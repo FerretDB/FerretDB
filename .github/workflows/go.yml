@@ -1,0 +1,173 @@
+---
+name: Go
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  schedule:
+    - cron: '42 3 * * *'
+
+env:
+  GOPATH: /home/runner/go
+  GOCACHE: /home/runner/go/cache
+  GOMODCACHE: /home/runner/go/cache/mod
+  GOPROXY: https://proxy.golang.org # remove direct
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Start pulling environment in the background
+        run: make env-pull &
+
+      - name: Install Go
+        run: |
+          sudo rm -fr /opt/hostedtoolcache/go /usr/local/go /usr/bin/go /bin/go
+          curl -o go.tar.gz -L \
+            https://github.com/AlekSi/golang-tip/releases/download/tip/master.linux-amd64.tar.gz
+          sudo tar -C /usr/local -xzf go.tar.gz
+          sudo ln -s /usr/local/go/bin/* /usr/local/bin/
+          go version
+          rm go.tar.gz
+
+      - name: Get week number
+        run: echo WEEK_NUMBER=$(date +%U) >> $GITHUB_ENV
+
+      - name: Restore cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.GOCACHE }}
+          key: test-${{ env.WEEK_NUMBER }}-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**') }}
+          restore-keys: |
+            test-${{ env.WEEK_NUMBER }}-${{ hashFiles('**/go.mod') }}
+            test-${{ env.WEEK_NUMBER }}
+
+      - name: Start environment
+        run: make env-up-detach
+
+      - name: Run init
+        run: make init
+
+      - name: Verify modules
+        run: |
+          go mod verify
+          cd tools && go mod verify
+
+      - name: Wait for and setup environment
+        run: make env-setup
+
+      - name: Run tests
+        run: make test
+
+      - name: Check dirty and clean
+        run: |
+          git status
+          git diff --exit-code
+          git clean -xdf
+
+  golangci-lint:
+    name: golangci-lint
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install Go
+        run: |
+          sudo rm -fr /opt/hostedtoolcache/go /usr/local/go /usr/bin/go /bin/go
+          curl -o go.tar.gz -L \
+            https://github.com/AlekSi/golang-tip/releases/download/tip/master.linux-amd64.tar.gz
+          sudo tar -C /usr/local -xzf go.tar.gz
+          sudo ln -s /usr/local/go/bin/* /usr/local/bin/
+          go version
+          rm go.tar.gz
+
+      - name: Get week number
+        run: echo WEEK_NUMBER=$(date +%U) >> $GITHUB_ENV
+
+      - name: Restore cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.GOCACHE }}
+          key: lint-${{ env.WEEK_NUMBER }}-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**') }}
+          restore-keys: |
+            lint-${{ env.WEEK_NUMBER }}-${{ hashFiles('**/go.mod') }}
+            lint-${{ env.WEEK_NUMBER }}
+
+      - name: Run required linters
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.42 # sync with tools/go.mod
+          args: --config=.golangci-required.yml
+          only-new-issues: false
+          skip-go-installation: true
+          skip-pkg-cache: true
+          skip-build-cache: true
+
+      - name: Run all linters
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.42 # sync with tools/go.mod
+          args: --config=.golangci.yml
+          only-new-issues: true
+          skip-go-installation: true
+          skip-pkg-cache: true
+          skip-build-cache: true
+
+      - name: Check dirty and clean
+        run: |
+          git status
+          git diff --exit-code
+          git clean -xdf
+
+  fuzz:
+    name: Fuzz
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install Go
+        run: |
+          sudo rm -fr /opt/hostedtoolcache/go /usr/local/go /usr/bin/go /bin/go
+          curl -o go.tar.gz -L \
+            https://github.com/AlekSi/golang-tip/releases/download/tip/master.linux-amd64.tar.gz
+          sudo tar -C /usr/local -xzf go.tar.gz
+          sudo ln -s /usr/local/go/bin/* /usr/local/bin/
+          go version
+          rm go.tar.gz
+
+      # Treat fuzz cache differently,
+      # at least until https://github.com/golang/go/issues/48901 is resolved one way or another.
+
+      - name: Restore cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.GOCACHE }}/fuzz
+          key: fuzz
+
+      - name: Run fuzzers
+        run: make fuzz-short
+
+      - name: Upload fuzz corpus
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: fuzz
+          path: |
+            ${{ env.GOCACHE }}/fuzz
+            **/testdata/fuzz
+
+      - name: Check dirty and clean
+        run: |
+          git status
+          git diff --exit-code
+          git clean -xdf

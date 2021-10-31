@@ -1,0 +1,127 @@
+// Copyright 2021 Baltoro OÜ.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package jsonb1
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/jackc/pgx/v4"
+
+	"github.com/MangoDB-io/MangoDB/internal/bson"
+	"github.com/MangoDB-io/MangoDB/internal/handlers/common"
+	"github.com/MangoDB-io/MangoDB/internal/pgconn"
+	"github.com/MangoDB-io/MangoDB/internal/types"
+	lazyerrors "github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/MangoDB-io/MangoDB/internal/wire"
+)
+
+func (h *storage) MsgUpdate(ctx context.Context, header *wire.MsgHeader, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	// TODO rework when sections are added
+
+	if len(msg.Documents) != 1 {
+		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("multiple documents are not supported"), header, msg)
+	}
+	document := msg.Documents[0]
+
+	m := document.Map()
+	collection := m["update"].(string)
+	docs, _ := m["updates"].(types.Array)
+	db := m["$db"].(string)
+
+	var selected, updated int32
+	for _, doc := range docs {
+		docM := doc.(types.Document).Map()
+
+		sql := fmt.Sprintf(`SELECT _jsonb FROM %s`, pgx.Identifier{db, collection}.Sanitize())
+		var placeholder pgconn.Placeholder
+
+		whereSQL, args, err := where(docM["q"].(types.Document), &placeholder)
+		if err != nil {
+			return nil, common.NewError(common.ErrNotImplemented, err, header, msg)
+		}
+
+		sql += whereSQL
+
+		rows, err := h.pgPool.Query(ctx, sql, args...)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+
+		var updateDocs types.Array
+
+		for {
+			updateDoc, err := nextRow(rows)
+			if err != nil {
+				return nil, err
+			}
+			if updateDoc == nil {
+				break
+			}
+
+			updateDocs = append(updateDocs, *updateDoc)
+		}
+
+		selected += int32(len(updateDocs))
+
+		for i, updateDoc := range updateDocs {
+			d := updateDoc.(types.Document)
+
+			for updateOp, updateV := range docM["u"].(types.Document).Map() {
+				switch updateOp {
+				case "$set":
+					for k, v := range updateV.(types.Document).Map() {
+						d.Set(k, v)
+					}
+				default:
+					return nil, lazyerrors.Errorf("unhandled operation %q", updateOp)
+				}
+			}
+
+			updateDocs[i] = d
+		}
+
+		for _, updateDoc := range updateDocs {
+			sql = fmt.Sprintf("UPDATE %s SET _jsonb = $1 WHERE _jsonb->'_id' = $2", pgx.Identifier{db, collection}.Sanitize())
+			d := updateDoc.(types.Document)
+			db, err := bson.NewDocument(d).MarshalJSON()
+			if err != nil {
+				return nil, err
+			}
+
+			idb, err := bson.ObjectID(d.Map()["_id"].(types.ObjectID)).MarshalJSON()
+			if err != nil {
+				return nil, err
+			}
+			tag, err := h.pgPool.Exec(ctx, sql, db, idb)
+			if err != nil {
+				return nil, err
+			}
+
+			updated += int32(tag.RowsAffected())
+		}
+	}
+
+	res := &wire.OpMsg{
+		Documents: []types.Document{types.MakeDocument(
+			"n", selected,
+			"nModified", updated,
+			"ok", float64(1),
+		)},
+	}
+
+	return res, nil
+}

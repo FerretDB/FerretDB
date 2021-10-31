@@ -1,0 +1,32 @@
+---
+# Almost all linters; some of them are optional.
+
+run:
+  modules-download-mode: readonly
+  issues-exit-code: 0
+
+linters-settings:
+  exhaustive:
+    default-signifies-exhaustive: false
+  goimports:
+    local-prefixes: github.com/MangoDB-io/MangoDB
+
+  unused:
+    check-exported: false
+
+  unparam:
+    check-exported: true
+
+linters:
+  enable-all: true
+  disable:
+    - golint      # deprecated
+    - interfacer  # deprecated
+    - maligned    # deprecated
+    - nlreturn    # too annoying
+    - scopelint   # deprecated
+    - testpackage # we test internals
+    - wsl         # too annoying
+
+issues:
+  exclude-use-default: false

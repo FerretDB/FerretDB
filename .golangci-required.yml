@@ -1,0 +1,24 @@
+---
+# The most valuable linters; they are required to pass for PR to be merged.
+
+run:
+  modules-download-mode: readonly
+  issues-exit-code: 1
+
+linters-settings:
+  exhaustive:
+    default-signifies-exhaustive: false
+  goimports:
+    local-prefixes: github.com/MangoDB-io/MangoDB
+
+linters:
+  disable-all: true
+  enable:
+    - exhaustive
+    - goimports
+    - govet
+    - ineffassign
+    - staticcheck
+
+issues:
+  exclude-use-default: false
