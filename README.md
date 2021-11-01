@@ -5,7 +5,7 @@ MangoDB is set out to become the de facto open-source alternative to MongoDB. Ma
 ## Why do we need MangoDB?
 
 MongoDB is a life-changing technology for many developers, empowering them to build applications faster than using relational databases. Its easy to use and well documented drivers makes MongoDB one of the easiest to use database solutions avaliable.
-However, MongoDB abandoned its Open Source roots, changing the license to SSPL - making it unusable for many open source and commercial projects.
+However, MongoDB abandoned its open source roots, changing the license to SSPL - making it unusable for many open source and commercial projects.
 
 Most MongoDB users are not in need of many of the advanced features offered by MongoDB, however, they are in the need of an open-source database solution. Recognizing this, MangoDB is here to fill the gap by providing an alternative.
 
