@@ -15,7 +15,7 @@ MangoDB will be compatible with MongoDB drivers and will work as a drop-in repla
 
 ## Current state
 
-What you are seeing here is a tech demo, intended to show the proof of concept. Over the next couple of months we will be working on adding more see [this example](https://github.com/MangoDB-io/example) for a short demonstration.
+What you are seeing here is a tech demo, intended to show a proof of concept. Over the next couple of months we will be working on adding more see [this example](https://github.com/MangoDB-io/example) for a short demonstration.
 
 MangoDB is in a very early stage and welcomes all contributors.
 See [CONTRIBUTING.md](CONTRIBUTING.md).
