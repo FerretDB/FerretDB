@@ -75,6 +75,9 @@ jobs:
     name: golangci-lint
     runs-on: ubuntu-20.04
 
+    # skip until golangci-lint is recompiled with Go 1.18
+    if: ${{ false }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2

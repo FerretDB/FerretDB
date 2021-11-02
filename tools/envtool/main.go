@@ -76,7 +76,8 @@ func main() {
 	}
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		Addr:   "127.0.0.1:27017",
+		// listen on all interfaces to make mongoimport below work on both Linux and macOS
+		Addr:   ":27017",
 		Mode:   "normal",
 		PgPool: pgPool,
 		Logger: logger.Named("listener").Desugar(),
