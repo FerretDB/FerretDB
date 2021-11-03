@@ -57,9 +57,15 @@ func (e Error) Error() string {
 }
 
 func (e Error) Document() types.Document {
+	var errStr string
+	if e.Err == nil {
+		errStr = ""
+	} else {
+		errStr = e.Err.Error()
+	}
 	return types.MakeDocument(
 		"ok", float64(0),
-		"errmsg", e.Err.Error(),
+		"errmsg", errStr,
 		"code", int32(e.Code),
 		"codeName", e.Code.String(),
 	)
