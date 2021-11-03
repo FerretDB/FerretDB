@@ -69,10 +69,20 @@ func TestErrors(t *testing.T) {
 	err2 := Errorf("err2: %w", err1)
 	err3 := Errorf("err3: %w", err2)
 
-	assert.Equal(t, "<lazyerrors_test.go:67 lazyerrors.TestErrors> err", err.Error())
-	assert.Equal(t, "<lazyerrors_test.go:68 lazyerrors.TestErrors> err1: <lazyerrors_test.go:67 lazyerrors.TestErrors> err", err1.Error())
-	assert.Equal(t, "<lazyerrors_test.go:69 lazyerrors.TestErrors> err2: <lazyerrors_test.go:68 lazyerrors.TestErrors> err1: <lazyerrors_test.go:67 lazyerrors.TestErrors> err", err2.Error())
-	assert.Equal(t, "<lazyerrors_test.go:70 lazyerrors.TestErrors> err3: <lazyerrors_test.go:69 lazyerrors.TestErrors> err2: <lazyerrors_test.go:68 lazyerrors.TestErrors> err1: <lazyerrors_test.go:67 lazyerrors.TestErrors> err", err3.Error())
+	expected := "<lazyerrors_test.go:67 lazyerrors.TestErrors> err"
+	assert.Equal(t, expected, err.Error())
+	expected = "<lazyerrors_test.go:68 lazyerrors.TestErrors> err1: " +
+		"<lazyerrors_test.go:67 lazyerrors.TestErrors> err"
+	assert.Equal(t, expected, err1.Error())
+	expected = "<lazyerrors_test.go:69 lazyerrors.TestErrors> err2: " +
+		"<lazyerrors_test.go:68 lazyerrors.TestErrors> err1: " +
+		"<lazyerrors_test.go:67 lazyerrors.TestErrors> err"
+	assert.Equal(t, expected, err2.Error())
+	expected = "<lazyerrors_test.go:70 lazyerrors.TestErrors> err3: " +
+		"<lazyerrors_test.go:69 lazyerrors.TestErrors> err2: " +
+		"<lazyerrors_test.go:68 lazyerrors.TestErrors> err1: " +
+		"<lazyerrors_test.go:67 lazyerrors.TestErrors> err"
+	assert.Equal(t, expected, err3.Error())
 
 	assert.NotEqual(t, err, unwrap(err1, 1))
 	assert.Equal(t, err, unwrap(err1, 2))
@@ -114,5 +124,5 @@ func TestPC(t *testing.T) {
 	}()
 
 	err := <-ch
-	assert.Equal(t, "<lazyerrors_test.go:113 lazyerrors.TestPC.func1> err", err.Error())
+	assert.Equal(t, "<lazyerrors_test.go:123 lazyerrors.TestPC.func1> err", err.Error())
 }
