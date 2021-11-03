@@ -18,7 +18,9 @@ linters:
     - goimports
     - govet
     - ineffassign
-    - staticcheck
+
+    # TODO enable when goanalysis_metalinter supports generics
+    # - staticcheck
 
 issues:
   exclude-use-default: false

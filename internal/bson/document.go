@@ -201,6 +201,8 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 			}
 			doc.m[string(ename)] = int64(v)
 
+		case tagDBPointer, tagDecimal, tagJavaScript, tagJavaScriptScope, tagMaxKey, tagMinKey, tagSymbol:
+			return lazyerrors.Errorf("bson.Document.ReadFrom: unhandled element type %#02x (%s)", t, tag(t))
 		default:
 			return lazyerrors.Errorf("bson.Document.ReadFrom: unhandled element type %#02x (%s)", t, tag(t))
 		}

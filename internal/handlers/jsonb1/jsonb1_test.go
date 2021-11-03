@@ -24,10 +24,10 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/util/testutil"
 )
 
-func setup(t testing.TB) (context.Context, *handlers.Handler, string) {
-	ctx := testutil.Ctx(t)
-	pool := testutil.Pool(ctx, t)
-	schema := testutil.Schema(ctx, t, pool)
-	h := handlers.New(pool, zaptest.NewLogger(t), nil, nil, NewStorage(pool, zaptest.NewLogger(t)))
+func setup(tb testing.TB) (context.Context, *handlers.Handler, string) {
+	ctx := testutil.Ctx(tb)
+	pool := testutil.Pool(ctx, tb)
+	schema := testutil.Schema(ctx, tb, pool)
+	h := handlers.New(pool, zaptest.NewLogger(tb), nil, nil, NewStorage(pool, zaptest.NewLogger(tb)))
 	return ctx, h, schema
 }

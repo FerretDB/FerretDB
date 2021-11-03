@@ -36,7 +36,7 @@ type fuzzTestCase struct {
 	msgBody   MsgBody
 }
 
-func testMessage(t testing.TB, b []byte) {
+func testMessage(tb testing.TB, b []byte) {
 	var msgHeader *MsgHeader
 	var msgBody MsgBody
 	var expectedB []byte
@@ -48,7 +48,7 @@ func testMessage(t testing.TB, b []byte) {
 		var err error
 		msgHeader, msgBody, err = ReadMessage(bufr)
 		if err != nil {
-			t.Skip(err)
+			tb.Skip(err)
 		}
 
 		// remove random tail
@@ -60,10 +60,10 @@ func testMessage(t testing.TB, b []byte) {
 		var bw bytes.Buffer
 		bufw := bufio.NewWriter(&bw)
 		err := WriteMessage(bufw, msgHeader, msgBody)
-		require.NoError(t, err)
+		require.NoError(tb, err)
 		err = bufw.Flush()
-		require.NoError(t, err)
-		assert.Equal(t, expectedB, bw.Bytes())
+		require.NoError(tb, err)
+		assert.Equal(tb, expectedB, bw.Bytes())
 	}
 }
 

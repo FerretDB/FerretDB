@@ -27,12 +27,20 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
-func (h *storage) selectDocuments(ctx context.Context, db, collection string, filter, sort types.Document, limit int32) (docs types.Array, err error) {
-	sql := fmt.Sprintf(`SELECT _jsonb FROM %s`, pgx.Identifier{db, collection}.Sanitize())
+type selectOpts struct {
+	db         string
+	collection string
+	filter     types.Document
+	sort       types.Document
+	limit      int32
+}
+
+func (h *storage) selectDocuments(ctx context.Context, opts *selectOpts) (docs types.Array, err error) {
+	sql := fmt.Sprintf(`SELECT _jsonb FROM %s`, pgx.Identifier{opts.db, opts.collection}.Sanitize())
 	var args []interface{}
 	var placeholder pgconn.Placeholder
 
-	whereSQL, args, err := where(filter, &placeholder)
+	whereSQL, args, err := where(opts.filter, &placeholder)
 	if err != nil {
 		err = lazyerrors.Error(err)
 		return
@@ -40,11 +48,11 @@ func (h *storage) selectDocuments(ctx context.Context, db, collection string, fi
 
 	sql += whereSQL
 
-	sortMap := sort.Map()
+	sortMap := opts.sort.Map()
 	if len(sortMap) > 0 {
 		sql += " ORDER BY"
 
-		for i, k := range sort.Keys() {
+		for i, k := range opts.sort.Keys() {
 			if i != 0 {
 				sql += ","
 			}
@@ -62,13 +70,13 @@ func (h *storage) selectDocuments(ctx context.Context, db, collection string, fi
 	}
 
 	switch {
-	case limit == 0:
+	case opts.limit == 0:
 		// undefined or zero - no limit
-	case limit > 0:
+	case opts.limit > 0:
 		sql += " LIMIT " + placeholder.Next()
-		args = append(args, limit)
+		args = append(args, opts.limit)
 	default:
-		err = lazyerrors.Errorf("unexpected limit %d", limit)
+		err = lazyerrors.Errorf("unexpected limit %d", opts.limit)
 		return
 	}
 

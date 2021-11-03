@@ -24,20 +24,20 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/util/hex"
 )
 
-func ParseDump(t testing.TB, s string) []byte {
-	t.Helper()
+func ParseDump(tb testing.TB, s string) []byte {
+	tb.Helper()
 
 	b, err := hex.ParseDump(s)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	return b
 }
 
-func ParseDumpFile(t testing.TB, path ...string) []byte {
-	t.Helper()
+func ParseDumpFile(tb testing.TB, path ...string) []byte {
+	tb.Helper()
 
 	b, err := os.ReadFile(filepath.Join(path...))
-	require.NoError(t, err)
-	return ParseDump(t, string(b))
+	require.NoError(tb, err)
+	return ParseDump(tb, string(b))
 }
 
 func MustParseDump(s string) []byte {

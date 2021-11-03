@@ -10,16 +10,57 @@ linters-settings:
     default-signifies-exhaustive: false
   goimports:
     local-prefixes: github.com/MangoDB-io/MangoDB
-
+  lll:
+    line-length: 130
+    tab-width: 1
+  nolintlint:
+    allow-unused: false
+    allow-leading-space: false
+    allow-no-explanation: []
+    require-explanation: true
+    require-specific: true
   unused:
-    check-exported: false
-
+    check-exported: true
   unparam:
     check-exported: true
 
 linters:
   enable-all: true
   disable:
+    # TODO configure and enable one by one
+    - thelper
+    - cyclop
+    - dupl
+    - errcheck
+    - errname
+    - errorlint
+    - exhaustivestruct
+    - forcetypeassert
+    - funlen
+    - gochecknoglobals
+    - gochecknoinits
+    - gocognit
+    - gocritic
+    - gocyclo
+    - godot
+    - godox
+    - goerr113
+    - gomnd
+    - gosec
+    - ifshort
+    - misspell
+    - nakedret
+    - revive
+    - unparam
+    - whitespace
+    - wrapcheck
+
+    # TODO enable when goanalysis_metalinter supports generics
+    - gosimple
+    - staticcheck
+    - stylecheck
+    - unused
+
     - golint      # deprecated
     - interfacer  # deprecated
     - maligned    # deprecated

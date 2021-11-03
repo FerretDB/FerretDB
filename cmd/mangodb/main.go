@@ -30,9 +30,7 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/util/version"
 )
 
-// Flags are defined there to be visible in the testcover binary help output (bin/mangodb-testcover -h).
-//
-//nolint:gochecknoglobals
+//nolint:gochecknoglobals // flags are defined there to be visible in the testcover binary help output (bin/mangodb-testcover -h).
 var (
 	modeF          = flag.String("mode", string(clientconn.AllModes[0]), fmt.Sprintf("operation mode: %v", clientconn.AllModes))
 	listenAddrF    = flag.String("listen-addr", "127.0.0.1:27017", "listen address")

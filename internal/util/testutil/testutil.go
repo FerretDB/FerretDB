@@ -25,42 +25,48 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/pgconn"
 )
 
-func Ctx(t testing.TB) context.Context {
+func Ctx(tb testing.TB) context.Context {
+	tb.Helper()
+
 	// TODO
 	return context.Background()
 }
 
-func Pool(ctx context.Context, t testing.TB) *pgconn.Pool {
+func Pool(ctx context.Context, tb testing.TB) *pgconn.Pool {
+	tb.Helper()
+
 	if testing.Short() {
-		t.Skip("skipping in -short mode")
+		tb.Skip("skipping in -short mode")
 	}
 
-	pgPool, err := pgconn.NewPool("postgres://postgres@127.0.0.1:5432/mangodb", zaptest.NewLogger(t))
-	require.NoError(t, err)
-	t.Cleanup(pgPool.Close)
+	pgPool, err := pgconn.NewPool("postgres://postgres@127.0.0.1:5432/mangodb", zaptest.NewLogger(tb))
+	require.NoError(tb, err)
+	tb.Cleanup(pgPool.Close)
 
 	return pgPool
 }
 
-func Schema(ctx context.Context, t testing.TB, pool *pgconn.Pool) string {
+func Schema(ctx context.Context, tb testing.TB, pool *pgconn.Pool) string {
+	tb.Helper()
+
 	if testing.Short() {
-		t.Skip("skipping in -short mode")
+		tb.Skip("skipping in -short mode")
 	}
 
-	name := strings.ToLower(t.Name())
+	name := strings.ToLower(tb.Name())
 
 	pool.Exec(ctx, "DROP SCHEMA "+name+" CASCADE")
 
 	_, err := pool.Exec(ctx, "CREATE SCHEMA "+name)
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		// keep schema around for debugging
-		if t.Failed() {
+	require.NoError(tb, err)
+	tb.Cleanup(func() {
+		if tb.Failed() {
+			tb.Logf("Keeping schema %q for debugging.", name)
 			return
 		}
 
 		_, err = pool.Exec(ctx, "DROP SCHEMA "+name+" CASCADE")
-		require.NoError(t, err)
+		require.NoError(tb, err)
 	})
 
 	return name
