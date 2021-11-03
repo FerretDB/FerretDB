@@ -8,11 +8,21 @@ run:
 linters-settings:
   exhaustive:
     default-signifies-exhaustive: false
+  godot:
+    scope: toplevel
+    exclude:
+      - go-sumtype:decl
+      - check interfaces
+    capital: true
   goimports:
     local-prefixes: github.com/MangoDB-io/MangoDB
   lll:
     line-length: 130
     tab-width: 1
+  misspell:
+    locale: US
+    ignore-words:
+      - guiness # present in the test dataset
   nolintlint:
     allow-unused: false
     allow-leading-space: false
@@ -23,6 +33,9 @@ linters-settings:
     check-exported: true
   unparam:
     check-exported: true
+  whitespace:
+    multi-if: false
+    multi-func: false
 
 linters:
   enable-all: true
@@ -42,17 +55,14 @@ linters:
     - gocognit
     - gocritic
     - gocyclo
-    - godot
     - godox
     - goerr113
     - gomnd
     - gosec
     - ifshort
-    - misspell
     - nakedret
     - revive
     - unparam
-    - whitespace
     - wrapcheck
 
     # TODO enable when goanalysis_metalinter supports generics

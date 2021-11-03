@@ -19,7 +19,7 @@ import (
 	"strings"
 )
 
-// for compatibility with bson.Document
+// For compatibility with bson.Document.
 type document interface {
 	Map() map[string]interface{}
 	Keys() []string

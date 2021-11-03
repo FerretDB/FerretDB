@@ -66,7 +66,6 @@ func (h *storage) MsgDelete(ctx context.Context, header *wire.MsgHeader, msg *wi
 		}
 
 		deleted += int32(tag.RowsAffected())
-
 	}
 
 	reply := &wire.OpMsg{

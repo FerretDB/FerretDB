@@ -46,7 +46,7 @@ func (h *Handler) MsgDrop(ctx context.Context, header *wire.MsgHeader, msg *wire
 
 	reply := &wire.OpMsg{
 		Documents: []types.Document{types.MakeDocument(
-			"nIndexesWas", int32(0), // TOOD
+			"nIndexesWas", int32(0), // TODO
 			"ns", db+"."+collection,
 			"ok", float64(1),
 		)},
