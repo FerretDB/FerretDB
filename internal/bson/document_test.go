@@ -25,21 +25,21 @@ import (
 var (
 	handshake1 = testCase{
 		name: "handshake1",
-		v: NewDocument(types.MakeDocument(
+		v: NewDocument(types.MustMakeDocument(
 			"ismaster", true,
-			"client", types.MakeDocument(
-				"driver", types.MakeDocument(
+			"client", types.MustMakeDocument(
+				"driver", types.MustMakeDocument(
 					"name", "nodejs",
 					"version", "4.0.0-beta.6",
 				),
-				"os", types.MakeDocument(
+				"os", types.MustMakeDocument(
 					"type", "Darwin",
 					"name", "darwin",
 					"architecture", "x64",
 					"version", "20.6.0",
 				),
 				"platform", "Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",
-				"application", types.MakeDocument(
+				"application", types.MustMakeDocument(
 					"name", "mongosh 1.0.1",
 				),
 			),
@@ -57,21 +57,21 @@ var (
 
 	handshake2 = testCase{
 		name: "handshake2",
-		v: NewDocument(types.MakeDocument(
+		v: NewDocument(types.MustMakeDocument(
 			"ismaster", true,
-			"client", types.MakeDocument(
-				"driver", types.MakeDocument(
+			"client", types.MustMakeDocument(
+				"driver", types.MustMakeDocument(
 					"name", "nodejs",
 					"version", "4.0.0-beta.6",
 				),
-				"os", types.MakeDocument(
+				"os", types.MustMakeDocument(
 					"type", "Darwin",
 					"name", "darwin",
 					"architecture", "x64",
 					"version", "20.6.0",
 				),
 				"platform", "Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",
-				"application", types.MakeDocument(
+				"application", types.MustMakeDocument(
 					"name", "mongosh 1.0.1",
 				),
 			),
@@ -89,9 +89,9 @@ var (
 
 	handshake3 = testCase{
 		name: "handshake3",
-		v: NewDocument(types.MakeDocument(
+		v: NewDocument(types.MustMakeDocument(
 			"buildInfo", int32(1),
-			"lsid", types.MakeDocument(
+			"lsid", types.MustMakeDocument(
 				"id", types.Binary{
 					Subtype: types.BinaryUUID,
 					B:       []byte{0xa3, 0x19, 0xf2, 0xb4, 0xa1, 0x75, 0x40, 0xc7, 0xb8, 0xe7, 0xa3, 0xa3, 0x2e, 0xc2, 0x56, 0xbe},
@@ -106,7 +106,7 @@ var (
 
 	handshake4 = testCase{
 		name: "handshake4",
-		v: NewDocument(types.MakeDocument(
+		v: NewDocument(types.MustMakeDocument(
 			"version", "5.0.0",
 			"gitVersion", "1184f004a99660de6f5e745573419bda8a28c0e9",
 			"modules", types.Array{},
@@ -114,11 +114,11 @@ var (
 			"javascriptEngine", "mozjs",
 			"sysInfo", "deprecated",
 			"versionArray", types.Array{int32(5), int32(0), int32(0), int32(0)},
-			"openssl", types.MakeDocument(
+			"openssl", types.MustMakeDocument(
 				"running", "OpenSSL 1.1.1f  31 Mar 2020",
 				"compiled", "OpenSSL 1.1.1f  31 Mar 2020",
 			),
-			"buildEnvironment", types.MakeDocument(
+			"buildEnvironment", types.MustMakeDocument(
 				"distmod", "ubuntu2004",
 				"distarch", "x86_64",
 				"cc", "/opt/mongodbtoolchain/v3/bin/gcc: gcc (GCC) 8.5.0",
@@ -179,7 +179,7 @@ var (
 
 	all = testCase{
 		name: "all",
-		v: NewDocument(types.MakeDocument(
+		v: NewDocument(types.MustMakeDocument(
 			"binary", types.Array{
 				types.Binary{Subtype: types.BinaryUser, B: []byte{0x42}},
 				types.Binary{Subtype: types.BinaryGeneric, B: []byte{}},

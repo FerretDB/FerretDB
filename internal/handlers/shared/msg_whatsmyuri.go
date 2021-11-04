@@ -23,7 +23,7 @@ import (
 
 func (h *Handler) MsgWhatsMyURI(ctx context.Context, header *wire.MsgHeader, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	reply := &wire.OpMsg{
-		Documents: []types.Document{types.MakeDocument(
+		Documents: []types.Document{types.MustMakeDocument(
 			"you", h.peerAddr,
 			"ok", float64(1),
 		)},

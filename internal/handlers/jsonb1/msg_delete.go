@@ -71,7 +71,7 @@ func (h *storage) MsgDelete(ctx context.Context, header *wire.MsgHeader, msg *wi
 	}
 
 	reply := &wire.OpMsg{
-		Documents: []types.Document{types.MakeDocument(
+		Documents: []types.Document{types.MustMakeDocument(
 			"n", deleted,
 			"ok", float64(1),
 		)},

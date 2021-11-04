@@ -31,7 +31,7 @@ func (h *Handler) QueryCmd(ctx context.Context, header *wire.MsgHeader, msg *wir
 		reply := &wire.OpReply{
 			NumberReturned: 1,
 			Documents: []types.Document{
-				types.MakeDocument(
+				types.MustMakeDocument(
 					"ismaster", true,
 					// topologyVersion
 					"maxBsonObjectSize", int32(bson.MaxDocumentLen),

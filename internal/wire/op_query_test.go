@@ -36,21 +36,21 @@ var queryTestCases = []testCase{{
 		FullCollectionName: "admin.$cmd",
 		NumberToSkip:       0,
 		NumberToReturn:     -1,
-		Query: types.MakeDocument(
+		Query: types.MustMakeDocument(
 			"ismaster", true,
-			"client", types.MakeDocument(
-				"driver", types.MakeDocument(
+			"client", types.MustMakeDocument(
+				"driver", types.MustMakeDocument(
 					"name", "nodejs",
 					"version", "4.0.0-beta.6",
 				),
-				"os", types.MakeDocument(
+				"os", types.MustMakeDocument(
 					"type", "Darwin",
 					"name", "darwin",
 					"architecture", "x64",
 					"version", "20.6.0",
 				),
 				"platform", "Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",
-				"application", types.MakeDocument(
+				"application", types.MustMakeDocument(
 					"name", "mongosh 1.0.1",
 				),
 			),
@@ -74,21 +74,21 @@ var queryTestCases = []testCase{{
 		FullCollectionName: "admin.$cmd",
 		NumberToSkip:       0,
 		NumberToReturn:     -1,
-		Query: types.MakeDocument(
+		Query: types.MustMakeDocument(
 			"ismaster", true,
-			"client", types.MakeDocument(
-				"driver", types.MakeDocument(
+			"client", types.MustMakeDocument(
+				"driver", types.MustMakeDocument(
 					"name", "nodejs",
 					"version", "4.0.0-beta.6",
 				),
-				"os", types.MakeDocument(
+				"os", types.MustMakeDocument(
 					"type", "Darwin",
 					"name", "darwin",
 					"architecture", "x64",
 					"version", "20.6.0",
 				),
 				"platform", "Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",
-				"application", types.MakeDocument(
+				"application", types.MustMakeDocument(
 					"name", "mongosh 1.0.1",
 				),
 			),

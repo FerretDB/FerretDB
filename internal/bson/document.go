@@ -33,7 +33,7 @@ const (
 	minDocumentLen = 5
 )
 
-// For compatibility with types.Document.
+// Common interface with types.Document.
 type document interface {
 	Map() map[string]interface{}
 	Keys() []string

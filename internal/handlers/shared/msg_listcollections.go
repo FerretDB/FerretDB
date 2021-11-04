@@ -76,15 +76,15 @@ func (h *Handler) MsgListCollections(ctx context.Context, header *wire.MsgHeader
 
 	collections := make(types.Array, len(names))
 	for i, n := range names {
-		collections[i] = types.MakeDocument(
+		collections[i] = types.MustMakeDocument(
 			"name", n,
 			"type", "collection",
 		)
 	}
 
 	reply := &wire.OpMsg{
-		Documents: []types.Document{types.MakeDocument(
-			"cursor", types.MakeDocument(
+		Documents: []types.Document{types.MustMakeDocument(
+			"cursor", types.MustMakeDocument(
 				"id", int64(0),
 				"ns", db+".$cmd.listCollections",
 				"firstBatch", collections,

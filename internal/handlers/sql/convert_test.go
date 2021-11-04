@@ -41,7 +41,7 @@ func TestConvert(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, doc)
 
-	expected := types.MakeDocument(
+	expected := types.MustMakeDocument(
 		"actor_id", int32(1),
 		"first_name", "PENELOPE",
 		"last_name", "GUINESS",

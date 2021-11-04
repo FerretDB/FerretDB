@@ -37,9 +37,9 @@ var replyTestCases = []testCase{{
 		CursorID:       0,
 		StartingFrom:   0,
 		NumberReturned: 1,
-		Documents: []types.Document{types.MakeDocument(
+		Documents: []types.Document{types.MustMakeDocument(
 			"ismaster", true,
-			"topologyVersion", types.MakeDocument(
+			"topologyVersion", types.MustMakeDocument(
 				"processId", types.ObjectID{0x60, 0xfb, 0xed, 0x53, 0x71, 0xfe, 0x1b, 0xae, 0x70, 0x33, 0x95, 0x05},
 				"counter", int64(0),
 			),
@@ -70,9 +70,9 @@ var replyTestCases = []testCase{{
 		CursorID:       0,
 		StartingFrom:   0,
 		NumberReturned: 1,
-		Documents: []types.Document{types.MakeDocument(
+		Documents: []types.Document{types.MustMakeDocument(
 			"ismaster", true,
-			"topologyVersion", types.MakeDocument(
+			"topologyVersion", types.MustMakeDocument(
 				"processId", types.ObjectID{0x60, 0xfb, 0xed, 0x53, 0x71, 0xfe, 0x1b, 0xae, 0x70, 0x33, 0x95, 0x05},
 				"counter", int64(0),
 			),

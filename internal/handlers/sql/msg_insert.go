@@ -81,7 +81,7 @@ func (h *storage) MsgInsert(ctx context.Context, header *wire.MsgHeader, msg *wi
 	}
 
 	res := &wire.OpMsg{
-		Documents: []types.Document{types.MakeDocument(
+		Documents: []types.Document{types.MustMakeDocument(
 			"n", inserted,
 			"ok", float64(1),
 		)},

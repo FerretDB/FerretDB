@@ -63,7 +63,7 @@ func (e Error) Document() types.Document {
 	} else {
 		errStr = e.Err.Error()
 	}
-	return types.MakeDocument(
+	return types.MustMakeDocument(
 		"ok", float64(0),
 		"errmsg", errStr,
 		"code", int32(e.Code),

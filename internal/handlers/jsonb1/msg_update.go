@@ -84,7 +84,9 @@ func (h *storage) MsgUpdate(ctx context.Context, header *wire.MsgHeader, msg *wi
 				switch updateOp {
 				case "$set":
 					for k, v := range updateV.(types.Document).Map() {
-						d.Set(k, v)
+						if err := d.Set(k, v); err != nil {
+							return nil, lazyerrors.Error(err)
+						}
 					}
 				default:
 					return nil, lazyerrors.Errorf("unhandled operation %q", updateOp)
@@ -116,7 +118,7 @@ func (h *storage) MsgUpdate(ctx context.Context, header *wire.MsgHeader, msg *wi
 	}
 
 	res := &wire.OpMsg{
-		Documents: []types.Document{types.MakeDocument(
+		Documents: []types.Document{types.MustMakeDocument(
 			"n", selected,
 			"nModified", updated,
 			"ok", float64(1),

@@ -109,8 +109,8 @@ func (h *storage) MsgFind(ctx context.Context, header *wire.MsgHeader, msg *wire
 	}
 
 	res := &wire.OpMsg{
-		Documents: []types.Document{types.MakeDocument(
-			"cursor", types.MakeDocument(
+		Documents: []types.Document{types.MustMakeDocument(
+			"cursor", types.MustMakeDocument(
 				"firstBatch", docs,
 				"id", int64(0), // TODO
 				"ns", db+"."+collection,

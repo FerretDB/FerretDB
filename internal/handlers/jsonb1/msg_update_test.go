@@ -35,10 +35,10 @@ func TestUpdate(t *testing.T) {
 
 	for i := 1; i <= 3; i++ {
 		msg := &wire.OpMsg{
-			Documents: []types.Document{types.MakeDocument(
+			Documents: []types.Document{types.MustMakeDocument(
 				"insert", "test",
 				"documents", types.Array{
-					types.MakeDocument(
+					types.MustMakeDocument(
 						"_id", types.ObjectID{byte(i)},
 						"description", "Test "+strconv.Itoa(i),
 					),
@@ -52,15 +52,15 @@ func TestUpdate(t *testing.T) {
 	}
 
 	msg := &wire.OpMsg{
-		Documents: []types.Document{types.MakeDocument(
+		Documents: []types.Document{types.MustMakeDocument(
 			"update", "test",
 			"updates", types.Array{
-				types.MakeDocument(
-					"q", types.MakeDocument(
+				types.MustMakeDocument(
+					"q", types.MustMakeDocument(
 						"_id", types.ObjectID{byte(1)},
 					),
-					"u", types.MakeDocument(
-						"$set", types.MakeDocument(
+					"u", types.MustMakeDocument(
+						"$set", types.MustMakeDocument(
 							"description", "Test 1 updated",
 						),
 					),

@@ -52,7 +52,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, header *wire.MsgHeader, 
 
 	dbs := make(types.Array, len(names))
 	for i, n := range names {
-		dbs[i] = types.MakeDocument(
+		dbs[i] = types.MustMakeDocument(
 			"name", n,
 			"sizeOnDisk", int64(1), // TODO
 			"empty", false, // TODO
@@ -60,7 +60,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, header *wire.MsgHeader, 
 	}
 
 	reply := &wire.OpMsg{
-		Documents: []types.Document{types.MakeDocument(
+		Documents: []types.Document{types.MustMakeDocument(
 			"databases", dbs,
 			// totalSize
 			// totalSizeMb

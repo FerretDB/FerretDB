@@ -33,9 +33,9 @@ var msgTestCases = []testCase{{
 	},
 	msgBody: &OpMsg{
 		FlagBits: 0,
-		Documents: []types.Document{types.MakeDocument(
+		Documents: []types.Document{types.MustMakeDocument(
 			"buildInfo", int32(1),
-			"lsid", types.MakeDocument(
+			"lsid", types.MustMakeDocument(
 				"id", types.Binary{
 					Subtype: types.BinaryUUID,
 					B:       []byte{0xa3, 0x19, 0xf2, 0xb4, 0xa1, 0x75, 0x40, 0xc7, 0xb8, 0xe7, 0xa3, 0xa3, 0x2e, 0xc2, 0x56, 0xbe},
@@ -56,7 +56,7 @@ var msgTestCases = []testCase{{
 	},
 	msgBody: &OpMsg{
 		FlagBits: 0,
-		Documents: []types.Document{types.MakeDocument(
+		Documents: []types.Document{types.MustMakeDocument(
 			"version", "5.0.0",
 			"gitVersion", "1184f004a99660de6f5e745573419bda8a28c0e9",
 			"modules", types.Array{},
@@ -64,11 +64,11 @@ var msgTestCases = []testCase{{
 			"javascriptEngine", "mozjs",
 			"sysInfo", "deprecated",
 			"versionArray", types.Array{int32(5), int32(0), int32(0), int32(0)},
-			"openssl", types.MakeDocument(
+			"openssl", types.MustMakeDocument(
 				"running", "OpenSSL 1.1.1f  31 Mar 2020",
 				"compiled", "OpenSSL 1.1.1f  31 Mar 2020",
 			),
-			"buildEnvironment", types.MakeDocument(
+			"buildEnvironment", types.MustMakeDocument(
 				"distmod", "ubuntu2004",
 				"distarch", "x86_64",
 				"cc", "/opt/mongodbtoolchain/v3/bin/gcc: gcc (GCC) 8.5.0",

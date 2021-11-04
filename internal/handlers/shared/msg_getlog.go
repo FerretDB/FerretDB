@@ -62,7 +62,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, header *wire.MsgHeader, msg *wi
 	}
 
 	reply := &wire.OpMsg{
-		Documents: []types.Document{types.MakeDocument(
+		Documents: []types.Document{types.MustMakeDocument(
 			"totalLinesWritten", int32(1),
 			"log", types.Array{string(b)},
 			"ok", float64(1),

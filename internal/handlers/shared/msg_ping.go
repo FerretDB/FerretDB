@@ -23,7 +23,7 @@ import (
 
 func (h *Handler) MsgPing(ctx context.Context, header *wire.MsgHeader, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	reply := &wire.OpMsg{
-		Documents: []types.Document{types.MakeDocument(
+		Documents: []types.Document{types.MustMakeDocument(
 			"ok", float64(1),
 		)},
 	}
