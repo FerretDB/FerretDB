@@ -17,6 +17,7 @@ package bson
 import (
 	"bufio"
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"io"
 	"testing"
@@ -25,15 +26,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type fuzzTestCase struct {
+type testCase struct {
 	name string
 	v    bsontype
 	b    []byte
 	j    string
 }
 
-func testBinary(t *testing.T, testcases []fuzzTestCase, newFunc func() bsontype) {
-	for _, tc := range testcases {
+func testBinary(t *testing.T, testCases []testCase, newFunc func() bsontype) {
+	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -59,7 +60,7 @@ func testBinary(t *testing.T, testcases []fuzzTestCase, newFunc func() bsontype)
 
 				actualB, err := tc.v.MarshalBinary()
 				require.NoError(t, err)
-				assert.Equal(t, tc.b, actualB)
+				assert.Equal(t, tc.b, actualB, "actual:\n%s", hex.Dump(actualB))
 			})
 
 			t.Run("WriteTo", func(t *testing.T) {
@@ -71,14 +72,14 @@ func testBinary(t *testing.T, testcases []fuzzTestCase, newFunc func() bsontype)
 				require.NoError(t, err)
 				err = bufw.Flush()
 				require.NoError(t, err)
-				assert.Equal(t, tc.b, buf.Bytes())
+				assert.Equal(t, tc.b, buf.Bytes(), "actual:\n%s", hex.Dump(buf.Bytes()))
 			})
 		})
 	}
 }
 
-func fuzzBinary(f *testing.F, testcases []fuzzTestCase, newFunc func() bsontype) {
-	for _, tc := range testcases {
+func fuzzBinary(f *testing.F, testCases []testCase, newFunc func() bsontype) {
+	for _, tc := range testCases {
 		f.Add(tc.b)
 	}
 
@@ -121,8 +122,8 @@ func fuzzBinary(f *testing.F, testcases []fuzzTestCase, newFunc func() bsontype)
 	})
 }
 
-func testJSON(t *testing.T, testcases []fuzzTestCase, newFunc func() bsontype) {
-	for _, tc := range testcases {
+func testJSON(t *testing.T, testCases []testCase, newFunc func() bsontype) {
+	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -154,40 +155,48 @@ func testJSON(t *testing.T, testcases []fuzzTestCase, newFunc func() bsontype) {
 	}
 }
 
-func fuzzJSON(f *testing.F, testcases []fuzzTestCase, newFunc func() bsontype) {
-	for _, tc := range testcases {
+func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() bsontype) {
+	for _, tc := range testCases {
 		f.Add(tc.j)
 	}
 
 	f.Fuzz(func(t *testing.T, j string) {
 		t.Parallel()
 
-		// compact generated input
-		var dst bytes.Buffer
-		require.NoError(t, json.Compact(&dst, []byte(j)))
-		j = dst.String()
+		// raw "null" should never reach UnmarshalJSON due to the way encoding/json works
+		if j == "null" {
+			t.Skip(j)
+		}
 
-		var v bsontype
+		// j may contain extra object fields, zero values, etc.
+		// We can't compare it with MarshalJSON() result directly.
+		// Instead, we compare second results.
 
-		// test UnmarshalJSON
-		{
-			v = newFunc()
-			if err := v.UnmarshalJSON([]byte(j)); err != nil {
-				t.Skip(err)
-			}
+		v := newFunc()
+		if err := v.UnmarshalJSON([]byte(j)); err != nil {
+			t.Skip(err)
 		}
 
 		// test MarshalJSON
 		{
-			actualJ, err := v.MarshalJSON()
+			b, err := v.MarshalJSON()
 			require.NoError(t, err)
-			require.Equal(t, j, string(actualJ))
+			j = string(b)
+		}
+
+		// test UnmarshalJSON
+		{
+			actualV := newFunc()
+			err := actualV.UnmarshalJSON([]byte(j))
+			require.NoError(t, err)
+			assert.Equal(t, v, actualV, "expected: %s\nactual  : %s", v, actualV)
 		}
 	})
 }
 
-func benchmark(b *testing.B, testcases []fuzzTestCase, newFunc func() bsontype) {
-	for _, tc := range testcases {
+func benchmark(b *testing.B, testCases []testCase, newFunc func() bsontype) {
+	for _, tc := range testCases {
+		tc := tc
 		b.Run(tc.name, func(b *testing.B) {
 			b.Run("ReadFrom", func(b *testing.B) {
 				br := bytes.NewReader(tc.b)

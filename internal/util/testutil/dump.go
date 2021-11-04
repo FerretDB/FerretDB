@@ -40,7 +40,7 @@ func ParseDumpFile(tb testing.TB, path ...string) []byte {
 	return ParseDump(tb, string(b))
 }
 
-func MustParseDump(s string) []byte {
+func mustParseDump(s string) []byte {
 	b, err := hex.ParseDump(s)
 	if err != nil {
 		panic(err)
@@ -53,5 +53,5 @@ func MustParseDumpFile(path ...string) []byte {
 	if err != nil {
 		panic(err)
 	}
-	return MustParseDump(string(b))
+	return mustParseDump(string(b))
 }

@@ -21,7 +21,7 @@ import (
 	"github.com/AlekSi/pointer"
 )
 
-var doubleTestcases = []fuzzTestCase{{
+var doubleTestCases = []testCase{{
 	name: "42.13",
 	v:    pointer.To(Double(42.13)),
 	b:    []byte{0x71, 0x3d, 0x0a, 0xd7, 0xa3, 0x10, 0x45, 0x40},
@@ -48,19 +48,23 @@ func TestDouble(t *testing.T) {
 
 	t.Run("Binary", func(t *testing.T) {
 		t.Parallel()
-		testBinary(t, doubleTestcases, func() bsontype { return new(Double) })
+		testBinary(t, doubleTestCases, func() bsontype { return new(Double) })
 	})
 
 	t.Run("JSON", func(t *testing.T) {
 		t.Parallel()
-		testJSON(t, doubleTestcases, func() bsontype { return new(Double) })
+		testJSON(t, doubleTestCases, func() bsontype { return new(Double) })
 	})
 }
 
 func FuzzDoubleBinary(f *testing.F) {
-	fuzzBinary(f, doubleTestcases, func() bsontype { return new(Double) })
+	fuzzBinary(f, doubleTestCases, func() bsontype { return new(Double) })
 }
 
 func FuzzDoubleJSON(f *testing.F) {
-	fuzzJSON(f, doubleTestcases, func() bsontype { return new(Double) })
+	fuzzJSON(f, doubleTestCases, func() bsontype { return new(Double) })
+}
+
+func BenchmarkDouble(b *testing.B) {
+	benchmark(b, doubleTestCases, func() bsontype { return new(Double) })
 }

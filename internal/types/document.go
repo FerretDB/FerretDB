@@ -31,10 +31,17 @@ type Document struct {
 }
 
 func NewDocument(d document) Document {
-	return Document{
+	res := Document{
 		m:    d.Map(),
 		keys: d.Keys(),
 	}
+	if res.m == nil {
+		res.m = map[string]interface{}{}
+	}
+	if res.keys == nil {
+		res.keys = []string{}
+	}
+	return res
 }
 
 func MakeDocument(pairs ...interface{}) Document {

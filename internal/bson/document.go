@@ -45,10 +45,17 @@ type Document struct {
 }
 
 func NewDocument(d document) *Document {
-	return &Document{
+	res := &Document{
 		m:    d.Map(),
 		keys: d.Keys(),
 	}
+	if res.m == nil {
+		res.m = map[string]interface{}{}
+	}
+	if res.keys == nil {
+		res.keys = []string{}
+	}
+	return res
 }
 
 func (doc *Document) bsontype() {}
@@ -94,7 +101,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 		if t == 0 {
 			// documented ended
 			if _, err := bufr.Peek(1); err != io.EOF {
-				return lazyerrors.Errorf("unexpected end of the document: %v", err)
+				return lazyerrors.Errorf("unexpected end of the document: %w", err)
 			}
 			return nil
 		}
@@ -380,7 +387,7 @@ func unmarshalJSONValue(data []byte) (interface{}, error) {
 		return nil, err
 	}
 	if err := checkConsumed(dec, r); err != nil {
-		return nil, lazyerrors.Errorf("unmarshalJSONValue: %s", err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	var res interface{}
@@ -408,9 +415,10 @@ func unmarshalJSONValue(data []byte) (interface{}, error) {
 			err = o.UnmarshalJSON(data)
 			res = time.Time(o)
 		case v["$r"] != nil:
-			var o Regex
-			err = o.UnmarshalJSON(data)
-			res = types.Regex(o)
+			err = lazyerrors.Errorf("unmarshalJSONValue: unhandled regex %v", v)
+			// var o Regex
+			// err = o.UnmarshalJSON(data)
+			// res = types.Regex(o)
 		case v["$t"] != nil:
 			var o Timestamp
 			err = o.UnmarshalJSON(data)
@@ -419,19 +427,23 @@ func unmarshalJSONValue(data []byte) (interface{}, error) {
 			var o Int64
 			err = o.UnmarshalJSON(data)
 			res = int64(o)
+		default:
+			err = lazyerrors.Errorf("unmarshalJSONValue: unhandled map %v", v)
 		}
+	case string:
+		res = v
 	case []interface{}:
 		var o Array
 		err = o.UnmarshalJSON(data)
 		res = types.Array(o)
 	case bool:
 		res = v
+	case nil:
+		res = v
 	case float64:
 		res = int32(v)
-	case string:
-		res = v
 	default:
-		err = lazyerrors.Errorf("unmarshalJSONValue: unhandled element %[1]T (%[1]v", v)
+		err = lazyerrors.Errorf("unmarshalJSONValue: unhandled element %[1]T (%[1]v)", v)
 	}
 
 	if err != nil {
@@ -451,10 +463,10 @@ func (doc *Document) UnmarshalJSON(data []byte) error {
 
 	var rawMessages map[string]json.RawMessage
 	if err := dec.Decode(&rawMessages); err != nil {
-		return lazyerrors.Errorf("bson.Document.UnmarshalJSON: %s", err)
+		return lazyerrors.Error(err)
 	}
 	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("bson.Document.UnmarshalJSON: %s", err)
+		return lazyerrors.Error(err)
 	}
 
 	b, ok := rawMessages["$k"]
@@ -464,7 +476,7 @@ func (doc *Document) UnmarshalJSON(data []byte) error {
 
 	var keys []string
 	if err := json.Unmarshal(b, &keys); err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
 	if len(keys)+1 != len(rawMessages) {
 		return lazyerrors.Errorf("bson.Document.UnmarshalJSON: %d elements in $k, %d in total", len(keys), len(rawMessages))
@@ -480,7 +492,7 @@ func (doc *Document) UnmarshalJSON(data []byte) error {
 		}
 		v, err := unmarshalJSONValue(b)
 		if err != nil {
-			return err
+			return lazyerrors.Error(err)
 		}
 		doc.m[key] = v
 	}

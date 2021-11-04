@@ -45,7 +45,9 @@ fuzz-short:                            ## Fuzz for 1 minute
 	go test -fuzz=FuzzArrayJSON -fuzztime=1m ./internal/bson/
 	go test -fuzz=FuzzDocumentBinary -fuzztime=1m ./internal/bson/
 	go test -fuzz=FuzzDocumentJSON -fuzztime=1m ./internal/bson/
-	go test -fuzz=FuzzMessage -fuzztime=1m ./internal/wire/
+	go test -fuzz=FuzzMsg -fuzztime=1m ./internal/wire/
+	go test -fuzz=FuzzQuery -fuzztime=1m ./internal/wire/
+	go test -fuzz=FuzzReply -fuzztime=1m ./internal/wire/
 
 build-testcover:                       ## Build bin/mangodb-testcover
 	go test -c -o=bin/mangodb-testcover -trimpath -tags=testcover -race -coverpkg=./... ./cmd/mangodb

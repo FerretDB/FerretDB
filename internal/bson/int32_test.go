@@ -21,7 +21,7 @@ import (
 	"github.com/AlekSi/pointer"
 )
 
-var int32Testcases = []fuzzTestCase{{
+var int32TestCases = []testCase{{
 	name: "42",
 	v:    pointer.To(Int32(42)),
 	b:    []byte{0x2a, 0x00, 0x00, 0x00},
@@ -48,19 +48,23 @@ func TestInt32(t *testing.T) {
 
 	t.Run("Binary", func(t *testing.T) {
 		t.Parallel()
-		testBinary(t, int32Testcases, func() bsontype { return new(Int32) })
+		testBinary(t, int32TestCases, func() bsontype { return new(Int32) })
 	})
 
 	t.Run("JSON", func(t *testing.T) {
 		t.Parallel()
-		testJSON(t, int32Testcases, func() bsontype { return new(Int32) })
+		testJSON(t, int32TestCases, func() bsontype { return new(Int32) })
 	})
 }
 
 func FuzzInt32Binary(f *testing.F) {
-	fuzzBinary(f, int32Testcases, func() bsontype { return new(Int32) })
+	fuzzBinary(f, int32TestCases, func() bsontype { return new(Int32) })
 }
 
 func FuzzInt32JSON(f *testing.F) {
-	fuzzJSON(f, int32Testcases, func() bsontype { return new(Int32) })
+	fuzzJSON(f, int32TestCases, func() bsontype { return new(Int32) })
+}
+
+func BenchmarkInt32(b *testing.B) {
+	benchmark(b, int32TestCases, func() bsontype { return new(Int32) })
 }

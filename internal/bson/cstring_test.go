@@ -20,7 +20,7 @@ import (
 	"github.com/AlekSi/pointer"
 )
 
-var cstringTestcases = []fuzzTestCase{{
+var cstringTestCases = []testCase{{
 	name: "foo",
 	v:    pointer.To(CString("foo")),
 	b:    []byte{0x66, 0x6f, 0x6f, 0x00},
@@ -37,19 +37,23 @@ func TestCString(t *testing.T) {
 
 	t.Run("Binary", func(t *testing.T) {
 		t.Parallel()
-		testBinary(t, cstringTestcases, func() bsontype { return new(CString) })
+		testBinary(t, cstringTestCases, func() bsontype { return new(CString) })
 	})
 
 	t.Run("JSON", func(t *testing.T) {
 		t.Parallel()
-		testJSON(t, cstringTestcases, func() bsontype { return new(CString) })
+		testJSON(t, cstringTestCases, func() bsontype { return new(CString) })
 	})
 }
 
 func FuzzCStringBinary(f *testing.F) {
-	fuzzBinary(f, cstringTestcases, func() bsontype { return new(CString) })
+	fuzzBinary(f, cstringTestCases, func() bsontype { return new(CString) })
 }
 
 func FuzzCStringJSON(f *testing.F) {
-	fuzzJSON(f, cstringTestcases, func() bsontype { return new(CString) })
+	fuzzJSON(f, cstringTestCases, func() bsontype { return new(CString) })
+}
+
+func BenchmarkCString(b *testing.B) {
+	benchmark(b, cstringTestCases, func() bsontype { return new(CString) })
 }

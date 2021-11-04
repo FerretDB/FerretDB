@@ -20,7 +20,7 @@ import (
 	"github.com/AlekSi/pointer"
 )
 
-var timestampTestcases = []fuzzTestCase{{
+var timestampTestCases = []testCase{{
 	name: "one",
 	v:    pointer.To(Timestamp(1)),
 	b:    []byte{0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
@@ -37,19 +37,23 @@ func TestTimestamp(t *testing.T) {
 
 	t.Run("Binary", func(t *testing.T) {
 		t.Parallel()
-		testBinary(t, timestampTestcases, func() bsontype { return new(Timestamp) })
+		testBinary(t, timestampTestCases, func() bsontype { return new(Timestamp) })
 	})
 
 	t.Run("JSON", func(t *testing.T) {
 		t.Parallel()
-		testJSON(t, timestampTestcases, func() bsontype { return new(Timestamp) })
+		testJSON(t, timestampTestCases, func() bsontype { return new(Timestamp) })
 	})
 }
 
 func FuzzTimestampBinary(f *testing.F) {
-	fuzzBinary(f, timestampTestcases, func() bsontype { return new(Timestamp) })
+	fuzzBinary(f, timestampTestCases, func() bsontype { return new(Timestamp) })
 }
 
 func FuzzTimestampJSON(f *testing.F) {
-	fuzzJSON(f, timestampTestcases, func() bsontype { return new(Timestamp) })
+	fuzzJSON(f, timestampTestCases, func() bsontype { return new(Timestamp) })
+}
+
+func BenchmarkTimestamp(b *testing.B) {
+	benchmark(b, timestampTestCases, func() bsontype { return new(Timestamp) })
 }

@@ -52,6 +52,8 @@ type bsontype interface {
 	json.Marshaler
 }
 
+//go-sumtype:decl bsontype
+
 func checkConsumed(dec *json.Decoder, r *bytes.Reader) error {
 	if dr := dec.Buffered().(*bytes.Reader); dr.Len() != 0 {
 		b, _ := io.ReadAll(dr)
@@ -65,5 +67,3 @@ func checkConsumed(dec *json.Decoder, r *bytes.Reader) error {
 
 	return nil
 }
-
-//go-sumtype:decl bsontype

@@ -20,7 +20,7 @@ import (
 	"github.com/AlekSi/pointer"
 )
 
-var boolTestcases = []fuzzTestCase{{
+var boolTestCases = []testCase{{
 	name: "false",
 	v:    pointer.To(Bool(false)),
 	b:    []byte{0x00},
@@ -37,19 +37,23 @@ func TestBool(t *testing.T) {
 
 	t.Run("Binary", func(t *testing.T) {
 		t.Parallel()
-		testBinary(t, boolTestcases, func() bsontype { return new(Bool) })
+		testBinary(t, boolTestCases, func() bsontype { return new(Bool) })
 	})
 
 	t.Run("JSON", func(t *testing.T) {
 		t.Parallel()
-		testJSON(t, boolTestcases, func() bsontype { return new(Bool) })
+		testJSON(t, boolTestCases, func() bsontype { return new(Bool) })
 	})
 }
 
 func FuzzBoolBinary(f *testing.F) {
-	fuzzBinary(f, boolTestcases, func() bsontype { return new(Bool) })
+	fuzzBinary(f, boolTestCases, func() bsontype { return new(Bool) })
 }
 
 func FuzzBoolJSON(f *testing.F) {
-	fuzzJSON(f, boolTestcases, func() bsontype { return new(Bool) })
+	fuzzJSON(f, boolTestCases, func() bsontype { return new(Bool) })
+}
+
+func BenchmarkBool(b *testing.B) {
+	benchmark(b, boolTestCases, func() bsontype { return new(Bool) })
 }

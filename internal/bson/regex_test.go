@@ -18,8 +18,8 @@ import (
 	"testing"
 )
 
-var regexTestcases = []fuzzTestCase{
-	// TODO
+var regexTestCases = []testCase{
+	// TODO add test cases
 }
 
 func TestRegex(t *testing.T) {
@@ -27,19 +27,23 @@ func TestRegex(t *testing.T) {
 
 	t.Run("Binary", func(t *testing.T) {
 		t.Parallel()
-		testBinary(t, regexTestcases, func() bsontype { return new(Regex) })
+		testBinary(t, regexTestCases, func() bsontype { return new(Regex) })
 	})
 
 	t.Run("JSON", func(t *testing.T) {
 		t.Parallel()
-		testJSON(t, regexTestcases, func() bsontype { return new(Regex) })
+		testJSON(t, regexTestCases, func() bsontype { return new(Regex) })
 	})
 }
 
 func FuzzRegexBinary(f *testing.F) {
-	fuzzBinary(f, regexTestcases, func() bsontype { return new(Regex) })
+	fuzzBinary(f, regexTestCases, func() bsontype { return new(Regex) })
 }
 
 func FuzzRegexJSON(f *testing.F) {
-	fuzzJSON(f, regexTestcases, func() bsontype { return new(Regex) })
+	fuzzJSON(f, regexTestCases, func() bsontype { return new(Regex) })
+}
+
+func BenchmarkRegex(b *testing.B) {
+	benchmark(b, regexTestCases, func() bsontype { return new(Regex) })
 }

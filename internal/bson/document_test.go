@@ -23,7 +23,7 @@ import (
 )
 
 var (
-	handshake1 = fuzzTestCase{
+	handshake1 = testCase{
 		name: "handshake1",
 		v: NewDocument(types.MakeDocument(
 			"ismaster", true,
@@ -55,7 +55,7 @@ var (
 			`"application":{"$k":["name"],"name":"mongosh 1.0.1"}},"compression":["none"],"loadBalanced":false}`,
 	}
 
-	handshake2 = fuzzTestCase{
+	handshake2 = testCase{
 		name: "handshake2",
 		v: NewDocument(types.MakeDocument(
 			"ismaster", true,
@@ -87,7 +87,7 @@ var (
 			`"application":{"$k":["name"],"name":"mongosh 1.0.1"}},"compression":["none"],"loadBalanced":false}`,
 	}
 
-	handshake3 = fuzzTestCase{
+	handshake3 = testCase{
 		name: "handshake3",
 		v: NewDocument(types.MakeDocument(
 			"buildInfo", int32(1),
@@ -104,7 +104,7 @@ var (
 			`"lsid":{"$k":["id"],"id":{"$b":"oxnytKF1QMe456OjLsJWvg==","s":4}},"$db":"admin"}`,
 	}
 
-	handshake4 = fuzzTestCase{
+	handshake4 = testCase{
 		name: "handshake4",
 		v: NewDocument(types.MakeDocument(
 			"version", "5.0.0",
@@ -177,7 +177,7 @@ var (
 			`"storageEngines":["devnull","ephemeralForTest","wiredTiger"],"ok":{"$f":"1"}}`,
 	}
 
-	all = fuzzTestCase{
+	all = testCase{
 		name: "all",
 		v: NewDocument(types.MakeDocument(
 			"binary", types.Array{
@@ -202,7 +202,7 @@ var (
 			`"string":["foo",""],"timestamp":[{"$t":"42"},{"$t":"0"}]}`,
 	}
 
-	documentTestcases = []fuzzTestCase{handshake1, handshake2, handshake3, handshake4, all}
+	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4, all}
 )
 
 func TestDocument(t *testing.T) {
@@ -210,19 +210,23 @@ func TestDocument(t *testing.T) {
 
 	t.Run("Binary", func(t *testing.T) {
 		t.Parallel()
-		testBinary(t, documentTestcases, func() bsontype { return new(Document) })
+		testBinary(t, documentTestCases, func() bsontype { return new(Document) })
 	})
 
 	t.Run("JSON", func(t *testing.T) {
 		t.Parallel()
-		testJSON(t, documentTestcases, func() bsontype { return new(Document) })
+		testJSON(t, documentTestCases, func() bsontype { return new(Document) })
 	})
 }
 
 func FuzzDocumentBinary(f *testing.F) {
-	fuzzBinary(f, documentTestcases, func() bsontype { return new(Document) })
+	fuzzBinary(f, documentTestCases, func() bsontype { return new(Document) })
 }
 
 func FuzzDocumentJSON(f *testing.F) {
-	fuzzJSON(f, documentTestcases, func() bsontype { return new(Document) })
+	fuzzJSON(f, documentTestCases, func() bsontype { return new(Document) })
+}
+
+func BenchmarkDocument(b *testing.B) {
+	benchmark(b, documentTestCases, func() bsontype { return new(Document) })
 }

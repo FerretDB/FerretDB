@@ -20,7 +20,7 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/types"
 )
 
-var binaryTestcases = []fuzzTestCase{{
+var binaryTestCases = []testCase{{
 	name: "foo",
 	v: &Binary{
 		Subtype: types.BinaryUser,
@@ -50,19 +50,23 @@ func TestBinary(t *testing.T) {
 
 	t.Run("Binary", func(t *testing.T) {
 		t.Parallel()
-		testBinary(t, binaryTestcases, func() bsontype { return new(Binary) })
+		testBinary(t, binaryTestCases, func() bsontype { return new(Binary) })
 	})
 
 	t.Run("JSON", func(t *testing.T) {
 		t.Parallel()
-		testJSON(t, binaryTestcases, func() bsontype { return new(Binary) })
+		testJSON(t, binaryTestCases, func() bsontype { return new(Binary) })
 	})
 }
 
 func FuzzBinaryBinary(f *testing.F) {
-	fuzzBinary(f, binaryTestcases, func() bsontype { return new(Binary) })
+	fuzzBinary(f, binaryTestCases, func() bsontype { return new(Binary) })
 }
 
 func FuzzBinaryJSON(f *testing.F) {
-	fuzzJSON(f, binaryTestcases, func() bsontype { return new(Binary) })
+	fuzzJSON(f, binaryTestCases, func() bsontype { return new(Binary) })
+}
+
+func BenchmarkBinary(b *testing.B) {
+	benchmark(b, binaryTestCases, func() bsontype { return new(Binary) })
 }

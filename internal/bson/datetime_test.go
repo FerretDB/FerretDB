@@ -21,7 +21,7 @@ import (
 	"github.com/AlekSi/pointer"
 )
 
-var dateTimeTestcases = []fuzzTestCase{{
+var dateTimeTestCases = []testCase{{
 	name: "2021",
 	v:    pointer.To(DateTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))),
 	b:    []byte{0x4b, 0x20, 0x02, 0xdb, 0x7c, 0x01, 0x00, 0x00},
@@ -48,19 +48,23 @@ func TestDateTime(t *testing.T) {
 
 	t.Run("Binary", func(t *testing.T) {
 		t.Parallel()
-		testBinary(t, dateTimeTestcases, func() bsontype { return new(DateTime) })
+		testBinary(t, dateTimeTestCases, func() bsontype { return new(DateTime) })
 	})
 
 	t.Run("JSON", func(t *testing.T) {
 		t.Parallel()
-		testJSON(t, dateTimeTestcases, func() bsontype { return new(DateTime) })
+		testJSON(t, dateTimeTestCases, func() bsontype { return new(DateTime) })
 	})
 }
 
 func FuzzDateTimeBinary(f *testing.F) {
-	fuzzBinary(f, dateTimeTestcases, func() bsontype { return new(DateTime) })
+	fuzzBinary(f, dateTimeTestCases, func() bsontype { return new(DateTime) })
 }
 
 func FuzzDateTimeJSON(f *testing.F) {
-	fuzzJSON(f, dateTimeTestcases, func() bsontype { return new(DateTime) })
+	fuzzJSON(f, dateTimeTestCases, func() bsontype { return new(DateTime) })
+}
+
+func BenchmarkDateTime(b *testing.B) {
+	benchmark(b, dateTimeTestCases, func() bsontype { return new(DateTime) })
 }
