@@ -70,11 +70,10 @@ jobs:
         with:
           files: ./cover.txt
 
-      - name: Check dirty and clean
+      - name: Check dirty
         run: |
           git status
           git diff --exit-code
-          git clean -xdf
 
   golangci-lint:
     name: golangci-lint
@@ -129,11 +128,10 @@ jobs:
           skip-pkg-cache: true
           skip-build-cache: true
 
-      - name: Check dirty and clean
+      - name: Check dirty
         run: |
           git status
           git diff --exit-code
-          git clean -xdf
 
   fuzz:
     name: Fuzz
@@ -159,23 +157,31 @@ jobs:
       - name: Restore cache
         uses: actions/cache@v2
         with:
-          path: ${{ env.GOCACHE }}/fuzz
+          path: |
+            ${{ env.GOCACHE }}
+            **/testdata/fuzz
           key: fuzz
 
       - name: Run fuzzers
         run: make fuzz-short
 
+      - name: Upload Linux logs
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: linux-logs
+          path: /var/log/messages
+
       - name: Upload fuzz corpus
         if: always()
         uses: actions/upload-artifact@v2
         with:
-          name: fuzz
+          name: fuzz-corpus
           path: |
             ${{ env.GOCACHE }}/fuzz
             **/testdata/fuzz
 
-      - name: Check dirty and clean
+      - name: Check dirty
         run: |
           git status
           git diff --exit-code
-          git clean -xdf

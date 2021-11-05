@@ -31,10 +31,12 @@ var binaryTestCases = []testCase{{
 }, {
 	name: "empty",
 	v: &Binary{
-		B: []byte{},
+		Subtype: types.BinaryGeneric,
+		B:       []byte{},
 	},
-	b: []byte{0x00, 0x00, 0x00, 0x00, 0x00},
-	j: `{"$b":"","s":0}`,
+	b:      []byte{0x00, 0x00, 0x00, 0x00, 0x00},
+	j:      `{"$b":""}`,
+	canonJ: `{"$b":"","s":0}`,
 }, {
 	name: "invalid subtype",
 	v: &Binary{
@@ -43,6 +45,16 @@ var binaryTestCases = []testCase{{
 	},
 	b: []byte{0x00, 0x00, 0x00, 0x00, 0xff},
 	j: `{"$b":"","s":255}`,
+}, {
+	name: "extra JSON fields",
+	v: &Binary{
+		Subtype: types.BinaryUser,
+		B:       []byte("foo"),
+	},
+	b:      []byte{0x03, 0x00, 0x00, 0x00, 0x80, 0x66, 0x6f, 0x6f},
+	j:      `{"$b":"Zm9v","s":128,"foo":"bar"}`,
+	canonJ: `{"$b":"Zm9v","s":128}`,
+	jErr:   `json: unknown field "foo"`,
 }}
 
 func TestBinary(t *testing.T) {

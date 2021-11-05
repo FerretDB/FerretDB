@@ -62,7 +62,7 @@ func (reply *OpReply) readFrom(bufr *bufio.Reader) error {
 		if err := doc.ReadFrom(bufr); err != nil {
 			return lazyerrors.Errorf("wire.OpReply.ReadFrom: %w", err)
 		}
-		reply.Documents[i] = types.NewDocument(&doc)
+		reply.Documents[i] = types.MustNewDocument(&doc)
 	}
 
 	return nil
@@ -105,7 +105,7 @@ func (reply *OpReply) MarshalBinary() ([]byte, error) {
 	}
 
 	for _, doc := range reply.Documents {
-		if err := bson.NewDocument(doc).WriteTo(bufw); err != nil {
+		if err := bson.MustNewDocument(doc).WriteTo(bufw); err != nil {
 			return nil, lazyerrors.Errorf("wire.OpReply.MarshalBinary: %w", err)
 		}
 	}
@@ -127,7 +127,7 @@ func (reply *OpReply) MarshalJSON() ([]byte, error) {
 
 	docs := make([]interface{}, len(reply.Documents))
 	for i, d := range reply.Documents {
-		docs[i] = bson.NewDocument(d)
+		docs[i] = bson.MustNewDocument(d)
 	}
 
 	m["Documents"] = docs

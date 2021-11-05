@@ -38,7 +38,7 @@ func (bin *Binary) ReadFrom(r *bufio.Reader) error {
 		return lazyerrors.Errorf("bson.Binary.ReadFrom (binary.Read): %w", err)
 	}
 	if l < 0 {
-		return lazyerrors.Errorf("bson.Binary.ReadFrom: invalid length %d", l)
+		return lazyerrors.Errorf("bson.Binary.ReadFrom: invalid length: %d", l)
 	}
 
 	subtype, err := r.ReadByte()
@@ -96,22 +96,26 @@ func (bin *Binary) UnmarshalJSON(data []byte) error {
 	var o binaryJSON
 	err := dec.Decode(&o)
 	if err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
 	if err = checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("bson.Binary.UnmarshalJSON: %s", err)
+		return lazyerrors.Errorf("bson.Binary.UnmarshalJSON: %w", err)
 	}
 
 	bin.B = o.B
 	bin.Subtype = types.BinarySubtype(o.S)
-	return err
+	return nil
 }
 
 func (bin Binary) MarshalJSON() ([]byte, error) {
-	return json.Marshal(binaryJSON{
+	b, err := json.Marshal(binaryJSON{
 		B: bin.B,
 		S: byte(bin.Subtype),
 	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	return b, nil
 }
 
 // check interfaces

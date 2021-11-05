@@ -41,6 +41,6 @@ func nextRow(rows pgx.Rows) (*types.Document, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	d := types.NewDocument(&doc)
+	d := types.MustNewDocument(&doc)
 	return &d, nil
 }

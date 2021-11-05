@@ -3,4 +3,4 @@
 cover.txt
 
 # for now
-fuzz/
+**/testdata/fuzz

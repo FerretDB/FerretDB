@@ -53,6 +53,9 @@ const (
 func (msg *MsgHeader) readFrom(r *bufio.Reader) error {
 	b := make([]byte, MsgHeaderLen)
 	if n, err := io.ReadFull(r, b); err != nil {
+		if err == io.EOF {
+			return err
+		}
 		return lazyerrors.Errorf("expected %d, read %d: %w", len(b), n, err)
 	}
 

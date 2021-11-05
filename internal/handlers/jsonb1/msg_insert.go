@@ -43,7 +43,7 @@ func (h *storage) MsgInsert(ctx context.Context, header *wire.MsgHeader, msg *wi
 	for _, doc := range docs {
 		d := doc.(types.Document)
 		sql := fmt.Sprintf("INSERT INTO %s (_jsonb) VALUES ($1)", pgx.Identifier{db, collection}.Sanitize())
-		b, err := bson.NewDocument(d).MarshalJSON()
+		b, err := bson.MustNewDocument(d).MarshalJSON()
 		if err != nil {
 			return nil, err
 		}

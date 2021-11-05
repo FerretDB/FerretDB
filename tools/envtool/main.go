@@ -68,6 +68,7 @@ func main() {
 	stdin := strings.NewReader(strings.Join([]string{
 		`ALTER SCHEMA public RENAME TO pagila;`,
 		`CREATE SCHEMA monila;`,
+		`CREATE SCHEMA test;`,
 	}, "\n"))
 	runCompose(args, stdin)
 

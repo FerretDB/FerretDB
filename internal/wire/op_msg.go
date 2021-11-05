@@ -60,7 +60,7 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 				return lazyerrors.Error(err)
 			}
 
-			d := types.NewDocument(&doc)
+			d := types.MustNewDocument(&doc)
 			section.Documents = append(section.Documents, d)
 			msg.Documents = append(msg.Documents, d)
 
@@ -93,7 +93,7 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 					return lazyerrors.Error(err)
 				}
 
-				d := types.NewDocument(&doc)
+				d := types.MustNewDocument(&doc)
 				section.Documents = append(section.Documents, d)
 				msg.Documents = append(msg.Documents, d)
 			}
@@ -157,7 +157,7 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 			return nil, lazyerrors.Error(err)
 		}
 
-		if err := bson.NewDocument(doc).WriteTo(bufw); err != nil {
+		if err := bson.MustNewDocument(doc).WriteTo(bufw); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 	}
@@ -183,7 +183,7 @@ func (msg *OpMsg) MarshalJSON() ([]byte, error) {
 
 	docs := make([]interface{}, len(msg.Documents))
 	for i, d := range msg.Documents {
-		docs[i] = bson.NewDocument(d)
+		docs[i] = bson.MustNewDocument(d)
 	}
 
 	m["Documents"] = docs

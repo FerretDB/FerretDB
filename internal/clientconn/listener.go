@@ -17,6 +17,7 @@ package clientconn
 import (
 	"context"
 	"errors"
+	"io"
 	"net"
 	"sync"
 	"time"
@@ -83,7 +84,11 @@ func (l *Listener) Run(ctx context.Context) error {
 			}
 
 			e = conn.run(ctx)
-			l.opts.Logger.Warn("Connection stopped", zap.Error(e))
+			if e == io.EOF {
+				l.opts.Logger.Info("Connection stopped")
+			} else {
+				l.opts.Logger.Warn("Connection stopped", zap.Error(e))
+			}
 		}(netConn.(*net.TCPConn))
 	}
 

@@ -99,7 +99,7 @@ func (h *storage) MsgUpdate(ctx context.Context, header *wire.MsgHeader, msg *wi
 		for _, updateDoc := range updateDocs {
 			sql = fmt.Sprintf("UPDATE %s SET _jsonb = $1 WHERE _jsonb->'_id' = $2", pgx.Identifier{db, collection}.Sanitize())
 			d := updateDoc.(types.Document)
-			db, err := bson.NewDocument(d).MarshalJSON()
+			db, err := bson.MustNewDocument(d).MarshalJSON()
 			if err != nil {
 				return nil, err
 			}
