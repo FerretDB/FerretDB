@@ -65,6 +65,11 @@ jobs:
       - name: Run tests
         run: make test
 
+      - name: Upload coverage information
+        uses: codecov/codecov-action@v2
+        with:
+          files: ./cover.txt
+
       - name: Check dirty and clean
         run: |
           git status
