@@ -1,3 +1,4 @@
+# This file is used for the development of MangoDB, not for actually running it.
 ---
 version: '3.8'
 
@@ -20,6 +21,7 @@ services:
       timeout: 5s
       retries: 30
 
+  # for compatibility testing and mongosh
   mongodb:
     image: mongo:5.0.3
     container_name: mangodb_mongodb
