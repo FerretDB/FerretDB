@@ -22,6 +22,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -75,9 +76,15 @@ func main() {
 		logger.Fatal(err)
 	}
 
+	// listen on all interfaces to make mongoimport below work from inside Docker
+	addr := ":27017"
+	if runtime.GOOS == "darwin" {
+		// do not trigger macOS firewall; it works with Docker Desktop
+		addr = "127.0.0.1:27017"
+	}
+
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		// listen on all interfaces to make mongoimport below work on both Linux and macOS
-		Addr:   ":27017",
+		Addr:   addr,
 		Mode:   "normal",
 		PgPool: pgPool,
 		Logger: logger.Named("listener").Desugar(),
