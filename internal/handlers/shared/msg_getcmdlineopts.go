@@ -21,7 +21,7 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
-func (h *Handler) MsgGetCmdLineOpts(ctx context.Context, header *wire.MsgHeader, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (h *Handler) MsgGetCmdLineOpts(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	reply := &wire.OpMsg{
 		Documents: []types.Document{types.MustMakeDocument(
 			"argv", types.Array{

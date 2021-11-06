@@ -22,7 +22,7 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
-func (h *Handler) MsgBuildInfo(ctx context.Context, header *wire.MsgHeader, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	reply := &wire.OpMsg{
 		Documents: []types.Document{types.MustMakeDocument(
 			"version", "5.0.42",

@@ -57,10 +57,10 @@ func (h *Handler) Handle(ctx context.Context, header *wire.MsgHeader, msg wire.M
 	switch header.OpCode {
 	case wire.OP_MSG:
 		resHeader.OpCode = wire.OP_MSG
-		resMsg, err = h.handleOpMsg(ctx, header, msg.(*wire.OpMsg))
+		resMsg, err = h.handleOpMsg(ctx, msg.(*wire.OpMsg))
 	case wire.OP_QUERY:
 		resHeader.OpCode = wire.OP_REPLY
-		resMsg, err = h.handleOpQuery(ctx, header, msg.(*wire.OpQuery))
+		resMsg, err = h.handleOpQuery(ctx, msg.(*wire.OpQuery))
 	case wire.OP_REPLY:
 		fallthrough
 	default:
@@ -97,30 +97,30 @@ func (h *Handler) Handle(ctx context.Context, header *wire.MsgHeader, msg wire.M
 	return resHeader, resMsg, nil
 }
 
-func (h *Handler) handleOpMsg(ctx context.Context, header *wire.MsgHeader, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document := msg.Documents[0]
 
 	cmd := document.Command()
 
 	switch cmd {
 	case "buildinfo":
-		return h.shared.MsgBuildInfo(ctx, header, msg)
+		return h.shared.MsgBuildInfo(ctx, msg)
 	case "drop":
-		return h.shared.MsgDrop(ctx, header, msg)
+		return h.shared.MsgDrop(ctx, msg)
 	case "getcmdlineopts":
-		return h.shared.MsgGetCmdLineOpts(ctx, header, msg)
+		return h.shared.MsgGetCmdLineOpts(ctx, msg)
 	case "getlog":
-		return h.shared.MsgGetLog(ctx, header, msg)
+		return h.shared.MsgGetLog(ctx, msg)
 	case "ismaster":
-		return h.shared.MsgIsMaster(ctx, header, msg)
+		return h.shared.MsgIsMaster(ctx, msg)
 	case "listcollections":
-		return h.shared.MsgListCollections(ctx, header, msg)
+		return h.shared.MsgListCollections(ctx, msg)
 	case "listdatabases":
-		return h.shared.MsgListDatabases(ctx, header, msg)
+		return h.shared.MsgListDatabases(ctx, msg)
 	case "ping":
-		return h.shared.MsgPing(ctx, header, msg)
+		return h.shared.MsgPing(ctx, msg)
 	case "whatsmyuri":
-		return h.shared.MsgWhatsMyURI(ctx, header, msg)
+		return h.shared.MsgWhatsMyURI(ctx, msg)
 
 	case "delete":
 		return h.msgStorage(ctx, msg).MsgDelete(ctx, msg)
@@ -136,9 +136,9 @@ func (h *Handler) handleOpMsg(ctx context.Context, header *wire.MsgHeader, msg *
 	}
 }
 
-func (h *Handler) handleOpQuery(ctx context.Context, header *wire.MsgHeader, msg *wire.OpQuery) (*wire.OpReply, error) {
+func (h *Handler) handleOpQuery(ctx context.Context, msg *wire.OpQuery) (*wire.OpReply, error) {
 	if msg.FullCollectionName == "admin.$cmd" {
-		return h.shared.QueryCmd(ctx, header, msg)
+		return h.shared.QueryCmd(ctx, msg)
 	}
 
 	return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("unhandled collection %q", msg.FullCollectionName))

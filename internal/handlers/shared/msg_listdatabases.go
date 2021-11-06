@@ -23,7 +23,7 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
-func (h *Handler) MsgListDatabases(ctx context.Context, header *wire.MsgHeader, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	// TODO use reform
 	var names []string
 	rows, err := h.pgPool.Query(ctx, "SELECT schema_name FROM information_schema.schemata")

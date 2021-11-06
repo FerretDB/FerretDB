@@ -25,7 +25,7 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
-func (h *Handler) QueryCmd(ctx context.Context, header *wire.MsgHeader, msg *wire.OpQuery) (*wire.OpReply, error) {
+func (h *Handler) QueryCmd(ctx context.Context, msg *wire.OpQuery) (*wire.OpReply, error) {
 	switch cmd := msg.Query.Command(); cmd {
 	case "ismaster":
 		// TODO merge with handleOpMsgIsMaster
