@@ -24,13 +24,13 @@ import (
 
 	"github.com/MangoDB-io/MangoDB/internal/handlers/common"
 	"github.com/MangoDB-io/MangoDB/internal/handlers/shared"
-	"github.com/MangoDB-io/MangoDB/internal/pgconn"
+	"github.com/MangoDB-io/MangoDB/internal/pg"
 	"github.com/MangoDB-io/MangoDB/internal/types"
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
 type Handler struct {
-	pgPool *pgconn.Pool
+	pgPool *pg.Pool
 	l      *zap.Logger
 	shared *shared.Handler
 	sql    common.Storage
@@ -39,7 +39,7 @@ type Handler struct {
 	lastRequestID int32
 }
 
-func New(pgPool *pgconn.Pool, l *zap.Logger, shared *shared.Handler, sql, jsonb1 common.Storage) *Handler {
+func New(pgPool *pg.Pool, l *zap.Logger, shared *shared.Handler, sql, jsonb1 common.Storage) *Handler {
 	return &Handler{
 		pgPool: pgPool,
 		l:      l,
@@ -123,16 +123,16 @@ func (h *Handler) handleOpMsg(ctx context.Context, header *wire.MsgHeader, msg *
 		return h.shared.MsgWhatsMyURI(ctx, header, msg)
 
 	case "delete":
-		return h.msgStorage(ctx, msg).MsgDelete(ctx, header, msg)
+		return h.msgStorage(ctx, msg).MsgDelete(ctx, msg)
 	case "find":
-		return h.msgStorage(ctx, msg).MsgFind(ctx, header, msg)
+		return h.msgStorage(ctx, msg).MsgFind(ctx, msg)
 	case "insert":
-		return h.msgStorage(ctx, msg).MsgInsert(ctx, header, msg)
+		return h.msgStorage(ctx, msg).MsgInsert(ctx, msg)
 	case "update":
-		return h.msgStorage(ctx, msg).MsgUpdate(ctx, header, msg)
+		return h.msgStorage(ctx, msg).MsgUpdate(ctx, msg)
 
 	default:
-		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("unhandled msg %q", cmd), header, msg)
+		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("unhandled msg %q", cmd))
 	}
 }
 
@@ -141,7 +141,7 @@ func (h *Handler) handleOpQuery(ctx context.Context, header *wire.MsgHeader, msg
 		return h.shared.QueryCmd(ctx, header, msg)
 	}
 
-	return nil, common.NewError(common.ErrNotImplemented, nil, header, msg)
+	return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("unhandled collection %q", msg.FullCollectionName))
 }
 
 func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) common.Storage {

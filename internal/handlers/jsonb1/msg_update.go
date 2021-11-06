@@ -22,17 +22,17 @@ import (
 
 	"github.com/MangoDB-io/MangoDB/internal/bson"
 	"github.com/MangoDB-io/MangoDB/internal/handlers/common"
-	"github.com/MangoDB-io/MangoDB/internal/pgconn"
+	"github.com/MangoDB-io/MangoDB/internal/pg"
 	"github.com/MangoDB-io/MangoDB/internal/types"
 	lazyerrors "github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
-func (h *storage) MsgUpdate(ctx context.Context, header *wire.MsgHeader, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	// TODO rework when sections are added
 
 	if len(msg.Documents) != 1 {
-		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("multiple documents are not supported"), header, msg)
+		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("multiple documents are not supported"))
 	}
 	document := msg.Documents[0]
 
@@ -46,11 +46,11 @@ func (h *storage) MsgUpdate(ctx context.Context, header *wire.MsgHeader, msg *wi
 		docM := doc.(types.Document).Map()
 
 		sql := fmt.Sprintf(`SELECT _jsonb FROM %s`, pgx.Identifier{db, collection}.Sanitize())
-		var placeholder pgconn.Placeholder
+		var placeholder pg.Placeholder
 
 		whereSQL, args, err := where(docM["q"].(types.Document), &placeholder)
 		if err != nil {
-			return nil, common.NewError(common.ErrNotImplemented, err, header, msg)
+			return nil, common.NewError(common.ErrNotImplemented, err)
 		}
 
 		sql += whereSQL

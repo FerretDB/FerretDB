@@ -20,12 +20,12 @@ import (
 
 	"github.com/jackc/pgx/v4"
 
-	"github.com/MangoDB-io/MangoDB/internal/pgconn"
+	"github.com/MangoDB-io/MangoDB/internal/pg"
 	"github.com/MangoDB-io/MangoDB/internal/types"
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
-func (h *storage) MsgInsert(ctx context.Context, header *wire.MsgHeader, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (h *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	// TODO rework when sections are added
 
 	document := msg.Documents[0]
@@ -62,7 +62,7 @@ func (h *storage) MsgInsert(ctx context.Context, header *wire.MsgHeader, msg *wi
 		}
 
 		sql += ") VALUES ("
-		var placeholder pgconn.Placeholder
+		var placeholder pg.Placeholder
 		for i := range args {
 			if i != 0 {
 				sql += ", "

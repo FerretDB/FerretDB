@@ -16,12 +16,12 @@ package jsonb1
 
 import (
 	"github.com/MangoDB-io/MangoDB/internal/bson"
-	"github.com/MangoDB-io/MangoDB/internal/pgconn"
+	"github.com/MangoDB-io/MangoDB/internal/pg"
 	"github.com/MangoDB-io/MangoDB/internal/types"
 	lazyerrors "github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
-func where(d types.Document, placeholder *pgconn.Placeholder) (sql string, args []interface{}, err error) {
+func where(d types.Document, placeholder *pg.Placeholder) (sql string, args []interface{}, err error) {
 	filterMap := d.Map()
 	if len(filterMap) > 0 {
 		sql += " WHERE"

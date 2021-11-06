@@ -12,41 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sql
+package handlers
 
 import (
 	"testing"
-	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zaptest"
 
-	"github.com/MangoDB-io/MangoDB/internal/types"
+	"github.com/MangoDB-io/MangoDB/internal/handlers/jsonb1"
+	"github.com/MangoDB-io/MangoDB/internal/handlers/shared"
+	"github.com/MangoDB-io/MangoDB/internal/handlers/sql"
 	"github.com/MangoDB-io/MangoDB/internal/util/testutil"
 )
 
-func TestConvert(t *testing.T) {
+func TestCRUD(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
 	pool := testutil.Pool(ctx, t)
+	schema := testutil.Schema(ctx, t, pool)
+	l := zaptest.NewLogger(t)
+	shared := shared.NewHandler(pool, "127.0.0.1:12345")
+	sql := sql.NewStorage(pool, l.Sugar())
+	jsonb1 := jsonb1.NewStorage(pool, l)
+	handler := New(pool, l, shared, sql, jsonb1)
 
-	rows, err := pool.Query(ctx, "SELECT * FROM pagila.actor ORDER BY actor_id")
-	require.NoError(t, err)
-	defer rows.Close()
-
-	ri := extractRowInfo(rows)
-	assert.Equal(t, []string{"actor_id", "first_name", "last_name", "last_update"}, ri.names)
-
-	doc, err := nextRow(rows, ri)
-	require.NoError(t, err)
-	require.NotNil(t, doc)
-
-	expected := types.MustMakeDocument(
-		"actor_id", int32(1),
-		"first_name", "PENELOPE",
-		"last_name", "GUINESS",
-		"last_update", time.Date(2020, 2, 15, 9, 34, 33, 0, time.UTC).Local(),
-	)
-	assert.Equal(t, &expected, doc)
+	// handler.Handle(ctx, &wire.MsgHeader{}, nil)
+	_ = schema
+	_ = handler
 }

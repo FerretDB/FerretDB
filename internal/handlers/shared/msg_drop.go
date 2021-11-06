@@ -27,7 +27,7 @@ import (
 
 func (h *Handler) MsgDrop(ctx context.Context, header *wire.MsgHeader, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	if len(msg.Documents) != 1 {
-		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("multiple documents are not supported"), header, msg)
+		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("multiple documents are not supported"))
 	}
 	document := msg.Documents[0]
 
@@ -41,7 +41,7 @@ func (h *Handler) MsgDrop(ctx context.Context, header *wire.MsgHeader, msg *wire
 	_, err := h.pgPool.Exec(ctx, sql)
 	if err != nil {
 		// TODO check error code
-		return nil, common.NewError(common.ErrNamespaceNotFound, fmt.Errorf("ns not found"), header, msg)
+		return nil, common.NewError(common.ErrNamespaceNotFound, fmt.Errorf("ns not found"))
 	}
 
 	reply := &wire.OpMsg{

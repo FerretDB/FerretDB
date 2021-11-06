@@ -29,7 +29,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/MangoDB-io/MangoDB/internal/clientconn"
-	"github.com/MangoDB-io/MangoDB/internal/pgconn"
+	"github.com/MangoDB-io/MangoDB/internal/pg"
 	"github.com/MangoDB-io/MangoDB/internal/util/debug"
 	"github.com/MangoDB-io/MangoDB/internal/util/logging"
 )
@@ -51,7 +51,7 @@ func runCompose(args []string, stdin io.Reader) {
 func main() {
 	logger := logging.Setup(zap.InfoLevel).Sugar()
 
-	debugAddrF := flag.String("debug-addr", "127.0.0.1:8088", "debug address")
+	debugAddrF := flag.String("debug-addr", "127.0.0.1:8089", "debug address")
 	flag.Parse()
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -72,7 +72,7 @@ func main() {
 	}, "\n"))
 	runCompose(args, stdin)
 
-	pgPool, err := pgconn.NewPool("postgres://postgres@127.0.0.1:5432/mangodb", logger.Desugar())
+	pgPool, err := pg.NewPool("postgres://postgres@127.0.0.1:5432/mangodb", logger.Desugar())
 	if err != nil {
 		logger.Fatal(err)
 	}

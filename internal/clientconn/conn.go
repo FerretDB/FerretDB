@@ -28,7 +28,7 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/handlers/jsonb1"
 	"github.com/MangoDB-io/MangoDB/internal/handlers/shared"
 	"github.com/MangoDB-io/MangoDB/internal/handlers/sql"
-	"github.com/MangoDB-io/MangoDB/internal/pgconn"
+	"github.com/MangoDB-io/MangoDB/internal/pg"
 	"github.com/MangoDB-io/MangoDB/internal/shadow"
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
@@ -51,7 +51,7 @@ type conn struct {
 	l       *zap.SugaredLogger
 }
 
-func newConn(tcpConn *net.TCPConn, pgPool *pgconn.Pool, shadowAddr string, mode Mode) (*conn, error) {
+func newConn(tcpConn *net.TCPConn, pgPool *pg.Pool, shadowAddr string, mode Mode) (*conn, error) {
 	prefix := fmt.Sprintf("// %s -> %s ", tcpConn.RemoteAddr(), tcpConn.LocalAddr())
 	l := zap.L().Named(prefix)
 

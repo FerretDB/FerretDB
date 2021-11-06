@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pgconn
+package pg
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/log/zapadapter"
@@ -30,10 +31,11 @@ type Pool struct {
 func NewPool(connString string, logger *zap.Logger) (*Pool, error) {
 	config, err := pgxpool.ParseConfig(connString)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("pg.NewPool: %w", err)
 	}
 
-	config.LazyConnect = true
+	config.ConnConfig.RuntimeParams["application_name"] = "MangoDB"
+	config.ConnConfig.RuntimeParams["search_path"] = ""
 
 	if logger.Core().Enabled(zap.DebugLevel) {
 		config.ConnConfig.LogLevel = pgx.LogLevelTrace
@@ -42,7 +44,7 @@ func NewPool(connString string, logger *zap.Logger) (*Pool, error) {
 
 	p, err := pgxpool.ConnectConfig(context.Background(), config)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("pg.NewPool: %w", err)
 	}
 
 	return &Pool{

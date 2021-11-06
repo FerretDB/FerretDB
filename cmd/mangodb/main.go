@@ -24,7 +24,7 @@ import (
 	"golang.org/x/sys/unix"
 
 	"github.com/MangoDB-io/MangoDB/internal/clientconn"
-	"github.com/MangoDB-io/MangoDB/internal/pgconn"
+	"github.com/MangoDB-io/MangoDB/internal/pg"
 	"github.com/MangoDB-io/MangoDB/internal/util/debug"
 	"github.com/MangoDB-io/MangoDB/internal/util/logging"
 	"github.com/MangoDB-io/MangoDB/internal/util/version"
@@ -73,7 +73,7 @@ func main() {
 
 	go debug.RunHandler(ctx, *debugAddrF, logger.Named("debug"))
 
-	pgPool, err := pgconn.NewPool(*postgresqlURLF, logger)
+	pgPool, err := pg.NewPool(*postgresqlURLF, logger)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}

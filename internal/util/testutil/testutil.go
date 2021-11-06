@@ -19,10 +19,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/MangoDB-io/MangoDB/internal/pgconn"
+	"github.com/MangoDB-io/MangoDB/internal/pg"
 )
 
 func Ctx(tb testing.TB) context.Context {
@@ -32,42 +34,46 @@ func Ctx(tb testing.TB) context.Context {
 	return context.Background()
 }
 
-func Pool(ctx context.Context, tb testing.TB) *pgconn.Pool {
+func Pool(ctx context.Context, tb testing.TB) *pg.Pool {
 	tb.Helper()
 
 	if testing.Short() {
 		tb.Skip("skipping in -short mode")
 	}
 
-	pgPool, err := pgconn.NewPool("postgres://postgres@127.0.0.1:5432/mangodb", zaptest.NewLogger(tb))
+	pool, err := pg.NewPool("postgres://postgres@127.0.0.1:5432/mangodb", zaptest.NewLogger(tb))
 	require.NoError(tb, err)
-	tb.Cleanup(pgPool.Close)
+	tb.Cleanup(pool.Close)
 
-	return pgPool
+	return pool
 }
 
-func Schema(ctx context.Context, tb testing.TB, pool *pgconn.Pool) string {
+func Schema(ctx context.Context, tb testing.TB, pool *pg.Pool) string {
 	tb.Helper()
 
 	if testing.Short() {
 		tb.Skip("skipping in -short mode")
 	}
 
-	name := strings.ToLower(tb.Name())
+	schema := strings.ToLower(tb.Name())
 
-	pool.Exec(ctx, "DROP SCHEMA "+name+" CASCADE")
+	_, err := pool.Exec(ctx, "DROP SCHEMA "+schema+" CASCADE")
+	if e, ok := err.(*pgconn.PgError); ok && e.Code == pgerrcode.InvalidSchemaName {
+		err = nil
+	}
+	require.NoError(tb, err)
 
-	_, err := pool.Exec(ctx, "CREATE SCHEMA "+name)
+	_, err = pool.Exec(ctx, "CREATE SCHEMA "+schema)
 	require.NoError(tb, err)
 	tb.Cleanup(func() {
 		if tb.Failed() {
-			tb.Logf("Keeping schema %q for debugging.", name)
+			tb.Logf("Keeping schema %q for debugging.", schema)
 			return
 		}
 
-		_, err = pool.Exec(ctx, "DROP SCHEMA "+name+" CASCADE")
+		_, err = pool.Exec(ctx, "DROP SCHEMA "+schema+" CASCADE")
 		require.NoError(tb, err)
 	})
 
-	return name
+	return schema
 }

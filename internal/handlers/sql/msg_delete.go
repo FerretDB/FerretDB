@@ -21,12 +21,12 @@ import (
 	"github.com/jackc/pgx/v4"
 
 	"github.com/MangoDB-io/MangoDB/internal/handlers/common"
-	"github.com/MangoDB-io/MangoDB/internal/pgconn"
+	"github.com/MangoDB-io/MangoDB/internal/pg"
 	"github.com/MangoDB-io/MangoDB/internal/types"
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
-func (h *storage) MsgDelete(ctx context.Context, header *wire.MsgHeader, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (h *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	// TODO rework when sections are added
 
 	document := msg.Documents[0]
@@ -45,16 +45,16 @@ func (h *storage) MsgDelete(ctx context.Context, header *wire.MsgHeader, msg *wi
 		d := doc.(types.Document).Map()
 
 		sql := fmt.Sprintf(`DELETE FROM %s`, pgx.Identifier{db, collection}.Sanitize())
-		var placeholder pgconn.Placeholder
+		var placeholder pg.Placeholder
 
 		elSQL, args, err := where(d["q"].(types.Document), &placeholder)
 		if err != nil {
-			return nil, common.NewError(common.ErrNotImplemented, err, header, msg)
+			return nil, common.NewError(common.ErrNotImplemented, err)
 		}
 
 		limit, _ := d["limit"].(int32)
 		if limit != 0 {
-			return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("limit for delete is not supported"), header, msg)
+			return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("limit for delete is not supported"))
 		}
 
 		sql += elSQL
@@ -62,7 +62,7 @@ func (h *storage) MsgDelete(ctx context.Context, header *wire.MsgHeader, msg *wi
 		tag, err := h.pgPool.Exec(ctx, sql, args...)
 		if err != nil {
 			// TODO check error code
-			return nil, common.NewError(common.ErrNamespaceNotFound, fmt.Errorf("ns not found"), header, msg)
+			return nil, common.NewError(common.ErrNamespaceNotFound, fmt.Errorf("ns not found"))
 		}
 
 		deleted += int32(tag.RowsAffected())

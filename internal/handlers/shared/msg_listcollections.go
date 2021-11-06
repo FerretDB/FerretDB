@@ -26,7 +26,7 @@ import (
 
 func (h *Handler) MsgListCollections(ctx context.Context, header *wire.MsgHeader, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	if len(msg.Documents) != 1 {
-		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("multiple documents are not supported"), header, msg)
+		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("multiple documents are not supported"))
 	}
 	document := msg.Documents[0]
 
@@ -34,22 +34,22 @@ func (h *Handler) MsgListCollections(ctx context.Context, header *wire.MsgHeader
 
 	filter, ok := m["filter"].(types.Document)
 	if ok && len(filter.Map()) != 0 {
-		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("filter is not supported"), header, msg)
+		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("filter is not supported"))
 	}
 
 	cursor, ok := m["cursor"].(types.Document)
 	if ok && len(cursor.Map()) != 0 {
-		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("cursor is not supported"), header, msg)
+		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("cursor is not supported"))
 	}
 
 	nameOnly, ok := m["nameOnly"].(bool)
 	if ok && !nameOnly {
-		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("nameOnly=false is not supported"), header, msg)
+		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("nameOnly=false is not supported"))
 	}
 
 	db, ok := m["$db"].(string)
 	if !ok {
-		return nil, common.NewError(common.ErrInternalError, fmt.Errorf("no db"), header, msg)
+		return nil, common.NewError(common.ErrInternalError, fmt.Errorf("no db"))
 	}
 
 	// TODO use reform

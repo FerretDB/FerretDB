@@ -14,14 +14,14 @@
 
 package shared
 
-import "github.com/MangoDB-io/MangoDB/internal/pgconn"
+import "github.com/MangoDB-io/MangoDB/internal/pg"
 
 type Handler struct {
-	pgPool   *pgconn.Pool
+	pgPool   *pg.Pool
 	peerAddr string
 }
 
-func NewHandler(pgPool *pgconn.Pool, peerAddr string) *Handler {
+func NewHandler(pgPool *pg.Pool, peerAddr string) *Handler {
 	return &Handler{
 		pgPool:   pgPool,
 		peerAddr: peerAddr,

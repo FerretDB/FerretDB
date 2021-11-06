@@ -24,7 +24,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/MangoDB-io/MangoDB/internal/pgconn"
+	"github.com/MangoDB-io/MangoDB/internal/pg"
 	lazyerrors "github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
@@ -36,7 +36,7 @@ type NewListenerOpts struct {
 	Addr       string
 	ShadowAddr string
 	Mode       Mode
-	PgPool     *pgconn.Pool
+	PgPool     *pg.Pool
 	Logger     *zap.Logger
 }
 

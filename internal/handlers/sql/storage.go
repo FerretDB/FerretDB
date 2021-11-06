@@ -18,15 +18,15 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/MangoDB-io/MangoDB/internal/handlers/common"
-	"github.com/MangoDB-io/MangoDB/internal/pgconn"
+	"github.com/MangoDB-io/MangoDB/internal/pg"
 )
 
 type storage struct {
-	pgPool *pgconn.Pool
+	pgPool *pg.Pool
 	l      *zap.SugaredLogger
 }
 
-func NewStorage(pgPool *pgconn.Pool, l *zap.SugaredLogger) common.Storage {
+func NewStorage(pgPool *pg.Pool, l *zap.SugaredLogger) common.Storage {
 	return &storage{
 		pgPool: pgPool,
 		l:      l,

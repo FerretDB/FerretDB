@@ -21,8 +21,8 @@ import (
 )
 
 type Storage interface {
-	MsgDelete(context.Context, *wire.MsgHeader, *wire.OpMsg) (*wire.OpMsg, error)
-	MsgFind(context.Context, *wire.MsgHeader, *wire.OpMsg) (*wire.OpMsg, error)
-	MsgInsert(context.Context, *wire.MsgHeader, *wire.OpMsg) (*wire.OpMsg, error)
-	MsgUpdate(context.Context, *wire.MsgHeader, *wire.OpMsg) (*wire.OpMsg, error)
+	MsgDelete(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
+	MsgFind(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
+	MsgInsert(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
+	MsgUpdate(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
 }

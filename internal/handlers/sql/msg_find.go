@@ -21,16 +21,16 @@ import (
 	"github.com/jackc/pgx/v4"
 
 	"github.com/MangoDB-io/MangoDB/internal/handlers/common"
-	"github.com/MangoDB-io/MangoDB/internal/pgconn"
+	"github.com/MangoDB-io/MangoDB/internal/pg"
 	"github.com/MangoDB-io/MangoDB/internal/types"
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
-func (h *storage) MsgFind(ctx context.Context, header *wire.MsgHeader, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (h *storage) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	// TODO cursor / getMore support via https://www.postgresql.org/docs/current/sql-declare.html
 
 	if len(msg.Documents) != 1 {
-		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("multiple documents are not supported"), header, msg)
+		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("multiple documents are not supported"))
 	}
 	document := msg.Documents[0]
 
@@ -40,7 +40,7 @@ func (h *storage) MsgFind(ctx context.Context, header *wire.MsgHeader, msg *wire
 
 	projection, ok := m["projection"].(types.Document)
 	if ok && len(projection.Map()) != 0 {
-		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("projection is not supported"), header, msg)
+		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("projection is not supported"))
 	}
 
 	filter, _ := m["filter"].(types.Document)
@@ -48,11 +48,11 @@ func (h *storage) MsgFind(ctx context.Context, header *wire.MsgHeader, msg *wire
 	limit, _ := m["limit"].(int32)
 
 	sql := fmt.Sprintf(`SELECT * FROM %s`, pgx.Identifier{db, collection}.Sanitize())
-	var placeholder pgconn.Placeholder
+	var placeholder pg.Placeholder
 
 	whereSQL, args, err := where(filter, &placeholder)
 	if err != nil {
-		return nil, common.NewError(common.ErrNotImplemented, err, header, msg)
+		return nil, common.NewError(common.ErrNotImplemented, err)
 	}
 
 	sql += whereSQL
@@ -83,7 +83,7 @@ func (h *storage) MsgFind(ctx context.Context, header *wire.MsgHeader, msg *wire
 		sql += " LIMIT " + placeholder.Next()
 		args = append(args, limit)
 	default:
-		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("negative limit values are not supported"), header, msg)
+		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("negative limit values are not supported"))
 	}
 
 	rows, err := h.pgPool.Query(ctx, sql, args...)

@@ -29,12 +29,12 @@ import (
 
 func (h *Handler) MsgGetLog(ctx context.Context, header *wire.MsgHeader, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	if len(msg.Documents) != 1 {
-		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("multiple documents are not supported"), header, msg)
+		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("multiple documents are not supported"))
 	}
 	document := msg.Documents[0]
 
-	if document.Map()["getLog"] != "startupWarnings" {
-		return nil, common.NewError(common.ErrNotImplemented, nil, header, msg)
+	if l := document.Map()["getLog"]; l != "startupWarnings" {
+		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("unhandled getLog value %q", l))
 	}
 
 	var pv string

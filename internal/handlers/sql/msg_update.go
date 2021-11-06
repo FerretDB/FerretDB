@@ -22,6 +22,6 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
-func (h *storage) MsgUpdate(ctx context.Context, header *wire.MsgHeader, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("TODO"), header, msg)
+func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("TODO"))
 }

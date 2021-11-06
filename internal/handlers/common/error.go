@@ -18,7 +18,6 @@ import (
 	"fmt"
 
 	"github.com/MangoDB-io/MangoDB/internal/types"
-	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
 //go:generate ../../../bin/stringer -linecomment -type ErrorCode
@@ -33,39 +32,25 @@ const (
 )
 
 type Error struct {
-	Code   ErrorCode
-	Err    error
-	header *wire.MsgHeader
-	msg    wire.MsgBody
+	Code ErrorCode
+	Err  error
 }
 
-func NewError(code ErrorCode, err error, header *wire.MsgHeader, msg wire.MsgBody) error {
+func NewError(code ErrorCode, err error) error {
 	return Error{
-		Code:   code,
-		Err:    err,
-		header: header,
-		msg:    msg,
+		Code: code,
+		Err:  err,
 	}
 }
 
 func (e Error) Error() string {
-	return fmt.Sprintf(
-		"%s (%d): %v\n%s\n%s",
-		e.Code, e.Code, e.Err,
-		wire.DumpMsgHeader(e.header), wire.DumpMsgBody(e.msg),
-	)
+	return fmt.Sprintf("%[1]s (%[1]d): %[2]v", e.Code, e.Err)
 }
 
 func (e Error) Document() types.Document {
-	var errStr string
-	if e.Err == nil {
-		errStr = ""
-	} else {
-		errStr = e.Err.Error()
-	}
 	return types.MustMakeDocument(
 		"ok", float64(0),
-		"errmsg", errStr,
+		"errmsg", e.Err.Error(),
 		"code", int32(e.Code),
 		"codeName", e.Code.String(),
 	)
