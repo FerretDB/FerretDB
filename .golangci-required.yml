@@ -10,6 +10,9 @@ linters-settings:
     default-signifies-exhaustive: false
   goimports:
     local-prefixes: github.com/MangoDB-io/MangoDB
+  staticcheck:
+    go: "1.18"
+    checks: ["all"]
 
 linters:
   disable-all: true

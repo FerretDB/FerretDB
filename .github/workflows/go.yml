@@ -112,7 +112,7 @@ jobs:
       - name: Run required linters
         uses: golangci/golangci-lint-action@v2
         with:
-          version: v1.42 # sync with tools/go.mod
+          version: v1.43 # sync with tools/go.mod
           args: --config=.golangci-required.yml
           only-new-issues: false
           skip-go-installation: true
@@ -122,7 +122,7 @@ jobs:
       - name: Run all linters
         uses: golangci/golangci-lint-action@v2
         with:
-          version: v1.42 # sync with tools/go.mod
+          version: v1.43 # sync with tools/go.mod
           args: --config=.golangci.yml
           only-new-issues: true
           skip-go-installation: true

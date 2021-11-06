@@ -16,6 +16,9 @@ linters-settings:
     capital: true
   goimports:
     local-prefixes: github.com/MangoDB-io/MangoDB
+  gosimple:
+    go: "1.18"
+    checks: ["all"]
   lll:
     line-length: 130
     tab-width: 1
@@ -29,10 +32,19 @@ linters-settings:
     allow-no-explanation: []
     require-explanation: true
     require-specific: true
-  unused:
-    check-exported: true
+  staticcheck:
+    go: "1.18"
+    checks: ["all"]
+  stylecheck:
+    go: "1.18"
+    checks: ["all"]
+    dot-import-whitelist: []
+    initialisms: []
+    http-status-code-whitelist: []
   unparam:
     check-exported: true
+  unused:
+    go: "1.18"
   whitespace:
     multi-if: false
     multi-func: false
@@ -41,7 +53,6 @@ linters:
   enable-all: true
   disable:
     # TODO configure and enable one by one
-    - thelper
     - cyclop
     - dupl
     - errcheck
@@ -60,9 +71,12 @@ linters:
     - gomnd
     - gosec
     - ifshort
+    - ireturn
     - nakedret
     - revive
+    - thelper
     - unparam
+    - varnamelen
     - wrapcheck
 
     # TODO enable when goanalysis_metalinter supports generics
