@@ -38,7 +38,8 @@ func (dt *DateTime) ReadFrom(r *bufio.Reader) error {
 		return lazyerrors.Errorf("bson.DateTime.ReadFrom (binary.Read): %w", err)
 	}
 
-	*dt = DateTime(time.UnixMilli(ts).UTC())
+	// TODO Use .UTC(): https://github.com/MangoDB-io/MangoDB/issues/43
+	*dt = DateTime(time.UnixMilli(ts))
 	return nil
 }
 
@@ -87,7 +88,8 @@ func (dt *DateTime) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Errorf("bson.DateTime.UnmarshalJSON: %s", err)
 	}
 
-	*dt = DateTime(time.UnixMilli(o.D).UTC())
+	// TODO Use .UTC(): https://github.com/MangoDB-io/MangoDB/issues/43
+	*dt = DateTime(time.UnixMilli(o.D))
 	return nil
 }
 

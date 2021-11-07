@@ -198,6 +198,25 @@ func (d *Document) Set(key string, value interface{}) error {
 	return nil
 }
 
+// Remove removes the given key, doing nothing if key does not exist.
+func (d *Document) Remove(key string) {
+	if _, ok := d.m[key]; !ok {
+		return
+	}
+
+	delete(d.m, key)
+
+	for i, k := range d.keys {
+		if k == key {
+			d.keys = append(d.keys[:i], d.keys[i+1:]...)
+			return
+		}
+	}
+
+	// should not be reached
+	panic(fmt.Sprintf("types.Document.Remove: key not found: %q", key))
+}
+
 // check interfaces
 var (
 	_ document = Document{}

@@ -16,7 +16,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -51,13 +50,10 @@ func runCompose(args []string, stdin io.Reader) {
 func main() {
 	logger := logging.Setup(zap.InfoLevel).Sugar()
 
-	debugAddrF := flag.String("debug-addr", "127.0.0.1:8089", "debug address")
-	flag.Parse()
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	go debug.RunHandler(ctx, *debugAddrF, logger.Named("debug").Desugar())
+	go debug.RunHandler(ctx, "127.0.0.1:8089", logger.Named("debug").Desugar())
 
 	var err error
 	if composeBin, err = exec.LookPath("docker-compose"); err != nil {
@@ -78,10 +74,10 @@ func main() {
 	}
 
 	// listen on all interfaces to make mongoimport below work from inside Docker
-	addr := ":27017"
+	addr := ":27018"
 	if runtime.GOOS == "darwin" {
 		// do not trigger macOS firewall; it works with Docker Desktop
-		addr = "127.0.0.1:27017"
+		addr = "127.0.0.1:27018"
 	}
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
@@ -115,7 +111,7 @@ func main() {
 		"store",
 	} {
 		l := fmt.Sprintf(
-			`exec -T mongodb mongoimport --uri mongodb://host.docker.internal/monila `+
+			`exec -T mongodb mongoimport --uri mongodb://host.docker.internal:27018/monila `+
 				`--drop --maintainInsertionOrder --collection %[1]s /docker-entrypoint-initdb.d/%[1]s.json`,
 			c,
 		)

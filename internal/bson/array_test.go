@@ -28,7 +28,7 @@ var arrayTestCases = []testCase{{
 		types.Array{},
 		types.Binary{Subtype: types.BinaryUser, B: []byte{0x42}},
 		true,
-		time.Date(2021, 7, 27, 9, 35, 42, 123000000, time.UTC),
+		time.Date(2021, 7, 27, 9, 35, 42, 123000000, time.UTC).Local(),
 		types.MustMakeDocument(),
 		42.13,
 		int32(42),

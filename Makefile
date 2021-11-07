@@ -1,5 +1,3 @@
-export TZ=UTC
-
 all: fmt test
 
 help:                                  ## Display this help message

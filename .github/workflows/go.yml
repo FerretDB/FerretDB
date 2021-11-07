@@ -165,12 +165,21 @@ jobs:
       - name: Run fuzzers
         run: make fuzz-short
 
+      - name: Get dmesg
+        if: failure()
+        run: |
+          mkdir -p /tmp/logs
+          ls -al /var/log/
+          sudo cp /var/log/kern.log /var/log/syslog /tmp/logs/
+          sudo dmesg --ctime > /tmp/logs/dmesg.txt
+          sudo chmod 0666 /tmp/logs/*
+
       - name: Upload Linux logs
         if: failure()
         uses: actions/upload-artifact@v2
         with:
           name: linux-logs
-          path: /var/log/messages
+          path: /tmp/logs
 
       - name: Upload fuzz corpus
         if: always()

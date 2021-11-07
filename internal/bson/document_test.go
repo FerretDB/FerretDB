@@ -185,7 +185,7 @@ var (
 				types.Binary{Subtype: types.BinaryGeneric, B: []byte{}},
 			},
 			"bool", types.Array{true, false},
-			"datetime", types.Array{time.Date(2021, 7, 27, 9, 35, 42, 123000000, time.UTC), time.Time{}},
+			"datetime", types.Array{time.Date(2021, 7, 27, 9, 35, 42, 123000000, time.UTC).Local(), time.Time{}.Local()},
 			"double", types.Array{42.13, 0.0},
 			"int32", types.Array{int32(42), int32(0)},
 			"int64", types.Array{int64(42), int64(0)},

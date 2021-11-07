@@ -23,22 +23,22 @@ import (
 
 var dateTimeTestCases = []testCase{{
 	name: "2021",
-	v:    pointer.To(DateTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))),
+	v:    pointer.To(DateTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC).Local())),
 	b:    []byte{0x4b, 0x20, 0x02, 0xdb, 0x7c, 0x01, 0x00, 0x00},
 	j:    `{"$d":"1635761922123"}`,
 }, {
 	name: "zero",
-	v:    pointer.To(DateTime(time.Unix(0, 0).UTC())),
+	v:    pointer.To(DateTime(time.Unix(0, 0))),
 	b:    []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
 	j:    `{"$d":"0"}`,
 }, {
 	name: "1000",
-	v:    pointer.To(DateTime(time.Date(1000, 1, 1, 0, 0, 0, 0, time.UTC))),
+	v:    pointer.To(DateTime(time.Date(1000, 1, 1, 0, 0, 0, 0, time.UTC).Local())),
 	b:    []byte{0x00, 0xd4, 0x78, 0x00, 0x29, 0xe4, 0xff, 0xff},
 	j:    `{"$d":"-30610224000000"}`,
 }, {
 	name: "3000",
-	v:    pointer.To(DateTime(time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC))),
+	v:    pointer.To(DateTime(time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC).Local())),
 	b:    []byte{0x00, 0xe0, 0x4c, 0xda, 0x8f, 0x1d, 0x00, 0x00},
 	j:    `{"$d":"32503680000000"}`,
 }}

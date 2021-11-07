@@ -34,6 +34,14 @@ func NewPool(connString string, logger *zap.Logger) (*Pool, error) {
 		return nil, fmt.Errorf("pg.NewPool: %w", err)
 	}
 
+	// That only affects text protocol; pgx mostly uses a binary one.
+	// See:
+	// * https://github.com/jackc/pgx/issues/520
+	// * https://github.com/jackc/pgx/issues/789
+	// * https://github.com/jackc/pgx/issues/863
+	// * https://github.com/MangoDB-io/MangoDB/issues/43
+	config.ConnConfig.RuntimeParams["timezone"] = "UTC"
+
 	config.ConnConfig.RuntimeParams["application_name"] = "MangoDB"
 	config.ConnConfig.RuntimeParams["search_path"] = ""
 
