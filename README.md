@@ -6,7 +6,7 @@ MangoDB is an open-source proxy, which converts MongoDB wire protocol queries to
 
 ## Why do we need MangoDB?
 
-MongoDB is a life-changing technology for many developers, empowering them to build applications faster than using relational databases.
+MangoDB is a life-changing technology for many developers, empowering them to build applications faster than using relational databases.
 Its easy-to-use and well-documented drivers make MongoDB one of the easiest to use database solutions available.
 However, MongoDB abandoned its open-source roots, changing the license to SSPL - making it unusable for many open source and commercial projects.
 
