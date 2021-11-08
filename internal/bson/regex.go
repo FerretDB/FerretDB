@@ -18,7 +18,7 @@ import (
 	"bufio"
 	"bytes"
 
-	lazyerrors "github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
 type Regex struct {

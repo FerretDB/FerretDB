@@ -20,7 +20,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 
-	lazyerrors "github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
 type Timestamp uint64

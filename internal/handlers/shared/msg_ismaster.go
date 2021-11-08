@@ -19,12 +19,14 @@ import (
 	"time"
 
 	"github.com/MangoDB-io/MangoDB/internal/bson"
+	"github.com/MangoDB-io/MangoDB/internal/handlers/common"
 	"github.com/MangoDB-io/MangoDB/internal/types"
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
 func (h *Handler) MsgIsMaster(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	reply := &wire.OpMsg{
+	var reply wire.OpMsg
+	err := reply.SetSections(wire.OpMsgSection{
 		// TODO merge with handleOpQueryCmd
 		Documents: []types.Document{types.MustMakeDocument(
 			"ismaster", true,
@@ -40,7 +42,10 @@ func (h *Handler) MsgIsMaster(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 			"readOnly", false,
 			"ok", float64(1),
 		)},
+	})
+	if err != nil {
+		return nil, common.NewError(common.ErrInternalError, err)
 	}
 
-	return reply, nil
+	return &reply, nil
 }

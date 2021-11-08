@@ -19,7 +19,7 @@ import (
 
 	"github.com/MangoDB-io/MangoDB/internal/pg"
 	"github.com/MangoDB-io/MangoDB/internal/types"
-	lazyerrors "github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
 func where(d types.Document, placeholder *pg.Placeholder) (sql string, args []interface{}, err error) {

@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"io"
 
-	lazyerrors "github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
 type MsgBody interface {

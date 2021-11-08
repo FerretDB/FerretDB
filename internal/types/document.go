@@ -49,10 +49,11 @@ type Document struct {
 	keys []string
 }
 
-// NewDocuments makes a shallow copy of other Document or bson.Document.
-func NewDocument(d document) (Document, error) {
+// ConvertDocument converts bson.Document to types.Document and validates it.
+// It references the same data without copying it.
+func ConvertDocument(d document) (Document, error) {
 	if d == nil {
-		panic("types.NewDocument: d is nil")
+		panic("types.ConvertDocument: d is nil")
 	}
 
 	doc := Document{
@@ -68,15 +69,15 @@ func NewDocument(d document) (Document, error) {
 	}
 
 	if err := doc.validate(); err != nil {
-		return doc, fmt.Errorf("types.NewDocument: %w", err)
+		return doc, fmt.Errorf("types.ConvertDocument: %w", err)
 	}
 
 	return doc, nil
 }
 
-// MustNewDocument is a NewDocument that panics in case of error.
-func MustNewDocument(d document) Document {
-	doc, err := NewDocument(d)
+// MustConvertDocument is a ConvertDocument that panics in case of error.
+func MustConvertDocument(d document) Document {
+	doc, err := ConvertDocument(d)
 	if err != nil {
 		panic(err)
 	}
@@ -149,12 +150,12 @@ func (d Document) validate() error {
 	return nil
 }
 
-// Map returns a shallow copy of the document as a map.
+// Map returns a shallow copy of the document as a map. Do not modify it.
 func (d Document) Map() map[string]interface{} {
 	return d.m
 }
 
-// Keys returns a shallow copy of the document's keys.
+// Keys returns a shallow copy of the document's keys. Do not modify it.
 func (d Document) Keys() []string {
 	return d.keys
 }
@@ -181,7 +182,7 @@ func (d *Document) add(key string, value interface{}) error {
 	return nil
 }
 
-// Set sets the value of the given key.
+// Set sets the value of the given key, replacing any existing value.
 func (d *Document) Set(key string, value interface{}) error {
 	if !isValidKey(key) {
 		return fmt.Errorf("Document.Set: invalid key: %q", key)

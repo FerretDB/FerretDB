@@ -34,7 +34,8 @@ func TestUpdate(t *testing.T) {
 	}
 
 	for i := 1; i <= 3; i++ {
-		msg := &wire.OpMsg{
+		var msg wire.OpMsg
+		err := msg.SetSections(wire.OpMsgSection{
 			Documents: []types.Document{types.MustMakeDocument(
 				"insert", "test",
 				"documents", types.Array{
@@ -45,13 +46,15 @@ func TestUpdate(t *testing.T) {
 				},
 				"$db", schema,
 			)},
-		}
+		})
+		require.NoError(t, err)
 
-		_, _, err := h.Handle(ctx, header, msg)
+		_, _, err = h.Handle(ctx, header, &msg)
 		require.NoError(t, err)
 	}
 
-	msg := &wire.OpMsg{
+	var msg wire.OpMsg
+	err := msg.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
 			"update", "test",
 			"updates", types.Array{
@@ -68,8 +71,9 @@ func TestUpdate(t *testing.T) {
 			},
 			"$db", schema,
 		)},
-	}
+	})
+	require.NoError(t, err)
 
-	_, _, err := h.Handle(ctx, header, msg)
+	_, _, err = h.Handle(ctx, header, &msg)
 	require.NoError(t, err)
 }

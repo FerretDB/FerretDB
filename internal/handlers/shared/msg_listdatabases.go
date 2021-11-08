@@ -19,6 +19,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/MangoDB-io/MangoDB/internal/handlers/common"
 	"github.com/MangoDB-io/MangoDB/internal/types"
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
@@ -59,13 +60,18 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 		)
 	}
 
-	reply := &wire.OpMsg{
+	var reply wire.OpMsg
+	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
 			"databases", dbs,
 			// totalSize
 			// totalSizeMb
 			"ok", float64(1),
 		)},
+	})
+	if err != nil {
+		return nil, common.NewError(common.ErrInternalError, err)
 	}
-	return reply, nil
+
+	return &reply, nil
 }

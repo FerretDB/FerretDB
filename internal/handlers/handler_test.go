@@ -18,6 +18,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/MangoDB-io/MangoDB/internal/handlers/jsonb1"
@@ -26,8 +28,6 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/types"
 	"github.com/MangoDB-io/MangoDB/internal/util/testutil"
 	"github.com/MangoDB-io/MangoDB/internal/wire"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func removeIDs(docs types.Array) {
@@ -58,7 +58,8 @@ func TestQuery(t *testing.T) {
 				OpCode:    wire.OP_MSG,
 			}
 
-			_, res, err := handler.Handle(ctx, header, &wire.OpMsg{
+			var msg wire.OpMsg
+			err := msg.SetSections(wire.OpMsgSection{
 				Documents: []types.Document{types.MustMakeDocument(
 					"find", "actor",
 					"filter", types.MustMakeDocument(
@@ -67,6 +68,8 @@ func TestQuery(t *testing.T) {
 					"$db", schema,
 				)},
 			})
+			require.NoError(t, err)
+			_, res, err := handler.Handle(ctx, header, &msg)
 			require.NoError(t, err)
 
 			expectedDocs := types.Array{
@@ -96,15 +99,16 @@ func TestQuery(t *testing.T) {
 				removeIDs(expectedDocs)
 			}
 
-			actual := res.(*wire.OpMsg).Documents
-			expected := []types.Document{types.MustMakeDocument(
+			actual, err := res.(*wire.OpMsg).Document()
+			require.NoError(t, err)
+			expected := types.MustMakeDocument(
 				"cursor", types.MustMakeDocument(
 					"firstBatch", expectedDocs,
 					"id", int64(0),
 					"ns", schema+".actor",
 				),
 				"ok", float64(1),
-			)}
+			)
 
 			assert.Equal(t, expected, actual)
 		})

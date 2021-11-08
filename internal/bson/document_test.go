@@ -25,7 +25,7 @@ import (
 var (
 	handshake1 = testCase{
 		name: "handshake1",
-		v: MustNewDocument(types.MustMakeDocument(
+		v: MustConvertDocument(types.MustMakeDocument(
 			"ismaster", true,
 			"client", types.MustMakeDocument(
 				"driver", types.MustMakeDocument(
@@ -57,7 +57,7 @@ var (
 
 	handshake2 = testCase{
 		name: "handshake2",
-		v: MustNewDocument(types.MustMakeDocument(
+		v: MustConvertDocument(types.MustMakeDocument(
 			"ismaster", true,
 			"client", types.MustMakeDocument(
 				"driver", types.MustMakeDocument(
@@ -89,7 +89,7 @@ var (
 
 	handshake3 = testCase{
 		name: "handshake3",
-		v: MustNewDocument(types.MustMakeDocument(
+		v: MustConvertDocument(types.MustMakeDocument(
 			"buildInfo", int32(1),
 			"lsid", types.MustMakeDocument(
 				"id", types.Binary{
@@ -106,7 +106,7 @@ var (
 
 	handshake4 = testCase{
 		name: "handshake4",
-		v: MustNewDocument(types.MustMakeDocument(
+		v: MustConvertDocument(types.MustMakeDocument(
 			"version", "5.0.0",
 			"gitVersion", "1184f004a99660de6f5e745573419bda8a28c0e9",
 			"modules", types.Array{},
@@ -179,7 +179,7 @@ var (
 
 	all = testCase{
 		name: "all",
-		v: MustNewDocument(types.MustMakeDocument(
+		v: MustConvertDocument(types.MustMakeDocument(
 			"binary", types.Array{
 				types.Binary{Subtype: types.BinaryUser, B: []byte{0x42}},
 				types.Binary{Subtype: types.BinaryGeneric, B: []byte{}},

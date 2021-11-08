@@ -28,11 +28,13 @@ type Pool struct {
 	*pgxpool.Pool
 }
 
-func NewPool(connString string, logger *zap.Logger) (*Pool, error) {
+func NewPool(connString string, logger *zap.Logger, lazy bool) (*Pool, error) {
 	config, err := pgxpool.ParseConfig(connString)
 	if err != nil {
 		return nil, fmt.Errorf("pg.NewPool: %w", err)
 	}
+
+	config.LazyConnect = lazy
 
 	// That only affects text protocol; pgx mostly uses a binary one.
 	// See:

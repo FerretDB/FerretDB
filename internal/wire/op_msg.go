@@ -19,11 +19,12 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"io"
 
 	"github.com/MangoDB-io/MangoDB/internal/bson"
 	"github.com/MangoDB-io/MangoDB/internal/types"
-	lazyerrors "github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
 type OpMsgSection struct {
@@ -34,10 +35,66 @@ type OpMsgSection struct {
 
 type OpMsg struct {
 	FlagBits OpMsgFlags
-	// Deprecated: remove.
-	Documents []types.Document
-	Sections  []OpMsgSection
-	Checksum  uint32
+	Checksum uint32
+
+	sections []OpMsgSection
+}
+
+func (msg *OpMsg) SetSections(sections ...OpMsgSection) error {
+	msg.sections = sections
+	_, err := msg.Document()
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+	return nil
+}
+
+func (msg *OpMsg) Document() (types.Document, error) {
+	var doc types.Document
+
+	for _, section := range msg.sections {
+		switch section.Kind {
+		case 0:
+			if l := len(section.Documents); l != 1 {
+				return doc, lazyerrors.Errorf("wire.OpMsg.Document: %d documents in kind 0 section", l)
+			}
+			if m := doc.Map(); len(m) != 0 {
+				return doc, lazyerrors.Errorf("wire.OpMsg.Document: doc is not empty already: %+v", m)
+			}
+
+			// do a shallow copy of the document that we would modify if there are kind 1 sections
+			doc = types.MustMakeDocument()
+			d := section.Documents[0]
+			m := d.Map()
+			for _, k := range d.Keys() {
+				doc.Set(k, m[k])
+			}
+
+		case 1:
+			if section.Identifier == "" {
+				return doc, lazyerrors.New("wire.OpMsg.Document: empty section identifier")
+			}
+			m := doc.Map()
+			if len(m) == 0 {
+				return doc, lazyerrors.New("wire.OpMsg.Document: doc is empty")
+			}
+			if _, ok := m[section.Identifier]; ok {
+				return doc, lazyerrors.Errorf("wire.OpMsg.Document: doc already has %q key", section.Identifier)
+			}
+
+			a := make(types.Array, len(section.Documents)) // may be zero
+			for i, d := range section.Documents {
+				a[i] = d
+			}
+
+			doc.Set(section.Identifier, a)
+
+		default:
+			return doc, lazyerrors.Errorf("wire.OpMsg.Document: unknown kind %d", section.Kind)
+		}
+	}
+
+	return doc, nil
 }
 
 func (msg *OpMsg) msgbody() {}
@@ -60,67 +117,71 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 				return lazyerrors.Error(err)
 			}
 
-			d := types.MustNewDocument(&doc)
-			section.Documents = append(section.Documents, d)
-			msg.Documents = append(msg.Documents, d)
+			d, err := types.ConvertDocument(&doc)
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
+			section.Documents = []types.Document{d}
 
 		case 1:
-			var seqSize int32
-			if err := binary.Read(bufr, binary.LittleEndian, &seqSize); err != nil {
+			var secSize int32
+			if err := binary.Read(bufr, binary.LittleEndian, &secSize); err != nil {
 				return lazyerrors.Error(err)
 			}
 
-			seq := make([]byte, seqSize-4)
-			if n, err := io.ReadFull(bufr, seq); err != nil {
-				return lazyerrors.Errorf("expected %d, read %d: %w", len(seq), n, err)
+			sec := make([]byte, secSize-4)
+			if n, err := io.ReadFull(bufr, sec); err != nil {
+				return lazyerrors.Errorf("expected %d, read %d: %w", len(sec), n, err)
 			}
 
-			seqR := bufio.NewReader(bytes.NewReader(seq))
+			secr := bufio.NewReader(bytes.NewReader(sec))
 
 			var id bson.CString
-			if err := id.ReadFrom(seqR); err != nil {
+			if err := id.ReadFrom(secr); err != nil {
 				return lazyerrors.Error(err)
 			}
 			section.Identifier = string(id)
 
 			for {
-				if _, err := seqR.Peek(1); err == io.EOF {
+				if _, err := secr.Peek(1); err == io.EOF {
 					break
 				}
 
 				var doc bson.Document
-				if err := doc.ReadFrom(seqR); err != nil {
+				if err := doc.ReadFrom(secr); err != nil {
 					return lazyerrors.Error(err)
 				}
 
-				d := types.MustNewDocument(&doc)
+				d, err := types.ConvertDocument(&doc)
+				if err != nil {
+					return lazyerrors.Error(err)
+				}
 				section.Documents = append(section.Documents, d)
-				msg.Documents = append(msg.Documents, d)
 			}
 
 		default:
 			return lazyerrors.Errorf("kind is %d", section.Kind)
 		}
 
-		msg.Sections = append(msg.Sections, section)
+		msg.sections = append(msg.sections, section)
 
 		peekBytes := 1
 		if msg.FlagBits.FlagSet(OpMsgChecksumPresent) {
 			peekBytes = 5
 		}
-
 		if _, err := bufr.Peek(peekBytes); err == io.EOF {
 			break
 		}
 	}
 
-	// TODO
-	msg.Sections = nil
-
 	if msg.FlagBits.FlagSet(OpMsgChecksumPresent) {
 		if err := binary.Read(bufr, binary.LittleEndian, &msg.Checksum); err != nil {
 			return lazyerrors.Error(err)
 		}
+	}
+
+	if _, err := msg.Document(); err != nil {
+		return lazyerrors.Error(err)
 	}
 
 	// TODO validate checksum
@@ -151,14 +212,56 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	for _, doc := range msg.Documents {
-		// kind
-		if err := bufw.WriteByte(0); err != nil {
+	for _, section := range msg.sections {
+		if err := bufw.WriteByte(section.Kind); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
-		if err := bson.MustNewDocument(doc).WriteTo(bufw); err != nil {
-			return nil, lazyerrors.Error(err)
+		switch section.Kind {
+		case 0:
+			if l := len(section.Documents); l != 1 {
+				panic(fmt.Errorf("%d documents in section with kind 0", l))
+			}
+
+			d, err := bson.ConvertDocument(section.Documents[0])
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+			if d.WriteTo(bufw); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+		case 1:
+			var secBuf bytes.Buffer
+			secw := bufio.NewWriter(&secBuf)
+
+			if err := bson.CString(section.Identifier).WriteTo(secw); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			for _, doc := range section.Documents {
+				d, err := bson.ConvertDocument(doc)
+				if err != nil {
+					return nil, lazyerrors.Error(err)
+				}
+				if d.WriteTo(secw); err != nil {
+					return nil, lazyerrors.Error(err)
+				}
+			}
+
+			if err := secw.Flush(); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			if err := binary.Write(bufw, binary.LittleEndian, int32(secBuf.Len()+4)); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+			if _, err := bufw.Write(secBuf.Bytes()); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+		default:
+			return nil, lazyerrors.Errorf("kind is %d", section.Kind)
 		}
 	}
 
@@ -181,12 +284,27 @@ func (msg *OpMsg) MarshalJSON() ([]byte, error) {
 		"Checksum": msg.Checksum,
 	}
 
-	docs := make([]interface{}, len(msg.Documents))
-	for i, d := range msg.Documents {
-		docs[i] = bson.MustNewDocument(d)
+	sections := make([]interface{}, len(msg.sections))
+	for i, section := range msg.sections {
+		s := map[string]interface{}{
+			"Kind": section.Kind,
+		}
+		switch section.Kind {
+		case 0:
+			s["Document"] = bson.MustConvertDocument(section.Documents[0])
+		case 1:
+			s["Identifier"] = section.Identifier
+			docs := make([]interface{}, len(section.Documents))
+			for j, d := range section.Documents {
+				docs[j] = bson.MustConvertDocument(d)
+			}
+			s["Documents"] = docs
+		}
+
+		sections[i] = s
 	}
 
-	m["Documents"] = docs
+	m["Sections"] = sections
 
 	return json.Marshal(m)
 }

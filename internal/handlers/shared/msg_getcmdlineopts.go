@@ -17,12 +17,14 @@ package shared
 import (
 	"context"
 
+	"github.com/MangoDB-io/MangoDB/internal/handlers/common"
 	"github.com/MangoDB-io/MangoDB/internal/types"
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
 func (h *Handler) MsgGetCmdLineOpts(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	reply := &wire.OpMsg{
+	var reply wire.OpMsg
+	err := reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
 			"argv", types.Array{
 				"mangodb",
@@ -30,6 +32,10 @@ func (h *Handler) MsgGetCmdLineOpts(ctx context.Context, msg *wire.OpMsg) (*wire
 			"parsed", types.MustMakeDocument(),
 			"ok", float64(1),
 		)},
+	})
+	if err != nil {
+		return nil, common.NewError(common.ErrInternalError, err)
 	}
-	return reply, nil
+
+	return &reply, nil
 }

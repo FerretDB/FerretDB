@@ -68,7 +68,7 @@ func main() {
 	}, "\n"))
 	runCompose(args, stdin)
 
-	pgPool, err := pg.NewPool("postgres://postgres@127.0.0.1:5432/mangodb", logger.Desugar())
+	pgPool, err := pg.NewPool("postgres://postgres@127.0.0.1:5432/mangodb", logger.Desugar(), true)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -117,10 +117,10 @@ func main() {
 		)
 
 		wg.Add(1)
-		go func() {
-			runCompose(strings.Split(l, " "), nil)
-			wg.Done()
-		}()
+		// go func() {
+		runCompose(strings.Split(l, " "), nil)
+		wg.Done()
+		// }()
 	}
 
 	wg.Wait()

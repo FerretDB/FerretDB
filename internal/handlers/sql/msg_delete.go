@@ -27,18 +27,15 @@ import (
 )
 
 func (h *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	// TODO rework when sections are added
-
-	document := msg.Documents[0]
+	document, err := msg.Document()
+	if err != nil {
+		return nil, common.NewError(common.ErrInternalError, err)
+	}
 
 	m := document.Map()
 	collection := m[document.Command()].(string)
 	db := m["$db"].(string)
 	docs, _ := m["deletes"].(types.Array)
-
-	for _, d := range msg.Documents[1:] {
-		docs = append(docs, d)
-	}
 
 	var deleted int32
 	for _, doc := range docs {
@@ -68,11 +65,16 @@ func (h *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		deleted += int32(tag.RowsAffected())
 	}
 
-	reply := &wire.OpMsg{
+	var reply wire.OpMsg
+	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
 			"n", deleted,
 			"ok", float64(1),
 		)},
+	})
+	if err != nil {
+		return nil, common.NewError(common.ErrInternalError, err)
 	}
-	return reply, nil
+
+	return &reply, nil
 }

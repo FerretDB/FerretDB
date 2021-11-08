@@ -23,7 +23,6 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/handlers/common"
 	"github.com/MangoDB-io/MangoDB/internal/pg"
 	"github.com/MangoDB-io/MangoDB/internal/types"
-	lazyerrors "github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
@@ -35,78 +34,11 @@ type selectOpts struct {
 	limit      int32
 }
 
-func (h *storage) selectDocuments(ctx context.Context, opts *selectOpts) (docs types.Array, err error) {
-	sql := fmt.Sprintf(`SELECT _jsonb FROM %s`, pgx.Identifier{opts.db, opts.collection}.Sanitize())
-	var args []interface{}
-	var placeholder pg.Placeholder
-
-	whereSQL, args, err := where(opts.filter, &placeholder)
-	if err != nil {
-		err = lazyerrors.Error(err)
-		return
-	}
-
-	sql += whereSQL
-
-	sortMap := opts.sort.Map()
-	if len(sortMap) > 0 {
-		sql += " ORDER BY"
-
-		for i, k := range opts.sort.Keys() {
-			if i != 0 {
-				sql += ","
-			}
-
-			sql += " _jsonb->" + placeholder.Next()
-			args = append(args, k)
-
-			order := sortMap[k].(int32)
-			if order > 0 {
-				sql += " ASC"
-			} else {
-				sql += " DESC"
-			}
-		}
-	}
-
-	switch {
-	case opts.limit == 0:
-		// undefined or zero - no limit
-	case opts.limit > 0:
-		sql += " LIMIT " + placeholder.Next()
-		args = append(args, opts.limit)
-	default:
-		err = lazyerrors.Errorf("unexpected limit %d", opts.limit)
-		return
-	}
-
-	rows, err := h.pgPool.Query(ctx, sql, args...)
-	if err != nil {
-		err = lazyerrors.Error(err)
-		return
-	}
-	defer rows.Close()
-
-	for {
-		doc, err := nextRow(rows)
-		if err != nil {
-			return nil, err
-		}
-		if doc == nil {
-			break
-		}
-
-		docs = append(docs, *doc)
-	}
-
-	return
-}
-
 func (h *storage) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	if len(msg.Documents) != 1 {
-		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("multiple documents are not supported"))
+	document, err := msg.Document()
+	if err != nil {
+		return nil, common.NewError(common.ErrInternalError, err)
 	}
-	document := msg.Documents[0]
 
 	m := document.Map()
 	collection := m["find"].(string)
@@ -183,7 +115,8 @@ func (h *storage) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		docs = append(docs, *doc)
 	}
 
-	res := &wire.OpMsg{
+	var reply wire.OpMsg
+	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
 			"cursor", types.MustMakeDocument(
 				"firstBatch", docs,
@@ -192,7 +125,10 @@ func (h *storage) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			),
 			"ok", float64(1),
 		)},
+	})
+	if err != nil {
+		return nil, common.NewError(common.ErrInternalError, err)
 	}
 
-	return res, nil
+	return &reply, nil
 }

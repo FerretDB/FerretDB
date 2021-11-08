@@ -25,7 +25,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/MangoDB-io/MangoDB/internal/pg"
-	lazyerrors "github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
 type Listener struct {

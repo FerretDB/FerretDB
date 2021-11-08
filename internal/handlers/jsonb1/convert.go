@@ -19,7 +19,7 @@ import (
 
 	"github.com/MangoDB-io/MangoDB/internal/bson"
 	"github.com/MangoDB-io/MangoDB/internal/types"
-	lazyerrors "github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
 func nextRow(rows pgx.Rows) (*types.Document, error) {
@@ -41,6 +41,6 @@ func nextRow(rows pgx.Rows) (*types.Document, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	d := types.MustNewDocument(&doc)
+	d := types.MustConvertDocument(&doc)
 	return &d, nil
 }

@@ -73,7 +73,7 @@ func main() {
 
 	go debug.RunHandler(ctx, *debugAddrF, logger.Named("debug"))
 
-	pgPool, err := pg.NewPool(*postgresqlURLF, logger)
+	pgPool, err := pg.NewPool(*postgresqlURLF, logger, false)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}

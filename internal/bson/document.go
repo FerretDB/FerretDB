@@ -44,7 +44,9 @@ type Document struct {
 	keys []string
 }
 
-func NewDocument(d document) (*Document, error) {
+// ConvertDocument converts types.Document to bson.Document and validates it.
+// It references the same data without copying it.
+func ConvertDocument(d document) (*Document, error) {
 	doc := &Document{
 		m:    d.Map(),
 		keys: d.Keys(),
@@ -57,15 +59,16 @@ func NewDocument(d document) (*Document, error) {
 		doc.keys = []string{}
 	}
 
-	if _, err := types.NewDocument(doc); err != nil {
-		return nil, fmt.Errorf("bson.NewDocument: %w", err)
+	// for validation
+	if _, err := types.ConvertDocument(doc); err != nil {
+		return nil, fmt.Errorf("bson.ConvertDocument: %w", err)
 	}
 
 	return doc, nil
 }
 
-func MustNewDocument(d document) *Document {
-	doc, err := NewDocument(d)
+func MustConvertDocument(d document) *Document {
+	doc, err := ConvertDocument(d)
 	if err != nil {
 		panic(err)
 	}
@@ -149,7 +152,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (embedded document): %w", err)
 			}
-			doc.m[string(ename)], err = types.NewDocument(&v)
+			doc.m[string(ename)], err = types.ConvertDocument(&v)
 			if err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (embedded document): %w", err)
 			}
@@ -232,7 +235,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 		}
 	}
 
-	if _, err := types.NewDocument(doc); err != nil {
+	if _, err := types.ConvertDocument(doc); err != nil {
 		return lazyerrors.Errorf("bson.Document.ReadFrom: %w", err)
 	}
 
@@ -288,7 +291,7 @@ func (doc Document) MarshalBinary() ([]byte, error) {
 			if err := ename.WriteTo(bufw); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
-			doc, err := NewDocument(elV)
+			doc, err := ConvertDocument(elV)
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
@@ -429,7 +432,7 @@ func unmarshalJSONValue(data []byte) (interface{}, error) {
 			var o Document
 			err = o.UnmarshalJSON(data)
 			if err == nil {
-				res, err = types.NewDocument(&o)
+				res, err = types.ConvertDocument(&o)
 			}
 		case v["$b"] != nil:
 			var o Binary
@@ -526,7 +529,7 @@ func (doc *Document) UnmarshalJSON(data []byte) error {
 		doc.m[key] = v
 	}
 
-	if _, err := types.NewDocument(doc); err != nil {
+	if _, err := types.ConvertDocument(doc); err != nil {
 		return lazyerrors.Errorf("bson.Document.UnmarshalJSON: %w", err)
 	}
 
@@ -542,7 +545,7 @@ func marshalJSONValue(v interface{}) ([]byte, error) {
 	case string:
 		o = String(v)
 	case types.Document:
-		o, err = NewDocument(v)
+		o, err = ConvertDocument(v)
 	case types.Array:
 		o = Array(v)
 	case types.Binary:

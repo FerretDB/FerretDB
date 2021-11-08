@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"runtime/debug"
 
 	"github.com/pmezard/go-difflib/difflib"
 	"go.uber.org/zap"
@@ -80,7 +79,9 @@ func newConn(tcpConn *net.TCPConn, pgPool *pg.Pool, shadowAddr string, mode Mode
 func (c *conn) run(ctx context.Context) (err error) {
 	defer func() {
 		if p := recover(); p != nil {
-			err = fmt.Errorf("recovered from panic (err = %v)\n%v\n%s", err, p, debug.Stack())
+			// Log human-readable stack trace there (included in the error level automatically).
+			c.l.Errorf("panic:\n%v\n(err = %v)", p, err)
+			err = fmt.Errorf("recovered from panic (err = %v): %v", err, p)
 		}
 	}()
 

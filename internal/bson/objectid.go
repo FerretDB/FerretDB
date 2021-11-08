@@ -21,7 +21,7 @@ import (
 	"encoding/json"
 	"io"
 
-	lazyerrors "github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
 type ObjectID [12]byte

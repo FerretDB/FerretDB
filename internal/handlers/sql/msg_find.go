@@ -29,10 +29,10 @@ import (
 func (h *storage) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	// TODO cursor / getMore support via https://www.postgresql.org/docs/current/sql-declare.html
 
-	if len(msg.Documents) != 1 {
-		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("multiple documents are not supported"))
+	document, err := msg.Document()
+	if err != nil {
+		return nil, common.NewError(common.ErrInternalError, err)
 	}
-	document := msg.Documents[0]
 
 	m := document.Map()
 	collection := m["find"].(string)
@@ -108,7 +108,8 @@ func (h *storage) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		docs = append(docs, *doc)
 	}
 
-	res := &wire.OpMsg{
+	var res wire.OpMsg
+	err = res.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
 			"cursor", types.MustMakeDocument(
 				"firstBatch", docs,
@@ -117,7 +118,10 @@ func (h *storage) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			),
 			"ok", float64(1),
 		)},
+	})
+	if err != nil {
+		return nil, common.NewError(common.ErrInternalError, err)
 	}
 
-	return res, nil
+	return &res, nil
 }

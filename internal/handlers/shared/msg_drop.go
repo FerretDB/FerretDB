@@ -26,10 +26,10 @@ import (
 )
 
 func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	if len(msg.Documents) != 1 {
-		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("multiple documents are not supported"))
+	document, err := msg.Document()
+	if err != nil {
+		return nil, common.NewError(common.ErrInternalError, err)
 	}
-	document := msg.Documents[0]
 
 	m := document.Map()
 	collection := m[document.Command()].(string)
@@ -38,18 +38,23 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	// TODO probably not CASCADE
 	sql := fmt.Sprintf(`DROP TABLE %s CASCADE`, pgx.Identifier{db, collection}.Sanitize())
 
-	_, err := h.pgPool.Exec(ctx, sql)
+	_, err = h.pgPool.Exec(ctx, sql)
 	if err != nil {
 		// TODO check error code
 		return nil, common.NewError(common.ErrNamespaceNotFound, fmt.Errorf("ns not found"))
 	}
 
-	reply := &wire.OpMsg{
+	var reply wire.OpMsg
+	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
 			"nIndexesWas", int32(0), // TODO
 			"ns", db+"."+collection,
 			"ok", float64(1),
 		)},
+	})
+	if err != nil {
+		return nil, common.NewError(common.ErrInternalError, err)
 	}
-	return reply, nil
+
+	return &reply, nil
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//TODO Completely remove this package when Go 1.18 is released,
+// TODO Completely remove this package when Go 1.18 is released,
 // or this datarace is fixed.
 package racefix
 

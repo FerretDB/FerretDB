@@ -74,9 +74,14 @@ func (h *Handler) Handle(ctx context.Context, header *wire.MsgHeader, msg wire.M
 		}
 
 		// FIXME use correct type for OP_QUERY
-		resMsg = &wire.OpMsg{
+		var res wire.OpMsg
+		err := res.SetSections(wire.OpMsgSection{
 			Documents: []types.Document{e.Document()},
+		})
+		if err != nil {
+			return nil, nil, err
 		}
+		resMsg = &res
 	}
 
 	resHeader.ResponseTo = header.RequestID
@@ -98,7 +103,10 @@ func (h *Handler) Handle(ctx context.Context, header *wire.MsgHeader, msg wire.M
 }
 
 func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document := msg.Documents[0]
+	document, err := msg.Document()
+	if err != nil {
+		return nil, common.NewError(common.ErrInternalError, err)
+	}
 
 	cmd := document.Command()
 
@@ -145,7 +153,11 @@ func (h *Handler) handleOpQuery(ctx context.Context, msg *wire.OpQuery) (*wire.O
 }
 
 func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) common.Storage {
-	document := msg.Documents[0]
+	document, err := msg.Document()
+	if err != nil {
+		h.l.Warn(err.Error())
+		return h.sql
+	}
 
 	m := document.Map()
 	command := document.Command()

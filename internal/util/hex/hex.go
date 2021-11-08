@@ -19,7 +19,7 @@ import (
 	"encoding/hex"
 	"strings"
 
-	lazyerrors "github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
 func Dump(b []byte) string {

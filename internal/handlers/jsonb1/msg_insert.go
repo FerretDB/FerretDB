@@ -21,29 +21,27 @@ import (
 	"github.com/jackc/pgx/v4"
 
 	"github.com/MangoDB-io/MangoDB/internal/bson"
+	"github.com/MangoDB-io/MangoDB/internal/handlers/common"
 	"github.com/MangoDB-io/MangoDB/internal/types"
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
 func (h *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	// TODO rework when sections are added
-
-	document := msg.Documents[0]
+	document, err := msg.Document()
+	if err != nil {
+		return nil, common.NewError(common.ErrInternalError, err)
+	}
 
 	m := document.Map()
 	collection := m[document.Command()].(string)
 	db := m["$db"].(string)
 	docs, _ := m["documents"].(types.Array)
 
-	for _, d := range msg.Documents[1:] {
-		docs = append(docs, d)
-	}
-
 	var inserted int32
 	for _, doc := range docs {
 		d := doc.(types.Document)
 		sql := fmt.Sprintf("INSERT INTO %s (_jsonb) VALUES ($1)", pgx.Identifier{db, collection}.Sanitize())
-		b, err := bson.MustNewDocument(d).MarshalJSON()
+		b, err := bson.MustConvertDocument(d).MarshalJSON()
 		if err != nil {
 			return nil, err
 		}
@@ -55,12 +53,16 @@ func (h *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		inserted++
 	}
 
-	res := &wire.OpMsg{
+	var reply wire.OpMsg
+	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
 			"n", inserted,
 			"ok", float64(1),
 		)},
+	})
+	if err != nil {
+		return nil, common.NewError(common.ErrInternalError, err)
 	}
 
-	return res, nil
+	return &reply, nil
 }

@@ -18,10 +18,13 @@ import (
 	"bufio"
 	"bytes"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+var lastUpdate = time.Date(2020, 2, 15, 9, 34, 33, 0, time.UTC).Local()
 
 type testCase struct {
 	name      string
@@ -55,6 +58,8 @@ func testMessages(t *testing.T, testcases []testCase) {
 			}
 
 			t.Run("ReadMessage", func(t *testing.T) {
+				t.Parallel()
+
 				br := bytes.NewReader(tc.expectedB)
 				bufr := bufio.NewReader(br)
 				msgHeader, msgBody, err := ReadMessage(bufr)
@@ -66,6 +71,8 @@ func testMessages(t *testing.T, testcases []testCase) {
 			})
 
 			t.Run("WriteMessage", func(t *testing.T) {
+				t.Parallel()
+
 				var buf bytes.Buffer
 				bufw := bufio.NewWriter(&buf)
 				err := WriteMessage(bufw, tc.msgHeader, tc.msgBody)

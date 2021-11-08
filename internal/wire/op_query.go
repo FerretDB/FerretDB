@@ -23,7 +23,7 @@ import (
 
 	"github.com/MangoDB-io/MangoDB/internal/bson"
 	"github.com/MangoDB-io/MangoDB/internal/types"
-	lazyerrors "github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
 type OpQuery struct {
@@ -59,7 +59,7 @@ func (query *OpQuery) readFrom(bufr *bufio.Reader) error {
 	if err := q.ReadFrom(bufr); err != nil {
 		return err
 	}
-	query.Query = types.MustNewDocument(&q)
+	query.Query = types.MustConvertDocument(&q)
 
 	if _, err := bufr.Peek(1); err == nil {
 		var r bson.Document
@@ -67,7 +67,7 @@ func (query *OpQuery) readFrom(bufr *bufio.Reader) error {
 			return err
 		}
 
-		tr := types.MustNewDocument(&r)
+		tr := types.MustConvertDocument(&r)
 		query.ReturnFieldsSelector = &tr
 	}
 
@@ -108,12 +108,12 @@ func (query *OpQuery) MarshalBinary() ([]byte, error) {
 		return nil, err
 	}
 
-	if err := bson.MustNewDocument(query.Query).WriteTo(bufw); err != nil {
+	if err := bson.MustConvertDocument(query.Query).WriteTo(bufw); err != nil {
 		return nil, err
 	}
 
 	if query.ReturnFieldsSelector != nil {
-		if err := bson.MustNewDocument(query.ReturnFieldsSelector).WriteTo(bufw); err != nil {
+		if err := bson.MustConvertDocument(query.ReturnFieldsSelector).WriteTo(bufw); err != nil {
 			return nil, err
 		}
 	}
@@ -131,10 +131,10 @@ func (query *OpQuery) MarshalJSON() ([]byte, error) {
 		"FullCollectionName": query.FullCollectionName,
 		"NumberToSkip":       query.NumberToSkip,
 		"NumberToReturn":     query.NumberToReturn,
-		"Query":              bson.MustNewDocument(query.Query),
+		"Query":              bson.MustConvertDocument(query.Query),
 	}
 	if query.ReturnFieldsSelector != nil {
-		m["ReturnFieldsSelector"] = bson.MustNewDocument(query.ReturnFieldsSelector)
+		m["ReturnFieldsSelector"] = bson.MustConvertDocument(query.ReturnFieldsSelector)
 	}
 
 	return json.Marshal(m)

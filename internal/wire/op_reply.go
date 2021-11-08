@@ -23,7 +23,7 @@ import (
 
 	"github.com/MangoDB-io/MangoDB/internal/bson"
 	"github.com/MangoDB-io/MangoDB/internal/types"
-	lazyerrors "github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
 const maxNumberReturned = 1000
@@ -62,7 +62,7 @@ func (reply *OpReply) readFrom(bufr *bufio.Reader) error {
 		if err := doc.ReadFrom(bufr); err != nil {
 			return lazyerrors.Errorf("wire.OpReply.ReadFrom: %w", err)
 		}
-		reply.Documents[i] = types.MustNewDocument(&doc)
+		reply.Documents[i] = types.MustConvertDocument(&doc)
 	}
 
 	return nil
@@ -105,7 +105,7 @@ func (reply *OpReply) MarshalBinary() ([]byte, error) {
 	}
 
 	for _, doc := range reply.Documents {
-		if err := bson.MustNewDocument(doc).WriteTo(bufw); err != nil {
+		if err := bson.MustConvertDocument(doc).WriteTo(bufw); err != nil {
 			return nil, lazyerrors.Errorf("wire.OpReply.MarshalBinary: %w", err)
 		}
 	}
@@ -127,7 +127,7 @@ func (reply *OpReply) MarshalJSON() ([]byte, error) {
 
 	docs := make([]interface{}, len(reply.Documents))
 	for i, d := range reply.Documents {
-		docs[i] = bson.MustNewDocument(d)
+		docs[i] = bson.MustConvertDocument(d)
 	}
 
 	m["Documents"] = docs

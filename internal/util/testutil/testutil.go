@@ -41,7 +41,7 @@ func Pool(ctx context.Context, tb testing.TB) *pg.Pool {
 		tb.Skip("skipping in -short mode")
 	}
 
-	pool, err := pg.NewPool("postgres://postgres@127.0.0.1:5432/mangodb", zaptest.NewLogger(tb))
+	pool, err := pg.NewPool("postgres://postgres@127.0.0.1:5432/mangodb", zaptest.NewLogger(tb), false)
 	require.NoError(tb, err)
 	tb.Cleanup(pool.Close)
 
