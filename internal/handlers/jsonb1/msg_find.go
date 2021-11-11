@@ -26,14 +26,6 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
-type selectOpts struct {
-	db         string
-	collection string
-	filter     types.Document
-	sort       types.Document
-	limit      int32
-}
-
 func (h *storage) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {

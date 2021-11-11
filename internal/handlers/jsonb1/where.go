@@ -12,19 +12,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sql
+package jsonb1
 
 import (
-	"github.com/jackc/pgx/v4"
+	"go.uber.org/zap"
 
+	"github.com/MangoDB-io/MangoDB/internal/bson"
 	"github.com/MangoDB-io/MangoDB/internal/pg"
 	"github.com/MangoDB-io/MangoDB/internal/types"
 	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
-func sqlValue(v interface{}, placeholder *pg.Placeholder) (sql string, args []interface{}, err error) {
-	sql = placeholder.Next()
-	args = []interface{}{v}
+func jsonValue(v interface{}, placeholder *pg.Placeholder) (sql string, args []interface{}, err error) {
+	var arg interface{}
+	switch v := v.(type) {
+	case int32:
+		sql = "to_jsonb(" + placeholder.Next() + "::int4)"
+		arg = v
+	case string:
+		sql = "to_jsonb(" + placeholder.Next() + "::text)"
+		arg = v
+	case types.ObjectID:
+		sql = placeholder.Next()
+		var b []byte
+		if b, err = bson.ObjectID(v).MarshalJSON(); err != nil {
+			err = lazyerrors.Errorf("jsonArgument: %w", err)
+			return
+		}
+		arg = string(b)
+	default:
+		err = lazyerrors.Errorf("jsonArgument: unhandled field %v (%T)", v, v)
+	}
+
+	args = []interface{}{arg}
 	return
 }
 
@@ -37,7 +57,7 @@ func array(a types.Array, placeholder *pg.Placeholder) (sql string, args []inter
 
 		var argSql string
 		var arg []interface{}
-		if argSql, arg, err = sqlValue(el, placeholder); err != nil {
+		if argSql, arg, err = jsonValue(el, placeholder); err != nil {
 			err = lazyerrors.Errorf("array: %w", err)
 			return
 		}
@@ -61,7 +81,8 @@ func where(filter types.Document, placeholder *pg.Placeholder) (sql string, args
 			sql += " AND"
 		}
 
-		sql += " " + pgx.Identifier{filterKey}.Sanitize()
+		sql += " _jsonb->" + placeholder.Next()
+		args = append(args, filterKey)
 
 		filterValue := filterMap[filterKey]
 
@@ -88,8 +109,10 @@ func where(filter types.Document, placeholder *pg.Placeholder) (sql string, args
 
 		default:
 			sql += " = "
-			argSql, arg, err = sqlValue(filterValue, placeholder)
+			argSql, arg, err = jsonValue(filterValue, placeholder)
 		}
+
+		zap.S().Debugf("where: %v %v", argSql, arg)
 
 		if err != nil {
 			err = lazyerrors.Errorf("where: %w", err)

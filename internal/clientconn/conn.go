@@ -159,11 +159,6 @@ func (c *conn) run(ctx context.Context) (err error) {
 		}
 
 		if resHeader == nil {
-			resHeader = shadowHeader
-			resBody = shadowBody
-		}
-
-		if resHeader == nil {
 			c.l.Info("no response to send to client")
 			return
 		}
