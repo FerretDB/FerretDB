@@ -36,6 +36,11 @@ fmt: bin/gofumports                    ## Format code
 test:                                  ## Run tests
 	go test -race -coverprofile=cover.txt -coverpkg=./... -shuffle=on ./...
 
+# That's not quite correct: https://github.com/golang/go/issues/15513
+# But good enough for us.
+fuzz-prepare:
+	go test -count=0 ./...
+
 fuzz-short:                            ## Fuzz for 1 minute
 	go test -list='Fuzz.*' ./...
 	go test -fuzz=FuzzArrayBinary -fuzztime=1m ./internal/bson/

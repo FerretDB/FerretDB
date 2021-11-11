@@ -162,16 +162,22 @@ jobs:
             **/testdata/fuzz
           key: fuzz
 
+      # precompile tests with unset GOMAXPROCS
+      - name: Prepare fuzzers
+        run: make fuzz-prepare
+
       - name: Run fuzzers
         run: make fuzz-short
+        env:
+          GOMAXPROCS: 2 # otherwise, oom-killer kills fuzzer too often
 
-      - name: Get dmesg
+      - name: Collect Linux logs
         if: failure()
         run: |
           mkdir -p /tmp/logs
           ls -al /var/log/
-          sudo cp /var/log/kern.log /var/log/syslog /tmp/logs/
-          sudo dmesg --ctime > /tmp/logs/dmesg.txt
+          sudo cp /var/log/syslog /tmp/logs/
+          sudo free > /tmp/logs/free.txt
           sudo chmod 0666 /tmp/logs/*
 
       - name: Upload Linux logs

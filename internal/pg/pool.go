@@ -57,6 +57,44 @@ func NewPool(connString string, logger *zap.Logger, lazy bool) (*Pool, error) {
 		return nil, fmt.Errorf("pg.NewPool: %w", err)
 	}
 
+	if !lazy {
+		rows, err := p.Query(context.Background(), "SHOW ALL")
+		if err != nil {
+			return nil, fmt.Errorf("pg.NewPool: %w", err)
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var name, setting, description string
+			if err := rows.Scan(&name, &setting, &description); err != nil {
+				return nil, fmt.Errorf("pg.NewPool: %w", err)
+			}
+
+			switch name {
+			case "server_encoding":
+				if setting != "UTF8" {
+					return nil, fmt.Errorf("pg.NewPool: %q is %q, want %q", name, setting, "UTF8")
+				}
+			case "client_encoding":
+				if setting != "UTF8" {
+					return nil, fmt.Errorf("pg.NewPool: %q is %q, want %q", name, setting, "UTF8")
+				}
+			case "lc_collate":
+				if setting != "C" && setting != "POSIX" && setting != "en_US.utf8" {
+					return nil, fmt.Errorf("pg.NewPool: %q is %q", name, setting)
+				}
+			case "lc_ctype":
+				if setting != "C" && setting != "POSIX" && setting != "en_US.utf8" {
+					return nil, fmt.Errorf("pg.NewPool: %q is %q", name, setting)
+				}
+			default:
+				continue
+			}
+
+			logger.Debug("PostgreSQL setting", zap.String("name", name), zap.String("setting", setting))
+		}
+	}
+
 	return &Pool{
 		Pool: p,
 	}, nil
