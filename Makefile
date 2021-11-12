@@ -41,7 +41,7 @@ test:                                  ## Run tests
 
 # That's not quite correct: https://github.com/golang/go/issues/15513
 # But good enough for us.
-fuzz-prepare:
+fuzz-prepare: gen-version
 	go test -count=0 ./...
 
 fuzz-short:                            ## Fuzz for 1 minute
