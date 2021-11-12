@@ -38,6 +38,10 @@ var arrayTestCases = []testCase{{
 	},
 	b: testutil.MustParseDumpFile("testdata", "array_all.hex"),
 	j: `[[],{"$b":"Qg==","s":128},true,{"$d":"1627378542123"},{"$k":[]},{"$f":"42.13"},42,{"$l":"42"},"foo",null]`,
+}, {
+	name: "array_fuzz1",
+	b:    testutil.MustParseDumpFile("testdata", "array_fuzz1.hex"),
+	bErr: `key 0 is "8"`,
 }}
 
 func TestArray(t *testing.T) {

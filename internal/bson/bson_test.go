@@ -30,9 +30,11 @@ import (
 )
 
 type testCase struct {
-	name   string
-	v      bsontype
-	b      []byte
+	name string
+	v    bsontype
+	b    []byte
+	bErr string // unwrapped
+
 	j      string
 	canonJ string // canonical form without extra object fields, zero values, etc.
 	jErr   string // unwrapped
@@ -42,10 +44,10 @@ func testBinary(t *testing.T, testCases []testCase, newFunc func() bsontype) {
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
 			require.NotEmpty(t, tc.name, "name should not be empty")
 			require.NotEmpty(t, tc.b, "b should not be empty")
+
+			t.Parallel()
 
 			t.Run("ReadFrom", func(t *testing.T) {
 				t.Parallel()
@@ -54,21 +56,54 @@ func testBinary(t *testing.T, testCases []testCase, newFunc func() bsontype) {
 				br := bytes.NewReader(tc.b)
 				bufr := bufio.NewReader(br)
 				err := v.ReadFrom(bufr)
-				assert.NoError(t, err)
-				assert.Equal(t, tc.v, v, "expected: %s\nactual  : %s", tc.v, v)
-				assert.Zero(t, br.Len(), "not all br bytes were consumed")
-				assert.Zero(t, bufr.Buffered(), "not all bufr bytes were consumed")
+				if tc.bErr == "" {
+					assert.NoError(t, err)
+					assert.Equal(t, tc.v, v, "expected: %s\nactual  : %s", tc.v, v)
+					assert.Zero(t, br.Len(), "not all br bytes were consumed")
+					assert.Zero(t, bufr.Buffered(), "not all bufr bytes were consumed")
+					return
+				}
+
+				require.Error(t, err)
+				for {
+					e := errors.Unwrap(err)
+					if e == nil {
+						break
+					}
+					err = e
+				}
+				require.Equal(t, tc.bErr, err.Error())
 			})
 
 			t.Run("MarshalBinary", func(t *testing.T) {
+				if tc.v == nil {
+					t.Skip("v is nil")
+				}
+
 				t.Parallel()
 
 				actualB, err := tc.v.MarshalBinary()
 				require.NoError(t, err)
-				assert.Equal(t, tc.b, actualB, "actual:\n%s", hex.Dump(actualB))
+				if !assert.Equal(t, tc.b, actualB, "actual:\n%s", hex.Dump(actualB)) {
+					// unmarshal again to compare BSON values
+					v := newFunc()
+					br := bytes.NewReader(actualB)
+					bufr := bufio.NewReader(br)
+					err := v.ReadFrom(bufr)
+					assert.NoError(t, err)
+					if assert.Equal(t, tc.v, v, "expected: %s\nactual  : %s", tc.v, v) {
+						t.Log("BSON values are equal after unmarshalling")
+					}
+					assert.Zero(t, br.Len(), "not all br bytes were consumed")
+					assert.Zero(t, bufr.Buffered(), "not all bufr bytes were consumed")
+				}
 			})
 
 			t.Run("WriteTo", func(t *testing.T) {
+				if tc.v == nil {
+					t.Skip("v is nil")
+				}
+
 				t.Parallel()
 
 				var buf bytes.Buffer
@@ -131,10 +166,12 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() bsontype) {
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
 			require.NotEmpty(t, tc.name, "name should not be empty")
-			require.NotEmpty(t, tc.j, "j should not be empty")
+			if tc.j == "" {
+				t.Skip("j is empty")
+			}
+
+			t.Parallel()
 
 			var dst bytes.Buffer
 			require.NoError(t, json.Compact(&dst, []byte(tc.j)))

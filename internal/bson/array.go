@@ -36,6 +36,10 @@ func (arr *Array) ReadFrom(r *bufio.Reader) error {
 	s := make([]interface{}, len(doc.m))
 
 	for i := 0; i < len(doc.m); i++ {
+		if k := doc.keys[i]; k != strconv.Itoa(i) {
+			return lazyerrors.Errorf("key %d is %q", i, k)
+		}
+
 		v, ok := doc.m[strconv.Itoa(i)]
 		if !ok {
 			return lazyerrors.Errorf("no element %d in array of length %d", i, len(doc.m))
