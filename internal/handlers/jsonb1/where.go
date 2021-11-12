@@ -102,6 +102,9 @@ func where(filter types.Document, placeholder *pg.Placeholder) (sql string, args
 			case "$in":
 				sql += " IN "
 				argSql, arg, err = array(value.(types.Array), placeholder)
+			case "$nin":
+				sql += " NOT IN "
+				argSql, arg, err = array(value.(types.Array), placeholder)
 			default:
 				err = lazyerrors.Errorf("unhandled field {%q: {%q: %v}}", filterKey, filterValue, key)
 				return

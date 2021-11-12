@@ -15,9 +15,15 @@
 package version
 
 import (
+	_ "embed"
 	"runtime/debug"
 	"strconv"
 )
+
+//go:generate ./version.sh
+
+//go:embed version.txt
+var version string
 
 type Info struct {
 	Version string
@@ -32,16 +38,16 @@ func Get() *Info {
 }
 
 func init() {
-	debugInfo, ok := debug.ReadBuildInfo()
+	info = &Info{
+		Version: version,
+	}
+
+	buildInfo, ok := debug.ReadBuildInfo()
 	if !ok {
 		return
 	}
 
-	info = &Info{
-		Version: "0.0.1",
-	}
-
-	for _, s := range debugInfo.Settings {
+	for _, s := range buildInfo.Settings {
 		switch s.Key {
 		case "gitrevision":
 			info.Commit = s.Value

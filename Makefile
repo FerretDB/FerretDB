@@ -30,6 +30,9 @@ gen: bin/gofumports                    ## Generate code
 	go generate -x ./...
 	$(MAKE) fmt
 
+gen-version:
+	go generate -x ./internal/util/version
+
 fmt: bin/gofumports                    ## Format code
 	bin/gofumports -w -local=github.com/MangoDB-io/MangoDB .
 
@@ -56,7 +59,7 @@ bench-short:                           ## Benchmark for 5 seconds
 	go test -bench=BenchmarkArray -benchtime=5s ./internal/bson/
 	go test -bench=BenchmarkDocument -benchtime=5s ./internal/bson/
 
-build-testcover:                       ## Build bin/mangodb-testcover
+build-testcover: gen-version           ## Build bin/mangodb-testcover
 	go test -c -o=bin/mangodb-testcover -trimpath -tags=testcover -race -coverpkg=./... ./cmd/mangodb
 
 run: build-testcover                   ## Run MangoDB
@@ -78,7 +81,7 @@ mongo:                                 ## Run (legacy) mongo shell
 	docker-compose exec mongodb mongo mongodb://host.docker.internal:27017/monila \
 		--verbose
 
-docker: build-testcover
+docker: build-testcover gen-version
 	env GOOS=linux go test -c -o=bin/mangodb -trimpath -tags=testcover -coverpkg=./... ./cmd/mangodb
 	docker build --tag=ghcr.io/mangodb-io/mangodb:latest .
 

@@ -2,5 +2,7 @@
 /vendor/
 cover.txt
 
+internal/util/version/version.txt
+
 # for now
 **/testdata/fuzz

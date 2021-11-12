@@ -30,7 +30,11 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
-func removeIDs(docs types.Array) {
+func removeIDs(schema string, docs types.Array) {
+	if schema != "pagila" {
+		return
+	}
+
 	for i, doc := range docs {
 		d := doc.(types.Document)
 		d.Remove("_id")
@@ -102,9 +106,7 @@ func TestQuery(t *testing.T) {
 						"last_update", lastUpdate,
 					),
 				}
-				if schema == "pagila" {
-					removeIDs(expectedDocs)
-				}
+				removeIDs(schema, expectedDocs)
 
 				actual, err := res.(*wire.OpMsg).Document()
 				require.NoError(t, err)
@@ -165,9 +167,65 @@ func TestQuery(t *testing.T) {
 						"last_update", lastUpdate,
 					),
 				}
-				if schema == "pagila" {
-					removeIDs(expectedDocs)
+				removeIDs(schema, expectedDocs)
+
+				actual, err := res.(*wire.OpMsg).Document()
+				require.NoError(t, err)
+				expected := types.MustMakeDocument(
+					"cursor", types.MustMakeDocument(
+						"firstBatch", expectedDocs,
+						"id", int64(0),
+						"ns", schema+".actor",
+					),
+					"ok", float64(1),
+				)
+
+				assert.Equal(t, expected, actual)
+			})
+
+			t.Run("NotIn", func(t *testing.T) {
+				header := &wire.MsgHeader{
+					RequestID: 3,
+					OpCode:    wire.OP_MSG,
 				}
+
+				var msg wire.OpMsg
+				err := msg.SetSections(wire.OpMsgSection{
+					Documents: []types.Document{types.MustMakeDocument(
+						"find", "actor",
+						"filter", types.MustMakeDocument(
+							"last_name", types.MustMakeDocument(
+								"$nin", types.Array{"HOFFMAN"},
+							),
+						),
+						"sort", types.MustMakeDocument(
+							"last_name", int32(1),
+						),
+						"limit", int32(2),
+						"$db", schema,
+					)},
+				})
+				require.NoError(t, err)
+				_, res, err := handler.Handle(ctx, header, &msg)
+				require.NoError(t, err)
+
+				expectedDocs := types.Array{
+					types.MustMakeDocument(
+						"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x3a, 0x00, 0x00, 0x00, 0x3a},
+						"actor_id", int32(58),
+						"first_name", "CHRISTIAN",
+						"last_name", "AKROYD",
+						"last_update", lastUpdate,
+					),
+					types.MustMakeDocument(
+						"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x5c, 0x00, 0x00, 0x00, 0x5c},
+						"actor_id", int32(92),
+						"first_name", "KIRSTEN",
+						"last_name", "AKROYD",
+						"last_update", lastUpdate,
+					),
+				}
+				removeIDs(schema, expectedDocs)
 
 				actual, err := res.(*wire.OpMsg).Document()
 				require.NoError(t, err)

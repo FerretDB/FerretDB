@@ -1,5 +1,5 @@
 ---
 name: Enhancement
-about: Something could work better
+about: Something implemented could work better
 labels: code/enhancement
 ---
