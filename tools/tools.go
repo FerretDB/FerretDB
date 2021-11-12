@@ -24,7 +24,7 @@ import (
 	_ "github.com/reviewdog/reviewdog/cmd/reviewdog"
 	_ "golang.org/x/perf/cmd/benchstat"
 	_ "golang.org/x/tools/cmd/stringer"
-	_ "mvdan.cc/gofumpt/gofumports"
+	_ "mvdan.cc/gofumpt"
 )
 
 //go:generate go build -v -o ../bin/go-sumtype github.com/BurntSushi/go-sumtype
@@ -33,4 +33,4 @@ import (
 //go:generate go build -v -o ../bin/reviewdog github.com/reviewdog/reviewdog/cmd/reviewdog
 //go:generate go build -v -o ../bin/benchstat golang.org/x/perf/cmd/benchstat
 //go:generate go build -v -o ../bin/stringer golang.org/x/tools/cmd/stringer
-//go:generate go build -v -o ../bin/gofumports mvdan.cc/gofumpt/gofumports
+//go:generate go build -v -o ../bin/gofumpt mvdan.cc/gofumpt

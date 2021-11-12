@@ -23,7 +23,9 @@ const (
 	_BinarySubtype_name_1 = "user"
 )
 
-var _BinarySubtype_index_0 = [...]uint8{0, 7, 15, 26, 34, 38, 41, 50}
+var (
+	_BinarySubtype_index_0 = [...]uint8{0, 7, 15, 26, 34, 38, 41, 50}
+)
 
 func (i BinarySubtype) String() string {
 	switch {

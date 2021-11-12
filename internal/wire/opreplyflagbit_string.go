@@ -20,7 +20,9 @@ const (
 	_OpReplyFlagBit_name_2 = "AwaitCapable"
 )
 
-var _OpReplyFlagBit_index_0 = [...]uint8{0, 14, 26}
+var (
+	_OpReplyFlagBit_index_0 = [...]uint8{0, 14, 26}
+)
 
 func (i OpReplyFlagBit) String() string {
 	switch {

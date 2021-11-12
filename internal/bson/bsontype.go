@@ -47,7 +47,6 @@ type bsontype interface {
 	ReadFrom(*bufio.Reader) error
 	WriteTo(*bufio.Writer) error
 	encoding.BinaryMarshaler
-
 	json.Unmarshaler
 	json.Marshaler
 }

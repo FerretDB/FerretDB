@@ -18,7 +18,9 @@ const (
 	_OpMsgFlagBit_name_1 = "exhaustAllowed"
 )
 
-var _OpMsgFlagBit_index_0 = [...]uint8{0, 15, 25}
+var (
+	_OpMsgFlagBit_index_0 = [...]uint8{0, 15, 25}
+)
 
 func (i OpMsgFlagBit) String() string {
 	switch {

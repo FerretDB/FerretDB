@@ -30,7 +30,6 @@ type MsgBody interface {
 	readFrom(*bufio.Reader) error
 	encoding.BinaryUnmarshaler
 	encoding.BinaryMarshaler
-
 	json.Marshaler
 }
 

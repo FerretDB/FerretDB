@@ -26,15 +26,15 @@ init:                                  ## Install development tools
 	go mod tidy
 	cd tools && go mod tidy && go generate -tags=tools -x
 
-gen: bin/gofumports                    ## Generate code
+gen: bin/gofumpt                       ## Generate code
 	go generate -x ./...
 	$(MAKE) fmt
 
 gen-version:
 	go generate -x ./internal/util/version
 
-fmt: bin/gofumports                    ## Format code
-	bin/gofumports -w -local=github.com/MangoDB-io/MangoDB .
+fmt: bin/gofumpt                       ## Format code
+	bin/gofumpt -w .
 
 test:                                  ## Run tests
 	go test -race -coverprofile=cover.txt -coverpkg=./... -shuffle=on ./...
