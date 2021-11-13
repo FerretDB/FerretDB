@@ -50,7 +50,7 @@ func TestFind(t *testing.T) {
 	}
 
 	testCases := []testCase{{
-		name: "Value,$lt,$gt",
+		name: "ValueLtGt",
 		req: types.MustMakeDocument(
 			"find", "actor",
 			"filter", types.MustMakeDocument(
@@ -71,7 +71,7 @@ func TestFind(t *testing.T) {
 			),
 		},
 	}, {
-		name: "$in,$lte,$gte",
+		name: "InLteGte",
 		req: types.MustMakeDocument(
 			"find", "actor",
 			"filter", types.MustMakeDocument(
@@ -94,7 +94,7 @@ func TestFind(t *testing.T) {
 			),
 		},
 	}, {
-		name: "$nin,$eq,$ne",
+		name: "NinEqNe",
 		req: types.MustMakeDocument(
 			"find", "actor",
 			"filter", types.MustMakeDocument(
@@ -117,7 +117,7 @@ func TestFind(t *testing.T) {
 			),
 		},
 	}, {
-		name: "$not",
+		name: "Not",
 		req: types.MustMakeDocument(
 			"find", "actor",
 			"filter", types.MustMakeDocument(
@@ -142,7 +142,7 @@ func TestFind(t *testing.T) {
 			),
 		},
 	}, {
-		name: "Nested$not",
+		name: "NestedNot",
 		req: types.MustMakeDocument(
 			"find", "actor",
 			"filter", types.MustMakeDocument(
@@ -167,6 +167,41 @@ func TestFind(t *testing.T) {
 				"actor_id", int32(2),
 				"first_name", "NICK",
 				"last_name", "WAHLBERG",
+				"last_update", lastUpdate,
+			),
+		},
+	}, {
+		name: "AndOr",
+		req: types.MustMakeDocument(
+			"find", "actor",
+			"filter", types.MustMakeDocument(
+				"$and", types.Array{
+					types.MustMakeDocument(
+						"first_name", "CHRISTIAN",
+					),
+					types.MustMakeDocument(
+						"$or", types.Array{
+							types.MustMakeDocument(
+								"last_name", "GABLE",
+							),
+							types.MustMakeDocument(
+								"last_name", "NEESON",
+							),
+						},
+					),
+				},
+			),
+			"sort", types.MustMakeDocument(
+				"actor_id", int32(1),
+			),
+			"limit", int32(1),
+		),
+		resp: types.Array{
+			types.MustMakeDocument(
+				"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x0a},
+				"actor_id", int32(10),
+				"first_name", "CHRISTIAN",
+				"last_name", "GABLE",
 				"last_update", lastUpdate,
 			),
 		},

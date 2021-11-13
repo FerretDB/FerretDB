@@ -15,6 +15,8 @@
 package sql
 
 import (
+	"strings"
+
 	"github.com/jackc/pgx/v4"
 
 	"github.com/MangoDB-io/MangoDB/internal/pg"
@@ -136,7 +138,58 @@ func fieldExpr(field string, expr types.Document, placeholder *pg.Placeholder) (
 	return
 }
 
+func logicExpr(op string, exprs types.Array, placeholder *pg.Placeholder) (sql string, args []interface{}, err error) {
+	switch op {
+	case "$or", "$and":
+		// {$or: [{expr1}, {expr2}, ...]}
+		// {$and: [{expr1}, {expr2}, ...]}
+		for i, expr := range exprs {
+			if i != 0 {
+				switch op {
+				case "$or":
+					sql += " OR"
+				case "$and":
+					sql += " AND"
+				}
+			}
+
+			expr := expr.(types.Document)
+			m := expr.Map()
+			for j, key := range expr.Keys() {
+				if j != 0 {
+					sql += " AND"
+				}
+
+				var exprSQL string
+				var exprArgs []interface{}
+				exprSQL, exprArgs, err = wherePair(key, m[key], placeholder)
+				if err != nil {
+					err = lazyerrors.Errorf("logicExpr: %w", err)
+					return
+				}
+
+				if sql != "" {
+					sql += " "
+				}
+				sql += "(" + exprSQL + ")"
+				args = append(args, exprArgs...)
+			}
+		}
+
+	default:
+		err = lazyerrors.Errorf("logicExpr: unhandled op %q", op)
+	}
+
+	return
+}
+
 func wherePair(key string, value interface{}, placeholder *pg.Placeholder) (sql string, args []interface{}, err error) {
+	if strings.HasPrefix(key, "$") {
+		exprs := value.(types.Array)
+		sql, args, err = logicExpr(key, exprs, placeholder)
+		return
+	}
+
 	switch value := value.(type) {
 	case types.Document:
 		// {field: {expr}}
