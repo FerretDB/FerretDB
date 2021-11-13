@@ -93,6 +93,29 @@ func TestFind(t *testing.T) {
 				"last_update", lastUpdate,
 			),
 		},
+	}, {
+		name: "$nin,$eq,$ne",
+		req: types.MustMakeDocument(
+			"find", "actor",
+			"filter", types.MustMakeDocument(
+				"last_name", types.MustMakeDocument(
+					"$nin", types.Array{"NEESON"},
+					"$ne", "AKROYD",
+				),
+				"first_name", types.MustMakeDocument(
+					"$eq", "CHRISTIAN",
+				),
+			),
+		),
+		resp: types.Array{
+			types.MustMakeDocument(
+				"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x0a},
+				"actor_id", int32(10),
+				"first_name", "CHRISTIAN",
+				"last_name", "GABLE",
+				"last_update", lastUpdate,
+			),
+		},
 	}}
 
 	for _, tc := range testCases { //nolint:paralleltest // false positive

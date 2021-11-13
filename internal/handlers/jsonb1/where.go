@@ -90,6 +90,12 @@ func filterObject(field string, filter types.Document, placeholder *pg.Placehold
 		case "$nin":
 			sql += " NOT IN"
 			argSql, arg, err = array(filterValue.(types.Array), placeholder)
+		case "$eq":
+			sql += " ="
+			argSql, arg, err = jsonValue(filterValue, placeholder)
+		case "$ne":
+			sql += " <>"
+			argSql, arg, err = jsonValue(filterValue, placeholder)
 		case "$lt":
 			sql += " <"
 			argSql, arg, err = jsonValue(filterValue, placeholder)
