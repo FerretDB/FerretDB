@@ -76,3 +76,25 @@ func LogicExpr(op string, exprs types.Array, p *pg.Placeholder, wherePair whereP
 
 	return
 }
+
+type scalar func(v interface{}, p *pg.Placeholder) (sql string, args []interface{}, err error)
+
+func InArray(a types.Array, p *pg.Placeholder, scalar scalar) (sql string, args []interface{}, err error) {
+	sql = "("
+	for i, el := range a {
+		if i != 0 {
+			sql += ", "
+		}
+
+		var argSql string
+		var arg []interface{}
+		if argSql, arg, err = scalar(el, p); err != nil {
+			err = lazyerrors.Errorf("inArray: %w", err)
+			return
+		}
+		sql += argSql
+		args = append(args, arg...)
+	}
+	sql += ")"
+	return
+}

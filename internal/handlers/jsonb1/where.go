@@ -49,26 +49,6 @@ func scalar(v interface{}, p *pg.Placeholder) (sql string, args []interface{}, e
 	return
 }
 
-func inArray(a types.Array, p *pg.Placeholder) (sql string, args []interface{}, err error) {
-	sql = "("
-	for i, el := range a {
-		if i != 0 {
-			sql += ", "
-		}
-
-		var argSql string
-		var arg []interface{}
-		if argSql, arg, err = scalar(el, p); err != nil {
-			err = lazyerrors.Errorf("inArray: %w", err)
-			return
-		}
-		sql += argSql
-		args = append(args, arg...)
-	}
-	sql += ")"
-	return
-}
-
 // fieldExpr handles {field: {expr}}.
 func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string, args []interface{}, err error) {
 	filterKeys := expr.Keys()
@@ -112,11 +92,11 @@ func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string
 		case "$in":
 			// {field: {$in: [value1, value2, ...]}}
 			sql += " IN"
-			argSql, arg, err = inArray(value.(types.Array), p)
+			argSql, arg, err = common.InArray(value.(types.Array), p, scalar)
 		case "$nin":
 			// {field: {$nin: [value1, value2, ...]}}
 			sql += " NOT IN"
-			argSql, arg, err = inArray(value.(types.Array), p)
+			argSql, arg, err = common.InArray(value.(types.Array), p, scalar)
 		case "$eq":
 			// {field: {$eq: value}}
 			// TODO special handling for regex
