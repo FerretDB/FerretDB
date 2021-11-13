@@ -18,22 +18,23 @@ import (
 	"strings"
 
 	"github.com/MangoDB-io/MangoDB/internal/bson"
+	"github.com/MangoDB-io/MangoDB/internal/handlers/common"
 	"github.com/MangoDB-io/MangoDB/internal/pg"
 	"github.com/MangoDB-io/MangoDB/internal/types"
 	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
-func scalar(v interface{}, placeholder *pg.Placeholder) (sql string, args []interface{}, err error) {
+func scalar(v interface{}, p *pg.Placeholder) (sql string, args []interface{}, err error) {
 	var arg interface{}
 	switch v := v.(type) {
 	case int32:
-		sql = "to_jsonb(" + placeholder.Next() + "::int4)"
+		sql = "to_jsonb(" + p.Next() + "::int4)"
 		arg = v
 	case string:
-		sql = "to_jsonb(" + placeholder.Next() + "::text)"
+		sql = "to_jsonb(" + p.Next() + "::text)"
 		arg = v
 	case types.ObjectID:
-		sql = placeholder.Next()
+		sql = p.Next()
 		var b []byte
 		if b, err = bson.ObjectID(v).MarshalJSON(); err != nil {
 			err = lazyerrors.Errorf("jsonArgument: %w", err)
@@ -48,7 +49,7 @@ func scalar(v interface{}, placeholder *pg.Placeholder) (sql string, args []inte
 	return
 }
 
-func inArray(a types.Array, placeholder *pg.Placeholder) (sql string, args []interface{}, err error) {
+func inArray(a types.Array, p *pg.Placeholder) (sql string, args []interface{}, err error) {
 	sql = "("
 	for i, el := range a {
 		if i != 0 {
@@ -57,7 +58,7 @@ func inArray(a types.Array, placeholder *pg.Placeholder) (sql string, args []int
 
 		var argSql string
 		var arg []interface{}
-		if argSql, arg, err = scalar(el, placeholder); err != nil {
+		if argSql, arg, err = scalar(el, p); err != nil {
 			err = lazyerrors.Errorf("inArray: %w", err)
 			return
 		}
@@ -69,7 +70,7 @@ func inArray(a types.Array, placeholder *pg.Placeholder) (sql string, args []int
 }
 
 // fieldExpr handles {field: {expr}}.
-func fieldExpr(field string, expr types.Document, placeholder *pg.Placeholder) (sql string, args []interface{}, err error) {
+func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string, args []interface{}, err error) {
 	filterKeys := expr.Keys()
 	filterMap := expr.Map()
 
@@ -89,7 +90,7 @@ func fieldExpr(field string, expr types.Document, placeholder *pg.Placeholder) (
 			}
 			sql += "NOT("
 
-			argSql, arg, err = fieldExpr(field, value.(types.Document), placeholder)
+			argSql, arg, err = fieldExpr(field, value.(types.Document), p)
 			if err != nil {
 				err = lazyerrors.Errorf("fieldExpr: %w", err)
 				return
@@ -104,43 +105,43 @@ func fieldExpr(field string, expr types.Document, placeholder *pg.Placeholder) (
 		if sql != "" {
 			sql += " "
 		}
-		sql += "_jsonb->" + placeholder.Next()
+		sql += "_jsonb->" + p.Next()
 		args = append(args, field)
 
 		switch op {
 		case "$in":
 			// {field: {$in: [value1, value2, ...]}}
 			sql += " IN"
-			argSql, arg, err = inArray(value.(types.Array), placeholder)
+			argSql, arg, err = inArray(value.(types.Array), p)
 		case "$nin":
 			// {field: {$nin: [value1, value2, ...]}}
 			sql += " NOT IN"
-			argSql, arg, err = inArray(value.(types.Array), placeholder)
+			argSql, arg, err = inArray(value.(types.Array), p)
 		case "$eq":
 			// {field: {$eq: value}}
 			// TODO special handling for regex
 			sql += " ="
-			argSql, arg, err = scalar(value, placeholder)
+			argSql, arg, err = scalar(value, p)
 		case "$ne":
 			// {field: {$ne: value}}
 			sql += " <>"
-			argSql, arg, err = scalar(value, placeholder)
+			argSql, arg, err = scalar(value, p)
 		case "$lt":
 			// {field: {$lt: value}}
 			sql += " <"
-			argSql, arg, err = scalar(value, placeholder)
+			argSql, arg, err = scalar(value, p)
 		case "$lte":
 			// {field: {$lte: value}}
 			sql += " <="
-			argSql, arg, err = scalar(value, placeholder)
+			argSql, arg, err = scalar(value, p)
 		case "$gt":
 			// {field: {$gt: value}}
 			sql += " >"
-			argSql, arg, err = scalar(value, placeholder)
+			argSql, arg, err = scalar(value, p)
 		case "$gte":
 			// {field: {$gte: value}}
 			sql += " >="
-			argSql, arg, err = scalar(value, placeholder)
+			argSql, arg, err = scalar(value, p)
 		default:
 			err = lazyerrors.Errorf("unhandled {%q: %v}", op, value)
 		}
@@ -157,71 +158,26 @@ func fieldExpr(field string, expr types.Document, placeholder *pg.Placeholder) (
 	return
 }
 
-func logicExpr(op string, exprs types.Array, placeholder *pg.Placeholder) (sql string, args []interface{}, err error) {
-	switch op {
-	case "$or", "$and":
-		// {$or: [{expr1}, {expr2}, ...]}
-		// {$and: [{expr1}, {expr2}, ...]}
-		for i, expr := range exprs {
-			if i != 0 {
-				switch op {
-				case "$or":
-					sql += " OR"
-				case "$and":
-					sql += " AND"
-				}
-			}
-
-			expr := expr.(types.Document)
-			m := expr.Map()
-			for j, key := range expr.Keys() {
-				if j != 0 {
-					sql += " AND"
-				}
-
-				var exprSQL string
-				var exprArgs []interface{}
-				exprSQL, exprArgs, err = wherePair(key, m[key], placeholder)
-				if err != nil {
-					err = lazyerrors.Errorf("logicExpr: %w", err)
-					return
-				}
-
-				if sql != "" {
-					sql += " "
-				}
-				sql += "(" + exprSQL + ")"
-				args = append(args, exprArgs...)
-			}
-		}
-
-	default:
-		err = lazyerrors.Errorf("logicExpr: unhandled op %q", op)
-	}
-
-	return
-}
-
-func wherePair(key string, value interface{}, placeholder *pg.Placeholder) (sql string, args []interface{}, err error) {
+func wherePair(key string, value interface{}, p *pg.Placeholder) (sql string, args []interface{}, err error) {
 	if strings.HasPrefix(key, "$") {
 		exprs := value.(types.Array)
-		sql, args, err = logicExpr(key, exprs, placeholder)
+		sql, args, err = common.LogicExpr(key, exprs, p, wherePair)
 		return
 	}
 
 	switch value := value.(type) {
 	case types.Document:
 		// {field: {expr}}
-		sql, args, err = fieldExpr(key, value, placeholder)
+		sql, args, err = fieldExpr(key, value, p)
 
 	default:
 		// {field: value}
-		sql = "_jsonb->" + placeholder.Next() + " = "
+		sql = "_jsonb->" + p.Next() + " = "
 		args = append(args, key)
 
 		var scalarSQL string
 		var scalarArgs []interface{}
-		scalarSQL, scalarArgs, err = scalar(value, placeholder)
+		scalarSQL, scalarArgs, err = scalar(value, p)
 		sql += scalarSQL
 		args = append(args, scalarArgs...)
 	}
@@ -233,7 +189,7 @@ func wherePair(key string, value interface{}, placeholder *pg.Placeholder) (sql 
 	return
 }
 
-func where(filter types.Document, placeholder *pg.Placeholder) (sql string, args []interface{}, err error) {
+func where(filter types.Document, p *pg.Placeholder) (sql string, args []interface{}, err error) {
 	filterMap := filter.Map()
 	if len(filterMap) == 0 {
 		return
@@ -250,7 +206,7 @@ func where(filter types.Document, placeholder *pg.Placeholder) (sql string, args
 
 		var argSql string
 		var arg []interface{}
-		argSql, arg, err = wherePair(key, value, placeholder)
+		argSql, arg, err = wherePair(key, value, p)
 		if err != nil {
 			err = lazyerrors.Errorf("where: %w", err)
 			return
