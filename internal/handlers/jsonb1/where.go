@@ -37,12 +37,12 @@ func scalar(v interface{}, p *pg.Placeholder) (sql string, args []interface{}, e
 		sql = p.Next()
 		var b []byte
 		if b, err = bson.ObjectID(v).MarshalJSON(); err != nil {
-			err = lazyerrors.Errorf("jsonArgument: %w", err)
+			err = lazyerrors.Errorf("scalar: %w", err)
 			return
 		}
 		arg = string(b)
 	default:
-		err = lazyerrors.Errorf("jsonArgument: unhandled field %v (%T)", v, v)
+		err = lazyerrors.Errorf("scalar: unhandled field %v (%T)", v, v)
 	}
 
 	args = []interface{}{arg}
