@@ -71,27 +71,41 @@ func fieldExpr(field string, expr types.Document, placeholder *pg.Placeholder) (
 	filterKeys := expr.Keys()
 	filterMap := expr.Map()
 
-	sql = "("
 	for i, op := range filterKeys {
 		if i != 0 {
 			sql += " AND"
 		}
 
-		// special case
-		if op != "$not" {
-			sql += " _jsonb->" + placeholder.Next()
-			args = append(args, field)
-		}
-
-		value := filterMap[op]
-
 		var argSql string
 		var arg []interface{}
-		switch op {
-		case "$not":
-			// {field: {$not: {expr}}}
-			sql += " NOT"
+		value := filterMap[op]
+
+		// {field: {$not: {expr}}}
+		if op == "$not" {
+			if sql != "" {
+				sql += " "
+			}
+			sql += "NOT("
+
 			argSql, arg, err = fieldExpr(field, value.(types.Document), placeholder)
+			if err != nil {
+				err = lazyerrors.Errorf("fieldExpr: %w", err)
+				return
+			}
+
+			sql += argSql + ")"
+			args = append(args, arg...)
+
+			continue
+		}
+
+		if sql != "" {
+			sql += " "
+		}
+		sql += "_jsonb->" + placeholder.Next()
+		args = append(args, field)
+
+		switch op {
 		case "$in":
 			// {field: {$in: [value1, value2, ...]}}
 			sql += " IN"
@@ -130,14 +144,14 @@ func fieldExpr(field string, expr types.Document, placeholder *pg.Placeholder) (
 		}
 
 		if err != nil {
-			err = lazyerrors.Errorf("filterObject: %w", err)
+			err = lazyerrors.Errorf("fieldExpr: %w", err)
 			return
 		}
+
 		sql += " " + argSql
 		args = append(args, arg...)
 	}
 
-	sql += ")"
 	return
 }
 
