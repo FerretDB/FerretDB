@@ -74,8 +74,14 @@ func filterObject(field string, filter types.Document, placeholder *pg.Placehold
 		case "$lt":
 			sql += " <"
 			argSql, arg, err = sqlValue(filterValue, placeholder)
+		case "$lte":
+			sql += " <="
+			argSql, arg, err = sqlValue(filterValue, placeholder)
 		case "$gt":
 			sql += " >"
+			argSql, arg, err = sqlValue(filterValue, placeholder)
+		case "$gte":
+			sql += " >="
 			argSql, arg, err = sqlValue(filterValue, placeholder)
 		default:
 			err = lazyerrors.Errorf("unhandled {%q: %v}", filterKey, filterValue)
