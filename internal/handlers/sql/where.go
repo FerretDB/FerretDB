@@ -48,6 +48,51 @@ func array(a types.Array, placeholder *pg.Placeholder) (sql string, args []inter
 	return
 }
 
+func filterObject(field string, filter types.Document, placeholder *pg.Placeholder) (sql string, args []interface{}, err error) {
+	filterKeys := filter.Keys()
+	filterMap := filter.Map()
+
+	sql = "("
+	for i, filterKey := range filterKeys {
+		if i != 0 {
+			sql += " AND"
+		}
+
+		sql += " " + pgx.Identifier{field}.Sanitize()
+
+		filterValue := filterMap[filterKey]
+
+		var argSql string
+		var arg []interface{}
+		switch filterKey {
+		case "$in":
+			sql += " IN"
+			argSql, arg, err = array(filterValue.(types.Array), placeholder)
+		case "$nin":
+			sql += " NOT IN"
+			argSql, arg, err = array(filterValue.(types.Array), placeholder)
+		case "$lt":
+			sql += " <"
+			argSql, arg, err = sqlValue(filterValue, placeholder)
+		case "$gt":
+			sql += " >"
+			argSql, arg, err = sqlValue(filterValue, placeholder)
+		default:
+			err = lazyerrors.Errorf("unhandled {%q: %v}", filterKey, filterValue)
+		}
+
+		if err != nil {
+			err = lazyerrors.Errorf("filterObject: %w", err)
+			return
+		}
+		sql += " " + argSql
+		args = append(args, arg...)
+	}
+
+	sql += ")"
+	return
+}
+
 func where(filter types.Document, placeholder *pg.Placeholder) (sql string, args []interface{}, err error) {
 	filterMap := filter.Map()
 	if len(filterMap) == 0 {
@@ -61,36 +106,16 @@ func where(filter types.Document, placeholder *pg.Placeholder) (sql string, args
 			sql += " AND"
 		}
 
-		sql += " " + pgx.Identifier{filterKey}.Sanitize()
-
 		filterValue := filterMap[filterKey]
 
 		var argSql string
 		var arg []interface{}
 		switch filterValue := filterValue.(type) {
 		case types.Document:
-			keys := filterValue.Keys()
-			if l := len(keys); l != 1 {
-				err = lazyerrors.Errorf("unhandled field {%q: %v} (%d keys)", filterKey, filterValue, l)
-				return
-			}
-			key := keys[0]
-			value := filterValue.Map()[key]
-
-			switch key {
-			case "$in":
-				sql += " IN "
-				argSql, arg, err = array(value.(types.Array), placeholder)
-			case "$nin":
-				sql += " NOT IN "
-				argSql, arg, err = array(value.(types.Array), placeholder)
-			default:
-				err = lazyerrors.Errorf("unhandled field {%q: {%q: %v}}", filterKey, filterValue, key)
-				return
-			}
+			argSql, arg, err = filterObject(filterKey, filterValue, placeholder)
 
 		default:
-			sql += " = "
+			sql += " " + pgx.Identifier{filterKey}.Sanitize() + " ="
 			argSql, arg, err = sqlValue(filterValue, placeholder)
 		}
 
@@ -98,7 +123,7 @@ func where(filter types.Document, placeholder *pg.Placeholder) (sql string, args
 			err = lazyerrors.Errorf("where: %w", err)
 			return
 		}
-		sql += argSql
+		sql += " " + argSql
 		args = append(args, arg...)
 	}
 

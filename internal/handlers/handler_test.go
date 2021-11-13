@@ -30,19 +30,7 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
-func removeIDs(schema string, docs types.Array) {
-	if schema != "pagila" {
-		return
-	}
-
-	for i, doc := range docs {
-		d := doc.(types.Document)
-		d.Remove("_id")
-		docs[i] = d
-	}
-}
-
-func TestQuery(t *testing.T) {
+func TestFind(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
@@ -55,191 +43,82 @@ func TestQuery(t *testing.T) {
 
 	lastUpdate := time.Date(2020, 2, 15, 9, 34, 33, 0, time.UTC).Local()
 
-	for _, schema := range []string{"monila", "pagila"} { //nolint:paralleltest // false positive
-		schema := schema
+	type testCase struct {
+		name string
+		req  types.Document
+		resp types.Array
+	}
 
-		t.Run(schema, func(t *testing.T) {
+	testCases := []testCase{{
+		name: "Value,$lt,$gt",
+		req: types.MustMakeDocument(
+			"find", "actor",
+			"filter", types.MustMakeDocument(
+				"last_name", "HOFFMAN",
+				"actor_id", types.MustMakeDocument(
+					"$gt", int32(50),
+					"$lt", int32(100),
+				),
+			),
+		),
+		resp: types.Array{
+			types.MustMakeDocument(
+				"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x4f, 0x00, 0x00, 0x00, 0x4f},
+				"actor_id", int32(79),
+				"first_name", "MAE",
+				"last_name", "HOFFMAN",
+				"last_update", lastUpdate,
+			),
+		},
+	}}
+
+	for _, tc := range testCases { //nolint:paralleltest // false positive
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			t.Run("Value", func(t *testing.T) {
-				t.Parallel()
+			for _, schema := range []string{"monila", "pagila"} {
+				t.Run(schema, func(t *testing.T) {
+					// not parallel because we modify tc
 
-				header := &wire.MsgHeader{
-					RequestID: 1,
-					OpCode:    wire.OP_MSG,
-				}
+					tc.req.Set("$db", schema)
 
-				var msg wire.OpMsg
-				err := msg.SetSections(wire.OpMsgSection{
-					Documents: []types.Document{types.MustMakeDocument(
-						"find", "actor",
-						"filter", types.MustMakeDocument(
-							"last_name", "HOFFMAN",
+					if schema == "pagila" {
+						for i, doc := range tc.resp {
+							d := doc.(types.Document)
+							d.Remove("_id")
+							tc.resp[i] = d
+						}
+					}
+
+					reqHeader := wire.MsgHeader{
+						RequestID: 1,
+						OpCode:    wire.OP_MSG,
+					}
+
+					var reqMsg wire.OpMsg
+					err := reqMsg.SetSections(wire.OpMsgSection{
+						Documents: []types.Document{tc.req},
+					})
+					require.NoError(t, err)
+
+					_, respMsg, err := handler.Handle(ctx, &reqHeader, &reqMsg)
+					require.NoError(t, err)
+
+					actual, err := respMsg.(*wire.OpMsg).Document()
+					require.NoError(t, err)
+
+					expected := types.MustMakeDocument(
+						"cursor", types.MustMakeDocument(
+							"firstBatch", tc.resp,
+							"id", int64(0),
+							"ns", schema+".actor",
 						),
-						"$db", schema,
-					)},
+						"ok", float64(1),
+					)
+					assert.Equal(t, expected, actual)
 				})
-				require.NoError(t, err)
-				_, res, err := handler.Handle(ctx, header, &msg)
-				require.NoError(t, err)
-
-				expectedDocs := types.Array{
-					types.MustMakeDocument(
-						"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x1c, 0x00, 0x00, 0x00, 0x1c},
-						"actor_id", int32(28),
-						"first_name", "WOODY",
-						"last_name", "HOFFMAN",
-						"last_update", lastUpdate,
-					),
-					types.MustMakeDocument(
-						"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x4f, 0x00, 0x00, 0x00, 0x4f},
-						"actor_id", int32(79),
-						"first_name", "MAE",
-						"last_name", "HOFFMAN",
-						"last_update", lastUpdate,
-					),
-					types.MustMakeDocument(
-						"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0xa9, 0x00, 0x00, 0x00, 0xa9},
-						"actor_id", int32(169),
-						"first_name", "KENNETH",
-						"last_name", "HOFFMAN",
-						"last_update", lastUpdate,
-					),
-				}
-				removeIDs(schema, expectedDocs)
-
-				actual, err := res.(*wire.OpMsg).Document()
-				require.NoError(t, err)
-				expected := types.MustMakeDocument(
-					"cursor", types.MustMakeDocument(
-						"firstBatch", expectedDocs,
-						"id", int64(0),
-						"ns", schema+".actor",
-					),
-					"ok", float64(1),
-				)
-
-				assert.Equal(t, expected, actual)
-			})
-
-			t.Run("In", func(t *testing.T) {
-				header := &wire.MsgHeader{
-					RequestID: 2,
-					OpCode:    wire.OP_MSG,
-				}
-
-				var msg wire.OpMsg
-				err := msg.SetSections(wire.OpMsgSection{
-					Documents: []types.Document{types.MustMakeDocument(
-						"find", "actor",
-						"filter", types.MustMakeDocument(
-							"last_name", types.MustMakeDocument(
-								"$in", types.Array{"HOFFMAN"},
-							),
-						),
-						"$db", schema,
-					)},
-				})
-				require.NoError(t, err)
-				_, res, err := handler.Handle(ctx, header, &msg)
-				require.NoError(t, err)
-
-				expectedDocs := types.Array{
-					types.MustMakeDocument(
-						"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x1c, 0x00, 0x00, 0x00, 0x1c},
-						"actor_id", int32(28),
-						"first_name", "WOODY",
-						"last_name", "HOFFMAN",
-						"last_update", lastUpdate,
-					),
-					types.MustMakeDocument(
-						"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x4f, 0x00, 0x00, 0x00, 0x4f},
-						"actor_id", int32(79),
-						"first_name", "MAE",
-						"last_name", "HOFFMAN",
-						"last_update", lastUpdate,
-					),
-					types.MustMakeDocument(
-						"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0xa9, 0x00, 0x00, 0x00, 0xa9},
-						"actor_id", int32(169),
-						"first_name", "KENNETH",
-						"last_name", "HOFFMAN",
-						"last_update", lastUpdate,
-					),
-				}
-				removeIDs(schema, expectedDocs)
-
-				actual, err := res.(*wire.OpMsg).Document()
-				require.NoError(t, err)
-				expected := types.MustMakeDocument(
-					"cursor", types.MustMakeDocument(
-						"firstBatch", expectedDocs,
-						"id", int64(0),
-						"ns", schema+".actor",
-					),
-					"ok", float64(1),
-				)
-
-				assert.Equal(t, expected, actual)
-			})
-
-			t.Run("NotIn", func(t *testing.T) {
-				header := &wire.MsgHeader{
-					RequestID: 3,
-					OpCode:    wire.OP_MSG,
-				}
-
-				var msg wire.OpMsg
-				err := msg.SetSections(wire.OpMsgSection{
-					Documents: []types.Document{types.MustMakeDocument(
-						"find", "actor",
-						"filter", types.MustMakeDocument(
-							"last_name", types.MustMakeDocument(
-								"$nin", types.Array{"HOFFMAN"},
-							),
-						),
-						"sort", types.MustMakeDocument(
-							"last_name", int32(1),
-						),
-						"limit", int32(2),
-						"$db", schema,
-					)},
-				})
-				require.NoError(t, err)
-				_, res, err := handler.Handle(ctx, header, &msg)
-				require.NoError(t, err)
-
-				expectedDocs := types.Array{
-					types.MustMakeDocument(
-						"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x3a, 0x00, 0x00, 0x00, 0x3a},
-						"actor_id", int32(58),
-						"first_name", "CHRISTIAN",
-						"last_name", "AKROYD",
-						"last_update", lastUpdate,
-					),
-					types.MustMakeDocument(
-						"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x5c, 0x00, 0x00, 0x00, 0x5c},
-						"actor_id", int32(92),
-						"first_name", "KIRSTEN",
-						"last_name", "AKROYD",
-						"last_update", lastUpdate,
-					),
-				}
-				removeIDs(schema, expectedDocs)
-
-				actual, err := res.(*wire.OpMsg).Document()
-				require.NoError(t, err)
-				expected := types.MustMakeDocument(
-					"cursor", types.MustMakeDocument(
-						"firstBatch", expectedDocs,
-						"id", int64(0),
-						"ns", schema+".actor",
-					),
-					"ok", float64(1),
-				)
-
-				assert.Equal(t, expected, actual)
-			})
+			}
 		})
 	}
 }
