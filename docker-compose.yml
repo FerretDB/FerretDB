@@ -4,7 +4,7 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:14.0
+    image: postgres:14.1
     container_name: mangodb_postgres
     ports:
       - 127.0.0.1:5432:5432
