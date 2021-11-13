@@ -14,7 +14,7 @@ env-up-detach:
 env-setup: gen-version
 	until [ "`docker inspect mangodb_postgres -f {{.State.Health.Status}}`" = "healthy" ]; do sleep 1; done
 	until [ "`docker inspect mangodb_mongodb  -f {{.State.Health.Status}}`" = "healthy" ]; do sleep 1; done
-	go run ./tools/envtool/main.go
+	go run ./tools/envtool/envtool.go
 
 env-pull:
 	docker-compose pull --include-deps --quiet
