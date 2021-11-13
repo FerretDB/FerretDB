@@ -15,97 +15,136 @@
 package sql
 
 import (
+	"strings"
+
 	"github.com/jackc/pgx/v4"
 
+	"github.com/MangoDB-io/MangoDB/internal/handlers/common"
 	"github.com/MangoDB-io/MangoDB/internal/pg"
 	"github.com/MangoDB-io/MangoDB/internal/types"
 	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
-func sqlValue(v interface{}, placeholder *pg.Placeholder) (sql string, args []interface{}, err error) {
-	sql = placeholder.Next()
+func scalar(v interface{}, p *pg.Placeholder) (sql string, args []interface{}, err error) {
+	sql = p.Next()
 	args = []interface{}{v}
 	return
 }
 
-func array(a types.Array, placeholder *pg.Placeholder) (sql string, args []interface{}, err error) {
-	sql = "("
-	for i, el := range a {
-		if i != 0 {
-			sql += ", "
-		}
+// fieldExpr handles {field: {expr}}.
+func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string, args []interface{}, err error) {
+	filterKeys := expr.Keys()
+	filterMap := expr.Map()
 
-		var argSql string
-		var arg []interface{}
-		if argSql, arg, err = sqlValue(el, placeholder); err != nil {
-			err = lazyerrors.Errorf("array: %w", err)
-			return
-		}
-		sql += argSql
-		args = append(args, arg...)
-	}
-	sql += ")"
-	return
-}
-
-func filterObject(field string, filter types.Document, placeholder *pg.Placeholder) (sql string, args []interface{}, err error) {
-	filterKeys := filter.Keys()
-	filterMap := filter.Map()
-
-	sql = "("
-	for i, filterKey := range filterKeys {
+	for i, op := range filterKeys {
 		if i != 0 {
 			sql += " AND"
 		}
 
-		sql += " " + pgx.Identifier{field}.Sanitize()
-
-		filterValue := filterMap[filterKey]
-
 		var argSql string
 		var arg []interface{}
-		switch filterKey {
+		value := filterMap[op]
+
+		// {field: {$not: {expr}}}
+		if op == "$not" {
+			if sql != "" {
+				sql += " "
+			}
+			sql += "NOT("
+
+			argSql, arg, err = fieldExpr(field, value.(types.Document), p)
+			if err != nil {
+				err = lazyerrors.Errorf("fieldExpr: %w", err)
+				return
+			}
+
+			sql += argSql + ")"
+			args = append(args, arg...)
+
+			continue
+		}
+
+		if sql != "" {
+			sql += " "
+		}
+		sql += pgx.Identifier{field}.Sanitize()
+
+		switch op {
 		case "$in":
+			// {field: {$in: [value1, value2, ...]}}
 			sql += " IN"
-			argSql, arg, err = array(filterValue.(types.Array), placeholder)
+			argSql, arg, err = common.InArray(value.(types.Array), p, scalar)
 		case "$nin":
+			// {field: {$nin: [value1, value2, ...]}}
 			sql += " NOT IN"
-			argSql, arg, err = array(filterValue.(types.Array), placeholder)
+			argSql, arg, err = common.InArray(value.(types.Array), p, scalar)
 		case "$eq":
+			// {field: {$eq: value}}
+			// TODO special handling for regex
 			sql += " ="
-			argSql, arg, err = sqlValue(filterValue, placeholder)
+			argSql, arg, err = scalar(value, p)
 		case "$ne":
+			// {field: {$ne: value}}
 			sql += " <>"
-			argSql, arg, err = sqlValue(filterValue, placeholder)
+			argSql, arg, err = scalar(value, p)
 		case "$lt":
+			// {field: {$lt: value}}
 			sql += " <"
-			argSql, arg, err = sqlValue(filterValue, placeholder)
+			argSql, arg, err = scalar(value, p)
 		case "$lte":
+			// {field: {$lte: value}}
 			sql += " <="
-			argSql, arg, err = sqlValue(filterValue, placeholder)
+			argSql, arg, err = scalar(value, p)
 		case "$gt":
+			// {field: {$gt: value}}
 			sql += " >"
-			argSql, arg, err = sqlValue(filterValue, placeholder)
+			argSql, arg, err = scalar(value, p)
 		case "$gte":
+			// {field: {$gte: value}}
 			sql += " >="
-			argSql, arg, err = sqlValue(filterValue, placeholder)
+			argSql, arg, err = scalar(value, p)
 		default:
-			err = lazyerrors.Errorf("unhandled {%q: %v}", filterKey, filterValue)
+			err = lazyerrors.Errorf("unhandled {%q: %v}", op, value)
 		}
 
 		if err != nil {
-			err = lazyerrors.Errorf("filterObject: %w", err)
+			err = lazyerrors.Errorf("fieldExpr: %w", err)
 			return
 		}
+
 		sql += " " + argSql
 		args = append(args, arg...)
 	}
 
-	sql += ")"
 	return
 }
 
-func where(filter types.Document, placeholder *pg.Placeholder) (sql string, args []interface{}, err error) {
+func wherePair(key string, value interface{}, p *pg.Placeholder) (sql string, args []interface{}, err error) {
+	if strings.HasPrefix(key, "$") {
+		exprs := value.(types.Array)
+		sql, args, err = common.LogicExpr(key, exprs, p, wherePair)
+		return
+	}
+
+	switch value := value.(type) {
+	case types.Document:
+		// {field: {expr}}
+		sql, args, err = fieldExpr(key, value, p)
+
+	default:
+		// {field: value}
+		sql, args, err = scalar(value, p)
+		sql = pgx.Identifier{key}.Sanitize() + " = " + sql
+	}
+
+	if err != nil {
+		err = lazyerrors.Errorf("wherePair: %w", err)
+	}
+
+	return
+}
+
+func where(filter types.Document, p *pg.Placeholder) (sql string, args []interface{}, err error) {
 	filterMap := filter.Map()
 	if len(filterMap) == 0 {
 		return
@@ -113,29 +152,22 @@ func where(filter types.Document, placeholder *pg.Placeholder) (sql string, args
 
 	sql += " WHERE"
 
-	for filterIndex, filterKey := range filter.Keys() {
-		if filterIndex != 0 {
+	for i, key := range filter.Keys() {
+		value := filterMap[key]
+
+		if i != 0 {
 			sql += " AND"
 		}
 
-		filterValue := filterMap[filterKey]
-
 		var argSql string
 		var arg []interface{}
-		switch filterValue := filterValue.(type) {
-		case types.Document:
-			argSql, arg, err = filterObject(filterKey, filterValue, placeholder)
-
-		default:
-			sql += " " + pgx.Identifier{filterKey}.Sanitize() + " ="
-			argSql, arg, err = sqlValue(filterValue, placeholder)
-		}
-
+		argSql, arg, err = wherePair(key, value, p)
 		if err != nil {
 			err = lazyerrors.Errorf("where: %w", err)
 			return
 		}
-		sql += " " + argSql
+
+		sql += " (" + argSql + ")"
 		args = append(args, arg...)
 	}
 
