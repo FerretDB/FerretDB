@@ -66,9 +66,10 @@ func inArray(a types.Array, placeholder *pg.Placeholder) (sql string, args []int
 	return
 }
 
-func expr(field string, filter types.Document, placeholder *pg.Placeholder) (sql string, args []interface{}, err error) {
-	filterKeys := filter.Keys()
-	filterMap := filter.Map()
+// fieldExpr handles {field: {expr}}.
+func fieldExpr(field string, expr types.Document, placeholder *pg.Placeholder) (sql string, args []interface{}, err error) {
+	filterKeys := expr.Keys()
+	filterMap := expr.Map()
 
 	sql = "("
 	for i, op := range filterKeys {
@@ -90,7 +91,7 @@ func expr(field string, filter types.Document, placeholder *pg.Placeholder) (sql
 		case "$not":
 			// {field: {$not: {expr}}}
 			sql += " NOT"
-			argSql, arg, err = expr(field, value.(types.Document), placeholder)
+			argSql, arg, err = fieldExpr(field, value.(types.Document), placeholder)
 		case "$in":
 			// {field: {$in: [value1, value2, ...]}}
 			sql += " IN"
@@ -140,40 +141,55 @@ func expr(field string, filter types.Document, placeholder *pg.Placeholder) (sql
 	return
 }
 
+func wherePair(key string, value interface{}, placeholder *pg.Placeholder) (sql string, args []interface{}, err error) {
+	switch value := value.(type) {
+	case types.Document:
+		// {field: {expr}}
+		sql, args, err = fieldExpr(key, value, placeholder)
+
+	default:
+		// {field: value}
+		sql = "_jsonb->" + placeholder.Next() + " = "
+		args = append(args, key)
+
+		var scalarSQL string
+		var scalarArgs []interface{}
+		scalarSQL, scalarArgs, err = scalar(value, placeholder)
+		sql += scalarSQL
+		args = append(args, scalarArgs...)
+	}
+
+	if err != nil {
+		err = lazyerrors.Errorf("wherePair: %w", err)
+	}
+
+	return
+}
+
 func where(filter types.Document, placeholder *pg.Placeholder) (sql string, args []interface{}, err error) {
 	filterMap := filter.Map()
 	if len(filterMap) == 0 {
 		return
 	}
 
-	sql += " WHERE"
+	sql = " WHERE"
 
-	for filterIndex, filterKey := range filter.Keys() {
-		if filterIndex != 0 {
+	for i, key := range filter.Keys() {
+		value := filterMap[key]
+
+		if i != 0 {
 			sql += " AND"
 		}
 
-		filterValue := filterMap[filterKey]
 		var argSql string
 		var arg []interface{}
-
-		switch filterValue := filterValue.(type) {
-		case types.Document:
-			// {field: {expr}}
-			argSql, arg, err = expr(filterKey, filterValue, placeholder)
-
-		default:
-			// {field: value}
-			sql += " _jsonb->" + placeholder.Next() + " ="
-			args = append(args, filterKey)
-			argSql, arg, err = scalar(filterValue, placeholder)
-		}
-
+		argSql, arg, err = wherePair(key, value, placeholder)
 		if err != nil {
 			err = lazyerrors.Errorf("where: %w", err)
 			return
 		}
-		sql += " " + argSql
+
+		sql += " (" + argSql + ")"
 		args = append(args, arg...)
 	}
 
