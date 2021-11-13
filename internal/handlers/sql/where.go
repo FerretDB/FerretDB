@@ -58,12 +58,19 @@ func filterObject(field string, filter types.Document, placeholder *pg.Placehold
 			sql += " AND"
 		}
 
-		sql += " " + pgx.Identifier{field}.Sanitize()
+		// special case
+		if op != "$not" {
+			sql += " " + pgx.Identifier{field}.Sanitize()
+		}
+
 		value := filterMap[op]
 
 		var argSql string
 		var arg []interface{}
 		switch op {
+		case "$not":
+			sql += " NOT"
+			argSql, arg, err = filterObject(field, value.(types.Document), placeholder)
 		case "$in":
 			sql += " IN"
 			argSql, arg, err = inArray(value.(types.Array), placeholder)
