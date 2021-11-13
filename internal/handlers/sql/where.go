@@ -22,7 +22,7 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
-func scalarValue(v interface{}, placeholder *pg.Placeholder) (sql string, args []interface{}, err error) {
+func scalar(v interface{}, placeholder *pg.Placeholder) (sql string, args []interface{}, err error) {
 	sql = placeholder.Next()
 	args = []interface{}{v}
 	return
@@ -37,7 +37,7 @@ func inArray(a types.Array, placeholder *pg.Placeholder) (sql string, args []int
 
 		var argSql string
 		var arg []interface{}
-		if argSql, arg, err = scalarValue(el, placeholder); err != nil {
+		if argSql, arg, err = scalar(el, placeholder); err != nil {
 			err = lazyerrors.Errorf("inArray: %w", err)
 			return
 		}
@@ -48,7 +48,7 @@ func inArray(a types.Array, placeholder *pg.Placeholder) (sql string, args []int
 	return
 }
 
-func filterObject(field string, filter types.Document, placeholder *pg.Placeholder) (sql string, args []interface{}, err error) {
+func expr(field string, filter types.Document, placeholder *pg.Placeholder) (sql string, args []interface{}, err error) {
 	filterKeys := filter.Keys()
 	filterMap := filter.Map()
 
@@ -69,32 +69,42 @@ func filterObject(field string, filter types.Document, placeholder *pg.Placehold
 		var arg []interface{}
 		switch op {
 		case "$not":
+			// {field: {$not: {expr}}}
 			sql += " NOT"
-			argSql, arg, err = filterObject(field, value.(types.Document), placeholder)
+			argSql, arg, err = expr(field, value.(types.Document), placeholder)
 		case "$in":
+			// {field: {$in: [value1, value2, ...]}}
 			sql += " IN"
 			argSql, arg, err = inArray(value.(types.Array), placeholder)
 		case "$nin":
+			// {field: {$nin: [value1, value2, ...]}}
 			sql += " NOT IN"
 			argSql, arg, err = inArray(value.(types.Array), placeholder)
 		case "$eq":
+			// {field: {$eq: value}}
+			// TODO special handling for regex
 			sql += " ="
-			argSql, arg, err = scalarValue(value, placeholder)
+			argSql, arg, err = scalar(value, placeholder)
 		case "$ne":
+			// {field: {$ne: value}}
 			sql += " <>"
-			argSql, arg, err = scalarValue(value, placeholder)
+			argSql, arg, err = scalar(value, placeholder)
 		case "$lt":
+			// {field: {$lt: value}}
 			sql += " <"
-			argSql, arg, err = scalarValue(value, placeholder)
+			argSql, arg, err = scalar(value, placeholder)
 		case "$lte":
+			// {field: {$lte: value}}
 			sql += " <="
-			argSql, arg, err = scalarValue(value, placeholder)
+			argSql, arg, err = scalar(value, placeholder)
 		case "$gt":
+			// {field: {$gt: value}}
 			sql += " >"
-			argSql, arg, err = scalarValue(value, placeholder)
+			argSql, arg, err = scalar(value, placeholder)
 		case "$gte":
+			// {field: {$gte: value}}
 			sql += " >="
-			argSql, arg, err = scalarValue(value, placeholder)
+			argSql, arg, err = scalar(value, placeholder)
 		default:
 			err = lazyerrors.Errorf("unhandled {%q: %v}", op, value)
 		}
@@ -130,11 +140,13 @@ func where(filter types.Document, placeholder *pg.Placeholder) (sql string, args
 
 		switch filterValue := filterValue.(type) {
 		case types.Document:
-			argSql, arg, err = filterObject(filterKey, filterValue, placeholder)
+			// {field: {expr}}
+			argSql, arg, err = expr(filterKey, filterValue, placeholder)
 
 		default:
+			// {field: value}
 			sql += " " + pgx.Identifier{filterKey}.Sanitize() + " ="
-			argSql, arg, err = scalarValue(filterValue, placeholder)
+			argSql, arg, err = scalar(filterValue, placeholder)
 		}
 
 		if err != nil {
