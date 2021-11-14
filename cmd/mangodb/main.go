@@ -32,11 +32,12 @@ import (
 
 //nolint:gochecknoglobals // flags are defined there to be visible in the testcover binary help output (bin/mangodb-testcover -h).
 var (
-	modeF          = flag.String("mode", string(clientconn.AllModes[0]), fmt.Sprintf("operation mode: %v", clientconn.AllModes))
+	debugAddrF     = flag.String("debug-addr", "127.0.0.1:8088", "debug address")
 	listenAddrF    = flag.String("listen-addr", "127.0.0.1:27017", "listen address")
+	modeF          = flag.String("mode", string(clientconn.AllModes[0]), fmt.Sprintf("operation mode: %v", clientconn.AllModes))
 	postgresqlURLF = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/mangodb", "PostgreSQL URL")
 	shadowAddrF    = flag.String("shadow-addr", "127.0.0.1:37017", "")
-	debugAddrF     = flag.String("debug-addr", "127.0.0.1:8088", "debug address")
+	tlsF           = flag.Bool("tls", false, "Enable insecure TLS")
 	versionF       = flag.Bool("version", false, "show version and exit")
 )
 
@@ -64,6 +65,10 @@ func main() {
 		logger.Sugar().Fatalf("Unknown mode %q.", *modeF)
 	}
 
+	if *tlsF {
+		logger.Sugar().Warn("The current TLS implementation is not secure.")
+	}
+
 	ctx, stop := signal.NotifyContext(context.Background(), unix.SIGTERM, unix.SIGINT)
 	go func() {
 		<-ctx.Done()
@@ -81,6 +86,7 @@ func main() {
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		Addr:       *listenAddrF,
+		TLS:        *tlsF,
 		ShadowAddr: *shadowAddrF,
 		Mode:       clientconn.Mode(*modeF),
 		PgPool:     pgPool,

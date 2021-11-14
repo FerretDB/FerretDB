@@ -16,6 +16,7 @@ package clientconn
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"io"
 	"net"
@@ -34,6 +35,7 @@ type Listener struct {
 
 type NewListenerOpts struct {
 	Addr       string
+	TLS        bool
 	ShadowAddr string
 	Mode       Mode
 	PgPool     *pg.Pool
@@ -54,6 +56,21 @@ func (l *Listener) Run(ctx context.Context) error {
 
 	l.opts.Logger.Sugar().Infof("Listening on %s ...", l.opts.Addr)
 
+	if l.opts.TLS {
+		l.opts.Logger.Sugar().Info("Using insecure TLS.")
+		cert, err := generateInsecureCert()
+		if err != nil {
+			return err
+		}
+		l.opts.Logger.Sugar().Info("Insecure self-signed cerificate generated.")
+
+		tlsConfig := &tls.Config{
+			Certificates:       []tls.Certificate{*cert},
+			InsecureSkipVerify: true,
+		}
+		lis = tls.NewListener(lis, tlsConfig)
+	}
+
 	go func() {
 		<-ctx.Done()
 		lis.Close()
@@ -71,13 +88,13 @@ func (l *Listener) Run(ctx context.Context) error {
 		}
 
 		wg.Add(1)
-		go func(tcpConn *net.TCPConn) {
+		go func() {
 			defer func() {
-				tcpConn.Close()
+				netConn.Close()
 				wg.Done()
 			}()
 
-			conn, e := newConn(tcpConn, l.opts.PgPool, l.opts.ShadowAddr, l.opts.Mode)
+			conn, e := newConn(netConn, l.opts.PgPool, l.opts.ShadowAddr, l.opts.Mode)
 			if e != nil {
 				l.opts.Logger.Warn("Failed to create connection", zap.Error(e))
 				return
@@ -89,7 +106,7 @@ func (l *Listener) Run(ctx context.Context) error {
 			} else {
 				l.opts.Logger.Warn("Connection stopped", zap.Error(e))
 			}
-		}(netConn.(*net.TCPConn))
+		}()
 	}
 
 	wg.Wait()
