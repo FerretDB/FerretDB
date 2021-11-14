@@ -9,24 +9,38 @@ func _() {
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
 	_ = x[OP_REPLY-1]
-	_ = x[OP_MSG-2013]
+	_ = x[OP_UPDATE-2001]
+	_ = x[OP_INSERT-2002]
+	_ = x[OP_GET_BY_OID-2003]
 	_ = x[OP_QUERY-2004]
+	_ = x[OP_GET_MORE-2005]
+	_ = x[OP_DELETE-2006]
+	_ = x[OP_KILL_CURSORS-2007]
+	_ = x[OP_COMPRESSED-2012]
+	_ = x[OP_MSG-2013]
 }
 
 const (
 	_OpCode_name_0 = "OP_REPLY"
-	_OpCode_name_1 = "OP_QUERY"
-	_OpCode_name_2 = "OP_MSG"
+	_OpCode_name_1 = "OP_UPDATEOP_INSERTOP_GET_BY_OIDOP_QUERYOP_GET_MOREOP_DELETEOP_KILL_CURSORS"
+	_OpCode_name_2 = "OP_COMPRESSEDOP_MSG"
+)
+
+var (
+	_OpCode_index_1 = [...]uint8{0, 9, 18, 31, 39, 50, 59, 74}
+	_OpCode_index_2 = [...]uint8{0, 13, 19}
 )
 
 func (i OpCode) String() string {
 	switch {
 	case i == 1:
 		return _OpCode_name_0
-	case i == 2004:
-		return _OpCode_name_1
-	case i == 2013:
-		return _OpCode_name_2
+	case 2001 <= i && i <= 2007:
+		i -= 2001
+		return _OpCode_name_1[_OpCode_index_1[i]:_OpCode_index_1[i+1]]
+	case 2012 <= i && i <= 2013:
+		i -= 2012
+		return _OpCode_name_2[_OpCode_index_2[i]:_OpCode_index_2[i+1]]
 	default:
 		return "OpCode(" + strconv.FormatInt(int64(i), 10) + ")"
 	}

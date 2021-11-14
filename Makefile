@@ -65,6 +65,9 @@ build-testcover: gen-version           ## Build bin/mangodb-testcover
 run: build-testcover                   ## Run MangoDB
 	bin/mangodb-testcover -test.coverprofile=cover.txt -mode=diff
 
+run-dance: build-testcover             ## Run MangoDB in testing mode
+	bin/mangodb-testcover -test.coverprofile=cover.txt -mode=normal -test-conn-timeout=10s
+
 lint: bin/go-sumtype bin/golangci-lint ## Run linters
 	bin/go-sumtype ./...
 	bin/golangci-lint run --config=.golangci-required.yml

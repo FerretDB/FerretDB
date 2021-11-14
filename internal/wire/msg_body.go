@@ -75,7 +75,7 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 		return &header, &query, nil
 
 	default:
-		return nil, nil, lazyerrors.Errorf("unhandled opcode %#02x", header.OpCode)
+		return nil, nil, lazyerrors.Errorf("unhandled opcode %s", header.OpCode)
 	}
 }
 

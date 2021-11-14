@@ -40,6 +40,8 @@ type NewListenerOpts struct {
 	Mode       Mode
 	PgPool     *pg.Pool
 	Logger     *zap.Logger
+
+	TestConnTimeout time.Duration
 }
 
 func NewListener(opts *NewListenerOpts) *Listener {
@@ -100,7 +102,14 @@ func (l *Listener) Run(ctx context.Context) error {
 				return
 			}
 
-			e = conn.run(ctx)
+			runCtx := ctx
+			var runCancel context.CancelFunc
+			if l.opts.TestConnTimeout != 0 {
+				runCtx, runCancel = context.WithTimeout(ctx, l.opts.TestConnTimeout)
+				defer runCancel()
+			}
+
+			e = conn.run(runCtx)
 			if e == io.EOF {
 				l.opts.Logger.Info("Connection stopped")
 			} else {

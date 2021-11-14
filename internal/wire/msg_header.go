@@ -29,9 +29,16 @@ import (
 type OpCode int32
 
 const (
-	OP_REPLY = OpCode(1)    // OP_REPLY
-	OP_MSG   = OpCode(2013) // OP_MSG
-	OP_QUERY = OpCode(2004) // OP_QUERY
+	OP_REPLY        = OpCode(1)    // OP_REPLY
+	OP_UPDATE       = OpCode(2001) // OP_UPDATE
+	OP_INSERT       = OpCode(2002) // OP_INSERT
+	OP_GET_BY_OID   = OpCode(2003) // OP_GET_BY_OID
+	OP_QUERY        = OpCode(2004) // OP_QUERY
+	OP_GET_MORE     = OpCode(2005) // OP_GET_MORE
+	OP_DELETE       = OpCode(2006) // OP_DELETE
+	OP_KILL_CURSORS = OpCode(2007) // OP_KILL_CURSORS
+	OP_COMPRESSED   = OpCode(2012) // OP_COMPRESSED
+	OP_MSG          = OpCode(2013) // OP_MSG
 )
 
 func (i OpCode) MarshalJSON() ([]byte, error) {

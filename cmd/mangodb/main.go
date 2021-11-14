@@ -32,13 +32,14 @@ import (
 
 //nolint:gochecknoglobals // flags are defined there to be visible in the testcover binary help output (bin/mangodb-testcover -h).
 var (
-	debugAddrF     = flag.String("debug-addr", "127.0.0.1:8088", "debug address")
-	listenAddrF    = flag.String("listen-addr", "127.0.0.1:27017", "listen address")
-	modeF          = flag.String("mode", string(clientconn.AllModes[0]), fmt.Sprintf("operation mode: %v", clientconn.AllModes))
-	postgresqlURLF = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/mangodb", "PostgreSQL URL")
-	shadowAddrF    = flag.String("shadow-addr", "127.0.0.1:37017", "")
-	tlsF           = flag.Bool("tls", false, "Enable insecure TLS")
-	versionF       = flag.Bool("version", false, "show version and exit")
+	debugAddrF       = flag.String("debug-addr", "127.0.0.1:8088", "debug address")
+	listenAddrF      = flag.String("listen-addr", "127.0.0.1:27017", "listen address")
+	modeF            = flag.String("mode", string(clientconn.AllModes[0]), fmt.Sprintf("operation mode: %v", clientconn.AllModes))
+	postgresqlURLF   = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/mangodb", "PostgreSQL URL")
+	shadowAddrF      = flag.String("shadow-addr", "127.0.0.1:37017", "")
+	tlsF             = flag.Bool("tls", false, "enable insecure TLS")
+	versionF         = flag.Bool("version", false, "show version and exit")
+	testConnTimeoutF = flag.Duration("test-conn-timeout", 0, "test: set connection timeout")
 )
 
 func main() {
@@ -91,6 +92,8 @@ func main() {
 		Mode:       clientconn.Mode(*modeF),
 		PgPool:     pgPool,
 		Logger:     logger.Named("listener"),
+
+		TestConnTimeout: *testConnTimeoutF,
 	})
 
 	if err = l.Run(ctx); err != nil {

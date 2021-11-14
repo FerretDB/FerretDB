@@ -85,6 +85,10 @@ func (c *conn) run(ctx context.Context) (err error) {
 		}
 	}()
 
+	if deadline, ok := ctx.Deadline(); ok {
+		c.netConn.SetDeadline(deadline)
+	}
+
 	bufr := bufio.NewReader(c.netConn)
 	bufw := bufio.NewWriter(c.netConn)
 	defer func() {
