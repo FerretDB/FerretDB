@@ -28,6 +28,7 @@ See [this example](https://github.com/MangoDB-io/example) for a short demonstrat
 MangoDB is in a very early stage and welcomes all contributors.
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
+
 ## Quickstart
 
 Those steps describe a quick local setup.
@@ -51,12 +52,14 @@ services:
 
   postgres_setup:
     image: postgres:14
+    container_name: postgres_setup
     restart: on-failure
     entrypoint: ["sh", "-c", "psql -h postgres -U user -d mangodb -c 'CREATE SCHEMA IF NOT EXISTS test'"]
 
   mangodb:
     image: ghcr.io/mangodb-io/mangodb:latest
     container_name: mangodb
+    restart: on-failure
     ports:
       - 27017:27017
     command: ["--listen-addr=:27017", "--postgresql-url=postgres://user@postgres:5432/mangodb"]
