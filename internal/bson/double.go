@@ -20,6 +20,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"math"
+	"strconv"
 
 	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
@@ -61,15 +62,13 @@ func (d Double) MarshalBinary() ([]byte, error) {
 }
 
 type doubleJSON struct {
-	F float64 `json:"$f,string"`
+	F string `json:"$f"`
 }
 
 func (d *Double) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
-
-	// TODO "Infinity", "-Infinity", "NaN"
 
 	r := bytes.NewReader(data)
 	dec := json.NewDecoder(r)
@@ -80,19 +79,42 @@ func (d *Double) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("bson.Double.UnmarshalJSON: %s", err)
+		return lazyerrors.Errorf("bson.Double.UnmarshalJSON: %w", err)
 	}
 
-	*d = Double(o.F)
+	switch o.F {
+	case "Infinity":
+		*d = Double(math.Inf(1))
+	case "-Infinity":
+		*d = Double(math.Inf(-1))
+	case "NaN":
+		*d = Double(math.NaN())
+	default:
+		f, err := strconv.ParseFloat(o.F, 64)
+		if err != nil {
+			return lazyerrors.Errorf("bson.Double.UnmarshalJSON: %w", err)
+		}
+		*d = Double(f)
+	}
+
 	return nil
 }
 
 func (d Double) MarshalJSON() ([]byte, error) {
-	// TODO "Infinity", "-Infinity", "NaN"
+	f := float64(d)
+	var o doubleJSON
+	switch {
+	case math.IsInf(f, 1):
+		o.F = "Infinity"
+	case math.IsInf(f, -1):
+		o.F = "-Infinity"
+	case math.IsNaN(f):
+		o.F = "NaN"
+	default:
+		o.F = strconv.FormatFloat(f, 'g', -1, 64)
+	}
 
-	return json.Marshal(doubleJSON{
-		F: float64(d),
-	})
+	return json.Marshal(o)
 }
 
 // check interfaces

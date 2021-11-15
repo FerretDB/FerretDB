@@ -41,6 +41,21 @@ var doubleTestCases = []testCase{{
 	v:    pointer.To(Double(math.SmallestNonzeroFloat64)),
 	b:    []byte{0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
 	j:    `{"$f":"5e-324"}`,
+}, {
+	name: "+Infinity",
+	v:    pointer.To(Double(math.Inf(1))),
+	b:    []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf0, 0x7f},
+	j:    `{"$f":"Infinity"}`,
+}, {
+	name: "-Infinity",
+	v:    pointer.To(Double(math.Inf(-1))),
+	b:    []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf0, 0xff},
+	j:    `{"$f":"-Infinity"}`,
+}, {
+	name: "NaN",
+	v:    pointer.To(Double(math.NaN())),
+	b:    []byte{0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf8, 0x7f},
+	j:    `{"$f":"NaN"}`,
 }}
 
 func TestDouble(t *testing.T) {
