@@ -16,11 +16,21 @@ package bson
 
 import (
 	"testing"
+
+	"github.com/AlekSi/pointer"
 )
 
-var regexTestCases = []testCase{
-	// TODO add test cases
-}
+var regexTestCases = []testCase{{
+	name: "normal",
+	v:    pointer.To(Regex{Pattern: "hoffman", Options: "i"}),
+	b:    []byte{0x68, 0x6f, 0x66, 0x66, 0x6d, 0x61, 0x6e, 0x00, 0x69, 0x00},
+	j:    `{"$r":"hoffman","o":"i"}`,
+}, {
+	name: "empty",
+	v:    pointer.To(Regex{Pattern: "", Options: ""}),
+	b:    []byte{0x00, 0x00},
+	j:    `{"$r":"","o":""}`,
+}}
 
 func TestRegex(t *testing.T) {
 	t.Parallel()

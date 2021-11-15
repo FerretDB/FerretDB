@@ -447,10 +447,9 @@ func unmarshalJSONValue(data []byte) (interface{}, error) {
 			err = o.UnmarshalJSON(data)
 			res = time.Time(o)
 		case v["$r"] != nil:
-			err = lazyerrors.Errorf("unmarshalJSONValue: unhandled regex %v", v)
-			// var o Regex
-			// err = o.UnmarshalJSON(data)
-			// res = types.Regex(o)
+			var o Regex
+			err = o.UnmarshalJSON(data)
+			res = types.Regex(o)
 		case v["$t"] != nil:
 			var o Timestamp
 			err = o.UnmarshalJSON(data)

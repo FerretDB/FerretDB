@@ -17,6 +17,7 @@ package bson
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 
 	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
@@ -74,16 +75,40 @@ func (regex Regex) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+type regexJSON struct {
+	R string `json:"$r"`
+	O string `json:"o"`
+}
+
 func (regex *Regex) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
 
-	panic("TODO Regex.UnmarshalJSON")
+	r := bytes.NewReader(data)
+	dec := json.NewDecoder(r)
+	dec.DisallowUnknownFields()
+
+	var o regexJSON
+	if err := dec.Decode(&o); err != nil {
+		return err
+	}
+	if err := checkConsumed(dec, r); err != nil {
+		return lazyerrors.Errorf("bson.Regex.UnmarshalJSON: %s", err)
+	}
+
+	*regex = Regex{
+		Pattern: o.R,
+		Options: o.O,
+	}
+	return nil
 }
 
 func (regex Regex) MarshalJSON() ([]byte, error) {
-	panic("TODO Regex.MarshalJSON")
+	return json.Marshal(regexJSON{
+		R: regex.Pattern,
+		O: regex.Options,
+	})
 }
 
 // check interfaces
