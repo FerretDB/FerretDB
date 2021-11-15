@@ -20,7 +20,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"math"
-	"strconv"
 
 	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
@@ -62,7 +61,7 @@ func (d Double) MarshalBinary() ([]byte, error) {
 }
 
 type doubleJSON struct {
-	F string `json:"$f"`
+	F interface{} `json:"$f"`
 }
 
 func (d *Double) UnmarshalJSON(data []byte) error {
@@ -82,19 +81,22 @@ func (d *Double) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Errorf("bson.Double.UnmarshalJSON: %w", err)
 	}
 
-	switch o.F {
-	case "Infinity":
-		*d = Double(math.Inf(1))
-	case "-Infinity":
-		*d = Double(math.Inf(-1))
-	case "NaN":
-		*d = Double(math.NaN())
-	default:
-		f, err := strconv.ParseFloat(o.F, 64)
-		if err != nil {
-			return lazyerrors.Errorf("bson.Double.UnmarshalJSON: %w", err)
-		}
+	switch f := o.F.(type) {
+	case float64:
 		*d = Double(f)
+	case string:
+		switch f {
+		case "Infinity":
+			*d = Double(math.Inf(1))
+		case "-Infinity":
+			*d = Double(math.Inf(-1))
+		case "NaN":
+			*d = Double(math.NaN())
+		default:
+			return lazyerrors.Errorf("bson.Double.UnmarshalJSON: unexpected string %q", f)
+		}
+	default:
+		return lazyerrors.Errorf("bson.Double.UnmarshalJSON: unexpected type %[1]T: %[1]v", f)
 	}
 
 	return nil
@@ -111,7 +113,7 @@ func (d Double) MarshalJSON() ([]byte, error) {
 	case math.IsNaN(f):
 		o.F = "NaN"
 	default:
-		o.F = strconv.FormatFloat(f, 'g', -1, 64)
+		o.F = f
 	}
 
 	return json.Marshal(o)

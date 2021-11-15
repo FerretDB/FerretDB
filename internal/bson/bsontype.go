@@ -16,7 +16,7 @@
 //
 // JSON mapping for storage
 //
-//   Double:    {"$f": "<number as string>"}
+//   Double:    {"$f": JSON number} or {"$f": "Infinity|-Infinity|NaN"}
 //   String:    JSON string
 //   Document:  {"$k": ["<key 1>", "<key 2>", ...], "<key 1>": <value 1>, "<key 2>": <value 2>, ...}
 //   Array:     JSON array

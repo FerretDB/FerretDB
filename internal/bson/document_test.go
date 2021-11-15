@@ -174,7 +174,7 @@ var (
 			`BOOST_SYSTEM_NO_DEPRECATED BOOST_MATH_NO_LONG_DOUBLE_MATH_FUNCTIONS BOOST_ENABLE_ASSERT_DEBUG_HANDLER ` +
 			`BOOST_LOG_NO_SHORTHAND_NAMES BOOST_LOG_USE_NATIVE_SYSLOG BOOST_LOG_WITHOUT_THREAD_ATTR ` +
 			`ABSL_FORCE_ALIGNED_ACCESS"},"bits":64,"debug":false,"maxBsonObjectSize":16777216,` +
-			`"storageEngines":["devnull","ephemeralForTest","wiredTiger"],"ok":{"$f":"1"}}`,
+			`"storageEngines":["devnull","ephemeralForTest","wiredTiger"],"ok":{"$f":1}}`,
 	}
 
 	all = testCase{
@@ -196,7 +196,7 @@ var (
 		b: testutil.MustParseDumpFile("testdata", "all.hex"),
 		j: `{"$k":["binary","bool","datetime","double","int32","int64","objectID","string","timestamp"],` +
 			`"binary":[{"$b":"Qg==","s":128},{"$b":"","s":0}],"bool":[true,false],` +
-			`"datetime":[{"$d":"1627378542123"},{"$d":"-62135596800000"}],"double":[{"$f":"42.13"},{"$f":"0"}],` +
+			`"datetime":[{"$d":"1627378542123"},{"$d":"-62135596800000"}],"double":[{"$f":42.13},{"$f":0}],` +
 			`"int32":[42,0],"int64":[{"$l":"42"},{"$l":"0"}],` +
 			`"objectID":[{"$o":"420000000000000000000000"},{"$o":"000000000000000000000000"}],` +
 			`"string":["foo",""],"timestamp":[{"$t":"42"},{"$t":"0"}]}`,
