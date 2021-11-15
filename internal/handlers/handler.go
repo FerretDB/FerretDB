@@ -26,6 +26,7 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/handlers/shared"
 	"github.com/MangoDB-io/MangoDB/internal/pg"
 	"github.com/MangoDB-io/MangoDB/internal/types"
+	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
@@ -62,6 +63,20 @@ func (h *Handler) Handle(ctx context.Context, header *wire.MsgHeader, msg wire.M
 		resHeader.OpCode = wire.OP_REPLY
 		resMsg, err = h.handleOpQuery(ctx, msg.(*wire.OpQuery))
 	case wire.OP_REPLY:
+		fallthrough
+	case wire.OP_UPDATE:
+		fallthrough
+	case wire.OP_INSERT:
+		fallthrough
+	case wire.OP_GET_BY_OID:
+		fallthrough
+	case wire.OP_GET_MORE:
+		fallthrough
+	case wire.OP_DELETE:
+		fallthrough
+	case wire.OP_KILL_CURSORS:
+		fallthrough
+	case wire.OP_COMPRESSED:
 		fallthrough
 	default:
 		panic(fmt.Sprintf("unexpected OpCode %s", header.OpCode))
@@ -102,6 +117,7 @@ func (h *Handler) Handle(ctx context.Context, header *wire.MsgHeader, msg wire.M
 	return resHeader, resMsg, nil
 }
 
+//nolint:goconst // good enough
 func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
@@ -130,14 +146,24 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	case "whatsmyuri":
 		return h.shared.MsgWhatsMyURI(ctx, msg)
 
-	case "delete":
-		return h.msgStorage(ctx, msg).MsgDelete(ctx, msg)
-	case "find":
-		return h.msgStorage(ctx, msg).MsgFind(ctx, msg)
-	case "insert":
-		return h.msgStorage(ctx, msg).MsgInsert(ctx, msg)
-	case "update":
-		return h.msgStorage(ctx, msg).MsgUpdate(ctx, msg)
+	case "delete", "find", "insert", "update":
+		storage, err := h.msgStorage(ctx, msg)
+		if err != nil {
+			return nil, common.NewError(common.ErrInternalError, err)
+		}
+
+		switch cmd {
+		case "delete":
+			return storage.MsgDelete(ctx, msg)
+		case "find":
+			return storage.MsgFind(ctx, msg)
+		case "insert":
+			return storage.MsgInsert(ctx, msg)
+		case "update":
+			return storage.MsgUpdate(ctx, msg)
+		default:
+			panic("not reached")
+		}
 
 	default:
 		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("unhandled msg %q", cmd))
@@ -152,11 +178,10 @@ func (h *Handler) handleOpQuery(ctx context.Context, msg *wire.OpQuery) (*wire.O
 	return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("unhandled collection %q", msg.FullCollectionName))
 }
 
-func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) common.Storage {
+func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) (common.Storage, error) {
 	document, err := msg.Document()
 	if err != nil {
-		h.l.Warn(err.Error())
-		return h.sql
+		return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)
 	}
 
 	m := document.Map()
@@ -167,29 +192,27 @@ func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) common.Storag
 	sql := `SELECT COUNT(*) > 0 FROM information_schema.tables WHERE table_schema = $1 AND table_name = $2`
 	var tableExist bool
 	if err := h.pgPool.QueryRow(ctx, sql, db, collection).Scan(&tableExist); err != nil {
-		h.l.Warn(err.Error())
-		return h.sql
+		return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)
 	}
 
 	sql = `SELECT COUNT(*) > 0 FROM information_schema.columns WHERE column_name = $1 AND table_schema = $2 AND table_name = $3`
 	var jsonbExist bool
 	if err := h.pgPool.QueryRow(ctx, sql, "_jsonb", db, collection).Scan(&jsonbExist); err != nil {
-		h.l.Warn(err.Error())
-		return h.sql
+		return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)
 	}
 
 	switch command {
 	case "delete":
 		if jsonbExist {
-			return h.jsonb1
+			return h.jsonb1, nil
 		}
 	case "find":
 		if jsonbExist {
-			return h.jsonb1
+			return h.jsonb1, nil
 		}
 	case "insert":
 		if jsonbExist {
-			return h.jsonb1
+			return h.jsonb1, nil
 		}
 		if !tableExist {
 			sql = `CREATE TABLE ` + pgx.Identifier{db, collection}.Sanitize() + ` (_jsonb jsonb)`
@@ -202,15 +225,15 @@ func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) common.Storag
 				h.l.Info("Created jsonb1 table.", fields...)
 			}
 
-			return h.jsonb1
+			return h.jsonb1, nil
 		}
 	case "update":
 		if jsonbExist {
-			return h.jsonb1
+			return h.jsonb1, nil
 		}
 	default:
 		panic(fmt.Sprintf("unhandled command %q", command))
 	}
 
-	return h.sql
+	return h.sql, nil
 }

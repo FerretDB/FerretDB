@@ -74,6 +74,21 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 
 		return &header, &query, nil
 
+	case OP_UPDATE:
+		fallthrough
+	case OP_INSERT:
+		fallthrough
+	case OP_GET_BY_OID:
+		fallthrough
+	case OP_GET_MORE:
+		fallthrough
+	case OP_DELETE:
+		fallthrough
+	case OP_KILL_CURSORS:
+		fallthrough
+	case OP_COMPRESSED:
+		fallthrough
+
 	default:
 		return nil, nil, lazyerrors.Errorf("unhandled opcode %s", header.OpCode)
 	}
