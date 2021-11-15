@@ -52,7 +52,6 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 		return nil, common.NewError(common.ErrInternalError, fmt.Errorf("no db"))
 	}
 
-	// TODO use reform
 	var names []string
 	rows, err := h.pgPool.Query(ctx, "SELECT table_name FROM information_schema.tables WHERE table_schema = $1", db)
 	if err != nil {

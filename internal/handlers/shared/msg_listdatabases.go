@@ -25,7 +25,6 @@ import (
 )
 
 func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	// TODO use reform
 	var names []string
 	rows, err := h.pgPool.Query(ctx, "SELECT schema_name FROM information_schema.schemata")
 	if err != nil {
@@ -53,10 +52,16 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	dbs := make(types.Array, len(names))
 	for i, n := range names {
+		// TODO https://github.com/MangoDB-io/MangoDB/issues/61
+		sizeOnDisk := int64(1)
+
+		// TODO return true if there are not collections
+		var empty bool
+
 		dbs[i] = types.MustMakeDocument(
 			"name", n,
-			"sizeOnDisk", int64(1), // TODO
-			"empty", false, // TODO
+			"sizeOnDisk", sizeOnDisk,
+			"empty", empty,
 		)
 	}
 
@@ -64,6 +69,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
 			"databases", dbs,
+			// TODO https://github.com/MangoDB-io/MangoDB/issues/61
 			// totalSize
 			// totalSizeMb
 			"ok", float64(1),
