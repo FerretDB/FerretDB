@@ -53,12 +53,8 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	dbs := make(types.Array, len(names))
 	for i, n := range names {
-		totalRelationSize, err := h.pgPool.Query(ctx, fmt.Sprintf("SELECT pg_total_relation_size(%s)", n))
-		if err != nil {
-			return nil, err
-		}
-
-		sizeOnDisk, err := totalRelationSize.Values()
+		var sizeOnDisk int64
+		err := h.pgPool.QueryRow(ctx, fmt.Sprintf("SELECT pg_total_relation_size(%s)", n)).Scan(&sizeOnDisk)
 		if err != nil {
 			return nil, err
 		}
@@ -68,27 +64,20 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 		dbs[i] = types.MustMakeDocument(
 			"name", n,
-			"sizeOnDisk", sizeOnDisk[0].(int64),
+			"sizeOnDisk", sizeOnDisk,
 			"empty", empty,
 		)
 	}
 
-	databaseSize, err := h.pgPool.Query(ctx, "SELECT pg_database_size(current_database())")
-	if err != nil {
-		return nil, err
-	}
-
-	totalSize, err := databaseSize.Values()
-	if err != nil {
-		return nil, err
-	}
+	var totalSize int64
+	err = h.pgPool.QueryRow(ctx, "SELECT pg_database_size(current_database())").Scan(&totalSize)
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
 			"databases", dbs,
-			"totalSize", totalSize[0].(int64),
-			"totalSizeMb", totalSize[0].(int64)>>20,
+			"totalSize", totalSize,
+			"totalSizeMb", totalSize>>20,
 			"ok", float64(1),
 		)},
 	})
