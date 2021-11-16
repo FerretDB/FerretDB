@@ -16,6 +16,7 @@ package shared
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"strings"
 
@@ -52,26 +53,42 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	dbs := make(types.Array, len(names))
 	for i, n := range names {
-		// TODO https://github.com/MangoDB-io/MangoDB/issues/61
-		sizeOnDisk := int64(1)
+		totalRelationSize, err := h.pgPool.Query(ctx, fmt.Sprintf("SELECT pg_total_relation_size(%s)", n))
+		if err != nil {
+			return nil, err
+		}
+
+		sizeOnDisk, err := totalRelationSize.Values()
+		if err != nil {
+			return nil, err
+		}
 
 		// TODO return true if there are not collections
 		var empty bool
 
 		dbs[i] = types.MustMakeDocument(
 			"name", n,
-			"sizeOnDisk", sizeOnDisk,
+			"sizeOnDisk", sizeOnDisk[0].(int64),
 			"empty", empty,
 		)
+	}
+
+	databaseSize, err := h.pgPool.Query(ctx, "SELECT pg_database_size(current_database())")
+	if err != nil {
+		return nil, err
+	}
+
+	totalSize, err := databaseSize.Values()
+	if err != nil {
+		return nil, err
 	}
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
 			"databases", dbs,
-			// TODO https://github.com/MangoDB-io/MangoDB/issues/61
-			// totalSize
-			// totalSizeMb
+			"totalSize", totalSize[0].(int64),
+			"totalSizeMb", totalSize[0].(int64)>>20,
 			"ok", float64(1),
 		)},
 	})
