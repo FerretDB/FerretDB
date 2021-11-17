@@ -30,6 +30,11 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
+func TestListDatabases(t *testing.T) {
+	// TODO TestListDatabases
+	_ = t
+}
+
 func TestFind(t *testing.T) {
 	t.Parallel()
 

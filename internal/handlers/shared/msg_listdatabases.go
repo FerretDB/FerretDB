@@ -16,7 +16,6 @@ package shared
 
 import (
 	"context"
-	"fmt"
 	"sort"
 	"strings"
 
@@ -54,7 +53,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 	dbs := make(types.Array, len(names))
 	for i, n := range names {
 		var sizeOnDisk int64
-		err := h.pgPool.QueryRow(ctx, "SELECT pg_total_relation_size($1)", n).Scan(&sizeOnDisk)
+		err = h.pgPool.QueryRow(ctx, "SELECT pg_total_relation_size($1)", n).Scan(&sizeOnDisk)
 		if err != nil {
 			return nil, err
 		}
@@ -71,13 +70,16 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	var totalSize int64
 	err = h.pgPool.QueryRow(ctx, "SELECT pg_database_size(current_database())").Scan(&totalSize)
+	if err != nil {
+		return nil, err
+	}
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
 			"databases", dbs,
 			"totalSize", totalSize,
-			"totalSizeMb", totalSize>>20,
+			"totalSizeMb", totalSize/1024/1024,
 			"ok", float64(1),
 		)},
 	})
