@@ -54,7 +54,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 	dbs := make(types.Array, len(names))
 	for i, n := range names {
 		var sizeOnDisk int64
-		err := h.pgPool.QueryRow(ctx, fmt.Sprintf("SELECT pg_total_relation_size(%s)", n)).Scan(&sizeOnDisk)
+		err := h.pgPool.QueryRow(ctx, "SELECT pg_total_relation_size($1)", n).Scan(&sizeOnDisk)
 		if err != nil {
 			return nil, err
 		}
