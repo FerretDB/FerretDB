@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package shadow
+// Package proxy sends requests to another wire protocol compatible service.
+package proxy
 
 import (
 	"bufio"
@@ -22,11 +23,14 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
+// Handler "handles" messages by sending them to another wire protocol compatible service.
 type Handler struct {
+	conn net.Conn
 	bufr *bufio.Reader
 	bufw *bufio.Writer
 }
 
+// New creates a new Handler for a service with given address.
 func New(addr string) (*Handler, error) {
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
@@ -34,19 +38,30 @@ func New(addr string) (*Handler, error) {
 	}
 
 	return &Handler{
+		conn: conn,
 		bufr: bufio.NewReader(conn),
 		bufw: bufio.NewWriter(conn),
 	}, nil
 }
 
-func (c *Handler) Handle(ctx context.Context, header *wire.MsgHeader, msg wire.MsgBody) (*wire.MsgHeader, wire.MsgBody, error) {
-	if err := wire.WriteMessage(c.bufw, header, msg); err != nil {
+// Close stops the handler.
+func (h *Handler) Close() {
+	h.bufw.Flush()
+	h.conn.Close()
+}
+
+// Handle "handles" the message by sending it to another wire protocol compatible service.
+func (h *Handler) Handle(ctx context.Context, header *wire.MsgHeader, msg wire.MsgBody) (*wire.MsgHeader, wire.MsgBody, error) {
+	deadline, _ := ctx.Deadline()
+	h.conn.SetDeadline(deadline)
+
+	if err := wire.WriteMessage(h.bufw, header, msg); err != nil {
 		return nil, nil, err
 	}
 
-	if err := c.bufw.Flush(); err != nil {
+	if err := h.bufw.Flush(); err != nil {
 		return nil, nil, err
 	}
 
-	return wire.ReadMessage(c.bufr)
+	return wire.ReadMessage(h.bufr)
 }

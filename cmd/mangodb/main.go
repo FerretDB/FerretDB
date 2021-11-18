@@ -36,7 +36,7 @@ var (
 	listenAddrF      = flag.String("listen-addr", "127.0.0.1:27017", "listen address")
 	modeF            = flag.String("mode", string(clientconn.AllModes[0]), fmt.Sprintf("operation mode: %v", clientconn.AllModes))
 	postgresqlURLF   = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/mangodb", "PostgreSQL URL")
-	shadowAddrF      = flag.String("shadow-addr", "127.0.0.1:37017", "")
+	proxyAddrF       = flag.String("proxy-addr", "127.0.0.1:37017", "")
 	tlsF             = flag.Bool("tls", false, "enable insecure TLS")
 	versionF         = flag.Bool("version", false, "show version and exit")
 	testConnTimeoutF = flag.Duration("test-conn-timeout", 0, "test: set connection timeout")
@@ -86,9 +86,9 @@ func main() {
 	defer pgPool.Close()
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		Addr:       *listenAddrF,
+		ListenAddr: *listenAddrF,
 		TLS:        *tlsF,
-		ShadowAddr: *shadowAddrF,
+		ProxyAddr:  *proxyAddrF,
 		Mode:       clientconn.Mode(*modeF),
 		PgPool:     pgPool,
 		Logger:     logger.Named("listener"),

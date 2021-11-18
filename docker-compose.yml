@@ -25,7 +25,7 @@ services:
 
   # for compatibility testing and mongosh
   mongodb:
-    image: mongo:5.0.3
+    image: mongo:5.0.4
     container_name: mangodb_mongodb
     ports:
       - 127.0.0.1:37017:27017
