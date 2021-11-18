@@ -27,7 +27,26 @@ import (
 
 func scalar(v interface{}, p *pg.Placeholder) (sql string, args []interface{}, err error) {
 	sql = p.Next()
-	args = []interface{}{v}
+
+	switch v := v.(type) {
+	case types.Regex:
+		var options string
+		for _, o := range v.Options {
+			switch o {
+			case 'i':
+				options += "i"
+			default:
+				err = lazyerrors.Errorf("scalar: unhandled regex option %v (%v)", o, v)
+			}
+		}
+		s := v.Pattern
+		if options != "" {
+			s = "(?" + options + ")" + v.Pattern
+		}
+		args = []interface{}{s}
+	default:
+		args = []interface{}{v}
+	}
 	return
 }
 
@@ -134,7 +153,12 @@ func wherePair(key string, value interface{}, p *pg.Placeholder) (sql string, ar
 	default:
 		// {field: value}
 		sql, args, err = scalar(value, p)
-		sql = pgx.Identifier{key}.Sanitize() + " = " + sql
+		switch value.(type) {
+		case types.Regex:
+			sql = pgx.Identifier{key}.Sanitize() + " ~ " + sql
+		default:
+			sql = pgx.Identifier{key}.Sanitize() + " = " + sql
+		}
 	}
 
 	if err != nil {

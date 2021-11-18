@@ -41,6 +41,21 @@ func scalar(v interface{}, p *pg.Placeholder) (sql string, args []interface{}, e
 			return
 		}
 		arg = string(b)
+	case types.Regex:
+		var options string
+		for _, o := range v.Options {
+			switch o {
+			case 'i':
+				options += "i"
+			default:
+				err = lazyerrors.Errorf("scalar: unhandled regex option %v (%v)", o, v)
+			}
+		}
+		sql = p.Next()
+		arg = v.Pattern
+		if options != "" {
+			arg = "(?" + options + ")" + v.Pattern
+		}
 	default:
 		err = lazyerrors.Errorf("scalar: unhandled field %v (%T)", v, v)
 	}
@@ -152,7 +167,13 @@ func wherePair(key string, value interface{}, p *pg.Placeholder) (sql string, ar
 
 	default:
 		// {field: value}
-		sql = "_jsonb->" + p.Next() + " = "
+		switch value.(type) {
+		case types.Regex:
+			sql = "_jsonb->>" + p.Next() + " ~ "
+		default:
+			sql = "_jsonb->" + p.Next() + " = "
+		}
+
 		args = append(args, key)
 
 		var scalarSQL string

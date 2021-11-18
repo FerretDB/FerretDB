@@ -225,6 +225,27 @@ func TestFind(t *testing.T) {
 				"last_update", lastUpdate,
 			),
 		},
+	}, {
+		name: "ValueRegex",
+		req: types.MustMakeDocument(
+			"find", "actor",
+			"filter", types.MustMakeDocument(
+				"last_name", types.Regex{Pattern: "hoffman", Options: "i"},
+			),
+			"sort", types.MustMakeDocument(
+				"actor_id", int32(1),
+			),
+			"limit", int32(1),
+		),
+		resp: types.Array{
+			types.MustMakeDocument(
+				"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x1c, 0x00, 0x00, 0x00, 0x1c},
+				"actor_id", int32(28),
+				"first_name", "WOODY",
+				"last_name", "HOFFMAN",
+				"last_update", lastUpdate,
+			),
+		},
 	}}
 
 	for _, tc := range testCases { //nolint:paralleltest // false positive
