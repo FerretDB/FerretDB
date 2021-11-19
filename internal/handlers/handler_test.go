@@ -31,8 +31,66 @@ import (
 )
 
 func TestListDatabases(t *testing.T) {
-	// TODO TestListDatabases
-	_ = t
+	t.Parallel()
+
+	ctx := testutil.Ctx(t)
+	pool := testutil.Pool(ctx, t)
+	l := zaptest.NewLogger(t)
+	shared := shared.NewHandler(pool, "127.0.0.1:12345")
+	sql := sql.NewStorage(pool, l.Sugar())
+	jsonb1 := jsonb1.NewStorage(pool, l)
+	handler := New(pool, l, shared, sql, jsonb1)
+
+	type testCase struct {
+		name string
+		req  types.Document
+		resp types.Document
+	}
+
+	testCases := []testCase{{
+		name: "ValueLtGt",
+		req: types.MustMakeDocument(
+			"listcollections", types.MustMakeDocument(
+				"$db", "monila",
+			),
+		),
+		resp: types.MustMakeDocument(
+			"ok", float64(0),
+			"errmsg", "no db",
+			"code", int32(1),
+			"codeName", "InternalError",
+		),
+	},
+	}
+
+	for _, tc := range testCases { //nolint:paralleltest // false positive
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			reqHeader := wire.MsgHeader{
+				RequestID: 1,
+				OpCode:    wire.OP_MSG,
+			}
+
+			var reqMsg wire.OpMsg
+			err := reqMsg.SetSections(wire.OpMsgSection{
+				Documents: []types.Document{tc.req},
+			})
+			require.NoError(t, err)
+
+			_, respMsg, err := handler.Handle(ctx, &reqHeader, &reqMsg)
+			require.NoError(t, err)
+
+			actual, err := respMsg.(*wire.OpMsg).Document()
+			require.NoError(t, err)
+
+			expected := tc.resp
+
+			assert.Equal(t, expected, actual)
+
+		})
+	}
 }
 
 func TestFind(t *testing.T) {
