@@ -48,7 +48,7 @@ func TestListDatabases(t *testing.T) {
 	}
 
 	testCases := []testCase{{
-		name: "ValueLtGt",
+		name: "List Collections No DB",
 		req: types.MustMakeDocument(
 			"listcollections", types.MustMakeDocument(
 				"$db", "monila",
