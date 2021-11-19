@@ -1,6 +1,6 @@
 # Contributing
 
-MangoDB is currently developed in either Linux or macOS, everything else is running inside Docker Compose. 
+MangoDB is currently developed in either Linux or macOS, everything else is running inside Docker Compose.
 
 You will need Go 1.18 (for [fuzzing](https://go.dev/blog/fuzz-beta) and [generics](https://go.dev/blog/generics-proposal)) that is not yet released.
 [Compile it yourself](https://golang.org/doc/install/source) or use [`gotip download`](https://pkg.go.dev/golang.org/dl/gotip).
