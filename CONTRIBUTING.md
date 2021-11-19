@@ -18,4 +18,4 @@ go version devel go1.18-[...]
 5. Start MangoDB with `make run`.
    That will start it in a development mode where all requests are handled by MangoDB and also routed to MongoDB.
    The response differences are then logged, and the MangoDB response is sent back to the client.
-6. Run `monogsh` with `make mongosh`.
+6. Run `mongosh` with `make mongosh`.
