@@ -25,10 +25,12 @@ import (
 type ErrorCode int32
 
 const (
-	ErrInternalError     = ErrorCode(1)   // InternalError
-	ErrNamespaceNotFound = ErrorCode(26)  // NamespaceNotFound
-	ErrCommandNotFound   = ErrorCode(59)  // CommandNotFound
-	ErrNotImplemented    = ErrorCode(238) // NotImplemented
+	ErrInternalError     = ErrorCode(1)     // InternalError
+	ErrBadValue          = ErrorCode(2)     // BadValue
+	ErrNamespaceNotFound = ErrorCode(26)    // NamespaceNotFound
+	ErrCommandNotFound   = ErrorCode(59)    // CommandNotFound
+	ErrNotImplemented    = ErrorCode(238)   // NotImplemented
+	ErrRegexOptions      = ErrorCode(51075) // Location51075
 )
 
 type Error struct {
