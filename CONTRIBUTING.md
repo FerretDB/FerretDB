@@ -15,7 +15,7 @@ go version devel go1.18-[...]
 1. Install tools with `make init`.
 2. Start the development environment with `make env-up`.
    This will start PostgreSQL and MongoDB; filling them with identical sets of test data.
-3. You may then run tests in the other window with `make test`. 
+3. You may then run tests in another window with `make test`. 
 
 You can see all available "make" commands with `make help`.
 
