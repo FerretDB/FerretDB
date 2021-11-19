@@ -63,7 +63,7 @@ build-testcover: gen-version           ## Build bin/mangodb-testcover
 	go test -c -o=bin/mangodb-testcover -trimpath -tags=testcover -race -coverpkg=./... ./cmd/mangodb
 
 run: build-testcover                   ## Run MangoDB
-	bin/mangodb-testcover -test.coverprofile=cover.txt -mode=diff
+	bin/mangodb-testcover -test.coverprofile=cover.txt -mode=diff-normal
 
 run-dance: build-testcover             ## Run MangoDB in testing mode
 	bin/mangodb-testcover -test.coverprofile=cover.txt -mode=normal -test-conn-timeout=10s

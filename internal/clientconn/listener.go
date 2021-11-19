@@ -34,9 +34,9 @@ type Listener struct {
 }
 
 type NewListenerOpts struct {
-	Addr       string
+	ListenAddr string
 	TLS        bool
-	ShadowAddr string
+	ProxyAddr  string
 	Mode       Mode
 	PgPool     *pg.Pool
 	Logger     *zap.Logger
@@ -51,12 +51,12 @@ func NewListener(opts *NewListenerOpts) *Listener {
 }
 
 func (l *Listener) Run(ctx context.Context) error {
-	lis, err := net.Listen("tcp", l.opts.Addr)
+	lis, err := net.Listen("tcp", l.opts.ListenAddr)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	l.opts.Logger.Sugar().Infof("Listening on %s ...", l.opts.Addr)
+	l.opts.Logger.Sugar().Infof("Listening on %s ...", l.opts.ListenAddr)
 
 	if l.opts.TLS {
 		l.opts.Logger.Sugar().Info("Using insecure TLS.")
@@ -96,7 +96,7 @@ func (l *Listener) Run(ctx context.Context) error {
 				wg.Done()
 			}()
 
-			conn, e := newConn(netConn, l.opts.PgPool, l.opts.ShadowAddr, l.opts.Mode)
+			conn, e := newConn(netConn, l.opts.PgPool, l.opts.ProxyAddr, l.opts.Mode)
 			if e != nil {
 				l.opts.Logger.Warn("Failed to create connection", zap.Error(e))
 				return

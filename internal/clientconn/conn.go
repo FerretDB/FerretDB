@@ -25,32 +25,39 @@ import (
 
 	"github.com/MangoDB-io/MangoDB/internal/handlers"
 	"github.com/MangoDB-io/MangoDB/internal/handlers/jsonb1"
+	"github.com/MangoDB-io/MangoDB/internal/handlers/proxy"
 	"github.com/MangoDB-io/MangoDB/internal/handlers/shared"
 	"github.com/MangoDB-io/MangoDB/internal/handlers/sql"
 	"github.com/MangoDB-io/MangoDB/internal/pg"
-	"github.com/MangoDB-io/MangoDB/internal/shadow"
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
 type Mode string
 
 const (
-	normalMode Mode = "normal"
-	proxyMode  Mode = "proxy"
-	diffMode   Mode = "diff"
+	// NormalMode only handles requests.
+	NormalMode Mode = "normal"
+	// ProxyMode only proxies requests to another wire protocol compatible service.
+	ProxyMode Mode = "proxy"
+	// DiffNormalMode both handles requests and proxies them, then logs the diff.
+	// Only the MangoDB response is sent to the client.
+	DiffNormalMode Mode = "diff-normal"
+	// DiffProxyMode both handles requests and proxies them, then logs the diff.
+	// Only the proxy response is sent to the client.
+	DiffProxyMode Mode = "diff-proxy"
 )
 
-var AllModes = []Mode{normalMode, proxyMode, diffMode}
+var AllModes = []Mode{NormalMode, ProxyMode, DiffNormalMode, DiffProxyMode}
 
 type conn struct {
 	netConn net.Conn
 	mode    Mode
 	h       *handlers.Handler
-	s       *shadow.Handler
+	proxy   *proxy.Handler
 	l       *zap.SugaredLogger
 }
 
-func newConn(netConn net.Conn, pgPool *pg.Pool, shadowAddr string, mode Mode) (*conn, error) {
+func newConn(netConn net.Conn, pgPool *pg.Pool, proxyAddr string, mode Mode) (*conn, error) {
 	prefix := fmt.Sprintf("// %s -> %s ", netConn.RemoteAddr(), netConn.LocalAddr())
 	l := zap.L().Named(prefix)
 
@@ -59,10 +66,10 @@ func newConn(netConn net.Conn, pgPool *pg.Pool, shadowAddr string, mode Mode) (*
 	sqlH := sql.NewStorage(pgPool, l.Sugar())
 	jsonb1H := jsonb1.NewStorage(pgPool, l)
 
-	var s *shadow.Handler
-	if mode != normalMode {
+	var p *proxy.Handler
+	if mode != NormalMode {
 		var err error
-		if s, err = shadow.New(shadowAddr); err != nil {
+		if p, err = proxy.New(proxyAddr); err != nil {
 			return nil, err
 		}
 	}
@@ -71,7 +78,7 @@ func newConn(netConn net.Conn, pgPool *pg.Pool, shadowAddr string, mode Mode) (*
 		netConn: netConn,
 		mode:    mode,
 		h:       handlers.New(pgPool, l, shared, sqlH, jsonb1H),
-		s:       s,
+		proxy:   p,
 		l:       l.Sugar(),
 	}, nil
 }
@@ -85,9 +92,8 @@ func (c *conn) run(ctx context.Context) (err error) {
 		}
 	}()
 
-	if deadline, ok := ctx.Deadline(); ok {
-		c.netConn.SetDeadline(deadline)
-	}
+	deadline, _ := ctx.Deadline()
+	c.netConn.SetDeadline(deadline)
 
 	bufr := bufio.NewReader(c.netConn)
 	bufw := bufio.NewWriter(c.netConn)
@@ -96,6 +102,12 @@ func (c *conn) run(ctx context.Context) (err error) {
 		if err == nil {
 			err = e
 		}
+
+		if c.proxy != nil {
+			c.proxy.Close()
+		}
+
+		// c.netConn is closed by the caller
 	}()
 
 	for {
@@ -109,15 +121,16 @@ func (c *conn) run(ctx context.Context) (err error) {
 		c.l.Infof("Request header:\n%s", wire.DumpMsgHeader(reqHeader))
 		c.l.Infof("Request message:\n%s\n\n\n", wire.DumpMsgBody(reqBody))
 
+		// handle request unless we are in proxy mode
 		var resHeader *wire.MsgHeader
 		var resBody wire.MsgBody
-		if c.mode != proxyMode {
+		if c.mode != ProxyMode {
 			resHeader, resBody, err = c.h.Handle(ctx, reqHeader, reqBody)
 			if err != nil {
 				c.l.Infof("Response error: %s.", err)
 
 				// TODO write handler.Error
-				if c.mode == normalMode {
+				if c.mode == NormalMode {
 					return
 				}
 			} else {
@@ -126,31 +139,33 @@ func (c *conn) run(ctx context.Context) (err error) {
 			}
 		}
 
-		var shadowHeader *wire.MsgHeader
-		var shadowBody wire.MsgBody
-		if c.mode != normalMode {
-			if c.s == nil {
-				panic("shadow addr was nil")
+		// send request to proxy unless we are in normal mode
+		var proxyHeader *wire.MsgHeader
+		var proxyBody wire.MsgBody
+		if c.mode != NormalMode {
+			if c.proxy == nil {
+				panic("proxy addr was nil")
 			}
 
-			shadowHeader, shadowBody, err = c.s.Handle(ctx, reqHeader, reqBody)
+			proxyHeader, proxyBody, err = c.proxy.Handle(ctx, reqHeader, reqBody)
 			if err != nil {
-				c.l.Infof("Shadow error: %s.", err)
+				c.l.Infof("Proxy error: %s.", err)
 				return
 			}
 
-			c.l.Infof("Shadow header:\n%s", wire.DumpMsgHeader(shadowHeader))
-			c.l.Infof("Shadow message:\n%s\n\n\n", wire.DumpMsgBody(shadowBody))
+			c.l.Infof("Proxy header:\n%s", wire.DumpMsgHeader(proxyHeader))
+			c.l.Infof("Proxt message:\n%s\n\n\n", wire.DumpMsgBody(proxyBody))
 		}
 
-		if c.mode == diffMode {
+		// diff in diff mode
+		if c.mode == DiffNormalMode || c.mode == DiffProxyMode {
 			res := difflib.SplitLines(wire.DumpMsgHeader(resHeader) + "\n" + wire.DumpMsgBody(resBody))
-			shadow := difflib.SplitLines(wire.DumpMsgHeader(shadowHeader) + "\n" + wire.DumpMsgBody(shadowBody))
+			proxy := difflib.SplitLines(wire.DumpMsgHeader(proxyHeader) + "\n" + wire.DumpMsgBody(proxyBody))
 			diff := difflib.UnifiedDiff{
 				A:        res,
 				FromFile: "res",
-				B:        shadow,
-				ToFile:   "shadow",
+				B:        proxy,
+				ToFile:   "proxy",
 				Context:  1,
 			}
 			var s string
@@ -160,6 +175,12 @@ func (c *conn) run(ctx context.Context) (err error) {
 			}
 
 			c.l.Infof("Diff:\n%s\n\n\n", s)
+		}
+
+		// replace response with one from proxy in proxy and diff-proxy modes
+		if c.mode == ProxyMode || c.mode == DiffProxyMode {
+			resHeader = proxyHeader
+			resBody = proxyBody
 		}
 
 		if resHeader == nil {

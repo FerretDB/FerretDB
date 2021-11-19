@@ -12,7 +12,7 @@ require (
 	github.com/reviewdog/reviewdog v0.13.0
 	go.uber.org/zap v1.19.1
 	golang.org/x/perf v0.0.0-20211012211434-03971e389cd3
-	golang.org/x/tools v0.1.8-0.20211106000844-0c60b7c5c272 // use @master until Go 1.18 release
+	golang.org/x/tools v0.1.8-0.20211117191604-43b469a3a904 // use @master until Go 1.18 release
 	mvdan.cc/gofumpt v0.2.0
 )
 

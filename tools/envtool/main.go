@@ -81,10 +81,10 @@ func main() {
 	}
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		Addr:   addr,
-		Mode:   "normal",
-		PgPool: pgPool,
-		Logger: logger.Named("listener").Desugar(),
+		ListenAddr: addr,
+		Mode:       "normal",
+		PgPool:     pgPool,
+		Logger:     logger.Named("listener").Desugar(),
 	})
 
 	done := make(chan struct{})
