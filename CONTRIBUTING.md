@@ -1,6 +1,6 @@
 # Contributing
 
-MangoDB is currently developed in either Linux or macOS, everything else is running inside Docker-Compose. 
+MangoDB is currently developed in either Linux or macOS, everything else is running inside Docker Compose. 
 
 You will need Go 1.18 (for [fuzzing](https://go.dev/blog/fuzz-beta) and [generics](https://go.dev/blog/generics-proposal)) that is not yet released.
 [Compile it yourself](https://golang.org/doc/install/source) or use [`gotip download`](https://pkg.go.dev/golang.org/dl/gotip).
@@ -19,6 +19,8 @@ go version devel go1.18-[...]
 
 You can see all available "make" commands with `make help`.
 
-You can start MangoDB standalone with `make run`. This will start it in a development mode where all requests are handled by MangoDB but also routed to MongoDB. The differences in response are then logged and the MangoDB response is sent back to the client.
+You can start MangoDB standalone with `make run`. 
+This will start it in a development mode where all requests are handled by MangoDB but also routed to MongoDB. 
+The differences in response are then logged and the MangoDB response is sent back to the client.
 
 Run `mongosh` with `make mongosh`.
