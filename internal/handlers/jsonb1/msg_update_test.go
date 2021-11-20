@@ -49,8 +49,8 @@ func TestUpdate(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		_, _, err = h.Handle(ctx, header, &msg)
-		require.NoError(t, err)
+		_, _, closeConn := h.Handle(ctx, header, &msg)
+		require.False(t, closeConn)
 	}
 
 	var msg wire.OpMsg
@@ -74,6 +74,6 @@ func TestUpdate(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	_, _, err = h.Handle(ctx, header, &msg)
-	require.NoError(t, err)
+	_, _, closeConn := h.Handle(ctx, header, &msg)
+	require.False(t, closeConn)
 }

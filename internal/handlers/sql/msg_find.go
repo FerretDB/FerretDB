@@ -23,6 +23,7 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/handlers/common"
 	"github.com/MangoDB-io/MangoDB/internal/pg"
 	"github.com/MangoDB-io/MangoDB/internal/types"
+	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
@@ -31,7 +32,7 @@ func (h *storage) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	document, err := msg.Document()
 	if err != nil {
-		return nil, common.NewError(common.ErrInternalError, err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	m := document.Map()
@@ -40,7 +41,7 @@ func (h *storage) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	projection, ok := m["projection"].(types.Document)
 	if ok && len(projection.Map()) != 0 {
-		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("projection is not supported"))
+		return nil, common.NewErrorMessage(common.ErrNotImplemented, "MsgFind: projection is not supported")
 	}
 
 	filter, _ := m["filter"].(types.Document)
@@ -52,7 +53,7 @@ func (h *storage) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	whereSQL, args, err := where(filter, &placeholder)
 	if err != nil {
-		return nil, common.NewError(common.ErrNotImplemented, err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	sql += whereSQL
@@ -83,12 +84,13 @@ func (h *storage) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		sql += " LIMIT " + placeholder.Next()
 		args = append(args, limit)
 	default:
-		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("negative limit values are not supported"))
+		// TODO https://github.com/MangoDB-io/MangoDB/issues/79
+		return nil, common.NewErrorMessage(common.ErrNotImplemented, "MsgFind: negative limit values are not supported")
 	}
 
 	rows, err := h.pgPool.Query(ctx, sql, args...)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 	defer rows.Close()
 
@@ -99,7 +101,7 @@ func (h *storage) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	for {
 		doc, err := nextRow(rows, rowInfo)
 		if err != nil {
-			return nil, err
+			return nil, lazyerrors.Error(err)
 		}
 		if doc == nil {
 			break
@@ -120,7 +122,7 @@ func (h *storage) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		)},
 	})
 	if err != nil {
-		return nil, common.NewError(common.ErrInternalError, err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	return &res, nil

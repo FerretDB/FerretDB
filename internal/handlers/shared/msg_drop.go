@@ -22,13 +22,14 @@ import (
 
 	"github.com/MangoDB-io/MangoDB/internal/handlers/common"
 	"github.com/MangoDB-io/MangoDB/internal/types"
+	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
 func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
-		return nil, common.NewError(common.ErrInternalError, err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	m := document.Map()
@@ -41,7 +42,7 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	_, err = h.pgPool.Exec(ctx, sql)
 	if err != nil {
 		// TODO check error code
-		return nil, common.NewError(common.ErrNamespaceNotFound, fmt.Errorf("ns not found"))
+		return nil, common.NewErrorMessage(common.ErrNamespaceNotFound, "MsgDrop: ns not found: %w", err)
 	}
 
 	var reply wire.OpMsg
@@ -53,7 +54,7 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		)},
 	})
 	if err != nil {
-		return nil, common.NewError(common.ErrInternalError, err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	return &reply, nil

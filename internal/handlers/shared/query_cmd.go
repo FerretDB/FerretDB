@@ -16,7 +16,6 @@ package shared
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/MangoDB-io/MangoDB/internal/bson"
@@ -51,6 +50,6 @@ func (h *Handler) QueryCmd(ctx context.Context, msg *wire.OpQuery) (*wire.OpRepl
 		return reply, nil
 
 	default:
-		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("unhandled command %q", cmd))
+		return nil, common.NewErrorMessage(common.ErrNotImplemented, "QueryCmd: unhandled command %q", cmd)
 	}
 }

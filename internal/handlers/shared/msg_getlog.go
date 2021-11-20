@@ -17,12 +17,12 @@ package shared
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strings"
 	"time"
 
 	"github.com/MangoDB-io/MangoDB/internal/handlers/common"
 	"github.com/MangoDB-io/MangoDB/internal/types"
+	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 	"github.com/MangoDB-io/MangoDB/internal/util/version"
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
@@ -30,17 +30,17 @@ import (
 func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
-		return nil, common.NewError(common.ErrInternalError, err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	if l := document.Map()["getLog"]; l != "startupWarnings" {
-		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("unhandled getLog value %q", l))
+		return nil, common.NewErrorMessage(common.ErrNotImplemented, "MsgGetLog: unhandled getLog value %q", l)
 	}
 
 	var pv string
 	err = h.pgPool.QueryRow(ctx, "SHOW server_version").Scan(&pv)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	pv = strings.Split(pv, " ")[0]
@@ -63,7 +63,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			},
 		})
 		if err != nil {
-			return nil, err
+			return nil, lazyerrors.Error(err)
 		}
 		log = append(log, string(b))
 	}
@@ -77,7 +77,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		)},
 	})
 	if err != nil {
-		return nil, common.NewError(common.ErrInternalError, err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	return &reply, nil

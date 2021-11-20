@@ -15,6 +15,7 @@
 package common
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/MangoDB-io/MangoDB/internal/types"
@@ -22,10 +23,13 @@ import (
 
 //go:generate ../../../bin/stringer -linecomment -type ErrorCode
 
+// ErrorCode represents wire protocol error code.
 type ErrorCode int32
 
 const (
-	ErrInternalError     = ErrorCode(1)     // InternalError
+	// For ProtocolError only.
+	errInternalError = ErrorCode(1) // InternalError
+
 	ErrBadValue          = ErrorCode(2)     // BadValue
 	ErrNamespaceNotFound = ErrorCode(26)    // NamespaceNotFound
 	ErrCommandNotFound   = ErrorCode(59)    // CommandNotFound
@@ -33,27 +37,76 @@ const (
 	ErrRegexOptions      = ErrorCode(51075) // Location51075
 )
 
+// Error represents wire protocol error.
 type Error struct {
-	Code ErrorCode
-	Err  error
+	code ErrorCode
+	err  error
 }
 
+// NewError creates a new wire protocol error.
+//
+// Code can't be zero, err can't be nil.
 func NewError(code ErrorCode, err error) error {
-	return Error{
-		Code: code,
-		Err:  err,
+	if code == 0 {
+		panic("code is 0")
+	}
+	if err == nil {
+		panic("err is nil")
+	}
+	return &Error{
+		code: code,
+		err:  err,
 	}
 }
 
-func (e Error) Error() string {
-	return fmt.Sprintf("%[1]s (%[1]d): %[2]v", e.Code, e.Err)
+// NewErrorMessage creates a new wire protocol error with message.
+//
+// Code can't be zero, message can't be empty.
+func NewErrorMessage(code ErrorCode, msg string, args ...any) error {
+	if msg == "" {
+		panic("msg is empty")
+	}
+	return NewError(code, fmt.Errorf(msg, args...))
 }
 
-func (e Error) Document() types.Document {
+// Error implements error interface.
+func (e *Error) Error() string {
+	return fmt.Sprintf("%[1]s (%[1]d): %[2]v", e.code, e.err)
+}
+
+// Unwrap implements standard error unwrapping interface.
+func (e *Error) Unwrap() error {
+	return e.err
+}
+
+// Document returns wire protocol error document.
+func (e *Error) Document() types.Document {
 	return types.MustMakeDocument(
 		"ok", float64(0),
-		"errmsg", e.Err.Error(),
-		"code", int32(e.Code),
-		"codeName", e.Code.String(),
+		"errmsg", e.err.Error(),
+		"code", int32(e.code),
+		"codeName", e.code.String(),
 	)
 }
+
+// ProtocolError converts any error to wire protocol error.
+//
+// Nil panics, *Error (possibly wrapped) is returned unwrapped with true,
+// any other value is wrapped with InternalError and returned with false.
+func ProtocolError(err error) (*Error, bool) {
+	if err == nil {
+		panic("err is nil")
+	}
+
+	var e *Error
+	if errors.As(err, &e) {
+		return e, true
+	}
+
+	return NewError(errInternalError, err).(*Error), false
+}
+
+// check interfaces
+var (
+	_ error = (*Error)(nil)
+)

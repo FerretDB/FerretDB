@@ -349,10 +349,10 @@ func TestFind(t *testing.T) {
 					})
 					require.NoError(t, err)
 
-					_, respMsg, err := handler.Handle(ctx, &reqHeader, &reqMsg)
-					require.NoError(t, err)
+					_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
+					require.False(t, closeConn)
 
-					actual, err := respMsg.(*wire.OpMsg).Document()
+					actual, err := resBody.(*wire.OpMsg).Document()
 					require.NoError(t, err)
 
 					expected := types.MustMakeDocument(
