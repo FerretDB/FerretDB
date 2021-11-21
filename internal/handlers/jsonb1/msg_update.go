@@ -21,7 +21,6 @@ import (
 	"github.com/jackc/pgx/v4"
 
 	"github.com/MangoDB-io/MangoDB/internal/bson"
-	"github.com/MangoDB-io/MangoDB/internal/handlers/common"
 	"github.com/MangoDB-io/MangoDB/internal/pg"
 	"github.com/MangoDB-io/MangoDB/internal/types"
 	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
@@ -31,7 +30,7 @@ import (
 func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
-		return nil, common.NewError(common.ErrInternalError, err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	m := document.Map()
@@ -48,7 +47,7 @@ func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		whereSQL, args, err := where(docM["q"].(types.Document), &placeholder)
 		if err != nil {
-			return nil, common.NewError(common.ErrNotImplemented, err)
+			return nil, lazyerrors.Error(err)
 		}
 
 		sql += whereSQL
@@ -124,7 +123,7 @@ func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		)},
 	})
 	if err != nil {
-		return nil, common.NewError(common.ErrInternalError, err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	return &reply, nil

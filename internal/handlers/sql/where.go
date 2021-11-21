@@ -55,8 +55,13 @@ func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string
 	filterKeys := expr.Keys()
 	filterMap := expr.Map()
 
-	for i, op := range filterKeys {
-		if i != 0 {
+	for _, op := range filterKeys {
+		if op == "$options" {
+			// handled by $regex, no need to modify sql in any way
+			continue
+		}
+
+		if sql != "" {
 			sql += " AND"
 		}
 
@@ -122,6 +127,41 @@ func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string
 			// {field: {$gte: value}}
 			sql += " >="
 			argSql, arg, err = scalar(value, p)
+		case "$regex":
+			// {field: {$regex: value}}
+
+			var options string
+			if opts, ok := filterMap["$options"]; ok {
+				// {field: {$regex: value, $options: string}}
+				if options, ok = opts.(string); !ok {
+					err = common.NewErrorMessage(common.ErrBadValue, "$options has to be a string")
+					return
+				}
+			}
+
+			sql += " ~"
+			switch value := value.(type) {
+			case string:
+				// {field: {$regex: string}}
+				v := types.Regex{
+					Pattern: value,
+					Options: options,
+				}
+				argSql, arg, err = scalar(v, p)
+			case types.Regex:
+				// {field: {$regex: /regex/}}
+				if options != "" {
+					if value.Options != "" {
+						err = common.NewErrorMessage(common.ErrRegexOptions, "options set in both $regex and $options")
+						return
+					}
+					value.Options = options
+				}
+				argSql, arg, err = scalar(value, p)
+			default:
+				err = common.NewErrorMessage(common.ErrBadValue, "$regex has to be a string")
+				return
+			}
 		default:
 			err = lazyerrors.Errorf("unhandled {%q: %v}", op, value)
 		}

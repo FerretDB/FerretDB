@@ -16,59 +16,59 @@ package shared
 
 import (
 	"context"
-	"fmt"
 	"sort"
 
 	"github.com/MangoDB-io/MangoDB/internal/handlers/common"
 	"github.com/MangoDB-io/MangoDB/internal/types"
+	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
 func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
-		return nil, common.NewError(common.ErrInternalError, err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	m := document.Map()
 
 	filter, ok := m["filter"].(types.Document)
 	if ok && len(filter.Map()) != 0 {
-		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("filter is not supported"))
+		return nil, common.NewErrorMessage(common.ErrNotImplemented, "MsgListCollections: filter is not supported")
 	}
 
 	cursor, ok := m["cursor"].(types.Document)
 	if ok && len(cursor.Map()) != 0 {
-		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("cursor is not supported"))
+		return nil, common.NewErrorMessage(common.ErrNotImplemented, "MsgListCollections: cursor is not supported")
 	}
 
 	nameOnly, ok := m["nameOnly"].(bool)
 	if ok && !nameOnly {
-		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("nameOnly=false is not supported"))
+		return nil, common.NewErrorMessage(common.ErrNotImplemented, "MsgListCollections: nameOnly=false is not supported")
 	}
 
 	db, ok := m["$db"].(string)
 	if !ok {
-		return nil, common.NewError(common.ErrInternalError, fmt.Errorf("no db"))
+		return nil, lazyerrors.New("no db")
 	}
 
 	var names []string
 	rows, err := h.pgPool.Query(ctx, "SELECT table_name FROM information_schema.tables WHERE table_schema = $1", db)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		var name string
 		if err = rows.Scan(&name); err != nil {
-			return nil, err
+			return nil, lazyerrors.Error(err)
 		}
 
 		names = append(names, name)
 	}
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	sort.Strings(names)
@@ -93,7 +93,7 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 		)},
 	})
 	if err != nil {
-		return nil, common.NewError(common.ErrInternalError, err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	return &reply, nil

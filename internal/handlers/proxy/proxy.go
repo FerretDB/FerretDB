@@ -20,6 +20,7 @@ import (
 	"context"
 	"net"
 
+	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
@@ -46,21 +47,22 @@ func New(addr string) (*Handler, error) {
 
 // Close stops the handler.
 func (h *Handler) Close() {
-	h.bufw.Flush()
 	h.conn.Close()
 }
 
 // Handle "handles" the message by sending it to another wire protocol compatible service.
-func (h *Handler) Handle(ctx context.Context, header *wire.MsgHeader, msg wire.MsgBody) (*wire.MsgHeader, wire.MsgBody, error) {
+//
+// Returned error is something fatal.
+func (h *Handler) Handle(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody) (*wire.MsgHeader, wire.MsgBody, error) {
 	deadline, _ := ctx.Deadline()
 	h.conn.SetDeadline(deadline)
 
-	if err := wire.WriteMessage(h.bufw, header, msg); err != nil {
+	if err := wire.WriteMessage(h.bufw, header, body); err != nil {
 		return nil, nil, err
 	}
 
 	if err := h.bufw.Flush(); err != nil {
-		return nil, nil, err
+		return nil, nil, lazyerrors.Error(err)
 	}
 
 	return wire.ReadMessage(h.bufr)

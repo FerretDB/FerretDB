@@ -16,12 +16,11 @@ package sql
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/MangoDB-io/MangoDB/internal/handlers/common"
+	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
 func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("TODO"))
+	return nil, lazyerrors.New("not implemented")
 }

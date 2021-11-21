@@ -17,6 +17,7 @@ package clientconn
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"net"
 
@@ -87,8 +88,8 @@ func (c *conn) run(ctx context.Context) (err error) {
 	defer func() {
 		if p := recover(); p != nil {
 			// Log human-readable stack trace there (included in the error level automatically).
-			c.l.Errorf("panic:\n%v\n(err = %v)", p, err)
-			err = fmt.Errorf("recovered from panic (err = %v): %v", err, p)
+			c.l.DPanicf("%v\n(err = %v)", p, err)
+			err = errors.New("panic")
 		}
 	}()
 
@@ -118,24 +119,23 @@ func (c *conn) run(ctx context.Context) (err error) {
 			return
 		}
 
-		c.l.Infof("Request header:\n%s", wire.DumpMsgHeader(reqHeader))
-		c.l.Infof("Request message:\n%s\n\n\n", wire.DumpMsgBody(reqBody))
+		// do not spend time dumping if we are not going to log it
+		if c.l.Desugar().Core().Enabled(zap.DebugLevel) {
+			c.l.Debugf("Request header:\n%s", wire.DumpMsgHeader(reqHeader))
+			c.l.Debugf("Request message:\n%s\n\n\n", wire.DumpMsgBody(reqBody))
+		}
 
 		// handle request unless we are in proxy mode
 		var resHeader *wire.MsgHeader
 		var resBody wire.MsgBody
+		var closeConn bool
 		if c.mode != ProxyMode {
-			resHeader, resBody, err = c.h.Handle(ctx, reqHeader, reqBody)
-			if err != nil {
-				c.l.Infof("Response error: %s.", err)
+			resHeader, resBody, closeConn = c.h.Handle(ctx, reqHeader, reqBody)
 
-				// TODO write handler.Error
-				if c.mode == NormalMode {
-					return
-				}
-			} else {
-				c.l.Infof("Response header:\n%s", wire.DumpMsgHeader(resHeader))
-				c.l.Infof("Response message:\n%s\n\n\n", wire.DumpMsgBody(resBody))
+			// do not spend time dumping if we are not going to log it
+			if c.l.Desugar().Core().Enabled(zap.DebugLevel) {
+				c.l.Debugf("Response header:\n%s", wire.DumpMsgHeader(resHeader))
+				c.l.Debugf("Response message:\n%s\n\n\n", wire.DumpMsgBody(resBody))
 			}
 		}
 
@@ -149,12 +149,15 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 			proxyHeader, proxyBody, err = c.proxy.Handle(ctx, reqHeader, reqBody)
 			if err != nil {
-				c.l.Infof("Proxy error: %s.", err)
+				c.l.Warnf("Proxy returned error, closing connection: %s.", err)
 				return
 			}
 
-			c.l.Infof("Proxy header:\n%s", wire.DumpMsgHeader(proxyHeader))
-			c.l.Infof("Proxt message:\n%s\n\n\n", wire.DumpMsgBody(proxyBody))
+			// do not spend time dumping if we are not going to log it
+			if c.l.Desugar().Core().Enabled(zap.DebugLevel) {
+				c.l.Debugf("Proxy header:\n%s", wire.DumpMsgHeader(proxyHeader))
+				c.l.Debugf("Proxy message:\n%s\n\n\n", wire.DumpMsgBody(proxyBody))
+			}
 		}
 
 		// diff in diff mode
@@ -183,7 +186,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 			resBody = proxyBody
 		}
 
-		if resHeader == nil {
+		if resHeader == nil || resBody == nil {
 			c.l.Info("no response to send to client")
 			return
 		}
@@ -193,6 +196,11 @@ func (c *conn) run(ctx context.Context) (err error) {
 		}
 
 		if err = bufw.Flush(); err != nil {
+			return
+		}
+
+		if closeConn {
+			err = errors.New("internal error")
 			return
 		}
 	}
