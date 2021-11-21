@@ -53,19 +53,41 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 	dbs := make(types.Array, len(names))
 	for i, n := range names {
 		var sizeOnDisk int64
-		err = h.pgPool.QueryRow(ctx, "SELECT pg_total_relation_size($1)", n).Scan(&sizeOnDisk)
+		var names []string
+		rows, err := h.pgPool.Query(ctx, "SELECT table_name FROM information_schema.tables WHERE table_schema = $1", n)
 		if err != nil {
-			return nil, err
+			return nil, lazyerrors.Error(err)
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var name string
+			if err = rows.Scan(&name); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			// TODO return true if there are no collections
+			var empty bool
+
+			err = h.pgPool.QueryRow(ctx, "SELECT pg_total_relation_size($1)", name).Scan(&sizeOnDisk, &empty)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			dbs[i] = types.MustMakeDocument(
+				"name", name,
+				"sizeOnDisk", sizeOnDisk,
+				"empty", empty,
+			)
+
+			names = append(names, name)
+		}
+		if err = rows.Err(); err != nil {
+			return nil, lazyerrors.Error(err)
 		}
 
-		// TODO return true if there are not collections
-		var empty bool
+		sort.Strings(names)
 
-		dbs[i] = types.MustMakeDocument(
-			"name", n,
-			"sizeOnDisk", sizeOnDisk,
-			"empty", empty,
-		)
 	}
 
 	var totalSize int64

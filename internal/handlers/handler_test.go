@@ -42,30 +42,31 @@ func TestListDatabases(t *testing.T) {
 	handler := New(pool, l, shared, sql, jsonb1)
 
 	type testCase struct {
-		name string
 		req  types.Document
 		resp types.Document
 	}
 
-	testCases := []testCase{{
-		name: "List Collections No DB",
-		req: types.MustMakeDocument(
-			"listcollections", types.MustMakeDocument(
-				"$db", "monila",
+	testCases := map[string]testCase{
+		"List Databases": {
+			req: types.MustMakeDocument(
+				"listdatabases", types.MustMakeDocument(),
 			),
-		),
-		resp: types.MustMakeDocument(
-			"ok", float64(0),
-			"errmsg", "no db",
-			"code", int32(1),
-			"codeName", "InternalError",
-		),
-	},
+			resp: types.MustMakeDocument(
+				"databases", types.Array{types.MustMakeDocument(
+					"name", "store",
+					"sizeOnDisk", int64(0),
+					"empty", false,
+				)},
+				"ok", 1,
+				"totalSize", int64(30065443),
+				"totalSizeMb", int64(28),
+			),
+		},
 	}
 
-	for _, tc := range testCases { //nolint:paralleltest // false positive
+	for name, tc := range testCases { //nolint:paralleltest // false positive
 		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
 			reqHeader := wire.MsgHeader{
