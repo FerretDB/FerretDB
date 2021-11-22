@@ -16,7 +16,6 @@ package shared
 
 import (
 	"context"
-	"sort"
 	"strings"
 
 	"github.com/MangoDB-io/MangoDB/internal/types"
@@ -25,8 +24,9 @@ import (
 )
 
 func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	var names []string
-	rows, err := h.pgPool.Query(ctx, "SELECT schema_name FROM information_schema.schemata")
+	// collect MangoDB databases / PostgreSQL schema names
+	var databaseNames []string
+	rows, err := h.pgPool.Query(ctx, "SELECT schema_name FROM information_schema.schemata ORDER BY schema_name")
 	if err != nil {
 		return nil, err
 	}
@@ -42,52 +42,47 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 			continue
 		}
 
-		names = append(names, name)
+		databaseNames = append(databaseNames, name)
 	}
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
 
-	sort.Strings(names)
-
-	dbs := make(types.Array, len(names))
-	for i, n := range names {
-		var sizeOnDisk int64
-		var names []string
-		rows, err := h.pgPool.Query(ctx, "SELECT table_name FROM information_schema.tables WHERE table_schema = $1", n)
+	databases := make(types.Array, len(databaseNames))
+	for i, databaseName := range databaseNames {
+		// get database collections / schema tables
+		rows, err := h.pgPool.Query(ctx, "SELECT table_name FROM information_schema.tables WHERE table_schema = $1", databaseName)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 		defer rows.Close()
 
+		// iterate over result to collect sizes
+		var sizeOnDisk int64
 		for rows.Next() {
 			var name string
 			if err = rows.Scan(&name); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 
-			// TODO return true if there are no collections
-			var empty bool
-
-			err = h.pgPool.QueryRow(ctx, "SELECT pg_total_relation_size($1)", name).Scan(&sizeOnDisk, &empty)
+			var tableSize int64
+			fullName := databaseName + "." + name
+			err = h.pgPool.QueryRow(ctx, "SELECT pg_total_relation_size($1)", fullName).Scan(&tableSize)
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 
-			dbs[i] = types.MustMakeDocument(
-				"name", name,
-				"sizeOnDisk", sizeOnDisk,
-				"empty", empty,
-			)
-
-			names = append(names, name)
+			sizeOnDisk += tableSize
 		}
 		if err = rows.Err(); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
-		sort.Strings(names)
-
+		databases[i] = types.MustMakeDocument(
+			"name", databaseName,
+			"sizeOnDisk", sizeOnDisk,
+			"empty", sizeOnDisk == 0,
+		)
 	}
 
 	var totalSize int64
@@ -99,7 +94,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
-			"databases", dbs,
+			"databases", databases,
 			"totalSize", totalSize,
 			"totalSizeMb", totalSize/1024/1024,
 			"ok", float64(1),
