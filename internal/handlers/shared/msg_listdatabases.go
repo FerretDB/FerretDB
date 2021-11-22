@@ -24,28 +24,41 @@ import (
 )
 
 func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	// collect MangoDB databases / PostgreSQL schema names
-	var databaseNames []string
-	rows, err := h.pgPool.Query(ctx, "SELECT schema_name FROM information_schema.schemata ORDER BY schema_name")
+	document, err := msg.Document()
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
-	defer rows.Close()
 
-	for rows.Next() {
-		var name string
-		if err = rows.Scan(&name); err != nil {
+	m := document.Map()
+
+	var databaseNames []string
+
+	db, ok := m["$db"].(string)
+	if !ok {
+		// collect MangoDB databases / PostgreSQL schema names
+		rows, err := h.pgPool.Query(ctx, "SELECT schema_name FROM information_schema.schemata ORDER BY schema_name")
+		if err != nil {
 			return nil, err
 		}
+		defer rows.Close()
 
-		if strings.HasPrefix(name, "pg_") || name == "information_schema" {
-			continue
+		for rows.Next() {
+			var name string
+			if err = rows.Scan(&name); err != nil {
+				return nil, err
+			}
+
+			if strings.HasPrefix(name, "pg_") || name == "information_schema" {
+				continue
+			}
+
+			databaseNames = append(databaseNames, name)
 		}
-
-		databaseNames = append(databaseNames, name)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, err
+		if err = rows.Err(); err != nil {
+			return nil, err
+		}
+	} else {
+		databaseNames = append(databaseNames, db)
 	}
 
 	databases := make(types.Array, len(databaseNames))

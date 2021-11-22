@@ -47,19 +47,36 @@ func TestListDatabases(t *testing.T) {
 	}
 
 	testCases := map[string]testCase{
-		"List Databases": {
+		"listDatabases Monila": {
 			req: types.MustMakeDocument(
 				"listDatabases", int32(1),
+				"$db", "monila",
 			),
 			resp: types.MustMakeDocument(
 				"databases", types.Array{types.MustMakeDocument(
-					"name", "store",
-					"sizeOnDisk", int64(0),
+					"name", "monila",
+					"sizeOnDisk", int64(13238272),
 					"empty", false,
 				)},
-				"ok", 1,
-				"totalSize", int64(30065443),
+				"totalSize", int64(30081827),
 				"totalSizeMb", int64(28),
+				"ok", float64(1),
+			),
+		},
+		"listDatabases Pagila": {
+			req: types.MustMakeDocument(
+				"listDatabases", int32(1),
+				"$db", "pagila",
+			),
+			resp: types.MustMakeDocument(
+				"databases", types.Array{types.MustMakeDocument(
+					"name", "pagila",
+					"sizeOnDisk", int64(7184384),
+					"empty", false,
+				)},
+				"totalSize", int64(30081827),
+				"totalSizeMb", int64(28),
+				"ok", float64(1),
 			),
 		},
 	}
@@ -69,34 +86,28 @@ func TestListDatabases(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			for _, schema := range []string{"monila", "pagila"} {
-				t.Run(schema, func(t *testing.T) {
-					// not parallel because we modify tc
-
-					tc.req.Set("$db", schema)
-
-					reqHeader := wire.MsgHeader{
-						RequestID: 1,
-						OpCode:    wire.OP_MSG,
-					}
-
-					var reqMsg wire.OpMsg
-					err := reqMsg.SetSections(wire.OpMsgSection{
-						Documents: []types.Document{tc.req},
-					})
-					require.NoError(t, err)
-
-					_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
-					require.False(t, closeConn)
-
-					actual, err := resBody.(*wire.OpMsg).Document()
-					require.NoError(t, err)
-
-					expected := tc.resp
-
-					assert.Equal(t, expected, actual)
-				})
+			reqHeader := wire.MsgHeader{
+				RequestID: 1,
+				OpCode:    wire.OP_MSG,
 			}
+
+			var reqMsg wire.OpMsg
+			err := reqMsg.SetSections(wire.OpMsgSection{
+				Documents: []types.Document{tc.req},
+			})
+			require.NoError(t, err)
+
+			_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
+			require.False(t, closeConn)
+
+			actual, err := resBody.(*wire.OpMsg).Document()
+			require.NoError(t, err)
+
+			expected := tc.resp
+
+			assert.Equal(t, actual.Map()["ok"].(float64), expected.Map()["ok"].(float64))
+			assert.GreaterOrEqual(t, actual.Map()["totalSize"].(int64), int64(5000))
+			assert.GreaterOrEqual(t, actual.Map()["totalSizeMb"].(int64), int64(1))
 		})
 	}
 }
