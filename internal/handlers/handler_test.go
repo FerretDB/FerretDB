@@ -49,7 +49,7 @@ func TestListDatabases(t *testing.T) {
 	testCases := map[string]testCase{
 		"List Databases": {
 			req: types.MustMakeDocument(
-				"listdatabases", types.MustMakeDocument(),
+				"listDatabases", int32(1),
 			),
 			resp: types.MustMakeDocument(
 				"databases", types.Array{types.MustMakeDocument(
@@ -69,27 +69,34 @@ func TestListDatabases(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			reqHeader := wire.MsgHeader{
-				RequestID: 1,
-				OpCode:    wire.OP_MSG,
+			for _, schema := range []string{"monila", "pagila"} {
+				t.Run(schema, func(t *testing.T) {
+					// not parallel because we modify tc
+
+					tc.req.Set("$db", schema)
+
+					reqHeader := wire.MsgHeader{
+						RequestID: 1,
+						OpCode:    wire.OP_MSG,
+					}
+
+					var reqMsg wire.OpMsg
+					err := reqMsg.SetSections(wire.OpMsgSection{
+						Documents: []types.Document{tc.req},
+					})
+					require.NoError(t, err)
+
+					_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
+					require.False(t, closeConn)
+
+					actual, err := resBody.(*wire.OpMsg).Document()
+					require.NoError(t, err)
+
+					expected := tc.resp
+
+					assert.Equal(t, expected, actual)
+				})
 			}
-
-			var reqMsg wire.OpMsg
-			err := reqMsg.SetSections(wire.OpMsgSection{
-				Documents: []types.Document{tc.req},
-			})
-			require.NoError(t, err)
-
-			_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
-			require.False(t, closeConn)
-
-			actual, err := resBody.(*wire.OpMsg).Document()
-			require.NoError(t, err)
-
-			expected := tc.resp
-
-			assert.Equal(t, expected, actual)
-
 		})
 	}
 }
