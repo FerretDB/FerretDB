@@ -26,6 +26,7 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
+// OpQuery is used to query the database for documents in a collection.
 type OpQuery struct {
 	Flags                OpQueryFlags
 	FullCollectionName   string
