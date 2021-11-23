@@ -108,6 +108,20 @@ func TestListDatabases(t *testing.T) {
 			assert.Equal(t, actual.Map()["ok"].(float64), expected.Map()["ok"].(float64))
 			assert.GreaterOrEqual(t, actual.Map()["totalSize"].(int64), int64(5000))
 			assert.GreaterOrEqual(t, actual.Map()["totalSizeMb"].(int64), int64(1))
+
+			actualDatabasesArray := actual.Map()["databases"].(types.Array)
+			expectedDatabasesArray := expected.Map()["databases"].(types.Array)
+
+			for i := range expectedDatabasesArray {
+				actualDatabase := actualDatabasesArray[i].(types.Document)
+				expectedDatabase := expectedDatabasesArray[i].(types.Document)
+				assert.GreaterOrEqual(t, actualDatabase.Map()["sizeOnDisk"].(int64), int64(1000))
+
+				actualDatabase.Remove("sizeOnDisk")
+				expectedDatabase.Remove("sizeOnDisk")
+				assert.Equal(t, actualDatabase, expectedDatabase)
+			}
+
 		})
 	}
 }
