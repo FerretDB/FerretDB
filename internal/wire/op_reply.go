@@ -28,7 +28,7 @@ import (
 
 const maxNumberReturned = 1000
 
-// OpReply is a message sent by the MongoDB ddatabase in response to an OpQuery.
+// OpReply is a message sent by the MongoDB database in response to an OpQuery.
 type OpReply struct {
 	ResponseFlags  OpReplyFlags
 	CursorID       int64
@@ -85,7 +85,7 @@ func (reply *OpReply) UnmarshalBinary(b []byte) error {
 	return nil
 }
 
-// MarshalBinary marshals an OpReply into a byte array.
+// MarshalBinary writes an OpReply to a byte array.
 func (reply *OpReply) MarshalBinary() ([]byte, error) {
 	if l := len(reply.Documents); int32(l) != reply.NumberReturned {
 		return nil, lazyerrors.Errorf("wire.OpReply.MarshalBinary: len(Documents)=%d, NumberReturned=%d", l, reply.NumberReturned)
@@ -120,7 +120,7 @@ func (reply *OpReply) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// MarshalJSON marshals an OpReply into JSON, represented as a byte array.
+// MarshalJSON marshals an OpReply in JSON format to a byte array.
 func (reply *OpReply) MarshalJSON() ([]byte, error) {
 	m := map[string]interface{}{
 		"ResponseFlags":  reply.ResponseFlags,

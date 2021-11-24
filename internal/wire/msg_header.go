@@ -45,6 +45,7 @@ func (i OpCode) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + i.String() + `"`), nil
 }
 
+// MsgHeader in general, each message consists of a standard message header followed by request-specific data.
 type MsgHeader struct {
 	MessageLength int32
 	RequestID     int32
@@ -91,6 +92,7 @@ func (msg *MsgHeader) writeTo(w *bufio.Writer) error {
 	return nil
 }
 
+// MarshalBinary writes a MsgHeader to a byte array.
 func (msg *MsgHeader) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 

@@ -31,6 +31,7 @@ var (
 	_OpCode_index_2 = [...]uint8{0, 13, 19}
 )
 
+// String the OpCode.
 func (i OpCode) String() string {
 	switch {
 	case i == 1:

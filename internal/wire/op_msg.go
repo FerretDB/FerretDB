@@ -42,6 +42,7 @@ type OpMsg struct {
 	sections []OpMsgSection
 }
 
+// SetSections of the OpMsg.
 func (msg *OpMsg) SetSections(sections ...OpMsgSection) error {
 	msg.sections = sections
 	_, err := msg.Document()
@@ -283,6 +284,7 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// MarshalJSON writes an OpMsg in JSON format to a byte array.
 func (msg *OpMsg) MarshalJSON() ([]byte, error) {
 	m := map[string]interface{}{
 		"FlagBits": msg.FlagBits,
