@@ -47,33 +47,21 @@ func TestListDatabases(t *testing.T) {
 	}
 
 	testCases := map[string]testCase{
-		"listDatabases Monila": {
+		"listDatabases": {
 			req: types.MustMakeDocument(
 				"listDatabases", int32(1),
-				"$db", "monila",
 			),
 			resp: types.MustMakeDocument(
 				"databases", types.Array{types.MustMakeDocument(
 					"name", "monila",
 					"sizeOnDisk", int64(13238272),
 					"empty", false,
-				)},
-				"totalSize", int64(30081827),
-				"totalSizeMb", int64(28),
-				"ok", float64(1),
-			),
-		},
-		"listDatabases Pagila": {
-			req: types.MustMakeDocument(
-				"listDatabases", int32(1),
-				"$db", "pagila",
-			),
-			resp: types.MustMakeDocument(
-				"databases", types.Array{types.MustMakeDocument(
-					"name", "pagila",
-					"sizeOnDisk", int64(7184384),
-					"empty", false,
-				)},
+				),
+					types.MustMakeDocument(
+						"name", "pagila",
+						"sizeOnDisk", int64(7184384),
+						"empty", false,
+					)},
 				"totalSize", int64(30081827),
 				"totalSizeMb", int64(28),
 				"ok", float64(1),

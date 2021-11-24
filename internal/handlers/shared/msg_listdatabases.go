@@ -24,41 +24,30 @@ import (
 )
 
 func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	m := document.Map()
 
 	var databaseNames []string
 
-	db, ok := m["$db"].(string)
-	if !ok {
-		// collect MangoDB databases / PostgreSQL schema names
-		rows, err := h.pgPool.Query(ctx, "SELECT schema_name FROM information_schema.schemata ORDER BY schema_name")
-		if err != nil {
+	// collect MangoDB databases / PostgreSQL schema names
+	rows, err := h.pgPool.Query(ctx, "SELECT schema_name FROM information_schema.schemata ORDER BY schema_name")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var name string
+		if err = rows.Scan(&name); err != nil {
 			return nil, err
 		}
-		defer rows.Close()
 
-		for rows.Next() {
-			var name string
-			if err = rows.Scan(&name); err != nil {
-				return nil, err
-			}
-
-			if strings.HasPrefix(name, "pg_") || name == "information_schema" {
-				continue
-			}
-
-			databaseNames = append(databaseNames, name)
+		if strings.HasPrefix(name, "pg_") || name == "information_schema" {
+			continue
 		}
-		if err = rows.Err(); err != nil {
-			return nil, err
-		}
-	} else {
-		databaseNames = append(databaseNames, db)
+
+		databaseNames = append(databaseNames, name)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
 
 	databases := make(types.Array, len(databaseNames))
