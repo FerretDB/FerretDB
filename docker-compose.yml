@@ -16,12 +16,7 @@ services:
       - POSTGRES_HOST_AUTH_METHOD=trust
       - POSTGRES_DB=mangodb
     volumes:
-      - test_db_postgres:/docker-entrypoint-initdb.d/:ro
-    healthcheck:
-      test: ['CMD', 'psql', '-U', 'postgres', '-l']
-      interval: 3s
-      timeout: 5s
-      retries: 30
+      - test_db_postgres:/test_db/:ro
 
   # for compatibility testing and mongosh
   mongodb:
@@ -35,12 +30,7 @@ services:
       # Always UTC+05:45. Set to catch timezone problems.
       - TZ=Asia/Kathmandu
     volumes:
-      - test_db_mongodb:/docker-entrypoint-initdb.d/:ro
-    healthcheck:
-      test: ['CMD', 'mongosh', '--eval', 'disableTelemetry()']
-      interval: 3s
-      timeout: 5s
-      retries: 30
+      - test_db_mongodb:/test_db/:ro
 
   test_db:
     image: aleksi/test_db:1.2.0
