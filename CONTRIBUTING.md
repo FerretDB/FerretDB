@@ -7,7 +7,7 @@ You will need Go 1.18 (for [fuzzing](https://go.dev/blog/fuzz-beta) and [generic
 
 To verify your Go version:
 ```
-$ go version
+$ gotip version
 go version devel go1.18-[...]
 ```
 ## Helpful Commands
