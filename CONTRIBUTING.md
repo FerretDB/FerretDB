@@ -7,9 +7,16 @@ You will need Go 1.18 (for [fuzzing](https://go.dev/blog/fuzz-beta) and [generic
 
 To verify your Go version:
 ```
-$ gotip version
+$ go version
 go version devel go1.18-[...]
 ```
+**Note:** If `go version` does not return version 1.18, you may need to symbolic link `gotip` to `go`.
+```
+ls -s path_to_gotip /user/local/bin/go
+```
+Use `which gotip` to get the path to gotip.
+
+
 ## Helpful Commands
 
 1. Install tools with `make init`.
