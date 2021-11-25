@@ -18,12 +18,13 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
+	"net"
 	"os"
 	"os/exec"
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -33,42 +34,130 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/util/logging"
 )
 
-var composeBin string
+var (
+	composeBin string
 
-func runCompose(args []string, stdin io.Reader) {
+	collections = []string{
+		"actor",
+		"address",
+		"category",
+		"city",
+		"country",
+		"customer",
+		"film_actor",
+		"film_category",
+		"film",
+		"inventory",
+		"language",
+		"rental",
+		"staff",
+		"store",
+	}
+)
+
+func runCompose(args []string, stdin io.Reader, logger *zap.SugaredLogger) {
 	cmd := exec.Command(composeBin, args...)
-	log.Printf("%#v", cmd.Args)
+	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
 
 	cmd.Stdin = stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		log.Fatal(err)
+		logger.Fatalf("%s failed: %s", strings.Join(cmd.Args, " "), err)
 	}
 }
 
-func main() {
-	logger := logging.Setup(zap.InfoLevel).Sugar()
+func waitForPort(ctx context.Context, port uint16) error {
+	for ctx.Err() == nil {
+		conn, err := net.Dial("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+		if err == nil {
+			conn.Close()
+			return nil
+		}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+		sleepCtx, sleepCancel := context.WithTimeout(ctx, time.Second)
+		<-sleepCtx.Done()
+		sleepCancel()
+	}
 
-	go debug.RunHandler(ctx, "127.0.0.1:8089", logger.Named("debug").Desugar())
+	return ctx.Err()
+}
 
-	var err error
-	if composeBin, err = exec.LookPath("docker-compose"); err != nil {
+func setupMongoDB(ctx context.Context) {
+	start := time.Now()
+	logger := zap.S().Named("mongodb")
+
+	logger.Infof("Waiting for port 37017 to be up...")
+	if err := waitForPort(ctx, 37017); err != nil {
 		logger.Fatal(err)
 	}
 
+	logger.Infof("Importing database...")
+
+	var wg sync.WaitGroup
+
+	for _, c := range collections {
+		args := fmt.Sprintf(
+			`exec -T mongodb mongoimport --uri mongodb://127.0.0.1:27017/monila `+
+				`--drop --maintainInsertionOrder --collection %[1]s /test_db/%[1]s.json`,
+			c,
+		)
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			runCompose(strings.Split(args, " "), nil, logger)
+		}()
+	}
+
+	wg.Wait()
+
+	logger.Infof("Done in %s.", time.Since(start))
+}
+
+func setupPagila(ctx context.Context) {
+	start := time.Now()
+	logger := zap.S().Named("postgres.pagila")
+
+	logger.Infof("Waiting for port 5432 to be up...")
+	if err := waitForPort(ctx, 5432); err != nil {
+		logger.Fatal(err)
+	}
+
+	logger.Infof("Importing database...")
+
+	args := strings.Split(`exec -T postgres psql -U postgres -d mangodb --quiet -f /test_db/01-pagila-schema.sql`, " ")
+	runCompose(args, nil, logger)
+
+	args = strings.Split(`exec -T postgres psql -U postgres -d mangodb --quiet -f /test_db/02-pagila-data.sql`, " ")
+	runCompose(args, nil, logger)
+
+	args = strings.Split(`exec -T postgres psql -U postgres -d mangodb --quiet`, " ")
+	stdin := strings.NewReader(`ALTER SCHEMA public RENAME TO pagila;`)
+	runCompose(args, stdin, logger)
+
+	logger.Infof("Done in %s.", time.Since(start))
+}
+
+func setupMonila(ctx context.Context) {
+	start := time.Now()
+	logger := zap.S().Named("postgres.monila")
+
+	logger.Infof("Waiting for port 5432 to be up...")
+	if err := waitForPort(ctx, 5432); err != nil {
+		logger.Fatal(err)
+	}
+
+	logger.Infof("Importing database...")
+
 	args := strings.Split(`exec -T postgres psql -U postgres -d mangodb`, " ")
 	stdin := strings.NewReader(strings.Join([]string{
-		`ALTER SCHEMA public RENAME TO pagila;`,
 		`CREATE SCHEMA monila;`,
 		`CREATE SCHEMA test;`,
 	}, "\n"))
-	runCompose(args, stdin)
+	runCompose(args, stdin, logger)
 
-	pgPool, err := pg.NewPool("postgres://postgres@127.0.0.1:5432/mangodb", logger.Desugar(), true)
+	pgPool, err := pg.NewPool("postgres://postgres@127.0.0.1:5432/mangodb", logger.Desugar(), false)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -87,44 +176,71 @@ func main() {
 		Logger:     logger.Named("listener").Desugar(),
 	})
 
-	done := make(chan struct{})
+	lCtx, lCancel := context.WithCancel(ctx)
+	lDone := make(chan struct{})
 	go func() {
-		defer close(done)
-		l.Run(ctx)
+		defer close(lDone)
+		l.Run(lCtx)
 	}()
 
 	var wg sync.WaitGroup
-	for _, c := range []string{
-		"actor",
-		"address",
-		"category",
-		"city",
-		"country",
-		"customer",
-		"film_actor",
-		"film_category",
-		"film",
-		"inventory",
-		"language",
-		"rental",
-		"staff",
-		"store",
-	} {
-		l := fmt.Sprintf(
+
+	for _, c := range collections {
+		args := strings.Split(fmt.Sprintf(
 			`exec -T mongodb mongoimport --uri mongodb://host.docker.internal:27018/monila `+
-				`--drop --maintainInsertionOrder --collection %[1]s /docker-entrypoint-initdb.d/%[1]s.json`,
-			c,
-		)
+				`--drop --maintainInsertionOrder --collection %[1]s /test_db/%[1]s.json`,
+			c), " ")
 
 		wg.Add(1)
-		// go func() {
-		runCompose(strings.Split(l, " "), nil)
-		wg.Done()
-		// }()
+		go func() {
+			defer wg.Done()
+			runCompose(args, nil, logger)
+		}()
 	}
 
 	wg.Wait()
 
-	cancel()
-	<-done
+	lCancel()
+	<-lDone
+
+	logger.Infof("Done in %s.", time.Since(start))
+}
+
+func main() {
+	logging.Setup(zap.InfoLevel)
+	logger := zap.S()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go debug.RunHandler(ctx, "127.0.0.1:8089", logger.Named("debug").Desugar())
+
+	var err error
+	if composeBin, err = exec.LookPath("docker-compose"); err != nil {
+		logger.Fatal(err)
+	}
+
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		setupMongoDB(ctx)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		setupPagila(ctx)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		setupMonila(ctx)
+	}()
+
+	wg.Wait()
+
+	logger.Info("Done.")
 }

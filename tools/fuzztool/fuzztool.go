@@ -23,7 +23,6 @@ import (
 )
 
 func main() {
-	logger := logging.Setup(zap.InfoLevel)
+	logging.Setup(zap.InfoLevel)
 	flag.Parse()
-	_ = logger
 }

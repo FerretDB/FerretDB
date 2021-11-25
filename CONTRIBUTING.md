@@ -10,6 +10,13 @@ To verify your Go version:
 $ go version
 go version devel go1.18-[...]
 ```
+**Note:** If using gotip and `go version` does not return version 1.18, you may need to symbolic link `gotip` to `go`.
+```
+ls -s path_to_gotip /user/local/bin/go
+```
+Use `which gotip` to get the path to gotip.
+
+
 ## Helpful Commands
 
 1. Install tools with `make init`.

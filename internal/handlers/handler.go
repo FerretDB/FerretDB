@@ -58,7 +58,9 @@ func New(pgPool *pg.Pool, l *zap.Logger, shared *shared.Handler, sql, jsonb1 com
 //  * return protocol error (*common.Error) - it will be returned to the client;
 //  * return any other error - it will be returned to the client before terminating connection;
 //  * panic - that will terminate the connection without a response.
-func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll
+//
+//nolint:lll // arguments are long
+func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) {
 	resHeader = new(wire.MsgHeader)
 	var err error
 

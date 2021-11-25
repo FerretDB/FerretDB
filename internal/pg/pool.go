@@ -71,6 +71,8 @@ func NewPool(connString string, logger *zap.Logger, lazy bool) (*Pool, error) {
 }
 
 func (p *Pool) checkConnection(ctx context.Context) error {
+	logger := p.Config().ConnConfig.Logger
+
 	rows, err := p.Query(ctx, "SHOW ALL")
 	if err != nil {
 		return fmt.Errorf("pg.Pool.checkConnection: %w", err)
@@ -104,10 +106,12 @@ func (p *Pool) checkConnection(ctx context.Context) error {
 			continue
 		}
 
-		p.Config().ConnConfig.Logger.Log(ctx, pgx.LogLevelDebug, "PostgreSQL setting", map[string]interface{}{
-			"name":    name,
-			"setting": setting,
-		})
+		if logger != nil {
+			logger.Log(ctx, pgx.LogLevelDebug, "PostgreSQL setting", map[string]interface{}{
+				"name":    name,
+				"setting": setting,
+			})
+		}
 	}
 
 	if err := rows.Err(); err != nil {
