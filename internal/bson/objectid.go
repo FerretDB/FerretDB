@@ -24,10 +24,12 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
+// ObjectID data type.
 type ObjectID [12]byte
 
 func (obj *ObjectID) bsontype() {}
 
+// ReadFrom bufio.Reader ObjectID type.
 func (obj *ObjectID) ReadFrom(r *bufio.Reader) error {
 	if _, err := io.ReadFull(r, obj[:]); err != nil {
 		return lazyerrors.Errorf("bson.ObjectID.ReadFrom (io.ReadFull): %w", err)
@@ -36,6 +38,7 @@ func (obj *ObjectID) ReadFrom(r *bufio.Reader) error {
 	return nil
 }
 
+// WriteTo bufio.Writer ObjectID.
 func (obj ObjectID) WriteTo(w *bufio.Writer) error {
 	v, err := obj.MarshalBinary()
 	if err != nil {
@@ -50,6 +53,7 @@ func (obj ObjectID) WriteTo(w *bufio.Writer) error {
 	return nil
 }
 
+// MarshalBinary converts ObjectID to byte array.
 func (obj ObjectID) MarshalBinary() ([]byte, error) {
 	b := make([]byte, len(obj))
 	copy(b, obj[:])
@@ -60,6 +64,7 @@ type objectIDJSON struct {
 	O string `json:"$o"`
 }
 
+// UnmarshalJSON ObjectID in JSON format to byte array.
 func (obj *ObjectID) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
@@ -89,6 +94,7 @@ func (obj *ObjectID) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MarshalJSON ObjectID to JSON format in a byte array.
 func (obj ObjectID) MarshalJSON() ([]byte, error) {
 	return json.Marshal(objectIDJSON{
 		O: hex.EncodeToString(obj[:]),
