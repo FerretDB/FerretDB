@@ -22,6 +22,7 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
+// MsgWhatsMyURI is an internal command, returns the peerAddress of the handler.
 func (h *Handler) MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 	err := reply.SetSections(wire.OpMsgSection{

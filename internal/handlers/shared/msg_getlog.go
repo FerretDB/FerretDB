@@ -27,6 +27,7 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
+// MsgGetLog is an administrative command that returns the most recent 1024 logged events.
 func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {

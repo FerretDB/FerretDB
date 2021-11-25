@@ -31,6 +31,7 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
+// Handler data struct.
 type Handler struct {
 	pgPool *pg.Pool
 	l      *zap.Logger
@@ -41,6 +42,7 @@ type Handler struct {
 	lastRequestID int32
 }
 
+// New returns a new handler.
 func New(pgPool *pg.Pool, l *zap.Logger, shared *shared.Handler, sql, jsonb1 common.Storage) *Handler {
 	return &Handler{
 		pgPool: pgPool,

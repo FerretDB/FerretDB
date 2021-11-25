@@ -22,6 +22,7 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
+// MsgPing OpMsg containing a ping, used to test whether a server is responding to commands.
 func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 	err := reply.SetSections(wire.OpMsgSection{

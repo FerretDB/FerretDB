@@ -24,10 +24,12 @@ import (
 	"go.uber.org/zap"
 )
 
+// Pool data struct for *pgxpool.Pool.
 type Pool struct {
 	*pgxpool.Pool
 }
 
+// NewPool returns a pfxpool, a concurrency-safe connection pool for pgx.
 func NewPool(connString string, logger *zap.Logger, lazy bool) (*Pool, error) {
 	config, err := pgxpool.ParseConfig(connString)
 	if err != nil {

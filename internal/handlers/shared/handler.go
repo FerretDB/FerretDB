@@ -16,11 +16,13 @@ package shared
 
 import "github.com/MangoDB-io/MangoDB/internal/pg"
 
+// Handler data struct.
 type Handler struct {
 	pgPool   *pg.Pool
 	peerAddr string
 }
 
+// NewHandler returns a pointer to a new Handler, populated with the pgPool and peerAddr.
 func NewHandler(pgPool *pg.Pool, peerAddr string) *Handler {
 	return &Handler{
 		pgPool:   pgPool,

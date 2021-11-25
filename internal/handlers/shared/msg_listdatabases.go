@@ -24,6 +24,7 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
+// MsgListDatabases command provides a list of all existing databases along with basic statistics about them.
 func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var names []string
 	rows, err := h.pgPool.Query(ctx, "SELECT schema_name FROM information_schema.schemata")
