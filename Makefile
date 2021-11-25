@@ -12,8 +12,6 @@ env-up-detach:
 	docker-compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --detach
 
 env-setup: gen-version
-	until [ "`docker inspect mangodb_postgres -f {{.State.Health.Status}}`" = "healthy" ]; do sleep 1; done
-	until [ "`docker inspect mangodb_mongodb  -f {{.State.Health.Status}}`" = "healthy" ]; do sleep 1; done
 	go run ./tools/envtool/main.go
 
 env-pull:
@@ -63,7 +61,7 @@ build-testcover: gen-version           ## Build bin/mangodb-testcover
 	go test -c -o=bin/mangodb-testcover -trimpath -tags=testcover -race -coverpkg=./... ./cmd/mangodb
 
 run: build-testcover                   ## Run MangoDB
-	bin/mangodb-testcover -test.coverprofile=cover.txt -mode=diff-normal
+	bin/mangodb-testcover -test.coverprofile=cover.txt -mode=diff-normal -listen-addr=:27017
 
 run-dance: build-testcover             ## Run MangoDB in testing mode
 	bin/mangodb-testcover -test.coverprofile=cover.txt -mode=normal -test-conn-timeout=10s

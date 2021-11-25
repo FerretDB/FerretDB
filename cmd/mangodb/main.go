@@ -43,7 +43,8 @@ var (
 )
 
 func main() {
-	logger := logging.Setup(zap.DebugLevel)
+	logging.Setup(zap.DebugLevel)
+	logger := zap.L()
 	flag.Parse()
 
 	info := version.Get()
