@@ -52,16 +52,18 @@ func TestListDatabases(t *testing.T) {
 				"listDatabases", int32(1),
 			),
 			resp: types.MustMakeDocument(
-				"databases", types.Array{types.MustMakeDocument(
-					"name", "monila",
-					"sizeOnDisk", int64(13238272),
-					"empty", false,
-				),
+				"databases", types.Array{
+					types.MustMakeDocument(
+						"name", "monila",
+						"sizeOnDisk", int64(13238272),
+						"empty", false,
+					),
 					types.MustMakeDocument(
 						"name", "pagila",
 						"sizeOnDisk", int64(7184384),
 						"empty", false,
-					)},
+					),
+				},
 				"totalSize", int64(30081827),
 				"totalSizeMb", int64(28),
 				"ok", float64(1),
@@ -109,7 +111,6 @@ func TestListDatabases(t *testing.T) {
 				expectedDatabase.Remove("sizeOnDisk")
 				assert.Equal(t, actualDatabase, expectedDatabase)
 			}
-
 		})
 	}
 }

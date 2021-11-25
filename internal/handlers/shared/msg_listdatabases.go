@@ -24,7 +24,6 @@ import (
 )
 
 func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-
 	var databaseNames []string
 
 	// collect MangoDB databases / PostgreSQL schema names
