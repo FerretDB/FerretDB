@@ -21,6 +21,7 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
+// MsgUpdate modifies an existing document or documents in a collection.
 func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	return nil, lazyerrors.New("not implemented")
 }

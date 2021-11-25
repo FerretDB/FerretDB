@@ -160,7 +160,7 @@ func (d Document) Keys() []string {
 	return d.keys
 }
 
-// Command returns the first documents's key that is often used as a command name.
+// Command returns the first document's key, this is often used as a command name.
 func (d Document) Command() string {
 	return strings.ToLower(d.keys[0])
 }
@@ -182,7 +182,7 @@ func (d *Document) add(key string, value interface{}) error {
 	return nil
 }
 
-// Set sets the value of the given key, replacing any existing value.
+// Set the value of the given key, replacing any existing value.
 func (d *Document) Set(key string, value interface{}) error {
 	if !isValidKey(key) {
 		return fmt.Errorf("Document.Set: invalid key: %q", key)
@@ -199,7 +199,7 @@ func (d *Document) Set(key string, value interface{}) error {
 	return nil
 }
 
-// Remove removes the given key, doing nothing if the key does not exist.
+// Remove the given key, doing nothing if the key does not exist.
 func (d *Document) Remove(key string) {
 	if _, ok := d.m[key]; !ok {
 		return

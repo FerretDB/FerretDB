@@ -24,7 +24,8 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
-// MsgListCollections retrieve information, i.e. the name and options, about the collections and views in a database.
+// MsgListCollections retrieve information.
+// i.e. the name and options, about the collections and views in a database.
 func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {

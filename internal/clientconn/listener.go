@@ -53,7 +53,7 @@ func NewListener(opts *NewListenerOpts) *Listener {
 	}
 }
 
-// Run the main routine for accepting connections.
+// Run the listener, accepting connections.
 func (l *Listener) Run(ctx context.Context) error {
 	lis, err := net.Listen("tcp", l.opts.ListenAddr)
 	if err != nil {
