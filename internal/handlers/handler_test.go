@@ -30,6 +30,91 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
+func TestListDatabases(t *testing.T) {
+	t.Parallel()
+
+	ctx := testutil.Ctx(t)
+	pool := testutil.Pool(ctx, t)
+	l := zaptest.NewLogger(t)
+	shared := shared.NewHandler(pool, "127.0.0.1:12345")
+	sql := sql.NewStorage(pool, l.Sugar())
+	jsonb1 := jsonb1.NewStorage(pool, l)
+	handler := New(pool, l, shared, sql, jsonb1)
+
+	type testCase struct {
+		req  types.Document
+		resp types.Document
+	}
+
+	testCases := map[string]testCase{
+		"listDatabases": {
+			req: types.MustMakeDocument(
+				"listDatabases", int32(1),
+			),
+			resp: types.MustMakeDocument(
+				"databases", types.Array{
+					types.MustMakeDocument(
+						"name", "monila",
+						"sizeOnDisk", int64(13238272),
+						"empty", false,
+					),
+					types.MustMakeDocument(
+						"name", "pagila",
+						"sizeOnDisk", int64(7184384),
+						"empty", false,
+					),
+				},
+				"totalSize", int64(30081827),
+				"totalSizeMb", int64(28),
+				"ok", float64(1),
+			),
+		},
+	}
+
+	for name, tc := range testCases { //nolint:paralleltest // false positive
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			reqHeader := wire.MsgHeader{
+				RequestID: 1,
+				OpCode:    wire.OP_MSG,
+			}
+
+			var reqMsg wire.OpMsg
+			err := reqMsg.SetSections(wire.OpMsgSection{
+				Documents: []types.Document{tc.req},
+			})
+			require.NoError(t, err)
+
+			_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
+			require.False(t, closeConn)
+
+			actual, err := resBody.(*wire.OpMsg).Document()
+			require.NoError(t, err)
+
+			expected := tc.resp
+
+			assert.Equal(t, actual.Map()["ok"].(float64), expected.Map()["ok"].(float64))
+			assert.GreaterOrEqual(t, actual.Map()["totalSize"].(int64), int64(5000))
+			assert.GreaterOrEqual(t, actual.Map()["totalSizeMb"].(int64), int64(1))
+
+			actualDatabasesArray := actual.Map()["databases"].(types.Array)
+			expectedDatabasesArray := expected.Map()["databases"].(types.Array)
+
+			for i := range expectedDatabasesArray {
+				actualDatabase := actualDatabasesArray[i].(types.Document)
+				expectedDatabase := expectedDatabasesArray[i].(types.Document)
+				assert.GreaterOrEqual(t, actualDatabase.Map()["sizeOnDisk"].(int64), int64(1000))
+
+				actualDatabase.Remove("sizeOnDisk")
+				expectedDatabase.Remove("sizeOnDisk")
+				assert.Equal(t, actualDatabase, expectedDatabase)
+			}
+		})
+	}
+}
+
 func TestFind(t *testing.T) {
 	t.Parallel()
 
