@@ -22,12 +22,12 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
-// Bool data type.
+// Bool represents BSON Bool data type.
 type Bool bool
 
 func (b *Bool) bsontype() {}
 
-// ReadFrom bufio.Reader Bool type.
+// ReadFrom implements bsontype interface.
 func (b *Bool) ReadFrom(r *bufio.Reader) error {
 	v, err := r.ReadByte()
 	if err != nil {
@@ -46,7 +46,7 @@ func (b *Bool) ReadFrom(r *bufio.Reader) error {
 	return nil
 }
 
-// WriteTo bufio.Writer Bool.
+// WriteTo implements bsontype interface.
 func (b Bool) WriteTo(w *bufio.Writer) error {
 	v, err := b.MarshalBinary()
 	if err != nil {
@@ -61,7 +61,7 @@ func (b Bool) WriteTo(w *bufio.Writer) error {
 	return nil
 }
 
-// MarshalBinary converts Bool to byte array.
+// MarshalBinary implements bsontype interface.
 func (b Bool) MarshalBinary() ([]byte, error) {
 	if b {
 		return []byte{1}, nil
@@ -70,7 +70,7 @@ func (b Bool) MarshalBinary() ([]byte, error) {
 	}
 }
 
-// UnmarshalJSON Bool in JSON format to byte array.
+// UnmarshalJSON implements bsontype interface.
 func (b *Bool) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
@@ -85,7 +85,7 @@ func (b *Bool) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON Bool to JSON format in a byte array.
+// MarshalJSON implements bsontype interface.
 func (b Bool) MarshalJSON() ([]byte, error) {
 	return json.Marshal(bool(b))
 }

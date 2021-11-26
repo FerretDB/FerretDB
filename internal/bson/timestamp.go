@@ -23,12 +23,12 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
-// Timestamp data type.
+// Timestamp represents BSON Timestamp data type.
 type Timestamp uint64
 
 func (ts *Timestamp) bsontype() {}
 
-// ReadFrom bufio.Reader Timestamp type.
+// ReadFrom implements bsontype interface.
 func (ts *Timestamp) ReadFrom(r *bufio.Reader) error {
 	if err := binary.Read(r, binary.LittleEndian, ts); err != nil {
 		return lazyerrors.Errorf("bson.Timestamp.ReadFrom (binary.Read): %w", err)
@@ -37,7 +37,7 @@ func (ts *Timestamp) ReadFrom(r *bufio.Reader) error {
 	return nil
 }
 
-// WriteTo bufio.Writer Timestamp.
+// WriteTo implements bsontype interface.
 func (ts Timestamp) WriteTo(w *bufio.Writer) error {
 	v, err := ts.MarshalBinary()
 	if err != nil {
@@ -52,7 +52,7 @@ func (ts Timestamp) WriteTo(w *bufio.Writer) error {
 	return nil
 }
 
-// MarshalBinary converts Timestamp to byte array.
+// MarshalBinary implements bsontype interface.
 func (ts Timestamp) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 
@@ -65,7 +65,7 @@ type timestampJSON struct {
 	T uint64 `json:"$t,string"`
 }
 
-// UnmarshalJSON Timestamp in JSON format to byte array.
+// UnmarshalJSON implements bsontype interface.
 func (ts *Timestamp) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
@@ -87,7 +87,7 @@ func (ts *Timestamp) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON Timestamp to JSON format in a byte array.
+// MarshalJSON implements bsontype interface.
 func (ts Timestamp) MarshalJSON() ([]byte, error) {
 	return json.Marshal(timestampJSON{
 		T: uint64(ts),

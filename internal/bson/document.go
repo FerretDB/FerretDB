@@ -39,7 +39,7 @@ type document interface {
 	Keys() []string
 }
 
-// Document data type.
+// Document represents BSON Document data type.
 type Document struct {
 	m    map[string]interface{}
 	keys []string
@@ -90,7 +90,7 @@ func (doc *Document) Keys() []string {
 	return doc.keys
 }
 
-// ReadFrom bufio.Reader Document type.
+// ReadFrom implements bsontype interface.
 func (doc *Document) ReadFrom(r *bufio.Reader) error {
 	var l int32
 	if err := binary.Read(r, binary.LittleEndian, &l); err != nil {
@@ -248,7 +248,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 	return nil
 }
 
-// WriteTo bufio.Writer Document.
+// WriteTo implements bsontype interface.
 func (doc Document) WriteTo(w *bufio.Writer) error {
 	v, err := doc.MarshalBinary()
 	if err != nil {
@@ -263,7 +263,7 @@ func (doc Document) WriteTo(w *bufio.Writer) error {
 	return nil
 }
 
-// MarshalBinary converts Document to byte array.
+// MarshalBinary implements bsontype interface.
 func (doc Document) MarshalBinary() ([]byte, error) {
 	var elist bytes.Buffer
 	bufw := bufio.NewWriter(&elist)
@@ -492,7 +492,7 @@ func unmarshalJSONValue(data []byte) (interface{}, error) {
 	return res, nil
 }
 
-// UnmarshalJSON Document in JSON format to byte array.
+// UnmarshalJSON implements bsontype interface.
 func (doc *Document) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
@@ -590,7 +590,7 @@ func marshalJSONValue(v interface{}) ([]byte, error) {
 	return b, nil
 }
 
-// MarshalJSON Document to JSON format in a byte array.
+// MarshalJSON implements bsontype interface.
 func (doc Document) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 

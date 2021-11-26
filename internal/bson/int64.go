@@ -23,12 +23,12 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
-// Int64 data type.
+// Int64 represents BSON Int64 data type.
 type Int64 int64
 
 func (i *Int64) bsontype() {}
 
-// ReadFrom bufio.Reader Int64 type.
+// ReadFrom implements bsontype interface.
 func (i *Int64) ReadFrom(r *bufio.Reader) error {
 	if err := binary.Read(r, binary.LittleEndian, i); err != nil {
 		return lazyerrors.Errorf("bson.Int64.ReadFrom (binary.Read): %w", err)
@@ -37,7 +37,7 @@ func (i *Int64) ReadFrom(r *bufio.Reader) error {
 	return nil
 }
 
-// WriteTo bufio.Writer Int64.
+// WriteTo implements bsontype interface.
 func (i Int64) WriteTo(w *bufio.Writer) error {
 	v, err := i.MarshalBinary()
 	if err != nil {
@@ -52,7 +52,7 @@ func (i Int64) WriteTo(w *bufio.Writer) error {
 	return nil
 }
 
-// MarshalBinary converts Int64 to byte array.
+// MarshalBinary implements bsontype interface.
 func (i Int64) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 
@@ -65,7 +65,7 @@ type int64JSON struct {
 	L int64 `json:"$l,string"`
 }
 
-// UnmarshalJSON Int64 in JSON format to byte array.
+// UnmarshalJSON implements bsontype interface.
 func (i *Int64) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
@@ -87,7 +87,7 @@ func (i *Int64) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON Int64 to JSON format in a byte array.
+// MarshalJSON implements bsontype interface.
 func (i Int64) MarshalJSON() ([]byte, error) {
 	return json.Marshal(int64JSON{
 		L: int64(i),

@@ -23,12 +23,12 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
-// Array data type.
+// Array represents BSON Array data type.
 type Array []interface{}
 
 func (arr *Array) bsontype() {}
 
-// ReadFrom bufio.Reader Array type.
+// ReadFrom implements bsontype interface.
 func (arr *Array) ReadFrom(r *bufio.Reader) error {
 	var doc Document
 	if err := doc.ReadFrom(r); err != nil {
@@ -54,7 +54,7 @@ func (arr *Array) ReadFrom(r *bufio.Reader) error {
 	return nil
 }
 
-// WriteTo bufio.Writer Array.
+// WriteTo implements bsontype interface.
 func (arr Array) WriteTo(w *bufio.Writer) error {
 	v, err := arr.MarshalBinary()
 	if err != nil {
@@ -68,7 +68,7 @@ func (arr Array) WriteTo(w *bufio.Writer) error {
 	return nil
 }
 
-// MarshalBinary converts Array to byte array.
+// MarshalBinary implements bsontype interface.
 func (arr Array) MarshalBinary() ([]byte, error) {
 	m := make(map[string]interface{}, len(arr))
 	keys := make([]string, len(arr))
@@ -89,7 +89,7 @@ func (arr Array) MarshalBinary() ([]byte, error) {
 	return b, nil
 }
 
-// UnmarshalJSON Array in JSON format to byte array.
+// UnmarshalJSON implements bsontype interface.
 func (arr *Array) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
@@ -119,7 +119,7 @@ func (arr *Array) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON Array to JSON format in a byte array.
+// MarshalJSON implements bsontype interface.
 func (arr Array) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	buf.WriteByte('[')

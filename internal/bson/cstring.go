@@ -22,12 +22,12 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
-// CString data type.
+// CString represents BSON CString data type.
 type CString string
 
 func (cstr *CString) bsontype() {}
 
-// ReadFrom bufio.Reader CString type.
+// ReadFrom implements bsontype interface.
 func (cstr *CString) ReadFrom(r *bufio.Reader) error {
 	b, err := r.ReadBytes(0)
 	if err != nil {
@@ -38,7 +38,7 @@ func (cstr *CString) ReadFrom(r *bufio.Reader) error {
 	return nil
 }
 
-// WriteTo bufio.Writer Cstring.
+// WriteTo implements bsontype interface.
 func (cstr CString) WriteTo(w *bufio.Writer) error {
 	v, err := cstr.MarshalBinary()
 	if err != nil {
@@ -53,7 +53,7 @@ func (cstr CString) WriteTo(w *bufio.Writer) error {
 	return nil
 }
 
-// MarshalBinary converts CString to byte array.
+// MarshalBinary implements bsontype interface.
 func (cstr CString) MarshalBinary() ([]byte, error) {
 	b := make([]byte, len(cstr)+1)
 	copy(b, cstr)
@@ -64,7 +64,7 @@ type cstringJSON struct {
 	CString string `json:"$c"`
 }
 
-// UnmarshalJSON CString in JSON format to byte array.
+// UnmarshalJSON implements bsontype interface.
 func (cstr *CString) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
@@ -86,7 +86,7 @@ func (cstr *CString) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON CString to JSON format in a byte array.
+// MarshalJSON implements bsontype interface.
 func (cstr CString) MarshalJSON() ([]byte, error) {
 	return json.Marshal(cstringJSON{
 		CString: string(cstr),

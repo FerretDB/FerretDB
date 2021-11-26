@@ -25,7 +25,7 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
-// Binary data type.
+// Binary represents BSON Binary data type.
 type Binary struct {
 	Subtype types.BinarySubtype
 	B       []byte
@@ -33,7 +33,7 @@ type Binary struct {
 
 func (bin *Binary) bsontype() {}
 
-// ReadFrom bufio.Reader Binary type.
+// ReadFrom implements bsontype interface.
 func (bin *Binary) ReadFrom(r *bufio.Reader) error {
 	var l int32
 	if err := binary.Read(r, binary.LittleEndian, &l); err != nil {
@@ -57,7 +57,7 @@ func (bin *Binary) ReadFrom(r *bufio.Reader) error {
 	return nil
 }
 
-// WriteTo bufio.Writer Binary.
+// WriteTo implements bsontype interface.
 func (bin Binary) WriteTo(w *bufio.Writer) error {
 	v, err := bin.MarshalBinary()
 	if err != nil {
@@ -77,7 +77,7 @@ type binaryJSON struct {
 	S byte   `json:"s"`
 }
 
-// MarshalBinary converts Binary to byte array.
+// MarshalBinary implements bsontype interface.
 func (bin Binary) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 
@@ -88,7 +88,7 @@ func (bin Binary) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// UnmarshalJSON Binary in JSON format to byte array.
+// UnmarshalJSON implements bsontype interface.
 func (bin *Binary) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
@@ -112,7 +112,7 @@ func (bin *Binary) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON Binary to JSON format in a byte array.
+// MarshalJSON implements bsontype interface.
 func (bin Binary) MarshalJSON() ([]byte, error) {
 	b, err := json.Marshal(binaryJSON{
 		B: bin.B,
