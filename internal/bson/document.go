@@ -68,8 +68,7 @@ func ConvertDocument(d document) (*Document, error) {
 	return doc, nil
 }
 
-// ConvertDocument converts types.Document to bson.Document and validates it.
-// Must convert or it will panic.
+// MustConvertDocument is a ConvertDocument that panics in case of error.
 func MustConvertDocument(d document) *Document {
 	doc, err := ConvertDocument(d)
 	if err != nil {
