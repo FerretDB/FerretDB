@@ -24,6 +24,7 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
+// MsgIsMaster returns a document that describes the role of the instance.
 func (h *Handler) MsgIsMaster(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 	err := reply.SetSections(wire.OpMsgSection{

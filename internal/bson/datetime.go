@@ -24,6 +24,7 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
+// DateTime represents BSON DateTime data type.
 type DateTime time.Time
 
 func (dt DateTime) String() string {
@@ -32,6 +33,7 @@ func (dt DateTime) String() string {
 
 func (dt *DateTime) bsontype() {}
 
+// ReadFrom implements bsontype interface.
 func (dt *DateTime) ReadFrom(r *bufio.Reader) error {
 	var ts int64
 	if err := binary.Read(r, binary.LittleEndian, &ts); err != nil {
@@ -43,6 +45,7 @@ func (dt *DateTime) ReadFrom(r *bufio.Reader) error {
 	return nil
 }
 
+// WriteTo implements bsontype interface.
 func (dt DateTime) WriteTo(w *bufio.Writer) error {
 	v, err := dt.MarshalBinary()
 	if err != nil {
@@ -57,6 +60,7 @@ func (dt DateTime) WriteTo(w *bufio.Writer) error {
 	return nil
 }
 
+// MarshalBinary implements bsontype interface.
 func (dt DateTime) MarshalBinary() ([]byte, error) {
 	ts := time.Time(dt).UnixMilli()
 
@@ -71,6 +75,7 @@ type dateTimeJSON struct {
 	D int64 `json:"$d,string"`
 }
 
+// UnmarshalJSON implements bsontype interface.
 func (dt *DateTime) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
@@ -93,6 +98,7 @@ func (dt *DateTime) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MarshalJSON implements bsontype interface.
 func (dt DateTime) MarshalJSON() ([]byte, error) {
 	return json.Marshal(dateTimeJSON{
 		D: time.Time(dt).UnixMilli(),

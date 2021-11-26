@@ -27,12 +27,14 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
+// OpMsgSection is one or more sections contained in an OpMsg.
 type OpMsgSection struct {
 	Kind       byte
 	Identifier string
 	Documents  []types.Document
 }
 
+// OpMsg is an extensible message format designed to subsume the functionality of other opcodes.
 type OpMsg struct {
 	FlagBits OpMsgFlags
 	Checksum uint32
@@ -40,6 +42,7 @@ type OpMsg struct {
 	sections []OpMsgSection
 }
 
+// SetSections of the OpMsg.
 func (msg *OpMsg) SetSections(sections ...OpMsgSection) error {
 	msg.sections = sections
 	_, err := msg.Document()
@@ -49,6 +52,7 @@ func (msg *OpMsg) SetSections(sections ...OpMsgSection) error {
 	return nil
 }
 
+// Document returns the value of msg as a types.Document.
 func (msg *OpMsg) Document() (types.Document, error) {
 	var doc types.Document
 
@@ -189,6 +193,7 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 	return nil
 }
 
+// UnmarshalBinary reads an OpMsg from a byte array.
 func (msg *OpMsg) UnmarshalBinary(b []byte) error {
 	br := bytes.NewReader(b)
 	bufr := bufio.NewReader(br)
@@ -204,6 +209,7 @@ func (msg *OpMsg) UnmarshalBinary(b []byte) error {
 	return nil
 }
 
+// MarshalBinary writes an OpMsg to a byte array.
 func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 	bufw := bufio.NewWriter(&buf)
@@ -278,6 +284,7 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// MarshalJSON writes an OpMsg in JSON format to a byte array.
 func (msg *OpMsg) MarshalJSON() ([]byte, error) {
 	m := map[string]interface{}{
 		"FlagBits": msg.FlagBits,

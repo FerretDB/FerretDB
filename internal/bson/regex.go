@@ -22,6 +22,7 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
+// Regex represents BSON Regex data type.
 type Regex struct {
 	Pattern string
 	Options string
@@ -29,6 +30,7 @@ type Regex struct {
 
 func (regex *Regex) bsontype() {}
 
+// ReadFrom implements bsontype interface.
 func (regex *Regex) ReadFrom(r *bufio.Reader) error {
 	var pattern, options CString
 	if err := pattern.ReadFrom(r); err != nil {
@@ -45,6 +47,7 @@ func (regex *Regex) ReadFrom(r *bufio.Reader) error {
 	return nil
 }
 
+// WriteTo implements bsontype interface.
 func (regex Regex) WriteTo(w *bufio.Writer) error {
 	v, err := regex.MarshalBinary()
 	if err != nil {
@@ -59,6 +62,7 @@ func (regex Regex) WriteTo(w *bufio.Writer) error {
 	return nil
 }
 
+// MarshalBinary implements bsontype interface.
 func (regex Regex) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 	bufw := bufio.NewWriter(&buf)
@@ -80,6 +84,7 @@ type regexJSON struct {
 	O string `json:"o"`
 }
 
+// UnmarshalJSON implements bsontype interface.
 func (regex *Regex) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
@@ -104,6 +109,7 @@ func (regex *Regex) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MarshalJSON implements bsontype interface.
 func (regex Regex) MarshalJSON() ([]byte, error) {
 	return json.Marshal(regexJSON{
 		R: regex.Pattern,

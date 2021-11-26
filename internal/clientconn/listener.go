@@ -29,10 +29,12 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
+// Listener main data object.
 type Listener struct {
 	opts *NewListenerOpts
 }
 
+// NewListenerOpts, configuration for a listener.
 type NewListenerOpts struct {
 	ListenAddr string
 	TLS        bool
@@ -44,12 +46,14 @@ type NewListenerOpts struct {
 	TestConnTimeout time.Duration
 }
 
+// NewListener returns a new listener, configured by the NewListenerOpts argument.
 func NewListener(opts *NewListenerOpts) *Listener {
 	return &Listener{
 		opts: opts,
 	}
 }
 
+// Run the listener, accepting connections.
 func (l *Listener) Run(ctx context.Context) error {
 	lis, err := net.Listen("tcp", l.opts.ListenAddr)
 	if err != nil {

@@ -23,6 +23,7 @@ import (
 
 const useSpew = false
 
+// DumpMsgHeader takes a MsgHeader and returns as a string.
 func DumpMsgHeader(header *MsgHeader) string {
 	var res string
 	if useSpew {
@@ -38,6 +39,7 @@ func DumpMsgHeader(header *MsgHeader) string {
 	return strings.TrimSpace(res)
 }
 
+// DumpMsgBody takes a MsgBody and returns as a string.
 func DumpMsgBody(body MsgBody) string {
 	var res string
 	if useSpew {

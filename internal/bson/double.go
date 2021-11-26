@@ -24,10 +24,12 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
+// Double represents BSON Double data type.
 type Double float64
 
 func (d *Double) bsontype() {}
 
+// ReadFrom implements bsontype interface.
 func (d *Double) ReadFrom(r *bufio.Reader) error {
 	var bits uint64
 	if err := binary.Read(r, binary.LittleEndian, &bits); err != nil {
@@ -38,6 +40,7 @@ func (d *Double) ReadFrom(r *bufio.Reader) error {
 	return nil
 }
 
+// WriteTo implements bsontype interface.
 func (d Double) WriteTo(w *bufio.Writer) error {
 	v, err := d.MarshalBinary()
 	if err != nil {
@@ -52,6 +55,7 @@ func (d Double) WriteTo(w *bufio.Writer) error {
 	return nil
 }
 
+// MarshalBinary implements bsontype interface.
 func (d Double) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 
@@ -64,6 +68,7 @@ type doubleJSON struct {
 	F interface{} `json:"$f"`
 }
 
+// UnmarshalJSON implements bsontype interface.
 func (d *Double) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
@@ -102,6 +107,7 @@ func (d *Double) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MarshalJSON implements bsontype interface.
 func (d Double) MarshalJSON() ([]byte, error) {
 	f := float64(d)
 	var o doubleJSON

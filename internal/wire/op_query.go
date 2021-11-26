@@ -26,6 +26,7 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
 )
 
+// OpQuery is used to query the database for documents in a collection.
 type OpQuery struct {
 	Flags                OpQueryFlags
 	FullCollectionName   string
@@ -74,6 +75,7 @@ func (query *OpQuery) readFrom(bufr *bufio.Reader) error {
 	return nil
 }
 
+// UnmarshalBinary reads an OpQuery from a byte array.
 func (query *OpQuery) UnmarshalBinary(b []byte) error {
 	br := bytes.NewReader(b)
 	bufr := bufio.NewReader(br)
@@ -89,6 +91,7 @@ func (query *OpQuery) UnmarshalBinary(b []byte) error {
 	return nil
 }
 
+// MarshalBinary writes an OpQuery to a byte array.
 func (query *OpQuery) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 	bufw := bufio.NewWriter(&buf)
@@ -125,6 +128,7 @@ func (query *OpQuery) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// MarshalBinary writes an OpQuery in JSON format to byte array.
 func (query *OpQuery) MarshalJSON() ([]byte, error) {
 	m := map[string]interface{}{
 		"Flags":              query.Flags,
