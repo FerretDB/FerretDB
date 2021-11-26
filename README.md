@@ -1,37 +1,37 @@
 # MangoDB
 
-MangoDB is set out to become the de-facto open-source alternative to MongoDB.
-MangoDB is an open-source proxy, which converts MongoDB wire protocol queries to SQL, and uses PostgreSQL as a database engine.
+MangoDB was founded to become the de-facto open-source alternative to MongoDB.
+MangoDB is an open-source proxy, it converts the MongoDB wire protocol queries to SQL, using PostgreSQL as a database engine.
 
 
 ## Why do we need MangoDB?
 
-MongoDB is a life-changing technology for many developers, empowering them to build applications faster than using relational databases.
-Its easy-to-use and well-documented drivers make MongoDB one of the easiest to use database solutions available.
-However, MongoDB abandoned its open-source roots, changing the license to SSPL - making it unusable for many open source and commercial projects.
+MongoDB was originally an eye-opening technology for many of us developers, empowering us to build applications faster than using relational databases.
+In its early days, its ease-to-use and well-documented drivers made MongoDB one of the simplest database solutions available.
+However, as time passed MongoDB abandoned its open-source roots, changing the license to SSPL - making it unusable for many open source and early stage commercial projects.
 
-Most MongoDB users are not in need of many of the advanced features offered by MongoDB; however, they are in need of an open-source database solution.
-Recognizing this, MangoDB is here to fill the gap by providing an alternative.
+Most MongoDB users are not in need of many advanced features offered by MongoDB; however, they are in need of an easy to use open-source database solution.
+Recognizing this, MangoDB is here to fill the gap.
 
 
 ## Scope
 
-MangoDB will be compatible with MongoDB drivers and will work as a drop-in replacement for MongoDB in many cases.
+MangoDB will be compatible with MongoDB drivers and will strive to serve as a drop-in replacement for MongoDB.
 
 
 ## Current state
 
-What you see here is a tech demo intended to show a proof of concept.
-Over the next couple of months, we will be working on adding more.
+What you see here is a tech demo - intended to show a proof of concept.
+Over the next couple of months we will be working on adding more.
 See [this example](https://github.com/MangoDB-io/example) for a short demonstration.
 
-MangoDB is in a very early stage and welcomes all contributors.
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+MangoDB is in its very early stages and welcomes all contributors.
+See and contribute to [CONTRIBUTING.md](CONTRIBUTING.md).
 
 
 ## Quickstart
 
-Those steps describe a quick local setup.
+These steps describe a quick local setup.
 They are not suitable for production use.
 
 1. Store the following in the `docker-compose.yml` file:
