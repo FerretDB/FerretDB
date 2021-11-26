@@ -32,7 +32,7 @@ See our [CONTRIBUTING.md](CONTRIBUTING.md).
 ## Quickstart
 
 These steps describe a quick local setup.
-They are not yet suitable for production use.
+They are not suitable for most production use-cases because they keep all data inside containers.
 
 1. Store the following in the `docker-compose.yml` file:
 
