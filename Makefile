@@ -20,7 +20,7 @@ env-pull:
 env-down:                              ## Stop development environment
 	docker-compose down --remove-orphans
 
-init:                                  ## Install development tools
+init: gen-version                      ## Install development tools
 	go mod tidy
 	cd tools && go mod tidy && go generate -tags=tools -x
 
@@ -39,7 +39,7 @@ test:                                  ## Run tests
 
 # That's not quite correct: https://github.com/golang/go/issues/15513
 # But good enough for us.
-fuzz-prepare: gen-version
+fuzz-init: gen-version
 	go test -count=0 ./...
 
 fuzz-short:                            ## Fuzz for 1 minute
@@ -82,7 +82,7 @@ mongo:                                 ## Run (legacy) mongo shell
 	docker-compose exec mongodb mongo mongodb://host.docker.internal:27017/monila \
 		--verbose
 
-docker: build-testcover gen-version
+docker: build-testcover
 	env GOOS=linux go test -c -o=bin/mangodb -trimpath -tags=testcover -coverpkg=./... ./cmd/mangodb
 	docker build --tag=ghcr.io/mangodb-io/mangodb:latest .
 
