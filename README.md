@@ -1,17 +1,17 @@
 # MangoDB
 
-MangoDB was founded to become the de-facto open-source alternative to MongoDB.
-MangoDB is an open-source proxy, it converts the MongoDB wire protocol queries to SQL, using PostgreSQL as a database engine.
+MangoDB was founded to become the de-facto open-source substitute to MongoDB.
+MangoDB is an open-source proxy, converting the MongoDB wire protocol queries to SQL - using PostgreSQL as a database engine.
 
 
 ## Why do we need MangoDB?
 
 MongoDB was originally an eye-opening technology for many of us developers, empowering us to build applications faster than using relational databases.
 In its early days, its ease-to-use and well-documented drivers made MongoDB one of the simplest database solutions available.
-However, as time passed MongoDB abandoned its open-source roots, changing the license to SSPL - making it unusable for many open source and early stage commercial projects.
+However, as time passed, MongoDB abandoned its open-source roots; changing the license to SSPL - making it unusable for many open source and early stage commercial projects.
 
 Most MongoDB users are not in need of many advanced features offered by MongoDB; however, they are in need of an easy to use open-source database solution.
-Recognizing this, MangoDB is here to fill the gap.
+Recognizing this, MangoDB is here to fill that gap.
 
 
 ## Scope
@@ -22,17 +22,17 @@ MangoDB will be compatible with MongoDB drivers and will strive to serve as a dr
 ## Current state
 
 What you see here is a tech demo - intended to show a proof of concept.
-Over the next couple of months we will be working on adding more.
+Over the next couple of months we will be adding more.
 See [this example](https://github.com/MangoDB-io/example) for a short demonstration.
 
 MangoDB is in its very early stages and welcomes all contributors.
-See and contribute to [CONTRIBUTING.md](CONTRIBUTING.md).
+See our [CONTRIBUTING.md](CONTRIBUTING.md).
 
 
 ## Quickstart
 
 These steps describe a quick local setup.
-They are not suitable for production use.
+They are not yet suitable for production use.
 
 1. Store the following in the `docker-compose.yml` file:
 
