@@ -12,7 +12,7 @@ env-up-detach:
 	docker-compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --detach
 
 env-setup: gen-version
-	go run ./tools/envtool/main.go
+	go run ./cmd/envtool/main.go
 
 env-pull:
 	docker-compose pull --include-deps --quiet
