@@ -157,7 +157,7 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	case "whatsmyuri":
 		return h.shared.MsgWhatsMyURI(ctx, msg)
 
-	case "delete", "find", "insert", "update":
+	case "delete", "find", "insert", "update", "count":
 		storage, err := h.msgStorage(ctx, msg)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
@@ -168,6 +168,8 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 			return storage.MsgDelete(ctx, msg)
 		case "find":
 			return storage.MsgFind(ctx, msg)
+		case "count":
+			return storage.MsgCount(ctx, msg)
 		case "insert":
 			return storage.MsgInsert(ctx, msg)
 		case "update":
@@ -222,7 +224,8 @@ func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) (common.Stora
 		if jsonbExist {
 			return h.jsonb1, nil
 		}
-	case "find":
+    // TODO(thuandh): what should we do here?
+	case "find", "count":
 		if jsonbExist {
 			return h.jsonb1, nil
 		}
