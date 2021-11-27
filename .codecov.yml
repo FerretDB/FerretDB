@@ -1,6 +1,6 @@
 ---
 codecov:
-  bot: mangodb-bot
+  bot: ferretdb-bot
 coverage:
   range: "30...60"
 github_checks:

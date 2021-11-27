@@ -15,7 +15,7 @@ linters-settings:
       - check interfaces
     capital: true
   goimports:
-    local-prefixes: github.com/MangoDB-io/MangoDB
+    local-prefixes: github.com/FerretDB/FerretDB
   gosimple:
     go: "1.18"
     checks: ["all"]

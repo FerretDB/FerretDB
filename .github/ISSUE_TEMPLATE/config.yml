@@ -2,5 +2,5 @@
 blank_issues_enabled: false
 contact_links:
   - name: General questions and discussion
-    url: https://github.com/MangoDB-io/MangoDB/discussions/categories/general
+    url: https://github.com/FerretDB/FerretDB/discussions/categories/general
     about: Please use Discussions

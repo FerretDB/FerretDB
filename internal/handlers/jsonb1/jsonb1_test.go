@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import (
 
 	"go.uber.org/zap/zaptest"
 
-	"github.com/MangoDB-io/MangoDB/internal/handlers"
-	"github.com/MangoDB-io/MangoDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/handlers"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func setup(tb testing.TB) (context.Context, *handlers.Handler, string) {

@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // DateTime represents BSON DateTime data type.
@@ -40,7 +40,7 @@ func (dt *DateTime) ReadFrom(r *bufio.Reader) error {
 		return lazyerrors.Errorf("bson.DateTime.ReadFrom (binary.Read): %w", err)
 	}
 
-	// TODO Use .UTC(): https://github.com/MangoDB-io/MangoDB/issues/43
+	// TODO Use .UTC(): https://github.com/FerretDB/FerretDB/issues/43
 	*dt = DateTime(time.UnixMilli(ts))
 	return nil
 }
@@ -93,7 +93,7 @@ func (dt *DateTime) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Errorf("bson.DateTime.UnmarshalJSON: %s", err)
 	}
 
-	// TODO Use .UTC(): https://github.com/MangoDB-io/MangoDB/issues/43
+	// TODO Use .UTC(): https://github.com/FerretDB/FerretDB/issues/43
 	*dt = DateTime(time.UnixMilli(o.D))
 	return nil
 }

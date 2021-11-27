@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 //go:build tools
 // +build tools
 
-package tools // import "github.com/MangoDB-io/MangoDB/tools"
+package tools // import "github.com/FerretDB/FerretDB/tools"
 
 import (
 	_ "github.com/BurntSushi/go-sumtype"

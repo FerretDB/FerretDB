@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/MangoDB-io/MangoDB/internal/pg"
+	"github.com/FerretDB/FerretDB/internal/pg"
 )
 
 func Ctx(tb testing.TB) context.Context {
@@ -41,7 +41,7 @@ func Pool(ctx context.Context, tb testing.TB) *pg.Pool {
 		tb.Skip("skipping in -short mode")
 	}
 
-	pool, err := pg.NewPool("postgres://postgres@127.0.0.1:5432/mangodb?pool_min_conns=1", zaptest.NewLogger(tb), false)
+	pool, err := pg.NewPool("postgres://postgres@127.0.0.1:5432/ferretdb?pool_min_conns=1", zaptest.NewLogger(tb), false)
 	require.NoError(tb, err)
 	tb.Cleanup(pool.Close)
 

@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -43,10 +43,10 @@ func NewPool(connString string, logger *zap.Logger, lazy bool) (*Pool, error) {
 	// * https://github.com/jackc/pgx/issues/520
 	// * https://github.com/jackc/pgx/issues/789
 	// * https://github.com/jackc/pgx/issues/863
-	// * https://github.com/MangoDB-io/MangoDB/issues/43
+	// * https://github.com/FerretDB/FerretDB/issues/43
 	config.ConnConfig.RuntimeParams["timezone"] = "UTC"
 
-	config.ConnConfig.RuntimeParams["application_name"] = "MangoDB"
+	config.ConnConfig.RuntimeParams["application_name"] = "FerretDB"
 	config.ConnConfig.RuntimeParams["search_path"] = ""
 
 	if logger.Core().Enabled(zap.DebugLevel) {

@@ -57,14 +57,14 @@ bench-short:                           ## Benchmark for 5 seconds
 	go test -bench=BenchmarkArray -benchtime=5s ./internal/bson/
 	go test -bench=BenchmarkDocument -benchtime=5s ./internal/bson/
 
-build-testcover: gen-version           ## Build bin/mangodb-testcover
-	go test -c -o=bin/mangodb-testcover -trimpath -tags=testcover -race -coverpkg=./... ./cmd/mangodb
+build-testcover: gen-version           ## Build bin/ferretdb-testcover
+	go test -c -o=bin/ferretdb-testcover -trimpath -tags=testcover -race -coverpkg=./... ./cmd/ferretdb
 
-run: build-testcover                   ## Run MangoDB
-	bin/mangodb-testcover -test.coverprofile=cover.txt -mode=diff-normal -listen-addr=:27017
+run: build-testcover                   ## Run FerretDB
+	bin/ferretdb-testcover -test.coverprofile=cover.txt -mode=diff-normal -listen-addr=:27017
 
-run-dance: build-testcover             ## Run MangoDB in testing mode
-	bin/mangodb-testcover -test.coverprofile=cover.txt -mode=normal -test-conn-timeout=10s
+run-dance: build-testcover             ## Run FerretDB in testing mode
+	bin/ferretdb-testcover -test.coverprofile=cover.txt -mode=normal -test-conn-timeout=10s
 
 lint: bin/go-sumtype bin/golangci-lint ## Run linters
 	bin/go-sumtype ./...
@@ -72,7 +72,7 @@ lint: bin/go-sumtype bin/golangci-lint ## Run linters
 	bin/golangci-lint run --config=.golangci.yml
 
 psql:                                  ## Run psql
-	docker-compose exec postgres psql -U postgres -d mangodb
+	docker-compose exec postgres psql -U postgres -d ferretdb
 
 mongosh:                               ## Run mongosh
 	docker-compose exec mongodb mongosh mongodb://host.docker.internal:27017/monila \
@@ -83,8 +83,8 @@ mongo:                                 ## Run (legacy) mongo shell
 		--verbose
 
 docker: build-testcover
-	env GOOS=linux go test -c -o=bin/mangodb -trimpath -tags=testcover -coverpkg=./... ./cmd/mangodb
-	docker build --tag=ghcr.io/mangodb-io/mangodb:latest .
+	env GOOS=linux go test -c -o=bin/ferretdb -trimpath -tags=testcover -coverpkg=./... ./cmd/ferretdb
+	docker build --tag=ghcr.io/ferretdb/ferretdb:latest .
 
 bin/golangci-lint:
 	$(MAKE) init

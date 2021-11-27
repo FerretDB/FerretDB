@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,19 +23,19 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/sys/unix"
 
-	"github.com/MangoDB-io/MangoDB/internal/clientconn"
-	"github.com/MangoDB-io/MangoDB/internal/pg"
-	"github.com/MangoDB-io/MangoDB/internal/util/debug"
-	"github.com/MangoDB-io/MangoDB/internal/util/logging"
-	"github.com/MangoDB-io/MangoDB/internal/util/version"
+	"github.com/FerretDB/FerretDB/internal/clientconn"
+	"github.com/FerretDB/FerretDB/internal/pg"
+	"github.com/FerretDB/FerretDB/internal/util/debug"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
+	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
-//nolint:gochecknoglobals // flags are defined there to be visible in the testcover binary help output (bin/mangodb-testcover -h).
+//nolint:gochecknoglobals // flags are defined there to be visible in the testcover binary help output (bin/ferretdb-testcover -h).
 var (
 	debugAddrF       = flag.String("debug-addr", "127.0.0.1:8088", "debug address")
 	listenAddrF      = flag.String("listen-addr", "127.0.0.1:27017", "listen address")
 	modeF            = flag.String("mode", string(clientconn.AllModes[0]), fmt.Sprintf("operation mode: %v", clientconn.AllModes))
-	postgresqlURLF   = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/mangodb", "PostgreSQL URL")
+	postgresqlURLF   = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/ferretdb", "PostgreSQL URL")
 	proxyAddrF       = flag.String("proxy-addr", "127.0.0.1:37017", "")
 	tlsF             = flag.Bool("tls", false, "enable insecure TLS")
 	versionF         = flag.Bool("version", false, "show version and exit")
@@ -54,7 +54,7 @@ func main() {
 		return
 	}
 
-	logger.Info("Starting MangoDB "+info.Version+"...", zap.String("commit", info.Commit), zap.Bool("dirty", info.Dirty))
+	logger.Info("Starting FerretDB "+info.Version+"...", zap.String("commit", info.Commit), zap.Bool("dirty", info.Dirty))
 
 	var found bool
 	for _, m := range clientconn.AllModes {
