@@ -2,15 +2,11 @@ module github.com/MangoDB-io/MangoDB/tools
 
 go 1.18
 
-replace github.com/MangoDB-io/MangoDB => ../
-
 require (
 	github.com/BurntSushi/go-sumtype v0.0.0-20190304192233-fcb4a6205bdc
-	github.com/MangoDB-io/MangoDB v0.0.0-00010101000000-000000000000
 	github.com/golangci/golangci-lint v1.43.0 // sync with Go workflow
 	github.com/quasilyte/go-consistent v0.0.0-20200404105227-766526bf1e96
 	github.com/reviewdog/reviewdog v0.13.0
-	go.uber.org/zap v1.19.1
 	golang.org/x/perf v0.0.0-20211012211434-03971e389cd3
 	golang.org/x/tools v0.1.8-0.20211117191604-43b469a3a904 // use @master until Go 1.18 release
 	mvdan.cc/gofumpt v0.2.0
@@ -90,15 +86,6 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/haya14busa/go-actions-toolkit v0.0.0-20200105081403-ca0307860f01 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
-	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
-	github.com/jackc/pgconn v1.10.0 // indirect
-	github.com/jackc/pgio v1.0.0 // indirect
-	github.com/jackc/pgpassfile v1.0.0 // indirect
-	github.com/jackc/pgproto3/v2 v2.1.1 // indirect
-	github.com/jackc/pgservicefile v0.0.0-20200714003250-2b9c44734f2b // indirect
-	github.com/jackc/pgtype v1.8.1 // indirect
-	github.com/jackc/pgx/v4 v4.13.0 // indirect
-	github.com/jackc/puddle v1.1.3 // indirect
 	github.com/jgautheron/goconst v1.5.1 // indirect
 	github.com/jingyugao/rowserrcheck v1.1.1 // indirect
 	github.com/jirfag/go-printf-func-name v0.0.0-20200119135958-7558a9eaa5af // indirect
@@ -159,7 +146,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.9.0 // indirect
 	github.com/ssgreg/nlreturn/v2 v2.2.1 // indirect
-	github.com/stretchr/objx v0.2.0 // indirect
+	github.com/stretchr/objx v0.1.1 // indirect
 	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/sylvia7788/contextcheck v1.0.4 // indirect
@@ -175,8 +162,6 @@ require (
 	github.com/xanzy/go-gitlab v0.50.1 // indirect
 	github.com/yeya24/promlinter v0.1.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.uber.org/atomic v1.7.0 // indirect
-	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/build v0.0.0-20200616162219-07bebbe343e9 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/mod v0.5.1 // indirect
