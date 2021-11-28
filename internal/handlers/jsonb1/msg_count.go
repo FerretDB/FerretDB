@@ -35,18 +35,6 @@ func (h *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	}
 
 	m := document.Map()
-    fmt.Println("=====================")
-    fmt.Printf("documeent map: ")
-    // == without count
-    // documeent map: find: actor	filter: {m:map[] keys:[]}	limit: 1	$db: monila	end
-
-    // === with count
-    // documeent map: count: actor	query: {m:map[] keys:[]}	limit: 1	$db: monila	end
-    // -> TODO: we need to parse both count and find
-    for k, v := range m {
-        fmt.Printf("%+v: %+v\t", k, v)
-    }
-    fmt.Printf("end\n")
 	collection := m["count"].(string)
 	db := m["$db"].(string)
 
@@ -55,7 +43,8 @@ func (h *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, common.NewErrorMessage(common.ErrNotImplemented, "MsgFind: projection is not supported")
 	}
 
-	filter, _ := m["filter"].(types.Document)
+	// in count query, key of filter valyes if is "query"
+	filter, _ := m["query"].(types.Document)
 	sort, _ := m["sort"].(types.Document)
 	limit, _ := m["limit"].(int32)
 
@@ -103,44 +92,30 @@ func (h *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	}
 
 	rows, err := h.pgPool.Query(ctx, sql, args...)
-    fmt.Println("=====================")
-    var count int
-    for rows.Next() {
-        err := rows.Scan(&count)
-        if err != nil {
-            return nil, lazyerrors.Error(err)
-        }
-    }
-    fmt.Printf("Ket qua count ne` %v\n", count)
+	var count int32
+	for rows.Next() {
+		err := rows.Scan(&count)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+	// in psql, the SELECT * FROM table limit `x` ignores the value of the limit,
+	// so, we need this `if` statement to support this kind of query `db.actor.find().limit(10).count()`
+	if count > limit && limit != 0 {
+		count = limit
+	}
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 	defer rows.Close()
 
-	var docs types.Int32
-    docs = 100
-
-	// for {
-		// doc, err := nextRow(rows)
-	// 	if err != nil {
-	// 		return nil, lazyerrors.Error(err)
-	// 	}
-	// 	if doc == nil {
-	// 		break
-	// 	}
-
-	// 	docs = append(docs, *doc)
-	// }
-
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
-			"cursor", types.MustMakeDocument(
-				"firstBatch", docs,
-				"id", int64(0), // TODO
-				"ns", db+"."+collection,
-			),
-			"ok", float64(1),
+			"n",
+			int32(count),
+			"ok",
+			float64(1),
 		)},
 	})
 	if err != nil {
@@ -149,4 +124,3 @@ func (h *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 
 	return &reply, nil
 }
-
