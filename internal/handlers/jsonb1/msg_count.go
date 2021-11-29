@@ -113,7 +113,7 @@ func (h *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
 			"n",
-			int32(count),
+			count,
 			"ok",
 			float64(1),
 		)},

@@ -37,8 +37,6 @@ func (h *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	}
 
 	m := document.Map()
-    fmt.Println("=====================")
-    fmt.Println("document mapping: ", m)
 	collection := m["count"].(string)
 	db := m["$db"].(string)
 
@@ -47,7 +45,8 @@ func (h *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, common.NewErrorMessage(common.ErrNotImplemented, "MsgFind: projection is not supported")
 	}
 
-	filter, _ := m["filter"].(types.Document)
+	// in count query, key of filter valyes if is "query"
+	filter, _ := m["count"].(types.Document)
 	sort, _ := m["sort"].(types.Document)
 	limit, _ := m["limit"].(int32)
 
@@ -92,42 +91,36 @@ func (h *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	}
 
 	rows, err := h.pgPool.Query(ctx, sql, args...)
+	var count int32
+	for rows.Next() {
+		err := rows.Scan(&count)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+	// in psql, the SELECT * FROM table limit `x` ignores the value of the limit,
+	// so, we need this `if` statement to support this kind of query `db.actor.find().limit(10).count()`
+	if count > limit && limit != 0 {
+		count = limit
+	}
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 	defer rows.Close()
 
-	rowInfo := extractRowInfo(rows)
-
-	var docs types.Array
-
-	for {
-		doc, err := nextRow(rows, rowInfo)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-		if doc == nil {
-			break
-		}
-
-		docs = append(docs, *doc)
-	}
-
-	var res wire.OpMsg
-	err = res.SetSections(wire.OpMsgSection{
+	var reply wire.OpMsg
+	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
-			"cursor", types.MustMakeDocument(
-				"firstBatch", docs,
-				"id", int64(0), // TODO
-				"ns", db+"."+collection,
-			),
-			"ok", float64(1),
+			"n",
+			count,
+			"ok",
+			float64(1),
 		)},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &res, nil
+	return &reply, nil
 }
 
