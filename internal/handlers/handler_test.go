@@ -529,7 +529,6 @@ func TestCount(t *testing.T) {
 					)
 					assert.Equal(t, expected, actual)
 				})
-
 			}
 		})
 	}
