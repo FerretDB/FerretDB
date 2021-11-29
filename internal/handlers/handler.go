@@ -224,7 +224,6 @@ func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) (common.Stora
 		if jsonbExist {
 			return h.jsonb1, nil
 		}
-    // TODO(thuandh): what should we do here?
 	case "find", "count":
 		if jsonbExist {
 			return h.jsonb1, nil
