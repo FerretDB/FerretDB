@@ -30,5 +30,4 @@ type (
 	}
 
 	Timestamp uint64
-    Int32 int32
 )

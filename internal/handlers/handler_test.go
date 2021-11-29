@@ -454,3 +454,83 @@ func TestFind(t *testing.T) {
 		})
 	}
 }
+
+func TestCount(t *testing.T) {
+	t.Parallel()
+
+	ctx := testutil.Ctx(t)
+	pool := testutil.Pool(ctx, t)
+	l := zaptest.NewLogger(t)
+	shared := shared.NewHandler(pool, "127.0.0.1:12345")
+	sql := sql.NewStorage(pool, l.Sugar())
+	jsonb1 := jsonb1.NewStorage(pool, l)
+	handler := New(pool, l, shared, sql, jsonb1)
+
+	type testCase struct {
+		req  types.Document
+		resp int32
+	}
+	testCases := map[string]testCase{
+		"CountAllActor": {
+			req: types.MustMakeDocument(
+				"count", "actor",
+			),
+			resp: 200,
+		},
+		"CountExactOne": {
+			req: types.MustMakeDocument(
+				"count", "actor",
+				"query", types.MustMakeDocument(
+					"actor_id", int32(28),
+				),
+			),
+			resp: 1,
+		},
+		"LastNameHoffman": {
+			req: types.MustMakeDocument(
+				"count", "actor",
+				"query", types.MustMakeDocument(
+					"last_name", "HOFFMAN",
+				),
+			),
+			resp: 3,
+		},
+	}
+
+	for name, tc := range testCases {
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			for _, schema := range []string{"monila", "pagila"} {
+				t.Run(schema, func(t *testing.T) {
+					tc.req.Set("$db", schema)
+
+					reqHeader := wire.MsgHeader{
+						RequestID: 1,
+						OpCode:    wire.OP_MSG,
+					}
+
+					var reqMsg wire.OpMsg
+					err := reqMsg.SetSections(wire.OpMsgSection{
+						Documents: []types.Document{tc.req},
+					})
+					require.NoError(t, err)
+
+					_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
+					require.False(t, closeConn)
+
+					actual, err := resBody.(*wire.OpMsg).Document()
+					require.NoError(t, err)
+
+					expected := types.MustMakeDocument(
+						"n", tc.resp,
+						"ok", float64(1),
+					)
+					assert.Equal(t, expected, actual)
+				})
+
+			}
+		})
+	}
+}

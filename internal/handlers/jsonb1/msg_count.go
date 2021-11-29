@@ -27,7 +27,7 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
-// MsgFind selects documents in a collection or view and returns a cursor to the selected documents.
+// MsgCount counts the number of documents matching the query conditions.
 func (h *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {

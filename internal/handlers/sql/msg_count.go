@@ -27,7 +27,7 @@ import (
 	"github.com/MangoDB-io/MangoDB/internal/wire"
 )
 
-// MsgFind selects documents in a collection or view and returns a cursor to the selected documents.
+// MsgCount counts the number of documents matching the query conditions.
 func (h *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	// TODO cursor / getMore support via https://www.postgresql.org/docs/current/sql-declare.html
 
@@ -46,11 +46,11 @@ func (h *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	}
 
 	// in count query, key of filter valyes if is "query"
-	filter, _ := m["count"].(types.Document)
+	filter, _ := m["query"].(types.Document)
 	sort, _ := m["sort"].(types.Document)
 	limit, _ := m["limit"].(int32)
 
-	sql := fmt.Sprintf(`SELECT * FROM %s`, pgx.Identifier{db, collection}.Sanitize())
+	sql := fmt.Sprintf(`SELECT count(*) FROM %s`, pgx.Identifier{db, collection}.Sanitize())
 	var placeholder pg.Placeholder
 
 	whereSQL, args, err := where(filter, &placeholder)
@@ -123,4 +123,3 @@ func (h *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 
 	return &reply, nil
 }
-
