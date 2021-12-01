@@ -19,12 +19,13 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"math/big"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // Decimal128 represents BSON Decimal128 data type.
-type Decimal128 uint64
+type Decimal128 big.Int
 
 func (d *Decimal128) bsontype() {}
 
@@ -62,7 +63,7 @@ func (d Decimal128) MarshalBinary() ([]byte, error) {
 }
 
 type decimal128JSON struct {
-	D uint64 `json:"$numberDecimal,string"`
+	D string `json:"$n"`
 }
 
 // UnmarshalJSON implements bsontype interface.
@@ -83,14 +84,20 @@ func (d *Decimal128) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Errorf("bson.Decimal128.UnmarshalJSON: %s", err)
 	}
 
-	*d = Decimal128(o.D)
+	n, ok := new(big.Int).SetString(o.D, 10)
+	if !ok {
+		return lazyerrors.Errorf("bson.Decimal128.UnmarshalJSON: %b", ok)
+	}
+
+	*d = Decimal128(*n)
 	return nil
 }
 
 // MarshalJSON implements bsontype interface.
 func (d Decimal128) MarshalJSON() ([]byte, error) {
+	n := big.Int(d)
 	return json.Marshal(decimal128JSON{
-		D: uint64(d),
+		D: n.String(),
 	})
 }
 

@@ -21,15 +21,15 @@ import (
 )
 
 var decimal128TestCases = []testCase{{
-	name: "100.50",
-	v:    pointer.To(Decimal128(100.5)),
+	name: "100.5",
+	v:    pointer.To(Decimal128(107666)),
 	b:    []byte{0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-	j:    `{"$numberDecimal":"100.5"}`,
+	j:    `{"$n":"107666"}`,
 }, {
 	name: "0",
 	v:    pointer.To(Decimal128(0)),
 	b:    []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-	j:    `{"$numberDecimal":"0"}`,
+	j:    `{"$n":"0"}`,
 }}
 
 func TestDecimal128(t *testing.T) {
