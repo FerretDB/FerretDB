@@ -30,7 +30,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
-//nolint:gochecknoglobals // flags are defined there to be visible in the testcover binary help output (bin/ferretdb-testcover -h).
+//nolint:gochecknoglobals // flags are defined there to be visible in `bin/ferretdb-testcover -h` output
 var (
 	debugAddrF       = flag.String("debug-addr", "127.0.0.1:8088", "debug address")
 	listenAddrF      = flag.String("listen-addr", "127.0.0.1:27017", "listen address")
