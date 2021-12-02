@@ -82,9 +82,19 @@ mongo:                                 ## Run (legacy) mongo shell
 	docker-compose exec mongodb mongo mongodb://host.docker.internal:27017/monila \
 		--verbose
 
-docker: build-testcover
-	env GOOS=linux go test -c -o=bin/ferretdb -trimpath -tags=testcover -coverpkg=./... ./cmd/ferretdb
-	docker build --tag=ghcr.io/ferretdb/ferretdb:latest .
+docker-init:
+	docker buildx create --driver=docker-container --name=ferretdb
+
+docker-build: build-testcover
+	env GOOS=linux GOARCH=arm64            go test -c -o=bin/ferretdb-arm64 -trimpath -tags=testcover -coverpkg=./... ./cmd/ferretdb
+	env GOOS=linux GOARCH=amd64 GOAMD64=v2 go test -c -o=bin/ferretdb-amd64 -trimpath -tags=testcover -coverpkg=./... ./cmd/ferretdb
+
+docker-local: docker-build
+	docker buildx build --builder=ferretdb --tag=ghcr.io/ferretdb/ferretdb:local --load .
+
+docker-push: docker-build
+	test $(DOCKER_TAG)
+	docker buildx build --builder=ferretdb --platform=linux/arm64,linux/amd64 --tag=ghcr.io/ferretdb/ferretdb:$(DOCKER_TAG) --push .
 
 bin/golangci-lint:
 	$(MAKE) init
