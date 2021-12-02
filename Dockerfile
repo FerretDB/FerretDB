@@ -1,6 +1,8 @@
 FROM scratch
 
-ADD bin/ferretdb /ferretdb
+ARG TARGETARCH
+
+ADD bin/ferretdb-${TARGETARCH} /ferretdb
 
 EXPOSE 27017
 
