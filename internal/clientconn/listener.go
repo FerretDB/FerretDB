@@ -23,18 +23,21 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/pg"
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// Listener main data object.
+// Listener handles incoming client connections.
 type Listener struct {
 	opts *NewListenerOpts
+	m    *ListenerMetrics
 }
 
-// NewListenerOpts, configuration for a listener.
+// NewListenerOpts represents listener configuration.
 type NewListenerOpts struct {
 	ListenAddr string
 	TLS        bool
@@ -42,18 +45,29 @@ type NewListenerOpts struct {
 	Mode       Mode
 	PgPool     *pg.Pool
 	Logger     *zap.Logger
+	Registry   prometheus.Registerer
 
 	TestConnTimeout time.Duration
 }
 
 // NewListener returns a new listener, configured by the NewListenerOpts argument.
 func NewListener(opts *NewListenerOpts) *Listener {
+	m := newListenerMetrics()
+
+	registry := opts.Registry
+	if registry == nil {
+		registry = prometheus.DefaultRegisterer
+	}
+
+	registry.MustRegister(m)
+
 	return &Listener{
 		opts: opts,
+		m:    m,
 	}
 }
 
-// Run the listener, accepting connections.
+// Run runs the listener until ctx is canceled or some unrecoverable error occurs.
 func (l *Listener) Run(ctx context.Context) error {
 	lis, err := net.Listen("tcp", l.opts.ListenAddr)
 	if err != nil {
@@ -68,7 +82,7 @@ func (l *Listener) Run(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		l.opts.Logger.Sugar().Info("Insecure self-signed cerificate generated.")
+		l.opts.Logger.Sugar().Info("Insecure self-signed certificate generated.")
 
 		tlsConfig := &tls.Config{
 			Certificates:       []tls.Certificate{*cert},
@@ -77,15 +91,22 @@ func (l *Listener) Run(ctx context.Context) error {
 		lis = tls.NewListener(lis, tlsConfig)
 	}
 
+	// handle ctx cancelation
 	go func() {
 		<-ctx.Done()
 		lis.Close()
 	}()
 
+	const delay = 3 * time.Second
+
 	var wg sync.WaitGroup
-	for ctx.Err() == nil {
+	for {
 		netConn, err := lis.Accept()
 		if err != nil {
+			if ctx.Err() != nil {
+				break
+			}
+
 			l.opts.Logger.Warn("Failed to accept connection", zap.Error(err))
 			if !errors.Is(err, net.ErrClosed) {
 				time.Sleep(time.Second)
@@ -94,9 +115,13 @@ func (l *Listener) Run(ctx context.Context) error {
 		}
 
 		wg.Add(1)
+		l.m.ConnectedClients.Inc()
+
+		// run connection
 		go func() {
 			defer func() {
 				netConn.Close()
+				l.m.ConnectedClients.Dec()
 				wg.Done()
 			}()
 
@@ -106,10 +131,11 @@ func (l *Listener) Run(ctx context.Context) error {
 				return
 			}
 
-			runCtx := ctx
-			var runCancel context.CancelFunc
+			runCtx, runCancel := ctxutil.WithDelay(ctx.Done(), delay)
+			defer runCancel()
+
 			if l.opts.TestConnTimeout != 0 {
-				runCtx, runCancel = context.WithTimeout(ctx, l.opts.TestConnTimeout)
+				runCtx, runCancel = context.WithTimeout(runCtx, l.opts.TestConnTimeout)
 				defer runCancel()
 			}
 
@@ -122,6 +148,7 @@ func (l *Listener) Run(ctx context.Context) error {
 		}()
 	}
 
+	l.opts.Logger.Info("Waiting for all connections to stop...")
 	wg.Wait()
 
 	return nil

@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"time"
 
 	"github.com/pmezard/go-difflib/difflib"
 	"go.uber.org/zap"
@@ -33,6 +34,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
+// Mode represents FerretDB mode of operation.
 type Mode string
 
 const (
@@ -48,8 +50,10 @@ const (
 	DiffProxyMode Mode = "diff-proxy"
 )
 
+// AllModes includes all operation modes, with the first one being the default.
 var AllModes = []Mode{NormalMode, ProxyMode, DiffNormalMode, DiffProxyMode}
 
+// conn represents client connection.
 type conn struct {
 	netConn net.Conn
 	mode    Mode
@@ -58,6 +62,7 @@ type conn struct {
 	l       *zap.SugaredLogger
 }
 
+// newConn creates a new client connection for given net.Conn.
 func newConn(netConn net.Conn, pgPool *pg.Pool, proxyAddr string, mode Mode) (*conn, error) {
 	prefix := fmt.Sprintf("// %s -> %s ", netConn.RemoteAddr(), netConn.LocalAddr())
 	l := zap.L().Named(prefix)
@@ -84,23 +89,39 @@ func newConn(netConn net.Conn, pgPool *pg.Pool, proxyAddr string, mode Mode) (*c
 	}, nil
 }
 
+// run runs the client connection until ctx is canceled, client disconnects,
+// or fatal error or panic is encountered.
+//
+// The caller is responsible for closing the underlying net.Conn.
 func (c *conn) run(ctx context.Context) (err error) {
+	done := make(chan struct{})
 	defer func() {
 		if p := recover(); p != nil {
 			// Log human-readable stack trace there (included in the error level automatically).
 			c.l.DPanicf("%v\n(err = %v)", p, err)
 			err = errors.New("panic")
 		}
+
+		if err == nil {
+			err = ctx.Err()
+		}
+
+		close(done)
 	}()
 
-	deadline, _ := ctx.Deadline()
-	c.netConn.SetDeadline(deadline)
+	// handle ctx cancelation
+	go func() {
+		select {
+		case <-done:
+		case <-ctx.Done():
+			c.netConn.SetDeadline(time.Unix(0, 0))
+		}
+	}()
 
 	bufr := bufio.NewReader(c.netConn)
 	bufw := bufio.NewWriter(c.netConn)
 	defer func() {
-		e := bufw.Flush()
-		if err == nil {
+		if e := bufw.Flush(); err == nil {
 			err = e
 		}
 
