@@ -1,4 +1,4 @@
-module github.com/MangoDB-io/MangoDB/tools
+module github.com/FerretDB/FerretDB/tools
 
 go 1.18
 

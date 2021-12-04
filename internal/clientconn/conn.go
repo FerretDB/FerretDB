@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,13 +24,13 @@ import (
 	"github.com/pmezard/go-difflib/difflib"
 	"go.uber.org/zap"
 
-	"github.com/MangoDB-io/MangoDB/internal/handlers"
-	"github.com/MangoDB-io/MangoDB/internal/handlers/jsonb1"
-	"github.com/MangoDB-io/MangoDB/internal/handlers/proxy"
-	"github.com/MangoDB-io/MangoDB/internal/handlers/shared"
-	"github.com/MangoDB-io/MangoDB/internal/handlers/sql"
-	"github.com/MangoDB-io/MangoDB/internal/pg"
-	"github.com/MangoDB-io/MangoDB/internal/wire"
+	"github.com/FerretDB/FerretDB/internal/handlers"
+	"github.com/FerretDB/FerretDB/internal/handlers/jsonb1"
+	"github.com/FerretDB/FerretDB/internal/handlers/proxy"
+	"github.com/FerretDB/FerretDB/internal/handlers/shared"
+	"github.com/FerretDB/FerretDB/internal/handlers/sql"
+	"github.com/FerretDB/FerretDB/internal/pg"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 type Mode string
@@ -41,7 +41,7 @@ const (
 	// ProxyMode only proxies requests to another wire protocol compatible service.
 	ProxyMode Mode = "proxy"
 	// DiffNormalMode both handles requests and proxies them, then logs the diff.
-	// Only the MangoDB response is sent to the client.
+	// Only the FerretDB response is sent to the client.
 	DiffNormalMode Mode = "diff-normal"
 	// DiffProxyMode both handles requests and proxies them, then logs the diff.
 	// Only the proxy response is sent to the client.

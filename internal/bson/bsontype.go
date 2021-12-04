@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,19 +16,20 @@
 //
 // JSON mapping for storage
 //
-//   Double:    {"$f": JSON number} or {"$f": "Infinity|-Infinity|NaN"}
-//   String:    JSON string
-//   Document:  {"$k": ["<key 1>", "<key 2>", ...], "<key 1>": <value 1>, "<key 2>": <value 2>, ...}
-//   Array:     JSON array
-//   Binary:    {"$b": "<base 64 string>", "s": <subtype number>}
-//   ObjectID:  {"$o": "<ObjectID as 24 character hex string"}
-//   Bool:      JSON true / false values
-//   DateTime:  {"$d": "milliseconds since epoch as string"}
-//   Regex:     {"$r": "<string without terminating 0x0>", "o": "<string without terminating 0x0>"}
-//   Int32:     JSON number
-//   Timestamp: {"$t": "<number as string>"}
-//   Int64:     {"$l": "<number as string>"}
-//   CString:   {"$c": "<string without terminating 0x0>"}
+//   Double:     {"$f": JSON number} or {"$f": "Infinity|-Infinity|NaN"}
+//   String:     JSON string
+//   Document:   {"$k": ["<key 1>", "<key 2>", ...], "<key 1>": <value 1>, "<key 2>": <value 2>, ...}
+//   Array:      JSON array
+//   Binary:     {"$b": "<base 64 string>", "s": <subtype number>}
+//   ObjectID:   {"$o": "<ObjectID as 24 character hex string"}
+//   Bool:       JSON true / false values
+//   DateTime:   {"$d": "milliseconds since epoch as string"}
+//   Regex:      {"$r": "<string without terminating 0x0>", "o": "<string without terminating 0x0>"}
+//   Int32:      JSON number
+//   Timestamp:  {"$t": "<number as string>"}
+//   Int64:      {"$l": "<number as string>"}
+//   Decimal128: {"$n": "<number as string>"}
+//   CString:    {"$c": "<string without terminating 0x0>"}
 package bson
 
 import (
@@ -38,7 +39,7 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 type bsontype interface {

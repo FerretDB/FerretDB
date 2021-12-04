@@ -9,7 +9,7 @@ linters-settings:
   exhaustive:
     default-signifies-exhaustive: false
   goimports:
-    local-prefixes: github.com/MangoDB-io/MangoDB
+    local-prefixes: github.com/FerretDB/FerretDB
   staticcheck:
     go: "1.18"
     checks: ["all"]

@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,10 +28,10 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/MangoDB-io/MangoDB/internal/clientconn"
-	"github.com/MangoDB-io/MangoDB/internal/pg"
-	"github.com/MangoDB-io/MangoDB/internal/util/debug"
-	"github.com/MangoDB-io/MangoDB/internal/util/logging"
+	"github.com/FerretDB/FerretDB/internal/clientconn"
+	"github.com/FerretDB/FerretDB/internal/pg"
+	"github.com/FerretDB/FerretDB/internal/util/debug"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 )
 
 var (
@@ -73,7 +73,7 @@ func waitForPort(ctx context.Context, port uint16) error {
 		if err == nil {
 			conn.Close()
 
-			// FIXME https://github.com/MangoDB-io/MangoDB/issues/92
+			// FIXME https://github.com/FerretDB/FerretDB/issues/92
 			time.Sleep(time.Second)
 
 			return nil
@@ -130,13 +130,13 @@ func setupPagila(ctx context.Context) {
 
 	logger.Infof("Importing database...")
 
-	args := strings.Split(`exec -T postgres psql -U postgres -d mangodb --quiet -f /test_db/01-pagila-schema.sql`, " ")
+	args := strings.Split(`exec -T postgres psql -U postgres -d ferretdb --quiet -f /test_db/01-pagila-schema.sql`, " ")
 	runCompose(args, nil, logger)
 
-	args = strings.Split(`exec -T postgres psql -U postgres -d mangodb --quiet -f /test_db/02-pagila-data.sql`, " ")
+	args = strings.Split(`exec -T postgres psql -U postgres -d ferretdb --quiet -f /test_db/02-pagila-data.sql`, " ")
 	runCompose(args, nil, logger)
 
-	args = strings.Split(`exec -T postgres psql -U postgres -d mangodb --quiet`, " ")
+	args = strings.Split(`exec -T postgres psql -U postgres -d ferretdb --quiet`, " ")
 	stdin := strings.NewReader(`ALTER SCHEMA public RENAME TO pagila;`)
 	runCompose(args, stdin, logger)
 
@@ -154,14 +154,14 @@ func setupMonila(ctx context.Context) {
 
 	logger.Infof("Importing database...")
 
-	args := strings.Split(`exec -T postgres psql -U postgres -d mangodb`, " ")
+	args := strings.Split(`exec -T postgres psql -U postgres -d ferretdb`, " ")
 	stdin := strings.NewReader(strings.Join([]string{
 		`CREATE SCHEMA monila;`,
 		`CREATE SCHEMA test;`,
 	}, "\n"))
 	runCompose(args, stdin, logger)
 
-	pgPool, err := pg.NewPool("postgres://postgres@127.0.0.1:5432/mangodb", logger.Desugar(), false)
+	pgPool, err := pg.NewPool("postgres://postgres@127.0.0.1:5432/ferretdb", logger.Desugar(), false)
 	if err != nil {
 		logger.Fatal(err)
 	}

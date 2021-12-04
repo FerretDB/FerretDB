@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,11 +20,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/MangoDB-io/MangoDB/internal/handlers/common"
-	"github.com/MangoDB-io/MangoDB/internal/types"
-	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
-	"github.com/MangoDB-io/MangoDB/internal/util/version"
-	"github.com/MangoDB-io/MangoDB/internal/wire"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/version"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgGetLog is an administrative command that returns the most recent 1024 logged events.
@@ -49,8 +49,8 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var log types.Array
 	for _, line := range []string{
-		"Powered by 🥭 MangoDB " + mv.Version + " and PostgreSQL " + pv + ".",
-		"Please star us on GitHub: https://github.com/MangoDB-io/MangoDB",
+		"Powered by 🥭 FerretDB " + mv.Version + " and PostgreSQL " + pv + ".",
+		"Please star us on GitHub: https://github.com/FerretDB/FerretDB",
 	} {
 		b, err := json.Marshal(map[string]interface{}{
 			"msg":  line,
