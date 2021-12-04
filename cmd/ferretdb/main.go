@@ -18,9 +18,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"os"
 	"os/signal"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/expfmt"
 	"go.uber.org/zap"
 	"golang.org/x/sys/unix"
 
@@ -109,5 +111,15 @@ func main() {
 		logger.Info("Listener stopped")
 	} else {
 		logger.Error("Listener stopped", zap.Error(err))
+	}
+
+	mfs, err := prometheus.DefaultGatherer.Gather()
+	if err != nil {
+		panic(err)
+	}
+	for _, mf := range mfs {
+		if _, err := expfmt.MetricFamilyToText(os.Stderr, mf); err != nil {
+			panic(err)
+		}
 	}
 }
