@@ -33,23 +33,36 @@ import (
 
 // Handler data struct.
 type Handler struct {
-	pgPool *pg.Pool
-	l      *zap.Logger
-	shared *shared.Handler
-	sql    common.Storage
-	jsonb1 common.Storage
+	// TODO replace those fields with opts *NewOpts
+	pgPool  *pg.Pool
+	l       *zap.Logger
+	shared  *shared.Handler
+	sql     common.Storage
+	jsonb1  common.Storage
+	metrics *Metrics
 
 	lastRequestID int32
 }
 
+// NewOpts represents handler configuration.
+type NewOpts struct {
+	PgPool        *pg.Pool
+	Logger        *zap.Logger
+	SharedHandler *shared.Handler
+	SQLStorage    common.Storage
+	JSONB1Storage common.Storage
+	Metrics       *Metrics
+}
+
 // New returns a new handler.
-func New(pgPool *pg.Pool, l *zap.Logger, shared *shared.Handler, sql, jsonb1 common.Storage) *Handler {
+func New(opts *NewOpts) *Handler {
 	return &Handler{
-		pgPool: pgPool,
-		l:      l,
-		shared: shared,
-		sql:    sql,
-		jsonb1: jsonb1,
+		pgPool:  opts.PgPool,
+		l:       opts.Logger,
+		shared:  opts.SharedHandler,
+		sql:     opts.SQLStorage,
+		jsonb1:  opts.JSONB1Storage,
+		metrics: opts.Metrics,
 	}
 }
 
@@ -58,7 +71,7 @@ func New(pgPool *pg.Pool, l *zap.Logger, shared *shared.Handler, sql, jsonb1 com
 // Message handlers should:
 //  * return normal response body;
 //  * return protocol error (*common.Error) - it will be returned to the client;
-//  * return any other error - it will be returned to the client before terminating connection;
+//  * return any other error - it will be returned to the client as InternalError before terminating connection;
 //  * panic - that will terminate the connection without a response.
 //
 //nolint:lll // arguments are long
@@ -90,6 +103,7 @@ func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody
 	case wire.OP_COMPRESSED:
 		fallthrough
 	default:
+		h.metrics.requests.WithLabelValues(reqHeader.OpCode.String(), "").Inc()
 		panic(fmt.Sprintf("unexpected OpCode %s", reqHeader.OpCode))
 	}
 
@@ -136,6 +150,8 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	}
 
 	cmd := document.Command()
+
+	h.metrics.requests.WithLabelValues(wire.OP_MSG.String(), cmd).Inc()
 
 	switch cmd {
 	case "buildinfo":
@@ -186,12 +202,15 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	}
 }
 
-func (h *Handler) handleOpQuery(ctx context.Context, msg *wire.OpQuery) (*wire.OpReply, error) {
-	if msg.FullCollectionName == "admin.$cmd" {
-		return h.shared.QueryCmd(ctx, msg)
+func (h *Handler) handleOpQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
+	cmd := query.Query.Command()
+	h.metrics.requests.WithLabelValues(wire.OP_QUERY.String(), cmd).Inc()
+
+	if query.FullCollectionName == "admin.$cmd" {
+		return h.shared.QueryCmd(ctx, query)
 	}
 
-	return nil, common.NewErrorMessage(common.ErrNotImplemented, "handleOpQuery: unhandled collection %q", msg.FullCollectionName)
+	return nil, common.NewErrorMessage(common.ErrNotImplemented, "handleOpQuery: unhandled collection %q", query.FullCollectionName)
 }
 
 func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) (common.Storage, error) {

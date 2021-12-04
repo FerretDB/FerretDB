@@ -62,28 +62,45 @@ type conn struct {
 	l       *zap.SugaredLogger
 }
 
+// newConnOpts represents newConn options.
+type newConnOpts struct {
+	netConn         net.Conn
+	pgPool          *pg.Pool
+	proxyAddr       string
+	mode            Mode
+	handlersMetrics *handlers.Metrics
+}
+
 // newConn creates a new client connection for given net.Conn.
-func newConn(netConn net.Conn, pgPool *pg.Pool, proxyAddr string, mode Mode) (*conn, error) {
-	prefix := fmt.Sprintf("// %s -> %s ", netConn.RemoteAddr(), netConn.LocalAddr())
+func newConn(opts *newConnOpts) (*conn, error) {
+	prefix := fmt.Sprintf("// %s -> %s ", opts.netConn.RemoteAddr(), opts.netConn.LocalAddr())
 	l := zap.L().Named(prefix)
 
-	peerAddr := netConn.RemoteAddr().String()
-	shared := shared.NewHandler(pgPool, peerAddr)
-	sqlH := sql.NewStorage(pgPool, l.Sugar())
-	jsonb1H := jsonb1.NewStorage(pgPool, l)
+	peerAddr := opts.netConn.RemoteAddr().String()
+	shared := shared.NewHandler(opts.pgPool, peerAddr)
+	sqlH := sql.NewStorage(opts.pgPool, l.Sugar())
+	jsonb1H := jsonb1.NewStorage(opts.pgPool, l)
 
 	var p *proxy.Handler
-	if mode != NormalMode {
+	if opts.mode != NormalMode {
 		var err error
-		if p, err = proxy.New(proxyAddr); err != nil {
+		if p, err = proxy.New(opts.proxyAddr); err != nil {
 			return nil, err
 		}
 	}
 
+	handlerOpts := &handlers.NewOpts{
+		PgPool:        opts.pgPool,
+		Logger:        l,
+		SharedHandler: shared,
+		SQLStorage:    sqlH,
+		JSONB1Storage: jsonb1H,
+		Metrics:       opts.handlersMetrics,
+	}
 	return &conn{
-		netConn: netConn,
-		mode:    mode,
-		h:       handlers.New(pgPool, l, shared, sqlH, jsonb1H),
+		netConn: opts.netConn,
+		mode:    opts.mode,
+		h:       handlers.New(handlerOpts),
 		proxy:   p,
 		l:       l.Sugar(),
 	}, nil

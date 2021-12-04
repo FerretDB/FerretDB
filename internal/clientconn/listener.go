@@ -23,47 +23,36 @@ import (
 	"sync"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// Listener handles incoming client connections.
+// Listener accepts incoming client connections.
 type Listener struct {
 	opts *NewListenerOpts
-	m    *ListenerMetrics
 }
 
 // NewListenerOpts represents listener configuration.
 type NewListenerOpts struct {
-	ListenAddr string
-	TLS        bool
-	ProxyAddr  string
-	Mode       Mode
-	PgPool     *pg.Pool
-	Logger     *zap.Logger
-	Registry   prometheus.Registerer
-
+	ListenAddr      string
+	TLS             bool
+	ProxyAddr       string
+	Mode            Mode
+	PgPool          *pg.Pool
+	Logger          *zap.Logger
+	Metrics         *ListenerMetrics
+	HandlersMetrics *handlers.Metrics
 	TestConnTimeout time.Duration
 }
 
 // NewListener returns a new listener, configured by the NewListenerOpts argument.
 func NewListener(opts *NewListenerOpts) *Listener {
-	m := newListenerMetrics()
-
-	registry := opts.Registry
-	if registry == nil {
-		registry = prometheus.DefaultRegisterer
-	}
-
-	registry.MustRegister(m)
-
 	return &Listener{
 		opts: opts,
-		m:    m,
 	}
 }
 
@@ -115,17 +104,24 @@ func (l *Listener) Run(ctx context.Context) error {
 		}
 
 		wg.Add(1)
-		l.m.ConnectedClients.Inc()
+		l.opts.Metrics.ConnectedClients.Inc()
 
 		// run connection
 		go func() {
 			defer func() {
 				netConn.Close()
-				l.m.ConnectedClients.Dec()
+				l.opts.Metrics.ConnectedClients.Dec()
 				wg.Done()
 			}()
 
-			conn, e := newConn(netConn, l.opts.PgPool, l.opts.ProxyAddr, l.opts.Mode)
+			opts := &newConnOpts{
+				netConn:         netConn,
+				pgPool:          l.opts.PgPool,
+				proxyAddr:       l.opts.ProxyAddr,
+				mode:            l.opts.Mode,
+				handlersMetrics: l.opts.HandlersMetrics,
+			}
+			conn, e := newConn(opts)
 			if e != nil {
 				l.opts.Logger.Warn("Failed to create connection", zap.Error(e))
 				return
@@ -139,7 +135,7 @@ func (l *Listener) Run(ctx context.Context) error {
 				defer runCancel()
 			}
 
-			e = conn.run(runCtx)
+			e = conn.run(runCtx) //nolint:contextcheck // false positive
 			if e == io.EOF {
 				l.opts.Logger.Info("Connection stopped")
 			} else {
@@ -151,5 +147,5 @@ func (l *Listener) Run(ctx context.Context) error {
 	l.opts.Logger.Info("Waiting for all connections to stop...")
 	wg.Wait()
 
-	return nil
+	return ctx.Err()
 }

@@ -12,45 +12,43 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package clientconn
+package handlers
 
-import (
-	"github.com/prometheus/client_golang/prometheus"
-)
+import "github.com/prometheus/client_golang/prometheus"
 
 const (
 	namespace = "ferretdb"
-	subsystem = "client"
+	subsystem = "handler"
 )
 
-// ListenerMetrics represents listener metrics.
-type ListenerMetrics struct {
-	ConnectedClients prometheus.Gauge
+// Metrics represents handler metrics.
+type Metrics struct {
+	requests *prometheus.CounterVec
 }
 
-// NewListenerMetrics creates new listener metrics.
-func NewListenerMetrics() *ListenerMetrics {
-	return &ListenerMetrics{
-		ConnectedClients: prometheus.NewGauge(prometheus.GaugeOpts{
+// NewMetrics creates new handler metrics.
+func NewMetrics() *Metrics {
+	return &Metrics{
+		requests: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: subsystem,
-			Name:      "connected",
-			Help:      "The current number of connected clients.",
-		}),
+			Name:      "requests_total",
+			Help:      "Total number of requests.",
+		}, []string{"opcode", "command"}),
 	}
 }
 
 // Describe implements prometheus.Collector.
-func (lm *ListenerMetrics) Describe(ch chan<- *prometheus.Desc) {
-	lm.ConnectedClients.Describe(ch)
+func (lm *Metrics) Describe(ch chan<- *prometheus.Desc) {
+	lm.requests.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
-func (lm *ListenerMetrics) Collect(ch chan<- prometheus.Metric) {
-	lm.ConnectedClients.Collect(ch)
+func (lm *Metrics) Collect(ch chan<- prometheus.Metric) {
+	lm.requests.Collect(ch)
 }
 
 // check interfaces
 var (
-	_ prometheus.Collector = (*ListenerMetrics)(nil)
+	_ prometheus.Collector = (*Metrics)(nil)
 )

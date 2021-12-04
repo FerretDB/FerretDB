@@ -20,10 +20,12 @@ import (
 	"fmt"
 	"os/signal"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"golang.org/x/sys/unix"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
+	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
@@ -86,18 +88,26 @@ func main() {
 	}
 	defer pgPool.Close()
 
-	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		ListenAddr: *listenAddrF,
-		TLS:        *tlsF,
-		ProxyAddr:  *proxyAddrF,
-		Mode:       clientconn.Mode(*modeF),
-		PgPool:     pgPool,
-		Logger:     logger.Named("listener"),
+	listenerMetrics := clientconn.NewListenerMetrics()
+	handlersMetrics := handlers.NewMetrics()
+	prometheus.DefaultRegisterer.MustRegister(listenerMetrics, handlersMetrics)
 
+	l := clientconn.NewListener(&clientconn.NewListenerOpts{
+		ListenAddr:      *listenAddrF,
+		TLS:             *tlsF,
+		ProxyAddr:       *proxyAddrF,
+		Mode:            clientconn.Mode(*modeF),
+		PgPool:          pgPool,
+		Logger:          logger.Named("listener"),
+		Metrics:         listenerMetrics,
+		HandlersMetrics: handlersMetrics,
 		TestConnTimeout: *testConnTimeoutF,
 	})
 
-	if err = l.Run(ctx); err != nil {
+	err = l.Run(ctx)
+	if err == nil || err == context.Canceled {
+		logger.Info("Listener stopped")
+	} else {
 		logger.Error("Listener stopped", zap.Error(err))
 	}
 }
