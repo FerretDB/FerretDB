@@ -166,7 +166,7 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		switch cmd {
 		case "delete":
 			return storage.MsgDelete(ctx, msg)
-        case "find", "count":
+		case "find", "count":
 			return storage.MsgFindOrCount(ctx, msg)
 		case "insert":
 			return storage.MsgInsert(ctx, msg)
