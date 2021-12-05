@@ -115,6 +115,55 @@ func TestListDatabases(t *testing.T) {
 	}
 }
 
+func TestServerStatus(t *testing.T) {
+	t.Parallel()
+	ctx := testutil.Ctx(t)
+	pool := testutil.Pool(ctx, t)
+	l := zaptest.NewLogger(t)
+	shared := shared.NewHandler(pool, "127.0.0.1:12345")
+	sql := sql.NewStorage(pool, l.Sugar())
+	jsonb1 := jsonb1.NewStorage(pool, l)
+	handler := New(pool, l, shared, sql, jsonb1)
+
+	type testCase struct {
+		req  types.Document
+		resp types.Document
+	}
+
+	tc := &testCase{
+		req: types.MustMakeDocument(
+			"serverStatus", int32(1),
+		),
+		resp: types.MustMakeDocument(
+			"status", "ok",
+		),
+	}
+	t.Run("ServerStatus", func(t *testing.T) {
+		t.Parallel()
+
+		reqHeader := wire.MsgHeader{
+			RequestID: 1,
+			OpCode:    wire.OP_MSG,
+		}
+
+		var reqMsg wire.OpMsg
+		err := reqMsg.SetSections(wire.OpMsgSection{
+			Documents: []types.Document{tc.req},
+		})
+		require.NoError(t, err)
+
+		_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
+		require.False(t, closeConn)
+
+		actual, err := resBody.(*wire.OpMsg).Document()
+		require.NoError(t, err)
+
+		expected := tc.resp.Map()
+		assert.Equal(t, actual.Map()["status"], expected["status"])
+
+	})
+}
+
 func TestFind(t *testing.T) {
 	t.Parallel()
 
