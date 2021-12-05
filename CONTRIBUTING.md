@@ -11,11 +11,22 @@ $ go version
 go version devel go1.18-[...]
 ```
 **Note:** If using gotip and `go version` does not return version 1.18, you may need to symbolic link `gotip` to `go`.
-```
-ls -s path_to_gotip /user/local/bin/go
+```sh
+$ ln -s `which gotip` /user/local/bin/go
 ```
 Use `which gotip` to get the path to gotip.
 
+## Clonning
+
+After forking FerretDB you can clone for best practices use the following instruction:
+
+```sh
+$ git clone git@github.com:FerretDB/FerretDB.git
+$ cd FerretDB
+$ git remote rename origin upstream
+$ git remote set-url --push upstream NO_PUSH
+$ git remote add origin git@github.com:<YOUR_GITHUB_USERNAME>/FerretDB.git
+```
 
 ## Helpful Commands
 
