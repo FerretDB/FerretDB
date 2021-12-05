@@ -16,11 +16,14 @@ package debug
 
 import (
 	"context"
+	_ "expvar"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 )
 
@@ -29,6 +32,17 @@ func RunHandler(ctx context.Context, addr string, l *zap.Logger) {
 	if err != nil {
 		panic(err)
 	}
+
+	l.Sugar().Infof("Starting debug server on http://%s/", addr)
+
+	http.Handle("/debug/metrics", promhttp.InstrumentMetricHandler(
+		prometheus.DefaultRegisterer, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
+			ErrorLog:          stdL,
+			ErrorHandling:     promhttp.ContinueOnError,
+			Registry:          prometheus.DefaultRegisterer,
+			EnableOpenMetrics: true,
+		}),
+	))
 
 	s := http.Server{
 		Addr:     addr,
