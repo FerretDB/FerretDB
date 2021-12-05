@@ -174,7 +174,6 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 			return storage.MsgInsert(ctx, msg)
 		case "update":
 			return storage.MsgUpdate(ctx, msg)
-
 		default:
 			panic("not reached")
 		}
