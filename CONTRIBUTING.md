@@ -16,7 +16,7 @@ $ ln -s `which gotip` /user/local/bin/go
 ```
 Use `which gotip` to get the path to gotip.
 
-## Clonning
+## Cloning the Repository
 
 After forking FerretDB you can clone for best practices use the following instruction:
 
