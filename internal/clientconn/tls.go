@@ -23,6 +23,9 @@ import (
 	"math/big"
 )
 
+// generateInsecureCert is hack that will be replaced with proper TLS handling.
+//
+// It is not secure. Do not use.
 func generateInsecureCert() (*tls.Certificate, error) {
 	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {

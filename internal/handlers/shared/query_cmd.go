@@ -24,8 +24,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-func (h *Handler) QueryCmd(ctx context.Context, msg *wire.OpQuery) (*wire.OpReply, error) {
-	switch cmd := msg.Query.Command(); cmd {
+func (h *Handler) QueryCmd(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
+	switch cmd := query.Query.Command(); cmd {
 	case "ismaster":
 		// TODO merge with handleOpMsgIsMaster
 		reply := &wire.OpReply{
