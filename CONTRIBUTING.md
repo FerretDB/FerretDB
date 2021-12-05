@@ -18,7 +18,7 @@ Use `which gotip` to get the path to gotip.
 
 ## Cloning the Repository
 
-After forking FerretDB you can clone for best practices use the following instruction:
+After forking FerretDB you can clone the repository - for rgw best practices use the following instructions:
 
 ```sh
 $ git clone git@github.com:FerretDB/FerretDB.git
