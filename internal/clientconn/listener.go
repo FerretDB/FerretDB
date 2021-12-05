@@ -25,24 +25,27 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/pg"
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// Listener main data object.
+// Listener accepts incoming client connections.
 type Listener struct {
 	opts *NewListenerOpts
 }
 
-// NewListenerOpts, configuration for a listener.
+// NewListenerOpts represents listener configuration.
 type NewListenerOpts struct {
-	ListenAddr string
-	TLS        bool
-	ProxyAddr  string
-	Mode       Mode
-	PgPool     *pg.Pool
-	Logger     *zap.Logger
-
+	ListenAddr      string
+	TLS             bool
+	ProxyAddr       string
+	Mode            Mode
+	PgPool          *pg.Pool
+	Logger          *zap.Logger
+	Metrics         *ListenerMetrics
+	HandlersMetrics *handlers.Metrics
 	TestConnTimeout time.Duration
 }
 
@@ -53,7 +56,7 @@ func NewListener(opts *NewListenerOpts) *Listener {
 	}
 }
 
-// Run the listener, accepting connections.
+// Run runs the listener until ctx is canceled or some unrecoverable error occurs.
 func (l *Listener) Run(ctx context.Context) error {
 	lis, err := net.Listen("tcp", l.opts.ListenAddr)
 	if err != nil {
@@ -68,7 +71,7 @@ func (l *Listener) Run(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		l.opts.Logger.Sugar().Info("Insecure self-signed cerificate generated.")
+		l.opts.Logger.Sugar().Info("Insecure self-signed certificate generated.")
 
 		tlsConfig := &tls.Config{
 			Certificates:       []tls.Certificate{*cert},
@@ -77,15 +80,22 @@ func (l *Listener) Run(ctx context.Context) error {
 		lis = tls.NewListener(lis, tlsConfig)
 	}
 
+	// handle ctx cancelation
 	go func() {
 		<-ctx.Done()
 		lis.Close()
 	}()
 
+	const delay = 3 * time.Second
+
 	var wg sync.WaitGroup
-	for ctx.Err() == nil {
+	for {
 		netConn, err := lis.Accept()
 		if err != nil {
+			if ctx.Err() != nil {
+				break
+			}
+
 			l.opts.Logger.Warn("Failed to accept connection", zap.Error(err))
 			if !errors.Is(err, net.ErrClosed) {
 				time.Sleep(time.Second)
@@ -94,26 +104,38 @@ func (l *Listener) Run(ctx context.Context) error {
 		}
 
 		wg.Add(1)
+		l.opts.Metrics.ConnectedClients.Inc()
+
+		// run connection
 		go func() {
 			defer func() {
 				netConn.Close()
+				l.opts.Metrics.ConnectedClients.Dec()
 				wg.Done()
 			}()
 
-			conn, e := newConn(netConn, l.opts.PgPool, l.opts.ProxyAddr, l.opts.Mode)
+			opts := &newConnOpts{
+				netConn:         netConn,
+				pgPool:          l.opts.PgPool,
+				proxyAddr:       l.opts.ProxyAddr,
+				mode:            l.opts.Mode,
+				handlersMetrics: l.opts.HandlersMetrics,
+			}
+			conn, e := newConn(opts)
 			if e != nil {
 				l.opts.Logger.Warn("Failed to create connection", zap.Error(e))
 				return
 			}
 
-			runCtx := ctx
-			var runCancel context.CancelFunc
+			runCtx, runCancel := ctxutil.WithDelay(ctx.Done(), delay)
+			defer runCancel()
+
 			if l.opts.TestConnTimeout != 0 {
-				runCtx, runCancel = context.WithTimeout(ctx, l.opts.TestConnTimeout)
+				runCtx, runCancel = context.WithTimeout(runCtx, l.opts.TestConnTimeout)
 				defer runCancel()
 			}
 
-			e = conn.run(runCtx)
+			e = conn.run(runCtx) //nolint:contextcheck // false positive
 			if e == io.EOF {
 				l.opts.Logger.Info("Connection stopped")
 			} else {
@@ -122,7 +144,8 @@ func (l *Listener) Run(ctx context.Context) error {
 		}()
 	}
 
+	l.opts.Logger.Info("Waiting for all connections to stop...")
 	wg.Wait()
 
-	return nil
+	return ctx.Err()
 }
