@@ -31,9 +31,14 @@ func (d *Decimal128) bsontype() {}
 
 // ReadFrom implements bsontype interface.
 func (d *Decimal128) ReadFrom(r *bufio.Reader) error {
-	if err := binary.Read(r, binary.LittleEndian, d); err != nil {
+	var b []byte
+	if err := binary.Read(r, binary.LittleEndian, &b); err != nil {
 		return lazyerrors.Errorf("bson.Decimal128.ReadFrom (binary.Read): %w", err)
 	}
+
+	bytes.
+
+	*d = Decimal128(*new(big.Int).SetBytes(b))
 
 	return nil
 }
@@ -88,7 +93,7 @@ func (d *Decimal128) UnmarshalJSON(data []byte) error {
 
 	n, ok := new(big.Int).SetString(o.D, 10)
 	if !ok {
-		return lazyerrors.Errorf("bson.Decimal128.UnmarshalJSON: %b", ok)
+		return lazyerrors.Errorf("bson.Decimal128.UnmarshalJSON: %v", ok)
 	}
 
 	*d = Decimal128(*n)

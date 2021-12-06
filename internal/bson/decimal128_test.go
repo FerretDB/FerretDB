@@ -15,21 +15,22 @@
 package bson
 
 import (
+	"math/big"
 	"testing"
 
 	"github.com/AlekSi/pointer"
 )
 
 var decimal128TestCases = []testCase{{
-	name: "100.5",
-	v:    pointer.To(Decimal128(107666)),
-	b:    []byte{0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-	j:    `{"$n":"107666"}`,
+	name: "1",
+	v:    pointer.To(Decimal128(*big.NewInt(1))),
+	b:    []byte{0x01},
+	j:    `{"$n":"1"}`,
 }, {
-	name: "0",
-	v:    pointer.To(Decimal128(0)),
-	b:    []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-	j:    `{"$n":"0"}`,
+	name: "17",
+	v:    pointer.To(Decimal128(*new(big.Int).SetBytes([]byte{0x11}))),
+	b:    []byte{0x11},
+	j:    `{"$n":"17"}`,
 }}
 
 func TestDecimal128(t *testing.T) {
