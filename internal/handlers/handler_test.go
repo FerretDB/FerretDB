@@ -15,6 +15,8 @@
 package handlers
 
 import (
+	"fmt"
+	"github.com/jackc/pgx/v4"
 	"testing"
 	"time"
 
@@ -118,6 +120,120 @@ func TestListDatabases(t *testing.T) {
 				expectedDatabase.Remove("sizeOnDisk")
 				assert.Equal(t, actualDatabase, expectedDatabase)
 			}
+		})
+	}
+}
+
+func TestDropDatabase(t *testing.T) {
+
+	ctx := testutil.Ctx(t)
+	pool := testutil.Pool(ctx, t)
+	l := zaptest.NewLogger(t)
+	shared := shared.NewHandler(pool, "127.0.0.1:12345")
+	sql := sql.NewStorage(pool, l.Sugar())
+	jsonb1 := jsonb1.NewStorage(pool, l)
+
+	handler := New(&NewOpts{
+		PgPool:        pool,
+		Logger:        l,
+		SharedHandler: shared,
+		SQLStorage:    sql,
+		JSONB1Storage: jsonb1,
+		Metrics:       NewMetrics(),
+	})
+
+	type testCase struct {
+		req  types.Document
+		resp types.Document
+	}
+
+	notExistedDbName := "not_existed_db"
+	dummyDbName := "dummy_db"
+	testCases := map[string]testCase{
+		"dropNotExistedDatabase": {
+			req: types.MustMakeDocument(
+				"dropDatabase", int32(1),
+			),
+			resp: types.MustMakeDocument(
+				"dropped", notExistedDbName,
+				"ok", float64(1),
+			),
+		},
+		"dropDummyDatabase": {
+			req: types.MustMakeDocument(
+				"dropDatabase", int32(1),
+			),
+			resp: types.MustMakeDocument(
+				"dropped", dummyDbName,
+				"ok", float64(1),
+			),
+		},
+	}
+
+	_, err := pool.Exec(ctx, fmt.Sprintf(
+		`CREATE SCHEMA %s`,
+		pgx.Identifier{dummyDbName}.Sanitize()))
+	require.NoError(t, err)
+	dummyTableName := "dummy_table"
+
+	_, err = pool.Exec(ctx, fmt.Sprintf(
+		`CREATE TABLE %s (_jsonb jsonb)`,
+		pgx.Identifier{dummyDbName, dummyTableName}.Sanitize()))
+	require.NoError(t, err)
+
+	_, err = pool.Exec(ctx, fmt.Sprintf(
+		`INSERT INTO %s(_jsonb) VALUES ('{"key": "value"}')`,
+		pgx.Identifier{dummyDbName, dummyTableName}.Sanitize()))
+	require.NoError(t, err)
+
+	for name, tc := range testCases { //nolint:paralleltest // false positive
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+			schemaName := tc.resp.Map()["dropped"].(string)
+
+			tc.req.Set("$db", schemaName)
+			reqHeader := wire.MsgHeader{
+				RequestID: 1,
+				OpCode:    wire.OP_MSG,
+			}
+
+			var reqMsg wire.OpMsg
+			err := reqMsg.SetSections(wire.OpMsgSection{
+				Documents: []types.Document{tc.req},
+			})
+			require.NoError(t, err)
+
+			_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
+			require.False(t, closeConn)
+
+			actual, err := resBody.(*wire.OpMsg).Document()
+			require.NoError(t, err)
+
+			expected := tc.resp
+
+			assert.Equal(t, actual.Map(), expected.Map())
+
+			var count int
+
+			// checking tables
+			query := fmt.Sprintf(`
+				SELECT COUNT(*) 
+				FROM information_schema.tables 
+				WHERE table_schema = %s`,
+				schemaName)
+			err = pool.QueryRow(ctx, query).Scan(&count)
+			require.NoError(t, err)
+			assert.Equal(t, count, 0)
+
+			// checking schema
+			query = fmt.Sprintf(`
+				SELECT COUNT(*) 
+				FROM information_schema.schemata 
+				WHERE schema_name = '%s'`,
+				schemaName)
+			err = pool.QueryRow(ctx, query).Scan(&count)
+			require.NoError(t, err)
+			assert.Equal(t, count, 0)
 		})
 	}
 }

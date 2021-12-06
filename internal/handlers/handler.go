@@ -158,6 +158,8 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return h.shared.MsgBuildInfo(ctx, msg)
 	case "drop":
 		return h.shared.MsgDrop(ctx, msg)
+	case "dropdatabase":
+		return h.shared.MsgDropDatabase(ctx, msg)
 	case "getcmdlineopts":
 		return h.shared.MsgGetCmdLineOpts(ctx, msg)
 	case "getlog":
