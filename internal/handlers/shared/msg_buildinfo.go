@@ -23,12 +23,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
+// For clients that check version.
+const versionValue = "5.0.42"
+
 // MsgBuildInfo returns an OpMsg with the build information.
 func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 	err := reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
-			"version", "5.0.42",
+			"version", versionValue,
 			"versionArray", types.Array{
 				int32(5),
 				int32(0),
