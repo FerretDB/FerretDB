@@ -57,7 +57,9 @@ func (d Decimal128) WriteTo(w *bufio.Writer) error {
 func (d Decimal128) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 
-	binary.Write(&buf, binary.LittleEndian, d)
+	n := big.Int(d)
+
+	binary.Write(&buf, binary.LittleEndian, n.Bytes())
 
 	return buf.Bytes(), nil
 }
