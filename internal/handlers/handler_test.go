@@ -136,7 +136,7 @@ func TestServerStatus(t *testing.T) {
 				"serverStatus", int32(1),
 			),
 			resp: types.MustMakeDocument(
-				"status", "ok",
+				"ok", float64(1),
 			),
 		},
 	}
@@ -163,7 +163,7 @@ func TestServerStatus(t *testing.T) {
 			require.NoError(t, err)
 
 			expected := tc.resp.Map()
-			assert.Equal(t, actual.Map()["status"], expected["status"])
+			assert.Equal(t, actual.Map()["ok"].(float64), expected["ok"].(float64))
 		})
 	}
 }
