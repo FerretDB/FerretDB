@@ -39,7 +39,14 @@ func TestListDatabases(t *testing.T) {
 	shared := shared.NewHandler(pool, "127.0.0.1:12345")
 	sql := sql.NewStorage(pool, l.Sugar())
 	jsonb1 := jsonb1.NewStorage(pool, l)
-	handler := New(pool, l, shared, sql, jsonb1)
+	handler := New(&NewOpts{
+		PgPool:        pool,
+		Logger:        l,
+		SharedHandler: shared,
+		SQLStorage:    sql,
+		JSONB1Storage: jsonb1,
+		Metrics:       NewMetrics(),
+	})
 
 	type testCase struct {
 		req  types.Document
@@ -177,7 +184,14 @@ func TestFind(t *testing.T) {
 	shared := shared.NewHandler(pool, "127.0.0.1:12345")
 	sql := sql.NewStorage(pool, l.Sugar())
 	jsonb1 := jsonb1.NewStorage(pool, l)
-	handler := New(pool, l, shared, sql, jsonb1)
+	handler := New(&NewOpts{
+		PgPool:        pool,
+		Logger:        l,
+		SharedHandler: shared,
+		SQLStorage:    sql,
+		JSONB1Storage: jsonb1,
+		Metrics:       NewMetrics(),
+	})
 
 	lastUpdate := time.Date(2020, 2, 15, 9, 34, 33, 0, time.UTC).Local()
 
