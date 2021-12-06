@@ -130,38 +130,42 @@ func TestServerStatus(t *testing.T) {
 		resp types.Document
 	}
 
-	tc := &testCase{
-		req: types.MustMakeDocument(
-			"serverStatus", int32(1),
-		),
-		resp: types.MustMakeDocument(
-			"status", "ok",
-		),
+	testCases := map[string]testCase{
+		"serverStatus": {
+			req: types.MustMakeDocument(
+				"serverStatus", int32(1),
+			),
+			resp: types.MustMakeDocument(
+				"status", "ok",
+			),
+		},
 	}
-	t.Run("ServerStatus", func(t *testing.T) {
-		t.Parallel()
+	for name, tc := range testCases {
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-		reqHeader := wire.MsgHeader{
-			RequestID: 1,
-			OpCode:    wire.OP_MSG,
-		}
+			reqHeader := wire.MsgHeader{
+				RequestID: 1,
+				OpCode:    wire.OP_MSG,
+			}
 
-		var reqMsg wire.OpMsg
-		err := reqMsg.SetSections(wire.OpMsgSection{
-			Documents: []types.Document{tc.req},
+			var reqMsg wire.OpMsg
+			err := reqMsg.SetSections(wire.OpMsgSection{
+				Documents: []types.Document{tc.req},
+			})
+			require.NoError(t, err)
+
+			_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
+			require.False(t, closeConn)
+
+			actual, err := resBody.(*wire.OpMsg).Document()
+			require.NoError(t, err)
+
+			expected := tc.resp.Map()
+			assert.Equal(t, actual.Map()["status"], expected["status"])
 		})
-		require.NoError(t, err)
-
-		_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
-		require.False(t, closeConn)
-
-		actual, err := resBody.(*wire.OpMsg).Document()
-		require.NoError(t, err)
-
-		expected := tc.resp.Map()
-		assert.Equal(t, actual.Map()["status"], expected["status"])
-
-	})
+	}
 }
 
 func TestFind(t *testing.T) {
