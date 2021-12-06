@@ -149,6 +149,7 @@ func TestServerStatus(t *testing.T) {
 				"serverStatus", int32(1),
 			),
 			resp: types.MustMakeDocument(
+				"version", "5.0.42",
 				"ok", float64(1),
 			),
 		},
@@ -174,9 +175,7 @@ func TestServerStatus(t *testing.T) {
 
 			actual, err := resBody.(*wire.OpMsg).Document()
 			require.NoError(t, err)
-
-			expected := tc.resp.Map()
-			assert.Equal(t, actual.Map()["ok"].(float64), expected["ok"].(float64))
+			assert.Equal(t, actual.Map(), tc.resp.Map())
 		})
 	}
 }
