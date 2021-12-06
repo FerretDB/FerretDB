@@ -59,7 +59,6 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	sort, _ := m["sort"].(types.Document)
 	limit, _ := m["limit"].(int32)
 
-	// start the duplicate code
 	var args []interface{}
 	var placeholder pg.Placeholder
 
