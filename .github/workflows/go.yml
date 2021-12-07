@@ -28,27 +28,10 @@ jobs:
       - name: Start pulling environment in the background
         run: make env-pull &
 
-      - name: Install Go
-        run: |
-          sudo rm -fr /opt/hostedtoolcache/go /usr/local/go /usr/bin/go /bin/go
-          curl -o go.tar.gz -L \
-            https://github.com/AlekSi/golang-tip/releases/download/tip/master.linux-amd64.tar.gz
-          sudo tar -C /usr/local -xzf go.tar.gz
-          sudo ln -s /usr/local/go/bin/* /usr/local/bin/
-          go version
-          rm go.tar.gz
-
-      - name: Get week number
-        run: echo WEEK_NUMBER=$(date +%U) >> $GITHUB_ENV
-
-      - name: Restore cache
-        uses: actions/cache@v2
+      - name: Setup Go
+        uses: ./.github/actions/setup-go
         with:
-          path: ${{ env.GOCACHE }}
-          key: test-${{ env.WEEK_NUMBER }}-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**') }}
-          restore-keys: |
-            test-${{ env.WEEK_NUMBER }}-${{ hashFiles('**/go.mod') }}
-            test-${{ env.WEEK_NUMBER }}
+          cache-key: 'test'
 
       - name: Start environment
         run: make env-up-detach
@@ -82,27 +65,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Go
-        run: |
-          sudo rm -fr /opt/hostedtoolcache/go /usr/local/go /usr/bin/go /bin/go
-          curl -o go.tar.gz -L \
-            https://github.com/AlekSi/golang-tip/releases/download/tip/master.linux-amd64.tar.gz
-          sudo tar -C /usr/local -xzf go.tar.gz
-          sudo ln -s /usr/local/go/bin/* /usr/local/bin/
-          go version
-          rm go.tar.gz
-
-      - name: Get week number
-        run: echo WEEK_NUMBER=$(date +%U) >> $GITHUB_ENV
-
-      - name: Restore cache
-        uses: actions/cache@v2
+      - name: Setup Go
+        uses: ./.github/actions/setup-go
         with:
-          path: ${{ env.GOCACHE }}
-          key: lint-${{ env.WEEK_NUMBER }}-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**') }}
-          restore-keys: |
-            lint-${{ env.WEEK_NUMBER }}-${{ hashFiles('**/go.mod') }}
-            lint-${{ env.WEEK_NUMBER }}
+          cache-key: 'lint'
 
       - name: Run init
         run: make init
@@ -150,26 +116,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Go
-        run: |
-          sudo rm -fr /opt/hostedtoolcache/go /usr/local/go /usr/bin/go /bin/go
-          curl -o go.tar.gz -L \
-            https://github.com/AlekSi/golang-tip/releases/download/tip/master.linux-amd64.tar.gz
-          sudo tar -C /usr/local -xzf go.tar.gz
-          sudo ln -s /usr/local/go/bin/* /usr/local/bin/
-          go version
-          rm go.tar.gz
-
-      # Treat fuzz cache differently,
-      # at least until https://github.com/golang/go/issues/48901 is resolved one way or another.
-
-      - name: Restore cache
-        uses: actions/cache@v2
+      - name: Setup Go
+        uses: ./.github/actions/setup-go
         with:
-          path: |
-            ${{ env.GOCACHE }}
-            **/testdata/fuzz
-          key: fuzz
+          cache-key: 'fuzz'
 
       - name: Run init
         run: make init
