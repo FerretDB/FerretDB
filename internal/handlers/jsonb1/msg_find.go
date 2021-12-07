@@ -59,7 +59,7 @@ func (h *storage) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	sql += whereSQL
 
 	sortMap := sort.Map()
-	if len(sortMap) > 0 {
+	if len(sortMap) != 0 {
 		sql += " ORDER BY"
 
 		for i, k := range sort.Keys() {
