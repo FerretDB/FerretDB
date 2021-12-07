@@ -157,10 +157,13 @@ func setupMonila(ctx context.Context) {
 	logger.Infof("Importing database...")
 
 	args := strings.Split(`exec -T postgres psql -U postgres -d ferretdb`, " ")
-	stdin := strings.NewReader(strings.Join([]string{
-		`CREATE SCHEMA monila;`,
-		`CREATE SCHEMA test;`,
-	}, "\n"))
+	queries := strings.Join(
+		[]string{
+			`CREATE SCHEMA monila;`,
+			`CREATE SCHEMA test;`,
+		}, "\n",
+	)
+	stdin := strings.NewReader(queries)
 	runCompose(args, stdin, logger)
 
 	pgPool, err := pg.NewPool("postgres://postgres@127.0.0.1:5432/ferretdb", logger.Desugar(), false)
@@ -198,10 +201,12 @@ func setupMonila(ctx context.Context) {
 	var wg sync.WaitGroup
 
 	for _, c := range collections {
-		args := strings.Split(fmt.Sprintf(
+		cmd := fmt.Sprintf(
 			`exec -T mongodb mongoimport --uri mongodb://host.docker.internal:27018/monila `+
 				`--drop --maintainInsertionOrder --collection %[1]s /test_db/%[1]s.json`,
-			c), " ")
+			c,
+		)
+		args := strings.Split(cmd, " ")
 
 		wg.Add(1)
 		go func() {

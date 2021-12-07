@@ -65,13 +65,11 @@ build-testcover: gen-version           ## Build bin/ferretdb-testcover
 run: build-testcover                   ## Run FerretDB
 	bin/ferretdb-testcover -test.coverprofile=cover.txt -mode=diff-normal -listen-addr=:27017
 
-run-dance: build-testcover             ## Run FerretDB in testing mode
-	bin/ferretdb-testcover -test.coverprofile=cover.txt -mode=normal -test-conn-timeout=10s
-
 lint: bin/go-sumtype bin/golangci-lint ## Run linters
 	bin/go-sumtype ./...
 	bin/golangci-lint run --config=.golangci-required.yml
 	bin/golangci-lint run --config=.golangci.yml
+	bin/go-consistent -v -pedantic ./...
 
 psql:                                  ## Run psql
 	docker-compose exec postgres psql -U postgres -d ferretdb

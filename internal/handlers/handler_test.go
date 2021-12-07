@@ -79,7 +79,7 @@ func TestListDatabases(t *testing.T) {
 	}
 
 	for name, tc := range testCases { //nolint:paralleltest // false positive
-		tc := tc
+		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -154,8 +154,8 @@ func TestServerStatus(t *testing.T) {
 			),
 		},
 	}
-	for name, tc := range testCases {
-		tc := tc
+	for name, tc := range testCases { //nolint:paralleltest // false positive
+		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 

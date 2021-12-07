@@ -14,9 +14,7 @@
 
 package clientconn
 
-import (
-	"github.com/prometheus/client_golang/prometheus"
-)
+import "github.com/prometheus/client_golang/prometheus"
 
 const (
 	namespace = "ferretdb"
@@ -31,12 +29,14 @@ type ListenerMetrics struct {
 // NewListenerMetrics creates new listener metrics.
 func NewListenerMetrics() *ListenerMetrics {
 	return &ListenerMetrics{
-		ConnectedClients: prometheus.NewGauge(prometheus.GaugeOpts{
-			Namespace: namespace,
-			Subsystem: subsystem,
-			Name:      "connected",
-			Help:      "The current number of connected clients.",
-		}),
+		ConnectedClients: prometheus.NewGauge(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Subsystem: subsystem,
+				Name:      "connected",
+				Help:      "The current number of connected clients.",
+			},
+		),
 	}
 }
 
