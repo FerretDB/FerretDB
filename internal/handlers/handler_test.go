@@ -19,7 +19,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
@@ -125,7 +124,6 @@ func TestListDatabases(t *testing.T) {
 }
 
 func TestDropDatabase(t *testing.T) {
-
 	ctx := testutil.Ctx(t)
 	pool := testutil.Pool(ctx, t)
 	l := zaptest.NewLogger(t)
