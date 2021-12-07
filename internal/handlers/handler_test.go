@@ -171,23 +171,30 @@ func TestDropDatabase(t *testing.T) {
 
 	_, err := pool.Exec(ctx, fmt.Sprintf(
 		`CREATE SCHEMA %s`,
-		pgx.Identifier{dummyDbName}.Sanitize()))
+		pgx.Identifier{dummyDbName}.Sanitize(),
+	),
+	)
 	require.NoError(t, err)
 	dummyTableName := "dummy_table"
 
 	_, err = pool.Exec(ctx, fmt.Sprintf(
 		`CREATE TABLE %s (_jsonb jsonb)`,
-		pgx.Identifier{dummyDbName, dummyTableName}.Sanitize()))
+		pgx.Identifier{dummyDbName, dummyTableName}.Sanitize(),
+	),
+	)
 	require.NoError(t, err)
 
 	_, err = pool.Exec(ctx, fmt.Sprintf(
 		`INSERT INTO %s(_jsonb) VALUES ('{"key": "value"}')`,
-		pgx.Identifier{dummyDbName, dummyTableName}.Sanitize()))
+		pgx.Identifier{dummyDbName, dummyTableName}.Sanitize(),
+	),
+	)
 	require.NoError(t, err)
 
 	for name, tc := range testCases { //nolint:paralleltest // false positive
-		tc := tc
+		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			schemaName := tc.resp.Map()["dropped"].(string)
 
 			tc.req.Set("$db", schemaName)
@@ -625,6 +632,92 @@ func TestFind(t *testing.T) {
 							"id", int64(0),
 							"ns", schema+".actor",
 						),
+						"ok", float64(1),
+					)
+					assert.Equal(t, expected, actual)
+				})
+			}
+		})
+	}
+}
+
+func TestCount(t *testing.T) {
+	t.Parallel()
+
+	ctx := testutil.Ctx(t)
+	pool := testutil.Pool(ctx, t)
+	l := zaptest.NewLogger(t)
+	shared := shared.NewHandler(pool, "127.0.0.1:12345")
+	sql := sql.NewStorage(pool, l.Sugar())
+	jsonb1 := jsonb1.NewStorage(pool, l)
+	handler := New(&NewOpts{
+		PgPool:        pool,
+		Logger:        l,
+		SharedHandler: shared,
+		SQLStorage:    sql,
+		JSONB1Storage: jsonb1,
+		Metrics:       NewMetrics(),
+	})
+
+	type testCase struct {
+		req  types.Document
+		resp int32
+	}
+	testCases := map[string]testCase{
+		"CountAllActor": {
+			req: types.MustMakeDocument(
+				"count", "actor",
+			),
+			resp: 200,
+		},
+		"CountExactOne": {
+			req: types.MustMakeDocument(
+				"count", "actor",
+				"query", types.MustMakeDocument(
+					"actor_id", int32(28),
+				),
+			),
+			resp: 1,
+		},
+		"LastNameHoffman": {
+			req: types.MustMakeDocument(
+				"count", "actor",
+				"query", types.MustMakeDocument(
+					"last_name", "HOFFMAN",
+				),
+			),
+			resp: 3,
+		},
+	}
+
+	for name, tc := range testCases { //nolint:paralleltest // false positive
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			for _, schema := range []string{"monila", "pagila"} {
+				t.Run(schema, func(t *testing.T) {
+					tc.req.Set("$db", schema)
+
+					reqHeader := wire.MsgHeader{
+						RequestID: 1,
+						OpCode:    wire.OP_MSG,
+					}
+
+					var reqMsg wire.OpMsg
+					err := reqMsg.SetSections(wire.OpMsgSection{
+						Documents: []types.Document{tc.req},
+					})
+					require.NoError(t, err)
+
+					_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
+					require.False(t, closeConn)
+
+					actual, err := resBody.(*wire.OpMsg).Document()
+					require.NoError(t, err)
+
+					expected := types.MustMakeDocument(
+						"n", tc.resp,
 						"ok", float64(1),
 					)
 					assert.Equal(t, expected, actual)
