@@ -56,11 +56,6 @@ jobs:
       - name: Run init
         run: make init
 
-      - name: Verify modules
-        run: |
-          go mod verify
-          cd tools && go mod verify
-
       - name: Wait for and setup environment
         run: make env-setup
 
@@ -111,11 +106,6 @@ jobs:
 
       - name: Run init
         run: make init
-
-      - name: Verify modules
-        run: |
-          go mod verify
-          cd tools && go mod verify
 
       - name: Format code
         run: make fmt
@@ -180,6 +170,9 @@ jobs:
             ${{ env.GOCACHE }}
             **/testdata/fuzz
           key: fuzz
+
+      - name: Run init
+        run: make init
 
       # precompile tests with unset GOMAXPROCS
       - name: Init fuzzers
