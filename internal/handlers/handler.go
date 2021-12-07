@@ -174,6 +174,8 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return h.shared.MsgPing(ctx, msg)
 	case "whatsmyuri":
 		return h.shared.MsgWhatsMyURI(ctx, msg)
+	case "serverstatus":
+		return h.shared.MsgServerStatus(ctx, msg)
 
 	case "delete", "find", "insert", "update":
 		storage, err := h.msgStorage(ctx, msg)
