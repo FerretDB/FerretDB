@@ -216,22 +216,14 @@ func TestDropDatabase(t *testing.T) {
 			var count int
 
 			// checking tables
-			query := fmt.Sprintf(`
-				SELECT COUNT(*) 
-				FROM information_schema.tables 
-				WHERE table_schema = '%s'`,
-				schemaName)
-			err = pool.QueryRow(ctx, query).Scan(&count)
+			query := `SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = $1`
+			err = pool.QueryRow(ctx, query, schemaName).Scan(&count)
 			require.NoError(t, err)
 			assert.Equal(t, count, 0)
 
 			// checking schema
-			query = fmt.Sprintf(`
-				SELECT COUNT(*) 
-				FROM information_schema.schemata 
-				WHERE schema_name = '%s'`,
-				schemaName)
-			err = pool.QueryRow(ctx, query).Scan(&count)
+			query = `SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name = $1`
+			err = pool.QueryRow(ctx, query, schemaName).Scan(&count)
 			require.NoError(t, err)
 			assert.Equal(t, count, 0)
 		})
