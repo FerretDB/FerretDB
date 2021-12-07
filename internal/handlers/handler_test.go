@@ -16,10 +16,10 @@ package handlers
 
 import (
 	"fmt"
-	"github.com/jackc/pgx/v4"
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
@@ -219,7 +219,7 @@ func TestDropDatabase(t *testing.T) {
 			query := fmt.Sprintf(`
 				SELECT COUNT(*) 
 				FROM information_schema.tables 
-				WHERE table_schema = %s`,
+				WHERE table_schema = '%s'`,
 				schemaName)
 			err = pool.QueryRow(ctx, query).Scan(&count)
 			require.NoError(t, err)
