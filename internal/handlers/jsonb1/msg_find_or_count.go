@@ -70,7 +70,7 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	sql += whereSQL
 
 	sortMap := sort.Map()
-	if len(sortMap) > 0 {
+	if len(sortMap) != 0 {
 		sql += " ORDER BY"
 
 		for i, k := range sort.Keys() {

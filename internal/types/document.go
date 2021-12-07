@@ -221,5 +221,5 @@ func (d *Document) Remove(key string) {
 // check interfaces
 var (
 	_ document = Document{}
-	_ document = &Document{}
+	_ document = (*Document)(nil)
 )
