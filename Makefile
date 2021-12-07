@@ -22,7 +22,9 @@ env-down:                              ## Stop development environment
 
 init: gen-version                      ## Install development tools
 	go mod tidy
-	cd tools && go mod tidy && go generate -tags=tools -x
+	cd tools && go mod tidy
+	go mod verify
+	cd tools && go generate -tags=tools -x
 
 gen: bin/gofumpt                       ## Generate code
 	go generate -x ./...
