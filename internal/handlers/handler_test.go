@@ -725,3 +725,109 @@ func TestCount(t *testing.T) {
 		})
 	}
 }
+
+func TestDelete(t *testing.T) {
+	t.Parallel()
+
+	ctx := testutil.Ctx(t)
+	pool := testutil.Pool(ctx, t)
+	l := zaptest.NewLogger(t)
+	shared := shared.NewHandler(pool, "127.0.0.1:12345")
+	sql := sql.NewStorage(pool, l.Sugar())
+	jsonb1 := jsonb1.NewStorage(pool, l)
+	handler := New(&NewOpts{
+		PgPool:        pool,
+		Logger:        l,
+		SharedHandler: shared,
+		SQLStorage:    sql,
+		JSONB1Storage: jsonb1,
+		Metrics:       NewMetrics(),
+	})
+
+	type testCase struct {
+		req  types.Document
+		resp types.Document
+	}
+	testCases := map[string]testCase{
+		"NothingToDelete": {
+			req: types.MustMakeDocument(
+				"delete", "fruit",
+			),
+			resp: types.MustMakeDocument(
+				"n", int32(0),
+				"ok", float64(1),
+			),
+		},
+		"DeleteLimit1": {
+			req: types.MustMakeDocument(
+				"delete", "car",
+				"limit", int32(1),
+			),
+			resp: types.MustMakeDocument(
+				"n", int32(1),
+				"ok", float64(1),
+			),
+		},
+		"DeleteLimit0": {
+			req: types.MustMakeDocument(
+				"delete", "animal",
+				"limit", int32(0),
+			),
+			resp: types.MustMakeDocument(
+				"n", int32(5),
+				"ok", float64(1),
+			),
+		},
+	}
+
+	// _, err := pool.Exec(ctx, fmt.Sprintf(
+	// 	`CREATE TABLE %s (_jsonb jsonb)`,
+	// 	pgx.Identifier{"monila", "car"}.Sanitize(),
+	// ))
+	// require.NoError(t, err)
+
+	_, err := pool.Exec(ctx, fmt.Sprintf(`INSERT INTO monila.car(_jsonb) VALUES ('{"car": "ford"}')`))
+	require.NoError(t, err)
+
+	// _, err = pool.Exec(ctx, fmt.Sprintf(
+	// 	`CREATE TABLE %s (_jsonb jsonb)`,
+	// 	pgx.Identifier{"pagila", "car"}.Sanitize(),
+	// ))
+	// require.NoError(t, err)
+
+	_, err = pool.Exec(ctx, fmt.Sprintf(`INSERT INTO pagila.car(_jsonb) VALUES ('{"car": "ford"}')`))
+	require.NoError(t, err)
+
+	for name, tc := range testCases { //nolint:paralleltest // false positive
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			for _, schema := range []string{"monila", "pagila"} {
+				t.Run(schema, func(t *testing.T) {
+					tc.req.Set("$db", schema)
+
+					reqHeader := wire.MsgHeader{
+						RequestID: 1,
+						OpCode:    wire.OP_MSG,
+					}
+
+					var reqMsg wire.OpMsg
+					err := reqMsg.SetSections(wire.OpMsgSection{
+						Documents: []types.Document{tc.req},
+					})
+					require.NoError(t, err)
+
+					_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
+					require.False(t, closeConn)
+
+					actual, err := resBody.(*wire.OpMsg).Document()
+					require.NoError(t, err)
+
+					expected := tc.resp
+					assert.Equal(t, expected, actual)
+				})
+			}
+		})
+	}
+}
