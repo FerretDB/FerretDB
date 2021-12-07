@@ -26,12 +26,6 @@ func isValidKey(key string) bool {
 		return false
 	}
 
-	// There are too many problems and edge cases with dots in field names;
-	// disallow them for now.
-	if strings.ContainsAny(key, ". ") {
-		return false
-	}
-
 	return utf8.ValidString(key)
 }
 

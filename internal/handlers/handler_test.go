@@ -124,7 +124,7 @@ func TestListDatabases(t *testing.T) {
 	}
 }
 
-func TestDropDatabase(t *testing.T) {
+func TestDropDatabase(t *testing.T) { //nolint:paralleltest,tparallel // affects a global list of databases
 	ctx := testutil.Ctx(t)
 	pool := testutil.Pool(ctx, t)
 	l := zaptest.NewLogger(t)
@@ -172,29 +172,27 @@ func TestDropDatabase(t *testing.T) {
 	_, err := pool.Exec(ctx, fmt.Sprintf(
 		`CREATE SCHEMA %s`,
 		pgx.Identifier{dummyDbName}.Sanitize(),
-	),
-	)
+	))
 	require.NoError(t, err)
 	dummyTableName := "dummy_table"
 
 	_, err = pool.Exec(ctx, fmt.Sprintf(
 		`CREATE TABLE %s (_jsonb jsonb)`,
 		pgx.Identifier{dummyDbName, dummyTableName}.Sanitize(),
-	),
-	)
+	))
 	require.NoError(t, err)
 
 	_, err = pool.Exec(ctx, fmt.Sprintf(
 		`INSERT INTO %s(_jsonb) VALUES ('{"key": "value"}')`,
 		pgx.Identifier{dummyDbName, dummyTableName}.Sanitize(),
-	),
-	)
+	))
 	require.NoError(t, err)
 
 	for name, tc := range testCases { //nolint:paralleltest // false positive
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
+
 			schemaName := tc.resp.Map()["dropped"].(string)
 
 			tc.req.Set("$db", schemaName)
@@ -238,6 +236,7 @@ func TestDropDatabase(t *testing.T) {
 
 func TestServerStatus(t *testing.T) {
 	t.Parallel()
+
 	ctx := testutil.Ctx(t)
 	pool := testutil.Pool(ctx, t)
 	l := zaptest.NewLogger(t)
