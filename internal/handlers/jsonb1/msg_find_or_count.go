@@ -27,7 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgFindOrCount finds documents in a collection or view and returns a cursor to the selected documents.
+// MsgFindOrCount finds documents in a collection or view and returns a cursor to the selected documents
 // or count the number of documents that matches the query filter.
 func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
@@ -108,7 +108,7 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	defer rows.Close()
 
 	var reply wire.OpMsg
-	if isFindOp {
+	if isFindOp { //nolint:nestif // FIXME: I have no idead to fix this lint
 		var docs types.Array
 		for {
 			doc, err := nextRow(rows)

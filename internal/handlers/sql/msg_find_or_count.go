@@ -27,7 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgFindOrCount finds documents in a collection or view and returns a cursor to the selected documents.
+// MsgFindOrCount finds documents in a collection or view and returns a cursor to the selected documents
 // or count the number of documents that matches the query filter.
 func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	// TODO cursor / getMore support via https://www.postgresql.org/docs/current/sql-declare.html
@@ -106,8 +106,7 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	defer rows.Close()
 
 	var res wire.OpMsg
-	if isFindOp {
-
+	if isFindOp { //nolint:nestif // FIXME: I have no idead to fix this lint
 		rowInfo := extractRowInfo(rows)
 
 		var docs types.Array
@@ -146,9 +145,6 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		// so, we need this `if` statement to support this kind of query `db.actor.find().limit(10).count()`
 		if count > limit && limit != 0 {
 			count = limit
-		}
-		if err != nil {
-			return nil, lazyerrors.Error(err)
 		}
 		defer rows.Close()
 

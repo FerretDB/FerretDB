@@ -478,7 +478,14 @@ func TestCount(t *testing.T) {
 	shared := shared.NewHandler(pool, "127.0.0.1:12345")
 	sql := sql.NewStorage(pool, l.Sugar())
 	jsonb1 := jsonb1.NewStorage(pool, l)
-	handler := New(pool, l, shared, sql, jsonb1)
+	handler := New(&NewOpts{
+		PgPool:        pool,
+		Logger:        l,
+		SharedHandler: shared,
+		SQLStorage:    sql,
+		JSONB1Storage: jsonb1,
+		Metrics:       NewMetrics(),
+	})
 
 	type testCase struct {
 		req  types.Document
@@ -511,7 +518,7 @@ func TestCount(t *testing.T) {
 		},
 	}
 
-	for name, tc := range testCases {
+	for name, tc := range testCases { //nolint:paralleltest // false positive
 		tc := tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
