@@ -111,7 +111,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 	}
 
 	bufr := bufio.NewReader(bytes.NewReader(b[4:]))
-	doc.m = make(map[string]interface{})
+	doc.m = map[string]interface{}{}
 	doc.keys = make([]string, 0, 2)
 
 	for {
