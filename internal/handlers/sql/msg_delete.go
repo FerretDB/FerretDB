@@ -55,7 +55,7 @@ func (h *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		limit, _ := d["limit"].(int32)
 		if limit != 0 {
-			sql += fmt.Sprintf("IN (SELECT %s FROM %s LIMIT 1)", placeholder.Next(), pgx.Identifier{db, collection}.Sanitize())
+			// TODO: sql += fmt.Sprintf("IN (SELECT %s FROM %s LIMIT 1)", placeholder.Next(), pgx.Identifier{db, collection}.Sanitize())
 		}
 
 		tag, err := h.pgPool.Exec(ctx, sql, args...)

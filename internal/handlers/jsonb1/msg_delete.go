@@ -53,7 +53,9 @@ func (h *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		limit, _ := d["limit"].(int32)
 		if limit != 0 {
-			sql += fmt.Sprintf(" WHERE _jsonb->'_id' IN (SELECT _jsonb->'_id' FROM %s%s LIMIT 1)", pgx.Identifier{db, collection}.Sanitize(), elSQL)
+			sql += fmt.Sprintf(" WHERE _jsonb->'_id' IN (SELECT _jsonb->'_id' FROM %s", pgx.Identifier{db, collection}.Sanitize())
+			sql += elSQL
+			sql += " LIMIT 1)"
 		} else {
 			sql += elSQL
 		}
