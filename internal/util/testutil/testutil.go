@@ -34,14 +34,26 @@ func Ctx(tb testing.TB) context.Context {
 	return context.Background()
 }
 
-func Pool(ctx context.Context, tb testing.TB) *pg.Pool {
+// PoolOpts represents options for creating a connection pool.
+type PoolOpts struct {
+	// If set, the pool will use read-only user.
+	ReadOnly bool
+}
+
+// Pool creates a new connection connection pool for testing.
+func Pool(ctx context.Context, tb testing.TB, opts *PoolOpts) *pg.Pool {
 	tb.Helper()
 
 	if testing.Short() {
 		tb.Skip("skipping in -short mode")
 	}
 
-	pool, err := pg.NewPool("postgres://postgres@127.0.0.1:5432/ferretdb?pool_min_conns=1", zaptest.NewLogger(tb), false)
+	username := "postgres"
+	if opts.ReadOnly {
+		username = "readonly"
+	}
+
+	pool, err := pg.NewPool("postgres://"+username+"@127.0.0.1:5432/ferretdb?pool_min_conns=1", zaptest.NewLogger(tb), false)
 	require.NoError(tb, err)
 	tb.Cleanup(pool.Close)
 
