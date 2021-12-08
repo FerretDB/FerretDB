@@ -236,67 +236,6 @@ func TestDropDatabase(t *testing.T) { //nolint:paralleltest,tparallel // affects
 	}
 }
 
-func TestServerStatus(t *testing.T) {
-	t.Parallel()
-
-	ctx := testutil.Ctx(t)
-	pool := testutil.Pool(ctx, t, &testutil.PoolOpts{
-		ReadOnly: true,
-	})
-	l := zaptest.NewLogger(t)
-	shared := shared.NewHandler(pool, "127.0.0.1:12345")
-	sql := sql.NewStorage(pool, l.Sugar())
-	jsonb1 := jsonb1.NewStorage(pool, l)
-	handler := New(&NewOpts{
-		PgPool:        pool,
-		Logger:        l,
-		SharedHandler: shared,
-		SQLStorage:    sql,
-		JSONB1Storage: jsonb1,
-		Metrics:       NewMetrics(),
-	})
-	type testCase struct {
-		req  types.Document
-		resp types.Document
-	}
-
-	testCases := map[string]testCase{
-		"serverStatus": {
-			req: types.MustMakeDocument(
-				"serverStatus", int32(1),
-			),
-			resp: types.MustMakeDocument(
-				"version", "5.0.42",
-				"ok", float64(1),
-			),
-		},
-	}
-	for name, tc := range testCases { //nolint:paralleltest // false positive
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			reqHeader := wire.MsgHeader{
-				RequestID: 1,
-				OpCode:    wire.OP_MSG,
-			}
-
-			var reqMsg wire.OpMsg
-			err := reqMsg.SetSections(wire.OpMsgSection{
-				Documents: []types.Document{tc.req},
-			})
-			require.NoError(t, err)
-
-			_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
-			require.False(t, closeConn, "%s", wire.DumpMsgBody(resBody))
-
-			actual, err := resBody.(*wire.OpMsg).Document()
-			require.NoError(t, err)
-			assert.Equal(t, actual.Map(), tc.resp.Map())
-		})
-	}
-}
-
 func TestFind(t *testing.T) {
 	t.Parallel()
 
@@ -646,7 +585,7 @@ func TestFind(t *testing.T) {
 	}
 }
 
-func TestCount(t *testing.T) {
+func TestReadOnlyHandlers(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
@@ -668,37 +607,56 @@ func TestCount(t *testing.T) {
 
 	type testCase struct {
 		req  types.Document
-		resp int32
+		resp types.Document
 	}
 	testCases := map[string]testCase{
-		"CountAllActor": {
+		"CountAllActors": {
 			req: types.MustMakeDocument(
 				"count", "actor",
 			),
-			resp: 200,
+			resp: types.MustMakeDocument(
+				"n", int32(200),
+				"ok", float64(1),
+			),
 		},
-		"CountExactOne": {
+		"CountExactlyOneActor": {
 			req: types.MustMakeDocument(
 				"count", "actor",
 				"query", types.MustMakeDocument(
 					"actor_id", int32(28),
 				),
 			),
-			resp: 1,
+			resp: types.MustMakeDocument(
+				"n", int32(1),
+				"ok", float64(1),
+			),
 		},
-		"LastNameHoffman": {
+		"CountLastNameHoffman": {
 			req: types.MustMakeDocument(
 				"count", "actor",
 				"query", types.MustMakeDocument(
 					"last_name", "HOFFMAN",
 				),
 			),
-			resp: 3,
+			resp: types.MustMakeDocument(
+				"n", int32(3),
+				"ok", float64(1),
+			),
+		},
+
+		"ServerStatus": {
+			req: types.MustMakeDocument(
+				"serverStatus", int32(1),
+			),
+			resp: types.MustMakeDocument(
+				"version", "5.0.42",
+				"ok", float64(1),
+			),
 		},
 	}
 
 	for name, tc := range testCases { //nolint:paralleltest // false positive
-		tc := tc
+		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -722,12 +680,7 @@ func TestCount(t *testing.T) {
 
 					actual, err := resBody.(*wire.OpMsg).Document()
 					require.NoError(t, err)
-
-					expected := types.MustMakeDocument(
-						"n", tc.resp,
-						"ok", float64(1),
-					)
-					assert.Equal(t, expected, actual)
+					assert.Equal(t, tc.resp, actual)
 				})
 			}
 		})
