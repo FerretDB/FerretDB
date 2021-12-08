@@ -29,9 +29,9 @@ jobs:
         run: make env-pull &
 
       - name: Setup Go
-        uses: ./.github/actions/setup-go
+        uses: FerretDB/github-actions/setup-go@main
         with:
-          cache-key: 'test'
+          cache-key: test
 
       - name: Start environment
         run: make env-up-detach
@@ -66,9 +66,9 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Go
-        uses: ./.github/actions/setup-go
+        uses: FerretDB/github-actions/setup-go@main
         with:
-          cache-key: 'lint'
+          cache-key: lint
 
       - name: Run init
         run: make init
@@ -117,9 +117,9 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Go
-        uses: ./.github/actions/setup-go
+        uses: FerretDB/github-actions/setup-go@main
         with:
-          cache-key: 'fuzz'
+          cache-key: fuzz
 
       - name: Run init
         run: make init
