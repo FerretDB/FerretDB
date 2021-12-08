@@ -691,7 +691,7 @@ func TestDelete(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
-	pool := testutil.Pool(ctx, t)
+	pool := testutil.Pool(ctx, t, new(testutil.PoolOpts))
 	l := zaptest.NewLogger(t)
 	shared := shared.NewHandler(pool, "127.0.0.1:12345")
 	sql := sql.NewStorage(pool, l.Sugar())
