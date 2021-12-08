@@ -26,7 +26,7 @@ import (
 
 func setup(tb testing.TB) (context.Context, *handlers.Handler, string) {
 	ctx := testutil.Ctx(tb)
-	pool := testutil.Pool(ctx, tb)
+	pool := testutil.Pool(ctx, tb, new(testutil.PoolOpts))
 	schema := testutil.Schema(ctx, tb, pool)
 	handlerOpts := &handlers.NewOpts{
 		PgPool:        pool,

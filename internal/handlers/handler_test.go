@@ -36,7 +36,9 @@ func TestListDatabases(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
-	pool := testutil.Pool(ctx, t)
+	pool := testutil.Pool(ctx, t, &testutil.PoolOpts{
+		ReadOnly: true,
+	})
 	l := zaptest.NewLogger(t)
 	shared := shared.NewHandler(pool, "127.0.0.1:12345")
 	sql := sql.NewStorage(pool, l.Sugar())
@@ -97,7 +99,7 @@ func TestListDatabases(t *testing.T) {
 			require.NoError(t, err)
 
 			_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
-			require.False(t, closeConn)
+			require.False(t, closeConn, "%s", wire.DumpMsgBody(resBody))
 
 			actual, err := resBody.(*wire.OpMsg).Document()
 			require.NoError(t, err)
@@ -126,7 +128,7 @@ func TestListDatabases(t *testing.T) {
 
 func TestDropDatabase(t *testing.T) { //nolint:paralleltest,tparallel // affects a global list of databases
 	ctx := testutil.Ctx(t)
-	pool := testutil.Pool(ctx, t)
+	pool := testutil.Pool(ctx, t, new(testutil.PoolOpts))
 	l := zaptest.NewLogger(t)
 	shared := shared.NewHandler(pool, "127.0.0.1:12345")
 	sql := sql.NewStorage(pool, l.Sugar())
@@ -208,7 +210,7 @@ func TestDropDatabase(t *testing.T) { //nolint:paralleltest,tparallel // affects
 			require.NoError(t, err)
 
 			_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
-			require.False(t, closeConn)
+			require.False(t, closeConn, "%s", wire.DumpMsgBody(resBody))
 
 			actual, err := resBody.(*wire.OpMsg).Document()
 			require.NoError(t, err)
@@ -238,7 +240,9 @@ func TestServerStatus(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
-	pool := testutil.Pool(ctx, t)
+	pool := testutil.Pool(ctx, t, &testutil.PoolOpts{
+		ReadOnly: true,
+	})
 	l := zaptest.NewLogger(t)
 	shared := shared.NewHandler(pool, "127.0.0.1:12345")
 	sql := sql.NewStorage(pool, l.Sugar())
@@ -284,7 +288,7 @@ func TestServerStatus(t *testing.T) {
 			require.NoError(t, err)
 
 			_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
-			require.False(t, closeConn)
+			require.False(t, closeConn, "%s", wire.DumpMsgBody(resBody))
 
 			actual, err := resBody.(*wire.OpMsg).Document()
 			require.NoError(t, err)
@@ -297,7 +301,9 @@ func TestFind(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
-	pool := testutil.Pool(ctx, t)
+	pool := testutil.Pool(ctx, t, &testutil.PoolOpts{
+		ReadOnly: true,
+	})
 	l := zaptest.NewLogger(t)
 	shared := shared.NewHandler(pool, "127.0.0.1:12345")
 	sql := sql.NewStorage(pool, l.Sugar())
@@ -620,7 +626,7 @@ func TestFind(t *testing.T) {
 					require.NoError(t, err)
 
 					_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
-					require.False(t, closeConn)
+					require.False(t, closeConn, "%s", wire.DumpMsgBody(resBody))
 
 					actual, err := resBody.(*wire.OpMsg).Document()
 					require.NoError(t, err)
@@ -644,7 +650,9 @@ func TestCount(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
-	pool := testutil.Pool(ctx, t)
+	pool := testutil.Pool(ctx, t, &testutil.PoolOpts{
+		ReadOnly: true,
+	})
 	l := zaptest.NewLogger(t)
 	shared := shared.NewHandler(pool, "127.0.0.1:12345")
 	sql := sql.NewStorage(pool, l.Sugar())
@@ -710,7 +718,7 @@ func TestCount(t *testing.T) {
 					require.NoError(t, err)
 
 					_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
-					require.False(t, closeConn)
+					require.False(t, closeConn, "%s", wire.DumpMsgBody(resBody))
 
 					actual, err := resBody.(*wire.OpMsg).Document()
 					require.NoError(t, err)
