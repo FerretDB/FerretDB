@@ -51,11 +51,11 @@ func (h *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, lazyerrors.Error(err)
 		}
 
-		sql += elSQL
-
 		limit, _ := d["limit"].(int32)
 		if limit != 0 {
-			sql += fmt.Sprintf("IN (SELECT _jsonb->%s FROM %s LIMIT 1)", placeholder.Next(), pgx.Identifier{db, collection}.Sanitize())
+			sql += fmt.Sprintf(" WHERE _jsonb->'_id' IN (SELECT _jsonb->'_id' FROM %s%s LIMIT 1)", pgx.Identifier{db, collection}.Sanitize(), elSQL)
+		} else {
+			sql += elSQL
 		}
 
 		tag, err := h.pgPool.Exec(ctx, sql, args...)

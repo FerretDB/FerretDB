@@ -761,7 +761,14 @@ func TestDelete(t *testing.T) {
 		"DeleteLimit1": {
 			req: types.MustMakeDocument(
 				"delete", "car",
-				"limit", int32(1),
+				"deletes", types.Array{
+					types.MustMakeDocument(
+						"q", types.MustMakeDocument(
+							"car", "ford",
+						),
+						"limit", int32(1),
+					),
+				},
 			),
 			resp: types.MustMakeDocument(
 				"n", int32(1),
@@ -771,7 +778,14 @@ func TestDelete(t *testing.T) {
 		"DeleteLimit0": {
 			req: types.MustMakeDocument(
 				"delete", "animal",
-				"limit", int32(0),
+				"deletes", types.Array{
+					types.MustMakeDocument(
+						"q", types.MustMakeDocument(
+							"animal", "test",
+						),
+						"limit", int32(0),
+					),
+				},
 			),
 			resp: types.MustMakeDocument(
 				"n", int32(5),
@@ -780,54 +794,52 @@ func TestDelete(t *testing.T) {
 		},
 	}
 
-	// _, err := pool.Exec(ctx, fmt.Sprintf(
-	// 	`CREATE TABLE %s (_jsonb jsonb)`,
-	// 	pgx.Identifier{"monila", "car"}.Sanitize(),
-	// ))
-	// require.NoError(t, err)
+	_, err := pool.Exec(ctx, fmt.Sprintf(
+		`CREATE TABLE %s (_jsonb jsonb)`,
+		pgx.Identifier{"pagila", "car"}.Sanitize(),
+	))
 
-	_, err := pool.Exec(ctx, fmt.Sprintf(`INSERT INTO monila.car(_jsonb) VALUES ('{"car": "ford"}')`))
-	require.NoError(t, err)
+	for i := 0; i < 2; i++ {
+		_, err = pool.Exec(ctx, fmt.Sprintf(`INSERT INTO pagila.car(_jsonb) VALUES ('{"car": "ford"}')`))
+		require.NoError(t, err)
+	}
 
-	// _, err = pool.Exec(ctx, fmt.Sprintf(
-	// 	`CREATE TABLE %s (_jsonb jsonb)`,
-	// 	pgx.Identifier{"pagila", "car"}.Sanitize(),
-	// ))
-	// require.NoError(t, err)
+	_, err = pool.Exec(ctx, fmt.Sprintf(
+		`CREATE TABLE %s (_jsonb jsonb)`,
+		pgx.Identifier{"pagila", "animal"}.Sanitize(),
+	))
 
-	_, err = pool.Exec(ctx, fmt.Sprintf(`INSERT INTO pagila.car(_jsonb) VALUES ('{"car": "ford"}')`))
-	require.NoError(t, err)
+	for i := 0; i < 5; i++ {
+		_, err = pool.Exec(ctx, fmt.Sprintf(`INSERT INTO pagila.animal(_jsonb) VALUES ('{"animal": "test"}')`))
+		require.NoError(t, err)
+	}
 
 	for name, tc := range testCases { //nolint:paralleltest // false positive
 		tc := tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
+			tc.req.Set("$db", "pagila")
 
-			for _, schema := range []string{"monila", "pagila"} {
-				t.Run(schema, func(t *testing.T) {
-					tc.req.Set("$db", schema)
-
-					reqHeader := wire.MsgHeader{
-						RequestID: 1,
-						OpCode:    wire.OP_MSG,
-					}
-
-					var reqMsg wire.OpMsg
-					err := reqMsg.SetSections(wire.OpMsgSection{
-						Documents: []types.Document{tc.req},
-					})
-					require.NoError(t, err)
-
-					_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
-					require.False(t, closeConn)
-
-					actual, err := resBody.(*wire.OpMsg).Document()
-					require.NoError(t, err)
-
-					expected := tc.resp
-					assert.Equal(t, expected, actual)
-				})
+			reqHeader := wire.MsgHeader{
+				RequestID: 1,
+				OpCode:    wire.OP_MSG,
 			}
+
+			var reqMsg wire.OpMsg
+			err := reqMsg.SetSections(wire.OpMsgSection{
+				Documents: []types.Document{tc.req},
+			})
+			require.NoError(t, err)
+
+			_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
+			require.False(t, closeConn)
+
+			actual, err := resBody.(*wire.OpMsg).Document()
+			require.NoError(t, err)
+
+			expected := tc.resp
+			assert.Equal(t, expected, actual)
 		})
+
 	}
 }
