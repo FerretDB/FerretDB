@@ -20,7 +20,7 @@ services:
 
   # for compatibility testing and mongosh
   mongodb:
-    image: mongo:5.0.4
+    image: mongo:5.0.5
     container_name: ferretdb_mongodb
     ports:
       - 127.0.0.1:37017:27017
@@ -33,7 +33,7 @@ services:
       - test_db_mongodb:/test_db/:ro
 
   test_db:
-    image: aleksi/test_db:1.2.0
+    image: aleksi/test_db:1.2.1
     container_name: ferretdb_test_db
     volumes:
       - test_db_postgres:/test_db/postgresql/pagila:ro
