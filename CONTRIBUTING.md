@@ -12,7 +12,7 @@ go version devel go1.18-[...]
 ```
 **Note:** If using gotip and `go version` does not return version 1.18, you may need to symbolic link `gotip` to `go`.
 ```sh
-$ ln -s `which gotip` /user/local/bin/go
+$ ln -s `which gotip` /usr/local/bin/go
 ```
 Use `which gotip` to get the path to gotip.
 
