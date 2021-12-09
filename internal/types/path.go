@@ -16,41 +16,37 @@ package types
 
 import "fmt"
 
-// type Foo interface {
-// 	Array | Document
-// }
-
-func GetByPath(f any, path ...any) (any, error) {
+func GetByPath(str any, path ...any) (any, error) {
 	if len(path) == 0 {
-		return f, nil
+		return str, nil
 	}
 
 	p, path := path[0], path[1:]
 
-	switch f := f.(type) {
+	switch str := str.(type) {
 	case Array:
-		i, ok := p.(int)
+		index, ok := p.(int)
 		if !ok {
-			return nil, fmt.Errorf("types.GetByPath: can't access %[1]T by path %[2]v (%[2]T)", f, p)
+			return nil, fmt.Errorf("types.GetByPath: can't access %[1]T by path %[2]v (%[2]T)", str, p)
 		}
-		next, err := f.Get(i)
+		nextStr, err := str.Get(index)
 		if err != nil {
 			return nil, fmt.Errorf("types.GetByPath: %w", err)
 		}
-		return GetByPath(next, path...)
+		return GetByPath(nextStr, path...)
 
 	case Document:
-		k, ok := p.(string)
+		key, ok := p.(string)
 		if !ok {
-			return nil, fmt.Errorf("types.GetByPath: can't access %[1]T by path %[2]v (%[2]T)", f, p)
+			return nil, fmt.Errorf("types.GetByPath: can't access %[1]T by path %[2]v (%[2]T)", str, p)
 		}
-		next, err := f.Get(k)
+		nextStr, err := str.Get(key)
 		if err != nil {
 			return nil, fmt.Errorf("types.GetByPath: %w", err)
 		}
-		return GetByPath(next, path...)
+		return GetByPath(nextStr, path...)
 
 	default:
-		return nil, fmt.Errorf("types.GetByPath: can't access %[1]T by path %[2]v (%[2]T)", f, p)
+		return nil, fmt.Errorf("types.GetByPath: can't access %[1]T by path %[2]v (%[2]T)", str, p)
 	}
 }

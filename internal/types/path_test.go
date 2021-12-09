@@ -53,7 +53,7 @@ func TestGetByPath(t *testing.T) {
 		err  string
 	}
 
-	for _, tc := range []testCase{{
+	for _, tc := range []testCase{{ //nolint:paralleltest // false positive
 		path: []any{"compression", 0},
 		res:  "none",
 	}, {
@@ -83,6 +83,8 @@ func TestGetByPath(t *testing.T) {
 	}} {
 		tc := tc
 		t.Run(fmt.Sprint(tc.path), func(t *testing.T) {
+			t.Parallel()
+
 			res, err := GetByPath(doc, tc.path...)
 			if tc.err == "" {
 				require.NoError(t, err)

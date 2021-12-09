@@ -43,12 +43,6 @@
 //  (does not exist) bson.CString
 package types
 
-import "time"
-
-type Type interface {
-	float64 | string | Document | Array | Binary | ObjectID | bool | time.Time | Regex | int32 | Timestamp | int64
-}
-
 type (
 	ObjectID [12]byte
 
