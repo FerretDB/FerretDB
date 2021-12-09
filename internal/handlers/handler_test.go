@@ -785,7 +785,7 @@ func TestDelete(t *testing.T) {
 						"ok", float64(1),
 					),
 				},
-				"DeleteLimit0Cat": {
+				"DeleteLimit0": {
 					req: types.MustMakeDocument(
 						"delete", "testcat",
 						"deletes", types.Array{
