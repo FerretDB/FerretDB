@@ -120,21 +120,21 @@ func MustMakeDocument(pairs ...any) Document {
 // validate checks if the document is valid.
 func (d Document) validate() error {
 	if len(d.m) != len(d.keys) {
-		return fmt.Errorf("Document.validate: keys and values count mismatch: %d != %d", len(d.m), len(d.keys))
+		return fmt.Errorf("types.Document.validate: keys and values count mismatch: %d != %d", len(d.m), len(d.keys))
 	}
 
 	keys := make(map[string]struct{}, len(d.keys))
 	for _, key := range d.keys {
 		if !isValidKey(key) {
-			return fmt.Errorf("Document.validate: invalid key: %q", key)
+			return fmt.Errorf("types.Document.validate: invalid key: %q", key)
 		}
 
 		if _, ok := d.m[key]; !ok {
-			return fmt.Errorf("Document.validate: key not found: %q", key)
+			return fmt.Errorf("types.Document.validate: key not found: %q", key)
 		}
 
 		if _, ok := keys[key]; ok {
-			return fmt.Errorf("Document.validate: duplicate key: %q", key)
+			return fmt.Errorf("types.Document.validate: duplicate key: %q", key)
 		}
 		keys[key] = struct{}{}
 
@@ -161,11 +161,11 @@ func (d Document) Command() string {
 
 func (d *Document) add(key string, value any) error {
 	if _, ok := d.m[key]; ok {
-		return fmt.Errorf("Document.add: key already present: %q", key)
+		return fmt.Errorf("types.Document.add: key already present: %q", key)
 	}
 
 	if !isValidKey(key) {
-		return fmt.Errorf("Document.add: invalid key: %q", key)
+		return fmt.Errorf("types.Document.add: invalid key: %q", key)
 	}
 
 	// TODO check value type
@@ -176,10 +176,19 @@ func (d *Document) add(key string, value any) error {
 	return nil
 }
 
+// Get returns the value at the given key.
+func (d Document) Get(key string) (any, error) {
+	if value, ok := d.m[key]; ok {
+		return value, nil
+	}
+
+	return nil, fmt.Errorf("types.Document.Get: key not found: %q", key)
+}
+
 // Set the value of the given key, replacing any existing value.
 func (d *Document) Set(key string, value any) error {
 	if !isValidKey(key) {
-		return fmt.Errorf("Document.Set: invalid key: %q", key)
+		return fmt.Errorf("types.Document.Set: invalid key: %q", key)
 	}
 
 	// TODO check value type

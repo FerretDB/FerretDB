@@ -14,17 +14,15 @@
 
 package types
 
-//go:generate ../../bin/stringer -linecomment -type BinarySubtype
+import "fmt"
 
-type BinarySubtype byte
+type Array []any
 
-const (
-	BinaryGeneric    = BinarySubtype(0x00) // generic
-	BinaryFunction   = BinarySubtype(0x01) // function
-	BinaryGenericOld = BinarySubtype(0x02) // generic-old
-	BinaryUUIDOld    = BinarySubtype(0x03) // uuid-old
-	BinaryUUID       = BinarySubtype(0x04) // uuid
-	BinaryMD5        = BinarySubtype(0x05) // md5
-	BinaryEncrypted  = BinarySubtype(0x06) // encrypted
-	BinaryUser       = BinarySubtype(0x80) // user
-)
+// Get returns the value at the given index.
+func (a Array) Get(index int) (any, error) {
+	if l := len(a); index < 0 || index >= l {
+		return nil, fmt.Errorf("types.Array.Get: index %d is out of bounds [0-%d)", index, l)
+	}
+
+	return a[index], nil
+}
