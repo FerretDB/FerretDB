@@ -17,11 +17,21 @@ package pg
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/log/zapadapter"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"go.uber.org/zap"
+)
+
+const (
+	// Supported encoding:
+	encUTF8 = "UTF8"
+
+	// Supported locales: (For more info see: https://www.gnu.org/software/libc/manual/html_node/Standard-Locales.html)
+	localeC     = "C"
+	localePOSIX = "POSIX"
 )
 
 // Pool data struct for *pgxpool.Pool.
@@ -89,19 +99,19 @@ func (p *Pool) checkConnection(ctx context.Context) error {
 
 		switch name {
 		case "server_encoding":
-			if setting != "UTF8" {
-				return fmt.Errorf("pg.Pool.checkConnection: %q is %q, want %q", name, setting, "UTF8")
+			if setting != encUTF8 {
+				return fmt.Errorf("pg.Pool.checkConnection: %q is %q, want %q", name, setting, encUTF8)
 			}
 		case "client_encoding":
-			if setting != "UTF8" {
-				return fmt.Errorf("pg.Pool.checkConnection: %q is %q, want %q", name, setting, "UTF8")
+			if setting != encUTF8 {
+				return fmt.Errorf("pg.Pool.checkConnection: %q is %q, want %q", name, setting, encUTF8)
 			}
 		case "lc_collate":
-			if setting != "C" && setting != "POSIX" && setting != "en_US.utf8" {
+			if setting != localeC && setting != localePOSIX && !validUtf8Locale(setting) {
 				return fmt.Errorf("pg.Pool.checkConnection: %q is %q", name, setting)
 			}
 		case "lc_ctype":
-			if setting != "C" && setting != "POSIX" && setting != "en_US.utf8" {
+			if setting != localeC && setting != localePOSIX && !validUtf8Locale(setting) {
 				return fmt.Errorf("pg.Pool.checkConnection: %q is %q", name, setting)
 			}
 		default:
@@ -121,4 +131,18 @@ func (p *Pool) checkConnection(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// Currently supported locale variants, compromised between https://www.postgresql.org/docs/9.3/multibyte.html
+// and https://www.gnu.org/software/libc/manual/html_node/Locale-Names.html.
+//
+// Valid examples:
+// * en_US.utf8,
+// * en_US.utf-8
+// * en_US.UTF8,
+// * en_US.UTF-8
+func validUtf8Locale(setting string) bool {
+	lowered := strings.ToLower(setting)
+
+	return lowered == "en_us.utf8" || lowered == "en_us.utf-8"
 }
