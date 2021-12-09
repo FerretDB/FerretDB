@@ -125,11 +125,6 @@ func setupPagila(ctx context.Context) {
 	start := time.Now()
 	logger := zap.S().Named("postgres.pagila")
 
-	logger.Infof("Waiting for port 5432 to be up...")
-	if err := waitForPort(ctx, 5432); err != nil {
-		logger.Fatal(err)
-	}
-
 	logger.Infof("Importing database...")
 
 	args := strings.Split(`exec -T postgres psql -U postgres -d ferretdb --quiet -f /test_db/01-pagila-schema.sql`, " ")
@@ -138,38 +133,14 @@ func setupPagila(ctx context.Context) {
 	args = strings.Split(`exec -T postgres psql -U postgres -d ferretdb --quiet -f /test_db/02-pagila-data.sql`, " ")
 	runCompose(args, nil, logger)
 
-	args = strings.Split(`exec -T postgres psql -U postgres -d ferretdb --quiet`, " ")
-	stdin := strings.NewReader(`ALTER SCHEMA public RENAME TO pagila;`)
-	runCompose(args, stdin, logger)
-
 	logger.Infof("Done in %s.", time.Since(start))
 }
 
-func setupMonila(ctx context.Context) {
+func setupMonila(ctx context.Context, pgPool *pg.Pool) {
 	start := time.Now()
 	logger := zap.S().Named("postgres.monila")
 
-	logger.Infof("Waiting for port 5432 to be up...")
-	if err := waitForPort(ctx, 5432); err != nil {
-		logger.Fatal(err)
-	}
-
 	logger.Infof("Importing database...")
-
-	args := strings.Split(`exec -T postgres psql -U postgres -d ferretdb`, " ")
-	queries := strings.Join(
-		[]string{
-			`CREATE SCHEMA monila;`,
-			`CREATE SCHEMA test;`,
-		}, "\n",
-	)
-	stdin := strings.NewReader(queries)
-	runCompose(args, stdin, logger)
-
-	pgPool, err := pg.NewPool("postgres://postgres@127.0.0.1:5432/ferretdb", logger.Desugar(), false)
-	if err != nil {
-		logger.Fatal(err)
-	}
 
 	listenerMetrics := clientconn.NewListenerMetrics()
 	handlersMetrics := handlers.NewMetrics()
@@ -245,6 +216,25 @@ func main() {
 		setupMongoDB(ctx)
 	}()
 
+	logger.Infof("Waiting for port 5432 to be up...")
+	if err := waitForPort(ctx, 5432); err != nil {
+		logger.Fatal(err)
+	}
+
+	pgPool, err := pg.NewPool("postgres://postgres@127.0.0.1:5432/ferretdb", logger.Desugar(), false)
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	for _, q := range []string{
+		`CREATE SCHEMA monila`,
+		`CREATE SCHEMA test`,
+	} {
+		if _, err = pgPool.Exec(ctx, q); err != nil {
+			logger.Fatal(err)
+		}
+	}
+
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -254,10 +244,21 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		setupMonila(ctx)
+		setupMonila(ctx, pgPool)
 	}()
 
 	wg.Wait()
+
+	for _, q := range []string{
+		`ALTER SCHEMA public RENAME TO pagila`,
+		`CREATE ROLE readonly NOINHERIT LOGIN`,
+		`GRANT SELECT ON ALL TABLES IN SCHEMA monila, pagila, test TO readonly`,
+		`GRANT USAGE ON SCHEMA monila, pagila, test TO readonly`,
+	} {
+		if _, err = pgPool.Exec(ctx, q); err != nil {
+			logger.Fatal(err)
+		}
+	}
 
 	logger.Info("Done.")
 }
