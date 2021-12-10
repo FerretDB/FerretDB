@@ -20,7 +20,7 @@ import (
 	"unicode/utf8"
 )
 
-// isValidKey returns false if k is not a valid document field key.
+// isValidKey returns false if key is not a valid document field key.
 func isValidKey(key string) bool {
 	if key == "" {
 		return false
@@ -123,22 +123,25 @@ func (d Document) validate() error {
 		return fmt.Errorf("types.Document.validate: keys and values count mismatch: %d != %d", len(d.m), len(d.keys))
 	}
 
-	keys := make(map[string]struct{}, len(d.keys))
+	prevKeys := make(map[string]struct{}, len(d.keys))
 	for _, key := range d.keys {
 		if !isValidKey(key) {
 			return fmt.Errorf("types.Document.validate: invalid key: %q", key)
 		}
 
-		if _, ok := d.m[key]; !ok {
+		value, ok := d.m[key]
+		if !ok {
 			return fmt.Errorf("types.Document.validate: key not found: %q", key)
 		}
 
-		if _, ok := keys[key]; ok {
+		if _, ok := prevKeys[key]; ok {
 			return fmt.Errorf("types.Document.validate: duplicate key: %q", key)
 		}
-		keys[key] = struct{}{}
+		prevKeys[key] = struct{}{}
 
-		// TODO check value type
+		if err := validateValue(value); err != nil {
+			return fmt.Errorf("types.Document.validate: %w", err)
+		}
 	}
 
 	return nil
@@ -168,7 +171,9 @@ func (d *Document) add(key string, value any) error {
 		return fmt.Errorf("types.Document.add: invalid key: %q", key)
 	}
 
-	// TODO check value type
+	if err := validateValue(value); err != nil {
+		return fmt.Errorf("types.Document.validate: %w", err)
+	}
 
 	d.keys = append(d.keys, key)
 	d.m[key] = value
@@ -191,7 +196,9 @@ func (d *Document) Set(key string, value any) error {
 		return fmt.Errorf("types.Document.Set: invalid key: %q", key)
 	}
 
-	// TODO check value type
+	if err := validateValue(value); err != nil {
+		return fmt.Errorf("types.Document.validate: %w", err)
+	}
 
 	if _, ok := d.m[key]; !ok {
 		d.keys = append(d.keys, key)

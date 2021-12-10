@@ -16,6 +16,7 @@ package types
 
 import "fmt"
 
+// GetByPath returns Array or Object value by path - a sequence of indexes and keys.
 func GetByPath(str any, path ...any) (any, error) {
 	if len(path) == 0 {
 		return str, nil
