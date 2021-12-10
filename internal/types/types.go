@@ -78,6 +78,8 @@ func validateValue(value any) error {
 		return nil
 	case time.Time:
 		return nil
+	case nil:
+		return nil
 	case Regex:
 		return nil
 	case int32:
