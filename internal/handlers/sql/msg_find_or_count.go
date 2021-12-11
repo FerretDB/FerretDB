@@ -150,10 +150,8 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 
 		err = res.SetSections(wire.OpMsgSection{
 			Documents: []types.Document{types.MustMakeDocument(
-				"n",
-				count,
-				"ok",
-				float64(1),
+				"n", count,
+				"ok", float64(1),
 			)},
 		})
 	}
