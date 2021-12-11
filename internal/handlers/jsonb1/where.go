@@ -37,6 +37,9 @@ func scalar(v any, p *pg.Placeholder) (sql string, args []any, err error) {
 	case string:
 		sql = "to_jsonb(" + p.Next() + "::text)"
 		arg = v
+	case bool:
+		sql = "to_jsonb(" + p.Next() + "::bool)"
+		arg = v
 	case types.ObjectID:
 		sql = p.Next()
 		var b []byte
