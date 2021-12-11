@@ -160,6 +160,11 @@ var commands = map[string]command{
 		help:           "Updates documents that are matched by the query.",
 		storageHandler: (common.Storage).MsgUpdate,
 	},
+	"aggregate": {
+		name:           "aggregate",
+		help:           "Returns aggregation pipeline result.",
+		storageHandler: (common.Storage).MsgAggregate,
+	},
 	"debug_error": {
 		name: "debug_error",
 		help: "Used for debugging purposes.",

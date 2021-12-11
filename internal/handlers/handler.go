@@ -238,7 +238,7 @@ func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) (common.Stora
 	h.l.Sugar().Debugf("Using storage %q for collection %q in database %q", storage, collection, db)
 
 	switch command {
-	case "delete", "find", "count":
+	case "delete", "find", "count", "aggregate":
 		switch storage {
 		case pg.JSONB1Table:
 			return h.jsonb1, nil
