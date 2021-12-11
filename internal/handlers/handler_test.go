@@ -588,7 +588,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				require.Equal(t, len(expectedDBs), len(actualDBs))
 				for i, actualDB := range actualDBs {
 					expectedDB := expectedDBs[i]
-					testutil.CompareByPath(t, expectedDB, actualDB, 100_000, "sizeOnDisk")
+					testutil.CompareByPath(t, expectedDB, actualDB, 200_000, "sizeOnDisk")
 				}
 
 				assert.Equal(t, expectedDoc, actualDoc)
