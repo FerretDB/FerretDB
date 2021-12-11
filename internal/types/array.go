@@ -28,6 +28,11 @@ func (a Array) Get(index int) (any, error) {
 	return a[index], nil
 }
 
+// GetByPath returns Array or Object value by path - a sequence of indexes and keys.
+func (a Array) GetByPath(path ...string) (any, error) {
+	return getByPath(a, path...)
+}
+
 // Set sets the value at the given index.
 func (a Array) Set(index int, value any) error {
 	if l := len(a); index < 0 || index >= l {

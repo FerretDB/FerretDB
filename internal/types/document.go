@@ -190,6 +190,11 @@ func (d Document) Get(key string) (any, error) {
 	return nil, fmt.Errorf("types.Document.Get: key not found: %q", key)
 }
 
+// GetByPath returns Array or Object value by path - a sequence of indexes and keys.
+func (d Document) GetByPath(path ...string) (any, error) {
+	return getByPath(d, path...)
+}
+
 // Set the value of the given key, replacing any existing value.
 func (d *Document) Set(key string, value any) error {
 	if !isValidKey(key) {

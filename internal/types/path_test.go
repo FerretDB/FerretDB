@@ -48,44 +48,44 @@ func TestGetByPath(t *testing.T) {
 	)
 
 	type testCase struct {
-		path []any
+		path []string
 		res  any
 		err  string
 	}
 
 	for _, tc := range []testCase{{ //nolint:paralleltest // false positive
-		path: []any{"compression", 0},
+		path: []string{"compression", "0"},
 		res:  "none",
 	}, {
-		path: []any{"compression"},
+		path: []string{"compression"},
 		res:  Array{"none"},
 	}, {
-		path: []any{"client", "driver"},
+		path: []string{"client", "driver"},
 		res: MustMakeDocument(
 			"name", "nodejs",
 			"version", "4.0.0-beta.6",
 		),
 	}, {
-		path: []any{"client", 0},
-		err:  `types.GetByPath: can't access types.Document by path 0 (int)`,
+		path: []string{"client", "0"},
+		err:  `types.getByPath: types.Document.Get: key not found: "0"`,
 	}, {
-		path: []any{"compression", "invalid"},
-		err:  `types.GetByPath: can't access types.Array by path invalid (string)`,
+		path: []string{"compression", "invalid"},
+		err:  `types.getByPath: strconv.Atoi: parsing "invalid": invalid syntax`,
 	}, {
-		path: []any{"client", "missing"},
-		err:  `types.GetByPath: types.Document.Get: key not found: "missing"`,
+		path: []string{"client", "missing"},
+		err:  `types.getByPath: types.Document.Get: key not found: "missing"`,
 	}, {
-		path: []any{"compression", 1},
-		err:  `types.GetByPath: types.Array.Get: index 1 is out of bounds [0-1)`,
+		path: []string{"compression", "1"},
+		err:  `types.getByPath: types.Array.Get: index 1 is out of bounds [0-1)`,
 	}, {
-		path: []any{"compression", 0, "invalid"},
-		err:  `types.GetByPath: can't access string by path invalid (string)`,
+		path: []string{"compression", "0", "invalid"},
+		err:  `types.getByPath: can't access string by path "invalid"`,
 	}} {
 		tc := tc
 		t.Run(fmt.Sprint(tc.path), func(t *testing.T) {
 			t.Parallel()
 
-			res, err := GetByPath(doc, tc.path...)
+			res, err := getByPath(doc, tc.path...)
 			if tc.err == "" {
 				require.NoError(t, err)
 				assert.Equal(t, tc.res, res)
