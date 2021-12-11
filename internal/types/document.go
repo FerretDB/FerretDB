@@ -31,7 +31,7 @@ func isValidKey(key string) bool {
 
 // Common interface with bson.Document.
 type document interface {
-	Map() map[string]interface{}
+	Map() map[string]any
 	Keys() []string
 }
 
@@ -39,7 +39,7 @@ type document interface {
 //
 // Duplicate field names are not supported.
 type Document struct {
-	m    map[string]interface{}
+	m    map[string]any
 	keys []string
 }
 
@@ -56,7 +56,7 @@ func ConvertDocument(d document) (Document, error) {
 	}
 
 	if doc.m == nil {
-		doc.m = map[string]interface{}{}
+		doc.m = map[string]any{}
 	}
 	if doc.keys == nil {
 		doc.keys = []string{}
@@ -79,14 +79,14 @@ func MustConvertDocument(d document) Document {
 }
 
 // MakeDocument makes a new Document from given key/value pairs.
-func MakeDocument(pairs ...interface{}) (Document, error) {
+func MakeDocument(pairs ...any) (Document, error) {
 	l := len(pairs)
 	if l%2 != 0 {
 		return Document{}, fmt.Errorf("types.MakeDocument: invalid number of arguments: %d", l)
 	}
 
 	doc := Document{
-		m:    make(map[string]interface{}, l/2),
+		m:    make(map[string]any, l/2),
 		keys: make([]string, 0, l/2),
 	}
 	for i := 0; i < l; i += 2 {
@@ -109,7 +109,7 @@ func MakeDocument(pairs ...interface{}) (Document, error) {
 }
 
 // MustMakeDocument is a MakeDocument that panics in case of error.
-func MustMakeDocument(pairs ...interface{}) Document {
+func MustMakeDocument(pairs ...any) Document {
 	doc, err := MakeDocument(pairs...)
 	if err != nil {
 		panic(err)
@@ -145,7 +145,7 @@ func (d Document) validate() error {
 }
 
 // Map returns a shallow copy of the document as a map. Do not modify it.
-func (d Document) Map() map[string]interface{} {
+func (d Document) Map() map[string]any {
 	return d.m
 }
 
@@ -159,7 +159,7 @@ func (d Document) Command() string {
 	return strings.ToLower(d.keys[0])
 }
 
-func (d *Document) add(key string, value interface{}) error {
+func (d *Document) add(key string, value any) error {
 	if _, ok := d.m[key]; ok {
 		return fmt.Errorf("Document.add: key already present: %q", key)
 	}
@@ -177,7 +177,7 @@ func (d *Document) add(key string, value interface{}) error {
 }
 
 // Set the value of the given key, replacing any existing value.
-func (d *Document) Set(key string, value interface{}) error {
+func (d *Document) Set(key string, value any) error {
 	if !isValidKey(key) {
 		return fmt.Errorf("Document.Set: invalid key: %q", key)
 	}

@@ -130,7 +130,7 @@ func (query *OpQuery) MarshalBinary() ([]byte, error) {
 
 // MarshalBinary writes an OpQuery in JSON format to byte array.
 func (query *OpQuery) MarshalJSON() ([]byte, error) {
-	m := map[string]interface{}{
+	m := map[string]any{
 		"Flags":              query.Flags,
 		"FullCollectionName": query.FullCollectionName,
 		"NumberToSkip":       query.NumberToSkip,

@@ -44,7 +44,7 @@ func (h *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		m := d.Map()
 
 		sql := fmt.Sprintf("INSERT INTO %s (", pgx.Identifier{db, collection}.Sanitize())
-		var args []interface{}
+		var args []any
 
 		for _, k := range d.Keys() {
 			// TODO

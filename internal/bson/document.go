@@ -35,13 +35,13 @@ const (
 
 // Common interface with types.Document.
 type document interface {
-	Map() map[string]interface{}
+	Map() map[string]any
 	Keys() []string
 }
 
 // Document represents BSON Document data type.
 type Document struct {
-	m    map[string]interface{}
+	m    map[string]any
 	keys []string
 }
 
@@ -54,7 +54,7 @@ func ConvertDocument(d document) (*Document, error) {
 	}
 
 	if doc.m == nil {
-		doc.m = map[string]interface{}{}
+		doc.m = map[string]any{}
 	}
 	if doc.keys == nil {
 		doc.keys = []string{}
@@ -80,7 +80,7 @@ func MustConvertDocument(d document) *Document {
 func (doc *Document) bsontype() {}
 
 // Returns the map of key values associated with the Document.
-func (doc *Document) Map() map[string]interface{} {
+func (doc *Document) Map() map[string]any {
 	return doc.m
 }
 
@@ -111,7 +111,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 	}
 
 	bufr := bufio.NewReader(bytes.NewReader(b[4:]))
-	doc.m = map[string]interface{}{}
+	doc.m = map[string]any{}
 	doc.keys = make([]string, 0, 2)
 
 	for {
@@ -415,8 +415,8 @@ func (doc Document) MarshalBinary() ([]byte, error) {
 	return res.Bytes(), nil
 }
 
-func unmarshalJSONValue(data []byte) (interface{}, error) {
-	var v interface{}
+func unmarshalJSONValue(data []byte) (any, error) {
+	var v any
 	r := bytes.NewReader(data)
 	dec := json.NewDecoder(r)
 	err := dec.Decode(&v)
@@ -427,9 +427,9 @@ func unmarshalJSONValue(data []byte) (interface{}, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	var res interface{}
+	var res any
 	switch v := v.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		switch {
 		case v["$f"] != nil:
 			var o Double
@@ -470,7 +470,7 @@ func unmarshalJSONValue(data []byte) (interface{}, error) {
 		}
 	case string:
 		res = v
-	case []interface{}:
+	case []any:
 		var o Array
 		err = o.UnmarshalJSON(data)
 		res = types.Array(o)
@@ -522,7 +522,7 @@ func (doc *Document) UnmarshalJSON(data []byte) error {
 	}
 
 	doc.keys = keys
-	doc.m = make(map[string]interface{}, len(keys))
+	doc.m = make(map[string]any, len(keys))
 
 	for _, key := range keys {
 		b, ok = rawMessages[key]
@@ -543,7 +543,7 @@ func (doc *Document) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func marshalJSONValue(v interface{}) ([]byte, error) {
+func marshalJSONValue(v any) ([]byte, error) {
 	var o json.Marshaler
 	var err error
 	switch v := v.(type) {

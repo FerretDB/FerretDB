@@ -15,7 +15,7 @@
 package types
 
 type (
-	Array []interface{}
+	Array []any
 
 	Binary struct {
 		Subtype BinarySubtype

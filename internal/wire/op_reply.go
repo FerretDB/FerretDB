@@ -122,14 +122,14 @@ func (reply *OpReply) MarshalBinary() ([]byte, error) {
 
 // MarshalJSON marshals an OpReply in JSON format to a byte array.
 func (reply *OpReply) MarshalJSON() ([]byte, error) {
-	m := map[string]interface{}{
+	m := map[string]any{
 		"ResponseFlags":  reply.ResponseFlags,
 		"CursorID":       reply.CursorID,
 		"StartingFrom":   reply.StartingFrom,
 		"NumberReturned": reply.NumberReturned,
 	}
 
-	docs := make([]interface{}, len(reply.Documents))
+	docs := make([]any, len(reply.Documents))
 	for i, d := range reply.Documents {
 		docs[i] = bson.MustConvertDocument(d)
 	}

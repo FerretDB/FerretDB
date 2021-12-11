@@ -119,7 +119,7 @@ func (p *Pool) checkConnection(ctx context.Context) error {
 		}
 
 		if logger != nil {
-			logger.Log(ctx, pgx.LogLevelDebug, "PostgreSQL setting", map[string]interface{}{
+			logger.Log(ctx, pgx.LogLevelDebug, "PostgreSQL setting", map[string]any{
 				"name":    name,
 				"setting": setting,
 			})

@@ -24,7 +24,7 @@ import (
 )
 
 // Array represents BSON Array data type.
-type Array []interface{}
+type Array []any
 
 func (arr *Array) bsontype() {}
 
@@ -35,7 +35,7 @@ func (arr *Array) ReadFrom(r *bufio.Reader) error {
 		return lazyerrors.Error(err)
 	}
 
-	s := make([]interface{}, len(doc.m))
+	s := make([]any, len(doc.m))
 
 	for i := 0; i < len(doc.m); i++ {
 		if k := doc.keys[i]; k != strconv.Itoa(i) {
@@ -70,7 +70,7 @@ func (arr Array) WriteTo(w *bufio.Writer) error {
 
 // MarshalBinary implements bsontype interface.
 func (arr Array) MarshalBinary() ([]byte, error) {
-	m := make(map[string]interface{}, len(arr))
+	m := make(map[string]any, len(arr))
 	keys := make([]string, len(arr))
 	for i := 0; i < len(keys); i++ {
 		key := strconv.Itoa(i)
