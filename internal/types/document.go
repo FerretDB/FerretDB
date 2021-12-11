@@ -181,7 +181,7 @@ func (d *Document) add(key string, value any) error {
 	return nil
 }
 
-// Get returns the value at the given key.
+// Get returns a value at the given key.
 func (d Document) Get(key string) (any, error) {
 	if value, ok := d.m[key]; ok {
 		return value, nil
@@ -190,7 +190,7 @@ func (d Document) Get(key string) (any, error) {
 	return nil, fmt.Errorf("types.Document.Get: key not found: %q", key)
 }
 
-// GetByPath returns Array or Object value by path - a sequence of indexes and keys.
+// GetByPath returns a value by path - a sequence of indexes and keys.
 func (d Document) GetByPath(path ...string) (any, error) {
 	return getByPath(d, path...)
 }

@@ -25,6 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
+// GetByPath returns a value by path - a sequence of indexes and keys.
 func GetByPath(tb testing.TB, str any, path ...string) any {
 	tb.Helper()
 
@@ -43,6 +44,9 @@ func GetByPath(tb testing.TB, str any, path ...string) any {
 	return res
 }
 
+// SetByPath sets the value by path - a sequence of indexes and keys.
+//
+// The path must exist.
 func SetByPath(tb testing.TB, str any, value any, path ...string) {
 	tb.Helper()
 
@@ -56,21 +60,23 @@ func SetByPath(tb testing.TB, str any, value any, path ...string) {
 			index, err := strconv.Atoi(p)
 			require.NoError(tb, err)
 
-			if !last {
-				str, err = s.Get(index)
-			} else {
-				err = s.Set(index, value)
-			}
+			str, err = s.Get(index)
 			require.NoError(tb, err)
+
+			if last {
+				err = s.Set(index, value)
+				require.NoError(tb, err)
+			}
 
 		case types.Document:
 			var err error
-			if !last {
-				str, err = s.Get(p)
-			} else {
-				err = s.Set(p, value)
-			}
+			str, err = s.Get(p)
 			require.NoError(tb, err)
+
+			if last {
+				err = s.Set(p, value)
+				require.NoError(tb, err)
+			}
 
 		default:
 			tb.Fatalf("can't access %T by path %q", str, p)
@@ -78,7 +84,9 @@ func SetByPath(tb testing.TB, str any, value any, path ...string) {
 	}
 }
 
-func CompareByPath(tb testing.TB, expected, actual any, delta float64, path ...string) {
+// CompareAndSetByPath asserts that two values with the same path in two objects (documents or arrays)
+// are within a given delta, then updates the expected object with the actual value.
+func CompareAndSetByPath(tb testing.TB, expected, actual any, delta float64, path ...string) {
 	tb.Helper()
 
 	expectedV := GetByPath(tb, expected, path...)

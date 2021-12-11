@@ -19,7 +19,7 @@ import "fmt"
 // Array represents BSON array.
 type Array []any
 
-// Get returns the value at the given index.
+// Get returns a value at the given index.
 func (a Array) Get(index int) (any, error) {
 	if l := len(a); index < 0 || index >= l {
 		return nil, fmt.Errorf("types.Array.Get: index %d is out of bounds [0-%d)", index, l)
@@ -28,7 +28,7 @@ func (a Array) Get(index int) (any, error) {
 	return a[index], nil
 }
 
-// GetByPath returns Array or Object value by path - a sequence of indexes and keys.
+// GetByPath returns a value by path - a sequence of indexes and keys.
 func (a Array) GetByPath(path ...string) (any, error) {
 	return getByPath(a, path...)
 }

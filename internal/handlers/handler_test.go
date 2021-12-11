@@ -580,15 +580,14 @@ func TestReadOnlyHandlers(t *testing.T) {
 			compareFunc: func(t testing.TB, expected, actual any) {
 				expectedDoc, actualDoc := expected.(types.Document), actual.(types.Document)
 
-				testutil.CompareByPath(t, expectedDoc, actualDoc, 1_000_000, "totalSize")
-				testutil.CompareByPath(t, expectedDoc, actualDoc, 1, "totalSizeMb")
+				testutil.CompareAndSetByPath(t, expectedDoc, actualDoc, 1_000_000, "totalSize")
+				testutil.CompareAndSetByPath(t, expectedDoc, actualDoc, 1, "totalSizeMb")
 
 				expectedDBs := testutil.GetByPath(t, expectedDoc, "databases").(types.Array)
 				actualDBs := testutil.GetByPath(t, actualDoc, "databases").(types.Array)
 				require.Equal(t, len(expectedDBs), len(actualDBs))
 				for i, actualDB := range actualDBs {
-					expectedDB := expectedDBs[i]
-					testutil.CompareByPath(t, expectedDB, actualDB, 200_000, "sizeOnDisk")
+					testutil.CompareAndSetByPath(t, expectedDBs[i], actualDB, 200_000, "sizeOnDisk")
 				}
 
 				assert.Equal(t, expectedDoc, actualDoc)

@@ -19,7 +19,7 @@ import (
 	"strconv"
 )
 
-// getByPath returns Array or Object value by path - a sequence of indexes and keys.
+// getByPath returns a value by path - a sequence of indexes and keys.
 func getByPath(str any, path ...string) (any, error) {
 	for _, p := range path {
 		switch s := str.(type) {
