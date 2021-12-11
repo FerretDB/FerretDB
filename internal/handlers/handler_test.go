@@ -653,6 +653,16 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 		},
+
+		"GetParameter": {
+			req: types.MustMakeDocument(
+				"getParameter", int32(1),
+			),
+			resp: types.MustMakeDocument(
+				"version", "5.0.42",
+				"ok", float64(1),
+			),
+		},
 	}
 
 	for name, tc := range testCases { //nolint:paralleltest // false positive
