@@ -15,13 +15,14 @@
 package pg
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestUtf8LocaleValidity(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		Case     string
 		Expected bool
@@ -37,7 +38,10 @@ func TestUtf8LocaleValidity(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		t.Run(fmt.Sprintf("Case: %s", tc.Case), func(t *testing.T) {
+		tc := tc
+		t.Run(tc.Case, func(t *testing.T) {
+			t.Parallel()
+
 			actual := validUtf8Locale(tc.Case)
 			assert.Equal(t, tc.Expected, actual)
 		})
