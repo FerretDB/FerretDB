@@ -58,15 +58,24 @@ var (
 )
 
 func runCompose(args []string, stdin io.Reader, logger *zap.SugaredLogger) {
+	if err := tryCompose(args, stdin, logger); err != nil {
+		logger.Fatal(err)
+	}
+}
+
+func tryCompose(args []string, stdin io.Reader, logger *zap.SugaredLogger) error {
 	cmd := exec.Command(composeBin, args...)
 	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
 
 	cmd.Stdin = stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+
 	if err := cmd.Run(); err != nil {
-		logger.Fatalf("%s failed: %s", strings.Join(cmd.Args, " "), err)
+		return fmt.Errorf("%s failed: %s", strings.Join(args, " "), err)
 	}
+
+	return nil
 }
 
 func waitForPort(ctx context.Context, port uint16) error {
@@ -75,9 +84,23 @@ func waitForPort(ctx context.Context, port uint16) error {
 		if err == nil {
 			conn.Close()
 
-			// FIXME https://github.com/FerretDB/FerretDB/issues/92
-			time.Sleep(time.Second)
+			return nil
+		}
 
+		sleepCtx, sleepCancel := context.WithTimeout(ctx, time.Second)
+		<-sleepCtx.Done()
+		sleepCancel()
+	}
+
+	return ctx.Err()
+}
+
+func waitForPostgresPort(ctx context.Context, port uint16) error {
+	logger := zap.S().Named("postgres.wait")
+
+	for ctx.Err() == nil {
+		args := fmt.Sprintf(`exec -T postgres psql -U postgres -d ferretdb -h 127.0.0.1 --port %d --quiet --command select`, port)
+		if err := tryCompose(strings.Split(args, " "), nil, logger); err == nil {
 			return nil
 		}
 
@@ -217,7 +240,7 @@ func main() {
 	}()
 
 	logger.Infof("Waiting for port 5432 to be up...")
-	if err := waitForPort(ctx, 5432); err != nil {
+	if err := waitForPostgresPort(ctx, 5432); err != nil {
 		logger.Fatal(err)
 	}
 
