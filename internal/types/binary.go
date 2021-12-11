@@ -28,3 +28,8 @@ const (
 	BinaryEncrypted  = BinarySubtype(0x06) // encrypted
 	BinaryUser       = BinarySubtype(0x80) // user
 )
+
+type Binary struct {
+	Subtype BinarySubtype
+	B       []byte
+}

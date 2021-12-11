@@ -43,14 +43,12 @@
 //  (does not exist) bson.CString
 package types
 
+import (
+	"fmt"
+	"time"
+)
+
 type (
-	Array []any
-
-	Binary struct {
-		Subtype BinarySubtype
-		B       []byte
-	}
-
 	ObjectID [12]byte
 
 	Regex struct {
@@ -60,3 +58,37 @@ type (
 
 	Timestamp uint64
 )
+
+// validateValue validates value.
+func validateValue(value any) error {
+	switch value := value.(type) {
+	case float64:
+		return nil
+	case string:
+		return nil
+	case Document:
+		return value.validate()
+	case Array:
+		return nil
+	case Binary:
+		return nil
+	case ObjectID:
+		return nil
+	case bool:
+		return nil
+	case time.Time:
+		return nil
+	case nil:
+		return nil
+	case Regex:
+		return nil
+	case int32:
+		return nil
+	case Timestamp:
+		return nil
+	case int64:
+		return nil
+	default:
+		return fmt.Errorf("types.validateValue: unsupported type: %T", value)
+	}
+}
