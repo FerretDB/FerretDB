@@ -20,10 +20,10 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-type wherePair func(key string, value interface{}, p *pg.Placeholder) (sql string, args []interface{}, err error)
+type wherePair func(key string, value any, p *pg.Placeholder) (sql string, args []any, err error)
 
 //nolint:goconst // $op is fine
-func LogicExpr(op string, exprs types.Array, p *pg.Placeholder, wherePair wherePair) (sql string, args []interface{}, err error) {
+func LogicExpr(op string, exprs types.Array, p *pg.Placeholder, wherePair wherePair) (sql string, args []any, err error) {
 	if op == "$nor" {
 		sql = "NOT ("
 	}
@@ -51,7 +51,7 @@ func LogicExpr(op string, exprs types.Array, p *pg.Placeholder, wherePair whereP
 				}
 
 				var exprSQL string
-				var exprArgs []interface{}
+				var exprArgs []any
 				exprSQL, exprArgs, err = wherePair(key, m[key], p)
 				if err != nil {
 					err = lazyerrors.Errorf("logicExpr: %w", err)
@@ -77,9 +77,9 @@ func LogicExpr(op string, exprs types.Array, p *pg.Placeholder, wherePair whereP
 	return
 }
 
-type scalar func(v interface{}, p *pg.Placeholder) (sql string, args []interface{}, err error)
+type scalar func(v any, p *pg.Placeholder) (sql string, args []any, err error)
 
-func InArray(a types.Array, p *pg.Placeholder, scalar scalar) (sql string, args []interface{}, err error) {
+func InArray(a types.Array, p *pg.Placeholder, scalar scalar) (sql string, args []any, err error) {
 	sql = "("
 	for i, el := range a {
 		if i != 0 {
@@ -87,7 +87,7 @@ func InArray(a types.Array, p *pg.Placeholder, scalar scalar) (sql string, args 
 		}
 
 		var argSql string
-		var arg []interface{}
+		var arg []any
 		if argSql, arg, err = scalar(el, p); err != nil {
 			err = lazyerrors.Errorf("inArray: %w", err)
 			return

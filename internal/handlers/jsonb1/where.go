@@ -24,8 +24,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-func scalar(v interface{}, p *pg.Placeholder) (sql string, args []interface{}, err error) {
-	var arg interface{}
+func scalar(v any, p *pg.Placeholder) (sql string, args []any, err error) {
+	var arg any
 	switch v := v.(type) {
 	case int32:
 		sql = "to_jsonb(" + p.Next() + "::int4)"
@@ -60,12 +60,12 @@ func scalar(v interface{}, p *pg.Placeholder) (sql string, args []interface{}, e
 		err = lazyerrors.Errorf("scalar: unhandled field %v (%T)", v, v)
 	}
 
-	args = []interface{}{arg}
+	args = []any{arg}
 	return
 }
 
 // fieldExpr handles {field: {expr}}.
-func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string, args []interface{}, err error) {
+func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
 	filterKeys := expr.Keys()
 	filterMap := expr.Map()
 
@@ -80,7 +80,7 @@ func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string
 		}
 
 		var argSql string
-		var arg []interface{}
+		var arg []any
 		value := filterMap[op]
 
 		// {field: {$not: {expr}}}
@@ -192,7 +192,7 @@ func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string
 	return
 }
 
-func wherePair(key string, value interface{}, p *pg.Placeholder) (sql string, args []interface{}, err error) {
+func wherePair(key string, value any, p *pg.Placeholder) (sql string, args []any, err error) {
 	if strings.HasPrefix(key, "$") {
 		exprs := value.(types.Array)
 		sql, args, err = common.LogicExpr(key, exprs, p, wherePair)
@@ -216,7 +216,7 @@ func wherePair(key string, value interface{}, p *pg.Placeholder) (sql string, ar
 		args = append(args, key)
 
 		var scalarSQL string
-		var scalarArgs []interface{}
+		var scalarArgs []any
 		scalarSQL, scalarArgs, err = scalar(value, p)
 		sql += scalarSQL
 		args = append(args, scalarArgs...)
@@ -229,7 +229,7 @@ func wherePair(key string, value interface{}, p *pg.Placeholder) (sql string, ar
 	return
 }
 
-func where(filter types.Document, p *pg.Placeholder) (sql string, args []interface{}, err error) {
+func where(filter types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
 	filterMap := filter.Map()
 	if len(filterMap) == 0 {
 		return
@@ -245,7 +245,7 @@ func where(filter types.Document, p *pg.Placeholder) (sql string, args []interfa
 		}
 
 		var argSql string
-		var arg []interface{}
+		var arg []any
 		argSql, arg, err = wherePair(key, value, p)
 		if err != nil {
 			err = lazyerrors.Errorf("where: %w", err)

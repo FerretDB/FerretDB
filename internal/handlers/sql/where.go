@@ -25,7 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-func scalar(v interface{}, p *pg.Placeholder) (sql string, args []interface{}, err error) {
+func scalar(v any, p *pg.Placeholder) (sql string, args []any, err error) {
 	sql = p.Next()
 
 	switch v := v.(type) {
@@ -43,15 +43,15 @@ func scalar(v interface{}, p *pg.Placeholder) (sql string, args []interface{}, e
 		if options != "" {
 			s = "(?" + options + ")" + v.Pattern
 		}
-		args = []interface{}{s}
+		args = []any{s}
 	default:
-		args = []interface{}{v}
+		args = []any{v}
 	}
 	return
 }
 
 // fieldExpr handles {field: {expr}}.
-func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string, args []interface{}, err error) {
+func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
 	filterKeys := expr.Keys()
 	filterMap := expr.Map()
 
@@ -66,7 +66,7 @@ func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string
 		}
 
 		var argSql string
-		var arg []interface{}
+		var arg []any
 		value := filterMap[op]
 
 		// {field: {$not: {expr}}}
@@ -178,7 +178,7 @@ func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string
 	return
 }
 
-func wherePair(key string, value interface{}, p *pg.Placeholder) (sql string, args []interface{}, err error) {
+func wherePair(key string, value any, p *pg.Placeholder) (sql string, args []any, err error) {
 	if strings.HasPrefix(key, "$") {
 		exprs := value.(types.Array)
 		sql, args, err = common.LogicExpr(key, exprs, p, wherePair)
@@ -208,7 +208,7 @@ func wherePair(key string, value interface{}, p *pg.Placeholder) (sql string, ar
 	return
 }
 
-func where(filter types.Document, p *pg.Placeholder) (sql string, args []interface{}, err error) {
+func where(filter types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
 	filterMap := filter.Map()
 	if len(filterMap) == 0 {
 		return
@@ -224,7 +224,7 @@ func where(filter types.Document, p *pg.Placeholder) (sql string, args []interfa
 		}
 
 		var argSql string
-		var arg []interface{}
+		var arg []any
 		argSql, arg, err = wherePair(key, value, p)
 		if err != nil {
 			err = lazyerrors.Errorf("where: %w", err)

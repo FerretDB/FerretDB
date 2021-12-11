@@ -59,7 +59,7 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	sort, _ := m["sort"].(types.Document)
 	limit, _ := m["limit"].(int32)
 
-	var args []interface{}
+	var args []any
 	var placeholder pg.Placeholder
 
 	whereSQL, args, err := where(filter, &placeholder)
