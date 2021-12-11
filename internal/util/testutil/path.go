@@ -15,13 +15,33 @@
 package testutil
 
 import (
+	"fmt"
 	"strconv"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 )
+
+func GetByPath(tb testing.TB, str any, path ...string) any {
+	tb.Helper()
+
+	var res any
+	var err error
+	switch str := str.(type) {
+	case types.Array:
+		res, err = str.GetByPath(path...)
+	case types.Document:
+		res, err = str.GetByPath(path...)
+	default:
+		err = fmt.Errorf("can't access %T by path", str)
+	}
+
+	require.NoError(tb, err)
+	return res
+}
 
 func SetByPath(tb testing.TB, str any, value any, path ...string) {
 	tb.Helper()
@@ -56,4 +76,15 @@ func SetByPath(tb testing.TB, str any, value any, path ...string) {
 			tb.Fatalf("can't access %T by path %q", str, p)
 		}
 	}
+}
+
+func CompareByPath(tb testing.TB, expected, actual any, delta float64, path ...string) {
+	tb.Helper()
+
+	expectedV := GetByPath(tb, expected, path...)
+	actualV := GetByPath(tb, actual, path...)
+	assert.IsType(tb, expectedV, actualV)
+	assert.InDelta(tb, expectedV, actualV, delta)
+
+	SetByPath(tb, expected, actualV, path...)
 }
