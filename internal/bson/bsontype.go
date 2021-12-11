@@ -33,7 +33,7 @@
 //  Binary:     {"$b": "<base 64 string>", "s": <subtype number>}
 //  ObjectID:   {"$o": "<ObjectID as 24 character hex string"}
 //  Bool:       JSON true / false values
-//  DateTime:   {"$d": "milliseconds since epoch as string"}
+//  DateTime:   {"$d": milliseconds since epoch as JSON number}
 //  nil:        JSON null
 //  Regex:      {"$r": "<string without terminating 0x0>", "o": "<string without terminating 0x0>"}
 //  Int32:      JSON number
