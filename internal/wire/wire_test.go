@@ -35,8 +35,8 @@ type testCase struct {
 	msgBody   MsgBody
 }
 
-func testMessages(t *testing.T, testcases []testCase) {
-	for _, tc := range testcases {
+func testMessages(t *testing.T, testCases []testCase) {
+	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -86,8 +86,8 @@ func testMessages(t *testing.T, testcases []testCase) {
 	}
 }
 
-func fuzzMessages(f *testing.F, testcases []testCase) {
-	for _, tc := range testcases {
+func fuzzMessages(f *testing.F, testCases []testCase) {
+	for _, tc := range testCases {
 		f.Add(tc.expectedB)
 	}
 

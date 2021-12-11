@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	// Supported encoding:
+	// Supported encoding.
 	encUTF8 = "UTF8"
 
 	// Supported locales: (For more info see: https://www.gnu.org/software/libc/manual/html_node/Standard-Locales.html)
@@ -140,7 +140,7 @@ func (p *Pool) checkConnection(ctx context.Context) error {
 // * en_US.utf8,
 // * en_US.utf-8
 // * en_US.UTF8,
-// * en_US.UTF-8
+// * en_US.UTF-8.
 func validUtf8Locale(setting string) bool {
 	lowered := strings.ToLower(setting)
 

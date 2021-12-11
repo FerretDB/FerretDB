@@ -48,8 +48,8 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
-			"ok", float64(1),
 			"dropped", db,
+			"ok", float64(1),
 		)},
 	})
 	if err != nil {
