@@ -65,7 +65,7 @@ func (d Double) MarshalBinary() ([]byte, error) {
 }
 
 type doubleJSON struct {
-	F interface{} `json:"$f"`
+	F any `json:"$f"`
 }
 
 // UnmarshalJSON implements bsontype interface.

@@ -70,7 +70,7 @@ func Error(err error) error {
 	}
 }
 
-func Errorf(format string, a ...interface{}) error {
+func Errorf(format string, a ...any) error {
 	return withStack{
 		error: fmt.Errorf(format, a...),
 		pc:    pc(),

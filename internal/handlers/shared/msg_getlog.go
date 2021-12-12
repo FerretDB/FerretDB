@@ -52,7 +52,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		"Powered by 🥭 FerretDB " + mv.Version + " and PostgreSQL " + pv + ".",
 		"Please star us on GitHub: https://github.com/FerretDB/FerretDB",
 	} {
-		b, err := json.Marshal(map[string]interface{}{
+		b, err := json.Marshal(map[string]any{
 			"msg":  line,
 			"tags": []string{"startupWarnings"},
 			"s":    "I",

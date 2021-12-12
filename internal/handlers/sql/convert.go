@@ -49,7 +49,7 @@ func nextRow(rows pgx.Rows, rowInfo *rowInfo) (*types.Document, error) {
 		return nil, err
 	}
 
-	pairs := make([]interface{}, len(values)*2)
+	pairs := make([]any, len(values)*2)
 	for i, v := range values {
 		pairs[i*2] = rowInfo.names[i]
 		pairs[i*2+1] = v

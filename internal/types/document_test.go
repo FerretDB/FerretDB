@@ -32,7 +32,7 @@ func TestValidate(t *testing.T) {
 		name: "normal",
 		doc: Document{
 			keys: []string{"0"},
-			m:    map[string]interface{}{"0": "foo"},
+			m:    map[string]any{"0": "foo"},
 		},
 	}, {
 		name: "empty",
@@ -41,23 +41,23 @@ func TestValidate(t *testing.T) {
 		name: "different keys",
 		doc: Document{
 			keys: []string{"0"},
-			m:    map[string]interface{}{"1": "foo"},
+			m:    map[string]any{"1": "foo"},
 		},
-		err: fmt.Errorf(`Document.validate: key not found: "0"`),
+		err: fmt.Errorf(`types.Document.validate: key not found: "0"`),
 	}, {
 		name: "duplicate keys",
 		doc: Document{
 			keys: []string{"0", "0"},
-			m:    map[string]interface{}{"0": "foo"},
+			m:    map[string]any{"0": "foo"},
 		},
-		err: fmt.Errorf("Document.validate: keys and values count mismatch: 1 != 2"),
+		err: fmt.Errorf("types.Document.validate: keys and values count mismatch: 1 != 2"),
 	}, {
 		name: "duplicate and different keys",
 		doc: Document{
 			keys: []string{"0", "0"},
-			m:    map[string]interface{}{"0": "foo", "1": "bar"},
+			m:    map[string]any{"0": "foo", "1": "bar"},
 		},
-		err: fmt.Errorf(`Document.validate: duplicate key: "0"`),
+		err: fmt.Errorf(`types.Document.validate: duplicate key: "0"`),
 	}} {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {

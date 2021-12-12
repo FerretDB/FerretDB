@@ -12,19 +12,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package types
+package pg
 
-//go:generate ../../bin/stringer -linecomment -type BinarySubtype
+import (
+	"testing"
 
-type BinarySubtype byte
-
-const (
-	BinaryGeneric    = BinarySubtype(0x00) // generic
-	BinaryFunction   = BinarySubtype(0x01) // function
-	BinaryGenericOld = BinarySubtype(0x02) // generic-old
-	BinaryUUIDOld    = BinarySubtype(0x03) // uuid-old
-	BinaryUUID       = BinarySubtype(0x04) // uuid
-	BinaryMD5        = BinarySubtype(0x05) // md5
-	BinaryEncrypted  = BinarySubtype(0x06) // encrypted
-	BinaryUser       = BinarySubtype(0x80) // user
+	"github.com/stretchr/testify/assert"
 )
+
+func TestUtf8LocaleValidity(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		Case     string
+		Expected bool
+	}{
+		{"en_US.utf8", true},
+		{"en_US.utf-8", true},
+		{"en_US.UTF8", true},
+		{"en_US.UTF-8", true},
+		{"en_UK.UTF-8", false},
+		{"en_UK.utf--8", false},
+		{"en_US", false},
+		{"utf8", false},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.Case, func(t *testing.T) {
+			t.Parallel()
+
+			actual := validUtf8Locale(tc.Case)
+			assert.Equal(t, tc.Expected, actual)
+		})
+	}
+}

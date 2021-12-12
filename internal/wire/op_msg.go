@@ -286,14 +286,14 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 
 // MarshalJSON writes an OpMsg in JSON format to a byte array.
 func (msg *OpMsg) MarshalJSON() ([]byte, error) {
-	m := map[string]interface{}{
+	m := map[string]any{
 		"FlagBits": msg.FlagBits,
 		"Checksum": msg.Checksum,
 	}
 
-	sections := make([]interface{}, len(msg.sections))
+	sections := make([]any, len(msg.sections))
 	for i, section := range msg.sections {
-		s := map[string]interface{}{
+		s := map[string]any{
 			"Kind": section.Kind,
 		}
 		switch section.Kind {
@@ -301,7 +301,7 @@ func (msg *OpMsg) MarshalJSON() ([]byte, error) {
 			s["Document"] = bson.MustConvertDocument(section.Documents[0])
 		case 1:
 			s["Identifier"] = section.Identifier
-			docs := make([]interface{}, len(section.Documents))
+			docs := make([]any, len(section.Documents))
 			for j, d := range section.Documents {
 				docs[j] = bson.MustConvertDocument(d)
 			}

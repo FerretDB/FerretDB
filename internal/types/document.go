@@ -20,7 +20,7 @@ import (
 	"unicode/utf8"
 )
 
-// isValidKey returns false if k is not a valid document field key.
+// isValidKey returns false if key is not a valid document field key.
 func isValidKey(key string) bool {
 	if key == "" {
 		return false
@@ -31,7 +31,7 @@ func isValidKey(key string) bool {
 
 // Common interface with bson.Document.
 type document interface {
-	Map() map[string]interface{}
+	Map() map[string]any
 	Keys() []string
 }
 
@@ -39,7 +39,7 @@ type document interface {
 //
 // Duplicate field names are not supported.
 type Document struct {
-	m    map[string]interface{}
+	m    map[string]any
 	keys []string
 }
 
@@ -56,7 +56,7 @@ func ConvertDocument(d document) (Document, error) {
 	}
 
 	if doc.m == nil {
-		doc.m = map[string]interface{}{}
+		doc.m = map[string]any{}
 	}
 	if doc.keys == nil {
 		doc.keys = []string{}
@@ -79,14 +79,14 @@ func MustConvertDocument(d document) Document {
 }
 
 // MakeDocument makes a new Document from given key/value pairs.
-func MakeDocument(pairs ...interface{}) (Document, error) {
+func MakeDocument(pairs ...any) (Document, error) {
 	l := len(pairs)
 	if l%2 != 0 {
 		return Document{}, fmt.Errorf("types.MakeDocument: invalid number of arguments: %d", l)
 	}
 
 	doc := Document{
-		m:    make(map[string]interface{}, l/2),
+		m:    make(map[string]any, l/2),
 		keys: make([]string, 0, l/2),
 	}
 	for i := 0; i < l; i += 2 {
@@ -109,7 +109,7 @@ func MakeDocument(pairs ...interface{}) (Document, error) {
 }
 
 // MustMakeDocument is a MakeDocument that panics in case of error.
-func MustMakeDocument(pairs ...interface{}) Document {
+func MustMakeDocument(pairs ...any) Document {
 	doc, err := MakeDocument(pairs...)
 	if err != nil {
 		panic(err)
@@ -120,32 +120,35 @@ func MustMakeDocument(pairs ...interface{}) Document {
 // validate checks if the document is valid.
 func (d Document) validate() error {
 	if len(d.m) != len(d.keys) {
-		return fmt.Errorf("Document.validate: keys and values count mismatch: %d != %d", len(d.m), len(d.keys))
+		return fmt.Errorf("types.Document.validate: keys and values count mismatch: %d != %d", len(d.m), len(d.keys))
 	}
 
-	keys := make(map[string]struct{}, len(d.keys))
+	prevKeys := make(map[string]struct{}, len(d.keys))
 	for _, key := range d.keys {
 		if !isValidKey(key) {
-			return fmt.Errorf("Document.validate: invalid key: %q", key)
+			return fmt.Errorf("types.Document.validate: invalid key: %q", key)
 		}
 
-		if _, ok := d.m[key]; !ok {
-			return fmt.Errorf("Document.validate: key not found: %q", key)
+		value, ok := d.m[key]
+		if !ok {
+			return fmt.Errorf("types.Document.validate: key not found: %q", key)
 		}
 
-		if _, ok := keys[key]; ok {
-			return fmt.Errorf("Document.validate: duplicate key: %q", key)
+		if _, ok := prevKeys[key]; ok {
+			return fmt.Errorf("types.Document.validate: duplicate key: %q", key)
 		}
-		keys[key] = struct{}{}
+		prevKeys[key] = struct{}{}
 
-		// TODO check value type
+		if err := validateValue(value); err != nil {
+			return fmt.Errorf("types.Document.validate: %w", err)
+		}
 	}
 
 	return nil
 }
 
 // Map returns a shallow copy of the document as a map. Do not modify it.
-func (d Document) Map() map[string]interface{} {
+func (d Document) Map() map[string]any {
 	return d.m
 }
 
@@ -159,16 +162,18 @@ func (d Document) Command() string {
 	return strings.ToLower(d.keys[0])
 }
 
-func (d *Document) add(key string, value interface{}) error {
+func (d *Document) add(key string, value any) error {
 	if _, ok := d.m[key]; ok {
-		return fmt.Errorf("Document.add: key already present: %q", key)
+		return fmt.Errorf("types.Document.add: key already present: %q", key)
 	}
 
 	if !isValidKey(key) {
-		return fmt.Errorf("Document.add: invalid key: %q", key)
+		return fmt.Errorf("types.Document.add: invalid key: %q", key)
 	}
 
-	// TODO check value type
+	if err := validateValue(value); err != nil {
+		return fmt.Errorf("types.Document.validate: %w", err)
+	}
 
 	d.keys = append(d.keys, key)
 	d.m[key] = value
@@ -176,13 +181,29 @@ func (d *Document) add(key string, value interface{}) error {
 	return nil
 }
 
-// Set the value of the given key, replacing any existing value.
-func (d *Document) Set(key string, value interface{}) error {
-	if !isValidKey(key) {
-		return fmt.Errorf("Document.Set: invalid key: %q", key)
+// Get returns a value at the given key.
+func (d Document) Get(key string) (any, error) {
+	if value, ok := d.m[key]; ok {
+		return value, nil
 	}
 
-	// TODO check value type
+	return nil, fmt.Errorf("types.Document.Get: key not found: %q", key)
+}
+
+// GetByPath returns a value by path - a sequence of indexes and keys.
+func (d Document) GetByPath(path ...string) (any, error) {
+	return getByPath(d, path...)
+}
+
+// Set the value of the given key, replacing any existing value.
+func (d *Document) Set(key string, value any) error {
+	if !isValidKey(key) {
+		return fmt.Errorf("types.Document.Set: invalid key: %q", key)
+	}
+
+	if err := validateValue(value); err != nil {
+		return fmt.Errorf("types.Document.validate: %w", err)
+	}
 
 	if _, ok := d.m[key]; !ok {
 		d.keys = append(d.keys, key)

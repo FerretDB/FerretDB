@@ -72,7 +72,7 @@ func (dt DateTime) MarshalBinary() ([]byte, error) {
 }
 
 type dateTimeJSON struct {
-	D int64 `json:"$d,string"`
+	D int64 `json:"$d"`
 }
 
 // UnmarshalJSON implements bsontype interface.

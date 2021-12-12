@@ -15,6 +15,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"testing"
@@ -28,18 +29,21 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/jsonb1"
 	"github.com/FerretDB/FerretDB/internal/handlers/shared"
 	"github.com/FerretDB/FerretDB/internal/handlers/sql"
+	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-func TestListDatabases(t *testing.T) {
-	t.Parallel()
+func setup(t *testing.T, poolOpts *testutil.PoolOpts) (context.Context, *Handler, *pg.Pool) {
+	t.Helper()
+
+	if poolOpts == nil {
+		poolOpts = new(testutil.PoolOpts)
+	}
 
 	ctx := testutil.Ctx(t)
-	pool := testutil.Pool(ctx, t, &testutil.PoolOpts{
-		ReadOnly: true,
-	})
+	pool := testutil.Pool(ctx, t, poolOpts)
 	l := zaptest.NewLogger(t)
 	shared := shared.NewHandler(pool, "127.0.0.1:12345")
 	sql := sql.NewStorage(pool, l.Sugar())
@@ -53,96 +57,11 @@ func TestListDatabases(t *testing.T) {
 		Metrics:       NewMetrics(),
 	})
 
-	type testCase struct {
-		req  types.Document
-		resp types.Document
-	}
-
-	testCases := map[string]testCase{
-		"listDatabases": {
-			req: types.MustMakeDocument(
-				"listDatabases", int32(1),
-			),
-			resp: types.MustMakeDocument(
-				"databases", types.Array{
-					types.MustMakeDocument(
-						"name", "monila",
-						"sizeOnDisk", int64(13238272),
-						"empty", false,
-					),
-					types.MustMakeDocument(
-						"name", "pagila",
-						"sizeOnDisk", int64(7184384),
-						"empty", false,
-					),
-				},
-				"totalSize", int64(30081827),
-				"totalSizeMb", int64(28),
-				"ok", float64(1),
-			),
-		},
-	}
-
-	for name, tc := range testCases { //nolint:paralleltest // false positive
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			reqHeader := wire.MsgHeader{
-				RequestID: 1,
-				OpCode:    wire.OP_MSG,
-			}
-
-			var reqMsg wire.OpMsg
-			err := reqMsg.SetSections(wire.OpMsgSection{
-				Documents: []types.Document{tc.req},
-			})
-			require.NoError(t, err)
-
-			_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
-			require.False(t, closeConn, "%s", wire.DumpMsgBody(resBody))
-
-			actual, err := resBody.(*wire.OpMsg).Document()
-			require.NoError(t, err)
-
-			expected := tc.resp
-
-			assert.Equal(t, actual.Map()["ok"].(float64), expected.Map()["ok"].(float64))
-			assert.GreaterOrEqual(t, actual.Map()["totalSize"].(int64), int64(5000))
-			assert.GreaterOrEqual(t, actual.Map()["totalSizeMb"].(int64), int64(1))
-
-			actualDatabasesArray := actual.Map()["databases"].(types.Array)
-			expectedDatabasesArray := expected.Map()["databases"].(types.Array)
-
-			for i := range expectedDatabasesArray {
-				actualDatabase := actualDatabasesArray[i].(types.Document)
-				expectedDatabase := expectedDatabasesArray[i].(types.Document)
-				assert.GreaterOrEqual(t, actualDatabase.Map()["sizeOnDisk"].(int64), int64(1000))
-
-				actualDatabase.Remove("sizeOnDisk")
-				expectedDatabase.Remove("sizeOnDisk")
-				assert.Equal(t, actualDatabase, expectedDatabase)
-			}
-		})
-	}
+	return ctx, handler, pool
 }
 
 func TestDropDatabase(t *testing.T) { //nolint:paralleltest,tparallel // affects a global list of databases
-	ctx := testutil.Ctx(t)
-	pool := testutil.Pool(ctx, t, new(testutil.PoolOpts))
-	l := zaptest.NewLogger(t)
-	shared := shared.NewHandler(pool, "127.0.0.1:12345")
-	sql := sql.NewStorage(pool, l.Sugar())
-	jsonb1 := jsonb1.NewStorage(pool, l)
-
-	handler := New(&NewOpts{
-		PgPool:        pool,
-		Logger:        l,
-		SharedHandler: shared,
-		SQLStorage:    sql,
-		JSONB1Storage: jsonb1,
-		Metrics:       NewMetrics(),
-	})
+	ctx, handler, pool := setup(t, nil)
 
 	type testCase struct {
 		req  types.Document
@@ -239,22 +158,8 @@ func TestDropDatabase(t *testing.T) { //nolint:paralleltest,tparallel // affects
 
 func TestFind(t *testing.T) {
 	t.Parallel()
-
-	ctx := testutil.Ctx(t)
-	pool := testutil.Pool(ctx, t, &testutil.PoolOpts{
+	ctx, handler, _ := setup(t, &testutil.PoolOpts{
 		ReadOnly: true,
-	})
-	l := zaptest.NewLogger(t)
-	shared := shared.NewHandler(pool, "127.0.0.1:12345")
-	sql := sql.NewStorage(pool, l.Sugar())
-	jsonb1 := jsonb1.NewStorage(pool, l)
-	handler := New(&NewOpts{
-		PgPool:        pool,
-		Logger:        l,
-		SharedHandler: shared,
-		SQLStorage:    sql,
-		JSONB1Storage: jsonb1,
-		Metrics:       NewMetrics(),
 	})
 
 	lastUpdate := time.Date(2020, 2, 15, 9, 34, 33, 0, time.UTC).Local()
@@ -588,33 +493,23 @@ func TestFind(t *testing.T) {
 
 func TestReadOnlyHandlers(t *testing.T) {
 	t.Parallel()
-
-	ctx := testutil.Ctx(t)
-	pool := testutil.Pool(ctx, t, &testutil.PoolOpts{
+	ctx, handler, _ := setup(t, &testutil.PoolOpts{
 		ReadOnly: true,
-	})
-	l := zaptest.NewLogger(t)
-	shared := shared.NewHandler(pool, "127.0.0.1:12345")
-	sql := sql.NewStorage(pool, l.Sugar())
-	jsonb1 := jsonb1.NewStorage(pool, l)
-	handler := New(&NewOpts{
-		PgPool:        pool,
-		Logger:        l,
-		SharedHandler: shared,
-		SQLStorage:    sql,
-		JSONB1Storage: jsonb1,
-		Metrics:       NewMetrics(),
 	})
 
 	type testCase struct {
-		req  types.Document
-		resp types.Document
+		req         types.Document
+		reqSetDB    bool
+		resp        types.Document
+		compareFunc func(t testing.TB, actual, expected any)
 	}
+
 	testCases := map[string]testCase{
 		"CountAllActors": {
 			req: types.MustMakeDocument(
 				"count", "actor",
 			),
+			reqSetDB: true,
 			resp: types.MustMakeDocument(
 				"n", int32(200),
 				"ok", float64(1),
@@ -627,6 +522,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 					"actor_id", int32(28),
 				),
 			),
+			reqSetDB: true,
 			resp: types.MustMakeDocument(
 				"n", int32(1),
 				"ok", float64(1),
@@ -639,10 +535,64 @@ func TestReadOnlyHandlers(t *testing.T) {
 					"last_name", "HOFFMAN",
 				),
 			),
+			reqSetDB: true,
 			resp: types.MustMakeDocument(
 				"n", int32(3),
 				"ok", float64(1),
 			),
+		},
+
+		"GetParameter": {
+			req: types.MustMakeDocument(
+				"getParameter", int32(1),
+			),
+			resp: types.MustMakeDocument(
+				"version", "5.0.42",
+				"ok", float64(1),
+			),
+		},
+
+		"ListDatabases": {
+			req: types.MustMakeDocument(
+				"listDatabases", int32(1),
+			),
+			resp: types.MustMakeDocument(
+				"databases", types.Array{
+					types.MustMakeDocument(
+						"name", "monila",
+						"sizeOnDisk", int64(13516800),
+						"empty", false,
+					),
+					types.MustMakeDocument(
+						"name", "pagila",
+						"sizeOnDisk", int64(7127040),
+						"empty", false,
+					),
+					types.MustMakeDocument(
+						"name", "test",
+						"sizeOnDisk", int64(0),
+						"empty", true,
+					),
+				},
+				"totalSize", int64(30114595),
+				"totalSizeMb", int64(28),
+				"ok", float64(1),
+			),
+			compareFunc: func(t testing.TB, expected, actual any) {
+				expectedDoc, actualDoc := expected.(types.Document), actual.(types.Document)
+
+				testutil.CompareAndSetByPath(t, expectedDoc, actualDoc, 1_000_000, "totalSize")
+				testutil.CompareAndSetByPath(t, expectedDoc, actualDoc, 1, "totalSizeMb")
+
+				expectedDBs := testutil.GetByPath(t, expectedDoc, "databases").(types.Array)
+				actualDBs := testutil.GetByPath(t, actualDoc, "databases").(types.Array)
+				require.Equal(t, len(expectedDBs), len(actualDBs))
+				for i, actualDB := range actualDBs {
+					testutil.CompareAndSetByPath(t, expectedDBs[i], actualDB, 200_000, "sizeOnDisk")
+				}
+
+				assert.Equal(t, expectedDoc, actualDoc)
+			},
 		},
 
 		"ServerStatus": {
@@ -663,7 +613,9 @@ func TestReadOnlyHandlers(t *testing.T) {
 
 			for _, schema := range []string{"monila", "pagila"} {
 				t.Run(schema, func(t *testing.T) {
-					tc.req.Set("$db", schema)
+					if tc.reqSetDB {
+						tc.req.Set("$db", schema)
+					}
 
 					reqHeader := wire.MsgHeader{
 						RequestID: 1,
@@ -681,7 +633,11 @@ func TestReadOnlyHandlers(t *testing.T) {
 
 					actual, err := resBody.(*wire.OpMsg).Document()
 					require.NoError(t, err)
-					assert.Equal(t, tc.resp, actual)
+					if tc.compareFunc == nil {
+						assert.Equal(t, tc.resp, actual)
+					} else {
+						tc.compareFunc(t, tc.resp, actual)
+					}
 				})
 			}
 		})
