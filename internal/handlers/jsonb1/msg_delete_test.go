@@ -33,7 +33,7 @@ func TestDelete(t *testing.T) {
 		OpCode: wire.OP_MSG,
 	}
 	t.Run(schema, func(t *testing.T) {
-		for i := 1; i <= 2; i++ {
+		for i := 1; i <= 5; i++ {
 			var msg wire.OpMsg
 			err := msg.SetSections(wire.OpMsgSection{
 				Documents: []types.Document{types.MustMakeDocument(

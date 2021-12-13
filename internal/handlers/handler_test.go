@@ -669,6 +669,7 @@ func TestDelete(t *testing.T) {
 
 	for _, schema := range []string{"monila", "pagila"} {
 		t.Run(schema, func(t *testing.T) {
+
 			var msg wire.OpMsg
 			err := msg.SetSections(wire.OpMsgSection{
 				Documents: []types.Document{types.MustMakeDocument(
@@ -676,7 +677,7 @@ func TestDelete(t *testing.T) {
 					"documents", types.Array{
 						types.MustMakeDocument(
 							"_id", types.ObjectID{byte(1)},
-							"car", "ford"+strconv.Itoa(1),
+							"car", "ford",
 							"colour", "red",
 						),
 					},
