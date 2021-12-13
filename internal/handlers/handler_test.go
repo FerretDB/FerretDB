@@ -17,7 +17,6 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"testing"
 	"time"
 
@@ -676,7 +675,6 @@ func TestDelete(t *testing.T) {
 					"documents", types.Array{
 						types.MustMakeDocument(
 							"_id", types.ObjectID{byte(1)},
-							"car", "ford",
 							"colour", "red",
 						),
 					},
@@ -697,7 +695,6 @@ func TestDelete(t *testing.T) {
 							types.MustMakeDocument(
 								"_id", types.ObjectID{byte(i)},
 								"animal", "cat",
-								"name", "test"+strconv.Itoa(i),
 							),
 						},
 						"$db", schema,

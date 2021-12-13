@@ -15,7 +15,6 @@
 package jsonb1
 
 import (
-	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -45,7 +44,6 @@ func TestDelete(t *testing.T) {
 					"documents", types.Array{
 						types.MustMakeDocument(
 							"_id", types.ObjectID{byte(10 + i)},
-							"car", "ford"+strconv.Itoa(1),
 							"colour", "red",
 						),
 					},
@@ -67,7 +65,6 @@ func TestDelete(t *testing.T) {
 						types.MustMakeDocument(
 							"_id", types.ObjectID{byte(i)},
 							"animal", "cat",
-							"name", "test"+strconv.Itoa(i),
 						),
 					},
 					"$db", schema,
