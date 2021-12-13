@@ -782,7 +782,6 @@ func TestDelete(t *testing.T) {
 					expected := tc.resp
 					assert.Equal(t, expected, actual)
 				})
-
 			}
 		})
 	}

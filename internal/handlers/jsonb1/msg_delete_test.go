@@ -27,6 +27,7 @@ import (
 
 func TestDelete(t *testing.T) {
 	t.Parallel()
+
 	ctx, h, schema := setup(t)
 
 	header := wire.MsgHeader{
@@ -156,7 +157,6 @@ func TestDelete(t *testing.T) {
 				expected := tc.resp
 				assert.Equal(t, expected, actual)
 			})
-
 		}
 	})
 }
