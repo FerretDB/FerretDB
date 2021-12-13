@@ -51,12 +51,11 @@ func (h *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, lazyerrors.Error(err)
 		}
 
-		sql += elSQL
-
 		limit, _ := d["limit"].(int32)
 		if limit != 0 {
-			// TODO: sql += fmt.Sprintf("IN (SELECT %s FROM %s LIMIT 1)", placeholder.Next(), pgx.Identifier{db, collection}.Sanitize())
-			return nil, common.NewErrorMessage(common.ErrNotImplemented, "MsgDelete: limit for delete is not supported")
+			sql += fmt.Sprintf("WHERE %s IN (SELECT %s FROM %s LIMIT 1)", placeholder.Next(), placeholder.Next(), pgx.Identifier{db, collection}.Sanitize())
+		} else {
+			sql += elSQL
 		}
 
 		tag, err := h.pgPool.Exec(ctx, sql, args...)
