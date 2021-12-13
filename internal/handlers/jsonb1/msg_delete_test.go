@@ -35,6 +35,8 @@ func TestDelete(t *testing.T) {
 	}
 
 	t.Run(schema, func(t *testing.T) {
+		t.Parallel()
+
 		for i := 1; i <= 5; i++ {
 			var msg wire.OpMsg
 			err := msg.SetSections(wire.OpMsgSection{
@@ -140,6 +142,7 @@ func TestDelete(t *testing.T) {
 			tc := tc
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
+
 				tc.req.Set("$db", schema)
 
 				var reqMsg wire.OpMsg
