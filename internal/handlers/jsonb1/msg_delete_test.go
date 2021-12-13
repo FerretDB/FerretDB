@@ -32,6 +32,7 @@ func TestDelete(t *testing.T) {
 	header := wire.MsgHeader{
 		OpCode: wire.OP_MSG,
 	}
+
 	t.Run(schema, func(t *testing.T) {
 		for i := 1; i <= 5; i++ {
 			var msg wire.OpMsg
@@ -137,6 +138,7 @@ func TestDelete(t *testing.T) {
 		for name, tc := range testCases {
 			tc := tc
 			t.Run(name, func(t *testing.T) {
+				t.Parallel()
 				tc.req.Set("$db", schema)
 
 				var reqMsg wire.OpMsg
