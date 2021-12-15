@@ -53,7 +53,10 @@ func (h *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		limit, _ := d["limit"].(int32)
 		if limit != 0 {
-			sql += fmt.Sprintf("WHERE %s IN (SELECT %s FROM %s LIMIT 1)", placeholder.Next(), placeholder.Next(), pgx.Identifier{db, collection}.Sanitize())
+			sql += fmt.Sprintf(
+				"WHERE %s IN (SELECT %s FROM %s LIMIT 1)",
+				placeholder.Next(), placeholder.Next(), pgx.Identifier{db, collection}.Sanitize(),
+			)
 		} else {
 			sql += elSQL
 		}
