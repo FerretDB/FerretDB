@@ -51,13 +51,14 @@ func (h *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, lazyerrors.Error(err)
 		}
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/82
 		limit, _ := d["limit"].(int32)
 		if limit != 0 {
-			return nil, common.NewErrorMessage(common.ErrNotImplemented, "MsgDelete: limit for delete is not supported")
+			sql += fmt.Sprintf(" WHERE _jsonb->'_id' IN (SELECT _jsonb->'_id' FROM %s", pgx.Identifier{db, collection}.Sanitize())
+			sql += elSQL
+			sql += " LIMIT 1)"
+		} else {
+			sql += elSQL
 		}
-
-		sql += elSQL
 
 		tag, err := h.pgPool.Exec(ctx, sql, args...)
 		if err != nil {
