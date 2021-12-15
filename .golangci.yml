@@ -38,7 +38,6 @@ linters-settings:
     line-length: 130
     tab-width: 1
   misspell:
-    locale: US
     ignore-words:
       - guiness # present in the test dataset
   nolintlint:
