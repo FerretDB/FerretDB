@@ -81,6 +81,13 @@ docker run --rm -it --network=ferretdb_default --entrypoint=mongosh mongo:5 mong
 ```
 
 
-## Contact us
+## Community
 
-Visit us at [www.ferretdb.io](https://www.ferretdb.io/), get in touch, and sign up for updates on the project.
+* Website and blog: [https://ferretdb.io](https://ferretdb.io/).
+* Twitter: [@ferret_db](https://twitter.com/ferret_db).
+* [Slack chat](https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A) for quick questions.
+* [GitHub Discussions](https://github.com/FerretDB/FerretDB/discussions) for longer topics.
+* [GitHub Issues](https://github.com/FerretDB/FerretDB/issues) for bugs and missing features.
+* [Open Office House meeting](https://calendar.google.com/event?action=TEMPLATE&tmeid=NjNkdTkyN3VoNW5zdHRiaHZybXFtb2l1OWtfMjAyMTEyMTNUMTgwMDAwWiBjX24zN3RxdW9yZWlsOWIwMm0wNzQwMDA3MjQ0QGc&tmsrc=c_n37tquoreil9b02m0740007244%40group.calendar.google.com&scp=ALL) every Monday at 18:00 UTC at [Google Meet](https://meet.google.com/mcb-arhw-qbq).
+
+If you want to contact FerretDB Inc., please use [this form](https://www.ferretdb.io/contact/).
