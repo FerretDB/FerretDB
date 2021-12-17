@@ -49,7 +49,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
-			"ns", db+"."+collection,
+			"created", db+"."+collection,
 			"ok", float64(1),
 		)},
 	})
