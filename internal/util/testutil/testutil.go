@@ -86,6 +86,9 @@ func Schema(ctx context.Context, tb testing.TB, pool *pg.Pool) string {
 		}
 
 		err = pool.DropSchema(ctx, schema)
+		if err == pg.ErrNotExist { // test might delete it
+			err = nil
+		}
 		require.NoError(tb, err)
 	})
 

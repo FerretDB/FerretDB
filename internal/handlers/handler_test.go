@@ -59,7 +59,9 @@ func setup(t *testing.T, poolOpts *testutil.PoolOpts) (context.Context, *Handler
 	return ctx, handler, pool
 }
 
-func TestDropDatabase(t *testing.T) { //nolint:paralleltest,tparallel // affects a global list of databases
+func TestDropDatabase(t *testing.T) {
+	t.Parallel()
+
 	ctx, handler, pool := setup(t, nil)
 
 	type testCase struct {
@@ -67,8 +69,8 @@ func TestDropDatabase(t *testing.T) { //nolint:paralleltest,tparallel // affects
 		resp types.Document
 	}
 
+	dummyDbName := testutil.Schema(ctx, t, pool)
 	notExistedDbName := "not_existed_db"
-	dummyDbName := "dummy_db"
 	testCases := map[string]testCase{
 		"dropNotExistedDatabase": {
 			req: types.MustMakeDocument(
@@ -91,7 +93,6 @@ func TestDropDatabase(t *testing.T) { //nolint:paralleltest,tparallel // affects
 	}
 
 	dummyTableName := "dummy_table"
-	require.NoError(t, pool.CreateSchema(ctx, dummyDbName))
 	require.NoError(t, pool.CreateTable(ctx, dummyDbName, dummyTableName))
 
 	_, err := pool.Exec(ctx, fmt.Sprintf(
@@ -634,7 +635,9 @@ func TestReadOnlyHandlers(t *testing.T) {
 	}
 }
 
-func TestCreate(t *testing.T) { //nolint:paralleltest,tparallel // affects a global list of databases
+func TestCreate(t *testing.T) {
+	t.Parallel()
+
 	ctx, handler, pool := setup(t, nil)
 
 	type testCase struct {
