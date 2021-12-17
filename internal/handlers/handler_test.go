@@ -649,6 +649,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 		})
 	}
 }
+
 func TestCreate(t *testing.T) { //nolint:paralleltest,tparallel // affects a global list of databases
 	ctx, handler, pool := setup(t, nil)
 
@@ -680,10 +681,7 @@ func TestCreate(t *testing.T) { //nolint:paralleltest,tparallel // affects a glo
 				"$db", dbName,
 			),
 			success: false,
-			resp: types.MustMakeDocument(
-				"ns", collectionExisted,
-				"ok", float64(1),
-			),
+			resp:    types.MustMakeDocument(),
 		},
 	}
 
