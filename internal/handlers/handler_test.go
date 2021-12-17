@@ -551,12 +551,12 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"databases", types.Array{
 					types.MustMakeDocument(
 						"name", "monila",
-						"sizeOnDisk", int64(13516800),
+						"sizeOnDisk", int64(13_516_800),
 						"empty", false,
 					),
 					types.MustMakeDocument(
 						"name", "pagila",
-						"sizeOnDisk", int64(7127040),
+						"sizeOnDisk", int64(7_127_040),
 						"empty", false,
 					),
 					types.MustMakeDocument(
@@ -565,15 +565,15 @@ func TestReadOnlyHandlers(t *testing.T) {
 						"empty", true,
 					),
 				},
-				"totalSize", int64(30114595),
+				"totalSize", int64(30_114_595),
 				"totalSizeMb", int64(28),
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, expected, actual any) {
 				expectedDoc, actualDoc := expected.(types.Document), actual.(types.Document)
 
-				testutil.CompareAndSetByPath(t, expectedDoc, actualDoc, 1_000_000, "totalSize")
-				testutil.CompareAndSetByPath(t, expectedDoc, actualDoc, 1, "totalSizeMb")
+				testutil.CompareAndSetByPath(t, expectedDoc, actualDoc, 2_000_000, "totalSize")
+				testutil.CompareAndSetByPath(t, expectedDoc, actualDoc, 2, "totalSizeMb")
 
 				expectedDBs := testutil.GetByPath(t, expectedDoc, "databases").(types.Array)
 				actualDBs := testutil.GetByPath(t, actualDoc, "databases").(types.Array)
