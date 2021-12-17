@@ -59,6 +59,22 @@ func setup(t *testing.T, poolOpts *testutil.PoolOpts) (context.Context, *Handler
 	return ctx, handler, pool
 }
 
+func createDB(ctx context.Context, pool *pg.Pool, name string) error {
+	_, err := pool.Exec(ctx, fmt.Sprintf(
+		`CREATE SCHEMA %s`,
+		pgx.Identifier{name}.Sanitize(),
+	))
+	return err
+}
+
+func dropDB(ctx context.Context, pool *pg.Pool, name string) error {
+	_, err := pool.Exec(ctx, fmt.Sprintf(
+		`DROP SCHEMA IF EXISTS %s CASCADE`,
+		pgx.Identifier{name}.Sanitize(),
+	))
+	return err
+}
+
 func TestDropDatabase(t *testing.T) { //nolint:paralleltest,tparallel // affects a global list of databases
 	ctx, handler, pool := setup(t, nil)
 
@@ -90,20 +106,11 @@ func TestDropDatabase(t *testing.T) { //nolint:paralleltest,tparallel // affects
 		},
 	}
 
-	_, err := pool.Exec(ctx, fmt.Sprintf(
-		`CREATE SCHEMA %s`,
-		pgx.Identifier{dummyDbName}.Sanitize(),
-	))
-	require.NoError(t, err)
 	dummyTableName := "dummy_table"
+	require.NoError(t, createDB(ctx, pool, dummyDbName))
+	require.NoError(t, shared.CreateCollection(ctx, pool, dummyDbName, dummyTableName))
 
-	_, err = pool.Exec(ctx, fmt.Sprintf(
-		`CREATE TABLE %s (_jsonb jsonb)`,
-		pgx.Identifier{dummyDbName, dummyTableName}.Sanitize(),
-	))
-	require.NoError(t, err)
-
-	_, err = pool.Exec(ctx, fmt.Sprintf(
+	_, err := pool.Exec(ctx, fmt.Sprintf(
 		`INSERT INTO %s(_jsonb) VALUES ('{"key": "value"}')`,
 		pgx.Identifier{dummyDbName, dummyTableName}.Sanitize(),
 	))
@@ -639,6 +646,81 @@ func TestReadOnlyHandlers(t *testing.T) {
 					}
 				})
 			}
+		})
+	}
+}
+
+func TestCreate(t *testing.T) { //nolint:paralleltest,tparallel // affects a global list of databases
+	ctx, handler, pool := setup(t, nil)
+
+	type testCase struct {
+		req     types.Document
+		resp    types.Document
+		success bool
+	}
+
+	dbName := "test_create_db"
+	collectionNew := "new_collection"
+	collectionExisted := "existed_collection"
+
+	testCases := map[string]testCase{
+		"new-collection": {
+			req: types.MustMakeDocument(
+				"create", collectionNew,
+				"$db", dbName,
+			),
+			success: true,
+			resp: types.MustMakeDocument(
+				"created", fmt.Sprintf("%s.%s", dbName, collectionNew),
+				"ok", float64(1),
+			),
+		},
+		"existed-collection": {
+			req: types.MustMakeDocument(
+				"create", collectionExisted,
+				"$db", dbName,
+			),
+			success: false,
+			resp:    types.MustMakeDocument(),
+		},
+	}
+
+	require.NoError(t, dropDB(ctx, pool, dbName))
+	require.NoError(t, createDB(ctx, pool, dbName))
+	require.NoError(t, shared.CreateCollection(ctx, pool, dbName, collectionExisted))
+
+	for name, tc := range testCases { //nolint:paralleltest // false positive
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			reqHeader := wire.MsgHeader{
+				RequestID: 1,
+				OpCode:    wire.OP_MSG,
+			}
+
+			var reqMsg wire.OpMsg
+			require.NoError(t, reqMsg.SetSections(wire.OpMsgSection{
+				Documents: []types.Document{tc.req},
+			}))
+
+			_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
+			if !tc.success {
+				require.True(t, closeConn, "%s", wire.DumpMsgBody(resBody))
+				return
+			}
+
+			require.False(t, closeConn, "%s", wire.DumpMsgBody(resBody))
+			actual, err := resBody.(*wire.OpMsg).Document()
+			require.NoError(t, err)
+
+			assert.Equal(t, actual.Map(), tc.resp.Map())
+
+			// checking tables
+			query := `SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = $1 and table_name = $2`
+			var count int
+			require.NoError(t, pool.QueryRow(ctx, query, dbName, collectionNew).Scan(&count))
+			assert.Equal(t, count, 1)
 		})
 	}
 }
