@@ -16,10 +16,8 @@ package shared
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/jackc/pgx/v4"
-
+	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -38,9 +36,10 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		return nil, lazyerrors.New("no db")
 	}
 
-	sql := fmt.Sprintf(`DROP SCHEMA IF EXISTS %s CASCADE`, pgx.Identifier{db}.Sanitize())
-
-	_, err = h.pgPool.Exec(ctx, sql)
+	err = h.pgPool.DropSchema(ctx, db)
+	if err == pg.ErrNotExist {
+		err = nil
+	}
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

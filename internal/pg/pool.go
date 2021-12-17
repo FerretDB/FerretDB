@@ -17,8 +17,12 @@ package pg
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/log/zapadapter"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -32,6 +36,11 @@ const (
 	// Supported locales: (For more info see: https://www.gnu.org/software/libc/manual/html_node/Standard-Locales.html)
 	localeC     = "C"
 	localePOSIX = "POSIX"
+)
+
+var (
+	ErrNotExist     = fmt.Errorf("schema or table does not exist")
+	ErrAlreadyExist = fmt.Errorf("schema or table already exist")
 )
 
 // Pool data struct for *pgxpool.Pool.
@@ -80,6 +89,20 @@ func NewPool(connString string, logger *zap.Logger, lazy bool) (*Pool, error) {
 	}
 
 	return res, err
+}
+
+// Currently supported locale variants, compromised between https://www.postgresql.org/docs/9.3/multibyte.html
+// and https://www.gnu.org/software/libc/manual/html_node/Locale-Names.html.
+//
+// Valid examples:
+// * en_US.utf8,
+// * en_US.utf-8
+// * en_US.UTF8,
+// * en_US.UTF-8.
+func validUtf8Locale(setting string) bool {
+	lowered := strings.ToLower(setting)
+
+	return lowered == "en_us.utf8" || lowered == "en_us.utf-8"
 }
 
 func (p *Pool) checkConnection(ctx context.Context) error {
@@ -133,16 +156,98 @@ func (p *Pool) checkConnection(ctx context.Context) error {
 	return nil
 }
 
-// Currently supported locale variants, compromised between https://www.postgresql.org/docs/9.3/multibyte.html
-// and https://www.gnu.org/software/libc/manual/html_node/Locale-Names.html.
-//
-// Valid examples:
-// * en_US.utf8,
-// * en_US.utf-8
-// * en_US.UTF8,
-// * en_US.UTF-8.
-func validUtf8Locale(setting string) bool {
-	lowered := strings.ToLower(setting)
+// Schemas returns a sorted list of FerretDB database / PostgreSQL schema names.
+func (pgPool *Pool) Schemas(ctx context.Context) ([]string, error) {
+	sql := "SELECT schema_name FROM information_schema.schemata ORDER BY schema_name"
+	rows, err := pgPool.Query(ctx, sql)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	defer rows.Close()
 
-	return lowered == "en_us.utf8" || lowered == "en_us.utf-8"
+	res := make([]string, 0, 2)
+	for rows.Next() {
+		var name string
+		if err = rows.Scan(&name); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		if strings.HasPrefix(name, "pg_") || name == "information_schema" {
+			continue
+		}
+
+		res = append(res, name)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return res, nil
+}
+
+// Tables returns a sorted list of FerretDB collection / PostgreSQL table names.
+func (pgPool *Pool) Tables(ctx context.Context, db string) ([]string, error) {
+	sql := "SELECT table_name FROM information_schema.tables WHERE table_schema = $1 ORDER BY table_name"
+	rows, err := pgPool.Query(ctx, sql, db)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	defer rows.Close()
+
+	res := make([]string, 0, 2)
+	for rows.Next() {
+		var name string
+		if err = rows.Scan(&name); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		res = append(res, name)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return res, nil
+}
+
+// searchInSorted returns true if element is present in sorted slice.
+func searchInSorted(s []string, e string) bool {
+	i := sort.SearchStrings(s, e)
+	return i < len(s) && s[i] == e
+}
+
+// CreateSchema creates a new FerretDB database / PostgreSQL schema.
+func (pgPool *Pool) CreateSchema(ctx context.Context, db string) error {
+	sql := `CREATE SCHEMA ` + pgx.Identifier{db}.Sanitize()
+	_, err := pgPool.Exec(ctx, sql)
+	return err
+}
+
+// DropSchema drops FerretDB database / PostgreSQL schema.
+//
+// It returns ErrNotExist is schema does not exist.
+func (pgPool *Pool) DropSchema(ctx context.Context, db string) error {
+	sql := `DROP SCHEMA ` + pgx.Identifier{db}.Sanitize() + ` CASCADE`
+	_, err := pgPool.Exec(ctx, sql)
+
+	if e, ok := err.(*pgconn.PgError); ok && e.Code == pgerrcode.InvalidSchemaName {
+		return ErrNotExist
+	}
+
+	return err
+}
+
+// CreateTable creates a new FerretDB collection / PostgreSQL jsonb table.
+func (pgPool *Pool) CreateTable(ctx context.Context, db, collection string) error {
+	sql := `CREATE TABLE ` + pgx.Identifier{db, collection}.Sanitize() + ` (_jsonb jsonb)`
+	_, err := pgPool.Exec(ctx, sql)
+	return err
+}
+
+// DropTable drops FerretDB collection / PostgreSQL table.
+func (pgPool *Pool) DropTable(ctx context.Context, db, collection string) error {
+	// TODO probably not CASCADE
+	sql := `DROP TABLE ` + pgx.Identifier{db, collection}.Sanitize() + `CASCADE`
+	_, err := pgPool.Exec(ctx, sql)
+	return err
 }
