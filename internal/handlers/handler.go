@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"github.com/jackc/pgx/v4"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -156,6 +155,8 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	switch cmd {
 	case "buildinfo":
 		return h.shared.MsgBuildInfo(ctx, msg)
+	case "create":
+		return h.shared.MsgCreate(ctx, msg)
 	case "drop":
 		return h.shared.MsgDrop(ctx, msg)
 	case "dropdatabase":
@@ -256,10 +257,8 @@ func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) (common.Stora
 			return h.jsonb1, nil
 		}
 		if !tableExist {
-			sql = `CREATE TABLE ` + pgx.Identifier{db, collection}.Sanitize() + ` (_jsonb jsonb)`
-			_, err := h.pgPool.Exec(ctx, sql)
 			fields := []zap.Field{zap.String("schema", db), zap.String("table", collection)}
-			if err != nil {
+			if err := shared.CreateCollection(ctx, h.pgPool, db, collection); err != nil {
 				fields = append(fields, zap.Error(err))
 				h.l.Warn("Failed to create jsonb1 table.", fields...)
 			} else {
