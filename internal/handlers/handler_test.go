@@ -421,9 +421,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 	nowStr := "2021-12-19T12:13:05Z"
 	shared.Now = func() time.Time {
 		dt, err := time.Parse(time.RFC3339, nowStr)
-		if err != nil {
-			panic(err)
-		}
+		require.NoError(t, err)
 		return dt
 	}
 	hostname, err := os.Hostname()
