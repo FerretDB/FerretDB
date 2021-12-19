@@ -16,6 +16,11 @@ package handlers
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"runtime"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -413,6 +418,14 @@ func TestReadOnlyHandlers(t *testing.T) {
 		compareFunc func(t testing.TB, actual, expected any)
 	}
 
+	now := time.Now()
+	shared.Now = func() time.Time {
+		return now
+	}
+	nowStr := now.UTC().Format(time.RFC3339)
+	hostname, err := os.Hostname()
+	require.NoError(t, err)
+
 	testCases := map[string]testCase{
 		"BuildInfo": {
 			req: types.MustMakeDocument(
@@ -518,6 +531,26 @@ func TestReadOnlyHandlers(t *testing.T) {
 				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "localTime")
 				assert.Equal(t, expected, actual)
 			},
+		},
+
+		"HostInfo": {
+			req: types.MustMakeDocument(
+				"hostInfo", int32(1),
+			),
+			resp: types.MustMakeDocument(
+				"system", types.MustMakeDocument(
+					"currentTime", fmt.Sprintf("ISODate(%s)", nowStr),
+					"hostname", hostname,
+					"cpuAddrSize", fmt.Sprintf("%d", strconv.IntSize),
+					"numCores", fmt.Sprintf("%d", runtime.NumCPU()),
+					"cpuArch", runtime.GOARCH,
+					"numaEnabled", "false",
+				),
+				"os", types.MustMakeDocument(
+					"type", strings.ToTitle(runtime.GOOS),
+				),
+				"ok", float64(1),
+			),
 		},
 
 		"ServerStatus": {
