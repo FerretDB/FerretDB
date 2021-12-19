@@ -37,7 +37,6 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
-
 	}
 
 	var reply wire.OpMsg
