@@ -541,7 +541,7 @@ func TestListDropDatabase(t *testing.T) {
 		actualDBs := testutil.GetByPath(t, actualList, "databases").(types.Array)
 		require.Equal(t, len(expectedDBs), len(actualDBs))
 		for i, actualDB := range actualDBs {
-			testutil.CompareAndSetByPath(t, expectedDBs[i], actualDB, 200_000, "sizeOnDisk")
+			testutil.CompareAndSetByPath(t, expectedDBs[i], actualDB, 300_000, "sizeOnDisk")
 		}
 
 		assert.Equal(t, expectedList, actualList)
