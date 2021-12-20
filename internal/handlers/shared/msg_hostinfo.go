@@ -16,12 +16,13 @@ package shared
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"runtime"
 	"strconv"
-	"strings"
 	"time"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -33,7 +34,7 @@ var Now = time.Now
 
 // MsgHostInfo returns an OpMsg with the host information.
 func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	now := Now().UTC().Format(time.RFC3339)
+	now := Now().UTC()
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -43,15 +44,15 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
 			"system", types.MustMakeDocument(
-				"currentTime", fmt.Sprintf("ISODate(%s)", now),
+				"currentTime", now,
 				"hostname", hostname,
-				"cpuAddrSize", fmt.Sprintf("%d", strconv.IntSize),
-				"numCores", fmt.Sprintf("%d", runtime.NumCPU()),
+				"cpuAddrSize", int32(strconv.IntSize),
+				"numCores", int32(runtime.NumCPU()),
 				"cpuArch", runtime.GOARCH,
-				"numaEnabled", "false",
+				"numaEnabled", false,
 			),
 			"os", types.MustMakeDocument(
-				"type", strings.ToTitle(runtime.GOOS),
+				"type", cases.Title(language.English).String(runtime.GOOS),
 			),
 			"ok", float64(1),
 		)},

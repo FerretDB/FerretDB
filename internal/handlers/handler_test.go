@@ -418,11 +418,9 @@ func TestReadOnlyHandlers(t *testing.T) {
 		compareFunc func(t testing.TB, actual, expected any)
 	}
 
-	nowStr := "2021-12-19T12:13:05Z"
+	now := time.Now().UTC()
 	shared.Now = func() time.Time {
-		dt, err := time.Parse(time.RFC3339, nowStr)
-		require.NoError(t, err)
-		return dt
+		return now
 	}
 	hostname, err := os.Hostname()
 	require.NoError(t, err)
@@ -540,15 +538,15 @@ func TestReadOnlyHandlers(t *testing.T) {
 			),
 			resp: types.MustMakeDocument(
 				"system", types.MustMakeDocument(
-					"currentTime", fmt.Sprintf("ISODate(%s)", nowStr),
+					"currentTime", now,
 					"hostname", hostname,
-					"cpuAddrSize", fmt.Sprintf("%d", strconv.IntSize),
-					"numCores", fmt.Sprintf("%d", runtime.NumCPU()),
+					"cpuAddrSize", int32(strconv.IntSize),
+					"numCores", int32(runtime.NumCPU()),
 					"cpuArch", runtime.GOARCH,
-					"numaEnabled", "false",
+					"numaEnabled", false,
 				),
 				"os", types.MustMakeDocument(
-					"type", strings.ToTitle(runtime.GOOS),
+					"type", strings.Title(runtime.GOOS),
 				),
 				"ok", float64(1),
 			),
