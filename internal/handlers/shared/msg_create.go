@@ -17,20 +17,10 @@ package shared
 import (
 	"context"
 
-	"github.com/jackc/pgx/v4"
-
-	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
-
-// CreateCollection creates a new collection in db.
-func CreateCollection(ctx context.Context, pgPool *pg.Pool, db, collection string) error {
-	sql := `CREATE TABLE ` + pgx.Identifier{db, collection}.Sanitize() + ` (_jsonb jsonb)`
-	_, err := pgPool.Exec(ctx, sql)
-	return err
-}
 
 // MsgCreate adds a collection or view into the database.
 func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
@@ -43,7 +33,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	collection := m[document.Command()].(string)
 	db := m["$db"].(string)
 
-	if err := CreateCollection(ctx, h.pgPool, db, collection); err != nil {
+	if err := h.pgPool.CreateTable(ctx, db, collection); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 

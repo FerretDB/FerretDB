@@ -19,8 +19,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jackc/pgconn"
-	"github.com/jackc/pgerrcode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 
@@ -41,7 +39,7 @@ type PoolOpts struct {
 }
 
 // Pool creates a new connection connection pool for testing.
-func Pool(ctx context.Context, tb testing.TB, opts *PoolOpts) *pg.Pool {
+func Pool(_ context.Context, tb testing.TB, opts *PoolOpts) *pg.Pool {
 	tb.Helper()
 
 	if testing.Short() {
@@ -60,6 +58,9 @@ func Pool(ctx context.Context, tb testing.TB, opts *PoolOpts) *pg.Pool {
 	return pool
 }
 
+// Schema creates a new FerretDB database / PostgreSQL schema for testing.
+//
+// It is automatically dropped if test pass.
 func Schema(ctx context.Context, tb testing.TB, pool *pg.Pool) string {
 	tb.Helper()
 
@@ -68,22 +69,27 @@ func Schema(ctx context.Context, tb testing.TB, pool *pg.Pool) string {
 	}
 
 	schema := strings.ToLower(tb.Name())
+	tb.Logf("Using schema %q.", schema)
 
-	_, err := pool.Exec(ctx, "DROP SCHEMA "+schema+" CASCADE")
-	if e, ok := err.(*pgconn.PgError); ok && e.Code == pgerrcode.InvalidSchemaName {
+	err := pool.DropSchema(ctx, schema)
+	if err == pg.ErrNotExist {
 		err = nil
 	}
 	require.NoError(tb, err)
 
-	_, err = pool.Exec(ctx, "CREATE SCHEMA "+schema)
+	err = pool.CreateSchema(ctx, schema)
 	require.NoError(tb, err)
+
 	tb.Cleanup(func() {
 		if tb.Failed() {
 			tb.Logf("Keeping schema %q for debugging.", schema)
 			return
 		}
 
-		_, err = pool.Exec(ctx, "DROP SCHEMA "+schema+" CASCADE")
+		err = pool.DropSchema(ctx, schema)
+		if err == pg.ErrNotExist { // test might delete it
+			err = nil
+		}
 		require.NoError(tb, err)
 	})
 

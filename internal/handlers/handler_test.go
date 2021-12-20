@@ -59,22 +59,6 @@ func setup(t *testing.T, poolOpts *testutil.PoolOpts) (context.Context, *Handler
 	return ctx, handler, pool
 }
 
-func createDB(ctx context.Context, pool *pg.Pool, name string) error {
-	_, err := pool.Exec(ctx, fmt.Sprintf(
-		`CREATE SCHEMA %s`,
-		pgx.Identifier{name}.Sanitize(),
-	))
-	return err
-}
-
-func dropDB(ctx context.Context, pool *pg.Pool, name string) error {
-	_, err := pool.Exec(ctx, fmt.Sprintf(
-		`DROP SCHEMA IF EXISTS %s CASCADE`,
-		pgx.Identifier{name}.Sanitize(),
-	))
-	return err
-}
-
 func TestDropDatabase(t *testing.T) { //nolint:paralleltest,tparallel // affects a global list of databases
 	ctx, handler, pool := setup(t, nil)
 
@@ -107,8 +91,8 @@ func TestDropDatabase(t *testing.T) { //nolint:paralleltest,tparallel // affects
 	}
 
 	dummyTableName := "dummy_table"
-	require.NoError(t, createDB(ctx, pool, dummyDbName))
-	require.NoError(t, shared.CreateCollection(ctx, pool, dummyDbName, dummyTableName))
+	require.NoError(t, pool.CreateSchema(ctx, dummyDbName))
+	require.NoError(t, pool.CreateTable(ctx, dummyDbName, dummyTableName))
 
 	_, err := pool.Exec(ctx, fmt.Sprintf(
 		`INSERT INTO %s(_jsonb) VALUES ('{"key": "value"}')`,
@@ -685,9 +669,9 @@ func TestCreate(t *testing.T) { //nolint:paralleltest,tparallel // affects a glo
 		},
 	}
 
-	require.NoError(t, dropDB(ctx, pool, dbName))
-	require.NoError(t, createDB(ctx, pool, dbName))
-	require.NoError(t, shared.CreateCollection(ctx, pool, dbName, collectionExisted))
+	pool.DropSchema(ctx, dbName)
+	require.NoError(t, pool.CreateSchema(ctx, dbName))
+	require.NoError(t, pool.CreateTable(ctx, dbName, collectionExisted))
 
 	for name, tc := range testCases { //nolint:paralleltest // false positive
 		name, tc := name, tc
