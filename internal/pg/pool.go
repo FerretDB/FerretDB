@@ -219,7 +219,7 @@ func (pgPool *Pool) CreateSchema(ctx context.Context, db string) error {
 
 // DropSchema drops FerretDB database / PostgreSQL schema.
 //
-// It returns ErrNotExist is schema does not exist.
+// It returns ErrNotExist if schema does not exist.
 func (pgPool *Pool) DropSchema(ctx context.Context, db string) error {
 	sql := `DROP SCHEMA ` + pgx.Identifier{db}.Sanitize() + ` CASCADE`
 	_, err := pgPool.Exec(ctx, sql)
@@ -232,16 +232,30 @@ func (pgPool *Pool) DropSchema(ctx context.Context, db string) error {
 }
 
 // CreateTable creates a new FerretDB collection / PostgreSQL jsonb table.
+//
+// It returns ErrAlreadyExist if table already exist.
 func (pgPool *Pool) CreateTable(ctx context.Context, db, collection string) error {
 	sql := `CREATE TABLE ` + pgx.Identifier{db, collection}.Sanitize() + ` (_jsonb jsonb)`
 	_, err := pgPool.Exec(ctx, sql)
+
+	if e, ok := err.(*pgconn.PgError); ok && e.Code == pgerrcode.DuplicateTable {
+		return ErrAlreadyExist
+	}
+
 	return err
 }
 
 // DropTable drops FerretDB collection / PostgreSQL table.
+//
+// It returns ErrNotExist is table does not exist.
 func (pgPool *Pool) DropTable(ctx context.Context, db, collection string) error {
 	// TODO probably not CASCADE
 	sql := `DROP TABLE ` + pgx.Identifier{db, collection}.Sanitize() + `CASCADE`
 	_, err := pgPool.Exec(ctx, sql)
+
+	if e, ok := err.(*pgconn.PgError); ok && e.Code == pgerrcode.UndefinedTable {
+		return ErrNotExist
+	}
+
 	return err
 }

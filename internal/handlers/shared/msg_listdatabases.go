@@ -16,7 +16,6 @@ package shared
 
 import (
 	"context"
-	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -25,48 +24,21 @@ import (
 
 // MsgListDatabases command provides a list of all existing databases along with basic statistics about them.
 func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	var databaseNames []string
-
-	// collect FerretDB databases / PostgreSQL schema names
-	rows, err := h.pgPool.Query(ctx, "SELECT schema_name FROM information_schema.schemata ORDER BY schema_name")
+	databaseNames, err := h.pgPool.Schemas(ctx)
 	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var name string
-		if err = rows.Scan(&name); err != nil {
-			return nil, err
-		}
-
-		if strings.HasPrefix(name, "pg_") || name == "information_schema" {
-			continue
-		}
-
-		databaseNames = append(databaseNames, name)
-	}
-	if err = rows.Err(); err != nil {
 		return nil, err
 	}
 
 	databases := make(types.Array, len(databaseNames))
 	for i, databaseName := range databaseNames {
-		// get database collections / schema tables
-		rows, err := h.pgPool.Query(ctx, "SELECT table_name FROM information_schema.tables WHERE table_schema = $1", databaseName)
+		tables, err := h.pgPool.Tables(ctx, databaseName)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
-		defer rows.Close()
 
 		// iterate over result to collect sizes
 		var sizeOnDisk int64
-		for rows.Next() {
-			var name string
-			if err = rows.Scan(&name); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
+		for _, name := range tables {
 			var tableSize int64
 			fullName := databaseName + "." + name
 			err = h.pgPool.QueryRow(ctx, "SELECT pg_total_relation_size($1)", fullName).Scan(&tableSize)
@@ -75,9 +47,6 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 			}
 
 			sizeOnDisk += tableSize
-		}
-		if err = rows.Err(); err != nil {
-			return nil, lazyerrors.Error(err)
 		}
 
 		databases[i] = types.MustMakeDocument(
