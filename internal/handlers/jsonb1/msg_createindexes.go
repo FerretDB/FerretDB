@@ -12,18 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package jsonb1
 
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-type Storage interface {
-	MsgCreateIndexes(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
-	MsgDelete(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
-	MsgFindOrCount(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
-	MsgInsert(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
-	MsgUpdate(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
+func (h *storage) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/78
+
+	var reply wire.OpMsg
+	err := reply.SetSections(wire.OpMsgSection{
+		Documents: []types.Document{types.MustMakeDocument(
+			"ok", float64(1),
+		)},
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &reply, nil
 }
