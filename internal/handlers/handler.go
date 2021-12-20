@@ -258,7 +258,7 @@ func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) (common.Stora
 		}
 		if !tableExist {
 			fields := []zap.Field{zap.String("schema", db), zap.String("table", collection)}
-			if err := shared.CreateCollection(ctx, h.pgPool, db, collection); err != nil {
+			if err := h.pgPool.CreateTable(ctx, db, collection); err != nil {
 				fields = append(fields, zap.Error(err))
 				h.l.Warn("Failed to create jsonb1 table.", fields...)
 			} else {
