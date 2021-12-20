@@ -181,13 +181,15 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	case "serverstatus":
 		return h.shared.MsgServerStatus(ctx, msg)
 
-	case "delete", "find", "insert", "update", "count":
+	case "createindexes", "delete", "find", "insert", "update", "count":
 		storage, err := h.msgStorage(ctx, msg)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
 		switch cmd {
+		case "createindexes":
+			return storage.MsgCreateIndexes(ctx, msg)
 		case "delete":
 			return storage.MsgDelete(ctx, msg)
 		case "find", "count":
@@ -229,6 +231,12 @@ func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) (common.Stora
 
 	m := document.Map()
 	command := document.Command()
+
+	if command == "createindexes" {
+		// TODO https://github.com/FerretDB/FerretDB/issues/78
+		return h.jsonb1, nil
+	}
+
 	collection := m[command].(string)
 	db := m["$db"].(string)
 

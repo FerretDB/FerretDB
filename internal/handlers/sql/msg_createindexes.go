@@ -12,18 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package sql
 
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-type Storage interface {
-	MsgCreateIndexes(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
-	MsgDelete(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
-	MsgFindOrCount(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
-	MsgInsert(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
-	MsgUpdate(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
+func (h *storage) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	return nil, lazyerrors.New("not implemented")
 }
