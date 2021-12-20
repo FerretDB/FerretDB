@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"sync/atomic"
 
 	"go.uber.org/zap"
@@ -165,6 +166,8 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return h.shared.MsgGetCmdLineOpts(ctx, msg)
 	case "getlog":
 		return h.shared.MsgGetLog(ctx, msg)
+	case "getparameter":
+		return h.shared.MsgGetParameter(ctx, msg)
 	case "ismaster":
 		return h.shared.MsgIsMaster(ctx, msg)
 	case "listcollections":
@@ -177,8 +180,6 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return h.shared.MsgWhatsMyURI(ctx, msg)
 	case "serverstatus":
 		return h.shared.MsgServerStatus(ctx, msg)
-	case "getparameter":
-		return h.shared.MsgGetParameter(ctx, msg)
 
 	case "delete", "find", "insert", "update", "count":
 		storage, err := h.msgStorage(ctx, msg)
@@ -231,49 +232,47 @@ func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) (common.Stora
 	collection := m[command].(string)
 	db := m["$db"].(string)
 
-	sql := `SELECT COUNT(*) > 0 FROM information_schema.tables WHERE table_schema = $1 AND table_name = $2`
-	var tableExist bool
-	if err := h.pgPool.QueryRow(ctx, sql, db, collection).Scan(&tableExist); err != nil {
-		return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)
-	}
-
-	sql = `SELECT COUNT(*) > 0 FROM information_schema.columns WHERE column_name = $1 AND table_schema = $2 AND table_name = $3`
-	var jsonbExist bool
-	if err := h.pgPool.QueryRow(ctx, sql, "_jsonb", db, collection).Scan(&jsonbExist); err != nil {
+	var jsonbTableExist bool
+	sql := `SELECT COUNT(*) > 0 FROM information_schema.columns WHERE column_name = $1 AND table_schema = $2 AND table_name = $3`
+	if err := h.pgPool.QueryRow(ctx, sql, "_jsonb", db, collection).Scan(&jsonbTableExist); err != nil {
 		return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)
 	}
 
 	switch command {
-	case "delete":
-		if jsonbExist {
+	case "delete", "find", "count", "update":
+		if jsonbTableExist {
 			return h.jsonb1, nil
 		}
-	case "find", "count":
-		if jsonbExist {
-			return h.jsonb1, nil
-		}
-	case "insert":
-		if jsonbExist {
-			return h.jsonb1, nil
-		}
-		if !tableExist {
-			fields := []zap.Field{zap.String("schema", db), zap.String("table", collection)}
-			if err := h.pgPool.CreateTable(ctx, db, collection); err != nil {
-				fields = append(fields, zap.Error(err))
-				h.l.Warn("Failed to create jsonb1 table.", fields...)
-			} else {
-				h.l.Info("Created jsonb1 table.", fields...)
-			}
+		return h.sql, nil
 
+	case "insert":
+		if jsonbTableExist {
 			return h.jsonb1, nil
 		}
-	case "update":
-		if jsonbExist {
-			return h.jsonb1, nil
+
+		// check if SQL table exist
+		tables, err := h.pgPool.Tables(ctx, db)
+		if err != nil {
+			return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)
 		}
+		if i := sort.SearchStrings(tables, collection); i < len(tables) && tables[i] == collection {
+			return h.sql, nil
+		}
+
+		// create schema if needed
+		if err := h.pgPool.CreateSchema(ctx, db); err != nil && err != pg.ErrAlreadyExist {
+			return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)
+		}
+
+		// create table
+		if err := h.pgPool.CreateTable(ctx, db, collection); err != nil {
+			return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)
+		}
+
+		h.l.Info("Created jsonb1 table.", zap.String("schema", db), zap.String("table", collection))
+		return h.jsonb1, nil
+
 	default:
 		panic(fmt.Sprintf("unhandled command %q", command))
 	}
-
-	return h.sql, nil
 }

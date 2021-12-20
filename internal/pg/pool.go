@@ -211,9 +211,16 @@ func (pgPool *Pool) Tables(ctx context.Context, db string) ([]string, error) {
 }
 
 // CreateSchema creates a new FerretDB database / PostgreSQL schema.
+//
+// It returns ErrAlreadyExist if schema already exist.
 func (pgPool *Pool) CreateSchema(ctx context.Context, db string) error {
 	sql := `CREATE SCHEMA ` + pgx.Identifier{db}.Sanitize()
 	_, err := pgPool.Exec(ctx, sql)
+
+	if e, ok := err.(*pgconn.PgError); ok && e.Code == pgerrcode.DuplicateSchema {
+		return ErrAlreadyExist
+	}
+
 	return err
 }
 
