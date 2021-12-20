@@ -247,13 +247,13 @@ func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) (common.Stora
 	}
 
 	switch command {
-	case "delete", "find", "count", "update":
+	case "delete", "find", "count":
 		if jsonbTableExist {
 			return h.jsonb1, nil
 		}
 		return h.sql, nil
 
-	case "insert":
+	case "insert", "update":
 		if jsonbTableExist {
 			return h.jsonb1, nil
 		}
