@@ -249,8 +249,8 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	for _, schema := range []string{"monila", "test"} {
-		if err = pgPool.CreateSchema(ctx, schema); err != nil {
+	for _, db := range []string{"monila", "test"} {
+		if err = pgPool.CreateSchema(ctx, db); err != nil {
 			logger.Fatal(err)
 		}
 	}

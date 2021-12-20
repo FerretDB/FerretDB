@@ -17,16 +17,16 @@ package pg
 import (
 	"context"
 	"fmt"
-	"sort"
 	"strings"
 
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/log/zapadapter"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"go.uber.org/zap"
+
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 const (
@@ -208,12 +208,6 @@ func (pgPool *Pool) Tables(ctx context.Context, db string) ([]string, error) {
 	}
 
 	return res, nil
-}
-
-// searchInSorted returns true if element is present in sorted slice.
-func searchInSorted(s []string, e string) bool {
-	i := sort.SearchStrings(s, e)
-	return i < len(s) && s[i] == e
 }
 
 // CreateSchema creates a new FerretDB database / PostgreSQL schema.
