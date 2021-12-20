@@ -16,10 +16,8 @@ package shared
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/jackc/pgx/v4"
-
+	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -34,23 +32,26 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	m := document.Map()
 	db, ok := m["$db"].(string)
-	if !ok {
+	if !ok || db == "" {
 		return nil, lazyerrors.New("no db")
 	}
 
-	sql := fmt.Sprintf(`DROP SCHEMA IF EXISTS %s CASCADE`, pgx.Identifier{db}.Sanitize())
-
-	_, err = h.pgPool.Exec(ctx, sql)
-	if err != nil {
+	res := types.MustMakeDocument()
+	err = h.pgPool.DropSchema(ctx, db)
+	switch err {
+	case nil:
+		res.Set("dropped", db)
+	case pg.ErrNotExist:
+		// nothing
+	default:
 		return nil, lazyerrors.Error(err)
 	}
 
+	res.Set("ok", float64(1))
+
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{types.MustMakeDocument(
-			"dropped", db,
-			"ok", float64(1),
-		)},
+		Documents: []types.Document{res},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)

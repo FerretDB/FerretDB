@@ -32,6 +32,7 @@ const (
 
 	ErrBadValue          = ErrorCode(2)     // BadValue
 	ErrNamespaceNotFound = ErrorCode(26)    // NamespaceNotFound
+	ErrNamespaceExists   = ErrorCode(48)    // NamespaceExists
 	ErrCommandNotFound   = ErrorCode(59)    // CommandNotFound
 	ErrNotImplemented    = ErrorCode(238)   // NotImplemented
 	ErrRegexOptions      = ErrorCode(51075) // Location51075

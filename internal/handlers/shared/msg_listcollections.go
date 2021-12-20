@@ -16,7 +16,6 @@ package shared
 
 import (
 	"context"
-	"sort"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -54,26 +53,10 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 		return nil, lazyerrors.New("no db")
 	}
 
-	var names []string
-	rows, err := h.pgPool.Query(ctx, "SELECT table_name FROM information_schema.tables WHERE table_schema = $1", db)
+	names, err := h.pgPool.Tables(ctx, db)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var name string
-		if err = rows.Scan(&name); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		names = append(names, name)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	sort.Strings(names)
 
 	collections := make(types.Array, len(names))
 	for i, n := range names {
