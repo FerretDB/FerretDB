@@ -1,3 +1,6 @@
+# Please use global .gitignore file for .vscode/, .idea/, etc.
+# See https://git.io/JD5Zf
+
 /bin/
 /vendor/
 cover.txt
@@ -6,4 +9,3 @@ internal/util/version/version.txt
 
 # for now
 **/testdata/fuzz
-
