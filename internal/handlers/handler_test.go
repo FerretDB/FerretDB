@@ -16,7 +16,6 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"runtime"
 	"strconv"
