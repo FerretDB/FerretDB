@@ -6,3 +6,6 @@ internal/util/version/version.txt
 
 # for now
 **/testdata/fuzz
+
+# idea
+.idea
