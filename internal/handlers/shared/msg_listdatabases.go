@@ -31,22 +31,14 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	databases := make(types.Array, len(databaseNames))
 	for i, databaseName := range databaseNames {
-		// get database collections / schema tables
-		// TODO
-		rows, err := h.pgPool.Query(ctx, "SELECT table_name FROM information_schema.tables WHERE table_schema = $1", databaseName)
+		tables, err := h.pgPool.Tables(ctx, databaseName)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
-		defer rows.Close()
 
 		// iterate over result to collect sizes
 		var sizeOnDisk int64
-		for rows.Next() {
-			var name string
-			if err = rows.Scan(&name); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
+		for _, name := range tables {
 			var tableSize int64
 			fullName := databaseName + "." + name
 			err = h.pgPool.QueryRow(ctx, "SELECT pg_total_relation_size($1)", fullName).Scan(&tableSize)
@@ -55,9 +47,6 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 			}
 
 			sizeOnDisk += tableSize
-		}
-		if err = rows.Err(); err != nil {
-			return nil, lazyerrors.Error(err)
 		}
 
 		databases[i] = types.MustMakeDocument(
