@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handlers/jsonb1"
 	"github.com/FerretDB/FerretDB/internal/handlers/shared"
 	"github.com/FerretDB/FerretDB/internal/handlers/sql"
@@ -413,6 +414,22 @@ func TestReadOnlyHandlers(t *testing.T) {
 	}
 
 	testCases := map[string]testCase{
+		"BuildInfo": {
+			req: types.MustMakeDocument(
+				"buildInfo", int32(1),
+			),
+			resp: types.MustMakeDocument(
+				"version", "5.0.42",
+				"versionArray", types.Array{
+					int32(5),
+					int32(0),
+					int32(42),
+					int32(0),
+				},
+				"maxBsonObjectSize", int32(bson.MaxDocumentLen),
+				"ok", float64(1),
+			),
+		},
 		"CountAllActors": {
 			req: types.MustMakeDocument(
 				"count", "actor",
