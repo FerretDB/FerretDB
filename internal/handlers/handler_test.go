@@ -16,7 +16,6 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -558,7 +557,7 @@ func TestListDropDatabase(t *testing.T) {
 		assert.Equal(t, expectedDrop, actualDrop)
 
 		databases := testutil.GetByPath(t, expectedList, "databases").(types.Array)
-		testutil.SetByPath(t, expectedList, types.Array(databases[:len(databases)-1]), "databases")
+		testutil.SetByPath(t, expectedList, databases[:len(databases)-1], "databases")
 
 		actualList = handle(ctx, t, handler, types.MustMakeDocument(
 			"listDatabases", int32(1),
@@ -579,89 +578,67 @@ func TestListDropDatabase(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // we test a global list of collections
 func TestCreateListDropCollection(t *testing.T) {
-	t.Skip("TODO")
-
-	t.Parallel()
 	ctx, handler, pool := setup(t, nil)
 	db := testutil.Schema(ctx, t, pool)
 
-	type testCase struct {
-		req     types.Document
-		resp    types.Document
-		success bool
-	}
-
-	collectionNew := "new_collection"
-	collectionExisted := "existed_collection"
-
-	testCases := map[string]testCase{
-		"new-collection": {
-			req: types.MustMakeDocument(
-				"create", collectionNew,
-				"$db", db,
-			),
-			success: true,
-			resp: types.MustMakeDocument(
-				"created", fmt.Sprintf("%s.%s", db, collectionNew),
-				"ok", float64(1),
-			),
-		},
-		"existed-collection": {
-			req: types.MustMakeDocument(
-				"create", collectionExisted,
-				"$db", db,
-			),
-			success: false,
-			resp:    types.MustMakeDocument(),
-		},
-	}
-
-	require.NoError(t, pool.CreateTable(ctx, db, collectionExisted))
-
-	for name, tc := range testCases { //nolint:paralleltest // false positive
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			reqHeader := wire.MsgHeader{
-				RequestID: 1,
-				OpCode:    wire.OP_MSG,
-			}
-
-			var reqMsg wire.OpMsg
-			require.NoError(t, reqMsg.SetSections(wire.OpMsgSection{
-				Documents: []types.Document{tc.req},
-			}))
-
-			_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
-			if !tc.success {
-				require.True(t, closeConn, "%s", wire.DumpMsgBody(resBody))
-				return
-			}
-
-			require.False(t, closeConn, "%s", wire.DumpMsgBody(resBody))
-			actual, err := resBody.(*wire.OpMsg).Document()
-			require.NoError(t, err)
-
-			assert.Equal(t, actual.Map(), tc.resp.Map())
-
-			// checking tables
-			// TODO
-			query := `SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = $1 and table_name = $2`
-			var count int
-			require.NoError(t, pool.QueryRow(ctx, query, db, collectionNew).Scan(&count))
-			assert.Equal(t, count, 1)
-		})
-	}
-
-	t.Run("existing", func(t *testing.T) {
-		collection := testutil.Table(ctx, t, pool, db)
+	t.Run("nonexisting", func(t *testing.T) {
+		collection := testutil.TableName(t)
 
 		actual := handle(ctx, t, handler, types.MustMakeDocument(
 			"create", collection,
 			"$db", db,
 		))
-		assert.Equal(t, nil, actual)
+		expected := types.MustMakeDocument(
+			"ok", float64(1),
+		)
+		assert.Equal(t, expected, actual)
+
+		// TODO test listCollections command once we have better cursor support
+		// https://github.com/FerretDB/FerretDB/issues/79
+
+		tables, err := pool.Tables(ctx, db)
+		require.NoError(t, err)
+		assert.Equal(t, []string{collection}, tables)
+
+		actual = handle(ctx, t, handler, types.MustMakeDocument(
+			"drop", collection,
+			"$db", db,
+		))
+		expected = types.MustMakeDocument(
+			"nIndexesWas", int32(1),
+			"ns", db+"."+collection,
+			"ok", float64(1),
+		)
+		assert.Equal(t, expected, actual)
+
+		actual = handle(ctx, t, handler, types.MustMakeDocument(
+			"drop", collection,
+			"$db", db,
+		))
+		expected = types.MustMakeDocument(
+			"ok", float64(0),
+			"errmsg", "ns not found",
+			"code", int32(26),
+			"codeName", "NamespaceNotFound",
+		)
+		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("existing", func(t *testing.T) {
+		collection := testutil.CreateTable(ctx, t, pool, db)
+
+		actual := handle(ctx, t, handler, types.MustMakeDocument(
+			"create", collection,
+			"$db", db,
+		))
+		expected := types.MustMakeDocument(
+			"ok", float64(0),
+			"errmsg", "Collection already exists. NS: testcreatelistdropcollection.testcreatelistdropcollection_existing",
+			"code", int32(48),
+			"codeName", "NamespaceExists",
+		)
+		assert.Equal(t, expected, actual)
 	})
 }

@@ -96,15 +96,19 @@ func Schema(ctx context.Context, tb testing.TB, pool *pg.Pool) string {
 	return schema
 }
 
-// Table creates a new FerretDB collection / PostgreSQL table for testing.
-func Table(ctx context.Context, tb testing.TB, pool *pg.Pool, db string) string {
+func TableName(tb testing.TB) string {
+	return strings.ReplaceAll(strings.ToLower(tb.Name()), "/", "_")
+}
+
+// CreateTable creates a new FerretDB collection / PostgreSQL table for testing.
+func CreateTable(ctx context.Context, tb testing.TB, pool *pg.Pool, db string) string {
 	tb.Helper()
 
 	if testing.Short() {
 		tb.Skip("skipping in -short mode")
 	}
 
-	table := strings.ToLower(tb.Name())
+	table := TableName(tb)
 	tb.Logf("Using table %q.", table)
 
 	err := pool.DropTable(ctx, db, table)
