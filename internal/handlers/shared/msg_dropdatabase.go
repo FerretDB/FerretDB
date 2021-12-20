@@ -32,24 +32,26 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	m := document.Map()
 	db, ok := m["$db"].(string)
-	if !ok {
+	if !ok || db == "" {
 		return nil, lazyerrors.New("no db")
 	}
 
+	res := types.MustMakeDocument()
 	err = h.pgPool.DropSchema(ctx, db)
 	switch err {
-	case nil, pg.ErrNotExist:
+	case nil:
+		res.Set("dropped", db)
+	case pg.ErrNotExist:
 		// nothing
 	default:
 		return nil, lazyerrors.Error(err)
 	}
 
+	res.Set("ok", float64(1))
+
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{types.MustMakeDocument(
-			"dropped", db,
-			"ok", float64(1),
-		)},
+		Documents: []types.Document{res},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)

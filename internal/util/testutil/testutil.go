@@ -58,9 +58,14 @@ func Pool(_ context.Context, tb testing.TB, opts *PoolOpts) *pg.Pool {
 	return pool
 }
 
+// SchemaName returns a stable schema name for that test.
+func SchemaName(tb testing.TB) string {
+	return strings.ReplaceAll(strings.ToLower(tb.Name()), "/", "_")
+}
+
 // Schema creates a new FerretDB database / PostgreSQL schema for testing.
 //
-// It is automatically dropped if test pass.
+// Name is stable for that test. It is automatically dropped if test pass.
 func Schema(ctx context.Context, tb testing.TB, pool *pg.Pool) string {
 	tb.Helper()
 
@@ -94,4 +99,34 @@ func Schema(ctx context.Context, tb testing.TB, pool *pg.Pool) string {
 	})
 
 	return schema
+}
+
+// TableName returns a stable table name for that test.
+func TableName(tb testing.TB) string {
+	return strings.ReplaceAll(strings.ToLower(tb.Name()), "/", "_")
+}
+
+// CreateTable creates FerretDB collection / PostgreSQL table for testing.
+//
+// Name is stable for that test.
+func CreateTable(ctx context.Context, tb testing.TB, pool *pg.Pool, db string) string {
+	tb.Helper()
+
+	if testing.Short() {
+		tb.Skip("skipping in -short mode")
+	}
+
+	table := TableName(tb)
+	tb.Logf("Using table %q.", table)
+
+	err := pool.DropTable(ctx, db, table)
+	if err == pg.ErrNotExist {
+		err = nil
+	}
+	require.NoError(tb, err)
+
+	err = pool.CreateTable(ctx, db, table)
+	require.NoError(tb, err)
+
+	return table
 }
