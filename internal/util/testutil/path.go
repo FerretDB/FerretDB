@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -84,15 +85,29 @@ func SetByPath(tb testing.TB, str any, value any, path ...string) {
 	}
 }
 
-// CompareAndSetByPath asserts that two values with the same path in two objects (documents or arrays)
-// are within a given delta, then updates the expected object with the actual value.
-func CompareAndSetByPath(tb testing.TB, expected, actual any, delta float64, path ...string) {
+// CompareAndSetByPathNum asserts that two values with the same path in two objects (documents or arrays)
+// are within a given numerical delta, then updates the expected object with the actual value.
+func CompareAndSetByPathNum(tb testing.TB, expected, actual any, delta float64, path ...string) {
 	tb.Helper()
 
 	expectedV := GetByPath(tb, expected, path...)
 	actualV := GetByPath(tb, actual, path...)
 	assert.IsType(tb, expectedV, actualV)
 	assert.InDelta(tb, expectedV, actualV, delta)
+
+	SetByPath(tb, expected, actualV, path...)
+}
+
+// CompareAndSetByPathTime asserts that two values with the same path in two objects (documents or arrays)
+// are within a given time delta, then updates the expected object with the actual value.
+func CompareAndSetByPathTime(tb testing.TB, expected, actual any, delta time.Duration, path ...string) {
+	tb.Helper()
+
+	expectedV := GetByPath(tb, expected, path...)
+	actualV := GetByPath(tb, actual, path...)
+	assert.IsType(tb, expectedV, actualV)
+	require.IsType(tb, time.Time{}, actualV)
+	assert.WithinDuration(tb, expectedV.(time.Time), actualV.(time.Time), delta)
 
 	SetByPath(tb, expected, actualV, path...)
 }

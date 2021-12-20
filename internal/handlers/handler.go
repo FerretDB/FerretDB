@@ -168,8 +168,8 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return h.shared.MsgGetLog(ctx, msg)
 	case "getparameter":
 		return h.shared.MsgGetParameter(ctx, msg)
-	case "ismaster":
-		return h.shared.MsgIsMaster(ctx, msg)
+	case "ismaster", "hello":
+		return h.shared.MsgHello(ctx, msg)
 	case "listcollections":
 		return h.shared.MsgListCollections(ctx, msg)
 	case "listdatabases":

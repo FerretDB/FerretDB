@@ -477,6 +477,49 @@ func TestReadOnlyHandlers(t *testing.T) {
 			),
 		},
 
+		"IsMaster": {
+			req: types.MustMakeDocument(
+				"isMaster", int32(1),
+			),
+			resp: types.MustMakeDocument(
+				"helloOk", true,
+				"ismaster", true,
+				"maxBsonObjectSize", int32(bson.MaxDocumentLen),
+				"maxMessageSizeBytes", int32(wire.MaxMsgLen),
+				"maxWriteBatchSize", int32(100000),
+				"localTime", time.Now(),
+				"minWireVersion", int32(13),
+				"maxWireVersion", int32(13),
+				"readOnly", false,
+				"ok", float64(1),
+			),
+			compareFunc: func(t testing.TB, actual, expected any) {
+				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "localTime")
+				assert.Equal(t, expected, actual)
+			},
+		},
+		"Hello": {
+			req: types.MustMakeDocument(
+				"hello", int32(1),
+			),
+			resp: types.MustMakeDocument(
+				"helloOk", true,
+				"ismaster", true,
+				"maxBsonObjectSize", int32(bson.MaxDocumentLen),
+				"maxMessageSizeBytes", int32(wire.MaxMsgLen),
+				"maxWriteBatchSize", int32(100000),
+				"localTime", time.Now(),
+				"minWireVersion", int32(13),
+				"maxWireVersion", int32(13),
+				"readOnly", false,
+				"ok", float64(1),
+			),
+			compareFunc: func(t testing.TB, actual, expected any) {
+				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "localTime")
+				assert.Equal(t, expected, actual)
+			},
+		},
+
 		"ServerStatus": {
 			req: types.MustMakeDocument(
 				"serverStatus", int32(1),
@@ -551,14 +594,14 @@ func TestListDropDatabase(t *testing.T) {
 			"ok", float64(1),
 		)
 
-		testutil.CompareAndSetByPath(t, expectedList, actualList, 2_000_000, "totalSize")
-		testutil.CompareAndSetByPath(t, expectedList, actualList, 2, "totalSizeMb")
+		testutil.CompareAndSetByPathNum(t, expectedList, actualList, 2_000_000, "totalSize")
+		testutil.CompareAndSetByPathNum(t, expectedList, actualList, 2, "totalSizeMb")
 
 		expectedDBs := testutil.GetByPath(t, expectedList, "databases").(types.Array)
 		actualDBs := testutil.GetByPath(t, actualList, "databases").(types.Array)
 		require.Equal(t, len(expectedDBs), len(actualDBs))
 		for i, actualDB := range actualDBs {
-			testutil.CompareAndSetByPath(t, expectedDBs[i], actualDB, 300_000, "sizeOnDisk")
+			testutil.CompareAndSetByPathNum(t, expectedDBs[i], actualDB, 300_000, "sizeOnDisk")
 		}
 
 		assert.Equal(t, expectedList, actualList)
