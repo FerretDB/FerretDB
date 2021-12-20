@@ -417,10 +417,6 @@ func TestReadOnlyHandlers(t *testing.T) {
 		compareFunc func(t testing.TB, actual, expected any)
 	}
 
-	now := time.Now().UTC()
-	shared.Now = func() time.Time {
-		return now
-	}
 	hostname, err := os.Hostname()
 	require.NoError(t, err)
 
@@ -537,7 +533,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 			),
 			resp: types.MustMakeDocument(
 				"system", types.MustMakeDocument(
-					"currentTime", now,
+					"currentTime", time.Now(),
 					"hostname", hostname,
 					"cpuAddrSize", int32(strconv.IntSize),
 					"numCores", int32(runtime.NumCPU()),
@@ -549,6 +545,10 @@ func TestReadOnlyHandlers(t *testing.T) {
 				),
 				"ok", float64(1),
 			),
+			compareFunc: func(t testing.TB, actual, expected any) {
+				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "system", "currentTime")
+				assert.Equal(t, expected, actual)
+			},
 		},
 
 		"ServerStatus": {

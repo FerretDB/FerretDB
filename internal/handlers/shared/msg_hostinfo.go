@@ -29,12 +29,9 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// Now is a synonym for the time.Now function (very handy for unit testing)
-var Now = time.Now
-
 // MsgHostInfo returns an OpMsg with the host information.
 func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	now := Now().UTC()
+	now := time.Now().UTC()
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
