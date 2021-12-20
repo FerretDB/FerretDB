@@ -645,6 +645,7 @@ func TestCreateListDropCollection(t *testing.T) {
 			assert.Equal(t, actual.Map(), tc.resp.Map())
 
 			// checking tables
+			// TODO
 			query := `SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = $1 and table_name = $2`
 			var count int
 			require.NoError(t, pool.QueryRow(ctx, query, dbName, collectionNew).Scan(&count))
