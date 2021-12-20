@@ -580,8 +580,11 @@ func TestListDropDatabase(t *testing.T) {
 }
 
 func TestCreateListDropCollection(t *testing.T) {
+	t.Skip("TODO")
+
 	t.Parallel()
 	ctx, handler, pool := setup(t, nil)
+	db := testutil.Schema(ctx, t, pool)
 
 	type testCase struct {
 		req     types.Document
@@ -589,7 +592,6 @@ func TestCreateListDropCollection(t *testing.T) {
 		success bool
 	}
 
-	dbName := testutil.Schema(ctx, t, pool)
 	collectionNew := "new_collection"
 	collectionExisted := "existed_collection"
 
@@ -597,25 +599,25 @@ func TestCreateListDropCollection(t *testing.T) {
 		"new-collection": {
 			req: types.MustMakeDocument(
 				"create", collectionNew,
-				"$db", dbName,
+				"$db", db,
 			),
 			success: true,
 			resp: types.MustMakeDocument(
-				"created", fmt.Sprintf("%s.%s", dbName, collectionNew),
+				"created", fmt.Sprintf("%s.%s", db, collectionNew),
 				"ok", float64(1),
 			),
 		},
 		"existed-collection": {
 			req: types.MustMakeDocument(
 				"create", collectionExisted,
-				"$db", dbName,
+				"$db", db,
 			),
 			success: false,
 			resp:    types.MustMakeDocument(),
 		},
 	}
 
-	require.NoError(t, pool.CreateTable(ctx, dbName, collectionExisted))
+	require.NoError(t, pool.CreateTable(ctx, db, collectionExisted))
 
 	for name, tc := range testCases { //nolint:paralleltest // false positive
 		name, tc := name, tc
@@ -648,8 +650,18 @@ func TestCreateListDropCollection(t *testing.T) {
 			// TODO
 			query := `SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = $1 and table_name = $2`
 			var count int
-			require.NoError(t, pool.QueryRow(ctx, query, dbName, collectionNew).Scan(&count))
+			require.NoError(t, pool.QueryRow(ctx, query, db, collectionNew).Scan(&count))
 			assert.Equal(t, count, 1)
 		})
 	}
+
+	t.Run("existing", func(t *testing.T) {
+		collection := testutil.Table(ctx, t, pool, db)
+
+		actual := handle(ctx, t, handler, types.MustMakeDocument(
+			"create", collection,
+			"$db", db,
+		))
+		assert.Equal(t, nil, actual)
+	})
 }

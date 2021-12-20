@@ -17,6 +17,8 @@ package shared
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -34,13 +36,15 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	db := m["$db"].(string)
 
 	if err = h.pgPool.CreateTable(ctx, db, collection); err != nil {
+		if err == pg.ErrAlreadyExist {
+			return nil, common.NewErrorMessage(common.ErrNamespaceExists, "Collection already exists. NS: %s.%s", db, collection)
+		}
 		return nil, lazyerrors.Error(err)
 	}
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
-			"created", db+"."+collection,
 			"ok", float64(1),
 		)},
 	})

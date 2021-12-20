@@ -95,3 +95,26 @@ func Schema(ctx context.Context, tb testing.TB, pool *pg.Pool) string {
 
 	return schema
 }
+
+// Table creates a new FerretDB collection / PostgreSQL table for testing.
+func Table(ctx context.Context, tb testing.TB, pool *pg.Pool, db string) string {
+	tb.Helper()
+
+	if testing.Short() {
+		tb.Skip("skipping in -short mode")
+	}
+
+	table := strings.ToLower(tb.Name())
+	tb.Logf("Using table %q.", table)
+
+	err := pool.DropTable(ctx, db, table)
+	if err == pg.ErrNotExist {
+		err = nil
+	}
+	require.NoError(tb, err)
+
+	err = pool.CreateTable(ctx, db, table)
+	require.NoError(tb, err)
+
+	return table
+}
