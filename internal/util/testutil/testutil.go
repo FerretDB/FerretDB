@@ -69,6 +69,7 @@ func Schema(ctx context.Context, tb testing.TB, pool *pg.Pool) string {
 	}
 
 	schema := strings.ToLower(tb.Name())
+	tb.Logf("Using schema %q.", schema)
 
 	err := pool.DropSchema(ctx, schema)
 	if err == pg.ErrNotExist {

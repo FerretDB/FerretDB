@@ -20,7 +20,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
@@ -59,92 +58,27 @@ func setup(t *testing.T, poolOpts *testutil.PoolOpts) (context.Context, *Handler
 	return ctx, handler, pool
 }
 
-func TestDropDatabase(t *testing.T) {
-	t.Parallel()
+func handle(ctx context.Context, t *testing.T, handler *Handler, req types.Document) types.Document {
+	t.Helper()
 
-	ctx, handler, pool := setup(t, nil)
-
-	type testCase struct {
-		req  types.Document
-		resp types.Document
+	reqHeader := wire.MsgHeader{
+		RequestID: 1,
+		OpCode:    wire.OP_MSG,
 	}
 
-	dummyDbName := testutil.Schema(ctx, t, pool)
-	notExistedDbName := "not_existed_db"
-	testCases := map[string]testCase{
-		"dropNotExistedDatabase": {
-			req: types.MustMakeDocument(
-				"dropDatabase", int32(1),
-			),
-			resp: types.MustMakeDocument(
-				"dropped", notExistedDbName,
-				"ok", float64(1),
-			),
-		},
-		"dropDummyDatabase": {
-			req: types.MustMakeDocument(
-				"dropDatabase", int32(1),
-			),
-			resp: types.MustMakeDocument(
-				"dropped", dummyDbName,
-				"ok", float64(1),
-			),
-		},
-	}
-
-	dummyTableName := "dummy_table"
-	require.NoError(t, pool.CreateTable(ctx, dummyDbName, dummyTableName))
-
-	_, err := pool.Exec(ctx, fmt.Sprintf(
-		`INSERT INTO %s(_jsonb) VALUES ('{"key": "value"}')`,
-		pgx.Identifier{dummyDbName, dummyTableName}.Sanitize(),
-	))
+	var reqMsg wire.OpMsg
+	err := reqMsg.SetSections(wire.OpMsgSection{
+		Documents: []types.Document{req},
+	})
 	require.NoError(t, err)
 
-	for name, tc := range testCases { //nolint:paralleltest // false positive
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+	_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
+	require.False(t, closeConn, "%s", wire.DumpMsgBody(resBody))
 
-			schemaName := tc.resp.Map()["dropped"].(string)
+	actual, err := resBody.(*wire.OpMsg).Document()
+	require.NoError(t, err)
 
-			tc.req.Set("$db", schemaName)
-			reqHeader := wire.MsgHeader{
-				RequestID: 1,
-				OpCode:    wire.OP_MSG,
-			}
-
-			var reqMsg wire.OpMsg
-			err := reqMsg.SetSections(wire.OpMsgSection{
-				Documents: []types.Document{tc.req},
-			})
-			require.NoError(t, err)
-
-			_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
-			require.False(t, closeConn, "%s", wire.DumpMsgBody(resBody))
-
-			actual, err := resBody.(*wire.OpMsg).Document()
-			require.NoError(t, err)
-
-			expected := tc.resp
-
-			assert.Equal(t, actual.Map(), expected.Map())
-
-			var count int
-
-			// checking tables
-			query := `SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = $1`
-			err = pool.QueryRow(ctx, query, schemaName).Scan(&count)
-			require.NoError(t, err)
-			assert.Equal(t, count, 0)
-
-			// checking schema
-			query = `SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name = $1`
-			err = pool.QueryRow(ctx, query, schemaName).Scan(&count)
-			require.NoError(t, err)
-			assert.Equal(t, count, 0)
-		})
-	}
+	return actual
 }
 
 func TestFind(t *testing.T) {
@@ -450,23 +384,7 @@ func TestFind(t *testing.T) {
 						}
 					}
 
-					reqHeader := wire.MsgHeader{
-						RequestID: 1,
-						OpCode:    wire.OP_MSG,
-					}
-
-					var reqMsg wire.OpMsg
-					err := reqMsg.SetSections(wire.OpMsgSection{
-						Documents: []types.Document{tc.req},
-					})
-					require.NoError(t, err)
-
-					_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
-					require.False(t, closeConn, "%s", wire.DumpMsgBody(resBody))
-
-					actual, err := resBody.(*wire.OpMsg).Document()
-					require.NoError(t, err)
-
+					actual := handle(ctx, t, handler, tc.req)
 					expected := types.MustMakeDocument(
 						"cursor", types.MustMakeDocument(
 							"firstBatch", tc.resp,
@@ -543,49 +461,6 @@ func TestReadOnlyHandlers(t *testing.T) {
 			),
 		},
 
-		"ListDatabases": {
-			req: types.MustMakeDocument(
-				"listDatabases", int32(1),
-			),
-			resp: types.MustMakeDocument(
-				"databases", types.Array{
-					types.MustMakeDocument(
-						"name", "monila",
-						"sizeOnDisk", int64(13_516_800),
-						"empty", false,
-					),
-					types.MustMakeDocument(
-						"name", "pagila",
-						"sizeOnDisk", int64(7_127_040),
-						"empty", false,
-					),
-					types.MustMakeDocument(
-						"name", "test",
-						"sizeOnDisk", int64(0),
-						"empty", true,
-					),
-				},
-				"totalSize", int64(30_114_595),
-				"totalSizeMb", int64(28),
-				"ok", float64(1),
-			),
-			compareFunc: func(t testing.TB, expected, actual any) {
-				expectedDoc, actualDoc := expected.(types.Document), actual.(types.Document)
-
-				testutil.CompareAndSetByPath(t, expectedDoc, actualDoc, 2_000_000, "totalSize")
-				testutil.CompareAndSetByPath(t, expectedDoc, actualDoc, 2, "totalSizeMb")
-
-				expectedDBs := testutil.GetByPath(t, expectedDoc, "databases").(types.Array)
-				actualDBs := testutil.GetByPath(t, actualDoc, "databases").(types.Array)
-				require.Equal(t, len(expectedDBs), len(actualDBs))
-				for i, actualDB := range actualDBs {
-					testutil.CompareAndSetByPath(t, expectedDBs[i], actualDB, 200_000, "sizeOnDisk")
-				}
-
-				assert.Equal(t, expectedDoc, actualDoc)
-			},
-		},
-
 		"ServerStatus": {
 			req: types.MustMakeDocument(
 				"serverStatus", int32(1),
@@ -604,26 +479,13 @@ func TestReadOnlyHandlers(t *testing.T) {
 
 			for _, schema := range []string{"monila", "pagila"} {
 				t.Run(schema, func(t *testing.T) {
+					// not parallel because we modify tc
+
 					if tc.reqSetDB {
 						tc.req.Set("$db", schema)
 					}
 
-					reqHeader := wire.MsgHeader{
-						RequestID: 1,
-						OpCode:    wire.OP_MSG,
-					}
-
-					var reqMsg wire.OpMsg
-					err := reqMsg.SetSections(wire.OpMsgSection{
-						Documents: []types.Document{tc.req},
-					})
-					require.NoError(t, err)
-
-					_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
-					require.False(t, closeConn, "%s", wire.DumpMsgBody(resBody))
-
-					actual, err := resBody.(*wire.OpMsg).Document()
-					require.NoError(t, err)
+					actual := handle(ctx, t, handler, tc.req)
 					if tc.compareFunc == nil {
 						assert.Equal(t, tc.resp, actual)
 					} else {
@@ -635,9 +497,90 @@ func TestReadOnlyHandlers(t *testing.T) {
 	}
 }
 
-func TestCreate(t *testing.T) {
-	t.Parallel()
+//nolint:paralleltest // we test a global list of databases
+func TestListDropDatabase(t *testing.T) {
+	ctx, handler, pool := setup(t, nil)
 
+	t.Run("existing", func(t *testing.T) {
+		db := testutil.Schema(ctx, t, pool)
+
+		actualList := handle(ctx, t, handler, types.MustMakeDocument(
+			"listDatabases", int32(1),
+		))
+		expectedList := types.MustMakeDocument(
+			"databases", types.Array{
+				types.MustMakeDocument(
+					"name", "monila",
+					"sizeOnDisk", int64(13_631_488),
+					"empty", false,
+				),
+				types.MustMakeDocument(
+					"name", "pagila",
+					"sizeOnDisk", int64(7_127_040),
+					"empty", false,
+				),
+				types.MustMakeDocument(
+					"name", "test",
+					"sizeOnDisk", int64(0),
+					"empty", true,
+				),
+				types.MustMakeDocument(
+					"name", db,
+					"sizeOnDisk", int64(0),
+					"empty", true,
+				),
+			},
+			"totalSize", int64(30_286_627),
+			"totalSizeMb", int64(28),
+			"ok", float64(1),
+		)
+
+		testutil.CompareAndSetByPath(t, expectedList, actualList, 2_000_000, "totalSize")
+		testutil.CompareAndSetByPath(t, expectedList, actualList, 2, "totalSizeMb")
+
+		expectedDBs := testutil.GetByPath(t, expectedList, "databases").(types.Array)
+		actualDBs := testutil.GetByPath(t, actualList, "databases").(types.Array)
+		require.Equal(t, len(expectedDBs), len(actualDBs))
+		for i, actualDB := range actualDBs {
+			testutil.CompareAndSetByPath(t, expectedDBs[i], actualDB, 200_000, "sizeOnDisk")
+		}
+
+		assert.Equal(t, expectedList, actualList)
+
+		actualDrop := handle(ctx, t, handler, types.MustMakeDocument(
+			"dropDatabase", int32(1),
+			"$db", db,
+		))
+		expectedDrop := types.MustMakeDocument(
+			"dropped", db,
+			"ok", float64(1),
+		)
+		assert.Equal(t, expectedDrop, actualDrop)
+
+		databases := testutil.GetByPath(t, expectedList, "databases").(types.Array)
+		testutil.SetByPath(t, expectedList, types.Array(databases[:len(databases)-1]), "databases")
+
+		actualList = handle(ctx, t, handler, types.MustMakeDocument(
+			"listDatabases", int32(1),
+		))
+		assert.Equal(t, expectedList, actualList)
+	})
+
+	t.Run("nonexisting", func(t *testing.T) {
+		actual := handle(ctx, t, handler, types.MustMakeDocument(
+			"dropDatabase", int32(1),
+			"$db", "nonexisting",
+		))
+		expected := types.MustMakeDocument(
+			// no $db
+			"ok", float64(1),
+		)
+		assert.Equal(t, expected, actual)
+	})
+}
+
+func TestCreateListDropCollection(t *testing.T) {
+	t.Parallel()
 	ctx, handler, pool := setup(t, nil)
 
 	type testCase struct {
