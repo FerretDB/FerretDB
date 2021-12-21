@@ -18,9 +18,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"sync/atomic"
 
-	"github.com/jackc/pgx/v4"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -156,6 +156,8 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	switch cmd {
 	case "buildinfo":
 		return h.shared.MsgBuildInfo(ctx, msg)
+	case "create":
+		return h.shared.MsgCreate(ctx, msg)
 	case "drop":
 		return h.shared.MsgDrop(ctx, msg)
 	case "dropdatabase":
@@ -164,8 +166,12 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return h.shared.MsgGetCmdLineOpts(ctx, msg)
 	case "getlog":
 		return h.shared.MsgGetLog(ctx, msg)
-	case "ismaster":
-		return h.shared.MsgIsMaster(ctx, msg)
+	case "getparameter":
+		return h.shared.MsgGetParameter(ctx, msg)
+	case "hostinfo":
+		return h.shared.MsgHostInfo(ctx, msg)
+	case "ismaster", "hello":
+		return h.shared.MsgHello(ctx, msg)
 	case "listcollections":
 		return h.shared.MsgListCollections(ctx, msg)
 	case "listcommands":
@@ -178,16 +184,16 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return h.shared.MsgWhatsMyURI(ctx, msg)
 	case "serverstatus":
 		return h.shared.MsgServerStatus(ctx, msg)
-	case "getparameter":
-		return h.shared.MsgGetParameter(ctx, msg)
 
-	case "delete", "find", "insert", "update", "count":
+	case "createindexes", "delete", "find", "insert", "update", "count":
 		storage, err := h.msgStorage(ctx, msg)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
 		switch cmd {
+		case "createindexes":
+			return storage.MsgCreateIndexes(ctx, msg)
 		case "delete":
 			return storage.MsgDelete(ctx, msg)
 		case "find", "count":
@@ -229,54 +235,56 @@ func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) (common.Stora
 
 	m := document.Map()
 	command := document.Command()
+
+	if command == "createindexes" {
+		// TODO https://github.com/FerretDB/FerretDB/issues/78
+		return h.jsonb1, nil
+	}
+
 	collection := m[command].(string)
 	db := m["$db"].(string)
 
-	sql := `SELECT COUNT(*) > 0 FROM information_schema.tables WHERE table_schema = $1 AND table_name = $2`
-	var tableExist bool
-	if err := h.pgPool.QueryRow(ctx, sql, db, collection).Scan(&tableExist); err != nil {
-		return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)
-	}
-
-	sql = `SELECT COUNT(*) > 0 FROM information_schema.columns WHERE column_name = $1 AND table_schema = $2 AND table_name = $3`
-	var jsonbExist bool
-	if err := h.pgPool.QueryRow(ctx, sql, "_jsonb", db, collection).Scan(&jsonbExist); err != nil {
+	var jsonbTableExist bool
+	sql := `SELECT COUNT(*) > 0 FROM information_schema.columns WHERE column_name = $1 AND table_schema = $2 AND table_name = $3`
+	if err := h.pgPool.QueryRow(ctx, sql, "_jsonb", db, collection).Scan(&jsonbTableExist); err != nil {
 		return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)
 	}
 
 	switch command {
-	case "delete":
-		if jsonbExist {
+	case "delete", "find", "count":
+		if jsonbTableExist {
 			return h.jsonb1, nil
 		}
-	case "find", "count":
-		if jsonbExist {
-			return h.jsonb1, nil
-		}
-	case "insert":
-		if jsonbExist {
-			return h.jsonb1, nil
-		}
-		if !tableExist {
-			sql = `CREATE TABLE ` + pgx.Identifier{db, collection}.Sanitize() + ` (_jsonb jsonb)`
-			_, err := h.pgPool.Exec(ctx, sql)
-			fields := []zap.Field{zap.String("schema", db), zap.String("table", collection)}
-			if err != nil {
-				fields = append(fields, zap.Error(err))
-				h.l.Warn("Failed to create jsonb1 table.", fields...)
-			} else {
-				h.l.Info("Created jsonb1 table.", fields...)
-			}
+		return h.sql, nil
 
+	case "insert", "update":
+		if jsonbTableExist {
 			return h.jsonb1, nil
 		}
-	case "update":
-		if jsonbExist {
-			return h.jsonb1, nil
+
+		// check if SQL table exist
+		tables, err := h.pgPool.Tables(ctx, db)
+		if err != nil {
+			return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)
 		}
+		if i := sort.SearchStrings(tables, collection); i < len(tables) && tables[i] == collection {
+			return h.sql, nil
+		}
+
+		// create schema if needed
+		if err := h.pgPool.CreateSchema(ctx, db); err != nil && err != pg.ErrAlreadyExist {
+			return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)
+		}
+
+		// create table
+		if err := h.pgPool.CreateTable(ctx, db, collection); err != nil {
+			return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)
+		}
+
+		h.l.Info("Created jsonb1 table.", zap.String("schema", db), zap.String("table", collection))
+		return h.jsonb1, nil
+
 	default:
 		panic(fmt.Sprintf("unhandled command %q", command))
 	}
-
-	return h.sql, nil
 }

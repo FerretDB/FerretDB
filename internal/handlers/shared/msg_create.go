@@ -12,22 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sql
+package shared
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/jackc/pgx/v4"
-
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgInsert inserts a document or documents into a collection.
-func (h *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// MsgCreate adds a collection or view into the database.
+func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -36,61 +34,21 @@ func (h *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	m := document.Map()
 	collection := m[document.Command()].(string)
 	db := m["$db"].(string)
-	docs, _ := m["documents"].(types.Array)
 
-	ordered, ok := m["ordered"].(bool)
-	if !ok {
-		ordered = true
+	if err := h.pgPool.CreateSchema(ctx, db); err != nil && err != pg.ErrAlreadyExist {
+		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/200
-	_ = ordered
-
-	var inserted int32
-	for _, doc := range docs {
-		d := doc.(types.Document)
-		m := d.Map()
-
-		sql := fmt.Sprintf("INSERT INTO %s (", pgx.Identifier{db, collection}.Sanitize())
-		var args []any
-
-		for _, k := range d.Keys() {
-			// TODO
-			if k == "_id" {
-				continue
-			}
-
-			if len(args) != 0 {
-				sql += ", "
-			}
-
-			sql += pgx.Identifier{k}.Sanitize()
-			args = append(args, m[k])
+	if err = h.pgPool.CreateTable(ctx, db, collection); err != nil {
+		if err == pg.ErrAlreadyExist {
+			return nil, common.NewErrorMessage(common.ErrNamespaceExists, "Collection already exists. NS: %s.%s", db, collection)
 		}
-
-		sql += ") VALUES ("
-		var placeholder pg.Placeholder
-		for i := range args {
-			if i != 0 {
-				sql += ", "
-			}
-			sql += placeholder.Next()
-		}
-
-		sql += ")"
-
-		_, err := h.pgPool.Exec(ctx, sql, args...)
-		if err != nil {
-			return nil, err
-		}
-
-		inserted++
+		return nil, lazyerrors.Error(err)
 	}
 
-	var res wire.OpMsg
-	err = res.SetSections(wire.OpMsgSection{
+	var reply wire.OpMsg
+	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
-			"n", inserted,
 			"ok", float64(1),
 		)},
 	})
@@ -98,5 +56,5 @@ func (h *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &res, nil
+	return &reply, nil
 }

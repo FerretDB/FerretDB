@@ -16,42 +16,34 @@ package shared
 
 import (
 	"context"
+	"time"
 
-	"github.com/FerretDB/FerretDB/internal/pg"
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgDropDatabase removes the current database.
-func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	m := document.Map()
-	db, ok := m["$db"].(string)
-	if !ok || db == "" {
-		return nil, lazyerrors.New("no db")
-	}
-
-	res := types.MustMakeDocument()
-	err = h.pgPool.DropSchema(ctx, db)
-	switch err {
-	case nil:
-		res.Set("dropped", db)
-	case pg.ErrNotExist:
-		// nothing
-	default:
-		return nil, lazyerrors.Error(err)
-	}
-
-	res.Set("ok", float64(1))
-
+// MsgHello returns a document that describes the role of the instance.
+func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{res},
+	err := reply.SetSections(wire.OpMsgSection{
+		// TODO merge with QueryCmd
+		Documents: []types.Document{types.MustMakeDocument(
+			"helloOk", true,
+			"ismaster", true,
+			// topologyVersion
+			"maxBsonObjectSize", int32(bson.MaxDocumentLen),
+			"maxMessageSizeBytes", int32(wire.MaxMsgLen),
+			"maxWriteBatchSize", int32(100000),
+			"localTime", time.Now(),
+			// logicalSessionTimeoutMinutes
+			// connectionId
+			"minWireVersion", int32(13),
+			"maxWireVersion", int32(13),
+			"readOnly", false,
+			"ok", float64(1),
+		)},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)

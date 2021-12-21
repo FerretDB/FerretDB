@@ -16,11 +16,9 @@ package shared
 
 import (
 	"context"
-	"fmt"
-
-	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -37,19 +35,17 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	collection := m[document.Command()].(string)
 	db := m["$db"].(string)
 
-	// TODO probably not CASCADE
-	sql := fmt.Sprintf(`DROP TABLE %s CASCADE`, pgx.Identifier{db, collection}.Sanitize())
-
-	_, err = h.pgPool.Exec(ctx, sql)
-	if err != nil {
-		// TODO check error code
-		return nil, common.NewErrorMessage(common.ErrNamespaceNotFound, "MsgDrop: ns not found: %w", err)
+	if err = h.pgPool.DropTable(ctx, db, collection); err != nil {
+		if err == pg.ErrNotExist {
+			return nil, common.NewErrorMessage(common.ErrNamespaceNotFound, "ns not found")
+		}
+		return nil, lazyerrors.Error(err)
 	}
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
-			"nIndexesWas", int32(0), // TODO
+			"nIndexesWas", int32(1), // TODO
 			"ns", db+"."+collection,
 			"ok", float64(1),
 		)},

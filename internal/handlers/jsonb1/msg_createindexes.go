@@ -16,26 +16,24 @@ package jsonb1
 
 import (
 	"context"
-	"testing"
 
-	"go.uber.org/zap/zaptest"
-
-	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-func setup(tb testing.TB) (context.Context, *handlers.Handler, string) {
-	ctx := testutil.Ctx(tb)
-	pool := testutil.Pool(ctx, tb, new(testutil.PoolOpts))
-	db := testutil.Schema(ctx, tb, pool)
-	handlerOpts := &handlers.NewOpts{
-		PgPool:        pool,
-		Logger:        zaptest.NewLogger(tb),
-		SharedHandler: nil,
-		SQLStorage:    nil,
-		JSONB1Storage: NewStorage(pool, zaptest.NewLogger(tb)),
-		Metrics:       handlers.NewMetrics(),
+func (h *storage) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/78
+
+	var reply wire.OpMsg
+	err := reply.SetSections(wire.OpMsgSection{
+		Documents: []types.Document{types.MustMakeDocument(
+			"ok", float64(1),
+		)},
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
-	h := handlers.New(handlerOpts)
-	return ctx, h, db
+
+	return &reply, nil
 }

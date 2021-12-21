@@ -16,31 +16,41 @@ package shared
 
 import (
 	"context"
+	"os"
+	"runtime"
+	"strconv"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgIsMaster returns a document that describes the role of the instance.
-func (h *Handler) MsgIsMaster(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// MsgHostInfo returns an OpMsg with the host information.
+func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	now := time.Now().UTC()
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	var reply wire.OpMsg
-	err := reply.SetSections(wire.OpMsgSection{
-		// TODO merge with handleOpQueryCmd
+	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
-			"ismaster", true,
-			// topologyVersion
-			"maxBsonObjectSize", int32(bson.MaxDocumentLen),
-			"maxMessageSizeBytes", int32(wire.MaxMsgLen),
-			"maxWriteBatchSize", int32(100000),
-			"localTime", time.Now(),
-			// logicalSessionTimeoutMinutes
-			// connectionId
-			"minWireVersion", int32(13),
-			"maxWireVersion", int32(13),
-			"readOnly", false,
+			"system", types.MustMakeDocument(
+				"currentTime", now,
+				"hostname", hostname,
+				"cpuAddrSize", int32(strconv.IntSize),
+				"numCores", int32(runtime.NumCPU()),
+				"cpuArch", runtime.GOARCH,
+				"numaEnabled", false,
+			),
+			"os", types.MustMakeDocument(
+				"type", cases.Title(language.English).String(runtime.GOOS),
+			),
 			"ok", float64(1),
 		)},
 	})
