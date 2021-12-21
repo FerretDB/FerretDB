@@ -33,7 +33,7 @@ func GetByPath(tb testing.TB, str any, path ...string) any {
 	var res any
 	var err error
 	switch str := str.(type) {
-	case types.Array:
+	case *types.Array:
 		res, err = str.GetByPath(path...)
 	case types.Document:
 		res, err = str.GetByPath(path...)
@@ -57,7 +57,7 @@ func SetByPath(tb testing.TB, str any, value any, path ...string) {
 	for i, p := range path {
 		last := i == l-1
 		switch s := str.(type) {
-		case types.Array:
+		case *types.Array:
 			index, err := strconv.Atoi(p)
 			require.NoError(tb, err)
 

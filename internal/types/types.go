@@ -29,7 +29,7 @@
 //  float64:         bson.Double
 //  string:          bson.String
 //  types.Document:  bson.Document
-//  types.Array:     bson.Array
+//  *types.Array:     bson.Array
 //  types.Binary:    bson.Binary
 //  types.ObjectID:  bson.ObjectID
 //  bool:            bson.Bool
@@ -68,7 +68,7 @@ func validateValue(value any) error {
 		return nil
 	case Document:
 		return value.validate()
-	case Array:
+	case *Array:
 		return nil
 	case Binary:
 		return nil

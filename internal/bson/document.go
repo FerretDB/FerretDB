@@ -306,7 +306,7 @@ func (doc Document) MarshalBinary() ([]byte, error) {
 				return nil, lazyerrors.Error(err)
 			}
 
-		case types.Array:
+		case *types.Array:
 			bufw.WriteByte(byte(tagArray))
 			if err := ename.WriteTo(bufw); err != nil {
 				return nil, lazyerrors.Error(err)
@@ -553,7 +553,7 @@ func marshalJSONValue(v any) ([]byte, error) {
 		o = String(v)
 	case types.Document:
 		o, err = ConvertDocument(v)
-	case types.Array:
+	case *types.Array:
 		o = Array(v)
 	case types.Binary:
 		o = Binary(v)

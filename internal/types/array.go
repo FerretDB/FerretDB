@@ -17,25 +17,36 @@ package types
 import "fmt"
 
 // Array represents BSON array.
-type Array []any
+type Array struct {
+	s []any
+}
+
+func MustMakeArray(values ...any) *Array {
+	// TODO validation
+	return &Array{s: values}
+}
+
+func (a *Array) Slice() []any {
+	return a.s
+}
 
 // Get returns a value at the given index.
-func (a Array) Get(index int) (any, error) {
-	if l := len(a); index < 0 || index >= l {
+func (a *Array) Get(index int) (any, error) {
+	if l := len(a.s); index < 0 || index >= l {
 		return nil, fmt.Errorf("types.Array.Get: index %d is out of bounds [0-%d)", index, l)
 	}
 
-	return a[index], nil
+	return a.s[index], nil
 }
 
 // GetByPath returns a value by path - a sequence of indexes and keys.
-func (a Array) GetByPath(path ...string) (any, error) {
+func (a *Array) GetByPath(path ...string) (any, error) {
 	return getByPath(a, path...)
 }
 
 // Set sets the value at the given index.
-func (a Array) Set(index int, value any) error {
-	if l := len(a); index < 0 || index >= l {
+func (a *Array) Set(index int, value any) error {
+	if l := len(a.s); index < 0 || index >= l {
 		return fmt.Errorf("types.Array.Set: index %d is out of bounds [0-%d)", index, l)
 	}
 
@@ -43,6 +54,6 @@ func (a Array) Set(index int, value any) error {
 		return fmt.Errorf("types.Array.Set: %w", err)
 	}
 
-	a[index] = value
+	a.s[index] = value
 	return nil
 }

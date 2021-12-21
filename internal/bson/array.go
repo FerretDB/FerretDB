@@ -20,16 +20,17 @@ import (
 	"encoding/json"
 	"strconv"
 
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // Array represents BSON Array data type.
-type Array []any
+type Array types.Array
 
-func (arr *Array) bsontype() {}
+func (a *Array) bsontype() {}
 
 // ReadFrom implements bsontype interface.
-func (arr *Array) ReadFrom(r *bufio.Reader) error {
+func (a *Array) ReadFrom(r *bufio.Reader) error {
 	var doc Document
 	if err := doc.ReadFrom(r); err != nil {
 		return lazyerrors.Error(err)
@@ -49,14 +50,14 @@ func (arr *Array) ReadFrom(r *bufio.Reader) error {
 		s[i] = v
 	}
 
-	*arr = s
+	*a = s
 
 	return nil
 }
 
 // WriteTo implements bsontype interface.
-func (arr Array) WriteTo(w *bufio.Writer) error {
-	v, err := arr.MarshalBinary()
+func (a Array) WriteTo(w *bufio.Writer) error {
+	v, err := a.MarshalBinary()
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -69,12 +70,12 @@ func (arr Array) WriteTo(w *bufio.Writer) error {
 }
 
 // MarshalBinary implements bsontype interface.
-func (arr Array) MarshalBinary() ([]byte, error) {
-	m := make(map[string]any, len(arr))
-	keys := make([]string, len(arr))
+func (a Array) MarshalBinary() ([]byte, error) {
+	m := make(map[string]any, len(a.Slice()))
+	keys := make([]string, len(a.Slice()))
 	for i := 0; i < len(keys); i++ {
 		key := strconv.Itoa(i)
-		m[key] = arr[i]
+		m[key] = a[i]
 		keys[i] = key
 	}
 

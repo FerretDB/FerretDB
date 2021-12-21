@@ -23,7 +23,7 @@ import (
 func getByPath(str any, path ...string) (any, error) {
 	for _, p := range path {
 		switch s := str.(type) {
-		case Array:
+		case *Array:
 			index, err := strconv.Atoi(p)
 			if err != nil {
 				return nil, fmt.Errorf("types.getByPath: %w", err)
