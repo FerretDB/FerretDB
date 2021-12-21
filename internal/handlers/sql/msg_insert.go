@@ -38,6 +38,14 @@ func (h *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	db := m["$db"].(string)
 	docs, _ := m["documents"].(types.Array)
 
+	ordered, ok := m["ordered"].(bool)
+	if !ok {
+		ordered = true
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/200
+	_ = ordered
+
 	var inserted int32
 	for _, doc := range docs {
 		d := doc.(types.Document)
