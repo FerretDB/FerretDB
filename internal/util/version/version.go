@@ -22,7 +22,6 @@ import (
 
 //go:generate ./version.sh
 
-//go:embed version.txt
 var version string
 
 type Info struct {
