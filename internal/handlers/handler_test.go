@@ -16,6 +16,10 @@ package handlers
 
 import (
 	"context"
+	"os"
+	"runtime"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -413,6 +417,9 @@ func TestReadOnlyHandlers(t *testing.T) {
 		compareFunc func(t testing.TB, actual, expected any)
 	}
 
+	hostname, err := os.Hostname()
+	require.NoError(t, err)
+
 	testCases := map[string]testCase{
 		"BuildInfo": {
 			req: types.MustMakeDocument(
@@ -516,6 +523,30 @@ func TestReadOnlyHandlers(t *testing.T) {
 			),
 			compareFunc: func(t testing.TB, actual, expected any) {
 				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "localTime")
+				assert.Equal(t, expected, actual)
+			},
+		},
+
+		"HostInfo": {
+			req: types.MustMakeDocument(
+				"hostInfo", int32(1),
+			),
+			resp: types.MustMakeDocument(
+				"system", types.MustMakeDocument(
+					"currentTime", time.Now(),
+					"hostname", hostname,
+					"cpuAddrSize", int32(strconv.IntSize),
+					"numCores", int32(runtime.NumCPU()),
+					"cpuArch", runtime.GOARCH,
+					"numaEnabled", false,
+				),
+				"os", types.MustMakeDocument(
+					"type", strings.Title(runtime.GOOS),
+				),
+				"ok", float64(1),
+			),
+			compareFunc: func(t testing.TB, actual, expected any) {
+				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "system", "currentTime")
 				assert.Equal(t, expected, actual)
 			},
 		},
