@@ -16,7 +16,6 @@ package handlers
 
 import (
 	"context"
-	"github.com/FerretDB/FerretDB/internal/util/version"
 	"os"
 	"runtime"
 	"strconv"
@@ -35,6 +34,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/version"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
