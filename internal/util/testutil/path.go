@@ -57,26 +57,26 @@ func SetByPath(tb testing.TB, comp types.CompositeType, value any, path ...strin
 	var next any = comp
 	for i, p := range path {
 		last := i == l-1
-		switch s := next.(type) {
+		switch c := next.(type) {
 		case *types.Array:
 			index, err := strconv.Atoi(p)
 			require.NoError(tb, err)
 
-			next, err = s.Get(index)
+			next, err = c.Get(index)
 			require.NoError(tb, err)
 
 			if last {
-				err = s.Set(index, value)
+				err = c.Set(index, value)
 				require.NoError(tb, err)
 			}
 
 		case types.Document:
 			var err error
-			next, err = s.Get(p)
+			next, err = c.Get(p)
 			require.NoError(tb, err)
 
 			if last {
-				err = s.Set(p, value)
+				err = c.Set(p, value)
 				require.NoError(tb, err)
 			}
 
