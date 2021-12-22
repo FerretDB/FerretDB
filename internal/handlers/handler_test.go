@@ -415,7 +415,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 		req         types.Document
 		reqSetDB    bool
 		resp        types.Document
-		compareFunc func(t testing.TB, actual, expected any)
+		compareFunc func(t testing.TB, actual, expected any, db string)
 	}
 
 	hostname, err := os.Hostname()
@@ -439,6 +439,27 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"maxBsonObjectSize", int32(bson.MaxDocumentLen),
 				"ok", float64(1),
 			),
+		},
+		"CollStats": {
+			req: types.MustMakeDocument(
+				"collstats", "film",
+			),
+			reqSetDB: true,
+			resp: types.MustMakeDocument(
+				"ns", "manila.film",
+				"count", int64(1_000),
+				"size", int64(704512),
+				"storageSize", int64(450560),
+				"totalIndexSize", int64(221184),
+				"totalSize", int64(704512),
+				"scaleFactor", int64(1),
+				"ok", float64(1),
+			),
+			compareFunc: func(t testing.TB, actual, expected any, db string) {
+				if db == "manila" {
+					assert.Equal(t, expected, actual)
+				}
+			},
 		},
 		"CountAllActors": {
 			req: types.MustMakeDocument(
@@ -503,7 +524,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"readOnly", false,
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, actual, expected any) {
+			compareFunc: func(t testing.TB, actual, expected any, _ string) {
 				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "localTime")
 				assert.Equal(t, expected, actual)
 			},
@@ -524,7 +545,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"readOnly", false,
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, actual, expected any) {
+			compareFunc: func(t testing.TB, actual, expected any, _ string) {
 				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "localTime")
 				assert.Equal(t, expected, actual)
 			},
@@ -548,7 +569,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, actual, expected any) {
+			compareFunc: func(t testing.TB, actual, expected any, _ string) {
 				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "system", "currentTime")
 				assert.Equal(t, expected, actual)
 			},
@@ -582,7 +603,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 					if tc.compareFunc == nil {
 						assert.Equal(t, tc.resp, actual)
 					} else {
-						tc.compareFunc(t, tc.resp, actual)
+						tc.compareFunc(t, tc.resp, actual, schema)
 					}
 				})
 			}
