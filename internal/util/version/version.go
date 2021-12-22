@@ -55,19 +55,6 @@ func init() {
 			info.Commit = s.Value
 		case "vcs.modified":
 			info.Dirty, _ = strconv.ParseBool(s.Value)
-		case "architecture":
-			temp, _ := strconv.ParseInt(s.Value, 10, 32)
-			if temp == 32 {
-				info.Architecture = x86
-			} else if temp == 64 {
-				info.Architecture = x64
-			}
-
 		}
 	}
 }
-
-const (
-	x86 int32 = 32
-	x64 int32 = 64
-)

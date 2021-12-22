@@ -16,6 +16,7 @@ package shared
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -40,7 +41,7 @@ func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 				int32(42),
 				int32(0),
 			},
-			"bits", version.Get().Architecture,
+			"bits", int32(strconv.IntSize),
 			"maxBsonObjectSize", int32(bson.MaxDocumentLen),
 			"ok", float64(1),
 		)},
