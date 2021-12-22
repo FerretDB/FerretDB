@@ -86,9 +86,11 @@ func (msg *OpMsg) Document() (types.Document, error) {
 				return doc, lazyerrors.Errorf("wire.OpMsg.Document: doc already has %q key", section.Identifier)
 			}
 
-			a := make(types.Array, len(section.Documents)) // may be zero
-			for i, d := range section.Documents {
-				a[i] = d
+			a := types.MakeArray(len(section.Documents)) // may be zero
+			for _, d := range section.Documents {
+				if err := a.Append(d); err != nil {
+					return doc, lazyerrors.Error(err)
+				}
 			}
 
 			doc.Set(section.Identifier, a)
