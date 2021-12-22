@@ -27,10 +27,9 @@ import (
 var version string
 
 type Info struct {
-	Version      string
-	Commit       string
-	Dirty        bool
-	Architecture int32 // either equals to 32 or 64
+	Version string
+	Commit  string
+	Dirty   bool
 }
 
 var info *Info
