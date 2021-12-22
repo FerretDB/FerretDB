@@ -91,7 +91,7 @@ func (a Array) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalJSON implements bsontype interface.
-func (arr *Array) UnmarshalJSON(data []byte) error {
+func (a *Array) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -107,25 +107,25 @@ func (arr *Array) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	*arr = make(Array, len(rawMessages))
+	*a = make(Array, len(rawMessages))
 	for i, el := range rawMessages {
 		v, err := unmarshalJSONValue(el)
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
 
-		(*arr)[i] = v
+		(*a)[i] = v
 	}
 
 	return nil
 }
 
 // MarshalJSON implements bsontype interface.
-func (arr Array) MarshalJSON() ([]byte, error) {
+func (a Array) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	buf.WriteByte('[')
 
-	for i, el := range arr {
+	for i, el := range a {
 		if i != 0 {
 			buf.WriteByte(',')
 		}

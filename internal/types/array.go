@@ -17,22 +17,39 @@ package types
 import "fmt"
 
 // Array represents BSON array.
+//
+// Zero value is an empty array.
 type Array struct {
 	s []any
 }
 
-func MustMakeArray(values ...any) *Array {
-	// TODO validation
-	return &Array{s: values}
+func NewArray(values ...any) (*Array, error) {
+	for i, value := range values {
+		if err := validateValue(value); err != nil {
+			return nil, fmt.Errorf("types.NewArray: index %d: %w", i, err)
+		}
+	}
+
+	return &Array{s: values}, nil
 }
 
-func (a *Array) Slice() []any {
-	return a.s
+func MustNewArray(values ...any) *Array {
+	a, err := NewArray(values...)
+	if err != nil {
+		panic(err)
+	}
+	return a
+}
+
+func (a *Array) compositeType() {}
+
+func (a *Array) Len() int {
+	return len(a.s)
 }
 
 // Get returns a value at the given index.
 func (a *Array) Get(index int) (any, error) {
-	if l := len(a.s); index < 0 || index >= l {
+	if l := a.Len(); index < 0 || index >= l {
 		return nil, fmt.Errorf("types.Array.Get: index %d is out of bounds [0-%d)", index, l)
 	}
 
@@ -46,7 +63,7 @@ func (a *Array) GetByPath(path ...string) (any, error) {
 
 // Set sets the value at the given index.
 func (a *Array) Set(index int, value any) error {
-	if l := len(a.s); index < 0 || index >= l {
+	if l := a.Len(); index < 0 || index >= l {
 		return fmt.Errorf("types.Array.Set: index %d is out of bounds [0-%d)", index, l)
 	}
 
@@ -55,5 +72,19 @@ func (a *Array) Set(index int, value any) error {
 	}
 
 	a.s[index] = value
+	return nil
+}
+
+func (a *Array) Append(value any) error {
+	if err := validateValue(value); err != nil {
+		return fmt.Errorf("types.Array.Append: %w", err)
+	}
+
+	if a.s == nil {
+		a.s = []any{value}
+		return nil
+	}
+
+	a.s = append(a.s, value)
 	return nil
 }

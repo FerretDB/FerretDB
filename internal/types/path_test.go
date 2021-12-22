@@ -43,7 +43,7 @@ func TestGetByPath(t *testing.T) {
 				"name", "mongosh 1.0.1",
 			),
 		),
-		"compression", MustMakeArray("none"),
+		"compression", MustNewArray("none"),
 		"loadBalanced", false,
 	)
 
@@ -58,7 +58,7 @@ func TestGetByPath(t *testing.T) {
 		res:  "none",
 	}, {
 		path: []string{"compression"},
-		res:  MustMakeArray("none"),
+		res:  MustNewArray("none"),
 	}, {
 		path: []string{"client", "driver"},
 		res: MustMakeDocument(

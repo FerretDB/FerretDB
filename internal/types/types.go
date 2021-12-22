@@ -26,27 +26,35 @@
 //
 // Mapping
 //
-//  float64:         bson.Double
-//  string:          bson.String
-//  types.Document:  bson.Document
-//  *types.Array:     bson.Array
-//  types.Binary:    bson.Binary
-//  types.ObjectID:  bson.ObjectID
-//  bool:            bson.Bool
-//  time.Time:       bson.DateTime
-//  nil              nil
-//  types.Regex:     bson.Regex
-//  int32:           bson.Int32
-//  types.Timestamp: bson.Timestamp
-//  int64:           bson.Int64
-//  TODO:            bson.Decimal128
-//  (does not exist) bson.CString
+// Composite types
+//  types.Document    bson.Document
+//  *types.Array      bson.Array
+// Value types
+//  float64           bson.Double
+//  string            bson.String
+//  types.Binary      bson.Binary
+//  types.ObjectID    bson.ObjectID
+//  bool              bson.Bool
+//  time.Time         bson.DateTime
+//  nil               nil
+//  types.Regex       bson.Regex
+//  int32             bson.Int32
+//  types.Timestamp   bson.Timestamp
+//  int64             bson.Int64
+//  TODO              bson.Decimal128
+//  (does not exist)  bson.CString
 package types
 
 import (
 	"fmt"
 	"time"
 )
+
+type compositeType interface {
+	compositeType()
+}
+
+//go-sumtype:decl compositeType
 
 type (
 	ObjectID [12]byte
@@ -62,13 +70,14 @@ type (
 // validateValue validates value.
 func validateValue(value any) error {
 	switch value := value.(type) {
-	case float64:
-		return nil
-	case string:
-		return nil
 	case Document:
 		return value.validate()
 	case *Array:
+		// TODO validate there?
+		return nil
+	case float64:
+		return nil
+	case string:
 		return nil
 	case Binary:
 		return nil
@@ -89,6 +98,13 @@ func validateValue(value any) error {
 	case int64:
 		return nil
 	default:
-		return fmt.Errorf("types.validateValue: unsupported type: %T", value)
+		return fmt.Errorf("types.validateValue: unsupported type: %[1]T (%[1]v)", value)
 	}
 }
+
+// check interfaces
+var (
+	// TODO
+	_ compositeType = Document{}
+	_ compositeType = (*Array)(nil)
+)
