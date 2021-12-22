@@ -23,6 +23,10 @@ type Array struct {
 	s []any
 }
 
+func MakeArray(capacity int) *Array {
+	return &Array{s: make([]any, 0, capacity)}
+}
+
 func NewArray(values ...any) (*Array, error) {
 	for i, value := range values {
 		if err := validateValue(value); err != nil {

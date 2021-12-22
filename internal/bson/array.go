@@ -27,6 +27,11 @@ import (
 // Array represents BSON Array data type.
 type Array types.Array
 
+func convertArray(a *types.Array) *Array {
+	res := Array(*a)
+	return &res
+}
+
 func (a *Array) bsontype() {}
 
 // ReadFrom implements bsontype interface.
@@ -36,8 +41,7 @@ func (a *Array) ReadFrom(r *bufio.Reader) error {
 		return lazyerrors.Error(err)
 	}
 
-	s := make([]any, len(doc.m))
-
+	ta := types.MakeArray(len(doc.m))
 	for i := 0; i < len(doc.m); i++ {
 		if k := doc.keys[i]; k != strconv.Itoa(i) {
 			return lazyerrors.Errorf("key %d is %q", i, k)
@@ -47,11 +51,12 @@ func (a *Array) ReadFrom(r *bufio.Reader) error {
 		if !ok {
 			return lazyerrors.Errorf("no element %d in array of length %d", i, len(doc.m))
 		}
-		s[i] = v
+		if err := ta.Append(v); err != nil {
+			return lazyerrors.Error(err)
+		}
 	}
 
-	*a = s
-
+	*a = Array(*ta)
 	return nil
 }
 
@@ -71,11 +76,17 @@ func (a Array) WriteTo(w *bufio.Writer) error {
 
 // MarshalBinary implements bsontype interface.
 func (a Array) MarshalBinary() ([]byte, error) {
-	m := make(map[string]any, len(a.Slice()))
-	keys := make([]string, len(a.Slice()))
-	for i := 0; i < len(keys); i++ {
+	ta := types.Array(a)
+	l := ta.Len()
+	m := make(map[string]any, l)
+	keys := make([]string, l)
+	for i := 0; i < l; i++ {
 		key := strconv.Itoa(i)
-		m[key] = a[i]
+		value, err := ta.Get(i)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		m[key] = value
 		keys[i] = key
 	}
 
@@ -107,14 +118,16 @@ func (a *Array) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	*a = make(Array, len(rawMessages))
-	for i, el := range rawMessages {
+	ta := types.MakeArray(len(rawMessages))
+	for _, el := range rawMessages {
 		v, err := unmarshalJSONValue(el)
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
 
-		(*a)[i] = v
+		if err = ta.Append(v); err != nil {
+			return lazyerrors.Error(err)
+		}
 	}
 
 	return nil
@@ -125,11 +138,17 @@ func (a Array) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	buf.WriteByte('[')
 
-	for i, el := range a {
+	ta := types.Array(a)
+	l := ta.Len()
+	for i := 0; i < l; i++ {
 		if i != 0 {
 			buf.WriteByte(',')
 		}
 
+		el, err := ta.Get(i)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 		b, err := marshalJSONValue(el)
 		if err != nil {
 			return nil, lazyerrors.Error(err)

@@ -169,7 +169,8 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Array): %w", err)
 			}
-			doc.m[string(ename)] = types.Array(v)
+			a := types.Array(v)
+			doc.m[string(ename)] = &a
 
 		case tagBinary:
 			var v Binary
@@ -311,7 +312,7 @@ func (doc Document) MarshalBinary() ([]byte, error) {
 			if err := ename.WriteTo(bufw); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
-			if err := Array(elV).WriteTo(bufw); err != nil {
+			if err := Array(*elV).WriteTo(bufw); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 
@@ -473,7 +474,8 @@ func unmarshalJSONValue(data []byte) (any, error) {
 	case []any:
 		var o Array
 		err = o.UnmarshalJSON(data)
-		res = types.Array(o)
+		a := types.Array(o)
+		res = &a
 	case bool:
 		res = v
 	case nil:
@@ -554,7 +556,7 @@ func marshalJSONValue(v any) ([]byte, error) {
 	case types.Document:
 		o, err = ConvertDocument(v)
 	case *types.Array:
-		o = Array(v)
+		o = Array(*v)
 	case types.Binary:
 		o = Binary(v)
 	case types.ObjectID:
