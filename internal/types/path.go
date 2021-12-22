@@ -20,7 +20,7 @@ import (
 )
 
 // getByPath returns a value by path - a sequence of indexes and keys.
-func getByPath(comp compositeType, path ...string) (any, error) {
+func getByPath(comp CompositeType, path ...string) (any, error) {
 	var next any = comp
 	for _, p := range path {
 		switch s := next.(type) {

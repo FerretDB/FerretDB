@@ -33,7 +33,7 @@ func TestSetByPath(t *testing.T) {
 					"name", "nodejs",
 				),
 			),
-			"compression", types.Array{"none"},
+			"compression", types.MustNewArray("none"),
 		)
 	}
 
@@ -52,14 +52,14 @@ func TestSetByPath(t *testing.T) {
 					"name", "nodejs",
 				),
 			),
-			"compression", types.Array{"zstd"},
+			"compression", types.MustNewArray("zstd"),
 		),
 	}, {
 		path:  []string{"client"},
 		value: "foo",
 		res: types.MustMakeDocument(
 			"client", "foo",
-			"compression", types.Array{"none"},
+			"compression", types.MustNewArray("none"),
 		),
 	}} {
 		tc := tc
@@ -69,6 +69,7 @@ func TestSetByPath(t *testing.T) {
 			doc := newDoc()
 			SetByPath(t, doc, tc.value, tc.path...)
 			assert.Equal(t, tc.res, doc)
+			assert.Equal(t, tc.value, GetByPath(t, doc, tc.path...))
 		})
 	}
 }

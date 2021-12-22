@@ -27,18 +27,18 @@ import (
 )
 
 // GetByPath returns a value by path - a sequence of indexes and keys.
-func GetByPath(tb testing.TB, str any, path ...string) any {
+func GetByPath(tb testing.TB, comp types.CompositeType, path ...string) any {
 	tb.Helper()
 
 	var res any
 	var err error
-	switch str := str.(type) {
+	switch comp := comp.(type) {
 	case *types.Array:
-		res, err = str.GetByPath(path...)
+		res, err = comp.GetByPath(path...)
 	case types.Document:
-		res, err = str.GetByPath(path...)
+		res, err = comp.GetByPath(path...)
 	default:
-		err = fmt.Errorf("can't access %T by path", str)
+		err = fmt.Errorf("can't access %T by path", comp)
 	}
 
 	require.NoError(tb, err)
@@ -48,20 +48,21 @@ func GetByPath(tb testing.TB, str any, path ...string) any {
 // SetByPath sets the value by path - a sequence of indexes and keys.
 //
 // The path must exist.
-func SetByPath(tb testing.TB, str any, value any, path ...string) {
+func SetByPath(tb testing.TB, comp types.CompositeType, value any, path ...string) {
 	tb.Helper()
 
 	l := len(path)
 	require.NotZero(tb, l, "path is empty")
 
+	var next any = comp
 	for i, p := range path {
 		last := i == l-1
-		switch s := str.(type) {
+		switch s := next.(type) {
 		case *types.Array:
 			index, err := strconv.Atoi(p)
 			require.NoError(tb, err)
 
-			str, err = s.Get(index)
+			next, err = s.Get(index)
 			require.NoError(tb, err)
 
 			if last {
@@ -71,7 +72,7 @@ func SetByPath(tb testing.TB, str any, value any, path ...string) {
 
 		case types.Document:
 			var err error
-			str, err = s.Get(p)
+			next, err = s.Get(p)
 			require.NoError(tb, err)
 
 			if last {
@@ -80,14 +81,14 @@ func SetByPath(tb testing.TB, str any, value any, path ...string) {
 			}
 
 		default:
-			tb.Fatalf("can't access %T by path %q", str, p)
+			tb.Fatalf("can't access %T by path %q", next, p)
 		}
 	}
 }
 
 // CompareAndSetByPathNum asserts that two values with the same path in two objects (documents or arrays)
 // are within a given numerical delta, then updates the expected object with the actual value.
-func CompareAndSetByPathNum(tb testing.TB, expected, actual any, delta float64, path ...string) {
+func CompareAndSetByPathNum(tb testing.TB, expected, actual types.CompositeType, delta float64, path ...string) {
 	tb.Helper()
 
 	expectedV := GetByPath(tb, expected, path...)
@@ -100,7 +101,7 @@ func CompareAndSetByPathNum(tb testing.TB, expected, actual any, delta float64, 
 
 // CompareAndSetByPathTime asserts that two values with the same path in two objects (documents or arrays)
 // are within a given time delta, then updates the expected object with the actual value.
-func CompareAndSetByPathTime(tb testing.TB, expected, actual any, delta time.Duration, path ...string) {
+func CompareAndSetByPathTime(tb testing.TB, expected, actual types.CompositeType, delta time.Duration, path ...string) {
 	tb.Helper()
 
 	expectedV := GetByPath(tb, expected, path...)

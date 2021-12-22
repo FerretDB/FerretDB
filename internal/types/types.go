@@ -50,11 +50,12 @@ import (
 	"time"
 )
 
-type compositeType interface {
+// CompositeType represents composite type - Document or *Array.
+type CompositeType interface {
 	compositeType()
 }
 
-//go-sumtype:decl compositeType
+//go-sumtype:decl CompositeType
 
 type (
 	ObjectID [12]byte
@@ -105,6 +106,6 @@ func validateValue(value any) error {
 // check interfaces
 var (
 	// TODO
-	_ compositeType = Document{}
-	_ compositeType = (*Array)(nil)
+	_ CompositeType = Document{}
+	_ CompositeType = (*Array)(nil)
 )
