@@ -34,6 +34,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/version"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -427,12 +428,14 @@ func TestReadOnlyHandlers(t *testing.T) {
 			),
 			resp: types.MustMakeDocument(
 				"version", "5.0.42",
+				"gitVersion", version.Get().Commit,
 				"versionArray", types.Array{
 					int32(5),
 					int32(0),
 					int32(42),
 					int32(0),
 				},
+				"bits", int32(strconv.IntSize),
 				"maxBsonObjectSize", int32(bson.MaxDocumentLen),
 				"ok", float64(1),
 			),

@@ -16,10 +16,12 @@ package shared
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/version"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -32,12 +34,14 @@ func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	err := reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
 			"version", versionValue,
+			"gitVersion", version.Get().Commit,
 			"versionArray", types.Array{
 				int32(5),
 				int32(0),
 				int32(42),
 				int32(0),
 			},
+			"bits", int32(strconv.IntSize),
 			"maxBsonObjectSize", int32(bson.MaxDocumentLen),
 			"ok", float64(1),
 		)},
