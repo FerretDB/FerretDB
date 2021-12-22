@@ -279,7 +279,7 @@ func (pgPool *Pool) DropTable(ctx context.Context, db, collection string) error 
 
 // TableStats returns a set of statistics for a table.
 func (pgPool *Pool) TableStats(ctx context.Context, db, table string) (*TableStats, error) {
-	res := &TableStats{}
+	res := new(TableStats)
 	sql := `
 	SELECT table_name, table_type,
 		   pg_total_relation_size('"'||t.table_schema||'"."'||t.table_name||'"'),
