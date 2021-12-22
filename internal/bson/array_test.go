@@ -22,6 +22,11 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
+func convertArray(a *types.Array) *Array {
+	res := Array(*a)
+	return &res
+}
+
 var arrayTestCases = []testCase{{
 	name: "array_all",
 	v: convertArray(types.MustNewArray(

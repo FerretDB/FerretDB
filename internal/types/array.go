@@ -23,10 +23,15 @@ type Array struct {
 	s []any
 }
 
+// MakeArray creates an empty array with set capacity.
 func MakeArray(capacity int) *Array {
+	if capacity == 0 {
+		return new(Array)
+	}
 	return &Array{s: make([]any, 0, capacity)}
 }
 
+// NewArray creates an array with the given values.
 func NewArray(values ...any) (*Array, error) {
 	for i, value := range values {
 		if err := validateValue(value); err != nil {

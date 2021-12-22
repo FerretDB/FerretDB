@@ -23,11 +23,16 @@ import (
 func TestArray(t *testing.T) {
 	t.Parallel()
 
-	t.Run("ZeroValue", func(t *testing.T) {
+	t.Run("ZeroValues", func(t *testing.T) {
 		t.Parallel()
+
+		// to avoid []any != nil in tests
+		assert.Nil(t, MustNewArray().s)
+		assert.Nil(t, MakeArray(0).s)
 
 		var a Array
 		assert.Equal(t, 0, a.Len())
+		assert.Nil(t, a.s)
 
 		err := a.Append(nil)
 		assert.NoError(t, err)

@@ -27,11 +27,6 @@ import (
 // Array represents BSON Array data type.
 type Array types.Array
 
-func convertArray(a *types.Array) *Array {
-	res := Array(*a)
-	return &res
-}
-
 func (a *Array) bsontype() {}
 
 // ReadFrom implements bsontype interface.
@@ -130,6 +125,7 @@ func (a *Array) UnmarshalJSON(data []byte) error {
 		}
 	}
 
+	*a = Array(*ta)
 	return nil
 }
 
