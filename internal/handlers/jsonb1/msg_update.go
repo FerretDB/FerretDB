@@ -36,7 +36,7 @@ func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	m := document.Map()
 	collection := m["update"].(string)
-	docs, _ := m["updates"].(types.Array)
+	docs, _ := m["updates"].(*types.Array)
 	db := m["$db"].(string)
 
 	var selected, updated int32

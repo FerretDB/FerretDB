@@ -36,7 +36,7 @@ func (h *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	m := document.Map()
 	collection := m[document.Command()].(string)
 	db := m["$db"].(string)
-	docs, _ := m["documents"].(types.Array)
+	docs, _ := m["documents"].(*types.Array)
 
 	var inserted int32
 	for _, doc := range docs {

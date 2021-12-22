@@ -37,7 +37,7 @@ func (h *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	m := document.Map()
 	collection := m[document.Command()].(string)
 	db := m["$db"].(string)
-	docs, _ := m["deletes"].(types.Array)
+	docs, _ := m["deletes"].(*types.Array)
 
 	var deleted int32
 	for _, doc := range docs {
