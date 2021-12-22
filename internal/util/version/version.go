@@ -18,6 +18,7 @@ import (
 	_ "embed"
 	"runtime/debug"
 	"strconv"
+	"strings"
 )
 
 //go:generate ./version.sh
@@ -39,7 +40,7 @@ func Get() *Info {
 
 func init() {
 	info = &Info{
-		Version: version,
+		Version: strings.TrimSpace(version),
 	}
 
 	buildInfo, ok := debug.ReadBuildInfo()
@@ -49,9 +50,9 @@ func init() {
 
 	for _, s := range buildInfo.Settings {
 		switch s.Key {
-		case "gitrevision":
+		case "vcs.revision":
 			info.Commit = s.Value
-		case "gituncommitted":
+		case "vcs.modified":
 			info.Dirty, _ = strconv.ParseBool(s.Value)
 		}
 	}
