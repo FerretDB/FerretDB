@@ -38,12 +38,12 @@ func TestUpdate(t *testing.T) {
 		err := msg.SetSections(wire.OpMsgSection{
 			Documents: []types.Document{types.MustMakeDocument(
 				"insert", "test",
-				"documents", types.Array{
+				"documents", types.MustNewArray(
 					types.MustMakeDocument(
 						"_id", types.ObjectID{byte(i)},
 						"description", "Test "+strconv.Itoa(i),
 					),
-				},
+				),
 				"$db", schema,
 			)},
 		})
@@ -57,7 +57,7 @@ func TestUpdate(t *testing.T) {
 	err := msg.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
 			"update", "test",
-			"updates", types.Array{
+			"updates", types.MustNewArray(
 				types.MustMakeDocument(
 					"q", types.MustMakeDocument(
 						"_id", types.ObjectID{byte(1)},
@@ -68,7 +68,7 @@ func TestUpdate(t *testing.T) {
 						),
 					),
 				),
-			},
+			),
 			"$db", schema,
 		)},
 	})

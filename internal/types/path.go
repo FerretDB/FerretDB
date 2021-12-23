@@ -20,30 +20,31 @@ import (
 )
 
 // getByPath returns a value by path - a sequence of indexes and keys.
-func getByPath(str any, path ...string) (any, error) {
+func getByPath(comp CompositeType, path ...string) (any, error) {
+	var next any = comp
 	for _, p := range path {
-		switch s := str.(type) {
-		case Array:
-			index, err := strconv.Atoi(p)
-			if err != nil {
-				return nil, fmt.Errorf("types.getByPath: %w", err)
-			}
-			str, err = s.Get(index)
+		switch s := next.(type) {
+		case Document:
+			var err error
+			next, err = s.Get(p)
 			if err != nil {
 				return nil, fmt.Errorf("types.getByPath: %w", err)
 			}
 
-		case Document:
-			var err error
-			str, err = s.Get(p)
+		case *Array:
+			index, err := strconv.Atoi(p)
+			if err != nil {
+				return nil, fmt.Errorf("types.getByPath: %w", err)
+			}
+			next, err = s.Get(index)
 			if err != nil {
 				return nil, fmt.Errorf("types.getByPath: %w", err)
 			}
 
 		default:
-			return nil, fmt.Errorf("types.getByPath: can't access %T by path %q", str, p)
+			return nil, fmt.Errorf("types.getByPath: can't access %T by path %q", next, p)
 		}
 	}
 
-	return str, nil
+	return next, nil
 }

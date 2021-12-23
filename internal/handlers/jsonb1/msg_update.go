@@ -36,11 +36,16 @@ func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	m := document.Map()
 	collection := m["update"].(string)
-	docs, _ := m["updates"].(types.Array)
+	docs, _ := m["updates"].(*types.Array)
 	db := m["$db"].(string)
 
 	var selected, updated int32
-	for _, doc := range docs {
+	for i := 0; i < docs.Len(); i++ {
+		doc, err := docs.Get(i)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
 		docM := doc.(types.Document).Map()
 
 		sql := fmt.Sprintf(`SELECT _jsonb FROM %s`, pgx.Identifier{db, collection}.Sanitize())
@@ -70,12 +75,19 @@ func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				break
 			}
 
-			updateDocs = append(updateDocs, *updateDoc)
+			if err = updateDocs.Append(*updateDoc); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
 		}
 
-		selected += int32(len(updateDocs))
+		selected += int32(updateDocs.Len())
 
-		for i, updateDoc := range updateDocs {
+		for i := 0; i < updateDocs.Len(); i++ {
+			updateDoc, err := updateDocs.Get(i)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
 			d := updateDoc.(types.Document)
 
 			for updateOp, updateV := range docM["u"].(types.Document).Map() {
@@ -91,10 +103,17 @@ func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				}
 			}
 
-			updateDocs[i] = d
+			if err = updateDocs.Set(i, d); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
 		}
 
-		for _, updateDoc := range updateDocs {
+		for i := 0; i < updateDocs.Len(); i++ {
+			updateDoc, err := updateDocs.Get(i)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
 			sql = fmt.Sprintf("UPDATE %s SET _jsonb = $1 WHERE _jsonb->'_id' = $2", pgx.Identifier{db, collection}.Sanitize())
 			d := updateDoc.(types.Document)
 			db, err := bson.MustConvertDocument(d).MarshalJSON()

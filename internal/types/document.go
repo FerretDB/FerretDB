@@ -117,6 +117,8 @@ func MustMakeDocument(pairs ...any) Document {
 	return doc
 }
 
+func (d Document) compositeType() {}
+
 // validate checks if the document is valid.
 func (d Document) validate() error {
 	if len(d.m) != len(d.keys) {

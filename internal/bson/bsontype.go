@@ -26,10 +26,12 @@
 //
 // JSON mapping for storage
 //
-//  Double:     {"$f": JSON number} or {"$f": "Infinity|-Infinity|NaN"}
-//  String:     JSON string
+// Composite types
 //  Document:   {"$k": ["<key 1>", "<key 2>", ...], "<key 1>": <value 1>, "<key 2>": <value 2>, ...}
 //  Array:      JSON array
+// Value types
+//  Double:     {"$f": JSON number} or {"$f": "Infinity|-Infinity|NaN"}
+//  String:     JSON string
 //  Binary:     {"$b": "<base 64 string>", "s": <subtype number>}
 //  ObjectID:   {"$o": "<ObjectID as 24 character hex string"}
 //  Bool:       JSON true / false values
