@@ -281,10 +281,10 @@ func (pgPool *Pool) DropTable(ctx context.Context, db, collection string) error 
 func (pgPool *Pool) TableStats(ctx context.Context, db, table string) (*TableStats, error) {
 	res := new(TableStats)
 	sql := `
-	SELECT table_name, table_type,
-		   pg_total_relation_size('"'||t.table_schema||'"."'||t.table_name||'"'),
-		   pg_indexes_size('"'||t.table_schema||'"."'||t.table_name||'"'),
-		   pg_relation_size('"'||t.table_schema||'"."'||t.table_name||'"'),
+    SELECT table_name, table_type,
+           pg_total_relation_size('"'||t.table_schema||'"."'||t.table_name||'"'),
+           pg_indexes_size('"'||t.table_schema||'"."'||t.table_name||'"'),
+           pg_relation_size('"'||t.table_schema||'"."'||t.table_name||'"'),
            COALESCE(s.n_live_tup, 0)
       FROM information_schema.tables t
       LEFT OUTER
