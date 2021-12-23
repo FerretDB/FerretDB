@@ -20,23 +20,23 @@ import (
 	"encoding/json"
 	"strconv"
 
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // Array represents BSON Array data type.
-type Array []any
+type Array types.Array
 
-func (arr *Array) bsontype() {}
+func (a *Array) bsontype() {}
 
 // ReadFrom implements bsontype interface.
-func (arr *Array) ReadFrom(r *bufio.Reader) error {
+func (a *Array) ReadFrom(r *bufio.Reader) error {
 	var doc Document
 	if err := doc.ReadFrom(r); err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	s := make([]any, len(doc.m))
-
+	ta := types.MakeArray(len(doc.m))
 	for i := 0; i < len(doc.m); i++ {
 		if k := doc.keys[i]; k != strconv.Itoa(i) {
 			return lazyerrors.Errorf("key %d is %q", i, k)
@@ -46,17 +46,18 @@ func (arr *Array) ReadFrom(r *bufio.Reader) error {
 		if !ok {
 			return lazyerrors.Errorf("no element %d in array of length %d", i, len(doc.m))
 		}
-		s[i] = v
+		if err := ta.Append(v); err != nil {
+			return lazyerrors.Error(err)
+		}
 	}
 
-	*arr = s
-
+	*a = Array(*ta)
 	return nil
 }
 
 // WriteTo implements bsontype interface.
-func (arr Array) WriteTo(w *bufio.Writer) error {
-	v, err := arr.MarshalBinary()
+func (a Array) WriteTo(w *bufio.Writer) error {
+	v, err := a.MarshalBinary()
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -69,12 +70,18 @@ func (arr Array) WriteTo(w *bufio.Writer) error {
 }
 
 // MarshalBinary implements bsontype interface.
-func (arr Array) MarshalBinary() ([]byte, error) {
-	m := make(map[string]any, len(arr))
-	keys := make([]string, len(arr))
-	for i := 0; i < len(keys); i++ {
+func (a Array) MarshalBinary() ([]byte, error) {
+	ta := types.Array(a)
+	l := ta.Len()
+	m := make(map[string]any, l)
+	keys := make([]string, l)
+	for i := 0; i < l; i++ {
 		key := strconv.Itoa(i)
-		m[key] = arr[i]
+		value, err := ta.Get(i)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		m[key] = value
 		keys[i] = key
 	}
 
@@ -90,7 +97,7 @@ func (arr Array) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalJSON implements bsontype interface.
-func (arr *Array) UnmarshalJSON(data []byte) error {
+func (a *Array) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -106,29 +113,38 @@ func (arr *Array) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	*arr = make(Array, len(rawMessages))
-	for i, el := range rawMessages {
+	ta := types.MakeArray(len(rawMessages))
+	for _, el := range rawMessages {
 		v, err := unmarshalJSONValue(el)
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
 
-		(*arr)[i] = v
+		if err = ta.Append(v); err != nil {
+			return lazyerrors.Error(err)
+		}
 	}
 
+	*a = Array(*ta)
 	return nil
 }
 
 // MarshalJSON implements bsontype interface.
-func (arr Array) MarshalJSON() ([]byte, error) {
+func (a Array) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	buf.WriteByte('[')
 
-	for i, el := range arr {
+	ta := types.Array(a)
+	l := ta.Len()
+	for i := 0; i < l; i++ {
 		if i != 0 {
 			buf.WriteByte(',')
 		}
 
+		el, err := ta.Get(i)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 		b, err := marshalJSONValue(el)
 		if err != nil {
 			return nil, lazyerrors.Error(err)

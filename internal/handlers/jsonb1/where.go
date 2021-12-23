@@ -111,11 +111,11 @@ func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string
 		case "$in":
 			// {field: {$in: [value1, value2, ...]}}
 			sql += "_jsonb->" + p.Next() + " IN"
-			argSql, arg, err = common.InArray(value.(types.Array), p, scalar)
+			argSql, arg, err = common.InArray(value.(*types.Array), p, scalar)
 		case "$nin":
 			// {field: {$nin: [value1, value2, ...]}}
 			sql += "_jsonb->" + p.Next() + " NOT IN"
-			argSql, arg, err = common.InArray(value.(types.Array), p, scalar)
+			argSql, arg, err = common.InArray(value.(*types.Array), p, scalar)
 		case "$eq":
 			// {field: {$eq: value}}
 			// TODO special handling for regex
@@ -194,7 +194,7 @@ func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string
 
 func wherePair(key string, value any, p *pg.Placeholder) (sql string, args []any, err error) {
 	if strings.HasPrefix(key, "$") {
-		exprs := value.(types.Array)
+		exprs := value.(*types.Array)
 		sql, args, err = common.LogicExpr(key, exprs, p, wherePair)
 		return
 	}

@@ -96,7 +96,7 @@ func TestFind(t *testing.T) {
 
 	type testCase struct {
 		req  types.Document
-		resp types.Array
+		resp *types.Array
 	}
 
 	testCases := map[string]testCase{
@@ -111,7 +111,7 @@ func TestFind(t *testing.T) {
 					),
 				),
 			),
-			resp: types.Array{
+			resp: types.MustNewArray(
 				types.MustMakeDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x4f, 0x00, 0x00, 0x00, 0x4f},
 					"actor_id", int32(79),
@@ -119,14 +119,14 @@ func TestFind(t *testing.T) {
 					"last_name", "HOFFMAN",
 					"last_update", lastUpdate,
 				),
-			},
+			),
 		},
 		"InLteGte": {
 			req: types.MustMakeDocument(
 				"find", "actor",
 				"filter", types.MustMakeDocument(
 					"last_name", types.MustMakeDocument(
-						"$in", types.Array{"HOFFMAN"},
+						"$in", types.MustNewArray("HOFFMAN"),
 					),
 					"actor_id", types.MustMakeDocument(
 						"$gte", int32(50),
@@ -134,7 +134,7 @@ func TestFind(t *testing.T) {
 					),
 				),
 			),
-			resp: types.Array{
+			resp: types.MustNewArray(
 				types.MustMakeDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x4f, 0x00, 0x00, 0x00, 0x4f},
 					"actor_id", int32(79),
@@ -142,14 +142,14 @@ func TestFind(t *testing.T) {
 					"last_name", "HOFFMAN",
 					"last_update", lastUpdate,
 				),
-			},
+			),
 		},
 		"NinEqNe": {
 			req: types.MustMakeDocument(
 				"find", "actor",
 				"filter", types.MustMakeDocument(
 					"last_name", types.MustMakeDocument(
-						"$nin", types.Array{"NEESON"},
+						"$nin", types.MustNewArray("NEESON"),
 						"$ne", "AKROYD",
 					),
 					"first_name", types.MustMakeDocument(
@@ -157,7 +157,7 @@ func TestFind(t *testing.T) {
 					),
 				),
 			),
-			resp: types.Array{
+			resp: types.MustNewArray(
 				types.MustMakeDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x0a},
 					"actor_id", int32(10),
@@ -165,7 +165,7 @@ func TestFind(t *testing.T) {
 					"last_name", "GABLE",
 					"last_update", lastUpdate,
 				),
-			},
+			),
 		},
 		"Not": {
 			req: types.MustMakeDocument(
@@ -182,7 +182,7 @@ func TestFind(t *testing.T) {
 				),
 				"limit", int32(1),
 			),
-			resp: types.Array{
+			resp: types.MustNewArray(
 				types.MustMakeDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x02},
 					"actor_id", int32(2),
@@ -190,7 +190,7 @@ func TestFind(t *testing.T) {
 					"last_name", "WAHLBERG",
 					"last_update", lastUpdate,
 				),
-			},
+			),
 		},
 		"NestedNot": {
 			req: types.MustMakeDocument(
@@ -211,7 +211,7 @@ func TestFind(t *testing.T) {
 				),
 				"limit", int32(1),
 			),
-			resp: types.Array{
+			resp: types.MustNewArray(
 				types.MustMakeDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x02},
 					"actor_id", int32(2),
@@ -219,34 +219,34 @@ func TestFind(t *testing.T) {
 					"last_name", "WAHLBERG",
 					"last_update", lastUpdate,
 				),
-			},
+			),
 		},
 		"AndOr": {
 			req: types.MustMakeDocument(
 				"find", "actor",
 				"filter", types.MustMakeDocument(
-					"$and", types.Array{
+					"$and", types.MustNewArray(
 						types.MustMakeDocument(
 							"first_name", "CHRISTIAN",
 						),
 						types.MustMakeDocument(
-							"$or", types.Array{
+							"$or", types.MustNewArray(
 								types.MustMakeDocument(
 									"last_name", "GABLE",
 								),
 								types.MustMakeDocument(
 									"last_name", "NEESON",
 								),
-							},
+							),
 						),
-					},
+					),
 				),
 				"sort", types.MustMakeDocument(
 					"actor_id", int32(1),
 				),
 				"limit", int32(1),
 			),
-			resp: types.Array{
+			resp: types.MustNewArray(
 				types.MustMakeDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x0a},
 					"actor_id", int32(10),
@@ -254,19 +254,19 @@ func TestFind(t *testing.T) {
 					"last_name", "GABLE",
 					"last_update", lastUpdate,
 				),
-			},
+			),
 		},
 		"Nor": {
 			req: types.MustMakeDocument(
 				"find", "actor",
 				"filter", types.MustMakeDocument(
-					"$nor", types.Array{
+					"$nor", types.MustNewArray(
 						types.MustMakeDocument("actor_id", types.MustMakeDocument("$gt", int32(2))),
 						types.MustMakeDocument("first_name", "PENELOPE"),
-					},
+					),
 				),
 			),
-			resp: types.Array{
+			resp: types.MustNewArray(
 				types.MustMakeDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x02},
 					"actor_id", int32(2),
@@ -274,7 +274,7 @@ func TestFind(t *testing.T) {
 					"last_name", "WAHLBERG",
 					"last_update", lastUpdate,
 				),
-			},
+			),
 		},
 		"ValueRegex": {
 			req: types.MustMakeDocument(
@@ -287,7 +287,7 @@ func TestFind(t *testing.T) {
 				),
 				"limit", int32(1),
 			),
-			resp: types.Array{
+			resp: types.MustNewArray(
 				types.MustMakeDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x1c, 0x00, 0x00, 0x00, 0x1c},
 					"actor_id", int32(28),
@@ -295,7 +295,7 @@ func TestFind(t *testing.T) {
 					"last_name", "HOFFMAN",
 					"last_update", lastUpdate,
 				),
-			},
+			),
 		},
 		"Regex": {
 			req: types.MustMakeDocument(
@@ -310,7 +310,7 @@ func TestFind(t *testing.T) {
 				),
 				"limit", int32(1),
 			),
-			resp: types.Array{
+			resp: types.MustNewArray(
 				types.MustMakeDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x1c, 0x00, 0x00, 0x00, 0x1c},
 					"actor_id", int32(28),
@@ -318,7 +318,7 @@ func TestFind(t *testing.T) {
 					"last_name", "HOFFMAN",
 					"last_update", lastUpdate,
 				),
-			},
+			),
 		},
 		"RegexOptions": {
 			req: types.MustMakeDocument(
@@ -334,7 +334,7 @@ func TestFind(t *testing.T) {
 				),
 				"limit", int32(1),
 			),
-			resp: types.Array{
+			resp: types.MustNewArray(
 				types.MustMakeDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x1c, 0x00, 0x00, 0x00, 0x1c},
 					"actor_id", int32(28),
@@ -342,7 +342,7 @@ func TestFind(t *testing.T) {
 					"last_name", "HOFFMAN",
 					"last_update", lastUpdate,
 				),
-			},
+			),
 		},
 		"RegexStringOptions": {
 			req: types.MustMakeDocument(
@@ -358,7 +358,7 @@ func TestFind(t *testing.T) {
 				),
 				"limit", int32(1),
 			),
-			resp: types.Array{
+			resp: types.MustNewArray(
 				types.MustMakeDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x1c, 0x00, 0x00, 0x00, 0x1c},
 					"actor_id", int32(28),
@@ -366,7 +366,7 @@ func TestFind(t *testing.T) {
 					"last_name", "HOFFMAN",
 					"last_update", lastUpdate,
 				),
-			},
+			),
 		},
 	}
 
@@ -382,10 +382,13 @@ func TestFind(t *testing.T) {
 					tc.req.Set("$db", schema)
 
 					if schema == "pagila" {
-						for i, doc := range tc.resp {
+						for i := 0; i < tc.resp.Len(); i++ {
+							doc, err := tc.resp.Get(i)
+							require.NoError(t, err)
 							d := doc.(types.Document)
 							d.Remove("_id")
-							tc.resp[i] = d
+							err = tc.resp.Set(i, d)
+							require.NoError(t, err)
 						}
 					}
 
@@ -415,7 +418,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 		req         types.Document
 		reqSetDB    bool
 		resp        types.Document
-		compareFunc func(t testing.TB, actual, expected any, db string)
+		compareFunc func(t testing.TB, actual, expected types.CompositeType, db string)
 	}
 
 	hostname, err := os.Hostname()
@@ -429,12 +432,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 			resp: types.MustMakeDocument(
 				"version", "5.0.42",
 				"gitVersion", version.Get().Commit,
-				"versionArray", types.Array{
-					int32(5),
-					int32(0),
-					int32(42),
-					int32(0),
-				},
+				"versionArray", types.MustNewArray(int32(5), int32(0), int32(42), int32(0)),
 				"bits", int32(strconv.IntSize),
 				"maxBsonObjectSize", int32(bson.MaxDocumentLen),
 				"ok", float64(1),
@@ -524,7 +522,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"readOnly", false,
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, actual, expected any, _ string) {
+			compareFunc: func(t testing.TB, actual, expected types.CompositeType, _ string) {
 				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "localTime")
 				assert.Equal(t, expected, actual)
 			},
@@ -545,7 +543,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"readOnly", false,
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, actual, expected any, _ string) {
+			compareFunc: func(t testing.TB, actual, expected types.CompositeType, _ string) {
 				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "localTime")
 				assert.Equal(t, expected, actual)
 			},
@@ -569,7 +567,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, actual, expected any, _ string) {
+			compareFunc: func(t testing.TB, actual, expected types.CompositeType, _ string) {
 				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "system", "currentTime")
 				assert.Equal(t, expected, actual)
 			},
@@ -622,7 +620,7 @@ func TestListDropDatabase(t *testing.T) {
 			"listDatabases", int32(1),
 		))
 		expectedList := types.MustMakeDocument(
-			"databases", types.Array{
+			"databases", types.MustNewArray(
 				types.MustMakeDocument(
 					"name", "monila",
 					"sizeOnDisk", int64(13_631_488),
@@ -643,7 +641,7 @@ func TestListDropDatabase(t *testing.T) {
 					"sizeOnDisk", int64(0),
 					"empty", true,
 				),
-			},
+			),
 			"totalSize", int64(30_286_627),
 			"totalSizeMb", int64(28),
 			"ok", float64(1),
@@ -652,11 +650,15 @@ func TestListDropDatabase(t *testing.T) {
 		testutil.CompareAndSetByPathNum(t, expectedList, actualList, 2_000_000, "totalSize")
 		testutil.CompareAndSetByPathNum(t, expectedList, actualList, 2, "totalSizeMb")
 
-		expectedDBs := testutil.GetByPath(t, expectedList, "databases").(types.Array)
-		actualDBs := testutil.GetByPath(t, actualList, "databases").(types.Array)
-		require.Equal(t, len(expectedDBs), len(actualDBs))
-		for i, actualDB := range actualDBs {
-			testutil.CompareAndSetByPathNum(t, expectedDBs[i], actualDB, 500_000, "sizeOnDisk")
+		expectedDBs := testutil.GetByPath(t, expectedList, "databases").(*types.Array)
+		actualDBs := testutil.GetByPath(t, actualList, "databases").(*types.Array)
+		require.Equal(t, expectedDBs.Len(), actualDBs.Len())
+		for i := 0; i < actualDBs.Len(); i++ {
+			actualDB, err := actualDBs.Get(i)
+			require.NoError(t, err)
+			expectedDB, err := expectedDBs.Get(i)
+			require.NoError(t, err)
+			testutil.CompareAndSetByPathNum(t, expectedDB.(types.Document), actualDB.(types.Document), 500_000, "sizeOnDisk")
 		}
 
 		assert.Equal(t, expectedList, actualList)
@@ -671,8 +673,10 @@ func TestListDropDatabase(t *testing.T) {
 		)
 		assert.Equal(t, expectedDrop, actualDrop)
 
-		databases := testutil.GetByPath(t, expectedList, "databases").(types.Array)
-		testutil.SetByPath(t, expectedList, databases[:len(databases)-1], "databases")
+		databases := testutil.GetByPath(t, expectedList, "databases").(*types.Array)
+		databases, err := databases.Subslice(0, databases.Len()-1)
+		require.NoError(t, err)
+		testutil.SetByPath(t, expectedList, databases, "databases")
 
 		actualList = handle(ctx, t, handler, types.MustMakeDocument(
 			"listDatabases", int32(1),
