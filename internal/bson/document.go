@@ -136,20 +136,6 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 		doc.keys = append(doc.keys, string(ename))
 
 		switch tag(t) {
-		case tagDouble:
-			var v Double
-			if err := v.ReadFrom(bufr); err != nil {
-				return lazyerrors.Errorf("bson.Document.ReadFrom (Double): %w", err)
-			}
-			doc.m[string(ename)] = float64(v)
-
-		case tagString:
-			var v String
-			if err := v.ReadFrom(bufr); err != nil {
-				return lazyerrors.Errorf("bson.Document.ReadFrom (String): %w", err)
-			}
-			doc.m[string(ename)] = string(v)
-
 		case tagDocument:
 			// TODO check maximum nesting
 
@@ -171,6 +157,20 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 			}
 			a := types.Array(v)
 			doc.m[string(ename)] = &a
+
+		case tagDouble:
+			var v Double
+			if err := v.ReadFrom(bufr); err != nil {
+				return lazyerrors.Errorf("bson.Document.ReadFrom (Double): %w", err)
+			}
+			doc.m[string(ename)] = float64(v)
+
+		case tagString:
+			var v String
+			if err := v.ReadFrom(bufr); err != nil {
+				return lazyerrors.Errorf("bson.Document.ReadFrom (String): %w", err)
+			}
+			doc.m[string(ename)] = string(v)
 
 		case tagBinary:
 			var v Binary
@@ -276,24 +276,6 @@ func (doc Document) MarshalBinary() ([]byte, error) {
 		}
 
 		switch elV := elV.(type) {
-		case float64:
-			bufw.WriteByte(byte(tagDouble))
-			if err := ename.WriteTo(bufw); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-			if err := Double(elV).WriteTo(bufw); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-		case string:
-			bufw.WriteByte(byte(tagString))
-			if err := ename.WriteTo(bufw); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-			if err := String(elV).WriteTo(bufw); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
 		case types.Document:
 			bufw.WriteByte(byte(tagDocument))
 			if err := ename.WriteTo(bufw); err != nil {
@@ -313,6 +295,24 @@ func (doc Document) MarshalBinary() ([]byte, error) {
 				return nil, lazyerrors.Error(err)
 			}
 			if err := Array(*elV).WriteTo(bufw); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+		case float64:
+			bufw.WriteByte(byte(tagDouble))
+			if err := ename.WriteTo(bufw); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+			if err := Double(elV).WriteTo(bufw); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+		case string:
+			bufw.WriteByte(byte(tagString))
+			if err := ename.WriteTo(bufw); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+			if err := String(elV).WriteTo(bufw); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 
@@ -549,14 +549,14 @@ func marshalJSONValue(v any) ([]byte, error) {
 	var o json.Marshaler
 	var err error
 	switch v := v.(type) {
-	case float64:
-		o = Double(v)
-	case string:
-		o = String(v)
 	case types.Document:
 		o, err = ConvertDocument(v)
 	case *types.Array:
 		o = Array(*v)
+	case float64:
+		o = Double(v)
+	case string:
+		o = String(v)
 	case types.Binary:
 		o = Binary(v)
 	case types.ObjectID:

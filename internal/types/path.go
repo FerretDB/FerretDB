@@ -24,19 +24,19 @@ func getByPath(comp CompositeType, path ...string) (any, error) {
 	var next any = comp
 	for _, p := range path {
 		switch s := next.(type) {
+		case Document:
+			var err error
+			next, err = s.Get(p)
+			if err != nil {
+				return nil, fmt.Errorf("types.getByPath: %w", err)
+			}
+
 		case *Array:
 			index, err := strconv.Atoi(p)
 			if err != nil {
 				return nil, fmt.Errorf("types.getByPath: %w", err)
 			}
 			next, err = s.Get(index)
-			if err != nil {
-				return nil, fmt.Errorf("types.getByPath: %w", err)
-			}
-
-		case Document:
-			var err error
-			next, err = s.Get(p)
 			if err != nil {
 				return nil, fmt.Errorf("types.getByPath: %w", err)
 			}

@@ -33,9 +33,9 @@ func GetByPath(tb testing.TB, comp types.CompositeType, path ...string) any {
 	var res any
 	var err error
 	switch comp := comp.(type) {
-	case *types.Array:
-		res, err = comp.GetByPath(path...)
 	case types.Document:
+		res, err = comp.GetByPath(path...)
+	case *types.Array:
 		res, err = comp.GetByPath(path...)
 	default:
 		err = fmt.Errorf("can't access %T by path", comp)
@@ -58,6 +58,16 @@ func SetByPath(tb testing.TB, comp types.CompositeType, value any, path ...strin
 	for i, p := range path {
 		last := i == l-1
 		switch c := next.(type) {
+		case types.Document:
+			var err error
+			next, err = c.Get(p)
+			require.NoError(tb, err)
+
+			if last {
+				err = c.Set(p, value)
+				require.NoError(tb, err)
+			}
+
 		case *types.Array:
 			index, err := strconv.Atoi(p)
 			require.NoError(tb, err)
@@ -67,16 +77,6 @@ func SetByPath(tb testing.TB, comp types.CompositeType, value any, path ...strin
 
 			if last {
 				err = c.Set(index, value)
-				require.NoError(tb, err)
-			}
-
-		case types.Document:
-			var err error
-			next, err = c.Get(p)
-			require.NoError(tb, err)
-
-			if last {
-				err = c.Set(p, value)
 				require.NoError(tb, err)
 			}
 
