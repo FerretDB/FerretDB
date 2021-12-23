@@ -20,6 +20,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 
+	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -89,9 +90,7 @@ func (i *Int64) UnmarshalJSON(data []byte) error {
 
 // MarshalJSON implements bsontype interface.
 func (i Int64) MarshalJSON() ([]byte, error) {
-	return json.Marshal(int64JSON{
-		L: int64(i),
-	})
+	return fjson.Int64(i).MarshalJSON()
 }
 
 // check interfaces

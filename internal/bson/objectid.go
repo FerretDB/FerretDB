@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"io"
 
+	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -96,9 +97,7 @@ func (obj *ObjectID) UnmarshalJSON(data []byte) error {
 
 // MarshalJSON implements bsontype interface.
 func (obj ObjectID) MarshalJSON() ([]byte, error) {
-	return json.Marshal(objectIDJSON{
-		O: hex.EncodeToString(obj[:]),
-	})
+	return fjson.ObjectID(obj).MarshalJSON()
 }
 
 // check interfaces

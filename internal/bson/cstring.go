@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"encoding/json"
 
+	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -88,9 +89,7 @@ func (cstr *CString) UnmarshalJSON(data []byte) error {
 
 // MarshalJSON implements bsontype interface.
 func (cstr CString) MarshalJSON() ([]byte, error) {
-	return json.Marshal(cstringJSON{
-		CString: string(cstr),
-	})
+	return fjson.CString(cstr).MarshalJSON()
 }
 
 // check interfaces

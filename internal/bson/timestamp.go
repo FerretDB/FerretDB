@@ -20,6 +20,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 
+	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -89,9 +90,7 @@ func (ts *Timestamp) UnmarshalJSON(data []byte) error {
 
 // MarshalJSON implements bsontype interface.
 func (ts Timestamp) MarshalJSON() ([]byte, error) {
-	return json.Marshal(timestampJSON{
-		T: uint64(ts),
-	})
+	return fjson.Timestamp(ts).MarshalJSON()
 }
 
 // check interfaces

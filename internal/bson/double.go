@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"math"
 
+	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -109,20 +110,7 @@ func (d *Double) UnmarshalJSON(data []byte) error {
 
 // MarshalJSON implements bsontype interface.
 func (d Double) MarshalJSON() ([]byte, error) {
-	f := float64(d)
-	var o doubleJSON
-	switch {
-	case math.IsInf(f, 1):
-		o.F = "Infinity"
-	case math.IsInf(f, -1):
-		o.F = "-Infinity"
-	case math.IsNaN(f):
-		o.F = "NaN"
-	default:
-		o.F = f
-	}
-
-	return json.Marshal(o)
+	return fjson.Double(d).MarshalJSON()
 }
 
 // check interfaces

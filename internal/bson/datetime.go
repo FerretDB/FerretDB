@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -100,9 +101,7 @@ func (dt *DateTime) UnmarshalJSON(data []byte) error {
 
 // MarshalJSON implements bsontype interface.
 func (dt DateTime) MarshalJSON() ([]byte, error) {
-	return json.Marshal(dateTimeJSON{
-		D: time.Time(dt).UnixMilli(),
-	})
+	return fjson.DateTime(dt).MarshalJSON()
 }
 
 // check interfaces
