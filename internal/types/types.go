@@ -74,7 +74,8 @@ func validateValue(value any) error {
 	case Document:
 		return value.validate()
 	case *Array:
-		// TODO validate there?
+		// It is impossible to construct invalid Array using exported function, methods, or type conversions,
+		// so no need to revalidate it.
 		return nil
 	case float64:
 		return nil

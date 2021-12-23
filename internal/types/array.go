@@ -105,17 +105,19 @@ func (a *Array) Set(index int, value any) error {
 	return nil
 }
 
-// Append appends the given value to the array.
-func (a *Array) Append(value any) error {
-	if err := validateValue(value); err != nil {
-		return fmt.Errorf("types.Array.Append: %w", err)
+// Append appends given values to the array.
+func (a *Array) Append(values ...any) error {
+	for _, value := range values {
+		if err := validateValue(value); err != nil {
+			return fmt.Errorf("types.Array.Append: %w", err)
+		}
 	}
 
 	if a.s == nil {
-		a.s = []any{value}
+		a.s = values
 		return nil
 	}
 
-	a.s = append(a.s, value)
+	a.s = append(a.s, values...)
 	return nil
 }
