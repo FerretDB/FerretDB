@@ -66,13 +66,15 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
-		log = append(log, string(b))
+		if err = log.Append(string(b)); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
-			"totalLinesWritten", int32(len(log)),
+			"totalLinesWritten", int32(log.Len()),
 			"log", log,
 			"ok", float64(1),
 		)},

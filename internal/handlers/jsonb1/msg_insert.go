@@ -39,7 +39,12 @@ func (h *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	docs, _ := m["documents"].(*types.Array)
 
 	var inserted int32
-	for _, doc := range docs {
+	for i := 0; i < docs.Len(); i++ {
+		doc, err := docs.Get(i)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
 		d := doc.(types.Document)
 		sql := fmt.Sprintf("INSERT INTO %s (_jsonb) VALUES ($1)", pgx.Identifier{db, collection}.Sanitize())
 		b, err := bson.MustConvertDocument(d).MarshalJSON()

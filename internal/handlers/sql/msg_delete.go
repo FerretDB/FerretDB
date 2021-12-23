@@ -40,7 +40,12 @@ func (h *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	docs, _ := m["deletes"].(*types.Array)
 
 	var deleted int32
-	for _, doc := range docs {
+	for i := 0; i < docs.Len(); i++ {
+		doc, err := docs.Get(i)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
 		d := doc.(types.Document).Map()
 
 		sql := fmt.Sprintf(`DELETE FROM %s`, pgx.Identifier{db, collection}.Sanitize())

@@ -58,12 +58,15 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 		return nil, lazyerrors.Error(err)
 	}
 
-	collections := make(types.Array, len(names))
-	for i, n := range names {
-		collections[i] = types.MustMakeDocument(
+	collections := types.MakeArray(len(names))
+	for _, n := range names {
+		d := types.MustMakeDocument(
 			"name", n,
 			"type", "collection",
 		)
+		if err = collections.Append(d); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	var reply wire.OpMsg

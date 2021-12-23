@@ -119,12 +119,14 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 				break
 			}
 
-			docs = append(docs, *doc)
+			if err = docs.Append(*doc); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
 		}
 		err = reply.SetSections(wire.OpMsgSection{
 			Documents: []types.Document{types.MustMakeDocument(
 				"cursor", types.MustMakeDocument(
-					"firstBatch", docs,
+					"firstBatch", &docs,
 					"id", int64(0), // TODO
 					"ns", db+"."+collection,
 				),

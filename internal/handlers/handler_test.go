@@ -637,7 +637,7 @@ func TestListDropDatabase(t *testing.T) {
 			require.NoError(t, err)
 			expectedDB, err := expectedDBs.Get(i)
 			require.NoError(t, err)
-			testutil.CompareAndSetByPathNum(t, expectedDB.(*types.Array), actualDB.(*types.Array), 500_000, "sizeOnDisk")
+			testutil.CompareAndSetByPathNum(t, expectedDB.(types.Document), actualDB.(types.Document), 500_000, "sizeOnDisk")
 		}
 
 		assert.Equal(t, expectedList, actualList)

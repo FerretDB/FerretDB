@@ -47,7 +47,12 @@ func (h *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	_ = ordered
 
 	var inserted int32
-	for _, doc := range docs {
+	for i := 0; i < docs.Len(); i++ {
+		doc, err := docs.Get(i)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
 		d := doc.(types.Document)
 		m := d.Map()
 
@@ -79,7 +84,7 @@ func (h *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		sql += ")"
 
-		_, err := h.pgPool.Exec(ctx, sql, args...)
+		_, err = h.pgPool.Exec(ctx, sql, args...)
 		if err != nil {
 			return nil, err
 		}
