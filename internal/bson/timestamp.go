@@ -20,11 +20,12 @@ import (
 	"encoding/binary"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // Timestamp represents BSON Timestamp data type.
-type Timestamp uint64
+type Timestamp types.Timestamp
 
 func (ts *Timestamp) bsontype() {}
 

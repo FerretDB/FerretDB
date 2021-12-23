@@ -19,14 +19,12 @@ import (
 	"bytes"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // Regex represents BSON Regex data type.
-type Regex struct {
-	Pattern string
-	Options string
-}
+type Regex types.Regex
 
 func (regex *Regex) bsontype() {}
 

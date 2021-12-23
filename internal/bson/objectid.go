@@ -19,11 +19,12 @@ import (
 	"io"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // ObjectID represents BSON ObjectID data type.
-type ObjectID [12]byte
+type ObjectID types.ObjectID
 
 func (obj *ObjectID) bsontype() {}
 

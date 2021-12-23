@@ -26,10 +26,7 @@ import (
 )
 
 // Binary represents BSON Binary data type.
-type Binary struct {
-	Subtype types.BinarySubtype
-	B       []byte
-}
+type Binary types.Binary
 
 func (bin *Binary) bsontype() {}
 
