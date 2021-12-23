@@ -18,7 +18,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
-	"encoding/json"
 	"io"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
@@ -84,32 +83,14 @@ func (bin Binary) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-type binaryJSON struct {
-	B []byte `json:"$b"`
-	S byte   `json:"s"`
-}
-
 // UnmarshalJSON implements bsontype interface.
 func (bin *Binary) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
+	var binJ fjson.Binary
+	if err := binJ.UnmarshalJSON(data); err != nil {
+		return err
 	}
 
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
-
-	var o binaryJSON
-	err := dec.Decode(&o)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-	if err = checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("bson.Binary.UnmarshalJSON: %w", err)
-	}
-
-	bin.B = o.B
-	bin.Subtype = types.BinarySubtype(o.S)
+	*bin = Binary(binJ)
 	return nil
 }
 

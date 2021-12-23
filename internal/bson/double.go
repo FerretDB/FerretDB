@@ -18,7 +18,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
-	"encoding/json"
 	"math"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
@@ -65,46 +64,14 @@ func (d Double) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-type doubleJSON struct {
-	F any `json:"$f"`
-}
-
 // UnmarshalJSON implements bsontype interface.
 func (d *Double) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
-	}
-
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
-
-	var o doubleJSON
-	if err := dec.Decode(&o); err != nil {
+	var dJ fjson.Double
+	if err := dJ.UnmarshalJSON(data); err != nil {
 		return err
 	}
-	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("bson.Double.UnmarshalJSON: %w", err)
-	}
 
-	switch f := o.F.(type) {
-	case float64:
-		*d = Double(f)
-	case string:
-		switch f {
-		case "Infinity":
-			*d = Double(math.Inf(1))
-		case "-Infinity":
-			*d = Double(math.Inf(-1))
-		case "NaN":
-			*d = Double(math.NaN())
-		default:
-			return lazyerrors.Errorf("bson.Double.UnmarshalJSON: unexpected string %q", f)
-		}
-	default:
-		return lazyerrors.Errorf("bson.Double.UnmarshalJSON: unexpected type %[1]T: %[1]v", f)
-	}
-
+	*d = Double(dJ)
 	return nil
 }
 

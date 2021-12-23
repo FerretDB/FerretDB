@@ -18,7 +18,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
-	"encoding/json"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -62,29 +61,14 @@ func (ts Timestamp) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-type timestampJSON struct {
-	T uint64 `json:"$t,string"`
-}
-
 // UnmarshalJSON implements bsontype interface.
 func (ts *Timestamp) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
-	}
-
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
-
-	var o timestampJSON
-	if err := dec.Decode(&o); err != nil {
+	var tsJ fjson.Timestamp
+	if err := tsJ.UnmarshalJSON(data); err != nil {
 		return err
 	}
-	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("bson.Timestamp.UnmarshalJSON: %s", err)
-	}
 
-	*ts = Timestamp(o.T)
+	*ts = Timestamp(tsJ)
 	return nil
 }
 

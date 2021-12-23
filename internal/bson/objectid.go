@@ -16,9 +16,6 @@ package bson
 
 import (
 	"bufio"
-	"bytes"
-	"encoding/hex"
-	"encoding/json"
 	"io"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
@@ -61,37 +58,14 @@ func (obj ObjectID) MarshalBinary() ([]byte, error) {
 	return b, nil
 }
 
-type objectIDJSON struct {
-	O string `json:"$o"`
-}
-
 // UnmarshalJSON implements bsontype interface.
 func (obj *ObjectID) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
-	}
-
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
-
-	var o objectIDJSON
-	if err := dec.Decode(&o); err != nil {
+	var objJ fjson.ObjectID
+	if err := objJ.UnmarshalJSON(data); err != nil {
 		return err
 	}
-	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("bson.ObjectID.UnmarshalJSON: %s", err)
-	}
 
-	b, err := hex.DecodeString(o.O)
-	if err != nil {
-		return err
-	}
-	if len(b) != 12 {
-		return lazyerrors.Errorf("bson.ObjectID.UnmarshalJSON: %d bytes", len(b))
-	}
-	copy(obj[:], b)
-
+	*obj = ObjectID(objJ)
 	return nil
 }
 
