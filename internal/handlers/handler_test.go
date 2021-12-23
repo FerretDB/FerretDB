@@ -652,14 +652,15 @@ func TestListDropDatabase(t *testing.T) {
 		)
 		assert.Equal(t, expectedDrop, actualDrop)
 
-		// TODO
-		// databases := testutil.GetByPath(t, expectedList, "databases").(*types.Array)
-		// testutil.SetByPath(t, expectedList, databases[:len(databases)-1], "databases")
+		databases := testutil.GetByPath(t, expectedList, "databases").(*types.Array)
+		databases, err := databases.Subslice(0, databases.Len()-1)
+		require.NoError(t, err)
+		testutil.SetByPath(t, expectedList, databases, "databases")
 
-		// actualList = handle(ctx, t, handler, types.MustMakeDocument(
-		// 	"listDatabases", int32(1),
-		// ))
-		// assert.Equal(t, expectedList, actualList)
+		actualList = handle(ctx, t, handler, types.MustMakeDocument(
+			"listDatabases", int32(1),
+		))
+		assert.Equal(t, expectedList, actualList)
 	})
 
 	t.Run("nonexisting", func(t *testing.T) {

@@ -36,7 +36,7 @@
 //  types.ObjectID    bson.ObjectID
 //  bool              bson.Bool
 //  time.Time         bson.DateTime
-//  nil               nil
+//  any(nil)          any(nil)
 //  types.Regex       bson.Regex
 //  int32             bson.Int32
 //  types.Timestamp   bson.Timestamp
@@ -105,7 +105,6 @@ func validateValue(value any) error {
 
 // check interfaces
 var (
-	// TODO
 	_ CompositeType = Document{}
 	_ CompositeType = (*Array)(nil)
 )

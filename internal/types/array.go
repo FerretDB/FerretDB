@@ -18,7 +18,7 @@ import "fmt"
 
 // Array represents BSON array.
 //
-// Zero value is an empty array.
+// Zero value is a valid empty array.
 type Array struct {
 	s []any
 }
@@ -42,6 +42,7 @@ func NewArray(values ...any) (*Array, error) {
 	return &Array{s: values}, nil
 }
 
+// MustNewArray is a NewArray that panics in case of error.
 func MustNewArray(values ...any) *Array {
 	a, err := NewArray(values...)
 	if err != nil {
@@ -52,6 +53,7 @@ func MustNewArray(values ...any) *Array {
 
 func (a *Array) compositeType() {}
 
+// Len returns the number of elements in the array.
 func (a *Array) Len() int {
 	return len(a.s)
 }
@@ -70,6 +72,25 @@ func (a *Array) GetByPath(path ...string) (any, error) {
 	return getByPath(a, path...)
 }
 
+// Subslice returns a slice of the array, sharing the same underlying space and elements.
+func (a *Array) Subslice(low, high int) (*Array, error) {
+	l := a.Len()
+
+	if low < 0 || low > l {
+		return nil, fmt.Errorf("types.Array.Subslice: low index %d is out of bounds [0-%d)", low, l)
+	}
+
+	if high < 0 || high > l {
+		return nil, fmt.Errorf("types.Array.Subslice: high index %d is out of bounds [0-%d)", high, l)
+	}
+
+	if high < low {
+		return nil, fmt.Errorf("types.Array.Subslice: high index %d is less low index %d", high, low)
+	}
+
+	return &Array{s: a.s[low:high]}, nil
+}
+
 // Set sets the value at the given index.
 func (a *Array) Set(index int, value any) error {
 	if l := a.Len(); index < 0 || index >= l {
@@ -84,6 +105,7 @@ func (a *Array) Set(index int, value any) error {
 	return nil
 }
 
+// Append appends the given value to the array.
 func (a *Array) Append(value any) error {
 	if err := validateValue(value); err != nil {
 		return fmt.Errorf("types.Array.Append: %w", err)
