@@ -288,7 +288,7 @@ func (pgPool *Pool) TableStats(ctx context.Context, db, table string) (*TableSta
            COALESCE(s.n_live_tup, 0)
       FROM information_schema.tables AS t
       LEFT OUTER
-      JOIN pg_stat_user_tables       s on s.schemaname = t.table_schema
+      JOIN pg_stat_user_tables AS s ON s.schemaname = t.table_schema
                                       and s.relname = t.table_name
      WHERE t.table_schema = $1
        AND t.table_name = $2`
