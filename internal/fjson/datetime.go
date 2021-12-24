@@ -50,7 +50,7 @@ func (dt *DateTime) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("bson.DateTime.UnmarshalJSON: %s", err)
+		return lazyerrors.Errorf("fjson.DateTime.UnmarshalJSON: %s", err)
 	}
 
 	// TODO Use .UTC(): https://github.com/FerretDB/FerretDB/issues/43

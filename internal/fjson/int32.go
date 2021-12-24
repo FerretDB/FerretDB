@@ -41,7 +41,7 @@ func (i *Int32) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("bson.Int32.UnmarshalJSON: %s", err)
+		return lazyerrors.Errorf("fjson.Int32.UnmarshalJSON: %s", err)
 	}
 
 	*i = Int32(o)

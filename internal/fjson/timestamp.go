@@ -46,7 +46,7 @@ func (ts *Timestamp) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("bson.Timestamp.UnmarshalJSON: %s", err)
+		return lazyerrors.Errorf("fjson.Timestamp.UnmarshalJSON: %s", err)
 	}
 
 	*ts = Timestamp(o.T)

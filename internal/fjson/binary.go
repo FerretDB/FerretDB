@@ -48,7 +48,7 @@ func (bin *Binary) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 	if err = checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("bson.Binary.UnmarshalJSON: %w", err)
+		return lazyerrors.Errorf("fjson.Binary.UnmarshalJSON: %w", err)
 	}
 
 	bin.B = o.B

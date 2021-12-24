@@ -46,7 +46,7 @@ func (d *Double) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("bson.Double.UnmarshalJSON: %w", err)
+		return lazyerrors.Errorf("fjson.Double.UnmarshalJSON: %w", err)
 	}
 
 	switch f := o.F.(type) {
@@ -61,10 +61,10 @@ func (d *Double) UnmarshalJSON(data []byte) error {
 		case "NaN":
 			*d = Double(math.NaN())
 		default:
-			return lazyerrors.Errorf("bson.Double.UnmarshalJSON: unexpected string %q", f)
+			return lazyerrors.Errorf("fjson.Double.UnmarshalJSON: unexpected string %q", f)
 		}
 	default:
-		return lazyerrors.Errorf("bson.Double.UnmarshalJSON: unexpected type %[1]T: %[1]v", f)
+		return lazyerrors.Errorf("fjson.Double.UnmarshalJSON: unexpected type %[1]T: %[1]v", f)
 	}
 
 	return nil

@@ -47,7 +47,7 @@ func (regex *Regex) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("bson.Regex.UnmarshalJSON: %s", err)
+		return lazyerrors.Errorf("fjson.Regex.UnmarshalJSON: %s", err)
 	}
 
 	*regex = Regex{

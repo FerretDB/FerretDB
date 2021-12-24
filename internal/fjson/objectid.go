@@ -47,7 +47,7 @@ func (obj *ObjectID) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("bson.ObjectID.UnmarshalJSON: %s", err)
+		return lazyerrors.Errorf("fjson.ObjectID.UnmarshalJSON: %s", err)
 	}
 
 	b, err := hex.DecodeString(o.O)
@@ -55,7 +55,7 @@ func (obj *ObjectID) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	if len(b) != 12 {
-		return lazyerrors.Errorf("bson.ObjectID.UnmarshalJSON: %d bytes", len(b))
+		return lazyerrors.Errorf("fjson.ObjectID.UnmarshalJSON: %d bytes", len(b))
 	}
 	copy(obj[:], b)
 

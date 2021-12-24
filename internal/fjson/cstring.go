@@ -45,7 +45,7 @@ func (cstr *CString) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("bson.CString.UnmarshalJSON: %s", err)
+		return lazyerrors.Errorf("fjson.CString.UnmarshalJSON: %s", err)
 	}
 
 	*cstr = CString(o.CString)
