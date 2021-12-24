@@ -286,7 +286,7 @@ func (pgPool *Pool) TableStats(ctx context.Context, db, table string) (*TableSta
            pg_indexes_size('"'||t.table_schema||'"."'||t.table_name||'"'),
            pg_relation_size('"'||t.table_schema||'"."'||t.table_name||'"'),
            COALESCE(s.n_live_tup, 0)
-      FROM information_schema.tables t
+      FROM information_schema.tables AS t
       LEFT OUTER
       JOIN pg_stat_user_tables       s on s.schemaname = t.table_schema
                                       and s.relname = t.table_name
