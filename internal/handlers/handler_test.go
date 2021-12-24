@@ -418,7 +418,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 		req         types.Document
 		reqSetDB    bool
 		resp        types.Document
-		compareFunc func(t testing.TB, actual, expected types.CompositeType, db string)
+		compareFunc func(t testing.TB, req types.Document, actual, expected types.CompositeType)
 	}
 
 	hostname, err := os.Hostname()
@@ -454,7 +454,9 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, req types.Document, actual, expected types.CompositeType) {
-				if db == "manila" {
+				db, err := req.Get("$db")
+				require.NoError(t, err)
+				if db.(string) == "manila" {
 					assert.Equal(t, expected, actual)
 				}
 			},
@@ -522,7 +524,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"readOnly", false,
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, actual, expected types.CompositeType, _ string) {
+			compareFunc: func(t testing.TB, _ types.Document, actual, expected types.CompositeType) {
 				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "localTime")
 				assert.Equal(t, expected, actual)
 			},
@@ -543,7 +545,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"readOnly", false,
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, actual, expected types.CompositeType, _ string) {
+			compareFunc: func(t testing.TB, _ types.Document, actual, expected types.CompositeType) {
 				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "localTime")
 				assert.Equal(t, expected, actual)
 			},
@@ -567,7 +569,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, actual, expected types.CompositeType, _ string) {
+			compareFunc: func(t testing.TB, _ types.Document, actual, expected types.CompositeType) {
 				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "system", "currentTime")
 				assert.Equal(t, expected, actual)
 			},
@@ -601,7 +603,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 					if tc.compareFunc == nil {
 						assert.Equal(t, tc.resp, actual)
 					} else {
-						tc.compareFunc(t, tc.resp, actual, schema)
+						tc.compareFunc(t, tc.req, tc.resp, actual)
 					}
 				})
 			}
