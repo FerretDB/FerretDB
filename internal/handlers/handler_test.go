@@ -453,7 +453,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"scaleFactor", int64(1),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, actual, expected types.CompositeType, db string) {
+			compareFunc: func(t testing.TB, req types.Document, actual, expected types.CompositeType) {
 				if db == "manila" {
 					assert.Equal(t, expected, actual)
 				}
