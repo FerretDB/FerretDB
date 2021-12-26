@@ -498,6 +498,24 @@ func TestReadOnlyHandlers(t *testing.T) {
 			),
 		},
 
+		"GetLog": {
+			req: types.MustMakeDocument(
+				"getLog", "startupWarnings",
+			),
+			resp: types.MustMakeDocument(
+				"totalLinesWritten", int32(2),
+				// will be replaced with the real value during the test
+				"log", types.MakeArray(2),
+				"ok", float64(1),
+			),
+			compareFunc: func(t testing.TB, _ types.Document, actual, expected types.CompositeType) {
+				// Just testing "ok" response, not the body of the response
+				actualV := testutil.GetByPath(t, actual, "log")
+				testutil.SetByPath(t, expected, actualV, "log")
+				assert.Equal(t, expected, actual)
+			},
+		},
+
 		"GetParameter": {
 			req: types.MustMakeDocument(
 				"getParameter", int32(1),
