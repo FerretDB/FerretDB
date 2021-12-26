@@ -12,7 +12,7 @@ changelog:
       labels:
         - code/chore
         - code/enhancement
-    - title: Dependencies
+    - title: Dependencies 🤖
       labels:
         - deps
     - title: Documentation 📄
