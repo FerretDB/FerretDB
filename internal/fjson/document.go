@@ -57,7 +57,7 @@ func (doc *Document) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Errorf("fjson.Document.UnmarshalJSON: %d elements in $k, %d in total", len(keys), len(rawMessages))
 	}
 
-	var td types.Document
+	td := types.MustMakeDocument()
 	for _, key := range keys {
 		b, ok = rawMessages[key]
 		if !ok {

@@ -101,7 +101,7 @@ func unmarshalJSONValue(data []byte) (any, error) {
 		case v["$k"] != nil:
 			var o Document
 			err = o.UnmarshalJSON(data)
-			res = Document(o)
+			res = types.Document(o)
 		case v["$b"] != nil:
 			var o Binary
 			err = o.UnmarshalJSON(data)
@@ -134,9 +134,8 @@ func unmarshalJSONValue(data []byte) (any, error) {
 	case []any:
 		var o Array
 		err = o.UnmarshalJSON(data)
-		res = types.Array(o)
-		// TODO
-		// res = &a
+		ta := types.Array(o)
+		res = &ta
 	case bool:
 		res = v
 	case nil:

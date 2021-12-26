@@ -47,12 +47,8 @@ package bson
 
 import (
 	"bufio"
-	"bytes"
 	"encoding"
 	"encoding/json"
-	"io"
-
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 type bsontype interface {
@@ -66,17 +62,3 @@ type bsontype interface {
 }
 
 //go-sumtype:decl bsontype
-
-func checkConsumed(dec *json.Decoder, r *bytes.Reader) error {
-	if dr := dec.Buffered().(*bytes.Reader); dr.Len() != 0 {
-		b, _ := io.ReadAll(dr)
-		return lazyerrors.Errorf("%d bytes remains in the decoded: %s", dr.Len(), b)
-	}
-
-	if l := r.Len(); l != 0 {
-		b, _ := io.ReadAll(r)
-		return lazyerrors.Errorf("%d bytes remains in the reader: %s", l, b)
-	}
-
-	return nil
-}
