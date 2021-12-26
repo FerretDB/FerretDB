@@ -48,6 +48,16 @@ type Pool struct {
 	*pgxpool.Pool
 }
 
+// TableStats describes some statistics for a table.
+type TableStats struct {
+	Table       string
+	TableType   string
+	SizeTotal   int64
+	SizeIndexes int64
+	SizeTable   int64
+	Rows        int64
+}
+
 // NewPool returns a pgxpool, a concurrency-safe connection pool for pgx.
 func NewPool(connString string, logger *zap.Logger, lazy bool) (*Pool, error) {
 	config, err := pgxpool.ParseConfig(connString)
@@ -265,4 +275,29 @@ func (pgPool *Pool) DropTable(ctx context.Context, db, collection string) error 
 	}
 
 	return err
+}
+
+// TableStats returns a set of statistics for a table.
+func (pgPool *Pool) TableStats(ctx context.Context, db, table string) (*TableStats, error) {
+	res := new(TableStats)
+	sql := `
+    SELECT table_name, table_type,
+           pg_total_relation_size('"'||t.table_schema||'"."'||t.table_name||'"'),
+           pg_indexes_size('"'||t.table_schema||'"."'||t.table_name||'"'),
+           pg_relation_size('"'||t.table_schema||'"."'||t.table_name||'"'),
+           COALESCE(s.n_live_tup, 0)
+      FROM information_schema.tables AS t
+      LEFT OUTER
+      JOIN pg_stat_user_tables AS s ON s.schemaname = t.table_schema
+                                      and s.relname = t.table_name
+     WHERE t.table_schema = $1
+       AND t.table_name = $2`
+
+	err := pgPool.QueryRow(ctx, sql, db, table).
+		Scan(&res.Table, &res.TableType, &res.SizeTotal, &res.SizeIndexes, &res.SizeTable, &res.Rows)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return res, nil
 }
