@@ -24,34 +24,19 @@ var boolTestCases = []testCase{{
 	name: "false",
 	v:    pointer.To(Bool(false)),
 	b:    []byte{0x00},
-	j:    `false`,
 }, {
 	name: "true",
 	v:    pointer.To(Bool(true)),
 	b:    []byte{0x01},
-	j:    `true`,
 }}
 
 func TestBool(t *testing.T) {
 	t.Parallel()
-
-	t.Run("Binary", func(t *testing.T) {
-		t.Parallel()
-		testBinary(t, boolTestCases, func() bsontype { return new(Bool) })
-	})
-
-	t.Run("JSON", func(t *testing.T) {
-		t.Parallel()
-		testJSON(t, boolTestCases, func() bsontype { return new(Bool) })
-	})
+	testBinary(t, boolTestCases, func() bsontype { return new(Bool) })
 }
 
-func FuzzBoolBinary(f *testing.F) {
+func FuzzBool(f *testing.F) {
 	fuzzBinary(f, boolTestCases, func() bsontype { return new(Bool) })
-}
-
-func FuzzBoolJSON(f *testing.F) {
-	fuzzJSON(f, boolTestCases, func() bsontype { return new(Bool) })
 }
 
 func BenchmarkBool(b *testing.B) {

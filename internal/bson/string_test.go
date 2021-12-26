@@ -24,39 +24,23 @@ var stringTestCases = []testCase{{
 	name: "foo",
 	v:    pointer.To(String("foo")),
 	b:    []byte{0x04, 0x00, 0x00, 0x00, 0x66, 0x6f, 0x6f, 0x00},
-	j:    `"foo"`,
 }, {
 	name: "empty",
 	v:    pointer.To(String("")),
 	b:    []byte{0x01, 0x00, 0x00, 0x00, 0x00},
-	j:    `""`,
 }, {
 	name: "zero",
 	v:    pointer.To(String("\x00")),
 	b:    []byte{0x02, 0x00, 0x00, 0x00, 0x00, 0x00},
-	j:    `"\u0000"`,
 }}
 
 func TestString(t *testing.T) {
 	t.Parallel()
-
-	t.Run("Binary", func(t *testing.T) {
-		t.Parallel()
-		testBinary(t, stringTestCases, func() bsontype { return new(String) })
-	})
-
-	t.Run("JSON", func(t *testing.T) {
-		t.Parallel()
-		testJSON(t, stringTestCases, func() bsontype { return new(String) })
-	})
+	testBinary(t, stringTestCases, func() bsontype { return new(String) })
 }
 
-func FuzzStringBinary(f *testing.F) {
+func FuzzString(f *testing.F) {
 	fuzzBinary(f, stringTestCases, func() bsontype { return new(String) })
-}
-
-func FuzzStringJSON(f *testing.F) {
-	fuzzJSON(f, stringTestCases, func() bsontype { return new(String) })
 }
 
 func BenchmarkString(b *testing.B) {

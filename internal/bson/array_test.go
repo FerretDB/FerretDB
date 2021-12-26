@@ -42,7 +42,6 @@ var arrayTestCases = []testCase{{
 		nil,
 	)),
 	b: testutil.MustParseDumpFile("testdata", "array_all.hex"),
-	j: `[[],{"$b":"Qg==","s":128},true,{"$d":1627378542123},{"$k":[]},{"$f":42.13},42,{"$l":"42"},"foo",null]`,
 }, {
 	name: "array_fuzz1",
 	b:    testutil.MustParseDumpFile("testdata", "array_fuzz1.hex"),
@@ -51,24 +50,11 @@ var arrayTestCases = []testCase{{
 
 func TestArray(t *testing.T) {
 	t.Parallel()
-
-	t.Run("Binary", func(t *testing.T) {
-		t.Parallel()
-		testBinary(t, arrayTestCases, func() bsontype { return new(Array) })
-	})
-
-	t.Run("JSON", func(t *testing.T) {
-		t.Parallel()
-		testJSON(t, arrayTestCases, func() bsontype { return new(Array) })
-	})
+	testBinary(t, arrayTestCases, func() bsontype { return new(Array) })
 }
 
-func FuzzArrayBinary(f *testing.F) {
+func FuzzArray(f *testing.F) {
 	fuzzBinary(f, arrayTestCases, func() bsontype { return new(Array) })
-}
-
-func FuzzArrayJSON(f *testing.F) {
-	fuzzJSON(f, arrayTestCases, func() bsontype { return new(Array) })
 }
 
 func BenchmarkArray(b *testing.B) {

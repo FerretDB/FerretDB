@@ -24,34 +24,19 @@ var timestampTestCases = []testCase{{
 	name: "one",
 	v:    pointer.To(Timestamp(1)),
 	b:    []byte{0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-	j:    `{"$t":"1"}`,
 }, {
 	name: "zero",
 	v:    pointer.To(Timestamp(0)),
 	b:    []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-	j:    `{"$t":"0"}`,
 }}
 
 func TestTimestamp(t *testing.T) {
 	t.Parallel()
-
-	t.Run("Binary", func(t *testing.T) {
-		t.Parallel()
-		testBinary(t, timestampTestCases, func() bsontype { return new(Timestamp) })
-	})
-
-	t.Run("JSON", func(t *testing.T) {
-		t.Parallel()
-		testJSON(t, timestampTestCases, func() bsontype { return new(Timestamp) })
-	})
+	testBinary(t, timestampTestCases, func() bsontype { return new(Timestamp) })
 }
 
-func FuzzTimestampBinary(f *testing.F) {
+func FuzzTimestamp(f *testing.F) {
 	fuzzBinary(f, timestampTestCases, func() bsontype { return new(Timestamp) })
-}
-
-func FuzzTimestampJSON(f *testing.F) {
-	fuzzJSON(f, timestampTestCases, func() bsontype { return new(Timestamp) })
 }
 
 func BenchmarkTimestamp(b *testing.B) {
