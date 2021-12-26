@@ -103,9 +103,3 @@ func validateValue(value any) error {
 		return fmt.Errorf("types.validateValue: unsupported type: %[1]T (%[1]v)", value)
 	}
 }
-
-// check interfaces
-var (
-	_ CompositeType = Document{}
-	_ CompositeType = (*Array)(nil)
-)
