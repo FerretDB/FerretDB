@@ -11,6 +11,7 @@ changelog:
     - title: Improvements 🛠
       labels:
         - code/chore
+        - code/enhancement
     - title: Dependencies
       labels:
         - deps
