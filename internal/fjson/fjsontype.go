@@ -49,7 +49,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"time"
 
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -74,4 +76,121 @@ func checkConsumed(dec *json.Decoder, r *bytes.Reader) error {
 	}
 
 	return nil
+}
+
+func unmarshalJSONValue(data []byte) (any, error) {
+	var v any
+	r := bytes.NewReader(data)
+	dec := json.NewDecoder(r)
+	err := dec.Decode(&v)
+	if err != nil {
+		return nil, err
+	}
+	if err := checkConsumed(dec, r); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var res any
+	switch v := v.(type) {
+	case map[string]any:
+		switch {
+		case v["$f"] != nil:
+			var o Double
+			err = o.UnmarshalJSON(data)
+			res = float64(o)
+		case v["$k"] != nil:
+			var o Document
+			err = o.UnmarshalJSON(data)
+			res = Document(o)
+		case v["$b"] != nil:
+			var o Binary
+			err = o.UnmarshalJSON(data)
+			res = types.Binary(o)
+		case v["$o"] != nil:
+			var o ObjectID
+			err = o.UnmarshalJSON(data)
+			res = types.ObjectID(o)
+		case v["$d"] != nil:
+			var o DateTime
+			err = o.UnmarshalJSON(data)
+			res = time.Time(o)
+		case v["$r"] != nil:
+			var o Regex
+			err = o.UnmarshalJSON(data)
+			res = types.Regex(o)
+		case v["$t"] != nil:
+			var o Timestamp
+			err = o.UnmarshalJSON(data)
+			res = types.Timestamp(o)
+		case v["$l"] != nil:
+			var o Int64
+			err = o.UnmarshalJSON(data)
+			res = int64(o)
+		default:
+			err = lazyerrors.Errorf("unmarshalJSONValue: unhandled map %v", v)
+		}
+	case string:
+		res = v
+	case []any:
+		var o Array
+		err = o.UnmarshalJSON(data)
+		res = types.Array(o)
+		// TODO
+		// res = &a
+	case bool:
+		res = v
+	case nil:
+		res = v
+	case float64:
+		res = int32(v)
+	default:
+		err = lazyerrors.Errorf("unmarshalJSONValue: unhandled element %[1]T (%[1]v)", v)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func marshalJSONValue(v any) ([]byte, error) {
+	var o json.Marshaler
+	switch v := v.(type) {
+	case types.Document:
+		o = Document(v)
+	case *types.Array:
+		o = Array(*v)
+	case float64:
+		o = Double(v)
+	case string:
+		o = String(v)
+	case types.Binary:
+		o = Binary(v)
+	case types.ObjectID:
+		o = ObjectID(v)
+	case bool:
+		o = Bool(v)
+	case time.Time:
+		o = DateTime(v)
+	case nil:
+		return []byte("null"), nil
+	case types.Regex:
+		o = Regex(v)
+	case int32:
+		o = Int32(v)
+	case types.Timestamp:
+		o = Timestamp(v)
+	case int64:
+		o = Int64(v)
+	default:
+		return nil, lazyerrors.Errorf("marshalJSONValue: unhandled type %T", v)
+	}
+
+	b, err := o.MarshalJSON()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return b, nil
 }
