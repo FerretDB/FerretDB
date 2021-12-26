@@ -10,7 +10,10 @@ changelog:
         - code/bug
     - title: Improvements 🛠
       labels:
-        - code/bug
+        - code/chore
+    - title: Dependencies
+      labels:
+        - deps
     - title: Documentation 📄
       labels:
         - documentation
