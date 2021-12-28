@@ -4,7 +4,12 @@ name: 'containers'
 on:
   push:
     branches:
-      - '**'
+      - main
+    tags:
+      - v[0-9]+.[0-9]+.[0-9]+*
+  pull_request:
+    branches:
+      - main
 
 env:
   GOPATH: /home/runner/go
@@ -42,16 +47,8 @@ jobs:
       - name: Initialize docker
         run: make docker-init
 
-      - name: Get branch name
-        shell: bash
-        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
-        id: branch_out
+      - name: Extract docker tag
+        uses: percona-platform/extract-docker-tag-action@v1
 
-      - name: Display branch name
-        shell: bash
-        run: echo ${{ steps.branch_out.outputs.branch }}
-
-      - name: Push the continer images
-        env:
-          DOCKER_TAG: ${{ steps.branch_out.outputs.branch }}
+      - name: Push the continer images with tag "${{ env.DOCKER_TAG }}"
         run: make docker-push
