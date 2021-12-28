@@ -20,29 +20,10 @@
 //  2. As they are used in the wire protocol implementation.
 //  3. As they are used to store data in PostgreSQL.
 //
-// The first representation is provided by the types package.
-// The second and third representations are provided by this package (bson).
+// The first representation is provided by types package.
+// The second is provided by this package (bson).
+// The third is provided by fjson package.
 // The reason for that is a separation of concerns: to avoid method names clashes, to simplify type asserts, etc.
-//
-// JSON mapping for storage
-//
-// Composite types
-//  Document:   {"$k": ["<key 1>", "<key 2>", ...], "<key 1>": <value 1>, "<key 2>": <value 2>, ...}
-//  Array:      JSON array
-// Value types
-//  Double:     {"$f": JSON number} or {"$f": "Infinity|-Infinity|NaN"}
-//  String:     JSON string
-//  Binary:     {"$b": "<base 64 string>", "s": <subtype number>}
-//  ObjectID:   {"$o": "<ObjectID as 24 character hex string"}
-//  Bool:       JSON true / false values
-//  DateTime:   {"$d": milliseconds since epoch as JSON number}
-//  nil:        JSON null
-//  Regex:      {"$r": "<string without terminating 0x0>", "o": "<string without terminating 0x0>"}
-//  Int32:      JSON number
-//  Timestamp:  {"$t": "<number as string>"}
-//  Int64:      {"$l": "<number as string>"}
-//  Decimal128: {"$n": "<number as string>"}
-//  CString:    {"$c": "<string without terminating 0x0>"}
 package bson
 
 import (

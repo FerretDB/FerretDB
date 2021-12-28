@@ -21,7 +21,8 @@
 //  3. As they are used to store data in PostgreSQL.
 //
 // The first representation is provided by this package (types).
-// The second and third representations are provided by the bson package.
+// The second is provided by bson package.
+// The third is provided by fjson package.
 // The reason for that is a separation of concerns: to avoid method names clashes, to simplify type asserts, etc.
 //
 // Mapping

@@ -20,8 +20,9 @@
 //  2. As they are used in the wire protocol implementation.
 //  3. As they are used to store data in PostgreSQL.
 //
-// The first representation is provided by the types package.
-// The second and third representations are provided by this package (bson).
+// The first representation is provided by types package.
+// The second is provided by bson package.
+// The third is provided by this package (fjson).
 // The reason for that is a separation of concerns: to avoid method names clashes, to simplify type asserts, etc.
 //
 // JSON mapping for storage
