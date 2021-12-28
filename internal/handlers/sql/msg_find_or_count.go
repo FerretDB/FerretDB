@@ -52,7 +52,7 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 			if i != 0 {
 				projectionStr += ", "
 			}
-			projectionStr += k + " as " + k
+			projectionStr += pgx.Identifier{k}.Sanitize()
 		}
 	}
 	if isFindOp {
