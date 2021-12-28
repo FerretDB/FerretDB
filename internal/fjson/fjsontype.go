@@ -78,7 +78,7 @@ func checkConsumed(dec *json.Decoder, r *bytes.Reader) error {
 	return nil
 }
 
-func unmarshalJSONValue(data []byte) (any, error) {
+func Unmarshal(data []byte) (any, error) {
 	var v any
 	r := bytes.NewReader(data)
 	dec := json.NewDecoder(r)
@@ -153,7 +153,7 @@ func unmarshalJSONValue(data []byte) (any, error) {
 	return res, nil
 }
 
-func marshalJSONValue(v any) ([]byte, error) {
+func Marshal(v any) ([]byte, error) {
 	var o json.Marshaler
 	switch v := v.(type) {
 	case types.Document:

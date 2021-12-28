@@ -46,7 +46,7 @@ func (a *Array) UnmarshalJSON(data []byte) error {
 
 	ta := types.MakeArray(len(rawMessages))
 	for _, el := range rawMessages {
-		v, err := unmarshalJSONValue(el)
+		v, err := Unmarshal(el)
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
@@ -76,7 +76,7 @@ func (a Array) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
-		b, err := marshalJSONValue(el)
+		b, err := Marshal(el)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
