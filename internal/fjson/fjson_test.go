@@ -51,7 +51,7 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
 				require.Equal(t, tc.canonJ, dst.String(), "canonJ should be compacted")
 			}
 
-			t.Run("Unmarshal", func(t *testing.T) {
+			t.Run("UnmarshalJSON", func(t *testing.T) {
 				t.Parallel()
 
 				v := newFunc()
@@ -60,21 +60,13 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
 				if tc.jErr == "" {
 					require.NoError(t, err)
 
-					v2, err := Unmarshal([]byte(tc.j))
-					require.NoError(t, err)
-					v2 = toFJSON(v2)
-
 					if d, ok := tc.v.(*Double); ok && math.IsNaN(float64(*d)) {
 						// NaN != NaN, do special handling
 						d, ok = v.(*Double)
 						require.True(t, ok, "%#v", v)
 						assert.True(t, math.IsNaN(float64(*d)))
-						d, ok = v2.(*Double)
-						require.True(t, ok)
-						assert.True(t, math.IsNaN(float64(*d)))
 					} else {
 						assert.Equal(t, tc.v, v, "expected: %s\nactual  : %s", tc.v, v)
-						assert.Equal(t, tc.v, v2)
 					}
 					return
 				}
@@ -90,10 +82,44 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
 				require.Equal(t, tc.jErr, err.Error())
 			})
 
-			t.Run("Marshal", func(t *testing.T) {
+			t.Run("Unmarshal", func(t *testing.T) {
+				if tc.jErr != "" {
+					t.Skip("tc.jErr is not empty")
+				}
+
+				t.Parallel()
+
+				v, err := Unmarshal([]byte(tc.j))
+				require.NoError(t, err)
+				v = toFJSON(v)
+
+				if d, ok := tc.v.(*Double); ok && math.IsNaN(float64(*d)) {
+					// NaN != NaN, do special handling
+					d, ok = v.(*Double)
+					require.True(t, ok)
+					assert.True(t, math.IsNaN(float64(*d)))
+				} else {
+					assert.Equal(t, tc.v, v, "expected: %s\nactual  : %s", tc.v, v)
+					assert.Equal(t, tc.v, v)
+				}
+			})
+
+			t.Run("MarshalJSON", func(t *testing.T) {
 				t.Parallel()
 
 				actualJ, err := tc.v.MarshalJSON()
+				require.NoError(t, err)
+				expectedJ := tc.j
+				if tc.canonJ != "" {
+					expectedJ = tc.canonJ
+				}
+				assert.Equal(t, expectedJ, string(actualJ))
+			})
+
+			t.Run("Marshal", func(t *testing.T) {
+				t.Parallel()
+
+				actualJ, err := Marshal(fromFJSON(tc.v))
 				require.NoError(t, err)
 				expectedJ := tc.j
 				if tc.canonJ != "" {
