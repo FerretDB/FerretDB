@@ -16,13 +16,10 @@
 //
 // All BSON data types have three representations in FerretDB:
 //
-//  1. As they are used in handlers implementation.
-//  2. As they are used in the wire protocol implementation.
-//  3. As they are used to store data in PostgreSQL.
+//  1. As they are used in handlers implementation (types package).
+//  2. As they are used in the wire protocol implementation (bson package).
+//  3. As they are used to store data in PostgreSQL (fjson package).
 //
-// The first representation is provided by types package.
-// The second is provided by this package (bson).
-// The third is provided by fjson package.
 // The reason for that is a separation of concerns: to avoid method names clashes, to simplify type asserts, etc.
 package bson
 
