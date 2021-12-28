@@ -519,17 +519,14 @@ func TestReadOnlyHandlers(t *testing.T) {
 						),
 					),
 					"id", int64(0),
-					"ns", "pagila.actor",
+					// will patch later, it depends on db
+					"ns", "",
 				),
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, req types.Document, actual, expected types.CompositeType) {
-				db, err := req.Get("$db")
-				require.NoError(t, err)
-				if db.(string) == "monila" {
-					actualV := testutil.GetByPath(t, actual, "cursor", "ns")
-					testutil.SetByPath(t, expected, actualV, "cursor", "ns")
-				}
+				actualV := testutil.GetByPath(t, actual, "cursor", "ns")
+				testutil.SetByPath(t, expected, actualV, "cursor", "ns")
 				assert.Equal(t, expected, actual)
 			},
 		},
