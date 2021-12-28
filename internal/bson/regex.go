@@ -90,7 +90,7 @@ func (regex *Regex) UnmarshalJSON(data []byte) error {
 
 // MarshalJSON implements bsontype interface.
 func (regex Regex) MarshalJSON() ([]byte, error) {
-	return fjson.Regex(regex).MarshalJSON()
+	return fjson.Marshal(fromBSON(&regex))
 }
 
 // check interfaces

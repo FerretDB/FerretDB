@@ -84,7 +84,7 @@ func (dt *DateTime) UnmarshalJSON(data []byte) error {
 
 // MarshalJSON implements bsontype interface.
 func (dt DateTime) MarshalJSON() ([]byte, error) {
-	return fjson.DateTime(dt).MarshalJSON()
+	return fjson.Marshal(fromBSON(&dt))
 }
 
 // check interfaces

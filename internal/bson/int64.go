@@ -74,7 +74,7 @@ func (i *Int64) UnmarshalJSON(data []byte) error {
 
 // MarshalJSON implements bsontype interface.
 func (i Int64) MarshalJSON() ([]byte, error) {
-	return fjson.Int64(i).MarshalJSON()
+	return fjson.Marshal(fromBSON(&i))
 }
 
 // check interfaces

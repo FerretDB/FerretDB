@@ -434,12 +434,7 @@ func (doc *Document) UnmarshalJSON(data []byte) error {
 
 // MarshalJSON implements bsontype interface.
 func (doc Document) MarshalJSON() ([]byte, error) {
-	d, err := types.ConvertDocument(&doc)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return fjson.Document(d).MarshalJSON()
+	return fjson.Marshal(fromBSON(&doc))
 }
 
 // check interfaces

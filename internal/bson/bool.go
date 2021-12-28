@@ -82,7 +82,7 @@ func (b *Bool) UnmarshalJSON(data []byte) error {
 
 // MarshalJSON implements bsontype interface.
 func (b Bool) MarshalJSON() ([]byte, error) {
-	return fjson.Bool(b).MarshalJSON()
+	return fjson.Marshal(fromBSON(&b))
 }
 
 // check interfaces

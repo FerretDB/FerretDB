@@ -72,7 +72,7 @@ func (cstr *CString) UnmarshalJSON(data []byte) error {
 
 // MarshalJSON implements bsontype interface.
 func (cstr CString) MarshalJSON() ([]byte, error) {
-	return fjson.CString(cstr).MarshalJSON()
+	return fjson.Marshal(fromBSON(&cstr))
 }
 
 // check interfaces

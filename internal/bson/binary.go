@@ -93,7 +93,7 @@ func (bin *Binary) UnmarshalJSON(data []byte) error {
 
 // MarshalJSON implements bsontype interface.
 func (bin Binary) MarshalJSON() ([]byte, error) {
-	return fjson.Binary(bin).MarshalJSON()
+	return fjson.Marshal(fromBSON(&bin))
 }
 
 // check interfaces

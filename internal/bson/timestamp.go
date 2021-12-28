@@ -75,7 +75,7 @@ func (ts *Timestamp) UnmarshalJSON(data []byte) error {
 
 // MarshalJSON implements bsontype interface.
 func (ts Timestamp) MarshalJSON() ([]byte, error) {
-	return fjson.Timestamp(ts).MarshalJSON()
+	return fjson.Marshal(fromBSON(&ts))
 }
 
 // check interfaces
