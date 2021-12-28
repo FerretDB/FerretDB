@@ -50,7 +50,7 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		projectionStr = ""
 		for i, k := range projection.Keys() {
 			if i != 0 {
-				projectionStr += ","
+				projectionStr += ", "
 			}
 			projectionStr += k + " as " + k
 		}
