@@ -27,10 +27,11 @@ import (
 var version string
 
 type Info struct {
-	Version      string
-	Commit       string
-	Dirty        bool
-	IsDebugBuild bool
+	Version          string
+	Commit           string
+	Dirty            bool
+	IsDebugBuild     bool
+	BuildEnvironment map[string]string
 }
 
 var info *Info
@@ -49,7 +50,10 @@ func init() {
 		return
 	}
 
+	info.BuildEnvironment = make(map[string]string)
 	for _, s := range buildInfo.Settings {
+		info.BuildEnvironment[s.Key] = s.Value
+
 		switch s.Key {
 		case "vcs.revision":
 			info.Commit = s.Value

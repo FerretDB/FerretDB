@@ -422,6 +422,12 @@ func TestReadOnlyHandlers(t *testing.T) {
 	}
 
 	hostname, err := os.Hostname()
+
+	buildEnvironment := types.MustMakeDocument()
+	for k, v := range version.Get().BuildEnvironment {
+		buildEnvironment.Set(k, v)
+	}
+
 	require.NoError(t, err)
 
 	testCases := map[string]testCase{
@@ -437,6 +443,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"debug", version.Get().IsDebugBuild,
 				"maxBsonObjectSize", int32(bson.MaxDocumentLen),
 				"ok", float64(1),
+				"buildEnvironment", buildEnvironment,
 			),
 		},
 		"CollStats": {
