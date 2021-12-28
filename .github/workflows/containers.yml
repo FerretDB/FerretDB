@@ -1,10 +1,10 @@
 ---
-name: 'containers_main'
+name: 'containers'
 
 on:
   push:
     branches:
-      - main
+      - '**'
 
 env:
   GOPATH: /home/runner/go
@@ -42,7 +42,16 @@ jobs:
       - name: Initialize docker
         run: make docker-init
 
+      - name: Get branch name
+        shell: bash
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        id: branch_out
+
+      - name: Display branch name
+        shell: bash
+        run: echo ${{ steps.branch_out.outputs.branch }}
+
       - name: Push the continer images
         env:
-          DOCKER_TAG: main
+          DOCKER_TAG: ${{ steps.branch_out.outputs.branch }}
         run: make docker-push
