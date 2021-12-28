@@ -45,14 +45,14 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	_, isFindOp := m["find"].(string)
 	db := m["$db"].(string)
 
-	projectionIn, _ := m["projection"].(types.Document)
-	projectionSQL, projectionArgs, err := projection(projectionIn, &placeholder)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-	args = append(args, projectionArgs...)
-
 	if isFindOp {
+		projectionIn, _ := m["projection"].(types.Document)
+		projectionSQL, projectionArgs, err := projection(projectionIn, &placeholder)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		args = append(args, projectionArgs...)
+
 		collection = m["find"].(string)
 		filter, _ = m["filter"].(types.Document)
 		sql = fmt.Sprintf(`SELECT %s FROM %s`, projectionSQL, pgx.Identifier{db, collection}.Sanitize())
