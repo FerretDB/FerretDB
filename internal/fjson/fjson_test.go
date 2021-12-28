@@ -184,7 +184,7 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() fjsontype) {
 	for _, tc := range testCases {
 		tc := tc
 		b.Run(tc.name, func(b *testing.B) {
-			b.Run("Unmarshal", func(b *testing.B) {
+			b.Run("UnmarshalJSON", func(b *testing.B) {
 				data := []byte(tc.j)
 				var v fjsontype
 				var err error
