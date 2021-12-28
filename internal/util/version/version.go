@@ -27,9 +27,10 @@ import (
 var version string
 
 type Info struct {
-	Version string
-	Commit  string
-	Dirty   bool
+	Version      string
+	Commit       string
+	Dirty        bool
+	IsDebugBuild bool
 }
 
 var info *Info
@@ -54,6 +55,12 @@ func init() {
 			info.Commit = s.Value
 		case "vcs.modified":
 			info.Dirty, _ = strconv.ParseBool(s.Value)
+		case "-race":
+			info.IsDebugBuild, _ = strconv.ParseBool(s.Value)
+		case "-tags":
+			if s.Value == "testcover" {
+				info.IsDebugBuild = true
+			}
 		}
 	}
 }

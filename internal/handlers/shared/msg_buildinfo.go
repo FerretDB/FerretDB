@@ -37,6 +37,7 @@ func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			"gitVersion", version.Get().Commit,
 			"versionArray", types.MustNewArray(int32(5), int32(0), int32(42), int32(0)),
 			"bits", int32(strconv.IntSize),
+			"debug", version.Get().IsDebugBuild,
 			"maxBsonObjectSize", int32(bson.MaxDocumentLen),
 			"ok", float64(1),
 		)},
