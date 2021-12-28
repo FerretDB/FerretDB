@@ -28,22 +28,22 @@
 // Mapping
 //
 // Composite types
-//  types.Document    bson.Document
-//  *types.Array      bson.Array
+//  types.Document   *bson.Document  *fjson.Document
+//  *types.Array     *bson.Array     *fjson.Array
 // Value types
-//  float64           bson.Double
-//  string            bson.String
-//  types.Binary      bson.Binary
-//  types.ObjectID    bson.ObjectID
-//  bool              bson.Bool
-//  time.Time         bson.DateTime
-//  any(nil)          any(nil)
-//  types.Regex       bson.Regex
-//  int32             bson.Int32
-//  types.Timestamp   bson.Timestamp
-//  int64             bson.Int64
-//  TODO              bson.Decimal128
-//  types.CString     bson.CString
+//  float64          *bson.Double     *fjson.Double
+//  string           *bson.String     *fjson.String
+//  types.Binary     *bson.Binary     *fjson.Binary
+//  types.ObjectID   *bson.ObjectID   *fjson.ObjectID
+//  bool             *bson.Bool       *fjson.Bool
+//  time.Time        *bson.DateTime   *fjson.DateTime
+//  any(nil)         any(nil)         any(nil)
+//  types.Regex      *bson.Regex      *fjson.Regex
+//  int32            *bson.Int32      *fjson.Int32
+//  types.Timestamp  *bson.Timestamp  *fjson.Timestamp
+//  int64            *bson.Int64      *fjson.Int64
+//  TODO Decimal128
+//  types.CString    *bson.CString    *fjson.CString
 package types
 
 import (
