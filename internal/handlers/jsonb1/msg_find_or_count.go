@@ -43,13 +43,28 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	db := m["$db"].(string)
 
 	projection, ok := m["projection"].(types.Document)
+	projectionStr := "_jsonb"
 	if ok && len(projection.Map()) != 0 {
-		return nil, common.NewErrorMessage(common.ErrNotImplemented, "MsgFind: projection is not supported")
+		ks := ""
+		for i, k := range projection.Keys() {
+			if i != 0 {
+				ks += ","
+			}
+			ks += " '" + k + "'"
+		}
+		projectionStr = "json_build_object('$k', array[" + ks + "],"
+		for i, k := range projection.Keys() {
+			if i != 0 {
+				projectionStr += ","
+			}
+			projectionStr += "'" + k + "', _jsonb->'" + k + "'"
+		}
+		projectionStr += ")"
 	}
 	if isFindOp {
 		collection = m["find"].(string)
 		filter, _ = m["filter"].(types.Document)
-		sql = fmt.Sprintf(`SELECT _jsonb FROM %s`, pgx.Identifier{db, collection}.Sanitize())
+		sql = fmt.Sprintf(`SELECT %s FROM %s`, projectionStr, pgx.Identifier{db, collection}.Sanitize())
 	} else {
 		collection = m["count"].(string)
 		filter, _ = m["query"].(types.Document)

@@ -498,6 +498,42 @@ func TestReadOnlyHandlers(t *testing.T) {
 			),
 		},
 
+		"FindProjectionActorsFirsAndLastName": {
+			req: types.MustMakeDocument(
+				"find", "actor",
+				"projection", types.MustMakeDocument(
+					"first_name", int32(1),
+					"last_name", int32(1),
+				),
+				"filter", types.MustMakeDocument(
+					"actor_id", int32(28),
+				),
+			),
+			reqSetDB: true,
+			resp: types.MustMakeDocument(
+				"cursor", types.MustMakeDocument(
+					"firstBatch", types.MustNewArray(
+						types.MustMakeDocument(
+							"first_name", "WOODY",
+							"last_name", "HOFFMAN",
+						),
+					),
+					"id", int64(0),
+					"ns", "pagila.actor",
+				),
+				"ok", float64(1),
+			),
+			compareFunc: func(t testing.TB, req types.Document, actual, expected types.CompositeType) {
+				db, err := req.Get("$db")
+				require.NoError(t, err)
+				if db.(string) == "monila" {
+					actualV := testutil.GetByPath(t, actual, "cursor", "ns")
+					testutil.SetByPath(t, expected, actualV, "cursor", "ns")
+				}
+				assert.Equal(t, expected, actual)
+			},
+		},
+
 		"GetLog": {
 			req: types.MustMakeDocument(
 				"getLog", "startupWarnings",
