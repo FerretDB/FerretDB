@@ -38,9 +38,7 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			require.NotEmpty(t, tc.name, "name should not be empty")
-			if tc.j == "" {
-				t.Skip("j is empty")
-			}
+			require.NotEmpty(t, tc.j, "j should not be empty")
 
 			t.Parallel()
 
@@ -53,11 +51,12 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
 				require.Equal(t, tc.canonJ, dst.String(), "canonJ should be compacted")
 			}
 
-			t.Run("UnmarshalJSON", func(t *testing.T) {
+			t.Run("Unmarshal", func(t *testing.T) {
 				t.Parallel()
 
 				v := newFunc()
 				err := v.UnmarshalJSON([]byte(tc.j))
+
 				if tc.jErr == "" {
 					require.NoError(t, err)
 					if d, ok := v.(*Double); ok && math.IsNaN(float64(*d)) {
@@ -82,7 +81,7 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
 				require.Equal(t, tc.jErr, err.Error())
 			})
 
-			t.Run("MarshalJSON", func(t *testing.T) {
+			t.Run("Marshal", func(t *testing.T) {
 				t.Parallel()
 
 				actualJ, err := tc.v.MarshalJSON()
@@ -150,7 +149,7 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() fjsontype) {
 	for _, tc := range testCases {
 		tc := tc
 		b.Run(tc.name, func(b *testing.B) {
-			b.Run("UnmarshalJSON", func(b *testing.B) {
+			b.Run("Unmarshal", func(b *testing.B) {
 				data := []byte(tc.j)
 				var v fjsontype
 				var err error

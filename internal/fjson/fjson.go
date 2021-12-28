@@ -64,6 +64,7 @@ type fjsontype interface {
 
 //go-sumtype:decl fjsontype
 
+// checkConsumed returns error if decoder or reader have buffered or unread data.
 func checkConsumed(dec *json.Decoder, r *bytes.Reader) error {
 	if dr := dec.Buffered().(*bytes.Reader); dr.Len() != 0 {
 		b, _ := io.ReadAll(dr)
@@ -78,6 +79,7 @@ func checkConsumed(dec *json.Decoder, r *bytes.Reader) error {
 	return nil
 }
 
+// Unmarshal decodes the given fjson-encoded data.
 func Unmarshal(data []byte) (any, error) {
 	var v any
 	r := bytes.NewReader(data)
@@ -127,7 +129,7 @@ func Unmarshal(data []byte) (any, error) {
 			err = o.UnmarshalJSON(data)
 			res = int64(o)
 		default:
-			err = lazyerrors.Errorf("unmarshalJSONValue: unhandled map %v", v)
+			err = lazyerrors.Errorf("fjson.Unmarshal: unhandled map %v", v)
 		}
 	case string:
 		res = v
@@ -143,7 +145,7 @@ func Unmarshal(data []byte) (any, error) {
 	case float64:
 		res = int32(v)
 	default:
-		err = lazyerrors.Errorf("unmarshalJSONValue: unhandled element %[1]T (%[1]v)", v)
+		err = lazyerrors.Errorf("fjson.Unmarshal: unhandled element %[1]T (%[1]v)", v)
 	}
 
 	if err != nil {
@@ -153,6 +155,7 @@ func Unmarshal(data []byte) (any, error) {
 	return res, nil
 }
 
+// Marshal encodes given value into fjson.
 func Marshal(v any) ([]byte, error) {
 	var o json.Marshaler
 	switch v := v.(type) {
@@ -183,7 +186,7 @@ func Marshal(v any) ([]byte, error) {
 	case int64:
 		o = Int64(v)
 	default:
-		return nil, lazyerrors.Errorf("marshalJSONValue: unhandled type %T", v)
+		return nil, lazyerrors.Errorf("fjson.Marshal: unhandled type %T", v)
 	}
 
 	b, err := o.MarshalJSON()
