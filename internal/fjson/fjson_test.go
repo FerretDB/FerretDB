@@ -59,13 +59,22 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
 
 				if tc.jErr == "" {
 					require.NoError(t, err)
-					if d, ok := v.(*Double); ok && math.IsNaN(float64(*d)) {
+
+					v2, err := Unmarshal([]byte(tc.j))
+					require.NoError(t, err)
+					v2 = toFJSON(v2)
+
+					if d, ok := tc.v.(*Double); ok && math.IsNaN(float64(*d)) {
 						// NaN != NaN, do special handling
-						d, ok = tc.v.(*Double)
-						assert.True(t, ok)
+						d, ok = v.(*Double)
+						require.True(t, ok, "%#v", v)
+						assert.True(t, math.IsNaN(float64(*d)))
+						d, ok = v2.(*Double)
+						require.True(t, ok)
 						assert.True(t, math.IsNaN(float64(*d)))
 					} else {
 						assert.Equal(t, tc.v, v, "expected: %s\nactual  : %s", tc.v, v)
+						assert.Equal(t, tc.v, v2)
 					}
 					return
 				}

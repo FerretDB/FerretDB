@@ -42,7 +42,7 @@
 //  types.Timestamp   bson.Timestamp
 //  int64             bson.Int64
 //  TODO              bson.Decimal128
-//  (does not exist)  bson.CString
+//  types.CString     bson.CString
 package types
 
 import (
@@ -58,6 +58,8 @@ type CompositeType interface {
 //go-sumtype:decl CompositeType
 
 type (
+	CString string
+
 	ObjectID [12]byte
 
 	Regex struct {
@@ -98,6 +100,8 @@ func validateValue(value any) error {
 	case Timestamp:
 		return nil
 	case int64:
+		return nil
+	case CString:
 		return nil
 	default:
 		return fmt.Errorf("types.validateValue: unsupported type: %[1]T (%[1]v)", value)

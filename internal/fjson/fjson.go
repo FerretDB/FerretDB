@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package bson provides converters from/to BSON.
+// Package fjson provides converters from/to FJSON.
 //
 // All BSON data types have three representations in FerretDB:
 //
@@ -51,6 +51,8 @@ import (
 	"io"
 	"time"
 
+	"github.com/AlekSi/pointer"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -79,6 +81,76 @@ func checkConsumed(dec *json.Decoder, r *bytes.Reader) error {
 	return nil
 }
 
+func fromFJSON(v fjsontype) any {
+	switch v := v.(type) {
+	case *Document:
+		return types.Document(*v)
+	case *Array:
+		return pointer.To(types.Array(*v))
+	case *Double:
+		return float64(*v)
+	case *String:
+		return string(*v)
+	case *Binary:
+		return types.Binary(*v)
+	case *ObjectID:
+		return types.ObjectID(*v)
+	case *Bool:
+		return bool(*v)
+	case *DateTime:
+		return time.Time(*v)
+	case nil:
+		return nil
+	case *Regex:
+		return types.Regex(*v)
+	case *Int32:
+		return int32(*v)
+	case *Timestamp:
+		return types.Timestamp(*v)
+	case *Int64:
+		return int64(*v)
+	case *CString:
+		return types.CString(*v)
+	}
+
+	panic("not reached") // for go-sumtype to work
+}
+
+func toFJSON(v any) fjsontype {
+	switch v := v.(type) {
+	case types.Document:
+		return pointer.To(Document(v))
+	case *types.Array:
+		return pointer.To(Array(*v))
+	case float64:
+		return pointer.To(Double(v))
+	case string:
+		return pointer.To(String(v))
+	case types.Binary:
+		return pointer.To(Binary(v))
+	case types.ObjectID:
+		return pointer.To(ObjectID(v))
+	case bool:
+		return pointer.To(Bool(v))
+	case time.Time:
+		return pointer.To(DateTime(v))
+	case nil:
+		return nil
+	case types.Regex:
+		return pointer.To(Regex(v))
+	case int32:
+		return pointer.To(Int32(v))
+	case types.Timestamp:
+		return pointer.To(Timestamp(v))
+	case int64:
+		return pointer.To(Int64(v))
+	case types.CString:
+		return pointer.To(CString(v))
+	}
+
+	panic("not reached")
+}
+
 // Unmarshal decodes the given fjson-encoded data.
 func Unmarshal(data []byte) (any, error) {
 	var v any
@@ -92,58 +164,61 @@ func Unmarshal(data []byte) (any, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	var res any
+	var res fjsontype
 	switch v := v.(type) {
 	case map[string]any:
 		switch {
 		case v["$f"] != nil:
 			var o Double
 			err = o.UnmarshalJSON(data)
-			res = float64(o)
+			res = &o
 		case v["$k"] != nil:
 			var o Document
 			err = o.UnmarshalJSON(data)
-			res = types.Document(o)
+			res = &o
 		case v["$b"] != nil:
 			var o Binary
 			err = o.UnmarshalJSON(data)
-			res = types.Binary(o)
+			res = &o
 		case v["$o"] != nil:
 			var o ObjectID
 			err = o.UnmarshalJSON(data)
-			res = types.ObjectID(o)
+			res = &o
 		case v["$d"] != nil:
 			var o DateTime
 			err = o.UnmarshalJSON(data)
-			res = time.Time(o)
+			res = &o
 		case v["$r"] != nil:
 			var o Regex
 			err = o.UnmarshalJSON(data)
-			res = types.Regex(o)
+			res = &o
 		case v["$t"] != nil:
 			var o Timestamp
 			err = o.UnmarshalJSON(data)
-			res = types.Timestamp(o)
+			res = &o
 		case v["$l"] != nil:
 			var o Int64
 			err = o.UnmarshalJSON(data)
-			res = int64(o)
+			res = &o
+		case v["$c"] != nil:
+			var o CString
+			err = o.UnmarshalJSON(data)
+			res = &o
 		default:
 			err = lazyerrors.Errorf("fjson.Unmarshal: unhandled map %v", v)
 		}
 	case string:
-		res = v
+		res = pointer.To(String(v))
 	case []any:
 		var o Array
 		err = o.UnmarshalJSON(data)
-		ta := types.Array(o)
-		res = &ta
+		res = &o
 	case bool:
-		res = v
+		res = pointer.To(Bool(v))
 	case nil:
-		res = v
+		res = nil
 	case float64:
-		res = int32(v)
+		res = pointer.To(Int32(v))
 	default:
 		err = lazyerrors.Errorf("fjson.Unmarshal: unhandled element %[1]T (%[1]v)", v)
 	}
@@ -152,44 +227,16 @@ func Unmarshal(data []byte) (any, error) {
 		return nil, err
 	}
 
-	return res, nil
+	return fromFJSON(res), nil
 }
 
 // Marshal encodes given value into fjson.
 func Marshal(v any) ([]byte, error) {
-	var o json.Marshaler
-	switch v := v.(type) {
-	case types.Document:
-		o = Document(v)
-	case *types.Array:
-		o = Array(*v)
-	case float64:
-		o = Double(v)
-	case string:
-		o = String(v)
-	case types.Binary:
-		o = Binary(v)
-	case types.ObjectID:
-		o = ObjectID(v)
-	case bool:
-		o = Bool(v)
-	case time.Time:
-		o = DateTime(v)
-	case nil:
+	if v == nil {
 		return []byte("null"), nil
-	case types.Regex:
-		o = Regex(v)
-	case int32:
-		o = Int32(v)
-	case types.Timestamp:
-		o = Timestamp(v)
-	case int64:
-		o = Int64(v)
-	default:
-		return nil, lazyerrors.Errorf("fjson.Marshal: unhandled type %T", v)
 	}
 
-	b, err := o.MarshalJSON()
+	b, err := toFJSON(v).MarshalJSON()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
