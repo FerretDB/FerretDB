@@ -50,8 +50,16 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	}
 	if isFindOp {
 		collection = m["find"].(string)
+		isCapped, err := h.pgPool.IsCappedTable(ctx, db, collection)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 		filter, _ = m["filter"].(types.Document)
 		sql = fmt.Sprintf(`SELECT * FROM %s`, pgx.Identifier{db, collection}.Sanitize())
+		// https://docs.mongodb.com/manual/core/capped-collections/#query-a-capped-collection
+		if isCapped {
+			sql += " ORDER BY created_dt"
+		}
 	} else {
 		collection = m["count"].(string)
 		filter, _ = m["query"].(types.Document)

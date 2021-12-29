@@ -262,6 +262,46 @@ func (pgPool *Pool) CreateTable(ctx context.Context, db, collection string) erro
 	return err
 }
 
+// CreateCappedTable creates a new capped FerretDB collection / PostgreSQL jsonb table.
+//
+// In addition to the table, a sequence (cycled) is also created.
+// ErrAlreadyExist is returned if table already exist.
+func (pgPool *Pool) CreateCappedTable(ctx context.Context, db, collection string, max int32) error {
+	seqName := pgx.Identifier{db, collection + "_capped_idx"}.Sanitize()
+	seqOpts := fmt.Sprintf(`START WITH 1 INCREMENT BY 1 MINVALUE 1 MAXVALUE %d CACHE 1 CYCLE`, max)
+
+	tblName := pgx.Identifier{db, collection}.Sanitize()
+	capColumn := fmt.Sprintf(`_id integer PRIMARY KEY DEFAULT nextval('%s') NOT NULL`, seqName)
+	dtColumn := `_dt timestamp DEFAULT current_timestamp NOT NULL`
+	sqls := []string{
+		`CREATE SEQUENCE ` + seqName + ` ` + seqOpts,
+		`CREATE TABLE ` + tblName + ` (_jsonb jsonb, ` + capColumn + `, ` + dtColumn + ` )`,
+	}
+	for _, sql := range sqls {
+		_, err := pgPool.Exec(ctx, sql)
+
+		if e, ok := err.(*pgconn.PgError); ok && e.Code == pgerrcode.DuplicateTable {
+			return ErrAlreadyExist
+		}
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// IsCappedTable returns if a table is capped
+func (pgPool *Pool) IsCappedTable(ctx context.Context, db, collection string) (bool, error) {
+	var isCappedTable bool
+	sql := `SELECT COUNT(*) > 0 FROM information_schema.columns WHERE column_name = $1 AND table_schema = $2 AND table_name = $3`
+	if err := pgPool.QueryRow(ctx, sql, "_id", db, collection).Scan(&isCappedTable); err != nil {
+		return false, lazyerrors.Errorf("Handler.msgStorage: %w", err)
+	}
+	return isCappedTable, nil
+}
+
 // DropTable drops FerretDB collection / PostgreSQL table.
 //
 // It returns ErrNotExist is table does not exist.

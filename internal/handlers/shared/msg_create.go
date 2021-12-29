@@ -34,12 +34,23 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	m := document.Map()
 	collection := m[document.Command()].(string)
 	db := m["$db"].(string)
+	isCapped, _ := m["capped"].(bool)
+	cappedMax, okMax := m["max"].(int32)
+	if !okMax {
+		cappedMax = 1024
+	}
 
 	if err := h.pgPool.CreateSchema(ctx, db); err != nil && err != pg.ErrAlreadyExist {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err = h.pgPool.CreateTable(ctx, db, collection); err != nil {
+	if isCapped {
+		err = h.pgPool.CreateCappedTable(ctx, db, collection, cappedMax)
+	} else {
+		err = h.pgPool.CreateTable(ctx, db, collection)
+	}
+
+	if err != nil {
 		if err == pg.ErrAlreadyExist {
 			return nil, common.NewErrorMessage(common.ErrNamespaceExists, "Collection already exists. NS: %s.%s", db, collection)
 		}

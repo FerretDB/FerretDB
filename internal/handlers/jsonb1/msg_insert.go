@@ -38,6 +38,11 @@ func (h *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	db := m["$db"].(string)
 	docs, _ := m["documents"].(*types.Array)
 
+	isCappedTable, err := h.pgPool.IsCappedTable(ctx, db, collection)
+	if err != nil {
+		return nil, err
+	}
+
 	var inserted int32
 	for i := 0; i < docs.Len(); i++ {
 		doc, err := docs.Get(i)
@@ -47,6 +52,9 @@ func (h *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		d := doc.(types.Document)
 		sql := fmt.Sprintf("INSERT INTO %s (_jsonb) VALUES ($1)", pgx.Identifier{db, collection}.Sanitize())
+		if isCappedTable {
+			sql += " ON CONFLICT (_id) DO UPDATE SET _jsonb = EXCLUDED._jsonb, _dt = DEFAULT"
+		}
 		b, err := bson.MustConvertDocument(d).MarshalJSON()
 		if err != nil {
 			return nil, err
