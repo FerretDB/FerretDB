@@ -47,7 +47,7 @@ jobs:
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
-          username: ferretdb-bot
+          username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push images with tag "${{ env.DOCKER_TAG }}"
