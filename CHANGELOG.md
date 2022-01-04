@@ -1,6 +1,6 @@
 # Changelog
 
-## [v0.0.5](https://github.com/FerretDB/FerretDB/releases/tag/v0.0.4) (2022-01-04)
+## [v0.0.5](https://github.com/FerretDB/FerretDB/releases/tag/v0.0.5) (2022-01-04)
 
 ### New Features 🎉
 * Add basic metrics by @AlekSi in https://github.com/FerretDB/FerretDB/pull/108

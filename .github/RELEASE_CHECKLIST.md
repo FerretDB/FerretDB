@@ -8,6 +8,6 @@
 6. Push it!
 7. Make [release](https://github.com/FerretDB/FerretDB/releases).
 8. Refresh
-   * `env GO111MODULE=on GOPROXY=https://proxy.golang.org go get -v github.com/FerretDB/FerretDB@<tag>`
+   * `env GOPROXY=https://proxy.golang.org go get -v github.com/FerretDB/FerretDB@<tag>`
    * https://pkg.go.dev/github.com/FerretDB/FerretDB
 9. `make docker`, add tag, push image.
