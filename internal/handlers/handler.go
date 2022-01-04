@@ -66,6 +66,12 @@ func New(opts *NewOpts) *Handler {
 	}
 }
 
+type command struct {
+	name    string
+	help    string
+	handler func(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
+}
+
 // Handle handles the message.
 //
 // Message handlers should:
@@ -153,69 +159,148 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 
 	h.metrics.requests.WithLabelValues(wire.OP_MSG.String(), cmd).Inc()
 
-	switch cmd {
-	case "buildinfo":
-		return h.shared.MsgBuildInfo(ctx, msg)
-	case "collstats":
-		return h.shared.MsgCollStats(ctx, msg)
-	case "create":
-		return h.shared.MsgCreate(ctx, msg)
-	case "drop":
-		return h.shared.MsgDrop(ctx, msg)
-	case "dropdatabase":
-		return h.shared.MsgDropDatabase(ctx, msg)
-	case "getcmdlineopts":
-		return h.shared.MsgGetCmdLineOpts(ctx, msg)
-	case "getlog":
-		return h.shared.MsgGetLog(ctx, msg)
-	case "getparameter":
-		return h.shared.MsgGetParameter(ctx, msg)
-	case "hostinfo":
-		return h.shared.MsgHostInfo(ctx, msg)
-	case "ismaster", "hello":
-		return h.shared.MsgHello(ctx, msg)
-	case "listcollections":
-		return h.shared.MsgListCollections(ctx, msg)
-	case "listcommands":
-		return h.shared.MsgListCommands(ctx, msg)
-	case "listdatabases":
-		return h.shared.MsgListDatabases(ctx, msg)
-	case "ping":
-		return h.shared.MsgPing(ctx, msg)
-	case "whatsmyuri":
-		return h.shared.MsgWhatsMyURI(ctx, msg)
-	case "serverstatus":
-		return h.shared.MsgServerStatus(ctx, msg)
-
-	case "createindexes", "delete", "find", "insert", "update", "count":
-		storage, err := h.msgStorage(ctx, msg)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		switch cmd {
-		case "createindexes":
-			return storage.MsgCreateIndexes(ctx, msg)
-		case "delete":
-			return storage.MsgDelete(ctx, msg)
-		case "find", "count":
-			return storage.MsgFindOrCount(ctx, msg)
-		case "insert":
-			return storage.MsgInsert(ctx, msg)
-		case "update":
-			return storage.MsgUpdate(ctx, msg)
-		default:
-			panic("not reached")
-		}
-
-	case "debug_panic":
-		panic("debug_panic")
-	case "debug_error":
-		return nil, errors.New("debug_error")
-
-	default:
-		return nil, common.NewErrorMessage(common.ErrCommandNotFound, "no such command: '%s'", cmd)
+	storage, err := h.msgStorage(ctx, msg)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
+
+	var commands = map[string]command{
+		"buildinfo": {
+			name:    "buildinfo",
+			help:    "",
+			handler: h.shared.MsgBuildInfo,
+		},
+		"collstats": {
+			name:    "collstats",
+			help:    "",
+			handler: h.shared.MsgCollStats,
+		},
+		"create": {
+			name:    "create",
+			help:    "",
+			handler: h.shared.MsgCreate,
+		},
+		"drop": {
+			name:    "drop",
+			help:    "",
+			handler: h.shared.MsgHostInfo,
+		},
+		"dropdatabase": {
+			name:    "dropdatabase",
+			help:    "",
+			handler: h.shared.MsgHostInfo,
+		},
+		"getcmdlineopts": {
+			name:    "getcmdlineopts",
+			help:    "",
+			handler: h.shared.MsgGetCmdLineOpts,
+		},
+		"getlog": {
+			name:    "getlog",
+			help:    "",
+			handler: h.shared.MsgGetLog,
+		},
+		"getparameter": {
+			name:    "getparameter",
+			help:    "",
+			handler: h.shared.MsgGetParameter,
+		},
+		"hostinfo": {
+			name:    "hostInfo",
+			help:    "",
+			handler: h.shared.MsgHostInfo,
+		},
+		"ismaster": {
+			name:    "ismaster",
+			help:    "",
+			handler: h.shared.MsgHello,
+		},
+		"hello": {
+			name:    "hello",
+			help:    "",
+			handler: h.shared.MsgHello,
+		},
+		"listcollections": {
+			name:    "listcollections",
+			help:    "",
+			handler: h.shared.MsgListCollections,
+		},
+		"listdatabases": {
+			name:    "listdatabases",
+			help:    "",
+			handler: h.shared.MsgListDatabases,
+		},
+		"listcommands": {
+			name:    "listcommands",
+			help:    "",
+			handler: h.shared.MsgListCommands,
+		},
+		"ping": {
+			name:    "listcommands",
+			help:    "",
+			handler: h.shared.MsgPing,
+		},
+		"whatsmyuri": {
+			name:    "whatsmyuri",
+			help:    "",
+			handler: h.shared.MsgWhatsMyURI,
+		},
+		"serverstatus": {
+			name:    "serverstatus",
+			help:    "",
+			handler: h.shared.MsgServerStatus,
+		},
+		"createindexes": {
+			name:    "createindexes",
+			help:    "",
+			handler: storage.MsgCreateIndexes,
+		},
+		"delete": {
+			name:    "delete",
+			help:    "",
+			handler: storage.MsgDelete,
+		},
+		"find": {
+			name:    "find",
+			help:    "",
+			handler: storage.MsgFindOrCount,
+		},
+		"count": {
+			name:    "count",
+			help:    "",
+			handler: storage.MsgFindOrCount,
+		},
+		"insert": {
+			name:    "insert",
+			help:    "",
+			handler: storage.MsgInsert,
+		},
+		"update": {
+			name:    "update",
+			help:    "",
+			handler: storage.MsgUpdate,
+		},
+		"debug_error": {
+			name: "debug_error",
+			help: "",
+			handler: func(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
+				return nil, errors.New("debug_error")
+			},
+		},
+		"debug_panic": {
+			name: "debug_panic",
+			help: "",
+			handler: func(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
+				panic("debug_panic")
+			},
+		},
+	}
+
+	if cmd, ok := commands[cmd]; ok {
+		cmd.handler(ctx, msg)
+	}
+
+	return nil, common.NewErrorMessage(common.ErrCommandNotFound, "no such command: '%s'", cmd)
 }
 
 func (h *Handler) handleOpQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
