@@ -17,6 +17,8 @@ env:
 
 jobs:
   build:
+    if: never() # FIXME https://github.com/FerretDB/FerretDB/issues/70
+
     name: Build
     runs-on: ubuntu-20.04
 
