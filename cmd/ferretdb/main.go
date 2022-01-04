@@ -42,7 +42,7 @@ var (
 	postgresqlURLF   = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/ferretdb", "PostgreSQL URL")
 	proxyAddrF       = flag.String("proxy-addr", "127.0.0.1:37017", "")
 	tlsF             = flag.Bool("tls", false, "enable insecure TLS")
-	versionF         = flag.Bool("version", false, "show version and exit")
+	versionF         = flag.Bool("version", false, "print version to stdout (full version, commit, branch, dirty flag) and exit")
 	testConnTimeoutF = flag.Duration("test-conn-timeout", 0, "test: set connection timeout")
 )
 
@@ -54,11 +54,20 @@ func main() {
 	info := version.Get()
 
 	if *versionF {
-		logger.Info(info.Version, zap.String("version", info.Version), zap.String("commit", info.Commit), zap.Bool("dirty", info.Dirty))
+		fmt.Fprintln(os.Stdout, "version:", info.Version)
+		fmt.Fprintln(os.Stdout, "commit:", info.Commit)
+		fmt.Fprintln(os.Stdout, "branch:", info.Branch)
+		fmt.Fprintln(os.Stdout, "dirty:", info.Dirty)
 		return
 	}
 
-	logger.Info("Starting FerretDB "+info.Version+"...", zap.String("commit", info.Commit), zap.Bool("dirty", info.Dirty))
+	logger.Info(
+		"Starting FerretDB "+info.Version+"...",
+		zap.String("version", info.Version),
+		zap.String("commit", info.Commit),
+		zap.String("branch", info.Branch),
+		zap.Bool("dirty", info.Dirty),
+	)
 
 	var found bool
 	for _, m := range clientconn.AllModes {
