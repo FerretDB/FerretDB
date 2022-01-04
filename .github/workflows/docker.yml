@@ -1,10 +1,13 @@
 ---
-name: 'containers_main'
+name: Docker
 
 on:
   push:
     branches:
       - main
+    tags:
+      - v[0-9]+.[0-9]+.[0-9]+*
+  pull_request:
 
 env:
   GOPATH: /home/runner/go
@@ -13,8 +16,10 @@ env:
   GOPROXY: https://proxy.golang.org # remove direct
 
 jobs:
-  container-build:
-    name: Container build
+  build:
+    if: "false" # FIXME https://github.com/FerretDB/FerretDB/issues/70
+
+    name: Build
     runs-on: ubuntu-20.04
 
     steps:
@@ -23,11 +28,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Docker Buildx
-        id: buildx
+      - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v1
+        with:
+          use: false # we initialize our own instance below
 
-      - name: Login to GHCR
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
@@ -39,10 +45,14 @@ jobs:
         with:
           cache-key: test
 
-      - name: Initialize docker
+      - name: Initialize builder instance
         run: make docker-init
 
-      - name: Push the continer images
-        env:
-          DOCKER_TAG: main
+      - name: Extract Docker image tag
+        id: extract-docker-tag
+        uses: FerretDB/github-actions/extract-docker-tag@main
+
+      - name: Build and push images with tag "${{ env.DOCKER_TAG }}"
         run: make docker-push
+        env:
+          DOCKER_TAG: ${{ steps.extract-docker-tag.outputs.tag }}

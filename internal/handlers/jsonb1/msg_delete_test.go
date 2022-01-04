@@ -41,12 +41,12 @@ func TestDelete(t *testing.T) {
 			err := msg.SetSections(wire.OpMsgSection{
 				Documents: []types.Document{types.MustMakeDocument(
 					"insert", "test",
-					"documents", types.Array{
+					"documents", types.MustNewArray(
 						types.MustMakeDocument(
 							"_id", types.ObjectID{byte(10 + i)},
 							"colour", "red",
 						),
-					},
+					),
 					"$db", schema,
 				)},
 			})
@@ -61,12 +61,12 @@ func TestDelete(t *testing.T) {
 			err := msg.SetSections(wire.OpMsgSection{
 				Documents: []types.Document{types.MustMakeDocument(
 					"insert", "test",
-					"documents", types.Array{
+					"documents", types.MustNewArray(
 						types.MustMakeDocument(
 							"_id", types.ObjectID{byte(i)},
 							"animal", "cat",
 						),
-					},
+					),
 					"$db", schema,
 				)},
 			})
@@ -85,14 +85,14 @@ func TestDelete(t *testing.T) {
 			"NothingToDelete": {
 				req: types.MustMakeDocument(
 					"delete", "test",
-					"deletes", types.Array{
+					"deletes", types.MustNewArray(
 						types.MustMakeDocument(
 							"q", types.MustMakeDocument(
 								"colour", "blue",
 							),
 							"limit", int32(0),
 						),
-					},
+					),
 				),
 				resp: types.MustMakeDocument(
 					"n", int32(0),
@@ -102,14 +102,14 @@ func TestDelete(t *testing.T) {
 			"DeleteLimit1": {
 				req: types.MustMakeDocument(
 					"delete", "test",
-					"deletes", types.Array{
+					"deletes", types.MustNewArray(
 						types.MustMakeDocument(
 							"q", types.MustMakeDocument(
 								"colour", "red",
 							),
 							"limit", int32(1),
 						),
-					},
+					),
 				),
 				resp: types.MustMakeDocument(
 					"n", int32(1),
@@ -119,14 +119,14 @@ func TestDelete(t *testing.T) {
 			"DeleteLimit0": {
 				req: types.MustMakeDocument(
 					"delete", "test",
-					"deletes", types.Array{
+					"deletes", types.MustNewArray(
 						types.MustMakeDocument(
 							"q", types.MustMakeDocument(
 								"animal", "cat",
 							),
 							"limit", int32(0),
 						),
-					},
+					),
 				),
 				resp: types.MustMakeDocument(
 					"n", int32(5),

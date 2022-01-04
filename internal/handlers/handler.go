@@ -156,6 +156,8 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	switch cmd {
 	case "buildinfo":
 		return h.shared.MsgBuildInfo(ctx, msg)
+	case "collstats":
+		return h.shared.MsgCollStats(ctx, msg)
 	case "create":
 		return h.shared.MsgCreate(ctx, msg)
 	case "drop":

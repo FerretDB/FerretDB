@@ -29,8 +29,8 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	databases := make(types.Array, len(databaseNames))
-	for i, databaseName := range databaseNames {
+	databases := types.MakeArray(len(databaseNames))
+	for _, databaseName := range databaseNames {
 		tables, err := h.pgPool.Tables(ctx, databaseName)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
@@ -49,11 +49,14 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 			sizeOnDisk += tableSize
 		}
 
-		databases[i] = types.MustMakeDocument(
+		d := types.MustMakeDocument(
 			"name", databaseName,
 			"sizeOnDisk", sizeOnDisk,
 			"empty", sizeOnDisk == 0,
 		)
+		if err = databases.Append(d); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	var totalSize int64

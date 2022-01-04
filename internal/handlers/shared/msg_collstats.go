@@ -16,28 +16,41 @@ package shared
 
 import (
 	"context"
-	"strconv"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/version"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// For clients that check version.
-const versionValue = "5.0.42"
+// MsgCollStats returns a set of statistics for a collection.
+func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
-// MsgBuildInfo returns an OpMsg with the build information.
-func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	m := document.Map()
+	collection := m[document.Command()].(string)
+	db, ok := m["$db"].(string)
+	if !ok {
+		return nil, lazyerrors.New("no db")
+	}
+
+	stats, err := h.pgPool.TableStats(ctx, db, collection)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	var reply wire.OpMsg
-	err := reply.SetSections(wire.OpMsgSection{
+	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
-			"version", versionValue,
-			"gitVersion", version.Get().Commit,
-			"versionArray", types.MustNewArray(int32(5), int32(0), int32(42), int32(0)),
-			"bits", int32(strconv.IntSize),
-			"maxBsonObjectSize", int32(bson.MaxDocumentLen),
+			"ns", db+"."+collection,
+			"count", stats.Rows,
+			"size", stats.SizeTotal,
+			"storageSize", stats.SizeTable,
+			"totalIndexSize", stats.SizeIndexes,
+			"totalSize", stats.SizeTotal,
+			"scaleFactor", int64(1),
 			"ok", float64(1),
 		)},
 	})
