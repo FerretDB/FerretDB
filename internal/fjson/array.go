@@ -27,7 +27,7 @@ type Array types.Array
 
 func (a *Array) fjsontype() {}
 
-// UnmarshalJSON implements bsontype interface.
+// UnmarshalJSON implements fjsontype interface.
 func (a *Array) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
@@ -60,7 +60,7 @@ func (a *Array) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON implements bsontype interface.
+// MarshalJSON implements fjsontype interface.
 func (a Array) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	buf.WriteByte('[')
