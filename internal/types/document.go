@@ -149,12 +149,12 @@ func (d Document) validate() error {
 	return nil
 }
 
-// Map returns a shallow copy of the document as a map. Do not modify it.
+// Map returns this document as a map. Do not modify it.
 func (d Document) Map() map[string]any {
 	return d.m
 }
 
-// Keys returns a shallow copy of the document's keys. Do not modify it.
+// Keys returns document's keys. Do not modify it.
 func (d Document) Keys() []string {
 	return d.keys
 }

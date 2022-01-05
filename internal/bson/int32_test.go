@@ -25,44 +25,27 @@ var int32TestCases = []testCase{{
 	name: "42",
 	v:    pointer.To(Int32(42)),
 	b:    []byte{0x2a, 0x00, 0x00, 0x00},
-	j:    `42`,
 }, {
 	name: "zero",
 	v:    pointer.To(Int32(0)),
 	b:    []byte{0x00, 0x00, 0x00, 0x00},
-	j:    `0`,
 }, {
 	name: "max int32",
 	v:    pointer.To(Int32(math.MaxInt32)),
 	b:    []byte{0xff, 0xff, 0xff, 0x7f},
-	j:    `2147483647`,
 }, {
 	name: "min int32",
 	v:    pointer.To(Int32(math.MinInt32)),
 	b:    []byte{0x00, 0x00, 0x00, 0x80},
-	j:    `-2147483648`,
 }}
 
 func TestInt32(t *testing.T) {
 	t.Parallel()
-
-	t.Run("Binary", func(t *testing.T) {
-		t.Parallel()
-		testBinary(t, int32TestCases, func() bsontype { return new(Int32) })
-	})
-
-	t.Run("JSON", func(t *testing.T) {
-		t.Parallel()
-		testJSON(t, int32TestCases, func() bsontype { return new(Int32) })
-	})
+	testBinary(t, int32TestCases, func() bsontype { return new(Int32) })
 }
 
-func FuzzInt32Binary(f *testing.F) {
+func FuzzInt32(f *testing.F) {
 	fuzzBinary(f, int32TestCases, func() bsontype { return new(Int32) })
-}
-
-func FuzzInt32JSON(f *testing.F) {
-	fuzzJSON(f, int32TestCases, func() bsontype { return new(Int32) })
 }
 
 func BenchmarkInt32(b *testing.B) {

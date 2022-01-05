@@ -18,8 +18,8 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
-	"encoding/json"
 
+	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -63,29 +63,18 @@ func (i Int32) MarshalBinary() ([]byte, error) {
 
 // UnmarshalJSON implements bsontype interface.
 func (i *Int32) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
-	}
-
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
-
-	var o int32
-	if err := dec.Decode(&o); err != nil {
+	var iJ fjson.Int32
+	if err := iJ.UnmarshalJSON(data); err != nil {
 		return err
 	}
-	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("bson.Int32.UnmarshalJSON: %s", err)
-	}
 
-	*i = Int32(o)
+	*i = Int32(iJ)
 	return nil
 }
 
 // MarshalJSON implements bsontype interface.
 func (i Int32) MarshalJSON() ([]byte, error) {
-	return json.Marshal(int32(i))
+	return fjson.Marshal(fromBSON(&i))
 }
 
 // check interfaces

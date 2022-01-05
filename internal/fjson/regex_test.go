@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bson
+package fjson
 
 import (
 	"testing"
@@ -20,25 +20,25 @@ import (
 	"github.com/AlekSi/pointer"
 )
 
-var timestampTestCases = []testCase{{
-	name: "one",
-	v:    pointer.To(Timestamp(1)),
-	b:    []byte{0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+var regexTestCases = []testCase{{
+	name: "normal",
+	v:    pointer.To(Regex{Pattern: "hoffman", Options: "i"}),
+	j:    `{"$r":"hoffman","o":"i"}`,
 }, {
-	name: "zero",
-	v:    pointer.To(Timestamp(0)),
-	b:    []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+	name: "empty",
+	v:    pointer.To(Regex{Pattern: "", Options: ""}),
+	j:    `{"$r":"","o":""}`,
 }}
 
-func TestTimestamp(t *testing.T) {
+func TestRegex(t *testing.T) {
 	t.Parallel()
-	testBinary(t, timestampTestCases, func() bsontype { return new(Timestamp) })
+	testJSON(t, regexTestCases, func() fjsontype { return new(Regex) })
 }
 
-func FuzzTimestamp(f *testing.F) {
-	fuzzBinary(f, timestampTestCases, func() bsontype { return new(Timestamp) })
+func FuzzRegex(f *testing.F) {
+	fuzzJSON(f, regexTestCases, func() fjsontype { return new(Regex) })
 }
 
-func BenchmarkTimestamp(b *testing.B) {
-	benchmark(b, timestampTestCases, func() bsontype { return new(Timestamp) })
+func BenchmarkRegex(b *testing.B) {
+	benchmark(b, regexTestCases, func() fjsontype { return new(Regex) })
 }

@@ -18,11 +18,11 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"io"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -416,212 +416,25 @@ func (doc Document) MarshalBinary() ([]byte, error) {
 	return res.Bytes(), nil
 }
 
-func unmarshalJSONValue(data []byte) (any, error) {
-	var v any
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-	err := dec.Decode(&v)
-	if err != nil {
-		return nil, err
-	}
-	if err := checkConsumed(dec, r); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	var res any
-	switch v := v.(type) {
-	case map[string]any:
-		switch {
-		case v["$f"] != nil:
-			var o Double
-			err = o.UnmarshalJSON(data)
-			res = float64(o)
-		case v["$k"] != nil:
-			var o Document
-			err = o.UnmarshalJSON(data)
-			if err == nil {
-				res, err = types.ConvertDocument(&o)
-			}
-		case v["$b"] != nil:
-			var o Binary
-			err = o.UnmarshalJSON(data)
-			res = types.Binary(o)
-		case v["$o"] != nil:
-			var o ObjectID
-			err = o.UnmarshalJSON(data)
-			res = types.ObjectID(o)
-		case v["$d"] != nil:
-			var o DateTime
-			err = o.UnmarshalJSON(data)
-			res = time.Time(o)
-		case v["$r"] != nil:
-			var o Regex
-			err = o.UnmarshalJSON(data)
-			res = types.Regex(o)
-		case v["$t"] != nil:
-			var o Timestamp
-			err = o.UnmarshalJSON(data)
-			res = types.Timestamp(o)
-		case v["$l"] != nil:
-			var o Int64
-			err = o.UnmarshalJSON(data)
-			res = int64(o)
-		default:
-			err = lazyerrors.Errorf("unmarshalJSONValue: unhandled map %v", v)
-		}
-	case string:
-		res = v
-	case []any:
-		var o Array
-		err = o.UnmarshalJSON(data)
-		a := types.Array(o)
-		res = &a
-	case bool:
-		res = v
-	case nil:
-		res = v
-	case float64:
-		res = int32(v)
-	default:
-		err = lazyerrors.Errorf("unmarshalJSONValue: unhandled element %[1]T (%[1]v)", v)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
 // UnmarshalJSON implements bsontype interface.
 func (doc *Document) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
+	var docJ fjson.Document
+	if err := docJ.UnmarshalJSON(data); err != nil {
+		return err
 	}
 
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-
-	var rawMessages map[string]json.RawMessage
-	if err := dec.Decode(&rawMessages); err != nil {
-		return lazyerrors.Error(err)
-	}
-	if err := checkConsumed(dec, r); err != nil {
+	d, err := ConvertDocument(types.Document(docJ))
+	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	b, ok := rawMessages["$k"]
-	if !ok {
-		return lazyerrors.Errorf("bson.Document.UnmarshalJSON: missing $k")
-	}
-
-	var keys []string
-	if err := json.Unmarshal(b, &keys); err != nil {
-		return lazyerrors.Error(err)
-	}
-	if len(keys)+1 != len(rawMessages) {
-		return lazyerrors.Errorf("bson.Document.UnmarshalJSON: %d elements in $k, %d in total", len(keys), len(rawMessages))
-	}
-
-	doc.keys = keys
-	doc.m = make(map[string]any, len(keys))
-
-	for _, key := range keys {
-		b, ok = rawMessages[key]
-		if !ok {
-			return lazyerrors.Errorf("bson.Document.UnmarshalJSON: missing key %q", key)
-		}
-		v, err := unmarshalJSONValue(b)
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-		doc.m[key] = v
-	}
-
-	if _, err := types.ConvertDocument(doc); err != nil {
-		return lazyerrors.Errorf("bson.Document.UnmarshalJSON: %w", err)
-	}
-
+	*doc = *d
 	return nil
-}
-
-func marshalJSONValue(v any) ([]byte, error) {
-	var o json.Marshaler
-	var err error
-	switch v := v.(type) {
-	case types.Document:
-		o, err = ConvertDocument(v)
-	case *types.Array:
-		o = Array(*v)
-	case float64:
-		o = Double(v)
-	case string:
-		o = String(v)
-	case types.Binary:
-		o = Binary(v)
-	case types.ObjectID:
-		o = ObjectID(v)
-	case bool:
-		o = Bool(v)
-	case time.Time:
-		o = DateTime(v)
-	case nil:
-		return []byte("null"), nil
-	case types.Regex:
-		o = Regex(v)
-	case int32:
-		o = Int32(v)
-	case types.Timestamp:
-		o = Timestamp(v)
-	case int64:
-		o = Int64(v)
-	default:
-		return nil, lazyerrors.Errorf("marshalJSONValue: unhandled type %T", v)
-	}
-
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	b, err := o.MarshalJSON()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return b, nil
 }
 
 // MarshalJSON implements bsontype interface.
 func (doc Document) MarshalJSON() ([]byte, error) {
-	var buf bytes.Buffer
-
-	buf.WriteString(`{"$k":`)
-	b, err := json.Marshal(doc.keys)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-	buf.Write(b)
-
-	for _, key := range doc.keys {
-		buf.WriteByte(',')
-
-		if b, err = json.Marshal(key); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-		buf.Write(b)
-		buf.WriteByte(':')
-
-		value := doc.m[key]
-		b, err := marshalJSONValue(value)
-		if err != nil {
-			return nil, lazyerrors.Errorf("bson.Document.MarshalJSON: %w", err)
-		}
-
-		buf.Write(b)
-	}
-
-	buf.WriteByte('}')
-	return buf.Bytes(), nil
+	return fjson.Marshal(fromBSON(&doc))
 }
 
 // check interfaces

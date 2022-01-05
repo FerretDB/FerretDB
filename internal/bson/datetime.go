@@ -18,9 +18,9 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
-	"encoding/json"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -71,38 +71,20 @@ func (dt DateTime) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-type dateTimeJSON struct {
-	D int64 `json:"$d"`
-}
-
 // UnmarshalJSON implements bsontype interface.
 func (dt *DateTime) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
-	}
-
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
-
-	var o dateTimeJSON
-	if err := dec.Decode(&o); err != nil {
+	var dtJ fjson.DateTime
+	if err := dtJ.UnmarshalJSON(data); err != nil {
 		return err
 	}
-	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("bson.DateTime.UnmarshalJSON: %s", err)
-	}
 
-	// TODO Use .UTC(): https://github.com/FerretDB/FerretDB/issues/43
-	*dt = DateTime(time.UnixMilli(o.D))
+	*dt = DateTime(dtJ)
 	return nil
 }
 
 // MarshalJSON implements bsontype interface.
 func (dt DateTime) MarshalJSON() ([]byte, error) {
-	return json.Marshal(dateTimeJSON{
-		D: time.Time(dt).UnixMilli(),
-	})
+	return fjson.Marshal(fromBSON(&dt))
 }
 
 // check interfaces

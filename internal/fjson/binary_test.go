@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bson
+package fjson
 
 import (
 	"testing"
@@ -26,39 +26,42 @@ var binaryTestCases = []testCase{{
 		Subtype: types.BinaryUser,
 		B:       []byte("foo"),
 	},
-	b: []byte{0x03, 0x00, 0x00, 0x00, 0x80, 0x66, 0x6f, 0x6f},
+	j: `{"$b":"Zm9v","s":128}`,
 }, {
 	name: "empty",
 	v: &Binary{
 		Subtype: types.BinaryGeneric,
 		B:       []byte{},
 	},
-	b: []byte{0x00, 0x00, 0x00, 0x00, 0x00},
+	j:      `{"$b":""}`,
+	canonJ: `{"$b":"","s":0}`,
 }, {
 	name: "invalid subtype",
 	v: &Binary{
 		Subtype: 0xff,
 		B:       []byte{},
 	},
-	b: []byte{0x00, 0x00, 0x00, 0x00, 0xff},
+	j: `{"$b":"","s":255}`,
 }, {
 	name: "extra JSON fields",
 	v: &Binary{
 		Subtype: types.BinaryUser,
 		B:       []byte("foo"),
 	},
-	b: []byte{0x03, 0x00, 0x00, 0x00, 0x80, 0x66, 0x6f, 0x6f},
+	j:      `{"$b":"Zm9v","s":128,"foo":"bar"}`,
+	canonJ: `{"$b":"Zm9v","s":128}`,
+	jErr:   `json: unknown field "foo"`,
 }}
 
 func TestBinary(t *testing.T) {
 	t.Parallel()
-	testBinary(t, binaryTestCases, func() bsontype { return new(Binary) })
+	testJSON(t, binaryTestCases, func() fjsontype { return new(Binary) })
 }
 
-func FuzzBinary(f *testing.F) {
-	fuzzBinary(f, binaryTestCases, func() bsontype { return new(Binary) })
+func FuzzBinaryJSON(f *testing.F) {
+	fuzzJSON(f, binaryTestCases, func() fjsontype { return new(Binary) })
 }
 
 func BenchmarkBinary(b *testing.B) {
-	benchmark(b, binaryTestCases, func() bsontype { return new(Binary) })
+	benchmark(b, binaryTestCases, func() fjsontype { return new(Binary) })
 }

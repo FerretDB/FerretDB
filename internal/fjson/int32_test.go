@@ -12,33 +12,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bson
+package fjson
 
 import (
+	"math"
 	"testing"
 
 	"github.com/AlekSi/pointer"
 )
 
-var timestampTestCases = []testCase{{
-	name: "one",
-	v:    pointer.To(Timestamp(1)),
-	b:    []byte{0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+var int32TestCases = []testCase{{
+	name: "42",
+	v:    pointer.To(Int32(42)),
+	j:    `42`,
 }, {
 	name: "zero",
-	v:    pointer.To(Timestamp(0)),
-	b:    []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+	v:    pointer.To(Int32(0)),
+	j:    `0`,
+}, {
+	name: "max int32",
+	v:    pointer.To(Int32(math.MaxInt32)),
+	j:    `2147483647`,
+}, {
+	name: "min int32",
+	v:    pointer.To(Int32(math.MinInt32)),
+	j:    `-2147483648`,
 }}
 
-func TestTimestamp(t *testing.T) {
+func TestInt32(t *testing.T) {
 	t.Parallel()
-	testBinary(t, timestampTestCases, func() bsontype { return new(Timestamp) })
+	testJSON(t, int32TestCases, func() fjsontype { return new(Int32) })
 }
 
-func FuzzTimestamp(f *testing.F) {
-	fuzzBinary(f, timestampTestCases, func() bsontype { return new(Timestamp) })
+func FuzzInt32JSON(f *testing.F) {
+	fuzzJSON(f, int32TestCases, func() fjsontype { return new(Int32) })
 }
 
-func BenchmarkTimestamp(b *testing.B) {
-	benchmark(b, timestampTestCases, func() bsontype { return new(Timestamp) })
+func BenchmarkInt32(b *testing.B) {
+	benchmark(b, int32TestCases, func() fjsontype { return new(Int32) })
 }
