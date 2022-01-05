@@ -498,7 +498,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 			),
 		},
 
-		"FindProjectionActorsFirsAndLastName": {
+		"FindProjectionActorsFirstAndLastName": {
 			req: types.MustMakeDocument(
 				"find", "actor",
 				"projection", types.MustMakeDocument(
@@ -519,8 +519,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 						),
 					),
 					"id", int64(0),
-					// will patch later, it depends on db
-					"ns", "",
+					"ns", "", // set by compareFunc
 				),
 				"ok", float64(1),
 			),
