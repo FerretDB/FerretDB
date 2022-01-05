@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bson
+package fjson
 
 import (
 	"testing"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func convertArray(a *types.Array) *Array {
@@ -41,22 +40,18 @@ var arrayTestCases = []testCase{{
 		"foo",
 		nil,
 	)),
-	b: testutil.MustParseDumpFile("testdata", "array_all.hex"),
-}, {
-	name: "array_fuzz1",
-	b:    testutil.MustParseDumpFile("testdata", "array_fuzz1.hex"),
-	bErr: `key 0 is "8"`,
+	j: `[[],{"$b":"Qg==","s":128},true,{"$d":1627378542123},{"$k":[]},{"$f":42.13},42,{"$l":"42"},"foo",null]`,
 }}
 
 func TestArray(t *testing.T) {
 	t.Parallel()
-	testBinary(t, arrayTestCases, func() bsontype { return new(Array) })
+	testJSON(t, arrayTestCases, func() fjsontype { return new(Array) })
 }
 
-func FuzzArray(f *testing.F) {
-	fuzzBinary(f, arrayTestCases, func() bsontype { return new(Array) })
+func FuzzArrayJSON(f *testing.F) {
+	fuzzJSON(f, arrayTestCases, func() fjsontype { return new(Array) })
 }
 
 func BenchmarkArray(b *testing.B) {
-	benchmark(b, arrayTestCases, func() bsontype { return new(Array) })
+	benchmark(b, arrayTestCases, func() fjsontype { return new(Array) })
 }

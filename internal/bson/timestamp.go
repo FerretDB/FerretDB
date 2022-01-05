@@ -18,13 +18,14 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
-	"encoding/json"
 
+	"github.com/FerretDB/FerretDB/internal/fjson"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // Timestamp represents BSON Timestamp data type.
-type Timestamp uint64
+type Timestamp types.Timestamp
 
 func (ts *Timestamp) bsontype() {}
 
@@ -61,37 +62,20 @@ func (ts Timestamp) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-type timestampJSON struct {
-	T uint64 `json:"$t,string"`
-}
-
 // UnmarshalJSON implements bsontype interface.
 func (ts *Timestamp) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
-	}
-
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
-
-	var o timestampJSON
-	if err := dec.Decode(&o); err != nil {
+	var tsJ fjson.Timestamp
+	if err := tsJ.UnmarshalJSON(data); err != nil {
 		return err
 	}
-	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("bson.Timestamp.UnmarshalJSON: %s", err)
-	}
 
-	*ts = Timestamp(o.T)
+	*ts = Timestamp(tsJ)
 	return nil
 }
 
 // MarshalJSON implements bsontype interface.
 func (ts Timestamp) MarshalJSON() ([]byte, error) {
-	return json.Marshal(timestampJSON{
-		T: uint64(ts),
-	})
+	return fjson.Marshal(fromBSON(&ts))
 }
 
 // check interfaces

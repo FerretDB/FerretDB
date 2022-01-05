@@ -16,10 +16,9 @@ package bson
 
 import (
 	"bufio"
-	"bytes"
-	"encoding/json"
 	"strconv"
 
+	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -98,63 +97,18 @@ func (a Array) MarshalBinary() ([]byte, error) {
 
 // UnmarshalJSON implements bsontype interface.
 func (a *Array) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
+	var aJ fjson.Array
+	if err := aJ.UnmarshalJSON(data); err != nil {
+		return err
 	}
 
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-
-	var rawMessages []json.RawMessage
-	if err := dec.Decode(&rawMessages); err != nil {
-		return lazyerrors.Error(err)
-	}
-	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	ta := types.MakeArray(len(rawMessages))
-	for _, el := range rawMessages {
-		v, err := unmarshalJSONValue(el)
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		if err = ta.Append(v); err != nil {
-			return lazyerrors.Error(err)
-		}
-	}
-
-	*a = Array(*ta)
+	*a = Array(aJ)
 	return nil
 }
 
 // MarshalJSON implements bsontype interface.
 func (a Array) MarshalJSON() ([]byte, error) {
-	var buf bytes.Buffer
-	buf.WriteByte('[')
-
-	ta := types.Array(a)
-	l := ta.Len()
-	for i := 0; i < l; i++ {
-		if i != 0 {
-			buf.WriteByte(',')
-		}
-
-		el, err := ta.Get(i)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-		b, err := marshalJSONValue(el)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		buf.Write(b)
-	}
-
-	buf.WriteByte(']')
-	return buf.Bytes(), nil
+	return fjson.Marshal(fromBSON(&a))
 }
 
 // check interfaces
