@@ -31,7 +31,6 @@ func setup(tb testing.TB) (context.Context, *handlers.Handler, string) {
 	handlerOpts := &handlers.NewOpts{
 		PgPool:        pool,
 		Logger:        zaptest.NewLogger(tb),
-		SharedHandler: nil,
 		SQLStorage:    nil,
 		JSONB1Storage: NewStorage(pool, zaptest.NewLogger(tb)),
 		Metrics:       handlers.NewMetrics(),

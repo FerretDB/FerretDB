@@ -8,5 +8,7 @@ cover.txt
 internal/util/version/version.txt
 internal/util/version/branch.txt
 
+.vscode/
+
 # for now
 **/testdata/fuzz

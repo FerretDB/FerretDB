@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package shared
+package handlers
 
 import (
 	"context"
@@ -22,12 +22,12 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgGetParameter OpMsg used to get parameter.
-func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// MsgWhatsMyURI is an internal command, returns the peerAddress of the handler.
+func (h *Handler) MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 	err := reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
-			"version", versionValue,
+			"you", h.peerAddr,
 			"ok", float64(1),
 		)},
 	})

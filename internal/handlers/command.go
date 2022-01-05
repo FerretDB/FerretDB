@@ -4,143 +4,172 @@ import (
 	"context"
 	"errors"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 type command struct {
-	name    string
-	help    string
-	handler func(*Handler, context.Context, *wire.OpMsg) (*wire.OpMsg, error)
+	name           string
+	help           string
+	handler        func(*Handler, context.Context, *wire.OpMsg) (*wire.OpMsg, error)
+	storageHandler func(common.Storage, context.Context, *wire.OpMsg) (*wire.OpMsg, error)
 }
 
 var commands = map[string]command{
 	"buildinfo": {
 		name:    "buildinfo",
 		help:    "",
-		handler: (*Handler).shared.MsgBuildInfo,
+		handler: (*Handler).MsgBuildInfo,
 	},
 	"collstats": {
 		name:    "collstats",
 		help:    "",
-		handler: (*Handler).shared.MsgCollStats,
+		handler: (*Handler).MsgCollStats,
 	},
 	"createindexes": {
-		name:    "createindexes",
-		help:    "",
-		handler: storage.MsgCreateIndexes,
+		name:           "createindexes",
+		help:           "",
+		storageHandler: (common.Storage).MsgCreateIndexes,
 	},
 	"create": {
 		name:    "create",
 		help:    "",
-		handler: h.shared.MsgCreate,
+		handler: (*Handler).MsgCreate,
 	},
 	"drop": {
 		name:    "drop",
 		help:    "",
-		handler: h.shared.MsgHostInfo,
+		handler: (*Handler).MsgDrop,
 	},
 	"dropdatabase": {
 		name:    "dropdatabase",
 		help:    "",
-		handler: h.shared.MsgHostInfo,
+		handler: (*Handler).MsgDropDatabase,
 	},
 	"getcmdlineopts": {
 		name:    "getcmdlineopts",
 		help:    "",
-		handler: h.shared.MsgGetCmdLineOpts,
+		handler: (*Handler).MsgGetCmdLineOpts,
 	},
 	"getlog": {
 		name:    "getlog",
 		help:    "",
-		handler: h.shared.MsgGetLog,
+		handler: (*Handler).MsgGetLog,
 	},
 	"getparameter": {
 		name:    "getparameter",
 		help:    "",
-		handler: h.shared.MsgGetParameter,
+		handler: (*Handler).MsgGetParameter,
 	},
 	"hostinfo": {
 		name:    "hostInfo",
 		help:    "",
-		handler: h.shared.MsgHostInfo,
+		handler: (*Handler).MsgHostInfo,
 	},
 	"ismaster": {
 		name:    "ismaster",
 		help:    "",
-		handler: h.shared.MsgHello,
+		handler: (*Handler).MsgHello,
 	},
 	"hello": {
 		name:    "hello",
 		help:    "",
-		handler: h.shared.MsgHello,
+		handler: (*Handler).MsgHello,
 	},
 	"listcollections": {
 		name:    "listcollections",
 		help:    "",
-		handler: h.shared.MsgListCollections,
+		handler: (*Handler).MsgListCollections,
 	},
 	"listdatabases": {
 		name:    "listdatabases",
 		help:    "",
-		handler: h.shared.MsgListDatabases,
+		handler: (*Handler).MsgListDatabases,
 	},
 	"listcommands": {
-		name:    "listcommands",
-		help:    "",
-		handler: h.shared.MsgListCommands,
+		name: "listcommands",
+		help: "",
 	},
 	"ping": {
 		name:    "listcommands",
 		help:    "",
-		handler: h.shared.MsgPing,
+		handler: (*Handler).MsgPing,
 	},
 	"whatsmyuri": {
 		name:    "whatsmyuri",
 		help:    "",
-		handler: h.shared.MsgWhatsMyURI,
+		handler: (*Handler).MsgWhatsMyURI,
 	},
 	"serverstatus": {
 		name:    "serverstatus",
 		help:    "",
-		handler: h.shared.MsgServerStatus,
+		handler: (*Handler).MsgServerStatus,
 	},
 	"delete": {
-		name:    "delete",
-		help:    "",
-		handler: storage.MsgDelete,
+		name:           "delete",
+		help:           "",
+		storageHandler: (common.Storage).MsgDelete,
 	},
 	"find": {
-		name:    "find",
-		help:    "",
-		handler: storage.MsgFindOrCount,
+		name:           "find",
+		help:           "",
+		storageHandler: (common.Storage).MsgFindOrCount,
 	},
 	"count": {
-		name:    "count",
-		help:    "",
-		handler: storage.MsgFindOrCount,
+		name:           "count",
+		help:           "",
+		storageHandler: (common.Storage).MsgFindOrCount,
 	},
 	"insert": {
-		name:    "insert",
-		help:    "",
-		handler: storage.MsgInsert,
+		name:           "insert",
+		help:           "",
+		storageHandler: (common.Storage).MsgInsert,
 	},
 	"update": {
-		name:    "update",
-		help:    "",
-		handler: storage.MsgUpdate,
+		name:           "update",
+		help:           "",
+		storageHandler: (common.Storage).MsgUpdate,
 	},
 	"debug_error": {
 		name: "debug_error",
 		help: "",
-		handler: func(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
+		handler: func(*Handler, context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
 			return nil, errors.New("debug_error")
 		},
 	},
 	"debug_panic": {
 		name: "debug_panic",
 		help: "",
-		handler: func(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
+		handler: func(*Handler, context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
 			panic("debug_panic")
 		},
 	},
+}
+
+func SupportedCommands(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
+	var reply wire.OpMsg
+	err := reply.SetSections(wire.OpMsgSection{
+		Documents: []types.Document{types.MustMakeDocument(
+			"commands", func() []types.Document {
+				var commandList []types.Document
+				for _, v := range commands {
+					commandList = append(commandList, types.MustMakeDocument(
+						v.name, types.MustMakeDocument(
+							"help", v.help,
+						),
+					))
+				}
+
+				return commandList
+			},
+			"ok", float64(1),
+		)},
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &reply, nil
 }

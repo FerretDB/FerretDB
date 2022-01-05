@@ -16,7 +16,6 @@ package handlers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sort"
 	"sync/atomic"
@@ -24,7 +23,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/shared"
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -34,13 +32,12 @@ import (
 // Handler data struct.
 type Handler struct {
 	// TODO replace those fields with opts *NewOpts
-	pgPool  *pg.Pool
-	l       *zap.Logger
-	shared  *shared.Handler
-	sql     common.Storage
-	jsonb1  common.Storage
-	metrics *Metrics
-
+	pgPool        *pg.Pool
+	peerAddr      string
+	l             *zap.Logger
+	sql           common.Storage
+	jsonb1        common.Storage
+	metrics       *Metrics
 	lastRequestID int32
 }
 
@@ -48,21 +45,21 @@ type Handler struct {
 type NewOpts struct {
 	PgPool        *pg.Pool
 	Logger        *zap.Logger
-	SharedHandler *shared.Handler
 	SQLStorage    common.Storage
 	JSONB1Storage common.Storage
 	Metrics       *Metrics
+	PeerAddr      string
 }
 
 // New returns a new handler.
 func New(opts *NewOpts) *Handler {
 	return &Handler{
-		pgPool:  opts.PgPool,
-		l:       opts.Logger,
-		shared:  opts.SharedHandler,
-		sql:     opts.SQLStorage,
-		jsonb1:  opts.JSONB1Storage,
-		metrics: opts.Metrics,
+		pgPool:   opts.PgPool,
+		l:        opts.Logger,
+		sql:      opts.SQLStorage,
+		jsonb1:   opts.JSONB1Storage,
+		metrics:  opts.Metrics,
+		peerAddr: opts.PeerAddr,
 	}
 }
 
@@ -153,145 +150,20 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 
 	h.metrics.requests.WithLabelValues(wire.OP_MSG.String(), cmd).Inc()
 
-	storage, err := h.msgStorage(ctx, msg)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	var commands = map[string]command{
-		"buildinfo": {
-			name:    "buildinfo",
-			help:    "",
-			handler: h.shared.MsgBuildInfo,
-		},
-		"collstats": {
-			name:    "collstats",
-			help:    "",
-			handler: h.shared.MsgCollStats,
-		},
-		"create": {
-			name:    "create",
-			help:    "",
-			handler: h.shared.MsgCreate,
-		},
-		"drop": {
-			name:    "drop",
-			help:    "",
-			handler: h.shared.MsgHostInfo,
-		},
-		"dropdatabase": {
-			name:    "dropdatabase",
-			help:    "",
-			handler: h.shared.MsgHostInfo,
-		},
-		"getcmdlineopts": {
-			name:    "getcmdlineopts",
-			help:    "",
-			handler: h.shared.MsgGetCmdLineOpts,
-		},
-		"getlog": {
-			name:    "getlog",
-			help:    "",
-			handler: h.shared.MsgGetLog,
-		},
-		"getparameter": {
-			name:    "getparameter",
-			help:    "",
-			handler: h.shared.MsgGetParameter,
-		},
-		"hostinfo": {
-			name:    "hostInfo",
-			help:    "",
-			handler: h.shared.MsgHostInfo,
-		},
-		"ismaster": {
-			name:    "ismaster",
-			help:    "",
-			handler: h.shared.MsgHello,
-		},
-		"hello": {
-			name:    "hello",
-			help:    "",
-			handler: h.shared.MsgHello,
-		},
-		"listcollections": {
-			name:    "listcollections",
-			help:    "",
-			handler: h.shared.MsgListCollections,
-		},
-		"listdatabases": {
-			name:    "listdatabases",
-			help:    "",
-			handler: h.shared.MsgListDatabases,
-		},
-		"listcommands": {
-			name:    "listcommands",
-			help:    "",
-			handler: h.shared.MsgListCommands,
-		},
-		"ping": {
-			name:    "listcommands",
-			help:    "",
-			handler: h.shared.MsgPing,
-		},
-		"whatsmyuri": {
-			name:    "whatsmyuri",
-			help:    "",
-			handler: h.shared.MsgWhatsMyURI,
-		},
-		"serverstatus": {
-			name:    "serverstatus",
-			help:    "",
-			handler: h.shared.MsgServerStatus,
-		},
-		"createindexes": {
-			name:    "createindexes",
-			help:    "",
-			handler: storage.MsgCreateIndexes,
-		},
-		"delete": {
-			name:    "delete",
-			help:    "",
-			handler: storage.MsgDelete,
-		},
-		"find": {
-			name:    "find",
-			help:    "",
-			handler: storage.MsgFindOrCount,
-		},
-		"count": {
-			name:    "count",
-			help:    "",
-			handler: storage.MsgFindOrCount,
-		},
-		"insert": {
-			name:    "insert",
-			help:    "",
-			handler: storage.MsgInsert,
-		},
-		"update": {
-			name:    "update",
-			help:    "",
-			handler: storage.MsgUpdate,
-		},
-		"debug_error": {
-			name: "debug_error",
-			help: "",
-			handler: func(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
-				return nil, errors.New("debug_error")
-			},
-		},
-		"debug_panic": {
-			name: "debug_panic",
-			help: "",
-			handler: func(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
-				panic("debug_panic")
-			},
-		},
+	if cmd == "listcommands" {
+		return SupportedCommands(ctx, msg)
 	}
 
 	if cmd, ok := commands[cmd]; ok {
-		cmd.handler(ctx, msg)
+		if cmd.handler != nil {
+			return cmd.handler(h, ctx, msg)
+		} else {
+			storage, err := h.msgStorage(ctx, msg)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+			return cmd.storageHandler(storage, ctx, msg)
+		}
 	}
 
 	return nil, common.NewErrorMessage(common.ErrCommandNotFound, "no such command: '%s'", cmd)
@@ -302,7 +174,7 @@ func (h *Handler) handleOpQuery(ctx context.Context, query *wire.OpQuery) (*wire
 	h.metrics.requests.WithLabelValues(wire.OP_QUERY.String(), cmd).Inc()
 
 	if query.FullCollectionName == "admin.$cmd" {
-		return h.shared.QueryCmd(ctx, query)
+		return h.QueryCmd(ctx, query)
 	}
 
 	return nil, common.NewErrorMessage(common.ErrNotImplemented, "handleOpQuery: unhandled collection %q", query.FullCollectionName)
