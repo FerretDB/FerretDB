@@ -156,7 +156,7 @@ func Unmarshal(data []byte) (any, error) {
 	dec := json.NewDecoder(r)
 	err := dec.Decode(&v)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 	if err := checkConsumed(dec, r); err != nil {
 		return nil, lazyerrors.Error(err)
@@ -222,7 +222,7 @@ func Unmarshal(data []byte) (any, error) {
 	}
 
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	return fromFJSON(res), nil
