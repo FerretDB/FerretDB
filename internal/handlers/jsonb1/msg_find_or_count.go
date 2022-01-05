@@ -38,18 +38,24 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	var filter types.Document
 	var sql, collection string
 
+	var args []any
+	var placeholder pg.Placeholder
+
 	m := document.Map()
 	_, isFindOp := m["find"].(string)
 	db := m["$db"].(string)
 
-	projection, ok := m["projection"].(types.Document)
-	if ok && len(projection.Map()) != 0 {
-		return nil, common.NewErrorMessage(common.ErrNotImplemented, "MsgFind: projection is not supported")
-	}
 	if isFindOp {
+		projectionIn, _ := m["projection"].(types.Document)
+		projectionSQL, projectionArgs, err := projection(projectionIn, &placeholder)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		args = append(args, projectionArgs...)
+
 		collection = m["find"].(string)
 		filter, _ = m["filter"].(types.Document)
-		sql = fmt.Sprintf(`SELECT _jsonb FROM %s`, pgx.Identifier{db, collection}.Sanitize())
+		sql = fmt.Sprintf(`SELECT %s FROM %s`, projectionSQL, pgx.Identifier{db, collection}.Sanitize())
 	} else {
 		collection = m["count"].(string)
 		filter, _ = m["query"].(types.Document)
@@ -59,13 +65,11 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	sort, _ := m["sort"].(types.Document)
 	limit, _ := m["limit"].(int32)
 
-	var args []any
-	var placeholder pg.Placeholder
-
-	whereSQL, args, err := where(filter, &placeholder)
+	whereSQL, whereArgs, err := where(filter, &placeholder)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+	args = append(args, whereArgs...)
 
 	sql += whereSQL
 
