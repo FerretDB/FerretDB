@@ -498,6 +498,33 @@ func TestReadOnlyHandlers(t *testing.T) {
 			),
 		},
 
+		"DBStats": {
+			req: types.MustMakeDocument(
+				"dbstats", int32(1),
+			),
+			reqSetDB: true,
+			resp: types.MustMakeDocument(
+				"db", "monila",
+				"collections", int32(14),
+				"views", int32(0),
+				"objects", int32(30224),
+				"avgObjSize", 437.4632080465855,
+				"dataSize", 1.3221888e+07,
+				"indexes", int32(0),
+				"indexSize", float64(0),
+				"totalSize", 1.3606912e+07,
+				"scaleFactor", float64(1),
+				"ok", float64(1),
+			),
+			compareFunc: func(t testing.TB, req types.Document, actual, expected types.CompositeType) {
+				db, err := req.Get("$db")
+				require.NoError(t, err)
+				if db.(string) == "monila" {
+					assert.Equal(t, expected, actual)
+				}
+			},
+		},
+
 		"FindProjectionActorsFirstAndLastName": {
 			req: types.MustMakeDocument(
 				"find", "actor",

@@ -30,15 +30,29 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	m := document.Map()
 	db := m["$db"].(string)
-	scale, ok := m["scale"].(int32)
+	scale, ok := m["scale"].(float64)
 	if !ok {
 		scale = 1
+	}
+
+	stats, err := h.pgPool.DBStats(ctx, db)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
 			"db", db,
+			"collections", stats.CountTables,
+			// TODO https://github.com/FerretDB/FerretDB/issues/176
+			"views", int32(0),
+			"objects", stats.CountRows,
+			"avgObjSize", float64(stats.SizeSchema)/float64(stats.CountRows),
+			"dataSize", float64(stats.SizeSchema)/scale,
+			"indexes", stats.CountIndexes,
+			"indexSize", float64(stats.SizeIndexes)/scale,
+			"totalSize", float64(stats.SizeTotal)/scale,
 			"scaleFactor", scale,
 			"ok", float64(1),
 		)},
