@@ -519,6 +519,9 @@ func TestReadOnlyHandlers(t *testing.T) {
 			compareFunc: func(t testing.TB, req types.Document, actual, expected types.CompositeType) {
 				db, err := req.Get("$db")
 				require.NoError(t, err)
+				testutil.CompareAndSetByPathNum(t, expected, actual, 20, "avgObjSize")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 400_000, "dataSize")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 400_000, "totalSize")
 				if db.(string) == "monila" {
 					assert.Equal(t, expected, actual)
 				}
@@ -546,6 +549,9 @@ func TestReadOnlyHandlers(t *testing.T) {
 			compareFunc: func(t testing.TB, req types.Document, actual, expected types.CompositeType) {
 				db, err := req.Get("$db")
 				require.NoError(t, err)
+				testutil.CompareAndSetByPathNum(t, expected, actual, 20, "avgObjSize")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 400, "dataSize")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 400, "totalSize")
 				if db.(string) == "monila" {
 					assert.Equal(t, expected, actual)
 				}
