@@ -43,10 +43,10 @@ func (d *Double) UnmarshalJSON(data []byte) error {
 
 	var o doubleJSON
 	if err := dec.Decode(&o); err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
 	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("fjson.Double.UnmarshalJSON: %w", err)
+		return lazyerrors.Error(err)
 	}
 
 	switch f := o.F.(type) {
@@ -71,8 +71,8 @@ func (d *Double) UnmarshalJSON(data []byte) error {
 }
 
 // MarshalJSON implements fjsontype interface.
-func (d Double) MarshalJSON() ([]byte, error) {
-	f := float64(d)
+func (d *Double) MarshalJSON() ([]byte, error) {
+	f := float64(*d)
 	var o doubleJSON
 	switch {
 	case math.IsInf(f, 1):
@@ -85,7 +85,11 @@ func (d Double) MarshalJSON() ([]byte, error) {
 		o.F = f
 	}
 
-	return json.Marshal(o)
+	res, err := json.Marshal(o)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	return res, nil
 }
 
 // check interfaces

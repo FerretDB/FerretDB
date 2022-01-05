@@ -77,8 +77,8 @@ func (doc *Document) UnmarshalJSON(data []byte) error {
 }
 
 // MarshalJSON implements fjsontype interface.
-func (doc Document) MarshalJSON() ([]byte, error) {
-	td := types.Document(doc)
+func (doc *Document) MarshalJSON() ([]byte, error) {
+	td := types.Document(*doc)
 
 	var buf bytes.Buffer
 
@@ -100,11 +100,11 @@ func (doc Document) MarshalJSON() ([]byte, error) {
 
 		value, err := td.Get(key)
 		if err != nil {
-			return nil, lazyerrors.Errorf("fjson.Document.MarshalJSON: %w", err)
+			return nil, lazyerrors.Error(err)
 		}
 		b, err := Marshal(value)
 		if err != nil {
-			return nil, lazyerrors.Errorf("fjson.Document.MarshalJSON: %w", err)
+			return nil, lazyerrors.Error(err)
 		}
 
 		buf.Write(b)

@@ -42,10 +42,10 @@ func (i *Int64) UnmarshalJSON(data []byte) error {
 
 	var o int64JSON
 	if err := dec.Decode(&o); err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
 	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("fjson.Int64.UnmarshalJSON: %s", err)
+		return lazyerrors.Error(err)
 	}
 
 	*i = Int64(o.L)
@@ -53,10 +53,14 @@ func (i *Int64) UnmarshalJSON(data []byte) error {
 }
 
 // MarshalJSON implements fjsontype interface.
-func (i Int64) MarshalJSON() ([]byte, error) {
-	return json.Marshal(int64JSON{
-		L: int64(i),
+func (i *Int64) MarshalJSON() ([]byte, error) {
+	res, err := json.Marshal(int64JSON{
+		L: int64(*i),
 	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	return res, nil
 }
 
 // check interfaces

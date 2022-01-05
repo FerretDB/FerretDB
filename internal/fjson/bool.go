@@ -17,6 +17,8 @@ package fjson
 import (
 	"bytes"
 	"encoding/json"
+
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // Bool represents BSON Bool data type.
@@ -32,7 +34,7 @@ func (b *Bool) UnmarshalJSON(data []byte) error {
 
 	var bb bool
 	if err := json.Unmarshal(data, &bb); err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
 
 	*b = Bool(bb)
@@ -40,8 +42,12 @@ func (b *Bool) UnmarshalJSON(data []byte) error {
 }
 
 // MarshalJSON implements fjsontype interface.
-func (b Bool) MarshalJSON() ([]byte, error) {
-	return json.Marshal(bool(b))
+func (b *Bool) MarshalJSON() ([]byte, error) {
+	res, err := json.Marshal(bool(*b))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	return res, nil
 }
 
 // check interfaces

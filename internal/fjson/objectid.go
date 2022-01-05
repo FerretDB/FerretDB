@@ -44,15 +44,15 @@ func (obj *ObjectID) UnmarshalJSON(data []byte) error {
 
 	var o objectIDJSON
 	if err := dec.Decode(&o); err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
 	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("fjson.ObjectID.UnmarshalJSON: %s", err)
+		return lazyerrors.Error(err)
 	}
 
 	b, err := hex.DecodeString(o.O)
 	if err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
 	if len(b) != 12 {
 		return lazyerrors.Errorf("fjson.ObjectID.UnmarshalJSON: %d bytes", len(b))
@@ -63,10 +63,14 @@ func (obj *ObjectID) UnmarshalJSON(data []byte) error {
 }
 
 // MarshalJSON implements fjsontype interface.
-func (obj ObjectID) MarshalJSON() ([]byte, error) {
-	return json.Marshal(objectIDJSON{
+func (obj *ObjectID) MarshalJSON() ([]byte, error) {
+	res, err := json.Marshal(objectIDJSON{
 		O: hex.EncodeToString(obj[:]),
 	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	return res, nil
 }
 
 // check interfaces

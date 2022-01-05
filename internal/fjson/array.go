@@ -61,11 +61,11 @@ func (a *Array) UnmarshalJSON(data []byte) error {
 }
 
 // MarshalJSON implements fjsontype interface.
-func (a Array) MarshalJSON() ([]byte, error) {
+func (a *Array) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	buf.WriteByte('[')
 
-	ta := types.Array(a)
+	ta := types.Array(*a)
 	l := ta.Len()
 	for i := 0; i < l; i++ {
 		if i != 0 {

@@ -43,10 +43,10 @@ func (ts *Timestamp) UnmarshalJSON(data []byte) error {
 
 	var o timestampJSON
 	if err := dec.Decode(&o); err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
 	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("fjson.Timestamp.UnmarshalJSON: %s", err)
+		return lazyerrors.Error(err)
 	}
 
 	*ts = Timestamp(o.T)
@@ -54,10 +54,14 @@ func (ts *Timestamp) UnmarshalJSON(data []byte) error {
 }
 
 // MarshalJSON implements fjsontype interface.
-func (ts Timestamp) MarshalJSON() ([]byte, error) {
-	return json.Marshal(timestampJSON{
-		T: uint64(ts),
+func (ts *Timestamp) MarshalJSON() ([]byte, error) {
+	res, err := json.Marshal(timestampJSON{
+		T: uint64(*ts),
 	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	return res, nil
 }
 
 // check interfaces

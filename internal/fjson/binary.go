@@ -48,7 +48,7 @@ func (bin *Binary) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 	if err = checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("fjson.Binary.UnmarshalJSON: %w", err)
+		return lazyerrors.Error(err)
 	}
 
 	bin.B = o.B
@@ -57,15 +57,15 @@ func (bin *Binary) UnmarshalJSON(data []byte) error {
 }
 
 // MarshalJSON implements fjsontype interface.
-func (bin Binary) MarshalJSON() ([]byte, error) {
-	b, err := json.Marshal(binaryJSON{
+func (bin *Binary) MarshalJSON() ([]byte, error) {
+	res, err := json.Marshal(binaryJSON{
 		B: bin.B,
 		S: byte(bin.Subtype),
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-	return b, nil
+	return res, nil
 }
 
 // check interfaces

@@ -18,11 +18,12 @@ import (
 	"bytes"
 	"encoding/json"
 
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // CString represents BSON CString data type.
-type CString string
+type CString types.CString
 
 func (cstr *CString) fjsontype() {}
 
@@ -42,10 +43,10 @@ func (cstr *CString) UnmarshalJSON(data []byte) error {
 
 	var o cstringJSON
 	if err := dec.Decode(&o); err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
 	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("fjson.CString.UnmarshalJSON: %s", err)
+		return lazyerrors.Error(err)
 	}
 
 	*cstr = CString(o.CString)
@@ -53,10 +54,14 @@ func (cstr *CString) UnmarshalJSON(data []byte) error {
 }
 
 // MarshalJSON implements fjsontype interface.
-func (cstr CString) MarshalJSON() ([]byte, error) {
-	return json.Marshal(cstringJSON{
-		CString: string(cstr),
+func (cstr *CString) MarshalJSON() ([]byte, error) {
+	res, err := json.Marshal(cstringJSON{
+		CString: string(*cstr),
 	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	return res, nil
 }
 
 // check interfaces

@@ -81,6 +81,7 @@ func fromBSON(v bsontype) any {
 	panic("not reached") // for go-sumtype to work
 }
 
+//nolint:deadcode // remove later if it is not needed
 func toBSON(v any) bsontype {
 	switch v := v.(type) {
 	case types.Document:

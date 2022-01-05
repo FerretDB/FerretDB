@@ -38,10 +38,10 @@ func (i *Int32) UnmarshalJSON(data []byte) error {
 
 	var o int32
 	if err := dec.Decode(&o); err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
 	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("fjson.Int32.UnmarshalJSON: %s", err)
+		return lazyerrors.Error(err)
 	}
 
 	*i = Int32(o)
@@ -49,8 +49,12 @@ func (i *Int32) UnmarshalJSON(data []byte) error {
 }
 
 // MarshalJSON implements fjsontype interface.
-func (i Int32) MarshalJSON() ([]byte, error) {
-	return json.Marshal(int32(i))
+func (i *Int32) MarshalJSON() ([]byte, error) {
+	res, err := json.Marshal(int32(*i))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	return res, nil
 }
 
 // check interfaces

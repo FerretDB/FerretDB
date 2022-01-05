@@ -44,10 +44,10 @@ func (regex *Regex) UnmarshalJSON(data []byte) error {
 
 	var o regexJSON
 	if err := dec.Decode(&o); err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
 	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("fjson.Regex.UnmarshalJSON: %s", err)
+		return lazyerrors.Error(err)
 	}
 
 	*regex = Regex{
@@ -58,11 +58,15 @@ func (regex *Regex) UnmarshalJSON(data []byte) error {
 }
 
 // MarshalJSON implements fjsontype interface.
-func (regex Regex) MarshalJSON() ([]byte, error) {
-	return json.Marshal(regexJSON{
+func (regex *Regex) MarshalJSON() ([]byte, error) {
+	res, err := json.Marshal(regexJSON{
 		R: regex.Pattern,
 		O: regex.Options,
 	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	return res, nil
 }
 
 // check interfaces

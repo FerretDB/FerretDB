@@ -42,13 +42,12 @@ func (str *String) UnmarshalJSON(data []byte) error {
 }
 
 // MarshalJSON implements fjsontype interface.
-func (str String) MarshalJSON() ([]byte, error) {
-	b, err := json.Marshal(string(str))
+func (str *String) MarshalJSON() ([]byte, error) {
+	res, err := json.Marshal(string(*str))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-
-	return b, nil
+	return res, nil
 }
 
 // check interfaces
