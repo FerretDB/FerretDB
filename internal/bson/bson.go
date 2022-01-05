@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/AlekSi/pointer"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
