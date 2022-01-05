@@ -524,6 +524,33 @@ func TestReadOnlyHandlers(t *testing.T) {
 				}
 			},
 		},
+		"DBStatsWithScale": {
+			req: types.MustMakeDocument(
+				"dbstats", int32(1),
+				"scale", float64(1_000),
+			),
+			reqSetDB: true,
+			resp: types.MustMakeDocument(
+				"db", "monila",
+				"collections", int32(14),
+				"views", int32(0),
+				"objects", int32(30224),
+				"avgObjSize", 437.7342509264161,
+				"dataSize", 13_230.08,
+				"indexes", int32(0),
+				"indexSize", float64(0),
+				"totalSize", 13_615.104,
+				"scaleFactor", float64(1_000),
+				"ok", float64(1),
+			),
+			compareFunc: func(t testing.TB, req types.Document, actual, expected types.CompositeType) {
+				db, err := req.Get("$db")
+				require.NoError(t, err)
+				if db.(string) == "monila" {
+					assert.Equal(t, expected, actual)
+				}
+			},
+		},
 
 		"FindProjectionActorsFirstAndLastName": {
 			req: types.MustMakeDocument(
