@@ -64,7 +64,7 @@ func (doc *Document) UnmarshalJSON(data []byte) error {
 		if !ok {
 			return lazyerrors.Errorf("fjson.Document.UnmarshalJSON: missing key %q", key)
 		}
-		v, err := Unmarshal(b)
+		v, err := UnmarshalValue(b)
 		if err != nil {
 			return lazyerrors.Error(err)
 		}

@@ -82,14 +82,14 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
 				require.Equal(t, tc.jErr, err.Error())
 			})
 
-			t.Run("Unmarshal", func(t *testing.T) {
+			t.Run("UnmarshalValue", func(t *testing.T) {
 				if tc.jErr != "" {
 					t.Skip("tc.jErr is not empty")
 				}
 
 				t.Parallel()
 
-				v, err := Unmarshal([]byte(tc.j))
+				v, err := UnmarshalValue([]byte(tc.j))
 				require.NoError(t, err)
 				v = toFJSON(v)
 

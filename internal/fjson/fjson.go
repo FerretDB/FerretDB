@@ -149,8 +149,8 @@ func toFJSON(v any) fjsontype {
 	panic("not reached")
 }
 
-// Unmarshal decodes the given fjson-encoded data.
-func Unmarshal(data []byte) (any, error) {
+// UnmarshalValue decodes the given fjson-encoded data.
+func UnmarshalValue(data []byte) (any, error) {
 	var v any
 	r := bytes.NewReader(data)
 	dec := json.NewDecoder(r)
