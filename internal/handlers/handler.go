@@ -66,12 +66,6 @@ func New(opts *NewOpts) *Handler {
 	}
 }
 
-type command struct {
-	name    string
-	help    string
-	handler func(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
-}
-
 // Handle handles the message.
 //
 // Message handlers should:
