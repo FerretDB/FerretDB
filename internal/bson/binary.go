@@ -18,18 +18,15 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
-	"encoding/json"
 	"io"
 
+	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // Binary represents BSON Binary data type.
-type Binary struct {
-	Subtype types.BinarySubtype
-	B       []byte
-}
+type Binary types.Binary
 
 func (bin *Binary) bsontype() {}
 
@@ -72,11 +69,6 @@ func (bin Binary) WriteTo(w *bufio.Writer) error {
 	return nil
 }
 
-type binaryJSON struct {
-	B []byte `json:"$b"`
-	S byte   `json:"s"`
-}
-
 // MarshalBinary implements bsontype interface.
 func (bin Binary) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
@@ -90,38 +82,18 @@ func (bin Binary) MarshalBinary() ([]byte, error) {
 
 // UnmarshalJSON implements bsontype interface.
 func (bin *Binary) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
+	var binJ fjson.Binary
+	if err := binJ.UnmarshalJSON(data); err != nil {
+		return err
 	}
 
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
-
-	var o binaryJSON
-	err := dec.Decode(&o)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-	if err = checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("bson.Binary.UnmarshalJSON: %w", err)
-	}
-
-	bin.B = o.B
-	bin.Subtype = types.BinarySubtype(o.S)
+	*bin = Binary(binJ)
 	return nil
 }
 
 // MarshalJSON implements bsontype interface.
 func (bin Binary) MarshalJSON() ([]byte, error) {
-	b, err := json.Marshal(binaryJSON{
-		B: bin.B,
-		S: byte(bin.Subtype),
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-	return b, nil
+	return fjson.Marshal(fromBSON(&bin))
 }
 
 // check interfaces

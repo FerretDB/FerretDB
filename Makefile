@@ -46,10 +46,10 @@ fuzz-init: gen-version
 
 fuzz-short:                            ## Fuzz for 1 minute
 	go test -list='Fuzz.*' ./...
-	go test -fuzz=FuzzArrayBinary -fuzztime=1m ./internal/bson/
-	go test -fuzz=FuzzArrayJSON -fuzztime=1m ./internal/bson/
-	go test -fuzz=FuzzDocumentBinary -fuzztime=1m ./internal/bson/
-	go test -fuzz=FuzzDocumentJSON -fuzztime=1m ./internal/bson/
+	go test -fuzz=FuzzArray -fuzztime=1m ./internal/bson/
+	go test -fuzz=FuzzDocument -fuzztime=1m ./internal/bson/
+	go test -fuzz=FuzzArray -fuzztime=1m ./internal/fjson/
+	go test -fuzz=FuzzDocument -fuzztime=1m ./internal/fjson/
 	go test -fuzz=FuzzMsg -fuzztime=1m ./internal/wire/
 	go test -fuzz=FuzzQuery -fuzztime=1m ./internal/wire/
 	go test -fuzz=FuzzReply -fuzztime=1m ./internal/wire/

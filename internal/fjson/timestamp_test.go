@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bson
+package fjson
 
 import (
 	"testing"
@@ -23,22 +23,22 @@ import (
 var timestampTestCases = []testCase{{
 	name: "one",
 	v:    pointer.To(Timestamp(1)),
-	b:    []byte{0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+	j:    `{"$t":"1"}`,
 }, {
 	name: "zero",
 	v:    pointer.To(Timestamp(0)),
-	b:    []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+	j:    `{"$t":"0"}`,
 }}
 
 func TestTimestamp(t *testing.T) {
 	t.Parallel()
-	testBinary(t, timestampTestCases, func() bsontype { return new(Timestamp) })
+	testJSON(t, timestampTestCases, func() fjsontype { return new(Timestamp) })
 }
 
 func FuzzTimestamp(f *testing.F) {
-	fuzzBinary(f, timestampTestCases, func() bsontype { return new(Timestamp) })
+	fuzzJSON(f, timestampTestCases, func() fjsontype { return new(Timestamp) })
 }
 
 func BenchmarkTimestamp(b *testing.B) {
-	benchmark(b, timestampTestCases, func() bsontype { return new(Timestamp) })
+	benchmark(b, timestampTestCases, func() fjsontype { return new(Timestamp) })
 }

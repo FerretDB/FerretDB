@@ -24,29 +24,15 @@ var objectIDTestCases = []testCase{{
 	name: "normal",
 	v:    pointer.To(ObjectID{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01}),
 	b:    []byte{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01},
-	j:    `{"$o":"010101010101010101010101"}`,
 }}
 
 func TestObjectID(t *testing.T) {
 	t.Parallel()
-
-	t.Run("Binary", func(t *testing.T) {
-		t.Parallel()
-		testBinary(t, objectIDTestCases, func() bsontype { return new(ObjectID) })
-	})
-
-	t.Run("JSON", func(t *testing.T) {
-		t.Parallel()
-		testJSON(t, objectIDTestCases, func() bsontype { return new(ObjectID) })
-	})
+	testBinary(t, objectIDTestCases, func() bsontype { return new(ObjectID) })
 }
 
-func FuzzObjectIDBinary(f *testing.F) {
+func FuzzObjectID(f *testing.F) {
 	fuzzBinary(f, objectIDTestCases, func() bsontype { return new(ObjectID) })
-}
-
-func FuzzObjectIDJSON(f *testing.F) {
-	fuzzJSON(f, objectIDTestCases, func() bsontype { return new(ObjectID) })
 }
 
 func BenchmarkObjectID(b *testing.B) {
