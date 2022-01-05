@@ -25,6 +25,7 @@ import (
 // Document represents BSON Document data type.
 type Document types.Document
 
+// fjsontype implements fjsontype interface.
 func (doc *Document) fjsontype() {}
 
 // UnmarshalJSON implements fjsontype interface.

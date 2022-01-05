@@ -24,6 +24,7 @@ import (
 // Int64 represents BSON Int64 data type.
 type Int64 int64
 
+// fjsontype implements fjsontype interface.
 func (i *Int64) fjsontype() {}
 
 type int64JSON struct {

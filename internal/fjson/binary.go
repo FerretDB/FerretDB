@@ -25,6 +25,7 @@ import (
 // Binary represents BSON Binary data type.
 type Binary types.Binary
 
+// fjsontype implements fjsontype interface.
 func (bin *Binary) fjsontype() {}
 
 type binaryJSON struct {

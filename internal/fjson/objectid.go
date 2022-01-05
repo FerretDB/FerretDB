@@ -26,6 +26,7 @@ import (
 // ObjectID represents BSON ObjectID data type.
 type ObjectID types.ObjectID
 
+// fjsontype implements fjsontype interface.
 func (obj *ObjectID) fjsontype() {}
 
 type objectIDJSON struct {

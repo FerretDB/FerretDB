@@ -24,6 +24,7 @@ import (
 // Bool represents BSON Bool data type.
 type Bool bool
 
+// fjsontype implements fjsontype interface.
 func (b *Bool) fjsontype() {}
 
 // UnmarshalJSON implements fjsontype interface.
@@ -32,12 +33,12 @@ func (b *Bool) UnmarshalJSON(data []byte) error {
 		panic("null data")
 	}
 
-	var bb bool
-	if err := json.Unmarshal(data, &bb); err != nil {
+	var o bool
+	if err := json.Unmarshal(data, &o); err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	*b = Bool(bb)
+	*b = Bool(o)
 	return nil
 }
 

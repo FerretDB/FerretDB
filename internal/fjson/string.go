@@ -24,6 +24,7 @@ import (
 // String represents BSON String data type.
 type String string
 
+// fjsontype implements fjsontype interface.
 func (str *String) fjsontype() {}
 
 // UnmarshalJSON implements fjsontype interface.
@@ -32,12 +33,12 @@ func (str *String) UnmarshalJSON(data []byte) error {
 		panic("null data")
 	}
 
-	var s string
-	if err := json.Unmarshal(data, &s); err != nil {
+	var o string
+	if err := json.Unmarshal(data, &o); err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	*str = String(s)
+	*str = String(o)
 	return nil
 }
 

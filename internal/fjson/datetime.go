@@ -25,8 +25,10 @@ import (
 // DateTime represents BSON DateTime data type.
 type DateTime time.Time
 
+// fjsontype implements fjsontype interface.
 func (dt *DateTime) fjsontype() {}
 
+// String returns formatted time for debugging.
 func (dt *DateTime) String() string {
 	return time.Time(*dt).Format(time.RFC3339Nano)
 }

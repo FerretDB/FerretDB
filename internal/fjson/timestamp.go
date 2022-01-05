@@ -25,6 +25,7 @@ import (
 // Timestamp represents BSON Timestamp data type.
 type Timestamp types.Timestamp
 
+// fjsontype implements fjsontype interface.
 func (ts *Timestamp) fjsontype() {}
 
 type timestampJSON struct {

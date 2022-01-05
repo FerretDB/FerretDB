@@ -24,6 +24,7 @@ import (
 // Int32 represents BSON Int32 data type.
 type Int32 int32
 
+// fjsontype implements fjsontype interface.
 func (i *Int32) fjsontype() {}
 
 // UnmarshalJSON implements fjsontype interface.

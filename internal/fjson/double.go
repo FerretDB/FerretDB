@@ -25,6 +25,7 @@ import (
 // Double represents BSON Double data type.
 type Double float64
 
+// fjsontype implements fjsontype interface.
 func (d *Double) fjsontype() {}
 
 type doubleJSON struct {

@@ -25,6 +25,7 @@ import (
 // CString represents BSON CString data type.
 type CString types.CString
 
+// fjsontype implements fjsontype interface.
 func (cstr *CString) fjsontype() {}
 
 type cstringJSON struct {

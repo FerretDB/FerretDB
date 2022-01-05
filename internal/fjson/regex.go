@@ -25,6 +25,7 @@ import (
 // Regex represents BSON Regex data type.
 type Regex types.Regex
 
+// fjsontype implements fjsontype interface.
 func (regex *Regex) fjsontype() {}
 
 type regexJSON struct {

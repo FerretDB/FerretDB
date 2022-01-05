@@ -25,6 +25,7 @@ import (
 // Array represents BSON Array data type.
 type Array types.Array
 
+// fjsontype implements fjsontype interface.
 func (a *Array) fjsontype() {}
 
 // UnmarshalJSON implements fjsontype interface.
