@@ -26,7 +26,7 @@ type String string
 
 func (str *String) fjsontype() {}
 
-// UnmarshalJSON implements bsontype interface.
+// UnmarshalJSON implements fjsontype interface.
 func (str *String) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
@@ -41,7 +41,7 @@ func (str *String) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON implements bsontype interface.
+// MarshalJSON implements fjsontype interface.
 func (str String) MarshalJSON() ([]byte, error) {
 	b, err := json.Marshal(string(str))
 	if err != nil {

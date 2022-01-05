@@ -27,7 +27,7 @@ type Document types.Document
 
 func (doc *Document) fjsontype() {}
 
-// UnmarshalJSON implements bsontype interface.
+// UnmarshalJSON implements fjsontype interface.
 func (doc *Document) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
@@ -76,7 +76,7 @@ func (doc *Document) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON implements bsontype interface.
+// MarshalJSON implements fjsontype interface.
 func (doc Document) MarshalJSON() ([]byte, error) {
 	td := types.Document(doc)
 

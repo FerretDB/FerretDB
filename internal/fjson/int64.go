@@ -30,7 +30,7 @@ type int64JSON struct {
 	L int64 `json:"$l,string"`
 }
 
-// UnmarshalJSON implements bsontype interface.
+// UnmarshalJSON implements fjsontype interface.
 func (i *Int64) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
@@ -52,7 +52,7 @@ func (i *Int64) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON implements bsontype interface.
+// MarshalJSON implements fjsontype interface.
 func (i Int64) MarshalJSON() ([]byte, error) {
 	return json.Marshal(int64JSON{
 		L: int64(i),

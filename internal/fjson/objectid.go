@@ -32,7 +32,7 @@ type objectIDJSON struct {
 	O string `json:"$o"`
 }
 
-// UnmarshalJSON implements bsontype interface.
+// UnmarshalJSON implements fjsontype interface.
 func (obj *ObjectID) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
@@ -62,7 +62,7 @@ func (obj *ObjectID) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON implements bsontype interface.
+// MarshalJSON implements fjsontype interface.
 func (obj ObjectID) MarshalJSON() ([]byte, error) {
 	return json.Marshal(objectIDJSON{
 		O: hex.EncodeToString(obj[:]),

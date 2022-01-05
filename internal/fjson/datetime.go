@@ -35,7 +35,7 @@ type dateTimeJSON struct {
 	D int64 `json:"$d"`
 }
 
-// UnmarshalJSON implements bsontype interface.
+// UnmarshalJSON implements fjsontype interface.
 func (dt *DateTime) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
@@ -58,7 +58,7 @@ func (dt *DateTime) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON implements bsontype interface.
+// MarshalJSON implements fjsontype interface.
 func (dt DateTime) MarshalJSON() ([]byte, error) {
 	return json.Marshal(dateTimeJSON{
 		D: time.Time(dt).UnixMilli(),

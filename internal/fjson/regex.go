@@ -32,7 +32,7 @@ type regexJSON struct {
 	O string `json:"o"`
 }
 
-// UnmarshalJSON implements bsontype interface.
+// UnmarshalJSON implements fjsontype interface.
 func (regex *Regex) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
@@ -57,7 +57,7 @@ func (regex *Regex) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON implements bsontype interface.
+// MarshalJSON implements fjsontype interface.
 func (regex Regex) MarshalJSON() ([]byte, error) {
 	return json.Marshal(regexJSON{
 		R: regex.Pattern,

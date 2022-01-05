@@ -31,7 +31,7 @@ type doubleJSON struct {
 	F any `json:"$f"`
 }
 
-// UnmarshalJSON implements bsontype interface.
+// UnmarshalJSON implements fjsontype interface.
 func (d *Double) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
@@ -70,7 +70,7 @@ func (d *Double) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON implements bsontype interface.
+// MarshalJSON implements fjsontype interface.
 func (d Double) MarshalJSON() ([]byte, error) {
 	f := float64(d)
 	var o doubleJSON

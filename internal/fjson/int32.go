@@ -26,7 +26,7 @@ type Int32 int32
 
 func (i *Int32) fjsontype() {}
 
-// UnmarshalJSON implements bsontype interface.
+// UnmarshalJSON implements fjsontype interface.
 func (i *Int32) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
@@ -48,7 +48,7 @@ func (i *Int32) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON implements bsontype interface.
+// MarshalJSON implements fjsontype interface.
 func (i Int32) MarshalJSON() ([]byte, error) {
 	return json.Marshal(int32(i))
 }

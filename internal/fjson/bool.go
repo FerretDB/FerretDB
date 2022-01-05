@@ -24,7 +24,7 @@ type Bool bool
 
 func (b *Bool) fjsontype() {}
 
-// UnmarshalJSON implements bsontype interface.
+// UnmarshalJSON implements fjsontype interface.
 func (b *Bool) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
@@ -39,7 +39,7 @@ func (b *Bool) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON implements bsontype interface.
+// MarshalJSON implements fjsontype interface.
 func (b Bool) MarshalJSON() ([]byte, error) {
 	return json.Marshal(bool(b))
 }

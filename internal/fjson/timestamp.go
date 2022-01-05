@@ -31,7 +31,7 @@ type timestampJSON struct {
 	T uint64 `json:"$t,string"`
 }
 
-// UnmarshalJSON implements bsontype interface.
+// UnmarshalJSON implements fjsontype interface.
 func (ts *Timestamp) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
@@ -53,7 +53,7 @@ func (ts *Timestamp) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON implements bsontype interface.
+// MarshalJSON implements fjsontype interface.
 func (ts Timestamp) MarshalJSON() ([]byte, error) {
 	return json.Marshal(timestampJSON{
 		T: uint64(ts),

@@ -32,7 +32,7 @@ type binaryJSON struct {
 	S byte   `json:"s"`
 }
 
-// UnmarshalJSON implements bsontype interface.
+// UnmarshalJSON implements fjsontype interface.
 func (bin *Binary) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
@@ -56,7 +56,7 @@ func (bin *Binary) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON implements bsontype interface.
+// MarshalJSON implements fjsontype interface.
 func (bin Binary) MarshalJSON() ([]byte, error) {
 	b, err := json.Marshal(binaryJSON{
 		B: bin.B,

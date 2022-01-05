@@ -30,7 +30,7 @@ type cstringJSON struct {
 	CString string `json:"$c"`
 }
 
-// UnmarshalJSON implements bsontype interface.
+// UnmarshalJSON implements fjsontype interface.
 func (cstr *CString) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
@@ -52,7 +52,7 @@ func (cstr *CString) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON implements bsontype interface.
+// MarshalJSON implements fjsontype interface.
 func (cstr CString) MarshalJSON() ([]byte, error) {
 	return json.Marshal(cstringJSON{
 		CString: string(cstr),
