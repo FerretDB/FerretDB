@@ -142,26 +142,7 @@ var msgTestCases = []testCase{{
 }, {
 	name:      "dollar_dot",
 	expectedB: testutil.MustParseDumpFile("testdata", "dollar_dot.hex"),
-	msgHeader: &MsgHeader{
-		MessageLength: 113,
-		RequestID:     35,
-		OpCode:        OP_MSG,
-	},
-	msgBody: &OpMsg{
-		sections: []OpMsgSection{{
-			Documents: []types.Document{types.MustMakeDocument(
-				"insert", "test",
-				"documents", types.MustNewArray(
-					types.MustMakeDocument(
-						"$.", true,
-						"_id", types.ObjectID{0x61, 0xaf, 0x7c, 0x02, 0x75, 0x48, 0x20, 0xa5, 0x92, 0x3e, 0xa4, 0x97},
-					),
-				),
-				"ordered", true,
-				"$db", "test",
-			)},
-		}},
-	},
+	err:       `types.Document.validate: invalid key: "$."`,
 }}
 
 func TestMsg(t *testing.T) {

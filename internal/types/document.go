@@ -26,6 +26,11 @@ func isValidKey(key string) bool {
 		return false
 	}
 
+	// forbid $k, but allow $db
+	if key[0] == '$' && len(key) <= 2 {
+		return false
+	}
+
 	return utf8.ValidString(key)
 }
 
