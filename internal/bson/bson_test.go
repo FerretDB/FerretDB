@@ -34,6 +34,22 @@ type testCase struct {
 	bErr string // unwrapped
 }
 
+// assertEqualWithNaN is assert.Equal that also can compare NaNs.
+func assertEqualWithNaN(t testing.TB, expected, actual any) {
+	t.Helper()
+
+	if expectedD, ok := expected.(*Double); ok {
+		require.IsType(t, expected, actual)
+		actualD := actual.(*Double)
+		if math.IsNaN(float64(*expectedD)) {
+			assert.True(t, math.IsNaN(float64(*actualD)))
+			return
+		}
+	}
+
+	assert.Equal(t, expected, actual, "expected: %s\nactual  : %s", expected, actual)
+}
+
 func testBinary(t *testing.T, testCases []testCase, newFunc func() bsontype) {
 	for _, tc := range testCases {
 		tc := tc
@@ -52,14 +68,7 @@ func testBinary(t *testing.T, testCases []testCase, newFunc func() bsontype) {
 				err := v.ReadFrom(bufr)
 				if tc.bErr == "" {
 					assert.NoError(t, err)
-					if d, ok := v.(*Double); ok && math.IsNaN(float64(*d)) {
-						// NaN != NaN, do special handling
-						d, ok = tc.v.(*Double)
-						assert.True(t, ok)
-						assert.True(t, math.IsNaN(float64(*d)))
-					} else {
-						assert.Equal(t, tc.v, v, "expected: %s\nactual  : %s", tc.v, v)
-					}
+					assertEqualWithNaN(t, tc.v, v)
 					assert.Zero(t, br.Len(), "not all br bytes were consumed")
 					assert.Zero(t, bufr.Buffered(), "not all bufr bytes were consumed")
 					return
@@ -169,6 +178,7 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() bsontype) {
 		b.Run(tc.name, func(b *testing.B) {
 			b.Run("ReadFrom", func(b *testing.B) {
 				br := bytes.NewReader(tc.b)
+				var bufr *bufio.Reader
 				var v bsontype
 				var readErr, seekErr error
 
@@ -177,16 +187,34 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() bsontype) {
 				b.ResetTimer()
 
 				for i := 0; i < b.N; i++ {
-					v = newFunc()
-					readErr = v.ReadFrom(bufio.NewReader(br))
 					_, seekErr = br.Seek(0, io.SeekStart)
+
+					v = newFunc()
+					bufr = bufio.NewReader(br)
+					readErr = v.ReadFrom(bufr)
 				}
 
 				b.StopTimer()
 
-				assert.NoError(b, readErr)
-				assert.NoError(b, seekErr)
-				assert.Equal(b, tc.v, v)
+				require.NoError(b, seekErr)
+
+				if tc.bErr == "" {
+					assert.NoError(b, readErr)
+					assertEqualWithNaN(b, tc.v, v)
+					assert.Zero(b, br.Len(), "not all br bytes were consumed")
+					assert.Zero(b, bufr.Buffered(), "not all bufr bytes were consumed")
+					return
+				}
+
+				require.Error(b, readErr)
+				for {
+					e := errors.Unwrap(readErr)
+					if e == nil {
+						break
+					}
+					readErr = e
+				}
+				require.Equal(b, tc.bErr, readErr.Error())
 			})
 		})
 	}
