@@ -58,6 +58,13 @@ func TestValidate(t *testing.T) {
 			m:    map[string]any{"0": "foo", "1": "bar"},
 		},
 		err: fmt.Errorf(`types.Document.validate: duplicate key: "0"`),
+	}, {
+		name: "fjson keys",
+		doc: Document{
+			keys: []string{"$k"},
+			m:    map[string]any{"$k": "foo"},
+		},
+		err: fmt.Errorf(`types.Document.validate: invalid key: "$k"`),
 	}} {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
