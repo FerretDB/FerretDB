@@ -19,6 +19,8 @@ import (
 	"runtime/debug"
 	"strconv"
 	"strings"
+
+	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 //go:generate ./version.sh
@@ -31,7 +33,7 @@ type Info struct {
 	Commit           string
 	Dirty            bool
 	IsDebugBuild     bool
-	BuildEnvironment map[string]string
+	BuildEnvironment types.Document
 }
 
 var info *Info
@@ -50,9 +52,9 @@ func init() {
 		return
 	}
 
-	info.BuildEnvironment = map[string]string{}
+	info.BuildEnvironment = types.MustMakeDocument()
 	for _, s := range buildInfo.Settings {
-		info.BuildEnvironment[s.Key] = s.Value
+		info.BuildEnvironment.Set(s.Key, s.Value)
 		switch s.Key {
 		case "vcs.revision":
 			info.Commit = s.Value
