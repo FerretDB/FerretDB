@@ -61,8 +61,11 @@ func init() {
 		case "-race":
 			info.IsDebugBuild, _ = strconv.ParseBool(s.Value)
 		case "-tags":
-			if s.Value == "testcover" {
-				info.IsDebugBuild = true
+			// TODO: replace for slices.Contains()
+			for _, tag := range strings.Split(s.Value, ",") {
+				if tag == "testcover" {
+					info.IsDebugBuild = true
+				}
 			}
 		}
 	}
