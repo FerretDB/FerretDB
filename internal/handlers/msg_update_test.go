@@ -25,6 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
+// TODO Rework to make them closer to other tests.
 func TestUpdate(t *testing.T) {
 	ctx, h, pool := setup(t, nil)
 	schema := testutil.Schema(ctx, t, pool)
