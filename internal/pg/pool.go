@@ -317,12 +317,12 @@ func (pgPool *Pool) TableStats(ctx context.Context, db, table string) (*TableSta
 func (pgPool *Pool) DBStats(ctx context.Context, db string) (*DBStats, error) {
 	res := new(DBStats)
 	sql := `
-    SELECT COUNT(distinct t.table_name)                                                 AS CountTables,
-           SUM(COALESCE(s.n_live_tup, 0))                                               AS CountRows,
-           SUM(pg_total_relation_size('"'||t.table_schema||'"."'||t.table_name||'"'))   AS SizeTotal,
-           SUM(pg_indexes_size('"'||t.table_schema||'"."'||t.table_name||'"'))          AS SizeIndexes,
-           SUM(pg_relation_size('"'||t.table_schema||'"."'||t.table_name||'"'))         AS SizeSchema,
-           COUNT(distinct i.indexname)                                                  AS CountIndexes
+    SELECT COUNT(distinct t.table_name)                                                             AS CountTables,
+           COALESCE(SUM(s.n_live_tup), 0)                                                           AS CountRows,
+           COALESCE(SUM(pg_total_relation_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)  AS SizeTotal,
+           COALESCE(SUM(pg_indexes_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)         AS SizeIndexes,
+           COALESCE(SUM(pg_relation_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)        AS SizeSchema,
+           COUNT(distinct i.indexname)                                                              AS CountIndexes
       FROM information_schema.tables AS t
       LEFT OUTER
       JOIN pg_stat_user_tables       AS s ON s.schemaname = t.table_schema
