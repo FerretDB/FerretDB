@@ -34,17 +34,19 @@ type testCase struct {
 }
 
 // assertEqualWithNaN is assert.Equal that also can compare NaNs.
-func assertEqualWithNaN(tb testing.TB, expected, actual any) {
+func assertEqualWithNaN(t testing.TB, expected, actual any) {
+	t.Helper()
+
 	if expectedD, ok := expected.(*Double); ok {
-		require.IsType(tb, expected, actual)
+		require.IsType(t, expected, actual)
 		actualD := actual.(*Double)
 		if math.IsNaN(float64(*expectedD)) {
-			assert.True(tb, math.IsNaN(float64(*actualD)))
+			assert.True(t, math.IsNaN(float64(*actualD)))
 			return
 		}
 	}
 
-	assert.Equal(tb, expected, actual, "expected: %s\nactual  : %s", expected, actual)
+	assert.Equal(t, expected, actual, "expected: %s\nactual  : %s", expected, actual)
 }
 
 func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
@@ -190,8 +192,21 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() fjsontype) {
 
 				b.StopTimer()
 
-				assert.NoError(b, err)
-				assertEqualWithNaN(b, tc.v, v)
+				if tc.jErr == "" {
+					require.NoError(b, err)
+					assertEqualWithNaN(b, tc.v, v)
+					return
+				}
+
+				require.Error(b, err)
+				for {
+					e := errors.Unwrap(err)
+					if e == nil {
+						break
+					}
+					err = e
+				}
+				require.Equal(b, tc.jErr, err.Error())
 			})
 		})
 	}
