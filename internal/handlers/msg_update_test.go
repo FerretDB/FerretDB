@@ -26,6 +26,7 @@ import (
 )
 
 // TODO Rework to make them closer to other tests.
+//nolint:paralleltest // TODO
 func TestUpdate(t *testing.T) {
 	ctx, h, pool := setup(t, nil)
 	schema := testutil.Schema(ctx, t, pool)
