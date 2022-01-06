@@ -33,6 +33,20 @@ type testCase struct {
 	jErr   string // unwrapped
 }
 
+// assertEqualWithNaN is assert.Equal that also can compare NaNs.
+func assertEqualWithNaN(tb testing.TB, expected, actual any) {
+	if expectedD, ok := expected.(*Double); ok {
+		require.IsType(tb, expected, actual)
+		actualD := actual.(*Double)
+		if math.IsNaN(float64(*expectedD)) {
+			assert.True(tb, math.IsNaN(float64(*actualD)))
+			return
+		}
+	}
+
+	assert.Equal(tb, expected, actual, "expected: %s\nactual  : %s", expected, actual)
+}
+
 func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
 	for _, tc := range testCases {
 		tc := tc
@@ -59,15 +73,7 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
 
 				if tc.jErr == "" {
 					require.NoError(t, err)
-
-					if d, ok := tc.v.(*Double); ok && math.IsNaN(float64(*d)) {
-						// NaN != NaN, do special handling
-						d, ok = v.(*Double)
-						require.True(t, ok, "%#v", v)
-						assert.True(t, math.IsNaN(float64(*d)))
-					} else {
-						assert.Equal(t, tc.v, v, "expected: %s\nactual  : %s", tc.v, v)
-					}
+					assertEqualWithNaN(t, tc.v, v)
 					return
 				}
 
@@ -91,17 +97,8 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
 
 				v, err := Unmarshal([]byte(tc.j))
 				require.NoError(t, err)
-				v = toFJSON(v)
-
-				if d, ok := tc.v.(*Double); ok && math.IsNaN(float64(*d)) {
-					// NaN != NaN, do special handling
-					d, ok = v.(*Double)
-					require.True(t, ok)
-					assert.True(t, math.IsNaN(float64(*d)))
-				} else {
-					assert.Equal(t, tc.v, v, "expected: %s\nactual  : %s", tc.v, v)
-					assert.Equal(t, tc.v, v)
-				}
+				f := toFJSON(v)
+				assertEqualWithNaN(t, tc.v, f)
 			})
 
 			t.Run("MarshalJSON", func(t *testing.T) {
@@ -168,14 +165,7 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() fjsontype) {
 			actualV := newFunc()
 			err := actualV.UnmarshalJSON([]byte(j))
 			require.NoError(t, err)
-			if d, ok := v.(*Double); ok && math.IsNaN(float64(*d)) {
-				// NaN != NaN, do special handling
-				d, ok = actualV.(*Double)
-				assert.True(t, ok)
-				assert.True(t, math.IsNaN(float64(*d)))
-			} else {
-				assert.Equal(t, v, actualV, "expected: %s\nactual  : %s", v, actualV)
-			}
+			assertEqualWithNaN(t, v, actualV)
 		}
 	})
 }
@@ -201,7 +191,7 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() fjsontype) {
 				b.StopTimer()
 
 				assert.NoError(b, err)
-				assert.Equal(b, tc.v, v)
+				assertEqualWithNaN(b, tc.v, v)
 			})
 		})
 	}
