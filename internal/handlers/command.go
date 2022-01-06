@@ -52,6 +52,11 @@ var commands = map[string]command{
 		description: "Creates the collection.",
 		handler:     (*Handler).MsgCreate,
 	},
+	"dbstats": {
+		name:        "dbstats",
+		description: "Returns the statistics of the database.",
+		handler:     (*Handler).MsgDBStats,
+	},
 	"drop": {
 		name:        "drop",
 		description: "Drops the collection.",

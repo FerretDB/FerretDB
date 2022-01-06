@@ -22,16 +22,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestConvert(t *testing.T) {
 	t.Parallel()
-
-	ctx := testutil.Ctx(t)
-	pool := testutil.Pool(ctx, t, &testutil.PoolOpts{
-		ReadOnly: true,
-	})
+	ctx, pool := setup(t)
 
 	rows, err := pool.Query(ctx, "SELECT * FROM pagila.actor ORDER BY actor_id")
 	require.NoError(t, err)

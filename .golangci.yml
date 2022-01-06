@@ -8,6 +8,8 @@ run:
 linters-settings:
   exhaustive:
     default-signifies-exhaustive: false
+  goconst:
+    ignore-tests: true
   godot:
     scope: toplevel
     exclude:

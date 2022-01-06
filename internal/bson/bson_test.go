@@ -18,7 +18,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"io"
 	"math"
@@ -33,10 +32,22 @@ type testCase struct {
 	v    bsontype
 	b    []byte
 	bErr string // unwrapped
+}
 
-	j      string
-	canonJ string // canonical form without extra object fields, zero values, etc.
-	jErr   string // unwrapped
+// assertEqualWithNaN is assert.Equal that also can compare NaNs.
+func assertEqualWithNaN(t testing.TB, expected, actual any) {
+	t.Helper()
+
+	if expectedD, ok := expected.(*Double); ok {
+		require.IsType(t, expected, actual)
+		actualD := actual.(*Double)
+		if math.IsNaN(float64(*expectedD)) {
+			assert.True(t, math.IsNaN(float64(*actualD)))
+			return
+		}
+	}
+
+	assert.Equal(t, expected, actual, "expected: %s\nactual  : %s", expected, actual)
 }
 
 func testBinary(t *testing.T, testCases []testCase, newFunc func() bsontype) {
@@ -57,14 +68,7 @@ func testBinary(t *testing.T, testCases []testCase, newFunc func() bsontype) {
 				err := v.ReadFrom(bufr)
 				if tc.bErr == "" {
 					assert.NoError(t, err)
-					if d, ok := v.(*Double); ok && math.IsNaN(float64(*d)) {
-						// NaN != NaN, do special handling
-						d, ok = tc.v.(*Double)
-						assert.True(t, ok)
-						assert.True(t, math.IsNaN(float64(*d)))
-					} else {
-						assert.Equal(t, tc.v, v, "expected: %s\nactual  : %s", tc.v, v)
-					}
+					assertEqualWithNaN(t, tc.v, v)
 					assert.Zero(t, br.Len(), "not all br bytes were consumed")
 					assert.Zero(t, bufr.Buffered(), "not all bufr bytes were consumed")
 					return
@@ -168,125 +172,13 @@ func fuzzBinary(f *testing.F, testCases []testCase, newFunc func() bsontype) {
 	})
 }
 
-func testJSON(t *testing.T, testCases []testCase, newFunc func() bsontype) {
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			require.NotEmpty(t, tc.name, "name should not be empty")
-			if tc.j == "" {
-				t.Skip("j is empty")
-			}
-
-			t.Parallel()
-
-			var dst bytes.Buffer
-			require.NoError(t, json.Compact(&dst, []byte(tc.j)))
-			require.Equal(t, tc.j, dst.String(), "j should be compacted")
-			if tc.canonJ != "" {
-				dst.Reset()
-				require.NoError(t, json.Compact(&dst, []byte(tc.canonJ)))
-				require.Equal(t, tc.canonJ, dst.String(), "canonJ should be compacted")
-			}
-
-			t.Run("UnmarshalJSON", func(t *testing.T) {
-				t.Parallel()
-
-				v := newFunc()
-				err := v.UnmarshalJSON([]byte(tc.j))
-				if tc.jErr == "" {
-					require.NoError(t, err)
-					if d, ok := v.(*Double); ok && math.IsNaN(float64(*d)) {
-						// NaN != NaN, do special handling
-						d, ok = tc.v.(*Double)
-						assert.True(t, ok)
-						assert.True(t, math.IsNaN(float64(*d)))
-					} else {
-						assert.Equal(t, tc.v, v, "expected: %s\nactual  : %s", tc.v, v)
-					}
-					return
-				}
-
-				require.Error(t, err)
-				for {
-					e := errors.Unwrap(err)
-					if e == nil {
-						break
-					}
-					err = e
-				}
-				require.Equal(t, tc.jErr, err.Error())
-			})
-
-			t.Run("MarshalJSON", func(t *testing.T) {
-				t.Parallel()
-
-				actualJ, err := tc.v.MarshalJSON()
-				require.NoError(t, err)
-				expectedJ := tc.j
-				if tc.canonJ != "" {
-					expectedJ = tc.canonJ
-				}
-				assert.Equal(t, expectedJ, string(actualJ))
-			})
-		})
-	}
-}
-
-func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() bsontype) {
-	for _, tc := range testCases {
-		f.Add(tc.j)
-		if tc.canonJ != "" {
-			f.Add(tc.canonJ)
-		}
-	}
-
-	f.Fuzz(func(t *testing.T, j string) {
-		t.Parallel()
-
-		// raw "null" should never reach UnmarshalJSON due to the way encoding/json works
-		if j == "null" {
-			t.Skip(j)
-		}
-
-		// j may not be a canonical form.
-		// We can't compare it with MarshalJSON() result directly.
-		// Instead, we compare second results.
-
-		v := newFunc()
-		if err := v.UnmarshalJSON([]byte(j)); err != nil {
-			t.Skip(err)
-		}
-
-		// test MarshalJSON
-		{
-			b, err := v.MarshalJSON()
-			require.NoError(t, err)
-			j = string(b)
-		}
-
-		// test UnmarshalJSON
-		{
-			actualV := newFunc()
-			err := actualV.UnmarshalJSON([]byte(j))
-			require.NoError(t, err)
-			if d, ok := v.(*Double); ok && math.IsNaN(float64(*d)) {
-				// NaN != NaN, do special handling
-				d, ok = actualV.(*Double)
-				assert.True(t, ok)
-				assert.True(t, math.IsNaN(float64(*d)))
-			} else {
-				assert.Equal(t, v, actualV, "expected: %s\nactual  : %s", v, actualV)
-			}
-		}
-	})
-}
-
 func benchmark(b *testing.B, testCases []testCase, newFunc func() bsontype) {
 	for _, tc := range testCases {
 		tc := tc
 		b.Run(tc.name, func(b *testing.B) {
 			b.Run("ReadFrom", func(b *testing.B) {
 				br := bytes.NewReader(tc.b)
+				var bufr *bufio.Reader
 				var v bsontype
 				var readErr, seekErr error
 
@@ -295,36 +187,34 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() bsontype) {
 				b.ResetTimer()
 
 				for i := 0; i < b.N; i++ {
+					_, seekErr = br.Seek(0, io.SeekStart)
+
 					v = newFunc()
-					readErr = v.ReadFrom(bufio.NewReader(br))
-					_, seekErr = br.Seek(io.SeekStart, 0)
+					bufr = bufio.NewReader(br)
+					readErr = v.ReadFrom(bufr)
 				}
 
 				b.StopTimer()
 
-				assert.NoError(b, readErr)
-				assert.NoError(b, seekErr)
-				assert.Equal(b, tc.v, v)
-			})
+				require.NoError(b, seekErr)
 
-			b.Run("UnmarshalJSON", func(b *testing.B) {
-				data := []byte(tc.j)
-				var v bsontype
-				var err error
-
-				b.ReportAllocs()
-				b.SetBytes(int64(len(data)))
-				b.ResetTimer()
-
-				for i := 0; i < b.N; i++ {
-					v = newFunc()
-					err = v.UnmarshalJSON(data)
+				if tc.bErr == "" {
+					assert.NoError(b, readErr)
+					assertEqualWithNaN(b, tc.v, v)
+					assert.Zero(b, br.Len(), "not all br bytes were consumed")
+					assert.Zero(b, bufr.Buffered(), "not all bufr bytes were consumed")
+					return
 				}
 
-				b.StopTimer()
-
-				assert.NoError(b, err)
-				assert.Equal(b, tc.v, v)
+				require.Error(b, readErr)
+				for {
+					e := errors.Unwrap(readErr)
+					if e == nil {
+						break
+					}
+					readErr = e
+				}
+				require.Equal(b, tc.bErr, readErr.Error())
 			})
 		})
 	}

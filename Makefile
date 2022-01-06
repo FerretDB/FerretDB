@@ -37,7 +37,8 @@ fmt: bin/gofumpt                       ## Format code
 	bin/gofumpt -w .
 
 test:                                  ## Run tests
-	go test -race -coverprofile=cover.txt -coverpkg=./... -shuffle=on ./...
+	go test -race -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
+	go test -race -shuffle=on -bench=. -benchtime=1x ./...
 
 # That's not quite correct: https://github.com/golang/go/issues/15513
 # But good enough for us.
@@ -46,18 +47,20 @@ fuzz-init: gen-version
 
 fuzz-short:                            ## Fuzz for 1 minute
 	go test -list='Fuzz.*' ./...
-	go test -fuzz=FuzzArrayBinary -fuzztime=1m ./internal/bson/
-	go test -fuzz=FuzzArrayJSON -fuzztime=1m ./internal/bson/
-	go test -fuzz=FuzzDocumentBinary -fuzztime=1m ./internal/bson/
-	go test -fuzz=FuzzDocumentJSON -fuzztime=1m ./internal/bson/
+	go test -fuzz=FuzzArray -fuzztime=1m ./internal/bson/
+	go test -fuzz=FuzzDocument -fuzztime=1m ./internal/bson/
+	go test -fuzz=FuzzArray -fuzztime=1m ./internal/fjson/
+	go test -fuzz=FuzzDocument -fuzztime=1m ./internal/fjson/
 	go test -fuzz=FuzzMsg -fuzztime=1m ./internal/wire/
 	go test -fuzz=FuzzQuery -fuzztime=1m ./internal/wire/
 	go test -fuzz=FuzzReply -fuzztime=1m ./internal/wire/
 
 bench-short:                           ## Benchmark for 5 seconds
-	go test -list='Bench.*' ./...
+	go test -list='Benchmark.*' ./...
 	go test -bench=BenchmarkArray -benchtime=5s ./internal/bson/
 	go test -bench=BenchmarkDocument -benchtime=5s ./internal/bson/
+	go test -bench=BenchmarkArray -benchtime=5s ./internal/fjson/
+	go test -bench=BenchmarkDocument -benchtime=5s ./internal/fjson/
 
 build-testcover: gen-version           ## Build bin/ferretdb-testcover
 	go test -c -o=bin/ferretdb-testcover -trimpath -tags=testcover -race -coverpkg=./... ./cmd/ferretdb

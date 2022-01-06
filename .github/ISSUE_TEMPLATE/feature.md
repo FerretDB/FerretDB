@@ -1,5 +1,5 @@
 ---
 name: Feature
-about: Something is not implemented yet
+about: Some feature is not implemented yet
 labels: code/feature
 ---
