@@ -1,3 +1,4 @@
+---
 # https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes
 
 changelog:
@@ -5,19 +6,24 @@ changelog:
     - title: New Features 🎉
       labels:
         - code/feature
-    - title: Fixed bugs 🐛
+
+    - title: Fixed Bugs 🐛
       labels:
         - code/bug
-    - title: Improvements 🛠
+
+    - title: Enhancements 🛠
       labels:
-        - code/chore
         - code/enhancement
-    - title: Dependencies 🤖
-      labels:
-        - deps
+
     - title: Documentation 📄
       labels:
         - documentation
-    - title: Other Changes
+
+    - title: Other Changes 🤖
+      labels:
+        - code/chore
+        - deps
+
+    - title: This section should be empty
       labels:
         - "*"
