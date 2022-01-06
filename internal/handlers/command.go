@@ -26,141 +26,141 @@ import (
 
 type command struct {
 	name           string
-	description    string
+	help           string
 	handler        func(*Handler, context.Context, *wire.OpMsg) (*wire.OpMsg, error)
 	storageHandler func(common.Storage, context.Context, *wire.OpMsg) (*wire.OpMsg, error)
 }
 
 var commands = map[string]command{
 	"buildinfo": {
-		name:        "buildinfo",
-		description: "Returns a summary of the build information.",
-		handler:     (*Handler).MsgBuildInfo,
+		name:    "buildInfo",
+		help:    "Returns a summary of the build information.",
+		handler: (*Handler).MsgBuildInfo,
 	},
 	"collstats": {
-		name:        "collstats",
-		description: "Storage data for a collection.",
-		handler:     (*Handler).MsgCollStats,
+		name:    "collStats",
+		help:    "Storage data for a collection.",
+		handler: (*Handler).MsgCollStats,
 	},
 	"createindexes": {
-		name:           "createindexes",
-		description:    "Creates indexes on a collection.",
+		name:           "createIndexes",
+		help:           "Creates indexes on a collection.",
 		storageHandler: (common.Storage).MsgCreateIndexes,
 	},
 	"create": {
-		name:        "create",
-		description: "Creates the collection.",
-		handler:     (*Handler).MsgCreate,
+		name:    "create",
+		help:    "Creates the collection.",
+		handler: (*Handler).MsgCreate,
 	},
 	"dbstats": {
-		name:        "dbstats",
-		description: "Returns the statistics of the database.",
-		handler:     (*Handler).MsgDBStats,
+		name:    "dbStats",
+		help:    "Returns the statistics of the database.",
+		handler: (*Handler).MsgDBStats,
 	},
 	"drop": {
-		name:        "drop",
-		description: "Drops the collection.",
-		handler:     (*Handler).MsgDrop,
+		name:    "drop",
+		help:    "Drops the collection.",
+		handler: (*Handler).MsgDrop,
 	},
 	"dropdatabase": {
-		name:        "dropdatabase",
-		description: "Deletes the database.",
-		handler:     (*Handler).MsgDropDatabase,
+		name:    "dropDatabase",
+		help:    "Deletes the database.",
+		handler: (*Handler).MsgDropDatabase,
 	},
 	"getcmdlineopts": {
-		name:        "getcmdlineopts",
-		description: "Returns a summary of all runtime and configuration options.",
-		handler:     (*Handler).MsgGetCmdLineOpts,
+		name:    "getCmdLineOpts",
+		help:    "Returns a summary of all runtime and configuration options.",
+		handler: (*Handler).MsgGetCmdLineOpts,
 	},
 	"getlog": {
-		name:        "getlog",
-		description: "Returns the most recent logged events from memory.",
-		handler:     (*Handler).MsgGetLog,
+		name:    "getLog",
+		help:    "Returns the most recent logged events from memory.",
+		handler: (*Handler).MsgGetLog,
 	},
 	"getparameter": {
-		name:        "getparameter",
-		description: "Returns the value of the parameter.",
-		handler:     (*Handler).MsgGetParameter,
+		name:    "getParameter",
+		help:    "Returns the value of the parameter.",
+		handler: (*Handler).MsgGetParameter,
 	},
 	"hostinfo": {
-		name:        "hostInfo",
-		description: "Returns a summary of the system information.",
-		handler:     (*Handler).MsgHostInfo,
+		name:    "hostInfo",
+		help:    "Returns a summary of the system information.",
+		handler: (*Handler).MsgHostInfo,
 	},
 	"ismaster": {
-		name:        "ismaster",
-		description: "Returns the role of the FerretDB instance.",
-		handler:     (*Handler).MsgHello,
+		name:    "isMaster",
+		help:    "Returns the role of the FerretDB instance.",
+		handler: (*Handler).MsgHello,
 	},
 	"hello": {
-		name:        "hello",
-		description: "Returns the role of the FerretDB instance.",
-		handler:     (*Handler).MsgHello,
+		name:    "hello",
+		help:    "Returns the role of the FerretDB instance.",
+		handler: (*Handler).MsgHello,
 	},
 	"listcollections": {
-		name:        "listcollections",
-		description: "Returns the information of the collections and views in the database.",
-		handler:     (*Handler).MsgListCollections,
+		name:    "listCollections",
+		help:    "Returns the information of the collections and views in the database.",
+		handler: (*Handler).MsgListCollections,
 	},
 	"listdatabases": {
-		name:        "listdatabases",
-		description: "Returns a summary of all the databases.",
-		handler:     (*Handler).MsgListDatabases,
+		name:    "listDatabases",
+		help:    "Returns a summary of all the databases.",
+		handler: (*Handler).MsgListDatabases,
 	},
 	"listcommands": {
-		name:        "listcommands",
-		description: "Returns information about the currently supported commands.",
+		name: "listCommands",
+		help: "Returns information about the currently supported commands.",
 	},
 	"ping": {
-		name:        "ping",
-		description: "Returns a pong response. Used for testing purposes.",
-		handler:     (*Handler).MsgPing,
+		name:    "ping",
+		help:    "Returns a pong response. Used for testing purposes.",
+		handler: (*Handler).MsgPing,
 	},
 	"whatsmyuri": {
-		name:        "whatsmyuri",
-		description: "An internal command.",
-		handler:     (*Handler).MsgWhatsMyURI,
+		name:    "whatsmyuri",
+		help:    "An internal command.",
+		handler: (*Handler).MsgWhatsMyURI,
 	},
 	"serverstatus": {
-		name:        "serverstatus",
-		description: "Returns an overview of the databases state.",
-		handler:     (*Handler).MsgServerStatus,
+		name:    "serverStatus",
+		help:    "Returns an overview of the databases state.",
+		handler: (*Handler).MsgServerStatus,
 	},
 	"delete": {
 		name:           "delete",
-		description:    "Deletes documents matched by the query.",
+		help:           "Deletes documents matched by the query.",
 		storageHandler: (common.Storage).MsgDelete,
 	},
 	"find": {
 		name:           "find",
-		description:    "Returns documents matched by the custom query.",
+		help:           "Returns documents matched by the custom query.",
 		storageHandler: (common.Storage).MsgFindOrCount,
 	},
 	"count": {
 		name:           "count",
-		description:    "Returns the count of documents that's matched by the query.",
+		help:           "Returns the count of documents that's matched by the query.",
 		storageHandler: (common.Storage).MsgFindOrCount,
 	},
 	"insert": {
 		name:           "insert",
-		description:    "Inserts documents into the database. ",
+		help:           "Inserts documents into the database. ",
 		storageHandler: (common.Storage).MsgInsert,
 	},
 	"update": {
 		name:           "update",
-		description:    "Updates documents that are matched by the query.",
+		help:           "Updates documents that are matched by the query.",
 		storageHandler: (common.Storage).MsgUpdate,
 	},
 	"debug_error": {
-		name:        "debug_error",
-		description: "Used for debugging purposes.",
+		name: "debug_error",
+		help: "Used for debugging purposes.",
 		handler: func(*Handler, context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
 			return nil, errors.New("debug_error")
 		},
 	},
 	"debug_panic": {
-		name:        "debug_panic",
-		description: "Used for debugging purposes.",
+		name: "debug_panic",
+		help: "Used for debugging purposes.",
 		handler: func(*Handler, context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
 			panic("debug_panic")
 		},
@@ -171,17 +171,16 @@ var commands = map[string]command{
 func SupportedCommands(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 
-	commandList := types.MakeArray(len(commands))
+	cmdList := types.MustMakeDocument()
 	for _, command := range commands {
-		commandList.Append(types.MustMakeDocument(
-			"name", command.name,
-			"description", command.description,
+		cmdList.Set(command.name, types.MustMakeDocument(
+			"help", command.help,
 		))
 	}
 
 	err := reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
-			"commands", commandList,
+			"commands", cmdList,
 			"ok", float64(1),
 		)},
 	})
