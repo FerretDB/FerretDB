@@ -438,29 +438,34 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 		},
+
 		"CollStats": {
 			req: types.MustMakeDocument(
 				"collstats", "film",
 			),
 			reqSetDB: true,
 			resp: types.MustMakeDocument(
-				"ns", "manila.film",
+				"ns", "monila.film",
 				"count", int64(1_000),
-				"size", int64(704512),
-				"storageSize", int64(450560),
-				"totalIndexSize", int64(221184),
-				"totalSize", int64(704512),
+				"size", int64(1_236_992),
+				"storageSize", int64(1_204_224),
+				"totalIndexSize", int64(0),
+				"totalSize", int64(1_236_992),
 				"scaleFactor", int64(1),
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, req types.Document, actual, expected types.CompositeType) {
 				db, err := req.Get("$db")
 				require.NoError(t, err)
-				if db.(string) == "manila" {
+				if db.(string) == "monila" {
+					testutil.CompareAndSetByPathNum(t, expected, actual, 30_000, "size")
+					testutil.CompareAndSetByPathNum(t, expected, actual, 30_000, "storageSize")
+					testutil.CompareAndSetByPathNum(t, expected, actual, 30_000, "totalSize")
 					assert.Equal(t, expected, actual)
 				}
 			},
 		},
+
 		"CountAllActors": {
 			req: types.MustMakeDocument(
 				"count", "actor",
