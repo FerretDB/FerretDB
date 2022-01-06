@@ -58,6 +58,17 @@ type TableStats struct {
 	Rows        int64
 }
 
+// DBStats describes some statistics for a database.
+type DBStats struct {
+	Name         string
+	CountTables  int32
+	CountRows    int32
+	SizeTotal    int64
+	SizeIndexes  int64
+	SizeSchema   int64
+	CountIndexes int32
+}
+
 // NewPool returns a pgxpool, a concurrency-safe connection pool for pgx.
 func NewPool(connString string, logger *zap.Logger, lazy bool) (*Pool, error) {
 	config, err := pgxpool.ParseConfig(connString)
@@ -295,6 +306,35 @@ func (pgPool *Pool) TableStats(ctx context.Context, db, table string) (*TableSta
 
 	err := pgPool.QueryRow(ctx, sql, db, table).
 		Scan(&res.Table, &res.TableType, &res.SizeTotal, &res.SizeIndexes, &res.SizeTable, &res.Rows)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return res, nil
+}
+
+// DBStats returns a set of statistics for a database.
+func (pgPool *Pool) DBStats(ctx context.Context, db string) (*DBStats, error) {
+	res := new(DBStats)
+	sql := `
+    SELECT COUNT(distinct t.table_name)                                                             AS CountTables,
+           COALESCE(SUM(s.n_live_tup), 0)                                                           AS CountRows,
+           COALESCE(SUM(pg_total_relation_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)  AS SizeTotal,
+           COALESCE(SUM(pg_indexes_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)         AS SizeIndexes,
+           COALESCE(SUM(pg_relation_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)        AS SizeSchema,
+           COUNT(distinct i.indexname)                                                              AS CountIndexes
+      FROM information_schema.tables AS t
+      LEFT OUTER
+      JOIN pg_stat_user_tables       AS s ON s.schemaname = t.table_schema
+                                         AND s.relname = t.table_name
+      LEFT OUTER
+      JOIN pg_indexes                AS i ON i.schemaname = t.table_schema
+                                         AND i.tablename = t.table_name
+     WHERE t.table_schema = $1`
+
+	res.Name = db
+	err := pgPool.QueryRow(ctx, sql, db).
+		Scan(&res.CountTables, &res.CountRows, &res.SizeTotal, &res.SizeIndexes, &res.SizeSchema, &res.CountIndexes)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

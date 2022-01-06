@@ -160,6 +160,8 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return h.shared.MsgCollStats(ctx, msg)
 	case "create":
 		return h.shared.MsgCreate(ctx, msg)
+	case "dbstats":
+		return h.shared.MsgDBStats(ctx, msg)
 	case "drop":
 		return h.shared.MsgDrop(ctx, msg)
 	case "dropdatabase":
