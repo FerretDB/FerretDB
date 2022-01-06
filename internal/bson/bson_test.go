@@ -179,7 +179,7 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() bsontype) {
 				for i := 0; i < b.N; i++ {
 					v = newFunc()
 					readErr = v.ReadFrom(bufio.NewReader(br))
-					_, seekErr = br.Seek(io.SeekStart, 0)
+					_, seekErr = br.Seek(0, io.SeekStart)
 				}
 
 				b.StopTimer()
