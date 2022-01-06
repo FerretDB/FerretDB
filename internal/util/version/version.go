@@ -59,7 +59,9 @@ func init() {
 		case "vcs.modified":
 			info.Dirty, _ = strconv.ParseBool(s.Value)
 		case "-race":
-			info.IsDebugBuild, _ = strconv.ParseBool(s.Value)
+			if raceEnabled, _ := strconv.ParseBool(s.Value); raceEnabled {
+				info.IsDebugBuild = true
+			}
 		case "-tags":
 			// TODO: replace for slices.Contains()
 			for _, tag := range strings.Split(s.Value, ",") {
