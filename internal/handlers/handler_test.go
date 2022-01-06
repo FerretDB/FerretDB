@@ -438,6 +438,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 		},
+
 		"CollStats": {
 			req: types.MustMakeDocument(
 				"collstats", "film",
@@ -464,6 +465,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				}
 			},
 		},
+
 		"CountAllActors": {
 			req: types.MustMakeDocument(
 				"count", "actor",
