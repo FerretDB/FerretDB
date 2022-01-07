@@ -621,6 +621,21 @@ func TestReadOnlyHandlers(t *testing.T) {
 			),
 		},
 
+		"ListCommands": {
+			req: types.MustMakeDocument(
+				"listCommands", int32(1),
+			),
+			resp: types.MustMakeDocument(
+				"commands", types.MustMakeDocument(),
+				"ok", float64(12),
+			),
+			compareFunc: func(t testing.TB, _ types.Document, actual, expected types.CompositeType) {
+				actualV := testutil.GetByPath(t, actual, "commands")
+				testutil.SetByPath(t, expected, actualV, "commands")
+				assert.Equal(t, expected, actual)
+			},
+		},
+
 		"IsMaster": {
 			req: types.MustMakeDocument(
 				"isMaster", int32(1),

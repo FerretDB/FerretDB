@@ -157,13 +157,13 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	if cmd, ok := commands[cmd]; ok {
 		if cmd.handler != nil {
 			return cmd.handler(h, ctx, msg)
-		} else {
-			storage, err := h.msgStorage(ctx, msg)
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-			return cmd.storageHandler(storage, ctx, msg)
 		}
+
+		storage, err := h.msgStorage(ctx, msg)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		return cmd.storageHandler(storage, ctx, msg)
 	}
 
 	return nil, common.NewErrorMessage(common.ErrCommandNotFound, "no such command: '%s'", cmd)
