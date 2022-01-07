@@ -25,6 +25,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// lastErr returns the last error in error chain.
+func lastErr(err error) error {
+	for {
+		e := errors.Unwrap(err)
+		if e == nil {
+			return err
+		}
+		err = e
+	}
+}
+
 var lastUpdate = time.Date(2020, 2, 15, 9, 34, 33, 0, time.UTC).Local()
 
 type testCase struct {
@@ -75,14 +86,7 @@ func testMessages(t *testing.T, testCases []testCase) {
 				}
 
 				require.Error(t, err)
-				for {
-					e := errors.Unwrap(err)
-					if e == nil {
-						break
-					}
-					err = e
-				}
-				require.Equal(t, tc.err, err.Error())
+				require.Equal(t, tc.err, lastErr(err).Error())
 			})
 
 			t.Run("WriteMessage", func(t *testing.T) {

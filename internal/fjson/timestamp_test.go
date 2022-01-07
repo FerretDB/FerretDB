@@ -28,6 +28,10 @@ var timestampTestCases = []testCase{{
 	name: "zero",
 	v:    pointer.To(Timestamp(0)),
 	j:    `{"$t":"0"}`,
+}, {
+	name: "EOF",
+	j:    `{`,
+	jErr: `unexpected EOF`,
 }}
 
 func TestTimestamp(t *testing.T) {

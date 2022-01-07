@@ -24,6 +24,10 @@ var objectIDTestCases = []testCase{{
 	name: "normal",
 	v:    pointer.To(ObjectID{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01}),
 	j:    `{"$o":"010101010101010101010101"}`,
+}, {
+	name: "EOF",
+	j:    `{`,
+	jErr: `unexpected EOF`,
 }}
 
 func TestObjectID(t *testing.T) {

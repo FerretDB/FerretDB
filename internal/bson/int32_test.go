@@ -37,6 +37,10 @@ var int32TestCases = []testCase{{
 	name: "min int32",
 	v:    pointer.To(Int32(math.MinInt32)),
 	b:    []byte{0x00, 0x00, 0x00, 0x80},
+}, {
+	name: "EOF",
+	b:    []byte{0x00},
+	bErr: `unexpected EOF`,
 }}
 
 func TestInt32(t *testing.T) {

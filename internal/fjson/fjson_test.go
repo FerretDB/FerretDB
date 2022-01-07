@@ -49,6 +49,17 @@ func assertEqualWithNaN(t testing.TB, expected, actual any) {
 	assert.Equal(t, expected, actual, "expected: %s\nactual  : %s", expected, actual)
 }
 
+// lastErr returns the last error in error chain.
+func lastErr(err error) error {
+	for {
+		e := errors.Unwrap(err)
+		if e == nil {
+			return err
+		}
+		err = e
+	}
+}
+
 func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
 	for _, tc := range testCases {
 		tc := tc
@@ -58,13 +69,15 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
 
 			t.Parallel()
 
-			var dst bytes.Buffer
-			require.NoError(t, json.Compact(&dst, []byte(tc.j)))
-			require.Equal(t, tc.j, dst.String(), "j should be compacted")
-			if tc.canonJ != "" {
-				dst.Reset()
-				require.NoError(t, json.Compact(&dst, []byte(tc.canonJ)))
-				require.Equal(t, tc.canonJ, dst.String(), "canonJ should be compacted")
+			if tc.jErr == "" {
+				var dst bytes.Buffer
+				require.NoError(t, json.Compact(&dst, []byte(tc.j)))
+				require.Equal(t, tc.j, dst.String(), "j should be compacted")
+				if tc.canonJ != "" {
+					dst.Reset()
+					require.NoError(t, json.Compact(&dst, []byte(tc.canonJ)))
+					require.Equal(t, tc.canonJ, dst.String(), "canonJ should be compacted")
+				}
 			}
 
 			t.Run("UnmarshalJSON", func(t *testing.T) {
@@ -80,30 +93,29 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
 				}
 
 				require.Error(t, err)
-				for {
-					e := errors.Unwrap(err)
-					if e == nil {
-						break
-					}
-					err = e
-				}
-				require.Equal(t, tc.jErr, err.Error())
+				require.Equal(t, tc.jErr, lastErr(err).Error())
 			})
 
 			t.Run("Unmarshal", func(t *testing.T) {
-				if tc.jErr != "" {
-					t.Skip("tc.jErr is not empty")
-				}
-
 				t.Parallel()
 
 				v, err := Unmarshal([]byte(tc.j))
-				require.NoError(t, err)
-				f := toFJSON(v)
-				assertEqualWithNaN(t, tc.v, f)
+
+				if tc.jErr == "" {
+					require.NoError(t, err)
+					assertEqualWithNaN(t, tc.v, toFJSON(v))
+					return
+				}
+
+				require.Error(t, err)
+				require.Equal(t, tc.jErr, lastErr(err).Error())
 			})
 
 			t.Run("MarshalJSON", func(t *testing.T) {
+				if tc.v == nil {
+					t.Skip("v is nil")
+				}
+
 				t.Parallel()
 
 				actualJ, err := tc.v.MarshalJSON()
@@ -116,6 +128,10 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
 			})
 
 			t.Run("Marshal", func(t *testing.T) {
+				if tc.v == nil {
+					t.Skip("v is nil")
+				}
+
 				t.Parallel()
 
 				actualJ, err := Marshal(fromFJSON(tc.v))
@@ -199,14 +215,7 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() fjsontype) {
 				}
 
 				require.Error(b, err)
-				for {
-					e := errors.Unwrap(err)
-					if e == nil {
-						break
-					}
-					err = e
-				}
-				require.Equal(b, tc.jErr, err.Error())
+				require.Equal(b, tc.jErr, lastErr(err).Error())
 			})
 		})
 	}

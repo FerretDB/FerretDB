@@ -439,17 +439,17 @@ func TestReadOnlyHandlers(t *testing.T) {
 
 		"CollStats": {
 			req: types.MustMakeDocument(
-				"collstats", "film",
+				"collStats", "film",
 			),
 			reqSetDB: true,
 			resp: types.MustMakeDocument(
 				"ns", "monila.film",
-				"count", int64(1_000),
-				"size", int64(1_236_992),
-				"storageSize", int64(1_204_224),
-				"totalIndexSize", int64(0),
-				"totalSize", int64(1_236_992),
-				"scaleFactor", int64(1),
+				"count", int32(1_000),
+				"size", int32(1_236_992),
+				"storageSize", int32(1_204_224),
+				"totalIndexSize", int32(0),
+				"totalSize", int32(1_236_992),
+				"scaleFactor", int32(1),
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, req types.Document, actual, expected types.CompositeType) {
@@ -627,7 +627,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 			),
 			resp: types.MustMakeDocument(
 				"commands", types.MustMakeDocument(),
-				"ok", float64(12),
+				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, _ types.Document, actual, expected types.CompositeType) {
 				actualV := testutil.GetByPath(t, actual, "commands")

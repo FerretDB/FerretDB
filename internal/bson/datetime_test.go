@@ -37,6 +37,10 @@ var dateTimeTestCases = []testCase{{
 	name: "9999",
 	v:    pointer.To(DateTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC).Local())),
 	b:    []byte{0xff, 0xdb, 0x1f, 0xd2, 0x77, 0xe6, 0x00, 0x00},
+}, {
+	name: "EOF",
+	b:    []byte{0x00},
+	bErr: `unexpected EOF`,
 }}
 
 func TestDateTime(t *testing.T) {
