@@ -128,10 +128,11 @@ jobs:
       - name: Init fuzzers
         run: make fuzz-init
 
+      # TODO https://github.com/FerretDB/FerretDB/issues/238
       - name: Run fuzzers
         run: make fuzz-short
         env:
-          GOMAXPROCS: 2 # otherwise, oom-killer kills fuzzer too often
+          GOMAXPROCS: 1 # otherwise, oom-killer kills fuzzer too often
 
       - name: Collect Linux logs
         if: failure()
