@@ -57,10 +57,12 @@ fuzz-short:                            ## Fuzz for 1 minute
 
 bench-short:                           ## Benchmark for 5 seconds
 	go test -list='Benchmark.*' ./...
-	go test -bench=BenchmarkArray -benchtime=5s ./internal/bson/
-	go test -bench=BenchmarkDocument -benchtime=5s ./internal/bson/
-	go test -bench=BenchmarkArray -benchtime=5s ./internal/fjson/
-	go test -bench=BenchmarkDocument -benchtime=5s ./internal/fjson/
+	rm -f new.txt
+	go test -bench=BenchmarkArray    -benchtime=5s ./internal/bson/  | tee -a new.txt
+	go test -bench=BenchmarkDocument -benchtime=5s ./internal/bson/  | tee -a new.txt
+	go test -bench=BenchmarkArray    -benchtime=5s ./internal/fjson/ | tee -a new.txt
+	go test -bench=BenchmarkDocument -benchtime=5s ./internal/fjson/ | tee -a new.txt
+	bin/benchstat old.txt new.txt
 
 build-testcover: gen-version           ## Build bin/ferretdb-testcover
 	go test -c -o=bin/ferretdb-testcover -trimpath -tags=testcover -race -coverpkg=./... ./cmd/ferretdb
