@@ -36,6 +36,3 @@ func TestCommands(t *testing.T) {
 		}
 	})
 }
-
-func TestSupportedCommands(t *testing.T) {
-}
