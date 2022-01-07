@@ -51,6 +51,10 @@ var binaryTestCases = []testCase{{
 	j:      `{"$b":"Zm9v","s":128,"foo":"bar"}`,
 	canonJ: `{"$b":"Zm9v","s":128}`,
 	jErr:   `json: unknown field "foo"`,
+}, {
+	name: "EOF",
+	j:    `{`,
+	jErr: `unexpected EOF`,
 }}
 
 func TestBinary(t *testing.T) {

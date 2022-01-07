@@ -43,6 +43,10 @@ var arrayTestCases = []testCase{{
 	)),
 	b: testutil.MustParseDumpFile("testdata", "array_all.hex"),
 }, {
+	name: "EOF",
+	b:    []byte{0x00},
+	bErr: `unexpected EOF`,
+}, {
 	name: "array_fuzz1",
 	b:    testutil.MustParseDumpFile("testdata", "array_fuzz1.hex"),
 	bErr: `key 0 is "8"`,

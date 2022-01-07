@@ -28,6 +28,10 @@ var cstringTestCases = []testCase{{
 	name: "empty",
 	v:    pointer.To(CString("")),
 	j:    `{"$c":""}`,
+}, {
+	name: "EOF",
+	j:    `{`,
+	jErr: `unexpected EOF`,
 }}
 
 func TestCString(t *testing.T) {

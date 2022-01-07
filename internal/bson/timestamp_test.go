@@ -28,6 +28,10 @@ var timestampTestCases = []testCase{{
 	name: "zero",
 	v:    pointer.To(Timestamp(0)),
 	b:    []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+}, {
+	name: "EOF",
+	b:    []byte{0x00},
+	bErr: `unexpected EOF`,
 }}
 
 func TestTimestamp(t *testing.T) {

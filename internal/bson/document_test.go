@@ -155,7 +155,13 @@ var (
 		b: testutil.MustParseDumpFile("testdata", "all.hex"),
 	}
 
-	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4, all}
+	eof = testCase{
+		name: "EOF",
+		b:    []byte{0x00},
+		bErr: `unexpected EOF`,
+	}
+
+	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4, all, eof}
 )
 
 func TestDocument(t *testing.T) {

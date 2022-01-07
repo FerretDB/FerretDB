@@ -50,6 +50,17 @@ func assertEqualWithNaN(t testing.TB, expected, actual any) {
 	assert.Equal(t, expected, actual, "expected: %s\nactual  : %s", expected, actual)
 }
 
+// lastErr returns the last error in error chain.
+func lastErr(err error) error {
+	for {
+		e := errors.Unwrap(err)
+		if e == nil {
+			return err
+		}
+		err = e
+	}
+}
+
 func testBinary(t *testing.T, testCases []testCase, newFunc func() bsontype) {
 	for _, tc := range testCases {
 		tc := tc
@@ -75,14 +86,7 @@ func testBinary(t *testing.T, testCases []testCase, newFunc func() bsontype) {
 				}
 
 				require.Error(t, err)
-				for {
-					e := errors.Unwrap(err)
-					if e == nil {
-						break
-					}
-					err = e
-				}
-				require.Equal(t, tc.bErr, err.Error())
+				require.Equal(t, tc.bErr, lastErr(err).Error())
 			})
 
 			t.Run("MarshalBinary", func(t *testing.T) {
@@ -207,14 +211,7 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() bsontype) {
 				}
 
 				require.Error(b, readErr)
-				for {
-					e := errors.Unwrap(readErr)
-					if e == nil {
-						break
-					}
-					readErr = e
-				}
-				require.Equal(b, tc.bErr, readErr.Error())
+				require.Equal(b, tc.bErr, lastErr(readErr).Error())
 			})
 		})
 	}
