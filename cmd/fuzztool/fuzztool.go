@@ -123,6 +123,7 @@ func copyFile(src, dst string) error {
 	return nil
 }
 
+// copyCorpus copies all new corpus files from srcRoot to dstRoot.
 func copyCorpus(srcRoot, dstRoot string) {
 	logger := zap.S()
 
