@@ -56,7 +56,7 @@ func TestDouble(t *testing.T) {
 	testJSON(t, doubleTestCases, func() fjsontype { return new(Double) })
 }
 
-func FuzzDoubleJSON(f *testing.F) {
+func FuzzDouble(f *testing.F) {
 	fuzzJSON(f, doubleTestCases, func() fjsontype { return new(Double) })
 }
 

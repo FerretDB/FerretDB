@@ -130,12 +130,11 @@ jobs:
 
       - name: Run fuzzers
         run: make fuzz-short
-        continue-on-error: true # FIXME
         env:
           GOMAXPROCS: 2 # otherwise, oom-killer kills fuzzer too often
 
       - name: Collect Linux logs
-        # if: failure() FIXME
+        if: failure()
         run: |
           mkdir -p /tmp/logs
           ls -al /var/log/
@@ -144,7 +143,7 @@ jobs:
           sudo chmod 0666 /tmp/logs/*
 
       - name: Upload Linux logs
-        # if: failure() FIXME
+        if: failure()
         uses: actions/upload-artifact@v2
         with:
           name: linux-logs

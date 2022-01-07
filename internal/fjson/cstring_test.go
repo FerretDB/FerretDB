@@ -35,7 +35,7 @@ func TestCString(t *testing.T) {
 	testJSON(t, cstringTestCases, func() fjsontype { return new(CString) })
 }
 
-func FuzzCStringJSON(f *testing.F) {
+func FuzzCString(f *testing.F) {
 	fuzzJSON(f, cstringTestCases, func() fjsontype { return new(CString) })
 }
 

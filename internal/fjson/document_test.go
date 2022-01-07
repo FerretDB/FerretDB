@@ -209,7 +209,7 @@ func TestDocument(t *testing.T) {
 	testJSON(t, documentTestCases, func() fjsontype { return new(Document) })
 }
 
-func FuzzDocumentJSON(f *testing.F) {
+func FuzzDocument(f *testing.F) {
 	fuzzJSON(f, documentTestCases, func() fjsontype { return new(Document) })
 }
 

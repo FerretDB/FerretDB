@@ -48,7 +48,7 @@ func TestArray(t *testing.T) {
 	testJSON(t, arrayTestCases, func() fjsontype { return new(Array) })
 }
 
-func FuzzArrayJSON(f *testing.F) {
+func FuzzArray(f *testing.F) {
 	fuzzJSON(f, arrayTestCases, func() fjsontype { return new(Array) })
 }
 

@@ -44,7 +44,7 @@ func TestDateTime(t *testing.T) {
 	testJSON(t, dateTimeTestCases, func() fjsontype { return new(DateTime) })
 }
 
-func FuzzDateTimeJSON(f *testing.F) {
+func FuzzDateTime(f *testing.F) {
 	fuzzJSON(f, dateTimeTestCases, func() fjsontype { return new(DateTime) })
 }
 
