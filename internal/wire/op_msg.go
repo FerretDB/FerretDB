@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,17 +22,19 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/MangoDB-io/MangoDB/internal/bson"
-	"github.com/MangoDB-io/MangoDB/internal/types"
-	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/bson"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// OpMsgSection is one or more sections contained in an OpMsg.
 type OpMsgSection struct {
 	Kind       byte
 	Identifier string
 	Documents  []types.Document
 }
 
+// OpMsg is an extensible message format designed to subsume the functionality of other opcodes.
 type OpMsg struct {
 	FlagBits OpMsgFlags
 	Checksum uint32
@@ -40,6 +42,7 @@ type OpMsg struct {
 	sections []OpMsgSection
 }
 
+// SetSections of the OpMsg.
 func (msg *OpMsg) SetSections(sections ...OpMsgSection) error {
 	msg.sections = sections
 	_, err := msg.Document()
@@ -49,6 +52,7 @@ func (msg *OpMsg) SetSections(sections ...OpMsgSection) error {
 	return nil
 }
 
+// Document returns the value of msg as a types.Document.
 func (msg *OpMsg) Document() (types.Document, error) {
 	var doc types.Document
 
@@ -82,9 +86,11 @@ func (msg *OpMsg) Document() (types.Document, error) {
 				return doc, lazyerrors.Errorf("wire.OpMsg.Document: doc already has %q key", section.Identifier)
 			}
 
-			a := make(types.Array, len(section.Documents)) // may be zero
-			for i, d := range section.Documents {
-				a[i] = d
+			a := types.MakeArray(len(section.Documents)) // may be zero
+			for _, d := range section.Documents {
+				if err := a.Append(d); err != nil {
+					return doc, lazyerrors.Error(err)
+				}
 			}
 
 			doc.Set(section.Identifier, a)
@@ -127,6 +133,10 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 			var secSize int32
 			if err := binary.Read(bufr, binary.LittleEndian, &secSize); err != nil {
 				return lazyerrors.Error(err)
+			}
+
+			if secSize < 5 {
+				return lazyerrors.Errorf("wire.OpMsg.readFrom: invalid kind 1 section length %d", secSize)
 			}
 
 			sec := make([]byte, secSize-4)
@@ -189,6 +199,7 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 	return nil
 }
 
+// UnmarshalBinary reads an OpMsg from a byte array.
 func (msg *OpMsg) UnmarshalBinary(b []byte) error {
 	br := bytes.NewReader(b)
 	bufr := bufio.NewReader(br)
@@ -204,6 +215,7 @@ func (msg *OpMsg) UnmarshalBinary(b []byte) error {
 	return nil
 }
 
+// MarshalBinary writes an OpMsg to a byte array.
 func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 	bufw := bufio.NewWriter(&buf)
@@ -278,15 +290,16 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// MarshalJSON writes an OpMsg in JSON format to a byte array.
 func (msg *OpMsg) MarshalJSON() ([]byte, error) {
-	m := map[string]interface{}{
+	m := map[string]any{
 		"FlagBits": msg.FlagBits,
 		"Checksum": msg.Checksum,
 	}
 
-	sections := make([]interface{}, len(msg.sections))
+	sections := make([]any, len(msg.sections))
 	for i, section := range msg.sections {
-		s := map[string]interface{}{
+		s := map[string]any{
 			"Kind": section.Kind,
 		}
 		switch section.Kind {
@@ -294,7 +307,7 @@ func (msg *OpMsg) MarshalJSON() ([]byte, error) {
 			s["Document"] = bson.MustConvertDocument(section.Documents[0])
 		case 1:
 			s["Identifier"] = section.Identifier
-			docs := make([]interface{}, len(section.Documents))
+			docs := make([]any, len(section.Documents))
 			for j, d := range section.Documents {
 				docs[j] = bson.MustConvertDocument(d)
 			}

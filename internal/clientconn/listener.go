@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@ package clientconn
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"io"
 	"net"
@@ -24,45 +25,77 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/MangoDB-io/MangoDB/internal/pg"
-	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers"
+	"github.com/FerretDB/FerretDB/internal/pg"
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// Listener accepts incoming client connections.
 type Listener struct {
 	opts *NewListenerOpts
 }
 
+// NewListenerOpts represents listener configuration.
 type NewListenerOpts struct {
-	Addr       string
-	ShadowAddr string
-	Mode       Mode
-	PgPool     *pg.Pool
-	Logger     *zap.Logger
+	ListenAddr      string
+	TLS             bool
+	ProxyAddr       string
+	Mode            Mode
+	PgPool          *pg.Pool
+	Logger          *zap.Logger
+	Metrics         *ListenerMetrics
+	HandlersMetrics *handlers.Metrics
+	TestConnTimeout time.Duration
 }
 
+// NewListener returns a new listener, configured by the NewListenerOpts argument.
 func NewListener(opts *NewListenerOpts) *Listener {
 	return &Listener{
 		opts: opts,
 	}
 }
 
+// Run runs the listener until ctx is canceled or some unrecoverable error occurs.
 func (l *Listener) Run(ctx context.Context) error {
-	lis, err := net.Listen("tcp", l.opts.Addr)
+	lis, err := net.Listen("tcp", l.opts.ListenAddr)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	l.opts.Logger.Sugar().Infof("Listening on %s ...", l.opts.Addr)
+	l.opts.Logger.Sugar().Infof("Listening on %s ...", l.opts.ListenAddr)
 
+	if l.opts.TLS {
+		l.opts.Logger.Sugar().Info("Using insecure TLS.")
+		cert, err := generateInsecureCert()
+		if err != nil {
+			return err
+		}
+		l.opts.Logger.Sugar().Info("Insecure self-signed certificate generated.")
+
+		tlsConfig := &tls.Config{
+			Certificates:       []tls.Certificate{*cert},
+			InsecureSkipVerify: true,
+		}
+		lis = tls.NewListener(lis, tlsConfig)
+	}
+
+	// handle ctx cancelation
 	go func() {
 		<-ctx.Done()
 		lis.Close()
 	}()
 
+	const delay = 3 * time.Second
+
 	var wg sync.WaitGroup
-	for ctx.Err() == nil {
+	for {
 		netConn, err := lis.Accept()
 		if err != nil {
+			if ctx.Err() != nil {
+				break
+			}
+
 			l.opts.Logger.Warn("Failed to accept connection", zap.Error(err))
 			if !errors.Is(err, net.ErrClosed) {
 				time.Sleep(time.Second)
@@ -71,28 +104,48 @@ func (l *Listener) Run(ctx context.Context) error {
 		}
 
 		wg.Add(1)
-		go func(tcpConn *net.TCPConn) {
+		l.opts.Metrics.ConnectedClients.Inc()
+
+		// run connection
+		go func() {
 			defer func() {
-				tcpConn.Close()
+				netConn.Close()
+				l.opts.Metrics.ConnectedClients.Dec()
 				wg.Done()
 			}()
 
-			conn, e := newConn(tcpConn, l.opts.PgPool, l.opts.ShadowAddr, l.opts.Mode)
+			opts := &newConnOpts{
+				netConn:         netConn,
+				pgPool:          l.opts.PgPool,
+				proxyAddr:       l.opts.ProxyAddr,
+				mode:            l.opts.Mode,
+				handlersMetrics: l.opts.HandlersMetrics,
+			}
+			conn, e := newConn(opts)
 			if e != nil {
 				l.opts.Logger.Warn("Failed to create connection", zap.Error(e))
 				return
 			}
 
-			e = conn.run(ctx)
+			runCtx, runCancel := ctxutil.WithDelay(ctx.Done(), delay)
+			defer runCancel()
+
+			if l.opts.TestConnTimeout != 0 {
+				runCtx, runCancel = context.WithTimeout(runCtx, l.opts.TestConnTimeout)
+				defer runCancel()
+			}
+
+			e = conn.run(runCtx) //nolint:contextcheck // false positive
 			if e == io.EOF {
 				l.opts.Logger.Info("Connection stopped")
 			} else {
 				l.opts.Logger.Warn("Connection stopped", zap.Error(e))
 			}
-		}(netConn.(*net.TCPConn))
+		}()
 	}
 
+	l.opts.Logger.Info("Waiting for all connections to stop...")
 	wg.Wait()
 
-	return nil
+	return ctx.Err()
 }

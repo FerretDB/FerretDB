@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,25 +20,31 @@ import (
 
 	"github.com/jackc/pgx/v4"
 
-	"github.com/MangoDB-io/MangoDB/internal/bson"
-	"github.com/MangoDB-io/MangoDB/internal/handlers/common"
-	"github.com/MangoDB-io/MangoDB/internal/types"
-	"github.com/MangoDB-io/MangoDB/internal/wire"
+	"github.com/FerretDB/FerretDB/internal/bson"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
+// MsgInsert inserts a document or documents into a collection.
 func (h *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
-		return nil, common.NewError(common.ErrInternalError, err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	m := document.Map()
 	collection := m[document.Command()].(string)
 	db := m["$db"].(string)
-	docs, _ := m["documents"].(types.Array)
+	docs, _ := m["documents"].(*types.Array)
 
 	var inserted int32
-	for _, doc := range docs {
+	for i := 0; i < docs.Len(); i++ {
+		doc, err := docs.Get(i)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
 		d := doc.(types.Document)
 		sql := fmt.Sprintf("INSERT INTO %s (_jsonb) VALUES ($1)", pgx.Identifier{db, collection}.Sanitize())
 		b, err := bson.MustConvertDocument(d).MarshalJSON()
@@ -61,7 +67,7 @@ func (h *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		)},
 	})
 	if err != nil {
-		return nil, common.NewError(common.ErrInternalError, err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	return &reply, nil

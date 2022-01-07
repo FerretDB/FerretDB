@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package bson
 import (
 	"testing"
 
-	"github.com/MangoDB-io/MangoDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 var binaryTestCases = []testCase{{
@@ -27,16 +27,13 @@ var binaryTestCases = []testCase{{
 		B:       []byte("foo"),
 	},
 	b: []byte{0x03, 0x00, 0x00, 0x00, 0x80, 0x66, 0x6f, 0x6f},
-	j: `{"$b":"Zm9v","s":128}`,
 }, {
 	name: "empty",
 	v: &Binary{
 		Subtype: types.BinaryGeneric,
 		B:       []byte{},
 	},
-	b:      []byte{0x00, 0x00, 0x00, 0x00, 0x00},
-	j:      `{"$b":""}`,
-	canonJ: `{"$b":"","s":0}`,
+	b: []byte{0x00, 0x00, 0x00, 0x00, 0x00},
 }, {
 	name: "invalid subtype",
 	v: &Binary{
@@ -44,39 +41,26 @@ var binaryTestCases = []testCase{{
 		B:       []byte{},
 	},
 	b: []byte{0x00, 0x00, 0x00, 0x00, 0xff},
-	j: `{"$b":"","s":255}`,
 }, {
 	name: "extra JSON fields",
 	v: &Binary{
 		Subtype: types.BinaryUser,
 		B:       []byte("foo"),
 	},
-	b:      []byte{0x03, 0x00, 0x00, 0x00, 0x80, 0x66, 0x6f, 0x6f},
-	j:      `{"$b":"Zm9v","s":128,"foo":"bar"}`,
-	canonJ: `{"$b":"Zm9v","s":128}`,
-	jErr:   `json: unknown field "foo"`,
+	b: []byte{0x03, 0x00, 0x00, 0x00, 0x80, 0x66, 0x6f, 0x6f},
+}, {
+	name: "EOF",
+	b:    []byte{0x00},
+	bErr: `unexpected EOF`,
 }}
 
 func TestBinary(t *testing.T) {
 	t.Parallel()
-
-	t.Run("Binary", func(t *testing.T) {
-		t.Parallel()
-		testBinary(t, binaryTestCases, func() bsontype { return new(Binary) })
-	})
-
-	t.Run("JSON", func(t *testing.T) {
-		t.Parallel()
-		testJSON(t, binaryTestCases, func() bsontype { return new(Binary) })
-	})
+	testBinary(t, binaryTestCases, func() bsontype { return new(Binary) })
 }
 
-func FuzzBinaryBinary(f *testing.F) {
+func FuzzBinary(f *testing.F) {
 	fuzzBinary(f, binaryTestCases, func() bsontype { return new(Binary) })
-}
-
-func FuzzBinaryJSON(f *testing.F) {
-	fuzzJSON(f, binaryTestCases, func() bsontype { return new(Binary) })
 }
 
 func BenchmarkBinary(b *testing.B) {

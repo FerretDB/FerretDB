@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 //go:generate ../../bin/stringer -linecomment -type OpCode
@@ -29,15 +29,23 @@ import (
 type OpCode int32
 
 const (
-	OP_REPLY = OpCode(1)    // OP_REPLY
-	OP_MSG   = OpCode(2013) // OP_MSG
-	OP_QUERY = OpCode(2004) // OP_QUERY
+	OP_REPLY        = OpCode(1)    // OP_REPLY
+	OP_UPDATE       = OpCode(2001) // OP_UPDATE
+	OP_INSERT       = OpCode(2002) // OP_INSERT
+	OP_GET_BY_OID   = OpCode(2003) // OP_GET_BY_OID
+	OP_QUERY        = OpCode(2004) // OP_QUERY
+	OP_GET_MORE     = OpCode(2005) // OP_GET_MORE
+	OP_DELETE       = OpCode(2006) // OP_DELETE
+	OP_KILL_CURSORS = OpCode(2007) // OP_KILL_CURSORS
+	OP_COMPRESSED   = OpCode(2012) // OP_COMPRESSED
+	OP_MSG          = OpCode(2013) // OP_MSG
 )
 
 func (i OpCode) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + i.String() + `"`), nil
 }
 
+// MsgHeader in general, each message consists of a standard message header followed by request-specific data.
 type MsgHeader struct {
 	MessageLength int32
 	RequestID     int32
@@ -84,6 +92,7 @@ func (msg *MsgHeader) writeTo(w *bufio.Writer) error {
 	return nil
 }
 
+// MarshalBinary writes a MsgHeader to a byte array.
 func (msg *MsgHeader) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 

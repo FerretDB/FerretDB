@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 type MsgBody interface {
@@ -74,8 +74,23 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 
 		return &header, &query, nil
 
+	case OP_UPDATE:
+		fallthrough
+	case OP_INSERT:
+		fallthrough
+	case OP_GET_BY_OID:
+		fallthrough
+	case OP_GET_MORE:
+		fallthrough
+	case OP_DELETE:
+		fallthrough
+	case OP_KILL_CURSORS:
+		fallthrough
+	case OP_COMPRESSED:
+		fallthrough
+
 	default:
-		return nil, nil, lazyerrors.Errorf("unhandled opcode %#02x", header.OpCode)
+		return nil, nil, lazyerrors.Errorf("unhandled opcode %s", header.OpCode)
 	}
 }
 

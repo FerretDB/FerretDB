@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,30 +20,44 @@ import (
 
 	"github.com/jackc/pgx/v4"
 
-	"github.com/MangoDB-io/MangoDB/internal/handlers/common"
-	"github.com/MangoDB-io/MangoDB/internal/pg"
-	"github.com/MangoDB-io/MangoDB/internal/types"
-	"github.com/MangoDB-io/MangoDB/internal/wire"
+	"github.com/FerretDB/FerretDB/internal/pg"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
+// MsgInsert inserts a document or documents into a collection.
 func (h *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
-		return nil, common.NewError(common.ErrInternalError, err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	m := document.Map()
 	collection := m[document.Command()].(string)
 	db := m["$db"].(string)
-	docs, _ := m["documents"].(types.Array)
+	docs, _ := m["documents"].(*types.Array)
+
+	ordered, ok := m["ordered"].(bool)
+	if !ok {
+		ordered = true
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/200
+	_ = ordered
 
 	var inserted int32
-	for _, doc := range docs {
+	for i := 0; i < docs.Len(); i++ {
+		doc, err := docs.Get(i)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
 		d := doc.(types.Document)
 		m := d.Map()
 
 		sql := fmt.Sprintf("INSERT INTO %s (", pgx.Identifier{db, collection}.Sanitize())
-		var args []interface{}
+		var args []any
 
 		for _, k := range d.Keys() {
 			// TODO
@@ -70,7 +84,7 @@ func (h *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		sql += ")"
 
-		_, err := h.pgPool.Exec(ctx, sql, args...)
+		_, err = h.pgPool.Exec(ctx, sql, args...)
 		if err != nil {
 			return nil, err
 		}
@@ -86,7 +100,7 @@ func (h *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		)},
 	})
 	if err != nil {
-		return nil, common.NewError(common.ErrInternalError, err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	return &res, nil

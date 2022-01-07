@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,12 +18,13 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
-	"encoding/json"
 	"time"
 
-	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/fjson"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// DateTime represents BSON DateTime data type.
 type DateTime time.Time
 
 func (dt DateTime) String() string {
@@ -32,17 +33,19 @@ func (dt DateTime) String() string {
 
 func (dt *DateTime) bsontype() {}
 
+// ReadFrom implements bsontype interface.
 func (dt *DateTime) ReadFrom(r *bufio.Reader) error {
 	var ts int64
 	if err := binary.Read(r, binary.LittleEndian, &ts); err != nil {
 		return lazyerrors.Errorf("bson.DateTime.ReadFrom (binary.Read): %w", err)
 	}
 
-	// TODO Use .UTC(): https://github.com/MangoDB-io/MangoDB/issues/43
+	// TODO Use .UTC(): https://github.com/FerretDB/FerretDB/issues/43
 	*dt = DateTime(time.UnixMilli(ts))
 	return nil
 }
 
+// WriteTo implements bsontype interface.
 func (dt DateTime) WriteTo(w *bufio.Writer) error {
 	v, err := dt.MarshalBinary()
 	if err != nil {
@@ -57,6 +60,7 @@ func (dt DateTime) WriteTo(w *bufio.Writer) error {
 	return nil
 }
 
+// MarshalBinary implements bsontype interface.
 func (dt DateTime) MarshalBinary() ([]byte, error) {
 	ts := time.Time(dt).UnixMilli()
 
@@ -67,36 +71,20 @@ func (dt DateTime) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-type dateTimeJSON struct {
-	D int64 `json:"$d,string"`
-}
-
+// UnmarshalJSON implements bsontype interface.
 func (dt *DateTime) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
-	}
-
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
-
-	var o dateTimeJSON
-	if err := dec.Decode(&o); err != nil {
+	var dtJ fjson.DateTime
+	if err := dtJ.UnmarshalJSON(data); err != nil {
 		return err
 	}
-	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("bson.DateTime.UnmarshalJSON: %s", err)
-	}
 
-	// TODO Use .UTC(): https://github.com/MangoDB-io/MangoDB/issues/43
-	*dt = DateTime(time.UnixMilli(o.D))
+	*dt = DateTime(dtJ)
 	return nil
 }
 
+// MarshalJSON implements bsontype interface.
 func (dt DateTime) MarshalJSON() ([]byte, error) {
-	return json.Marshal(dateTimeJSON{
-		D: time.Time(dt).UnixMilli(),
-	})
+	return fjson.Marshal(fromBSON(&dt))
 }
 
 // check interfaces

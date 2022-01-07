@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,16 +18,18 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
-	"encoding/json"
 	"math"
 
-	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/fjson"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// Double represents BSON Double data type.
 type Double float64
 
 func (d *Double) bsontype() {}
 
+// ReadFrom implements bsontype interface.
 func (d *Double) ReadFrom(r *bufio.Reader) error {
 	var bits uint64
 	if err := binary.Read(r, binary.LittleEndian, &bits); err != nil {
@@ -38,6 +40,7 @@ func (d *Double) ReadFrom(r *bufio.Reader) error {
 	return nil
 }
 
+// WriteTo implements bsontype interface.
 func (d Double) WriteTo(w *bufio.Writer) error {
 	v, err := d.MarshalBinary()
 	if err != nil {
@@ -52,6 +55,7 @@ func (d Double) WriteTo(w *bufio.Writer) error {
 	return nil
 }
 
+// MarshalBinary implements bsontype interface.
 func (d Double) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 
@@ -60,39 +64,20 @@ func (d Double) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-type doubleJSON struct {
-	F float64 `json:"$f,string"`
-}
-
+// UnmarshalJSON implements bsontype interface.
 func (d *Double) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
-	}
-
-	// TODO "Infinity", "-Infinity", "NaN"
-
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
-
-	var o doubleJSON
-	if err := dec.Decode(&o); err != nil {
+	var dJ fjson.Double
+	if err := dJ.UnmarshalJSON(data); err != nil {
 		return err
 	}
-	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("bson.Double.UnmarshalJSON: %s", err)
-	}
 
-	*d = Double(o.F)
+	*d = Double(dJ)
 	return nil
 }
 
+// MarshalJSON implements bsontype interface.
 func (d Double) MarshalJSON() ([]byte, error) {
-	// TODO "Infinity", "-Infinity", "NaN"
-
-	return json.Marshal(doubleJSON{
-		F: float64(d),
-	})
+	return fjson.Marshal(fromBSON(&d))
 }
 
 // check interfaces

@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,32 +16,31 @@ package bson
 
 import (
 	"testing"
+
+	"github.com/AlekSi/pointer"
 )
 
-var regexTestCases = []testCase{
-	// TODO add test cases
-}
+var regexTestCases = []testCase{{
+	name: "normal",
+	v:    pointer.To(Regex{Pattern: "hoffman", Options: "i"}),
+	b:    []byte{0x68, 0x6f, 0x66, 0x66, 0x6d, 0x61, 0x6e, 0x00, 0x69, 0x00},
+}, {
+	name: "empty",
+	v:    pointer.To(Regex{Pattern: "", Options: ""}),
+	b:    []byte{0x00, 0x00},
+}, {
+	name: "EOF",
+	b:    []byte{0x00},
+	bErr: `EOF`,
+}}
 
 func TestRegex(t *testing.T) {
 	t.Parallel()
-
-	t.Run("Binary", func(t *testing.T) {
-		t.Parallel()
-		testBinary(t, regexTestCases, func() bsontype { return new(Regex) })
-	})
-
-	t.Run("JSON", func(t *testing.T) {
-		t.Parallel()
-		testJSON(t, regexTestCases, func() bsontype { return new(Regex) })
-	})
+	testBinary(t, regexTestCases, func() bsontype { return new(Regex) })
 }
 
-func FuzzRegexBinary(f *testing.F) {
+func FuzzRegex(f *testing.F) {
 	fuzzBinary(f, regexTestCases, func() bsontype { return new(Regex) })
-}
-
-func FuzzRegexJSON(f *testing.F) {
-	fuzzJSON(f, regexTestCases, func() bsontype { return new(Regex) })
 }
 
 func BenchmarkRegex(b *testing.B) {

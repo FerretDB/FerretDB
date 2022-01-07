@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,16 +18,23 @@ import (
 	_ "embed"
 	"runtime/debug"
 	"strconv"
+	"strings"
 )
 
-//go:generate ./version.sh
+//go:generate ./generate.sh
 
-//go:embed version.txt
-var version string
+var (
+	//go:embed version.txt
+	version string
+
+	//go:embed branch.txt
+	branch string
+)
 
 type Info struct {
 	Version string
 	Commit  string
+	Branch  string
 	Dirty   bool
 }
 
@@ -39,7 +46,8 @@ func Get() *Info {
 
 func init() {
 	info = &Info{
-		Version: version,
+		Version: strings.TrimSpace(version),
+		Branch:  strings.TrimSpace(branch),
 	}
 
 	buildInfo, ok := debug.ReadBuildInfo()
@@ -49,9 +57,9 @@ func init() {
 
 	for _, s := range buildInfo.Settings {
 		switch s.Key {
-		case "gitrevision":
+		case "vcs.revision":
 			info.Commit = s.Value
-		case "gituncommitted":
+		case "vcs.modified":
 			info.Dirty, _ = strconv.ParseBool(s.Value)
 		}
 	}

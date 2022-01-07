@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,12 +16,12 @@ package sql
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/MangoDB-io/MangoDB/internal/handlers/common"
-	"github.com/MangoDB-io/MangoDB/internal/wire"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
+// MsgUpdate modifies an existing document or documents in a collection.
 func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("TODO"))
+	return nil, lazyerrors.New("not implemented")
 }

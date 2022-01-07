@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,13 +14,15 @@
 
 package shared
 
-import "github.com/MangoDB-io/MangoDB/internal/pg"
+import "github.com/FerretDB/FerretDB/internal/pg"
 
+// Handler data struct.
 type Handler struct {
 	pgPool   *pg.Pool
 	peerAddr string
 }
 
+// NewHandler returns a pointer to a new Handler, populated with the pgPool and peerAddr.
 func NewHandler(pgPool *pg.Pool, peerAddr string) *Handler {
 	return &Handler{
 		pgPool:   pgPool,

@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -70,7 +70,7 @@ func Error(err error) error {
 	}
 }
 
-func Errorf(format string, a ...interface{}) error {
+func Errorf(format string, a ...any) error {
 	return withStack{
 		error: fmt.Errorf(format, a...),
 		pc:    pc(),

@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,30 +19,54 @@ import (
 
 	"github.com/jackc/pgx/v4"
 
-	"github.com/MangoDB-io/MangoDB/internal/handlers/common"
-	"github.com/MangoDB-io/MangoDB/internal/pg"
-	"github.com/MangoDB-io/MangoDB/internal/types"
-	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/pg"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-func scalar(v interface{}, p *pg.Placeholder) (sql string, args []interface{}, err error) {
+func scalar(v any, p *pg.Placeholder) (sql string, args []any, err error) {
 	sql = p.Next()
-	args = []interface{}{v}
+
+	switch v := v.(type) {
+	case types.Regex:
+		var options string
+		for _, o := range v.Options {
+			switch o {
+			case 'i':
+				options += "i"
+			default:
+				err = lazyerrors.Errorf("scalar: unhandled regex option %v (%v)", o, v)
+			}
+		}
+		s := v.Pattern
+		if options != "" {
+			s = "(?" + options + ")" + v.Pattern
+		}
+		args = []any{s}
+	default:
+		args = []any{v}
+	}
 	return
 }
 
 // fieldExpr handles {field: {expr}}.
-func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string, args []interface{}, err error) {
+func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
 	filterKeys := expr.Keys()
 	filterMap := expr.Map()
 
-	for i, op := range filterKeys {
-		if i != 0 {
+	for _, op := range filterKeys {
+		if op == "$options" {
+			// handled by $regex, no need to modify sql in any way
+			continue
+		}
+
+		if sql != "" {
 			sql += " AND"
 		}
 
 		var argSql string
-		var arg []interface{}
+		var arg []any
 		value := filterMap[op]
 
 		// {field: {$not: {expr}}}
@@ -73,11 +97,11 @@ func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string
 		case "$in":
 			// {field: {$in: [value1, value2, ...]}}
 			sql += " IN"
-			argSql, arg, err = common.InArray(value.(types.Array), p, scalar)
+			argSql, arg, err = common.InArray(value.(*types.Array), p, scalar)
 		case "$nin":
 			// {field: {$nin: [value1, value2, ...]}}
 			sql += " NOT IN"
-			argSql, arg, err = common.InArray(value.(types.Array), p, scalar)
+			argSql, arg, err = common.InArray(value.(*types.Array), p, scalar)
 		case "$eq":
 			// {field: {$eq: value}}
 			// TODO special handling for regex
@@ -103,6 +127,41 @@ func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string
 			// {field: {$gte: value}}
 			sql += " >="
 			argSql, arg, err = scalar(value, p)
+		case "$regex":
+			// {field: {$regex: value}}
+
+			var options string
+			if opts, ok := filterMap["$options"]; ok {
+				// {field: {$regex: value, $options: string}}
+				if options, ok = opts.(string); !ok {
+					err = common.NewErrorMessage(common.ErrBadValue, "$options has to be a string")
+					return
+				}
+			}
+
+			sql += " ~"
+			switch value := value.(type) {
+			case string:
+				// {field: {$regex: string}}
+				v := types.Regex{
+					Pattern: value,
+					Options: options,
+				}
+				argSql, arg, err = scalar(v, p)
+			case types.Regex:
+				// {field: {$regex: /regex/}}
+				if options != "" {
+					if value.Options != "" {
+						err = common.NewErrorMessage(common.ErrRegexOptions, "options set in both $regex and $options")
+						return
+					}
+					value.Options = options
+				}
+				argSql, arg, err = scalar(value, p)
+			default:
+				err = common.NewErrorMessage(common.ErrBadValue, "$regex has to be a string")
+				return
+			}
 		default:
 			err = lazyerrors.Errorf("unhandled {%q: %v}", op, value)
 		}
@@ -119,9 +178,9 @@ func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string
 	return
 }
 
-func wherePair(key string, value interface{}, p *pg.Placeholder) (sql string, args []interface{}, err error) {
+func wherePair(key string, value any, p *pg.Placeholder) (sql string, args []any, err error) {
 	if strings.HasPrefix(key, "$") {
-		exprs := value.(types.Array)
+		exprs := value.(*types.Array)
 		sql, args, err = common.LogicExpr(key, exprs, p, wherePair)
 		return
 	}
@@ -134,7 +193,12 @@ func wherePair(key string, value interface{}, p *pg.Placeholder) (sql string, ar
 	default:
 		// {field: value}
 		sql, args, err = scalar(value, p)
-		sql = pgx.Identifier{key}.Sanitize() + " = " + sql
+		switch value.(type) {
+		case types.Regex:
+			sql = pgx.Identifier{key}.Sanitize() + " ~ " + sql
+		default:
+			sql = pgx.Identifier{key}.Sanitize() + " = " + sql
+		}
 	}
 
 	if err != nil {
@@ -144,7 +208,7 @@ func wherePair(key string, value interface{}, p *pg.Placeholder) (sql string, ar
 	return
 }
 
-func where(filter types.Document, p *pg.Placeholder) (sql string, args []interface{}, err error) {
+func where(filter types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
 	filterMap := filter.Map()
 	if len(filterMap) == 0 {
 		return
@@ -160,7 +224,7 @@ func where(filter types.Document, p *pg.Placeholder) (sql string, args []interfa
 		}
 
 		var argSql string
-		var arg []interface{}
+		var arg []any
 		argSql, arg, err = wherePair(key, value, p)
 		if err != nil {
 			err = lazyerrors.Errorf("where: %w", err)

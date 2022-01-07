@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,15 +18,17 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
-	"encoding/json"
 
-	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/fjson"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// Int64 represents BSON Int64 data type.
 type Int64 int64
 
 func (i *Int64) bsontype() {}
 
+// ReadFrom implements bsontype interface.
 func (i *Int64) ReadFrom(r *bufio.Reader) error {
 	if err := binary.Read(r, binary.LittleEndian, i); err != nil {
 		return lazyerrors.Errorf("bson.Int64.ReadFrom (binary.Read): %w", err)
@@ -35,6 +37,7 @@ func (i *Int64) ReadFrom(r *bufio.Reader) error {
 	return nil
 }
 
+// WriteTo implements bsontype interface.
 func (i Int64) WriteTo(w *bufio.Writer) error {
 	v, err := i.MarshalBinary()
 	if err != nil {
@@ -49,6 +52,7 @@ func (i Int64) WriteTo(w *bufio.Writer) error {
 	return nil
 }
 
+// MarshalBinary implements bsontype interface.
 func (i Int64) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 
@@ -57,35 +61,20 @@ func (i Int64) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-type int64JSON struct {
-	L int64 `json:"$l,string"`
-}
-
+// UnmarshalJSON implements bsontype interface.
 func (i *Int64) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
-	}
-
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
-
-	var o int64JSON
-	if err := dec.Decode(&o); err != nil {
+	var iJ fjson.Int64
+	if err := iJ.UnmarshalJSON(data); err != nil {
 		return err
 	}
-	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("bson.Int64.UnmarshalJSON: %s", err)
-	}
 
-	*i = Int64(o.L)
+	*i = Int64(iJ)
 	return nil
 }
 
+// MarshalJSON implements bsontype interface.
 func (i Int64) MarshalJSON() ([]byte, error) {
-	return json.Marshal(int64JSON{
-		L: int64(i),
-	})
+	return fjson.Marshal(fromBSON(&i))
 }
 
 // check interfaces

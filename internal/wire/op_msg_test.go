@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@ package wire
 import (
 	"testing"
 
-	"github.com/MangoDB-io/MangoDB/internal/types"
-	"github.com/MangoDB-io/MangoDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 var msgTestCases = []testCase{{
@@ -59,11 +59,11 @@ var msgTestCases = []testCase{{
 			Documents: []types.Document{types.MustMakeDocument(
 				"version", "5.0.0",
 				"gitVersion", "1184f004a99660de6f5e745573419bda8a28c0e9",
-				"modules", types.Array{},
+				"modules", types.MustNewArray(),
 				"allocator", "tcmalloc",
 				"javascriptEngine", "mozjs",
 				"sysInfo", "deprecated",
-				"versionArray", types.Array{int32(5), int32(0), int32(0), int32(0)},
+				"versionArray", types.MustNewArray(int32(5), int32(0), int32(0), int32(0)),
 				"openssl", types.MustMakeDocument(
 					"running", "OpenSSL 1.1.1f  31 Mar 2020",
 					"compiled", "OpenSSL 1.1.1f  31 Mar 2020",
@@ -95,7 +95,7 @@ var msgTestCases = []testCase{{
 				"bits", int32(64),
 				"debug", false,
 				"maxBsonObjectSize", int32(16777216),
-				"storageEngines", types.Array{"devnull", "ephemeralForTest", "wiredTiger"},
+				"storageEngines", types.MustNewArray("devnull", "ephemeralForTest", "wiredTiger"),
 				"ok", float64(1),
 			)},
 		}},
@@ -139,6 +139,14 @@ var msgTestCases = []testCase{{
 			},
 		}},
 	},
+}, {
+	name:      "dollar_dot",
+	expectedB: testutil.MustParseDumpFile("testdata", "dollar_dot.hex"),
+	err:       `types.Document.validate: invalid key: "$."`,
+}, {
+	name:      "msg_fuzz1",
+	expectedB: testutil.MustParseDumpFile("testdata", "msg_fuzz1.hex"),
+	err:       `wire.OpMsg.readFrom: invalid kind 1 section length -13619152`,
 }}
 
 func TestMsg(t *testing.T) {

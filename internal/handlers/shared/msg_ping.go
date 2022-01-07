@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,11 +17,12 @@ package shared
 import (
 	"context"
 
-	"github.com/MangoDB-io/MangoDB/internal/handlers/common"
-	"github.com/MangoDB-io/MangoDB/internal/types"
-	"github.com/MangoDB-io/MangoDB/internal/wire"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
+// MsgPing OpMsg containing a ping, used to test whether a server is responding to commands.
 func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 	err := reply.SetSections(wire.OpMsgSection{
@@ -30,7 +31,7 @@ func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		)},
 	})
 	if err != nil {
-		return nil, common.NewError(common.ErrInternalError, err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	return &reply, nil

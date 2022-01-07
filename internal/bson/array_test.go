@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,14 +18,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MangoDB-io/MangoDB/internal/types"
-	"github.com/MangoDB-io/MangoDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
+
+func convertArray(a *types.Array) *Array {
+	res := Array(*a)
+	return &res
+}
 
 var arrayTestCases = []testCase{{
 	name: "array_all",
-	v: &Array{
-		types.Array{},
+	v: convertArray(types.MustNewArray(
+		types.MustNewArray(),
 		types.Binary{Subtype: types.BinaryUser, B: []byte{0x42}},
 		true,
 		time.Date(2021, 7, 27, 9, 35, 42, 123000000, time.UTC).Local(),
@@ -35,9 +40,12 @@ var arrayTestCases = []testCase{{
 		int64(42),
 		"foo",
 		nil,
-	},
+	)),
 	b: testutil.MustParseDumpFile("testdata", "array_all.hex"),
-	j: `[[],{"$b":"Qg==","s":128},true,{"$d":"1627378542123"},{"$k":[]},{"$f":"42.13"},42,{"$l":"42"},"foo",null]`,
+}, {
+	name: "EOF",
+	b:    []byte{0x00},
+	bErr: `unexpected EOF`,
 }, {
 	name: "array_fuzz1",
 	b:    testutil.MustParseDumpFile("testdata", "array_fuzz1.hex"),
@@ -46,24 +54,11 @@ var arrayTestCases = []testCase{{
 
 func TestArray(t *testing.T) {
 	t.Parallel()
-
-	t.Run("Binary", func(t *testing.T) {
-		t.Parallel()
-		testBinary(t, arrayTestCases, func() bsontype { return new(Array) })
-	})
-
-	t.Run("JSON", func(t *testing.T) {
-		t.Parallel()
-		testJSON(t, arrayTestCases, func() bsontype { return new(Array) })
-	})
+	testBinary(t, arrayTestCases, func() bsontype { return new(Array) })
 }
 
-func FuzzArrayBinary(f *testing.F) {
+func FuzzArray(f *testing.F) {
 	fuzzBinary(f, arrayTestCases, func() bsontype { return new(Array) })
-}
-
-func FuzzArrayJSON(f *testing.F) {
-	fuzzJSON(f, arrayTestCases, func() bsontype { return new(Array) })
 }
 
 func BenchmarkArray(b *testing.B) {

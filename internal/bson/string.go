@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,16 +18,18 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
-	"encoding/json"
 	"io"
 
-	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/fjson"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// String represents BSON String data type.
 type String string
 
 func (str *String) bsontype() {}
 
+// ReadFrom implements bsontype interface.
 func (str *String) ReadFrom(r *bufio.Reader) error {
 	var l int32
 	if err := binary.Read(r, binary.LittleEndian, &l); err != nil {
@@ -50,6 +52,7 @@ func (str *String) ReadFrom(r *bufio.Reader) error {
 	return nil
 }
 
+// WriteTo implements bsontype interface.
 func (str String) WriteTo(w *bufio.Writer) error {
 	v, err := str.MarshalBinary()
 	if err != nil {
@@ -64,6 +67,7 @@ func (str String) WriteTo(w *bufio.Writer) error {
 	return nil
 }
 
+// MarshalBinary implements bsontype interface.
 func (str String) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 
@@ -74,27 +78,20 @@ func (str String) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// UnmarshalJSON implements bsontype interface.
 func (str *String) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
+	var strJ fjson.String
+	if err := strJ.UnmarshalJSON(data); err != nil {
+		return err
 	}
 
-	var s string
-	if err := json.Unmarshal(data, &s); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	*str = String(s)
+	*str = String(strJ)
 	return nil
 }
 
+// MarshalJSON implements bsontype interface.
 func (str String) MarshalJSON() ([]byte, error) {
-	b, err := json.Marshal(string(str))
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return b, nil
+	return fjson.Marshal(fromBSON(&str))
 }
 
 // check interfaces

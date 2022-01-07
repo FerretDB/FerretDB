@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,27 +20,32 @@ import (
 
 	"github.com/jackc/pgx/v4"
 
-	"github.com/MangoDB-io/MangoDB/internal/bson"
-	"github.com/MangoDB-io/MangoDB/internal/handlers/common"
-	"github.com/MangoDB-io/MangoDB/internal/pg"
-	"github.com/MangoDB-io/MangoDB/internal/types"
-	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
-	"github.com/MangoDB-io/MangoDB/internal/wire"
+	"github.com/FerretDB/FerretDB/internal/bson"
+	"github.com/FerretDB/FerretDB/internal/pg"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
+// MsgUpdate modifies an existing document or documents in a collection.
 func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
-		return nil, common.NewError(common.ErrInternalError, err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	m := document.Map()
 	collection := m["update"].(string)
-	docs, _ := m["updates"].(types.Array)
+	docs, _ := m["updates"].(*types.Array)
 	db := m["$db"].(string)
 
 	var selected, updated int32
-	for _, doc := range docs {
+	for i := 0; i < docs.Len(); i++ {
+		doc, err := docs.Get(i)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
 		docM := doc.(types.Document).Map()
 
 		sql := fmt.Sprintf(`SELECT _jsonb FROM %s`, pgx.Identifier{db, collection}.Sanitize())
@@ -48,7 +53,7 @@ func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		whereSQL, args, err := where(docM["q"].(types.Document), &placeholder)
 		if err != nil {
-			return nil, common.NewError(common.ErrNotImplemented, err)
+			return nil, lazyerrors.Error(err)
 		}
 
 		sql += whereSQL
@@ -70,12 +75,19 @@ func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				break
 			}
 
-			updateDocs = append(updateDocs, *updateDoc)
+			if err = updateDocs.Append(*updateDoc); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
 		}
 
-		selected += int32(len(updateDocs))
+		selected += int32(updateDocs.Len())
 
-		for i, updateDoc := range updateDocs {
+		for i := 0; i < updateDocs.Len(); i++ {
+			updateDoc, err := updateDocs.Get(i)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
 			d := updateDoc.(types.Document)
 
 			for updateOp, updateV := range docM["u"].(types.Document).Map() {
@@ -91,10 +103,17 @@ func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				}
 			}
 
-			updateDocs[i] = d
+			if err = updateDocs.Set(i, d); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
 		}
 
-		for _, updateDoc := range updateDocs {
+		for i := 0; i < updateDocs.Len(); i++ {
+			updateDoc, err := updateDocs.Get(i)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
 			sql = fmt.Sprintf("UPDATE %s SET _jsonb = $1 WHERE _jsonb->'_id' = $2", pgx.Identifier{db, collection}.Sanitize())
 			d := updateDoc.(types.Document)
 			db, err := bson.MustConvertDocument(d).MarshalJSON()
@@ -124,7 +143,7 @@ func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		)},
 	})
 	if err != nil {
-		return nil, common.NewError(common.ErrInternalError, err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	return &reply, nil

@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,15 +15,15 @@
 package common
 
 import (
-	"github.com/MangoDB-io/MangoDB/internal/pg"
-	"github.com/MangoDB-io/MangoDB/internal/types"
-	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/pg"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-type wherePair func(key string, value interface{}, p *pg.Placeholder) (sql string, args []interface{}, err error)
+type wherePair func(key string, value any, p *pg.Placeholder) (sql string, args []any, err error)
 
 //nolint:goconst // $op is fine
-func LogicExpr(op string, exprs types.Array, p *pg.Placeholder, wherePair wherePair) (sql string, args []interface{}, err error) {
+func LogicExpr(op string, exprs *types.Array, p *pg.Placeholder, wherePair wherePair) (sql string, args []any, err error) {
 	if op == "$nor" {
 		sql = "NOT ("
 	}
@@ -33,7 +33,7 @@ func LogicExpr(op string, exprs types.Array, p *pg.Placeholder, wherePair whereP
 		// {$or: [{expr1}, {expr2}, ...]}
 		// {$and: [{expr1}, {expr2}, ...]}
 		// {$nor: [{expr1}, {expr2}, ...]}
-		for i, expr := range exprs {
+		for i := 0; i < exprs.Len(); i++ {
 			if i != 0 {
 				switch op {
 				case "$or", "$nor":
@@ -43,7 +43,13 @@ func LogicExpr(op string, exprs types.Array, p *pg.Placeholder, wherePair whereP
 				}
 			}
 
-			expr := expr.(types.Document)
+			var el any
+			if el, err = exprs.Get(i); err != nil {
+				err = lazyerrors.Errorf("logicExpr: %w", err)
+				return
+			}
+
+			expr := el.(types.Document)
 			m := expr.Map()
 			for j, key := range expr.Keys() {
 				if j != 0 {
@@ -51,7 +57,7 @@ func LogicExpr(op string, exprs types.Array, p *pg.Placeholder, wherePair whereP
 				}
 
 				var exprSQL string
-				var exprArgs []interface{}
+				var exprArgs []any
 				exprSQL, exprArgs, err = wherePair(key, m[key], p)
 				if err != nil {
 					err = lazyerrors.Errorf("logicExpr: %w", err)
@@ -77,17 +83,23 @@ func LogicExpr(op string, exprs types.Array, p *pg.Placeholder, wherePair whereP
 	return
 }
 
-type scalar func(v interface{}, p *pg.Placeholder) (sql string, args []interface{}, err error)
+type scalar func(v any, p *pg.Placeholder) (sql string, args []any, err error)
 
-func InArray(a types.Array, p *pg.Placeholder, scalar scalar) (sql string, args []interface{}, err error) {
+func InArray(a *types.Array, p *pg.Placeholder, scalar scalar) (sql string, args []any, err error) {
 	sql = "("
-	for i, el := range a {
+	for i := 0; i < a.Len(); i++ {
 		if i != 0 {
 			sql += ", "
 		}
 
+		var el any
+		if el, err = a.Get(i); err != nil {
+			err = lazyerrors.Errorf("inArray: %w", err)
+			return
+		}
+
 		var argSql string
-		var arg []interface{}
+		var arg []any
 		if argSql, arg, err = scalar(el, p); err != nil {
 			err = lazyerrors.Errorf("inArray: %w", err)
 			return

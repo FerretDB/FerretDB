@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,44 +25,31 @@ var int64TestCases = []testCase{{
 	name: "42",
 	v:    pointer.To(Int64(42)),
 	b:    []byte{0x2a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-	j:    `{"$l":"42"}`,
 }, {
 	name: "zero",
 	v:    pointer.To(Int64(0)),
 	b:    []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-	j:    `{"$l":"0"}`,
 }, {
 	name: "max int64",
 	v:    pointer.To(Int64(math.MaxInt64)),
 	b:    []byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f},
-	j:    `{"$l":"9223372036854775807"}`,
 }, {
 	name: "min int64",
 	v:    pointer.To(Int64(math.MinInt64)),
 	b:    []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80},
-	j:    `{"$l":"-9223372036854775808"}`,
+}, {
+	name: "EOF",
+	b:    []byte{0x00},
+	bErr: `unexpected EOF`,
 }}
 
 func TestInt64(t *testing.T) {
 	t.Parallel()
-
-	t.Run("Binary", func(t *testing.T) {
-		t.Parallel()
-		testBinary(t, int64TestCases, func() bsontype { return new(Int64) })
-	})
-
-	t.Run("JSON", func(t *testing.T) {
-		t.Parallel()
-		testJSON(t, int64TestCases, func() bsontype { return new(Int64) })
-	})
+	testBinary(t, int64TestCases, func() bsontype { return new(Int64) })
 }
 
-func FuzzInt64Binary(f *testing.F) {
+func FuzzInt64(f *testing.F) {
 	fuzzBinary(f, int64TestCases, func() bsontype { return new(Int64) })
-}
-
-func FuzzInt64JSON(f *testing.F) {
-	fuzzJSON(f, int64TestCases, func() bsontype { return new(Int64) })
 }
 
 func BenchmarkInt64(b *testing.B) {

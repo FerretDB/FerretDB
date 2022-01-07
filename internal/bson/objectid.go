@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,18 +16,19 @@ package bson
 
 import (
 	"bufio"
-	"bytes"
-	"encoding/hex"
-	"encoding/json"
 	"io"
 
-	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/fjson"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-type ObjectID [12]byte
+// ObjectID represents BSON ObjectID data type.
+type ObjectID types.ObjectID
 
 func (obj *ObjectID) bsontype() {}
 
+// ReadFrom implements bsontype interface.
 func (obj *ObjectID) ReadFrom(r *bufio.Reader) error {
 	if _, err := io.ReadFull(r, obj[:]); err != nil {
 		return lazyerrors.Errorf("bson.ObjectID.ReadFrom (io.ReadFull): %w", err)
@@ -36,6 +37,7 @@ func (obj *ObjectID) ReadFrom(r *bufio.Reader) error {
 	return nil
 }
 
+// WriteTo implements bsontype interface.
 func (obj ObjectID) WriteTo(w *bufio.Writer) error {
 	v, err := obj.MarshalBinary()
 	if err != nil {
@@ -50,49 +52,27 @@ func (obj ObjectID) WriteTo(w *bufio.Writer) error {
 	return nil
 }
 
+// MarshalBinary implements bsontype interface.
 func (obj ObjectID) MarshalBinary() ([]byte, error) {
 	b := make([]byte, len(obj))
 	copy(b, obj[:])
 	return b, nil
 }
 
-type objectIDJSON struct {
-	O string `json:"$o"`
-}
-
+// UnmarshalJSON implements bsontype interface.
 func (obj *ObjectID) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
-	}
-
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
-
-	var o objectIDJSON
-	if err := dec.Decode(&o); err != nil {
+	var objJ fjson.ObjectID
+	if err := objJ.UnmarshalJSON(data); err != nil {
 		return err
 	}
-	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("bson.ObjectID.UnmarshalJSON: %s", err)
-	}
 
-	b, err := hex.DecodeString(o.O)
-	if err != nil {
-		return err
-	}
-	if len(b) != 12 {
-		return lazyerrors.Errorf("bson.ObjectID.UnmarshalJSON: %d bytes", len(b))
-	}
-	copy(obj[:], b)
-
+	*obj = ObjectID(objJ)
 	return nil
 }
 
+// MarshalJSON implements bsontype interface.
 func (obj ObjectID) MarshalJSON() ([]byte, error) {
-	return json.Marshal(objectIDJSON{
-		O: hex.EncodeToString(obj[:]),
-	})
+	return fjson.Marshal(fromBSON(&obj))
 }
 
 // check interfaces

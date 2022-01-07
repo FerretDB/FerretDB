@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,70 +16,57 @@ package shared
 
 import (
 	"context"
-	"fmt"
-	"sort"
 
-	"github.com/MangoDB-io/MangoDB/internal/handlers/common"
-	"github.com/MangoDB-io/MangoDB/internal/types"
-	"github.com/MangoDB-io/MangoDB/internal/wire"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
+// MsgListCollections retrieves information (i.e. the name and options)
+// about the collections and views in a database.
 func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
-		return nil, common.NewError(common.ErrInternalError, err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	m := document.Map()
 
 	filter, ok := m["filter"].(types.Document)
 	if ok && len(filter.Map()) != 0 {
-		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("filter is not supported"))
+		return nil, common.NewErrorMessage(common.ErrNotImplemented, "MsgListCollections: filter is not supported")
 	}
 
 	cursor, ok := m["cursor"].(types.Document)
 	if ok && len(cursor.Map()) != 0 {
-		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("cursor is not supported"))
+		return nil, common.NewErrorMessage(common.ErrNotImplemented, "MsgListCollections: cursor is not supported")
 	}
 
 	nameOnly, ok := m["nameOnly"].(bool)
 	if ok && !nameOnly {
-		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("nameOnly=false is not supported"))
+		return nil, common.NewErrorMessage(common.ErrNotImplemented, "MsgListCollections: nameOnly=false is not supported")
 	}
 
 	db, ok := m["$db"].(string)
 	if !ok {
-		return nil, common.NewError(common.ErrInternalError, fmt.Errorf("no db"))
+		return nil, lazyerrors.New("no db")
 	}
 
-	// TODO use reform
-	var names []string
-	rows, err := h.pgPool.Query(ctx, "SELECT table_name FROM information_schema.tables WHERE table_schema = $1", db)
+	names, err := h.pgPool.Tables(ctx, db)
 	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var name string
-		if err = rows.Scan(&name); err != nil {
-			return nil, err
-		}
-
-		names = append(names, name)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
-	sort.Strings(names)
-
-	collections := make(types.Array, len(names))
-	for i, n := range names {
-		collections[i] = types.MustMakeDocument(
+	collections := types.MakeArray(len(names))
+	for _, n := range names {
+		d := types.MustMakeDocument(
 			"name", n,
 			"type", "collection",
 		)
+		if err = collections.Append(d); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	var reply wire.OpMsg
@@ -94,7 +81,7 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 		)},
 	})
 	if err != nil {
-		return nil, common.NewError(common.ErrInternalError, err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	return &reply, nil

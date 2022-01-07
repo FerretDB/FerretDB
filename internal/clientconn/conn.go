@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,81 +17,136 @@ package clientconn
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"net"
+	"time"
 
 	"github.com/pmezard/go-difflib/difflib"
 	"go.uber.org/zap"
 
-	"github.com/MangoDB-io/MangoDB/internal/handlers"
-	"github.com/MangoDB-io/MangoDB/internal/handlers/jsonb1"
-	"github.com/MangoDB-io/MangoDB/internal/handlers/shared"
-	"github.com/MangoDB-io/MangoDB/internal/handlers/sql"
-	"github.com/MangoDB-io/MangoDB/internal/pg"
-	"github.com/MangoDB-io/MangoDB/internal/shadow"
-	"github.com/MangoDB-io/MangoDB/internal/wire"
+	"github.com/FerretDB/FerretDB/internal/handlers"
+	"github.com/FerretDB/FerretDB/internal/handlers/jsonb1"
+	"github.com/FerretDB/FerretDB/internal/handlers/proxy"
+	"github.com/FerretDB/FerretDB/internal/handlers/shared"
+	"github.com/FerretDB/FerretDB/internal/handlers/sql"
+	"github.com/FerretDB/FerretDB/internal/pg"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
+// Mode represents FerretDB mode of operation.
 type Mode string
 
 const (
-	normalMode Mode = "normal"
-	proxyMode  Mode = "proxy"
-	diffMode   Mode = "diff"
+	// NormalMode only handles requests.
+	NormalMode Mode = "normal"
+	// ProxyMode only proxies requests to another wire protocol compatible service.
+	ProxyMode Mode = "proxy"
+	// DiffNormalMode both handles requests and proxies them, then logs the diff.
+	// Only the FerretDB response is sent to the client.
+	DiffNormalMode Mode = "diff-normal"
+	// DiffProxyMode both handles requests and proxies them, then logs the diff.
+	// Only the proxy response is sent to the client.
+	DiffProxyMode Mode = "diff-proxy"
 )
 
-var AllModes = []Mode{normalMode, proxyMode, diffMode}
+// AllModes includes all operation modes, with the first one being the default.
+var AllModes = []Mode{NormalMode, ProxyMode, DiffNormalMode, DiffProxyMode}
 
+// conn represents client connection.
 type conn struct {
-	tcpConn *net.TCPConn
+	netConn net.Conn
 	mode    Mode
 	h       *handlers.Handler
-	s       *shadow.Handler
+	proxy   *proxy.Handler
 	l       *zap.SugaredLogger
 }
 
-func newConn(tcpConn *net.TCPConn, pgPool *pg.Pool, shadowAddr string, mode Mode) (*conn, error) {
-	prefix := fmt.Sprintf("// %s -> %s ", tcpConn.RemoteAddr(), tcpConn.LocalAddr())
+// newConnOpts represents newConn options.
+type newConnOpts struct {
+	netConn         net.Conn
+	pgPool          *pg.Pool
+	proxyAddr       string
+	mode            Mode
+	handlersMetrics *handlers.Metrics
+}
+
+// newConn creates a new client connection for given net.Conn.
+func newConn(opts *newConnOpts) (*conn, error) {
+	prefix := fmt.Sprintf("// %s -> %s ", opts.netConn.RemoteAddr(), opts.netConn.LocalAddr())
 	l := zap.L().Named(prefix)
 
-	peerAddr := tcpConn.RemoteAddr().String()
-	shared := shared.NewHandler(pgPool, peerAddr)
-	sqlH := sql.NewStorage(pgPool, l.Sugar())
-	jsonb1H := jsonb1.NewStorage(pgPool, l)
+	peerAddr := opts.netConn.RemoteAddr().String()
+	shared := shared.NewHandler(opts.pgPool, peerAddr)
+	sqlH := sql.NewStorage(opts.pgPool, l.Sugar())
+	jsonb1H := jsonb1.NewStorage(opts.pgPool, l)
 
-	var s *shadow.Handler
-	if mode != normalMode {
+	var p *proxy.Handler
+	if opts.mode != NormalMode {
 		var err error
-		if s, err = shadow.New(shadowAddr); err != nil {
+		if p, err = proxy.New(opts.proxyAddr); err != nil {
 			return nil, err
 		}
 	}
 
+	handlerOpts := &handlers.NewOpts{
+		PgPool:        opts.pgPool,
+		Logger:        l,
+		SharedHandler: shared,
+		SQLStorage:    sqlH,
+		JSONB1Storage: jsonb1H,
+		Metrics:       opts.handlersMetrics,
+	}
 	return &conn{
-		tcpConn: tcpConn,
-		mode:    mode,
-		h:       handlers.New(pgPool, l, shared, sqlH, jsonb1H),
-		s:       s,
+		netConn: opts.netConn,
+		mode:    opts.mode,
+		h:       handlers.New(handlerOpts),
+		proxy:   p,
 		l:       l.Sugar(),
 	}, nil
 }
 
+// run runs the client connection until ctx is canceled, client disconnects,
+// or fatal error or panic is encountered.
+//
+// The caller is responsible for closing the underlying net.Conn.
 func (c *conn) run(ctx context.Context) (err error) {
+	done := make(chan struct{})
 	defer func() {
 		if p := recover(); p != nil {
 			// Log human-readable stack trace there (included in the error level automatically).
-			c.l.Errorf("panic:\n%v\n(err = %v)", p, err)
-			err = fmt.Errorf("recovered from panic (err = %v): %v", err, p)
+			c.l.DPanicf("%v\n(err = %v)", p, err)
+			err = errors.New("panic")
+		}
+
+		if err == nil {
+			err = ctx.Err()
+		}
+
+		close(done)
+	}()
+
+	// handle ctx cancelation
+	go func() {
+		select {
+		case <-done:
+		case <-ctx.Done():
+			c.netConn.SetDeadline(time.Unix(0, 0))
 		}
 	}()
 
-	bufr := bufio.NewReader(c.tcpConn)
-	bufw := bufio.NewWriter(c.tcpConn)
+	bufr := bufio.NewReader(c.netConn)
+	bufw := bufio.NewWriter(c.netConn)
 	defer func() {
-		e := bufw.Flush()
-		if err == nil {
+		if e := bufw.Flush(); err == nil {
 			err = e
 		}
+
+		if c.proxy != nil {
+			c.proxy.Close()
+		}
+
+		// c.netConn is closed by the caller
 	}()
 
 	for {
@@ -102,51 +157,56 @@ func (c *conn) run(ctx context.Context) (err error) {
 			return
 		}
 
-		c.l.Infof("Request header:\n%s", wire.DumpMsgHeader(reqHeader))
-		c.l.Infof("Request message:\n%s\n\n\n", wire.DumpMsgBody(reqBody))
+		// do not spend time dumping if we are not going to log it
+		if c.l.Desugar().Core().Enabled(zap.DebugLevel) {
+			c.l.Debugf("Request header:\n%s", wire.DumpMsgHeader(reqHeader))
+			c.l.Debugf("Request message:\n%s\n\n\n", wire.DumpMsgBody(reqBody))
+		}
 
+		// handle request unless we are in proxy mode
 		var resHeader *wire.MsgHeader
 		var resBody wire.MsgBody
-		if c.mode != proxyMode {
-			resHeader, resBody, err = c.h.Handle(ctx, reqHeader, reqBody)
-			if err != nil {
-				c.l.Infof("Response error: %s.", err)
+		var closeConn bool
+		if c.mode != ProxyMode {
+			resHeader, resBody, closeConn = c.h.Handle(ctx, reqHeader, reqBody)
 
-				// TODO write handler.Error
-				if c.mode == normalMode {
-					return
-				}
-			} else {
-				c.l.Infof("Response header:\n%s", wire.DumpMsgHeader(resHeader))
-				c.l.Infof("Response message:\n%s\n\n\n", wire.DumpMsgBody(resBody))
+			// do not spend time dumping if we are not going to log it
+			if c.l.Desugar().Core().Enabled(zap.DebugLevel) {
+				c.l.Debugf("Response header:\n%s", wire.DumpMsgHeader(resHeader))
+				c.l.Debugf("Response message:\n%s\n\n\n", wire.DumpMsgBody(resBody))
 			}
 		}
 
-		var shadowHeader *wire.MsgHeader
-		var shadowBody wire.MsgBody
-		if c.mode != normalMode {
-			if c.s == nil {
-				panic("shadow addr was nil")
+		// send request to proxy unless we are in normal mode
+		var proxyHeader *wire.MsgHeader
+		var proxyBody wire.MsgBody
+		if c.mode != NormalMode {
+			if c.proxy == nil {
+				panic("proxy addr was nil")
 			}
 
-			shadowHeader, shadowBody, err = c.s.Handle(ctx, reqHeader, reqBody)
+			proxyHeader, proxyBody, err = c.proxy.Handle(ctx, reqHeader, reqBody)
 			if err != nil {
-				c.l.Infof("Shadow error: %s.", err)
+				c.l.Warnf("Proxy returned error, closing connection: %s.", err)
 				return
 			}
 
-			c.l.Infof("Shadow header:\n%s", wire.DumpMsgHeader(shadowHeader))
-			c.l.Infof("Shadow message:\n%s\n\n\n", wire.DumpMsgBody(shadowBody))
+			// do not spend time dumping if we are not going to log it
+			if c.l.Desugar().Core().Enabled(zap.DebugLevel) {
+				c.l.Debugf("Proxy header:\n%s", wire.DumpMsgHeader(proxyHeader))
+				c.l.Debugf("Proxy message:\n%s\n\n\n", wire.DumpMsgBody(proxyBody))
+			}
 		}
 
-		if c.mode == diffMode {
+		// diff in diff mode
+		if c.mode == DiffNormalMode || c.mode == DiffProxyMode {
 			res := difflib.SplitLines(wire.DumpMsgHeader(resHeader) + "\n" + wire.DumpMsgBody(resBody))
-			shadow := difflib.SplitLines(wire.DumpMsgHeader(shadowHeader) + "\n" + wire.DumpMsgBody(shadowBody))
+			proxy := difflib.SplitLines(wire.DumpMsgHeader(proxyHeader) + "\n" + wire.DumpMsgBody(proxyBody))
 			diff := difflib.UnifiedDiff{
 				A:        res,
 				FromFile: "res",
-				B:        shadow,
-				ToFile:   "shadow",
+				B:        proxy,
+				ToFile:   "proxy",
 				Context:  1,
 			}
 			var s string
@@ -158,7 +218,13 @@ func (c *conn) run(ctx context.Context) (err error) {
 			c.l.Infof("Diff:\n%s\n\n\n", s)
 		}
 
-		if resHeader == nil {
+		// replace response with one from proxy in proxy and diff-proxy modes
+		if c.mode == ProxyMode || c.mode == DiffProxyMode {
+			resHeader = proxyHeader
+			resBody = proxyBody
+		}
+
+		if resHeader == nil || resBody == nil {
 			c.l.Info("no response to send to client")
 			return
 		}
@@ -168,6 +234,11 @@ func (c *conn) run(ctx context.Context) (err error) {
 		}
 
 		if err = bufw.Flush(); err != nil {
+			return
+		}
+
+		if closeConn {
+			err = errors.New("internal error")
 			return
 		}
 	}

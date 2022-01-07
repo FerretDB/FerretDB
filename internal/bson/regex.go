@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,16 +18,17 @@ import (
 	"bufio"
 	"bytes"
 
-	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/fjson"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-type Regex struct {
-	Pattern string
-	Options string
-}
+// Regex represents BSON Regex data type.
+type Regex types.Regex
 
 func (regex *Regex) bsontype() {}
 
+// ReadFrom implements bsontype interface.
 func (regex *Regex) ReadFrom(r *bufio.Reader) error {
 	var pattern, options CString
 	if err := pattern.ReadFrom(r); err != nil {
@@ -44,6 +45,7 @@ func (regex *Regex) ReadFrom(r *bufio.Reader) error {
 	return nil
 }
 
+// WriteTo implements bsontype interface.
 func (regex Regex) WriteTo(w *bufio.Writer) error {
 	v, err := regex.MarshalBinary()
 	if err != nil {
@@ -58,6 +60,7 @@ func (regex Regex) WriteTo(w *bufio.Writer) error {
 	return nil
 }
 
+// MarshalBinary implements bsontype interface.
 func (regex Regex) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 	bufw := bufio.NewWriter(&buf)
@@ -74,16 +77,20 @@ func (regex Regex) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// UnmarshalJSON implements bsontype interface.
 func (regex *Regex) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
+	var regexJ fjson.Regex
+	if err := regexJ.UnmarshalJSON(data); err != nil {
+		return err
 	}
 
-	panic("TODO Regex.UnmarshalJSON")
+	*regex = Regex(regexJ)
+	return nil
 }
 
+// MarshalJSON implements bsontype interface.
 func (regex Regex) MarshalJSON() ([]byte, error) {
-	panic("TODO Regex.MarshalJSON")
+	return fjson.Marshal(fromBSON(&regex))
 }
 
 // check interfaces

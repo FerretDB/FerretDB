@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,30 +16,33 @@ package shared
 
 import (
 	"context"
+	"strconv"
 
-	"github.com/MangoDB-io/MangoDB/internal/bson"
-	"github.com/MangoDB-io/MangoDB/internal/handlers/common"
-	"github.com/MangoDB-io/MangoDB/internal/types"
-	"github.com/MangoDB-io/MangoDB/internal/wire"
+	"github.com/FerretDB/FerretDB/internal/bson"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/version"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
+// For clients that check version.
+const versionValue = "5.0.42"
+
+// MsgBuildInfo returns an OpMsg with the build information.
 func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 	err := reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
-			"version", "5.0.42",
-			"versionArray", types.Array{
-				int32(5),
-				int32(0),
-				int32(42),
-				int32(0),
-			},
+			"version", versionValue,
+			"gitVersion", version.Get().Commit,
+			"versionArray", types.MustNewArray(int32(5), int32(0), int32(42), int32(0)),
+			"bits", int32(strconv.IntSize),
 			"maxBsonObjectSize", int32(bson.MaxDocumentLen),
 			"ok", float64(1),
 		)},
 	})
 	if err != nil {
-		return nil, common.NewError(common.ErrInternalError, err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	return &reply, nil

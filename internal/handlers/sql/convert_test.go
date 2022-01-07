@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,15 +21,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/MangoDB-io/MangoDB/internal/types"
-	"github.com/MangoDB-io/MangoDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 func TestConvert(t *testing.T) {
 	t.Parallel()
-
-	ctx := testutil.Ctx(t)
-	pool := testutil.Pool(ctx, t)
+	ctx, pool := setup(t)
 
 	rows, err := pool.Query(ctx, "SELECT * FROM pagila.actor ORDER BY actor_id")
 	require.NoError(t, err)

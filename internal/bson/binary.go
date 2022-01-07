@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,20 +18,19 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
-	"encoding/json"
 	"io"
 
-	"github.com/MangoDB-io/MangoDB/internal/types"
-	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/fjson"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-type Binary struct {
-	Subtype types.BinarySubtype
-	B       []byte
-}
+// Binary represents BSON Binary data type.
+type Binary types.Binary
 
 func (bin *Binary) bsontype() {}
 
+// ReadFrom implements bsontype interface.
 func (bin *Binary) ReadFrom(r *bufio.Reader) error {
 	var l int32
 	if err := binary.Read(r, binary.LittleEndian, &l); err != nil {
@@ -55,6 +54,7 @@ func (bin *Binary) ReadFrom(r *bufio.Reader) error {
 	return nil
 }
 
+// WriteTo implements bsontype interface.
 func (bin Binary) WriteTo(w *bufio.Writer) error {
 	v, err := bin.MarshalBinary()
 	if err != nil {
@@ -69,11 +69,7 @@ func (bin Binary) WriteTo(w *bufio.Writer) error {
 	return nil
 }
 
-type binaryJSON struct {
-	B []byte `json:"$b"`
-	S byte   `json:"s"`
-}
-
+// MarshalBinary implements bsontype interface.
 func (bin Binary) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 
@@ -84,38 +80,20 @@ func (bin Binary) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// UnmarshalJSON implements bsontype interface.
 func (bin *Binary) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
+	var binJ fjson.Binary
+	if err := binJ.UnmarshalJSON(data); err != nil {
+		return err
 	}
 
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
-
-	var o binaryJSON
-	err := dec.Decode(&o)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-	if err = checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("bson.Binary.UnmarshalJSON: %w", err)
-	}
-
-	bin.B = o.B
-	bin.Subtype = types.BinarySubtype(o.S)
+	*bin = Binary(binJ)
 	return nil
 }
 
+// MarshalJSON implements bsontype interface.
 func (bin Binary) MarshalJSON() ([]byte, error) {
-	b, err := json.Marshal(binaryJSON{
-		B: bin.B,
-		S: byte(bin.Subtype),
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-	return b, nil
+	return fjson.Marshal(fromBSON(&bin))
 }
 
 // check interfaces

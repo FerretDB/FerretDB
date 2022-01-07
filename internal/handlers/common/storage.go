@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,12 +17,13 @@ package common
 import (
 	"context"
 
-	"github.com/MangoDB-io/MangoDB/internal/wire"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 type Storage interface {
+	MsgCreateIndexes(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
 	MsgDelete(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
-	MsgFind(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
+	MsgFindOrCount(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
 	MsgInsert(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
 	MsgUpdate(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
 }

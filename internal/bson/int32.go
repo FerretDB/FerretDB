@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,15 +18,17 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
-	"encoding/json"
 
-	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/fjson"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// Int32 represents BSON Int32 data type.
 type Int32 int32
 
 func (i *Int32) bsontype() {}
 
+// ReadFrom implements bsontype interface.
 func (i *Int32) ReadFrom(r *bufio.Reader) error {
 	if err := binary.Read(r, binary.LittleEndian, i); err != nil {
 		return lazyerrors.Errorf("bson.Int32.ReadFrom (binary.Read): %w", err)
@@ -35,6 +37,7 @@ func (i *Int32) ReadFrom(r *bufio.Reader) error {
 	return nil
 }
 
+// WriteTo implements bsontype interface.
 func (i Int32) WriteTo(w *bufio.Writer) error {
 	v, err := i.MarshalBinary()
 	if err != nil {
@@ -49,6 +52,7 @@ func (i Int32) WriteTo(w *bufio.Writer) error {
 	return nil
 }
 
+// MarshalBinary implements bsontype interface.
 func (i Int32) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 
@@ -57,29 +61,20 @@ func (i Int32) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// UnmarshalJSON implements bsontype interface.
 func (i *Int32) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
-	}
-
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
-
-	var o int32
-	if err := dec.Decode(&o); err != nil {
+	var iJ fjson.Int32
+	if err := iJ.UnmarshalJSON(data); err != nil {
 		return err
 	}
-	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("bson.Int32.UnmarshalJSON: %s", err)
-	}
 
-	*i = Int32(o)
+	*i = Int32(iJ)
 	return nil
 }
 
+// MarshalJSON implements bsontype interface.
 func (i Int32) MarshalJSON() ([]byte, error) {
-	return json.Marshal(int32(i))
+	return fjson.Marshal(fromBSON(&i))
 }
 
 // check interfaces

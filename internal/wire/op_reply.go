@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,13 +21,14 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/MangoDB-io/MangoDB/internal/bson"
-	"github.com/MangoDB-io/MangoDB/internal/types"
-	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/bson"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 const maxNumberReturned = 1000
 
+// OpReply is a message sent by the MongoDB database in response to an OpQuery.
 type OpReply struct {
 	ResponseFlags  OpReplyFlags
 	CursorID       int64
@@ -68,6 +69,7 @@ func (reply *OpReply) readFrom(bufr *bufio.Reader) error {
 	return nil
 }
 
+// UnmarshalBinary reads an OpReply from a byte array.
 func (reply *OpReply) UnmarshalBinary(b []byte) error {
 	br := bytes.NewReader(b)
 	bufr := bufio.NewReader(br)
@@ -83,6 +85,7 @@ func (reply *OpReply) UnmarshalBinary(b []byte) error {
 	return nil
 }
 
+// MarshalBinary writes an OpReply to a byte array.
 func (reply *OpReply) MarshalBinary() ([]byte, error) {
 	if l := len(reply.Documents); int32(l) != reply.NumberReturned {
 		return nil, lazyerrors.Errorf("wire.OpReply.MarshalBinary: len(Documents)=%d, NumberReturned=%d", l, reply.NumberReturned)
@@ -117,15 +120,16 @@ func (reply *OpReply) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// MarshalJSON marshals an OpReply in JSON format to a byte array.
 func (reply *OpReply) MarshalJSON() ([]byte, error) {
-	m := map[string]interface{}{
+	m := map[string]any{
 		"ResponseFlags":  reply.ResponseFlags,
 		"CursorID":       reply.CursorID,
 		"StartingFrom":   reply.StartingFrom,
 		"NumberReturned": reply.NumberReturned,
 	}
 
-	docs := make([]interface{}, len(reply.Documents))
+	docs := make([]any, len(reply.Documents))
 	for i, d := range reply.Documents {
 		docs[i] = bson.MustConvertDocument(d)
 	}

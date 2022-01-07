@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,12 +17,24 @@ package wire
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// lastErr returns the last error in error chain.
+func lastErr(err error) error {
+	for {
+		e := errors.Unwrap(err)
+		if e == nil {
+			return err
+		}
+		err = e
+	}
+}
 
 var lastUpdate = time.Date(2020, 2, 15, 9, 34, 33, 0, time.UTC).Local()
 
@@ -33,10 +45,11 @@ type testCase struct {
 	expectedB []byte
 	msgHeader *MsgHeader
 	msgBody   MsgBody
+	err       string // unwrapped
 }
 
-func testMessages(t *testing.T, testcases []testCase) {
-	for _, tc := range testcases {
+func testMessages(t *testing.T, testCases []testCase) {
+	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -63,14 +76,24 @@ func testMessages(t *testing.T, testcases []testCase) {
 				br := bytes.NewReader(tc.expectedB)
 				bufr := bufio.NewReader(br)
 				msgHeader, msgBody, err := ReadMessage(bufr)
-				require.NoError(t, err)
-				assert.Equal(t, tc.msgHeader, msgHeader)
-				assert.Equal(t, tc.msgBody, msgBody)
-				assert.Zero(t, br.Len(), "not all br bytes were consumed")
-				assert.Zero(t, bufr.Buffered(), "not all bufr bytes were consumed")
+				if tc.err == "" {
+					assert.NoError(t, err)
+					assert.Equal(t, tc.msgHeader, msgHeader)
+					assert.Equal(t, tc.msgBody, msgBody)
+					assert.Zero(t, br.Len(), "not all br bytes were consumed")
+					assert.Zero(t, bufr.Buffered(), "not all bufr bytes were consumed")
+					return
+				}
+
+				require.Error(t, err)
+				require.Equal(t, tc.err, lastErr(err).Error())
 			})
 
 			t.Run("WriteMessage", func(t *testing.T) {
+				if tc.msgHeader == nil {
+					t.Skip("msgHeader is nil")
+				}
+
 				t.Parallel()
 
 				var buf bytes.Buffer
@@ -86,8 +109,8 @@ func testMessages(t *testing.T, testcases []testCase) {
 	}
 }
 
-func fuzzMessages(f *testing.F, testcases []testCase) {
-	for _, tc := range testcases {
+func fuzzMessages(f *testing.F, testCases []testCase) {
+	for _, tc := range testCases {
 		f.Add(tc.expectedB)
 	}
 

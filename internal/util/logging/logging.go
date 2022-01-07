@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-func Setup(level zapcore.Level) *zap.Logger {
+func Setup(level zapcore.Level) {
 	config := zap.NewDevelopmentConfig()
 	config.Level = zap.NewAtomicLevelAt(level)
 
@@ -35,6 +35,4 @@ func Setup(level zapcore.Level) *zap.Logger {
 	if _, err = zap.RedirectStdLogAt(logger, zap.InfoLevel); err != nil {
 		log.Fatal(err)
 	}
-
-	return logger
 }

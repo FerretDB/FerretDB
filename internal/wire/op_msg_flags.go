@@ -1,4 +1,4 @@
-// Copyright 2021 Baltoro OÜ.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import (
 
 //go:generate ../../bin/stringer -linecomment -type OpMsgFlagBit
 
+// OpMsgFlagBit integer is a bitmask encoding flags that modify the format and behavior of OpMsg.
 type OpMsgFlagBit flagBit
 
 const (
@@ -33,20 +34,24 @@ func (i OpMsgFlagBit) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + i.String() + `"`), nil
 }
 
+// OpMsgFlags type unint32.
 type OpMsgFlags flags
 
 func opMsgFlagBitStringer(bit flagBit) string {
 	return OpMsgFlagBit(bit).String()
 }
 
+// String returns OpMsgFlags as a string.
 func (f OpMsgFlags) String() string {
 	return flags(f).string(opMsgFlagBitStringer)
 }
 
+// MarshalJSON writes the OpMsgFlag in JSON format to a byte array.
 func (f OpMsgFlags) MarshalJSON() ([]byte, error) {
 	return json.Marshal(flags(f).strings(opMsgFlagBitStringer))
 }
 
+// FlagSet check if flag is set.
 func (f OpMsgFlags) FlagSet(bit OpMsgFlagBit) bool {
 	return f&OpMsgFlags(bit) != 0
 }
