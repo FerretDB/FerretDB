@@ -31,7 +31,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 )
 
-// generatedCorpus returns $GOCACHE/fuzz/github.com/FerretDB/FerretDB/internal.
+// generatedCorpus returns $GOCACHE/fuzz/github.com/FerretDB/FerretDB.
 func generatedCorpus() (string, error) {
 	b, err := exec.Command("go", "env", "GOCACHE").Output()
 	if err != nil {
@@ -39,7 +39,7 @@ func generatedCorpus() (string, error) {
 	}
 
 	gocache := strings.TrimSpace(string(b))
-	return filepath.Join(gocache, "fuzz", "github.com", "FerretDB", "FerretDB", "internal"), nil
+	return filepath.Join(gocache, "fuzz", "github.com", "FerretDB", "FerretDB"), nil
 }
 
 // collectFiles returns a map of all interesting files in the given directory.
@@ -123,6 +123,33 @@ func copyFile(src, dst string) error {
 	return nil
 }
 
+func copyCorpus(srcRoot, dstRoot string) {
+	logger := zap.S()
+
+	srcFiles, err := collectFiles(srcRoot, logger)
+	if err != nil {
+		logger.Fatal(err)
+	}
+	logger.Infof("Found %d files in src.", len(srcFiles))
+
+	dstFiles, err := collectFiles(dstRoot, logger)
+	if err != nil {
+		logger.Fatal(err)
+	}
+	logger.Infof("Found %d files in dst.", len(dstFiles))
+
+	files := diff(srcFiles, dstFiles)
+	logger.Infof("Copying %d files to dst.", len(files))
+	for _, p := range files {
+		src := filepath.Join(srcRoot, p)
+		dst := filepath.Join(dstRoot, p)
+		logger.Infof("%s -> %s", src, dst)
+		if err := copyFile(src, dst); err != nil {
+			logger.Fatal(err)
+		}
+	}
+}
+
 func main() {
 	debugF := flag.Bool("debug", false, "enable debug mode")
 	flag.Usage = func() {
@@ -155,26 +182,13 @@ func main() {
 	}
 	logger.Infof("Collected corpus: %s.", collectedCorpus)
 
-	collectedCorpusFiles, err := collectFiles(collectedCorpus, logger)
+	copyCorpus(generatedCorpus, collectedCorpus)
+
+	seedCorpus, err := os.Getwd()
 	if err != nil {
 		logger.Fatal(err)
 	}
-	logger.Infof("Found %d files in collected corpus.", len(collectedCorpusFiles))
+	logger.Infof("Seed corpus: %s.", seedCorpus)
 
-	generatedCorpusFiles, err := collectFiles(generatedCorpus, logger)
-	if err != nil {
-		logger.Fatal(err)
-	}
-	logger.Infof("Found %d files in generated corpus.", len(generatedCorpusFiles))
-
-	files := diff(generatedCorpusFiles, collectedCorpusFiles)
-	logger.Infof("Copying %d files to generated corpus.", len(files))
-	for _, p := range files {
-		from := filepath.Join(generatedCorpus, p)
-		to := filepath.Join(collectedCorpus, p)
-		logger.Debugf("%s -> %s", from, to)
-		if err := copyFile(from, to); err != nil {
-			logger.Fatal(err)
-		}
-	}
+	copyCorpus(seedCorpus, collectedCorpus)
 }
