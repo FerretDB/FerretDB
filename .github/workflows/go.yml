@@ -114,6 +114,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
         with:
+          path: main
           fetch-depth: 0
 
       # use deploy key instead of Personal Access Token (PAT) to limit access to one repository
@@ -122,7 +123,7 @@ jobs:
         with:
           repository: FerretDB/fuzz-corpus
           ssh-key: ${{ secrets.FUZZ_CORPUS_DEPLOY_KEY }}
-          path: ../fuzz-corpus
+          path: fuzz-corpus
           fetch-depth: 0
 
       - name: Setup Go
@@ -132,14 +133,17 @@ jobs:
 
       - name: Run init
         run: make init
+        working-directory: main
 
       # precompile tests with unset GOMAXPROCS
       - name: Init fuzzers
         run: make fuzz-init
+        working-directory: main
 
       # TODO https://github.com/FerretDB/FerretDB/issues/238
       - name: Run fuzzers
         run: make fuzz-short
+        working-directory: main
         env:
           GOMAXPROCS: 1 # otherwise, oom-killer kills fuzzer too often
 
@@ -151,6 +155,7 @@ jobs:
           sudo cp /var/log/syslog /tmp/logs/
           sudo free > /tmp/logs/free.txt
           sudo chmod 0666 /tmp/logs/*
+        working-directory: main
 
       - name: Upload Linux logs
         if: failure()
@@ -160,7 +165,7 @@ jobs:
           path: /tmp/logs
 
       - name: Upload fuzz corpus
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v2
         with:
           name: fuzz-corpus
@@ -172,3 +177,4 @@ jobs:
         run: |
           git status
           git diff --exit-code
+        working-directory: main
