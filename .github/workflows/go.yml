@@ -147,6 +147,21 @@ jobs:
         env:
           GOMAXPROCS: 1 # otherwise, oom-killer kills fuzzer too often
 
+      - name: Collect corpus
+        if: always()
+        run: go run ./cmd/fuzztool/fuzztool.go ../fuzz-corpus
+        working-directory: main
+
+      - name: Push corpus
+        if: always()
+        run: |
+          git add --all .
+          git commit --message 'Update corpus'
+          git fetch
+          git rebase origin/main
+          git push
+        working-directory: fuzz-corpus
+
       - name: Collect Linux logs
         if: failure()
         run: |
