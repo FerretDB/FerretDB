@@ -52,10 +52,10 @@ type Pool struct {
 type TableStats struct {
 	Table       string
 	TableType   string
-	SizeTotal   int64
-	SizeIndexes int64
-	SizeTable   int64
-	Rows        int64
+	SizeTotal   int32
+	SizeIndexes int32
+	SizeTable   int32
+	Rows        int32
 }
 
 // DBStats describes some statistics for a database.
