@@ -19,11 +19,10 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime/debug"
+	"sort"
 	"strings"
 
 	"go.uber.org/zap"
@@ -32,33 +31,23 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 )
 
-func readModulePath() (string, error) {
-	info, ok := debug.ReadBuildInfo()
-	if !ok {
-		return "", fmt.Errorf("failed to read build info")
-	}
-
-	parts := strings.Split(info.Main.Path, "/")
-	if len(parts) != 4 {
-		return "", fmt.Errorf("unexpected path format: %q", info.Main.Path)
-	}
-
-	return strings.Join(parts[:3], "/"), nil
-}
-
-func readCacheRoot(module string) (string, error) {
+// generatedCorpus returns $GOCACHE/fuzz/github.com/FerretDB/FerretDB/internal.
+func generatedCorpus() (string, error) {
 	b, err := exec.Command("go", "env", "GOCACHE").Output()
 	if err != nil {
-		return "", err
+		return "", lazyerrors.Error(err)
 	}
-	return filepath.Join(strings.TrimSpace(string(b)), "fuzz", module, "internal"), nil
+
+	gocache := strings.TrimSpace(string(b))
+	return filepath.Join(gocache, "fuzz", "github.com", "FerretDB", "FerretDB", "internal"), nil
 }
 
-func collectExistingFiles(root string, logger *zap.SugaredLogger) (map[string]struct{}, error) {
+// collectFiles returns a map of all interesting files in the given directory.
+func collectFiles(root string, logger *zap.SugaredLogger) (map[string]struct{}, error) {
 	existingFiles := make(map[string]struct{}, 1000)
 	err := filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
-			return err
+			return lazyerrors.Error(err)
 		}
 
 		if info.IsDir() {
@@ -69,14 +58,14 @@ func collectExistingFiles(root string, logger *zap.SugaredLogger) (map[string]st
 			return nil
 		}
 
-		// skip .env, .DS_Store, etc
+		// skip .env, .DS_Store, README.md, etc
 		if len(info.Name()) != 64 {
 			return nil
 		}
 
 		path, err = filepath.Rel(root, path)
 		if err != nil {
-			return err
+			return lazyerrors.Error(err)
 		}
 		logger.Debug(path)
 		existingFiles[path] = struct{}{}
@@ -86,67 +75,48 @@ func collectExistingFiles(root string, logger *zap.SugaredLogger) (map[string]st
 	return existingFiles, err
 }
 
-func collectCacheFiles(cacheRoot string, logger *zap.SugaredLogger) (map[string]struct{}, error) {
-	cacheFiles := make(map[string]struct{}, 1000)
-	err := filepath.Walk(cacheRoot, func(path string, info fs.FileInfo, err error) error {
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		if info.IsDir() {
-			// skip .git, etc
-			if strings.HasPrefix(info.Name(), ".") {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-
-		// skip .env, .DS_Store, etc
-		if len(info.Name()) != 64 {
-			return nil
-		}
-
-		path, err = filepath.Rel(cacheRoot, path)
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-		logger.Debug(path)
-		cacheFiles[path] = struct{}{}
-		return nil
-	})
-
-	return cacheFiles, err
-}
-
-func diff(from, to map[string]struct{}) []string {
+// diff returns the set of files in srd that are not in dst.
+func diff(src, dst map[string]struct{}) []string {
 	res := make([]string, 0, 50)
-	for p := range from {
-		if _, ok := to[p]; !ok {
+	for p := range src {
+		if _, ok := dst[p]; !ok {
 			res = append(res, p)
 		}
 	}
+
+	sort.Strings(res)
 	return res
 }
 
-func copyFile(from, to string) error {
-	fromF, err := os.Open(from)
+// copyFile copies a file from src to dst, overwriting dst if it exists.
+func copyFile(src, dst string) error {
+	srcF, err := os.Open(src)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
-	defer fromF.Close()
+	defer srcF.Close()
 
-	toF, err := os.OpenFile(to, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o666)
+	dir := filepath.Dir(dst)
+	_, err = os.Stat(dir)
+	if os.IsNotExist(err) {
+		err = os.MkdirAll(dir, 0o777)
+	}
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	_, err = io.Copy(toF, fromF)
-	if closeErr := toF.Close(); err == nil {
+	dstF, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o666)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	_, err = io.Copy(dstF, srcF)
+	if closeErr := dstF.Close(); err == nil {
 		err = closeErr
 	}
 
 	if err != nil {
-		os.Remove(to)
+		os.Remove(dst)
 		return lazyerrors.Error(err)
 	}
 
@@ -163,7 +133,8 @@ func main() {
 
 	if flag.NArg() != 1 {
 		flag.Usage()
-		log.Fatal("one arguments expected")
+		fmt.Fprintln(flag.CommandLine.Output(), "one arguments expected")
+		os.Exit(2)
 	}
 
 	logging.Setup(zap.InfoLevel)
@@ -172,39 +143,35 @@ func main() {
 	}
 	logger := zap.S()
 
-	module, err := readModulePath()
+	generatedCorpus, err := generatedCorpus()
 	if err != nil {
 		logger.Fatal(err)
 	}
-	logger.Infof("Module path: %s.", module)
+	logger.Infof("Generated corpus: %s.", generatedCorpus)
 
-	cacheRoot, err := readCacheRoot(module)
+	collectedCorpus, err := filepath.Abs(flag.Arg(0))
 	if err != nil {
 		logger.Fatal(err)
 	}
-	logger.Infof("Cache root: %s.", cacheRoot)
+	logger.Infof("Collected corpus: %s.", collectedCorpus)
 
-	root, err := filepath.Abs(flag.Arg(0))
+	collectedCorpusFiles, err := collectFiles(collectedCorpus, logger)
 	if err != nil {
 		logger.Fatal(err)
 	}
-	existingFiles, err := collectExistingFiles(root, logger)
-	if err != nil {
-		logger.Fatal(err)
-	}
-	logger.Infof("Found %d existing files.", len(existingFiles))
+	logger.Infof("Found %d files in collected corpus.", len(collectedCorpusFiles))
 
-	cacheFiles, err := collectCacheFiles(cacheRoot, logger)
+	generatedCorpusFiles, err := collectFiles(generatedCorpus, logger)
 	if err != nil {
 		logger.Fatal(err)
 	}
-	logger.Infof("Found %d cached files.", len(cacheFiles))
+	logger.Infof("Found %d files in generated corpus.", len(generatedCorpusFiles))
 
-	diffFiles := diff(cacheFiles, existingFiles)
-	logger.Infof("Copying %d files to corpus.", len(diffFiles))
-	for _, p := range diffFiles {
-		from := filepath.Join(cacheRoot, p)
-		to := filepath.Join(root, p)
+	files := diff(generatedCorpusFiles, collectedCorpusFiles)
+	logger.Infof("Copying %d files to generated corpus.", len(files))
+	for _, p := range files {
+		from := filepath.Join(generatedCorpus, p)
+		to := filepath.Join(collectedCorpus, p)
 		logger.Debugf("%s -> %s", from, to)
 		if err := copyFile(from, to); err != nil {
 			logger.Fatal(err)

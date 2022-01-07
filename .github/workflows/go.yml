@@ -106,8 +106,8 @@ jobs:
           git status
           git diff --exit-code
 
-  fuzz:
-    name: Fuzz
+  fuzz-short:
+    name: Fuzz short
     runs-on: ubuntu-20.04
 
     steps:

@@ -19,7 +19,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -225,7 +224,8 @@ func main() {
 
 	if flag.NArg() != 0 {
 		flag.Usage()
-		log.Fatal("no arguments expected")
+		fmt.Fprintln(flag.CommandLine.Output(), "no arguments expected")
+		os.Exit(2)
 	}
 
 	logging.Setup(zap.InfoLevel)
