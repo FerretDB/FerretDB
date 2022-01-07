@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -30,68 +31,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 )
-
-func main() {
-	logging.Setup(zap.InfoLevel)
-	flag.Parse()
-
-	debugF := flag.Bool("debug", false, "enable debug mode")
-	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s target_directory\n", os.Args[0])
-		flag.PrintDefaults()
-	}
-	flag.Parse()
-
-	if flag.NArg() != 1 {
-		flag.Usage()
-		os.Exit(1)
-	}
-
-	if *debugF {
-		logging.Setup(zap.DebugLevel)
-	}
-
-	logger := zap.S()
-
-	module, err := readModulePath()
-	if err != nil {
-		logger.Fatal(err)
-	}
-	logger.Infof("Module path: %s.", module)
-
-	cacheRoot, err := readCacheRoot(module)
-	if err != nil {
-		logger.Fatal(err)
-	}
-	logger.Infof("Cache root: %s.", cacheRoot)
-
-	root, err := filepath.Abs(flag.Arg(0))
-	if err != nil {
-		logger.Fatal(err)
-	}
-	existingFiles, err := collectExistingFiles(root, logger)
-	if err != nil {
-		logger.Fatal(err)
-	}
-	logger.Infof("Found %d existing files.", len(existingFiles))
-
-	cacheFiles, err := collectCacheFiles(cacheRoot, logger)
-	if err != nil {
-		logger.Fatal(err)
-	}
-	logger.Infof("Found %d cached files.", len(cacheFiles))
-
-	diffFiles := diff(cacheFiles, existingFiles)
-	logger.Infof("Copying %d files to corpus.", len(diffFiles))
-	for _, p := range diffFiles {
-		from := filepath.Join(cacheRoot, p)
-		to := filepath.Join(root, p)
-		logger.Debugf("%s -> %s", from, to)
-		if err := copyFile(from, to); err != nil {
-			logger.Fatal(err)
-		}
-	}
-}
 
 func readModulePath() (string, error) {
 	info, ok := debug.ReadBuildInfo()
@@ -212,4 +151,63 @@ func copyFile(from, to string) error {
 	}
 
 	return nil
+}
+
+func main() {
+	debugF := flag.Bool("debug", false, "enable debug mode")
+	flag.Usage = func() {
+		fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s target_directory\n", os.Args[0])
+		flag.PrintDefaults()
+	}
+	flag.Parse()
+
+	if flag.NArg() != 1 {
+		flag.Usage()
+		log.Fatal("one arguments expected")
+	}
+
+	logging.Setup(zap.InfoLevel)
+	if *debugF {
+		logging.Setup(zap.DebugLevel)
+	}
+	logger := zap.S()
+
+	module, err := readModulePath()
+	if err != nil {
+		logger.Fatal(err)
+	}
+	logger.Infof("Module path: %s.", module)
+
+	cacheRoot, err := readCacheRoot(module)
+	if err != nil {
+		logger.Fatal(err)
+	}
+	logger.Infof("Cache root: %s.", cacheRoot)
+
+	root, err := filepath.Abs(flag.Arg(0))
+	if err != nil {
+		logger.Fatal(err)
+	}
+	existingFiles, err := collectExistingFiles(root, logger)
+	if err != nil {
+		logger.Fatal(err)
+	}
+	logger.Infof("Found %d existing files.", len(existingFiles))
+
+	cacheFiles, err := collectCacheFiles(cacheRoot, logger)
+	if err != nil {
+		logger.Fatal(err)
+	}
+	logger.Infof("Found %d cached files.", len(cacheFiles))
+
+	diffFiles := diff(cacheFiles, existingFiles)
+	logger.Infof("Copying %d files to corpus.", len(diffFiles))
+	for _, p := range diffFiles {
+		from := filepath.Join(cacheRoot, p)
+		to := filepath.Join(root, p)
+		logger.Debugf("%s -> %s", from, to)
+		if err := copyFile(from, to); err != nil {
+			logger.Fatal(err)
+		}
+	}
 }
