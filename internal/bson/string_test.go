@@ -32,6 +32,10 @@ var stringTestCases = []testCase{{
 	name: "zero",
 	v:    pointer.To(String("\x00")),
 	b:    []byte{0x02, 0x00, 0x00, 0x00, 0x00, 0x00},
+}, {
+	name: "EOF",
+	b:    []byte{0x00},
+	bErr: `unexpected EOF`,
 }}
 
 func TestString(t *testing.T) {

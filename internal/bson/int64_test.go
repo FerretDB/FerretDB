@@ -37,6 +37,10 @@ var int64TestCases = []testCase{{
 	name: "min int64",
 	v:    pointer.To(Int64(math.MinInt64)),
 	b:    []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80},
+}, {
+	name: "EOF",
+	b:    []byte{0x00},
+	bErr: `unexpected EOF`,
 }}
 
 func TestInt64(t *testing.T) {

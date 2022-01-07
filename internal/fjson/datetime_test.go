@@ -37,6 +37,10 @@ var dateTimeTestCases = []testCase{{
 	name: "9999",
 	v:    pointer.To(DateTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC).Local())),
 	j:    `{"$d":253402300799999}`,
+}, {
+	name: "EOF",
+	j:    `{`,
+	jErr: `unexpected EOF`,
 }}
 
 func TestDateTime(t *testing.T) {
@@ -44,7 +48,7 @@ func TestDateTime(t *testing.T) {
 	testJSON(t, dateTimeTestCases, func() fjsontype { return new(DateTime) })
 }
 
-func FuzzDateTimeJSON(f *testing.F) {
+func FuzzDateTime(f *testing.F) {
 	fuzzJSON(f, dateTimeTestCases, func() fjsontype { return new(DateTime) })
 }
 
