@@ -27,15 +27,13 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/MangoDB-io/MangoDB/internal/util/lazyerrors"
-	"github.com/MangoDB-io/MangoDB/internal/util/logging"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 )
 
 func main() {
 	logging.Setup(zap.InfoLevel)
 	flag.Parse()
-
-	logger := logging.Setup(zap.InfoLevel).Sugar()
 
 	debugF := flag.Bool("debug", false, "enable debug mode")
 	flag.Usage = func() {
@@ -50,8 +48,10 @@ func main() {
 	}
 
 	if *debugF {
-		logger = logging.Setup(zap.DebugLevel).Sugar()
+		logging.Setup(zap.DebugLevel)
 	}
+
+	logger := zap.S()
 
 	module, err := readModulePath()
 	if err != nil {
