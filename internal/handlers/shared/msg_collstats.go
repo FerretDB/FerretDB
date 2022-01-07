@@ -30,7 +30,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	m := document.Map()
-	collection := m[document.Command()].(string)
+	collection := m["collStats"].(string)
 	db, ok := m["$db"].(string)
 	if !ok {
 		return nil, lazyerrors.New("no db")
@@ -50,7 +50,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			"storageSize", stats.SizeTable,
 			"totalIndexSize", stats.SizeIndexes,
 			"totalSize", stats.SizeTotal,
-			"scaleFactor", int64(1),
+			"scaleFactor", int32(1),
 			"ok", float64(1),
 		)},
 	})

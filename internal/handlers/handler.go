@@ -157,6 +157,9 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	case "buildinfo":
 		return h.shared.MsgBuildInfo(ctx, msg)
 	case "collstats":
+		// This command implements the follow database methods:
+		// 	- db.collection.stats()
+		// 	- db.collection.dataSize()
 		return h.shared.MsgCollStats(ctx, msg)
 	case "create":
 		return h.shared.MsgCreate(ctx, msg)
