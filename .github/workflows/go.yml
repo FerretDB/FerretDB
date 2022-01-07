@@ -155,6 +155,8 @@ jobs:
       - name: Push corpus
         if: always()
         run: |
+          git config user.name ferretdb-bot
+          git config user.email ferretdb-bot@ferretdb.io
           git add --all .
           git commit --message 'Update corpus'
           git fetch
