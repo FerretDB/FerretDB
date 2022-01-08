@@ -31,14 +31,13 @@ const versionValue = "5.0.42"
 // MsgBuildInfo returns an OpMsg with the build information.
 func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
-
 	err := reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
 			"version", versionValue,
 			"gitVersion", version.Get().Commit,
 			"versionArray", types.MustNewArray(int32(5), int32(0), int32(42), int32(0)),
 			"bits", int32(strconv.IntSize),
-			"debug", version.Get().IsDebugBuild,
+			"debug", version.Get().Debug,
 			"maxBsonObjectSize", int32(bson.MaxDocumentLen),
 			"ok", float64(1),
 			"buildEnvironment", version.Get().BuildEnvironment,

@@ -422,7 +422,6 @@ func TestReadOnlyHandlers(t *testing.T) {
 	}
 
 	hostname, err := os.Hostname()
-
 	require.NoError(t, err)
 
 	testCases := map[string]testCase{
