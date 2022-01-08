@@ -441,29 +441,34 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"buildEnvironment", types.MustMakeDocument(),
 			),
 		},
+
 		"CollStats": {
 			req: types.MustMakeDocument(
-				"collstats", "film",
+				"collStats", "film",
 			),
 			reqSetDB: true,
 			resp: types.MustMakeDocument(
-				"ns", "manila.film",
-				"count", int64(1_000),
-				"size", int64(704512),
-				"storageSize", int64(450560),
-				"totalIndexSize", int64(221184),
-				"totalSize", int64(704512),
-				"scaleFactor", int64(1),
+				"ns", "monila.film",
+				"count", int32(1_000),
+				"size", int32(1_236_992),
+				"storageSize", int32(1_204_224),
+				"totalIndexSize", int32(0),
+				"totalSize", int32(1_236_992),
+				"scaleFactor", int32(1),
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, req types.Document, actual, expected types.CompositeType) {
 				db, err := req.Get("$db")
 				require.NoError(t, err)
-				if db.(string) == "manila" {
+				if db.(string) == "monila" {
+					testutil.CompareAndSetByPathNum(t, expected, actual, 30_000, "size")
+					testutil.CompareAndSetByPathNum(t, expected, actual, 30_000, "storageSize")
+					testutil.CompareAndSetByPathNum(t, expected, actual, 30_000, "totalSize")
 					assert.Equal(t, expected, actual)
 				}
 			},
 		},
+
 		"CountAllActors": {
 			req: types.MustMakeDocument(
 				"count", "actor",
@@ -499,6 +504,98 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"n", int32(3),
 				"ok", float64(1),
 			),
+		},
+
+		"DBStats": {
+			req: types.MustMakeDocument(
+				"dbstats", int32(1),
+			),
+			reqSetDB: true,
+			resp: types.MustMakeDocument(
+				"db", "monila",
+				"collections", int32(14),
+				"views", int32(0),
+				"objects", int32(30224),
+				"avgObjSize", 437.7342509264161,
+				"dataSize", 1.323008e+07,
+				"indexes", int32(0),
+				"indexSize", float64(0),
+				"totalSize", 1.3615104e+07,
+				"scaleFactor", float64(1),
+				"ok", float64(1),
+			),
+			compareFunc: func(t testing.TB, req types.Document, actual, expected types.CompositeType) {
+				db, err := req.Get("$db")
+				require.NoError(t, err)
+				if db.(string) == "monila" {
+					testutil.CompareAndSetByPathNum(t, expected, actual, 20, "avgObjSize")
+					testutil.CompareAndSetByPathNum(t, expected, actual, 400_000, "dataSize")
+					testutil.CompareAndSetByPathNum(t, expected, actual, 400_000, "totalSize")
+					assert.Equal(t, expected, actual)
+				}
+			},
+		},
+		"DBStatsWithScale": {
+			req: types.MustMakeDocument(
+				"dbstats", int32(1),
+				"scale", float64(1_000),
+			),
+			reqSetDB: true,
+			resp: types.MustMakeDocument(
+				"db", "monila",
+				"collections", int32(14),
+				"views", int32(0),
+				"objects", int32(30224),
+				"avgObjSize", 437.7342509264161,
+				"dataSize", 13_230.08,
+				"indexes", int32(0),
+				"indexSize", float64(0),
+				"totalSize", 13_615.104,
+				"scaleFactor", float64(1_000),
+				"ok", float64(1),
+			),
+			compareFunc: func(t testing.TB, req types.Document, actual, expected types.CompositeType) {
+				db, err := req.Get("$db")
+				require.NoError(t, err)
+				if db.(string) == "monila" {
+					testutil.CompareAndSetByPathNum(t, expected, actual, 20, "avgObjSize")
+					testutil.CompareAndSetByPathNum(t, expected, actual, 400, "dataSize")
+					testutil.CompareAndSetByPathNum(t, expected, actual, 400, "totalSize")
+					assert.Equal(t, expected, actual)
+				}
+			},
+		},
+
+		"FindProjectionActorsFirstAndLastName": {
+			req: types.MustMakeDocument(
+				"find", "actor",
+				"projection", types.MustMakeDocument(
+					"first_name", int32(1),
+					"last_name", int32(1),
+				),
+				"filter", types.MustMakeDocument(
+					"actor_id", int32(28),
+				),
+			),
+			reqSetDB: true,
+			resp: types.MustMakeDocument(
+				"cursor", types.MustMakeDocument(
+					"firstBatch", types.MustNewArray(
+						types.MustMakeDocument(
+							"first_name", "WOODY",
+							"last_name", "HOFFMAN",
+						),
+					),
+					"id", int64(0),
+					"ns", "", // set by compareFunc
+				),
+				"ok", float64(1),
+			),
+			compareFunc: func(t testing.TB, req types.Document, actual, expected types.CompositeType) {
+				actualV := testutil.GetByPath(t, actual, "cursor", "ns")
+				testutil.SetByPath(t, expected, actualV, "cursor", "ns")
+				assert.Equal(t, expected, actual)
+			},
 		},
 
 		"GetLog": {

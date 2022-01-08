@@ -1,5 +1,5 @@
 ---
 name: Bug
-about: Something implemented works incorrectly
+about: Some feature works incorrectly
 labels: code/bug
 ---

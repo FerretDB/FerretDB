@@ -67,7 +67,8 @@
 * @agneum made their first contribution in https://github.com/FerretDB/FerretDB/pull/149
 * @pboros made their first contribution in https://github.com/FerretDB/FerretDB/pull/189
 
-**Full Changelog**: https://github.com/FerretDB/FerretDB/compare/v0.0.4...v0.0.5
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/4?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v0.0.4...v0.0.5).
 
 
 ## [v0.0.4](https://github.com/FerretDB/FerretDB/releases/tag/v0.0.4) (2021-12-01)

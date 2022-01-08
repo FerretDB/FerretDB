@@ -23,10 +23,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-//go:generate ./version.sh
+//go:generate ./generate.sh
 
-//go:embed version.txt
-var version string
+var (
+	//go:embed version.txt
+	version string
+
+	//go:embed branch.txt
+	branch string
+)
 
 type Info struct {
 	Version          string
@@ -45,6 +50,7 @@ func Get() *Info {
 func init() {
 	info = &Info{
 		Version: strings.TrimSpace(version),
+		Branch:  strings.TrimSpace(branch),
 	}
 
 	buildInfo, ok := debug.ReadBuildInfo()

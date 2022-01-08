@@ -16,33 +16,31 @@
 //
 // All BSON data types have three representations in FerretDB:
 //
-//  1. As they are used in handlers implementation.
-//  2. As they are used in the wire protocol implementation.
-//  3. As they are used to store data in PostgreSQL.
+//  1. As they are used in handlers implementation (types package).
+//  2. As they are used in the wire protocol implementation (bson package).
+//  3. As they are used to store data in PostgreSQL (fjson package).
 //
-// The first representation is provided by this package (types).
-// The second and third representations are provided by the bson package.
 // The reason for that is a separation of concerns: to avoid method names clashes, to simplify type asserts, etc.
 //
 // Mapping
 //
 // Composite types
-//  types.Document    bson.Document
-//  *types.Array      bson.Array
+//  types.Document   *bson.Document  *fjson.Document
+//  *types.Array     *bson.Array     *fjson.Array
 // Value types
-//  float64           bson.Double
-//  string            bson.String
-//  types.Binary      bson.Binary
-//  types.ObjectID    bson.ObjectID
-//  bool              bson.Bool
-//  time.Time         bson.DateTime
-//  any(nil)          any(nil)
-//  types.Regex       bson.Regex
-//  int32             bson.Int32
-//  types.Timestamp   bson.Timestamp
-//  int64             bson.Int64
-//  TODO              bson.Decimal128
-//  (does not exist)  bson.CString
+//  float64          *bson.Double     *fjson.Double
+//  string           *bson.String     *fjson.String
+//  types.Binary     *bson.Binary     *fjson.Binary
+//  types.ObjectID   *bson.ObjectID   *fjson.ObjectID
+//  bool             *bson.Bool       *fjson.Bool
+//  time.Time        *bson.DateTime   *fjson.DateTime
+//  any(nil)         any(nil)         any(nil)
+//  types.Regex      *bson.Regex      *fjson.Regex
+//  int32            *bson.Int32      *fjson.Int32
+//  types.Timestamp  *bson.Timestamp  *fjson.Timestamp
+//  int64            *bson.Int64      *fjson.Int64
+//  TODO Decimal128
+//  types.CString    *bson.CString    *fjson.CString
 package types
 
 import (
@@ -58,6 +56,8 @@ type CompositeType interface {
 //go-sumtype:decl CompositeType
 
 type (
+	CString string
+
 	ObjectID [12]byte
 
 	Regex struct {
@@ -99,13 +99,9 @@ func validateValue(value any) error {
 		return nil
 	case int64:
 		return nil
+	case CString:
+		return nil
 	default:
 		return fmt.Errorf("types.validateValue: unsupported type: %[1]T (%[1]v)", value)
 	}
 }
-
-// check interfaces
-var (
-	_ CompositeType = Document{}
-	_ CompositeType = (*Array)(nil)
-)
