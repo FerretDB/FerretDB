@@ -513,7 +513,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"estimate", false,
 				"size", int32(114_688),
 				"numObjects", int32(200),
-				"millis", int32(40),
+				"millis", int32(50),
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, req types.Document, actual, expected types.CompositeType) {
@@ -534,7 +534,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 			resp: types.MustMakeDocument(
 				"size", int32(0),
 				"numObjects", int32(0),
-				"millis", int32(30),
+				"millis", int32(50),
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, req types.Document, actual, expected types.CompositeType) {
