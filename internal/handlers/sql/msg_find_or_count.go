@@ -62,7 +62,7 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 			return nil, lazyerrors.Error(err)
 		}
 		filter, _ = m["filter"].(types.Document)
-    sql = fmt.Sprintf(`SELECT %s FROM %s`, projectionStr, pgx.Identifier{db, collection}.Sanitize())
+		sql = fmt.Sprintf(`SELECT %s FROM %s`, projectionStr, pgx.Identifier{db, collection}.Sanitize())
 		// https://docs.mongodb.com/manual/core/capped-collections/#query-a-capped-collection
 		if isCapped {
 			sql += " ORDER BY created_dt"
