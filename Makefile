@@ -65,7 +65,7 @@ bench-short:                           ## Benchmark for 5 seconds
 	bin/benchstat old.txt new.txt
 
 build-testcover: gen-version           ## Build bin/ferretdb-testcover
-	go test -c -o=bin/ferretdb-testcover -trimpath -tags=testcover -race -coverpkg=./... ./cmd/ferretdb
+	go test -c -o=bin/ferretdb-testcover -gcflags="all=-N -l" -trimpath -tags=testcover -race -coverpkg=./... ./cmd/ferretdb
 
 run: build-testcover                   ## Run FerretDB
 	bin/ferretdb-testcover -test.coverprofile=cover.txt -mode=diff-normal -listen-addr=:27017
