@@ -192,6 +192,25 @@ func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string
 	return
 }
 
+// nested handles queries on nested documents (e.g. {"a.b": 3} for {"a": {"b": 3}})
+func nested(path string, p *pg.Placeholder) (sql string, nestedKeys []string, err error) {
+	sql = "_jsonb"
+
+	for _, node := range strings.Split(path, ".") {
+		if node == "" {
+			return "", nil, lazyerrors.Errorf(
+				"nested: key contains multiple consecutive dots: %s", path)
+			// MongoDB doesn't forbid multiple consecutive dots in queries,
+			//it just returns no results. So this error has to be handled accordingly
+		}
+
+		sql += "->" + p.Next()
+		nestedKeys = append(nestedKeys, node)
+	}
+
+	return
+}
+
 func wherePair(key string, value any, p *pg.Placeholder) (sql string, args []any, err error) {
 	if strings.HasPrefix(key, "$") {
 		exprs := value.(*types.Array)
