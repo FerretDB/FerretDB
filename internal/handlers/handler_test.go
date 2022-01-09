@@ -521,6 +521,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				require.NoError(t, err)
 				if db.(string) == "monila" {
 					testutil.CompareAndSetByPathNum(t, expected, actual, 30, "millis")
+					testutil.CompareAndSetByPathNum(t, expected, actual, 20_000, "size")
 					assert.Equal(t, expected, actual)
 				}
 			},
