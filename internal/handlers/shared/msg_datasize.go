@@ -16,11 +16,39 @@ package shared
 
 import (
 	"context"
+	"errors"
+	"strings"
+	"time"
+
+	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
+
+func formatResponse(size, rows, millis int32, showEstimate bool) (*wire.OpMsg, error) {
+	var pairs []any
+	if showEstimate {
+		pairs = append(pairs, "estimate", false)
+	}
+	pairs = append(pairs,
+		"size", size,
+		"numObjects", rows,
+		"millis", millis,
+		"ok", float64(1),
+	)
+
+	var reply wire.OpMsg
+	err := reply.SetSections(wire.OpMsgSection{
+		Documents: []types.Document{types.MustMakeDocument(pairs...)},
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &reply, nil
+}
 
 // MsgDataSize returns the size of the collection in bytes.
 func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
@@ -30,33 +58,26 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	}
 
 	m := document.Map()
-	collection := m["dataSize"].(string)
-	db, ok := m["$db"].(string)
+	target, ok := m["dataSize"].(string)
 	if !ok {
-		return nil, lazyerrors.New("no db")
+		return nil, lazyerrors.New("no target collection")
 	}
+	targets := strings.Split(target, ".")
+	if len(targets) != 2 {
+		return nil, lazyerrors.New("target collection must be like: 'database.collection'")
+	}
+	db, collection := targets[0], targets[1]
 
+	started := time.Now()
 	stats, err := h.pgPool.TableStats(ctx, db, collection)
+	elapses := time.Now().Sub(started)
+	millis := int32(elapses.Milliseconds())
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return formatResponse(0, 0, millis, false)
+		}
 		return nil, lazyerrors.Error(err)
 	}
 
-	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{types.MustMakeDocument(
-			"ns", db+"."+collection,
-			"count", stats.Rows,
-			"size", stats.SizeTotal,
-			"storageSize", stats.SizeTable,
-			"totalIndexSize", stats.SizeIndexes,
-			"totalSize", stats.SizeTotal,
-			"scaleFactor", int32(1),
-			"ok", float64(1),
-		)},
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return &reply, nil
+	return formatResponse(stats.SizeTotal, stats.Rows, millis, true)
 }
