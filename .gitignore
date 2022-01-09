@@ -4,8 +4,11 @@
 /bin/
 /vendor/
 cover.txt
+old.txt
+new.txt
 
 internal/util/version/version.txt
+internal/util/version/branch.txt
 
 # for now
 **/testdata/fuzz

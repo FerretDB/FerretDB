@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jsonb1
+package handlers
 
 import (
 	"strconv"
@@ -21,13 +21,15 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
+// TODO Rework to make them closer to other tests.
+//nolint:paralleltest // TODO
 func TestUpdate(t *testing.T) {
-	t.Parallel()
-
-	ctx, h, schema := setup(t)
+	ctx, h, pool := setup(t, nil)
+	schema := testutil.Schema(ctx, t, pool)
 
 	header := &wire.MsgHeader{
 		OpCode: wire.OP_MSG,

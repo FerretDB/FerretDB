@@ -17,16 +17,14 @@ package bson
 import (
 	"bufio"
 	"bytes"
-	"encoding/json"
 
+	"github.com/FerretDB/FerretDB/internal/fjson"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // Regex represents BSON Regex data type.
-type Regex struct {
-	Pattern string
-	Options string
-}
+type Regex types.Regex
 
 func (regex *Regex) bsontype() {}
 
@@ -79,42 +77,20 @@ func (regex Regex) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-type regexJSON struct {
-	R string `json:"$r"`
-	O string `json:"o"`
-}
-
 // UnmarshalJSON implements bsontype interface.
 func (regex *Regex) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
-	}
-
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
-
-	var o regexJSON
-	if err := dec.Decode(&o); err != nil {
+	var regexJ fjson.Regex
+	if err := regexJ.UnmarshalJSON(data); err != nil {
 		return err
 	}
-	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Errorf("bson.Regex.UnmarshalJSON: %s", err)
-	}
 
-	*regex = Regex{
-		Pattern: o.R,
-		Options: o.O,
-	}
+	*regex = Regex(regexJ)
 	return nil
 }
 
 // MarshalJSON implements bsontype interface.
 func (regex Regex) MarshalJSON() ([]byte, error) {
-	return json.Marshal(regexJSON{
-		R: regex.Pattern,
-		O: regex.Options,
-	})
+	return fjson.Marshal(fromBSON(&regex))
 }
 
 // check interfaces

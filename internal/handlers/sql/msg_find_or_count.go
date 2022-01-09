@@ -45,8 +45,15 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	db := m["$db"].(string)
 
 	projection, ok := m["projection"].(types.Document)
+	projectionStr := "*"
 	if ok && len(projection.Map()) != 0 {
-		return nil, common.NewErrorMessage(common.ErrNotImplemented, "MsgFind: projection is not supported")
+		projectionStr = ""
+		for i, k := range projection.Keys() {
+			if i != 0 {
+				projectionStr += ", "
+			}
+			projectionStr += pgx.Identifier{k}.Sanitize()
+		}
 	}
 	if isFindOp {
 		collection = m["find"].(string)
@@ -55,7 +62,7 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 			return nil, lazyerrors.Error(err)
 		}
 		filter, _ = m["filter"].(types.Document)
-		sql = fmt.Sprintf(`SELECT * FROM %s`, pgx.Identifier{db, collection}.Sanitize())
+    sql = fmt.Sprintf(`SELECT %s FROM %s`, projectionStr, pgx.Identifier{db, collection}.Sanitize())
 		// https://docs.mongodb.com/manual/core/capped-collections/#query-a-capped-collection
 		if isCapped {
 			sql += " ORDER BY created_dt"

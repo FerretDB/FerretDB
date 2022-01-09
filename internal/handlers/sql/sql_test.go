@@ -12,30 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jsonb1
+package sql
 
 import (
 	"context"
 	"testing"
 
-	"go.uber.org/zap/zaptest"
-
-	"github.com/FerretDB/FerretDB/internal/handlers"
+	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func setup(tb testing.TB) (context.Context, *handlers.Handler, string) {
-	ctx := testutil.Ctx(tb)
-	pool := testutil.Pool(ctx, tb, new(testutil.PoolOpts))
-	db := testutil.Schema(ctx, tb, pool)
-	handlerOpts := &handlers.NewOpts{
-		PgPool:        pool,
-		Logger:        zaptest.NewLogger(tb),
-		SharedHandler: nil,
-		SQLStorage:    nil,
-		JSONB1Storage: NewStorage(pool, zaptest.NewLogger(tb)),
-		Metrics:       handlers.NewMetrics(),
-	}
-	h := handlers.New(handlerOpts)
-	return ctx, h, db
+// All tests in this package should be fine running in parallel with tests from the handler package.
+// For that reason, we use read-only access.
+//
+// Exported methods should be tested by the handler package.
+func setup(t *testing.T) (context.Context, *pg.Pool) {
+	ctx := testutil.Ctx(t)
+	pool := testutil.Pool(ctx, t, &testutil.PoolOpts{
+		ReadOnly: true,
+	})
+	return ctx, pool
 }
