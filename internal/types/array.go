@@ -121,8 +121,3 @@ func (a *Array) Append(values ...any) error {
 	a.s = append(a.s, values...)
 	return nil
 }
-
-// check interfaces
-var (
-	_ CompositeType = (*Array)(nil)
-)

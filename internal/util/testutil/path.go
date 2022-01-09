@@ -15,7 +15,6 @@
 package testutil
 
 import (
-	"fmt"
 	"strconv"
 	"testing"
 	"time"
@@ -27,20 +26,10 @@ import (
 )
 
 // GetByPath returns a value by path - a sequence of indexes and keys.
-func GetByPath(tb testing.TB, comp types.CompositeType, path ...string) any {
+func GetByPath[T types.CompositeType](tb testing.TB, comp T, path ...string) any {
 	tb.Helper()
 
-	var res any
-	var err error
-	switch comp := comp.(type) {
-	case types.Document:
-		res, err = comp.GetByPath(path...)
-	case *types.Array:
-		res, err = comp.GetByPath(path...)
-	default:
-		err = fmt.Errorf("can't access %T by path", comp)
-	}
-
+	res, err := comp.GetByPath(path...)
 	require.NoError(tb, err)
 	return res
 }
@@ -48,7 +37,7 @@ func GetByPath(tb testing.TB, comp types.CompositeType, path ...string) any {
 // SetByPath sets the value by path - a sequence of indexes and keys.
 //
 // The path must exist.
-func SetByPath(tb testing.TB, comp types.CompositeType, value any, path ...string) {
+func SetByPath[T types.CompositeType](tb testing.TB, comp T, value any, path ...string) {
 	tb.Helper()
 
 	l := len(path)
@@ -88,7 +77,7 @@ func SetByPath(tb testing.TB, comp types.CompositeType, value any, path ...strin
 
 // CompareAndSetByPathNum asserts that two values with the same path in two objects (documents or arrays)
 // are within a given numerical delta, then updates the expected object with the actual value.
-func CompareAndSetByPathNum(tb testing.TB, expected, actual types.CompositeType, delta float64, path ...string) {
+func CompareAndSetByPathNum[T types.CompositeType](tb testing.TB, expected, actual T, delta float64, path ...string) {
 	tb.Helper()
 
 	expectedV := GetByPath(tb, expected, path...)
@@ -101,7 +90,7 @@ func CompareAndSetByPathNum(tb testing.TB, expected, actual types.CompositeType,
 
 // CompareAndSetByPathTime asserts that two values with the same path in two objects (documents or arrays)
 // are within a given time delta, then updates the expected object with the actual value.
-func CompareAndSetByPathTime(tb testing.TB, expected, actual types.CompositeType, delta time.Duration, path ...string) {
+func CompareAndSetByPathTime[T types.CompositeType](tb testing.TB, expected, actual T, delta time.Duration, path ...string) {
 	tb.Helper()
 
 	expectedV := GetByPath(tb, expected, path...)

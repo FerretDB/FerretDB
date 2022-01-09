@@ -24,10 +24,10 @@
 //
 // Mapping
 //
-// Composite types
+// Composite/pointer types
 //  types.Document   *bson.Document  *fjson.Document
 //  *types.Array     *bson.Array     *fjson.Array
-// Value types
+// Scalar/value types
 //  float64          *bson.Double     *fjson.Double
 //  string           *bson.String     *fjson.String
 //  types.Binary     *bson.Binary     *fjson.Binary
@@ -48,9 +48,10 @@ import (
 	"time"
 )
 
-// CompositeType represents composite type - Document or *Array.
+// CompositeType represents composite/pointer type - Document or *Array.
 type CompositeType interface {
-	compositeType()
+	Document | *Array
+	GetByPath(path ...string) (any, error)
 }
 
 //go-sumtype:decl CompositeType
