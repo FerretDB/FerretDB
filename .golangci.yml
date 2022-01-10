@@ -100,7 +100,7 @@ linters:
     - contextcheck
     - gosimple
     - nilerr
-    - noctx
+    # - noctx
     - rowserrcheck
     - sqlclosecheck
     - staticcheck
