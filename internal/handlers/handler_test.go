@@ -418,7 +418,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 		req         types.Document
 		reqSetDB    bool
 		resp        types.Document
-		compareFunc func(t testing.TB, req types.Document, actual, expected types.Document)
+		compareFunc func(t testing.TB, req, expected, actual types.Document)
 	}
 
 	hostname, err := os.Hostname()
@@ -456,7 +456,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"scaleFactor", int32(1),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, req types.Document, actual, expected types.Document) {
+			compareFunc: func(t testing.TB, req, expected, actual types.Document) {
 				db, err := req.Get("$db")
 				require.NoError(t, err)
 				if db.(string) == "monila" {
@@ -516,7 +516,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"millis", int32(20),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, req types.Document, actual, expected types.CompositeType) {
+			compareFunc: func(t testing.TB, req, expected, actual types.Document) {
 				db, err := req.Get("$db")
 				require.NoError(t, err)
 				if db.(string) == "monila" {
@@ -537,7 +537,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"millis", int32(20),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, req types.Document, actual, expected types.CompositeType) {
+			compareFunc: func(t testing.TB, req, expected, actual types.Document) {
 				db, err := req.Get("$db")
 				require.NoError(t, err)
 				if db.(string) == "monila" {
@@ -565,7 +565,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"scaleFactor", float64(1),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, req types.Document, actual, expected types.Document) {
+			compareFunc: func(t testing.TB, req, expected, actual types.Document) {
 				db, err := req.Get("$db")
 				require.NoError(t, err)
 				if db.(string) == "monila" {
@@ -595,7 +595,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"scaleFactor", float64(1_000),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, req types.Document, actual, expected types.Document) {
+			compareFunc: func(t testing.TB, req, expected, actual types.Document) {
 				db, err := req.Get("$db")
 				require.NoError(t, err)
 				if db.(string) == "monila" {
@@ -632,7 +632,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, req types.Document, actual, expected types.Document) {
+			compareFunc: func(t testing.TB, _, expected, actual types.Document) {
 				actualV := testutil.GetByPath(t, actual, "cursor", "ns")
 				testutil.SetByPath(t, expected, actualV, "cursor", "ns")
 				assert.Equal(t, expected, actual)

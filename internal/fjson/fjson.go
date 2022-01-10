@@ -56,7 +56,7 @@ import (
 )
 
 type fjsontype interface {
-	fjsontype() // seal
+	fjsontype() // seal for go-sumtype
 
 	json.Unmarshaler
 	json.Marshaler

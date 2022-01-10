@@ -52,6 +52,8 @@ import (
 type CompositeType interface {
 	Document | *Array
 	GetByPath(path ...string) (any, error)
+
+	sealed() // for go-sumtype
 }
 
 //go-sumtype:decl CompositeType
