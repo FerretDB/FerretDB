@@ -74,7 +74,8 @@ lint: bin/go-sumtype bin/golangci-lint ## Run linters
 	bin/go-sumtype ./...
 	bin/golangci-lint run --config=.golangci-required.yml
 	bin/golangci-lint run --config=.golangci.yml
-	bin/go-consistent -pedantic ./...
+	# FIXME https://github.com/FerretDB/FerretDB/issues/247
+	#bin/go-consistent -pedantic ./...
 
 psql:                                  ## Run psql
 	docker-compose exec postgres psql -U postgres -d ferretdb
