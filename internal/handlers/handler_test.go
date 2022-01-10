@@ -504,6 +504,48 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 		},
+		"DataSize": {
+			req: types.MustMakeDocument(
+				"dataSize", "monila.actor",
+			),
+			reqSetDB: true,
+			resp: types.MustMakeDocument(
+				"estimate", false,
+				"size", int32(114_688),
+				"numObjects", int32(200),
+				"millis", int32(20),
+				"ok", float64(1),
+			),
+			compareFunc: func(t testing.TB, req types.Document, actual, expected types.CompositeType) {
+				db, err := req.Get("$db")
+				require.NoError(t, err)
+				if db.(string) == "monila" {
+					testutil.CompareAndSetByPathNum(t, expected, actual, 30, "millis")
+					testutil.CompareAndSetByPathNum(t, expected, actual, 20_000, "size")
+					assert.Equal(t, expected, actual)
+				}
+			},
+		},
+		"DataSizeCollectionNotExist": {
+			req: types.MustMakeDocument(
+				"dataSize", "some-database.some-collection",
+			),
+			reqSetDB: true,
+			resp: types.MustMakeDocument(
+				"size", int32(0),
+				"numObjects", int32(0),
+				"millis", int32(20),
+				"ok", float64(1),
+			),
+			compareFunc: func(t testing.TB, req types.Document, actual, expected types.CompositeType) {
+				db, err := req.Get("$db")
+				require.NoError(t, err)
+				if db.(string) == "monila" {
+					testutil.CompareAndSetByPathNum(t, expected, actual, 30, "millis")
+					assert.Equal(t, expected, actual)
+				}
+			},
+		},
 
 		"DBStats": {
 			req: types.MustMakeDocument(
