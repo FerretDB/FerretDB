@@ -416,7 +416,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 		req         types.Document
 		reqSetDB    bool
 		resp        types.Document
-		compareFunc func(t testing.TB, req types.Document, actual, expected types.CompositeType)
+		compareFunc func(t testing.TB, req, expected, actual types.Document)
 	}
 
 	hostname, err := os.Hostname()
@@ -432,8 +432,10 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"gitVersion", version.Get().Commit,
 				"versionArray", types.MustNewArray(int32(5), int32(0), int32(42), int32(0)),
 				"bits", int32(strconv.IntSize),
+				"debug", version.Get().Debug,
 				"maxBsonObjectSize", int32(bson.MaxDocumentLen),
 				"ok", float64(1),
+				"buildEnvironment", types.MustMakeDocument(),
 			),
 		},
 
@@ -452,7 +454,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"scaleFactor", int32(1),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, req types.Document, actual, expected types.CompositeType) {
+			compareFunc: func(t testing.TB, req, expected, actual types.Document) {
 				db, err := req.Get("$db")
 				require.NoError(t, err)
 				if db.(string) == "monila" {
@@ -500,6 +502,48 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 		},
+		"DataSize": {
+			req: types.MustMakeDocument(
+				"dataSize", "monila.actor",
+			),
+			reqSetDB: true,
+			resp: types.MustMakeDocument(
+				"estimate", false,
+				"size", int32(114_688),
+				"numObjects", int32(200),
+				"millis", int32(20),
+				"ok", float64(1),
+			),
+			compareFunc: func(t testing.TB, req, expected, actual types.Document) {
+				db, err := req.Get("$db")
+				require.NoError(t, err)
+				if db.(string) == "monila" {
+					testutil.CompareAndSetByPathNum(t, expected, actual, 30, "millis")
+					testutil.CompareAndSetByPathNum(t, expected, actual, 20_000, "size")
+					assert.Equal(t, expected, actual)
+				}
+			},
+		},
+		"DataSizeCollectionNotExist": {
+			req: types.MustMakeDocument(
+				"dataSize", "some-database.some-collection",
+			),
+			reqSetDB: true,
+			resp: types.MustMakeDocument(
+				"size", int32(0),
+				"numObjects", int32(0),
+				"millis", int32(20),
+				"ok", float64(1),
+			),
+			compareFunc: func(t testing.TB, req, expected, actual types.Document) {
+				db, err := req.Get("$db")
+				require.NoError(t, err)
+				if db.(string) == "monila" {
+					testutil.CompareAndSetByPathNum(t, expected, actual, 30, "millis")
+					assert.Equal(t, expected, actual)
+				}
+			},
+		},
 
 		"DBStats": {
 			req: types.MustMakeDocument(
@@ -519,7 +563,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"scaleFactor", float64(1),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, req types.Document, actual, expected types.CompositeType) {
+			compareFunc: func(t testing.TB, req, expected, actual types.Document) {
 				db, err := req.Get("$db")
 				require.NoError(t, err)
 				if db.(string) == "monila" {
@@ -549,7 +593,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"scaleFactor", float64(1_000),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, req types.Document, actual, expected types.CompositeType) {
+			compareFunc: func(t testing.TB, req, expected, actual types.Document) {
 				db, err := req.Get("$db")
 				require.NoError(t, err)
 				if db.(string) == "monila" {
@@ -586,7 +630,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, req types.Document, actual, expected types.CompositeType) {
+			compareFunc: func(t testing.TB, _, expected, actual types.Document) {
 				actualV := testutil.GetByPath(t, actual, "cursor", "ns")
 				testutil.SetByPath(t, expected, actualV, "cursor", "ns")
 				assert.Equal(t, expected, actual)
@@ -603,7 +647,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"log", types.MakeArray(2),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, _ types.Document, actual, expected types.CompositeType) {
+			compareFunc: func(t testing.TB, _ types.Document, actual, expected types.Document) {
 				// Just testing "ok" response, not the body of the response
 				actualV := testutil.GetByPath(t, actual, "log")
 				testutil.SetByPath(t, expected, actualV, "log")
@@ -629,7 +673,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"commands", types.MustMakeDocument(),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, _ types.Document, actual, expected types.CompositeType) {
+			compareFunc: func(t testing.TB, _ types.Document, actual, expected types.Document) {
 				actualV := testutil.GetByPath(t, actual, "commands")
 				testutil.SetByPath(t, expected, actualV, "commands")
 				assert.Equal(t, expected, actual)
@@ -652,7 +696,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"readOnly", false,
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, _ types.Document, actual, expected types.CompositeType) {
+			compareFunc: func(t testing.TB, _ types.Document, actual, expected types.Document) {
 				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "localTime")
 				assert.Equal(t, expected, actual)
 			},
@@ -673,7 +717,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"readOnly", false,
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, _ types.Document, actual, expected types.CompositeType) {
+			compareFunc: func(t testing.TB, _ types.Document, actual, expected types.Document) {
 				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "localTime")
 				assert.Equal(t, expected, actual)
 			},
@@ -697,7 +741,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, _ types.Document, actual, expected types.CompositeType) {
+			compareFunc: func(t testing.TB, _ types.Document, actual, expected types.Document) {
 				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "system", "currentTime")
 				assert.Equal(t, expected, actual)
 			},

@@ -19,6 +19,10 @@ import (
 	"runtime/debug"
 	"strconv"
 	"strings"
+
+	"golang.org/x/exp/slices"
+
+	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 //go:generate ./generate.sh
@@ -32,10 +36,12 @@ var (
 )
 
 type Info struct {
-	Version string
-	Commit  string
-	Branch  string
-	Dirty   bool
+	Version          string
+	Commit           string
+	Branch           string
+	Dirty            bool
+	Debug            bool // testcover or -race
+	BuildEnvironment types.Document
 }
 
 var info *Info
@@ -55,12 +61,22 @@ func init() {
 		return
 	}
 
+	info.BuildEnvironment = types.MustMakeDocument()
 	for _, s := range buildInfo.Settings {
+		info.BuildEnvironment.Set(s.Key, s.Value)
 		switch s.Key {
 		case "vcs.revision":
 			info.Commit = s.Value
 		case "vcs.modified":
 			info.Dirty, _ = strconv.ParseBool(s.Value)
+		case "-race":
+			if raceEnabled, _ := strconv.ParseBool(s.Value); raceEnabled {
+				info.Debug = true
+			}
+		case "-tags":
+			if slices.Contains(strings.Split(s.Value, ","), "testcover") {
+				info.Debug = true
+			}
 		}
 	}
 }

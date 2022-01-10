@@ -55,6 +55,11 @@ var commands = map[string]command{
 		help:    "Creates the collection.",
 		handler: (*Handler).MsgCreate,
 	},
+	"datasize": {
+		name:    "dataSize",
+		help:    "Returns the size of the collection in bytes.",
+		handler: (*Handler).MsgDataSize,
+	},
 	"dbstats": {
 		name:    "dbStats",
 		help:    "Returns the statistics of the database.",

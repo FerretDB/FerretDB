@@ -23,6 +23,8 @@ type Array struct {
 	s []any
 }
 
+func (*Array) sealed() {}
+
 // MakeArray creates an empty array with set capacity.
 func MakeArray(capacity int) *Array {
 	if capacity == 0 {
@@ -121,8 +123,3 @@ func (a *Array) Append(values ...any) error {
 	a.s = append(a.s, values...)
 	return nil
 }
-
-// check interfaces
-var (
-	_ CompositeType = (*Array)(nil)
-)
