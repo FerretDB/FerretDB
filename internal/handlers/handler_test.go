@@ -29,7 +29,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handlers/jsonb1"
-	"github.com/FerretDB/FerretDB/internal/handlers/shared"
 	"github.com/FerretDB/FerretDB/internal/handlers/sql"
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -48,13 +47,12 @@ func setup(t *testing.T, poolOpts *testutil.PoolOpts) (context.Context, *Handler
 	ctx := testutil.Ctx(t)
 	pool := testutil.Pool(ctx, t, poolOpts)
 	l := zaptest.NewLogger(t)
-	shared := shared.NewHandler(pool, "127.0.0.1:12345")
 	sql := sql.NewStorage(pool, l.Sugar())
 	jsonb1 := jsonb1.NewStorage(pool, l)
 	handler := New(&NewOpts{
 		PgPool:        pool,
 		Logger:        l,
-		SharedHandler: shared,
+		PeerAddr:      "127.0.0.1:12345",
 		SQLStorage:    sql,
 		JSONB1Storage: jsonb1,
 		Metrics:       NewMetrics(),
@@ -665,6 +663,21 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"version", "5.0.42",
 				"ok", float64(1),
 			),
+		},
+
+		"ListCommands": {
+			req: types.MustMakeDocument(
+				"listCommands", int32(1),
+			),
+			resp: types.MustMakeDocument(
+				"commands", types.MustMakeDocument(),
+				"ok", float64(1),
+			),
+			compareFunc: func(t testing.TB, _ types.Document, actual, expected types.Document) {
+				actualV := testutil.GetByPath(t, actual, "commands")
+				testutil.SetByPath(t, expected, actualV, "commands")
+				assert.Equal(t, expected, actual)
+			},
 		},
 
 		"IsMaster": {

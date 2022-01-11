@@ -12,46 +12,47 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package shared
+package handlers
 
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgDropDatabase removes the current database.
-func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// MsgCollStats returns a set of statistics for a collection.
+func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	m := document.Map()
+	collection := m["collStats"].(string)
 	db, ok := m["$db"].(string)
-	if !ok || db == "" {
+	if !ok {
 		return nil, lazyerrors.New("no db")
 	}
 
-	res := types.MustMakeDocument()
-	err = h.pgPool.DropSchema(ctx, db)
-	switch err {
-	case nil:
-		res.Set("dropped", db)
-	case pg.ErrNotExist:
-		// nothing
-	default:
+	stats, err := h.pgPool.TableStats(ctx, db, collection)
+	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	res.Set("ok", float64(1))
-
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{res},
+		Documents: []types.Document{types.MustMakeDocument(
+			"ns", db+"."+collection,
+			"count", stats.Rows,
+			"size", stats.SizeTotal,
+			"storageSize", stats.SizeTable,
+			"totalIndexSize", stats.SizeIndexes,
+			"totalSize", stats.SizeTotal,
+			"scaleFactor", int32(1),
+			"ok", float64(1),
+		)},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)

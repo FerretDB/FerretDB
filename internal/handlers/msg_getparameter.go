@@ -12,36 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package shared
+package handlers
 
 import (
 	"context"
-	"time"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgHello returns a document that describes the role of the instance.
-func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// MsgGetParameter OpMsg used to get parameter.
+func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 	err := reply.SetSections(wire.OpMsgSection{
-		// TODO merge with QueryCmd
 		Documents: []types.Document{types.MustMakeDocument(
-			"helloOk", true,
-			"ismaster", true,
-			// topologyVersion
-			"maxBsonObjectSize", int32(bson.MaxDocumentLen),
-			"maxMessageSizeBytes", int32(wire.MaxMsgLen),
-			"maxWriteBatchSize", int32(100000),
-			"localTime", time.Now(),
-			// logicalSessionTimeoutMinutes
-			// connectionId
-			"minWireVersion", int32(13),
-			"maxWireVersion", int32(13),
-			"readOnly", false,
+			"version", versionValue,
 			"ok", float64(1),
 		)},
 	})
