@@ -101,6 +101,8 @@ jobs:
       - name: Run linters manually
         run: make lint
 
+      # TODO don't forget to run go-consistent when we switch back to golangci/golangci-lint-action
+
       - name: Check dirty
         run: |
           git status

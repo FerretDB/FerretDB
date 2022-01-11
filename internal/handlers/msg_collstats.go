@@ -12,36 +12,45 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package shared
+package handlers
 
 import (
 	"context"
-	"time"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgHello returns a document that describes the role of the instance.
-func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// MsgCollStats returns a set of statistics for a collection.
+func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	m := document.Map()
+	collection := m["collStats"].(string)
+	db, ok := m["$db"].(string)
+	if !ok {
+		return nil, lazyerrors.New("no db")
+	}
+
+	stats, err := h.pgPool.TableStats(ctx, db, collection)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	var reply wire.OpMsg
-	err := reply.SetSections(wire.OpMsgSection{
-		// TODO merge with QueryCmd
+	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
-			"helloOk", true,
-			"ismaster", true,
-			// topologyVersion
-			"maxBsonObjectSize", int32(bson.MaxDocumentLen),
-			"maxMessageSizeBytes", int32(wire.MaxMsgLen),
-			"maxWriteBatchSize", int32(100000),
-			"localTime", time.Now(),
-			// logicalSessionTimeoutMinutes
-			// connectionId
-			"minWireVersion", int32(13),
-			"maxWireVersion", int32(13),
-			"readOnly", false,
+			"ns", db+"."+collection,
+			"count", stats.Rows,
+			"size", stats.SizeTotal,
+			"storageSize", stats.SizeTable,
+			"totalIndexSize", stats.SizeIndexes,
+			"totalSize", stats.SizeTotal,
+			"scaleFactor", int32(1),
 			"ok", float64(1),
 		)},
 	})

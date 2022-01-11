@@ -96,10 +96,18 @@ linters:
     - wrapcheck
 
     # TODO enable when goanalysis_metalinter supports generics
+    - bodyclose
+    - contextcheck
     - gosimple
+    - nilerr
+    - noctx
+    - rowserrcheck
+    - sqlclosecheck
     - staticcheck
     - stylecheck
+    - tparallel
     - unused
+    - wastedassign
 
     - golint      # deprecated
     - interfacer  # deprecated

@@ -35,7 +35,7 @@ import (
 )
 
 type bsontype interface {
-	bsontype() // seal
+	bsontype() // seal for go-sumtype
 
 	ReadFrom(*bufio.Reader) error
 	WriteTo(*bufio.Writer) error

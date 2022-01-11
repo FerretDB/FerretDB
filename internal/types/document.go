@@ -48,6 +48,8 @@ type Document struct {
 	keys []string
 }
 
+func (Document) sealed() {}
+
 // ConvertDocument converts bson.Document to types.Document and validates it.
 // It references the same data without copying it.
 func ConvertDocument(d document) (Document, error) {

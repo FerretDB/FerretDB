@@ -12,48 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package shared
+package handlers
 
 import (
 	"context"
+	"time"
 
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	m := document.Map()
-	db := m["$db"].(string)
-	scale, ok := m["scale"].(float64)
-	if !ok {
-		scale = 1
-	}
-
-	stats, err := h.pgPool.DBStats(ctx, db)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
+// MsgHello returns a document that describes the role of the instance.
+func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{
+	err := reply.SetSections(wire.OpMsgSection{
+		// TODO merge with QueryCmd
 		Documents: []types.Document{types.MustMakeDocument(
-			"db", db,
-			"collections", stats.CountTables,
-			// TODO https://github.com/FerretDB/FerretDB/issues/176
-			"views", int32(0),
-			"objects", stats.CountRows,
-			"avgObjSize", float64(stats.SizeSchema)/float64(stats.CountRows),
-			"dataSize", float64(stats.SizeSchema)/scale,
-			"indexes", stats.CountIndexes,
-			"indexSize", float64(stats.SizeIndexes)/scale,
-			"totalSize", float64(stats.SizeTotal)/scale,
-			"scaleFactor", scale,
+			"helloOk", true,
+			"ismaster", true,
+			// topologyVersion
+			"maxBsonObjectSize", int32(bson.MaxDocumentLen),
+			"maxMessageSizeBytes", int32(wire.MaxMsgLen),
+			"maxWriteBatchSize", int32(100000),
+			"localTime", time.Now(),
+			// logicalSessionTimeoutMinutes
+			// connectionId
+			"minWireVersion", int32(13),
+			"maxWireVersion", int32(13),
+			"readOnly", false,
 			"ok", float64(1),
 		)},
 	})

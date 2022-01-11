@@ -12,28 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package shared
+package handlers
 
 import (
-	"context"
+	"strings"
+	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/stretchr/testify/assert"
 )
 
-// MsgServerStatus OpMsg used to get a server status.
-func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	var reply wire.OpMsg
-	err := reply.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{types.MustMakeDocument(
-			"version", versionValue,
-			"ok", float64(1),
-		)},
+func TestCommands(t *testing.T) {
+	t.Run("Command key is all lowercase", func(t *testing.T) {
+		t.Parallel()
+		for key := range commands {
+			assert.Equal(t, key, strings.ToLower(key))
+		}
 	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
 
-	return &reply, nil
+	t.Run("Command name matches key", func(t *testing.T) {
+		t.Parallel()
+		for key, command := range commands {
+			assert.Equal(t, key, strings.ToLower(command.name))
+		}
+	})
 }
