@@ -12,46 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package shared
+package handlers
 
 import (
 	"context"
-	"os"
-	"runtime"
 	"strconv"
-	"time"
 
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
-
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/version"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgHostInfo returns an OpMsg with the host information.
-func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	now := time.Now().UTC()
-	hostname, err := os.Hostname()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+// For clients that check version.
+const versionValue = "5.0.42"
 
+// MsgBuildInfo returns an OpMsg with the build information.
+func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{
+	err := reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
-			"system", types.MustMakeDocument(
-				"currentTime", now,
-				"hostname", hostname,
-				"cpuAddrSize", int32(strconv.IntSize),
-				"numCores", int32(runtime.NumCPU()),
-				"cpuArch", runtime.GOARCH,
-				"numaEnabled", false,
-			),
-			"os", types.MustMakeDocument(
-				"type", cases.Title(language.English).String(runtime.GOOS),
-			),
+			"version", versionValue,
+			"gitVersion", version.Get().Commit,
+			"versionArray", types.MustNewArray(int32(5), int32(0), int32(42), int32(0)),
+			"bits", int32(strconv.IntSize),
+			"debug", version.Get().Debug,
+			"maxBsonObjectSize", int32(bson.MaxDocumentLen),
 			"ok", float64(1),
+			"buildEnvironment", version.Get().BuildEnvironment,
 		)},
 	})
 	if err != nil {

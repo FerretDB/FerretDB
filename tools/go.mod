@@ -2,6 +2,9 @@ module github.com/FerretDB/FerretDB/tools
 
 go 1.18
 
+// TODO remove once https://github.com/quasilyte/go-consistent/issues/38 is fixed properly
+replace github.com/quasilyte/go-consistent => github.com/AlekSi/go-consistent v0.0.0-20220110091530-6bd5f7d2362a
+
 require (
 	github.com/BurntSushi/go-sumtype v0.0.0-20190304192233-fcb4a6205bdc
 	github.com/golangci/golangci-lint v1.43.0 // sync with Go workflow
@@ -55,9 +58,9 @@ require (
 	github.com/go-toolsmith/astcopy v1.0.0 // indirect
 	github.com/go-toolsmith/astequal v1.0.1 // indirect
 	github.com/go-toolsmith/astfmt v1.0.0 // indirect
-	github.com/go-toolsmith/astinfo v0.0.0-20180906194353-9809ff7efb21 // indirect
+	github.com/go-toolsmith/astinfo v1.0.0 // indirect
 	github.com/go-toolsmith/astp v1.0.0 // indirect
-	github.com/go-toolsmith/pkgload v1.0.0 // indirect
+	github.com/go-toolsmith/pkgload v1.0.1 // indirect
 	github.com/go-toolsmith/strparse v1.0.0 // indirect
 	github.com/go-toolsmith/typep v1.0.2 // indirect
 	github.com/go-xmlfmt/xmlfmt v0.0.0-20191208150333-d5b6f63a941b // indirect

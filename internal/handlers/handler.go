@@ -16,7 +16,6 @@ package handlers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sort"
 	"sync/atomic"
@@ -24,7 +23,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/shared"
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -34,13 +32,12 @@ import (
 // Handler data struct.
 type Handler struct {
 	// TODO replace those fields with opts *NewOpts
-	pgPool  *pg.Pool
-	l       *zap.Logger
-	shared  *shared.Handler
-	sql     common.Storage
-	jsonb1  common.Storage
-	metrics *Metrics
-
+	pgPool        *pg.Pool
+	peerAddr      string
+	l             *zap.Logger
+	sql           common.Storage
+	jsonb1        common.Storage
+	metrics       *Metrics
 	lastRequestID int32
 }
 
@@ -48,21 +45,21 @@ type Handler struct {
 type NewOpts struct {
 	PgPool        *pg.Pool
 	Logger        *zap.Logger
-	SharedHandler *shared.Handler
 	SQLStorage    common.Storage
 	JSONB1Storage common.Storage
 	Metrics       *Metrics
+	PeerAddr      string
 }
 
 // New returns a new handler.
 func New(opts *NewOpts) *Handler {
 	return &Handler{
-		pgPool:  opts.PgPool,
-		l:       opts.Logger,
-		shared:  opts.SharedHandler,
-		sql:     opts.SQLStorage,
-		jsonb1:  opts.JSONB1Storage,
-		metrics: opts.Metrics,
+		pgPool:   opts.PgPool,
+		l:        opts.Logger,
+		sql:      opts.SQLStorage,
+		jsonb1:   opts.JSONB1Storage,
+		metrics:  opts.Metrics,
+		peerAddr: opts.PeerAddr,
 	}
 }
 
@@ -153,72 +150,23 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 
 	h.metrics.requests.WithLabelValues(wire.OP_MSG.String(), cmd).Inc()
 
-	switch cmd {
-	case "buildinfo":
-		return h.shared.MsgBuildInfo(ctx, msg)
-	case "collstats":
-		// This command implements the follow database methods:
-		// 	- db.collection.stats()
-		// 	- db.collection.dataSize()
-		return h.shared.MsgCollStats(ctx, msg)
-	case "create":
-		return h.shared.MsgCreate(ctx, msg)
-	case "dbstats":
-		return h.shared.MsgDBStats(ctx, msg)
-	case "drop":
-		return h.shared.MsgDrop(ctx, msg)
-	case "dropdatabase":
-		return h.shared.MsgDropDatabase(ctx, msg)
-	case "getcmdlineopts":
-		return h.shared.MsgGetCmdLineOpts(ctx, msg)
-	case "getlog":
-		return h.shared.MsgGetLog(ctx, msg)
-	case "getparameter":
-		return h.shared.MsgGetParameter(ctx, msg)
-	case "hostinfo":
-		return h.shared.MsgHostInfo(ctx, msg)
-	case "ismaster", "hello":
-		return h.shared.MsgHello(ctx, msg)
-	case "listcollections":
-		return h.shared.MsgListCollections(ctx, msg)
-	case "listdatabases":
-		return h.shared.MsgListDatabases(ctx, msg)
-	case "ping":
-		return h.shared.MsgPing(ctx, msg)
-	case "whatsmyuri":
-		return h.shared.MsgWhatsMyURI(ctx, msg)
-	case "serverstatus":
-		return h.shared.MsgServerStatus(ctx, msg)
+	if cmd == "listcommands" {
+		return SupportedCommands(ctx, msg)
+	}
 
-	case "createindexes", "delete", "find", "insert", "update", "count":
+	if cmd, ok := commands[cmd]; ok {
+		if cmd.handler != nil {
+			return cmd.handler(h, ctx, msg)
+		}
+
 		storage, err := h.msgStorage(ctx, msg)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
-
-		switch cmd {
-		case "createindexes":
-			return storage.MsgCreateIndexes(ctx, msg)
-		case "delete":
-			return storage.MsgDelete(ctx, msg)
-		case "find", "count":
-			return storage.MsgFindOrCount(ctx, msg)
-		case "insert":
-			return storage.MsgInsert(ctx, msg)
-		case "update":
-			return storage.MsgUpdate(ctx, msg)
-		default:
-			panic("not reached")
-		}
-
-	case "debug_panic":
-		panic("debug_panic")
-	case "debug_error":
-		return nil, errors.New("debug_error")
-
-	default:
-		return nil, common.NewErrorMessage(common.ErrCommandNotFound, "no such command: '%s'", cmd)
+		return cmd.storageHandler(storage, ctx, msg)
 	}
+
+	return nil, common.NewErrorMessage(common.ErrCommandNotFound, "no such command: '%s'", cmd)
 }
 
 func (h *Handler) handleOpQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
@@ -226,7 +174,7 @@ func (h *Handler) handleOpQuery(ctx context.Context, query *wire.OpQuery) (*wire
 	h.metrics.requests.WithLabelValues(wire.OP_QUERY.String(), cmd).Inc()
 
 	if query.FullCollectionName == "admin.$cmd" {
-		return h.shared.QueryCmd(ctx, query)
+		return h.QueryCmd(ctx, query)
 	}
 
 	return nil, common.NewErrorMessage(common.ErrNotImplemented, "handleOpQuery: unhandled collection %q", query.FullCollectionName)
