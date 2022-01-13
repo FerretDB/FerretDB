@@ -33,8 +33,15 @@ func (str *fjsonString) UnmarshalJSON(data []byte) error {
 		panic("null data")
 	}
 
+	r := bytes.NewReader(data)
+	dec := json.NewDecoder(r)
+	dec.DisallowUnknownFields()
+
 	var o string
-	if err := json.Unmarshal(data, &o); err != nil {
+	if err := dec.Decode(&o); err != nil {
+		return lazyerrors.Error(err)
+	}
+	if err := checkConsumed(dec, r); err != nil {
 		return lazyerrors.Error(err)
 	}
 
