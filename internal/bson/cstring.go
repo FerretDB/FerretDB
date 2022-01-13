@@ -17,7 +17,6 @@ package bson
 import (
 	"bufio"
 
-	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -57,22 +56,6 @@ func (cstr CString) MarshalBinary() ([]byte, error) {
 	b := make([]byte, len(cstr)+1)
 	copy(b, cstr)
 	return b, nil
-}
-
-// UnmarshalJSON implements bsontype interface.
-func (cstr *CString) UnmarshalJSON(data []byte) error {
-	v, err := fjson.Unmarshal(data)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	*cstr = *(toBSON(v).(*CString))
-	return nil
-}
-
-// MarshalJSON implements bsontype interface.
-func (cstr CString) MarshalJSON() ([]byte, error) {
-	return fjson.Marshal(fromBSON(&cstr))
 }
 
 // check interfaces
