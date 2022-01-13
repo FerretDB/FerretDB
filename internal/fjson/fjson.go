@@ -46,6 +46,7 @@ package fjson
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"time"
 
@@ -111,7 +112,7 @@ func fromFJSON(v fjsontype) any {
 		return types.CString(*v)
 	}
 
-	panic("not reached") // for go-sumtype to work
+	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
 }
 
 func toFJSON(v any) fjsontype {
@@ -146,7 +147,7 @@ func toFJSON(v any) fjsontype {
 		return pointer.To(CString(v))
 	}
 
-	panic("not reached")
+	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
 }
 
 // UnmarshalValue decodes the given fjson-encoded data.

@@ -27,6 +27,7 @@ import (
 	"bufio"
 	"encoding"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/AlekSi/pointer"
@@ -78,7 +79,7 @@ func fromBSON(v bsontype) any {
 		return types.CString(*v)
 	}
 
-	panic("not reached") // for go-sumtype to work
+	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
 }
 
 //nolint:deadcode // remove later if it is not needed
@@ -114,5 +115,5 @@ func toBSON(v any) bsontype {
 		return pointer.To(CString(v))
 	}
 
-	panic("not reached")
+	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
 }

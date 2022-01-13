@@ -109,7 +109,7 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
 
 				if tc.jErr == "" {
 					require.NoError(t, err)
-					assertEqualWithNaN(t, tc.v, toFJSON(v))
+					assertEqualWithNaN(t, tc.v, v)
 					return
 				}
 
