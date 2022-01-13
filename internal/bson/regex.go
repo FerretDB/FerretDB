@@ -79,12 +79,12 @@ func (regex Regex) MarshalBinary() ([]byte, error) {
 
 // UnmarshalJSON implements bsontype interface.
 func (regex *Regex) UnmarshalJSON(data []byte) error {
-	var regexJ fjson.Regex
-	if err := regexJ.UnmarshalJSON(data); err != nil {
-		return err
+	v, err := fjson.Unmarshal(data)
+	if err != nil {
+		return lazyerrors.Error(err)
 	}
 
-	*regex = Regex(regexJ)
+	*regex = *(toBSON(v).(*Regex))
 	return nil
 }
 

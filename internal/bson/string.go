@@ -80,12 +80,12 @@ func (str String) MarshalBinary() ([]byte, error) {
 
 // UnmarshalJSON implements bsontype interface.
 func (str *String) UnmarshalJSON(data []byte) error {
-	var strJ fjson.String
-	if err := strJ.UnmarshalJSON(data); err != nil {
-		return err
+	v, err := fjson.Unmarshal(data)
+	if err != nil {
+		return lazyerrors.Error(err)
 	}
 
-	*str = String(strJ)
+	*str = *(toBSON(v).(*String))
 	return nil
 }
 

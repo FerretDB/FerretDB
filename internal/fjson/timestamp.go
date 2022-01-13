@@ -22,18 +22,18 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// Timestamp represents BSON Timestamp data type.
-type Timestamp types.Timestamp
+// fjsonTimestamp represents BSON fjsonTimestamp data type.
+type fjsonTimestamp types.Timestamp
 
 // fjsontype implements fjsontype interface.
-func (ts *Timestamp) fjsontype() {}
+func (ts *fjsonTimestamp) fjsontype() {}
 
 type timestampJSON struct {
 	T uint64 `json:"$t,string"`
 }
 
 // UnmarshalJSON implements fjsontype interface.
-func (ts *Timestamp) UnmarshalJSON(data []byte) error {
+func (ts *fjsonTimestamp) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -50,12 +50,12 @@ func (ts *Timestamp) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	*ts = Timestamp(o.T)
+	*ts = fjsonTimestamp(o.T)
 	return nil
 }
 
 // MarshalJSON implements fjsontype interface.
-func (ts *Timestamp) MarshalJSON() ([]byte, error) {
+func (ts *fjsonTimestamp) MarshalJSON() ([]byte, error) {
 	res, err := json.Marshal(timestampJSON{
 		T: uint64(*ts),
 	})
@@ -67,5 +67,5 @@ func (ts *Timestamp) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ fjsontype = (*Timestamp)(nil)
+	_ fjsontype = (*fjsonTimestamp)(nil)
 )

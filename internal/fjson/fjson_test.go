@@ -37,9 +37,9 @@ type testCase struct {
 func assertEqualWithNaN(t testing.TB, expected, actual any) {
 	t.Helper()
 
-	if expectedD, ok := expected.(*Double); ok {
+	if expectedD, ok := expected.(*double); ok {
 		require.IsType(t, expected, actual)
-		actualD := actual.(*Double)
+		actualD := actual.(*double)
 		if math.IsNaN(float64(*expectedD)) {
 			assert.True(t, math.IsNaN(float64(*actualD)))
 			return

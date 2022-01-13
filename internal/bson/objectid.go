@@ -61,12 +61,12 @@ func (obj ObjectID) MarshalBinary() ([]byte, error) {
 
 // UnmarshalJSON implements bsontype interface.
 func (obj *ObjectID) UnmarshalJSON(data []byte) error {
-	var objJ fjson.ObjectID
-	if err := objJ.UnmarshalJSON(data); err != nil {
-		return err
+	v, err := fjson.Unmarshal(data)
+	if err != nil {
+		return lazyerrors.Error(err)
 	}
 
-	*obj = ObjectID(objJ)
+	*obj = *(toBSON(v).(*ObjectID))
 	return nil
 }
 
