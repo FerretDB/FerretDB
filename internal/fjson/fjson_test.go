@@ -96,20 +96,14 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
 				require.Equal(t, tc.jErr, lastErr(err).Error())
 			})
 
-			t.Run("UnmarshalValue", func(t *testing.T) {
-				if tc.jErr != "" {
-					t.Skip("tc.jErr is not empty")
-				}
-
+			t.Run("Unmarshal", func(t *testing.T) {
 				t.Parallel()
 
-				v, err := UnmarshalValue([]byte(tc.j))
-				require.NoError(t, err)
-				v = toFJSON(v)
+				v, err := Unmarshal([]byte(tc.j))
 
 				if tc.jErr == "" {
 					require.NoError(t, err)
-					assertEqualWithNaN(t, tc.v, v)
+					assertEqualWithNaN(t, tc.v, toFJSON(v))
 					return
 				}
 

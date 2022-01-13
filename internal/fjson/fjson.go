@@ -56,6 +56,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// fjsontype is a type that can be marshaled to/from FJSON.
 type fjsontype interface {
 	fjsontype() // seal for go-sumtype
 
@@ -80,6 +81,7 @@ func checkConsumed(dec *json.Decoder, r *bytes.Reader) error {
 	return nil
 }
 
+// fromFJSON converts fjsontype value to matching built-in or types' package value.
 func fromFJSON(v fjsontype) any {
 	switch v := v.(type) {
 	case *Document:
@@ -115,6 +117,7 @@ func fromFJSON(v fjsontype) any {
 	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
 }
 
+// toFJSON converts built-in or types' package value to fjsontype value.
 func toFJSON(v any) fjsontype {
 	switch v := v.(type) {
 	case types.Document:
@@ -150,8 +153,8 @@ func toFJSON(v any) fjsontype {
 	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
 }
 
-// UnmarshalValue decodes the given fjson-encoded data.
-func UnmarshalValue(data []byte) (any, error) {
+// Unmarshal decodes the given fjson-encoded data.
+func Unmarshal(data []byte) (any, error) {
 	var v any
 	r := bytes.NewReader(data)
 	dec := json.NewDecoder(r)
@@ -229,7 +232,7 @@ func UnmarshalValue(data []byte) (any, error) {
 	return fromFJSON(res), nil
 }
 
-// Marshal encodes given value into fjson.
+// Marshal encodes given built-in or types' package value into fjson.
 func Marshal(v any) ([]byte, error) {
 	if v == nil {
 		return []byte("null"), nil

@@ -63,12 +63,12 @@ func (i Int64) MarshalBinary() ([]byte, error) {
 
 // UnmarshalJSON implements bsontype interface.
 func (i *Int64) UnmarshalJSON(data []byte) error {
-	var iJ fjson.Int64
-	if err := iJ.UnmarshalJSON(data); err != nil {
-		return err
+	v, err := fjson.Unmarshal(data)
+	if err != nil {
+		return lazyerrors.Error(err)
 	}
 
-	*i = Int64(iJ)
+	*i = *(toBSON(v).(*Int64))
 	return nil
 }
 
