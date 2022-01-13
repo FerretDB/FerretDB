@@ -22,14 +22,14 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// Document represents BSON Document data type.
-type Document types.Document
+// document represents BSON document data type.
+type document types.Document
 
 // fjsontype implements fjsontype interface.
-func (doc *Document) fjsontype() {}
+func (doc *document) fjsontype() {}
 
 // UnmarshalJSON implements fjsontype interface.
-func (doc *Document) UnmarshalJSON(data []byte) error {
+func (doc *document) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -73,12 +73,12 @@ func (doc *Document) UnmarshalJSON(data []byte) error {
 		}
 	}
 
-	*doc = Document(td)
+	*doc = document(td)
 	return nil
 }
 
 // MarshalJSON implements fjsontype interface.
-func (doc *Document) MarshalJSON() ([]byte, error) {
+func (doc *document) MarshalJSON() ([]byte, error) {
 	td := types.Document(*doc)
 
 	var buf bytes.Buffer
@@ -117,5 +117,5 @@ func (doc *Document) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ fjsontype = (*Document)(nil)
+	_ fjsontype = (*document)(nil)
 )

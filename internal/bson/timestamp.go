@@ -64,12 +64,12 @@ func (ts Timestamp) MarshalBinary() ([]byte, error) {
 
 // UnmarshalJSON implements bsontype interface.
 func (ts *Timestamp) UnmarshalJSON(data []byte) error {
-	var tsJ fjson.Timestamp
-	if err := tsJ.UnmarshalJSON(data); err != nil {
-		return err
+	v, err := fjson.Unmarshal(data)
+	if err != nil {
+		return lazyerrors.Error(err)
 	}
 
-	*ts = Timestamp(tsJ)
+	*ts = *(toBSON(v).(*Timestamp))
 	return nil
 }
 

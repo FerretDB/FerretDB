@@ -418,17 +418,12 @@ func (doc Document) MarshalBinary() ([]byte, error) {
 
 // UnmarshalJSON implements bsontype interface.
 func (doc *Document) UnmarshalJSON(data []byte) error {
-	var docJ fjson.Document
-	if err := docJ.UnmarshalJSON(data); err != nil {
-		return err
-	}
-
-	d, err := ConvertDocument(types.Document(docJ))
+	v, err := fjson.Unmarshal(data)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	*doc = *d
+	*doc = *(toBSON(v).(*Document))
 	return nil
 }
 

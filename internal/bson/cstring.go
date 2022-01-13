@@ -61,12 +61,12 @@ func (cstr CString) MarshalBinary() ([]byte, error) {
 
 // UnmarshalJSON implements bsontype interface.
 func (cstr *CString) UnmarshalJSON(data []byte) error {
-	var cstrJ fjson.CString
-	if err := cstrJ.UnmarshalJSON(data); err != nil {
-		return err
+	v, err := fjson.Unmarshal(data)
+	if err != nil {
+		return lazyerrors.Error(err)
 	}
 
-	*cstr = CString(cstrJ)
+	*cstr = *(toBSON(v).(*CString))
 	return nil
 }
 

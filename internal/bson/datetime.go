@@ -73,12 +73,12 @@ func (dt DateTime) MarshalBinary() ([]byte, error) {
 
 // UnmarshalJSON implements bsontype interface.
 func (dt *DateTime) UnmarshalJSON(data []byte) error {
-	var dtJ fjson.DateTime
-	if err := dtJ.UnmarshalJSON(data); err != nil {
-		return err
+	v, err := fjson.Unmarshal(data)
+	if err != nil {
+		return lazyerrors.Error(err)
 	}
 
-	*dt = DateTime(dtJ)
+	*dt = *(toBSON(v).(*DateTime))
 	return nil
 }
 
