@@ -101,6 +101,8 @@ jobs:
       - name: Run linters manually
         run: make lint
 
+      # TODO don't forget to run go-consistent when we switch back to golangci/golangci-lint-action
+
       - name: Check dirty
         run: |
           git status
@@ -128,14 +130,14 @@ jobs:
       - name: Init fuzzers
         run: make fuzz-init
 
+      # TODO https://github.com/FerretDB/FerretDB/issues/238
       - name: Run fuzzers
         run: make fuzz-short
-        continue-on-error: true # FIXME
         env:
-          GOMAXPROCS: 2 # otherwise, oom-killer kills fuzzer too often
+          GOMAXPROCS: 1 # otherwise, oom-killer kills fuzzer too often
 
       - name: Collect Linux logs
-        # if: failure() FIXME
+        if: failure()
         run: |
           mkdir -p /tmp/logs
           ls -al /var/log/
@@ -144,7 +146,7 @@ jobs:
           sudo chmod 0666 /tmp/logs/*
 
       - name: Upload Linux logs
-        # if: failure() FIXME
+        if: failure()
         uses: actions/upload-artifact@v2
         with:
           name: linux-logs

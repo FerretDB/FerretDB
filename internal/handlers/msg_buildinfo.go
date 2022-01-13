@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package shared
+package handlers
 
 import (
 	"context"
@@ -37,8 +37,10 @@ func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			"gitVersion", version.Get().Commit,
 			"versionArray", types.MustNewArray(int32(5), int32(0), int32(42), int32(0)),
 			"bits", int32(strconv.IntSize),
+			"debug", version.Get().Debug,
 			"maxBsonObjectSize", int32(bson.MaxDocumentLen),
 			"ok", float64(1),
+			"buildEnvironment", version.Get().BuildEnvironment,
 		)},
 	})
 	if err != nil {

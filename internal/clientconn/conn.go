@@ -28,7 +28,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/jsonb1"
 	"github.com/FerretDB/FerretDB/internal/handlers/proxy"
-	"github.com/FerretDB/FerretDB/internal/handlers/shared"
 	"github.com/FerretDB/FerretDB/internal/handlers/sql"
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -77,7 +76,6 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	l := zap.L().Named(prefix)
 
 	peerAddr := opts.netConn.RemoteAddr().String()
-	shared := shared.NewHandler(opts.pgPool, peerAddr)
 	sqlH := sql.NewStorage(opts.pgPool, l.Sugar())
 	jsonb1H := jsonb1.NewStorage(opts.pgPool, l)
 
@@ -92,7 +90,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	handlerOpts := &handlers.NewOpts{
 		PgPool:        opts.pgPool,
 		Logger:        l,
-		SharedHandler: shared,
+		PeerAddr:      peerAddr,
 		SQLStorage:    sqlH,
 		JSONB1Storage: jsonb1H,
 		Metrics:       opts.handlersMetrics,

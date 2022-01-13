@@ -24,10 +24,10 @@
 //
 // JSON mapping for storage
 //
-// Composite types
+// Composite/pointer types
 //  Document:   {"$k": ["<key 1>", "<key 2>", ...], "<key 1>": <value 1>, "<key 2>": <value 2>, ...}
 //  Array:      JSON array
-// Value types
+// Scalar/value types
 //  Double:     {"$f": JSON number} or {"$f": "Infinity|-Infinity|NaN"}
 //  String:     JSON string
 //  Binary:     {"$b": "<base 64 string>", "s": <subtype number>}
@@ -56,7 +56,7 @@ import (
 )
 
 type fjsontype interface {
-	fjsontype() // seal
+	fjsontype() // seal for go-sumtype
 
 	json.Unmarshaler
 	json.Marshaler

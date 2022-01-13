@@ -135,6 +135,10 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 				return lazyerrors.Error(err)
 			}
 
+			if secSize < 5 {
+				return lazyerrors.Errorf("wire.OpMsg.readFrom: invalid kind 1 section length %d", secSize)
+			}
+
 			sec := make([]byte, secSize-4)
 			if n, err := io.ReadFull(bufr, sec); err != nil {
 				return lazyerrors.Errorf("expected %d, read %d: %w", len(sec), n, err)

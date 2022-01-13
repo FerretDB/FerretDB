@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package shared
+package handlers
 
 import (
 	"context"
@@ -22,35 +22,12 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgCollStats returns a set of statistics for a collection.
-func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	m := document.Map()
-	collection := m[document.Command()].(string)
-	db, ok := m["$db"].(string)
-	if !ok {
-		return nil, lazyerrors.New("no db")
-	}
-
-	stats, err := h.pgPool.TableStats(ctx, db, collection)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
+// MsgWhatsMyURI is an internal command, returns the peerAddress of the handler.
+func (h *Handler) MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{
+	err := reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
-			"ns", db+"."+collection,
-			"count", stats.Rows,
-			"size", stats.SizeTotal,
-			"storageSize", stats.SizeTable,
-			"totalIndexSize", stats.SizeIndexes,
-			"totalSize", stats.SizeTotal,
-			"scaleFactor", int64(1),
+			"you", h.peerAddr,
 			"ok", float64(1),
 		)},
 	})

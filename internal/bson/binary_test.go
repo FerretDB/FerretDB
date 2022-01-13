@@ -48,6 +48,10 @@ var binaryTestCases = []testCase{{
 		B:       []byte("foo"),
 	},
 	b: []byte{0x03, 0x00, 0x00, 0x00, 0x80, 0x66, 0x6f, 0x6f},
+}, {
+	name: "EOF",
+	b:    []byte{0x00},
+	bErr: `unexpected EOF`,
 }}
 
 func TestBinary(t *testing.T) {

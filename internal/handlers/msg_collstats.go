@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package shared
+package handlers
 
 import (
 	"context"
@@ -22,12 +22,35 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgGetParameter OpMsg used to get parameter.
-func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// MsgCollStats returns a set of statistics for a collection.
+func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	m := document.Map()
+	collection := m["collStats"].(string)
+	db, ok := m["$db"].(string)
+	if !ok {
+		return nil, lazyerrors.New("no db")
+	}
+
+	stats, err := h.pgPool.TableStats(ctx, db, collection)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	var reply wire.OpMsg
-	err := reply.SetSections(wire.OpMsgSection{
+	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
-			"version", versionValue,
+			"ns", db+"."+collection,
+			"count", stats.Rows,
+			"size", stats.SizeTotal,
+			"storageSize", stats.SizeTable,
+			"totalIndexSize", stats.SizeIndexes,
+			"totalSize", stats.SizeTotal,
+			"scaleFactor", int32(1),
 			"ok", float64(1),
 		)},
 	})

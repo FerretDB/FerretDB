@@ -44,7 +44,7 @@ func TestInt32(t *testing.T) {
 	testJSON(t, int32TestCases, func() fjsontype { return new(Int32) })
 }
 
-func FuzzInt32JSON(f *testing.F) {
+func FuzzInt32(f *testing.F) {
 	fuzzJSON(f, int32TestCases, func() fjsontype { return new(Int32) })
 }
 

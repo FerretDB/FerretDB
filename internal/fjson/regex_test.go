@@ -28,6 +28,10 @@ var regexTestCases = []testCase{{
 	name: "empty",
 	v:    pointer.To(Regex{Pattern: "", Options: ""}),
 	j:    `{"$r":"","o":""}`,
+}, {
+	name: "EOF",
+	j:    `{`,
+	jErr: `unexpected EOF`,
 }}
 
 func TestRegex(t *testing.T) {

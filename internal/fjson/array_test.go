@@ -41,6 +41,10 @@ var arrayTestCases = []testCase{{
 		nil,
 	)),
 	j: `[[],{"$b":"Qg==","s":128},true,{"$d":1627378542123},{"$k":[]},{"$f":42.13},42,{"$l":"42"},"foo",null]`,
+}, {
+	name: "EOF",
+	j:    `[`,
+	jErr: `unexpected EOF`,
 }}
 
 func TestArray(t *testing.T) {
@@ -48,7 +52,7 @@ func TestArray(t *testing.T) {
 	testJSON(t, arrayTestCases, func() fjsontype { return new(Array) })
 }
 
-func FuzzArrayJSON(f *testing.F) {
+func FuzzArray(f *testing.F) {
 	fuzzJSON(f, arrayTestCases, func() fjsontype { return new(Array) })
 }
 

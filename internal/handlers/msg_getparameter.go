@@ -12,46 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package shared
+package handlers
 
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgDropDatabase removes the current database.
-func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	m := document.Map()
-	db, ok := m["$db"].(string)
-	if !ok || db == "" {
-		return nil, lazyerrors.New("no db")
-	}
-
-	res := types.MustMakeDocument()
-	err = h.pgPool.DropSchema(ctx, db)
-	switch err {
-	case nil:
-		res.Set("dropped", db)
-	case pg.ErrNotExist:
-		// nothing
-	default:
-		return nil, lazyerrors.Error(err)
-	}
-
-	res.Set("ok", float64(1))
-
+// MsgGetParameter OpMsg used to get parameter.
+func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{res},
+	err := reply.SetSections(wire.OpMsgSection{
+		Documents: []types.Document{types.MustMakeDocument(
+			"version", versionValue,
+			"ok", float64(1),
+		)},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)

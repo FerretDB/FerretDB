@@ -26,6 +26,11 @@ func isValidKey(key string) bool {
 		return false
 	}
 
+	// forbid $k, but allow $db
+	if key[0] == '$' && len(key) <= 2 {
+		return false
+	}
+
 	return utf8.ValidString(key)
 }
 
@@ -42,6 +47,8 @@ type Document struct {
 	m    map[string]any
 	keys []string
 }
+
+func (Document) sealed() {}
 
 // ConvertDocument converts bson.Document to types.Document and validates it.
 // It references the same data without copying it.

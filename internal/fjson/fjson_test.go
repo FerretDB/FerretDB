@@ -33,6 +33,33 @@ type testCase struct {
 	jErr   string // unwrapped
 }
 
+// assertEqualWithNaN is assert.Equal that also can compare NaNs.
+func assertEqualWithNaN(t testing.TB, expected, actual any) {
+	t.Helper()
+
+	if expectedD, ok := expected.(*Double); ok {
+		require.IsType(t, expected, actual)
+		actualD := actual.(*Double)
+		if math.IsNaN(float64(*expectedD)) {
+			assert.True(t, math.IsNaN(float64(*actualD)))
+			return
+		}
+	}
+
+	assert.Equal(t, expected, actual, "expected: %s\nactual  : %s", expected, actual)
+}
+
+// lastErr returns the last error in error chain.
+func lastErr(err error) error {
+	for {
+		e := errors.Unwrap(err)
+		if e == nil {
+			return err
+		}
+		err = e
+	}
+}
+
 func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
 	for _, tc := range testCases {
 		tc := tc
@@ -42,13 +69,15 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
 
 			t.Parallel()
 
-			var dst bytes.Buffer
-			require.NoError(t, json.Compact(&dst, []byte(tc.j)))
-			require.Equal(t, tc.j, dst.String(), "j should be compacted")
-			if tc.canonJ != "" {
-				dst.Reset()
-				require.NoError(t, json.Compact(&dst, []byte(tc.canonJ)))
-				require.Equal(t, tc.canonJ, dst.String(), "canonJ should be compacted")
+			if tc.jErr == "" {
+				var dst bytes.Buffer
+				require.NoError(t, json.Compact(&dst, []byte(tc.j)))
+				require.Equal(t, tc.j, dst.String(), "j should be compacted")
+				if tc.canonJ != "" {
+					dst.Reset()
+					require.NoError(t, json.Compact(&dst, []byte(tc.canonJ)))
+					require.Equal(t, tc.canonJ, dst.String(), "canonJ should be compacted")
+				}
 			}
 
 			t.Run("UnmarshalJSON", func(t *testing.T) {
@@ -59,27 +88,12 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
 
 				if tc.jErr == "" {
 					require.NoError(t, err)
-
-					if d, ok := tc.v.(*Double); ok && math.IsNaN(float64(*d)) {
-						// NaN != NaN, do special handling
-						d, ok = v.(*Double)
-						require.True(t, ok, "%#v", v)
-						assert.True(t, math.IsNaN(float64(*d)))
-					} else {
-						assert.Equal(t, tc.v, v, "expected: %s\nactual  : %s", tc.v, v)
-					}
+					assertEqualWithNaN(t, tc.v, v)
 					return
 				}
 
 				require.Error(t, err)
-				for {
-					e := errors.Unwrap(err)
-					if e == nil {
-						break
-					}
-					err = e
-				}
-				require.Equal(t, tc.jErr, err.Error())
+				require.Equal(t, tc.jErr, lastErr(err).Error())
 			})
 
 			t.Run("UnmarshalValue", func(t *testing.T) {
@@ -93,18 +107,21 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
 				require.NoError(t, err)
 				v = toFJSON(v)
 
-				if d, ok := tc.v.(*Double); ok && math.IsNaN(float64(*d)) {
-					// NaN != NaN, do special handling
-					d, ok = v.(*Double)
-					require.True(t, ok)
-					assert.True(t, math.IsNaN(float64(*d)))
-				} else {
-					assert.Equal(t, tc.v, v, "expected: %s\nactual  : %s", tc.v, v)
-					assert.Equal(t, tc.v, v)
+				if tc.jErr == "" {
+					require.NoError(t, err)
+					assertEqualWithNaN(t, tc.v, toFJSON(v))
+					return
 				}
+
+				require.Error(t, err)
+				require.Equal(t, tc.jErr, lastErr(err).Error())
 			})
 
 			t.Run("MarshalJSON", func(t *testing.T) {
+				if tc.v == nil {
+					t.Skip("v is nil")
+				}
+
 				t.Parallel()
 
 				actualJ, err := tc.v.MarshalJSON()
@@ -117,6 +134,10 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
 			})
 
 			t.Run("Marshal", func(t *testing.T) {
+				if tc.v == nil {
+					t.Skip("v is nil")
+				}
+
 				t.Parallel()
 
 				actualJ, err := Marshal(fromFJSON(tc.v))
@@ -168,14 +189,7 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() fjsontype) {
 			actualV := newFunc()
 			err := actualV.UnmarshalJSON([]byte(j))
 			require.NoError(t, err)
-			if d, ok := v.(*Double); ok && math.IsNaN(float64(*d)) {
-				// NaN != NaN, do special handling
-				d, ok = actualV.(*Double)
-				assert.True(t, ok)
-				assert.True(t, math.IsNaN(float64(*d)))
-			} else {
-				assert.Equal(t, v, actualV, "expected: %s\nactual  : %s", v, actualV)
-			}
+			assertEqualWithNaN(t, v, actualV)
 		}
 	})
 }
@@ -200,8 +214,14 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() fjsontype) {
 
 				b.StopTimer()
 
-				assert.NoError(b, err)
-				assert.Equal(b, tc.v, v)
+				if tc.jErr == "" {
+					require.NoError(b, err)
+					assertEqualWithNaN(b, tc.v, v)
+					return
+				}
+
+				require.Error(b, err)
+				require.Equal(b, tc.jErr, lastErr(err).Error())
 			})
 		})
 	}
