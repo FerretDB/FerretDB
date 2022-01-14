@@ -18,7 +18,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
-	"encoding/json"
+	"fmt"
 	"io"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -40,10 +40,6 @@ const (
 	OP_COMPRESSED   = OpCode(2012) // OP_COMPRESSED
 	OP_MSG          = OpCode(2013) // OP_MSG
 )
-
-func (i OpCode) MarshalJSON() ([]byte, error) {
-	return []byte(`"` + i.String() + `"`), nil
-}
 
 // MsgHeader in general, each message consists of a standard message header followed by request-specific data.
 type MsgHeader struct {
@@ -104,7 +100,20 @@ func (msg *MsgHeader) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// String returns a string representation for logging.
+func (msg *MsgHeader) String() string {
+	if msg == nil {
+		return "<nil>"
+	}
+
+	return fmt.Sprintf(
+		"length: %5d, id: %4d, response_to: %4d, opcode: %s",
+		msg.MessageLength, msg.RequestID, msg.ResponseTo, msg.OpCode,
+	)
+}
+
 // check interfaces
 var (
-	_ json.Marshaler = OpCode(0)
+	_ fmt.Stringer = OpCode(0)
+	_ fmt.Stringer = (*MsgHeader)(nil)
 )

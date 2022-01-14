@@ -23,8 +23,6 @@ type Array struct {
 	s []any
 }
 
-func (*Array) sealed() {}
-
 // MakeArray creates an empty array with set capacity.
 func MakeArray(capacity int) *Array {
 	if capacity == 0 {
