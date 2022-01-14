@@ -42,7 +42,7 @@ $ git remote add origin git@github.com:<YOUR_GITHUB_USERNAME>/FerretDB.git
 
 You can see all available "make" commands with `make help`.
 
-## Code overview
+## Code Overview
 
 Package `cmd` provides commands implementation. `ferretdb` is the main FerretDB binary; others are tools for development.
 
