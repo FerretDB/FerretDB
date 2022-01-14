@@ -76,7 +76,7 @@ func handle(ctx context.Context, t *testing.T, handler *Handler, req types.Docum
 	require.NoError(t, err)
 
 	_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
-	require.False(t, closeConn, "%s", wire.DumpMsgBody(resBody))
+	require.False(t, closeConn, "%s", resBody.String())
 
 	actual, err := resBody.(*wire.OpMsg).Document()
 	require.NoError(t, err)

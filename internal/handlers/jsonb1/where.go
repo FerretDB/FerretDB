@@ -17,7 +17,7 @@ package jsonb1
 import (
 	"strings"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
+	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -36,7 +36,7 @@ func scalar(v any, p *pg.Placeholder) (sql string, args []any, err error) {
 	case types.ObjectID:
 		sql = p.Next()
 		var b []byte
-		if b, err = bson.ObjectID(v).MarshalJSON(); err != nil {
+		if b, err = fjson.Marshal(v); err != nil {
 			err = lazyerrors.Errorf("scalar: %w", err)
 			return
 		}

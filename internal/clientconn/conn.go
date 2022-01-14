@@ -157,8 +157,8 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 		// do not spend time dumping if we are not going to log it
 		if c.l.Desugar().Core().Enabled(zap.DebugLevel) {
-			c.l.Debugf("Request header:\n%s", wire.DumpMsgHeader(reqHeader))
-			c.l.Debugf("Request message:\n%s\n\n\n", wire.DumpMsgBody(reqBody))
+			c.l.Debugf("Request header: %s", reqHeader)
+			c.l.Debugf("Request message:\n%s\n\n\n", reqBody)
 		}
 
 		// handle request unless we are in proxy mode
@@ -170,8 +170,8 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 			// do not spend time dumping if we are not going to log it
 			if c.l.Desugar().Core().Enabled(zap.DebugLevel) {
-				c.l.Debugf("Response header:\n%s", wire.DumpMsgHeader(resHeader))
-				c.l.Debugf("Response message:\n%s\n\n\n", wire.DumpMsgBody(resBody))
+				c.l.Debugf("Response header: %s", resHeader)
+				c.l.Debugf("Response message:\n%s\n\n\n", resBody)
 			}
 		}
 
@@ -191,29 +191,38 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 			// do not spend time dumping if we are not going to log it
 			if c.l.Desugar().Core().Enabled(zap.DebugLevel) {
-				c.l.Debugf("Proxy header:\n%s", wire.DumpMsgHeader(proxyHeader))
-				c.l.Debugf("Proxy message:\n%s\n\n\n", wire.DumpMsgBody(proxyBody))
+				c.l.Debugf("Proxy header: %s", proxyHeader)
+				c.l.Debugf("Proxy message:\n%s\n\n\n", proxyBody)
 			}
 		}
 
 		// diff in diff mode
 		if c.mode == DiffNormalMode || c.mode == DiffProxyMode {
-			res := difflib.SplitLines(wire.DumpMsgHeader(resHeader) + "\n" + wire.DumpMsgBody(resBody))
-			proxy := difflib.SplitLines(wire.DumpMsgHeader(proxyHeader) + "\n" + wire.DumpMsgBody(proxyBody))
-			diff := difflib.UnifiedDiff{
-				A:        res,
-				FromFile: "res",
-				B:        proxy,
-				ToFile:   "proxy",
+			var diffHeader string
+			diffHeader, err = difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
+				A:        difflib.SplitLines(resHeader.String()),
+				FromFile: "res header",
+				B:        difflib.SplitLines(proxyHeader.String()),
+				ToFile:   "proxy header",
 				Context:  1,
-			}
-			var s string
-			s, err = difflib.GetUnifiedDiffString(diff)
+			})
 			if err != nil {
 				return
 			}
 
-			c.l.Infof("Diff:\n%s\n\n\n", s)
+			var diffBody string
+			diffBody, err = difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
+				A:        difflib.SplitLines(resBody.String()),
+				FromFile: "res body",
+				B:        difflib.SplitLines(proxyBody.String()),
+				ToFile:   "proxy body",
+				Context:  1,
+			})
+			if err != nil {
+				return
+			}
+
+			c.l.Infof("Header diff:\n%s\nBody diff:\n%s\n\n", diffHeader, diffBody)
 		}
 
 		// replace response with one from proxy in proxy and diff-proxy modes

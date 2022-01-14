@@ -20,7 +20,6 @@ import (
 	"encoding/binary"
 	"io"
 
-	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -76,22 +75,6 @@ func (str String) MarshalBinary() ([]byte, error) {
 	buf.WriteByte(0)
 
 	return buf.Bytes(), nil
-}
-
-// UnmarshalJSON implements bsontype interface.
-func (str *String) UnmarshalJSON(data []byte) error {
-	var strJ fjson.String
-	if err := strJ.UnmarshalJSON(data); err != nil {
-		return err
-	}
-
-	*str = String(strJ)
-	return nil
-}
-
-// MarshalJSON implements bsontype interface.
-func (str String) MarshalJSON() ([]byte, error) {
-	return fjson.Marshal(fromBSON(&str))
 }
 
 // check interfaces

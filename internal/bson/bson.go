@@ -26,7 +26,7 @@ package bson
 import (
 	"bufio"
 	"encoding"
-	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/AlekSi/pointer"
@@ -40,12 +40,11 @@ type bsontype interface {
 	ReadFrom(*bufio.Reader) error
 	WriteTo(*bufio.Writer) error
 	encoding.BinaryMarshaler
-	json.Unmarshaler
-	json.Marshaler
 }
 
 //go-sumtype:decl bsontype
 
+//nolint:deadcode // remove later if it is not needed
 func fromBSON(v bsontype) any {
 	switch v := v.(type) {
 	case *Document:
@@ -78,7 +77,7 @@ func fromBSON(v bsontype) any {
 		return types.CString(*v)
 	}
 
-	panic("not reached") // for go-sumtype to work
+	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
 }
 
 //nolint:deadcode // remove later if it is not needed
@@ -114,5 +113,5 @@ func toBSON(v any) bsontype {
 		return pointer.To(CString(v))
 	}
 
-	panic("not reached")
+	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
 }

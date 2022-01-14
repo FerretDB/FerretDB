@@ -20,7 +20,6 @@ import (
 	"encoding/binary"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -69,22 +68,6 @@ func (dt DateTime) MarshalBinary() ([]byte, error) {
 	binary.Write(&buf, binary.LittleEndian, ts)
 
 	return buf.Bytes(), nil
-}
-
-// UnmarshalJSON implements bsontype interface.
-func (dt *DateTime) UnmarshalJSON(data []byte) error {
-	var dtJ fjson.DateTime
-	if err := dtJ.UnmarshalJSON(data); err != nil {
-		return err
-	}
-
-	*dt = DateTime(dtJ)
-	return nil
-}
-
-// MarshalJSON implements bsontype interface.
-func (dt DateTime) MarshalJSON() ([]byte, error) {
-	return fjson.Marshal(fromBSON(&dt))
 }
 
 // check interfaces

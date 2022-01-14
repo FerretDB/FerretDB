@@ -21,29 +21,36 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// String represents BSON String data type.
-type String string
+// fjsonString represents BSON fjsonString data type.
+type fjsonString string
 
 // fjsontype implements fjsontype interface.
-func (str *String) fjsontype() {}
+func (str *fjsonString) fjsontype() {}
 
 // UnmarshalJSON implements fjsontype interface.
-func (str *String) UnmarshalJSON(data []byte) error {
+func (str *fjsonString) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
 
+	r := bytes.NewReader(data)
+	dec := json.NewDecoder(r)
+	dec.DisallowUnknownFields()
+
 	var o string
-	if err := json.Unmarshal(data, &o); err != nil {
+	if err := dec.Decode(&o); err != nil {
+		return lazyerrors.Error(err)
+	}
+	if err := checkConsumed(dec, r); err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	*str = String(o)
+	*str = fjsonString(o)
 	return nil
 }
 
 // MarshalJSON implements fjsontype interface.
-func (str *String) MarshalJSON() ([]byte, error) {
+func (str *fjsonString) MarshalJSON() ([]byte, error) {
 	res, err := json.Marshal(string(*str))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -53,5 +60,5 @@ func (str *String) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ fjsontype = (*String)(nil)
+	_ fjsontype = (*fjsonString)(nil)
 )

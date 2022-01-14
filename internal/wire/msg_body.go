@@ -17,7 +17,6 @@ package wire
 import (
 	"bufio"
 	"encoding"
-	"encoding/json"
 	"fmt"
 	"io"
 
@@ -25,12 +24,12 @@ import (
 )
 
 type MsgBody interface {
-	msgbody() // seal
-
 	readFrom(*bufio.Reader) error
 	encoding.BinaryUnmarshaler
 	encoding.BinaryMarshaler
-	json.Marshaler
+	fmt.Stringer
+
+	msgbody() // seal for go-sumtype
 }
 
 //go-sumtype:decl MsgBody

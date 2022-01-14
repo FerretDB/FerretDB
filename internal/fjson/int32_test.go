@@ -23,31 +23,31 @@ import (
 
 var int32TestCases = []testCase{{
 	name: "42",
-	v:    pointer.To(Int32(42)),
+	v:    pointer.To(fjsonInt32(42)),
 	j:    `42`,
 }, {
 	name: "zero",
-	v:    pointer.To(Int32(0)),
+	v:    pointer.To(fjsonInt32(0)),
 	j:    `0`,
 }, {
 	name: "max int32",
-	v:    pointer.To(Int32(math.MaxInt32)),
+	v:    pointer.To(fjsonInt32(math.MaxInt32)),
 	j:    `2147483647`,
 }, {
 	name: "min int32",
-	v:    pointer.To(Int32(math.MinInt32)),
+	v:    pointer.To(fjsonInt32(math.MinInt32)),
 	j:    `-2147483648`,
 }}
 
 func TestInt32(t *testing.T) {
 	t.Parallel()
-	testJSON(t, int32TestCases, func() fjsontype { return new(Int32) })
+	testJSON(t, int32TestCases, func() fjsontype { return new(fjsonInt32) })
 }
 
 func FuzzInt32(f *testing.F) {
-	fuzzJSON(f, int32TestCases, func() fjsontype { return new(Int32) })
+	fuzzJSON(f, int32TestCases, func() fjsontype { return new(fjsonInt32) })
 }
 
 func BenchmarkInt32(b *testing.B) {
-	benchmark(b, int32TestCases, func() fjsontype { return new(Int32) })
+	benchmark(b, int32TestCases, func() fjsontype { return new(fjsonInt32) })
 }
