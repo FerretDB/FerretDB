@@ -14,10 +14,7 @@
 
 package wire
 
-import (
-	"encoding/json"
-	"fmt"
-)
+import "fmt"
 
 //go:generate ../../bin/stringer -linecomment -type OpReplyFlagBit
 
@@ -30,10 +27,6 @@ const (
 	OpReplyAwaitCapable     = OpReplyFlagBit(1 << 3) // AwaitCapable
 )
 
-func (i OpReplyFlagBit) MarshalJSON() ([]byte, error) {
-	return []byte(`"` + i.String() + `"`), nil
-}
-
 type OpReplyFlags flags
 
 func opReplyFlagBitStringer(bit flagBit) string {
@@ -44,18 +37,12 @@ func (f OpReplyFlags) String() string {
 	return flags(f).string(opReplyFlagBitStringer)
 }
 
-func (f OpReplyFlags) MarshalJSON() ([]byte, error) {
-	return json.Marshal(flags(f).strings(opReplyFlagBitStringer))
-}
-
 func (f OpReplyFlags) FlagSet(bit OpReplyFlagBit) bool {
 	return f&OpReplyFlags(bit) != 0
 }
 
 // check interfaces
 var (
-	_ fmt.Stringer   = OpReplyFlagBit(0)
-	_ json.Marshaler = OpReplyFlagBit(0)
-	_ fmt.Stringer   = OpReplyFlags(0)
-	_ json.Marshaler = OpReplyFlags(0)
+	_ fmt.Stringer = OpReplyFlagBit(0)
+	_ fmt.Stringer = OpReplyFlags(0)
 )

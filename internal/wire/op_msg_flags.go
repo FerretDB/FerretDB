@@ -14,10 +14,7 @@
 
 package wire
 
-import (
-	"encoding/json"
-	"fmt"
-)
+import "fmt"
 
 //go:generate ../../bin/stringer -linecomment -type OpMsgFlagBit
 
@@ -29,10 +26,6 @@ const (
 	OpMsgMoreToCome      = OpMsgFlagBit(1 << 1)  // moreToCome
 	OpMsgExhaustAllowed  = OpMsgFlagBit(1 << 16) // exhaustAllowed
 )
-
-func (i OpMsgFlagBit) MarshalJSON() ([]byte, error) {
-	return []byte(`"` + i.String() + `"`), nil
-}
 
 // OpMsgFlags type unint32.
 type OpMsgFlags flags
@@ -46,11 +39,6 @@ func (f OpMsgFlags) String() string {
 	return flags(f).string(opMsgFlagBitStringer)
 }
 
-// MarshalJSON writes the OpMsgFlag in JSON format to a byte array.
-func (f OpMsgFlags) MarshalJSON() ([]byte, error) {
-	return json.Marshal(flags(f).strings(opMsgFlagBitStringer))
-}
-
 // FlagSet check if flag is set.
 func (f OpMsgFlags) FlagSet(bit OpMsgFlagBit) bool {
 	return f&OpMsgFlags(bit) != 0
@@ -58,8 +46,6 @@ func (f OpMsgFlags) FlagSet(bit OpMsgFlagBit) bool {
 
 // check interfaces
 var (
-	_ fmt.Stringer   = OpMsgFlagBit(0)
-	_ json.Marshaler = OpMsgFlagBit(0)
-	_ fmt.Stringer   = OpMsgFlags(0)
-	_ json.Marshaler = OpMsgFlags(0)
+	_ fmt.Stringer = OpMsgFlagBit(0)
+	_ fmt.Stringer = OpMsgFlags(0)
 )

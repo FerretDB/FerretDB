@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/util/hex"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func ParseDump(tb testing.TB, s string) []byte {
@@ -40,18 +41,7 @@ func ParseDumpFile(tb testing.TB, path ...string) []byte {
 	return ParseDump(tb, string(b))
 }
 
-func mustParseDump(s string) []byte {
-	b, err := hex.ParseDump(s)
-	if err != nil {
-		panic(err)
-	}
-	return b
-}
-
 func MustParseDumpFile(path ...string) []byte {
-	b, err := os.ReadFile(filepath.Join(path...))
-	if err != nil {
-		panic(err)
-	}
-	return mustParseDump(string(b))
+	b := must.NotFail(os.ReadFile(filepath.Join(path...)))
+	return must.NotFail(hex.ParseDump(string(b)))
 }

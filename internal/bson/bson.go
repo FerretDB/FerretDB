@@ -26,7 +26,6 @@ package bson
 import (
 	"bufio"
 	"encoding"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -41,12 +40,11 @@ type bsontype interface {
 	ReadFrom(*bufio.Reader) error
 	WriteTo(*bufio.Writer) error
 	encoding.BinaryMarshaler
-	json.Unmarshaler
-	json.Marshaler
 }
 
 //go-sumtype:decl bsontype
 
+//nolint:deadcode // remove later if it is not needed
 func fromBSON(v bsontype) any {
 	switch v := v.(type) {
 	case *Document:

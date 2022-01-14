@@ -12,35 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jsonb1
+// Package must provides Do helper function.
+package must
 
-import (
-	"github.com/jackc/pgx/v4"
-
-	"github.com/FerretDB/FerretDB/internal/fjson"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-)
-
-func nextRow(rows pgx.Rows) (*types.Document, error) {
-	if !rows.Next() {
-		err := rows.Err()
-		if err != nil {
-			err = lazyerrors.Error(err)
-		}
-		return nil, err
-	}
-
-	var b []byte
-	if err := rows.Scan(&b); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	doc, err := fjson.Unmarshal(b)
+// NotFail panics if the error is not nil, returns res otherwise.
+//
+// Use that function only for static initialization, test code, or code that "can't" fail.
+// When in doubt, don't.
+func NotFail[T any](res T, err error) T {
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		panic(err)
 	}
-
-	d := doc.(types.Document)
-	return &d, nil
+	return res
 }
