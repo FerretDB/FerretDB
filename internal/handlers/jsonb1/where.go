@@ -110,36 +110,36 @@ func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string
 		switch op {
 		case "$in":
 			// {field: {$in: [value1, value2, ...]}}
-			sql += "_jsonb->" + p.Next() + " IN"
+			sql += "->" + p.Next() + " IN"
 			argSql, arg, err = common.InArray(value.(*types.Array), p, scalar)
 		case "$nin":
 			// {field: {$nin: [value1, value2, ...]}}
-			sql += "_jsonb->" + p.Next() + " NOT IN"
+			sql += "->" + p.Next() + " NOT IN"
 			argSql, arg, err = common.InArray(value.(*types.Array), p, scalar)
 		case "$eq":
 			// {field: {$eq: value}}
 			// TODO special handling for regex
-			sql += "_jsonb->" + p.Next() + " ="
+			sql += "->" + p.Next() + " ="
 			argSql, arg, err = scalar(value, p)
 		case "$ne":
 			// {field: {$ne: value}}
-			sql += "_jsonb->" + p.Next() + " <>"
+			sql += "->" + p.Next() + " <>"
 			argSql, arg, err = scalar(value, p)
 		case "$lt":
 			// {field: {$lt: value}}
-			sql += "_jsonb->" + p.Next() + " <"
+			sql += "->" + p.Next() + " <"
 			argSql, arg, err = scalar(value, p)
 		case "$lte":
 			// {field: {$lte: value}}
-			sql += "_jsonb->" + p.Next() + " <="
+			sql += "->" + p.Next() + " <="
 			argSql, arg, err = scalar(value, p)
 		case "$gt":
 			// {field: {$gt: value}}
-			sql += "_jsonb->" + p.Next() + " >"
+			sql += "->" + p.Next() + " >"
 			argSql, arg, err = scalar(value, p)
 		case "$gte":
 			// {field: {$gte: value}}
-			sql += "_jsonb->" + p.Next() + " >="
+			sql += "->" + p.Next() + " >="
 			argSql, arg, err = scalar(value, p)
 		case "$regex":
 			// {field: {$regex: value}}
@@ -153,7 +153,7 @@ func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string
 				}
 			}
 
-			sql += "_jsonb->>" + p.Next() + " ~"
+			sql += "->>" + p.Next() + " ~"
 			switch value := value.(type) {
 			case string:
 				// {field: {$regex: string}}
@@ -192,20 +192,26 @@ func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string
 	return
 }
 
-// nested handles queries on nested documents (e.g. {"a.b": 3} for {"a": {"b": 3}})
-func nested(path string, p *pg.Placeholder) (sql string, nestedKeys []string, err error) {
-	sql = "_jsonb"
+// parseKey is needed to handle queries on nested documents (e.g. {"a.b": 3} for {"a": {"b": 3}})
+func parseKey(key string, p *pg.Placeholder) (sql string, path []string, valid bool) {
 
-	for _, node := range strings.Split(path, ".") {
+	sql = "_jsonb"
+	path = strings.Split(key, ".")
+
+	for i, node := range path {
+
+		// MongoDB doesn't forbid multiple consecutive dots in queries,
+		// such a query just returns no results
 		if node == "" {
-			return "", nil, lazyerrors.Errorf(
-				"nested: key contains multiple consecutive dots: %s", path)
-			// MongoDB doesn't forbid multiple consecutive dots in queries,
-			//it just returns no results. So this error has to be handled accordingly
+			return "", nil, false
 		}
 
-		sql += "->" + p.Next()
-		nestedKeys = append(nestedKeys, node)
+		// we don't fill in the last arrow, because we may want to use `->>` instead of `->` depending on type
+		// of value we query
+		if i != len(path)-1 {
+			sql += "->" + p.Next()
+		}
+
 	}
 
 	return
@@ -218,21 +224,37 @@ func wherePair(key string, value any, p *pg.Placeholder) (sql string, args []any
 		return
 	}
 
+	var kp []string // keyPath
+	sql, kp, valid := parseKey(key, p)
+
+	if !valid {
+		return "", nil, nil
+	}
+
+	for k := range kp[:len(kp)-1] {
+		args = append(args, k)
+	}
+
+	last := kp[len(kp)-1]
 	switch value := value.(type) {
 	case types.Document:
 		// {field: {expr}}
-		sql, args, err = fieldExpr(key, value, p)
+		var fieldSql string
+		var fieldArgs []any
+		fieldSql, fieldArgs, err = fieldExpr(last, value, p) // TODO Fix fieldExpr func
+		sql += fieldSql
+		args = append(args, fieldArgs)
 
 	default:
 		// {field: value}
 		switch value.(type) {
 		case types.Regex:
-			sql = "_jsonb->>" + p.Next() + " ~ "
+			sql += "->>" + p.Next() + " ~ "
 		default:
-			sql = "_jsonb->" + p.Next() + " = "
+			sql += "->" + p.Next() + " = "
 		}
 
-		args = append(args, key)
+		args = append(args, last)
 
 		var scalarSQL string
 		var scalarArgs []any
@@ -269,6 +291,10 @@ func where(filter types.Document, p *pg.Placeholder) (sql string, args []any, er
 		if err != nil {
 			err = lazyerrors.Errorf("where: %w", err)
 			return
+		} else if argSql == "" {
+			// empty filter
+			argSql = "true"
+			arg = []any{}
 		}
 
 		sql += " (" + argSql + ")"
