@@ -9,6 +9,7 @@ linters-settings:
   exhaustive:
     default-signifies-exhaustive: false
   goconst:
+    min-occurrences: 5
     ignore-tests: true
   godot:
     scope: toplevel

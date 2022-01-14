@@ -17,7 +17,7 @@ package jsonb1
 import (
 	"github.com/jackc/pgx/v4"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
+	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -36,11 +36,11 @@ func nextRow(rows pgx.Rows) (*types.Document, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	var doc bson.Document
-	if err := doc.UnmarshalJSON(b); err != nil {
+	doc, err := fjson.Unmarshal(b)
+	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	d := types.MustConvertDocument(&doc)
+	d := doc.(types.Document)
 	return &d, nil
 }

@@ -44,6 +44,7 @@ type bsontype interface {
 
 //go-sumtype:decl bsontype
 
+//nolint:deadcode // remove later if it is not needed
 func fromBSON(v bsontype) any {
 	switch v := v.(type) {
 	case *Document:

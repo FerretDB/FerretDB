@@ -14,9 +14,7 @@
 
 package wire
 
-import (
-	"fmt"
-)
+import "fmt"
 
 //go:generate ../../bin/stringer -linecomment -type OpMsgFlagBit
 
