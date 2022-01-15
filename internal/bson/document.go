@@ -27,7 +27,8 @@ import (
 )
 
 const (
-	MaxDocumentLen = 16777216
+	// Deprecated: use types.MaxDocumentLen instead.
+	MaxDocumentLen = types.MaxDocumentLen
 
 	minDocumentLen = 5
 )

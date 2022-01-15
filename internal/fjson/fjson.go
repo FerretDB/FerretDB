@@ -12,35 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package fjson provides converters from/to FJSON.
+// Package fjson provides converters from/to FJSON (JSON with some extensions) for built-in and `types` types.
 //
-// All BSON data types have three representations in FerretDB:
+// See contributing guidelines and documentation for package `types` for details.
 //
-//  1. As they are used in handlers implementation (types package).
-//  2. As they are used in the wire protocol implementation (bson package).
-//  3. As they are used to store data in PostgreSQL (fjson package).
+// Mapping
 //
-// The reason for that is a separation of concerns: to avoid method names clashes, to simplify type asserts, etc.
-//
-// JSON mapping for storage
-//
-// Composite/pointer types
-//  Document:   {"$k": ["<key 1>", "<key 2>", ...], "<key 1>": <value 1>, "<key 2>": <value 2>, ...}
-//  Array:      JSON array
-// Scalar/value types
-//  Double:     {"$f": JSON number} or {"$f": "Infinity|-Infinity|NaN"}
-//  String:     JSON string
-//  Binary:     {"$b": "<base 64 string>", "s": <subtype number>}
-//  ObjectID:   {"$o": "<ObjectID as 24 character hex string"}
-//  Bool:       JSON true / false values
-//  DateTime:   {"$d": milliseconds since epoch as JSON number}
-//  nil:        JSON null
-//  Regex:      {"$r": "<string without terminating 0x0>", "o": "<string without terminating 0x0>"}
-//  Int32:      JSON number
-//  Timestamp:  {"$t": "<number as string>"}
-//  Int64:      {"$l": "<number as string>"}
-//  Decimal128: {"$n": "<number as string>"}
-//  CString:    {"$c": "<string without terminating 0x0>"}
+// Composite types
+//  types.Document   {"$k": ["<key 1>", "<key 2>", ...], "<key 1>": <value 1>, "<key 2>": <value 2>, ...}
+//  *types.Array     JSON array
+// Scalar types
+//  float64          {"$f": JSON number} or {"$f": "Infinity|-Infinity|NaN"}
+//  string           JSON string
+//  types.Binary     {"$b": "<base 64 string>", "s": <subtype number>}
+//  types.ObjectID   {"$o": "<ObjectID as 24 character hex string"}
+//  bool             JSON true / false values
+//  time.Time        {"$d": milliseconds since epoch as JSON number}
+//  nil              JSON null
+//  types.Regex      {"$r": "<string without terminating 0x0>", "o": "<string without terminating 0x0>"}
+//  int32            JSON number
+//  types.Timestamp  {"$t": "<number as string>"}
+//  int64            {"$l": "<number as string>"}
+//  TODO Decimal128  {"$n": "<number as string>"}
+//  types.CString    {"$c": "<string without terminating 0x0>"}
 package fjson
 
 import (

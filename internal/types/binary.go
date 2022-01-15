@@ -16,6 +16,7 @@ package types
 
 //go:generate ../../bin/stringer -linecomment -type BinarySubtype
 
+// BinarySubtype represents BSON Binary's subtype.
 type BinarySubtype byte
 
 const (
@@ -29,6 +30,7 @@ const (
 	BinaryUser       = BinarySubtype(0x80) // user
 )
 
+// Binary represents BSON type Binary.
 type Binary struct {
 	Subtype BinarySubtype
 	B       []byte

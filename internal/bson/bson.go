@@ -12,15 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package bson provides converters from/to BSON.
+// Package bson provides converters from/to BSON for built-in and `types` types.
 //
-// All BSON data types have three representations in FerretDB:
-//
-//  1. As they are used in handlers implementation (types package).
-//  2. As they are used in the wire protocol implementation (bson package).
-//  3. As they are used to store data in PostgreSQL (fjson package).
-//
-// The reason for that is a separation of concerns: to avoid method names clashes, to simplify type asserts, etc.
+// See contributing guidelines and documentation for package `types` for details.
 package bson
 
 import (

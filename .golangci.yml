@@ -6,6 +6,10 @@ run:
   issues-exit-code: 0
 
 linters-settings:
+  depguard:
+    list-type: blacklist
+    packages:
+      - github.com/FerretDB/FerretDB/internal/bson
   exhaustive:
     default-signifies-exhaustive: false
   goconst:
@@ -120,3 +124,8 @@ linters:
 
 issues:
   exclude-use-default: false
+  exclude-rules:
+    # only `wire` package can import `bson` package
+    - linters: [depguard]
+      path: internal/wire
+      text: bson

@@ -19,6 +19,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -27,7 +28,7 @@ func (h *Handler) MsgGetCmdLineOpts(ctx context.Context, msg *wire.OpMsg) (*wire
 	var reply wire.OpMsg
 	err := reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
-			"argv", types.MustNewArray("ferretdb"),
+			"argv", must.NotFail(types.NewArray("ferretdb")),
 			"parsed", types.MustMakeDocument(),
 			"ok", float64(1),
 		)},
