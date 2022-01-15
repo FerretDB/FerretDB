@@ -20,7 +20,7 @@ import (
 
 	"github.com/jackc/pgx/v4"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
+	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -116,12 +116,12 @@ func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 			sql = fmt.Sprintf("UPDATE %s SET _jsonb = $1 WHERE _jsonb->'_id' = $2", pgx.Identifier{db, collection}.Sanitize())
 			d := updateDoc.(types.Document)
-			db, err := bson.MustConvertDocument(d).MarshalJSON()
+			db, err := fjson.Marshal(d)
 			if err != nil {
 				return nil, err
 			}
 
-			idb, err := bson.ObjectID(d.Map()["_id"].(types.ObjectID)).MarshalJSON()
+			idb, err := fjson.Marshal(d.Map()["_id"].(types.ObjectID))
 			if err != nil {
 				return nil, err
 			}

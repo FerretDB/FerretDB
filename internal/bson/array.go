@@ -18,7 +18,6 @@ import (
 	"bufio"
 	"strconv"
 
-	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -93,22 +92,6 @@ func (a Array) MarshalBinary() ([]byte, error) {
 		return nil, lazyerrors.Error(err)
 	}
 	return b, nil
-}
-
-// UnmarshalJSON implements bsontype interface.
-func (a *Array) UnmarshalJSON(data []byte) error {
-	var aJ fjson.Array
-	if err := aJ.UnmarshalJSON(data); err != nil {
-		return err
-	}
-
-	*a = Array(aJ)
-	return nil
-}
-
-// MarshalJSON implements bsontype interface.
-func (a Array) MarshalJSON() ([]byte, error) {
-	return fjson.Marshal(fromBSON(&a))
 }
 
 // check interfaces

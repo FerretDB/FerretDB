@@ -27,7 +27,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handlers/jsonb1"
 	"github.com/FerretDB/FerretDB/internal/handlers/sql"
 	"github.com/FerretDB/FerretDB/internal/pg"
@@ -76,7 +75,7 @@ func handle(ctx context.Context, t *testing.T, handler *Handler, req types.Docum
 	require.NoError(t, err)
 
 	_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
-	require.False(t, closeConn, "%s", wire.DumpMsgBody(resBody))
+	require.False(t, closeConn, "%s", resBody.String())
 
 	actual, err := resBody.(*wire.OpMsg).Document()
 	require.NoError(t, err)
@@ -433,7 +432,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"versionArray", types.MustNewArray(int32(5), int32(0), int32(42), int32(0)),
 				"bits", int32(strconv.IntSize),
 				"debug", version.Get().Debug,
-				"maxBsonObjectSize", int32(bson.MaxDocumentLen),
+				"maxBsonObjectSize", int32(16777216),
 				"ok", float64(1),
 				"buildEnvironment", types.MustMakeDocument(),
 			),
@@ -687,7 +686,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 			resp: types.MustMakeDocument(
 				"helloOk", true,
 				"ismaster", true,
-				"maxBsonObjectSize", int32(bson.MaxDocumentLen),
+				"maxBsonObjectSize", int32(16777216),
 				"maxMessageSizeBytes", int32(wire.MaxMsgLen),
 				"maxWriteBatchSize", int32(100000),
 				"localTime", time.Now(),
@@ -708,7 +707,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 			resp: types.MustMakeDocument(
 				"helloOk", true,
 				"ismaster", true,
-				"maxBsonObjectSize", int32(bson.MaxDocumentLen),
+				"maxBsonObjectSize", int32(16777216),
 				"maxMessageSizeBytes", int32(wire.MaxMsgLen),
 				"maxWriteBatchSize", int32(100000),
 				"localTime", time.Now(),

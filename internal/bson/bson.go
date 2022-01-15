@@ -12,21 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package bson provides converters from/to BSON.
+// Package bson provides converters from/to BSON for built-in and `types` types.
 //
-// All BSON data types have three representations in FerretDB:
-//
-//  1. As they are used in handlers implementation (types package).
-//  2. As they are used in the wire protocol implementation (bson package).
-//  3. As they are used to store data in PostgreSQL (fjson package).
-//
-// The reason for that is a separation of concerns: to avoid method names clashes, to simplify type asserts, etc.
+// See contributing guidelines and documentation for package `types` for details.
 package bson
 
 import (
 	"bufio"
 	"encoding"
-	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/AlekSi/pointer"
@@ -40,12 +34,11 @@ type bsontype interface {
 	ReadFrom(*bufio.Reader) error
 	WriteTo(*bufio.Writer) error
 	encoding.BinaryMarshaler
-	json.Unmarshaler
-	json.Marshaler
 }
 
 //go-sumtype:decl bsontype
 
+//nolint:deadcode // remove later if it is not needed
 func fromBSON(v bsontype) any {
 	switch v := v.(type) {
 	case *Document:
@@ -78,7 +71,7 @@ func fromBSON(v bsontype) any {
 		return types.CString(*v)
 	}
 
-	panic("not reached") // for go-sumtype to work
+	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
 }
 
 //nolint:deadcode // remove later if it is not needed
@@ -114,5 +107,5 @@ func toBSON(v any) bsontype {
 		return pointer.To(CString(v))
 	}
 
-	panic("not reached")
+	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
 }

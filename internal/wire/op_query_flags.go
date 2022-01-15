@@ -14,10 +14,7 @@
 
 package wire
 
-import (
-	"encoding/json"
-	"fmt"
-)
+import "fmt"
 
 //go:generate ../../bin/stringer -linecomment -type OpQueryFlagBit
 
@@ -33,10 +30,6 @@ const (
 	OpQueryPartial         = OpQueryFlagBit(1 << 7) // Partial
 )
 
-func (i OpQueryFlagBit) MarshalJSON() ([]byte, error) {
-	return []byte(`"` + i.String() + `"`), nil
-}
-
 type OpQueryFlags flags
 
 func opQueryFlagBitStringer(bit flagBit) string {
@@ -47,18 +40,12 @@ func (f OpQueryFlags) String() string {
 	return flags(f).string(opQueryFlagBitStringer)
 }
 
-func (f OpQueryFlags) MarshalJSON() ([]byte, error) {
-	return json.Marshal(flags(f).strings(opQueryFlagBitStringer))
-}
-
 func (f OpQueryFlags) FlagSet(bit OpQueryFlagBit) bool {
 	return f&OpQueryFlags(bit) != 0
 }
 
 // check interfaces
 var (
-	_ fmt.Stringer   = OpQueryFlagBit(0)
-	_ json.Marshaler = OpQueryFlagBit(0)
-	_ fmt.Stringer   = OpQueryFlags(0)
-	_ json.Marshaler = OpQueryFlags(0)
+	_ fmt.Stringer = OpQueryFlagBit(0)
+	_ fmt.Stringer = OpQueryFlags(0)
 )

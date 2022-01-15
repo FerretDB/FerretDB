@@ -12,22 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package types provides Go types matching BSON types without built-in Go equivalents.
+// Package types provides Go types matching BSON types that don't have built-in Go equivalents.
 //
 // All BSON data types have three representations in FerretDB:
 //
-//  1. As they are used in handlers implementation (types package).
-//  2. As they are used in the wire protocol implementation (bson package).
-//  3. As they are used to store data in PostgreSQL (fjson package).
+//  1. As they are used in "business logic" / handlers - `types` package.
+//  2. As they are used in the wire protocol implementation - `bson` package.
+//  3. As they are used to store data in PostgreSQL - `fjson` package.
 //
-// The reason for that is a separation of concerns: to avoid method names clashes, to simplify type asserts, etc.
+// The reason for that is a separation of concerns: to avoid method names clashes, to simplify type asserts,
+// to make refactorings and optimizations easier, etc.
 //
 // Mapping
 //
-// Composite/pointer types
+// Composite types
 //  types.Document   *bson.Document  *fjson.Document
 //  *types.Array     *bson.Array     *fjson.Array
-// Scalar/value types
+// Scalar types
 //  float64          *bson.Double     *fjson.Double
 //  string           *bson.String     *fjson.String
 //  types.Binary     *bson.Binary     *fjson.Binary
@@ -39,7 +40,6 @@
 //  int32            *bson.Int32      *fjson.Int32
 //  types.Timestamp  *bson.Timestamp  *fjson.Timestamp
 //  int64            *bson.Int64      *fjson.Int64
-//  TODO Decimal128
 //  types.CString    *bson.CString    *fjson.CString
 package types
 
@@ -48,26 +48,32 @@ import (
 	"time"
 )
 
-// CompositeType represents composite/pointer type - Document or *Array.
+const MaxDocumentLen = 16777216
+
+// CompositeType represents composite type - Document or *Array.
 type CompositeType interface {
 	Document | *Array
 	GetByPath(path ...string) (any, error)
 
-	sealed() // for go-sumtype
+	compositeType() // seal for go-sumtype
 }
 
 //go-sumtype:decl CompositeType
 
 type (
+	// CString represents BSON type CString that used as document field name, etc.
 	CString string
 
+	// ObjectID represents BSON type ObjectID.
 	ObjectID [12]byte
 
+	// Regex represents BSON type Regex.
 	Regex struct {
 		Pattern string
 		Options string
 	}
 
+	// Timestamp represents BSON type Timestamp.
 	Timestamp uint64
 )
 

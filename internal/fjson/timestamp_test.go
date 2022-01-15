@@ -22,11 +22,11 @@ import (
 
 var timestampTestCases = []testCase{{
 	name: "one",
-	v:    pointer.To(Timestamp(1)),
+	v:    pointer.To(fjsonTimestamp(1)),
 	j:    `{"$t":"1"}`,
 }, {
 	name: "zero",
-	v:    pointer.To(Timestamp(0)),
+	v:    pointer.To(fjsonTimestamp(0)),
 	j:    `{"$t":"0"}`,
 }, {
 	name: "EOF",
@@ -36,13 +36,13 @@ var timestampTestCases = []testCase{{
 
 func TestTimestamp(t *testing.T) {
 	t.Parallel()
-	testJSON(t, timestampTestCases, func() fjsontype { return new(Timestamp) })
+	testJSON(t, timestampTestCases, func() fjsontype { return new(fjsonTimestamp) })
 }
 
 func FuzzTimestamp(f *testing.F) {
-	fuzzJSON(f, timestampTestCases, func() fjsontype { return new(Timestamp) })
+	fuzzJSON(f, timestampTestCases, func() fjsontype { return new(fjsonTimestamp) })
 }
 
 func BenchmarkTimestamp(b *testing.B) {
-	benchmark(b, timestampTestCases, func() fjsontype { return new(Timestamp) })
+	benchmark(b, timestampTestCases, func() fjsontype { return new(fjsonTimestamp) })
 }

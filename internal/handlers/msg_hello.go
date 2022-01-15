@@ -18,7 +18,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -33,7 +32,7 @@ func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 			"helloOk", true,
 			"ismaster", true,
 			// topologyVersion
-			"maxBsonObjectSize", int32(bson.MaxDocumentLen),
+			"maxBsonObjectSize", int32(types.MaxDocumentLen),
 			"maxMessageSizeBytes", int32(wire.MaxMsgLen),
 			"maxWriteBatchSize", int32(100000),
 			"localTime", time.Now(),

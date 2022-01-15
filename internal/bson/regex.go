@@ -18,7 +18,6 @@ import (
 	"bufio"
 	"bytes"
 
-	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -75,22 +74,6 @@ func (regex Regex) MarshalBinary() ([]byte, error) {
 	bufw.Flush()
 
 	return buf.Bytes(), nil
-}
-
-// UnmarshalJSON implements bsontype interface.
-func (regex *Regex) UnmarshalJSON(data []byte) error {
-	var regexJ fjson.Regex
-	if err := regexJ.UnmarshalJSON(data); err != nil {
-		return err
-	}
-
-	*regex = Regex(regexJ)
-	return nil
-}
-
-// MarshalJSON implements bsontype interface.
-func (regex Regex) MarshalJSON() ([]byte, error) {
-	return fjson.Marshal(fromBSON(&regex))
 }
 
 // check interfaces

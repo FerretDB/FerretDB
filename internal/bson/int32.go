@@ -19,7 +19,6 @@ import (
 	"bytes"
 	"encoding/binary"
 
-	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -59,22 +58,6 @@ func (i Int32) MarshalBinary() ([]byte, error) {
 	binary.Write(&buf, binary.LittleEndian, i)
 
 	return buf.Bytes(), nil
-}
-
-// UnmarshalJSON implements bsontype interface.
-func (i *Int32) UnmarshalJSON(data []byte) error {
-	var iJ fjson.Int32
-	if err := iJ.UnmarshalJSON(data); err != nil {
-		return err
-	}
-
-	*i = Int32(iJ)
-	return nil
-}
-
-// MarshalJSON implements bsontype interface.
-func (i Int32) MarshalJSON() ([]byte, error) {
-	return fjson.Marshal(fromBSON(&i))
 }
 
 // check interfaces

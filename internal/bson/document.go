@@ -22,13 +22,13 @@ import (
 	"io"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 const (
-	MaxDocumentLen = 16777216
+	// Deprecated: use types.MaxDocumentLen instead.
+	MaxDocumentLen = types.MaxDocumentLen
 
 	minDocumentLen = 5
 )
@@ -414,27 +414,6 @@ func (doc Document) MarshalBinary() ([]byte, error) {
 		panic(fmt.Sprintf("got %d, expected %d", res.Len(), l))
 	}
 	return res.Bytes(), nil
-}
-
-// UnmarshalJSON implements bsontype interface.
-func (doc *Document) UnmarshalJSON(data []byte) error {
-	var docJ fjson.Document
-	if err := docJ.UnmarshalJSON(data); err != nil {
-		return err
-	}
-
-	d, err := ConvertDocument(types.Document(docJ))
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	*doc = *d
-	return nil
-}
-
-// MarshalJSON implements bsontype interface.
-func (doc Document) MarshalJSON() ([]byte, error) {
-	return fjson.Marshal(fromBSON(&doc))
 }
 
 // check interfaces

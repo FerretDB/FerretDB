@@ -23,8 +23,10 @@ import (
 	"io"
 
 	"github.com/FerretDB/FerretDB/internal/bson"
+	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // OpMsgSection is one or more sections contained in an OpMsg.
@@ -290,26 +292,34 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// MarshalJSON writes an OpMsg in JSON format to a byte array.
-func (msg *OpMsg) MarshalJSON() ([]byte, error) {
+// String returns a string representation for logging.
+//
+// Currently, it uses FJSON, but that may change in the future.
+func (msg *OpMsg) String() string {
+	if msg == nil {
+		return "<nil>"
+	}
+
 	m := map[string]any{
 		"FlagBits": msg.FlagBits,
 		"Checksum": msg.Checksum,
 	}
 
-	sections := make([]any, len(msg.sections))
+	sections := make([]map[string]any, len(msg.sections))
 	for i, section := range msg.sections {
 		s := map[string]any{
 			"Kind": section.Kind,
 		}
 		switch section.Kind {
 		case 0:
-			s["Document"] = bson.MustConvertDocument(section.Documents[0])
+			b := must.NotFail(fjson.Marshal(section.Documents[0]))
+			s["Document"] = json.RawMessage(b)
 		case 1:
 			s["Identifier"] = section.Identifier
-			docs := make([]any, len(section.Documents))
+			docs := make([]json.RawMessage, len(section.Documents))
 			for j, d := range section.Documents {
-				docs[j] = bson.MustConvertDocument(d)
+				b := must.NotFail(fjson.Marshal(d))
+				docs[j] = json.RawMessage(b)
 			}
 			s["Documents"] = docs
 		}
@@ -319,7 +329,7 @@ func (msg *OpMsg) MarshalJSON() ([]byte, error) {
 
 	m["Sections"] = sections
 
-	return json.Marshal(m)
+	return string(must.NotFail(json.MarshalIndent(m, "", "  ")))
 }
 
 // check interfaces
