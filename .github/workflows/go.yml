@@ -108,14 +108,24 @@ jobs:
           git status
           git diff --exit-code
 
-  fuzz:
-    name: Fuzz
+  fuzz-short:
+    name: Fuzz short
     runs-on: ubuntu-20.04
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
         with:
+          path: source
+          fetch-depth: 0
+
+      # use deploy key instead of Personal Access Token (PAT) to limit access to one repository
+      - name: Checkout collected fuzz corpus
+        uses: actions/checkout@v2
+        with:
+          repository: FerretDB/fuzz-corpus
+          ssh-key: ${{ secrets.FUZZ_CORPUS_DEPLOY_KEY }}
+          path: fuzz-corpus
           fetch-depth: 0
 
       - name: Setup Go
@@ -125,16 +135,42 @@ jobs:
 
       - name: Run init
         run: make init
+        working-directory: source
+
+      - name: Setup corpus
+        run: go run ./cmd/fuzztool/fuzztool.go -src=../fuzz-corpus -dst=generated
+        working-directory: source
 
       # precompile tests with unset GOMAXPROCS
       - name: Init fuzzers
         run: make fuzz-init
+        working-directory: source
 
       # TODO https://github.com/FerretDB/FerretDB/issues/238
       - name: Run fuzzers
         run: make fuzz-short
+        working-directory: source
         env:
           GOMAXPROCS: 1 # otherwise, oom-killer kills fuzzer too often
+
+      - name: Collect corpus
+        if: always()
+        run: |
+          go run ./cmd/fuzztool/fuzztool.go -src=seed -dst=../fuzz-corpus
+          go run ./cmd/fuzztool/fuzztool.go -src=generated -dst=../fuzz-corpus
+        working-directory: source
+
+      - name: Push corpus
+        if: always()
+        run: |
+          git config user.name ferretdb-bot
+          git config user.email ferretdb-bot@ferretdb.io
+          git add --all .
+          git commit --message 'Update corpus'
+          git fetch
+          git rebase origin/main
+          git push
+        working-directory: fuzz-corpus
 
       - name: Collect Linux logs
         if: failure()
@@ -144,6 +180,7 @@ jobs:
           sudo cp /var/log/syslog /tmp/logs/
           sudo free > /tmp/logs/free.txt
           sudo chmod 0666 /tmp/logs/*
+        working-directory: source
 
       - name: Upload Linux logs
         if: failure()
@@ -152,16 +189,18 @@ jobs:
           name: linux-logs
           path: /tmp/logs
 
-      - name: Upload fuzz corpus
-        if: always()
+      - name: Upload all fuzz corpuses
+        if: failure()
         uses: actions/upload-artifact@v2
         with:
           name: fuzz-corpus
           path: |
             ${{ env.GOCACHE }}/fuzz
             **/testdata/fuzz
+            fuzz-corpus
 
       - name: Check dirty
         run: |
           git status
           git diff --exit-code
+        working-directory: source

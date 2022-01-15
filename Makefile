@@ -46,17 +46,17 @@ test:                                  ## Run tests
 fuzz-init: gen-version
 	go test -count=0 ./...
 
-fuzz-short:                            ## Fuzz for 1 minute
+fuzz-short:                            ## Fuzz for about 2 minutes
 	go test -list='Fuzz.*' ./...
-	go test -fuzz=FuzzArray -fuzztime=1m ./internal/bson/
-	go test -fuzz=FuzzDocument -fuzztime=1m ./internal/bson/
-	go test -fuzz=FuzzArray -fuzztime=1m ./internal/fjson/
-	go test -fuzz=FuzzDocument -fuzztime=1m ./internal/fjson/
-	go test -fuzz=FuzzMsg -fuzztime=1m ./internal/wire/
-	go test -fuzz=FuzzQuery -fuzztime=1m ./internal/wire/
-	go test -fuzz=FuzzReply -fuzztime=1m ./internal/wire/
+	go test -fuzz=FuzzArray -fuzztime=20s ./internal/bson/
+	go test -fuzz=FuzzDocument -fuzztime=20s ./internal/bson/
+	go test -fuzz=FuzzArray -fuzztime=20s ./internal/fjson/
+	go test -fuzz=FuzzDocument -fuzztime=20s ./internal/fjson/
+	go test -fuzz=FuzzMsg -fuzztime=20s ./internal/wire/
+	go test -fuzz=FuzzQuery -fuzztime=20s ./internal/wire/
+	go test -fuzz=FuzzReply -fuzztime=20s ./internal/wire/
 
-bench-short:                           ## Benchmark for 5 seconds
+bench-short:                           ## Benchmark for about 20 seconds
 	go test -list='Benchmark.*' ./...
 	rm -f new.txt
 	go test -bench=BenchmarkArray    -benchtime=5s ./internal/bson/  | tee -a new.txt

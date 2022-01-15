@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 	"net"
@@ -218,7 +219,19 @@ func setupMonila(ctx context.Context, pgPool *pg.Pool) {
 }
 
 func main() {
+	debugF := flag.Bool("debug", false, "enable debug mode")
+	flag.Parse()
+
+	if flag.NArg() != 0 {
+		flag.Usage()
+		fmt.Fprintln(flag.CommandLine.Output(), "no arguments expected")
+		os.Exit(2)
+	}
+
 	logging.Setup(zap.InfoLevel)
+	if *debugF {
+		logging.Setup(zap.DebugLevel)
+	}
 	logger := zap.S()
 
 	ctx, cancel := context.WithCancel(context.Background())
