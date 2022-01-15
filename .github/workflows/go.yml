@@ -116,7 +116,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
         with:
-          path: main
+          path: source
           fetch-depth: 0
 
       # use deploy key instead of Personal Access Token (PAT) to limit access to one repository
@@ -135,24 +135,30 @@ jobs:
 
       - name: Run init
         run: make init
-        working-directory: main
+        working-directory: source
+
+      - name: Setup corpus
+        run: go run ./cmd/fuzztool/fuzztool.go -src=../fuzz-corpus -dst=generated
+        working-directory: source
 
       # precompile tests with unset GOMAXPROCS
       - name: Init fuzzers
         run: make fuzz-init
-        working-directory: main
+        working-directory: source
 
       # TODO https://github.com/FerretDB/FerretDB/issues/238
       - name: Run fuzzers
         run: make fuzz-short
-        working-directory: main
+        working-directory: source
         env:
           GOMAXPROCS: 1 # otherwise, oom-killer kills fuzzer too often
 
       - name: Collect corpus
         if: always()
-        run: go run ./cmd/fuzztool/fuzztool.go ../fuzz-corpus
-        working-directory: main
+        run: |
+          go run ./cmd/fuzztool/fuzztool.go -src=seed -dst=../fuzz-corpus
+          go run ./cmd/fuzztool/fuzztool.go -src=generated -dst=../fuzz-corpus
+        working-directory: source
 
       - name: Push corpus
         if: always()
@@ -174,7 +180,7 @@ jobs:
           sudo cp /var/log/syslog /tmp/logs/
           sudo free > /tmp/logs/free.txt
           sudo chmod 0666 /tmp/logs/*
-        working-directory: main
+        working-directory: source
 
       - name: Upload Linux logs
         if: failure()
@@ -183,7 +189,7 @@ jobs:
           name: linux-logs
           path: /tmp/logs
 
-      - name: Upload fuzz corpus
+      - name: Upload all fuzz corpuses
         if: failure()
         uses: actions/upload-artifact@v2
         with:
@@ -191,9 +197,10 @@ jobs:
           path: |
             ${{ env.GOCACHE }}/fuzz
             **/testdata/fuzz
+            fuzz-corpus
 
       - name: Check dirty
         run: |
           git status
           git diff --exit-code
-        working-directory: main
+        working-directory: source

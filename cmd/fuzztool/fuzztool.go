@@ -42,7 +42,7 @@ func generatedCorpus() (string, error) {
 	return filepath.Join(gocache, "fuzz", "github.com", "FerretDB", "FerretDB"), nil
 }
 
-// collectFiles returns a map of all interesting files in the given directory.
+// collectFiles returns a map of all fuzz files in the given directory.
 func collectFiles(root string, logger *zap.SugaredLogger) (map[string]struct{}, error) {
 	existingFiles := make(map[string]struct{}, 1000)
 	err := filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
@@ -153,15 +153,13 @@ func copyCorpus(srcRoot, dstRoot string) {
 
 func main() {
 	debugF := flag.Bool("debug", false, "enable debug mode")
-	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s target_directory\n", os.Args[0])
-		flag.PrintDefaults()
-	}
+	srcF := flag.String("src", "", "source, one of: 'seed', 'generated', or collected corpus' directory")
+	dstF := flag.String("dst", "", "destination, one of: 'seed', 'generated', or or collected corpus' directory")
 	flag.Parse()
 
-	if flag.NArg() != 1 {
+	if flag.NArg() != 0 {
 		flag.Usage()
-		fmt.Fprintln(flag.CommandLine.Output(), "one arguments expected")
+		fmt.Fprintln(flag.CommandLine.Output(), "zero arguments expected")
 		os.Exit(2)
 	}
 
@@ -171,25 +169,46 @@ func main() {
 	}
 	logger := zap.S()
 
-	generatedCorpus, err := generatedCorpus()
-	if err != nil {
-		logger.Fatal(err)
-	}
-	logger.Infof("Generated corpus: %s.", generatedCorpus)
-
-	collectedCorpus, err := filepath.Abs(flag.Arg(0))
-	if err != nil {
-		logger.Fatal(err)
-	}
-	logger.Infof("Collected corpus: %s.", collectedCorpus)
-
-	copyCorpus(generatedCorpus, collectedCorpus)
-
 	seedCorpus, err := os.Getwd()
 	if err != nil {
 		logger.Fatal(err)
 	}
-	logger.Infof("Seed corpus: %s.", seedCorpus)
 
-	copyCorpus(seedCorpus, collectedCorpus)
+	generatedCorpus, err := generatedCorpus()
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	var src string
+	switch *srcF {
+	case "seed":
+		src = seedCorpus
+	case "generated":
+		src = generatedCorpus
+	case "":
+		logger.Fatal("-src flag must be specified.")
+	default:
+		src, err = filepath.Abs(*srcF)
+		if err != nil {
+			logger.Fatal(err)
+		}
+	}
+
+	var dst string
+	switch *dstF {
+	case "seed":
+		dst = seedCorpus
+	case "generated":
+		dst = generatedCorpus
+	case "":
+		logger.Fatal("-dst flag must be specified.")
+	default:
+		dst, err = filepath.Abs(*dstF)
+		if err != nil {
+			logger.Fatal(err)
+		}
+	}
+
+	logger.Infof("Copyting from %s to %s.", src, dst)
+	copyCorpus(src, dst)
 }
