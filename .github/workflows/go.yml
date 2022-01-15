@@ -154,6 +154,12 @@ jobs:
             **/testdata/fuzz
             fuzz-corpus
 
+      # To prevent Setup Go's cache to include it.
+      # See https://github.com/golang/go/issues/48901.
+      - name: Clear generated corpus
+        if: always()
+        run: go clean -fuzzcache
+
       - name: Check dirty
         run: |
           git status
