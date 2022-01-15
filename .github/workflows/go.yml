@@ -85,7 +85,9 @@ jobs:
           fetch-depth: 0
 
       - run: exit 1
-        if: secrets.FUZZ_CORPUS_DEPLOY_KEY
+        if: ${{ env.SECRET != '' }}
+        env:
+          SECRET: ${{ secrets.FUZZ_CORPUS_DEPLOY_KEY }}
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
