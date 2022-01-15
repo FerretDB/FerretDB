@@ -75,6 +75,7 @@ jobs:
           fetch-depth: 0
 
       # use deploy key instead of Personal Access Token (PAT) to limit access to one repository
+      # test
       - name: Checkout collected fuzz corpus
         uses: actions/checkout@v2
         with:
