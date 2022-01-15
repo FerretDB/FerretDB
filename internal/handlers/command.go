@@ -118,6 +118,7 @@ var commands = map[string]command{
 	"listcommands": {
 		name: "listCommands",
 		help: "Returns information about the currently supported commands.",
+		// no handler - special case
 	},
 	"ping": {
 		name:    "ping",
@@ -175,8 +176,8 @@ var commands = map[string]command{
 	},
 }
 
-// SupportedCommands returns a list of currently supported commands.
-func SupportedCommands(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
+// listCommands returns a list of currently supported commands.
+func listCommands(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 
 	cmdList := types.MustMakeDocument()

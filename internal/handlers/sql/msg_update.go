@@ -16,12 +16,13 @@ package sql
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgUpdate modifies an existing document or documents in a collection.
 func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, lazyerrors.New("not implemented")
+	return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("update: not implemented for SQL storage"))
 }

@@ -21,6 +21,7 @@ import (
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -34,6 +35,11 @@ func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
+	if err := common.Unimplemented(document, "let"); err != nil {
+		return nil, err
+	}
+	common.Ignored(document, h.l, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
+
 	m := document.Map()
 	collection := m["update"].(string)
 	docs, _ := m["updates"].(*types.Array)
@@ -44,6 +50,18 @@ func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		doc, err := docs.Get(i)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
+		}
+
+		unimplementedFields := []string{
+			"c",
+			"upsert",
+			"multi",
+			"collation",
+			"arrayFilters",
+			"hint",
+		}
+		if err := common.Unimplemented(doc.(types.Document), unimplementedFields...); err != nil {
+			return nil, err
 		}
 
 		docM := doc.(types.Document).Map()

@@ -16,11 +16,12 @@ package sql
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 func (h *storage) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, lazyerrors.New("not implemented")
+	return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("createIndexes: not implemented for SQL storage"))
 }

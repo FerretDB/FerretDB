@@ -20,6 +20,7 @@ import (
 
 	"github.com/jackc/pgx/v4"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -32,6 +33,8 @@ func (h *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
+	common.Ignored(document, h.l.Desugar(), "ordered", "writeConcern", "bypassDocumentValidation", "comment")
 
 	m := document.Map()
 	collection := m[document.Command()].(string)

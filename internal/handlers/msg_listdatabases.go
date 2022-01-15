@@ -17,6 +17,7 @@ package handlers
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -24,6 +25,28 @@ import (
 
 // MsgListDatabases command provides a list of all existing databases along with basic statistics about them.
 func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if err = common.UnimplementedNonDefault(document, "filter", func(v any) bool {
+		d, ok := v.(types.Document)
+		return ok && d.Len() == 0
+	}); err != nil {
+		return nil, err
+	}
+	if err = common.UnimplementedNonDefault(document, "nameOnly", func(v any) bool {
+		nameOnly, ok := v.(bool)
+		return ok && !nameOnly
+	}); err != nil {
+		return nil, err
+	}
+	if err := common.Unimplemented(document, "authorizedCollections"); err != nil {
+		return nil, err
+	}
+	common.Ignored(document, h.l, "comment")
+
 	databaseNames, err := h.pgPool.Schemas(ctx)
 	if err != nil {
 		return nil, err

@@ -35,6 +35,34 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, lazyerrors.Error(err)
 	}
 
+	unimplementedFields := []string{
+		"skip",
+		"returnKey",
+		"showRecordId",
+		"tailable",
+		"oplogReplay",
+		"noCursorTimeout",
+		"awaitData",
+		"allowPartialResults",
+		"collation",
+		"allowDiskUse",
+		"let",
+	}
+	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
+		return nil, err
+	}
+	ignoredFields := []string{
+		"hint",
+		"batchSize",
+		"singleBatch",
+		"comment",
+		"maxTimeMS",
+		"readConcern",
+		"max",
+		"min",
+	}
+	common.Ignored(document, h.l, ignoredFields...)
+
 	var filter types.Document
 	var sql, collection string
 
@@ -102,7 +130,7 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		args = append(args, limit)
 	default:
 		// TODO https://github.com/FerretDB/FerretDB/issues/79
-		return nil, common.NewErrorMessage(common.ErrNotImplemented, "MsgFind: negative limit values are not supported")
+		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("find: negative limit values are not supported"))
 	}
 
 	rows, err := h.pgPool.Query(ctx, sql, args...)

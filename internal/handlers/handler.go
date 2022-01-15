@@ -149,8 +149,9 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 
 	h.metrics.requests.WithLabelValues(wire.OP_MSG.String(), cmd).Inc()
 
+	// special case to avoid circular dependency
 	if cmd == "listcommands" {
-		return SupportedCommands(ctx, msg)
+		return listCommands(ctx, msg)
 	}
 
 	if cmd, ok := commands[cmd]; ok {
@@ -165,7 +166,7 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return cmd.storageHandler(storage, ctx, msg)
 	}
 
-	return nil, common.NewErrorMessage(common.ErrCommandNotFound, "no such command: '%s'", cmd)
+	return nil, common.NewError(common.ErrCommandNotFound, fmt.Errorf("no such command: '%s'", cmd))
 }
 
 func (h *Handler) handleOpQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
@@ -176,7 +177,8 @@ func (h *Handler) handleOpQuery(ctx context.Context, query *wire.OpQuery) (*wire
 		return h.QueryCmd(ctx, query)
 	}
 
-	return nil, common.NewErrorMessage(common.ErrNotImplemented, "handleOpQuery: unhandled collection %q", query.FullCollectionName)
+	err := fmt.Errorf("handleOpQuery: unhandled collection %q", query.FullCollectionName)
+	return nil, common.NewError(common.ErrNotImplemented, err)
 }
 
 func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) (common.Storage, error) {
