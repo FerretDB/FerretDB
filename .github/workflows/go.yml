@@ -60,53 +60,8 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - name: Setup Go
-        uses: FerretDB/github-actions/setup-go@main
-        with:
-          cache-key: lint
-
-      - name: Run init
-        run: make init
-
-      - name: Format code
-        run: make fmt
-
-      - name: Run required linters
-        uses: golangci/golangci-lint-action@v2
-        if: ${{ false }} # skip until golangci-lint is recompiled with Go 1.18
-        with:
-          version: v1.43 # sync with tools/go.mod
-          args: --config=.golangci-required.yml
-          only-new-issues: false
-          skip-go-installation: true
-          skip-pkg-cache: true
-          skip-build-cache: true
-
-      - name: Run all linters
-        uses: golangci/golangci-lint-action@v2
-        if: ${{ false }} # skip until golangci-lint is recompiled with Go 1.18
-        with:
-          version: v1.43 # sync with tools/go.mod
-          args: --config=.golangci.yml
-          only-new-issues: true
-          skip-go-installation: true
-          skip-pkg-cache: true
-          skip-build-cache: true
-
-      - name: Run linters manually
-        run: make lint
-
-      # TODO don't forget to run go-consistent when we switch back to golangci/golangci-lint-action
-
-      - name: Check dirty
-        run: |
-          git status
-          git diff --exit-code
+      - name: Run linters
+        uses: FerretDB/github-actions/linters@main
 
   fuzz-short:
     name: Fuzz short
@@ -189,7 +144,7 @@ jobs:
           name: linux-logs
           path: /tmp/logs
 
-      - name: Upload all fuzz corpuses
+      - name: Upload all fuzz corpora
         if: failure()
         uses: actions/upload-artifact@v2
         with:
