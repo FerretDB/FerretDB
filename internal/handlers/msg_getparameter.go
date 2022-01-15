@@ -17,6 +17,7 @@ package handlers
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -24,8 +25,15 @@ import (
 
 // MsgGetParameter OpMsg used to get parameter.
 func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	common.Ignored(document, h.l, "comment")
+
 	var reply wire.OpMsg
-	err := reply.SetSections(wire.OpMsgSection{
+	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
 			"version", versionValue,
 			"ok", float64(1),

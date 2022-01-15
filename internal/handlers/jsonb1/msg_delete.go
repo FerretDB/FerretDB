@@ -34,6 +34,11 @@ func (h *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
+	if err := common.Unimplemented(document, "let"); err != nil {
+		return nil, err
+	}
+	common.Ignored(document, h.l, "ordered", "writeConcern")
+
 	m := document.Map()
 	collection := m[document.Command()].(string)
 	db := m["$db"].(string)
@@ -44,6 +49,10 @@ func (h *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		doc, err := docs.Get(i)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
+		}
+
+		if err := common.Unimplemented(doc.(types.Document), "collation", "hint", "comment"); err != nil {
+			return nil, err
 		}
 
 		d := doc.(types.Document).Map()
@@ -68,7 +77,7 @@ func (h *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		tag, err := h.pgPool.Exec(ctx, sql, args...)
 		if err != nil {
 			// TODO check error code
-			return nil, common.NewErrorMessage(common.ErrNamespaceNotFound, "MsgDelete: ns not found: %w", err)
+			return nil, common.NewError(common.ErrNamespaceNotFound, fmt.Errorf("delete: ns not found: %w", err))
 		}
 
 		deleted += int32(tag.RowsAffected())

@@ -16,6 +16,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/pg"
@@ -31,13 +32,15 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
+	common.Ignored(document, h.l, "writeConcern", "comment")
+
 	m := document.Map()
 	collection := m[document.Command()].(string)
 	db := m["$db"].(string)
 
 	if err = h.pgPool.DropTable(ctx, db, collection); err != nil {
 		if err == pg.ErrNotExist {
-			return nil, common.NewErrorMessage(common.ErrNamespaceNotFound, "ns not found")
+			return nil, common.NewError(common.ErrNamespaceNotFound, fmt.Errorf("ns not found"))
 		}
 		return nil, lazyerrors.Error(err)
 	}

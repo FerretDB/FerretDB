@@ -16,6 +16,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -50,6 +51,6 @@ func (h *Handler) QueryCmd(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 		return reply, nil
 
 	default:
-		return nil, common.NewErrorMessage(common.ErrNotImplemented, "QueryCmd: unhandled command %q", cmd)
+		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("QueryCmd: unhandled command %q", cmd))
 	}
 }

@@ -154,6 +154,11 @@ func (d Document) validate() error {
 	return nil
 }
 
+// Len returns the number of elements in the document.
+func (d Document) Len() int {
+	return len(d.keys)
+}
+
 // Map returns this document as a map. Do not modify it.
 func (d Document) Map() map[string]any {
 	return d.m

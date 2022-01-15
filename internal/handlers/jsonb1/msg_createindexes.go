@@ -17,6 +17,7 @@ package jsonb1
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -25,8 +26,15 @@ import (
 func (h *storage) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/78
 
+	document, err := msg.Document()
+	if err != nil {
+		return nil, err
+	}
+
+	common.Ignored(document, h.l, "writeConcern", "commitQuorum", "comment")
+
 	var reply wire.OpMsg
-	err := reply.SetSections(wire.OpMsgSection{
+	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []types.Document{types.MustMakeDocument(
 			"ok", float64(1),
 		)},
