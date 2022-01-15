@@ -74,8 +74,8 @@ jobs:
           path: source
           fetch-depth: 0
 
-      # use deploy key instead of Personal Access Token (PAT) to limit access to one repository
-      # test
+      # Use deploy key instead of Personal Access Token (PAT) to limit access to one repository.
+      # If secrets are not available (for example, for a pull request from a fork), GITHUB_TOKEN PAT is used automatically.
       - name: Checkout collected fuzz corpus
         uses: actions/checkout@v2
         with:
@@ -83,6 +83,9 @@ jobs:
           ssh-key: ${{ secrets.FUZZ_CORPUS_DEPLOY_KEY }}
           path: fuzz-corpus
           fetch-depth: 0
+
+      - run: exit 1
+        if: secrets.FUZZ_CORPUS_DEPLOY_KEY
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
