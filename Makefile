@@ -1,3 +1,5 @@
+FUZZTIME ?= 20s
+
 all: fmt test
 
 help:                                  ## Display this help message
@@ -46,15 +48,16 @@ test:                                  ## Run tests
 fuzz-init: gen-version
 	go test -count=0 ./...
 
-fuzz-short:                            ## Fuzz for about 2 minutes
+fuzz:                                  ## Fuzz for about 2 minutes (with default FUZZTIME)
 	go test -list='Fuzz.*' ./...
-	go test -fuzz=FuzzArray -fuzztime=20s ./internal/bson/
-	go test -fuzz=FuzzDocument -fuzztime=20s ./internal/bson/
-	go test -fuzz=FuzzArray -fuzztime=20s ./internal/fjson/
-	go test -fuzz=FuzzDocument -fuzztime=20s ./internal/fjson/
-	go test -fuzz=FuzzMsg -fuzztime=20s ./internal/wire/
-	go test -fuzz=FuzzQuery -fuzztime=20s ./internal/wire/
-	go test -fuzz=FuzzReply -fuzztime=20s ./internal/wire/
+	# Running seven functions for $(FUZZTIME) each..."
+	go test -fuzz=FuzzArray -fuzztime=$(FUZZTIME) ./internal/bson/
+	go test -fuzz=FuzzDocument -fuzztime=$(FUZZTIME) ./internal/bson/
+	go test -fuzz=FuzzArray -fuzztime=$(FUZZTIME) ./internal/fjson/
+	go test -fuzz=FuzzDocument -fuzztime=$(FUZZTIME) ./internal/fjson/
+	go test -fuzz=FuzzMsg -fuzztime=$(FUZZTIME) ./internal/wire/
+	go test -fuzz=FuzzQuery -fuzztime=$(FUZZTIME) ./internal/wire/
+	go test -fuzz=FuzzReply -fuzztime=$(FUZZTIME) ./internal/wire/
 
 bench-short:                           ## Benchmark for about 20 seconds
 	go test -list='Benchmark.*' ./...

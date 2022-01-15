@@ -104,7 +104,7 @@ jobs:
 
       # TODO https://github.com/FerretDB/FerretDB/issues/238
       - name: Run fuzzers
-        run: make fuzz-short
+        run: make fuzz
         working-directory: source
         env:
           GOMAXPROCS: 1 # otherwise, oom-killer kills fuzzer too often
