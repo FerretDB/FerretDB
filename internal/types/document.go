@@ -75,6 +75,8 @@ func ConvertDocument(d document) (Document, error) {
 }
 
 // MustConvertDocument is a ConvertDocument that panics in case of error.
+//
+// Deprecated: use `must.NotFail(ConvertDocument(...))` instead.
 func MustConvertDocument(d document) Document {
 	doc, err := ConvertDocument(d)
 	if err != nil {
@@ -114,6 +116,8 @@ func MakeDocument(pairs ...any) (Document, error) {
 }
 
 // MustMakeDocument is a MakeDocument that panics in case of error.
+//
+// Deprecated: use `must.NotFail(MakeDocument(...))` instead.
 func MustMakeDocument(pairs ...any) Document {
 	doc, err := MakeDocument(pairs...)
 	if err != nil {

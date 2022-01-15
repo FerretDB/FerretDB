@@ -35,12 +35,14 @@ func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		Documents: []types.Document{types.MustMakeDocument(
 			"version", versionValue,
 			"gitVersion", version.Get().Commit,
+			"modules", types.MustNewArray(),
+			"sysInfo", "deprecated",
 			"versionArray", must.NotFail(types.NewArray(int32(5), int32(0), int32(42), int32(0))),
 			"bits", int32(strconv.IntSize),
 			"debug", version.Get().Debug,
 			"maxBsonObjectSize", int32(types.MaxDocumentLen),
-			"ok", float64(1),
 			"buildEnvironment", version.Get().BuildEnvironment,
+			"ok", float64(1),
 		)},
 	})
 	if err != nil {

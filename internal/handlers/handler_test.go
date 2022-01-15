@@ -31,6 +31,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/sql"
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/version"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -429,12 +430,14 @@ func TestReadOnlyHandlers(t *testing.T) {
 			resp: types.MustMakeDocument(
 				"version", "5.0.42",
 				"gitVersion", version.Get().Commit,
-				"versionArray", types.MustNewArray(int32(5), int32(0), int32(42), int32(0)),
+				"modules", must.NotFail(types.NewArray()),
+				"sysInfo", "deprecated",
+				"versionArray", must.NotFail(types.NewArray(int32(5), int32(0), int32(42), int32(0))),
 				"bits", int32(strconv.IntSize),
 				"debug", version.Get().Debug,
 				"maxBsonObjectSize", int32(16777216),
+				"buildEnvironment", must.NotFail(types.MakeDocument()),
 				"ok", float64(1),
-				"buildEnvironment", types.MustMakeDocument(),
 			),
 		},
 
