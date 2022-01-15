@@ -5,6 +5,10 @@ go 1.18
 // TODO remove once https://github.com/quasilyte/go-consistent/issues/38 is fixed properly
 replace github.com/quasilyte/go-consistent => github.com/AlekSi/go-consistent v0.0.0-20220110091530-6bd5f7d2362a
 
+// TODO remove once stringer is fixed
+// TODO create an issue in Go repo
+replace golang.org/x/tools => github.com/AlekSi/tools v0.1.9-0.20220115084258-e92103107bc4
+
 require (
 	github.com/BurntSushi/go-sumtype v0.0.0-20190304192233-fcb4a6205bdc
 	github.com/golangci/golangci-lint v1.43.0 // sync with Go workflow

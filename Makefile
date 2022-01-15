@@ -21,6 +21,7 @@ env-down:                              ## Stop development environment
 	docker-compose down --remove-orphans
 
 init: gen-version                      ## Install development tools
+	rm -fr bin
 	go mod tidy
 	cd tools && go mod tidy
 	go mod verify
