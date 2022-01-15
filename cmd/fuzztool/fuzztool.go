@@ -31,15 +31,26 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 )
 
-// generatedCorpus returns $GOCACHE/fuzz/github.com/FerretDB/FerretDB.
+// generatedCorpus returns $GOCACHE/fuzz/github.com/FerretDB/FerretDB,
+// ensuring that this directory exists.
 func generatedCorpus() (string, error) {
 	b, err := exec.Command("go", "env", "GOCACHE").Output()
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
 
-	gocache := strings.TrimSpace(string(b))
-	return filepath.Join(gocache, "fuzz", "github.com", "FerretDB", "FerretDB"), nil
+	path := filepath.Join(strings.TrimSpace(string(b)), "fuzz", "github.com", "FerretDB", "FerretDB")
+
+	if _, err = os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			err = os.MkdirAll(path, 0o777)
+		}
+		if err != nil {
+			return "", lazyerrors.Error(err)
+		}
+	}
+
+	return path, err
 }
 
 // collectFiles returns a map of all fuzz files in the given directory.
