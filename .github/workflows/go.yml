@@ -74,7 +74,8 @@ jobs:
           path: source
           fetch-depth: 0
 
-      # use deploy key instead of Personal Access Token (PAT) to limit access to one repository
+      # Use deploy key instead of Personal Access Token (PAT) to limit access to one repository.
+      # If secrets are not available (for example, for a pull request from a fork), GITHUB_TOKEN PAT is used automatically.
       - name: Checkout collected fuzz corpus
         uses: actions/checkout@v2
         with:
@@ -115,8 +116,13 @@ jobs:
           go run ./cmd/fuzztool/fuzztool.go -src=generated -dst=../fuzz-corpus
         working-directory: source
 
+      # `secrets` are not supported in `if`, so we have to do this trick with environment variable:
+      # https://docs.github.com/en/actions/learn-github-actions/contexts#context-availability
+      # https://github.com/actions/runner/issues/520
       - name: Push corpus
-        if: always()
+        if: ${{ always() && env.KEY != '' }}
+        env:
+          KEY: ${{ secrets.FUZZ_CORPUS_DEPLOY_KEY }}
         run: |
           git config user.name ferretdb-bot
           git config user.email ferretdb-bot@ferretdb.io
