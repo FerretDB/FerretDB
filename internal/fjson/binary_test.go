@@ -22,14 +22,14 @@ import (
 
 var binaryTestCases = []testCase{{
 	name: "foo",
-	v: &fjsonBinary{
+	v: &binaryType{
 		Subtype: types.BinaryUser,
 		B:       []byte("foo"),
 	},
 	j: `{"$b":"Zm9v","s":128}`,
 }, {
 	name: "empty",
-	v: &fjsonBinary{
+	v: &binaryType{
 		Subtype: types.BinaryGeneric,
 		B:       []byte{},
 	},
@@ -37,14 +37,14 @@ var binaryTestCases = []testCase{{
 	canonJ: `{"$b":"","s":0}`,
 }, {
 	name: "invalid subtype",
-	v: &fjsonBinary{
+	v: &binaryType{
 		Subtype: 0xff,
 		B:       []byte{},
 	},
 	j: `{"$b":"","s":255}`,
 }, {
 	name: "extra JSON fields",
-	v: &fjsonBinary{
+	v: &binaryType{
 		Subtype: types.BinaryUser,
 		B:       []byte("foo"),
 	},
@@ -59,13 +59,13 @@ var binaryTestCases = []testCase{{
 
 func TestBinary(t *testing.T) {
 	t.Parallel()
-	testJSON(t, binaryTestCases, func() fjsontype { return new(fjsonBinary) })
+	testJSON(t, binaryTestCases, func() fjsontype { return new(binaryType) })
 }
 
 func FuzzBinary(f *testing.F) {
-	fuzzJSON(f, binaryTestCases, func() fjsontype { return new(fjsonBinary) })
+	fuzzJSON(f, binaryTestCases, func() fjsontype { return new(binaryType) })
 }
 
 func BenchmarkBinary(b *testing.B) {
-	benchmark(b, binaryTestCases, func() fjsontype { return new(fjsonBinary) })
+	benchmark(b, binaryTestCases, func() fjsontype { return new(binaryType) })
 }

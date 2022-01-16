@@ -22,11 +22,11 @@ import (
 
 var cstringTestCases = []testCase{{
 	name: "foo",
-	v:    pointer.To(fjsonCString("foo")),
+	v:    pointer.To(cstringType("foo")),
 	j:    `{"$c":"foo"}`,
 }, {
 	name: "empty",
-	v:    pointer.To(fjsonCString("")),
+	v:    pointer.To(cstringType("")),
 	j:    `{"$c":""}`,
 }, {
 	name: "EOF",
@@ -36,13 +36,13 @@ var cstringTestCases = []testCase{{
 
 func TestCString(t *testing.T) {
 	t.Parallel()
-	testJSON(t, cstringTestCases, func() fjsontype { return new(fjsonCString) })
+	testJSON(t, cstringTestCases, func() fjsontype { return new(cstringType) })
 }
 
 func FuzzCString(f *testing.F) {
-	fuzzJSON(f, cstringTestCases, func() fjsontype { return new(fjsonCString) })
+	fuzzJSON(f, cstringTestCases, func() fjsontype { return new(cstringType) })
 }
 
 func BenchmarkCString(b *testing.B) {
-	benchmark(b, cstringTestCases, func() fjsontype { return new(fjsonCString) })
+	benchmark(b, cstringTestCases, func() fjsontype { return new(cstringType) })
 }

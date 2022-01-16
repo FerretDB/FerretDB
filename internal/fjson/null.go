@@ -15,50 +15,28 @@
 package fjson
 
 import (
-	"bytes"
-	"encoding/json"
+	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-// int32Type represents BSON 32-bit integer type.
-type int32Type int32
+// nullType represents BSON Null type.
+type nullType types.NullType
 
 // fjsontype implements fjsontype interface.
-func (i *int32Type) fjsontype() {}
+func (*nullType) fjsontype() {}
 
 // UnmarshalJSON implements fjsontype interface.
-func (i *int32Type) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
-	}
-
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
-
-	var o int32
-	if err := dec.Decode(&o); err != nil {
-		return lazyerrors.Error(err)
-	}
-	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	*i = int32Type(o)
-	return nil
+func (*nullType) UnmarshalJSON(data []byte) error {
+	panic(fmt.Sprintf("must not be called, was called with %s", string(data)))
 }
 
 // MarshalJSON implements fjsontype interface.
-func (i *int32Type) MarshalJSON() ([]byte, error) {
-	res, err := json.Marshal(int32(*i))
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-	return res, nil
+func (*nullType) MarshalJSON() ([]byte, error) {
+	return []byte("null"), nil
 }
 
 // check interfaces
 var (
-	_ fjsontype = (*int32Type)(nil)
+	_ fjsontype = (*nullType)(nil)
 )

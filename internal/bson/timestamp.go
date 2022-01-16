@@ -23,7 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// Timestamp represents BSON Timestamp data type.
+// Timestamp represents BSON Timestamp type.
 type Timestamp types.Timestamp
 
 func (ts *Timestamp) bsontype() {}

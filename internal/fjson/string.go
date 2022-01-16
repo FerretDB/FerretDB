@@ -21,14 +21,14 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// fjsonString represents BSON fjsonString data type.
-type fjsonString string
+// stringType represents BSON UTF-8 string type.
+type stringType string
 
 // fjsontype implements fjsontype interface.
-func (str *fjsonString) fjsontype() {}
+func (str *stringType) fjsontype() {}
 
 // UnmarshalJSON implements fjsontype interface.
-func (str *fjsonString) UnmarshalJSON(data []byte) error {
+func (str *stringType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -45,12 +45,12 @@ func (str *fjsonString) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	*str = fjsonString(o)
+	*str = stringType(o)
 	return nil
 }
 
 // MarshalJSON implements fjsontype interface.
-func (str *fjsonString) MarshalJSON() ([]byte, error) {
+func (str *stringType) MarshalJSON() ([]byte, error) {
 	res, err := json.Marshal(string(*str))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -60,5 +60,5 @@ func (str *fjsonString) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ fjsontype = (*fjsonString)(nil)
+	_ fjsontype = (*stringType)(nil)
 )

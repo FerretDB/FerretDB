@@ -23,7 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// DateTime represents BSON DateTime data type.
+// DateTime represents BSON UTC datetime type.
 type DateTime time.Time
 
 func (dt DateTime) String() string {

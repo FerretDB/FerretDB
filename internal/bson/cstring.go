@@ -20,7 +20,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// CString represents BSON CString data type.
+// CString represents BSON zero-terminated UTF-8 string type.
 type CString string
 
 func (cstr *CString) bsontype() {}

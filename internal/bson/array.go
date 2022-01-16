@@ -22,7 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// Array represents BSON Array data type.
+// Array represents BSON Array type.
 type Array types.Array
 
 func (a *Array) bsontype() {}

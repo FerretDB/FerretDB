@@ -34,14 +34,17 @@ func TestArray(t *testing.T) {
 		assert.Equal(t, 0, a.Len())
 		assert.Nil(t, a.s)
 
-		err := a.Append(nil)
+		err := a.Append(Null)
 		assert.NoError(t, err)
 		value, err := a.Get(0)
 		assert.NoError(t, err)
-		assert.Equal(t, nil, value)
+		assert.Equal(t, Null, value)
 
 		err = a.Append(42)
 		assert.EqualError(t, err, `types.Array.Append: types.validateValue: unsupported type: int (42)`)
+
+		err = a.Append(nil)
+		assert.EqualError(t, err, `types.Array.Append: types.validateValue: unsupported type: <nil> (<nil>)`)
 	})
 
 	t.Run("NewArray", func(t *testing.T) {

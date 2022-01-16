@@ -23,19 +23,19 @@ import (
 
 var int64TestCases = []testCase{{
 	name: "42",
-	v:    pointer.To(fjsonInt64(42)),
+	v:    pointer.To(int64Type(42)),
 	j:    `{"$l":"42"}`,
 }, {
 	name: "zero",
-	v:    pointer.To(fjsonInt64(0)),
+	v:    pointer.To(int64Type(0)),
 	j:    `{"$l":"0"}`,
 }, {
 	name: "max int64",
-	v:    pointer.To(fjsonInt64(math.MaxInt64)),
+	v:    pointer.To(int64Type(math.MaxInt64)),
 	j:    `{"$l":"9223372036854775807"}`,
 }, {
 	name: "min int64",
-	v:    pointer.To(fjsonInt64(math.MinInt64)),
+	v:    pointer.To(int64Type(math.MinInt64)),
 	j:    `{"$l":"-9223372036854775808"}`,
 }, {
 	name: "EOF",
@@ -45,13 +45,13 @@ var int64TestCases = []testCase{{
 
 func TestInt64(t *testing.T) {
 	t.Parallel()
-	testJSON(t, int64TestCases, func() fjsontype { return new(fjsonInt64) })
+	testJSON(t, int64TestCases, func() fjsontype { return new(int64Type) })
 }
 
 func FuzzInt64(f *testing.F) {
-	fuzzJSON(f, int64TestCases, func() fjsontype { return new(fjsonInt64) })
+	fuzzJSON(f, int64TestCases, func() fjsontype { return new(int64Type) })
 }
 
 func BenchmarkInt64(b *testing.B) {
-	benchmark(b, int64TestCases, func() fjsontype { return new(fjsonInt64) })
+	benchmark(b, int64TestCases, func() fjsontype { return new(int64Type) })
 }

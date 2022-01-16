@@ -21,8 +21,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-func convertDocument(d types.Document) *document {
-	res := document(d)
+func convertDocument(d types.Document) *documentType {
+	res := documentType(d)
 	return &res
 }
 
@@ -212,13 +212,13 @@ var (
 
 func TestDocument(t *testing.T) {
 	t.Parallel()
-	testJSON(t, documentTestCases, func() fjsontype { return new(document) })
+	testJSON(t, documentTestCases, func() fjsontype { return new(documentType) })
 }
 
 func FuzzDocument(f *testing.F) {
-	fuzzJSON(f, documentTestCases, func() fjsontype { return new(document) })
+	fuzzJSON(f, documentTestCases, func() fjsontype { return new(documentType) })
 }
 
 func BenchmarkDocument(b *testing.B) {
-	benchmark(b, documentTestCases, func() fjsontype { return new(document) })
+	benchmark(b, documentTestCases, func() fjsontype { return new(documentType) })
 }

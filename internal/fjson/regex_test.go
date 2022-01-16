@@ -22,11 +22,11 @@ import (
 
 var regexTestCases = []testCase{{
 	name: "normal",
-	v:    pointer.To(fjsonRegex{Pattern: "hoffman", Options: "i"}),
+	v:    pointer.To(regexType{Pattern: "hoffman", Options: "i"}),
 	j:    `{"$r":"hoffman","o":"i"}`,
 }, {
 	name: "empty",
-	v:    pointer.To(fjsonRegex{Pattern: "", Options: ""}),
+	v:    pointer.To(regexType{Pattern: "", Options: ""}),
 	j:    `{"$r":"","o":""}`,
 }, {
 	name: "EOF",
@@ -36,13 +36,13 @@ var regexTestCases = []testCase{{
 
 func TestRegex(t *testing.T) {
 	t.Parallel()
-	testJSON(t, regexTestCases, func() fjsontype { return new(fjsonRegex) })
+	testJSON(t, regexTestCases, func() fjsontype { return new(regexType) })
 }
 
 func FuzzRegex(f *testing.F) {
-	fuzzJSON(f, regexTestCases, func() fjsontype { return new(fjsonRegex) })
+	fuzzJSON(f, regexTestCases, func() fjsontype { return new(regexType) })
 }
 
 func BenchmarkRegex(b *testing.B) {
-	benchmark(b, regexTestCases, func() fjsontype { return new(fjsonRegex) })
+	benchmark(b, regexTestCases, func() fjsontype { return new(regexType) })
 }

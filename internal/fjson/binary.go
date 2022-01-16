@@ -22,11 +22,11 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// fjsonBinary represents BSON fjsonBinary data type.
-type fjsonBinary types.Binary
+// binaryType represents BSON Binary data type.
+type binaryType types.Binary
 
 // fjsontype implements fjsontype interface.
-func (bin *fjsonBinary) fjsontype() {}
+func (bin *binaryType) fjsontype() {}
 
 type binaryJSON struct {
 	B []byte `json:"$b"`
@@ -34,7 +34,7 @@ type binaryJSON struct {
 }
 
 // UnmarshalJSON implements fjsontype interface.
-func (bin *fjsonBinary) UnmarshalJSON(data []byte) error {
+func (bin *binaryType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -58,7 +58,7 @@ func (bin *fjsonBinary) UnmarshalJSON(data []byte) error {
 }
 
 // MarshalJSON implements fjsontype interface.
-func (bin *fjsonBinary) MarshalJSON() ([]byte, error) {
+func (bin *binaryType) MarshalJSON() ([]byte, error) {
 	res, err := json.Marshal(binaryJSON{
 		B: bin.B,
 		S: byte(bin.Subtype),
@@ -71,5 +71,5 @@ func (bin *fjsonBinary) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ fjsontype = (*fjsonBinary)(nil)
+	_ fjsontype = (*binaryType)(nil)
 )
