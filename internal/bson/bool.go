@@ -20,7 +20,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// Bool represents BSON Bool data type.
+// Bool represents BSON Boolean type.
 type Bool bool
 
 func (b *Bool) bsontype() {}

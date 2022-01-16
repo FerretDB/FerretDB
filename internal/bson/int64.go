@@ -22,7 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// Int64 represents BSON Int64 data type.
+// Int64 represents BSON 64-bit integer type.
 type Int64 int64
 
 func (i *Int64) bsontype() {}

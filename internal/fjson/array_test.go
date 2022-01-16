@@ -21,8 +21,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-func convertArray(a *types.Array) *fjsonArray {
-	res := fjsonArray(*a)
+func convertArray(a *types.Array) *arrayType {
+	res := arrayType(*a)
 	return &res
 }
 
@@ -38,7 +38,7 @@ var arrayTestCases = []testCase{{
 		int32(42),
 		int64(42),
 		"foo",
-		nil,
+		types.Null,
 	)),
 	j: `[[],{"$b":"Qg==","s":128},true,{"$d":1627378542123},{"$k":[]},{"$f":42.13},42,{"$l":"42"},"foo",null]`,
 }, {
@@ -49,13 +49,13 @@ var arrayTestCases = []testCase{{
 
 func TestArray(t *testing.T) {
 	t.Parallel()
-	testJSON(t, arrayTestCases, func() fjsontype { return new(fjsonArray) })
+	testJSON(t, arrayTestCases, func() fjsontype { return new(arrayType) })
 }
 
 func FuzzArray(f *testing.F) {
-	fuzzJSON(f, arrayTestCases, func() fjsontype { return new(fjsonArray) })
+	fuzzJSON(f, arrayTestCases, func() fjsontype { return new(arrayType) })
 }
 
 func BenchmarkArray(b *testing.B) {
-	benchmark(b, arrayTestCases, func() fjsontype { return new(fjsonArray) })
+	benchmark(b, arrayTestCases, func() fjsontype { return new(arrayType) })
 }

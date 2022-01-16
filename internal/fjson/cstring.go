@@ -22,18 +22,18 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// fjsonCString represents BSON fjsonCString data type.
-type fjsonCString types.CString
+// cstringType represents BSON zero-terminated UTF-8 string type.
+type cstringType types.CString
 
 // fjsontype implements fjsontype interface.
-func (cstr *fjsonCString) fjsontype() {}
+func (cstr *cstringType) fjsontype() {}
 
 type cstringJSON struct {
 	CString string `json:"$c"`
 }
 
 // UnmarshalJSON implements fjsontype interface.
-func (cstr *fjsonCString) UnmarshalJSON(data []byte) error {
+func (cstr *cstringType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -50,12 +50,12 @@ func (cstr *fjsonCString) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	*cstr = fjsonCString(o.CString)
+	*cstr = cstringType(o.CString)
 	return nil
 }
 
 // MarshalJSON implements fjsontype interface.
-func (cstr *fjsonCString) MarshalJSON() ([]byte, error) {
+func (cstr *cstringType) MarshalJSON() ([]byte, error) {
 	res, err := json.Marshal(cstringJSON{
 		CString: string(*cstr),
 	})
@@ -67,5 +67,5 @@ func (cstr *fjsonCString) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ fjsontype = (*fjsonCString)(nil)
+	_ fjsontype = (*cstringType)(nil)
 )

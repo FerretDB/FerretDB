@@ -22,7 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// ObjectID represents BSON ObjectID data type.
+// ObjectID represents BSON ObjectId type.
 type ObjectID types.ObjectID
 
 func (obj *ObjectID) bsontype() {}

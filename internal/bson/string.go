@@ -23,7 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// String represents BSON String data type.
+// String represents BSON UTF-8 string type.
 type String string
 
 func (str *String) bsontype() {}

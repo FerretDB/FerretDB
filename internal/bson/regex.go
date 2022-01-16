@@ -22,7 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// Regex represents BSON Regex data type.
+// Regex represents BSON Regular expression type.
 type Regex types.Regex
 
 func (regex *Regex) bsontype() {}

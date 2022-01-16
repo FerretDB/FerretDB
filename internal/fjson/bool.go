@@ -21,14 +21,14 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// fjsonBool represents BSON fjsonBool data type.
-type fjsonBool bool
+// boolType represents BSON Boolean type.
+type boolType bool
 
 // fjsontype implements fjsontype interface.
-func (b *fjsonBool) fjsontype() {}
+func (b *boolType) fjsontype() {}
 
 // UnmarshalJSON implements fjsontype interface.
-func (b *fjsonBool) UnmarshalJSON(data []byte) error {
+func (b *boolType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -45,12 +45,12 @@ func (b *fjsonBool) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	*b = fjsonBool(o)
+	*b = boolType(o)
 	return nil
 }
 
 // MarshalJSON implements fjsontype interface.
-func (b *fjsonBool) MarshalJSON() ([]byte, error) {
+func (b *boolType) MarshalJSON() ([]byte, error) {
 	res, err := json.Marshal(bool(*b))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -60,5 +60,5 @@ func (b *fjsonBool) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ fjsontype = (*fjsonBool)(nil)
+	_ fjsontype = (*boolType)(nil)
 )

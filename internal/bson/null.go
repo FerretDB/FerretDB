@@ -12,33 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package fjson
+package bson
 
 import (
-	"testing"
+	"bufio"
 
-	"github.com/AlekSi/pointer"
+	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-var boolTestCases = []testCase{{
-	name: "false",
-	v:    pointer.To(boolType(false)),
-	j:    `false`,
-}, {
-	name: "true",
-	v:    pointer.To(boolType(true)),
-	j:    `true`,
-}}
+// nullType represents BSON Null type.
+type nullType types.NullType
 
-func TestBool(t *testing.T) {
-	t.Parallel()
-	testJSON(t, boolTestCases, func() fjsontype { return new(boolType) })
+func (*nullType) bsontype() {}
+
+// ReadFrom implements bsontype interface.
+func (*nullType) ReadFrom(r *bufio.Reader) error {
+	return nil
 }
 
-func FuzzBool(f *testing.F) {
-	fuzzJSON(f, boolTestCases, func() fjsontype { return new(boolType) })
+// WriteTo implements bsontype interface.
+func (nullType) WriteTo(w *bufio.Writer) error {
+	return nil
 }
 
-func BenchmarkBool(b *testing.B) {
-	benchmark(b, boolTestCases, func() fjsontype { return new(boolType) })
+// MarshalBinary implements bsontype interface.
+func (nullType) MarshalBinary() ([]byte, error) {
+	return nil, nil
 }
+
+// check interfaces
+var (
+	_ bsontype = (*nullType)(nil)
+)

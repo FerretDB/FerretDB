@@ -23,7 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// Double represents BSON Double data type.
+// Double represents BSON 64-bit binary floating point type.
 type Double float64
 
 func (d *Double) bsontype() {}

@@ -22,7 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// Int32 represents BSON Int32 data type.
+// Int32 represents BSON 32-bit integer type.
 type Int32 int32
 
 func (i *Int32) bsontype() {}

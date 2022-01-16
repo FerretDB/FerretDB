@@ -39,7 +39,7 @@ var arrayTestCases = []testCase{{
 		int32(42),
 		int64(42),
 		"foo",
-		nil,
+		types.Null,
 	)),
 	b: testutil.MustParseDumpFile("testdata", "array_all.hex"),
 }, {

@@ -39,7 +39,7 @@ type document interface {
 	Keys() []string
 }
 
-// Document represents BSON Document data type.
+// Document represents BSON Document type.
 type Document struct {
 	m    map[string]any
 	keys []string
@@ -204,7 +204,8 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 			doc.m[string(ename)] = time.Time(v)
 
 		case tagNull:
-			doc.m[string(ename)] = nil
+			// skip calling ReadFrom that does nothing
+			doc.m[string(ename)] = types.Null
 
 		case tagRegex:
 			var v Regex
@@ -352,11 +353,12 @@ func (doc Document) MarshalBinary() ([]byte, error) {
 				return nil, lazyerrors.Error(err)
 			}
 
-		case nil:
+		case types.NullType:
 			bufw.WriteByte(byte(tagNull))
 			if err := ename.WriteTo(bufw); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
+			// skip calling WriteTo that does nothing
 
 		case types.Regex:
 			bufw.WriteByte(byte(tagRegex))
