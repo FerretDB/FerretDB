@@ -212,7 +212,7 @@ func Unmarshal(data []byte) (any, error) {
 	case bool:
 		res = pointer.To(boolType(v))
 	case nil:
-		res = &nullType{}
+		res = new(nullType)
 	case float64:
 		res = pointer.To(int32Type(v))
 	default:
