@@ -436,7 +436,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"bits", int32(strconv.IntSize),
 				"debug", version.Get().Debug,
 				"maxBsonObjectSize", int32(16777216),
-				"buildEnvironment", must.NotFail(types.MakeDocument()),
+				"buildEnvironment", must.NotFail(types.NewDocument()),
 				"ok", float64(1),
 			),
 		},

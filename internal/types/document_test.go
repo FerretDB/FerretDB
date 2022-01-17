@@ -65,6 +65,12 @@ func TestValidate(t *testing.T) {
 			m:    map[string]any{"$k": "foo"},
 		},
 		err: fmt.Errorf(`types.Document.validate: invalid key: "$k"`),
+	}, {
+		name: "dollar keys",
+		doc: Document{
+			keys: []string{"$db"},
+			m:    map[string]any{"$db": "foo"},
+		},
 	}} {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {

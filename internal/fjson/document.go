@@ -73,7 +73,7 @@ func (doc *documentType) UnmarshalJSON(data []byte) error {
 		}
 	}
 
-	*doc = documentType(td)
+	*doc = documentType(*td)
 	return nil
 }
 

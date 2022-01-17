@@ -18,7 +18,7 @@ services:
     volumes:
       - test_db_postgres:/test_db/:ro
 
-  # for compatibility testing and mongosh
+  # for proxy mode and mongosh
   mongodb:
     image: mongo:5.0.5
     container_name: ferretdb_mongodb

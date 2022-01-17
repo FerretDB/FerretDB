@@ -26,7 +26,7 @@
 // Mapping
 //
 // Composite types
-//  types.Document   *bson.Document  *fjson.documentType    Document
+//  *types.Document  *bson.Document  *fjson.documentType    Document
 //  *types.Array     *bson.Array     *fjson.arrayType       Array
 // Scalar types
 //  float64          *bson.Double     *fjson.doubleType     64-bit binary floating point
@@ -52,7 +52,7 @@ const MaxDocumentLen = 16777216
 
 // CompositeType represents composite type - Document or *Array.
 type CompositeType interface {
-	Document | *Array
+	*Document | *Array
 	GetByPath(path ...string) (any, error)
 
 	compositeType() // seal for go-sumtype
@@ -88,7 +88,7 @@ var Null = NullType{}
 // validateValue validates value.
 func validateValue(value any) error {
 	switch value := value.(type) {
-	case Document:
+	case *Document:
 		return value.validate()
 	case *Array:
 		// It is impossible to construct invalid Array using exported function, methods, or type conversions,

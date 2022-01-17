@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -54,7 +55,7 @@ var queryTestCases = []testCase{{
 					"name", "mongosh 1.0.1",
 				),
 			),
-			"compression", types.MustNewArray("none"),
+			"compression", must.NotFail(types.NewArray("none")),
 			"loadBalanced", false,
 		),
 		ReturnFieldsSelector: nil,
@@ -92,7 +93,7 @@ var queryTestCases = []testCase{{
 					"name", "mongosh 1.0.1",
 				),
 			),
-			"compression", types.MustNewArray("none"),
+			"compression", must.NotFail(types.NewArray("none")),
 			"loadBalanced", false,
 		),
 		ReturnFieldsSelector: nil,

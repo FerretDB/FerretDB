@@ -20,6 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestGetByPath(t *testing.T) {
@@ -43,7 +45,7 @@ func TestGetByPath(t *testing.T) {
 				"name", "mongosh 1.0.1",
 			),
 		),
-		"compression", MustNewArray("none"),
+		"compression", must.NotFail(NewArray("none")),
 		"loadBalanced", false,
 	)
 
@@ -58,7 +60,7 @@ func TestGetByPath(t *testing.T) {
 		res:  "none",
 	}, {
 		path: []string{"compression"},
-		res:  MustNewArray("none"),
+		res:  must.NotFail(NewArray("none")),
 	}, {
 		path: []string{"client", "driver"},
 		res: MustMakeDocument(

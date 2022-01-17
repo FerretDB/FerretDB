@@ -18,6 +18,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestArray(t *testing.T) {
@@ -27,7 +29,7 @@ func TestArray(t *testing.T) {
 		t.Parallel()
 
 		// to avoid []any != nil in tests
-		assert.Nil(t, MustNewArray().s)
+		assert.Nil(t, must.NotFail(NewArray()).s)
 		assert.Nil(t, MakeArray(0).s)
 
 		var a Array

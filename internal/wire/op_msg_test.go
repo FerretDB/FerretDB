@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -59,11 +60,11 @@ var msgTestCases = []testCase{{
 			Documents: []types.Document{types.MustMakeDocument(
 				"version", "5.0.0",
 				"gitVersion", "1184f004a99660de6f5e745573419bda8a28c0e9",
-				"modules", types.MustNewArray(),
+				"modules", must.NotFail(types.NewArray()),
 				"allocator", "tcmalloc",
 				"javascriptEngine", "mozjs",
 				"sysInfo", "deprecated",
-				"versionArray", types.MustNewArray(int32(5), int32(0), int32(0), int32(0)),
+				"versionArray", must.NotFail(types.NewArray(int32(5), int32(0), int32(0), int32(0))),
 				"openssl", types.MustMakeDocument(
 					"running", "OpenSSL 1.1.1f  31 Mar 2020",
 					"compiled", "OpenSSL 1.1.1f  31 Mar 2020",
@@ -95,7 +96,7 @@ var msgTestCases = []testCase{{
 				"bits", int32(64),
 				"debug", false,
 				"maxBsonObjectSize", int32(16777216),
-				"storageEngines", types.MustNewArray("devnull", "ephemeralForTest", "wiredTiger"),
+				"storageEngines", must.NotFail(types.NewArray("devnull", "ephemeralForTest", "wiredTiger")),
 				"ok", float64(1),
 			)},
 		}},

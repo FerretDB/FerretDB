@@ -21,19 +21,20 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestSetByPath(t *testing.T) {
 	t.Parallel()
 
-	newDoc := func() types.Document {
+	newDoc := func() *types.Document {
 		return types.MustMakeDocument(
 			"client", types.MustMakeDocument(
 				"driver", types.MustMakeDocument(
 					"name", "nodejs",
 				),
 			),
-			"compression", types.MustNewArray("none"),
+			"compression", must.NotFail(types.NewArray("none")),
 		)
 	}
 
@@ -52,14 +53,14 @@ func TestSetByPath(t *testing.T) {
 					"name", "nodejs",
 				),
 			),
-			"compression", types.MustNewArray("zstd"),
+			"compression", must.NotFail(types.NewArray("zstd")),
 		),
 	}, {
 		path:  []string{"client"},
 		value: "foo",
 		res: types.MustMakeDocument(
 			"client", "foo",
-			"compression", types.MustNewArray("none"),
+			"compression", must.NotFail(types.NewArray("none")),
 		),
 	}} {
 		tc := tc

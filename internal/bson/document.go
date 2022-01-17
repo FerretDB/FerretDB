@@ -27,13 +27,12 @@ import (
 )
 
 const (
-	// Deprecated: use types.MaxDocumentLen instead.
-	MaxDocumentLen = types.MaxDocumentLen
-
 	minDocumentLen = 5
 )
 
 // Common interface with types.Document.
+//
+// TODO Remove it.
 type document interface {
 	Map() map[string]any
 	Keys() []string
@@ -47,6 +46,8 @@ type Document struct {
 
 // ConvertDocument converts types.Document to bson.Document and validates it.
 // It references the same data without copying it.
+//
+// TODO Remove it.
 func ConvertDocument(d document) (*Document, error) {
 	doc := &Document{
 		m:    d.Map(),
@@ -95,7 +96,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 	if err := binary.Read(r, binary.LittleEndian, &l); err != nil {
 		return lazyerrors.Errorf("bson.Document.ReadFrom (binary.Read): %w", err)
 	}
-	if l < minDocumentLen || l > MaxDocumentLen {
+	if l < minDocumentLen || l > types.MaxDocumentLen {
 		return lazyerrors.Errorf("bson.Document.ReadFrom: invalid length %d", l)
 	}
 
@@ -277,7 +278,7 @@ func (doc Document) MarshalBinary() ([]byte, error) {
 		}
 
 		switch elV := elV.(type) {
-		case types.Document:
+		case *types.Document:
 			bufw.WriteByte(byte(tagDocument))
 			if err := ename.WriteTo(bufw); err != nil {
 				return nil, lazyerrors.Error(err)

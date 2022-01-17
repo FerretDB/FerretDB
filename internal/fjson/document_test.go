@@ -21,8 +21,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-func convertDocument(d types.Document) *documentType {
-	res := documentType(d)
+func convertDocument(d *types.Document) *documentType {
+	res := documentType(*d)
 	return &res
 }
 
