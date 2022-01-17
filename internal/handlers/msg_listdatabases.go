@@ -72,7 +72,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 			sizeOnDisk += tableSize
 		}
 
-		d := types.MustMakeDocument(
+		d := types.MustNewDocument(
 			"name", databaseName,
 			"sizeOnDisk", sizeOnDisk,
 			"empty", sizeOnDisk == 0,
@@ -90,7 +90,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{types.MustMakeDocument(
+		Documents: []*types.Document{types.MustNewDocument(
 			"databases", databases,
 			"totalSize", totalSize,
 			"totalSizeMb", totalSize/1024/1024,

@@ -97,7 +97,7 @@ func (h *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var res wire.OpMsg
 	err = res.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{types.MustMakeDocument(
+		Documents: []*types.Document{types.MustNewDocument(
 			"n", inserted,
 			"ok", float64(1),
 		)},

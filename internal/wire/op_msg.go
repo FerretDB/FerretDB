@@ -69,7 +69,7 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 			}
 
 			// do a shallow copy of the document that we would modify if there are kind 1 sections
-			doc = types.MustMakeDocument()
+			doc = types.MustNewDocument()
 			d := section.Documents[0]
 			m := d.Map()
 			for _, k := range d.Keys() {

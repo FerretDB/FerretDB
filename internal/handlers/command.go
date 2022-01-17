@@ -180,15 +180,15 @@ var commands = map[string]command{
 func listCommands(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 
-	cmdList := types.MustMakeDocument()
+	cmdList := types.MustNewDocument()
 	for _, command := range commands {
-		cmdList.Set(command.name, types.MustMakeDocument(
+		cmdList.Set(command.name, types.MustNewDocument(
 			"help", command.help,
 		))
 	}
 
 	err := reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{types.MustMakeDocument(
+		Documents: []*types.Document{types.MustNewDocument(
 			"commands", cmdList,
 			"ok", float64(1),
 		)},

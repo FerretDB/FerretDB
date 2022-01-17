@@ -27,21 +27,21 @@ import (
 func TestGetByPath(t *testing.T) {
 	t.Parallel()
 
-	doc := MustMakeDocument(
+	doc := MustNewDocument(
 		"ismaster", true,
-		"client", MustMakeDocument(
-			"driver", MustMakeDocument(
+		"client", MustNewDocument(
+			"driver", MustNewDocument(
 				"name", "nodejs",
 				"version", "4.0.0-beta.6",
 			),
-			"os", MustMakeDocument(
+			"os", MustNewDocument(
 				"type", "Darwin",
 				"name", "darwin",
 				"architecture", "x64",
 				"version", "20.6.0",
 			),
 			"platform", "Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",
-			"application", MustMakeDocument(
+			"application", MustNewDocument(
 				"name", "mongosh 1.0.1",
 			),
 		),
@@ -63,7 +63,7 @@ func TestGetByPath(t *testing.T) {
 		res:  must.NotFail(NewArray("none")),
 	}, {
 		path: []string{"client", "driver"},
-		res: MustMakeDocument(
+		res: MustNewDocument(
 			"name", "nodejs",
 			"version", "4.0.0-beta.6",
 		),

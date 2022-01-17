@@ -105,12 +105,12 @@ func NewDocument(pairs ...any) (*Document, error) {
 	return doc, nil
 }
 
-// MustMakeDocument is a NewDocument that panics in case of error.
+// MustNewDocument is a NewDocument that panics in case of error.
 //
 // TODO Remove this function.
 //
 // Deprecated: use `must.NotFail(NewDocument(...))` instead.
-func MustMakeDocument(pairs ...any) *Document {
+func MustNewDocument(pairs ...any) *Document {
 	doc, err := NewDocument(pairs...)
 	if err != nil {
 		panic(err)

@@ -163,8 +163,8 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		}
 
 		err = res.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{types.MustMakeDocument(
-				"cursor", types.MustMakeDocument(
+			Documents: []*types.Document{types.MustNewDocument(
+				"cursor", types.MustNewDocument(
 					"firstBatch", &docs,
 					"id", int64(0),
 					"ns", db+"."+collection,
@@ -188,7 +188,7 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		defer rows.Close()
 
 		err = res.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{types.MustMakeDocument(
+			Documents: []*types.Document{types.MustNewDocument(
 				"n", count,
 				"ok", float64(1),
 			)},

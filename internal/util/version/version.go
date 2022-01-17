@@ -61,7 +61,7 @@ func init() {
 		return
 	}
 
-	info.BuildEnvironment = types.MustMakeDocument()
+	info.BuildEnvironment = types.MustNewDocument()
 	for _, s := range buildInfo.Settings {
 		info.BuildEnvironment.Set(s.Key, s.Value)
 		switch s.Key {

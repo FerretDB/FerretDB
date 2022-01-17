@@ -31,7 +31,7 @@ func (h *Handler) QueryCmd(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 		reply := &wire.OpReply{
 			NumberReturned: 1,
 			Documents: []*types.Document{
-				types.MustMakeDocument(
+				types.MustNewDocument(
 					"helloOk", true,
 					"ismaster", true,
 					// topologyVersion

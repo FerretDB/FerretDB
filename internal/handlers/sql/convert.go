@@ -55,6 +55,6 @@ func nextRow(rows pgx.Rows, rowInfo *rowInfo) (*types.Document, error) {
 		pairs[i*2+1] = v
 	}
 
-	doc := types.MustMakeDocument(pairs...)
+	doc := types.MustNewDocument(pairs...)
 	return doc, nil
 }

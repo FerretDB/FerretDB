@@ -28,9 +28,9 @@ func TestSetByPath(t *testing.T) {
 	t.Parallel()
 
 	newDoc := func() *types.Document {
-		return types.MustMakeDocument(
-			"client", types.MustMakeDocument(
-				"driver", types.MustMakeDocument(
+		return types.MustNewDocument(
+			"client", types.MustNewDocument(
+				"driver", types.MustNewDocument(
 					"name", "nodejs",
 				),
 			),
@@ -47,9 +47,9 @@ func TestSetByPath(t *testing.T) {
 	for _, tc := range []testCase{{ //nolint:paralleltest // false positive
 		path:  []string{"compression", "0"},
 		value: "zstd",
-		res: types.MustMakeDocument(
-			"client", types.MustMakeDocument(
-				"driver", types.MustMakeDocument(
+		res: types.MustNewDocument(
+			"client", types.MustNewDocument(
+				"driver", types.MustNewDocument(
 					"name", "nodejs",
 				),
 			),
@@ -58,7 +58,7 @@ func TestSetByPath(t *testing.T) {
 	}, {
 		path:  []string{"client"},
 		value: "foo",
-		res: types.MustMakeDocument(
+		res: types.MustNewDocument(
 			"client", "foo",
 			"compression", must.NotFail(types.NewArray("none")),
 		),

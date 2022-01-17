@@ -32,7 +32,7 @@ const versionValue = "5.0.42"
 func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 	err := reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{types.MustMakeDocument(
+		Documents: []*types.Document{types.MustNewDocument(
 			"version", versionValue,
 			"gitVersion", version.Get().Commit,
 			"modules", types.MustNewArray(),

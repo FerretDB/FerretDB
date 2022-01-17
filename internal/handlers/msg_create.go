@@ -74,7 +74,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{types.MustMakeDocument(
+		Documents: []*types.Document{types.MustNewDocument(
 			"ok", float64(1),
 		)},
 	})

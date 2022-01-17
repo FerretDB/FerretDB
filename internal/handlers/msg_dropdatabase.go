@@ -39,7 +39,7 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		return nil, lazyerrors.New("no db")
 	}
 
-	res := types.MustMakeDocument()
+	res := types.MustNewDocument()
 	err = h.pgPool.DropSchema(ctx, db)
 	switch err {
 	case nil:
