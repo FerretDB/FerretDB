@@ -188,7 +188,7 @@ func listCommands(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
 	}
 
 	err := reply.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{types.MustMakeDocument(
+		Documents: []*types.Document{types.MustMakeDocument(
 			"commands", cmdList,
 			"ok", float64(1),
 		)},

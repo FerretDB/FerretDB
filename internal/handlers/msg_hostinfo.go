@@ -39,7 +39,7 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{types.MustMakeDocument(
+		Documents: []*types.Document{types.MustMakeDocument(
 			"system", types.MustMakeDocument(
 				"currentTime", now,
 				"hostname", hostname,

@@ -33,7 +33,7 @@ var msgTestCases = []testCase{{
 	},
 	msgBody: &OpMsg{
 		sections: []OpMsgSection{{
-			Documents: []types.Document{types.MustMakeDocument(
+			Documents: []*types.Document{types.MustMakeDocument(
 				"buildInfo", int32(1),
 				"lsid", types.MustMakeDocument(
 					"id", types.Binary{
@@ -57,7 +57,7 @@ var msgTestCases = []testCase{{
 	},
 	msgBody: &OpMsg{
 		sections: []OpMsgSection{{
-			Documents: []types.Document{types.MustMakeDocument(
+			Documents: []*types.Document{types.MustMakeDocument(
 				"version", "5.0.0",
 				"gitVersion", "1184f004a99660de6f5e745573419bda8a28c0e9",
 				"modules", must.NotFail(types.NewArray()),
@@ -111,7 +111,7 @@ var msgTestCases = []testCase{{
 	},
 	msgBody: &OpMsg{
 		sections: []OpMsgSection{{
-			Documents: []types.Document{types.MustMakeDocument(
+			Documents: []*types.Document{types.MustMakeDocument(
 				"insert", "actor",
 				"ordered", true,
 				"writeConcern", types.MustMakeDocument(
@@ -122,7 +122,7 @@ var msgTestCases = []testCase{{
 		}, {
 			Kind:       1,
 			Identifier: "documents",
-			Documents: []types.Document{
+			Documents: []*types.Document{
 				types.MustMakeDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01},
 					"actor_id", int32(1),

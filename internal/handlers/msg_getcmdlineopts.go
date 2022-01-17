@@ -27,7 +27,7 @@ import (
 func (h *Handler) MsgGetCmdLineOpts(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 	err := reply.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{types.MustMakeDocument(
+		Documents: []*types.Document{types.MustMakeDocument(
 			"argv", must.NotFail(types.NewArray("ferretdb")),
 			"parsed", types.MustMakeDocument(),
 			"ok", float64(1),

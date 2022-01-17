@@ -41,7 +41,7 @@ type Info struct {
 	Branch           string
 	Dirty            bool
 	Debug            bool // testcover or -race
-	BuildEnvironment types.Document
+	BuildEnvironment *types.Document
 }
 
 var info *Info

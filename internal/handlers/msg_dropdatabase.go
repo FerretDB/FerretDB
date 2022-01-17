@@ -54,7 +54,7 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{res},
+		Documents: []*types.Document{res},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)

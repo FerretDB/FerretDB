@@ -35,7 +35,7 @@ func (h *storage) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{types.MustMakeDocument(
+		Documents: []*types.Document{types.MustMakeDocument(
 			"ok", float64(1),
 		)},
 	})

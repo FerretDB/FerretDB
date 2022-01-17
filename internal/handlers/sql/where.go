@@ -52,7 +52,7 @@ func scalar(v any, p *pg.Placeholder) (sql string, args []any, err error) {
 }
 
 // fieldExpr handles {field: {expr}}.
-func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
+func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
 	filterKeys := expr.Keys()
 	filterMap := expr.Map()
 
@@ -77,7 +77,7 @@ func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string
 			}
 			sql += "NOT("
 
-			argSql, arg, err = fieldExpr(field, value.(types.Document), p)
+			argSql, arg, err = fieldExpr(field, value.(*types.Document), p)
 			if err != nil {
 				err = lazyerrors.Errorf("fieldExpr: %w", err)
 				return
@@ -187,7 +187,7 @@ func wherePair(key string, value any, p *pg.Placeholder) (sql string, args []any
 	}
 
 	switch value := value.(type) {
-	case types.Document:
+	case *types.Document:
 		// {field: {expr}}
 		sql, args, err = fieldExpr(key, value, p)
 
@@ -209,7 +209,10 @@ func wherePair(key string, value any, p *pg.Placeholder) (sql string, args []any
 	return
 }
 
-func where(filter types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
+func where(filter *types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
+	if filter == nil {
+		return
+	}
 	filterMap := filter.Map()
 	if len(filterMap) == 0 {
 		return

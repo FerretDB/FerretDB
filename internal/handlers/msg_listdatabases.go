@@ -31,7 +31,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 	}
 
 	if err = common.UnimplementedNonDefault(document, "filter", func(v any) bool {
-		d, ok := v.(types.Document)
+		d, ok := v.(*types.Document)
 		return ok && d.Len() == 0
 	}); err != nil {
 		return nil, err
@@ -90,7 +90,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{types.MustMakeDocument(
+		Documents: []*types.Document{types.MustMakeDocument(
 			"databases", databases,
 			"totalSize", totalSize,
 			"totalSizeMb", totalSize/1024/1024,

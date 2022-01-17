@@ -38,7 +38,7 @@ func TestUpdate(t *testing.T) {
 	for i := 1; i <= 3; i++ {
 		var msg wire.OpMsg
 		err := msg.SetSections(wire.OpMsgSection{
-			Documents: []types.Document{types.MustMakeDocument(
+			Documents: []*types.Document{types.MustMakeDocument(
 				"insert", "test",
 				"documents", types.MustNewArray(
 					types.MustMakeDocument(
@@ -57,7 +57,7 @@ func TestUpdate(t *testing.T) {
 
 	var msg wire.OpMsg
 	err := msg.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{types.MustMakeDocument(
+		Documents: []*types.Document{types.MustMakeDocument(
 			"update", "test",
 			"updates", types.MustNewArray(
 				types.MustMakeDocument(

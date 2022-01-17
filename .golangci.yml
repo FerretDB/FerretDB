@@ -21,6 +21,11 @@ linters-settings:
       - go-sumtype:decl
       - check interfaces
     capital: true
+  godox:
+    keywords:
+      - BUG
+      - FIXME
+      - HACK
   goheader:
     template: |-
       Copyright 2021 FerretDB Inc.
@@ -87,7 +92,6 @@ linters:
     - gocognit
     - gocritic
     - gocyclo
-    - godox
     - goerr113
     - gomnd
     - gosec

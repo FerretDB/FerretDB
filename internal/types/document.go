@@ -36,7 +36,7 @@ type Document struct {
 	keys []string
 }
 
-// ConvertDocument converts bson.Document to types.Document and validates it.
+// ConvertDocument converts bson.Document to *types.Document and validates it.
 // It references the same data without copying it.
 //
 // TODO Remove this function.

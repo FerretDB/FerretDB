@@ -65,14 +65,14 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	}
 	common.Ignored(document, h.l.Desugar(), ignoredFields...)
 
-	var filter types.Document
+	var filter *types.Document
 	var sql, collection string
 
 	m := document.Map()
 	_, isFindOp := m["find"].(string)
 	db := m["$db"].(string)
 
-	projection, ok := m["projection"].(types.Document)
+	projection, ok := m["projection"].(*types.Document)
 	projectionStr := "*"
 	if ok && projection.Len() != 0 {
 		projectionStr = ""
@@ -85,14 +85,14 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	}
 	if isFindOp {
 		collection = m["find"].(string)
-		filter, _ = m["filter"].(types.Document)
+		filter, _ = m["filter"].(*types.Document)
 		sql = fmt.Sprintf(`SELECT %s FROM %s`, projectionStr, pgx.Identifier{db, collection}.Sanitize())
 	} else {
 		collection = m["count"].(string)
-		filter, _ = m["query"].(types.Document)
+		filter, _ = m["query"].(*types.Document)
 		sql = fmt.Sprintf(`SELECT COUNT(*) FROM %s`, pgx.Identifier{db, collection}.Sanitize())
 	}
-	sort, _ := m["sort"].(types.Document)
+	sort, _ := m["sort"].(*types.Document)
 	limit, _ := m["limit"].(int32)
 
 	var placeholder pg.Placeholder
@@ -104,21 +104,23 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 
 	sql += whereSQL
 
-	sortMap := sort.Map()
-	if len(sortMap) != 0 {
-		sql += " ORDER BY"
+	if sort != nil {
+		sortMap := sort.Map()
+		if len(sortMap) != 0 {
+			sql += " ORDER BY"
 
-		for i, k := range sort.Keys() {
-			if i != 0 {
-				sql += ","
-			}
+			for i, k := range sort.Keys() {
+				if i != 0 {
+					sql += ","
+				}
 
-			sql += " " + pgx.Identifier{k}.Sanitize()
-			order := sortMap[k].(int32)
-			if order > 0 {
-				sql += " ASC"
-			} else {
-				sql += " DESC"
+				sql += " " + pgx.Identifier{k}.Sanitize()
+				order := sortMap[k].(int32)
+				if order > 0 {
+					sql += " ASC"
+				} else {
+					sql += " DESC"
+				}
 			}
 		}
 	}
@@ -141,7 +143,7 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	defer rows.Close()
 
 	var res wire.OpMsg
-	if isFindOp { //nolint:nestif // FIXME: I have no idead to fix this lint
+	if isFindOp { //nolint:nestif // TODO simplify
 		rowInfo := extractRowInfo(rows)
 
 		var docs types.Array
@@ -161,7 +163,7 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		}
 
 		err = res.SetSections(wire.OpMsgSection{
-			Documents: []types.Document{types.MustMakeDocument(
+			Documents: []*types.Document{types.MustMakeDocument(
 				"cursor", types.MustMakeDocument(
 					"firstBatch", &docs,
 					"id", int64(0),
@@ -186,7 +188,7 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		defer rows.Close()
 
 		err = res.SetSections(wire.OpMsgSection{
-			Documents: []types.Document{types.MustMakeDocument(
+			Documents: []*types.Document{types.MustMakeDocument(
 				"n", count,
 				"ok", float64(1),
 			)},

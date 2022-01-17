@@ -39,7 +39,7 @@ func TestDelete(t *testing.T) {
 		for i := 1; i <= 5; i++ {
 			var msg wire.OpMsg
 			err := msg.SetSections(wire.OpMsgSection{
-				Documents: []types.Document{types.MustMakeDocument(
+				Documents: []*types.Document{types.MustMakeDocument(
 					"insert", "test",
 					"documents", types.MustNewArray(
 						types.MustMakeDocument(
@@ -59,7 +59,7 @@ func TestDelete(t *testing.T) {
 		for i := 1; i <= 5; i++ {
 			var msg wire.OpMsg
 			err := msg.SetSections(wire.OpMsgSection{
-				Documents: []types.Document{types.MustMakeDocument(
+				Documents: []*types.Document{types.MustMakeDocument(
 					"insert", "test",
 					"documents", types.MustNewArray(
 						types.MustMakeDocument(
@@ -77,8 +77,8 @@ func TestDelete(t *testing.T) {
 		}
 
 		type testCase struct {
-			req  types.Document
-			resp types.Document
+			req  *types.Document
+			resp *types.Document
 		}
 
 		testCases := map[string]testCase{
@@ -142,7 +142,7 @@ func TestDelete(t *testing.T) {
 
 				var reqMsg wire.OpMsg
 				err := reqMsg.SetSections(wire.OpMsgSection{
-					Documents: []types.Document{tc.req},
+					Documents: []*types.Document{tc.req},
 				})
 				require.NoError(t, err)
 

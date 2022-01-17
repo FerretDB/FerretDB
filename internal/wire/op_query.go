@@ -34,8 +34,8 @@ type OpQuery struct {
 	FullCollectionName   string
 	NumberToSkip         int32
 	NumberToReturn       int32
-	Query                types.Document
-	ReturnFieldsSelector *types.Document
+	Query                *types.Document
+	ReturnFieldsSelector *types.Document // may be nil
 }
 
 func (query *OpQuery) msgbody() {}
@@ -71,7 +71,7 @@ func (query *OpQuery) readFrom(bufr *bufio.Reader) error {
 		}
 
 		tr := types.MustConvertDocument(&r)
-		query.ReturnFieldsSelector = &tr
+		query.ReturnFieldsSelector = tr
 	}
 
 	return nil

@@ -71,7 +71,7 @@ func (e *Error) Unwrap() error {
 }
 
 // Document returns wire protocol error document.
-func (e *Error) Document() types.Document {
+func (e *Error) Document() *types.Document {
 	return types.MustMakeDocument(
 		"ok", float64(0),
 		"errmsg", e.err.Error(),

@@ -32,7 +32,7 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 	}
 
 	if err = common.UnimplementedNonDefault(document, "filter", func(v any) bool {
-		d, ok := v.(types.Document)
+		d, ok := v.(*types.Document)
 		return ok && d.Len() == 0
 	}); err != nil {
 		return nil, err
@@ -73,7 +73,7 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{types.MustMakeDocument(
+		Documents: []*types.Document{types.MustMakeDocument(
 			"cursor", types.MustMakeDocument(
 				"id", int64(0),
 				"ns", db+".$cmd.listCollections",
