@@ -43,29 +43,29 @@ func fromBSON(v bsontype) any {
 	switch v := v.(type) {
 	case *Document:
 		return types.MustConvertDocument(v)
-	case *Array:
+	case *arrayType:
 		return pointer.To(types.Array(*v))
-	case *Double:
+	case *doubleType:
 		return float64(*v)
-	case *String:
+	case *stringType:
 		return string(*v)
-	case *Binary:
+	case *binaryType:
 		return types.Binary(*v)
-	case *ObjectID:
+	case *objectIDType:
 		return types.ObjectID(*v)
-	case *Bool:
+	case *boolType:
 		return bool(*v)
-	case *DateTime:
+	case *dateTimeType:
 		return time.Time(*v)
 	case *nullType:
 		return types.Null
-	case *Regex:
+	case *regexType:
 		return types.Regex(*v)
-	case *Int32:
+	case *int32Type:
 		return int32(*v)
-	case *Timestamp:
+	case *timestampType:
 		return types.Timestamp(*v)
-	case *Int64:
+	case *int64Type:
 		return int64(*v)
 	case *CString:
 		return types.CString(*v)
@@ -80,29 +80,29 @@ func toBSON(v any) bsontype {
 	case *types.Document:
 		return MustConvertDocument(v)
 	case *types.Array:
-		return pointer.To(Array(*v))
+		return pointer.To(arrayType(*v))
 	case float64:
-		return pointer.To(Double(v))
+		return pointer.To(doubleType(v))
 	case string:
-		return pointer.To(String(v))
+		return pointer.To(stringType(v))
 	case types.Binary:
-		return pointer.To(Binary(v))
+		return pointer.To(binaryType(v))
 	case types.ObjectID:
-		return pointer.To(ObjectID(v))
+		return pointer.To(objectIDType(v))
 	case bool:
-		return pointer.To(Bool(v))
+		return pointer.To(boolType(v))
 	case time.Time:
-		return pointer.To(DateTime(v))
+		return pointer.To(dateTimeType(v))
 	case types.NullType:
 		return pointer.To(nullType(v))
 	case types.Regex:
-		return pointer.To(Regex(v))
+		return pointer.To(regexType(v))
 	case int32:
-		return pointer.To(Int32(v))
+		return pointer.To(int32Type(v))
 	case types.Timestamp:
-		return pointer.To(Timestamp(v))
+		return pointer.To(timestampType(v))
 	case int64:
-		return pointer.To(Int64(v))
+		return pointer.To(int64Type(v))
 	case types.CString:
 		return pointer.To(CString(v))
 	}

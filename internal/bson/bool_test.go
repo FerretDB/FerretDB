@@ -22,23 +22,23 @@ import (
 
 var boolTestCases = []testCase{{
 	name: "false",
-	v:    pointer.To(Bool(false)),
+	v:    pointer.To(boolType(false)),
 	b:    []byte{0x00},
 }, {
 	name: "true",
-	v:    pointer.To(Bool(true)),
+	v:    pointer.To(boolType(true)),
 	b:    []byte{0x01},
 }}
 
 func TestBool(t *testing.T) {
 	t.Parallel()
-	testBinary(t, boolTestCases, func() bsontype { return new(Bool) })
+	testBinary(t, boolTestCases, func() bsontype { return new(boolType) })
 }
 
 func FuzzBool(f *testing.F) {
-	fuzzBinary(f, boolTestCases, func() bsontype { return new(Bool) })
+	fuzzBinary(f, boolTestCases, func() bsontype { return new(boolType) })
 }
 
 func BenchmarkBool(b *testing.B) {
-	benchmark(b, boolTestCases, func() bsontype { return new(Bool) })
+	benchmark(b, boolTestCases, func() bsontype { return new(boolType) })
 }
