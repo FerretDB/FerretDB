@@ -82,6 +82,10 @@ func NewDocument(pairs ...any) (*Document, error) {
 		return nil, fmt.Errorf("types.NewDocument: invalid number of arguments: %d", l)
 	}
 
+	if l == 0 {
+		return new(Document), nil
+	}
+
 	doc := &Document{
 		m:    make(map[string]any, l/2),
 		keys: make([]string, 0, l/2),
@@ -165,17 +169,32 @@ func (d *Document) validate() error {
 }
 
 // Len returns the number of elements in the document.
+//
+// It returns 0 for nil Document.
 func (d *Document) Len() int {
+	if d == nil {
+		return 0
+	}
 	return len(d.keys)
 }
 
 // Map returns this document as a map. Do not modify it.
+//
+// It returns nil for nil Document.
 func (d *Document) Map() map[string]any {
+	if d == nil {
+		return nil
+	}
 	return d.m
 }
 
 // Keys returns document's keys. Do not modify it.
+//
+// It returns nil for nil Document.
 func (d *Document) Keys() []string {
+	if d == nil {
+		return nil
+	}
 	return d.keys
 }
 
@@ -231,8 +250,14 @@ func (d *Document) Set(key string, value any) error {
 		d.keys = append(d.keys, key)
 	}
 
-	d.m[key] = value
+	if d.m == nil {
+		d.m = map[string]any{
+			key: value,
+		}
+		return nil
+	}
 
+	d.m[key] = value
 	return nil
 }
 

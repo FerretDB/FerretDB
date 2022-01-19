@@ -25,10 +25,17 @@ import (
 func TestArray(t *testing.T) {
 	t.Parallel()
 
+	t.Run("MethodsOnNil", func(t *testing.T) {
+		t.Parallel()
+
+		var a *Array
+		assert.Zero(t, a.Len())
+	})
+
 	t.Run("ZeroValues", func(t *testing.T) {
 		t.Parallel()
 
-		// to avoid []any != nil in tests
+		// to avoid {} != nil in tests
 		assert.Nil(t, must.NotFail(NewArray()).s)
 		assert.Nil(t, MakeArray(0).s)
 
