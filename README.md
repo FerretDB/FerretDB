@@ -37,7 +37,7 @@ See our [CONTRIBUTING.md](CONTRIBUTING.md).
 These steps describe a quick local setup.
 They are not suitable for most production use-cases because they keep all data inside containers.
 
-1. Store the following in the `docker-compose.yml` file:
+1. Create a folder `ferretdb` and store the following in the `docker-compose.yml` file in folder `ferretdb`:
 
 ```yaml
 version: "3"
@@ -57,12 +57,16 @@ services:
     image: postgres:14
     container_name: postgres_setup
     restart: on-failure
+    depends_on:
+      - postgres
     entrypoint: ["sh", "-c", "psql -h postgres -U user -d ferretdb -c 'CREATE SCHEMA IF NOT EXISTS test'"]
 
   ferretdb:
     image: ghcr.io/ferretdb/ferretdb:latest
     container_name: ferretdb
     restart: on-failure
+    depends_on:
+      - postgres_setup
     ports:
       - 27017:27017
     command: ["-listen-addr=:27017", "-postgresql-url=postgres://user@postgres:5432/ferretdb"]
