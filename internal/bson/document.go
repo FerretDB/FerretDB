@@ -54,13 +54,6 @@ func ConvertDocument(d document) (*Document, error) {
 		keys: d.Keys(),
 	}
 
-	if doc.m == nil {
-		doc.m = map[string]any{}
-	}
-	if doc.keys == nil {
-		doc.keys = []string{}
-	}
-
 	// for validation
 	if _, err := types.ConvertDocument(doc); err != nil {
 		return nil, fmt.Errorf("bson.ConvertDocument: %w", err)
@@ -112,8 +105,6 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 	}
 
 	bufr := bufio.NewReader(bytes.NewReader(b[4:]))
-	doc.m = map[string]any{}
-	doc.keys = make([]string, 0, 2)
 
 	for {
 		t, err := bufr.ReadByte()
@@ -135,6 +126,10 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 		}
 
 		doc.keys = append(doc.keys, string(ename))
+
+		if doc.m == nil {
+			doc.m = map[string]any{}
+		}
 
 		switch tag(t) {
 		case tagDocument:

@@ -104,23 +104,21 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 
 	sql += whereSQL
 
-	if sort != nil {
-		sortMap := sort.Map()
-		if len(sortMap) != 0 {
-			sql += " ORDER BY"
+	sortMap := sort.Map()
+	if len(sortMap) != 0 {
+		sql += " ORDER BY"
 
-			for i, k := range sort.Keys() {
-				if i != 0 {
-					sql += ","
-				}
+		for i, k := range sort.Keys() {
+			if i != 0 {
+				sql += ","
+			}
 
-				sql += " " + pgx.Identifier{k}.Sanitize()
-				order := sortMap[k].(int32)
-				if order > 0 {
-					sql += " ASC"
-				} else {
-					sql += " DESC"
-				}
+			sql += " " + pgx.Identifier{k}.Sanitize()
+			order := sortMap[k].(int32)
+			if order > 0 {
+				sql += " ASC"
+			} else {
+				sql += " DESC"
 			}
 		}
 	}
@@ -157,7 +155,7 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 				break
 			}
 
-			if err = docs.Append(*doc); err != nil {
+			if err = docs.Append(doc); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 		}

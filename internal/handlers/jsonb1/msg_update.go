@@ -93,7 +93,7 @@ func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				break
 			}
 
-			if err = updateDocs.Append(*updateDoc); err != nil {
+			if err = updateDocs.Append(updateDoc); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 		}

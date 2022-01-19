@@ -50,13 +50,6 @@ func ConvertDocument(d document) (*Document, error) {
 		keys: d.Keys(),
 	}
 
-	if doc.m == nil {
-		doc.m = map[string]any{}
-	}
-	if doc.keys == nil {
-		doc.keys = []string{}
-	}
-
 	if err := doc.validate(); err != nil {
 		return doc, fmt.Errorf("types.ConvertDocument: %w", err)
 	}
