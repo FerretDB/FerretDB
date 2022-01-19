@@ -23,8 +23,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func convertArray(a *types.Array) *Array {
-	res := Array(*a)
+func convertArray(a *types.Array) *arrayType {
+	res := arrayType(*a)
 	return &res
 }
 
@@ -55,13 +55,13 @@ var arrayTestCases = []testCase{{
 
 func TestArray(t *testing.T) {
 	t.Parallel()
-	testBinary(t, arrayTestCases, func() bsontype { return new(Array) })
+	testBinary(t, arrayTestCases, func() bsontype { return new(arrayType) })
 }
 
 func FuzzArray(f *testing.F) {
-	fuzzBinary(f, arrayTestCases, func() bsontype { return new(Array) })
+	fuzzBinary(f, arrayTestCases, func() bsontype { return new(arrayType) })
 }
 
 func BenchmarkArray(b *testing.B) {
-	benchmark(b, arrayTestCases, func() bsontype { return new(Array) })
+	benchmark(b, arrayTestCases, func() bsontype { return new(arrayType) })
 }

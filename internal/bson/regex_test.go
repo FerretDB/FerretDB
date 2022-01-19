@@ -22,11 +22,11 @@ import (
 
 var regexTestCases = []testCase{{
 	name: "normal",
-	v:    pointer.To(Regex{Pattern: "hoffman", Options: "i"}),
+	v:    pointer.To(regexType{Pattern: "hoffman", Options: "i"}),
 	b:    []byte{0x68, 0x6f, 0x66, 0x66, 0x6d, 0x61, 0x6e, 0x00, 0x69, 0x00},
 }, {
 	name: "empty",
-	v:    pointer.To(Regex{Pattern: "", Options: ""}),
+	v:    pointer.To(regexType{Pattern: "", Options: ""}),
 	b:    []byte{0x00, 0x00},
 }, {
 	name: "EOF",
@@ -36,13 +36,13 @@ var regexTestCases = []testCase{{
 
 func TestRegex(t *testing.T) {
 	t.Parallel()
-	testBinary(t, regexTestCases, func() bsontype { return new(Regex) })
+	testBinary(t, regexTestCases, func() bsontype { return new(regexType) })
 }
 
 func FuzzRegex(f *testing.F) {
-	fuzzBinary(f, regexTestCases, func() bsontype { return new(Regex) })
+	fuzzBinary(f, regexTestCases, func() bsontype { return new(regexType) })
 }
 
 func BenchmarkRegex(b *testing.B) {
-	benchmark(b, regexTestCases, func() bsontype { return new(Regex) })
+	benchmark(b, regexTestCases, func() bsontype { return new(regexType) })
 }

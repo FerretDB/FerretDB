@@ -22,11 +22,11 @@ import (
 
 var timestampTestCases = []testCase{{
 	name: "one",
-	v:    pointer.To(Timestamp(1)),
+	v:    pointer.To(timestampType(1)),
 	b:    []byte{0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
 }, {
 	name: "zero",
-	v:    pointer.To(Timestamp(0)),
+	v:    pointer.To(timestampType(0)),
 	b:    []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
 }, {
 	name: "EOF",
@@ -36,13 +36,13 @@ var timestampTestCases = []testCase{{
 
 func TestTimestamp(t *testing.T) {
 	t.Parallel()
-	testBinary(t, timestampTestCases, func() bsontype { return new(Timestamp) })
+	testBinary(t, timestampTestCases, func() bsontype { return new(timestampType) })
 }
 
 func FuzzTimestamp(f *testing.F) {
-	fuzzBinary(f, timestampTestCases, func() bsontype { return new(Timestamp) })
+	fuzzBinary(f, timestampTestCases, func() bsontype { return new(timestampType) })
 }
 
 func BenchmarkTimestamp(b *testing.B) {
-	benchmark(b, timestampTestCases, func() bsontype { return new(Timestamp) })
+	benchmark(b, timestampTestCases, func() bsontype { return new(timestampType) })
 }
