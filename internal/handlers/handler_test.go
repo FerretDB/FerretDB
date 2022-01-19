@@ -40,10 +40,6 @@ import (
 func setup(t *testing.T, poolOpts *testutil.PoolOpts) (context.Context, *Handler, *pg.Pool) {
 	t.Helper()
 
-	if poolOpts == nil {
-		poolOpts = new(testutil.PoolOpts)
-	}
-
 	ctx := testutil.Ctx(t)
 	pool := testutil.Pool(ctx, t, poolOpts)
 	l := zaptest.NewLogger(t)

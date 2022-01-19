@@ -230,8 +230,12 @@ func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) (common.Stora
 			return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)
 		}
 
-		// create table
+		// create table if needed
 		if err := h.pgPool.CreateTable(ctx, db, collection); err != nil {
+			if err == pg.ErrAlreadyExist {
+				// already created by concurrent connection
+				return h.jsonb1, nil
+			}
 			return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)
 		}
 

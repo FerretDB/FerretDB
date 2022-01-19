@@ -12,20 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pg
+// Use _test package to avoid import cycle with testutil.
+package pg_test
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zaptest"
+
+	"github.com/FerretDB/FerretDB/internal/pg"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func TestUtf8LocaleValidity(t *testing.T) {
+func TestValidUTF8Locale(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
-		Case     string
-		Expected bool
+		locale   string
+		expected bool
 	}{
 		{"en_US.utf8", true},
 		{"en_US.utf-8", true},
@@ -39,11 +47,71 @@ func TestUtf8LocaleValidity(t *testing.T) {
 
 	for _, tc := range cases {
 		tc := tc
-		t.Run(tc.Case, func(t *testing.T) {
+		t.Run(tc.locale, func(t *testing.T) {
 			t.Parallel()
 
-			actual := validUtf8Locale(tc.Case)
-			assert.Equal(t, tc.Expected, actual)
+			actual := pg.IsValidUTF8Locale(tc.locale)
+			assert.Equal(t, tc.expected, actual)
 		})
+	}
+}
+
+func TestConcurrentCreate(t *testing.T) {
+	t.Parallel()
+
+	ctx := testutil.Ctx(t)
+	createPool := testutil.Pool(ctx, t, nil)
+	dbName := strings.ReplaceAll(strings.ToLower(t.Name()), "/", "_")
+	_, err := createPool.Exec(ctx, `CREATE DATABASE `+dbName)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, err := createPool.Exec(ctx, `DROP DATABASE `+dbName)
+		require.NoError(t, err)
+	})
+
+	n := 10
+	dsn := fmt.Sprintf("postgres://postgres@127.0.0.1:5432/%[1]s?pool_min_conns=%[2]d&pool_max_conns=%[2]d", dbName, n)
+	pool, err := pg.NewPool(dsn, zaptest.NewLogger(t), false)
+	require.NoError(t, err)
+	t.Cleanup(pool.Close)
+
+	schemaName := testutil.SchemaName(t)
+	tableName := testutil.TableName(t)
+
+	for _, withTable := range []bool{false, true} {
+		start := make(chan struct{})
+		res := make(chan error, n)
+		for i := 0; i < n; i++ {
+			go func() {
+				<-start
+				if withTable {
+					res <- pool.CreateTable(ctx, schemaName, tableName)
+				} else {
+					res <- pool.CreateSchema(ctx, schemaName)
+				}
+			}()
+		}
+
+		close(start)
+
+		var errors int
+		for i := 0; i < n; i++ {
+			err := <-res
+			if err == nil {
+				continue
+			}
+
+			errors++
+			assert.Equal(t, pg.ErrAlreadyExist, err)
+		}
+
+		assert.Equal(t, n-1, errors)
+
+		// one more time to check "normal" error (DuplicateSchema, DuplicateTable)
+		if withTable {
+			assert.Equal(t, pg.ErrAlreadyExist, pool.CreateTable(ctx, schemaName, tableName))
+		} else {
+			assert.Equal(t, pg.ErrAlreadyExist, pool.CreateSchema(ctx, schemaName))
+		}
 	}
 }
