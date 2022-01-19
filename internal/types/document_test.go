@@ -18,8 +18,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestDocument(t *testing.T) {
