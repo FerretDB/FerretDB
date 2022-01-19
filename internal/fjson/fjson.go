@@ -19,7 +19,7 @@
 // Mapping
 //
 // Composite types
-//  types.Document   {"$k": ["<key 1>", "<key 2>", ...], "<key 1>": <value 1>, "<key 2>": <value 2>, ...}
+//  *types.Document  {"$k": ["<key 1>", "<key 2>", ...], "<key 1>": <value 1>, "<key 2>": <value 2>, ...}
 //  *types.Array     JSON array
 // Scalar types
 //  float64          {"$f": JSON number} or {"$f": "Infinity|-Infinity|NaN"}
@@ -79,7 +79,7 @@ func checkConsumed(dec *json.Decoder, r *bytes.Reader) error {
 func fromFJSON(v fjsontype) any {
 	switch v := v.(type) {
 	case *documentType:
-		return types.Document(*v)
+		return pointer.To(types.Document(*v))
 	case *arrayType:
 		return pointer.To(types.Array(*v))
 	case *doubleType:
@@ -114,8 +114,8 @@ func fromFJSON(v fjsontype) any {
 // toFJSON converts built-in or types' package value to fjsontype value.
 func toFJSON(v any) fjsontype {
 	switch v := v.(type) {
-	case types.Document:
-		return pointer.To(documentType(v))
+	case *types.Document:
+		return pointer.To(documentType(*v))
 	case *types.Array:
 		return pointer.To(arrayType(*v))
 	case float64:

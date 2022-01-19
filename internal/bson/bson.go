@@ -77,7 +77,7 @@ func fromBSON(v bsontype) any {
 //nolint:deadcode // remove later if it is not needed
 func toBSON(v any) bsontype {
 	switch v := v.(type) {
-	case types.Document:
+	case *types.Document:
 		return MustConvertDocument(v)
 	case *types.Array:
 		return pointer.To(Array(*v))

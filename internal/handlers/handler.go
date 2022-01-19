@@ -113,7 +113,7 @@ func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody
 		closeConn = !recoverable
 		var res wire.OpMsg
 		err = res.SetSections(wire.OpMsgSection{
-			Documents: []types.Document{protoErr.Document()},
+			Documents: []*types.Document{protoErr.Document()},
 		})
 		if err != nil {
 			panic(err)
@@ -123,8 +123,8 @@ func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 	resHeader.ResponseTo = reqHeader.RequestID
 
-	// FIXME don't call MarshalBinary there
-	// Fix header in the caller?
+	// TODO Don't call MarshalBinary there. Fix header in the caller?
+	// https://github.com/FerretDB/FerretDB/issues/273
 	b, err := resBody.MarshalBinary()
 	if err != nil {
 		panic(err)

@@ -30,8 +30,8 @@ func (h *Handler) QueryCmd(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 		// TODO merge with MsgHello
 		reply := &wire.OpReply{
 			NumberReturned: 1,
-			Documents: []types.Document{
-				types.MustMakeDocument(
+			Documents: []*types.Document{
+				types.MustNewDocument(
 					"helloOk", true,
 					"ismaster", true,
 					// topologyVersion

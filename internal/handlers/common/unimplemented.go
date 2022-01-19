@@ -23,7 +23,7 @@ import (
 )
 
 // Unimplemented returns ErrNotImplemented if doc has any of the given fields.
-func Unimplemented(doc types.Document, fields ...string) error {
+func Unimplemented(doc *types.Document, fields ...string) error {
 	// TODO add metrics https://github.com/FerretDB/FerretDB/issues/74
 
 	for _, field := range fields {
@@ -38,7 +38,7 @@ func Unimplemented(doc types.Document, fields ...string) error {
 
 // UnimplementedNonDefault returns ErrNotImplemented if doc has given field,
 // and isDefault, called with the actual value, returns false.
-func UnimplementedNonDefault(doc types.Document, field string, isDefault func(v any) bool) error {
+func UnimplementedNonDefault(doc *types.Document, field string, isDefault func(v any) bool) error {
 	// TODO add metrics https://github.com/FerretDB/FerretDB/issues/74
 
 	v, err := doc.Get(field)
@@ -55,7 +55,7 @@ func UnimplementedNonDefault(doc types.Document, field string, isDefault func(v 
 }
 
 // Ignored logs a message if doc has any of the given fields.
-func Ignored(doc types.Document, l *zap.Logger, fields ...string) {
+func Ignored(doc *types.Document, l *zap.Logger, fields ...string) {
 	// TODO add metrics https://github.com/FerretDB/FerretDB/issues/74
 
 	for _, field := range fields {

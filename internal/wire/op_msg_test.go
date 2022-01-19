@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -32,9 +33,9 @@ var msgTestCases = []testCase{{
 	},
 	msgBody: &OpMsg{
 		sections: []OpMsgSection{{
-			Documents: []types.Document{types.MustMakeDocument(
+			Documents: []*types.Document{types.MustNewDocument(
 				"buildInfo", int32(1),
-				"lsid", types.MustMakeDocument(
+				"lsid", types.MustNewDocument(
 					"id", types.Binary{
 						Subtype: types.BinaryUUID,
 						B:       []byte{0xa3, 0x19, 0xf2, 0xb4, 0xa1, 0x75, 0x40, 0xc7, 0xb8, 0xe7, 0xa3, 0xa3, 0x2e, 0xc2, 0x56, 0xbe},
@@ -56,19 +57,19 @@ var msgTestCases = []testCase{{
 	},
 	msgBody: &OpMsg{
 		sections: []OpMsgSection{{
-			Documents: []types.Document{types.MustMakeDocument(
+			Documents: []*types.Document{types.MustNewDocument(
 				"version", "5.0.0",
 				"gitVersion", "1184f004a99660de6f5e745573419bda8a28c0e9",
-				"modules", types.MustNewArray(),
+				"modules", must.NotFail(types.NewArray()),
 				"allocator", "tcmalloc",
 				"javascriptEngine", "mozjs",
 				"sysInfo", "deprecated",
-				"versionArray", types.MustNewArray(int32(5), int32(0), int32(0), int32(0)),
-				"openssl", types.MustMakeDocument(
+				"versionArray", must.NotFail(types.NewArray(int32(5), int32(0), int32(0), int32(0))),
+				"openssl", types.MustNewDocument(
 					"running", "OpenSSL 1.1.1f  31 Mar 2020",
 					"compiled", "OpenSSL 1.1.1f  31 Mar 2020",
 				),
-				"buildEnvironment", types.MustMakeDocument(
+				"buildEnvironment", types.MustNewDocument(
 					"distmod", "ubuntu2004",
 					"distarch", "x86_64",
 					"cc", "/opt/mongodbtoolchain/v3/bin/gcc: gcc (GCC) 8.5.0",
@@ -95,7 +96,7 @@ var msgTestCases = []testCase{{
 				"bits", int32(64),
 				"debug", false,
 				"maxBsonObjectSize", int32(16777216),
-				"storageEngines", types.MustNewArray("devnull", "ephemeralForTest", "wiredTiger"),
+				"storageEngines", must.NotFail(types.NewArray("devnull", "ephemeralForTest", "wiredTiger")),
 				"ok", float64(1),
 			)},
 		}},
@@ -110,10 +111,10 @@ var msgTestCases = []testCase{{
 	},
 	msgBody: &OpMsg{
 		sections: []OpMsgSection{{
-			Documents: []types.Document{types.MustMakeDocument(
+			Documents: []*types.Document{types.MustNewDocument(
 				"insert", "actor",
 				"ordered", true,
-				"writeConcern", types.MustMakeDocument(
+				"writeConcern", types.MustNewDocument(
 					"w", "majority",
 				),
 				"$db", "monila",
@@ -121,15 +122,15 @@ var msgTestCases = []testCase{{
 		}, {
 			Kind:       1,
 			Identifier: "documents",
-			Documents: []types.Document{
-				types.MustMakeDocument(
+			Documents: []*types.Document{
+				types.MustNewDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01},
 					"actor_id", int32(1),
 					"first_name", "PENELOPE",
 					"last_name", "GUINESS",
 					"last_update", lastUpdate,
 				),
-				types.MustMakeDocument(
+				types.MustNewDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x02},
 					"actor_id", int32(2),
 					"first_name", "NICK",

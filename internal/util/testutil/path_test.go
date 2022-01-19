@@ -21,19 +21,20 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestSetByPath(t *testing.T) {
 	t.Parallel()
 
-	newDoc := func() types.Document {
-		return types.MustMakeDocument(
-			"client", types.MustMakeDocument(
-				"driver", types.MustMakeDocument(
+	newDoc := func() *types.Document {
+		return types.MustNewDocument(
+			"client", types.MustNewDocument(
+				"driver", types.MustNewDocument(
 					"name", "nodejs",
 				),
 			),
-			"compression", types.MustNewArray("none"),
+			"compression", must.NotFail(types.NewArray("none")),
 		)
 	}
 
@@ -46,20 +47,20 @@ func TestSetByPath(t *testing.T) {
 	for _, tc := range []testCase{{ //nolint:paralleltest // false positive
 		path:  []string{"compression", "0"},
 		value: "zstd",
-		res: types.MustMakeDocument(
-			"client", types.MustMakeDocument(
-				"driver", types.MustMakeDocument(
+		res: types.MustNewDocument(
+			"client", types.MustNewDocument(
+				"driver", types.MustNewDocument(
 					"name", "nodejs",
 				),
 			),
-			"compression", types.MustNewArray("zstd"),
+			"compression", must.NotFail(types.NewArray("zstd")),
 		),
 	}, {
 		path:  []string{"client"},
 		value: "foo",
-		res: types.MustMakeDocument(
+		res: types.MustNewDocument(
 			"client", "foo",
-			"compression", types.MustNewArray("none"),
+			"compression", must.NotFail(types.NewArray("none")),
 		),
 	}} {
 		tc := tc

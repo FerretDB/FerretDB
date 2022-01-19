@@ -63,7 +63,7 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	}
 	common.Ignored(document, h.l, ignoredFields...)
 
-	var filter types.Document
+	var filter *types.Document
 	var sql, collection string
 
 	var args []any
@@ -74,7 +74,7 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	db := m["$db"].(string)
 
 	if isFindOp {
-		projectionIn, _ := m["projection"].(types.Document)
+		projectionIn, _ := m["projection"].(*types.Document)
 		projectionSQL, projectionArgs, err := projection(projectionIn, &placeholder)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
@@ -82,15 +82,15 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		args = append(args, projectionArgs...)
 
 		collection = m["find"].(string)
-		filter, _ = m["filter"].(types.Document)
+		filter, _ = m["filter"].(*types.Document)
 		sql = fmt.Sprintf(`SELECT %s FROM %s`, projectionSQL, pgx.Identifier{db, collection}.Sanitize())
 	} else {
 		collection = m["count"].(string)
-		filter, _ = m["query"].(types.Document)
+		filter, _ = m["query"].(*types.Document)
 		sql = fmt.Sprintf(`SELECT COUNT(*) FROM %s`, pgx.Identifier{db, collection}.Sanitize())
 	}
 
-	sort, _ := m["sort"].(types.Document)
+	sort, _ := m["sort"].(*types.Document)
 	limit, _ := m["limit"].(int32)
 
 	whereSQL, whereArgs, err := where(filter, &placeholder)
@@ -140,7 +140,7 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	defer rows.Close()
 
 	var reply wire.OpMsg
-	if isFindOp { //nolint:nestif // FIXME: I have no idead to fix this lint
+	if isFindOp { //nolint:nestif // TODO simplify
 		var docs types.Array
 		for {
 			doc, err := nextRow(rows)
@@ -151,13 +151,13 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 				break
 			}
 
-			if err = docs.Append(*doc); err != nil {
+			if err = docs.Append(doc); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 		}
 		err = reply.SetSections(wire.OpMsgSection{
-			Documents: []types.Document{types.MustMakeDocument(
-				"cursor", types.MustMakeDocument(
+			Documents: []*types.Document{types.MustNewDocument(
+				"cursor", types.MustNewDocument(
 					"firstBatch", &docs,
 					"id", int64(0), // TODO
 					"ns", db+"."+collection,
@@ -182,7 +182,7 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 			return nil, lazyerrors.Error(err)
 		}
 		err = reply.SetSections(wire.OpMsgSection{
-			Documents: []types.Document{types.MustMakeDocument(
+			Documents: []*types.Document{types.MustNewDocument(
 				"n", count,
 				"ok", float64(1),
 			)},

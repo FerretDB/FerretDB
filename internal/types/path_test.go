@@ -20,30 +20,32 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestGetByPath(t *testing.T) {
 	t.Parallel()
 
-	doc := MustMakeDocument(
+	doc := MustNewDocument(
 		"ismaster", true,
-		"client", MustMakeDocument(
-			"driver", MustMakeDocument(
+		"client", MustNewDocument(
+			"driver", MustNewDocument(
 				"name", "nodejs",
 				"version", "4.0.0-beta.6",
 			),
-			"os", MustMakeDocument(
+			"os", MustNewDocument(
 				"type", "Darwin",
 				"name", "darwin",
 				"architecture", "x64",
 				"version", "20.6.0",
 			),
 			"platform", "Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",
-			"application", MustMakeDocument(
+			"application", MustNewDocument(
 				"name", "mongosh 1.0.1",
 			),
 		),
-		"compression", MustNewArray("none"),
+		"compression", must.NotFail(NewArray("none")),
 		"loadBalanced", false,
 	)
 
@@ -58,10 +60,10 @@ func TestGetByPath(t *testing.T) {
 		res:  "none",
 	}, {
 		path: []string{"compression"},
-		res:  MustNewArray("none"),
+		res:  must.NotFail(NewArray("none")),
 	}, {
 		path: []string{"client", "driver"},
-		res: MustMakeDocument(
+		res: MustNewDocument(
 			"name", "nodejs",
 			"version", "4.0.0-beta.6",
 		),

@@ -47,7 +47,7 @@ func SetByPath[T types.CompositeType](tb testing.TB, comp T, value any, path ...
 	for i, p := range path {
 		last := i == l-1
 		switch c := next.(type) {
-		case types.Document:
+		case *types.Document:
 			var err error
 			next, err = c.Get(p)
 			require.NoError(tb, err)

@@ -42,7 +42,7 @@ func formatResponse(size, rows, millis int32, showEstimate bool) (*wire.OpMsg, e
 
 	var reply wire.OpMsg
 	err := reply.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{types.MustMakeDocument(pairs...)},
+		Documents: []*types.Document{types.MustNewDocument(pairs...)},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)

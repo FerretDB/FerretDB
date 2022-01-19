@@ -48,7 +48,7 @@ func LogicExpr(op string, exprs *types.Array, p *pg.Placeholder, wherePair where
 				return
 			}
 
-			expr := el.(types.Document)
+			expr := el.(*types.Document)
 			m := expr.Map()
 			for j, key := range expr.Keys() {
 				if j != 0 {

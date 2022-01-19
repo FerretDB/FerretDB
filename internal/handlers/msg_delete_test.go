@@ -39,10 +39,10 @@ func TestDelete(t *testing.T) {
 		for i := 1; i <= 5; i++ {
 			var msg wire.OpMsg
 			err := msg.SetSections(wire.OpMsgSection{
-				Documents: []types.Document{types.MustMakeDocument(
+				Documents: []*types.Document{types.MustNewDocument(
 					"insert", "test",
 					"documents", types.MustNewArray(
-						types.MustMakeDocument(
+						types.MustNewDocument(
 							"_id", types.ObjectID{byte(10 + i)},
 							"colour", "red",
 						),
@@ -59,10 +59,10 @@ func TestDelete(t *testing.T) {
 		for i := 1; i <= 5; i++ {
 			var msg wire.OpMsg
 			err := msg.SetSections(wire.OpMsgSection{
-				Documents: []types.Document{types.MustMakeDocument(
+				Documents: []*types.Document{types.MustNewDocument(
 					"insert", "test",
 					"documents", types.MustNewArray(
-						types.MustMakeDocument(
+						types.MustNewDocument(
 							"_id", types.ObjectID{byte(i)},
 							"animal", "cat",
 						),
@@ -77,58 +77,58 @@ func TestDelete(t *testing.T) {
 		}
 
 		type testCase struct {
-			req  types.Document
-			resp types.Document
+			req  *types.Document
+			resp *types.Document
 		}
 
 		testCases := map[string]testCase{
 			"NothingToDelete": {
-				req: types.MustMakeDocument(
+				req: types.MustNewDocument(
 					"delete", "test",
 					"deletes", types.MustNewArray(
-						types.MustMakeDocument(
-							"q", types.MustMakeDocument(
+						types.MustNewDocument(
+							"q", types.MustNewDocument(
 								"colour", "blue",
 							),
 							"limit", int32(0),
 						),
 					),
 				),
-				resp: types.MustMakeDocument(
+				resp: types.MustNewDocument(
 					"n", int32(0),
 					"ok", float64(1),
 				),
 			},
 			"DeleteLimit1": {
-				req: types.MustMakeDocument(
+				req: types.MustNewDocument(
 					"delete", "test",
 					"deletes", types.MustNewArray(
-						types.MustMakeDocument(
-							"q", types.MustMakeDocument(
+						types.MustNewDocument(
+							"q", types.MustNewDocument(
 								"colour", "red",
 							),
 							"limit", int32(1),
 						),
 					),
 				),
-				resp: types.MustMakeDocument(
+				resp: types.MustNewDocument(
 					"n", int32(1),
 					"ok", float64(1),
 				),
 			},
 			"DeleteLimit0": {
-				req: types.MustMakeDocument(
+				req: types.MustNewDocument(
 					"delete", "test",
 					"deletes", types.MustNewArray(
-						types.MustMakeDocument(
-							"q", types.MustMakeDocument(
+						types.MustNewDocument(
+							"q", types.MustNewDocument(
 								"animal", "cat",
 							),
 							"limit", int32(0),
 						),
 					),
 				),
-				resp: types.MustMakeDocument(
+				resp: types.MustNewDocument(
 					"n", int32(5),
 					"ok", float64(1),
 				),
@@ -142,7 +142,7 @@ func TestDelete(t *testing.T) {
 
 				var reqMsg wire.OpMsg
 				err := reqMsg.SetSections(wire.OpMsgSection{
-					Documents: []types.Document{tc.req},
+					Documents: []*types.Document{tc.req},
 				})
 				require.NoError(t, err)
 

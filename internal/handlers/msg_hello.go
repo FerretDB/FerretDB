@@ -28,7 +28,7 @@ func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	var reply wire.OpMsg
 	err := reply.SetSections(wire.OpMsgSection{
 		// TODO merge with QueryCmd
-		Documents: []types.Document{types.MustMakeDocument(
+		Documents: []*types.Document{types.MustNewDocument(
 			"helloOk", true,
 			"ismaster", true,
 			// topologyVersion
