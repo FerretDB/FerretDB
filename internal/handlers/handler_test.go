@@ -40,10 +40,6 @@ import (
 func setup(t *testing.T, poolOpts *testutil.PoolOpts) (context.Context, *Handler, *pg.Pool) {
 	t.Helper()
 
-	if poolOpts == nil {
-		poolOpts = new(testutil.PoolOpts)
-	}
-
 	ctx := testutil.Ctx(t)
 	pool := testutil.Pool(ctx, t, poolOpts)
 	l := zaptest.NewLogger(t)
@@ -893,7 +889,7 @@ func TestCreateListDropCollection(t *testing.T) {
 		// TODO test listCollections command once we have better cursor support
 		// https://github.com/FerretDB/FerretDB/issues/79
 
-		tables, err := pool.Tables(ctx, db)
+		tables, _, err := pool.Tables(ctx, db)
 		require.NoError(t, err)
 		assert.Equal(t, []string{collection}, tables)
 

@@ -46,6 +46,10 @@ func Pool(_ context.Context, tb testing.TB, opts *PoolOpts) *pg.Pool {
 		tb.Skip("skipping in -short mode")
 	}
 
+	if opts == nil {
+		opts = new(PoolOpts)
+	}
+
 	username := "postgres"
 	if opts.ReadOnly {
 		username = "readonly"
