@@ -256,21 +256,24 @@ func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, []stri
 func (pgPool *Pool) CreateSchema(ctx context.Context, schema string) error {
 	sql := `CREATE SCHEMA ` + pgx.Identifier{schema}.Sanitize()
 	_, err := pgPool.Exec(ctx, sql)
+	if err == nil {
+		return nil
+	}
 
 	pgErr, ok := err.(*pgconn.PgError)
 	if !ok {
-		return err
+		return lazyerrors.Errorf("pg.CreateSchema: %w", err)
 	}
 
 	switch pgErr.Code {
 	case pgerrcode.DuplicateSchema:
 		return ErrAlreadyExist
-	case pgerrcode.UniqueViolation:
+	case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject:
 		// https://www.postgresql.org/message-id/CA+TgmoZAdYVtwBfp1FL2sMZbiHCWT4UPrzRLNnX1Nb30Ku3-gg@mail.gmail.com
-		// The same thing for schemas.
+		// The same thing for schemas. Reproducible by dance tests.
 		return ErrAlreadyExist
 	default:
-		return err
+		return lazyerrors.Errorf("pg.CreateSchema: %w", err)
 	}
 }
 
@@ -280,12 +283,15 @@ func (pgPool *Pool) CreateSchema(ctx context.Context, schema string) error {
 func (pgPool *Pool) DropSchema(ctx context.Context, schema string) error {
 	sql := `DROP SCHEMA ` + pgx.Identifier{schema}.Sanitize() + ` CASCADE`
 	_, err := pgPool.Exec(ctx, sql)
+	if err == nil {
+		return nil
+	}
 
 	if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.InvalidSchemaName {
 		return ErrNotExist
 	}
 
-	return err
+	return lazyerrors.Errorf("pg.DropSchema: %w", err)
 }
 
 // CreateTable creates a new FerretDB collection / PostgreSQL jsonb1 table.
@@ -294,21 +300,24 @@ func (pgPool *Pool) DropSchema(ctx context.Context, schema string) error {
 func (pgPool *Pool) CreateTable(ctx context.Context, schema, table string) error {
 	sql := `CREATE TABLE ` + pgx.Identifier{schema, table}.Sanitize() + ` (_jsonb jsonb)`
 	_, err := pgPool.Exec(ctx, sql)
+	if err == nil {
+		return nil
+	}
 
 	pgErr, ok := err.(*pgconn.PgError)
 	if !ok {
-		return err
+		return lazyerrors.Errorf("pg.CreateTable: %w", err)
 	}
 
 	switch pgErr.Code {
 	case pgerrcode.DuplicateTable:
 		return ErrAlreadyExist
-	case pgerrcode.UniqueViolation:
+	case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject:
 		// https://www.postgresql.org/message-id/CA+TgmoZAdYVtwBfp1FL2sMZbiHCWT4UPrzRLNnX1Nb30Ku3-gg@mail.gmail.com
 		// Reproducible by dance tests.
 		return ErrAlreadyExist
 	default:
-		return err
+		return lazyerrors.Errorf("pg.CreateTable: %w", err)
 	}
 }
 
@@ -319,12 +328,15 @@ func (pgPool *Pool) DropTable(ctx context.Context, schema, table string) error {
 	// TODO probably not CASCADE
 	sql := `DROP TABLE ` + pgx.Identifier{schema, table}.Sanitize() + `CASCADE`
 	_, err := pgPool.Exec(ctx, sql)
+	if err == nil {
+		return nil
+	}
 
 	if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
 		return ErrNotExist
 	}
 
-	return err
+	return lazyerrors.Errorf("pg.DropTable: %w", err)
 }
 
 // TableStats returns a set of statistics for FerretDB collection / PostgreSQL table.
