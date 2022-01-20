@@ -213,28 +213,41 @@ func (pgPool *Pool) Schemas(ctx context.Context) ([]string, error) {
 }
 
 // Tables returns a sorted list of FerretDB collection / PostgreSQL table names.
-func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, error) {
-	sql := "SELECT table_name FROM information_schema.tables WHERE table_schema = $1 ORDER BY table_name"
+func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, []string, error) {
+	// TODO query settings table instead: https://github.com/FerretDB/FerretDB/issues/125
+
+	sql := `SELECT table_name, bool_or(column_name = '_jsonb') ` +
+		`FROM information_schema.columns ` +
+		`WHERE table_schema = $1 ` +
+		`GROUP BY table_name ` +
+		`ORDER BY table_name`
 	rows, err := pgPool.Query(ctx, sql, schema)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, nil, lazyerrors.Error(err)
 	}
 	defer rows.Close()
 
-	res := make([]string, 0, 2)
+	tables := make([]string, 0, 2)
+	storages := make([]string, 0, 2)
+	var name string
+	var hasJSONB bool
 	for rows.Next() {
-		var name string
-		if err = rows.Scan(&name); err != nil {
-			return nil, lazyerrors.Error(err)
+		if err = rows.Scan(&name, &hasJSONB); err != nil {
+			return nil, nil, lazyerrors.Error(err)
 		}
 
-		res = append(res, name)
+		tables = append(tables, name)
+		if hasJSONB {
+			storages = append(storages, JSONB1Table)
+		} else {
+			storages = append(storages, SQLTable)
+		}
 	}
 	if err = rows.Err(); err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, nil, lazyerrors.Error(err)
 	}
 
-	return res, nil
+	return tables, storages, nil
 }
 
 // CreateSchema creates a new FerretDB database / PostgreSQL schema.

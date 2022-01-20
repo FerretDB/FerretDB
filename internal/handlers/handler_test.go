@@ -889,7 +889,7 @@ func TestCreateListDropCollection(t *testing.T) {
 		// TODO test listCollections command once we have better cursor support
 		// https://github.com/FerretDB/FerretDB/issues/79
 
-		tables, err := pool.Tables(ctx, db)
+		tables, _, err := pool.Tables(ctx, db)
 		require.NoError(t, err)
 		assert.Equal(t, []string{collection}, tables)
 
