@@ -22,6 +22,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-func (h *storage) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (s *storage) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("createIndexes: not implemented for SQL storage"))
 }
