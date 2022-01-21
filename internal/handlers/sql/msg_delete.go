@@ -28,7 +28,7 @@ import (
 )
 
 // MsgDelete deletes document.
-func (h *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (s *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -37,7 +37,7 @@ func (h *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	if err := common.Unimplemented(document, "let"); err != nil {
 		return nil, err
 	}
-	common.Ignored(document, h.l.Desugar(), "ordered", "writeConcern")
+	common.Ignored(document, s.l.Desugar(), "ordered", "writeConcern")
 
 	m := document.Map()
 	collection := m[document.Command()].(string)
@@ -75,7 +75,7 @@ func (h *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			sql += elSQL
 		}
 
-		tag, err := h.pgPool.Exec(ctx, sql, args...)
+		tag, err := s.pgPool.Exec(ctx, sql, args...)
 		if err != nil {
 			// TODO check error code
 			return nil, common.NewError(common.ErrNamespaceNotFound, fmt.Errorf("delete: ns not found: %w", err))

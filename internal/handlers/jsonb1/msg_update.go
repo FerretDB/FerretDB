@@ -29,7 +29,7 @@ import (
 )
 
 // MsgUpdate modifies an existing document or documents in a collection.
-func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (s *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -38,7 +38,7 @@ func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	if err := common.Unimplemented(document, "let"); err != nil {
 		return nil, err
 	}
-	common.Ignored(document, h.l, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
+	common.Ignored(document, s.l, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
 
 	m := document.Map()
 	collection := m["update"].(string)
@@ -76,7 +76,7 @@ func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		sql += whereSQL
 
-		rows, err := h.pgPool.Query(ctx, sql, args...)
+		rows, err := s.pgPool.Query(ctx, sql, args...)
 		if err != nil {
 			return nil, err
 		}
@@ -143,7 +143,7 @@ func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			if err != nil {
 				return nil, err
 			}
-			tag, err := h.pgPool.Exec(ctx, sql, db, idb)
+			tag, err := s.pgPool.Exec(ctx, sql, db, idb)
 			if err != nil {
 				return nil, err
 			}

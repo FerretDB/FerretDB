@@ -29,7 +29,7 @@ import (
 
 // MsgFindOrCount finds documents in a collection or view and returns a cursor to the selected documents
 // or count the number of documents that matches the query filter.
-func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (s *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -61,7 +61,7 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		"max",
 		"min",
 	}
-	common.Ignored(document, h.l, ignoredFields...)
+	common.Ignored(document, s.l, ignoredFields...)
 
 	var filter *types.Document
 	var sql, collection string
@@ -133,7 +133,7 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("find: negative limit values are not supported"))
 	}
 
-	rows, err := h.pgPool.Query(ctx, sql, args...)
+	rows, err := s.pgPool.Query(ctx, sql, args...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

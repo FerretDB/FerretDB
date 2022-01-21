@@ -28,13 +28,13 @@ import (
 )
 
 // MsgInsert inserts a document or documents into a collection.
-func (h *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (s *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.l.Desugar(), "ordered", "writeConcern", "bypassDocumentValidation", "comment")
+	common.Ignored(document, s.l.Desugar(), "ordered", "writeConcern", "bypassDocumentValidation", "comment")
 
 	m := document.Map()
 	collection := m[document.Command()].(string)
@@ -87,7 +87,7 @@ func (h *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		sql += ")"
 
-		_, err = h.pgPool.Exec(ctx, sql, args...)
+		_, err = s.pgPool.Exec(ctx, sql, args...)
 		if err != nil {
 			return nil, err
 		}
