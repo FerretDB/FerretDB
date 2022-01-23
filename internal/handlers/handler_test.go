@@ -870,7 +870,7 @@ func TestListDropDatabase(t *testing.T) {
 }
 
 //nolint:paralleltest // we test a global list of collections
-func TestCreateListDropCollection(t *testing.T) {
+func TestCreateDropCollection(t *testing.T) {
 	ctx, handler, pool := setup(t, nil)
 	db := testutil.Schema(ctx, t, pool)
 

@@ -231,7 +231,7 @@ func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) (common.Stora
 		}
 
 		// Table (or even schema) does not exist. Try to create it,
-		// but keep in mind that that it can be created in concurrent connection.
+		// but keep in mind that it can be created in concurrent connection.
 
 		if err := h.pgPool.CreateSchema(ctx, db); err != nil && err != pg.ErrAlreadyExist {
 			return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)
