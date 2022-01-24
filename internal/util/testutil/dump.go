@@ -15,6 +15,8 @@
 package testutil
 
 import (
+	"bytes"
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -27,5 +29,9 @@ import (
 func Dump[T types.Type](tb testing.TB, o T) string {
 	b, err := fjson.Marshal(o)
 	require.NoError(tb, err)
-	return string(b)
+
+	dst := bytes.NewBuffer(make([]byte, 0, len(b)))
+	err = json.Indent(dst, b, "", "  ")
+	require.NoError(tb, err)
+	return dst.String()
 }
