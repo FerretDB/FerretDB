@@ -48,7 +48,7 @@ linters-settings:
     checks: ["all"]
   lll:
     line-length: 130
-    tab-width: 1
+    tab-width: 4
   misspell:
     ignore-words:
       - guiness # present in the test dataset
