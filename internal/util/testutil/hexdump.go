@@ -12,17 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package testutil provides testing helpers.
 package testutil
 
 import (
-	"context"
+	"os"
+	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/internal/util/hex"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-func Ctx(tb testing.TB) context.Context {
+func ParseDump(tb testing.TB, s string) []byte {
 	tb.Helper()
 
-	// TODO
-	return context.Background()
+	b, err := hex.ParseDump(s)
+	require.NoError(tb, err)
+	return b
+}
+
+func ParseDumpFile(tb testing.TB, path ...string) []byte {
+	tb.Helper()
+
+	b, err := os.ReadFile(filepath.Join(path...))
+	require.NoError(tb, err)
+	return ParseDump(tb, string(b))
+}
+
+func MustParseDumpFile(path ...string) []byte {
+	b := must.NotFail(os.ReadFile(filepath.Join(path...)))
+	return must.NotFail(hex.ParseDump(string(b)))
 }

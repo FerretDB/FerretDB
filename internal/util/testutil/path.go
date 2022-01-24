@@ -26,7 +26,7 @@ import (
 )
 
 // GetByPath returns a value by path - a sequence of indexes and keys.
-func GetByPath[T types.CompositeType](tb testing.TB, comp T, path ...string) any {
+func GetByPath[T types.CompositeTypeInterface](tb testing.TB, comp T, path ...string) any {
 	tb.Helper()
 
 	res, err := comp.GetByPath(path...)
@@ -37,7 +37,7 @@ func GetByPath[T types.CompositeType](tb testing.TB, comp T, path ...string) any
 // SetByPath sets the value by path - a sequence of indexes and keys.
 //
 // The path must exist.
-func SetByPath[T types.CompositeType](tb testing.TB, comp T, value any, path ...string) {
+func SetByPath[T types.CompositeTypeInterface](tb testing.TB, comp T, value any, path ...string) {
 	tb.Helper()
 
 	l := len(path)
@@ -77,7 +77,7 @@ func SetByPath[T types.CompositeType](tb testing.TB, comp T, value any, path ...
 
 // CompareAndSetByPathNum asserts that two values with the same path in two objects (documents or arrays)
 // are within a given numerical delta, then updates the expected object with the actual value.
-func CompareAndSetByPathNum[T types.CompositeType](tb testing.TB, expected, actual T, delta float64, path ...string) {
+func CompareAndSetByPathNum[T types.CompositeTypeInterface](tb testing.TB, expected, actual T, delta float64, path ...string) {
 	tb.Helper()
 
 	expectedV := GetByPath(tb, expected, path...)
@@ -90,7 +90,9 @@ func CompareAndSetByPathNum[T types.CompositeType](tb testing.TB, expected, actu
 
 // CompareAndSetByPathTime asserts that two values with the same path in two objects (documents or arrays)
 // are within a given time delta, then updates the expected object with the actual value.
-func CompareAndSetByPathTime[T types.CompositeType](tb testing.TB, expected, actual T, delta time.Duration, path ...string) {
+//
+//nolint:lll // will be fixed when CompositeTypeInterface is removed
+func CompareAndSetByPathTime[T types.CompositeTypeInterface](tb testing.TB, expected, actual T, delta time.Duration, path ...string) {
 	tb.Helper()
 
 	expectedV := GetByPath(tb, expected, path...)
