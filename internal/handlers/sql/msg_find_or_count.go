@@ -29,7 +29,7 @@ import (
 
 // MsgFindOrCount finds documents in a collection or view and returns a cursor to the selected documents
 // or count the number of documents that matches the query filter.
-func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (s *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	// TODO cursor / getMore support via https://www.postgresql.org/docs/current/sql-declare.html
 
 	document, err := msg.Document()
@@ -63,16 +63,16 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		"max",
 		"min",
 	}
-	common.Ignored(document, h.l.Desugar(), ignoredFields...)
+	common.Ignored(document, s.l.Desugar(), ignoredFields...)
 
-	var filter types.Document
+	var filter *types.Document
 	var sql, collection string
 
 	m := document.Map()
 	_, isFindOp := m["find"].(string)
 	db := m["$db"].(string)
 
-	projection, ok := m["projection"].(types.Document)
+	projection, ok := m["projection"].(*types.Document)
 	projectionStr := "*"
 	if ok && projection.Len() != 0 {
 		projectionStr = ""
@@ -85,14 +85,14 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	}
 	if isFindOp {
 		collection = m["find"].(string)
-		filter, _ = m["filter"].(types.Document)
+		filter, _ = m["filter"].(*types.Document)
 		sql = fmt.Sprintf(`SELECT %s FROM %s`, projectionStr, pgx.Identifier{db, collection}.Sanitize())
 	} else {
 		collection = m["count"].(string)
-		filter, _ = m["query"].(types.Document)
+		filter, _ = m["query"].(*types.Document)
 		sql = fmt.Sprintf(`SELECT COUNT(*) FROM %s`, pgx.Identifier{db, collection}.Sanitize())
 	}
-	sort, _ := m["sort"].(types.Document)
+	sort, _ := m["sort"].(*types.Document)
 	limit, _ := m["limit"].(int32)
 
 	var placeholder pg.Placeholder
@@ -134,14 +134,14 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("find: negative limit values are not supported"))
 	}
 
-	rows, err := h.pgPool.Query(ctx, sql, args...)
+	rows, err := s.pgPool.Query(ctx, sql, args...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 	defer rows.Close()
 
 	var res wire.OpMsg
-	if isFindOp { //nolint:nestif // FIXME: I have no idead to fix this lint
+	if isFindOp { //nolint:nestif // TODO simplify
 		rowInfo := extractRowInfo(rows)
 
 		var docs types.Array
@@ -155,14 +155,14 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 				break
 			}
 
-			if err = docs.Append(*doc); err != nil {
+			if err = docs.Append(doc); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 		}
 
 		err = res.SetSections(wire.OpMsgSection{
-			Documents: []types.Document{types.MustMakeDocument(
-				"cursor", types.MustMakeDocument(
+			Documents: []*types.Document{types.MustNewDocument(
+				"cursor", types.MustNewDocument(
 					"firstBatch", &docs,
 					"id", int64(0),
 					"ns", db+"."+collection,
@@ -186,7 +186,7 @@ func (h *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		defer rows.Close()
 
 		err = res.SetSections(wire.OpMsgSection{
-			Documents: []types.Document{types.MustMakeDocument(
+			Documents: []*types.Document{types.MustNewDocument(
 				"n", count,
 				"ok", float64(1),
 			)},

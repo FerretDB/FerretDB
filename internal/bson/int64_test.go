@@ -23,19 +23,19 @@ import (
 
 var int64TestCases = []testCase{{
 	name: "42",
-	v:    pointer.To(Int64(42)),
+	v:    pointer.To(int64Type(42)),
 	b:    []byte{0x2a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
 }, {
 	name: "zero",
-	v:    pointer.To(Int64(0)),
+	v:    pointer.To(int64Type(0)),
 	b:    []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
 }, {
 	name: "max int64",
-	v:    pointer.To(Int64(math.MaxInt64)),
+	v:    pointer.To(int64Type(math.MaxInt64)),
 	b:    []byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f},
 }, {
 	name: "min int64",
-	v:    pointer.To(Int64(math.MinInt64)),
+	v:    pointer.To(int64Type(math.MinInt64)),
 	b:    []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80},
 }, {
 	name: "EOF",
@@ -45,13 +45,13 @@ var int64TestCases = []testCase{{
 
 func TestInt64(t *testing.T) {
 	t.Parallel()
-	testBinary(t, int64TestCases, func() bsontype { return new(Int64) })
+	testBinary(t, int64TestCases, func() bsontype { return new(int64Type) })
 }
 
 func FuzzInt64(f *testing.F) {
-	fuzzBinary(f, int64TestCases, func() bsontype { return new(Int64) })
+	fuzzBinary(f, int64TestCases, func() bsontype { return new(int64Type) })
 }
 
 func BenchmarkInt64(b *testing.B) {
-	benchmark(b, int64TestCases, func() bsontype { return new(Int64) })
+	benchmark(b, int64TestCases, func() bsontype { return new(int64Type) })
 }

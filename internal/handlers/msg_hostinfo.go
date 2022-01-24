@@ -39,8 +39,8 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{types.MustMakeDocument(
-			"system", types.MustMakeDocument(
+		Documents: []*types.Document{types.MustNewDocument(
+			"system", types.MustNewDocument(
 				"currentTime", now,
 				"hostname", hostname,
 				"cpuAddrSize", int32(strconv.IntSize),
@@ -48,7 +48,7 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 				"cpuArch", runtime.GOARCH,
 				"numaEnabled", false,
 			),
-			"os", types.MustMakeDocument(
+			"os", types.MustNewDocument(
 				"type", cases.Title(language.English).String(runtime.GOOS),
 			),
 			"ok", float64(1),

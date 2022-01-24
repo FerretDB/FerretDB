@@ -36,7 +36,7 @@ type OpReply struct {
 	CursorID       int64
 	StartingFrom   int32
 	NumberReturned int32
-	Documents      []types.Document
+	Documents      []*types.Document
 }
 
 func (reply *OpReply) msgbody() {}
@@ -59,7 +59,7 @@ func (reply *OpReply) readFrom(bufr *bufio.Reader) error {
 		return lazyerrors.Errorf("wire.OpReply.ReadFrom: invalid NumberReturned %d", n)
 	}
 
-	reply.Documents = make([]types.Document, reply.NumberReturned)
+	reply.Documents = make([]*types.Document, reply.NumberReturned)
 	for i := int32(0); i < reply.NumberReturned; i++ {
 		var doc bson.Document
 		if err := doc.ReadFrom(bufr); err != nil {

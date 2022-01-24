@@ -17,7 +17,6 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"sort"
 	"sync/atomic"
 
 	"go.uber.org/zap"
@@ -113,7 +112,7 @@ func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody
 		closeConn = !recoverable
 		var res wire.OpMsg
 		err = res.SetSections(wire.OpMsgSection{
-			Documents: []types.Document{protoErr.Document()},
+			Documents: []*types.Document{protoErr.Document()},
 		})
 		if err != nil {
 			panic(err)
@@ -123,8 +122,8 @@ func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 	resHeader.ResponseTo = reqHeader.RequestID
 
-	// FIXME don't call MarshalBinary there
-	// Fix header in the caller?
+	// TODO Don't call MarshalBinary there. Fix header in the caller?
+	// https://github.com/FerretDB/FerretDB/issues/273
 	b, err := resBody.MarshalBinary()
 	if err != nil {
 		panic(err)
@@ -198,40 +197,50 @@ func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) (common.Stora
 	collection := m[command].(string)
 	db := m["$db"].(string)
 
-	var jsonbTableExist bool
-	sql := `SELECT COUNT(*) > 0 FROM information_schema.columns WHERE column_name = $1 AND table_schema = $2 AND table_name = $3`
-	if err := h.pgPool.QueryRow(ctx, sql, "_jsonb", db, collection).Scan(&jsonbTableExist); err != nil {
-		return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)
+	tables, storages, err := h.pgPool.Tables(ctx, db)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var storage string
+	for i, t := range tables {
+		if t == collection {
+			storage = storages[i]
+			break
+		}
 	}
 
 	switch command {
 	case "delete", "find", "count":
-		if jsonbTableExist {
+		switch storage {
+		case pg.JSONB1Table:
 			return h.jsonb1, nil
-		}
-		return h.sql, nil
-
-	case "insert", "update":
-		if jsonbTableExist {
-			return h.jsonb1, nil
-		}
-
-		// check if SQL table exist
-		tables, err := h.pgPool.Tables(ctx, db)
-		if err != nil {
-			return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)
-		}
-		if i := sort.SearchStrings(tables, collection); i < len(tables) && tables[i] == collection {
+		case pg.SQLTable:
+			return h.sql, nil
+		default:
+			// does not matter much what we return there
 			return h.sql, nil
 		}
 
-		// create schema if needed
+	case "insert", "update":
+		switch storage {
+		case pg.JSONB1Table:
+			return h.jsonb1, nil
+		case pg.SQLTable:
+			return h.sql, nil
+		}
+
+		// Table (or even schema) does not exist. Try to create it,
+		// but keep in mind that that it can be created in concurrent connection.
+
 		if err := h.pgPool.CreateSchema(ctx, db); err != nil && err != pg.ErrAlreadyExist {
 			return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)
 		}
 
-		// create table
 		if err := h.pgPool.CreateTable(ctx, db, collection); err != nil {
+			if err == pg.ErrAlreadyExist {
+				return h.jsonb1, nil
+			}
 			return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)
 		}
 

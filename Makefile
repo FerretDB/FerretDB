@@ -1,4 +1,5 @@
 FUZZTIME ?= 20s
+FUZZCORPUS ?= ../fuzz-corpus
 
 all: fmt test
 
@@ -59,6 +60,10 @@ fuzz:                                  ## Fuzz for about 2 minutes (with default
 	go test -fuzz=FuzzQuery -fuzztime=$(FUZZTIME) ./internal/wire/
 	go test -fuzz=FuzzReply -fuzztime=$(FUZZTIME) ./internal/wire/
 
+fuzz-corpus:                           ## Sync generated fuzz corpus with FUZZCORPUS
+	go run ./cmd/fuzztool/fuzztool.go -src=$(FUZZCORPUS) -dst=generated
+	go run ./cmd/fuzztool/fuzztool.go -dst=$(FUZZCORPUS) -src=generated
+
 bench-short:                           ## Benchmark for about 20 seconds
 	go test -list='Benchmark.*' ./...
 	rm -f new.txt
@@ -95,8 +100,8 @@ docker-init:
 	docker buildx create --driver=docker-container --name=ferretdb
 
 docker-build: build-testcover
-	env GOOS=linux GOARCH=arm64            go test -c -o=bin/ferretdb-arm64 -trimpath -tags=testcover -coverpkg=./... ./cmd/ferretdb
-	env GOOS=linux GOARCH=amd64 GOAMD64=v2 go test -c -o=bin/ferretdb-amd64 -trimpath -tags=testcover -coverpkg=./... ./cmd/ferretdb
+	env GOOS=linux GOARCH=arm64 go test -c -o=bin/ferretdb-arm64 -trimpath -tags=testcover -coverpkg=./... ./cmd/ferretdb
+	env GOOS=linux GOARCH=amd64 go test -c -o=bin/ferretdb-amd64 -trimpath -tags=testcover -coverpkg=./... ./cmd/ferretdb
 
 docker-local: docker-build
 	docker buildx build --builder=ferretdb --tag=ghcr.io/ferretdb/ferretdb:local --load .

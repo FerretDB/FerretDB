@@ -29,7 +29,7 @@ import (
 )
 
 // MsgUpdate modifies an existing document or documents in a collection.
-func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (s *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -38,7 +38,7 @@ func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	if err := common.Unimplemented(document, "let"); err != nil {
 		return nil, err
 	}
-	common.Ignored(document, h.l, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
+	common.Ignored(document, s.l, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
 
 	m := document.Map()
 	collection := m["update"].(string)
@@ -60,23 +60,23 @@ func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			"arrayFilters",
 			"hint",
 		}
-		if err := common.Unimplemented(doc.(types.Document), unimplementedFields...); err != nil {
+		if err := common.Unimplemented(doc.(*types.Document), unimplementedFields...); err != nil {
 			return nil, err
 		}
 
-		docM := doc.(types.Document).Map()
+		docM := doc.(*types.Document).Map()
 
 		sql := fmt.Sprintf(`SELECT _jsonb FROM %s`, pgx.Identifier{db, collection}.Sanitize())
 		var placeholder pg.Placeholder
 
-		whereSQL, args, err := where(docM["q"].(types.Document), &placeholder)
+		whereSQL, args, err := where(docM["q"].(*types.Document), &placeholder)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
 		sql += whereSQL
 
-		rows, err := h.pgPool.Query(ctx, sql, args...)
+		rows, err := s.pgPool.Query(ctx, sql, args...)
 		if err != nil {
 			return nil, err
 		}
@@ -93,7 +93,7 @@ func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				break
 			}
 
-			if err = updateDocs.Append(*updateDoc); err != nil {
+			if err = updateDocs.Append(updateDoc); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 		}
@@ -106,12 +106,12 @@ func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				return nil, lazyerrors.Error(err)
 			}
 
-			d := updateDoc.(types.Document)
+			d := updateDoc.(*types.Document)
 
-			for updateOp, updateV := range docM["u"].(types.Document).Map() {
+			for updateOp, updateV := range docM["u"].(*types.Document).Map() {
 				switch updateOp {
 				case "$set":
-					for k, v := range updateV.(types.Document).Map() {
+					for k, v := range updateV.(*types.Document).Map() {
 						if err := d.Set(k, v); err != nil {
 							return nil, lazyerrors.Error(err)
 						}
@@ -133,7 +133,7 @@ func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			}
 
 			sql = fmt.Sprintf("UPDATE %s SET _jsonb = $1 WHERE _jsonb->'_id' = $2", pgx.Identifier{db, collection}.Sanitize())
-			d := updateDoc.(types.Document)
+			d := updateDoc.(*types.Document)
 			db, err := fjson.Marshal(d)
 			if err != nil {
 				return nil, err
@@ -143,7 +143,7 @@ func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			if err != nil {
 				return nil, err
 			}
-			tag, err := h.pgPool.Exec(ctx, sql, db, idb)
+			tag, err := s.pgPool.Exec(ctx, sql, db, idb)
 			if err != nil {
 				return nil, err
 			}
@@ -154,7 +154,7 @@ func (h *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{types.MustMakeDocument(
+		Documents: []*types.Document{types.MustNewDocument(
 			"n", selected,
 			"nModified", updated,
 			"ok", float64(1),

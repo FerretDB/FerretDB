@@ -28,7 +28,7 @@ import (
 )
 
 // MsgDelete deletes document.
-func (h *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (s *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -37,7 +37,7 @@ func (h *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	if err := common.Unimplemented(document, "let"); err != nil {
 		return nil, err
 	}
-	common.Ignored(document, h.l, "ordered", "writeConcern")
+	common.Ignored(document, s.l, "ordered", "writeConcern")
 
 	m := document.Map()
 	collection := m[document.Command()].(string)
@@ -51,16 +51,16 @@ func (h *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, lazyerrors.Error(err)
 		}
 
-		if err := common.Unimplemented(doc.(types.Document), "collation", "hint", "comment"); err != nil {
+		if err := common.Unimplemented(doc.(*types.Document), "collation", "hint", "comment"); err != nil {
 			return nil, err
 		}
 
-		d := doc.(types.Document).Map()
+		d := doc.(*types.Document).Map()
 
 		sql := fmt.Sprintf(`DELETE FROM %s`, pgx.Identifier{db, collection}.Sanitize())
 		var placeholder pg.Placeholder
 
-		elSQL, args, err := where(d["q"].(types.Document), &placeholder)
+		elSQL, args, err := where(d["q"].(*types.Document), &placeholder)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -74,7 +74,7 @@ func (h *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			sql += elSQL
 		}
 
-		tag, err := h.pgPool.Exec(ctx, sql, args...)
+		tag, err := s.pgPool.Exec(ctx, sql, args...)
 		if err != nil {
 			// TODO check error code
 			return nil, common.NewError(common.ErrNamespaceNotFound, fmt.Errorf("delete: ns not found: %w", err))
@@ -85,7 +85,7 @@ func (h *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{types.MustMakeDocument(
+		Documents: []*types.Document{types.MustNewDocument(
 			"n", deleted,
 			"ok", float64(1),
 		)},

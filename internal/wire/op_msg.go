@@ -33,7 +33,7 @@ import (
 type OpMsgSection struct {
 	Kind       byte
 	Identifier string
-	Documents  []types.Document
+	Documents  []*types.Document // TODO https://github.com/FerretDB/FerretDB/issues/274
 }
 
 // OpMsg is an extensible message format designed to subsume the functionality of other opcodes.
@@ -55,21 +55,21 @@ func (msg *OpMsg) SetSections(sections ...OpMsgSection) error {
 }
 
 // Document returns the value of msg as a types.Document.
-func (msg *OpMsg) Document() (types.Document, error) {
-	var doc types.Document
+func (msg *OpMsg) Document() (*types.Document, error) {
+	var doc *types.Document
 
 	for _, section := range msg.sections {
 		switch section.Kind {
 		case 0:
 			if l := len(section.Documents); l != 1 {
-				return doc, lazyerrors.Errorf("wire.OpMsg.Document: %d documents in kind 0 section", l)
+				return nil, lazyerrors.Errorf("wire.OpMsg.Document: %d documents in kind 0 section", l)
 			}
-			if m := doc.Map(); len(m) != 0 {
-				return doc, lazyerrors.Errorf("wire.OpMsg.Document: doc is not empty already: %+v", m)
+			if doc != nil {
+				return nil, lazyerrors.Errorf("wire.OpMsg.Document: doc is not empty already: %+v", doc)
 			}
 
 			// do a shallow copy of the document that we would modify if there are kind 1 sections
-			doc = types.MustMakeDocument()
+			doc = types.MustNewDocument()
 			d := section.Documents[0]
 			m := d.Map()
 			for _, k := range d.Keys() {
@@ -78,27 +78,28 @@ func (msg *OpMsg) Document() (types.Document, error) {
 
 		case 1:
 			if section.Identifier == "" {
-				return doc, lazyerrors.New("wire.OpMsg.Document: empty section identifier")
+				return nil, lazyerrors.New("wire.OpMsg.Document: empty section identifier")
 			}
+			if doc == nil {
+				return nil, lazyerrors.New("wire.OpMsg.Document: doc is empty")
+			}
+
 			m := doc.Map()
-			if len(m) == 0 {
-				return doc, lazyerrors.New("wire.OpMsg.Document: doc is empty")
-			}
 			if _, ok := m[section.Identifier]; ok {
-				return doc, lazyerrors.Errorf("wire.OpMsg.Document: doc already has %q key", section.Identifier)
+				return nil, lazyerrors.Errorf("wire.OpMsg.Document: doc already has %q key", section.Identifier)
 			}
 
 			a := types.MakeArray(len(section.Documents)) // may be zero
 			for _, d := range section.Documents {
 				if err := a.Append(d); err != nil {
-					return doc, lazyerrors.Error(err)
+					return nil, lazyerrors.Error(err)
 				}
 			}
 
 			doc.Set(section.Identifier, a)
 
 		default:
-			return doc, lazyerrors.Errorf("wire.OpMsg.Document: unknown kind %d", section.Kind)
+			return nil, lazyerrors.Errorf("wire.OpMsg.Document: unknown kind %d", section.Kind)
 		}
 	}
 
@@ -129,7 +130,7 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
-			section.Documents = []types.Document{d}
+			section.Documents = []*types.Document{d}
 
 		case 1:
 			var secSize int32

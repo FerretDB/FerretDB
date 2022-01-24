@@ -58,7 +58,7 @@ func (doc *documentType) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Errorf("fjson.Document.UnmarshalJSON: %d elements in $k, %d in total", len(keys), len(rawMessages))
 	}
 
-	td := types.MustMakeDocument()
+	td := types.MustNewDocument()
 	for _, key := range keys {
 		b, ok = rawMessages[key]
 		if !ok {
@@ -73,7 +73,7 @@ func (doc *documentType) UnmarshalJSON(data []byte) error {
 		}
 	}
 
-	*doc = documentType(td)
+	*doc = documentType(*td)
 	return nil
 }
 
@@ -84,13 +84,17 @@ func (doc *documentType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 
 	buf.WriteString(`{"$k":`)
-	b, err := json.Marshal(td.Keys())
+	keys := td.Keys()
+	if keys == nil {
+		keys = []string{}
+	}
+	b, err := json.Marshal(keys)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 	buf.Write(b)
 
-	for _, key := range td.Keys() {
+	for _, key := range keys {
 		buf.WriteByte(',')
 
 		if b, err = json.Marshal(key); err != nil {

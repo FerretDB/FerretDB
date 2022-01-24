@@ -82,6 +82,10 @@ func testMessages(t *testing.T, testCases []testCase) {
 					assert.Equal(t, tc.msgBody, msgBody)
 					assert.Zero(t, br.Len(), "not all br bytes were consumed")
 					assert.Zero(t, bufr.Buffered(), "not all bufr bytes were consumed")
+
+					assert.NotPanics(t, func() { _ = msgHeader.String() })
+					assert.NotPanics(t, func() { _ = msgBody.String() })
+
 					return
 				}
 
@@ -130,6 +134,9 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 			if err != nil {
 				t.Skip(err)
 			}
+
+			assert.NotPanics(t, func() { _ = msgHeader.String() })
+			assert.NotPanics(t, func() { _ = msgBody.String() })
 
 			// remove random tail
 			expectedB = b[:len(b)-bufr.Buffered()-br.Len()]

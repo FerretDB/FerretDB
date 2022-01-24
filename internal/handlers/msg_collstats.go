@@ -43,7 +43,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{types.MustMakeDocument(
+		Documents: []*types.Document{types.MustNewDocument(
 			"ns", db+"."+collection,
 			"count", stats.Rows,
 			"size", stats.SizeTotal,

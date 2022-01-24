@@ -34,7 +34,7 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{types.MustMakeDocument(
+		Documents: []*types.Document{types.MustNewDocument(
 			"version", versionValue,
 			"ok", float64(1),
 		)},

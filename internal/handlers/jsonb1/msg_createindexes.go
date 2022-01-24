@@ -23,7 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-func (h *storage) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (s *storage) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/78
 
 	document, err := msg.Document()
@@ -31,11 +31,11 @@ func (h *storage) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	common.Ignored(document, h.l, "writeConcern", "commitQuorum", "comment")
+	common.Ignored(document, s.l, "writeConcern", "commitQuorum", "comment")
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{types.MustMakeDocument(
+		Documents: []*types.Document{types.MustNewDocument(
 			"ok", float64(1),
 		)},
 	})

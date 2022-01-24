@@ -23,31 +23,31 @@ import (
 
 var doubleTestCases = []testCase{{
 	name: "42.13",
-	v:    pointer.To(Double(42.13)),
+	v:    pointer.To(doubleType(42.13)),
 	b:    []byte{0x71, 0x3d, 0x0a, 0xd7, 0xa3, 0x10, 0x45, 0x40},
 }, {
 	name: "zero",
-	v:    pointer.To(Double(0)),
+	v:    pointer.To(doubleType(0)),
 	b:    []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
 }, {
 	name: "max float64",
-	v:    pointer.To(Double(math.MaxFloat64)),
+	v:    pointer.To(doubleType(math.MaxFloat64)),
 	b:    []byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xef, 0x7f},
 }, {
 	name: "smallest positive float64",
-	v:    pointer.To(Double(math.SmallestNonzeroFloat64)),
+	v:    pointer.To(doubleType(math.SmallestNonzeroFloat64)),
 	b:    []byte{0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
 }, {
 	name: "+Infinity",
-	v:    pointer.To(Double(math.Inf(1))),
+	v:    pointer.To(doubleType(math.Inf(1))),
 	b:    []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf0, 0x7f},
 }, {
 	name: "-Infinity",
-	v:    pointer.To(Double(math.Inf(-1))),
+	v:    pointer.To(doubleType(math.Inf(-1))),
 	b:    []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf0, 0xff},
 }, {
 	name: "NaN",
-	v:    pointer.To(Double(math.NaN())),
+	v:    pointer.To(doubleType(math.NaN())),
 	b:    []byte{0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf8, 0x7f},
 }, {
 	name: "EOF",
@@ -57,13 +57,13 @@ var doubleTestCases = []testCase{{
 
 func TestDouble(t *testing.T) {
 	t.Parallel()
-	testBinary(t, doubleTestCases, func() bsontype { return new(Double) })
+	testBinary(t, doubleTestCases, func() bsontype { return new(doubleType) })
 }
 
 func FuzzDouble(f *testing.F) {
-	fuzzBinary(f, doubleTestCases, func() bsontype { return new(Double) })
+	fuzzBinary(f, doubleTestCases, func() bsontype { return new(doubleType) })
 }
 
 func BenchmarkDouble(b *testing.B) {
-	benchmark(b, doubleTestCases, func() bsontype { return new(Double) })
+	benchmark(b, doubleTestCases, func() bsontype { return new(doubleType) })
 }

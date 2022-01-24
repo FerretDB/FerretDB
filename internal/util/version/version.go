@@ -41,7 +41,7 @@ type Info struct {
 	Branch           string
 	Dirty            bool
 	Debug            bool // testcover or -race
-	BuildEnvironment types.Document
+	BuildEnvironment *types.Document
 }
 
 var info *Info
@@ -61,7 +61,7 @@ func init() {
 		return
 	}
 
-	info.BuildEnvironment = types.MustMakeDocument()
+	info.BuildEnvironment = types.MustNewDocument()
 	for _, s := range buildInfo.Settings {
 		info.BuildEnvironment.Set(s.Key, s.Value)
 		switch s.Key {

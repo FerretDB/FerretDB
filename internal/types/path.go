@@ -20,11 +20,11 @@ import (
 )
 
 // getByPath returns a value by path - a sequence of indexes and keys.
-func getByPath[T CompositeType](comp T, path ...string) (any, error) {
+func getByPath[T CompositeTypeInterface](comp T, path ...string) (any, error) {
 	var next any = comp
 	for _, p := range path {
 		switch s := next.(type) {
-		case Document:
+		case *Document:
 			var err error
 			next, err = s.Get(p)
 			if err != nil {

@@ -39,11 +39,11 @@ func TestConvert(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, doc)
 
-	expected := types.MustMakeDocument(
+	expected := types.MustNewDocument(
 		"actor_id", int32(1),
 		"first_name", "PENELOPE",
 		"last_name", "GUINESS",
 		"last_update", time.Date(2020, 2, 15, 9, 34, 33, 0, time.UTC).Local(),
 	)
-	assert.Equal(t, &expected, doc)
+	assert.Equal(t, expected, doc)
 }
