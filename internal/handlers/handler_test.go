@@ -824,7 +824,7 @@ func TestListDropDatabase(t *testing.T) {
 
 		expectedDBs := testutil.GetByPath(t, expectedList, "databases").(*types.Array)
 		actualDBs := testutil.GetByPath(t, actualList, "databases").(*types.Array)
-		require.Equal(t, expectedDBs.Len(), actualDBs.Len())
+		require.Equal(t, expectedDBs.Len(), actualDBs.Len(), "actual:\n%s", testutil.Dump(t, actualList))
 		for i := 0; i < actualDBs.Len(); i++ {
 			actualDB, err := actualDBs.Get(i)
 			require.NoError(t, err)

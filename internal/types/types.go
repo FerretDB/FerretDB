@@ -51,15 +51,30 @@ import (
 
 const MaxDocumentLen = 16777216
 
-// CompositeType represents composite type - Document or *Array.
+// ScalarType represents scalar type.
+type ScalarType interface {
+	float64 | string | Binary | ObjectID | bool | time.Time | NullType | Regex | int32 | Timestamp | int64 | CString
+}
+
+// CompositeType represents composite type - *Document or *Array.
 type CompositeType interface {
 	*Document | *Array
+}
+
+// Type represents any BSON type (scalar or composite).
+type Type interface {
+	ScalarType | CompositeType
+}
+
+// TODO remove once we have go-sumtype equivalent?
+type CompositeTypeInterface interface {
+	CompositeType
 	GetByPath(path ...string) (any, error)
 
 	compositeType() // seal for go-sumtype
 }
 
-//go-sumtype:decl CompositeType
+//go-sumtype:decl CompositeTypeInterface
 
 type (
 	// CString represents BSON type CString that used as document field name, etc.

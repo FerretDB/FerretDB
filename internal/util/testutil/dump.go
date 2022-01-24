@@ -15,33 +15,23 @@
 package testutil
 
 import (
-	"os"
-	"path/filepath"
+	"bytes"
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/internal/util/hex"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/fjson"
+	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-func ParseDump(tb testing.TB, s string) []byte {
-	tb.Helper()
-
-	b, err := hex.ParseDump(s)
+// Dump returns string representation for debugging.
+func Dump[T types.Type](tb testing.TB, o T) string {
+	b, err := fjson.Marshal(o)
 	require.NoError(tb, err)
-	return b
-}
 
-func ParseDumpFile(tb testing.TB, path ...string) []byte {
-	tb.Helper()
-
-	b, err := os.ReadFile(filepath.Join(path...))
+	dst := bytes.NewBuffer(make([]byte, 0, len(b)))
+	err = json.Indent(dst, b, "", "  ")
 	require.NoError(tb, err)
-	return ParseDump(tb, string(b))
-}
-
-func MustParseDumpFile(path ...string) []byte {
-	b := must.NotFail(os.ReadFile(filepath.Join(path...)))
-	return must.NotFail(hex.ParseDump(string(b)))
+	return dst.String()
 }
