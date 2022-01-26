@@ -37,7 +37,7 @@ See our [CONTRIBUTING.md](CONTRIBUTING.md).
 These steps describe a quick local setup.
 They are not suitable for most production use-cases because they keep all data inside containers.
 
-1. Create a folder `ferretdb` and store the following in the `docker-compose.yml` file in folder `ferretdb`:
+1. Store the following in the `docker-compose.yml` file:
 
 ```yaml
 version: "3"
@@ -57,19 +57,19 @@ services:
     image: postgres:14
     container_name: postgres_setup
     restart: on-failure
-    depends_on:
-      - postgres
     entrypoint: ["sh", "-c", "psql -h postgres -U user -d ferretdb -c 'CREATE SCHEMA IF NOT EXISTS test'"]
 
   ferretdb:
     image: ghcr.io/ferretdb/ferretdb:latest
     container_name: ferretdb
     restart: on-failure
-    depends_on:
-      - postgres_setup
     ports:
       - 27017:27017
     command: ["-listen-addr=:27017", "-postgresql-url=postgres://user@postgres:5432/ferretdb"]
+
+networks:
+  default:
+    name: ferretdb
 ```
 
 * `postgres` container runs PostgreSQL 14 that would store data.
@@ -81,7 +81,7 @@ services:
 3. If you have `mongosh` installed, just run it to connect to FerretDB database `test`.
 If not, run the following command to run `mongosh` inside the temporary MongoDB container, attaching to the same Docker network:
 ```
-docker run --rm -it --network=ferretdb_default --entrypoint=mongosh mongo:5 mongodb://ferretdb/
+docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo:5 mongodb://ferretdb/
 ```
 
 
