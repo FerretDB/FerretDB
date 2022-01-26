@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
@@ -113,6 +114,7 @@ func main() {
 		Metrics:         listenerMetrics,
 		HandlersMetrics: handlersMetrics,
 		TestConnTimeout: *testConnTimeoutF,
+		StartUnixTime:   time.Now().UnixMilli(),
 	})
 
 	err = l.Run(ctx)
