@@ -235,7 +235,7 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 		switch section.Kind {
 		case 0:
 			if l := len(section.Documents); l != 1 {
-				panic(fmt.Errorf("%d documents in section with kind 0", l))
+				panic(fmt.Sprintf("%d documents in section with kind 0", l))
 			}
 
 			d, err := bson.ConvertDocument(section.Documents[0])
