@@ -118,7 +118,7 @@ func NewPool(connString string, logger *zap.Logger, lazy bool) (*Pool, error) {
 	return res, err
 }
 
-// Currently supported locale variants, compromised between https://www.postgresql.org/docs/9.3/multibyte.html
+// IsValidUTF8Locale Currently supported locale variants, compromised between https://www.postgresql.org/docs/9.3/multibyte.html
 // and https://www.gnu.org/software/libc/manual/html_node/Locale-Names.html.
 //
 // Valid examples:
@@ -132,10 +132,10 @@ func IsValidUTF8Locale(setting string) bool {
 	return lowered == "en_us.utf8" || lowered == "en_us.utf-8"
 }
 
-func (p *Pool) checkConnection(ctx context.Context) error {
-	logger := p.Config().ConnConfig.Logger
+func (pgPool *Pool) checkConnection(ctx context.Context) error {
+	logger := pgPool.Config().ConnConfig.Logger
 
-	rows, err := p.Query(ctx, "SHOW ALL")
+	rows, err := pgPool.Query(ctx, "SHOW ALL")
 	if err != nil {
 		return fmt.Errorf("pg.Pool.checkConnection: %w", err)
 	}
