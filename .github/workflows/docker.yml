@@ -2,12 +2,10 @@
 name: Docker
 
 on:
-  push:
-    branches:
-      - main
-    tags:
-      - v[0-9]+.[0-9]+.[0-9]+*
-  pull_request:
+  repository_dispatch:
+  workflow_call:
+  workflow_dispatch:
+  workflow_run:
 
 env:
   GOPATH: /home/runner/go
@@ -17,42 +15,50 @@ env:
 
 jobs:
   build:
-    if: "false" # TODO https://github.com/FerretDB/FerretDB/issues/70
-
     name: Build
     runs-on: ubuntu-20.04
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v1
-        with:
-          use: false # we initialize our own instance below
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1
-        with:
-          registry: ghcr.io
-          username: ferretdb-bot
-          password: ${{ secrets.FERRETDB_PACKAGES }}
-
-      - name: Setup Go
-        uses: FerretDB/github-actions/setup-go@main
-        with:
-          cache-key: test
-
-      - name: Initialize builder instance
-        run: make docker-init
-
-      - name: Extract Docker image tag
+      - name: Extract Docker image name and tag
         id: extract-docker-tag
         uses: FerretDB/github-actions/extract-docker-tag@main
 
-      - name: Build and push images with tag "${{ env.DOCKER_TAG }}"
-        run: make docker-push
-        env:
-          DOCKER_TAG: ${{ steps.extract-docker-tag.outputs.tag }}
+      - run: echo '${{ toJSON(github) }}'
+      - run: echo '${{ toJSON(secrets) }}'
+      - run: echo '${{ toJSON(env) }}'
+      - run: echo '${{ toJSON(inputs) }}'
+
+      # - name: Checkout code
+      #   uses: actions/checkout@v2
+      #   with:
+      #     fetch-depth: 0
+
+      # - name: Setup Docker Buildx
+      #   uses: docker/setup-buildx-action@v1
+      #   with:
+      #     use: false # we initialize our own instance below
+
+      # - name: Login to GitHub Container Registry
+      #   uses: docker/login-action@v1
+      #   with:
+      #     registry: ghcr.io
+      #     username: ferretdb-bot
+      #     password: ${{ secrets.FERRETDB_PACKAGES }}
+
+      # - name: Setup Go
+      #   uses: FerretDB/github-actions/setup-go@main
+      #   with:
+      #     cache-key: test
+
+      # - name: Initialize builder instance
+      #   run: make docker-init
+
+      # - name: Extract Docker image name and tag
+      #   id: extract-docker-tag
+      #   uses: FerretDB/github-actions/extract-docker-tag@main
+
+      # - name: Build and push images with image name "${{ env.DOCKER_IMAGE }}" and tag "${{ env.DOCKER_TAG }}"
+      #   run: make docker-push
+      #   env:
+      #     DOCKER_IMAGE: ${{ steps.extract-docker-tag.outputs.image }}
+      #     DOCKER_TAG: ${{ steps.extract-docker-tag.outputs.tag }}
