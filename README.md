@@ -66,6 +66,10 @@ services:
     ports:
       - 27017:27017
     command: ["-listen-addr=:27017", "-postgresql-url=postgres://user@postgres:5432/ferretdb"]
+
+networks:
+  default:
+    name: ferretdb
 ```
 
 * `postgres` container runs PostgreSQL 14 that would store data.
@@ -77,7 +81,7 @@ services:
 3. If you have `mongosh` installed, just run it to connect to FerretDB database `test`.
 If not, run the following command to run `mongosh` inside the temporary MongoDB container, attaching to the same Docker network:
 ```
-docker run --rm -it --network=ferretdb_default --entrypoint=mongosh mongo:5 mongodb://ferretdb/
+docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo:5 mongodb://ferretdb/
 ```
 
 
