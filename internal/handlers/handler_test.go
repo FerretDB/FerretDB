@@ -746,13 +746,41 @@ func TestReadOnlyHandlers(t *testing.T) {
 		},
 
 		"ServerStatus": {
-			req: types.MustNewDocument(
+			req: must.NotFail(types.NewDocument(
 				"serverStatus", int32(1),
-			),
-			resp: types.MustNewDocument(
+			)),
+			reqSetDB: true,
+			resp: must.NotFail(types.NewDocument(
+				"host", "",
 				"version", "5.0.42",
+				"process", "handlers.test",
+				"pid", int64(0),
+				"uptime", int64(0),
+				"uptimeMillis", int64(0),
+				"uptimeEstimate", int64(0),
+				"localTime", time.Now(),
+				"catalogStats", must.NotFail(types.NewDocument(
+					"collections", int32(28),
+					"capped", int32(0),
+					"timeseries", int32(0),
+					"views", int32(0),
+					"internalCollections", int32(0),
+					"internalViews", int32(0),
+				)),
+				"freeMonitoring", must.NotFail(types.NewDocument(
+					"state", "disabled",
+				)),
 				"ok", float64(1),
-			),
+			)),
+			compareFunc: func(t testing.TB, _ *types.Document, actual, expected *types.Document) {
+				for _, key := range []string{"host", "pid", "uptime", "uptimeMillis", "uptimeEstimate"} {
+					actualV := testutil.GetByPath(t, actual, key)
+					testutil.SetByPath(t, expected, actualV, key)
+				}
+				testutil.CompareAndSetByPathNum(t, expected, actual, 20, "catalogStats", "collections")
+				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "localTime")
+				assert.Equal(t, expected, actual)
+			},
 		},
 	}
 

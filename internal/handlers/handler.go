@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"sync/atomic"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -38,6 +39,7 @@ type Handler struct {
 	jsonb1        common.Storage
 	metrics       *Metrics
 	lastRequestID int32
+	startTime     time.Time
 }
 
 // NewOpts represents handler configuration.
@@ -48,17 +50,19 @@ type NewOpts struct {
 	JSONB1Storage common.Storage
 	Metrics       *Metrics
 	PeerAddr      string
+	StartTime     time.Time
 }
 
 // New returns a new handler.
 func New(opts *NewOpts) *Handler {
 	return &Handler{
-		pgPool:   opts.PgPool,
-		l:        opts.Logger,
-		sql:      opts.SQLStorage,
-		jsonb1:   opts.JSONB1Storage,
-		metrics:  opts.Metrics,
-		peerAddr: opts.PeerAddr,
+		pgPool:    opts.PgPool,
+		l:         opts.Logger,
+		sql:       opts.SQLStorage,
+		jsonb1:    opts.JSONB1Storage,
+		metrics:   opts.Metrics,
+		peerAddr:  opts.PeerAddr,
+		startTime: opts.StartTime,
 	}
 }
 
