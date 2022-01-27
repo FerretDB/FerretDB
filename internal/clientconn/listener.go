@@ -47,7 +47,7 @@ type NewListenerOpts struct {
 	Metrics         *ListenerMetrics
 	HandlersMetrics *handlers.Metrics
 	TestConnTimeout time.Duration
-	StartUnixTime   int64
+	StartTime       time.Time
 }
 
 // NewListener returns a new listener, configured by the NewListenerOpts argument.
@@ -121,7 +121,7 @@ func (l *Listener) Run(ctx context.Context) error {
 				proxyAddr:       l.opts.ProxyAddr,
 				mode:            l.opts.Mode,
 				handlersMetrics: l.opts.HandlersMetrics,
-				startUnixTime:   l.opts.StartUnixTime,
+				startTime:       l.opts.StartTime,
 			}
 			conn, e := newConn(opts)
 			if e != nil {

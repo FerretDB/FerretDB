@@ -114,7 +114,7 @@ func main() {
 		Metrics:         listenerMetrics,
 		HandlersMetrics: handlersMetrics,
 		TestConnTimeout: *testConnTimeoutF,
-		StartUnixTime:   time.Now().UnixMilli(),
+		StartTime:       time.Now(),
 	})
 
 	err = l.Run(ctx)

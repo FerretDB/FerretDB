@@ -69,7 +69,7 @@ type newConnOpts struct {
 	proxyAddr       string
 	mode            Mode
 	handlersMetrics *handlers.Metrics
-	startUnixTime   int64
+	startTime       time.Time
 }
 
 // newConn creates a new client connection for given net.Conn.
@@ -96,7 +96,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 		SQLStorage:    sqlH,
 		JSONB1Storage: jsonb1H,
 		Metrics:       opts.handlersMetrics,
-		StartUnixTime: opts.startUnixTime,
+		StartTime:     opts.startTime,
 	}
 	return &conn{
 		netConn: opts.netConn,

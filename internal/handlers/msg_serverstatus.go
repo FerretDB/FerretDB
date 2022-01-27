@@ -48,8 +48,7 @@ func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		return nil, lazyerrors.Error(err)
 	}
 
-	uptimeMillis := time.Now().UnixMilli() - h.startUnixTime
-	uptimeSecs := uptimeMillis / 1_000
+	uptime := time.Since(h.startTime)
 
 	stats, err := h.pgPool.SchemaStats(ctx, db)
 	if err != nil {
@@ -63,9 +62,9 @@ func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.O
 			"version", versionValue,
 			"process", filepath.Base(exec),
 			"pid", int64(os.Getpid()),
-			"uptime", uptimeSecs,
-			"uptimeMillis", uptimeMillis,
-			"uptimeEstimate", uptimeSecs,
+			"uptime", int64(uptime.Seconds()),
+			"uptimeMillis", uptime.Milliseconds(),
+			"uptimeEstimate", int64(uptime.Seconds()),
 			"localTime", time.Now(),
 			"catalogStats", must.NotFail(types.NewDocument(
 				"collections", stats.CountTables,
