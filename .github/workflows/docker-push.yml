@@ -1,12 +1,12 @@
 ---
-name: Docker
+name: Docker Push
 
 on:
   repository_dispatch:
   workflow_call:
   workflow_dispatch:
   workflow_run:
-    workflows: [Go]
+    workflows: [Docker Build]
     types: [completed]
 
 env:
@@ -16,19 +16,26 @@ env:
   GOPROXY: https://proxy.golang.org # remove direct
 
 jobs:
-  build:
-    name: Build
+  push:
+    name: Push
     runs-on: ubuntu-20.04
 
     steps:
+      - name: Dump GitHub context
+        run: echo '${{ toJSON(github) }}'
+
+      - name: Dump Secrets context
+        run: echo '${{ toJSON(secrets) }}'
+
+      - name: Dump Env context
+        run: echo '${{ toJSON(env) }}'
+
+      - name: Dump Inputs context
+        run: echo '${{ toJSON(inputs) }}'
+
       - name: Extract Docker image name and tag
         id: extract-docker-tag
         uses: FerretDB/github-actions/extract-docker-tag@main
-
-      - run: echo '${{ toJSON(github) }}'
-      - run: echo '${{ toJSON(secrets) }}'
-      - run: echo '${{ toJSON(env) }}'
-      - run: echo '${{ toJSON(inputs) }}'
 
       # - name: Checkout code
       #   uses: actions/checkout@v2
