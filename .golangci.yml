@@ -97,6 +97,7 @@ linters:
     - gosec
     - ifshort
     - ireturn
+    - maintidx
     - nakedret
     - revive
     - thelper
