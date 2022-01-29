@@ -1,0 +1,106 @@
+---
+# This action is dangerous and should be handled with a lot of care to avoid security problems. We use
+# `pull_request_target` event to give pull requests access to `GITHUB_TOKEN` secret with permissions
+# to publish Docker images. We want to do that to allow Dance to test those PRs. But rogue PR authors could
+# try to steal our secrets. We prevent that with the following:
+#
+# * We require approval for PRs from first-time contributors. That's a built-in feature for all actions.
+# * After reviewing changes, we require the `trust` label to be assigned to PRs by FerretDB maintainers.
+#   Only a few trusted people have permission to do that.
+# * Thanks to the way `pull_request_target` trigger works, PR changes in the workflow itself are not run
+#   until they are merged.
+# * We use a short-living automatic `GITHUB_TOKEN` instead of a long-living personal access token (PAT).
+#   It also has minimal permissions.
+# * We publish Docker images from PRs as a separate package that should not be run by users.
+# * We limit what third-party actions can be used.
+#
+# We also tried a different approach: build Docker image in one normal, secure `pull_request` workflow,
+# upload artifact, and then download and publish it in another workflow that has access to secrets, but treats
+# artifact as passive data. We use buildx for building multi-platform images, and there is a way to export
+# multi-platform OCI tarball: https://docs.docker.com/engine/reference/commandline/buildx_build/#output
+# Unfortunately, it seems that there is no way to import that tarball in another workflow and publish it
+# as a Docker image, as strange as it sounds: https://github.com/docker/buildx/issues/186
+#
+# Relevant GitHub documentation is scattered. The first article gives a good overview:
+# * https://securitylab.github.com/research/github-actions-preventing-pwn-requests/
+# * https://docs.github.com/en/actions/security-guides/automatic-token-authentication
+# * https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions
+# * https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility
+# * https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-action
+# * https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry
+
+name: Docker
+on:
+  pull_request_target:
+    types:
+      - labeled
+      - opened
+      - reopened
+      - synchronize
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '42 4 * * *'
+
+env:
+  GOPATH: /home/runner/go
+  GOCACHE: /home/runner/go/cache
+  GOMODCACHE: /home/runner/go/cache/mod
+  GOPROXY: https://proxy.golang.org # remove direct
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-20.04
+
+    if: github.event_name != 'pull_request_target' || contains(github.event.pull_request.labels.*.name, 'trust')
+
+    permissions:
+      packages: write
+
+    steps:
+      - name: Checkout code
+        if: github.event_name != 'pull_request_target'
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Checkout pull request code
+        if: github.event_name == 'pull_request_target'
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Setup Go
+        uses: FerretDB/github-actions/setup-go@main
+        with:
+          cache-key: build
+
+      - name: Run init
+        run: make init
+
+      - name: Initialize Docker Buildx builder
+        run: make docker-init
+
+      - name: Extract Docker image name and tag
+        id: extract
+        uses: FerretDB/github-actions/extract-docker-tag@main
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker image ${{ steps.extract.outputs.ghcr }}
+        run: make docker-push
+        env:
+          DOCKER_IMAGE: ${{ steps.extract.outputs.ghcr }}
+
+      - name: Check dirty
+        run: |
+          git status
+          git diff --exit-code

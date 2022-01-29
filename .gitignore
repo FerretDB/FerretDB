@@ -8,6 +8,7 @@ old.txt
 new.txt
 
 internal/util/version/version.txt
+internal/util/version/commit.txt
 internal/util/version/branch.txt
 
 # for now
