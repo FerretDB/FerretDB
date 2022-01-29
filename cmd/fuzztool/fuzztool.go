@@ -148,14 +148,14 @@ func copyCorpus(srcRoot, dstRoot string) {
 	if err != nil {
 		logger.Fatal(err)
 	}
-	logger.Infof("Found %d files in dst.", len(dstFiles))
+	logger.Infof("Found %d existing files in dst.", len(dstFiles))
 
 	files := diff(srcFiles, dstFiles)
-	logger.Infof("Copying %d files to dst.", len(files))
+	logger.Infof("Copying new %d files to dst.", len(files))
 	for _, p := range files {
 		src := filepath.Join(srcRoot, p)
 		dst := filepath.Join(dstRoot, p)
-		logger.Infof("%s -> %s", src, dst)
+		logger.Debugf("%s -> %s", src, dst)
 		if err := copyFile(src, dst); err != nil {
 			logger.Fatal(err)
 		}
