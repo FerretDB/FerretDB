@@ -16,6 +16,7 @@ package handlers
 
 import (
 	"context"
+	"math"
 	"os"
 	"runtime"
 	"strconv"
@@ -78,6 +79,88 @@ func handle(ctx context.Context, t *testing.T, handler *Handler, req *types.Docu
 	require.NoError(t, err)
 
 	return actual
+}
+
+func TestSize(t *testing.T) {
+	t.Parallel()
+	ctx, handler, pool := setup(t, nil)
+	schema := testutil.Schema(ctx, t, pool)
+	loadTestData(ctx, t, handler, schema)
+
+	req := must.NotFail(types.NewDocument(
+		"find", testutil.TableName(t),
+		"filter", must.NotFail(types.NewDocument(
+			"value", must.NotFail(types.NewDocument(
+				"$size", strconv.Itoa(3))),
+		)),
+		"$db", schema,
+	))
+
+	resp := must.NotFail(types.NewArray(
+		must.NotFail(types.NewDocument(
+			"_id", types.ObjectID{byte(8)},
+			"value", must.NotFail(types.NewArray("chars", "ololo", "issue255")),
+		)),
+	))
+
+	actual := handle(ctx, t, handler, req)
+	expected := must.NotFail(types.NewDocument(
+		"cursor", must.NotFail(types.NewDocument(
+			"firstBatch", resp,
+			"id", int64(0),
+			"ns", schema+"."+testutil.TableName(t),
+		)),
+		"ok", float64(1),
+	))
+
+	assert.Equal(t, expected, actual)
+}
+
+// loadTestData inserts variety of documents to be used in test cases.
+func loadTestData(ctx context.Context, t *testing.T, handler *Handler, schema string) {
+	t.Helper()
+
+	data := map[string]struct {
+		id    byte
+		value any
+	}{
+		// doubles
+		"double":                   {0, 42.123},
+		"double-negative-infinity": {1, math.Inf(-1)},
+		"double-positive-infinity": {2, math.Inf(+1)},
+		"double-nan":               {3, math.NaN()},
+		"double-max":               {4, math.MaxFloat64},
+		"double-smallest":          {5, math.SmallestNonzeroFloat64},
+
+		// strings
+		"string":           {6, "foo"},
+		"string-empty":     {7, ""},
+		"array-of-strings": {8, must.NotFail(types.NewArray("chars", "ololo", "issue255"))},
+	}
+
+	header := &wire.MsgHeader{
+		OpCode: wire.OP_MSG,
+	}
+
+	for _, v := range data {
+		var msg wire.OpMsg
+		err := msg.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"insert", testutil.TableName(t),
+				"documents", must.NotFail(types.NewArray(
+					must.NotFail(types.NewDocument(
+						"_id", types.ObjectID{v.id},
+						"value", v.value,
+					)),
+				)),
+				"$db", schema,
+			))},
+		})
+		require.NoError(t, err)
+
+		_, _, closeConn := handler.Handle(ctx, header, &msg)
+		require.False(t, closeConn)
+	}
 }
 
 func TestFind(t *testing.T) {

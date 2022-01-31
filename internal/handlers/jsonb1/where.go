@@ -142,6 +142,13 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 			// {field: {$gte: value}}
 			sql += "_jsonb->" + p.Next() + " >="
 			argSql, arg, err = scalar(value, p)
+		case "$size":
+			// { field: { $size: 2 } }
+			sql += "jsonb_typeof(_jsonb->" + p.Next() + ") = 'array' AND jsonb_array_length(_jsonb->" + p.Next() + ") = "
+
+			var sizeValue any
+			sizeValue, err = expr.Get(op)
+			argSql, arg = p.Next(), []any{field, sizeValue}
 		case "$regex":
 			// {field: {$regex: value}}
 
