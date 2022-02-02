@@ -36,11 +36,11 @@ func IsPositiveInteger(value any) error {
 		return fmt.Errorf("$size needs a number")
 	}
 
-	if math.Signbit(v) || v < 1 {
+	if math.Signbit(v) || v < 0 {
 		return fmt.Errorf("$size may not be negative")
 	}
 
-	if v == math.Trunc(v) || math.IsNaN(v) || math.IsInf(v, 0) {
+	if v != math.Trunc(v) || math.IsNaN(v) || math.IsInf(v, 0) {
 		return fmt.Errorf("$size must be a whole number")
 	}
 
