@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/AlekSi/pointer"
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -28,7 +29,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 // Handler data struct.
