@@ -143,14 +143,15 @@ func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody
 }
 
 func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	var cmd string
 	document, err := msg.Document()
+	if document != nil {
+		cmd = document.Command()
+	}
+	h.metrics.requests.WithLabelValues(wire.OP_MSG.String(), cmd).Inc()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-
-	cmd := document.Command()
-
-	h.metrics.requests.WithLabelValues(wire.OP_MSG.String(), cmd).Inc()
 
 	// special case to avoid circular dependency
 	if cmd == "listcommands" {
