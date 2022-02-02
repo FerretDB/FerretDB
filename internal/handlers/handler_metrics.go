@@ -46,7 +46,7 @@ func NewMetrics() *Metrics {
 				Name:      "responses_total",
 				Help:      "Total number of responses.",
 			},
-			[]string{"opcode", "command"},
+			[]string{"opcode", "command", "res"},
 		),
 	}
 }
@@ -54,11 +54,13 @@ func NewMetrics() *Metrics {
 // Describe implements prometheus.Collector.
 func (lm *Metrics) Describe(ch chan<- *prometheus.Desc) {
 	lm.requests.Describe(ch)
+	lm.responses.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
 func (lm *Metrics) Collect(ch chan<- prometheus.Metric) {
 	lm.requests.Collect(ch)
+	lm.responses.Collect(ch)
 }
 
 // check interfaces
