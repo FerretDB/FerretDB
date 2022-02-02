@@ -31,7 +31,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
-	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
@@ -166,10 +165,6 @@ func setupMonila(ctx context.Context, pgPool *pg.Pool) {
 
 	logger.Infof("Importing database...")
 
-	listenerMetrics := clientconn.NewListenerMetrics()
-	handlersMetrics := handlers.NewMetrics()
-	prometheus.DefaultRegisterer.MustRegister(listenerMetrics, handlersMetrics)
-
 	// listen on all interfaces to make mongoimport below work from inside Docker
 	addr := ":27018"
 	if runtime.GOOS == "darwin" {
@@ -178,13 +173,13 @@ func setupMonila(ctx context.Context, pgPool *pg.Pool) {
 	}
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		ListenAddr:      addr,
-		Mode:            "normal",
-		PgPool:          pgPool,
-		Logger:          logger.Named("listener").Desugar(),
-		Metrics:         listenerMetrics,
-		HandlersMetrics: handlersMetrics,
+		ListenAddr: addr,
+		Mode:       "normal",
+		PgPool:     pgPool,
+		Logger:     logger.Named("listener").Desugar(),
 	})
+
+	prometheus.DefaultRegisterer.MustRegister(l)
 
 	lCtx, lCancel := context.WithCancel(ctx)
 	lDone := make(chan struct{})

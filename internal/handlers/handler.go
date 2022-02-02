@@ -20,6 +20,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/AlekSi/pointer"
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -76,16 +78,43 @@ func New(opts *NewOpts) *Handler {
 //
 //nolint:lll // arguments are long
 func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) {
+	var cmdLabel string
+	requests := h.metrics.requests.MustCurryWith(prometheus.Labels{"opcode": reqHeader.OpCode.String()})
+
+	var resLabel *string
+	defer func() {
+		if resLabel == nil {
+			resLabel = pointer.To("panic")
+		}
+		h.metrics.responses.WithLabelValues(resHeader.OpCode.String(), cmdLabel, *resLabel).Inc()
+	}()
+
 	resHeader = new(wire.MsgHeader)
 	var err error
-
 	switch reqHeader.OpCode {
 	case wire.OP_MSG:
-		resHeader.OpCode = wire.OP_MSG
-		resBody, err = h.handleOpMsg(ctx, reqBody.(*wire.OpMsg))
+		// count requests even if msg's document is invalid
+		msg := reqBody.(*wire.OpMsg)
+		var document *types.Document
+		document, err = msg.Document()
+		if document != nil {
+			cmdLabel = document.Command()
+		}
+		requests.WithLabelValues(cmdLabel).Inc()
+
+		if err == nil {
+			resHeader.OpCode = wire.OP_MSG
+			resBody, err = h.handleOpMsg(ctx, msg, cmdLabel)
+		}
+
 	case wire.OP_QUERY:
+		query := reqBody.(*wire.OpQuery)
+		cmdLabel = query.Query.Command()
+		requests.WithLabelValues(cmdLabel).Inc()
+
 		resHeader.OpCode = wire.OP_REPLY
-		resBody, err = h.handleOpQuery(ctx, reqBody.(*wire.OpQuery))
+		resBody, err = h.handleOpQuery(ctx, query, cmdLabel)
+
 	case wire.OP_REPLY:
 		fallthrough
 	case wire.OP_UPDATE:
@@ -103,7 +132,7 @@ func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody
 	case wire.OP_COMPRESSED:
 		fallthrough
 	default:
-		h.metrics.requests.WithLabelValues(reqHeader.OpCode.String(), "").Inc()
+		requests.WithLabelValues(cmdLabel).Inc()
 		panic(fmt.Sprintf("unexpected OpCode %s", reqHeader.OpCode))
 	}
 
@@ -113,6 +142,7 @@ func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody
 		}
 
 		protoErr, recoverable := common.ProtocolError(err)
+		resLabel = pointer.To(protoErr.Error())
 		closeConn = !recoverable
 		var res wire.OpMsg
 		err = res.SetSections(wire.OpMsgSection{
@@ -139,19 +169,11 @@ func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody
 	}
 	resHeader.RequestID = atomic.AddInt32(&h.lastRequestID, 1)
 
+	resLabel = pointer.To("ok")
 	return
 }
 
-func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	cmd := document.Command()
-
-	h.metrics.requests.WithLabelValues(wire.OP_MSG.String(), cmd).Inc()
-
+func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg, cmd string) (*wire.OpMsg, error) {
 	// special case to avoid circular dependency
 	if cmd == "listcommands" {
 		return listCommands(ctx, msg)
@@ -172,10 +194,7 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	return nil, common.NewError(common.ErrCommandNotFound, fmt.Errorf("no such command: '%s'", cmd))
 }
 
-func (h *Handler) handleOpQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
-	cmd := query.Query.Command()
-	h.metrics.requests.WithLabelValues(wire.OP_QUERY.String(), cmd).Inc()
-
+func (h *Handler) handleOpQuery(ctx context.Context, query *wire.OpQuery, cmd string) (*wire.OpReply, error) {
 	if query.FullCollectionName == "admin.$cmd" {
 		return h.QueryCmd(ctx, query)
 	}
