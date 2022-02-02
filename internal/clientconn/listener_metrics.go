@@ -53,11 +53,13 @@ func NewListenerMetrics() *ListenerMetrics {
 // Describe implements prometheus.Collector.
 func (lm *ListenerMetrics) Describe(ch chan<- *prometheus.Desc) {
 	lm.connectedClients.Describe(ch)
+	lm.accepts.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
 func (lm *ListenerMetrics) Collect(ch chan<- prometheus.Metric) {
 	lm.connectedClients.Collect(ch)
+	lm.accepts.Collect(ch)
 }
 
 // check interfaces

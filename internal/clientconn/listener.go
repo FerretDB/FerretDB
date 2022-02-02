@@ -29,11 +29,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // Listener accepts incoming client connections.
 type Listener struct {
-	opts *NewListenerOpts
+	opts            *NewListenerOpts
+	metrics         *ListenerMetrics
+	handlersMetrics *handlers.Metrics
+	startTime       time.Time
 }
 
 // NewListenerOpts represents listener configuration.
@@ -44,16 +48,16 @@ type NewListenerOpts struct {
 	Mode            Mode
 	PgPool          *pg.Pool
 	Logger          *zap.Logger
-	Metrics         *ListenerMetrics
-	HandlersMetrics *handlers.Metrics
 	TestConnTimeout time.Duration
-	StartTime       time.Time
 }
 
 // NewListener returns a new listener, configured by the NewListenerOpts argument.
 func NewListener(opts *NewListenerOpts) *Listener {
 	return &Listener{
-		opts: opts,
+		opts:            opts,
+		metrics:         NewListenerMetrics(),
+		handlersMetrics: handlers.NewMetrics(),
+		startTime:       time.Now(),
 	}
 }
 
@@ -93,7 +97,7 @@ func (l *Listener) Run(ctx context.Context) error {
 	for {
 		netConn, err := lis.Accept()
 		if err != nil {
-			l.opts.Metrics.accepts.WithLabelValues("1").Inc()
+			l.metrics.accepts.WithLabelValues("1").Inc()
 
 			if ctx.Err() != nil {
 				break
@@ -107,14 +111,14 @@ func (l *Listener) Run(ctx context.Context) error {
 		}
 
 		wg.Add(1)
-		l.opts.Metrics.accepts.WithLabelValues("0").Inc()
-		l.opts.Metrics.connectedClients.Inc()
+		l.metrics.accepts.WithLabelValues("0").Inc()
+		l.metrics.connectedClients.Inc()
 
 		// run connection
 		go func() {
 			defer func() {
 				netConn.Close()
-				l.opts.Metrics.connectedClients.Dec()
+				l.metrics.connectedClients.Dec()
 				wg.Done()
 			}()
 
@@ -123,8 +127,8 @@ func (l *Listener) Run(ctx context.Context) error {
 				pgPool:          l.opts.PgPool,
 				proxyAddr:       l.opts.ProxyAddr,
 				mode:            l.opts.Mode,
-				handlersMetrics: l.opts.HandlersMetrics,
-				startTime:       l.opts.StartTime,
+				handlersMetrics: l.handlersMetrics,
+				startTime:       l.startTime,
 			}
 			conn, e := newConn(opts)
 			if e != nil {
@@ -153,4 +157,16 @@ func (l *Listener) Run(ctx context.Context) error {
 	wg.Wait()
 
 	return ctx.Err()
+}
+
+// Describe implements prometheus.Collector.
+func (l *Listener) Describe(ch chan<- *prometheus.Desc) {
+	l.metrics.Describe(ch)
+	l.handlersMetrics.Describe(ch)
+}
+
+// Collect implements prometheus.Collector.
+func (l *Listener) Collect(ch chan<- prometheus.Metric) {
+	l.metrics.Collect(ch)
+	l.handlersMetrics.Collect(ch)
 }
