@@ -33,11 +33,11 @@ services:
       - test_db_mongodb:/test_db/:ro
 
   test_db:
-    image: aleksi/test_db:1.2.1
+    image: aleksi/test_db:mongodb-values
     container_name: ferretdb_test_db
     volumes:
       - test_db_postgres:/test_db/postgresql/pagila:ro
-      - test_db_mongodb:/test_db/mongodb/monila:ro
+      - test_db_mongodb:/test_db/mongodb:ro
 
 volumes:
   test_db_postgres:
