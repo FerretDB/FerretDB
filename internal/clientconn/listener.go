@@ -93,6 +93,8 @@ func (l *Listener) Run(ctx context.Context) error {
 	for {
 		netConn, err := lis.Accept()
 		if err != nil {
+			l.opts.Metrics.accepts.WithLabelValues("1").Inc()
+
 			if ctx.Err() != nil {
 				break
 			}
@@ -105,13 +107,14 @@ func (l *Listener) Run(ctx context.Context) error {
 		}
 
 		wg.Add(1)
-		l.opts.Metrics.ConnectedClients.Inc()
+		l.opts.Metrics.accepts.WithLabelValues("0").Inc()
+		l.opts.Metrics.connectedClients.Inc()
 
 		// run connection
 		go func() {
 			defer func() {
 				netConn.Close()
-				l.opts.Metrics.ConnectedClients.Dec()
+				l.opts.Metrics.connectedClients.Dec()
 				wg.Done()
 			}()
 
