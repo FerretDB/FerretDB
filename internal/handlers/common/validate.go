@@ -19,10 +19,6 @@ import (
 	"math"
 )
 
-type Number interface {
-	float64 | int32 | int64
-}
-
 func IsPositiveInteger(value any) error {
 	var v float64
 	switch n := value.(type) {
