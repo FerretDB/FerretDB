@@ -14,9 +14,7 @@
 
 package wire
 
-import (
-	"strings"
-)
+import "strings"
 
 type flagBit uint32
 
