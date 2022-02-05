@@ -45,7 +45,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	pv = strings.Split(pv, " ")[0]
+	pv, _, _ = strings.Cut(pv, " ")
 	mv := version.Get()
 
 	var log types.Array
