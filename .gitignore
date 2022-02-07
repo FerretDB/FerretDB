@@ -3,6 +3,7 @@
 
 /bin/
 /vendor/
+.idea
 cover.txt
 cover.html
 integration.txt
