@@ -14,10 +14,7 @@
 
 package wire
 
-import (
-	"fmt"
-	"strings"
-)
+import "strings"
 
 type flagBit uint32
 
@@ -36,5 +33,5 @@ func (flags flags) strings(bitStringer func(flagBit) string) []string {
 
 func (flags flags) string(bitStringer func(flagBit) string) string {
 	res := flags.strings(bitStringer)
-	return fmt.Sprintf("[%s]", strings.Join(res, "|"))
+	return "[" + strings.Join(res, "|") + "]"
 }

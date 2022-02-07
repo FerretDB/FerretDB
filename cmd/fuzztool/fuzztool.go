@@ -15,6 +15,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -39,7 +40,7 @@ func generatedCorpus() (string, error) {
 		return "", lazyerrors.Error(err)
 	}
 
-	path := filepath.Join(strings.TrimSpace(string(b)), "fuzz", "github.com", "FerretDB", "FerretDB")
+	path := filepath.Join(string(bytes.TrimSpace(b)), "fuzz", "github.com", "FerretDB", "FerretDB")
 
 	if _, err = os.Stat(path); err != nil {
 		if os.IsNotExist(err) {

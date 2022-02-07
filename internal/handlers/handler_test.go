@@ -711,8 +711,8 @@ func TestReadOnlyHandlers(t *testing.T) {
 				db, err := req.Get("$db")
 				require.NoError(t, err)
 				if db.(string) == "monila" {
-					testutil.CompareAndSetByPathNum(t, expected, actual, 30, "millis")
-					testutil.CompareAndSetByPathNum(t, expected, actual, 20_000, "size")
+					testutil.CompareAndSetByPathNum(t, expected, actual, 50, "millis")
+					testutil.CompareAndSetByPathNum(t, expected, actual, 30_000, "size")
 					assert.Equal(t, expected, actual)
 				}
 			},
@@ -1036,6 +1036,11 @@ func TestListDropDatabase(t *testing.T) {
 					"sizeOnDisk", int64(0),
 					"empty", true,
 				),
+				types.MustNewDocument(
+					"name", "values",
+					"sizeOnDisk", int64(16_384),
+					"empty", false,
+				),
 			),
 			"totalSize", int64(30_286_627),
 			"totalSizeMb", int64(28),
@@ -1068,10 +1073,15 @@ func TestListDropDatabase(t *testing.T) {
 		)
 		assert.Equal(t, expectedDrop, actualDrop)
 
+		// cut dropped db from the expected list
 		databases := testutil.GetByPath(t, expectedList, "databases").(*types.Array)
-		databases, err := databases.Subslice(0, databases.Len()-1)
+		newDatabases, err := databases.Subslice(0, databases.Len()-2)
 		require.NoError(t, err)
-		testutil.SetByPath(t, expectedList, databases, "databases")
+		valuesDB, err := databases.Get(databases.Len() - 1)
+		require.NoError(t, err)
+		err = newDatabases.Append(valuesDB)
+		require.NoError(t, err)
+		testutil.SetByPath(t, expectedList, newDatabases, "databases")
 
 		actualList = handle(ctx, t, handler, types.MustNewDocument(
 			"listDatabases", int32(1),

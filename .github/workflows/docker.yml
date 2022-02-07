@@ -104,3 +104,16 @@ jobs:
         run: |
           git status
           git diff --exit-code
+
+  # TODO
+  dance:
+    name: Dance
+    runs-on: ubuntu-20.04
+    # needs: build
+
+    permissions:
+      packages: read
+
+    steps:
+      - name: Detect matching PR
+        uses: FerretDB/github-actions/detect-matching-pr@detect-matching-pr
