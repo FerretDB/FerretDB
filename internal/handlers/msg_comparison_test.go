@@ -397,10 +397,10 @@ func TestComparison(t *testing.T) {
 		//},
 	}
 
-	for name, tc := range testCases {
+	for name, tc := range testCases { //nolint:paralleltest // false positive
 		name, tc := name, tc
-
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			actual := handle(ctx, t, handler, tc.req)
 			expected := must.NotFail(types.NewDocument(
 				"cursor", must.NotFail(types.NewDocument(
