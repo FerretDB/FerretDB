@@ -60,6 +60,13 @@ func NewError(code ErrorCode, err error) error {
 	}
 }
 
+// NewErrorMsg is variant for NewError with error string.
+//
+// Code can't be zero, err can't be empty.
+func NewErrorMsg(code ErrorCode, msg string) error {
+	return NewError(code, errors.New(msg))
+}
+
 // Error implements error interface.
 func (e *Error) Error() string {
 	return fmt.Sprintf("%[1]s (%[1]d): %[2]v", e.code, e.err)

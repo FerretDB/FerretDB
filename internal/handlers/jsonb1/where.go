@@ -16,6 +16,7 @@ package jsonb1
 
 import (
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
@@ -25,6 +26,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// scalar returns an SQL expression (with placeholder and type casting),
+// and the arguments to bind to it for scalar types.
 func scalar(v any, p *pg.Placeholder) (sql string, args []any, err error) {
 	var arg any
 	switch v := v.(type) {
@@ -63,6 +66,31 @@ func scalar(v any, p *pg.Placeholder) (sql string, args []any, err error) {
 
 	args = []any{arg}
 	return
+}
+
+// validateSize validates $size argument.
+func validateSize(value any) error {
+	var v float64
+	switch n := value.(type) {
+	case int32:
+		v = float64(n)
+	case float64:
+		v = n
+	case int64:
+		v = float64(n)
+	default:
+		return common.NewErrorMsg(common.ErrBadValue, "$size needs a number")
+	}
+
+	if v != math.Trunc(v) || math.IsNaN(v) || math.IsInf(v, 0) {
+		return common.NewErrorMsg(common.ErrBadValue, "$size must be a whole number")
+	}
+
+	if math.Signbit(v) {
+		return common.NewErrorMsg(common.ErrBadValue, "$size may not be negative")
+	}
+
+	return nil
 }
 
 // fieldExpr handles {field: {expr}}.
@@ -106,7 +134,6 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 		if sql != "" {
 			sql += " "
 		}
-		args = append(args, field)
 
 		switch op {
 		case "$in":
@@ -142,14 +169,21 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 			// {field: {$gte: value}}
 			sql += "_jsonb->" + p.Next() + " >="
 			argSql, arg, err = scalar(value, p)
+		case "$size":
+			// {field: {$size: value}}
+			if err = validateSize(value); err != nil {
+				return
+			}
+			sql += "(" + fmt.Sprintf("jsonb_typeof(_jsonb->%[1]s) = 'array' AND jsonb_array_length(_jsonb->%[1]s) = ", p.Next())
+			argSql = p.Next() + ")"
+			arg = []any{value}
 		case "$regex":
 			// {field: {$regex: value}}
-
 			var options string
 			if opts, ok := filterMap["$options"]; ok {
 				// {field: {$regex: value, $options: string}}
 				if options, ok = opts.(string); !ok {
-					err = common.NewError(common.ErrBadValue, fmt.Errorf("$options has to be a string"))
+					err = common.NewErrorMsg(common.ErrBadValue, "$options has to be a string")
 					return
 				}
 			}
@@ -167,14 +201,14 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 				// {field: {$regex: /regex/}}
 				if options != "" {
 					if value.Options != "" {
-						err = common.NewError(common.ErrRegexOptions, fmt.Errorf("options set in both $regex and $options"))
+						err = common.NewErrorMsg(common.ErrRegexOptions, "options set in both $regex and $options")
 						return
 					}
 					value.Options = options
 				}
 				argSql, arg, err = scalar(value, p)
 			default:
-				err = common.NewError(common.ErrBadValue, fmt.Errorf("$regex has to be a string"))
+				err = common.NewErrorMsg(common.ErrBadValue, "$regex has to be a string")
 				return
 			}
 		default:
@@ -186,6 +220,8 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 			return
 		}
 
+		args = append(args, field)
+
 		sql += " " + argSql
 		args = append(args, arg...)
 	}
@@ -194,8 +230,19 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 }
 
 func wherePair(key string, value any, p *pg.Placeholder) (sql string, args []any, err error) {
+	// {$operator: [expr1, expr2, ...]}
 	if strings.HasPrefix(key, "$") {
-		exprs := value.(*types.Array)
+		exprs, ok := value.(*types.Array)
+		if !ok {
+			msg := fmt.Sprintf(
+				`unknown top level operator: %s. `+
+					`If you have a field name that starts with a '$' symbol, consider using $getField or $setField.`,
+				key,
+			)
+			err = common.NewErrorMsg(common.ErrBadValue, msg)
+			return
+		}
+
 		sql, args, err = common.LogicExpr(key, exprs, p, wherePair)
 		return
 	}

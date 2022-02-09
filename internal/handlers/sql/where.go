@@ -15,7 +15,6 @@
 package sql
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/jackc/pgx/v4"
@@ -135,7 +134,7 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 			if opts, ok := filterMap["$options"]; ok {
 				// {field: {$regex: value, $options: string}}
 				if options, ok = opts.(string); !ok {
-					err = common.NewError(common.ErrBadValue, fmt.Errorf("$options has to be a string"))
+					err = common.NewErrorMsg(common.ErrBadValue, "$options has to be a string")
 					return
 				}
 			}
@@ -153,14 +152,14 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 				// {field: {$regex: /regex/}}
 				if options != "" {
 					if value.Options != "" {
-						err = common.NewError(common.ErrRegexOptions, fmt.Errorf("options set in both $regex and $options"))
+						err = common.NewErrorMsg(common.ErrRegexOptions, "options set in both $regex and $options")
 						return
 					}
 					value.Options = options
 				}
 				argSql, arg, err = scalar(value, p)
 			default:
-				err = common.NewError(common.ErrBadValue, fmt.Errorf("$regex has to be a string"))
+				err = common.NewErrorMsg(common.ErrBadValue, "$regex has to be a string")
 				return
 			}
 		default:

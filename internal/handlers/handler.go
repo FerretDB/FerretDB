@@ -188,10 +188,12 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg, cmd string) 
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+		h.l.Sugar().Debugf("Handling with storage %T", storage)
 		return cmd.storageHandler(storage, ctx, msg)
 	}
 
-	return nil, common.NewError(common.ErrCommandNotFound, fmt.Errorf("no such command: '%s'", cmd))
+	errMsg := fmt.Sprintf("no such command: '%s'", cmd)
+	return nil, common.NewErrorMsg(common.ErrCommandNotFound, errMsg)
 }
 
 func (h *Handler) handleOpQuery(ctx context.Context, query *wire.OpQuery, cmd string) (*wire.OpReply, error) {
@@ -199,8 +201,8 @@ func (h *Handler) handleOpQuery(ctx context.Context, query *wire.OpQuery, cmd st
 		return h.QueryCmd(ctx, query)
 	}
 
-	err := fmt.Errorf("handleOpQuery: unhandled collection %q", query.FullCollectionName)
-	return nil, common.NewError(common.ErrNotImplemented, err)
+	msg := fmt.Sprintf("handleOpQuery: unhandled collection %q", query.FullCollectionName)
+	return nil, common.NewErrorMsg(common.ErrNotImplemented, msg)
 }
 
 func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) (common.Storage, error) {
@@ -225,13 +227,15 @@ func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) (common.Stora
 		return nil, lazyerrors.Error(err)
 	}
 
-	var storage string
+	storage := "default"
 	for i, t := range tables {
 		if t == collection {
 			storage = storages[i]
 			break
 		}
 	}
+
+	h.l.Sugar().Debugf("Using storage %q for collection %q in database %q", storage, collection, db)
 
 	switch command {
 	case "delete", "find", "count":
