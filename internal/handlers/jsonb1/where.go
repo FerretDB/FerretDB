@@ -17,6 +17,7 @@ package jsonb1
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
@@ -64,6 +65,31 @@ func scalar(v any, p *pg.Placeholder) (sql string, args []any, err error) {
 
 	args = []any{arg}
 	return
+}
+
+// validateSize validates $size argument.
+func validateSize(value any) error {
+	var v float64
+	switch n := value.(type) {
+	case int32:
+		v = float64(n)
+	case float64:
+		v = n
+	case int64:
+		v = float64(n)
+	default:
+		return common.NewError(common.ErrBadValue, fmt.Errorf("$size needs a number"))
+	}
+
+	if v != math.Trunc(v) || math.IsNaN(v) || math.IsInf(v, 0) {
+		return common.NewError(common.ErrBadValue, fmt.Errorf("$size must be a whole number"))
+	}
+
+	if math.Signbit(v) {
+		return common.NewError(common.ErrBadValue, fmt.Errorf("$size may not be negative"))
+	}
+
+	return nil
 }
 
 // fieldExpr handles {field: {expr}}.
@@ -147,8 +173,7 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 			// { field: { $size: 2 } }
 			var sizeValue any
 			sizeValue, err = expr.Get(op)
-			if err = common.IsPositiveInteger(sizeValue); err != nil {
-				err = common.NewError(common.ErrBadValue, err)
+			if err = validateSize(sizeValue); err != nil {
 				return
 			}
 

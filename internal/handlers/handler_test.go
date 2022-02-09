@@ -451,6 +451,24 @@ func TestFind(t *testing.T) {
 			)),
 			resp: must.NotFail(types.NewArray()),
 		},
+		"SizeZero": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$size", 0.0,
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x02, 0x00, 0x00, 0x04, 0x02},
+					"name", "array-empty",
+					"value", must.NotFail(types.NewArray()),
+				)),
+			)),
+		},
 		"SizeInvalidType": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
