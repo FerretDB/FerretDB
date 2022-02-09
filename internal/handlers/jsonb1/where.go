@@ -27,6 +27,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// scalar returns an SQL expression (with placeholder and type casting),
+// and the arguments to bind to it for scalar types.
 func scalar(v any, p *pg.Placeholder) (sql string, args []any, err error) {
 	var arg any
 	switch v := v.(type) {
@@ -133,7 +135,6 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 		if sql != "" {
 			sql += " "
 		}
-		args = append(args, field)
 
 		switch op {
 		case "$in":
@@ -174,8 +175,9 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 			if err = validateSize(value); err != nil {
 				return
 			}
-			sql += "jsonb_typeof(_jsonb->" + p.Next() + ") = 'array' AND jsonb_array_length(_jsonb->" + p.Next() + ") = "
-			argSql, arg = p.Next(), []any{field, value}
+			sql += "(" + fmt.Sprintf("jsonb_typeof(_jsonb->%[1]s) = 'array' AND jsonb_array_length(_jsonb->%[1]s) = ", p.Next())
+			argSql = p.Next() + ")"
+			arg = []any{value}
 		case "$regex":
 			// {field: {$regex: value}}
 			var options string
@@ -218,6 +220,8 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 			err = lazyerrors.Errorf("fieldExpr: %w", err)
 			return
 		}
+
+		args = append(args, field)
 
 		sql += " " + argSql
 		args = append(args, arg...)
