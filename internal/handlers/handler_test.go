@@ -40,12 +40,11 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-type testCase struct {
-	req  *types.Document
-	resp *types.Array
-	err  error
-}
-
+// setup creates shared objects for testing.
+//
+// Using shared objects helps us spot concurrency bugs.
+// If some test is failing and the log output is confusing, and you are tempted to move setup call to subtest,
+// instead run that single test with `go test -run test/name`.
 func setup(t *testing.T, poolOpts *testutil.PoolOpts) (context.Context, *Handler, *pg.Pool) {
 	t.Helper()
 
@@ -69,15 +68,6 @@ func setup(t *testing.T, poolOpts *testutil.PoolOpts) (context.Context, *Handler
 func handle(ctx context.Context, t *testing.T, handler *Handler, req *types.Document) *types.Document {
 	t.Helper()
 
-	actual, err := handleWithError(ctx, t, handler, req)
-	require.NoError(t, err)
-
-	return actual
-}
-
-func handleWithError(ctx context.Context, t *testing.T, handler *Handler, req *types.Document) (*types.Document, error) {
-	t.Helper()
-
 	reqHeader := wire.MsgHeader{
 		RequestID: 1,
 		OpCode:    wire.OP_MSG,
@@ -87,197 +77,15 @@ func handleWithError(ctx context.Context, t *testing.T, handler *Handler, req *t
 	err := reqMsg.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{req},
 	})
-	if err != nil {
-		return nil, err
-	}
+	require.NoError(t, err)
 
 	_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
-	if closeConn {
-		return nil, fmt.Errorf("%s", resBody.String())
-	}
+	require.False(t, closeConn, "%s", resBody.String())
 
 	actual, err := resBody.(*wire.OpMsg).Document()
-	if err != nil {
-		return nil, err
-	}
+	require.NoError(t, err)
 
-	return actual, nil
-}
-
-func TestSize(t *testing.T) {
-	t.Parallel()
-	ctx, handler, pool := setup(t, nil)
-	schema := testutil.Schema(ctx, t, pool)
-	loadTestData(ctx, t, handler, schema)
-
-	testCases := map[string]testCase{
-		"required size array is returned": {
-			req: must.NotFail(types.NewDocument(
-				"find", testutil.TableName(t),
-				"filter", must.NotFail(types.NewDocument(
-					"value", must.NotFail(types.NewDocument(
-						"$size", int32(3))),
-				)),
-				"$db", schema,
-			)),
-			resp: must.NotFail(types.NewArray(
-				must.NotFail(types.NewDocument(
-					"_id", types.ObjectID{byte(8)},
-					"value", must.NotFail(types.NewArray("chars", "ololo", "issue255")),
-				)),
-			)),
-		},
-		"nonexistent size array is not returned": {
-			req: must.NotFail(types.NewDocument(
-				"find", testutil.TableName(t),
-				"filter", must.NotFail(types.NewDocument(
-					"value", must.NotFail(types.NewDocument(
-						"$size", int32(333))),
-				)),
-				"$db", schema,
-			)),
-			resp: must.NotFail(types.NewArray()), // no documents found
-		},
-		"negative size is not allowed": {
-			req: must.NotFail(types.NewDocument(
-				"find", testutil.TableName(t),
-				"filter", must.NotFail(types.NewDocument(
-					"value", must.NotFail(types.NewDocument(
-						"$size", int32(-1))),
-				)),
-				"$db", schema,
-			)),
-			resp: must.NotFail(types.NewArray()), // no documents found
-			err:  common.NewError(common.ErrBadValue, fmt.Errorf("$size may not be negative")),
-		},
-		"fractional size is not allowed": {
-			req: must.NotFail(types.NewDocument(
-				"find", testutil.TableName(t),
-				"filter", must.NotFail(types.NewDocument(
-					"value", must.NotFail(types.NewDocument(
-						"$size", float64(3.14))),
-				)),
-				"$db", schema,
-			)),
-			resp: must.NotFail(types.NewArray()), // no documents found
-			err:  common.NewError(common.ErrBadValue, fmt.Errorf("$size must be a whole number")),
-		},
-		"NaN size is not allowed": {
-			req: must.NotFail(types.NewDocument(
-				"find", testutil.TableName(t),
-				"filter", must.NotFail(types.NewDocument(
-					"value", must.NotFail(types.NewDocument(
-						"$size", math.NaN())),
-				)),
-				"$db", schema,
-			)),
-			resp: must.NotFail(types.NewArray()), // no documents found
-			err:  common.NewError(common.ErrBadValue, fmt.Errorf("$size must be a whole number")),
-		},
-		"Infinity size is not allowed": {
-			req: must.NotFail(types.NewDocument(
-				"find", testutil.TableName(t),
-				"filter", must.NotFail(types.NewDocument(
-					"value", must.NotFail(types.NewDocument(
-						"$size", math.Inf(1))),
-				)),
-				"$db", schema,
-			)),
-			resp: must.NotFail(types.NewArray()), // no documents found
-			err:  common.NewError(common.ErrBadValue, fmt.Errorf("$size must be a whole number")),
-		},
-		"zero size array is returned": {
-			req: must.NotFail(types.NewDocument(
-				"find", testutil.TableName(t),
-				"filter", must.NotFail(types.NewDocument(
-					"value", must.NotFail(types.NewDocument(
-						"$size", int32(0))),
-				)),
-				"$db", schema,
-			)),
-			resp: must.NotFail(types.NewArray(
-				must.NotFail(types.NewDocument(
-					"_id", types.ObjectID{byte(9)},
-					"value", must.NotFail(types.NewArray()),
-				)),
-			)),
-		},
-	}
-
-	parentT := t
-	for tcName, tc := range testCases { //nolint:paralleltest // false positive
-		tcName, tc := tcName, tc
-
-		t.Run(tcName, func(t *testing.T) {
-			t.Parallel()
-
-			actual, err := handleWithError(ctx, t, handler, tc.req)
-			expected := must.NotFail(types.NewDocument(
-				"cursor", must.NotFail(types.NewDocument(
-					"firstBatch", tc.resp,
-					"id", int64(0),
-					"ns", schema+"."+testutil.TableName(parentT),
-				)),
-				"ok", float64(1),
-			))
-
-			if tc.err != nil && assert.ErrorAs(t, tc.err, &err) {
-				assert.Equal(t, tc.err.Error(), err.Error())
-				// TODO: compare error code
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, expected, actual)
-			}
-		})
-	}
-}
-
-// loadTestData inserts variety of documents to be used in test cases.
-func loadTestData(ctx context.Context, t *testing.T, handler *Handler, schema string) {
-	t.Helper()
-
-	data := map[string]struct {
-		id    byte
-		value any
-	}{
-		// doubles
-		"double":                   {0, 42.123},
-		"double-negative-infinity": {1, math.Inf(-1)},
-		"double-positive-infinity": {2, math.Inf(+1)},
-		"double-nan":               {3, math.NaN()},
-		"double-max":               {4, math.MaxFloat64},
-		"double-smallest":          {5, math.SmallestNonzeroFloat64},
-
-		// strings
-		"string":           {6, "foo"},
-		"string-empty":     {7, ""},
-		"array-of-strings": {8, must.NotFail(types.NewArray("chars", "ololo", "issue255"))},
-		"empty-array":      {9, must.NotFail(types.NewArray())},
-	}
-
-	header := &wire.MsgHeader{
-		OpCode: wire.OP_MSG,
-	}
-
-	for _, v := range data {
-		var msg wire.OpMsg
-		err := msg.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{must.NotFail(types.NewDocument(
-				"insert", testutil.TableName(t),
-				"documents", must.NotFail(types.NewArray(
-					must.NotFail(types.NewDocument(
-						"_id", types.ObjectID{v.id},
-						"value", v.value,
-					)),
-				)),
-				"$db", schema,
-			))},
-		})
-		require.NoError(t, err)
-
-		_, _, closeConn := handler.Handle(ctx, header, &msg)
-		require.False(t, closeConn)
-	}
+	return actual
 }
 
 func TestFind(t *testing.T) {
@@ -288,8 +96,18 @@ func TestFind(t *testing.T) {
 
 	lastUpdate := time.Date(2020, 2, 15, 9, 34, 33, 0, time.UTC).Local()
 
+	type testCase struct {
+		schemas []string
+		req     *types.Document
+		resp    *types.Array
+		err     error
+	}
+
+	// Do not use sentences, spaces, or underscores in subtest names
+	// to make it easier to run individual tests with `go test -run test/name` and for consistency.
 	testCases := map[string]testCase{
 		"ValueLtGt": {
+			schemas: []string{"monila", "pagila"},
 			req: types.MustNewDocument(
 				"find", "actor",
 				"filter", types.MustNewDocument(
@@ -311,6 +129,7 @@ func TestFind(t *testing.T) {
 			),
 		},
 		"InLteGte": {
+			schemas: []string{"monila", "pagila"},
 			req: types.MustNewDocument(
 				"find", "actor",
 				"filter", types.MustNewDocument(
@@ -334,6 +153,7 @@ func TestFind(t *testing.T) {
 			),
 		},
 		"NinEqNe": {
+			schemas: []string{"monila", "pagila"},
 			req: types.MustNewDocument(
 				"find", "actor",
 				"filter", types.MustNewDocument(
@@ -357,6 +177,7 @@ func TestFind(t *testing.T) {
 			),
 		},
 		"Not": {
+			schemas: []string{"monila", "pagila"},
 			req: types.MustNewDocument(
 				"find", "actor",
 				"filter", types.MustNewDocument(
@@ -382,6 +203,7 @@ func TestFind(t *testing.T) {
 			),
 		},
 		"NestedNot": {
+			schemas: []string{"monila", "pagila"},
 			req: types.MustNewDocument(
 				"find", "actor",
 				"filter", types.MustNewDocument(
@@ -411,6 +233,7 @@ func TestFind(t *testing.T) {
 			),
 		},
 		"AndOr": {
+			schemas: []string{"monila", "pagila"},
 			req: types.MustNewDocument(
 				"find", "actor",
 				"filter", types.MustNewDocument(
@@ -446,6 +269,7 @@ func TestFind(t *testing.T) {
 			),
 		},
 		"Nor": {
+			schemas: []string{"monila", "pagila"},
 			req: types.MustNewDocument(
 				"find", "actor",
 				"filter", types.MustNewDocument(
@@ -466,6 +290,7 @@ func TestFind(t *testing.T) {
 			),
 		},
 		"ValueRegex": {
+			schemas: []string{"monila", "pagila"},
 			req: types.MustNewDocument(
 				"find", "actor",
 				"filter", types.MustNewDocument(
@@ -487,6 +312,7 @@ func TestFind(t *testing.T) {
 			),
 		},
 		"Regex": {
+			schemas: []string{"monila", "pagila"},
 			req: types.MustNewDocument(
 				"find", "actor",
 				"filter", types.MustNewDocument(
@@ -510,6 +336,7 @@ func TestFind(t *testing.T) {
 			),
 		},
 		"RegexOptions": {
+			schemas: []string{"monila", "pagila"},
 			req: types.MustNewDocument(
 				"find", "actor",
 				"filter", types.MustNewDocument(
@@ -534,6 +361,7 @@ func TestFind(t *testing.T) {
 			),
 		},
 		"RegexStringOptions": {
+			schemas: []string{"monila", "pagila"},
 			req: types.MustNewDocument(
 				"find", "actor",
 				"filter", types.MustNewDocument(
@@ -557,6 +385,146 @@ func TestFind(t *testing.T) {
 				),
 			),
 		},
+		"SizeInt32": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$size", int32(2),
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x01, 0x00, 0x00, 0x04, 0x01},
+					"name", "array",
+					"value", must.NotFail(types.NewArray("array", int32(42))),
+				)),
+			)),
+		},
+		"SizeInt64": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$size", int64(2),
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x01, 0x00, 0x00, 0x04, 0x01},
+					"name", "array",
+					"value", must.NotFail(types.NewArray("array", int32(42))),
+				)),
+			)),
+		},
+		"SizeDouble": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$size", 2.0,
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x01, 0x00, 0x00, 0x04, 0x01},
+					"name", "array",
+					"value", must.NotFail(types.NewArray("array", int32(42))),
+				)),
+			)),
+		},
+		"SizeNotFound": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$size", int32(4),
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray()),
+		},
+		"SizeInvalidType": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$size", must.NotFail(types.NewDocument("$gt", int32(1))),
+					)),
+				)),
+			)),
+			err: common.NewError(common.ErrBadValue, fmt.Errorf("$size needs a number")),
+		},
+		"SizeNonWhole": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$size", 2.1,
+					)),
+				)),
+			)),
+			err: common.NewError(common.ErrBadValue, fmt.Errorf("$size must be a whole number")),
+		},
+		"SizeNaN": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$size", math.NaN(),
+					)),
+				)),
+			)),
+			err: common.NewError(common.ErrBadValue, fmt.Errorf("$size must be a whole number")),
+		},
+		"SizeInfinity": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$size", math.Inf(1),
+					)),
+				)),
+			)),
+			err: common.NewError(common.ErrBadValue, fmt.Errorf("$size must be a whole number")),
+		},
+		"SizeNegative": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$size", int32(-1),
+					)),
+				)),
+			)),
+			err: common.NewError(common.ErrBadValue, fmt.Errorf("$size may not be negative")),
+		},
+		"SizeInvalid": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"$size", int32(2),
+				)),
+			)),
+			err: common.NewError(
+				common.ErrBadValue,
+				fmt.Errorf(`unknown top level operator: $size. `+
+					`If you have a field name that starts with a '$' symbol, consider using $getField or $setField.`),
+			),
+		},
 	}
 
 	for name, tc := range testCases { //nolint:paralleltest // false positive
@@ -564,12 +532,19 @@ func TestFind(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			for _, schema := range []string{"monila", "pagila"} {
+			require.NotEmpty(t, tc.schemas)
+			require.NotEmpty(t, tc.req)
+
+			collection := must.NotFail(tc.req.Get(tc.req.Command())).(string)
+			require.NotEmpty(t, collection)
+
+			for _, schema := range tc.schemas {
 				t.Run(schema, func(t *testing.T) {
 					// not parallel because we modify tc
 
 					tc.req.Set("$db", schema)
 
+					// remove _id fields that are not present in pagila
 					if schema == "pagila" {
 						for i := 0; i < tc.resp.Len(); i++ {
 							doc, err := tc.resp.Get(i)
@@ -581,15 +556,24 @@ func TestFind(t *testing.T) {
 						}
 					}
 
+					var expected *types.Document
+					if tc.err == nil {
+						expected = types.MustNewDocument(
+							"cursor", types.MustNewDocument(
+								"firstBatch", tc.resp,
+								"id", int64(0),
+								"ns", schema+"."+collection,
+							),
+							"ok", float64(1),
+						)
+					} else {
+						require.Nil(t, tc.resp)
+						pErr, ok := common.ProtocolError(tc.err)
+						require.True(t, ok)
+						expected = pErr.Document()
+					}
+
 					actual := handle(ctx, t, handler, tc.req)
-					expected := types.MustNewDocument(
-						"cursor", types.MustNewDocument(
-							"firstBatch", tc.resp,
-							"id", int64(0),
-							"ns", schema+".actor",
-						),
-						"ok", float64(1),
-					)
 					assert.Equal(t, expected, actual)
 				})
 			}
@@ -1014,6 +998,7 @@ func TestListDropDatabase(t *testing.T) {
 		actualList := handle(ctx, t, handler, types.MustNewDocument(
 			"listDatabases", int32(1),
 		))
+
 		expectedList := types.MustNewDocument(
 			"databases", types.MustNewArray(
 				types.MustNewDocument(
@@ -1067,6 +1052,7 @@ func TestListDropDatabase(t *testing.T) {
 			"dropDatabase", int32(1),
 			"$db", db,
 		))
+
 		expectedDrop := types.MustNewDocument(
 			"dropped", db,
 			"ok", float64(1),

@@ -188,6 +188,7 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg, cmd string) 
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+		h.l.Sugar().Debugf("Handling with storage %T", storage)
 		return cmd.storageHandler(storage, ctx, msg)
 	}
 
@@ -225,13 +226,15 @@ func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) (common.Stora
 		return nil, lazyerrors.Error(err)
 	}
 
-	var storage string
+	storage := "default"
 	for i, t := range tables {
 		if t == collection {
 			storage = storages[i]
 			break
 		}
 	}
+
+	h.l.Sugar().Debugf("Using storage %q for collection %q in database %q", storage, collection, db)
 
 	switch command {
 	case "delete", "find", "count":

@@ -15,6 +15,7 @@
 package jsonb1
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -205,8 +206,19 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 }
 
 func wherePair(key string, value any, p *pg.Placeholder) (sql string, args []any, err error) {
+	// {$operator: [expr1, expr2, ...]}
 	if strings.HasPrefix(key, "$") {
-		exprs := value.(*types.Array)
+		exprs, ok := value.(*types.Array)
+		if !ok {
+			msg := fmt.Sprintf(
+				`unknown top level operator: %s. `+
+					`If you have a field name that starts with a '$' symbol, consider using $getField or $setField.`,
+				key,
+			)
+			err = common.NewError(common.ErrBadValue, errors.New(msg))
+			return
+		}
+
 		sql, args, err = common.LogicExpr(key, exprs, p, wherePair)
 		return
 	}
