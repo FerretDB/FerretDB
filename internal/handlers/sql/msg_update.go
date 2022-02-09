@@ -16,7 +16,6 @@ package sql
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -24,5 +23,5 @@ import (
 
 // MsgUpdate modifies an existing document or documents in a collection.
 func (s *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("update: not implemented for SQL storage"))
+	return nil, common.NewErrorMsg(common.ErrNotImplemented, "update: not implemented for SQL storage")
 }

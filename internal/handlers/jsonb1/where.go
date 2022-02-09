@@ -15,7 +15,6 @@
 package jsonb1
 
 import (
-	"errors"
 	"fmt"
 	"math"
 	"strings"
@@ -80,15 +79,15 @@ func validateSize(value any) error {
 	case int64:
 		v = float64(n)
 	default:
-		return common.NewError(common.ErrBadValue, fmt.Errorf("$size needs a number"))
+		return common.NewErrorMsg(common.ErrBadValue, "$size needs a number")
 	}
 
 	if v != math.Trunc(v) || math.IsNaN(v) || math.IsInf(v, 0) {
-		return common.NewError(common.ErrBadValue, fmt.Errorf("$size must be a whole number"))
+		return common.NewErrorMsg(common.ErrBadValue, "$size must be a whole number")
 	}
 
 	if math.Signbit(v) {
-		return common.NewError(common.ErrBadValue, fmt.Errorf("$size may not be negative"))
+		return common.NewErrorMsg(common.ErrBadValue, "$size may not be negative")
 	}
 
 	return nil
@@ -184,7 +183,7 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 			if opts, ok := filterMap["$options"]; ok {
 				// {field: {$regex: value, $options: string}}
 				if options, ok = opts.(string); !ok {
-					err = common.NewError(common.ErrBadValue, fmt.Errorf("$options has to be a string"))
+					err = common.NewErrorMsg(common.ErrBadValue, "$options has to be a string")
 					return
 				}
 			}
@@ -202,14 +201,14 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 				// {field: {$regex: /regex/}}
 				if options != "" {
 					if value.Options != "" {
-						err = common.NewError(common.ErrRegexOptions, fmt.Errorf("options set in both $regex and $options"))
+						err = common.NewErrorMsg(common.ErrRegexOptions, "options set in both $regex and $options")
 						return
 					}
 					value.Options = options
 				}
 				argSql, arg, err = scalar(value, p)
 			default:
-				err = common.NewError(common.ErrBadValue, fmt.Errorf("$regex has to be a string"))
+				err = common.NewErrorMsg(common.ErrBadValue, "$regex has to be a string")
 				return
 			}
 		default:
@@ -240,7 +239,7 @@ func wherePair(key string, value any, p *pg.Placeholder) (sql string, args []any
 					`If you have a field name that starts with a '$' symbol, consider using $getField or $setField.`,
 				key,
 			)
-			err = common.NewError(common.ErrBadValue, errors.New(msg))
+			err = common.NewErrorMsg(common.ErrBadValue, msg)
 			return
 		}
 

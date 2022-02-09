@@ -130,7 +130,7 @@ func (s *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		args = append(args, limit)
 	default:
 		// TODO https://github.com/FerretDB/FerretDB/issues/79
-		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("find: negative limit values are not supported"))
+		return nil, common.NewErrorMsg(common.ErrNotImplemented, "find: negative limit values are not supported")
 	}
 
 	rows, err := s.pgPool.Query(ctx, sql, args...)

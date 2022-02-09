@@ -16,7 +16,6 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"os"
 	"runtime"
@@ -479,7 +478,7 @@ func TestFind(t *testing.T) {
 					)),
 				)),
 			)),
-			err: common.NewError(common.ErrBadValue, fmt.Errorf("$size needs a number")),
+			err: common.NewErrorMsg(common.ErrBadValue, "$size needs a number"),
 		},
 		"SizeNonWhole": {
 			schemas: []string{"values"},
@@ -491,7 +490,7 @@ func TestFind(t *testing.T) {
 					)),
 				)),
 			)),
-			err: common.NewError(common.ErrBadValue, fmt.Errorf("$size must be a whole number")),
+			err: common.NewErrorMsg(common.ErrBadValue, "$size must be a whole number"),
 		},
 		"SizeNaN": {
 			schemas: []string{"values"},
@@ -503,7 +502,7 @@ func TestFind(t *testing.T) {
 					)),
 				)),
 			)),
-			err: common.NewError(common.ErrBadValue, fmt.Errorf("$size must be a whole number")),
+			err: common.NewErrorMsg(common.ErrBadValue, "$size must be a whole number"),
 		},
 		"SizeInfinity": {
 			schemas: []string{"values"},
@@ -515,7 +514,7 @@ func TestFind(t *testing.T) {
 					)),
 				)),
 			)),
-			err: common.NewError(common.ErrBadValue, fmt.Errorf("$size must be a whole number")),
+			err: common.NewErrorMsg(common.ErrBadValue, "$size must be a whole number"),
 		},
 		"SizeNegative": {
 			schemas: []string{"values"},
@@ -527,7 +526,7 @@ func TestFind(t *testing.T) {
 					)),
 				)),
 			)),
-			err: common.NewError(common.ErrBadValue, fmt.Errorf("$size may not be negative")),
+			err: common.NewErrorMsg(common.ErrBadValue, "$size may not be negative"),
 		},
 		"SizeInvalid": {
 			schemas: []string{"values"},
@@ -537,10 +536,10 @@ func TestFind(t *testing.T) {
 					"$size", int32(2),
 				)),
 			)),
-			err: common.NewError(
+			err: common.NewErrorMsg(
 				common.ErrBadValue,
-				fmt.Errorf(`unknown top level operator: $size. `+
-					`If you have a field name that starts with a '$' symbol, consider using $getField or $setField.`),
+				`unknown top level operator: $size. `+
+					`If you have a field name that starts with a '$' symbol, consider using $getField or $setField.`,
 			),
 		},
 	}

@@ -51,6 +51,7 @@ func (h *Handler) QueryCmd(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 		return reply, nil
 
 	default:
-		return nil, common.NewError(common.ErrNotImplemented, fmt.Errorf("QueryCmd: unhandled command %q", cmd))
+		msg := fmt.Sprintf("QueryCmd: unhandled command %q", cmd)
+		return nil, common.NewErrorMsg(common.ErrNotImplemented, msg)
 	}
 }
