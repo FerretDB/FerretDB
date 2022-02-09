@@ -170,18 +170,14 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 			sql += "_jsonb->" + p.Next() + " >="
 			argSql, arg, err = scalar(value, p)
 		case "$size":
-			// { field: { $size: 2 } }
-			var sizeValue any
-			sizeValue, err = expr.Get(op)
-			if err = validateSize(sizeValue); err != nil {
+			// {field: {$size: value}}
+			if err = validateSize(value); err != nil {
 				return
 			}
-
 			sql += "jsonb_typeof(_jsonb->" + p.Next() + ") = 'array' AND jsonb_array_length(_jsonb->" + p.Next() + ") = "
-			argSql, arg = p.Next(), []any{field, sizeValue}
+			argSql, arg = p.Next(), []any{field, value}
 		case "$regex":
 			// {field: {$regex: value}}
-
 			var options string
 			if opts, ok := filterMap["$options"]; ok {
 				// {field: {$regex: value, $options: string}}

@@ -1016,7 +1016,6 @@ func TestListDropDatabase(t *testing.T) {
 		actualList := handle(ctx, t, handler, types.MustNewDocument(
 			"listDatabases", int32(1),
 		))
-
 		expectedList := types.MustNewDocument(
 			"databases", types.MustNewArray(
 				types.MustNewDocument(
@@ -1070,7 +1069,6 @@ func TestListDropDatabase(t *testing.T) {
 			"dropDatabase", int32(1),
 			"$db", db,
 		))
-
 		expectedDrop := types.MustNewDocument(
 			"dropped", db,
 			"ok", float64(1),
