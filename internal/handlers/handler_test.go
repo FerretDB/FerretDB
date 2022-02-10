@@ -890,7 +890,708 @@ func TestFind(t *testing.T) {
 				),
 			),
 		},
+		"SizeInt32": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$size", int32(2),
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x01, 0x00, 0x00, 0x04, 0x01},
+					"name", "array",
+					"value", must.NotFail(types.NewArray("array", int32(42))),
+				)),
+			)),
+		},
+		"EqString": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", "foo",
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x02, 0x01, 0x00, 0x00, 0x02, 0x01},
+					"name", "string",
+					"value", "foo",
+				)),
+			)),
+		},
+		"EmptyStringEq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", "",
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x02, 0x02, 0x00, 0x00, 0x02, 0x02},
+					"name", "string-empty",
+					"value", "",
+				)),
+			)),
+		},
+		"DoubleEq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", 42.13,
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01, 0x01},
+					"name", "double",
+					"value", 42.13,
+				)),
+			)),
+		},
+		"DoubleNegativeInfinityEq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", math.Inf(-1),
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x01, 0x06, 0x00, 0x00, 0x01, 0x06},
+					"name", "double-negative-infinity",
+					"value", math.Inf(-1),
+				)),
+			)),
+		},
+		"DoublePositiveInfinityEq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", math.Inf(+1),
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x01, 0x05, 0x00, 0x00, 0x01, 0x05},
+					"name", "double-positive-infinity",
+					"value", math.Inf(+1),
+				)),
+			)),
+		},
+		"DoubleZeroEq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", 0.0,
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x01, 0x02, 0x00, 0x00, 0x01, 0x02},
+					"name", "double-zero",
+					"value", 0.0,
+				)),
+			)),
+		},
+		"DoubleMaxEq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", math.MaxFloat64,
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x01, 0x03, 0x00, 0x00, 0x01, 0x03},
+					"name", "double-max",
+					"value", math.MaxFloat64,
+				)),
+			)),
+		},
+		"DoubleSmallestEq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", math.SmallestNonzeroFloat64,
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x01, 0x04, 0x00, 0x00, 0x01, 0x04},
+					"name", "double-smallest",
+					"value", math.SmallestNonzeroFloat64,
+				)),
+			)),
+		},
+		//"DoubleNanDataTypeEq": {
+		//	// TODO: write properly NaN test
+		//	// Nan eq works
+		//
+		//	//be, _ := fjson.Marshal(expected)
+		//	//ba, _ := fjson.Marshal(actual)
+		//
+		//	//fmt.Println("actyeal NanKEY", string(ba))
+		//	//fmt.Println("expedal NanKEY", string(be))
+		//
+		//	//assert.Equal(t, be, ba)
+		//
+		//	schemas: []string{"values"},
+		//req: must.NotFail(types.NewDocument(
+		//		"find", "values",
+		//		"filter", must.NotFail(types.NewDocument(
+		//			"value", must.NotFail(types.NewDocument(
+		//				"$eq", "",
+		//			)),
+		//		)),
+		//	)),
+		//
+		//	resp: must.NotFail(types.NewArray(
+		//		must.NotFail(types.NewDocument(
+		//			"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x01, 0x07, 0x00, 0x00, 0x00, 0x07},
+		//			"name", DoubleNanDataType,
+		//			"value", dataValues[DoubleNanDataType],
+		//		)),
+		//	)),
+		//},
 
+		"ArrayEq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", must.NotFail(types.NewArray("array", int32(42))),
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x01, 0x00, 0x00, 0x04, 0x01},
+					"name", "array",
+					"value", must.NotFail(types.NewArray("array", int32(42))),
+				)),
+			)),
+		},
+		"EmptyArrayEq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", must.NotFail(types.NewArray()),
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x02, 0x00, 0x00, 0x04, 0x02},
+					"name", "array-empty",
+					"value", must.NotFail(types.NewArray()),
+				)),
+			)),
+		},
+		"BinaryEq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", types.Binary{Subtype: types.BinaryUser, B: []byte{42, 0, 13}},
+					)),
+				)),
+			)),
+
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x05, 0x01, 0x00, 0x00, 0x05, 0x01},
+					"name", "binary",
+					"value", types.Binary{Subtype: types.BinaryUser, B: []byte{42, 0, 13}},
+				)),
+			)),
+		},
+		"EmptyBinaryEq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", types.Binary{Subtype: 0, B: []byte{}},
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x05, 0x02, 0x00, 0x00, 0x05, 0x02},
+					"name", "binary-empty",
+					"value", types.Binary{Subtype: 0, B: []byte{}},
+				)),
+			)),
+		},
+
+		"BoolFalseEq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", false,
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x08, 0x01, 0x00, 0x00, 0x08, 0x01},
+					"name", "bool-false",
+					"value", false,
+				)),
+			)),
+		},
+		"BoolTrueEq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", true,
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x08, 0x02, 0x00, 0x00, 0x08, 0x02},
+					"name", "bool-true",
+					"value", true,
+				)),
+			)),
+		},
+
+		"Int32Eq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", int32(42),
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x10, 0x01, 0x00, 0x00, 0x10, 0x01},
+					"name", "int32",
+					"value", int32(42),
+				)),
+			)),
+		},
+		"Int32ZeroEq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", int32(0),
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x10, 0x02, 0x00, 0x00, 0x10, 0x02},
+					"name", "int32-zero",
+					"value", int32(0),
+				)),
+			)),
+		},
+		"Int32MaxEq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", int32(2147483647),
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x10, 0x03, 0x00, 0x00, 0x10, 0x03},
+					"name", "int32-max",
+					"value", int32(2147483647),
+				)),
+			)),
+		},
+		"Int32MinEq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", int32(-2147483648),
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x10, 0x04, 0x00, 0x00, 0x10, 0x04},
+					"name", "int32-min",
+					"value", int32(-2147483648),
+				)),
+			)),
+		},
+
+		"Int64Eq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", int64(42),
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x12, 0x01, 0x00, 0x00, 0x12, 0x01},
+					"name", "int64",
+					"value", int64(42),
+				)),
+			)),
+		},
+		"Int64ZeroEq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", int64(0),
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x12, 0x02, 0x00, 0x00, 0x12, 0x02},
+					"name", "int64-zero",
+					"value", int64(0),
+				)),
+			)),
+		},
+		"Int64MaxEq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", int64(9223372036854775807),
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x12, 0x03, 0x00, 0x00, 0x12, 0x03},
+					"name", "int64-max",
+					"value", int64(9223372036854775807),
+				)),
+			)),
+		},
+		"Int64MinEq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", int64(-9223372036854775808),
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x12, 0x04, 0x00, 0x00, 0x12, 0x04},
+					"name", "int64-min",
+					"value", int64(-9223372036854775808),
+				)),
+			)),
+		},
+
+		"DateTimeEq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC).Local(),
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x9, 0x01, 0x00, 0x00, 0x09, 0x01},
+					"name", "datetime",
+					"value", time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC).Local(),
+				)),
+			)),
+		},
+		"DateEpochEq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", time.Unix(0, 0),
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x9, 0x02, 0x00, 0x00, 0x09, 0x02},
+					"name", "datetime-epoch",
+					"value", time.Unix(0, 0),
+				)),
+			)),
+		},
+		"DateTimeMinYearEq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC).Local(),
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x9, 0x03, 0x00, 0x00, 0x09, 0x03},
+					"name", "datetime-year-min",
+					"value", time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC).Local(),
+				)),
+			)),
+		},
+		"DateTimeMaxYearEq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC).Local(),
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x9, 0x04, 0x00, 0x00, 0x09, 0x04},
+					"name", "datetime-year-max",
+					"value", time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC).Local(),
+				)),
+			)),
+		},
+
+		"TimestampEq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", types.Timestamp(180388626445),
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x11, 0x01, 0x00, 0x00, 0x11, 0x01},
+					"name", "timestamp",
+					"value", types.Timestamp(180388626445),
+				)),
+			)),
+		},
+
+		"NilEq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", types.NullType{},
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x0a, 0x01, 0x00, 0x00, 0x0a, 0x01},
+					"name", "null",
+					"value", types.NullType{},
+				)),
+			)),
+		},
+
+		"DocumentEq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", must.NotFail(types.NewDocument("document", int32(42))),
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x03, 0x01, 0x00, 0x00, 0x03, 0x01},
+					"name", "document",
+					"value", must.NotFail(types.NewDocument("document", int32(42))),
+				)),
+			)),
+		},
+
+		//	"RegexEq": {
+		//	schemas: []string{"values"},
+		//	req: must.NotFail(types.NewDocument(
+		//	"find", "values",
+		//	"filter", must.NotFail(types.NewDocument(
+		//	"value", must.NotFail(types.NewDocument(
+		//	"$eq", "",
+		//)),
+		//)),
+		//)),
+		//	resp: must.NotFail(types.NewArray(
+		//	must.NotFail(types.NewDocument(
+		//	"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x0a, 0x01, 0x00, 0x00, 0x0a, 0x01},
+		//	"name", NullDataType,
+		//	"value", dataValues[NullDataType],
+		//)),
+		//)),
+		//},
+		"SizeNotFound": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$size", int32(4),
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray()),
+		},
+		"SizeZero": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$size", 0.0,
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x02, 0x00, 0x00, 0x04, 0x02},
+					"name", "array-empty",
+					"value", must.NotFail(types.NewArray()),
+				)),
+			)),
+		},
+		"SizeInvalidType": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$size", must.NotFail(types.NewDocument("$gt", int32(1))),
+					)),
+				)),
+			)),
+			err: common.NewErrorMsg(common.ErrBadValue, "$size needs a number"),
+		},
+		"SizeNonWhole": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$size", 2.1,
+					)),
+				)),
+			)),
+			err: common.NewErrorMsg(common.ErrBadValue, "$size must be a whole number"),
+		},
+		"SizeNaN": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$size", math.NaN(),
+					)),
+				)),
+			)),
+			err: common.NewErrorMsg(common.ErrBadValue, "$size must be a whole number"),
+		},
+		"SizeInfinity": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$size", math.Inf(1),
+					)),
+				)),
+			)),
+			err: common.NewErrorMsg(common.ErrBadValue, "$size must be a whole number"),
+		},
+		"SizeNegative": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$size", int32(-1),
+					)),
+				)),
+			)),
+			err: common.NewErrorMsg(common.ErrBadValue, "$size may not be negative"),
+		},
+		"SizeInvalid": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"$size", types.MustNewArray(int32(2)),
+				)),
+			)),
+			err: common.NewErrorMsg(
+				common.ErrBadValue,
+				`unknown top level operator: $size. `+
+					`If you have a field name that starts with a '$' symbol, consider using $getField or $setField.`,
+			),
+		},
 		"BitsAllClear": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
