@@ -37,15 +37,18 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 	}); err != nil {
 		return nil, err
 	}
-	if err = common.UnimplementedNonDefault(document, "nameOnly", func(v any) bool {
-		nameOnly, ok := v.(bool)
-		return ok && !nameOnly
-	}); err != nil {
-		return nil, err
-	}
-	if err := common.Unimplemented(document, "authorizedCollections"); err != nil {
-		return nil, err
-	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/301
+	// if err = common.UnimplementedNonDefault(document, "nameOnly", func(v any) bool {
+	// 	nameOnly, ok := v.(bool)
+	// 	return ok && !nameOnly
+	// }); err != nil {
+	// 	return nil, err
+	// }
+	// if err := common.Unimplemented(document, "authorizedCollections"); err != nil {
+	// 	return nil, err
+	// }
+
 	common.Ignored(document, h.l, "comment")
 
 	m := document.Map()
