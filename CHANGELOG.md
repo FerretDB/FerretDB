@@ -1,5 +1,77 @@
 # Changelog
 
+## [v0.0.6](https://github.com/FerretDB/FerretDB/releases/tag/v0.0.6) (2022-02-10)
+
+### New Features 🎉
+* Support projections by @ekalinin in https://github.com/FerretDB/FerretDB/pull/212
+* Support `dbStats` by @ekalinin in https://github.com/FerretDB/FerretDB/pull/232
+* Support `dataSize` by @ekalinin in https://github.com/FerretDB/FerretDB/pull/246
+* Implement `listCommands` by @OpenSauce in https://github.com/FerretDB/FerretDB/pull/203
+* Support `serverStatus` by @ekalinin in https://github.com/FerretDB/FerretDB/pull/289
+* Add more metrics by @AlekSi in https://github.com/FerretDB/FerretDB/pull/298
+* Implement `$size` query operator by @taaraora in https://github.com/FerretDB/FerretDB/pull/296
+### Fixed Bugs 🐛
+* Forbid short document keys like `$k` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/234
+* Fix benchmarks by @AlekSi in https://github.com/FerretDB/FerretDB/pull/236
+* Move handler tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/239
+* Fix and enable fuzzing by @AlekSi in https://github.com/FerretDB/FerretDB/pull/240
+* Make `db.collection.stats()` & `.dataSize()` work from `mongosh` by @ekalinin in https://github.com/FerretDB/FerretDB/pull/243
+* fix: remove amd-v2 limit by @Junnplus in https://github.com/FerretDB/FerretDB/pull/282
+* Catch concurrent schema/table creation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/283
+* Ignore some parameters by @AlekSi in https://github.com/FerretDB/FerretDB/pull/310
+### Enhancements 🛠
+* Add `buildEnvironment` and `debug` to `buildInfo` command by @GinGin3203 in https://github.com/FerretDB/FerretDB/pull/218
+* Add helper for checking for unimplemented fields by @AlekSi in https://github.com/FerretDB/FerretDB/pull/267
+* Ignore `authorizedXXX` parameters for now by @AlekSi in https://github.com/FerretDB/FerretDB/pull/311
+### Documentation 📄
+* Update documentation about `fjson` package by @AlekSi in https://github.com/FerretDB/FerretDB/pull/262
+* Update tutorial ,add depends_on in docker-compose by @muyouming in https://github.com/FerretDB/FerretDB/pull/275
+### Other Changes 🤖
+* Bump github.com/reviewdog/reviewdog from 0.13.0 to 0.13.1 in /tools by @dependabot in https://github.com/FerretDB/FerretDB/pull/222
+* Fix Docker workflow by @AlekSi in https://github.com/FerretDB/FerretDB/pull/225
+* Extract `fjson` package by @AlekSi in https://github.com/FerretDB/FerretDB/pull/207
+* Fix test for `collstats` by @ekalinin in https://github.com/FerretDB/FerretDB/pull/233
+* Bump go.uber.org/zap from 1.19.1 to 1.20.0 by @dependabot in https://github.com/FerretDB/FerretDB/pull/241
+* Use generics for CompositeType by @AlekSi in https://github.com/FerretDB/FerretDB/pull/245
+* Enable go-consistent by @AlekSi in https://github.com/FerretDB/FerretDB/pull/248
+* Unexport `fjson` types by @AlekSi in https://github.com/FerretDB/FerretDB/pull/231
+* Remove JSON methods from bson package by @AlekSi in https://github.com/FerretDB/FerretDB/pull/259
+* Fix `make gen` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/264
+* Add fuzztool by @ferretdb-bot in https://github.com/FerretDB/FerretDB/pull/56
+* Use FerretDB/github-actions/linters by @AlekSi in https://github.com/FerretDB/FerretDB/pull/265
+* Make PRs from forks work by @AlekSi in https://github.com/FerretDB/FerretDB/pull/266
+* Use `types.Null` instead of `nil` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/268
+* Add `make fuzz-corpus` target by @AlekSi in https://github.com/FerretDB/FerretDB/pull/279
+* Pass Documents by pointer by @AlekSi in https://github.com/FerretDB/FerretDB/pull/272
+* Unexport some `bson` types by @AlekSi in https://github.com/FerretDB/FerretDB/pull/280
+* Rename receivers by @AlekSi in https://github.com/FerretDB/FerretDB/pull/284
+* Bump github.com/prometheus/client_golang from 1.11.0 to 1.12.0 by @dependabot in https://github.com/FerretDB/FerretDB/pull/285
+* Introduce generics for types by @AlekSi in https://github.com/FerretDB/FerretDB/pull/287
+* Fix some typos and style by @ekalinin in https://github.com/FerretDB/FerretDB/pull/286
+* Add Docker workflow stub by @AlekSi in https://github.com/FerretDB/FerretDB/pull/288
+* Split Docker Build and Push by @AlekSi in https://github.com/FerretDB/FerretDB/pull/290
+* Securely build and push Docker images by @AlekSi in https://github.com/FerretDB/FerretDB/pull/292
+* Update golangci-lint by @AlekSi in https://github.com/FerretDB/FerretDB/pull/294
+* Make fuzztool less verbose by @AlekSi in https://github.com/FerretDB/FerretDB/pull/295
+* Fix compilation with the latest go tip by @AlekSi in https://github.com/FerretDB/FerretDB/pull/300
+* Use `values` MongoDB database by @AlekSi in https://github.com/FerretDB/FerretDB/pull/299
+* Spend less time fuzzing pull requests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/302
+* Detect matching PR by @AlekSi in https://github.com/FerretDB/FerretDB/pull/303
+* Add detection action by @AlekSi in https://github.com/FerretDB/FerretDB/pull/304
+* Remove extra allocation by @peakle in https://github.com/FerretDB/FerretDB/pull/307
+* Micro fixes: type assert order, strings.Split -> strings.Cut by @peakle in https://github.com/FerretDB/FerretDB/pull/308
+* Bump github.com/prometheus/client_golang from 1.12.0 to 1.12.1 by @dependabot in https://github.com/FerretDB/FerretDB/pull/306
+
+## New Contributors
+* @Junnplus made their first contribution in https://github.com/FerretDB/FerretDB/pull/282
+* @muyouming made their first contribution in https://github.com/FerretDB/FerretDB/pull/275
+* @peakle made their first contribution in https://github.com/FerretDB/FerretDB/pull/307
+* @taaraora made their first contribution in https://github.com/FerretDB/FerretDB/pull/296
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/10?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v0.0.5...v0.0.6).
+
+
 ## [v0.0.5](https://github.com/FerretDB/FerretDB/releases/tag/v0.0.5) (2022-01-04)
 
 ### New Features 🎉
