@@ -45,11 +45,8 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 	// }); err != nil {
 	// 	return nil, err
 	// }
-	// if err := common.Unimplemented(document, "authorizedCollections"); err != nil {
-	// 	return nil, err
-	// }
 
-	common.Ignored(document, h.l, "comment")
+	common.Ignored(document, h.l, "comment", "authorizedCollections")
 
 	m := document.Map()
 

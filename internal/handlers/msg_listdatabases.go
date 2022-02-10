@@ -44,11 +44,8 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 	// }); err != nil {
 	// 	return nil, err
 	// }
-	// if err := common.Unimplemented(document, "authorizedCollections"); err != nil {
-	// 	return nil, err
-	// }
 
-	common.Ignored(document, h.l, "comment")
+	common.Ignored(document, h.l, "comment", "authorizedDatabases")
 
 	databaseNames, err := h.pgPool.Schemas(ctx)
 	if err != nil {
