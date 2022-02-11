@@ -21,7 +21,7 @@ env-pull:
 	docker-compose pull --include-deps --quiet
 
 env-down:                              ## Stop development environment
-	docker-compose down --remove-orphans
+	docker-compose down --remove-orphans --volumes
 
 init: gen-version                      ## Install development tools
 	rm -fr bin
