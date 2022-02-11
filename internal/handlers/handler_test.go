@@ -1470,24 +1470,43 @@ func TestFind(t *testing.T) {
 			)),
 		},
 
-		//	"RegexEq": {
-		//	schemas: []string{"values"},
-		//	req: must.NotFail(types.NewDocument(
-		//	"find", "values",
-		//	"filter", must.NotFail(types.NewDocument(
-		//	"value", must.NotFail(types.NewDocument(
-		//	"$eq", "",
-		//)),
-		//)),
-		//)),
-		//	resp: must.NotFail(types.NewArray(
-		//	must.NotFail(types.NewDocument(
-		//	"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x0a, 0x01, 0x00, 0x00, 0x0a, 0x01},
-		//	"name", NullDataType,
-		//	"value", dataValues[NullDataType],
-		//)),
-		//)),
-		//},
+		"RegexEq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", types.Regex{Pattern: "foo", Options: "i"},
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x0b, 0x01, 0x00, 0x00, 0x0b, 0x01},
+					"name", "regex",
+					"value", types.Regex{Pattern: "foo", Options: "i"},
+				)),
+			)),
+		},
+		"EmptyRegexEq": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$eq", types.Regex{Pattern: ""},
+					)),
+				)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x0b, 0x02, 0x00, 0x00, 0x0b, 0x02},
+					"name", "regex-empty",
+					"value", types.Regex{Pattern: "", Options: ""},
+				)),
+			)),
+		},
+
 		"SizeNotFound": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
