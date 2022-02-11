@@ -17,11 +17,12 @@ package bson
 import (
 	"bufio"
 
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // CString represents BSON zero-terminated UTF-8 string type.
-type CString string
+type CString types.CString
 
 func (cstr *CString) bsontype() {}
 

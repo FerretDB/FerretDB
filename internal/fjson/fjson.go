@@ -21,6 +21,7 @@
 // Composite types
 //  *types.Document  {"$k": ["<key 1>", "<key 2>", ...], "<key 1>": <value 1>, "<key 2>": <value 2>, ...}
 //  *types.Array     JSON array
+//
 // Scalar types
 //  float64          {"$f": JSON number} or {"$f": "Infinity|-Infinity|NaN"}
 //  string           JSON string
