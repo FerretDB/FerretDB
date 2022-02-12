@@ -152,7 +152,7 @@ var commands = map[string]command{
 	},
 	"insert": {
 		name:           "insert",
-		help:           "Inserts documents into the database. ",
+		help:           "Inserts documents into the database.",
 		storageHandler: (common.Storage).MsgInsert,
 	},
 	"update": {
