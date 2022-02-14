@@ -15,13 +15,24 @@
 package types
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
+
+// lastErr returns the last error in error chain.
+func lastErr(err error) error {
+	for {
+		e := errors.Unwrap(err)
+		if e == nil {
+			return err
+		}
+		err = e
+	}
+}
 
 func TestDocument(t *testing.T) {
 	t.Parallel()
@@ -78,7 +89,7 @@ func TestDocument(t *testing.T) {
 		for _, tc := range []struct {
 			name string
 			doc  Document
-			err  error
+			err  string // unwrapped
 		}{{
 			name: "normal",
 			doc: Document{
@@ -94,28 +105,28 @@ func TestDocument(t *testing.T) {
 				keys: []string{"0"},
 				m:    map[string]any{"1": "foo"},
 			},
-			err: fmt.Errorf(`types.Document.validate: key not found: "0"`),
+			err: `types.Document.validate: key not found: "0"`,
 		}, {
 			name: "duplicate keys",
 			doc: Document{
 				keys: []string{"0", "0"},
 				m:    map[string]any{"0": "foo"},
 			},
-			err: fmt.Errorf("types.Document.validate: keys and values count mismatch: 1 != 2"),
+			err: `types.Document.validate: keys and values count mismatch: 1 != 2`,
 		}, {
 			name: "duplicate and different keys",
 			doc: Document{
 				keys: []string{"0", "0"},
 				m:    map[string]any{"0": "foo", "1": "bar"},
 			},
-			err: fmt.Errorf(`types.Document.validate: duplicate key: "0"`),
+			err: `types.Document.validate: duplicate key: "0"`,
 		}, {
 			name: "fjson keys",
 			doc: Document{
 				keys: []string{"$k"},
 				m:    map[string]any{"$k": "foo"},
 			},
-			err: fmt.Errorf(`types.Document.validate: invalid key: "$k"`),
+			err: `types.validateDocumentKey: short keys that start with '$' are not supported: "$k"`,
 		}, {
 			name: "dollar keys",
 			doc: Document{
@@ -128,7 +139,11 @@ func TestDocument(t *testing.T) {
 				t.Parallel()
 
 				err := tc.doc.validate()
-				assert.Equal(t, tc.err, err)
+				if tc.err == "" {
+					assert.NoError(t, err)
+				} else {
+					assert.Equal(t, tc.err, lastErr(err).Error())
+				}
 			})
 		}
 	})

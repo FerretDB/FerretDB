@@ -146,7 +146,7 @@ var msgTestCases = []testCase{{
 }, {
 	name:      "dollar_dot",
 	expectedB: testutil.MustParseDumpFile("testdata", "dollar_dot.hex"),
-	err:       `types.Document.validate: invalid key: "$."`,
+	err:       `types.validateDocumentKey: short keys that start with '$' are not supported: "$."`,
 }, {
 	name:      "msg_fuzz1",
 	expectedB: testutil.MustParseDumpFile("testdata", "msg_fuzz1.hex"),

@@ -117,18 +117,22 @@ func MustNewDocument(pairs ...any) *Document {
 
 func (*Document) compositeType() {}
 
-// isValidKey returns false if key is not a valid document field key.
-func isValidKey(key string) bool {
+// validateDocumentKey returns false if key is not a valid document field key.
+func validateDocumentKey(key string) error {
 	if key == "" {
-		return false
+		return fmt.Errorf("types.validateDocumentKey: empty key")
 	}
 
 	// forbid keys like $k (used by fjson representation), but allow $db (used by many commands)
 	if key[0] == '$' && len(key) <= 2 {
-		return false
+		return fmt.Errorf("types.validateDocumentKey: short keys that start with '$' are not supported: %q", key)
 	}
 
-	return utf8.ValidString(key)
+	if !utf8.ValidString(key) {
+		return fmt.Errorf("types.validateDocumentKey: invalid UTF-8: %q", key)
+	}
+
+	return nil
 }
 
 // validate checks if the document is valid.
@@ -139,8 +143,8 @@ func (d *Document) validate() error {
 
 	prevKeys := make(map[string]struct{}, len(d.keys))
 	for _, key := range d.keys {
-		if !isValidKey(key) {
-			return fmt.Errorf("types.Document.validate: invalid key: %q", key)
+		if err := validateDocumentKey(key); err != nil {
+			return fmt.Errorf("types.Document.validate: %w", err)
 		}
 
 		value, ok := d.m[key]
@@ -201,8 +205,8 @@ func (d *Document) add(key string, value any) error {
 		return fmt.Errorf("types.Document.add: key already present: %q", key)
 	}
 
-	if !isValidKey(key) {
-		return fmt.Errorf("types.Document.add: invalid key: %q", key)
+	if err := validateDocumentKey(key); err != nil {
+		return fmt.Errorf("types.Document.add: %w", err)
 	}
 
 	if err := validateValue(value); err != nil {
@@ -231,8 +235,8 @@ func (d *Document) GetByPath(path ...string) (any, error) {
 
 // Set the value of the given key, replacing any existing value.
 func (d *Document) Set(key string, value any) error {
-	if !isValidKey(key) {
-		return fmt.Errorf("types.Document.Set: invalid key: %q", key)
+	if err := validateDocumentKey(key); err != nil {
+		return fmt.Errorf("types.Document.Set: %w", err)
 	}
 
 	if err := validateValue(value); err != nil {
