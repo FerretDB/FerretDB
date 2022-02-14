@@ -18,13 +18,14 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/hex"
-	"errors"
 	"io"
 	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 type testCase struct {
@@ -48,17 +49,6 @@ func assertEqualWithNaN(t testing.TB, expected, actual any) {
 	}
 
 	assert.Equal(t, expected, actual, "expected: %s\nactual  : %s", expected, actual)
-}
-
-// lastErr returns the last error in error chain.
-func lastErr(err error) error {
-	for {
-		e := errors.Unwrap(err)
-		if e == nil {
-			return err
-		}
-		err = e
-	}
 }
 
 func testBinary(t *testing.T, testCases []testCase, newFunc func() bsontype) {
@@ -86,7 +76,7 @@ func testBinary(t *testing.T, testCases []testCase, newFunc func() bsontype) {
 				}
 
 				require.Error(t, err)
-				require.Equal(t, tc.bErr, lastErr(err).Error())
+				require.Equal(t, tc.bErr, lazyerrors.UnwrapAll(err).Error())
 			})
 
 			t.Run("MarshalBinary", func(t *testing.T) {
@@ -211,7 +201,7 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() bsontype) {
 				}
 
 				require.Error(b, readErr)
-				require.Equal(b, tc.bErr, lastErr(readErr).Error())
+				require.Equal(b, tc.bErr, lazyerrors.UnwrapAll(readErr).Error())
 			})
 		})
 	}

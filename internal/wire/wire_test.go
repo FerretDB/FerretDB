@@ -17,24 +17,14 @@ package wire
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-)
 
-// lastErr returns the last error in error chain.
-func lastErr(err error) error {
-	for {
-		e := errors.Unwrap(err)
-		if e == nil {
-			return err
-		}
-		err = e
-	}
-}
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+)
 
 var lastUpdate = time.Date(2020, 2, 15, 9, 34, 33, 0, time.UTC).Local()
 
@@ -90,7 +80,7 @@ func testMessages(t *testing.T, testCases []testCase) {
 				}
 
 				require.Error(t, err)
-				require.Equal(t, tc.err, lastErr(err).Error())
+				require.Equal(t, tc.err, lazyerrors.UnwrapAll(err).Error())
 			})
 
 			t.Run("WriteMessage", func(t *testing.T) {

@@ -17,12 +17,13 @@ package fjson
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 type testCase struct {
@@ -47,17 +48,6 @@ func assertEqualWithNaN(t testing.TB, expected, actual any) {
 	}
 
 	assert.Equal(t, expected, actual, "expected: %s\nactual  : %s", expected, actual)
-}
-
-// lastErr returns the last error in error chain.
-func lastErr(err error) error {
-	for {
-		e := errors.Unwrap(err)
-		if e == nil {
-			return err
-		}
-		err = e
-	}
 }
 
 func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
@@ -93,7 +83,7 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
 				}
 
 				require.Error(t, err)
-				require.Equal(t, tc.jErr, lastErr(err).Error())
+				require.Equal(t, tc.jErr, lazyerrors.UnwrapAll(err).Error())
 			})
 
 			t.Run("Unmarshal", func(t *testing.T) {
@@ -108,7 +98,7 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
 				}
 
 				require.Error(t, err)
-				require.Equal(t, tc.jErr, lastErr(err).Error())
+				require.Equal(t, tc.jErr, lazyerrors.UnwrapAll(err).Error())
 			})
 
 			t.Run("MarshalJSON", func(t *testing.T) {
@@ -215,7 +205,7 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() fjsontype) {
 				}
 
 				require.Error(b, err)
-				require.Equal(b, tc.jErr, lastErr(err).Error())
+				require.Equal(b, tc.jErr, lazyerrors.UnwrapAll(err).Error())
 			})
 		})
 	}

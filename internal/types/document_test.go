@@ -15,24 +15,13 @@
 package types
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
-
-// lastErr returns the last error in error chain.
-func lastErr(err error) error {
-	for {
-		e := errors.Unwrap(err)
-		if e == nil {
-			return err
-		}
-		err = e
-	}
-}
 
 func TestDocument(t *testing.T) {
 	t.Parallel()
@@ -142,7 +131,7 @@ func TestDocument(t *testing.T) {
 				if tc.err == "" {
 					assert.NoError(t, err)
 				} else {
-					assert.Equal(t, tc.err, lastErr(err).Error())
+					assert.Equal(t, tc.err, lazyerrors.UnwrapAll(err).Error())
 				}
 			})
 		}

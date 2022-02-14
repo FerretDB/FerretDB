@@ -12,17 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package types
+package lazyerrors
 
-import (
-	"testing"
+import "errors"
 
-	"github.com/stretchr/testify/assert"
-)
+// UnwrapAll returns the last error in error chain, or nil, if err is nil.
+func UnwrapAll(err error) error {
+	if err == nil {
+		return nil
+	}
 
-func TestNull(t *testing.T) {
-	t.Parallel()
-
-	assert.Equal(t, Null, NullType{})
-	assert.Equal(t, &Null, new(NullType))
+	for {
+		e := errors.Unwrap(err)
+		if e == nil {
+			return err
+		}
+		err = e
+	}
 }
