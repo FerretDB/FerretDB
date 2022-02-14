@@ -20,52 +20,12 @@ import (
 	"unicode/utf8"
 )
 
-// Common interface with bson.Document.
-//
-// TODO Remove this type.
-type document interface {
-	Map() map[string]any
-	Keys() []string
-}
-
 // Document represents BSON document.
 //
 // Duplicate field names are not supported.
 type Document struct {
 	m    map[string]any
 	keys []string
-}
-
-// ConvertDocument converts bson.Document to *types.Document and validates it.
-// It references the same data without copying it.
-//
-// TODO Remove this function.
-func ConvertDocument(d document) (*Document, error) {
-	if d == nil {
-		panic("types.ConvertDocument: d is nil")
-	}
-
-	doc := &Document{
-		m:    d.Map(),
-		keys: d.Keys(),
-	}
-
-	if err := doc.validate(); err != nil {
-		return doc, fmt.Errorf("types.ConvertDocument: %w", err)
-	}
-
-	return doc, nil
-}
-
-// MustConvertDocument is a ConvertDocument that panics in case of error.
-//
-// Deprecated: use `must.NotFail(ConvertDocument(...))` instead.
-func MustConvertDocument(d document) *Document {
-	doc, err := ConvertDocument(d)
-	if err != nil {
-		panic(err)
-	}
-	return doc
 }
 
 // NewDocument creates a document with the given key/value pairs.
@@ -95,10 +55,6 @@ func NewDocument(pairs ...any) (*Document, error) {
 		}
 	}
 
-	if err := doc.validate(); err != nil {
-		return nil, fmt.Errorf("types.NewDocument: %w", err)
-	}
-
 	return doc, nil
 }
 
@@ -116,54 +72,6 @@ func MustNewDocument(pairs ...any) *Document {
 }
 
 func (*Document) compositeType() {}
-
-// validateDocumentKey returns false if key is not a valid document field key.
-func validateDocumentKey(key string) error {
-	if key == "" {
-		return fmt.Errorf("types.validateDocumentKey: empty key")
-	}
-
-	// forbid keys like $k (used by fjson representation), but allow $db (used by many commands)
-	if key[0] == '$' && len(key) <= 2 {
-		return fmt.Errorf("types.validateDocumentKey: short keys that start with '$' are not supported: %q", key)
-	}
-
-	if !utf8.ValidString(key) {
-		return fmt.Errorf("types.validateDocumentKey: invalid UTF-8: %q", key)
-	}
-
-	return nil
-}
-
-// validate checks if the document is valid.
-func (d *Document) validate() error {
-	if len(d.m) != len(d.keys) {
-		return fmt.Errorf("types.Document.validate: keys and values count mismatch: %d != %d", len(d.m), len(d.keys))
-	}
-
-	prevKeys := make(map[string]struct{}, len(d.keys))
-	for _, key := range d.keys {
-		if err := validateDocumentKey(key); err != nil {
-			return fmt.Errorf("types.Document.validate: %w", err)
-		}
-
-		value, ok := d.m[key]
-		if !ok {
-			return fmt.Errorf("types.Document.validate: key not found: %q", key)
-		}
-
-		if _, ok := prevKeys[key]; ok {
-			return fmt.Errorf("types.Document.validate: duplicate key: %q", key)
-		}
-		prevKeys[key] = struct{}{}
-
-		if err := validateValue(value); err != nil {
-			return fmt.Errorf("types.Document.validate: %w", err)
-		}
-	}
-
-	return nil
-}
 
 // Len returns the number of elements in the document.
 //
@@ -200,6 +108,7 @@ func (d *Document) Command() string {
 	return strings.ToLower(d.keys[0])
 }
 
+// add validates and adds a new key/value pair to the document.
 func (d *Document) add(key string, value any) error {
 	if _, ok := d.m[key]; ok {
 		return fmt.Errorf("types.Document.add: key already present: %q", key)
@@ -210,7 +119,7 @@ func (d *Document) add(key string, value any) error {
 	}
 
 	if err := validateValue(value); err != nil {
-		return fmt.Errorf("types.Document.validate: %w", err)
+		return fmt.Errorf("types.Document.add: %w", err)
 	}
 
 	d.keys = append(d.keys, key)
@@ -233,14 +142,14 @@ func (d *Document) GetByPath(path ...string) (any, error) {
 	return getByPath(d, path...)
 }
 
-// Set the value of the given key, replacing any existing value.
+// Set validates and sets the value of the given key, replacing any existing value.
 func (d *Document) Set(key string, value any) error {
 	if err := validateDocumentKey(key); err != nil {
 		return fmt.Errorf("types.Document.Set: %w", err)
 	}
 
 	if err := validateValue(value); err != nil {
-		return fmt.Errorf("types.Document.validate: %w", err)
+		return fmt.Errorf("types.Document.Set: %w", err)
 	}
 
 	if _, ok := d.m[key]; !ok {
@@ -277,7 +186,20 @@ func (d *Document) Remove(key string) {
 	panic(fmt.Sprintf("types.Document.Remove: key not found: %q", key))
 }
 
-// check interfaces
-var (
-	_ document = (*Document)(nil)
-)
+// validateDocumentKey returns false if key is not a valid document field key.
+func validateDocumentKey(key string) error {
+	if key == "" {
+		return fmt.Errorf("types.validateDocumentKey: empty key")
+	}
+
+	// forbid keys like $k (used by fjson representation), but allow $db (used by many commands)
+	if key[0] == '$' && len(key) <= 2 {
+		return fmt.Errorf("types.validateDocumentKey: short keys that start with '$' are not supported: %q", key)
+	}
+
+	if !utf8.ValidString(key) {
+		return fmt.Errorf("types.validateDocumentKey: invalid UTF-8: %q", key)
+	}
+
+	return nil
+}

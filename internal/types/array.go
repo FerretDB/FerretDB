@@ -98,7 +98,7 @@ func (a *Array) Subslice(low, high int) (*Array, error) {
 	return &Array{s: a.s[low:high]}, nil
 }
 
-// Set sets the value at the given index.
+// Set validates and sets the value at the given index.
 func (a *Array) Set(index int, value any) error {
 	if l := a.Len(); index < 0 || index >= l {
 		return fmt.Errorf("types.Array.Set: index %d is out of bounds [0-%d)", index, l)
@@ -112,7 +112,7 @@ func (a *Array) Set(index int, value any) error {
 	return nil
 }
 
-// Append appends given values to the array.
+// Append validates and appends given values to the array.
 func (a *Array) Append(values ...any) error {
 	for _, value := range values {
 		if err := validateValue(value); err != nil {

@@ -101,14 +101,12 @@ type (
 // Null represents BSON value Null.
 var Null = NullType{}
 
-// validateValue validates value.
+// validateValue validates composite or scalar value.
 func validateValue(value any) error {
 	switch value := value.(type) {
-	case *Document:
-		return value.validate()
-	case *Array:
-		// It is impossible to construct invalid Array using exported function, methods, or type conversions,
-		// so no need to revalidate it.
+	case *Document, *Array:
+		// It is impossible to construct invalid Document or Array using exported function, methods,
+		// or type conversions, so no need to revalidate it.
 		return nil
 	case float64:
 		return nil

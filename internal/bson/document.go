@@ -30,46 +30,8 @@ const (
 	minDocumentLen = 5
 )
 
-// Common interface with types.Document.
-//
-// TODO Remove it.
-type document interface {
-	Map() map[string]any
-	Keys() []string
-}
-
 // Document represents BSON Document type.
-type Document struct {
-	m    map[string]any
-	keys []string
-}
-
-// ConvertDocument converts types.Document to bson.Document and validates it.
-// It references the same data without copying it.
-//
-// TODO Remove it.
-func ConvertDocument(d document) (*Document, error) {
-	doc := &Document{
-		m:    d.Map(),
-		keys: d.Keys(),
-	}
-
-	// for validation
-	if _, err := types.ConvertDocument(doc); err != nil {
-		return nil, fmt.Errorf("bson.ConvertDocument: %w", err)
-	}
-
-	return doc, nil
-}
-
-// MustConvertDocument is a ConvertDocument that panics in case of error.
-func MustConvertDocument(d document) *Document {
-	doc, err := ConvertDocument(d)
-	if err != nil {
-		panic(err)
-	}
-	return doc
-}
+type Document types.Document
 
 func (doc *Document) bsontype() {}
 
