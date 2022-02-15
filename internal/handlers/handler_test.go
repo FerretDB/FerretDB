@@ -926,7 +926,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-		"EmptyStringEq": {
+		"EqEmptyString": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -944,7 +944,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-		"DoubleEq": {
+		"EqDouble": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -962,7 +962,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-		"DoubleNegativeInfinityEq": {
+		"EqDoubleNegativeInfinity": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -980,7 +980,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-		"DoublePositiveInfinityEq": {
+		"EqDoublePositiveInfinity": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -998,7 +998,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-		"DoubleZeroEq": {
+		"EqDoubleZero": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -1016,7 +1016,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-		"DoubleMaxEq": {
+		"EqDoubleMax": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -1034,7 +1034,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-		"DoubleSmallestEq": {
+		"EqDoubleSmallest": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -1052,38 +1052,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-		//"DoubleNanDataTypeEq": {
-		//	// TODO: write properly NaN test
-		//	// Nan eq works
-		//
-		//	//be, _ := fjson.Marshal(expected)
-		//	//ba, _ := fjson.Marshal(actual)
-		//
-		//	//fmt.Println("actyeal NanKEY", string(ba))
-		//	//fmt.Println("expedal NanKEY", string(be))
-		//
-		//	//assert.Equal(t, be, ba)
-		//
-		//	schemas: []string{"values"},
-		//req: must.NotFail(types.NewDocument(
-		//		"find", "values",
-		//		"filter", must.NotFail(types.NewDocument(
-		//			"value", must.NotFail(types.NewDocument(
-		//				"$eq", "",
-		//			)),
-		//		)),
-		//	)),
-		//
-		//	resp: must.NotFail(types.NewArray(
-		//		must.NotFail(types.NewDocument(
-		//			"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x01, 0x07, 0x00, 0x00, 0x00, 0x07},
-		//			"name", DoubleNanDataType,
-		//			"value", dataValues[DoubleNanDataType],
-		//		)),
-		//	)),
-		//},
-
-		"ArrayEq": {
+		"EqArray": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -1101,7 +1070,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-		"EmptyArrayEq": {
+		"EqEmptyArray": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -1119,7 +1088,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-		"BinaryEq": {
+		"EqBinary": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -1138,7 +1107,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-		"EmptyBinaryEq": {
+		"EqEmptyBinary": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -1156,8 +1125,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-
-		"BoolFalseEq": {
+		"EqBoolFalse": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -1175,7 +1143,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-		"BoolTrueEq": {
+		"EqBoolTrue": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -1193,8 +1161,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-
-		"Int32Eq": {
+		"EqInt32": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -1212,7 +1179,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-		"Int32ZeroEq": {
+		"EqInt32Zero": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -1230,7 +1197,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-		"Int32MaxEq": {
+		"EqInt32Max": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -1248,7 +1215,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-		"Int32MinEq": {
+		"EqInt32Min": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -1266,8 +1233,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-
-		"Int64Eq": {
+		"EqInt64": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -1285,7 +1251,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-		"Int64ZeroEq": {
+		"EqInt64Zero": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -1303,7 +1269,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-		"Int64MaxEq": {
+		"EqInt64Max": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -1321,7 +1287,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-		"Int64MinEq": {
+		"EqInt64Min": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -1339,8 +1305,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-
-		"DateTimeEq": {
+		"EqDateTime": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -1358,7 +1323,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-		"DateEpochEq": {
+		"EqDateEpoch": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -1376,7 +1341,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-		"DateTimeMinYearEq": {
+		"EqDateTimeMinYear": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -1394,7 +1359,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-		"DateTimeMaxYearEq": {
+		"EqDateTimeMaxYear": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -1412,8 +1377,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-
-		"TimestampEq": {
+		"EqTimestamp": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -1431,8 +1395,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-
-		"NilEq": {
+		"EqNil": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -1450,8 +1413,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-
-		"DocumentEq": {
+		"EqDocument": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -1469,8 +1431,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-
-		"RegexEq": {
+		"EqRegex": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -1488,7 +1449,7 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-		"EmptyRegexEq": {
+		"EqEmptyRegexEq": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
