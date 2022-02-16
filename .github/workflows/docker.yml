@@ -113,8 +113,12 @@ jobs:
 
     if: github.event_name != 'pull_request_target' || contains(github.event.pull_request.labels.*.name, 'trust')
 
-    permissions:
-      actions: write
+    permissions: write-all
+
+    # permissions:
+    #   actions: write
+    #   checks: write
+    #   contents: write
 
     steps:
       - name: Detect matching PR
@@ -129,4 +133,4 @@ jobs:
           INPUT_REPO: ${{ steps.detect.outputs.repo }}
           INPUT_NUMBER: ${{ steps.detect.outputs.number }}
           INPUT_HEAD_SHA: ${{ steps.detect.outputs.head_sha }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
