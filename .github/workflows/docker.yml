@@ -9,7 +9,7 @@
 #   Only a few trusted people have permission to do that.
 # * Thanks to the way `pull_request_target` trigger works, PR changes in the workflow itself are not run
 #   until they are merged.
-# * We use a short-living automatic `GITHUB_TOKEN` instead of a long-living personal access token (PAT).
+# * FIXME We use a short-living automatic `GITHUB_TOKEN` instead of a long-living personal access token (PAT).
 #   It also has minimal permissions.
 # * We publish Docker images from PRs as a separate package that should not be run by users.
 # * We limit what third-party actions can be used.
@@ -113,13 +113,6 @@ jobs:
 
     if: github.event_name != 'pull_request_target' || contains(github.event.pull_request.labels.*.name, 'trust')
 
-    permissions: write-all
-
-    # permissions:
-    #   actions: write
-    #   checks: write
-    #   contents: write
-
     steps:
       - name: Detect matching PR
         id: detect
@@ -133,4 +126,4 @@ jobs:
           INPUT_REPO: ${{ steps.detect.outputs.repo }}
           INPUT_NUMBER: ${{ steps.detect.outputs.number }}
           INPUT_HEAD_SHA: ${{ steps.detect.outputs.head_sha }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.BOT_REPO_TOKEN }}
