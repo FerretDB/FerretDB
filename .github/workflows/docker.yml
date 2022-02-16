@@ -118,8 +118,9 @@ jobs:
 
       - name: Restart dance PR actions
         uses: FerretDB/github-actions/restart-pr-actions@detect-matching-pr
-        with:
-          owner: ${{ steps.detect.outputs.owner }}
-          repo: ${{ steps.detect.outputs.repo }}
-          number: ${{ steps.detect.outputs.number }}
-          head_sha: ${{ steps.detect.outputs.head_sha }}
+        env:
+          # https://github.com/actions/runner/issues/665
+          INPUT_OWNER: ${{ steps.detect.outputs.owner }}
+          INPUT_REPO: ${{ steps.detect.outputs.repo }}
+          INPUT_NUMBER: ${{ steps.detect.outputs.number }}
+          INPUT_HEAD_SHA: ${{ steps.detect.outputs.head_sha }}
