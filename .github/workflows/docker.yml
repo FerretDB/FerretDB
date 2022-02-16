@@ -1,5 +1,5 @@
 ---
-# This action is dangerous and should be handled with a lot of care to avoid security problems. We use
+# This workflow is dangerous and should be handled with a lot of care to avoid security problems. We use
 # `pull_request_target` event to give pull requests access to `GITHUB_TOKEN` secret with permissions
 # to publish Docker images. We want to do that to allow Dance to test those PRs. But rogue PR authors could
 # try to steal our secrets. We prevent that with the following:
@@ -109,11 +109,17 @@ jobs:
   dance:
     name: Dance
     runs-on: ubuntu-20.04
-    # needs: build
-
-    permissions:
-      packages: read
+    needs: build
 
     steps:
       - name: Detect matching PR
+        id: detect
         uses: FerretDB/github-actions/detect-matching-pr@detect-matching-pr
+
+      - name: Restart dance PR actions
+        uses: FerretDB/github-actions/restart-pr-actions@detect-matching-pr
+        with:
+          owner: ${{ steps.detect.outputs.owner }}
+          repo: ${{ steps.detect.outputs.repo }}
+          number: ${{ steps.detect.outputs.number }}
+          head_sha: ${{ steps.detect.outputs.head_sha }}
