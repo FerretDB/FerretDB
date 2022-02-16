@@ -109,7 +109,7 @@ jobs:
   dance:
     name: Dance
     runs-on: ubuntu-20.04
-    needs: build
+    # needs: build
 
     steps:
       - name: Detect matching PR
