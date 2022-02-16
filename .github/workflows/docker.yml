@@ -124,3 +124,4 @@ jobs:
           INPUT_REPO: ${{ steps.detect.outputs.repo }}
           INPUT_NUMBER: ${{ steps.detect.outputs.number }}
           INPUT_HEAD_SHA: ${{ steps.detect.outputs.head_sha }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
