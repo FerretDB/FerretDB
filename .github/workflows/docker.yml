@@ -111,6 +111,11 @@ jobs:
     runs-on: ubuntu-20.04
     # needs: build
 
+    if: github.event_name != 'pull_request_target' || contains(github.event.pull_request.labels.*.name, 'trust')
+
+    permissions:
+      actions: write
+
     steps:
       - name: Detect matching PR
         id: detect
