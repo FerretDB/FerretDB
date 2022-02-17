@@ -127,5 +127,5 @@ jobs:
           repo: ${{ steps.detect.outputs.repo }}
           branch: ${{ steps.detect.outputs.branch }}
           number: ${{ steps.detect.outputs.number }}
-        # env:
-        #   GITHUB_TOKEN: ${{ secrets.BOT_REPO_TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.BOT_REPO_TOKEN }}
