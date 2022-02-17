@@ -1,4 +1,6 @@
 ---
+# FIXME FIXME FIXME
+#
 # This workflow is dangerous and should be handled with a lot of care to avoid security problems. We use
 # `pull_request_target` event to give pull requests access to `GITHUB_TOKEN` secret with permissions
 # to publish Docker images. We want to do that to allow Dance to test those PRs. But rogue PR authors could
@@ -120,10 +122,10 @@ jobs:
 
       - name: Restart dance PR actions
         uses: FerretDB/github-actions/restart-pr-actions@detect-matching-pr
-        env:
-          # https://github.com/actions/runner/issues/665
-          INPUT_OWNER: ${{ steps.detect.outputs.owner }}
-          INPUT_REPO: ${{ steps.detect.outputs.repo }}
-          INPUT_NUMBER: ${{ steps.detect.outputs.number }}
-          INPUT_HEAD_SHA: ${{ steps.detect.outputs.head_sha }}
-          GITHUB_TOKEN: ${{ secrets.BOT_REPO_TOKEN }}
+        with:
+          owner: ${{ steps.detect.outputs.owner }}
+          repo: ${{ steps.detect.outputs.repo }}
+          branch: ${{ steps.detect.outputs.branch }}
+          number: ${{ steps.detect.outputs.number }}
+        # env:
+        #   GITHUB_TOKEN: ${{ secrets.BOT_REPO_TOKEN }}
