@@ -6,6 +6,10 @@ run:
   issues-exit-code: 0
 
 linters-settings:
+  depguard:
+    list-type: blacklist
+    packages:
+      - github.com/FerretDB/FerretDB/internal/bson
   exhaustive:
     default-signifies-exhaustive: false
   goconst:
@@ -17,6 +21,11 @@ linters-settings:
       - go-sumtype:decl
       - check interfaces
     capital: true
+  godox:
+    keywords:
+      - BUG
+      - FIXME
+      - HACK
   goheader:
     template: |-
       Copyright 2021 FerretDB Inc.
@@ -39,7 +48,7 @@ linters-settings:
     checks: ["all"]
   lll:
     line-length: 130
-    tab-width: 1
+    tab-width: 4
   misspell:
     ignore-words:
       - guiness # present in the test dataset
@@ -83,12 +92,12 @@ linters:
     - gocognit
     - gocritic
     - gocyclo
-    - godox
     - goerr113
     - gomnd
     - gosec
     - ifshort
     - ireturn
+    - maintidx
     - nakedret
     - revive
     - thelper
@@ -120,3 +129,8 @@ linters:
 
 issues:
   exclude-use-default: false
+  exclude-rules:
+    # only `wire` package can import `bson` package
+    - linters: [depguard]
+      path: internal/wire
+      text: bson

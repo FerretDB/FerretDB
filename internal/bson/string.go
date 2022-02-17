@@ -23,13 +23,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// String represents BSON String data type.
-type String string
+// stringType represents BSON UTF-8 string type.
+type stringType string
 
-func (str *String) bsontype() {}
+func (str *stringType) bsontype() {}
 
 // ReadFrom implements bsontype interface.
-func (str *String) ReadFrom(r *bufio.Reader) error {
+func (str *stringType) ReadFrom(r *bufio.Reader) error {
 	var l int32
 	if err := binary.Read(r, binary.LittleEndian, &l); err != nil {
 		return lazyerrors.Error(err)
@@ -47,12 +47,12 @@ func (str *String) ReadFrom(r *bufio.Reader) error {
 		return lazyerrors.Errorf("unexpected terminating byte %#02x", b[l-1])
 	}
 
-	*str = String(b[:l-1])
+	*str = stringType(b[:l-1])
 	return nil
 }
 
 // WriteTo implements bsontype interface.
-func (str String) WriteTo(w *bufio.Writer) error {
+func (str stringType) WriteTo(w *bufio.Writer) error {
 	v, err := str.MarshalBinary()
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -67,7 +67,7 @@ func (str String) WriteTo(w *bufio.Writer) error {
 }
 
 // MarshalBinary implements bsontype interface.
-func (str String) MarshalBinary() ([]byte, error) {
+func (str stringType) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 
 	binary.Write(&buf, binary.LittleEndian, int32(len(str)+1))
@@ -79,5 +79,5 @@ func (str String) MarshalBinary() ([]byte, error) {
 
 // check interfaces
 var (
-	_ bsontype = (*String)(nil)
+	_ bsontype = (*stringType)(nil)
 )

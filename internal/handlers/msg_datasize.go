@@ -22,6 +22,7 @@ import (
 
 	"github.com/jackc/pgx/v4"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -41,7 +42,7 @@ func formatResponse(size, rows, millis int32, showEstimate bool) (*wire.OpMsg, e
 
 	var reply wire.OpMsg
 	err := reply.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{types.MustMakeDocument(pairs...)},
+		Documents: []*types.Document{types.MustNewDocument(pairs...)},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -57,6 +58,11 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, lazyerrors.Error(err)
 	}
 
+	if err := common.Unimplemented(document, "keyPattern", "min", "max"); err != nil {
+		return nil, err
+	}
+	common.Ignored(document, h.l, "estimate")
+
 	m := document.Map()
 	target, ok := m["dataSize"].(string)
 	if !ok {
@@ -70,7 +76,7 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 
 	started := time.Now()
 	stats, err := h.pgPool.TableStats(ctx, db, collection)
-	elapses := time.Now().Sub(started)
+	elapses := time.Since(started)
 	millis := int32(elapses.Milliseconds())
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

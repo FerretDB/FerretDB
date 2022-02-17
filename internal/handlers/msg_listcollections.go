@@ -31,36 +31,38 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 		return nil, lazyerrors.Error(err)
 	}
 
+	if err = common.UnimplementedNonDefault(document, "filter", func(v any) bool {
+		d, ok := v.(*types.Document)
+		return ok && d.Len() == 0
+	}); err != nil {
+		return nil, err
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/301
+	// if err = common.UnimplementedNonDefault(document, "nameOnly", func(v any) bool {
+	// 	nameOnly, ok := v.(bool)
+	// 	return ok && !nameOnly
+	// }); err != nil {
+	// 	return nil, err
+	// }
+
+	common.Ignored(document, h.l, "comment", "authorizedCollections")
+
 	m := document.Map()
-
-	filter, ok := m["filter"].(types.Document)
-	if ok && len(filter.Map()) != 0 {
-		return nil, common.NewErrorMessage(common.ErrNotImplemented, "MsgListCollections: filter is not supported")
-	}
-
-	cursor, ok := m["cursor"].(types.Document)
-	if ok && len(cursor.Map()) != 0 {
-		return nil, common.NewErrorMessage(common.ErrNotImplemented, "MsgListCollections: cursor is not supported")
-	}
-
-	nameOnly, ok := m["nameOnly"].(bool)
-	if ok && !nameOnly {
-		return nil, common.NewErrorMessage(common.ErrNotImplemented, "MsgListCollections: nameOnly=false is not supported")
-	}
 
 	db, ok := m["$db"].(string)
 	if !ok {
 		return nil, lazyerrors.New("no db")
 	}
 
-	names, err := h.pgPool.Tables(ctx, db)
+	names, _, err := h.pgPool.Tables(ctx, db)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	collections := types.MakeArray(len(names))
 	for _, n := range names {
-		d := types.MustMakeDocument(
+		d := types.MustNewDocument(
 			"name", n,
 			"type", "collection",
 		)
@@ -71,8 +73,8 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{types.MustMakeDocument(
-			"cursor", types.MustMakeDocument(
+		Documents: []*types.Document{types.MustNewDocument(
+			"cursor", types.MustNewDocument(
 				"id", int64(0),
 				"ns", db+".$cmd.listCollections",
 				"firstBatch", collections,

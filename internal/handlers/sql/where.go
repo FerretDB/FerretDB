@@ -51,7 +51,7 @@ func scalar(v any, p *pg.Placeholder) (sql string, args []any, err error) {
 }
 
 // fieldExpr handles {field: {expr}}.
-func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
+func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
 	filterKeys := expr.Keys()
 	filterMap := expr.Map()
 
@@ -76,7 +76,7 @@ func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string
 			}
 			sql += "NOT("
 
-			argSql, arg, err = fieldExpr(field, value.(types.Document), p)
+			argSql, arg, err = fieldExpr(field, value.(*types.Document), p)
 			if err != nil {
 				err = lazyerrors.Errorf("fieldExpr: %w", err)
 				return
@@ -134,7 +134,7 @@ func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string
 			if opts, ok := filterMap["$options"]; ok {
 				// {field: {$regex: value, $options: string}}
 				if options, ok = opts.(string); !ok {
-					err = common.NewErrorMessage(common.ErrBadValue, "$options has to be a string")
+					err = common.NewErrorMsg(common.ErrBadValue, "$options has to be a string")
 					return
 				}
 			}
@@ -152,14 +152,14 @@ func fieldExpr(field string, expr types.Document, p *pg.Placeholder) (sql string
 				// {field: {$regex: /regex/}}
 				if options != "" {
 					if value.Options != "" {
-						err = common.NewErrorMessage(common.ErrRegexOptions, "options set in both $regex and $options")
+						err = common.NewErrorMsg(common.ErrRegexOptions, "options set in both $regex and $options")
 						return
 					}
 					value.Options = options
 				}
 				argSql, arg, err = scalar(value, p)
 			default:
-				err = common.NewErrorMessage(common.ErrBadValue, "$regex has to be a string")
+				err = common.NewErrorMsg(common.ErrBadValue, "$regex has to be a string")
 				return
 			}
 		default:
@@ -186,7 +186,7 @@ func wherePair(key string, value any, p *pg.Placeholder) (sql string, args []any
 	}
 
 	switch value := value.(type) {
-	case types.Document:
+	case *types.Document:
 		// {field: {expr}}
 		sql, args, err = fieldExpr(key, value, p)
 
@@ -208,7 +208,10 @@ func wherePair(key string, value any, p *pg.Placeholder) (sql string, args []any
 	return
 }
 
-func where(filter types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
+func where(filter *types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
+	if filter == nil {
+		return
+	}
 	filterMap := filter.Map()
 	if len(filterMap) == 0 {
 		return

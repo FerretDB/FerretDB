@@ -12,16 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sql
+package bson
 
 import (
-	"context"
+	"bufio"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-// MsgUpdate modifies an existing document or documents in a collection.
-func (s *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, common.NewErrorMsg(common.ErrNotImplemented, "update: not implemented for SQL storage")
+// nullType represents BSON Null type.
+type nullType types.NullType
+
+func (*nullType) bsontype() {}
+
+// ReadFrom implements bsontype interface.
+func (*nullType) ReadFrom(r *bufio.Reader) error {
+	return nil
 }
+
+// WriteTo implements bsontype interface.
+func (nullType) WriteTo(w *bufio.Writer) error {
+	return nil
+}
+
+// MarshalBinary implements bsontype interface.
+func (nullType) MarshalBinary() ([]byte, error) {
+	return nil, nil
+}
+
+// check interfaces
+var (
+	_ bsontype = (*nullType)(nil)
+)

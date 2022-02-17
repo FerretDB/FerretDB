@@ -38,10 +38,10 @@ func TestUpdate(t *testing.T) {
 	for i := 1; i <= 3; i++ {
 		var msg wire.OpMsg
 		err := msg.SetSections(wire.OpMsgSection{
-			Documents: []types.Document{types.MustMakeDocument(
+			Documents: []*types.Document{types.MustNewDocument(
 				"insert", "test",
 				"documents", types.MustNewArray(
-					types.MustMakeDocument(
+					types.MustNewDocument(
 						"_id", types.ObjectID{byte(i)},
 						"description", "Test "+strconv.Itoa(i),
 					),
@@ -57,15 +57,15 @@ func TestUpdate(t *testing.T) {
 
 	var msg wire.OpMsg
 	err := msg.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{types.MustMakeDocument(
+		Documents: []*types.Document{types.MustNewDocument(
 			"update", "test",
 			"updates", types.MustNewArray(
-				types.MustMakeDocument(
-					"q", types.MustMakeDocument(
+				types.MustNewDocument(
+					"q", types.MustNewDocument(
 						"_id", types.ObjectID{byte(1)},
 					),
-					"u", types.MustMakeDocument(
-						"$set", types.MustMakeDocument(
+					"u", types.MustNewDocument(
+						"$set", types.MustNewDocument(
 							"description", "Test 1 updated",
 						),
 					),

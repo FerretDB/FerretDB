@@ -22,13 +22,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// Int64 represents BSON Int64 data type.
-type Int64 int64
+// int64Type represents BSON 64-bit integer type.
+type int64Type int64
 
-func (i *Int64) bsontype() {}
+func (i *int64Type) bsontype() {}
 
 // ReadFrom implements bsontype interface.
-func (i *Int64) ReadFrom(r *bufio.Reader) error {
+func (i *int64Type) ReadFrom(r *bufio.Reader) error {
 	if err := binary.Read(r, binary.LittleEndian, i); err != nil {
 		return lazyerrors.Errorf("bson.Int64.ReadFrom (binary.Read): %w", err)
 	}
@@ -37,7 +37,7 @@ func (i *Int64) ReadFrom(r *bufio.Reader) error {
 }
 
 // WriteTo implements bsontype interface.
-func (i Int64) WriteTo(w *bufio.Writer) error {
+func (i int64Type) WriteTo(w *bufio.Writer) error {
 	v, err := i.MarshalBinary()
 	if err != nil {
 		return lazyerrors.Errorf("bson.Int64.WriteTo: %w", err)
@@ -52,7 +52,7 @@ func (i Int64) WriteTo(w *bufio.Writer) error {
 }
 
 // MarshalBinary implements bsontype interface.
-func (i Int64) MarshalBinary() ([]byte, error) {
+func (i int64Type) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 
 	binary.Write(&buf, binary.LittleEndian, i)
@@ -62,5 +62,5 @@ func (i Int64) MarshalBinary() ([]byte, error) {
 
 // check interfaces
 var (
-	_ bsontype = (*Int64)(nil)
+	_ bsontype = (*int64Type)(nil)
 )

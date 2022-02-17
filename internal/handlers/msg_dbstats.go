@@ -35,14 +35,14 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		scale = 1
 	}
 
-	stats, err := h.pgPool.DBStats(ctx, db)
+	stats, err := h.pgPool.SchemaStats(ctx, db)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{types.MustMakeDocument(
+		Documents: []*types.Document{types.MustNewDocument(
 			"db", db,
 			"collections", stats.CountTables,
 			// TODO https://github.com/FerretDB/FerretDB/issues/176

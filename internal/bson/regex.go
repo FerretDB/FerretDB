@@ -22,13 +22,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// Regex represents BSON Regex data type.
-type Regex types.Regex
+// regexType represents BSON Regular expression type.
+type regexType types.Regex
 
-func (regex *Regex) bsontype() {}
+func (regex *regexType) bsontype() {}
 
 // ReadFrom implements bsontype interface.
-func (regex *Regex) ReadFrom(r *bufio.Reader) error {
+func (regex *regexType) ReadFrom(r *bufio.Reader) error {
 	var pattern, options CString
 	if err := pattern.ReadFrom(r); err != nil {
 		return lazyerrors.Errorf("bson.Regex.ReadFrom (regex pattern): %w", err)
@@ -37,7 +37,7 @@ func (regex *Regex) ReadFrom(r *bufio.Reader) error {
 		return lazyerrors.Errorf("bson.Regex.ReadFrom (regex options): %w", err)
 	}
 
-	*regex = Regex{
+	*regex = regexType{
 		Pattern: string(pattern),
 		Options: string(options),
 	}
@@ -45,7 +45,7 @@ func (regex *Regex) ReadFrom(r *bufio.Reader) error {
 }
 
 // WriteTo implements bsontype interface.
-func (regex Regex) WriteTo(w *bufio.Writer) error {
+func (regex regexType) WriteTo(w *bufio.Writer) error {
 	v, err := regex.MarshalBinary()
 	if err != nil {
 		return lazyerrors.Errorf("bson.Regex.WriteTo: %w", err)
@@ -60,7 +60,7 @@ func (regex Regex) WriteTo(w *bufio.Writer) error {
 }
 
 // MarshalBinary implements bsontype interface.
-func (regex Regex) MarshalBinary() ([]byte, error) {
+func (regex regexType) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 	bufw := bufio.NewWriter(&buf)
 
@@ -78,5 +78,5 @@ func (regex Regex) MarshalBinary() ([]byte, error) {
 
 // check interfaces
 var (
-	_ bsontype = (*Regex)(nil)
+	_ bsontype = (*regexType)(nil)
 )

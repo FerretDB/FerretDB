@@ -22,14 +22,14 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// fjsonArray represents BSON fjsonArray data type.
-type fjsonArray types.Array
+// arrayType represents BSON Array type.
+type arrayType types.Array
 
 // fjsontype implements fjsontype interface.
-func (a *fjsonArray) fjsontype() {}
+func (a *arrayType) fjsontype() {}
 
 // UnmarshalJSON implements fjsontype interface.
-func (a *fjsonArray) UnmarshalJSON(data []byte) error {
+func (a *arrayType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -57,12 +57,12 @@ func (a *fjsonArray) UnmarshalJSON(data []byte) error {
 		}
 	}
 
-	*a = fjsonArray(*ta)
+	*a = arrayType(*ta)
 	return nil
 }
 
 // MarshalJSON implements fjsontype interface.
-func (a *fjsonArray) MarshalJSON() ([]byte, error) {
+func (a *arrayType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	buf.WriteByte('[')
 
@@ -91,5 +91,5 @@ func (a *fjsonArray) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ fjsontype = (*fjsonArray)(nil)
+	_ fjsontype = (*arrayType)(nil)
 )

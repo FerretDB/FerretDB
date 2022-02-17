@@ -17,9 +17,11 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"sort"
 	"sync/atomic"
+	"time"
 
+	"github.com/AlekSi/pointer"
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -39,6 +41,7 @@ type Handler struct {
 	jsonb1        common.Storage
 	metrics       *Metrics
 	lastRequestID int32
+	startTime     time.Time
 }
 
 // NewOpts represents handler configuration.
@@ -49,17 +52,19 @@ type NewOpts struct {
 	JSONB1Storage common.Storage
 	Metrics       *Metrics
 	PeerAddr      string
+	StartTime     time.Time
 }
 
 // New returns a new handler.
 func New(opts *NewOpts) *Handler {
 	return &Handler{
-		pgPool:   opts.PgPool,
-		l:        opts.Logger,
-		sql:      opts.SQLStorage,
-		jsonb1:   opts.JSONB1Storage,
-		metrics:  opts.Metrics,
-		peerAddr: opts.PeerAddr,
+		pgPool:    opts.PgPool,
+		l:         opts.Logger,
+		sql:       opts.SQLStorage,
+		jsonb1:    opts.JSONB1Storage,
+		metrics:   opts.Metrics,
+		peerAddr:  opts.PeerAddr,
+		startTime: opts.StartTime,
 	}
 }
 
@@ -73,16 +78,43 @@ func New(opts *NewOpts) *Handler {
 //
 //nolint:lll // arguments are long
 func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) {
+	var cmdLabel string
+	requests := h.metrics.requests.MustCurryWith(prometheus.Labels{"opcode": reqHeader.OpCode.String()})
+
+	var resLabel *string
+	defer func() {
+		if resLabel == nil {
+			resLabel = pointer.To("panic")
+		}
+		h.metrics.responses.WithLabelValues(resHeader.OpCode.String(), cmdLabel, *resLabel).Inc()
+	}()
+
 	resHeader = new(wire.MsgHeader)
 	var err error
-
 	switch reqHeader.OpCode {
 	case wire.OP_MSG:
-		resHeader.OpCode = wire.OP_MSG
-		resBody, err = h.handleOpMsg(ctx, reqBody.(*wire.OpMsg))
+		// count requests even if msg's document is invalid
+		msg := reqBody.(*wire.OpMsg)
+		var document *types.Document
+		document, err = msg.Document()
+		if document != nil {
+			cmdLabel = document.Command()
+		}
+		requests.WithLabelValues(cmdLabel).Inc()
+
+		if err == nil {
+			resHeader.OpCode = wire.OP_MSG
+			resBody, err = h.handleOpMsg(ctx, msg, cmdLabel)
+		}
+
 	case wire.OP_QUERY:
+		query := reqBody.(*wire.OpQuery)
+		cmdLabel = query.Query.Command()
+		requests.WithLabelValues(cmdLabel).Inc()
+
 		resHeader.OpCode = wire.OP_REPLY
-		resBody, err = h.handleOpQuery(ctx, reqBody.(*wire.OpQuery))
+		resBody, err = h.handleOpQuery(ctx, query, cmdLabel)
+
 	case wire.OP_REPLY:
 		fallthrough
 	case wire.OP_UPDATE:
@@ -100,7 +132,7 @@ func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody
 	case wire.OP_COMPRESSED:
 		fallthrough
 	default:
-		h.metrics.requests.WithLabelValues(reqHeader.OpCode.String(), "").Inc()
+		requests.WithLabelValues(cmdLabel).Inc()
 		panic(fmt.Sprintf("unexpected OpCode %s", reqHeader.OpCode))
 	}
 
@@ -110,10 +142,11 @@ func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody
 		}
 
 		protoErr, recoverable := common.ProtocolError(err)
+		resLabel = pointer.To(protoErr.Error())
 		closeConn = !recoverable
 		var res wire.OpMsg
 		err = res.SetSections(wire.OpMsgSection{
-			Documents: []types.Document{protoErr.Document()},
+			Documents: []*types.Document{protoErr.Document()},
 		})
 		if err != nil {
 			panic(err)
@@ -123,8 +156,8 @@ func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 	resHeader.ResponseTo = reqHeader.RequestID
 
-	// FIXME don't call MarshalBinary there
-	// Fix header in the caller?
+	// TODO Don't call MarshalBinary there. Fix header in the caller?
+	// https://github.com/FerretDB/FerretDB/issues/273
 	b, err := resBody.MarshalBinary()
 	if err != nil {
 		panic(err)
@@ -136,21 +169,14 @@ func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody
 	}
 	resHeader.RequestID = atomic.AddInt32(&h.lastRequestID, 1)
 
+	resLabel = pointer.To("ok")
 	return
 }
 
-func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	cmd := document.Command()
-
-	h.metrics.requests.WithLabelValues(wire.OP_MSG.String(), cmd).Inc()
-
+func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg, cmd string) (*wire.OpMsg, error) {
+	// special case to avoid circular dependency
 	if cmd == "listcommands" {
-		return SupportedCommands(ctx, msg)
+		return listCommands(ctx, msg)
 	}
 
 	if cmd, ok := commands[cmd]; ok {
@@ -162,21 +188,21 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+		h.l.Sugar().Debugf("Handling with storage %T", storage)
 		return cmd.storageHandler(storage, ctx, msg)
 	}
 
-	return nil, common.NewErrorMessage(common.ErrCommandNotFound, "no such command: '%s'", cmd)
+	errMsg := fmt.Sprintf("no such command: '%s'", cmd)
+	return nil, common.NewErrorMsg(common.ErrCommandNotFound, errMsg)
 }
 
-func (h *Handler) handleOpQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
-	cmd := query.Query.Command()
-	h.metrics.requests.WithLabelValues(wire.OP_QUERY.String(), cmd).Inc()
-
+func (h *Handler) handleOpQuery(ctx context.Context, query *wire.OpQuery, cmd string) (*wire.OpReply, error) {
 	if query.FullCollectionName == "admin.$cmd" {
 		return h.QueryCmd(ctx, query)
 	}
 
-	return nil, common.NewErrorMessage(common.ErrNotImplemented, "handleOpQuery: unhandled collection %q", query.FullCollectionName)
+	msg := fmt.Sprintf("handleOpQuery: unhandled collection %q", query.FullCollectionName)
+	return nil, common.NewErrorMsg(common.ErrNotImplemented, msg)
 }
 
 func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) (common.Storage, error) {
@@ -196,40 +222,52 @@ func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) (common.Stora
 	collection := m[command].(string)
 	db := m["$db"].(string)
 
-	var jsonbTableExist bool
-	sql := `SELECT COUNT(*) > 0 FROM information_schema.columns WHERE column_name = $1 AND table_schema = $2 AND table_name = $3`
-	if err := h.pgPool.QueryRow(ctx, sql, "_jsonb", db, collection).Scan(&jsonbTableExist); err != nil {
-		return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)
+	tables, storages, err := h.pgPool.Tables(ctx, db)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
+
+	storage := "default"
+	for i, t := range tables {
+		if t == collection {
+			storage = storages[i]
+			break
+		}
+	}
+
+	h.l.Sugar().Debugf("Using storage %q for collection %q in database %q", storage, collection, db)
 
 	switch command {
 	case "delete", "find", "count":
-		if jsonbTableExist {
+		switch storage {
+		case pg.JSONB1Table:
 			return h.jsonb1, nil
-		}
-		return h.sql, nil
-
-	case "insert", "update":
-		if jsonbTableExist {
-			return h.jsonb1, nil
-		}
-
-		// check if SQL table exist
-		tables, err := h.pgPool.Tables(ctx, db)
-		if err != nil {
-			return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)
-		}
-		if i := sort.SearchStrings(tables, collection); i < len(tables) && tables[i] == collection {
+		case pg.SQLTable:
+			return h.sql, nil
+		default:
+			// does not matter much what we return there
 			return h.sql, nil
 		}
 
-		// create schema if needed
+	case "insert", "update":
+		switch storage {
+		case pg.JSONB1Table:
+			return h.jsonb1, nil
+		case pg.SQLTable:
+			return h.sql, nil
+		}
+
+		// Table (or even schema) does not exist. Try to create it,
+		// but keep in mind that it can be created in concurrent connection.
+
 		if err := h.pgPool.CreateSchema(ctx, db); err != nil && err != pg.ErrAlreadyExist {
 			return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)
 		}
 
-		// create table
 		if err := h.pgPool.CreateTable(ctx, db, collection); err != nil {
+			if err == pg.ErrAlreadyExist {
+				return h.jsonb1, nil
+			}
 			return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)
 		}
 

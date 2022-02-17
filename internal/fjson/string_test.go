@@ -22,27 +22,27 @@ import (
 
 var stringTestCases = []testCase{{
 	name: "foo",
-	v:    pointer.To(fjsonString("foo")),
+	v:    pointer.To(stringType("foo")),
 	j:    `"foo"`,
 }, {
 	name: "empty",
-	v:    pointer.To(fjsonString("")),
+	v:    pointer.To(stringType("")),
 	j:    `""`,
 }, {
 	name: "zero",
-	v:    pointer.To(fjsonString("\x00")),
+	v:    pointer.To(stringType("\x00")),
 	j:    `"\u0000"`,
 }}
 
 func TestString(t *testing.T) {
 	t.Parallel()
-	testJSON(t, stringTestCases, func() fjsontype { return new(fjsonString) })
+	testJSON(t, stringTestCases, func() fjsontype { return new(stringType) })
 }
 
 func FuzzString(f *testing.F) {
-	fuzzJSON(f, stringTestCases, func() fjsontype { return new(fjsonString) })
+	fuzzJSON(f, stringTestCases, func() fjsontype { return new(stringType) })
 }
 
 func BenchmarkString(b *testing.B) {
-	benchmark(b, stringTestCases, func() fjsontype { return new(fjsonString) })
+	benchmark(b, stringTestCases, func() fjsontype { return new(stringType) })
 }

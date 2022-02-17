@@ -10,6 +10,7 @@ changelog:
     - title: Fixed Bugs 🐛
       labels:
         - code/bug
+        - code/bug-regression
 
     - title: Enhancements 🛠
       labels:

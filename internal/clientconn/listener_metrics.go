@@ -23,13 +23,14 @@ const (
 
 // ListenerMetrics represents listener metrics.
 type ListenerMetrics struct {
-	ConnectedClients prometheus.Gauge
+	connectedClients prometheus.Gauge
+	accepts          *prometheus.CounterVec
 }
 
 // NewListenerMetrics creates new listener metrics.
 func NewListenerMetrics() *ListenerMetrics {
 	return &ListenerMetrics{
-		ConnectedClients: prometheus.NewGauge(
+		connectedClients: prometheus.NewGauge(
 			prometheus.GaugeOpts{
 				Namespace: namespace,
 				Subsystem: subsystem,
@@ -37,17 +38,28 @@ func NewListenerMetrics() *ListenerMetrics {
 				Help:      "The current number of connected clients.",
 			},
 		),
+		accepts: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace: namespace,
+				Subsystem: subsystem,
+				Name:      "accepts_total",
+				Help:      "Total number of accepted client connections.",
+			},
+			[]string{"error"},
+		),
 	}
 }
 
 // Describe implements prometheus.Collector.
 func (lm *ListenerMetrics) Describe(ch chan<- *prometheus.Desc) {
-	lm.ConnectedClients.Describe(ch)
+	lm.connectedClients.Describe(ch)
+	lm.accepts.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
 func (lm *ListenerMetrics) Collect(ch chan<- prometheus.Metric) {
-	lm.ConnectedClients.Collect(ch)
+	lm.connectedClients.Collect(ch)
+	lm.accepts.Collect(ch)
 }
 
 // check interfaces

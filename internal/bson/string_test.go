@@ -22,15 +22,15 @@ import (
 
 var stringTestCases = []testCase{{
 	name: "foo",
-	v:    pointer.To(String("foo")),
+	v:    pointer.To(stringType("foo")),
 	b:    []byte{0x04, 0x00, 0x00, 0x00, 0x66, 0x6f, 0x6f, 0x00},
 }, {
 	name: "empty",
-	v:    pointer.To(String("")),
+	v:    pointer.To(stringType("")),
 	b:    []byte{0x01, 0x00, 0x00, 0x00, 0x00},
 }, {
 	name: "zero",
-	v:    pointer.To(String("\x00")),
+	v:    pointer.To(stringType("\x00")),
 	b:    []byte{0x02, 0x00, 0x00, 0x00, 0x00, 0x00},
 }, {
 	name: "EOF",
@@ -40,13 +40,13 @@ var stringTestCases = []testCase{{
 
 func TestString(t *testing.T) {
 	t.Parallel()
-	testBinary(t, stringTestCases, func() bsontype { return new(String) })
+	testBinary(t, stringTestCases, func() bsontype { return new(stringType) })
 }
 
 func FuzzString(f *testing.F) {
-	fuzzBinary(f, stringTestCases, func() bsontype { return new(String) })
+	fuzzBinary(f, stringTestCases, func() bsontype { return new(stringType) })
 }
 
 func BenchmarkString(b *testing.B) {
-	benchmark(b, stringTestCases, func() bsontype { return new(String) })
+	benchmark(b, stringTestCases, func() bsontype { return new(stringType) })
 }

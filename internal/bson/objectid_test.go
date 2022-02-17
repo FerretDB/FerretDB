@@ -22,7 +22,7 @@ import (
 
 var objectIDTestCases = []testCase{{
 	name: "normal",
-	v:    pointer.To(ObjectID{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01}),
+	v:    pointer.To(objectIDType{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01}),
 	b:    []byte{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01},
 }, {
 	name: "EOF",
@@ -32,13 +32,13 @@ var objectIDTestCases = []testCase{{
 
 func TestObjectID(t *testing.T) {
 	t.Parallel()
-	testBinary(t, objectIDTestCases, func() bsontype { return new(ObjectID) })
+	testBinary(t, objectIDTestCases, func() bsontype { return new(objectIDType) })
 }
 
 func FuzzObjectID(f *testing.F) {
-	fuzzBinary(f, objectIDTestCases, func() bsontype { return new(ObjectID) })
+	fuzzBinary(f, objectIDTestCases, func() bsontype { return new(objectIDType) })
 }
 
 func BenchmarkObjectID(b *testing.B) {
-	benchmark(b, objectIDTestCases, func() bsontype { return new(ObjectID) })
+	benchmark(b, objectIDTestCases, func() bsontype { return new(objectIDType) })
 }

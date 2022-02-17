@@ -22,23 +22,23 @@ import (
 
 var boolTestCases = []testCase{{
 	name: "false",
-	v:    pointer.To(fjsonBool(false)),
+	v:    pointer.To(boolType(false)),
 	j:    `false`,
 }, {
 	name: "true",
-	v:    pointer.To(fjsonBool(true)),
+	v:    pointer.To(boolType(true)),
 	j:    `true`,
 }}
 
 func TestBool(t *testing.T) {
 	t.Parallel()
-	testJSON(t, boolTestCases, func() fjsontype { return new(fjsonBool) })
+	testJSON(t, boolTestCases, func() fjsontype { return new(boolType) })
 }
 
 func FuzzBool(f *testing.F) {
-	fuzzJSON(f, boolTestCases, func() fjsontype { return new(fjsonBool) })
+	fuzzJSON(f, boolTestCases, func() fjsontype { return new(boolType) })
 }
 
 func BenchmarkBool(b *testing.B) {
-	benchmark(b, boolTestCases, func() fjsontype { return new(fjsonBool) })
+	benchmark(b, boolTestCases, func() fjsontype { return new(boolType) })
 }

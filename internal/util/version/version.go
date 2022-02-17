@@ -16,6 +16,7 @@ package version
 
 import (
 	_ "embed"
+	"fmt"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -31,6 +32,9 @@ var (
 	//go:embed version.txt
 	version string
 
+	//go:embed commit.txt
+	commit string
+
 	//go:embed branch.txt
 	branch string
 )
@@ -41,7 +45,7 @@ type Info struct {
 	Branch           string
 	Dirty            bool
 	Debug            bool // testcover or -race
-	BuildEnvironment types.Document
+	BuildEnvironment *types.Document
 }
 
 var info *Info
@@ -53,6 +57,7 @@ func Get() *Info {
 func init() {
 	info = &Info{
 		Version: strings.TrimSpace(version),
+		Commit:  strings.TrimSpace(commit),
 		Branch:  strings.TrimSpace(branch),
 	}
 
@@ -61,12 +66,15 @@ func init() {
 		return
 	}
 
-	info.BuildEnvironment = types.MustMakeDocument()
+	info.BuildEnvironment = types.MustNewDocument()
 	for _, s := range buildInfo.Settings {
 		info.BuildEnvironment.Set(s.Key, s.Value)
+
 		switch s.Key {
 		case "vcs.revision":
-			info.Commit = s.Value
+			if s.Value != info.Commit {
+				panic(fmt.Sprintf("commit.txt value %q != vcs.revision value %q", info.Commit, s.Value))
+			}
 		case "vcs.modified":
 			info.Dirty, _ = strconv.ParseBool(s.Value)
 		case "-race":

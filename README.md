@@ -1,7 +1,8 @@
 # FerretDB
 
 [![Go](https://github.com/FerretDB/FerretDB/actions/workflows/go.yml/badge.svg)](https://github.com/FerretDB/FerretDB/actions/workflows/go.yml)
- [![codecov](https://codecov.io/gh/FerretDB/FerretDB/branch/main/graph/badge.svg?token=JZ56XFT3DM)](https://codecov.io/gh/FerretDB/FerretDB)
+[![Docker](https://github.com/FerretDB/FerretDB/actions/workflows/docker.yml/badge.svg)](https://github.com/FerretDB/FerretDB/actions/workflows/docker.yml)
+[![codecov](https://codecov.io/gh/FerretDB/FerretDB/branch/main/graph/badge.svg?token=JZ56XFT3DM)](https://codecov.io/gh/FerretDB/FerretDB)
 
 FerretDB (previously MangoDB) was founded to become the de-facto open-source substitute to MongoDB.
 FerretDB is an open-source proxy, converting the MongoDB wire protocol queries to SQL - using PostgreSQL as a database engine.
@@ -66,6 +67,10 @@ services:
     ports:
       - 27017:27017
     command: ["-listen-addr=:27017", "-postgresql-url=postgres://user@postgres:5432/ferretdb"]
+
+networks:
+  default:
+    name: ferretdb
 ```
 
 * `postgres` container runs PostgreSQL 14 that would store data.
@@ -77,7 +82,7 @@ services:
 3. If you have `mongosh` installed, just run it to connect to FerretDB database `test`.
 If not, run the following command to run `mongosh` inside the temporary MongoDB container, attaching to the same Docker network:
 ```
-docker run --rm -it --network=ferretdb_default --entrypoint=mongosh mongo:5 mongodb://ferretdb/
+docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo:5 mongodb://ferretdb/
 ```
 
 

@@ -22,18 +22,18 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// double represents BSON double data type.
-type double float64
+// doubleType represents BSON 64-bit binary floating point type.
+type doubleType float64
 
 // fjsontype implements fjsontype interface.
-func (d *double) fjsontype() {}
+func (d *doubleType) fjsontype() {}
 
 type doubleJSON struct {
 	F any `json:"$f"`
 }
 
 // UnmarshalJSON implements fjsontype interface.
-func (d *double) UnmarshalJSON(data []byte) error {
+func (d *doubleType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -52,15 +52,15 @@ func (d *double) UnmarshalJSON(data []byte) error {
 
 	switch f := o.F.(type) {
 	case float64:
-		*d = double(f)
+		*d = doubleType(f)
 	case string:
 		switch f {
 		case "Infinity":
-			*d = double(math.Inf(1))
+			*d = doubleType(math.Inf(1))
 		case "-Infinity":
-			*d = double(math.Inf(-1))
+			*d = doubleType(math.Inf(-1))
 		case "NaN":
-			*d = double(math.NaN())
+			*d = doubleType(math.NaN())
 		default:
 			return lazyerrors.Errorf("fjson.Double.UnmarshalJSON: unexpected string %q", f)
 		}
@@ -72,7 +72,7 @@ func (d *double) UnmarshalJSON(data []byte) error {
 }
 
 // MarshalJSON implements fjsontype interface.
-func (d *double) MarshalJSON() ([]byte, error) {
+func (d *doubleType) MarshalJSON() ([]byte, error) {
 	f := float64(*d)
 	var o doubleJSON
 	switch {
@@ -95,5 +95,5 @@ func (d *double) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ fjsontype = (*double)(nil)
+	_ fjsontype = (*doubleType)(nil)
 )

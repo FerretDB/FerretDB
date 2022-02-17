@@ -19,7 +19,11 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-func projection(projection types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
+func projection(projection *types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
+	if projection == nil {
+		sql = "_jsonb"
+		return
+	}
 	projectionMap := projection.Map()
 	if len(projectionMap) == 0 {
 		sql = "_jsonb"

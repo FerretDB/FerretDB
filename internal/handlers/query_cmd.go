@@ -16,9 +16,9 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -30,12 +30,12 @@ func (h *Handler) QueryCmd(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 		// TODO merge with MsgHello
 		reply := &wire.OpReply{
 			NumberReturned: 1,
-			Documents: []types.Document{
-				types.MustMakeDocument(
+			Documents: []*types.Document{
+				types.MustNewDocument(
 					"helloOk", true,
 					"ismaster", true,
 					// topologyVersion
-					"maxBsonObjectSize", int32(bson.MaxDocumentLen),
+					"maxBsonObjectSize", int32(types.MaxDocumentLen),
 					"maxMessageSizeBytes", int32(wire.MaxMsgLen),
 					"maxWriteBatchSize", int32(100000),
 					"localTime", time.Now(),
@@ -51,6 +51,7 @@ func (h *Handler) QueryCmd(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 		return reply, nil
 
 	default:
-		return nil, common.NewErrorMessage(common.ErrNotImplemented, "QueryCmd: unhandled command %q", cmd)
+		msg := fmt.Sprintf("QueryCmd: unhandled command %q", cmd)
+		return nil, common.NewErrorMsg(common.ErrNotImplemented, msg)
 	}
 }

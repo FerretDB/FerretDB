@@ -8,6 +8,11 @@ run:
 linters-settings:
   exhaustive:
     default-signifies-exhaustive: false
+  godox:
+    keywords:
+      - BUG
+      - FIXME
+      - HACK
   goheader:
     template: |-
       Copyright 2021 FerretDB Inc.
@@ -33,6 +38,7 @@ linters:
   disable-all: true
   enable:
     - exhaustive
+    - godox
     - goheader
     - goimports
     - govet

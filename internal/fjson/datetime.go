@@ -22,14 +22,14 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// dateTime represents BSON dateTime data type.
-type dateTime time.Time
+// dateTimeType represents BSON UTC datetime type.
+type dateTimeType time.Time
 
 // fjsontype implements fjsontype interface.
-func (dt *dateTime) fjsontype() {}
+func (dt *dateTimeType) fjsontype() {}
 
 // String returns formatted time for debugging.
-func (dt *dateTime) String() string {
+func (dt *dateTimeType) String() string {
 	return time.Time(*dt).Format(time.RFC3339Nano)
 }
 
@@ -38,7 +38,7 @@ type dateTimeJSON struct {
 }
 
 // UnmarshalJSON implements fjsontype interface.
-func (dt *dateTime) UnmarshalJSON(data []byte) error {
+func (dt *dateTimeType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -56,12 +56,12 @@ func (dt *dateTime) UnmarshalJSON(data []byte) error {
 	}
 
 	// TODO Use .UTC(): https://github.com/FerretDB/FerretDB/issues/43
-	*dt = dateTime(time.UnixMilli(o.D))
+	*dt = dateTimeType(time.UnixMilli(o.D))
 	return nil
 }
 
 // MarshalJSON implements fjsontype interface.
-func (dt *dateTime) MarshalJSON() ([]byte, error) {
+func (dt *dateTimeType) MarshalJSON() ([]byte, error) {
 	res, err := json.Marshal(dateTimeJSON{
 		D: time.Time(*dt).UnixMilli(),
 	})
@@ -73,5 +73,5 @@ func (dt *dateTime) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ fjsontype = (*dateTime)(nil)
+	_ fjsontype = (*dateTimeType)(nil)
 )

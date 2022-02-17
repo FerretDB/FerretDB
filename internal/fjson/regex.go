@@ -22,11 +22,11 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// fjsonRegex represents BSON fjsonRegex data type.
-type fjsonRegex types.Regex
+// regexType represents BSON Regular expression type.
+type regexType types.Regex
 
 // fjsontype implements fjsontype interface.
-func (regex *fjsonRegex) fjsontype() {}
+func (regex *regexType) fjsontype() {}
 
 type regexJSON struct {
 	R string `json:"$r"`
@@ -34,7 +34,7 @@ type regexJSON struct {
 }
 
 // UnmarshalJSON implements fjsontype interface.
-func (regex *fjsonRegex) UnmarshalJSON(data []byte) error {
+func (regex *regexType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -51,7 +51,7 @@ func (regex *fjsonRegex) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	*regex = fjsonRegex{
+	*regex = regexType{
 		Pattern: o.R,
 		Options: o.O,
 	}
@@ -59,7 +59,7 @@ func (regex *fjsonRegex) UnmarshalJSON(data []byte) error {
 }
 
 // MarshalJSON implements fjsontype interface.
-func (regex *fjsonRegex) MarshalJSON() ([]byte, error) {
+func (regex *regexType) MarshalJSON() ([]byte, error) {
 	res, err := json.Marshal(regexJSON{
 		R: regex.Pattern,
 		O: regex.Options,
@@ -72,5 +72,5 @@ func (regex *fjsonRegex) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ fjsontype = (*fjsonRegex)(nil)
+	_ fjsontype = (*regexType)(nil)
 )

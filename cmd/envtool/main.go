@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 	"net"
@@ -30,7 +31,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
-	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
@@ -128,9 +128,20 @@ func setupMongoDB(ctx context.Context) {
 	for _, c := range collections {
 		args := fmt.Sprintf(
 			`exec -T mongodb mongoimport --uri mongodb://127.0.0.1:27017/monila `+
-				`--drop --maintainInsertionOrder --collection %[1]s /test_db/%[1]s.json`,
+				`--drop --maintainInsertionOrder --collection %[1]s /test_db/monila/%[1]s.json`,
 			c,
 		)
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			runCompose(strings.Split(args, " "), nil, logger)
+		}()
+	}
+
+	{
+		args := `exec -T mongodb mongoimport --uri mongodb://127.0.0.1:27017/values ` +
+			`--drop --maintainInsertionOrder --collection values /test_db/values/values.json`
 
 		wg.Add(1)
 		go func() {
@@ -159,15 +170,11 @@ func setupPagila(ctx context.Context) {
 	logger.Infof("Done in %s.", time.Since(start))
 }
 
-func setupMonila(ctx context.Context, pgPool *pg.Pool) {
+func setupMonilaAndValues(ctx context.Context, pgPool *pg.Pool) {
 	start := time.Now()
-	logger := zap.S().Named("postgres.monila")
+	logger := zap.S().Named("postgres.monila_and_values")
 
-	logger.Infof("Importing database...")
-
-	listenerMetrics := clientconn.NewListenerMetrics()
-	handlersMetrics := handlers.NewMetrics()
-	prometheus.DefaultRegisterer.MustRegister(listenerMetrics, handlersMetrics)
+	logger.Infof("Importing databases...")
 
 	// listen on all interfaces to make mongoimport below work from inside Docker
 	addr := ":27018"
@@ -177,13 +184,13 @@ func setupMonila(ctx context.Context, pgPool *pg.Pool) {
 	}
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		ListenAddr:      addr,
-		Mode:            "normal",
-		PgPool:          pgPool,
-		Logger:          logger.Named("listener").Desugar(),
-		Metrics:         listenerMetrics,
-		HandlersMetrics: handlersMetrics,
+		ListenAddr: addr,
+		Mode:       "normal",
+		PgPool:     pgPool,
+		Logger:     logger.Named("listener").Desugar(),
 	})
+
+	prometheus.DefaultRegisterer.MustRegister(l)
 
 	lCtx, lCancel := context.WithCancel(ctx)
 	lDone := make(chan struct{})
@@ -197,15 +204,25 @@ func setupMonila(ctx context.Context, pgPool *pg.Pool) {
 	for _, c := range collections {
 		cmd := fmt.Sprintf(
 			`exec -T mongodb mongoimport --uri mongodb://host.docker.internal:27018/monila `+
-				`--drop --maintainInsertionOrder --collection %[1]s /test_db/%[1]s.json`,
+				`--drop --maintainInsertionOrder --collection %[1]s /test_db/monila/%[1]s.json`,
 			c,
 		)
-		args := strings.Split(cmd, " ")
 
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			runCompose(args, nil, logger)
+			runCompose(strings.Split(cmd, " "), nil, logger)
+		}()
+	}
+
+	{
+		cmd := `exec -T mongodb mongoimport --uri mongodb://host.docker.internal:27018/values ` +
+			`--drop --maintainInsertionOrder --collection values /test_db/values/values.json`
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			runCompose(strings.Split(cmd, " "), nil, logger)
 		}()
 	}
 
@@ -218,7 +235,19 @@ func setupMonila(ctx context.Context, pgPool *pg.Pool) {
 }
 
 func main() {
+	debugF := flag.Bool("debug", false, "enable debug mode")
+	flag.Parse()
+
+	if flag.NArg() != 0 {
+		flag.Usage()
+		fmt.Fprintln(flag.CommandLine.Output(), "no arguments expected")
+		os.Exit(2)
+	}
+
 	logging.Setup(zap.InfoLevel)
+	if *debugF {
+		logging.Setup(zap.DebugLevel)
+	}
 	logger := zap.S()
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -249,7 +278,7 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	for _, db := range []string{`monila`, `test`} {
+	for _, db := range []string{`monila`, `values`, `test`} {
 		if err = pgPool.CreateSchema(ctx, db); err != nil {
 			logger.Fatal(err)
 		}
@@ -264,7 +293,7 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		setupMonila(ctx, pgPool)
+		setupMonilaAndValues(ctx, pgPool)
 	}()
 
 	wg.Wait()
@@ -272,8 +301,8 @@ func main() {
 	for _, q := range []string{
 		`ALTER SCHEMA public RENAME TO pagila`,
 		`CREATE ROLE readonly NOINHERIT LOGIN`,
-		`GRANT SELECT ON ALL TABLES IN SCHEMA monila, pagila, test TO readonly`,
-		`GRANT USAGE ON SCHEMA monila, pagila, test TO readonly`,
+		`GRANT SELECT ON ALL TABLES IN SCHEMA monila, pagila, values, test TO readonly`,
+		`GRANT USAGE ON SCHEMA monila, pagila, values, test TO readonly`,
 	} {
 		if _, err = pgPool.Exec(ctx, q); err != nil {
 			logger.Fatal(err)

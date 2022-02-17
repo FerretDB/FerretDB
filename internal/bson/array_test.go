@@ -19,28 +19,29 @@ import (
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func convertArray(a *types.Array) *Array {
-	res := Array(*a)
+func convertArray(a *types.Array) *arrayType {
+	res := arrayType(*a)
 	return &res
 }
 
 var arrayTestCases = []testCase{{
 	name: "array_all",
-	v: convertArray(types.MustNewArray(
-		types.MustNewArray(),
+	v: convertArray(must.NotFail(types.NewArray(
+		must.NotFail(types.NewArray()),
 		types.Binary{Subtype: types.BinaryUser, B: []byte{0x42}},
 		true,
 		time.Date(2021, 7, 27, 9, 35, 42, 123000000, time.UTC).Local(),
-		types.MustMakeDocument(),
+		types.MustNewDocument(),
 		42.13,
 		int32(42),
 		int64(42),
 		"foo",
-		nil,
-	)),
+		types.Null,
+	))),
 	b: testutil.MustParseDumpFile("testdata", "array_all.hex"),
 }, {
 	name: "EOF",
@@ -54,13 +55,13 @@ var arrayTestCases = []testCase{{
 
 func TestArray(t *testing.T) {
 	t.Parallel()
-	testBinary(t, arrayTestCases, func() bsontype { return new(Array) })
+	testBinary(t, arrayTestCases, func() bsontype { return new(arrayType) })
 }
 
 func FuzzArray(f *testing.F) {
-	fuzzBinary(f, arrayTestCases, func() bsontype { return new(Array) })
+	fuzzBinary(f, arrayTestCases, func() bsontype { return new(arrayType) })
 }
 
 func BenchmarkArray(b *testing.B) {
-	benchmark(b, arrayTestCases, func() bsontype { return new(Array) })
+	benchmark(b, arrayTestCases, func() bsontype { return new(arrayType) })
 }

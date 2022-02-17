@@ -22,13 +22,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// ObjectID represents BSON ObjectID data type.
-type ObjectID types.ObjectID
+// objectIDType represents BSON ObjectId type.
+type objectIDType types.ObjectID
 
-func (obj *ObjectID) bsontype() {}
+func (obj *objectIDType) bsontype() {}
 
 // ReadFrom implements bsontype interface.
-func (obj *ObjectID) ReadFrom(r *bufio.Reader) error {
+func (obj *objectIDType) ReadFrom(r *bufio.Reader) error {
 	if _, err := io.ReadFull(r, obj[:]); err != nil {
 		return lazyerrors.Errorf("bson.ObjectID.ReadFrom (io.ReadFull): %w", err)
 	}
@@ -37,7 +37,7 @@ func (obj *ObjectID) ReadFrom(r *bufio.Reader) error {
 }
 
 // WriteTo implements bsontype interface.
-func (obj ObjectID) WriteTo(w *bufio.Writer) error {
+func (obj objectIDType) WriteTo(w *bufio.Writer) error {
 	v, err := obj.MarshalBinary()
 	if err != nil {
 		return lazyerrors.Errorf("bson.ObjectID.WriteTo: %w", err)
@@ -52,7 +52,7 @@ func (obj ObjectID) WriteTo(w *bufio.Writer) error {
 }
 
 // MarshalBinary implements bsontype interface.
-func (obj ObjectID) MarshalBinary() ([]byte, error) {
+func (obj objectIDType) MarshalBinary() ([]byte, error) {
 	b := make([]byte, len(obj))
 	copy(b, obj[:])
 	return b, nil
@@ -60,5 +60,5 @@ func (obj ObjectID) MarshalBinary() ([]byte, error) {
 
 // check interfaces
 var (
-	_ bsontype = (*ObjectID)(nil)
+	_ bsontype = (*objectIDType)(nil)
 )

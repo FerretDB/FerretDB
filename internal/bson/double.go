@@ -23,24 +23,24 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// Double represents BSON Double data type.
-type Double float64
+// doubleType represents BSON 64-bit binary floating point type.
+type doubleType float64
 
-func (d *Double) bsontype() {}
+func (d *doubleType) bsontype() {}
 
 // ReadFrom implements bsontype interface.
-func (d *Double) ReadFrom(r *bufio.Reader) error {
+func (d *doubleType) ReadFrom(r *bufio.Reader) error {
 	var bits uint64
 	if err := binary.Read(r, binary.LittleEndian, &bits); err != nil {
 		return lazyerrors.Errorf("bson.Double.ReadFrom (binary.Read): %w", err)
 	}
 
-	*d = Double(math.Float64frombits(bits))
+	*d = doubleType(math.Float64frombits(bits))
 	return nil
 }
 
 // WriteTo implements bsontype interface.
-func (d Double) WriteTo(w *bufio.Writer) error {
+func (d doubleType) WriteTo(w *bufio.Writer) error {
 	v, err := d.MarshalBinary()
 	if err != nil {
 		return lazyerrors.Errorf("bson.Double.WriteTo: %w", err)
@@ -55,7 +55,7 @@ func (d Double) WriteTo(w *bufio.Writer) error {
 }
 
 // MarshalBinary implements bsontype interface.
-func (d Double) MarshalBinary() ([]byte, error) {
+func (d doubleType) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 
 	binary.Write(&buf, binary.LittleEndian, math.Float64bits(float64(d)))
@@ -65,5 +65,5 @@ func (d Double) MarshalBinary() ([]byte, error) {
 
 // check interfaces
 var (
-	_ bsontype = (*Double)(nil)
+	_ bsontype = (*doubleType)(nil)
 )

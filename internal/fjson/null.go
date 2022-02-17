@@ -12,16 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sql
+package fjson
 
 import (
-	"context"
+	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-// MsgUpdate modifies an existing document or documents in a collection.
-func (s *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, common.NewErrorMsg(common.ErrNotImplemented, "update: not implemented for SQL storage")
+// nullType represents BSON Null type.
+type nullType types.NullType
+
+// fjsontype implements fjsontype interface.
+func (*nullType) fjsontype() {}
+
+// UnmarshalJSON implements fjsontype interface.
+func (*nullType) UnmarshalJSON(data []byte) error {
+	panic(fmt.Sprintf("must not be called, was called with %s", string(data)))
 }
+
+// MarshalJSON implements fjsontype interface.
+func (*nullType) MarshalJSON() ([]byte, error) {
+	return []byte("null"), nil
+}
+
+// check interfaces
+var (
+	_ fjsontype = (*nullType)(nil)
+)

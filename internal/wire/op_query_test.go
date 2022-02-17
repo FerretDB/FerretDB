@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -36,25 +37,25 @@ var queryTestCases = []testCase{{
 		FullCollectionName: "admin.$cmd",
 		NumberToSkip:       0,
 		NumberToReturn:     -1,
-		Query: types.MustMakeDocument(
+		Query: types.MustNewDocument(
 			"ismaster", true,
-			"client", types.MustMakeDocument(
-				"driver", types.MustMakeDocument(
+			"client", types.MustNewDocument(
+				"driver", types.MustNewDocument(
 					"name", "nodejs",
 					"version", "4.0.0-beta.6",
 				),
-				"os", types.MustMakeDocument(
+				"os", types.MustNewDocument(
 					"type", "Darwin",
 					"name", "darwin",
 					"architecture", "x64",
 					"version", "20.6.0",
 				),
 				"platform", "Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",
-				"application", types.MustMakeDocument(
+				"application", types.MustNewDocument(
 					"name", "mongosh 1.0.1",
 				),
 			),
-			"compression", types.MustNewArray("none"),
+			"compression", must.NotFail(types.NewArray("none")),
 			"loadBalanced", false,
 		),
 		ReturnFieldsSelector: nil,
@@ -74,25 +75,25 @@ var queryTestCases = []testCase{{
 		FullCollectionName: "admin.$cmd",
 		NumberToSkip:       0,
 		NumberToReturn:     -1,
-		Query: types.MustMakeDocument(
+		Query: types.MustNewDocument(
 			"ismaster", true,
-			"client", types.MustMakeDocument(
-				"driver", types.MustMakeDocument(
+			"client", types.MustNewDocument(
+				"driver", types.MustNewDocument(
 					"name", "nodejs",
 					"version", "4.0.0-beta.6",
 				),
-				"os", types.MustMakeDocument(
+				"os", types.MustNewDocument(
 					"type", "Darwin",
 					"name", "darwin",
 					"architecture", "x64",
 					"version", "20.6.0",
 				),
 				"platform", "Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",
-				"application", types.MustMakeDocument(
+				"application", types.MustNewDocument(
 					"name", "mongosh 1.0.1",
 				),
 			),
-			"compression", types.MustNewArray("none"),
+			"compression", must.NotFail(types.NewArray("none")),
 			"loadBalanced", false,
 		),
 		ReturnFieldsSelector: nil,

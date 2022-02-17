@@ -43,6 +43,8 @@ func NewArray(values ...any) (*Array, error) {
 }
 
 // MustNewArray is a NewArray that panics in case of error.
+//
+// Deprecated: use `must.NotFail(NewArray(...))` instead.
 func MustNewArray(values ...any) *Array {
 	a, err := NewArray(values...)
 	if err != nil {
@@ -54,7 +56,12 @@ func MustNewArray(values ...any) *Array {
 func (a *Array) compositeType() {}
 
 // Len returns the number of elements in the array.
+//
+// It returns 0 for nil Array.
 func (a *Array) Len() int {
+	if a == nil {
+		return 0
+	}
 	return len(a.s)
 }
 

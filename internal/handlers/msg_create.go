@@ -16,6 +16,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/pg"
@@ -31,6 +32,31 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
+	unimplementedFields := []string{
+		"capped",
+		"timeseries",
+		"expireAfterSeconds",
+		"size",
+		"max",
+		"validator",
+		"validationLevel",
+		"validationAction",
+		"viewOn",
+		"pipeline",
+		"collation",
+	}
+	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
+		return nil, err
+	}
+	ignoredFields := []string{
+		"autoIndexId",
+		"storageEngine",
+		"indexOptionDefaults",
+		"writeConcern",
+		"comment",
+	}
+	common.Ignored(document, h.l, ignoredFields...)
+
 	m := document.Map()
 	collection := m[document.Command()].(string)
 	db := m["$db"].(string)
@@ -41,14 +67,15 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	if err = h.pgPool.CreateTable(ctx, db, collection); err != nil {
 		if err == pg.ErrAlreadyExist {
-			return nil, common.NewErrorMessage(common.ErrNamespaceExists, "Collection already exists. NS: %s.%s", db, collection)
+			msg := fmt.Sprintf("Collection already exists. NS: %s.%s", db, collection)
+			return nil, common.NewErrorMsg(common.ErrNamespaceExists, msg)
 		}
 		return nil, lazyerrors.Error(err)
 	}
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{types.MustMakeDocument(
+		Documents: []*types.Document{types.MustNewDocument(
 			"ok", float64(1),
 		)},
 	})

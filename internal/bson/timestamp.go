@@ -23,13 +23,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// Timestamp represents BSON Timestamp data type.
-type Timestamp types.Timestamp
+// timestampType represents BSON Timestamp type.
+type timestampType types.Timestamp
 
-func (ts *Timestamp) bsontype() {}
+func (ts *timestampType) bsontype() {}
 
 // ReadFrom implements bsontype interface.
-func (ts *Timestamp) ReadFrom(r *bufio.Reader) error {
+func (ts *timestampType) ReadFrom(r *bufio.Reader) error {
 	if err := binary.Read(r, binary.LittleEndian, ts); err != nil {
 		return lazyerrors.Errorf("bson.Timestamp.ReadFrom (binary.Read): %w", err)
 	}
@@ -38,7 +38,7 @@ func (ts *Timestamp) ReadFrom(r *bufio.Reader) error {
 }
 
 // WriteTo implements bsontype interface.
-func (ts Timestamp) WriteTo(w *bufio.Writer) error {
+func (ts timestampType) WriteTo(w *bufio.Writer) error {
 	v, err := ts.MarshalBinary()
 	if err != nil {
 		return lazyerrors.Errorf("bson.Timestamp.WriteTo: %w", err)
@@ -53,7 +53,7 @@ func (ts Timestamp) WriteTo(w *bufio.Writer) error {
 }
 
 // MarshalBinary implements bsontype interface.
-func (ts Timestamp) MarshalBinary() ([]byte, error) {
+func (ts timestampType) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 
 	binary.Write(&buf, binary.LittleEndian, ts)
@@ -63,5 +63,5 @@ func (ts Timestamp) MarshalBinary() ([]byte, error) {
 
 // check interfaces
 var (
-	_ bsontype = (*Timestamp)(nil)
+	_ bsontype = (*timestampType)(nil)
 )

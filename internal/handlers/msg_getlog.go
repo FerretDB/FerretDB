@@ -17,6 +17,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
@@ -35,7 +36,8 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	if l := document.Map()["getLog"]; l != "startupWarnings" {
-		return nil, common.NewErrorMessage(common.ErrNotImplemented, "MsgGetLog: unhandled getLog value %q", l)
+		errMsg := fmt.Sprintf("MsgGetLog: unhandled getLog value %q", l)
+		return nil, common.NewErrorMsg(common.ErrNotImplemented, errMsg)
 	}
 
 	var pv string
@@ -44,7 +46,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	pv = strings.Split(pv, " ")[0]
+	pv, _, _ = strings.Cut(pv, " ")
 	mv := version.Get()
 
 	var log types.Array
@@ -73,7 +75,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{types.MustMakeDocument(
+		Documents: []*types.Document{types.MustNewDocument(
 			"totalLinesWritten", int32(log.Len()),
 			"log", &log,
 			"ok", float64(1),

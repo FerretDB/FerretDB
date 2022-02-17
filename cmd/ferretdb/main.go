@@ -27,7 +27,6 @@ import (
 	"golang.org/x/sys/unix"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
-	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
@@ -99,10 +98,6 @@ func main() {
 	}
 	defer pgPool.Close()
 
-	listenerMetrics := clientconn.NewListenerMetrics()
-	handlersMetrics := handlers.NewMetrics()
-	prometheus.DefaultRegisterer.MustRegister(listenerMetrics, handlersMetrics)
-
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		ListenAddr:      *listenAddrF,
 		TLS:             *tlsF,
@@ -110,10 +105,10 @@ func main() {
 		Mode:            clientconn.Mode(*modeF),
 		PgPool:          pgPool,
 		Logger:          logger.Named("listener"),
-		Metrics:         listenerMetrics,
-		HandlersMetrics: handlersMetrics,
 		TestConnTimeout: *testConnTimeoutF,
 	})
+
+	prometheus.DefaultRegisterer.MustRegister(l)
 
 	err = l.Run(ctx)
 	if err == nil || err == context.Canceled {

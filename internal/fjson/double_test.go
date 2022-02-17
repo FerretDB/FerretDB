@@ -23,31 +23,31 @@ import (
 
 var doubleTestCases = []testCase{{
 	name: "42.13",
-	v:    pointer.To(double(42.13)),
+	v:    pointer.To(doubleType(42.13)),
 	j:    `{"$f":42.13}`,
 }, {
 	name: "zero",
-	v:    pointer.To(double(0)),
+	v:    pointer.To(doubleType(0)),
 	j:    `{"$f":0}`,
 }, {
 	name: "max float64",
-	v:    pointer.To(double(math.MaxFloat64)),
+	v:    pointer.To(doubleType(math.MaxFloat64)),
 	j:    `{"$f":1.7976931348623157e+308}`,
 }, {
 	name: "smallest positive float64",
-	v:    pointer.To(double(math.SmallestNonzeroFloat64)),
+	v:    pointer.To(doubleType(math.SmallestNonzeroFloat64)),
 	j:    `{"$f":5e-324}`,
 }, {
 	name: "+Infinity",
-	v:    pointer.To(double(math.Inf(1))),
+	v:    pointer.To(doubleType(math.Inf(1))),
 	j:    `{"$f":"Infinity"}`,
 }, {
 	name: "-Infinity",
-	v:    pointer.To(double(math.Inf(-1))),
+	v:    pointer.To(doubleType(math.Inf(-1))),
 	j:    `{"$f":"-Infinity"}`,
 }, {
 	name: "NaN",
-	v:    pointer.To(double(math.NaN())),
+	v:    pointer.To(doubleType(math.NaN())),
 	j:    `{"$f":"NaN"}`,
 }, {
 	name: "EOF",
@@ -57,13 +57,13 @@ var doubleTestCases = []testCase{{
 
 func TestDouble(t *testing.T) {
 	t.Parallel()
-	testJSON(t, doubleTestCases, func() fjsontype { return new(double) })
+	testJSON(t, doubleTestCases, func() fjsontype { return new(doubleType) })
 }
 
 func FuzzDouble(f *testing.F) {
-	fuzzJSON(f, doubleTestCases, func() fjsontype { return new(double) })
+	fuzzJSON(f, doubleTestCases, func() fjsontype { return new(doubleType) })
 }
 
 func BenchmarkDouble(b *testing.B) {
-	benchmark(b, doubleTestCases, func() fjsontype { return new(double) })
+	benchmark(b, doubleTestCases, func() fjsontype { return new(doubleType) })
 }

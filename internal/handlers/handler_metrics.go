@@ -23,7 +23,8 @@ const (
 
 // Metrics represents handler metrics.
 type Metrics struct {
-	requests *prometheus.CounterVec
+	requests  *prometheus.CounterVec
+	responses *prometheus.CounterVec
 }
 
 // NewMetrics creates new handler metrics.
@@ -38,17 +39,28 @@ func NewMetrics() *Metrics {
 			},
 			[]string{"opcode", "command"},
 		),
+		responses: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace: namespace,
+				Subsystem: subsystem,
+				Name:      "responses_total",
+				Help:      "Total number of responses.",
+			},
+			[]string{"opcode", "command", "res"},
+		),
 	}
 }
 
 // Describe implements prometheus.Collector.
 func (lm *Metrics) Describe(ch chan<- *prometheus.Desc) {
 	lm.requests.Describe(ch)
+	lm.responses.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
 func (lm *Metrics) Collect(ch chan<- prometheus.Metric) {
 	lm.requests.Collect(ch)
+	lm.responses.Collect(ch)
 }
 
 // check interfaces

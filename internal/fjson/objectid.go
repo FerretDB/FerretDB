@@ -23,18 +23,18 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// fjsonObjectID represents BSON fjsonObjectID data type.
-type fjsonObjectID types.ObjectID
+// objectIDType represents BSON ObjectId type.
+type objectIDType types.ObjectID
 
 // fjsontype implements fjsontype interface.
-func (obj *fjsonObjectID) fjsontype() {}
+func (obj *objectIDType) fjsontype() {}
 
 type objectIDJSON struct {
 	O string `json:"$o"`
 }
 
 // UnmarshalJSON implements fjsontype interface.
-func (obj *fjsonObjectID) UnmarshalJSON(data []byte) error {
+func (obj *objectIDType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -64,7 +64,7 @@ func (obj *fjsonObjectID) UnmarshalJSON(data []byte) error {
 }
 
 // MarshalJSON implements fjsontype interface.
-func (obj *fjsonObjectID) MarshalJSON() ([]byte, error) {
+func (obj *objectIDType) MarshalJSON() ([]byte, error) {
 	res, err := json.Marshal(objectIDJSON{
 		O: hex.EncodeToString(obj[:]),
 	})
@@ -76,5 +76,5 @@ func (obj *fjsonObjectID) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ fjsontype = (*fjsonObjectID)(nil)
+	_ fjsontype = (*objectIDType)(nil)
 )

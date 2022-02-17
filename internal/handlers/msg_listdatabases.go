@@ -17,6 +17,7 @@ package handlers
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -24,6 +25,28 @@ import (
 
 // MsgListDatabases command provides a list of all existing databases along with basic statistics about them.
 func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if err = common.UnimplementedNonDefault(document, "filter", func(v any) bool {
+		d, ok := v.(*types.Document)
+		return ok && d.Len() == 0
+	}); err != nil {
+		return nil, err
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/301
+	// if err = common.UnimplementedNonDefault(document, "nameOnly", func(v any) bool {
+	// 	nameOnly, ok := v.(bool)
+	// 	return ok && !nameOnly
+	// }); err != nil {
+	// 	return nil, err
+	// }
+
+	common.Ignored(document, h.l, "comment", "authorizedDatabases")
+
 	databaseNames, err := h.pgPool.Schemas(ctx)
 	if err != nil {
 		return nil, err
@@ -31,7 +54,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	databases := types.MakeArray(len(databaseNames))
 	for _, databaseName := range databaseNames {
-		tables, err := h.pgPool.Tables(ctx, databaseName)
+		tables, _, err := h.pgPool.Tables(ctx, databaseName)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -49,7 +72,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 			sizeOnDisk += tableSize
 		}
 
-		d := types.MustMakeDocument(
+		d := types.MustNewDocument(
 			"name", databaseName,
 			"sizeOnDisk", sizeOnDisk,
 			"empty", sizeOnDisk == 0,
@@ -67,7 +90,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []types.Document{types.MustMakeDocument(
+		Documents: []*types.Document{types.MustNewDocument(
 			"databases", databases,
 			"totalSize", totalSize,
 			"totalSizeMb", totalSize/1024/1024,

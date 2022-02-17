@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-// WithDelay returns a context that is canceled a given amount of time after done channel is closed.
+// WithDelay returns a context that is canceled after a given amount of time after done channel is closed.
 func WithDelay(done <-chan struct{}, delay time.Duration) (context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
 

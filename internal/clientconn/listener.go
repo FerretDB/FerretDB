@@ -23,6 +23,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers"
@@ -33,7 +34,10 @@ import (
 
 // Listener accepts incoming client connections.
 type Listener struct {
-	opts *NewListenerOpts
+	opts            *NewListenerOpts
+	metrics         *ListenerMetrics
+	handlersMetrics *handlers.Metrics
+	startTime       time.Time
 }
 
 // NewListenerOpts represents listener configuration.
@@ -44,15 +48,16 @@ type NewListenerOpts struct {
 	Mode            Mode
 	PgPool          *pg.Pool
 	Logger          *zap.Logger
-	Metrics         *ListenerMetrics
-	HandlersMetrics *handlers.Metrics
 	TestConnTimeout time.Duration
 }
 
 // NewListener returns a new listener, configured by the NewListenerOpts argument.
 func NewListener(opts *NewListenerOpts) *Listener {
 	return &Listener{
-		opts: opts,
+		opts:            opts,
+		metrics:         NewListenerMetrics(),
+		handlersMetrics: handlers.NewMetrics(),
+		startTime:       time.Now(),
 	}
 }
 
@@ -92,6 +97,8 @@ func (l *Listener) Run(ctx context.Context) error {
 	for {
 		netConn, err := lis.Accept()
 		if err != nil {
+			l.metrics.accepts.WithLabelValues("1").Inc()
+
 			if ctx.Err() != nil {
 				break
 			}
@@ -104,13 +111,14 @@ func (l *Listener) Run(ctx context.Context) error {
 		}
 
 		wg.Add(1)
-		l.opts.Metrics.ConnectedClients.Inc()
+		l.metrics.accepts.WithLabelValues("0").Inc()
+		l.metrics.connectedClients.Inc()
 
 		// run connection
 		go func() {
 			defer func() {
 				netConn.Close()
-				l.opts.Metrics.ConnectedClients.Dec()
+				l.metrics.connectedClients.Dec()
 				wg.Done()
 			}()
 
@@ -119,7 +127,8 @@ func (l *Listener) Run(ctx context.Context) error {
 				pgPool:          l.opts.PgPool,
 				proxyAddr:       l.opts.ProxyAddr,
 				mode:            l.opts.Mode,
-				handlersMetrics: l.opts.HandlersMetrics,
+				handlersMetrics: l.handlersMetrics,
+				startTime:       l.startTime,
 			}
 			conn, e := newConn(opts)
 			if e != nil {
@@ -148,4 +157,16 @@ func (l *Listener) Run(ctx context.Context) error {
 	wg.Wait()
 
 	return ctx.Err()
+}
+
+// Describe implements prometheus.Collector.
+func (l *Listener) Describe(ch chan<- *prometheus.Desc) {
+	l.metrics.Describe(ch)
+	l.handlersMetrics.Describe(ch)
+}
+
+// Collect implements prometheus.Collector.
+func (l *Listener) Collect(ch chan<- prometheus.Metric) {
+	l.metrics.Collect(ch)
+	l.handlersMetrics.Collect(ch)
 }

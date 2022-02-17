@@ -23,29 +23,29 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// DateTime represents BSON DateTime data type.
-type DateTime time.Time
+// dateTimeType represents BSON UTC datetime type.
+type dateTimeType time.Time
 
-func (dt DateTime) String() string {
+func (dt dateTimeType) String() string {
 	return time.Time(dt).Format(time.RFC3339Nano)
 }
 
-func (dt *DateTime) bsontype() {}
+func (dt *dateTimeType) bsontype() {}
 
 // ReadFrom implements bsontype interface.
-func (dt *DateTime) ReadFrom(r *bufio.Reader) error {
+func (dt *dateTimeType) ReadFrom(r *bufio.Reader) error {
 	var ts int64
 	if err := binary.Read(r, binary.LittleEndian, &ts); err != nil {
 		return lazyerrors.Errorf("bson.DateTime.ReadFrom (binary.Read): %w", err)
 	}
 
 	// TODO Use .UTC(): https://github.com/FerretDB/FerretDB/issues/43
-	*dt = DateTime(time.UnixMilli(ts))
+	*dt = dateTimeType(time.UnixMilli(ts))
 	return nil
 }
 
 // WriteTo implements bsontype interface.
-func (dt DateTime) WriteTo(w *bufio.Writer) error {
+func (dt dateTimeType) WriteTo(w *bufio.Writer) error {
 	v, err := dt.MarshalBinary()
 	if err != nil {
 		return lazyerrors.Errorf("bson.DateTime.WriteTo: %w", err)
@@ -60,7 +60,7 @@ func (dt DateTime) WriteTo(w *bufio.Writer) error {
 }
 
 // MarshalBinary implements bsontype interface.
-func (dt DateTime) MarshalBinary() ([]byte, error) {
+func (dt dateTimeType) MarshalBinary() ([]byte, error) {
 	ts := time.Time(dt).UnixMilli()
 
 	var buf bytes.Buffer
@@ -72,5 +72,5 @@ func (dt DateTime) MarshalBinary() ([]byte, error) {
 
 // check interfaces
 var (
-	_ bsontype = (*DateTime)(nil)
+	_ bsontype = (*dateTimeType)(nil)
 )

@@ -21,14 +21,14 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// fjsonInt32 represents BSON fjsonInt32 data type.
-type fjsonInt32 int32
+// int32Type represents BSON 32-bit integer type.
+type int32Type int32
 
 // fjsontype implements fjsontype interface.
-func (i *fjsonInt32) fjsontype() {}
+func (i *int32Type) fjsontype() {}
 
 // UnmarshalJSON implements fjsontype interface.
-func (i *fjsonInt32) UnmarshalJSON(data []byte) error {
+func (i *int32Type) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -45,12 +45,12 @@ func (i *fjsonInt32) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	*i = fjsonInt32(o)
+	*i = int32Type(o)
 	return nil
 }
 
 // MarshalJSON implements fjsontype interface.
-func (i *fjsonInt32) MarshalJSON() ([]byte, error) {
+func (i *int32Type) MarshalJSON() ([]byte, error) {
 	res, err := json.Marshal(int32(*i))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -60,5 +60,5 @@ func (i *fjsonInt32) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ fjsontype = (*fjsonInt32)(nil)
+	_ fjsontype = (*int32Type)(nil)
 )

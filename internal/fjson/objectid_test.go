@@ -22,7 +22,7 @@ import (
 
 var objectIDTestCases = []testCase{{
 	name: "normal",
-	v:    pointer.To(fjsonObjectID{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01}),
+	v:    pointer.To(objectIDType{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01}),
 	j:    `{"$o":"010101010101010101010101"}`,
 }, {
 	name: "EOF",
@@ -32,13 +32,13 @@ var objectIDTestCases = []testCase{{
 
 func TestObjectID(t *testing.T) {
 	t.Parallel()
-	testJSON(t, objectIDTestCases, func() fjsontype { return new(fjsonObjectID) })
+	testJSON(t, objectIDTestCases, func() fjsontype { return new(objectIDType) })
 }
 
 func FuzzObjectID(f *testing.F) {
-	fuzzJSON(f, objectIDTestCases, func() fjsontype { return new(fjsonObjectID) })
+	fuzzJSON(f, objectIDTestCases, func() fjsontype { return new(objectIDType) })
 }
 
 func BenchmarkObjectID(b *testing.B) {
-	benchmark(b, objectIDTestCases, func() fjsontype { return new(fjsonObjectID) })
+	benchmark(b, objectIDTestCases, func() fjsontype { return new(objectIDType) })
 }

@@ -18,30 +18,42 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestArray(t *testing.T) {
 	t.Parallel()
 
+	t.Run("MethodsOnNil", func(t *testing.T) {
+		t.Parallel()
+
+		var a *Array
+		assert.Zero(t, a.Len())
+	})
+
 	t.Run("ZeroValues", func(t *testing.T) {
 		t.Parallel()
 
-		// to avoid []any != nil in tests
-		assert.Nil(t, MustNewArray().s)
+		// to avoid {} != nil in tests
+		assert.Nil(t, must.NotFail(NewArray()).s)
 		assert.Nil(t, MakeArray(0).s)
 
 		var a Array
 		assert.Equal(t, 0, a.Len())
 		assert.Nil(t, a.s)
 
-		err := a.Append(nil)
+		err := a.Append(Null)
 		assert.NoError(t, err)
 		value, err := a.Get(0)
 		assert.NoError(t, err)
-		assert.Equal(t, nil, value)
+		assert.Equal(t, Null, value)
 
 		err = a.Append(42)
 		assert.EqualError(t, err, `types.Array.Append: types.validateValue: unsupported type: int (42)`)
+
+		err = a.Append(nil)
+		assert.EqualError(t, err, `types.Array.Append: types.validateValue: unsupported type: <nil> (<nil>)`)
 	})
 
 	t.Run("NewArray", func(t *testing.T) {

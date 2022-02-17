@@ -12,35 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package fjson provides converters from/to FJSON.
+// Package fjson provides converters from/to FJSON (JSON with some extensions) for built-in and `types` types.
 //
-// All BSON data types have three representations in FerretDB:
+// See contributing guidelines and documentation for package `types` for details.
 //
-//  1. As they are used in handlers implementation (types package).
-//  2. As they are used in the wire protocol implementation (bson package).
-//  3. As they are used to store data in PostgreSQL (fjson package).
+// Mapping
 //
-// The reason for that is a separation of concerns: to avoid method names clashes, to simplify type asserts, etc.
-//
-// JSON mapping for storage
-//
-// Composite/pointer types
-//  Document:   {"$k": ["<key 1>", "<key 2>", ...], "<key 1>": <value 1>, "<key 2>": <value 2>, ...}
-//  Array:      JSON array
-// Scalar/value types
-//  Double:     {"$f": JSON number} or {"$f": "Infinity|-Infinity|NaN"}
-//  String:     JSON string
-//  Binary:     {"$b": "<base 64 string>", "s": <subtype number>}
-//  ObjectID:   {"$o": "<ObjectID as 24 character hex string"}
-//  Bool:       JSON true / false values
-//  DateTime:   {"$d": milliseconds since epoch as JSON number}
-//  nil:        JSON null
-//  Regex:      {"$r": "<string without terminating 0x0>", "o": "<string without terminating 0x0>"}
-//  Int32:      JSON number
-//  Timestamp:  {"$t": "<number as string>"}
-//  Int64:      {"$l": "<number as string>"}
-//  Decimal128: {"$n": "<number as string>"}
-//  CString:    {"$c": "<string without terminating 0x0>"}
+// Composite types
+//  *types.Document  {"$k": ["<key 1>", "<key 2>", ...], "<key 1>": <value 1>, "<key 2>": <value 2>, ...}
+//  *types.Array     JSON array
+// Scalar types
+//  float64          {"$f": JSON number} or {"$f": "Infinity|-Infinity|NaN"}
+//  string           JSON string
+//  types.Binary     {"$b": "<base 64 string>", "s": <subtype number>}
+//  types.ObjectID   {"$o": "<ObjectID as 24 character hex string"}
+//  bool             JSON true / false values
+//  time.Time        {"$d": milliseconds since epoch as JSON number}
+//  types.NullType   JSON null
+//  types.Regex      {"$r": "<string without terminating 0x0>", "o": "<string without terminating 0x0>"}
+//  int32            JSON number
+//  types.Timestamp  {"$t": "<number as string>"}
+//  int64            {"$l": "<number as string>"}
+//  TODO Decimal128  {"$n": "<number as string>"}
+//  types.CString    {"$c": "<string without terminating 0x0>"}
 package fjson
 
 import (
@@ -84,33 +78,33 @@ func checkConsumed(dec *json.Decoder, r *bytes.Reader) error {
 // fromFJSON converts fjsontype value to matching built-in or types' package value.
 func fromFJSON(v fjsontype) any {
 	switch v := v.(type) {
-	case *document:
-		return types.Document(*v)
-	case *fjsonArray:
+	case *documentType:
+		return pointer.To(types.Document(*v))
+	case *arrayType:
 		return pointer.To(types.Array(*v))
-	case *double:
+	case *doubleType:
 		return float64(*v)
-	case *fjsonString:
+	case *stringType:
 		return string(*v)
-	case *fjsonBinary:
+	case *binaryType:
 		return types.Binary(*v)
-	case *fjsonObjectID:
+	case *objectIDType:
 		return types.ObjectID(*v)
-	case *fjsonBool:
+	case *boolType:
 		return bool(*v)
-	case *dateTime:
+	case *dateTimeType:
 		return time.Time(*v)
-	case nil:
-		return nil
-	case *fjsonRegex:
+	case *nullType:
+		return types.Null
+	case *regexType:
 		return types.Regex(*v)
-	case *fjsonInt32:
+	case *int32Type:
 		return int32(*v)
-	case *fjsonTimestamp:
+	case *timestampType:
 		return types.Timestamp(*v)
-	case *fjsonInt64:
+	case *int64Type:
 		return int64(*v)
-	case *fjsonCString:
+	case *cstringType:
 		return types.CString(*v)
 	}
 
@@ -120,34 +114,34 @@ func fromFJSON(v fjsontype) any {
 // toFJSON converts built-in or types' package value to fjsontype value.
 func toFJSON(v any) fjsontype {
 	switch v := v.(type) {
-	case types.Document:
-		return pointer.To(document(v))
+	case *types.Document:
+		return pointer.To(documentType(*v))
 	case *types.Array:
-		return pointer.To(fjsonArray(*v))
+		return pointer.To(arrayType(*v))
 	case float64:
-		return pointer.To(double(v))
+		return pointer.To(doubleType(v))
 	case string:
-		return pointer.To(fjsonString(v))
+		return pointer.To(stringType(v))
 	case types.Binary:
-		return pointer.To(fjsonBinary(v))
+		return pointer.To(binaryType(v))
 	case types.ObjectID:
-		return pointer.To(fjsonObjectID(v))
+		return pointer.To(objectIDType(v))
 	case bool:
-		return pointer.To(fjsonBool(v))
+		return pointer.To(boolType(v))
 	case time.Time:
-		return pointer.To(dateTime(v))
-	case nil:
-		return nil
+		return pointer.To(dateTimeType(v))
+	case types.NullType:
+		return pointer.To(nullType(v))
 	case types.Regex:
-		return pointer.To(fjsonRegex(v))
+		return pointer.To(regexType(v))
 	case int32:
-		return pointer.To(fjsonInt32(v))
+		return pointer.To(int32Type(v))
 	case types.Timestamp:
-		return pointer.To(fjsonTimestamp(v))
+		return pointer.To(timestampType(v))
 	case int64:
-		return pointer.To(fjsonInt64(v))
+		return pointer.To(int64Type(v))
 	case types.CString:
-		return pointer.To(fjsonCString(v))
+		return pointer.To(cstringType(v))
 	}
 
 	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
@@ -171,56 +165,56 @@ func Unmarshal(data []byte) (any, error) {
 	case map[string]any:
 		switch {
 		case v["$f"] != nil:
-			var o double
+			var o doubleType
 			err = o.UnmarshalJSON(data)
 			res = &o
 		case v["$k"] != nil:
-			var o document
+			var o documentType
 			err = o.UnmarshalJSON(data)
 			res = &o
 		case v["$b"] != nil:
-			var o fjsonBinary
+			var o binaryType
 			err = o.UnmarshalJSON(data)
 			res = &o
 		case v["$o"] != nil:
-			var o fjsonObjectID
+			var o objectIDType
 			err = o.UnmarshalJSON(data)
 			res = &o
 		case v["$d"] != nil:
-			var o dateTime
+			var o dateTimeType
 			err = o.UnmarshalJSON(data)
 			res = &o
 		case v["$r"] != nil:
-			var o fjsonRegex
+			var o regexType
 			err = o.UnmarshalJSON(data)
 			res = &o
 		case v["$t"] != nil:
-			var o fjsonTimestamp
+			var o timestampType
 			err = o.UnmarshalJSON(data)
 			res = &o
 		case v["$l"] != nil:
-			var o fjsonInt64
+			var o int64Type
 			err = o.UnmarshalJSON(data)
 			res = &o
 		case v["$c"] != nil:
-			var o fjsonCString
+			var o cstringType
 			err = o.UnmarshalJSON(data)
 			res = &o
 		default:
 			err = lazyerrors.Errorf("fjson.Unmarshal: unhandled map %v", v)
 		}
 	case string:
-		res = pointer.To(fjsonString(v))
+		res = pointer.To(stringType(v))
 	case []any:
-		var o fjsonArray
+		var o arrayType
 		err = o.UnmarshalJSON(data)
 		res = &o
 	case bool:
-		res = pointer.To(fjsonBool(v))
+		res = pointer.To(boolType(v))
 	case nil:
-		res = nil
+		res = new(nullType)
 	case float64:
-		res = pointer.To(fjsonInt32(v))
+		res = pointer.To(int32Type(v))
 	default:
 		err = lazyerrors.Errorf("fjson.Unmarshal: unhandled element %[1]T (%[1]v)", v)
 	}
@@ -235,7 +229,7 @@ func Unmarshal(data []byte) (any, error) {
 // Marshal encodes given built-in or types' package value into fjson.
 func Marshal(v any) ([]byte, error) {
 	if v == nil {
-		return []byte("null"), nil
+		panic("v is nil")
 	}
 
 	b, err := toFJSON(v).MarshalJSON()

@@ -22,14 +22,14 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// document represents BSON document data type.
-type document types.Document
+// documentType represents BSON Document type.
+type documentType types.Document
 
 // fjsontype implements fjsontype interface.
-func (doc *document) fjsontype() {}
+func (doc *documentType) fjsontype() {}
 
 // UnmarshalJSON implements fjsontype interface.
-func (doc *document) UnmarshalJSON(data []byte) error {
+func (doc *documentType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -58,7 +58,7 @@ func (doc *document) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Errorf("fjson.Document.UnmarshalJSON: %d elements in $k, %d in total", len(keys), len(rawMessages))
 	}
 
-	td := types.MustMakeDocument()
+	td := types.MustNewDocument()
 	for _, key := range keys {
 		b, ok = rawMessages[key]
 		if !ok {
@@ -73,24 +73,28 @@ func (doc *document) UnmarshalJSON(data []byte) error {
 		}
 	}
 
-	*doc = document(td)
+	*doc = documentType(*td)
 	return nil
 }
 
 // MarshalJSON implements fjsontype interface.
-func (doc *document) MarshalJSON() ([]byte, error) {
+func (doc *documentType) MarshalJSON() ([]byte, error) {
 	td := types.Document(*doc)
 
 	var buf bytes.Buffer
 
 	buf.WriteString(`{"$k":`)
-	b, err := json.Marshal(td.Keys())
+	keys := td.Keys()
+	if keys == nil {
+		keys = []string{}
+	}
+	b, err := json.Marshal(keys)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 	buf.Write(b)
 
-	for _, key := range td.Keys() {
+	for _, key := range keys {
 		buf.WriteByte(',')
 
 		if b, err = json.Marshal(key); err != nil {
@@ -117,5 +121,5 @@ func (doc *document) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ fjsontype = (*document)(nil)
+	_ fjsontype = (*documentType)(nil)
 )

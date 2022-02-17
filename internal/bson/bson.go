@@ -12,15 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package bson provides converters from/to BSON.
+// Package bson provides converters from/to BSON for built-in and `types` types.
 //
-// All BSON data types have three representations in FerretDB:
-//
-//  1. As they are used in handlers implementation (types package).
-//  2. As they are used in the wire protocol implementation (bson package).
-//  3. As they are used to store data in PostgreSQL (fjson package).
-//
-// The reason for that is a separation of concerns: to avoid method names clashes, to simplify type asserts, etc.
+// See contributing guidelines and documentation for package `types` for details.
 package bson
 
 import (
@@ -49,29 +43,29 @@ func fromBSON(v bsontype) any {
 	switch v := v.(type) {
 	case *Document:
 		return types.MustConvertDocument(v)
-	case *Array:
+	case *arrayType:
 		return pointer.To(types.Array(*v))
-	case *Double:
+	case *doubleType:
 		return float64(*v)
-	case *String:
+	case *stringType:
 		return string(*v)
-	case *Binary:
+	case *binaryType:
 		return types.Binary(*v)
-	case *ObjectID:
+	case *objectIDType:
 		return types.ObjectID(*v)
-	case *Bool:
+	case *boolType:
 		return bool(*v)
-	case *DateTime:
+	case *dateTimeType:
 		return time.Time(*v)
-	case nil:
-		return nil
-	case *Regex:
+	case *nullType:
+		return types.Null
+	case *regexType:
 		return types.Regex(*v)
-	case *Int32:
+	case *int32Type:
 		return int32(*v)
-	case *Timestamp:
+	case *timestampType:
 		return types.Timestamp(*v)
-	case *Int64:
+	case *int64Type:
 		return int64(*v)
 	case *CString:
 		return types.CString(*v)
@@ -83,32 +77,32 @@ func fromBSON(v bsontype) any {
 //nolint:deadcode // remove later if it is not needed
 func toBSON(v any) bsontype {
 	switch v := v.(type) {
-	case types.Document:
+	case *types.Document:
 		return MustConvertDocument(v)
 	case *types.Array:
-		return pointer.To(Array(*v))
+		return pointer.To(arrayType(*v))
 	case float64:
-		return pointer.To(Double(v))
+		return pointer.To(doubleType(v))
 	case string:
-		return pointer.To(String(v))
+		return pointer.To(stringType(v))
 	case types.Binary:
-		return pointer.To(Binary(v))
+		return pointer.To(binaryType(v))
 	case types.ObjectID:
-		return pointer.To(ObjectID(v))
+		return pointer.To(objectIDType(v))
 	case bool:
-		return pointer.To(Bool(v))
+		return pointer.To(boolType(v))
 	case time.Time:
-		return pointer.To(DateTime(v))
-	case nil:
-		return nil
+		return pointer.To(dateTimeType(v))
+	case types.NullType:
+		return pointer.To(nullType(v))
 	case types.Regex:
-		return pointer.To(Regex(v))
+		return pointer.To(regexType(v))
 	case int32:
-		return pointer.To(Int32(v))
+		return pointer.To(int32Type(v))
 	case types.Timestamp:
-		return pointer.To(Timestamp(v))
+		return pointer.To(timestampType(v))
 	case int64:
-		return pointer.To(Int64(v))
+		return pointer.To(int64Type(v))
 	case types.CString:
 		return pointer.To(CString(v))
 	}
