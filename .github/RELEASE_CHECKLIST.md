@@ -13,4 +13,5 @@
 9. Refresh
    * `env GOPROXY=https://proxy.golang.org go get -v github.com/FerretDB/FerretDB@<tag>`
    * https://pkg.go.dev/github.com/FerretDB/FerretDB
-10. `make docker`, add tag, push image.
+10. `make docker-local`
+11. `make docker-push` with four tags (`X.Y.Z` and `latest` for both ghcr.io and Docker Hub).
