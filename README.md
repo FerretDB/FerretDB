@@ -1,7 +1,8 @@
 # FerretDB
 
 [![Go](https://github.com/FerretDB/FerretDB/actions/workflows/go.yml/badge.svg)](https://github.com/FerretDB/FerretDB/actions/workflows/go.yml)
- [![codecov](https://codecov.io/gh/FerretDB/FerretDB/branch/main/graph/badge.svg?token=JZ56XFT3DM)](https://codecov.io/gh/FerretDB/FerretDB)
+[![Docker](https://github.com/FerretDB/FerretDB/actions/workflows/docker.yml/badge.svg)](https://github.com/FerretDB/FerretDB/actions/workflows/docker.yml)
+[![codecov](https://codecov.io/gh/FerretDB/FerretDB/branch/main/graph/badge.svg?token=JZ56XFT3DM)](https://codecov.io/gh/FerretDB/FerretDB)
 
 FerretDB (previously MangoDB) was founded to become the de-facto open-source substitute to MongoDB.
 FerretDB is an open-source proxy, converting the MongoDB wire protocol queries to SQL - using PostgreSQL as a database engine.
