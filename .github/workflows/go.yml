@@ -177,12 +177,3 @@ jobs:
           git status
           git diff --exit-code
         working-directory: source
-
-  # TODO
-  detect-matching-pr:
-    name: Detect matching PR
-    runs-on: ubuntu-20.04
-
-    steps:
-      - name: Detect matching PR
-        uses: FerretDB/github-actions/detect-matching-pr@detect-matching-pr
