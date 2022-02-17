@@ -49,7 +49,7 @@ Package `cmd` provides commands implementation. `ferretdb` is the main FerretDB 
 Package `tools` uses "tools.go" approach to fix tools versions. They are installed into `bin/` by `make init`.
 
 `internal` subpackages contain most of the FerretDB code:
-* `types` package provides Go types matching BSON types that don't have built-in Go equivalents: we use `int32` for BSON's int32, but types.ObjectID for BSON's ObjectId.
+* `types` package provides Go types matching BSON types that don't have built-in Go equivalents: we use `int32` for BSON's int32, but `types.ObjectID` for BSON's ObjectId.
 * `fjson` provides converters from/to FJSON for built-in and `types` types.
   FJSON adds some extensions to JSON for keeping object keys in order, preserving BSON type information, etc.
   FJSON is used by `jsonb1` handler/storage.
