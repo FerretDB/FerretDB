@@ -15,3 +15,5 @@ internal/util/version/branch.txt
 **/testdata/fuzz
 
 docker-compose.override.yml
+
+.idea/

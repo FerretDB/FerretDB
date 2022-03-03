@@ -15,6 +15,8 @@
 package jsonb1
 
 import (
+	"encoding/binary"
+	"errors"
 	"fmt"
 	"math"
 	"strings"
@@ -24,6 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/jackc/pgtype"
 )
 
 // scalar returns an SQL expression (with placeholder and type casting),
@@ -59,6 +62,13 @@ func scalar(v any, p *pg.Placeholder) (sql string, args []any, err error) {
 		arg = v.Pattern
 		if options != "" {
 			arg = "(?" + options + ")" + v.Pattern
+		}
+	case types.Binary:
+		sql = fmt.Sprintf(`)::integer::bit(%d) & `+p.Next()+` )::integer != 0`, len(v.B)*8)
+		arg = pgtype.Bit{
+			Bytes:  v.B,
+			Len:    8,
+			Status: pgtype.Present,
 		}
 	default:
 		err = lazyerrors.Errorf("scalar: unhandled field %v (%T)", v, v)
@@ -211,6 +221,31 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 				err = common.NewErrorMsg(common.ErrBadValue, "$regex has to be a string")
 				return
 			}
+		case "$bitsAllClear":
+			// {field: {$bitsAllClear: bitmask}}
+
+			sql += `((_jsonb->` + p.Next()
+
+			switch values := value.(type) {
+			case *types.Array:
+				var mask *types.Binary
+				mask, err = bitMaskFromArray(values)
+				if err != nil {
+					err = common.NewError(common.ErrBadValue, err)
+					return
+				}
+
+				argSql, arg, err = scalar(*mask, p)
+			case int32:
+				mask := bitMaskFromInt(values)
+				argSql, arg, err = scalar(*mask, p)
+			case types.Binary:
+				argSql, arg, err = scalar(value, p)
+			default:
+				err = common.NewErrorMsg(common.ErrBadValue,
+					"$bitsAllClear has to be bitmask, position array or ")
+			}
+
 		default:
 			err = lazyerrors.Errorf("unhandled {%q: %v}", op, value)
 		}
@@ -227,6 +262,42 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 	}
 
 	return
+}
+
+func bitMaskFromArray(values *types.Array) (*types.Binary, error) {
+	var bitMask uint64
+	for i := 0; i < values.Len(); i++ {
+		value, err := values.Get(i)
+		if err != nil {
+			return nil, err
+		}
+
+		if _, ok := value.(int32); !ok {
+			return nil, errors.New("bit position should be an integer value")
+		}
+
+		bitPosition := value.(int32)
+
+		bitMask |= 1 << bitPosition
+	}
+
+	bs := make([]byte, 8)
+	binary.LittleEndian.PutUint64(bs, bitMask)
+
+	return &types.Binary{
+		Subtype: types.BinaryGeneric,
+		B:       bs,
+	}, nil
+}
+
+func bitMaskFromInt(value int32) (mask *types.Binary) {
+	bs := make([]byte, 0)
+	binary.LittleEndian.PutUint64(bs, uint64(value))
+
+	return &types.Binary{
+		Subtype: types.BinaryGeneric,
+		B:       bs,
+	}
 }
 
 func wherePair(key string, value any, p *pg.Placeholder) (sql string, args []any, err error) {
