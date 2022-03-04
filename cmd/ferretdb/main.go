@@ -20,11 +20,11 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"syscall"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
 	"go.uber.org/zap"
+	"golang.org/x/sys/unix"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/pg"
@@ -83,7 +83,7 @@ func main() {
 		logger.Sugar().Warn("The current TLS implementation is not secure.")
 	}
 
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
+	ctx, stop := signal.NotifyContext(context.Background(), unix.SIGTERM, unix.SIGINT)
 	go func() {
 		<-ctx.Done()
 		logger.Info("Stopping...")
