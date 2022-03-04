@@ -20,17 +20,16 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/common/expfmt"
-	"go.uber.org/zap"
-	"golang.org/x/sys/unix"
+	"syscall"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/version"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/expfmt"
+	"go.uber.org/zap"
 )
 
 //nolint:gochecknoglobals // flags are defined there to be visible in `bin/ferretdb-testcover -h` output
@@ -83,7 +82,7 @@ func main() {
 		logger.Sugar().Warn("The current TLS implementation is not secure.")
 	}
 
-	ctx, stop := signal.NotifyContext(context.Background(), unix.SIGTERM, unix.SIGINT)
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	go func() {
 		<-ctx.Done()
 		logger.Info("Stopping...")

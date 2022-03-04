@@ -14,6 +14,11 @@
 
 package types
 
+import (
+	"encoding/binary"
+	"errors"
+)
+
 //go:generate ../../bin/stringer -linecomment -type BinarySubtype
 
 // BinarySubtype represents BSON Binary's subtype.
@@ -34,4 +39,40 @@ const (
 type Binary struct {
 	Subtype BinarySubtype
 	B       []byte
+}
+
+func BinaryFromArray(values *Array) (*Binary, error) {
+	var bitMask uint64
+	for i := 0; i < values.Len(); i++ {
+		value, err := values.Get(i)
+		if err != nil {
+			return nil, err
+		}
+
+		if _, ok := value.(int32); !ok {
+			return nil, errors.New("bit position should be an integer value")
+		}
+
+		bitPosition := value.(int32)
+
+		bitMask |= 1 << bitPosition
+	}
+
+	bs := make([]byte, 8)
+	binary.LittleEndian.PutUint64(bs, bitMask)
+
+	return &Binary{
+		Subtype: BinaryGeneric,
+		B:       bs,
+	}, nil
+}
+
+func BinaryFromInt(value int32) (mask *Binary) {
+	bs := make([]byte, 0)
+	binary.LittleEndian.PutUint64(bs, uint64(value))
+
+	return &Binary{
+		Subtype: BinaryGeneric,
+		B:       bs,
+	}
 }
