@@ -19,12 +19,13 @@ import (
 	"math"
 	"strings"
 
+	"github.com/jackc/pgtype"
+
 	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/jackc/pgtype"
 )
 
 // scalar returns an SQL expression (with placeholder and type casting),
