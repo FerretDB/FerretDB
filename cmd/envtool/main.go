@@ -178,14 +178,14 @@ func setupMonilaAndValues(ctx context.Context, pgPool *pg.Pool) {
 
 	// listen on all interfaces to make mongoimport below work from inside Docker
 	addr := ":27018"
-	if runtime.GOOS == "darwin" {
+	if runtime.GOOS == "darwin" || runtime.GOOS == "linux" {
 		// do not trigger macOS firewall; it works with Docker Desktop
 		addr = "127.0.0.1:27018"
 	}
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		ListenAddr: addr,
-		Mode:       "normal",
+		Mode:       clientconn.NormalMode,
 		PgPool:     pgPool,
 		Logger:     logger.Named("listener").Desugar(),
 	})
