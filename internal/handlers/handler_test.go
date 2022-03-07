@@ -98,8 +98,6 @@ func handle(ctx context.Context, t *testing.T, handler *Handler, req *types.Docu
 		OpCode:        wire.OP_MSG,
 	}
 
-	addToSeedCorpus(t, &reqHeader, &reqMsg)
-
 	_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
 	require.False(t, closeConn, "%s", resBody.String())
 
