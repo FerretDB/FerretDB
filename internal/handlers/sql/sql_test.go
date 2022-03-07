@@ -18,6 +18,8 @@ import (
 	"context"
 	"testing"
 
+	"go.uber.org/zap/zaptest"
+
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
@@ -28,8 +30,9 @@ import (
 // Exported methods should be tested by the handler package.
 func setup(t *testing.T) (context.Context, *pg.Pool) {
 	ctx := testutil.Ctx(t)
-	pool := testutil.Pool(ctx, t, &testutil.PoolOpts{
+	opts := &testutil.PoolOpts{
 		ReadOnly: true,
-	})
+	}
+	pool := testutil.Pool(ctx, t, opts, zaptest.NewLogger(t))
 	return ctx, pool
 }

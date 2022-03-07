@@ -40,8 +40,8 @@ const (
 
 // Error represents wire protocol error.
 type Error struct {
-	code ErrorCode
 	err  error
+	code ErrorCode
 }
 
 // NewError creates a new wire protocol error.
