@@ -132,7 +132,7 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 			var err error
 			msgHeader, msgBody, err = ReadMessage(bufr)
 			if err != nil {
-				t.Skip(err)
+				t.Skip()
 			}
 
 			assert.NotPanics(t, func() { _ = msgHeader.String() })

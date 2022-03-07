@@ -97,7 +97,7 @@ func NewPool(connString string, logger *zap.Logger, lazy bool) (*Pool, error) {
 
 	if logger.Core().Enabled(zap.DebugLevel) {
 		config.ConnConfig.LogLevel = pgx.LogLevelTrace
-		config.ConnConfig.Logger = zapadapter.NewLogger(logger.Named("pgconn.Pool"))
+		config.ConnConfig.Logger = zapadapter.NewLogger(logger.Named("pg.Pool"))
 	}
 
 	ctx := context.Background()
