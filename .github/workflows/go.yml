@@ -25,7 +25,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
@@ -73,7 +73,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: source
           fetch-depth: 0
@@ -81,7 +81,7 @@ jobs:
       # Use deploy key instead of Personal Access Token (PAT) to limit access to one repository.
       # If secrets are not available (for example, for a pull request from a fork), GITHUB_TOKEN PAT is used automatically.
       - name: Checkout collected fuzz corpus
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: FerretDB/fuzz-corpus
           ssh-key: ${{ secrets.FUZZ_CORPUS_DEPLOY_KEY }}
