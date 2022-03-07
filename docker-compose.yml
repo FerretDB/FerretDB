@@ -4,7 +4,7 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:14.1
+    image: postgres:14.2
     container_name: ferretdb_postgres
     ports:
       - 127.0.0.1:5432:5432
@@ -20,7 +20,7 @@ services:
 
   # for proxy mode and mongosh
   mongodb:
-    image: mongo:5.0.5
+    image: mongo:5.0.6
     container_name: ferretdb_mongodb
     ports:
       - 127.0.0.1:37017:27017
