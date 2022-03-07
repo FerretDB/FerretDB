@@ -564,6 +564,22 @@ func TestFind(t *testing.T) {
 					`If you have a field name that starts with a '$' symbol, consider using $getField or $setField.`,
 			),
 		},
+		"BitsAllClear": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"name", "binary",
+				"value", must.NotFail(types.NewDocument(
+					"$bitsAllClear", 20)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x05, 0x01, 0x00, 0x00, 0x05, 0x01},
+					"name", "binary",
+					"value", types.Binary{B: []byte("KgAN"), Subtype: types.BinaryGeneric},
+				)),
+			)),
+		},
 	}
 
 	for name, tc := range testCases { //nolint:paralleltest // false positive
