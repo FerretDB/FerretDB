@@ -211,16 +211,19 @@ func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) (common.Stora
 		return nil, fmt.Errorf("Handler.msgStorage: %w", err)
 	}
 
-	m := document.Map()
 	command := document.Command()
-
 	if command == "createindexes" {
 		// TODO https://github.com/FerretDB/FerretDB/issues/78
 		return h.jsonb1, nil
 	}
 
-	collection := m[command].(string)
-	db := m["$db"].(string)
+	var db, collection string
+	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
+	}
+	if collection, err = common.GetRequiredParam[string](document, command); err != nil {
+		return nil, err
+	}
 
 	tables, storages, err := h.pgPool.Tables(ctx, db)
 	if err != nil {

@@ -70,7 +70,11 @@ func (s *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 
 	m := document.Map()
 	_, isFindOp := m["find"].(string)
-	db := m["$db"].(string)
+
+	var db string
+	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
+	}
 
 	projection, ok := m["projection"].(*types.Document)
 	projectionStr := "*"
