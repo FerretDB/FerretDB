@@ -63,9 +63,10 @@ fuzz:                                  ## Fuzz for about 2 minutes (with default
 	go test -fuzz=FuzzQuery -fuzztime=$(FUZZTIME) ./internal/wire/
 	go test -fuzz=FuzzReply -fuzztime=$(FUZZTIME) ./internal/wire/
 
-fuzz-corpus:                           ## Sync generated fuzz corpus with FUZZCORPUS
-	go run ./cmd/fuzztool/fuzztool.go -src=$(FUZZCORPUS) -dst=generated
+fuzz-corpus:                           ## Sync seed and generated fuzz corpora with FUZZCORPUS
 	go run ./cmd/fuzztool/fuzztool.go -dst=$(FUZZCORPUS) -src=generated
+	go run ./cmd/fuzztool/fuzztool.go -dst=$(FUZZCORPUS) -src=seed
+	go run ./cmd/fuzztool/fuzztool.go -src=$(FUZZCORPUS) -dst=generated
 
 bench-short:                           ## Benchmark for about 20 seconds (with default BENCHTIME)
 	go test -list='Benchmark.*' ./...
