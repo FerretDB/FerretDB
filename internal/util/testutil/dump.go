@@ -27,6 +27,8 @@ import (
 
 // Dump returns string representation for debugging.
 func Dump[T types.Type](tb testing.TB, o T) string {
+	tb.Helper()
+
 	b, err := fjson.Marshal(o)
 	require.NoError(tb, err)
 

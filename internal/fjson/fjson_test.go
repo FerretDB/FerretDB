@@ -159,7 +159,7 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() fjsontype) {
 
 		// raw "null" should never reach UnmarshalJSON due to the way encoding/json works
 		if j == "null" {
-			t.Skip(j)
+			t.Skip()
 		}
 
 		// j may not be a canonical form.
@@ -168,7 +168,7 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() fjsontype) {
 
 		v := newFunc()
 		if err := v.UnmarshalJSON([]byte(j)); err != nil {
-			t.Skip(err)
+			t.Skip()
 		}
 
 		// test MarshalJSON

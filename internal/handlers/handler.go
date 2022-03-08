@@ -78,15 +78,15 @@ func New(opts *NewOpts) *Handler {
 //
 //nolint:lll // arguments are long
 func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) {
-	var cmdLabel string
+	var command string
 	requests := h.metrics.requests.MustCurryWith(prometheus.Labels{"opcode": reqHeader.OpCode.String()})
 
-	var resLabel *string
+	var result *string
 	defer func() {
-		if resLabel == nil {
-			resLabel = pointer.To("panic")
+		if result == nil {
+			result = pointer.To("panic")
 		}
-		h.metrics.responses.WithLabelValues(resHeader.OpCode.String(), cmdLabel, *resLabel).Inc()
+		h.metrics.responses.WithLabelValues(resHeader.OpCode.String(), command, *result).Inc()
 	}()
 
 	resHeader = new(wire.MsgHeader)
@@ -98,22 +98,22 @@ func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody
 		var document *types.Document
 		document, err = msg.Document()
 		if document != nil {
-			cmdLabel = document.Command()
+			command = document.Command()
 		}
-		requests.WithLabelValues(cmdLabel).Inc()
+		requests.WithLabelValues(command).Inc()
 
 		if err == nil {
 			resHeader.OpCode = wire.OP_MSG
-			resBody, err = h.handleOpMsg(ctx, msg, cmdLabel)
+			resBody, err = h.handleOpMsg(ctx, msg, command)
 		}
 
 	case wire.OP_QUERY:
 		query := reqBody.(*wire.OpQuery)
-		cmdLabel = query.Query.Command()
-		requests.WithLabelValues(cmdLabel).Inc()
+		command = query.Query.Command()
+		requests.WithLabelValues(command).Inc()
 
 		resHeader.OpCode = wire.OP_REPLY
-		resBody, err = h.handleOpQuery(ctx, query, cmdLabel)
+		resBody, err = h.handleOpQuery(ctx, query, command)
 
 	case wire.OP_REPLY:
 		fallthrough
@@ -132,7 +132,7 @@ func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody
 	case wire.OP_COMPRESSED:
 		fallthrough
 	default:
-		requests.WithLabelValues(cmdLabel).Inc()
+		requests.WithLabelValues(command).Inc()
 		panic(fmt.Sprintf("unexpected OpCode %s", reqHeader.OpCode))
 	}
 
@@ -142,7 +142,7 @@ func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody
 		}
 
 		protoErr, recoverable := common.ProtocolError(err)
-		resLabel = pointer.To(protoErr.Error())
+		result = pointer.To(protoErr.Error())
 		closeConn = !recoverable
 		var res wire.OpMsg
 		err = res.SetSections(wire.OpMsgSection{
@@ -169,7 +169,7 @@ func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody
 	}
 	resHeader.RequestID = atomic.AddInt32(&h.lastRequestID, 1)
 
-	resLabel = pointer.To("ok")
+	result = pointer.To("ok")
 	return
 }
 
