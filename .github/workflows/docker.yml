@@ -65,13 +65,13 @@ jobs:
     steps:
       - name: Checkout code
         if: github.event_name != 'pull_request_target'
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
       - name: Checkout pull request code
         if: github.event_name == 'pull_request_target'
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
@@ -116,11 +116,11 @@ jobs:
     if: github.event_name != 'pull_request_target' || contains(github.event.pull_request.labels.*.name, 'trust')
 
     steps:
-      - name: Detect matching PR
+      - name: Detect matching PR or branch
         id: detect
         uses: FerretDB/github-actions/detect-matching-pr@main
 
-      - name: Restart dance PR actions
+      - name: Restart dance PR or branch actions
         uses: FerretDB/github-actions/restart-pr-actions@main
         with:
           owner: ${{ steps.detect.outputs.owner }}
