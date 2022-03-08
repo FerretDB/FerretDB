@@ -33,9 +33,15 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	common.Ignored(document, h.l, "writeConcern", "comment")
 
-	m := document.Map()
-	collection := m[document.Command()].(string)
-	db := m["$db"].(string)
+	command := document.Command()
+
+	var db, collection string
+	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
+	}
+	if collection, err = common.GetRequiredParam[string](document, command); err != nil {
+		return nil, err
+	}
 
 	if err = h.pgPool.DropTable(ctx, db, collection); err != nil {
 		if err == pg.ErrNotExist {

@@ -17,6 +17,7 @@ package handlers
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -28,8 +29,12 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
+	var db string
+	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
+	}
+
 	m := document.Map()
-	db := m["$db"].(string)
 	scale, ok := m["scale"].(float64)
 	if !ok {
 		scale = 1

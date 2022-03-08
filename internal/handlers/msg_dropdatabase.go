@@ -33,10 +33,9 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	common.Ignored(document, h.l, "writeConcern", "comment")
 
-	m := document.Map()
-	db, ok := m["$db"].(string)
-	if !ok || db == "" {
-		return nil, lazyerrors.New("no db")
+	var db string
+	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
 	}
 
 	res := types.MustNewDocument()
