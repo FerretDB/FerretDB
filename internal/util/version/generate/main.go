@@ -52,7 +52,7 @@ func main() {
 	var wg sync.WaitGroup
 	logger := zap.S().Named("git")
 
-	//git describe --tags --dirty > version.txt
+	// git describe --tags --dirty > version.txt
 	{
 		file := "version.txt"
 		args := `describe --tags --dirty`
@@ -69,7 +69,7 @@ func main() {
 		}()
 	}
 
-	//git rev-parse HEAD > commit.txt
+	// git rev-parse HEAD > commit.txt
 	{
 		file := "commit.txt"
 		args := `rev-parse HEAD`
@@ -86,7 +86,7 @@ func main() {
 		}()
 	}
 
-	//git branch --show-current > branch.txt
+	// git branch --show-current > branch.txt
 	{
 		file := "branch.txt"
 		args := `branch --show-current`
