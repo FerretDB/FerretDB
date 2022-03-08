@@ -180,7 +180,10 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 
 func wherePair(key string, value any, p *pg.Placeholder) (sql string, args []any, err error) {
 	if strings.HasPrefix(key, "$") {
-		exprs := value.(*types.Array)
+		var exprs *types.Array
+		if exprs, err = common.AssertType[*types.Array](value); err != nil {
+			return
+		}
 		sql, args, err = common.LogicExpr(key, exprs, p, wherePair)
 		return
 	}
