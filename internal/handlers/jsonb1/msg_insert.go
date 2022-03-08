@@ -36,9 +36,17 @@ func (s *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	common.Ignored(document, s.l, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
 
+	command := document.Command()
+
+	var db, collection string
+	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
+	}
+	if collection, err = common.GetRequiredParam[string](document, command); err != nil {
+		return nil, err
+	}
+
 	m := document.Map()
-	collection := m[document.Command()].(string)
-	db := m["$db"].(string)
 	docs, _ := m["documents"].(*types.Array)
 
 	var inserted int32

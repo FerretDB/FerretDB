@@ -40,10 +40,18 @@ func (s *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 	common.Ignored(document, s.l, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
 
+	command := document.Command()
+
+	var db, collection string
+	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
+	}
+	if collection, err = common.GetRequiredParam[string](document, command); err != nil {
+		return nil, err
+	}
+
 	m := document.Map()
-	collection := m["update"].(string)
 	docs, _ := m["updates"].(*types.Array)
-	db := m["$db"].(string)
 
 	var selected, updated int32
 	for i := 0; i < docs.Len(); i++ {
