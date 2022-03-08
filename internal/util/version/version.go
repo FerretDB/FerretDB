@@ -26,7 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-//go:generate ./generate.sh
+//go:generate go run ./generate.go
 
 var (
 	//go:embed version.txt
