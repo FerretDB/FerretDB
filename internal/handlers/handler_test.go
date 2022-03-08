@@ -568,15 +568,18 @@ func TestFind(t *testing.T) {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
-				"name", "binary",
-				"value", must.NotFail(types.NewDocument(
-					"$bitsAllClear", 20)),
+				"filter", must.NotFail(
+					types.NewDocument(
+						"name", "int32",
+						"value", must.NotFail(types.NewDocument(
+							"$bitsAllClear", int32(42))),
+					)),
 			)),
 			resp: must.NotFail(types.NewArray(
 				must.NotFail(types.NewDocument(
-					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x05, 0x01, 0x00, 0x00, 0x05, 0x01},
-					"name", "binary",
-					"value", types.Binary{B: []byte("KgAN"), Subtype: types.BinaryGeneric},
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x10, 0x01, 0x00, 0x00, 0x10, 0x01},
+					"name", "int32",
+					"value", int32(42),
 				)),
 			)),
 		},

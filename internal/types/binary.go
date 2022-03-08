@@ -15,6 +15,7 @@
 package types
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 )
@@ -67,12 +68,15 @@ func BinaryFromArray(values *Array) (*Binary, error) {
 	}, nil
 }
 
-func BinaryFromInt(value int32) (mask *Binary) {
-	bs := make([]byte, 0)
-	binary.LittleEndian.PutUint64(bs, uint64(value))
+func BinaryFromInt(value int32) (mask *Binary, err error) {
+	buff := new(bytes.Buffer)
+	err = binary.Write(buff, binary.LittleEndian, uint64(value))
+	if err != nil {
+		return nil, err
+	}
 
 	return &Binary{
 		Subtype: BinaryGeneric,
-		B:       bs,
-	}
+		B:       buff.Bytes(),
+	}, nil
 }

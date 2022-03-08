@@ -63,12 +63,14 @@ func scalar(v any, p *pg.Placeholder) (sql string, args []any, err error) {
 			arg = "(?" + options + ")" + v.Pattern
 		}
 	case types.Binary:
-		sql = fmt.Sprintf(`)::integer::bit(%d) & `+p.Next()+` )::integer != 0`, len(v.B)*8)
-		arg = pgtype.Bit{
+		sql = fmt.Sprintf(`)::integer::bit(%d) # `+p.Next()+` )::integer = 0`, 8)
+		bit := pgtype.Bit{
 			Bytes:  v.B,
 			Len:    8,
 			Status: pgtype.Present,
 		}
+
+		arg, _ = bit.Value()
 	default:
 		err = lazyerrors.Errorf("scalar: unhandled field %v (%T)", v, v)
 	}
@@ -237,7 +239,13 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 				argSql, arg, err = scalar(*mask, p)
 			case int32:
 				// {field: {$bitsAllClear: bitmask}}
-				mask := types.BinaryFromInt(values)
+				var mask *types.Binary
+				mask, err = types.BinaryFromInt(values)
+				if err != nil {
+					err = common.NewError(common.ErrBadValue, err)
+					return
+				}
+
 				argSql, arg, err = scalar(*mask, p)
 			case types.Binary:
 				// {field: {$bitsAllClear: BinData()}}
