@@ -183,6 +183,9 @@ func setupMonilaAndValues(ctx context.Context, pgPool *pg.Pool) {
 		addr = "127.0.0.1:27018"
 	}
 
+	logger.Info("Runtime value ", runtime.GOOS)
+	logger.Infof("FerretDB listener address: %s", addr)
+
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		ListenAddr: addr,
 		Mode:       clientconn.NormalMode,
