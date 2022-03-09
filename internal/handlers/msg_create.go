@@ -57,9 +57,15 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 	common.Ignored(document, h.l, ignoredFields...)
 
-	m := document.Map()
-	collection := m[document.Command()].(string)
-	db := m["$db"].(string)
+	command := document.Command()
+
+	var db, collection string
+	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
+	}
+	if collection, err = common.GetRequiredParam[string](document, command); err != nil {
+		return nil, err
+	}
 
 	if err := h.pgPool.CreateSchema(ctx, db); err != nil && err != pg.ErrAlreadyExist {
 		return nil, lazyerrors.Error(err)
