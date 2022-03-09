@@ -54,7 +54,6 @@ func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql
 
 	sql = "json_build_object('$k', array[" + ks + "],"
 	for i, k := range projection.Keys() { // value
-
 		doc, isDoc := projectionMap[k].(*types.Document)
 		if isDoc {
 			if _, err := doc.Get("$elemMatch"); err == nil {

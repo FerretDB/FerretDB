@@ -53,7 +53,6 @@ type setupOpts struct {
 // If some test is failing and the log output is confusing, and you are tempted to move setup call to subtest,
 // instead run that single test with `go test -run test/name`.
 func setup(t testing.TB, opts *setupOpts) (context.Context, *Handler, *pg.Pool) {
-
 	t.Helper()
 
 	if opts == nil {
