@@ -139,7 +139,7 @@ func fuzzBinary(f *testing.F, testCases []testCase, newFunc func() bsontype) {
 			br := bytes.NewReader(b)
 			bufr := bufio.NewReader(br)
 			if err := v.ReadFrom(bufr); err != nil {
-				t.Skip(err)
+				t.Skip()
 			}
 
 			// remove random tail

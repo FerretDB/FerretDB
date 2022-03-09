@@ -70,7 +70,7 @@ func collectFiles(root string, logger *zap.SugaredLogger) (map[string]struct{}, 
 			return nil
 		}
 
-		// skip .env, .DS_Store, README.md, etc
+		// skip other files
 		if len(info.Name()) != 64 {
 			return nil
 		}
@@ -87,13 +87,26 @@ func collectFiles(root string, logger *zap.SugaredLogger) (map[string]struct{}, 
 	return existingFiles, err
 }
 
-// diff returns the set of files in srd that are not in dst.
+// cutTestdata returns s with "/testdata/fuzz" removed.
+//
+// That converts seed corpus entry like `internal/bson/testdata/fuzz/FuzzArray/HEX`
+// to format used by generated and collected corpora `internal/bson/FuzzArray/HEX`.
+func cutTestdata(s string) string {
+	old := string(filepath.Separator) + filepath.Join("testdata", "fuzz")
+	return strings.Replace(s, old, "", 1)
+}
+
+// diff returns the set of files in src that are not in dst, with and without applying `cutTestdata`.
 func diff(src, dst map[string]struct{}) []string {
 	res := make([]string, 0, 50)
 	for p := range src {
-		if _, ok := dst[p]; !ok {
-			res = append(res, p)
+		if _, ok := dst[p]; ok {
+			continue
 		}
+		if _, ok := dst[cutTestdata(p)]; ok {
+			continue
+		}
+		res = append(res, p)
 	}
 
 	sort.Strings(res)
@@ -155,7 +168,7 @@ func copyCorpus(srcRoot, dstRoot string) {
 	logger.Infof("Copying new %d files to dst.", len(files))
 	for _, p := range files {
 		src := filepath.Join(srcRoot, p)
-		dst := filepath.Join(dstRoot, p)
+		dst := cutTestdata(filepath.Join(dstRoot, p))
 		logger.Debugf("%s -> %s", src, dst)
 		if err := copyFile(src, dst); err != nil {
 			logger.Fatal(err)
@@ -221,6 +234,6 @@ func main() {
 		}
 	}
 
-	logger.Infof("Copyting from %s to %s.", src, dst)
+	logger.Infof("Copying from %s to %s.", src, dst)
 	copyCorpus(src, dst)
 }
