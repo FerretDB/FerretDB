@@ -48,11 +48,9 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 
 	common.Ignored(document, h.l, "comment", "authorizedCollections")
 
-	m := document.Map()
-
-	db, ok := m["$db"].(string)
-	if !ok {
-		return nil, lazyerrors.New("no db")
+	var db string
+	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
 	}
 
 	names, _, err := h.pgPool.Tables(ctx, db)
