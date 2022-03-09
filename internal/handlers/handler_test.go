@@ -130,69 +130,34 @@ func TestFind(t *testing.T) {
 	// Do not use sentences, spaces, or underscores in subtest names
 	// to make it easier to run individual tests with `go test -run test/name` and for consistency.
 	testCases := map[string]testCase{
-		// db.values.find({}, { value: { $elemMatch: { score: 24 }} })
-		"elemMatchScalar": {
+		// db.values.find({ "code": 121081 }, { value: { $elemMatch: { score: {"$gt", 24 }, joined: 1, lastLogin: 1}} })
+		"elemMatchFilterProjection": {
 			deep:    true,
 			schemas: []string{"values"},
 			req: types.MustNewDocument(
 				"find", "values",
+				"filter", types.MustNewDocument(
+					"code", 121081,
+				),
 				"projection", types.MustNewDocument(
 					"value", types.MustNewDocument(
-						"$elemMatch", types.MustNewDocument("docuemtn", int32(42)),
+						"$elemMatch", types.MustNewDocument(
+							"score", types.MustNewDocument("$gt", int32(5)),
+							"joined", 1,
+							"lastLogin", 1,
+						),
 					),
 				),
 			),
 			resp: types.MustNewArray(
 				types.MustNewDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x05, 0x00, 0x00, 0x04, 0x05},
-					"name", "array-embedded",
+					"code", 121081,
 					"value", types.MustNewArray(
 						types.MustNewDocument("document", int32(42), "score", float64(42.13), "age", int32(999)),
 					),
 				),
 			),
-		},
-		// db.values.find({}, { value: { $elemMatch: { age: { $gt: 999 }, score: 24  }} })
-		"elemMatchTwoConditions": {
-			deep:    true,
-			schemas: []string{"values"},
-			req: types.MustNewDocument(
-				"find", "values",
-				"projection", types.MustNewDocument(
-					"value", types.MustNewDocument(
-						"$elemMatch", types.MustNewDocument(
-							"score", int32(24),
-							"age", types.MustNewDocument("$gt", int32(999)),
-						),
-					),
-				),
-			),
-			resp: types.MustNewArray(
-				types.MustNewDocument(
-					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x05, 0x00, 0x00, 0x04, 0x05},
-					"name", "array-embedded",
-					"value", types.MustNewArray(
-						types.MustNewDocument("document", "def", "score", int32(24), "age", int32(1002)),
-					),
-				),
-			),
-		},
-		// db.values.find({}, { value: { $elemMatch: { age: { $lt: 999 }, score: 24  }} })
-		"elemMatchTwoConditionsEmpty": {
-			deep:    true,
-			schemas: []string{"values"},
-			req: types.MustNewDocument(
-				"find", "values",
-				"projection", types.MustNewDocument(
-					"value", types.MustNewDocument(
-						"$elemMatch", types.MustNewDocument(
-							"score", int32(24),
-							"age", types.MustNewDocument("$lt", int32(999)),
-						),
-					),
-				),
-			),
-			resp: types.MustNewArray(),
 		},
 		"ValueLtGt": {
 			schemas: []string{"monila", "pagila"},
