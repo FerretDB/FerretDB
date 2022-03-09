@@ -131,33 +131,23 @@ func TestFind(t *testing.T) {
 	// Do not use sentences, spaces, or underscores in subtest names
 	// to make it easier to run individual tests with `go test -run test/name` and for consistency.
 	testCases := map[string]testCase{
-		// db.values.find({ value: { code: {$gt: 121080 }}}, { value: { $elemMatch: { code: 121082 }}})
-		// output:
-		// elemmatch5 w/o name field, w/o value field
-		// elemmatch6 w/o name field, with value field
+		// db.values.find({ name: "array-five" }, { value: { $elemMatch:{ code: 121081 }}})
 		"elemMatchFilterProjection": {
 			deep:    true,
 			schemas: []string{"values"},
 			req: types.MustNewDocument(
 				"find", "values",
-				"filter", types.MustNewDocument(
-					"value.code", types.MustNewDocument("$gt", int32(121081)),
-				),
-				"sort", types.MustNewDocument(
-					"name", int32(1),
-				),
+				"filter", types.MustNewDocument("name", "array-four"),
+				"sort", types.MustNewDocument("name", int32(1)),
 				"projection", types.MustNewDocument(
 					"value", types.MustNewDocument(
 						"$elemMatch", types.MustNewDocument(
-							"code", int32(121082),
+							"code", int32(121081),
 						),
 					),
 				),
 			),
 			resp: types.MustNewArray(
-				types.MustNewDocument(
-					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x05, 0x00, 0x00, 0x03, 0x09},
-				),
 				types.MustNewDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x05, 0x00, 0x00, 0x03, 0x09},
 					"value", types.MustNewArray(
