@@ -114,10 +114,13 @@ func (s *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 				sql += ","
 			}
 
+			order, err := common.AssertType[int32](sortMap[k])
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
 			sql += " _jsonb->" + placeholder.Next()
 			args = append(args, k)
-
-			order := sortMap[k].(int32)
 			if order > 0 {
 				sql += " ASC"
 			} else {

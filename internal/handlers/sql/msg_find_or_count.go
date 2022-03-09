@@ -117,8 +117,12 @@ func (s *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 				sql += ","
 			}
 
+			order, err := common.AssertType[int32](sortMap[k])
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
 			sql += " " + pgx.Identifier{k}.Sanitize()
-			order := sortMap[k].(int32)
 			if order > 0 {
 				sql += " ASC"
 			} else {
