@@ -138,7 +138,6 @@ func TestFind(t *testing.T) {
 			req: types.MustNewDocument(
 				"find", "values",
 				"filter", types.MustNewDocument("name", "array-four"),
-				"sort", types.MustNewDocument("name", int32(1)),
 				"projection", types.MustNewDocument(
 					"value", types.MustNewDocument(
 						"$elemMatch", types.MustNewDocument(
