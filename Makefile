@@ -43,6 +43,7 @@ fmt: bin/gofumpt                       ## Format code
 
 test:                                  ## Run tests
 	go test -race -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
+	go tool cover -html ./cover.txt -o ./cover.html
 	go test -race -shuffle=on -bench=. -benchtime=1x ./...
 
 # That's not quite correct: https://github.com/golang/go/issues/15513
