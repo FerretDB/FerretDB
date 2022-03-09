@@ -138,7 +138,7 @@ func TestFind(t *testing.T) {
 				"find", "values",
 				"projection", types.MustNewDocument(
 					"value", types.MustNewDocument(
-						"$elemMatch", types.MustNewDocument("score", float64(42.13)),
+						"$elemMatch", types.MustNewDocument("docuemtn", int32(42)),
 					),
 				),
 			),
@@ -147,7 +147,7 @@ func TestFind(t *testing.T) {
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x05, 0x00, 0x00, 0x04, 0x05},
 					"name", "array-embedded",
 					"value", types.MustNewArray(
-						types.MustNewDocument("document", "def", "score", float64(42.13), "age", int32(1000)),
+						types.MustNewDocument("document", int32(42), "score", float64(42.13), "age", int32(999)),
 					),
 				),
 			),
@@ -172,7 +172,7 @@ func TestFind(t *testing.T) {
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x05, 0x00, 0x00, 0x04, 0x05},
 					"name", "array-embedded",
 					"value", types.MustNewArray(
-						types.MustNewDocument("document", "jkl", "score", int32(24), "age", int32(1002)),
+						types.MustNewDocument("document", "def", "score", int32(24), "age", int32(1002)),
 					),
 				),
 			),
