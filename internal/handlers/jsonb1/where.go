@@ -119,7 +119,12 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 			}
 			sql += "NOT("
 
-			argSql, arg, err = fieldExpr(field, value.(*types.Document), p)
+			var exprValue *types.Document
+			if exprValue, err = common.AssertType[*types.Document](value); err != nil {
+				err = lazyerrors.Errorf("fieldExpr: %w", err)
+				return
+			}
+			argSql, arg, err = fieldExpr(field, exprValue, p)
 			if err != nil {
 				err = lazyerrors.Errorf("fieldExpr: %w", err)
 				return
@@ -139,11 +144,17 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 		case "$in":
 			// {field: {$in: [value1, value2, ...]}}
 			sql += "_jsonb->" + p.Next() + " IN"
-			argSql, arg, err = common.InArray(value.(*types.Array), p, scalar)
+			var arr *types.Array
+			if arr, err = common.AssertType[*types.Array](value); err == nil {
+				argSql, arg, err = common.InArray(arr, p, scalar)
+			}
 		case "$nin":
 			// {field: {$nin: [value1, value2, ...]}}
 			sql += "_jsonb->" + p.Next() + " NOT IN"
-			argSql, arg, err = common.InArray(value.(*types.Array), p, scalar)
+			var arr *types.Array
+			if arr, err = common.AssertType[*types.Array](value); err == nil {
+				argSql, arg, err = common.InArray(arr, p, scalar)
+			}
 		case "$eq":
 			// {field: {$eq: value}}
 			// TODO special handling for regex
