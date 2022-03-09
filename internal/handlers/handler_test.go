@@ -16,6 +16,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"math"
 	"os"
 	"runtime"
@@ -24,6 +25,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pmezard/go-difflib/difflib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -51,6 +53,7 @@ type setupOpts struct {
 // If some test is failing and the log output is confusing, and you are tempted to move setup call to subtest,
 // instead run that single test with `go test -run test/name`.
 func setup(t testing.TB, opts *setupOpts) (context.Context, *Handler, *pg.Pool) {
+
 	t.Helper()
 
 	if opts == nil {
@@ -88,7 +91,6 @@ func handle(ctx context.Context, t *testing.T, handler *Handler, req *types.Docu
 		Documents: []*types.Document{req},
 	})
 	require.NoError(t, err)
-
 	b, err := reqMsg.MarshalBinary()
 	require.NoError(t, err)
 
@@ -122,11 +124,76 @@ func TestFind(t *testing.T) {
 		req     *types.Document
 		resp    *types.Array
 		err     error
+		deep    bool
 	}
 
 	// Do not use sentences, spaces, or underscores in subtest names
 	// to make it easier to run individual tests with `go test -run test/name` and for consistency.
 	testCases := map[string]testCase{
+		// db.values.find({}, { value: { $elemMatch: { score: 24 }} })
+		"elemMatchScalar": {
+			deep:    true,
+			schemas: []string{"values"},
+			req: types.MustNewDocument(
+				"find", "values",
+				"projection", types.MustNewDocument(
+					"value", types.MustNewDocument(
+						"$elemMatch", types.MustNewDocument("score", float64(42.13)),
+					),
+				),
+			),
+			resp: types.MustNewArray(
+				types.MustNewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x05, 0x00, 0x00, 0x04, 0x05},
+					"name", "array-embedded",
+					"value", types.MustNewArray(
+						types.MustNewDocument("document", "def", "score", float64(42.13), "age", int32(1000)),
+					),
+				),
+			),
+		},
+		// db.values.find({}, { value: { $elemMatch: { age: { $gt: 999 }, score: 24  }} })
+		"elemMatchTwoConditions": {
+			deep:    true,
+			schemas: []string{"values"},
+			req: types.MustNewDocument(
+				"find", "values",
+				"projection", types.MustNewDocument(
+					"value", types.MustNewDocument(
+						"$elemMatch", types.MustNewDocument(
+							"score", int32(24),
+							"age", types.MustNewDocument("$gt", int32(999)),
+						),
+					),
+				),
+			),
+			resp: types.MustNewArray(
+				types.MustNewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x05, 0x00, 0x00, 0x04, 0x05},
+					"name", "array-embedded",
+					"value", types.MustNewArray(
+						types.MustNewDocument("document", "jkl", "score", int32(24), "age", int32(1002)),
+					),
+				),
+			),
+		},
+		// db.values.find({}, { value: { $elemMatch: { age: { $lt: 999 }, score: 24  }} })
+		"elemMatchTwoConditionsEmpty": {
+			deep:    true,
+			schemas: []string{"values"},
+			req: types.MustNewDocument(
+				"find", "values",
+				"projection", types.MustNewDocument(
+					"value", types.MustNewDocument(
+						"$elemMatch", types.MustNewDocument(
+							"score", int32(24),
+							"age", types.MustNewDocument("$lt", int32(999)),
+						),
+					),
+				),
+			),
+			resp: types.MustNewArray(),
+		},
 		"ValueLtGt": {
 			schemas: []string{"monila", "pagila"},
 			req: types.MustNewDocument(
@@ -613,7 +680,30 @@ func TestFind(t *testing.T) {
 					}
 
 					actual := handle(ctx, t, handler, tc.req)
-					assert.Equal(t, expected, actual)
+					if tc.deep {
+						expectedJson, err := json.MarshalIndent(expected, " ", " ")
+						assert.Nil(t, err)
+						actualJson, err := json.MarshalIndent(actual, " ", " ")
+						assert.Nil(t, err)
+						var diffBody string
+						diffBody, err = difflib.GetUnifiedDiffString(
+							difflib.UnifiedDiff{
+								A:        difflib.SplitLines(string(expectedJson)),
+								FromFile: "expected",
+								B:        difflib.SplitLines(string(actualJson)),
+								ToFile:   "actual",
+								Context:  3,
+							})
+						assert.Nil(t, err)
+						if diffBody != "" {
+							t.Log(string(expectedJson))
+							t.Log(string(actualJson))
+							t.Log(diffBody)
+							t.Fail()
+						}
+					} else {
+						assert.Equal(t, expected, actual)
+					}
 				})
 			}
 		})
