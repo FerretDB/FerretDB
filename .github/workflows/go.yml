@@ -119,7 +119,8 @@ jobs:
         working-directory: source
 
       # TODO https://github.com/FerretDB/FerretDB/issues/238
-      - name: Run fuzzers
+      # TODO https://github.com/FerretDB/FerretDB/issues/344
+      - name: Run collected fuzzing corpus
         run: make fuzz
         working-directory: source
         env:

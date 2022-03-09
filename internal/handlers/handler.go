@@ -100,9 +100,7 @@ func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody
 		msg := reqBody.(*wire.OpMsg)
 		var document *types.Document
 		document, err = msg.Document()
-		if document != nil {
-			command = document.Command()
-		}
+		command = document.Command()
 		requests.WithLabelValues(command).Inc()
 
 		if err == nil {
