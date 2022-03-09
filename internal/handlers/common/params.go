@@ -21,7 +21,7 @@ import (
 )
 
 // GetRequiredParam returns doc's value for key or protocol error for missing or invalid parameter.
-func GetRequiredParam[T types.ScalarType](doc *types.Document, key string) (T, error) {
+func GetRequiredParam[T types.Type](doc *types.Document, key string) (T, error) {
 	var zero T
 
 	v, err := doc.Get(key)
@@ -34,6 +34,17 @@ func GetRequiredParam[T types.ScalarType](doc *types.Document, key string) (T, e
 	if !ok {
 		msg := fmt.Sprintf("required parameter %q has type %T (expected %T)", key, v, zero)
 		return zero, NewErrorMsg(ErrBadValue, msg)
+	}
+
+	return res, nil
+}
+
+// AssertType asserts value's type, returning protocol error for unexpected types.
+func AssertType[T types.Type](value any) (T, error) {
+	res, ok := value.(T)
+	if !ok {
+		msg := fmt.Sprintf("got type %T, expected %T", value, res)
+		return res, NewErrorMsg(ErrBadValue, msg)
 	}
 
 	return res, nil
