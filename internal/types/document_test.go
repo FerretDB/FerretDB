@@ -33,6 +33,7 @@ func TestDocument(t *testing.T) {
 		assert.Zero(t, doc.Len())
 		assert.Nil(t, doc.Map())
 		assert.Nil(t, doc.Keys())
+		assert.Equal(t, "", doc.Command())
 	})
 
 	t.Run("ZeroValues", func(t *testing.T) {
@@ -46,10 +47,11 @@ func TestDocument(t *testing.T) {
 		assert.Equal(t, 0, doc.Len())
 		assert.Nil(t, doc.m)
 		assert.Nil(t, doc.keys)
+		assert.Equal(t, "", doc.Command())
 
-		err := doc.Set("foo", Null)
+		err := doc.Set("Foo", Null)
 		assert.NoError(t, err)
-		value, err := doc.Get("foo")
+		value, err := doc.Get("Foo")
 		assert.NoError(t, err)
 		assert.Equal(t, Null, value)
 
@@ -58,6 +60,8 @@ func TestDocument(t *testing.T) {
 
 		err = doc.Set("bar", nil)
 		assert.EqualError(t, err, `types.Document.validate: types.validateValue: unsupported type: <nil> (<nil>)`)
+
+		assert.Equal(t, "foo", doc.Command())
 	})
 
 	t.Run("NewDocument", func(t *testing.T) {
