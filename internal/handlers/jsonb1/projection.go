@@ -47,10 +47,10 @@ func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql
 		args = append(args, k)
 	}
 
-	if ks == "" {
-		sql = "_jsonb"
-		return
-	}
+	// if ks == "" {
+	// 	sql = "_jsonb"
+	// 	return
+	// }
 
 	sql = "json_build_object('$k', array[" + ks + "],"
 	for i, k := range projection.Keys() { // value

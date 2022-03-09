@@ -455,6 +455,10 @@ func TestFind(t *testing.T) {
 						"$size", int32(2),
 					)),
 				)),
+				"sort", types.MustNewDocument(
+					"name", int32(1),
+				),
+				"limit", int32(1),
 			)),
 			resp: must.NotFail(types.NewArray(
 				must.NotFail(types.NewDocument(
@@ -465,6 +469,7 @@ func TestFind(t *testing.T) {
 			)),
 		},
 		"SizeInt64": {
+			deep:    true,
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -473,6 +478,10 @@ func TestFind(t *testing.T) {
 						"$size", int64(2),
 					)),
 				)),
+				"sort", types.MustNewDocument(
+					"name", int32(1),
+				),
+				"limit", int32(1),
 			)),
 			resp: must.NotFail(types.NewArray(
 				must.NotFail(types.NewDocument(
@@ -491,6 +500,10 @@ func TestFind(t *testing.T) {
 						"$size", 2.0,
 					)),
 				)),
+				"sort", types.MustNewDocument(
+					"name", int32(1),
+				),
+				"limit", int32(1),
 			)),
 			resp: must.NotFail(types.NewArray(
 				must.NotFail(types.NewDocument(
