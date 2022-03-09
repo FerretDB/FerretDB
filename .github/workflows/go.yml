@@ -124,7 +124,7 @@ jobs:
         working-directory: source
         env:
           GOMAXPROCS: 1 # otherwise, oom-killer kills fuzzer too often
-          FUZZTIME: 10s
+          FUZZTIME: 5s
           FUZZCORPUS: ../fuzz-corpus
 
       - name: Collect corpus

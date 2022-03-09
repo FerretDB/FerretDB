@@ -72,6 +72,11 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("%[1]s (%[1]d): %[2]v", e.code, e.err)
 }
 
+// Code returns error code.
+func (e *Error) Code() ErrorCode {
+	return e.code
+}
+
 // Unwrap implements standard error unwrapping interface.
 func (e *Error) Unwrap() error {
 	return e.err

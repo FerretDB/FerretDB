@@ -1,5 +1,5 @@
 BENCHTIME ?= 5s
-FUZZTIME ?= 20s
+FUZZTIME ?= 15s
 FUZZCORPUS ?= ../fuzz-corpus
 
 all: fmt test
@@ -54,7 +54,7 @@ fuzz-init: gen-version
 # to fill seed corpus for fuzz tests that use WriteSeedCorpusFile (e.g., FuzzHandler).
 fuzz:                                  ## Fuzz for about 2 minutes (with default FUZZTIME)
 	go test -list='Fuzz.*' ./...
-	# Running seven functions for $(FUZZTIME) each..."
+	# Running eight functions for $(FUZZTIME) each..."
 	go test -fuzz=FuzzArray -fuzztime=$(FUZZTIME) ./internal/bson/
 	go test -fuzz=FuzzDocument -fuzztime=$(FUZZTIME) ./internal/bson/
 	go test -fuzz=FuzzArray -fuzztime=$(FUZZTIME) ./internal/fjson/
@@ -62,6 +62,7 @@ fuzz:                                  ## Fuzz for about 2 minutes (with default
 	go test -fuzz=FuzzMsg -fuzztime=$(FUZZTIME) ./internal/wire/
 	go test -fuzz=FuzzQuery -fuzztime=$(FUZZTIME) ./internal/wire/
 	go test -fuzz=FuzzReply -fuzztime=$(FUZZTIME) ./internal/wire/
+	go test -fuzz=FuzzHandler -fuzztime=$(FUZZTIME) ./internal/handlers/
 
 fuzz-corpus:                           ## Sync seed and generated fuzz corpora with FUZZCORPUS
 	go run ./cmd/fuzztool/fuzztool.go -dst=$(FUZZCORPUS) -src=generated
