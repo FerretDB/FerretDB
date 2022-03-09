@@ -59,51 +59,6 @@ func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql
 		if isDoc {
 			if _, err := doc.Get("$elemMatch"); err == nil {
 				s.l.Sugar().Debugf("filter projection %s", k)
-
-				// // {field: {$elemMatch: value}}
-				// elemMatchMap := value.(*types.Document).Map()
-				// for elemMatchField, elemMatchVal := range elemMatchMap {
-				// 	if argSql != "" {
-				// 		argSql += " AND"
-				// 	}
-
-				// 	elemMatchCondition, isDoc := elemMatchMap[elemMatchField].(*types.Document)
-
-				// 	// {field1: {$elemMatch: { field2: value}}}
-				// 	// SELECT _jsonb FROM "values"."values" WHERE (_jsonb->'value' @?  '$.score[*] ? (@ == 24 )'  )
-				// 	if !isDoc {
-				// 		argSql += fmt.Sprintf(" _jsonb->%[1]s @? '$.%[2]s[*] ? (@ == %[3]v)' ",
-				// 			p.Next(), elemMatchField, elemMatchVal,
-				// 		)
-				// 		arg = append(arg, field)
-				// 		continue
-				// 	}
-
-				// 	// {field1: { $elemMatch: { field2: { $gt: 23 }}} }
-				// 	filterMap := elemMatchCondition.Map()
-				// 	for elemMatchOp, val := range filterMap {
-				// 		var operand string
-				// 		switch elemMatchOp {
-				// 		case "$eq":
-				// 			operand = "=="
-				// 		case "$ne":
-				// 			operand = "<>"
-				// 		case "$lt":
-				// 			operand = "<"
-				// 		case "$lte":
-				// 			operand = "<="
-				// 		case "$gt":
-				// 			operand = ">"
-				// 		case "$gte":
-				// 			operand = ">="
-				// 		}
-
-				// 		argSql += fmt.Sprintf(" _jsonb->%[1]s @? '$.%[2]s[*] ? (@ %[3]s %[4]v)' ",
-				// 			p.Next(), elemMatchField, operand, val,
-				// 		)
-				// 		arg = append(arg, field)
-				// 	}
-				// }
 				continue
 			}
 		}
