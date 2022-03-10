@@ -1069,13 +1069,13 @@ func TestListDropDatabase(t *testing.T) {
 					"empty", false,
 				),
 			),
-			"totalSize", int64(30_286_627),
-			"totalSizeMb", int64(28),
+			"totalSize", int64(30_000_000),
+			"totalSizeMb", int64(30),
 			"ok", float64(1),
 		)
 
-		testutil.CompareAndSetByPathNum(t, expectedList, actualList, 2_000_000, "totalSize")
-		testutil.CompareAndSetByPathNum(t, expectedList, actualList, 2, "totalSizeMb")
+		testutil.CompareAndSetByPathNum(t, expectedList, actualList, 5_000_000, "totalSize")
+		testutil.CompareAndSetByPathNum(t, expectedList, actualList, 5, "totalSizeMb")
 
 		expectedDBs := testutil.GetByPath(t, expectedList, "databases").(*types.Array)
 		actualDBs := testutil.GetByPath(t, actualList, "databases").(*types.Array)
