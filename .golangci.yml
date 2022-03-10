@@ -12,6 +12,11 @@ linters-settings:
       - github.com/FerretDB/FerretDB/internal/bson
   exhaustive:
     default-signifies-exhaustive: false
+  gci:
+    sections:
+      - standard
+      - default
+      - prefix(github.com/FerretDB/FerretDB)
   goconst:
     min-occurrences: 5
     ignore-tests: true
