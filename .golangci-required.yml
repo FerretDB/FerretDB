@@ -8,6 +8,11 @@ run:
 linters-settings:
   exhaustive:
     default-signifies-exhaustive: false
+  gci:
+    sections:
+      - standard
+      - default
+      - prefix(github.com/FerretDB/FerretDB)
   godox:
     keywords:
       - BUG
@@ -38,6 +43,7 @@ linters:
   disable-all: true
   enable:
     - exhaustive
+    - gci
     - godox
     - goheader
     - goimports
