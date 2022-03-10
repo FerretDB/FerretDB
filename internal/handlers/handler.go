@@ -70,11 +70,14 @@ func New(opts *NewOpts) *Handler {
 
 // Handle handles the message.
 //
-// Message handlers should:
+// Specific message handlers should do one of the following:
 //  * return normal response body;
 //  * return protocol error (*common.Error) - it will be returned to the client;
-//  * return any other error - it will be returned to the client as InternalError before terminating connection;
-//  * panic - that will terminate the connection without a response.
+//  * return any other error - it will be returned to the client as InternalError before terminating connection.
+//
+// They should not panic on bad input, but may do so in "impossible" cases.
+// They also should not use recover(). That allows us to use fuzzing.
+// (Panics terminate the connection without a response on a different level.)
 //
 //nolint:lll // arguments are long
 func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) {
@@ -84,7 +87,7 @@ func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody
 	var result *string
 	defer func() {
 		if result == nil {
-			result = pointer.To("panic")
+			result = pointer.ToString("panic")
 		}
 		h.metrics.responses.WithLabelValues(resHeader.OpCode.String(), command, *result).Inc()
 	}()
@@ -97,9 +100,7 @@ func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody
 		msg := reqBody.(*wire.OpMsg)
 		var document *types.Document
 		document, err = msg.Document()
-		if document != nil {
-			command = document.Command()
-		}
+		command = document.Command()
 		requests.WithLabelValues(command).Inc()
 
 		if err == nil {
@@ -133,43 +134,70 @@ func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody
 		fallthrough
 	default:
 		requests.WithLabelValues(command).Inc()
-		panic(fmt.Sprintf("unexpected OpCode %s", reqHeader.OpCode))
+
+		err = lazyerrors.Errorf("unexpected OpCode %s", reqHeader.OpCode)
 	}
 
+	// set body for error
 	if err != nil {
-		if resHeader.OpCode != wire.OP_MSG {
-			panic(err)
-		}
+		switch resHeader.OpCode {
+		case wire.OP_MSG:
+			protoErr, recoverable := common.ProtocolError(err)
+			closeConn = !recoverable
+			var res wire.OpMsg
+			err = res.SetSections(wire.OpMsgSection{
+				Documents: []*types.Document{protoErr.Document()},
+			})
+			if err != nil {
+				panic(err)
+			}
+			resBody = &res
+			result = pointer.ToString(protoErr.Code().String())
 
-		protoErr, recoverable := common.ProtocolError(err)
-		result = pointer.To(protoErr.Error())
-		closeConn = !recoverable
-		var res wire.OpMsg
-		err = res.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{protoErr.Document()},
-		})
-		if err != nil {
-			panic(err)
+		case wire.OP_QUERY:
+			fallthrough
+		case wire.OP_REPLY:
+			fallthrough
+		case wire.OP_UPDATE:
+			fallthrough
+		case wire.OP_INSERT:
+			fallthrough
+		case wire.OP_GET_BY_OID:
+			fallthrough
+		case wire.OP_GET_MORE:
+			fallthrough
+		case wire.OP_DELETE:
+			fallthrough
+		case wire.OP_KILL_CURSORS:
+			fallthrough
+		case wire.OP_COMPRESSED:
+			fallthrough
+
+		default:
+			// do not panic to make fuzzing easier
+			h.l.Error("Handler error for unexpected response opcode", zap.Error(err), zap.Stringer("opcode", resHeader.OpCode))
+			closeConn = true
+			result = pointer.ToString("unexpected")
+			return
 		}
-		resBody = &res
 	}
-
-	resHeader.ResponseTo = reqHeader.RequestID
 
 	// TODO Don't call MarshalBinary there. Fix header in the caller?
 	// https://github.com/FerretDB/FerretDB/issues/273
 	b, err := resBody.MarshalBinary()
 	if err != nil {
+		result = nil
 		panic(err)
 	}
 	resHeader.MessageLength = int32(wire.MsgHeaderLen + len(b))
 
-	if resHeader.RequestID != 0 {
-		panic("resHeader.RequestID must not be set by handler")
-	}
 	resHeader.RequestID = atomic.AddInt32(&h.lastRequestID, 1)
+	resHeader.ResponseTo = reqHeader.RequestID
 
-	result = pointer.To("ok")
+	if result == nil {
+		result = pointer.ToString("ok")
+	}
+
 	return
 }
 

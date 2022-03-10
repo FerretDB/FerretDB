@@ -1,5 +1,5 @@
 BENCHTIME ?= 5s
-FUZZTIME ?= 20s
+FUZZTIME ?= 15s
 FUZZCORPUS ?= ../fuzz-corpus
 
 all: fmt test
@@ -29,7 +29,7 @@ init: gen-version                      ## Install development tools
 	go mod tidy
 	cd tools && go mod tidy
 	go mod verify
-	cd tools && go generate -tags=tools -x
+	cd tools && go generate -x
 
 gen: bin/gofumpt                       ## Generate code
 	go generate -x ./...
@@ -54,7 +54,7 @@ fuzz-init: gen-version
 # to fill seed corpus for fuzz tests that use WriteSeedCorpusFile (e.g., FuzzHandler).
 fuzz:                                  ## Fuzz for about 2 minutes (with default FUZZTIME)
 	go test -list='Fuzz.*' ./...
-	# Running seven functions for $(FUZZTIME) each..."
+	# Running eight functions for $(FUZZTIME) each..."
 	go test -fuzz=FuzzArray -fuzztime=$(FUZZTIME) ./internal/bson/
 	go test -fuzz=FuzzDocument -fuzztime=$(FUZZTIME) ./internal/bson/
 	go test -fuzz=FuzzArray -fuzztime=$(FUZZTIME) ./internal/fjson/
@@ -62,6 +62,7 @@ fuzz:                                  ## Fuzz for about 2 minutes (with default
 	go test -fuzz=FuzzMsg -fuzztime=$(FUZZTIME) ./internal/wire/
 	go test -fuzz=FuzzQuery -fuzztime=$(FUZZTIME) ./internal/wire/
 	go test -fuzz=FuzzReply -fuzztime=$(FUZZTIME) ./internal/wire/
+	go test -fuzz=FuzzHandler -fuzztime=$(FUZZTIME) ./internal/handlers/
 
 fuzz-corpus:                           ## Sync seed and generated fuzz corpora with FUZZCORPUS
 	go run ./cmd/fuzztool/fuzztool.go -dst=$(FUZZCORPUS) -src=generated
@@ -88,7 +89,7 @@ lint: bin/go-sumtype bin/golangci-lint ## Run linters
 	bin/go-sumtype ./...
 	bin/golangci-lint run --config=.golangci-required.yml
 	bin/golangci-lint run --config=.golangci.yml
-	bin/go-consistent -pedantic ./...
+	bin/go-consistent -pedantic ./cmd/... ./internal/...
 
 psql:                                  ## Run psql
 	docker-compose exec postgres psql -U postgres -d ferretdb
