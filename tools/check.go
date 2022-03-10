@@ -37,7 +37,7 @@ func main() {
 	}
 
 	v := runtime.Version()
-	re := regexp.MustCompile(`^go1\.(\d+)`)
+	re := regexp.MustCompile(`go1\.(\d+)`)
 	m := re.FindStringSubmatch(v)
 	if len(m) != 2 {
 		log.Fatalf("Unexpected version %q.", v)
