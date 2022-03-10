@@ -28,6 +28,7 @@ import (
 )
 
 //go:generate go build -v -o ../bin/go-sumtype github.com/BurntSushi/go-sumtype
+//go:generate go build -v -o ../bin/task github.com/go-task/task/v3/cmd/task
 //go:generate go build -v -o ../bin/golangci-lint github.com/golangci/golangci-lint/cmd/golangci-lint
 //go:generate go build -v -o ../bin/go-consistent github.com/quasilyte/go-consistent
 //go:generate go build -v -o ../bin/reviewdog github.com/reviewdog/reviewdog/cmd/reviewdog
