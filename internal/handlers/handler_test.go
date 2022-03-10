@@ -16,7 +16,6 @@ package handlers
 
 import (
 	"context"
-	"encoding/json"
 	"math"
 	"os"
 	"runtime"
@@ -25,11 +24,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pmezard/go-difflib/difflib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+	gotest "gotest.tools/assert"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/jsonb1"
@@ -137,11 +136,11 @@ func TestFind(t *testing.T) {
 			schemas: []string{"values"},
 			req: types.MustNewDocument(
 				"find", "values",
-				"filter", types.MustNewDocument("name", "array-four"),
+				"filter", types.MustNewDocument("name", "array-embedded"),
 				"projection", types.MustNewDocument(
 					"value", types.MustNewDocument(
 						"$elemMatch", types.MustNewDocument(
-							"code", int32(121081),
+							"score", int32(24),
 						),
 					),
 				),
@@ -150,7 +149,7 @@ func TestFind(t *testing.T) {
 				types.MustNewDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x05, 0x00, 0x00, 0x04, 0x05},
 					"value", types.MustNewArray(
-						types.MustNewDocument("code", int32(121081), "document", "zyx"),
+						types.MustNewDocument("document", "jkl", "score", int32(24), "age", int32(1002)),
 					),
 				),
 			),
@@ -655,26 +654,7 @@ func TestFind(t *testing.T) {
 
 					actual := handle(ctx, t, handler, tc.req)
 					if tc.deep {
-						expectedJson, err := json.MarshalIndent(expected, " ", " ")
-						assert.Nil(t, err)
-						actualJson, err := json.MarshalIndent(actual, " ", " ")
-						assert.Nil(t, err)
-						var diffBody string
-						diffBody, err = difflib.GetUnifiedDiffString(
-							difflib.UnifiedDiff{
-								A:        difflib.SplitLines(string(expectedJson)),
-								FromFile: "expected",
-								B:        difflib.SplitLines(string(actualJson)),
-								ToFile:   "actual",
-								Context:  3,
-							})
-						assert.Nil(t, err)
-						if diffBody != "" {
-							t.Log(string(expectedJson))
-							t.Log(string(actualJson))
-							t.Log(diffBody)
-							t.Fail()
-						}
+						gotest.DeepEqual(t, actual, expected)
 					} else {
 						assert.Equal(t, expected, actual)
 					}

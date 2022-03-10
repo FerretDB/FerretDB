@@ -33,7 +33,7 @@ services:
       - test_db_mongodb:/test_db/:ro
 
   test_db:
-    image: docker.io/aleksi/test_db:local
+    image: aleksi/test_db:mongodb-values
     container_name: ferretdb_test_db
     volumes:
       - test_db_postgres:/test_db/postgresql/pagila:ro
