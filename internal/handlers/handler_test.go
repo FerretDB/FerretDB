@@ -666,7 +666,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 			reqSetDB: true,
 			resp: types.MustNewDocument(
 				"ns", "monila.film",
-				"count", int32(1_000),
+				"count", int32(1_000), // FIXME
 				"size", int32(1_236_992),
 				"storageSize", int32(1_204_224),
 				"totalIndexSize", int32(0),
@@ -675,7 +675,6 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, req, expected, actual *types.Document) {
-				t.Helper()
 				db, err := req.Get("$db")
 				require.NoError(t, err)
 				if db.(string) == "monila" {
@@ -736,7 +735,6 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, req, expected, actual *types.Document) {
-				t.Helper()
 				db, err := req.Get("$db")
 				require.NoError(t, err)
 				if db.(string) == "monila" {
@@ -758,7 +756,6 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, req, expected, actual *types.Document) {
-				t.Helper()
 				db, err := req.Get("$db")
 				require.NoError(t, err)
 				if db.(string) == "monila" {
@@ -787,7 +784,6 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, req, expected, actual *types.Document) {
-				t.Helper()
 				db, err := req.Get("$db")
 				require.NoError(t, err)
 				if db.(string) == "monila" {
@@ -819,7 +815,6 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, req, expected, actual *types.Document) {
-				t.Helper()
 				db, err := req.Get("$db")
 				require.NoError(t, err)
 				if db.(string) == "monila" {
@@ -858,7 +853,6 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
-				t.Helper()
 				actualV := testutil.GetByPath(t, actual, "cursor", "ns")
 				testutil.SetByPath(t, expected, actualV, "cursor", "ns")
 				assert.Equal(t, expected, actual)
@@ -877,7 +871,6 @@ func TestReadOnlyHandlers(t *testing.T) {
 			),
 			compareFunc: func(t testing.TB, _ *types.Document, actual, expected *types.Document) {
 				// Just testing "ok" response, not the body of the response
-				t.Helper()
 				actualV := testutil.GetByPath(t, actual, "log")
 				testutil.SetByPath(t, expected, actualV, "log")
 				assert.Equal(t, expected, actual)
@@ -903,7 +896,6 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, _ *types.Document, actual, expected *types.Document) {
-				t.Helper()
 				actualV := testutil.GetByPath(t, actual, "commands")
 				testutil.SetByPath(t, expected, actualV, "commands")
 				assert.Equal(t, expected, actual)
@@ -927,7 +919,6 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, _ *types.Document, actual, expected *types.Document) {
-				t.Helper()
 				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "localTime")
 				assert.Equal(t, expected, actual)
 			},
@@ -949,7 +940,6 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, _ *types.Document, actual, expected *types.Document) {
-				t.Helper()
 				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "localTime")
 				assert.Equal(t, expected, actual)
 			},
@@ -974,7 +964,6 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, _ *types.Document, actual, expected *types.Document) {
-				t.Helper()
 				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "system", "currentTime")
 				assert.Equal(t, expected, actual)
 			},
@@ -1008,7 +997,6 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			)),
 			compareFunc: func(t testing.TB, _ *types.Document, actual, expected *types.Document) {
-				t.Helper()
 				for _, key := range []string{"host", "pid", "uptime", "uptimeMillis", "uptimeEstimate"} {
 					actualV := testutil.GetByPath(t, actual, key)
 					testutil.SetByPath(t, expected, actualV, key)
