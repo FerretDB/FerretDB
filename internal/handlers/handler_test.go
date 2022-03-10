@@ -666,7 +666,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 			reqSetDB: true,
 			resp: types.MustNewDocument(
 				"ns", "monila.film",
-				"count", int32(1_000), // FIXME
+				"count", int32(1_000),
 				"size", int32(1_236_992),
 				"storageSize", int32(1_204_224),
 				"totalIndexSize", int32(0),
