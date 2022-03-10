@@ -220,7 +220,7 @@ func (d *Document) Equal(e *Document) bool {
 			}
 			if eComp == dComp == true {
 				if Equal(vd, ve) {
-					return false
+					return true
 				}
 				return false
 			}
