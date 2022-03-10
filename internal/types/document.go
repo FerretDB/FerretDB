@@ -17,7 +17,10 @@ package types
 import (
 	"fmt"
 	"strings"
+	"time"
 	"unicode/utf8"
+
+	"golang.org/x/exp/slices"
 )
 
 // Common interface with bson.Document.
@@ -191,6 +194,54 @@ func (d *Document) Keys() []string {
 	return d.keys
 }
 
+func (d *Document) Equal(e *Document) bool {
+	if d.Len() != e.Len() {
+		return false
+	}
+	// keys can be in random order
+	for _, kd := range d.keys {
+		for _, ke := range e.keys {
+			if !slices.Contains(d.keys, kd) {
+				return false
+			}
+			vd, okd := d.m[kd]
+			if !okd {
+				return false // impossible code but false
+			}
+			ve, err := e.Get(ke)
+			if err != nil {
+				return false // impossible code but false
+			}
+
+			eComp := isComparable(ve)
+			dComp := isComparable(vd)
+			if eComp != dComp {
+				return false
+			}
+			if eComp == dComp == false {
+				// go deeper
+			}
+
+			if Equal(vd, ve) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func isComparable(i any) bool {
+	switch i.(type) {
+	case float64, string, Binary, ObjectID, bool, time.Time, NullType, int32, Timestamp, int64, CString:
+		return true
+	}
+	return false
+}
+
+func Equal[T comparable](a, b T) bool {
+	return a == b
+}
+
 // Command returns the first document's key lowercased. This is often used as a command name.
 // It returns an empty string if document is nil or empty.
 func (d *Document) Command() string {
@@ -257,6 +308,12 @@ func (d *Document) Set(key string, value any) error {
 
 	d.m[key] = value
 	return nil
+}
+
+func Cmp(a, b any) {
+	if ht, ok := t.(helperT); ok {
+		ht.Helper()
+	}
 }
 
 // Remove the given key, doing nothing if the key does not exist.
