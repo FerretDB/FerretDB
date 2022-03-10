@@ -294,6 +294,14 @@ func (d *Document) Get(key string) (any, error) {
 	return nil, fmt.Errorf("types.Document.Get: key not found: %q", key)
 }
 
+func (d *Document) MustGet(key string) any {
+	value, ok := d.m[key]
+	if ok {
+		return value
+	}
+	panic("cannot find key: " + key)
+}
+
 // GetByPath returns a value by path - a sequence of indexes and keys.
 func (d *Document) GetByPath(path ...string) (any, error) {
 	return getByPath(d, path...)

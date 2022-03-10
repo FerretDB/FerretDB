@@ -129,7 +129,7 @@ func TestFind(t *testing.T) {
 	// Do not use sentences, spaces, or underscores in subtest names
 	// to make it easier to run individual tests with `go test -run test/name` and for consistency.
 	testCases := map[string]testCase{
-		// db.values.find({ name: "array-five" }, { value: { $elemMatch:{ code: 121081 }}})
+		// db.values.find({ name: "array-embedded"}, { value: { $elemMatch:{ score: 24}}})
 		"elemMatchFilterProjection": {
 			deep:    true,
 			schemas: []string{"values"},
