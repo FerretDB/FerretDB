@@ -33,23 +33,6 @@ func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql
 
 	ks := ""
 	for i, k := range projection.Keys() {
-		doc, isDoc := projectionMap[k].(*types.Document)
-		if isDoc {
-			if elemMatchAny, err := doc.Get("$elemMatch"); err == nil {
-				elemMatchDOc, _ := elemMatchAny.(*types.Document)
-
-				for _, filterField := range elemMatchDOc.Keys() {
-					if i != 0 {
-						ks += ", "
-					}
-					s.l.Sugar().Debugf("filter field %s", filterField)
-					ks += p.Next()
-					args = append(args, k)
-				}
-
-				continue
-			}
-		}
 		if i != 0 {
 			ks += ", "
 		}
@@ -57,27 +40,8 @@ func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql
 		args = append(args, k)
 	}
 
-	// if ks == "" {
-	// 	s.l.Sugar().Debugf("EXIT")
-	// 	sql = "_jsonb"
-	// 	return
-	// }
-
 	sql = "json_build_object('$k', array[" + ks + "],"
 	for i, k := range projection.Keys() { // value
-		doc, isDoc := projectionMap[k].(*types.Document)
-		if isDoc {
-			if _, err := doc.Get("$elemMatch"); err == nil {
-				s.l.Sugar().Debugf("filter projection %s", k)
-				if i != 0 {
-					sql += ", "
-				}
-				sql += p.Next() + "::text, _jsonb->" + p.Next()
-				args = append(args, k, k)
-				continue
-			}
-		}
-
 		if i != 0 {
 			sql += ", "
 		}
