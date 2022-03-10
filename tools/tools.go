@@ -19,6 +19,7 @@ package tools // import "github.com/FerretDB/FerretDB/tools"
 
 import (
 	_ "github.com/BurntSushi/go-sumtype"
+	_ "github.com/go-task/task/v3/cmd/task"
 	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
 	_ "github.com/quasilyte/go-consistent"
 	_ "github.com/reviewdog/reviewdog/cmd/reviewdog"
