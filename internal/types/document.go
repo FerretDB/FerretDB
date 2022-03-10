@@ -220,6 +220,20 @@ func (d *Document) Equal(e *Document) bool {
 			}
 			if eComp == dComp == false {
 				// go deeper
+				switch vType := vd.(type) {
+				case *Document:
+					if eDoc, ok := ve.(*Document); ok {
+						return eDoc.Equal(vd.(*Document))
+					}
+					return false
+				case *Array:
+					if eArr, ok := ve.(*Array); ok {
+						return eArr.Equal(vd.(*Array))
+					}
+					return false
+				default:
+					panic(fmt.Sprintf("%T	", vType) + "comparison is not implemented")
+				}
 			}
 
 			if Equal(vd, ve) {
@@ -238,7 +252,7 @@ func isComparable(i any) bool {
 	return false
 }
 
-func Equal[T comparable](a, b T) bool {
+func Equal(a, b any) bool {
 	return a == b
 }
 

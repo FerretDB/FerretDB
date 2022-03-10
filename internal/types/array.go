@@ -14,7 +14,9 @@
 
 package types
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // Array represents BSON array.
 //
@@ -63,6 +65,22 @@ func (a *Array) Len() int {
 		return 0
 	}
 	return len(a.s)
+}
+
+func (a *Array) Equal(bAny any) bool {
+	b, ok := bAny.(*Array)
+	if !ok {
+		return false
+	}
+	if a.Len() != b.Len() {
+		return false
+	}
+	for i := range a.s {
+		if a.s[i] != b.s[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // Get returns a value at the given index.
