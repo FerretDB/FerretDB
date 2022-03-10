@@ -28,7 +28,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
-	gotest "gotest.tools/assert"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/jsonb1"
@@ -653,11 +652,7 @@ func TestFind(t *testing.T) {
 					}
 
 					actual := handle(ctx, t, handler, tc.req)
-					if tc.deep {
-						gotest.DeepEqual(t, actual, expected)
-					} else {
-						assert.Equal(t, expected, actual)
-					}
+					assert.Equal(t, expected, actual)
 				})
 			}
 		})

@@ -218,26 +218,26 @@ func (d *Document) Equal(e *Document) bool {
 			if eComp != dComp {
 				return false
 			}
-			if eComp == dComp == false {
-				// go deeper
-				switch vType := vd.(type) {
-				case *Document:
-					if eDoc, ok := ve.(*Document); ok {
-						return eDoc.Equal(vd.(*Document))
-					}
+			if eComp == dComp == true {
+				if Equal(vd, ve) {
 					return false
-				case *Array:
-					if eArr, ok := ve.(*Array); ok {
-						return eArr.Equal(vd.(*Array))
-					}
-					return false
-				default:
-					panic(fmt.Sprintf("%T	", vType) + "comparison is not implemented")
 				}
-			}
-
-			if Equal(vd, ve) {
 				return false
+			}
+			// go deeper
+			switch vType := vd.(type) {
+			case *Document:
+				if eDoc, ok := ve.(*Document); ok {
+					return eDoc.Equal(vd.(*Document))
+				}
+				return false
+			case *Array:
+				if eArr, ok := ve.(*Array); ok {
+					return eArr.Equal(vd.(*Array))
+				}
+				return false
+			default:
+				panic(fmt.Sprintf("%T	", vType) + "comparison is not implemented")
 			}
 		}
 	}
@@ -322,12 +322,6 @@ func (d *Document) Set(key string, value any) error {
 
 	d.m[key] = value
 	return nil
-}
-
-func Cmp(a, b any) {
-	if ht, ok := t.(helperT); ok {
-		ht.Helper()
-	}
 }
 
 // Remove the given key, doing nothing if the key does not exist.
