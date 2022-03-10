@@ -29,7 +29,7 @@ init: gen-version                      ## Install development tools
 	go mod tidy
 	cd tools && go mod tidy
 	go mod verify
-	cd tools && go generate -tags=tools -x
+	cd tools && go generate -x
 
 gen: bin/gofumpt                       ## Generate code
 	go generate -x ./...
@@ -89,7 +89,7 @@ lint: bin/go-sumtype bin/golangci-lint ## Run linters
 	bin/go-sumtype ./...
 	bin/golangci-lint run --config=.golangci-required.yml
 	bin/golangci-lint run --config=.golangci.yml
-	bin/go-consistent -pedantic ./...
+	bin/go-consistent -pedantic ./cmd/... ./internal/...
 
 psql:                                  ## Run psql
 	docker-compose exec postgres psql -U postgres -d ferretdb
