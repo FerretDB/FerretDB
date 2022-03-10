@@ -678,9 +678,9 @@ func TestReadOnlyHandlers(t *testing.T) {
 				db, err := req.Get("$db")
 				require.NoError(t, err)
 				if db.(string) == "monila" {
-					testutil.CompareAndSetByPathNum(t, expected, actual, 30_000, "size")
-					testutil.CompareAndSetByPathNum(t, expected, actual, 30_000, "storageSize")
-					testutil.CompareAndSetByPathNum(t, expected, actual, 30_000, "totalSize")
+					testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "size")
+					testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "storageSize")
+					testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "totalSize")
 					assert.Equal(t, expected, actual)
 				}
 			},
@@ -739,7 +739,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				require.NoError(t, err)
 				if db.(string) == "monila" {
 					testutil.CompareAndSetByPathNum(t, expected, actual, 50, "millis")
-					testutil.CompareAndSetByPathNum(t, expected, actual, 30_000, "size")
+					testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "size")
 					assert.Equal(t, expected, actual)
 				}
 			},
