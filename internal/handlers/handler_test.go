@@ -123,7 +123,6 @@ func TestFind(t *testing.T) {
 		req     *types.Document
 		resp    *types.Array
 		err     error
-		deep    bool
 	}
 
 	// Do not use sentences, spaces, or underscores in subtest names
@@ -431,7 +430,6 @@ func TestFind(t *testing.T) {
 			)),
 		},
 		"SizeInt64": {
-			deep:    true,
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
