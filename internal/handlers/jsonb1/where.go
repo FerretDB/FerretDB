@@ -263,7 +263,8 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 				argSql, arg, err = scalar(value, p)
 			default:
 				err = common.NewErrorMsg(common.ErrBadValue,
-					"$bitsAllClear has to be bitmask, position array or ")
+					"$bitsAllClear has to be bitmask, position array or binary value",
+				)
 			}
 		default:
 			err = lazyerrors.Errorf("unhandled {%q: %v}", op, value)
