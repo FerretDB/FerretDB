@@ -19,6 +19,7 @@ package tools // import "github.com/FerretDB/FerretDB/tools"
 
 import (
 	_ "github.com/BurntSushi/go-sumtype"
+	_ "github.com/go-task/task/v3/cmd/task"
 	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
 	_ "github.com/quasilyte/go-consistent"
 	_ "github.com/reviewdog/reviewdog/cmd/reviewdog"
@@ -28,6 +29,7 @@ import (
 )
 
 //go:generate go build -v -o ../bin/go-sumtype github.com/BurntSushi/go-sumtype
+//go:generate go build -v -o ../bin/task github.com/go-task/task/v3/cmd/task
 //go:generate go build -v -o ../bin/golangci-lint github.com/golangci/golangci-lint/cmd/golangci-lint
 //go:generate go build -v -o ../bin/go-consistent github.com/quasilyte/go-consistent
 //go:generate go build -v -o ../bin/reviewdog github.com/reviewdog/reviewdog/cmd/reviewdog
