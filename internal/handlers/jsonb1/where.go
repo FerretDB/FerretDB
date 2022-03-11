@@ -63,7 +63,9 @@ func scalar(v any, p *pg.Placeholder) (sql string, args []any, err error) {
 			arg = "(?" + options + ")" + v.Pattern
 		}
 	case types.Binary:
-		sql = fmt.Sprintf(`)::integer::bit(%d) # `+p.Next()+` )::integer = 0`, 8)
+		placeHolder := p.Next()
+		sql = fmt.Sprintf(`)::integer::bit(%d) & `+placeHolder+
+			` )::integer - 1) >= (`+placeHolder+`::integer - 1)`, 8)
 		bit := pgtype.Bit{
 			Bytes:  v.B,
 			Len:    8,
@@ -239,7 +241,7 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 			}
 		case "$bitsAllClear":
 			// {field: {$bitsAllClear: value}}
-			sql += `((_jsonb->` + p.Next()
+			sql += `(((_jsonb->` + p.Next()
 
 			switch values := value.(type) {
 			case *types.Array:

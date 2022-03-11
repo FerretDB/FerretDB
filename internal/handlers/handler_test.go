@@ -585,6 +585,19 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
+		"BitsAllClearEmptyResult": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(
+					types.NewDocument(
+						"name", "int32",
+						"value", must.NotFail(types.NewDocument(
+							"$bitsAllClear", int32(53))),
+					)),
+			)),
+			resp: &types.Array{},
+		},
 	}
 
 	for name, tc := range testCases { //nolint:paralleltest // false positive
