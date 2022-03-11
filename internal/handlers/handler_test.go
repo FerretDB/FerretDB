@@ -574,14 +574,14 @@ func TestFind(t *testing.T) {
 					types.NewDocument(
 						"name", "int32",
 						"value", must.NotFail(types.NewDocument(
-							"$bitsAllClear", int32(42))),
+							"$bitsAllClear", int32(21))),
 					)),
 			)),
 			resp: must.NotFail(types.NewArray(
 				must.NotFail(types.NewDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x10, 0x01, 0x00, 0x00, 0x10, 0x01},
 					"name", "int32",
-					"value", int32(42),
+					"value", int32(53),
 				)),
 			)),
 		},
