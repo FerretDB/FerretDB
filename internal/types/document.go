@@ -194,6 +194,7 @@ func (d *Document) Keys() []string {
 	return d.keys
 }
 
+// Equal compares document to the other Document, deeply.
 func (d *Document) Equal(e *Document) bool {
 	if d.Len() != e.Len() {
 		return false
