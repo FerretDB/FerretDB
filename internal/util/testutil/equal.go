@@ -39,21 +39,8 @@ func AssertEqual[T types.Type](t testing.TB, expected, actual T) bool {
 		return true
 	}
 
-	expectedB, err := fjson.Marshal(expected)
-	require.NoError(t, err)
-	actualB, err := fjson.Marshal(actual)
-	require.NoError(t, err)
-
-	diff, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
-		A:        difflib.SplitLines(string(expectedB)),
-		FromFile: "expected",
-		B:        difflib.SplitLines(string(actualB)),
-		ToFile:   "actual",
-		Context:  1,
-	})
-	require.NoError(t, err)
-
-	msg := fmt.Sprintf("Not equal: \nexpected: %s\nactual  : %s\n%s", expectedB, actualB, diff)
+	expectedS, actualS, diff := diffValues(t, expected, actual)
+	msg := fmt.Sprintf("Not equal: \nexpected: %s\nactual  : %s\n%s", expectedS, actualS, diff)
 	return assert.Fail(t, msg)
 }
 
@@ -66,23 +53,32 @@ func AssertNotEqual[T types.Type](t testing.TB, expected, actual T) bool {
 	}
 
 	// The diff of equal values should be empty, but produce it anyway to catch subtle bugs.
+	expectedS, actualS, diff := diffValues(t, expected, actual)
+	msg := fmt.Sprintf("Unexpected equal: \nexpected: %s\nactual  : %s\n%s", expectedS, actualS, diff)
+	return assert.Fail(t, msg)
+}
 
+// diffValues returns a readable form of given values and the difference between them.
+func diffValues[T types.Type](t testing.TB, expected, actual T) (expectedS string, actualS string, diff string) {
+	// We might switch to spew or something else later.
 	expectedB, err := fjson.Marshal(expected)
 	require.NoError(t, err)
+	expectedS = string(expectedB)
+
 	actualB, err := fjson.Marshal(actual)
 	require.NoError(t, err)
+	actualS = string(actualB)
 
-	diff, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
-		A:        difflib.SplitLines(string(expectedB)),
+	diff, err = difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
+		A:        difflib.SplitLines(expectedS),
 		FromFile: "expected",
-		B:        difflib.SplitLines(string(actualB)),
+		B:        difflib.SplitLines(actualS),
 		ToFile:   "actual",
 		Context:  1,
 	})
 	require.NoError(t, err)
 
-	msg := fmt.Sprintf("Unexpected equal: \nexpected: %s\nactual  : %s\n%s", expectedB, actualB, diff)
-	return assert.Fail(t, msg)
+	return
 }
 
 // Equal compares any BSON values.
