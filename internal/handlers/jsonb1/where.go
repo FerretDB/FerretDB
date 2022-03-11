@@ -70,7 +70,11 @@ func scalar(v any, p *pg.Placeholder) (sql string, args []any, err error) {
 			Status: pgtype.Present,
 		}
 
-		arg, _ = bit.Value()
+		arg, err = bit.Value()
+		if err != nil {
+			err = lazyerrors.Errorf("failed to pack binary value: %v", err)
+			return
+		}
 	default:
 		err = lazyerrors.Errorf("scalar: unhandled field %v (%T)", v, v)
 	}

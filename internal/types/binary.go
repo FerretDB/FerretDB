@@ -42,6 +42,8 @@ type Binary struct {
 	B       []byte
 }
 
+//BinaryFromArray takes position array which must contain non-negative numbers
+// and packs it into types.Binary. Bit positions start at 0 from the least significant bit.
 func BinaryFromArray(values *Array) (*Binary, error) {
 	var bitMask uint64
 	for i := 0; i < values.Len(); i++ {
@@ -68,6 +70,7 @@ func BinaryFromArray(values *Array) (*Binary, error) {
 	}, nil
 }
 
+// BinaryFromInt packs int32 value into types.Binary.
 func BinaryFromInt(value int32) (mask *Binary, err error) {
 	buff := new(bytes.Buffer)
 	err = binary.Write(buff, binary.LittleEndian, uint64(value))
