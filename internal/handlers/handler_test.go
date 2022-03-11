@@ -596,7 +596,7 @@ func TestFind(t *testing.T) {
 							"$bitsAllClear", int32(53))),
 					)),
 			)),
-			resp: &types.Array{},
+			resp: new(types.Array),
 		},
 	}
 
