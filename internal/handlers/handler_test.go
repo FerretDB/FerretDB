@@ -128,31 +128,30 @@ func TestFind(t *testing.T) {
 	// Do not use sentences, spaces, or underscores in subtest names
 	// to make it easier to run individual tests with `go test -run test/name` and for consistency.
 	testCases := map[string]testCase{
+		// jsonb_path_query_first but
+		// SELECT _jsonb FROM "values"."values" WHERE (_jsonb->'name' = to_jsonb('array-embedded'::text))
+		// SELECT _jsonb FROM "values"."values" WHERE (_jsonb->'value' @?  '$.score[*] ? (@ == 24 )'  )
+		// SELECT jsonb_path_query_first_item( _jsonb->'value' ,  '$.score[*] ? (@ == 24 )' ) FROM "values"."values" WHERE (_jsonb->'name' = to_jsonb('array-embedded'::text));
+		// SELECT json_build_object('$k', array['value'], 'value'::text, _jsonb->'value') FROM "values"."values" WHERE (_jsonb->'name' = to_jsonb('array-embedded'::text))
+		// get jsonb-> (index of an array where value is )
 		"elemMatchFilterProjection": {
 			schemas: []string{"values"},
 			req: types.MustNewDocument(
 				"find", "values",
-				"filter", types.MustNewDocument(
-					"value", types.MustNewDocument(
-						"code", types.MustNewDocument("$gt", int32(121081)),
-					),
-				),
+				"filter", types.MustNewDocument("name", "array-embedded"),
 				"projection", types.MustNewDocument(
 					"value", types.MustNewDocument(
 						"$elemMatch", types.MustNewDocument(
-							"code", int32(121082),
+							"document", "jkl",
 						),
 					),
 				),
 			),
 			resp: types.MustNewArray(
 				types.MustNewDocument(
-					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x05, 0x00, 0x00, 0x03, 0x09},
-				),
-				types.MustNewDocument(
-					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x05, 0x00, 0x00, 0x03, 0x09},
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x05, 0x00, 0x00, 0x04, 0x05},
 					"value", types.MustNewArray(
-						types.MustNewDocument("code", int32(121081), "document", "zyx"),
+						types.MustNewDocument("document", "jkl", "score", int32(24), "age", int32(1002)),
 					),
 				),
 			),

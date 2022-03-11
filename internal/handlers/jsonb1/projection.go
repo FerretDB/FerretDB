@@ -19,6 +19,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
+// elemMatch
+// SELECT json_build_object('$k', array['value'], 'value'::text, _jsonb->$3) FROM "values"."values" WHERE (_jsonb->'name' = to_jsonb('array-embedded'::text))
 // Filter fields to return.
 func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
 	if projection == nil {
@@ -32,7 +34,26 @@ func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql
 	}
 
 	ks := ""
+
 	for i, k := range projection.Keys() {
+		doc, isDoc := projectionMap[k].(*types.Document)
+		if isDoc {
+			if elemMatchAny, err := doc.Get("$elemMatch"); err == nil {
+				elemMatchDoc, ok := elemMatchAny.(*types.Document)
+				if !ok {
+					panic("expected $elemMatch to be doc")
+				}
+				for _, filterField := range elemMatchDoc.Keys() {
+					if i != 0 {
+						ks += ", "
+					}
+					ks += "" + p.Next()
+					args = append(args, k)
+					s.l.Sugar().Debugf("$elemMatch field [%s] in %s", filterField, k)
+				}
+				continue
+			}
+		}
 		if i != 0 {
 			ks += ", "
 		}
