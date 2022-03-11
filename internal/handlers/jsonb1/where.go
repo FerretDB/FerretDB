@@ -64,8 +64,9 @@ func scalar(v any, p *pg.Placeholder) (sql string, args []any, err error) {
 		}
 	case types.Binary:
 		placeHolder := p.Next()
+		var bitSize = 8
 		sql = fmt.Sprintf(`)::integer::bit(%d) & `+placeHolder+
-			` )::integer - 1) >= (`+placeHolder+`::integer - 1)`, 8,
+			`::bit(%d))::integer = 0)`, bitSize, bitSize,
 		)
 		bit := pgtype.Bit{
 			Bytes:  v.B,
