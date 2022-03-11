@@ -78,7 +78,7 @@ func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql
 
 			switch fieldKey {
 			case "$elemMatch":
-				elemMatchSQL, arg := s.elemMatchProjection(k, fieldKey, fieldDoc, p)
+				elemMatchSQL, arg := s.elemMatchProjection(k, fieldDoc, p)
 				sql += elemMatchSQL
 				args = append(args, arg...)
 			default:
@@ -92,20 +92,20 @@ func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql
 	return
 }
 
-func (s *storage) elemMatchProjection(k, fieldKey string, elemMatchDoc *types.Document, p *pg.Placeholder) (elemMatchSQL string, arg []any) {
-	elemMatchSQL = " CASE " +
-		"WHEN jsonb_typeof(_jsonb->" + p.Next() + ") != 'array' THEN null " +
-		"ELSE (" +
-		"SELECT tempTable.value result " +
-		"FROM jsonb_array_elements(_jsonb->" + p.Next() + ") tempTable " +
-		" WHERE %s LIMIT 1 " +
-		") END val "
-	arg = append(arg, k, k)
+func (s *storage) elemMatchProjection(k string, elemMatchDoc *types.Document, p *pg.Placeholder) (elemMatchSQL string, arg []any) {
+	s.l.Sugar().Debugf("field %s -> $elemMatch", k)
+
+	elemMatchSQL = p.Next() + "::text, CASE WHEN jsonb_typeof(_jsonb->" + p.Next() + ") != 'array' THEN null " +
+		"ELSE ( SELECT tempTable.value result FROM jsonb_array_elements(_jsonb->" + p.Next() + ") tempTable WHERE %s LIMIT 1 " +
+		") END "
+	arg = append(arg, k, k, k)
 
 	// where part
 	elemMatchWhere := ""
 	elemMatchMap := elemMatchDoc.Map()
 	for elemMatchKey, elemMatchVal := range elemMatchMap { // elemMatch field
+		s.l.Sugar().Debugf("field %s -> $elemMatch -> %s", k, elemMatchKey)
+
 		if elemMatchWhere != "" {
 			elemMatchWhere += " AND "
 		}
@@ -113,8 +113,10 @@ func (s *storage) elemMatchProjection(k, fieldKey string, elemMatchDoc *types.Do
 		filter, isDoc := elemMatchMap[elemMatchKey].(*types.Document)
 		// field: scalar value
 		if !isDoc {
-			elemMatchWhere += "tempTable.value @? '$." + p.Next() + "[*] ? (@ == " + p.Next() + ")'"
-			arg = append(arg, fieldKey, elemMatchVal)
+			// TODO escape?
+			elemMatchWhere += "tempTable.value @? '$." + elemMatchKey + "[*] ? (@ == " + p.Next() + ")'"
+			arg = append(arg, elemMatchVal)
+			s.l.Sugar().Debugf("field %s -> $elemMatch -> { %s: %v }", k, elemMatchKey, elemMatchVal)
 			continue
 		}
 
@@ -144,8 +146,8 @@ func (s *storage) elemMatchProjection(k, fieldKey string, elemMatchDoc *types.Do
 			}
 
 			elemMatchWhere += "tempTable.value @? '$." + p.Next() + "[*] ? (@ " + operand + " " + p.Next() + ")'"
-			arg = append(arg, k, elemMatchKey, val)
-			s.l.Sugar().Debugf("$elemMatch field [%s] in %s", elemMatchKey, k)
+			arg = append(arg, elemMatchKey, val)
+			s.l.Sugar().Debugf("field %s -> $elemMatch -> { %s %s %v }", k, elemMatchKey, operand, val)
 		}
 	}
 	elemMatchSQL = fmt.Sprintf(elemMatchSQL, elemMatchWhere)
