@@ -17,14 +17,13 @@ package types
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// TestDocument example run go test -run TestDocument/Equal github.com/FerretDB/FerretDB/internal/types
+// TestDocument example run go test -run TestDocument/MethodsOnNil github.com/FerretDB/FerretDB/internal/types.
 func TestDocument(t *testing.T) {
 	t.Parallel()
 
@@ -36,163 +35,6 @@ func TestDocument(t *testing.T) {
 		assert.Nil(t, doc.Map())
 		assert.Nil(t, doc.Keys())
 		assert.Equal(t, "", doc.Command())
-	})
-
-	t.Run("Equal", func(t *testing.T) {
-		t.Parallel()
-
-		for _, tc := range []struct {
-			name     string
-			a        *Document
-			b        *Document
-			expected bool
-		}{
-			{
-				name:     "normal",
-				expected: true,
-				a: &Document{
-					keys: []string{"name", "code", "games", "joined", "lastLogin"},
-					m: map[string]any{
-						"name":  "John Doe",
-						"code":  121081,
-						"score": 42.13,
-						"games": []any{
-							map[string]any{"game": "abc", "score": 5},
-							map[string]any{"game": "def", "score": 8},
-							map[string]any{"game": "xyz", "score": 9},
-						},
-						"joined":    time.Date(2022, 03, 01, 0, 0, 0, 0, time.UTC),
-						"lastLogin": time.Date(2022, 03, 16, 12, 13, 14, 0, time.UTC),
-					},
-				},
-				b: &Document{
-					keys: []string{"name", "code", "games", "joined", "lastLogin"},
-					m: map[string]any{
-						"name":  "John Doe",
-						"code":  121081,
-						"score": 42.13,
-						"games": []any{
-							map[string]any{"game": "abc", "score": 5},
-							map[string]any{"game": "def", "score": 8},
-							map[string]any{"game": "xyz", "score": 9},
-						},
-						"joined":    time.Date(2022, 03, 01, 0, 0, 0, 0, time.UTC),
-						"lastLogin": time.Date(2022, 03, 16, 12, 13, 14, 0, time.UTC),
-					},
-				},
-			},
-			{
-				name:     "lastLoginNsecDiffers",
-				expected: false,
-				a: &Document{
-					keys: []string{"name", "code", "games", "joined", "lastLogin"},
-					m: map[string]any{
-						"name":  "John Doe",
-						"code":  121081,
-						"score": 42.13,
-						"games": []any{
-							map[string]any{"game": "abc", "score": 5},
-							map[string]any{"game": "def", "score": 8},
-							map[string]any{"game": "xyz", "score": 9},
-						},
-						"joined":    time.Date(2022, 03, 01, 0, 0, 0, 0, time.UTC),
-						"lastLogin": time.Date(2022, 03, 16, 12, 13, 14, 0, time.UTC),
-					},
-				},
-				b: &Document{
-					keys: []string{"name", "code", "games", "joined", "lastLogin"},
-					m: map[string]any{
-						"name":  "John Doe",
-						"code":  121081,
-						"score": 42.13,
-						"games": []any{
-							map[string]any{"game": "abc", "score": 5},
-							map[string]any{"game": "def", "score": 8},
-							map[string]any{"game": "xyz", "score": 9},
-						},
-						"joined":    time.Date(2022, 03, 01, 0, 0, 0, 0, time.UTC),
-						"lastLogin": time.Date(2022, 03, 16, 12, 13, 14, 1, time.UTC),
-					},
-				},
-			},
-			{
-				name:     "GamesGame3dValueDiffers",
-				expected: false,
-				a: &Document{
-					keys: []string{"name", "code", "games", "joined", "lastLogin"},
-					m: map[string]any{
-						"name":  "John Doe",
-						"code":  121081,
-						"score": 42.13,
-						"games": []any{
-							map[string]any{"game": "abc", "score": 5},
-							map[string]any{"game": "def", "score": 8},
-							map[string]any{"game": "XYZ", "score": 9},
-						},
-						"joined":    time.Date(2022, 03, 01, 0, 0, 0, 0, time.UTC),
-						"lastLogin": time.Date(2022, 03, 16, 12, 13, 14, 0, time.UTC),
-					},
-				},
-				b: &Document{
-					keys: []string{"name", "code", "games", "joined", "lastLogin"},
-					m: map[string]any{
-						"name":  "John Doe",
-						"code":  121081,
-						"score": 42.13,
-						"games": []any{
-							map[string]any{"game": "abc", "score": 5},
-							map[string]any{"game": "def", "score": 8},
-							map[string]any{"game": "xyz", "score": 9},
-						},
-						"joined":    time.Date(2022, 03, 01, 0, 0, 0, 0, time.UTC),
-						"lastLogin": time.Date(2022, 03, 16, 12, 13, 14, 0, time.UTC),
-					},
-				},
-			},
-			{
-				name:     "CodeDiffers",
-				expected: false,
-				a: &Document{
-					keys: []string{"name", "code", "games", "joined", "lastLogin"},
-					m: map[string]any{
-						"name":  "John Doe",
-						"code":  121082,
-						"score": 42.13,
-						"games": []any{
-							map[string]any{"game": "abc", "score": 5},
-							map[string]any{"game": "def", "score": 8},
-							map[string]any{"game": "xyz", "score": 9},
-						},
-						"joined":    time.Date(2022, 03, 01, 0, 0, 0, 0, time.UTC),
-						"lastLogin": time.Date(2022, 03, 16, 12, 13, 14, 0, time.UTC),
-					},
-				},
-				b: &Document{
-					keys: []string{"name", "code", "games", "joined", "lastLogin"},
-					m: map[string]any{
-						"name":  "John Doe",
-						"code":  121081,
-						"score": 42.13,
-						"games": []any{
-							map[string]any{"game": "abc", "score": 5},
-							map[string]any{"game": "def", "score": 8},
-							map[string]any{"game": "xyz", "score": 9},
-						},
-						"joined":    time.Date(2022, 03, 01, 0, 0, 0, 0, time.UTC),
-						"lastLogin": time.Date(2022, 03, 16, 12, 13, 14, 0, time.UTC),
-					},
-				},
-			},
-		} {
-			tc := tc
-			t.Run(tc.name, func(t *testing.T) {
-				t.Parallel()
-
-				actual := tc.a.Equal(tc.b)
-				assert.Equal(t, tc.expected, actual)
-			})
-		}
-
 	})
 
 	t.Run("ZeroValues", func(t *testing.T) {

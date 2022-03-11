@@ -65,22 +65,6 @@ func (a *Array) Len() int {
 	return len(a.s)
 }
 
-func (a *Array) Equal(bAny any) bool {
-	b, ok := bAny.(*Array)
-	if !ok {
-		return false
-	}
-	if a.Len() != b.Len() {
-		return false
-	}
-	for i := range a.s {
-		if a.s[i] != b.s[i] {
-			return false
-		}
-	}
-	return true
-}
-
 // Get returns a value at the given index.
 func (a *Array) Get(index int) (any, error) {
 	if l := a.Len(); index < 0 || index >= l {
