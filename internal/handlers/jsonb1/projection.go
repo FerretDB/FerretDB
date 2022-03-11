@@ -36,21 +36,24 @@ func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql
 		return
 	}
 
+	// create a list of keys for document
 	ks, arg := s.buildProjectionKeys(projection.Keys(), projectionMap, p)
 	args = append(args, arg...)
+	sql = "json_build_object('$k', array[" + ks + "],"
 
 	// build json object
-	sql = "json_build_object('$k', array[" + ks + "],"
 	for i, k := range projection.Keys() { // value
+		s.l.Sugar().Debugf("key %s", k)
 
 		doc, isDoc := projectionMap[k].(*types.Document)
-		// { field: 1}
+		// { field: 1 } to value->field
 		if !isDoc {
 			if i != 0 {
 				sql += ", "
 			}
 			sql += p.Next() + "::text, _jsonb->" + p.Next()
 			args = append(args, k, k)
+			s.l.Sugar().Debugf("%s->%s", k, k)
 			continue
 		}
 
@@ -90,17 +93,13 @@ func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql
 }
 
 func (s *storage) elemMatchProjection(k, fieldKey string, elemMatchDoc *types.Document, p *pg.Placeholder) (elemMatchSQL string, arg []any) {
-	elemMatchSQL = `
-				CASE
-				WHEN  jsonb_typeof(_jsonb->` + p.Next() + `) != 'array' THEN null
-				ELSE
-					(
-						SELECT tempTable.value result
-						FROM jsonb_array_elements(_jsonb->` + p.Next() + `) tempTable
-						WHERE %s
-						LIMIT 1
-					)
-				END val`
+	elemMatchSQL = " CASE " +
+		"WHEN jsonb_typeof(_jsonb->" + p.Next() + ") != 'array' THEN null " +
+		"ELSE (" +
+		"SELECT tempTable.value result " +
+		"FROM jsonb_array_elements(_jsonb->" + p.Next() + ") tempTable " +
+		" WHERE %s LIMIT 1 " +
+		") END val "
 	arg = append(arg, k, k)
 
 	// where part
@@ -148,7 +147,6 @@ func (s *storage) elemMatchProjection(k, fieldKey string, elemMatchDoc *types.Do
 			arg = append(arg, k, elemMatchKey, val)
 			s.l.Sugar().Debugf("$elemMatch field [%s] in %s", elemMatchKey, k)
 		}
-
 	}
 	elemMatchSQL = fmt.Sprintf(elemMatchSQL, elemMatchWhere)
 	return
@@ -165,12 +163,13 @@ func (s *storage) buildProjectionKeys(projectionKeys []string, projectionMap map
 					panic("expected $elemMatch to be doc")
 				}
 				for _, filterField := range elemMatchDoc.Keys() { // elemMatch field
-					if i != 0 {
+					s.l.Sugar().Debugf("$elemMatch field [%s] in %s", filterField, k)
+					if ks != "" {
 						ks += ", "
 					}
 					ks += p.Next()
-					arg = append(arg, filterField)
-					s.l.Sugar().Debugf("$elemMatch field [%s] in %s", filterField, k)
+					arg = append(arg, k)
+
 				}
 				continue
 			}
