@@ -42,7 +42,7 @@ type Binary struct {
 	B       []byte
 }
 
-//BinaryFromArray takes position array which must contain non-negative numbers
+// BinaryFromArray takes position array which must contain non-negative numbers
 // and packs it into types.Binary. Bit positions start at 0 from the least significant bit.
 func BinaryFromArray(values *Array) (*Binary, error) {
 	var bitMask uint64
