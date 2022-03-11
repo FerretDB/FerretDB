@@ -15,8 +15,11 @@
 package jsonb1
 
 import (
+	"fmt"
+
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"golang.org/x/exp/slices"
 )
 
 // elemMatch
@@ -33,9 +36,127 @@ func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql
 		return
 	}
 
-	ks := ""
+	ks, arg := s.buildProjectionKeys(projection.Keys(), projectionMap, p)
+	args = append(args, arg...)
 
-	for i, k := range projection.Keys() {
+	// build json object
+	sql = "json_build_object('$k', array[" + ks + "],"
+	for i, k := range projection.Keys() { // value
+
+		doc, isDoc := projectionMap[k].(*types.Document)
+		// { field: 1}
+		if !isDoc {
+			if i != 0 {
+				sql += ", "
+			}
+			sql += p.Next() + "::text, _jsonb->" + p.Next()
+			args = append(args, k, k)
+			continue
+		}
+
+		// field: { field: value } is not supported
+		// field: { $elemMatch: { }}
+		supportedKeys := []string{"$elemMatch"}
+		for _, fieldKey := range doc.Keys() {
+			if !slices.Contains(supportedKeys, fieldKey) {
+				s.l.Sugar().Warnf("%s not supported", fieldKey)
+				continue
+			}
+
+			fieldAny, err := doc.Get(fieldKey)
+			if err != nil {
+				panic("impossible code " + k + " > " + fieldKey)
+			}
+
+			fieldDoc, ok := fieldAny.(*types.Document)
+			if !ok {
+				panic("document expected " + k + "." + fieldKey)
+			}
+
+			switch fieldKey {
+			case "$elemMatch":
+				elemMatchSQL, arg := s.elemMatchProjection(k, fieldKey, fieldDoc, p)
+				sql += elemMatchSQL
+				args = append(args, arg...)
+			default:
+				panic("unsupported projection " + k + "." + fieldKey)
+			}
+		}
+
+	}
+	sql += ")"
+
+	return
+}
+
+func (s *storage) elemMatchProjection(k, fieldKey string, elemMatchDoc *types.Document, p *pg.Placeholder) (elemMatchSQL string, arg []any) {
+	elemMatchSQL = `
+				CASE
+				WHEN  jsonb_typeof(_jsonb->` + p.Next() + `) != 'array' THEN null
+				ELSE
+					(
+						SELECT tempTable.value result
+						FROM jsonb_array_elements(_jsonb->` + p.Next() + `) tempTable
+						WHERE %s
+						LIMIT 1
+					)
+				END val`
+	arg = append(arg, k, k)
+
+	// where part
+	elemMatchWhere := ""
+	elemMatchMap := elemMatchDoc.Map()
+	for elemMatchKey, elemMatchVal := range elemMatchMap { // elemMatch field
+		if elemMatchWhere != "" {
+			elemMatchWhere += " AND "
+		}
+
+		filter, isDoc := elemMatchMap[elemMatchKey].(*types.Document)
+		// field: scalar value
+		if !isDoc {
+			elemMatchWhere += "_jsonb->" + p.Next() + "@? '$." + p.Next() + "[*] ? (@ == " + p.Next() + ")'"
+			arg = append(arg, fieldKey, elemMatchVal)
+			continue
+		}
+
+		// field: { $gt: scalar value}
+		filterMap := filter.Map()
+		for op, val := range filterMap {
+			var operand string
+			switch op {
+			case "$eq":
+				// {field: {$eq: value}}
+				operand = "=="
+			case "$ne":
+				// {field: {$ne: value}}
+				operand = "<>"
+			case "$lt":
+				// {field: {$lt: value}}
+				operand = "<"
+			case "$lte":
+				// {field: {$lte: value}}
+				operand = "<="
+			case "$gt":
+				// {field: {$gt: value}}
+				operand = ">"
+			case "$gte":
+				// {field: {$gte: value}}
+				operand = ">="
+			}
+
+			elemMatchWhere += "_jsonb->" + p.Next() + "@? '$." + p.Next() + "[*] ? (@ " + operand + p.Next() + ")'"
+			arg = append(arg, k, elemMatchKey, val)
+			s.l.Sugar().Debugf("$elemMatch field [%s] in %s", elemMatchKey, k)
+		}
+
+	}
+	elemMatchSQL = fmt.Sprintf(elemMatchSQL, elemMatchWhere)
+	return
+}
+
+// buildProjectionKeys prepares a key list with placeholders
+func (s *storage) buildProjectionKeys(projectionKeys []string, projectionMap map[string]any, p *pg.Placeholder) (ks string, arg []any) {
+	for i, k := range projectionKeys {
 		doc, isDoc := projectionMap[k].(*types.Document)
 		if isDoc {
 			if elemMatchAny, err := doc.Get("$elemMatch"); err == nil {
@@ -43,33 +164,23 @@ func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql
 				if !ok {
 					panic("expected $elemMatch to be doc")
 				}
-				for _, filterField := range elemMatchDoc.Keys() {
+				for _, filterField := range elemMatchDoc.Keys() { // elemMatch field
 					if i != 0 {
 						ks += ", "
 					}
-					ks += "" + p.Next()
-					args = append(args, k)
+					ks += p.Next()
+					arg = append(arg, filterField)
 					s.l.Sugar().Debugf("$elemMatch field [%s] in %s", filterField, k)
 				}
 				continue
 			}
 		}
+
 		if i != 0 {
 			ks += ", "
 		}
 		ks += p.Next()
-		args = append(args, k)
+		arg = append(arg, k)
 	}
-
-	sql = "json_build_object('$k', array[" + ks + "],"
-	for i, k := range projection.Keys() { // value
-		if i != 0 {
-			sql += ", "
-		}
-		sql += p.Next() + "::text, _jsonb->" + p.Next()
-		args = append(args, k, k)
-	}
-	sql += ")"
-
 	return
 }
