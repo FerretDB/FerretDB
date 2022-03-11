@@ -581,7 +581,7 @@ func TestFind(t *testing.T) {
 				must.NotFail(types.NewDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x10, 0x01, 0x00, 0x00, 0x10, 0x01},
 					"name", "int32",
-					"value", int32(53),
+					"value", int32(42),
 				)),
 			)),
 		},
