@@ -114,7 +114,7 @@ func (s *storage) elemMatchProjection(k, fieldKey string, elemMatchDoc *types.Do
 		filter, isDoc := elemMatchMap[elemMatchKey].(*types.Document)
 		// field: scalar value
 		if !isDoc {
-			elemMatchWhere += "_jsonb->" + p.Next() + "@? '$." + p.Next() + "[*] ? (@ == " + p.Next() + ")'"
+			elemMatchWhere += "tempTable.value @? '$." + p.Next() + "[*] ? (@ == " + p.Next() + ")'"
 			arg = append(arg, fieldKey, elemMatchVal)
 			continue
 		}
@@ -144,7 +144,7 @@ func (s *storage) elemMatchProjection(k, fieldKey string, elemMatchDoc *types.Do
 				operand = ">="
 			}
 
-			elemMatchWhere += "_jsonb->" + p.Next() + "@? '$." + p.Next() + "[*] ? (@ " + operand + p.Next() + ")'"
+			elemMatchWhere += "tempTable.value @? '$." + p.Next() + "[*] ? (@ " + operand + " " + p.Next() + ")'"
 			arg = append(arg, k, elemMatchKey, val)
 			s.l.Sugar().Debugf("$elemMatch field [%s] in %s", elemMatchKey, k)
 		}
