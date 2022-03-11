@@ -191,10 +191,6 @@ func (d *Document) Keys() []string {
 	return d.keys
 }
 
-func Equal(a, b any) bool {
-	return a == b
-}
-
 // Command returns the first document's key lowercased. This is often used as a command name.
 // It returns an empty string if document is nil or empty.
 func (d *Document) Command() string {
