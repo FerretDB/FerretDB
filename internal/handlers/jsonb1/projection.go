@@ -113,7 +113,7 @@ func (s *storage) elemMatchProjection(k string, elemMatchDoc *types.Document, p 
 		filter, isDoc := elemMatchMap[elemMatchKey].(*types.Document)
 		// field: scalar value
 		if !isDoc {
-			// TODO escape?
+			// TODO escape? // questionable
 			elemMatchWhere += "tempTable.value @? '$." + elemMatchKey + "[*] ? (@ == " + p.Next() + ")'"
 			arg = append(arg, elemMatchVal)
 			s.l.Sugar().Debugf("field %s -> $elemMatch -> { %s: %v }", k, elemMatchKey, elemMatchVal)

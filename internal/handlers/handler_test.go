@@ -138,22 +138,19 @@ func TestFind(t *testing.T) {
 			schemas: []string{"values"},
 			req: types.MustNewDocument(
 				"find", "values",
-				"filter", types.MustNewDocument("name", "array-embedded"),
-				"projection", types.MustNewDocument(
-					"value", types.MustNewDocument(
-						"$elemMatch", types.MustNewDocument(
-							"document", "jkl",
-						),
-					),
-				),
+				"filter", must.NotFail(types.NewDocument("name", "array-embedded")),
+				"projection", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$elemMatch", must.NotFail(types.NewDocument("document", "jkl")))),
+				)),
 			),
 			resp: types.MustNewArray(
-				types.MustNewDocument(
+				must.NotFail(types.NewDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x05, 0x00, 0x00, 0x04, 0x05},
-					"value", types.MustNewArray(
-						types.MustNewDocument("document", "jkl", "score", int32(24), "age", int32(1002)),
-					),
-				),
+					"value", must.NotFail(types.NewArray(
+						must.NotFail(types.NewDocument("document", "jkl", "score", int32(24), "age", int32(1002))),
+					)),
+				)),
 			),
 		},
 
