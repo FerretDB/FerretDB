@@ -128,6 +128,36 @@ func TestFind(t *testing.T) {
 	// Do not use sentences, spaces, or underscores in subtest names
 	// to make it easier to run individual tests with `go test -run test/name` and for consistency.
 	testCases := map[string]testCase{
+		"elemMatchFilterProjection": {
+			schemas: []string{"values"},
+			req: types.MustNewDocument(
+				"find", "values",
+				"filter", types.MustNewDocument(
+					"value", types.MustNewDocument(
+						"code", types.MustNewDocument("$gt", int32(121081)),
+					),
+				),
+				"projection", types.MustNewDocument(
+					"value", types.MustNewDocument(
+						"$elemMatch", types.MustNewDocument(
+							"code", int32(121082),
+						),
+					),
+				),
+			),
+			resp: types.MustNewArray(
+				types.MustNewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x05, 0x00, 0x00, 0x03, 0x09},
+				),
+				types.MustNewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x05, 0x00, 0x00, 0x03, 0x09},
+					"value", types.MustNewArray(
+						types.MustNewDocument("code", int32(121081), "document", "zyx"),
+					),
+				),
+			),
+		},
+
 		"ValueLtGt": {
 			schemas: []string{"monila", "pagila"},
 			req: types.MustNewDocument(
