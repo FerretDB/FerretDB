@@ -27,3 +27,17 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+
+SELECT
+ CASE
+    WHEN  jsonb_typeof(_jsonb->'value') != 'array' THEN null
+    ELSE
+        (
+            SELECT tempTable.value result
+            FROM jsonb_array_elements(_jsonb->'value') tempTable
+            WHERE tempTable.value @? '$.score[*] ? (@ == 24 )'
+            LIMIT 1
+        )
+ END val
+FROM "values"."values"
+WHERE (_jsonb->'name' = to_jsonb('array-embedded'::text));
