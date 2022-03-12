@@ -18,6 +18,15 @@ import "strconv"
 
 type Placeholder int
 
+func (p *Placeholder) Previous() string {
+	*p--
+	return "$" + strconv.Itoa(int(*p))
+}
+
+func (p *Placeholder) Current() string {
+	return "$" + strconv.Itoa(int(*p))
+}
+
 func (p *Placeholder) Next() string {
 	*p++
 	return "$" + strconv.Itoa(int(*p))
