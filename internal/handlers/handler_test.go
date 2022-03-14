@@ -142,7 +142,8 @@ func TestFind(t *testing.T) {
 				"filter", must.NotFail(types.NewDocument("name", "array-embedded")),
 				"projection", must.NotFail(types.NewDocument(
 					"value", must.NotFail(types.NewDocument(
-						"$elemMatch", must.NotFail(types.NewDocument("document", "jkl")))),
+						"$elemMatch", must.NotFail(types.NewDocument("document", "jkl")),
+					)),
 				)),
 			),
 			resp: types.MustNewArray(
