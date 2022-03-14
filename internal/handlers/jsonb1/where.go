@@ -272,7 +272,7 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 			default:
 				err = common.NewErrorMsg(common.ErrBadValue,
 					fmt.Sprintf(
-						"value takes an Array, a number, or a BinData but received: $bitsAllClear: %v", values),
+						"value takes an Array, a number, or a BinData but received: $bitsAllClear: %#v", values),
 				)
 			}
 		default:
