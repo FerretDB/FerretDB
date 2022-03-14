@@ -127,14 +127,15 @@ func (s *storage) buildProjectionQueryELemMatch(k string, elemMatchDoc *types.Do
 		// field: scalar value
 		if !isDoc {
 			// TODO escape? // questionable
-			var val string
-			val, err = pg.Sanitize(elemMatchVal)
+			var val, _ string
+			val, _, err = pg.Sanitize(elemMatchVal)
 			if err != nil {
 				err = lazyerrors.Errorf("pg.Sanitize: %w", err)
 				return
 			}
-			elemMatchWhere += "tempTable.value @? '$." + elemMatchKey + "[*] ? (@ == " + p.Next() + ")'"
-			arg = append(arg, val[1:len(val)-1])
+			jsonpath := "'$." + elemMatchKey + "[*] ? (@ == " + val + ")'"
+			elemMatchWhere += "tempTable.value @? " + jsonpath
+			// arg = append(arg, val[1:len(val)-1])
 			s.l.Sugar().Debugf("field %s -> $elemMatch -> { %s: %v }", k, elemMatchKey, elemMatchVal)
 			continue
 		}
