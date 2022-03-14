@@ -1,9 +1,6 @@
 version: 3
 
-vars:
-  EXT: .exe
-
 tasks:
   rm-bin:
     cmds:
-    - echo "skip"
+	  - rm -rf bin
