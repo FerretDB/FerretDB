@@ -126,16 +126,13 @@ func (s *storage) buildProjectionQueryELemMatch(k string, elemMatchDoc *types.Do
 		filter, isDoc := elemMatchMap[elemMatchKey].(*types.Document)
 		// field: scalar value
 		if !isDoc {
-			// TODO escape? // questionable
-			var val, _ string
-			val, _, err = pg.Sanitize(elemMatchVal)
+			var val string
+			val, err = pg.Sanitize(elemMatchVal)
 			if err != nil {
 				err = lazyerrors.Errorf("pg.Sanitize: %w", err)
 				return
 			}
-			jsonpath := "'$." + elemMatchKey + "[*] ? (@ == " + val + ")'"
-			elemMatchWhere += "tempTable.value @? " + jsonpath
-			// arg = append(arg, val[1:len(val)-1])
+			elemMatchWhere += "tempTable.value @? " + "'$." + elemMatchKey + "[*] ? (@ == " + val + ")'"
 			s.l.Sugar().Debugf("field %s -> $elemMatch -> { %s: %v }", k, elemMatchKey, elemMatchVal)
 			continue
 		}
@@ -164,9 +161,14 @@ func (s *storage) buildProjectionQueryELemMatch(k string, elemMatchDoc *types.Do
 				// {field: {$gte: value}}
 				operand = ">="
 			}
-
-			elemMatchWhere += "tempTable.value @? '$." + p.Next() + "[*] ? (@ " + operand + " " + p.Next() + ")'"
-			arg = append(arg, elemMatchKey, val)
+			var conditionVal string
+			conditionVal, err = pg.Sanitize(conditionVal)
+			if err != nil {
+				err = lazyerrors.Errorf("pg.Sanitize: %w", err)
+				return
+			}
+			elemMatchWhere += "tempTable.value @? '$." + p.Next() + "[*] ? (@ " + operand + " " + conditionVal + ")'"
+			arg = append(arg, elemMatchKey)
 			s.l.Sugar().Debugf("field %s -> $elemMatch -> { %s %s %v }", k, elemMatchKey, operand, val)
 		}
 	}

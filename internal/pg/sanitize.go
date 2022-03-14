@@ -26,41 +26,32 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// Sanitize prepares a scalar value of any type to be passed to sql query and gives a typo to cast type in postgres query
-// Sanitize(v any) (val, type cast string, error)
-func Sanitize(v any) (val string, cast string, err error) {
+// Sanitize prepares a scalar value of any type to be passed to sql query
+func Sanitize(v any) (val string, err error) {
 	switch value := v.(type) {
 	case float64:
 		val = pgx.Identifier{strconv.FormatFloat(value, 'g', 6, 64)}.Sanitize()
-		cast = "numeric"
 		return
 	case string:
 		val = pgx.Identifier{value}.Sanitize()
-		cast = "varchar"
 		return
 	case bool:
 		val = pgx.Identifier{fmt.Sprintf("v", value)}.Sanitize()
-		cast = "boolean"
 		return
 	case time.Time:
 		val = pgx.Identifier{value.String()}.Sanitize()
-		cast = "timestamp"
 		return
 	case int32:
 		val = pgx.Identifier{strconv.FormatInt(int64(value), 10)}.Sanitize()
-		cast = "integer"
 		return
 	case types.Timestamp:
 		val = pgx.Identifier{strconv.FormatUint(uint64(value), 10)}.Sanitize()
-		cast = "timestamp"
 		return
 	case int64:
 		val = pgx.Identifier{strconv.FormatInt(value, 10)}.Sanitize()
-		cast = "bigint"
 		return
 	case types.CString:
 		val = pgx.Identifier{string(value)}.Sanitize()
-		cast = "varchar"
 		return
 	default:
 		err = lazyerrors.Errorf("sanitize: unsupported type: %[1]T (%[1]v)", value)
