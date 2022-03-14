@@ -45,16 +45,18 @@ func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql
 	args = append(args, arg...)
 	sql = "json_build_object('$k', array[" + ks + "],"
 
+	// _id and _id value
+	sql += p.Next() + "::text, _jsonb->" + p.Next() + ", "
+	args = append(args, "_id", "_id")
+
 	// build json object
-	for i, k := range projection.Keys() { // value
-		s.l.Sugar().Debugf("key %s", k)
+	for _, k := range projection.Keys() { // value
+		s.l.Sugar().Debugf("projection key %s", k)
 
 		doc, isDoc := projectionMap[k].(*types.Document)
 		// { field: 1 } to value->field
 		if !isDoc {
-			if i != 0 {
-				sql += ", "
-			}
+			sql += ", "
 			sql += p.Next() + "::text, _jsonb->" + p.Next()
 			args = append(args, k, k)
 			s.l.Sugar().Debugf("%s->%s", k, k)
@@ -86,7 +88,7 @@ func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql
 			switch fieldKey {
 			case "$elemMatch":
 				var elemMatchSQL string
-				elemMatchSQL, arg, err = s.buildProjectionQueryELemMatch(k, fieldDoc, p)
+				elemMatchSQL, arg, err = s.buildProjectionQueryElemMatch(k, fieldDoc, p)
 				if err != nil {
 					err = lazyerrors.Errorf("buildProjectionQueryELemMatch: %s.%s %w", k, fieldKey, err)
 					return
@@ -104,14 +106,13 @@ func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql
 	return
 }
 
-func (s *storage) buildProjectionQueryELemMatch(k string, elemMatchDoc *types.Document, p *pg.Placeholder) (
+func (s *storage) buildProjectionQueryElemMatch(k string, elemMatchDoc *types.Document, p *pg.Placeholder) (
 	elemMatchSQL string, arg []any, err error,
 ) {
 	s.l.Sugar().Debugf("field %s -> $elemMatch", k)
 
 	elemMatchSQL = p.Next() + "::text, CASE WHEN jsonb_typeof(_jsonb->" + p.Next() + ") != 'array' THEN null " +
-		"ELSE ( SELECT tempTable.value result FROM jsonb_array_elements(_jsonb->" + p.Next() + ") tempTable WHERE %s LIMIT 1 " +
-		") END "
+		"ELSE jsonb_build_array(( SELECT tempTable.value result FROM jsonb_array_elements(_jsonb->" + p.Next() + ") tempTable WHERE %s LIMIT 1 )) END "
 	arg = append(arg, k, k, k)
 
 	// where part
@@ -181,16 +182,18 @@ func (s *storage) buildProjectionQueryELemMatch(k string, elemMatchDoc *types.Do
 func (s *storage) buildProjectionKeys(projectionKeys []string, projectionMap map[string]any, p *pg.Placeholder) (
 	ks string, arg []any, err error,
 ) {
-	for i, k := range projectionKeys {
+	ks += p.Next()
+	arg = append(arg, "_id")
+
+	for _, k := range projectionKeys {
 		doc, isDoc := projectionMap[k].(*types.Document)
 		if !isDoc {
-			if i != 0 {
-				ks += ", "
-			}
+			ks += ", "
 			ks += p.Next()
 			arg = append(arg, k)
 			continue
 		}
+
 		var elemMatchAny any
 		if elemMatchAny, err = doc.Get("$elemMatch"); err == nil {
 			elemMatchDoc, ok := elemMatchAny.(*types.Document)

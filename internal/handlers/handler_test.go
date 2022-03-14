@@ -16,6 +16,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"os"
 	"runtime"
@@ -129,10 +130,11 @@ func TestFind(t *testing.T) {
 	// to make it easier to run individual tests with `go test -run test/name` and for consistency.
 	testCases := map[string]testCase{
 		// jsonb_path_query_first but
-		// SELECT _jsonb FROM "values"."values" WHERE (_jsonb->'name' = to_jsonb('array-embedded'::text))
-		// SELECT _jsonb FROM "values"."values" WHERE (_jsonb->'value' @?  '$.score[*] ? (@ == 24 )'  )
-		// SELECT json_build_object('$k', array['value'], 'value'::text, _jsonb->'value')
-		//    FROM "values"."values" WHERE (_jsonb->'name' = to_jsonb('array-embedded'::text))
+		// SELECT json_build_object('$k', array['_id', 'value'], '_id'::text, _jsonb->'_id', 'value'::text,
+		// CASE WHEN jsonb_typeof(_jsonb->'value') != 'array' THEN null
+		// ELSE jsonb_build_array( ( SELECT tempTable.value result FROM jsonb_array_elements(_jsonb->'value') tempTable WHERE tempTable.value @? '$.document[*] ? (@ == "jkl")' LIMIT 1 )) END )
+		// FROM "values"."values" WHERE (_jsonb->'name' = to_jsonb('array-embedded'::text));
+
 		"elemMatchFilterProjection": {
 			schemas: []string{"values"},
 			req: types.MustNewDocument(
@@ -651,6 +653,30 @@ func TestFind(t *testing.T) {
 					}
 
 					actual := handle(ctx, t, handler, tc.req)
+					e, _ := expected.Get("cursor")
+					ec, _ := e.(*types.Document).Get("firstBatch")
+
+					a, _ := actual.Get("cursor")
+					ac, _ := a.(*types.Document).Get("firstBatch")
+
+					for i := 0; i < ec.(*types.Array).Len(); i++ {
+						x, _ := ec.(*types.Array).Get(i)
+						fmt.Printf("excp %#v\n", x)
+						if ed, ok := x.(*types.Document); ok {
+							v, _ := ed.Get("value")
+							vv, _ := v.(*types.Array).Get(0)
+							fmt.Printf("exp map %#v\n\n", vv)
+						}
+
+						x, _ = ac.(*types.Array).Get(i)
+						fmt.Printf("act %#v\n", x)
+						if ad, ok := x.(*types.Document); ok {
+							v, _ := ad.Get("value")
+							vv, _ := v.(*types.Array).Get(0)
+							fmt.Printf("act map %#v\n\n", vv)
+						}
+					}
+
 					assert.Equal(t, expected, actual)
 				})
 			}
