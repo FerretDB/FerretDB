@@ -17,14 +17,13 @@ package jsonb1
 import (
 	"fmt"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"golang.org/x/exp/slices"
 )
 
-// elemMatch
-// SELECT json_build_object('$k', array['value'], 'value'::text, _jsonb->$3) FROM "values"."values" WHERE (_jsonb->'name' = to_jsonb('array-embedded'::text))
 // Filter fields to return.
 func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
 	if projection == nil {
@@ -105,7 +104,9 @@ func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql
 	return
 }
 
-func (s *storage) buildProjectionQueryELemMatch(k string, elemMatchDoc *types.Document, p *pg.Placeholder) (elemMatchSQL string, arg []any, err error) {
+func (s *storage) buildProjectionQueryELemMatch(k string, elemMatchDoc *types.Document, p *pg.Placeholder) (
+	elemMatchSQL string, arg []any, err error,
+) {
 	s.l.Sugar().Debugf("field %s -> $elemMatch", k)
 
 	elemMatchSQL = p.Next() + "::text, CASE WHEN jsonb_typeof(_jsonb->" + p.Next() + ") != 'array' THEN null " +
@@ -176,36 +177,37 @@ func (s *storage) buildProjectionQueryELemMatch(k string, elemMatchDoc *types.Do
 	return
 }
 
-// buildProjectionKeys prepares a key list with placeholders
-func (s *storage) buildProjectionKeys(projectionKeys []string, projectionMap map[string]any, p *pg.Placeholder) (ks string, arg []any, err error) {
+// buildProjectionKeys prepares a key list with placeholders.
+func (s *storage) buildProjectionKeys(projectionKeys []string, projectionMap map[string]any, p *pg.Placeholder) (
+	ks string, arg []any, err error,
+) {
 	for i, k := range projectionKeys {
 		doc, isDoc := projectionMap[k].(*types.Document)
-		if isDoc {
-			var elemMatchAny any
-			if elemMatchAny, err = doc.Get("$elemMatch"); err == nil {
-				elemMatchDoc, ok := elemMatchAny.(*types.Document)
-				if !ok {
-					err = fmt.Errorf("$elemMatch condition is not doc")
-					return
-				}
-				for _, filterField := range elemMatchDoc.Keys() { // elemMatch field
-					s.l.Sugar().Debugf("$elemMatch field [%s] in %s", filterField, k)
-					if ks != "" {
-						ks += ", "
-					}
-					ks += p.Next()
-					arg = append(arg, k)
-
-				}
-				continue
+		if !isDoc {
+			if i != 0 {
+				ks += ", "
 			}
+			ks += p.Next()
+			arg = append(arg, k)
+			continue
 		}
-
-		if i != 0 {
-			ks += ", "
+		var elemMatchAny any
+		if elemMatchAny, err = doc.Get("$elemMatch"); err == nil {
+			elemMatchDoc, ok := elemMatchAny.(*types.Document)
+			if !ok {
+				err = fmt.Errorf("$elemMatch condition is not doc")
+				return
+			}
+			for _, filterField := range elemMatchDoc.Keys() { // elemMatch field
+				s.l.Sugar().Debugf("$elemMatch field [%s] in %s", filterField, k)
+				if ks != "" {
+					ks += ", "
+				}
+				ks += p.Next()
+				arg = append(arg, k)
+			}
+			continue
 		}
-		ks += p.Next()
-		arg = append(arg, k)
 	}
 	return
 }

@@ -131,9 +131,8 @@ func TestFind(t *testing.T) {
 		// jsonb_path_query_first but
 		// SELECT _jsonb FROM "values"."values" WHERE (_jsonb->'name' = to_jsonb('array-embedded'::text))
 		// SELECT _jsonb FROM "values"."values" WHERE (_jsonb->'value' @?  '$.score[*] ? (@ == 24 )'  )
-		// SELECT jsonb_path_query_first_item( _jsonb->'value' ,  '$.score[*] ? (@ == 24 )' ) FROM "values"."values" WHERE (_jsonb->'name' = to_jsonb('array-embedded'::text));
-		// SELECT json_build_object('$k', array['value'], 'value'::text, _jsonb->'value') FROM "values"."values" WHERE (_jsonb->'name' = to_jsonb('array-embedded'::text))
-		// get jsonb-> (index of an array where value is )
+		// SELECT json_build_object('$k', array['value'], 'value'::text, _jsonb->'value')
+		//    FROM "values"."values" WHERE (_jsonb->'name' = to_jsonb('array-embedded'::text))
 		"elemMatchFilterProjection": {
 			schemas: []string{"values"},
 			req: types.MustNewDocument(
