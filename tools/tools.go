@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build tools
-// +build tools
+//go:build go1.18
+// +build go1.18
 
 package tools // import "github.com/FerretDB/FerretDB/tools"
 
 import (
 	_ "github.com/BurntSushi/go-sumtype"
+	_ "github.com/go-task/task/v3/cmd/task"
 	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
 	_ "github.com/quasilyte/go-consistent"
 	_ "github.com/reviewdog/reviewdog/cmd/reviewdog"
@@ -27,10 +28,18 @@ import (
 	_ "mvdan.cc/gofumpt"
 )
 
-//go:generate go build -v -o ../bin/go-sumtype github.com/BurntSushi/go-sumtype
-//go:generate go build -v -o ../bin/golangci-lint github.com/golangci/golangci-lint/cmd/golangci-lint
-//go:generate go build -v -o ../bin/go-consistent github.com/quasilyte/go-consistent
-//go:generate go build -v -o ../bin/reviewdog github.com/reviewdog/reviewdog/cmd/reviewdog
-//go:generate go build -v -o ../bin/benchstat golang.org/x/perf/cmd/benchstat
-//go:generate go build -v -o ../bin/stringer golang.org/x/tools/cmd/stringer
-//go:generate go build -v -o ../bin/gofumpt mvdan.cc/gofumpt
+// Check that `go` in $PATH have the right version.
+// Catches problems like `/some/path/go generate` invocations where `/some/path/go` is 1.18+
+// (that's checked by the build tags above), but just `go` in $PATH (typically something like `/usr/bin/go`)
+// is an earlier version.
+
+//go:generate go run check.go
+
+//go:generate go build -v -o ../bin/ github.com/BurntSushi/go-sumtype
+//go:generate go build -v -o ../bin/ github.com/go-task/task/v3/cmd/task
+//go:generate go build -v -o ../bin/ github.com/golangci/golangci-lint/cmd/golangci-lint
+//go:generate go build -v -o ../bin/ github.com/quasilyte/go-consistent
+//go:generate go build -v -o ../bin/ github.com/reviewdog/reviewdog/cmd/reviewdog
+//go:generate go build -v -o ../bin/ golang.org/x/perf/cmd/benchstat
+//go:generate go build -v -o ../bin/ golang.org/x/tools/cmd/stringer
+//go:generate go build -v -o ../bin/ mvdan.cc/gofumpt

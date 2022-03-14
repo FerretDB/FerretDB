@@ -12,28 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testutil
+package main
 
 import (
-	"bytes"
-	"encoding/json"
-	"testing"
+	"context"
+	"os"
+	"os/signal"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/FerretDB/FerretDB/internal/fjson"
-	"github.com/FerretDB/FerretDB/internal/types"
+	"golang.org/x/sys/windows"
 )
 
-// Dump returns string representation for debugging.
-func Dump[T types.Type](tb testing.TB, o T) string {
-	tb.Helper()
-
-	b, err := fjson.Marshal(o)
-	require.NoError(tb, err)
-
-	dst := bytes.NewBuffer(make([]byte, 0, len(b)))
-	err = json.Indent(dst, b, "", "  ")
-	require.NoError(tb, err)
-	return dst.String()
+func notifyAppTermination(parent context.Context) (context.Context, context.CancelFunc) {
+	return signal.NotifyContext(parent, windows.SIGTERM, windows.SIGINT, os.Interrupt)
 }

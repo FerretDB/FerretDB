@@ -60,7 +60,7 @@ func TestTables(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
-	pool := testutil.Pool(ctx, t, nil)
+	pool := testutil.Pool(ctx, t, nil, zaptest.NewLogger(t))
 
 	tables, storages, err := pool.Tables(ctx, "monila")
 	require.NoError(t, err)
@@ -131,7 +131,7 @@ func TestConcurrentCreate(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
-	createPool := testutil.Pool(ctx, t, nil)
+	createPool := testutil.Pool(ctx, t, nil, zaptest.NewLogger(t))
 	dbName := strings.ReplaceAll(strings.ToLower(t.Name()), "/", "_")
 	_, err := createPool.Exec(ctx, `CREATE DATABASE `+dbName)
 	require.NoError(t, err)

@@ -26,6 +26,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -39,17 +40,32 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
+type setupOpts struct {
+	noLogging bool
+	poolOpts  *testutil.PoolOpts
+}
+
 // setup creates shared objects for testing.
 //
 // Using shared objects helps us spot concurrency bugs.
 // If some test is failing and the log output is confusing, and you are tempted to move setup call to subtest,
 // instead run that single test with `go test -run test/name`.
-func setup(t *testing.T, poolOpts *testutil.PoolOpts) (context.Context, *Handler, *pg.Pool) {
+func setup(t testing.TB, opts *setupOpts) (context.Context, *Handler, *pg.Pool) {
 	t.Helper()
 
+	if opts == nil {
+		opts = new(setupOpts)
+	}
+
+	var l *zap.Logger
+	if opts.noLogging {
+		l = zap.NewNop()
+	} else {
+		l = zaptest.NewLogger(t)
+	}
+
 	ctx := testutil.Ctx(t)
-	pool := testutil.Pool(ctx, t, poolOpts)
-	l := zaptest.NewLogger(t)
+	pool := testutil.Pool(ctx, t, opts.poolOpts, l)
 	sql := sql.NewStorage(pool, l.Sugar())
 	jsonb1 := jsonb1.NewStorage(pool, l)
 	handler := New(&NewOpts{
@@ -67,16 +83,22 @@ func setup(t *testing.T, poolOpts *testutil.PoolOpts) (context.Context, *Handler
 func handle(ctx context.Context, t *testing.T, handler *Handler, req *types.Document) *types.Document {
 	t.Helper()
 
-	reqHeader := wire.MsgHeader{
-		RequestID: 1,
-		OpCode:    wire.OP_MSG,
-	}
-
 	var reqMsg wire.OpMsg
 	err := reqMsg.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{req},
 	})
 	require.NoError(t, err)
+
+	b, err := reqMsg.MarshalBinary()
+	require.NoError(t, err)
+
+	reqHeader := wire.MsgHeader{
+		MessageLength: int32(wire.MsgHeaderLen + len(b)),
+		RequestID:     1,
+		OpCode:        wire.OP_MSG,
+	}
+
+	addToSeedCorpus(t, &reqHeader, &reqMsg)
 
 	_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
 	require.False(t, closeConn, "%s", resBody.String())
@@ -89,8 +111,10 @@ func handle(ctx context.Context, t *testing.T, handler *Handler, req *types.Docu
 
 func TestFind(t *testing.T) {
 	t.Parallel()
-	ctx, handler, _ := setup(t, &testutil.PoolOpts{
-		ReadOnly: true,
+	ctx, handler, _ := setup(t, &setupOpts{
+		poolOpts: &testutil.PoolOpts{
+			ReadOnly: true,
+		},
 	})
 
 	lastUpdate := time.Date(2020, 2, 15, 9, 34, 33, 0, time.UTC).Local()
@@ -600,8 +624,10 @@ func TestFind(t *testing.T) {
 
 func TestReadOnlyHandlers(t *testing.T) {
 	t.Parallel()
-	ctx, handler, _ := setup(t, &testutil.PoolOpts{
-		ReadOnly: true,
+	ctx, handler, _ := setup(t, &setupOpts{
+		poolOpts: &testutil.PoolOpts{
+			ReadOnly: true,
+		},
 	})
 
 	type testCase struct {

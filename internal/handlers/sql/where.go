@@ -76,7 +76,12 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 			}
 			sql += "NOT("
 
-			argSql, arg, err = fieldExpr(field, value.(*types.Document), p)
+			var exprValue *types.Document
+			if exprValue, err = common.AssertType[*types.Document](value); err != nil {
+				err = lazyerrors.Errorf("fieldExpr: %w", err)
+				return
+			}
+			argSql, arg, err = fieldExpr(field, exprValue, p)
 			if err != nil {
 				err = lazyerrors.Errorf("fieldExpr: %w", err)
 				return
@@ -97,11 +102,17 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 		case "$in":
 			// {field: {$in: [value1, value2, ...]}}
 			sql += " IN"
-			argSql, arg, err = common.InArray(value.(*types.Array), p, scalar)
+			var arr *types.Array
+			if arr, err = common.AssertType[*types.Array](value); err == nil {
+				argSql, arg, err = common.InArray(arr, p, scalar)
+			}
 		case "$nin":
 			// {field: {$nin: [value1, value2, ...]}}
 			sql += " NOT IN"
-			argSql, arg, err = common.InArray(value.(*types.Array), p, scalar)
+			var arr *types.Array
+			if arr, err = common.AssertType[*types.Array](value); err == nil {
+				argSql, arg, err = common.InArray(arr, p, scalar)
+			}
 		case "$eq":
 			// {field: {$eq: value}}
 			// TODO special handling for regex
@@ -180,7 +191,10 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 
 func wherePair(key string, value any, p *pg.Placeholder) (sql string, args []any, err error) {
 	if strings.HasPrefix(key, "$") {
-		exprs := value.(*types.Array)
+		var exprs *types.Array
+		if exprs, err = common.AssertType[*types.Array](value); err != nil {
+			return
+		}
 		sql, args, err = common.LogicExpr(key, exprs, p, wherePair)
 		return
 	}

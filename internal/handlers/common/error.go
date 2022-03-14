@@ -40,8 +40,8 @@ const (
 
 // Error represents wire protocol error.
 type Error struct {
-	code ErrorCode
 	err  error
+	code ErrorCode
 }
 
 // NewError creates a new wire protocol error.
@@ -70,6 +70,11 @@ func NewErrorMsg(code ErrorCode, msg string) error {
 // Error implements error interface.
 func (e *Error) Error() string {
 	return fmt.Sprintf("%[1]s (%[1]d): %[2]v", e.code, e.err)
+}
+
+// Code returns error code.
+func (e *Error) Code() ErrorCode {
+	return e.code
 }
 
 // Unwrap implements standard error unwrapping interface.

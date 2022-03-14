@@ -16,24 +16,31 @@ package testutil
 
 import (
 	"bytes"
-	"encoding/json"
+	"crypto/sha256"
+	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/FerretDB/FerretDB/internal/fjson"
-	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-// Dump returns string representation for debugging.
-func Dump[T types.Type](tb testing.TB, o T) string {
+// WriteSeedCorpusFile adds given data to the fuzzing seed corpus for given fuzz function.
+//
+// It can be an alternative to using f.Add.
+func WriteSeedCorpusFile(tb testing.TB, funcName string, b []byte) {
 	tb.Helper()
 
-	b, err := fjson.Marshal(o)
+	var buf bytes.Buffer
+	buf.WriteString("go test fuzz v1\n")
+	_, err := fmt.Fprintf(&buf, "[]byte(%q)\n", b)
 	require.NoError(tb, err)
 
-	dst := bytes.NewBuffer(make([]byte, 0, len(b)))
-	err = json.Indent(dst, b, "", "  ")
+	dir := filepath.Join("testdata", "fuzz", funcName)
+	err = os.MkdirAll(dir, 0o777)
 	require.NoError(tb, err)
-	return dst.String()
+
+	filename := filepath.Join(dir, fmt.Sprintf("test-%x", sha256.Sum256(b)))
+	err = os.WriteFile(filename, buf.Bytes(), 0o666)
+	require.NoError(tb, err)
 }

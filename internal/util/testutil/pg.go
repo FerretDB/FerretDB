@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
+	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/pg"
 )
@@ -32,7 +32,7 @@ type PoolOpts struct {
 }
 
 // Pool creates a new connection connection pool for testing.
-func Pool(_ context.Context, tb testing.TB, opts *PoolOpts) *pg.Pool {
+func Pool(_ context.Context, tb testing.TB, opts *PoolOpts, l *zap.Logger) *pg.Pool {
 	tb.Helper()
 
 	if testing.Short() {
@@ -48,7 +48,7 @@ func Pool(_ context.Context, tb testing.TB, opts *PoolOpts) *pg.Pool {
 		username = "readonly"
 	}
 
-	pool, err := pg.NewPool("postgres://"+username+"@127.0.0.1:5432/ferretdb?pool_min_conns=1", zaptest.NewLogger(tb), false)
+	pool, err := pg.NewPool("postgres://"+username+"@127.0.0.1:5432/ferretdb?pool_min_conns=1", l, false)
 	require.NoError(tb, err)
 	tb.Cleanup(pool.Close)
 
@@ -57,6 +57,8 @@ func Pool(_ context.Context, tb testing.TB, opts *PoolOpts) *pg.Pool {
 
 // SchemaName returns a stable schema name for that test.
 func SchemaName(tb testing.TB) string {
+	tb.Helper()
+
 	return strings.ReplaceAll(strings.ToLower(tb.Name()), "/", "_")
 }
 
@@ -65,10 +67,6 @@ func SchemaName(tb testing.TB) string {
 // Name is stable for that test. It is automatically dropped if test pass.
 func Schema(ctx context.Context, tb testing.TB, pool *pg.Pool) string {
 	tb.Helper()
-
-	if testing.Short() {
-		tb.Skip("skipping in -short mode")
-	}
 
 	schema := strings.ToLower(tb.Name())
 	tb.Logf("Using schema %q.", schema)
@@ -100,6 +98,8 @@ func Schema(ctx context.Context, tb testing.TB, pool *pg.Pool) string {
 
 // TableName returns a stable table name for that test.
 func TableName(tb testing.TB) string {
+	tb.Helper()
+
 	return strings.ReplaceAll(strings.ToLower(tb.Name()), "/", "_")
 }
 
@@ -108,10 +108,6 @@ func TableName(tb testing.TB) string {
 // Name is stable for that test.
 func CreateTable(ctx context.Context, tb testing.TB, pool *pg.Pool, db string) string {
 	tb.Helper()
-
-	if testing.Short() {
-		tb.Skip("skipping in -short mode")
-	}
 
 	table := TableName(tb)
 	tb.Logf("Using table %q.", table)

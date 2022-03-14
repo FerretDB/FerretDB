@@ -46,7 +46,7 @@ func NewMetrics() *Metrics {
 				Name:      "responses_total",
 				Help:      "Total number of responses.",
 			},
-			[]string{"opcode", "command", "res"},
+			[]string{"opcode", "command", "result"},
 		),
 	}
 }

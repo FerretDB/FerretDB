@@ -70,7 +70,11 @@ func (s *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 
 	m := document.Map()
 	_, isFindOp := m["find"].(string)
-	db := m["$db"].(string)
+
+	var db string
+	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
+	}
 
 	projection, ok := m["projection"].(*types.Document)
 	projectionStr := "*"
@@ -113,8 +117,12 @@ func (s *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 				sql += ","
 			}
 
+			order, err := common.AssertType[int32](sortMap[k])
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
 			sql += " " + pgx.Identifier{k}.Sanitize()
-			order := sortMap[k].(int32)
 			if order > 0 {
 				sql += " ASC"
 			} else {

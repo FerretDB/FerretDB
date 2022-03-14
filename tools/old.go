@@ -12,28 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testutil
+//go:build !go1.18
+// +build !go1.18
 
-import (
-	"bytes"
-	"encoding/json"
-	"testing"
+package tools // import "github.com/FerretDB/FerretDB/tools"
 
-	"github.com/stretchr/testify/require"
+// The version of Go used in `go generate` command is old - we know that from the build tags above.
+// Let the user know.
 
-	"github.com/FerretDB/FerretDB/internal/fjson"
-	"github.com/FerretDB/FerretDB/internal/types"
-)
-
-// Dump returns string representation for debugging.
-func Dump[T types.Type](tb testing.TB, o T) string {
-	tb.Helper()
-
-	b, err := fjson.Marshal(o)
-	require.NoError(tb, err)
-
-	dst := bytes.NewBuffer(make([]byte, 0, len(b)))
-	err = json.Indent(dst, b, "", "  ")
-	require.NoError(tb, err)
-	return dst.String()
-}
+//go:generate go run check.go -old

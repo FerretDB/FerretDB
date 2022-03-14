@@ -1,4 +1,5 @@
-FUZZTIME ?= 20s
+BENCHTIME ?= 5s
+FUZZTIME ?= 15s
 FUZZCORPUS ?= ../fuzz-corpus
 
 all: fmt test
@@ -28,7 +29,7 @@ init: gen-version                      ## Install development tools
 	go mod tidy
 	cd tools && go mod tidy
 	go mod verify
-	cd tools && go generate -tags=tools -x
+	cd tools && go generate -x
 
 gen: bin/gofumpt                       ## Generate code
 	go generate -x ./...
@@ -49,9 +50,11 @@ test:                                  ## Run tests
 fuzz-init: gen-version
 	go test -count=0 ./...
 
+# Those commands should still run tests (i.e., should not have -run=XXX flags)
+# to fill seed corpus for fuzz tests that use WriteSeedCorpusFile (e.g., FuzzHandler).
 fuzz:                                  ## Fuzz for about 2 minutes (with default FUZZTIME)
 	go test -list='Fuzz.*' ./...
-	# Running seven functions for $(FUZZTIME) each..."
+	# Running eight functions for $(FUZZTIME) each..."
 	go test -fuzz=FuzzArray -fuzztime=$(FUZZTIME) ./internal/bson/
 	go test -fuzz=FuzzDocument -fuzztime=$(FUZZTIME) ./internal/bson/
 	go test -fuzz=FuzzArray -fuzztime=$(FUZZTIME) ./internal/fjson/
@@ -59,18 +62,21 @@ fuzz:                                  ## Fuzz for about 2 minutes (with default
 	go test -fuzz=FuzzMsg -fuzztime=$(FUZZTIME) ./internal/wire/
 	go test -fuzz=FuzzQuery -fuzztime=$(FUZZTIME) ./internal/wire/
 	go test -fuzz=FuzzReply -fuzztime=$(FUZZTIME) ./internal/wire/
+	go test -fuzz=FuzzHandler -fuzztime=$(FUZZTIME) ./internal/handlers/
 
-fuzz-corpus:                           ## Sync generated fuzz corpus with FUZZCORPUS
-	go run ./cmd/fuzztool/fuzztool.go -src=$(FUZZCORPUS) -dst=generated
+fuzz-corpus:                           ## Sync seed and generated fuzz corpora with FUZZCORPUS
 	go run ./cmd/fuzztool/fuzztool.go -dst=$(FUZZCORPUS) -src=generated
+	go run ./cmd/fuzztool/fuzztool.go -dst=$(FUZZCORPUS) -src=seed
+	go run ./cmd/fuzztool/fuzztool.go -src=$(FUZZCORPUS) -dst=generated
 
-bench-short:                           ## Benchmark for about 20 seconds
+bench-short:                           ## Benchmark for about 20 seconds (with default BENCHTIME)
 	go test -list='Benchmark.*' ./...
 	rm -f new.txt
-	go test -bench=BenchmarkArray    -benchtime=5s ./internal/bson/  | tee -a new.txt
-	go test -bench=BenchmarkDocument -benchtime=5s ./internal/bson/  | tee -a new.txt
-	go test -bench=BenchmarkArray    -benchtime=5s ./internal/fjson/ | tee -a new.txt
-	go test -bench=BenchmarkDocument -benchtime=5s ./internal/fjson/ | tee -a new.txt
+	# Running four functions for $(BENCHTIME) each..."
+	go test -bench=BenchmarkArray    -benchtime=$(BENCHTIME) ./internal/bson/  | tee -a new.txt
+	go test -bench=BenchmarkDocument -benchtime=$(BENCHTIME) ./internal/bson/  | tee -a new.txt
+	go test -bench=BenchmarkArray    -benchtime=$(BENCHTIME) ./internal/fjson/ | tee -a new.txt
+	go test -bench=BenchmarkDocument -benchtime=$(BENCHTIME) ./internal/fjson/ | tee -a new.txt
 	bin/benchstat old.txt new.txt
 
 build-testcover: gen-version           ## Build bin/ferretdb-testcover
@@ -83,7 +89,7 @@ lint: bin/go-sumtype bin/golangci-lint ## Run linters
 	bin/go-sumtype ./...
 	bin/golangci-lint run --config=.golangci-required.yml
 	bin/golangci-lint run --config=.golangci.yml
-	bin/go-consistent -pedantic ./...
+	bin/go-consistent -pedantic ./cmd/... ./internal/...
 
 psql:                                  ## Run psql
 	docker-compose exec postgres psql -U postgres -d ferretdb
