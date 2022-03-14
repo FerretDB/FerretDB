@@ -94,12 +94,15 @@ func validateSize(value any) error {
 }
 
 // fieldExpr handles {field: {expr}}.
-func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
+func (s *storage) fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
 	filterKeys := expr.Keys()
 	filterMap := expr.Map()
 
 	for _, op := range filterKeys {
-		if op == "$options" {
+		s.l.Sugar().Debugf("filter op %s", op)
+
+		if op == "$options" ||
+			op == "$elemMatch" {
 			// handled by $regex, no need to modify sql in any way
 			continue
 		}
@@ -124,7 +127,7 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 				err = lazyerrors.Errorf("fieldExpr: %w", err)
 				return
 			}
-			argSql, arg, err = fieldExpr(field, exprValue, p)
+			argSql, arg, err = s.fieldExpr(field, exprValue, p)
 			if err != nil {
 				err = lazyerrors.Errorf("fieldExpr: %w", err)
 				return
@@ -240,7 +243,7 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 	return
 }
 
-func wherePair(key string, value any, p *pg.Placeholder) (sql string, args []any, err error) {
+func (s *storage) wherePair(key string, value any, p *pg.Placeholder) (sql string, args []any, err error) {
 	// {$operator: [expr1, expr2, ...]}
 	if strings.HasPrefix(key, "$") {
 		exprs, ok := value.(*types.Array)
@@ -254,14 +257,14 @@ func wherePair(key string, value any, p *pg.Placeholder) (sql string, args []any
 			return
 		}
 
-		sql, args, err = common.LogicExpr(key, exprs, p, wherePair)
+		sql, args, err = common.LogicExpr(key, exprs, p, s.wherePair)
 		return
 	}
 
 	switch value := value.(type) {
 	case *types.Document:
 		// {field: {expr}}
-		sql, args, err = fieldExpr(key, value, p)
+		sql, args, err = s.fieldExpr(key, value, p)
 
 	default:
 		// {field: value}
@@ -288,7 +291,7 @@ func wherePair(key string, value any, p *pg.Placeholder) (sql string, args []any
 	return
 }
 
-func where(filter *types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
+func (s *storage) where(filter *types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
 	if filter == nil {
 		return
 	}
@@ -302,18 +305,19 @@ func where(filter *types.Document, p *pg.Placeholder) (sql string, args []any, e
 	for i, key := range filter.Keys() {
 		value := filterMap[key]
 
-		if i != 0 {
-			sql += " AND"
-		}
-
 		var argSql string
 		var arg []any
-		argSql, arg, err = wherePair(key, value, p)
+		argSql, arg, err = s.wherePair(key, value, p)
 		if err != nil {
 			err = lazyerrors.Errorf("where: %w", err)
 			return
 		}
-
+		if argSql == "" {
+			continue
+		}
+		if i != 0 {
+			sql += " AND"
+		}
 		sql += " (" + argSql + ")"
 		args = append(args, arg...)
 	}

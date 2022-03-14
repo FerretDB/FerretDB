@@ -77,7 +77,7 @@ func (s *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		sql := fmt.Sprintf(`SELECT _jsonb FROM %s`, pgx.Identifier{db, collection}.Sanitize())
 		var placeholder pg.Placeholder
 
-		whereSQL, args, err := where(docM["q"].(*types.Document), &placeholder)
+		whereSQL, args, err := s.where(docM["q"].(*types.Document), &placeholder)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}

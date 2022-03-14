@@ -97,7 +97,7 @@ func (s *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	sort, _ := m["sort"].(*types.Document)
 	limit, _ := m["limit"].(int32)
 
-	whereSQL, whereArgs, err := where(filter, &placeholder)
+	whereSQL, whereArgs, err := s.where(filter, &placeholder)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
