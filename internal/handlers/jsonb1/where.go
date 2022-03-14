@@ -271,7 +271,8 @@ func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql strin
 				argSql, arg, err = scalar(value, p)
 			default:
 				err = common.NewErrorMsg(common.ErrBadValue,
-					"$bitsAllClear has to be bitmask, position array or binary value",
+					fmt.Sprintf(
+						"value takes an Array, a number, or a BinData but received: %v: %v", value, values),
 				)
 			}
 		default:
