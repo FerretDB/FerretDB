@@ -39,7 +39,7 @@ $ git remote add origin git@github.com:<YOUR_GITHUB_USERNAME>/FerretDB.git
    The differences in response are then logged and the FerretDB response is sent back to the client.
 5. Run `mongosh` with `make mongosh`.
    This allows you to run commands against FerretDB.
-6. Example run of test: `run go test -run TestDocument/MethodsOnNil github.com/FerretDB/FerretDB/internal/types.`
+6. Example run of test: `run go test -run TestDocument/MethodsOnNil github.com/FerretDB/FerretDB/internal/types`.
 
 You can see all available "make" commands with `make help`.
 
