@@ -1,0 +1,11 @@
+version: 3
+
+vars:
+  BENCHTIME: 5s
+  FUZZTIME: 15s
+  FUZZCORPUS: ../fuzz-corpus
+
+tasks:
+  gen-version:
+    cmds:
+      - go generate -x ./internal/util/version
