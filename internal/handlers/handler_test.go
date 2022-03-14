@@ -131,7 +131,8 @@ func TestFind(t *testing.T) {
 		// jsonb_path_query_first but
 		// SELECT json_build_object('$k', array['_id', 'value'], '_id'::text, _jsonb->'_id', 'value'::text,
 		// CASE WHEN jsonb_typeof(_jsonb->'value') != 'array' THEN null
-		// ELSE jsonb_build_array( ( SELECT tempTable.value result FROM jsonb_array_elements(_jsonb->'value') tempTable WHERE tempTable.value @? '$.document[*] ? (@ == "jkl")' LIMIT 1 )) END )
+		// ELSE jsonb_build_array( ( SELECT tempTable.value result FROM jsonb_array_elements(_jsonb->'value')
+		// tempTable WHERE tempTable.value @? '$.document[*] ? (@ == "jkl")' LIMIT 1 )) END )
 		// FROM "values"."values" WHERE (_jsonb->'name' = to_jsonb('array-embedded'::text));
 
 		"elemMatchFilterProjection": {

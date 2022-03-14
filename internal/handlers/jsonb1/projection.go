@@ -112,7 +112,8 @@ func (s *storage) buildProjectionQueryElemMatch(k string, elemMatchDoc *types.Do
 	s.l.Sugar().Debugf("field %s -> $elemMatch", k)
 
 	elemMatchSQL = p.Next() + "::text, CASE WHEN jsonb_typeof(_jsonb->" + p.Next() + ") != 'array' THEN null " +
-		"ELSE jsonb_build_array(( SELECT tempTable.value result FROM jsonb_array_elements(_jsonb->" + p.Next() + ") tempTable WHERE %s LIMIT 1 )) END "
+		"ELSE jsonb_build_array(( SELECT tempTable.value result FROM jsonb_array_elements(_jsonb->" + p.Next() +
+		") tempTable WHERE %s LIMIT 1 )) END "
 	arg = append(arg, k, k, k)
 
 	// where part
