@@ -234,6 +234,12 @@ func (d *Document) GetByPath(path ...string) (any, error) {
 	return getByPath(d, path...)
 }
 
+// GetKeyPath returns a path where key is.
+func (d *Document) GetKeyPaths(key string) (res [][]string, err error) {
+	res, err = getKeyPaths(d, key, []string{}, [][]string{})
+	return
+}
+
 // Set the value of the given key, replacing any existing value.
 func (d *Document) Set(key string, value any) error {
 	if !isValidKey(key) {
