@@ -32,7 +32,7 @@ func Sanitize(v any) (val string, err error) {
 		val = pgx.Identifier{strconv.FormatFloat(value, 'g', 6, 64)}.Sanitize()
 		return
 	case string:
-		val = pgx.Identifier{value}.Sanitize()
+		val = "\"" + pgx.Identifier{value}.Sanitize() + "\""
 		return
 	case bool:
 		val = pgx.Identifier{fmt.Sprintf("%v", value)}.Sanitize()
@@ -50,7 +50,7 @@ func Sanitize(v any) (val string, err error) {
 		val = pgx.Identifier{strconv.FormatInt(value, 10)}.Sanitize()
 		return
 	case types.CString:
-		val = pgx.Identifier{string(value)}.Sanitize()
+		val = "\"" + pgx.Identifier{string(value)}.Sanitize() + "\""
 		return
 	default:
 		err = lazyerrors.Errorf("sanitize: unsupported type: %[1]T (%[1]v)", value)

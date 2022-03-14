@@ -135,7 +135,7 @@ func (s *storage) buildProjectionQueryElemMatch(k string, elemMatchDoc *types.Do
 				err = lazyerrors.Errorf("pg.Sanitize: %w", err)
 				return
 			}
-			elemMatchWhere += "tempTable.value @? " + "'$." + elemMatchKey + "[*] ? (@ == " + val + ")'"
+			elemMatchWhere += "tempTable.value @? " + "'$." + elemMatchKey + "[*] ? (@ == " + val[1:len(val)-1] + ")'"
 			s.l.Sugar().Debugf("field %s -> $elemMatch -> { %s: %v }", k, elemMatchKey, elemMatchVal)
 			continue
 		}
