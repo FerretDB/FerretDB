@@ -879,6 +879,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"cursor", types.MustNewDocument(
 					"firstBatch", types.MustNewArray(
 						types.MustNewDocument(
+							"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x1c, 0x00, 0x00, 0x00, 0x1c},
 							"first_name", "WOODY",
 							"last_name", "HOFFMAN",
 						),
@@ -888,10 +889,21 @@ func TestReadOnlyHandlers(t *testing.T) {
 				),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
+			compareFunc: func(t testing.TB, req, expected, actual *types.Document) {
 				actualV := testutil.GetByPath(t, actual, "cursor", "ns")
 				testutil.SetByPath(t, expected, actualV, "cursor", "ns")
-				assert.Equal(t, expected, actual)
+
+				// remove _id fields that are not present in pagila
+				db, err := req.Get("$db")
+				require.NoError(t, err)
+				if db.(string) == "pagila" {
+					doc := testutil.GetByPath(t, expected, "cursor", "firstBatch", "0")
+					d := doc.(*types.Document)
+					d.Remove("_id")
+					testutil.SetByPath(t, expected, d, "cursor", "firstBatch", "0")
+					require.NoError(t, err)
+				}
+				testutil.AssertEqual(t, expected, actual)
 			},
 		},
 
@@ -1059,7 +1071,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 
 					actual := handle(ctx, t, handler, tc.req)
 					if tc.compareFunc == nil {
-						assert.Equal(t, tc.resp, actual)
+						testutil.AssertEqual(t, tc.resp, actual)
 					} else {
 						tc.compareFunc(t, tc.req, tc.resp, actual)
 					}

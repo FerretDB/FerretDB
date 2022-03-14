@@ -43,10 +43,10 @@ func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql
 		return
 	}
 	args = append(args, arg...)
-	sql = "json_build_object('$k', array[" + ks + "],"
+	sql = "json_build_object('$k', array[" + ks + "], "
 
 	// _id and _id value
-	sql += p.Next() + "::text, _jsonb->" + p.Next() + ", "
+	sql += p.Next() + "::text, _jsonb->" + p.Next() + " "
 	args = append(args, "_id", "_id")
 
 	// build json object
@@ -93,7 +93,7 @@ func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql
 					err = lazyerrors.Errorf("buildProjectionQueryELemMatch: %s.%s %w", k, fieldKey, err)
 					return
 				}
-				sql += elemMatchSQL
+				sql += ", " + elemMatchSQL
 				args = append(args, arg...)
 			default:
 				err = lazyerrors.Errorf("unsupported projection %s.%s", k, fieldKey)
