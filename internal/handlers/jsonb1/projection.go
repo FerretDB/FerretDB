@@ -51,15 +51,12 @@ func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql
 
 	// build json object
 	for _, k := range projection.Keys() { // value
-		s.l.Sugar().Debugf("projection key %s", k)
-
 		doc, isDoc := projectionMap[k].(*types.Document)
 		// { field: 1 } to value->field
 		if !isDoc {
 			sql += ", "
 			sql += p.Next() + "::text, _jsonb->" + p.Next()
 			args = append(args, k, k)
-			s.l.Sugar().Debugf("%s->%s", k, k)
 			continue
 		}
 
@@ -68,15 +65,15 @@ func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql
 		supportedKeys := []string{"$elemMatch"}
 		for _, fieldKey := range doc.Keys() {
 			if !slices.Contains(supportedKeys, fieldKey) {
-				s.l.Sugar().Warnf("%s not supported", fieldKey)
-				continue
+				err = lazyerrors.Errorf("%s not supported", fieldKey)
+				return
 			}
 
 			var fieldAny any
 			fieldAny, err = doc.Get(fieldKey)
 			if err != nil {
-				err = lazyerrors.Errorf("impossible code %s.%s", k, fieldKey)
-				return
+				err = fmt.Errorf("impossible code %s.%s", k, fieldKey)
+				panic(err)
 			}
 
 			fieldDoc, ok := fieldAny.(*types.Document)
@@ -109,8 +106,6 @@ func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql
 func (s *storage) buildProjectionQueryElemMatch(k string, elemMatchDoc *types.Document, p *pg.Placeholder) (
 	elemMatchSQL string, arg []any, err error,
 ) {
-	s.l.Sugar().Debugf("field %s -> $elemMatch", k)
-
 	elemMatchSQL = p.Next() + "::text, CASE WHEN jsonb_typeof(_jsonb->" + p.Next() + ") != 'array' THEN null " +
 		"ELSE jsonb_build_array(( SELECT tempTable.value result FROM jsonb_array_elements(_jsonb->" + p.Next() +
 		") tempTable WHERE %s LIMIT 1 )) END "
@@ -120,8 +115,6 @@ func (s *storage) buildProjectionQueryElemMatch(k string, elemMatchDoc *types.Do
 	elemMatchWhere := ""
 	elemMatchMap := elemMatchDoc.Map()
 	for elemMatchKey, elemMatchVal := range elemMatchMap { // elemMatch field
-		s.l.Sugar().Debugf("field %s -> $elemMatch -> %s", k, elemMatchKey)
-
 		if elemMatchWhere != "" {
 			elemMatchWhere += " AND "
 		}
@@ -165,14 +158,13 @@ func (s *storage) buildProjectionQueryElemMatch(k string, elemMatchDoc *types.Do
 				operand = ">="
 			}
 			var conditionVal string
-			conditionVal, err = pg.Sanitize(conditionVal)
+			conditionVal, err = pg.Sanitize(val)
 			if err != nil {
 				err = lazyerrors.Errorf("pg.Sanitize: %w", err)
 				return
 			}
 			elemMatchWhere += "tempTable.value @? '$." + p.Next() + "[*] ? (@ " + operand + " " + conditionVal + ")'"
 			arg = append(arg, elemMatchKey)
-			s.l.Sugar().Debugf("field %s -> $elemMatch -> { %s %s %v }", k, elemMatchKey, operand, val)
 		}
 	}
 	elemMatchSQL = fmt.Sprintf(elemMatchSQL, elemMatchWhere)
@@ -202,8 +194,7 @@ func (s *storage) buildProjectionKeys(projectionKeys []string, projectionMap map
 				err = fmt.Errorf("$elemMatch condition is not doc")
 				return
 			}
-			for _, filterField := range elemMatchDoc.Keys() { // elemMatch field
-				s.l.Sugar().Debugf("$elemMatch field [%s] in %s", filterField, k)
+			for range elemMatchDoc.Keys() { // elemMatch field
 				if ks != "" {
 					ks += ", "
 				}

@@ -99,11 +99,8 @@ func (s *storage) fieldExpr(field string, expr *types.Document, p *pg.Placeholde
 	filterMap := expr.Map()
 
 	for _, op := range filterKeys {
-		s.l.Sugar().Debugf("filter op %s", op)
-
-		if op == "$options" ||
-			op == "$elemMatch" {
-			// handled by $regex, no need to modify sql in any way
+		if op == "$options" || // handled by $regex, no need to modify sql in any way
+			op == "$elemMatch" { // handled by projection
 			continue
 		}
 

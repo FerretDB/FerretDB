@@ -39,8 +39,19 @@ $ git remote add origin git@github.com:<YOUR_GITHUB_USERNAME>/FerretDB.git
    The differences in response are then logged and the FerretDB response is sent back to the client.
 5. Run `mongosh` with `make mongosh`.
    This allows you to run commands against FerretDB.
+6. Example run of test: `run go test -run TestDocument/MethodsOnNil github.com/FerretDB/FerretDB/internal/types.`
 
 You can see all available "make" commands with `make help`.
+
+
+### Useful links
+
+* https://www.postgresql.org/docs/current/functions-json.html
+* https://www.postgresql.org/docs/current/datatype-json.html
+* https://doxygen.postgresql.org/jsonb_8c_source.html
+* https://www.postgresql.org/docs/current/indexes-expressional.html
+* https://www.postgresql.org/docs/current/pageinspect.html#id-1.11.7.32.8
+
 
 ## Code Overview
 
@@ -60,3 +71,4 @@ Package `tools` uses "tools.go" approach to fix tools versions. They are install
   Responses are then converted to `wire`/`bson` messages and sent back to the client.
 * `handlers` handle protocol commands.
   They use `fjson` package for storing data in PostgreSQL in jsonb columns, but they don't use `bson` package – all data is represented as built-in and `types` types.
+
