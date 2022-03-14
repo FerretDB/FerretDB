@@ -19,6 +19,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"golang.org/x/exp/slices"
 )
 
@@ -37,7 +38,11 @@ func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql
 	}
 
 	// create a list of keys for document
-	ks, arg := s.buildProjectionKeys(projection.Keys(), projectionMap, p)
+	ks, arg, err := s.buildProjectionKeys(projection.Keys(), projectionMap, p)
+	if err != nil {
+		err = lazyerrors.Errorf("buildProjectionKeys: %w", err)
+		return
+	}
 	args = append(args, arg...)
 	sql = "json_build_object('$k', array[" + ks + "],"
 
@@ -66,33 +71,41 @@ func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql
 				continue
 			}
 
-			fieldAny, err := doc.Get(fieldKey)
+			var fieldAny any
+			fieldAny, err = doc.Get(fieldKey)
 			if err != nil {
-				panic("impossible code " + k + " > " + fieldKey)
+				err = lazyerrors.Errorf("impossible code %s.%s", k, fieldKey)
+				return
 			}
 
 			fieldDoc, ok := fieldAny.(*types.Document)
 			if !ok {
-				panic("document expected " + k + "." + fieldKey)
+				err = lazyerrors.Errorf("projection: document expected at %s.%s", k, fieldKey)
+				return
 			}
 
 			switch fieldKey {
 			case "$elemMatch":
-				elemMatchSQL, arg := s.elemMatchProjection(k, fieldDoc, p)
+				var elemMatchSQL string
+				elemMatchSQL, arg, err = s.buildProjectionQueryELemMatch(k, fieldDoc, p)
+				if err != nil {
+					err = lazyerrors.Errorf("buildProjectionQueryELemMatch: %s.%s %w", k, fieldKey, err)
+					return
+				}
 				sql += elemMatchSQL
 				args = append(args, arg...)
 			default:
-				panic("unsupported projection " + k + "." + fieldKey)
+				err = lazyerrors.Errorf("unsupported projection %s.%s", k, fieldKey)
+				return
 			}
 		}
-
 	}
 	sql += ")"
 
 	return
 }
 
-func (s *storage) elemMatchProjection(k string, elemMatchDoc *types.Document, p *pg.Placeholder) (elemMatchSQL string, arg []any) {
+func (s *storage) buildProjectionQueryELemMatch(k string, elemMatchDoc *types.Document, p *pg.Placeholder) (elemMatchSQL string, arg []any, err error) {
 	s.l.Sugar().Debugf("field %s -> $elemMatch", k)
 
 	elemMatchSQL = p.Next() + "::text, CASE WHEN jsonb_typeof(_jsonb->" + p.Next() + ") != 'array' THEN null " +
@@ -114,8 +127,14 @@ func (s *storage) elemMatchProjection(k string, elemMatchDoc *types.Document, p 
 		// field: scalar value
 		if !isDoc {
 			// TODO escape? // questionable
+			var val string
+			val, err = pg.Sanitize(elemMatchVal)
+			if err != nil {
+				err = lazyerrors.Errorf("pg.Sanitize: %w", err)
+				return
+			}
 			elemMatchWhere += "tempTable.value @? '$." + elemMatchKey + "[*] ? (@ == " + p.Next() + ")'"
-			arg = append(arg, elemMatchVal)
+			arg = append(arg, val[1:len(val)-1])
 			s.l.Sugar().Debugf("field %s -> $elemMatch -> { %s: %v }", k, elemMatchKey, elemMatchVal)
 			continue
 		}
@@ -155,14 +174,16 @@ func (s *storage) elemMatchProjection(k string, elemMatchDoc *types.Document, p 
 }
 
 // buildProjectionKeys prepares a key list with placeholders
-func (s *storage) buildProjectionKeys(projectionKeys []string, projectionMap map[string]any, p *pg.Placeholder) (ks string, arg []any) {
+func (s *storage) buildProjectionKeys(projectionKeys []string, projectionMap map[string]any, p *pg.Placeholder) (ks string, arg []any, err error) {
 	for i, k := range projectionKeys {
 		doc, isDoc := projectionMap[k].(*types.Document)
 		if isDoc {
-			if elemMatchAny, err := doc.Get("$elemMatch"); err == nil {
+			var elemMatchAny any
+			if elemMatchAny, err = doc.Get("$elemMatch"); err == nil {
 				elemMatchDoc, ok := elemMatchAny.(*types.Document)
 				if !ok {
-					panic("expected $elemMatch to be doc")
+					err = fmt.Errorf("$elemMatch condition is not doc")
+					return
 				}
 				for _, filterField := range elemMatchDoc.Keys() { // elemMatch field
 					s.l.Sugar().Debugf("$elemMatch field [%s] in %s", filterField, k)
