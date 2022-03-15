@@ -50,7 +50,8 @@ You can see all available "make" commands with `make help`.
 * https://www.postgresql.org/docs/current/datatype-json.html
 * https://doxygen.postgresql.org/jsonb_8c_source.html
 * https://www.postgresql.org/docs/current/indexes-expressional.html
-* https://www.postgresql.org/docs/current/pageinspect.html#id-1.11.7.32.8
+* https://www.postgresql.org/docs/current/pageinspect.html
+* https://github.com/lib/pq/issues/782
 
 ### Agreements
 

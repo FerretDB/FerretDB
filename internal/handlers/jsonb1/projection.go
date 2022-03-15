@@ -122,8 +122,8 @@ func (s *storage) buildProjectionQueryElemMatch(k string, elemMatchDoc *types.Do
 		filter, isDoc := elemMatchMap[elemMatchKey].(*types.Document)
 		// field: scalar value
 		if !isDoc {
-			elemMatchWhere += "tempTable.value @? " + "'$." + elemMatchKey + "[*] ? (@ == " + p.Next() + ")'"
-			s.l.Sugar().Debugf("field %s -> $elemMatch -> { %s: %v }", k, elemMatchKey, elemMatchVal)
+			elemMatchWhere += "tempTable.value @? " + "'$." + elemMatchKey + "[*] ? (@ == ' ||" + p.Next() + "|| ')' "
+			arg = append(arg, elemMatchKey, elemMatchVal)
 			continue
 		}
 
@@ -151,7 +151,7 @@ func (s *storage) buildProjectionQueryElemMatch(k string, elemMatchDoc *types.Do
 				// {field: {$gte: value}}
 				operand = ">="
 			}
-			elemMatchWhere += "tempTable.value @? '$." + p.Next() + "[*] ? (@ " + operand + " " + p.Next() + ")'"
+			elemMatchWhere += "tempTable.value @? '$." + p.Next() + "[*] ? (@ " + operand + " ' || " + p.Next() + "|| ')'"
 			arg = append(arg, elemMatchKey, val)
 		}
 	}
