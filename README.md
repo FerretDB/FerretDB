@@ -61,7 +61,7 @@ services:
     entrypoint: ["sh", "-c", "psql -h postgres -U user -d ferretdb -c 'CREATE SCHEMA IF NOT EXISTS test'"]
 
   ferretdb:
-    image: ghcr.io/ferretdb/ferretdb:latest
+    image: ferretdb/ferretdb:latest
     container_name: ferretdb
     restart: on-failure
     ports:
