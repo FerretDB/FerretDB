@@ -87,7 +87,10 @@ jobs:
           cache-key: fuzz
 
       - name: Install Task
-        run: cd tools; go generate -x
+        run: |
+          ls
+          cd tools
+          go generate -x
 
       - name: Start pulling environment in the background
         run: ./bin/task env-pull &
