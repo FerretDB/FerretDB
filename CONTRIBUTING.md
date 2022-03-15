@@ -52,6 +52,10 @@ You can see all available "make" commands with `make help`.
 * https://www.postgresql.org/docs/current/indexes-expressional.html
 * https://www.postgresql.org/docs/current/pageinspect.html#id-1.11.7.32.8
 
+### Agreements
+
+* in where and projection, let functions be functions, not methods
+* use placeholders, must not use sanitizers / bare values
 
 ## Code Overview
 

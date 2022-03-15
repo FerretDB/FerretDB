@@ -122,13 +122,7 @@ func (s *storage) buildProjectionQueryElemMatch(k string, elemMatchDoc *types.Do
 		filter, isDoc := elemMatchMap[elemMatchKey].(*types.Document)
 		// field: scalar value
 		if !isDoc {
-			var val string
-			val, err = pg.Sanitize(elemMatchVal)
-			if err != nil {
-				err = lazyerrors.Errorf("pg.Sanitize: %w", err)
-				return
-			}
-			elemMatchWhere += "tempTable.value @? " + "'$." + elemMatchKey + "[*] ? (@ == " + val[1:len(val)-1] + ")'"
+			elemMatchWhere += "tempTable.value @? " + "'$." + elemMatchKey + "[*] ? (@ == " + p.Next() + ")'"
 			s.l.Sugar().Debugf("field %s -> $elemMatch -> { %s: %v }", k, elemMatchKey, elemMatchVal)
 			continue
 		}
@@ -157,14 +151,8 @@ func (s *storage) buildProjectionQueryElemMatch(k string, elemMatchDoc *types.Do
 				// {field: {$gte: value}}
 				operand = ">="
 			}
-			var conditionVal string
-			conditionVal, err = pg.Sanitize(val)
-			if err != nil {
-				err = lazyerrors.Errorf("pg.Sanitize: %w", err)
-				return
-			}
-			elemMatchWhere += "tempTable.value @? '$." + p.Next() + "[*] ? (@ " + operand + " " + conditionVal + ")'"
-			arg = append(arg, elemMatchKey)
+			elemMatchWhere += "tempTable.value @? '$." + p.Next() + "[*] ? (@ " + operand + " " + p.Next() + ")'"
+			arg = append(arg, elemMatchKey, val)
 		}
 	}
 	elemMatchSQL = fmt.Sprintf(elemMatchSQL, elemMatchWhere)
