@@ -100,6 +100,9 @@ jobs:
         with:
           cache-key: fuzz
 
+      - name: Install Task
+        run: cd tools; go generate -x
+
       - name: Start environment
         run: ./bin/task env-up-detach
         working-directory: source
