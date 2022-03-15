@@ -25,7 +25,7 @@ import (
 )
 
 // Filter fields to return.
-func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
+func projection(projection *types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
 	if projection == nil {
 		sql = "_jsonb"
 		return
@@ -37,7 +37,7 @@ func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql
 	}
 
 	// create a list of keys for document
-	ks, arg, err := s.buildProjectionKeys(projection.Keys(), projectionMap, p)
+	ks, arg, err := buildProjectionKeys(projection.Keys(), projectionMap, p)
 	if err != nil {
 		err = lazyerrors.Errorf("buildProjectionKeys: %w", err)
 		return
@@ -85,7 +85,7 @@ func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql
 			switch fieldKey {
 			case "$elemMatch":
 				var elemMatchSQL string
-				elemMatchSQL, arg, err = s.buildProjectionQueryElemMatch(k, fieldDoc, p)
+				elemMatchSQL, arg, err = buildProjectionQueryElemMatch(k, fieldDoc, p)
 				if err != nil {
 					err = lazyerrors.Errorf("buildProjectionQueryELemMatch: %s.%s %w", k, fieldKey, err)
 					return
@@ -103,7 +103,7 @@ func (s *storage) projection(projection *types.Document, p *pg.Placeholder) (sql
 	return
 }
 
-func (s *storage) buildProjectionQueryElemMatch(k string, elemMatchDoc *types.Document, p *pg.Placeholder) (
+func buildProjectionQueryElemMatch(k string, elemMatchDoc *types.Document, p *pg.Placeholder) (
 	elemMatchSQL string, arg []any, err error,
 ) {
 	elemMatchSQL = p.Next() + "::text, CASE WHEN jsonb_typeof(_jsonb->" + p.Next() + ") != 'array' THEN null " +
@@ -122,7 +122,7 @@ func (s *storage) buildProjectionQueryElemMatch(k string, elemMatchDoc *types.Do
 		filter, isDoc := elemMatchMap[elemMatchKey].(*types.Document)
 		// field: scalar value
 		if !isDoc {
-			elemMatchWhere += "tempTable.value @? " + "'$." + elemMatchKey + "[*] ? (@ == ' ||" + p.Next() + "|| ')' "
+			elemMatchWhere += " tempTable.value @? ('$.'||" + p.Next() + "||'[*] ? (@ == '||" + p.Next() + "||')')::jsonpath "
 			arg = append(arg, elemMatchKey, elemMatchVal)
 			continue
 		}
@@ -151,7 +151,7 @@ func (s *storage) buildProjectionQueryElemMatch(k string, elemMatchDoc *types.Do
 				// {field: {$gte: value}}
 				operand = ">="
 			}
-			elemMatchWhere += "tempTable.value @? '$." + p.Next() + "[*] ? (@ " + operand + " ' || " + p.Next() + "|| ')'"
+			elemMatchWhere += "tempTable.value @? '$.'||" + p.Next() + "||'[*] ? ( @ '||" + operand + "'||'" + p.Next() + "||')'"
 			arg = append(arg, elemMatchKey, val)
 		}
 	}
@@ -160,7 +160,7 @@ func (s *storage) buildProjectionQueryElemMatch(k string, elemMatchDoc *types.Do
 }
 
 // buildProjectionKeys prepares a key list with placeholders.
-func (s *storage) buildProjectionKeys(projectionKeys []string, projectionMap map[string]any, p *pg.Placeholder) (
+func buildProjectionKeys(projectionKeys []string, projectionMap map[string]any, p *pg.Placeholder) (
 	ks string, arg []any, err error,
 ) {
 	ks += p.Next()

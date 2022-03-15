@@ -79,7 +79,7 @@ func (s *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 
 	if isFindOp {
 		projectionIn, _ := m["projection"].(*types.Document)
-		projectionSQL, projectionArgs, err := s.projection(projectionIn, &placeholder)
+		projectionSQL, projectionArgs, err := projection(projectionIn, &placeholder)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}

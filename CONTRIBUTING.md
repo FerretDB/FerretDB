@@ -51,7 +51,8 @@ You can see all available "make" commands with `make help`.
 * https://doxygen.postgresql.org/jsonb_8c_source.html
 * https://www.postgresql.org/docs/current/indexes-expressional.html
 * https://www.postgresql.org/docs/current/pageinspect.html
-* https://github.com/lib/pq/issues/782
+* escaping https://github.com/lib/pq/issues/782
+* jsonb https://www.postgresql.eu/events/pgconfeu2019/sessions/session/2555/slides/221/jsonpath-pgconfeu-2019.pdf
 
 ### Agreements
 
