@@ -20,7 +20,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"golang.org/x/exp/slices"
 )
 
 // Common interface with bson.Document.
@@ -224,41 +223,133 @@ func (d *Document) add(key string, value any) error {
 }
 
 func (d *Document) ApplyProjection(projection *Document) (err error) {
+
 	// field: { field: value } is not supported
 	// field: { $elemMatch: { }}
-
-	supportedKeys := []string{"$elemMatch"}
-	for _, fieldKey := range projection.Keys() {
-		if !slices.Contains(supportedKeys, fieldKey) {
-			err = lazyerrors.Errorf("%s not supported", fieldKey)
-			return
-		}
-
-		var fieldAny any
-		fieldAny, err = projection.Get(fieldKey)
-		if err != nil {
-			err = fmt.Errorf("impossible code %s", fieldKey)
-			panic(err)
-		}
-
-		fieldDoc, ok := fieldAny.(*Document)
-		if !ok {
-			err = lazyerrors.Errorf("projection: document expected at %s.%s", fieldKey)
-			return
-		}
-
-		switch fieldKey {
-		case "$elemMatch":
-
-		default:
-			err = lazyerrors.Errorf("unsupported projection %s.%s", fieldKey)
-			return
-		}
+	elemMatchConditions, err := projection.GetKeyPaths("$elemMatch")
+	if err != nil {
 		return
+	}
+
+	// better to have elemMatchConditions in a graf
+	elemM := make(map[string]struct{}, len(elemMatchConditions))
+	for _, conditionPath := range elemMatchConditions {
+		if len(conditionPath) == 0 {
+			panic("impossible code")
+		}
+		elemM[conditionPath[0]] = struct{}{}
+	}
+	for k := range d.m {
+		fmt.Printf("key %v\n", k)
+
+		if k == "_id" {
+			continue
+		}
+		_, ok := elemM[k]
+		if !ok {
+			fmt.Printf("removed key %v\n", k)
+			d.Remove(k)
+			continue
+		}
+	}
+
+	for _, conditionPath := range elemMatchConditions {
+		conditionPath = conditionPath[0 : len(conditionPath)-1]
+		fmt.Printf("path %s\n", strings.Join(conditionPath, "."))
+
+		var conditionDocPathAny any
+		conditionDocPathAny, err = d.GetByPath(conditionPath...)
+		if err != nil {
+			fmt.Printf("not found %s\n", strings.Join(conditionPath, "."))
+			continue
+		}
+		switch candidateIFArrayDoc := conditionDocPathAny.(type) {
+		case *Array:
+			for i := 0; i < candidateIFArrayDoc.Len(); i++ {
+
+				var tuple *Document
+				// get array tuple
+				var tupleAny any
+				tupleAny, err = candidateIFArrayDoc.Get(i)
+				if err != nil {
+					return lazyerrors.Error(err)
+				}
+				var ok bool
+				if tuple, ok = tupleAny.(*Document); !ok {
+					fmt.Printf("%d skip\n", i)
+					continue
+				}
+
+				fmt.Printf("path %s.%d\n", strings.Join(conditionPath, "."), i)
+
+				var condDocAny any
+				condDocAny, err = projection.GetByPath(conditionPath...)
+				if err != nil {
+					fmt.Printf("not found \n")
+					return lazyerrors.Error(err)
+				}
+
+				switch condDoc := condDocAny.(type) {
+				case *Array: // array of conditions? can it be?
+					for i := range condDoc.s {
+						var a any
+						a, err = condDoc.Get(i)
+						fmt.Printf("array %v\n", a)
+					}
+
+				case *Document: // list of conditions
+					var match int
+					for k, v := range condDoc.m {
+						fmt.Printf("%d doc %s -> %v\n", i, k, v)
+						val, ok := tuple.m[k]
+						if !ok {
+							fmt.Printf("%d not found %s -> %v\n", i, k, v)
+							continue
+						}
+						switch vt := v.(type) {
+						case *Document: // field: { $gte: 10}
+						case *Array: // field: [1, 4, 5] // not as in mongo, not documented, IN? // todo check projection on the query state
+						default: // field: 10  or field: "abc"
+							if val != vt {
+								fmt.Printf("%d <> cond %s -> %v\n", i, k, v)
+								// todo remove by path
+								continue
+							}
+							fmt.Printf("%d found %s -> %v\n", i, k, v)
+							// remember
+							match = i
+							break
+						}
+					}
+					if match == 0 {
+						// remove entire key
+						d.Remove(conditionPath[0])
+					}
+
+				default:
+					fmt.Printf("path %#v\n", condDoc)
+				}
+				// fmt.Printf("path %s.%d\n", tupleAny)
+			}
+		default:
+			// remove if no other projections
+		}
 	}
 
 	return
 }
+
+// queryRes, _ := d.GetByPath(conditionPath...)
+// if queryRes == nil {
+// 	continue
+// }
+
+// switch queryRes.(type) {
+// case *Array:
+
+// 	fmt.Printf("%s \n")
+// default:
+// }
 
 // Get returns a value at the given key.
 func (d *Document) Get(key string) (any, error) {
@@ -272,6 +363,12 @@ func (d *Document) Get(key string) (any, error) {
 // GetByPath returns a value by path - a sequence of indexes and keys.
 func (d *Document) GetByPath(path ...string) (any, error) {
 	return getByPath(d, path...)
+}
+
+// GetKeyPath returns a path where key is.
+func (d *Document) GetKeyPaths(key string) (res [][]string, err error) {
+	res, err = getKeyPaths(d, key, []string{}, [][]string{})
+	return
 }
 
 // Set the value of the given key, replacing any existing value.
