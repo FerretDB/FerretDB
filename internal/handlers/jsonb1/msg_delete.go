@@ -68,7 +68,7 @@ func (s *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		sql := fmt.Sprintf(`DELETE FROM %s`, pgx.Identifier{db, collection}.Sanitize())
 		var placeholder pg.Placeholder
 
-		elSQL, args, err := s.where(d["q"].(*types.Document), &placeholder)
+		elSQL, args, err := where(d["q"].(*types.Document), &placeholder)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}

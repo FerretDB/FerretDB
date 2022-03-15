@@ -94,7 +94,7 @@ func validateSize(value any) error {
 }
 
 // fieldExpr handles {field: {expr}}.
-func (s *storage) fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
+func fieldExpr(field string, expr *types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
 	filterKeys := expr.Keys()
 	filterMap := expr.Map()
 
@@ -124,7 +124,7 @@ func (s *storage) fieldExpr(field string, expr *types.Document, p *pg.Placeholde
 				err = lazyerrors.Errorf("fieldExpr: %w", err)
 				return
 			}
-			argSql, arg, err = s.fieldExpr(field, exprValue, p)
+			argSql, arg, err = fieldExpr(field, exprValue, p)
 			if err != nil {
 				err = lazyerrors.Errorf("fieldExpr: %w", err)
 				return
@@ -240,7 +240,7 @@ func (s *storage) fieldExpr(field string, expr *types.Document, p *pg.Placeholde
 	return
 }
 
-func (s *storage) wherePair(key string, value any, p *pg.Placeholder) (sql string, args []any, err error) {
+func wherePair(key string, value any, p *pg.Placeholder) (sql string, args []any, err error) {
 	// {$operator: [expr1, expr2, ...]}
 	if strings.HasPrefix(key, "$") {
 		exprs, ok := value.(*types.Array)
@@ -254,14 +254,14 @@ func (s *storage) wherePair(key string, value any, p *pg.Placeholder) (sql strin
 			return
 		}
 
-		sql, args, err = common.LogicExpr(key, exprs, p, s.wherePair)
+		sql, args, err = common.LogicExpr(key, exprs, p, wherePair)
 		return
 	}
 
 	switch value := value.(type) {
 	case *types.Document:
 		// {field: {expr}}
-		sql, args, err = s.fieldExpr(key, value, p)
+		sql, args, err = fieldExpr(key, value, p)
 
 	default:
 		// {field: value}
@@ -288,7 +288,7 @@ func (s *storage) wherePair(key string, value any, p *pg.Placeholder) (sql strin
 	return
 }
 
-func (s *storage) where(filter *types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
+func where(filter *types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
 	if filter == nil {
 		return
 	}
@@ -304,7 +304,7 @@ func (s *storage) where(filter *types.Document, p *pg.Placeholder) (sql string, 
 
 		var argSql string
 		var arg []any
-		argSql, arg, err = s.wherePair(key, value, p)
+		argSql, arg, err = wherePair(key, value, p)
 		if err != nil {
 			err = lazyerrors.Errorf("where: %w", err)
 			return
