@@ -37,6 +37,9 @@ jobs:
         with:
           cache-key: test
 
+      - name: Install Task
+        run: cd tools; go generate -x
+
       - name: Start environment
         run: ./bin/task env-up-detach
 
