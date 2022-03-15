@@ -16,6 +16,7 @@ package jsonb1
 
 import (
 	"fmt"
+	"time"
 
 	"golang.org/x/exp/slices"
 
@@ -122,10 +123,17 @@ func buildProjectionQueryElemMatch(k string, elemMatchDoc *types.Document, p *pg
 		filter, isDoc := elemMatchMap[elemMatchKey].(*types.Document)
 		// field: scalar value
 		if !isDoc {
-			elemMatchWhere += " tempTable.value @? ('strict $.'||" + p.Next() + "||'[*] ? (@ == '|| " + p.Next() + " ||')')::jsonpath "
+			var cast string
+			cast, err = getCast(elemMatchVal)
+			if err != nil {
+				err = lazyerrors.Errorf("getCast: %s.%s.%s %w", k, elemMatchKey, elemMatchVal, err)
+				return
+			}
+			elemMatchWhere += " tempTable.value @? ('$.'||" + p.Next() + "||'[*] ? (@ == '||'" + p.Next() + cast + "'||')')::jsonpath "
 			arg = append(arg, elemMatchKey, elemMatchVal)
 			continue
 		}
+
 		// field: { $gt: scalar value}
 		filterMap := filter.Map()
 		for op, val := range filterMap {
@@ -150,12 +158,44 @@ func buildProjectionQueryElemMatch(k string, elemMatchDoc *types.Document, p *pg
 				// {field: {$gte: value}}
 				operand = ">="
 			}
-			elemMatchWhere += "tempTable.value @? '$.'||" + p.Next() + "||'[*] ? ( @ '||" + operand + p.Next() + "||')'"
+			var cast string
+			cast, err = getCast(val)
+			if err != nil {
+				err = lazyerrors.Errorf("getCast: %s.%s.%s %w", k, elemMatchKey, elemMatchVal, err)
+				return
+			}
+			elemMatchWhere += "tempTable.value @? '$.'||" + p.Next() + "||'[*] ? ( @ '||" + operand + p.Next() + cast + "||')'"
 			arg = append(arg, elemMatchKey, val)
 		}
 	}
 	elemMatchSQL = fmt.Sprintf(elemMatchSQL, elemMatchWhere)
 	return
+}
+
+func getCast(v any) (cast string, err error) {
+	switch value := v.(type) {
+	case float64:
+		cast = "::double"
+		return
+	case string, types.CString:
+		cast = "::text"
+		return
+	case bool:
+		cast = "::boolean"
+		return
+	case time.Time, types.Timestamp:
+		cast = "::timestamptz"
+		return
+	case int32, int:
+		cast = "::integer"
+		return
+	case int64:
+		cast = "::bigint"
+		return
+	default:
+		err = fmt.Errorf("getCast unsupported type: %[1]T (%[1]v)", value)
+		return
+	}
 }
 
 // buildProjectionKeys prepares a key list with placeholders.
