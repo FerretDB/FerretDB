@@ -82,10 +82,10 @@ jobs:
           cache-key: build
 
       - name: Run init
-        run: make init
+        run: ./bin/task init
 
       - name: Initialize Docker Buildx builder
-        run: make docker-init
+        run: ./bin/task docker-init
 
       - name: Extract Docker image name and tag
         id: extract
@@ -99,7 +99,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Docker image ${{ steps.extract.outputs.ghcr }}
-        run: make docker-push
+        run: ./bin/task docker-push
         env:
           DOCKER_IMAGE: ${{ steps.extract.outputs.ghcr }}
 
