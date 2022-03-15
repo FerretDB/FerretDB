@@ -107,8 +107,8 @@ func buildProjectionQueryElemMatch(k string, elemMatchDoc *types.Document, p *pg
 	elemMatchSQL string, arg []any, err error,
 ) {
 	elemMatchSQL = p.Next() + "::text, CASE WHEN jsonb_typeof(_jsonb->" + p.Next() + ") != 'array' THEN null " +
-		"ELSE jsonb_build_array(( SELECT tempTable.value result FROM jsonb_array_elements(_jsonb->" + p.Next() +
-		") tempTable WHERE %s LIMIT 1 )) END "
+		"ELSE jsonb_build_array(( SELECT tempTable.value result FROM jsonb_array_elements(_jsonb->" + p.Next() + ")" +
+		" tempTable WHERE %s LIMIT 1 )) END "
 	arg = append(arg, k, k, k)
 
 	// where part
@@ -122,11 +122,10 @@ func buildProjectionQueryElemMatch(k string, elemMatchDoc *types.Document, p *pg
 		filter, isDoc := elemMatchMap[elemMatchKey].(*types.Document)
 		// field: scalar value
 		if !isDoc {
-			elemMatchWhere += " tempTable.value @? ('$.'||" + p.Next() + "||'[*] ? (@ == '||" + p.Next() + "||')')::jsonpath "
+			elemMatchWhere += " tempTable.value @? ('strict $.'||" + p.Next() + "||'[*] ? (@ == '|| " + p.Next() + " ||')')::jsonpath "
 			arg = append(arg, elemMatchKey, elemMatchVal)
 			continue
 		}
-
 		// field: { $gt: scalar value}
 		filterMap := filter.Map()
 		for op, val := range filterMap {
@@ -151,7 +150,7 @@ func buildProjectionQueryElemMatch(k string, elemMatchDoc *types.Document, p *pg
 				// {field: {$gte: value}}
 				operand = ">="
 			}
-			elemMatchWhere += "tempTable.value @? '$.'||" + p.Next() + "||'[*] ? ( @ '||" + operand + "'||'" + p.Next() + "||')'"
+			elemMatchWhere += "tempTable.value @? '$.'||" + p.Next() + "||'[*] ? ( @ '||" + operand + p.Next() + "||')'"
 			arg = append(arg, elemMatchKey, val)
 		}
 	}
