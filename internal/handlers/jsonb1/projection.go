@@ -15,17 +15,11 @@
 package jsonb1
 
 import (
-	"fmt"
-	"time"
-
-	"golang.org/x/exp/slices"
-
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// Filter fields to return.
 func projection(projection *types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
 	if projection == nil {
 		sql = "_jsonb"
@@ -52,150 +46,16 @@ func projection(projection *types.Document, p *pg.Placeholder) (sql string, args
 
 	// build json object
 	for _, k := range projection.Keys() { // value
-		doc, isDoc := projectionMap[k].(*types.Document)
-		// { field: 1 } to value->field
-		if !isDoc {
+		if _, isDoc := projectionMap[k].(*types.Document); !isDoc {
 			sql += ", "
 			sql += p.Next() + "::text, _jsonb->" + p.Next()
 			args = append(args, k, k)
 			continue
 		}
-
-		// field: { field: value } is not supported
-		// field: { $elemMatch: { }}
-		supportedKeys := []string{"$elemMatch"}
-		for _, fieldKey := range doc.Keys() {
-			if !slices.Contains(supportedKeys, fieldKey) {
-				err = lazyerrors.Errorf("%s not supported", fieldKey)
-				return
-			}
-
-			var fieldAny any
-			fieldAny, err = doc.Get(fieldKey)
-			if err != nil {
-				err = fmt.Errorf("impossible code %s.%s", k, fieldKey)
-				panic(err)
-			}
-
-			fieldDoc, ok := fieldAny.(*types.Document)
-			if !ok {
-				err = lazyerrors.Errorf("projection: document expected at %s.%s", k, fieldKey)
-				return
-			}
-
-			switch fieldKey {
-			case "$elemMatch":
-				var elemMatchSQL string
-				elemMatchSQL, arg, err = buildProjectionQueryElemMatch(k, fieldDoc, p)
-				if err != nil {
-					err = lazyerrors.Errorf("buildProjectionQueryELemMatch: %s.%s %w", k, fieldKey, err)
-					return
-				}
-				sql += ", " + elemMatchSQL
-				args = append(args, arg...)
-			default:
-				err = lazyerrors.Errorf("unsupported projection %s.%s", k, fieldKey)
-				return
-			}
-		}
 	}
 	sql += ")"
 
 	return
-}
-
-func buildProjectionQueryElemMatch(k string, elemMatchDoc *types.Document, p *pg.Placeholder) (
-	elemMatchSQL string, arg []any, err error,
-) {
-	elemMatchSQL = p.Next() + "::text, CASE WHEN jsonb_typeof(_jsonb->" + p.Next() + ") != 'array' THEN null " +
-		"ELSE jsonb_build_array(( SELECT tempTable.value result FROM jsonb_array_elements(_jsonb->" + p.Next() + ")" +
-		" tempTable WHERE %s LIMIT 1 )) END "
-	arg = append(arg, k, k, k)
-
-	// where part
-	elemMatchWhere := ""
-	elemMatchMap := elemMatchDoc.Map()
-	for elemMatchKey, elemMatchVal := range elemMatchMap { // elemMatch field
-		if elemMatchWhere != "" {
-			elemMatchWhere += " AND "
-		}
-
-		filter, isDoc := elemMatchMap[elemMatchKey].(*types.Document)
-		// field: scalar value
-		if !isDoc {
-			var cast string
-			cast, err = getCast(elemMatchVal)
-			if err != nil {
-				err = lazyerrors.Errorf("getCast: %s.%s.%s %w", k, elemMatchKey, elemMatchVal, err)
-				return
-			}
-			elemMatchWhere += " tempTable.value @? ('$.'||" + p.Next() + "||'[*] ? (@ == '||'" + p.Next() + cast + "'||')')::jsonpath "
-			arg = append(arg, elemMatchKey, elemMatchVal)
-			continue
-		}
-
-		// field: { $gt: scalar value}
-		filterMap := filter.Map()
-		for op, val := range filterMap {
-			var operand string
-			switch op {
-			case "$eq":
-				// {field: {$eq: value}}
-				operand = "=="
-			case "$ne":
-				// {field: {$ne: value}}
-				operand = "<>"
-			case "$lt":
-				// {field: {$lt: value}}
-				operand = "<"
-			case "$lte":
-				// {field: {$lte: value}}
-				operand = "<="
-			case "$gt":
-				// {field: {$gt: value}}
-				operand = ">"
-			case "$gte":
-				// {field: {$gte: value}}
-				operand = ">="
-			}
-			var cast string
-			cast, err = getCast(val)
-			if err != nil {
-				err = lazyerrors.Errorf("getCast: %s.%s.%s %w", k, elemMatchKey, elemMatchVal, err)
-				return
-			}
-			elemMatchWhere += "tempTable.value @? '$.'||" + p.Next() + "||'[*] ? ( @ '||" + operand + p.Next() + cast + "||')'"
-			arg = append(arg, elemMatchKey, val)
-		}
-	}
-	elemMatchSQL = fmt.Sprintf(elemMatchSQL, elemMatchWhere)
-	return
-}
-
-func getCast(v any) (cast string, err error) {
-	switch value := v.(type) {
-	case float64:
-		cast = "::double"
-		return
-	case string, types.CString:
-		cast = "::text"
-		return
-	case bool:
-		cast = "::boolean"
-		return
-	case time.Time, types.Timestamp:
-		cast = "::timestamptz"
-		return
-	case int32, int:
-		cast = "::integer"
-		return
-	case int64:
-		cast = "::bigint"
-		return
-	default:
-		err = fmt.Errorf("getCast unsupported type: %[1]T (%[1]v)", value)
-		return
-	}
 }
 
 // buildProjectionKeys prepares a key list with placeholders.
@@ -206,28 +66,10 @@ func buildProjectionKeys(projectionKeys []string, projectionMap map[string]any, 
 	arg = append(arg, "_id")
 
 	for _, k := range projectionKeys {
-		doc, isDoc := projectionMap[k].(*types.Document)
-		if !isDoc {
+		if _, isDoc := projectionMap[k].(*types.Document); !isDoc {
 			ks += ", "
 			ks += p.Next()
 			arg = append(arg, k)
-			continue
-		}
-
-		var elemMatchAny any
-		if elemMatchAny, err = doc.Get("$elemMatch"); err == nil {
-			elemMatchDoc, ok := elemMatchAny.(*types.Document)
-			if !ok {
-				err = fmt.Errorf("$elemMatch condition is not doc")
-				return
-			}
-			for range elemMatchDoc.Keys() { // elemMatch field
-				if ks != "" {
-					ks += ", "
-				}
-				ks += p.Next()
-				arg = append(arg, k)
-			}
 			continue
 		}
 	}

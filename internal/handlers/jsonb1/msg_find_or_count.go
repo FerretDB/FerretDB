@@ -157,6 +157,7 @@ func (s *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 			if doc == nil {
 				break
 			}
+			doc.ApplyProjection(m["projection"].(*types.Document))
 
 			if err = docs.Append(doc); err != nil {
 				return nil, lazyerrors.Error(err)

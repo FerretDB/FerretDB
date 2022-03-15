@@ -18,6 +18,9 @@ import (
 	"fmt"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"golang.org/x/exp/slices"
 )
 
 // Common interface with bson.Document.
@@ -218,6 +221,43 @@ func (d *Document) add(key string, value any) error {
 	d.m[key] = value
 
 	return nil
+}
+
+func (d *Document) ApplyProjection(projection *Document) (err error) {
+	// field: { field: value } is not supported
+	// field: { $elemMatch: { }}
+
+	supportedKeys := []string{"$elemMatch"}
+	for _, fieldKey := range projection.Keys() {
+		if !slices.Contains(supportedKeys, fieldKey) {
+			err = lazyerrors.Errorf("%s not supported", fieldKey)
+			return
+		}
+
+		var fieldAny any
+		fieldAny, err = projection.Get(fieldKey)
+		if err != nil {
+			err = fmt.Errorf("impossible code %s", fieldKey)
+			panic(err)
+		}
+
+		fieldDoc, ok := fieldAny.(*Document)
+		if !ok {
+			err = lazyerrors.Errorf("projection: document expected at %s.%s", fieldKey)
+			return
+		}
+
+		switch fieldKey {
+		case "$elemMatch":
+
+		default:
+			err = lazyerrors.Errorf("unsupported projection %s.%s", fieldKey)
+			return
+		}
+		return
+	}
+
+	return
 }
 
 // Get returns a value at the given key.

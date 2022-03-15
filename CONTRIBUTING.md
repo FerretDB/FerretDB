@@ -59,6 +59,7 @@ You can see all available "make" commands with `make help`.
 
 * in where and projection, let functions be functions, not methods
 * use placeholders, must not use sanitizers / bare values
+ 
 
 ## Code Overview
 
