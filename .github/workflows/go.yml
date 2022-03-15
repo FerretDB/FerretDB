@@ -81,6 +81,14 @@ jobs:
           path: source
           fetch-depth: 0
 
+      - name: Setup Go
+        uses: FerretDB/github-actions/setup-go@main
+        with:
+          cache-key: fuzz
+
+      - name: Install Task
+        run: cd tools; go generate -x
+
       - name: Start pulling environment in the background
         run: ./bin/task env-pull &
         working-directory: source
@@ -94,14 +102,6 @@ jobs:
           ssh-key: ${{ secrets.FUZZ_CORPUS_DEPLOY_KEY }}
           path: fuzz-corpus
           fetch-depth: 0
-
-      - name: Setup Go
-        uses: FerretDB/github-actions/setup-go@main
-        with:
-          cache-key: fuzz
-
-      - name: Install Task
-        run: cd tools; go generate -x
 
       - name: Start environment
         run: ./bin/task env-up-detach
