@@ -64,7 +64,6 @@ tasks:
   fmt:
     desc: "Format code"
     cmds:
-#      - ./bin/gofumpt{{.EXT}}
       - ./bin/gofumpt{{.EXT}} -w .
 
   test:
@@ -72,13 +71,12 @@ tasks:
       - go test -race -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
       - go test -race -shuffle=on -bench=. -benchtime=1x ./...
 
-
   bench-short:
     desc: "Benchmark for about 20 seconds (with default BENCHTIME)"
     cmds:
       - go test -list='Benchmark.*' ./...
-#      - {{.RM}} new.txt
-      # Running four functions for $(BENCHTIME) each..."
+      - task: build:rm-bin
+      - echo "Running four functions for {{.BENCHTIME}} each..."
       - go test -bench=BenchmarkArray    -benchtime={{.BENCHTIME}} ./internal/bson/  | tee -a new.txt
       - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/bson/  | tee -a new.txt
       - go test -bench=BenchmarkArray    -benchtime={{.BENCHTIME}} ./internal/fjson/ | tee -a new.txt
