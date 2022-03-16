@@ -254,13 +254,13 @@ func (d *Document) ApplyProjection(projection *Document) (err error) {
 	}
 
 	for _, conditionPath := range elemMatchConditions {
-		conditionPath = conditionPath[0 : len(conditionPath)-1]
-		fmt.Printf("path %s\n", strings.Join(conditionPath, "."))
+		emConditionPath := conditionPath[0 : len(conditionPath)-1]
+		fmt.Printf("path %s\n", strings.Join(emConditionPath, "."))
 
 		var conditionDocPathAny any
-		conditionDocPathAny, err = d.GetByPath(conditionPath...)
+		conditionDocPathAny, err = d.GetByPath(emConditionPath...)
 		if err != nil {
-			fmt.Printf("not found %s\n", strings.Join(conditionPath, "."))
+			fmt.Printf("not found %s\n", strings.Join(emConditionPath, "."))
 			continue
 		}
 		switch candidateIFArrayDoc := conditionDocPathAny.(type) {
@@ -280,13 +280,12 @@ func (d *Document) ApplyProjection(projection *Document) (err error) {
 					continue
 				}
 
-				fmt.Printf("path %s.%d\n", strings.Join(conditionPath, "."), i)
+				fmt.Printf("path %s.%d\n", strings.Join(emConditionPath, "."), i)
 
 				var condDocAny any
 				condDocAny, err = projection.GetByPath(conditionPath...)
 				if err != nil {
-					fmt.Printf("not found \n")
-					return lazyerrors.Error(err)
+					return lazyerrors.Errorf("projection not found: %s", err)
 				}
 
 				switch condDoc := condDocAny.(type) {
@@ -299,31 +298,37 @@ func (d *Document) ApplyProjection(projection *Document) (err error) {
 
 				case *Document: // list of conditions
 					var match int
-					for k, v := range condDoc.m {
-						fmt.Printf("%d doc %s -> %v\n", i, k, v)
-						val, ok := tuple.m[k]
+					for k, v := range condDoc.m { // score 24
+						fmt.Printf("%d projection condition %s -> %v\n", i, k, v)
+						fmt.Printf("%d %v\n", i, tuple)
+
+						val, ok := tuple.m[k] // score 42
 						if !ok {
-							fmt.Printf("%d not found %s -> %v\n", i, k, v)
+							fmt.Printf("%d not found projection condition %s -> %v\n", i, k, v)
+							// todo remove
 							continue
 						}
-						switch vt := v.(type) {
+						switch v.(type) {
 						case *Document: // field: { $gte: 10}
+
 						case *Array: // field: [1, 4, 5] // not as in mongo, not documented, IN? // todo check projection on the query state
-						default: // field: 10  or field: "abc"
-							if val != vt {
-								fmt.Printf("%d <> cond %s -> %v\n", i, k, v)
-								// todo remove by path
-								continue
+
+						default:
+							fmt.Printf("%d CHECK %v -> %v %T to  %v -> %v %T\n", i, k, v, v, k, val, val)
+							// field: 10  or field: "abc"
+							if EqualScalars(val, v) {
+								fmt.Printf("%d FOUND %v -> %v to  %v -> %v\n", i, k, v, k, val)
+								match = i
+								// remember
+								break
 							}
-							fmt.Printf("%d found %s -> %v\n", i, k, v)
-							// remember
-							match = i
-							break
+							// todo remove by path
 						}
 					}
+
 					if match == 0 {
 						// remove entire key
-						d.Remove(conditionPath[0])
+						d.Remove(emConditionPath[0])
 					}
 
 				default:
@@ -335,7 +340,6 @@ func (d *Document) ApplyProjection(projection *Document) (err error) {
 			// remove if no other projections
 		}
 	}
-
 	return
 }
 
