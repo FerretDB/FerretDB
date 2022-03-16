@@ -30,23 +30,24 @@ $ git remote add origin git@github.com:<YOUR_GITHUB_USERNAME>/FerretDB.git
 
 ## Helpful Commands
 
-1. Install tools with `make init`.
-2. Start the development environment with `make env-up`.
+0. Install [task](https://taskfile.dev/) with `go install github.com/go-task/task/v3/cmd/task@latest`
+1. Install development tools with `task init`.
+2. Start the development environment with `task env-up`.
    This will start PostgreSQL and MongoDB; filling them with identical sets of test data.
-3. You may then run tests in another window with `make test`.
-4. You can start FerretDB with `make run`.
+3. You may then run tests in another window with `task test`.
+4. You can start FerretDB with `task run`.
    This will start it in a development mode where all requests are handled by FerretDB, but also routed to MongoDB.
    The differences in response are then logged and the FerretDB response is sent back to the client.
-5. Run `mongosh` with `make mongosh`.
+5. Run `mongosh` with `task mongosh`.
    This allows you to run commands against FerretDB.
 
-You can see all available "make" commands with `make help`.
+You can see all available "task" commands with `task`.
 
 ## Code Overview
 
 Package `cmd` provides commands implementation. `ferretdb` is the main FerretDB binary; others are tools for development.
 
-Package `tools` uses "tools.go" approach to fix tools versions. They are installed into `bin/` by `make init`.
+Package `tools` uses "tools.go" approach to fix tools versions. They are installed into `bin/` by `task init`.
 
 `internal` subpackages contain most of the FerretDB code:
 * `types` package provides Go types matching BSON types that don't have built-in Go equivalents: we use `int32` for BSON's int32, but `types.ObjectID` for BSON's ObjectId.
