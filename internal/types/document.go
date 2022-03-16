@@ -233,12 +233,13 @@ func (d *Document) ApplyProjection(projection *Document) (err error) {
 
 	// better to have elemMatchConditions in a graf
 	elemM := make(map[string]struct{}, len(elemMatchConditions))
-	for _, conditionPath := range elemMatchConditions {
+	for _, conditionPath := range elemMatchConditions { // it includes the last $elemMatch arrray element
 		if len(conditionPath) == 0 {
 			panic("impossible code")
 		}
 		elemM[conditionPath[0]] = struct{}{}
 	}
+	// version 1 - projection of first level docs
 	for k := range d.m {
 		fmt.Printf("key %v\n", k)
 
@@ -246,34 +247,41 @@ func (d *Document) ApplyProjection(projection *Document) (err error) {
 			continue
 		}
 		_, ok := elemM[k]
+		// should not get there bcs projection in query will not fetch top level keys
+		// todo: add field projection by condition, ex.jsonb_path_exists(_jsonb->'value', '$.score[*] ? (@ == 24 )')
+		// so big arrays where definetely not met the elemMatch condition won't be even fetched
 		if !ok {
-			fmt.Printf("removed key %v\n", k)
 			d.Remove(k)
 			continue
 		}
 	}
 
-	for _, conditionPath := range elemMatchConditions {
-		emConditionPath := conditionPath[0 : len(conditionPath)-1]
-		fmt.Printf("path %s\n", strings.Join(emConditionPath, "."))
+	// todo version 2 - remove from doc elements that are in projection condition but not related to the projection array itself.
+	for range d.m {
+	}
 
+	// the fields with array which are left are already checked that they really contain the matching element
+	// so the goal of this code is to find first array with matching condition
+	for _, conditionPath := range elemMatchConditions {
+		// remove from path $elemMatch, which is last
+		// so emConditionPath should be the path of target array elements in a doc
+		emConditionPath := conditionPath[0 : len(conditionPath)-1]
 		var conditionDocPathAny any
 		conditionDocPathAny, err = d.GetByPath(emConditionPath...)
 		if err != nil {
-			fmt.Printf("not found %s\n", strings.Join(emConditionPath, "."))
 			continue
 		}
 		switch candidateIFArrayDoc := conditionDocPathAny.(type) {
 		case *Array:
 			for i := 0; i < candidateIFArrayDoc.Len(); i++ {
 
-				var tuple *Document
-				// get array tuple
+				// in matched elemMatch path, get array tuple
 				var tupleAny any
 				tupleAny, err = candidateIFArrayDoc.Get(i)
 				if err != nil {
 					return lazyerrors.Error(err)
 				}
+				var tuple *Document
 				var ok bool
 				if tuple, ok = tupleAny.(*Document); !ok {
 					fmt.Printf("%d skip\n", i)
@@ -337,23 +345,14 @@ func (d *Document) ApplyProjection(projection *Document) (err error) {
 				// fmt.Printf("path %s.%d\n", tupleAny)
 			}
 		default:
-			// remove if no other projections
+			// not an array, remove from doc
+			d.Remove(emConditionPath...)
+			continue
+
 		}
 	}
 	return
 }
-
-// queryRes, _ := d.GetByPath(conditionPath...)
-// if queryRes == nil {
-// 	continue
-// }
-
-// switch queryRes.(type) {
-// case *Array:
-
-// 	fmt.Printf("%s \n")
-// default:
-// }
 
 // Get returns a value at the given key.
 func (d *Document) Get(key string) (any, error) {
