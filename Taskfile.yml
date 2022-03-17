@@ -136,6 +136,9 @@ tasks:
       - bin/golangci-lint run --config=.golangci-required.yml
       - bin/golangci-lint run --config=.golangci.yml
       - bin/go-consistent -pedantic ./cmd/... ./internal/...
+    preconditions:
+      - sh: "test -f bin/go-sumtype{{.EXT}} || test -f bin/golangci-lint{{.EXT}}"
+        msg: "Please run `task init` first"
 
 
   psql:
