@@ -131,7 +131,6 @@ tasks:
   lint:
     desc: "Run linters"
     cmds:
-      - bin/go-sumtype bin/golangci-lint ## Run linters
       - bin/go-sumtype ./...
       - bin/golangci-lint run --config=.golangci-required.yml
       - bin/golangci-lint run --config=.golangci.yml
