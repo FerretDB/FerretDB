@@ -175,7 +175,8 @@ tasks:
     deps:
       - docker-build
     cmds:
-     - docker buildx build --builder=ferretdb \
+     - |
+      docker buildx build --builder=ferretdb \
         --build-arg VERSION=$(shell cat internal/util/version/version.txt) \
         --build-arg COMMIT=$(shell cat internal/util/version/commit.txt) \
         --tag=ferretdb-local \
@@ -186,7 +187,12 @@ tasks:
       - docker-build
     cmds:
       - test {{.DOCKER_IMAGE}}
-      - docker buildx build --builder=ferretdb --platform=linux/arm64,linux/amd64 --build-arg VERSION={{.VERSION}} --build-arg COMMIT={{.COMMIT}} --tag={{.DOCKER_IMAGE}} --push .
+      - | 
+        docker buildx build --builder=ferretdb --platform=linux/arm64,linux/amd64 \
+          --build-arg VERSION={{.VERSION}} \
+          --build-arg COMMIT={{.COMMIT}} \
+          --tag={{.DOCKER_IMAGE}} \
+          --push .
     vars:
       COMMIT:
         sh: cat internal/util/version/commit.txt
