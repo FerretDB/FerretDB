@@ -185,8 +185,8 @@ tasks:
     deps:
       - docker-build
     cmds:
-     - test {{.DOCKER_IMAGE}}
-     - docker buildx build --builder=ferretdb --platform=linux/arm64,linux/amd64 \
+      - test {{.DOCKER_IMAGE}}
+      - docker buildx build --builder=ferretdb --platform=linux/arm64,linux/amd64 \
         --build-arg VERSION={{.VERSION}} \
         --build-arg COMMIT={{.COMMIT}} \
         --tag={{.DOCKER_IMAGE}} \
