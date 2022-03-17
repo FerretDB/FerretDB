@@ -2,30 +2,17 @@
 
 FerretDB is currently developed in either Linux or macOS, everything else is running inside Docker Compose.
 
-You will need Go 1.18 (for [fuzzing](https://go.dev/blog/fuzz-beta) and [generics](https://go.dev/blog/generics-proposal)) that is not yet released.
-[Compile it yourself](https://golang.org/doc/install/source) or use [`gotip download`](https://pkg.go.dev/golang.org/dl/gotip).
-
-To verify your Go version:
-```
-$ go version
-go version devel go1.18-[...]
-```
-**Note:** If using gotip and `go version` does not return version 1.18, you may need to symbolic link `gotip` to `go`.
-```sh
-$ ln -s `which gotip` /usr/local/bin/go
-```
-Use `which gotip` to get the path to gotip.
+You will need Go 1.18 as FerretDB extensively uses ([fuzzing](https://go.dev/doc/tutorial/fuzz)) and [generics](https://go.dev/doc/tutorial/generics)).
+If your package manager does not provide it yet, please install it from [go.dev](https://go.dev/dl/).
 
 ## Cloning the Repository
 
-After forking FerretDB you can clone the repository - for the best practices use the following instructions:
+After forking FerretDB on GitHub, you can clone the repository:
 
 ```sh
-$ git clone git@github.com:FerretDB/FerretDB.git
-$ cd FerretDB
-$ git remote rename origin upstream
-$ git remote set-url --push upstream NO_PUSH
-$ git remote add origin git@github.com:<YOUR_GITHUB_USERNAME>/FerretDB.git
+git clone git@github.com:<YOUR_GITHUB_USERNAME>/FerretDB.git
+cd FerretDB
+git remote add upstream https://github.com/FerretDB/FerretDB.git
 ```
 
 ## Helpful Commands
@@ -41,10 +28,10 @@ After this `task` will be available with `bin/task` on Linux and `bin\task.exe` 
 4. You can start FerretDB with `bin/task run`.
    This will start it in a development mode where all requests are handled by FerretDB, but also routed to MongoDB.
    The differences in response are then logged and the FerretDB response is sent back to the client.
-5. Run `mongosh` with `task mongosh`.
+5. Run `mongosh` with `bin/task mongosh`.
    This allows you to run commands against FerretDB.
 
-You can see all available "task" commands with `bin/task`.
+You can see all available "task" commands with `bin/task -l`.
 
 ## Code Overview
 
