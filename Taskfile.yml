@@ -71,7 +71,7 @@ tasks:
   bench-short:
     desc: "Benchmark for about 20 seconds (with default BENCHTIME)"
     cmds:
-      - go test -list="Benchmark.*" ./...
+      - go test -list='Benchmark.*' ./...
       - task: build:rm-bin
       - echo "Running four functions for {{.BENCHTIME}} each..."
       - go test -bench=BenchmarkArray    -benchtime={{.BENCHTIME}} ./internal/bson/  | tee -a new.txt
@@ -93,7 +93,7 @@ tasks:
   fuzz:
     desc: "Fuzz for about 2 minutes (with default FUZZTIME)"
     cmds:
-      - go test -list="Fuzz.*" ./...
+      - go test -list='Fuzz.*' ./...
       # Running eight functions for {{.FUZZTIME}} each..."
       - go test -fuzz=FuzzArray -fuzztime={{.FUZZTIME}} ./internal/bson/
       - go test -fuzz=FuzzDocument -fuzztime={{.FUZZTIME}} ./internal/bson/
@@ -143,7 +143,7 @@ tasks:
     desc: "Run mongo shell"
     cmds:
       - docker-compose exec mongodb mongosh mongodb://host.docker.internal:27017/monila?heartbeatFrequencyMS=300000 \
-        --verbose --eval "disableTelemetry()" --shell
+        --verbose --eval 'disableTelemetry()' --shell
 
   mongo:
     desc: "Run (legacy) mongo shell"
