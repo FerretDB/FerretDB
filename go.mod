@@ -10,10 +10,11 @@ require (
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/prometheus/client_golang v1.12.1
 	github.com/prometheus/common v0.32.1
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.1
 	go.uber.org/zap v1.21.0
-	golang.org/x/exp v0.0.0-20220212023102-3e31098684e2
-	golang.org/x/sys v0.0.0-20220209214540-3681064d5158
+	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd // indirect; always use @latest
+	golang.org/x/exp v0.0.0-20220317015231-48e79f11773a
+	golang.org/x/sys v0.0.0-20220317061510-51cd9980dadf
 	golang.org/x/text v0.3.7
 )
 
@@ -35,7 +36,6 @@ require (
 	github.com/prometheus/procfs v0.7.3 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
-	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	google.golang.org/protobuf v1.26.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )

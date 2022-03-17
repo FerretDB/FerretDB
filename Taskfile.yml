@@ -52,7 +52,7 @@ tasks:
   gen:
     desc: 'Generate code'
     cmds:
-      - bin/gofumpt
+      - bin/gofumpt -w .
       - go generate -x ./...
       - task: fmt
 
