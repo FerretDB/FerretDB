@@ -30,24 +30,27 @@ jobs:
           fetch-depth: 0
 
       - name: Start pulling environment in the background
-        run: make env-pull &
+        run: bin/task env-pull &
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
         with:
           cache-key: test
 
+      - name: Install Task
+        run: cd tools; go generate -x
+
       - name: Start environment
-        run: make env-up-detach
+        run: bin/task env-up-detach
 
       - name: Run init
-        run: make init
+        run: bin/task init
 
       - name: Wait for and setup environment
-        run: make env-setup
+        run: bin/task env-setup
 
       - name: Run tests
-        run: make test
+        run: bin/task test
 
       - name: Upload coverage information
         uses: codecov/codecov-action@v2
@@ -78,8 +81,17 @@ jobs:
           path: source
           fetch-depth: 0
 
+      - name: Setup Go
+        uses: FerretDB/github-actions/setup-go@main
+        with:
+          cache-key: fuzz
+
+      - name: Install Task
+        run: cd tools; go generate -x
+        working-directory: source
+
       - name: Start pulling environment in the background
-        run: make env-pull &
+        run: bin/task env-pull &
         working-directory: source
 
       # Use deploy key instead of Personal Access Token (PAT) to limit access to one repository.
@@ -92,36 +104,31 @@ jobs:
           path: fuzz-corpus
           fetch-depth: 0
 
-      - name: Setup Go
-        uses: FerretDB/github-actions/setup-go@main
-        with:
-          cache-key: fuzz
-
       - name: Start environment
-        run: make env-up-detach
+        run: bin/task env-up-detach
         working-directory: source
 
       - name: Run init
-        run: make init
+        run: bin/task init
         working-directory: source
 
       - name: Setup corpus
-        run: make fuzz-corpus
+        run: bin/task fuzz-corpus
         working-directory: source
 
       - name: Wait for and setup environment
-        run: make env-setup
+        run: bin/task env-setup
         working-directory: source
 
       # precompile tests with unset GOMAXPROCS
       - name: Init fuzzers
-        run: make fuzz-init
+        run: bin/task fuzz-init
         working-directory: source
 
       # TODO https://github.com/FerretDB/FerretDB/issues/238
       # TODO https://github.com/FerretDB/FerretDB/issues/344
       - name: Run collected fuzzing corpus
-        run: make fuzz
+        run: bin/task fuzz
         working-directory: source
         env:
           GOMAXPROCS: 1 # otherwise, oom-killer kills fuzzer too often
@@ -131,7 +138,7 @@ jobs:
       - name: Collect corpus
         if: always()
         run: |
-          make fuzz-corpus
+          bin/task fuzz-corpus
           go run ./cmd/fuzztool/fuzztool.go -src=seed -dst=../fuzz-corpus
         working-directory: source
 
