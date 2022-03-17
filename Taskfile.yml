@@ -19,14 +19,10 @@ tasks:
 
   init:
     desc: 'Install development tools'
-    deps: [gen-version, clean-bin]
+    deps: [gen-version]
     cmds:
       - go mod tidy
       - task: install-tools
-
-  clean-bin:
-    cmds:
-      - go run ./cmd/envtool/main.go clean-bin
 
   env-setup:
     deps:

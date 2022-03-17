@@ -238,30 +238,17 @@ func main() {
 	debugF := flag.Bool("debug", false, "enable debug mode")
 	flag.Parse()
 
+	if flag.NArg() != 0 {
+		flag.Usage()
+		fmt.Fprintln(flag.CommandLine.Output(), "no arguments expected")
+		os.Exit(2)
+	}
+
 	logging.Setup(zap.InfoLevel)
 	if *debugF {
 		logging.Setup(zap.DebugLevel)
 	}
 	logger := zap.S()
-
-	switch flag.NArg() {
-	case 0:
-		// nothing, continue with the rest of the function
-	case 1:
-		switch cmd := flag.Arg(0); cmd {
-		case "clean-bin":
-			if err := os.RemoveAll("bin"); err != nil {
-				logger.Fatal(err)
-			}
-		default:
-			logger.Fatalf("unknown command %q", cmd)
-		}
-		os.Exit(0)
-	default:
-		flag.Usage()
-		fmt.Fprintln(flag.CommandLine.Output(), "zero or one argument expected")
-		os.Exit(2)
-	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
