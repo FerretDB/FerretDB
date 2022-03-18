@@ -48,7 +48,6 @@ type Handler struct {
 type NewOpts struct {
 	PgPool        *pg.Pool
 	Logger        *zap.Logger
-	SQLStorage    common.Storage
 	JSONB1Storage common.Storage
 	Metrics       *Metrics
 	PeerAddr      string
@@ -60,7 +59,6 @@ func New(opts *NewOpts) *Handler {
 	return &Handler{
 		pgPool:    opts.PgPool,
 		l:         opts.Logger,
-		sql:       opts.SQLStorage,
 		jsonb1:    opts.JSONB1Storage,
 		metrics:   opts.Metrics,
 		peerAddr:  opts.PeerAddr,

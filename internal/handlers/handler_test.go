@@ -31,7 +31,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/jsonb1"
-	"github.com/FerretDB/FerretDB/internal/handlers/sql"
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -66,13 +65,11 @@ func setup(t testing.TB, opts *setupOpts) (context.Context, *Handler, *pg.Pool) 
 
 	ctx := testutil.Ctx(t)
 	pool := testutil.Pool(ctx, t, opts.poolOpts, l)
-	sql := sql.NewStorage(pool, l.Sugar())
 	jsonb1 := jsonb1.NewStorage(pool, l)
 	handler := New(&NewOpts{
 		PgPool:        pool,
 		Logger:        l,
 		PeerAddr:      "127.0.0.1:12345",
-		SQLStorage:    sql,
 		JSONB1Storage: jsonb1,
 		Metrics:       NewMetrics(),
 	})
