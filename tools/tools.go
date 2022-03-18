@@ -35,11 +35,11 @@ import (
 
 //go:generate go run check.go
 
-//go:generate go build -v -o ../bin/go-sumtype github.com/BurntSushi/go-sumtype
-//go:generate go build -v -o ../bin/task github.com/go-task/task/v3/cmd/task
-//go:generate go build -v -o ../bin/golangci-lint github.com/golangci/golangci-lint/cmd/golangci-lint
-//go:generate go build -v -o ../bin/go-consistent github.com/quasilyte/go-consistent
-//go:generate go build -v -o ../bin/reviewdog github.com/reviewdog/reviewdog/cmd/reviewdog
-//go:generate go build -v -o ../bin/benchstat golang.org/x/perf/cmd/benchstat
-//go:generate go build -v -o ../bin/stringer golang.org/x/tools/cmd/stringer
-//go:generate go build -v -o ../bin/gofumpt mvdan.cc/gofumpt
+//go:generate go build -v -o ../bin/ github.com/BurntSushi/go-sumtype
+//go:generate go build -v -o ../bin/ github.com/go-task/task/v3/cmd/task
+//go:generate go build -v -o ../bin/ github.com/golangci/golangci-lint/cmd/golangci-lint
+//go:generate go build -v -o ../bin/ github.com/quasilyte/go-consistent
+//go:generate go build -v -o ../bin/ github.com/reviewdog/reviewdog/cmd/reviewdog
+//go:generate go build -v -o ../bin/ golang.org/x/perf/cmd/benchstat
+//go:generate go build -v -o ../bin/ golang.org/x/tools/cmd/stringer
+//go:generate go build -v -o ../bin/ mvdan.cc/gofumpt
