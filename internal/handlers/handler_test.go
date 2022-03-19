@@ -127,7 +127,7 @@ func TestFind(t *testing.T) {
 	// to make it easier to run individual tests with `go test -run test/name` and for consistency.
 	testCases := map[string]testCase{
 		"ValueLtGt": {
-			schemas: []string{"monila", "pagila"},
+			schemas: []string{"monila"},
 			req: types.MustNewDocument(
 				"find", "actor",
 				"filter", types.MustNewDocument(
@@ -149,7 +149,7 @@ func TestFind(t *testing.T) {
 			),
 		},
 		"InLteGte": {
-			schemas: []string{"monila", "pagila"},
+			schemas: []string{"monila"},
 			req: types.MustNewDocument(
 				"find", "actor",
 				"filter", types.MustNewDocument(
@@ -173,7 +173,7 @@ func TestFind(t *testing.T) {
 			),
 		},
 		"NinEqNe": {
-			schemas: []string{"monila", "pagila"},
+			schemas: []string{"monila"},
 			req: types.MustNewDocument(
 				"find", "actor",
 				"filter", types.MustNewDocument(
@@ -197,7 +197,7 @@ func TestFind(t *testing.T) {
 			),
 		},
 		"Not": {
-			schemas: []string{"monila", "pagila"},
+			schemas: []string{"monila"},
 			req: types.MustNewDocument(
 				"find", "actor",
 				"filter", types.MustNewDocument(
@@ -223,7 +223,7 @@ func TestFind(t *testing.T) {
 			),
 		},
 		"NestedNot": {
-			schemas: []string{"monila", "pagila"},
+			schemas: []string{"monila"},
 			req: types.MustNewDocument(
 				"find", "actor",
 				"filter", types.MustNewDocument(
@@ -253,7 +253,7 @@ func TestFind(t *testing.T) {
 			),
 		},
 		"AndOr": {
-			schemas: []string{"monila", "pagila"},
+			schemas: []string{"monila"},
 			req: types.MustNewDocument(
 				"find", "actor",
 				"filter", types.MustNewDocument(
@@ -289,7 +289,7 @@ func TestFind(t *testing.T) {
 			),
 		},
 		"Nor": {
-			schemas: []string{"monila", "pagila"},
+			schemas: []string{"monila"},
 			req: types.MustNewDocument(
 				"find", "actor",
 				"filter", types.MustNewDocument(
@@ -310,7 +310,7 @@ func TestFind(t *testing.T) {
 			),
 		},
 		"ValueRegex": {
-			schemas: []string{"monila", "pagila"},
+			schemas: []string{"monila"},
 			req: types.MustNewDocument(
 				"find", "actor",
 				"filter", types.MustNewDocument(
@@ -332,7 +332,7 @@ func TestFind(t *testing.T) {
 			),
 		},
 		"Regex": {
-			schemas: []string{"monila", "pagila"},
+			schemas: []string{"monila"},
 			req: types.MustNewDocument(
 				"find", "actor",
 				"filter", types.MustNewDocument(
@@ -356,7 +356,7 @@ func TestFind(t *testing.T) {
 			),
 		},
 		"RegexOptions": {
-			schemas: []string{"monila", "pagila"},
+			schemas: []string{"monila"},
 			req: types.MustNewDocument(
 				"find", "actor",
 				"filter", types.MustNewDocument(
@@ -381,7 +381,7 @@ func TestFind(t *testing.T) {
 			),
 		},
 		"RegexStringOptions": {
-			schemas: []string{"monila", "pagila"},
+			schemas: []string{"monila"},
 			req: types.MustNewDocument(
 				"find", "actor",
 				"filter", types.MustNewDocument(
@@ -581,18 +581,6 @@ func TestFind(t *testing.T) {
 					// not parallel because we modify tc
 
 					tc.req.Set("$db", schema)
-
-					// remove _id fields that are not present in pagila
-					if schema == "pagila" {
-						for i := 0; i < tc.resp.Len(); i++ {
-							doc, err := tc.resp.Get(i)
-							require.NoError(t, err)
-							d := doc.(*types.Document)
-							d.Remove("_id")
-							err = tc.resp.Set(i, d)
-							require.NoError(t, err)
-						}
-					}
 
 					var expected *types.Document
 					if tc.err == nil {
@@ -1008,7 +996,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			for _, schema := range []string{"monila", "pagila"} {
+			for _, schema := range []string{"monila"} {
 				t.Run(schema, func(t *testing.T) {
 					// not parallel because we modify tc
 
@@ -1046,9 +1034,9 @@ func TestListDropDatabase(t *testing.T) {
 					"empty", false,
 				),
 				types.MustNewDocument(
-					"name", "pagila",
-					"sizeOnDisk", int64(7_127_040),
-					"empty", false,
+					"name", "public",
+					"sizeOnDisk", int64(0),
+					"empty", true,
 				),
 				types.MustNewDocument(
 					"name", "test",
@@ -1066,8 +1054,8 @@ func TestListDropDatabase(t *testing.T) {
 					"empty", false,
 				),
 			),
-			"totalSize", int64(30_286_627),
-			"totalSizeMb", int64(28),
+			"totalSize", int64(22_561_571),
+			"totalSizeMb", int64(21),
 			"ok", float64(1),
 		)
 

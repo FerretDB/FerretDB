@@ -207,6 +207,7 @@ func (pgPool *Pool) Schemas(ctx context.Context) ([]string, error) {
 }
 
 // Tables returns a sorted list of FerretDB collection / PostgreSQL table names.
+// Returns empty slice if schema does not exist.
 func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, error) {
 	// TODO query settings table instead: https://github.com/FerretDB/FerretDB/issues/125
 

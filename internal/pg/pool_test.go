@@ -85,38 +85,7 @@ func TestTables(t *testing.T) {
 
 	tables, err = pool.Tables(ctx, "pagila")
 	require.NoError(t, err)
-
-	expectedTables = []string{
-		"actor",
-		"actor_info",
-		"address",
-		"category",
-		"city",
-		"country",
-		"customer",
-		"customer_list",
-		"film",
-		"film_actor",
-		"film_category",
-		"film_list",
-		"inventory",
-		"language",
-		"nicer_but_slower_film_list",
-		"payment",
-		"payment_p2020_01",
-		"payment_p2020_02",
-		"payment_p2020_03",
-		"payment_p2020_04",
-		"payment_p2020_05",
-		"payment_p2020_06",
-		"rental",
-		"sales_by_film_category",
-		"sales_by_store",
-		"staff",
-		"staff_list",
-		"store",
-	}
-	assert.Equal(t, expectedTables, tables)
+	assert.Empty(t, tables)
 }
 
 func TestConcurrentCreate(t *testing.T) {
