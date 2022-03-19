@@ -288,37 +288,4 @@ func wherePair(key string, value any, p *pg.Placeholder) (sql string, args []any
 
 	return
 }
-
-func where(filter *types.Document, p *pg.Placeholder) (sql string, args []any, err error) {
-	if filter == nil {
-		return
-	}
-	filterMap := filter.Map()
-	if len(filterMap) == 0 {
-		return
-	}
-
-	sql = " WHERE"
-
-	for i, key := range filter.Keys() {
-		value := filterMap[key]
-
-		if i != 0 {
-			sql += " AND"
-		}
-
-		var argSql string
-		var arg []any
-		argSql, arg, err = wherePair(key, value, p)
-		if err != nil {
-			err = lazyerrors.Errorf("where: %w", err)
-			return
-		}
-
-		sql += " (" + argSql + ")"
-		args = append(args, arg...)
-	}
-
-	return
-}
 */

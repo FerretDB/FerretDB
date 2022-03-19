@@ -25,7 +25,7 @@ import (
 
 // MsgFindOrCount finds documents in a collection or view and returns a cursor to the selected documents
 // or count the number of documents that matches the query filter.
-func (s *storage) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (s *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -76,7 +76,7 @@ func (s *storage) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	m := document.Map()
-	filter, _ := m["filter"].(*types.Document)
+	filter, _ := m["query"].(*types.Document)
 	sort, _ := m["sort"].(*types.Document)
 	limit, _ := m["limit"].(int32)
 
@@ -102,21 +102,10 @@ func (s *storage) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	// TODO re-add projection
-
-	firstBatch := types.MakeArray(len(resDocs))
-	for _, doc := range resDocs {
-		firstBatch.Append(doc)
-	}
-
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{types.MustNewDocument(
-			"cursor", types.MustNewDocument(
-				"firstBatch", firstBatch,
-				"id", int64(0), // TODO
-				"ns", db+"."+collection,
-			),
+			"n", int32(len(resDocs)),
 			"ok", float64(1),
 		)},
 	})

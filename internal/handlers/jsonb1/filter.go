@@ -33,7 +33,7 @@ func filterDocument(doc, filter *types.Document) (bool, error) {
 		filterValue := filterMap[filterKey]
 		res, err := filterDocumentFoo(doc, filterKey, filterValue)
 		if err != nil {
-			return false, err
+			return false, lazyerrors.Errorf("filterDocument: %w", err)
 		}
 		if !res {
 			return false, nil
