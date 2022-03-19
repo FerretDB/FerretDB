@@ -30,11 +30,13 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
+	command := document.Command()
+
 	var db, collection string
 	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
-	if collection, err = common.GetRequiredParam[string](document, "collStats"); err != nil {
+	if collection, err = common.GetRequiredParam[string](document, command); err != nil {
 		return nil, err
 	}
 

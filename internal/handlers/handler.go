@@ -203,7 +203,7 @@ func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg, cmd string) (*wire.OpMsg, error) {
 	// special case to avoid circular dependency
-	if cmd == "listcommands" {
+	if cmd == "listCommands" {
 		return listCommands(ctx, msg)
 	}
 
@@ -240,7 +240,7 @@ func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) (common.Stora
 	}
 
 	command := document.Command()
-	if command == "createindexes" {
+	if command == "createIndexes" {
 		// TODO https://github.com/FerretDB/FerretDB/issues/78
 		return h.pgStorage, nil
 	}

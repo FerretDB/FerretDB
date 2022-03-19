@@ -752,7 +752,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 
 		"DBStats": {
 			req: types.MustNewDocument(
-				"dbstats", int32(1),
+				"dbStats", int32(1),
 			),
 			reqSetDB: true,
 			resp: types.MustNewDocument(
@@ -781,7 +781,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 		},
 		"DBStatsWithScale": {
 			req: types.MustNewDocument(
-				"dbstats", int32(1),
+				"dbStats", int32(1),
 				"scale", float64(1_000),
 			),
 			reqSetDB: true,

@@ -27,10 +27,10 @@ import (
 func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 	err := reply.SetSections(wire.OpMsgSection{
-		// TODO merge with QueryCmd
+		// TODO merge with QueryCmd?
 		Documents: []*types.Document{types.MustNewDocument(
 			"helloOk", true,
-			"ismaster", true,
+			"ismaster", true, // only lowercase
 			// topologyVersion
 			"maxBsonObjectSize", int32(types.MaxDocumentLen),
 			"maxMessageSizeBytes", int32(wire.MaxMsgLen),
