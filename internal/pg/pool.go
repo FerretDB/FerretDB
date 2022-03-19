@@ -36,12 +36,6 @@ const (
 	// Supported locales: (For more info see: https://www.gnu.org/software/libc/manual/html_node/Standard-Locales.html)
 	localeC     = "C"
 	localePOSIX = "POSIX"
-
-	// Table uses JSONB1 storage.
-	JSONB1Table = "jsonb1"
-
-	// Table uses SQL storage.
-	SQLTable = "sql"
 )
 
 var (
@@ -213,41 +207,35 @@ func (pgPool *Pool) Schemas(ctx context.Context) ([]string, error) {
 }
 
 // Tables returns a sorted list of FerretDB collection / PostgreSQL table names.
-func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, []string, error) {
+// Returns empty slice if schema does not exist.
+func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, error) {
 	// TODO query settings table instead: https://github.com/FerretDB/FerretDB/issues/125
 
-	sql := `SELECT table_name, bool_or(column_name = '_jsonb') ` +
+	sql := `SELECT table_name ` +
 		`FROM information_schema.columns ` +
 		`WHERE table_schema = $1 ` +
 		`GROUP BY table_name ` +
 		`ORDER BY table_name`
 	rows, err := pgPool.Query(ctx, sql, schema)
 	if err != nil {
-		return nil, nil, lazyerrors.Error(err)
+		return nil, lazyerrors.Error(err)
 	}
 	defer rows.Close()
 
 	tables := make([]string, 0, 2)
-	storages := make([]string, 0, 2)
 	var name string
-	var hasJSONB bool
 	for rows.Next() {
-		if err = rows.Scan(&name, &hasJSONB); err != nil {
-			return nil, nil, lazyerrors.Error(err)
+		if err = rows.Scan(&name); err != nil {
+			return nil, lazyerrors.Error(err)
 		}
 
 		tables = append(tables, name)
-		if hasJSONB {
-			storages = append(storages, JSONB1Table)
-		} else {
-			storages = append(storages, SQLTable)
-		}
 	}
 	if err = rows.Err(); err != nil {
-		return nil, nil, lazyerrors.Error(err)
+		return nil, lazyerrors.Error(err)
 	}
 
-	return tables, storages, nil
+	return tables, nil
 }
 
 // CreateSchema creates a new FerretDB database / PostgreSQL schema.

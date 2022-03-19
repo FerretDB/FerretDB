@@ -1,9 +1,12 @@
-BENCHTIME ?= 5s
-FUZZTIME ?= 15s
-FUZZCORPUS ?= ../fuzz-corpus
+# That's a shim for https://github.com/FerretDB/github-actions/blob/main/linters/action.yml
+# TODO Remove this file when https://github.com/FerretDB/dance/issues/75 is done
+# and github-actions are updated to use bin/task.
 
-all: fmt test
+init:
+	cd tools; go generate -x
+	bin/task init
 
+<<<<<<< HEAD
 help:                                  ## Display this help message
 	@echo "Please use \`make <target>\` where <target> is one of:"
 	@grep '^[a-zA-Z]' $(MAKEFILE_LIST) | \
@@ -133,3 +136,8 @@ bin/go-sumtype:
 
 bin/gofumports:
 	$(MAKE) init
+=======
+%:
+	# Use `bin/task $@` instead.
+	bin/task $@
+>>>>>>> main

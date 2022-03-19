@@ -5,18 +5,20 @@ go 1.18
 // TODO remove once https://github.com/quasilyte/go-consistent/issues/38 is fixed properly
 replace github.com/quasilyte/go-consistent => github.com/AlekSi/go-consistent v0.0.0-20220110091530-6bd5f7d2362a
 
+// Hack to make `bin/task gen` work without `stringer: Unexpected package creation during export data loading` errors.
 // TODO remove once stringer is fixed
-// TODO create an issue in Go repo
-replace golang.org/x/tools => github.com/AlekSi/tools v0.1.9-0.20220310084833-603f356b65be
+// https://github.com/golang/go/issues/45218
+// https://github.com/golang/go/issues/51629
+replace golang.org/x/tools => github.com/AlekSi/tools v0.1.11-0.20220317161929-e47c4f46a332
 
 require (
 	github.com/BurntSushi/go-sumtype v0.0.0-20190304192233-fcb4a6205bdc
 	github.com/go-task/task/v3 v3.11.0
-	github.com/golangci/golangci-lint v1.44.2
+	github.com/golangci/golangci-lint v1.44.2 // sync with GitHub Actions workflow
 	github.com/quasilyte/go-consistent v0.0.0-00010101000000-000000000000
 	github.com/reviewdog/reviewdog v0.14.0
-	golang.org/x/perf v0.0.0-20220308081927-511bcb8b8934
-	golang.org/x/tools v0.1.9
+	golang.org/x/perf v0.0.0-20220317012736-7f87d66fe45f
+	golang.org/x/tools v0.1.10
 	mvdan.cc/gofumpt v0.3.0
 )
 
