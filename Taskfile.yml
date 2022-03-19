@@ -61,6 +61,7 @@ tasks:
       - bin/gofumpt{{exeExt}} -w .
 
   test:
+    desc: 'Run tests'
     cmds:
       - go test -race -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
       - go test -race -shuffle=on -bench=. -benchtime=1x ./...
