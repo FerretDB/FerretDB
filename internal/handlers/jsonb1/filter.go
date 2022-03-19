@@ -96,22 +96,46 @@ func filterDocumentFoo(doc *types.Document, filterKey string, filterValue any) (
 		panic(lazyerrors.Errorf("lala1 key %q, value %v", filterKey, filterValue))
 	}
 
+	docValue := must.NotFail(doc.Get(filterKey))
+
 	switch filterValue := filterValue.(type) {
 	case *types.Document:
 		// {field: {expr}}
-		panic("oops")
+		return filterFieldExpr(docValue, filterValue), nil
 
 	case *types.Array:
-		panic("oops")
+		panic("oops array")
 
 	case types.Regex:
-		panic("oops")
+		panic("oops regex")
 
 	default:
 		// {field: value}
-		v := must.NotFail(doc.Get(filterKey))
-		return filterScalarEqual(v, filterValue), nil
+		return filterScalarEqual(docValue, filterValue), nil
 	}
+}
+
+func filterFieldExpr(docValue any, expr *types.Document) bool {
+	for _, key := range expr.Keys() {
+		switch key {
+		case "$not":
+			// {field: {$not: {expr}}}
+			expr := must.NotFail(expr.Get(key)).(*types.Document)
+			if filterFieldExpr(docValue, expr) {
+				return false
+			}
+
+		case "$eq":
+			v := must.NotFail(expr.Get(key))
+			if !filterScalarEqual(docValue, v) {
+				return false
+			}
+		default:
+			panic(key)
+		}
+	}
+
+	return true
 }
 
 // filterScalarEqual returns true if given scalar values are equal as used by filters.
