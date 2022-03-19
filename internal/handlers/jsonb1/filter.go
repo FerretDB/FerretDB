@@ -115,23 +115,65 @@ func filterDocumentFoo(doc *types.Document, filterKey string, filterValue any) (
 	}
 }
 
+// {field: {expr}}
 func filterFieldExpr(docValue any, expr *types.Document) bool {
-	for _, key := range expr.Keys() {
-		switch key {
+	for _, exprKey := range expr.Keys() {
+		exprValue := must.NotFail(expr.Get(exprKey))
+
+		switch exprKey {
 		case "$not":
 			// {field: {$not: {expr}}}
-			expr := must.NotFail(expr.Get(key)).(*types.Document)
+			expr := exprValue.(*types.Document)
 			if filterFieldExpr(docValue, expr) {
 				return false
 			}
 
 		case "$eq":
-			v := must.NotFail(expr.Get(key))
-			if !filterScalarEqual(docValue, v) {
+			// {field: {$eq: value}}
+			// TODO regex
+			if !filterScalarEqual(docValue, exprValue) {
 				return false
 			}
+
+		case "$ne":
+			// {field: {$ne: value}}
+			// TODO regex
+			if filterScalarEqual(docValue, exprValue) {
+				return false
+			}
+
+		case "$in":
+			// {field: {$in: [value1, value2, ...]}}
+			arr := exprValue.(*types.Array)
+			var found bool
+			for i := 0; i < arr.Len(); i++ {
+				arrValue := must.NotFail(arr.Get(i))
+				if filterScalarEqual(docValue, arrValue) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return false
+			}
+
+		case "$nin":
+			// {field: {$nin: [value1, value2, ...]}}
+			arr := exprValue.(*types.Array)
+			var found bool
+			for i := 0; i < arr.Len(); i++ {
+				arrValue := must.NotFail(arr.Get(i))
+				if filterScalarEqual(docValue, arrValue) {
+					found = true
+					break
+				}
+			}
+			if found {
+				return false
+			}
+
 		default:
-			panic(key)
+			panic(exprKey)
 		}
 	}
 
