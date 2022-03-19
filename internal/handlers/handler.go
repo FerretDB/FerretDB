@@ -23,6 +23,7 @@ import (
 	"github.com/AlekSi/pointer"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/pg"
@@ -33,35 +34,34 @@ import (
 
 // Handler data struct.
 type Handler struct {
-	// TODO replace those fields with opts *NewOpts
-	pgPool        *pg.Pool
-	peerAddr      string
-	l             *zap.Logger
-	sql           common.Storage
-	jsonb1        common.Storage
-	metrics       *Metrics
+	// TODO replace those fields with
+	// opts *NewOpts
+	pgPool    *pg.Pool
+	l         *zap.Logger
+	pgStorage common.Storage
+	metrics   *Metrics
+	peerAddr  string
+	startTime time.Time
+
 	lastRequestID int32
-	startTime     time.Time
 }
 
 // NewOpts represents handler configuration.
 type NewOpts struct {
-	PgPool        *pg.Pool
-	Logger        *zap.Logger
-	SQLStorage    common.Storage
-	JSONB1Storage common.Storage
-	Metrics       *Metrics
-	PeerAddr      string
-	StartTime     time.Time
+	PgPool    *pg.Pool
+	L         *zap.Logger
+	PgStorage common.Storage
+	Metrics   *Metrics
+	PeerAddr  string
+	StartTime time.Time
 }
 
 // New returns a new handler.
 func New(opts *NewOpts) *Handler {
 	return &Handler{
 		pgPool:    opts.PgPool,
-		l:         opts.Logger,
-		sql:       opts.SQLStorage,
-		jsonb1:    opts.JSONB1Storage,
+		l:         opts.L,
+		pgStorage: opts.PgStorage,
 		metrics:   opts.Metrics,
 		peerAddr:  opts.PeerAddr,
 		startTime: opts.StartTime,
@@ -242,7 +242,7 @@ func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) (common.Stora
 	command := document.Command()
 	if command == "createindexes" {
 		// TODO https://github.com/FerretDB/FerretDB/issues/78
-		return h.jsonb1, nil
+		return h.pgStorage, nil
 	}
 
 	var db, collection string
@@ -253,39 +253,18 @@ func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) (common.Stora
 		return nil, err
 	}
 
-	tables, storages, err := h.pgPool.Tables(ctx, db)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	storage := "default"
-	for i, t := range tables {
-		if t == collection {
-			storage = storages[i]
-			break
-		}
-	}
-
-	h.l.Sugar().Debugf("Using storage %q for collection %q in database %q", storage, collection, db)
-
 	switch command {
 	case "delete", "find", "count":
-		switch storage {
-		case pg.JSONB1Table:
-			return h.jsonb1, nil
-		case pg.SQLTable:
-			return h.sql, nil
-		default:
-			// does not matter much what we return there
-			return h.sql, nil
-		}
+		return h.pgStorage, nil
 
 	case "insert", "update":
-		switch storage {
-		case pg.JSONB1Table:
-			return h.jsonb1, nil
-		case pg.SQLTable:
-			return h.sql, nil
+		tables, err := h.pgPool.Tables(ctx, db)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		if slices.Contains(tables, collection) {
+			return h.pgStorage, nil
 		}
 
 		// Table (or even schema) does not exist. Try to create it,
@@ -297,13 +276,13 @@ func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) (common.Stora
 
 		if err := h.pgPool.CreateTable(ctx, db, collection); err != nil {
 			if err == pg.ErrAlreadyExist {
-				return h.jsonb1, nil
+				return h.pgStorage, nil
 			}
 			return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)
 		}
 
-		h.l.Info("Created jsonb1 table.", zap.String("schema", db), zap.String("table", collection))
-		return h.jsonb1, nil
+		h.l.Info("Created table.", zap.String("schema", db), zap.String("table", collection))
+		return h.pgStorage, nil
 
 	default:
 		panic(fmt.Sprintf("unhandled command %q", command))

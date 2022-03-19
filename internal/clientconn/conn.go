@@ -29,7 +29,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/jsonb1"
 	"github.com/FerretDB/FerretDB/internal/handlers/proxy"
-	"github.com/FerretDB/FerretDB/internal/handlers/sql"
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
@@ -78,8 +77,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	l := zap.L().Named(prefix)
 
 	peerAddr := opts.netConn.RemoteAddr().String()
-	sqlH := sql.NewStorage(opts.pgPool, l.Sugar())
-	jsonb1H := jsonb1.NewStorage(opts.pgPool, l)
+	pgStorage := jsonb1.NewStorage(opts.pgPool, l)
 
 	var p *proxy.Handler
 	if opts.mode != NormalMode {
@@ -90,13 +88,12 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	}
 
 	handlerOpts := &handlers.NewOpts{
-		PgPool:        opts.pgPool,
-		Logger:        l,
-		PeerAddr:      peerAddr,
-		SQLStorage:    sqlH,
-		JSONB1Storage: jsonb1H,
-		Metrics:       opts.handlersMetrics,
-		StartTime:     opts.startTime,
+		PgPool:    opts.pgPool,
+		L:         l,
+		PeerAddr:  peerAddr,
+		PgStorage: pgStorage,
+		Metrics:   opts.handlersMetrics,
+		StartTime: opts.startTime,
 	}
 	return &conn{
 		netConn: opts.netConn,

@@ -15,8 +15,6 @@ services:
       - TZ=America/St_Johns
       - POSTGRES_HOST_AUTH_METHOD=trust
       - POSTGRES_DB=ferretdb
-    volumes:
-      - test_db_postgres:/test_db/:ro
 
   # for proxy mode and mongosh
   mongodb:
@@ -36,9 +34,7 @@ services:
     image: aleksi/test_db:mongodb-values
     container_name: ferretdb_test_db
     volumes:
-      - test_db_postgres:/test_db/postgresql/pagila:ro
       - test_db_mongodb:/test_db/mongodb:ro
 
 volumes:
-  test_db_postgres:
   test_db_mongodb:

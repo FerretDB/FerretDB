@@ -62,7 +62,7 @@ func TestTables(t *testing.T) {
 	ctx := testutil.Ctx(t)
 	pool := testutil.Pool(ctx, t, nil, zaptest.NewLogger(t))
 
-	tables, storages, err := pool.Tables(ctx, "monila")
+	tables, err := pool.Tables(ctx, "monila")
 	require.NoError(t, err)
 
 	expectedTables := []string{
@@ -82,49 +82,10 @@ func TestTables(t *testing.T) {
 		"store",
 	}
 	assert.Equal(t, expectedTables, tables)
-	assert.Len(t, storages, len(expectedTables))
-	for _, s := range storages {
-		assert.Equal(t, pg.JSONB1Table, s)
-	}
 
-	tables, storages, err = pool.Tables(ctx, "pagila")
+	tables, err = pool.Tables(ctx, "pagila")
 	require.NoError(t, err)
-
-	expectedTables = []string{
-		"actor",
-		"actor_info",
-		"address",
-		"category",
-		"city",
-		"country",
-		"customer",
-		"customer_list",
-		"film",
-		"film_actor",
-		"film_category",
-		"film_list",
-		"inventory",
-		"language",
-		"nicer_but_slower_film_list",
-		"payment",
-		"payment_p2020_01",
-		"payment_p2020_02",
-		"payment_p2020_03",
-		"payment_p2020_04",
-		"payment_p2020_05",
-		"payment_p2020_06",
-		"rental",
-		"sales_by_film_category",
-		"sales_by_store",
-		"staff",
-		"staff_list",
-		"store",
-	}
-	assert.Equal(t, expectedTables, tables)
-	assert.Len(t, storages, len(expectedTables))
-	for _, s := range storages {
-		assert.Equal(t, pg.SQLTable, s)
-	}
+	assert.Empty(t, tables)
 }
 
 func TestConcurrentCreate(t *testing.T) {
