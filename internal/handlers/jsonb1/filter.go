@@ -15,6 +15,8 @@
 package jsonb1
 
 import (
+	"strings"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -44,5 +46,10 @@ func filterDocument(doc, filter *types.Document) (bool, error) {
 }
 
 func filterDocumentFoo(doc *types.Document, filterKey string, filterValue any) (bool, error) {
+	// {$operator: [expr1, expr2, ...]}
+	if strings.HasPrefix(filterKey, "$") {
+		return false, lazyerrors.Errorf("lala1 key %q, value %v", filterKey, filterValue)
+	}
+
 	return false, lazyerrors.Errorf("filterDocumentFoo: unhandled key %q, value %v", filterKey, filterValue)
 }
