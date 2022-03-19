@@ -49,9 +49,9 @@ func TestDocument(t *testing.T) {
 		assert.Nil(t, doc.keys)
 		assert.Equal(t, "", doc.Command())
 
-		err := doc.Set("Foo", Null)
+		err := doc.Set("foo", Null)
 		assert.NoError(t, err)
-		value, err := doc.Get("Foo")
+		value, err := doc.Get("foo")
 		assert.NoError(t, err)
 		assert.Equal(t, Null, value)
 
