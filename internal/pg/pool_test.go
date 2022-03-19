@@ -62,7 +62,7 @@ func TestTables(t *testing.T) {
 	ctx := testutil.Ctx(t)
 	pool := testutil.Pool(ctx, t, nil, zaptest.NewLogger(t))
 
-	tables, storages, err := pool.Tables(ctx, "monila")
+	tables, err := pool.Tables(ctx, "monila")
 	require.NoError(t, err)
 
 	expectedTables := []string{
@@ -82,12 +82,8 @@ func TestTables(t *testing.T) {
 		"store",
 	}
 	assert.Equal(t, expectedTables, tables)
-	assert.Len(t, storages, len(expectedTables))
-	for _, s := range storages {
-		assert.Equal(t, pg.JSONB1Table, s)
-	}
 
-	tables, storages, err = pool.Tables(ctx, "pagila")
+	tables, err = pool.Tables(ctx, "pagila")
 	require.NoError(t, err)
 
 	expectedTables = []string{
@@ -121,10 +117,6 @@ func TestTables(t *testing.T) {
 		"store",
 	}
 	assert.Equal(t, expectedTables, tables)
-	assert.Len(t, storages, len(expectedTables))
-	for _, s := range storages {
-		assert.Equal(t, pg.SQLTable, s)
-	}
 }
 
 func TestConcurrentCreate(t *testing.T) {

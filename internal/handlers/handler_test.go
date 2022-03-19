@@ -65,13 +65,13 @@ func setup(t testing.TB, opts *setupOpts) (context.Context, *Handler, *pg.Pool) 
 
 	ctx := testutil.Ctx(t)
 	pool := testutil.Pool(ctx, t, opts.poolOpts, l)
-	jsonb1 := jsonb1.NewStorage(pool, l)
+	pgStorage := jsonb1.NewStorage(pool, l)
 	handler := New(&NewOpts{
-		PgPool:        pool,
-		Logger:        l,
-		PeerAddr:      "127.0.0.1:12345",
-		JSONB1Storage: jsonb1,
-		Metrics:       NewMetrics(),
+		PgPool:    pool,
+		L:         l,
+		PeerAddr:  "127.0.0.1:12345",
+		PgStorage: pgStorage,
+		Metrics:   NewMetrics(),
 	})
 
 	return ctx, handler, pool
@@ -1146,7 +1146,7 @@ func TestCreateListDropCollection(t *testing.T) {
 		// TODO test listCollections command once we have better cursor support
 		// https://github.com/FerretDB/FerretDB/issues/79
 
-		tables, _, err := pool.Tables(ctx, db)
+		tables, err := pool.Tables(ctx, db)
 		require.NoError(t, err)
 		assert.Equal(t, []string{collection}, tables)
 

@@ -77,7 +77,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	l := zap.L().Named(prefix)
 
 	peerAddr := opts.netConn.RemoteAddr().String()
-	jsonb1H := jsonb1.NewStorage(opts.pgPool, l)
+	pgStorage := jsonb1.NewStorage(opts.pgPool, l)
 
 	var p *proxy.Handler
 	if opts.mode != NormalMode {
@@ -88,12 +88,12 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	}
 
 	handlerOpts := &handlers.NewOpts{
-		PgPool:        opts.pgPool,
-		Logger:        l,
-		PeerAddr:      peerAddr,
-		JSONB1Storage: jsonb1H,
-		Metrics:       opts.handlersMetrics,
-		StartTime:     opts.startTime,
+		PgPool:    opts.pgPool,
+		L:         l,
+		PeerAddr:  peerAddr,
+		PgStorage: pgStorage,
+		Metrics:   opts.handlersMetrics,
+		StartTime: opts.startTime,
 	}
 	return &conn{
 		netConn: opts.netConn,
