@@ -155,21 +155,6 @@ func setupMongoDB(ctx context.Context) {
 	logger.Infof("Done in %s.", time.Since(start))
 }
 
-func setupPagila(ctx context.Context) {
-	start := time.Now()
-	logger := zap.S().Named("postgres.pagila")
-
-	logger.Infof("Importing database...")
-
-	args := strings.Split(`exec -T postgres psql -U postgres -d ferretdb --quiet -f /test_db/01-pagila-schema.sql`, " ")
-	runCompose(args, nil, logger)
-
-	args = strings.Split(`exec -T postgres psql -U postgres -d ferretdb --quiet -f /test_db/02-pagila-data.sql`, " ")
-	runCompose(args, nil, logger)
-
-	logger.Infof("Done in %s.", time.Since(start))
-}
-
 func setupMonilaAndValues(ctx context.Context, pgPool *pg.Pool) {
 	start := time.Now()
 	logger := zap.S().Named("postgres.monila_and_values")
@@ -287,22 +272,15 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		setupPagila(ctx)
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
 		setupMonilaAndValues(ctx, pgPool)
 	}()
 
 	wg.Wait()
 
 	for _, q := range []string{
-		`ALTER SCHEMA public RENAME TO pagila`,
 		`CREATE ROLE readonly NOINHERIT LOGIN`,
-		`GRANT SELECT ON ALL TABLES IN SCHEMA monila, pagila, values, test TO readonly`,
-		`GRANT USAGE ON SCHEMA monila, pagila, values, test TO readonly`,
+		`GRANT SELECT ON ALL TABLES IN SCHEMA monila, values, test TO readonly`,
+		`GRANT USAGE ON SCHEMA monila, values, test TO readonly`,
 	} {
 		if _, err = pgPool.Exec(ctx, q); err != nil {
 			logger.Fatal(err)
