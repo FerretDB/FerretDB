@@ -15,10 +15,15 @@
 package jsonb1
 
 import (
+	"bytes"
+	"fmt"
 	"strings"
+	"time"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // filterDocument returns true if given document matches given filter condition.
@@ -33,11 +38,11 @@ func filterDocument(doc, filter *types.Document) (bool, error) {
 	// top-level filters are ANDed together
 	for _, filterKey := range filter.Keys() {
 		filterValue := filterMap[filterKey]
-		res, err := filterDocumentFoo(doc, filterKey, filterValue)
+		matches, err := filterDocumentFoo(doc, filterKey, filterValue)
 		if err != nil {
-			return false, lazyerrors.Errorf("filterDocument: %w", err)
+			return false, err
 		}
-		if !res {
+		if !matches {
 			return false, nil
 		}
 	}
@@ -48,8 +53,102 @@ func filterDocument(doc, filter *types.Document) (bool, error) {
 func filterDocumentFoo(doc *types.Document, filterKey string, filterValue any) (bool, error) {
 	// {$operator: [expr1, expr2, ...]}
 	if strings.HasPrefix(filterKey, "$") {
-		return false, lazyerrors.Errorf("lala1 key %q, value %v", filterKey, filterValue)
+		exprs, ok := filterValue.(*types.Array)
+		if !ok {
+			msg := fmt.Sprintf(
+				`unknown top level operator: %s. `+
+					`If you have a field name that starts with a '$' symbol, consider using $getField or $setField.`,
+				filterKey,
+			)
+			return false, common.NewErrorMsg(common.ErrBadValue, msg)
+		}
+
+		switch filterKey {
+		case "$and":
+			for i := 0; i < exprs.Len(); i++ {
+				expr := must.NotFail(exprs.Get(i)).(*types.Document)
+
+				matches, err := filterDocument(doc, expr)
+				if err != nil {
+					panic(err)
+				}
+				if !matches {
+					return false, nil
+				}
+			}
+			return true, nil
+
+		case "$or":
+			for i := 0; i < exprs.Len(); i++ {
+				expr := must.NotFail(exprs.Get(i)).(*types.Document)
+
+				matches, err := filterDocument(doc, expr)
+				if err != nil {
+					panic(err)
+				}
+				if matches {
+					return true, nil
+				}
+			}
+			return false, nil
+		}
+
+		panic(lazyerrors.Errorf("lala1 key %q, value %v", filterKey, filterValue))
 	}
 
-	return false, lazyerrors.Errorf("filterDocumentFoo: unhandled key %q, value %v", filterKey, filterValue)
+	switch filterValue := filterValue.(type) {
+	case *types.Document:
+		// {field: {expr}}
+		panic("oops")
+
+	case *types.Array:
+		panic("oops")
+
+	case types.Regex:
+		panic("oops")
+
+	default:
+		// {field: value}
+		v := must.NotFail(doc.Get(filterKey))
+		return filterScalarEqual(v, filterValue), nil
+	}
+}
+
+// filterScalarEqual returns true if given scalar values are equal as used by filters.
+func filterScalarEqual(a, b any) bool {
+	if a == nil {
+		panic("a is nil")
+	}
+	if b == nil {
+		panic("b is nil")
+	}
+
+	switch a := a.(type) {
+	case float64:
+		return a == b.(float64)
+	case string:
+		return a == b.(string)
+	case types.Binary:
+		b := b.(types.Binary)
+		return a.Subtype == b.Subtype && bytes.Equal(a.B, b.B)
+	case types.ObjectID:
+		return a == b.(types.ObjectID)
+	case bool:
+		return a == b.(bool)
+	case time.Time:
+		return a.Equal(b.(time.Time))
+	case types.NullType:
+		_ = b.(types.NullType)
+		return true
+	case types.Regex:
+		return a == b.(types.Regex)
+	case int32:
+		return a == b.(int32)
+	case types.Timestamp:
+		return a == b.(types.Timestamp)
+	case int64:
+		return a == b.(int64)
+	default:
+		panic(fmt.Sprintf("unhandled type %T", a))
+	}
 }
