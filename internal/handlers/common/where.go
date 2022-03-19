@@ -14,12 +14,7 @@
 
 package common
 
-import (
-	"github.com/FerretDB/FerretDB/internal/pg"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-)
-
+/*
 type wherePair func(key string, value any, p *pg.Placeholder) (sql string, args []any, err error)
 
 func LogicExpr(op string, exprs *types.Array, p *pg.Placeholder, wherePair wherePair) (sql string, args []any, err error) {
@@ -109,3 +104,4 @@ func InArray(a *types.Array, p *pg.Placeholder, scalar scalar) (sql string, args
 	sql += ")"
 	return
 }
+*/

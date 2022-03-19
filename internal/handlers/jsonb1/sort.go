@@ -14,33 +14,10 @@
 
 package jsonb1
 
-import (
-	"github.com/jackc/pgx/v4"
+import "github.com/FerretDB/FerretDB/internal/types"
 
-	"github.com/FerretDB/FerretDB/internal/fjson"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-)
-
-func nextRow(rows pgx.Rows) (*types.Document, error) {
-	if !rows.Next() {
-		err := rows.Err()
-		if err != nil {
-			err = lazyerrors.Error(err)
-		}
-		return nil, err
-	}
-
-	var b []byte
-	if err := rows.Scan(&b); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	doc, err := fjson.Unmarshal(b)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	d := doc.(*types.Document)
-	return d, nil
+// sortDocuments sorts given documents in place according to the given sorting conditions.
+func sortDocuments(docs []*types.Document, sort *types.Document) error {
+	// TODO
+	return nil
 }

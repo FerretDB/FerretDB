@@ -14,6 +14,7 @@
 
 package jsonb1
 
+/*
 import (
 	"fmt"
 	"math"
@@ -320,3 +321,4 @@ func where(filter *types.Document, p *pg.Placeholder) (sql string, args []any, e
 
 	return
 }
+*/

@@ -21,7 +21,6 @@ import (
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -47,6 +46,7 @@ func (s *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		"collation",
 		"allowDiskUse",
 		"let",
+		"projection", // FIXME
 	}
 	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
 		return nil, err
@@ -63,16 +63,14 @@ func (s *storage) MsgFindOrCount(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	}
 	common.Ignored(document, s.l, ignoredFields...)
 
-	var filter *types.Document
-	var sql, collection string
-
-	var args []any
-	var placeholder pg.Placeholder
-
 	var db string
 	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
+
+	document.Command()
+
+	// TODO re-add projection
 
 	m := document.Map()
 	_, isFindOp := m["find"].(string)

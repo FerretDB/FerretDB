@@ -16,91 +16,86 @@ package jsonb1
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/jackc/pgx/v4"
-
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/pg"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgDelete deletes document.
 func (s *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	return nil, nil
 
-	if err := common.Unimplemented(document, "let"); err != nil {
-		return nil, err
-	}
-	common.Ignored(document, s.l, "ordered", "writeConcern")
+	// document, err := msg.Document()
+	// if err != nil {
+	// 	return nil, lazyerrors.Error(err)
+	// }
 
-	command := document.Command()
+	// if err := common.Unimplemented(document, "let"); err != nil {
+	// 	return nil, err
+	// }
+	// common.Ignored(document, s.l, "ordered", "writeConcern")
 
-	var db, collection string
-	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-	if collection, err = common.GetRequiredParam[string](document, command); err != nil {
-		return nil, err
-	}
+	// command := document.Command()
 
-	m := document.Map()
-	docs, _ := m["deletes"].(*types.Array)
+	// var db, collection string
+	// if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	// 	return nil, err
+	// }
+	// if collection, err = common.GetRequiredParam[string](document, command); err != nil {
+	// 	return nil, err
+	// }
 
-	var deleted int32
-	for i := 0; i < docs.Len(); i++ {
-		doc, err := docs.Get(i)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+	// m := document.Map()
+	// docs, _ := m["deletes"].(*types.Array)
 
-		if err := common.Unimplemented(doc.(*types.Document), "collation", "hint", "comment"); err != nil {
-			return nil, err
-		}
+	// var deleted int32
+	// for i := 0; i < docs.Len(); i++ {
+	// 	doc, err := docs.Get(i)
+	// 	if err != nil {
+	// 		return nil, lazyerrors.Error(err)
+	// 	}
 
-		d := doc.(*types.Document).Map()
+	// 	if err := common.Unimplemented(doc.(*types.Document), "collation", "hint", "comment"); err != nil {
+	// 		return nil, err
+	// 	}
 
-		sql := fmt.Sprintf(`DELETE FROM %s`, pgx.Identifier{db, collection}.Sanitize())
-		var placeholder pg.Placeholder
+	// 	d := doc.(*types.Document).Map()
 
-		elSQL, args, err := where(d["q"].(*types.Document), &placeholder)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+	// 	sql := fmt.Sprintf(`DELETE FROM %s`, pgx.Identifier{db, collection}.Sanitize())
+	// 	var placeholder pg.Placeholder
 
-		limit, _ := d["limit"].(int32)
-		if limit != 0 {
-			sql += fmt.Sprintf(" WHERE _jsonb->'_id' IN (SELECT _jsonb->'_id' FROM %s", pgx.Identifier{db, collection}.Sanitize())
-			sql += elSQL
-			sql += " LIMIT 1)"
-		} else {
-			sql += elSQL
-		}
+	// 	elSQL, args, err := where(d["q"].(*types.Document), &placeholder)
+	// 	if err != nil {
+	// 		return nil, lazyerrors.Error(err)
+	// 	}
 
-		tag, err := s.pgPool.Exec(ctx, sql, args...)
-		if err != nil {
-			// TODO check error code
-			return nil, common.NewError(common.ErrNamespaceNotFound, fmt.Errorf("delete: ns not found: %w", err))
-		}
+	// 	limit, _ := d["limit"].(int32)
+	// 	if limit != 0 {
+	// 		sql += fmt.Sprintf(" WHERE _jsonb->'_id' IN (SELECT _jsonb->'_id' FROM %s", pgx.Identifier{db, collection}.Sanitize())
+	// 		sql += elSQL
+	// 		sql += " LIMIT 1)"
+	// 	} else {
+	// 		sql += elSQL
+	// 	}
 
-		deleted += int32(tag.RowsAffected())
-	}
+	// 	tag, err := s.pgPool.Exec(ctx, sql, args...)
+	// 	if err != nil {
+	// 		// TODO check error code
+	// 		return nil, common.NewError(common.ErrNamespaceNotFound, fmt.Errorf("delete: ns not found: %w", err))
+	// 	}
 
-	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{types.MustNewDocument(
-			"n", deleted,
-			"ok", float64(1),
-		)},
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	// 	deleted += int32(tag.RowsAffected())
+	// }
 
-	return &reply, nil
+	// var reply wire.OpMsg
+	// err = reply.SetSections(wire.OpMsgSection{
+	// 	Documents: []*types.Document{types.MustNewDocument(
+	// 		"n", deleted,
+	// 		"ok", float64(1),
+	// 	)},
+	// })
+	// if err != nil {
+	// 	return nil, lazyerrors.Error(err)
+	// }
+
+	// return &reply, nil
 }
