@@ -113,7 +113,7 @@ func filterDocumentFoo(doc *types.Document, filterKey string, filterValue any) (
 
 	default:
 		// {field: value}
-		return filterScalarEqual(docValue, filterValue), nil
+		return filterCompareScalars(docValue, filterValue) == equal, nil
 	}
 }
 
@@ -133,14 +133,14 @@ func filterFieldExpr(docValue any, expr *types.Document) (bool, error) {
 		case "$eq":
 			// {field: {$eq: value}}
 			// TODO regex
-			if !filterScalarEqual(docValue, exprValue) {
+			if filterCompareScalars(docValue, exprValue) != equal {
 				return false, nil
 			}
 
 		case "$ne":
 			// {field: {$ne: value}}
 			// TODO regex
-			if filterScalarEqual(docValue, exprValue) {
+			if filterCompareScalars(docValue, exprValue) == equal {
 				return false, nil
 			}
 
@@ -159,7 +159,7 @@ func filterFieldExpr(docValue any, expr *types.Document) (bool, error) {
 			var found bool
 			for i := 0; i < arr.Len(); i++ {
 				arrValue := must.NotFail(arr.Get(i))
-				if filterScalarEqual(docValue, arrValue) {
+				if filterCompareScalars(docValue, arrValue) == equal {
 					found = true
 					break
 				}
@@ -174,7 +174,7 @@ func filterFieldExpr(docValue any, expr *types.Document) (bool, error) {
 			var found bool
 			for i := 0; i < arr.Len(); i++ {
 				arrValue := must.NotFail(arr.Get(i))
-				if filterScalarEqual(docValue, arrValue) {
+				if filterCompareScalars(docValue, arrValue) == equal {
 					found = true
 					break
 				}

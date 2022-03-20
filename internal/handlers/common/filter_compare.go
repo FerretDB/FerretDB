@@ -19,11 +19,22 @@ import (
 	"fmt"
 	"time"
 
+	"golang.org/x/exp/constraints"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
+type compareResult int
+
+const (
+	equal compareResult = iota
+	less
+	greater
+	notEqual // but not less or greater; for example, two NaNs
+)
+
 // filterScalarEqual returns true if given scalar values are equal as used by filters.
-func filterScalarEqual(a, b any) bool {
+func filterCompareScalars(a, b any) compareResult {
 	if a == nil {
 		panic("a is nil")
 	}
@@ -33,39 +44,133 @@ func filterScalarEqual(a, b any) bool {
 
 	switch a := a.(type) {
 	case float64:
-		b := b.(float64)
-		return a == b
+		switch b := b.(type) {
+		case float64:
+			return filterCompareOrdered(a, b)
+		case int32:
+			return filterCompareNumbers(a, int64(b))
+		case int64:
+			return filterCompareNumbers(a, b)
+		default:
+			panic(fmt.Sprintf("unexpected type %T", b))
+		}
+
 	case string:
 		b := b.(string)
-		return a == b
+		return filterCompareOrdered(a, b)
+
 	case types.Binary:
 		b := b.(types.Binary)
-		return a.Subtype == b.Subtype && bytes.Equal(a.B, b.B)
+		al, bl := len(a.B), len(b.B)
+		if al != bl {
+			return filterCompareOrdered(al, bl)
+		}
+		if a.Subtype != b.Subtype {
+			return filterCompareOrdered(a.Subtype, b.Subtype)
+		}
+		switch bytes.Compare(a.B, b.B) {
+		case 0:
+			return equal
+		case -1:
+			return less
+		case 1:
+			return greater
+		default:
+			panic("unreachable")
+		}
+
 	case types.ObjectID:
 		b := b.(types.ObjectID)
-		return a == b
+		switch bytes.Compare(a[:], b[:]) {
+		case 0:
+			return equal
+		case -1:
+			return less
+		case 1:
+			return greater
+		default:
+			panic("unreachable")
+		}
+
 	case bool:
 		b := b.(bool)
-		return a == b
+		if a == b {
+			return equal
+		}
+		if b {
+			return less
+		}
+		return greater
+
 	case time.Time:
 		b := b.(time.Time)
-		return a.Equal(b)
+		return filterCompareOrdered(a.UnixNano(), b.UnixNano())
+
 	case types.NullType:
 		_ = b.(types.NullType)
-		return true
+		return equal // or notEqual?
+
 	case types.Regex:
-		b := b.(types.Regex)
-		return a == b
+		_ = b.(types.Regex)
+		return notEqual // ???
+
 	case int32:
-		b := b.(int32)
-		return a == b
+		switch b := b.(type) {
+		case float64:
+			return filterCompareInvert(filterCompareNumbers(b, int64(a)))
+		case int32:
+			return filterCompareOrdered(a, b)
+		case int64:
+			return filterCompareOrdered(int64(a), b)
+		default:
+			panic(fmt.Sprintf("unexpected type %T", b))
+		}
+
 	case types.Timestamp:
 		b := b.(types.Timestamp)
-		return a == b
+		return filterCompareOrdered(a, b)
+
 	case int64:
-		b := b.(int64)
-		return a == b
+		switch b := b.(type) {
+		case float64:
+			return filterCompareInvert(filterCompareNumbers(b, a))
+		case int32:
+			return filterCompareOrdered(a, int64(b))
+		case int64:
+			return filterCompareOrdered(a, b)
+		default:
+			panic(fmt.Sprintf("unexpected type %T", b))
+		}
+
 	default:
 		panic(fmt.Sprintf("unhandled type %T", a))
 	}
+}
+
+func filterCompareInvert(res compareResult) compareResult {
+	switch res {
+	case less:
+		return greater
+	case greater:
+		return less
+	default:
+		return res
+	}
+}
+
+func filterCompareOrdered[T constraints.Ordered](a, b T) compareResult {
+	if a == b {
+		return equal
+	}
+	if a < b {
+		return less
+	}
+	if a > b {
+		return greater
+	}
+	return notEqual
+}
+
+func filterCompareNumbers(a float64, b int64) compareResult {
+	return filterCompareOrdered(a, float64(b))
 }
