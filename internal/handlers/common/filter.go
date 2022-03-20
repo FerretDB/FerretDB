@@ -108,7 +108,10 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 		panic(fmt.Sprintf("filterDocumentPair: %q %v", filterKey, filterValue))
 	}
 
-	docValue := must.NotFail(doc.Get(filterKey))
+	docValue, err := doc.Get(filterKey)
+	if err != nil {
+		return false, err
+	}
 
 	switch filterValue := filterValue.(type) {
 	case *types.Document:

@@ -25,6 +25,9 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// fetch fetches all documents from the given database and collection.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/372
 func (s *storage) fetch(ctx context.Context, db, collection string) ([]*types.Document, error) {
 	sql := fmt.Sprintf(`SELECT _jsonb FROM %s`, pgx.Identifier{db, collection}.Sanitize())
 	rows, err := s.pgPool.Query(ctx, sql)
@@ -49,6 +52,9 @@ func (s *storage) fetch(ctx context.Context, db, collection string) ([]*types.Do
 	return res, nil
 }
 
+// nextRow returns the next document from the given rows.
+//
+// It returns (nil, nil) when iteration stops.
 func nextRow(rows pgx.Rows) (*types.Document, error) {
 	if !rows.Next() {
 		if err := rows.Err(); err != nil {

@@ -176,7 +176,7 @@ func compareOrdered[T constraints.Ordered](a, b T) compareResult {
 
 // compareNumbers compares two numbers.
 //
-// https://github.com/FerretDB/FerretDB/issues/371
+// TODO https://github.com/FerretDB/FerretDB/issues/371
 func compareNumbers(a float64, b int64) compareResult {
 	return compareOrdered(a, float64(b))
 }

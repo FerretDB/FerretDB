@@ -16,13 +16,14 @@ package jsonb1
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgUpdate modifies an existing document or documents in a collection.
 func (s *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, nil
+	return nil, fmt.Errorf("TODO")
 
 	// document, err := msg.Document()
 	// if err != nil {
