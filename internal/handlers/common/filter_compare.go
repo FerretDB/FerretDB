@@ -33,7 +33,7 @@ const (
 	notEqual // but not less or greater; for example, two NaNs
 )
 
-// filterScalarEqual returns true if given scalar values are equal as used by filters.
+// filterCompareScalars returns true if given scalar values are equal as used by filters.
 func filterCompareScalars(a, b any) compareResult {
 	if a == nil {
 		panic("a is nil")
@@ -147,6 +147,7 @@ func filterCompareScalars(a, b any) compareResult {
 	}
 }
 
+// filterCompareInvert swaps less and greater, keeping equal and notEqual.
 func filterCompareInvert(res compareResult) compareResult {
 	switch res {
 	case less:
@@ -158,6 +159,7 @@ func filterCompareInvert(res compareResult) compareResult {
 	}
 }
 
+// filterCompareOrdered compares two values of the same type using ==, <, > operators.
 func filterCompareOrdered[T constraints.Ordered](a, b T) compareResult {
 	if a == b {
 		return equal
@@ -171,6 +173,9 @@ func filterCompareOrdered[T constraints.Ordered](a, b T) compareResult {
 	return notEqual
 }
 
+// filterCompareNumbers compares two numbers.
+//
+// FIXME it does not work correctly for large (> 2^53) numbers, for example: https://go.dev/play/p/tYJkQoHGr4I
 func filterCompareNumbers(a float64, b int64) compareResult {
 	return filterCompareOrdered(a, float64(b))
 }

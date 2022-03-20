@@ -43,7 +43,6 @@ func (s *storage) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		"collation",
 		"allowDiskUse",
 		"let",
-		"projection", // FIXME
 	}
 	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
 		return nil, err
@@ -70,15 +69,25 @@ func (s *storage) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
+	var filter, sort, projection *types.Document
+	var limit int32
+	if filter, err = common.GetOptionalParam(document, "filter", filter); err != nil {
+		return nil, err
+	}
+	if sort, err = common.GetOptionalParam(document, "sort", sort); err != nil {
+		return nil, err
+	}
+	if projection, err = common.GetOptionalParam(document, "projection", projection); err != nil {
+		return nil, err
+	}
+	if limit, err = common.GetOptionalParam(document, "limit", limit); err != nil {
+		return nil, err
+	}
+
 	fetchedDocs, err := s.fetch(ctx, db, collection)
 	if err != nil {
 		return nil, err
 	}
-
-	m := document.Map()
-	filter, _ := m["filter"].(*types.Document)
-	sort, _ := m["sort"].(*types.Document)
-	limit, _ := m["limit"].(int32)
 
 	resDocs := make([]*types.Document, 0, 16)
 	for _, doc := range fetchedDocs {
@@ -97,12 +106,12 @@ func (s *storage) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	if err = common.SortDocuments(resDocs, sort); err != nil {
 		return nil, err
 	}
-
 	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
 		return nil, err
 	}
-
-	// TODO re-add projection
+	if err = common.ProjectDocuments(resDocs, projection); err != nil {
+		return nil, err
+	}
 
 	firstBatch := types.MakeArray(len(resDocs))
 	for _, doc := range resDocs {

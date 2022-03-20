@@ -43,7 +43,6 @@ func (s *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		"collation",
 		"allowDiskUse",
 		"let",
-		"projection", // FIXME
 	}
 	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
 		return nil, err
@@ -70,15 +69,22 @@ func (s *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, err
 	}
 
+	var filter, sort *types.Document
+	var limit int32
+	if filter, err = common.GetOptionalParam(document, "filter", filter); err != nil {
+		return nil, err
+	}
+	if sort, err = common.GetOptionalParam(document, "sort", sort); err != nil {
+		return nil, err
+	}
+	if limit, err = common.GetOptionalParam(document, "limit", limit); err != nil {
+		return nil, err
+	}
+
 	fetchedDocs, err := s.fetch(ctx, db, collection)
 	if err != nil {
 		return nil, err
 	}
-
-	m := document.Map()
-	filter, _ := m["query"].(*types.Document)
-	sort, _ := m["sort"].(*types.Document)
-	limit, _ := m["limit"].(int32)
 
 	resDocs := make([]*types.Document, 0, 16)
 	for _, doc := range fetchedDocs {
@@ -97,7 +103,6 @@ func (s *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	if err = common.SortDocuments(resDocs, sort); err != nil {
 		return nil, err
 	}
-
 	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
 		return nil, err
 	}
