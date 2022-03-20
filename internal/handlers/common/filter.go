@@ -65,7 +65,6 @@ func filterDocumentFoo(doc *types.Document, filterKey string, filterValue any) (
 		case "$and":
 			for i := 0; i < exprs.Len(); i++ {
 				expr := must.NotFail(exprs.Get(i)).(*types.Document)
-
 				matches, err := FilterDocument(doc, expr)
 				if err != nil {
 					panic(err)
@@ -79,7 +78,6 @@ func filterDocumentFoo(doc *types.Document, filterKey string, filterValue any) (
 		case "$or":
 			for i := 0; i < exprs.Len(); i++ {
 				expr := must.NotFail(exprs.Get(i)).(*types.Document)
-
 				matches, err := FilterDocument(doc, expr)
 				if err != nil {
 					panic(err)
@@ -91,7 +89,17 @@ func filterDocumentFoo(doc *types.Document, filterKey string, filterValue any) (
 			return false, nil
 
 		case "$nor":
-			panic("$nor")
+			for i := 0; i < exprs.Len(); i++ {
+				expr := must.NotFail(exprs.Get(i)).(*types.Document)
+				matches, err := FilterDocument(doc, expr)
+				if err != nil {
+					panic(err)
+				}
+				if matches {
+					return false, nil
+				}
+			}
+			return true, nil
 		}
 
 		panic(lazyerrors.Errorf("lala1 key %q, value %v", filterKey, filterValue))
