@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -36,7 +35,7 @@ func FilterDocument(doc, filter *types.Document) (bool, error) {
 	// top-level filters are ANDed together
 	for _, filterKey := range filter.Keys() {
 		filterValue := filterMap[filterKey]
-		matches, err := filterDocumentFoo(doc, filterKey, filterValue)
+		matches, err := filterDocumentPair(doc, filterKey, filterValue)
 		if err != nil {
 			return false, err
 		}
@@ -48,7 +47,8 @@ func FilterDocument(doc, filter *types.Document) (bool, error) {
 	return true, nil
 }
 
-func filterDocumentFoo(doc *types.Document, filterKey string, filterValue any) (bool, error) {
+// filterDocumentPair handles a single filter element key/value pair {filterKey: filterValue}.
+func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) (bool, error) {
 	// {$operator: [expr1, expr2, ...]}
 	if strings.HasPrefix(filterKey, "$") {
 		exprs, ok := filterValue.(*types.Array)
@@ -63,6 +63,7 @@ func filterDocumentFoo(doc *types.Document, filterKey string, filterValue any) (
 
 		switch filterKey {
 		case "$and":
+			// {$and: [{expr1}, {expr2}, ...]}
 			for i := 0; i < exprs.Len(); i++ {
 				expr := must.NotFail(exprs.Get(i)).(*types.Document)
 				matches, err := FilterDocument(doc, expr)
@@ -76,6 +77,7 @@ func filterDocumentFoo(doc *types.Document, filterKey string, filterValue any) (
 			return true, nil
 
 		case "$or":
+			// {$or: [{expr1}, {expr2}, ...]}
 			for i := 0; i < exprs.Len(); i++ {
 				expr := must.NotFail(exprs.Get(i)).(*types.Document)
 				matches, err := FilterDocument(doc, expr)
@@ -89,6 +91,7 @@ func filterDocumentFoo(doc *types.Document, filterKey string, filterValue any) (
 			return false, nil
 
 		case "$nor":
+			// {$nor: [{expr1}, {expr2}, ...]}
 			for i := 0; i < exprs.Len(); i++ {
 				expr := must.NotFail(exprs.Get(i)).(*types.Document)
 				matches, err := FilterDocument(doc, expr)
@@ -102,7 +105,7 @@ func filterDocumentFoo(doc *types.Document, filterKey string, filterValue any) (
 			return true, nil
 		}
 
-		panic(lazyerrors.Errorf("lala1 key %q, value %v", filterKey, filterValue))
+		panic(fmt.Sprintf("filterDocumentPair: %q %v", filterKey, filterValue))
 	}
 
 	docValue := must.NotFail(doc.Get(filterKey))
@@ -113,7 +116,8 @@ func filterDocumentFoo(doc *types.Document, filterKey string, filterValue any) (
 		return filterFieldExpr(docValue, filterValue)
 
 	case *types.Array:
-		panic("oops array")
+		// {field: [array]}
+		panic("not implemented")
 
 	case types.Regex:
 		// {field: /regex/}
@@ -121,14 +125,12 @@ func filterDocumentFoo(doc *types.Document, filterKey string, filterValue any) (
 
 	default:
 		// {field: value}
-		return filterCompareScalars(docValue, filterValue) == equal, nil
+		return compareScalars(docValue, filterValue) == equal, nil
 	}
 }
 
-// filterFieldExpr returns true if given value satisfies given expression.
-//
-// It handles `{field: {expr}}`.
-func filterFieldExpr(docValue any, expr *types.Document) (bool, error) {
+// filterFieldExpr handles {field: {expr}} filter.
+func filterFieldExpr(fieldValue any, expr *types.Document) (bool, error) {
 	for _, exprKey := range expr.Keys() {
 		if exprKey == "$options" {
 			// handled by $regex
@@ -139,36 +141,40 @@ func filterFieldExpr(docValue any, expr *types.Document) (bool, error) {
 
 		switch exprKey {
 		case "$eq":
-			// {field: {$eq: value}}
+			// {field: {$eq: exprValue}}
 			// TODO regex
-			if filterCompareScalars(docValue, exprValue) != equal {
+			if compareScalars(fieldValue, exprValue) != equal {
 				return false, nil
 			}
 
 		case "$ne":
-			// {field: {$ne: value}}
+			// {field: {$ne: exprValue}}
 			// TODO regex
-			if filterCompareScalars(docValue, exprValue) == equal {
+			if compareScalars(fieldValue, exprValue) == equal {
 				return false, nil
 			}
 
 		case "$gt":
-			if c := filterCompareScalars(docValue, exprValue); c != greater {
+			// {field: {$gt: exprValue}}
+			if c := compareScalars(fieldValue, exprValue); c != greater {
 				return false, nil
 			}
 
 		case "$gte":
-			if c := filterCompareScalars(docValue, exprValue); c != greater && c != equal {
+			// {field: {$gte: exprValue}}
+			if c := compareScalars(fieldValue, exprValue); c != greater && c != equal {
 				return false, nil
 			}
 
 		case "$lt":
-			if c := filterCompareScalars(docValue, exprValue); c != less {
+			// {field: {$lt: exprValue}}
+			if c := compareScalars(fieldValue, exprValue); c != less {
 				return false, nil
 			}
 
 		case "$lte":
-			if c := filterCompareScalars(docValue, exprValue); c != less && c != equal {
+			// {field: {$lte: exprValue}}
+			if c := compareScalars(fieldValue, exprValue); c != less && c != equal {
 				return false, nil
 			}
 
@@ -178,7 +184,7 @@ func filterFieldExpr(docValue any, expr *types.Document) (bool, error) {
 			var found bool
 			for i := 0; i < arr.Len(); i++ {
 				arrValue := must.NotFail(arr.Get(i))
-				if filterCompareScalars(docValue, arrValue) == equal {
+				if compareScalars(fieldValue, arrValue) == equal {
 					found = true
 					break
 				}
@@ -193,7 +199,7 @@ func filterFieldExpr(docValue any, expr *types.Document) (bool, error) {
 			var found bool
 			for i := 0; i < arr.Len(); i++ {
 				arrValue := must.NotFail(arr.Get(i))
-				if filterCompareScalars(docValue, arrValue) == equal {
+				if compareScalars(fieldValue, arrValue) == equal {
 					found = true
 					break
 				}
@@ -205,22 +211,22 @@ func filterFieldExpr(docValue any, expr *types.Document) (bool, error) {
 		case "$not":
 			// {field: {$not: {expr}}}
 			expr := exprValue.(*types.Document)
-			res, err := filterFieldExpr(docValue, expr)
+			res, err := filterFieldExpr(fieldValue, expr)
 			if res || err != nil {
 				return false, err
 			}
 
 		case "$regex":
-			// {field: {$regex: value}}
+			// {field: {$regex: exprValue}}
 			optionsAny, _ := expr.Get("$options")
-			res, err := filterFieldExprRegex(docValue, exprValue, optionsAny)
+			res, err := filterFieldExprRegex(fieldValue, exprValue, optionsAny)
 			if !res || err != nil {
 				return false, err
 			}
 
 		case "$size":
 			// {field: {$size: value}}
-			res, err := filterFieldExprSize(docValue, exprValue)
+			res, err := filterFieldExprSize(fieldValue, exprValue)
 			if !res || err != nil {
 				return false, err
 			}
@@ -233,9 +239,9 @@ func filterFieldExpr(docValue any, expr *types.Document) (bool, error) {
 	return true, nil
 }
 
-// {field: /regex/}
-func filterFieldRegex(docValue any, regex types.Regex) (bool, error) {
-	docString, ok := docValue.(string)
+// filterFieldRegex handles {field: /regex/} filter.
+func filterFieldRegex(fieldValue any, regex types.Regex) (bool, error) {
+	s, ok := fieldValue.(string)
 	if !ok {
 		return false, nil
 	}
@@ -245,69 +251,70 @@ func filterFieldRegex(docValue any, regex types.Regex) (bool, error) {
 		return false, err
 	}
 
-	return re.MatchString(docString), nil
+	return re.MatchString(s), nil
 }
 
-func filterFieldExprRegex(docValue any, exprValue, optionsAny any) (bool, error) {
+// filterFieldExprRegex handles {field: {$regex: regexValue, $options: optionsValue}} filter.
+func filterFieldExprRegex(fieldValue any, regexValue, optionsValue any) (bool, error) {
 	var options string
-	if optionsAny != nil {
+	if optionsValue != nil {
 		var ok bool
-		if options, ok = optionsAny.(string); !ok {
+		if options, ok = optionsValue.(string); !ok {
 			return false, NewErrorMsg(ErrBadValue, "$options has to be a string")
 		}
 	}
 
-	switch exprValue := exprValue.(type) {
+	switch regexValue := regexValue.(type) {
 	case string:
 		regex := types.Regex{
-			Pattern: exprValue,
+			Pattern: regexValue,
 			Options: options,
 		}
-		return filterFieldRegex(docValue, regex)
+		return filterFieldRegex(fieldValue, regex)
 
 	case types.Regex:
 		if options != "" {
-			if exprValue.Options != "" {
+			if regexValue.Options != "" {
 				return false, NewErrorMsg(ErrRegexOptions, "options set in both $regex and $options")
 			}
-			exprValue.Options = options
+			regexValue.Options = options
 		}
-		return filterFieldRegex(docValue, exprValue)
+		return filterFieldRegex(fieldValue, regexValue)
 
 	default:
 		return false, NewErrorMsg(ErrBadValue, "$regex has to be a string")
 	}
 }
 
-// {field: {$size: value}}
-func filterFieldExprSize(docValue any, exprValue any) (bool, error) {
-	arr, ok := docValue.(*types.Array)
+// filterFieldExprSize handles {field: {$size: sizeValue}} filter.
+func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
+	arr, ok := fieldValue.(*types.Array)
 	if !ok {
 		return false, nil
 	}
 
-	var value int
-	switch exprValue := exprValue.(type) {
+	var size int
+	switch sizeValue := sizeValue.(type) {
 	case float64:
-		if exprValue != math.Trunc(exprValue) || math.IsNaN(exprValue) || math.IsInf(exprValue, 0) {
+		if sizeValue != math.Trunc(sizeValue) || math.IsNaN(sizeValue) || math.IsInf(sizeValue, 0) {
 			return false, NewErrorMsg(ErrBadValue, "$size must be a whole number")
 		}
-		value = int(exprValue)
+		size = int(sizeValue)
 	case int32:
-		value = int(exprValue)
+		size = int(sizeValue)
 	case int64:
-		value = int(exprValue)
+		size = int(sizeValue)
 	default:
 		return false, NewErrorMsg(ErrBadValue, "$size needs a number")
 	}
 
 	// TODO check float negative zero
 
-	if value < 0 {
+	if size < 0 {
 		return false, NewErrorMsg(ErrBadValue, "$size may not be negative")
 	}
 
-	if arr.Len() != value {
+	if arr.Len() != size {
 		return false, nil
 	}
 

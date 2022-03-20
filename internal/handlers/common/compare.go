@@ -24,6 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
+// compareResult represents the result of a comparison.
 type compareResult int
 
 const (
@@ -33,8 +34,8 @@ const (
 	notEqual // but not less or greater; for example, two NaNs
 )
 
-// filterCompareScalars returns true if given scalar values are equal as used by filters.
-func filterCompareScalars(a, b any) compareResult {
+// compareScalars compares two scalar values.
+func compareScalars(a, b any) compareResult {
 	if a == nil {
 		panic("a is nil")
 	}
@@ -46,27 +47,27 @@ func filterCompareScalars(a, b any) compareResult {
 	case float64:
 		switch b := b.(type) {
 		case float64:
-			return filterCompareOrdered(a, b)
+			return compareOrdered(a, b)
 		case int32:
-			return filterCompareNumbers(a, int64(b))
+			return compareNumbers(a, int64(b))
 		case int64:
-			return filterCompareNumbers(a, b)
+			return compareNumbers(a, b)
 		default:
 			panic(fmt.Sprintf("unexpected type %T", b))
 		}
 
 	case string:
 		b := b.(string)
-		return filterCompareOrdered(a, b)
+		return compareOrdered(a, b)
 
 	case types.Binary:
 		b := b.(types.Binary)
 		al, bl := len(a.B), len(b.B)
 		if al != bl {
-			return filterCompareOrdered(al, bl)
+			return compareOrdered(al, bl)
 		}
 		if a.Subtype != b.Subtype {
-			return filterCompareOrdered(a.Subtype, b.Subtype)
+			return compareOrdered(a.Subtype, b.Subtype)
 		}
 		switch bytes.Compare(a.B, b.B) {
 		case 0:
@@ -104,7 +105,7 @@ func filterCompareScalars(a, b any) compareResult {
 
 	case time.Time:
 		b := b.(time.Time)
-		return filterCompareOrdered(a.UnixNano(), b.UnixNano())
+		return compareOrdered(a.UnixNano(), b.UnixNano())
 
 	case types.NullType:
 		_ = b.(types.NullType)
@@ -117,27 +118,27 @@ func filterCompareScalars(a, b any) compareResult {
 	case int32:
 		switch b := b.(type) {
 		case float64:
-			return filterCompareInvert(filterCompareNumbers(b, int64(a)))
+			return filterCompareInvert(compareNumbers(b, int64(a)))
 		case int32:
-			return filterCompareOrdered(a, b)
+			return compareOrdered(a, b)
 		case int64:
-			return filterCompareOrdered(int64(a), b)
+			return compareOrdered(int64(a), b)
 		default:
 			panic(fmt.Sprintf("unexpected type %T", b))
 		}
 
 	case types.Timestamp:
 		b := b.(types.Timestamp)
-		return filterCompareOrdered(a, b)
+		return compareOrdered(a, b)
 
 	case int64:
 		switch b := b.(type) {
 		case float64:
-			return filterCompareInvert(filterCompareNumbers(b, a))
+			return filterCompareInvert(compareNumbers(b, a))
 		case int32:
-			return filterCompareOrdered(a, int64(b))
+			return compareOrdered(a, int64(b))
 		case int64:
-			return filterCompareOrdered(a, b)
+			return compareOrdered(a, b)
 		default:
 			panic(fmt.Sprintf("unexpected type %T", b))
 		}
@@ -159,8 +160,8 @@ func filterCompareInvert(res compareResult) compareResult {
 	}
 }
 
-// filterCompareOrdered compares two values of the same type using ==, <, > operators.
-func filterCompareOrdered[T constraints.Ordered](a, b T) compareResult {
+// compareOrdered compares two values of the same type using ==, <, > operators.
+func compareOrdered[T constraints.Ordered](a, b T) compareResult {
 	if a == b {
 		return equal
 	}
@@ -173,9 +174,9 @@ func filterCompareOrdered[T constraints.Ordered](a, b T) compareResult {
 	return notEqual
 }
 
-// filterCompareNumbers compares two numbers.
+// compareNumbers compares two numbers.
 //
 // https://github.com/FerretDB/FerretDB/issues/371
-func filterCompareNumbers(a float64, b int64) compareResult {
-	return filterCompareOrdered(a, float64(b))
+func compareNumbers(a float64, b int64) compareResult {
+	return compareOrdered(a, float64(b))
 }
