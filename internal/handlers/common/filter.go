@@ -105,7 +105,8 @@ func filterDocumentFoo(doc *types.Document, filterKey string, filterValue any) (
 		panic("oops array")
 
 	case types.Regex:
-		panic("oops regex")
+		// {field: /regex/}
+		return filterFieldRegex(docValue, filterValue)
 
 	default:
 		// {field: value}
@@ -118,6 +119,11 @@ func filterDocumentFoo(doc *types.Document, filterKey string, filterValue any) (
 // It handles `{field: {expr}}`.
 func filterFieldExpr(docValue any, expr *types.Document) (bool, error) {
 	for _, exprKey := range expr.Keys() {
+		if exprKey == "$options" {
+			// handled by $regex
+			continue
+		}
+
 		exprValue := must.NotFail(expr.Get(exprKey))
 
 		switch exprKey {
@@ -180,12 +186,66 @@ func filterFieldExpr(docValue any, expr *types.Document) (bool, error) {
 				return res, err
 			}
 
+		case "$regex":
+			// {field: {$regex: value}}
+			optionsAny, _ := expr.Get("$options")
+			res, err := filterFieldExprRegex(docValue, exprValue, optionsAny)
+			if !res || err != nil {
+				return res, err
+			}
+
 		default:
 			panic(fmt.Sprintf("filterFieldExpr: %q", exprKey))
 		}
 	}
 
 	return true, nil
+}
+
+// {field: /regex/}
+func filterFieldRegex(docValue any, regex types.Regex) (bool, error) {
+	docString, ok := docValue.(string)
+	if !ok {
+		return false, nil
+	}
+
+	re, err := regex.Compile()
+	if err != nil {
+		return false, err
+	}
+
+	return re.MatchString(docString), nil
+}
+
+func filterFieldExprRegex(docValue any, exprValue, optionsAny any) (bool, error) {
+	var options string
+	if optionsAny != nil {
+		var ok bool
+		if options, ok = optionsAny.(string); !ok {
+			return false, NewErrorMsg(ErrBadValue, "$options has to be a string")
+		}
+	}
+
+	switch exprValue := exprValue.(type) {
+	case string:
+		regex := types.Regex{
+			Pattern: exprValue,
+			Options: options,
+		}
+		return filterFieldRegex(docValue, regex)
+
+	case types.Regex:
+		if options != "" {
+			if exprValue.Options != "" {
+				return false, NewErrorMsg(ErrRegexOptions, "options set in both $regex and $options")
+			}
+			exprValue.Options = options
+		}
+		return filterFieldRegex(docValue, exprValue)
+
+	default:
+		return false, NewErrorMsg(ErrBadValue, "$regex has to be a string")
+	}
 }
 
 func filterFieldExprSize(docValue any, exprValue any) (bool, error) {
@@ -208,6 +268,8 @@ func filterFieldExprSize(docValue any, exprValue any) (bool, error) {
 	default:
 		return false, NewErrorMsg(ErrBadValue, "$size needs a number")
 	}
+
+	// TODO check float negative zero
 
 	if value < 0 {
 		return false, NewErrorMsg(ErrBadValue, "$size may not be negative")
