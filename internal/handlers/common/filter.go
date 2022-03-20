@@ -145,13 +145,24 @@ func filterFieldExpr(docValue any, expr *types.Document) (bool, error) {
 			}
 
 		case "$gt":
-			panic("$gt")
+			if c := filterCompareScalars(docValue, exprValue); c != greater {
+				return false, nil
+			}
+
 		case "$gte":
-			panic("$gte")
+			if c := filterCompareScalars(docValue, exprValue); c != greater && c != equal {
+				return false, nil
+			}
+
 		case "$lt":
-			panic("$lt")
+			if c := filterCompareScalars(docValue, exprValue); c != less {
+				return false, nil
+			}
+
 		case "$lte":
-			panic("$lte")
+			if c := filterCompareScalars(docValue, exprValue); c != less && c != equal {
+				return false, nil
+			}
 
 		case "$in":
 			// {field: {$in: [value1, value2, ...]}}
