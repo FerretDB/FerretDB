@@ -12,12 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jsonb1
+package common
 
-import "github.com/FerretDB/FerretDB/internal/types"
+import (
+	"github.com/FerretDB/FerretDB/internal/types"
+)
 
-// sortDocuments sorts given documents in place according to the given sorting conditions.
-func sortDocuments(docs []*types.Document, sort *types.Document) error {
-	// TODO
-	return nil
+// LimitDocuments returns a subslice of given documents according to the given limit.
+func LimitDocuments(docs []*types.Document, limit int32) ([]*types.Document, error) {
+	switch {
+	case limit == 0:
+		return docs, nil
+	case limit > 0:
+		return docs[:limit], nil
+	default:
+		// TODO https://github.com/FerretDB/FerretDB/issues/79
+		return nil, NewErrorMsg(ErrNotImplemented, "limitDocuments: negative limit values are not supported")
+	}
 }

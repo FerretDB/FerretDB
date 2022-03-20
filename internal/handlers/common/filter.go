@@ -12,24 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jsonb1
+package common
 
 import (
-	"bytes"
 	"fmt"
+	"math"
 	"strings"
-	"time"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// filterDocument returns true if given document matches given filter condition.
+// FilterDocument returns true if given document satisfies given filter expression.
 //
 // Passed arguments must not be modified.
-func filterDocument(doc, filter *types.Document) (bool, error) {
+func FilterDocument(doc, filter *types.Document) (bool, error) {
 	filterMap := filter.Map()
 	if len(filterMap) == 0 {
 		return true, nil
@@ -60,7 +58,7 @@ func filterDocumentFoo(doc *types.Document, filterKey string, filterValue any) (
 					`If you have a field name that starts with a '$' symbol, consider using $getField or $setField.`,
 				filterKey,
 			)
-			return false, common.NewErrorMsg(common.ErrBadValue, msg)
+			return false, NewErrorMsg(ErrBadValue, msg)
 		}
 
 		switch filterKey {
@@ -68,7 +66,7 @@ func filterDocumentFoo(doc *types.Document, filterKey string, filterValue any) (
 			for i := 0; i < exprs.Len(); i++ {
 				expr := must.NotFail(exprs.Get(i)).(*types.Document)
 
-				matches, err := filterDocument(doc, expr)
+				matches, err := FilterDocument(doc, expr)
 				if err != nil {
 					panic(err)
 				}
@@ -82,7 +80,7 @@ func filterDocumentFoo(doc *types.Document, filterKey string, filterValue any) (
 			for i := 0; i < exprs.Len(); i++ {
 				expr := must.NotFail(exprs.Get(i)).(*types.Document)
 
-				matches, err := filterDocument(doc, expr)
+				matches, err := FilterDocument(doc, expr)
 				if err != nil {
 					panic(err)
 				}
@@ -101,7 +99,7 @@ func filterDocumentFoo(doc *types.Document, filterKey string, filterValue any) (
 	switch filterValue := filterValue.(type) {
 	case *types.Document:
 		// {field: {expr}}
-		return filterFieldExpr(docValue, filterValue), nil
+		return filterFieldExpr(docValue, filterValue)
 
 	case *types.Array:
 		panic("oops array")
@@ -115,8 +113,10 @@ func filterDocumentFoo(doc *types.Document, filterKey string, filterValue any) (
 	}
 }
 
-// {field: {expr}}
-func filterFieldExpr(docValue any, expr *types.Document) bool {
+// filterFieldExpr returns true if given value satisfies given expression.
+//
+// It handles `{field: {expr}}`.
+func filterFieldExpr(docValue any, expr *types.Document) (bool, error) {
 	for _, exprKey := range expr.Keys() {
 		exprValue := must.NotFail(expr.Get(exprKey))
 
@@ -124,22 +124,23 @@ func filterFieldExpr(docValue any, expr *types.Document) bool {
 		case "$not":
 			// {field: {$not: {expr}}}
 			expr := exprValue.(*types.Document)
-			if filterFieldExpr(docValue, expr) {
-				return false
+			res, err := filterFieldExpr(docValue, expr)
+			if !res || err != nil {
+				return res, err
 			}
 
 		case "$eq":
 			// {field: {$eq: value}}
 			// TODO regex
 			if !filterScalarEqual(docValue, exprValue) {
-				return false
+				return false, nil
 			}
 
 		case "$ne":
 			// {field: {$ne: value}}
 			// TODO regex
 			if filterScalarEqual(docValue, exprValue) {
-				return false
+				return false, nil
 			}
 
 		case "$in":
@@ -154,7 +155,7 @@ func filterFieldExpr(docValue any, expr *types.Document) bool {
 				}
 			}
 			if !found {
-				return false
+				return false, nil
 			}
 
 		case "$nin":
@@ -169,52 +170,52 @@ func filterFieldExpr(docValue any, expr *types.Document) bool {
 				}
 			}
 			if found {
-				return false
+				return false, nil
+			}
+
+		case "$size":
+			// {field: {$size: value}}
+			res, err := filterFieldExprSize(docValue, exprValue)
+			if !res || err != nil {
+				return res, err
 			}
 
 		default:
-			panic(exprKey)
+			panic(fmt.Sprintf("filterFieldExpr: %q", exprKey))
 		}
 	}
 
-	return true
+	return true, nil
 }
 
-// filterScalarEqual returns true if given scalar values are equal as used by filters.
-func filterScalarEqual(a, b any) bool {
-	if a == nil {
-		panic("a is nil")
-	}
-	if b == nil {
-		panic("b is nil")
+func filterFieldExprSize(docValue any, exprValue any) (bool, error) {
+	arr, ok := docValue.(*types.Array)
+	if !ok {
+		return false, nil
 	}
 
-	switch a := a.(type) {
+	var value int
+	switch exprValue := exprValue.(type) {
 	case float64:
-		return a == b.(float64)
-	case string:
-		return a == b.(string)
-	case types.Binary:
-		b := b.(types.Binary)
-		return a.Subtype == b.Subtype && bytes.Equal(a.B, b.B)
-	case types.ObjectID:
-		return a == b.(types.ObjectID)
-	case bool:
-		return a == b.(bool)
-	case time.Time:
-		return a.Equal(b.(time.Time))
-	case types.NullType:
-		_ = b.(types.NullType)
-		return true
-	case types.Regex:
-		return a == b.(types.Regex)
+		if exprValue != math.Trunc(exprValue) || math.IsNaN(exprValue) || math.IsInf(exprValue, 0) {
+			return false, NewErrorMsg(ErrBadValue, "$size must be a whole number")
+		}
+		value = int(exprValue)
 	case int32:
-		return a == b.(int32)
-	case types.Timestamp:
-		return a == b.(types.Timestamp)
+		value = int(exprValue)
 	case int64:
-		return a == b.(int64)
+		value = int(exprValue)
 	default:
-		panic(fmt.Sprintf("unhandled type %T", a))
+		return false, NewErrorMsg(ErrBadValue, "$size needs a number")
 	}
+
+	if value < 0 {
+		return false, NewErrorMsg(ErrBadValue, "$size may not be negative")
+	}
+
+	if arr.Len() != value {
+		return false, nil
+	}
+
+	return true, nil
 }

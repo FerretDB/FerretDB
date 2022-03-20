@@ -82,7 +82,7 @@ func (s *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 
 	resDocs := make([]*types.Document, 0, 16)
 	for _, doc := range fetchedDocs {
-		matches, err := filterDocument(doc, filter)
+		matches, err := common.FilterDocument(doc, filter)
 		if err != nil {
 			return nil, err
 		}
@@ -94,11 +94,11 @@ func (s *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		resDocs = append(resDocs, doc)
 	}
 
-	if err = sortDocuments(resDocs, sort); err != nil {
+	if err = common.SortDocuments(resDocs, sort); err != nil {
 		return nil, err
 	}
 
-	if resDocs, err = limitDocuments(resDocs, limit); err != nil {
+	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
 		return nil, err
 	}
 
