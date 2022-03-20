@@ -206,8 +206,8 @@ func filterFieldExpr(docValue any, expr *types.Document) (bool, error) {
 			// {field: {$not: {expr}}}
 			expr := exprValue.(*types.Document)
 			res, err := filterFieldExpr(docValue, expr)
-			if !res || err != nil {
-				return res, err
+			if res || err != nil {
+				return false, err
 			}
 
 		case "$regex":
@@ -215,14 +215,14 @@ func filterFieldExpr(docValue any, expr *types.Document) (bool, error) {
 			optionsAny, _ := expr.Get("$options")
 			res, err := filterFieldExprRegex(docValue, exprValue, optionsAny)
 			if !res || err != nil {
-				return res, err
+				return false, err
 			}
 
 		case "$size":
 			// {field: {$size: value}}
 			res, err := filterFieldExprSize(docValue, exprValue)
 			if !res || err != nil {
-				return res, err
+				return false, err
 			}
 
 		default:
