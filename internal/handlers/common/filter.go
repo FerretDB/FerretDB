@@ -89,6 +89,9 @@ func filterDocumentFoo(doc *types.Document, filterKey string, filterValue any) (
 				}
 			}
 			return false, nil
+
+		case "$nor":
+			panic("$nor")
 		}
 
 		panic(lazyerrors.Errorf("lala1 key %q, value %v", filterKey, filterValue))
@@ -127,14 +130,6 @@ func filterFieldExpr(docValue any, expr *types.Document) (bool, error) {
 		exprValue := must.NotFail(expr.Get(exprKey))
 
 		switch exprKey {
-		case "$not":
-			// {field: {$not: {expr}}}
-			expr := exprValue.(*types.Document)
-			res, err := filterFieldExpr(docValue, expr)
-			if !res || err != nil {
-				return res, err
-			}
-
 		case "$eq":
 			// {field: {$eq: value}}
 			// TODO regex
@@ -148,6 +143,15 @@ func filterFieldExpr(docValue any, expr *types.Document) (bool, error) {
 			if filterScalarEqual(docValue, exprValue) {
 				return false, nil
 			}
+
+		case "$gt":
+			panic("$gt")
+		case "$gte":
+			panic("$gte")
+		case "$lt":
+			panic("$lt")
+		case "$lte":
+			panic("$lte")
 
 		case "$in":
 			// {field: {$in: [value1, value2, ...]}}
@@ -179,9 +183,10 @@ func filterFieldExpr(docValue any, expr *types.Document) (bool, error) {
 				return false, nil
 			}
 
-		case "$size":
-			// {field: {$size: value}}
-			res, err := filterFieldExprSize(docValue, exprValue)
+		case "$not":
+			// {field: {$not: {expr}}}
+			expr := exprValue.(*types.Document)
+			res, err := filterFieldExpr(docValue, expr)
 			if !res || err != nil {
 				return res, err
 			}
@@ -190,6 +195,13 @@ func filterFieldExpr(docValue any, expr *types.Document) (bool, error) {
 			// {field: {$regex: value}}
 			optionsAny, _ := expr.Get("$options")
 			res, err := filterFieldExprRegex(docValue, exprValue, optionsAny)
+			if !res || err != nil {
+				return res, err
+			}
+
+		case "$size":
+			// {field: {$size: value}}
+			res, err := filterFieldExprSize(docValue, exprValue)
 			if !res || err != nil {
 				return res, err
 			}
@@ -248,6 +260,7 @@ func filterFieldExprRegex(docValue any, exprValue, optionsAny any) (bool, error)
 	}
 }
 
+// {field: {$size: value}}
 func filterFieldExprSize(docValue any, exprValue any) (bool, error) {
 	arr, ok := docValue.(*types.Array)
 	if !ok {
