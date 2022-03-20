@@ -151,12 +151,16 @@ func compareScalars(a, b any) compareResult {
 // filterCompareInvert swaps less and greater, keeping equal and notEqual.
 func filterCompareInvert(res compareResult) compareResult {
 	switch res {
+	case equal:
+		return equal
 	case less:
 		return greater
 	case greater:
 		return less
+	case notEqual:
+		return notEqual
 	default:
-		return res
+		panic("unreachable")
 	}
 }
 

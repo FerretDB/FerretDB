@@ -17,6 +17,7 @@ package jsonb1
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/jackc/pgx/v4"
 
@@ -39,13 +40,12 @@ func (s *storage) fetch(ctx context.Context, db, collection string) ([]*types.Do
 	var res []*types.Document
 	for {
 		doc, err := nextRow(rows)
+		if err == io.EOF {
+			break
+		}
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
-		if doc == nil {
-			break
-		}
-
 		res = append(res, doc)
 	}
 
@@ -53,14 +53,12 @@ func (s *storage) fetch(ctx context.Context, db, collection string) ([]*types.Do
 }
 
 // nextRow returns the next document from the given rows.
-//
-// It returns (nil, nil) when iteration stops.
 func nextRow(rows pgx.Rows) (*types.Document, error) {
 	if !rows.Next() {
 		if err := rows.Err(); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
-		return nil, nil
+		return nil, io.EOF
 	}
 
 	var b []byte
