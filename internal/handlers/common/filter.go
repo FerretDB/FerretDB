@@ -110,7 +110,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 
 	docValue, err := doc.Get(filterKey)
 	if err != nil {
-		return false, err
+		return false, nil // no error - the field is just not present
 	}
 
 	switch filterValue := filterValue.(type) {

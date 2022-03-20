@@ -21,6 +21,7 @@ import (
 
 	"github.com/jackc/pgx/v4"
 
+	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -108,11 +109,12 @@ func (s *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		ids := make([]any, len(resDocs))
 		for i, doc := range resDocs {
 			placeholders[i] = p.Next()
-			ids[i] = must.NotFail(doc.Get("_id"))
+			id := must.NotFail(doc.Get("_id"))
+			ids[i] = must.NotFail(fjson.Marshal(id))
 		}
 
 		sql := fmt.Sprintf(
-			"DELETE FROM %s WHERE _jsonb->_id IN (%s)",
+			"DELETE FROM %s WHERE _jsonb->'_id' IN (%s)",
 			pgx.Identifier{db, collection}.Sanitize(), strings.Join(placeholders, ", "),
 		)
 		tag, err := s.pgPool.Exec(ctx, sql, ids...)
