@@ -175,7 +175,7 @@ func filterCompareOrdered[T constraints.Ordered](a, b T) compareResult {
 
 // filterCompareNumbers compares two numbers.
 //
-// FIXME it does not work correctly for large (> 2^53) numbers, for example: https://go.dev/play/p/tYJkQoHGr4I
+// https://github.com/FerretDB/FerretDB/issues/371
 func filterCompareNumbers(a float64, b int64) compareResult {
 	return filterCompareOrdered(a, float64(b))
 }
