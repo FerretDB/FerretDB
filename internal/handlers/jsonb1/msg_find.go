@@ -23,8 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgFindOrCount finds documents in a collection or view and returns a cursor to the selected documents
-// or count the number of documents that matches the query filter.
+// MsgFind finds documents in a collection or view and returns a cursor to the selected documents.
 func (s *storage) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {

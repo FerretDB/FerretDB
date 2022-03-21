@@ -554,7 +554,7 @@ func TestFind(t *testing.T) {
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
 				"filter", must.NotFail(types.NewDocument(
-					"$size", int32(2),
+					"$size", types.MustNewArray(int32(2)),
 				)),
 			)),
 			err: common.NewErrorMsg(

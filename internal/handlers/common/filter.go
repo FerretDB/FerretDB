@@ -49,63 +49,13 @@ func FilterDocument(doc, filter *types.Document) (bool, error) {
 
 // filterDocumentPair handles a single filter element key/value pair {filterKey: filterValue}.
 func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) (bool, error) {
-	// {$operator: [expr1, expr2, ...]}
 	if strings.HasPrefix(filterKey, "$") {
-		exprs, ok := filterValue.(*types.Array)
-		if !ok {
-			msg := fmt.Sprintf(
-				`unknown top level operator: %s. `+
-					`If you have a field name that starts with a '$' symbol, consider using $getField or $setField.`,
-				filterKey,
-			)
-			return false, NewErrorMsg(ErrBadValue, msg)
+		// {$operator: [expr1, expr2, ...]}
+		exprs, err := AssertType[*types.Array](filterValue)
+		if err != nil {
+			return false, err
 		}
-
-		switch filterKey {
-		case "$and":
-			// {$and: [{expr1}, {expr2}, ...]}
-			for i := 0; i < exprs.Len(); i++ {
-				expr := must.NotFail(exprs.Get(i)).(*types.Document)
-				matches, err := FilterDocument(doc, expr)
-				if err != nil {
-					panic(err)
-				}
-				if !matches {
-					return false, nil
-				}
-			}
-			return true, nil
-
-		case "$or":
-			// {$or: [{expr1}, {expr2}, ...]}
-			for i := 0; i < exprs.Len(); i++ {
-				expr := must.NotFail(exprs.Get(i)).(*types.Document)
-				matches, err := FilterDocument(doc, expr)
-				if err != nil {
-					panic(err)
-				}
-				if matches {
-					return true, nil
-				}
-			}
-			return false, nil
-
-		case "$nor":
-			// {$nor: [{expr1}, {expr2}, ...]}
-			for i := 0; i < exprs.Len(); i++ {
-				expr := must.NotFail(exprs.Get(i)).(*types.Document)
-				matches, err := FilterDocument(doc, expr)
-				if err != nil {
-					panic(err)
-				}
-				if matches {
-					return false, nil
-				}
-			}
-			return true, nil
-		}
-
-		panic(fmt.Sprintf("filterDocumentPair: %q %v", filterKey, filterValue))
+		return filterLala(doc, filterKey, exprs)
 	}
 
 	docValue, err := doc.Get(filterKey)
@@ -129,6 +79,61 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 	default:
 		// {field: value}
 		return compareScalars(docValue, filterValue) == equal, nil
+	}
+}
+
+// filterLala handles {$operator: [expr1, expr2, ...]} filter.
+func filterLala(doc *types.Document, operator string, exprs *types.Array) (bool, error) {
+	switch operator {
+	case "$and":
+		// {$and: [{expr1}, {expr2}, ...]}
+		for i := 0; i < exprs.Len(); i++ {
+			expr := must.NotFail(exprs.Get(i)).(*types.Document)
+			matches, err := FilterDocument(doc, expr)
+			if err != nil {
+				panic(err)
+			}
+			if !matches {
+				return false, nil
+			}
+		}
+		return true, nil
+
+	case "$or":
+		// {$or: [{expr1}, {expr2}, ...]}
+		for i := 0; i < exprs.Len(); i++ {
+			expr := must.NotFail(exprs.Get(i)).(*types.Document)
+			matches, err := FilterDocument(doc, expr)
+			if err != nil {
+				panic(err)
+			}
+			if matches {
+				return true, nil
+			}
+		}
+		return false, nil
+
+	case "$nor":
+		// {$nor: [{expr1}, {expr2}, ...]}
+		for i := 0; i < exprs.Len(); i++ {
+			expr := must.NotFail(exprs.Get(i)).(*types.Document)
+			matches, err := FilterDocument(doc, expr)
+			if err != nil {
+				panic(err)
+			}
+			if matches {
+				return false, nil
+			}
+		}
+		return true, nil
+
+	default:
+		msg := fmt.Sprintf(
+			`unknown top level operator: %s. `+
+				`If you have a field name that starts with a '$' symbol, consider using $getField or $setField.`,
+			operator,
+		)
+		return false, NewErrorMsg(ErrBadValue, msg)
 	}
 }
 

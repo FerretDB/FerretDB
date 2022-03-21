@@ -23,8 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgFindOrCount finds documents in a collection or view and returns a cursor to the selected documents
-// or count the number of documents that matches the query filter.
+// MsgCount counts the number of documents that matches the query filter.
 func (s *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
@@ -33,29 +32,15 @@ func (s *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 
 	unimplementedFields := []string{
 		"skip",
-		"returnKey",
-		"showRecordId",
-		"tailable",
-		"oplogReplay",
-		"noCursorTimeout",
-		"awaitData",
-		"allowPartialResults",
 		"collation",
-		"allowDiskUse",
-		"let",
 	}
 	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
 		return nil, err
 	}
 	ignoredFields := []string{
 		"hint",
-		"batchSize",
-		"singleBatch",
-		"comment",
-		"maxTimeMS",
 		"readConcern",
-		"max",
-		"min",
+		"comment",
 	}
 	common.Ignored(document, s.l, ignoredFields...)
 
@@ -69,12 +54,9 @@ func (s *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, err
 	}
 
-	var filter, sort *types.Document
+	var filter *types.Document
 	var limit int32
 	if filter, err = common.GetOptionalParam(document, "query", filter); err != nil {
-		return nil, err
-	}
-	if sort, err = common.GetOptionalParam(document, "sort", sort); err != nil {
 		return nil, err
 	}
 	if limit, err = common.GetOptionalParam(document, "limit", limit); err != nil {
@@ -100,9 +82,6 @@ func (s *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		resDocs = append(resDocs, doc)
 	}
 
-	if err = common.SortDocuments(resDocs, sort); err != nil {
-		return nil, err
-	}
 	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
 		return nil, err
 	}
