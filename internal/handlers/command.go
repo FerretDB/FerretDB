@@ -117,6 +117,10 @@ var commands = map[string]command{
 	},
 
 	// storage-specific commands
+	"count": {
+		help:           "Returns the count of documents that's matched by the query.",
+		storageHandler: (common.Storage).MsgCount,
+	},
 	"createIndexes": {
 		help:           "Creates indexes on a collection.",
 		storageHandler: (common.Storage).MsgCreateIndexes,
@@ -127,11 +131,7 @@ var commands = map[string]command{
 	},
 	"find": {
 		help:           "Returns documents matched by the custom query.",
-		storageHandler: (common.Storage).MsgFindOrCount,
-	},
-	"count": {
-		help:           "Returns the count of documents that's matched by the query.",
-		storageHandler: (common.Storage).MsgFindOrCount,
+		storageHandler: (common.Storage).MsgFind,
 	},
 	"insert": {
 		help:           "Inserts documents into the database.",

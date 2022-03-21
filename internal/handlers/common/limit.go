@@ -14,17 +14,17 @@
 
 package common
 
-import (
-	"context"
+import "github.com/FerretDB/FerretDB/internal/types"
 
-	"github.com/FerretDB/FerretDB/internal/wire"
-)
-
-type Storage interface {
-	MsgCount(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
-	MsgCreateIndexes(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
-	MsgDelete(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
-	MsgFind(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
-	MsgInsert(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
-	MsgUpdate(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
+// LimitDocuments returns a subslice of given documents according to the given limit.
+func LimitDocuments(docs []*types.Document, limit int32) ([]*types.Document, error) {
+	switch {
+	case limit == 0:
+		return docs, nil
+	case limit > 0:
+		return docs[:limit], nil
+	default:
+		// TODO https://github.com/FerretDB/FerretDB/issues/79
+		return nil, NewErrorMsg(ErrNotImplemented, "LimitDocuments: negative limit values are not supported")
+	}
 }

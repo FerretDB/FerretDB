@@ -14,17 +14,10 @@
 
 package common
 
-import (
-	"context"
+import "github.com/FerretDB/FerretDB/internal/types"
 
-	"github.com/FerretDB/FerretDB/internal/wire"
-)
-
-type Storage interface {
-	MsgCount(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
-	MsgCreateIndexes(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
-	MsgDelete(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
-	MsgFind(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
-	MsgInsert(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
-	MsgUpdate(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
+// ProjectDocuments modifies given documents in places according to the given projection.
+func ProjectDocuments(docs []*types.Document, projection *types.Document) error {
+	// TODO
+	return nil
 }

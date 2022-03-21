@@ -46,8 +46,10 @@ func (s *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	m := document.Map()
-	docs, _ := m["documents"].(*types.Array)
+	var docs *types.Array
+	if docs, err = common.GetOptionalParam(document, "documents", docs); err != nil {
+		return nil, err
+	}
 
 	var inserted int32
 	for i := 0; i < docs.Len(); i++ {
