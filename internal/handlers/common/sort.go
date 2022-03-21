@@ -142,9 +142,9 @@ func matchSortResult(sort sortType, result compareResult) bool {
 	case less:
 		switch sort {
 		case ascending:
-			cmp = false
-		case descending:
 			cmp = true
+		case descending:
+			cmp = false
 		}
 	case greater, equal:
 		switch sort {
