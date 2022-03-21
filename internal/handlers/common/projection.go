@@ -20,7 +20,6 @@ import (
 
 // ProjectDocuments modifies given documents in places according to the given projection.
 func ProjectDocuments(docs []*types.Document, projection *types.Document) error {
-	// TODO
 	if projection.Len() == 0 {
 		return nil
 	}
