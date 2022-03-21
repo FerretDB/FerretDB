@@ -814,7 +814,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 			req: types.MustNewDocument(
 				"find", "actor",
 				"projection", types.MustNewDocument(
-					"first_name", int32(1),
+					"first_name", int32(0),
 					"last_name", int32(1),
 				),
 				"filter", types.MustNewDocument(
@@ -826,7 +826,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"cursor", types.MustNewDocument(
 					"firstBatch", types.MustNewArray(
 						types.MustNewDocument(
-							"first_name", "WOODY",
+							"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x1c, 0x00, 0x00, 0x00, 0x1c},
 							"last_name", "HOFFMAN",
 						),
 					),

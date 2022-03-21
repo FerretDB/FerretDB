@@ -14,7 +14,10 @@
 
 package common
 
-import "github.com/FerretDB/FerretDB/internal/types"
+import (
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+)
 
 // ProjectDocuments modifies given documents in places according to the given projection.
 func ProjectDocuments(docs []*types.Document, projection *types.Document) error {
@@ -24,8 +27,31 @@ func ProjectDocuments(docs []*types.Document, projection *types.Document) error 
 	projectionMap := projection.Map()
 	for i := 0; i < len(docs); i++ {
 		for k := range docs[i].Map() {
-			if _, ok := projectionMap[k]; !ok {
+			if k == "_id" {
+				continue
+			}
+
+			v, ok := projectionMap[k]
+			if !ok {
 				docs[i].Remove(k)
+				continue
+			}
+
+			switch v := v.(type) {
+			case bool:
+				if !v {
+					docs[i].Remove(k)
+					continue
+				}
+				continue
+
+			case int32, int64, float32, float64:
+				if compareScalars(v, int32(0)) == equal {
+					docs[i].Remove(k)
+					continue
+				}
+			default:
+				return lazyerrors.Errorf("unsupported operation {%v %v}", k, v)
 			}
 		}
 	}
