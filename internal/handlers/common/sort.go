@@ -28,8 +28,6 @@ type sortType int
 const (
 	ascending sortType = iota
 	descending
-	textScore
-	unknown
 )
 
 // SortDocuments sorts given documents in place according to the given sorting conditions.
@@ -59,12 +57,14 @@ func SortDocuments(docs []*types.Document, sort *types.Document) error {
 			sortType := sortType
 			// TODO: errors
 			aField, _ := a.Get(sortKey)
+
 			bField, _ := b.Get(sortKey)
 
 			switch aField.(type) {
 			case string:
-				aField := aField.(string)
-				bField := bField.(string)
+				aField, _ := AssertType[string](aField)
+				bField, _ := AssertType[string](bField)
+
 				return strings.Compare(aField, bField) == -1
 			default:
 				result := compareScalars(aField, bField)
@@ -130,25 +130,21 @@ func getSortType(value any) (sortType, error) {
 		case -1:
 			return descending, nil
 		default:
-			return unknown, lazyerrors.New("failed to determine sort type")
+			return 0, lazyerrors.New("failed to determine sort type")
 		}
-	case *types.Document:
-		return textScore, nil
 	default:
-		return unknown, lazyerrors.New("failed to determine sort type")
+		return 0, lazyerrors.New("failed to determine sort type")
 	}
 }
 
 func matchSortResult(sort sortType, result compareResult) bool {
-	cmp := true
+	cmp := false
 	switch result {
 	case less:
 		switch sort {
 		case ascending:
 			cmp = true
 		case descending:
-			cmp = false
-		case textScore, unknown: // ???
 			cmp = false
 		}
 	case greater, equal:
@@ -157,8 +153,6 @@ func matchSortResult(sort sortType, result compareResult) bool {
 			cmp = false
 		case descending:
 			cmp = true
-		case textScore, unknown: // ???
-			cmp = false
 		}
 	case notEqual:
 		return false // ???
