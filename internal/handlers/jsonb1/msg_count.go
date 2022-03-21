@@ -45,7 +45,7 @@ func (s *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		"let",
 	}
 	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 	ignoredFields := []string{
 		"hint",
