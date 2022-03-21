@@ -99,6 +99,7 @@ func (s *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 
 		resDocs = append(resDocs, doc)
 	}
+
 	if err = common.SortDocuments(resDocs, sort); err != nil {
 		return nil, err
 	}
