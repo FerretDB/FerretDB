@@ -14,10 +14,30 @@
 
 package common
 
-import "github.com/FerretDB/FerretDB/internal/types"
+import (
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+)
+
+// sortType represents sort type
+type sortType int
+
+const (
+	ascending sortType = iota
+	descending
+	textScore
+)
 
 // SortDocuments sorts given documents in place according to the given sorting conditions.
 func SortDocuments(docs []*types.Document, sort *types.Document) error {
 	// TODO
+
+	if sort.Len() > 32 {
+		return lazyerrors.Errorf("maximum sort keys exceeded: %v", sort.Len())
+	}
+
+	for i := 0; i < len(docs)-1; i++ {
+	}
+
 	return nil
 }
