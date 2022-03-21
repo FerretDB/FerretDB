@@ -810,12 +810,14 @@ func TestReadOnlyHandlers(t *testing.T) {
 			},
 		},
 
-		"FindProjectionActorsFirstAndLastName": {
+		"FindProjectionField": {
 			req: types.MustNewDocument(
 				"find", "actor",
 				"projection", types.MustNewDocument(
 					"first_name", int32(0),
 					"last_name", int32(1),
+					"last_update", true,
+					"actor_id", false,
 				),
 				"filter", types.MustNewDocument(
 					"actor_id", int32(28),
@@ -828,6 +830,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 						types.MustNewDocument(
 							"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x1c, 0x00, 0x00, 0x00, 0x1c},
 							"last_name", "HOFFMAN",
+							"last_update", time.Date(2020, 2, 15, 9, 34, 33, 0, time.UTC).Local(),
 						),
 					),
 					"id", int64(0),
