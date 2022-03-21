@@ -101,12 +101,12 @@ func (ds *docsSorter) Less(i, j int) bool {
 	// Try all but the last comparison.
 	var k int
 	for k = 0; k < len(ds.sorts)-1; k++ {
-		sort := ds.sorts[k]
+		sortFunc := ds.sorts[k]
 		switch {
-		case sort(p, q):
+		case sortFunc(p, q):
 			// p < q, so we have a decision.
 			return true
-		case sort(q, p):
+		case sortFunc(q, p):
 			// p > q, so we have a decision.
 			return false
 		}
@@ -145,6 +145,8 @@ func matchSortResult(sort sortType, result compareResult) bool {
 			cmp = true
 		case descending:
 			cmp = false
+		case textScore, unknown: // ???
+			cmp = false
 		}
 	case greater, equal:
 		switch sort {
@@ -152,7 +154,12 @@ func matchSortResult(sort sortType, result compareResult) bool {
 			cmp = false
 		case descending:
 			cmp = true
+		case textScore, unknown: // ???
+			cmp = false
 		}
+	case notEqual:
+		return false // ???
 	}
+
 	return cmp
 }
