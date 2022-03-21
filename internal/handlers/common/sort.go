@@ -32,7 +32,6 @@ const (
 
 // SortDocuments sorts given documents in place according to the given sorting conditions.
 func SortDocuments(docs []*types.Document, sort *types.Document) error {
-	// TODO
 	if sort.Len() == 0 {
 		return nil
 	}
@@ -55,15 +54,26 @@ func SortDocuments(docs []*types.Document, sort *types.Document) error {
 		sortFuncs[i] = func(a, b *types.Document) bool {
 			sortKey := sortKey
 			sortType := sortType
-			// TODO: errors
-			aField, _ := a.Get(sortKey)
+			aField, err := a.Get(sortKey)
+			if err != nil {
+				return false
+			}
 
-			bField, _ := b.Get(sortKey)
+			bField, err := b.Get(sortKey)
+			if err != nil {
+				return false
+			}
 
 			switch aField.(type) {
 			case string:
-				aField, _ := AssertType[string](aField)
-				bField, _ := AssertType[string](bField)
+				aField, err := AssertType[string](aField)
+				if err != nil {
+					return false
+				}
+				bField, err := AssertType[string](bField)
+				if err != nil {
+					return false
+				}
 
 				return strings.Compare(aField, bField) == -1
 			default:

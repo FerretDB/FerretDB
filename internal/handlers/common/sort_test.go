@@ -73,6 +73,46 @@ func TestSortDocuments(t *testing.T) {
 				types.MustNewDocument("_id", int32(3), "building", int32(15)),
 			},
 		},
+		{
+			name: "CompareStringsAndName",
+			args: args{
+				docs: []*types.Document{
+					types.MustNewDocument("_id", int32(1), "name", "Central Park Cafe", "borough", "Manhattan"),
+					types.MustNewDocument("_id", int32(2), "name", "Rock A Feller Bar and Grill", "borough", "Queens"),
+					types.MustNewDocument("_id", int32(3), "name", "Empire State Pub", "borough", "Brooklyn"),
+					types.MustNewDocument("_id", int32(4), "name", "Stan's Pizzaria", "borough", "Manhattan"),
+					types.MustNewDocument("_id", int32(5), "name", "Jane's Deli", "borough", "Brooklyn"),
+				},
+				sort: types.MustNewDocument("borough", int32(1), "name", int32(1)),
+			},
+			sorted: []*types.Document{
+				types.MustNewDocument("_id", int32(3), "name", "Empire State Pub", "borough", "Brooklyn"),
+				types.MustNewDocument("_id", int32(5), "name", "Jane's Deli", "borough", "Brooklyn"),
+				types.MustNewDocument("_id", int32(1), "name", "Central Park Cafe", "borough", "Manhattan"),
+				types.MustNewDocument("_id", int32(4), "name", "Stan's Pizzaria", "borough", "Manhattan"),
+				types.MustNewDocument("_id", int32(2), "name", "Rock A Feller Bar and Grill", "borough", "Queens"),
+			},
+		},
+		{
+			name: "CompareStringsAndName",
+			args: args{
+				docs: []*types.Document{
+					types.MustNewDocument("_id", int32(1), "name", "Central Park Cafe", "borough", "Manhattan"),
+					types.MustNewDocument("_id", int32(2), "name", "Rock A Feller Bar and Grill", "borough", "Queens"),
+					types.MustNewDocument("_id", int32(3), "name", "Empire State Pub", "borough", "Brooklyn"),
+					types.MustNewDocument("_id", int32(4), "name", "Stan's Pizzaria", "borough", "Manhattan"),
+					types.MustNewDocument("_id", int32(5), "name", "Jane's Deli", "borough", "Brooklyn"),
+				},
+				sort: types.MustNewDocument("borough", int32(1), "_id", int32(1)),
+			},
+			sorted: []*types.Document{
+				types.MustNewDocument("_id", int32(3), "name", "Empire State Pub", "borough", "Brooklyn"),
+				types.MustNewDocument("_id", int32(5), "name", "Jane's Deli", "borough", "Brooklyn"),
+				types.MustNewDocument("_id", int32(1), "name", "Central Park Cafe", "borough", "Manhattan"),
+				types.MustNewDocument("_id", int32(4), "name", "Stan's Pizzaria", "borough", "Manhattan"),
+				types.MustNewDocument("_id", int32(2), "name", "Rock A Feller Bar and Grill", "borough", "Queens"),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
