@@ -20,7 +20,7 @@ import (
 )
 
 // isProjectionInclusion: projection can be only inclusion or exlusion. Validate and return true if inclusion.
-// Exception for the _id field
+// Exception for the _id field.
 func isProjectionInclusion(projection *types.Document) (inclusion bool, err error) {
 	errMsg := "projection must contain only inclusions or exclusions"
 	var exclusion bool
@@ -79,7 +79,6 @@ func ProjectDocuments(docs []*types.Document, projection *types.Document) error 
 	projectionMap := projection.Map()
 	for i := 0; i < len(docs); i++ {
 		for k := range docs[i].Map() {
-
 			v, ok := projectionMap[k]
 			if !ok {
 				if k == "_id" { // if _id is not in projection map, do not do anything with it

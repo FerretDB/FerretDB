@@ -69,7 +69,7 @@ func (s *storage) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	var filter, sort, projection *types.Document
-	var limit int32
+	var limit int64
 	if filter, err = common.GetOptionalParam(document, "filter", filter); err != nil {
 		return nil, err
 	}

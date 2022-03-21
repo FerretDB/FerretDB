@@ -210,7 +210,7 @@ func TestFind(t *testing.T) {
 				"sort", types.MustNewDocument(
 					"actor_id", int32(1),
 				),
-				"limit", int32(1),
+				"limit", int64(1),
 			),
 			resp: types.MustNewArray(
 				types.MustNewDocument(
@@ -240,7 +240,7 @@ func TestFind(t *testing.T) {
 				"sort", types.MustNewDocument(
 					"actor_id", int32(1),
 				),
-				"limit", int32(1),
+				"limit", int64(1),
 			),
 			resp: types.MustNewArray(
 				types.MustNewDocument(
@@ -276,7 +276,7 @@ func TestFind(t *testing.T) {
 				"sort", types.MustNewDocument(
 					"actor_id", int32(1),
 				),
-				"limit", int32(1),
+				"limit", int64(1),
 			),
 			resp: types.MustNewArray(
 				types.MustNewDocument(
@@ -319,7 +319,7 @@ func TestFind(t *testing.T) {
 				"sort", types.MustNewDocument(
 					"actor_id", int32(1),
 				),
-				"limit", int32(1),
+				"limit", int64(1),
 			),
 			resp: types.MustNewArray(
 				types.MustNewDocument(
@@ -343,7 +343,7 @@ func TestFind(t *testing.T) {
 				"sort", types.MustNewDocument(
 					"actor_id", int32(1),
 				),
-				"limit", int32(1),
+				"limit", int64(1),
 			),
 			resp: types.MustNewArray(
 				types.MustNewDocument(
@@ -368,7 +368,7 @@ func TestFind(t *testing.T) {
 				"sort", types.MustNewDocument(
 					"actor_id", int32(1),
 				),
-				"limit", int32(1),
+				"limit", int64(1),
 			),
 			resp: types.MustNewArray(
 				types.MustNewDocument(
@@ -393,7 +393,7 @@ func TestFind(t *testing.T) {
 				"sort", types.MustNewDocument(
 					"actor_id", int32(1),
 				),
-				"limit", int32(1),
+				"limit", int64(1),
 			),
 			resp: types.MustNewArray(
 				types.MustNewDocument(

@@ -69,7 +69,7 @@ func (s *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		var filter *types.Document
-		var limit int32
+		var limit int64
 		if filter, err = common.GetOptionalParam(d, "q", filter); err != nil {
 			return nil, err
 		}
