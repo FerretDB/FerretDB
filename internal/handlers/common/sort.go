@@ -15,6 +15,9 @@
 package common
 
 import (
+	"sort"
+	"strings"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -26,6 +29,7 @@ const (
 	ascending sortType = iota
 	descending
 	textScore
+	unknown
 )
 
 // SortDocuments sorts given documents in place according to the given sorting conditions.
@@ -36,8 +40,119 @@ func SortDocuments(docs []*types.Document, sort *types.Document) error {
 		return lazyerrors.Errorf("maximum sort keys exceeded: %v", sort.Len())
 	}
 
-	for i := 0; i < len(docs)-1; i++ {
+	sortFuncs := make([]sortFunc, len(sort.Keys()))
+	for i, sortKey := range sort.Keys() {
+		sortField, err := sort.Get(sortKey)
+		if err != nil {
+			return err
+		}
+		sortType, err := getSortType(sortField)
+		if err != nil {
+			return err
+		}
+
+		sortFuncs[i] = func(a, b *types.Document) bool {
+			sortKey := sortKey
+			sortType := sortType
+			// TODO: errors
+			aField, _ := a.Get(sortKey)
+			bField, _ := b.Get(sortKey)
+
+			switch aField.(type) {
+			case string:
+				aField := aField.(string)
+				bField := bField.(string)
+				return strings.Compare(aField, bField) == -1
+			default:
+				result := compareScalars(aField, bField)
+				return matchSortResult(sortType, result)
+			}
+		}
 	}
 
+	sorter := &docsSorter{docs: docs, sorts: sortFuncs}
+	sorter.Sort(docs)
+
 	return nil
+}
+
+type sortFunc func(a, b *types.Document) bool
+
+type docsSorter struct {
+	docs  []*types.Document
+	sorts []sortFunc
+}
+
+func (ds *docsSorter) Sort(docs []*types.Document) {
+	ds.docs = docs
+	sort.Sort(ds)
+}
+
+func (ds *docsSorter) Len() int {
+	return len(ds.docs)
+}
+
+func (ds *docsSorter) Swap(i, j int) {
+	ds.docs[i], ds.docs[j] = ds.docs[j], ds.docs[i]
+}
+
+func (ds *docsSorter) Less(i, j int) bool {
+	p, q := ds.docs[i], ds.docs[j]
+	// Try all but the last comparison.
+	var k int
+	for k = 0; k < len(ds.sorts)-1; k++ {
+		sort := ds.sorts[k]
+		switch {
+		case sort(p, q):
+			// p < q, so we have a decision.
+			return true
+		case sort(q, p):
+			// p > q, so we have a decision.
+			return false
+		}
+		// p == q; try the next comparison.
+	}
+	// All comparisons to here said "equal", so just return whatever
+	// the final comparison reports.
+	return ds.sorts[k](p, q)
+}
+
+func getSortType(value any) (sortType, error) {
+	switch value.(type) {
+	case int32:
+		value := value.(int32)
+		switch value {
+		case 1:
+			return ascending, nil
+		case -1:
+			return descending, nil
+		default:
+			return unknown, lazyerrors.New("failed to determine sort type")
+		}
+	case *types.Document:
+		return textScore, nil
+	default:
+		return unknown, lazyerrors.New("failed to determine sort type")
+	}
+}
+
+func matchSortResult(sort sortType, result compareResult) bool {
+	cmp := true
+	switch result {
+	case less:
+		switch sort {
+		case ascending:
+			cmp = false
+		case descending:
+			cmp = true
+		}
+	case greater, equal:
+		switch sort {
+		case ascending:
+			cmp = false
+		case descending:
+			cmp = true
+		}
+	}
+	return cmp
 }

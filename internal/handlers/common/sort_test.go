@@ -34,7 +34,7 @@ func TestSortDocuments(t *testing.T) {
 		sorted  []*types.Document
 	}{
 		{
-			name: "first",
+			name: "CompareStrings",
 			args: args{
 				docs: []*types.Document{
 					types.MustNewDocument("_id", int32(1), "name", "Central Park Cafe", "borough", "Manhattan"),
@@ -45,13 +45,32 @@ func TestSortDocuments(t *testing.T) {
 				},
 				sort: types.MustNewDocument("borough", int32(1)),
 			},
-			wantErr: false,
 			sorted: []*types.Document{
 				types.MustNewDocument("_id", int32(3), "name", "Empire State Pub", "borough", "Brooklyn"),
 				types.MustNewDocument("_id", int32(5), "name", "Jane's Deli", "borough", "Brooklyn"),
 				types.MustNewDocument("_id", int32(1), "name", "Central Park Cafe", "borough", "Manhattan"),
 				types.MustNewDocument("_id", int32(4), "name", "Stan's Pizzaria", "borough", "Manhattan"),
 				types.MustNewDocument("_id", int32(2), "name", "Rock A Feller Bar and Grill", "borough", "Queens"),
+			},
+		},
+		{
+			name: "CompareInt",
+			args: args{
+				docs: []*types.Document{
+					types.MustNewDocument("_id", int32(1), "building", int32(10)),
+					types.MustNewDocument("_id", int32(2), "building", int32(2)),
+					types.MustNewDocument("_id", int32(3), "building", int32(15)),
+					types.MustNewDocument("_id", int32(4), "building", int32(1)),
+					types.MustNewDocument("_id", int32(5), "building", int32(5)),
+				},
+				sort: types.MustNewDocument("building", int32(1)),
+			},
+			sorted: []*types.Document{
+				types.MustNewDocument("_id", int32(4), "building", int32(1)),
+				types.MustNewDocument("_id", int32(2), "building", int32(2)),
+				types.MustNewDocument("_id", int32(5), "building", int32(5)),
+				types.MustNewDocument("_id", int32(1), "building", int32(10)),
+				types.MustNewDocument("_id", int32(3), "building", int32(15)),
 			},
 		},
 	}
