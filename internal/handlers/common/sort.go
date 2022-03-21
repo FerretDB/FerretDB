@@ -35,6 +35,9 @@ const (
 // SortDocuments sorts given documents in place according to the given sorting conditions.
 func SortDocuments(docs []*types.Document, sort *types.Document) error {
 	// TODO
+	if sort.Len() == 0 {
+		return nil
+	}
 
 	if sort.Len() > 32 {
 		return lazyerrors.Errorf("maximum sort keys exceeded: %v", sort.Len())
