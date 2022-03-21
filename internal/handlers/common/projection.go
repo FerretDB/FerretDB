@@ -14,12 +14,16 @@
 
 package common
 
-import "github.com/FerretDB/FerretDB/internal/types"
+import (
+	"github.com/FerretDB/FerretDB/internal/types"
+)
 
 // ProjectDocuments modifies given documents in places according to the given projection.
 func ProjectDocuments(docs []*types.Document, projection *types.Document) error {
 	// TODO
-
+	if projection.Len() == 0 {
+		return nil
+	}
 	projectionMap := projection.Map()
 	for i := 0; i < len(docs); i++ {
 		for k := range docs[i].Map() {

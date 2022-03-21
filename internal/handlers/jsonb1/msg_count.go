@@ -45,7 +45,7 @@ func (s *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		"let",
 	}
 	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 	ignoredFields := []string{
 		"hint",
@@ -100,9 +100,6 @@ func (s *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		resDocs = append(resDocs, doc)
 	}
 
-	if err = common.SortDocuments(resDocs, sort); err != nil {
-		return nil, err
-	}
 	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
 		return nil, err
 	}
