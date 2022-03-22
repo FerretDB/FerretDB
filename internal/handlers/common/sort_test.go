@@ -94,7 +94,7 @@ func TestSortDocuments(t *testing.T) {
 			},
 		},
 		{
-			name: "CompareStringsAndName",
+			name: "CompareStringsAndID",
 			args: args{
 				docs: []*types.Document{
 					types.MustNewDocument("_id", int32(1), "name", "Central Park Cafe", "borough", "Manhattan"),

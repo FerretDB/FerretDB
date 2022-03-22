@@ -51,9 +51,10 @@ func SortDocuments(docs []*types.Document, sort *types.Document) error {
 			return err
 		}
 
+		sortKey := sortKey
 		sortFuncs[i] = func(a, b *types.Document) bool {
-			sortKey := sortKey
 			sortType := sortType
+
 			aField, err := a.Get(sortKey)
 			if err != nil {
 				return false
@@ -157,14 +158,14 @@ func matchSortResult(sort sortType, result compareResult) bool {
 		case descending:
 			cmp = false
 		}
-	case greater, equal:
+	case greater:
 		switch sort {
 		case ascending:
 			cmp = false
 		case descending:
 			cmp = true
 		}
-	case notEqual:
+	case notEqual, equal:
 		return false // ???
 	}
 
