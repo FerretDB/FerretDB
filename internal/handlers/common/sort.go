@@ -134,7 +134,7 @@ func (ds *docsSorter) Less(i, j int) bool {
 // getSortType determines sortType from input sort value.
 func getSortType(value any) (sortType, error) {
 	switch value.(type) {
-	case int32:
+	case int32, int64:
 		value := value.(int32)
 		switch value {
 		case 1:
