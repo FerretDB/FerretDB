@@ -23,6 +23,8 @@ import (
 )
 
 func TestSortDocuments(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		docs []*types.Document
 		sort *types.Document
@@ -115,7 +117,11 @@ func TestSortDocuments(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			if err := SortDocuments(tt.args.docs, tt.args.sort); (err != nil) != tt.wantErr {
 				t.Errorf("SortDocuments() error = %v, wantErr %v", err, tt.wantErr)
 			}
