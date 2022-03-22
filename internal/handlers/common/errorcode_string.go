@@ -14,8 +14,8 @@ func _() {
 	_ = x[ErrNamespaceExists-48]
 	_ = x[ErrCommandNotFound-59]
 	_ = x[ErrNotImplemented-238]
-	_ = x[ErrProjectionInEx-31253]
-	_ = x[ErrProjectionExIn-31254]
+	_ = x[ErrProjectionExIn-31253]
+	_ = x[ErrProjectionInEx-31254]
 	_ = x[ErrRegexOptions-51075]
 }
 

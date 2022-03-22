@@ -33,16 +33,16 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 		case bool:
 			if v {
 				if exclusion {
-					err = NewError(ErrProjectionExIn,
-						fmt.Errorf("Cannot do exclusion on field %s in inclusion projection", k),
+					err = NewError(ErrProjectionInEx,
+						fmt.Errorf("Cannot do inclusion on field %s in exclusion projection", k),
 					)
 					return
 				}
 				inclusion = true
 			} else {
 				if inclusion {
-					err = NewError(ErrProjectionInEx,
-						fmt.Errorf("Cannot do inclusion on field %s in exclusion projection", k),
+					err = NewError(ErrProjectionExIn,
+						fmt.Errorf("Cannot do exclusion on field %s in inclusion projection", k),
 					)
 					return
 				}
@@ -51,16 +51,16 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 		case int32, int64, float64:
 			if compareScalars(v, int32(0)) == equal {
 				if inclusion {
-					err = NewError(ErrProjectionInEx,
-						fmt.Errorf("Cannot do inclusion on field %s in exclusion projection", k),
+					err = NewError(ErrProjectionExIn,
+						fmt.Errorf("Cannot do exclusion on field %s in inclusion projection", k),
 					)
 					return
 				}
 				exclusion = true
 			} else {
 				if exclusion {
-					err = NewError(ErrProjectionExIn,
-						fmt.Errorf("Cannot do exclusion on field %s in inclusion projection", k),
+					err = NewError(ErrProjectionInEx,
+						fmt.Errorf("Cannot do inclusion on field %s in exclusion projection", k),
 					)
 					return
 				}
