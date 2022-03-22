@@ -52,9 +52,3 @@ Package `tools` uses "tools.go" approach to fix tools versions. They are install
 * `handlers` handle protocol commands.
   They use `fjson` package for storing data in PostgreSQL in jsonb columns, but they don't use `bson` package – all data is represented as built-in and `types` types.
 
-
-## Agreements
-
-* in where and projection, let functions be functions, not methods
-* use placeholders, must not use sanitizers / bare values
-* formatting a message should be caller's responsibility (see NewError func comment)
