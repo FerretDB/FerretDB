@@ -15,6 +15,8 @@
 package common
 
 import (
+	"fmt"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -32,13 +34,13 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 		case bool:
 			if v {
 				if exclusion {
-					err = NewErrorMsg(ErrBadValue, errMsg)
+					err = fmt.Errorf(errMsg)
 					return
 				}
 				inclusion = true
 			} else {
 				if inclusion {
-					err = NewErrorMsg(ErrBadValue, errMsg)
+					err = fmt.Errorf(errMsg)
 					return
 				}
 				exclusion = true
@@ -46,19 +48,19 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 		case int32, int64, float64:
 			if compareScalars(v, int32(0)) == equal {
 				if inclusion {
-					err = NewErrorMsg(ErrBadValue, errMsg)
+					err = fmt.Errorf(errMsg)
 					return
 				}
 				exclusion = true
 			} else {
 				if exclusion {
-					err = NewErrorMsg(ErrBadValue, errMsg)
+					err = fmt.Errorf(errMsg)
 					return
 				}
 				inclusion = true
 			}
 		default:
-			err = NewErrorMsgf(ErrBadValue, "unsupported operation %s %v (%T)", []any{k, v, v})
+			err = fmt.Errorf("unsupported operation %s %v (%T)", k, v, v)
 			return
 		}
 	}
@@ -73,7 +75,7 @@ func ProjectDocuments(docs []*types.Document, projection *types.Document) error 
 
 	inclusion, err := isProjectionInclusion(projection)
 	if err != nil {
-		return err
+		return NewError(ErrBadValue, err)
 	}
 
 	projectionMap := projection.Map()

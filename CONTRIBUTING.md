@@ -51,3 +51,21 @@ Package `tools` uses "tools.go" approach to fix tools versions. They are install
   Responses are then converted to `wire`/`bson` messages and sent back to the client.
 * `handlers` handle protocol commands.
   They use `fjson` package for storing data in PostgreSQL in jsonb columns, but they don't use `bson` package – all data is represented as built-in and `types` types.
+
+
+## Useful links
+
+* https://www.postgresql.org/docs/current/functions-json.html
+* https://www.postgresql.org/docs/current/datatype-json.html
+* https://doxygen.postgresql.org/jsonb_8c_source.html
+* https://www.postgresql.org/docs/current/indexes-expressional.html
+* https://www.postgresql.org/docs/current/pageinspect.html
+* escaping https://github.com/lib/pq/issues/782
+* jsonb https://www.postgresql.eu/events/pgconfeu2019/sessions/session/2555/slides/221/jsonpath-pgconfeu-2019.pdf
+* jsnpath guide https://github.com/obartunov/sqljsondoc/blob/master/jsonpath.md
+
+## Agreements
+
+* in where and projection, let functions be functions, not methods
+* use placeholders, must not use sanitizers / bare values
+* formatting a message should be caller's responsibility
