@@ -14,6 +14,8 @@ func _() {
 	_ = x[ErrNamespaceExists-48]
 	_ = x[ErrCommandNotFound-59]
 	_ = x[ErrNotImplemented-238]
+	_ = x[ErrProjectionInEx-31253]
+	_ = x[ErrProjectionExIn-31254]
 	_ = x[ErrRegexOptions-51075]
 }
 
@@ -23,11 +25,13 @@ const (
 	_ErrorCode_name_2 = "NamespaceExists"
 	_ErrorCode_name_3 = "CommandNotFound"
 	_ErrorCode_name_4 = "NotImplemented"
-	_ErrorCode_name_5 = "Location51075"
+	_ErrorCode_name_5 = "Location31253Location31254"
+	_ErrorCode_name_6 = "Location51075"
 )
 
 var (
 	_ErrorCode_index_0 = [...]uint8{0, 13, 21}
+	_ErrorCode_index_5 = [...]uint8{0, 13, 26}
 )
 
 func (i ErrorCode) String() string {
@@ -43,8 +47,11 @@ func (i ErrorCode) String() string {
 		return _ErrorCode_name_3
 	case i == 238:
 		return _ErrorCode_name_4
+	case 31253 <= i && i <= 31254:
+		i -= 31253
+		return _ErrorCode_name_5[_ErrorCode_index_5[i]:_ErrorCode_index_5[i+1]]
 	case i == 51075:
-		return _ErrorCode_name_5
+		return _ErrorCode_name_6
 	default:
 		return "ErrorCode(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
