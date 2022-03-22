@@ -51,7 +51,6 @@ func SortDocuments(docs []*types.Document, sort *types.Document) error {
 			return err
 		}
 
-		sortKey := sortKey
 		sortFuncs[i] = lessFunc(sortKey, sortType)
 	}
 
