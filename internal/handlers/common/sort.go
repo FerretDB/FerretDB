@@ -21,6 +21,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // sortType represents sort type for $sort aggregation.
@@ -43,52 +44,50 @@ func SortDocuments(docs []*types.Document, sort *types.Document) error {
 
 	sortFuncs := make([]sortFunc, len(sort.Keys()))
 	for i, sortKey := range sort.Keys() {
-		sortField, err := sort.Get(sortKey)
-		if err != nil {
-			return err
-		}
+		sortField := must.NotFail(sort.Get(sortKey))
+
 		sortType, err := getSortType(sortField)
 		if err != nil {
 			return err
 		}
 
 		sortKey := sortKey
-		sortFuncs[i] = func(a, b *types.Document) bool {
-			sortType := sortType
-
-			aField, err := a.Get(sortKey)
-			if err != nil {
-				return false
-			}
-
-			bField, err := b.Get(sortKey)
-			if err != nil {
-				return false
-			}
-
-			switch aField.(type) {
-			case string:
-				aField, err := AssertType[string](aField)
-				if err != nil {
-					return false
-				}
-				bField, err := AssertType[string](bField)
-				if err != nil {
-					return false
-				}
-
-				return strings.Compare(aField, bField) == -1
-			default:
-				result := compareScalars(aField, bField)
-				return matchSortResult(sortType, result)
-			}
-		}
+		sortFuncs[i] = lessFunc(sortKey, sortType)
 	}
 
 	sorter := &docsSorter{docs: docs, sorts: sortFuncs}
 	sorter.Sort(docs)
 
 	return nil
+}
+
+// lessFunc takes sort key and type and returns compare function which
+// compares selected key of 2 documents
+func lessFunc(sortKey string, sortType sortType) func(a, b *types.Document) bool {
+	return func(a, b *types.Document) bool {
+		aField, err := a.Get(sortKey)
+		if err != nil {
+			return false
+		}
+
+		bField, err := b.Get(sortKey)
+		if err != nil {
+			return false
+		}
+
+		switch aField := aField.(type) {
+		case string:
+			bField, err := AssertType[string](bField)
+			if err != nil {
+				return false
+			}
+
+			return strings.Compare(aField, bField) == -1
+		default:
+			result := compareScalars(aField, bField)
+			return matchSortResult(sortType, result)
+		}
+	}
 }
 
 type sortFunc func(a, b *types.Document) bool
@@ -143,7 +142,7 @@ func getSortType(value any) (sortType, error) {
 		sortValue = int(value)
 	case float64:
 		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) {
-			return 0, NewErrorMsg(ErrBadValue, "$size must be a whole number")
+			return 0, NewErrorMsg(ErrBadValue, "$sort must be a whole number")
 		}
 		sortValue = int(value)
 	default:

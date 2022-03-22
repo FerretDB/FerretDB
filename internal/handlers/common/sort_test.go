@@ -29,10 +29,10 @@ func TestSortDocuments(t *testing.T) {
 		docs []*types.Document
 		sort *types.Document
 	}
-	tests := []struct {
+	testCases := []struct {
 		name    string
 		args    args
-		wantErr bool
+		wantErr error
 		sorted  []*types.Document
 	}{
 		{
@@ -116,16 +116,19 @@ func TestSortDocuments(t *testing.T) {
 			},
 		},
 	}
-	for _, tt := range tests {
-		tt := tt
+	for _, tc := range testCases {
+		tc := tc
 
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			if err := SortDocuments(tt.args.docs, tt.args.sort); (err != nil) != tt.wantErr {
-				t.Errorf("SortDocuments() error = %v, wantErr %v", err, tt.wantErr)
+			err := SortDocuments(tc.args.docs, tc.args.sort)
+			if tc.wantErr != nil {
+				assert.Equal(t, tc.wantErr, err)
+				return
 			}
-			assert.Equal(t, tt.sorted, tt.args.docs)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.sorted, tc.args.docs)
 		})
 	}
 }
