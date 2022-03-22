@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Using messages where templates are expected is one of the common sources of security problems.
+// So there are no "constructors" that accept template parameters to avoid pitfalls associated with them.
 package common
 
 import (
