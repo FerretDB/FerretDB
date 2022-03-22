@@ -55,10 +55,10 @@ func (s *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	}
 
 	var filter *types.Document
-	var limit int64
 	if filter, err = common.GetOptionalParam(document, "query", filter); err != nil {
 		return nil, err
 	}
+	var limit int64
 	if limit, err = common.GetOptionalParam(document, "limit", limit); err != nil {
 		return nil, err
 	}
