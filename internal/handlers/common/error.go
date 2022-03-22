@@ -67,6 +67,10 @@ func NewErrorMsg(code ErrorCode, msg string) error {
 	return NewError(code, errors.New(msg))
 }
 
+func NewErrorMsgf(code ErrorCode, msg string, args []any) error {
+	return NewError(code, errors.New(fmt.Sprintf(msg, args...)))
+}
+
 // Error implements error interface.
 func (e *Error) Error() string {
 	return fmt.Sprintf("%[1]s (%[1]d): %[2]v", e.code, e.err)
