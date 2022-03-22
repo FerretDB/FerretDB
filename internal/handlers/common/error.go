@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Using messages where templates are expected is one of the common sources of security problems.
+// So there are no "constructors" that accept template parameters to avoid pitfalls associated with them.
 package common
 
 import (
@@ -47,8 +49,6 @@ type Error struct {
 // NewError creates a new wire protocol error.
 //
 // Code can't be zero, err can't be nil.
-// Using messages where templates are expected is one of the common sources of security problems.
-// So there are no "constructors" that accept template parameters to avoid pitfalls associated with them.
 func NewError(code ErrorCode, err error) error {
 	if code == 0 {
 		panic("code is 0")
