@@ -24,6 +24,60 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+func TestKeyPaths(t *testing.T) {
+	doc := must.NotFail(NewDocument(
+		"find", "testcore-queryoperators",
+		"filter", must.NotFail(NewDocument("name", "array-embedded")),
+		"projection", must.NotFail(NewDocument("value",
+			must.NotFail(NewDocument("$elemMatch", must.NotFail(NewDocument("score", int32(24))))),
+		)),
+		"$db", "testcore",
+	))
+
+	actual, err := doc.GetKeyPaths("$elemMatch")
+	assert.NoError(t, err)
+	expected := [][]string{
+		{"projection", "value", "$elemMatch"},
+	}
+	assert.Equal(t, expected, actual)
+	actualDoc, err := doc.GetByPath(actual[0][0 : len(actual[0])-1]...)
+	assert.NoError(t, err)
+	expectedDoc := must.NotFail(NewDocument(
+		"$elemMatch", must.NotFail(NewDocument("score", int32(24))),
+	))
+	assert.Equal(t, expectedDoc, actualDoc)
+
+}
+
+// TestProjection tests projection operator applied after data fetch
+func TestProjection(t *testing.T) {
+	testDoc := must.NotFail(NewDocument(
+		"_id", ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x05, 0x00, 0x00, 0x04, 0x05},
+		"code", must.NotFail(NewArray(
+			must.NotFail(NewDocument("age", int32(999), "document", "abc", "score", int32(42))),
+			must.NotFail(NewDocument("age", int32(1000), "document", "def", "score", float64(42.13))),
+			must.NotFail(NewDocument("age", int32(1001), "document", "jkl", "score", int64(24))),
+		)),
+		"value", must.NotFail(NewArray(
+			must.NotFail(NewDocument("age", int32(999), "document", "abc", "score", int32(42))),
+			must.NotFail(NewDocument("age", int32(1000), "document", "def", "score", float64(42.13))),
+			must.NotFail(NewDocument("age", int32(1001), "document", "jkl", "score", int64(24))),
+		)),
+	))
+	expected := must.NotFail(NewDocument(
+		"_id", ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x05, 0x00, 0x00, 0x04, 0x05},
+		"value", must.NotFail(NewArray(
+			must.NotFail(NewDocument("age", int32(1001), "document", "jkl", "score", int64(24))),
+		)),
+	))
+	projection := must.NotFail(NewDocument("value",
+		must.NotFail(NewDocument("$elemMatch", must.NotFail(NewDocument("score", int32(24))))),
+	))
+
+	testDoc.ApplyProjection(projection)
+	assert.Equal(t, expected, testDoc)
+}
+
 func TestGetByPath(t *testing.T) {
 	t.Parallel()
 
