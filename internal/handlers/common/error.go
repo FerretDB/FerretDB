@@ -37,8 +37,8 @@ const (
 	ErrNamespaceExists                = ErrorCode(48)    // NamespaceExists
 	ErrCommandNotFound                = ErrorCode(59)    // CommandNotFound
 	ErrNotImplemented                 = ErrorCode(238)   // NotImplemented
-	ErrProjectionInclusionInExclusion = ErrorCode(31253) // Cannot do inclusion on field array in exclusion projection
-	ErrProjectionExclusionInInclusion = ErrorCode(31253) // Cannot do exclusion on field array in inclusion projection
+	ErrProjectionInclusionInExclusion = ErrorCode(31253) // Cannot do inclusion on field in exclusion projection
+	ErrProjectionExclusionInInclusion = ErrorCode(31254) // Cannot do exclusion on field in inclusion projection
 	ErrRegexOptions                   = ErrorCode(51075) // Location51075
 )
 
