@@ -51,4 +51,3 @@ Package `tools` uses "tools.go" approach to fix tools versions. They are install
   Responses are then converted to `wire`/`bson` messages and sent back to the client.
 * `handlers` handle protocol commands.
   They use `fjson` package for storing data in PostgreSQL in jsonb columns, but they don't use `bson` package – all data is represented as built-in and `types` types.
-
