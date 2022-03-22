@@ -53,12 +53,6 @@ Package `tools` uses "tools.go" approach to fix tools versions. They are install
   They use `fjson` package for storing data in PostgreSQL in jsonb columns, but they don't use `bson` package – all data is represented as built-in and `types` types.
 
 
-## Useful links
-
-* escaping https://github.com/lib/pq/issues/782
-* jsonb https://www.postgresql.eu/events/pgconfeu2019/sessions/session/2555/slides/221/jsonpath-pgconfeu-2019.pdf
-* jsnpath guide https://github.com/obartunov/sqljsondoc/blob/master/jsonpath.md
-
 ## Agreements
 
 * in where and projection, let functions be functions, not methods
