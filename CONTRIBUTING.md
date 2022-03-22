@@ -63,4 +63,4 @@ Package `tools` uses "tools.go" approach to fix tools versions. They are install
 
 * in where and projection, let functions be functions, not methods
 * use placeholders, must not use sanitizers / bare values
-* formatting a message should be caller's responsibility
+* formatting a message should be caller's responsibility (see NewError func comment)
