@@ -16,6 +16,7 @@ package common
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 )
@@ -64,4 +65,25 @@ func AssertType[T types.Type](value any) (T, error) {
 	}
 
 	return res, nil
+}
+
+// AssertInt64Value asserts value's type returning protocol error for bad float values and unexpected results.
+// valueType parameter used to generate error message.
+func AssertInt64Value(valueType string, value any) (int64, error) {
+	var sortValue int64
+
+	switch value := value.(type) {
+	case int32:
+		sortValue = int64(value)
+	case int64:
+		sortValue = int64(value)
+	case float64:
+		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) {
+			return 0, NewErrorMsg(ErrBadValue, fmt.Sprintf("%s must be a whole number", valueType))
+		}
+		sortValue = int64(value)
+	default:
+		return 0, NewErrorMsg(ErrBadValue, fmt.Sprintf("failed to determine %s type", valueType))
+	}
+	return sortValue, nil
 }

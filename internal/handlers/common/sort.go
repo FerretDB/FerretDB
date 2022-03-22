@@ -15,7 +15,6 @@
 package common
 
 import (
-	"math"
 	"sort"
 	"strings"
 
@@ -132,20 +131,9 @@ func (ds *docsSorter) Less(i, j int) bool {
 
 // getSortType determines sortType from input sort value.
 func getSortType(value any) (sortType, error) {
-	var sortValue int
-
-	switch value := value.(type) {
-	case int32:
-		sortValue = int(value)
-	case int64:
-		sortValue = int(value)
-	case float64:
-		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) {
-			return 0, NewErrorMsg(ErrBadValue, "$sort must be a whole number")
-		}
-		sortValue = int(value)
-	default:
-		return 0, lazyerrors.New("failed to determine sort type")
+	sortValue, err := AssertInt64Value("$sort", value)
+	if err != nil {
+		return 0, err
 	}
 
 	switch sortValue {
