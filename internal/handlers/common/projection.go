@@ -20,7 +20,7 @@ import (
 )
 
 // isProjectionInclusion: projection can be only inclusion or exlusion. Validate and return true if inclusion.
-// Exception for the _id field
+// Exception for the _id field.
 func isProjectionInclusion(projection *types.Document) (inclusion bool, err error) {
 	errMsg := "projection must contain only inclusions or exclusions"
 	var exclusion bool

@@ -158,7 +158,6 @@ func getSortType(value any) (sortType, error) {
 	default:
 		return 0, lazyerrors.New("failed to determine sort type")
 	}
-
 }
 
 // matchSortResult matching sort type and compare result.
