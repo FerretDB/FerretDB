@@ -15,7 +15,6 @@
 package common
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -25,7 +24,6 @@ import (
 // isProjectionInclusion: projection can be only inclusion or exlusion. Validate and return true if inclusion.
 // Exception for the _id field.
 func isProjectionInclusion(projection *types.Document) (inclusion bool, err error) {
-	errMsg := "projection must contain only inclusions or exclusions"
 	var exclusion bool
 	for k, v := range projection.Map() {
 		if k == "_id" { // _id is a special case and can be both
@@ -35,13 +33,15 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 		case bool:
 			if v {
 				if exclusion {
-					err = errors.New(errMsg)
+					err = NewError(ErrProjectionExclusionInInclusion,
+						fmt.Errorf("Cannot do exclusion on field array in inclusion projection"))
 					return
 				}
 				inclusion = true
 			} else {
 				if inclusion {
-					err = errors.New(errMsg)
+					err = NewError(ErrProjectionInclusionInExclusion,
+						fmt.Errorf("Cannot do inclusion on field array in exclusion projection"))
 					return
 				}
 				exclusion = true
@@ -49,13 +49,15 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 		case int32, int64, float64:
 			if compareScalars(v, int32(0)) == equal {
 				if inclusion {
-					err = errors.New(errMsg)
+					err = NewError(ErrProjectionInclusionInExclusion,
+						fmt.Errorf("Cannot do inclusion on field array in exclusion projection"))
 					return
 				}
 				exclusion = true
 			} else {
 				if exclusion {
-					err = errors.New(errMsg)
+					err = NewError(ErrProjectionExclusionInInclusion,
+						fmt.Errorf("Cannot do exclusion on field array in inclusion projection"))
 					return
 				}
 				inclusion = true
@@ -76,7 +78,7 @@ func ProjectDocuments(docs []*types.Document, projection *types.Document) error 
 
 	inclusion, err := isProjectionInclusion(projection)
 	if err != nil {
-		return NewError(ErrBadValue, err)
+		return err
 	}
 
 	projectionMap := projection.Map()
