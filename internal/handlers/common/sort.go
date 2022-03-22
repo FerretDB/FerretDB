@@ -22,7 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// sortType represents sort type
+// sortType represents sort type for $sort aggregation.
 type sortType int
 
 const (
