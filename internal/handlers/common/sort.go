@@ -131,6 +131,7 @@ func (ds *docsSorter) Less(i, j int) bool {
 	return ds.sorts[k](p, q)
 }
 
+// getSortType determines sortType from input sort value.
 func getSortType(value any) (sortType, error) {
 	switch value.(type) {
 	case int32:
@@ -148,6 +149,7 @@ func getSortType(value any) (sortType, error) {
 	}
 }
 
+// matchSortResult matching sort type and compare result.
 func matchSortResult(sort sortType, result compareResult) bool {
 	cmp := false
 	switch result {
