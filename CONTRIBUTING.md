@@ -55,11 +55,6 @@ Package `tools` uses "tools.go" approach to fix tools versions. They are install
 
 ## Useful links
 
-* https://www.postgresql.org/docs/current/functions-json.html
-* https://www.postgresql.org/docs/current/datatype-json.html
-* https://doxygen.postgresql.org/jsonb_8c_source.html
-* https://www.postgresql.org/docs/current/indexes-expressional.html
-* https://www.postgresql.org/docs/current/pageinspect.html
 * escaping https://github.com/lib/pq/issues/782
 * jsonb https://www.postgresql.eu/events/pgconfeu2019/sessions/session/2555/slides/221/jsonpath-pgconfeu-2019.pdf
 * jsnpath guide https://github.com/obartunov/sqljsondoc/blob/master/jsonpath.md
