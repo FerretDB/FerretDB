@@ -302,7 +302,13 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 
 	size, err := GetNumberParam("$size", sizeValue)
 	if err != nil {
-		return false, NewErrorMsg(ErrBadValue, fmt.Sprintf("%v: %v: %#v", err, fieldValue, sizeValue))
+		if err == ErrNotWholeNumber {
+			return false, NewErrorMsg(ErrBadValue, "$size must be a whole number")
+		}
+		if err == ErrNotMatchedType {
+			return false, NewErrorMsg(ErrBadValue, "$size needs a number")
+		}
+		return false, err
 	}
 
 	if size < 0 {

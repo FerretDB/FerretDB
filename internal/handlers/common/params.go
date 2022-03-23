@@ -15,7 +15,6 @@
 package common
 
 import (
-	"errors"
 	"fmt"
 	"math"
 
@@ -68,6 +67,11 @@ func AssertType[T types.Type](value any) (T, error) {
 	return res, nil
 }
 
+var (
+	ErrNotWholeNumber = fmt.Errorf("not a whole number")
+	ErrNotMatchedType = fmt.Errorf("not matched required type")
+)
+
 // GetNumberParam matches value's type returning error for bad float values and unmatched types.
 // Parameter parameterName used to generate error message.
 func GetNumberParam(parameterName string, value any) (int64, error) {
@@ -81,11 +85,11 @@ func GetNumberParam(parameterName string, value any) (int64, error) {
 	case float64:
 		// TODO check float negative zero
 		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) {
-			return 0, errors.New(fmt.Sprintf("%s must be a whole number", parameterName))
+			return 0, ErrNotWholeNumber
 		}
 		numberValue = int64(value)
 	default:
-		return 0, errors.New(fmt.Sprintf("Illegal key in %s specification", parameterName))
+		return 0, ErrNotMatchedType
 	}
 	return numberValue, nil
 }

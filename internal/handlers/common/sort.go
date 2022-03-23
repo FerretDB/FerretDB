@@ -143,6 +143,12 @@ func (ds *docsSorter) Less(i, j int) bool {
 func getSortType(value any) (sortType, error) {
 	sortValue, err := GetNumberParam("$sort", value)
 	if err != nil {
+		if err == ErrNotWholeNumber {
+			return 0, NewErrorMsg(ErrBadValue, "$sort must be a whole number")
+		}
+		if err == ErrNotMatchedType {
+			return 0, NewErrorMsg(ErrBadValue, `Illegal key in $sort specification`)
+		}
 		return 0, err
 	}
 
@@ -152,6 +158,6 @@ func getSortType(value any) (sortType, error) {
 	case -1:
 		return descending, nil
 	default:
-		return 0, lazyerrors.New(`Illegal key in $sort specification`)
+		return 0, NewErrorMsg(ErrBadValue, `Illegal key in $sort specification`)
 	}
 }
