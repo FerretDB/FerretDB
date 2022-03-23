@@ -15,6 +15,10 @@
 package jsonb1
 
 import (
+	"context"
+	"fmt"
+	"io"
+
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
@@ -22,13 +26,39 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// fetch fetches all documents from the given database and collection.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/372
+func (s *storage) fetch(ctx context.Context, db, collection string) ([]*types.Document, error) {
+	sql := fmt.Sprintf(`SELECT _jsonb FROM %s`, pgx.Identifier{db, collection}.Sanitize())
+	rows, err := s.pgPool.Query(ctx, sql)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	defer rows.Close()
+
+	var res []*types.Document
+	for {
+		doc, err := nextRow(rows)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		res = append(res, doc)
+	}
+
+	return res, nil
+}
+
+// nextRow returns the next document from the given rows.
 func nextRow(rows pgx.Rows) (*types.Document, error) {
 	if !rows.Next() {
-		err := rows.Err()
-		if err != nil {
-			err = lazyerrors.Error(err)
+		if err := rows.Err(); err != nil {
+			return nil, lazyerrors.Error(err)
 		}
-		return nil, err
+		return nil, io.EOF
 	}
 
 	var b []byte
@@ -41,6 +71,5 @@ func nextRow(rows pgx.Rows) (*types.Document, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	d := doc.(*types.Document)
-	return d, nil
+	return doc.(*types.Document), nil
 }

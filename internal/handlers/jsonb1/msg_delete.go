@@ -17,13 +17,16 @@ package jsonb1
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v4"
 
+	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -49,40 +52,72 @@ func (s *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	m := document.Map()
-	docs, _ := m["deletes"].(*types.Array)
+	var deletes *types.Array
+	if deletes, err = common.GetOptionalParam(document, "deletes", deletes); err != nil {
+		return nil, err
+	}
 
 	var deleted int32
-	for i := 0; i < docs.Len(); i++ {
-		doc, err := docs.Get(i)
+	for i := 0; i < deletes.Len(); i++ {
+		d, err := common.AssertType[*types.Document](must.NotFail(deletes.Get(i)))
 		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		if err := common.Unimplemented(doc.(*types.Document), "collation", "hint", "comment"); err != nil {
 			return nil, err
 		}
 
-		d := doc.(*types.Document).Map()
+		if err := common.Unimplemented(d, "collation", "hint", "comment"); err != nil {
+			return nil, err
+		}
 
-		sql := fmt.Sprintf(`DELETE FROM %s`, pgx.Identifier{db, collection}.Sanitize())
-		var placeholder pg.Placeholder
+		var filter *types.Document
+		var limit int32
+		if filter, err = common.GetOptionalParam(d, "q", filter); err != nil {
+			return nil, err
+		}
+		if limit, err = common.GetOptionalParam(d, "limit", limit); err != nil {
+			return nil, err
+		}
 
-		elSQL, args, err := where(d["q"].(*types.Document), &placeholder)
+		fetchedDocs, err := s.fetch(ctx, db, collection)
 		if err != nil {
-			return nil, lazyerrors.Error(err)
+			return nil, err
 		}
 
-		limit, _ := d["limit"].(int32)
-		if limit != 0 {
-			sql += fmt.Sprintf(" WHERE _jsonb->'_id' IN (SELECT _jsonb->'_id' FROM %s", pgx.Identifier{db, collection}.Sanitize())
-			sql += elSQL
-			sql += " LIMIT 1)"
-		} else {
-			sql += elSQL
+		resDocs := make([]*types.Document, 0, 16)
+		for _, doc := range fetchedDocs {
+			matches, err := common.FilterDocument(doc, filter)
+			if err != nil {
+				return nil, err
+			}
+
+			if !matches {
+				continue
+			}
+
+			resDocs = append(resDocs, doc)
 		}
 
-		tag, err := s.pgPool.Exec(ctx, sql, args...)
+		if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
+			return nil, err
+		}
+
+		if len(resDocs) == 0 {
+			continue
+		}
+
+		var p pg.Placeholder
+		placeholders := make([]string, len(resDocs))
+		ids := make([]any, len(resDocs))
+		for i, doc := range resDocs {
+			placeholders[i] = p.Next()
+			id := must.NotFail(doc.Get("_id"))
+			ids[i] = must.NotFail(fjson.Marshal(id))
+		}
+
+		sql := fmt.Sprintf(
+			"DELETE FROM %s WHERE _jsonb->'_id' IN (%s)",
+			pgx.Identifier{db, collection}.Sanitize(), strings.Join(placeholders, ", "),
+		)
+		tag, err := s.pgPool.Exec(ctx, sql, ids...)
 		if err != nil {
 			// TODO check error code
 			return nil, common.NewError(common.ErrNamespaceNotFound, fmt.Errorf("delete: ns not found: %w", err))

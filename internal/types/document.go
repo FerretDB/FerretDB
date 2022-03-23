@@ -16,7 +16,6 @@ package types
 
 import (
 	"fmt"
-	"strings"
 	"unicode/utf8"
 )
 
@@ -191,14 +190,14 @@ func (d *Document) Keys() []string {
 	return d.keys
 }
 
-// Command returns the first document's key lowercased. This is often used as a command name.
+// Command returns the first document's key. This is often used as a command name.
 // It returns an empty string if document is nil or empty.
 func (d *Document) Command() string {
 	keys := d.Keys()
 	if len(keys) == 0 {
 		return ""
 	}
-	return strings.ToLower(keys[0])
+	return keys[0]
 }
 
 func (d *Document) add(key string, value any) error {

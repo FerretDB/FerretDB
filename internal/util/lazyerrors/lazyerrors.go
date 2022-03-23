@@ -35,7 +35,7 @@ func (e withStack) Error() string {
 
 	f := frame(e.pc)
 	if f.File == "" {
-		return "<unknown> " + e.error.Error()
+		return "[unknown] " + e.error.Error()
 	}
 
 	_, file := filepath.Split(f.File)
@@ -45,7 +45,7 @@ func (e withStack) Error() string {
 		l += " " + f.Function[i+1:]
 	}
 
-	return fmt.Sprintf("<%s> %s", l, e.error)
+	return fmt.Sprintf("[%s] %s", l, e.error)
 }
 
 func (e withStack) Unwrap() error {
