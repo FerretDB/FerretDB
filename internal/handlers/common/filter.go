@@ -16,7 +16,6 @@ package common
 
 import (
 	"fmt"
-	"math"
 	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -301,28 +300,22 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 		return false, nil
 	}
 
-	var size int
-	switch sizeValue := sizeValue.(type) {
-	case float64:
-		if sizeValue != math.Trunc(sizeValue) || math.IsNaN(sizeValue) || math.IsInf(sizeValue, 0) {
+	size, err := GetNumberParam("$size", sizeValue)
+	if err != nil {
+		if err == ErrNotWholeNumber {
 			return false, NewErrorMsg(ErrBadValue, "$size must be a whole number")
 		}
-		size = int(sizeValue)
-	case int32:
-		size = int(sizeValue)
-	case int64:
-		size = int(sizeValue)
-	default:
-		return false, NewErrorMsg(ErrBadValue, "$size needs a number")
+		if err == ErrNotMatchedType {
+			return false, NewErrorMsg(ErrBadValue, "$size needs a number")
+		}
+		return false, err
 	}
-
-	// TODO check float negative zero
 
 	if size < 0 {
 		return false, NewErrorMsg(ErrBadValue, "$size may not be negative")
 	}
 
-	if arr.Len() != size {
+	if arr.Len() != int(size) {
 		return false, nil
 	}
 
