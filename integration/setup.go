@@ -89,15 +89,26 @@ func setup(t *testing.T) (context.Context, *mongo.Database) {
 	err = client.Ping(ctx, nil)
 	require.NoError(t, err)
 
+	databaseName := databaseName(t)
+	db := client.Database(databaseName)
+
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
+
+		if t.Failed() {
+			t.Logf("Keeping database %q for debugging.", databaseName)
+		} else {
+			client.Database(databaseName)
+			err = db.Drop(context.Background())
+			require.NoError(t, err)
+		}
+
 		err = client.Disconnect(context.Background())
 		require.NoError(t, err)
 	}()
 
-	db := client.Database(databaseName(t))
 	err = db.Drop(context.Background())
 	require.NoError(t, err)
 

@@ -176,16 +176,6 @@ jobs:
           name: linux-logs
           path: /tmp/logs
 
-      - name: Upload all fuzz corpora
-        if: failure()
-        uses: actions/upload-artifact@v2
-        with:
-          name: fuzz-corpus
-          path: |
-            ${{ env.GOCACHE }}/fuzz
-            **/testdata/fuzz
-            fuzz-corpus
-
       # To prevent Setup Go's cache to include it.
       # See https://github.com/golang/go/issues/48901.
       - name: Clear generated corpus
