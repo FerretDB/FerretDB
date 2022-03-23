@@ -74,7 +74,27 @@ func lessFunc(sortKey string, sortType sortType) func(a, b *types.Document) bool
 		}
 
 		result := compareScalars(aField, bField)
-		return matchSortResult(sortType, result)
+
+		switch result {
+		case less:
+			switch sortType {
+			case ascending:
+				return true
+			case descending:
+				return false
+			}
+		case greater:
+			switch sortType {
+			case ascending:
+				return false
+			case descending:
+				return true
+			}
+		case notEqual, equal:
+			return false
+		}
+
+		return false
 	}
 }
 
@@ -121,7 +141,7 @@ func (ds *docsSorter) Less(i, j int) bool {
 
 // getSortType determines sortType from input sort value.
 func getSortType(value any) (sortType, error) {
-	sortValue, err := GetInt64Value("$sort", value)
+	sortValue, err := GetNumberParam("$sort", value)
 	if err != nil {
 		return 0, err
 	}
@@ -134,29 +154,4 @@ func getSortType(value any) (sortType, error) {
 	default:
 		return 0, lazyerrors.New(`Illegal key in $sort specification`)
 	}
-}
-
-// matchSortResult matching sort type and compare result.
-func matchSortResult(sort sortType, result compareResult) bool {
-	cmp := false
-	switch result {
-	case less:
-		switch sort {
-		case ascending:
-			cmp = true
-		case descending:
-			cmp = false
-		}
-	case greater:
-		switch sort {
-		case ascending:
-			cmp = false
-		case descending:
-			cmp = true
-		}
-	case notEqual, equal:
-		return false
-	}
-
-	return cmp
 }
