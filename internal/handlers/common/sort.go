@@ -15,6 +15,7 @@
 package common
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 
@@ -47,7 +48,7 @@ func SortDocuments(docs []*types.Document, sort *types.Document) error {
 
 		sortType, err := getSortType(sortField)
 		if err != nil {
-			return err
+			return NewErrorMsg(ErrBadValue, fmt.Sprintf("%v: %v: %v", err, sortKey, sortField))
 		}
 
 		sortFuncs[i] = lessFunc(sortKey, sortType)
@@ -142,7 +143,7 @@ func getSortType(value any) (sortType, error) {
 	case -1:
 		return descending, nil
 	default:
-		return 0, lazyerrors.New("failed to determine sort type")
+		return 0, lazyerrors.New(`Illegal key in $sort specification`)
 	}
 }
 

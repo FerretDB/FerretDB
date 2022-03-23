@@ -15,6 +15,7 @@
 package common
 
 import (
+	"errors"
 	"fmt"
 	"math"
 
@@ -79,11 +80,11 @@ func AssertInt64Value(valueType string, value any) (int64, error) {
 		sortValue = int64(value)
 	case float64:
 		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) {
-			return 0, NewErrorMsg(ErrBadValue, fmt.Sprintf("%s must be a whole number", valueType))
+			return 0, errors.New(fmt.Sprintf("%s must be a whole number", valueType))
 		}
 		sortValue = int64(value)
 	default:
-		return 0, NewErrorMsg(ErrBadValue, fmt.Sprintf("failed to determine %s type", valueType))
+		return 0, errors.New(fmt.Sprintf("Illegal key in %s specification", valueType))
 	}
 	return sortValue, nil
 }
