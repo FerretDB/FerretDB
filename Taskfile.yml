@@ -134,14 +134,30 @@ tasks:
 
   lint:
     desc: 'Run linters'
+    deps:
+      - lint-golangci-lint-required
+      - lint-go-sumtype
+      - lint-go-consistent
+      - lint-go-consistent-integration
+    cmds:
+      - bin/golangci-lint run --config=.golangci.yml
+
+  lint-golangci-lint-required:
+    cmds:
+      - bin/golangci-lint run --config=.golangci-required.yml
+
+  lint-go-sumtype:
     cmds:
       - bin/go-sumtype ./...
-      - bin/golangci-lint run --config=.golangci-required.yml
-      - bin/golangci-lint run --config=.golangci.yml
-      - bin/go-consistent -pedantic ./cmd/... ./integration/... ./internal/...
-    preconditions:
-      - sh: 'test -f bin/go-sumtype{{exeExt}} || test -f bin/golangci-lint{{exeExt}}'
-        msg: 'Please run `task init` first'
+
+  lint-go-consistent:
+    cmds:
+      - bin/go-consistent -pedantic ./cmd/... ./internal/...
+
+  lint-go-consistent-integration:
+    dir: integration
+    cmds:
+      - ../bin/go-consistent -pedantic ./...
 
   psql:
     desc: 'Run psql'

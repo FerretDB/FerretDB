@@ -46,11 +46,11 @@ jobs:
       - name: Run init
         run: bin/task init
 
-      - name: Wait for and setup environment
-        run: bin/task env-setup
-
       - name: Regenerate and reformat
         run: bin/task gen fmt
+
+      - name: Wait for and setup environment
+        run: bin/task env-setup
 
       - name: Run tests
         run: bin/task test
