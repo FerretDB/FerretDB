@@ -969,7 +969,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, _ *types.Document, actual, expected *types.Document) {
-				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "localTime")
+				testutil.CompareAndSetByPathTime(t, expected, actual, 2*time.Second, "localTime")
 				assert.Equal(t, expected, actual)
 			},
 		},
@@ -990,7 +990,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, _ *types.Document, actual, expected *types.Document) {
-				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "localTime")
+				testutil.CompareAndSetByPathTime(t, expected, actual, 2*time.Second, "localTime")
 				assert.Equal(t, expected, actual)
 			},
 		},
@@ -1014,7 +1014,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, _ *types.Document, actual, expected *types.Document) {
-				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "system", "currentTime")
+				testutil.CompareAndSetByPathTime(t, expected, actual, 2*time.Second, "system", "currentTime")
 				assert.Equal(t, expected, actual)
 			},
 		},
@@ -1052,7 +1052,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 					testutil.SetByPath(t, expected, actualV, key)
 				}
 				testutil.CompareAndSetByPathNum(t, expected, actual, 20, "catalogStats", "collections")
-				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "localTime")
+				testutil.CompareAndSetByPathTime(t, expected, actual, 2*time.Second, "localTime")
 				assert.Equal(t, expected, actual)
 			},
 		},
