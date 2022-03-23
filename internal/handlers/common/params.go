@@ -39,6 +39,22 @@ func GetRequiredParam[T types.Type](doc *types.Document, key string) (T, error) 
 	return res, nil
 }
 
+// GetOptionalParam returns doc's value for key, default value for missing parameter, or protocol error for invalid parameter.
+func GetOptionalParam[T types.Type](doc *types.Document, key string, defaultValue T) (T, error) {
+	v, err := doc.Get(key)
+	if err != nil {
+		return defaultValue, nil
+	}
+
+	res, ok := v.(T)
+	if !ok {
+		msg := fmt.Sprintf("parameter %q has type %T (expected %T)", key, v, defaultValue)
+		return defaultValue, NewErrorMsg(ErrBadValue, msg)
+	}
+
+	return res, nil
+}
+
 // AssertType asserts value's type, returning protocol error for unexpected types.
 func AssertType[T types.Type](value any) (T, error) {
 	res, ok := value.(T)

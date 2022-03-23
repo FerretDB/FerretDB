@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// build ignore
+//go:build ignore
+// +build ignore
 
 // This file is invoked from tools.go or old.go and should work with any version of Go.
 

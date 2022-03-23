@@ -12,16 +12,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sql
+package types
 
 import (
-	"context"
-
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	"fmt"
+	"regexp"
 )
 
-// MsgUpdate modifies an existing document or documents in a collection.
-func (s *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, common.NewErrorMsg(common.ErrNotImplemented, "update: not implemented for SQL storage")
+// Regex represents BSON type Regex.
+type Regex struct {
+	Pattern string
+	Options string
+}
+
+// Compile returns Go Regexp object.
+func (r Regex) Compile() (*regexp.Regexp, error) {
+	var opts string
+	for _, o := range r.Options {
+		switch o {
+		case 'i':
+			opts += "i"
+		default:
+			return nil, fmt.Errorf("types.Regex.Compile: unhandled regex option %v (%v)", o, r)
+		}
+	}
+
+	expr := r.Pattern
+	if opts != "" {
+		expr = "(?" + opts + ")" + expr
+	}
+
+	re, err := regexp.Compile(expr)
+	if err != nil {
+		return nil, fmt.Errorf("types.Regex.Compile: %w", err)
+	}
+
+	return re, nil
 }

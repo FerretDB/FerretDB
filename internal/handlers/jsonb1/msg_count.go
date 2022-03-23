@@ -12,32 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sql
+package jsonb1
 
 import (
 	"context"
-	"fmt"
-
-	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgDelete deletes document.
-func (s *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// MsgCount counts the number of documents that matches the query filter.
+func (s *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err := common.Unimplemented(document, "let"); err != nil {
+	unimplementedFields := []string{
+		"skip",
+		"collation",
+	}
+	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
 		return nil, err
 	}
-	common.Ignored(document, s.l.Desugar(), "ordered", "writeConcern")
+	ignoredFields := []string{
+		"hint",
+		"readConcern",
+		"comment",
+	}
+	common.Ignored(document, s.l, ignoredFields...)
 
 	command := document.Command()
 
@@ -49,53 +54,42 @@ func (s *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	m := document.Map()
-	docs, _ := m["deletes"].(*types.Array)
+	var filter *types.Document
+	var limit int32
+	if filter, err = common.GetOptionalParam(document, "query", filter); err != nil {
+		return nil, err
+	}
+	if limit, err = common.GetOptionalParam(document, "limit", limit); err != nil {
+		return nil, err
+	}
 
-	var deleted int32
-	for i := 0; i < docs.Len(); i++ {
-		doc, err := docs.Get(i)
+	fetchedDocs, err := s.fetch(ctx, db, collection)
+	if err != nil {
+		return nil, err
+	}
+
+	resDocs := make([]*types.Document, 0, 16)
+	for _, doc := range fetchedDocs {
+		matches, err := common.FilterDocument(doc, filter)
 		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		if err := common.Unimplemented(doc.(*types.Document), "collation", "hint", "comment"); err != nil {
 			return nil, err
 		}
 
-		d := doc.(*types.Document).Map()
-
-		sql := fmt.Sprintf(`DELETE FROM %s`, pgx.Identifier{db, collection}.Sanitize())
-		var placeholder pg.Placeholder
-
-		elSQL, args, err := where(d["q"].(*types.Document), &placeholder)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
+		if !matches {
+			continue
 		}
 
-		limit, _ := d["limit"].(int32)
-		if limit != 0 {
-			sql += fmt.Sprintf(
-				"WHERE %s IN (SELECT %s FROM %s LIMIT 1)",
-				placeholder.Next(), placeholder.Next(), pgx.Identifier{db, collection}.Sanitize(),
-			)
-		} else {
-			sql += elSQL
-		}
+		resDocs = append(resDocs, doc)
+	}
 
-		tag, err := s.pgPool.Exec(ctx, sql, args...)
-		if err != nil {
-			// TODO check error code
-			return nil, common.NewError(common.ErrNamespaceNotFound, fmt.Errorf("delete: ns not found: %w", err))
-		}
-
-		deleted += int32(tag.RowsAffected())
+	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
+		return nil, err
 	}
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{types.MustNewDocument(
-			"n", deleted,
+			"n", int32(len(resDocs)),
 			"ok", float64(1),
 		)},
 	})

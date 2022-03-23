@@ -12,27 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handlers
+package common
 
-import (
-	"strings"
-	"testing"
+import "github.com/FerretDB/FerretDB/internal/types"
 
-	"github.com/stretchr/testify/assert"
-)
-
-func TestCommands(t *testing.T) {
-	t.Run("Command key is all lowercase", func(t *testing.T) {
-		t.Parallel()
-		for key := range commands {
-			assert.Equal(t, key, strings.ToLower(key))
-		}
-	})
-
-	t.Run("Command name matches key", func(t *testing.T) {
-		t.Parallel()
-		for key, command := range commands {
-			assert.Equal(t, key, strings.ToLower(command.name))
-		}
-	})
+// SortDocuments sorts given documents in place according to the given sorting conditions.
+func SortDocuments(docs []*types.Document, sort *types.Document) error {
+	// TODO
+	return nil
 }

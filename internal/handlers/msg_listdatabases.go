@@ -54,7 +54,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	databases := types.MakeArray(len(databaseNames))
 	for _, databaseName := range databaseNames {
-		tables, _, err := h.pgPool.Tables(ctx, databaseName)
+		tables, err := h.pgPool.Tables(ctx, databaseName)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}

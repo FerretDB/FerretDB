@@ -26,14 +26,14 @@ import (
 
 func (h *Handler) QueryCmd(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
 	switch cmd := query.Query.Command(); cmd {
-	case "ismaster":
-		// TODO merge with MsgHello
+	case "ismaster", "isMaster": // both are valid
+		// TODO merge with MsgHello?
 		reply := &wire.OpReply{
 			NumberReturned: 1,
 			Documents: []*types.Document{
 				types.MustNewDocument(
 					"helloOk", true,
-					"ismaster", true,
+					"ismaster", true, // only lowercase
 					// topologyVersion
 					"maxBsonObjectSize", int32(types.MaxDocumentLen),
 					"maxMessageSizeBytes", int32(wire.MaxMsgLen),

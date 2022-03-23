@@ -22,9 +22,9 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -50,14 +50,16 @@ func (s *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	m := document.Map()
-	docs, _ := m["updates"].(*types.Array)
+	var updates *types.Array
+	if updates, err = common.GetOptionalParam(document, "updates", updates); err != nil {
+		return nil, err
+	}
 
 	var selected, updated int32
-	for i := 0; i < docs.Len(); i++ {
-		doc, err := docs.Get(i)
+	for i := 0; i < updates.Len(); i++ {
+		update, err := common.AssertType[*types.Document](must.NotFail(updates.Get(i)))
 		if err != nil {
-			return nil, lazyerrors.Error(err)
+			return nil, err
 		}
 
 		unimplementedFields := []string{
@@ -68,90 +70,68 @@ func (s *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			"arrayFilters",
 			"hint",
 		}
-		if err := common.Unimplemented(doc.(*types.Document), unimplementedFields...); err != nil {
+		if err := common.Unimplemented(update, unimplementedFields...); err != nil {
 			return nil, err
 		}
 
-		docM := doc.(*types.Document).Map()
-
-		sql := fmt.Sprintf(`SELECT _jsonb FROM %s`, pgx.Identifier{db, collection}.Sanitize())
-		var placeholder pg.Placeholder
-
-		whereSQL, args, err := where(docM["q"].(*types.Document), &placeholder)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
+		var q, u *types.Document
+		if q, err = common.GetOptionalParam(update, "q", q); err != nil {
+			return nil, err
+		}
+		if u, err = common.GetOptionalParam(update, "u", u); err != nil {
+			return nil, err
 		}
 
-		sql += whereSQL
-
-		rows, err := s.pgPool.Query(ctx, sql, args...)
+		fetchedDocs, err := s.fetch(ctx, db, collection)
 		if err != nil {
 			return nil, err
 		}
-		defer rows.Close()
 
-		var updateDocs types.Array
-
-		for {
-			updateDoc, err := nextRow(rows)
+		resDocs := make([]*types.Document, 0, 16)
+		for _, doc := range fetchedDocs {
+			matches, err := common.FilterDocument(doc, q)
 			if err != nil {
 				return nil, err
 			}
-			if updateDoc == nil {
-				break
+
+			if !matches {
+				continue
 			}
 
-			if err = updateDocs.Append(updateDoc); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
+			resDocs = append(resDocs, doc)
 		}
 
-		selected += int32(updateDocs.Len())
+		if len(resDocs) == 0 {
+			continue
+		}
 
-		for i := 0; i < updateDocs.Len(); i++ {
-			updateDoc, err := updateDocs.Get(i)
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
+		selected += int32(len(resDocs))
 
-			d := updateDoc.(*types.Document)
-
-			for updateOp, updateV := range docM["u"].(*types.Document).Map() {
+		for _, doc := range resDocs {
+			for _, updateOp := range u.Keys() {
+				updateV := must.NotFail(u.Get(updateOp))
 				switch updateOp {
 				case "$set":
-					for k, v := range updateV.(*types.Document).Map() {
-						if err := d.Set(k, v); err != nil {
+					setDoc, err := common.AssertType[*types.Document](updateV)
+					if err != nil {
+						return nil, err
+					}
+
+					for _, setKey := range setDoc.Keys() {
+						setValue := must.NotFail(setDoc.Get(setKey))
+						if err = doc.Set(setKey, setValue); err != nil {
 							return nil, lazyerrors.Error(err)
 						}
 					}
+
 				default:
 					return nil, lazyerrors.Errorf("unhandled operation %q", updateOp)
 				}
 			}
 
-			if err = updateDocs.Set(i, d); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-		}
-
-		for i := 0; i < updateDocs.Len(); i++ {
-			updateDoc, err := updateDocs.Get(i)
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			sql = fmt.Sprintf("UPDATE %s SET _jsonb = $1 WHERE _jsonb->'_id' = $2", pgx.Identifier{db, collection}.Sanitize())
-			d := updateDoc.(*types.Document)
-			db, err := fjson.Marshal(d)
-			if err != nil {
-				return nil, err
-			}
-
-			idb, err := fjson.Marshal(d.Map()["_id"].(types.ObjectID))
-			if err != nil {
-				return nil, err
-			}
-			tag, err := s.pgPool.Exec(ctx, sql, db, idb)
+			sql := fmt.Sprintf("UPDATE %s SET _jsonb = $1 WHERE _jsonb->'_id' = $2", pgx.Identifier{db, collection}.Sanitize())
+			id := must.NotFail(doc.Get("_id"))
+			tag, err := s.pgPool.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)), must.NotFail(fjson.Marshal(id)))
 			if err != nil {
 				return nil, err
 			}

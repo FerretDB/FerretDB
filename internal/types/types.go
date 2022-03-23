@@ -83,12 +83,6 @@ type (
 	// ObjectID represents BSON type ObjectID.
 	ObjectID [12]byte
 
-	// Regex represents BSON type Regex.
-	Regex struct {
-		Pattern string
-		Options string
-	}
-
 	// Timestamp represents BSON type Timestamp.
 	Timestamp uint64
 
