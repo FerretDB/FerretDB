@@ -40,6 +40,7 @@ const (
 	ErrProjectionInEx    = ErrorCode(31253) // Location31253
 	ErrProjectionExIn    = ErrorCode(31254) // Location31254
 	ErrRegexOptions      = ErrorCode(51075) // Location51075
+	ErrIllegalKey        = ErrorCode(15974) // Location15974
 )
 
 // Error represents wire protocol error.
