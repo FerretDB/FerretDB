@@ -53,66 +53,83 @@ func compareScalars(a, b any) compareResult {
 		case int64:
 			return compareNumbers(a, b)
 		default:
-			panic(fmt.Sprintf("unexpected type %T", b))
+			return notEqual
 		}
 
 	case string:
-		b := b.(string)
-		return compareOrdered(a, b)
+		b, ok := b.(string)
+		if ok {
+			return compareOrdered(a, b)
+		}
+		return notEqual
 
 	case types.Binary:
-		b := b.(types.Binary)
-		al, bl := len(a.B), len(b.B)
-		if al != bl {
-			return compareOrdered(al, bl)
+		b, ok := b.(types.Binary)
+		if ok {
+			al, bl := len(a.B), len(b.B)
+			if al != bl {
+				return compareOrdered(al, bl)
+			}
+			if a.Subtype != b.Subtype {
+				return compareOrdered(a.Subtype, b.Subtype)
+			}
+			switch bytes.Compare(a.B, b.B) {
+			case 0:
+				return equal
+			case -1:
+				return less
+			case 1:
+				return greater
+			default:
+				panic("unreachable")
+			}
 		}
-		if a.Subtype != b.Subtype {
-			return compareOrdered(a.Subtype, b.Subtype)
-		}
-		switch bytes.Compare(a.B, b.B) {
-		case 0:
-			return equal
-		case -1:
-			return less
-		case 1:
-			return greater
-		default:
-			panic("unreachable")
-		}
+		return notEqual
 
 	case types.ObjectID:
-		b := b.(types.ObjectID)
-		switch bytes.Compare(a[:], b[:]) {
-		case 0:
-			return equal
-		case -1:
-			return less
-		case 1:
-			return greater
-		default:
-			panic("unreachable")
+		b, ok := b.(types.ObjectID)
+		if ok {
+			switch bytes.Compare(a[:], b[:]) {
+			case 0:
+				return equal
+			case -1:
+				return less
+			case 1:
+				return greater
+			default:
+				panic("unreachable")
+			}
 		}
+		return notEqual
 
 	case bool:
-		b := b.(bool)
-		if a == b {
-			return equal
+		b, ok := b.(bool)
+		if ok {
+			if a == b {
+				return equal
+			}
+			if b {
+				return less
+			}
+			return greater
 		}
-		if b {
-			return less
-		}
-		return greater
+		return notEqual
 
 	case time.Time:
-		b := b.(time.Time)
-		return compareOrdered(a.UnixNano(), b.UnixNano())
+		b, ok := b.(time.Time)
+		if ok {
+			return compareOrdered(a.UnixNano(), b.UnixNano())
+		}
+		return notEqual
 
 	case types.NullType:
-		_ = b.(types.NullType)
-		return equal // or notEqual?
+		_, ok := b.(types.NullType)
+		if ok {
+			return equal
+		}
+		return notEqual
 
 	case types.Regex:
-		_ = b.(types.Regex)
 		return notEqual // ???
 
 	case int32:
@@ -124,12 +141,15 @@ func compareScalars(a, b any) compareResult {
 		case int64:
 			return compareOrdered(int64(a), b)
 		default:
-			panic(fmt.Sprintf("unexpected type %T", b))
+			return notEqual
 		}
 
 	case types.Timestamp:
-		b := b.(types.Timestamp)
-		return compareOrdered(a, b)
+		b, ok := b.(types.Timestamp)
+		if ok {
+			return compareOrdered(a, b)
+		}
+		return notEqual
 
 	case int64:
 		switch b := b.(type) {
@@ -140,8 +160,28 @@ func compareScalars(a, b any) compareResult {
 		case int64:
 			return compareOrdered(a, b)
 		default:
-			panic(fmt.Sprintf("unexpected type %T", b))
+			return notEqual
 		}
+
+	case *types.Document:
+		return notEqual
+
+	case *types.Array:
+		for i := 0; i < a.Len(); i++ {
+			a, err := a.Get(i)
+			if err != nil {
+				panic(fmt.Sprintf("cannot get value from array, err is %v, array is %v, index is %v", err, a, i))
+			}
+			switch compareScalars(a, b) {
+			case equal:
+				return equal
+			case greater:
+				return greater
+			case less:
+				return less
+			}
+		}
+		return notEqual
 
 	default:
 		panic(fmt.Sprintf("unhandled type %T", a))
