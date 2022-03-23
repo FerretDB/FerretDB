@@ -37,6 +37,7 @@ const (
 	ErrNamespaceExists   = ErrorCode(48)    // NamespaceExists
 	ErrCommandNotFound   = ErrorCode(59)    // CommandNotFound
 	ErrNotImplemented    = ErrorCode(238)   // NotImplemented
+	ErrSortBadValue      = ErrorCode(15974) // Location15974
 	ErrProjectionInEx    = ErrorCode(31253) // Location31253
 	ErrProjectionExIn    = ErrorCode(31254) // Location31254
 	ErrRegexOptions      = ErrorCode(51075) // Location51075
