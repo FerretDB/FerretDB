@@ -68,9 +68,9 @@ func AssertType[T types.Type](value any) (T, error) {
 	return res, nil
 }
 
-// GetNumberParam matches value's type returning protocol error for bad float values and unexpected results.
-// valueType parameter used to generate error message.
-func GetNumberParam(valueType string, value any) (int64, error) {
+// GetNumberParam matches value's type returning error for bad float values and unexpected results.
+// parameterName used to generate error message.
+func GetNumberParam(parameterName string, value any) (int64, error) {
 	var numberValue int64
 
 	switch value := value.(type) {
@@ -80,11 +80,11 @@ func GetNumberParam(valueType string, value any) (int64, error) {
 		numberValue = int64(value)
 	case float64:
 		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) {
-			return 0, errors.New(fmt.Sprintf("%s must be a whole number", valueType))
+			return 0, errors.New(fmt.Sprintf("%s must be a whole number", parameterName))
 		}
 		numberValue = int64(value)
 	default:
-		return 0, errors.New(fmt.Sprintf("Illegal key in %s specification", valueType))
+		return 0, errors.New(fmt.Sprintf("Illegal key in %s specification", parameterName))
 
 		// TODO check float negative zero
 	}
