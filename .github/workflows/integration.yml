@@ -62,7 +62,8 @@ jobs:
       - name: Upload coverage information
         uses: codecov/codecov-action@v2
         with:
-          files: ./cover.txt
+          files: ./integration.txt
+          flags: integration,${{ matrix.db }}
 
       - name: Check dirty
         run: |
