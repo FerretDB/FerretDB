@@ -131,10 +131,10 @@ tasks:
       - sh: 'test -f bin/go-sumtype{{exeExt}} || test -f bin/golangci-lint{{exeExt}}'
         msg: 'Please run `task init` first'
 
-  docs-lint:
-    desc: 'Run markdown linters'
+  docs-fmt:
+    desc: 'Markdown formatter and linter'
     cmds:
-      - docker run --rm -v $PWD:/workdir ghcr.io/igorshubovych/markdownlint-cli:latest "**/*.md" --fix
+      - docker run --rm -v $PWD:/workdir ghcr.io/igorshubovych/markdownlint-cli:latest "**/*.md" -c ".markdownlint.yaml" --fix
 
   psql:
     desc: 'Run psql'
