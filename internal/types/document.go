@@ -16,10 +16,10 @@ package types
 
 import (
 	"fmt"
-	"strings"
+	"strconv"
 	"unicode/utf8"
 
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // Common interface with bson.Document.
@@ -280,134 +280,39 @@ func (d *Document) Remove(key string) {
 	panic(fmt.Sprintf("types.Document.Remove: key not found: %q", key))
 }
 
-func (d *Document) ApplyProjection(projection *Document) (err error) {
-
-	// field: { field: value } is not supported
-	// field: { $elemMatch: { }}
-	elemMatchConditions, err := projection.GetKeyPaths("$elemMatch")
-	if err != nil {
+// RemoveByPath removes document by path, doing nothing if the key does not exist.
+func RemoveByPath(d any, keys ...string) {
+	if len(keys) == 0 {
 		return
 	}
 
-	// better to have elemMatchConditions in a graf
-	elemM := make(map[string]struct{}, len(elemMatchConditions))
-	for _, conditionPath := range elemMatchConditions { // it includes the last $elemMatch arrray element
-		if len(conditionPath) == 0 {
-			panic("impossible code")
-		}
-		elemM[conditionPath[0]] = struct{}{}
-	}
-	// version 1 - projection of first level docs
-	for k := range d.m {
-		fmt.Printf("key %v\n", k)
+	key := keys[0]
 
-		if k == "_id" {
-			continue
+	switch d := d.(type) {
+	case *Document:
+		if _, ok := d.m[key]; !ok {
+			return
 		}
-		_, ok := elemM[k]
-		// should not get there bcs projection in query will not fetch top level keys
-		// todo: add field projection by condition, ex.jsonb_path_exists(_jsonb->'value', '$.score[*] ? (@ == 24 )')
-		// so big arrays where definetely not met the elemMatch condition won't be even fetched
-		if !ok {
-			d.Remove(k)
-			continue
+		if len(keys) > 1 {
+			next := must.NotFail(d.Get(key)).(*Document)
+			RemoveByPath(next, keys[1:]...)
+			return
 		}
-	}
-
-	// todo version 2 - remove from doc elements that are in projection condition but not related to the projection array itself.
-	for range d.m {
-	}
-
-	// the fields with array which are left are already checked that they really contain the matching element
-	// so the goal of this code is to find first array with matching condition
-	for _, conditionPath := range elemMatchConditions {
-		// remove from path $elemMatch, which is last
-		// so emConditionPath should be the path of target array elements in a doc
-		emConditionPath := conditionPath[0 : len(conditionPath)-1]
-		var conditionDocPathAny any
-		conditionDocPathAny, err = d.GetByPath(emConditionPath...)
+		d.Remove(key)
+	case *Array:
+		i, err := strconv.Atoi(key)
 		if err != nil {
-			continue
+			panic("wrong path")
+			// return
 		}
-		switch candidateIFArrayDoc := conditionDocPathAny.(type) {
-		case *Array:
-			for i := 0; i < candidateIFArrayDoc.Len(); i++ {
-
-				// in matched elemMatch path, get array tuple
-				var tupleAny any
-				tupleAny, err = candidateIFArrayDoc.Get(i)
-				if err != nil {
-					return lazyerrors.Error(err)
-				}
-				var tuple *Document
-				var ok bool
-				if tuple, ok = tupleAny.(*Document); !ok {
-					fmt.Printf("%d skip\n", i)
-					continue
-				}
-
-				fmt.Printf("path %s.%d\n", strings.Join(emConditionPath, "."), i)
-
-				var condDocAny any
-				condDocAny, err = projection.GetByPath(conditionPath...)
-				if err != nil {
-					return lazyerrors.Errorf("projection not found: %s", err)
-				}
-
-				switch condDoc := condDocAny.(type) {
-				case *Array: // array of conditions? can it be?
-					for i := range condDoc.s {
-						var a any
-						a, err = condDoc.Get(i)
-						fmt.Printf("array %v\n", a)
-					}
-
-				case *Document: // list of conditions
-					var match int
-					for k, v := range condDoc.m { // score 24
-						fmt.Printf("%d projection condition %s -> %v\n", i, k, v)
-						fmt.Printf("%d %v\n", i, tuple)
-
-						val, ok := tuple.m[k] // score 42
-						if !ok {
-							fmt.Printf("%d not found projection condition %s -> %v\n", i, k, v)
-							// todo remove
-							continue
-						}
-						switch v.(type) {
-						case *Document: // field: { $gte: 10}
-
-						case *Array: // field: [1, 4, 5] // not as in mongo, not documented, IN? // todo check projection on the query state
-
-						default:
-							fmt.Printf("%d CHECK %v -> %v %T to  %v -> %v %T\n", i, k, v, v, k, val, val)
-							// field: 10  or field: "abc"
-							if EqualScalars(val, v) {
-								fmt.Printf("%d FOUND %v -> %v to  %v -> %v\n", i, k, v, k, val)
-								match = i
-								// remember
-								break
-							}
-							// todo remove by path
-						}
-					}
-
-					if match == 0 {
-						// remove entire key
-						d.Remove(emConditionPath[0])
-					}
-
-				default:
-					fmt.Printf("path %#v\n", condDoc)
-				}
-				// fmt.Printf("path %s.%d\n", tupleAny)
-			}
-		default:
-			// not an array, remove from doc
-			d.Remove("emConditionPath")
-			continue
-
+		if len(keys) > 1 {
+			next := must.NotFail(d.Get(i))
+			RemoveByPath(next, keys[1:]...)
+			return
 		}
+		d.Remove(i)
+	default:
+		// no path further: scalar value
 	}
 	return
 }

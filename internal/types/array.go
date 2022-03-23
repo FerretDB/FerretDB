@@ -65,6 +65,14 @@ func (a *Array) Len() int {
 	return len(a.s)
 }
 
+func (a *Array) Remove(i int) {
+	if a == nil {
+		return
+	}
+	a.s = append(a.s[:i], a.s[i+1:]...)
+	return
+}
+
 // Get returns a value at the given index.
 func (a *Array) Get(index int) (any, error) {
 	if l := a.Len(); index < 0 || index >= l {

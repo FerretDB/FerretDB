@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -74,7 +75,7 @@ func TestProjection(t *testing.T) {
 		must.NotFail(NewDocument("$elemMatch", must.NotFail(NewDocument("score", int32(24))))),
 	))
 
-	testDoc.ApplyProjection(projection)
+	types.ProjectDocuments([]*types.Document{testDoc}, projection)
 	assert.Equal(t, expected, testDoc)
 }
 
