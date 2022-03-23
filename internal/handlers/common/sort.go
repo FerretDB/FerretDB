@@ -48,7 +48,7 @@ func SortDocuments(docs []*types.Document, sort *types.Document) error {
 
 		sortType, err := getSortType(sortField)
 		if err != nil {
-			return NewErrorMsg(ErrIllegalKey, fmt.Sprintf("%v: %v: %#v", err, sortKey, sortField))
+			return NewErrorMsg(ErrSortBadValue, fmt.Sprintf("%v: %v: %#v", err, sortKey, sortField))
 		}
 
 		sortFuncs[i] = lessFunc(sortKey, sortType)
@@ -132,7 +132,7 @@ func (ds *docsSorter) Less(i, j int) bool {
 
 // getSortType determines sortType from input sort value.
 func getSortType(value any) (sortType, error) {
-	sortValue, err := AssertInt64Value("$sort", value)
+	sortValue, err := GetInt64Value("$sort", value)
 	if err != nil {
 		return 0, err
 	}
@@ -166,7 +166,7 @@ func matchSortResult(sort sortType, result compareResult) bool {
 			cmp = true
 		}
 	case notEqual, equal:
-		return false // ???
+		return false
 	}
 
 	return cmp

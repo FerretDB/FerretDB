@@ -68,9 +68,9 @@ func AssertType[T types.Type](value any) (T, error) {
 	return res, nil
 }
 
-// AssertInt64Value asserts value's type returning protocol error for bad float values and unexpected results.
+// GetInt64Value matches value's type returning protocol error for bad float values and unexpected results.
 // valueType parameter used to generate error message.
-func AssertInt64Value(valueType string, value any) (int64, error) {
+func GetInt64Value(valueType string, value any) (int64, error) {
 	var sortValue int64
 
 	switch value := value.(type) {

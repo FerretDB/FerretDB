@@ -17,7 +17,7 @@ func _() {
 	_ = x[ErrProjectionInEx-31253]
 	_ = x[ErrProjectionExIn-31254]
 	_ = x[ErrRegexOptions-51075]
-	_ = x[ErrIllegalKey-15974]
+	_ = x[ErrSortBadValue-15974]
 }
 
 const (

@@ -115,6 +115,26 @@ func TestSortDocuments(t *testing.T) {
 				types.MustNewDocument("_id", int32(2), "name", "Rock A Feller Bar and Grill", "borough", "Queens"),
 			},
 		},
+		{
+			name: "SortOrderReverse",
+			args: args{
+				docs: []*types.Document{
+					types.MustNewDocument("_id", int32(1), "name", "Central Park Cafe", "borough", "Manhattan"),
+					types.MustNewDocument("_id", int32(2), "name", "Rock A Feller Bar and Grill", "borough", "Queens"),
+					types.MustNewDocument("_id", int32(3), "name", "Empire State Pub", "borough", "Brooklyn"),
+					types.MustNewDocument("_id", int32(4), "name", "Stan's Pizzaria", "borough", "Manhattan"),
+					types.MustNewDocument("_id", int32(5), "name", "Jane's Deli", "borough", "Brooklyn"),
+				},
+				sort: types.MustNewDocument("_id", int32(-1)),
+			},
+			sorted: []*types.Document{
+				types.MustNewDocument("_id", int32(5), "name", "Jane's Deli", "borough", "Brooklyn"),
+				types.MustNewDocument("_id", int32(4), "name", "Stan's Pizzaria", "borough", "Manhattan"),
+				types.MustNewDocument("_id", int32(3), "name", "Empire State Pub", "borough", "Brooklyn"),
+				types.MustNewDocument("_id", int32(2), "name", "Rock A Feller Bar and Grill", "borough", "Queens"),
+				types.MustNewDocument("_id", int32(1), "name", "Central Park Cafe", "borough", "Manhattan"),
+			},
+		},
 	}
 	for _, tc := range testCases {
 		tc := tc
