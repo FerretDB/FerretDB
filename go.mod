@@ -13,8 +13,8 @@ require (
 	github.com/stretchr/testify v1.7.1
 	go.uber.org/zap v1.21.0
 	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd // indirect; always use @latest
-	golang.org/x/exp v0.0.0-20220317015231-48e79f11773a
-	golang.org/x/sys v0.0.0-20220317061510-51cd9980dadf
+	golang.org/x/exp v0.0.0-20220323121947-b445f275a754
+	golang.org/x/sys v0.0.0-20220319134239-a9b59b0215f8
 	golang.org/x/text v0.3.7
 )
 
