@@ -18,154 +18,139 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v4"
+
+	"github.com/FerretDB/FerretDB/internal/fjson"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgUpdate modifies an existing document or documents in a collection.
 func (s *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, fmt.Errorf("TODO")
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
-	// document, err := msg.Document()
-	// if err != nil {
-	// 	return nil, lazyerrors.Error(err)
-	// }
+	if err := common.Unimplemented(document, "let"); err != nil {
+		return nil, err
+	}
+	common.Ignored(document, s.l, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
 
-	// if err := common.Unimplemented(document, "let"); err != nil {
-	// 	return nil, err
-	// }
-	// common.Ignored(document, s.l, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
+	command := document.Command()
 
-	// command := document.Command()
+	var db, collection string
+	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
+	}
+	if collection, err = common.GetRequiredParam[string](document, command); err != nil {
+		return nil, err
+	}
 
-	// var db, collection string
-	// if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-	// 	return nil, err
-	// }
-	// if collection, err = common.GetRequiredParam[string](document, command); err != nil {
-	// 	return nil, err
-	// }
+	var updates *types.Array
+	if updates, err = common.GetOptionalParam(document, "updates", updates); err != nil {
+		return nil, err
+	}
 
-	// m := document.Map()
-	// docs, _ := m["updates"].(*types.Array)
+	var selected, updated int32
+	for i := 0; i < updates.Len(); i++ {
+		update, err := common.AssertType[*types.Document](must.NotFail(updates.Get(i)))
+		if err != nil {
+			return nil, err
+		}
 
-	// var selected, updated int32
-	// for i := 0; i < docs.Len(); i++ {
-	// 	doc, err := docs.Get(i)
-	// 	if err != nil {
-	// 		return nil, lazyerrors.Error(err)
-	// 	}
+		unimplementedFields := []string{
+			"c",
+			"upsert",
+			"multi",
+			"collation",
+			"arrayFilters",
+			"hint",
+		}
+		if err := common.Unimplemented(update, unimplementedFields...); err != nil {
+			return nil, err
+		}
 
-	// 	unimplementedFields := []string{
-	// 		"c",
-	// 		"upsert",
-	// 		"multi",
-	// 		"collation",
-	// 		"arrayFilters",
-	// 		"hint",
-	// 	}
-	// 	if err := common.Unimplemented(doc.(*types.Document), unimplementedFields...); err != nil {
-	// 		return nil, err
-	// 	}
+		var q, u *types.Document
+		if q, err = common.GetOptionalParam(update, "q", q); err != nil {
+			return nil, err
+		}
+		if u, err = common.GetOptionalParam(update, "u", u); err != nil {
+			return nil, err
+		}
 
-	// 	docM := doc.(*types.Document).Map()
+		fetchedDocs, err := s.fetch(ctx, db, collection)
+		if err != nil {
+			return nil, err
+		}
 
-	// 	sql := fmt.Sprintf(`SELECT _jsonb FROM %s`, pgx.Identifier{db, collection}.Sanitize())
-	// 	var placeholder pg.Placeholder
+		resDocs := make([]*types.Document, 0, 16)
+		for _, doc := range fetchedDocs {
+			matches, err := common.FilterDocument(doc, q)
+			if err != nil {
+				return nil, err
+			}
 
-	// 	whereSQL, args, err := where(docM["q"].(*types.Document), &placeholder)
-	// 	if err != nil {
-	// 		return nil, lazyerrors.Error(err)
-	// 	}
+			if !matches {
+				continue
+			}
 
-	// 	sql += whereSQL
+			resDocs = append(resDocs, doc)
+		}
 
-	// 	rows, err := s.pgPool.Query(ctx, sql, args...)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	defer rows.Close()
+		if len(resDocs) == 0 {
+			continue
+		}
 
-	// 	var updateDocs types.Array
+		selected += int32(len(resDocs))
 
-	// 	for {
-	// 		updateDoc, err := nextRow(rows)
-	// 		if err != nil {
-	// 			return nil, err
-	// 		}
-	// 		if updateDoc == nil {
-	// 			break
-	// 		}
+		for _, doc := range resDocs {
+			for _, updateOp := range u.Keys() {
+				updateV := must.NotFail(u.Get(updateOp))
+				switch updateOp {
+				case "$set":
+					setDoc, err := common.AssertType[*types.Document](updateV)
+					if err != nil {
+						return nil, err
+					}
 
-	// 		if err = updateDocs.Append(updateDoc); err != nil {
-	// 			return nil, lazyerrors.Error(err)
-	// 		}
-	// 	}
+					for _, setKey := range setDoc.Keys() {
+						setValue := must.NotFail(setDoc.Get(setKey))
+						if err = doc.Set(setKey, setValue); err != nil {
+							return nil, lazyerrors.Error(err)
+						}
+					}
 
-	// 	selected += int32(updateDocs.Len())
+				default:
+					return nil, lazyerrors.Errorf("unhandled operation %q", updateOp)
+				}
+			}
 
-	// 	for i := 0; i < updateDocs.Len(); i++ {
-	// 		updateDoc, err := updateDocs.Get(i)
-	// 		if err != nil {
-	// 			return nil, lazyerrors.Error(err)
-	// 		}
+			sql := fmt.Sprintf("UPDATE %s SET _jsonb = $1 WHERE _jsonb->'_id' = $2", pgx.Identifier{db, collection}.Sanitize())
+			id := must.NotFail(doc.Get("_id"))
+			tag, err := s.pgPool.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)), must.NotFail(fjson.Marshal(id)))
+			if err != nil {
+				return nil, err
+			}
 
-	// 		d := updateDoc.(*types.Document)
+			updated += int32(tag.RowsAffected())
+		}
+	}
 
-	// 		for updateOp, updateV := range docM["u"].(*types.Document).Map() {
-	// 			switch updateOp {
-	// 			case "$set":
-	// 				for k, v := range updateV.(*types.Document).Map() {
-	// 					if err := d.Set(k, v); err != nil {
-	// 						return nil, lazyerrors.Error(err)
-	// 					}
-	// 				}
-	// 			default:
-	// 				return nil, lazyerrors.Errorf("unhandled operation %q", updateOp)
-	// 			}
-	// 		}
+	var reply wire.OpMsg
+	err = reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{types.MustNewDocument(
+			"n", selected,
+			"nModified", updated,
+			"ok", float64(1),
+		)},
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
-	// 		if err = updateDocs.Set(i, d); err != nil {
-	// 			return nil, lazyerrors.Error(err)
-	// 		}
-	// 	}
-
-	// 	for i := 0; i < updateDocs.Len(); i++ {
-	// 		updateDoc, err := updateDocs.Get(i)
-	// 		if err != nil {
-	// 			return nil, lazyerrors.Error(err)
-	// 		}
-
-	// 		sql = fmt.Sprintf("UPDATE %s SET _jsonb = $1 WHERE _jsonb->'_id' = $2", pgx.Identifier{db, collection}.Sanitize())
-	// 		d := updateDoc.(*types.Document)
-	// 		db, err := fjson.Marshal(d)
-	// 		if err != nil {
-	// 			return nil, err
-	// 		}
-
-	// 		idb, err := fjson.Marshal(d.Map()["_id"].(types.ObjectID))
-	// 		if err != nil {
-	// 			return nil, err
-	// 		}
-	// 		tag, err := s.pgPool.Exec(ctx, sql, db, idb)
-	// 		if err != nil {
-	// 			return nil, err
-	// 		}
-
-	// 		updated += int32(tag.RowsAffected())
-	// 	}
-	// }
-
-	// var reply wire.OpMsg
-	// err = reply.SetSections(wire.OpMsgSection{
-	// 	Documents: []*types.Document{types.MustNewDocument(
-	// 		"n", selected,
-	// 		"nModified", updated,
-	// 		"ok", float64(1),
-	// 	)},
-	// })
-	// if err != nil {
-	// 	return nil, lazyerrors.Error(err)
-	// }
-
-	// return &reply, nil
+	return &reply, nil
 }
