@@ -33,8 +33,6 @@ func RunHandler(ctx context.Context, addr string, l *zap.Logger) {
 		panic(err)
 	}
 
-	l.Sugar().Infof("Starting debug server on http://%s/", addr)
-
 	http.Handle("/debug/metrics", promhttp.InstrumentMetricHandler(
 		prometheus.DefaultRegisterer, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
 			ErrorLog:          stdL,
@@ -53,7 +51,14 @@ func RunHandler(ctx context.Context, addr string, l *zap.Logger) {
 	}
 
 	go func() {
-		if err := s.ListenAndServe(); err != http.ErrServerClosed {
+		lis, err := net.Listen("tcp", addr)
+		if err != nil {
+			panic(err)
+		}
+
+		l.Sugar().Infof("Starting debug server on http://%s/", lis.Addr())
+
+		if err := s.Serve(lis); err != http.ErrServerClosed {
 			panic(err)
 		}
 	}()
