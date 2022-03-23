@@ -16,6 +16,7 @@ package common
 
 import (
 	"fmt"
+	"strconv"
 
 	"golang.org/x/exp/slices"
 
@@ -72,18 +73,18 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 			}
 
 		case *types.Document:
-			for _, documentKey := range v.Keys() {
+			for _, projectionType := range v.Keys() {
 
-				supported := []string{"$elemMatch"}
-				if !slices.Contains[string](supported, documentKey) {
-					err = lazyerrors.Errorf("projecion of %s is not supported", documentKey)
+				supportedProjectionTypes := []string{"$elemMatch"}
+				if !slices.Contains(supportedProjectionTypes, projectionType) {
+					err = lazyerrors.Errorf("projecion of %s is not supported", projectionType)
 					return
 				}
-				switch documentKey {
+				switch projectionType {
 				case "$elemMatch":
 					inclusion = true
 				default:
-					panic(documentKey + " not supported")
+					panic(projectionType + " not supported")
 				}
 			}
 		default:
@@ -118,6 +119,7 @@ func ProjectDocuments(docs []*types.Document, projection *types.Document) error 
 func projectDocument(inclusion bool, doc *types.Document, projection *types.Document) error {
 	projectionMap := projection.Map()
 
+docMapLoopK1:
 	for k1 := range doc.Map() {
 
 		projectionVal, ok := projectionMap[k1]
@@ -125,7 +127,7 @@ func projectDocument(inclusion bool, doc *types.Document, projection *types.Docu
 			if k1 == "_id" { // if _id is not in projection map, do not do anything with it
 				continue
 			}
-			if inclusion {
+			if inclusion { // k1 from doc is absent in projection, remove from doc only if projection type inclusion
 				doc.Remove(k1)
 			}
 			continue
@@ -143,79 +145,80 @@ func projectDocument(inclusion bool, doc *types.Document, projection *types.Docu
 				doc.Remove(k1)
 			}
 
-			// TODO field: { $gt: value }
-		case *types.Document:
+		case *types.Document: // field: { $elemMatch: { field2: value }}
+
+		procjectionDocLoop:
 			for _, projectionType := range projectionVal.Keys() {
 
-				// field: { $elemMatch: { field2: value }}
 				supportedProjections := []string{"$elemMatch"}
 				if !slices.Contains(supportedProjections, projectionType) {
 					return fmt.Errorf("projecion %s is not supported", projectionType)
 				}
 
-				switch projectionType {
-				case "$elemMatch": // all conditions should be ANDed
-					var comply int // 0 or positive means found
-					conditions := must.NotFail(projectionVal.Get(projectionType)).(*types.Document)
+				// for now it's only $elemMatch further
+				// if the corresponding value is not an array, skip
 
-					for k2ElemMatchField, elemMatchValue := range conditions.Map() {
-						fmt.Println(k2ElemMatchField, elemMatchValue)
+				docValueA, err := doc.GetByPath(k1)
+				if err != nil {
+					continue procjectionDocLoop
+				}
 
-						docValueA, err := doc.GetByPath(k1)
-						if err != nil { // not found
-							comply = -1
-							break // since AND condition applies
-						}
+				// $elemMatch works only for arrays, it must be an array
+				docValueArray, ok := docValueA.(*types.Array)
+				if !ok {
+					doc.Remove(k1)
+					continue docMapLoopK1
+				}
 
-						// $elemMatch works only for arrays
-						docValueArray, ok := docValueA.(*types.Array)
-						if !ok {
-							comply = -1
-							break // must be an array
-						}
+				// get the elemMatch conditions
+				conditions := must.NotFail(projectionVal.Get(projectionType)).(*types.Document)
 
-						switch elemMatchFieldCondition := elemMatchValue.(type) {
+				for k2ElemMatchField, elemMatchValue := range conditions.Map() {
+					fmt.Println(k2ElemMatchField, elemMatchValue)
 
-						case *types.Document: // TODO field2: { $gte: 10 }
+					switch elemMatchFieldCondition := elemMatchValue.(type) {
+					case *types.Document: // TODO field2: { $gte: 10 }
 
-						case *types.Array:
-							panic("unexpected code")
+					case *types.Array:
+						panic("unexpected code")
 
-						default: // field2: value
+					default: // field2: value
+						found := -1 // >= 0 means found
 
-						internal:
-							for j := 0; j < docValueArray.Len(); j++ {
-								var cmpVal any
-								cmpVal, err = docValueArray.Get(j)
+					internal:
+						for j := 0; j < docValueArray.Len(); j++ {
+							var cmpVal any
+							cmpVal, err = docValueArray.Get(j)
+							if err != nil {
+								continue internal
+							}
+							switch cmpVal := cmpVal.(type) {
+							case *types.Document:
+								docVal, err := cmpVal.Get(k2ElemMatchField)
 								if err != nil {
 									continue internal
 								}
-								switch cmpVal := cmpVal.(type) {
-								case *types.Document:
-									docVal, err := cmpVal.Get(k2ElemMatchField)
-									if err != nil {
-										continue internal
-									}
-									if types.EqualScalars(docVal, elemMatchFieldCondition) {
-										// elemMatch to return first matching, all others are to be removed
-										comply = j
-										break internal
-									}
-								default:
-									continue internal
+								if types.EqualScalars(docVal, elemMatchFieldCondition) {
+									// elemMatch to return first matching, all others are to be removed
+									found = j
+									break internal
 								}
-
+								types.RemoveByPath(doc, k1, strconv.Itoa(j))
+							default:
+								types.RemoveByPath(doc, k1, strconv.Itoa(j))
+								continue internal
 							}
-
+						}
+						if found < 0 {
+							doc.Remove(k1)
+							continue procjectionDocLoop
 						}
 					}
-
-				default:
-					panic(projectionType + " not supported")
 				}
 			}
 		default:
 			return lazyerrors.Errorf("unsupported operation %s %v (%T)", k1, projectionVal, projectionVal)
 		}
 	}
+	return nil
 }
