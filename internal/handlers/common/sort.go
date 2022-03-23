@@ -48,7 +48,7 @@ func SortDocuments(docs []*types.Document, sort *types.Document) error {
 
 		sortType, err := getSortType(sortField)
 		if err != nil {
-			return NewErrorMsg(ErrIllegalKey, fmt.Sprintf("%v: %v: %v", err, sortKey, sortField))
+			return NewErrorMsg(ErrIllegalKey, fmt.Sprintf("%v: %v: %#v", err, sortKey, sortField))
 		}
 
 		sortFuncs[i] = lessFunc(sortKey, sortType)
