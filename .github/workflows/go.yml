@@ -49,6 +49,9 @@ jobs:
       - name: Wait for and setup environment
         run: bin/task env-setup
 
+      - name: Regenerate and reformat
+        run: bin/task gen fmt
+
       - name: Run tests
         run: bin/task test
 
