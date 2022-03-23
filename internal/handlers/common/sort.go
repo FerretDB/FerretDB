@@ -17,7 +17,6 @@ package common
 import (
 	"fmt"
 	"sort"
-	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -74,18 +73,8 @@ func lessFunc(sortKey string, sortType sortType) func(a, b *types.Document) bool
 			return false
 		}
 
-		switch aField := aField.(type) {
-		case string:
-			bField, err := AssertType[string](bField)
-			if err != nil {
-				return false
-			}
-
-			return strings.Compare(aField, bField) == -1
-		default:
-			result := compareScalars(aField, bField)
-			return matchSortResult(sortType, result)
-		}
+		result := compareScalars(aField, bField)
+		return matchSortResult(sortType, result)
 	}
 }
 
