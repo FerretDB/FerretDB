@@ -66,11 +66,23 @@ tasks:
       - go test -race -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
       - go test -race -shuffle=on -bench=. -benchtime=1x ./...
 
+  test-integration:
+    desc: 'Run integration tests'
+    cmds:
+      - task: test-integration-ci
+        vars: { DB: 'FerretDB' }
+      - task: test-integration-ci
+        vars: { DB: 'MongoDB' }
+
+  test-integration-ci:
+    dir: integration
+    cmds:
+      - go test -race -shuffle=on -coverprofile=integration.txt -coverpkg=../... -port={{.DB}}
+
   bench-short:
     desc: 'Benchmark for about 20 seconds (with default BENCHTIME)'
     cmds:
       - go test -list='Benchmark.*' ./...
-      - task: build:rm-bin
       - echo 'Running four functions for {{.BENCHTIME}} each...'
       - go test -bench=BenchmarkArray    -benchtime={{.BENCHTIME}} ./internal/bson/  | tee -a new.txt
       - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/bson/  | tee -a new.txt

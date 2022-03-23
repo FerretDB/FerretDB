@@ -25,7 +25,6 @@ import (
 
 func TestMostCommandsAreCaseSensitive(t *testing.T) {
 	t.Parallel()
-
 	ctx, db := setup(t)
 
 	res := db.RunCommand(ctx, bson.D{{"listcollections", 1}})

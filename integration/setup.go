@@ -19,6 +19,8 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"strconv"
+	"strings"
 	"sync"
 	"testing"
 
@@ -35,7 +37,7 @@ import (
 )
 
 var (
-	startupPort = flag.Int("port", 0, "port to use; 0 will start in-process FerretDB on a random port")
+	startupPort = flag.String("port", "ferretdb", "port to use")
 
 	startupOnce sync.Once
 )
@@ -46,12 +48,16 @@ func setup(t *testing.T) (context.Context, *mongo.Database) {
 
 	startupOnce.Do(func() { startup(t) })
 
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.DebugLevel))
 
-	port := *startupPort
+	var wg sync.WaitGroup
+	ctx, cancel := context.WithCancel(context.Background())
+
+	port, err := strconv.Atoi(*startupPort)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	if port == 0 {
 		pgPool := testutil.Pool(ctx, t, nil, logger)
 
@@ -62,7 +68,10 @@ func setup(t *testing.T) (context.Context, *mongo.Database) {
 			Logger:     logger.Named("listener"),
 		})
 
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
+
 			err := l.Run(ctx)
 			if err == nil || err == context.Canceled {
 				logger.Info("Listener stopped")
@@ -80,14 +89,22 @@ func setup(t *testing.T) (context.Context, *mongo.Database) {
 	err = client.Ping(ctx, nil)
 	require.NoError(t, err)
 
-	t.Cleanup(func() {
-		err = client.Disconnect(ctx)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		<-ctx.Done()
+		err = client.Disconnect(context.Background())
 		require.NoError(t, err)
-	})
+	}()
 
 	db := client.Database(databaseName(t))
 	err = db.Drop(context.Background())
 	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		cancel()
+		wg.Wait()
+	})
 
 	return ctx, db
 }
@@ -95,6 +112,20 @@ func setup(t *testing.T) (context.Context, *mongo.Database) {
 // startup initializes things that should be initialized only once.
 func startup(t *testing.T) {
 	t.Helper()
+
+	*startupPort = strings.ToLower(*startupPort)
+	switch *startupPort {
+	case "ferretdb":
+		*startupPort = "0"
+	case "default":
+		*startupPort = "27017"
+	case "mongodb":
+		*startupPort = "37017"
+	}
+
+	if _, err := strconv.Atoi(*startupPort); err != nil {
+		t.Fatal(err)
+	}
 
 	logging.Setup(zap.DebugLevel)
 
