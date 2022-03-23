@@ -60,7 +60,7 @@ func SortDocuments(docs []*types.Document, sort *types.Document) error {
 }
 
 // lessFunc takes sort key and type and returns compare function which
-// compares selected key of 2 documents
+// compares selected key of 2 documents.
 func lessFunc(sortKey string, sortType sortType) func(a, b *types.Document) bool {
 	return func(a, b *types.Document) bool {
 		aField, err := a.Get(sortKey)
