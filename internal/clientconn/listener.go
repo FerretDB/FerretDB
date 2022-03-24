@@ -16,7 +16,6 @@ package clientconn
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"io"
 	"net"
@@ -45,7 +44,6 @@ type Listener struct {
 // NewListenerOpts represents listener configuration.
 type NewListenerOpts struct {
 	ListenAddr      string
-	TLS             bool
 	ProxyAddr       string
 	Mode            Mode
 	PgPool          *pg.Pool
@@ -73,21 +71,6 @@ func (l *Listener) Run(ctx context.Context) error {
 
 	close(l.listening)
 	l.opts.Logger.Sugar().Infof("Listening on %s ...", l.Addr())
-
-	if l.opts.TLS {
-		l.opts.Logger.Sugar().Info("Using insecure TLS.")
-		cert, err := generateInsecureCert()
-		if err != nil {
-			return err
-		}
-		l.opts.Logger.Sugar().Info("Insecure self-signed certificate generated.")
-
-		tlsConfig := &tls.Config{
-			Certificates:       []tls.Certificate{*cert},
-			InsecureSkipVerify: true,
-		}
-		l.listener = tls.NewListener(l.listener, tlsConfig)
-	}
 
 	// handle ctx cancelation
 	go func() {
