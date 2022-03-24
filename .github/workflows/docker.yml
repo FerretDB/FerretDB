@@ -81,10 +81,12 @@ jobs:
         with:
           cache-key: build
 
+      - name: Download tools modules
+        run: go mod download
+        working-directory: tools
+
       - name: Install Task
-        run: |
-          go mod download
-          go generate -x
+        run: go generate -x
         working-directory: tools
 
       - name: Run init

@@ -37,10 +37,12 @@ jobs:
         with:
           cache-key: test
 
+      - name: Download tools modules
+        run: go mod download
+        working-directory: tools
+
       - name: Install Task
-        run: |
-          go mod download
-          go generate -x
+        run: go generate -x
         working-directory: tools
 
       - name: Start environment
@@ -92,10 +94,12 @@ jobs:
         with:
           cache-key: fuzz
 
+      - name: Download tools modules
+        run: go mod download
+        working-directory: source/tools
+
       - name: Install Task
-        run: |
-          go mod download
-          go generate -x
+        run: go generate -x
         working-directory: source/tools
 
       - name: Start pulling environment in the background
