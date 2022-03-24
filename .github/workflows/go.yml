@@ -29,9 +29,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Start pulling environment in the background
-        run: bin/task env-pull &
-
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
         with:
