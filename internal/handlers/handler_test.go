@@ -1122,7 +1122,7 @@ func TestListDropDatabase(t *testing.T) {
 					"sizeOnDisk", int64(16_384),
 					"empty", false,
 				),
-			),`
+			),
 			"totalSize", int64(25_000_000),
 			"totalSizeMb", int64(30),
 			"ok", float64(1),
