@@ -23,7 +23,7 @@ updates:
       day: "saturday"
       time: "04:42"
   - package-ecosystem: "gomod"
-    directory: "/tests"
+    directory: "/integration"
     labels: [deps]
     schedule:
       interval: "weekly"
