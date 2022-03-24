@@ -652,10 +652,10 @@ func TestReadOnlyHandlers(t *testing.T) {
 			resp: types.MustNewDocument(
 				"ns", "monila.film",
 				"count", int32(1_000),
-				"size", int32(1_236_992),
-				"storageSize", int32(1_204_224),
+				"size", int32(1_228_800),
+				"storageSize", int32(1_196_032),
 				"totalIndexSize", int32(0),
-				"totalSize", int32(1_236_992),
+				"totalSize", int32(1_228_800),
 				"scaleFactor", int32(1),
 				"ok", float64(1),
 			),
@@ -714,7 +714,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 			reqSetDB: true,
 			resp: types.MustNewDocument(
 				"estimate", false,
-				"size", int32(114_688),
+				"size", int32(106_496),
 				"numObjects", int32(200),
 				"millis", int32(20),
 				"ok", float64(1),
@@ -737,14 +737,14 @@ func TestReadOnlyHandlers(t *testing.T) {
 			resp: types.MustNewDocument(
 				"size", int32(0),
 				"numObjects", int32(0),
-				"millis", int32(30),
+				"millis", int32(20),
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, req, expected, actual *types.Document) {
 				db, err := req.Get("$db")
 				require.NoError(t, err)
 				if db.(string) == "monila" {
-					testutil.CompareAndSetByPathNum(t, expected, actual, 30, "millis")
+					testutil.CompareAndSetByPathNum(t, expected, actual, 50, "millis")
 					assert.Equal(t, expected, actual)
 				}
 			},
@@ -760,11 +760,11 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"collections", int32(14),
 				"views", int32(0),
 				"objects", int32(30_000),
-				"avgObjSize", 437.7342509264161,
-				"dataSize", 1.323008e+07,
+				"avgObjSize", 433.0,
+				"dataSize", 13_107_200.0,
 				"indexes", int32(0),
 				"indexSize", float64(0),
-				"totalSize", 1.3615104e+07,
+				"totalSize", 13_492_224.0,
 				"scaleFactor", float64(1),
 				"ok", float64(1),
 			),
@@ -791,11 +791,11 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"collections", int32(14),
 				"views", int32(0),
 				"objects", int32(30_000),
-				"avgObjSize", 437.7342509264161,
-				"dataSize", 13_230.08,
+				"avgObjSize", 433.0,
+				"dataSize", 13_107.200,
 				"indexes", int32(0),
 				"indexSize", float64(0),
-				"totalSize", 13_615.104,
+				"totalSize", 13_492.224,
 				"scaleFactor", float64(1_000),
 				"ok", float64(1),
 			),
@@ -1121,13 +1121,13 @@ func TestListDropDatabase(t *testing.T) {
 					"empty", false,
 				),
 			),
-			"totalSize", int64(30_000_000),
+			"totalSize", int64(25_000_000),
 			"totalSizeMb", int64(30),
 			"ok", float64(1),
 		)
 
 		testutil.CompareAndSetByPathNum(t, expectedList, actualList, 5_000_000, "totalSize")
-		testutil.CompareAndSetByPathNum(t, expectedList, actualList, 5, "totalSizeMb")
+		testutil.CompareAndSetByPathNum(t, expectedList, actualList, 10, "totalSizeMb")
 
 		expectedDBs := testutil.GetByPath(t, expectedList, "databases").(*types.Array)
 		actualDBs := testutil.GetByPath(t, actualList, "databases").(*types.Array)
