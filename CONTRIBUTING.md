@@ -37,10 +37,13 @@ You can see all available "task" commands with `bin/task -l`.
 
 Package `cmd` provides commands implementation. `ferretdb` is the main FerretDB binary; others are tools for development.
 
-Package `tools` uses "tools.go" approach to fix tools versions. They are installed into `bin/` by `cd tools; go generate -x`.
+Package `tools` uses "tools.go" approach to fix tools versions.
+They are installed into `bin/` by `cd tools; go generate -x`.
 
 `internal` subpackages contain most of the FerretDB code:
-* `types` package provides Go types matching BSON types that don't have built-in Go equivalents: we use `int32` for BSON's int32, but `types.ObjectID` for BSON's ObjectId.
+
+* `types` package provides Go types matching BSON types that don't have built-in Go equivalents:
+  we use `int32` for BSON's int32, but `types.ObjectID` for BSON's ObjectId.
 * `fjson` provides converters from/to FJSON for built-in and `types` types.
   FJSON adds some extensions to JSON for keeping object keys in order, preserving BSON type information, etc.
   FJSON is used by `jsonb1` handler/storage.
@@ -50,4 +53,5 @@ Package `tools` uses "tools.go" approach to fix tools versions. They are install
   It accepts client connections, reads `wire`/`bson` protocol messages, and passes them to `handlers`.
   Responses are then converted to `wire`/`bson` messages and sent back to the client.
 * `handlers` handle protocol commands.
-  They use `fjson` package for storing data in PostgreSQL in jsonb columns, but they don't use `bson` package – all data is represented as built-in and `types` types.
+  They use `fjson` package for storing data in PostgreSQL in jsonb columns, but they don't use `bson` package –
+  all data is represented as built-in and `types` types.

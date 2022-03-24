@@ -15,7 +15,7 @@ on:
 env:
   GOPATH: /home/runner/go
   GOCACHE: /home/runner/go/cache
-  GOMODCACHE: /home/runner/go/cache/mod
+  GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org # remove direct
 
 jobs:
@@ -29,22 +29,23 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Start pulling environment in the background
-        run: bin/task env-pull &
-
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
         with:
           cache-key: test
 
       - name: Install Task
-        run: cd tools; go generate -x
+        run: go generate -x
+        working-directory: tools
 
       - name: Start environment
         run: bin/task env-up-detach
 
       - name: Run init
         run: bin/task init
+
+      - name: Regenerate and reformat
+        run: bin/task gen fmt docs-fmt
 
       - name: Wait for and setup environment
         run: bin/task env-setup
@@ -87,8 +88,8 @@ jobs:
           cache-key: fuzz
 
       - name: Install Task
-        run: cd tools; go generate -x
-        working-directory: source
+        run: go generate -x
+        working-directory: source/tools
 
       - name: Start pulling environment in the background
         run: bin/task env-pull &
@@ -175,16 +176,6 @@ jobs:
         with:
           name: linux-logs
           path: /tmp/logs
-
-      - name: Upload all fuzz corpora
-        if: failure()
-        uses: actions/upload-artifact@v2
-        with:
-          name: fuzz-corpus
-          path: |
-            ${{ env.GOCACHE }}/fuzz
-            **/testdata/fuzz
-            fuzz-corpus
 
       # To prevent Setup Go's cache to include it.
       # See https://github.com/golang/go/issues/48901.

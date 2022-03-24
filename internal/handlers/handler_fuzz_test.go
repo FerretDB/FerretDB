@@ -40,6 +40,8 @@ func addToSeedCorpus(tb testing.TB, header *wire.MsgHeader, msg wire.MsgBody) {
 }
 
 func FuzzHandler(f *testing.F) {
+	f.Skip("TODO")
+
 	ctx, handler, _ := setup(f, &setupOpts{
 		// to avoid panic: testing: f.Logf was called inside the fuzz target, use t.Logf instead
 		noLogging: true,
