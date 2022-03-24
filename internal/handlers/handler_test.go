@@ -608,7 +608,7 @@ func TestFind(t *testing.T) {
 			)),
 			err: common.NewErrorMsg(
 				common.ErrBadValue,
-				`Expected an integer: $bitsAllClear: "123"`,
+				`value takes an Array, a number, or a BinData but received: $bitsAllClear: "123"`,
 			),
 		},
 		"BitsAllClearFloat64": {
