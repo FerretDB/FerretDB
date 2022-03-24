@@ -207,10 +207,6 @@ docMapLoopK1:
 								types.RemoveByPath(doc, k1, strconv.Itoa(j))
 								j = j - 1
 							}
-							if found > 0 { // all others remove
-								doc.Remove(k1)
-								continue procjectionDocLoop
-							}
 						}
 
 						if found < 0 {
