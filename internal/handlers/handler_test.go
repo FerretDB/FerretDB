@@ -1123,8 +1123,8 @@ func TestListDropDatabase(t *testing.T) {
 					"empty", false,
 				),
 			),
-			"totalSize", int64(25_000_000),
-			"totalSizeMb", int64(30),
+			"totalSize", int64(22_561_571),
+			"totalSizeMb", int64(21),
 			"ok", float64(1),
 		)
 
