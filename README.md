@@ -77,6 +77,7 @@ networks:
 * `ferretdb` runs FerretDB.
 
 2. Start services with `docker-compose up -d`.
+
 3. If you have `mongosh` installed, just run it to connect to FerretDB database `test`.
 If not, run the following command to run `mongosh` inside the temporary MongoDB container, attaching to the same Docker network:
 
