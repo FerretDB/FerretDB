@@ -611,6 +611,22 @@ func TestFind(t *testing.T) {
 				`Expected an integer: $bitsAllClear: "123"`,
 			),
 		},
+		"BitsAllClearNegativeNumber": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(
+					types.NewDocument(
+						"name", "int32",
+						"value", must.NotFail(types.NewDocument(
+							"$bitsAllClear", int32(-1))),
+					)),
+			)),
+			err: common.NewErrorMsg(
+				common.ErrBitsAllClearBadValue,
+				`Expected a positive number in: $bitsAllClear: -1`,
+			),
+		},
 	}
 
 	for name, tc := range testCases { //nolint:paralleltest // false positive

@@ -108,7 +108,7 @@ func GetBinaryMaskParam(value any) (mask *types.Binary, err error) {
 	case int32:
 		// {field: {$bitsAllClear: bitmask}}
 		if value < 0 {
-			return nil, NewErrorMsg(ErrBadValue,
+			return nil, NewErrorMsg(ErrBitsAllClearBadValue,
 				fmt.Sprintf(`Expected a positive number in: $bitsAllClear: %#v`, value),
 			)
 		}

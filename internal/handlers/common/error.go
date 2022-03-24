@@ -32,15 +32,16 @@ const (
 	// For ProtocolError only.
 	errInternalError = ErrorCode(1) // InternalError
 
-	ErrBadValue          = ErrorCode(2)     // BadValue
-	ErrNamespaceNotFound = ErrorCode(26)    // NamespaceNotFound
-	ErrNamespaceExists   = ErrorCode(48)    // NamespaceExists
-	ErrCommandNotFound   = ErrorCode(59)    // CommandNotFound
-	ErrNotImplemented    = ErrorCode(238)   // NotImplemented
-	ErrSortBadValue      = ErrorCode(15974) // Location15974
-	ErrProjectionInEx    = ErrorCode(31253) // Location31253
-	ErrProjectionExIn    = ErrorCode(31254) // Location31254
-	ErrRegexOptions      = ErrorCode(51075) // Location51075
+	ErrBadValue             = ErrorCode(2)     // BadValue
+	ErrBitsAllClearBadValue = ErrorCode(9)     // FailedToParse
+	ErrNamespaceNotFound    = ErrorCode(26)    // NamespaceNotFound
+	ErrNamespaceExists      = ErrorCode(48)    // NamespaceExists
+	ErrCommandNotFound      = ErrorCode(59)    // CommandNotFound
+	ErrNotImplemented       = ErrorCode(238)   // NotImplemented
+	ErrSortBadValue         = ErrorCode(15974) // Location15974
+	ErrProjectionInEx       = ErrorCode(31253) // Location31253
+	ErrProjectionExIn       = ErrorCode(31254) // Location31254
+	ErrRegexOptions         = ErrorCode(51075) // Location51075
 )
 
 // Error represents wire protocol error.
