@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -48,35 +47,6 @@ func TestKeyPaths(t *testing.T) {
 	))
 	assert.Equal(t, expectedDoc, actualDoc)
 
-}
-
-// TestProjection tests projection operator applied after data fetch
-func TestProjection(t *testing.T) {
-	testDoc := must.NotFail(NewDocument(
-		"_id", ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x05, 0x00, 0x00, 0x04, 0x05},
-		"code", must.NotFail(NewArray(
-			must.NotFail(NewDocument("age", int32(999), "document", "abc", "score", int32(42))),
-			must.NotFail(NewDocument("age", int32(1000), "document", "def", "score", float64(42.13))),
-			must.NotFail(NewDocument("age", int32(1001), "document", "jkl", "score", int64(24))),
-		)),
-		"value", must.NotFail(NewArray(
-			must.NotFail(NewDocument("age", int32(999), "document", "abc", "score", int32(42))),
-			must.NotFail(NewDocument("age", int32(1000), "document", "def", "score", float64(42.13))),
-			must.NotFail(NewDocument("age", int32(1001), "document", "jkl", "score", int64(24))),
-		)),
-	))
-	expected := must.NotFail(NewDocument(
-		"_id", ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x05, 0x00, 0x00, 0x04, 0x05},
-		"value", must.NotFail(NewArray(
-			must.NotFail(NewDocument("age", int32(1001), "document", "jkl", "score", int64(24))),
-		)),
-	))
-	projection := must.NotFail(NewDocument("value",
-		must.NotFail(NewDocument("$elemMatch", must.NotFail(NewDocument("score", int32(24))))),
-	))
-
-	types.ProjectDocuments([]*types.Document{testDoc}, projection)
-	assert.Equal(t, expected, testDoc)
 }
 
 func TestGetByPath(t *testing.T) {

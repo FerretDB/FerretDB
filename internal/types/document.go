@@ -17,7 +17,6 @@ package types
 import (
 	"fmt"
 	"strconv"
-	"strings"
 	"unicode/utf8"
 )
 
@@ -281,7 +280,6 @@ func (d *Document) Remove(key string) {
 
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
 func RemoveByPath(d *Document, keys ...string) {
-	fmt.Println(strings.Join(keys, "."))
 	if len(keys) == 0 {
 		return
 	}

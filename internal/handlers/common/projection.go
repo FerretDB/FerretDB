@@ -23,6 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 // isProjectionInclusion: projection can be only inclusion or exlusion. Validate and return true if inclusion.
@@ -174,7 +175,6 @@ docMapLoopK1:
 				conditions := must.NotFail(projectionVal.Get(projectionType)).(*types.Document)
 
 				for k2ConditionField, conditionValue := range conditions.Map() {
-					fmt.Println("!! cond ", k2ConditionField, conditionValue)
 
 					switch elemMatchFieldCondition := conditionValue.(type) {
 					case *types.Document: // TODO field2: { $gte: 10 }
@@ -194,13 +194,12 @@ docMapLoopK1:
 							}
 							switch cmpVal := cmpVal.(type) {
 							case *types.Document:
-								fmt.Println(j, "??", k1, j, cmpVal, elemMatchFieldCondition)
 								docVal, err := cmpVal.Get(k2ConditionField)
 								if err != nil {
 									types.RemoveByPath(doc, k1, strconv.Itoa(j))
 									continue
 								}
-								if types.EqualScalars(docVal, elemMatchFieldCondition) {
+								if testutil.EqualScalars(docVal, elemMatchFieldCondition) {
 									// elemMatch to return first matching, all others are to be removed
 									found = j
 									break internal
