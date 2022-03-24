@@ -659,15 +659,12 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"scaleFactor", int32(1),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, req, expected, actual *types.Document) {
-				db, err := req.Get("$db")
-				require.NoError(t, err)
-				if db.(string) == "monila" {
-					testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "size")
-					testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "storageSize")
-					testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "totalSize")
-					assert.Equal(t, expected, actual)
-				}
+			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
+				testutil.CompareAndSetByPathNum(t, expected, actual, 200, "count") // that's not a number of rows
+				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "size")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "storageSize")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "totalSize")
+				assert.Equal(t, expected, actual)
 			},
 		},
 
