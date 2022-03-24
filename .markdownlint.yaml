@@ -1,49 +1,13 @@
+---
+# https://github.com/DavidAnson/markdownlint
+# https://github.com/igorshubovych/markdownlint-cli
+# https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
 
-# Default state for all rules
 default: true
 
-# Path to configuration file to extend
-extends: null
-
-# MD012/no-multiple-blanks - Multiple consecutive blank lines
-MD012:
-  # Consecutive blank lines
-  maximum: 1
-
-# MD013/line-length - Line length
-MD013:
-  # Number of characters
-  line_length: 80
-  # Number of characters for headings
-  heading_line_length: 80
-  # Number of characters for code blocks
-  code_block_line_length: 80
-  # Include code blocks
-  code_blocks: true
-  # Include tables
-  tables: true
-  # Include headings
-  headings: true
-  # Include headings
-  headers: true
-  # Strict length checking
-  strict: false
-  # Stern length checking
-  stern: false
-
-MD022:
-  # Blank lines above heading
-  lines_above: 1
-  # Blank lines below heading
-  lines_below: 0
-
-# MD031/blanks-around-fences - Fenced code blocks should be surrounded by blank lines
-MD031:
-  # Include list items
-  list_items: true
-
-# MD032/blanks-around-lists - Lists should be surrounded by blank lines
-MD032: true
-
-# MD034/no-bare-urls - Bare URL used
-MD034: false
+MD002: false # deprecated
+MD003: { style: atx }
+MD004: { style: 'asterisk' }
+MD006: false # deprecated
+MD013: { line_length: 120 }
+MD029: { style: ordered }
