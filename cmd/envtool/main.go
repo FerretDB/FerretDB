@@ -281,6 +281,7 @@ func main() {
 		`CREATE ROLE readonly NOINHERIT LOGIN`,
 		`GRANT SELECT ON ALL TABLES IN SCHEMA monila, values, test TO readonly`,
 		`GRANT USAGE ON SCHEMA monila, values, test TO readonly`,
+		`ANALYZE`, // to make tests more stable
 	} {
 		if _, err = pgPool.Exec(ctx, q); err != nil {
 			logger.Fatal(err)
