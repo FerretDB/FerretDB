@@ -132,7 +132,9 @@ func GetBinaryMaskParam(value any) (mask *types.Binary, err error) {
 	case float64:
 		// TODO check float negative zero
 		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) {
-			return nil, ErrNotWholeNumber
+			return nil, NewErrorMsg(ErrBitsAllClearBadValue,
+				fmt.Sprintf("Expected an integer: $bitsAllClear: %#v", value),
+			)
 		}
 		mask, err = types.BinaryFromInt(int64(value))
 		if err != nil {
