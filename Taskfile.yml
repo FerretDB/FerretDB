@@ -20,10 +20,10 @@ tasks:
 
   init:
     desc: 'Install development tools'
-    deps: [gen-version]
+    deps: [gen-version, install-tools]
     cmds:
       - go mod tidy
-      - task: install-tools
+      - go mod verify
 
   env-setup:
     deps: [gen-version]
@@ -158,6 +158,13 @@ tasks:
     dir: integration
     cmds:
       - ../bin/go-consistent -pedantic ./...
+
+  docs-fmt:
+    desc: 'Markdown formatter and linter'
+    cmds:
+      - >
+        docker run --rm -v $PWD:/workdir ghcr.io/igorshubovych/markdownlint-cli:v0.31.1
+        --fix --ignore CHANGELOG.md **/*.md
 
   psql:
     desc: 'Run psql'
