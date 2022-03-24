@@ -659,16 +659,14 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"scaleFactor", int32(1),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, req, expected, actual *types.Document) {
-				db, err := req.Get("$db")
-				require.NoError(t, err)
-				if db.(string) == "monila" {
-					testutil.CompareAndSetByPathNum(t, expected, actual, 0, "count") // TODO
-					testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "size")
-					testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "storageSize")
-					testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "totalSize")
-					assert.Equal(t, expected, actual)
-				}
+			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
+				// https://github.com/FerretDB/FerretDB/issues/335
+				testutil.CompareAndSetByPathNum(t, expected, actual, 0, "count")
+
+				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "size")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "storageSize")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "totalSize")
+				assert.Equal(t, expected, actual)
 			},
 		},
 
@@ -720,14 +718,10 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"millis", int32(20),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, req, expected, actual *types.Document) {
-				db, err := req.Get("$db")
-				require.NoError(t, err)
-				if db.(string) == "monila" {
-					testutil.CompareAndSetByPathNum(t, expected, actual, 50, "millis")
-					testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "size")
-					assert.Equal(t, expected, actual)
-				}
+			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
+				testutil.CompareAndSetByPathNum(t, expected, actual, 50, "millis")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "size")
+				assert.Equal(t, expected, actual)
 			},
 		},
 		"DataSizeCollectionNotExist": {
@@ -741,13 +735,9 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"millis", int32(20),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, req, expected, actual *types.Document) {
-				db, err := req.Get("$db")
-				require.NoError(t, err)
-				if db.(string) == "monila" {
-					testutil.CompareAndSetByPathNum(t, expected, actual, 50, "millis")
-					assert.Equal(t, expected, actual)
-				}
+			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
+				testutil.CompareAndSetByPathNum(t, expected, actual, 50, "millis")
+				assert.Equal(t, expected, actual)
 			},
 		},
 
@@ -769,16 +759,12 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"scaleFactor", float64(1),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, req, expected, actual *types.Document) {
-				db, err := req.Get("$db")
-				require.NoError(t, err)
-				if db.(string) == "monila" {
-					testutil.CompareAndSetByPathNum(t, expected, actual, 1_000, "objects")
-					testutil.CompareAndSetByPathNum(t, expected, actual, 20, "avgObjSize")
-					testutil.CompareAndSetByPathNum(t, expected, actual, 400_000, "dataSize")
-					testutil.CompareAndSetByPathNum(t, expected, actual, 400_000, "totalSize")
-					assert.Equal(t, expected, actual)
-				}
+			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
+				testutil.CompareAndSetByPathNum(t, expected, actual, 1_000, "objects")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 20, "avgObjSize")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 400_000, "dataSize")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 400_000, "totalSize")
+				assert.Equal(t, expected, actual)
 			},
 		},
 		"DBStatsWithScale": {
@@ -800,16 +786,12 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"scaleFactor", float64(1_000),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, req, expected, actual *types.Document) {
-				db, err := req.Get("$db")
-				require.NoError(t, err)
-				if db.(string) == "monila" {
-					testutil.CompareAndSetByPathNum(t, expected, actual, 1_000, "objects")
-					testutil.CompareAndSetByPathNum(t, expected, actual, 20, "avgObjSize")
-					testutil.CompareAndSetByPathNum(t, expected, actual, 400, "dataSize")
-					testutil.CompareAndSetByPathNum(t, expected, actual, 400, "totalSize")
-					assert.Equal(t, expected, actual)
-				}
+			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
+				testutil.CompareAndSetByPathNum(t, expected, actual, 1_000, "objects")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 20, "avgObjSize")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 400, "dataSize")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 400, "totalSize")
+				assert.Equal(t, expected, actual)
 			},
 		},
 
