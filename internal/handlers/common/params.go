@@ -124,6 +124,7 @@ func GetBinaryMaskParam(value any) (mask *types.Binary, err error) {
 	return mask, nil
 }
 
+// GetBinaryParam returns *types.Binary value matched and error if match failed.
 func GetBinaryParam(value any) (res *types.Binary, err error) {
 	switch value := value.(type) {
 	case int32:

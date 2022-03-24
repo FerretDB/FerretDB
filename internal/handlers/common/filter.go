@@ -329,6 +329,7 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 	return true, nil
 }
 
+// filterFieldExprBitsAllClear handles {field: {$bitsAllClear: value}} filter.
 func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
 	mask, err := GetBinaryMaskParam(maskValue)
 	if err != nil {
