@@ -143,7 +143,9 @@ tasks:
   docs-fmt:
     desc: 'Markdown formatter and linter'
     cmds:
-      - docker run --rm -v $PWD:/workdir ghcr.io/igorshubovych/markdownlint-cli:latest "**/*.md" -c ".markdownlint.yaml" --fix
+      - >
+        docker run --rm -v $PWD:/workdir ghcr.io/igorshubovych/markdownlint-cli:v0.31.1
+        --fix --ignore CHANGELOG.md **/*.md
 
   psql:
     desc: 'Run psql'
