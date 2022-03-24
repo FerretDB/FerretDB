@@ -38,7 +38,10 @@ jobs:
           cache-key: test
 
       - name: Install Task
-        run: cd tools; go generate -x
+        run: |
+          go mod download
+          go generate -x
+        working-directory: tools
 
       - name: Start environment
         run: bin/task env-up-detach
@@ -90,8 +93,10 @@ jobs:
           cache-key: fuzz
 
       - name: Install Task
-        run: cd tools; go generate -x
-        working-directory: source
+        run: |
+          go mod download
+          go generate -x
+        working-directory: source/tools
 
       - name: Start pulling environment in the background
         run: bin/task env-pull &

@@ -20,10 +20,10 @@ tasks:
 
   init:
     desc: 'Install development tools'
-    deps: [gen-version]
+    deps: [gen-version, install-tools]
     cmds:
       - go mod tidy
-      - task: install-tools
+      - go mod verify
 
   env-setup:
     deps: [gen-version]
