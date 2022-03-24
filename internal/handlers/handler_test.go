@@ -680,9 +680,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
-				// https://github.com/FerretDB/FerretDB/issues/335
-				testutil.CompareAndSetByPathNum(t, expected, actual, 0, "count")
-
+				testutil.CompareAndSetByPathNum(t, expected, actual, 100, "count") // that's not a number of rows
 				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "size")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "storageSize")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "totalSize")
@@ -734,11 +732,12 @@ func TestReadOnlyHandlers(t *testing.T) {
 			resp: types.MustNewDocument(
 				"estimate", false,
 				"size", int32(106_496),
-				"numObjects", int32(200),
+				"numObjects", int32(210),
 				"millis", int32(20),
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
+				testutil.CompareAndSetByPathNum(t, expected, actual, 10, "numObjects")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 50, "millis")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "size")
 				assert.Equal(t, expected, actual)
@@ -770,7 +769,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"db", "monila",
 				"collections", int32(14),
 				"views", int32(0),
-				"objects", int32(30_000),
+				"objects", int32(31_000),
 				"avgObjSize", 433.0,
 				"dataSize", 13_107_200.0,
 				"indexes", int32(0),
@@ -781,7 +780,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 			),
 			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
 				testutil.CompareAndSetByPathNum(t, expected, actual, 1_000, "objects")
-				testutil.CompareAndSetByPathNum(t, expected, actual, 20, "avgObjSize")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 40, "avgObjSize")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 400_000, "dataSize")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 400_000, "totalSize")
 				assert.Equal(t, expected, actual)
@@ -797,7 +796,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"db", "monila",
 				"collections", int32(14),
 				"views", int32(0),
-				"objects", int32(30_000),
+				"objects", int32(31_000),
 				"avgObjSize", 433.0,
 				"dataSize", 13_107.200,
 				"indexes", int32(0),
@@ -808,7 +807,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 			),
 			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
 				testutil.CompareAndSetByPathNum(t, expected, actual, 1_000, "objects")
-				testutil.CompareAndSetByPathNum(t, expected, actual, 20, "avgObjSize")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 40, "avgObjSize")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 400, "dataSize")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 400, "totalSize")
 				assert.Equal(t, expected, actual)
