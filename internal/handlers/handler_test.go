@@ -760,7 +760,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 			),
 			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
 				testutil.CompareAndSetByPathNum(t, expected, actual, 1_000, "objects")
-				testutil.CompareAndSetByPathNum(t, expected, actual, 20, "avgObjSize")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 40, "avgObjSize")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 400_000, "dataSize")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 400_000, "totalSize")
 				assert.Equal(t, expected, actual)
@@ -787,7 +787,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 			),
 			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
 				testutil.CompareAndSetByPathNum(t, expected, actual, 1_000, "objects")
-				testutil.CompareAndSetByPathNum(t, expected, actual, 20, "avgObjSize")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 40, "avgObjSize")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 400, "dataSize")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 400, "totalSize")
 				assert.Equal(t, expected, actual)
