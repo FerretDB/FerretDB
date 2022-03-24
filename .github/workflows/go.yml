@@ -15,7 +15,7 @@ on:
 env:
   GOPATH: /home/runner/go
   GOCACHE: /home/runner/go/cache
-  GOMODCACHE: /home/runner/go/cache/mod
+  GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org # remove direct
 
 jobs:
