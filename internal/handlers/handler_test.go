@@ -660,9 +660,6 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
-				// https://github.com/FerretDB/FerretDB/issues/335
-				testutil.CompareAndSetByPathNum(t, expected, actual, 0, "count")
-
 				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "size")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "storageSize")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "totalSize")
