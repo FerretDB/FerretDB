@@ -38,6 +38,8 @@ type Listener struct {
 	metrics         *ListenerMetrics
 	handlersMetrics *handlers.Metrics
 	startTime       time.Time
+	listener        net.Listener
+	listening       chan struct{}
 }
 
 // NewListenerOpts represents listener configuration.
@@ -58,17 +60,19 @@ func NewListener(opts *NewListenerOpts) *Listener {
 		metrics:         NewListenerMetrics(),
 		handlersMetrics: handlers.NewMetrics(),
 		startTime:       time.Now(),
+		listening:       make(chan struct{}),
 	}
 }
 
 // Run runs the listener until ctx is canceled or some unrecoverable error occurs.
 func (l *Listener) Run(ctx context.Context) error {
-	lis, err := net.Listen("tcp", l.opts.ListenAddr)
-	if err != nil {
+	var err error
+	if l.listener, err = net.Listen("tcp", l.opts.ListenAddr); err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	l.opts.Logger.Sugar().Infof("Listening on %s ...", l.opts.ListenAddr)
+	close(l.listening)
+	l.opts.Logger.Sugar().Infof("Listening on %s ...", l.Addr())
 
 	if l.opts.TLS {
 		l.opts.Logger.Sugar().Info("Using insecure TLS.")
@@ -82,20 +86,20 @@ func (l *Listener) Run(ctx context.Context) error {
 			Certificates:       []tls.Certificate{*cert},
 			InsecureSkipVerify: true,
 		}
-		lis = tls.NewListener(lis, tlsConfig)
+		l.listener = tls.NewListener(l.listener, tlsConfig)
 	}
 
 	// handle ctx cancelation
 	go func() {
 		<-ctx.Done()
-		lis.Close()
+		l.listener.Close()
 	}()
 
 	const delay = 3 * time.Second
 
 	var wg sync.WaitGroup
 	for {
-		netConn, err := lis.Accept()
+		netConn, err := l.listener.Accept()
 		if err != nil {
 			l.metrics.accepts.WithLabelValues("1").Inc()
 
@@ -157,6 +161,13 @@ func (l *Listener) Run(ctx context.Context) error {
 	wg.Wait()
 
 	return ctx.Err()
+}
+
+// Addr returns listener's address.
+// It can be used to determine an actually used port, if it was zero.
+func (l *Listener) Addr() net.Addr {
+	<-l.listening
+	return l.listener.Addr()
 }
 
 // Describe implements prometheus.Collector.
