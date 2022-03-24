@@ -58,6 +58,7 @@ func setup(t *testing.T) (context.Context, *mongo.Database) {
 		t.Fatal(err)
 	}
 
+	// start in-process FerretDB if port is not set
 	if port == 0 {
 		pgPool := testutil.Pool(ctx, t, nil, logger)
 
