@@ -330,33 +330,20 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 }
 
 func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
-	var mask *types.Binary
-
-	switch values := maskValue.(type) {
-	case *types.Array:
-		// {field: {$bitsAllClear: [position1, position2]}}
-		mask, err := types.BinaryFromArray(values)
-		if err != nil {
-			return false, NewError(ErrBadValue, err)
-		}
-
-	case int32:
-		// {field: {$bitsAllClear: bitmask}}
-		mask, err := types.BinaryFromInt(values)
-		if err != nil {
-			NewError(ErrBadValue, err)
-			return
-		}
-
-	case types.Binary:
-		// {field: {$bitsAllClear: BinData()}}
-		mask := values
-	default:
-		return false, NewErrorMsg(ErrBadValue,
-			fmt.Sprintf(
-				"value takes an Array, a number, or a BinData but received: $bitsAllClear: %#v", values),
-		)
+	mask, err := GetBinaryMaskParam(maskValue)
+	if err != nil {
+		return false, err
 	}
 
-	return true, nil
+	fieldBinary, err := GetBinaryParam(fieldValue)
+	if err != nil {
+		return false, err
+	}
+
+	return matchBits(fieldBinary, mask), nil
+}
+
+func matchBits(value, mask *types.Binary) bool {
+
+	return true
 }
