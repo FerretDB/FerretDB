@@ -107,6 +107,12 @@ func GetBinaryMaskParam(value any) (mask *types.Binary, err error) {
 
 	case int32:
 		// {field: {$bitsAllClear: bitmask}}
+		if value < 0 {
+			return nil, NewErrorMsg(ErrBadValue,
+				fmt.Sprintf(`Expected a positive number in: $bitsAllClear: %#v`, value),
+			)
+		}
+
 		mask, err = types.BinaryFromInt(int64(value))
 		if err != nil {
 			return nil, NewError(ErrBadValue, err)
@@ -118,7 +124,7 @@ func GetBinaryMaskParam(value any) (mask *types.Binary, err error) {
 	default:
 		return nil, NewErrorMsg(ErrBadValue,
 			fmt.Sprintf(
-				"value takes an Array, a number, or a BinData but received: $bitsAllClear: %#v", value),
+				`Expected an integer: $bitsAllClear: %#v`, value),
 		)
 	}
 	return mask, nil
