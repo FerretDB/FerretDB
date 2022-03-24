@@ -611,6 +611,22 @@ func TestFind(t *testing.T) {
 				`Expected an integer: $bitsAllClear: "123"`,
 			),
 		},
+		"BitsAllClearFloat64": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(
+					types.NewDocument(
+						"name", "int32",
+						"value", must.NotFail(types.NewDocument(
+							"$bitsAllClear", 1.2)),
+					)),
+			)),
+			err: common.NewErrorMsg(
+				common.ErrBitsAllClearBadValue,
+				`Expected an integer: $bitsAllClear: 1.2`,
+			),
+		},
 		"BitsAllClearNegativeNumber": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(

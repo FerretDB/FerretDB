@@ -10,6 +10,7 @@ func _() {
 	var x [1]struct{}
 	_ = x[errInternalError-1]
 	_ = x[ErrBadValue-2]
+	_ = x[ErrBitsAllClearBadValue-9]
 	_ = x[ErrNamespaceNotFound-26]
 	_ = x[ErrNamespaceExists-48]
 	_ = x[ErrCommandNotFound-59]
@@ -22,18 +23,19 @@ func _() {
 
 const (
 	_ErrorCode_name_0 = "InternalErrorBadValue"
-	_ErrorCode_name_1 = "NamespaceNotFound"
-	_ErrorCode_name_2 = "NamespaceExists"
-	_ErrorCode_name_3 = "CommandNotFound"
-	_ErrorCode_name_4 = "NotImplemented"
-	_ErrorCode_name_5 = "Location15974"
-	_ErrorCode_name_6 = "Location31253Location31254"
-	_ErrorCode_name_7 = "Location51075"
+	_ErrorCode_name_1 = "FailedToParse"
+	_ErrorCode_name_2 = "NamespaceNotFound"
+	_ErrorCode_name_3 = "NamespaceExists"
+	_ErrorCode_name_4 = "CommandNotFound"
+	_ErrorCode_name_5 = "NotImplemented"
+	_ErrorCode_name_6 = "Location15974"
+	_ErrorCode_name_7 = "Location31253Location31254"
+	_ErrorCode_name_8 = "Location51075"
 )
 
 var (
 	_ErrorCode_index_0 = [...]uint8{0, 13, 21}
-	_ErrorCode_index_6 = [...]uint8{0, 13, 26}
+	_ErrorCode_index_7 = [...]uint8{0, 13, 26}
 )
 
 func (i ErrorCode) String() string {
@@ -41,21 +43,23 @@ func (i ErrorCode) String() string {
 	case 1 <= i && i <= 2:
 		i -= 1
 		return _ErrorCode_name_0[_ErrorCode_index_0[i]:_ErrorCode_index_0[i+1]]
-	case i == 26:
+	case i == 9:
 		return _ErrorCode_name_1
-	case i == 48:
+	case i == 26:
 		return _ErrorCode_name_2
-	case i == 59:
+	case i == 48:
 		return _ErrorCode_name_3
-	case i == 238:
+	case i == 59:
 		return _ErrorCode_name_4
-	case i == 15974:
+	case i == 238:
 		return _ErrorCode_name_5
+	case i == 15974:
+		return _ErrorCode_name_6
 	case 31253 <= i && i <= 31254:
 		i -= 31253
-		return _ErrorCode_name_6[_ErrorCode_index_6[i]:_ErrorCode_index_6[i+1]]
+		return _ErrorCode_name_7[_ErrorCode_index_7[i]:_ErrorCode_index_7[i+1]]
 	case i == 51075:
-		return _ErrorCode_name_7
+		return _ErrorCode_name_8
 	default:
 		return "ErrorCode(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
