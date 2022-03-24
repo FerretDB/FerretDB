@@ -17,6 +17,7 @@ package common
 import (
 	"bytes"
 	"fmt"
+	"math"
 	"time"
 
 	"golang.org/x/exp/constraints"
@@ -47,6 +48,9 @@ func compareScalars(a, b any) compareResult {
 	case float64:
 		switch b := b.(type) {
 		case float64:
+			if math.IsNaN(a) && math.IsNaN(b) {
+				return equal
+			}
 			return compareOrdered(a, b)
 		case int32:
 			return compareNumbers(a, int64(b))

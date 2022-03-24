@@ -1071,6 +1071,25 @@ func TestFind(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("EqNanDoubleDataType", func(t *testing.T) {
+		req := must.NotFail(types.NewDocument(
+			"find", "values",
+			"filter", must.NotFail(types.NewDocument(
+				"value", math.NaN(),
+			)),
+			"$db", "values",
+		))
+
+		response := handle(ctx, t, handler, req)
+		firstBatch, err := testutil.GetByPath(t, response, "cursor", "firstBatch").(*types.Array).Get(0)
+		require.NoError(t, err)
+		responseValue, err := firstBatch.(*types.Document).Get("value")
+		require.NoError(t, err)
+		if nan, ok := responseValue.(float64); ok {
+			assert.True(t, math.IsNaN(nan))
+		}
+	})
 }
 
 func TestReadOnlyHandlers(t *testing.T) {
