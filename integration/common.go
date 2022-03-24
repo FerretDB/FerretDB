@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package integration provides FerretDB integration tests.
 package integration
 
 import (

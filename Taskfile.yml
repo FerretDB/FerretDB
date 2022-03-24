@@ -11,16 +11,22 @@ tasks:
     cmds:
       - go generate -x ./internal/util/version
 
-  install-tools:
+  init-tools:
     dir: tools
     cmds:
       - go mod tidy
       - go mod verify
       - go generate -x
 
+  init-integration:
+    dir: integration
+    cmds:
+      - go mod tidy
+      - go mod verify
+
   init:
     desc: 'Install development tools'
-    deps: [gen-version, install-tools]
+    deps: [gen-version, init-tools, init-integration]
     cmds:
       - go mod tidy
       - go mod verify
