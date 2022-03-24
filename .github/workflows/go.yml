@@ -37,10 +37,6 @@ jobs:
         with:
           cache-key: test
 
-      - name: Download tools modules
-        run: go mod download
-        working-directory: tools
-
       - name: Install Task
         run: go generate -x
         working-directory: tools
@@ -93,10 +89,6 @@ jobs:
         uses: FerretDB/github-actions/setup-go@main
         with:
           cache-key: fuzz
-
-      - name: Download tools modules
-        run: go mod download
-        working-directory: source/tools
 
       - name: Install Task
         run: go generate -x
