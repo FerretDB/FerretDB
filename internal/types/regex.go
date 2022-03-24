@@ -12,27 +12,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handlers
+package types
 
 import (
-	"strings"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
+	"fmt"
+	"regexp"
 )
 
-func TestCommands(t *testing.T) {
-	t.Run("Command key is all lowercase", func(t *testing.T) {
-		t.Parallel()
-		for key := range commands {
-			assert.Equal(t, key, strings.ToLower(key))
-		}
-	})
+// Regex represents BSON type Regex.
+type Regex struct {
+	Pattern string
+	Options string
+}
 
-	t.Run("Command name matches key", func(t *testing.T) {
-		t.Parallel()
-		for key, command := range commands {
-			assert.Equal(t, key, strings.ToLower(command.name))
+// Compile returns Go Regexp object.
+func (r Regex) Compile() (*regexp.Regexp, error) {
+	var opts string
+	for _, o := range r.Options {
+		switch o {
+		case 'i':
+			opts += "i"
+		default:
+			return nil, fmt.Errorf("types.Regex.Compile: unhandled regex option %v (%v)", o, r)
 		}
-	})
+	}
+
+	expr := r.Pattern
+	if opts != "" {
+		expr = "(?" + opts + ")" + expr
+	}
+
+	re, err := regexp.Compile(expr)
+	if err != nil {
+		return nil, fmt.Errorf("types.Regex.Compile: %w", err)
+	}
+
+	return re, nil
 }

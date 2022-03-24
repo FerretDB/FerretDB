@@ -554,7 +554,7 @@ func TestFind(t *testing.T) {
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
 				"filter", must.NotFail(types.NewDocument(
-					"$size", int32(2),
+					"$size", types.MustNewArray(int32(2)),
 				)),
 			)),
 			err: common.NewErrorMsg(
@@ -652,22 +652,19 @@ func TestReadOnlyHandlers(t *testing.T) {
 			resp: types.MustNewDocument(
 				"ns", "monila.film",
 				"count", int32(1_000),
-				"size", int32(1_236_992),
-				"storageSize", int32(1_204_224),
+				"size", int32(1_228_800),
+				"storageSize", int32(1_196_032),
 				"totalIndexSize", int32(0),
-				"totalSize", int32(1_236_992),
+				"totalSize", int32(1_228_800),
 				"scaleFactor", int32(1),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, req, expected, actual *types.Document) {
-				db, err := req.Get("$db")
-				require.NoError(t, err)
-				if db.(string) == "monila" {
-					testutil.CompareAndSetByPathNum(t, expected, actual, 30_000, "size")
-					testutil.CompareAndSetByPathNum(t, expected, actual, 30_000, "storageSize")
-					testutil.CompareAndSetByPathNum(t, expected, actual, 30_000, "totalSize")
-					assert.Equal(t, expected, actual)
-				}
+			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
+				testutil.CompareAndSetByPathNum(t, expected, actual, 100, "count") // that's not a number of rows
+				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "size")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "storageSize")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "totalSize")
+				assert.Equal(t, expected, actual)
 			},
 		},
 
@@ -714,19 +711,16 @@ func TestReadOnlyHandlers(t *testing.T) {
 			reqSetDB: true,
 			resp: types.MustNewDocument(
 				"estimate", false,
-				"size", int32(114_688),
-				"numObjects", int32(200),
+				"size", int32(106_496),
+				"numObjects", int32(210),
 				"millis", int32(20),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, req, expected, actual *types.Document) {
-				db, err := req.Get("$db")
-				require.NoError(t, err)
-				if db.(string) == "monila" {
-					testutil.CompareAndSetByPathNum(t, expected, actual, 50, "millis")
-					testutil.CompareAndSetByPathNum(t, expected, actual, 30_000, "size")
-					assert.Equal(t, expected, actual)
-				}
+			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
+				testutil.CompareAndSetByPathNum(t, expected, actual, 10, "numObjects")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 50, "millis")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "size")
+				assert.Equal(t, expected, actual)
 			},
 		},
 		"DataSizeCollectionNotExist": {
@@ -740,48 +734,41 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"millis", int32(20),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, req, expected, actual *types.Document) {
-				db, err := req.Get("$db")
-				require.NoError(t, err)
-				if db.(string) == "monila" {
-					testutil.CompareAndSetByPathNum(t, expected, actual, 30, "millis")
-					assert.Equal(t, expected, actual)
-				}
+			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
+				testutil.CompareAndSetByPathNum(t, expected, actual, 50, "millis")
+				assert.Equal(t, expected, actual)
 			},
 		},
 
 		"DBStats": {
 			req: types.MustNewDocument(
-				"dbstats", int32(1),
+				"dbStats", int32(1),
 			),
 			reqSetDB: true,
 			resp: types.MustNewDocument(
 				"db", "monila",
 				"collections", int32(14),
 				"views", int32(0),
-				"objects", int32(30224),
-				"avgObjSize", 437.7342509264161,
-				"dataSize", 1.323008e+07,
+				"objects", int32(31_000),
+				"avgObjSize", 433.0,
+				"dataSize", 13_107_200.0,
 				"indexes", int32(0),
 				"indexSize", float64(0),
-				"totalSize", 1.3615104e+07,
+				"totalSize", 13_492_224.0,
 				"scaleFactor", float64(1),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, req, expected, actual *types.Document) {
-				db, err := req.Get("$db")
-				require.NoError(t, err)
-				if db.(string) == "monila" {
-					testutil.CompareAndSetByPathNum(t, expected, actual, 20, "avgObjSize")
-					testutil.CompareAndSetByPathNum(t, expected, actual, 400_000, "dataSize")
-					testutil.CompareAndSetByPathNum(t, expected, actual, 400_000, "totalSize")
-					assert.Equal(t, expected, actual)
-				}
+			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
+				testutil.CompareAndSetByPathNum(t, expected, actual, 1_000, "objects")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 40, "avgObjSize")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 400_000, "dataSize")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 400_000, "totalSize")
+				assert.Equal(t, expected, actual)
 			},
 		},
 		"DBStatsWithScale": {
 			req: types.MustNewDocument(
-				"dbstats", int32(1),
+				"dbStats", int32(1),
 				"scale", float64(1_000),
 			),
 			reqSetDB: true,
@@ -789,33 +776,30 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"db", "monila",
 				"collections", int32(14),
 				"views", int32(0),
-				"objects", int32(30224),
-				"avgObjSize", 437.7342509264161,
-				"dataSize", 13_230.08,
+				"objects", int32(31_000),
+				"avgObjSize", 433.0,
+				"dataSize", 13_107.200,
 				"indexes", int32(0),
 				"indexSize", float64(0),
-				"totalSize", 13_615.104,
+				"totalSize", 13_492.224,
 				"scaleFactor", float64(1_000),
 				"ok", float64(1),
 			),
-			compareFunc: func(t testing.TB, req, expected, actual *types.Document) {
-				db, err := req.Get("$db")
-				require.NoError(t, err)
-				if db.(string) == "monila" {
-					testutil.CompareAndSetByPathNum(t, expected, actual, 20, "avgObjSize")
-					testutil.CompareAndSetByPathNum(t, expected, actual, 400, "dataSize")
-					testutil.CompareAndSetByPathNum(t, expected, actual, 400, "totalSize")
-					assert.Equal(t, expected, actual)
-				}
+			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
+				testutil.CompareAndSetByPathNum(t, expected, actual, 1_000, "objects")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 40, "avgObjSize")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 400, "dataSize")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 400, "totalSize")
+				assert.Equal(t, expected, actual)
 			},
 		},
 
-		"FindProjectionActorsFirstAndLastName": {
+		"FindProjectionInclusions": {
 			req: types.MustNewDocument(
 				"find", "actor",
 				"projection", types.MustNewDocument(
-					"first_name", int32(1),
 					"last_name", int32(1),
+					"last_update", true,
 				),
 				"filter", types.MustNewDocument(
 					"actor_id", int32(28),
@@ -826,8 +810,73 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"cursor", types.MustNewDocument(
 					"firstBatch", types.MustNewArray(
 						types.MustNewDocument(
-							"first_name", "WOODY",
+							"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x1c, 0x00, 0x00, 0x00, 0x1c},
 							"last_name", "HOFFMAN",
+							"last_update", time.Date(2020, 2, 15, 9, 34, 33, 0, time.UTC).Local(),
+						),
+					),
+					"id", int64(0),
+					"ns", "", // set by compareFunc
+				),
+				"ok", float64(1),
+			),
+			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
+				actualV := testutil.GetByPath(t, actual, "cursor", "ns")
+				testutil.SetByPath(t, expected, actualV, "cursor", "ns")
+				assert.Equal(t, expected, actual)
+			},
+		},
+
+		"FindProjectionExclusions": {
+			req: types.MustNewDocument(
+				"find", "actor",
+				"projection", types.MustNewDocument(
+					"first_name", int32(0),
+					"actor_id", false,
+				),
+				"filter", types.MustNewDocument(
+					"actor_id", int32(28),
+				),
+			),
+			reqSetDB: true,
+			resp: types.MustNewDocument(
+				"cursor", types.MustNewDocument(
+					"firstBatch", types.MustNewArray(
+						types.MustNewDocument(
+							"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x1c, 0x00, 0x00, 0x00, 0x1c},
+							"last_name", "HOFFMAN",
+							"last_update", time.Date(2020, 2, 15, 9, 34, 33, 0, time.UTC).Local(),
+						),
+					),
+					"id", int64(0),
+					"ns", "", // set by compareFunc
+				),
+				"ok", float64(1),
+			),
+			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
+				actualV := testutil.GetByPath(t, actual, "cursor", "ns")
+				testutil.SetByPath(t, expected, actualV, "cursor", "ns")
+				assert.Equal(t, expected, actual)
+			},
+		},
+
+		"FindProjectionIDInclusion": {
+			req: types.MustNewDocument(
+				"find", "actor",
+				"projection", types.MustNewDocument(
+					"_id", false,
+					"actor_id", int32(1),
+				),
+				"filter", types.MustNewDocument(
+					"actor_id", int32(28),
+				),
+			),
+			reqSetDB: true,
+			resp: types.MustNewDocument(
+				"cursor", types.MustNewDocument(
+					"firstBatch", types.MustNewArray(
+						types.MustNewDocument(
+							"actor_id", int32(28),
 						),
 					),
 					"id", int64(0),
@@ -902,7 +951,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, _ *types.Document, actual, expected *types.Document) {
-				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "localTime")
+				testutil.CompareAndSetByPathTime(t, expected, actual, 2*time.Second, "localTime")
 				assert.Equal(t, expected, actual)
 			},
 		},
@@ -923,7 +972,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, _ *types.Document, actual, expected *types.Document) {
-				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "localTime")
+				testutil.CompareAndSetByPathTime(t, expected, actual, 2*time.Second, "localTime")
 				assert.Equal(t, expected, actual)
 			},
 		},
@@ -947,7 +996,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, _ *types.Document, actual, expected *types.Document) {
-				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "system", "currentTime")
+				testutil.CompareAndSetByPathTime(t, expected, actual, 2*time.Second, "system", "currentTime")
 				assert.Equal(t, expected, actual)
 			},
 		},
@@ -985,7 +1034,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 					testutil.SetByPath(t, expected, actualV, key)
 				}
 				testutil.CompareAndSetByPathNum(t, expected, actual, 20, "catalogStats", "collections")
-				testutil.CompareAndSetByPathTime(t, expected, actual, time.Second, "localTime")
+				testutil.CompareAndSetByPathTime(t, expected, actual, 2*time.Second, "localTime")
 				assert.Equal(t, expected, actual)
 			},
 		},
@@ -1054,13 +1103,13 @@ func TestListDropDatabase(t *testing.T) {
 					"empty", false,
 				),
 			),
-			"totalSize", int64(22_561_571),
-			"totalSizeMb", int64(21),
+			"totalSize", int64(25_000_000),
+			"totalSizeMb", int64(30),
 			"ok", float64(1),
 		)
 
-		testutil.CompareAndSetByPathNum(t, expectedList, actualList, 2_000_000, "totalSize")
-		testutil.CompareAndSetByPathNum(t, expectedList, actualList, 2, "totalSizeMb")
+		testutil.CompareAndSetByPathNum(t, expectedList, actualList, 5_000_000, "totalSize")
+		testutil.CompareAndSetByPathNum(t, expectedList, actualList, 10, "totalSizeMb")
 
 		expectedDBs := testutil.GetByPath(t, expectedList, "databases").(*types.Array)
 		actualDBs := testutil.GetByPath(t, actualList, "databases").(*types.Array)

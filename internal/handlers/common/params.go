@@ -16,6 +16,7 @@ package common
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 )
@@ -39,6 +40,22 @@ func GetRequiredParam[T types.Type](doc *types.Document, key string) (T, error) 
 	return res, nil
 }
 
+// GetOptionalParam returns doc's value for key, default value for missing parameter, or protocol error for invalid parameter.
+func GetOptionalParam[T types.Type](doc *types.Document, key string, defaultValue T) (T, error) {
+	v, err := doc.Get(key)
+	if err != nil {
+		return defaultValue, nil
+	}
+
+	res, ok := v.(T)
+	if !ok {
+		msg := fmt.Sprintf("parameter %q has type %T (expected %T)", key, v, defaultValue)
+		return defaultValue, NewErrorMsg(ErrBadValue, msg)
+	}
+
+	return res, nil
+}
+
 // AssertType asserts value's type, returning protocol error for unexpected types.
 func AssertType[T types.Type](value any) (T, error) {
 	res, ok := value.(T)
@@ -48,4 +65,31 @@ func AssertType[T types.Type](value any) (T, error) {
 	}
 
 	return res, nil
+}
+
+var (
+	ErrNotWholeNumber = fmt.Errorf("not a whole number")
+	ErrNotMatchedType = fmt.Errorf("not matched required type")
+)
+
+// GetNumberParam matches value's type returning error for bad float values and unmatched types.
+// Parameter parameterName used to generate error message.
+func GetNumberParam(parameterName string, value any) (int64, error) {
+	var numberValue int64
+
+	switch value := value.(type) {
+	case int32:
+		numberValue = int64(value)
+	case int64:
+		numberValue = value
+	case float64:
+		// TODO check float negative zero
+		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) {
+			return 0, ErrNotWholeNumber
+		}
+		numberValue = int64(value)
+	default:
+		return 0, ErrNotMatchedType
+	}
+	return numberValue, nil
 }

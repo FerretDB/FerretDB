@@ -7,21 +7,19 @@
 FerretDB (previously MangoDB) was founded to become the de-facto open-source substitute to MongoDB.
 FerretDB is an open-source proxy, converting the MongoDB wire protocol queries to SQL - using PostgreSQL as a database engine.
 
-
 ## Why do we need FerretDB?
 
-MongoDB was originally an eye-opening technology for many of us developers, empowering us to build applications faster than using relational databases.
-In its early days, its ease-to-use and well-documented drivers made MongoDB one of the simplest database solutions available.
-However, as time passed, MongoDB abandoned its open-source roots; changing the license to SSPL - making it unusable for many open source and early stage commercial projects.
+MongoDB was originally an eye-opening technology for many of us developers, empowering us to build applications faster
+than using relational databases. In its early days, its ease-to-use and well-documented drivers made MongoDB one of the
+simplest database solutions available. However, as time passed, MongoDB abandoned its open-source roots; changing the
+license to SSPL - making it unusable for many open source and early stage commercial projects.
 
-Most MongoDB users are not in need of many advanced features offered by MongoDB; however, they are in need of an easy to use open-source database solution.
-Recognizing this, FerretDB is here to fill that gap.
-
+Most MongoDB users are not in need of many advanced features offered by MongoDB; however, they are in need of an easy
+to use open-source database solution. Recognizing this, FerretDB is here to fill that gap.
 
 ## Scope
 
 FerretDB will be compatible with MongoDB drivers and will strive to serve as a drop-in replacement for MongoDB.
-
 
 ## Current state
 
@@ -32,11 +30,12 @@ See [this example](https://github.com/FerretDB/example) for a short demonstratio
 FerretDB is in its very early stages and welcomes all contributors.
 See our [CONTRIBUTING.md](CONTRIBUTING.md).
 
-
 ## Quickstart
 
 These steps describe a quick local setup.
 They are not suitable for most production use-cases because they keep all data inside containers.
+
+<!-- markdownlint-disable MD029 -->
 
 1. Store the following in the `docker-compose.yml` file:
 
@@ -81,10 +80,12 @@ networks:
 
 3. If you have `mongosh` installed, just run it to connect to FerretDB database `test`.
 If not, run the following command to run `mongosh` inside the temporary MongoDB container, attaching to the same Docker network:
-```
+
+```sh
 docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo:5 mongodb://ferretdb/
 ```
 
+<!-- markdownlint-enable MD029 -->
 
 ## Community
 
@@ -93,6 +94,7 @@ docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo:5 mongodb://fe
 * [Slack chat](https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A) for quick questions.
 * [GitHub Discussions](https://github.com/FerretDB/FerretDB/discussions) for longer topics.
 * [GitHub Issues](https://github.com/FerretDB/FerretDB/issues) for bugs and missing features.
-* [Open Office House meeting](https://calendar.google.com/event?action=TEMPLATE&tmeid=NjNkdTkyN3VoNW5zdHRiaHZybXFtb2l1OWtfMjAyMTEyMTNUMTgwMDAwWiBjX24zN3RxdW9yZWlsOWIwMm0wNzQwMDA3MjQ0QGc&tmsrc=c_n37tquoreil9b02m0740007244%40group.calendar.google.com&scp=ALL) every Monday at 18:00 UTC at [Google Meet](https://meet.google.com/mcb-arhw-qbq).
+* [Open Office House meeting](https://calendar.google.com/event?action=TEMPLATE&tmeid=NjNkdTkyN3VoNW5zdHRiaHZybXFtb2l1OWtfMjAyMTEyMTNUMTgwMDAwWiBjX24zN3RxdW9yZWlsOWIwMm0wNzQwMDA3MjQ0QGc&tmsrc=c_n37tquoreil9b02m0740007244%40group.calendar.google.com&scp=ALL)
+  every Monday at 18:00 UTC at [Google Meet](https://meet.google.com/mcb-arhw-qbq).
 
 If you want to contact FerretDB Inc., please use [this form](https://www.ferretdb.io/contact/).
