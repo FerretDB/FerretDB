@@ -52,7 +52,6 @@ func getByPath[T CompositeTypeInterface](comp T, path ...string) (any, error) {
 
 // getKeyPaths returns a key path.
 func getKeyPaths[T CompositeTypeInterface](comp T, key string, currentPath []string, in [][]string) (res [][]string, err error) {
-
 	var next any = comp
 
 	switch s := next.(type) {
@@ -97,7 +96,6 @@ func getKeyPaths[T CompositeTypeInterface](comp T, key string, currentPath []str
 					}
 				}
 			}
-
 		}
 
 	case *Array:

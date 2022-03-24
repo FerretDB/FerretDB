@@ -75,12 +75,12 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 
 		case *types.Document:
 			for _, projectionType := range v.Keys() {
-
 				supportedProjectionTypes := []string{"$elemMatch"}
 				if !slices.Contains(supportedProjectionTypes, projectionType) {
 					err = lazyerrors.Errorf("projecion of %s is not supported", projectionType)
 					return
 				}
+
 				switch projectionType {
 				case "$elemMatch":
 					inclusion = true
@@ -122,7 +122,6 @@ func projectDocument(inclusion bool, doc *types.Document, projection *types.Docu
 
 docMapLoopK1:
 	for k1 := range doc.Map() {
-
 		projectionVal, ok := projectionMap[k1]
 		if !ok {
 			if k1 == "_id" { // if _id is not in projection map, do not do anything with it
@@ -135,7 +134,6 @@ docMapLoopK1:
 		}
 
 		switch projectionVal := projectionVal.(type) { // found in the projection
-
 		case bool: // field: bool
 			if !projectionVal {
 				doc.Remove(k1)
@@ -150,7 +148,6 @@ docMapLoopK1:
 
 		procjectionDocLoop:
 			for _, projectionType := range projectionVal.Keys() {
-
 				supportedProjections := []string{"$elemMatch"}
 				if !slices.Contains(supportedProjections, projectionType) {
 					return fmt.Errorf("projecion %s is not supported", projectionType)
@@ -175,7 +172,6 @@ docMapLoopK1:
 				conditions := must.NotFail(projectionVal.Get(projectionType)).(*types.Document)
 
 				for k2ConditionField, conditionValue := range conditions.Map() {
-
 					switch elemMatchFieldCondition := conditionValue.(type) {
 					case *types.Document: // TODO field2: { $gte: 10 }
 
