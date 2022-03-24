@@ -38,7 +38,6 @@ var (
 	modeF            = flag.String("mode", string(clientconn.AllModes[0]), fmt.Sprintf("operation mode: %v", clientconn.AllModes))
 	postgresqlURLF   = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/ferretdb", "PostgreSQL URL")
 	proxyAddrF       = flag.String("proxy-addr", "127.0.0.1:37017", "")
-	tlsF             = flag.Bool("tls", false, "enable insecure TLS")
 	versionF         = flag.Bool("version", false, "print version to stdout (full version, commit, branch, dirty flag) and exit")
 	testConnTimeoutF = flag.Duration("test-conn-timeout", 0, "test: set connection timeout")
 )
@@ -77,10 +76,6 @@ func main() {
 		logger.Sugar().Fatalf("Unknown mode %q.", *modeF)
 	}
 
-	if *tlsF {
-		logger.Sugar().Warn("The current TLS implementation is not secure.")
-	}
-
 	ctx, stop := notifyAppTermination(context.Background())
 	go func() {
 		<-ctx.Done()
@@ -98,7 +93,6 @@ func main() {
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		ListenAddr:      *listenAddrF,
-		TLS:             *tlsF,
 		ProxyAddr:       *proxyAddrF,
 		Mode:            clientconn.Mode(*modeF),
 		PgPool:          pgPool,
