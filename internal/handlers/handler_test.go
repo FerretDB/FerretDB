@@ -651,7 +651,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 			reqSetDB: true,
 			resp: types.MustNewDocument(
 				"ns", "monila.film",
-				"count", int32(1_148),
+				"count", int32(1_000),
 				"size", int32(1_228_800),
 				"storageSize", int32(1_196_032),
 				"totalIndexSize", int32(0),
@@ -660,6 +660,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
+				testutil.CompareAndSetByPathNum(t, expected, actual, 100, "count") // that's not a number of rows
 				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "size")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "storageSize")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "totalSize")
