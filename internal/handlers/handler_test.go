@@ -717,6 +717,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
+				testutil.CompareAndSetByPathNum(t, expected, actual, 10, "numObjects")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 50, "millis")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "size")
 				assert.Equal(t, expected, actual)
