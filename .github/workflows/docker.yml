@@ -49,7 +49,7 @@ on:
 env:
   GOPATH: /home/runner/go
   GOCACHE: /home/runner/go/cache
-  GOMODCACHE: /home/runner/go/cache/mod
+  GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org # remove direct
 
 jobs:
@@ -82,7 +82,8 @@ jobs:
           cache-key: build
 
       - name: Install Task
-        run: cd tools; go generate -x
+        run: go generate -x
+        working-directory: tools
 
       - name: Run init
         run: bin/task init
