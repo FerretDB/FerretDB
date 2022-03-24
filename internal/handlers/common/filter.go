@@ -340,10 +340,15 @@ func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
 		return false, err
 	}
 
-	return matchBits(fieldBinary, mask), nil
-}
+	if len(fieldBinary.B) != len(mask.B) {
+		panic("field and mask sizes should be equal")
+	}
 
-func matchBits(value, mask *types.Binary) bool {
+	for i := 0; i < len(fieldBinary.B); i++ {
+		if (fieldBinary.B[i] & mask.B[i]) != 0 {
+			return false, nil
+		}
+	}
 
-	return true
+	return true, nil
 }
