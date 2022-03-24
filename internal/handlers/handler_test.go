@@ -663,6 +663,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				db, err := req.Get("$db")
 				require.NoError(t, err)
 				if db.(string) == "monila" {
+					testutil.CompareAndSetByPathNum(t, expected, actual, 0, "count") // TODO
 					testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "size")
 					testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "storageSize")
 					testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "totalSize")
