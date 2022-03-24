@@ -620,7 +620,7 @@ func TestFind(t *testing.T) {
 					}
 
 					actual := handle(ctx, t, handler, tc.req)
-					assert.Equal(t, expected, actual)
+					testutil.AssertEqual(t, expected, actual)
 				})
 			}
 		})

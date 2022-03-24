@@ -173,10 +173,10 @@ docMapLoopK1:
 				// get the elemMatch conditions
 				conditions := must.NotFail(projectionVal.Get(projectionType)).(*types.Document)
 
-				for k2ElemMatchField, elemMatchValue := range conditions.Map() {
-					fmt.Println(k2ElemMatchField, elemMatchValue)
+				for k2ConditionField, conditionValue := range conditions.Map() {
+					fmt.Println("!! cond ", k2ConditionField, conditionValue)
 
-					switch elemMatchFieldCondition := elemMatchValue.(type) {
+					switch elemMatchFieldCondition := conditionValue.(type) {
 					case *types.Document: // TODO field2: { $gte: 10 }
 
 					case *types.Array:
@@ -194,9 +194,11 @@ docMapLoopK1:
 							}
 							switch cmpVal := cmpVal.(type) {
 							case *types.Document:
-								docVal, err := cmpVal.Get(k2ElemMatchField)
+								fmt.Println(j, "??", k1, j, cmpVal, elemMatchFieldCondition)
+								docVal, err := cmpVal.Get(k2ConditionField)
 								if err != nil {
-									continue internal
+									types.RemoveByPath(doc, k1, strconv.Itoa(j))
+									continue
 								}
 								if types.EqualScalars(docVal, elemMatchFieldCondition) {
 									// elemMatch to return first matching, all others are to be removed
@@ -204,11 +206,14 @@ docMapLoopK1:
 									break internal
 								}
 								types.RemoveByPath(doc, k1, strconv.Itoa(j))
-							default:
-								types.RemoveByPath(doc, k1, strconv.Itoa(j))
-								continue internal
+								j = j - 1
+							}
+							if found > 0 { // all others remove
+								doc.Remove(k1)
+								continue procjectionDocLoop
 							}
 						}
+
 						if found < 0 {
 							doc.Remove(k1)
 							continue procjectionDocLoop

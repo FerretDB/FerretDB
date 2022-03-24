@@ -17,9 +17,8 @@ package types
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"unicode/utf8"
-
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // Common interface with bson.Document.
@@ -281,36 +280,34 @@ func (d *Document) Remove(key string) {
 }
 
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
-func RemoveByPath(d any, keys ...string) {
+func RemoveByPath(d *Document, keys ...string) {
+	fmt.Println(strings.Join(keys, "."))
 	if len(keys) == 0 {
 		return
 	}
 
 	key := keys[0]
+	if _, ok := d.m[key]; !ok {
+		return
+	}
 
-	switch d := d.(type) {
-	case *Document:
-		if _, ok := d.m[key]; !ok {
-			return
-		}
-		if len(keys) > 1 {
-			next := must.NotFail(d.Get(key)).(*Document)
-			RemoveByPath(next, keys[1:]...)
-			return
-		}
+	if len(keys) == 1 {
 		d.Remove(key)
+		return
+	}
+
+	key2 := keys[1]
+	switch x := d.m[key].(type) {
+	case *Document:
+		delete(x.m, key2)
+
 	case *Array:
-		i, err := strconv.Atoi(key)
+		i, err := strconv.Atoi(key2)
 		if err != nil {
-			panic("wrong path")
+			panic("wrong path " + key2)
 			// return
 		}
-		if len(keys) > 1 {
-			next := must.NotFail(d.Get(i))
-			RemoveByPath(next, keys[1:]...)
-			return
-		}
-		d.Remove(i)
+		x.s = append(x.s[:i], x.s[i+1:]...)
 	default:
 		// no path further: scalar value
 	}

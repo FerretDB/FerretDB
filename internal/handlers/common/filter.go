@@ -64,7 +64,6 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 	}
 
 	switch filterValue := filterValue.(type) {
-
 	case *types.Document:
 		// {field: {expr}}
 		return filterFieldExpr(docValue, filterValue)
