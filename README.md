@@ -7,7 +7,6 @@
 FerretDB (previously MangoDB) was founded to become the de-facto open-source substitute to MongoDB.
 FerretDB is an open-source proxy, converting the MongoDB wire protocol queries to SQL - using PostgreSQL as a database engine.
 
-
 ## Why do we need FerretDB?
 
 MongoDB was originally an eye-opening technology for many of us developers, empowering us to build applications faster than using relational databases.
@@ -17,11 +16,9 @@ However, as time passed, MongoDB abandoned its open-source roots; changing the l
 Most MongoDB users are not in need of many advanced features offered by MongoDB; however, they are in need of an easy to use open-source database solution.
 Recognizing this, FerretDB is here to fill that gap.
 
-
 ## Scope
 
 FerretDB will be compatible with MongoDB drivers and will strive to serve as a drop-in replacement for MongoDB.
-
 
 ## Current state
 
@@ -31,7 +28,6 @@ See [this example](https://github.com/FerretDB/example) for a short demonstratio
 
 FerretDB is in its very early stages and welcomes all contributors.
 See our [CONTRIBUTING.md](CONTRIBUTING.md).
-
 
 ## Quickstart
 
@@ -81,10 +77,10 @@ networks:
 
 3. If you have `mongosh` installed, just run it to connect to FerretDB database `test`.
 If not, run the following command to run `mongosh` inside the temporary MongoDB container, attaching to the same Docker network:
+
 ```
 docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo:5 mongodb://ferretdb/
 ```
-
 
 ## Community
 
