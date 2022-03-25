@@ -55,12 +55,15 @@ func (s *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	}
 
 	var filter *types.Document
-	var limit int32
 	if filter, err = common.GetOptionalParam(document, "query", filter); err != nil {
 		return nil, err
 	}
-	if limit, err = common.GetOptionalParam(document, "limit", limit); err != nil {
-		return nil, err
+
+	var limit int64
+	if l, _ := document.Get("limit"); l != nil {
+		if limit, err = common.GetWholeNumberParam(l); err != nil {
+			return nil, err
+		}
 	}
 
 	fetchedDocs, err := s.fetch(ctx, db, collection)
