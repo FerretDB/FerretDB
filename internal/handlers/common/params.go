@@ -182,3 +182,21 @@ func getBinaryParam(value any) (types.Binary, error) {
 	}
 	return res, nil
 }
+
+func getBinaryParams(fieldValue any, maskValue any) (types.Binary, types.Binary, error) {
+	maskBinary, err := getBinaryMaskParam(maskValue)
+	if err != nil {
+		return types.Binary{}, types.Binary{}, err
+	}
+
+	fieldBinary, err := getBinaryParam(fieldValue)
+	if err != nil {
+		return types.Binary{}, types.Binary{}, err
+	}
+
+	if len(fieldBinary.B) != len(maskBinary.B) {
+		panic("fieldBinary and maskBinary sizes should be equal")
+	}
+
+	return fieldBinary, maskBinary, nil
+}

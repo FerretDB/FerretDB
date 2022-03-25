@@ -347,22 +347,13 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 
 // filterFieldExprBitsAllClear handles {field: {$bitsAllClear: value}} filter.
 func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
-	mask, err := getBinaryMaskParam(maskValue)
+	fieldBinary, maskBinary, err := getBinaryParams(fieldValue, maskValue)
 	if err != nil {
-		return false, err
-	}
-
-	fieldBinary, err := getBinaryParam(fieldValue)
-	if err != nil {
-		return false, err
-	}
-
-	if len(fieldBinary.B) != len(mask.B) {
-		panic("field and mask sizes should be equal")
+		return false, nil
 	}
 
 	for i := 0; i < len(fieldBinary.B); i++ {
-		if (fieldBinary.B[i] & mask.B[i]) != 0 {
+		if (fieldBinary.B[i] & maskBinary.B[i]) != 0 {
 			return false, nil
 		}
 	}
@@ -372,22 +363,47 @@ func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
 
 // filterFieldExprBitsAllSet handles {field: {$bitsAllSet: value}} filter.
 func filterFieldExprBitsAllSet(fieldValue, maskValue any) (bool, error) {
-	mask, err := getBinaryMaskParam(maskValue)
+	fieldBinary, maskBinary, err := getBinaryParams(fieldValue, maskValue)
 	if err != nil {
-		return false, err
-	}
-
-	fieldBinary, err := getBinaryParam(fieldValue)
-	if err != nil {
-		return false, err
-	}
-
-	if len(fieldBinary.B) != len(mask.B) {
-		panic("field and mask sizes should be equal")
+		return false, nil
 	}
 
 	for i := 0; i < len(fieldBinary.B); i++ {
-		if (fieldBinary.B[i] & mask.B[i]) != mask.B[i] {
+		if (fieldBinary.B[i] & maskBinary.B[i]) != maskBinary.B[i] {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+// filterFieldExprBitsAnyClear handles {field: {$bitsAnyClear: value}} filter.
+func filterFieldExprBitsAnyClear(fieldValue, maskValue any) (bool, error) {
+	fieldBinary, maskBinary, err := getBinaryParams(fieldValue, maskValue)
+	if err != nil {
+		return false, err
+	}
+
+	for i := 0; i < len(fieldBinary.B); i++ {
+		// TODO: fix condition
+		if (fieldBinary.B[i] & maskBinary.B[i]) != maskBinary.B[i] {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+// filterFieldExprBitsAnySet handles {field: {$bitsAnySet: value}} filter.
+func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
+	fieldBinary, maskBinary, err := getBinaryParams(fieldValue, maskValue)
+	if err != nil {
+		return false, err
+	}
+
+	for i := 0; i < len(fieldBinary.B); i++ {
+		// TODO: fix condition
+		if (fieldBinary.B[i] & maskBinary.B[i]) != maskBinary.B[i] {
 			return false, nil
 		}
 	}
