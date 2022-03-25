@@ -30,10 +30,11 @@ import (
 // Exception for the _id field.
 func isProjectionInclusion(projection *types.Document) (inclusion bool, err error) {
 	var exclusion bool
-	for k, v := range projection.Map() {
+	for _, k := range projection.Keys() {
 		if k == "_id" { // _id is a special case and can be both
 			continue
 		}
+		v := must.NotFail(projection.Get(k))
 		switch v := v.(type) {
 		case bool:
 			if v {
