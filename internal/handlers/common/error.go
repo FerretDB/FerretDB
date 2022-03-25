@@ -120,6 +120,8 @@ var (
 	_ error = (*Error)(nil)
 )
 
+// formatBitwiseOperatorErr formats protocol error for given internal error and bitwise operator.
+// Mask value used in error message.
 func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
 	switch err {
 	case errNotWholeNumber:

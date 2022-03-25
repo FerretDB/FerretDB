@@ -176,6 +176,7 @@ func getBinaryParam(value any) (types.Binary, error) {
 	return res, nil
 }
 
+// getBinaryParams creates types.Binary for field and mask from given values returning types.Binary or error.
 func getBinaryParams(fieldValue any, maskValue any) (types.Binary, types.Binary, error) {
 	maskBinary, err := getBinaryMaskParam(maskValue)
 	if err != nil {
