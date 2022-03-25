@@ -44,16 +44,16 @@ type Binary struct {
 
 // BinaryFromArray takes position array which must contain non-negative numbers
 // and packs it into types.Binary. Bit positions start at 0 from the least significant bit.
-func BinaryFromArray(values *Array) (*Binary, error) {
+func BinaryFromArray(values *Array) (Binary, error) {
 	var bitMask uint64
 	for i := 0; i < values.Len(); i++ {
 		value, err := values.Get(i)
 		if err != nil {
-			return nil, err
+			return Binary{}, err
 		}
 
 		if _, ok := value.(int32); !ok {
-			return nil, errors.New("bit position should be an integer value")
+			return Binary{}, errors.New("bit position should be an integer value")
 		}
 
 		bitPosition := value.(int32)
@@ -64,21 +64,21 @@ func BinaryFromArray(values *Array) (*Binary, error) {
 	bs := make([]byte, 8)
 	binary.LittleEndian.PutUint64(bs, bitMask)
 
-	return &Binary{
+	return Binary{
 		Subtype: BinaryGeneric,
 		B:       bs,
 	}, nil
 }
 
 // BinaryFromInt packs int64 value into types.Binary.
-func BinaryFromInt(value int64) (mask *Binary, err error) {
+func BinaryFromInt(value int64) (Binary, error) {
 	buff := new(bytes.Buffer)
-	err = binary.Write(buff, binary.LittleEndian, uint64(value))
+	err := binary.Write(buff, binary.LittleEndian, uint64(value))
 	if err != nil {
-		return nil, err
+		return Binary{}, err
 	}
 
-	return &Binary{
+	return Binary{
 		Subtype: BinaryGeneric,
 		B:       buff.Bytes(),
 	}, nil

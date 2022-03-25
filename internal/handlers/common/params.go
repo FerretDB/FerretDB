@@ -94,57 +94,60 @@ func GetNumberParam(parameterName string, value any) (int64, error) {
 	return numberValue, nil
 }
 
-// GetBinaryMaskParam returns *types.Binary value matched and error if match failed.
-// Possible values are: position array ([1,3,5] == 010101), integer value and types.Binary value.
-func GetBinaryMaskParam(value any) (mask *types.Binary, err error) {
+// getBinaryMaskParam matches value type, returning types.Binary and error if match failed.
+// Possible values are: position array ([1,3,5] == 010101), whole number value and types.Binary value.
+func getBinaryMaskParam(value any) (types.Binary, error) {
+	var mask types.Binary
+	var err error
+
 	switch value := value.(type) {
 	case *types.Array:
 		// {field: {$bitsAllClear: [position1, position2]}}
 		mask, err = types.BinaryFromArray(value)
 		if err != nil {
-			return nil, NewError(ErrBadValue, err)
+			return types.Binary{}, NewError(ErrBadValue, err)
 		}
 
 	case int32:
 		// {field: {$bitsAllClear: bitmask}}
 		if value < 0 {
-			return nil, NewErrorMsg(ErrBitsAllClearBadValue,
+			return types.Binary{}, NewErrorMsg(ErrFailedToParse,
 				fmt.Sprintf(`Expected a positive number in: $bitsAllClear: %#v`, value),
 			)
 		}
 
 		mask, err = types.BinaryFromInt(int64(value))
 		if err != nil {
-			return nil, NewError(ErrBadValue, err)
+			return types.Binary{}, NewError(ErrBadValue, err)
 		}
 	case int64:
 		// {field: {$bitsAllClear: bitmask}}
 		if value < 0 {
-			return nil, NewErrorMsg(ErrBitsAllClearBadValue,
+			return types.Binary{}, NewErrorMsg(ErrFailedToParse,
 				fmt.Sprintf(`Expected a positive number in: $bitsAllClear: %#v`, value),
 			)
 		}
 
 		mask, err = types.BinaryFromInt(value)
 		if err != nil {
-			return nil, NewError(ErrBadValue, err)
+			return types.Binary{}, NewError(ErrBadValue, err)
 		}
 	case float64:
 		// TODO check float negative zero
 		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) {
-			return nil, NewErrorMsg(ErrBitsAllClearBadValue,
+			return types.Binary{}, NewErrorMsg(ErrFailedToParse,
 				fmt.Sprintf("Expected an integer: $bitsAllClear: %#v", value),
 			)
 		}
 		mask, err = types.BinaryFromInt(int64(value))
 		if err != nil {
-			return nil, err
+			return types.Binary{}, err
 		}
 	case types.Binary:
 		// {field: {$bitsAllClear: BinData()}}
-		mask = &value
+		mask = value
 	default:
-		return nil, NewErrorMsg(ErrBadValue,
+		return types.Binary{}, NewErrorMsg(ErrBadValue,
 			fmt.Sprintf(
 				`value takes an Array, a number, or a BinData but received: $bitsAllClear: %#v`, value),
 		)
@@ -152,30 +155,33 @@ func GetBinaryMaskParam(value any) (mask *types.Binary, err error) {
 	return mask, nil
 }
 
-// GetBinaryParam returns *types.Binary value matched and error if match failed.
-func GetBinaryParam(value any) (res *types.Binary, err error) {
+// GetBinaryParam matches value type, returning types.Binary and error if match failed.
+func GetBinaryParam(value any) (types.Binary, error) {
+	var res types.Binary
+	var err error
+
 	switch value := value.(type) {
 	case int32:
 		res, err = types.BinaryFromInt(int64(value))
 		if err != nil {
-			return nil, err
+			return types.Binary{}, err
 		}
 	case int64:
 		res, err = types.BinaryFromInt(value)
 		if err != nil {
-			return nil, err
+			return types.Binary{}, err
 		}
 	case float64:
 		// TODO check float negative zero
 		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) {
-			return nil, ErrNotWholeNumber
+			return types.Binary{}, ErrNotWholeNumber
 		}
 		res, err = types.BinaryFromInt(int64(value))
 		if err != nil {
-			return nil, err
+			return types.Binary{}, err
 		}
 	default:
-		return nil, NewErrorMsg(ErrBadValue, "not matched")
+		return types.Binary{}, NewErrorMsg(ErrBadValue, "not matched")
 	}
 	return res, nil
 }

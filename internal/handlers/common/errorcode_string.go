@@ -10,7 +10,7 @@ func _() {
 	var x [1]struct{}
 	_ = x[errInternalError-1]
 	_ = x[ErrBadValue-2]
-	_ = x[ErrBitsAllClearBadValue-9]
+	_ = x[ErrFailedToParse-9]
 	_ = x[ErrNamespaceNotFound-26]
 	_ = x[ErrNamespaceExists-48]
 	_ = x[ErrCommandNotFound-59]

@@ -623,7 +623,7 @@ func TestFind(t *testing.T) {
 					)),
 			)),
 			err: common.NewErrorMsg(
-				common.ErrBitsAllClearBadValue,
+				common.ErrFailedToParse,
 				`Expected an integer: $bitsAllClear: 1.2`,
 			),
 		},
@@ -639,7 +639,7 @@ func TestFind(t *testing.T) {
 					)),
 			)),
 			err: common.NewErrorMsg(
-				common.ErrBitsAllClearBadValue,
+				common.ErrFailedToParse,
 				`Expected a positive number in: $bitsAllClear: -1`,
 			),
 		},
