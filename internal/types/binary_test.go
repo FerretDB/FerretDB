@@ -54,6 +54,8 @@ func TestBinaryFromArray(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			got, err := BinaryFromArray(tt.args.values)
 			if tt.wantErr != nil {
 				assert.Equal(t, tt.wantErr, err)
