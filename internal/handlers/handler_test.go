@@ -662,6 +662,70 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
+		"BitsAnyClear": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(
+					types.NewDocument(
+						"name", "int32",
+						"value", must.NotFail(types.NewDocument(
+							"$bitsAnyClear", int32(1))),
+					)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x10, 0x01, 0x00, 0x00, 0x10, 0x01},
+					"name", "int32",
+					"value", int32(42),
+				)),
+			)),
+		},
+		"BitsAnyClearEmptyResult": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(
+					types.NewDocument(
+						"name", "int32",
+						"value", must.NotFail(types.NewDocument(
+							"$bitsAnyClear", int32(42))),
+					)),
+			)),
+			resp: new(types.Array),
+		},
+		"BitsAnySet": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(
+					types.NewDocument(
+						"name", "int32",
+						"value", must.NotFail(types.NewDocument(
+							"$bitsAnySet", int32(22))),
+					)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x10, 0x01, 0x00, 0x00, 0x10, 0x01},
+					"name", "int32",
+					"value", int32(42),
+				)),
+			)),
+		},
+		"BitsAnySetEmptyResult": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(
+					types.NewDocument(
+						"name", "int32",
+						"value", must.NotFail(types.NewDocument(
+							"$bitsAnySet", int32(4))),
+					)),
+			)),
+			resp: new(types.Array),
+		},
 	}
 
 	for name, tc := range testCases { //nolint:paralleltest // false positive

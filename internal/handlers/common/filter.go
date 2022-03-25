@@ -260,6 +260,20 @@ func filterFieldExpr(fieldValue any, expr *types.Document) (bool, error) {
 				return false, err
 			}
 
+		case "$bitsAnyClear":
+			// {field: {$bitsAnyClear: value}}
+			res, err := filterFieldExprBitsAnyClear(fieldValue, exprValue)
+			if !res || err != nil {
+				return false, err
+			}
+
+		case "$bitsAnySet":
+			// {field: {$bitsAnySet: value}}
+			res, err := filterFieldExprBitsAnySet(fieldValue, exprValue)
+			if !res || err != nil {
+				return false, err
+			}
+
 		default:
 			panic(fmt.Sprintf("filterFieldExpr: %q", exprKey))
 		}
@@ -385,8 +399,12 @@ func filterFieldExprBitsAnyClear(fieldValue, maskValue any) (bool, error) {
 	}
 
 	for i := 0; i < len(fieldBinary.B); i++ {
-		// TODO: fix condition
-		if (fieldBinary.B[i] & maskBinary.B[i]) != maskBinary.B[i] {
+		if fieldBinary.B[i] == 0 {
+			continue
+		}
+
+		mask := maskBinary.B[i] ^ 0b1111_1111
+		if (fieldBinary.B[i] & mask) == 0 {
 			return false, nil
 		}
 	}
@@ -402,8 +420,12 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 	}
 
 	for i := 0; i < len(fieldBinary.B); i++ {
-		// TODO: fix condition
-		if (fieldBinary.B[i] & maskBinary.B[i]) != maskBinary.B[i] {
+		if fieldBinary.B[i] == 0 {
+			continue
+		}
+
+		mask := maskBinary.B[i] ^ 0b0000_0000
+		if (fieldBinary.B[i] & mask) == 0 {
 			return false, nil
 		}
 	}
