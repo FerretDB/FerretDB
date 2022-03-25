@@ -14,7 +14,7 @@ replace golang.org/x/tools => github.com/AlekSi/tools v0.1.11-0.20220317161929-e
 require (
 	github.com/BurntSushi/go-sumtype v0.0.0-20190304192233-fcb4a6205bdc
 	github.com/go-task/task/v3 v3.11.0
-	github.com/golangci/golangci-lint v1.45.0 // sync with GitHub Actions workflow
+	github.com/golangci/golangci-lint v1.45.2 // sync with GitHub Actions workflow
 	github.com/quasilyte/go-consistent v0.0.0-00010101000000-000000000000
 	github.com/reviewdog/reviewdog v0.14.0
 	golang.org/x/perf v0.0.0-20220317191433-96728ec1d780
@@ -38,7 +38,7 @@ require (
 	github.com/ashanbrown/makezero v1.1.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bkielbasa/cyclop v1.2.0 // indirect
-	github.com/blizzy78/varnamelen v0.6.0 // indirect
+	github.com/blizzy78/varnamelen v0.6.1 // indirect
 	github.com/bombsimon/wsl/v3 v3.3.0 // indirect
 	github.com/bradleyfalzon/ghinstallation/v2 v2.0.4 // indirect
 	github.com/breml/bidichk v0.2.2 // indirect
@@ -101,7 +101,7 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-retryablehttp v0.6.8 // indirect
-	github.com/hashicorp/go-version v1.2.1 // indirect
+	github.com/hashicorp/go-version v1.4.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/haya14busa/go-actions-toolkit v0.0.0-20200105081403-ca0307860f01 // indirect
 	github.com/hexops/gotextdiff v1.0.3 // indirect
@@ -173,7 +173,7 @@ require (
 	github.com/spf13/viper v1.10.1 // indirect
 	github.com/ssgreg/nlreturn/v2 v2.2.1 // indirect
 	github.com/stretchr/objx v0.1.1 // indirect
-	github.com/stretchr/testify v1.7.0 // indirect
+	github.com/stretchr/testify v1.7.1 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/sylvia7788/contextcheck v1.0.4 // indirect
 	github.com/tdakkota/asciicheck v0.1.1 // indirect
