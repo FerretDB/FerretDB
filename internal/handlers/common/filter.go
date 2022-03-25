@@ -336,7 +336,7 @@ func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
 		return false, err
 	}
 
-	fieldBinary, err := GetBinaryParam(fieldValue)
+	fieldBinary, err := getBinaryParam(fieldValue)
 	if err != nil {
 		return false, err
 	}

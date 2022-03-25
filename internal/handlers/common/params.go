@@ -155,8 +155,8 @@ func getBinaryMaskParam(value any) (types.Binary, error) {
 	return mask, nil
 }
 
-// GetBinaryParam matches value type, returning types.Binary and error if match failed.
-func GetBinaryParam(value any) (types.Binary, error) {
+// getBinaryParam matches value type, returning types.Binary and error if match failed.
+func getBinaryParam(value any) (types.Binary, error) {
 	var res types.Binary
 	var err error
 

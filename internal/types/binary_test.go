@@ -21,6 +21,8 @@ import (
 )
 
 func TestBinaryFromArray(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		values *Array
 	}
