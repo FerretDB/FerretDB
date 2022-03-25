@@ -11,16 +11,22 @@ tasks:
     cmds:
       - go generate -x ./internal/util/version
 
-  install-tools:
+  init-tools:
     dir: tools
     cmds:
       - go mod tidy
       - go mod verify
       - go generate -x
 
+  init-integration:
+    dir: integration
+    cmds:
+      - go mod tidy
+      - go mod verify
+
   init:
     desc: 'Install development tools'
-    deps: [gen-version, install-tools]
+    deps: [gen-version, init-tools, init-integration]
     cmds:
       - go mod tidy
       - go mod verify
@@ -65,6 +71,19 @@ tasks:
     cmds:
       - go test -race -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
       - go test -race -shuffle=on -bench=. -benchtime=1x ./...
+
+  test-integration:
+    desc: 'Run integration tests'
+    cmds:
+      - task: test-integration-ci
+        vars: { DB: 'FerretDB' }
+      - task: test-integration-ci
+        vars: { DB: 'MongoDB' }
+
+  test-integration-ci:
+    dir: integration
+    cmds:
+      - go test -count=1 -race -shuffle=on -coverprofile=integration.txt -coverpkg=../... -port={{.DB}}
 
   bench-short:
     desc: 'Benchmark for about 20 seconds (with default BENCHTIME)'
@@ -125,6 +144,7 @@ tasks:
       - lint-golangci-lint-required
       - lint-go-sumtype
       - lint-go-consistent
+      - lint-go-consistent-integration
     cmds:
       - bin/golangci-lint run --config=.golangci.yml
 
@@ -139,6 +159,11 @@ tasks:
   lint-go-consistent:
     cmds:
       - bin/go-consistent -pedantic ./cmd/... ./internal/...
+
+  lint-go-consistent-integration:
+    dir: integration
+    cmds:
+      - ../bin/go-consistent -pedantic ./...
 
   docs-fmt:
     desc: 'Markdown formatter and linter'
