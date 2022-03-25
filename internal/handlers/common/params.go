@@ -171,7 +171,7 @@ func getBinaryParam(value any) (types.Binary, error) {
 	case float64:
 		// TODO check float negative zero
 		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) {
-			return types.Binary{}, ErrNotWholeNumber
+			return types.Binary{}, errNotWholeNumber
 		}
 		res, err = types.BinaryFromInt(int64(value))
 		if err != nil {
