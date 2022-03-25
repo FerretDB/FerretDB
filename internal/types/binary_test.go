@@ -26,7 +26,7 @@ func TestBinaryFromArray(t *testing.T) {
 	type args struct {
 		values *Array
 	}
-	tests := []struct {
+	testCases := []struct {
 		name    string
 		args    args
 		want    Binary
@@ -52,15 +52,17 @@ func TestBinaryFromArray(t *testing.T) {
 			},
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			got, err := BinaryFromArray(tt.args.values)
-			if tt.wantErr != nil {
-				assert.Equal(t, tt.wantErr, err)
+			got, err := BinaryFromArray(tc.args.values)
+			if tc.wantErr != nil {
+				assert.Equal(t, tc.wantErr, err)
 			}
-			assert.Equalf(t, tt.want, got, "BinaryFromArray(%v)", tt.args.values)
+			assert.Equalf(t, tc.want, got, "BinaryFromArray(%v)", tc.args.values)
 		})
 	}
 }
