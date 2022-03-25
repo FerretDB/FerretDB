@@ -119,6 +119,7 @@ linters:
     - rowserrcheck
     - sqlclosecheck
     - staticcheck
+    - structcheck
     - stylecheck
     - tparallel
     - unused
