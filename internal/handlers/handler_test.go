@@ -260,7 +260,7 @@ func TestFind(t *testing.T) {
 				"sort", types.MustNewDocument(
 					"actor_id", int32(1),
 				),
-				"limit", int32(1),
+				"limit", int64(1),
 			),
 			resp: types.MustNewArray(
 				types.MustNewDocument(
@@ -296,7 +296,7 @@ func TestFind(t *testing.T) {
 				"sort", types.MustNewDocument(
 					"actor_id", int32(1),
 				),
-				"limit", int32(1),
+				"limit", float64(1),
 			),
 			resp: types.MustNewArray(
 				types.MustNewDocument(
@@ -363,7 +363,7 @@ func TestFind(t *testing.T) {
 				"sort", types.MustNewDocument(
 					"actor_id", int32(1),
 				),
-				"limit", int32(1),
+				"limit", int64(1),
 			),
 			resp: types.MustNewArray(
 				types.MustNewDocument(
@@ -388,7 +388,7 @@ func TestFind(t *testing.T) {
 				"sort", types.MustNewDocument(
 					"actor_id", int32(1),
 				),
-				"limit", int32(1),
+				"limit", float64(1),
 			),
 			resp: types.MustNewArray(
 				types.MustNewDocument(
@@ -581,6 +581,86 @@ func TestFind(t *testing.T) {
 				common.ErrBadValue,
 				`unknown top level operator: $size. `+
 					`If you have a field name that starts with a '$' symbol, consider using $getField or $setField.`,
+			),
+		},
+		"BitsAllClear": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(
+					types.NewDocument(
+						"name", "int32",
+						"value", must.NotFail(types.NewDocument(
+							"$bitsAllClear", int32(21))),
+					)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x10, 0x01, 0x00, 0x00, 0x10, 0x01},
+					"name", "int32",
+					"value", int32(42),
+				)),
+			)),
+		},
+		"BitsAllClearEmptyResult": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(
+					types.NewDocument(
+						"name", "int32",
+						"value", must.NotFail(types.NewDocument(
+							"$bitsAllClear", int32(53))),
+					)),
+			)),
+			resp: new(types.Array),
+		},
+		"BitsAllClearString": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(
+					types.NewDocument(
+						"name", "int32",
+						"value", must.NotFail(types.NewDocument(
+							"$bitsAllClear", "123")),
+					)),
+			)),
+			err: common.NewErrorMsg(
+				common.ErrBadValue,
+				`value takes an Array, a number, or a BinData but received: $bitsAllClear: "123"`,
+			),
+		},
+		"BitsAllClearFloat64": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(
+					types.NewDocument(
+						"name", "int32",
+						"value", must.NotFail(types.NewDocument(
+							"$bitsAllClear", 1.2)),
+					)),
+			)),
+			err: common.NewErrorMsg(
+				common.ErrFailedToParse,
+				`Expected an integer: $bitsAllClear: 1.2`,
+			),
+		},
+		"BitsAllClearNegativeNumber": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(
+					types.NewDocument(
+						"name", "int32",
+						"value", must.NotFail(types.NewDocument(
+							"$bitsAllClear", int32(-1))),
+					)),
+			)),
+			err: common.NewErrorMsg(
+				common.ErrFailedToParse,
+				`Expected a positive number in: $bitsAllClear: -1`,
 			),
 		},
 	}
