@@ -24,31 +24,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-func TestKeyPaths(t *testing.T) {
-	t.Parallel()
-
-	doc := must.NotFail(NewDocument(
-		"find", "testcore-queryoperators",
-		"filter", must.NotFail(NewDocument("name", "array-embedded")),
-		"projection", must.NotFail(NewDocument("value",
-			must.NotFail(NewDocument("$elemMatch", must.NotFail(NewDocument("score", int32(24))))),
-		)),
-		"$db", "testcore",
-	))
-
-	actual, err := doc.GetKeyPaths("$elemMatch")
-	assert.NoError(t, err)
-	expected := [][]string{{"projection", "value", "$elemMatch"}}
-	assert.Equal(t, expected, actual)
-	actualDoc, err := doc.GetByPath(actual[0][0 : len(actual[0])-1]...)
-	assert.NoError(t, err)
-	expectedDoc := must.NotFail(NewDocument(
-		"$elemMatch", must.NotFail(NewDocument("score", int32(24))),
-	))
-
-	assert.Equal(t, expectedDoc, actualDoc)
-}
-
 func TestGetByPath(t *testing.T) {
 	t.Parallel()
 

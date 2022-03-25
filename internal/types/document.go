@@ -312,12 +312,6 @@ func RemoveByPath(d *Document, keys ...string) {
 	return
 }
 
-// GetKeyPath returns a path where key is.
-func (d *Document) GetKeyPaths(key string) (res [][]string, err error) {
-	res, err = getKeyPaths(d, key, []string{}, [][]string{})
-	return
-}
-
 // check interfaces
 var (
 	_ document = (*Document)(nil)
