@@ -643,6 +643,25 @@ func TestFind(t *testing.T) {
 				`Expected a positive number in: $bitsAllClear: -1`,
 			),
 		},
+		"BitsAllSet": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(
+					types.NewDocument(
+						"name", "int32",
+						"value", must.NotFail(types.NewDocument(
+							"$bitsAllSet", int32(42))),
+					)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x10, 0x01, 0x00, 0x00, 0x10, 0x01},
+					"name", "int32",
+					"value", int32(42),
+				)),
+			)),
+		},
 	}
 
 	for name, tc := range testCases { //nolint:paralleltest // false positive
