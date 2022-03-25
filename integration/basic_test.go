@@ -23,13 +23,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func TestInsertOneFindOne(t *testing.T) {
-	t.Parallel()
-	ctx, db := setup(t)
-
-	Scalars(ctx, t, db)
-}
-
 func TestMostCommandsAreCaseSensitive(t *testing.T) {
 	t.Parallel()
 	ctx, db := setup(t)
