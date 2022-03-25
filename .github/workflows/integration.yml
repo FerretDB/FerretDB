@@ -1,0 +1,69 @@
+---
+name: Integration
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '42 3 * * *'
+
+env:
+  GOPATH: /home/runner/go
+  GOCACHE: /home/runner/go/cache
+  GOMODCACHE: /home/runner/go/mod
+  GOPROXY: https://proxy.golang.org # remove direct
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-20.04
+
+    strategy:
+      fail-fast: false
+      matrix:
+        db:
+          - FerretDB
+          - MongoDB
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: FerretDB/github-actions/setup-go@main
+        with:
+          cache-key: test
+
+      - name: Install Task
+        run: go generate -x
+        working-directory: tools
+
+      - name: Start environment
+        run: bin/task env-up-detach
+
+      - name: Run init
+        run: bin/task init
+
+      - name: Wait for and setup environment
+        run: bin/task env-setup
+
+      - name: Run tests
+        run: bin/task test-integration-ci DB=${{ matrix.db }}
+
+      - name: Upload coverage information
+        uses: codecov/codecov-action@v2
+        with:
+          files: ./integration.txt
+          flags: integration,${{ matrix.db }}
+
+      - name: Check dirty
+        run: |
+          git status
+          git diff --exit-code
