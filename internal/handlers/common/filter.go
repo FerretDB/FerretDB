@@ -363,7 +363,7 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
 	fieldBinary, maskBinary, err := getBinaryParams(fieldValue, maskValue)
 	if err != nil {
-		return false, err
+		return false, formatBitwiseOperatorErr(err, "$bitsAllClear", maskValue)
 	}
 
 	for i := 0; i < len(fieldBinary.B); i++ {
@@ -379,7 +379,7 @@ func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
 func filterFieldExprBitsAllSet(fieldValue, maskValue any) (bool, error) {
 	fieldBinary, maskBinary, err := getBinaryParams(fieldValue, maskValue)
 	if err != nil {
-		return false, err
+		return false, formatBitwiseOperatorErr(err, "$bitsAllSet", maskValue)
 	}
 
 	for i := 0; i < len(fieldBinary.B); i++ {
@@ -395,7 +395,7 @@ func filterFieldExprBitsAllSet(fieldValue, maskValue any) (bool, error) {
 func filterFieldExprBitsAnyClear(fieldValue, maskValue any) (bool, error) {
 	fieldBinary, maskBinary, err := getBinaryParams(fieldValue, maskValue)
 	if err != nil {
-		return false, err
+		return false, formatBitwiseOperatorErr(err, "$bitsAnyClear", maskValue)
 	}
 
 	for i := 0; i < len(fieldBinary.B); i++ {
@@ -416,7 +416,7 @@ func filterFieldExprBitsAnyClear(fieldValue, maskValue any) (bool, error) {
 func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 	fieldBinary, maskBinary, err := getBinaryParams(fieldValue, maskValue)
 	if err != nil {
-		return false, err
+		return false, formatBitwiseOperatorErr(err, "$bitsAnySet", maskValue)
 	}
 
 	for i := 0; i < len(fieldBinary.B); i++ {

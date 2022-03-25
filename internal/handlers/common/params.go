@@ -70,6 +70,8 @@ func AssertType[T types.Type](value any) (T, error) {
 var (
 	errUnexpectedType = fmt.Errorf("GetWholeNumberParam: unexpected type")
 	errNotWholeNumber = fmt.Errorf("GetWholeNumberParam: not a whole number")
+	errNegativeNumber = fmt.Errorf("getBinaryMaskParam: negative number")
+	errNotBinaryMask  = fmt.Errorf("getBinaryMaskParam: not a binary mask")
 )
 
 // GetWholeNumberParam checks if the given value is int32, int64, or float64 containing a whole number,
@@ -108,9 +110,7 @@ func getBinaryMaskParam(value any) (types.Binary, error) {
 	case int32:
 		// {field: {$bitsAllClear: bitmask}}
 		if value < 0 {
-			return types.Binary{}, NewErrorMsg(ErrFailedToParse,
-				fmt.Sprintf(`Expected a positive number in: $bitsAllClear: %#v`, value),
-			)
+			return types.Binary{}, errNegativeNumber
 		}
 
 		mask, err = types.BinaryFromInt(int64(value))
@@ -120,9 +120,7 @@ func getBinaryMaskParam(value any) (types.Binary, error) {
 	case int64:
 		// {field: {$bitsAllClear: bitmask}}
 		if value < 0 {
-			return types.Binary{}, NewErrorMsg(ErrFailedToParse,
-				fmt.Sprintf(`Expected a positive number in: $bitsAllClear: %#v`, value),
-			)
+			return types.Binary{}, errNegativeNumber
 		}
 
 		mask, err = types.BinaryFromInt(value)
@@ -132,9 +130,7 @@ func getBinaryMaskParam(value any) (types.Binary, error) {
 	case float64:
 		// TODO check float negative zero
 		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) {
-			return types.Binary{}, NewErrorMsg(ErrFailedToParse,
-				fmt.Sprintf("Expected an integer: $bitsAllClear: %#v", value),
-			)
+			return types.Binary{}, errNotWholeNumber
 		}
 		mask, err = types.BinaryFromInt(int64(value))
 		if err != nil {
@@ -144,10 +140,7 @@ func getBinaryMaskParam(value any) (types.Binary, error) {
 		// {field: {$bitsAllClear: BinData()}}
 		mask = value
 	default:
-		return types.Binary{}, NewErrorMsg(ErrBadValue,
-			fmt.Sprintf(
-				`value takes an Array, a number, or a BinData but received: $bitsAllClear: %#v`, value),
-		)
+		return types.Binary{}, errNotBinaryMask
 	}
 	return mask, nil
 }

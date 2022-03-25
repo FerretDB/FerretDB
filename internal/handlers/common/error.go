@@ -119,3 +119,20 @@ func ProtocolError(err error) (*Error, bool) {
 var (
 	_ error = (*Error)(nil)
 )
+
+func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
+	switch err {
+	case errNotWholeNumber:
+		return NewErrorMsg(ErrFailedToParse,
+			fmt.Sprintf("Expected an integer: %s: %#v", operator, maskValue))
+	case errNegativeNumber:
+		return NewErrorMsg(ErrFailedToParse,
+			fmt.Sprintf(`Expected a positive number in: %s: %#v`, operator, maskValue))
+	case errNotBinaryMask:
+		return NewErrorMsg(ErrBadValue,
+			fmt.Sprintf(
+				`value takes an Array, a number, or a BinData but received: %s: %#v`, operator, maskValue))
+	default:
+		return err
+	}
+}
