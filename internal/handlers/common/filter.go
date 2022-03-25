@@ -49,12 +49,8 @@ func FilterDocument(doc, filter *types.Document) (bool, error) {
 // filterDocumentPair handles a single filter element key/value pair {filterKey: filterValue}.
 func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) (bool, error) {
 	if strings.HasPrefix(filterKey, "$") {
-		// {$operator: [expr1, expr2, ...]}
-		exprs, err := AssertType[*types.Array](filterValue)
-		if err != nil {
-			return false, err
-		}
-		return filterLala(doc, filterKey, exprs)
+		// {$operator: filterValue}
+		return filterOperator(doc, filterKey, filterValue)
 	}
 
 	docValue, err := doc.Get(filterKey)
@@ -81,11 +77,15 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 	}
 }
 
-// filterLala handles {$operator: [expr1, expr2, ...]} filter.
-func filterLala(doc *types.Document, operator string, exprs *types.Array) (bool, error) {
+// filterOperator handles a top-level operator filter {$operator: filterValue}.
+func filterOperator(doc *types.Document, operator string, filterValue any) (bool, error) {
 	switch operator {
 	case "$and":
 		// {$and: [{expr1}, {expr2}, ...]}
+		exprs, err := AssertType[*types.Array](filterValue)
+		if err != nil {
+			return false, err
+		}
 		for i := 0; i < exprs.Len(); i++ {
 			expr := must.NotFail(exprs.Get(i)).(*types.Document)
 			matches, err := FilterDocument(doc, expr)
@@ -100,6 +100,10 @@ func filterLala(doc *types.Document, operator string, exprs *types.Array) (bool,
 
 	case "$or":
 		// {$or: [{expr1}, {expr2}, ...]}
+		exprs, err := AssertType[*types.Array](filterValue)
+		if err != nil {
+			return false, err
+		}
 		for i := 0; i < exprs.Len(); i++ {
 			expr := must.NotFail(exprs.Get(i)).(*types.Document)
 			matches, err := FilterDocument(doc, expr)
@@ -114,6 +118,10 @@ func filterLala(doc *types.Document, operator string, exprs *types.Array) (bool,
 
 	case "$nor":
 		// {$nor: [{expr1}, {expr2}, ...]}
+		exprs, err := AssertType[*types.Array](filterValue)
+		if err != nil {
+			return false, err
+		}
 		for i := 0; i < exprs.Len(); i++ {
 			expr := must.NotFail(exprs.Get(i)).(*types.Document)
 			matches, err := FilterDocument(doc, expr)
@@ -300,15 +308,16 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 		return false, nil
 	}
 
-	size, err := GetNumberParam("$size", sizeValue)
+	size, err := GetWholeNumberParam(sizeValue)
 	if err != nil {
-		if err == ErrNotWholeNumber {
-			return false, NewErrorMsg(ErrBadValue, "$size must be a whole number")
-		}
-		if err == ErrNotMatchedType {
+		switch err {
+		case errUnexpectedType:
 			return false, NewErrorMsg(ErrBadValue, "$size needs a number")
+		case errNotWholeNumber:
+			return false, NewErrorMsg(ErrBadValue, "$size must be a whole number")
+		default:
+			return false, err
 		}
-		return false, err
 	}
 
 	if size < 0 {

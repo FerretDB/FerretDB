@@ -68,28 +68,25 @@ func AssertType[T types.Type](value any) (T, error) {
 }
 
 var (
-	ErrNotWholeNumber = fmt.Errorf("not a whole number")
-	ErrNotMatchedType = fmt.Errorf("not matched required type")
+	errUnexpectedType = fmt.Errorf("GetWholeNumberParam: unexpected type")
+	errNotWholeNumber = fmt.Errorf("GetWholeNumberParam: not a whole number")
 )
 
-// GetNumberParam matches value's type returning error for bad float values and unmatched types.
-// Parameter parameterName used to generate error message.
-func GetNumberParam(parameterName string, value any) (int64, error) {
-	var numberValue int64
-
+// GetWholeNumberParam checks if the given value is int32, int64, or float64 containing a whole number,
+// such as used in the limit, $size, etc.
+func GetWholeNumberParam(value any) (int64, error) {
 	switch value := value.(type) {
 	case int32:
-		numberValue = int64(value)
+		return int64(value), nil
 	case int64:
-		numberValue = value
+		return value, nil
 	case float64:
-		// TODO check float negative zero
+		// TODO check float negative zero (math.Copysig(0, -1))
 		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) {
-			return 0, ErrNotWholeNumber
+			return 0, errNotWholeNumber
 		}
-		numberValue = int64(value)
+		return int64(value), nil
 	default:
-		return 0, ErrNotMatchedType
+		return 0, errUnexpectedType
 	}
-	return numberValue, nil
 }
