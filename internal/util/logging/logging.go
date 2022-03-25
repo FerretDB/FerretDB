@@ -21,6 +21,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// Setup initializes logging with a given level.
 func Setup(level zapcore.Level) {
 	config := zap.NewDevelopmentConfig()
 	config.Level = zap.NewAtomicLevelAt(level)
@@ -30,9 +31,14 @@ func Setup(level zapcore.Level) {
 		log.Fatal(err)
 	}
 
+	SetupWithLogger(logger)
+}
+
+// SetupWithLogger initializes logging with a given logger and its level.
+func SetupWithLogger(logger *zap.Logger) {
 	zap.ReplaceGlobals(logger)
 
-	if _, err = zap.RedirectStdLogAt(logger, zap.InfoLevel); err != nil {
+	if _, err := zap.RedirectStdLogAt(logger, zap.InfoLevel); err != nil {
 		log.Fatal(err)
 	}
 }
