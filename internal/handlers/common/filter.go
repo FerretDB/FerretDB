@@ -246,6 +246,13 @@ func filterFieldExpr(fieldValue any, expr *types.Document) (bool, error) {
 				return false, err
 			}
 
+		case "$bitsAllClear":
+			// {field: {$bitsAllClear: value}}
+			res, err := filterFieldExprBitsAllClear(fieldValue, exprValue)
+			if !res || err != nil {
+				return false, err
+			}
+
 		default:
 			panic(fmt.Sprintf("filterFieldExpr: %q", exprKey))
 		}
@@ -326,6 +333,31 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 
 	if arr.Len() != int(size) {
 		return false, nil
+	}
+
+	return true, nil
+}
+
+// filterFieldExprBitsAllClear handles {field: {$bitsAllClear: value}} filter.
+func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
+	mask, err := getBinaryMaskParam(maskValue)
+	if err != nil {
+		return false, err
+	}
+
+	fieldBinary, err := getBinaryParam(fieldValue)
+	if err != nil {
+		return false, err
+	}
+
+	if len(fieldBinary.B) != len(mask.B) {
+		panic("field and mask sizes should be equal")
+	}
+
+	for i := 0; i < len(fieldBinary.B); i++ {
+		if (fieldBinary.B[i] & mask.B[i]) != 0 {
+			return false, nil
+		}
 	}
 
 	return true, nil

@@ -33,6 +33,7 @@ const (
 	errInternalError = ErrorCode(1) // InternalError
 
 	ErrBadValue          = ErrorCode(2)     // BadValue
+	ErrFailedToParse     = ErrorCode(9)     // FailedToParse
 	ErrNamespaceNotFound = ErrorCode(26)    // NamespaceNotFound
 	ErrNamespaceExists   = ErrorCode(48)    // NamespaceExists
 	ErrCommandNotFound   = ErrorCode(59)    // CommandNotFound
