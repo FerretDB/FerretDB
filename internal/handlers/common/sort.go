@@ -141,15 +141,16 @@ func (ds *docsSorter) Less(i, j int) bool {
 
 // getSortType determines sortType from input sort value.
 func getSortType(value any) (sortType, error) {
-	sortValue, err := GetNumberParam("$sort", value)
+	sortValue, err := GetWholeNumberParam(value)
 	if err != nil {
-		if err == ErrNotWholeNumber {
-			return 0, NewErrorMsg(ErrBadValue, "$sort must be a whole number")
-		}
-		if err == ErrNotMatchedType {
+		switch err {
+		case errUnexpectedType:
 			return 0, NewErrorMsg(ErrBadValue, `Illegal key in $sort specification`)
+		case errNotWholeNumber:
+			return 0, NewErrorMsg(ErrBadValue, "$sort must be a whole number")
+		default:
+			return 0, err
 		}
-		return 0, err
 	}
 
 	switch sortValue {

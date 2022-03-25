@@ -69,7 +69,6 @@ func (s *storage) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	var filter, sort, projection *types.Document
-	var limit int32
 	if filter, err = common.GetOptionalParam(document, "filter", filter); err != nil {
 		return nil, err
 	}
@@ -79,8 +78,12 @@ func (s *storage) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	if projection, err = common.GetOptionalParam(document, "projection", projection); err != nil {
 		return nil, err
 	}
-	if limit, err = common.GetOptionalParam(document, "limit", limit); err != nil {
-		return nil, err
+
+	var limit int64
+	if l, _ := document.Get("limit"); l != nil {
+		if limit, err = common.GetWholeNumberParam(l); err != nil {
+			return nil, err
+		}
 	}
 
 	fetchedDocs, err := s.fetch(ctx, db, collection)

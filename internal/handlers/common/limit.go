@@ -17,7 +17,7 @@ package common
 import "github.com/FerretDB/FerretDB/internal/types"
 
 // LimitDocuments returns a subslice of given documents according to the given limit.
-func LimitDocuments(docs []*types.Document, limit int32) ([]*types.Document, error) {
+func LimitDocuments(docs []*types.Document, limit int64) ([]*types.Document, error) {
 	switch {
 	case limit == 0:
 		return docs, nil
