@@ -349,7 +349,7 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
 	fieldBinary, maskBinary, err := getBinaryParams(fieldValue, maskValue)
 	if err != nil {
-		return false, nil
+		return false, err
 	}
 
 	for i := 0; i < len(fieldBinary.B); i++ {
@@ -365,7 +365,7 @@ func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
 func filterFieldExprBitsAllSet(fieldValue, maskValue any) (bool, error) {
 	fieldBinary, maskBinary, err := getBinaryParams(fieldValue, maskValue)
 	if err != nil {
-		return false, nil
+		return false, err
 	}
 
 	for i := 0; i < len(fieldBinary.B); i++ {
