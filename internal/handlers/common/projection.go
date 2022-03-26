@@ -172,45 +172,9 @@ docMapLoopK1:
 				// get the elemMatch conditions
 				conditions := must.NotFail(projectionVal.Get(projectionType)).(*types.Document)
 
-				for k2ConditionField, conditionValue := range conditions.Map() {
-					switch elemMatchFieldCondition := conditionValue.(type) {
-					case *types.Document: // TODO field2: { $gte: 10 }
-
-					case *types.Array:
-						panic("unexpected code")
-
-					default: // field2: value
-						found := -1 // >= 0 means found
-
-					internal:
-						for j := 0; j < docValueArray.Len(); j++ {
-							var cmpVal any
-							cmpVal, err = docValueArray.Get(j)
-							if err != nil {
-								continue internal
-							}
-							switch cmpVal := cmpVal.(type) {
-							case *types.Document:
-								docVal, err := cmpVal.Get(k2ConditionField)
-								if err != nil {
-									types.RemoveByPath(doc, k1, strconv.Itoa(j))
-									continue
-								}
-								if testutil.EqualScalars(docVal, elemMatchFieldCondition) {
-									// elemMatch to return first matching, all others are to be removed
-									found = j
-									break internal
-								}
-								types.RemoveByPath(doc, k1, strconv.Itoa(j))
-								j = j - 1
-							}
-						}
-
-						if found < 0 {
-							doc.Remove(k1)
-							continue procjectionDocLoop
-						}
-					}
+				found, err := projectFieldArrayElemaMatch(k1, doc, conditions, docValueArray)
+				if found < 0 {
+					doc.Remove(k1)
 				}
 			}
 		default:
@@ -218,4 +182,47 @@ docMapLoopK1:
 		}
 	}
 	return nil
+}
+
+// projectFieldArrayElemaMatch is for elemMatch conditions
+func projectFieldArrayElemaMatch(k1 string, doc, conditions *types.Document, docValueArray *types.Array) (found int, err error) {
+	for k2ConditionField, conditionValue := range conditions.Map() {
+		switch elemMatchFieldCondition := conditionValue.(type) {
+		case *types.Document: // TODO field2: { $gte: 10 }
+
+		case *types.Array:
+			panic("unexpected code")
+
+		default: // field2: value
+			found = -1 // >= 0 means found
+
+			for j := 0; j < docValueArray.Len(); j++ {
+				var cmpVal any
+				cmpVal, err = docValueArray.Get(j)
+				if err != nil {
+					continue
+				}
+				switch cmpVal := cmpVal.(type) {
+				case *types.Document:
+					docVal, err := cmpVal.Get(k2ConditionField)
+					if err != nil {
+						types.RemoveByPath(doc, k1, strconv.Itoa(j))
+						continue
+					}
+					if testutil.EqualScalars(docVal, elemMatchFieldCondition) {
+						// elemMatch to return first matching, all others are to be removed
+						found = j
+						break
+					}
+					types.RemoveByPath(doc, k1, strconv.Itoa(j))
+					j = j - 1
+				}
+			}
+
+			if found < 0 {
+				return
+			}
+		}
+	}
+	return
 }
