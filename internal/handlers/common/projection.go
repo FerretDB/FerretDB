@@ -121,7 +121,6 @@ func ProjectDocuments(docs []*types.Document, projection *types.Document) error 
 func projectDocument(inclusion bool, doc *types.Document, projection *types.Document) error {
 	projectionMap := projection.Map()
 
-docMapLoopK1:
 	for k1 := range doc.Map() {
 		projectionVal, ok := projectionMap[k1]
 		if !ok {
@@ -146,37 +145,10 @@ docMapLoopK1:
 			}
 
 		case *types.Document: // field: { $elemMatch: { field2: value }}
-
-		procjectionDocLoop:
-			for _, projectionType := range projectionVal.Keys() {
-				supportedProjections := []string{"$elemMatch"}
-				if !slices.Contains(supportedProjections, projectionType) {
-					return fmt.Errorf("projecion %s is not supported", projectionType)
-				}
-
-				// for now it's only $elemMatch further
-				// if the corresponding value is not an array, skip
-
-				docValueA, err := doc.GetByPath(k1)
-				if err != nil {
-					continue procjectionDocLoop
-				}
-
-				// $elemMatch works only for arrays, it must be an array
-				docValueArray, ok := docValueA.(*types.Array)
-				if !ok {
-					doc.Remove(k1)
-					continue docMapLoopK1
-				}
-
-				// get the elemMatch conditions
-				conditions := must.NotFail(projectionVal.Get(projectionType)).(*types.Document)
-
-				found, err := projectFieldArrayElemaMatch(k1, doc, conditions, docValueArray)
-				if found < 0 {
-					doc.Remove(k1)
-				}
+			if err := applyComplexProjection(k1, doc, projectionVal); err != nil {
+				return err
 			}
+
 		default:
 			return lazyerrors.Errorf("unsupported operation %s %v (%T)", k1, projectionVal, projectionVal)
 		}
@@ -184,8 +156,44 @@ docMapLoopK1:
 	return nil
 }
 
-// projectFieldArrayElemaMatch is for elemMatch conditions
-func projectFieldArrayElemaMatch(k1 string, doc, conditions *types.Document, docValueArray *types.Array) (found int, err error) {
+func applyComplexProjection(k1 string, doc, projectionVal *types.Document) (err error) {
+	for _, projectionType := range projectionVal.Keys() {
+		supportedProjections := []string{"$elemMatch"}
+		if !slices.Contains(supportedProjections, projectionType) {
+			return fmt.Errorf("projecion %s is not supported", projectionType)
+		}
+
+		// for now it's only $elemMatch further
+		// if the corresponding value is not an array, skip
+
+		var docValueA any
+		docValueA, err = doc.GetByPath(k1)
+		if err != nil {
+			continue
+		}
+
+		// $elemMatch works only for arrays, it must be an array
+		docValueArray, ok := docValueA.(*types.Array)
+		if !ok {
+			doc.Remove(k1)
+			return
+		}
+
+		// get the elemMatch conditions
+		conditions := must.NotFail(projectionVal.Get(projectionType)).(*types.Document)
+
+		var found int
+		found, err = filterFieldArrayElemMatch(k1, doc, conditions, docValueArray)
+		if found < 0 {
+			doc.Remove(k1)
+			return
+		}
+	}
+	return
+}
+
+// filterFieldArrayElemMatch is for elemMatch conditions
+func filterFieldArrayElemMatch(k1 string, doc, conditions *types.Document, docValueArray *types.Array) (found int, err error) {
 	for k2ConditionField, conditionValue := range conditions.Map() {
 		switch elemMatchFieldCondition := conditionValue.(type) {
 		case *types.Document: // TODO field2: { $gte: 10 }
