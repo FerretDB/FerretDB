@@ -297,7 +297,7 @@ func RemoveByPath(d *Document, keys ...string) {
 	key2 := keys[1]
 	switch x := d.m[key].(type) {
 	case *Document:
-		delete(x.m, key2)
+		d.Remove(key2)
 
 	case *Array:
 		i, err := strconv.Atoi(key2)
