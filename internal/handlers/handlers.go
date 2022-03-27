@@ -12,19 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
-
-import "github.com/FerretDB/FerretDB/internal/types"
-
-// LimitDocuments returns a subslice of given documents according to the given limit.
-func LimitDocuments(docs []*types.Document, limit int64) ([]*types.Document, error) {
-	switch {
-	case limit == 0:
-		return docs, nil
-	case limit > 0:
-		return docs[:limit], nil
-	default:
-		// TODO https://github.com/FerretDB/FerretDB/issues/79
-		return nil, NewErrorMsg(ErrNotImplemented, "LimitDocuments: negative limit values are not supported")
-	}
-}
+package handlers
