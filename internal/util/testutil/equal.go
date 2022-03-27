@@ -108,7 +108,7 @@ func equal(v1, v2 any) bool {
 		}
 
 	default:
-		if !EqualScalars(v1, v2) {
+		if !equalScalars(v1, v2) {
 			return false
 		}
 	}
@@ -166,35 +166,18 @@ func equalArrays(v1, v2 *types.Array) bool {
 	return true
 }
 
-// EqualScalars compares BSON scalar values in a way that is useful for tests:
+// equalScalars compares BSON scalar values in a way that is useful for tests:
 //  * float64 NaNs are equal to each other;
 //  * time.Time values are compared using Equal method.
-func EqualScalars(v1, v2 any) bool {
+func equalScalars(v1, v2 any) bool {
 	switch s1 := v1.(type) {
 	case float64:
 		s2, ok := v2.(float64)
 		if !ok {
-			s3, ok := v2.(float32)
-			if !ok {
-				return false
-			}
-			return s1 == float64(s3)
+			return false
 		}
 		if math.IsNaN(s1) {
 			return math.IsNaN(s2)
-		}
-		return s1 == s2
-	case float32:
-		s2, ok := v2.(float32)
-		if !ok {
-			s3, ok := v2.(float64)
-			if !ok {
-				return false
-			}
-			return float64(s1) == s3
-		}
-		if math.IsNaN(float64(s1)) {
-			return math.IsNaN(float64(s2))
 		}
 		return s1 == s2
 
@@ -247,11 +230,7 @@ func EqualScalars(v1, v2 any) bool {
 	case int32:
 		s2, ok := v2.(int32)
 		if !ok {
-			s3, ok := v2.(int64)
-			if !ok {
-				return false
-			}
-			return int64(s1) == s3
+			return false
 		}
 		return s1 == s2
 
@@ -265,11 +244,7 @@ func EqualScalars(v1, v2 any) bool {
 	case int64:
 		s2, ok := v2.(int64)
 		if !ok {
-			s3, ok := v2.(int32)
-			if !ok {
-				return false
-			}
-			return s1 == int64(s3)
+			return false
 		}
 		return s1 == s2
 
