@@ -27,7 +27,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/jsonb1"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/handlers/proxy"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -77,7 +77,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	l := zap.L().Named(prefix)
 
 	peerAddr := opts.netConn.RemoteAddr().String()
-	pgStorage := jsonb1.NewStorage(opts.pgPool, l)
+	pgStorage := pg.NewStorage(opts.pgPool, l)
 
 	var p *proxy.Handler
 	if opts.mode != NormalMode {
