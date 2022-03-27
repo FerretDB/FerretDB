@@ -41,3 +41,18 @@ func TestMostCommandsAreCaseSensitive(t *testing.T) {
 	res = db.RunCommand(ctx, bson.D{{"isMaster", 1}})
 	assert.NoError(t, res.Err())
 }
+
+func TestInsertFindBasicScalars(t *testing.T) {
+	t.Parallel()
+	ctx, db := setup(t)
+
+	insertScalars(ctx, t, db)
+
+	collection := db.Collection(collectionName(t))
+	for id, expected := range scalarsData() {
+		var actual any
+		err := collection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&actual)
+		require.NoError(t, err)
+		assert.Equal(t, expected, actual)
+	}
+}
