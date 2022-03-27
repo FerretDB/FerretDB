@@ -14,11 +14,21 @@
 
 package pg
 
-import "strconv"
+import (
+	"go.uber.org/zap"
 
-type Placeholder int
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
+)
 
-func (p *Placeholder) Next() string {
-	*p++
-	return "$" + strconv.Itoa(int(*p))
+type storage struct {
+	pgPool *pgdb.Pool
+	l      *zap.Logger
+}
+
+func NewStorage(pgPool *pgdb.Pool, l *zap.Logger) common.Storage {
+	return &storage{
+		pgPool: pgPool,
+		l:      l,
+	}
 }

@@ -26,7 +26,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/pg"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -36,7 +36,7 @@ import (
 type Handler struct {
 	// TODO replace those fields with
 	// opts *NewOpts
-	pgPool    *pg.Pool
+	pgPool    *pgdb.Pool
 	l         *zap.Logger
 	pgStorage common.Storage
 	metrics   *Metrics
@@ -48,7 +48,7 @@ type Handler struct {
 
 // NewOpts represents handler configuration.
 type NewOpts struct {
-	PgPool    *pg.Pool
+	PgPool    *pgdb.Pool
 	L         *zap.Logger
 	PgStorage common.Storage
 	Metrics   *Metrics
@@ -270,12 +270,12 @@ func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) (common.Stora
 		// Table (or even schema) does not exist. Try to create it,
 		// but keep in mind that it can be created in concurrent connection.
 
-		if err := h.pgPool.CreateSchema(ctx, db); err != nil && err != pg.ErrAlreadyExist {
+		if err := h.pgPool.CreateSchema(ctx, db); err != nil && err != pgdb.ErrAlreadyExist {
 			return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)
 		}
 
 		if err := h.pgPool.CreateTable(ctx, db, collection); err != nil {
-			if err == pg.ErrAlreadyExist {
+			if err == pgdb.ErrAlreadyExist {
 				return h.pgStorage, nil
 			}
 			return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)

@@ -12,23 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jsonb1
+package pgdb
 
-import (
-	"go.uber.org/zap"
+import "strconv"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/pg"
-)
+type Placeholder int
 
-type storage struct {
-	pgPool *pg.Pool
-	l      *zap.Logger
-}
-
-func NewStorage(pgPool *pg.Pool, l *zap.Logger) common.Storage {
-	return &storage{
-		pgPool: pgPool,
-		l:      l,
-	}
+func (p *Placeholder) Next() string {
+	*p++
+	return "$" + strconv.Itoa(int(*p))
 }

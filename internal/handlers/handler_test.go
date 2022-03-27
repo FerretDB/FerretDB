@@ -30,8 +30,8 @@ import (
 	"go.uber.org/zap/zaptest"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/jsonb1"
-	"github.com/FerretDB/FerretDB/internal/pg"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -49,7 +49,7 @@ type setupOpts struct {
 // Using shared objects helps us spot concurrency bugs.
 // If some test is failing and the log output is confusing, and you are tempted to move setup call to subtest,
 // instead run that single test with `go test -run test/name`.
-func setup(t testing.TB, opts *setupOpts) (context.Context, *Handler, *pg.Pool) {
+func setup(t testing.TB, opts *setupOpts) (context.Context, *Handler, *pgdb.Pool) {
 	t.Helper()
 
 	if opts == nil {
@@ -65,7 +65,7 @@ func setup(t testing.TB, opts *setupOpts) (context.Context, *Handler, *pg.Pool) 
 
 	ctx := testutil.Ctx(t)
 	pool := testutil.Pool(ctx, t, opts.poolOpts, l)
-	pgStorage := jsonb1.NewStorage(pool, l)
+	pgStorage := pg.NewStorage(pool, l)
 	handler := New(&NewOpts{
 		PgPool:    pool,
 		L:         l,

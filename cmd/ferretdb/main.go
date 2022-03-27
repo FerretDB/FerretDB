@@ -25,7 +25,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
-	"github.com/FerretDB/FerretDB/internal/pg"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/version"
@@ -85,7 +85,7 @@ func main() {
 
 	go debug.RunHandler(ctx, *debugAddrF, logger.Named("debug"))
 
-	pgPool, err := pg.NewPool(*postgresqlURLF, logger, false)
+	pgPool, err := pgdb.NewPool(*postgresqlURLF, logger, false)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
