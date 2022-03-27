@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v4"
+	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -29,7 +30,7 @@ import (
 )
 
 // MsgUpdate modifies an existing document or documents in a collection.
-func (s *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -38,7 +39,7 @@ func (s *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	if err := common.Unimplemented(document, "let"); err != nil {
 		return nil, err
 	}
-	common.Ignored(document, s.l, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
+	common.Ignored(document, h.l, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
 
 	command := document.Command()
 
@@ -53,6 +54,14 @@ func (s *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	var updates *types.Array
 	if updates, err = common.GetOptionalParam(document, "updates", updates); err != nil {
 		return nil, err
+	}
+
+	created, err := h.pgPool.EnsureTableExist(ctx, db, collection)
+	if err != nil {
+		return nil, err
+	}
+	if created {
+		h.l.Info("Created table.", zap.String("schema", db), zap.String("table", collection))
 	}
 
 	var selected, updated int32
@@ -82,7 +91,7 @@ func (s *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		fetchedDocs, err := s.fetch(ctx, db, collection)
+		fetchedDocs, err := h.fetch(ctx, db, collection)
 		if err != nil {
 			return nil, err
 		}
@@ -131,7 +140,7 @@ func (s *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 			sql := fmt.Sprintf("UPDATE %s SET _jsonb = $1 WHERE _jsonb->'_id' = $2", pgx.Identifier{db, collection}.Sanitize())
 			id := must.NotFail(doc.Get("_id"))
-			tag, err := s.pgPool.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)), must.NotFail(fjson.Marshal(id)))
+			tag, err := h.pgPool.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)), must.NotFail(fjson.Marshal(id)))
 			if err != nil {
 				return nil, err
 			}

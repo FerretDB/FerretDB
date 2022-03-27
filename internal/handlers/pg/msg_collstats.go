@@ -12,50 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handlers
+package pg
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgCreate adds a collection or view into the database.
-func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// MsgCollStats returns a set of statistics for a collection.
+func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-
-	unimplementedFields := []string{
-		"capped",
-		"timeseries",
-		"expireAfterSeconds",
-		"size",
-		"max",
-		"validator",
-		"validationLevel",
-		"validationAction",
-		"viewOn",
-		"pipeline",
-		"collation",
-	}
-	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
-		return nil, err
-	}
-	ignoredFields := []string{
-		"autoIndexId",
-		"storageEngine",
-		"indexOptionDefaults",
-		"writeConcern",
-		"comment",
-	}
-	common.Ignored(document, h.l, ignoredFields...)
 
 	command := document.Command()
 
@@ -67,21 +40,21 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	if err := h.pgPool.CreateSchema(ctx, db); err != nil && err != pgdb.ErrAlreadyExist {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if err = h.pgPool.CreateTable(ctx, db, collection); err != nil {
-		if err == pgdb.ErrAlreadyExist {
-			msg := fmt.Sprintf("Collection already exists. NS: %s.%s", db, collection)
-			return nil, common.NewErrorMsg(common.ErrNamespaceExists, msg)
-		}
+	stats, err := h.pgPool.TableStats(ctx, db, collection)
+	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{types.MustNewDocument(
+			"ns", db+"."+collection,
+			"count", stats.Rows,
+			"size", stats.SizeTotal,
+			"storageSize", stats.SizeTable,
+			"totalIndexSize", stats.SizeIndexes,
+			"totalSize", stats.SizeTotal,
+			"scaleFactor", int32(1),
 			"ok", float64(1),
 		)},
 	})

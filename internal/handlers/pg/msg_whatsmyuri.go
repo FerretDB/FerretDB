@@ -15,20 +15,25 @@
 package pg
 
 import (
-	"go.uber.org/zap"
+	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-type storage struct {
-	pgPool *pgdb.Pool
-	l      *zap.Logger
-}
-
-func NewStorage(pgPool *pgdb.Pool, l *zap.Logger) common.Storage {
-	return &storage{
-		pgPool: pgPool,
-		l:      l,
+// MsgWhatsMyURI is an internal command, returns the peerAddress of the handler.
+func (h *Handler) MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	var reply wire.OpMsg
+	err := reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{types.MustNewDocument(
+			"you", h.peerAddr,
+			"ok", float64(1),
+		)},
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
+
+	return &reply, nil
 }

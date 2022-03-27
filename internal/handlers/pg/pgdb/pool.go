@@ -25,6 +25,7 @@ import (
 	"github.com/jackc/pgx/v4/log/zapadapter"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"go.uber.org/zap"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -325,6 +326,36 @@ func (pgPool *Pool) DropTable(ctx context.Context, schema, table string) error {
 	}
 
 	return lazyerrors.Errorf("pg.DropTable: %w", err)
+}
+
+// EnsureTableExist ensures that given FerretDB database / PostgreSQL schema and FerretDB collection / PostgreSQL table exist.
+//
+// True is returned if table was created.
+func (pgPool *Pool) EnsureTableExist(ctx context.Context, db, collection string) (bool, error) {
+	tables, err := pgPool.Tables(ctx, db)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	if slices.Contains(tables, collection) {
+		return false, nil
+	}
+
+	// Table (or even schema) does not exist. Try to create it,
+	// but keep in mind that it can be created in concurrent connection.
+
+	if err := pgPool.CreateSchema(ctx, db); err != nil && err != ErrAlreadyExist {
+		return false, lazyerrors.Error(err)
+	}
+
+	if err := pgPool.CreateTable(ctx, db, collection); err != nil {
+		if err == ErrAlreadyExist {
+			return false, nil
+		}
+		return false, lazyerrors.Error(err)
+	}
+
+	return true, nil
 }
 
 // TableStats returns a set of statistics for FerretDB collection / PostgreSQL table.

@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v4"
+	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -28,13 +29,13 @@ import (
 )
 
 // MsgInsert inserts a document or documents into a collection.
-func (s *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, s.l, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
+	common.Ignored(document, h.l, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
 
 	command := document.Command()
 
@@ -51,6 +52,14 @@ func (s *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
+	created, err := h.pgPool.EnsureTableExist(ctx, db, collection)
+	if err != nil {
+		return nil, err
+	}
+	if created {
+		h.l.Info("Created table.", zap.String("schema", db), zap.String("table", collection))
+	}
+
 	var inserted int32
 	for i := 0; i < docs.Len(); i++ {
 		doc, err := docs.Get(i)
@@ -65,7 +74,7 @@ func (s *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		if _, err = s.pgPool.Exec(ctx, sql, b); err != nil {
+		if _, err = h.pgPool.Exec(ctx, sql, b); err != nil {
 			return nil, err
 		}
 

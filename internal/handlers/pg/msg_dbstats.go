@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handlers
+package pg
 
 import (
 	"context"
@@ -23,60 +23,42 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgListCollections retrieves information (i.e. the name and options)
-// about the collections and views in a database.
-func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-
-	if err = common.UnimplementedNonDefault(document, "filter", func(v any) bool {
-		d, ok := v.(*types.Document)
-		return ok && d.Len() == 0
-	}); err != nil {
-		return nil, err
-	}
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/301
-	// if err = common.UnimplementedNonDefault(document, "nameOnly", func(v any) bool {
-	// 	nameOnly, ok := v.(bool)
-	// 	return ok && !nameOnly
-	// }); err != nil {
-	// 	return nil, err
-	// }
-
-	common.Ignored(document, h.l, "comment", "authorizedCollections")
 
 	var db string
 	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 
-	names, err := h.pgPool.Tables(ctx, db)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+	m := document.Map()
+	scale, ok := m["scale"].(float64)
+	if !ok {
+		scale = 1
 	}
 
-	collections := types.MakeArray(len(names))
-	for _, n := range names {
-		d := types.MustNewDocument(
-			"name", n,
-			"type", "collection",
-		)
-		if err = collections.Append(d); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+	stats, err := h.pgPool.SchemaStats(ctx, db)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{types.MustNewDocument(
-			"cursor", types.MustNewDocument(
-				"id", int64(0),
-				"ns", db+".$cmd.listCollections",
-				"firstBatch", collections,
-			),
+			"db", db,
+			"collections", stats.CountTables,
+			// TODO https://github.com/FerretDB/FerretDB/issues/176
+			"views", int32(0),
+			"objects", stats.CountRows,
+			"avgObjSize", float64(stats.SizeSchema)/float64(stats.CountRows),
+			"dataSize", float64(stats.SizeSchema)/scale,
+			"indexes", stats.CountIndexes,
+			"indexSize", float64(stats.SizeIndexes)/scale,
+			"totalSize", float64(stats.SizeTotal)/scale,
+			"scaleFactor", scale,
 			"ok", float64(1),
 		)},
 	})

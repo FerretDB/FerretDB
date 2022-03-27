@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handlers
+package pg
 
 import (
 	"context"
@@ -30,7 +30,6 @@ import (
 	"go.uber.org/zap/zaptest"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -65,13 +64,11 @@ func setup(t testing.TB, opts *setupOpts) (context.Context, *Handler, *pgdb.Pool
 
 	ctx := testutil.Ctx(t)
 	pool := testutil.Pool(ctx, t, opts.poolOpts, l)
-	pgStorage := pg.NewStorage(pool, l)
 	handler := New(&NewOpts{
-		PgPool:    pool,
-		L:         l,
-		PeerAddr:  "127.0.0.1:12345",
-		PgStorage: pgStorage,
-		Metrics:   NewMetrics(),
+		PgPool:   pool,
+		L:        l,
+		PeerAddr: "127.0.0.1:12345",
+		Metrics:  NewMetrics(),
 	})
 
 	return ctx, handler, pool
@@ -1109,7 +1106,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 			resp: must.NotFail(types.NewDocument(
 				"host", "",
 				"version", "5.0.42",
-				"process", "handlers.test",
+				"process", "pg.test",
 				"pid", int64(0),
 				"uptime", int64(0),
 				"uptimeMillis", int64(0),

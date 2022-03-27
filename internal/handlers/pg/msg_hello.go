@@ -12,36 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handlers
+package pg
 
 import (
 	"context"
-	"strconv"
+	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/version"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// For clients that check version.
-const versionValue = "5.0.42"
-
-// MsgBuildInfo returns an OpMsg with the build information.
-func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// MsgHello returns a document that describes the role of the instance.
+func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 	err := reply.SetSections(wire.OpMsgSection{
+		// TODO merge with QueryCmd?
 		Documents: []*types.Document{types.MustNewDocument(
-			"version", versionValue,
-			"gitVersion", version.Get().Commit,
-			"modules", types.MustNewArray(),
-			"sysInfo", "deprecated",
-			"versionArray", must.NotFail(types.NewArray(int32(5), int32(0), int32(42), int32(0))),
-			"bits", int32(strconv.IntSize),
-			"debug", version.Get().Debug,
+			"helloOk", true,
+			"ismaster", true, // only lowercase
+			// topologyVersion
 			"maxBsonObjectSize", int32(types.MaxDocumentLen),
-			"buildEnvironment", version.Get().BuildEnvironment,
+			"maxMessageSizeBytes", int32(wire.MaxMsgLen),
+			"maxWriteBatchSize", int32(100000),
+			"localTime", time.Now(),
+			// logicalSessionTimeoutMinutes
+			// connectionId
+			"minWireVersion", int32(13),
+			"maxWireVersion", int32(13),
+			"readOnly", false,
 			"ok", float64(1),
 		)},
 	})

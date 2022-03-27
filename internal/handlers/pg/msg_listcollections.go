@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handlers
+package pg
 
 import (
 	"context"
@@ -23,8 +23,9 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgListDatabases command provides a list of all existing databases along with basic statistics about them.
-func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// MsgListCollections retrieves information (i.e. the name and options)
+// about the collections and views in a database.
+func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -45,55 +46,37 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 	// 	return nil, err
 	// }
 
-	common.Ignored(document, h.l, "comment", "authorizedDatabases")
+	common.Ignored(document, h.l, "comment", "authorizedCollections")
 
-	databaseNames, err := h.pgPool.Schemas(ctx)
-	if err != nil {
+	var db string
+	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 
-	databases := types.MakeArray(len(databaseNames))
-	for _, databaseName := range databaseNames {
-		tables, err := h.pgPool.Tables(ctx, databaseName)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+	names, err := h.pgPool.Tables(ctx, db)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
-		// iterate over result to collect sizes
-		var sizeOnDisk int64
-		for _, name := range tables {
-			var tableSize int64
-			fullName := databaseName + "." + name
-			err = h.pgPool.QueryRow(ctx, "SELECT pg_total_relation_size($1)", fullName).Scan(&tableSize)
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			sizeOnDisk += tableSize
-		}
-
+	collections := types.MakeArray(len(names))
+	for _, n := range names {
 		d := types.MustNewDocument(
-			"name", databaseName,
-			"sizeOnDisk", sizeOnDisk,
-			"empty", sizeOnDisk == 0,
+			"name", n,
+			"type", "collection",
 		)
-		if err = databases.Append(d); err != nil {
+		if err = collections.Append(d); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
-	}
-
-	var totalSize int64
-	err = h.pgPool.QueryRow(ctx, "SELECT pg_database_size(current_database())").Scan(&totalSize)
-	if err != nil {
-		return nil, err
 	}
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{types.MustNewDocument(
-			"databases", databases,
-			"totalSize", totalSize,
-			"totalSizeMb", totalSize/1024/1024,
+			"cursor", types.MustNewDocument(
+				"id", int64(0),
+				"ns", db+".$cmd.listCollections",
+				"firstBatch", collections,
+			),
 			"ok", float64(1),
 		)},
 	})

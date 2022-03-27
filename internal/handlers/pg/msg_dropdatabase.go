@@ -12,23 +12,48 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handlers
+package pg
 
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgPing OpMsg containing a ping, used to test whether a server is responding to commands.
-func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// MsgDropDatabase removes the current database.
+func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	common.Ignored(document, h.l, "writeConcern", "comment")
+
+	var db string
+	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
+	}
+
+	res := types.MustNewDocument()
+	err = h.pgPool.DropSchema(ctx, db)
+	switch err {
+	case nil:
+		res.Set("dropped", db)
+	case pgdb.ErrNotExist:
+		// nothing
+	default:
+		return nil, lazyerrors.Error(err)
+	}
+
+	res.Set("ok", float64(1))
+
 	var reply wire.OpMsg
-	err := reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{types.MustNewDocument(
-			"ok", float64(1),
-		)},
+	err = reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{res},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)

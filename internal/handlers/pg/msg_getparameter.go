@@ -12,45 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handlers
+package pg
 
 import (
 	"context"
-	"os"
-	"runtime"
-	"strconv"
-	"time"
 
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
-
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgHostInfo returns an OpMsg with the host information.
-func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	now := time.Now().UTC()
-	hostname, err := os.Hostname()
+// MsgGetParameter OpMsg used to get parameter.
+func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
+	common.Ignored(document, h.l, "comment")
+
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{types.MustNewDocument(
-			"system", types.MustNewDocument(
-				"currentTime", now,
-				"hostname", hostname,
-				"cpuAddrSize", int32(strconv.IntSize),
-				"numCores", int32(runtime.NumCPU()),
-				"cpuArch", runtime.GOARCH,
-				"numaEnabled", false,
-			),
-			"os", types.MustNewDocument(
-				"type", cases.Title(language.English).String(runtime.GOOS),
-			),
+			"version", versionValue,
 			"ok", float64(1),
 		)},
 	})
