@@ -191,7 +191,7 @@ func applyComplexProjection(k1 string, doc, projectionVal *types.Document) (err 
 	return
 }
 
-// filterFieldArrayElemMatch is for elemMatch conditions
+// filterFieldArrayElemMatch is for elemMatch conditions.
 func filterFieldArrayElemMatch(k1 string, doc, conditions *types.Document, docValueArray *types.Array) (found int, err error) {
 	for k2ConditionField, conditionValue := range conditions.Map() {
 		switch elemMatchFieldCondition := conditionValue.(type) {
