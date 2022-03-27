@@ -30,8 +30,8 @@ import (
 	"go.uber.org/zap/zaptest"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/jsonb1"
-	"github.com/FerretDB/FerretDB/internal/pg"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -49,7 +49,7 @@ type setupOpts struct {
 // Using shared objects helps us spot concurrency bugs.
 // If some test is failing and the log output is confusing, and you are tempted to move setup call to subtest,
 // instead run that single test with `go test -run test/name`.
-func setup(t testing.TB, opts *setupOpts) (context.Context, *Handler, *pg.Pool) {
+func setup(t testing.TB, opts *setupOpts) (context.Context, *pg.Handler, *pgdb.Pool) {
 	t.Helper()
 
 	if opts == nil {
@@ -65,19 +65,17 @@ func setup(t testing.TB, opts *setupOpts) (context.Context, *Handler, *pg.Pool) 
 
 	ctx := testutil.Ctx(t)
 	pool := testutil.Pool(ctx, t, opts.poolOpts, l)
-	pgStorage := jsonb1.NewStorage(pool, l)
-	handler := New(&NewOpts{
-		PgPool:    pool,
-		L:         l,
-		PeerAddr:  "127.0.0.1:12345",
-		PgStorage: pgStorage,
-		Metrics:   NewMetrics(),
+	handler := pg.New(&pg.NewOpts{
+		PgPool:   pool,
+		L:        l,
+		PeerAddr: "127.0.0.1:12345",
+		Metrics:  pg.NewMetrics(),
 	})
 
 	return ctx, handler, pool
 }
 
-func handle(ctx context.Context, t *testing.T, handler *Handler, req *types.Document) *types.Document {
+func handle(ctx context.Context, t *testing.T, handler *pg.Handler, req *types.Document) *types.Document {
 	t.Helper()
 
 	var reqMsg wire.OpMsg
@@ -95,7 +93,8 @@ func handle(ctx context.Context, t *testing.T, handler *Handler, req *types.Docu
 		OpCode:        wire.OP_MSG,
 	}
 
-	addToSeedCorpus(t, &reqHeader, &reqMsg)
+	// TODO
+	// addToSeedCorpus(t, &reqHeader, &reqMsg)
 
 	_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
 	require.False(t, closeConn, "%s", resBody.String())
@@ -126,6 +125,26 @@ func TestFind(t *testing.T) {
 	// Do not use sentences, spaces, or underscores in subtest names
 	// to make it easier to run individual tests with `go test -run test/name` and for consistency.
 	testCases := map[string]testCase{
+		"ProjectionElemMatch": {
+			schemas: []string{"values"},
+			req: types.MustNewDocument(
+				"find", "values",
+				"filter", must.NotFail(types.NewDocument("name", "array-embedded")),
+				"projection", must.NotFail(types.NewDocument(
+					"value", must.NotFail(types.NewDocument(
+						"$elemMatch", must.NotFail(types.NewDocument("document", "jkl")),
+					)),
+				)),
+			),
+			resp: types.MustNewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x05, 0x00, 0x00, 0x04, 0x05},
+					"value", must.NotFail(types.NewArray(
+						must.NotFail(types.NewDocument("age", int32(1002), "document", "jkl", "score", int32(24))),
+					)),
+				)),
+			),
+		},
 		"ValueLtGt": {
 			schemas: []string{"monila"},
 			req: types.MustNewDocument(
