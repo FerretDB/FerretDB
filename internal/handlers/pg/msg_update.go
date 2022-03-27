@@ -12,26 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jsonb1
+package pg
 
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgDelete deletes document.
-func (s *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// MsgUpdate modifies an existing document or documents in a collection.
+func (s *storage) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -40,7 +38,7 @@ func (s *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	if err := common.Unimplemented(document, "let"); err != nil {
 		return nil, err
 	}
-	common.Ignored(document, s.l, "ordered", "writeConcern")
+	common.Ignored(document, s.l, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
 
 	command := document.Command()
 
@@ -52,32 +50,36 @@ func (s *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	var deletes *types.Array
-	if deletes, err = common.GetOptionalParam(document, "deletes", deletes); err != nil {
+	var updates *types.Array
+	if updates, err = common.GetOptionalParam(document, "updates", updates); err != nil {
 		return nil, err
 	}
 
-	var deleted int32
-	for i := 0; i < deletes.Len(); i++ {
-		d, err := common.AssertType[*types.Document](must.NotFail(deletes.Get(i)))
+	var selected, updated int32
+	for i := 0; i < updates.Len(); i++ {
+		update, err := common.AssertType[*types.Document](must.NotFail(updates.Get(i)))
 		if err != nil {
 			return nil, err
 		}
 
-		if err := common.Unimplemented(d, "collation", "hint", "comment"); err != nil {
+		unimplementedFields := []string{
+			"c",
+			"upsert",
+			"multi",
+			"collation",
+			"arrayFilters",
+			"hint",
+		}
+		if err := common.Unimplemented(update, unimplementedFields...); err != nil {
 			return nil, err
 		}
 
-		var filter *types.Document
-		if filter, err = common.GetOptionalParam(d, "q", filter); err != nil {
+		var q, u *types.Document
+		if q, err = common.GetOptionalParam(update, "q", q); err != nil {
 			return nil, err
 		}
-
-		var limit int64
-		if l, _ := d.Get("limit"); l != nil {
-			if limit, err = common.GetWholeNumberParam(l); err != nil {
-				return nil, err
-			}
+		if u, err = common.GetOptionalParam(update, "u", u); err != nil {
+			return nil, err
 		}
 
 		fetchedDocs, err := s.fetch(ctx, db, collection)
@@ -87,7 +89,7 @@ func (s *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		resDocs := make([]*types.Document, 0, 16)
 		for _, doc := range fetchedDocs {
-			matches, err := common.FilterDocument(doc, filter)
+			matches, err := common.FilterDocument(doc, q)
 			if err != nil {
 				return nil, err
 			}
@@ -99,40 +101,50 @@ func (s *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			resDocs = append(resDocs, doc)
 		}
 
-		if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
-			return nil, err
-		}
-
 		if len(resDocs) == 0 {
 			continue
 		}
 
-		var p pgdb.Placeholder
-		placeholders := make([]string, len(resDocs))
-		ids := make([]any, len(resDocs))
-		for i, doc := range resDocs {
-			placeholders[i] = p.Next()
+		selected += int32(len(resDocs))
+
+		for _, doc := range resDocs {
+			for _, updateOp := range u.Keys() {
+				updateV := must.NotFail(u.Get(updateOp))
+				switch updateOp {
+				case "$set":
+					setDoc, err := common.AssertType[*types.Document](updateV)
+					if err != nil {
+						return nil, err
+					}
+
+					for _, setKey := range setDoc.Keys() {
+						setValue := must.NotFail(setDoc.Get(setKey))
+						if err = doc.Set(setKey, setValue); err != nil {
+							return nil, lazyerrors.Error(err)
+						}
+					}
+
+				default:
+					return nil, lazyerrors.Errorf("unhandled operation %q", updateOp)
+				}
+			}
+
+			sql := fmt.Sprintf("UPDATE %s SET _jsonb = $1 WHERE _jsonb->'_id' = $2", pgx.Identifier{db, collection}.Sanitize())
 			id := must.NotFail(doc.Get("_id"))
-			ids[i] = must.NotFail(fjson.Marshal(id))
-		}
+			tag, err := s.pgPool.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)), must.NotFail(fjson.Marshal(id)))
+			if err != nil {
+				return nil, err
+			}
 
-		sql := fmt.Sprintf(
-			"DELETE FROM %s WHERE _jsonb->'_id' IN (%s)",
-			pgx.Identifier{db, collection}.Sanitize(), strings.Join(placeholders, ", "),
-		)
-		tag, err := s.pgPool.Exec(ctx, sql, ids...)
-		if err != nil {
-			// TODO check error code
-			return nil, common.NewError(common.ErrNamespaceNotFound, fmt.Errorf("delete: ns not found: %w", err))
+			updated += int32(tag.RowsAffected())
 		}
-
-		deleted += int32(tag.RowsAffected())
 	}
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{types.MustNewDocument(
-			"n", deleted,
+			"n", selected,
+			"nModified", updated,
 			"ok", float64(1),
 		)},
 	})

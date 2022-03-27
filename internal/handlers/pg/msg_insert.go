@@ -12,37 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jsonb1
+package pg
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/jackc/pgx/v4"
+
+	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgCount counts the number of documents that matches the query filter.
-func (s *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// MsgInsert inserts a document or documents into a collection.
+func (s *storage) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	unimplementedFields := []string{
-		"skip",
-		"collation",
-	}
-	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
-		return nil, err
-	}
-	ignoredFields := []string{
-		"hint",
-		"readConcern",
-		"comment",
-	}
-	common.Ignored(document, s.l, ignoredFields...)
+	common.Ignored(document, s.l, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
 
 	command := document.Command()
 
@@ -54,45 +46,36 @@ func (s *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, err
 	}
 
-	var filter *types.Document
-	if filter, err = common.GetOptionalParam(document, "query", filter); err != nil {
+	var docs *types.Array
+	if docs, err = common.GetOptionalParam(document, "documents", docs); err != nil {
 		return nil, err
 	}
 
-	var limit int64
-	if l, _ := document.Get("limit"); l != nil {
-		if limit, err = common.GetWholeNumberParam(l); err != nil {
-			return nil, err
+	var inserted int32
+	for i := 0; i < docs.Len(); i++ {
+		doc, err := docs.Get(i)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
 		}
-	}
 
-	fetchedDocs, err := s.fetch(ctx, db, collection)
-	if err != nil {
-		return nil, err
-	}
-
-	resDocs := make([]*types.Document, 0, 16)
-	for _, doc := range fetchedDocs {
-		matches, err := common.FilterDocument(doc, filter)
+		d := doc.(*types.Document)
+		sql := fmt.Sprintf("INSERT INTO %s (_jsonb) VALUES ($1)", pgx.Identifier{db, collection}.Sanitize())
+		b, err := fjson.Marshal(d)
 		if err != nil {
 			return nil, err
 		}
 
-		if !matches {
-			continue
+		if _, err = s.pgPool.Exec(ctx, sql, b); err != nil {
+			return nil, err
 		}
 
-		resDocs = append(resDocs, doc)
-	}
-
-	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
-		return nil, err
+		inserted++
 	}
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{types.MustNewDocument(
-			"n", int32(len(resDocs)),
+			"n", inserted,
 			"ok", float64(1),
 		)},
 	})
