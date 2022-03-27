@@ -580,7 +580,6 @@ func TestFind(t *testing.T) {
 					`If you have a field name that starts with a '$' symbol, consider using $getField or $setField.`,
 			),
 		},
-<<<<<<< Updated upstream:internal/handlers/pg/handler_test.go
 		"BitsAllClear": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
@@ -659,85 +658,6 @@ func TestFind(t *testing.T) {
 			err: common.NewErrorMsg(
 				common.ErrFailedToParse,
 				`Expected a positive number in: $bitsAllClear: -1`,
-=======
-
-		"ProjectionInclusions": {
-			req: types.MustNewDocument(
-				"find", "actor",
-				"projection", types.MustNewDocument(
-					"last_name", int32(1),
-					"last_update", true,
-				),
-				"filter", types.MustNewDocument(
-					"actor_id", int32(28),
-				),
-			),
-			resp: types.MustNewArray(
-				types.MustNewDocument(
-					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x1c, 0x00, 0x00, 0x00, 0x1c},
-					"last_name", "HOFFMAN",
-					"last_update", time.Date(2020, 2, 15, 9, 34, 33, 0, time.UTC).Local(),
-				),
-			),
-		},
-
-		"ProjectionExclusions": {
-			req: types.MustNewDocument(
-				"find", "actor",
-				"projection", types.MustNewDocument(
-					"first_name", int32(0),
-					"actor_id", false,
-				),
-				"filter", types.MustNewDocument(
-					"actor_id", int32(28),
-				),
-			),
-			resp: types.MustNewArray(
-				types.MustNewDocument(
-					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x1c, 0x00, 0x00, 0x00, 0x1c},
-					"last_name", "HOFFMAN",
-					"last_update", time.Date(2020, 2, 15, 9, 34, 33, 0, time.UTC).Local(),
-				),
-			),
-		},
-
-		"ProjectionIDInclusion": {
-			req: types.MustNewDocument(
-				"find", "actor",
-				"projection", types.MustNewDocument(
-					"_id", false,
-					"actor_id", int32(1),
-				),
-				"filter", types.MustNewDocument(
-					"actor_id", int32(28),
-				),
-			),
-			resp: types.MustNewArray(
-				types.MustNewDocument(
-					"actor_id", int32(28),
-				),
-			),
-		},
-
-		"ProjectionElemMatch": {
-			schemas: []string{"values"},
-			req: types.MustNewDocument(
-				"find", "values",
-				"filter", must.NotFail(types.NewDocument("name", "array-embedded")),
-				"projection", must.NotFail(types.NewDocument(
-					"value", must.NotFail(types.NewDocument(
-						"$elemMatch", must.NotFail(types.NewDocument("document", "jkl")),
-					)),
-				)),
-			),
-			resp: types.MustNewArray(
-				must.NotFail(types.NewDocument(
-					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x05, 0x00, 0x00, 0x04, 0x05},
-					"value", must.NotFail(types.NewArray(
-						must.NotFail(types.NewDocument("age", int32(1002), "document", "jkl", "score", int32(24))),
-					)),
-				)),
->>>>>>> Stashed changes:internal/handlers/handler_test.go
 			),
 		},
 	}
@@ -777,7 +697,7 @@ func TestFind(t *testing.T) {
 					}
 
 					actual := handle(ctx, t, handler, tc.req)
-					testutil.AssertEqual(t, expected, actual)
+					assert.Equal(t, expected, actual)
 				})
 			}
 		})
@@ -967,6 +887,103 @@ func TestReadOnlyHandlers(t *testing.T) {
 				testutil.CompareAndSetByPathNum(t, expected, actual, 40, "avgObjSize")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 400, "dataSize")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 400, "totalSize")
+				assert.Equal(t, expected, actual)
+			},
+		},
+
+		"FindProjectionInclusions": {
+			req: types.MustNewDocument(
+				"find", "actor",
+				"projection", types.MustNewDocument(
+					"last_name", int32(1),
+					"last_update", true,
+				),
+				"filter", types.MustNewDocument(
+					"actor_id", int32(28),
+				),
+			),
+			reqSetDB: true,
+			resp: types.MustNewDocument(
+				"cursor", types.MustNewDocument(
+					"firstBatch", types.MustNewArray(
+						types.MustNewDocument(
+							"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x1c, 0x00, 0x00, 0x00, 0x1c},
+							"last_name", "HOFFMAN",
+							"last_update", time.Date(2020, 2, 15, 9, 34, 33, 0, time.UTC).Local(),
+						),
+					),
+					"id", int64(0),
+					"ns", "", // set by compareFunc
+				),
+				"ok", float64(1),
+			),
+			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
+				actualV := testutil.GetByPath(t, actual, "cursor", "ns")
+				testutil.SetByPath(t, expected, actualV, "cursor", "ns")
+				assert.Equal(t, expected, actual)
+			},
+		},
+
+		"FindProjectionExclusions": {
+			req: types.MustNewDocument(
+				"find", "actor",
+				"projection", types.MustNewDocument(
+					"first_name", int32(0),
+					"actor_id", false,
+				),
+				"filter", types.MustNewDocument(
+					"actor_id", int32(28),
+				),
+			),
+			reqSetDB: true,
+			resp: types.MustNewDocument(
+				"cursor", types.MustNewDocument(
+					"firstBatch", types.MustNewArray(
+						types.MustNewDocument(
+							"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x1c, 0x00, 0x00, 0x00, 0x1c},
+							"last_name", "HOFFMAN",
+							"last_update", time.Date(2020, 2, 15, 9, 34, 33, 0, time.UTC).Local(),
+						),
+					),
+					"id", int64(0),
+					"ns", "", // set by compareFunc
+				),
+				"ok", float64(1),
+			),
+			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
+				actualV := testutil.GetByPath(t, actual, "cursor", "ns")
+				testutil.SetByPath(t, expected, actualV, "cursor", "ns")
+				assert.Equal(t, expected, actual)
+			},
+		},
+
+		"FindProjectionIDInclusion": {
+			req: types.MustNewDocument(
+				"find", "actor",
+				"projection", types.MustNewDocument(
+					"_id", false,
+					"actor_id", int32(1),
+				),
+				"filter", types.MustNewDocument(
+					"actor_id", int32(28),
+				),
+			),
+			reqSetDB: true,
+			resp: types.MustNewDocument(
+				"cursor", types.MustNewDocument(
+					"firstBatch", types.MustNewArray(
+						types.MustNewDocument(
+							"actor_id", int32(28),
+						),
+					),
+					"id", int64(0),
+					"ns", "", // set by compareFunc
+				),
+				"ok", float64(1),
+			),
+			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
+				actualV := testutil.GetByPath(t, actual, "cursor", "ns")
+				testutil.SetByPath(t, expected, actualV, "cursor", "ns")
 				assert.Equal(t, expected, actual)
 			},
 		},
