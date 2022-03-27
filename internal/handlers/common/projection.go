@@ -23,7 +23,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 // isProjectionInclusion: projection can be only inclusion or exlusion. Validate and return true if inclusion.
@@ -217,7 +216,7 @@ func filterFieldArrayElemMatch(k1 string, doc, conditions *types.Document, docVa
 						types.RemoveByPath(doc, k1, strconv.Itoa(j))
 						continue
 					}
-					if testutil.EqualScalars(docVal, elemMatchFieldCondition) {
+					if compareScalars(docVal, elemMatchFieldCondition) == equal {
 						// elemMatch to return first matching, all others are to be removed
 						found = j
 						break
