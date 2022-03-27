@@ -29,9 +29,9 @@ import (
 // fetch fetches all documents from the given database and collection.
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/372
-func (s *storage) fetch(ctx context.Context, db, collection string) ([]*types.Document, error) {
+func (h *Handler) fetch(ctx context.Context, db, collection string) ([]*types.Document, error) {
 	sql := fmt.Sprintf(`SELECT _jsonb FROM %s`, pgx.Identifier{db, collection}.Sanitize())
-	rows, err := s.pgPool.Query(ctx, sql)
+	rows, err := h.pgPool.Query(ctx, sql)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

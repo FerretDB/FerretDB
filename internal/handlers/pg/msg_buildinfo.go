@@ -12,24 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handlers
+package pg
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/version"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgGetCmdLineOpts returns a document containing command line options used to start the given FerretDB.
-func (h *Handler) MsgGetCmdLineOpts(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// For clients that check version.
+const versionValue = "5.0.42"
+
+// MsgBuildInfo returns an OpMsg with the build information.
+func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 	err := reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{types.MustNewDocument(
-			"argv", must.NotFail(types.NewArray("ferretdb")),
-			"parsed", types.MustNewDocument(),
+			"version", versionValue,
+			"gitVersion", version.Get().Commit,
+			"modules", types.MustNewArray(),
+			"sysInfo", "deprecated",
+			"versionArray", must.NotFail(types.NewArray(int32(5), int32(0), int32(42), int32(0))),
+			"bits", int32(strconv.IntSize),
+			"debug", version.Get().Debug,
+			"maxBsonObjectSize", int32(types.MaxDocumentLen),
+			"buildEnvironment", version.Get().BuildEnvironment,
 			"ok", float64(1),
 		)},
 	})

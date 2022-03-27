@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handlers
+package pg
 
 import (
 	"context"
@@ -22,12 +22,11 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgWhatsMyURI is an internal command, returns the peerAddress of the handler.
-func (h *Handler) MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// MsgPing OpMsg containing a ping, used to test whether a server is responding to commands.
+func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 	err := reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{types.MustNewDocument(
-			"you", h.peerAddr,
 			"ok", float64(1),
 		)},
 	})

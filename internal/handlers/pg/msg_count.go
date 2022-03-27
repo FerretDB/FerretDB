@@ -24,7 +24,7 @@ import (
 )
 
 // MsgCount counts the number of documents that matches the query filter.
-func (s *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -42,7 +42,7 @@ func (s *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		"readConcern",
 		"comment",
 	}
-	common.Ignored(document, s.l, ignoredFields...)
+	common.Ignored(document, h.l, ignoredFields...)
 
 	command := document.Command()
 
@@ -66,7 +66,7 @@ func (s *storage) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		}
 	}
 
-	fetchedDocs, err := s.fetch(ctx, db, collection)
+	fetchedDocs, err := h.fetch(ctx, db, collection)
 	if err != nil {
 		return nil, err
 	}

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handlers
+package pg
 
 import (
 	"context"
@@ -21,16 +21,14 @@ import (
 
 	"golang.org/x/exp/maps"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 type command struct {
-	help           string
-	handler        func(*Handler, context.Context, *wire.OpMsg) (*wire.OpMsg, error)
-	storageHandler func(common.Storage, context.Context, *wire.OpMsg) (*wire.OpMsg, error)
+	help    string
+	handler func(*Handler, context.Context, *wire.OpMsg) (*wire.OpMsg, error)
 }
 
 var commands = map[string]command{
@@ -116,30 +114,29 @@ var commands = map[string]command{
 		handler: (*Handler).MsgWhatsMyURI,
 	},
 
-	// storage-specific commands
 	"count": {
-		help:           "Returns the count of documents that's matched by the query.",
-		storageHandler: (common.Storage).MsgCount,
+		help:    "Returns the count of documents that's matched by the query.",
+		handler: (*Handler).MsgCount,
 	},
 	"createIndexes": {
-		help:           "Creates indexes on a collection.",
-		storageHandler: (common.Storage).MsgCreateIndexes,
+		help:    "Creates indexes on a collection.",
+		handler: (*Handler).MsgCreateIndexes,
 	},
 	"delete": {
-		help:           "Deletes documents matched by the query.",
-		storageHandler: (common.Storage).MsgDelete,
+		help:    "Deletes documents matched by the query.",
+		handler: (*Handler).MsgDelete,
 	},
 	"find": {
-		help:           "Returns documents matched by the custom query.",
-		storageHandler: (common.Storage).MsgFind,
+		help:    "Returns documents matched by the custom query.",
+		handler: (*Handler).MsgFind,
 	},
 	"insert": {
-		help:           "Inserts documents into the database.",
-		storageHandler: (common.Storage).MsgInsert,
+		help:    "Inserts documents into the database.",
+		handler: (*Handler).MsgInsert,
 	},
 	"update": {
-		help:           "Updates documents that are matched by the query.",
-		storageHandler: (common.Storage).MsgUpdate,
+		help:    "Updates documents that are matched by the query.",
+		handler: (*Handler).MsgUpdate,
 	},
 
 	// internal commands

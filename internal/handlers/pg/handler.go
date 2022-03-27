@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handlers
+package pg
 
 import (
 	"context"
@@ -23,7 +23,6 @@ import (
 	"github.com/AlekSi/pointer"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
@@ -38,7 +37,6 @@ type Handler struct {
 	// opts *NewOpts
 	pgPool    *pgdb.Pool
 	l         *zap.Logger
-	pgStorage common.Storage
 	metrics   *Metrics
 	peerAddr  string
 	startTime time.Time
@@ -50,7 +48,6 @@ type Handler struct {
 type NewOpts struct {
 	PgPool    *pgdb.Pool
 	L         *zap.Logger
-	PgStorage common.Storage
 	Metrics   *Metrics
 	PeerAddr  string
 	StartTime time.Time
@@ -61,7 +58,6 @@ func New(opts *NewOpts) *Handler {
 	return &Handler{
 		pgPool:    opts.PgPool,
 		l:         opts.L,
-		pgStorage: opts.PgStorage,
 		metrics:   opts.Metrics,
 		peerAddr:  opts.PeerAddr,
 		startTime: opts.StartTime,
@@ -211,13 +207,6 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg, cmd string) 
 		if cmd.handler != nil {
 			return cmd.handler(h, ctx, msg)
 		}
-
-		storage, err := h.msgStorage(ctx, msg)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-		h.l.Sugar().Debugf("Handling with storage %T", storage)
-		return cmd.storageHandler(storage, ctx, msg)
 	}
 
 	errMsg := fmt.Sprintf("no such command: '%s'", cmd)
@@ -231,60 +220,4 @@ func (h *Handler) handleOpQuery(ctx context.Context, query *wire.OpQuery, cmd st
 
 	msg := fmt.Sprintf("handleOpQuery: unhandled collection %q", query.FullCollectionName)
 	return nil, common.NewErrorMsg(common.ErrNotImplemented, msg)
-}
-
-func (h *Handler) msgStorage(ctx context.Context, msg *wire.OpMsg) (common.Storage, error) {
-	document, err := msg.Document()
-	if err != nil {
-		return nil, fmt.Errorf("Handler.msgStorage: %w", err)
-	}
-
-	command := document.Command()
-	if command == "createIndexes" {
-		// TODO https://github.com/FerretDB/FerretDB/issues/78
-		return h.pgStorage, nil
-	}
-
-	var db, collection string
-	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-	if collection, err = common.GetRequiredParam[string](document, command); err != nil {
-		return nil, err
-	}
-
-	switch command {
-	case "delete", "find", "count":
-		return h.pgStorage, nil
-
-	case "insert", "update":
-		tables, err := h.pgPool.Tables(ctx, db)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		if slices.Contains(tables, collection) {
-			return h.pgStorage, nil
-		}
-
-		// Table (or even schema) does not exist. Try to create it,
-		// but keep in mind that it can be created in concurrent connection.
-
-		if err := h.pgPool.CreateSchema(ctx, db); err != nil && err != pgdb.ErrAlreadyExist {
-			return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)
-		}
-
-		if err := h.pgPool.CreateTable(ctx, db, collection); err != nil {
-			if err == pgdb.ErrAlreadyExist {
-				return h.pgStorage, nil
-			}
-			return nil, lazyerrors.Errorf("Handler.msgStorage: %w", err)
-		}
-
-		h.l.Info("Created table.", zap.String("schema", db), zap.String("table", collection))
-		return h.pgStorage, nil
-
-	default:
-		panic(fmt.Sprintf("unhandled command %q", command))
-	}
 }
