@@ -305,6 +305,9 @@ func (d *Document) RemoveByPath(keys ...string) {
 			panic("wrong path " + key2)
 			// return
 		}
+		if i > len(x.s)-1 {
+			return
+		}
 		x.s = append(x.s[:i], x.s[i+1:]...)
 	default:
 		// no path further: scalar value

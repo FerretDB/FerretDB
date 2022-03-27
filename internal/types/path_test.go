@@ -27,66 +27,139 @@ import (
 func TestRemoveByPath(t *testing.T) {
 	t.Parallel()
 
-	doc := MustNewDocument(
-		"ismaster", true,
-		"client", MustNewArray(
-			MustNewDocument(
-				"document", "abc",
-				"score", 42.13,
-				"age", 1000,
-			),
-			MustNewDocument(
-				"document", "def",
-				"score", 42.13,
-				"age", 1000,
-			),
-			MustNewDocument(
-				"document", "jkl",
-				"score", 24,
-				"age", 1002,
-			),
-		),
-		"value", must.NotFail(NewArray("none")),
-	)
-
 	type testCase struct {
 		name string
 		path []string
 		res  any
 		err  string
 	}
-
 	for _, tc := range []testCase{{ //nolint:paralleltest // false positive
 		name: "not found no error, ismaster field removed",
 		path: []string{"ismaster", "0"},
-		res:  "none",
+		res: MustNewDocument(
+			"ismaster", true,
+			"client", MustNewArray(
+				MustNewDocument(
+					"document", "abc",
+					"score", float64(42.13),
+					"age", int32(1000),
+				),
+				MustNewDocument(
+					"document", "def",
+					"score", float64(42.13),
+					"age", int32(1000),
+				),
+				MustNewDocument(
+					"document", "jkl",
+					"score", int32(24),
+					"age", int32(1002),
+				),
+			),
+			"value", must.NotFail(NewArray("none")),
+		),
 	}, {
 		name: "removed entire client field",
 		path: []string{"client"},
-		res:  must.NotFail(NewArray("none")),
-	}, {
-		name: "only 2d array element of client field is removed",
-		path: []string{"client", "2"},
 		res: MustNewDocument(
-			"name", "nodejs",
-			"version", "4.0.0-beta.6",
+			"ismaster", true,
+			"value", must.NotFail(NewArray("none")),
 		),
 	}, {
-		name: "not found, element must be on place, no error"
-		path: []string{"client", "3"},
-		res: doc,
+		name: "only 1d array element of client field is removed",
+		path: []string{"client", "1"},
+		res: MustNewDocument(
+			"ismaster", true,
+			"client", MustNewArray(
+				MustNewDocument(
+					"document", "abc",
+					"score", float64(42.13),
+					"age", int32(1000),
+				),
+				MustNewDocument(
+					"document", "jkl",
+					"score", int32(24),
+					"age", int32(1002),
+				),
+			),
+			"value", must.NotFail(NewArray("none")),
+		),
 	}, {
-		name: "not found, no error doc is same"
+		name: "not found, element must be on place, no error",
+		path: []string{"client", "3"},
+		res: MustNewDocument(
+			"ismaster", true,
+			"client", MustNewArray(
+				MustNewDocument(
+					"document", "abc",
+					"score", float64(42.13),
+					"age", int32(1000),
+				),
+				MustNewDocument(
+					"document", "def",
+					"score", float64(42.13),
+					"age", int32(1000),
+				),
+				MustNewDocument(
+					"document", "jkl",
+					"score", int32(24),
+					"age", int32(1002),
+				),
+			),
+			"value", must.NotFail(NewArray("none")),
+		),
+	}, {
+		name: "not found, no error doc is same",
 		path: []string{"compression", "invalid"},
-		res: doc,
+		res: MustNewDocument(
+			"ismaster", true,
+			"client", MustNewArray(
+				MustNewDocument(
+					"document", "abc",
+					"score", float64(42.13),
+					"age", int32(1000),
+				),
+				MustNewDocument(
+					"document", "def",
+					"score", float64(42.13),
+					"age", int32(1000),
+				),
+				MustNewDocument(
+					"document", "jkl",
+					"score", int32(24),
+					"age", int32(1002),
+				),
+			),
+			"value", must.NotFail(NewArray("none")),
+		),
 	}} {
 		tc := tc
 		t.Run(fmt.Sprint(tc.path), func(t *testing.T) {
 			t.Parallel()
 
-			res, err := doc.RemoveByPath(tc.path...)
-				require.NoError(t, err)
-				assert.Equal(t, tc.res, res)
+			doc := MustNewDocument(
+				"ismaster", true,
+				"client", MustNewArray(
+					MustNewDocument(
+						"document", "abc",
+						"score", float64(42.13),
+						"age", int32(1000),
+					),
+					MustNewDocument(
+						"document", "def",
+						"score", float64(42.13),
+						"age", int32(1000),
+					),
+					MustNewDocument(
+						"document", "jkl",
+						"score", int32(24),
+						"age", int32(1002),
+					),
+				),
+				"value", must.NotFail(NewArray("none")),
+			)
+
+			doc.RemoveByPath(tc.path...)
+			assert.Equal(t, tc.res, doc, tc.name)
 		})
 	}
 }
