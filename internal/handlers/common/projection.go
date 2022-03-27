@@ -213,7 +213,7 @@ func filterFieldArrayElemMatch(k1 string, doc, conditions *types.Document, docVa
 				case *types.Document:
 					docVal, err := cmpVal.Get(k2ConditionField)
 					if err != nil {
-						types.RemoveByPath(doc, k1, strconv.Itoa(j))
+						doc.RemoveByPath(k1, strconv.Itoa(j))
 						continue
 					}
 					if compareScalars(docVal, elemMatchFieldCondition) == equal {
@@ -221,7 +221,7 @@ func filterFieldArrayElemMatch(k1 string, doc, conditions *types.Document, docVa
 						found = j
 						break
 					}
-					types.RemoveByPath(doc, k1, strconv.Itoa(j))
+					doc.RemoveByPath(k1, strconv.Itoa(j))
 					j = j - 1
 				}
 			}

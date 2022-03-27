@@ -279,7 +279,7 @@ func (d *Document) Remove(key string) {
 }
 
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
-func RemoveByPath(d *Document, keys ...string) {
+func (d *Document) RemoveByPath(keys ...string) {
 	if len(keys) == 0 {
 		return
 	}
