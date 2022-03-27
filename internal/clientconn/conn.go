@@ -28,8 +28,8 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/jsonb1"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/handlers/proxy"
-	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -64,7 +64,7 @@ type conn struct {
 // newConnOpts represents newConn options.
 type newConnOpts struct {
 	netConn         net.Conn
-	pgPool          *pg.Pool
+	pgPool          *pgdb.Pool
 	proxyAddr       string
 	mode            Mode
 	handlersMetrics *handlers.Metrics

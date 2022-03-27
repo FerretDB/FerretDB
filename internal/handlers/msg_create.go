@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/pg"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -67,12 +67,12 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	if err := h.pgPool.CreateSchema(ctx, db); err != nil && err != pg.ErrAlreadyExist {
+	if err := h.pgPool.CreateSchema(ctx, db); err != nil && err != pgdb.ErrAlreadyExist {
 		return nil, lazyerrors.Error(err)
 	}
 
 	if err = h.pgPool.CreateTable(ctx, db, collection); err != nil {
-		if err == pg.ErrAlreadyExist {
+		if err == pgdb.ErrAlreadyExist {
 			msg := fmt.Sprintf("Collection already exists. NS: %s.%s", db, collection)
 			return nil, common.NewErrorMsg(common.ErrNamespaceExists, msg)
 		}

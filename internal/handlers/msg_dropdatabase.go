@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/pg"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -43,7 +43,7 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	switch err {
 	case nil:
 		res.Set("dropped", db)
-	case pg.ErrNotExist:
+	case pgdb.ErrNotExist:
 		// nothing
 	default:
 		return nil, lazyerrors.Error(err)

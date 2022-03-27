@@ -18,15 +18,15 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/pg"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 )
 
 type storage struct {
-	pgPool *pg.Pool
+	pgPool *pgdb.Pool
 	l      *zap.Logger
 }
 
-func NewStorage(pgPool *pg.Pool, l *zap.Logger) common.Storage {
+func NewStorage(pgPool *pgdb.Pool, l *zap.Logger) common.Storage {
 	return &storage{
 		pgPool: pgPool,
 		l:      l,

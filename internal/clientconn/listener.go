@@ -26,7 +26,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/pg"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -46,7 +46,7 @@ type NewListenerOpts struct {
 	ListenAddr      string
 	ProxyAddr       string
 	Mode            Mode
-	PgPool          *pg.Pool
+	PgPool          *pgdb.Pool
 	Logger          *zap.Logger
 	TestConnTimeout time.Duration
 }
