@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Use _test package to avoid import cycle with testutil.
-package pg_test
+package pgdb_test
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/FerretDB/FerretDB/internal/pg"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -50,7 +50,7 @@ func TestValidUTF8Locale(t *testing.T) {
 		t.Run(tc.locale, func(t *testing.T) {
 			t.Parallel()
 
-			actual := pg.IsValidUTF8Locale(tc.locale)
+			actual := pgdb.IsValidUTF8Locale(tc.locale)
 			assert.Equal(t, tc.expected, actual)
 		})
 	}
@@ -103,7 +103,7 @@ func TestConcurrentCreate(t *testing.T) {
 
 	n := 10
 	dsn := fmt.Sprintf("postgres://postgres@127.0.0.1:5432/%[1]s?pool_min_conns=%[2]d&pool_max_conns=%[2]d", dbName, n)
-	pool, err := pg.NewPool(dsn, zaptest.NewLogger(t), false)
+	pool, err := pgdb.NewPool(dsn, zaptest.NewLogger(t), false)
 	require.NoError(t, err)
 	t.Cleanup(pool.Close)
 
@@ -134,16 +134,16 @@ func TestConcurrentCreate(t *testing.T) {
 			}
 
 			errors++
-			assert.Equal(t, pg.ErrAlreadyExist, err)
+			assert.Equal(t, pgdb.ErrAlreadyExist, err)
 		}
 
 		assert.Equal(t, n-1, errors)
 
 		// one more time to check "normal" error (DuplicateSchema, DuplicateTable)
 		if withTable {
-			assert.Equal(t, pg.ErrAlreadyExist, pool.CreateTable(ctx, schemaName, tableName))
+			assert.Equal(t, pgdb.ErrAlreadyExist, pool.CreateTable(ctx, schemaName, tableName))
 		} else {
-			assert.Equal(t, pg.ErrAlreadyExist, pool.CreateSchema(ctx, schemaName))
+			assert.Equal(t, pgdb.ErrAlreadyExist, pool.CreateSchema(ctx, schemaName))
 		}
 	}
 }

@@ -23,7 +23,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/pg"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -107,7 +107,7 @@ func (s *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			continue
 		}
 
-		var p pg.Placeholder
+		var p pgdb.Placeholder
 		placeholders := make([]string, len(resDocs))
 		ids := make([]any, len(resDocs))
 		for i, doc := range resDocs {
