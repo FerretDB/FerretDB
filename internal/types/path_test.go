@@ -24,6 +24,73 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+func TestRemoveByPath(t *testing.T) {
+	t.Parallel()
+
+	doc := MustNewDocument(
+		"ismaster", true,
+		"client", MustNewArray(
+			MustNewDocument(
+				"document", "abc",
+				"score", 42.13,
+				"age", 1000,
+			),
+			MustNewDocument(
+				"document", "def",
+				"score", 42.13,
+				"age", 1000,
+			),
+			MustNewDocument(
+				"document", "jkl",
+				"score", 24,
+				"age", 1002,
+			),
+		),
+		"value", must.NotFail(NewArray("none")),
+	)
+
+	type testCase struct {
+		name string
+		path []string
+		res  any
+		err  string
+	}
+
+	for _, tc := range []testCase{{ //nolint:paralleltest // false positive
+		name: "not found no error, ismaster field removed",
+		path: []string{"ismaster", "0"},
+		res:  "none",
+	}, {
+		name: "removed entire client field",
+		path: []string{"client"},
+		res:  must.NotFail(NewArray("none")),
+	}, {
+		name: "only 2d array element of client field is removed",
+		path: []string{"client", "2"},
+		res: MustNewDocument(
+			"name", "nodejs",
+			"version", "4.0.0-beta.6",
+		),
+	}, {
+		name: "not found, element must be on place, no error"
+		path: []string{"client", "3"},
+		res: doc,
+	}, {
+		name: "not found, no error doc is same"
+		path: []string{"compression", "invalid"},
+		res: doc,
+	}} {
+		tc := tc
+		t.Run(fmt.Sprint(tc.path), func(t *testing.T) {
+			t.Parallel()
+
+			res, err := doc.RemoveByPath(tc.path...)
+				require.NoError(t, err)
+				assert.Equal(t, tc.res, res)
+		})
+	}
+}
+
 func TestGetByPath(t *testing.T) {
 	t.Parallel()
 
