@@ -50,23 +50,22 @@ func (h *Handler) Close() {
 }
 
 // Handle "handles" the message by sending it to another wire protocol compatible service.
-func (h *Handler) Handle(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) {
+func (h *Handler) Handle(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody) (*wire.MsgHeader, wire.MsgBody, bool) {
 	deadline, _ := ctx.Deadline()
 	h.conn.SetDeadline(deadline)
 
-	var err error
-
-	if err = wire.WriteMessage(h.bufw, header, body); err != nil {
+	if err := wire.WriteMessage(h.bufw, header, body); err != nil {
 		panic(err)
 	}
 
-	if err = h.bufw.Flush(); err != nil {
+	if err := h.bufw.Flush(); err != nil {
 		panic(err)
 	}
 
-	if resHeader, resBody, err = wire.ReadMessage(h.bufr); err != nil {
+	resHeader, resBody, err := wire.ReadMessage(h.bufr)
+	if err != nil {
 		panic(err)
 	}
 
-	return
+	return resHeader, resBody, false
 }

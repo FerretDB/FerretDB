@@ -27,8 +27,7 @@ import (
 
 // addToSeedCorpus adds given header and message body to handler's fuzzing seed corpus.
 func addToSeedCorpus(tb testing.TB, header *wire.MsgHeader, msg wire.MsgBody) {
-	// TODO
-	return
+	tb.Skip("TODO")
 
 	tb.Helper()
 
