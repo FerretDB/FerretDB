@@ -240,7 +240,7 @@ func TestFind(t *testing.T) {
 				"sort", types.MustNewDocument(
 					"actor_id", int32(1),
 				),
-				"limit", int32(1),
+				"limit", int64(1),
 			),
 			resp: types.MustNewArray(
 				types.MustNewDocument(
@@ -276,7 +276,7 @@ func TestFind(t *testing.T) {
 				"sort", types.MustNewDocument(
 					"actor_id", int32(1),
 				),
-				"limit", int32(1),
+				"limit", float64(1),
 			),
 			resp: types.MustNewArray(
 				types.MustNewDocument(
@@ -343,7 +343,7 @@ func TestFind(t *testing.T) {
 				"sort", types.MustNewDocument(
 					"actor_id", int32(1),
 				),
-				"limit", int32(1),
+				"limit", int64(1),
 			),
 			resp: types.MustNewArray(
 				types.MustNewDocument(
@@ -368,7 +368,7 @@ func TestFind(t *testing.T) {
 				"sort", types.MustNewDocument(
 					"actor_id", int32(1),
 				),
-				"limit", int32(1),
+				"limit", float64(1),
 			),
 			resp: types.MustNewArray(
 				types.MustNewDocument(
@@ -563,6 +563,86 @@ func TestFind(t *testing.T) {
 					`If you have a field name that starts with a '$' symbol, consider using $getField or $setField.`,
 			),
 		},
+		"BitsAllClear": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(
+					types.NewDocument(
+						"name", "int32",
+						"value", must.NotFail(types.NewDocument(
+							"$bitsAllClear", int32(21))),
+					)),
+			)),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x10, 0x01, 0x00, 0x00, 0x10, 0x01},
+					"name", "int32",
+					"value", int32(42),
+				)),
+			)),
+		},
+		"BitsAllClearEmptyResult": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(
+					types.NewDocument(
+						"name", "int32",
+						"value", must.NotFail(types.NewDocument(
+							"$bitsAllClear", int32(53))),
+					)),
+			)),
+			resp: new(types.Array),
+		},
+		"BitsAllClearString": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(
+					types.NewDocument(
+						"name", "int32",
+						"value", must.NotFail(types.NewDocument(
+							"$bitsAllClear", "123")),
+					)),
+			)),
+			err: common.NewErrorMsg(
+				common.ErrBadValue,
+				`value takes an Array, a number, or a BinData but received: $bitsAllClear: "123"`,
+			),
+		},
+		"BitsAllClearFloat64": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(
+					types.NewDocument(
+						"name", "int32",
+						"value", must.NotFail(types.NewDocument(
+							"$bitsAllClear", 1.2)),
+					)),
+			)),
+			err: common.NewErrorMsg(
+				common.ErrFailedToParse,
+				`Expected an integer: $bitsAllClear: 1.2`,
+			),
+		},
+		"BitsAllClearNegativeNumber": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(
+					types.NewDocument(
+						"name", "int32",
+						"value", must.NotFail(types.NewDocument(
+							"$bitsAllClear", int32(-1))),
+					)),
+			)),
+			err: common.NewErrorMsg(
+				common.ErrFailedToParse,
+				`Expected a positive number in: $bitsAllClear: -1`,
+			),
+		},
 	}
 
 	for name, tc := range testCases { //nolint:paralleltest // false positive
@@ -660,7 +740,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
-				testutil.CompareAndSetByPathNum(t, expected, actual, 100, "count") // that's not a number of rows
+				testutil.CompareAndSetByPathNum(t, expected, actual, 200, "count") // that's not a number of rows
 				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "size")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "storageSize")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "totalSize")
@@ -759,7 +839,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
-				testutil.CompareAndSetByPathNum(t, expected, actual, 1_000, "objects")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 2_000, "objects")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 40, "avgObjSize")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 400_000, "dataSize")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 400_000, "totalSize")
@@ -786,7 +866,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
-				testutil.CompareAndSetByPathNum(t, expected, actual, 1_000, "objects")
+				testutil.CompareAndSetByPathNum(t, expected, actual, 2_000, "objects")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 40, "avgObjSize")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 400, "dataSize")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 400, "totalSize")

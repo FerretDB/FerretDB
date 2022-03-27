@@ -107,7 +107,7 @@ func TestDelete(t *testing.T) {
 							"q", types.MustNewDocument(
 								"colour", "red",
 							),
-							"limit", int32(1),
+							"limit", int64(1),
 						),
 					),
 				),
@@ -124,7 +124,7 @@ func TestDelete(t *testing.T) {
 							"q", types.MustNewDocument(
 								"animal", "cat",
 							),
-							"limit", int32(0),
+							"limit", float64(0),
 						),
 					),
 				),
