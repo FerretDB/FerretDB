@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pg
+package handlers
 
 import (
 	"context"
@@ -30,6 +30,7 @@ import (
 	"go.uber.org/zap/zaptest"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -48,7 +49,7 @@ type setupOpts struct {
 // Using shared objects helps us spot concurrency bugs.
 // If some test is failing and the log output is confusing, and you are tempted to move setup call to subtest,
 // instead run that single test with `go test -run test/name`.
-func setup(t testing.TB, opts *setupOpts) (context.Context, *Handler, *pgdb.Pool) {
+func setup(t testing.TB, opts *setupOpts) (context.Context, *pg.Handler, *pgdb.Pool) {
 	t.Helper()
 
 	if opts == nil {
@@ -64,17 +65,17 @@ func setup(t testing.TB, opts *setupOpts) (context.Context, *Handler, *pgdb.Pool
 
 	ctx := testutil.Ctx(t)
 	pool := testutil.Pool(ctx, t, opts.poolOpts, l)
-	handler := New(&NewOpts{
+	handler := pg.New(&pg.NewOpts{
 		PgPool:   pool,
 		L:        l,
 		PeerAddr: "127.0.0.1:12345",
-		Metrics:  NewMetrics(),
+		Metrics:  pg.NewMetrics(),
 	})
 
 	return ctx, handler, pool
 }
 
-func handle(ctx context.Context, t *testing.T, handler *Handler, req *types.Document) *types.Document {
+func handle(ctx context.Context, t *testing.T, handler *pg.Handler, req *types.Document) *types.Document {
 	t.Helper()
 
 	var reqMsg wire.OpMsg
@@ -92,7 +93,8 @@ func handle(ctx context.Context, t *testing.T, handler *Handler, req *types.Docu
 		OpCode:        wire.OP_MSG,
 	}
 
-	addToSeedCorpus(t, &reqHeader, &reqMsg)
+	// TODO
+	// addToSeedCorpus(t, &reqHeader, &reqMsg)
 
 	_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
 	require.False(t, closeConn, "%s", resBody.String())
@@ -1106,7 +1108,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 			resp: must.NotFail(types.NewDocument(
 				"host", "",
 				"version", "5.0.42",
-				"process", "pg.test",
+				"process", "handlers.test",
 				"pid", int64(0),
 				"uptime", int64(0),
 				"uptimeMillis", int64(0),
