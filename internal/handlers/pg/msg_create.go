@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handlers
+package pg
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
@@ -24,14 +25,37 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgDrop removes a collection or view from the database.
-func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// MsgCreate adds a collection or view into the database.
+func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.l, "writeConcern", "comment")
+	unimplementedFields := []string{
+		"capped",
+		"timeseries",
+		"expireAfterSeconds",
+		"size",
+		"max",
+		"validator",
+		"validationLevel",
+		"validationAction",
+		"viewOn",
+		"pipeline",
+		"collation",
+	}
+	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
+		return nil, err
+	}
+	ignoredFields := []string{
+		"autoIndexId",
+		"storageEngine",
+		"indexOptionDefaults",
+		"writeConcern",
+		"comment",
+	}
+	common.Ignored(document, h.l, ignoredFields...)
 
 	command := document.Command()
 
@@ -43,9 +67,14 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	if err = h.pgPool.DropTable(ctx, db, collection); err != nil {
-		if err == pgdb.ErrNotExist {
-			return nil, common.NewErrorMsg(common.ErrNamespaceNotFound, "ns not found")
+	if err := h.pgPool.CreateSchema(ctx, db); err != nil && err != pgdb.ErrAlreadyExist {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if err = h.pgPool.CreateTable(ctx, db, collection); err != nil {
+		if err == pgdb.ErrAlreadyExist {
+			msg := fmt.Sprintf("Collection already exists. NS: %s.%s", db, collection)
+			return nil, common.NewErrorMsg(common.ErrNamespaceExists, msg)
 		}
 		return nil, lazyerrors.Error(err)
 	}
@@ -53,8 +82,6 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{types.MustNewDocument(
-			"nIndexesWas", int32(1), // TODO
-			"ns", db+"."+collection,
 			"ok", float64(1),
 		)},
 	})

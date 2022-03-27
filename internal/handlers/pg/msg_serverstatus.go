@@ -12,48 +12,73 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handlers
+package pg
 
 import (
 	"context"
+	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgDropDatabase removes the current database.
-func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// MsgServerStatus OpMsg used to get a server status.
+func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-
-	common.Ignored(document, h.l, "writeConcern", "comment")
 
 	var db string
 	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 
-	res := types.MustNewDocument()
-	err = h.pgPool.DropSchema(ctx, db)
-	switch err {
-	case nil:
-		res.Set("dropped", db)
-	case pgdb.ErrNotExist:
-		// nothing
-	default:
+	host, err := os.Hostname()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	exec, err := os.Executable()
+	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	res.Set("ok", float64(1))
+	uptime := time.Since(h.startTime)
+
+	stats, err := h.pgPool.SchemaStats(ctx, db)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{res},
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"host", host,
+			"version", versionValue,
+			"process", filepath.Base(exec),
+			"pid", int64(os.Getpid()),
+			"uptime", int64(uptime.Seconds()),
+			"uptimeMillis", uptime.Milliseconds(),
+			"uptimeEstimate", int64(uptime.Seconds()),
+			"localTime", time.Now(),
+			"catalogStats", must.NotFail(types.NewDocument(
+				"collections", stats.CountTables,
+				"capped", int32(0),
+				"timeseries", int32(0),
+				"views", int32(0),
+				"internalCollections", int32(0),
+				"internalViews", int32(0),
+			)),
+			"freeMonitoring", must.NotFail(types.NewDocument(
+				"state", "disabled",
+			)),
+			"ok", float64(1),
+		))},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)

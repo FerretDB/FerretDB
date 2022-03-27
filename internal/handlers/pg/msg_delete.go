@@ -31,7 +31,7 @@ import (
 )
 
 // MsgDelete deletes document.
-func (s *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -40,7 +40,7 @@ func (s *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	if err := common.Unimplemented(document, "let"); err != nil {
 		return nil, err
 	}
-	common.Ignored(document, s.l, "ordered", "writeConcern")
+	common.Ignored(document, h.l, "ordered", "writeConcern")
 
 	command := document.Command()
 
@@ -80,7 +80,7 @@ func (s *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			}
 		}
 
-		fetchedDocs, err := s.fetch(ctx, db, collection)
+		fetchedDocs, err := h.fetch(ctx, db, collection)
 		if err != nil {
 			return nil, err
 		}
@@ -120,7 +120,7 @@ func (s *storage) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			"DELETE FROM %s WHERE _jsonb->'_id' IN (%s)",
 			pgx.Identifier{db, collection}.Sanitize(), strings.Join(placeholders, ", "),
 		)
-		tag, err := s.pgPool.Exec(ctx, sql, ids...)
+		tag, err := h.pgPool.Exec(ctx, sql, ids...)
 		if err != nil {
 			// TODO check error code
 			return nil, common.NewError(common.ErrNamespaceNotFound, fmt.Errorf("delete: ns not found: %w", err))

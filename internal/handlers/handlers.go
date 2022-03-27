@@ -12,19 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
-
-import (
-	"context"
-
-	"github.com/FerretDB/FerretDB/internal/wire"
-)
-
-type Storage interface {
-	MsgCount(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
-	MsgCreateIndexes(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
-	MsgDelete(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
-	MsgFind(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
-	MsgInsert(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
-	MsgUpdate(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
-}
+package handlers

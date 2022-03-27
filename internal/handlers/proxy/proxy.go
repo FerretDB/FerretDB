@@ -20,7 +20,6 @@ import (
 	"context"
 	"net"
 
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -51,19 +50,23 @@ func (h *Handler) Close() {
 }
 
 // Handle "handles" the message by sending it to another wire protocol compatible service.
-//
-// Returned error is something fatal.
-func (h *Handler) Handle(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody) (*wire.MsgHeader, wire.MsgBody, error) {
+func (h *Handler) Handle(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) {
 	deadline, _ := ctx.Deadline()
 	h.conn.SetDeadline(deadline)
 
-	if err := wire.WriteMessage(h.bufw, header, body); err != nil {
-		return nil, nil, err
+	var err error
+
+	if err = wire.WriteMessage(h.bufw, header, body); err != nil {
+		panic(err)
 	}
 
-	if err := h.bufw.Flush(); err != nil {
-		return nil, nil, lazyerrors.Error(err)
+	if err = h.bufw.Flush(); err != nil {
+		panic(err)
 	}
 
-	return wire.ReadMessage(h.bufr)
+	if resHeader, resBody, err = wire.ReadMessage(h.bufr); err != nil {
+		panic(err)
+	}
+
+	return
 }
