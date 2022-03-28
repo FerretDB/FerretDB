@@ -167,24 +167,7 @@ func compareScalars(a, b any) compareResult {
 			return notEqual
 		}
 
-	case *types.Document:
-		return notEqual
-
-	case *types.Array:
-		for i := 0; i < a.Len(); i++ {
-			a, err := a.Get(i)
-			if err != nil {
-				panic(fmt.Sprintf("cannot get value from array, err is %v, array is %v, index is %v", err, a, i))
-			}
-			switch compareScalars(a, b) {
-			case equal:
-				return equal
-			case greater:
-				return greater
-			case less:
-				return less
-			}
-		}
+	case *types.Document, *types.Array:
 		return notEqual
 
 	default:

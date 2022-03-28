@@ -73,6 +73,21 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 
 	default:
 		// {field: value}
+		switch docValue := docValue.(type) {
+		case *types.Document:
+			return false, nil
+		case *types.Array:
+			for i := 0; i < docValue.Len(); i++ {
+				arrValue, err := docValue.Get(i)
+				if err != nil {
+					panic(fmt.Sprintf("cannot get value from array, err is %v, array is %v, index is %v", err, arrValue, i))
+				}
+				if compareScalars(arrValue, filterValue) == equal {
+					return true, nil
+				}
+			}
+		}
+
 		return compareScalars(docValue, filterValue) == equal, nil
 	}
 }

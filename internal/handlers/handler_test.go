@@ -345,7 +345,7 @@ func TestFind(t *testing.T) {
 				must.NotFail(types.NewDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x04, 0x00, 0x00, 0x04, 0x04},
 					"name", "array-three",
-					"value", must.NotFail(types.NewArray(int32(42), "foo", types.NullType{})),
+					"value", must.NotFail(types.NewArray(int32(42), "foo", types.Null)),
 				)),
 			)),
 		},
@@ -532,7 +532,7 @@ func TestFind(t *testing.T) {
 				must.NotFail(types.NewDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x04, 0x00, 0x00, 0x04, 0x04},
 					"name", "array-three",
-					"value", must.NotFail(types.NewArray(int32(42), "foo", types.NullType{})),
+					"value", must.NotFail(types.NewArray(int32(42), "foo", types.Null)),
 				)),
 				must.NotFail(types.NewDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x10, 0x01, 0x00, 0x00, 0x10, 0x01},
@@ -621,7 +621,7 @@ func TestFind(t *testing.T) {
 				must.NotFail(types.NewDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x04, 0x00, 0x00, 0x04, 0x04},
 					"name", "array-three",
-					"value", must.NotFail(types.NewArray(int32(42), "foo", types.NullType{})),
+					"value", must.NotFail(types.NewArray(int32(42), "foo", types.Null)),
 				)),
 				must.NotFail(types.NewDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x10, 0x01, 0x00, 0x00, 0x10, 0x01},
@@ -778,19 +778,19 @@ func TestFind(t *testing.T) {
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
 				"filter", must.NotFail(types.NewDocument(
-					"value", types.NullType{},
+					"value", types.Null,
 				)),
 			)),
 			resp: must.NotFail(types.NewArray(
 				must.NotFail(types.NewDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x04, 0x00, 0x00, 0x04, 0x04},
 					"name", "array-three",
-					"value", must.NotFail(types.NewArray(int32(42), "foo", types.NullType{})),
+					"value", must.NotFail(types.NewArray(int32(42), "foo", types.Null)),
 				)),
 				must.NotFail(types.NewDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x0a, 0x01, 0x00, 0x00, 0x0a, 0x01},
 					"name", "null",
-					"value", types.NullType{},
+					"value", types.Null,
 				)),
 			)),
 		},
