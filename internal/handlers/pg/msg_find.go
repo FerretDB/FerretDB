@@ -105,6 +105,11 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		resDocs = append(resDocs, doc)
 	}
 
+	// no documents left after filtration
+	if len(resDocs) == 0 {
+		return nil, nil
+	}
+
 	if err = common.SortDocuments(resDocs, sort); err != nil {
 		return nil, err
 	}

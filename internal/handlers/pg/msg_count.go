@@ -85,6 +85,11 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		resDocs = append(resDocs, doc)
 	}
 
+	// no documents left after filtration
+	if len(resDocs) == 0 {
+		return nil, nil
+	}
+
 	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
 		return nil, err
 	}
