@@ -85,9 +85,22 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		resDocs = append(resDocs, doc)
 	}
 
-	// no documents left after filtration
 	if len(resDocs) == 0 {
-		return nil, nil
+		var reply wire.OpMsg
+		err = reply.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{types.MustNewDocument(
+				"cursor", types.MustNewDocument(
+					"firstBatch", types.MakeArray(0),
+					"id", int64(0), // TODO
+					"ns", db+"."+collection,
+				),
+				"ok", float64(1),
+			)},
+		})
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		return &reply, nil
 	}
 
 	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
