@@ -23,6 +23,7 @@ import (
 	"golang.org/x/exp/constraints"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // compareResult represents the result of a comparison.
@@ -69,55 +70,55 @@ func compareScalars(a, b any) compareResult {
 
 	case types.Binary:
 		b, ok := b.(types.Binary)
-		if ok {
-			al, bl := len(a.B), len(b.B)
-			if al != bl {
-				return compareOrdered(al, bl)
-			}
-			if a.Subtype != b.Subtype {
-				return compareOrdered(a.Subtype, b.Subtype)
-			}
-			switch bytes.Compare(a.B, b.B) {
-			case 0:
-				return equal
-			case -1:
-				return less
-			case 1:
-				return greater
-			default:
-				panic("unreachable")
-			}
+		if !ok {
+			return notEqual
 		}
-		return notEqual
+		al, bl := len(a.B), len(b.B)
+		if al != bl {
+			return compareOrdered(al, bl)
+		}
+		if a.Subtype != b.Subtype {
+			return compareOrdered(a.Subtype, b.Subtype)
+		}
+		switch bytes.Compare(a.B, b.B) {
+		case 0:
+			return equal
+		case -1:
+			return less
+		case 1:
+			return greater
+		default:
+			panic("unreachable")
+		}
 
 	case types.ObjectID:
 		b, ok := b.(types.ObjectID)
-		if ok {
-			switch bytes.Compare(a[:], b[:]) {
-			case 0:
-				return equal
-			case -1:
-				return less
-			case 1:
-				return greater
-			default:
-				panic("unreachable")
-			}
+		if !ok {
+			return notEqual
 		}
-		return notEqual
+		switch bytes.Compare(a[:], b[:]) {
+		case 0:
+			return equal
+		case -1:
+			return less
+		case 1:
+			return greater
+		default:
+			panic("unreachable")
+		}
 
 	case bool:
 		b, ok := b.(bool)
-		if ok {
-			if a == b {
-				return equal
-			}
-			if b {
-				return less
-			}
-			return greater
+		if !ok {
+			return notEqual
 		}
-		return notEqual
+		if a == b {
+			return equal
+		}
+		if b {
+			return less
+		}
+		return greater
 
 	case time.Time:
 		b, ok := b.(time.Time)
@@ -167,11 +168,47 @@ func compareScalars(a, b any) compareResult {
 			return notEqual
 		}
 
-	case *types.Document, *types.Array:
+	default:
+		panic(fmt.Sprintf("unhandled type %T", a))
+	}
+}
+
+// compare compares the filter to the value of the document, whether it is a composite type or a scalar type.
+func compare(docValue, filter any) compareResult {
+	if docValue == nil {
+		panic("docValue is nil")
+	}
+	if filter == nil {
+		panic("filter is nil")
+	}
+
+	switch docValue := docValue.(type) {
+	case *types.Document:
+		return notEqual
+
+	case *types.Array:
+		for i := 0; i < docValue.Len(); i++ {
+			arrValue := must.NotFail(docValue.Get(i)).(any)
+
+			_, isValueArr := arrValue.(*types.Array)
+			_, isValueDoc := arrValue.(*types.Document)
+			if isValueArr || isValueDoc {
+				return notEqual
+			}
+
+			switch compareScalars(arrValue, filter) {
+			case equal:
+				return equal
+			case greater:
+				return greater
+			case less:
+				return less
+			}
+		}
 		return notEqual
 
 	default:
-		panic(fmt.Sprintf("unhandled type %T", a))
+		return compareScalars(docValue, filter)
 	}
 }
 
