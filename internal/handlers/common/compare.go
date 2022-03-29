@@ -17,11 +17,13 @@ package common
 import (
 	"bytes"
 	"fmt"
+	"math"
 	"time"
 
 	"golang.org/x/exp/constraints"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // compareResult represents the result of a comparison.
@@ -47,21 +49,30 @@ func compareScalars(a, b any) compareResult {
 	case float64:
 		switch b := b.(type) {
 		case float64:
+			if math.IsNaN(a) && math.IsNaN(b) {
+				return equal
+			}
 			return compareOrdered(a, b)
 		case int32:
 			return compareNumbers(a, int64(b))
 		case int64:
 			return compareNumbers(a, b)
 		default:
-			panic(fmt.Sprintf("unexpected type %T", b))
+			return notEqual
 		}
 
 	case string:
-		b := b.(string)
-		return compareOrdered(a, b)
+		b, ok := b.(string)
+		if ok {
+			return compareOrdered(a, b)
+		}
+		return notEqual
 
 	case types.Binary:
-		b := b.(types.Binary)
+		b, ok := b.(types.Binary)
+		if !ok {
+			return notEqual
+		}
 		al, bl := len(a.B), len(b.B)
 		if al != bl {
 			return compareOrdered(al, bl)
@@ -81,7 +92,10 @@ func compareScalars(a, b any) compareResult {
 		}
 
 	case types.ObjectID:
-		b := b.(types.ObjectID)
+		b, ok := b.(types.ObjectID)
+		if !ok {
+			return notEqual
+		}
 		switch bytes.Compare(a[:], b[:]) {
 		case 0:
 			return equal
@@ -94,7 +108,10 @@ func compareScalars(a, b any) compareResult {
 		}
 
 	case bool:
-		b := b.(bool)
+		b, ok := b.(bool)
+		if !ok {
+			return notEqual
+		}
 		if a == b {
 			return equal
 		}
@@ -104,15 +121,20 @@ func compareScalars(a, b any) compareResult {
 		return greater
 
 	case time.Time:
-		b := b.(time.Time)
-		return compareOrdered(a.UnixNano(), b.UnixNano())
+		b, ok := b.(time.Time)
+		if ok {
+			return compareOrdered(a.UnixNano(), b.UnixNano())
+		}
+		return notEqual
 
 	case types.NullType:
-		_ = b.(types.NullType)
-		return equal // or notEqual?
+		_, ok := b.(types.NullType)
+		if ok {
+			return equal
+		}
+		return notEqual
 
 	case types.Regex:
-		_ = b.(types.Regex)
 		return notEqual // ???
 
 	case int32:
@@ -124,12 +146,15 @@ func compareScalars(a, b any) compareResult {
 		case int64:
 			return compareOrdered(int64(a), b)
 		default:
-			panic(fmt.Sprintf("unexpected type %T", b))
+			return notEqual
 		}
 
 	case types.Timestamp:
-		b := b.(types.Timestamp)
-		return compareOrdered(a, b)
+		b, ok := b.(types.Timestamp)
+		if ok {
+			return compareOrdered(a, b)
+		}
+		return notEqual
 
 	case int64:
 		switch b := b.(type) {
@@ -140,11 +165,52 @@ func compareScalars(a, b any) compareResult {
 		case int64:
 			return compareOrdered(a, b)
 		default:
-			panic(fmt.Sprintf("unexpected type %T", b))
+			return notEqual
 		}
 
 	default:
 		panic(fmt.Sprintf("unhandled type %T", a))
+	}
+}
+
+// compare compares the filter to the value of the document, whether it is a composite type or a scalar type.
+func compare(docValue, filter any) compareResult {
+	if docValue == nil {
+		panic("docValue is nil")
+	}
+	if filter == nil {
+		panic("filter is nil")
+	}
+
+	switch docValue := docValue.(type) {
+	case *types.Document:
+		return notEqual
+
+	case *types.Array:
+		for i := 0; i < docValue.Len(); i++ {
+			arrValue := must.NotFail(docValue.Get(i)).(any)
+
+			_, isValueArr := arrValue.(*types.Array)
+			_, isValueDoc := arrValue.(*types.Document)
+			if isValueArr || isValueDoc {
+				return notEqual
+			}
+
+			switch compareScalars(arrValue, filter) {
+			case equal:
+				return equal
+			case greater:
+				return greater
+			case less:
+				return less
+			case notEqual:
+				continue
+			}
+		}
+		return notEqual
+
+	default:
+		return compareScalars(docValue, filter)
 	}
 }
 
