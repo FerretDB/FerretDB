@@ -203,6 +203,8 @@ func compare(docValue, filter any) compareResult {
 				return greater
 			case less:
 				return less
+			case notEqual:
+				continue
 			}
 		}
 		return notEqual
