@@ -73,6 +73,11 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 
 	default:
 		// {field: value}
+		switch docValue := docValue.(type) {
+		case *types.Document, *types.Array:
+			return compare(docValue, filterValue) == equal, nil
+		}
+
 		return compareScalars(docValue, filterValue) == equal, nil
 	}
 }
