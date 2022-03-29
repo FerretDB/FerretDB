@@ -713,6 +713,33 @@ func TestFind(t *testing.T) {
 			)),
 			resp: new(types.Array),
 		},
+		"BitsAnyClearBigBinary": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(
+					types.NewDocument(
+						"name", "binary-big",
+						"value", must.NotFail(types.NewDocument(
+							"$bitsAnyClear", int64(0b1000_0000_0000_0000))),
+					)),
+			)),
+			// TODO: add record that should match
+			resp: new(types.Array),
+		},
+		"BitsAnyClearBigBinaryEmptyResult": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(
+					types.NewDocument(
+						"name", "binary-big",
+						"value", must.NotFail(types.NewDocument(
+							"$bitsAnyClear", int64(0b1000_0000_0000_0000_0000_0000))),
+					)),
+			)),
+			resp: new(types.Array),
+		},
 		"BitsAnySet": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
@@ -741,6 +768,33 @@ func TestFind(t *testing.T) {
 						"name", "int32",
 						"value", must.NotFail(types.NewDocument(
 							"$bitsAnySet", int32(4))),
+					)),
+			)),
+			resp: new(types.Array),
+		},
+		"BitsAnySetBigBinary": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(
+					types.NewDocument(
+						"name", "binary-big",
+						"value", must.NotFail(types.NewDocument(
+							"$bitsAnySet", int64(0b1000_0000_0000_0000_0000_0000))),
+					)),
+			)),
+			// TODO: add record that should match
+			resp: new(types.Array),
+		},
+		"BitsAnySetBigBinaryEmptyResult": {
+			schemas: []string{"values"},
+			req: must.NotFail(types.NewDocument(
+				"find", "values",
+				"filter", must.NotFail(
+					types.NewDocument(
+						"name", "binary-big",
+						"value", must.NotFail(types.NewDocument(
+							"$bitsAnySet", int64(0b1000_0000_0000_0000))),
 					)),
 			)),
 			resp: new(types.Array),
