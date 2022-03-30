@@ -17,36 +17,12 @@ package integration
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
-
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestQueryComparisionEqScalar(t *testing.T) {
+func TestQueryArraySize(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t, shareddata.Scalars)
 
-	for _, expected := range shareddata.Scalars.Docs() {
-		id := expected.Map()["_id"]
-		var actual bson.D
-		err := collection.FindOne(ctx, bson.D{{"_id", bson.D{{"$eq", id}}}}).Decode(&actual)
-		require.NoError(t, err)
-		assert.Equal(t, expected, actual)
-	}
+	_, _ = ctx, collection
 }
-
-// $gt
-
-// $gte
-
-// $in
-
-// $lt
-
-// $lte
-
-// $ne
-
-// $nin

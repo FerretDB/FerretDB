@@ -26,21 +26,6 @@ type Provider interface {
 	Docs() []bson.D
 }
 
-/*
-func Map[idType comparable](t testing.TB, docs []bson.D) map[idType]bson.D {
-	t.Helper()
-
-	res := make(map[idType]bson.D, len(docs))
-	for _, doc := range docs {
-		id, ok := doc.Map()["_id"].(idType)
-		require.True(t, ok)
-		res[id] = doc
-	}
-
-	return res
-}
-*/
-
 type Values[idType constraints.Ordered] struct {
 	data map[idType]any
 }

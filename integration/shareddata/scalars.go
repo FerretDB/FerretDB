@@ -30,13 +30,10 @@ var Scalars = &Values[string]{
 		"double-smallest":          math.SmallestNonzeroFloat64,
 		"double-positive-infinity": math.Inf(+1),
 		"double-negative-infinity": math.Inf(-1),
-		// "double-nan":               math.NaN(), FIXME
+		// TODO "double-nan":               math.NaN(),
 
 		"string":       "foo",
 		"string-empty": "",
-
-		// no Document
-		// no Array
 
 		"binary":       primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}},
 		"binary-empty": primitive.Binary{Data: []byte{}},
