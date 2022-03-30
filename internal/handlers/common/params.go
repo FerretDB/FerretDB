@@ -68,10 +68,10 @@ func AssertType[T types.Type](value any) (T, error) {
 }
 
 var (
-	errUnexpectedType = fmt.Errorf("GetWholeNumberParam: unexpected type")
-	errNotWholeNumber = fmt.Errorf("GetWholeNumberParam: not a whole number")
-	errNegativeNumber = fmt.Errorf("getBinaryMaskParam: negative number")
-	errNotBinaryMask  = fmt.Errorf("getBinaryMaskParam: not a binary mask")
+	errUnexpectedType = fmt.Errorf("unexpected type")
+	errNotWholeNumber = fmt.Errorf("not a whole number")
+	errNegativeNumber = fmt.Errorf("negative number")
+	errNotBinaryMask  = fmt.Errorf("not a binary mask")
 )
 
 // GetWholeNumberParam checks if the given value is int32, int64, or float64 containing a whole number,
