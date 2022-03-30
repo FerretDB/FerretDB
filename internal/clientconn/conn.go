@@ -26,10 +26,9 @@ import (
 	"github.com/pmezard/go-difflib/difflib"
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/jsonb1"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/handlers/proxy"
-	"github.com/FerretDB/FerretDB/internal/pg"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -56,7 +55,7 @@ var AllModes = []Mode{NormalMode, ProxyMode, DiffNormalMode, DiffProxyMode}
 type conn struct {
 	netConn net.Conn
 	mode    Mode
-	h       *handlers.Handler
+	h       *pg.Handler
 	proxy   *proxy.Handler
 	l       *zap.SugaredLogger
 }
@@ -64,10 +63,10 @@ type conn struct {
 // newConnOpts represents newConn options.
 type newConnOpts struct {
 	netConn         net.Conn
-	pgPool          *pg.Pool
+	pgPool          *pgdb.Pool
 	proxyAddr       string
 	mode            Mode
-	handlersMetrics *handlers.Metrics
+	handlersMetrics *pg.Metrics
 	startTime       time.Time
 }
 
@@ -77,7 +76,6 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	l := zap.L().Named(prefix)
 
 	peerAddr := opts.netConn.RemoteAddr().String()
-	pgStorage := jsonb1.NewStorage(opts.pgPool, l)
 
 	var p *proxy.Handler
 	if opts.mode != NormalMode {
@@ -87,18 +85,17 @@ func newConn(opts *newConnOpts) (*conn, error) {
 		}
 	}
 
-	handlerOpts := &handlers.NewOpts{
+	handlerOpts := &pg.NewOpts{
 		PgPool:    opts.pgPool,
 		L:         l,
 		PeerAddr:  peerAddr,
-		PgStorage: pgStorage,
 		Metrics:   opts.handlersMetrics,
 		StartTime: opts.startTime,
 	}
 	return &conn{
 		netConn: opts.netConn,
 		mode:    opts.mode,
-		h:       handlers.New(handlerOpts),
+		h:       pg.New(handlerOpts),
 		proxy:   p,
 		l:       l.Sugar(),
 	}, nil
@@ -164,9 +161,9 @@ func (c *conn) run(ctx context.Context) (err error) {
 		// handle request unless we are in proxy mode
 		var resHeader *wire.MsgHeader
 		var resBody wire.MsgBody
-		var closeConn bool
+		var resCloseConn bool
 		if c.mode != ProxyMode {
-			resHeader, resBody, closeConn = c.h.Handle(ctx, reqHeader, reqBody)
+			resHeader, resBody, resCloseConn = c.h.Handle(ctx, reqHeader, reqBody)
 
 			// do not spend time dumping if we are not going to log it
 			if c.l.Desugar().Core().Enabled(zap.DebugLevel) {
@@ -183,11 +180,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 				panic("proxy addr was nil")
 			}
 
-			proxyHeader, proxyBody, err = c.proxy.Handle(ctx, reqHeader, reqBody)
-			if err != nil {
-				c.l.Warnf("Proxy returned error, closing connection: %s.", err)
-				return
-			}
+			proxyHeader, proxyBody, _ = c.proxy.Handle(ctx, reqHeader, reqBody)
 
 			// do not spend time dumping if we are not going to log it
 			if c.l.Desugar().Core().Enabled(zap.DebugLevel) {
@@ -244,7 +237,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 			return
 		}
 
-		if closeConn {
+		if resCloseConn {
 			err = errors.New("internal error")
 			return
 		}

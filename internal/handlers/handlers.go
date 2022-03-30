@@ -12,29 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testutil
-
-import (
-	"bytes"
-	"encoding/json"
-	"testing"
-
-	"github.com/stretchr/testify/require"
-
-	"github.com/FerretDB/FerretDB/internal/fjson"
-	"github.com/FerretDB/FerretDB/internal/types"
-)
-
-// Dump returns string representation for debugging.
-func Dump[T types.Type](tb testing.TB, o T) string {
-	tb.Helper()
-
-	// We might switch to spew or something else later.
-	b, err := fjson.Marshal(o)
-	require.NoError(tb, err)
-
-	dst := bytes.NewBuffer(make([]byte, 0, len(b)))
-	err = json.Indent(dst, b, "", "  ")
-	require.NoError(tb, err)
-	return dst.String()
-}
+package handlers

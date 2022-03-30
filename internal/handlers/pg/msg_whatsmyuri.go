@@ -12,29 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testutil
+package pg
 
 import (
-	"bytes"
-	"encoding/json"
-	"testing"
+	"context"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// Dump returns string representation for debugging.
-func Dump[T types.Type](tb testing.TB, o T) string {
-	tb.Helper()
+// MsgWhatsMyURI is an internal command, returns the peerAddress of the handler.
+func (h *Handler) MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	var reply wire.OpMsg
+	err := reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{types.MustNewDocument(
+			"you", h.peerAddr,
+			"ok", float64(1),
+		)},
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
-	// We might switch to spew or something else later.
-	b, err := fjson.Marshal(o)
-	require.NoError(tb, err)
-
-	dst := bytes.NewBuffer(make([]byte, 0, len(b)))
-	err = json.Indent(dst, b, "", "  ")
-	require.NoError(tb, err)
-	return dst.String()
+	return &reply, nil
 }
