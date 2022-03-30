@@ -27,7 +27,8 @@ import (
 
 func TestMostCommandsAreCaseSensitive(t *testing.T) {
 	t.Parallel()
-	ctx, db := setup(t)
+	ctx, collection := setup(t)
+	db := collection.Database()
 
 	res := db.RunCommand(ctx, bson.D{{"listcollections", 1}})
 	err := res.Err()
@@ -44,15 +45,14 @@ func TestMostCommandsAreCaseSensitive(t *testing.T) {
 	assert.NoError(t, res.Err())
 }
 
-func TestInsertFindBasicScalars(t *testing.T) {
+func TestInsertFindScalars(t *testing.T) {
 	t.Parallel()
-	ctx, db := setup(t)
-	collection := db.Collection(collectionName(t))
-	shareddata.Scalars.Insert(ctx, t, collection)
+	ctx, collection := setup(t, shareddata.Scalars)
 
 	for _, expected := range shareddata.Scalars.Docs() {
+		id := expected.Map()["_id"]
 		var actual bson.D
-		err := collection.FindOne(ctx, bson.D{{"_id", expected.Map()["_id"]}}).Decode(&actual)
+		err := collection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&actual)
 		require.NoError(t, err)
 		assert.Equal(t, expected, actual)
 	}

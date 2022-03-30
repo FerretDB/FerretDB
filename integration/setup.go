@@ -30,6 +30,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
@@ -43,7 +44,7 @@ var (
 )
 
 // setup returns test-specific context (that is cancelled when the test ends) and database client.
-func setup(t *testing.T) (context.Context, *mongo.Database) {
+func setup(t *testing.T, providers ...shareddata.Provider) (context.Context, *mongo.Collection) {
 	t.Helper()
 
 	startupOnce.Do(func() { startup(t) })
@@ -113,12 +114,20 @@ func setup(t *testing.T) (context.Context, *mongo.Database) {
 	err = db.Drop(context.Background())
 	require.NoError(t, err)
 
+	collection := db.Collection(collectionName(t))
+	for _, provider := range providers {
+		for _, doc := range provider.Docs() {
+			_, err = collection.InsertOne(ctx, doc)
+			require.NoError(t, err)
+		}
+	}
+
 	t.Cleanup(func() {
 		cancel()
 		wg.Wait()
 	})
 
-	return ctx, db
+	return ctx, collection
 }
 
 // startup initializes things that should be initialized only once.
