@@ -26,6 +26,8 @@ import (
 )
 
 // addToSeedCorpus adds given header and message body to handler's fuzzing seed corpus.
+//
+//nolint:deadcode // TODO
 func addToSeedCorpus(tb testing.TB, header *wire.MsgHeader, msg wire.MsgBody) {
 	tb.Skip("TODO")
 

@@ -890,6 +890,7 @@ func TestFind(t *testing.T) {
 				),
 			),
 		},
+
 		"SizeInt32": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
@@ -1048,6 +1049,7 @@ func TestFind(t *testing.T) {
 					`If you have a field name that starts with a '$' symbol, consider using $getField or $setField.`,
 			),
 		},
+
 		"BitsAllClear": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
