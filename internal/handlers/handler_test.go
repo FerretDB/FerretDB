@@ -724,8 +724,13 @@ func TestFind(t *testing.T) {
 							"$bitsAnyClear", int64(0b1000_0000_0000_0000))),
 					)),
 			)),
-			// TODO: add record that should match
-			resp: new(types.Array),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x05, 0x03, 0x00, 0x00, 0x05, 0x03},
+					"name", "binary-big",
+					"value", types.Binary{B: []byte{0, 0, 128}},
+				)),
+			)),
 		},
 		"BitsAnyClearBigBinaryEmptyResult": {
 			schemas: []string{"values"},
@@ -783,8 +788,13 @@ func TestFind(t *testing.T) {
 							"$bitsAnySet", int64(0b1000_0000_0000_0000_0000_0000))),
 					)),
 			)),
-			// TODO: add record that should match
-			resp: new(types.Array),
+			resp: must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x05, 0x03, 0x00, 0x00, 0x05, 0x03},
+					"name", "binary-big",
+					"value", types.Binary{B: []byte{0, 0, 128}},
+				)),
+			)),
 		},
 		"BitsAnySetBigBinaryEmptyResult": {
 			schemas: []string{"values"},

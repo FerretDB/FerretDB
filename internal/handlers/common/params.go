@@ -170,6 +170,8 @@ func getBinaryParam(value any) (types.Binary, error) {
 		if err != nil {
 			return types.Binary{}, err
 		}
+	case types.Binary:
+		return value, nil
 	default:
 		return types.Binary{}, NewErrorMsg(ErrBadValue, "not matched")
 	}
@@ -186,10 +188,6 @@ func getBinaryParams(fieldValue any, maskValue any) (types.Binary, types.Binary,
 	fieldBinary, err := getBinaryParam(fieldValue)
 	if err != nil {
 		return types.Binary{}, types.Binary{}, err
-	}
-
-	if len(fieldBinary.B) != len(maskBinary.B) {
-		panic("fieldBinary and maskBinary sizes should be equal")
 	}
 
 	return fieldBinary, maskBinary, nil
