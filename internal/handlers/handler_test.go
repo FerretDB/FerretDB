@@ -140,7 +140,7 @@ func TestFind(t *testing.T) {
 				must.NotFail(types.NewDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x05, 0x00, 0x00, 0x04, 0x05},
 					"value", must.NotFail(types.NewArray(
-						must.NotFail(types.NewDocument("age", int32(1002), "document", "jkl", "score", int32(24))),
+						must.NotFail(types.NewDocument("document", "jkl", "score", int32(24), "age", int32(1002))),
 					)),
 				)),
 			),
@@ -1165,7 +1165,7 @@ func TestFind(t *testing.T) {
 					}
 
 					actual := handle(ctx, t, handler, tc.req)
-					assert.Equal(t, expected, actual)
+					testutil.AssertEqual(t, expected, actual)
 				})
 			}
 		})
@@ -1248,7 +1248,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "size")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "storageSize")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "totalSize")
-				assert.Equal(t, expected, actual)
+				testutil.AssertEqual(t, expected, actual)
 			},
 		},
 
@@ -1304,7 +1304,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				testutil.CompareAndSetByPathNum(t, expected, actual, 10, "numObjects")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 50, "millis")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "size")
-				assert.Equal(t, expected, actual)
+				testutil.AssertEqual(t, expected, actual)
 			},
 		},
 		"DataSizeCollectionNotExist": {
@@ -1320,7 +1320,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 			),
 			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
 				testutil.CompareAndSetByPathNum(t, expected, actual, 50, "millis")
-				assert.Equal(t, expected, actual)
+				testutil.AssertEqual(t, expected, actual)
 			},
 		},
 
@@ -1347,7 +1347,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				testutil.CompareAndSetByPathNum(t, expected, actual, 40, "avgObjSize")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 400_000, "dataSize")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 400_000, "totalSize")
-				assert.Equal(t, expected, actual)
+				testutil.AssertEqual(t, expected, actual)
 			},
 		},
 		"DBStatsWithScale": {
@@ -1374,7 +1374,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				testutil.CompareAndSetByPathNum(t, expected, actual, 40, "avgObjSize")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 400, "dataSize")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 400, "totalSize")
-				assert.Equal(t, expected, actual)
+				testutil.AssertEqual(t, expected, actual)
 			},
 		},
 
@@ -1407,7 +1407,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
 				actualV := testutil.GetByPath(t, actual, "cursor", "ns")
 				testutil.SetByPath(t, expected, actualV, "cursor", "ns")
-				assert.Equal(t, expected, actual)
+				testutil.AssertEqual(t, expected, actual)
 			},
 		},
 
@@ -1440,7 +1440,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
 				actualV := testutil.GetByPath(t, actual, "cursor", "ns")
 				testutil.SetByPath(t, expected, actualV, "cursor", "ns")
-				assert.Equal(t, expected, actual)
+				testutil.AssertEqual(t, expected, actual)
 			},
 		},
 
@@ -1471,7 +1471,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
 				actualV := testutil.GetByPath(t, actual, "cursor", "ns")
 				testutil.SetByPath(t, expected, actualV, "cursor", "ns")
-				assert.Equal(t, expected, actual)
+				testutil.AssertEqual(t, expected, actual)
 			},
 		},
 
@@ -1489,7 +1489,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				// Just testing "ok" response, not the body of the response
 				actualV := testutil.GetByPath(t, actual, "log")
 				testutil.SetByPath(t, expected, actualV, "log")
-				assert.Equal(t, expected, actual)
+				testutil.AssertEqual(t, expected, actual)
 			},
 		},
 
@@ -1514,7 +1514,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 			compareFunc: func(t testing.TB, _ *types.Document, actual, expected *types.Document) {
 				actualV := testutil.GetByPath(t, actual, "commands")
 				testutil.SetByPath(t, expected, actualV, "commands")
-				assert.Equal(t, expected, actual)
+				testutil.AssertEqual(t, expected, actual)
 			},
 		},
 
@@ -1536,7 +1536,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 			),
 			compareFunc: func(t testing.TB, _ *types.Document, actual, expected *types.Document) {
 				testutil.CompareAndSetByPathTime(t, expected, actual, 2*time.Second, "localTime")
-				assert.Equal(t, expected, actual)
+				testutil.AssertEqual(t, expected, actual)
 			},
 		},
 		"Hello": {
@@ -1557,7 +1557,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 			),
 			compareFunc: func(t testing.TB, _ *types.Document, actual, expected *types.Document) {
 				testutil.CompareAndSetByPathTime(t, expected, actual, 2*time.Second, "localTime")
-				assert.Equal(t, expected, actual)
+				testutil.AssertEqual(t, expected, actual)
 			},
 		},
 
@@ -1581,7 +1581,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 			),
 			compareFunc: func(t testing.TB, _ *types.Document, actual, expected *types.Document) {
 				testutil.CompareAndSetByPathTime(t, expected, actual, 2*time.Second, "system", "currentTime")
-				assert.Equal(t, expected, actual)
+				testutil.AssertEqual(t, expected, actual)
 			},
 		},
 
@@ -1619,7 +1619,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				}
 				testutil.CompareAndSetByPathNum(t, expected, actual, 20, "catalogStats", "collections")
 				testutil.CompareAndSetByPathTime(t, expected, actual, 2*time.Second, "localTime")
-				assert.Equal(t, expected, actual)
+				testutil.AssertEqual(t, expected, actual)
 			},
 		},
 	}
@@ -1639,7 +1639,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 
 					actual := handle(ctx, t, handler, tc.req)
 					if tc.compareFunc == nil {
-						assert.Equal(t, tc.resp, actual)
+						testutil.AssertEqual(t, tc.resp, actual)
 					} else {
 						tc.compareFunc(t, tc.req, tc.resp, actual)
 					}
@@ -1706,7 +1706,7 @@ func TestListDropDatabase(t *testing.T) {
 			testutil.CompareAndSetByPathNum(t, expectedDB.(*types.Document), actualDB.(*types.Document), 500_000, "sizeOnDisk")
 		}
 
-		assert.Equal(t, expectedList, actualList)
+		testutil.AssertEqual(t, expectedList, actualList)
 
 		actualDrop := handle(ctx, t, handler, types.MustNewDocument(
 			"dropDatabase", int32(1),
@@ -1716,7 +1716,7 @@ func TestListDropDatabase(t *testing.T) {
 			"dropped", db,
 			"ok", float64(1),
 		)
-		assert.Equal(t, expectedDrop, actualDrop)
+		testutil.AssertEqual(t, expectedDrop, actualDrop)
 
 		// cut dropped db from the expected list
 		databases := testutil.GetByPath(t, expectedList, "databases").(*types.Array)
@@ -1731,7 +1731,7 @@ func TestListDropDatabase(t *testing.T) {
 		actualList = handle(ctx, t, handler, types.MustNewDocument(
 			"listDatabases", int32(1),
 		))
-		assert.Equal(t, expectedList, actualList)
+		testutil.AssertEqual(t, expectedList, actualList)
 	})
 
 	t.Run("nonexisting", func(t *testing.T) {
@@ -1743,7 +1743,7 @@ func TestListDropDatabase(t *testing.T) {
 			// no $db
 			"ok", float64(1),
 		)
-		assert.Equal(t, expected, actual)
+		testutil.AssertEqual(t, expected, actual)
 	})
 }
 
@@ -1762,7 +1762,7 @@ func TestCreateListDropCollection(t *testing.T) {
 		expected := types.MustNewDocument(
 			"ok", float64(1),
 		)
-		assert.Equal(t, expected, actual)
+		testutil.AssertEqual(t, expected, actual)
 
 		// TODO test listCollections command once we have better cursor support
 		// https://github.com/FerretDB/FerretDB/issues/79
@@ -1780,7 +1780,7 @@ func TestCreateListDropCollection(t *testing.T) {
 			"ns", db+"."+collection,
 			"ok", float64(1),
 		)
-		assert.Equal(t, expected, actual)
+		testutil.AssertEqual(t, expected, actual)
 
 		actual = handle(ctx, t, handler, types.MustNewDocument(
 			"drop", collection,
@@ -1792,7 +1792,7 @@ func TestCreateListDropCollection(t *testing.T) {
 			"code", int32(26),
 			"codeName", "NamespaceNotFound",
 		)
-		assert.Equal(t, expected, actual)
+		testutil.AssertEqual(t, expected, actual)
 	})
 
 	t.Run("existing", func(t *testing.T) {
@@ -1808,6 +1808,6 @@ func TestCreateListDropCollection(t *testing.T) {
 			"code", int32(48),
 			"codeName", "NamespaceExists",
 		)
-		assert.Equal(t, expected, actual)
+		testutil.AssertEqual(t, expected, actual)
 	})
 }
