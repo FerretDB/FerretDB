@@ -29,6 +29,7 @@ import (
 func Dump[T types.Type](tb testing.TB, o T) string {
 	tb.Helper()
 
+	// We might switch to spew or something else later.
 	b, err := fjson.Marshal(o)
 	require.NoError(tb, err)
 

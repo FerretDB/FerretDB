@@ -140,7 +140,7 @@ func TestFind(t *testing.T) {
 				must.NotFail(types.NewDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x05, 0x00, 0x00, 0x04, 0x05},
 					"value", must.NotFail(types.NewArray(
-						must.NotFail(types.NewDocument("age", int32(1002), "document", "jkl", "score", int32(24))),
+						must.NotFail(types.NewDocument("document", "jkl", "score", int32(24), "age", int32(1002))),
 					)),
 				)),
 			),
