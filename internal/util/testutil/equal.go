@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/slices"
 
-	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -61,14 +60,10 @@ func AssertNotEqual[T types.Type](t testing.TB, expected, actual T) bool {
 // diffValues returns a readable form of given values and the difference between them.
 func diffValues[T types.Type](t testing.TB, expected, actual T) (expectedS string, actualS string, diff string) {
 	// We might switch to spew or something else later.
-	expectedB, err := fjson.Marshal(expected)
-	require.NoError(t, err)
-	expectedS = string(expectedB)
+	expectedS = Dump(t, expected)
+	actualS = Dump(t, actual)
 
-	actualB, err := fjson.Marshal(actual)
-	require.NoError(t, err)
-	actualS = string(actualB)
-
+	var err error
 	diff, err = difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
 		A:        difflib.SplitLines(expectedS),
 		FromFile: "expected",
