@@ -21,6 +21,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestMostCommandsAreCaseSensitive(t *testing.T) {
@@ -45,13 +47,12 @@ func TestMostCommandsAreCaseSensitive(t *testing.T) {
 func TestInsertFindBasicScalars(t *testing.T) {
 	t.Parallel()
 	ctx, db := setup(t)
-
-	insertScalars(ctx, t, db)
-
 	collection := db.Collection(collectionName(t))
-	for id, expected := range scalarsData() {
-		var actual any
-		err := collection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&actual)
+	shareddata.Scalars.Insert(ctx, t, collection)
+
+	for _, expected := range shareddata.Scalars.Docs() {
+		var actual bson.D
+		err := collection.FindOne(ctx, bson.D{{"_id", expected.Map()["_id"]}}).Decode(&actual)
 		require.NoError(t, err)
 		assert.Equal(t, expected, actual)
 	}

@@ -59,7 +59,6 @@ func AssertNotEqual[T types.Type](t testing.TB, expected, actual T) bool {
 
 // diffValues returns a readable form of given values and the difference between them.
 func diffValues[T types.Type](t testing.TB, expected, actual T) (expectedS string, actualS string, diff string) {
-	// We might switch to spew or something else later.
 	expectedS = Dump(t, expected)
 	actualS = Dump(t, actual)
 
