@@ -125,7 +125,8 @@ var (
 func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
 	switch err {
 	case errNotWholeNumber:
-		return NewErrorMsg(ErrFailedToParse,
+		return NewErrorMsg(
+		    ErrFailedToParse,
 			fmt.Sprintf("Expected an integer: %s: %#v", operator, maskValue),
 		)
 	case errNegativeNumber:
