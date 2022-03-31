@@ -30,7 +30,8 @@ var Scalars = &Values[string]{
 		"double-smallest":          math.SmallestNonzeroFloat64,
 		"double-positive-infinity": math.Inf(+1),
 		"double-negative-infinity": math.Inf(-1),
-		// TODO "double-nan":               math.NaN(),
+		// TODO https://github.com/FerretDB/FerretDB/issues/411
+		// "double-nan":               math.NaN(),
 
 		"string":       "foo",
 		"string-empty": "",

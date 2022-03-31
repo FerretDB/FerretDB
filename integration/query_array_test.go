@@ -55,13 +55,17 @@ func TestQueryArraySize(t *testing.T) {
 			q:           bson.D{{"value", bson.D{{"$size", float64(2)}}}},
 			expectedIDs: []any{"array-two"},
 		},
-		"NotFound": {
-			q:           bson.D{{"value", bson.D{{"$size", 4}}}},
-			expectedIDs: []any{},
-		},
 		"Zero": {
 			q:           bson.D{{"value", bson.D{{"$size", 0}}}},
 			expectedIDs: []any{"array-empty"},
+		},
+		"NegativeZero": {
+			q:           bson.D{{"value", bson.D{{"$size", math.Copysign(0, -1)}}}},
+			expectedIDs: []any{"array-empty"},
+		},
+		"NotFound": {
+			q:           bson.D{{"value", bson.D{{"$size", 4}}}},
+			expectedIDs: []any{},
 		},
 		"InvalidType": {
 			q: bson.D{{"value", bson.D{{"$size", bson.D{{"$gt", 1}}}}}},
