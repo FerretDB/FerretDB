@@ -26,23 +26,14 @@ import (
 
 func TestQueryComparisionEq(t *testing.T) {
 	t.Parallel()
+	ctx, collection := setup(t, shareddata.Scalars)
 
-	for name, provider := range map[string]shareddata.Provider{
-		"scalars": shareddata.Scalars,
-	} {
-		name, provider := name, provider
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			ctx, collection := setup(t, provider)
-
-			for _, expected := range provider.Docs() {
-				id := expected.Map()["_id"]
-				var actual bson.D
-				err := collection.FindOne(ctx, bson.D{{"_id", bson.D{{"$eq", id}}}}).Decode(&actual)
-				require.NoError(t, err)
-				assert.Equal(t, expected, actual)
-			}
-		})
+	for _, expected := range shareddata.Scalars.Docs() {
+		id := expected.Map()["_id"]
+		var actual bson.D
+		err := collection.FindOne(ctx, bson.D{{"_id", bson.D{{"$eq", id}}}}).Decode(&actual)
+		require.NoError(t, err)
+		assert.Equal(t, expected, actual)
 	}
 }
 

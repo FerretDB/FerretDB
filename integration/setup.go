@@ -153,9 +153,7 @@ func startup(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// FIXME
-	// logging.Setup(zap.DebugLevel)
-	logging.Setup(zap.ErrorLevel)
+	logging.Setup(zap.DebugLevel)
 
 	ctx := context.Background()
 
