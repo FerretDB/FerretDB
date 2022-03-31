@@ -41,3 +41,25 @@ func TestMostCommandsAreCaseSensitive(t *testing.T) {
 	res = db.RunCommand(ctx, bson.D{{"isMaster", 1}})
 	assert.NoError(t, res.Err())
 }
+
+func TestFindNothing(t *testing.T) {
+	t.Parallel()
+	ctx, db := setup(t)
+
+	name := collectionName(t)
+	err := db.CreateCollection(ctx, name)
+	require.NoError(t, err)
+	collection := db.Collection(name)
+
+	cursor, err := collection.Find(ctx, bson.D{})
+	require.NoError(t, err)
+	var docs []bson.D
+	err = cursor.All(ctx, &docs)
+	require.NoError(t, err)
+	assert.Equal(t, []bson.D(nil), docs)
+
+	var doc bson.D
+	err = collection.FindOne(ctx, bson.D{}).Decode(&doc)
+	require.NoError(t, err)
+	assert.Equal(t, nil, doc)
+}
