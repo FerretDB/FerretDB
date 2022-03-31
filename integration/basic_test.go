@@ -60,6 +60,6 @@ func TestFindNothing(t *testing.T) {
 
 	var doc bson.D
 	err = collection.FindOne(ctx, bson.D{}).Decode(&doc)
-	require.NoError(t, err)
-	assert.Equal(t, nil, doc)
+	require.Equal(t, mongo.ErrNoDocuments, err)
+	assert.Equal(t, bson.D(nil), doc)
 }
