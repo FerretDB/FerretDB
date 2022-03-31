@@ -133,6 +133,10 @@ func isValidKey(key string) bool {
 
 // validate checks if the document is valid.
 func (d *Document) validate() error {
+	if d == nil {
+		panic("types.Document.validate: d is nil")
+	}
+
 	if len(d.m) != len(d.keys) {
 		return fmt.Errorf("types.Document.validate: keys and values count mismatch: %d != %d", len(d.m), len(d.keys))
 	}
