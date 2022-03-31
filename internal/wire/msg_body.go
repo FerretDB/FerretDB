@@ -24,6 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// MsgBody is a common interface for various message body types: OpMsg, OpQuery, OpReply.
 type MsgBody interface {
 	readFrom(*bufio.Reader) error
 	encoding.BinaryUnmarshaler
@@ -35,6 +36,7 @@ type MsgBody interface {
 
 //go-sumtype:decl MsgBody
 
+// ReadMessage reads message header and body from the given reader.
 func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 	var header MsgHeader
 	if err := header.readFrom(r); err != nil {
@@ -94,6 +96,7 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 	}
 }
 
+// WriteMessages writes message header and body to the given writer.
 func WriteMessage(w *bufio.Writer, header *MsgHeader, msg MsgBody) error {
 	b, err := msg.MarshalBinary()
 	if err != nil {
@@ -118,6 +121,7 @@ func WriteMessage(w *bufio.Writer, header *MsgHeader, msg MsgBody) error {
 	return nil
 }
 
+// MarshalBinary marshals given message header and body to bytes.
 func MarshalMessage(header *MsgHeader, msg MsgBody) ([]byte, error) {
 	var buf bytes.Buffer
 	bufw := bufio.NewWriter(&buf)

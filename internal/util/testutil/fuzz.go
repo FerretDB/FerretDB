@@ -18,8 +18,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/util/fuzz"
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/internal/util/fuzz"
 )
 
 // WriteSeedCorpusFile adds given data to the fuzzing seed corpus for given fuzz function.
