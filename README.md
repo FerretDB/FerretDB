@@ -1,6 +1,7 @@
 # FerretDB
 
 [![Go](https://github.com/FerretDB/FerretDB/actions/workflows/go.yml/badge.svg)](https://github.com/FerretDB/FerretDB/actions/workflows/go.yml)
+[![Integration](https://github.com/FerretDB/FerretDB/actions/workflows/integration.yml/badge.svg)](https://github.com/FerretDB/FerretDB/actions/workflows/integration.yml)
 [![Docker](https://github.com/FerretDB/FerretDB/actions/workflows/docker.yml/badge.svg)](https://github.com/FerretDB/FerretDB/actions/workflows/docker.yml)
 [![codecov](https://codecov.io/gh/FerretDB/FerretDB/branch/main/graph/badge.svg?token=JZ56XFT3DM)](https://codecov.io/gh/FerretDB/FerretDB)
 
