@@ -162,10 +162,12 @@ func filterFieldExpr(fieldValue any, expr *types.Document) (bool, error) {
 		switch exprKey {
 		case "$eq":
 			// {field: {$eq: exprValue}}
-			// TODO regex
-			if compareScalars(fieldValue, exprValue) != equal {
-				return false, nil
+			_, isValueDocument := fieldValue.(*types.Document)
+			_, isValueArray := fieldValue.(*types.Array)
+			if isValueDocument || isValueArray {
+				return compare(fieldValue, exprValue) == equal, nil
 			}
+			return compareScalars(fieldValue, exprValue) == equal, nil
 
 		case "$ne":
 			// {field: {$ne: exprValue}}
@@ -300,6 +302,37 @@ func filterFieldRegex(fieldValue any, regex types.Regex) (bool, error) {
 	}
 
 	return re.MatchString(s), nil
+}
+
+func filterFieldRegex1(fieldValue any, regex types.Regex) (bool, error) {
+	switch fieldValue := fieldValue.(type) {
+	case string:
+		re, err := regex.Compile()
+		if err != nil {
+			return false, err
+		}
+		return re.MatchString(fieldValue), nil
+
+	case *types.Array:
+		for i := 0; i < fieldValue.Len(); i++ {
+			arrValue := must.NotFail(fieldValue.Get(i)).(any)
+			s, isString := arrValue.(string)
+			if !isString {
+				continue
+			}
+
+			re, err := regex.Compile()
+			if err != nil {
+				return false, err
+			}
+
+			if re.MatchString(s) == true {
+				return true, nil
+			}
+		}
+	}
+
+	return false, nil
 }
 
 // filterFieldExprRegex handles {field: {$regex: regexValue, $options: optionsValue}} filter.
