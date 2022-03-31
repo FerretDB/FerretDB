@@ -111,9 +111,10 @@ func (l *Listener) Run(ctx context.Context) error {
 
 			opts := &newConnOpts{
 				netConn:         netConn,
+				mode:            l.opts.Mode,
+				l:               l.opts.Logger,
 				pgPool:          l.opts.PgPool,
 				proxyAddr:       l.opts.ProxyAddr,
-				mode:            l.opts.Mode,
 				handlersMetrics: l.handlersMetrics,
 				startTime:       l.startTime,
 			}
