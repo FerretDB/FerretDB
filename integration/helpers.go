@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // databaseName returns valid database name for given test.
@@ -44,4 +45,18 @@ func collectionName(t testing.TB) string {
 
 	require.Less(t, len(name), 64)
 	return name
+}
+
+// collectIDs returns all _id values from given documents.
+func collectIDs(t testing.TB, docs []bson.D) []any {
+	t.Helper()
+
+	ids := make([]any, len(docs))
+	for i, doc := range docs {
+		id, ok := doc.Map()["_id"]
+		require.True(t, ok)
+		ids[i] = id
+	}
+
+	return ids
 }

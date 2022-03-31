@@ -39,29 +39,29 @@ func TestQueryArraySize(t *testing.T) {
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
-		q        bson.D
-		expected []bson.D
-		err      error
+		q           bson.D
+		expectedIDs []any
+		err         error
 	}{
 		"int32": {
-			q:        bson.D{{"value", bson.D{{"$size", int32(2)}}}},
-			expected: []bson.D{{{"_id", "array-two"}, {"value", bson.A{"1", "2"}}}},
+			q:           bson.D{{"value", bson.D{{"$size", int32(2)}}}},
+			expectedIDs: []any{"array-two"},
 		},
 		"int64": {
-			q:        bson.D{{"value", bson.D{{"$size", int64(2)}}}},
-			expected: []bson.D{{{"_id", "array-two"}, {"value", bson.A{"1", "2"}}}},
+			q:           bson.D{{"value", bson.D{{"$size", int64(2)}}}},
+			expectedIDs: []any{"array-two"},
 		},
 		"float64": {
-			q:        bson.D{{"value", bson.D{{"$size", float64(2)}}}},
-			expected: []bson.D{{{"_id", "array-two"}, {"value", bson.A{"1", "2"}}}},
+			q:           bson.D{{"value", bson.D{{"$size", float64(2)}}}},
+			expectedIDs: []any{"array-two"},
 		},
 		"NotFound": {
-			q:        bson.D{{"value", bson.D{{"$size", 4}}}},
-			expected: nil,
+			q:           bson.D{{"value", bson.D{{"$size", 4}}}},
+			expectedIDs: []any{},
 		},
 		"Zero": {
-			q:        bson.D{{"value", bson.D{{"$size", 0}}}},
-			expected: []bson.D{{{"_id", "array-empty"}, {"value", bson.A{}}}},
+			q:           bson.D{{"value", bson.D{{"$size", 0}}}},
+			expectedIDs: []any{"array-empty"},
 		},
 		"InvalidType": {
 			q: bson.D{{"value", bson.D{{"$size", bson.D{{"$gt", 1}}}}}},
@@ -120,14 +120,14 @@ func TestQueryArraySize(t *testing.T) {
 			var actual []bson.D
 			cursor, err := collection.Find(ctx, tc.q)
 			if tc.err != nil {
-				require.Nil(t, tc.expected)
+				require.Nil(t, tc.expectedIDs)
 				require.Equal(t, tc.err, err)
 				return
 			}
 			require.NoError(t, err)
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
-			assert.Equal(t, tc.expected, actual)
+			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
 		})
 	}
 }
