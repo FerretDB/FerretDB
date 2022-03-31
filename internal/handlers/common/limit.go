@@ -22,6 +22,9 @@ func LimitDocuments(docs []*types.Document, limit int64) ([]*types.Document, err
 	case limit == 0:
 		return docs, nil
 	case limit > 0:
+		if int64(len(docs)) <= limit {
+			return docs, nil
+		}
 		return docs[:limit], nil
 	default:
 		// TODO https://github.com/FerretDB/FerretDB/issues/79

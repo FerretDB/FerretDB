@@ -73,6 +73,11 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 
 	default:
 		// {field: value}
+		switch docValue := docValue.(type) {
+		case *types.Document, *types.Array:
+			return compare(docValue, filterValue) == equal, nil
+		}
+
 		return compareScalars(docValue, filterValue) == equal, nil
 	}
 }
@@ -253,6 +258,27 @@ func filterFieldExpr(fieldValue any, expr *types.Document) (bool, error) {
 				return false, err
 			}
 
+		case "$bitsAllSet":
+			// {field: {$bitsAllSet: value}}
+			res, err := filterFieldExprBitsAllSet(fieldValue, exprValue)
+			if !res || err != nil {
+				return false, err
+			}
+
+		case "$bitsAnyClear":
+			// {field: {$bitsAnyClear: value}}
+			res, err := filterFieldExprBitsAnyClear(fieldValue, exprValue)
+			if !res || err != nil {
+				return false, err
+			}
+
+		case "$bitsAnySet":
+			// {field: {$bitsAnySet: value}}
+			res, err := filterFieldExprBitsAnySet(fieldValue, exprValue)
+			if !res || err != nil {
+				return false, err
+			}
+
 		default:
 			panic(fmt.Sprintf("filterFieldExpr: %q", exprKey))
 		}
@@ -340,22 +366,71 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 
 // filterFieldExprBitsAllClear handles {field: {$bitsAllClear: value}} filter.
 func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
-	mask, err := getBinaryMaskParam(maskValue)
+	fieldBinary, maskBinary, err := getBinaryParams(fieldValue, maskValue)
 	if err != nil {
-		return false, err
-	}
-
-	fieldBinary, err := getBinaryParam(fieldValue)
-	if err != nil {
-		return false, err
-	}
-
-	if len(fieldBinary.B) != len(mask.B) {
-		panic("field and mask sizes should be equal")
+		return false, formatBitwiseOperatorErr(err, "$bitsAllClear", maskValue)
 	}
 
 	for i := 0; i < len(fieldBinary.B); i++ {
-		if (fieldBinary.B[i] & mask.B[i]) != 0 {
+		if (fieldBinary.B[i] & maskBinary.B[i]) != 0 {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+// filterFieldExprBitsAllSet handles {field: {$bitsAllSet: value}} filter.
+func filterFieldExprBitsAllSet(fieldValue, maskValue any) (bool, error) {
+	fieldBinary, maskBinary, err := getBinaryParams(fieldValue, maskValue)
+	if err != nil {
+		return false, formatBitwiseOperatorErr(err, "$bitsAllSet", maskValue)
+	}
+
+	for i := 0; i < len(fieldBinary.B); i++ {
+		if (fieldBinary.B[i] & maskBinary.B[i]) != maskBinary.B[i] {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+// filterFieldExprBitsAnyClear handles {field: {$bitsAnyClear: value}} filter.
+func filterFieldExprBitsAnyClear(fieldValue, maskValue any) (bool, error) {
+	fieldBinary, maskBinary, err := getBinaryParams(fieldValue, maskValue)
+	if err != nil {
+		return false, formatBitwiseOperatorErr(err, "$bitsAnyClear", maskValue)
+	}
+
+	for i := 0; i < len(fieldBinary.B); i++ {
+		if fieldBinary.B[i] == 0 {
+			continue
+		}
+
+		mask := maskBinary.B[i] ^ 0b1111_1111
+		if (fieldBinary.B[i] & mask) == 0 {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+// filterFieldExprBitsAnySet handles {field: {$bitsAnySet: value}} filter.
+func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
+	fieldBinary, maskBinary, err := getBinaryParams(fieldValue, maskValue)
+	if err != nil {
+		return false, formatBitwiseOperatorErr(err, "$bitsAnySet", maskValue)
+	}
+
+	for i := 0; i < len(fieldBinary.B); i++ {
+		if fieldBinary.B[i] == 0 {
+			continue
+		}
+
+		mask := maskBinary.B[i] ^ 0b0000_0000
+		if (fieldBinary.B[i] & mask) == 0 {
 			return false, nil
 		}
 	}

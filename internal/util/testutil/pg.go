@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/pg"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 )
 
 // PoolOpts represents options for creating a connection pool.
@@ -32,7 +32,7 @@ type PoolOpts struct {
 }
 
 // Pool creates a new connection connection pool for testing.
-func Pool(_ context.Context, tb testing.TB, opts *PoolOpts, l *zap.Logger) *pg.Pool {
+func Pool(_ context.Context, tb testing.TB, opts *PoolOpts, l *zap.Logger) *pgdb.Pool {
 	tb.Helper()
 
 	if testing.Short() {
@@ -48,7 +48,7 @@ func Pool(_ context.Context, tb testing.TB, opts *PoolOpts, l *zap.Logger) *pg.P
 		username = "readonly"
 	}
 
-	pool, err := pg.NewPool("postgres://"+username+"@127.0.0.1:5432/ferretdb?pool_min_conns=1", l, false)
+	pool, err := pgdb.NewPool("postgres://"+username+"@127.0.0.1:5432/ferretdb?pool_min_conns=1", l, false)
 	require.NoError(tb, err)
 	tb.Cleanup(pool.Close)
 
@@ -65,14 +65,14 @@ func SchemaName(tb testing.TB) string {
 // Schema creates a new FerretDB database / PostgreSQL schema for testing.
 //
 // Name is stable for that test. It is automatically dropped if test pass.
-func Schema(ctx context.Context, tb testing.TB, pool *pg.Pool) string {
+func Schema(ctx context.Context, tb testing.TB, pool *pgdb.Pool) string {
 	tb.Helper()
 
 	schema := strings.ToLower(tb.Name())
 	tb.Logf("Using schema %q.", schema)
 
 	err := pool.DropSchema(ctx, schema)
-	if err == pg.ErrNotExist {
+	if err == pgdb.ErrNotExist {
 		err = nil
 	}
 	require.NoError(tb, err)
@@ -87,7 +87,7 @@ func Schema(ctx context.Context, tb testing.TB, pool *pg.Pool) string {
 		}
 
 		err = pool.DropSchema(ctx, schema)
-		if err == pg.ErrNotExist { // test might delete it
+		if err == pgdb.ErrNotExist { // test might delete it
 			err = nil
 		}
 		require.NoError(tb, err)
@@ -106,14 +106,14 @@ func TableName(tb testing.TB) string {
 // CreateTable creates FerretDB collection / PostgreSQL table for testing.
 //
 // Name is stable for that test.
-func CreateTable(ctx context.Context, tb testing.TB, pool *pg.Pool, db string) string {
+func CreateTable(ctx context.Context, tb testing.TB, pool *pgdb.Pool, db string) string {
 	tb.Helper()
 
 	table := TableName(tb)
 	tb.Logf("Using table %q.", table)
 
 	err := pool.DropTable(ctx, db, table)
-	if err == pg.ErrNotExist {
+	if err == pgdb.ErrNotExist {
 		err = nil
 	}
 	require.NoError(tb, err)

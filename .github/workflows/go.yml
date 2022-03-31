@@ -57,6 +57,7 @@ jobs:
         uses: codecov/codecov-action@v2
         with:
           files: ./cover.txt
+          flags: tests
 
       - name: Check dirty
         run: |

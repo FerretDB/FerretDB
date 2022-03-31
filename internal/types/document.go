@@ -16,6 +16,7 @@ package types
 
 import (
 	"fmt"
+	"strconv"
 	"unicode/utf8"
 )
 
@@ -71,6 +72,54 @@ func MustNewDocument(pairs ...any) *Document {
 }
 
 func (*Document) compositeType() {}
+
+// isValidKey returns false if key is not a valid document field key.
+func isValidKey(key string) bool {
+	if key == "" {
+		return false
+	}
+
+	// forbid keys like $k (used by fjson representation), but allow $db (used by many commands)
+	if key[0] == '$' && len(key) <= 2 {
+		return false
+	}
+
+	return utf8.ValidString(key)
+}
+
+// validate checks if the document is valid.
+func (d *Document) validate() error {
+	if d == nil {
+		panic("types.Document.validate: d is nil")
+	}
+
+	if len(d.m) != len(d.keys) {
+		return fmt.Errorf("types.Document.validate: keys and values count mismatch: %d != %d", len(d.m), len(d.keys))
+	}
+
+	prevKeys := make(map[string]struct{}, len(d.keys))
+	for _, key := range d.keys {
+		if !isValidKey(key) {
+			return fmt.Errorf("types.Document.validate: invalid key: %q", key)
+		}
+
+		value, ok := d.m[key]
+		if !ok {
+			return fmt.Errorf("types.Document.validate: key not found: %q", key)
+		}
+
+		if _, ok := prevKeys[key]; ok {
+			return fmt.Errorf("types.Document.validate: duplicate key: %q", key)
+		}
+		prevKeys[key] = struct{}{}
+
+		if err := validateValue(value); err != nil {
+			return fmt.Errorf("types.Document.validate: %w", err)
+		}
+	}
+
+	return nil
+}
 
 // Len returns the number of elements in the document.
 //
@@ -207,3 +256,45 @@ func validateDocumentKey(key string) error {
 
 	return nil
 }
+
+// RemoveByPath removes document by path, doing nothing if the key does not exist.
+func (d *Document) RemoveByPath(keys ...string) {
+	if len(keys) == 0 {
+		return
+	}
+
+	key := keys[0]
+	if _, ok := d.m[key]; !ok {
+		return
+	}
+
+	if len(keys) == 1 {
+		d.Remove(key)
+		return
+	}
+
+	key2 := keys[1]
+	switch x := d.m[key].(type) {
+	case *Document:
+		d.Remove(key2)
+
+	case *Array:
+		i, err := strconv.Atoi(key2)
+		if err != nil {
+			panic("wrong path " + key2)
+			// return
+		}
+		if i > len(x.s)-1 {
+			return
+		}
+		x.s = append(x.s[:i], x.s[i+1:]...)
+	default:
+		// no path further: scalar value
+	}
+	return
+}
+
+// check interfaces
+var (
+	_ document = (*Document)(nil)
+)
