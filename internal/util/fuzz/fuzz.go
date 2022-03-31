@@ -37,8 +37,11 @@ func Record(dir string, b []byte) error {
 	}
 
 	// https://github.com/golang/go/blob/378221bd6e73bdc21884fed9e32f53e6672ca0cd/src/internal/fuzz/fuzz.go
-	filename := filepath.Join(dir, fmt.Sprintf("rec-%x", sha256.Sum256(b)))
-	if err := os.WriteFile(filename, buf.Bytes(), 0o666); err != nil {
+	// Go hashes serialized representation for the file name, so we do the same.
+	b = buf.Bytes()
+	filename := filepath.Join(dir, fmt.Sprintf("%x", sha256.Sum256(b)))
+	if err := os.WriteFile(filename, b, 0o666); err != nil {
+		os.Remove(filename)
 		return lazyerrors.Error(err)
 	}
 
