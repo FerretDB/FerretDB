@@ -291,20 +291,6 @@ func filterFieldExpr(fieldValue any, expr *types.Document) (bool, error) {
 
 // filterFieldRegex handles {field: /regex/} filter.
 func filterFieldRegex(fieldValue any, regex types.Regex) (bool, error) {
-	s, ok := fieldValue.(string)
-	if !ok {
-		return false, nil
-	}
-
-	re, err := regex.Compile()
-	if err != nil {
-		return false, err
-	}
-
-	return re.MatchString(s), nil
-}
-
-func filterFieldRegex1(fieldValue any, regex types.Regex) (bool, error) {
 	switch fieldValue := fieldValue.(type) {
 	case string:
 		re, err := regex.Compile()
