@@ -45,6 +45,23 @@ func TestMostCommandsAreCaseSensitive(t *testing.T) {
 	assert.NoError(t, res.Err())
 }
 
+func TestFindNothing(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	cursor, err := collection.Find(ctx, bson.D{})
+	require.NoError(t, err)
+	var docs []bson.D
+	err = cursor.All(ctx, &docs)
+	require.NoError(t, err)
+	assert.Equal(t, []bson.D(nil), docs)
+
+	var doc bson.D
+	err = collection.FindOne(ctx, bson.D{}).Decode(&doc)
+	require.Equal(t, mongo.ErrNoDocuments, err)
+	assert.Equal(t, bson.D(nil), doc)
+}
+
 func TestInsertFindScalars(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t, shareddata.Scalars)

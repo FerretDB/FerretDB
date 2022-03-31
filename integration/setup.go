@@ -114,7 +114,12 @@ func setup(t *testing.T, providers ...shareddata.Provider) (context.Context, *mo
 	err = db.Drop(context.Background())
 	require.NoError(t, err)
 
-	collection := db.Collection(collectionName(t))
+	// create collection explicitly in case there are no providers
+	collectionName := collectionName(t)
+	err = db.CreateCollection(ctx, collectionName)
+	require.NoError(t, err)
+
+	collection := db.Collection(collectionName)
 	for _, provider := range providers {
 		for _, doc := range provider.Docs() {
 			_, err = collection.InsertOne(ctx, doc)
