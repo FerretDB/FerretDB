@@ -55,17 +55,18 @@ var AllModes = []Mode{NormalMode, ProxyMode, DiffNormalMode, DiffProxyMode}
 type conn struct {
 	netConn net.Conn
 	mode    Mode
+	l       *zap.SugaredLogger
 	h       *pg.Handler
 	proxy   *proxy.Handler
-	l       *zap.SugaredLogger
 }
 
 // newConnOpts represents newConn options.
 type newConnOpts struct {
 	netConn         net.Conn
+	mode            Mode
+	l               *zap.Logger
 	pgPool          *pgdb.Pool
 	proxyAddr       string
-	mode            Mode
 	handlersMetrics *pg.Metrics
 	startTime       time.Time
 }
@@ -73,7 +74,7 @@ type newConnOpts struct {
 // newConn creates a new client connection for given net.Conn.
 func newConn(opts *newConnOpts) (*conn, error) {
 	prefix := fmt.Sprintf("// %s -> %s ", opts.netConn.RemoteAddr(), opts.netConn.LocalAddr())
-	l := zap.L().Named(prefix)
+	l := opts.l.Named(prefix)
 
 	peerAddr := opts.netConn.RemoteAddr().String()
 
@@ -95,9 +96,9 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	return &conn{
 		netConn: opts.netConn,
 		mode:    opts.mode,
+		l:       l.Sugar(),
 		h:       pg.New(handlerOpts),
 		proxy:   p,
-		l:       l.Sugar(),
 	}, nil
 }
 
