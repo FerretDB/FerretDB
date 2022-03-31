@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 // databaseName returns valid database name for given test.
@@ -47,16 +46,16 @@ func collectionName(t testing.TB) string {
 	return name
 }
 
-// Map returns documents mapped by their _id.
-func Map[idType comparable](t testing.TB, docs []bson.D) map[idType]bson.D {
-	t.Helper()
+// // Map returns documents mapped by their _id.
+// func Map[idType comparable](t testing.TB, docs []bson.D) map[idType]bson.D {
+// 	t.Helper()
 
-	res := make(map[idType]bson.D, len(docs))
-	for _, doc := range docs {
-		id := doc.Map()["_id"].(idType)
-		require.NotContains(t, res, id)
-		res[id] = doc
-	}
+// 	res := make(map[idType]bson.D, len(docs))
+// 	for _, doc := range docs {
+// 		id := doc.Map()["_id"].(idType)
+// 		require.NotContains(t, res, id)
+// 		res[id] = doc
+// 	}
 
-	return res
-}
+// 	return res
+// }

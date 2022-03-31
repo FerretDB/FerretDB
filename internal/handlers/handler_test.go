@@ -891,60 +891,6 @@ func TestFind(t *testing.T) {
 			),
 		},
 
-		"SizeInt32": {
-			schemas: []string{"values"},
-			req: must.NotFail(types.NewDocument(
-				"find", "values",
-				"filter", must.NotFail(types.NewDocument(
-					"value", must.NotFail(types.NewDocument(
-						"$size", int32(2),
-					)),
-				)),
-			)),
-			resp: must.NotFail(types.NewArray(
-				must.NotFail(types.NewDocument(
-					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x01, 0x00, 0x00, 0x04, 0x01},
-					"name", "array",
-					"value", must.NotFail(types.NewArray("array", int32(42))),
-				)),
-			)),
-		},
-		"SizeInt64": {
-			schemas: []string{"values"},
-			req: must.NotFail(types.NewDocument(
-				"find", "values",
-				"filter", must.NotFail(types.NewDocument(
-					"value", must.NotFail(types.NewDocument(
-						"$size", int64(2),
-					)),
-				)),
-			)),
-			resp: must.NotFail(types.NewArray(
-				must.NotFail(types.NewDocument(
-					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x01, 0x00, 0x00, 0x04, 0x01},
-					"name", "array",
-					"value", must.NotFail(types.NewArray("array", int32(42))),
-				)),
-			)),
-		},
-		"SizeDouble": {
-			schemas: []string{"values"},
-			req: must.NotFail(types.NewDocument(
-				"find", "values",
-				"filter", must.NotFail(types.NewDocument(
-					"value", must.NotFail(types.NewDocument(
-						"$size", 2.0,
-					)),
-				)),
-			)),
-			resp: must.NotFail(types.NewArray(
-				must.NotFail(types.NewDocument(
-					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x01, 0x00, 0x00, 0x04, 0x01},
-					"name", "array",
-					"value", must.NotFail(types.NewArray("array", int32(42))),
-				)),
-			)),
-		},
 		"SizeNotFound": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
