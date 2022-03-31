@@ -15,11 +15,13 @@
 package integration
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func TestQueryArraySize(t *testing.T) {
@@ -39,6 +41,7 @@ func TestQueryArraySize(t *testing.T) {
 	for name, tc := range map[string]struct {
 		q        bson.D
 		expected []bson.D
+		err      error
 	}{
 		"int32": {
 			q:        bson.D{{"value", bson.D{{"$size", int32(2)}}}},
@@ -49,12 +52,65 @@ func TestQueryArraySize(t *testing.T) {
 			expected: []bson.D{{{"_id", "array-two"}, {"value", bson.A{"1", "2"}}}},
 		},
 		"float64": {
-			q:        bson.D{{"value", bson.D{{"$size", 2.0}}}},
+			q:        bson.D{{"value", bson.D{{"$size", float64(2)}}}},
 			expected: []bson.D{{{"_id", "array-two"}, {"value", bson.A{"1", "2"}}}},
 		},
 		"NotFound": {
 			q:        bson.D{{"value", bson.D{{"$size", 4}}}},
-			expected: []bson.D{{{"_id", "array-two"}, {"value", bson.A{"1", "2"}}}},
+			expected: nil,
+		},
+		"Zero": {
+			q:        bson.D{{"value", bson.D{{"$size", 0}}}},
+			expected: []bson.D{{{"_id", "array-empty"}, {"value", bson.A{}}}},
+		},
+		"InvalidType": {
+			q: bson.D{{"value", bson.D{{"$size", bson.D{{"$gt", 1}}}}}},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `$size needs a number`,
+			},
+		},
+		"NotWhole": {
+			q: bson.D{{"value", bson.D{{"$size", 2.1}}}},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `$size must be a whole number`,
+			},
+		},
+		"NaN": {
+			q: bson.D{{"value", bson.D{{"$size", math.NaN()}}}},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `$size must be a whole number`,
+			},
+		},
+		"Infinity": {
+			q: bson.D{{"value", bson.D{{"$size", math.Inf(1)}}}},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `$size must be a whole number`,
+			},
+		},
+		"Negative": {
+			q: bson.D{{"value", bson.D{{"$size", -1}}}},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `$size may not be negative`,
+			},
+		},
+		"InvalidUse": {
+			q: bson.D{{"$size", 2}},
+			err: mongo.CommandError{
+				Code: 2,
+				Name: "BadValue",
+				Message: `unknown top level operator: $size. ` +
+					`If you have a field name that starts with a '$' symbol, consider using $getField or $setField.`,
+			},
 		},
 	} {
 		name, tc := name, tc
@@ -63,6 +119,11 @@ func TestQueryArraySize(t *testing.T) {
 
 			var actual []bson.D
 			cursor, err := collection.Find(ctx, tc.q)
+			if tc.err != nil {
+				require.Nil(t, tc.expected)
+				require.Equal(t, tc.err, err)
+				return
+			}
 			require.NoError(t, err)
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
