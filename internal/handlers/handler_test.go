@@ -890,7 +890,7 @@ func TestFind(t *testing.T) {
 				),
 			),
 		},
-		"FindManyRegex": {
+		"FindManyRegexWithOption": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
@@ -909,26 +909,35 @@ func TestFind(t *testing.T) {
 					"name", "array-three",
 					"value", must.NotFail(types.NewArray(int32(42), "foo", types.Null)),
 				)),
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x0b, 0x01, 0x00, 0x00, 0x0b, 0x01},
+					"name", "regex",
+					"value", types.Regex{Pattern: "foo", Options: "i"},
+				)),
 			)),
 		},
-		"SizeInt32": {
+		"FindManyRegexWithoutOption": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
 				"filter", must.NotFail(types.NewDocument(
-					"value", must.NotFail(types.NewDocument(
-						"$size", int32(2),
-					)),
+					"value", types.Regex{Pattern: "foo"},
 				)),
 			)),
 			resp: must.NotFail(types.NewArray(
 				must.NotFail(types.NewDocument(
-					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x01, 0x00, 0x00, 0x04, 0x01},
-					"name", "array",
-					"value", must.NotFail(types.NewArray("array", int32(42))),
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x02, 0x01, 0x00, 0x00, 0x02, 0x01},
+					"name", "string",
+					"value", "foo",
+				)),
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x04, 0x00, 0x00, 0x04, 0x04},
+					"name", "array-three",
+					"value", must.NotFail(types.NewArray(int32(42), "foo", types.Null)),
 				)),
 			)),
 		},
+
 		"EqString": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
@@ -1473,111 +1482,37 @@ func TestFind(t *testing.T) {
 				)),
 			)),
 		},
-
-		"SizeNotFound": {
+		"EqRegexWithOption": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
 				"filter", must.NotFail(types.NewDocument(
 					"value", must.NotFail(types.NewDocument(
-						"$size", int32(4),
-					)),
-				)),
-			)),
-			resp: must.NotFail(types.NewArray()),
-		},
-		"SizeZero": {
-			schemas: []string{"values"},
-			req: must.NotFail(types.NewDocument(
-				"find", "values",
-				"filter", must.NotFail(types.NewDocument(
-					"value", must.NotFail(types.NewDocument(
-						"$size", 0.0,
+						"$eq", types.Regex{Pattern: "foo", Options: "i"},
 					)),
 				)),
 			)),
 			resp: must.NotFail(types.NewArray(
 				must.NotFail(types.NewDocument(
-					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x04, 0x02, 0x00, 0x00, 0x04, 0x02},
-					"name", "array-empty",
-					"value", must.NotFail(types.NewArray()),
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x0b, 0x01, 0x00, 0x00, 0x0b, 0x01},
+					"name", "regex",
+					"value", types.Regex{Pattern: "foo", Options: "i"},
 				)),
 			)),
 		},
-		"SizeInvalidType": {
+		"EqRegexWithoutOption": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(
 				"find", "values",
 				"filter", must.NotFail(types.NewDocument(
 					"value", must.NotFail(types.NewDocument(
-						"$size", must.NotFail(types.NewDocument("$gt", int32(1))),
+						"$eq", types.Regex{Pattern: "foo"},
 					)),
 				)),
 			)),
-			err: common.NewErrorMsg(common.ErrBadValue, "$size needs a number"),
+			resp: must.NotFail(types.NewArray()),
 		},
-		"SizeNonWhole": {
-			schemas: []string{"values"},
-			req: must.NotFail(types.NewDocument(
-				"find", "values",
-				"filter", must.NotFail(types.NewDocument(
-					"value", must.NotFail(types.NewDocument(
-						"$size", 2.1,
-					)),
-				)),
-			)),
-			err: common.NewErrorMsg(common.ErrBadValue, "$size must be a whole number"),
-		},
-		"SizeNaN": {
-			schemas: []string{"values"},
-			req: must.NotFail(types.NewDocument(
-				"find", "values",
-				"filter", must.NotFail(types.NewDocument(
-					"value", must.NotFail(types.NewDocument(
-						"$size", math.NaN(),
-					)),
-				)),
-			)),
-			err: common.NewErrorMsg(common.ErrBadValue, "$size must be a whole number"),
-		},
-		"SizeInfinity": {
-			schemas: []string{"values"},
-			req: must.NotFail(types.NewDocument(
-				"find", "values",
-				"filter", must.NotFail(types.NewDocument(
-					"value", must.NotFail(types.NewDocument(
-						"$size", math.Inf(1),
-					)),
-				)),
-			)),
-			err: common.NewErrorMsg(common.ErrBadValue, "$size must be a whole number"),
-		},
-		"SizeNegative": {
-			schemas: []string{"values"},
-			req: must.NotFail(types.NewDocument(
-				"find", "values",
-				"filter", must.NotFail(types.NewDocument(
-					"value", must.NotFail(types.NewDocument(
-						"$size", int32(-1),
-					)),
-				)),
-			)),
-			err: common.NewErrorMsg(common.ErrBadValue, "$size may not be negative"),
-		},
-		"SizeInvalid": {
-			schemas: []string{"values"},
-			req: must.NotFail(types.NewDocument(
-				"find", "values",
-				"filter", must.NotFail(types.NewDocument(
-					"$size", types.MustNewArray(int32(2)),
-				)),
-			)),
-			err: common.NewErrorMsg(
-				common.ErrBadValue,
-				`unknown top level operator: $size. `+
-					`If you have a field name that starts with a '$' symbol, consider using $getField or $setField.`,
-			),
-		},
+
 		"BitsAllClear": {
 			schemas: []string{"values"},
 			req: must.NotFail(types.NewDocument(

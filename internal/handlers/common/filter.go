@@ -157,17 +157,25 @@ func filterFieldExpr(fieldValue any, expr *types.Document) (bool, error) {
 			continue
 		}
 
-		exprValue := must.NotFail(expr.Get(exprKey))
+		exprValue := must.NotFail(expr.Get(exprKey)).(any)
 
 		switch exprKey {
 		case "$eq":
 			// {field: {$eq: exprValue}}
 			_, isValueDocument := fieldValue.(*types.Document)
 			_, isValueArray := fieldValue.(*types.Array)
-			if isValueDocument || isValueArray {
+			exprValueRegex, isExprValueRegex := exprValue.(types.Regex)
+			fieldValueRegex, isFieldValueRegex := fieldValue.(types.Regex)
+			switch {
+			case isValueDocument, isValueArray:
 				return compare(fieldValue, exprValue) == equal, nil
+
+			case isExprValueRegex && isFieldValueRegex:
+				return filterFieldRegex(fieldValueRegex, exprValueRegex)
+
+			default:
+				return compareScalars(fieldValue, exprValue) == equal, nil
 			}
-			return compareScalars(fieldValue, exprValue) == equal, nil
 
 		case "$ne":
 			// {field: {$ne: exprValue}}
@@ -291,12 +299,13 @@ func filterFieldExpr(fieldValue any, expr *types.Document) (bool, error) {
 
 // filterFieldRegex handles {field: /regex/} filter.
 func filterFieldRegex(fieldValue any, regex types.Regex) (bool, error) {
+	re, err := regex.Compile()
+	if err != nil {
+		return false, err
+	}
+
 	switch fieldValue := fieldValue.(type) {
 	case string:
-		re, err := regex.Compile()
-		if err != nil {
-			return false, err
-		}
 		return re.MatchString(fieldValue), nil
 
 	case *types.Array:
@@ -306,16 +315,12 @@ func filterFieldRegex(fieldValue any, regex types.Regex) (bool, error) {
 			if !isString {
 				continue
 			}
-
-			re, err := regex.Compile()
-			if err != nil {
-				return false, err
-			}
-
 			if re.MatchString(s) == true {
 				return true, nil
 			}
 		}
+	case types.Regex:
+		return fieldValue == regex, nil
 	}
 
 	return false, nil
