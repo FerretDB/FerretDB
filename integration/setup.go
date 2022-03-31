@@ -114,7 +114,7 @@ func setup(t *testing.T, providers ...shareddata.Provider) (context.Context, *mo
 	err = db.Drop(context.Background())
 	require.NoError(t, err)
 
-	// create collection explicitly in case there are no providers
+	// create collection explicitly in case there are no docs to insert
 	collectionName := collectionName(t)
 	err = db.CreateCollection(ctx, collectionName)
 	require.NoError(t, err)
