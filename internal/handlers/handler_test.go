@@ -1234,7 +1234,7 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"ok", float64(1),
 			),
 			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
-				testutil.CompareAndSetByPathNum(t, expected, actual, 200, "count") // that's not a number of rows
+				testutil.CompareAndSetByPathNum(t, expected, actual, 300, "count") // that's not a number of rows
 				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "size")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "storageSize")
 				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "totalSize")
