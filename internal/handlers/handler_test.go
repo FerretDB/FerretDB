@@ -1508,49 +1508,6 @@ func TestReadOnlyHandlers(t *testing.T) {
 			},
 		},
 
-		"IsMaster": {
-			req: types.MustNewDocument(
-				"isMaster", int32(1),
-			),
-			resp: types.MustNewDocument(
-				"helloOk", true,
-				"ismaster", true,
-				"maxBsonObjectSize", int32(16777216),
-				"maxMessageSizeBytes", int32(wire.MaxMsgLen),
-				"maxWriteBatchSize", int32(100000),
-				"localTime", time.Now(),
-				"minWireVersion", int32(13),
-				"maxWireVersion", int32(13),
-				"readOnly", false,
-				"ok", float64(1),
-			),
-			compareFunc: func(t testing.TB, _ *types.Document, actual, expected *types.Document) {
-				testutil.CompareAndSetByPathTime(t, expected, actual, 2*time.Second, "localTime")
-				testutil.AssertEqual(t, expected, actual)
-			},
-		},
-		"Hello": {
-			req: types.MustNewDocument(
-				"hello", int32(1),
-			),
-			resp: types.MustNewDocument(
-				"helloOk", true,
-				"ismaster", true,
-				"maxBsonObjectSize", int32(16777216),
-				"maxMessageSizeBytes", int32(wire.MaxMsgLen),
-				"maxWriteBatchSize", int32(100000),
-				"localTime", time.Now(),
-				"minWireVersion", int32(13),
-				"maxWireVersion", int32(13),
-				"readOnly", false,
-				"ok", float64(1),
-			),
-			compareFunc: func(t testing.TB, _ *types.Document, actual, expected *types.Document) {
-				testutil.CompareAndSetByPathTime(t, expected, actual, 2*time.Second, "localTime")
-				testutil.AssertEqual(t, expected, actual)
-			},
-		},
-
 		"HostInfo": {
 			req: types.MustNewDocument(
 				"hostInfo", int32(1),
