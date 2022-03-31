@@ -12,36 +12,41 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package integration provides FerretDB integration tests.
 package integration
 
 import (
-	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-// databaseName returns valid database name for given test.
-func databaseName(t *testing.T) string {
-	t.Helper()
+func TestQueryComparisionEq(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t, shareddata.Scalars)
 
-	name := strings.ToLower(t.Name())
-	name = strings.ReplaceAll(name, "/", "-")
-	name = strings.ReplaceAll(name, " ", "-")
-
-	require.Less(t, len(name), 64)
-	return name
+	for _, expected := range shareddata.Scalars.Docs() {
+		id := expected.Map()["_id"]
+		var actual bson.D
+		err := collection.FindOne(ctx, bson.D{{"_id", bson.D{{"$eq", id}}}}).Decode(&actual)
+		require.NoError(t, err)
+		assert.Equal(t, expected, actual)
+	}
 }
 
-// collectionName returns valid collection name for given test.
-func collectionName(t *testing.T) string {
-	t.Helper()
+// $gt
 
-	name := strings.ToLower(t.Name())
-	name = strings.ReplaceAll(name, "/", "-")
-	name = strings.ReplaceAll(name, " ", "-")
+// $gte
 
-	require.Less(t, len(name), 64)
-	return name
-}
+// $in
+
+// $lt
+
+// $lte
+
+// $ne
+
+// $nin

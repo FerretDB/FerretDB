@@ -21,11 +21,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestMostCommandsAreCaseSensitive(t *testing.T) {
 	t.Parallel()
-	ctx, db := setup(t)
+	ctx, collection := setup(t)
+	db := collection.Database()
 
 	res := db.RunCommand(ctx, bson.D{{"listcollections", 1}})
 	err := res.Err()
@@ -44,12 +47,7 @@ func TestMostCommandsAreCaseSensitive(t *testing.T) {
 
 func TestFindNothing(t *testing.T) {
 	t.Parallel()
-	ctx, db := setup(t)
-
-	name := collectionName(t)
-	err := db.CreateCollection(ctx, name)
-	require.NoError(t, err)
-	collection := db.Collection(name)
+	ctx, collection := setup(t)
 
 	cursor, err := collection.Find(ctx, bson.D{})
 	require.NoError(t, err)
@@ -62,4 +60,17 @@ func TestFindNothing(t *testing.T) {
 	err = collection.FindOne(ctx, bson.D{}).Decode(&doc)
 	require.Equal(t, mongo.ErrNoDocuments, err)
 	assert.Equal(t, bson.D(nil), doc)
+}
+
+func TestInsertFindScalars(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t, shareddata.Scalars)
+
+	for _, expected := range shareddata.Scalars.Docs() {
+		id := expected.Map()["_id"]
+		var actual bson.D
+		err := collection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&actual)
+		require.NoError(t, err)
+		assert.Equal(t, expected, actual)
+	}
 }

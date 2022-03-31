@@ -26,8 +26,10 @@ import (
 )
 
 // addToSeedCorpus adds given header and message body to handler's fuzzing seed corpus.
+//
+//nolint:deadcode // TODO https://github.com/FerretDB/FerretDB/issues/411
 func addToSeedCorpus(tb testing.TB, header *wire.MsgHeader, msg wire.MsgBody) {
-	tb.Skip("TODO")
+	tb.Skip("TODO https://github.com/FerretDB/FerretDB/issues/411")
 
 	tb.Helper()
 
@@ -42,7 +44,7 @@ func addToSeedCorpus(tb testing.TB, header *wire.MsgHeader, msg wire.MsgBody) {
 }
 
 func FuzzHandler(f *testing.F) {
-	f.Skip("TODO")
+	f.Skip("TODO https://github.com/FerretDB/FerretDB/issues/411")
 
 	ctx, handler, _ := setup(f, &setupOpts{
 		// to avoid panic: testing: f.Logf was called inside the fuzz target, use t.Logf instead
