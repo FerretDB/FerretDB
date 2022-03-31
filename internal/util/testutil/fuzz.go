@@ -15,13 +15,10 @@
 package testutil
 
 import (
-	"bytes"
-	"crypto/sha256"
-	"fmt"
-	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/FerretDB/FerretDB/internal/util/fuzz"
 	"github.com/stretchr/testify/require"
 )
 
@@ -31,16 +28,6 @@ import (
 func WriteSeedCorpusFile(tb testing.TB, funcName string, b []byte) {
 	tb.Helper()
 
-	var buf bytes.Buffer
-	buf.WriteString("go test fuzz v1\n")
-	_, err := fmt.Fprintf(&buf, "[]byte(%q)\n", b)
-	require.NoError(tb, err)
-
-	dir := filepath.Join("testdata", "fuzz", funcName)
-	err = os.MkdirAll(dir, 0o777)
-	require.NoError(tb, err)
-
-	filename := filepath.Join(dir, fmt.Sprintf("test-%x", sha256.Sum256(b)))
-	err = os.WriteFile(filename, buf.Bytes(), 0o666)
+	err := fuzz.Record(filepath.Join("testdata", "fuzz", funcName), b)
 	require.NoError(tb, err)
 }

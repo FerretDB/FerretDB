@@ -33,14 +33,10 @@ func addToSeedCorpus(tb testing.TB, header *wire.MsgHeader, msg wire.MsgBody) {
 
 	tb.Helper()
 
-	var buf bytes.Buffer
-	bufw := bufio.NewWriter(&buf)
-	err := wire.WriteMessage(bufw, header, msg)
-	require.NoError(tb, err)
-	err = bufw.Flush()
+	b, err := wire.MarshalMessage(header, msg)
 	require.NoError(tb, err)
 
-	testutil.WriteSeedCorpusFile(tb, "FuzzHandler", buf.Bytes())
+	testutil.WriteSeedCorpusFile(tb, "FuzzHandler", b)
 }
 
 func FuzzHandler(f *testing.F) {

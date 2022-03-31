@@ -16,6 +16,7 @@ package wire
 
 import (
 	"bufio"
+	"bytes"
 	"encoding"
 	"fmt"
 	"io"
@@ -115,4 +116,18 @@ func WriteMessage(w *bufio.Writer, header *MsgHeader, msg MsgBody) error {
 	}
 
 	return nil
+}
+
+func MarshalMessage(header *MsgHeader, msg MsgBody) ([]byte, error) {
+	var buf bytes.Buffer
+	bufw := bufio.NewWriter(&buf)
+	if err := WriteMessage(bufw, header, msg); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if err := bufw.Flush(); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return buf.Bytes(), nil
 }

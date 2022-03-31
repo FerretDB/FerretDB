@@ -93,20 +93,15 @@ func testMessages(t *testing.T, testCases []testCase) {
 				require.Equal(t, tc.err, lastErr(err).Error())
 			})
 
-			t.Run("WriteMessage", func(t *testing.T) {
+			t.Run("MarshalMessage", func(t *testing.T) {
 				if tc.msgHeader == nil {
 					t.Skip("msgHeader is nil")
 				}
 
 				t.Parallel()
 
-				var buf bytes.Buffer
-				bufw := bufio.NewWriter(&buf)
-				err := WriteMessage(bufw, tc.msgHeader, tc.msgBody)
+				actualB, err := MarshalMessage(tc.msgHeader, tc.msgBody)
 				require.NoError(t, err)
-				err = bufw.Flush()
-				require.NoError(t, err)
-				actualB := buf.Bytes()
 				require.Equal(t, tc.expectedB, actualB)
 			})
 		})
@@ -142,15 +137,11 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 			expectedB = b[:len(b)-bufr.Buffered()-br.Len()]
 		}
 
-		// test WriteMessage
+		// test MarshalMessage
 		{
-			var bw bytes.Buffer
-			bufw := bufio.NewWriter(&bw)
-			err := WriteMessage(bufw, msgHeader, msgBody)
+			actualB, err := MarshalMessage(msgHeader, msgBody)
 			require.NoError(t, err)
-			err = bufw.Flush()
-			require.NoError(t, err)
-			assert.Equal(t, expectedB, bw.Bytes())
+			assert.Equal(t, expectedB, actualB)
 		}
 	})
 }

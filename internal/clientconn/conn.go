@@ -29,6 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/pg"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/handlers/proxy"
+	"github.com/FerretDB/FerretDB/internal/util/fuzz"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -56,6 +57,7 @@ type conn struct {
 	netConn net.Conn
 	mode    Mode
 	l       *zap.SugaredLogger
+	recDir  string
 	h       *pg.Handler
 	proxy   *proxy.Handler
 }
@@ -65,6 +67,7 @@ type newConnOpts struct {
 	netConn         net.Conn
 	mode            Mode
 	l               *zap.Logger
+	recDir          string
 	pgPool          *pgdb.Pool
 	proxyAddr       string
 	handlersMetrics *pg.Metrics
@@ -148,8 +151,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 	for {
 		var reqHeader *wire.MsgHeader
 		var reqBody wire.MsgBody
-		reqHeader, reqBody, err = wire.ReadMessage(bufr)
-		if err != nil {
+		if reqHeader, reqBody, err = wire.ReadMessage(bufr); err != nil {
 			return
 		}
 
@@ -157,6 +159,16 @@ func (c *conn) run(ctx context.Context) (err error) {
 		if c.l.Desugar().Core().Enabled(zap.DebugLevel) {
 			c.l.Debugf("Request header: %s", reqHeader)
 			c.l.Debugf("Request message:\n%s\n\n\n", reqBody)
+		}
+
+		if c.recDir != "" {
+			var b []byte
+			if b, err = wire.MarshalMessage(reqHeader, reqBody); err != nil {
+				return
+			}
+			if err = fuzz.Record(c.recDir, b); err != nil {
+				return
+			}
 		}
 
 		// handle request unless we are in proxy mode
