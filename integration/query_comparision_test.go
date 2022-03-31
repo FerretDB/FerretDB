@@ -29,7 +29,6 @@ func TestQueryComparisionEq(t *testing.T) {
 
 	for name, provider := range map[string]shareddata.Provider{
 		"scalars": shareddata.Scalars,
-		"lalala":  shareddata.Lalala,
 	} {
 		name, provider := name, provider
 		t.Run(name, func(t *testing.T) {
