@@ -43,9 +43,23 @@ var (
 	startupOnce sync.Once
 )
 
-// setup returns test-specific context (that is cancelled when the test ends) and database client.
-func setup(t *testing.T, providers ...shareddata.Provider) (context.Context, *mongo.Collection) {
+type setupOpts struct {
+	databaseName string
+	providers    []shareddata.Provider
+}
+
+func setupWithOpts(t *testing.T, opts *setupOpts) (context.Context, *mongo.Collection) {
 	t.Helper()
+
+	if opts == nil {
+		opts = new(setupOpts)
+	}
+
+	var dropDatabase bool
+	if opts.databaseName == "" {
+		opts.databaseName = databaseName(t)
+		dropDatabase = true
+	}
 
 	startupOnce.Do(func() { startup(t) })
 
@@ -53,6 +67,11 @@ func setup(t *testing.T, providers ...shareddata.Provider) (context.Context, *mo
 
 	var wg sync.WaitGroup
 	ctx, cancel := context.WithCancel(context.Background())
+
+	t.Cleanup(func() {
+		cancel()
+		wg.Wait()
+	})
 
 	port, err := strconv.Atoi(*startupPort)
 	if err != nil {
@@ -67,7 +86,7 @@ func setup(t *testing.T, providers ...shareddata.Provider) (context.Context, *mo
 			ListenAddr: "127.0.0.1:0",
 			Mode:       clientconn.NormalMode,
 			PgPool:     pgPool,
-			Logger:     logger.Named("listener"),
+			Logger:     logger,
 		})
 
 		wg.Add(1)
@@ -91,8 +110,14 @@ func setup(t *testing.T, providers ...shareddata.Provider) (context.Context, *mo
 	err = client.Ping(ctx, nil)
 	require.NoError(t, err)
 
-	databaseName := databaseName(t)
-	db := client.Database(databaseName)
+	db := client.Database(opts.databaseName)
+
+	if dropDatabase {
+		err = db.Drop(context.Background())
+		require.NoError(t, err)
+	}
+
+	collectionName := collectionName(t)
 
 	wg.Add(1)
 	go func() {
@@ -100,39 +125,44 @@ func setup(t *testing.T, providers ...shareddata.Provider) (context.Context, *mo
 		<-ctx.Done()
 
 		if t.Failed() {
-			t.Logf("Keeping database %q for debugging.", databaseName)
+			t.Logf("Keeping database %q for debugging.", opts.databaseName)
 		} else {
-			client.Database(databaseName)
-			err = db.Drop(context.Background())
+			err = db.Collection(collectionName).Drop(ctx)
 			require.NoError(t, err)
+
+			if dropDatabase {
+				err = db.Drop(context.Background())
+				require.NoError(t, err)
+			}
 		}
 
 		err = client.Disconnect(context.Background())
 		require.NoError(t, err)
 	}()
 
-	err = db.Drop(context.Background())
-	require.NoError(t, err)
-
 	// create collection explicitly in case there are no docs to insert
-	collectionName := collectionName(t)
+	_ = db.Collection(collectionName).Drop(ctx)
 	err = db.CreateCollection(ctx, collectionName)
 	require.NoError(t, err)
 
 	collection := db.Collection(collectionName)
-	for _, provider := range providers {
+	for _, provider := range opts.providers {
 		for _, doc := range provider.Docs() {
 			_, err = collection.InsertOne(ctx, doc)
 			require.NoError(t, err)
 		}
 	}
 
-	t.Cleanup(func() {
-		cancel()
-		wg.Wait()
-	})
-
 	return ctx, collection
+}
+
+// setup returns test-specific context (that is cancelled when the test ends) and database client.
+func setup(t *testing.T, providers ...shareddata.Provider) (context.Context, *mongo.Collection) {
+	t.Helper()
+
+	return setupWithOpts(t, &setupOpts{
+		providers: providers,
+	})
 }
 
 // startup initializes things that should be initialized only once.
