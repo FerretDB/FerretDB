@@ -2355,7 +2355,7 @@ func TestCreateListDropCollection(t *testing.T) {
 		))
 		expected := types.MustNewDocument(
 			"ok", float64(0),
-			"errmsg", "Collection already exists. NS: testcreatelistdropcollection.testcreatelistdropcollection_existing",
+			"errmsg", "Collection already exists. NS: testcreatelistdropcollection.testcreatelistdropcollection-existing",
 			"code", int32(48),
 			"codeName", "NamespaceExists",
 		)
