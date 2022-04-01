@@ -27,6 +27,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
@@ -34,6 +35,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
+	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
 var (
@@ -96,20 +98,20 @@ func waitForPort(ctx context.Context, port uint16) error {
 }
 
 func waitForPostgresPort(ctx context.Context, port uint16) error {
-	logger := zap.S().Named("postgres.wait")
+	var perr error
+	sleepCtx, sleepCancel := context.WithTimeout(ctx, time.Second*30)
+	defer sleepCancel()
 
-	for ctx.Err() == nil {
-		args := fmt.Sprintf(`exec -T postgres psql -U postgres -d ferretdb -h 127.0.0.1 --port %d --quiet --command select`, port)
-		if err := tryCompose(strings.Split(args, " "), nil, logger); err == nil {
-			return nil
+	for sleepCtx.Err() == nil {
+		_, err := pgxpool.Connect(sleepCtx, fmt.Sprintf("postgres://postgres@127.0.0.1:%d/ferretdb", port))
+		if err != nil {
+			perr = err
 		}
 
-		sleepCtx, sleepCancel := context.WithTimeout(ctx, time.Second)
 		<-sleepCtx.Done()
-		sleepCancel()
 	}
 
-	return ctx.Err()
+	return perr
 }
 
 func setupMongoDB(ctx context.Context) {
@@ -219,7 +221,39 @@ func setupMonilaAndValues(ctx context.Context, pgPool *pgdb.Pool) {
 	logger.Infof("Done in %s.", time.Since(start))
 }
 
+func printDiagnosticData(err error) {
+	info := version.Get()
+	msg := fmt.Sprintf(`Looks like something went wrong..
+Please file an issue with all that information below:
+	Go version: %s
+	OS: %s
+	Arch: %s
+	Version: %s
+	Commit: %s
+	Branch: %s
+	Error: %v
+`,
+		runtime.Version(),
+		runtime.GOOS,
+		runtime.GOARCH,
+		info.Version,
+		info.Commit,
+		info.Branch,
+		err,
+	)
+	fmt.Println(msg)
+}
+
 func main() {
+	var err error
+	defer func() {
+		if err != nil {
+			printDiagnosticData(err)
+			return
+		}
+		printDiagnosticData(err)
+	}()
+
 	debugF := flag.Bool("debug", false, "enable debug mode")
 	flag.Parse()
 
@@ -240,7 +274,6 @@ func main() {
 
 	go debug.RunHandler(ctx, "127.0.0.1:8089", logger.Named("debug").Desugar())
 
-	var err error
 	if composeBin, err = exec.LookPath("docker-compose"); err != nil {
 		logger.Fatal(err)
 	}
@@ -255,7 +288,8 @@ func main() {
 
 	logger.Infof("Waiting for port 5432 to be up...")
 	if err := waitForPostgresPort(ctx, 5432); err != nil {
-		logger.Fatal(err)
+		fmt.Printf("%T\n", err)
+		return
 	}
 
 	pgPool, err := pgdb.NewPool("postgres://postgres@127.0.0.1:5432/ferretdb", logger.Desugar(), false)
