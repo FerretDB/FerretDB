@@ -17,7 +17,6 @@ package pgdb_test
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -134,7 +133,7 @@ func TestConcurrentCreate(t *testing.T) {
 
 	ctx := testutil.Ctx(t)
 	createPool := testutil.Pool(ctx, t, nil, zaptest.NewLogger(t))
-	dbName := strings.ReplaceAll(strings.ToLower(t.Name()), "/", "_")
+	dbName := testutil.SchemaName(t) // using schema name helper for database name is good enough
 	_, err := createPool.Exec(ctx, `CREATE DATABASE `+dbName)
 	require.NoError(t, err)
 	t.Cleanup(func() {

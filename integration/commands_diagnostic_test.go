@@ -12,26 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package integration provides FerretDB integration tests.
 package integration
 
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-// collectIDs returns all _id values from given documents.
-func collectIDs(t testing.TB, docs []bson.D) []any {
-	t.Helper()
+func TestCommandsDiagnosticGetLog(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setupWithOpts(t, &setupOpts{
+		databaseName: "admin",
+	})
 
-	ids := make([]any, len(docs))
-	for i, doc := range docs {
-		id, ok := doc.Map()["_id"]
-		require.True(t, ok)
-		ids[i] = id
-	}
+	var actual bson.D
+	err := collection.Database().RunCommand(ctx, bson.D{{"getLog", "startupWarnings"}}).Decode(&actual)
+	require.NoError(t, err)
 
-	return ids
+	m := actual.Map()
+	t.Log(m)
+
+	assert.Equal(t, 1.0, m["ok"])
+	assert.IsType(t, int32(0), m["totalLinesWritten"])
 }
