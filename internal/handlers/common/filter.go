@@ -157,21 +157,16 @@ func filterFieldExpr(fieldValue any, expr *types.Document) (bool, error) {
 			continue
 		}
 
-		exprValue := must.NotFail(expr.Get(exprKey)).(any)
+		exprValue := must.NotFail(expr.Get(exprKey))
 
 		switch exprKey {
 		case "$eq":
 			// {field: {$eq: exprValue}}
 			_, isValueDocument := fieldValue.(*types.Document)
 			_, isValueArray := fieldValue.(*types.Array)
-			exprValueRegex, isExprValueRegex := exprValue.(types.Regex)
-			fieldValueRegex, isFieldValueRegex := fieldValue.(types.Regex)
 			switch {
 			case isValueDocument, isValueArray:
 				return compare(fieldValue, exprValue) == equal, nil
-
-			case isExprValueRegex && isFieldValueRegex:
-				return filterFieldRegex(fieldValueRegex, exprValueRegex)
 
 			default:
 				return compareScalars(fieldValue, exprValue) == equal, nil
@@ -319,8 +314,9 @@ func filterFieldRegex(fieldValue any, regex types.Regex) (bool, error) {
 				return true, nil
 			}
 		}
+
 	case types.Regex:
-		return fieldValue == regex, nil
+		return compareScalars(fieldValue, regex) == equal, nil
 	}
 
 	return false, nil
