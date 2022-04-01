@@ -17,6 +17,7 @@ package integration
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -33,5 +34,7 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 
 	m := actual.Map()
 	t.Log(m)
-	t.Fail()
+
+	assert.Equal(t, 1.0, m["ok"])
+	assert.IsType(t, int32(0), m["totalLinesWritten"])
 }

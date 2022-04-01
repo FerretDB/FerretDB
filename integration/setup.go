@@ -106,7 +106,7 @@ func setupWithOpts(t *testing.T, opts *setupOpts) (context.Context, *mongo.Colle
 	// delete collection and (possibly) database unless test failed
 	t.Cleanup(func() {
 		if t.Failed() {
-			t.Logf("Keeping database %q for debugging.", opts.databaseName)
+			t.Logf("Keeping database %q and collection %q for debugging.", opts.databaseName, collectionName)
 			return
 		}
 
