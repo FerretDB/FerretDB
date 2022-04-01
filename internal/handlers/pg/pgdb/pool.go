@@ -276,11 +276,17 @@ func (pgPool *Pool) DropSchema(ctx context.Context, schema string) error {
 		return nil
 	}
 
-	if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.InvalidSchemaName {
-		return ErrNotExist
+	pgErr, ok := err.(*pgconn.PgError)
+	if !ok {
+		return lazyerrors.Errorf("pg.DropSchema: %w", err)
 	}
 
-	return lazyerrors.Errorf("pg.DropSchema: %w", err)
+	switch pgErr.Code {
+	case pgerrcode.InvalidSchemaName:
+		return ErrNotExist
+	default:
+		return lazyerrors.Errorf("pg.DropSchema: %w", err)
+	}
 }
 
 // CreateTable creates a new FerretDB collection / PostgreSQL jsonb1 table in existing schema.
