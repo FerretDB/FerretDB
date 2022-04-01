@@ -135,7 +135,11 @@ func compareScalars(a, b any) compareResult {
 		return notEqual
 
 	case types.Regex:
-		return notEqual // ???
+		b, ok := b.(types.Regex)
+		if ok && a == b {
+			return equal
+		}
+		return notEqual
 
 	case int32:
 		switch b := b.(type) {
