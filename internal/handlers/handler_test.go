@@ -2347,7 +2347,7 @@ func TestCreateListDropCollection(t *testing.T) {
 	})
 
 	t.Run("existing", func(t *testing.T) {
-		collection := testutil.CreateTable(ctx, t, pool, db)
+		collection := testutil.Table(ctx, t, pool, db)
 
 		actual := handle(ctx, t, handler, types.MustNewDocument(
 			"create", collection,

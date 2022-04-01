@@ -245,7 +245,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 		}
 
 		if resCloseConn {
-			err = errors.New("internal error")
+			err = errors.New("fatal error")
 			return
 		}
 	}
