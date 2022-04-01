@@ -16,36 +16,11 @@
 package integration
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 )
-
-// databaseName returns valid database name for given test.
-func databaseName(t testing.TB) string {
-	t.Helper()
-
-	name := strings.ToLower(t.Name())
-	name = strings.ReplaceAll(name, "/", "-")
-	name = strings.ReplaceAll(name, " ", "-")
-
-	require.Less(t, len(name), 64)
-	return name
-}
-
-// collectionName returns valid collection name for given test.
-func collectionName(t testing.TB) string {
-	t.Helper()
-
-	name := strings.ToLower(t.Name())
-	name = strings.ReplaceAll(name, "/", "-")
-	name = strings.ReplaceAll(name, " ", "-")
-
-	require.Less(t, len(name), 64)
-	return name
-}
 
 // collectIDs returns all _id values from given documents.
 func collectIDs(t testing.TB, docs []bson.D) []any {

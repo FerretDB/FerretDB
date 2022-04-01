@@ -59,7 +59,7 @@ func setupWithOpts(t *testing.T, opts *setupOpts) (context.Context, *mongo.Colle
 
 	var ownDatabase bool
 	if opts.databaseName == "" {
-		opts.databaseName = databaseName(t)
+		opts.databaseName = testutil.SchemaName(t)
 		ownDatabase = true
 	}
 
@@ -90,7 +90,7 @@ func setupWithOpts(t *testing.T, opts *setupOpts) (context.Context, *mongo.Colle
 	})
 
 	db := client.Database(opts.databaseName)
-	collectionName := collectionName(t)
+	collectionName := testutil.TableName(t)
 	collection := db.Collection(collectionName)
 
 	// drop remnants of the previous failed run
