@@ -43,11 +43,17 @@ var (
 	startupOnce sync.Once
 )
 
+// setupOpts represents setup options.
 type setupOpts struct {
+	// Database to use. If empty, temporary test-specific database is created.
 	databaseName string
-	providers    []shareddata.Provider
+
+	// Data providers.
+	providers []shareddata.Provider
 }
 
+// setupWithOpts setups the test according to given options,
+// and returns test-specific context (that is cancelled when the test ends) and database collection.
 func setupWithOpts(t *testing.T, opts *setupOpts) (context.Context, *mongo.Collection) {
 	t.Helper()
 
@@ -130,7 +136,7 @@ func setupWithOpts(t *testing.T, opts *setupOpts) (context.Context, *mongo.Colle
 	return ctx, collection
 }
 
-// setup returns test-specific context (that is cancelled when the test ends) and database client.
+// setup calls setupWithOpts with specified data providers.
 func setup(t *testing.T, providers ...shareddata.Provider) (context.Context, *mongo.Collection) {
 	t.Helper()
 
