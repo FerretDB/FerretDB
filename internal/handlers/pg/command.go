@@ -83,11 +83,11 @@ var commands = map[string]command{
 	},
 	"ismaster": {
 		help:    "Returns the role of the FerretDB instance.",
-		handler: (*Handler).MsgHello,
+		handler: (*Handler).MsgIsMaster,
 	},
 	"isMaster": { // both `ismaster` and `isMaster` are valid
 		help:    "Returns the role of the FerretDB instance.",
-		handler: (*Handler).MsgHello,
+		handler: (*Handler).MsgIsMaster,
 	},
 	"hello": {
 		help:    "Returns the role of the FerretDB instance.",
