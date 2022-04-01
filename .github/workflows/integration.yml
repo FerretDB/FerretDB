@@ -55,7 +55,7 @@ jobs:
         run: bin/task env-setup
 
       - name: Run tests
-        run: bin/task test-integration-ci DB=${{ matrix.db }}
+        run: bin/task test-integration-db DB=${{ matrix.db }}
 
       - name: Upload coverage information
         uses: codecov/codecov-action@v2

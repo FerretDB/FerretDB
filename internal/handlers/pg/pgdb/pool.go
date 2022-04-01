@@ -276,16 +276,22 @@ func (pgPool *Pool) DropSchema(ctx context.Context, schema string) error {
 		return nil
 	}
 
-	if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.InvalidSchemaName {
-		return ErrNotExist
+	pgErr, ok := err.(*pgconn.PgError)
+	if !ok {
+		return lazyerrors.Errorf("pg.DropSchema: %w", err)
 	}
 
-	return lazyerrors.Errorf("pg.DropSchema: %w", err)
+	switch pgErr.Code {
+	case pgerrcode.InvalidSchemaName:
+		return ErrNotExist
+	default:
+		return lazyerrors.Errorf("pg.DropSchema: %w", err)
+	}
 }
 
-// CreateTable creates a new FerretDB collection / PostgreSQL jsonb1 table.
+// CreateTable creates a new FerretDB collection / PostgreSQL jsonb1 table in existing schema.
 //
-// It returns ErrAlreadyExist if table already exist.
+// It returns ErrAlreadyExist if table already exist, ErrNotExist is schema does not exist.
 func (pgPool *Pool) CreateTable(ctx context.Context, schema, table string) error {
 	sql := `CREATE TABLE ` + pgx.Identifier{schema, table}.Sanitize() + ` (_jsonb jsonb)`
 	_, err := pgPool.Exec(ctx, sql)
@@ -299,6 +305,8 @@ func (pgPool *Pool) CreateTable(ctx context.Context, schema, table string) error
 	}
 
 	switch pgErr.Code {
+	case pgerrcode.InvalidSchemaName:
+		return ErrNotExist
 	case pgerrcode.DuplicateTable:
 		return ErrAlreadyExist
 	case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject:
@@ -312,7 +320,7 @@ func (pgPool *Pool) CreateTable(ctx context.Context, schema, table string) error
 
 // DropTable drops FerretDB collection / PostgreSQL table.
 //
-// It returns ErrNotExist is table does not exist.
+// It returns ErrNotExist if schema or table does not exist.
 func (pgPool *Pool) DropTable(ctx context.Context, schema, table string) error {
 	// TODO probably not CASCADE
 	sql := `DROP TABLE ` + pgx.Identifier{schema, table}.Sanitize() + `CASCADE`
@@ -321,11 +329,17 @@ func (pgPool *Pool) DropTable(ctx context.Context, schema, table string) error {
 		return nil
 	}
 
-	if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
-		return ErrNotExist
+	pgErr, ok := err.(*pgconn.PgError)
+	if !ok {
+		return lazyerrors.Errorf("pg.DropTable: %w", err)
 	}
 
-	return lazyerrors.Errorf("pg.DropTable: %w", err)
+	switch pgErr.Code {
+	case pgerrcode.InvalidSchemaName, pgerrcode.UndefinedTable:
+		return ErrNotExist
+	default:
+		return lazyerrors.Errorf("pg.DropTable: %w", err)
+	}
 }
 
 // EnsureTableExist ensures that given FerretDB database / PostgreSQL schema and FerretDB collection / PostgreSQL table exist.

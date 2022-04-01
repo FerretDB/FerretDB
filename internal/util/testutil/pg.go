@@ -103,10 +103,10 @@ func TableName(tb testing.TB) string {
 	return strings.ReplaceAll(strings.ToLower(tb.Name()), "/", "_")
 }
 
-// CreateTable creates FerretDB collection / PostgreSQL table for testing.
+// Table creates FerretDB collection / PostgreSQL table for testing.
 //
 // Name is stable for that test.
-func CreateTable(ctx context.Context, tb testing.TB, pool *pgdb.Pool, db string) string {
+func Table(ctx context.Context, tb testing.TB, pool *pgdb.Pool, db string) string {
 	tb.Helper()
 
 	table := TableName(tb)

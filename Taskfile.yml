@@ -73,14 +73,26 @@ tasks:
       - go test -race -shuffle=on -bench=. -benchtime=1x ./...
 
   test-integration:
-    desc: 'Run integration tests'
-    cmds:
-      - task: test-integration-ci
+    desc: 'Run all integration tests'
+    deps:
+      - task: test-integration-db
         vars: { DB: 'FerretDB' }
-      - task: test-integration-ci
+      - task: test-integration-db
         vars: { DB: 'MongoDB' }
 
-  test-integration-ci:
+  test-integration-ferretdb:
+    desc: 'Run integration tests for FerretDB'
+    cmds:
+      - task: test-integration-db
+        vars: { DB: 'FerretDB' }
+
+  test-integration-mongodb:
+    desc: 'Run integration tests for MongoDB'
+    cmds:
+      - task: test-integration-db
+        vars: { DB: 'MongoDB' }
+
+  test-integration-db:
     dir: integration
     cmds:
       - go test -count=1 -race -shuffle=on -coverprofile=integration.txt -coverpkg=../... -port={{.DB}}

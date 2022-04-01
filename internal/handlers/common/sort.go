@@ -59,7 +59,7 @@ func SortDocuments(docs []*types.Document, sort *types.Document) error {
 	return nil
 }
 
-// lessFunc takes sort key and type and returns compareScalars function which
+// lessFunc takes sort key and type and returns sort.Interface's Less function which
 // compares selected key of 2 documents.
 func lessFunc(sortKey string, sortType sortType) func(a, b *types.Document) bool {
 	return func(a, b *types.Document) bool {
@@ -73,7 +73,7 @@ func lessFunc(sortKey string, sortType sortType) func(a, b *types.Document) bool
 			return false
 		}
 
-		result := compareScalars(aField, bField)
+		result := compare(aField, bField)
 
 		switch result {
 		case less:
