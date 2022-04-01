@@ -21,32 +21,29 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 func (h *Handler) QueryCmd(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
 	switch cmd := query.Query.Command(); cmd {
 	case "ismaster", "isMaster": // both are valid
-		// TODO merge with MsgHello?
 		reply := &wire.OpReply{
 			NumberReturned: 1,
-			Documents: []*types.Document{
-				types.MustNewDocument(
-					"helloOk", true,
-					"ismaster", true, // only lowercase
-					// topologyVersion
-					"maxBsonObjectSize", int32(types.MaxDocumentLen),
-					"maxMessageSizeBytes", int32(wire.MaxMsgLen),
-					"maxWriteBatchSize", int32(100000),
-					"localTime", time.Now(),
-					// logicalSessionTimeoutMinutes
-					// connectionId
-					"minWireVersion", int32(13),
-					"maxWireVersion", int32(13),
-					"readOnly", false,
-					"ok", float64(1),
-				),
-			},
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"ismaster", true, // only lowercase
+				// topologyVersion
+				"maxBsonObjectSize", int32(types.MaxDocumentLen),
+				"maxMessageSizeBytes", int32(wire.MaxMsgLen),
+				"maxWriteBatchSize", int32(100000),
+				"localTime", time.Now(),
+				// logicalSessionTimeoutMinutes
+				// connectionId
+				"minWireVersion", int32(13),
+				"maxWireVersion", int32(13),
+				"readOnly", false,
+				"ok", float64(1),
+			))},
 		}
 		return reply, nil
 
