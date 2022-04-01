@@ -181,8 +181,18 @@ func filterFieldExpr(fieldValue any, expr *types.Document) (bool, error) {
 
 		case "$gt":
 			// {field: {$gt: exprValue}}
-			if c := compareScalars(fieldValue, exprValue); c != greater {
-				return false, nil
+			_, isValueDocument := fieldValue.(*types.Document)
+			_, isValueArray := fieldValue.(*types.Array)
+			switch {
+			case isValueDocument, isValueArray:
+				if compare(fieldValue, exprValue) != greater {
+					return false, nil
+				}
+
+			default:
+				if compareScalars(fieldValue, exprValue) != greater {
+					return false, nil
+				}
 			}
 
 		case "$gte":
