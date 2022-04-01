@@ -292,7 +292,8 @@ func filterFieldExpr(fieldValue any, expr *types.Document) (bool, error) {
 	return true, nil
 }
 
-// filterFieldRegex handles {field: /regex/} filter.
+// filterFieldRegex handles {field: /regex/} filter. Provides regular expression capabilities
+// for pattern matching strings in queries, even if the strings are in an array.
 func filterFieldRegex(fieldValue any, regex types.Regex) (bool, error) {
 	re, err := regex.Compile()
 	if err != nil {
