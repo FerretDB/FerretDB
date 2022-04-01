@@ -43,96 +43,140 @@ var (
 	startupOnce sync.Once
 )
 
-// setup returns test-specific context (that is cancelled when the test ends) and database client.
-func setup(t *testing.T, providers ...shareddata.Provider) (context.Context, *mongo.Collection) {
+// setupOpts represents setup options.
+type setupOpts struct {
+	// Database to use. If empty, temporary test-specific database is created.
+	databaseName string
+
+	// Data providers.
+	providers []shareddata.Provider
+}
+
+// setupWithOpts setups the test according to given options,
+// and returns test-specific context (that is cancelled when the test ends) and database collection.
+func setupWithOpts(t *testing.T, opts *setupOpts) (context.Context, *mongo.Collection) {
 	t.Helper()
 
 	startupOnce.Do(func() { startup(t) })
 
-	logger := zaptest.NewLogger(t, zaptest.Level(zap.DebugLevel))
+	if opts == nil {
+		opts = new(setupOpts)
+	}
 
-	var wg sync.WaitGroup
-	ctx, cancel := context.WithCancel(context.Background())
+	var ownDatabase bool
+	if opts.databaseName == "" {
+		opts.databaseName = testutil.SchemaName(t)
+		ownDatabase = true
+	}
+
+	logger := zaptest.NewLogger(t, zaptest.Level(zap.DebugLevel))
 
 	port, err := strconv.Atoi(*startupPort)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// start in-process FerretDB if port is not set
+	ctx, cancel := context.WithCancel(context.Background())
+
 	if port == 0 {
-		pgPool := testutil.Pool(ctx, t, nil, logger)
-
-		l := clientconn.NewListener(&clientconn.NewListenerOpts{
-			ListenAddr: "127.0.0.1:0",
-			Mode:       clientconn.NormalMode,
-			PgPool:     pgPool,
-			Logger:     logger.Named("listener"),
-		})
-
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-
-			err := l.Run(ctx)
-			if err == nil || err == context.Canceled {
-				logger.Info("Listener stopped")
-			} else {
-				logger.Error("Listener stopped", zap.Error(err))
-			}
-		}()
-
-		port = l.Addr().(*net.TCPAddr).Port
+		port = setupListener(t, ctx, logger)
 	}
+
+	// register cleanup function after setupListener's internal registration
+	t.Cleanup(cancel)
 
 	uri := fmt.Sprintf("mongodb://127.0.0.1:%d", port)
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	require.NoError(t, err)
 	err = client.Ping(ctx, nil)
 	require.NoError(t, err)
-
-	databaseName := databaseName(t)
-	db := client.Database(databaseName)
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		<-ctx.Done()
-
-		if t.Failed() {
-			t.Logf("Keeping database %q for debugging.", databaseName)
-		} else {
-			client.Database(databaseName)
-			err = db.Drop(context.Background())
-			require.NoError(t, err)
-		}
-
-		err = client.Disconnect(context.Background())
+	t.Cleanup(func() {
+		err = client.Disconnect(ctx)
 		require.NoError(t, err)
-	}()
+	})
 
-	err = db.Drop(context.Background())
-	require.NoError(t, err)
+	db := client.Database(opts.databaseName)
+	collectionName := testutil.TableName(t)
+	collection := db.Collection(collectionName)
+
+	// drop remnants of the previous failed run
+	_ = collection.Drop(ctx)
+	if ownDatabase {
+		_ = db.Drop(ctx)
+	}
 
 	// create collection explicitly in case there are no docs to insert
-	collectionName := collectionName(t)
 	err = db.CreateCollection(ctx, collectionName)
 	require.NoError(t, err)
 
-	collection := db.Collection(collectionName)
-	for _, provider := range providers {
+	// delete collection and (possibly) database unless test failed
+	t.Cleanup(func() {
+		if t.Failed() {
+			t.Logf("Keeping database %q and collection %q for debugging.", opts.databaseName, collectionName)
+			return
+		}
+
+		err = collection.Drop(ctx)
+		require.NoError(t, err)
+
+		if ownDatabase {
+			err = db.Drop(ctx)
+			require.NoError(t, err)
+		}
+	})
+
+	// insert all provided data
+	for _, provider := range opts.providers {
 		for _, doc := range provider.Docs() {
 			_, err = collection.InsertOne(ctx, doc)
 			require.NoError(t, err)
 		}
 	}
 
-	t.Cleanup(func() {
-		cancel()
-		wg.Wait()
+	return ctx, collection
+}
+
+// setup calls setupWithOpts with specified data providers.
+func setup(t *testing.T, providers ...shareddata.Provider) (context.Context, *mongo.Collection) {
+	t.Helper()
+
+	return setupWithOpts(t, &setupOpts{
+		providers: providers,
+	})
+}
+
+// setupListener starts in-process FerretDB server that runs until ctx is cancelled,
+// and returns listening port number.
+func setupListener(t *testing.T, ctx context.Context, logger *zap.Logger) int {
+	t.Helper()
+
+	pgPool := testutil.Pool(ctx, t, nil, logger)
+
+	l := clientconn.NewListener(&clientconn.NewListenerOpts{
+		ListenAddr: "127.0.0.1:0",
+		Mode:       clientconn.NormalMode,
+		PgPool:     pgPool,
+		Logger:     logger,
 	})
 
-	return ctx, collection
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+
+		err := l.Run(ctx)
+		if err == nil || err == context.Canceled {
+			logger.Info("Listener stopped")
+		} else {
+			logger.Error("Listener stopped", zap.Error(err))
+		}
+	}()
+
+	// ensure that all listener's logs are written before test ends
+	t.Cleanup(func() {
+		<-done
+	})
+
+	return l.Addr().(*net.TCPAddr).Port
 }
 
 // startup initializes things that should be initialized only once.
