@@ -51,101 +51,75 @@ type setupOpts struct {
 func setupWithOpts(t *testing.T, opts *setupOpts) (context.Context, *mongo.Collection) {
 	t.Helper()
 
+	startupOnce.Do(func() { startup(t) })
+
 	if opts == nil {
 		opts = new(setupOpts)
 	}
 
-	var dropDatabase bool
+	var ownDatabase bool
 	if opts.databaseName == "" {
 		opts.databaseName = databaseName(t)
-		dropDatabase = true
+		ownDatabase = true
 	}
 
-	startupOnce.Do(func() { startup(t) })
-
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.DebugLevel))
-
-	var wg sync.WaitGroup
-	ctx, cancel := context.WithCancel(context.Background())
-
-	t.Cleanup(func() {
-		cancel()
-		wg.Wait()
-	})
 
 	port, err := strconv.Atoi(*startupPort)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// start in-process FerretDB if port is not set
+	ctx, cancel := context.WithCancel(context.Background())
+
 	if port == 0 {
-		pgPool := testutil.Pool(ctx, t, nil, logger)
-
-		l := clientconn.NewListener(&clientconn.NewListenerOpts{
-			ListenAddr: "127.0.0.1:0",
-			Mode:       clientconn.NormalMode,
-			PgPool:     pgPool,
-			Logger:     logger,
-		})
-
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-
-			err := l.Run(ctx)
-			if err == nil || err == context.Canceled {
-				logger.Info("Listener stopped")
-			} else {
-				logger.Error("Listener stopped", zap.Error(err))
-			}
-		}()
-
-		port = l.Addr().(*net.TCPAddr).Port
+		port = setupListener(t, ctx, logger)
 	}
+
+	// register cleanup function after setupListener's internal registration
+	t.Cleanup(cancel)
 
 	uri := fmt.Sprintf("mongodb://127.0.0.1:%d", port)
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	require.NoError(t, err)
 	err = client.Ping(ctx, nil)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		err = client.Disconnect(ctx)
+		require.NoError(t, err)
+	})
 
 	db := client.Database(opts.databaseName)
+	collectionName := collectionName(t)
+	collection := db.Collection(collectionName)
 
-	if dropDatabase {
-		err = db.Drop(context.Background())
-		require.NoError(t, err)
+	// drop remnants of the previous failed run
+	_ = collection.Drop(ctx)
+	if ownDatabase {
+		_ = db.Drop(ctx)
 	}
 
-	collectionName := collectionName(t)
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		<-ctx.Done()
-
-		if t.Failed() {
-			t.Logf("Keeping database %q for debugging.", opts.databaseName)
-		} else {
-			err = db.Collection(collectionName).Drop(ctx)
-			require.NoError(t, err)
-
-			if dropDatabase {
-				err = db.Drop(context.Background())
-				require.NoError(t, err)
-			}
-		}
-
-		err = client.Disconnect(context.Background())
-		require.NoError(t, err)
-	}()
-
 	// create collection explicitly in case there are no docs to insert
-	_ = db.Collection(collectionName).Drop(ctx)
 	err = db.CreateCollection(ctx, collectionName)
 	require.NoError(t, err)
 
-	collection := db.Collection(collectionName)
+	// delete collection and (possibly) database unless test failed
+	t.Cleanup(func() {
+		if t.Failed() {
+			t.Logf("Keeping database %q for debugging.", opts.databaseName)
+			return
+		}
+
+		err = collection.Drop(ctx)
+		require.NoError(t, err)
+
+		if ownDatabase {
+			err = db.Drop(ctx)
+			require.NoError(t, err)
+		}
+	})
+
+	// insert all provided data
 	for _, provider := range opts.providers {
 		for _, doc := range provider.Docs() {
 			_, err = collection.InsertOne(ctx, doc)
@@ -163,6 +137,40 @@ func setup(t *testing.T, providers ...shareddata.Provider) (context.Context, *mo
 	return setupWithOpts(t, &setupOpts{
 		providers: providers,
 	})
+}
+
+// setupListener starts in-process FerretDB server that runs until ctx is cancelled,
+// and returns listening port number.
+func setupListener(t *testing.T, ctx context.Context, logger *zap.Logger) int {
+	t.Helper()
+
+	pgPool := testutil.Pool(ctx, t, nil, logger)
+
+	l := clientconn.NewListener(&clientconn.NewListenerOpts{
+		ListenAddr: "127.0.0.1:0",
+		Mode:       clientconn.NormalMode,
+		PgPool:     pgPool,
+		Logger:     logger,
+	})
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+
+		err := l.Run(ctx)
+		if err == nil || err == context.Canceled {
+			logger.Info("Listener stopped")
+		} else {
+			logger.Error("Listener stopped", zap.Error(err))
+		}
+	}()
+
+	// ensure that all listener's logs are written before test ends
+	t.Cleanup(func() {
+		<-done
+	})
+
+	return l.Addr().(*net.TCPAddr).Port
 }
 
 // startup initializes things that should be initialized only once.
