@@ -172,7 +172,7 @@ func setupMonilaAndValues(ctx context.Context, pgPool *pgdb.Pool) {
 		ListenAddr: addr,
 		Mode:       "normal",
 		PgPool:     pgPool,
-		Logger:     logger.Named("listener").Desugar(),
+		Logger:     logger.Desugar(),
 	})
 
 	prometheus.DefaultRegisterer.MustRegister(l)
