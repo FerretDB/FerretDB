@@ -21,6 +21,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -29,7 +30,7 @@ func (h *Handler) QueryCmd(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 	case "ismaster", "isMaster": // both are valid
 		reply := &wire.OpReply{
 			NumberReturned: 1,
-			Documents: []*types.Document{types.MustNewDocument(
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
 				"ismaster", true, // only lowercase
 				// topologyVersion
 				"maxBsonObjectSize", int32(types.MaxDocumentLen),
@@ -42,7 +43,7 @@ func (h *Handler) QueryCmd(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 				"maxWireVersion", int32(13),
 				"readOnly", false,
 				"ok", float64(1),
-			)},
+			))},
 		}
 		return reply, nil
 
