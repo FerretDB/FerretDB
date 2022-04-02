@@ -9,7 +9,7 @@ require (
 	github.com/jackc/pgx/v4 v4.15.0
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/prometheus/client_golang v1.12.1
-	github.com/prometheus/common v0.32.1
+	github.com/prometheus/common v0.33.0
 	github.com/stretchr/testify v1.7.1
 	go.uber.org/zap v1.21.0
 	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd // indirect; always use @latest
