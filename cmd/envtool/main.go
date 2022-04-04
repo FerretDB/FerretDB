@@ -242,36 +242,24 @@ func parseFlags() *bool {
 	return debugF
 }
 
-func main() {
-	var err error
-	defer func() {
-		if err != nil {
-			printDiagnosticData(err)
-		}
-	}()
-
-	debugLevel := parseFlags()
-
-	logger := setupLogger(*debugLevel)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
+func run(ctx context.Context, logger *zap.SugaredLogger) error {
 	go debug.RunHandler(ctx, "127.0.0.1:8089", logger.Named("debug").Desugar())
 
-	if composeBin, err = exec.LookPath("docker-compose"); err != nil {
-		return
+	if _, err := exec.LookPath("docker-compose"); err != nil {
+		return err
 	}
 
 	var wg sync.WaitGroup
 	portsCtx, portsCancel := context.WithTimeout(ctx, time.Second*30)
 	defer portsCancel()
 
+	var portsCheckError error
+
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		logger.Infof("Waiting for port 37017 to be up...")
-		err = waitForPort(portsCtx, 37017)
+		portsCheckError = waitForPort(portsCtx, 37017)
 	}()
 
 	wg.Add(1)
@@ -279,24 +267,24 @@ func main() {
 		defer wg.Done()
 
 		logger.Infof("Waiting for port 5432 to be up...")
-		err = waitForPort(portsCtx, 5432)
+		portsCheckError = waitForPort(portsCtx, 5432)
 	}()
 
 	wg.Wait()
 
-	if err != nil {
-		return
+	if portsCheckError != nil {
+		return portsCheckError
 	}
 
 	var pgPool *pgdb.Pool
-	pgPool, err = pgdb.NewPool("postgres://postgres@127.0.0.1:5432/ferretdb", logger.Desugar(), false)
+	pgPool, err := pgdb.NewPool("postgres://postgres@127.0.0.1:5432/ferretdb", logger.Desugar(), false)
 	if err != nil {
-		return
+		return err
 	}
 
 	for _, db := range []string{`monila`, `values`, `test`} {
-		if err = pgPool.CreateSchema(ctx, db); err != nil {
-			return
+		if err := pgPool.CreateSchema(ctx, db); err != nil {
+			return err
 		}
 	}
 
@@ -320,10 +308,26 @@ func main() {
 		`GRANT USAGE ON SCHEMA monila, values, test TO readonly`,
 		`ANALYZE`, // to make tests more stable
 	} {
-		if _, err = pgPool.Exec(ctx, q); err != nil {
-			return
+		if _, err := pgPool.Exec(ctx, q); err != nil {
+			return err
 		}
 	}
 
 	logger.Info("Done.")
+	return nil
+}
+
+func main() {
+	debugLevel := parseFlags()
+
+	logger := setupLogger(*debugLevel)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	err := run(ctx, logger)
+	if err != nil {
+		printDiagnosticData(err)
+		os.Exit(2)
+	}
 }
