@@ -109,8 +109,8 @@ jobs:
         env:
           DOCKER_IMAGE: ${{ format('{0}:{1}', steps.extract.outputs.ghcr, steps.extract.outputs.tag ) }}
 
-      - name: Docker latest
-        if: ${{ steps.extract.outputs.version }} != ""
+      - name: Docker tag latest
+        if: steps.extract.outputs.version != ''
         run: bin/task docker-push
         env:
           DOCKER_IMAGE: ${{ format('{0}:{1}', steps.extract.outputs.ghcr, 'latest') }}
