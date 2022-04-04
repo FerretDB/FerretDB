@@ -122,13 +122,10 @@ func compareScalars(a, b any) compareResult {
 
 	case time.Time:
 		b, ok := b.(time.Time)
-		switch {
-		case ok && a.Unix() != b.Unix():
-			return compareOrdered(a.Unix(), b.Unix())
-		case ok && a.Unix() == b.Unix():
-			return compareOrdered(a.UnixNano(), b.UnixNano())
+		if !ok {
+			return notEqual
 		}
-		return notEqual
+		return compareOrdered(a.UnixMilli(), b.UnixMilli())
 
 	case types.NullType:
 		_, ok := b.(types.NullType)
