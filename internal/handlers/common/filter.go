@@ -162,15 +162,8 @@ func filterFieldExpr(fieldValue any, expr *types.Document) (bool, error) {
 		switch exprKey {
 		case "$eq":
 			// {field: {$eq: exprValue}}
-			switch fieldValue.(type) {
-			case *types.Document, *types.Array:
-				if compare(fieldValue, exprValue) != equal {
-					return false, nil
-				}
-			default:
-				if compareScalars(fieldValue, exprValue) != equal {
-					return false, nil
-				}
+			if compare(fieldValue, exprValue) != equal {
+				return false, nil
 			}
 
 		case "$ne":
@@ -182,15 +175,8 @@ func filterFieldExpr(fieldValue any, expr *types.Document) (bool, error) {
 
 		case "$gt":
 			// {field: {$gt: exprValue}}
-			switch fieldValue.(type) {
-			case *types.Document, *types.Array:
-				if compare(fieldValue, exprValue) != greater {
-					return false, nil
-				}
-			default:
-				if compareScalars(fieldValue, exprValue) != greater {
-					return false, nil
-				}
+			if compare(fieldValue, exprValue) != greater {
+				return false, nil
 			}
 
 		case "$gte":
