@@ -111,6 +111,20 @@ func newConn(opts *newConnOpts) (*conn, error) {
 // The caller is responsible for closing the underlying net.Conn.
 func (c *conn) run(ctx context.Context) (err error) {
 	done := make(chan struct{})
+
+	// handle ctx cancelation
+	go func() {
+		select {
+		case <-done:
+			// nothing, let goroutine exit
+		case <-ctx.Done():
+			// unblocks ReadMessage below; any non-zero past value will do
+			if e := c.netConn.SetDeadline(time.Unix(0, 0)); e != nil {
+				c.l.Warnf("Failed to set deadline: %s", e)
+			}
+		}
+	}()
+
 	defer func() {
 		if p := recover(); p != nil {
 			// Log human-readable stack trace there (included in the error level automatically).
@@ -122,16 +136,8 @@ func (c *conn) run(ctx context.Context) (err error) {
 			err = ctx.Err()
 		}
 
+		// let goroutine above exit
 		close(done)
-	}()
-
-	// handle ctx cancelation
-	go func() {
-		select {
-		case <-done:
-		case <-ctx.Done():
-			c.netConn.SetDeadline(time.Unix(0, 0))
-		}
 	}()
 
 	bufr := bufio.NewReader(c.netConn)
@@ -251,7 +257,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 		}
 
 		if resCloseConn {
-			err = errors.New("internal error")
+			err = errors.New("fatal error")
 			return
 		}
 	}
