@@ -6,8 +6,10 @@
 4. Tweak generated release notes:
    * Ensure that "This section should be empty" section does not exist.
    * Add "All closed issues and pull requests" and "All commits".
-5. Update CHANGELOG.md with the same release notes.
-6. Make a signed tag `vX.Y.Z` with the relevant section of the changelog (without leading `##`).
+   * Tweak spacing, headers levels.
+5. Update CHANGELOG.md with the same release notes:
+   * Check spacing, header levels.
+6. Make a signed tag `vX.Y.Z` with the relevant section of the changelog (without leading `#` as they are comments in git and removed after editing).
 7. Push it!
 8. Make [release](https://github.com/FerretDB/FerretDB/releases).
 9. Refresh
