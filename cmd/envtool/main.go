@@ -27,7 +27,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
@@ -97,31 +96,9 @@ func waitForPort(ctx context.Context, port uint16) error {
 	return ctx.Err()
 }
 
-func waitForPostgresPort(ctx context.Context, port uint16) error {
-	var perr error
-	sleepCtx, sleepCancel := context.WithTimeout(ctx, time.Second*30)
-	defer sleepCancel()
-
-	for sleepCtx.Err() == nil {
-		_, err := pgxpool.Connect(sleepCtx, fmt.Sprintf("postgres://postgres@127.0.0.1:%d/ferretdb", port))
-		if err != nil {
-			perr = err
-		}
-
-		<-sleepCtx.Done()
-	}
-
-	return perr
-}
-
 func setupMongoDB(ctx context.Context) {
 	start := time.Now()
 	logger := zap.S().Named("mongodb")
-
-	logger.Infof("Waiting for port 37017 to be up...")
-	if err := waitForPort(ctx, 37017); err != nil {
-		logger.Fatal(err)
-	}
 
 	logger.Infof("Importing database...")
 
@@ -244,16 +221,16 @@ Please file an issue with all that information below:
 	fmt.Println(msg)
 }
 
-func main() {
-	var err error
-	defer func() {
-		if err != nil {
-			printDiagnosticData(err)
-			return
-		}
-		printDiagnosticData(err)
-	}()
+func setupLogger(debug bool) *zap.SugaredLogger {
+	logging.Setup(zap.InfoLevel)
+	if debug {
+		logging.Setup(zap.DebugLevel)
+	}
+	logger := zap.S()
+	return logger
+}
 
+func parseFlags() *bool {
 	debugF := flag.Bool("debug", false, "enable debug mode")
 	flag.Parse()
 
@@ -262,12 +239,20 @@ func main() {
 		fmt.Fprintln(flag.CommandLine.Output(), "no arguments expected")
 		os.Exit(2)
 	}
+	return debugF
+}
 
-	logging.Setup(zap.InfoLevel)
-	if *debugF {
-		logging.Setup(zap.DebugLevel)
-	}
-	logger := zap.S()
+func main() {
+	var err error
+	defer func() {
+		if err != nil {
+			printDiagnosticData(err)
+		}
+	}()
+
+	debugLevel := parseFlags()
+
+	logger := setupLogger(*debugLevel)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -275,33 +260,51 @@ func main() {
 	go debug.RunHandler(ctx, "127.0.0.1:8089", logger.Named("debug").Desugar())
 
 	if composeBin, err = exec.LookPath("docker-compose"); err != nil {
-		logger.Fatal(err)
+		return
 	}
 
 	var wg sync.WaitGroup
+	portsCtx, portsCancel := context.WithTimeout(ctx, time.Second*30)
+	defer portsCancel()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		logger.Infof("Waiting for port 37017 to be up...")
+		err = waitForPort(portsCtx, 37017)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		logger.Infof("Waiting for port 5432 to be up...")
+		err = waitForPort(portsCtx, 5432)
+	}()
+
+	wg.Wait()
+
+	if err != nil {
+		return
+	}
+
+	var pgPool *pgdb.Pool
+	pgPool, err = pgdb.NewPool("postgres://postgres@127.0.0.1:5432/ferretdb", logger.Desugar(), false)
+	if err != nil {
+		return
+	}
+
+	for _, db := range []string{`monila`, `values`, `test`} {
+		if err = pgPool.CreateSchema(ctx, db); err != nil {
+			return
+		}
+	}
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		setupMongoDB(ctx)
 	}()
-
-	logger.Infof("Waiting for port 5432 to be up...")
-	if err := waitForPostgresPort(ctx, 5432); err != nil {
-		fmt.Printf("%T\n", err)
-		return
-	}
-
-	pgPool, err := pgdb.NewPool("postgres://postgres@127.0.0.1:5432/ferretdb", logger.Desugar(), false)
-	if err != nil {
-		logger.Fatal(err)
-	}
-
-	for _, db := range []string{`monila`, `values`, `test`} {
-		if err = pgPool.CreateSchema(ctx, db); err != nil {
-			logger.Fatal(err)
-		}
-	}
 
 	wg.Add(1)
 	go func() {
@@ -318,7 +321,7 @@ func main() {
 		`ANALYZE`, // to make tests more stable
 	} {
 		if _, err = pgPool.Exec(ctx, q); err != nil {
-			logger.Fatal(err)
+			return
 		}
 	}
 
