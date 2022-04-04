@@ -1716,7 +1716,7 @@ func TestFind(t *testing.T) {
 				"find", "values",
 				"filter", must.NotFail(types.NewDocument(
 					"value", must.NotFail(types.NewDocument(
-						"$gt", time.Date(2021, 11, 1, 10, 18, 41, 123000000, time.UTC).Local(),
+						"$gt", time.Date(2021, 11, 1, 10, 18, 42, 121000000, time.UTC).Local(),
 					)),
 				)),
 			)),
@@ -1725,6 +1725,11 @@ func TestFind(t *testing.T) {
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x9, 0x01, 0x00, 0x00, 0x09, 0x01},
 					"name", "datetime",
 					"value", time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC).Local(),
+				)),
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x9, 0x04, 0x00, 0x00, 0x09, 0x04},
+					"name", "datetime-year-max",
+					"value", time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC).Local(),
 				)),
 			)),
 		},
