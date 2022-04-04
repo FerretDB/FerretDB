@@ -16,6 +16,23 @@ services:
       - POSTGRES_HOST_AUTH_METHOD=trust
       - POSTGRES_DB=ferretdb
 
+  tigrisdb_fdb:
+    image: foundationdb/foundationdb:6.3.23
+    container_name: ferretdb_tigrisdb_fdb
+    ports:
+      - 127.0.0.1:4500:4500
+    volumes:
+      - tigrisdata:/var/fdb
+
+  tigrisdb:
+    image: tigrisdata/tigrisdb:main
+    container_name: ferretdb_tigrisdb
+    ports:
+      - 127.0.0.1:8081:8081
+    volumes:
+      - tigrisdata:/etc/foundationdb
+    command: bash -c 'fdbcli --exec "configure new single memory" && /server/service'
+
   # for proxy mode and mongosh
   mongodb:
     image: mongo:5.0.6
@@ -38,3 +55,4 @@ services:
 
 volumes:
   test_db_mongodb:
+  tigrisdata:
