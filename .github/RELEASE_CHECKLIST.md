@@ -13,7 +13,11 @@
 7. Push it!
 8. Make [release](https://github.com/FerretDB/FerretDB/releases).
 9. Refresh
-   * `env GOPROXY=https://proxy.golang.org go get -v github.com/FerretDB/FerretDB@<tag>`
+   * `env GOPROXY=https://proxy.golang.org go install -v github.com/FerretDB/FerretDB/cmd/ferretdb@<tag>`
    * https://pkg.go.dev/github.com/FerretDB/FerretDB
 10. `bin/task docker-local`
-11. `bin/task docker-push` with four tags (`X.Y.Z` and `latest` for both ghcr.io and Docker Hub).
+11. `bin/task docker-push` with four tags (`X.Y.Z` and `latest` for both ghcr.io and Docker Hub):
+   * `bin/task docker-push DOCKER_IMAGE=ferretdb/ferretdb:latest`
+   * `bin/task docker-push DOCKER_IMAGE=ferretdb/ferretdb:<tag>`
+   * `bin/task docker-push DOCKER_IMAGE=ghcr.io/ferretdb/ferretdb:latest`
+   * `bin/task docker-push DOCKER_IMAGE=ghcr.io/ferretdb/ferretdb:<tag>`
