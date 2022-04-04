@@ -64,13 +64,15 @@ func NewListener(opts *NewListenerOpts) *Listener {
 
 // Run runs the listener until ctx is canceled or some unrecoverable error occurs.
 func (l *Listener) Run(ctx context.Context) error {
+	logger := l.opts.Logger.Named("listener")
+
 	var err error
 	if l.listener, err = net.Listen("tcp", l.opts.ListenAddr); err != nil {
 		return lazyerrors.Error(err)
 	}
 
 	close(l.listening)
-	l.opts.Logger.Sugar().Infof("Listening on %s ...", l.Addr())
+	logger.Sugar().Infof("Listening on %s ...", l.Addr())
 
 	// handle ctx cancelation
 	go func() {
@@ -90,7 +92,7 @@ func (l *Listener) Run(ctx context.Context) error {
 				break
 			}
 
-			l.opts.Logger.Warn("Failed to accept connection", zap.Error(err))
+			logger.Warn("Failed to accept connection", zap.Error(err))
 			if !errors.Is(err, net.ErrClosed) {
 				time.Sleep(time.Second)
 			}
@@ -112,7 +114,7 @@ func (l *Listener) Run(ctx context.Context) error {
 			opts := &newConnOpts{
 				netConn:         netConn,
 				mode:            l.opts.Mode,
-				l:               l.opts.Logger,
+				l:               l.opts.Logger, // original unnamed logger
 				pgPool:          l.opts.PgPool,
 				proxyAddr:       l.opts.ProxyAddr,
 				handlersMetrics: l.handlersMetrics,
@@ -120,7 +122,7 @@ func (l *Listener) Run(ctx context.Context) error {
 			}
 			conn, e := newConn(opts)
 			if e != nil {
-				l.opts.Logger.Warn("Failed to create connection", zap.Error(e))
+				logger.Warn("Failed to create connection", zap.Error(e))
 				return
 			}
 
@@ -134,14 +136,14 @@ func (l *Listener) Run(ctx context.Context) error {
 
 			e = conn.run(runCtx) //nolint:contextcheck // false positive
 			if e == io.EOF {
-				l.opts.Logger.Info("Connection stopped")
+				logger.Info("Connection stopped")
 			} else {
-				l.opts.Logger.Warn("Connection stopped", zap.Error(e))
+				logger.Warn("Connection stopped", zap.Error(e))
 			}
 		}()
 	}
 
-	l.opts.Logger.Info("Waiting for all connections to stop...")
+	logger.Info("Waiting for all connections to stop...")
 	wg.Wait()
 
 	return ctx.Err()

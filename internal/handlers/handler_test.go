@@ -2333,24 +2333,6 @@ func TestReadOnlyHandlers(t *testing.T) {
 			},
 		},
 
-		"GetLog": {
-			req: types.MustNewDocument(
-				"getLog", "startupWarnings",
-			),
-			resp: types.MustNewDocument(
-				"totalLinesWritten", int32(2),
-				// will be replaced with the real value during the test
-				"log", types.MakeArray(2),
-				"ok", float64(1),
-			),
-			compareFunc: func(t testing.TB, _ *types.Document, actual, expected *types.Document) {
-				// Just testing "ok" response, not the body of the response
-				actualV := testutil.GetByPath(t, actual, "log")
-				testutil.SetByPath(t, expected, actualV, "log")
-				testutil.AssertEqual(t, expected, actual)
-			},
-		},
-
 		"GetParameter": {
 			req: types.MustNewDocument(
 				"getParameter", int32(1),
@@ -2611,7 +2593,7 @@ func TestCreateListDropCollection(t *testing.T) {
 	})
 
 	t.Run("existing", func(t *testing.T) {
-		collection := testutil.CreateTable(ctx, t, pool, db)
+		collection := testutil.Table(ctx, t, pool, db)
 
 		actual := handle(ctx, t, handler, types.MustNewDocument(
 			"create", collection,
@@ -2619,7 +2601,7 @@ func TestCreateListDropCollection(t *testing.T) {
 		))
 		expected := types.MustNewDocument(
 			"ok", float64(0),
-			"errmsg", "Collection already exists. NS: testcreatelistdropcollection.testcreatelistdropcollection_existing",
+			"errmsg", "Collection already exists. NS: testcreatelistdropcollection.testcreatelistdropcollection-existing",
 			"code", int32(48),
 			"codeName", "NamespaceExists",
 		)

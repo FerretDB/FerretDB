@@ -17,7 +17,6 @@ package pgdb_test
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -88,12 +87,53 @@ func TestTables(t *testing.T) {
 	assert.Empty(t, tables)
 }
 
+func TestCreateDrop(t *testing.T) {
+	t.Parallel()
+
+	ctx := testutil.Ctx(t)
+	pool := testutil.Pool(ctx, t, nil, zaptest.NewLogger(t))
+
+	schemaName := testutil.SchemaName(t)
+	tableName := testutil.TableName(t)
+
+	t.Cleanup(func() {
+		pool.DropSchema(ctx, schemaName)
+	})
+
+	err := pool.CreateTable(ctx, schemaName, tableName)
+	require.Equal(t, pgdb.ErrNotExist, err)
+
+	err = pool.CreateSchema(ctx, schemaName)
+	require.NoError(t, err)
+
+	err = pool.CreateSchema(ctx, schemaName)
+	require.Equal(t, pgdb.ErrAlreadyExist, err)
+
+	err = pool.CreateTable(ctx, schemaName, tableName)
+	require.NoError(t, err)
+
+	err = pool.CreateTable(ctx, schemaName, tableName)
+	require.Equal(t, pgdb.ErrAlreadyExist, err)
+
+	err = pool.DropTable(ctx, schemaName, tableName)
+	require.NoError(t, err)
+
+	err = pool.DropTable(ctx, schemaName, tableName)
+	require.Equal(t, pgdb.ErrNotExist, err)
+
+	err = pool.DropSchema(ctx, schemaName)
+	require.NoError(t, err)
+
+	err = pool.DropSchema(ctx, schemaName)
+	require.Equal(t, pgdb.ErrNotExist, err)
+}
+
 func TestConcurrentCreate(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
 	createPool := testutil.Pool(ctx, t, nil, zaptest.NewLogger(t))
-	dbName := strings.ReplaceAll(strings.ToLower(t.Name()), "/", "_")
+	dbName := testutil.SchemaName(t) // using schema name helper for database name is good enough
 	_, err := createPool.Exec(ctx, `CREATE DATABASE `+dbName)
 	require.NoError(t, err)
 	t.Cleanup(func() {
