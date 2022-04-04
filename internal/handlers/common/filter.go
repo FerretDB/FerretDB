@@ -284,6 +284,13 @@ func filterFieldExpr(fieldValue any, expr *types.Document) (bool, error) {
 				return false, err
 			}
 
+		case "$mod":
+			// {field: {$mod: [divisor, remainder]}}
+			res, err := filterFieldMod(fieldValue, exprValue)
+			if !res || err != nil {
+				return false, err
+			}
+
 		default:
 			panic(fmt.Sprintf("filterFieldExpr: %q", exprKey))
 		}
@@ -457,4 +464,63 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// filterFieldMod handles {field: {$mod: [divisor, remainder]}}
+func filterFieldMod(fieldValue, exprValue any) (bool, error) {
+	//	fmt.Printf("%+v\t%+v\n", fieldValue, expr)
+	arr := exprValue.(*types.Array)
+	if arr.Len() < 2 {
+		return false, NewErrorMsg(ErrBadValue, "$mod, not enough elements")
+	}
+	if arr.Len() > 2 {
+		return false, NewErrorMsg(ErrBadValue, "$mod, too many elements")
+	}
+
+	div, err := toInt64(must.NotFail(arr.Get(0)))
+	if err != nil {
+		return false, err
+	}
+	rem, err := toInt64(must.NotFail(arr.Get(1)))
+	if err != nil {
+		return false, err
+	}
+	field, err := toInt64(fieldValue)
+	if err != nil {
+		return false, err
+	}
+
+	if field%div != rem {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func toInt64(val any) (int64, error) {
+
+	switch v := val.(type) {
+	case float64:
+		return int64(v), nil
+	case float32:
+		return int64(v), nil
+	case uint8:
+		return int64(v), nil
+	case uint16:
+		return int64(v), nil
+	case uint32:
+		return int64(v), nil
+	case uint64:
+		return int64(v), nil
+	case int8:
+		return int64(v), nil
+	case int16:
+		return int64(v), nil
+	case int32:
+		return int64(v), nil
+	case int64:
+		return int64(v), nil
+	default:
+		return 0, NewErrorMsg(ErrBadValue, "value that cannot be represented using a 64-bit integer")
+	}
 }
