@@ -2,7 +2,7 @@
 
 ## [v0.1.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.1.0) (2022-04-04)
 
-## What's Changed
+### What's Changed
 
 In this release, we made a big change in the way FerretDB fetches data from PostgreSQL.
 
