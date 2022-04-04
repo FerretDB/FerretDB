@@ -24,6 +24,10 @@ import (
 
 // MsgPing OpMsg containing a ping, used to test whether a server is responding to commands.
 func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	if err := h.pgPool.Ping(ctx); err != nil {
+		return nil, err
+	}
+
 	var reply wire.OpMsg
 	err := reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{types.MustNewDocument(

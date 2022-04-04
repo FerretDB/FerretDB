@@ -26,6 +26,10 @@ import (
 
 // MsgIsMaster returns a document that describes the role of the instance.
 func (h *Handler) MsgIsMaster(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	if err := h.pgPool.Ping(ctx); err != nil {
+		return nil, err
+	}
+
 	var reply wire.OpMsg
 	err := reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(

@@ -6,12 +6,18 @@
 4. Tweak generated release notes:
    * Ensure that "This section should be empty" section does not exist.
    * Add "All closed issues and pull requests" and "All commits".
-5. Update CHANGELOG.md with the same release notes.
-6. Make a signed tag `vX.Y.Z` with the relevant section of the changelog (without leading `##`).
+   * Tweak spacing, headers levels.
+5. Update CHANGELOG.md with the same release notes:
+   * Check spacing, header levels.
+6. Make a signed tag `vX.Y.Z` with the relevant section of the changelog (without leading `#` as they are comments in git and removed after editing).
 7. Push it!
 8. Make [release](https://github.com/FerretDB/FerretDB/releases).
 9. Refresh
-   * `env GOPROXY=https://proxy.golang.org go get -v github.com/FerretDB/FerretDB@<tag>`
+   * `env GOPROXY=https://proxy.golang.org go install -v github.com/FerretDB/FerretDB/cmd/ferretdb@<tag>`
    * https://pkg.go.dev/github.com/FerretDB/FerretDB
 10. `bin/task docker-local`
-11. `bin/task docker-push` with four tags (`X.Y.Z` and `latest` for both ghcr.io and Docker Hub).
+11. `bin/task docker-push` with four tags (`X.Y.Z` and `latest` for both ghcr.io and Docker Hub):
+   * `bin/task docker-push DOCKER_IMAGE=ferretdb/ferretdb:latest`
+   * `bin/task docker-push DOCKER_IMAGE=ferretdb/ferretdb:<tag>`
+   * `bin/task docker-push DOCKER_IMAGE=ghcr.io/ferretdb/ferretdb:latest`
+   * `bin/task docker-push DOCKER_IMAGE=ghcr.io/ferretdb/ferretdb:<tag>`
