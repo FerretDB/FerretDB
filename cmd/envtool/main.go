@@ -93,7 +93,7 @@ func waitForPort(ctx context.Context, port uint16) error {
 		sleepCancel()
 	}
 
-	return ctx.Err()
+	return fmt.Errorf("failed to connect to port %d", port)
 }
 
 func setupMongoDB(ctx context.Context) {
@@ -258,7 +258,8 @@ func run(ctx context.Context, logger *zap.SugaredLogger) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		logger.Infof("Waiting for port 37017 to be up...")
+
+		logger.Info("Waiting for port 37017 to be up...")
 		portsCheckError = waitForPort(portsCtx, 37017)
 	}()
 
@@ -266,7 +267,7 @@ func run(ctx context.Context, logger *zap.SugaredLogger) error {
 	go func() {
 		defer wg.Done()
 
-		logger.Infof("Waiting for port 5432 to be up...")
+		logger.Info("Waiting for port 5432 to be up...")
 		portsCheckError = waitForPort(portsCtx, 5432)
 	}()
 
