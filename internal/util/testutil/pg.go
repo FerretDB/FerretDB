@@ -59,7 +59,12 @@ func Pool(_ context.Context, tb testing.TB, opts *PoolOpts, l *zap.Logger) *pgdb
 func SchemaName(tb testing.TB) string {
 	tb.Helper()
 
-	return strings.ReplaceAll(strings.ToLower(tb.Name()), "/", "_")
+	name := strings.ToLower(tb.Name())
+	name = strings.ReplaceAll(name, "/", "-")
+	name = strings.ReplaceAll(name, " ", "-")
+
+	require.Less(tb, len(name), 64)
+	return name
 }
 
 // Schema creates a new FerretDB database / PostgreSQL schema for testing.
@@ -68,7 +73,7 @@ func SchemaName(tb testing.TB) string {
 func Schema(ctx context.Context, tb testing.TB, pool *pgdb.Pool) string {
 	tb.Helper()
 
-	schema := strings.ToLower(tb.Name())
+	schema := SchemaName(tb)
 	tb.Logf("Using schema %q.", schema)
 
 	err := pool.DropSchema(ctx, schema)
@@ -100,13 +105,18 @@ func Schema(ctx context.Context, tb testing.TB, pool *pgdb.Pool) string {
 func TableName(tb testing.TB) string {
 	tb.Helper()
 
-	return strings.ReplaceAll(strings.ToLower(tb.Name()), "/", "_")
+	name := strings.ToLower(tb.Name())
+	name = strings.ReplaceAll(name, "/", "-")
+	name = strings.ReplaceAll(name, " ", "-")
+
+	require.Less(tb, len(name), 64)
+	return name
 }
 
-// CreateTable creates FerretDB collection / PostgreSQL table for testing.
+// Table creates FerretDB collection / PostgreSQL table for testing.
 //
 // Name is stable for that test.
-func CreateTable(ctx context.Context, tb testing.TB, pool *pgdb.Pool, db string) string {
+func Table(ctx context.Context, tb testing.TB, pool *pgdb.Pool, db string) string {
 	tb.Helper()
 
 	table := TableName(tb)

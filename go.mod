@@ -9,12 +9,12 @@ require (
 	github.com/jackc/pgx/v4 v4.15.0
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/prometheus/client_golang v1.12.1
-	github.com/prometheus/common v0.32.1
+	github.com/prometheus/common v0.33.0
 	github.com/stretchr/testify v1.7.1
 	go.uber.org/zap v1.21.0
 	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd // indirect; always use @latest
-	golang.org/x/exp v0.0.0-20220323121947-b445f275a754
-	golang.org/x/sys v0.0.0-20220319134239-a9b59b0215f8
+	golang.org/x/exp v0.0.0-20220328175248-053ad81199eb
+	golang.org/x/sys v0.0.0-20220403205710-6acee93ad0eb
 	golang.org/x/text v0.3.7
 )
 

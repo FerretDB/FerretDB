@@ -96,7 +96,7 @@ func main() {
 		ProxyAddr:       *proxyAddrF,
 		Mode:            clientconn.Mode(*modeF),
 		PgPool:          pgPool,
-		Logger:          logger.Named("listener"),
+		Logger:          logger,
 		TestConnTimeout: *testConnTimeoutF,
 	})
 
