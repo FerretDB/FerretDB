@@ -15,6 +15,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"flag"
 	"fmt"
@@ -59,17 +60,42 @@ var (
 )
 
 func runCompose(args []string, stdin io.Reader, logger *zap.SugaredLogger) {
-	if err := tryCompose(args, stdin, logger); err != nil {
+	if err := tryCompose(args, stdin, nil, logger); err != nil {
 		logger.Fatal(err)
 	}
 }
 
-func tryCompose(args []string, stdin io.Reader, logger *zap.SugaredLogger) error {
+func tryCompose(args []string, stdin io.Reader, stdout io.Writer, logger *zap.SugaredLogger) error {
 	cmd := exec.Command(composeBin, args...)
 	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
 
 	cmd.Stdin = stdin
 	cmd.Stdout = os.Stdout
+	if stdout != nil {
+		cmd.Stdout = stdout
+	}
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%s failed: %s", strings.Join(args, " "), err)
+	}
+
+	return nil
+}
+
+func tryCommand(command string, args []string, stdin io.Reader, stdout io.Writer, logger *zap.SugaredLogger) error {
+	gitBin, err := exec.LookPath(command)
+	if err != nil {
+		return err
+	}
+	cmd := exec.Command(gitBin, args...)
+	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
+
+	cmd.Stdin = stdin
+	cmd.Stdout = os.Stdout
+	if stdout != nil {
+		cmd.Stdout = stdout
+	}
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
@@ -93,7 +119,7 @@ func waitForPort(ctx context.Context, port uint16) error {
 		sleepCancel()
 	}
 
-	return fmt.Errorf("failed to connect to port %d", port)
+	return fmt.Errorf("failed to connect to 127.0.0.1:%d", port)
 }
 
 func setupMongoDB(ctx context.Context) {
@@ -199,25 +225,65 @@ func setupMonilaAndValues(ctx context.Context, pgPool *pgdb.Pool) {
 }
 
 //nolint:forbidigo // Printf used to make diagnostic data easier to copy.
-func printDiagnosticData(err error) {
+func printDiagnosticData(runError error, logger *zap.SugaredLogger) {
+	buffer := bytes.NewBuffer([]byte{})
+	var composeVersion string
+	composeError := tryCompose([]string{"version"}, nil, buffer, logger)
+	if composeError != nil {
+		composeVersion = composeError.Error()
+	} else {
+		composeVersion = string(buffer.Bytes())
+	}
+	buffer.Reset()
+
+	var dockerVersion string
+	dockerError := tryCommand("git", []string{"version"}, nil, buffer, logger)
+	if dockerError != nil {
+		dockerVersion = dockerError.Error()
+	} else {
+		dockerVersion = string(buffer.Bytes())
+	}
+
+	buffer.Reset()
+
+	var gitVersion string
+	gitError := tryCommand("git", []string{"version"}, nil, buffer, logger)
+	if gitError != nil {
+		gitVersion = gitError.Error()
+	} else {
+		gitVersion = string(buffer.Bytes())
+	}
+
 	info := version.Get()
+
 	fmt.Printf(`Looks like something went wrong.
 Please file an issue with all that information below:
-	Go version: %s
+	
 	OS: %s
 	Arch: %s
 	Version: %s
 	Commit: %s
 	Branch: %s
+
+	Go version: %s
+	%s
+	%s
+	%s
+
 	Error: %v
 `,
-		runtime.Version(),
 		runtime.GOOS,
 		runtime.GOARCH,
 		info.Version,
 		info.Commit,
 		info.Branch,
-		err,
+
+		runtime.Version(),
+		strings.TrimSpace(gitVersion),
+		strings.TrimSpace(composeVersion),
+		strings.TrimSpace(dockerVersion),
+
+		runError,
 	)
 }
 
@@ -330,7 +396,7 @@ func main() {
 
 	err := run(ctx, logger)
 	if err != nil {
-		printDiagnosticData(err)
+		printDiagnosticData(err, logger)
 		os.Exit(2)
 	}
 }

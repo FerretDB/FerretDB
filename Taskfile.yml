@@ -146,7 +146,7 @@ tasks:
 
   run:
     desc: 'Run FerretDB'
-    deps: [build-testcover]
+    deps: [gen-version, build-testcover]
     cmds:
       - bin/ferretdb-testcover -test.coverprofile=cover.txt -mode=diff-normal -listen-addr=:27017
 
