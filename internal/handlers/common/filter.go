@@ -278,6 +278,13 @@ func filterFieldExpr(fieldValue any, expr *types.Document) (bool, error) {
 				return false, err
 			}
 
+		case "$exists":
+			// {field: {$exists: boolean}}
+			res, err := filterFieldExprExists(expr)
+			if !res || err != nil {
+				return false, err
+			}
+
 		default:
 			panic(fmt.Sprintf("filterFieldExpr: %q", exprKey))
 		}
@@ -451,4 +458,13 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func filterFieldExprExists(exprValue any) (bool, error) {
+	switch exprValue := exprValue.(type) {
+	case bool:
+		return exprValue, nil
+	default:
+		return false, NewErrorMsg(ErrBadValue, "exists has to be a boolean")
+	}
 }

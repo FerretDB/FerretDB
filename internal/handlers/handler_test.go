@@ -2548,3 +2548,68 @@ func TestListDropDatabase(t *testing.T) {
 		testutil.AssertEqual(t, expected, actual)
 	})
 }
+
+//nolint:paralleltest // we test a global list of collections
+func TestCreateListDropCollection(t *testing.T) {
+	ctx, handler, pool := setup(t, nil)
+	db := testutil.Schema(ctx, t, pool)
+
+	t.Run("nonexisting", func(t *testing.T) {
+		collection := testutil.TableName(t)
+
+		actual := handle(ctx, t, handler, types.MustNewDocument(
+			"create", collection,
+			"$db", db,
+		))
+		expected := types.MustNewDocument(
+			"ok", float64(1),
+		)
+		testutil.AssertEqual(t, expected, actual)
+
+		// TODO test listCollections command once we have better cursor support
+		// https://github.com/FerretDB/FerretDB/issues/79
+
+		tables, err := pool.Tables(ctx, db)
+		require.NoError(t, err)
+		assert.Equal(t, []string{collection}, tables)
+
+		actual = handle(ctx, t, handler, types.MustNewDocument(
+			"drop", collection,
+			"$db", db,
+		))
+		expected = types.MustNewDocument(
+			"nIndexesWas", int32(1),
+			"ns", db+"."+collection,
+			"ok", float64(1),
+		)
+		testutil.AssertEqual(t, expected, actual)
+
+		actual = handle(ctx, t, handler, types.MustNewDocument(
+			"drop", collection,
+			"$db", db,
+		))
+		expected = types.MustNewDocument(
+			"ok", float64(0),
+			"errmsg", "ns not found",
+			"code", int32(26),
+			"codeName", "NamespaceNotFound",
+		)
+		testutil.AssertEqual(t, expected, actual)
+	})
+
+	t.Run("existing", func(t *testing.T) {
+		collection := testutil.Table(ctx, t, pool, db)
+
+		actual := handle(ctx, t, handler, types.MustNewDocument(
+			"create", collection,
+			"$db", db,
+		))
+		expected := types.MustNewDocument(
+			"ok", float64(0),
+			"errmsg", "Collection already exists. NS: testcreatelistdropcollection.testcreatelistdropcollection-existing",
+			"code", int32(48),
+			"codeName", "NamespaceExists",
+		)
+		testutil.AssertEqual(t, expected, actual)
+	})
+}

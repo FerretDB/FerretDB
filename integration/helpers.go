@@ -105,8 +105,6 @@ func assertEqualDocuments(t testing.TB, expected, actual bson.D) bool {
 }
 
 // collectIDs returns all _id values from given documents.
-//
-// The order is preserved.
 func collectIDs(t testing.TB, docs []bson.D) []any {
 	t.Helper()
 
