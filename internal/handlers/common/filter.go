@@ -460,9 +460,8 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 	return true, nil
 }
 
-// filterFieldMod handles {field: {$mod: [divisor, remainder]}}
+// filterFieldMod handles {field: {$mod: [divisor, remainder]}} filter.
 func filterFieldMod(fieldValue, exprValue any) (bool, error) {
-	//	fmt.Printf("%+v\t%+v\n", fieldValue, expr)
 	arr := exprValue.(*types.Array)
 	if arr.Len() < 2 {
 		return false, NewErrorMsg(ErrBadValue, "$mod, not enough elements")
@@ -491,29 +490,15 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 	return true, nil
 }
 
+// toInt64 ...
 func toInt64(val any) (int64, error) {
-
 	switch v := val.(type) {
 	case float64:
-		return int64(v), nil
-	case float32:
-		return int64(v), nil
-	case uint8:
-		return int64(v), nil
-	case uint16:
-		return int64(v), nil
-	case uint32:
-		return int64(v), nil
-	case uint64:
-		return int64(v), nil
-	case int8:
-		return int64(v), nil
-	case int16:
 		return int64(v), nil
 	case int32:
 		return int64(v), nil
 	case int64:
-		return int64(v), nil
+		return v, nil
 	default:
 		return 0, NewErrorMsg(ErrBadValue, "value that cannot be represented using a 64-bit integer")
 	}
