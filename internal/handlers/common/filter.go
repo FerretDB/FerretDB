@@ -464,10 +464,10 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 	arr := exprValue.(*types.Array)
 	if arr.Len() < 2 {
-		return false, NewErrorMsg(ErrBadValue, "$mod, not enough elements")
+		return false, NewErrorMsg(ErrBadValue, "malformed mod, not enough elements")
 	}
 	if arr.Len() > 2 {
-		return false, NewErrorMsg(ErrBadValue, "$mod, too many elements")
+		return false, NewErrorMsg(ErrBadValue, "malformed mod, too many elements")
 	}
 
 	div, err := toInt64(must.NotFail(arr.Get(0)))

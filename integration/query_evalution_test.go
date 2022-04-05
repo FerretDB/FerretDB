@@ -73,7 +73,7 @@ func TestEvalMod(t *testing.T) {
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: `$mod, not enough elements`,
+				Message: `malformed mod, not enough elements`,
 			},
 		},
 		"NotEnoughElements": {
@@ -81,7 +81,7 @@ func TestEvalMod(t *testing.T) {
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: `$mod, not enough elements`,
+				Message: `malformed mod, not enough elements`,
 			},
 		},
 		"TooManyElements": {
@@ -89,7 +89,15 @@ func TestEvalMod(t *testing.T) {
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: `$mod, too many elements`,
+				Message: `malformed mod, too many elements`,
+			},
+		},
+		"NotConvertInt64": {
+			q: bson.D{{"value", bson.D{{"$mod", bson.A{"1", 2}}}}},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `value that cannot be represented using a 64-bit integer`,
 			},
 		},
 	} {
