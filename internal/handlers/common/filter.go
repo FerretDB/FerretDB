@@ -53,15 +53,16 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 		return filterOperator(doc, filterKey, filterValue)
 	}
 
+	fieldExist := true
 	docValue, err := doc.Get(filterKey)
 	if err != nil {
-		return false, nil // no error - the field is just not present
+		fieldExist = false
 	}
 
 	switch filterValue := filterValue.(type) {
 	case *types.Document:
 		// {field: {expr}}
-		return filterFieldExpr(docValue, filterValue)
+		return filterFieldExpr(docValue, filterValue, fieldExist)
 
 	case *types.Array:
 		// {field: [array]}
@@ -150,7 +151,7 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 }
 
 // filterFieldExpr handles {field: {expr}} filter.
-func filterFieldExpr(fieldValue any, expr *types.Document) (bool, error) {
+func filterFieldExpr(fieldValue any, expr *types.Document, fieldExist bool) (bool, error) {
 	for _, exprKey := range expr.Keys() {
 		if exprKey == "$options" {
 			// handled by $regex
@@ -230,7 +231,7 @@ func filterFieldExpr(fieldValue any, expr *types.Document) (bool, error) {
 		case "$not":
 			// {field: {$not: {expr}}}
 			expr := exprValue.(*types.Document)
-			res, err := filterFieldExpr(fieldValue, expr)
+			res, err := filterFieldExpr(fieldValue, expr, fieldExist)
 			if res || err != nil {
 				return false, err
 			}
@@ -280,7 +281,7 @@ func filterFieldExpr(fieldValue any, expr *types.Document) (bool, error) {
 
 		case "$exists":
 			// {field: {$exists: boolean}}
-			res, err := filterFieldExprExists(exprValue)
+			res, err := filterFieldExprExists(fieldExist, exprValue)
 			if !res || err != nil {
 				return false, err
 			}
@@ -461,10 +462,16 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 }
 
 // filterFieldExprExists handles {field: {$exists: value}} filter.
-func filterFieldExprExists(exprValue any) (bool, error) {
+func filterFieldExprExists(fieldExist bool, exprValue any) (bool, error) {
 	switch exprValue := exprValue.(type) {
 	case bool:
-		return exprValue, nil
+		if fieldExist && exprValue {
+			return true, nil
+		}
+		if !fieldExist && !exprValue {
+			return true, nil
+		}
+		return false, nil
 	default:
 		return false, NewErrorMsg(ErrBadValue, "exists has to be a boolean")
 	}
