@@ -17,10 +17,7 @@ package handlers
 import (
 	"context"
 	"math"
-	"os"
-	"runtime"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 
@@ -1242,9 +1239,6 @@ func TestReadOnlyHandlers(t *testing.T) {
 		compareFunc func(t testing.TB, req, expected, actual *types.Document)
 	}
 
-	hostname, err := os.Hostname()
-	require.NoError(t, err)
-
 	testCases := map[string]testCase{
 		"BuildInfo": {
 			req: types.MustNewDocument(
@@ -1519,45 +1513,6 @@ func TestReadOnlyHandlers(t *testing.T) {
 				"version", "5.0.42",
 				"ok", float64(1),
 			),
-		},
-
-		"ListCommands": {
-			req: types.MustNewDocument(
-				"listCommands", int32(1),
-			),
-			resp: types.MustNewDocument(
-				"commands", types.MustNewDocument(),
-				"ok", float64(1),
-			),
-			compareFunc: func(t testing.TB, _ *types.Document, actual, expected *types.Document) {
-				actualV := testutil.GetByPath(t, actual, "commands")
-				testutil.SetByPath(t, expected, actualV, "commands")
-				testutil.AssertEqual(t, expected, actual)
-			},
-		},
-
-		"HostInfo": {
-			req: types.MustNewDocument(
-				"hostInfo", int32(1),
-			),
-			resp: types.MustNewDocument(
-				"system", types.MustNewDocument(
-					"currentTime", time.Now(),
-					"hostname", hostname,
-					"cpuAddrSize", int32(strconv.IntSize),
-					"numCores", int32(runtime.NumCPU()),
-					"cpuArch", runtime.GOARCH,
-					"numaEnabled", false,
-				),
-				"os", types.MustNewDocument(
-					"type", strings.Title(runtime.GOOS),
-				),
-				"ok", float64(1),
-			),
-			compareFunc: func(t testing.TB, _ *types.Document, actual, expected *types.Document) {
-				testutil.CompareAndSetByPathTime(t, expected, actual, 2*time.Second, "system", "currentTime")
-				testutil.AssertEqual(t, expected, actual)
-			},
 		},
 
 		"ServerStatus": {

@@ -119,3 +119,17 @@ func collectIDs(t testing.TB, docs []bson.D) []any {
 
 	return ids
 }
+
+// collectKeys returns document keys.
+//
+// The order is preserved.
+func collectKeys(t testing.TB, doc bson.D) []string {
+	t.Helper()
+
+	res := make([]string, len(doc))
+	for i, e := range doc {
+		res[i] = e.Key
+	}
+
+	return res
+}
