@@ -21,6 +21,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// Scalars contain scalar values for tests.
+//
+// This shared data set is frozen. If you need more values, add them in the test itself.
 var Scalars = &Values[string]{
 	data: map[string]any{
 		"double":                   42.13,
@@ -30,8 +33,7 @@ var Scalars = &Values[string]{
 		"double-smallest":          math.SmallestNonzeroFloat64,
 		"double-positive-infinity": math.Inf(+1),
 		"double-negative-infinity": math.Inf(-1),
-		// TODO https://github.com/FerretDB/FerretDB/issues/411
-		// "double-nan":               math.NaN(),
+		"double-nan":               math.NaN(),
 
 		"string":       "foo",
 		"string-empty": "",
