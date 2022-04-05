@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,8 +28,11 @@ func TestExistsOperator(t *testing.T) {
 	ctx, collection := setup(t)
 
 	_, err := collection.InsertMany(ctx, []any{
+		bson.D{{"_id", "empty-array"}, {"empty-array", []any{}}},
+		bson.D{{"_id", "nan"}, {"nan", math.NaN()}},
+		bson.D{{"_id", "null"}, {"null", nil}},
 		bson.D{{"_id", "string"}, {"value", "12"}},
-		bson.D{{"_id", "2fields"}, {"value", "12"}, {"some-field", 42}},
+		bson.D{{"_id", "two-fields"}, {"value", "12"}, {"field", 42}},
 	})
 	require.NoError(t, err)
 
@@ -37,9 +41,33 @@ func TestExistsOperator(t *testing.T) {
 		expectedIDs []any
 		err         error
 	}{
-		"find-all": {
+		"query-all": {
 			q:           bson.D{{"_id", bson.D{{"$exists", true}}}},
-			expectedIDs: []any{"2fields", "string"},
+			expectedIDs: []any{"empty-array", "nan", "null", "string", "two-fields"},
+		},
+		"query-second-field": {
+			q:           bson.D{{"field", bson.D{{"$exists", true}}}},
+			expectedIDs: []any{"two-fields"},
+		},
+		"query-null-field": {
+			q:           bson.D{{"null", bson.D{{"$exists", true}}}},
+			expectedIDs: []any{"null"},
+		},
+		"query-non-existent-field": {
+			q:           bson.D{{"non-existent", bson.D{{"$exists", true}}}},
+			expectedIDs: []any{},
+		},
+		"query-empty-array": {
+			q:           bson.D{{"empty-array", bson.D{{"$exists", true}}}},
+			expectedIDs: []any{"empty-array"},
+		},
+		"query-nan-field": {
+			q:           bson.D{{"nan", bson.D{{"$exists", true}}}},
+			expectedIDs: []any{"nan"},
+		},
+		"query-exists-false": {
+			q:           bson.D{{"field", bson.D{{"$exists", false}}}},
+			expectedIDs: []any{"empty-array", "nan", "null", "string"},
 		},
 	} {
 		name, tc := name, tc
