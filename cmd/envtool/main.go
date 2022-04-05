@@ -200,7 +200,7 @@ func setupMonilaAndValues(ctx context.Context, pgPool *pgdb.Pool) {
 
 func printDiagnosticData(err error) {
 	info := version.Get()
-	msg := fmt.Sprintf(`Looks like something went wrong..
+	fmt.Printf(`Looks like something went wrong..
 Please file an issue with all that information below:
 	Go version: %s
 	OS: %s
@@ -218,7 +218,6 @@ Please file an issue with all that information below:
 		info.Branch,
 		err,
 	)
-	fmt.Println(msg)
 }
 
 func setupLogger(debug bool) *zap.SugaredLogger {
