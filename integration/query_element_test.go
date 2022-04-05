@@ -39,7 +39,7 @@ func TestExistsOperator(t *testing.T) {
 	}{
 		"find-all": {
 			q:           bson.D{{"_id", bson.D{{"$exists", true}}}},
-			expectedIDs: []any{"string", "2fields"},
+			expectedIDs: []any{"2fields", "string"},
 		},
 	} {
 		name, tc := name, tc
