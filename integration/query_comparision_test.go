@@ -50,7 +50,7 @@ func TestQueryComparisionEq(t *testing.T) {
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			require.Len(t, actual, 1)
-			require.Equal(t, expected, actual[0])
+			assertEqualDocuments(t, expected, actual[0])
 		})
 	}
 }
