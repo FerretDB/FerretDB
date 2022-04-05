@@ -198,6 +198,7 @@ func setupMonilaAndValues(ctx context.Context, pgPool *pgdb.Pool) {
 	logger.Infof("Done in %s.", time.Since(start))
 }
 
+//nolint:forbidigo
 func printDiagnosticData(err error) {
 	info := version.Get()
 	fmt.Printf(`Looks like something went wrong..
