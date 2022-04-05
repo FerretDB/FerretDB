@@ -245,7 +245,9 @@ func parseFlags() *bool {
 func run(ctx context.Context, logger *zap.SugaredLogger) error {
 	go debug.RunHandler(ctx, "127.0.0.1:8089", logger.Named("debug").Desugar())
 
-	if _, err := exec.LookPath("docker-compose"); err != nil {
+	var err error
+	composeBin, err = exec.LookPath("docker-compose")
+	if err != nil {
 		return err
 	}
 
@@ -278,7 +280,7 @@ func run(ctx context.Context, logger *zap.SugaredLogger) error {
 	}
 
 	var pgPool *pgdb.Pool
-	pgPool, err := pgdb.NewPool("postgres://postgres@127.0.0.1:5432/ferretdb", logger.Desugar(), false)
+	pgPool, err = pgdb.NewPool("postgres://postgres@127.0.0.1:5432/ferretdb", logger.Desugar(), false)
 	if err != nil {
 		return err
 	}
