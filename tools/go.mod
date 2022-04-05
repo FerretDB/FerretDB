@@ -13,11 +13,11 @@ replace golang.org/x/tools => github.com/AlekSi/tools v0.1.11-0.20220317161929-e
 
 require (
 	github.com/BurntSushi/go-sumtype v0.0.0-20190304192233-fcb4a6205bdc
-	github.com/go-task/task/v3 v3.11.0
+	github.com/go-task/task/v3 v3.12.0
 	github.com/golangci/golangci-lint v1.45.2 // sync with GitHub Actions workflow
 	github.com/quasilyte/go-consistent v0.0.0-00010101000000-000000000000
 	github.com/reviewdog/reviewdog v0.14.0
-	golang.org/x/perf v0.0.0-20220317191433-96728ec1d780
+	golang.org/x/perf v0.0.0-20220401180428-0625e007bf10
 	golang.org/x/tools v0.1.10
 	mvdan.cc/gofumpt v0.3.1
 )

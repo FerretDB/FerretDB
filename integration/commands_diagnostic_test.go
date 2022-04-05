@@ -36,5 +36,52 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 	t.Log(m)
 
 	assert.Equal(t, 1.0, m["ok"])
+	assert.Equal(t, []string{"totalLinesWritten", "log", "ok"}, collectKeys(t, actual))
+
 	assert.IsType(t, int32(0), m["totalLinesWritten"])
+}
+
+func TestCommandsDiagnosticHostInfo(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	var actual bson.D
+	err := collection.Database().RunCommand(ctx, bson.D{{"hostInfo", 42}}).Decode(&actual)
+	require.NoError(t, err)
+
+	m := actual.Map()
+	t.Log(m)
+
+	assert.Equal(t, 1.0, m["ok"])
+	assert.Equal(t, []string{"system", "os", "extra", "ok"}, collectKeys(t, actual))
+
+	os := m["os"].(bson.D)
+	assert.Equal(t, []string{"type", "name", "version"}, collectKeys(t, os))
+
+	system := m["system"].(bson.D)
+	keys := collectKeys(t, system)
+	assert.Contains(t, keys, "currentTime")
+	assert.Contains(t, keys, "hostname")
+	assert.Contains(t, keys, "cpuAddrSize")
+	assert.Contains(t, keys, "numCores")
+	assert.Contains(t, keys, "cpuArch")
+}
+
+func TestCommandsDiagnosticListCommands(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	var actual bson.D
+	err := collection.Database().RunCommand(ctx, bson.D{{"listCommands", 42}}).Decode(&actual)
+	require.NoError(t, err)
+
+	m := actual.Map()
+	t.Log(m)
+
+	assert.Equal(t, 1.0, m["ok"])
+	assert.Equal(t, []string{"commands", "ok"}, collectKeys(t, actual))
+
+	commands := m["commands"].(bson.D)
+	listCommands := commands.Map()["listCommands"].(bson.D)
+	assert.NotEmpty(t, listCommands.Map()["help"].(string))
 }

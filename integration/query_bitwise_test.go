@@ -15,56 +15,51 @@
 package integration
 
 import (
-	"fmt"
 	"testing"
 
+	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
-
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestQueryComparisionEq(t *testing.T) {
-	t.Parallel()
-	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
-	ctx, collection := setup(t, providers...)
+func TestQueryBitwiseAllClear(t *testing.T) {
+	t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/442")
 
-	var docs []bson.D
-	for _, provider := range providers {
-		docs = append(docs, provider.Docs()...)
-	}
+	t.Parallel()
+	ctx, collection := setup(t, shareddata.Scalars)
 
 	opts := options.Find().SetSort(bson.D{{"_id", 1}})
-	for _, expected := range docs {
-		expected := expected
-		id := expected.Map()["_id"]
-
-		t.Run(fmt.Sprint(id), func(t *testing.T) {
+	for name, tc := range map[string]struct {
+		v           any
+		expectedIDs []any
+		err         error
+	}{
+		"int32": {
+			v: int32(2),
+			expectedIDs: []any{
+				"binary-empty", "double-negative-zero", "double-zero",
+				"int32-min", "int32-zero", "int64-min", "int64-zero",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
 			var actual []bson.D
-			cursor, err := collection.Find(ctx, bson.D{{"_id", bson.D{{"$eq", id}}}}, opts)
+			q := bson.D{{"value", bson.D{{"$bitsAllClear", tc.v}}}}
+			cursor, err := collection.Find(ctx, q, opts)
+			if tc.err != nil {
+				require.Nil(t, tc.expectedIDs)
+				require.Equal(t, tc.err, err)
+				return
+			}
 			require.NoError(t, err)
-
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
-			require.Len(t, actual, 1)
-			assertEqualDocuments(t, expected, actual[0])
+			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
 		})
 	}
 }
-
-// $gt
-
-// $gte
-
-// $in
-
-// $lt
-
-// $lte
-
-// $ne
-
-// $nin
