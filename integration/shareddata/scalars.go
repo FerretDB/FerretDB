@@ -21,6 +21,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// Scalars contain scalar values for tests.
+//
+// This shared data set is frozen (except for double-nan).
+// If you need more values, add them in the test itself.
 var Scalars = &Values[string]{
 	data: map[string]any{
 		"double":                   42.13,

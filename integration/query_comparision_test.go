@@ -15,25 +15,43 @@
 package integration
 
 import (
+	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestQueryComparisionEq(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars)
+	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
+	ctx, collection := setup(t, providers...)
 
-	for _, expected := range shareddata.Scalars.Docs() {
+	var docs []bson.D
+	for _, provider := range providers {
+		docs = append(docs, provider.Docs()...)
+	}
+
+	opts := options.Find().SetSort(bson.D{{"_id", 1}})
+	for _, expected := range docs {
+		expected := expected
 		id := expected.Map()["_id"]
-		var actual bson.D
-		err := collection.FindOne(ctx, bson.D{{"_id", bson.D{{"$eq", id}}}}).Decode(&actual)
-		require.NoError(t, err)
-		assert.Equal(t, expected, actual)
+
+		t.Run(fmt.Sprint(id), func(t *testing.T) {
+			t.Parallel()
+
+			var actual []bson.D
+			cursor, err := collection.Find(ctx, bson.D{{"_id", bson.D{{"$eq", id}}}}, opts)
+			require.NoError(t, err)
+
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			require.Len(t, actual, 1)
+			require.Equal(t, expected, actual[0])
+		})
 	}
 }
 
