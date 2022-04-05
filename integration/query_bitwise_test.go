@@ -1,0 +1,65 @@
+// Copyright 2021 FerretDB Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package integration
+
+import (
+	"testing"
+
+	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
+)
+
+func TestQueryBitwiseAllClear(t *testing.T) {
+	t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/442")
+
+	t.Parallel()
+	ctx, collection := setup(t, shareddata.Scalars)
+
+	opts := options.Find().SetSort(bson.D{{"_id", 1}})
+	for name, tc := range map[string]struct {
+		v           any
+		expectedIDs []any
+		err         error
+	}{
+		"int32": {
+			v: int32(2),
+			expectedIDs: []any{
+				"binary-empty", "double-negative-zero", "double-zero",
+				"int32-min", "int32-zero", "int64-min", "int64-zero",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var actual []bson.D
+			q := bson.D{{"value", bson.D{{"$bitsAllClear", tc.v}}}}
+			cursor, err := collection.Find(ctx, q, opts)
+			if tc.err != nil {
+				require.Nil(t, tc.expectedIDs)
+				require.Equal(t, tc.err, err)
+				return
+			}
+			require.NoError(t, err)
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
+		})
+	}
+}
