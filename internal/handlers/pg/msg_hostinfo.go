@@ -19,10 +19,8 @@ import (
 	"os"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
-
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -46,11 +44,13 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 				"cpuAddrSize", int32(strconv.IntSize),
 				"numCores", int32(runtime.NumCPU()),
 				"cpuArch", runtime.GOARCH,
-				"numaEnabled", false,
 			),
 			"os", types.MustNewDocument(
-				"type", cases.Title(language.English).String(runtime.GOOS),
+				"type", strings.Title(runtime.GOOS),
+				"name", "", // TODO https://github.com/FerretDB/FerretDB/issues/447
+				"version", "",
 			),
+			"extra", types.MustNewDocument(),
 			"ok", float64(1),
 		)},
 	})
