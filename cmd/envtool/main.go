@@ -60,27 +60,9 @@ var (
 )
 
 func runCompose(args []string, stdin io.Reader, logger *zap.SugaredLogger) {
-	if err := tryCompose(args, stdin, nil, logger); err != nil {
+	if err := tryCommand(composeBin, args, stdin, nil, logger); err != nil {
 		logger.Fatal(err)
 	}
-}
-
-func tryCompose(args []string, stdin io.Reader, stdout io.Writer, logger *zap.SugaredLogger) error {
-	cmd := exec.Command(composeBin, args...)
-	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
-
-	cmd.Stdin = stdin
-	cmd.Stdout = os.Stdout
-	if stdout != nil {
-		cmd.Stdout = stdout
-	}
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%s failed: %s", strings.Join(args, " "), err)
-	}
-
-	return nil
 }
 
 func tryCommand(command string, args []string, stdin io.Reader, stdout io.Writer, logger *zap.SugaredLogger) error {
@@ -228,7 +210,7 @@ func setupMonilaAndValues(ctx context.Context, pgPool *pgdb.Pool) {
 func printDiagnosticData(runError error, logger *zap.SugaredLogger) {
 	buffer := bytes.NewBuffer([]byte{})
 	var composeVersion string
-	composeError := tryCompose([]string{"version"}, nil, buffer, logger)
+	composeError := tryCommand(composeBin, []string{"version"}, nil, buffer, logger)
 	if composeError != nil {
 		composeVersion = composeError.Error()
 	} else {
