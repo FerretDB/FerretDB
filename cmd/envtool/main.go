@@ -201,7 +201,7 @@ func setupMonilaAndValues(ctx context.Context, pgPool *pgdb.Pool) {
 //nolint:forbidigo // Printf used to make diagnostic data easier to copy.
 func printDiagnosticData(err error) {
 	info := version.Get()
-	fmt.Printf(`Looks like something went wrong..
+	fmt.Printf(`Looks like something went wrong.
 Please file an issue with all that information below:
 	Go version: %s
 	OS: %s
