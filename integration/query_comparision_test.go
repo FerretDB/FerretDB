@@ -37,7 +37,6 @@ func TestQueryComparisonEq(t *testing.T) {
 		q           bson.D
 		expectedIDs []any
 	}{
-		// $eq
 		"EqDouble": {
 			q:           bson.D{{"value", bson.D{{"$eq", 42.13}}}},
 			expectedIDs: []any{"double"},
@@ -45,6 +44,10 @@ func TestQueryComparisonEq(t *testing.T) {
 		"EqDoubleNegativeInfinity": {
 			q:           bson.D{{"value", bson.D{{"$eq", math.Inf(-1)}}}},
 			expectedIDs: []any{"double-negative-infinity"},
+		},
+		"EqDoubleNegativeZero": {
+			q:           bson.D{{"value", bson.D{{"$eq", math.Copysign(0, -1)}}}},
+			expectedIDs: []any{"double-negative-zero", "double-zero", "int32-zero", "int64-zero"},
 		},
 		"EqDoublePositiveInfinity": {
 			q:           bson.D{{"value", bson.D{{"$eq", math.Inf(+1)}}}},
@@ -65,10 +68,6 @@ func TestQueryComparisonEq(t *testing.T) {
 		"EqDoubleNaN": {
 			q:           bson.D{{"value", bson.D{{"$eq", math.NaN()}}}},
 			expectedIDs: []any{"double-nan"},
-		},
-		"EqNegativeZero": {
-			q:           bson.D{{"value", bson.D{{"$eq", math.Copysign(0, -1)}}}},
-			expectedIDs: []any{"double-negative-zero", "double-zero", "int32-zero", "int64-zero"},
 		},
 
 		"EqString": {
@@ -171,8 +170,30 @@ func TestQueryComparisonEq(t *testing.T) {
 			q:           bson.D{{"value", bson.D{{"$eq", int64(math.MinInt64)}}}},
 			expectedIDs: []any{"int64-min"},
 		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-		// $gt
+			var actual []bson.D
+			cursor, err := collection.Find(ctx, tc.q, options.Find().SetSort(bson.D{{"_id", 1}}))
+			require.NoError(t, err)
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
+		})
+	}
+}
+
+func TestQueryComparisonGt(t *testing.T) {
+	t.Parallel()
+	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
+	ctx, collection := setup(t, providers...)
+
+	for name, tc := range map[string]struct {
+		q           bson.D
+		expectedIDs []any
+	}{
 		"GtDouble": {
 			q:           bson.D{{"value", bson.D{{"$gt", 40.123}}}},
 			expectedIDs: []any{"array", "array-three", "double", "double-max", "double-positive-infinity", "int32", "int32-max", "int64", "int64-max"},
