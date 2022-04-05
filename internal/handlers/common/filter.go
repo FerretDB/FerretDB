@@ -280,7 +280,7 @@ func filterFieldExpr(fieldValue any, expr *types.Document) (bool, error) {
 
 		case "$exists":
 			// {field: {$exists: boolean}}
-			res, err := filterFieldExprExists(expr)
+			res, err := filterFieldExprExists(exprValue)
 			if !res || err != nil {
 				return false, err
 			}
