@@ -198,7 +198,7 @@ func setupMonilaAndValues(ctx context.Context, pgPool *pgdb.Pool) {
 	logger.Infof("Done in %s.", time.Since(start))
 }
 
-//nolint:forbidigo
+//nolint:forbidigo // Printf used to make diagnostic data easier to copy.
 func printDiagnosticData(err error) {
 	info := version.Get()
 	fmt.Printf(`Looks like something went wrong..
