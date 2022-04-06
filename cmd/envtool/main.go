@@ -96,9 +96,25 @@ func waitForPort(ctx context.Context, port uint16) error {
 			return nil
 		}
 
-		sleepCtx, sleepCancel := context.WithTimeout(ctx, time.Second)
-		<-sleepCtx.Done()
-		sleepCancel()
+		time.Sleep(time.Second)
+	}
+
+	return fmt.Errorf("failed to connect to 127.0.0.1:%d", port)
+}
+
+func waitForPostgresPort(ctx context.Context, port uint16) error {
+	logger := zap.S().Named("postgres.wait")
+
+	for ctx.Err() == nil {
+		var pgPool *pgdb.Pool
+		pgPool, err := pgdb.NewPool(fmt.Sprintf("postgres://postgres@127.0.0.1:%d/ferretdb", port), logger.Desugar(), false)
+		if err == nil {
+			pgPool.Close()
+
+			return nil
+		}
+
+		time.Sleep(time.Second)
 	}
 
 	return fmt.Errorf("failed to connect to 127.0.0.1:%d", port)
@@ -300,7 +316,7 @@ func run(ctx context.Context, logger *zap.SugaredLogger) error {
 	}
 
 	var wg sync.WaitGroup
-	portsCtx, portsCancel := context.WithTimeout(ctx, time.Second*30)
+	portsCtx, portsCancel := context.WithTimeout(ctx, time.Minute)
 	defer portsCancel()
 
 	var portsCheckError error
@@ -318,7 +334,7 @@ func run(ctx context.Context, logger *zap.SugaredLogger) error {
 		defer wg.Done()
 
 		logger.Info("Waiting for port 5432 to be up...")
-		portsCheckError = waitForPort(portsCtx, 5432)
+		portsCheckError = waitForPostgresPort(portsCtx, 5432)
 	}()
 
 	wg.Wait()
