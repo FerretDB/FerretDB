@@ -472,15 +472,15 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 
 	div, err := toInt64(must.NotFail(arr.Get(0)))
 	if err != nil {
-		return false, err
+		return false, NewErrorMsg(ErrBadValue, "malformed mod, divisor not a number")
 	}
 	rem, err := toInt64(must.NotFail(arr.Get(1)))
 	if err != nil {
-		return false, err
+		return false, NewErrorMsg(ErrBadValue, "malformed mod, remainder not a number")
 	}
 	field, err := toInt64(fieldValue)
 	if err != nil {
-		return false, err
+		return false, nil
 	}
 
 	if field%div != rem {
@@ -500,6 +500,6 @@ func toInt64(val any) (int64, error) {
 	case int64:
 		return v, nil
 	default:
-		return 0, NewErrorMsg(ErrBadValue, "value that cannot be represented using a 64-bit integer")
+		return 0, NewErrorMsg(ErrBadValue, "not a number")
 	}
 }
