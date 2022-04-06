@@ -159,6 +159,7 @@ func filterFieldExpr(fieldValue any, expr *types.Document, fieldExist bool) (boo
 		}
 
 		if exprKey == "$exists" && !fieldExist {
+			// exit when not $exists filter and no such field
 			return false, nil
 		}
 
