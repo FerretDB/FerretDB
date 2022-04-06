@@ -97,10 +97,6 @@ func TestExistsOperator(t *testing.T) {
 
 			var actual []bson.D
 			err = cursor.All(ctx, &actual)
-			if err != nil {
-				t.Error(err)
-			}
-
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
 				require.Equal(t, tc.err, err)
