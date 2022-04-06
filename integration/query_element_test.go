@@ -83,15 +83,30 @@ func TestExistsOperator(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			var actual []bson.D
-			cursor, err := collection.Find(ctx, tc.q)
+			db := collection.Database()
+			cursor, err := db.RunCommandCursor(ctx,
+				bson.D{
+					{"find", collection.Name()},
+					{"filter", tc.q},
+				})
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
 				require.Equal(t, tc.err, err)
 				return
 			}
-			require.NoError(t, err)
+
+			var actual []bson.D
 			err = cursor.All(ctx, &actual)
+			if err != nil {
+				t.Error(err)
+			}
+
+			if tc.err != nil {
+				require.Nil(t, tc.expectedIDs)
+				require.Equal(t, tc.err, err)
+				return
+			}
+
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
 		})
