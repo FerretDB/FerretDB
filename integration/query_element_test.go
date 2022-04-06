@@ -70,9 +70,8 @@ func TestExistsOperator(t *testing.T) {
 			expectedIDs: []any{"empty-array", "nan", "null", "string"},
 		},
 		"query-non-bool": {
-			q: bson.D{{"_id", bson.D{{"$exists", -123}}}},
-			// TODO: there should be BadValue error
-			expectedIDs: []any{},
+			q:           bson.D{{"_id", bson.D{{"$exists", -123}}}},
+			expectedIDs: []any{"empty-array", "nan", "null", "string", "two-fields"},
 		},
 	} {
 		name, tc := name, tc

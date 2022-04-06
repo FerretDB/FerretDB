@@ -482,7 +482,7 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 func filterFieldExprExists(fieldExist bool, exprValue any) (bool, error) {
 	expr, ok := exprValue.(bool)
 	if !ok {
-		return false, nil
+		return true, nil
 	}
 
 	switch {
