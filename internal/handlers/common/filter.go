@@ -158,6 +158,10 @@ func filterFieldExpr(fieldValue any, expr *types.Document, fieldExist bool) (boo
 			continue
 		}
 
+		if exprKey == "$exists" && !fieldExist {
+			return false, nil
+		}
+
 		exprValue := must.NotFail(expr.Get(exprKey))
 
 		switch exprKey {
