@@ -16,7 +16,9 @@ package common
 
 import (
 	"fmt"
+	"math"
 	"strings"
+	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -296,6 +298,13 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				return false, err
 			}
 
+		case "$type":
+			// {field: {$type: value}}
+			res, err := filterFieldExprType(fieldValue, exprValue)
+			if !res || err != nil {
+				return false, err
+			}
+
 		default:
 			panic(fmt.Sprintf("filterFieldExpr: %q", exprKey))
 		}
@@ -468,5 +477,181 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 		}
 	}
 
+	return true, nil
+}
+
+func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
+	switch exprValue := exprValue.(type) {
+	case string:
+		res, err := matchTypeByAlias(fieldValue, exprValue)
+		if err != nil {
+			return res, err
+		}
+		return res, nil
+
+	case int32:
+		alias, err := getTypeAliasByCode(exprValue)
+		if err != nil {
+			return false, err
+		}
+		res, err := matchTypeByAlias(fieldValue, alias)
+		if err != nil {
+			return res, err
+		}
+		return res, nil
+
+	case *types.Array:
+		hasSameType := exprValue.HasSameTypeElements()
+
+		for i := 0; i < exprValue.Len(); i++ {
+			aliasValue, err := exprValue.Get(i)
+			if err != nil {
+				panic(err)
+			}
+
+			switch alias := aliasValue.(type) {
+			case string:
+				res, err := matchTypeByAlias(fieldValue, alias)
+				if err != nil {
+					return false, err
+				}
+				if res {
+					return true, nil
+				}
+
+			case int32:
+				aliasCode, err := getTypeAliasByCode(alias)
+				if err != nil {
+					return false, err
+				}
+
+				if !hasSameType {
+					continue
+				}
+
+				res, err := matchTypeByAlias(fieldValue, aliasCode)
+				if err != nil {
+					return false, err
+				}
+				if res {
+					return true, nil
+				}
+			case float64:
+				if alias != math.Trunc(alias) || math.IsNaN(alias) || math.IsInf(alias, 0) {
+					return false, NewErrorMsg(ErrBadValue, `Invalid numerical type code: nan`)
+				}
+
+				aliasCode, err := getTypeAliasByCode(int32(alias))
+				if err != nil {
+					return false, err
+				}
+
+				if !hasSameType {
+					continue
+				}
+
+				res, err := matchTypeByAlias(fieldValue, aliasCode)
+				if err != nil {
+					return false, err
+				}
+				if res {
+					return true, nil
+				}
+			default:
+				return false, NewErrorMsg(
+					ErrBadValue,
+					fmt.Sprintf(
+						`Invalid numerical type code: %s`, aliasValue),
+				)
+			}
+		}
+		return false, nil
+
+	default:
+		return false, NewErrorMsg(
+			ErrBadValue,
+			fmt.Sprintf(
+				`Invalid numerical type code: %v`, exprValue),
+		)
+	}
+}
+
+func matchTypeByAlias(fieldValue any, alias string) (bool, error) {
+	if array, ok := fieldValue.(*types.Array); ok && alias != "array" {
+		for i := 0; i < array.Len(); i++ {
+			value, err := array.Get(i)
+			if err != nil {
+				panic(err)
+			}
+
+			res, err := matchTypeByAlias(value, alias)
+			if err != nil {
+				return false, err
+			}
+
+			if res {
+				return true, nil
+			}
+		}
+	}
+
+	switch alias {
+	case "int":
+		if _, ok := fieldValue.(int32); !ok {
+			return false, nil
+		}
+	case "array":
+		if _, ok := fieldValue.(*types.Array); !ok {
+			return false, nil
+		}
+	case "long":
+		if _, ok := fieldValue.(int64); !ok {
+			return false, nil
+		}
+	case "regex":
+		if _, ok := fieldValue.(types.Regex); !ok {
+			return false, nil
+		}
+	case "null":
+		if _, ok := fieldValue.(types.NullType); !ok {
+			return false, nil
+		}
+	case "timestamp":
+		if _, ok := fieldValue.(types.Timestamp); !ok {
+			return false, nil
+		}
+	case "object":
+		if _, ok := fieldValue.(*types.Document); !ok {
+			return false, nil
+		}
+	case "double":
+		if _, ok := fieldValue.(float64); !ok {
+			return false, nil
+		}
+	case "string":
+		if _, ok := fieldValue.(string); !ok {
+			return false, nil
+		}
+	case "binData":
+		if _, ok := fieldValue.(types.Binary); !ok {
+			return false, nil
+		}
+	case "bool":
+		if _, ok := fieldValue.(bool); !ok {
+			return false, nil
+		}
+	case "date":
+		if _, ok := fieldValue.(time.Time); !ok {
+			return false, nil
+		}
+	case "decimal":
+		return false, nil
+	default:
+		return false, NewErrorMsg(
+			ErrBadValue,
+			fmt.Sprintf(
+				`Unknown type name alias: %s`, alias),
+		)
+	}
 	return true, nil
 }

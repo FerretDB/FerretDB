@@ -14,7 +14,11 @@
 
 package types
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+	"time"
+)
 
 // Array represents BSON array.
 //
@@ -127,4 +131,52 @@ func (a *Array) Append(values ...any) error {
 
 	a.s = append(a.s, values...)
 	return nil
+}
+
+func (a *Array) HasSameTypeElements() bool {
+	var prev string
+	for _, i := range a.s {
+		var cur string
+		switch i := i.(type) {
+		case int32, int64:
+			cur = "int"
+		case *Array:
+			cur = "array"
+		case Regex:
+			cur = "regex"
+		case NullType:
+			cur = "null"
+		case Timestamp:
+			cur = "timestamp"
+		case *Document:
+			cur = "object"
+		case float64:
+			if i != math.Trunc(i) || math.IsNaN(i) || math.IsInf(i, 0) {
+				cur = "double"
+			} else {
+				cur = "int"
+			}
+		case string:
+			cur = "string"
+		case Binary:
+			cur = "binData"
+		case bool:
+			cur = "bool"
+		case time.Time:
+			cur = "date"
+		default:
+			return false
+		}
+
+		if prev == "" {
+			prev = cur
+			continue
+		}
+
+		if prev != cur {
+			return false
+		}
+	}
+
+	return true
 }

@@ -192,3 +192,47 @@ func getBinaryParams(fieldValue any, maskValue any) (types.Binary, types.Binary,
 
 	return fieldBinary, maskBinary, nil
 }
+
+// getTypeAliasByCode returns type alias and error by given type code.
+func getTypeAliasByCode(code int32) (string, error) {
+	switch code {
+	case 1:
+		return "double", nil
+	case 2:
+		return "string", nil
+	case 3:
+		return "object", nil
+	case 4:
+		return "array", nil
+	case 5:
+		return "binData", nil
+	case 7:
+		return "objectId", nil
+	case 8:
+		return "bool", nil
+	case 9:
+		return "date", nil
+	case 10:
+		return "null", nil
+	case 11:
+		return "regex", nil
+	case 16:
+		return "int", nil
+	case 17:
+		return "timestamp", nil
+	case 18:
+		return "long", nil
+	case 19:
+		return "decimal", nil
+	case -1:
+		return "minKey", nil
+	case 127:
+		return "maxKey", nil
+	default:
+		return "", NewErrorMsg(
+			ErrBadValue,
+			fmt.Sprintf(
+				`Invalid numerical type code: %d`, code),
+		)
+	}
+}
