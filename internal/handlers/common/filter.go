@@ -66,14 +66,26 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 
 	case *types.Array:
 		// {field: [array]}
+		if !fieldExist {
+			return false, nil
+		}
+
 		panic("not implemented")
 
 	case types.Regex:
 		// {field: /regex/}
+		if !fieldExist {
+			return false, nil
+		}
+
 		return filterFieldRegex(docValue, filterValue)
 
 	default:
 		// {field: value}
+		if !fieldExist {
+			return false, nil
+		}
+
 		switch docValue := docValue.(type) {
 		case *types.Document, *types.Array:
 			return compare(docValue, filterValue) == equal, nil
@@ -158,7 +170,7 @@ func filterFieldExpr(fieldValue any, expr *types.Document, fieldExist bool) (boo
 			continue
 		}
 
-		if exprKey == "$exists" && !fieldExist {
+		if !fieldExist && exprKey != "$exists" {
 			// exit when not $exists filter and no such field
 			return false, nil
 		}
