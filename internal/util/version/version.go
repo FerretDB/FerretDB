@@ -73,7 +73,7 @@ func init() {
 		switch s.Key {
 		case "vcs.revision":
 			if s.Value != info.Commit {
-				panic(fmt.Sprintf("commit.txt value %q != vcs.revision value %q", info.Commit, s.Value))
+				panic(fmt.Sprintf("commit.txt value %q != vcs.revision value %q\nPlease run `bin/task gen-version`", info.Commit, s.Value))
 			}
 		case "vcs.modified":
 			info.Dirty, _ = strconv.ParseBool(s.Value)
