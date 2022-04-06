@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -109,12 +110,39 @@ func TestEvalMod(t *testing.T) {
 				Message: `malformed mod, remainder not a number`,
 			},
 		},
-		"NaN": {
+		"Nil": {
 			q: bson.D{{"value", bson.D{{"$mod", bson.A{nil, 3}}}}},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `malformed mod, divisor not a number`,
+			},
+		},
+		"NaN": {
+			q: bson.D{{"value", bson.D{{"$mod", bson.A{math.NaN(), 1}}}}},
+			err: mongo.CommandError{
+				Code: 2,
+				Name: "BadValue",
+				Message: `malformed mod, divisor value is invalid :: caused by :: ` +
+					`Unable to coerce NaN/Inf to integral type`,
+			},
+		},
+		"Infinity": {
+			q: bson.D{{"value", bson.D{{"$mod", bson.A{1, math.Inf(1)}}}}},
+			err: mongo.CommandError{
+				Code: 2,
+				Name: "BadValue",
+				Message: `malformed mod, remainder value is invalid :: caused by :: ` +
+					`Unable to coerce NaN/Inf to integral type`,
+			},
+		},
+		"InvalidUse": {
+			q: bson.D{{"$mod", bson.A{1, 1}}},
+			err: mongo.CommandError{
+				Code: 2,
+				Name: "BadValue",
+				Message: `unknown top level operator: $mod. ` +
+					`If you have a field name that starts with a '$' symbol, consider using $getField or $setField.`,
 			},
 		},
 	} {
@@ -135,30 +163,4 @@ func TestEvalMod(t *testing.T) {
 			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
 		})
 	}
-
-	// _, err = collection.InsertOne(ctx, bson.D{{"_id", "string"}, {"value", "12"}})
-	// t.Run("RemaNotNumber", func(t *testing.T) {
-	// 	var tc = struct {
-	// 		q           bson.D
-	// 		expectedIDs []any
-	// 		err         error
-	// 	}{
-	// 		q:   bson.D{{"value", bson.D{{"$mod", bson.A{1000, 1000}}}}},
-	// 		err: nil,
-	// 	}
-
-	// 	var actual []bson.D
-	// 	cursor, err := collection.Find(ctx, tc.q)
-	// 	if tc.err != nil {
-	// 		require.Nil(t, tc.expectedIDs)
-	// 		require.Equal(t, tc.err, err)
-	// 		fmt.Println(tc.err, err)
-	// 		return
-	// 	}
-	// 	require.NoError(t, err)
-	// 	err = cursor.All(ctx, &actual)
-	// 	require.NoError(t, err)
-	// 	assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
-	// })
-
 }

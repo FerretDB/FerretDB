@@ -16,6 +16,7 @@ package common
 
 import (
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -462,25 +463,42 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 
 // filterFieldMod handles {field: {$mod: [divisor, remainder]}} filter.
 func filterFieldMod(fieldValue, exprValue any) (bool, error) {
+	field, err := toInt64(fieldValue)
+	if err != nil {
+		return false, nil
+	}
+
 	arr := exprValue.(*types.Array)
 	if arr.Len() < 2 {
-		return false, NewErrorMsg(ErrBadValue, "malformed mod, not enough elements")
+		return false, NewErrorMsg(ErrBadValue, `malformed mod, not enough elements`)
 	}
 	if arr.Len() > 2 {
-		return false, NewErrorMsg(ErrBadValue, "malformed mod, too many elements")
+		return false, NewErrorMsg(ErrBadValue, `malformed mod, too many elements`)
 	}
 
 	div, err := toInt64(must.NotFail(arr.Get(0)))
 	if err != nil {
-		return false, NewErrorMsg(ErrBadValue, "malformed mod, divisor not a number")
+		switch err {
+		case errUnexpectedType:
+			return false, NewErrorMsg(ErrBadValue, `malformed mod, divisor not a number`)
+		case errNotWholeNumber:
+			return false, NewErrorMsg(ErrBadValue, `malformed mod, divisor value is invalid :: caused by :: `+
+				`Unable to coerce NaN/Inf to integral type`)
+		default:
+			return false, err
+		}
 	}
 	rem, err := toInt64(must.NotFail(arr.Get(1)))
 	if err != nil {
-		return false, NewErrorMsg(ErrBadValue, "malformed mod, remainder not a number")
-	}
-	field, err := toInt64(fieldValue)
-	if err != nil {
-		return false, nil
+		switch err {
+		case errUnexpectedType:
+			return false, NewErrorMsg(ErrBadValue, `malformed mod, remainder not a number`)
+		case errNotWholeNumber:
+			return false, NewErrorMsg(ErrBadValue, `malformed mod, remainder value is invalid :: caused by :: `+
+				`Unable to coerce NaN/Inf to integral type`)
+		default:
+			return false, err
+		}
 	}
 
 	if field%div != rem {
@@ -493,13 +511,16 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 // toInt64 ...
 func toInt64(val any) (int64, error) {
 	switch v := val.(type) {
-	case float64:
-		return int64(v), nil
 	case int32:
 		return int64(v), nil
 	case int64:
 		return v, nil
+	case float64:
+		if math.IsNaN(v) || math.IsInf(v, 0) {
+			return 0, errNotWholeNumber
+		}
+		return int64(v), nil
 	default:
-		return 0, NewErrorMsg(ErrBadValue, "not a number")
+		return 0, errUnexpectedType
 	}
 }
