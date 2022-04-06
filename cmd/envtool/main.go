@@ -316,7 +316,7 @@ func run(ctx context.Context, logger *zap.SugaredLogger) error {
 	}
 
 	var wg sync.WaitGroup
-	portsCtx, portsCancel := context.WithTimeout(ctx, time.Minute*2)
+	portsCtx, portsCancel := context.WithTimeout(ctx, time.Minute)
 	defer portsCancel()
 
 	var portsCheckError error
