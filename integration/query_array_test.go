@@ -31,8 +31,8 @@ func TestQueryArraySize(t *testing.T) {
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{{"_id", "array-empty"}, {"value", bson.A{}}},
 		bson.D{{"_id", "array-one"}, {"value", bson.A{"1"}}},
-		bson.D{{"_id", "array-two"}, {"value", bson.A{"1", "2"}}},
-		bson.D{{"_id", "array-three"}, {"value", bson.A{"1", "2", "3"}}},
+		bson.D{{"_id", "array-two"}, {"value", bson.A{"1", nil}}},
+		bson.D{{"_id", "array-three"}, {"value", bson.A{"1", "2", math.NaN()}}},
 		bson.D{{"_id", "string"}, {"value", "12"}},
 		bson.D{{"_id", "document"}, {"value", bson.D{{"value", bson.A{"1", "2"}}}}},
 	})
