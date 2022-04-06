@@ -1505,16 +1505,6 @@ func TestReadOnlyHandlers(t *testing.T) {
 			},
 		},
 
-		"GetParameter": {
-			req: types.MustNewDocument(
-				"getParameter", int32(1),
-			),
-			resp: types.MustNewDocument(
-				"version", "5.0.42",
-				"ok", float64(1),
-			),
-		},
-
 		"ServerStatus": {
 			req: must.NotFail(types.NewDocument(
 				"serverStatus", int32(1),
