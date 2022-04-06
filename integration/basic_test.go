@@ -74,7 +74,6 @@ func TestInsertFind(t *testing.T) {
 		docs = append(docs, provider.Docs()...)
 	}
 
-	opts := options.Find().SetSort(bson.D{{"_id", 1}})
 	for _, expected := range docs {
 		expected := expected
 		id := expected.Map()["_id"]
@@ -83,7 +82,7 @@ func TestInsertFind(t *testing.T) {
 			t.Parallel()
 
 			var actual []bson.D
-			cursor, err := collection.Find(ctx, bson.D{{"_id", id}}, opts)
+			cursor, err := collection.Find(ctx, bson.D{{"_id", id}}, options.Find().SetSort(bson.D{{"_id", 1}}))
 			require.NoError(t, err)
 
 			err = cursor.All(ctx, &actual)
