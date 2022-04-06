@@ -25,6 +25,7 @@ var Composites = &Values[string]{
 		"document-empty": bson.D{},
 
 		"array":       bson.A{int32(42)},
+		"array-three": bson.A{int32(42), "foo", nil},
 		"array-empty": bson.A{},
 	},
 }

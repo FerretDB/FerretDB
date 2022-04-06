@@ -31,7 +31,6 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t, shareddata.Scalars)
 
-	opts := options.Find().SetSort(bson.D{{"_id", 1}})
 	for name, tc := range map[string]struct {
 		v           any
 		expectedIDs []any
@@ -51,7 +50,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 
 			var actual []bson.D
 			q := bson.D{{"value", bson.D{{"$bitsAllClear", tc.v}}}}
-			cursor, err := collection.Find(ctx, q, opts)
+			cursor, err := collection.Find(ctx, q, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
 				require.Equal(t, tc.err, err)

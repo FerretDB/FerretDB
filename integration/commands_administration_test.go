@@ -72,3 +72,23 @@ func TestCommandsAdministrationCreateDropList(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, names, name)
 }
+
+func TestCommandsAdministrationGetParameter(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setupWithOpts(t, &setupOpts{
+		databaseName: "admin",
+	})
+
+	var actual bson.D
+	err := collection.Database().RunCommand(ctx, bson.D{{"getParameter", "*"}}).Decode(&actual)
+	require.NoError(t, err)
+
+	m := actual.Map()
+	t.Log(m)
+
+	assert.Equal(t, 1.0, m["ok"])
+
+	keys := collectKeys(t, actual)
+	assert.Contains(t, keys, "quiet")
+	assert.Equal(t, false, m["quiet"])
+}
