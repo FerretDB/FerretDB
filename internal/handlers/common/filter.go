@@ -463,16 +463,18 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 
 // filterFieldExprExists handles {field: {$exists: value}} filter.
 func filterFieldExprExists(fieldExist bool, exprValue any) (bool, error) {
-	switch exprValue := exprValue.(type) {
-	case bool:
-		if fieldExist && exprValue {
-			return true, nil
-		}
-		if !fieldExist && !exprValue {
-			return true, nil
-		}
-		return false, nil
-	default:
+	if _, ok := exprValue.(bool); !ok {
 		return false, NewErrorMsg(ErrBadValue, "exists has to be a boolean")
+	}
+
+	expr := exprValue.(bool)
+
+	switch {
+	case fieldExist && expr:
+		return true, nil
+	case !fieldExist && !expr:
+		return true, nil
+	default:
+		return false, nil
 	}
 }
