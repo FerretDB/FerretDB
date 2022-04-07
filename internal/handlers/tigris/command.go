@@ -47,6 +47,11 @@ var commands = map[string]command{
 		handler: (*Handler).MsgPing,
 	},
 
+	"find": {
+		help:    "Returns documents matched by the custom query.",
+		handler: (*Handler).MsgFind,
+	},
+
 	// internal commands
 	"debug_error": {
 		help: "Used for debugging purposes.",
