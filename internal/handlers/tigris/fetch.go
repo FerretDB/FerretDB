@@ -42,10 +42,7 @@ func (h *Handler) fetch(ctx context.Context, db, collection string) ([]*types.Do
 		if !ok {
 			break
 		}
-
-		b := (json.RawMessage)(elem)
-
-		anyDoc, err := fjson.Unmarshal(b)
+		anyDoc, err := fjson.Unmarshal((json.RawMessage)(elem))
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
