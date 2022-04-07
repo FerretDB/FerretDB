@@ -2,6 +2,8 @@ module github.com/FerretDB/FerretDB/integration
 
 go 1.18
 
+replace github.com/FerretDB/FerretDB => ../
+
 require (
 	github.com/FerretDB/FerretDB v0.1.0
 	github.com/stretchr/testify v1.7.1
