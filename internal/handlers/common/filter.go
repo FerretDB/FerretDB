@@ -53,36 +53,29 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 		return filterOperator(doc, filterKey, filterValue)
 	}
 
-	fieldExist := true
-	docValue, err := doc.Get(filterKey)
-	if err != nil {
-		fieldExist = false
-	}
-
 	switch filterValue := filterValue.(type) {
 	case *types.Document:
 		// {field: {expr}}
-		return filterFieldExpr(docValue, filterValue, fieldExist)
+		return filterFieldExpr(doc, filterKey, filterValue)
 
 	case *types.Array:
 		// {field: [array]}
-		if !fieldExist {
-			return false, nil
-		}
-
 		panic("not implemented")
 
 	case types.Regex:
 		// {field: /regex/}
-		if !fieldExist {
+		docValue, err := doc.Get(filterKey)
+		if err != nil {
+			// not an error, just no such field
 			return false, nil
 		}
-
 		return filterFieldRegex(docValue, filterValue)
 
 	default:
 		// {field: value}
-		if !fieldExist {
+		docValue, err := doc.Get(filterKey)
+		if err != nil {
+			// not an error, just no such field
 			return false, nil
 		}
 
@@ -163,14 +156,15 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 }
 
 // filterFieldExpr handles {field: {expr}} filter.
-func filterFieldExpr(fieldValue any, expr *types.Document, fieldExist bool) (bool, error) {
+func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document) (bool, error) {
 	for _, exprKey := range expr.Keys() {
 		if exprKey == "$options" {
 			// handled by $regex
 			continue
 		}
 
-		if !fieldExist && exprKey != "$exists" {
+		fieldValue, err := doc.Get(filterKey)
+		if err != nil && exprKey != "$exists" {
 			// exit when not $exists filter and no such field
 			return false, nil
 		}
@@ -248,7 +242,7 @@ func filterFieldExpr(fieldValue any, expr *types.Document, fieldExist bool) (boo
 		case "$not":
 			// {field: {$not: {expr}}}
 			expr := exprValue.(*types.Document)
-			res, err := filterFieldExpr(fieldValue, expr, fieldExist)
+			res, err := filterFieldExpr(doc, filterKey, expr)
 			if res || err != nil {
 				return false, err
 			}
@@ -298,7 +292,7 @@ func filterFieldExpr(fieldValue any, expr *types.Document, fieldExist bool) (boo
 
 		case "$exists":
 			// {field: {$exists: boolean}}
-			res, err := filterFieldExprExists(fieldExist, exprValue)
+			res, err := filterFieldExprExists(fieldValue != nil, exprValue)
 			if !res || err != nil {
 				return false, err
 			}
