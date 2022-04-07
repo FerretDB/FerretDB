@@ -32,6 +32,8 @@ services:
     volumes:
       - tigrisdata:/etc/foundationdb
     command: bash -c 'fdbcli --exec "configure new single memory" && /server/service'
+    depends_on:
+      - tigrisdb_fdb
 
   # for proxy mode and mongosh
   mongodb:

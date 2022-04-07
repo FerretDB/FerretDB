@@ -171,7 +171,7 @@ func setupMonilaAndValues(ctx context.Context, pgPool *pgdb.Pool) {
 		addr = "127.0.0.1:27018"
 	}
 
-	l := clientconn.NewListener(&clientconn.NewListenerOpts{
+	l := clientconn.NewPgListener(&clientconn.NewListenerOpts{
 		ListenAddr: addr,
 		Mode:       "normal",
 		PgPool:     pgPool,

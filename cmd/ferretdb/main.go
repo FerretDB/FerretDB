@@ -26,6 +26,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/version"
@@ -37,6 +38,8 @@ var (
 	listenAddrF      = flag.String("listen-addr", "127.0.0.1:27017", "listen address")
 	modeF            = flag.String("mode", string(clientconn.AllModes[0]), fmt.Sprintf("operation mode: %v", clientconn.AllModes))
 	postgresqlURLF   = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/ferretdb", "PostgreSQL URL")
+	tigrisURLF       = flag.String("tigris-url", "localhost:8081", "Tigris URL")
+	backendTypeF     = flag.String("backendType", "tigris", "Backend type to be used, can be tigris, tg and postgres, pg")
 	proxyAddrF       = flag.String("proxy-addr", "127.0.0.1:37017", "")
 	versionF         = flag.Bool("version", false, "print version to stdout (full version, commit, branch, dirty flag) and exit")
 	testConnTimeoutF = flag.Duration("test-conn-timeout", 0, "test: set connection timeout")
@@ -85,23 +88,42 @@ func main() {
 
 	go debug.RunHandler(ctx, *debugAddrF, logger.Named("debug"))
 
-	pgPool, err := pgdb.NewPool(*postgresqlURLF, logger, false)
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
-	defer pgPool.Close()
-
-	l := clientconn.NewListener(&clientconn.NewListenerOpts{
+	listenerOpts := &clientconn.NewListenerOpts{
 		ListenAddr:      *listenAddrF,
 		ProxyAddr:       *proxyAddrF,
 		Mode:            clientconn.Mode(*modeF),
-		PgPool:          pgPool,
 		Logger:          logger,
 		TestConnTimeout: *testConnTimeoutF,
-	})
+	}
+
+	var l *clientconn.Listener
+	switch *backendTypeF {
+	case "pg", "postgres":
+		pgPool, err := pgdb.NewPool(*postgresqlURLF, logger, false)
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+		listenerOpts.PgPool = pgPool
+		defer pgPool.Close()
+		l = clientconn.NewPgListener(listenerOpts)
+
+	case "tg", "tigris":
+		tgConn, err := tigris.NewConn(*tigrisURLF, logger, false)
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+		listenerOpts.TgConn = tgConn
+		defer tgConn.Close()
+		l = clientconn.NewTigrisListener(listenerOpts)
+
+	default:
+		msg := *backendTypeF + " not supported"
+		logger.Fatal(msg)
+	}
 
 	prometheus.DefaultRegisterer.MustRegister(l)
 
+	var err error
 	err = l.Run(ctx)
 	if err == nil || err == context.Canceled {
 		logger.Info("Listener stopped")

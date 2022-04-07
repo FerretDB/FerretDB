@@ -29,6 +29,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/pg"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/handlers/proxy"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -55,20 +57,25 @@ var AllModes = []Mode{NormalMode, ProxyMode, DiffNormalMode, DiffProxyMode}
 type conn struct {
 	netConn net.Conn
 	mode    Mode
+	backend Backend
 	l       *zap.SugaredLogger
-	h       *pg.Handler
+	pgh     *pg.Handler
+	tgh     *tigris.Handler
 	proxy   *proxy.Handler
 }
 
 // newConnOpts represents newConn options.
 type newConnOpts struct {
-	netConn         net.Conn
-	mode            Mode
-	l               *zap.Logger
-	pgPool          *pgdb.Pool
-	proxyAddr       string
-	handlersMetrics *pg.Metrics
-	startTime       time.Time
+	netConn   net.Conn
+	mode      Mode
+	backend   Backend
+	l         *zap.Logger
+	pgPool    *pgdb.Pool
+	pgMetrics *pg.Metrics
+	tgConn    *tigris.Client
+	tgMetrics *tigris.Metrics
+	proxyAddr string
+	startTime time.Time
 }
 
 // newConn creates a new client connection for given net.Conn.
@@ -82,24 +89,47 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	if opts.mode != NormalMode {
 		var err error
 		if p, err = proxy.New(opts.proxyAddr); err != nil {
-			return nil, err
+			return nil, lazyerrors.Error(err)
 		}
 	}
 
-	handlerOpts := &pg.NewOpts{
-		PgPool:    opts.pgPool,
-		L:         l,
-		PeerAddr:  peerAddr,
-		Metrics:   opts.handlersMetrics,
-		StartTime: opts.startTime,
+	switch opts.backend {
+	case Postgres:
+		pgHandlerOpts := &pg.NewOpts{
+			PgPool:    opts.pgPool,
+			L:         l,
+			PeerAddr:  peerAddr,
+			Metrics:   opts.pgMetrics,
+			StartTime: opts.startTime,
+		}
+		return &conn{
+			backend: Postgres,
+			netConn: opts.netConn,
+			mode:    opts.mode,
+			l:       l.Sugar(),
+			pgh:     pg.New(pgHandlerOpts),
+			proxy:   p,
+		}, nil
+
+	case Tigris:
+		tgHandlerOpts := &tigris.NewOpts{
+			Conn:      opts.tgConn,
+			L:         l,
+			Metrics:   opts.tgMetrics,
+			StartTime: opts.startTime,
+		}
+		return &conn{
+			backend: Tigris,
+			netConn: opts.netConn,
+			mode:    opts.mode,
+			l:       l.Sugar(),
+			tgh:     tigris.New(tgHandlerOpts),
+			proxy:   p,
+		}, nil
+
+	default:
+		return nil, fmt.Errorf("%s is not supported", opts.backend)
 	}
-	return &conn{
-		netConn: opts.netConn,
-		mode:    opts.mode,
-		l:       l.Sugar(),
-		h:       pg.New(handlerOpts),
-		proxy:   p,
-	}, nil
 }
 
 // run runs the client connection until ctx is canceled, client disconnects,
@@ -170,7 +200,14 @@ func (c *conn) run(ctx context.Context) (err error) {
 		var resBody wire.MsgBody
 		var resCloseConn bool
 		if c.mode != ProxyMode {
-			resHeader, resBody, resCloseConn = c.h.Handle(ctx, reqHeader, reqBody)
+			switch c.backend {
+			case Postgres:
+				resHeader, resBody, resCloseConn = c.pgh.Handle(ctx, reqHeader, reqBody)
+			case Tigris:
+				resHeader, resBody, resCloseConn = c.tgh.Handle(ctx, reqHeader, reqBody)
+			default:
+				panic(c.backend + ": unknown backend")
+			}
 
 			// do not spend time dumping if we are not going to log it
 			if c.l.Desugar().Core().Enabled(zap.DebugLevel) {

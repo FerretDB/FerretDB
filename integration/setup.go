@@ -152,7 +152,7 @@ func setupListener(t *testing.T, ctx context.Context, logger *zap.Logger) int {
 
 	pgPool := testutil.Pool(ctx, t, nil, logger)
 
-	l := clientconn.NewListener(&clientconn.NewListenerOpts{
+	l := clientconn.NewPgListener(&clientconn.NewListenerOpts{
 		ListenAddr: "127.0.0.1:0",
 		Mode:       clientconn.NormalMode,
 		PgPool:     pgPool,
