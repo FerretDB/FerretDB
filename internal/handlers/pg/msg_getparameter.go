@@ -30,12 +30,14 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		return nil, lazyerrors.Error(err)
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/449
+
 	common.Ignored(document, h.l, "comment")
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{types.MustNewDocument(
-			"version", versionValue,
+			"quiet", false,
 			"ok", float64(1),
 		)},
 	})
