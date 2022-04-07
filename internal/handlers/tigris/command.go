@@ -41,7 +41,14 @@ var commands = map[string]command{
 		help:    "Returns the role of the FerretDB instance.",
 		handler: (*Handler).MsgHello,
 	},
-
+	"listCollections": {
+		help:    "Returns the information of the collections and views in the database.",
+		handler: (*Handler).MsgListCollections,
+	},
+	"listDatabases": {
+		help:    "Returns a summary of all the databases.",
+		handler: (*Handler).MsgListDatabases,
+	},
 	"ping": {
 		help:    "Returns a pong response. Used for testing purposes.",
 		handler: (*Handler).MsgPing,
