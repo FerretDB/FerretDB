@@ -463,8 +463,19 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 
 // filterFieldMod handles {field: {$mod: [divisor, remainder]}} filter.
 func filterFieldMod(fieldValue, exprValue any) (bool, error) {
-	field, err := toInt64(fieldValue)
-	if err != nil {
+	var field, divisor, remainder int64
+
+	switch f := fieldValue.(type) {
+	case int32:
+		field = int64(f)
+	case int64:
+		field = f
+	case float64:
+		if math.IsNaN(f) || math.IsInf(f, 0) {
+			return false, nil
+		}
+		field = int64(f)
+	default:
 		return false, nil
 	}
 
@@ -476,51 +487,39 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 		return false, NewErrorMsg(ErrBadValue, `malformed mod, too many elements`)
 	}
 
-	div, err := toInt64(must.NotFail(arr.Get(0)))
-	if err != nil {
-		switch err {
-		case errUnexpectedType:
-			return false, NewErrorMsg(ErrBadValue, `malformed mod, divisor not a number`)
-		case errNotWholeNumber:
+	switch d := must.NotFail(arr.Get(0)).(type) {
+	case int32:
+		divisor = int64(d)
+	case int64:
+		divisor = d
+	case float64:
+		if math.IsNaN(d) || math.IsInf(d, 0) {
 			return false, NewErrorMsg(ErrBadValue, `malformed mod, divisor value is invalid :: caused by :: `+
 				`Unable to coerce NaN/Inf to integral type`)
-		default:
-			return false, err
 		}
-	}
-	rem, err := toInt64(must.NotFail(arr.Get(1)))
-	if err != nil {
-		switch err {
-		case errUnexpectedType:
-			return false, NewErrorMsg(ErrBadValue, `malformed mod, remainder not a number`)
-		case errNotWholeNumber:
-			return false, NewErrorMsg(ErrBadValue, `malformed mod, remainder value is invalid :: caused by :: `+
-				`Unable to coerce NaN/Inf to integral type`)
-		default:
-			return false, err
-		}
+		divisor = int64(d)
+	default:
+		return false, NewErrorMsg(ErrBadValue, `malformed mod, divisor not a number`)
 	}
 
-	if field%div != rem {
+	switch r := must.NotFail(arr.Get(1)).(type) {
+	case int32:
+		remainder = int64(r)
+	case int64:
+		remainder = r
+	case float64:
+		if math.IsNaN(r) || math.IsInf(r, 0) {
+			return false, NewErrorMsg(ErrBadValue, `malformed mod, remainder value is invalid :: caused by :: `+
+				`Unable to coerce NaN/Inf to integral type`)
+		}
+		remainder = int64(r)
+	default:
+		return false, NewErrorMsg(ErrBadValue, `malformed mod, remainder not a number`)
+	}
+
+	if field%divisor != remainder {
 		return false, nil
 	}
 
 	return true, nil
-}
-
-// toInt64 ...
-func toInt64(val any) (int64, error) {
-	switch v := val.(type) {
-	case int32:
-		return int64(v), nil
-	case int64:
-		return v, nil
-	case float64:
-		if math.IsNaN(v) || math.IsInf(v, 0) {
-			return 0, errNotWholeNumber
-		}
-		return int64(v), nil
-	default:
-		return 0, errUnexpectedType
-	}
 }

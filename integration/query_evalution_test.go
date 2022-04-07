@@ -11,7 +11,7 @@ import (
 )
 
 func TestEvalMod(t *testing.T) {
-	//	t.Parallel()
+	t.Parallel()
 	ctx, collection := setup(t)
 
 	_, err := collection.InsertMany(ctx, []any{
@@ -148,7 +148,7 @@ func TestEvalMod(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			//			t.Parallel()
+			t.Parallel()
 
 			var actual []bson.D
 			cursor, err := collection.Find(ctx, tc.q)
