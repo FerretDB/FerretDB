@@ -213,7 +213,7 @@ func TestQueryComparisonGt(t *testing.T) {
 		},
 
 		"GtEmptyString": {
-			q:           bson.D{{"value", bson.D{{"$gt", "boo"}}}},
+			q:           bson.D{{"value", bson.D{{"$gt", ""}}}},
 			expectedIDs: []any{"array-three", "string"},
 		},
 
@@ -265,13 +265,247 @@ func TestQueryComparisonGt(t *testing.T) {
 	}
 }
 
-// $gte
+func TestQueryComparisonGte(t *testing.T) {
+	t.Parallel()
+	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
+	ctx, collection := setup(t, providers...)
+
+	for name, tc := range map[string]struct {
+		q           bson.D
+		expectedIDs []any
+	}{
+		"GteDouble": {
+			q:           bson.D{{"value", bson.D{{"$gte", 42.13}}}},
+			expectedIDs: []any{"double", "double-max", "double-positive-infinity", "int32-max", "int64-max"},
+		},
+		"GteDoublePositiveInfinity": {
+			q:           bson.D{{"value", bson.D{{"$gte", math.Inf(+1)}}}},
+			expectedIDs: []any{"double-positive-infinity"},
+		},
+		"GteDoubleMax": {
+			q:           bson.D{{"value", bson.D{{"$gte", math.MaxFloat64}}}},
+			expectedIDs: []any{"double-max", "double-positive-infinity"},
+		},
+
+		"GteString": {
+			q:           bson.D{{"value", bson.D{{"$gte", "foo"}}}},
+			expectedIDs: []any{"array-three", "string"},
+		},
+
+		"GteEmptyString": {
+			q:           bson.D{{"value", bson.D{{"$gte", ""}}}},
+			expectedIDs: []any{"array-three", "string", "string-empty"},
+		},
+
+		"GteInt32": {
+			q:           bson.D{{"value", bson.D{{"$gte", int32(42)}}}},
+			expectedIDs: []any{"array", "array-three", "double", "double-max", "double-positive-infinity", "int32", "int32-max", "int64", "int64-max"},
+		},
+
+		"GteInt32Max": {
+			q:           bson.D{{"value", bson.D{{"$gte", int32(math.MaxInt32)}}}},
+			expectedIDs: []any{"double-max", "double-positive-infinity", "int32-max", "int64-max"},
+		},
+
+		"GteInt64": {
+			q:           bson.D{{"value", bson.D{{"$gte", int64(42)}}}},
+			expectedIDs: []any{"array", "array-three", "double", "double-max", "double-positive-infinity", "int32", "int32-max", "int64", "int64-max"},
+		},
+
+		"GteInt64Max": {
+			q:           bson.D{{"value", bson.D{{"$gte", int64(math.MaxInt64)}}}},
+			expectedIDs: []any{"double-max", "double-positive-infinity", "int64-max"},
+		},
+
+		"GteDatetime": {
+			q:           bson.D{{"value", bson.D{{"$gte", time.Date(2021, 11, 1, 10, 18, 41, 123000000, time.UTC)}}}},
+			expectedIDs: []any{"datetime", "datetime-year-max"},
+		},
+
+		"GteTimeStamp": {
+			q:           bson.D{{"value", bson.D{{"$gte", primitive.Timestamp{T: 41, I: 13}}}}},
+			expectedIDs: []any{"timestamp"},
+		},
+		"GteNull": {
+			q:           bson.D{{"value", bson.D{{"$gte", nil}}}},
+			expectedIDs: []any{"array-three", "null"},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var actual []bson.D
+			cursor, err := collection.Find(ctx, tc.q, options.Find().SetSort(bson.D{{"_id", 1}}))
+			require.NoError(t, err)
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
+		})
+	}
+}
+
+func TestQueryComparisonLt(t *testing.T) {
+	t.Parallel()
+	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
+	ctx, collection := setup(t, providers...)
+
+	for name, tc := range map[string]struct {
+		q           bson.D
+		expectedIDs []any
+	}{
+		"LtDouble": {
+			q:           bson.D{{"value", bson.D{{"$lt", 42.13}}}},
+			expectedIDs: []any{"array", "array-three", "double-negative-infinity", "double-negative-zero", "double-smallest", "double-zero", "int32", "int32-min", "int32-zero", "int64", "int64-min", "int64-zero"},
+		},
+		"LtDoubleNegativeInfinity": {
+			q:           bson.D{{"value", bson.D{{"$lt", math.Inf(-1)}}}},
+			expectedIDs: []any{},
+		},
+		"LtDoubleSmallest": {
+			q:           bson.D{{"value", bson.D{{"$lt", math.SmallestNonzeroFloat64}}}},
+			expectedIDs: []any{"double-negative-infinity", "double-negative-zero", "double-zero", "int32-min", "int32-zero", "int64-min", "int64-zero"},
+		},
+
+		"LtString": {
+			q:           bson.D{{"value", bson.D{{"$lt", "goo"}}}},
+			expectedIDs: []any{"array-three", "string", "string-empty"},
+		},
+
+		"LtEmptyString": {
+			q:           bson.D{{"value", bson.D{{"$lt", ""}}}},
+			expectedIDs: []any{},
+		},
+
+		"LtInt32": {
+			q:           bson.D{{"value", bson.D{{"$lt", int32(42)}}}},
+			expectedIDs: []any{"double-negative-infinity", "double-negative-zero", "double-smallest", "double-zero", "int32-min", "int32-zero", "int64-min", "int64-zero"},
+		},
+
+		"LtInt32Min": {
+			q:           bson.D{{"value", bson.D{{"$lt", int32(math.MinInt32)}}}},
+			expectedIDs: []any{"double-negative-infinity", "int64-min"},
+		},
+
+		"LtInt64": {
+			q:           bson.D{{"value", bson.D{{"$lt", int64(42)}}}},
+			expectedIDs: []any{"double-negative-infinity", "double-negative-zero", "double-smallest", "double-zero", "int32-min", "int32-zero", "int64-min", "int64-zero"},
+		},
+
+		"LtInt64Min": {
+			q:           bson.D{{"value", bson.D{{"$lt", int64(math.MinInt64)}}}},
+			expectedIDs: []any{"double-negative-infinity"},
+		},
+
+		"LtDatetime": {
+			q:           bson.D{{"value", bson.D{{"$lt", time.Date(2021, 11, 1, 10, 18, 41, 123000000, time.UTC)}}}},
+			expectedIDs: []any{"datetime-epoch", "datetime-year-min"},
+		},
+
+		"LtTimeStamp": {
+			q:           bson.D{{"value", bson.D{{"$lt", primitive.Timestamp{T: 41, I: 13}}}}},
+			expectedIDs: []any{"timestamp-i"},
+		},
+		"LtNull": {
+			q:           bson.D{{"value", bson.D{{"$lt", nil}}}},
+			expectedIDs: []any{},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var actual []bson.D
+			cursor, err := collection.Find(ctx, tc.q, options.Find().SetSort(bson.D{{"_id", 1}}))
+			require.NoError(t, err)
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
+		})
+	}
+}
+
+func TestQueryComparisonLte(t *testing.T) {
+	t.Parallel()
+	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
+	ctx, collection := setup(t, providers...)
+
+	for name, tc := range map[string]struct {
+		q           bson.D
+		expectedIDs []any
+	}{
+		"LteDouble": {
+			q:           bson.D{{"value", bson.D{{"$lte", 42.13}}}},
+			expectedIDs: []any{"array", "array-three", "double", "double-negative-infinity", "double-negative-zero", "double-smallest", "double-zero", "int32", "int32-min", "int32-zero", "int64", "int64-min", "int64-zero"},
+		},
+		"LteDoubleNegativeInfinity": {
+			q:           bson.D{{"value", bson.D{{"$lte", math.Inf(-1)}}}},
+			expectedIDs: []any{"double-negative-infinity"},
+		},
+		"LteDoubleSmallest": {
+			q:           bson.D{{"value", bson.D{{"$lte", math.SmallestNonzeroFloat64}}}},
+			expectedIDs: []any{"double-negative-infinity", "double-negative-zero", "double-smallest", "double-zero", "int32-min", "int32-zero", "int64-min", "int64-zero"},
+		},
+
+		"LteString": {
+			q:           bson.D{{"value", bson.D{{"$lte", "foo"}}}},
+			expectedIDs: []any{"array-three", "string", "string-empty"},
+		},
+
+		"LteEmptyString": {
+			q:           bson.D{{"value", bson.D{{"$lte", ""}}}},
+			expectedIDs: []any{"string-empty"},
+		},
+
+		"LteInt32": {
+			q:           bson.D{{"value", bson.D{{"$lte", int32(42)}}}},
+			expectedIDs: []any{"array", "array-three", "double-negative-infinity", "double-negative-zero", "double-smallest", "double-zero", "int32", "int32-min", "int32-zero", "int64", "int64-min", "int64-zero"},
+		},
+
+		"LteInt32Min": {
+			q:           bson.D{{"value", bson.D{{"$lte", int32(math.MinInt32)}}}},
+			expectedIDs: []any{"double-negative-infinity", "int32-min", "int64-min"},
+		},
+
+		"LteInt64": {
+			q:           bson.D{{"value", bson.D{{"$lte", int64(42)}}}},
+			expectedIDs: []any{"array", "array-three", "double-negative-infinity", "double-negative-zero", "double-smallest", "double-zero", "int32", "int32-min", "int32-zero", "int64", "int64-min", "int64-zero"},
+		},
+
+		"LteInt64Min": {
+			q:           bson.D{{"value", bson.D{{"$lte", int64(math.MinInt64)}}}},
+			expectedIDs: []any{"double-negative-infinity", "int64-min"},
+		},
+
+		"LteDatetime": {
+			q:           bson.D{{"value", bson.D{{"$lte", time.Date(2021, 11, 1, 10, 18, 41, 123000000, time.UTC)}}}},
+			expectedIDs: []any{"datetime-epoch", "datetime-year-min"},
+		},
+
+		"LteTimeStamp": {
+			q:           bson.D{{"value", bson.D{{"$lte", primitive.Timestamp{T: 41, I: 13}}}}},
+			expectedIDs: []any{"timestamp-i"},
+		},
+		"LteNull": {
+			q:           bson.D{{"value", bson.D{{"$lte", nil}}}},
+			expectedIDs: []any{"array-three", "null"},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var actual []bson.D
+			cursor, err := collection.Find(ctx, tc.q, options.Find().SetSort(bson.D{{"_id", 1}}))
+			require.NoError(t, err)
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
+		})
+	}
+}
 
 // $in
-
-// $lt
-
-// $lte
 
 // $ne
 
