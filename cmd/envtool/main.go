@@ -15,6 +15,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"flag"
 	"fmt"
@@ -34,6 +35,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
+	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
 var (
@@ -58,17 +60,24 @@ var (
 )
 
 func runCompose(args []string, stdin io.Reader, logger *zap.SugaredLogger) {
-	if err := tryCompose(args, stdin, logger); err != nil {
+	if err := tryCommand(composeBin, args, stdin, nil, logger); err != nil {
 		logger.Fatal(err)
 	}
 }
 
-func tryCompose(args []string, stdin io.Reader, logger *zap.SugaredLogger) error {
-	cmd := exec.Command(composeBin, args...)
+func tryCommand(command string, args []string, stdin io.Reader, stdout io.Writer, logger *zap.SugaredLogger) error {
+	gitBin, err := exec.LookPath(command)
+	if err != nil {
+		return err
+	}
+	cmd := exec.Command(gitBin, args...)
 	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
 
 	cmd.Stdin = stdin
 	cmd.Stdout = os.Stdout
+	if stdout != nil {
+		cmd.Stdout = stdout
+	}
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
@@ -87,39 +96,33 @@ func waitForPort(ctx context.Context, port uint16) error {
 			return nil
 		}
 
-		sleepCtx, sleepCancel := context.WithTimeout(ctx, time.Second)
-		<-sleepCtx.Done()
-		sleepCancel()
+		time.Sleep(time.Second)
 	}
 
-	return ctx.Err()
+	return fmt.Errorf("failed to connect to 127.0.0.1:%d", port)
 }
 
 func waitForPostgresPort(ctx context.Context, port uint16) error {
 	logger := zap.S().Named("postgres.wait")
 
 	for ctx.Err() == nil {
-		args := fmt.Sprintf(`exec -T postgres psql -U postgres -d ferretdb -h 127.0.0.1 --port %d --quiet --command select`, port)
-		if err := tryCompose(strings.Split(args, " "), nil, logger); err == nil {
+		var pgPool *pgdb.Pool
+		pgPool, err := pgdb.NewPool(fmt.Sprintf("postgres://postgres@127.0.0.1:%d/ferretdb", port), logger.Desugar(), false)
+		if err == nil {
+			pgPool.Close()
+
 			return nil
 		}
 
-		sleepCtx, sleepCancel := context.WithTimeout(ctx, time.Second)
-		<-sleepCtx.Done()
-		sleepCancel()
+		time.Sleep(time.Second)
 	}
 
-	return ctx.Err()
+	return fmt.Errorf("failed to connect to 127.0.0.1:%d", port)
 }
 
 func setupMongoDB(ctx context.Context) {
 	start := time.Now()
 	logger := zap.S().Named("mongodb")
-
-	logger.Infof("Waiting for port 37017 to be up...")
-	if err := waitForPort(ctx, 37017); err != nil {
-		logger.Fatal(err)
-	}
 
 	logger.Infof("Importing database...")
 
@@ -219,7 +222,79 @@ func setupMonilaAndValues(ctx context.Context, pgPool *pgdb.Pool) {
 	logger.Infof("Done in %s.", time.Since(start))
 }
 
-func main() {
+//nolint:forbidigo // Printf used to make diagnostic data easier to copy.
+func printDiagnosticData(runError error, logger *zap.SugaredLogger) {
+	buffer := bytes.NewBuffer([]byte{})
+	var composeVersion string
+	composeError := tryCommand(composeBin, []string{"version"}, nil, buffer, logger)
+	if composeError != nil {
+		composeVersion = composeError.Error()
+	} else {
+		composeVersion = string(buffer.Bytes())
+	}
+	buffer.Reset()
+
+	var dockerVersion string
+	dockerError := tryCommand("git", []string{"version"}, nil, buffer, logger)
+	if dockerError != nil {
+		dockerVersion = dockerError.Error()
+	} else {
+		dockerVersion = string(buffer.Bytes())
+	}
+
+	buffer.Reset()
+
+	var gitVersion string
+	gitError := tryCommand("git", []string{"version"}, nil, buffer, logger)
+	if gitError != nil {
+		gitVersion = gitError.Error()
+	} else {
+		gitVersion = string(buffer.Bytes())
+	}
+
+	info := version.Get()
+
+	fmt.Printf(`Looks like something went wrong..
+Please file an issue with all that information below:
+	
+	OS: %s
+	Arch: %s
+	Version: %s
+	Commit: %s
+	Branch: %s
+
+	Go version: %s
+	%s
+	%s
+	%s
+
+	Error: %v
+`,
+		runtime.GOOS,
+		runtime.GOARCH,
+		info.Version,
+		info.Commit,
+		info.Branch,
+
+		runtime.Version(),
+		strings.TrimSpace(gitVersion),
+		strings.TrimSpace(composeVersion),
+		strings.TrimSpace(dockerVersion),
+
+		runError,
+	)
+}
+
+func setupLogger(debug bool) *zap.SugaredLogger {
+	logging.Setup(zap.InfoLevel)
+	if debug {
+		logging.Setup(zap.DebugLevel)
+	}
+	logger := zap.S()
+	return logger
+}
+
+func parseFlags() *bool {
 	debugF := flag.Bool("debug", false, "enable debug mode")
 	flag.Parse()
 
@@ -228,46 +303,63 @@ func main() {
 		fmt.Fprintln(flag.CommandLine.Output(), "no arguments expected")
 		os.Exit(2)
 	}
+	return debugF
+}
 
-	logging.Setup(zap.InfoLevel)
-	if *debugF {
-		logging.Setup(zap.DebugLevel)
-	}
-	logger := zap.S()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
+func run(ctx context.Context, logger *zap.SugaredLogger) error {
 	go debug.RunHandler(ctx, "127.0.0.1:8089", logger.Named("debug").Desugar())
 
 	var err error
-	if composeBin, err = exec.LookPath("docker-compose"); err != nil {
-		logger.Fatal(err)
+	composeBin, err = exec.LookPath("docker-compose")
+	if err != nil {
+		return err
 	}
 
 	var wg sync.WaitGroup
+	portsCtx, portsCancel := context.WithTimeout(ctx, time.Minute)
+	defer portsCancel()
+
+	var portsCheckError error
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		logger.Info("Waiting for port 37017 to be up...")
+		portsCheckError = waitForPort(portsCtx, 37017)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		logger.Info("Waiting for port 5432 to be up...")
+		portsCheckError = waitForPostgresPort(portsCtx, 5432)
+	}()
+
+	wg.Wait()
+
+	if portsCheckError != nil {
+		return portsCheckError
+	}
+
+	var pgPool *pgdb.Pool
+	pgPool, err = pgdb.NewPool("postgres://postgres@127.0.0.1:5432/ferretdb", logger.Desugar(), false)
+	if err != nil {
+		return err
+	}
+
+	for _, db := range []string{`monila`, `values`, `test`} {
+		if err := pgPool.CreateSchema(ctx, db); err != nil {
+			return err
+		}
+	}
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		setupMongoDB(ctx)
 	}()
-
-	logger.Infof("Waiting for port 5432 to be up...")
-	if err := waitForPostgresPort(ctx, 5432); err != nil {
-		logger.Fatal(err)
-	}
-
-	pgPool, err := pgdb.NewPool("postgres://postgres@127.0.0.1:5432/ferretdb", logger.Desugar(), false)
-	if err != nil {
-		logger.Fatal(err)
-	}
-
-	for _, db := range []string{`monila`, `values`, `test`} {
-		if err = pgPool.CreateSchema(ctx, db); err != nil {
-			logger.Fatal(err)
-		}
-	}
 
 	wg.Add(1)
 	go func() {
@@ -283,10 +375,26 @@ func main() {
 		`GRANT USAGE ON SCHEMA monila, values, test TO readonly`,
 		`ANALYZE`, // to make tests more stable
 	} {
-		if _, err = pgPool.Exec(ctx, q); err != nil {
-			logger.Fatal(err)
+		if _, err := pgPool.Exec(ctx, q); err != nil {
+			return err
 		}
 	}
 
 	logger.Info("Done.")
+	return nil
+}
+
+func main() {
+	debugLevel := parseFlags()
+
+	logger := setupLogger(*debugLevel)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	err := run(ctx, logger)
+	if err != nil {
+		printDiagnosticData(err, logger)
+		os.Exit(2)
+	}
 }
