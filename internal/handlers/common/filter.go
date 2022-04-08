@@ -66,8 +66,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 		// {field: /regex/}
 		docValue, err := doc.Get(filterKey)
 		if err != nil {
-			// not an error, just no such field
-			return false, nil
+			return false, nil // no error - the field is just not present
 		}
 		return filterFieldRegex(docValue, filterValue)
 
@@ -75,8 +74,11 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 		// {field: value}
 		docValue, err := doc.Get(filterKey)
 		if err != nil {
-			// not an error, just no such field
-			return false, nil
+			// comparing not existent field with null should return true
+			if _, ok := filterValue.(types.NullType); ok {
+				return true, nil
+			}
+			return false, nil // no error - the field is just not present
 		}
 
 		switch docValue := docValue.(type) {
@@ -170,6 +172,15 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 		}
 
 		exprValue := must.NotFail(expr.Get(exprKey))
+
+		if err != nil {
+			// comparing not existent field with null should return true
+			if _, ok := exprValue.(types.NullType); ok {
+				return true, nil
+			}
+
+			return false, nil // no error - the field is just not present
+		}
 
 		switch exprKey {
 		case "$eq":
