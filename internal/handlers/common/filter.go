@@ -55,6 +55,10 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 
 	docValue, err := doc.Get(filterKey)
 	if err != nil {
+		// comparing not existent field with null should return true
+		if _, ok := filterValue.(types.NullType); ok {
+			return true, nil
+		}
 		return false, nil // no error - the field is just not present
 	}
 
