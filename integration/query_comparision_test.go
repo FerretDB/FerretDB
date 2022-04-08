@@ -170,7 +170,28 @@ func TestQueryComparisonEq(t *testing.T) {
 			q:           bson.D{{"value", bson.D{{"$eq", int64(math.MinInt64)}}}},
 			expectedIDs: []any{"int64-min"},
 		},
-		"CompareNoSuchField": {
+
+		"EqNoSuchFieldNull": {
+			q: bson.D{{"no-such-field", bson.D{{"$eq", nil}}}},
+			expectedIDs: []any{
+				"array", "array-empty", "array-three",
+				"binary", "binary-empty",
+				"bool-false", "bool-true",
+				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
+				"document", "document-empty",
+				"double", "double-max", "double-nan",
+				"double-negative-infinity", "double-negative-zero",
+				"double-positive-infinity", "double-smallest", "double-zero",
+				"int32", "int32-max", "int32-min", "int32-zero", "int64", "int64-max", "int64-min", "int64-zero",
+				"null", "regex", "regex-empty", "string", "string-empty", "timestamp", "timestamp-i",
+			},
+		},
+		"EqStringNull": {
+			q:           bson.D{{"_id", bson.D{{"$eq", nil}}}},
+			expectedIDs: []any{},
+		},
+
+		"EqCompareNoSuchField": {
 			q: bson.D{{"no-such-field", nil}},
 			expectedIDs: []any{
 				"array", "array-empty", "array-three",
@@ -185,12 +206,8 @@ func TestQueryComparisonEq(t *testing.T) {
 				"null", "regex", "regex-empty", "string", "string-empty", "timestamp", "timestamp-i",
 			},
 		},
-		"CompareWithNull": {
+		"EqCompareWithNull": {
 			q:           bson.D{{"_id", nil}},
-			expectedIDs: []any{},
-		},
-		"EqStringNull": {
-			q:           bson.D{{"_id", bson.D{{"$eq", nil}}}},
 			expectedIDs: []any{},
 		},
 	} {
