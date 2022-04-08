@@ -165,21 +165,16 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			continue
 		}
 
-		fieldValue, err := doc.Get(filterKey)
-		if err != nil && exprKey != "$exists" {
-			// exit when not $exists filter and no such field
-			return false, nil
-		}
-
 		exprValue := must.NotFail(expr.Get(exprKey))
 
-		if err != nil {
+		fieldValue, err := doc.Get(filterKey)
+		if err != nil && exprKey != "$exists" {
 			// comparing not existent field with null should return true
 			if _, ok := exprValue.(types.NullType); ok {
 				return true, nil
 			}
-
-			return false, nil // no error - the field is just not present
+			// exit when not $exists filter and no such field
+			return false, nil
 		}
 
 		switch exprKey {
