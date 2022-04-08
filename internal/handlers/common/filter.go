@@ -53,15 +53,10 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 		return filterOperator(doc, filterKey, filterValue)
 	}
 
-	docValue, err := doc.Get(filterKey)
-	if err != nil {
-		return false, nil // no error - the field is just not present
-	}
-
 	switch filterValue := filterValue.(type) {
 	case *types.Document:
 		// {field: {expr}}
-		return filterFieldExpr(docValue, filterValue)
+		return filterFieldExpr(doc, filterKey, filterValue)
 
 	case *types.Array:
 		// {field: [array]}
@@ -69,10 +64,23 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 
 	case types.Regex:
 		// {field: /regex/}
+		docValue, err := doc.Get(filterKey)
+		if err != nil {
+			return false, nil // no error - the field is just not present
+		}
 		return filterFieldRegex(docValue, filterValue)
 
 	default:
 		// {field: value}
+		docValue, err := doc.Get(filterKey)
+		if err != nil {
+			// comparing not existent field with null should return true
+			if _, ok := filterValue.(types.NullType); ok {
+				return true, nil
+			}
+			return false, nil // no error - the field is just not present
+		}
+
 		switch docValue := docValue.(type) {
 		case *types.Document, *types.Array:
 			return compare(docValue, filterValue) == equal, nil
@@ -150,7 +158,7 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 }
 
 // filterFieldExpr handles {field: {expr}} filter.
-func filterFieldExpr(fieldValue any, expr *types.Document) (bool, error) {
+func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document) (bool, error) {
 	for _, exprKey := range expr.Keys() {
 		if exprKey == "$options" {
 			// handled by $regex
@@ -158,6 +166,16 @@ func filterFieldExpr(fieldValue any, expr *types.Document) (bool, error) {
 		}
 
 		exprValue := must.NotFail(expr.Get(exprKey))
+
+		fieldValue, err := doc.Get(filterKey)
+		if err != nil {
+			// comparing not existent field with null should return true
+			if _, ok := exprValue.(types.NullType); ok {
+				return true, nil
+			}
+
+			return false, nil // no error - the field is just not present
+		}
 
 		switch exprKey {
 		case "$eq":
@@ -230,7 +248,7 @@ func filterFieldExpr(fieldValue any, expr *types.Document) (bool, error) {
 		case "$not":
 			// {field: {$not: {expr}}}
 			expr := exprValue.(*types.Document)
-			res, err := filterFieldExpr(fieldValue, expr)
+			res, err := filterFieldExpr(doc, filterKey, expr)
 			if res || err != nil {
 				return false, err
 			}
