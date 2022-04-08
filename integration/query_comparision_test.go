@@ -986,8 +986,39 @@ func TestQueryComparisonLte(t *testing.T) {
 	}
 }
 
+func TestQueryComparisonNin(t *testing.T) {
+	t.Parallel()
+	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
+	ctx, collection := setup(t, providers...)
+
+	var docValue bson.A
+	for _, expected := range shareddata.Scalars.Docs() {
+		docValue = append(docValue, expected.Map()["value"])
+	}
+
+	for name, tc := range map[string]struct {
+		q           bson.D
+		expectedIDs []any
+	}{
+		"NinForAllDataType": {
+			q:           bson.D{{"value", bson.D{{"$nin", docValue}}}},
+			expectedIDs: []any{"array-empty", "document", "document-empty"},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var actual []bson.D
+			cursor, err := collection.Find(ctx, tc.q, options.Find().SetSort(bson.D{{"_id", 1}}))
+			require.NoError(t, err)
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
+		})
+	}
+}
+
 // $in
 
 // $ne
-
-// $nin

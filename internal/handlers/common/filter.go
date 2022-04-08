@@ -281,7 +281,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			var found bool
 			for i := 0; i < arr.Len(); i++ {
 				arrValue := must.NotFail(arr.Get(i))
-				if compareScalars(fieldValue, arrValue) == equal {
+				if compare(fieldValue, arrValue) == equal {
 					found = true
 					break
 				}
