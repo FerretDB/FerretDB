@@ -291,7 +291,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			}
 
 		case "$exists":
-			// {field: {$exists: boolean}}
+			// {field: {$exists: value}}
 			res, err := filterFieldExprExists(fieldValue != nil, exprValue)
 			if !res || err != nil {
 				return false, err
@@ -475,6 +475,7 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 // filterFieldExprExists handles {field: {$exists: value}} filter.
 func filterFieldExprExists(fieldExist bool, exprValue any) (bool, error) {
 	expr, ok := exprValue.(bool)
+	// return all documents if filter value is not bool type
 	if !ok {
 		return true, nil
 	}

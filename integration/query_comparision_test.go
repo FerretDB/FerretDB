@@ -170,6 +170,18 @@ func TestQueryComparisonEq(t *testing.T) {
 			q:           bson.D{{"value", bson.D{{"$eq", int64(math.MinInt64)}}}},
 			expectedIDs: []any{"int64-min"},
 		},
+		"EqNoSuchField": {
+			q:           bson.D{{"no-such-field", bson.D{{"$eq", nil}}}},
+			expectedIDs: []any{},
+		},
+		"NoSuchFieldNullValue": {
+			q:           bson.D{{"no-such-field", nil}},
+			expectedIDs: []any{},
+		},
+		"NoSuchFieldZeroValue": {
+			q:           bson.D{{"no-such-field", 0}},
+			expectedIDs: []any{},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
