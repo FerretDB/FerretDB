@@ -1075,5 +1075,3 @@ func TestQueryComparisonNin(t *testing.T) {
 }
 
 // $in
-
-// $ne
