@@ -41,7 +41,7 @@ func TestQueryArraySize(t *testing.T) {
 	for name, tc := range map[string]struct {
 		q           bson.D
 		expectedIDs []any
-		err         error
+		err         mongo.CommandError
 	}{
 		"int32": {
 			q:           bson.D{{"value", bson.D{{"$size", int32(2)}}}},
@@ -123,9 +123,9 @@ func TestQueryArraySize(t *testing.T) {
 
 			var actual []bson.D
 			cursor, err := collection.Find(ctx, tc.q)
-			if tc.err != nil {
+			if tc.err.Code != 0 {
 				require.Nil(t, tc.expectedIDs)
-				require.Equal(t, tc.err, err)
+				assertEqualError(t, tc.err, err)
 				return
 			}
 			require.NoError(t, err)
