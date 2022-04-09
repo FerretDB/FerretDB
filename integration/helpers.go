@@ -106,6 +106,7 @@ func assertEqualDocuments(t testing.TB, expected, actual bson.D) bool {
 	return testutil.AssertEqual(t, expectedDoc, actualDoc)
 }
 
+// assertEqualError asserts that expected error is the same as actual, ignoring the Raw part.
 func assertEqualError(t testing.TB, expected mongo.CommandError, actual error) bool {
 	t.Helper()
 
@@ -114,7 +115,9 @@ func assertEqualError(t testing.TB, expected mongo.CommandError, actual error) b
 		return assert.Equal(t, expected, actual)
 	}
 
-	a.Raw = nil
+	// raw part might be useful if assertion fails
+	expected.Raw = a.Raw
+
 	return assert.Equal(t, expected, a)
 }
 
