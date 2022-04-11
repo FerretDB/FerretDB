@@ -304,64 +304,125 @@ func TestQueryComparisonGt(t *testing.T) {
 	ctx, collection := setup(t, providers...)
 
 	for name, tc := range map[string]struct {
-		q           bson.D
+		value       any
 		expectedIDs []any
 	}{
 		"GtDouble": {
-			q:           bson.D{{"value", bson.D{{"$gt", 40.123}}}},
-			expectedIDs: []any{"array", "array-three", "double", "double-max", "double-positive-infinity", "int32", "int32-max", "int64", "int64-max"},
+			value: 41.13,
+			expectedIDs: []any{
+				"array", "array-three",
+				"double", "double-max", "double-positive-infinity", "double-whole",
+				"int32", "int32-max",
+				"int64", "int64-max",
+			},
 		},
-		"GtDoublePositiveInfinity": {
-			q:           bson.D{{"value", bson.D{{"$gt", math.Inf(+1)}}}},
-			expectedIDs: []any{},
+		"GtDoubleNegativeZero": {
+			value: math.Copysign(0, -1),
+			expectedIDs: []any{
+				"array", "array-three",
+				"double", "double-max", "double-positive-infinity", "double-smallest", "double-whole",
+				"int32", "int32-max",
+				"int64", "int64-max",
+			},
 		},
 		"GtDoubleMax": {
-			q:           bson.D{{"value", bson.D{{"$gt", math.MaxFloat64}}}},
+			value:       math.MaxFloat64,
 			expectedIDs: []any{"double-positive-infinity"},
+		},
+		"GtDoublePositiveInfinity": {
+			value:       math.Inf(+1),
+			expectedIDs: []any{},
+		},
+		"GtDoubleNaN": {
+			value:       math.NaN(),
+			expectedIDs: []any{},
 		},
 
 		"GtString": {
-			q:           bson.D{{"value", bson.D{{"$gt", "boo"}}}},
+			value:       "boo",
 			expectedIDs: []any{"array-three", "string"},
 		},
-
-		"GtEmptyString": {
-			q:           bson.D{{"value", bson.D{{"$gt", ""}}}},
-			expectedIDs: []any{"array-three", "string"},
+		"GtStringWhole": {
+			value:       "42",
+			expectedIDs: []any{"array-three", "string", "string-double"},
+		},
+		"GtStringEmpty": {
+			value:       "",
+			expectedIDs: []any{"array-three", "string", "string-double", "string-whole"},
 		},
 
-		"GtInt32": {
-			q:           bson.D{{"value", bson.D{{"$gt", int32(42)}}}},
-			expectedIDs: []any{"double", "double-max", "double-positive-infinity", "int32-max", "int64-max"},
+		"GtBinary": {
+			value:       primitive.Binary{Subtype: 0x80, Data: []byte{42}},
+			expectedIDs: []any{"binary"},
+		},
+		"GtBinaryNoSubtype": {
+			value:       primitive.Binary{Data: []byte{42}},
+			expectedIDs: []any{"binary"},
+		},
+		"GtBinaryEmpty": {
+			value:       primitive.Binary{},
+			expectedIDs: []any{"binary"},
 		},
 
-		"GtInt32Max": {
-			q:           bson.D{{"value", bson.D{{"$gt", int32(math.MaxInt32)}}}},
-			expectedIDs: []any{"double-max", "double-positive-infinity", "int64-max"},
+		"GtObjectID": {
+			value:       must.NotFail(primitive.ObjectIDFromHex("000102030405060708091010")),
+			expectedIDs: []any{"objectid"},
+		},
+		"GtObjectIDEmpty": {
+			value:       primitive.NilObjectID,
+			expectedIDs: []any{"objectid"},
 		},
 
-		"GtInt64": {
-			q:           bson.D{{"value", bson.D{{"$gt", int64(42)}}}},
-			expectedIDs: []any{"double", "double-max", "double-positive-infinity", "int32-max", "int64-max"},
-		},
-
-		"GtInt64Max": {
-			q:           bson.D{{"value", bson.D{{"$gt", int64(math.MaxInt64)}}}},
-			expectedIDs: []any{"double-max", "double-positive-infinity"},
+		"GtBool": {
+			value:       false,
+			expectedIDs: []any{"bool-true"},
 		},
 
 		"GtDatetime": {
-			q:           bson.D{{"value", bson.D{{"$gt", time.Date(2021, 11, 1, 10, 18, 41, 123000000, time.UTC)}}}},
+			value:       time.Date(2021, 11, 1, 10, 18, 41, 123000000, time.UTC),
 			expectedIDs: []any{"datetime", "datetime-year-max"},
 		},
 
-		"GtTimeStamp": {
-			q:           bson.D{{"value", bson.D{{"$gt", primitive.Timestamp{T: 41, I: 13}}}}},
+		"GtNull": {
+			value:       nil,
+			expectedIDs: []any{},
+		},
+
+		// TODO
+		// "GtRegex": {
+		// 	value:       primitive.Regex{Pattern: "foo"},
+		// 	expectedIDs: []any{},
+		// },
+
+		"GtInt32": {
+			value:       int32(42),
+			expectedIDs: []any{"double", "double-max", "double-positive-infinity", "int32-max", "int64-max"},
+		},
+		"GtInt32Max": {
+			value:       int32(math.MaxInt32),
+			expectedIDs: []any{"double-max", "double-positive-infinity", "int64-max"},
+		},
+
+		"GtTimestamp": {
+			value:       primitive.Timestamp{T: 41, I: 12},
 			expectedIDs: []any{"timestamp"},
 		},
-		"GtNull": {
-			q:           bson.D{{"value", bson.D{{"$gt", nil}}}},
-			expectedIDs: []any{},
+		"GtTimestampNoI": {
+			value:       primitive.Timestamp{T: 41},
+			expectedIDs: []any{"timestamp"},
+		},
+		"GtTimestampNoT": {
+			value:       primitive.Timestamp{I: 12},
+			expectedIDs: []any{"timestamp"},
+		},
+
+		"GtInt64": {
+			value:       int64(42),
+			expectedIDs: []any{"double", "double-max", "double-positive-infinity", "int32-max", "int64-max"},
+		},
+		"GtInt64Max": {
+			value:       int64(math.MaxInt64),
+			expectedIDs: []any{"double-max", "double-positive-infinity"},
 		},
 	} {
 		name, tc := name, tc
@@ -369,7 +430,8 @@ func TestQueryComparisonGt(t *testing.T) {
 			t.Parallel()
 
 			var actual []bson.D
-			cursor, err := collection.Find(ctx, tc.q, options.Find().SetSort(bson.D{{"_id", 1}}))
+			filter := bson.D{{"value", bson.D{{"$gt", tc.value}}}}
+			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			require.NoError(t, err)
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
