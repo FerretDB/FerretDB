@@ -155,7 +155,7 @@ func TestTypeOperator(t *testing.T) {
 			v: []any{"binData", math.Inf(1)},
 			err: mongo.CommandError{
 				Code:    2,
-				Message: "Invalid numerical type code: nan",
+				Message: "Invalid numerical type code: inf",
 				Name:    "BadValue",
 			},
 		},
