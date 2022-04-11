@@ -36,7 +36,7 @@ func TestQueryLogicalAnd(t *testing.T) {
 		expectedIDs []any
 		err         error
 	}{
-		"SimpleAnd": {
+		"And": {
 			q: bson.D{{
 				"$and",
 				bson.A{
@@ -57,6 +57,141 @@ func TestQueryLogicalAnd(t *testing.T) {
 		"BadExpressionValue": {
 			q: bson.D{{
 				"$and",
+				bson.A{
+					bson.D{{"value", bson.D{{"$gt", 0}}}},
+					nil,
+				},
+			}},
+			err: mongo.CommandError{
+				Code:    2,
+				Message: "$or/$and/$nor entries need to be full objects",
+				Name:    "BadValue",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var actual []bson.D
+			cursor, err := collection.Find(ctx, tc.q)
+			if tc.err != nil {
+				require.Nil(t, tc.expectedIDs)
+				assertEqualError(t, tc.err.(mongo.CommandError), err)
+				return
+			}
+			require.NoError(t, err)
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
+		})
+	}
+}
+
+func TestQueryLogicalOr(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setupWithOpts(t, &setupOpts{
+		providers: []shareddata.Provider{shareddata.Scalars},
+	})
+
+	for name, tc := range map[string]struct {
+		q           bson.D
+		expectedIDs []any
+		err         error
+	}{
+		"Or": {
+			q: bson.D{{
+				"$or",
+				bson.A{
+					bson.D{{"value", bson.D{{"$lt", 0}}}},
+					bson.D{{"value", bson.D{{"$lt", 42}}}},
+				},
+			}},
+			expectedIDs: []any{
+				"double-negative-infinity", "double-negative-zero",
+				"double-smallest", "double-zero",
+				"int32-min", "int32-zero", "int64-min", "int64-zero"},
+		},
+		"BadInput": {
+			q: bson.D{{"$or", nil}},
+			err: mongo.CommandError{
+				Code:    2,
+				Message: "$or must be an array",
+				Name:    "BadValue",
+			},
+		},
+		"BadExpressionValue": {
+			q: bson.D{{
+				"$or",
+				bson.A{
+					bson.D{{"value", bson.D{{"$gt", 0}}}},
+					nil,
+				},
+			}},
+			err: mongo.CommandError{
+				Code:    2,
+				Message: "$or/$and/$nor entries need to be full objects",
+				Name:    "BadValue",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var actual []bson.D
+			cursor, err := collection.Find(ctx, tc.q)
+			if tc.err != nil {
+				require.Nil(t, tc.expectedIDs)
+				assertEqualError(t, tc.err.(mongo.CommandError), err)
+				return
+			}
+			require.NoError(t, err)
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
+		})
+	}
+}
+
+func TestQueryLogicalNor(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setupWithOpts(t, &setupOpts{
+		providers: []shareddata.Provider{shareddata.Scalars},
+	})
+
+	for name, tc := range map[string]struct {
+		q           bson.D
+		expectedIDs []any
+		err         error
+	}{
+		"Nor": {
+			q: bson.D{{
+				"$nor",
+				bson.A{
+					bson.D{{"value", bson.D{{"$gt", 0}}}},
+					bson.D{{"value", bson.D{{"$gt", 42}}}},
+				},
+			}},
+			expectedIDs: []any{
+				"binary", "binary-empty", "bool-false", "bool-true",
+				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
+				"double-nan", "double-negative-infinity", "double-negative-zero", "double-zero",
+				"int32-min", "int32-zero", "int64-min", "int64-zero",
+				"null", "regex", "regex-empty", "string", "string-empty", "timestamp", "timestamp-i",
+			},
+		},
+		"BadInput": {
+			q: bson.D{{"$nor", nil}},
+			err: mongo.CommandError{
+				Code:    2,
+				Message: "$nor must be an array",
+				Name:    "BadValue",
+			},
+		},
+		"BadExpressionValue": {
+			q: bson.D{{
+				"$nor",
 				bson.A{
 					bson.D{{"value", bson.D{{"$gt", 0}}}},
 					nil,

@@ -100,10 +100,17 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 			return false, NewErrorMsg(ErrBadValue, "$and must be an array")
 		}
 		for i := 0; i < exprs.Len(); i++ {
-			expr := must.NotFail(exprs.Get(i)).(*types.Document)
+			value, err := exprs.Get(i)
+			if err != nil {
+				return false, err
+			}
+			expr, err := AssertType[*types.Document](value)
+			if err != nil {
+				return false, NewErrorMsg(ErrBadValue, "$or/$and/$nor entries need to be full objects")
+			}
 			matches, err := FilterDocument(doc, expr)
 			if err != nil {
-				panic(err)
+				return false, err
 			}
 			if !matches {
 				return false, nil
@@ -115,13 +122,20 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 		// {$or: [{expr1}, {expr2}, ...]}
 		exprs, err := AssertType[*types.Array](filterValue)
 		if err != nil {
-			return false, err
+			return false, NewErrorMsg(ErrBadValue, "$or must be an array")
 		}
 		for i := 0; i < exprs.Len(); i++ {
-			expr := must.NotFail(exprs.Get(i)).(*types.Document)
+			value, err := exprs.Get(i)
+			if err != nil {
+				return false, err
+			}
+			expr, err := AssertType[*types.Document](value)
+			if err != nil {
+				return false, NewErrorMsg(ErrBadValue, "$or/$and/$nor entries need to be full objects")
+			}
 			matches, err := FilterDocument(doc, expr)
 			if err != nil {
-				panic(err)
+				return false, err
 			}
 			if matches {
 				return true, nil
@@ -133,13 +147,20 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 		// {$nor: [{expr1}, {expr2}, ...]}
 		exprs, err := AssertType[*types.Array](filterValue)
 		if err != nil {
-			return false, err
+			return false, NewErrorMsg(ErrBadValue, "$nor must be an array")
 		}
 		for i := 0; i < exprs.Len(); i++ {
-			expr := must.NotFail(exprs.Get(i)).(*types.Document)
+			value, err := exprs.Get(i)
+			if err != nil {
+				return false, err
+			}
+			expr, err := AssertType[*types.Document](value)
+			if err != nil {
+				return false, NewErrorMsg(ErrBadValue, "$or/$and/$nor entries need to be full objects")
+			}
 			matches, err := FilterDocument(doc, expr)
 			if err != nil {
-				panic(err)
+				return false, err
 			}
 			if matches {
 				return false, nil
