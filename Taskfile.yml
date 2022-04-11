@@ -87,26 +87,26 @@ tasks:
     desc: "Run all integration tests in parallel"
     deps:
       - task: test-integration-db
-        vars: { DB: "FerretDB" }
+        vars: { DB: 'FerretDB', LOG: 'debug' }
       - task: test-integration-db
-        vars: { DB: "MongoDB" }
+        vars: { DB: 'MongoDB', LOG: 'debug' }
 
   test-integration-ferretdb:
     desc: "Run integration tests for FerretDB"
     cmds:
       - task: test-integration-db
-        vars: { DB: "FerretDB" }
+        vars: { DB: 'FerretDB', LOG: 'debug' }
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
     cmds:
       - task: test-integration-db
-        vars: { DB: "MongoDB" }
+        vars: { DB: 'MongoDB', LOG: 'debug' }
 
   test-integration-db:
     dir: integration
     cmds:
-      - go test -count=1 -race -shuffle=on -coverprofile=integration-{{.DB}}.txt -coverpkg=../... -port={{.DB}}
+      - go test -count=1 -race -shuffle=on -coverprofile=integration.txt -coverpkg=../... -port={{.DB}} -log={{.LOG}}
 
   bench-short:
     desc: "Benchmark for about 20 seconds (with default BENCHTIME)"
