@@ -54,6 +54,20 @@ func TestQueryLogicalAnd(t *testing.T) {
 				Name:    "BadValue",
 			},
 		},
+		"BadExpressionValue": {
+			q: bson.D{{
+				"$and",
+				bson.A{
+					bson.D{{"value", bson.D{{"$gt", 0}}}},
+					nil,
+				},
+			}},
+			err: mongo.CommandError{
+				Code:    2,
+				Message: "$or/$and/$nor entries need to be full objects",
+				Name:    "BadValue",
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
