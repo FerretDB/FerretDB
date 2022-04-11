@@ -59,6 +59,8 @@ func convert(t testing.TB, v any) any {
 			Subtype: types.BinarySubtype(v.Subtype),
 			B:       v.Data,
 		}
+	case primitive.ObjectID:
+		return types.ObjectID(v)
 	case bool:
 		return v
 	case primitive.DateTime:

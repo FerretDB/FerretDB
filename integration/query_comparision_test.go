@@ -309,6 +309,8 @@ func TestQueryComparisonGt(t *testing.T) {
 		expectedIDs []any
 		err         mongo.CommandError
 	}{
+		// TODO document, array
+
 		"Double": {
 			value: 41.13,
 			expectedIDs: []any{
@@ -390,15 +392,14 @@ func TestQueryComparisonGt(t *testing.T) {
 			expectedIDs: []any{},
 		},
 
-		// TODO
-		// "Regex": {
-		// 	value: primitive.Regex{Pattern: "foo"},
-		// 	err: mongo.CommandError{
-		// 		Code:    2,
-		// 		Name:    "BadValue",
-		// 		Message: "Can't have RegEx as arg to predicate over field 'value'.",
-		// 	},
-		// },
+		"Regex": {
+			value: primitive.Regex{Pattern: "foo"},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "Can't have RegEx as arg to predicate over field 'value'.",
+			},
+		},
 
 		"Int32": {
 			value:       int32(42),
@@ -461,6 +462,8 @@ func TestQueryComparisonGte(t *testing.T) {
 		expectedIDs []any
 		err         mongo.CommandError
 	}{
+		// TODO document, array
+
 		"Double": {
 			value: 42.13,
 			expectedIDs: []any{
@@ -539,15 +542,14 @@ func TestQueryComparisonGte(t *testing.T) {
 			expectedIDs: []any{"array-three", "null"},
 		},
 
-		// TODO
-		// "Regex": {
-		// 	value: primitive.Regex{Pattern: "foo"},
-		// 	err: mongo.CommandError{
-		// 		Code:    2,
-		// 		Name:    "BadValue",
-		// 		Message: "Can't have RegEx as arg to predicate over field 'value'.",
-		// 	},
-		// },
+		"Regex": {
+			value: primitive.Regex{Pattern: "foo"},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "Can't have RegEx as arg to predicate over field 'value'.",
+			},
+		},
 
 		"Int32": {
 			value: int32(42),
@@ -620,6 +622,8 @@ func TestQueryComparisonLt(t *testing.T) {
 		expectedIDs []any
 		err         mongo.CommandError
 	}{
+		// TODO document, array
+
 		"Double": {
 			value: 43.13,
 			expectedIDs: []any{
@@ -700,15 +704,14 @@ func TestQueryComparisonLt(t *testing.T) {
 			expectedIDs: []any{},
 		},
 
-		// TODO
-		// "Regex": {
-		// 	value: primitive.Regex{Pattern: "foo"},
-		// 	err: mongo.CommandError{
-		// 		Code:    2,
-		// 		Name:    "BadValue",
-		// 		Message: "Can't have RegEx as arg to predicate over field 'value'.",
-		// 	},
-		// },
+		"Regex": {
+			value: primitive.Regex{Pattern: "foo"},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "Can't have RegEx as arg to predicate over field 'value'.",
+			},
+		},
 
 		"Int32": {
 			value: int32(42),
@@ -779,6 +782,8 @@ func TestQueryComparisonLte(t *testing.T) {
 		expectedIDs []any
 		err         mongo.CommandError
 	}{
+		// TODO document, array
+
 		"Double": {
 			value: 42.13,
 			expectedIDs: []any{
@@ -863,15 +868,14 @@ func TestQueryComparisonLte(t *testing.T) {
 			expectedIDs: []any{"array-three", "null"},
 		},
 
-		// TODO
-		// "Regex": {
-		// 	value: primitive.Regex{Pattern: "foo"},
-		// 	err: mongo.CommandError{
-		// 		Code:    2,
-		// 		Name:    "BadValue",
-		// 		Message: "Can't have RegEx as arg to predicate over field 'value'.",
-		// 	},
-		// },
+		"Regex": {
+			value: primitive.Regex{Pattern: "foo"},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "Can't have RegEx as arg to predicate over field 'value'.",
+			},
+		},
 
 		"Int32": {
 			value: int32(42),
