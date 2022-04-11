@@ -29,7 +29,7 @@ import (
 
 func TestTypeOperator(t *testing.T) {
 	t.Parallel()
-	// TODO: add this data types to collection "objectId" "javascript" "decimal" "minKey" "maxKey"
+	// TODO: add this data types to collection "objectId", "decimal", "minKey", "maxKey"
 	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
