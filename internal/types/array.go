@@ -133,6 +133,7 @@ func (a *Array) Append(values ...any) error {
 	return nil
 }
 
+// HasSameTypeElements returns true is Array elements has the same type.
 func (a *Array) HasSameTypeElements() bool {
 	var prev string
 	for _, i := range a.s {
