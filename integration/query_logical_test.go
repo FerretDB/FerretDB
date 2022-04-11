@@ -20,17 +20,41 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestQueryLogicalAnd(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := setupWithOpts(t, &setupOpts{
+		providers: []shareddata.Provider{shareddata.Scalars},
+	})
 
 	for name, tc := range map[string]struct {
 		q           bson.D
 		expectedIDs []any
 		err         error
-	}{} {
+	}{
+		"SimpleAnd": {
+			q: bson.D{{
+				"$and",
+				bson.A{
+					bson.D{{"value", bson.D{{"$gt", 0}}}},
+					bson.D{{"value", bson.D{{"$lte", 42}}}},
+				},
+			}},
+			expectedIDs: []any{"double-smallest", "int32", "int64"},
+		},
+		"BadInput": {
+			q: bson.D{{"$and", nil}},
+			err: mongo.CommandError{
+				Code:    2,
+				Message: "$and must be an array",
+				Name:    "BadValue",
+			},
+		},
+	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
@@ -39,7 +63,7 @@ func TestQueryLogicalAnd(t *testing.T) {
 			cursor, err := collection.Find(ctx, tc.q)
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				assertErr(t, tc.err, err)
+				assertEqualError(t, tc.err.(mongo.CommandError), err)
 				return
 			}
 			require.NoError(t, err)
