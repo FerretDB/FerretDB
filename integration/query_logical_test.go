@@ -110,7 +110,8 @@ func TestQueryLogicalOr(t *testing.T) {
 			expectedIDs: []any{
 				"double-negative-infinity", "double-negative-zero",
 				"double-smallest", "double-zero",
-				"int32-min", "int32-zero", "int64-min", "int64-zero"},
+				"int32-min", "int32-zero", "int64-min", "int64-zero",
+			},
 		},
 		"BadInput": {
 			q: bson.D{{"$or", nil}},
