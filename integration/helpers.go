@@ -118,6 +118,7 @@ func assertEqualError(t testing.TB, expected mongo.CommandError, actual error) b
 	}
 
 	// raw part might be useful if assertion fails
+	require.Nil(t, expected.Raw)
 	expected.Raw = a.Raw
 
 	return assert.Equal(t, expected, a)
