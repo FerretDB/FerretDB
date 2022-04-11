@@ -41,6 +41,8 @@ var (
 	startupPort = flag.String("port", "ferretdb", "port to use")
 
 	startupOnce sync.Once
+
+	logLevel = flag.String("log", "debug", "logger level")
 )
 
 // setupOpts represents setup options.
@@ -69,7 +71,19 @@ func setupWithOpts(t *testing.T, opts *setupOpts) (context.Context, *mongo.Colle
 		ownDatabase = true
 	}
 
-	logger := zaptest.NewLogger(t, zaptest.Level(zap.DebugLevel))
+	var level zaptest.LoggerOption
+	switch *logLevel {
+	case "debug":
+		level = zaptest.Level(zap.DebugLevel)
+	case "info":
+		level = zaptest.Level(zap.InfoLevel)
+	case "error":
+		level = zaptest.Level(zap.ErrorLevel)
+	default:
+		level = zaptest.Level(zap.DebugLevel)
+	}
+
+	logger := zaptest.NewLogger(t, level)
 
 	port, err := strconv.Atoi(*startupPort)
 	if err != nil {

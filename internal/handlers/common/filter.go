@@ -538,8 +538,12 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 					return true, nil
 				}
 			case float64:
-				if alias != math.Trunc(alias) || math.IsNaN(alias) || math.IsInf(alias, 0) {
-					return false, NewErrorMsg(ErrBadValue, `Invalid numerical type code: nan`)
+				if math.IsNaN(alias) || math.IsInf(alias, 0) {
+					return false, NewErrorMsg(ErrBadValue, `Invalid numerical type code: `+
+						strings.Trim(strings.ToLower(fmt.Sprintf("%v", alias)), "+"))
+				}
+				if alias != math.Trunc(alias) {
+					return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %v`, alias))
 				}
 
 				aliasCode, err := getTypeAliasByCode(int32(alias))

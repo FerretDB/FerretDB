@@ -159,6 +159,22 @@ func TestTypeOperator(t *testing.T) {
 				Name:    "BadValue",
 			},
 		},
+		"type-array-bad-value-minus-inf": {
+			v: []any{"binData", math.Inf(-1)},
+			err: mongo.CommandError{
+				Code:    2,
+				Message: "Invalid numerical type code: -inf",
+				Name:    "BadValue",
+			},
+		},
+		"type-array-bad-value-negative-float": {
+			v: []any{"binData", -1.123},
+			err: mongo.CommandError{
+				Code:    2,
+				Message: "Invalid numerical type code: -1.123",
+				Name:    "BadValue",
+			},
+		},
 		"type-array-float": {
 			v:           []any{5, 8.0},
 			expectedIDs: []any{"binary", "binary-empty", "bool-false", "bool-true"},
