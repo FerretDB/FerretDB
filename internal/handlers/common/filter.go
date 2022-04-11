@@ -277,7 +277,10 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 		case "$nin":
 			// {field: {$nin: [value1, value2, ...]}}
-			arr := exprValue.(*types.Array)
+			arr, ok := exprValue.(*types.Array)
+			if !ok {
+				return false, NewErrorMsg(ErrBadValue, "$nin needs an array")
+			}
 			var found bool
 			for i := 0; i < arr.Len(); i++ {
 				arrValue := must.NotFail(arr.Get(i))

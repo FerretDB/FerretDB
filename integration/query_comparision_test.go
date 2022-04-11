@@ -999,10 +999,28 @@ func TestQueryComparisonNin(t *testing.T) {
 	for name, tc := range map[string]struct {
 		q           bson.D
 		expectedIDs []any
+		err         mongo.CommandError
 	}{
 		"NinForAllDataType": {
 			q:           bson.D{{"value", bson.D{{"$nin", docValue}}}},
 			expectedIDs: []any{"array-empty", "document", "document-empty"},
+		},
+
+		"NilInsteadOfArray": {
+			q: bson.D{{"value", bson.D{{"$nin", nil}}}},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `$nin needs an array`,
+			},
+		},
+		"StringInsteadOfArray": {
+			q: bson.D{{"value", bson.D{{"$nin", "foo"}}}},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `$nin needs an array`,
+			},
 		},
 	} {
 		name, tc := name, tc
@@ -1011,6 +1029,11 @@ func TestQueryComparisonNin(t *testing.T) {
 
 			var actual []bson.D
 			cursor, err := collection.Find(ctx, tc.q, options.Find().SetSort(bson.D{{"_id", 1}}))
+			if tc.err.Code != 0 {
+				require.Nil(t, tc.expectedIDs)
+				assertEqualError(t, tc.err, err)
+				return
+			}
 			require.NoError(t, err)
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
