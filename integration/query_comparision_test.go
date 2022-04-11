@@ -616,64 +616,137 @@ func TestQueryComparisonLt(t *testing.T) {
 	ctx, collection := setup(t, providers...)
 
 	for name, tc := range map[string]struct {
-		filter      bson.D
+		value       any
 		expectedIDs []any
+		err         mongo.CommandError
 	}{
-		"LtDouble": {
-			filter:      bson.D{{"value", bson.D{{"$lt", 42.13}}}},
-			expectedIDs: []any{"array", "array-three", "double-negative-infinity", "double-negative-zero", "double-smallest", "double-zero", "int32", "int32-min", "int32-zero", "int64", "int64-min", "int64-zero"},
+		"Double": {
+			value: 43.13,
+			expectedIDs: []any{
+				"array", "array-three",
+				"double", "double-negative-infinity", "double-negative-zero", "double-smallest", "double-whole", "double-zero",
+				"int32", "int32-min", "int32-zero",
+				"int64", "int64-min", "int64-zero",
+			},
 		},
-		"LtDoubleNegativeInfinity": {
-			filter:      bson.D{{"value", bson.D{{"$lt", math.Inf(-1)}}}},
+		"DoubleNegativeZero": {
+			value:       math.Copysign(0, -1),
+			expectedIDs: []any{"double-negative-infinity", "int32-min", "int64-min"},
+		},
+		"DoubleSmallest": {
+			value: math.SmallestNonzeroFloat64,
+			expectedIDs: []any{
+				"double-negative-infinity", "double-negative-zero", "double-zero",
+				"int32-min", "int32-zero",
+				"int64-min", "int64-zero",
+			},
+		},
+		"DoubleNegativeInfinity": {
+			value:       math.Inf(-1),
 			expectedIDs: []any{},
 		},
-		"LtDoubleSmallest": {
-			filter:      bson.D{{"value", bson.D{{"$lt", math.SmallestNonzeroFloat64}}}},
-			expectedIDs: []any{"double-negative-infinity", "double-negative-zero", "double-zero", "int32-min", "int32-zero", "int64-min", "int64-zero"},
-		},
-
-		"LtString": {
-			filter:      bson.D{{"value", bson.D{{"$lt", "goo"}}}},
-			expectedIDs: []any{"array-three", "string", "string-empty"},
-		},
-
-		"LtEmptyString": {
-			filter:      bson.D{{"value", bson.D{{"$lt", ""}}}},
+		"DoubleNaN": {
+			value:       math.NaN(),
 			expectedIDs: []any{},
 		},
 
-		"LtInt32": {
-			filter:      bson.D{{"value", bson.D{{"$lt", int32(42)}}}},
-			expectedIDs: []any{"double-negative-infinity", "double-negative-zero", "double-smallest", "double-zero", "int32-min", "int32-zero", "int64-min", "int64-zero"},
+		"String": {
+			value:       "goo",
+			expectedIDs: []any{"array-three", "string", "string-double", "string-empty", "string-whole"},
+		},
+		"StringWhole": {
+			value:       "42",
+			expectedIDs: []any{"string-empty"},
+		},
+		"StringEmpty": {
+			value:       "",
+			expectedIDs: []any{},
 		},
 
-		"LtInt32Min": {
-			filter:      bson.D{{"value", bson.D{{"$lt", int32(math.MinInt32)}}}},
+		"Binary": {
+			value:       primitive.Binary{Subtype: 0x80, Data: []byte{43}},
+			expectedIDs: []any{"binary-empty"},
+		},
+		"BinaryNoSubtype": {
+			value:       primitive.Binary{Data: []byte{43}},
+			expectedIDs: []any{"binary-empty"},
+		},
+		"BinaryEmpty": {
+			value:       primitive.Binary{},
+			expectedIDs: []any{},
+		},
+
+		"ObjectID": {
+			value:       must.NotFail(primitive.ObjectIDFromHex("000102030405060708091012")),
+			expectedIDs: []any{"objectid", "objectid-empty"},
+		},
+		"ObjectIDEmpty": {
+			value:       primitive.NilObjectID,
+			expectedIDs: []any{},
+		},
+
+		"Bool": {
+			value:       true,
+			expectedIDs: []any{"bool-false"},
+		},
+
+		"Datetime": {
+			value:       time.Date(2021, 11, 1, 10, 18, 43, 123000000, time.UTC),
+			expectedIDs: []any{"datetime", "datetime-epoch", "datetime-year-min"},
+		},
+
+		"Null": {
+			value:       nil,
+			expectedIDs: []any{},
+		},
+
+		// TODO
+		// "Regex": {
+		// 	value: primitive.Regex{Pattern: "foo"},
+		// 	err: mongo.CommandError{
+		// 		Code:    2,
+		// 		Name:    "BadValue",
+		// 		Message: "Can't have RegEx as arg to predicate over field 'value'.",
+		// 	},
+		// },
+
+		"Int32": {
+			value: int32(42),
+			expectedIDs: []any{
+				"double-negative-infinity", "double-negative-zero", "double-smallest", "double-zero",
+				"int32-min", "int32-zero",
+				"int64-min", "int64-zero",
+			},
+		},
+		"Int32Min": {
+			value:       int32(math.MinInt32),
 			expectedIDs: []any{"double-negative-infinity", "int64-min"},
 		},
 
-		"LtInt64": {
-			filter:      bson.D{{"value", bson.D{{"$lt", int64(42)}}}},
-			expectedIDs: []any{"double-negative-infinity", "double-negative-zero", "double-smallest", "double-zero", "int32-min", "int32-zero", "int64-min", "int64-zero"},
+		"Timestamp": {
+			value:       primitive.Timestamp{T: 43, I: 14},
+			expectedIDs: []any{"timestamp", "timestamp-i"},
 		},
-
-		"LtInt64Min": {
-			filter:      bson.D{{"value", bson.D{{"$lt", int64(math.MinInt64)}}}},
-			expectedIDs: []any{"double-negative-infinity"},
+		"TimestampNoI": {
+			value:       primitive.Timestamp{T: 43},
+			expectedIDs: []any{"timestamp", "timestamp-i"},
 		},
-
-		"LtDatetime": {
-			filter:      bson.D{{"value", bson.D{{"$lt", time.Date(2021, 11, 1, 10, 18, 41, 123000000, time.UTC)}}}},
-			expectedIDs: []any{"datetime-epoch", "datetime-year-min"},
-		},
-
-		"LtTimeStamp": {
-			filter:      bson.D{{"value", bson.D{{"$lt", primitive.Timestamp{T: 41, I: 13}}}}},
+		"TimestampNoT": {
+			value:       primitive.Timestamp{I: 14},
 			expectedIDs: []any{"timestamp-i"},
 		},
-		"LtNull": {
-			filter:      bson.D{{"value", bson.D{{"$lt", nil}}}},
-			expectedIDs: []any{},
+
+		"Int64": {
+			value: int64(42),
+			expectedIDs: []any{
+				"double-negative-infinity", "double-negative-zero", "double-smallest", "double-zero",
+				"int32-min", "int32-zero",
+				"int64-min", "int64-zero",
+			},
+		},
+		"Int64Min": {
+			value:       int64(math.MinInt64),
+			expectedIDs: []any{"double-negative-infinity"},
 		},
 	} {
 		name, tc := name, tc
@@ -681,7 +754,13 @@ func TestQueryComparisonLt(t *testing.T) {
 			t.Parallel()
 
 			var actual []bson.D
-			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			filter := bson.D{{"value", bson.D{{"$lt", tc.value}}}}
+			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			if tc.err.Code != 0 {
+				require.Nil(t, tc.expectedIDs)
+				assertEqualError(t, tc.err, err)
+				return
+			}
 			require.NoError(t, err)
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
@@ -696,64 +775,143 @@ func TestQueryComparisonLte(t *testing.T) {
 	ctx, collection := setup(t, providers...)
 
 	for name, tc := range map[string]struct {
-		filter      bson.D
+		value       any
 		expectedIDs []any
+		err         mongo.CommandError
 	}{
-		"LteDouble": {
-			filter:      bson.D{{"value", bson.D{{"$lte", 42.13}}}},
-			expectedIDs: []any{"array", "array-three", "double", "double-negative-infinity", "double-negative-zero", "double-smallest", "double-zero", "int32", "int32-min", "int32-zero", "int64", "int64-min", "int64-zero"},
+		"Double": {
+			value: 42.13,
+			expectedIDs: []any{
+				"array", "array-three",
+				"double", "double-negative-infinity", "double-negative-zero", "double-smallest", "double-whole", "double-zero",
+				"int32", "int32-min", "int32-zero",
+				"int64", "int64-min", "int64-zero",
+			},
 		},
-		"LteDoubleNegativeInfinity": {
-			filter:      bson.D{{"value", bson.D{{"$lte", math.Inf(-1)}}}},
+		"DoubleNegativeZero": {
+			value: math.Copysign(0, -1),
+			expectedIDs: []any{
+				"double-negative-infinity", "double-negative-zero", "double-zero",
+				"int32-min", "int32-zero",
+				"int64-min", "int64-zero",
+			},
+		},
+		"DoubleSmallest": {
+			value: math.SmallestNonzeroFloat64,
+			expectedIDs: []any{
+				"double-negative-infinity", "double-negative-zero", "double-smallest", "double-zero",
+				"int32-min", "int32-zero",
+				"int64-min", "int64-zero",
+			},
+		},
+		"DoubleNegativeInfinity": {
+			value:       math.Inf(-1),
 			expectedIDs: []any{"double-negative-infinity"},
 		},
-		"LteDoubleSmallest": {
-			filter:      bson.D{{"value", bson.D{{"$lte", math.SmallestNonzeroFloat64}}}},
-			expectedIDs: []any{"double-negative-infinity", "double-negative-zero", "double-smallest", "double-zero", "int32-min", "int32-zero", "int64-min", "int64-zero"},
+		"DoubleNaN": {
+			value:       math.NaN(),
+			expectedIDs: []any{"double-nan"},
 		},
 
-		"LteString": {
-			filter:      bson.D{{"value", bson.D{{"$lte", "foo"}}}},
-			expectedIDs: []any{"array-three", "string", "string-empty"},
+		"String": {
+			value:       "foo",
+			expectedIDs: []any{"array-three", "string", "string-double", "string-empty", "string-whole"},
 		},
-
-		"LteEmptyString": {
-			filter:      bson.D{{"value", bson.D{{"$lte", ""}}}},
+		"StringWhole": {
+			value:       "42",
+			expectedIDs: []any{"string-empty", "string-whole"},
+		},
+		"StringEmpty": {
+			value:       "",
 			expectedIDs: []any{"string-empty"},
 		},
 
-		"LteInt32": {
-			filter:      bson.D{{"value", bson.D{{"$lte", int32(42)}}}},
-			expectedIDs: []any{"array", "array-three", "double-negative-infinity", "double-negative-zero", "double-smallest", "double-zero", "int32", "int32-min", "int32-zero", "int64", "int64-min", "int64-zero"},
+		"Binary": {
+			value:       primitive.Binary{Subtype: 0x80, Data: []byte{42}},
+			expectedIDs: []any{"binary-empty"},
+		},
+		"BinaryNoSubtype": {
+			value:       primitive.Binary{Data: []byte{42}},
+			expectedIDs: []any{"binary-empty"},
+		},
+		"BinaryEmpty": {
+			value:       primitive.Binary{},
+			expectedIDs: []any{"binary-empty"},
 		},
 
-		"LteInt32Min": {
-			filter:      bson.D{{"value", bson.D{{"$lte", int32(math.MinInt32)}}}},
+		"ObjectID": {
+			value:       must.NotFail(primitive.ObjectIDFromHex("000102030405060708091011")),
+			expectedIDs: []any{"objectid", "objectid-empty"},
+		},
+		"ObjectIDEmpty": {
+			value:       primitive.NilObjectID,
+			expectedIDs: []any{"objectid-empty"},
+		},
+
+		"Bool": {
+			value:       true,
+			expectedIDs: []any{"bool-false", "bool-true"},
+		},
+
+		"Datetime": {
+			value:       time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC),
+			expectedIDs: []any{"datetime", "datetime-epoch", "datetime-year-min"},
+		},
+
+		"Null": {
+			value:       nil,
+			expectedIDs: []any{"array-three", "null"},
+		},
+
+		// TODO
+		// "Regex": {
+		// 	value: primitive.Regex{Pattern: "foo"},
+		// 	err: mongo.CommandError{
+		// 		Code:    2,
+		// 		Name:    "BadValue",
+		// 		Message: "Can't have RegEx as arg to predicate over field 'value'.",
+		// 	},
+		// },
+
+		"Int32": {
+			value: int32(42),
+			expectedIDs: []any{
+				"array", "array-three",
+				"double-negative-infinity", "double-negative-zero", "double-smallest", "double-whole", "double-zero",
+				"int32", "int32-min", "int32-zero",
+				"int64", "int64-min", "int64-zero",
+			},
+		},
+		"Int32Min": {
+			value:       int32(math.MinInt32),
 			expectedIDs: []any{"double-negative-infinity", "int32-min", "int64-min"},
 		},
 
-		"LteInt64": {
-			filter:      bson.D{{"value", bson.D{{"$lte", int64(42)}}}},
-			expectedIDs: []any{"array", "array-three", "double-negative-infinity", "double-negative-zero", "double-smallest", "double-zero", "int32", "int32-min", "int32-zero", "int64", "int64-min", "int64-zero"},
+		"Timestamp": {
+			value:       primitive.Timestamp{T: 42, I: 13},
+			expectedIDs: []any{"timestamp", "timestamp-i"},
 		},
-
-		"LteInt64Min": {
-			filter:      bson.D{{"value", bson.D{{"$lte", int64(math.MinInt64)}}}},
-			expectedIDs: []any{"double-negative-infinity", "int64-min"},
-		},
-
-		"LteDatetime": {
-			filter:      bson.D{{"value", bson.D{{"$lte", time.Date(2021, 11, 1, 10, 18, 41, 123000000, time.UTC)}}}},
-			expectedIDs: []any{"datetime-epoch", "datetime-year-min"},
-		},
-
-		"LteTimeStamp": {
-			filter:      bson.D{{"value", bson.D{{"$lte", primitive.Timestamp{T: 41, I: 13}}}}},
+		"TimestampNoI": {
+			value:       primitive.Timestamp{T: 42},
 			expectedIDs: []any{"timestamp-i"},
 		},
-		"LteNull": {
-			filter:      bson.D{{"value", bson.D{{"$lte", nil}}}},
-			expectedIDs: []any{"array-three", "null"},
+		"TimestampNoT": {
+			value:       primitive.Timestamp{I: 13},
+			expectedIDs: []any{"timestamp-i"},
+		},
+
+		"Int64": {
+			value: int64(42),
+			expectedIDs: []any{
+				"array", "array-three",
+				"double-negative-infinity", "double-negative-zero", "double-smallest", "double-whole", "double-zero",
+				"int32", "int32-min", "int32-zero",
+				"int64", "int64-min", "int64-zero",
+			},
+		},
+		"Int64Min": {
+			value:       int64(math.MinInt64),
+			expectedIDs: []any{"double-negative-infinity", "int64-min"},
 		},
 	} {
 		name, tc := name, tc
@@ -761,7 +919,13 @@ func TestQueryComparisonLte(t *testing.T) {
 			t.Parallel()
 
 			var actual []bson.D
-			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			filter := bson.D{{"value", bson.D{{"$lte", tc.value}}}}
+			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			if tc.err.Code != 0 {
+				require.Nil(t, tc.expectedIDs)
+				assertEqualError(t, tc.err, err)
+				return
+			}
 			require.NoError(t, err)
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
