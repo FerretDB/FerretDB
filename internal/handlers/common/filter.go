@@ -480,6 +480,7 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 	return true, nil
 }
 
+// filterFieldExprType handles {field: {$type: value}} filter.
 func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 	switch exprValue := exprValue.(type) {
 	case string:
@@ -576,7 +577,9 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 	}
 }
 
+// matchTypeByAlias matches fieldValue against given type alias.
 func matchTypeByAlias(fieldValue any, alias string) (bool, error) {
+	// check types.Array elements for match to given alias.
 	if array, ok := fieldValue.(*types.Array); ok && alias != "array" {
 		for i := 0; i < array.Len(); i++ {
 			value, err := array.Get(i)
