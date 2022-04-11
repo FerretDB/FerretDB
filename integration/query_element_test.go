@@ -189,7 +189,7 @@ func TestTypeOperator(t *testing.T) {
 			cursor, err := collection.Find(ctx, q, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				require.Equal(t, tc.err, err)
+				assertEqualError(t, tc.err.(mongo.CommandError), err)
 				return
 			}
 			require.NoError(t, err)
