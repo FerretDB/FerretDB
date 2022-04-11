@@ -26,189 +26,54 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-func TestQueryComparisonEq(t *testing.T) {
+func TestQueryComparisonImplicit(t *testing.T) {
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
 	ctx, collection := setup(t, providers...)
 
 	for name, tc := range map[string]struct {
-		q           bson.D
+		filter      bson.D
 		expectedIDs []any
 	}{
-		"EqDouble": {
-			q:           bson.D{{"value", bson.D{{"$eq", 42.13}}}},
-			expectedIDs: []any{"double"},
+		"IDNull": {
+			filter:      bson.D{{"_id", nil}},
+			expectedIDs: []any{},
 		},
-		"EqDoubleNegativeInfinity": {
-			q:           bson.D{{"value", bson.D{{"$eq", math.Inf(-1)}}}},
-			expectedIDs: []any{"double-negative-infinity"},
-		},
-		"EqDoubleNegativeZero": {
-			q:           bson.D{{"value", bson.D{{"$eq", math.Copysign(0, -1)}}}},
-			expectedIDs: []any{"double-negative-zero", "double-zero", "int32-zero", "int64-zero"},
-		},
-		"EqDoublePositiveInfinity": {
-			q:           bson.D{{"value", bson.D{{"$eq", math.Inf(+1)}}}},
-			expectedIDs: []any{"double-positive-infinity"},
-		},
-		"EqDoubleMax": {
-			q:           bson.D{{"value", bson.D{{"$eq", math.MaxFloat64}}}},
-			expectedIDs: []any{"double-max"},
-		},
-		"EqDoubleSmallest": {
-			q:           bson.D{{"value", bson.D{{"$eq", math.SmallestNonzeroFloat64}}}},
-			expectedIDs: []any{"double-smallest"},
-		},
-		"EqDoubleZero": {
-			q:           bson.D{{"value", bson.D{{"$eq", 0.0}}}},
-			expectedIDs: []any{"double-negative-zero", "double-zero", "int32-zero", "int64-zero"},
-		},
-		"EqDoubleNaN": {
-			q:           bson.D{{"value", bson.D{{"$eq", math.NaN()}}}},
-			expectedIDs: []any{"double-nan"},
-		},
-
-		"EqString": {
-			q:           bson.D{{"value", bson.D{{"$eq", "foo"}}}},
-			expectedIDs: []any{"array-three", "string"},
-		},
-		"EqEmptyString": {
-			q:           bson.D{{"value", bson.D{{"$eq", ""}}}},
-			expectedIDs: []any{"string-empty"},
-		},
-
-		"EqBinary": {
-			q:           bson.D{{"value", bson.D{{"$eq", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}}}},
-			expectedIDs: []any{"binary"},
-		},
-		"EqEmptyBinary": {
-			q:           bson.D{{"value", bson.D{{"$eq", primitive.Binary{Data: []byte{}}}}}},
-			expectedIDs: []any{"binary-empty"},
-		},
-
-		"EqBoolFalse": {
-			q:           bson.D{{"value", bson.D{{"$eq", false}}}},
-			expectedIDs: []any{"bool-false"},
-		},
-		"EqBoolTrue": {
-			q:           bson.D{{"value", bson.D{{"$eq", true}}}},
-			expectedIDs: []any{"bool-true"},
-		},
-
-		"EqDatetime": {
-			q:           bson.D{{"value", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))}}}},
-			expectedIDs: []any{"datetime"},
-		},
-		"EqDatetimeEpoch": {
-			q:           bson.D{{"value", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Unix(0, 0))}}}},
-			expectedIDs: []any{"datetime-epoch"},
-		},
-		"EqDatetimeYearMax": {
-			q:           bson.D{{"value", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC))}}}},
-			expectedIDs: []any{"datetime-year-min"},
-		},
-		"EqDatetimeYearMin": {
-			q:           bson.D{{"value", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC))}}}},
-			expectedIDs: []any{"datetime-year-max"},
-		},
-
-		"EqTimestamp": {
-			q:           bson.D{{"value", bson.D{{"$eq", primitive.Timestamp{T: 42, I: 13}}}}},
-			expectedIDs: []any{"timestamp"},
-		},
-		"EqTimestampI": {
-			q:           bson.D{{"value", bson.D{{"$eq", primitive.Timestamp{I: 1}}}}},
-			expectedIDs: []any{"timestamp-i"},
-		},
-
-		"EqNull": {
-			q:           bson.D{{"value", bson.D{{"$eq", nil}}}},
+		"ValueNull": {
+			filter:      bson.D{{"value", nil}},
 			expectedIDs: []any{"array-three", "null"},
 		},
-
-		"EqFindRegexWithoutOption": {
-			q:           bson.D{{"value", bson.D{{"$eq", primitive.Regex{Pattern: "foo"}}}}},
-			expectedIDs: []any{},
-		},
-		"EqFindRegexWithOption": {
-			q:           bson.D{{"value", bson.D{{"$eq", primitive.Regex{Pattern: "foo", Options: "i"}}}}},
-			expectedIDs: []any{"regex"},
-		},
-
-		"EqInt32": {
-			q:           bson.D{{"value", bson.D{{"$eq", int32(42)}}}},
-			expectedIDs: []any{"array", "array-three", "int32", "int64"},
-		},
-		"EqInt32Zero": {
-			q:           bson.D{{"value", bson.D{{"$eq", int32(0)}}}},
-			expectedIDs: []any{"double-negative-zero", "double-zero", "int32-zero", "int64-zero"},
-		},
-		"EqInt32Max": {
-			q:           bson.D{{"value", bson.D{{"$eq", int32(math.MaxInt32)}}}},
-			expectedIDs: []any{"int32-max"},
-		},
-		"EqInt32Min": {
-			q:           bson.D{{"value", bson.D{{"$eq", int32(math.MinInt32)}}}},
-			expectedIDs: []any{"int32-min"},
-		},
-
-		"EqInt64": {
-			q:           bson.D{{"value", bson.D{{"$eq", int64(42)}}}},
-			expectedIDs: []any{"array", "array-three", "int32", "int64"},
-		},
-		"EqInt64Zero": {
-			q:           bson.D{{"value", bson.D{{"$eq", int64(0)}}}},
-			expectedIDs: []any{"double-negative-zero", "double-zero", "int32-zero", "int64-zero"},
-		},
-		"EqInt64Max": {
-			q:           bson.D{{"value", bson.D{{"$eq", int64(math.MaxInt64)}}}},
-			expectedIDs: []any{"int64-max"},
-		},
-		"EqInt64Min": {
-			q:           bson.D{{"value", bson.D{{"$eq", int64(math.MinInt64)}}}},
-			expectedIDs: []any{"int64-min"},
-		},
-
-		"EqNoSuchFieldNull": {
-			q: bson.D{{"no-such-field", bson.D{{"$eq", nil}}}},
+		"NoSuchFieldNull": {
+			filter: bson.D{{"no-such-field", nil}},
 			expectedIDs: []any{
 				"array", "array-empty", "array-three",
 				"binary", "binary-empty",
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
 				"document", "document-empty",
-				"double", "double-max", "double-nan",
-				"double-negative-infinity", "double-negative-zero",
-				"double-positive-infinity", "double-smallest", "double-zero",
-				"int32", "int32-max", "int32-min", "int32-zero", "int64", "int64-max", "int64-min", "int64-zero",
-				"null", "regex", "regex-empty", "string", "string-empty", "timestamp", "timestamp-i",
+				"double", "double-max", "double-nan", "double-negative-infinity", "double-negative-zero",
+				"double-positive-infinity", "double-smallest", "double-whole", "double-zero",
+				"int32", "int32-max", "int32-min", "int32-zero",
+				"int64", "int64-max", "int64-min", "int64-zero",
+				"null",
+				"objectid", "objectid-empty",
+				"regex", "regex-empty",
+				"string", "string-double", "string-empty", "string-whole",
+				"timestamp", "timestamp-i",
 			},
-		},
-		"EqStringNull": {
-			q:           bson.D{{"_id", bson.D{{"$eq", nil}}}},
-			expectedIDs: []any{},
 		},
 
-		"EqCompareNoSuchField": {
-			q: bson.D{{"no-such-field", nil}},
-			expectedIDs: []any{
-				"array", "array-empty", "array-three",
-				"binary", "binary-empty",
-				"bool-false", "bool-true",
-				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
-				"document", "document-empty",
-				"double", "double-max", "double-nan",
-				"double-negative-infinity", "double-negative-zero",
-				"double-positive-infinity", "double-smallest", "double-zero",
-				"int32", "int32-max", "int32-min", "int32-zero", "int64", "int64-max", "int64-min", "int64-zero",
-				"null", "regex", "regex-empty", "string", "string-empty", "timestamp", "timestamp-i",
-			},
+		"ValueNumber": {
+			filter:      bson.D{{"value", 42}},
+			expectedIDs: []any{"array", "array-three", "double-whole", "int32", "int64"},
 		},
-		"EqCompareWithNull": {
-			q:           bson.D{{"_id", nil}},
-			expectedIDs: []any{},
+
+		"ValueRegex": {
+			filter:      bson.D{{"value", primitive.Regex{Pattern: "^fo"}}},
+			expectedIDs: []any{"array-three", "string"},
 		},
 	} {
 		name, tc := name, tc
@@ -216,7 +81,215 @@ func TestQueryComparisonEq(t *testing.T) {
 			t.Parallel()
 
 			var actual []bson.D
-			cursor, err := collection.Find(ctx, tc.q, options.Find().SetSort(bson.D{{"_id", 1}}))
+			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			require.NoError(t, err)
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
+		})
+	}
+}
+
+func TestQueryComparisonEq(t *testing.T) {
+	t.Parallel()
+	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
+	ctx, collection := setup(t, providers...)
+
+	for name, tc := range map[string]struct {
+		filter      bson.D
+		expectedIDs []any
+	}{
+		// TODO document, array
+
+		"EqDouble": {
+			filter:      bson.D{{"value", bson.D{{"$eq", 42.13}}}},
+			expectedIDs: []any{"double"},
+		},
+		"EqDoubleWhole": {
+			filter:      bson.D{{"value", bson.D{{"$eq", 42.0}}}},
+			expectedIDs: []any{"array", "array-three", "double-whole", "int32", "int64"},
+		},
+		"EqDoubleZero": {
+			filter:      bson.D{{"value", bson.D{{"$eq", 0.0}}}},
+			expectedIDs: []any{"double-negative-zero", "double-zero", "int32-zero", "int64-zero"},
+		},
+		"EqDoubleNegativeZero": {
+			filter:      bson.D{{"value", bson.D{{"$eq", math.Copysign(0, -1)}}}},
+			expectedIDs: []any{"double-negative-zero", "double-zero", "int32-zero", "int64-zero"},
+		},
+		"EqDoubleMax": {
+			filter:      bson.D{{"value", bson.D{{"$eq", math.MaxFloat64}}}},
+			expectedIDs: []any{"double-max"},
+		},
+		"EqDoubleSmallest": {
+			filter:      bson.D{{"value", bson.D{{"$eq", math.SmallestNonzeroFloat64}}}},
+			expectedIDs: []any{"double-smallest"},
+		},
+		"EqDoublePositiveInfinity": {
+			filter:      bson.D{{"value", bson.D{{"$eq", math.Inf(+1)}}}},
+			expectedIDs: []any{"double-positive-infinity"},
+		},
+		"EqDoubleNegativeInfinity": {
+			filter:      bson.D{{"value", bson.D{{"$eq", math.Inf(-1)}}}},
+			expectedIDs: []any{"double-negative-infinity"},
+		},
+		"EqDoubleNaN": {
+			filter:      bson.D{{"value", bson.D{{"$eq", math.NaN()}}}},
+			expectedIDs: []any{"double-nan"},
+		},
+
+		"EqString": {
+			filter:      bson.D{{"value", bson.D{{"$eq", "foo"}}}},
+			expectedIDs: []any{"array-three", "string"},
+		},
+		"EqStringDouble": {
+			filter:      bson.D{{"value", bson.D{{"$eq", "42.13"}}}},
+			expectedIDs: []any{"string-double"},
+		},
+		"EqStringWhole": {
+			filter:      bson.D{{"value", bson.D{{"$eq", "42"}}}},
+			expectedIDs: []any{"string-whole"},
+		},
+		"EqStringEmpty": {
+			filter:      bson.D{{"value", bson.D{{"$eq", ""}}}},
+			expectedIDs: []any{"string-empty"},
+		},
+
+		"EqBinary": {
+			filter:      bson.D{{"value", bson.D{{"$eq", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}}}},
+			expectedIDs: []any{"binary"},
+		},
+		"EqBinaryEmpty": {
+			filter:      bson.D{{"value", bson.D{{"$eq", primitive.Binary{Data: []byte{}}}}}},
+			expectedIDs: []any{"binary-empty"},
+		},
+
+		"EqObjectID": {
+			filter:      bson.D{{"value", bson.D{{"$eq", must.NotFail(primitive.ObjectIDFromHex("000102030405060708091011"))}}}},
+			expectedIDs: []any{"objectid"},
+		},
+		"EqObjectIDEmpty": {
+			filter:      bson.D{{"value", bson.D{{"$eq", primitive.NilObjectID}}}},
+			expectedIDs: []any{"objectid-empty"},
+		},
+
+		"EqBoolFalse": {
+			filter:      bson.D{{"value", bson.D{{"$eq", false}}}},
+			expectedIDs: []any{"bool-false"},
+		},
+		"EqBoolTrue": {
+			filter:      bson.D{{"value", bson.D{{"$eq", true}}}},
+			expectedIDs: []any{"bool-true"},
+		},
+
+		"EqDatetime": {
+			filter:      bson.D{{"value", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))}}}},
+			expectedIDs: []any{"datetime"},
+		},
+		"EqDatetimeEpoch": {
+			filter:      bson.D{{"value", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Unix(0, 0))}}}},
+			expectedIDs: []any{"datetime-epoch"},
+		},
+		"EqDatetimeYearMax": {
+			filter:      bson.D{{"value", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC))}}}},
+			expectedIDs: []any{"datetime-year-min"},
+		},
+		"EqDatetimeYearMin": {
+			filter:      bson.D{{"value", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC))}}}},
+			expectedIDs: []any{"datetime-year-max"},
+		},
+
+		"EqNull": {
+			filter:      bson.D{{"value", bson.D{{"$eq", nil}}}},
+			expectedIDs: []any{"array-three", "null"},
+		},
+
+		"EqRegexWithoutOption": {
+			filter:      bson.D{{"value", bson.D{{"$eq", primitive.Regex{Pattern: "foo"}}}}},
+			expectedIDs: []any{},
+		},
+		"EqRegexWithOption": {
+			filter:      bson.D{{"value", bson.D{{"$eq", primitive.Regex{Pattern: "foo", Options: "i"}}}}},
+			expectedIDs: []any{"regex"},
+		},
+		"EqRegexEmpty": {
+			filter:      bson.D{{"value", bson.D{{"$eq", primitive.Regex{}}}}},
+			expectedIDs: []any{"regex-empty"},
+		},
+
+		"EqInt32": {
+			filter:      bson.D{{"value", bson.D{{"$eq", int32(42)}}}},
+			expectedIDs: []any{"array", "array-three", "double-whole", "int32", "int64"},
+		},
+		"EqInt32Zero": {
+			filter:      bson.D{{"value", bson.D{{"$eq", int32(0)}}}},
+			expectedIDs: []any{"double-negative-zero", "double-zero", "int32-zero", "int64-zero"},
+		},
+		"EqInt32Max": {
+			filter:      bson.D{{"value", bson.D{{"$eq", int32(math.MaxInt32)}}}},
+			expectedIDs: []any{"int32-max"},
+		},
+		"EqInt32Min": {
+			filter:      bson.D{{"value", bson.D{{"$eq", int32(math.MinInt32)}}}},
+			expectedIDs: []any{"int32-min"},
+		},
+
+		"EqTimestamp": {
+			filter:      bson.D{{"value", bson.D{{"$eq", primitive.Timestamp{T: 42, I: 13}}}}},
+			expectedIDs: []any{"timestamp"},
+		},
+		"EqTimestampI": {
+			filter:      bson.D{{"value", bson.D{{"$eq", primitive.Timestamp{I: 1}}}}},
+			expectedIDs: []any{"timestamp-i"},
+		},
+
+		"EqInt64": {
+			filter:      bson.D{{"value", bson.D{{"$eq", int64(42)}}}},
+			expectedIDs: []any{"array", "array-three", "double-whole", "int32", "int64"},
+		},
+		"EqInt64Zero": {
+			filter:      bson.D{{"value", bson.D{{"$eq", int64(0)}}}},
+			expectedIDs: []any{"double-negative-zero", "double-zero", "int32-zero", "int64-zero"},
+		},
+		"EqInt64Max": {
+			filter:      bson.D{{"value", bson.D{{"$eq", int64(math.MaxInt64)}}}},
+			expectedIDs: []any{"int64-max"},
+		},
+		"EqInt64Min": {
+			filter:      bson.D{{"value", bson.D{{"$eq", int64(math.MinInt64)}}}},
+			expectedIDs: []any{"int64-min"},
+		},
+
+		"EqIDNull": {
+			filter:      bson.D{{"_id", bson.D{{"$eq", nil}}}},
+			expectedIDs: []any{},
+		},
+		"EqNoSuchFieldNull": {
+			filter: bson.D{{"no-such-field", bson.D{{"$eq", nil}}}},
+			expectedIDs: []any{
+				"array", "array-empty", "array-three",
+				"binary", "binary-empty",
+				"bool-false", "bool-true",
+				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
+				"document", "document-empty",
+				"double", "double-max", "double-nan", "double-negative-infinity", "double-negative-zero",
+				"double-positive-infinity", "double-smallest", "double-whole", "double-zero",
+				"int32", "int32-max", "int32-min", "int32-zero",
+				"int64", "int64-max", "int64-min", "int64-zero",
+				"null",
+				"objectid", "objectid-empty",
+				"regex", "regex-empty",
+				"string", "string-double", "string-empty", "string-whole",
+				"timestamp", "timestamp-i",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var actual []bson.D
+			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			require.NoError(t, err)
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
@@ -391,63 +464,63 @@ func TestQueryComparisonLt(t *testing.T) {
 	ctx, collection := setup(t, providers...)
 
 	for name, tc := range map[string]struct {
-		q           bson.D
+		filter      bson.D
 		expectedIDs []any
 	}{
 		"LtDouble": {
-			q:           bson.D{{"value", bson.D{{"$lt", 42.13}}}},
+			filter:      bson.D{{"value", bson.D{{"$lt", 42.13}}}},
 			expectedIDs: []any{"array", "array-three", "double-negative-infinity", "double-negative-zero", "double-smallest", "double-zero", "int32", "int32-min", "int32-zero", "int64", "int64-min", "int64-zero"},
 		},
 		"LtDoubleNegativeInfinity": {
-			q:           bson.D{{"value", bson.D{{"$lt", math.Inf(-1)}}}},
+			filter:      bson.D{{"value", bson.D{{"$lt", math.Inf(-1)}}}},
 			expectedIDs: []any{},
 		},
 		"LtDoubleSmallest": {
-			q:           bson.D{{"value", bson.D{{"$lt", math.SmallestNonzeroFloat64}}}},
+			filter:      bson.D{{"value", bson.D{{"$lt", math.SmallestNonzeroFloat64}}}},
 			expectedIDs: []any{"double-negative-infinity", "double-negative-zero", "double-zero", "int32-min", "int32-zero", "int64-min", "int64-zero"},
 		},
 
 		"LtString": {
-			q:           bson.D{{"value", bson.D{{"$lt", "goo"}}}},
+			filter:      bson.D{{"value", bson.D{{"$lt", "goo"}}}},
 			expectedIDs: []any{"array-three", "string", "string-empty"},
 		},
 
 		"LtEmptyString": {
-			q:           bson.D{{"value", bson.D{{"$lt", ""}}}},
+			filter:      bson.D{{"value", bson.D{{"$lt", ""}}}},
 			expectedIDs: []any{},
 		},
 
 		"LtInt32": {
-			q:           bson.D{{"value", bson.D{{"$lt", int32(42)}}}},
+			filter:      bson.D{{"value", bson.D{{"$lt", int32(42)}}}},
 			expectedIDs: []any{"double-negative-infinity", "double-negative-zero", "double-smallest", "double-zero", "int32-min", "int32-zero", "int64-min", "int64-zero"},
 		},
 
 		"LtInt32Min": {
-			q:           bson.D{{"value", bson.D{{"$lt", int32(math.MinInt32)}}}},
+			filter:      bson.D{{"value", bson.D{{"$lt", int32(math.MinInt32)}}}},
 			expectedIDs: []any{"double-negative-infinity", "int64-min"},
 		},
 
 		"LtInt64": {
-			q:           bson.D{{"value", bson.D{{"$lt", int64(42)}}}},
+			filter:      bson.D{{"value", bson.D{{"$lt", int64(42)}}}},
 			expectedIDs: []any{"double-negative-infinity", "double-negative-zero", "double-smallest", "double-zero", "int32-min", "int32-zero", "int64-min", "int64-zero"},
 		},
 
 		"LtInt64Min": {
-			q:           bson.D{{"value", bson.D{{"$lt", int64(math.MinInt64)}}}},
+			filter:      bson.D{{"value", bson.D{{"$lt", int64(math.MinInt64)}}}},
 			expectedIDs: []any{"double-negative-infinity"},
 		},
 
 		"LtDatetime": {
-			q:           bson.D{{"value", bson.D{{"$lt", time.Date(2021, 11, 1, 10, 18, 41, 123000000, time.UTC)}}}},
+			filter:      bson.D{{"value", bson.D{{"$lt", time.Date(2021, 11, 1, 10, 18, 41, 123000000, time.UTC)}}}},
 			expectedIDs: []any{"datetime-epoch", "datetime-year-min"},
 		},
 
 		"LtTimeStamp": {
-			q:           bson.D{{"value", bson.D{{"$lt", primitive.Timestamp{T: 41, I: 13}}}}},
+			filter:      bson.D{{"value", bson.D{{"$lt", primitive.Timestamp{T: 41, I: 13}}}}},
 			expectedIDs: []any{"timestamp-i"},
 		},
 		"LtNull": {
-			q:           bson.D{{"value", bson.D{{"$lt", nil}}}},
+			filter:      bson.D{{"value", bson.D{{"$lt", nil}}}},
 			expectedIDs: []any{},
 		},
 	} {
@@ -456,7 +529,7 @@ func TestQueryComparisonLt(t *testing.T) {
 			t.Parallel()
 
 			var actual []bson.D
-			cursor, err := collection.Find(ctx, tc.q, options.Find().SetSort(bson.D{{"_id", 1}}))
+			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			require.NoError(t, err)
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
@@ -471,63 +544,63 @@ func TestQueryComparisonLte(t *testing.T) {
 	ctx, collection := setup(t, providers...)
 
 	for name, tc := range map[string]struct {
-		q           bson.D
+		filter      bson.D
 		expectedIDs []any
 	}{
 		"LteDouble": {
-			q:           bson.D{{"value", bson.D{{"$lte", 42.13}}}},
+			filter:      bson.D{{"value", bson.D{{"$lte", 42.13}}}},
 			expectedIDs: []any{"array", "array-three", "double", "double-negative-infinity", "double-negative-zero", "double-smallest", "double-zero", "int32", "int32-min", "int32-zero", "int64", "int64-min", "int64-zero"},
 		},
 		"LteDoubleNegativeInfinity": {
-			q:           bson.D{{"value", bson.D{{"$lte", math.Inf(-1)}}}},
+			filter:      bson.D{{"value", bson.D{{"$lte", math.Inf(-1)}}}},
 			expectedIDs: []any{"double-negative-infinity"},
 		},
 		"LteDoubleSmallest": {
-			q:           bson.D{{"value", bson.D{{"$lte", math.SmallestNonzeroFloat64}}}},
+			filter:      bson.D{{"value", bson.D{{"$lte", math.SmallestNonzeroFloat64}}}},
 			expectedIDs: []any{"double-negative-infinity", "double-negative-zero", "double-smallest", "double-zero", "int32-min", "int32-zero", "int64-min", "int64-zero"},
 		},
 
 		"LteString": {
-			q:           bson.D{{"value", bson.D{{"$lte", "foo"}}}},
+			filter:      bson.D{{"value", bson.D{{"$lte", "foo"}}}},
 			expectedIDs: []any{"array-three", "string", "string-empty"},
 		},
 
 		"LteEmptyString": {
-			q:           bson.D{{"value", bson.D{{"$lte", ""}}}},
+			filter:      bson.D{{"value", bson.D{{"$lte", ""}}}},
 			expectedIDs: []any{"string-empty"},
 		},
 
 		"LteInt32": {
-			q:           bson.D{{"value", bson.D{{"$lte", int32(42)}}}},
+			filter:      bson.D{{"value", bson.D{{"$lte", int32(42)}}}},
 			expectedIDs: []any{"array", "array-three", "double-negative-infinity", "double-negative-zero", "double-smallest", "double-zero", "int32", "int32-min", "int32-zero", "int64", "int64-min", "int64-zero"},
 		},
 
 		"LteInt32Min": {
-			q:           bson.D{{"value", bson.D{{"$lte", int32(math.MinInt32)}}}},
+			filter:      bson.D{{"value", bson.D{{"$lte", int32(math.MinInt32)}}}},
 			expectedIDs: []any{"double-negative-infinity", "int32-min", "int64-min"},
 		},
 
 		"LteInt64": {
-			q:           bson.D{{"value", bson.D{{"$lte", int64(42)}}}},
+			filter:      bson.D{{"value", bson.D{{"$lte", int64(42)}}}},
 			expectedIDs: []any{"array", "array-three", "double-negative-infinity", "double-negative-zero", "double-smallest", "double-zero", "int32", "int32-min", "int32-zero", "int64", "int64-min", "int64-zero"},
 		},
 
 		"LteInt64Min": {
-			q:           bson.D{{"value", bson.D{{"$lte", int64(math.MinInt64)}}}},
+			filter:      bson.D{{"value", bson.D{{"$lte", int64(math.MinInt64)}}}},
 			expectedIDs: []any{"double-negative-infinity", "int64-min"},
 		},
 
 		"LteDatetime": {
-			q:           bson.D{{"value", bson.D{{"$lte", time.Date(2021, 11, 1, 10, 18, 41, 123000000, time.UTC)}}}},
+			filter:      bson.D{{"value", bson.D{{"$lte", time.Date(2021, 11, 1, 10, 18, 41, 123000000, time.UTC)}}}},
 			expectedIDs: []any{"datetime-epoch", "datetime-year-min"},
 		},
 
 		"LteTimeStamp": {
-			q:           bson.D{{"value", bson.D{{"$lte", primitive.Timestamp{T: 41, I: 13}}}}},
+			filter:      bson.D{{"value", bson.D{{"$lte", primitive.Timestamp{T: 41, I: 13}}}}},
 			expectedIDs: []any{"timestamp-i"},
 		},
 		"LteNull": {
-			q:           bson.D{{"value", bson.D{{"$lte", nil}}}},
+			filter:      bson.D{{"value", bson.D{{"$lte", nil}}}},
 			expectedIDs: []any{"array-three", "null"},
 		},
 	} {
@@ -536,7 +609,7 @@ func TestQueryComparisonLte(t *testing.T) {
 			t.Parallel()
 
 			var actual []bson.D
-			cursor, err := collection.Find(ctx, tc.q, options.Find().SetSort(bson.D{{"_id", 1}}))
+			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			require.NoError(t, err)
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
