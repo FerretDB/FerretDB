@@ -97,7 +97,7 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 		// {$and: [{expr1}, {expr2}, ...]}
 		exprs, err := AssertType[*types.Array](filterValue)
 		if err != nil {
-			return false, err
+			return false, NewErrorMsg(ErrBadValue, "$and must be an array")
 		}
 		for i := 0; i < exprs.Len(); i++ {
 			expr := must.NotFail(exprs.Get(i)).(*types.Document)
