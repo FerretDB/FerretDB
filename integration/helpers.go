@@ -59,6 +59,8 @@ func convert(t testing.TB, v any) any {
 			Subtype: types.BinarySubtype(v.Subtype),
 			B:       v.Data,
 		}
+	case primitive.ObjectID:
+		return types.ObjectID(v)
 	case bool:
 		return v
 	case primitive.DateTime:
@@ -116,6 +118,7 @@ func assertEqualError(t testing.TB, expected mongo.CommandError, actual error) b
 	}
 
 	// raw part might be useful if assertion fails
+	require.Nil(t, expected.Raw)
 	expected.Raw = a.Raw
 
 	return assert.Equal(t, expected, a)
