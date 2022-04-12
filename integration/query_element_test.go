@@ -82,18 +82,10 @@ func TestExistsOperator(t *testing.T) {
 				{"find", collection.Name()},
 				{"filter", tc.q},
 			})
-			if err != nil {
-				t.Fatal(err)
-				return
-			}
+			require.NoError(t, err)
 
 			var actual []bson.D
 			err = cursor.All(ctx, &actual)
-			if err != nil {
-				t.Fatal(err)
-				return
-			}
-
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
 		})
