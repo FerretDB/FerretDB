@@ -2,7 +2,6 @@ module github.com/FerretDB/FerretDB
 
 go 1.18
 
-replace github.com/tigrisdata/tigrisdb-client-go => ../../tigris/tigrisdb-client-go
 
 require (
 	github.com/AlekSi/pointer v1.2.0
