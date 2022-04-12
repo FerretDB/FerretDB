@@ -3,37 +3,37 @@
 version: '3.8'
 
 services:
-  # postgres:
-  #   image: postgres:14.2
-  #   container_name: ferretdb_postgres
-  #   ports:
-  #     - 127.0.0.1:5432:5432
-  #   extra_hosts:
-  #     - 'host.docker.internal:host-gateway'
-  #   environment:
-  #     # UTC−03:30/−02:30. Set to catch timezone problems.
-  #     - TZ=America/St_Johns
-  #     - POSTGRES_HOST_AUTH_METHOD=trust
-  #     - POSTGRES_DB=ferretdb
+  postgres:
+    image: postgres:14.2
+    container_name: ferretdb_postgres
+    ports:
+      - 127.0.0.1:5432:5432
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    environment:
+      # UTC−03:30/−02:30. Set to catch timezone problems.
+      - TZ=America/St_Johns
+      - POSTGRES_HOST_AUTH_METHOD=trust
+      - POSTGRES_DB=ferretdb
 
-  # tigrisdb_fdb:
-  #   image: foundationdb/foundationdb:6.3.23
-  #   container_name: ferretdb_tigrisdb_fdb
-  #   ports:
-  #     - 127.0.0.1:4500:4500
-  #   volumes:
-  #     - tigrisdata:/var/fdb
+  tigrisdb_fdb:
+    image: foundationdb/foundationdb:6.3.23
+    container_name: ferretdb_tigrisdb_fdb
+    ports:
+      - 127.0.0.1:4500:4500
+    volumes:
+      - tigrisdata:/var/fdb
 
-  # tigrisdb:
-  #   image: tigrisdata/tigrisdb:main
-  #   container_name: ferretdb_tigrisdb
-  #   ports:
-  #     - 127.0.0.1:8081:8081
-  #   volumes:
-  #     - tigrisdata:/etc/foundationdb
-  #   command: bash -c 'fdbcli --exec "configure new single memory" && /server/service'
-  #   depends_on:
-  #     - tigrisdb_fdb
+  tigrisdb:
+    image: tigrisdata/tigrisdb:main
+    container_name: ferretdb_tigrisdb
+    ports:
+      - 127.0.0.1:8081:8081
+    volumes:
+      - tigrisdata:/etc/foundationdb
+    command: bash -c 'fdbcli --exec "configure new single memory" && /server/service'
+    depends_on:
+      - tigrisdb_fdb
 
   # for proxy mode and mongosh
   mongodb:
