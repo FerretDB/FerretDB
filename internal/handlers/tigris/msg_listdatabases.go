@@ -20,6 +20,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -36,7 +37,6 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 	}); err != nil {
 		return nil, err
 	}
-
 	common.Ignored(document, h.l, "comment", "authorizedDatabases")
 
 	databaseNames, err := h.client.conn.ListDatabases(ctx)
@@ -45,14 +45,26 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 	}
 
 	databases := types.MakeArray(len(databaseNames))
+	for _, n := range databaseNames {
+		sizeOnDisk := int32(0)
+		d := must.NotFail(types.NewDocument(
+			"name", n,
+			"sizeOnDisk", sizeOnDisk,
+			"empty", sizeOnDisk == 0,
+		))
+		if err = databases.Append(d); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{types.MustNewDocument(
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"databases", databases,
 			"ok", float64(1),
-		)},
+		))},
 	})
+
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
