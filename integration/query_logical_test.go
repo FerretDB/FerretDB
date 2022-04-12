@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
@@ -44,7 +45,7 @@ func TestQueryLogicalAnd(t *testing.T) {
 					bson.D{{"value", bson.D{{"$lte", 42}}}},
 				},
 			}},
-			expectedIDs: []any{"double-smallest", "int32", "int64"},
+			expectedIDs: []any{"double-smallest", "double-whole", "int32", "int64"},
 		},
 		"BadInput": {
 			q: bson.D{{"$and", nil}},
@@ -179,7 +180,9 @@ func TestQueryLogicalNor(t *testing.T) {
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
 				"double-nan", "double-negative-infinity", "double-negative-zero", "double-zero",
 				"int32-min", "int32-zero", "int64-min", "int64-zero",
-				"null", "regex", "regex-empty", "string", "string-empty", "timestamp", "timestamp-i",
+				"null", "objectid", "objectid-empty",
+				"regex", "regex-empty", "string", "string-double", "string-empty", "string-whole",
+				"timestamp", "timestamp-i",
 			},
 		},
 		"BadInput": {
@@ -210,7 +213,7 @@ func TestQueryLogicalNor(t *testing.T) {
 			t.Parallel()
 
 			var actual []bson.D
-			cursor, err := collection.Find(ctx, tc.q)
+			cursor, err := collection.Find(ctx, tc.q, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
 				assertEqualError(t, tc.err.(mongo.CommandError), err)
