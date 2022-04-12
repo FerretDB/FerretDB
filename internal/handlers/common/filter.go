@@ -168,13 +168,13 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 		exprValue := must.NotFail(expr.Get(exprKey))
 
 		fieldValue, err := doc.Get(filterKey)
-		if err != nil {
+		if err != nil && exprKey != "$exists" {
 			// comparing not existent field with null should return true
 			if _, ok := exprValue.(types.NullType); ok {
 				return true, nil
 			}
-
-			return false, nil // no error - the field is just not present
+			// exit when not $exists filter and no such field
+			return false, nil
 		}
 
 		switch exprKey {
@@ -308,6 +308,13 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 		case "$bitsAnySet":
 			// {field: {$bitsAnySet: value}}
 			res, err := filterFieldExprBitsAnySet(fieldValue, exprValue)
+			if !res || err != nil {
+				return false, err
+			}
+
+		case "$exists":
+			// {field: {$exists: value}}
+			res, err := filterFieldExprExists(fieldValue != nil, exprValue)
 			if !res || err != nil {
 				return false, err
 			}
@@ -485,4 +492,22 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// filterFieldExprExists handles {field: {$exists: value}} filter.
+func filterFieldExprExists(fieldExist bool, exprValue any) (bool, error) {
+	expr, ok := exprValue.(bool)
+	// return all documents if filter value is not bool type
+	if !ok {
+		return true, nil
+	}
+
+	switch {
+	case fieldExist && expr:
+		return true, nil
+	case !fieldExist && !expr:
+		return true, nil
+	default:
+		return false, nil
+	}
 }
