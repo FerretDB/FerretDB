@@ -37,13 +37,13 @@ func TestTypeOperator(t *testing.T) {
 		expectedIDs []any
 		err         error
 	}{
-		"array": {
+		"Array": {
 			v: "array",
 			expectedIDs: []any{
 				"array", "array-empty", "array-three",
 			},
 		},
-		"bad-type-code": {
+		"BadTypeCode": {
 			v: 42,
 			err: mongo.CommandError{
 				Code:    2,
@@ -51,7 +51,7 @@ func TestTypeOperator(t *testing.T) {
 				Name:    "BadValue",
 			},
 		},
-		"bad-input-string": {
+		"BadInputString": {
 			v: "123",
 			err: mongo.CommandError{
 				Code:    2,
@@ -59,7 +59,7 @@ func TestTypeOperator(t *testing.T) {
 				Name:    "BadValue",
 			},
 		},
-		"bad-type-name": {
+		"BadTypeName": {
 			v: "float",
 			err: mongo.CommandError{
 				Code:    2,
@@ -67,39 +67,39 @@ func TestTypeOperator(t *testing.T) {
 				Name:    "BadValue",
 			},
 		},
-		"not-matched-type": {
+		"NotMatchedType": {
 			v:           "decimal",
 			expectedIDs: []any{},
 		},
-		"integer": {
+		"Integer": {
 			v:           "int",
 			expectedIDs: []any{"array", "array-three", "int32", "int32-max", "int32-min", "int32-zero"},
 		},
-		"integer-numerical-input": {
+		"IntegerNumericalInput": {
 			v:           16,
 			expectedIDs: []any{"array", "array-three", "int32", "int32-max", "int32-min", "int32-zero"},
 		},
-		"long": {
+		"Long": {
 			v:           "long",
 			expectedIDs: []any{"int64", "int64-max", "int64-min", "int64-zero"},
 		},
-		"regex": {
+		"Regex": {
 			v:           "regex",
 			expectedIDs: []any{"regex", "regex-empty"},
 		},
-		"null": {
+		"Null": {
 			v:           "null",
 			expectedIDs: []any{"array-three", "null"},
 		},
-		"timestamp": {
+		"Timestamp": {
 			v:           "timestamp",
 			expectedIDs: []any{"timestamp", "timestamp-i"},
 		},
-		"object": {
+		"Document": {
 			v:           "object",
 			expectedIDs: []any{"document", "document-empty"},
 		},
-		"double": {
+		"Double": {
 			v: "double",
 			expectedIDs: []any{
 				"double", "double-max", "double-nan", "double-negative-infinity",
@@ -107,35 +107,35 @@ func TestTypeOperator(t *testing.T) {
 				"double-smallest", "double-zero",
 			},
 		},
-		"string": {
+		"String": {
 			v:           "string",
 			expectedIDs: []any{"array-three", "string", "string-empty"},
 		},
-		"binData": {
+		"Binary": {
 			v:           "binData",
 			expectedIDs: []any{"binary", "binary-empty"},
 		},
-		"bool": {
+		"Bool": {
 			v:           "bool",
 			expectedIDs: []any{"bool-false", "bool-true"},
 		},
-		"datetime": {
+		"Datetime": {
 			v:           "date",
 			expectedIDs: []any{"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min"},
 		},
-		"type-array-aliases": {
+		"TypeArrayAliases": {
 			v:           []any{"bool", "binData"},
 			expectedIDs: []any{"binary", "binary-empty", "bool-false", "bool-true"},
 		},
-		"type-array-codes": {
+		"TypeArrayCodes": {
 			v:           []any{5, 8},
 			expectedIDs: []any{"binary", "binary-empty", "bool-false", "bool-true"},
 		},
-		"type-array-alias-and-code-mixed": {
+		"TypeArrayAliasAndCodeMixed": {
 			v:           []any{5, "binData"},
 			expectedIDs: []any{"binary", "binary-empty"},
 		},
-		"type-array-bad-value": {
+		"TypeArrayBadValue": {
 			v: []any{"binData", -123},
 			err: mongo.CommandError{
 				Code:    2,
@@ -143,7 +143,7 @@ func TestTypeOperator(t *testing.T) {
 				Name:    "BadValue",
 			},
 		},
-		"type-array-bad-value-nan": {
+		"TypeArrayBadValueNan": {
 			v: []any{"binData", math.NaN()},
 			err: mongo.CommandError{
 				Code:    2,
@@ -151,7 +151,7 @@ func TestTypeOperator(t *testing.T) {
 				Name:    "BadValue",
 			},
 		},
-		"type-array-bad-value-plus-inf": {
+		"TypeArrayBadValuePlusInf": {
 			v: []any{"binData", math.Inf(1)},
 			err: mongo.CommandError{
 				Code:    2,
@@ -159,7 +159,7 @@ func TestTypeOperator(t *testing.T) {
 				Name:    "BadValue",
 			},
 		},
-		"type-array-bad-value-minus-inf": {
+		"TypeArrayBadValueMinusInf": {
 			v: []any{"binData", math.Inf(-1)},
 			err: mongo.CommandError{
 				Code:    2,
@@ -167,7 +167,7 @@ func TestTypeOperator(t *testing.T) {
 				Name:    "BadValue",
 			},
 		},
-		"type-array-bad-value-negative-float": {
+		"TypeArrayBadValueNegativeFloat": {
 			v: []any{"binData", -1.123},
 			err: mongo.CommandError{
 				Code:    2,
@@ -175,7 +175,7 @@ func TestTypeOperator(t *testing.T) {
 				Name:    "BadValue",
 			},
 		},
-		"type-array-float": {
+		"TypeArrayFloat": {
 			v:           []any{5, 8.0},
 			expectedIDs: []any{"binary", "binary-empty", "bool-false", "bool-true"},
 		},
