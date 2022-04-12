@@ -20,7 +20,6 @@ import (
 
 	"github.com/tigrisdata/tigrisdb-client-go/driver"
 
-	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -41,12 +40,16 @@ func (h *Handler) fetch(ctx context.Context, db, collection string) ([]*types.Do
 		if !ok {
 			break
 		}
-		anyDoc, err := fjson.Unmarshal((json.RawMessage)(elem))
+		var anyDoc map[string]any
+		err := json.Unmarshal((json.RawMessage)(elem), &anyDoc)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
-		res = append(res, anyDoc.(*types.Document))
+		doc, err := types.NewDocumentFromMap(anyDoc)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, doc)
 	}
-
 	return res, nil
 }
