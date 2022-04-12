@@ -193,24 +193,40 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 		case "$gt":
 			// {field: {$gt: exprValue}}
+			if _, ok := exprValue.(types.Regex); ok {
+				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
+				return false, NewErrorMsg(ErrBadValue, msg)
+			}
 			if compare(fieldValue, exprValue) != greater {
 				return false, nil
 			}
 
 		case "$gte":
 			// {field: {$gte: exprValue}}
+			if _, ok := exprValue.(types.Regex); ok {
+				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
+				return false, NewErrorMsg(ErrBadValue, msg)
+			}
 			if c := compare(fieldValue, exprValue); c != greater && c != equal {
 				return false, nil
 			}
 
 		case "$lt":
 			// {field: {$lt: exprValue}}
+			if _, ok := exprValue.(types.Regex); ok {
+				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
+				return false, NewErrorMsg(ErrBadValue, msg)
+			}
 			if c := compare(fieldValue, exprValue); c != less {
 				return false, nil
 			}
 
 		case "$lte":
 			// {field: {$lte: exprValue}}
+			if _, ok := exprValue.(types.Regex); ok {
+				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
+				return false, NewErrorMsg(ErrBadValue, msg)
+			}
 			if c := compare(fieldValue, exprValue); c != less && c != equal {
 				return false, nil
 			}

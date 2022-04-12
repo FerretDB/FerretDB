@@ -142,28 +142,6 @@ func TestFind(t *testing.T) {
 				)),
 			),
 		},
-		"ValueLtGt": {
-			schemas: []string{"monila"},
-			req: types.MustNewDocument(
-				"find", "actor",
-				"filter", types.MustNewDocument(
-					"last_name", "HOFFMAN",
-					"actor_id", types.MustNewDocument(
-						"$gt", int32(50),
-						"$lt", int32(100),
-					),
-				),
-			),
-			resp: types.MustNewArray(
-				types.MustNewDocument(
-					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x4f, 0x00, 0x00, 0x00, 0x4f},
-					"actor_id", int32(79),
-					"first_name", "MAE",
-					"last_name", "HOFFMAN",
-					"last_update", lastUpdate,
-				),
-			),
-		},
 		"InLteGte": {
 			schemas: []string{"monila"},
 			req: types.MustNewDocument(
