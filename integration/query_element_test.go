@@ -39,37 +39,36 @@ func TestExistsOperator(t *testing.T) {
 	for name, tc := range map[string]struct {
 		q           bson.D
 		expectedIDs []any
-		err         error
 	}{
-		"query-all": {
+		"Exists": {
 			q:           bson.D{{"_id", bson.D{{"$exists", true}}}},
 			expectedIDs: []any{"empty-array", "nan", "null", "string", "two-fields"},
 		},
-		"query-second-field": {
+		"ExistsSecondField": {
 			q:           bson.D{{"field", bson.D{{"$exists", true}}}},
 			expectedIDs: []any{"two-fields"},
 		},
-		"query-null-field": {
+		"NullField": {
 			q:           bson.D{{"null", bson.D{{"$exists", true}}}},
 			expectedIDs: []any{"null"},
 		},
-		"query-non-existent-field": {
+		"NonExistentField": {
 			q:           bson.D{{"non-existent", bson.D{{"$exists", true}}}},
 			expectedIDs: []any{},
 		},
-		"query-empty-array": {
+		"EmptyArray": {
 			q:           bson.D{{"empty-array", bson.D{{"$exists", true}}}},
 			expectedIDs: []any{"empty-array"},
 		},
-		"query-nan-field": {
+		"NanField": {
 			q:           bson.D{{"nan", bson.D{{"$exists", true}}}},
 			expectedIDs: []any{"nan"},
 		},
-		"query-exists-false": {
+		"ExistsFalse": {
 			q:           bson.D{{"field", bson.D{{"$exists", false}}}},
 			expectedIDs: []any{"empty-array", "nan", "null", "string"},
 		},
-		"query-non-bool": {
+		"NonBool": {
 			q:           bson.D{{"_id", bson.D{{"$exists", -123}}}},
 			expectedIDs: []any{"empty-array", "nan", "null", "string", "two-fields"},
 		},
@@ -79,22 +78,19 @@ func TestExistsOperator(t *testing.T) {
 			t.Parallel()
 
 			db := collection.Database()
-			cursor, err := db.RunCommandCursor(ctx,
-				bson.D{
-					{"find", collection.Name()},
-					{"filter", tc.q},
-				})
-			if tc.err != nil {
-				require.Nil(t, tc.expectedIDs)
-				require.Equal(t, tc.err, err)
+			cursor, err := db.RunCommandCursor(ctx, bson.D{
+				{"find", collection.Name()},
+				{"filter", tc.q},
+			})
+			if err != nil {
+				t.Fatal(err)
 				return
 			}
 
 			var actual []bson.D
 			err = cursor.All(ctx, &actual)
-			if tc.err != nil {
-				require.Nil(t, tc.expectedIDs)
-				require.Equal(t, tc.err, err)
+			if err != nil {
+				t.Fatal(err)
 				return
 			}
 
