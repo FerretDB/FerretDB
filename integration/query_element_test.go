@@ -102,14 +102,14 @@ func TestTypeOperator(t *testing.T) {
 		"Double": {
 			v: "double",
 			expectedIDs: []any{
-				"double", "double-max", "double-nan", "double-negative-infinity",
-				"double-negative-zero", "double-positive-infinity",
-				"double-smallest", "double-zero",
+				"double", "double-max", "double-nan",
+				"double-negative-infinity", "double-negative-zero", "double-positive-infinity",
+				"double-smallest", "double-whole", "double-zero",
 			},
 		},
 		"String": {
 			v:           "string",
-			expectedIDs: []any{"array-three", "string", "string-empty"},
+			expectedIDs: []any{"array-three", "string", "string-double", "string-empty", "string-whole"},
 		},
 		"Binary": {
 			v:           "binData",
