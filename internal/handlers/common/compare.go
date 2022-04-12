@@ -192,11 +192,10 @@ func compare(docValue, filter any) compareResult {
 
 	case *types.Array:
 		for i := 0; i < docValue.Len(); i++ {
-			arrValue := must.NotFail(docValue.Get(i)).(any)
+			arrValue := must.NotFail(docValue.Get(i))
 
-			_, isValueArr := arrValue.(*types.Array)
-			_, isValueDoc := arrValue.(*types.Document)
-			if isValueArr || isValueDoc {
+			switch arrValue.(type) {
+			case *types.Document, *types.Array:
 				return notEqual
 			}
 
