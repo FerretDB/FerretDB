@@ -76,6 +76,46 @@ func TestQueryComparisonImplicit(t *testing.T) {
 			filter:      bson.D{{"value", primitive.Regex{Pattern: "^fo"}}},
 			expectedIDs: []any{"array-three", "string"},
 		},
+    
+		"EqNoSuchFieldNull": {
+			q: bson.D{{"no-such-field", bson.D{{"$eq", nil}}}},
+			expectedIDs: []any{
+				"array", "array-empty", "array-three",
+				"binary", "binary-empty",
+				"bool-false", "bool-true",
+				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
+				"document", "document-empty",
+				"double", "double-max", "double-nan",
+				"double-negative-infinity", "double-negative-zero",
+				"double-positive-infinity", "double-smallest", "double-zero",
+				"int32", "int32-max", "int32-min", "int32-zero", "int64", "int64-max", "int64-min", "int64-zero",
+				"null", "regex", "regex-empty", "string", "string-empty", "timestamp", "timestamp-i",
+			},
+		},
+		"EqStringNull": {
+			q:           bson.D{{"_id", bson.D{{"$eq", nil}}}},
+			expectedIDs: []any{},
+		},
+
+		"EqCompareNoSuchField": {
+			q: bson.D{{"no-such-field", nil}},
+			expectedIDs: []any{
+				"array", "array-empty", "array-three",
+				"binary", "binary-empty",
+				"bool-false", "bool-true",
+				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
+				"document", "document-empty",
+				"double", "double-max", "double-nan",
+				"double-negative-infinity", "double-negative-zero",
+				"double-positive-infinity", "double-smallest", "double-zero",
+				"int32", "int32-max", "int32-min", "int32-zero", "int64", "int64-max", "int64-min", "int64-zero",
+				"null", "regex", "regex-empty", "string", "string-empty", "timestamp", "timestamp-i",
+			},
+		},
+		"EqCompareWithNull": {
+			q:           bson.D{{"_id", nil}},
+			expectedIDs: []any{},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -725,7 +765,6 @@ func TestQueryComparisonLt(t *testing.T) {
 			value:       int32(math.MinInt32),
 			expectedIDs: []any{"double-negative-infinity", "int64-min"},
 		},
-
 		"Timestamp": {
 			value:       primitive.Timestamp{T: 43, I: 14},
 			expectedIDs: []any{"timestamp", "timestamp-i"},
@@ -862,7 +901,6 @@ func TestQueryComparisonLte(t *testing.T) {
 			value:       time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC),
 			expectedIDs: []any{"datetime", "datetime-epoch", "datetime-year-min"},
 		},
-
 		"Null": {
 			value:       nil,
 			expectedIDs: []any{"array-three", "null"},
