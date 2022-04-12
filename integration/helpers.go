@@ -18,9 +18,11 @@ package integration
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -57,6 +59,8 @@ func convert(t testing.TB, v any) any {
 			Subtype: types.BinarySubtype(v.Subtype),
 			B:       v.Data,
 		}
+	case primitive.ObjectID:
+		return types.ObjectID(v)
 	case bool:
 		return v
 	case primitive.DateTime:
@@ -102,6 +106,22 @@ func assertEqualDocuments(t testing.TB, expected, actual bson.D) bool {
 	expectedDoc := convertDocument(t, expected)
 	actualDoc := convertDocument(t, actual)
 	return testutil.AssertEqual(t, expectedDoc, actualDoc)
+}
+
+// assertEqualError asserts that expected error is the same as actual, ignoring the Raw part.
+func assertEqualError(t testing.TB, expected mongo.CommandError, actual error) bool {
+	t.Helper()
+
+	a, ok := actual.(mongo.CommandError)
+	if !ok {
+		return assert.Equal(t, expected, actual)
+	}
+
+	// raw part might be useful if assertion fails
+	require.Nil(t, expected.Raw)
+	expected.Raw = a.Raw
+
+	return assert.Equal(t, expected, a)
 }
 
 // collectIDs returns all _id values from given documents.

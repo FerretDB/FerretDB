@@ -35,7 +35,7 @@ func TestMostCommandsAreCaseSensitive(t *testing.T) {
 	res := db.RunCommand(ctx, bson.D{{"listcollections", 1}})
 	err := res.Err()
 	require.Error(t, err)
-	assert.Equal(t, mongo.CommandError{Code: 59, Name: "CommandNotFound", Message: `no such command: 'listcollections'`}, err)
+	assertEqualError(t, mongo.CommandError{Code: 59, Name: "CommandNotFound", Message: `no such command: 'listcollections'`}, err)
 
 	res = db.RunCommand(ctx, bson.D{{"listCollections", 1}})
 	assert.NoError(t, res.Err())
