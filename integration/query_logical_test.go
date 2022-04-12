@@ -245,18 +245,10 @@ func TestQueryLogicalNot(t *testing.T) {
 				Message: "$not needs a regex or a document",
 			},
 		},
-		"ValueNull": {
+		"NotEqNull": {
 			filter: bson.D{{"value", bson.D{{"$not", bson.D{{"$eq", nil}}}}}},
-			err: mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "$not needs a regex or a document",
-			},
-		},
-		"NoSuchFieldNull": {
-			filter: bson.D{{"no-such-field", bson.D{{"$not", 0}}}},
 			expectedIDs: []any{
-				"array", "array-empty", "array-three",
+				"array", "array-empty",
 				"binary", "binary-empty",
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
@@ -265,19 +257,12 @@ func TestQueryLogicalNot(t *testing.T) {
 				"double-positive-infinity", "double-smallest", "double-whole", "double-zero",
 				"int32", "int32-max", "int32-min", "int32-zero",
 				"int64", "int64-max", "int64-min", "int64-zero",
-				"null",
 				"objectid", "objectid-empty",
 				"regex", "regex-empty",
 				"string", "string-double", "string-empty", "string-whole",
 				"timestamp", "timestamp-i",
 			},
 		},
-
-		"ValueNumber": {
-			filter:      bson.D{{"value", bson.D{{"$not", 42}}}},
-			expectedIDs: []any{"array", "array-three", "double-whole", "int32", "int64"},
-		},
-
 		"ValueRegex": {
 			filter: bson.D{{"value", bson.D{{"$not", primitive.Regex{Pattern: "^fo"}}}}},
 			expectedIDs: []any{
@@ -302,13 +287,14 @@ func TestQueryLogicalNot(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			var actual []bson.D
 			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err.Code != 0 {
+			if err != nil {
 				require.Nil(t, tc.expectedIDs)
 				assertEqualError(t, tc.err, err)
 				return
 			}
+
+			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))

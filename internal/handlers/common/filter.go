@@ -284,10 +284,20 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 		case "$not":
 			// {field: {$not: {expr}}}
-			expr := exprValue.(*types.Document)
-			res, err := filterFieldExpr(doc, filterKey, expr)
-			if res || err != nil {
-				return false, err
+			switch exprValue := exprValue.(type) {
+			case *types.Document:
+				res, err := filterFieldExpr(doc, filterKey, exprValue)
+				if res || err != nil {
+					return false, err
+				}
+			case types.Regex:
+				optionsAny, _ := expr.Get("$options")
+				res, err := filterFieldExprRegex(fieldValue, exprValue, optionsAny)
+				if res || err != nil {
+					return false, err
+				}
+			default:
+				return false, NewErrorMsg(ErrBadValue, "$not needs a regex or a document")
 			}
 
 		case "$regex":
