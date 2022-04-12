@@ -15,7 +15,7 @@ require (
 	github.com/stretchr/testify v1.7.1
 	github.com/tigrisdata/tigrisdb-client-go v1.0.0-alpha.3
 	go.uber.org/zap v1.21.0
-	golang.org/x/crypto v0.0.0-20220408190544-5352b0902921 // indirect; always use @latest
+	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd // indirect; always use @latest
 	golang.org/x/exp v0.0.0-20220407100705-7b9b53b0aca4
 	golang.org/x/sys v0.0.0-20220408201424-a24fb2fb8a0f
 )
