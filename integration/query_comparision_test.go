@@ -76,9 +76,9 @@ func TestQueryComparisonImplicit(t *testing.T) {
 			filter:      bson.D{{"value", primitive.Regex{Pattern: "^fo"}}},
 			expectedIDs: []any{"array-three", "string"},
 		},
-    
+
 		"EqNoSuchFieldNull": {
-			q: bson.D{{"no-such-field", bson.D{{"$eq", nil}}}},
+			filter: bson.D{{"no-such-field", bson.D{{"$eq", nil}}}},
 			expectedIDs: []any{
 				"array", "array-empty", "array-three",
 				"binary", "binary-empty",
@@ -93,12 +93,12 @@ func TestQueryComparisonImplicit(t *testing.T) {
 			},
 		},
 		"EqStringNull": {
-			q:           bson.D{{"_id", bson.D{{"$eq", nil}}}},
+			filter:      bson.D{{"_id", bson.D{{"$eq", nil}}}},
 			expectedIDs: []any{},
 		},
 
 		"EqCompareNoSuchField": {
-			q: bson.D{{"no-such-field", nil}},
+			filter: bson.D{{"no-such-field", nil}},
 			expectedIDs: []any{
 				"array", "array-empty", "array-three",
 				"binary", "binary-empty",
@@ -113,7 +113,7 @@ func TestQueryComparisonImplicit(t *testing.T) {
 			},
 		},
 		"EqCompareWithNull": {
-			q:           bson.D{{"_id", nil}},
+			filter:      bson.D{{"_id", nil}},
 			expectedIDs: []any{},
 		},
 	} {
