@@ -111,7 +111,7 @@ func TestQueryElementType(t *testing.T) {
 			expectedIDs: []any{"document", "document-empty"},
 		},
 		"Array": {
-			v: "array",
+			v:           "array",
 			expectedIDs: []any{"array", "array-empty", "array-three"},
 		},
 		"Double": {
