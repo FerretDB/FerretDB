@@ -193,6 +193,7 @@ func getBinaryParams(fieldValue any, maskValue any) (types.Binary, types.Binary,
 	return fieldBinary, maskBinary, nil
 }
 
+// parseTypeCode returns typeCode and error by given type code alias.
 func parseTypeCode(alias string) (typeCode, error) {
 	code, ok := aliasToTypeCode[alias]
 	if !ok {

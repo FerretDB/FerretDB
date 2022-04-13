@@ -39,7 +39,7 @@ const (
 	typeCodeNumber = typeCode(-128) // number
 )
 
-// newTypeCode returns type alias and error by given type code.
+// newTypeCode returns typeCde and error by given code.
 func newTypeCode(code int32) (typeCode, error) {
 	c := typeCode(code)
 	switch c {
