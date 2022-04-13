@@ -79,6 +79,10 @@ linters-settings:
   whitespace:
     multi-if: false
     multi-func: false
+  gomoddirectives:
+    replace-allow-list:
+      - github.com/tigrisdata/tigrisdb-client-go
+
 
 linters:
   enable-all: true
