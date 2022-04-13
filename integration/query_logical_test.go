@@ -29,9 +29,7 @@ import (
 
 func TestQueryLogicalAnd(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setupWithOpts(t, &setupOpts{
-		providers: []shareddata.Provider{shareddata.Scalars},
-	})
+	ctx, collection := setupWithOpts(t, &setupOpts{providers: []shareddata.Provider{shareddata.Scalars}})
 
 	for name, tc := range map[string]struct {
 		q           bson.D
@@ -92,9 +90,7 @@ func TestQueryLogicalAnd(t *testing.T) {
 
 func TestQueryLogicalOr(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setupWithOpts(t, &setupOpts{
-		providers: []shareddata.Provider{shareddata.Scalars},
-	})
+	ctx, collection := setupWithOpts(t, &setupOpts{providers: []shareddata.Provider{shareddata.Scalars}})
 
 	for name, tc := range map[string]struct {
 		q           bson.D
@@ -159,9 +155,7 @@ func TestQueryLogicalOr(t *testing.T) {
 
 func TestQueryLogicalNor(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setupWithOpts(t, &setupOpts{
-		providers: []shareddata.Provider{shareddata.Scalars},
-	})
+	ctx, collection := setupWithOpts(t, &setupOpts{providers: []shareddata.Provider{shareddata.Scalars}})
 
 	for name, tc := range map[string]struct {
 		q           bson.D
