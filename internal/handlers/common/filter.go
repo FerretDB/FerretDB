@@ -314,16 +314,16 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				return false, err
 			}
 
-		case "$type":
-			// {field: {$type: value}}
-			res, err := filterFieldExprType(fieldValue, exprValue)
+		case "$exists":
+			// {field: {$exists: value}}
+			res, err := filterFieldExprExists(fieldValue != nil, exprValue)
 			if !res || err != nil {
 				return false, err
 			}
 
-		case "$exists":
-			// {field: {$exists: value}}
-			res, err := filterFieldExprExists(fieldValue != nil, exprValue)
+		case "$type":
+			// {field: {$type: value}}
+			res, err := filterFieldExprType(fieldValue, exprValue)
 			if !res || err != nil {
 				return false, err
 			}

@@ -155,6 +155,7 @@ func (a *Array) HasSameTypeElements() bool {
 			if i != math.Trunc(i) || math.IsNaN(i) || math.IsInf(i, 0) {
 				cur = "double"
 			} else {
+				// float that could be converted to int should be compared as int
 				cur = "int"
 			}
 		case string:
