@@ -28,7 +28,7 @@ import (
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/372
 func (h *Handler) fetch(ctx context.Context, db, collection string) ([]*types.Document, error) {
-	iterator, err := h.client.conn.Read(ctx, db, collection, driver.Filter("{}"))
+	iterator, err := h.client.conn.Read(ctx, db, collection, driver.Filter("{}"), driver.Fields("{}"))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
