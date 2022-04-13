@@ -34,7 +34,7 @@ func TestQueryLogicalAnd(t *testing.T) {
 	for name, tc := range map[string]struct {
 		filter      bson.D
 		expectedIDs []any
-		err         error
+		err         mongo.CommandError
 	}{
 		"And": {
 			filter: bson.D{{
@@ -75,9 +75,9 @@ func TestQueryLogicalAnd(t *testing.T) {
 
 			var actual []bson.D
 			cursor, err := collection.Find(ctx, tc.filter)
-			if tc.err != nil {
+			if tc.err.Code != 0 {
 				require.Nil(t, tc.expectedIDs)
-				assertEqualError(t, tc.err.(mongo.CommandError), err)
+				assertEqualError(t, tc.err, err)
 				return
 			}
 			require.NoError(t, err)
@@ -95,7 +95,7 @@ func TestQueryLogicalOr(t *testing.T) {
 	for name, tc := range map[string]struct {
 		filter      bson.D
 		expectedIDs []any
-		err         error
+		err         mongo.CommandError
 	}{
 		"Or": {
 			filter: bson.D{{
@@ -140,9 +140,9 @@ func TestQueryLogicalOr(t *testing.T) {
 
 			var actual []bson.D
 			cursor, err := collection.Find(ctx, tc.filter)
-			if tc.err != nil {
+			if tc.err.Code != 0 {
 				require.Nil(t, tc.expectedIDs)
-				assertEqualError(t, tc.err.(mongo.CommandError), err)
+				assertEqualError(t, tc.err, err)
 				return
 			}
 			require.NoError(t, err)
