@@ -81,9 +81,10 @@ func TestQueryComparisonImplicit(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			var actual []bson.D
 			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			require.NoError(t, err)
+
+			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
@@ -289,9 +290,10 @@ func TestQueryComparisonEq(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			var actual []bson.D
 			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			require.NoError(t, err)
+
+			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
@@ -436,7 +438,6 @@ func TestQueryComparisonGt(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			var actual []bson.D
 			filter := bson.D{{"value", bson.D{{"$gt", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err.Code != 0 {
@@ -445,6 +446,8 @@ func TestQueryComparisonGt(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
+
+			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
@@ -596,7 +599,6 @@ func TestQueryComparisonGte(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			var actual []bson.D
 			filter := bson.D{{"value", bson.D{{"$gte", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err.Code != 0 {
@@ -605,6 +607,8 @@ func TestQueryComparisonGte(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
+
+			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
@@ -756,7 +760,6 @@ func TestQueryComparisonLt(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			var actual []bson.D
 			filter := bson.D{{"value", bson.D{{"$lt", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err.Code != 0 {
@@ -765,6 +768,8 @@ func TestQueryComparisonLt(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
+
+			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
@@ -922,7 +927,6 @@ func TestQueryComparisonLte(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			var actual []bson.D
 			filter := bson.D{{"value", bson.D{{"$lte", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err.Code != 0 {
@@ -931,6 +935,8 @@ func TestQueryComparisonLte(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
+
+			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))

@@ -53,6 +53,7 @@ func TestFindNothing(t *testing.T) {
 
 	cursor, err := collection.Find(ctx, bson.D{})
 	require.NoError(t, err)
+
 	var docs []bson.D
 	err = cursor.All(ctx, &docs)
 	require.NoError(t, err)
@@ -81,10 +82,10 @@ func TestInsertFind(t *testing.T) {
 		t.Run(fmt.Sprint(id), func(t *testing.T) {
 			t.Parallel()
 
-			var actual []bson.D
 			cursor, err := collection.Find(ctx, bson.D{{"_id", id}}, options.Find().SetSort(bson.D{{"_id", 1}}))
 			require.NoError(t, err)
 
+			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			require.Len(t, actual, 1)
