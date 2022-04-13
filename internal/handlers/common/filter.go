@@ -717,8 +717,6 @@ func matchTypeExprByTypeCode(fieldValue any, code typeCode) (bool, error) {
 		if _, ok := fieldValue.(int64); !ok {
 			return false, nil
 		}
-	case typeCodeUnknown:
-		return false, nil
 	default:
 		return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Unknown type name alias: %s`, code.String()))
 	}

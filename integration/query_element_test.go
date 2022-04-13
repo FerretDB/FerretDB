@@ -170,14 +170,6 @@ func TestQueryElementType(t *testing.T) {
 				Name:    "BadValue",
 			},
 		},
-		"BadInputString": {
-			v: "123",
-			err: mongo.CommandError{
-				Code:    2,
-				Message: "Unknown type name alias: 123",
-				Name:    "BadValue",
-			},
-		},
 		"BadTypeName": {
 			v: "float",
 			err: mongo.CommandError{
@@ -185,10 +177,6 @@ func TestQueryElementType(t *testing.T) {
 				Message: "Unknown type name alias: float",
 				Name:    "BadValue",
 			},
-		},
-		"NotMatchedType": {
-			v:           "decimal",
-			expectedIDs: []any{},
 		},
 		"IntegerNumericalInput": {
 			v:           16,

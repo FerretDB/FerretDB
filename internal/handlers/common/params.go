@@ -196,7 +196,7 @@ func getBinaryParams(fieldValue any, maskValue any) (types.Binary, types.Binary,
 func parseTypeCode(alias string) (typeCode, error) {
 	code, ok := aliasToTypeCode[alias]
 	if !ok {
-		return typeCodeUnknown, nil
+		return 0, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Unknown type name alias: %s`, alias))
 	}
 
 	return code, nil

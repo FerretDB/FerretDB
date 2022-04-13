@@ -21,7 +21,6 @@ import "fmt"
 type typeCode int32
 
 const (
-	typeCodeUnknown   = typeCode(0)
 	typeCodeDouble    = typeCode(1)  // double
 	typeCodeString    = typeCode(2)  // string
 	typeCodeObject    = typeCode(3)  // object
@@ -45,8 +44,6 @@ func newTypeCode(code int32) (typeCode, error) {
 		typeCodeBinData, typeCodeObjectID, typeCodeBool, typeCodeDate,
 		typeCodeNull, typeCodeRegex, typeCodeInt, typeCodeTimestamp, typeCodeLong:
 		return c, nil
-	case typeCodeUnknown:
-		return 0, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %d`, code))
 	case 19, -1, 127:
 		return 0, NewErrorMsg(ErrNotImplemented, fmt.Sprintf(`Type code %v not implemented`, code))
 	default:
