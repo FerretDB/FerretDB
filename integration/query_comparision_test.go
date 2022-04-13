@@ -189,6 +189,10 @@ func TestQueryComparisonEq(t *testing.T) {
 			filter:      bson.D{{"value", bson.D{{"$eq", math.NaN()}}}},
 			expectedIDs: []any{"double-nan"},
 		},
+		"DoubleBigInt64": {
+			filter:      bson.D{{"value", bson.D{{"$eq", int64(2 << 60)}}}},
+			expectedIDs: []any{"double-big"},
+		},
 
 		"String": {
 			filter:      bson.D{{"value", bson.D{{"$eq", "foo"}}}},
@@ -311,17 +315,13 @@ func TestQueryComparisonEq(t *testing.T) {
 			filter:      bson.D{{"value", bson.D{{"$eq", int64(math.MinInt64)}}}},
 			expectedIDs: []any{"int64-min"},
 		},
-		"Float64AndInt64": {
-			filter:      bson.D{{"value", bson.D{{"$eq", float64(2 << 61)}}}},
-			expectedIDs: []any{"int64-big"},
-		},
-		"Int64AndFloat64": {
-			filter:      bson.D{{"value", bson.D{{"$eq", int64(2 << 60)}}}},
-			expectedIDs: []any{"float64-big"},
-		},
-		"Float32AndInt32": {
+		"Int32DoubleBig": {
 			filter:      bson.D{{"value", bson.D{{"$eq", float32(2 << 25)}}}},
 			expectedIDs: []any{"int32-big"},
+		},
+		"Int64DoubleBig": {
+			filter:      bson.D{{"value", bson.D{{"$eq", float64(2 << 61)}}}},
+			expectedIDs: []any{"int64-big"},
 		},
 		"IDNull": {
 			filter:      bson.D{{"_id", bson.D{{"$eq", nil}}}},
@@ -335,9 +335,9 @@ func TestQueryComparisonEq(t *testing.T) {
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
 				"document", "document-composite", "document-empty",
-				"double", "double-max", "double-nan", "double-negative-infinity", "double-negative-zero",
+				"double", "double-big", "double-max", "double-nan", "double-negative-infinity", "double-negative-zero",
 				"double-positive-infinity", "double-smallest", "double-whole", "double-zero",
-				"float64-big", "int32", "int32-big", "int32-max", "int32-min", "int32-zero",
+				"int32", "int32-big", "int32-max", "int32-min", "int32-zero",
 				"int64", "int64-big", "int64-max", "int64-min", "int64-zero",
 				"null",
 				"objectid", "objectid-empty",
