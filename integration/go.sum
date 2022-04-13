@@ -372,8 +372,8 @@ github.com/stretchr/testify v1.7.1 h1:5TQK59W5E3v0r2duFAb7P95B6hEeOyEnHRa8MjYSMT
 github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/tidwall/pretty v1.0.0 h1:HsD+QiTn7sK6flMKIvNmpqz1qrpP3Ps6jOKIKMooyg4=
 github.com/tidwall/pretty v1.0.0/go.mod h1:XNkn88O1ChpSDQmQeStsy+sBenx6DDtFZJxhVysOjyk=
-github.com/tigrisdata/tigrisdb-client-go v1.0.0-alpha.3 h1:8M8TySqpgWKIMO0orwM42NyUU644Qdar9mkQpQ3ttjs=
-github.com/tigrisdata/tigrisdb-client-go v1.0.0-alpha.3/go.mod h1:lP4RhNml4kRHULYY+nb+nmvGz0THlwUx9w5BI7Qus7I=
+github.com/tigrisdata/tigrisdb-client-go v1.0.0-alpha.4 h1:bxmxXRVzsD9vGlFgfpMe1WtWB0wzUV2rE66ir7wacdY=
+github.com/tigrisdata/tigrisdb-client-go v1.0.0-alpha.4/go.mod h1:lP4RhNml4kRHULYY+nb+nmvGz0THlwUx9w5BI7Qus7I=
 github.com/ugorji/go v1.1.7/go.mod h1:kZn38zHttfInRq0xu/PH0az30d+z6vm202qpg1oXVMw=
 github.com/ugorji/go v1.2.6/go.mod h1:anCg0y61KIhDlPZmnH+so+RQbysYVyDko0IMgJv0Nn0=
 github.com/ugorji/go/codec v1.1.7/go.mod h1:Ax+UKWsSmolVDwsd+7N3ZtXu+yMGCf907BLYF3GoBXY=
