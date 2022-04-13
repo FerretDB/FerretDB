@@ -221,6 +221,7 @@ func TestQueryLogicalNor(t *testing.T) {
 		})
 	}
 }
+
 func TestQueryLogicalNot(t *testing.T) {
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
