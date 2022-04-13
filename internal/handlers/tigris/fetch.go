@@ -33,6 +33,7 @@ func (h *Handler) fetch(ctx context.Context, db, collection string) ([]*types.Do
 		return nil, lazyerrors.Error(err)
 	}
 
+	// TODO preserve fields order
 	var res []*types.Document
 	elem := new(driver.Document)
 	for iterator.Next(elem) {
@@ -41,11 +42,14 @@ func (h *Handler) fetch(ctx context.Context, db, collection string) ([]*types.Do
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+
 		doc, err := types.NewDocumentFromMap(anyDoc)
 		if err != nil {
-			return nil, err
+			return nil, lazyerrors.Error(err)
 		}
+
 		res = append(res, doc)
 	}
+
 	return res, nil
 }
