@@ -76,46 +76,6 @@ func TestQueryComparisonImplicit(t *testing.T) {
 			filter:      bson.D{{"value", primitive.Regex{Pattern: "^fo"}}},
 			expectedIDs: []any{"array-three", "string"},
 		},
-
-		"EqNoSuchFieldNull": {
-			filter: bson.D{{"no-such-field", bson.D{{"$eq", nil}}}},
-			expectedIDs: []any{
-				"array", "array-empty", "array-three",
-				"binary", "binary-empty",
-				"bool-false", "bool-true",
-				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
-				"document", "document-empty",
-				"double", "double-max", "double-nan",
-				"double-negative-infinity", "double-negative-zero",
-				"double-positive-infinity", "double-smallest", "double-zero",
-				"int32", "int32-max", "int32-min", "int32-zero", "int64", "int64-max", "int64-min", "int64-zero",
-				"null", "regex", "regex-empty", "string", "string-empty", "timestamp", "timestamp-i",
-			},
-		},
-		"EqStringNull": {
-			filter:      bson.D{{"_id", bson.D{{"$eq", nil}}}},
-			expectedIDs: []any{},
-		},
-
-		"EqCompareNoSuchField": {
-			filter: bson.D{{"no-such-field", nil}},
-			expectedIDs: []any{
-				"array", "array-empty", "array-three",
-				"binary", "binary-empty",
-				"bool-false", "bool-true",
-				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
-				"document", "document-empty",
-				"double", "double-max", "double-nan",
-				"double-negative-infinity", "double-negative-zero",
-				"double-positive-infinity", "double-smallest", "double-zero",
-				"int32", "int32-max", "int32-min", "int32-zero", "int64", "int64-max", "int64-min", "int64-zero",
-				"null", "regex", "regex-empty", "string", "string-empty", "timestamp", "timestamp-i",
-			},
-		},
-		"EqCompareWithNull": {
-			filter:      bson.D{{"_id", nil}},
-			expectedIDs: []any{},
-		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
