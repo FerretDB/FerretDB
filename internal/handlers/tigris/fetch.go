@@ -34,14 +34,10 @@ func (h *Handler) fetch(ctx context.Context, db, collection string) ([]*types.Do
 	}
 
 	var res []*types.Document
-	for {
-		var elem driver.Document
-		ok := iterator.Next(&elem)
-		if !ok {
-			break
-		}
+	elem := new(driver.Document)
+	for iterator.Next(elem) {
 		var anyDoc map[string]any
-		err := json.Unmarshal((json.RawMessage)(elem), &anyDoc)
+		err := json.Unmarshal(*elem, &anyDoc)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
