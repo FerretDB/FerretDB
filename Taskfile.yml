@@ -162,7 +162,7 @@ tasks:
 
   lint-golangci-lint-required:
     cmds:
-      - bin/golangci-lint run --config=.golangci-required.yml
+      - bin/golangci-lint run --config=.golangci-required.yml --timeout=240s
 
   lint-go-sumtype:
     cmds:
