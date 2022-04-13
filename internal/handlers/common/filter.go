@@ -529,7 +529,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		res, err := matchTypeExprByTypeCode(fieldValue, code)
+		res, err := filterFieldExprByTypeCode(fieldValue, code)
 		if err != nil {
 			return res, err
 		}
@@ -540,7 +540,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		res, err := matchTypeExprByTypeCode(fieldValue, code)
+		res, err := filterFieldExprByTypeCode(fieldValue, code)
 		if err != nil {
 			return res, err
 		}
@@ -560,7 +560,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 			return false, err
 		}
 
-		res, err := matchTypeExprByTypeCode(fieldValue, code)
+		res, err := filterFieldExprByTypeCode(fieldValue, code)
 		if err != nil {
 			return false, err
 		}
@@ -582,7 +582,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 				if err != nil {
 					return false, err
 				}
-				res, err := matchTypeExprByTypeCode(fieldValue, code)
+				res, err := filterFieldExprByTypeCode(fieldValue, code)
 				if err != nil {
 					return false, err
 				}
@@ -600,7 +600,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 					continue
 				}
 
-				res, err := matchTypeExprByTypeCode(fieldValue, code)
+				res, err := filterFieldExprByTypeCode(fieldValue, code)
 				if err != nil {
 					return false, err
 				}
@@ -625,7 +625,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 					continue
 				}
 
-				res, err := matchTypeExprByTypeCode(fieldValue, code)
+				res, err := filterFieldExprByTypeCode(fieldValue, code)
 				if err != nil {
 					return false, err
 				}
@@ -643,8 +643,8 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 	}
 }
 
-// matchTypeExprByTypeCode matches fieldValue against given type alias.
-func matchTypeExprByTypeCode(fieldValue any, code typeCode) (bool, error) {
+// filterFieldExprByTypeCode matches fieldValue against given type alias.
+func filterFieldExprByTypeCode(fieldValue any, code typeCode) (bool, error) {
 	// check types.Array elements for match to given alias.
 	if array, ok := fieldValue.(*types.Array); ok && code != typeCodeArray {
 		for i := 0; i < array.Len(); i++ {
@@ -653,7 +653,7 @@ func matchTypeExprByTypeCode(fieldValue any, code typeCode) (bool, error) {
 				panic(err)
 			}
 
-			res, err := matchTypeExprByTypeCode(value, code)
+			res, err := filterFieldExprByTypeCode(value, code)
 			if err != nil {
 				return false, err
 			}
