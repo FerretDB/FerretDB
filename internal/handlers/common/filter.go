@@ -643,9 +643,9 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 	}
 }
 
-// filterFieldExprByTypeCode matches fieldValue against given type alias.
+// filterFieldExprByTypeCode filters fieldValue by given type code.
 func filterFieldExprByTypeCode(fieldValue any, code typeCode) (bool, error) {
-	// check types.Array elements for match to given alias.
+	// check types.Array elements for match to given code.
 	if array, ok := fieldValue.(*types.Array); ok && code != typeCodeArray {
 		for i := 0; i < array.Len(); i++ {
 			value, err := array.Get(i)
