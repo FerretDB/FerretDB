@@ -194,34 +194,10 @@ func getBinaryParams(fieldValue any, maskValue any) (types.Binary, types.Binary,
 }
 
 func parseTypeCode(alias string) (typeCode, error) {
-	switch alias {
-	case "double":
-		return typeCodeDouble, nil
-	case "string":
-		return typeCodeString, nil
-	case "object":
-		return typeCodeObject, nil
-	case "array":
-		return typeCodeArray, nil
-	case "binData":
-		return typeCodeBinData, nil
-	case "objectId":
-		return typeCodeObjectID, nil
-	case "bool":
-		return typeCodeBool, nil
-	case "date":
-		return typeCodeDate, nil
-	case "null":
-		return typeCodeNull, nil
-	case "regex":
-		return typeCodeRegex, nil
-	case "int":
-		return typeCodeInt, nil
-	case "timestamp":
-		return typeCodeTimestamp, nil
-	case "long":
-		return typeCodeLong, nil
-	default:
+	code, ok := aliasToTypeCode[alias]
+	if !ok {
 		return typeCodeUnknown, nil
 	}
+
+	return code, nil
 }

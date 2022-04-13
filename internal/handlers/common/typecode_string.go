@@ -8,7 +8,7 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[typeCodeUnknown - -1]
+	_ = x[typeCodeUnknown-0]
 	_ = x[typeCodeDouble-1]
 	_ = x[typeCodeString-2]
 	_ = x[typeCodeObject-3]
@@ -25,31 +25,27 @@ func _() {
 }
 
 const (
-	_typeCode_name_0 = "typeCodeUnknown"
-	_typeCode_name_1 = "doublestringobjectarraybinData"
-	_typeCode_name_2 = "objectIdbooldatenullregex"
-	_typeCode_name_3 = "inttimestamplong"
+	_typeCode_name_0 = "typeCodeUnknowndoublestringobjectarraybinData"
+	_typeCode_name_1 = "objectIdbooldatenullregex"
+	_typeCode_name_2 = "inttimestamplong"
 )
 
 var (
-	_typeCode_index_1 = [...]uint8{0, 6, 12, 18, 23, 30}
-	_typeCode_index_2 = [...]uint8{0, 8, 12, 16, 20, 25}
-	_typeCode_index_3 = [...]uint8{0, 3, 12, 16}
+	_typeCode_index_0 = [...]uint8{0, 15, 21, 27, 33, 38, 45}
+	_typeCode_index_1 = [...]uint8{0, 8, 12, 16, 20, 25}
+	_typeCode_index_2 = [...]uint8{0, 3, 12, 16}
 )
 
 func (i typeCode) String() string {
 	switch {
-	case i == -1:
-		return _typeCode_name_0
-	case 1 <= i && i <= 5:
-		i -= 1
-		return _typeCode_name_1[_typeCode_index_1[i]:_typeCode_index_1[i+1]]
+	case 0 <= i && i <= 5:
+		return _typeCode_name_0[_typeCode_index_0[i]:_typeCode_index_0[i+1]]
 	case 7 <= i && i <= 11:
 		i -= 7
-		return _typeCode_name_2[_typeCode_index_2[i]:_typeCode_index_2[i+1]]
+		return _typeCode_name_1[_typeCode_index_1[i]:_typeCode_index_1[i+1]]
 	case 16 <= i && i <= 18:
 		i -= 16
-		return _typeCode_name_3[_typeCode_index_3[i]:_typeCode_index_3[i+1]]
+		return _typeCode_name_2[_typeCode_index_2[i]:_typeCode_index_2[i+1]]
 	default:
 		return "typeCode(" + strconv.FormatInt(int64(i), 10) + ")"
 	}

@@ -21,7 +21,7 @@ import "fmt"
 type typeCode int32
 
 const (
-	typeCodeUnknown   = typeCode(-1)
+	typeCodeUnknown   = typeCode(0)
 	typeCodeDouble    = typeCode(1)  // double
 	typeCodeString    = typeCode(2)  // string
 	typeCodeObject    = typeCode(3)  // object
@@ -45,9 +45,27 @@ func newTypeCode(code int32) (typeCode, error) {
 		typeCodeBinData, typeCodeObjectID, typeCodeBool, typeCodeDate,
 		typeCodeNull, typeCodeRegex, typeCodeInt, typeCodeTimestamp, typeCodeLong:
 		return c, nil
+	case typeCodeUnknown:
+		return 0, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %d`, code))
 	case 19, -1, 127:
 		return 0, NewErrorMsg(ErrNotImplemented, fmt.Sprintf(`Type code %v not implemented`, code))
 	default:
 		return 0, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %d`, code))
 	}
+}
+
+var aliasToTypeCode = map[string]typeCode{
+	"double":    typeCodeDouble,
+	"string":    typeCodeString,
+	"object":    typeCodeObject,
+	"array":     typeCodeArray,
+	"binData":   typeCodeBinData,
+	"objectId":  typeCodeObjectID,
+	"bool":      typeCodeBool,
+	"date":      typeCodeDate,
+	"null":      typeCodeNull,
+	"regex":     typeCodeRegex,
+	"int":       typeCodeInt,
+	"timestamp": typeCodeTimestamp,
+	"long":      typeCodeLong,
 }
