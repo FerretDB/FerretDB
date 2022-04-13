@@ -32,12 +32,12 @@ func TestQueryLogicalAnd(t *testing.T) {
 	ctx, collection := setupWithOpts(t, &setupOpts{providers: []shareddata.Provider{shareddata.Scalars}})
 
 	for name, tc := range map[string]struct {
-		q           bson.D
+		filter      bson.D
 		expectedIDs []any
 		err         error
 	}{
 		"And": {
-			q: bson.D{{
+			filter: bson.D{{
 				"$and",
 				bson.A{
 					bson.D{{"value", bson.D{{"$gt", 0}}}},
@@ -47,7 +47,7 @@ func TestQueryLogicalAnd(t *testing.T) {
 			expectedIDs: []any{"double-smallest", "double-whole", "int32", "int64"},
 		},
 		"BadInput": {
-			q: bson.D{{"$and", nil}},
+			filter: bson.D{{"$and", nil}},
 			err: mongo.CommandError{
 				Code:    2,
 				Message: "$and must be an array",
@@ -55,7 +55,7 @@ func TestQueryLogicalAnd(t *testing.T) {
 			},
 		},
 		"BadExpressionValue": {
-			q: bson.D{{
+			filter: bson.D{{
 				"$and",
 				bson.A{
 					bson.D{{"value", bson.D{{"$gt", 0}}}},
@@ -74,7 +74,7 @@ func TestQueryLogicalAnd(t *testing.T) {
 			t.Parallel()
 
 			var actual []bson.D
-			cursor, err := collection.Find(ctx, tc.q)
+			cursor, err := collection.Find(ctx, tc.filter)
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
 				assertEqualError(t, tc.err.(mongo.CommandError), err)
@@ -93,12 +93,12 @@ func TestQueryLogicalOr(t *testing.T) {
 	ctx, collection := setupWithOpts(t, &setupOpts{providers: []shareddata.Provider{shareddata.Scalars}})
 
 	for name, tc := range map[string]struct {
-		q           bson.D
+		filter      bson.D
 		expectedIDs []any
 		err         error
 	}{
 		"Or": {
-			q: bson.D{{
+			filter: bson.D{{
 				"$or",
 				bson.A{
 					bson.D{{"value", bson.D{{"$lt", 0}}}},
@@ -112,7 +112,7 @@ func TestQueryLogicalOr(t *testing.T) {
 			},
 		},
 		"BadInput": {
-			q: bson.D{{"$or", nil}},
+			filter: bson.D{{"$or", nil}},
 			err: mongo.CommandError{
 				Code:    2,
 				Message: "$or must be an array",
@@ -120,7 +120,7 @@ func TestQueryLogicalOr(t *testing.T) {
 			},
 		},
 		"BadExpressionValue": {
-			q: bson.D{{
+			filter: bson.D{{
 				"$or",
 				bson.A{
 					bson.D{{"value", bson.D{{"$gt", 0}}}},
@@ -139,7 +139,7 @@ func TestQueryLogicalOr(t *testing.T) {
 			t.Parallel()
 
 			var actual []bson.D
-			cursor, err := collection.Find(ctx, tc.q)
+			cursor, err := collection.Find(ctx, tc.filter)
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
 				assertEqualError(t, tc.err.(mongo.CommandError), err)
@@ -158,12 +158,12 @@ func TestQueryLogicalNor(t *testing.T) {
 	ctx, collection := setupWithOpts(t, &setupOpts{providers: []shareddata.Provider{shareddata.Scalars}})
 
 	for name, tc := range map[string]struct {
-		q           bson.D
+		filter      bson.D
 		expectedIDs []any
 		err         mongo.CommandError
 	}{
 		"Nor": {
-			q: bson.D{{
+			filter: bson.D{{
 				"$nor",
 				bson.A{
 					bson.D{{"value", bson.D{{"$gt", 0}}}},
@@ -181,7 +181,7 @@ func TestQueryLogicalNor(t *testing.T) {
 			},
 		},
 		"BadInput": {
-			q: bson.D{{"$nor", nil}},
+			filter: bson.D{{"$nor", nil}},
 			err: mongo.CommandError{
 				Code:    2,
 				Message: "$nor must be an array",
@@ -189,7 +189,7 @@ func TestQueryLogicalNor(t *testing.T) {
 			},
 		},
 		"BadExpressionValue": {
-			q: bson.D{{
+			filter: bson.D{{
 				"$nor",
 				bson.A{
 					bson.D{{"value", bson.D{{"$gt", 0}}}},
@@ -208,7 +208,7 @@ func TestQueryLogicalNor(t *testing.T) {
 			t.Parallel()
 
 			var actual []bson.D
-			cursor, err := collection.Find(ctx, tc.q, options.Find().SetSort(bson.D{{"_id", 1}}))
+			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err.Code != 0 {
 				require.Nil(t, tc.expectedIDs)
 				assertEqualError(t, tc.err, err)
