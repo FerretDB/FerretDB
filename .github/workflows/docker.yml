@@ -1,8 +1,8 @@
 ---
-# This workflow is dangerous and should be handled with a lot of care to avoid security problems. We use
-# `pull_request_target` event to give pull requests access to secrets with permissions to publish Docker images,
-# access `dance` repository, etc. We want to do that to allow Dance to test those PRs. But rogue PR authors
-# could try to steal our secrets. We prevent that with the following:
+# This workflow is dangerous and should be handled with a lot of care to avoid security problems.
+# We use `pull_request_target` event to give pull requests access to secrets with permissions to publish Docker images, etc.
+# But rogue PR authors could try to steal our secrets.
+# We prevent that with the following:
 #
 # * We require approval for PRs from first-time contributors. That's a built-in feature for all actions.
 # * After reviewing changes, we require the `trust` label to be assigned to PRs by FerretDB maintainers.
@@ -111,25 +111,3 @@ jobs:
         run: |
           git status
           git diff --exit-code
-
-  dance:
-    name: Dance
-    runs-on: ubuntu-20.04
-    needs: build
-
-    if: github.event_name != 'pull_request_target' || contains(github.event.pull_request.labels.*.name, 'trust')
-
-    steps:
-      - name: Detect matching PR or branch
-        id: detect
-        uses: FerretDB/github-actions/detect-matching-pr@main
-
-      - name: Restart dance PR or branch actions
-        uses: FerretDB/github-actions/restart-pr-actions@main
-        with:
-          owner: ${{ steps.detect.outputs.owner }}
-          repo: ${{ steps.detect.outputs.repo }}
-          branch: ${{ steps.detect.outputs.branch }}
-          number: ${{ steps.detect.outputs.number }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.BOT_REPO_TOKEN }} # we use cross-repo APIs
