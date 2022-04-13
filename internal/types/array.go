@@ -134,6 +134,7 @@ func (a *Array) Append(values ...any) error {
 }
 
 // HasSameTypeElements returns true if Array elements has the same type.
+// MongoDB consider int32, int64 and float64 that could be converted to int as the same type.
 func (a *Array) HasSameTypeElements() bool {
 	var prev string
 	for _, i := range a.s {
