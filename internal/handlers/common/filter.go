@@ -717,6 +717,14 @@ func matchTypeExprByTypeCode(fieldValue any, code typeCode) (bool, error) {
 		if _, ok := fieldValue.(int64); !ok {
 			return false, nil
 		}
+	case typeCodeNumber:
+		// typeCodeNumber should match int32, int64 and float64 types
+		switch fieldValue.(type) {
+		case int32, int64, float64:
+			return true, nil
+		default:
+			return false, nil
+		}
 	default:
 		return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Unknown type name alias: %s`, code.String()))
 	}

@@ -162,6 +162,20 @@ func TestQueryElementType(t *testing.T) {
 			v:           "long",
 			expectedIDs: []any{"int64", "int64-max", "int64-min", "int64-zero"},
 		},
+
+		"Number": {
+			v: "number",
+			expectedIDs: []any{
+				"array", "array-three",
+				"double", "double-max", "double-nan",
+				"double-negative-infinity", "double-negative-zero",
+				"double-positive-infinity", "double-smallest",
+				"double-whole", "double-zero",
+				"int32", "int32-max", "int32-min", "int32-zero",
+				"int64", "int64-max", "int64-min", "int64-zero",
+			},
+		},
+
 		"BadTypeCode": {
 			v: 42,
 			err: mongo.CommandError{

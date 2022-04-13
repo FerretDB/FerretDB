@@ -18,6 +18,7 @@ import "fmt"
 
 //go:generate ../../../bin/stringer -linecomment -type typeCode
 
+// typeCode represents BSON type codes.
 type typeCode int32
 
 const (
@@ -34,6 +35,8 @@ const (
 	typeCodeInt       = typeCode(16) // int
 	typeCodeTimestamp = typeCode(17) // timestamp
 	typeCodeLong      = typeCode(18) // long
+	// not actual type code. number matches double, int and long
+	typeCodeNumber = typeCode(-128) // number
 )
 
 // newTypeCode returns type alias and error by given type code.
@@ -42,7 +45,7 @@ func newTypeCode(code int32) (typeCode, error) {
 	switch c {
 	case typeCodeDouble, typeCodeString, typeCodeObject, typeCodeArray,
 		typeCodeBinData, typeCodeObjectID, typeCodeBool, typeCodeDate,
-		typeCodeNull, typeCodeRegex, typeCodeInt, typeCodeTimestamp, typeCodeLong:
+		typeCodeNull, typeCodeRegex, typeCodeInt, typeCodeTimestamp, typeCodeLong, typeCodeNumber:
 		return c, nil
 	case 19, -1, 127:
 		return 0, NewErrorMsg(ErrNotImplemented, fmt.Sprintf(`Type code %v not implemented`, code))
@@ -51,6 +54,7 @@ func newTypeCode(code int32) (typeCode, error) {
 	}
 }
 
+// aliasToTypeCode matches string type aliases to the corresponding typeCode value.
 var aliasToTypeCode = map[string]typeCode{
 	"double":    typeCodeDouble,
 	"string":    typeCodeString,
@@ -65,4 +69,5 @@ var aliasToTypeCode = map[string]typeCode{
 	"int":       typeCodeInt,
 	"timestamp": typeCodeTimestamp,
 	"long":      typeCodeLong,
+	"number":    typeCodeNumber,
 }
