@@ -102,30 +102,6 @@ func NewDocument(pairs ...any) (*Document, error) {
 	return doc, nil
 }
 
-func NewDocumentFromMap(pairs map[string]any) (*Document, error) {
-	if pairs == nil {
-		panic("types.NewDocumentFromMap: pairs is nil")
-	}
-	l := len(pairs)
-	if len(pairs) == 0 {
-		return new(Document), nil
-	}
-
-	doc := &Document{
-		m:    make(map[string]any, l),
-		keys: make([]string, 0, l),
-	}
-	for key, value := range pairs {
-		if err := doc.add(key, value); err != nil {
-			return nil, fmt.Errorf("types.NewDocumentFromMap: %w", err)
-		}
-	}
-	if err := doc.validate(); err != nil {
-		return nil, fmt.Errorf("types.NewDocumentFromMap: %w", err)
-	}
-	return doc, nil
-}
-
 // MustNewDocument is a NewDocument that panics in case of error.
 //
 // TODO Remove this function.

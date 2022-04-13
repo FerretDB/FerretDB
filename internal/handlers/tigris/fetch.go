@@ -43,7 +43,14 @@ func (h *Handler) fetch(ctx context.Context, db, collection string) ([]*types.Do
 			return nil, lazyerrors.Error(err)
 		}
 
-		doc, err := types.NewDocumentFromMap(anyDoc)
+		pairs := make([]any, 2*len(anyDoc))
+		var i int
+		for k, v := range anyDoc {
+			pairs[i] = k
+			pairs[i+1] = v
+			i += 2
+		}
+		doc, err := types.NewDocument(pairs...)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
