@@ -725,6 +725,7 @@ func TestQueryComparisonLt(t *testing.T) {
 			value:       int32(math.MinInt32),
 			expectedIDs: []any{"double-negative-infinity", "int64-min"},
 		},
+
 		"Timestamp": {
 			value:       primitive.Timestamp{T: 43, I: 14},
 			expectedIDs: []any{"timestamp", "timestamp-i"},
@@ -861,6 +862,7 @@ func TestQueryComparisonLte(t *testing.T) {
 			value:       time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC),
 			expectedIDs: []any{"datetime", "datetime-epoch", "datetime-year-min"},
 		},
+
 		"Null": {
 			value:       nil,
 			expectedIDs: []any{"array-three", "null"},
