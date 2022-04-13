@@ -106,11 +106,61 @@ func TestQueryElementType(t *testing.T) {
 		expectedIDs []any
 		err         error
 	}{
+		"Document": {
+			v:           "object",
+			expectedIDs: []any{"document", "document-empty"},
+		},
 		"Array": {
 			v: "array",
+			expectedIDs: []any{"array", "array-empty", "array-three"},
+		},
+		"Double": {
+			v: "double",
 			expectedIDs: []any{
-				"array", "array-empty", "array-three",
+				"double", "double-max", "double-nan",
+				"double-negative-infinity", "double-negative-zero", "double-positive-infinity",
+				"double-smallest", "double-whole", "double-zero",
 			},
+		},
+		"String": {
+			v:           "string",
+			expectedIDs: []any{"array-three", "string", "string-double", "string-empty", "string-whole"},
+		},
+		"Binary": {
+			v:           "binData",
+			expectedIDs: []any{"binary", "binary-empty"},
+		},
+		"ObjectID": {
+			v:           "objectId",
+			expectedIDs: []any{"objectid", "objectid-empty"},
+		},
+		"Bool": {
+			v:           "bool",
+			expectedIDs: []any{"bool-false", "bool-true"},
+		},
+		"Datetime": {
+			v:           "date",
+			expectedIDs: []any{"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min"},
+		},
+		"Null": {
+			v:           "null",
+			expectedIDs: []any{"array-three", "null"},
+		},
+		"Regex": {
+			v:           "regex",
+			expectedIDs: []any{"regex", "regex-empty"},
+		},
+		"Integer": {
+			v:           "int",
+			expectedIDs: []any{"array", "array-three", "int32", "int32-max", "int32-min", "int32-zero"},
+		},
+		"Timestamp": {
+			v:           "timestamp",
+			expectedIDs: []any{"timestamp", "timestamp-i"},
+		},
+		"Long": {
+			v:           "long",
+			expectedIDs: []any{"int64", "int64-max", "int64-min", "int64-zero"},
 		},
 		"BadTypeCode": {
 			v: 42,
@@ -140,57 +190,9 @@ func TestQueryElementType(t *testing.T) {
 			v:           "decimal",
 			expectedIDs: []any{},
 		},
-		"Integer": {
-			v:           "int",
-			expectedIDs: []any{"array", "array-three", "int32", "int32-max", "int32-min", "int32-zero"},
-		},
 		"IntegerNumericalInput": {
 			v:           16,
 			expectedIDs: []any{"array", "array-three", "int32", "int32-max", "int32-min", "int32-zero"},
-		},
-		"Long": {
-			v:           "long",
-			expectedIDs: []any{"int64", "int64-max", "int64-min", "int64-zero"},
-		},
-		"Regex": {
-			v:           "regex",
-			expectedIDs: []any{"regex", "regex-empty"},
-		},
-		"Null": {
-			v:           "null",
-			expectedIDs: []any{"array-three", "null"},
-		},
-		"Timestamp": {
-			v:           "timestamp",
-			expectedIDs: []any{"timestamp", "timestamp-i"},
-		},
-		"Document": {
-			v:           "object",
-			expectedIDs: []any{"document", "document-empty"},
-		},
-		"Double": {
-			v: "double",
-			expectedIDs: []any{
-				"double", "double-max", "double-nan",
-				"double-negative-infinity", "double-negative-zero", "double-positive-infinity",
-				"double-smallest", "double-whole", "double-zero",
-			},
-		},
-		"String": {
-			v:           "string",
-			expectedIDs: []any{"array-three", "string", "string-double", "string-empty", "string-whole"},
-		},
-		"Binary": {
-			v:           "binData",
-			expectedIDs: []any{"binary", "binary-empty"},
-		},
-		"Bool": {
-			v:           "bool",
-			expectedIDs: []any{"bool-false", "bool-true"},
-		},
-		"Datetime": {
-			v:           "date",
-			expectedIDs: []any{"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min"},
 		},
 		"TypeArrayAliases": {
 			v:           []any{"bool", "binData"},
