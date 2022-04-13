@@ -39,22 +39,38 @@ func TestQueryComparisonImplicit(t *testing.T) {
 		filter      bson.D
 		expectedIDs []any
 	}{
+
+		"Document": {
+			filter:      bson.D{{"value", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{"foo", 42}}}}},
+			expectedIDs: []any{"document-resembling"},
+		},
+
+		"Array": {
+			filter:      bson.D{{"value", bson.A{int32(42), "foo", nil}}},
+			expectedIDs: []any{"array-three"},
+		},
+
+		"ArrayEmbedded": {
+			filter:      bson.D{{"value", bson.A{bson.A{int32(42), "foo"}, nil}}},
+			expectedIDs: []any{"array-embedded"},
+		},
+
 		"IDNull": {
 			filter:      bson.D{{"_id", nil}},
 			expectedIDs: []any{},
 		},
 		"ValueNull": {
 			filter:      bson.D{{"value", nil}},
-			expectedIDs: []any{"array-three", "null"},
+			expectedIDs: []any{"array-embedded", "array-three", "null"},
 		},
 		"NoSuchFieldNull": {
 			filter: bson.D{{"no-such-field", nil}},
 			expectedIDs: []any{
-				"array", "array-empty", "array-three",
+				"array", "array-embedded", "array-empty", "array-three",
 				"binary", "binary-empty",
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
-				"document", "document-empty",
+				"document", "document-empty", "document-resembling",
 				"double", "double-max", "double-nan", "double-negative-infinity", "double-negative-zero",
 				"double-positive-infinity", "double-smallest", "double-whole", "double-zero",
 				"int32", "int32-max", "int32-min", "int32-zero",
@@ -101,7 +117,21 @@ func TestQueryComparisonEq(t *testing.T) {
 		filter      bson.D
 		expectedIDs []any
 	}{
-		// TODO document, array
+
+		"Document": {
+			filter:      bson.D{{"value", bson.D{{"$eq", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{"foo", 42}}}}}}},
+			expectedIDs: []any{"document-resembling"},
+		},
+
+		"Array": {
+			filter:      bson.D{{"value", bson.D{{"$eq", bson.A{int32(42), "foo", nil}}}}},
+			expectedIDs: []any{"array-three"},
+		},
+
+		"ArrayEmbedded": {
+			filter:      bson.D{{"value", bson.D{{"$eq", bson.A{bson.A{int32(42), "foo"}, nil}}}}},
+			expectedIDs: []any{"array-embedded"},
+		},
 
 		"Double": {
 			filter:      bson.D{{"value", bson.D{{"$eq", 42.13}}}},
@@ -203,7 +233,7 @@ func TestQueryComparisonEq(t *testing.T) {
 
 		"Null": {
 			filter:      bson.D{{"value", bson.D{{"$eq", nil}}}},
-			expectedIDs: []any{"array-three", "null"},
+			expectedIDs: []any{"array-embedded", "array-three", "null"},
 		},
 
 		"RegexWithoutOption": {
@@ -269,11 +299,11 @@ func TestQueryComparisonEq(t *testing.T) {
 		"NoSuchFieldNull": {
 			filter: bson.D{{"no-such-field", bson.D{{"$eq", nil}}}},
 			expectedIDs: []any{
-				"array", "array-empty", "array-three",
+				"array", "array-embedded", "array-empty", "array-three",
 				"binary", "binary-empty",
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
-				"document", "document-empty",
+				"document", "document-empty", "document-resembling",
 				"double", "double-max", "double-nan", "double-negative-infinity", "double-negative-zero",
 				"double-positive-infinity", "double-smallest", "double-whole", "double-zero",
 				"int32", "int32-max", "int32-min", "int32-zero",
@@ -542,7 +572,7 @@ func TestQueryComparisonGte(t *testing.T) {
 
 		"Null": {
 			value:       nil,
-			expectedIDs: []any{"array-three", "null"},
+			expectedIDs: []any{"array-embedded", "array-three", "null"},
 		},
 
 		"Regex": {
@@ -870,7 +900,7 @@ func TestQueryComparisonLte(t *testing.T) {
 
 		"Null": {
 			value:       nil,
-			expectedIDs: []any{"array-three", "null"},
+			expectedIDs: []any{"array-embedded", "array-three", "null"},
 		},
 
 		"Regex": {

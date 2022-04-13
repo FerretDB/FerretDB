@@ -22,6 +22,7 @@ import (
 
 	"golang.org/x/exp/constraints"
 
+	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -188,15 +189,24 @@ func compare(docValue, filter any) compareResult {
 
 	switch docValue := docValue.(type) {
 	case *types.Document:
+		filter, isFilterDocument := filter.(*types.Document)
+		if isFilterDocument {
+			return compareDocuments(filter, docValue)
+		}
 		return notEqual
 
 	case *types.Array:
+		switch filter.(type) {
+		case *types.Array:
+			return compareArray(filter.(*types.Array), docValue)
+		}
+
 		for i := 0; i < docValue.Len(); i++ {
 			arrValue := must.NotFail(docValue.Get(i))
 
 			switch arrValue.(type) {
 			case *types.Document, *types.Array:
-				return notEqual
+				continue
 			}
 
 			switch compareScalars(arrValue, filter) {
@@ -252,4 +262,31 @@ func compareOrdered[T constraints.Ordered](a, b T) compareResult {
 // TODO https://github.com/FerretDB/FerretDB/issues/371
 func compareNumbers(a float64, b int64) compareResult {
 	return compareOrdered(a, float64(b))
+}
+
+// compareDocuments converts two documents to fjson and compares them.
+func compareDocuments(a, b *types.Document) compareResult {
+	if string(must.NotFail(fjson.Marshal(a))) == string(must.NotFail(fjson.Marshal(b))) {
+		return equal
+	}
+
+	return notEqual
+}
+
+// compareArray compares two arrays and returns document where array equals exactly the specified array
+// or array contains an element that equals the array.
+func compareArray(filterArr, docArr *types.Array) compareResult {
+	if string(must.NotFail(fjson.Marshal(filterArr))) == string(must.NotFail(fjson.Marshal(docArr))) {
+		return equal
+	}
+	for i := 0; i < docArr.Len(); i++ {
+		arrValue := must.NotFail(docArr.Get(i))
+		switch arrValue.(type) {
+		case *types.Array:
+			if string(must.NotFail(fjson.Marshal(filterArr))) == string(must.NotFail(fjson.Marshal(arrValue))) {
+				return equal
+			}
+		}
+	}
+	return notEqual
 }
