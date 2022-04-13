@@ -39,36 +39,36 @@ func TestQueryArraySize(t *testing.T) {
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
-		q           bson.D
+		filter      bson.D
 		expectedIDs []any
 		err         mongo.CommandError
 	}{
 		"int32": {
-			q:           bson.D{{"value", bson.D{{"$size", int32(2)}}}},
+			filter:      bson.D{{"value", bson.D{{"$size", int32(2)}}}},
 			expectedIDs: []any{"array-two"},
 		},
 		"int64": {
-			q:           bson.D{{"value", bson.D{{"$size", int64(2)}}}},
+			filter:      bson.D{{"value", bson.D{{"$size", int64(2)}}}},
 			expectedIDs: []any{"array-two"},
 		},
 		"float64": {
-			q:           bson.D{{"value", bson.D{{"$size", float64(2)}}}},
+			filter:      bson.D{{"value", bson.D{{"$size", float64(2)}}}},
 			expectedIDs: []any{"array-two"},
 		},
 		"Zero": {
-			q:           bson.D{{"value", bson.D{{"$size", 0}}}},
+			filter:      bson.D{{"value", bson.D{{"$size", 0}}}},
 			expectedIDs: []any{"array-empty"},
 		},
 		"NegativeZero": {
-			q:           bson.D{{"value", bson.D{{"$size", math.Copysign(0, -1)}}}},
+			filter:      bson.D{{"value", bson.D{{"$size", math.Copysign(0, -1)}}}},
 			expectedIDs: []any{"array-empty"},
 		},
 		"NotFound": {
-			q:           bson.D{{"value", bson.D{{"$size", 4}}}},
+			filter:      bson.D{{"value", bson.D{{"$size", 4}}}},
 			expectedIDs: []any{},
 		},
 		"InvalidType": {
-			q: bson.D{{"value", bson.D{{"$size", bson.D{{"$gt", 1}}}}}},
+			filter: bson.D{{"value", bson.D{{"$size", bson.D{{"$gt", 1}}}}}},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -76,7 +76,7 @@ func TestQueryArraySize(t *testing.T) {
 			},
 		},
 		"NotWhole": {
-			q: bson.D{{"value", bson.D{{"$size", 2.1}}}},
+			filter: bson.D{{"value", bson.D{{"$size", 2.1}}}},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -84,7 +84,7 @@ func TestQueryArraySize(t *testing.T) {
 			},
 		},
 		"NaN": {
-			q: bson.D{{"value", bson.D{{"$size", math.NaN()}}}},
+			filter: bson.D{{"value", bson.D{{"$size", math.NaN()}}}},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -92,7 +92,7 @@ func TestQueryArraySize(t *testing.T) {
 			},
 		},
 		"Infinity": {
-			q: bson.D{{"value", bson.D{{"$size", math.Inf(1)}}}},
+			filter: bson.D{{"value", bson.D{{"$size", math.Inf(1)}}}},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -100,7 +100,7 @@ func TestQueryArraySize(t *testing.T) {
 			},
 		},
 		"Negative": {
-			q: bson.D{{"value", bson.D{{"$size", -1}}}},
+			filter: bson.D{{"value", bson.D{{"$size", -1}}}},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -108,7 +108,7 @@ func TestQueryArraySize(t *testing.T) {
 			},
 		},
 		"InvalidUse": {
-			q: bson.D{{"$size", 2}},
+			filter: bson.D{{"$size", 2}},
 			err: mongo.CommandError{
 				Code: 2,
 				Name: "BadValue",
@@ -121,14 +121,15 @@ func TestQueryArraySize(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			var actual []bson.D
-			cursor, err := collection.Find(ctx, tc.q)
+			cursor, err := collection.Find(ctx, tc.filter)
 			if tc.err.Code != 0 {
 				require.Nil(t, tc.expectedIDs)
 				assertEqualError(t, tc.err, err)
 				return
 			}
 			require.NoError(t, err)
+
+			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
