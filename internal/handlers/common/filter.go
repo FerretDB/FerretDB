@@ -604,21 +604,13 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 					return true, nil
 				}
 			default:
-				return false, NewErrorMsg(
-					ErrBadValue,
-					fmt.Sprintf(
-						`Invalid numerical type code: %s`, aliasValue),
-				)
+				return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %s`, aliasValue))
 			}
 		}
 		return false, nil
 
 	default:
-		return false, NewErrorMsg(
-			ErrBadValue,
-			fmt.Sprintf(
-				`Invalid numerical type code: %v`, exprValue),
-		)
+		return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %v`, exprValue))
 	}
 }
 
@@ -695,11 +687,7 @@ func matchTypeByAlias(fieldValue any, alias string) (bool, error) {
 	case "decimal":
 		return false, nil
 	default:
-		return false, NewErrorMsg(
-			ErrBadValue,
-			fmt.Sprintf(
-				`Unknown type name alias: %s`, alias),
-		)
+		return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Unknown type name alias: %s`, alias))
 	}
 	return true, nil
 }

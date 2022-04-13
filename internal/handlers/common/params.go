@@ -222,17 +222,9 @@ func getTypeAliasByCode(code int32) (string, error) {
 		return "timestamp", nil
 	case 18:
 		return "long", nil
-	case 19:
-		return "decimal", nil
-	case -1:
-		return "minKey", nil
-	case 127:
-		return "maxKey", nil
+	case 19, -1, 127:
+		return "", NewErrorMsg(ErrNotImplemented, fmt.Sprintf(`Type code %v not implemented`, code))
 	default:
-		return "", NewErrorMsg(
-			ErrBadValue,
-			fmt.Sprintf(
-				`Invalid numerical type code: %d`, code),
-		)
+		return "", NewErrorMsg(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %d`, code))
 	}
 }

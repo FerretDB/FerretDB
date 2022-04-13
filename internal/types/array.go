@@ -139,18 +139,10 @@ func (a *Array) HasSameTypeElements() bool {
 	for _, i := range a.s {
 		var cur string
 		switch i := i.(type) {
-		case int32, int64:
-			cur = "int"
-		case *Array:
-			cur = "array"
-		case Regex:
-			cur = "regex"
-		case NullType:
-			cur = "null"
-		case Timestamp:
-			cur = "timestamp"
 		case *Document:
 			cur = "object"
+		case *Array:
+			cur = "array"
 		case float64:
 			if i != math.Trunc(i) || math.IsNaN(i) || math.IsInf(i, 0) {
 				cur = "double"
@@ -162,10 +154,22 @@ func (a *Array) HasSameTypeElements() bool {
 			cur = "string"
 		case Binary:
 			cur = "binData"
+		case ObjectID:
+			cur = "objectId"
 		case bool:
 			cur = "bool"
 		case time.Time:
 			cur = "date"
+		case NullType:
+			cur = "null"
+		case Regex:
+			cur = "regex"
+		case int32:
+			cur = "int"
+		case Timestamp:
+			cur = "timestamp"
+		case int64:
+			cur = "int"
 		default:
 			return false
 		}

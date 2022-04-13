@@ -27,7 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestExistsOperator(t *testing.T) {
+func TestQueryElementExists(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t)
 
@@ -89,7 +89,6 @@ func TestExistsOperator(t *testing.T) {
 			require.NoError(t, err)
 
 			var actual []bson.D
-
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
@@ -97,9 +96,9 @@ func TestExistsOperator(t *testing.T) {
 	}
 }
 
-func TestTypeOperator(t *testing.T) {
+func TestQueryElementType(t *testing.T) {
 	t.Parallel()
-	// TODO: add this data types to collection "objectId", "decimal", "minKey", "maxKey"
+	// TODO: add cases for "decimal" when it would be added.
 	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
@@ -255,8 +254,8 @@ func TestTypeOperator(t *testing.T) {
 			t.Parallel()
 
 			var actual []bson.D
-			q := bson.D{{"value", bson.D{{"$type", tc.v}}}}
-			cursor, err := collection.Find(ctx, q, options.Find().SetSort(bson.D{{"_id", 1}}))
+			filter := bson.D{{"value", bson.D{{"$type", tc.v}}}}
+			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
 				assertEqualError(t, tc.err.(mongo.CommandError), err)
