@@ -529,7 +529,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		res, err := filterFieldExprByTypeCode(fieldValue, code)
+		res, err := filterFieldValueByTypeCode(fieldValue, code)
 		if err != nil {
 			return res, err
 		}
@@ -540,7 +540,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		res, err := filterFieldExprByTypeCode(fieldValue, code)
+		res, err := filterFieldValueByTypeCode(fieldValue, code)
 		if err != nil {
 			return res, err
 		}
@@ -560,7 +560,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 			return false, err
 		}
 
-		res, err := filterFieldExprByTypeCode(fieldValue, code)
+		res, err := filterFieldValueByTypeCode(fieldValue, code)
 		if err != nil {
 			return false, err
 		}
@@ -582,7 +582,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 				if err != nil {
 					return false, err
 				}
-				res, err := filterFieldExprByTypeCode(fieldValue, code)
+				res, err := filterFieldValueByTypeCode(fieldValue, code)
 				if err != nil {
 					return false, err
 				}
@@ -600,7 +600,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 					continue
 				}
 
-				res, err := filterFieldExprByTypeCode(fieldValue, code)
+				res, err := filterFieldValueByTypeCode(fieldValue, code)
 				if err != nil {
 					return false, err
 				}
@@ -625,7 +625,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 					continue
 				}
 
-				res, err := filterFieldExprByTypeCode(fieldValue, code)
+				res, err := filterFieldValueByTypeCode(fieldValue, code)
 				if err != nil {
 					return false, err
 				}
@@ -643,8 +643,8 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 	}
 }
 
-// filterFieldExprByTypeCode filters fieldValue by given type code.
-func filterFieldExprByTypeCode(fieldValue any, code typeCode) (bool, error) {
+// filterFieldValueByTypeCode filters fieldValue by given type code.
+func filterFieldValueByTypeCode(fieldValue any, code typeCode) (bool, error) {
 	// check types.Array elements for match to given code.
 	if array, ok := fieldValue.(*types.Array); ok && code != typeCodeArray {
 		for i := 0; i < array.Len(); i++ {
@@ -653,7 +653,7 @@ func filterFieldExprByTypeCode(fieldValue any, code typeCode) (bool, error) {
 				panic(err)
 			}
 
-			res, err := filterFieldExprByTypeCode(value, code)
+			res, err := filterFieldValueByTypeCode(value, code)
 			if err != nil {
 				return false, err
 			}
