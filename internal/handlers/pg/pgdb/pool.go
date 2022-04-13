@@ -259,7 +259,7 @@ func (pgPool *Pool) CreateSchema(ctx context.Context, schema string) error {
 		return ErrAlreadyExist
 	case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject:
 		// https://www.postgresql.org/message-id/CA+TgmoZAdYVtwBfp1FL2sMZbiHCWT4UPrzRLNnX1Nb30Ku3-gg@mail.gmail.com
-		// The same thing for schemas. Reproducible by dance tests.
+		// The same thing for schemas. Reproducible by integration tests.
 		return ErrAlreadyExist
 	default:
 		return lazyerrors.Errorf("pg.CreateSchema: %w", err)
@@ -311,7 +311,7 @@ func (pgPool *Pool) CreateTable(ctx context.Context, schema, table string) error
 		return ErrAlreadyExist
 	case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject:
 		// https://www.postgresql.org/message-id/CA+TgmoZAdYVtwBfp1FL2sMZbiHCWT4UPrzRLNnX1Nb30Ku3-gg@mail.gmail.com
-		// Reproducible by dance tests.
+		// Reproducible by integration tests.
 		return ErrAlreadyExist
 	default:
 		return lazyerrors.Errorf("pg.CreateTable: %w", err)
