@@ -525,35 +525,64 @@ func filterFieldExprExists(fieldExist bool, exprValue any) (bool, error) {
 func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 	switch exprValue := exprValue.(type) {
 	case string:
-		res, err := matchTypeByAlias(fieldValue, exprValue)
+		code, err := parseTypeCode(exprValue)
+		if err != nil {
+			return false, err
+		}
+		res, err := matchTypeExprByTypeCode(fieldValue, code)
 		if err != nil {
 			return res, err
 		}
 		return res, nil
 
 	case int32:
-		alias, err := getTypeAliasByCode(exprValue)
+		code, err := newTypeCode(exprValue)
 		if err != nil {
 			return false, err
 		}
-		res, err := matchTypeByAlias(fieldValue, alias)
+		res, err := matchTypeExprByTypeCode(fieldValue, code)
 		if err != nil {
 			return res, err
 		}
+		return res, nil
+
+	case float64:
+		if math.IsNaN(exprValue) || math.IsInf(exprValue, 0) {
+			return false, NewErrorMsg(ErrBadValue, `Invalid numerical type code: `+
+				strings.Trim(strings.ToLower(fmt.Sprintf("%v", exprValue)), "+"))
+		}
+		if exprValue != math.Trunc(exprValue) {
+			return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %v`, exprValue))
+		}
+
+		code, err := newTypeCode(int32(exprValue))
+		if err != nil {
+			return false, err
+		}
+
+		res, err := matchTypeExprByTypeCode(fieldValue, code)
+		if err != nil {
+			return false, err
+		}
+
 		return res, nil
 
 	case *types.Array:
 		hasSameType := exprValue.HasSameTypeElements()
 
 		for i := 0; i < exprValue.Len(); i++ {
-			aliasValue, err := exprValue.Get(i)
+			exprVal, err := exprValue.Get(i)
 			if err != nil {
 				panic(err)
 			}
 
-			switch alias := aliasValue.(type) {
+			switch exprValue := exprVal.(type) {
 			case string:
-				res, err := matchTypeByAlias(fieldValue, alias)
+				code, err := parseTypeCode(exprValue)
+				if err != nil {
+					return false, err
+				}
+				res, err := matchTypeExprByTypeCode(fieldValue, code)
 				if err != nil {
 					return false, err
 				}
@@ -562,7 +591,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 				}
 
 			case int32:
-				aliasCode, err := getTypeAliasByCode(alias)
+				code, err := newTypeCode(exprValue)
 				if err != nil {
 					return false, err
 				}
@@ -571,7 +600,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 					continue
 				}
 
-				res, err := matchTypeByAlias(fieldValue, aliasCode)
+				res, err := matchTypeExprByTypeCode(fieldValue, code)
 				if err != nil {
 					return false, err
 				}
@@ -579,15 +608,15 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 					return true, nil
 				}
 			case float64:
-				if math.IsNaN(alias) || math.IsInf(alias, 0) {
+				if math.IsNaN(exprValue) || math.IsInf(exprValue, 0) {
 					return false, NewErrorMsg(ErrBadValue, `Invalid numerical type code: `+
-						strings.Trim(strings.ToLower(fmt.Sprintf("%v", alias)), "+"))
+						strings.Trim(strings.ToLower(fmt.Sprintf("%v", exprValue)), "+"))
 				}
-				if alias != math.Trunc(alias) {
-					return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %v`, alias))
+				if exprValue != math.Trunc(exprValue) {
+					return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %v`, exprValue))
 				}
 
-				aliasCode, err := getTypeAliasByCode(int32(alias))
+				code, err := newTypeCode(int32(exprValue))
 				if err != nil {
 					return false, err
 				}
@@ -596,7 +625,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 					continue
 				}
 
-				res, err := matchTypeByAlias(fieldValue, aliasCode)
+				res, err := matchTypeExprByTypeCode(fieldValue, code)
 				if err != nil {
 					return false, err
 				}
@@ -604,7 +633,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 					return true, nil
 				}
 			default:
-				return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %s`, aliasValue))
+				return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %s`, exprVal))
 			}
 		}
 		return false, nil
@@ -614,17 +643,17 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 	}
 }
 
-// matchTypeByAlias matches fieldValue against given type alias.
-func matchTypeByAlias(fieldValue any, alias string) (bool, error) {
+// matchTypeExprByTypeCode matches fieldValue against given type alias.
+func matchTypeExprByTypeCode(fieldValue any, code typeCode) (bool, error) {
 	// check types.Array elements for match to given alias.
-	if array, ok := fieldValue.(*types.Array); ok && alias != "array" {
+	if array, ok := fieldValue.(*types.Array); ok && code != typeCodeArray {
 		for i := 0; i < array.Len(); i++ {
 			value, err := array.Get(i)
 			if err != nil {
 				panic(err)
 			}
 
-			res, err := matchTypeByAlias(value, alias)
+			res, err := matchTypeExprByTypeCode(value, code)
 			if err != nil {
 				return false, err
 			}
@@ -635,59 +664,64 @@ func matchTypeByAlias(fieldValue any, alias string) (bool, error) {
 		}
 	}
 
-	switch alias {
-	case "int":
-		if _, ok := fieldValue.(int32); !ok {
-			return false, nil
-		}
-	case "array":
-		if _, ok := fieldValue.(*types.Array); !ok {
-			return false, nil
-		}
-	case "long":
-		if _, ok := fieldValue.(int64); !ok {
-			return false, nil
-		}
-	case "regex":
-		if _, ok := fieldValue.(types.Regex); !ok {
-			return false, nil
-		}
-	case "null":
-		if _, ok := fieldValue.(types.NullType); !ok {
-			return false, nil
-		}
-	case "timestamp":
-		if _, ok := fieldValue.(types.Timestamp); !ok {
-			return false, nil
-		}
-	case "object":
+	switch code {
+	case typeCodeObject:
 		if _, ok := fieldValue.(*types.Document); !ok {
 			return false, nil
 		}
-	case "double":
+	case typeCodeArray:
+		if _, ok := fieldValue.(*types.Array); !ok {
+			return false, nil
+		}
+	case typeCodeDouble:
 		if _, ok := fieldValue.(float64); !ok {
 			return false, nil
 		}
-	case "string":
+	case typeCodeString:
 		if _, ok := fieldValue.(string); !ok {
 			return false, nil
 		}
-	case "binData":
+	case typeCodeBinData:
 		if _, ok := fieldValue.(types.Binary); !ok {
 			return false, nil
 		}
-	case "bool":
+	case typeCodeObjectID:
+		if _, ok := fieldValue.(types.ObjectID); !ok {
+			return false, nil
+		}
+	case typeCodeBool:
 		if _, ok := fieldValue.(bool); !ok {
 			return false, nil
 		}
-	case "date":
+	case typeCodeDate:
 		if _, ok := fieldValue.(time.Time); !ok {
 			return false, nil
 		}
-	case "decimal":
+	case typeCodeNull:
+		if _, ok := fieldValue.(types.NullType); !ok {
+			return false, nil
+		}
+	case typeCodeRegex:
+		if _, ok := fieldValue.(types.Regex); !ok {
+			return false, nil
+		}
+	case typeCodeInt:
+		if _, ok := fieldValue.(int32); !ok {
+			return false, nil
+		}
+	case typeCodeTimestamp:
+		if _, ok := fieldValue.(types.Timestamp); !ok {
+			return false, nil
+		}
+	case typeCodeLong:
+		if _, ok := fieldValue.(int64); !ok {
+			return false, nil
+		}
+	case typeCodeUnknown:
 		return false, nil
 	default:
-		return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Unknown type name alias: %s`, alias))
+		return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Unknown type name alias: %s`, code.String()))
 	}
+
 	return true, nil
 }

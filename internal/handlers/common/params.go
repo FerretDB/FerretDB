@@ -193,38 +193,35 @@ func getBinaryParams(fieldValue any, maskValue any) (types.Binary, types.Binary,
 	return fieldBinary, maskBinary, nil
 }
 
-// getTypeAliasByCode returns type alias and error by given type code.
-func getTypeAliasByCode(code int32) (string, error) {
-	switch code {
-	case 1:
-		return "double", nil
-	case 2:
-		return "string", nil
-	case 3:
-		return "object", nil
-	case 4:
-		return "array", nil
-	case 5:
-		return "binData", nil
-	case 7:
-		return "objectId", nil
-	case 8:
-		return "bool", nil
-	case 9:
-		return "date", nil
-	case 10:
-		return "null", nil
-	case 11:
-		return "regex", nil
-	case 16:
-		return "int", nil
-	case 17:
-		return "timestamp", nil
-	case 18:
-		return "long", nil
-	case 19, -1, 127:
-		return "", NewErrorMsg(ErrNotImplemented, fmt.Sprintf(`Type code %v not implemented`, code))
+func parseTypeCode(alias string) (typeCode, error) {
+	switch alias {
+	case "double":
+		return typeCodeDouble, nil
+	case "string":
+		return typeCodeString, nil
+	case "object":
+		return typeCodeObject, nil
+	case "array":
+		return typeCodeArray, nil
+	case "binData":
+		return typeCodeBinData, nil
+	case "objectId":
+		return typeCodeObjectID, nil
+	case "bool":
+		return typeCodeBool, nil
+	case "date":
+		return typeCodeDate, nil
+	case "null":
+		return typeCodeNull, nil
+	case "regex":
+		return typeCodeRegex, nil
+	case "int":
+		return typeCodeInt, nil
+	case "timestamp":
+		return typeCodeTimestamp, nil
+	case "long":
+		return typeCodeLong, nil
 	default:
-		return "", NewErrorMsg(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %d`, code))
+		return typeCodeUnknown, nil
 	}
 }

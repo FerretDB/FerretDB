@@ -194,6 +194,10 @@ func TestQueryElementType(t *testing.T) {
 			v:           16,
 			expectedIDs: []any{"array", "array-three", "int32", "int32-max", "int32-min", "int32-zero"},
 		},
+		"FloatTypeCode": {
+			v:           16.0,
+			expectedIDs: []any{"array", "array-three", "int32", "int32-max", "int32-min", "int32-zero"},
+		},
 		"TypeArrayAliases": {
 			v:           []any{"bool", "binData"},
 			expectedIDs: []any{"binary", "binary-empty", "bool-false", "bool-true"},
@@ -255,7 +259,6 @@ func TestQueryElementType(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			var actual []bson.D
 			filter := bson.D{{"value", bson.D{{"$type", tc.v}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
@@ -264,6 +267,8 @@ func TestQueryElementType(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
+
+			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
