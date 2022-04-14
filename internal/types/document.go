@@ -117,6 +117,14 @@ func MustNewDocument(pairs ...any) *Document {
 
 func (*Document) compositeType() {}
 
+// DeepCopy returns a deep copy of this Document.
+func (d *Document) DeepCopy() *Document {
+	if d == nil {
+		panic("types.Document.DeepCopy: nil document")
+	}
+	return deepCopy(d).(*Document)
+}
+
 // isValidKey returns false if key is not a valid document field key.
 func isValidKey(key string) bool {
 	if key == "" {
