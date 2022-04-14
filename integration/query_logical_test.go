@@ -261,6 +261,12 @@ func TestQueryLogicalNot(t *testing.T) {
 				"timestamp", "timestamp-i",
 			},
 		},
+		"ValueInvalidRegex": {
+			filter: bson.D{{"value", bson.D{{"$not",
+				// TODO: add some bad regex value
+				nil}}}},
+			err:    mongo.CommandError{},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
