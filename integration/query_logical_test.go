@@ -262,11 +262,25 @@ func TestQueryLogicalNot(t *testing.T) {
 				"timestamp", "timestamp-i",
 			},
 		},
-		"ValueInvalidRegex": {
-			filter: bson.D{{"value", bson.D{{"$not",
-				// TODO: add some bad regex value
-				nil}}}},
-			err: mongo.CommandError{},
+		"NoSuchFieldRegex": {
+			filter: bson.D{{"no-such-field", bson.D{{"$not", primitive.Regex{Pattern: "/someregex/"}}}}},
+			expectedIDs: []any{
+				"array", "array-empty", "array-three",
+				"binary", "binary-empty",
+				"bool-false", "bool-true",
+				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
+				"document", "document-empty",
+				"double", "double-max", "double-nan",
+				"double-negative-infinity", "double-negative-zero", "double-positive-infinity",
+				"double-smallest", "double-whole", "double-zero",
+				"int32", "int32-max", "int32-min", "int32-zero",
+				"int64", "int64-max", "int64-min", "int64-zero",
+				"null",
+				"objectid", "objectid-empty",
+				"regex", "regex-empty",
+				"string", "string-double", "string-empty", "string-whole",
+				"timestamp", "timestamp-i",
+			},
 		},
 	} {
 		name, tc := name, tc
