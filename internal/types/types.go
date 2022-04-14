@@ -80,9 +80,6 @@ type (
 	// CString represents BSON type CString that used as document field name, etc.
 	CString string
 
-	// ObjectID represents BSON type ObjectID.
-	ObjectID [12]byte
-
 	// Timestamp represents BSON type Timestamp.
 	Timestamp uint64
 
