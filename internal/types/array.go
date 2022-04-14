@@ -14,11 +14,7 @@
 
 package types
 
-import (
-	"fmt"
-	"math"
-	"time"
-)
+import "fmt"
 
 // Array represents BSON array.
 //
@@ -131,59 +127,4 @@ func (a *Array) Append(values ...any) error {
 
 	a.s = append(a.s, values...)
 	return nil
-}
-
-// HasSameTypeElements returns true if Array elements has the same type.
-// MongoDB consider int32, int64 and float64 that could be converted to int as the same type.
-func (a *Array) HasSameTypeElements() bool {
-	var prev string
-	for _, i := range a.s {
-		var cur string
-		switch i := i.(type) {
-		case *Document:
-			cur = "object"
-		case *Array:
-			cur = "array"
-		case float64:
-			if i != math.Trunc(i) || math.IsNaN(i) || math.IsInf(i, 0) {
-				cur = "double"
-			} else {
-				// float that could be converted to int should be compared as int
-				cur = "int"
-			}
-		case string:
-			cur = "string"
-		case Binary:
-			cur = "binData"
-		case ObjectID:
-			cur = "objectId"
-		case bool:
-			cur = "bool"
-		case time.Time:
-			cur = "date"
-		case NullType:
-			cur = "null"
-		case Regex:
-			cur = "regex"
-		case int32:
-			cur = "int"
-		case Timestamp:
-			cur = "timestamp"
-		case int64:
-			cur = "int"
-		default:
-			return false
-		}
-
-		if prev == "" {
-			prev = cur
-			continue
-		}
-
-		if prev != cur {
-			return false
-		}
-	}
-
-	return true
 }

@@ -14,11 +14,21 @@
 
 package common
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+	"time"
+
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
+)
 
 //go:generate ../../../bin/stringer -linecomment -type typeCode
 
 // typeCode represents BSON type codes.
+// BSON type codes represent corresponding codes in BSON specification.
+// They could be used to query fields with particular type values using $type operator.
+// Type code `number` is added to support MongoDB surrogate alias `number` which matches double, int and long type values.
 type typeCode int32
 
 const (
@@ -35,7 +45,11 @@ const (
 	typeCodeInt       = typeCode(16) // int
 	typeCodeTimestamp = typeCode(17) // timestamp
 	typeCodeLong      = typeCode(18) // long
-	// not actual type code. number matches double, int and long
+	// Not implemented.
+	typeCodeDecimal = typeCode(19)  // decimal
+	typeCodeMinKey  = typeCode(-1)  // minKey
+	typeCodeMaxKey  = typeCode(127) // maxKey
+	// Not actual type code. `number` matches double, int and long.
 	typeCodeNumber = typeCode(-128) // number
 )
 
@@ -47,27 +61,80 @@ func newTypeCode(code int32) (typeCode, error) {
 		typeCodeBinData, typeCodeObjectID, typeCodeBool, typeCodeDate,
 		typeCodeNull, typeCodeRegex, typeCodeInt, typeCodeTimestamp, typeCodeLong, typeCodeNumber:
 		return c, nil
-	case 19, -1, 127:
+	case typeCodeDecimal, typeCodeMinKey, typeCodeMaxKey:
 		return 0, NewErrorMsg(ErrNotImplemented, fmt.Sprintf(`Type code %v not implemented`, code))
 	default:
 		return 0, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %d`, code))
 	}
 }
 
+// hasSameTypeElements returns true if Array elements has the same type.
+// MongoDB consider int32, int64 and float64 that could be converted to int as the same type.
+func hasSameTypeElements(array *types.Array) bool {
+	var prev string
+	for i := 0; i < array.Len(); i++ {
+		var cur string
+
+		element := must.NotFail(array.Get(i))
+
+		switch element := element.(type) {
+		case *types.Document:
+			cur = "object"
+		case *types.Array:
+			cur = "array"
+		case float64:
+			if element != math.Trunc(element) || math.IsNaN(element) || math.IsInf(element, 0) {
+				cur = "double"
+			} else {
+				// float that could be converted to int should be compared as int
+				cur = "int"
+			}
+		case string:
+			cur = "string"
+		case types.Binary:
+			cur = "binData"
+		case types.ObjectID:
+			cur = "objectId"
+		case bool:
+			cur = "bool"
+		case time.Time:
+			cur = "date"
+		case types.NullType:
+			cur = "null"
+		case types.Regex:
+			cur = "regex"
+		case int32:
+			cur = "int"
+		case types.Timestamp:
+			cur = "timestamp"
+		case int64:
+			cur = "int"
+		default:
+			return false
+		}
+
+		if prev == "" {
+			prev = cur
+			continue
+		}
+
+		if prev != cur {
+			return false
+		}
+	}
+
+	return true
+}
+
 // aliasToTypeCode matches string type aliases to the corresponding typeCode value.
-var aliasToTypeCode = map[string]typeCode{
-	"double":    typeCodeDouble,
-	"string":    typeCodeString,
-	"object":    typeCodeObject,
-	"array":     typeCodeArray,
-	"binData":   typeCodeBinData,
-	"objectId":  typeCodeObjectID,
-	"bool":      typeCodeBool,
-	"date":      typeCodeDate,
-	"null":      typeCodeNull,
-	"regex":     typeCodeRegex,
-	"int":       typeCodeInt,
-	"timestamp": typeCodeTimestamp,
-	"long":      typeCodeLong,
-	"number":    typeCodeNumber,
+var aliasToTypeCode = map[string]typeCode{}
+
+func init() {
+	for _, i := range []typeCode{
+		typeCodeDouble, typeCodeString, typeCodeObject, typeCodeArray,
+		typeCodeBinData, typeCodeObjectID, typeCodeBool, typeCodeDate, typeCodeNull,
+		typeCodeRegex, typeCodeInt, typeCodeTimestamp, typeCodeLong, typeCodeNumber,
+	} {
+		aliasToTypeCode[i.String()] = i
+	}
 }

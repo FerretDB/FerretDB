@@ -524,89 +524,13 @@ func filterFieldExprExists(fieldExist bool, exprValue any) (bool, error) {
 // filterFieldExprType handles {field: {$type: value}} filter.
 func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 	switch exprValue := exprValue.(type) {
-	case string:
-		code, err := parseTypeCode(exprValue)
-		if err != nil {
-			return false, err
-		}
-		res, err := filterFieldValueByTypeCode(fieldValue, code)
-		if err != nil {
-			return res, err
-		}
-		return res, nil
-
-	case int32:
-		code, err := newTypeCode(exprValue)
-		if err != nil {
-			return false, err
-		}
-		res, err := filterFieldValueByTypeCode(fieldValue, code)
-		if err != nil {
-			return res, err
-		}
-		return res, nil
-
-	case float64:
-		if math.IsNaN(exprValue) || math.IsInf(exprValue, 0) {
-			return false, NewErrorMsg(ErrBadValue, `Invalid numerical type code: `+
-				strings.Trim(strings.ToLower(fmt.Sprintf("%v", exprValue)), "+"))
-		}
-		if exprValue != math.Trunc(exprValue) {
-			return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %v`, exprValue))
-		}
-
-		code, err := newTypeCode(int32(exprValue))
-		if err != nil {
-			return false, err
-		}
-
-		res, err := filterFieldValueByTypeCode(fieldValue, code)
-		if err != nil {
-			return false, err
-		}
-
-		return res, nil
-
 	case *types.Array:
-		hasSameType := exprValue.HasSameTypeElements()
+		hasSameType := hasSameTypeElements(exprValue)
 
 		for i := 0; i < exprValue.Len(); i++ {
-			exprVal, err := exprValue.Get(i)
-			if err != nil {
-				panic(err)
-			}
+			exprValue := must.NotFail(exprValue.Get(i))
 
-			switch exprValue := exprVal.(type) {
-			case string:
-				code, err := parseTypeCode(exprValue)
-				if err != nil {
-					return false, err
-				}
-				res, err := filterFieldValueByTypeCode(fieldValue, code)
-				if err != nil {
-					return false, err
-				}
-				if res {
-					return true, nil
-				}
-
-			case int32:
-				code, err := newTypeCode(exprValue)
-				if err != nil {
-					return false, err
-				}
-
-				if !hasSameType {
-					continue
-				}
-
-				res, err := filterFieldValueByTypeCode(fieldValue, code)
-				if err != nil {
-					return false, err
-				}
-				if res {
-					return true, nil
-				}
+			switch exprValue := exprValue.(type) {
 			case float64:
 				if math.IsNaN(exprValue) || math.IsInf(exprValue, 0) {
 					return false, NewErrorMsg(ErrBadValue, `Invalid numerical type code: `+
@@ -632,11 +556,73 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 				if res {
 					return true, nil
 				}
+
+			case string:
+				code, err := parseTypeCode(exprValue)
+				if err != nil {
+					return false, err
+				}
+				res, err := filterFieldValueByTypeCode(fieldValue, code)
+				if err != nil {
+					return false, err
+				}
+				if res {
+					return true, nil
+				}
+			case int32:
+				code, err := newTypeCode(exprValue)
+				if err != nil {
+					return false, err
+				}
+
+				if !hasSameType {
+					continue
+				}
+
+				res, err := filterFieldValueByTypeCode(fieldValue, code)
+				if err != nil {
+					return false, err
+				}
+				if res {
+					return true, nil
+				}
 			default:
-				return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %s`, exprVal))
+				return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %s`, exprValue))
 			}
 		}
 		return false, nil
+
+	case float64:
+		if math.IsNaN(exprValue) || math.IsInf(exprValue, 0) {
+			return false, NewErrorMsg(ErrBadValue, `Invalid numerical type code: `+
+				strings.Trim(strings.ToLower(fmt.Sprintf("%v", exprValue)), "+"))
+		}
+		if exprValue != math.Trunc(exprValue) {
+			return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %v`, exprValue))
+		}
+
+		code, err := newTypeCode(int32(exprValue))
+		if err != nil {
+			return false, err
+		}
+
+		return filterFieldValueByTypeCode(fieldValue, code)
+
+	case string:
+		code, err := parseTypeCode(exprValue)
+		if err != nil {
+			return false, err
+		}
+
+		return filterFieldValueByTypeCode(fieldValue, code)
+
+	case int32:
+		code, err := newTypeCode(exprValue)
+		if err != nil {
+			return false, err
+		}
+
+		return filterFieldValueByTypeCode(fieldValue, code)
 
 	default:
 		return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %v`, exprValue))
@@ -725,6 +711,8 @@ func filterFieldValueByTypeCode(fieldValue any, code typeCode) (bool, error) {
 		default:
 			return false, nil
 		}
+	case typeCodeDecimal, typeCodeMinKey, typeCodeMaxKey:
+		return false, NewErrorMsg(ErrNotImplemented, fmt.Sprintf(`Type code %v not implemented`, code))
 	default:
 		return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Unknown type name alias: %s`, code.String()))
 	}
