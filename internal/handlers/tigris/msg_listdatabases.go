@@ -44,6 +44,9 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
+	// TODO: it's agreed that for the beginning a zero value can be sent.
+	// after the data will be available via tigris client, it can be added to the
+	// FerretDB response
 	databases := types.MakeArray(len(databaseNames))
 	for _, n := range databaseNames {
 		sizeOnDisk := int32(0)

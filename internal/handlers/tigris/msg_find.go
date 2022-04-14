@@ -99,7 +99,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		Documents: []*types.Document{types.MustNewDocument(
 			"cursor", types.MustNewDocument(
 				"firstBatch", firstBatch,
-				"id", int64(0), // TODO
+				"id", int64(0),
 				"ns", db+"."+collection,
 			),
 			"ok", float64(1),
