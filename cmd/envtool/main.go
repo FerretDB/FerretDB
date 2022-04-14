@@ -256,7 +256,7 @@ func printDiagnosticData(runError error, logger *zap.SugaredLogger) {
 
 	fmt.Printf(`Looks like something went wrong..
 Please file an issue with all that information below:
-	
+
 	OS: %s
 	Arch: %s
 	Version: %s

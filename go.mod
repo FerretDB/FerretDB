@@ -11,7 +11,7 @@ require (
 	github.com/prometheus/client_golang v1.12.1
 	github.com/prometheus/common v0.33.0
 	github.com/stretchr/testify v1.7.1
-	github.com/tigrisdata/tigrisdb-client-go v1.0.0-alpha.3
+	github.com/tigrisdata/tigrisdb-client-go v1.0.0-alpha.4
 	go.uber.org/zap v1.21.0
 	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd // indirect; always use @latest
 	golang.org/x/exp v0.0.0-20220407100705-7b9b53b0aca4
