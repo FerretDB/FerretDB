@@ -67,7 +67,6 @@ func TestQueryLogicalAnd(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			var actual []bson.D
 			cursor, err := collection.Find(ctx, bson.D{{"$and", tc.filter}})
 			if tc.err.Code != 0 {
 				require.Nil(t, tc.expectedIDs)
@@ -75,6 +74,8 @@ func TestQueryLogicalAnd(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
+
+			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
@@ -265,7 +266,7 @@ func TestQueryLogicalNot(t *testing.T) {
 			filter: bson.D{{"value", bson.D{{"$not",
 				// TODO: add some bad regex value
 				nil}}}},
-			err:    mongo.CommandError{},
+			err: mongo.CommandError{},
 		},
 	} {
 		name, tc := name, tc

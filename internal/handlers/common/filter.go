@@ -95,17 +95,15 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 	switch operator {
 	case "$and":
 		// {$and: [{expr1}, {expr2}, ...]}
-		exprs, err := AssertType[*types.Array](filterValue)
-		if err != nil {
+		exprs, ok := filterValue.(types.Array)
+		if !ok {
 			return false, NewErrorMsg(ErrBadValue, "$and must be an array")
 		}
 		for i := 0; i < exprs.Len(); i++ {
-			value, err := exprs.Get(i)
-			if err != nil {
-				return false, err
-			}
-			expr, err := AssertType[*types.Document](value)
-			if err != nil {
+			value := must.NotFail(exprs.Get(i))
+
+			expr, ok := value.(*types.Document)
+			if !ok {
 				return false, NewErrorMsg(ErrBadValue, "$or/$and/$nor entries need to be full objects")
 			}
 			matches, err := FilterDocument(doc, expr)
@@ -120,8 +118,8 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 
 	case "$or":
 		// {$or: [{expr1}, {expr2}, ...]}
-		exprs, err := AssertType[*types.Array](filterValue)
-		if err != nil {
+		exprs, ok := filterValue.(*types.Array)
+		if !ok {
 			return false, NewErrorMsg(ErrBadValue, "$or must be an array")
 		}
 		for i := 0; i < exprs.Len(); i++ {
@@ -129,8 +127,8 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 			if err != nil {
 				return false, err
 			}
-			expr, err := AssertType[*types.Document](value)
-			if err != nil {
+			expr, ok := value.(*types.Document)
+			if !ok {
 				return false, NewErrorMsg(ErrBadValue, "$or/$and/$nor entries need to be full objects")
 			}
 			matches, err := FilterDocument(doc, expr)
@@ -145,8 +143,8 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 
 	case "$nor":
 		// {$nor: [{expr1}, {expr2}, ...]}
-		exprs, err := AssertType[*types.Array](filterValue)
-		if err != nil {
+		exprs, ok := filterValue.(*types.Array)
+		if !ok {
 			return false, NewErrorMsg(ErrBadValue, "$nor must be an array")
 		}
 		for i := 0; i < exprs.Len(); i++ {
@@ -154,8 +152,8 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 			if err != nil {
 				return false, err
 			}
-			expr, err := AssertType[*types.Document](value)
-			if err != nil {
+			expr, ok := value.(*types.Document)
+			if !ok {
 				return false, NewErrorMsg(ErrBadValue, "$or/$and/$nor entries need to be full objects")
 			}
 			matches, err := FilterDocument(doc, expr)
