@@ -68,7 +68,7 @@ func newTypeCode(code int32) (typeCode, error) {
 	}
 }
 
-// hasSameTypeElements returns true if Array elements has the same type.
+// hasSameTypeElements returns true if types.Array elements has the same type.
 // MongoDB consider int32, int64 and float64 that could be converted to int as the same type.
 func hasSameTypeElements(array *types.Array) bool {
 	var prev string
