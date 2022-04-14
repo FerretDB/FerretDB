@@ -25,3 +25,13 @@ func NotFail[T any](res T, err error) T {
 	}
 	return res
 }
+
+// NoError panics if the error is not nil.
+//
+// Use that function only for static initialization, test code, or code that "can't" fail.
+// When in doubt, don't.
+func NoError(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
