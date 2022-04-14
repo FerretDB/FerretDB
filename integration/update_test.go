@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -36,9 +37,13 @@ func TestUpdateUpsert(t *testing.T) {
 
 	id := res.UpsertedID
 	assert.NotEmpty(t, id)
-	assert.EqualValues(t, 0, res.MatchedCount)
-	assert.EqualValues(t, 0, res.ModifiedCount)
-	assert.EqualValues(t, 1, res.UpsertedCount)
+	res.UpsertedID = nil
+	expected := &mongo.UpdateResult{
+		MatchedCount:  0,
+		ModifiedCount: 0,
+		UpsertedCount: 1,
+	}
+	require.Equal(t, expected, res)
 
 	// check inserted document
 	var doc bson.D
@@ -52,10 +57,12 @@ func TestUpdateUpsert(t *testing.T) {
 	res, err = collection.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
 	require.NoError(t, err)
 
-	assert.Empty(t, res.UpsertedID)
-	assert.EqualValues(t, 1, res.MatchedCount)
-	assert.EqualValues(t, 1, res.ModifiedCount)
-	assert.EqualValues(t, 0, res.UpsertedCount)
+	expected = &mongo.UpdateResult{
+		MatchedCount:  1,
+		ModifiedCount: 1,
+		UpsertedCount: 0,
+	}
+	require.Equal(t, expected, res)
 
 	// check updated document
 	err = collection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&doc)
