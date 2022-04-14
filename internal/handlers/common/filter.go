@@ -192,7 +192,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			if _, ok := exprValue.(types.NullType); ok {
 				return true, nil
 			}
-			// exit when not $exists filter and no such field
+			// exit when not $exists or $not filters and no such field
 			return false, nil
 		}
 
