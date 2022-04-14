@@ -22,9 +22,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+//nolint:paralleltest // we modify the global objectIDProcess
 func TestNewObjectID(t *testing.T) {
-	t.Parallel()
-
 	objectIDProcess = [5]byte{0x0b, 0xad, 0xc0, 0xff, 0xee}
 	ts := time.Date(2022, time.April, 13, 12, 44, 42, 0, time.UTC)
 
