@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -34,7 +35,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 	for name, tc := range map[string]struct {
 		v           any
 		expectedIDs []any
-		err         error
+		err         mongo.CommandError
 	}{
 		"int32": {
 			v: int32(2),
@@ -48,15 +49,16 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			var actual []bson.D
-			q := bson.D{{"value", bson.D{{"$bitsAllClear", tc.v}}}}
-			cursor, err := collection.Find(ctx, q, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err != nil {
+			filter := bson.D{{"value", bson.D{{"$bitsAllClear", tc.v}}}}
+			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			if tc.err.Code != 0 {
 				require.Nil(t, tc.expectedIDs)
-				require.Equal(t, tc.err, err)
+				assertEqualError(t, tc.err, err)
 				return
 			}
 			require.NoError(t, err)
+
+			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
