@@ -17,10 +17,13 @@ package common
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"math"
+	"reflect"
 	"time"
 
 	"golang.org/x/exp/constraints"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -189,21 +192,12 @@ func compare(docValue, filter any) compareResult {
 
 	switch docValue := docValue.(type) {
 	case *types.Document:
-		filter, isFilterDocument := filter.(*types.Document)
-		if isFilterDocument {
-			return compareDocuments(filter, docValue)
-		}
+		// TODO: implement document comparing
 		return notEqual
 
 	case *types.Array:
-		switch filter.(type) {
-		case *types.Array:
-			return compareArray(filter.(*types.Array), docValue)
-		}
-
 		for i := 0; i < docValue.Len(); i++ {
 			arrValue := must.NotFail(docValue.Get(i))
-
 			switch arrValue.(type) {
 			case *types.Document, *types.Array:
 				continue
@@ -264,29 +258,44 @@ func compareNumbers(a float64, b int64) compareResult {
 	return compareOrdered(a, float64(b))
 }
 
-// compareDocuments converts two documents to fjson and compares them.
-func compareDocuments(a, b *types.Document) compareResult {
-	if string(must.NotFail(fjson.Marshal(a))) == string(must.NotFail(fjson.Marshal(b))) {
-		return equal
+// matchDocuments returns true if 2 documents are equal.
+func matchDocuments(a, b *types.Document) bool {
+	if a == nil {
+		log.Panicf("%v is nil", a)
+	}
+	if b == nil {
+		log.Panicf("%v is nil", b)
 	}
 
-	return notEqual
+	keys := a.Keys()
+	if !slices.Equal(keys, b.Keys()) {
+		return false
+	}
+	return reflect.DeepEqual(a.Map(), b.Map())
 }
 
-// compareArray compares two arrays and returns document where array equals exactly the specified array
-// or array contains an element that equals the array.
-func compareArray(filterArr, docArr *types.Array) compareResult {
-	if string(must.NotFail(fjson.Marshal(filterArr))) == string(must.NotFail(fjson.Marshal(docArr))) {
-		return equal
+// matchArrays returns true if a filter array equals exactly the specified array or
+// array contains an element that equals the array.
+func matchArrays(filterArr, docArr *types.Array) bool {
+	if filterArr == nil {
+		log.Panicf("%v is nil", filterArr)
 	}
+	if docArr == nil {
+		log.Panicf("%v is nil", docArr)
+	}
+
+	if string(must.NotFail(fjson.Marshal(filterArr))) == string(must.NotFail(fjson.Marshal(docArr))) {
+		return true
+	}
+
 	for i := 0; i < docArr.Len(); i++ {
 		arrValue := must.NotFail(docArr.Get(i))
-		switch arrValue.(type) {
-		case *types.Array:
+		if arrValue, ok := arrValue.(*types.Array); ok {
 			if string(must.NotFail(fjson.Marshal(filterArr))) == string(must.NotFail(fjson.Marshal(arrValue))) {
-				return equal
+				return true
 			}
 		}
 	}
-	return notEqual
+
+	return false
 }

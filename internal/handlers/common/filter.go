@@ -64,9 +64,8 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 		if err != nil {
 			return false, nil // no error - the field is just not present
 		}
-		switch docValue := docValue.(type) {
-		case *types.Array:
-			return compareArray(docValue, filterValue) == equal, nil
+		if docValue, ok := docValue.(*types.Array); ok {
+			return matchArrays(docValue, filterValue), nil
 		}
 		return false, nil
 
@@ -185,10 +184,9 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			return false, nil
 		}
 
-		documentValue, isDocument := fieldValue.(*types.Document)
 		if !strings.HasPrefix(exprKey, "$") {
-			if isDocument && compareDocuments(documentValue, expr) == equal {
-				return true, nil
+			if documentValue, ok := fieldValue.(*types.Document); ok {
+				return matchDocuments(documentValue, expr), nil
 			}
 			return false, nil
 		}
@@ -196,8 +194,21 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 		switch exprKey {
 		case "$eq":
 			// {field: {$eq: exprValue}}
-			if compare(fieldValue, exprValue) != equal {
+			switch exprValue := exprValue.(type) {
+			case *types.Document:
+				if fieldValue, ok := fieldValue.(*types.Document); ok {
+					return matchDocuments(exprValue, fieldValue), nil
+				}
 				return false, nil
+			case *types.Array:
+				if fieldValue, ok := fieldValue.(*types.Array); ok {
+					return matchArrays(exprValue, fieldValue), nil
+				}
+				return false, nil
+			default:
+				if compare(fieldValue, exprValue) != equal {
+					return false, nil
+				}
 			}
 
 		case "$ne":

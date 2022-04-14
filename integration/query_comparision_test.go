@@ -43,15 +43,22 @@ func TestQueryComparisonImplicit(t *testing.T) {
 			filter:      bson.D{{"value", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}},
 			expectedIDs: []any{"document-composite"},
 		},
+		"DocumentShuffledKeys": {
+			filter:      bson.D{{"value", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}},
+			expectedIDs: []any{},
+		},
 
 		"Array": {
 			filter:      bson.D{{"value", bson.A{int32(42), "foo", nil}}},
 			expectedIDs: []any{"array-three"},
 		},
-
 		"ArrayEmbedded": {
 			filter:      bson.D{{"value", bson.A{bson.A{int32(42), "foo"}, nil}}},
 			expectedIDs: []any{"array-embedded"},
+		},
+		"ArrayShuffledValues": {
+			filter:      bson.D{{"value", bson.A{"foo", nil, int32(42)}}},
+			expectedIDs: []any{},
 		},
 
 		"IDNull": {
@@ -120,15 +127,22 @@ func TestQueryComparisonEq(t *testing.T) {
 			filter:      bson.D{{"value", bson.D{{"$eq", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}}}},
 			expectedIDs: []any{"document-composite"},
 		},
+		"DocumentShuffledKeys": {
+			filter:      bson.D{{"value", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}},
+			expectedIDs: []any{},
+		},
 
 		"Array": {
 			filter:      bson.D{{"value", bson.D{{"$eq", bson.A{int32(42), "foo", nil}}}}},
 			expectedIDs: []any{"array-three"},
 		},
-
 		"ArrayEmbedded": {
 			filter:      bson.D{{"value", bson.D{{"$eq", bson.A{bson.A{int32(42), "foo"}, nil}}}}},
 			expectedIDs: []any{"array-embedded"},
+		},
+		"ArrayShuffledValues": {
+			filter:      bson.D{{"value", bson.A{"foo", nil, int32(42)}}},
+			expectedIDs: []any{},
 		},
 
 		"Double": {
