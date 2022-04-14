@@ -55,6 +55,14 @@ func MustNewArray(values ...any) *Array {
 
 func (a *Array) compositeType() {}
 
+// DeepCopy returns a deep copy of this Array.
+func (a *Array) DeepCopy() *Array {
+	if a == nil {
+		panic("types.Array.DeepCopy: nil array")
+	}
+	return deepCopy(a).(*Array)
+}
+
 // Len returns the number of elements in the array.
 //
 // It returns 0 for nil Array.

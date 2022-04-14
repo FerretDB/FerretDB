@@ -76,6 +76,19 @@ func TestDocument(t *testing.T) {
 		assert.EqualError(t, err, `types.NewDocument: types.Document.validate: types.validateValue: unsupported type: int (42)`)
 	})
 
+	t.Run("DeepCopy", func(t *testing.T) {
+		t.Parallel()
+
+		a := must.NotFail(NewDocument("foo", int32(42)))
+		b := a.DeepCopy()
+		assert.Equal(t, a, b)
+		assert.NotSame(t, a, b)
+
+		a.m["foo"] = "bar"
+		assert.NotEqual(t, a, b)
+		assert.Equal(t, int32(42), b.m["foo"])
+	})
+
 	t.Run("Validate", func(t *testing.T) {
 		t.Parallel()
 

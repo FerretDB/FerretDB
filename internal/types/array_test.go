@@ -63,4 +63,17 @@ func TestArray(t *testing.T) {
 		assert.Nil(t, a)
 		assert.EqualError(t, err, `types.NewArray: index 1: types.validateValue: unsupported type: int (42)`)
 	})
+
+	t.Run("DeepCopy", func(t *testing.T) {
+		t.Parallel()
+
+		a := must.NotFail(NewArray(int32(42)))
+		b := a.DeepCopy()
+		assert.Equal(t, a, b)
+		assert.NotSame(t, a, b)
+
+		a.s[0] = "foo"
+		assert.NotEqual(t, a, b)
+		assert.Equal(t, int32(42), b.s[0])
+	})
 }
