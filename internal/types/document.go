@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"strconv"
 	"unicode/utf8"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // Common interface with bson.Document.
@@ -61,11 +63,7 @@ func ConvertDocument(d document) (*Document, error) {
 //
 // Deprecated: use `must.NotFail(ConvertDocument(...))` instead.
 func MustConvertDocument(d document) *Document {
-	doc, err := ConvertDocument(d)
-	if err != nil {
-		panic(err)
-	}
-	return doc
+	return must.NotFail(ConvertDocument(d))
 }
 
 // NewDocument creates a document with the given key/value pairs.
@@ -108,11 +106,7 @@ func NewDocument(pairs ...any) (*Document, error) {
 //
 // Deprecated: use `must.NotFail(NewDocument(...))` instead.
 func MustNewDocument(pairs ...any) *Document {
-	doc, err := NewDocument(pairs...)
-	if err != nil {
-		panic(err)
-	}
-	return doc
+	return must.NotFail(NewDocument(pairs...))
 }
 
 func (*Document) compositeType() {}
@@ -232,6 +226,12 @@ func (d *Document) add(key string, value any) error {
 	return nil
 }
 
+// Has returns true if the given key is present in the document.
+func (d *Document) Has(key string) bool {
+	_, ok := d.m[key]
+	return ok
+}
+
 // Get returns a value at the given key.
 func (d *Document) Get(key string) (any, error) {
 	if value, ok := d.m[key]; ok {
@@ -269,13 +269,6 @@ func (d *Document) Set(key string, value any) error {
 
 	d.m[key] = value
 	return nil
-}
-
-// MustSet is a variant of Set that panics on error.
-func (d *Document) MustSet(key string, value any) {
-	if err := d.Set(key, value); err != nil {
-		panic(err)
-	}
 }
 
 // Remove the given key, doing nothing if the key does not exist.
