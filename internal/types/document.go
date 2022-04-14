@@ -19,6 +19,8 @@ import (
 	"strconv"
 	"unicode/utf8"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -143,6 +145,8 @@ func (d *Document) validate() error {
 		return fmt.Errorf("types.Document.validate: keys and values count mismatch: %d != %d", len(d.m), len(d.keys))
 	}
 
+	// TODO check that _id is not regex or array
+
 	prevKeys := make(map[string]struct{}, len(d.keys))
 	for _, key := range d.keys {
 		if !isValidKey(key) {
@@ -207,6 +211,9 @@ func (d *Document) Command() string {
 	return keys[0]
 }
 
+// add adds the value for the given key, returning error if that key is already present.
+//
+// As a special case, _id always becomes the first key.
 func (d *Document) add(key string, value any) error {
 	if _, ok := d.m[key]; ok {
 		return fmt.Errorf("types.Document.add: key already present: %q", key)
@@ -220,7 +227,16 @@ func (d *Document) add(key string, value any) error {
 		return fmt.Errorf("types.Document.validate: %w", err)
 	}
 
-	d.keys = append(d.keys, key)
+	// update keys slice
+	if key == "_id" {
+		// TODO check that value is not regex or array
+
+		// ensure that _id is the first field
+		d.keys = slices.Insert(d.keys, 0, key)
+	} else {
+		d.keys = append(d.keys, key)
+	}
+
 	d.m[key] = value
 
 	return nil
@@ -246,7 +262,9 @@ func (d *Document) GetByPath(path ...string) (any, error) {
 	return getByPath(d, path...)
 }
 
-// Set the value of the given key, replacing any existing value.
+// Set sets the value for the given key, replacing any existing value.
+//
+// As a special case, _id always becomes the first key.
 func (d *Document) Set(key string, value any) error {
 	if !isValidKey(key) {
 		return fmt.Errorf("types.Document.Set: invalid key: %q", key)
@@ -256,8 +274,19 @@ func (d *Document) Set(key string, value any) error {
 		return fmt.Errorf("types.Document.validate: %w", err)
 	}
 
-	if _, ok := d.m[key]; !ok {
-		d.keys = append(d.keys, key)
+	// update keys slice
+	if key == "_id" {
+		// TODO check that value is not regex or array
+
+		// ensure that _id is the first field
+		if i := slices.Index(d.keys, key); i >= 0 {
+			d.keys = slices.Delete(d.keys, i, i+1)
+		}
+		d.keys = slices.Insert(d.keys, 0, key)
+	} else {
+		if _, ok := d.m[key]; !ok {
+			d.keys = append(d.keys, key)
+		}
 	}
 
 	if d.m == nil {
