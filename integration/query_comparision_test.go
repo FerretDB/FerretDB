@@ -39,10 +39,9 @@ func TestQueryComparisonImplicit(t *testing.T) {
 		filter      bson.D
 		expectedIDs []any
 	}{
-
 		"Document": {
-			filter:      bson.D{{"value", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{"foo", 42}}}}},
-			expectedIDs: []any{"document-resembling"},
+			filter:      bson.D{{"value", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}},
+			expectedIDs: []any{"document-composite"},
 		},
 
 		"Array": {
@@ -70,7 +69,7 @@ func TestQueryComparisonImplicit(t *testing.T) {
 				"binary", "binary-empty",
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
-				"document", "document-empty", "document-resembling",
+				"document", "document-composite", "document-empty",
 				"double", "double-max", "double-nan", "double-negative-infinity", "double-negative-zero",
 				"double-positive-infinity", "double-smallest", "double-whole", "double-zero",
 				"int32", "int32-max", "int32-min", "int32-zero",
@@ -117,10 +116,9 @@ func TestQueryComparisonEq(t *testing.T) {
 		filter      bson.D
 		expectedIDs []any
 	}{
-
 		"Document": {
-			filter:      bson.D{{"value", bson.D{{"$eq", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{"foo", 42}}}}}}},
-			expectedIDs: []any{"document-resembling"},
+			filter:      bson.D{{"value", bson.D{{"$eq", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}}}},
+			expectedIDs: []any{"document-composite"},
 		},
 
 		"Array": {
@@ -303,7 +301,7 @@ func TestQueryComparisonEq(t *testing.T) {
 				"binary", "binary-empty",
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
-				"document", "document-empty", "document-resembling",
+				"document", "document-composite", "document-empty",
 				"double", "double-max", "double-nan", "double-negative-infinity", "double-negative-zero",
 				"double-positive-infinity", "double-smallest", "double-whole", "double-zero",
 				"int32", "int32-max", "int32-min", "int32-zero",
