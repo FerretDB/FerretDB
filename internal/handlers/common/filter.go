@@ -95,7 +95,7 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 	switch operator {
 	case "$and":
 		// {$and: [{expr1}, {expr2}, ...]}
-		exprs, ok := filterValue.(types.Array)
+		exprs, ok := filterValue.(*types.Array)
 		if !ok {
 			return false, NewErrorMsg(ErrBadValue, "$and must be an array")
 		}
@@ -187,7 +187,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 		exprValue := must.NotFail(expr.Get(exprKey))
 
 		fieldValue, err := doc.Get(filterKey)
-		if err != nil && exprKey != "$exists" {
+		if err != nil && exprKey != "$exists" && exprKey != "$not" {
 			// comparing not existent field with null should return true
 			if _, ok := exprValue.(types.NullType); ok {
 				return true, nil
