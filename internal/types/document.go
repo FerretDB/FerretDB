@@ -263,6 +263,13 @@ func (d *Document) Set(key string, value any) error {
 	return nil
 }
 
+// MustSet is a variant of Set that panics on error.
+func (d *Document) MustSet(key string, value any) {
+	if err := d.Set(key, value); err != nil {
+		panic(err)
+	}
+}
+
 // Remove the given key, doing nothing if the key does not exist.
 func (d *Document) Remove(key string) {
 	if _, ok := d.m[key]; !ok {

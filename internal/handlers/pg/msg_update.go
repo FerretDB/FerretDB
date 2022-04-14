@@ -64,7 +64,8 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		h.l.Info("Created table.", zap.String("schema", db), zap.String("table", collection))
 	}
 
-	var selected, updated int32
+	var selected, modified int32
+	var upserted *types.Array
 	for i := 0; i < updates.Len(); i++ {
 		update, err := common.AssertType[*types.Document](must.NotFail(updates.Get(i)))
 		if err != nil {
@@ -83,10 +84,14 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		var q, u *types.Document
+		var upsert bool
 		if q, err = common.GetOptionalParam(update, "q", q); err != nil {
 			return nil, err
 		}
 		if u, err = common.GetOptionalParam(update, "u", u); err != nil {
+			return nil, err
+		}
+		if upsert, err = common.GetOptionalParam(update, "upsert", upsert); err != nil {
 			return nil, err
 		}
 
@@ -107,6 +112,29 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			}
 
 			resDocs = append(resDocs, doc)
+		}
+
+		if len(resDocs) == 0 {
+			if !upsert {
+				// nothing to do, continue to the next update operation
+				continue
+			}
+
+			upsertDoc := must.NotFail(types.NewDocument())
+			// use filter as the basis for the upsert
+			d := types.Document(*q)
+
+			d := doc.(*types.Document)
+			sql := fmt.Sprintf("INSERT INTO %s (_jsonb) VALUES ($1)", pgx.Identifier{db, collection}.Sanitize())
+			b, err := fjson.Marshal(d)
+			if err != nil {
+				return nil, err
+			}
+
+			if _, err = h.pgPool.Exec(ctx, sql, b); err != nil {
+				return nil, err
+			}
+
 		}
 
 		selected += int32(len(resDocs))
@@ -140,17 +168,22 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				return nil, err
 			}
 
-			updated += int32(tag.RowsAffected())
+			modified += int32(tag.RowsAffected())
 		}
 	}
 
+	res := must.NotFail(types.NewDocument(
+		"n", selected,
+	))
+	if upserted != nil {
+		res.MustSet("upserted", upserted)
+	}
+	res.MustSet("nModified", modified)
+	res.MustSet("ok", float64(1))
+
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{types.MustNewDocument(
-			"n", selected,
-			"nModified", updated,
-			"ok", float64(1),
-		)},
+		Documents: []*types.Document{res},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
