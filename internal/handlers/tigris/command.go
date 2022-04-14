@@ -58,6 +58,10 @@ var commands = map[string]command{
 		help:    "Returns documents matched by the custom query.",
 		handler: (*Handler).MsgFind,
 	},
+	"insert": {
+		help:    "Inserts documents into the database.",
+		handler: (*Handler).MsgInsert,
+	},
 
 	// internal commands
 	"debug_error": {
