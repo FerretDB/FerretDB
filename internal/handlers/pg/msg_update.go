@@ -73,7 +73,6 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		unimplementedFields := []string{
 			"c",
-			"upsert",
 			"multi",
 			"collation",
 			"arrayFilters",
@@ -108,10 +107,6 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			}
 
 			resDocs = append(resDocs, doc)
-		}
-
-		if len(resDocs) == 0 {
-			continue
 		}
 
 		selected += int32(len(resDocs))
