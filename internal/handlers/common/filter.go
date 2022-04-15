@@ -666,6 +666,10 @@ func filterFieldValueByTypeCode(fieldValue any, code typeCode) (bool, error) {
 				panic(err)
 			}
 
+			if _, ok := value.(*types.Array); ok {
+				continue
+			}
+
 			res, err := filterFieldValueByTypeCode(value, code)
 			if err != nil {
 				return false, err
