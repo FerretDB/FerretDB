@@ -16,7 +16,7 @@
    * `env GOPROXY=https://proxy.golang.org go install -v github.com/FerretDB/FerretDB/cmd/ferretdb@<tag>`
    * <https://pkg.go.dev/github.com/FerretDB/FerretDB>
 10. `task docker-local`
-11. `task docker-push` with four tags (`X.Y.Z` and `latest` for both ghcr.io and Docker Hub):
+11. `task docker-push` with four tags (`X.Y.Z` without leading `v` and `latest` for both ghcr.io and Docker Hub):
     * `task docker-push DOCKER_IMAGE=ferretdb/ferretdb:latest`
     * `task docker-push DOCKER_IMAGE=ferretdb/ferretdb:<tag>`
     * `task docker-push DOCKER_IMAGE=ghcr.io/ferretdb/ferretdb:latest`
