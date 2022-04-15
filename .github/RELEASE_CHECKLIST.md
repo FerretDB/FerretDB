@@ -15,11 +15,11 @@
 9. Refresh
    * `env GOPROXY=https://proxy.golang.org go install -v github.com/FerretDB/FerretDB/cmd/ferretdb@<tag>`
    * <https://pkg.go.dev/github.com/FerretDB/FerretDB>
-10. `bin/task docker-local`
-11. `bin/task docker-push` with four tags (`X.Y.Z` and `latest` for both ghcr.io and Docker Hub):
-    * `bin/task docker-push DOCKER_IMAGE=ferretdb/ferretdb:latest`
-    * `bin/task docker-push DOCKER_IMAGE=ferretdb/ferretdb:<tag>`
-    * `bin/task docker-push DOCKER_IMAGE=ghcr.io/ferretdb/ferretdb:latest`
-    * `bin/task docker-push DOCKER_IMAGE=ghcr.io/ferretdb/ferretdb:<tag>`
+10. `task docker-local`
+11. `task docker-push` with four tags (`X.Y.Z` and `latest` for both ghcr.io and Docker Hub):
+    * `task docker-push DOCKER_IMAGE=ferretdb/ferretdb:latest`
+    * `task docker-push DOCKER_IMAGE=ferretdb/ferretdb:<tag>`
+    * `task docker-push DOCKER_IMAGE=ghcr.io/ferretdb/ferretdb:latest`
+    * `task docker-push DOCKER_IMAGE=ghcr.io/ferretdb/ferretdb:<tag>`
 12. Close milestone in issues.
 13. Announce it!
