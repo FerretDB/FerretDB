@@ -17,12 +17,13 @@ package integration
 import (
 	"testing"
 
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestUpdateUpsert(t *testing.T) {

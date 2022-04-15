@@ -695,6 +695,11 @@ func filterFieldValueByTypeCode(fieldValue any, code typeCode) (bool, error) {
 				panic(err)
 			}
 
+			// Skip embedded arrays.
+			if _, ok := value.(*types.Array); ok {
+				continue
+			}
+
 			res, err := filterFieldValueByTypeCode(value, code)
 			if err != nil {
 				return false, err
