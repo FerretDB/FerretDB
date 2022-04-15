@@ -16,7 +16,9 @@ package common
 
 import (
 	"fmt"
+	"math"
 	"strings"
+	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -319,6 +321,13 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				return false, err
 			}
 
+		case "$type":
+			// {field: {$type: value}}
+			res, err := filterFieldExprType(fieldValue, exprValue)
+			if !res || err != nil {
+				return false, err
+			}
+
 		default:
 			panic(fmt.Sprintf("filterFieldExpr: %q", exprKey))
 		}
@@ -510,4 +519,203 @@ func filterFieldExprExists(fieldExist bool, exprValue any) (bool, error) {
 	default:
 		return false, nil
 	}
+}
+
+// filterFieldExprType handles {field: {$type: value}} filter.
+func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
+	switch exprValue := exprValue.(type) {
+	case *types.Array:
+		hasSameType := hasSameTypeElements(exprValue)
+
+		for i := 0; i < exprValue.Len(); i++ {
+			exprValue := must.NotFail(exprValue.Get(i))
+
+			switch exprValue := exprValue.(type) {
+			case float64:
+				if math.IsNaN(exprValue) || math.IsInf(exprValue, 0) {
+					return false, NewErrorMsg(ErrBadValue, `Invalid numerical type code: `+
+						strings.Trim(strings.ToLower(fmt.Sprintf("%v", exprValue)), "+"))
+				}
+				if exprValue != math.Trunc(exprValue) {
+					return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %v`, exprValue))
+				}
+
+				code, err := newTypeCode(int32(exprValue))
+				if err != nil {
+					return false, err
+				}
+
+				if !hasSameType {
+					continue
+				}
+
+				res, err := filterFieldValueByTypeCode(fieldValue, code)
+				if err != nil {
+					return false, err
+				}
+				if res {
+					return true, nil
+				}
+
+			case string:
+				code, err := parseTypeCode(exprValue)
+				if err != nil {
+					return false, err
+				}
+				res, err := filterFieldValueByTypeCode(fieldValue, code)
+				if err != nil {
+					return false, err
+				}
+				if res {
+					return true, nil
+				}
+			case int32:
+				code, err := newTypeCode(exprValue)
+				if err != nil {
+					return false, err
+				}
+
+				if !hasSameType {
+					continue
+				}
+
+				res, err := filterFieldValueByTypeCode(fieldValue, code)
+				if err != nil {
+					return false, err
+				}
+				if res {
+					return true, nil
+				}
+			default:
+				return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %s`, exprValue))
+			}
+		}
+		return false, nil
+
+	case float64:
+		if math.IsNaN(exprValue) || math.IsInf(exprValue, 0) {
+			return false, NewErrorMsg(ErrBadValue, `Invalid numerical type code: `+
+				strings.Trim(strings.ToLower(fmt.Sprintf("%v", exprValue)), "+"))
+		}
+		if exprValue != math.Trunc(exprValue) {
+			return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %v`, exprValue))
+		}
+
+		code, err := newTypeCode(int32(exprValue))
+		if err != nil {
+			return false, err
+		}
+
+		return filterFieldValueByTypeCode(fieldValue, code)
+
+	case string:
+		code, err := parseTypeCode(exprValue)
+		if err != nil {
+			return false, err
+		}
+
+		return filterFieldValueByTypeCode(fieldValue, code)
+
+	case int32:
+		code, err := newTypeCode(exprValue)
+		if err != nil {
+			return false, err
+		}
+
+		return filterFieldValueByTypeCode(fieldValue, code)
+
+	default:
+		return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %v`, exprValue))
+	}
+}
+
+// filterFieldValueByTypeCode filters fieldValue by given type code.
+func filterFieldValueByTypeCode(fieldValue any, code typeCode) (bool, error) {
+	// check types.Array elements for match to given code.
+	if array, ok := fieldValue.(*types.Array); ok && code != typeCodeArray {
+		for i := 0; i < array.Len(); i++ {
+			value, err := array.Get(i)
+			if err != nil {
+				panic(err)
+			}
+
+			res, err := filterFieldValueByTypeCode(value, code)
+			if err != nil {
+				return false, err
+			}
+
+			if res {
+				return true, nil
+			}
+		}
+	}
+
+	switch code {
+	case typeCodeObject:
+		if _, ok := fieldValue.(*types.Document); !ok {
+			return false, nil
+		}
+	case typeCodeArray:
+		if _, ok := fieldValue.(*types.Array); !ok {
+			return false, nil
+		}
+	case typeCodeDouble:
+		if _, ok := fieldValue.(float64); !ok {
+			return false, nil
+		}
+	case typeCodeString:
+		if _, ok := fieldValue.(string); !ok {
+			return false, nil
+		}
+	case typeCodeBinData:
+		if _, ok := fieldValue.(types.Binary); !ok {
+			return false, nil
+		}
+	case typeCodeObjectID:
+		if _, ok := fieldValue.(types.ObjectID); !ok {
+			return false, nil
+		}
+	case typeCodeBool:
+		if _, ok := fieldValue.(bool); !ok {
+			return false, nil
+		}
+	case typeCodeDate:
+		if _, ok := fieldValue.(time.Time); !ok {
+			return false, nil
+		}
+	case typeCodeNull:
+		if _, ok := fieldValue.(types.NullType); !ok {
+			return false, nil
+		}
+	case typeCodeRegex:
+		if _, ok := fieldValue.(types.Regex); !ok {
+			return false, nil
+		}
+	case typeCodeInt:
+		if _, ok := fieldValue.(int32); !ok {
+			return false, nil
+		}
+	case typeCodeTimestamp:
+		if _, ok := fieldValue.(types.Timestamp); !ok {
+			return false, nil
+		}
+	case typeCodeLong:
+		if _, ok := fieldValue.(int64); !ok {
+			return false, nil
+		}
+	case typeCodeNumber:
+		// typeCodeNumber should match int32, int64 and float64 types
+		switch fieldValue.(type) {
+		case int32, int64, float64:
+			return true, nil
+		default:
+			return false, nil
+		}
+	case typeCodeDecimal, typeCodeMinKey, typeCodeMaxKey:
+		return false, NewErrorMsg(ErrNotImplemented, fmt.Sprintf(`Type code %v not implemented`, code))
+	default:
+		return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Unknown type name alias: %s`, code.String()))
+	}
+
+	return true, nil
 }
