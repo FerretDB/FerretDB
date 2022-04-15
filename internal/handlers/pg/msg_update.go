@@ -64,7 +64,8 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		h.l.Info("Created table.", zap.String("schema", db), zap.String("table", collection))
 	}
 
-	var selected, updated int32
+	var matched, modified int32
+	var upserted types.Array
 	for i := 0; i < updates.Len(); i++ {
 		update, err := common.AssertType[*types.Document](must.NotFail(updates.Get(i)))
 		if err != nil {
@@ -73,7 +74,6 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		unimplementedFields := []string{
 			"c",
-			"upsert",
 			"multi",
 			"collation",
 			"arrayFilters",
@@ -84,10 +84,14 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		var q, u *types.Document
+		var upsert bool
 		if q, err = common.GetOptionalParam(update, "q", q); err != nil {
 			return nil, err
 		}
 		if u, err = common.GetOptionalParam(update, "u", u); err != nil {
+			return nil, err
+		}
+		if upsert, err = common.GetOptionalParam(update, "upsert", upsert); err != nil {
 			return nil, err
 		}
 
@@ -111,31 +115,44 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		if len(resDocs) == 0 {
+			if !upsert {
+				// nothing to do, continue to the next update operation
+				continue
+			}
+
+			doc := q.DeepCopy()
+			if err = common.UpdateDocument(doc, u); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+			if !doc.Has("_id") {
+				must.NoError(doc.Set("_id", types.NewObjectID()))
+			}
+
+			must.NoError(upserted.Append(must.NotFail(types.NewDocument(
+				"index", int32(0), // TODO
+				"_id", must.NotFail(doc.Get("_id")),
+			))))
+
+			sql := fmt.Sprintf("INSERT INTO %s (_jsonb) VALUES ($1)", pgx.Identifier{db, collection}.Sanitize())
+			b, err := fjson.Marshal(doc)
+			if err != nil {
+				return nil, err
+			}
+
+			if _, err := h.pgPool.Exec(ctx, sql, b); err != nil {
+				return nil, err
+			}
+
+			matched += 1
+
 			continue
 		}
 
-		selected += int32(len(resDocs))
+		matched += int32(len(resDocs))
 
 		for _, doc := range resDocs {
-			for _, updateOp := range u.Keys() {
-				updateV := must.NotFail(u.Get(updateOp))
-				switch updateOp {
-				case "$set":
-					setDoc, err := common.AssertType[*types.Document](updateV)
-					if err != nil {
-						return nil, err
-					}
-
-					for _, setKey := range setDoc.Keys() {
-						setValue := must.NotFail(setDoc.Get(setKey))
-						if err = doc.Set(setKey, setValue); err != nil {
-							return nil, lazyerrors.Error(err)
-						}
-					}
-
-				default:
-					return nil, lazyerrors.Errorf("unhandled operation %q", updateOp)
-				}
+			if err = common.UpdateDocument(doc, u); err != nil {
+				return nil, lazyerrors.Error(err)
 			}
 
 			sql := fmt.Sprintf("UPDATE %s SET _jsonb = $1 WHERE _jsonb->'_id' = $2", pgx.Identifier{db, collection}.Sanitize())
@@ -145,17 +162,22 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				return nil, err
 			}
 
-			updated += int32(tag.RowsAffected())
+			modified += int32(tag.RowsAffected())
 		}
 	}
 
+	res := must.NotFail(types.NewDocument(
+		"n", matched,
+	))
+	if upserted.Len() != 0 {
+		must.NoError(res.Set("upserted", &upserted))
+	}
+	must.NoError(res.Set("nModified", modified))
+	must.NoError(res.Set("ok", float64(1)))
+
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{types.MustNewDocument(
-			"n", selected,
-			"nModified", updated,
-			"ok", float64(1),
-		)},
+		Documents: []*types.Document{res},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
