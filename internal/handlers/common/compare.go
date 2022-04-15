@@ -17,11 +17,15 @@ package common
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"math"
+	"reflect"
 	"time"
 
 	"golang.org/x/exp/constraints"
+	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -188,15 +192,15 @@ func compare(docValue, filter any) compareResult {
 
 	switch docValue := docValue.(type) {
 	case *types.Document:
+		// TODO: implement document comparing
 		return notEqual
 
 	case *types.Array:
 		for i := 0; i < docValue.Len(); i++ {
 			arrValue := must.NotFail(docValue.Get(i))
-
 			switch arrValue.(type) {
 			case *types.Document, *types.Array:
-				return notEqual
+				continue
 			}
 
 			switch compareScalars(arrValue, filter) {
@@ -252,4 +256,46 @@ func compareOrdered[T constraints.Ordered](a, b T) compareResult {
 // TODO https://github.com/FerretDB/FerretDB/issues/371
 func compareNumbers(a float64, b int64) compareResult {
 	return compareOrdered(a, float64(b))
+}
+
+// matchDocuments returns true if 2 documents are equal.
+func matchDocuments(a, b *types.Document) bool {
+	if a == nil {
+		log.Panicf("%v is nil", a)
+	}
+	if b == nil {
+		log.Panicf("%v is nil", b)
+	}
+
+	keys := a.Keys()
+	if !slices.Equal(keys, b.Keys()) {
+		return false
+	}
+	return reflect.DeepEqual(a.Map(), b.Map())
+}
+
+// matchArrays returns true if a filter array equals exactly the specified array or
+// array contains an element that equals the array.
+func matchArrays(filterArr, docArr *types.Array) bool {
+	if filterArr == nil {
+		log.Panicf("%v is nil", filterArr)
+	}
+	if docArr == nil {
+		log.Panicf("%v is nil", docArr)
+	}
+
+	if string(must.NotFail(fjson.Marshal(filterArr))) == string(must.NotFail(fjson.Marshal(docArr))) {
+		return true
+	}
+
+	for i := 0; i < docArr.Len(); i++ {
+		arrValue := must.NotFail(docArr.Get(i))
+		if arrValue, ok := arrValue.(*types.Array); ok {
+			if string(must.NotFail(fjson.Marshal(filterArr))) == string(must.NotFail(fjson.Marshal(arrValue))) {
+				return true
+			}
+		}
+	}
+
+	return false
 }
