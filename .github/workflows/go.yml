@@ -54,7 +54,7 @@ jobs:
         run: bin/task test-unit
 
       - name: Upload coverage information
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           files: ./cover.txt
           flags: unit
