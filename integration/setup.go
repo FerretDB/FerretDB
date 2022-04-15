@@ -38,7 +38,8 @@ import (
 )
 
 var (
-	startupPort = flag.String("port", "ferretdb", "port to use")
+	startupPortF = flag.String("port", "ferretdb", "port to use")
+	proxyAddrF   = flag.String("proxy-addr", "", "use proxy for in-process listener mode")
 
 	startupOnce sync.Once
 )
@@ -71,7 +72,7 @@ func setupWithOpts(t *testing.T, opts *setupOpts) (context.Context, *mongo.Colle
 
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.DebugLevel))
 
-	port, err := strconv.Atoi(*startupPort)
+	port, err := strconv.Atoi(*startupPortF)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -152,9 +153,16 @@ func setupListener(t *testing.T, ctx context.Context, logger *zap.Logger) int {
 
 	pgPool := testutil.Pool(ctx, t, nil, logger)
 
+	proxyAddr := *proxyAddrF
+	mode := clientconn.NormalMode
+	if proxyAddr != "" {
+		mode = clientconn.DiffNormalMode
+	}
+
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		ListenAddr: "127.0.0.1:0",
-		Mode:       clientconn.NormalMode,
+		ProxyAddr:  proxyAddr,
+		Mode:       mode,
 		PgPool:     pgPool,
 		Logger:     logger,
 	})
@@ -183,17 +191,17 @@ func setupListener(t *testing.T, ctx context.Context, logger *zap.Logger) int {
 func startup(t *testing.T) {
 	t.Helper()
 
-	*startupPort = strings.ToLower(*startupPort)
-	switch *startupPort {
+	*startupPortF = strings.ToLower(*startupPortF)
+	switch *startupPortF {
 	case "ferretdb":
-		*startupPort = "0"
+		*startupPortF = "0"
 	case "default":
-		*startupPort = "27017"
+		*startupPortF = "27017"
 	case "mongodb":
-		*startupPort = "37017"
+		*startupPortF = "37017"
 	}
 
-	if _, err := strconv.Atoi(*startupPort); err != nil {
+	if _, err := strconv.Atoi(*startupPortF); err != nil {
 		t.Fatal(err)
 	}
 
