@@ -89,6 +89,25 @@ func TestDocument(t *testing.T) {
 		assert.Equal(t, int32(42), b.m["foo"])
 	})
 
+	t.Run("SetID", func(t *testing.T) {
+		t.Parallel()
+
+		doc := must.NotFail(NewDocument(
+			"_id", int32(42),
+			"foo", "bar",
+		))
+		assert.Equal(t, []string{"_id", "foo"}, doc.keys)
+
+		doc = must.NotFail(NewDocument(
+			"foo", "bar",
+			"_id", int32(42),
+		))
+		assert.Equal(t, []string{"_id", "foo"}, doc.keys)
+
+		doc.Set("_id", "bar")
+		assert.Equal(t, []string{"_id", "foo"}, doc.keys)
+	})
+
 	t.Run("Validate", func(t *testing.T) {
 		t.Parallel()
 
