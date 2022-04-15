@@ -1,11 +1,15 @@
 # Contributing
 
-FerretDB is currently developed in either Linux or macOS, everything else is running inside Docker Compose.
+Thank you for your interest in making FerretDB better!
+
+## Contributing code
+
+The supported way of developing FerretDB is to modify and run it on the host (Linux, macOS, or Windows with [WSL2](https://docs.microsoft.com/en-us/windows/wsl/)), with PostgreSQL and other dependencies running inside Docker Compose.
 
 You will need Go 1.18 as FerretDB extensively uses ([fuzzing](https://go.dev/doc/tutorial/fuzz)) and [generics](https://go.dev/doc/tutorial/generics)).
 If your package manager does not provide it yet, please install it from [go.dev](https://go.dev/dl/).
 
-## Cloning the Repository
+### Cloning the Repository
 
 After forking FerretDB on GitHub, you can clone the repository:
 
@@ -15,25 +19,29 @@ cd FerretDB
 git remote add upstream https://github.com/FerretDB/FerretDB.git
 ```
 
-## Helpful Commands
+### Setting up the development environment
 
-In order to run development commands you should get [task](https://taskfile.dev/).
-You can do this with `cd tools; go generate -x`.
-After this `task` will be available with `bin/task` on Linux and `bin\task.exe` on Windows.
+To run development commands, you should first install the [`task`](https://taskfile.dev/) tool.
+You can do this by changing the directory to `tools` (`cd tools`) and running `go generate -x`.
+That will install `task` into the `bin` directory (`bin/task` on Linux and macOS, `bin\task.exe` on Windows).
+You can then add `./bin` to `$PATH` either manually (`export PATH=./bin:$PATH` in `bash`) or using something like (`direnv` (`.envrc` files)[https://direnv.net], or replace every invocation of `task` with explicit `bin/task`.
+You can also [install `task` globally](https://taskfile.dev/#/installation), but that might lead to the version skew.
 
-1. Install development tools with `bin/task init`.
-2. Start the development environment with `bin/task env-up`.
-   This will start PostgreSQL and MongoDB; filling them with identical sets of test data.
-3. You may then run tests in another window with `bin/task test`.
-4. You can start FerretDB with `bin/task run`.
+With `task` installed, you may do the following:
+
+1. Install development tools with `task init`.
+2. Start the development environment with `task env-up`.
+   This will start PostgreSQL and MongoDB containers, filling them with identical sets of test data.
+3. Run all tests in another terminal window with `task test`.
+4. Start FerretDB with `task run`.
    This will start it in a development mode where all requests are handled by FerretDB, but also routed to MongoDB.
    The differences in response are then logged and the FerretDB response is sent back to the client.
-5. Run `mongosh` with `bin/task mongosh`.
+5. Run `mongosh` with `task mongosh`.
    This allows you to run commands against FerretDB.
 
-You can see all available "task" commands with `bin/task -l`.
+You can see all available `task` tasks with `task -l`.
 
-## Code Overview
+### Code Overview
 
 Package `cmd` provides commands implementation. `ferretdb` is the main FerretDB binary; others are tools for development.
 
@@ -55,3 +63,20 @@ They are installed into `bin/` by `cd tools; go generate -x`.
 * `handlers` handle protocol commands.
   They use `fjson` package for storing data in PostgreSQL in jsonb columns, but they don't use `bson` package –
   all data is represented as built-in and `types` types.
+
+Those packages are tested by "unit" tests that are placed inside those packages.
+Some of them are truly hermetic and test only the package that contains them; you can run those "short" tests with `go test -short` or `task test-unit-short`, but that's typically not required.
+Other unit tests use real databases; you can run those with `task test-unit` after starting the environment as described above.
+
+We also have a set of "integration" tests in `integration` Go module that uses the Go MongoDB driver and tests either a running MongoDB-compatible database (such as FerretDB or MongoDB itself) or in-process FerretDB.
+They allow us to ensure compatibility between FerretDB and MongoDB.
+You can run them with `task test-integration-ferretdb` for in-process FerretDB (meaning that integration tests start and stop FerretDB themselves), `task test-integration-mongodb` for MongoDB running on port 37017 (as in our development environment), or `task test-integration` to run both in parallel.
+
+Finally, you may run all tests in parallel with `task test`.
+If tests fail and the output is too confusing, try running them sequentially by using the commands above.
+
+In general, we prefer integration tests over unit tests, tests using real databases over short tests and real objects over mocks.
+
+(You might disagree with our terminology for "unit" and "integration" tests; let's not fight over it.)
+
+We have an additional integration testing system in another repository: <https://github.com/FerretDB/dance>.
