@@ -27,8 +27,6 @@ import (
 )
 
 func TestQueryBitwiseAllClear(t *testing.T) {
-	t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/442")
-
 	t.Parallel()
 	ctx, collection := setup(t, shareddata.Scalars)
 
