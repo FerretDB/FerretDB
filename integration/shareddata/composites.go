@@ -21,11 +21,13 @@ import "go.mongodb.org/mongo-driver/bson"
 // This shared data set is not frozen yet, but please add to it only if it is really shared.
 var Composites = &Values[string]{
 	data: map[string]any{
-		"document":       bson.D{{"foo", int32(42)}},
-		"document-empty": bson.D{},
+		"document":           bson.D{{"foo", int32(42)}},
+		"document-composite": bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}},
+		"document-empty":     bson.D{},
 
-		"array":       bson.A{int32(42)},
-		"array-three": bson.A{int32(42), "foo", nil},
-		"array-empty": bson.A{},
+		"array":          bson.A{int32(42)},
+		"array-three":    bson.A{int32(42), "foo", nil},
+		"array-embedded": bson.A{bson.A{int32(42), "foo"}, nil},
+		"array-empty":    bson.A{},
 	},
 }

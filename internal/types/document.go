@@ -18,6 +18,10 @@ import (
 	"fmt"
 	"strconv"
 	"unicode/utf8"
+
+	"golang.org/x/exp/slices"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // Common interface with bson.Document.
@@ -61,11 +65,7 @@ func ConvertDocument(d document) (*Document, error) {
 //
 // Deprecated: use `must.NotFail(ConvertDocument(...))` instead.
 func MustConvertDocument(d document) *Document {
-	doc, err := ConvertDocument(d)
-	if err != nil {
-		panic(err)
-	}
-	return doc
+	return must.NotFail(ConvertDocument(d))
 }
 
 // NewDocument creates a document with the given key/value pairs.
@@ -108,14 +108,18 @@ func NewDocument(pairs ...any) (*Document, error) {
 //
 // Deprecated: use `must.NotFail(NewDocument(...))` instead.
 func MustNewDocument(pairs ...any) *Document {
-	doc, err := NewDocument(pairs...)
-	if err != nil {
-		panic(err)
-	}
-	return doc
+	return must.NotFail(NewDocument(pairs...))
 }
 
 func (*Document) compositeType() {}
+
+// DeepCopy returns a deep copy of this Document.
+func (d *Document) DeepCopy() *Document {
+	if d == nil {
+		panic("types.Document.DeepCopy: nil document")
+	}
+	return deepCopy(d).(*Document)
+}
 
 // isValidKey returns false if key is not a valid document field key.
 func isValidKey(key string) bool {
@@ -140,6 +144,8 @@ func (d *Document) validate() error {
 	if len(d.m) != len(d.keys) {
 		return fmt.Errorf("types.Document.validate: keys and values count mismatch: %d != %d", len(d.m), len(d.keys))
 	}
+
+	// TODO check that _id is not regex or array
 
 	prevKeys := make(map[string]struct{}, len(d.keys))
 	for _, key := range d.keys {
@@ -205,6 +211,9 @@ func (d *Document) Command() string {
 	return keys[0]
 }
 
+// add adds the value for the given key, returning error if that key is already present.
+//
+// As a special case, _id always becomes the first key.
 func (d *Document) add(key string, value any) error {
 	if _, ok := d.m[key]; ok {
 		return fmt.Errorf("types.Document.add: key already present: %q", key)
@@ -218,10 +227,25 @@ func (d *Document) add(key string, value any) error {
 		return fmt.Errorf("types.Document.validate: %w", err)
 	}
 
-	d.keys = append(d.keys, key)
+	// update keys slice
+	if key == "_id" {
+		// TODO check that value is not regex or array
+
+		// ensure that _id is the first field
+		d.keys = slices.Insert(d.keys, 0, key)
+	} else {
+		d.keys = append(d.keys, key)
+	}
+
 	d.m[key] = value
 
 	return nil
+}
+
+// Has returns true if the given key is present in the document.
+func (d *Document) Has(key string) bool {
+	_, ok := d.m[key]
+	return ok
 }
 
 // Get returns a value at the given key.
@@ -238,7 +262,9 @@ func (d *Document) GetByPath(path ...string) (any, error) {
 	return getByPath(d, path...)
 }
 
-// Set the value of the given key, replacing any existing value.
+// Set sets the value for the given key, replacing any existing value.
+//
+// As a special case, _id always becomes the first key.
 func (d *Document) Set(key string, value any) error {
 	if !isValidKey(key) {
 		return fmt.Errorf("types.Document.Set: invalid key: %q", key)
@@ -248,8 +274,19 @@ func (d *Document) Set(key string, value any) error {
 		return fmt.Errorf("types.Document.validate: %w", err)
 	}
 
-	if _, ok := d.m[key]; !ok {
-		d.keys = append(d.keys, key)
+	// update keys slice
+	if key == "_id" {
+		// TODO check that value is not regex or array
+
+		// ensure that _id is the first field
+		if i := slices.Index(d.keys, key); i >= 0 {
+			d.keys = slices.Delete(d.keys, i, i+1)
+		}
+		d.keys = slices.Insert(d.keys, 0, key)
+	} else {
+		if _, ok := d.m[key]; !ok {
+			d.keys = append(d.keys, key)
+		}
 	}
 
 	if d.m == nil {
