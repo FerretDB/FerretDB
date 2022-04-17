@@ -1,3 +1,17 @@
+// Copyright 2021 FerretDB Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package integration
 
 import (
@@ -10,66 +24,195 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func TestEvalMod(t *testing.T) {
+func TestEvalutionMod(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t)
 
 	_, err := collection.InsertMany(ctx, []any{
-		bson.D{{"_id", "float64_1"}, {"value", float64(113.01)}},
-		bson.D{{"_id", "float64_2"}, {"value", float64(114.99)}},
-		bson.D{{"_id", "float64_3"}, {"value", float64(115.5)}},
-		bson.D{{"_id", "int64_1"}, {"value", int64(141)}},
-		bson.D{{"_id", "int64_2"}, {"value", int64(151)}},
-		bson.D{{"_id", "int64_3"}, {"value", int64(161)}},
-		bson.D{{"_id", "int32_1"}, {"value", int32(177)}},
-		bson.D{{"_id", "int32_2"}, {"value", int32(178)}},
-		bson.D{{"_id", "int32_3"}, {"value", int32(179)}},
-		bson.D{{"_id", "nil"}, {"value", nil}},
-		bson.D{{"_id", "string"}, {"value", "12"}},
+		bson.D{{"_id", "Zero"}, {"value", 0}},
+		bson.D{{"_id", "Int32_1"}, {"value", int32(4080)}},
+		bson.D{{"_id", "Int32_2"}, {"value", int32(1048560)}},
+		bson.D{{"_id", "Int32_3"}, {"value", int32(268435440)}},
+		bson.D{{"_id", "Int64_1"}, {"value", int64(1099511628000)}},
+		bson.D{{"_id", "Int64_2"}, {"value", int64(281474976700000)}},
+		bson.D{{"_id", "Int64_3"}, {"value", int64(72057594040000000)}},
+		bson.D{{"_id", "Nil"}, {"value", nil}},
+		bson.D{{"_id", "String"}, {"value", "12"}},
+		bson.D{{"_id", "SmallestNonzeroFloat64"}, {"value", math.SmallestNonzeroFloat64}},
+		bson.D{{"_id", "PositiveNumber"}, {"value", 123456789}},
+		bson.D{{"_id", "NegativeNumber"}, {"value", -123456789}},
+		bson.D{{"_id", "MaxInt64"}, {"value", math.MaxInt64}},
+		bson.D{{"_id", "MaxInt64_float"}, {"value", float64(math.MaxInt64)}},
+		bson.D{{"_id", "MaxInt64_plus"}, {"value", float64(math.MaxInt64 + 1)}},
+		bson.D{{"_id", "MaxInt64_overflowVerge"}, {"value", 9.223372036854776832e+18}},
+		bson.D{{"_id", "MaxInt64_overflow"}, {"value", 9.223372036854776833e+18}},
+		bson.D{{"_id", "MaxFloat64_minus"}, {"value", 1.79769e+307}},
+		bson.D{{"_id", "MaxFloat64"}, {"value", math.MaxFloat64}},
 	})
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
 		q           bson.D
 		expectedIDs []any
-		err         error
+		err         mongo.CommandError
 	}{
+		"Int32": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{4000, 80}}}}},
+			expectedIDs: []any{"Int32_1"},
+		},
+		"Int32_floatDivisor": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{float64(1048500.444), 60}}}}},
+			expectedIDs: []any{"Int32_2"},
+		},
+		"Int32_floatRemainder": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{268435000, float64(440.555)}}}}},
+			expectedIDs: []any{"Int32_3"},
+		},
+		"Int32_emptyAnswer": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{268435000, float64(400)}}}}},
+			expectedIDs: []any{},
+		},
+		"Int64": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{1099511620000, 8000}}}}},
+			expectedIDs: []any{"Int64_1"},
+		},
+		"Int64_floatDivisor": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{float64(281474976000000.444), 700000}}}}},
+			expectedIDs: []any{"Int64_2"},
+		},
+		"Int64_floatRemainder": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{72057594000000000, float64(40000000.555)}}}}},
+			expectedIDs: []any{"Int64_3"},
+		},
+		"Int64_emptyAnswer": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{1234567890, float64(111)}}}}},
+			expectedIDs: []any{},
+		},
+		"MaxInt64_Divisor": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{math.MaxInt64, 0}}}}},
+			expectedIDs: []any{"Zero", "SmallestNonzeroFloat64", "MaxInt64"},
+		},
+		"MaxInt64_Remainder": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{1, math.MaxInt64}}}}},
+			expectedIDs: []any{},
+		},
+		"MaxInt64_floatDivisor": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{float64(math.MaxInt64), 0}}}}},
+			expectedIDs: []any{"Zero", "SmallestNonzeroFloat64"},
+		},
+		"MaxInt64_floatRemainder": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{1, float64(math.MaxInt64)}}}}},
+			expectedIDs: []any{},
+		},
+		"MaxInt64_plus": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854775808e+18, 0}}}}},
+			expectedIDs: []any{"Zero", "SmallestNonzeroFloat64"},
+		},
+		"MaxInt64_1": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{922337203685477580, 7}}}}},
+			expectedIDs: []any{"MaxInt64"},
+		},
+		"MaxInt64_2": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854775807e+17, 7}}}}},
+			expectedIDs: []any{},
+		},
+		"MaxInt64_3": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854775800e+17, 7}}}}},
+			expectedIDs: []any{},
+		},
+		"MaxInt64_4": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{922337203, 6854775807}}}}},
+			expectedIDs: []any{},
+		},
+		"MaxInt64_overflowVerge": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854776832e+18, 0}}}}},
+			expectedIDs: []any{"Zero", "SmallestNonzeroFloat64"},
+		},
+		"MaxInt64_overflowDivisor": {
+			q: bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854776833e+18, 0}}}}},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `malformed mod, divisor value is invalid :: caused by :: Out of bounds coercing to integral value`,
+			},
+		},
+		"MaxInt64_overflowBoth": {
+			q: bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854776833e+18, 9.223372036854776833e+18}}}}},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `malformed mod, divisor value is invalid :: caused by :: Out of bounds coercing to integral value`,
+			},
+		},
 		"Float64_1": {
-			q:           bson.D{{"value", bson.D{{"$mod", bson.A{10, 3}}}}},
-			expectedIDs: []any{"float64_1"},
+			q: bson.D{{"value", bson.D{{"$mod", bson.A{1.79769e+307, 0}}}}},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `malformed mod, divisor value is invalid :: caused by :: Out of bounds coercing to integral value`,
+			},
 		},
 		"Float64_2": {
-			q:           bson.D{{"value", bson.D{{"$mod", bson.A{10, float64(4.5)}}}}},
-			expectedIDs: []any{"float64_2"},
+			q: bson.D{{"value", bson.D{{"$mod", bson.A{math.MaxFloat64, 0}}}}},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `malformed mod, divisor value is invalid :: caused by :: Out of bounds coercing to integral value`,
+			},
 		},
 		"Float64_3": {
-			q:           bson.D{{"value", bson.D{{"$mod", bson.A{float64(10.5), 5}}}}},
-			expectedIDs: []any{"float64_3"},
+			q: bson.D{{"value", bson.D{{"$mod", bson.A{math.MaxFloat64, math.MaxFloat64}}}}},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `malformed mod, divisor value is invalid :: caused by :: Out of bounds coercing to integral value`,
+			},
 		},
-		"Int64_1": {
-			q:           bson.D{{"value", bson.D{{"$mod", bson.A{70, 1}}}}},
-			expectedIDs: []any{"int64_1"},
+		"NegativeDivisor": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{-100, 89}}}}},
+			expectedIDs: []any{"PositiveNumber"},
 		},
-		"Int64_2": {
-			q:           bson.D{{"value", bson.D{{"$mod", bson.A{float64(70.5), 11}}}}},
-			expectedIDs: []any{"int64_2"},
+		"NegativeRemainder": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{100, -89}}}}},
+			expectedIDs: []any{"NegativeNumber"},
 		},
-		"Int64_3": {
-			q:           bson.D{{"value", bson.D{{"$mod", bson.A{70, float64(21.99)}}}}},
-			expectedIDs: []any{"int64_3"},
+		"NegativeBoth": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{-100, -89}}}}},
+			expectedIDs: []any{"NegativeNumber"},
 		},
-		"Int32_1": {
-			q:           bson.D{{"value", bson.D{{"$mod", bson.A{80, 17}}}}},
-			expectedIDs: []any{"int32_1"},
+		"NegativeDivisorFloat": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{-100.5, 89.5}}}}},
+			expectedIDs: []any{"PositiveNumber"},
 		},
-		"Int32_2": {
-			q:           bson.D{{"value", bson.D{{"$mod", bson.A{float64(80.5), 18}}}}},
-			expectedIDs: []any{"int32_2"},
+		"NegativeRemainderFloat": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{100.5, -89.5}}}}},
+			expectedIDs: []any{"NegativeNumber"},
 		},
-		"Int32_3": {
-			q:           bson.D{{"value", bson.D{{"$mod", bson.A{80, float64(19.09)}}}}},
-			expectedIDs: []any{"int32_3"},
+		"NegativeBothFloat": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{-100.5, -89.5}}}}},
+			expectedIDs: []any{"NegativeNumber"},
 		},
+		"DivisorZero": {
+			q: bson.D{{"value", bson.D{{"$mod", bson.A{0, 1}}}}},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `divisor cannot be 0`,
+			},
+		},
+		"DivisorSmallestNonzeroFloat64": {
+			q: bson.D{{"value", bson.D{{"$mod", bson.A{math.SmallestNonzeroFloat64, 1}}}}},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `divisor cannot be 0`,
+			},
+		},
+		"RemainderSmallestNonzeroFloat64": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{23456789, math.SmallestNonzeroFloat64}}}}},
+			expectedIDs: []any{"Zero", "SmallestNonzeroFloat64"},
+		},
+
 		"EmptyArray": {
 			q: bson.D{{"value", bson.D{{"$mod", bson.A{}}}}},
 			err: mongo.CommandError{
@@ -127,12 +270,30 @@ func TestEvalMod(t *testing.T) {
 					`Unable to coerce NaN/Inf to integral type`,
 			},
 		},
-		"Infinity": {
-			q: bson.D{{"value", bson.D{{"$mod", bson.A{1, math.Inf(1)}}}}},
+		"InfinityNegative": {
+			q: bson.D{{"value", bson.D{{"$mod", bson.A{1, math.Inf(-1)}}}}},
 			err: mongo.CommandError{
 				Code: 2,
 				Name: "BadValue",
 				Message: `malformed mod, remainder value is invalid :: caused by :: ` +
+					`Unable to coerce NaN/Inf to integral type`,
+			},
+		},
+		"Infinity": {
+			q: bson.D{{"value", bson.D{{"$mod", bson.A{1, math.Inf(0)}}}}},
+			err: mongo.CommandError{
+				Code: 2,
+				Name: "BadValue",
+				Message: `malformed mod, remainder value is invalid :: caused by :: ` +
+					`Unable to coerce NaN/Inf to integral type`,
+			},
+		},
+		"InfinityPositive": {
+			q: bson.D{{"value", bson.D{{"$mod", bson.A{math.Inf(+1), 0}}}}},
+			err: mongo.CommandError{
+				Code: 2,
+				Name: "BadValue",
+				Message: `malformed mod, divisor value is invalid :: caused by :: ` +
 					`Unable to coerce NaN/Inf to integral type`,
 			},
 		},
@@ -150,14 +311,15 @@ func TestEvalMod(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			var actual []bson.D
 			cursor, err := collection.Find(ctx, tc.q)
-			if tc.err != nil {
+			if tc.err.Code != 0 {
 				require.Nil(t, tc.expectedIDs)
-				require.Equal(t, tc.err, err)
+				assertEqualError(t, tc.err, err)
 				return
 			}
 			require.NoError(t, err)
+
+			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
