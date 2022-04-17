@@ -577,13 +577,15 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 			return false, NewErrorMsg(ErrBadValue, `malformed mod, divisor value is invalid :: caused by :: `+
 				`Unable to coerce NaN/Inf to integral type`)
 		}
+
 		d = math.Trunc(d)
 		if d > float64(9.223372036854776832e+18) || d < float64(-9.223372036854776832e+18) {
 			return false, NewErrorMsg(ErrBadValue, `malformed mod, divisor value is invalid :: caused by :: `+
 				`Out of bounds coercing to integral value`)
 		}
+
 		divisor = int64(d)
-		if d != float64(divisor) && field != 0 {
+		if d != float64(divisor) && field != 0 && d < 9.223372036854775296e+18 {
 			return false, nil
 		}
 	default:

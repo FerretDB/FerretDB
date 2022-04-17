@@ -25,11 +25,12 @@ import (
 )
 
 func TestEvalutionMod(t *testing.T) {
-	t.Parallel()
+	//t.Parallel()
 	ctx, collection := setup(t)
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{{"_id", "Zero"}, {"value", 0}},
+		bson.D{{"_id", "NegativeZero"}, {"value", math.Copysign(0, -1)}},
 		bson.D{{"_id", "Int32_1"}, {"value", int32(4080)}},
 		bson.D{{"_id", "Int32_2"}, {"value", int32(1048560)}},
 		bson.D{{"_id", "Int32_3"}, {"value", int32(268435440)}},
@@ -48,6 +49,11 @@ func TestEvalutionMod(t *testing.T) {
 		bson.D{{"_id", "MaxInt64_overflow"}, {"value", 9.223372036854776833e+18}},
 		bson.D{{"_id", "MaxFloat64_minus"}, {"value", 1.79769e+307}},
 		bson.D{{"_id", "MaxFloat64"}, {"value", math.MaxFloat64}},
+		bson.D{{"_id", "MinInt64"}, {"value", math.MinInt64}},
+		bson.D{{"_id", "MinInt64_float"}, {"value", float64(math.MinInt64)}},
+		bson.D{{"_id", "MinInt64_minus"}, {"value", float64(math.MinInt64 - 1)}},
+		bson.D{{"_id", "MinInt64_overflowVerge"}, {"value", -9.223372036854776832e+18}},
+		bson.D{{"_id", "MinInt64_overflow"}, {"value", -9.223372036854776833e+18}},
 	})
 	require.NoError(t, err)
 
@@ -90,7 +96,7 @@ func TestEvalutionMod(t *testing.T) {
 		},
 		"MaxInt64_Divisor": {
 			q:           bson.D{{"value", bson.D{{"$mod", bson.A{math.MaxInt64, 0}}}}},
-			expectedIDs: []any{"Zero", "SmallestNonzeroFloat64", "MaxInt64"},
+			expectedIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64", "MaxInt64"},
 		},
 		"MaxInt64_Remainder": {
 			q:           bson.D{{"value", bson.D{{"$mod", bson.A{1, math.MaxInt64}}}}},
@@ -98,7 +104,7 @@ func TestEvalutionMod(t *testing.T) {
 		},
 		"MaxInt64_floatDivisor": {
 			q:           bson.D{{"value", bson.D{{"$mod", bson.A{float64(math.MaxInt64), 0}}}}},
-			expectedIDs: []any{"Zero", "SmallestNonzeroFloat64"},
+			expectedIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64", "MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge"},
 		},
 		"MaxInt64_floatRemainder": {
 			q:           bson.D{{"value", bson.D{{"$mod", bson.A{1, float64(math.MaxInt64)}}}}},
@@ -106,7 +112,7 @@ func TestEvalutionMod(t *testing.T) {
 		},
 		"MaxInt64_plus": {
 			q:           bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854775808e+18, 0}}}}},
-			expectedIDs: []any{"Zero", "SmallestNonzeroFloat64"},
+			expectedIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64", "MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge"},
 		},
 		"MaxInt64_1": {
 			q:           bson.D{{"value", bson.D{{"$mod", bson.A{922337203685477580, 7}}}}},
@@ -126,7 +132,7 @@ func TestEvalutionMod(t *testing.T) {
 		},
 		"MaxInt64_overflowVerge": {
 			q:           bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854776832e+18, 0}}}}},
-			expectedIDs: []any{"Zero", "SmallestNonzeroFloat64"},
+			expectedIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64", "MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge"},
 		},
 		"MaxInt64_overflowDivisor": {
 			q: bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854776833e+18, 0}}}}},
@@ -138,6 +144,63 @@ func TestEvalutionMod(t *testing.T) {
 		},
 		"MaxInt64_overflowBoth": {
 			q: bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854776833e+18, 9.223372036854776833e+18}}}}},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `malformed mod, divisor value is invalid :: caused by :: Out of bounds coercing to integral value`,
+			},
+		},
+
+		"MinInt64_Divisor": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{math.MinInt64, 0}}}}},
+			expectedIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64", "MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge"},
+		},
+		"MinInt64_Remainder": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{1, math.MinInt64}}}}},
+			expectedIDs: []any{},
+		},
+		"MinInt64_floatDivisor": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{float64(math.MinInt64), 0}}}}},
+			expectedIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64", "MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge"},
+		},
+		"MinInt64_floatRemainder": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{1, float64(math.MinInt64)}}}}},
+			expectedIDs: []any{},
+		},
+		"MinInt64_minus": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{-9.223372036854775809e+18, 0}}}}},
+			expectedIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64", "MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge"},
+		},
+		"MinInt64_1": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{-922337203685477580, -8}}}}},
+			expectedIDs: []any{"MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge"},
+		},
+		"MinInt64_2": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{-9.223372036854775808e+17, -8}}}}},
+			expectedIDs: []any{},
+		},
+		"MinInt64_3": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{-9.223372036854775800e+17, -8}}}}},
+			expectedIDs: []any{},
+		},
+		"MinInt64_4": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{-922337203, -6854775808}}}}},
+			expectedIDs: []any{},
+		},
+		"MinInt64_overflowVerge": {
+			q:           bson.D{{"value", bson.D{{"$mod", bson.A{-9.223372036854776832e+18, 0}}}}},
+			expectedIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64", "MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge"},
+		},
+		"MinInt64_overflowDivisor": {
+			q: bson.D{{"value", bson.D{{"$mod", bson.A{-9.223372036854776833e+18, 0}}}}},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `malformed mod, divisor value is invalid :: caused by :: Out of bounds coercing to integral value`,
+			},
+		},
+		"MinInt64_overflowBoth": {
+			q: bson.D{{"value", bson.D{{"$mod", bson.A{-9.223372036854776833e+18, -9.223372036854776833e+18}}}}},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -210,7 +273,7 @@ func TestEvalutionMod(t *testing.T) {
 		},
 		"RemainderSmallestNonzeroFloat64": {
 			q:           bson.D{{"value", bson.D{{"$mod", bson.A{23456789, math.SmallestNonzeroFloat64}}}}},
-			expectedIDs: []any{"Zero", "SmallestNonzeroFloat64"},
+			expectedIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64"},
 		},
 
 		"EmptyArray": {
@@ -309,7 +372,7 @@ func TestEvalutionMod(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+			//	t.Parallel()
 
 			cursor, err := collection.Find(ctx, tc.q)
 			if tc.err.Code != 0 {
