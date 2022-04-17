@@ -25,7 +25,7 @@ import (
 )
 
 func TestEvalutionMod(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 	ctx, collection := setup(t)
 
 	_, err := collection.InsertMany(ctx, []any{
@@ -150,7 +150,6 @@ func TestEvalutionMod(t *testing.T) {
 				Message: `malformed mod, divisor value is invalid :: caused by :: Out of bounds coercing to integral value`,
 			},
 		},
-
 		"MinInt64_Divisor": {
 			q:           bson.D{{"value", bson.D{{"$mod", bson.A{math.MinInt64, 0}}}}},
 			expectedIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64", "MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge"},
@@ -275,7 +274,6 @@ func TestEvalutionMod(t *testing.T) {
 			q:           bson.D{{"value", bson.D{{"$mod", bson.A{23456789, math.SmallestNonzeroFloat64}}}}},
 			expectedIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64"},
 		},
-
 		"EmptyArray": {
 			q: bson.D{{"value", bson.D{{"$mod", bson.A{}}}}},
 			err: mongo.CommandError{
@@ -372,7 +370,7 @@ func TestEvalutionMod(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			//	t.Parallel()
+			t.Parallel()
 
 			cursor, err := collection.Find(ctx, tc.q)
 			if tc.err.Code != 0 {
