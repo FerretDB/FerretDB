@@ -80,9 +80,6 @@ type (
 	// CString represents BSON type CString that used as document field name, etc.
 	CString string
 
-	// ObjectID represents BSON type ObjectID.
-	ObjectID [12]byte
-
 	// Timestamp represents BSON type Timestamp.
 	Timestamp uint64
 
@@ -96,6 +93,8 @@ type (
 var Null = NullType{}
 
 // validateValue validates value.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/260
 func validateValue(value any) error {
 	switch value := value.(type) {
 	case *Document:
@@ -130,5 +129,70 @@ func validateValue(value any) error {
 		return nil
 	default:
 		return fmt.Errorf("types.validateValue: unsupported type: %[1]T (%[1]v)", value)
+	}
+}
+
+// deepCopy returns a deep copy of the given value.
+func deepCopy(value any) any {
+	if value == nil {
+		panic("types.deepCopy: nil value")
+	}
+
+	switch value := value.(type) {
+	case *Document:
+		keys := make([]string, len(value.keys))
+		copy(keys, value.keys)
+
+		m := make(map[string]any, len(value.m))
+		for k, v := range value.m {
+			m[k] = deepCopy(v)
+		}
+
+		return &Document{
+			keys: keys,
+			m:    m,
+		}
+
+	case *Array:
+		s := make([]any, len(value.s))
+		for i, v := range value.s {
+			s[i] = deepCopy(v)
+		}
+		return &Array{
+			s: s,
+		}
+
+	case float64:
+		return value
+	case string:
+		return value
+	case Binary:
+		b := make([]byte, len(value.B))
+		copy(b, value.B)
+		return Binary{
+			Subtype: value.Subtype,
+			B:       b,
+		}
+	case ObjectID:
+		return value
+	case bool:
+		return value
+	case time.Time:
+		return value
+	case NullType:
+		return value
+	case Regex:
+		return value
+	case int32:
+		return value
+	case Timestamp:
+		return value
+	case int64:
+		return value
+	case CString:
+		return value
+
+	default:
+		panic(fmt.Sprintf("types.deepCopy: unsupported type: %[1]T (%[1]v)", value))
 	}
 }

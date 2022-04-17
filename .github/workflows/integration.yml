@@ -58,7 +58,7 @@ jobs:
         run: bin/task test-integration-db DB=${{ matrix.db }}
 
       - name: Upload coverage information
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           files: ./integration/integration.txt
           flags: integration,${{ matrix.db }}
