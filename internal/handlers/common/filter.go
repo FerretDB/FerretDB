@@ -114,11 +114,6 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 	}
 }
 
-// dotNotation transforms expression "field1.field2./.../.fieldN" into {}
-func resolveDotNotationQuery(doc *types.Document, filterKey string) (*types.Document, string, error) {
-	return nil, "", nil
-}
-
 // filterOperator handles a top-level operator filter {$operator: filterValue}.
 func filterOperator(doc *types.Document, operator string, filterValue any) (bool, error) {
 	switch operator {

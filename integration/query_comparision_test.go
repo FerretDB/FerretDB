@@ -47,6 +47,10 @@ func TestQueryComparisonImplicit(t *testing.T) {
 			filter:      bson.D{{"value", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}},
 			expectedIDs: []any{},
 		},
+		"DocumentDotNotation": {
+			filter:      bson.D{{"value.foo", int32(42)}},
+			expectedIDs: []any{"document", "document-composite"},
+		},
 
 		"Array": {
 			filter:      bson.D{{"value", bson.A{int32(42), "foo", nil}}},
@@ -130,6 +134,10 @@ func TestQueryComparisonEq(t *testing.T) {
 		"DocumentShuffledKeys": {
 			filter:      bson.D{{"value", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}},
 			expectedIDs: []any{},
+		},
+		"DocumentDotNotation": {
+			filter:      bson.D{{"value.foo", bson.D{{"$eq", int32(42)}}}},
+			expectedIDs: []any{"document", "document-composite"},
 		},
 
 		"Array": {

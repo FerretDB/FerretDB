@@ -122,26 +122,6 @@ func TestFind(t *testing.T) {
 	// Do not use sentences, spaces, or underscores in subtest names
 	// to make it easier to run individual tests with `go test -run test/name` and for consistency.
 	testCases := map[string]testCase{
-		"DotNotationQuery": {
-			schemas: []string{"values"},
-			req: must.NotFail(types.NewDocument(
-				"find", "values",
-				"filter", must.NotFail(types.NewDocument(
-					"value.document", must.NotFail(types.NewDocument(
-						"$eq", int32(42),
-					)),
-				)),
-			)),
-			resp: must.NotFail(types.NewArray(
-				must.NotFail(types.NewDocument(
-					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x03, 0x01, 0x00, 0x00, 0x03, 0x01},
-					"name", "document",
-					"value", must.NotFail(types.NewDocument(
-						"document", int32(42),
-					)),
-				)),
-			)),
-		},
 		"ProjectionElemMatch": {
 			schemas: []string{"values"},
 			req: types.MustNewDocument(
