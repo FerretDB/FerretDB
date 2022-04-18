@@ -62,84 +62,84 @@ func TestEvalutionMod(t *testing.T) {
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
-		reqData bson.D
-		waitIDs []any
-		err     mongo.CommandError
+		filter      bson.D
+		expectedIDs []any
+		err         mongo.CommandError
 	}{
 		"Int32": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{4000, 80}}}}},
-			waitIDs: []any{"Int32_1"},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{4000, 80}}}}},
+			expectedIDs: []any{"Int32_1"},
 		},
 		"Int32_floatDivisor": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{float64(1048500.444), 60}}}}},
-			waitIDs: []any{"Int32_2"},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{float64(1048500.444), 60}}}}},
+			expectedIDs: []any{"Int32_2"},
 		},
 		"Int32_floatRemainder": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{268435000, float64(440.555)}}}}},
-			waitIDs: []any{"Int32_3"},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{268435000, float64(440.555)}}}}},
+			expectedIDs: []any{"Int32_3"},
 		},
 		"Int32_emptyAnswer": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{268435000, float64(400)}}}}},
-			waitIDs: []any{},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{268435000, float64(400)}}}}},
+			expectedIDs: []any{},
 		},
 		"Int64": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{1099511620000, 8000}}}}},
-			waitIDs: []any{"Int64_1"},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{1099511620000, 8000}}}}},
+			expectedIDs: []any{"Int64_1"},
 		},
 		"Int64_floatDivisor": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{float64(281474976000000.444), 700000}}}}},
-			waitIDs: []any{"Int64_2"},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{float64(281474976000000.444), 700000}}}}},
+			expectedIDs: []any{"Int64_2"},
 		},
 		"Int64_floatRemainder": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{72057594000000000, float64(40000000.555)}}}}},
-			waitIDs: []any{"Int64_3"},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{72057594000000000, float64(40000000.555)}}}}},
+			expectedIDs: []any{"Int64_3"},
 		},
 		"Int64_emptyAnswer": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{1234567890, float64(111)}}}}},
-			waitIDs: []any{},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{1234567890, float64(111)}}}}},
+			expectedIDs: []any{},
 		},
 		"MaxInt64_Divisor": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{math.MaxInt64, 0}}}}},
-			waitIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64", "MaxInt64"},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{math.MaxInt64, 0}}}}},
+			expectedIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64", "MaxInt64"},
 		},
 		"MaxInt64_Remainder": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{1, math.MaxInt64}}}}},
-			waitIDs: []any{},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{1, math.MaxInt64}}}}},
+			expectedIDs: []any{},
 		},
 		"MaxInt64_floatDivisor": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{float64(math.MaxInt64), 0}}}}},
-			waitIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64", "MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge"},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{float64(math.MaxInt64), 0}}}}},
+			expectedIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64", "MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge"},
 		},
 		"MaxInt64_floatRemainder": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{1, float64(math.MaxInt64)}}}}},
-			waitIDs: []any{},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{1, float64(math.MaxInt64)}}}}},
+			expectedIDs: []any{},
 		},
 		"MaxInt64_plus": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854775808e+18, 0}}}}},
-			waitIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64", "MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge"},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854775808e+18, 0}}}}},
+			expectedIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64", "MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge"},
 		},
 		"MaxInt64_1": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{922337203685477580, 7}}}}},
-			waitIDs: []any{"MaxInt64"},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{922337203685477580, 7}}}}},
+			expectedIDs: []any{"MaxInt64"},
 		},
 		"MaxInt64_2": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854775807e+17, 7}}}}},
-			waitIDs: []any{},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854775807e+17, 7}}}}},
+			expectedIDs: []any{},
 		},
 		"MaxInt64_3": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854775800e+17, 7}}}}},
-			waitIDs: []any{},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854775800e+17, 7}}}}},
+			expectedIDs: []any{},
 		},
 		"MaxInt64_4": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{922337203, 6854775807}}}}},
-			waitIDs: []any{},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{922337203, 6854775807}}}}},
+			expectedIDs: []any{},
 		},
 		"MaxInt64_overflowVerge": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854776832e+18, 0}}}}},
-			waitIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64", "MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge"},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854776832e+18, 0}}}}},
+			expectedIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64", "MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge"},
 		},
 		"MaxInt64_overflowDivisor": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854776833e+18, 0}}}}},
+			filter: bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854776833e+18, 0}}}}},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -147,7 +147,7 @@ func TestEvalutionMod(t *testing.T) {
 			},
 		},
 		"MaxInt64_overflowBoth": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854776833e+18, 9.223372036854776833e+18}}}}},
+			filter: bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854776833e+18, 9.223372036854776833e+18}}}}},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -155,47 +155,47 @@ func TestEvalutionMod(t *testing.T) {
 			},
 		},
 		"MinInt64_Divisor": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{math.MinInt64, 0}}}}},
-			waitIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64", "MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge"},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{math.MinInt64, 0}}}}},
+			expectedIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64", "MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge"},
 		},
 		"MinInt64_Remainder": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{1, math.MinInt64}}}}},
-			waitIDs: []any{},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{1, math.MinInt64}}}}},
+			expectedIDs: []any{},
 		},
 		"MinInt64_floatDivisor": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{float64(math.MinInt64), 0}}}}},
-			waitIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64", "MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge"},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{float64(math.MinInt64), 0}}}}},
+			expectedIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64", "MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge"},
 		},
 		"MinInt64_floatRemainder": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{1, float64(math.MinInt64)}}}}},
-			waitIDs: []any{},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{1, float64(math.MinInt64)}}}}},
+			expectedIDs: []any{},
 		},
 		"MinInt64_minus": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{-9.223372036854775809e+18, 0}}}}},
-			waitIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64", "MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge"},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{-9.223372036854775809e+18, 0}}}}},
+			expectedIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64", "MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge"},
 		},
 		"MinInt64_1": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{-922337203685477580, -8}}}}},
-			waitIDs: []any{"MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge"},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{-922337203685477580, -8}}}}},
+			expectedIDs: []any{"MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge"},
 		},
 		"MinInt64_2": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{-9.223372036854775808e+17, -8}}}}},
-			waitIDs: []any{},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{-9.223372036854775808e+17, -8}}}}},
+			expectedIDs: []any{},
 		},
 		"MinInt64_3": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{-9.223372036854775800e+17, -8}}}}},
-			waitIDs: []any{},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{-9.223372036854775800e+17, -8}}}}},
+			expectedIDs: []any{},
 		},
 		"MinInt64_4": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{-922337203, -6854775808}}}}},
-			waitIDs: []any{},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{-922337203, -6854775808}}}}},
+			expectedIDs: []any{},
 		},
 		"MinInt64_overflowVerge": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{-9.223372036854776832e+18, 0}}}}},
-			waitIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64", "MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge"},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{-9.223372036854776832e+18, 0}}}}},
+			expectedIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64", "MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge"},
 		},
 		"MinInt64_overflowDivisor": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{-9.223372036854776833e+18, 0}}}}},
+			filter: bson.D{{"value", bson.D{{"$mod", bson.A{-9.223372036854776833e+18, 0}}}}},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -203,7 +203,7 @@ func TestEvalutionMod(t *testing.T) {
 			},
 		},
 		"MinInt64_overflowBoth": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{-9.223372036854776833e+18, -9.223372036854776833e+18}}}}},
+			filter: bson.D{{"value", bson.D{{"$mod", bson.A{-9.223372036854776833e+18, -9.223372036854776833e+18}}}}},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -211,7 +211,7 @@ func TestEvalutionMod(t *testing.T) {
 			},
 		},
 		"Float64_1": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{1.79769e+307, 0}}}}},
+			filter: bson.D{{"value", bson.D{{"$mod", bson.A{1.79769e+307, 0}}}}},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -219,7 +219,7 @@ func TestEvalutionMod(t *testing.T) {
 			},
 		},
 		"Float64_2": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{math.MaxFloat64, 0}}}}},
+			filter: bson.D{{"value", bson.D{{"$mod", bson.A{math.MaxFloat64, 0}}}}},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -227,7 +227,7 @@ func TestEvalutionMod(t *testing.T) {
 			},
 		},
 		"Float64_3": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{math.MaxFloat64, math.MaxFloat64}}}}},
+			filter: bson.D{{"value", bson.D{{"$mod", bson.A{math.MaxFloat64, math.MaxFloat64}}}}},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -235,31 +235,31 @@ func TestEvalutionMod(t *testing.T) {
 			},
 		},
 		"NegativeDivisor": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{-100, 89}}}}},
-			waitIDs: []any{"PositiveNumber"},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{-100, 89}}}}},
+			expectedIDs: []any{"PositiveNumber"},
 		},
 		"NegativeRemainder": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{100, -89}}}}},
-			waitIDs: []any{"NegativeNumber"},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{100, -89}}}}},
+			expectedIDs: []any{"NegativeNumber"},
 		},
 		"NegativeBoth": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{-100, -89}}}}},
-			waitIDs: []any{"NegativeNumber"},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{-100, -89}}}}},
+			expectedIDs: []any{"NegativeNumber"},
 		},
 		"NegativeDivisorFloat": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{-100.5, 89.5}}}}},
-			waitIDs: []any{"PositiveNumber"},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{-100.5, 89.5}}}}},
+			expectedIDs: []any{"PositiveNumber"},
 		},
 		"NegativeRemainderFloat": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{100.5, -89.5}}}}},
-			waitIDs: []any{"NegativeNumber"},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{100.5, -89.5}}}}},
+			expectedIDs: []any{"NegativeNumber"},
 		},
 		"NegativeBothFloat": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{-100.5, -89.5}}}}},
-			waitIDs: []any{"NegativeNumber"},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{-100.5, -89.5}}}}},
+			expectedIDs: []any{"NegativeNumber"},
 		},
 		"DivisorZero": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{0, 1}}}}},
+			filter: bson.D{{"value", bson.D{{"$mod", bson.A{0, 1}}}}},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -267,7 +267,7 @@ func TestEvalutionMod(t *testing.T) {
 			},
 		},
 		"ZeroNegativeDevisor": {
-			reqData: bson.D{{"$mod", bson.A{math.Copysign(0, -1), 1}}},
+			filter: bson.D{{"$mod", bson.A{math.Copysign(0, -1), 1}}},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -275,7 +275,7 @@ func TestEvalutionMod(t *testing.T) {
 			},
 		},
 		"DivisorSmallestNonzeroFloat64": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{math.SmallestNonzeroFloat64, 1}}}}},
+			filter: bson.D{{"value", bson.D{{"$mod", bson.A{math.SmallestNonzeroFloat64, 1}}}}},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -283,11 +283,11 @@ func TestEvalutionMod(t *testing.T) {
 			},
 		},
 		"RemainderSmallestNonzeroFloat64": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{23456789, math.SmallestNonzeroFloat64}}}}},
-			waitIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64"},
+			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{23456789, math.SmallestNonzeroFloat64}}}}},
+			expectedIDs: []any{"Zero", "NegativeZero", "SmallestNonzeroFloat64"},
 		},
 		"EmptyArray": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{}}}}},
+			filter: bson.D{{"value", bson.D{{"$mod", bson.A{}}}}},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -295,7 +295,7 @@ func TestEvalutionMod(t *testing.T) {
 			},
 		},
 		"NotEnoughElements": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{1}}}}},
+			filter: bson.D{{"value", bson.D{{"$mod", bson.A{1}}}}},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -303,7 +303,7 @@ func TestEvalutionMod(t *testing.T) {
 			},
 		},
 		"TooManyElements": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{1, 2, 3}}}}},
+			filter: bson.D{{"value", bson.D{{"$mod", bson.A{1, 2, 3}}}}},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -311,7 +311,7 @@ func TestEvalutionMod(t *testing.T) {
 			},
 		},
 		"DivisorNotNumber": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{"1", 2}}}}},
+			filter: bson.D{{"value", bson.D{{"$mod", bson.A{"1", 2}}}}},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -319,7 +319,7 @@ func TestEvalutionMod(t *testing.T) {
 			},
 		},
 		"RemainderNotNumber": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{1, "2"}}}}},
+			filter: bson.D{{"value", bson.D{{"$mod", bson.A{1, "2"}}}}},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -327,7 +327,7 @@ func TestEvalutionMod(t *testing.T) {
 			},
 		},
 		"Nil": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{nil, 3}}}}},
+			filter: bson.D{{"value", bson.D{{"$mod", bson.A{nil, 3}}}}},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -335,7 +335,7 @@ func TestEvalutionMod(t *testing.T) {
 			},
 		},
 		"DivisorNaN": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{math.NaN(), 1}}}}},
+			filter: bson.D{{"value", bson.D{{"$mod", bson.A{math.NaN(), 1}}}}},
 			err: mongo.CommandError{
 				Code: 2,
 				Name: "BadValue",
@@ -344,7 +344,7 @@ func TestEvalutionMod(t *testing.T) {
 			},
 		},
 		"RemainderNaN": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{1, math.NaN()}}}}},
+			filter: bson.D{{"value", bson.D{{"$mod", bson.A{1, math.NaN()}}}}},
 			err: mongo.CommandError{
 				Code: 2,
 				Name: "BadValue",
@@ -353,7 +353,7 @@ func TestEvalutionMod(t *testing.T) {
 			},
 		},
 		"InfinityNegative": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{1, math.Inf(-1)}}}}},
+			filter: bson.D{{"value", bson.D{{"$mod", bson.A{1, math.Inf(-1)}}}}},
 			err: mongo.CommandError{
 				Code: 2,
 				Name: "BadValue",
@@ -362,7 +362,7 @@ func TestEvalutionMod(t *testing.T) {
 			},
 		},
 		"Infinity": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{1, math.Inf(0)}}}}},
+			filter: bson.D{{"value", bson.D{{"$mod", bson.A{1, math.Inf(0)}}}}},
 			err: mongo.CommandError{
 				Code: 2,
 				Name: "BadValue",
@@ -371,7 +371,7 @@ func TestEvalutionMod(t *testing.T) {
 			},
 		},
 		"InfinityPositive": {
-			reqData: bson.D{{"value", bson.D{{"$mod", bson.A{math.Inf(+1), 0}}}}},
+			filter: bson.D{{"value", bson.D{{"$mod", bson.A{math.Inf(+1), 0}}}}},
 			err: mongo.CommandError{
 				Code: 2,
 				Name: "BadValue",
@@ -384,9 +384,9 @@ func TestEvalutionMod(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			cursor, err := collection.Find(ctx, tc.reqData)
+			cursor, err := collection.Find(ctx, tc.filter)
 			if tc.err.Code != 0 {
-				require.Nil(t, tc.waitIDs)
+				require.Nil(t, tc.expectedIDs)
 				assertEqualError(t, tc.err, err)
 				return
 			}
@@ -395,7 +395,7 @@ func TestEvalutionMod(t *testing.T) {
 			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
-			assert.Equal(t, tc.waitIDs, collectIDs(t, actual))
+			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
 		})
 	}
 }
