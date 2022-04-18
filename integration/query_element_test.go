@@ -41,39 +41,39 @@ func TestQueryElementExists(t *testing.T) {
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
-		q           bson.D
+		filter      bson.D
 		expectedIDs []any
 	}{
 		"Exists": {
-			q:           bson.D{{"_id", bson.D{{"$exists", true}}}},
+			filter:      bson.D{{"_id", bson.D{{"$exists", true}}}},
 			expectedIDs: []any{"empty-array", "nan", "null", "string", "two-fields"},
 		},
 		"ExistsSecondField": {
-			q:           bson.D{{"field", bson.D{{"$exists", true}}}},
+			filter:      bson.D{{"field", bson.D{{"$exists", true}}}},
 			expectedIDs: []any{"two-fields"},
 		},
 		"NullField": {
-			q:           bson.D{{"null", bson.D{{"$exists", true}}}},
+			filter:      bson.D{{"null", bson.D{{"$exists", true}}}},
 			expectedIDs: []any{"null"},
 		},
 		"NonExistentField": {
-			q:           bson.D{{"non-existent", bson.D{{"$exists", true}}}},
+			filter:      bson.D{{"non-existent", bson.D{{"$exists", true}}}},
 			expectedIDs: []any{},
 		},
 		"EmptyArray": {
-			q:           bson.D{{"empty-array", bson.D{{"$exists", true}}}},
+			filter:      bson.D{{"empty-array", bson.D{{"$exists", true}}}},
 			expectedIDs: []any{"empty-array"},
 		},
 		"NanField": {
-			q:           bson.D{{"nan", bson.D{{"$exists", true}}}},
+			filter:      bson.D{{"nan", bson.D{{"$exists", true}}}},
 			expectedIDs: []any{"nan"},
 		},
 		"ExistsFalse": {
-			q:           bson.D{{"field", bson.D{{"$exists", false}}}},
+			filter:      bson.D{{"field", bson.D{{"$exists", false}}}},
 			expectedIDs: []any{"empty-array", "nan", "null", "string"},
 		},
 		"NonBool": {
-			q:           bson.D{{"_id", bson.D{{"$exists", -123}}}},
+			filter:      bson.D{{"_id", bson.D{{"$exists", -123}}}},
 			expectedIDs: []any{"empty-array", "nan", "null", "string", "two-fields"},
 		},
 	} {
@@ -84,7 +84,7 @@ func TestQueryElementExists(t *testing.T) {
 			db := collection.Database()
 			cursor, err := db.RunCommandCursor(ctx, bson.D{
 				{"find", collection.Name()},
-				{"filter", tc.q},
+				{"filter", tc.filter},
 			})
 			require.NoError(t, err)
 
