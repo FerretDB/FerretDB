@@ -39,6 +39,10 @@ func TestEvalutionMod(t *testing.T) {
 		bson.D{{"_id", "Int64_3"}, {"value", int64(72057594040000000)}},
 		bson.D{{"_id", "Nil"}, {"value", nil}},
 		bson.D{{"_id", "String"}, {"value", "12"}},
+		// bson.D{{"_id", "NaN"}, {"value", math.NaN}},
+		bson.D{{"_id", "Infinity"}, {"value", math.Inf(0)}},
+		bson.D{{"_id", "InfinityNegative"}, {"value", math.Inf(-1)}},
+		bson.D{{"_id", "InfinityPositive"}, {"value", math.Inf(+1)}},
 		bson.D{{"_id", "SmallestNonzeroFloat64"}, {"value", math.SmallestNonzeroFloat64}},
 		bson.D{{"_id", "PositiveNumber"}, {"value", 123456789}},
 		bson.D{{"_id", "NegativeNumber"}, {"value", -123456789}},
@@ -262,6 +266,14 @@ func TestEvalutionMod(t *testing.T) {
 				Message: `divisor cannot be 0`,
 			},
 		},
+		"ZeroNegativeDevisor": {
+			q: bson.D{{"$mod", bson.A{math.Copysign(0, -1), 1}}},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `unknown top level operator: $mod. If you have a field name that starts with a '$' symbol, consider using $getField or $setField.`,
+			},
+		},
 		"DivisorSmallestNonzeroFloat64": {
 			q: bson.D{{"value", bson.D{{"$mod", bson.A{math.SmallestNonzeroFloat64, 1}}}}},
 			err: mongo.CommandError{
@@ -322,6 +334,7 @@ func TestEvalutionMod(t *testing.T) {
 				Message: `malformed mod, divisor not a number`,
 			},
 		},
+
 		"NaN": {
 			q: bson.D{{"value", bson.D{{"$mod", bson.A{math.NaN(), 1}}}}},
 			err: mongo.CommandError{
@@ -356,15 +369,6 @@ func TestEvalutionMod(t *testing.T) {
 				Name: "BadValue",
 				Message: `malformed mod, divisor value is invalid :: caused by :: ` +
 					`Unable to coerce NaN/Inf to integral type`,
-			},
-		},
-		"InvalidUse": {
-			q: bson.D{{"$mod", bson.A{1, 1}}},
-			err: mongo.CommandError{
-				Code: 2,
-				Name: "BadValue",
-				Message: `unknown top level operator: $mod. ` +
-					`If you have a field name that starts with a '$' symbol, consider using $getField or $setField.`,
 			},
 		},
 	} {
