@@ -991,9 +991,14 @@ func TestQueryComparisonNin(t *testing.T) {
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
 	ctx, collection := setup(t, providers...)
 
-	var docValue bson.A
-	for _, expected := range shareddata.Scalars.Docs() {
-		docValue = append(docValue, expected.Map()["value"])
+	var scalarDataTypesFilter bson.A
+	for _, scalarDataType := range shareddata.Scalars.Docs() {
+		scalarDataTypesFilter = append(scalarDataTypesFilter, scalarDataType.Map()["value"])
+	}
+
+	var compositeDataTypesFilter bson.A
+	for _, compositeDataType := range shareddata.Composites.Docs() {
+		compositeDataTypesFilter = append(compositeDataTypesFilter, compositeDataType.Map()["value"])
 	}
 
 	for name, tc := range map[string]struct {
@@ -1001,9 +1006,26 @@ func TestQueryComparisonNin(t *testing.T) {
 		expectedIDs []any
 		err         mongo.CommandError
 	}{
-		"NinForAllDataType": {
-			q:           bson.D{{"value", bson.D{{"$nin", docValue}}}},
-			expectedIDs: []any{"array-empty", "document", "document-empty"},
+		"NinForScalarDataTypes": {
+			q:           bson.D{{"value", bson.D{{"$nin", scalarDataTypesFilter}}}},
+			expectedIDs: []any{"array-empty", "document", "document-composite", "document-empty"},
+		},
+		"NinForCompositeDataTypes": {
+			q: bson.D{{"value", bson.D{{"$nin", compositeDataTypesFilter}}}},
+			expectedIDs: []any{
+				"binary", "binary-empty",
+				"bool-false", "bool-true",
+				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
+				"double", "double-max", "double-nan", "double-negative-infinity", "double-negative-zero",
+				"double-positive-infinity", "double-smallest", "double-whole", "double-zero",
+				"int32", "int32-max", "int32-min", "int32-zero",
+				"int64", "int64-max", "int64-min", "int64-zero",
+				"null",
+				"objectid", "objectid-empty",
+				"regex", "regex-empty",
+				"string", "string-double", "string-empty", "string-whole",
+				"timestamp", "timestamp-i",
+			},
 		},
 
 		"NilInsteadOfArray": {
