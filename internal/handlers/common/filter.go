@@ -341,6 +341,13 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				return false, err
 			}
 
+		case "$mod":
+			// {field: {$mod: [divisor, remainder]}}
+			res, err := filterFieldMod(fieldValue, exprValue)
+			if !res || err != nil {
+				return false, err
+			}
+
 		case "$exists":
 			// {field: {$exists: value}}
 			res, err := filterFieldExprExists(fieldValue != nil, exprValue)
@@ -525,6 +532,96 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 		if (fieldBinary.B[i] & mask) == 0 {
 			return false, nil
 		}
+	}
+
+	return true, nil
+}
+
+// filterFieldMod handles {field: {$mod: [divisor, remainder]}} filter.
+func filterFieldMod(fieldValue, exprValue any) (bool, error) {
+	var field, divisor, remainder int64
+
+	switch f := fieldValue.(type) {
+	case int32:
+		field = int64(f)
+	case int64:
+		field = f
+	case float64:
+		if math.IsNaN(f) || math.IsInf(f, 0) {
+			return false, nil
+		}
+		f = math.Trunc(f)
+		field = int64(f)
+		if f != float64(field) {
+			return false, nil
+		}
+	default:
+		return false, nil
+	}
+
+	arr := exprValue.(*types.Array)
+	if arr.Len() < 2 {
+		return false, NewErrorMsg(ErrBadValue, `malformed mod, not enough elements`)
+	}
+	if arr.Len() > 2 {
+		return false, NewErrorMsg(ErrBadValue, `malformed mod, too many elements`)
+	}
+
+	switch d := must.NotFail(arr.Get(0)).(type) {
+	case int32:
+		divisor = int64(d)
+	case int64:
+		divisor = d
+	case float64:
+		if math.IsNaN(d) || math.IsInf(d, 0) {
+			return false, NewErrorMsg(ErrBadValue, `malformed mod, divisor value is invalid :: caused by :: `+
+				`Unable to coerce NaN/Inf to integral type`)
+		}
+
+		d = math.Trunc(d)
+		if d > float64(9.223372036854776832e+18) || d < float64(-9.223372036854776832e+18) {
+			return false, NewErrorMsg(ErrBadValue, `malformed mod, divisor value is invalid :: caused by :: `+
+				`Out of bounds coercing to integral value`)
+		}
+
+		divisor = int64(d)
+		if d != float64(divisor) && field != 0 && d < 9.223372036854775296e+18 {
+			return false, nil
+		}
+	default:
+		return false, NewErrorMsg(ErrBadValue, `malformed mod, divisor not a number`)
+	}
+
+	switch r := must.NotFail(arr.Get(1)).(type) {
+	case int32:
+		remainder = int64(r)
+	case int64:
+		remainder = r
+	case float64:
+		if math.IsNaN(r) || math.IsInf(r, 0) {
+			return false, NewErrorMsg(ErrBadValue, `malformed mod, remainder value is invalid :: caused by :: `+
+				`Unable to coerce NaN/Inf to integral type`)
+		}
+		r = math.Trunc(r)
+		if r > float64(9.223372036854776832e+18) || r < float64(-9.223372036854776832e+18) {
+			return false, NewErrorMsg(ErrBadValue, `malformed mod, remainder value is invalid :: caused by :: `+
+				`Out of bounds coercing to integral value`)
+		}
+		remainder = int64(r)
+		if r != float64(remainder) {
+			return false, nil
+		}
+	default:
+		return false, NewErrorMsg(ErrBadValue, `malformed mod, remainder not a number`)
+	}
+
+	if divisor == 0 {
+		return false, NewErrorMsg(ErrBadValue, `divisor cannot be 0`)
+	}
+
+	f := field % divisor
+	if f != remainder {
+		return false, nil
 	}
 
 	return true, nil
