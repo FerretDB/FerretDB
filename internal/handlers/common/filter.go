@@ -104,15 +104,20 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 	switch operator {
 	case "$and":
 		// {$and: [{expr1}, {expr2}, ...]}
-		exprs, err := AssertType[*types.Array](filterValue)
-		if err != nil {
-			return false, err
+		exprs, ok := filterValue.(*types.Array)
+		if !ok {
+			return false, NewErrorMsg(ErrBadValue, "$and must be an array")
 		}
 		for i := 0; i < exprs.Len(); i++ {
-			expr := must.NotFail(exprs.Get(i)).(*types.Document)
+			value := must.NotFail(exprs.Get(i))
+
+			expr, ok := value.(*types.Document)
+			if !ok {
+				return false, NewErrorMsg(ErrBadValue, "$or/$and/$nor entries need to be full objects")
+			}
 			matches, err := FilterDocument(doc, expr)
 			if err != nil {
-				panic(err)
+				return false, err
 			}
 			if !matches {
 				return false, nil
@@ -122,15 +127,22 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 
 	case "$or":
 		// {$or: [{expr1}, {expr2}, ...]}
-		exprs, err := AssertType[*types.Array](filterValue)
-		if err != nil {
-			return false, err
+		exprs, ok := filterValue.(*types.Array)
+		if !ok {
+			return false, NewErrorMsg(ErrBadValue, "$or must be an array")
 		}
 		for i := 0; i < exprs.Len(); i++ {
-			expr := must.NotFail(exprs.Get(i)).(*types.Document)
+			value, err := exprs.Get(i)
+			if err != nil {
+				return false, err
+			}
+			expr, ok := value.(*types.Document)
+			if !ok {
+				return false, NewErrorMsg(ErrBadValue, "$or/$and/$nor entries need to be full objects")
+			}
 			matches, err := FilterDocument(doc, expr)
 			if err != nil {
-				panic(err)
+				return false, err
 			}
 			if matches {
 				return true, nil
@@ -140,15 +152,22 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 
 	case "$nor":
 		// {$nor: [{expr1}, {expr2}, ...]}
-		exprs, err := AssertType[*types.Array](filterValue)
-		if err != nil {
-			return false, err
+		exprs, ok := filterValue.(*types.Array)
+		if !ok {
+			return false, NewErrorMsg(ErrBadValue, "$nor must be an array")
 		}
 		for i := 0; i < exprs.Len(); i++ {
-			expr := must.NotFail(exprs.Get(i)).(*types.Document)
+			value, err := exprs.Get(i)
+			if err != nil {
+				return false, err
+			}
+			expr, ok := value.(*types.Document)
+			if !ok {
+				return false, NewErrorMsg(ErrBadValue, "$or/$and/$nor entries need to be full objects")
+			}
 			matches, err := FilterDocument(doc, expr)
 			if err != nil {
-				panic(err)
+				return false, err
 			}
 			if matches {
 				return false, nil
@@ -177,12 +196,12 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 		exprValue := must.NotFail(expr.Get(exprKey))
 
 		fieldValue, err := doc.Get(filterKey)
-		if err != nil && exprKey != "$exists" {
+		if err != nil && exprKey != "$exists" && exprKey != "$not" {
 			// comparing not existent field with null should return true
 			if _, ok := exprValue.(types.NullType); ok {
 				return true, nil
 			}
-			// exit when not $exists filter and no such field
+			// exit when not $exists or $not filters and no such field
 			return false, nil
 		}
 
@@ -292,10 +311,20 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 		case "$not":
 			// {field: {$not: {expr}}}
-			expr := exprValue.(*types.Document)
-			res, err := filterFieldExpr(doc, filterKey, expr)
-			if res || err != nil {
-				return false, err
+			switch exprValue := exprValue.(type) {
+			case *types.Document:
+				res, err := filterFieldExpr(doc, filterKey, exprValue)
+				if res || err != nil {
+					return false, err
+				}
+			case types.Regex:
+				optionsAny, _ := expr.Get("$options")
+				res, err := filterFieldExprRegex(fieldValue, exprValue, optionsAny)
+				if res || err != nil {
+					return false, err
+				}
+			default:
+				return false, NewErrorMsg(ErrBadValue, "$not needs a regex or a document")
 			}
 
 		case "$regex":
