@@ -169,8 +169,8 @@ func getBinaryParam(value any) (types.Binary, error) {
 		}
 	case float64:
 		// TODO check float negative zero
-		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) {
-			return types.Binary{}, errNotWholeNumber
+		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) || value > math.MaxInt64 {
+			return types.Binary{}, errUnexpectedType
 		}
 		res, err = types.BinaryFromInt(int64(value))
 		if err != nil {
@@ -179,7 +179,7 @@ func getBinaryParam(value any) (types.Binary, error) {
 	case types.Binary:
 		return value, nil
 	default:
-		return types.Binary{}, NewErrorMsg(ErrBadValue, "not matched")
+		return types.Binary{}, errUnexpectedType
 	}
 	return res, nil
 }

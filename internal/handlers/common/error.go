@@ -135,6 +135,8 @@ func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
 			fmt.Sprintf(
 				`value takes an Array, a number, or a BinData but received: %s: %#v`, operator, maskValue),
 		)
+	case errUnexpectedType:
+		return nil
 	default:
 		return err
 	}
