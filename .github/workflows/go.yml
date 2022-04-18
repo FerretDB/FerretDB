@@ -50,14 +50,14 @@ jobs:
       - name: Wait for and setup environment
         run: bin/task env-setup
 
-      - name: Run tests
-        run: bin/task test
+      - name: Run unit tests
+        run: bin/task test-unit
 
       - name: Upload coverage information
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           files: ./cover.txt
-          flags: tests
+          flags: unit
 
       - name: Check dirty
         run: |

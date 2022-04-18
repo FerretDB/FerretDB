@@ -12,26 +12,43 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package must provides Do helper function.
-package must
+package types
 
-// NotFail panics if the error is not nil, returns res otherwise.
-//
-// Use that function only for static initialization, test code, or code that "can't" fail.
-// When in doubt, don't.
-func NotFail[T any](res T, err error) T {
-	if err != nil {
-		panic(err)
-	}
-	return res
-}
+import (
+	"testing"
 
-// NoError panics if the error is not nil.
-//
-// Use that function only for static initialization, test code, or code that "can't" fail.
-// When in doubt, don't.
-func NoError(err error) {
-	if err != nil {
-		panic(err)
-	}
+	"github.com/stretchr/testify/assert"
+)
+
+func TestDeepCopy(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Binary", func(t *testing.T) {
+		t.Parallel()
+
+		b1 := Binary{
+			Subtype: 0x01,
+			B:       []byte{0x01, 0x02, 0x03},
+		}
+		b2 := deepCopy(b1)
+
+		assert.Equal(t, b1, b2)
+		assert.NotSame(t, b1, b2)
+
+		b1.B[0] = 0
+		assert.NotEqual(t, b1, b2)
+	})
+
+	t.Run("ObjectID", func(t *testing.T) {
+		t.Parallel()
+
+		o1 := NewObjectID()
+		o2 := deepCopy(o1)
+
+		assert.Equal(t, o1, o2)
+		assert.NotSame(t, o1, o2)
+
+		o1[0] = 0
+		assert.NotEqual(t, o1, o2)
+	})
 }

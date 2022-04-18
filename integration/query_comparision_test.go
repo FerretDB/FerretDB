@@ -39,22 +39,44 @@ func TestQueryComparisonImplicit(t *testing.T) {
 		filter      bson.D
 		expectedIDs []any
 	}{
+		"Document": {
+			filter:      bson.D{{"value", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}},
+			expectedIDs: []any{"document-composite"},
+		},
+		"DocumentShuffledKeys": {
+			filter:      bson.D{{"value", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}},
+			expectedIDs: []any{},
+		},
+
+		"Array": {
+			filter:      bson.D{{"value", bson.A{int32(42), "foo", nil}}},
+			expectedIDs: []any{"array-three"},
+		},
+		"ArrayEmbedded": {
+			filter:      bson.D{{"value", bson.A{bson.A{int32(42), "foo"}, nil}}},
+			expectedIDs: []any{"array-embedded"},
+		},
+		"ArrayShuffledValues": {
+			filter:      bson.D{{"value", bson.A{"foo", nil, int32(42)}}},
+			expectedIDs: []any{},
+		},
+
 		"IDNull": {
 			filter:      bson.D{{"_id", nil}},
 			expectedIDs: []any{},
 		},
 		"ValueNull": {
 			filter:      bson.D{{"value", nil}},
-			expectedIDs: []any{"array-three", "null"},
+			expectedIDs: []any{"array-embedded", "array-three", "null"},
 		},
 		"NoSuchFieldNull": {
 			filter: bson.D{{"no-such-field", nil}},
 			expectedIDs: []any{
-				"array", "array-empty", "array-three",
+				"array", "array-embedded", "array-empty", "array-three",
 				"binary", "binary-empty",
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
-				"document", "document-empty",
+				"document", "document-composite", "document-empty",
 				"double", "double-max", "double-nan", "double-negative-infinity", "double-negative-zero",
 				"double-positive-infinity", "double-smallest", "double-whole", "double-zero",
 				"int32", "int32-max", "int32-min", "int32-zero",
@@ -81,9 +103,10 @@ func TestQueryComparisonImplicit(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			var actual []bson.D
 			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			require.NoError(t, err)
+
+			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
@@ -100,7 +123,27 @@ func TestQueryComparisonEq(t *testing.T) {
 		filter      bson.D
 		expectedIDs []any
 	}{
-		// TODO document, array
+		"Document": {
+			filter:      bson.D{{"value", bson.D{{"$eq", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}}}},
+			expectedIDs: []any{"document-composite"},
+		},
+		"DocumentShuffledKeys": {
+			filter:      bson.D{{"value", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}},
+			expectedIDs: []any{},
+		},
+
+		"Array": {
+			filter:      bson.D{{"value", bson.D{{"$eq", bson.A{int32(42), "foo", nil}}}}},
+			expectedIDs: []any{"array-three"},
+		},
+		"ArrayEmbedded": {
+			filter:      bson.D{{"value", bson.D{{"$eq", bson.A{bson.A{int32(42), "foo"}, nil}}}}},
+			expectedIDs: []any{"array-embedded"},
+		},
+		"ArrayShuffledValues": {
+			filter:      bson.D{{"value", bson.A{"foo", nil, int32(42)}}},
+			expectedIDs: []any{},
+		},
 
 		"Double": {
 			filter:      bson.D{{"value", bson.D{{"$eq", 42.13}}}},
@@ -202,7 +245,7 @@ func TestQueryComparisonEq(t *testing.T) {
 
 		"Null": {
 			filter:      bson.D{{"value", bson.D{{"$eq", nil}}}},
-			expectedIDs: []any{"array-three", "null"},
+			expectedIDs: []any{"array-embedded", "array-three", "null"},
 		},
 
 		"RegexWithoutOption": {
@@ -268,11 +311,11 @@ func TestQueryComparisonEq(t *testing.T) {
 		"NoSuchFieldNull": {
 			filter: bson.D{{"no-such-field", bson.D{{"$eq", nil}}}},
 			expectedIDs: []any{
-				"array", "array-empty", "array-three",
+				"array", "array-embedded", "array-empty", "array-three",
 				"binary", "binary-empty",
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
-				"document", "document-empty",
+				"document", "document-composite", "document-empty",
 				"double", "double-max", "double-nan", "double-negative-infinity", "double-negative-zero",
 				"double-positive-infinity", "double-smallest", "double-whole", "double-zero",
 				"int32", "int32-max", "int32-min", "int32-zero",
@@ -289,9 +332,10 @@ func TestQueryComparisonEq(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			var actual []bson.D
 			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			require.NoError(t, err)
+
+			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
@@ -436,7 +480,6 @@ func TestQueryComparisonGt(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			var actual []bson.D
 			filter := bson.D{{"value", bson.D{{"$gt", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err.Code != 0 {
@@ -445,6 +488,8 @@ func TestQueryComparisonGt(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
+
+			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
@@ -539,7 +584,7 @@ func TestQueryComparisonGte(t *testing.T) {
 
 		"Null": {
 			value:       nil,
-			expectedIDs: []any{"array-three", "null"},
+			expectedIDs: []any{"array-embedded", "array-three", "null"},
 		},
 
 		"Regex": {
@@ -596,7 +641,6 @@ func TestQueryComparisonGte(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			var actual []bson.D
 			filter := bson.D{{"value", bson.D{{"$gte", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err.Code != 0 {
@@ -605,6 +649,8 @@ func TestQueryComparisonGte(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
+
+			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
@@ -756,7 +802,6 @@ func TestQueryComparisonLt(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			var actual []bson.D
 			filter := bson.D{{"value", bson.D{{"$lt", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err.Code != 0 {
@@ -765,6 +810,8 @@ func TestQueryComparisonLt(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
+
+			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
@@ -865,7 +912,7 @@ func TestQueryComparisonLte(t *testing.T) {
 
 		"Null": {
 			value:       nil,
-			expectedIDs: []any{"array-three", "null"},
+			expectedIDs: []any{"array-embedded", "array-three", "null"},
 		},
 
 		"Regex": {
@@ -922,7 +969,6 @@ func TestQueryComparisonLte(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			var actual []bson.D
 			filter := bson.D{{"value", bson.D{{"$lte", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err.Code != 0 {
@@ -931,6 +977,8 @@ func TestQueryComparisonLte(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
+
+			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))

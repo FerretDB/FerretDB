@@ -67,13 +67,22 @@ tasks:
       - bin/gofumpt{{exeExt}} -w .
 
   test:
-    desc: 'Run tests'
+    desc: 'Run all unit and integration tests in parallel'
+    deps: [test-unit, test-integration]
+
+  test-unit-short:
+    desc: 'Run short unit tests'
+    cmds:
+      - go test -short -race -shuffle=on -coverprofile=cover.txt ./...
+
+  test-unit:
+    desc: 'Run all unit tests'
     cmds:
       - go test -race -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
       - go test -race -shuffle=on -bench=. -benchtime=1x ./...
 
   test-integration:
-    desc: 'Run all integration tests'
+    desc: 'Run all integration tests in parallel'
     deps:
       - task: test-integration-db
         vars: { DB: 'FerretDB' }
@@ -146,7 +155,7 @@ tasks:
 
   run:
     desc: 'Run FerretDB'
-    deps: [gen-version, build-testcover]
+    deps: [build-testcover]
     cmds:
       - bin/ferretdb-testcover -test.coverprofile=cover.txt -mode=diff-normal -listen-addr=:27017
 
@@ -182,7 +191,7 @@ tasks:
     cmds:
       - >
         docker run --rm -v $PWD:/workdir ghcr.io/igorshubovych/markdownlint-cli:v0.31.1
-        --fix --ignore CHANGELOG.md **/*.md
+        --fix --dot --ignore CHANGELOG.md '**/*.md'
 
   psql:
     desc: 'Run psql'
@@ -190,14 +199,14 @@ tasks:
       - docker-compose exec postgres psql -U postgres -d ferretdb
 
   mongosh:
-    desc: 'Run mongo shell'
+    desc: 'Run MongoDB shell (`mongosh`)'
     cmds:
       - >
         docker-compose exec mongodb mongosh mongodb://host.docker.internal:27017/monila?heartbeatFrequencyMS=300000
         --verbose --eval 'disableTelemetry()' --shell
 
   mongo:
-    desc: 'Run (legacy) mongo shell'
+    desc: 'Run legacy `mongo` shell'
     cmds:
       - >
         docker-compose exec mongodb mongo mongodb://host.docker.internal:27017/monila?heartbeatFrequencyMS=300000
