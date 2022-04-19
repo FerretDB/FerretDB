@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func TestQueryArraySize(t *testing.T) {
@@ -121,7 +122,7 @@ func TestQueryArraySize(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			cursor, err := collection.Find(ctx, tc.filter)
+			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err.Code != 0 {
 				require.Nil(t, tc.expectedIDs)
 				assertEqualError(t, tc.err, err)
