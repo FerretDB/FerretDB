@@ -249,9 +249,26 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 		case "$ne":
 			// {field: {$ne: exprValue}}
-			// TODO regex
-			if compareScalars(fieldValue, exprValue) == equal {
+			switch exprValue := exprValue.(type) {
+			case *types.Document:
+				if fieldValue, ok := fieldValue.(*types.Document); ok {
+					return !matchDocuments(exprValue, fieldValue), nil
+				}
 				return false, nil
+
+			case *types.Array:
+				if fieldValue, ok := fieldValue.(*types.Array); ok {
+					return !matchArrays(exprValue, fieldValue), nil
+				}
+				return false, nil
+
+			case types.Regex:
+				return false, NewErrorMsg(ErrBadValue, "Can't have regex as arg to $ne.")
+
+			default:
+				if compare(fieldValue, exprValue) == equal {
+					return false, nil
+				}
 			}
 
 		case "$gt":
