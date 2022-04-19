@@ -119,15 +119,20 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 	switch operator {
 	case "$and":
 		// {$and: [{expr1}, {expr2}, ...]}
-		exprs, err := AssertType[*types.Array](filterValue)
-		if err != nil {
-			return false, err
+		exprs, ok := filterValue.(*types.Array)
+		if !ok {
+			return false, NewErrorMsg(ErrBadValue, "$and must be an array")
 		}
 		for i := 0; i < exprs.Len(); i++ {
-			expr := must.NotFail(exprs.Get(i)).(*types.Document)
+			value := must.NotFail(exprs.Get(i))
+
+			expr, ok := value.(*types.Document)
+			if !ok {
+				return false, NewErrorMsg(ErrBadValue, "$or/$and/$nor entries need to be full objects")
+			}
 			matches, err := FilterDocument(doc, expr)
 			if err != nil {
-				panic(err)
+				return false, err
 			}
 			if !matches {
 				return false, nil
@@ -137,15 +142,22 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 
 	case "$or":
 		// {$or: [{expr1}, {expr2}, ...]}
-		exprs, err := AssertType[*types.Array](filterValue)
-		if err != nil {
-			return false, err
+		exprs, ok := filterValue.(*types.Array)
+		if !ok {
+			return false, NewErrorMsg(ErrBadValue, "$or must be an array")
 		}
 		for i := 0; i < exprs.Len(); i++ {
-			expr := must.NotFail(exprs.Get(i)).(*types.Document)
+			value, err := exprs.Get(i)
+			if err != nil {
+				return false, err
+			}
+			expr, ok := value.(*types.Document)
+			if !ok {
+				return false, NewErrorMsg(ErrBadValue, "$or/$and/$nor entries need to be full objects")
+			}
 			matches, err := FilterDocument(doc, expr)
 			if err != nil {
-				panic(err)
+				return false, err
 			}
 			if matches {
 				return true, nil
@@ -155,15 +167,22 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 
 	case "$nor":
 		// {$nor: [{expr1}, {expr2}, ...]}
-		exprs, err := AssertType[*types.Array](filterValue)
-		if err != nil {
-			return false, err
+		exprs, ok := filterValue.(*types.Array)
+		if !ok {
+			return false, NewErrorMsg(ErrBadValue, "$nor must be an array")
 		}
 		for i := 0; i < exprs.Len(); i++ {
-			expr := must.NotFail(exprs.Get(i)).(*types.Document)
+			value, err := exprs.Get(i)
+			if err != nil {
+				return false, err
+			}
+			expr, ok := value.(*types.Document)
+			if !ok {
+				return false, NewErrorMsg(ErrBadValue, "$or/$and/$nor entries need to be full objects")
+			}
 			matches, err := FilterDocument(doc, expr)
 			if err != nil {
-				panic(err)
+				return false, err
 			}
 			if matches {
 				return false, nil
@@ -192,12 +211,12 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 		exprValue := must.NotFail(expr.Get(exprKey))
 
 		fieldValue, err := doc.Get(filterKey)
-		if err != nil && exprKey != "$exists" {
+		if err != nil && exprKey != "$exists" && exprKey != "$not" {
 			// comparing not existent field with null should return true
 			if _, ok := exprValue.(types.NullType); ok {
 				return true, nil
 			}
-			// exit when not $exists filter and no such field
+			// exit when not $exists or $not filters and no such field
 			return false, nil
 		}
 
@@ -292,13 +311,31 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 		case "$nin":
 			// {field: {$nin: [value1, value2, ...]}}
-			arr := exprValue.(*types.Array)
+			arr, ok := exprValue.(*types.Array)
+			if !ok {
+				return false, NewErrorMsg(ErrBadValue, "$nin needs an array")
+			}
 			var found bool
 			for i := 0; i < arr.Len(); i++ {
 				arrValue := must.NotFail(arr.Get(i))
-				if compareScalars(fieldValue, arrValue) == equal {
-					found = true
-					break
+				switch arrValue := arrValue.(type) {
+				case *types.Array:
+					fieldValue, ok := fieldValue.(*types.Array)
+					if ok && matchArrays(fieldValue, arrValue) {
+						found = true
+						break
+					}
+				case *types.Document:
+					fieldValue, ok := fieldValue.(*types.Document)
+					if ok && matchDocuments(fieldValue, arrValue) {
+						found = true
+						break
+					}
+				default:
+					if compare(fieldValue, arrValue) == equal {
+						found = true
+						break
+					}
 				}
 			}
 			if found {
@@ -307,10 +344,20 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 		case "$not":
 			// {field: {$not: {expr}}}
-			expr := exprValue.(*types.Document)
-			res, err := filterFieldExpr(doc, filterKey, expr)
-			if res || err != nil {
-				return false, err
+			switch exprValue := exprValue.(type) {
+			case *types.Document:
+				res, err := filterFieldExpr(doc, filterKey, exprValue)
+				if res || err != nil {
+					return false, err
+				}
+			case types.Regex:
+				optionsAny, _ := expr.Get("$options")
+				res, err := filterFieldExprRegex(fieldValue, exprValue, optionsAny)
+				if res || err != nil {
+					return false, err
+				}
+			default:
+				return false, NewErrorMsg(ErrBadValue, "$not needs a regex or a document")
 			}
 
 		case "$regex":
@@ -352,6 +399,13 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 		case "$bitsAnySet":
 			// {field: {$bitsAnySet: value}}
 			res, err := filterFieldExprBitsAnySet(fieldValue, exprValue)
+			if !res || err != nil {
+				return false, err
+			}
+
+		case "$mod":
+			// {field: {$mod: [divisor, remainder]}}
+			res, err := filterFieldMod(fieldValue, exprValue)
 			if !res || err != nil {
 				return false, err
 			}
@@ -540,6 +594,96 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 		if (fieldBinary.B[i] & mask) == 0 {
 			return false, nil
 		}
+	}
+
+	return true, nil
+}
+
+// filterFieldMod handles {field: {$mod: [divisor, remainder]}} filter.
+func filterFieldMod(fieldValue, exprValue any) (bool, error) {
+	var field, divisor, remainder int64
+
+	switch f := fieldValue.(type) {
+	case int32:
+		field = int64(f)
+	case int64:
+		field = f
+	case float64:
+		if math.IsNaN(f) || math.IsInf(f, 0) {
+			return false, nil
+		}
+		f = math.Trunc(f)
+		field = int64(f)
+		if f != float64(field) {
+			return false, nil
+		}
+	default:
+		return false, nil
+	}
+
+	arr := exprValue.(*types.Array)
+	if arr.Len() < 2 {
+		return false, NewErrorMsg(ErrBadValue, `malformed mod, not enough elements`)
+	}
+	if arr.Len() > 2 {
+		return false, NewErrorMsg(ErrBadValue, `malformed mod, too many elements`)
+	}
+
+	switch d := must.NotFail(arr.Get(0)).(type) {
+	case int32:
+		divisor = int64(d)
+	case int64:
+		divisor = d
+	case float64:
+		if math.IsNaN(d) || math.IsInf(d, 0) {
+			return false, NewErrorMsg(ErrBadValue, `malformed mod, divisor value is invalid :: caused by :: `+
+				`Unable to coerce NaN/Inf to integral type`)
+		}
+
+		d = math.Trunc(d)
+		if d > float64(9.223372036854776832e+18) || d < float64(-9.223372036854776832e+18) {
+			return false, NewErrorMsg(ErrBadValue, `malformed mod, divisor value is invalid :: caused by :: `+
+				`Out of bounds coercing to integral value`)
+		}
+
+		divisor = int64(d)
+		if d != float64(divisor) && field != 0 && d < 9.223372036854775296e+18 {
+			return false, nil
+		}
+	default:
+		return false, NewErrorMsg(ErrBadValue, `malformed mod, divisor not a number`)
+	}
+
+	switch r := must.NotFail(arr.Get(1)).(type) {
+	case int32:
+		remainder = int64(r)
+	case int64:
+		remainder = r
+	case float64:
+		if math.IsNaN(r) || math.IsInf(r, 0) {
+			return false, NewErrorMsg(ErrBadValue, `malformed mod, remainder value is invalid :: caused by :: `+
+				`Unable to coerce NaN/Inf to integral type`)
+		}
+		r = math.Trunc(r)
+		if r > float64(9.223372036854776832e+18) || r < float64(-9.223372036854776832e+18) {
+			return false, NewErrorMsg(ErrBadValue, `malformed mod, remainder value is invalid :: caused by :: `+
+				`Out of bounds coercing to integral value`)
+		}
+		remainder = int64(r)
+		if r != float64(remainder) {
+			return false, nil
+		}
+	default:
+		return false, NewErrorMsg(ErrBadValue, `malformed mod, remainder not a number`)
+	}
+
+	if divisor == 0 {
+		return false, NewErrorMsg(ErrBadValue, `divisor cannot be 0`)
+	}
+
+	f := field % divisor
+	if f != remainder {
+		return false, nil
 	}
 
 	return true, nil

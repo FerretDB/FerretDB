@@ -1,5 +1,51 @@
 # Changelog
 
+## [v0.1.1](https://github.com/FerretDB/FerretDB/releases/tag/v0.1.1) (2022-04-19)
+
+### New Features 🎉
+* Support `$gt` comparision operator by @ribaraka in https://github.com/FerretDB/FerretDB/pull/330
+* Support `$exists` element query operator by @w84thesun in https://github.com/FerretDB/FerretDB/pull/446
+* Add basic `upsert` support by @AlekSi in https://github.com/FerretDB/FerretDB/pull/473
+* Add `$type` operator by @w84thesun in https://github.com/FerretDB/FerretDB/pull/453
+* Support `$mod` evaluation query operator by @fenogentov in https://github.com/FerretDB/FerretDB/pull/440
+* Support logical operators by @w84thesun in https://github.com/FerretDB/FerretDB/pull/465
+
+### Enhancements 🛠
+* Ping database in some commands by @AlekSi in https://github.com/FerretDB/FerretDB/pull/435
+* Ensure that `_id` fields are always the first by @AlekSi in https://github.com/FerretDB/FerretDB/pull/476
+
+### Documentation 📄
+* Improve contributing guidelines by @AlekSi in https://github.com/FerretDB/FerretDB/pull/480
+
+### Other Changes 🤖
+* Integration tests improvements by @AlekSi in https://github.com/FerretDB/FerretDB/pull/441
+* Add test stub for bitwise operators by @AlekSi in https://github.com/FerretDB/FerretDB/pull/443
+* Add tests for collections `create` and `drop` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/444
+* Add tests for more diagnostic commands by @AlekSi in https://github.com/FerretDB/FerretDB/pull/448
+* Transfer existing comparison tests by @ribaraka in https://github.com/FerretDB/FerretDB/pull/445
+* Move `getParameter` tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/450
+* Improve `envtool` diagnostics by @w84thesun in https://github.com/FerretDB/FerretDB/pull/426
+* Fix Postgres port check for `envtool` by @w84thesun in https://github.com/FerretDB/FerretDB/pull/451
+* Add support for `$gte`, `$lt`, `$lte` operators by @ribaraka in https://github.com/FerretDB/FerretDB/pull/452
+* Add tests for `null` values by @w84thesun in https://github.com/FerretDB/FerretDB/pull/458
+* Bump actions/upload-artifact from 2 to 3 by @dependabot in https://github.com/FerretDB/FerretDB/pull/460
+* Update tests for the latest mongo-driver by @AlekSi in https://github.com/FerretDB/FerretDB/pull/463
+* Rearrange tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/467
+* Do not invoke Dance tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/468
+* Minor unification of tests style by @AlekSi in https://github.com/FerretDB/FerretDB/pull/469
+* Add helpers that generate ObjectID by @AlekSi in https://github.com/FerretDB/FerretDB/pull/474
+* Add deep copy helpers by @AlekSi in https://github.com/FerretDB/FerretDB/pull/475
+* Allow the usage of proxy/diff mode in tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/477
+* Bump codecov/codecov-action from 2 to 3 by @dependabot in https://github.com/FerretDB/FerretDB/pull/461
+* Composite data type find handling by @ribaraka in https://github.com/FerretDB/FerretDB/pull/471
+* Fix failing tests by @w84thesun in https://github.com/FerretDB/FerretDB/pull/482
+* Rename `q` to `filter` in tests by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/484
+* Supress linter warning by @AlekSi in https://github.com/FerretDB/FerretDB/pull/485
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/11?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v0.1.0...v0.1.1).
+
+
 ## [v0.1.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.1.0) (2022-04-04)
 
 ### What's Changed
