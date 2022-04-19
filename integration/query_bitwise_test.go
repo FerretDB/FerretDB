@@ -256,7 +256,8 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 				Name:    "BadValue",
 				Message: `bit positions must be an integer but got: 0: "123"`,
 			},
-		}} {
+		},
+	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
