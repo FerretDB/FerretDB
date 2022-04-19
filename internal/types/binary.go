@@ -73,12 +73,12 @@ func BinaryFromArray(values *Array) (Binary, error) {
 }
 
 // BinaryFromInt packs int64 value into types.Binary.
-func BinaryFromInt(value int64) (Binary, error) {
+func BinaryFromInt(value int64) Binary {
 	buff := new(bytes.Buffer)
 	must.NoError(binary.Write(buff, binary.LittleEndian, uint64(value)))
 
 	return Binary{
 		Subtype: BinaryGeneric,
 		B:       buff.Bytes(),
-	}, nil
+	}
 }

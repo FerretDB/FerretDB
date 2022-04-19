@@ -119,29 +119,20 @@ func getBinaryMaskParam(value any) (types.Binary, error) {
 			return types.Binary{}, errNegativeNumber
 		}
 
-		mask, err = types.BinaryFromInt(int64(value))
-		if err != nil {
-			return types.Binary{}, NewError(ErrBadValue, err)
-		}
+		mask = types.BinaryFromInt(int64(value))
 	case int64:
 		// {field: {$bitsAllClear: bitmask}}
 		if value < 0 {
 			return types.Binary{}, errNegativeNumber
 		}
 
-		mask, err = types.BinaryFromInt(value)
-		if err != nil {
-			return types.Binary{}, NewError(ErrBadValue, err)
-		}
+		mask = types.BinaryFromInt(value)
 	case float64:
 		// TODO check float negative zero
 		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) {
 			return types.Binary{}, errNotWholeNumber
 		}
-		mask, err = types.BinaryFromInt(int64(value))
-		if err != nil {
-			return types.Binary{}, err
-		}
+		mask = types.BinaryFromInt(int64(value))
 	case types.Binary:
 		// {field: {$bitsAllClear: BinData()}}
 		mask = value
@@ -154,28 +145,21 @@ func getBinaryMaskParam(value any) (types.Binary, error) {
 // getBinaryParam matches value type, returning types.Binary and error if match failed.
 func getBinaryParam(value any) (types.Binary, error) {
 	var res types.Binary
-	var err error
 
 	switch value := value.(type) {
 	case int32:
-		res, err = types.BinaryFromInt(int64(value))
-		if err != nil {
-			return types.Binary{}, err
-		}
+		res = types.BinaryFromInt(int64(value))
+
 	case int64:
-		res, err = types.BinaryFromInt(value)
-		if err != nil {
-			return types.Binary{}, err
-		}
+		res = types.BinaryFromInt(value)
+
 	case float64:
 		// TODO check float negative zero
 		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) || value > math.MaxInt64 {
 			return types.Binary{}, errUnexpectedType
 		}
-		res, err = types.BinaryFromInt(int64(value))
-		if err != nil {
-			return types.Binary{}, err
-		}
+		res = types.BinaryFromInt(int64(value))
+
 	case types.Binary:
 		return value, nil
 	default:
