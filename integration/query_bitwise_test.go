@@ -225,7 +225,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 			err: mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
-				Message: "Expected a positive number in: $bitsAllClear: -1",
+				Message: "Expected a positive number in: $bitsAllSet: -1",
 			},
 		},
 		"BigBinary": {
