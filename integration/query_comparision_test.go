@@ -1002,16 +1002,16 @@ func TestQueryComparisonNin(t *testing.T) {
 	}
 
 	for name, tc := range map[string]struct {
-		filter      bson.D
+		value       any
 		expectedIDs []any
 		err         mongo.CommandError
 	}{
 		"ForScalarDataTypes": {
-			filter:      bson.D{{"value", bson.D{{"$nin", scalarDataTypesFilter}}}},
+			value:       scalarDataTypesFilter,
 			expectedIDs: []any{"array-empty", "document", "document-composite", "document-empty"},
 		},
 		"ForCompositeDataTypes": {
-			filter: bson.D{{"value", bson.D{{"$nin", compositeDataTypesFilter}}}},
+			value: compositeDataTypesFilter,
 			expectedIDs: []any{
 				"binary", "binary-empty",
 				"bool-false", "bool-true",
@@ -1029,7 +1029,7 @@ func TestQueryComparisonNin(t *testing.T) {
 		},
 
 		"NilInsteadOfArray": {
-			filter: bson.D{{"value", bson.D{{"$nin", nil}}}},
+			value: nil,
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -1037,7 +1037,7 @@ func TestQueryComparisonNin(t *testing.T) {
 			},
 		},
 		"StringInsteadOfArray": {
-			filter: bson.D{{"value", bson.D{{"$nin", "foo"}}}},
+			value: "foo",
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -1049,14 +1049,16 @@ func TestQueryComparisonNin(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			var actual []bson.D
-			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			filter := bson.D{{"value", bson.D{{"$nin", tc.value}}}}
+			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err.Code != 0 {
 				require.Nil(t, tc.expectedIDs)
 				assertEqualError(t, tc.err, err)
 				return
 			}
 			require.NoError(t, err)
+
+			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
