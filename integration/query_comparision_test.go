@@ -1080,155 +1080,155 @@ func TestQueryComparisonNe(t *testing.T) {
 	ctx, collection := setup(t, providers...)
 
 	for name, tc := range map[string]struct {
-		value         any
-		valueToBeLost string
-		err           mongo.CommandError
+		value        any
+		unexpectedID string
+		err          mongo.CommandError
 	}{
 		"Document": {
-			value:         bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}},
-			valueToBeLost: "document-composite",
+			value:        bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}},
+			unexpectedID: "document-composite",
 		},
 		"DocumentShuffledKeys": {
-			value:         bson.D{{"value", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}},
-			valueToBeLost: "",
+			value:        bson.D{{"value", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}},
+			unexpectedID: "",
 		},
 
 		"Array": {
-			value:         bson.A{int32(42), "foo", nil},
-			valueToBeLost: "array-three",
+			value:        bson.A{int32(42), "foo", nil},
+			unexpectedID: "array-three",
 		},
 		"ArrayEmbedded": {
-			value:         bson.A{bson.A{int32(42), "foo"}, nil},
-			valueToBeLost: "array-embedded",
+			value:        bson.A{bson.A{int32(42), "foo"}, nil},
+			unexpectedID: "array-embedded",
 		},
 		"ArrayShuffledValues": {
-			value:         bson.A{"foo", nil, int32(42)},
-			valueToBeLost: "",
+			value:        bson.A{"foo", nil, int32(42)},
+			unexpectedID: "",
 		},
 
 		"Double": {
-			value:         42.13,
-			valueToBeLost: "double",
+			value:        42.13,
+			unexpectedID: "double",
 		},
 		"DoubleNegativeInfinity": {
-			value:         math.Inf(-1),
-			valueToBeLost: "double-negative-infinity",
+			value:        math.Inf(-1),
+			unexpectedID: "double-negative-infinity",
 		},
 		"DoubleNegativeZero": {
-			value:         math.Copysign(0, -1),
-			valueToBeLost: "double-negative-zero",
+			value:        math.Copysign(0, -1),
+			unexpectedID: "double-negative-zero",
 		},
 		"DoublePositiveInfinity": {
-			value:         math.Inf(+1),
-			valueToBeLost: "double-positive-infinity",
+			value:        math.Inf(+1),
+			unexpectedID: "double-positive-infinity",
 		},
 		"DoubleMax": {
-			value:         math.MaxFloat64,
-			valueToBeLost: "double-max",
+			value:        math.MaxFloat64,
+			unexpectedID: "double-max",
 		},
 		"DoubleSmallest": {
-			value:         math.SmallestNonzeroFloat64,
-			valueToBeLost: "double-smallest",
+			value:        math.SmallestNonzeroFloat64,
+			unexpectedID: "double-smallest",
 		},
 		"DoubleZero": {
-			value:         0.0,
-			valueToBeLost: "double-zero",
+			value:        0.0,
+			unexpectedID: "double-zero",
 		},
 		"DoubleNaN": {
-			value:         math.NaN(),
-			valueToBeLost: "double-nan",
+			value:        math.NaN(),
+			unexpectedID: "double-nan",
 		},
 
 		"String": {
-			value:         "foo",
-			valueToBeLost: "string",
+			value:        "foo",
+			unexpectedID: "string",
 		},
 		"EmptyString": {
-			value:         "",
-			valueToBeLost: "string-empty",
+			value:        "",
+			unexpectedID: "string-empty",
 		},
 
 		"Binary": {
-			value:         primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}},
-			valueToBeLost: "binary",
+			value:        primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}},
+			unexpectedID: "binary",
 		},
 		"EmptyBinary": {
-			value:         primitive.Binary{Data: []byte{}},
-			valueToBeLost: "binary-empty",
+			value:        primitive.Binary{Data: []byte{}},
+			unexpectedID: "binary-empty",
 		},
 
 		"BoolFalse": {
-			value:         false,
-			valueToBeLost: "bool-false",
+			value:        false,
+			unexpectedID: "bool-false",
 		},
 		"BoolTrue": {
-			value:         true,
-			valueToBeLost: "bool-true",
+			value:        true,
+			unexpectedID: "bool-true",
 		},
 
 		"Datetime": {
-			value:         primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC)),
-			valueToBeLost: "datetime",
+			value:        primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC)),
+			unexpectedID: "datetime",
 		},
 		"DatetimeEpoch": {
-			value:         primitive.NewDateTimeFromTime(time.Unix(0, 0)),
-			valueToBeLost: "datetime-epoch",
+			value:        primitive.NewDateTimeFromTime(time.Unix(0, 0)),
+			unexpectedID: "datetime-epoch",
 		},
 		"DatetimeYearMax": {
-			value:         primitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)),
-			valueToBeLost: "datetime-year-min",
+			value:        primitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)),
+			unexpectedID: "datetime-year-min",
 		},
 		"DatetimeYearMin": {
-			value:         primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC)),
-			valueToBeLost: "datetime-year-max",
+			value:        primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC)),
+			unexpectedID: "datetime-year-max",
 		},
 
 		"Timestamp": {
-			value:         primitive.Timestamp{T: 42, I: 13},
-			valueToBeLost: "timestamp",
+			value:        primitive.Timestamp{T: 42, I: 13},
+			unexpectedID: "timestamp",
 		},
 		"TimestampI": {
-			value:         primitive.Timestamp{I: 1},
-			valueToBeLost: "timestamp-i",
+			value:        primitive.Timestamp{I: 1},
+			unexpectedID: "timestamp-i",
 		},
 
 		"Null": {
-			value:         nil,
-			valueToBeLost: "null",
+			value:        nil,
+			unexpectedID: "null",
 		},
 
 		"Int32": {
-			value:         int32(42),
-			valueToBeLost: "int32",
+			value:        int32(42),
+			unexpectedID: "int32",
 		},
 		"Int32Zero": {
-			value:         int32(0),
-			valueToBeLost: "int32-zero",
+			value:        int32(0),
+			unexpectedID: "int32-zero",
 		},
 		"Int32Max": {
-			value:         int32(math.MaxInt32),
-			valueToBeLost: "int32-max",
+			value:        int32(math.MaxInt32),
+			unexpectedID: "int32-max",
 		},
 		"Int32Min": {
-			value:         int32(math.MinInt32),
-			valueToBeLost: "int32-min",
+			value:        int32(math.MinInt32),
+			unexpectedID: "int32-min",
 		},
 
 		"Int64": {
-			value:         int64(42),
-			valueToBeLost: "int64",
+			value:        int64(42),
+			unexpectedID: "int64",
 		},
 		"Int64Zero": {
-			value:         int64(0),
-			valueToBeLost: "int64-zero",
+			value:        int64(0),
+			unexpectedID: "int64-zero",
 		},
 		"Int64Max": {
-			value:         int64(math.MaxInt64),
-			valueToBeLost: "int64-max",
+			value:        int64(math.MaxInt64),
+			unexpectedID: "int64-max",
 		},
 		"Int64Min": {
-			value:         int64(math.MinInt64),
-			valueToBeLost: "int64-min",
+			value:        int64(math.MinInt64),
+			unexpectedID: "int64-min",
 		},
 
 		"Regex": {
@@ -1255,7 +1255,7 @@ func TestQueryComparisonNe(t *testing.T) {
 			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
-			assert.NotContains(t, collectIDs(t, actual), tc.valueToBeLost)
+			assert.NotContains(t, collectIDs(t, actual), tc.unexpectedID)
 		})
 	}
 }
