@@ -112,6 +112,22 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 				"int64-min", "int64-zero",
 			},
 		},
+		"ArrayNegativeBitPositionValue": {
+			filter: primitive.A{-1},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "bit positions must be >= 0 but got: 0: -1",
+			},
+		},
+		"ArrayBadValue": {
+			filter: primitive.A{"123"},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `bit positions must be an integer but got: 0: "123"`,
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -193,7 +209,22 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 			filter:      primitive.A{1, 5},
 			expectedIDs: []any{"binary", "double-whole", "int32", "int32-max", "int64", "int64-max"},
 		},
-	} {
+		"ArrayNegativeBitPositionValue": {
+			filter: primitive.A{-1},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "bit positions must be >= 0 but got: 0: -1",
+			},
+		},
+		"ArrayBadValue": {
+			filter: primitive.A{"123"},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `bit positions must be an integer but got: 0: "123"`,
+			},
+		}} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
@@ -299,6 +330,22 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 				"int64-min", "int64-zero",
 			},
 		},
+		"ArrayNegativeBitPositionValue": {
+			filter: primitive.A{-1},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "bit positions must be >= 0 but got: 0: -1",
+			},
+		},
+		"ArrayBadValue": {
+			filter: primitive.A{"123"},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `bit positions must be an integer but got: 0: "123"`,
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -393,6 +440,22 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 				"double-whole",
 				"int32", "int32-max",
 				"int64", "int64-max",
+			},
+		},
+		"ArrayNegativeBitPositionValue": {
+			filter: primitive.A{-1},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "bit positions must be >= 0 but got: 0: -1",
+			},
+		},
+		"ArrayBadValue": {
+			filter: primitive.A{"123"},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `bit positions must be an integer but got: 0: "123"`,
 			},
 		},
 	} {

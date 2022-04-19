@@ -17,7 +17,9 @@ package types
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
+	"fmt"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 //go:generate ../../bin/stringer -linecomment -type BinarySubtype
@@ -47,16 +49,16 @@ type Binary struct {
 func BinaryFromArray(values *Array) (Binary, error) {
 	var bitMask uint64
 	for i := 0; i < values.Len(); i++ {
-		value, err := values.Get(i)
-		if err != nil {
-			return Binary{}, err
+		value := must.NotFail(values.Get(i))
+
+		bitPosition, ok := value.(int32)
+		if !ok {
+			return Binary{}, fmt.Errorf(`bit positions must be an integer but got: %d: %#v`, i, value)
 		}
 
-		if _, ok := value.(int32); !ok {
-			return Binary{}, errors.New("bit position should be an integer value")
+		if bitPosition < 0 {
+			return Binary{}, fmt.Errorf("bit positions must be >= 0 but got: %d: %d", i, bitPosition)
 		}
-
-		bitPosition := value.(int32)
 
 		bitMask |= 1 << bitPosition
 	}
