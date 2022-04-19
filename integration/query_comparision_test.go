@@ -986,8 +986,86 @@ func TestQueryComparisonLte(t *testing.T) {
 	}
 }
 
+func TestQueryComparisonNin(t *testing.T) {
+	t.Parallel()
+	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
+	ctx, collection := setup(t, providers...)
+
+	var scalarDataTypesFilter bson.A
+	for _, scalarDataType := range shareddata.Scalars.Docs() {
+		scalarDataTypesFilter = append(scalarDataTypesFilter, scalarDataType.Map()["value"])
+	}
+
+	var compositeDataTypesFilter bson.A
+	for _, compositeDataType := range shareddata.Composites.Docs() {
+		compositeDataTypesFilter = append(compositeDataTypesFilter, compositeDataType.Map()["value"])
+	}
+
+	for name, tc := range map[string]struct {
+		value       any
+		expectedIDs []any
+		err         mongo.CommandError
+	}{
+		"ForScalarDataTypes": {
+			value:       scalarDataTypesFilter,
+			expectedIDs: []any{"array-empty", "document", "document-composite", "document-empty"},
+		},
+		"ForCompositeDataTypes": {
+			value: compositeDataTypesFilter,
+			expectedIDs: []any{
+				"binary", "binary-empty",
+				"bool-false", "bool-true",
+				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
+				"double", "double-max", "double-nan", "double-negative-infinity", "double-negative-zero",
+				"double-positive-infinity", "double-smallest", "double-whole", "double-zero",
+				"int32", "int32-max", "int32-min", "int32-zero",
+				"int64", "int64-max", "int64-min", "int64-zero",
+				"null",
+				"objectid", "objectid-empty",
+				"regex", "regex-empty",
+				"string", "string-double", "string-empty", "string-whole",
+				"timestamp", "timestamp-i",
+			},
+		},
+
+		"NilInsteadOfArray": {
+			value: nil,
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `$nin needs an array`,
+			},
+		},
+		"StringInsteadOfArray": {
+			value: "foo",
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `$nin needs an array`,
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			filter := bson.D{{"value", bson.D{{"$nin", tc.value}}}}
+			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			if tc.err.Code != 0 {
+				require.Nil(t, tc.expectedIDs)
+				assertEqualError(t, tc.err, err)
+				return
+			}
+			require.NoError(t, err)
+
+			var actual []bson.D
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
+		})
+	}
+}
+
 // $in
 
 // $ne
-
-// $nin
