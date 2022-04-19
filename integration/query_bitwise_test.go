@@ -76,13 +76,22 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 				"int64-min", "int64-zero",
 			},
 		},
-		"Array": {
-			filter: primitive.A{1, 5},
+		"BigBinary": {
+			filter: int32(0b1000_0000_0000_0000_0000_0000),
 			expectedIDs: []any{
-				"binary-big", "binary-empty",
-				"double-negative-zero", "double-zero",
-				"int32-min", "int32-zero",
-				"int64-min", "int64-zero",
+				"binary", "binary-empty",
+				"double-negative-zero", "double-whole", "double-zero",
+				"int32", "int32-min", "int32-zero",
+				"int64", "int64-min", "int64-zero",
+			},
+		},
+		"ByteOne": {
+			filter: int32(0b1000_0000_0000_0000),
+			expectedIDs: []any{
+				"binary", "binary-big", "binary-empty",
+				"double-negative-zero", "double-whole", "double-zero",
+				"int32", "int32-min", "int32-zero",
+				"int64", "int64-min", "int64-zero",
 			},
 		},
 		"NegativeValue": {
@@ -91,6 +100,16 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected a positive number in: $bitsAllClear: -1",
+			},
+		},
+
+		"Array": {
+			filter: primitive.A{1, 5},
+			expectedIDs: []any{
+				"binary-big", "binary-empty",
+				"double-negative-zero", "double-zero",
+				"int32-min", "int32-zero",
+				"int64-min", "int64-zero",
 			},
 		},
 	} {
@@ -129,9 +148,13 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 		expectedIDs []any
 		err         mongo.CommandError
 	}{
-		"Int32": {
-			filter:      int32(2),
-			expectedIDs: []any{"binary", "double-whole", "int32", "int32-max", "int64", "int64-max"},
+		"Float": {
+			filter: 1.2,
+			err: mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "Expected an integer: $bitsAllSet: 1.2",
+			},
 		},
 		"String": {
 			filter: "123",
@@ -141,13 +164,21 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 				Message: "value takes an Array, a number, or a BinData but received: $bitsAllSet: \"123\"",
 			},
 		},
-		"Float": {
-			filter: 1.2,
-			err: mongo.CommandError{
-				Code:    9,
-				Name:    "FailedToParse",
-				Message: "Expected an integer: $bitsAllSet: 1.2",
-			},
+		"Int32": {
+			filter:      int32(2),
+			expectedIDs: []any{"binary", "double-whole", "int32", "int32-max", "int64", "int64-max"},
+		},
+		"Int64": {
+			filter:      math.MaxInt64,
+			expectedIDs: []any{"int64-max"},
+		},
+		"BigBinary": {
+			filter:      int32(0b1000_0000_0000_0000_0000_0000),
+			expectedIDs: []any{"binary-big", "int32-max", "int64-max"},
+		},
+		"ByteOne": {
+			filter:      int32(0b1000_0000_0000_0000),
+			expectedIDs: []any{"int32-max", "int64-max"},
 		},
 		"NegativeValue": {
 			filter: int32(-1),
@@ -156,6 +187,11 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 				Name:    "FailedToParse",
 				Message: "Expected a positive number in: $bitsAllSet: -1",
 			},
+		},
+
+		"Array": {
+			filter:      primitive.A{1, 5},
+			expectedIDs: []any{"binary", "double-whole", "int32", "int32-max", "int64", "int64-max"},
 		},
 	} {
 		name, tc := name, tc
@@ -193,23 +229,12 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		expectedIDs []any
 		err         mongo.CommandError
 	}{
-		"Int32": {
-			filter: int32(2),
-			expectedIDs: []any{
-				"binary-big", "binary-empty",
-				"double-negative-zero", "double-zero",
-				"int32-min", "int32-zero",
-				"int64-min", "int64-zero",
-			},
-		},
-
-		"BigBinary": {
-			filter: int32(0b1000_0000_0000_0000),
-			expectedIDs: []any{
-				"binary", "binary-big", "binary-empty",
-				"double-negative-zero", "double-whole", "double-zero",
-				"int32", "int32-min", "int32-zero",
-				"int64", "int64-min", "int64-zero",
+		"Float": {
+			filter: 1.2,
+			err: mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "Expected an integer: $bitsAnyClear: 1.2",
 			},
 		},
 		"String": {
@@ -220,12 +245,40 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 				Message: "value takes an Array, a number, or a BinData but received: $bitsAnyClear: \"123\"",
 			},
 		},
-		"Float": {
-			filter: 1.2,
-			err: mongo.CommandError{
-				Code:    9,
-				Name:    "FailedToParse",
-				Message: "Expected an integer: $bitsAnyClear: 1.2",
+		"Int32": {
+			filter: int32(2),
+			expectedIDs: []any{
+				"binary-big", "binary-empty",
+				"double-negative-zero", "double-zero",
+				"int32-min", "int32-zero",
+				"int64-min", "int64-zero",
+			},
+		},
+		"Int64": {
+			filter: math.MaxInt64,
+			expectedIDs: []any{
+				"binary", "binary-big", "binary-empty",
+				"double-negative-zero", "double-whole", "double-zero",
+				"int32", "int32-max", "int32-min", "int32-zero",
+				"int64", "int64-min", "int64-zero",
+			},
+		},
+		"BigBinary": {
+			filter: int32(0b1000_0000_0000_0000),
+			expectedIDs: []any{
+				"binary", "binary-big", "binary-empty",
+				"double-negative-zero", "double-whole", "double-zero",
+				"int32", "int32-min", "int32-zero",
+				"int64", "int64-min", "int64-zero",
+			},
+		},
+		"ByteOne": {
+			filter: int32(0b1000_0000_0000_0000),
+			expectedIDs: []any{
+				"binary", "binary-big", "binary-empty",
+				"double-negative-zero", "double-whole", "double-zero",
+				"int32", "int32-min", "int32-zero",
+				"int64", "int64-min", "int64-zero",
 			},
 		},
 		"NegativeValue": {
@@ -234,6 +287,16 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected a positive number in: $bitsAnyClear: -1",
+			},
+		},
+
+		"Array": {
+			filter: primitive.A{1, 5},
+			expectedIDs: []any{
+				"binary-big", "binary-empty",
+				"double-negative-zero", "double-zero",
+				"int32-min", "int32-zero",
+				"int64-min", "int64-zero",
 			},
 		},
 	} {
@@ -272,22 +335,13 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 		expectedIDs []any
 		err         mongo.CommandError
 	}{
-		"Int32": {
-			filter: int32(2),
-			expectedIDs: []any{
-				"binary",
-				"double-whole",
-				"int32", "int32-max",
-				"int64", "int64-max",
+		"Float": {
+			filter: 1.2,
+			err: mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "Expected an integer: $bitsAnySet: 1.2",
 			},
-		},
-		"BigBinary": {
-			filter:      int32(0b1000_0000_0000_0000_0000_0000),
-			expectedIDs: []any{"binary-big", "int32-max", "int64-max"},
-		},
-		"Zero": {
-			filter:      int32(0b1000_0000_0000_0000),
-			expectedIDs: []any{"int32-max", "int64-max"},
 		},
 		"String": {
 			filter: "123",
@@ -297,13 +351,31 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 				Message: "value takes an Array, a number, or a BinData but received: $bitsAnySet: \"123\"",
 			},
 		},
-		"Float": {
-			filter: 1.2,
-			err: mongo.CommandError{
-				Code:    9,
-				Name:    "FailedToParse",
-				Message: "Expected an integer: $bitsAnySet: 1.2",
+		"Int32": {
+			filter: int32(2),
+			expectedIDs: []any{
+				"binary",
+				"double-whole",
+				"int32", "int32-max",
+				"int64", "int64-max",
 			},
+		},
+		"Int64": {
+			filter: math.MaxInt64,
+			expectedIDs: []any{
+				"binary", "binary-big",
+				"double-whole",
+				"int32", "int32-max", "int32-min",
+				"int64", "int64-max",
+			},
+		},
+		"BigBinary": {
+			filter:      int32(0b1000_0000_0000_0000_0000_0000),
+			expectedIDs: []any{"binary-big", "int32-max", "int64-max"},
+		},
+		"ByteOne": {
+			filter:      int32(0b1000_0000_0000_0000),
+			expectedIDs: []any{"int32-max", "int64-max"},
 		},
 		"NegativeValue": {
 			filter: int32(-1),
@@ -311,6 +383,16 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected a positive number in: $bitsAnySet: -1",
+			},
+		},
+
+		"Array": {
+			filter: primitive.A{1, 5},
+			expectedIDs: []any{
+				"binary",
+				"double-whole",
+				"int32", "int32-max",
+				"int64", "int64-max",
 			},
 		},
 	} {
