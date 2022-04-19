@@ -252,9 +252,6 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			switch exprValue := exprValue.(type) {
 			case *types.Document:
 				if fieldValue, ok := fieldValue.(*types.Document); ok {
-					fmt.Println("fieldValue", fieldValue)
-					fmt.Println("exprValue", exprValue)
-					fmt.Println("!matchDocuments(exprValue, fieldValue)", !matchDocuments(exprValue, fieldValue))
 					return !matchDocuments(exprValue, fieldValue), nil
 				}
 				return false, nil

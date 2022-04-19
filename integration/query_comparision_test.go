@@ -132,7 +132,7 @@ func TestQueryComparisonEq(t *testing.T) {
 			expectedIDs: []any{"document-composite"},
 		},
 		"DocumentShuffledKeys": {
-			filter:      bson.D{{"value", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}},
+			filter:      bson.D{{"value", bson.D{{"$eq", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}}}},
 			expectedIDs: []any{},
 		},
 		"DocumentDotNotation": {
@@ -149,7 +149,7 @@ func TestQueryComparisonEq(t *testing.T) {
 			expectedIDs: []any{"array-embedded"},
 		},
 		"ArrayShuffledValues": {
-			filter:      bson.D{{"value", bson.A{"foo", nil, int32(42)}}},
+			filter:      bson.D{{"value", bson.D{{"$eq", bson.A{"foo", nil, int32(42)}}}}},
 			expectedIDs: []any{},
 		},
 
@@ -1070,6 +1070,192 @@ func TestQueryComparisonNin(t *testing.T) {
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
+		})
+	}
+}
+
+func TestQueryComparisonNe(t *testing.T) {
+	t.Parallel()
+	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
+	ctx, collection := setup(t, providers...)
+
+	for name, tc := range map[string]struct {
+		value         any
+		valueToBeLost string
+		err           mongo.CommandError
+	}{
+		"Document": {
+			value:         bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}},
+			valueToBeLost: "document-composite",
+		},
+		"DocumentShuffledKeys": {
+			value:         bson.D{{"value", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}},
+			valueToBeLost: "",
+		},
+
+		"Array": {
+			value:         bson.A{int32(42), "foo", nil},
+			valueToBeLost: "array-three",
+		},
+		"ArrayEmbedded": {
+			value:         bson.A{bson.A{int32(42), "foo"}, nil},
+			valueToBeLost: "array-embedded",
+		},
+		"ArrayShuffledValues": {
+			value:         bson.A{"foo", nil, int32(42)},
+			valueToBeLost: "",
+		},
+
+		"Double": {
+			value:         42.13,
+			valueToBeLost: "double",
+		},
+		"DoubleNegativeInfinity": {
+			value:         math.Inf(-1),
+			valueToBeLost: "double-negative-infinity",
+		},
+		"DoubleNegativeZero": {
+			value:         math.Copysign(0, -1),
+			valueToBeLost: "double-negative-zero",
+		},
+		"DoublePositiveInfinity": {
+			value:         math.Inf(+1),
+			valueToBeLost: "double-positive-infinity",
+		},
+		"DoubleMax": {
+			value:         math.MaxFloat64,
+			valueToBeLost: "double-max",
+		},
+		"DoubleSmallest": {
+			value:         math.SmallestNonzeroFloat64,
+			valueToBeLost: "double-smallest",
+		},
+		"DoubleZero": {
+			value:         0.0,
+			valueToBeLost: "double-zero",
+		},
+		"DoubleNaN": {
+			value:         math.NaN(),
+			valueToBeLost: "double-nan",
+		},
+
+		"String": {
+			value:         "foo",
+			valueToBeLost: "string",
+		},
+		"EmptyString": {
+			value:         "",
+			valueToBeLost: "string-empty",
+		},
+
+		"Binary": {
+			value:         primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}},
+			valueToBeLost: "binary",
+		},
+		"EmptyBinary": {
+			value:         primitive.Binary{Data: []byte{}},
+			valueToBeLost: "binary-empty",
+		},
+
+		"BoolFalse": {
+			value:         false,
+			valueToBeLost: "bool-false",
+		},
+		"BoolTrue": {
+			value:         true,
+			valueToBeLost: "bool-true",
+		},
+
+		"Datetime": {
+			value:         primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC)),
+			valueToBeLost: "datetime",
+		},
+		"DatetimeEpoch": {
+			value:         primitive.NewDateTimeFromTime(time.Unix(0, 0)),
+			valueToBeLost: "datetime-epoch",
+		},
+		"DatetimeYearMax": {
+			value:         primitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)),
+			valueToBeLost: "datetime-year-min",
+		},
+		"DatetimeYearMin": {
+			value:         primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC)),
+			valueToBeLost: "datetime-year-max",
+		},
+
+		"Timestamp": {
+			value:         primitive.Timestamp{T: 42, I: 13},
+			valueToBeLost: "timestamp",
+		},
+		"TimestampI": {
+			value:         primitive.Timestamp{I: 1},
+			valueToBeLost: "timestamp-i",
+		},
+
+		"Null": {
+			value:         nil,
+			valueToBeLost: "null",
+		},
+
+		"Int32": {
+			value:         int32(42),
+			valueToBeLost: "int32",
+		},
+		"Int32Zero": {
+			value:         int32(0),
+			valueToBeLost: "int32-zero",
+		},
+		"Int32Max": {
+			value:         int32(math.MaxInt32),
+			valueToBeLost: "int32-max",
+		},
+		"Int32Min": {
+			value:         int32(math.MinInt32),
+			valueToBeLost: "int32-min",
+		},
+
+		"Int64": {
+			value:         int64(42),
+			valueToBeLost: "int64",
+		},
+		"Int64Zero": {
+			value:         int64(0),
+			valueToBeLost: "int64-zero",
+		},
+		"Int64Max": {
+			value:         int64(math.MaxInt64),
+			valueToBeLost: "int64-max",
+		},
+		"Int64Min": {
+			value:         int64(math.MinInt64),
+			valueToBeLost: "int64-min",
+		},
+
+		"Regex": {
+			value: primitive.Regex{Pattern: "foo"},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `Can't have regex as arg to $ne.`,
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			filter := bson.D{{"value", bson.D{{"$ne", tc.value}}}}
+			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			if tc.err.Code != 0 {
+				assertEqualError(t, tc.err, err)
+				return
+			}
+			require.NoError(t, err)
+
+			var actual []bson.D
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.NotContains(t, collectIDs(t, actual), tc.valueToBeLost)
 		})
 	}
 }
