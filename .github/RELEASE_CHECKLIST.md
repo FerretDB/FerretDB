@@ -9,7 +9,7 @@
    * Tweak spacing, headers levels.
 5. Update CHANGELOG.md with the same release notes:
    * Check spacing, header levels.
-6. Make a signed tag `vX.Y.Z` with the relevant section of the changelog (without leading `#` as they are comments in git and removed after editing).
+6. Make a signed tag `vX.Y.Z` with the relevant section of the changelog using `--cleanup=verbatim`.
 7. Push it!
 8. Make [release](https://github.com/FerretDB/FerretDB/releases).
 9. Refresh
