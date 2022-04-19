@@ -30,6 +30,8 @@ import (
 )
 
 // MsgUpdate modifies an existing document or documents in a collection.
+//
+//nolint:nestif // TODO refactor to simplify
 func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
