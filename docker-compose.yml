@@ -18,7 +18,7 @@ services:
 
   # for proxy mode and mongosh
   mongodb:
-    image: mongo:5.0.6
+    image: mongo:5.0.7
     container_name: ferretdb_mongodb
     ports:
       - 127.0.0.1:37017:27017
