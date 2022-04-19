@@ -16,6 +16,7 @@ package integration
 
 import (
 	"math"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,6 +27,10 @@ import (
 )
 
 func TestEvalutionMod(t *testing.T) {
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
+	}
+
 	t.Parallel()
 	ctx, collection := setup(t)
 
