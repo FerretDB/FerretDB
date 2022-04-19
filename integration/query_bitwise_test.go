@@ -34,6 +34,10 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{{"_id", "binary-big"}, {"value", primitive.Binary{Data: []byte{0, 0, 128}}}},
+		bson.D{{"_id", "binary-user-1"}, {"value", primitive.Binary{Subtype: 0x80, Data: []byte{0, 0, 30}}}},
+		bson.D{{"_id", "binary-user-2"}, {"value", primitive.Binary{Subtype: 0x80, Data: []byte{15, 0, 0, 0}}}},
+		bson.D{{"_id", "binary-user-3"}, {"value", primitive.Binary{Data: []byte{15, 0, 0, 0}}}},
+		bson.D{{"_id", "binary-user-4"}, {"value", primitive.Binary{Data: []byte{0, 0, 30}}}},
 	})
 	require.NoError(t, err)
 
@@ -53,7 +57,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"FloatWhole": {
 			filter: 2.0,
 			expectedIDs: []any{
-				"binary-big", "binary-empty",
+				"binary-big", "binary-empty", "binary-user-1", "binary-user-4",
 				"double-negative-zero", "double-zero",
 				"int32-min", "int32-zero",
 				"int64-min", "int64-zero",
@@ -67,13 +71,31 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 				Message: "Expected a positive number in: $bitsAllClear: -1",
 			},
 		},
-		"Binary": {
+		"BinaryOneByte": {
 			filter: primitive.Binary{Data: []byte{2}},
 			expectedIDs: []any{
-				"binary-big", "binary-empty",
+				"binary-big", "binary-empty", "binary-user-1", "binary-user-4",
 				"double-negative-zero", "double-zero",
 				"int32-min", "int32-zero",
 				"int64-min", "int64-zero",
+			},
+		},
+		"BinaryTwoBytes": {
+			filter: primitive.Binary{Data: []byte{2, 2}},
+			expectedIDs: []any{
+				"binary-big", "binary-empty", "binary-user-1", "binary-user-4",
+				"double-negative-zero", "double-zero",
+				"int32-min", "int32-zero",
+				"int64-min", "int64-zero",
+			},
+		},
+		"BinaryBig": {
+			filter: primitive.Binary{Data: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}},
+			expectedIDs: []any{
+				"binary-big", "binary-empty",
+				"double-negative-zero", "double-whole", "double-zero",
+				"int32", "int32-zero",
+				"int64", "int64-zero",
 			},
 		},
 		"String": {
@@ -87,7 +109,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"Int32": {
 			filter: int32(2),
 			expectedIDs: []any{
-				"binary-big", "binary-empty",
+				"binary-big", "binary-empty", "binary-user-1", "binary-user-4",
 				"double-negative-zero", "double-zero",
 				"int32-min", "int32-zero",
 				"int64-min", "int64-zero",
@@ -121,7 +143,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"BigBinary": {
 			filter: int32(0b1000_0000_0000_0000_0000_0000),
 			expectedIDs: []any{
-				"binary", "binary-empty",
+				"binary", "binary-empty", "binary-user-1", "binary-user-2", "binary-user-3", "binary-user-4",
 				"double-negative-zero", "double-whole", "double-zero",
 				"int32", "int32-min", "int32-zero",
 				"int64", "int64-min", "int64-zero",
@@ -130,7 +152,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"ByteOne": {
 			filter: int32(0b1000_0000_0000_0000),
 			expectedIDs: []any{
-				"binary", "binary-big", "binary-empty",
+				"binary", "binary-big", "binary-empty", "binary-user-1", "binary-user-2", "binary-user-3", "binary-user-4",
 				"double-negative-zero", "double-whole", "double-zero",
 				"int32", "int32-min", "int32-zero",
 				"int64", "int64-min", "int64-zero",
@@ -140,7 +162,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"Array": {
 			filter: primitive.A{1, 5},
 			expectedIDs: []any{
-				"binary-big", "binary-empty",
+				"binary-big", "binary-empty", "binary-user-1", "binary-user-4",
 				"double-negative-zero", "double-zero",
 				"int32-min", "int32-zero",
 				"int64-min", "int64-zero",

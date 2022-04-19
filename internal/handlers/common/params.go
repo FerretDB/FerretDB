@@ -162,6 +162,7 @@ func getBinaryParam(value any) (types.Binary, error) {
 
 	case types.Binary:
 		return value, nil
+
 	default:
 		return types.Binary{}, errUnexpectedType
 	}
@@ -178,6 +179,16 @@ func getBinaryParams(fieldValue any, maskValue any) (types.Binary, types.Binary,
 	fieldBinary, err := getBinaryParam(fieldValue)
 	if err != nil {
 		return types.Binary{}, types.Binary{}, err
+	}
+
+	diff := len(fieldBinary.B) - len(maskBinary.B)
+	if diff > 0 {
+		extra := make([]byte, diff)
+		if fieldBinary.Subtype >= 0x80 {
+			maskBinary.B = append(extra, maskBinary.B...)
+		} else {
+			maskBinary.B = append(maskBinary.B, extra...)
+		}
 	}
 
 	return fieldBinary, maskBinary, nil
