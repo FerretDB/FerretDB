@@ -32,7 +32,6 @@ exec task docs-fmt fmt lint
 ```
 
 Please make sure your *.md files comply with <https://sembr.org>.
-Use one sentence per line in all markdown files except the changelog and other rules.
 You could also run `task docs-fmt`.
 
 ### Visual Studio Code
