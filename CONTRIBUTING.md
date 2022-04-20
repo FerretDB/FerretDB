@@ -21,12 +21,13 @@ git remote add upstream https://github.com/FerretDB/FerretDB.git
 
 ### Setting up the development environment
 
-In the CI there are checks that new code complies the imports sorted convention
-and that the code is gofmt-ed. To avoid failing PR checks, please setup your beloved text editor
-to gofmt files before push. Here provided some setup guides for VScode and Goland.
+In the CI there are checks that new code complies the imports sorted convention and that the code is gofmt-ed.
+To avoid failing PR checks, please setup your beloved text editor to gofmt files before push. Here provided some setup guides for VScode and Goland.
 You can also execute each time `task fmt lint` or project -> fmt functions of the text editor.
 
-After you edited *.md files, please run `task docs-fmt` to comply with <https://sembr.org>.
+Please make sure your *.md files comply with <https://sembr.org>.
+Use one sentence per line in all markdown files except the changelog and other rules.
+You could also run `task docs-fmt`.
 
 ### Visual Studio Code
 
