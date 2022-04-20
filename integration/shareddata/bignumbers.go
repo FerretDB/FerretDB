@@ -21,6 +21,5 @@ var BigNumbersData = &Values[string]{
 	data: map[string]any{
 		"int64-big":  int64(2 << 61),
 		"double-big": float64(2 << 60),
-		"int32-big":  int32(2 << 25),
 	},
 }

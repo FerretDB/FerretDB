@@ -193,6 +193,10 @@ func TestQueryComparisonEq(t *testing.T) {
 			filter:      bson.D{{"value", bson.D{{"$eq", float64(2 << 61)}}}},
 			expectedIDs: []any{"int64-big"},
 		},
+		"DoubleBigInt64PlusOne": {
+			filter:      bson.D{{"value", bson.D{{"$eq", float64(2<<61 + 1)}}}},
+			expectedIDs: []any{"int64-big"},
+		},
 
 		"String": {
 			filter:      bson.D{{"value", bson.D{{"$eq", "foo"}}}},
@@ -319,7 +323,7 @@ func TestQueryComparisonEq(t *testing.T) {
 			filter:      bson.D{{"value", bson.D{{"$eq", int64(2 << 60)}}}},
 			expectedIDs: []any{"double-big"},
 		},
-		"Int64PlusOneDoubleBig": {
+		"Int64DoubleBigPlusOne": {
 			filter:      bson.D{{"value", bson.D{{"$eq", int64(2<<60 + 1)}}}},
 			expectedIDs: []any{},
 		},
@@ -338,7 +342,7 @@ func TestQueryComparisonEq(t *testing.T) {
 				"document", "document-composite", "document-empty",
 				"double", "double-big", "double-max", "double-nan", "double-negative-infinity", "double-negative-zero",
 				"double-positive-infinity", "double-smallest", "double-whole", "double-zero",
-				"int32", "int32-big", "int32-max", "int32-min", "int32-zero",
+				"int32", "int32-max", "int32-min", "int32-zero",
 				"int64", "int64-big", "int64-max", "int64-min", "int64-zero",
 				"null",
 				"objectid", "objectid-empty",
@@ -380,7 +384,7 @@ func TestQueryComparisonGt(t *testing.T) {
 			expectedIDs: []any{
 				"array", "array-three",
 				"double", "double-big", "double-max", "double-positive-infinity", "double-whole",
-				"int32", "int32-big", "int32-max",
+				"int32", "int32-max",
 				"int64", "int64-big", "int64-max",
 			},
 		},
@@ -389,7 +393,7 @@ func TestQueryComparisonGt(t *testing.T) {
 			expectedIDs: []any{
 				"array", "array-three",
 				"double", "double-big", "double-max", "double-positive-infinity", "double-smallest", "double-whole",
-				"int32", "int32-big", "int32-max",
+				"int32", "int32-max",
 				"int64", "int64-big", "int64-max",
 			},
 		},
@@ -469,7 +473,7 @@ func TestQueryComparisonGt(t *testing.T) {
 			value: int32(42),
 			expectedIDs: []any{
 				"double", "double-big", "double-max", "double-positive-infinity",
-				"int32-big", "int32-max",
+				"int32-max",
 				"int64-big", "int64-max",
 			},
 		},
@@ -498,7 +502,7 @@ func TestQueryComparisonGt(t *testing.T) {
 			value: int64(42),
 			expectedIDs: []any{
 				"double", "double-big", "double-max", "double-positive-infinity",
-				"int32-big", "int32-max",
+				"int32-max",
 				"int64-big", "int64-max",
 			},
 		},
@@ -840,7 +844,7 @@ func TestQueryComparisonLt(t *testing.T) {
 			expectedIDs: []any{
 				"array", "array-three",
 				"double", "double-big", "double-negative-infinity", "double-negative-zero", "double-smallest", "double-whole", "double-zero",
-				"int32", "int32-big", "int32-max", "int32-min", "int32-zero",
+				"int32", "int32-max", "int32-min", "int32-zero",
 				"int64", "int64-min", "int64-zero",
 			},
 		},
