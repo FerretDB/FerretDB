@@ -9,8 +9,6 @@ The supported way of developing FerretDB is to modify and run it on the host (Li
 You will need Go 1.18 as FerretDB extensively uses ([fuzzing](https://go.dev/doc/tutorial/fuzz)) and [generics](https://go.dev/doc/tutorial/generics)).
 If your package manager does not provide it yet, please install it from [go.dev](https://go.dev/dl/).
 
-Tests are grouped by argument type. Please add a blank line in between different groups.
-
 ### Cloning the Repository
 
 After forking FerretDB on GitHub, you can clone the repository:
