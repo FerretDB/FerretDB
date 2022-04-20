@@ -120,7 +120,7 @@ func TestQueryComparisonImplicit(t *testing.T) {
 
 func TestQueryComparisonEq(t *testing.T) {
 	t.Parallel()
-	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
+	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites, shareddata.BigNumbersData}
 	ctx, collection := setup(t, providers...)
 
 	for name, tc := range map[string]struct {
@@ -188,6 +188,14 @@ func TestQueryComparisonEq(t *testing.T) {
 		"DoubleNaN": {
 			filter:      bson.D{{"value", bson.D{{"$eq", math.NaN()}}}},
 			expectedIDs: []any{"double-nan"},
+		},
+		"DoubleBigInt64": {
+			filter:      bson.D{{"value", bson.D{{"$eq", float64(2 << 61)}}}},
+			expectedIDs: []any{"int64-big"},
+		},
+		"DoubleBigInt64PlusOne": {
+			filter:      bson.D{{"value", bson.D{{"$eq", float64(2<<61 + 1)}}}},
+			expectedIDs: []any{"int64-big"},
 		},
 
 		"String": {
@@ -311,6 +319,14 @@ func TestQueryComparisonEq(t *testing.T) {
 			filter:      bson.D{{"value", bson.D{{"$eq", int64(math.MinInt64)}}}},
 			expectedIDs: []any{"int64-min"},
 		},
+		"Int64DoubleBig": {
+			filter:      bson.D{{"value", bson.D{{"$eq", int64(2 << 60)}}}},
+			expectedIDs: []any{"double-big"},
+		},
+		"Int64DoubleBigPlusOne": {
+			filter:      bson.D{{"value", bson.D{{"$eq", int64(2<<60 + 1)}}}},
+			expectedIDs: []any{},
+		},
 
 		"IDNull": {
 			filter:      bson.D{{"_id", bson.D{{"$eq", nil}}}},
@@ -324,15 +340,15 @@ func TestQueryComparisonEq(t *testing.T) {
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
 				"document", "document-composite", "document-empty",
-				"double", "double-max", "double-nan", "double-negative-infinity", "double-negative-zero",
+				"double", "double-big", "double-max", "double-nan", "double-negative-infinity", "double-negative-zero",
 				"double-positive-infinity", "double-smallest", "double-whole", "double-zero",
 				"int32", "int32-max", "int32-min", "int32-zero",
-				"int64", "int64-max", "int64-min", "int64-zero",
+				"int64", "int64-big", "int64-max", "int64-min", "int64-zero",
 				"null",
 				"objectid", "objectid-empty",
 				"regex", "regex-empty",
-				"string", "string-double", "string-empty", "string-whole",
-				"timestamp", "timestamp-i",
+				"string", "string-double", "string-empty",
+				"string-whole", "timestamp", "timestamp-i",
 			},
 		},
 	} {
@@ -353,7 +369,7 @@ func TestQueryComparisonEq(t *testing.T) {
 
 func TestQueryComparisonGt(t *testing.T) {
 	t.Parallel()
-	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
+	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites, shareddata.BigNumbersData}
 	ctx, collection := setup(t, providers...)
 
 	for name, tc := range map[string]struct {
@@ -367,18 +383,18 @@ func TestQueryComparisonGt(t *testing.T) {
 			value: 41.13,
 			expectedIDs: []any{
 				"array", "array-three",
-				"double", "double-max", "double-positive-infinity", "double-whole",
+				"double", "double-big", "double-max", "double-positive-infinity", "double-whole",
 				"int32", "int32-max",
-				"int64", "int64-max",
+				"int64", "int64-big", "int64-max",
 			},
 		},
 		"DoubleNegativeZero": {
 			value: math.Copysign(0, -1),
 			expectedIDs: []any{
 				"array", "array-three",
-				"double", "double-max", "double-positive-infinity", "double-smallest", "double-whole",
+				"double", "double-big", "double-max", "double-positive-infinity", "double-smallest", "double-whole",
 				"int32", "int32-max",
-				"int64", "int64-max",
+				"int64", "int64-big", "int64-max",
 			},
 		},
 		"DoubleMax": {
@@ -454,12 +470,19 @@ func TestQueryComparisonGt(t *testing.T) {
 		},
 
 		"Int32": {
-			value:       int32(42),
-			expectedIDs: []any{"double", "double-max", "double-positive-infinity", "int32-max", "int64-max"},
+			value: int32(42),
+			expectedIDs: []any{
+				"double", "double-big", "double-max", "double-positive-infinity",
+				"int32-max",
+				"int64-big", "int64-max",
+			},
 		},
 		"Int32Max": {
-			value:       int32(math.MaxInt32),
-			expectedIDs: []any{"double-max", "double-positive-infinity", "int64-max"},
+			value: int32(math.MaxInt32),
+			expectedIDs: []any{
+				"double-big", "double-max", "double-positive-infinity",
+				"int64-big", "int64-max",
+			},
 		},
 
 		"Timestamp": {
@@ -476,12 +499,23 @@ func TestQueryComparisonGt(t *testing.T) {
 		},
 
 		"Int64": {
-			value:       int64(42),
-			expectedIDs: []any{"double", "double-max", "double-positive-infinity", "int32-max", "int64-max"},
+			value: int64(42),
+			expectedIDs: []any{
+				"double", "double-big", "double-max", "double-positive-infinity",
+				"int32-max",
+				"int64-big", "int64-max",
+			},
 		},
 		"Int64Max": {
 			value:       int64(math.MaxInt64),
 			expectedIDs: []any{"double-max", "double-positive-infinity"},
+		},
+		"Int64Big": {
+			value: int64(2<<60 - 1),
+			expectedIDs: []any{
+				"double-big", "double-max", "double-positive-infinity",
+				"int64-big", "int64-max",
+			},
 		},
 	} {
 		name, tc := name, tc
@@ -668,7 +702,7 @@ func TestQueryComparisonGte(t *testing.T) {
 
 func TestQueryComparisonLt(t *testing.T) {
 	t.Parallel()
-	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
+	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites, shareddata.BigNumbersData}
 	ctx, collection := setup(t, providers...)
 
 	for name, tc := range map[string]struct {
@@ -804,6 +838,15 @@ func TestQueryComparisonLt(t *testing.T) {
 		"Int64Min": {
 			value:       int64(math.MinInt64),
 			expectedIDs: []any{"double-negative-infinity"},
+		},
+		"Int64Big": {
+			value: int64(2<<60 + 1),
+			expectedIDs: []any{
+				"array", "array-three",
+				"double", "double-big", "double-negative-infinity", "double-negative-zero", "double-smallest", "double-whole", "double-zero",
+				"int32", "int32-max", "int32-min", "int32-zero",
+				"int64", "int64-min", "int64-zero",
+			},
 		},
 	} {
 		name, tc := name, tc

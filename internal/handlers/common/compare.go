@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"math/big"
 	"reflect"
 	"time"
 
@@ -252,10 +253,25 @@ func compareOrdered[T constraints.Ordered](a, b T) compareResult {
 }
 
 // compareNumbers compares two numbers.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/371
 func compareNumbers(a float64, b int64) compareResult {
-	return compareOrdered(a, float64(b))
+	if math.IsNaN(a) {
+		return notEqual
+	}
+
+	// TODO figure out correct precision
+	bigFloat := new(big.Float).SetFloat64(a).SetPrec(100000)
+	bigFloatFromInt := new(big.Float).SetInt64(b).SetPrec(100000)
+
+	switch bigFloat.Cmp(bigFloatFromInt) {
+	case -1:
+		return less
+	case 0:
+		return equal
+	case 1:
+		return greater
+	default:
+		panic("not reached")
+	}
 }
 
 // matchDocuments returns true if 2 documents are equal.
