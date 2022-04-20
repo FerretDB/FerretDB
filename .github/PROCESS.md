@@ -18,6 +18,7 @@ We will do all that for you so you can focus on what is really interesting for y
 
 ## Calls `to show and/or to explain`
 
-Having a call with someone explaining something what you already know and sharing knowledge with someone else, please multiply this knowledge to the benefit of others by writing a detailed article about the topic. Single 1-1 calls are good to check what you might have missed in the way - what seemed to you obvious and to other is not.
+Having a call with someone explaining something what you already know and sharing knowledge with someone else, please multiply this knowledge to the benefit of others by writing a detailed article about the topic.
+Single 1-1 calls are good to check what you might have missed in the way - what seemed to you obvious and to other is not.
 
 Please also gather other people ideas since diversity and different opinoins expand our understanding and vision of the project.
