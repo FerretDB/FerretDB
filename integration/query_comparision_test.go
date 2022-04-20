@@ -64,6 +64,45 @@ func TestQueryComparisonImplicit(t *testing.T) {
 			filter:      bson.D{{"value", bson.A{"foo", nil, int32(42)}}},
 			expectedIDs: []any{},
 		},
+		"ArrayValue": {
+			filter:      bson.D{{"value", "foo"}},
+			expectedIDs: []any{"array-three", "string"},
+		},
+
+		"Double": {
+			filter:      bson.D{{"value", 42.13}},
+			expectedIDs: []any{"double"},
+		},
+		"DoubleNegativeInfinity": {
+			filter:      bson.D{{"value", math.Inf(-1)}},
+			expectedIDs: []any{"double-negative-infinity"},
+		},
+		"DoublePositiveInfinity": {
+			filter:      bson.D{{"value", math.Inf(+1)}},
+			expectedIDs: []any{"double-positive-infinity"},
+		},
+		"DoubleMax": {
+			filter:      bson.D{{"value", math.MaxFloat64}},
+			expectedIDs: []any{"double-max"},
+		},
+		"DoubleSmallest": {
+			filter:      bson.D{{"value", math.SmallestNonzeroFloat64}},
+			expectedIDs: []any{"double-smallest"},
+		},
+
+		"String": {
+			filter:      bson.D{{"value", "foo"}},
+			expectedIDs: []any{"string"},
+		},
+		"StringEmpty": {
+			filter:      bson.D{{"value", ""}},
+			expectedIDs: []any{"string-empty"},
+		},
+
+		"Binary":      {},
+		"BinaryEmpty": {},
+		"BoolFalse":   {},
+		"BoolTrue":    {},
 
 		"IDNull": {
 			filter:      bson.D{{"_id", nil}},
