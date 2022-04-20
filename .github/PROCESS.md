@@ -22,3 +22,5 @@ Having a call with someone explaining something what you already know and sharin
 Single 1-1 calls are good to check what you might have missed in the way - what seemed to you obvious and to other is not.
 
 Please also gather other people ideas since diversity and different opinions expand our understanding and vision of the project.
+
+Keep guides short: we don't create rules, we automate. 
