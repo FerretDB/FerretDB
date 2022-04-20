@@ -50,6 +50,21 @@ func FilterDocument(doc, filter *types.Document) (bool, error) {
 
 // filterDocumentPair handles a single filter element key/value pair {filterKey: filterValue}.
 func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) (bool, error) {
+	if strings.ContainsRune(filterKey, '.') {
+		// {field1./.../.fieldN: filterValue}
+		path := strings.Split(filterKey, ".")
+		// we pass the path without the last key because we want {fieldN: *someValue*}, not just *someValue*
+		docValue, err := doc.GetByPath(path[:len(path)-1]...)
+		if err != nil {
+			return false, nil // no error - the field is just not present
+		}
+		var ok bool
+		if doc, ok = docValue.(*types.Document); !ok {
+			return false, nil // no error - the field is just not present
+		}
+		filterKey = path[len(path)-1]
+	}
+
 	if strings.HasPrefix(filterKey, "$") {
 		// {$operator: filterValue}
 		return filterOperator(doc, filterKey, filterValue)
@@ -234,9 +249,26 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 		case "$ne":
 			// {field: {$ne: exprValue}}
-			// TODO regex
-			if compareScalars(fieldValue, exprValue) == equal {
+			switch exprValue := exprValue.(type) {
+			case *types.Document:
+				if fieldValue, ok := fieldValue.(*types.Document); ok {
+					return !matchDocuments(exprValue, fieldValue), nil
+				}
 				return false, nil
+
+			case *types.Array:
+				if fieldValue, ok := fieldValue.(*types.Array); ok {
+					return !matchArrays(exprValue, fieldValue), nil
+				}
+				return false, nil
+
+			case types.Regex:
+				return false, NewErrorMsg(ErrBadValue, "Can't have regex as arg to $ne.")
+
+			default:
+				if compare(fieldValue, exprValue) == equal {
+					return false, nil
+				}
 			}
 
 		case "$gt":
@@ -296,13 +328,31 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 		case "$nin":
 			// {field: {$nin: [value1, value2, ...]}}
-			arr := exprValue.(*types.Array)
+			arr, ok := exprValue.(*types.Array)
+			if !ok {
+				return false, NewErrorMsg(ErrBadValue, "$nin needs an array")
+			}
 			var found bool
 			for i := 0; i < arr.Len(); i++ {
 				arrValue := must.NotFail(arr.Get(i))
-				if compareScalars(fieldValue, arrValue) == equal {
-					found = true
-					break
+				switch arrValue := arrValue.(type) {
+				case *types.Array:
+					fieldValue, ok := fieldValue.(*types.Array)
+					if ok && matchArrays(fieldValue, arrValue) {
+						found = true
+						break
+					}
+				case *types.Document:
+					fieldValue, ok := fieldValue.(*types.Document)
+					if ok && matchDocuments(fieldValue, arrValue) {
+						found = true
+						break
+					}
+				default:
+					if compare(fieldValue, arrValue) == equal {
+						found = true
+						break
+					}
 				}
 			}
 			if found {

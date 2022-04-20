@@ -104,7 +104,7 @@ func TestQueryElementType(t *testing.T) {
 	for name, tc := range map[string]struct {
 		v           any
 		expectedIDs []any
-		err         error
+		err         mongo.CommandError
 	}{
 		"Document": {
 			v:           "object",
@@ -263,9 +263,9 @@ func TestQueryElementType(t *testing.T) {
 
 			filter := bson.D{{"value", bson.D{{"$type", tc.v}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err != nil {
+			if tc.err.Code != 0 {
 				require.Nil(t, tc.expectedIDs)
-				assertEqualError(t, tc.err.(mongo.CommandError), err)
+				assertEqualError(t, tc.err, err)
 				return
 			}
 			require.NoError(t, err)
