@@ -9,7 +9,6 @@ The supported way of developing FerretDB is to modify and run it on the host (Li
 You will need Go 1.18 as FerretDB extensively uses ([fuzzing](https://go.dev/doc/tutorial/fuzz)) and [generics](https://go.dev/doc/tutorial/generics)).
 If your package manager does not provide it yet, please install it from [go.dev](https://go.dev/dl/).
 
-
 ### Cloning the Repository
 
 After forking FerretDB on GitHub, you can clone the repository:
@@ -27,11 +26,14 @@ and that the code is gofmt-ed. To avoid failing PR checks, please setup your bel
 to gofmt files before push. Here provided some setup guides for VScode and Goland.
 You can also execute each time `task fmt lint` or project -> fmt functions of the text editor.
 
+After you edited *.md files, please run `task docs-fmt` to comply with <https://sembr.org>.
+
 ### Visual Studio Code
 
 Follow [`vscode guideline`](https://code.visualstudio.com/docs/languages/go),
 Setting example:
-```
+
+```json
     "go.testOnSave": true,
     "go.testFlags": [
         "-v"
@@ -59,8 +61,8 @@ Setting example:
 
 Do same with go imports.
 
-
 ### Run
+
 To run development commands, you should first install the [`task`](https://taskfile.dev/) tool.
 You can do this by changing the directory to `tools` (`cd tools`) and running `go generate -x`.
 That will install `task` into the `bin` directory (`bin/task` on Linux and macOS, `bin\task.exe` on Windows).
