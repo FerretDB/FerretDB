@@ -269,9 +269,9 @@ func compareNumbers(a float64, b int64) compareResult {
 		return equal
 	case 1:
 		return greater
+	default:
+		panic("not reached")
 	}
-
-	return notEqual
 }
 
 // matchDocuments returns true if 2 documents are equal.

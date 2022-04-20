@@ -190,12 +190,8 @@ func TestQueryComparisonEq(t *testing.T) {
 			expectedIDs: []any{"double-nan"},
 		},
 		"DoubleBigInt64": {
-			filter:      bson.D{{"value", bson.D{{"$eq", int64(2 << 60)}}}},
-			expectedIDs: []any{"double-big"},
-		},
-		"DoubleBigInt64PlusOne": {
-			filter:      bson.D{{"value", bson.D{{"$eq", int64(2<<60 + 1)}}}},
-			expectedIDs: []any{},
+			filter:      bson.D{{"value", bson.D{{"$eq", float64(2 << 61)}}}},
+			expectedIDs: []any{"int64-big"},
 		},
 
 		"String": {
@@ -293,10 +289,6 @@ func TestQueryComparisonEq(t *testing.T) {
 			filter:      bson.D{{"value", bson.D{{"$eq", int32(math.MinInt32)}}}},
 			expectedIDs: []any{"int32-min"},
 		},
-		"Int32DoubleBig": {
-			filter:      bson.D{{"value", bson.D{{"$eq", float32(2 << 25)}}}},
-			expectedIDs: []any{"int32-big"},
-		},
 
 		"Timestamp": {
 			filter:      bson.D{{"value", bson.D{{"$eq", primitive.Timestamp{T: 42, I: 13}}}}},
@@ -324,8 +316,12 @@ func TestQueryComparisonEq(t *testing.T) {
 			expectedIDs: []any{"int64-min"},
 		},
 		"Int64DoubleBig": {
-			filter:      bson.D{{"value", bson.D{{"$eq", float64(2 << 61)}}}},
-			expectedIDs: []any{"int64-big"},
+			filter:      bson.D{{"value", bson.D{{"$eq", int64(2 << 60)}}}},
+			expectedIDs: []any{"double-big"},
+		},
+		"Int64PlusOneDoubleBig": {
+			filter:      bson.D{{"value", bson.D{{"$eq", int64(2<<60 + 1)}}}},
+			expectedIDs: []any{},
 		},
 
 		"IDNull": {
