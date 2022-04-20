@@ -19,54 +19,6 @@ cd FerretDB
 git remote add upstream https://github.com/FerretDB/FerretDB.git
 ```
 
-### Setting up the development environment
-
-In the CI there are checks that new code complies with the imports sorting convention and that the code is gofmt-ed.
-To avoid failing PR checks, please setup your beloved text editor to gofmt files before push. Here provided some setup guides for VScode and Goland.
-You can also execute each time `task fmt lint`, run project -> fmt functions of the text editor or place in the `.git/hooks/pre-commit` file
-
-```shell
-#!/bin/sh
-
-exec task docs-fmt fmt lint
-```
-
-Please make sure your *.md files comply with <https://sembr.org>.
-You could also run `task docs-fmt`.
-
-### Visual Studio Code
-
-Follow [`vscode guideline`](https://code.visualstudio.com/docs/languages/go),
-Setting example:
-
-```json
-    "go.testOnSave": true,
-    "go.testFlags": [
-        "-v"
-    ],
-    "go.toolsEnvVars": {
-        "GO111MODULE": "on"
-    },
-    "go.formatTool": "goimports",
-    "go.lintOnSave": "package",
-    "go.toolsManagement.autoUpdate": true,
-    "[go]": {
-        "editor.formatOnSave": true,
-        "editor.defaultFormatter": "golang.go",
-        "editor.codeActionsOnSave": {
-            "source.organizeImports": true
-        }
-    },
-```
-
-### Goland
-
-* `Preferences -> Tools -> File watchers`
-* Click on the Add button and choose go fmt
-* Click on the OK button to enable it
-
-Do same with go imports.
-
 ### Run
 
 To run development commands, you should first install the [`task`](https://taskfile.dev/) tool.
@@ -77,15 +29,21 @@ You can also [install `task` globally](https://taskfile.dev/#/installation), but
 
 With `task` installed, you may do the following:
 
-1. Install development tools with `task init`.
-2. Start the development environment with `task env-up`.
-   This will start PostgreSQL and MongoDB containers, filling them with identical sets of test data.
-3. Run all tests in another terminal window with `task test`.
-4. Start FerretDB with `task run`.
-   This will start it in a development mode where all requests are handled by FerretDB, but also routed to MongoDB.
-   The differences in response are then logged and the FerretDB response is sent back to the client.
-5. Run `mongosh` with `task mongosh`.
-   This allows you to run commands against FerretDB.
+* `task init` Install development tools.
+
+* `task env-up` Start the development environment.
+This will start PostgreSQL and MongoDB containers, filling them with identical sets of test data.
+
+* `task test` Run all tests in another terminal window.
+
+* `task run` Start FerretDB in a development mode where all requests are handled by FerretDB, but also routed to MongoDB.
+The differences in response are then logged and the FerretDB response is sent back to the client.
+
+* `task mongosh` Run `mongosh` to run commands against FerretDB.
+
+* `task fmt lint` Format source code and run golang linter checks.
+
+* `task docs-fmt` Format markdown documents with the markdown linter.
 
 You can see all available `task` tasks with `task -l`.
 
