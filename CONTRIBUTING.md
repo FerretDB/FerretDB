@@ -22,9 +22,10 @@ git remote add upstream https://github.com/FerretDB/FerretDB.git
 
 ### Setting up the development environment
 
-In the github-actions there are checks that new code complies the imports sorted convention
+In the CI there are checks that new code complies the imports sorted convention
 and that the code is gofmt-ed. To avoid failing PR checks, please setup your beloved text editor
 to gofmt files before push. Here provided some setup guides for VScode and Goland.
+You can also execute each time `task fmt lint` or project -> fmt functions of the text editor.
 
 ### Visual Studio Code
 
