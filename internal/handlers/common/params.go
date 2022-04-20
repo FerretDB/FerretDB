@@ -182,13 +182,15 @@ func getBinaryParams(fieldValue any, maskValue any) (types.Binary, types.Binary,
 	}
 
 	diff := len(fieldBinary.B) - len(maskBinary.B)
-	if diff > 0 {
-		extra := make([]byte, diff)
-		if fieldBinary.Subtype >= 0x80 {
-			maskBinary.B = append(extra, maskBinary.B...)
-		} else {
-			maskBinary.B = append(maskBinary.B, extra...)
-		}
+
+	extra := make([]byte, int(math.Abs(float64(diff))))
+	switch {
+	case fieldBinary.Subtype >= 0x80:
+		maskBinary.B = append(maskBinary.B, extra...)
+	case diff > 0:
+		maskBinary.B = append(maskBinary.B, extra...)
+	case diff < 0:
+		maskBinary.B = append(extra, maskBinary.B...)
 	}
 
 	return fieldBinary, maskBinary, nil

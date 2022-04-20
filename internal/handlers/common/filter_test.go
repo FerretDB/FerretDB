@@ -15,6 +15,7 @@
 package common
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -52,6 +53,16 @@ func Test_filterFieldExprBitsAllClearBinaryMask(t *testing.T) {
 		"binary-user-2": {
 			fieldValue: types.Binary{Subtype: 0x80, B: []byte{15, 0, 0, 0}},
 			maskValue:  types.Binary{B: []byte{2}},
+			want:       false,
+		},
+		"int64": {
+			fieldValue: int32(42),
+			maskValue:  types.Binary{B: []byte{2}},
+			want:       false,
+		},
+		"binary-big-2": {
+			fieldValue: int64(math.MinInt64),
+			maskValue:  types.Binary{B: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}},
 			want:       false,
 		},
 	}

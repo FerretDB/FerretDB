@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"math"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -75,7 +76,12 @@ func BinaryFromArray(values *Array) (Binary, error) {
 // BinaryFromInt packs int64 value into types.Binary.
 func BinaryFromInt(value int64) Binary {
 	buff := new(bytes.Buffer)
-	must.NoError(binary.Write(buff, binary.LittleEndian, uint64(value)))
+	if value <= math.MinInt64 {
+		must.NoError(binary.Write(buff, binary.LittleEndian, uint64(value-1)))
+		buff.Write([]byte{0})
+	} else {
+		must.NoError(binary.Write(buff, binary.LittleEndian, uint64(value)))
+	}
 
 	return Binary{
 		Subtype: BinaryGeneric,
