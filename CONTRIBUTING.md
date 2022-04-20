@@ -41,7 +41,9 @@ The differences in response are then logged and the FerretDB response is sent ba
 
 * `task mongosh` Run `mongosh` to run commands against FerretDB.
 
-* `task fmt lint` Format source code and run golang linter checks.
+* `task fmt` Format source code.
+
+* `task lint` Run linter checks.
 
 * `task docs-fmt` Format markdown documents with the markdown linter.
 
