@@ -9,6 +9,7 @@ The supported way of developing FerretDB is to modify and run it on the host (Li
 You will need Go 1.18 as FerretDB extensively uses ([fuzzing](https://go.dev/doc/tutorial/fuzz)) and [generics](https://go.dev/doc/tutorial/generics)).
 If your package manager does not provide it yet, please install it from [go.dev](https://go.dev/dl/).
 
+
 ### Cloning the Repository
 
 After forking FerretDB on GitHub, you can clone the repository:
@@ -21,6 +22,43 @@ git remote add upstream https://github.com/FerretDB/FerretDB.git
 
 ### Setting up the development environment
 
+In the github-actions there are checks that new code complies the imports sorted convention
+and that the code is gofmt-ed. To avoid failing PR checks, please setup IDE.
+
+### Visual Studio Code
+
+Follow [`vscode guideline`](https://code.visualstudio.com/docs/languages/go),
+Setting example:
+```
+    "go.testOnSave": true,
+    "go.testFlags": [
+        "-v"
+    ],
+    "go.toolsEnvVars": {
+        "GO111MODULE": "on"
+    },
+    "go.formatTool": "goimports",
+    "go.lintOnSave": "package",
+    "go.toolsManagement.autoUpdate": true,
+    "[go]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "golang.go",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": true
+        }
+    },
+```
+
+### Goland
+
+* `Preferences -> Tools -> File watchers`
+* Click on the Add button and choose go fmt
+* Click on the OK button to enable it
+
+Do same with go imports.
+
+
+### Run
 To run development commands, you should first install the [`task`](https://taskfile.dev/) tool.
 You can do this by changing the directory to `tools` (`cd tools`) and running `go generate -x`.
 That will install `task` into the `bin` directory (`bin/task` on Linux and macOS, `bin\task.exe` on Windows).
