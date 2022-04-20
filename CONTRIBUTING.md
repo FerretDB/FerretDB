@@ -23,7 +23,13 @@ git remote add upstream https://github.com/FerretDB/FerretDB.git
 
 In the CI there are checks that new code complies the imports sorted convention and that the code is gofmt-ed.
 To avoid failing PR checks, please setup your beloved text editor to gofmt files before push. Here provided some setup guides for VScode and Goland.
-You can also execute each time `task fmt lint` or project -> fmt functions of the text editor.
+You can also execute each time `task fmt lint`, run project -> fmt functions of the text editor or place in the `.git/hooks/pre-commit` file
+
+```shell
+#!/bin/sh
+
+exec task docs-fmt fmt lint
+```
 
 Please make sure your *.md files comply with <https://sembr.org>.
 Use one sentence per line in all markdown files except the changelog and other rules.
