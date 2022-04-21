@@ -29,7 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgUpdate modifies an existing document or documents in a collection.
+// MsgUpdate updates documents that are matched by the query.
 //
 //nolint:nestif // TODO refactor to simplify
 func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {

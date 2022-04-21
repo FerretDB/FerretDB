@@ -120,7 +120,7 @@ func TestQueryComparisonImplicit(t *testing.T) {
 
 func TestQueryComparisonEq(t *testing.T) {
 	t.Parallel()
-	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
+	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites, shareddata.BigNumbersData}
 	ctx, collection := setup(t, providers...)
 
 	for name, tc := range map[string]struct {
@@ -132,7 +132,7 @@ func TestQueryComparisonEq(t *testing.T) {
 			expectedIDs: []any{"document-composite"},
 		},
 		"DocumentShuffledKeys": {
-			filter:      bson.D{{"value", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}},
+			filter:      bson.D{{"value", bson.D{{"$eq", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}}}},
 			expectedIDs: []any{},
 		},
 		"DocumentDotNotation": {
@@ -149,7 +149,7 @@ func TestQueryComparisonEq(t *testing.T) {
 			expectedIDs: []any{"array-embedded"},
 		},
 		"ArrayShuffledValues": {
-			filter:      bson.D{{"value", bson.A{"foo", nil, int32(42)}}},
+			filter:      bson.D{{"value", bson.D{{"$eq", bson.A{"foo", nil, int32(42)}}}}},
 			expectedIDs: []any{},
 		},
 
@@ -188,6 +188,14 @@ func TestQueryComparisonEq(t *testing.T) {
 		"DoubleNaN": {
 			filter:      bson.D{{"value", bson.D{{"$eq", math.NaN()}}}},
 			expectedIDs: []any{"double-nan"},
+		},
+		"DoubleBigInt64": {
+			filter:      bson.D{{"value", bson.D{{"$eq", float64(2 << 61)}}}},
+			expectedIDs: []any{"int64-big"},
+		},
+		"DoubleBigInt64PlusOne": {
+			filter:      bson.D{{"value", bson.D{{"$eq", float64(2<<61 + 1)}}}},
+			expectedIDs: []any{"int64-big"},
 		},
 
 		"String": {
@@ -311,6 +319,14 @@ func TestQueryComparisonEq(t *testing.T) {
 			filter:      bson.D{{"value", bson.D{{"$eq", int64(math.MinInt64)}}}},
 			expectedIDs: []any{"int64-min"},
 		},
+		"Int64DoubleBig": {
+			filter:      bson.D{{"value", bson.D{{"$eq", int64(2 << 60)}}}},
+			expectedIDs: []any{"double-big"},
+		},
+		"Int64DoubleBigPlusOne": {
+			filter:      bson.D{{"value", bson.D{{"$eq", int64(2<<60 + 1)}}}},
+			expectedIDs: []any{},
+		},
 
 		"IDNull": {
 			filter:      bson.D{{"_id", bson.D{{"$eq", nil}}}},
@@ -324,15 +340,15 @@ func TestQueryComparisonEq(t *testing.T) {
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
 				"document", "document-composite", "document-empty",
-				"double", "double-max", "double-nan", "double-negative-infinity", "double-negative-zero",
+				"double", "double-big", "double-max", "double-nan", "double-negative-infinity", "double-negative-zero",
 				"double-positive-infinity", "double-smallest", "double-whole", "double-zero",
 				"int32", "int32-max", "int32-min", "int32-zero",
-				"int64", "int64-max", "int64-min", "int64-zero",
+				"int64", "int64-big", "int64-max", "int64-min", "int64-zero",
 				"null",
 				"objectid", "objectid-empty",
 				"regex", "regex-empty",
-				"string", "string-double", "string-empty", "string-whole",
-				"timestamp", "timestamp-i",
+				"string", "string-double", "string-empty",
+				"string-whole", "timestamp", "timestamp-i",
 			},
 		},
 	} {
@@ -353,7 +369,7 @@ func TestQueryComparisonEq(t *testing.T) {
 
 func TestQueryComparisonGt(t *testing.T) {
 	t.Parallel()
-	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
+	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites, shareddata.BigNumbersData}
 	ctx, collection := setup(t, providers...)
 
 	for name, tc := range map[string]struct {
@@ -367,18 +383,18 @@ func TestQueryComparisonGt(t *testing.T) {
 			value: 41.13,
 			expectedIDs: []any{
 				"array", "array-three",
-				"double", "double-max", "double-positive-infinity", "double-whole",
+				"double", "double-big", "double-max", "double-positive-infinity", "double-whole",
 				"int32", "int32-max",
-				"int64", "int64-max",
+				"int64", "int64-big", "int64-max",
 			},
 		},
 		"DoubleNegativeZero": {
 			value: math.Copysign(0, -1),
 			expectedIDs: []any{
 				"array", "array-three",
-				"double", "double-max", "double-positive-infinity", "double-smallest", "double-whole",
+				"double", "double-big", "double-max", "double-positive-infinity", "double-smallest", "double-whole",
 				"int32", "int32-max",
-				"int64", "int64-max",
+				"int64", "int64-big", "int64-max",
 			},
 		},
 		"DoubleMax": {
@@ -454,12 +470,19 @@ func TestQueryComparisonGt(t *testing.T) {
 		},
 
 		"Int32": {
-			value:       int32(42),
-			expectedIDs: []any{"double", "double-max", "double-positive-infinity", "int32-max", "int64-max"},
+			value: int32(42),
+			expectedIDs: []any{
+				"double", "double-big", "double-max", "double-positive-infinity",
+				"int32-max",
+				"int64-big", "int64-max",
+			},
 		},
 		"Int32Max": {
-			value:       int32(math.MaxInt32),
-			expectedIDs: []any{"double-max", "double-positive-infinity", "int64-max"},
+			value: int32(math.MaxInt32),
+			expectedIDs: []any{
+				"double-big", "double-max", "double-positive-infinity",
+				"int64-big", "int64-max",
+			},
 		},
 
 		"Timestamp": {
@@ -476,12 +499,23 @@ func TestQueryComparisonGt(t *testing.T) {
 		},
 
 		"Int64": {
-			value:       int64(42),
-			expectedIDs: []any{"double", "double-max", "double-positive-infinity", "int32-max", "int64-max"},
+			value: int64(42),
+			expectedIDs: []any{
+				"double", "double-big", "double-max", "double-positive-infinity",
+				"int32-max",
+				"int64-big", "int64-max",
+			},
 		},
 		"Int64Max": {
 			value:       int64(math.MaxInt64),
 			expectedIDs: []any{"double-max", "double-positive-infinity"},
+		},
+		"Int64Big": {
+			value: int64(2<<60 - 1),
+			expectedIDs: []any{
+				"double-big", "double-max", "double-positive-infinity",
+				"int64-big", "int64-max",
+			},
 		},
 	} {
 		name, tc := name, tc
@@ -668,7 +702,7 @@ func TestQueryComparisonGte(t *testing.T) {
 
 func TestQueryComparisonLt(t *testing.T) {
 	t.Parallel()
-	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
+	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites, shareddata.BigNumbersData}
 	ctx, collection := setup(t, providers...)
 
 	for name, tc := range map[string]struct {
@@ -804,6 +838,15 @@ func TestQueryComparisonLt(t *testing.T) {
 		"Int64Min": {
 			value:       int64(math.MinInt64),
 			expectedIDs: []any{"double-negative-infinity"},
+		},
+		"Int64Big": {
+			value: int64(2<<60 + 1),
+			expectedIDs: []any{
+				"array", "array-three",
+				"double", "double-big", "double-negative-infinity", "double-negative-zero", "double-smallest", "double-whole", "double-zero",
+				"int32", "int32-max", "int32-min", "int32-zero",
+				"int64", "int64-min", "int64-zero",
+			},
 		},
 	} {
 		name, tc := name, tc
@@ -1074,6 +1117,190 @@ func TestQueryComparisonNin(t *testing.T) {
 	}
 }
 
-// $in
+func TestQueryComparisonNe(t *testing.T) {
+	t.Parallel()
+	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
+	ctx, collection := setup(t, providers...)
 
-// $ne
+	for name, tc := range map[string]struct {
+		value        any
+		unexpectedID string
+		err          mongo.CommandError
+	}{
+		"Document": {
+			value:        bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}},
+			unexpectedID: "document-composite",
+		},
+		"DocumentShuffledKeys": {
+			value:        bson.D{{"value", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}},
+			unexpectedID: "",
+		},
+
+		"Array": {
+			value:        bson.A{int32(42), "foo", nil},
+			unexpectedID: "array-three",
+		},
+		"ArrayEmbedded": {
+			value:        bson.A{bson.A{int32(42), "foo"}, nil},
+			unexpectedID: "array-embedded",
+		},
+		"ArrayShuffledValues": {
+			value:        bson.A{"foo", nil, int32(42)},
+			unexpectedID: "",
+		},
+
+		"Double": {
+			value:        42.13,
+			unexpectedID: "double",
+		},
+		"DoubleNegativeInfinity": {
+			value:        math.Inf(-1),
+			unexpectedID: "double-negative-infinity",
+		},
+		"DoubleNegativeZero": {
+			value:        math.Copysign(0, -1),
+			unexpectedID: "double-negative-zero",
+		},
+		"DoublePositiveInfinity": {
+			value:        math.Inf(+1),
+			unexpectedID: "double-positive-infinity",
+		},
+		"DoubleMax": {
+			value:        math.MaxFloat64,
+			unexpectedID: "double-max",
+		},
+		"DoubleSmallest": {
+			value:        math.SmallestNonzeroFloat64,
+			unexpectedID: "double-smallest",
+		},
+		"DoubleZero": {
+			value:        0.0,
+			unexpectedID: "double-zero",
+		},
+		"DoubleNaN": {
+			value:        math.NaN(),
+			unexpectedID: "double-nan",
+		},
+
+		"String": {
+			value:        "foo",
+			unexpectedID: "string",
+		},
+		"EmptyString": {
+			value:        "",
+			unexpectedID: "string-empty",
+		},
+
+		"Binary": {
+			value:        primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}},
+			unexpectedID: "binary",
+		},
+		"EmptyBinary": {
+			value:        primitive.Binary{Data: []byte{}},
+			unexpectedID: "binary-empty",
+		},
+
+		"BoolFalse": {
+			value:        false,
+			unexpectedID: "bool-false",
+		},
+		"BoolTrue": {
+			value:        true,
+			unexpectedID: "bool-true",
+		},
+
+		"Datetime": {
+			value:        primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC)),
+			unexpectedID: "datetime",
+		},
+		"DatetimeEpoch": {
+			value:        primitive.NewDateTimeFromTime(time.Unix(0, 0)),
+			unexpectedID: "datetime-epoch",
+		},
+		"DatetimeYearMax": {
+			value:        primitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)),
+			unexpectedID: "datetime-year-min",
+		},
+		"DatetimeYearMin": {
+			value:        primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC)),
+			unexpectedID: "datetime-year-max",
+		},
+
+		"Timestamp": {
+			value:        primitive.Timestamp{T: 42, I: 13},
+			unexpectedID: "timestamp",
+		},
+		"TimestampI": {
+			value:        primitive.Timestamp{I: 1},
+			unexpectedID: "timestamp-i",
+		},
+
+		"Null": {
+			value:        nil,
+			unexpectedID: "null",
+		},
+
+		"Int32": {
+			value:        int32(42),
+			unexpectedID: "int32",
+		},
+		"Int32Zero": {
+			value:        int32(0),
+			unexpectedID: "int32-zero",
+		},
+		"Int32Max": {
+			value:        int32(math.MaxInt32),
+			unexpectedID: "int32-max",
+		},
+		"Int32Min": {
+			value:        int32(math.MinInt32),
+			unexpectedID: "int32-min",
+		},
+
+		"Int64": {
+			value:        int64(42),
+			unexpectedID: "int64",
+		},
+		"Int64Zero": {
+			value:        int64(0),
+			unexpectedID: "int64-zero",
+		},
+		"Int64Max": {
+			value:        int64(math.MaxInt64),
+			unexpectedID: "int64-max",
+		},
+		"Int64Min": {
+			value:        int64(math.MinInt64),
+			unexpectedID: "int64-min",
+		},
+
+		"Regex": {
+			value: primitive.Regex{Pattern: "foo"},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `Can't have regex as arg to $ne.`,
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			filter := bson.D{{"value", bson.D{{"$ne", tc.value}}}}
+			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			if tc.err.Code != 0 {
+				assertEqualError(t, tc.err, err)
+				return
+			}
+			require.NoError(t, err)
+
+			var actual []bson.D
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.NotContains(t, collectIDs(t, actual), tc.unexpectedID)
+		})
+	}
+}
+
+// $in

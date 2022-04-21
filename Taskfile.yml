@@ -64,6 +64,7 @@ tasks:
   fmt:
     desc: 'Format code'
     cmds:
+      - bin/goimports{{exeExt}} -format-only -local=github.com/FerretDB/FerretDB -w .
       - bin/gofumpt{{exeExt}} -w .
 
   test:
