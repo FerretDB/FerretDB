@@ -28,10 +28,10 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-// convert converts given driver value (bson.D, bson.A, etc) to FerretDB types package value.
+// Convert converts given driver value (bson.D, bson.A, etc) to FerretDB types package value.
 //
 // It then can be used with all types helpers such as testutil.AssertEqual.
-func convert(t testing.TB, v any) any {
+func Convert(t testing.TB, v any) any {
 	t.Helper()
 
 	switch v := v.(type) {
@@ -39,13 +39,13 @@ func convert(t testing.TB, v any) any {
 	case primitive.D:
 		doc := types.MustNewDocument()
 		for _, e := range v {
-			doc.Set(e.Key, convert(t, e.Value))
+			doc.Set(e.Key, Convert(t, e.Value))
 		}
 		return doc
 	case primitive.A:
 		arr := types.MakeArray(len(v))
 		for _, e := range v {
-			arr.Append(convert(t, e))
+			arr.Append(Convert(t, e))
 		}
 		return arr
 
@@ -84,11 +84,11 @@ func convert(t testing.TB, v any) any {
 	}
 }
 
-// convertDocument converts given driver's document to FerretDB's *types.Document.
-func convertDocument(t testing.TB, doc bson.D) *types.Document {
+// ConvertDocument converts given driver's document to FerretDB's *types.Document.
+func ConvertDocument(t testing.TB, doc bson.D) *types.Document {
 	t.Helper()
 
-	v := convert(t, doc)
+	v := Convert(t, doc)
 
 	var res *types.Document
 	require.IsType(t, res, v)
@@ -96,20 +96,20 @@ func convertDocument(t testing.TB, doc bson.D) *types.Document {
 	return res
 }
 
-// assertEqualDocuments asserts that two documents are equal in a way that is useful for tests
+// AssertEqualDocuments asserts that two documents are equal in a way that is useful for tests
 // (NaNs are equal, etc).
 //
 // See testutil.AssertEqual for details.
-func assertEqualDocuments(t testing.TB, expected, actual bson.D) bool {
+func AssertEqualDocuments(t testing.TB, expected, actual bson.D) bool {
 	t.Helper()
 
-	expectedDoc := convertDocument(t, expected)
-	actualDoc := convertDocument(t, actual)
+	expectedDoc := ConvertDocument(t, expected)
+	actualDoc := ConvertDocument(t, actual)
 	return testutil.AssertEqual(t, expectedDoc, actualDoc)
 }
 
-// assertEqualError asserts that expected error is the same as actual, ignoring the Raw part.
-func assertEqualError(t testing.TB, expected mongo.CommandError, actual error) bool {
+// AssertEqualError asserts that expected error is the same as actual, ignoring the Raw part.
+func AssertEqualError(t testing.TB, expected mongo.CommandError, actual error) bool {
 	t.Helper()
 
 	a, ok := actual.(mongo.CommandError)
@@ -124,10 +124,10 @@ func assertEqualError(t testing.TB, expected mongo.CommandError, actual error) b
 	return assert.Equal(t, expected, a)
 }
 
-// collectIDs returns all _id values from given documents.
+// CollectIDs returns all _id values from given documents.
 //
 // The order is preserved.
-func collectIDs(t testing.TB, docs []bson.D) []any {
+func CollectIDs(t testing.TB, docs []bson.D) []any {
 	t.Helper()
 
 	ids := make([]any, len(docs))
@@ -140,10 +140,10 @@ func collectIDs(t testing.TB, docs []bson.D) []any {
 	return ids
 }
 
-// collectKeys returns document keys.
+// CollectKeys returns document keys.
 //
 // The order is preserved.
-func collectKeys(t testing.TB, doc bson.D) []string {
+func CollectKeys(t testing.TB, doc bson.D) []string {
 	t.Helper()
 
 	res := make([]string, len(doc))
