@@ -14,15 +14,6 @@
 
 package types
 
-import (
-	"bytes"
-	"encoding/binary"
-	"fmt"
-	"math"
-
-	"github.com/FerretDB/FerretDB/internal/util/must"
-)
-
 //go:generate ../../bin/stringer -linecomment -type BinarySubtype
 
 // BinarySubtype represents BSON Binary's subtype.
@@ -43,48 +34,4 @@ const (
 type Binary struct {
 	Subtype BinarySubtype
 	B       []byte
-}
-
-// BinaryFromArray takes position array which must contain non-negative numbers
-// and packs it into types.Binary. Bit positions start at 0 from the least significant bit.
-func BinaryFromArray(values *Array) (Binary, error) {
-	var bitMask uint64
-	for i := 0; i < values.Len(); i++ {
-		value := must.NotFail(values.Get(i))
-
-		bitPosition, ok := value.(int32)
-		if !ok {
-			return Binary{}, fmt.Errorf(`bit positions must be an integer but got: %d: %#v`, i, value)
-		}
-
-		if bitPosition < 0 {
-			return Binary{}, fmt.Errorf("bit positions must be >= 0 but got: %d: %d", i, bitPosition)
-		}
-
-		bitMask |= 1 << bitPosition
-	}
-
-	bs := make([]byte, 8)
-	binary.LittleEndian.PutUint64(bs, bitMask)
-
-	return Binary{
-		Subtype: BinaryGeneric,
-		B:       bs,
-	}, nil
-}
-
-// BinaryFromInt packs int64 value into types.Binary.
-func BinaryFromInt(value int64) Binary {
-	buff := new(bytes.Buffer)
-	if value <= math.MinInt64 {
-		must.NoError(binary.Write(buff, binary.LittleEndian, uint64(value-1)))
-		buff.Write([]byte{0})
-	} else {
-		must.NoError(binary.Write(buff, binary.LittleEndian, uint64(value)))
-	}
-
-	return Binary{
-		Subtype: BinaryGeneric,
-		B:       buff.Bytes(),
-	}
 }
