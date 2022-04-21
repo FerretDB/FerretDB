@@ -1079,6 +1079,34 @@ func TestQueryComparisonNin(t *testing.T) {
 			},
 		},
 
+		"$regex": {
+			value: bson.A{bson.D{{"$regex", "/foo/"}}},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `cannot nest $ under $in`,
+			},
+		},
+		"Regex": {
+			value: bson.A{primitive.Regex{Pattern: "foo", Options: "i"}},
+			expectedIDs: []any{
+				"array", "array-embedded", "array-empty",
+				"binary", "binary-empty",
+				"bool-false", "bool-true",
+				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
+				"document", "document-composite", "document-empty",
+				"double", "double-max", "double-nan", "double-negative-infinity", "double-negative-zero",
+				"double-positive-infinity", "double-smallest", "double-whole", "double-zero",
+				"int32", "int32-max", "int32-min", "int32-zero",
+				"int64", "int64-max", "int64-min", "int64-zero",
+				"null",
+				"objectid", "objectid-empty",
+				"regex-empty",
+				"string-double", "string-empty", "string-whole",
+				"timestamp", "timestamp-i",
+			},
+		},
+
 		"NilInsteadOfArray": {
 			value: nil,
 			err: mongo.CommandError{
@@ -1158,6 +1186,19 @@ func TestQueryComparisonIn(t *testing.T) {
 		"ForCompositeDataTypes": {
 			value:       compositeDataTypesFilter,
 			expectedIDs: []any{"array", "array-embedded", "array-empty", "array-three", "document", "document-composite", "document-empty"},
+		},
+
+		"$regex": {
+			value: bson.A{bson.D{{"$regex", "/foo/"}}},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `cannot nest $ under $in`,
+			},
+		},
+		"Regex": {
+			value:       bson.A{primitive.Regex{Pattern: "foo", Options: "i"}},
+			expectedIDs: []any{"array-three", "regex", "string"},
 		},
 
 		"NilInsteadOfArray": {

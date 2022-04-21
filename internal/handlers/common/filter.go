@@ -328,11 +328,27 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 						break
 					}
 				case *types.Document:
+					for _, key := range arrValue.Keys() {
+						if strings.HasPrefix(key, "$") {
+							return false, NewErrorMsg(ErrBadValue, "cannot nest $ under $in")
+						}
+					}
 					fieldValue, ok := fieldValue.(*types.Document)
 					if ok && matchDocuments(fieldValue, arrValue) {
 						found = true
 						break
 					}
+				case types.Regex:
+					match, err := filterFieldRegex(fieldValue, arrValue)
+					switch {
+					case err != nil:
+						return false, err
+					case match:
+						found = true
+						break
+					}
+					continue
+
 				default:
 					if compare(fieldValue, arrValue) == equal {
 						found = true
@@ -361,11 +377,27 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 						break
 					}
 				case *types.Document:
+					for _, key := range arrValue.Keys() {
+						if strings.HasPrefix(key, "$") {
+							return false, NewErrorMsg(ErrBadValue, "cannot nest $ under $in")
+						}
+					}
 					fieldValue, ok := fieldValue.(*types.Document)
 					if ok && matchDocuments(fieldValue, arrValue) {
 						found = true
 						break
 					}
+				case types.Regex:
+					match, err := filterFieldRegex(fieldValue, arrValue)
+					switch {
+					case err != nil:
+						return false, err
+					case match:
+						found = true
+						break
+					}
+					continue
+
 				default:
 					if compare(fieldValue, arrValue) == equal {
 						found = true
