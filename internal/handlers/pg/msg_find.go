@@ -23,7 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgFind finds documents in a collection or view and returns a cursor to the selected documents.
+// MsgFind returns documents matched by the query.
 func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
