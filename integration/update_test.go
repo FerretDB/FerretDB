@@ -50,7 +50,7 @@ func TestUpdateUpsert(t *testing.T) {
 	var doc bson.D
 	err = collection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&doc)
 	require.NoError(t, err)
-	if !assertEqualDocuments(t, bson.D{{"_id", id}, {"foo", "baz"}}, doc) {
+	if !AssertEqualDocuments(t, bson.D{{"_id", id}, {"foo", "baz"}}, doc) {
 		t.FailNow()
 	}
 
@@ -70,5 +70,5 @@ func TestUpdateUpsert(t *testing.T) {
 	// check updated document
 	err = collection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&doc)
 	require.NoError(t, err)
-	assertEqualDocuments(t, bson.D{{"_id", id}, {"foo", "qux"}}, doc)
+	AssertEqualDocuments(t, bson.D{{"_id", id}, {"foo", "qux"}}, doc)
 }

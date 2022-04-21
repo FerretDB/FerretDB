@@ -36,7 +36,7 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 	t.Log(m)
 
 	assert.Equal(t, 1.0, m["ok"])
-	assert.Equal(t, []string{"totalLinesWritten", "log", "ok"}, collectKeys(t, actual))
+	assert.Equal(t, []string{"totalLinesWritten", "log", "ok"}, CollectKeys(t, actual))
 
 	assert.IsType(t, int32(0), m["totalLinesWritten"])
 }
@@ -53,13 +53,13 @@ func TestCommandsDiagnosticHostInfo(t *testing.T) {
 	t.Log(m)
 
 	assert.Equal(t, 1.0, m["ok"])
-	assert.Equal(t, []string{"system", "os", "extra", "ok"}, collectKeys(t, actual))
+	assert.Equal(t, []string{"system", "os", "extra", "ok"}, CollectKeys(t, actual))
 
 	os := m["os"].(bson.D)
-	assert.Equal(t, []string{"type", "name", "version"}, collectKeys(t, os))
+	assert.Equal(t, []string{"type", "name", "version"}, CollectKeys(t, os))
 
 	system := m["system"].(bson.D)
-	keys := collectKeys(t, system)
+	keys := CollectKeys(t, system)
 	assert.Contains(t, keys, "currentTime")
 	assert.Contains(t, keys, "hostname")
 	assert.Contains(t, keys, "cpuAddrSize")
@@ -79,7 +79,7 @@ func TestCommandsDiagnosticListCommands(t *testing.T) {
 	t.Log(m)
 
 	assert.Equal(t, 1.0, m["ok"])
-	assert.Equal(t, []string{"commands", "ok"}, collectKeys(t, actual))
+	assert.Equal(t, []string{"commands", "ok"}, CollectKeys(t, actual))
 
 	commands := m["commands"].(bson.D)
 	listCommands := commands.Map()["listCommands"].(bson.D)

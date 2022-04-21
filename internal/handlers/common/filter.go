@@ -313,13 +313,47 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 		case "$in":
 			// {field: {$in: [value1, value2, ...]}}
-			arr := exprValue.(*types.Array)
+			arr, ok := exprValue.(*types.Array)
+			if !ok {
+				return false, NewErrorMsg(ErrBadValue, "$in needs an array")
+			}
 			var found bool
 			for i := 0; i < arr.Len(); i++ {
 				arrValue := must.NotFail(arr.Get(i))
-				if compareScalars(fieldValue, arrValue) == equal {
-					found = true
-					break
+				switch arrValue := arrValue.(type) {
+				case *types.Array:
+					fieldValue, ok := fieldValue.(*types.Array)
+					if ok && matchArrays(fieldValue, arrValue) {
+						found = true
+						break
+					}
+				case *types.Document:
+					for _, key := range arrValue.Keys() {
+						if strings.HasPrefix(key, "$") {
+							return false, NewErrorMsg(ErrBadValue, "cannot nest $ under $in")
+						}
+					}
+					fieldValue, ok := fieldValue.(*types.Document)
+					if ok && matchDocuments(fieldValue, arrValue) {
+						found = true
+						break
+					}
+				case types.Regex:
+					match, err := filterFieldRegex(fieldValue, arrValue)
+					switch {
+					case err != nil:
+						return false, err
+					case match:
+						found = true
+						break
+					}
+					continue
+
+				default:
+					if compare(fieldValue, arrValue) == equal {
+						found = true
+						break
+					}
 				}
 			}
 			if !found {
@@ -343,11 +377,27 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 						break
 					}
 				case *types.Document:
+					for _, key := range arrValue.Keys() {
+						if strings.HasPrefix(key, "$") {
+							return false, NewErrorMsg(ErrBadValue, "cannot nest $ under $in")
+						}
+					}
 					fieldValue, ok := fieldValue.(*types.Document)
 					if ok && matchDocuments(fieldValue, arrValue) {
 						found = true
 						break
 					}
+				case types.Regex:
+					match, err := filterFieldRegex(fieldValue, arrValue)
+					switch {
+					case err != nil:
+						return false, err
+					case match:
+						found = true
+						break
+					}
+					continue
+
 				default:
 					if compare(fieldValue, arrValue) == equal {
 						found = true

@@ -130,12 +130,10 @@ jobs:
       # TODO https://github.com/FerretDB/FerretDB/issues/238
       # TODO https://github.com/FerretDB/FerretDB/issues/344
       - name: Run collected fuzzing corpus
-        run: bin/task fuzz
+        run: bin/task fuzz FUZZTIME=1s
         working-directory: source
         env:
           GOMAXPROCS: 1 # otherwise, oom-killer kills fuzzer too often
-          FUZZTIME: 5s
-          FUZZCORPUS: ../fuzz-corpus
 
       - name: Collect corpus
         if: always()
