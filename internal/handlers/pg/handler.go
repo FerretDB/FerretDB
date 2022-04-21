@@ -68,7 +68,7 @@ func New(opts *NewOpts) *Handler {
 //
 // Specific message handlers should do one of the following:
 //  * return normal response body;
-//  * return protocol error (*common.Error) - it will be returned to the client;
+//  * return protocol error (*common.Error, possibly wrapped) - it will be returned to the client;
 //  * return any other error - it will be returned to the client as InternalError before terminating connection.
 //
 // They should not panic on bad input, but may do so in "impossible" cases.
