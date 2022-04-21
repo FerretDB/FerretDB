@@ -70,7 +70,7 @@ func setupWithOpts(t *testing.T, opts *setupOpts) (context.Context, *mongo.Colle
 		ownDatabase = true
 	}
 
-	logger := zaptest.NewLogger(t, zaptest.Level(zap.DebugLevel))
+	logger := zaptest.NewLogger(t, zaptest.Level(zap.ErrorLevel))
 
 	port, err := strconv.Atoi(*startupPortF)
 	if err != nil {
@@ -205,7 +205,7 @@ func startup(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	logging.Setup(zap.DebugLevel)
+	logging.Setup(zap.ErrorLevel)
 
 	ctx := context.Background()
 

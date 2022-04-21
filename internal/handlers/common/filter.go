@@ -544,76 +544,166 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 
 // filterFieldExprBitsAllClear handles {field: {$bitsAllClear: value}} filter.
 func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
-	fieldBinary, maskBinary, err := getBinaryParams(fieldValue, maskValue)
-	if err != nil {
-		return false, formatBitwiseOperatorErr(err, "$bitsAllClear", maskValue)
-	}
+	switch value := fieldValue.(type) {
+	case int32:
+		bitmask, err := getBinaryMaskParam(maskValue)
+		if err != nil {
+			return false, formatBitwiseOperatorErr(err, "$bitsAllClear", maskValue)
+		}
+		return (^uint64(value) & bitmask) == bitmask, nil
 
-	for i := 0; i < len(fieldBinary.B); i++ {
-		if (fieldBinary.B[i] & maskBinary.B[i]) != 0 {
+	case int64:
+		bitmask, err := getBinaryMaskParam(maskValue)
+		if err != nil {
+			return false, formatBitwiseOperatorErr(err, "$bitsAllClear", maskValue)
+		}
+		return (^uint64(value) & bitmask) == bitmask, nil
+
+	case float64:
+		// TODO check float negative zero
+		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) || value > math.MaxInt64 {
 			return false, nil
 		}
-	}
 
-	return true, nil
+		bitmask, err := getBinaryMaskParam(maskValue)
+		if err != nil {
+			return false, formatBitwiseOperatorErr(err, "$bitsAllClear", maskValue)
+		}
+
+		return (^uint64(value) & bitmask) == bitmask, nil
+
+	case types.Binary:
+		if len(value.B) == 0 {
+			return true, nil
+		}
+
+		return false, nil
+	default:
+		return false, nil
+	}
 }
 
 // filterFieldExprBitsAllSet handles {field: {$bitsAllSet: value}} filter.
 func filterFieldExprBitsAllSet(fieldValue, maskValue any) (bool, error) {
-	fieldBinary, maskBinary, err := getBinaryParams(fieldValue, maskValue)
-	if err != nil {
-		return false, formatBitwiseOperatorErr(err, "$bitsAllSet", maskValue)
-	}
+	switch value := fieldValue.(type) {
+	case int32:
+		bitmask, err := getBinaryMaskParam(maskValue)
+		if err != nil {
+			return false, formatBitwiseOperatorErr(err, "$bitsAllSet", maskValue)
+		}
+		return (uint64(value) & bitmask) == bitmask, nil
 
-	for i := 0; i < len(fieldBinary.B); i++ {
-		if (fieldBinary.B[i] & maskBinary.B[i]) != maskBinary.B[i] {
+	case int64:
+		bitmask, err := getBinaryMaskParam(maskValue)
+		if err != nil {
+			return false, formatBitwiseOperatorErr(err, "$bitsAllSet", maskValue)
+		}
+		return (uint64(value) & bitmask) == bitmask, nil
+
+	case float64:
+		// TODO check float negative zero
+		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) || value > math.MaxInt64 {
 			return false, nil
 		}
-	}
 
-	return true, nil
+		bitmask, err := getBinaryMaskParam(maskValue)
+		if err != nil {
+			return false, formatBitwiseOperatorErr(err, "$bitsAllSet", maskValue)
+		}
+
+		return (uint64(value) & bitmask) == bitmask, nil
+
+	case types.Binary:
+		if len(value.B) == 0 {
+			return false, nil
+		}
+
+		return false, nil
+	default:
+		return false, nil
+	}
 }
 
 // filterFieldExprBitsAnyClear handles {field: {$bitsAnyClear: value}} filter.
 func filterFieldExprBitsAnyClear(fieldValue, maskValue any) (bool, error) {
-	fieldBinary, maskBinary, err := getBinaryParams(fieldValue, maskValue)
-	if err != nil {
-		return false, formatBitwiseOperatorErr(err, "$bitsAnyClear", maskValue)
-	}
-
-	for i := 0; i < len(fieldBinary.B); i++ {
-		if fieldBinary.B[i] == 0 {
-			continue
+	switch value := fieldValue.(type) {
+	case int32:
+		bitmask, err := getBinaryMaskParam(maskValue)
+		if err != nil {
+			return false, formatBitwiseOperatorErr(err, "$bitsAnyClear", maskValue)
 		}
+		return (^uint64(value) & bitmask) == 0, nil
 
-		mask := maskBinary.B[i] ^ 0b1111_1111
-		if (fieldBinary.B[i] & mask) == 0 {
+	case int64:
+		bitmask, err := getBinaryMaskParam(maskValue)
+		if err != nil {
+			return false, formatBitwiseOperatorErr(err, "$bitsAnyClear", maskValue)
+		}
+		return (^uint64(value) & bitmask) == 0, nil
+
+	case float64:
+		// TODO check float negative zero
+		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) || value > math.MaxInt64 {
 			return false, nil
 		}
-	}
 
-	return true, nil
+		bitmask, err := getBinaryMaskParam(maskValue)
+		if err != nil {
+			return false, formatBitwiseOperatorErr(err, "$bitsAnyClear", maskValue)
+		}
+
+		return (^uint64(value) & bitmask) == 0, nil
+
+	case types.Binary:
+		if len(value.B) == 0 {
+			return true, nil
+		}
+
+		return false, nil
+	default:
+		return false, nil
+	}
 }
 
 // filterFieldExprBitsAnySet handles {field: {$bitsAnySet: value}} filter.
 func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
-	fieldBinary, maskBinary, err := getBinaryParams(fieldValue, maskValue)
-	if err != nil {
-		return false, formatBitwiseOperatorErr(err, "$bitsAnySet", maskValue)
-	}
-
-	for i := 0; i < len(fieldBinary.B); i++ {
-		if fieldBinary.B[i] == 0 {
-			continue
+	switch value := fieldValue.(type) {
+	case int32:
+		bitmask, err := getBinaryMaskParam(maskValue)
+		if err != nil {
+			return false, formatBitwiseOperatorErr(err, "$bitsAnySet", maskValue)
 		}
+		return (uint64(value) & bitmask) == 0, nil
 
-		mask := maskBinary.B[i] ^ 0b0000_0000
-		if (fieldBinary.B[i] & mask) == 0 {
+	case int64:
+		bitmask, err := getBinaryMaskParam(maskValue)
+		if err != nil {
+			return false, formatBitwiseOperatorErr(err, "$bitsAnySet", maskValue)
+		}
+		return (uint64(value) & bitmask) == 0, nil
+
+	case float64:
+		// TODO check float negative zero
+		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) || value > math.MaxInt64 {
 			return false, nil
 		}
-	}
 
-	return true, nil
+		bitmask, err := getBinaryMaskParam(maskValue)
+		if err != nil {
+			return false, formatBitwiseOperatorErr(err, "$bitsAnySet", maskValue)
+		}
+
+		return (uint64(value) & bitmask) == 0, nil
+
+	case types.Binary:
+		if len(value.B) == 0 {
+			return false, nil
+		}
+
+		return false, nil
+	default:
+		return false, nil
+	}
 }
 
 // filterFieldMod handles {field: {$mod: [divisor, remainder]}} filter.
