@@ -35,7 +35,7 @@ func TestMostCommandsAreCaseSensitive(t *testing.T) {
 	res := db.RunCommand(ctx, bson.D{{"listcollections", 1}})
 	err := res.Err()
 	require.Error(t, err)
-	assertEqualError(t, mongo.CommandError{Code: 59, Name: "CommandNotFound", Message: `no such command: 'listcollections'`}, err)
+	AssertEqualError(t, mongo.CommandError{Code: 59, Name: "CommandNotFound", Message: `no such command: 'listcollections'`}, err)
 
 	res = db.RunCommand(ctx, bson.D{{"listCollections", 1}})
 	assert.NoError(t, res.Err())
@@ -89,7 +89,7 @@ func TestInsertFind(t *testing.T) {
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			require.Len(t, actual, 1)
-			assertEqualDocuments(t, expected, actual[0])
+			AssertEqualDocuments(t, expected, actual[0])
 		})
 	}
 }
