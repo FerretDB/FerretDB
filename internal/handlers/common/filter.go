@@ -627,7 +627,23 @@ func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
 			return true, nil
 		}
 
-		return false, nil
+		var v uint64
+		for b := 0; b < 2; b++ {
+			byteAt := value.B[b]
+
+			if byteAt == 0 {
+				continue
+			}
+
+			v |= uint64(byteAt) << b
+		}
+
+		bitmask, err := getBinaryMaskParam(maskValue)
+		if err != nil {
+			return false, formatBitwiseOperatorErr(err, "$bitsAllClear", maskValue)
+		}
+
+		return (^v & bitmask) == bitmask, nil
 	default:
 		return false, nil
 	}
@@ -668,7 +684,24 @@ func filterFieldExprBitsAllSet(fieldValue, maskValue any) (bool, error) {
 			return false, nil
 		}
 
-		return false, nil
+		var v uint64
+		for b := 0; b < 2; b++ {
+			byteAt := value.B[b]
+
+			if byteAt == 0 {
+				continue
+			}
+
+			v |= uint64(byteAt) << b
+		}
+
+		bitmask, err := getBinaryMaskParam(maskValue)
+		if err != nil {
+			return false, formatBitwiseOperatorErr(err, "$bitsAllSet", maskValue)
+		}
+
+		return (v & bitmask) == bitmask, nil
+
 	default:
 		return false, nil
 	}
@@ -709,7 +742,23 @@ func filterFieldExprBitsAnyClear(fieldValue, maskValue any) (bool, error) {
 			return true, nil
 		}
 
-		return false, nil
+		var v uint64
+		for b := 0; b < 2; b++ {
+			byteAt := value.B[b]
+
+			if byteAt == 0 {
+				continue
+			}
+
+			v |= uint64(byteAt) << b
+		}
+
+		bitmask, err := getBinaryMaskParam(maskValue)
+		if err != nil {
+			return false, formatBitwiseOperatorErr(err, "$bitsAllClear", maskValue)
+		}
+
+		return (^v & bitmask) == 0, nil
 	default:
 		return false, nil
 	}
@@ -750,7 +799,23 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 			return false, nil
 		}
 
-		return false, nil
+		var v uint64
+		for b := 0; b < 2; b++ {
+			byteAt := value.B[b]
+
+			if byteAt == 0 {
+				continue
+			}
+
+			v |= uint64(byteAt) << b
+		}
+
+		bitmask, err := getBinaryMaskParam(maskValue)
+		if err != nil {
+			return false, formatBitwiseOperatorErr(err, "$bitsAllClear", maskValue)
+		}
+
+		return (v & bitmask) == 0, nil
 	default:
 		return false, nil
 	}
