@@ -314,7 +314,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		"FloatWhole": {
 			filter: 2.0,
 			expectedIDs: []any{
-				"binary-big", "binary-empty",
+				"binary-empty",
 				"double-negative-zero", "double-zero",
 				"int32-min", "int32-zero",
 				"int64-min", "int64-zero",
@@ -356,7 +356,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		"Int64": {
 			filter: math.MaxInt64,
 			expectedIDs: []any{
-				"binary", "binary-big", "binary-empty",
+				"binary", "binary-empty",
 				"double-negative-zero", "double-whole", "double-zero",
 				"int32", "int32-max", "int32-min", "int32-zero",
 				"int64", "int64-min", "int64-zero",
