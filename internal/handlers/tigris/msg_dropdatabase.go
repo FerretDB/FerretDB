@@ -16,9 +16,9 @@ package tigris
 
 import (
 	"context"
-	"encoding/json"
 
-	"github.com/tigrisdata/tigrisdb-client-go/driver"
+	api "github.com/tigrisdata/tigrisdb-client-go/api/server/v1"
+	"google.golang.org/grpc/codes"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -27,51 +27,41 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgInsert inserts a document or documents into a collection.
-func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// MsgDropDatabase removes the current database.
+func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.l, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
+	common.Ignored(document, h.l, "writeConcern", "comment")
 
-	command := document.Command()
-
-	var db, collection string
+	var db string
 	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
-	if collection, err = common.GetRequiredParam[string](document, command); err != nil {
-		return nil, err
-	}
 
-	var docs *types.Array
-	if docs, err = common.GetOptionalParam(document, "documents", docs); err != nil {
-		return nil, err
-	}
-
-	var inserted int32
-	for i := 0; i < docs.Len(); i++ {
-		doc := must.NotFail(docs.Get(i)).(*types.Document)
-
-		tigrisDoc, err := json.Marshal(doc.Map())
-		if err != nil {
+	res := must.NotFail(types.NewDocument())
+	err = h.client.conn.DropDatabase(ctx, db)
+	if err != nil {
+		switch err := err.(type) {
+		case *api.TigrisDBError:
+			// TODO: database not found DatabaseNotFound error
+			// is hidden in codes.InvalidArgument due to same gRPC status codes
+			if err.Code == codes.NotFound {
+				break
+			}
+			return nil, lazyerrors.Error(err)
+		default:
 			return nil, lazyerrors.Error(err)
 		}
-		if _, err = h.client.conn.Insert(ctx, db, collection, []driver.Document{tigrisDoc}); err != nil {
-			return nil, err
-		}
-
-		inserted++
 	}
+	res.Set("dropped", db)
+	res.Set("ok", float64(1))
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"n", inserted,
-			"ok", float64(1),
-		))},
+		Documents: []*types.Document{res},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)

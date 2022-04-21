@@ -36,10 +36,21 @@ var commands = map[string]command{
 		help: "Returns information about the currently supported commands.",
 		// no handler - special case
 	},
-
+	"ismaster": {
+		help:    "Returns the role of the FerretDB instance.",
+		handler: (*Handler).MsgIsMaster,
+	},
+	"isMaster": { // both `ismaster` and `isMaster` are valid
+		help:    "Returns the role of the FerretDB instance.",
+		handler: (*Handler).MsgIsMaster,
+	},
 	"hello": {
 		help:    "Returns the role of the FerretDB instance.",
 		handler: (*Handler).MsgHello,
+	},
+	"create": {
+		help:    "Creates the collection.",
+		handler: (*Handler).MsgCreate,
 	},
 	"listCollections": {
 		help:    "Returns the information of the collections and views in the database.",
@@ -53,7 +64,14 @@ var commands = map[string]command{
 		help:    "Returns a pong response. Used for testing purposes.",
 		handler: (*Handler).MsgPing,
 	},
-
+	"drop": {
+		help:    "Drops the collection.",
+		handler: (*Handler).MsgDrop,
+	},
+	"dropDatabase": {
+		help:    "Deletes the database.",
+		handler: (*Handler).MsgDropDatabase,
+	},
 	"find": {
 		help:    "Returns documents matched by the custom query.",
 		handler: (*Handler).MsgFind,

@@ -67,6 +67,9 @@ type NewListenerOpts struct {
 
 // NewPgListener returns a new listener, configured by the NewListenerOpts argument.
 func NewPgListener(opts *NewListenerOpts) *Listener {
+	if opts.PgPool == nil {
+		panic("pgpool is nil")
+	}
 	return &Listener{
 		backend:   Postgres,
 		opts:      opts,
@@ -79,6 +82,9 @@ func NewPgListener(opts *NewListenerOpts) *Listener {
 
 // NewTigrisListener returns a new listener, configured by the NewListenerOpts argument.
 func NewTigrisListener(opts *NewListenerOpts) *Listener {
+	if opts.TgConn == nil {
+		panic("tigris conn is nil")
+	}
 	return &Listener{
 		backend:   Tigris,
 		opts:      opts,

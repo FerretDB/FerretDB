@@ -16,25 +16,47 @@ package tigris
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/tigrisdata/tigrisdb-client-go/driver"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgInsert inserts a document or documents into a collection.
-func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// MsgCreate adds a collection or view into the database.
+func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.l, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
+	unimplementedFields := []string{
+		"capped",
+		"timeseries",
+		"expireAfterSeconds",
+		"size",
+		"max",
+		"validator",
+		"validationLevel",
+		"validationAction",
+		"viewOn",
+		"pipeline",
+		"collation",
+	}
+	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
+		return nil, err
+	}
+	ignoredFields := []string{
+		"autoIndexId",
+		"storageEngine",
+		"indexOptionDefaults",
+		"writeConcern",
+		"comment",
+	}
+	common.Ignored(document, h.l, ignoredFields...)
 
 	command := document.Command()
 
@@ -42,36 +64,21 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
+
 	if collection, err = common.GetRequiredParam[string](document, command); err != nil {
 		return nil, err
 	}
 
-	var docs *types.Array
-	if docs, err = common.GetOptionalParam(document, "documents", docs); err != nil {
-		return nil, err
-	}
-
-	var inserted int32
-	for i := 0; i < docs.Len(); i++ {
-		doc := must.NotFail(docs.Get(i)).(*types.Document)
-
-		tigrisDoc, err := json.Marshal(doc.Map())
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-		if _, err = h.client.conn.Insert(ctx, db, collection, []driver.Document{tigrisDoc}); err != nil {
-			return nil, err
-		}
-
-		inserted++
+	var schema driver.Schema
+	if err := h.client.conn.CreateOrUpdateCollection(ctx, db, collection, schema); err != nil && err != pgdb.ErrAlreadyExist {
+		return nil, lazyerrors.Error(err)
 	}
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"n", inserted,
+		Documents: []*types.Document{types.MustNewDocument(
 			"ok", float64(1),
-		))},
+		)},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)

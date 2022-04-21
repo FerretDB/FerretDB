@@ -16,9 +16,9 @@ package tigris
 
 import (
 	"context"
-	"encoding/json"
 
-	"github.com/tigrisdata/tigrisdb-client-go/driver"
+	api "github.com/tigrisdata/tigrisdb-client-go/api/server/v1"
+	"google.golang.org/grpc/codes"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -27,14 +27,14 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgInsert inserts a document or documents into a collection.
-func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// MsgDrop removes a collection or view from the database.
+func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.l, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
+	common.Ignored(document, h.l, "writeConcern", "comment")
 
 	command := document.Command()
 
@@ -46,30 +46,25 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	var docs *types.Array
-	if docs, err = common.GetOptionalParam(document, "documents", docs); err != nil {
-		return nil, err
-	}
-
-	var inserted int32
-	for i := 0; i < docs.Len(); i++ {
-		doc := must.NotFail(docs.Get(i)).(*types.Document)
-
-		tigrisDoc, err := json.Marshal(doc.Map())
-		if err != nil {
+	if err = h.client.conn.DropCollection(ctx, db, collection); err != nil {
+		switch err := err.(type) {
+		case *api.TigrisDBError:
+			// TODO: database not found DatabaseNotFound error
+			// is hidden in codes.InvalidArgument due to same gRPC status codes
+			if err.Code == codes.NotFound ||
+				err.Code == codes.InvalidArgument { // DatabaseNotFound
+				return nil, common.NewErrorMsg(common.ErrNamespaceNotFound, "ns not found")
+			}
+		default:
 			return nil, lazyerrors.Error(err)
 		}
-		if _, err = h.client.conn.Insert(ctx, db, collection, []driver.Document{tigrisDoc}); err != nil {
-			return nil, err
-		}
-
-		inserted++
 	}
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"n", inserted,
+			"nIndexesWas", int32(1), // TODO
+			"ns", db+"."+collection,
 			"ok", float64(1),
 		))},
 	})

@@ -23,13 +23,6 @@ jobs:
     name: Test
     runs-on: ubuntu-20.04
 
-    strategy:
-      fail-fast: false
-      matrix:
-        db:
-          - FerretDB
-          - MongoDB
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -55,13 +48,13 @@ jobs:
         run: bin/task env-setup
 
       - name: Run tests
-        run: bin/task test-integration-db DB=${{ matrix.db }}
+        run: bin/task test-integration-tigris
 
       - name: Upload coverage information
         uses: codecov/codecov-action@v3
         with:
           files: ./integration/integration.txt
-          flags: integration,${{ matrix.db }}
+          flags: integration,tigris
 
       - name: Check dirty
         run: |
