@@ -15,6 +15,8 @@
 package common
 
 import (
+	"fmt"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -40,7 +42,7 @@ func UpdateDocument(doc, update *types.Document) error {
 			}
 
 		default:
-			return lazyerrors.Errorf("unhandled operation %q", updateOp)
+			return NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
 		}
 	}
 
