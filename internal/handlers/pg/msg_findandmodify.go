@@ -16,30 +16,53 @@ package pg
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/jackc/pgx/v4"
+
+	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgCount returns the count of documents that's matched by the query.
-func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// MsgFindAndModify inserts, updates, or deletes, and returns a document matched by the query.
+func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/164
+
 	unimplementedFields := []string{
-		"skip",
-		"collation",
+		"sort",
+		"update",
+		"arrayFilters",
+		"let",
 	}
 	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
 		return nil, err
 	}
+
+	for _, field := range []string{"new", "upsert"} {
+		if err := common.UnimplementedNonDefault(document, field, func(v any) bool {
+			b, ok := v.(bool)
+			return ok && !b
+		}); err != nil {
+			return nil, err
+		}
+	}
+
 	ignoredFields := []string{
+		"fields",
+		"bypassDocumentValidation",
+		"writeConcern",
+		"maxTimeMS",
+		"collation",
 		"hint",
-		"readConcern",
 		"comment",
 	}
 	common.Ignored(document, h.l, ignoredFields...)
@@ -54,16 +77,13 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, err
 	}
 
-	var filter *types.Document
-	if filter, err = common.GetOptionalParam(document, "query", filter); err != nil {
+	var query *types.Document
+	var remove bool
+	if query, err = common.GetOptionalParam(document, "query", query); err != nil {
 		return nil, err
 	}
-
-	var limit int64
-	if l, _ := document.Get("limit"); l != nil {
-		if limit, err = common.GetWholeNumberParam(l); err != nil {
-			return nil, err
-		}
+	if remove, err = common.GetOptionalParam(document, "remove", remove); err != nil {
+		return nil, err
 	}
 
 	fetchedDocs, err := h.fetch(ctx, db, collection)
@@ -73,7 +93,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 
 	resDocs := make([]*types.Document, 0, 16)
 	for _, doc := range fetchedDocs {
-		matches, err := common.FilterDocument(doc, filter)
+		matches, err := common.FilterDocument(doc, query)
 		if err != nil {
 			return nil, err
 		}
@@ -85,14 +105,22 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		resDocs = append(resDocs, doc)
 	}
 
-	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
+	// findAndModify always works with a single document
+	if resDocs, err = common.LimitDocuments(resDocs, 1); err != nil {
 		return nil, err
+	}
+
+	if len(resDocs) == 1 && remove {
+		id := must.NotFail(fjson.Marshal(must.NotFail(resDocs[0].Get("_id"))))
+		sql := fmt.Sprintf("DELETE FROM %s WHERE _jsonb->'_id' IN ($1)", pgx.Identifier{db, collection}.Sanitize())
+		if _, err := h.pgPool.Exec(ctx, sql, id); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{types.MustNewDocument(
-			"n", int32(len(resDocs)),
 			"ok", float64(1),
 		)},
 	})

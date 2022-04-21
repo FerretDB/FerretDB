@@ -127,8 +127,12 @@ var commands = map[string]command{
 		handler: (*Handler).MsgDelete,
 	},
 	"find": {
-		help:    "Returns documents matched by the custom query.",
+		help:    "Returns documents matched by the query.",
 		handler: (*Handler).MsgFind,
+	},
+	"findAndModify": {
+		help:    "Inserts, updates, or deletes, and returns a document matched by the query.",
+		handler: (*Handler).MsgFindAndModify,
 	},
 	"insert": {
 		help:    "Inserts documents into the database.",
