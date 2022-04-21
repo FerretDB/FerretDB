@@ -113,7 +113,7 @@ func TestQueryComparisonImplicit(t *testing.T) {
 			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
-			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
 		})
 	}
 }
@@ -362,7 +362,7 @@ func TestQueryComparisonEq(t *testing.T) {
 			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
-			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
 		})
 	}
 }
@@ -526,7 +526,7 @@ func TestQueryComparisonGt(t *testing.T) {
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err.Code != 0 {
 				require.Nil(t, tc.expectedIDs)
-				assertEqualError(t, tc.err, err)
+				AssertEqualError(t, tc.err, err)
 				return
 			}
 			require.NoError(t, err)
@@ -534,7 +534,7 @@ func TestQueryComparisonGt(t *testing.T) {
 			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
-			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
 		})
 	}
 }
@@ -687,7 +687,7 @@ func TestQueryComparisonGte(t *testing.T) {
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err.Code != 0 {
 				require.Nil(t, tc.expectedIDs)
-				assertEqualError(t, tc.err, err)
+				AssertEqualError(t, tc.err, err)
 				return
 			}
 			require.NoError(t, err)
@@ -695,7 +695,7 @@ func TestQueryComparisonGte(t *testing.T) {
 			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
-			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
 		})
 	}
 }
@@ -857,7 +857,7 @@ func TestQueryComparisonLt(t *testing.T) {
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err.Code != 0 {
 				require.Nil(t, tc.expectedIDs)
-				assertEqualError(t, tc.err, err)
+				AssertEqualError(t, tc.err, err)
 				return
 			}
 			require.NoError(t, err)
@@ -865,7 +865,7 @@ func TestQueryComparisonLt(t *testing.T) {
 			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
-			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
 		})
 	}
 }
@@ -1024,7 +1024,7 @@ func TestQueryComparisonLte(t *testing.T) {
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err.Code != 0 {
 				require.Nil(t, tc.expectedIDs)
-				assertEqualError(t, tc.err, err)
+				AssertEqualError(t, tc.err, err)
 				return
 			}
 			require.NoError(t, err)
@@ -1032,7 +1032,7 @@ func TestQueryComparisonLte(t *testing.T) {
 			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
-			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
 		})
 	}
 }
@@ -1104,7 +1104,7 @@ func TestQueryComparisonNin(t *testing.T) {
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err.Code != 0 {
 				require.Nil(t, tc.expectedIDs)
-				assertEqualError(t, tc.err, err)
+				AssertEqualError(t, tc.err, err)
 				return
 			}
 			require.NoError(t, err)
@@ -1112,7 +1112,7 @@ func TestQueryComparisonNin(t *testing.T) {
 			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
-			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
 		})
 	}
 }
@@ -1290,7 +1290,7 @@ func TestQueryComparisonNe(t *testing.T) {
 			filter := bson.D{{"value", bson.D{{"$ne", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err.Code != 0 {
-				assertEqualError(t, tc.err, err)
+				AssertEqualError(t, tc.err, err)
 				return
 			}
 			require.NoError(t, err)
@@ -1298,7 +1298,7 @@ func TestQueryComparisonNe(t *testing.T) {
 			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
-			assert.NotContains(t, collectIDs(t, actual), tc.unexpectedID)
+			assert.NotContains(t, CollectIDs(t, actual), tc.unexpectedID)
 		})
 	}
 }
