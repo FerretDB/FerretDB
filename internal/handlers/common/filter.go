@@ -662,27 +662,8 @@ func filterFieldExprBitsAllSet(fieldValue, maskValue any) (bool, error) {
 		return (uint64(value) & bitmask) == bitmask, nil
 
 	case types.Binary:
-		if len(value.B) == 0 {
-			return false, nil
-		}
-
-		var v uint64
-		for b := 0; b < 2; b++ {
-			byteAt := value.B[b]
-
-			if byteAt == 0 {
-				continue
-			}
-
-			v |= uint64(byteAt) << b
-		}
-
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAllSet", maskValue)
-		}
-
-		return (v & bitmask) == bitmask, nil
+		// TODO: https://github.com/FerretDB/FerretDB/issues/508
+		return false, NewErrorMsg(ErrNotImplemented, "BinData() not supported yet")
 
 	default:
 		return false, nil
@@ -720,27 +701,9 @@ func filterFieldExprBitsAnyClear(fieldValue, maskValue any) (bool, error) {
 		return (^uint64(value) & bitmask) != 0, nil
 
 	case types.Binary:
-		if len(value.B) == 0 {
-			return true, nil
-		}
+		// TODO: https://github.com/FerretDB/FerretDB/issues/508
+		return false, NewErrorMsg(ErrNotImplemented, "BinData() not supported yet")
 
-		var v uint64
-		for b := 0; b < 2; b++ {
-			byteAt := value.B[b]
-
-			if byteAt == 0 {
-				continue
-			}
-
-			v |= uint64(byteAt) << b
-		}
-
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAnyClear", maskValue)
-		}
-
-		return (^v & bitmask) != 0, nil
 	default:
 		return false, nil
 	}
@@ -777,27 +740,9 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 		return (uint64(value) & bitmask) != 0, nil
 
 	case types.Binary:
-		if len(value.B) == 0 {
-			return false, nil
-		}
+		// TODO: https://github.com/FerretDB/FerretDB/issues/508
+		return false, NewErrorMsg(ErrNotImplemented, "BinData() not supported yet")
 
-		var v uint64
-		for b := 0; b < 2; b++ {
-			byteAt := value.B[b]
-
-			if byteAt == 0 {
-				continue
-			}
-
-			v |= uint64(byteAt) << b
-		}
-
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAnySet", maskValue)
-		}
-
-		return (v & bitmask) != 0, nil
 	default:
 		return false, nil
 	}
