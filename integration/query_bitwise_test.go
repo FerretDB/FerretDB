@@ -361,7 +361,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 			},
 		},
 
-		"Int64": {
+		"MaxInt64": {
 			value: math.MaxInt64,
 			expectedIDs: []any{
 				"binary", "binary-empty",
