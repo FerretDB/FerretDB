@@ -24,4 +24,4 @@ Single 1-1 calls are good to check what you might have missed in the way - what 
 
 Please also gather other people ideas since diversity and different opinions expand our understanding and vision of the project.
 
-Keep guides short: we don't create rules, we automate. 
+Keep guides short: we don't create rules, we automate.
