@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Using messages where templates are expected is one of the common sources of security problems.
-// So there are no "constructors" that accept template parameters to avoid pitfalls associated with them.
+// Package common provides common code for all handlers.
 package common
 
 import (
@@ -49,6 +48,9 @@ type Error struct {
 	err  error
 	code ErrorCode
 }
+
+// There should not be NewError function variant that accepts printf-like format specifiers.
+// Let the caller do safe formatting.
 
 // NewError creates a new wire protocol error.
 //
