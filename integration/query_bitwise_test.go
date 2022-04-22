@@ -43,20 +43,20 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 	//require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
-		filter      any
+		value       any
 		expectedIDs []any
 		err         mongo.CommandError
 	}{
-		"Float": {
-			filter: 1.2,
+		"Double": {
+			value: 1.2,
 			err: mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected an integer: $bitsAllClear: 1.2",
 			},
 		},
-		"FloatWhole": {
-			filter: 2.0,
+		"DoubleWhole": {
+			value: 2.0,
 			expectedIDs: []any{
 				"binary-empty",
 				"double-negative-zero", "double-zero",
@@ -64,17 +64,17 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 				"int64-min", "int64-zero",
 			},
 		},
-		"FloatNegativeValue": {
-			filter: int32(-1),
+		"DoubleNegativeValue": {
+			value: float64(-1),
 			err: mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
-				Message: "Expected a positive number in: $bitsAllClear: -1",
+				Message: "Expected a positive number in: $bitsAllClear: -1.0",
 			},
 		},
 		// TODO: return this after types.Binary filtering fixed.
 		//"BinaryOneByte": {
-		//	filter: primitive.Binary{Data: []byte{2}},
+		//	value: primitive.Binary{Data: []byte{2}},
 		//	expectedIDs: []any{
 		//		"binary-empty",
 		//		"double-negative-zero", "double-zero",
@@ -83,7 +83,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		//	},
 		//},
 		//"BinaryTwoBytes": {
-		//	filter: primitive.Binary{Data: []byte{2, 2}},
+		//	value: primitive.Binary{Data: []byte{2, 2}},
 		//	expectedIDs: []any{
 		//		"binary-empty",
 		//		"double-negative-zero", "double-zero",
@@ -92,7 +92,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		//	},
 		//},
 		//"BinaryBig": {
-		//	filter: primitive.Binary{Data: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}},
+		//	value: primitive.Binary{Data: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}},
 		//	expectedIDs: []any{
 		//		"binary-empty",
 		//		"double-negative-zero", "double-whole", "double-zero",
@@ -101,15 +101,16 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		//	},
 		//},
 		"String": {
-			filter: "123",
+			value: "123",
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: "value takes an Array, a number, or a BinData but received: $bitsAllClear: \"123\"",
 			},
 		},
+
 		"Int32": {
-			filter: int32(2),
+			value: int32(2),
 			expectedIDs: []any{
 				"binary-empty",
 				"double-negative-zero", "double-zero",
@@ -118,15 +119,16 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			},
 		},
 		"Int32NegativeValue": {
-			filter: int32(-1),
+			value: int32(-1),
 			err: mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected a positive number in: $bitsAllClear: -1",
 			},
 		},
+
 		"Int64": {
-			filter: math.MaxInt64,
+			value: math.MaxInt64,
 			expectedIDs: []any{
 				"binary-empty",
 				"double-negative-zero", "double-zero",
@@ -135,7 +137,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			},
 		},
 		"Int64NegativeValue": {
-			filter: int64(-1),
+			value: int64(-1),
 			err: mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
@@ -144,7 +146,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		},
 
 		"Array": {
-			filter: primitive.A{1, 5},
+			value: primitive.A{1, 5},
 			expectedIDs: []any{
 				"binary-empty",
 				"double-negative-zero", "double-zero",
@@ -153,7 +155,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			},
 		},
 		"ArrayNegativeBitPositionValue": {
-			filter: primitive.A{-1},
+			value: primitive.A{-1},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -161,7 +163,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			},
 		},
 		"ArrayBadValue": {
-			filter: primitive.A{"123"},
+			value: primitive.A{"123"},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -173,7 +175,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			filter := bson.D{{"value", bson.D{{"$bitsAllClear", tc.filter}}}}
+			filter := bson.D{{"value", bson.D{{"$bitsAllClear", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err.Code != 0 {
 				require.Nil(t, tc.expectedIDs)
@@ -195,56 +197,59 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 	ctx, collection := setup(t, shareddata.Scalars)
 
 	for name, tc := range map[string]struct {
-		filter      any
+		value       any
 		expectedIDs []any
 		err         mongo.CommandError
 	}{
-		"Float": {
-			filter: 1.2,
+		"Double": {
+			value: 1.2,
 			err: mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected an integer: $bitsAllSet: 1.2",
 			},
 		},
-		"FloatWhole": {
-			filter:      2.0,
+		"DoubleWhole": {
+			value:       2.0,
 			expectedIDs: []any{"binary", "double-whole", "int32", "int32-max", "int64", "int64-max"},
 		},
-		"FloatNegativeValue": {
-			filter: int32(-1),
+		"DoubleNegativeValue": {
+			value: -1.0,
 			err: mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
-				Message: "Expected a positive number in: $bitsAllSet: -1",
+				Message: "Expected a positive number in: $bitsAllSet: -1.0",
 			},
 		},
+
 		"String": {
-			filter: "123",
+			value: "123",
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: "value takes an Array, a number, or a BinData but received: $bitsAllSet: \"123\"",
 			},
 		},
+
 		"Int32": {
-			filter:      int32(2),
+			value:       int32(2),
 			expectedIDs: []any{"binary", "double-whole", "int32", "int32-max", "int64", "int64-max"},
 		},
 		"Int32NegativeValue": {
-			filter: int32(-1),
+			value: int32(-1),
 			err: mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected a positive number in: $bitsAllSet: -1",
 			},
 		},
+
 		"Int64": {
-			filter:      math.MaxInt64,
+			value:       math.MaxInt64,
 			expectedIDs: []any{"int64-max"},
 		},
 		"Int64NegativeValue": {
-			filter: int64(-1),
+			value: int64(-1),
 			err: mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
@@ -253,11 +258,11 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 		},
 
 		"Array": {
-			filter:      primitive.A{1, 5},
+			value:       primitive.A{1, 5},
 			expectedIDs: []any{"binary", "double-whole", "int32", "int32-max", "int64", "int64-max"},
 		},
 		"ArrayNegativeBitPositionValue": {
-			filter: primitive.A{-1},
+			value: primitive.A{-1},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -265,7 +270,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 			},
 		},
 		"ArrayBadValue": {
-			filter: primitive.A{"123"},
+			value: primitive.A{"123"},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -277,7 +282,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			filter := bson.D{{"value", bson.D{{"$bitsAllSet", tc.filter}}}}
+			filter := bson.D{{"value", bson.D{{"$bitsAllSet", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err.Code != 0 {
 				require.Nil(t, tc.expectedIDs)
@@ -299,20 +304,20 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 	ctx, collection := setup(t, shareddata.Scalars)
 
 	for name, tc := range map[string]struct {
-		filter      any
+		value       any
 		expectedIDs []any
 		err         mongo.CommandError
 	}{
-		"Float": {
-			filter: 1.2,
+		"Double": {
+			value: 1.2,
 			err: mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected an integer: $bitsAnyClear: 1.2",
 			},
 		},
-		"FloatWhole": {
-			filter: 2.0,
+		"DoubleWhole": {
+			value: 2.0,
 			expectedIDs: []any{
 				"binary-empty",
 				"double-negative-zero", "double-zero",
@@ -320,24 +325,26 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 				"int64-min", "int64-zero",
 			},
 		},
-		"FloatNegativeValue": {
-			filter: int32(-1),
+		"DoubleNegativeValue": {
+			value: -1.0,
 			err: mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
-				Message: "Expected a positive number in: $bitsAnyClear: -1",
+				Message: "Expected a positive number in: $bitsAnyClear: -1.0",
 			},
 		},
+
 		"String": {
-			filter: "123",
+			value: "123",
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: "value takes an Array, a number, or a BinData but received: $bitsAnyClear: \"123\"",
 			},
 		},
+
 		"Int32": {
-			filter: int32(2),
+			value: int32(2),
 			expectedIDs: []any{
 				"binary-empty",
 				"double-negative-zero", "double-zero",
@@ -346,15 +353,16 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 			},
 		},
 		"Int32NegativeValue": {
-			filter: int32(-1),
+			value: int32(-1),
 			err: mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected a positive number in: $bitsAnyClear: -1",
 			},
 		},
+
 		"Int64": {
-			filter: math.MaxInt64,
+			value: math.MaxInt64,
 			expectedIDs: []any{
 				"binary", "binary-empty",
 				"double-negative-zero", "double-whole", "double-zero",
@@ -363,7 +371,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 			},
 		},
 		"Int64NegativeValue": {
-			filter: int64(-1),
+			value: int64(-1),
 			err: mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
@@ -372,7 +380,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		},
 
 		"Array": {
-			filter: primitive.A{1, 5},
+			value: primitive.A{1, 5},
 			expectedIDs: []any{
 				"binary-empty",
 				"double-negative-zero", "double-zero",
@@ -381,7 +389,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 			},
 		},
 		"ArrayNegativeBitPositionValue": {
-			filter: primitive.A{-1},
+			value: primitive.A{-1},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -389,7 +397,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 			},
 		},
 		"ArrayBadValue": {
-			filter: primitive.A{"123"},
+			value: primitive.A{"123"},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -401,7 +409,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			filter := bson.D{{"value", bson.D{{"$bitsAnyClear", tc.filter}}}}
+			filter := bson.D{{"value", bson.D{{"$bitsAnyClear", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err.Code != 0 {
 				require.Nil(t, tc.expectedIDs)
@@ -423,20 +431,20 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 	ctx, collection := setup(t, shareddata.Scalars)
 
 	for name, tc := range map[string]struct {
-		filter      any
+		value       any
 		expectedIDs []any
 		err         mongo.CommandError
 	}{
-		"Float": {
-			filter: 1.2,
+		"Double": {
+			value: 1.2,
 			err: mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected an integer: $bitsAnySet: 1.2",
 			},
 		},
-		"FloatWhole": {
-			filter: 2.0,
+		"DoubleWhole": {
+			value: 2.0,
 			expectedIDs: []any{
 				"binary",
 				"double-whole",
@@ -444,24 +452,26 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 				"int64", "int64-max",
 			},
 		},
-		"FloatNegativeValue": {
-			filter: int32(-1),
+		"DoubleNegativeValue": {
+			value: -1.0,
 			err: mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
-				Message: "Expected a positive number in: $bitsAnySet: -1",
+				Message: "Expected a positive number in: $bitsAnySet: -1.0",
 			},
 		},
+
 		"String": {
-			filter: "123",
+			value: "123",
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: "value takes an Array, a number, or a BinData but received: $bitsAnySet: \"123\"",
 			},
 		},
+
 		"Int32": {
-			filter: int32(2),
+			value: int32(2),
 			expectedIDs: []any{
 				"binary",
 				"double-whole",
@@ -470,15 +480,16 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 			},
 		},
 		"Int32NegativeValue": {
-			filter: int32(-1),
+			value: int32(-1),
 			err: mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected a positive number in: $bitsAnySet: -1",
 			},
 		},
+
 		"Int64": {
-			filter: math.MaxInt64,
+			value: math.MaxInt64,
 			expectedIDs: []any{
 				"binary",
 				"double-whole",
@@ -487,7 +498,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 			},
 		},
 		"Int64NegativeValue": {
-			filter: int64(-1),
+			value: int64(-1),
 			err: mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
@@ -496,7 +507,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 		},
 
 		"Array": {
-			filter: primitive.A{1, 5},
+			value: primitive.A{1, 5},
 			expectedIDs: []any{
 				"binary",
 				"double-whole",
@@ -505,7 +516,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 			},
 		},
 		"ArrayNegativeBitPositionValue": {
-			filter: primitive.A{-1},
+			value: primitive.A{-1},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -513,7 +524,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 			},
 		},
 		"ArrayBadValue": {
-			filter: primitive.A{"123"},
+			value: primitive.A{"123"},
 			err: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -525,7 +536,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			filter := bson.D{{"value", bson.D{{"$bitsAnySet", tc.filter}}}}
+			filter := bson.D{{"value", bson.D{{"$bitsAnySet", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err.Code != 0 {
 				require.Nil(t, tc.expectedIDs)

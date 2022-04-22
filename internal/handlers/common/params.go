@@ -143,6 +143,10 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 			return 0, errNotWholeNumber
 		}
 
+		if mask < 0 {
+			return 0, errNegativeNumber
+		}
+
 		bitmask = uint64(mask)
 
 	case types.Binary:
