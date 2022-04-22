@@ -611,10 +611,10 @@ func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
 
 	case float64:
 		// TODO check float negative zero
-		if value != math.Trunc(value) || 
-		   math.IsNaN(value) || 
-		   math.IsInf(value, 0) || 
-		   value > math.MaxInt64 {
+		if value != math.Trunc(value) ||
+			math.IsNaN(value) ||
+			math.IsInf(value, 0) ||
+			value > math.MaxInt64 {
 			return false, nil
 		}
 
@@ -653,10 +653,10 @@ func filterFieldExprBitsAllSet(fieldValue, maskValue any) (bool, error) {
 
 	case float64:
 		// TODO check float negative zero
-		if value != math.Trunc(value) || 
-		math.IsNaN(value) || 
-		math.IsInf(value, 0) || 
-		value > math.MaxInt64 {
+		if value != math.Trunc(value) ||
+			math.IsNaN(value) ||
+			math.IsInf(value, 0) ||
+			value > math.MaxInt64 {
 			return false, nil
 		}
 
@@ -695,7 +695,10 @@ func filterFieldExprBitsAnyClear(fieldValue, maskValue any) (bool, error) {
 
 	case float64:
 		// TODO check float negative zero
-		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) || value > math.MaxInt64 {
+		if value != math.Trunc(value) ||
+			math.IsNaN(value) ||
+			math.IsInf(value, 0) ||
+			value > math.MaxInt64 {
 			return false, nil
 		}
 
@@ -734,7 +737,10 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 
 	case float64:
 		// TODO check float negative zero
-		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) || value > math.MaxInt64 {
+		if value != math.Trunc(value) ||
+			math.IsNaN(value) ||
+			math.IsInf(value, 0) ||
+			value > math.MaxInt64 {
 			return false, nil
 		}
 
