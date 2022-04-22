@@ -15,14 +15,13 @@
 package pg
 
 import (
+	"bufio"
 	"context"
 	"os"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
-
-	"gopkg.in/ini.v1"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -58,8 +57,8 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 			),
 			"os", types.MustNewDocument(
 				"type", strings.Title(runtime.GOOS),
-				"name", osInfo["name"],
-				"version", osInfo["version"],
+				"name", osInfo["NAME"],
+				"version", osInfo["VERSION"],
 			),
 			"extra", types.MustNewDocument(),
 			"ok", float64(1),
@@ -73,14 +72,25 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 }
 
 func readOSRelease() (map[string]string, error) {
-	cfg, err := ini.Load("/etc/os-release")
+	file, err := os.Open("/etc/os-release")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
 
 	configParams := make(map[string]string)
-	configParams["name"] = cfg.Section("").Key("NAME").String()
-	configParams["version"] = cfg.Section("").Key("VERSION").String()
+
+	for scanner.Scan() {
+		str := strings.Split(scanner.Text(), "=")
+
+		configParams[str[0]] = str[1]
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	return configParams, nil
 }
