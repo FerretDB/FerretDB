@@ -179,7 +179,7 @@ func copyCorpus(srcRoot, dstRoot string) {
 func main() {
 	debugF := flag.Bool("debug", false, "enable debug mode")
 	srcF := flag.String("src", "", "source, one of: 'seed', 'generated', or collected corpus' directory")
-	dstF := flag.String("dst", "", "destination, one of: 'seed', 'generated', or or collected corpus' directory")
+	dstF := flag.String("dst", "", "destination, one of: 'seed', 'generated', or collected corpus' directory")
 	flag.Parse()
 
 	if flag.NArg() != 0 {
