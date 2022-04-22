@@ -1,7 +1,25 @@
 ---
-codecov:
-  bot: ferretdb-bot
 coverage:
-  range: "40...60"
+  range: "50...65"
+
+  # https://docs.codecov.com/docs/commit-status
+  status:
+    project:
+      default:
+        target: auto
+    patch:
+      default:
+        target: auto
+
+# https://docs.codecov.com/docs/ignoring-paths
+ignore:
+  - cmd
+
+# https://docs.codecov.com/docs/pull-request-comments
+comment:
+  layout: reach,diff,files,flags
+
+# https://docs.codecov.com/docs/github-checks
+# Annotations may be hidden by pressing the "a" key or by unselecting "Show annotations" in the top right of the file.
 github_checks:
-  annotations: false
+  annotations: true
