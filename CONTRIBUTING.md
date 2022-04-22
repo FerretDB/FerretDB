@@ -27,25 +27,25 @@ That will install `task` into the `bin` directory (`bin/task` on Linux and macOS
 You can then add `./bin` to `$PATH` either manually (`export PATH=./bin:$PATH` in `bash`) or using something like (`direnv` (`.envrc` files)[https://direnv.net], or replace every invocation of `task` with explicit `bin/task`.
 You can also [install `task` globally](https://taskfile.dev/#/installation), but that might lead to the version skew.
 
-With `task` installed, you may do the following:
+With `task` installed, you may run:
 
-* `task init` Install development tools.
+* `task init` to install development tools.
 
-* `task env-up` Start the development environment.
+* `task env-up` to start the development environment.
 This will start PostgreSQL and MongoDB containers, filling them with identical sets of test data.
 
-* `task test` Run all tests in another terminal window.
+* `task test` to run all tests in another terminal window.
 
-* `task run` Start FerretDB in a development mode where all requests are handled by FerretDB, but also routed to MongoDB.
+* `task run` to start FerretDB in a development mode where all requests are handled by FerretDB, but also routed to MongoDB.
 The differences in response are then logged and the FerretDB response is sent back to the client.
 
-* `task mongosh` Run `mongosh` to run commands against FerretDB.
+* `task mongosh` to run `mongosh` to run commands against FerretDB.
 
-* `task fmt` Format source code.
+* `task fmt` to format source code.
 
-* `task lint` Run linter checks.
+* `task lint` to run linter checks.
 
-* `task docs-fmt` Format markdown documents with the markdown linter.
+* `task docs-fmt` to format markdown documents with the markdown linter.
 
 You can see all available `task` tasks with `task -l`.
 
