@@ -244,7 +244,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 			},
 		},
 
-		"Int64": {
+		"MaxInt64": {
 			value:       math.MaxInt64,
 			expectedIDs: []any{"int64-max"},
 		},
