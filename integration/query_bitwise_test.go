@@ -32,15 +32,11 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t, shareddata.Scalars)
 
-	// TODO: return this after fixing filtering against types.Binary.
-	//_, err := collection.InsertMany(ctx, []any{
-	//	bson.D{{"_id", "binary-big"}, {"value", primitive.Binary{Data: []byte{0, 0, 128}}}},
-	//	bson.D{{"_id", "binary-user-1"}, {"value", primitive.Binary{Subtype: 0x80, Data: []byte{0, 0, 30}}}},
-	//	bson.D{{"_id", "binary-user-2"}, {"value", primitive.Binary{Subtype: 0x80, Data: []byte{15, 0, 0, 0}}}},
-	//	bson.D{{"_id", "binary-user-3"}, {"value", primitive.Binary{Data: []byte{15, 0, 0, 0}}}},
-	//	bson.D{{"_id", "binary-user-4"}, {"value", primitive.Binary{Data: []byte{0, 0, 30}}}},
-	//})
-	//require.NoError(t, err)
+	// TODO: https://github.com/FerretDB/FerretDB/issues/508
+	_, err := collection.DeleteOne(ctx, bson.D{{"_id", "binary"}})
+	require.NoError(t, err)
+	_, err = collection.DeleteOne(ctx, bson.D{{"_id", "binary-empty"}})
+	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
 		value       any
@@ -58,7 +54,6 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"DoubleWhole": {
 			value: 2.0,
 			expectedIDs: []any{
-				"binary-empty",
 				"double-negative-zero", "double-zero",
 				"int32-min", "int32-zero",
 				"int64-min", "int64-zero",
@@ -72,34 +67,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 				Message: "Expected a positive number in: $bitsAllClear: -1.0",
 			},
 		},
-		// TODO: return this after types.Binary filtering fixed.
-		//"BinaryOneByte": {
-		//	value: primitive.Binary{Data: []byte{2}},
-		//	expectedIDs: []any{
-		//		"binary-empty",
-		//		"double-negative-zero", "double-zero",
-		//		"int32-min", "int32-zero",
-		//		"int64-min", "int64-zero",
-		//	},
-		//},
-		//"BinaryTwoBytes": {
-		//	value: primitive.Binary{Data: []byte{2, 2}},
-		//	expectedIDs: []any{
-		//		"binary-empty",
-		//		"double-negative-zero", "double-zero",
-		//		"int32-min", "int32-zero",
-		//		"int64-min", "int64-zero",
-		//	},
-		//},
-		//"BinaryBig": {
-		//	value: primitive.Binary{Data: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}},
-		//	expectedIDs: []any{
-		//		"binary-empty",
-		//		"double-negative-zero", "double-whole", "double-zero",
-		//		"int32", "int32-zero",
-		//		"int64", "int64-zero",
-		//	},
-		//},
+
 		"String": {
 			value: "123",
 			err: mongo.CommandError{
@@ -112,7 +80,6 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"Int32": {
 			value: int32(2),
 			expectedIDs: []any{
-				"binary-empty",
 				"double-negative-zero", "double-zero",
 				"int32-min", "int32-zero",
 				"int64-min", "int64-zero",
@@ -130,7 +97,6 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"MaxInt64": {
 			value: math.MaxInt64,
 			expectedIDs: []any{
-				"binary-empty",
 				"double-negative-zero", "double-zero",
 				"int32-zero",
 				"int64-min", "int64-zero",
@@ -148,7 +114,6 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"Array": {
 			value: primitive.A{1, 5},
 			expectedIDs: []any{
-				"binary-empty",
 				"double-negative-zero", "double-zero",
 				"int32-min", "int32-zero",
 				"int64-min", "int64-zero",
@@ -196,6 +161,12 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t, shareddata.Scalars)
 
+	// TODO: https://github.com/FerretDB/FerretDB/issues/508
+	_, err := collection.DeleteOne(ctx, bson.D{{"_id", "binary"}})
+	require.NoError(t, err)
+	_, err = collection.DeleteOne(ctx, bson.D{{"_id", "binary-empty"}})
+	require.NoError(t, err)
+
 	for name, tc := range map[string]struct {
 		value       any
 		expectedIDs []any
@@ -211,7 +182,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 		},
 		"DoubleWhole": {
 			value:       2.0,
-			expectedIDs: []any{"binary", "double-whole", "int32", "int32-max", "int64", "int64-max"},
+			expectedIDs: []any{"double-whole", "int32", "int32-max", "int64", "int64-max"},
 		},
 		"DoubleNegativeValue": {
 			value: -1.0,
@@ -233,7 +204,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 
 		"Int32": {
 			value:       int32(2),
-			expectedIDs: []any{"binary", "double-whole", "int32", "int32-max", "int64", "int64-max"},
+			expectedIDs: []any{"double-whole", "int32", "int32-max", "int64", "int64-max"},
 		},
 		"Int32NegativeValue": {
 			value: int32(-1),
@@ -259,7 +230,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 
 		"Array": {
 			value:       primitive.A{1, 5},
-			expectedIDs: []any{"binary", "double-whole", "int32", "int32-max", "int64", "int64-max"},
+			expectedIDs: []any{"double-whole", "int32", "int32-max", "int64", "int64-max"},
 		},
 		"ArrayNegativeBitPositionValue": {
 			value: primitive.A{-1},
@@ -303,6 +274,12 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t, shareddata.Scalars)
 
+	// TODO: https://github.com/FerretDB/FerretDB/issues/508
+	_, err := collection.DeleteOne(ctx, bson.D{{"_id", "binary"}})
+	require.NoError(t, err)
+	_, err = collection.DeleteOne(ctx, bson.D{{"_id", "binary-empty"}})
+	require.NoError(t, err)
+
 	for name, tc := range map[string]struct {
 		value       any
 		expectedIDs []any
@@ -319,7 +296,6 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		"DoubleWhole": {
 			value: 2.0,
 			expectedIDs: []any{
-				"binary-empty",
 				"double-negative-zero", "double-zero",
 				"int32-min", "int32-zero",
 				"int64-min", "int64-zero",
@@ -346,7 +322,6 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		"Int32": {
 			value: int32(2),
 			expectedIDs: []any{
-				"binary-empty",
 				"double-negative-zero", "double-zero",
 				"int32-min", "int32-zero",
 				"int64-min", "int64-zero",
@@ -364,7 +339,6 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		"MaxInt64": {
 			value: math.MaxInt64,
 			expectedIDs: []any{
-				"binary", "binary-empty",
 				"double-negative-zero", "double-whole", "double-zero",
 				"int32", "int32-max", "int32-min", "int32-zero",
 				"int64", "int64-min", "int64-zero",
@@ -382,7 +356,6 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		"Array": {
 			value: primitive.A{1, 5},
 			expectedIDs: []any{
-				"binary-empty",
 				"double-negative-zero", "double-zero",
 				"int32-min", "int32-zero",
 				"int64-min", "int64-zero",
@@ -430,6 +403,12 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t, shareddata.Scalars)
 
+	// TODO: https://github.com/FerretDB/FerretDB/issues/508
+	_, err := collection.DeleteOne(ctx, bson.D{{"_id", "binary"}})
+	require.NoError(t, err)
+	_, err = collection.DeleteOne(ctx, bson.D{{"_id", "binary-empty"}})
+	require.NoError(t, err)
+
 	for name, tc := range map[string]struct {
 		value       any
 		expectedIDs []any
@@ -446,7 +425,6 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 		"DoubleWhole": {
 			value: 2.0,
 			expectedIDs: []any{
-				"binary",
 				"double-whole",
 				"int32", "int32-max",
 				"int64", "int64-max",
@@ -473,7 +451,6 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 		"Int32": {
 			value: int32(2),
 			expectedIDs: []any{
-				"binary",
 				"double-whole",
 				"int32", "int32-max",
 				"int64", "int64-max",
@@ -491,7 +468,6 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 		"MaxInt64": {
 			value: math.MaxInt64,
 			expectedIDs: []any{
-				"binary",
 				"double-whole",
 				"int32", "int32-max", "int32-min",
 				"int64", "int64-max",
@@ -509,7 +485,6 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 		"Array": {
 			value: primitive.A{1, 5},
 			expectedIDs: []any{
-				"binary",
 				"double-whole",
 				"int32", "int32-max",
 				"int64", "int64-max",
