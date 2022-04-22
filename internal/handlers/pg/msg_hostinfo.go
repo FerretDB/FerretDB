@@ -22,6 +22,8 @@ import (
 	"strings"
 	"time"
 
+	"gopkg.in/ini.v1"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -33,6 +35,15 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	osInfo := make(map[string]string)
+
+	if runtime.GOOS == "linux" {
+		osInfo, err = readOSRelease()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	var reply wire.OpMsg
@@ -47,8 +58,8 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 			),
 			"os", types.MustNewDocument(
 				"type", strings.Title(runtime.GOOS),
-				"name", "", // TODO https://github.com/FerretDB/FerretDB/issues/447
-				"version", "",
+				"name", osInfo["name"],
+				"version", osInfo["version"],
 			),
 			"extra", types.MustNewDocument(),
 			"ok", float64(1),
@@ -59,4 +70,17 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	}
 
 	return &reply, nil
+}
+
+func readOSRelease() (map[string]string, error) {
+	cfg, err := ini.Load("/etc/os-release")
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	configParams := make(map[string]string)
+	configParams["name"] = cfg.Section("").Key("NAME").String()
+	configParams["version"] = cfg.Section("").Key("VERSION").String()
+
+	return configParams, nil
 }
