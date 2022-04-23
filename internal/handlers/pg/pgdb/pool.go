@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package pgdb provides PostgreSQL connection utilities.
 package pgdb
 
 import (
@@ -44,7 +45,7 @@ var (
 	ErrAlreadyExist = fmt.Errorf("schema or table already exist")
 )
 
-// Pool data struct for *pgxpool.Pool.
+// Pool represents PostgreSQL concurrency-safe connection pool.
 type Pool struct {
 	*pgxpool.Pool
 }
@@ -70,8 +71,11 @@ type DBStats struct {
 	CountIndexes int32
 }
 
-// NewPool returns a pgxpool, a concurrency-safe connection pool for pgx.
-func NewPool(connString string, logger *zap.Logger, lazy bool) (*Pool, error) {
+// NewPool returns a new concurrency-safe connection pool.
+//
+// Passed context is used only by the first checking connection.
+// Canceling it after that function returns does nothing.
+func NewPool(ctx context.Context, connString string, logger *zap.Logger, lazy bool) (*Pool, error) {
 	config, err := pgxpool.ParseConfig(connString)
 	if err != nil {
 		return nil, fmt.Errorf("pg.NewPool: %w", err)
@@ -94,8 +98,6 @@ func NewPool(connString string, logger *zap.Logger, lazy bool) (*Pool, error) {
 		config.ConnConfig.LogLevel = pgx.LogLevelTrace
 		config.ConnConfig.Logger = zapadapter.NewLogger(logger.Named("pg.Pool"))
 	}
-
-	ctx := context.Background()
 
 	p, err := pgxpool.ConnectConfig(ctx, config)
 	if err != nil {
@@ -127,6 +129,7 @@ func IsValidUTF8Locale(setting string) bool {
 	return lowered == "en_us.utf8" || lowered == "en_us.utf-8"
 }
 
+// checkConnection checks PostgreSQL settings.
 func (pgPool *Pool) checkConnection(ctx context.Context) error {
 	logger := pgPool.Config().ConnConfig.Logger
 

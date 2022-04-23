@@ -32,7 +32,7 @@ type PoolOpts struct {
 }
 
 // Pool creates a new connection connection pool for testing.
-func Pool(_ context.Context, tb testing.TB, opts *PoolOpts, l *zap.Logger) *pgdb.Pool {
+func Pool(ctx context.Context, tb testing.TB, opts *PoolOpts, l *zap.Logger) *pgdb.Pool {
 	tb.Helper()
 
 	if testing.Short() {
@@ -48,7 +48,7 @@ func Pool(_ context.Context, tb testing.TB, opts *PoolOpts, l *zap.Logger) *pgdb
 		username = "readonly"
 	}
 
-	pool, err := pgdb.NewPool("postgres://"+username+"@127.0.0.1:5432/ferretdb?pool_min_conns=1", l, false)
+	pool, err := pgdb.NewPool(ctx, "postgres://"+username+"@127.0.0.1:5432/ferretdb?pool_min_conns=1", l, false)
 	require.NoError(tb, err)
 	tb.Cleanup(pool.Close)
 

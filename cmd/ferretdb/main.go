@@ -99,7 +99,7 @@ func main() {
 	var l *clientconn.Listener
 	switch *backendTypeF {
 	case "pg", "postgres":
-		pgPool, err := pgdb.NewPool(*postgresqlURLF, logger, false)
+		pgPool, err := pgdb.NewPool(ctx, *postgresqlURLF, logger, false)
 		if err != nil {
 			logger.Fatal(err.Error())
 		}
