@@ -492,7 +492,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			}
 
 		default:
-			panic(fmt.Sprintf("filterFieldExpr: %q", exprKey))
+			return false, NewErrorMsg(ErrBadValue, fmt.Sprintf("unknown operator: %q", exprKey))
 		}
 	}
 
