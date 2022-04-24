@@ -493,7 +493,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			}
 
 		default:
-			return false, NewError(ErrCommandNotFound, lazyerrors.Errorf("unknown operator: %q", exprKey))
+			return false, NewError(ErrCommandNotFound, lazyerrors.Errorf("filterFieldExpr: unknown operator: %q", exprKey))
 		}
 	}
 
