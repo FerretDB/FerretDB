@@ -25,6 +25,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+var supportedProjectionTypes = []string{"$elemMatch", "$slice"}
+
 // isProjectionInclusion: projection can be only inclusion or exclusion. Validate and return true if inclusion.
 // Exception for the _id field.
 func isProjectionInclusion(projection *types.Document) (inclusion bool, err error) {
@@ -75,7 +77,6 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 
 		case *types.Document:
 			for _, projectionType := range v.Keys() {
-				supportedProjectionTypes := []string{"$elemMatch"}
 				if !slices.Contains(supportedProjectionTypes, projectionType) {
 					err = lazyerrors.Errorf("projecion of %s is not supported", projectionType)
 					return
@@ -83,6 +84,8 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 
 				switch projectionType {
 				case "$elemMatch":
+					inclusion = true
+				case "$slice":
 					inclusion = true
 				default:
 					panic(projectionType + " not supported")
@@ -143,7 +146,7 @@ func projectDocument(inclusion bool, doc *types.Document, projection *types.Docu
 				doc.Remove(k1)
 			}
 
-		case *types.Document: // field: { $elemMatch: { field2: value }}
+		case *types.Document: // field: {$operator: filter}
 			if err := applyComplexProjection(k1, doc, projectionVal); err != nil {
 				return err
 			}
@@ -157,35 +160,47 @@ func projectDocument(inclusion bool, doc *types.Document, projection *types.Docu
 
 func applyComplexProjection(k1 string, doc, projectionVal *types.Document) (err error) {
 	for _, projectionType := range projectionVal.Keys() {
-		supportedProjections := []string{"$elemMatch"}
-		if !slices.Contains(supportedProjections, projectionType) {
+		if !slices.Contains(supportedProjectionTypes, projectionType) {
 			return fmt.Errorf("projecion %s is not supported", projectionType)
 		}
 
-		// for now it's only $elemMatch further
-		// if the corresponding value is not an array, skip
+		switch projectionType {
+		case "$elemMatch":
+			var docValueA any
+			docValueA, err = doc.GetByPath(k1)
+			if err != nil {
+				continue
+			}
 
-		var docValueA any
-		docValueA, err = doc.GetByPath(k1)
-		if err != nil {
-			continue
-		}
+			// $elemMatch works only for arrays, it must be an array
+			docValueArray, ok := docValueA.(*types.Array)
+			if !ok {
+				doc.Remove(k1)
+				return
+			}
 
-		// $elemMatch works only for arrays, it must be an array
-		docValueArray, ok := docValueA.(*types.Array)
-		if !ok {
-			doc.Remove(k1)
-			return
-		}
+			// get the elemMatch conditions
+			conditions := must.NotFail(projectionVal.Get(projectionType)).(*types.Document)
 
-		// get the elemMatch conditions
-		conditions := must.NotFail(projectionVal.Get(projectionType)).(*types.Document)
+			var found int
+			found, err = filterFieldArrayElemMatch(k1, doc, conditions, docValueArray)
+			if found < 0 {
+				doc.Remove(k1)
+				return
+			}
+		case "$slice":
+			var docValueA any
+			docValueA, err = doc.Get(k1)
+			if err != nil {
+				continue
+			}
+			// $slice works only for arrays, it must be an array
+			docValueArray, ok := docValueA.(*types.Array)
+			if !ok {
+				doc.Remove(k1)
+				return
+			}
 
-		var found int
-		found, err = filterFieldArrayElemMatch(k1, doc, conditions, docValueArray)
-		if found < 0 {
-			doc.Remove(k1)
-			return
 		}
 	}
 	return
@@ -232,4 +247,8 @@ func filterFieldArrayElemMatch(k1 string, doc, conditions *types.Document, docVa
 		}
 	}
 	return
+}
+
+func filterFieldArraySlice(k1 string, doc, conditions *types.Document, docValueArray *types.Array) (err error) {
+	return nil
 }
