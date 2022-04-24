@@ -25,8 +25,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-var supportedProjectionTypes = []string{"$elemMatch", "$slice"}
-
 // isProjectionInclusion: projection can be only inclusion or exclusion. Validate and return true if inclusion.
 // Exception for the _id field.
 func isProjectionInclusion(projection *types.Document) (inclusion bool, err error) {
@@ -77,6 +75,7 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 
 		case *types.Document:
 			for _, projectionType := range v.Keys() {
+				supportedProjectionTypes := []string{"$elemMatch", "$slice"}
 				if !slices.Contains(supportedProjectionTypes, projectionType) {
 					err = lazyerrors.Errorf("projecion of %s is not supported", projectionType)
 					return
@@ -86,7 +85,7 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 				case "$elemMatch":
 					inclusion = true
 				case "$slice":
-					inclusion = true
+					inclusion = false
 				default:
 					panic(projectionType + " not supported")
 				}
@@ -160,10 +159,6 @@ func projectDocument(inclusion bool, doc *types.Document, projection *types.Docu
 
 func applyComplexProjection(k1 string, doc, projectionVal *types.Document) (err error) {
 	for _, projectionType := range projectionVal.Keys() {
-		if !slices.Contains(supportedProjectionTypes, projectionType) {
-			return fmt.Errorf("projecion %s is not supported", projectionType)
-		}
-
 		switch projectionType {
 		case "$elemMatch":
 			var docValueA any
@@ -186,23 +181,30 @@ func applyComplexProjection(k1 string, doc, projectionVal *types.Document) (err 
 			found, err = filterFieldArrayElemMatch(k1, doc, conditions, docValueArray)
 			if found < 0 {
 				doc.Remove(k1)
-				return
 			}
 		case "$slice":
-			var docValueA any
-			docValueA, err = doc.Get(k1)
-			if err != nil {
-				continue
+			var docValue any
+			docValue, err = doc.Get(k1)
+			if err != nil { // the field can't be obtained, so there is nothing to do
+				return
 			}
-			// $slice works only for arrays, it must be an array
-			docValueArray, ok := docValueA.(*types.Array)
+			// $slice works only for arrays, so docValue must be an array
+			arr, ok := docValue.(*types.Array)
 			if !ok {
 				doc.Remove(k1)
 				return
 			}
+			projectionVal := must.NotFail(projectionVal.Get(projectionType))
+			err = filterFieldArraySlice(arr, projectionVal)
+			if err != nil {
+				return NewError(ErrBadValue, lazyerrors.Errorf("applyComplexProjection: %w", err))
+			}
 
+		default:
+			return NewError(ErrCommandNotFound, lazyerrors.Errorf("applyComplexProjection: unknown projection operator: %q", projectionType))
 		}
 	}
+
 	return
 }
 
@@ -249,6 +251,19 @@ func filterFieldArrayElemMatch(k1 string, doc, conditions *types.Document, docVa
 	return
 }
 
-func filterFieldArraySlice(k1 string, doc, conditions *types.Document, docValueArray *types.Array) (err error) {
-	return nil
+func filterFieldArraySlice(docValue *types.Array, projectionValue any) error {
+	var toSkip, toReturn int
+	switch projectionValue {
+	// TODO can it contain int64?
+	case int32:
+	case *types.Array:
+		if projectionVal.Len() != 2 {
+			return NewError(ErrBadValue, lazyerrors.Errorf("filterFieldArraySlice: expected"))
+		}
+
+	}
+	err = filterFieldArraySlice(arr, projectionVal)
+	if err != nil { // array can't be properly sliced, so we don't include the field in the final result
+		doc.Remove(k1)
+	}
 }
