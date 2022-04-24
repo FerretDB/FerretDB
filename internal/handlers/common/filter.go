@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -492,7 +493,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			}
 
 		default:
-			return false, NewErrorMsg(ErrCommandNotFound, fmt.Sprintf("unknown operator: %q", exprKey))
+			return false, NewError(ErrCommandNotFound, lazyerrors.Errorf("unknown operator: %q", exprKey))
 		}
 	}
 
