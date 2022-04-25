@@ -43,8 +43,10 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	v, _ := document.Get("nameOnly")
-	nameOnly, _ := v.(bool)
+	nameOnly, err := common.GetOptionalParam(document, "nameOnly", false)
+	if err != nil {
+		return nil, err
+	}
 
 	databases := types.MakeArray(len(databaseNames))
 	for _, databaseName := range databaseNames {
@@ -86,6 +88,20 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 				return nil, lazyerrors.Error(err)
 			}
 		}
+	}
+
+	if nameOnly {
+		var reply wire.OpMsg
+		err = reply.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"databases", databases,
+			))},
+		})
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return &reply, nil
 	}
 
 	var totalSize int64
