@@ -595,20 +595,6 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 // filterFieldExprBitsAllClear handles {field: {$bitsAllClear: value}} filter.
 func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
 	switch value := fieldValue.(type) {
-	case int32:
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAllClear", maskValue)
-		}
-		return (^uint64(value) & bitmask) == bitmask, nil
-
-	case int64:
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAllClear", maskValue)
-		}
-		return (^uint64(value) & bitmask) == bitmask, nil
-
 	case float64:
 		// TODO check float negative zero
 		if value != math.Trunc(value) ||
@@ -628,6 +614,22 @@ func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
 	case types.Binary:
 		// TODO: https://github.com/FerretDB/FerretDB/issues/508
 		return false, NewErrorMsg(ErrNotImplemented, "BinData() not supported yet")
+
+	case int32:
+		bitmask, err := getBinaryMaskParam(maskValue)
+		if err != nil {
+			return false, formatBitwiseOperatorErr(err, "$bitsAllClear", maskValue)
+		}
+
+		return (^uint64(value) & bitmask) == bitmask, nil
+
+	case int64:
+		bitmask, err := getBinaryMaskParam(maskValue)
+		if err != nil {
+			return false, formatBitwiseOperatorErr(err, "$bitsAllClear", maskValue)
+		}
+
+		return (^uint64(value) & bitmask) == bitmask, nil
 
 	default:
 		return false, nil
@@ -637,20 +639,6 @@ func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
 // filterFieldExprBitsAllSet handles {field: {$bitsAllSet: value}} filter.
 func filterFieldExprBitsAllSet(fieldValue, maskValue any) (bool, error) {
 	switch value := fieldValue.(type) {
-	case int32:
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAllSet", maskValue)
-		}
-		return (uint64(value) & bitmask) == bitmask, nil
-
-	case int64:
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAllSet", maskValue)
-		}
-		return (uint64(value) & bitmask) == bitmask, nil
-
 	case float64:
 		// TODO check float negative zero
 		if value != math.Trunc(value) ||
@@ -670,6 +658,22 @@ func filterFieldExprBitsAllSet(fieldValue, maskValue any) (bool, error) {
 	case types.Binary:
 		// TODO: https://github.com/FerretDB/FerretDB/issues/508
 		return false, NewErrorMsg(ErrNotImplemented, "BinData() not supported yet")
+
+	case int32:
+		bitmask, err := getBinaryMaskParam(maskValue)
+		if err != nil {
+			return false, formatBitwiseOperatorErr(err, "$bitsAllSet", maskValue)
+		}
+
+		return (uint64(value) & bitmask) == bitmask, nil
+
+	case int64:
+		bitmask, err := getBinaryMaskParam(maskValue)
+		if err != nil {
+			return false, formatBitwiseOperatorErr(err, "$bitsAllSet", maskValue)
+		}
+
+		return (uint64(value) & bitmask) == bitmask, nil
 
 	default:
 		return false, nil
@@ -679,20 +683,6 @@ func filterFieldExprBitsAllSet(fieldValue, maskValue any) (bool, error) {
 // filterFieldExprBitsAnyClear handles {field: {$bitsAnyClear: value}} filter.
 func filterFieldExprBitsAnyClear(fieldValue, maskValue any) (bool, error) {
 	switch value := fieldValue.(type) {
-	case int32:
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAnyClear", maskValue)
-		}
-		return (^uint64(value) & bitmask) != 0, nil
-
-	case int64:
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAnyClear", maskValue)
-		}
-		return (^uint64(value) & bitmask) != 0, nil
-
 	case float64:
 		// TODO check float negative zero
 		if value != math.Trunc(value) ||
@@ -712,6 +702,22 @@ func filterFieldExprBitsAnyClear(fieldValue, maskValue any) (bool, error) {
 	case types.Binary:
 		// TODO: https://github.com/FerretDB/FerretDB/issues/508
 		return false, NewErrorMsg(ErrNotImplemented, "BinData() not supported yet")
+
+	case int32:
+		bitmask, err := getBinaryMaskParam(maskValue)
+		if err != nil {
+			return false, formatBitwiseOperatorErr(err, "$bitsAnyClear", maskValue)
+		}
+
+		return (^uint64(value) & bitmask) != 0, nil
+
+	case int64:
+		bitmask, err := getBinaryMaskParam(maskValue)
+		if err != nil {
+			return false, formatBitwiseOperatorErr(err, "$bitsAnyClear", maskValue)
+		}
+
+		return (^uint64(value) & bitmask) != 0, nil
 
 	default:
 		return false, nil
@@ -721,20 +727,6 @@ func filterFieldExprBitsAnyClear(fieldValue, maskValue any) (bool, error) {
 // filterFieldExprBitsAnySet handles {field: {$bitsAnySet: value}} filter.
 func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 	switch value := fieldValue.(type) {
-	case int32:
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAnySet", maskValue)
-		}
-		return (uint64(value) & bitmask) != 0, nil
-
-	case int64:
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAnySet", maskValue)
-		}
-		return (uint64(value) & bitmask) != 0, nil
-
 	case float64:
 		// TODO check float negative zero
 		if value != math.Trunc(value) ||
@@ -754,6 +746,20 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 	case types.Binary:
 		// TODO: https://github.com/FerretDB/FerretDB/issues/508
 		return false, NewErrorMsg(ErrNotImplemented, "BinData() not supported yet")
+
+	case int32:
+		bitmask, err := getBinaryMaskParam(maskValue)
+		if err != nil {
+			return false, formatBitwiseOperatorErr(err, "$bitsAnySet", maskValue)
+		}
+		return (uint64(value) & bitmask) != 0, nil
+
+	case int64:
+		bitmask, err := getBinaryMaskParam(maskValue)
+		if err != nil {
+			return false, formatBitwiseOperatorErr(err, "$bitsAnySet", maskValue)
+		}
+		return (uint64(value) & bitmask) != 0, nil
 
 	default:
 		return false, nil
