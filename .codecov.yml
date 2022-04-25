@@ -7,9 +7,10 @@ coverage:
     project:
       default:
         target: auto
+        threshold: 1%
     patch:
       default:
-        target: auto
+        target: 50%
 
 # https://docs.codecov.com/docs/ignoring-paths
 ignore:

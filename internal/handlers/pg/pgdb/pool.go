@@ -377,7 +377,7 @@ func (pgPool *Pool) EnsureTableExist(ctx context.Context, db, collection string)
 
 // TableStats returns a set of statistics for FerretDB collection / PostgreSQL table.
 func (pgPool *Pool) TableStats(ctx context.Context, schema, table string) (*TableStats, error) {
-	res := new(TableStats)
+	var res TableStats
 	sql := `
     SELECT table_name, table_type,
            pg_total_relation_size('"'||t.table_schema||'"."'||t.table_name||'"'),
@@ -397,12 +397,12 @@ func (pgPool *Pool) TableStats(ctx context.Context, schema, table string) (*Tabl
 		return nil, lazyerrors.Error(err)
 	}
 
-	return res, nil
+	return &res, nil
 }
 
 // SchemaStats returns a set of statistics for FerretDB database / PostgreSQL schema.
 func (pgPool *Pool) SchemaStats(ctx context.Context, schema string) (*DBStats, error) {
-	res := new(DBStats)
+	var res DBStats
 	sql := `
     SELECT COUNT(distinct t.table_name)                                                             AS CountTables,
            COALESCE(SUM(s.n_live_tup), 0)                                                           AS CountRows,
@@ -426,5 +426,5 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema string) (*DBStats, e
 		return nil, lazyerrors.Error(err)
 	}
 
-	return res, nil
+	return &res, nil
 }
