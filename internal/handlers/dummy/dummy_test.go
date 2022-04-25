@@ -42,7 +42,6 @@ func TestDummyHandler(t *testing.T) {
 	assert.NoError(t, err)
 
 	errNotImplemented := common.NewErrorMsg(common.ErrNotImplemented, "I'm a dummy, not a handler")
-
 	for k, command := range common.Commands {
 		t.Log(k)
 
