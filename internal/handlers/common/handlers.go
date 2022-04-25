@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package handlers hosts wire protocol commands handlers.
-package handlers
+// Handler interface  commands handlers.
+package common
 
 import (
 	"context"
