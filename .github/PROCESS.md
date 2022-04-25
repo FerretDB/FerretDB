@@ -25,4 +25,3 @@ Keep guides short: we don't create rules; we automate.
 
 Please multiply the knowledge shared on calls and 1-1 messages by writing a separate detailed blog-post article (not in the project's source code).
 1-1s are good to check what you might have missed along the way - what seemed to you obvious and to others is not.
-
