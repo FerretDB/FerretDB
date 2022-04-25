@@ -47,15 +47,10 @@ func TestDummyHandler(t *testing.T) {
 	}
 
 	msgq := &wire.OpQuery{
-		Flags:              0,
-		FullCollectionName: "admin.$cmd",
-		NumberToSkip:       0,
-		NumberToReturn:     -1,
 		Query: must.NotFail(types.NewDocument(
 			"ismaster", true,
 			"loadBalanced", false,
 		)),
-		ReturnFieldsSelector: nil,
 	}
 	assert.NoError(t, err)
 	_, err = h.MsgQueryCmd(ctx, msgq)
