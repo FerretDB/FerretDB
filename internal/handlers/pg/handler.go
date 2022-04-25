@@ -19,17 +19,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"sync/atomic"
 	"time"
 
 	"github.com/AlekSi/pointer"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
+	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -200,11 +203,6 @@ func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody
 }
 
 func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg, cmd string) (*wire.OpMsg, error) {
-	// special case to avoid circular dependency
-	if cmd == "listCommands" {
-		return listCommands(ctx, msg)
-	}
-
 	if cmd, ok := common.Commands[cmd]; ok {
 		if cmd.Handler != nil {
 			return cmd.Handler(h, ctx, msg)
@@ -234,10 +232,36 @@ func (h *Handler) MsgQueryCmd(ctx context.Context, query *wire.OpQuery) (*wire.O
 
 // MsgDebugError used for debugging purposes.
 func (h *Handler) MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, errors.New("debug_error")
+	return nil, errors.New("debug_eMsgQueryCmdrror")
 }
 
 // MsgDebugPanic used for debugging purposes.
 func (h *Handler) MsgDebugPanic(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	panic("debug_panic")
+}
+
+// MsgListCommands returns a list of currently supported commands.
+func (h *Handler) MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	var reply wire.OpMsg
+
+	cmdList := must.NotFail(types.NewDocument())
+	names := maps.Keys(common.Commands)
+	sort.Strings(names)
+	for _, name := range names {
+		cmdList.Set(name, must.NotFail(types.NewDocument(
+			"help", common.Commands[name].Help,
+		)))
+	}
+
+	err := reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"commands", cmdList,
+			"ok", float64(1),
+		))},
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &reply, nil
 }

@@ -16,20 +16,21 @@ package common
 
 import (
 	"context"
-	"errors"
 
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
+// Command represents a handler command.
 type Command struct {
 	Help    string
 	Handler func(Handler, context.Context, *wire.OpMsg) (*wire.OpMsg, error)
 }
 
+// Commands is a list of commands that common.Handler interface can support.
 var Commands = map[string]Command{
 	"listCommands": {
-		Help: "Returns information about the currently supported commands.",
-		// no handler - special case
+		Help:    "Returns information about the currently supported commands.",
+		Handler: (Handler).MsgListCommands,
 	},
 
 	"buildInfo": {
@@ -140,16 +141,12 @@ var Commands = map[string]Command{
 
 	// internal commands
 	"debug_error": {
-		Help: "Used for debugging purposes.",
-		Handler: func(Handler, context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
-			return nil, errors.New("debug_error")
-		},
+		Help:    "Used for debugging purposes.",
+		Handler: (Handler).MsgDebugError,
 	},
 
 	"debug_panic": {
-		Help: "Used for debugging purposes.",
-		Handler: func(Handler, context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
-			panic("debug_panic")
-		},
+		Help:    "Used for debugging purposes.",
+		Handler: (Handler).MsgDebugPanic,
 	},
 }

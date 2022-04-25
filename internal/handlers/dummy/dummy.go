@@ -30,6 +30,11 @@ func New() common.Handler {
 	return new(Handler)
 }
 
+// MsgListCommands returns information about the currently supported commands.
+func (h *Handler) MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	return nil, common.NewErrorMsg(common.ErrNotImplemented, "I'm a dummy, not a handler")
+}
+
 // MsgBuildInfo returns a summary of the build information.
 func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	return nil, common.NewErrorMsg(common.ErrNotImplemented, "I'm a dummy, not a handler")

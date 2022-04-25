@@ -43,20 +43,7 @@ func TestDummyHandler(t *testing.T) {
 	errNotImplemented := common.NewErrorMsg(common.ErrNotImplemented, "I'm a dummy, not a handler")
 	for k, command := range common.Commands {
 		t.Log(k)
-
-		switch k {
-		case "debug_panic":
-			continue
-
-		case "debug_error":
-			_, _ = command.Handler(h, ctx, &msg)
-
-		case "listCommands":
-			assert.Nil(t, command.Handler, k)
-
-		default:
-			_, _ = command.Handler(h, ctx, &msg)
-		}
+		_, _ = command.Handler(h, ctx, &msg)
 	}
 
 	var msgq wire.OpQuery

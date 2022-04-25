@@ -22,6 +22,9 @@ import (
 
 // Handler interface represents common commands handlers.
 type Handler interface {
+	// MsgListCommands returns a list of currently supported commands.
+	MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
 	// MsgBuildInfo returns a summary of the build information.
 	MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
