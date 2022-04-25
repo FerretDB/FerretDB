@@ -39,7 +39,6 @@ With `task` installed, you may run:
 * `task run` to start FerretDB in a development mode.
 In the development mode, FerretDB not only handles all requests but also routes them to MongoDB and logs the differences in response.
 
-
 * `task mongosh` to run `mongosh` to run commands against FerretDB.
 
 * `task fmt` to format source code.
