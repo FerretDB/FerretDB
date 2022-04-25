@@ -38,6 +38,9 @@ With `task` installed, you may do the following:
    The differences in response are then logged and the FerretDB response is sent back to the client.
 5. Run `mongosh` with `task mongosh`.
    This allows you to run commands against FerretDB.
+6. Change the code.
+7. Run `task fmt` to format source code.
+8. Run `task lint` to run linter checks.
 
 You can see all available `task` tasks with `task -l`.
 
