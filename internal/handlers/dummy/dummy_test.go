@@ -59,7 +59,7 @@ func TestDummyHandler(t *testing.T) {
 		}
 	}
 
-	msgq := new(wire.OpQuery)
+	var msgq wire.OpQuery
 	_, err = h.MsgQueryCmd(ctx, msgq)
 	assert.Equal(t, err, errNotImplemented)
 }
