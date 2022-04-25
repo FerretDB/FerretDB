@@ -19,33 +19,28 @@ cd FerretDB
 git remote add upstream https://github.com/FerretDB/FerretDB.git
 ```
 
-### Run
+### Setting up the development environment
 
-You should first install the [`task`](https://taskfile.dev/) tool to run development commands.
+To run development commands, you should first install the [`task`](https://taskfile.dev/) tool.
 You can do this by changing the directory to `tools` (`cd tools`) and running `go generate -x`.
 That will install `task` into the `bin` directory (`bin/task` on Linux and macOS, `bin\task.exe` on Windows).
 You can then add `./bin` to `$PATH` either manually (`export PATH=./bin:$PATH` in `bash`) or using something like (`direnv` (`.envrc` files)[https://direnv.net], or replace every invocation of `task` with explicit `bin/task`.
 You can also [install `task` globally](https://taskfile.dev/#/installation), but that might lead to the version skew.
 
-With `task` installed, you may run:
+With `task` installed, you may do the following:
 
-* `task init` to install development tools.
-
-* `task env-up` to set up the development environment.
-`task env-up` will start PostgreSQL and MongoDB containers, filling them with identical datasets.
-
-* `task test` to run all tests in another terminal window.
-
-* `task run` to start FerretDB in a development mode.
-In the development mode, FerretDB not only handles all requests but also routes them to MongoDB and logs the differences in response.
-
-* `task mongosh` to run `mongosh` to run commands against FerretDB.
-
-* `task fmt` to format source code.
-
-* `task lint` to run linter checks.
-
-* `task docs-fmt` to format markdown documents with the markdown linter.
+1. Install development tools with `task init`.
+2. Start the development environment with `task env-up`.
+   This will start PostgreSQL and MongoDB containers, filling them with identical sets of test data.
+3. Run all tests in another terminal window with `task test`.
+4. Start FerretDB with `task run`.
+   This will start it in a development mode where all requests are handled by FerretDB, but also routed to MongoDB.
+   The differences in response are then logged and the FerretDB response is sent back to the client.
+5. Run `mongosh` with `task mongosh`.
+   This allows you to run commands against FerretDB.
+6. Change the code.
+7. Run `task fmt` to format source code.
+8. Run `task lint` to run linter checks.
 
 You can see all available `task` tasks with `task -l`.
 
