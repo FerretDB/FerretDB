@@ -288,7 +288,7 @@ func filterFieldArraySlice(docValue *types.Array, projectionValue any) error {
 			pair[i], ok = must.NotFail(arr.Get(i)).(int)
 			if !ok {
 				return NewError(ErrBadValue,
-					lazyerrors.Errorf("filterFieldArraySlice: element %d for expression $slice was expected"+
+					lazyerrors.Errorf("filterFieldArraySlice: argument %d for expression $slice was expected"+
 						" to be int, but got value of type: %T", i, must.NotFail(arr.Get(i)),
 					))
 			}
@@ -297,7 +297,7 @@ func filterFieldArraySlice(docValue *types.Array, projectionValue any) error {
 		n := pair[1]
 		if n <= 0 {
 			return NewError(ErrBadValue,
-				lazyerrors.Errorf("filterFieldArraySlice: element 2 for expression $slice was expected"+
+				lazyerrors.Errorf("filterFieldArraySlice: argument 2 for expression $slice was expected"+
 					" to be positive, but got value: %d", n,
 				))
 		} else if n >= docValue.Len() {
