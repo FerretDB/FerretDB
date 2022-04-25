@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Handler interface represents common commands handlers.
 package common
 
 import (
@@ -21,6 +20,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
+// Handler interface represents common commands handlers.
 type Handler interface {
 	// MsgBuildInfo returns a summary of the build information.
 	MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)

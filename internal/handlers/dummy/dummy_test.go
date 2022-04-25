@@ -29,8 +29,7 @@ import (
 func TestDummyHandler(t *testing.T) {
 	t.Parallel()
 
-	opts := new(NewOpts)
-	h := New(opts)
+	h := New()
 	ctx := context.Background()
 	var msg wire.OpMsg
 	err := msg.SetSections(wire.OpMsgSection{
@@ -40,6 +39,8 @@ func TestDummyHandler(t *testing.T) {
 		))},
 	})
 	assert.NoError(t, err)
+
+	errNotImplemented := common.NewErrorMsg(common.ErrNotImplemented, "I'm a dummy, not a handler")
 
 	for _, fn := range []func(context.Context, *wire.OpMsg) (*wire.OpMsg, error){
 		h.MsgBuildInfo,
@@ -71,10 +72,10 @@ func TestDummyHandler(t *testing.T) {
 		h.MsgDebugPanic,
 	} {
 		_, err := fn(ctx, &msg)
-		assert.Error(t, err, common.ErrNotImplemented)
+		assert.Equal(t, err, errNotImplemented)
 	}
 
 	msgq := new(wire.OpQuery)
 	_, err = h.MsgQueryCmd(ctx, msgq)
-	assert.Error(t, err, common.ErrNotImplemented)
+	assert.Equal(t, err, errNotImplemented)
 }
