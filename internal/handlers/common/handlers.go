@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Handler interface  commands handlers.
+// Handler interface represents common commands handlers.
 package common
 
 import (
