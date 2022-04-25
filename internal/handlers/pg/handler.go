@@ -232,7 +232,7 @@ func (h *Handler) MsgQueryCmd(ctx context.Context, query *wire.OpQuery) (*wire.O
 
 // MsgDebugError used for debugging purposes.
 func (h *Handler) MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, errors.New("debug_eMsgQueryCmdrror")
+	return nil, errors.New("debug_error")
 }
 
 // MsgDebugPanic used for debugging purposes.
