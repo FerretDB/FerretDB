@@ -19,6 +19,7 @@ import (
 	"math"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // GetRequiredParam returns doc's value for key or protocol error for missing or invalid parameter.
@@ -84,119 +85,93 @@ var (
 // such as used in the limit, $size, etc.
 func GetWholeNumberParam(value any) (int64, error) {
 	switch value := value.(type) {
-	case int32:
-		return int64(value), nil
-	case int64:
-		return value, nil
 	case float64:
 		// TODO check float negative zero (math.Copysig(0, -1))
 		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) {
 			return 0, errNotWholeNumber
 		}
 		return int64(value), nil
+	case int32:
+		return int64(value), nil
+	case int64:
+		return value, nil
 	default:
 		return 0, errUnexpectedType
 	}
 }
 
-// getBinaryMaskParam matches value type, returning types.Binary and error if match failed.
+// getBinaryMaskParam matches value type, returning bit mask and error if match failed.
 // Possible values are: position array ([1,3,5] == 010101), whole number value and types.Binary value.
-func getBinaryMaskParam(value any) (types.Binary, error) {
-	var mask types.Binary
-	var err error
+func getBinaryMaskParam(mask any) (uint64, error) {
+	var bitmask uint64
 
-	switch value := value.(type) {
+	switch mask := mask.(type) {
 	case *types.Array:
 		// {field: {$bitsAllClear: [position1, position2]}}
-		mask, err = types.BinaryFromArray(value)
-		if err != nil {
-			return types.Binary{}, NewError(ErrBadValue, err)
+		for i := 0; i < mask.Len(); i++ {
+			val := must.NotFail(mask.Get(i))
+			b, ok := val.(int32)
+			if !ok {
+				return 0, NewError(ErrBadValue, fmt.Errorf(`bit positions must be an integer but got: %d: %#v`, i, val))
+			}
+
+			if b < 0 {
+				return 0, NewError(ErrBadValue, fmt.Errorf("bit positions must be >= 0 but got: %d: %d", i, b))
+			}
+
+			bitmask |= 1 << uint64(math.Min(float64(b), 63))
 		}
 
-	case int32:
-		// {field: {$bitsAllClear: bitmask}}
-		if value < 0 {
-			return types.Binary{}, errNegativeNumber
-		}
-
-		mask, err = types.BinaryFromInt(int64(value))
-		if err != nil {
-			return types.Binary{}, NewError(ErrBadValue, err)
-		}
-	case int64:
-		// {field: {$bitsAllClear: bitmask}}
-		if value < 0 {
-			return types.Binary{}, errNegativeNumber
-		}
-
-		mask, err = types.BinaryFromInt(value)
-		if err != nil {
-			return types.Binary{}, NewError(ErrBadValue, err)
-		}
 	case float64:
+		// {field: {$bitsAllClear: bitmask}}
 		// TODO check float negative zero
-		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) {
-			return types.Binary{}, errNotWholeNumber
+		if mask != math.Trunc(mask) || math.IsNaN(mask) || math.IsInf(mask, 0) {
+			return 0, errNotWholeNumber
 		}
-		mask, err = types.BinaryFromInt(int64(value))
-		if err != nil {
-			return types.Binary{}, err
+
+		if mask < 0 {
+			return 0, errNegativeNumber
 		}
+
+		bitmask = uint64(mask)
+
 	case types.Binary:
 		// {field: {$bitsAllClear: BinData()}}
-		mask = value
-	default:
-		return types.Binary{}, errNotBinaryMask
-	}
-	return mask, nil
-}
+		for b := 0; b < len(mask.B); b++ {
+			byteAt := mask.B[b]
 
-// getBinaryParam matches value type, returning types.Binary and error if match failed.
-func getBinaryParam(value any) (types.Binary, error) {
-	var res types.Binary
-	var err error
+			if byteAt == 0 {
+				continue
+			}
 
-	switch value := value.(type) {
+			if b < 8 {
+				bitmask |= uint64(byteAt) << uint64(b*8)
+			} else {
+				bitmask |= 1 << 63
+			}
+		}
+
 	case int32:
-		res, err = types.BinaryFromInt(int64(value))
-		if err != nil {
-			return types.Binary{}, err
+		// {field: {$bitsAllClear: bitmask}}
+		if mask < 0 {
+			return 0, errNegativeNumber
 		}
+
+		bitmask = uint64(mask)
+
 	case int64:
-		res, err = types.BinaryFromInt(value)
-		if err != nil {
-			return types.Binary{}, err
+		// {field: {$bitsAllClear: bitmask}}
+		if mask < 0 {
+			return 0, errNegativeNumber
 		}
-	case float64:
-		// TODO check float negative zero
-		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) {
-			return types.Binary{}, errNotWholeNumber
-		}
-		res, err = types.BinaryFromInt(int64(value))
-		if err != nil {
-			return types.Binary{}, err
-		}
-	case types.Binary:
-		return value, nil
+
+		bitmask = uint64(mask)
+
 	default:
-		return types.Binary{}, NewErrorMsg(ErrBadValue, "not matched")
-	}
-	return res, nil
-}
-
-// getBinaryParams creates types.Binary for field and mask from given values returning types.Binary or error.
-func getBinaryParams(fieldValue any, maskValue any) (types.Binary, types.Binary, error) {
-	maskBinary, err := getBinaryMaskParam(maskValue)
-	if err != nil {
-		return types.Binary{}, types.Binary{}, err
+		return 0, errNotBinaryMask
 	}
 
-	fieldBinary, err := getBinaryParam(fieldValue)
-	if err != nil {
-		return types.Binary{}, types.Binary{}, err
-	}
-
-	return fieldBinary, maskBinary, nil
+	return bitmask, nil
 }
 
 // parseTypeCode returns typeCode and error by given type code alias.

@@ -87,25 +87,6 @@ func (a *Array) GetByPath(path ...string) (any, error) {
 	return getByPath(a, path...)
 }
 
-// Subslice returns a slice of the array, sharing the same underlying space and elements.
-func (a *Array) Subslice(low, high int) (*Array, error) {
-	l := a.Len()
-
-	if low < 0 || low > l {
-		return nil, fmt.Errorf("types.Array.Subslice: low index %d is out of bounds [0-%d)", low, l)
-	}
-
-	if high < 0 || high > l {
-		return nil, fmt.Errorf("types.Array.Subslice: high index %d is out of bounds [0-%d)", high, l)
-	}
-
-	if high < low {
-		return nil, fmt.Errorf("types.Array.Subslice: high index %d is less low index %d", high, low)
-	}
-
-	return &Array{s: a.s[low:high]}, nil
-}
-
 // Set sets the value at the given index.
 func (a *Array) Set(index int, value any) error {
 	if l := a.Len(); index < 0 || index >= l {
