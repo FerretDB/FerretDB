@@ -1,10 +1,11 @@
 package integration
 
 import (
+	"testing"
+
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"testing"
 )
 
 func TestUnknownFilterOperator(t *testing.T) {
