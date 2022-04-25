@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tigris_integration
+package tigris
 
 import (
 	"fmt"
@@ -29,10 +29,10 @@ import (
 )
 
 func TestMostCommandsAreCaseSensitive(t *testing.T) {
-	t.Parallel()
 	ctx, collection := setup(t)
-	db := collection.Database()
+	t.Parallel()
 
+	db := collection.Database()
 	res := db.RunCommand(ctx, bson.D{{"listcollections", 1}})
 	err := res.Err()
 	require.Error(t, err)
@@ -49,8 +49,8 @@ func TestMostCommandsAreCaseSensitive(t *testing.T) {
 }
 
 func TestFindNothing(t *testing.T) {
-	t.Parallel()
 	ctx, collection := setup(t)
+	t.Parallel()
 
 	cursor, err := collection.Find(ctx, bson.D{})
 	require.NoError(t, err)
@@ -66,9 +66,9 @@ func TestFindNothing(t *testing.T) {
 }
 
 func TestInsertFind(t *testing.T) {
+	ctx, collection := setup(t, shareddata.Scalars)
 	t.Parallel()
 
-	ctx, collection := setup(t, shareddata.Scalars)
 	docs := shareddata.Scalars.Docs()
 
 	for _, expected := range docs {

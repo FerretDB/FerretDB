@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tigris_integration
+package tigris
 
 import (
 	"context"
@@ -22,13 +22,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	api "github.com/tigrisdata/tigrisdb-client-go/api/server/v1"
 	"github.com/tigrisdata/tigrisdb-client-go/driver"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
-	"google.golang.org/grpc/codes"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
@@ -42,9 +40,6 @@ var startupOnce sync.Once
 
 // setupOpts represents setup options.
 type setupOpts struct {
-	// Database to use. If empty, temporary test-specific database is created.
-	databaseName string
-
 	// Data providers.
 	providers []shareddata.Provider
 }
@@ -60,14 +55,9 @@ func setupWithOpts(t *testing.T, opts *setupOpts) (context.Context, *mongo.Colle
 		opts = new(setupOpts)
 	}
 
-	var ownDatabase bool
-	if opts.databaseName == "" {
-		opts.databaseName = testutil.SchemaName(t)
-		ownDatabase = true
-	}
+	databaseName := testutil.SchemaName(t)
 
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.DebugLevel))
-
 	ctx, cancel := context.WithCancel(context.Background())
 
 	port := setupListener(t, ctx, logger)
@@ -84,33 +74,17 @@ func setupWithOpts(t *testing.T, opts *setupOpts) (context.Context, *mongo.Colle
 	})
 
 	tigrisAddress := "127.0.0.1:8081"
-	collectionName := "values"
-
-	db := client.Database(opts.databaseName)
-	collection := db.Collection(collectionName)
 
 	conf := new(driver.Config)
 	c, err := driver.NewDriver(ctx, tigrisAddress, conf)
 	require.NoError(t, err)
 
-	t.Log("dbname", opts.databaseName, "ownDatabase", ownDatabase, "drop collection", collectionName)
-	// drop remnants of the previous failed run
-	_ = collection.Drop(ctx)
-	if ownDatabase {
-		t.Log("drop and create database", opts.databaseName)
-		_ = db.Drop(ctx)
-		err = c.CreateDatabase(ctx, opts.databaseName)
+	t.Log("recreate db", databaseName)
+	_ = c.DropDatabase(ctx, databaseName)
+	err = c.CreateDatabase(ctx, databaseName)
+	require.NoError(t, err)
 
-		switch err := err.(type) {
-		case *api.TigrisDBError:
-			if err.Code == codes.AlreadyExists {
-				break // ok
-			}
-		default:
-			require.NoError(t, err)
-		}
-	}
-
+	collectionName := "values"
 	// create a new collection: tigris requies strict collection definition
 	collectionSchema := driver.Schema(`{
 	"title" : "values",
@@ -128,26 +102,15 @@ func setupWithOpts(t *testing.T, opts *setupOpts) (context.Context, *mongo.Colle
 	"primary_key": ["_id"]
   }`)
 
-	t.Log("create collection", opts.databaseName, collectionName)
-	err = c.CreateOrUpdateCollection(ctx, opts.databaseName, collectionName, collectionSchema)
+	t.Log("create collection", databaseName, collectionName)
+	err = c.CreateOrUpdateCollection(ctx, databaseName, collectionName, collectionSchema)
 	require.NoError(t, err)
 
+	db := client.Database(databaseName)
+	collection := db.Collection(collectionName)
+
 	t.Cleanup(func() {
-		if t.Failed() {
-			t.Logf("Keeping database %q and collection %q for debugging.", opts.databaseName, collectionName)
-			return
-		}
-
-		err = collection.Drop(ctx)
-		if err != nil && err.Error() == codes.NotFound.String() {
-			err = nil
-		}
-		require.NoError(t, err)
-
-		if ownDatabase {
-			err = db.Drop(ctx)
-			require.NoError(t, err)
-		}
+		c.Close()
 	})
 
 	// insert all provided data

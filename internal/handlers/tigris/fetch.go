@@ -16,10 +16,10 @@ package tigris
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/tigrisdata/tigrisdb-client-go/driver"
 
+	"github.com/FerretDB/FerretDB/internal/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -28,7 +28,8 @@ import (
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/372
 func (h *Handler) fetch(ctx context.Context, db, collection string) ([]*types.Document, error) {
-	iterator, err := h.client.conn.Read(ctx, db, collection, driver.Filter("{}"), driver.Fields("{}"))
+	readOpts := new(driver.ReadOptions)
+	iterator, err := h.client.conn.Read(ctx, db, collection, driver.Filter("{}"), nil, readOpts)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -37,20 +38,8 @@ func (h *Handler) fetch(ctx context.Context, db, collection string) ([]*types.Do
 	var res []*types.Document
 	elem := new(driver.Document)
 	for iterator.Next(elem) {
-		var anyDoc map[string]any
-		err := json.Unmarshal(*elem, &anyDoc)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		pairs := make([]any, 2*len(anyDoc))
-		var i int
-		for k, v := range anyDoc {
-			pairs[i] = k
-			pairs[i+1] = v
-			i += 2
-		}
-		doc, err := types.NewDocument(pairs...)
+		var doc *types.Document
+		doc, err := tjson.Unmarshal(elem)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}

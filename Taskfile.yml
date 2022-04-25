@@ -109,6 +109,7 @@ tasks:
       - go test -count=1 -race -shuffle=on -coverprofile=integration.txt -coverpkg=../... -port={{.DB}}
 
   test-integration-tigris:
+    desc: 'Run integration tests for FerretDB with Tigris backend'
     dir: integration/tigris
     cmds:
       - go test -count=1 -race -shuffle=on -coverprofile=integration.txt -coverpkg=../...

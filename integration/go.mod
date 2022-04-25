@@ -7,11 +7,10 @@ replace github.com/FerretDB/FerretDB => ../
 require (
 	github.com/FerretDB/FerretDB v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.7.1
-	github.com/tigrisdata/tigrisdb-client-go v1.0.0-alpha.5
+	github.com/tigrisdata/tigrisdb-client-go v1.0.0-alpha.6
 	go.mongodb.org/mongo-driver v1.9.0
 	go.uber.org/zap v1.21.0
 	golang.org/x/exp v0.0.0-20220414153411-bcd21879b8fd
-	google.golang.org/grpc v1.46.0
 )
 
 require (
@@ -68,6 +67,7 @@ require (
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.6 // indirect
 	google.golang.org/genproto v0.0.0-20220303160752-862486edd9cc // indirect
+	google.golang.org/grpc v1.46.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect

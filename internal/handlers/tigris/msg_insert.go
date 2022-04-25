@@ -16,11 +16,11 @@ package tigris
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/tigrisdata/tigrisdb-client-go/driver"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -55,11 +55,11 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	for i := 0; i < docs.Len(); i++ {
 		doc := must.NotFail(docs.Get(i)).(*types.Document)
 
-		tigrisDoc, err := json.Marshal(doc.Map())
+		tigrisDoc, err := tjson.Marshal(doc)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
-		if _, err = h.client.conn.Insert(ctx, db, collection, []driver.Document{tigrisDoc}); err != nil {
+		if _, err = h.client.conn.Insert(ctx, db, collection, []driver.Document{*tigrisDoc}); err != nil {
 			return nil, err
 		}
 
