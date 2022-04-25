@@ -92,17 +92,30 @@ func TestQueryComparisonImplicit(t *testing.T) {
 
 		"String": {
 			filter:      bson.D{{"value", "foo"}},
-			expectedIDs: []any{"string"},
+			expectedIDs: []any{"array-three", "string"},
 		},
 		"StringEmpty": {
 			filter:      bson.D{{"value", ""}},
 			expectedIDs: []any{"string-empty"},
 		},
 
-		"Binary":      {},
-		"BinaryEmpty": {},
-		"BoolFalse":   {},
-		"BoolTrue":    {},
+		"Binary": {
+			filter:      bson.D{{"value", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}},
+			expectedIDs: []any{"binary"},
+		},
+		"BinaryEmpty": {
+			filter:      bson.D{{"value", primitive.Binary{}}},
+			expectedIDs: []any{"binary-empty"},
+		},
+
+		"BoolFalse": {
+			filter:      bson.D{{"value", false}},
+			expectedIDs: []any{"bool-false"},
+		},
+		"BoolTrue": {
+			filter:      bson.D{{"value", true}},
+			expectedIDs: []any{"bool-true"},
+		},
 
 		"IDNull": {
 			filter:      bson.D{{"_id", nil}},
