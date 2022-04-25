@@ -21,7 +21,7 @@ git remote add upstream https://github.com/FerretDB/FerretDB.git
 
 ### Run
 
-To run development commands, you should first install the [`task`](https://taskfile.dev/) tool.
+You should first install the [`task`](https://taskfile.dev/) tool to run development commands.
 You can do this by changing the directory to `tools` (`cd tools`) and running `go generate -x`.
 That will install `task` into the `bin` directory (`bin/task` on Linux and macOS, `bin\task.exe` on Windows).
 You can then add `./bin` to `$PATH` either manually (`export PATH=./bin:$PATH` in `bash`) or using something like (`direnv` (`.envrc` files)[https://direnv.net], or replace every invocation of `task` with explicit `bin/task`.
@@ -31,13 +31,14 @@ With `task` installed, you may run:
 
 * `task init` to install development tools.
 
-* `task env-up` to start the development environment.
-This will start PostgreSQL and MongoDB containers, filling them with identical sets of test data.
+* `task env-up` to set up the development environment.
+`task env-up` will start PostgreSQL and MongoDB containers, filling them with identical datasets.
 
 * `task test` to run all tests in another terminal window.
 
-* `task run` to start FerretDB in a development mode where all requests are handled by FerretDB, but also routed to MongoDB.
-The differences in response are then logged and the FerretDB response is sent back to the client.
+* `task run` to start FerretDB in a development mode.
+In the development mode FerretDB handles all requests, routes them to MongoDB, and logs the differences in response.
+.
 
 * `task mongosh` to run `mongosh` to run commands against FerretDB.
 
