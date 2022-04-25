@@ -17,7 +17,6 @@ package dummy
 
 import (
 	"context"
-	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -25,23 +24,14 @@ import (
 )
 
 // Handler data struct.
-type Handler struct {
-	peerAddr  string
-	startTime time.Time
-}
+type Handler struct{}
 
 // NewOpts represents handler configuration.
-type NewOpts struct {
-	PeerAddr  string
-	StartTime time.Time
-}
+type NewOpts struct{}
 
 // New returns a new handler.
 func New(opts *NewOpts) handlers.Handler {
-	return &Handler{
-		peerAddr:  opts.PeerAddr,
-		startTime: opts.StartTime,
-	}
+	return new(Handler)
 }
 
 // MsgBuildInfo returns a summary of the build information.
