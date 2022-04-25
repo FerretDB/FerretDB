@@ -20,6 +20,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -30,25 +31,20 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err = common.UnimplementedNonDefault(document, "filter", func(v any) bool {
-		d, ok := v.(*types.Document)
-		return ok && d.Len() == 0
-	}); err != nil {
+	var filter *types.Document
+	if filter, err = common.GetOptionalParam(document, "filter", filter); err != nil {
 		return nil, err
 	}
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/301
-	// if err = common.UnimplementedNonDefault(document, "nameOnly", func(v any) bool {
-	// 	nameOnly, ok := v.(bool)
-	// 	return ok && !nameOnly
-	// }); err != nil {
-	// 	return nil, err
-	// }
 
 	common.Ignored(document, h.l, "comment", "authorizedDatabases")
 
 	databaseNames, err := h.pgPool.Schemas(ctx)
 	if err != nil {
+		return nil, err
+	}
+
+	var nameOnly bool
+	if nameOnly, err = common.GetOptionalParam(document, "nameOnly", false); err != nil {
 		return nil, err
 	}
 
@@ -68,18 +64,45 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
-
 			sizeOnDisk += tableSize
 		}
 
-		d := types.MustNewDocument(
+		d := must.NotFail(types.NewDocument(
 			"name", databaseName,
 			"sizeOnDisk", sizeOnDisk,
 			"empty", sizeOnDisk == 0,
-		)
-		if err = databases.Append(d); err != nil {
+		))
+
+		matches, err := common.FilterDocument(d, filter)
+		if err != nil {
+			return nil, err
+		}
+
+		if matches {
+			if nameOnly {
+				d = must.NotFail(types.NewDocument(
+					"name", databaseName,
+				))
+			}
+			if err = databases.Append(d); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+		}
+	}
+
+	if nameOnly {
+		var reply wire.OpMsg
+		err = reply.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"databases", databases,
+				"ok", float64(1),
+			))},
+		})
+		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+
+		return &reply, nil
 	}
 
 	var totalSize int64
@@ -90,12 +113,12 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{types.MustNewDocument(
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"databases", databases,
 			"totalSize", totalSize,
 			"totalSizeMb", totalSize/1024/1024,
 			"ok", float64(1),
-		)},
+		))},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
