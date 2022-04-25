@@ -19,9 +19,9 @@ We will do all that for you so you can focus on what is really interesting for y
 
 ## Calls `to show and/or to explain`
 
-Having a call with someone explaining something what you already know and sharing knowledge with someone else, please multiply this knowledge to the benefit of others by writing a detailed article about the topic.
-Single 1-1 calls are good to check what you might have missed in the way - what seemed to you obvious and to other is not.
-
-Please also gather other people ideas since diversity and different opinions expand our understanding and vision of the project.
-
 Keep guides short: we don't create rules, we automate.
+
+Please multiply the knowledge shaed on calls and 1-1 messages by writing a detailed article.
+1-1s are good to check what you might have missed in the way - what seemed to you obvious and to other is not.
+
+We encourage diversity between us as different points of view expands vision and contributes to the project success.
