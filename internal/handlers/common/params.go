@@ -159,7 +159,7 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 			}
 
 			if b < 8 {
-				bitmask |= uint64(byteAt) << b
+				bitmask |= uint64(byteAt) << uint64(b*8)
 			} else {
 				bitmask |= 1 << 63
 			}

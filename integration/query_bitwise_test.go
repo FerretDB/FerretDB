@@ -102,6 +102,23 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			},
 		},
 
+		"Binary": {
+			value: primitive.Binary{Data: []byte{2}},
+			expectedIDs: []any{
+				"double-negative-zero", "double-zero",
+				"int32-min", "int32-zero",
+				"int64-min", "int64-zero",
+			},
+		},
+		"BinaryWithZeroBytes": {
+			value: primitive.Binary{Data: []byte{0, 0, 2}},
+			expectedIDs: []any{
+				"double-negative-zero", "double-whole", "double-zero",
+				"int32", "int32-min", "int32-zero",
+				"int64", "int64-min", "int64-zero",
+			},
+		},
+
 		"Int32": {
 			value: int32(2),
 			expectedIDs: []any{
@@ -223,6 +240,15 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 			},
 		},
 
+		"Binary": {
+			value:       primitive.Binary{Data: []byte{2}},
+			expectedIDs: []any{"double-whole", "int32", "int32-max", "int64", "int64-max"},
+		},
+		"BinaryWithZeroBytes": {
+			value:       primitive.Binary{Data: []byte{0, 0, 2}},
+			expectedIDs: []any{"int32-max", "int64-max"},
+		},
+
 		"Int32": {
 			value:       int32(2),
 			expectedIDs: []any{"double-whole", "int32", "int32-max", "int64", "int64-max"},
@@ -341,6 +367,23 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 				Code:    2,
 				Name:    "BadValue",
 				Message: "value takes an Array, a number, or a BinData but received: $bitsAnyClear: \"123\"",
+			},
+		},
+
+		"Binary": {
+			value: primitive.Binary{Data: []byte{2}},
+			expectedIDs: []any{
+				"double-negative-zero", "double-zero",
+				"int32-min", "int32-zero",
+				"int64-min", "int64-zero",
+			},
+		},
+		"BinaryWithZeroBytes": {
+			value: primitive.Binary{Data: []byte{0, 0, 2}},
+			expectedIDs: []any{
+				"double-negative-zero", "double-whole", "double-zero",
+				"int32", "int32-min", "int32-zero",
+				"int64", "int64-min", "int64-zero",
 			},
 		},
 
@@ -471,6 +514,15 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 				Name:    "BadValue",
 				Message: "value takes an Array, a number, or a BinData but received: $bitsAnySet: \"123\"",
 			},
+		},
+
+		"Binary": {
+			value:       primitive.Binary{Data: []byte{2}},
+			expectedIDs: []any{"double-whole", "int32", "int32-max", "int64", "int64-max"},
+		},
+		"BinaryWithZeroBytes": {
+			value:       primitive.Binary{Data: []byte{0, 0, 2}},
+			expectedIDs: []any{"int32-max", "int64-max"},
 		},
 
 		"Int32": {
