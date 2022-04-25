@@ -201,7 +201,9 @@ func applyComplexProjection(k1 string, doc, projectionVal *types.Document) (err 
 			}
 
 		default:
-			return NewError(ErrCommandNotFound, lazyerrors.Errorf("applyComplexProjection: unknown projection operator: %q", projectionType))
+			return NewError(ErrCommandNotFound,
+				lazyerrors.Errorf("applyComplexProjection: unknown projection operator: %q", projectionType),
+			)
 		}
 	}
 
@@ -251,19 +253,80 @@ func filterFieldArrayElemMatch(k1 string, doc, conditions *types.Document, docVa
 	return
 }
 
+// filterFieldArraySlice is a function that implements $slice projection query.
 func filterFieldArraySlice(docValue *types.Array, projectionValue any) error {
-	var toSkip, toReturn int
-	switch projectionValue {
-	// TODO can it contain int64?
+	var elementsToSkip, elementsToReturn int
+	switch projectionValue.(type) {
+	// TODO can it have type int64?
 	case int32:
+		n := projectionValue.(int)
+		if n >= docValue.Len() || n <= -1*docValue.Len() {
+			// if abs(n) >= docValue.Len(), just return the whole array
+			// (even if n < 0; that's how MongoDB does it)
+			return nil
+		}
+		// now we are confident that abs(n) < docValue.Len()
+		if n >= 0 {
+			elementsToSkip, elementsToReturn = 0, n
+		} else {
+			// for example: n = -2, docValue.Len() = 5; then
+			// elementsToSkip, elementsToReturn = 3, 2; i.e. the last 2 elements
+			elementsToSkip, elementsToReturn = docValue.Len()+n, -1*n
+		}
 	case *types.Array:
-		if projectionVal.Len() != 2 {
-			return NewError(ErrBadValue, lazyerrors.Errorf("filterFieldArraySlice: expected"))
+		arr := projectionValue.(*types.Array)
+		if arr.Len() != 2 {
+			return NewError(ErrBadValue,
+				lazyerrors.Errorf("filterFieldArraySlice: expression $slice takes array of size 2,"+
+					" but array of size %d was provided", arr.Len(),
+				))
 		}
 
+		pair := [2]int{}
+		for i := range pair {
+			var ok bool
+			pair[i], ok = must.NotFail(arr.Get(i)).(int)
+			if !ok {
+				return NewError(ErrBadValue,
+					lazyerrors.Errorf("filterFieldArraySlice: element %d for expression $slice was expected"+
+						" to be int, but got value of type: %T", i, must.NotFail(arr.Get(i)),
+					))
+			}
+		}
+
+		n := pair[1]
+		if n <= 0 {
+			return NewError(ErrBadValue,
+				lazyerrors.Errorf("filterFieldArraySlice: element 2 for expression $slice was expected"+
+					" to be positive, but got value: %d", n,
+				))
+		} else if n >= docValue.Len() {
+			n = docValue.Len()
+		}
+		elementsToReturn = n
+		// now we are confident that elementsToReturn is <= docValue.Len()
+
+		elementsToSkip = pair[0]
+		if elementsToSkip >= docValue.Len() {
+			// skip all elements, so no elements to return
+			elementsToSkip, elementsToReturn = 0, 0
+		} else if elementsToSkip <= -1*docValue.Len() {
+			// skip no elements
+			elementsToSkip = 0
+		}
+		// now we are confident that abs(elementsToSkip) < docValue.Len()
+
+		if elementsToSkip < 0 {
+			// if elementsToSkip < 0, then skip first docValue.Len() + elementsToSkip elements
+			elementsToSkip = docValue.Len() + elementsToSkip
+		}
 	}
-	err = filterFieldArraySlice(arr, projectionVal)
-	if err != nil { // array can't be properly sliced, so we don't include the field in the final result
-		doc.Remove(k1)
+
+	subslice, err := docValue.Subslice(elementsToSkip, elementsToReturn)
+	if err != nil {
+		panic(fmt.Sprintf("unexpected error: %v", err))
 	}
+	docValue = subslice
+
+	return nil
 }
