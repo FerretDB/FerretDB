@@ -118,6 +118,14 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 				"int64", "int64-min", "int64-zero",
 			},
 		},
+		"Binary9Bytes": {
+			value: primitive.Binary{Data: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9}},
+			expectedIDs: []any{
+				"double-negative-zero", "double-whole", "double-zero",
+				"int32", "int32-zero",
+				"int64", "int64-zero",
+			},
+		},
 
 		"Int32": {
 			value: int32(2),
