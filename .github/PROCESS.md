@@ -19,9 +19,9 @@ We will do all that for you so you can focus on what is really interesting for y
 
 ## Calls `to show and/or to explain`
 
-Keep guides short: we don't create rules, we automate.
+Keep guides short: we don't create rules; we automate.
 
-Please multiply the knowledge shaed on calls and 1-1 messages by writing a detailed article.
-1-1s are good to check what you might have missed in the way - what seemed to you obvious and to other is not.
+Please multiply the knowledge shared on calls and 1-1 messages by writing a detailed article.
+1-1s are good to check what you might have missed along the way - what seemed to you obvious and to others is not.
 
-We encourage diversity between us as different points of view expands vision and contributes to the project success.
+We encourage diversity between us as different points of view expand our vision and contribute to the project's success.
