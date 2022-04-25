@@ -25,7 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgQueryCmd used for debugging purposes.
+// MsgQueryCmd runs query operation command.
 func (h *Handler) MsgQueryCmd(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
 	if query.FullCollectionName == "admin.$cmd" {
 		switch cmd := query.Query.Command(); cmd {

@@ -106,6 +106,6 @@ type Handler interface {
 	// MsgDebugPanic used for debugging purposes.
 	MsgDebugPanic(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
-	// MsgQueryCmd used for debugging purposes.
+	// MsgQueryCmd runs query operation command.
 	MsgQueryCmd(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error)
 }
