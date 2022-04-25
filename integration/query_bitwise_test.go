@@ -43,6 +43,31 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		expectedIDs []any
 		err         mongo.CommandError
 	}{
+		"Array": {
+			value: primitive.A{1, 5},
+			expectedIDs: []any{
+				"double-negative-zero", "double-zero",
+				"int32-min", "int32-zero",
+				"int64-min", "int64-zero",
+			},
+		},
+		"ArrayNegativeBitPositionValue": {
+			value: primitive.A{-1},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "bit positions must be >= 0 but got: 0: -1",
+			},
+		},
+		"ArrayBadValue": {
+			value: primitive.A{"123"},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `bit positions must be an integer but got: 0: "123"`,
+			},
+		},
+
 		"Double": {
 			value: 1.2,
 			err: mongo.CommandError{
@@ -94,7 +119,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			},
 		},
 
-		"MaxInt64": {
+		"Int64Max": {
 			value: math.MaxInt64,
 			expectedIDs: []any{
 				"double-negative-zero", "double-zero",
@@ -108,31 +133,6 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected a positive number in: $bitsAllClear: -1",
-			},
-		},
-
-		"Array": {
-			value: primitive.A{1, 5},
-			expectedIDs: []any{
-				"double-negative-zero", "double-zero",
-				"int32-min", "int32-zero",
-				"int64-min", "int64-zero",
-			},
-		},
-		"ArrayNegativeBitPositionValue": {
-			value: primitive.A{-1},
-			err: mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "bit positions must be >= 0 but got: 0: -1",
-			},
-		},
-		"ArrayBadValue": {
-			value: primitive.A{"123"},
-			err: mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: `bit positions must be an integer but got: 0: "123"`,
 			},
 		},
 	} {
@@ -172,6 +172,27 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 		expectedIDs []any
 		err         mongo.CommandError
 	}{
+		"Array": {
+			value:       primitive.A{1, 5},
+			expectedIDs: []any{"double-whole", "int32", "int32-max", "int64", "int64-max"},
+		},
+		"ArrayNegativeBitPositionValue": {
+			value: primitive.A{-1},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "bit positions must be >= 0 but got: 0: -1",
+			},
+		},
+		"ArrayBadValue": {
+			value: primitive.A{"123"},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `bit positions must be an integer but got: 0: "123"`,
+			},
+		},
+
 		"Double": {
 			value: 1.2,
 			err: mongo.CommandError{
@@ -215,7 +236,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 			},
 		},
 
-		"MaxInt64": {
+		"Int64Max": {
 			value:       math.MaxInt64,
 			expectedIDs: []any{"int64-max"},
 		},
@@ -225,27 +246,6 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected a positive number in: $bitsAllSet: -1",
-			},
-		},
-
-		"Array": {
-			value:       primitive.A{1, 5},
-			expectedIDs: []any{"double-whole", "int32", "int32-max", "int64", "int64-max"},
-		},
-		"ArrayNegativeBitPositionValue": {
-			value: primitive.A{-1},
-			err: mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "bit positions must be >= 0 but got: 0: -1",
-			},
-		},
-		"ArrayBadValue": {
-			value: primitive.A{"123"},
-			err: mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: `bit positions must be an integer but got: 0: "123"`,
 			},
 		},
 	} {
@@ -285,6 +285,31 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		expectedIDs []any
 		err         mongo.CommandError
 	}{
+		"Array": {
+			value: primitive.A{1, 5},
+			expectedIDs: []any{
+				"double-negative-zero", "double-zero",
+				"int32-min", "int32-zero",
+				"int64-min", "int64-zero",
+			},
+		},
+		"ArrayNegativeBitPositionValue": {
+			value: primitive.A{-1},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "bit positions must be >= 0 but got: 0: -1",
+			},
+		},
+		"ArrayBadValue": {
+			value: primitive.A{"123"},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `bit positions must be an integer but got: 0: "123"`,
+			},
+		},
+
 		"Double": {
 			value: 1.2,
 			err: mongo.CommandError{
@@ -336,7 +361,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 			},
 		},
 
-		"MaxInt64": {
+		"Int64Max": {
 			value: math.MaxInt64,
 			expectedIDs: []any{
 				"double-negative-zero", "double-whole", "double-zero",
@@ -350,31 +375,6 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected a positive number in: $bitsAnyClear: -1",
-			},
-		},
-
-		"Array": {
-			value: primitive.A{1, 5},
-			expectedIDs: []any{
-				"double-negative-zero", "double-zero",
-				"int32-min", "int32-zero",
-				"int64-min", "int64-zero",
-			},
-		},
-		"ArrayNegativeBitPositionValue": {
-			value: primitive.A{-1},
-			err: mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "bit positions must be >= 0 but got: 0: -1",
-			},
-		},
-		"ArrayBadValue": {
-			value: primitive.A{"123"},
-			err: mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: `bit positions must be an integer but got: 0: "123"`,
 			},
 		},
 	} {
@@ -414,6 +414,31 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 		expectedIDs []any
 		err         mongo.CommandError
 	}{
+		"Array": {
+			value: primitive.A{1, 5},
+			expectedIDs: []any{
+				"double-whole",
+				"int32", "int32-max",
+				"int64", "int64-max",
+			},
+		},
+		"ArrayNegativeBitPositionValue": {
+			value: primitive.A{-1},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "bit positions must be >= 0 but got: 0: -1",
+			},
+		},
+		"ArrayBadValue": {
+			value: primitive.A{"123"},
+			err: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `bit positions must be an integer but got: 0: "123"`,
+			},
+		},
+
 		"Double": {
 			value: 1.2,
 			err: mongo.CommandError{
@@ -465,7 +490,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 			},
 		},
 
-		"MaxInt64": {
+		"Int64Max": {
 			value: math.MaxInt64,
 			expectedIDs: []any{
 				"double-whole",
@@ -479,31 +504,6 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected a positive number in: $bitsAnySet: -1",
-			},
-		},
-
-		"Array": {
-			value: primitive.A{1, 5},
-			expectedIDs: []any{
-				"double-whole",
-				"int32", "int32-max",
-				"int64", "int64-max",
-			},
-		},
-		"ArrayNegativeBitPositionValue": {
-			value: primitive.A{-1},
-			err: mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "bit positions must be >= 0 but got: 0: -1",
-			},
-		},
-		"ArrayBadValue": {
-			value: primitive.A{"123"},
-			err: mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: `bit positions must be an integer but got: 0: "123"`,
 			},
 		},
 	} {
