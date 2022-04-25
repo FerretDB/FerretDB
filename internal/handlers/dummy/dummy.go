@@ -18,7 +18,6 @@ package dummy
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
@@ -30,7 +29,7 @@ type Handler struct{}
 type NewOpts struct{}
 
 // New returns a new handler.
-func New(opts *NewOpts) handlers.Handler {
+func New(opts *NewOpts) common.Handler {
 	return new(Handler)
 }
 
