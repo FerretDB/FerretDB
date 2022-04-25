@@ -273,12 +273,24 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 		case "$gt":
 			// {field: {$gt: exprValue}}
-			if _, ok := exprValue.(types.Regex); ok {
+			switch exprValue := exprValue.(type) {
+			case *types.Array:
+				if fieldValue, ok := fieldValue.(*types.Array); ok {
+					res := compareArrays(exprValue, fieldValue)
+					if res != greater {
+						return false, nil
+					}
+				} else {
+					return false, nil
+				}
+
+			case types.Regex:
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewErrorMsg(ErrBadValue, msg)
-			}
-			if compare(fieldValue, exprValue) != greater {
-				return false, nil
+			default:
+				if compare(fieldValue, exprValue) != greater {
+					return false, nil
+				}
 			}
 
 		case "$gte":

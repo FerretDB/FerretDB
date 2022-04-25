@@ -108,11 +108,11 @@ func TestQueryElementType(t *testing.T) {
 	}{
 		"Document": {
 			v:           "object",
-			expectedIDs: []any{"document", "document-composite", "document-empty"},
+			expectedIDs: []any{"array-embedded-document", "document", "document-composite", "document-empty"},
 		},
 		"Array": {
 			v:           "array",
-			expectedIDs: []any{"array", "array-embedded", "array-empty", "array-three"},
+			expectedIDs: []any{"array", "array-embedded", "array-embedded-document", "array-empty", "array-three"},
 		},
 		"Double": {
 			v: "double",

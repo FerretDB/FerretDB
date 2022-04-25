@@ -193,10 +193,31 @@ func compare(docValue, filter any) compareResult {
 
 	switch docValue := docValue.(type) {
 	case *types.Document:
-		// TODO: implement document comparing
+		if filter, ok := filter.(*types.Document); ok {
+			switch compareDocuments(filter, docValue) {
+			case equal:
+				return equal
+			case greater:
+				return greater
+			case less:
+				return less
+			}
+		}
 		return notEqual
 
 	case *types.Array:
+		if filter, ok := filter.(*types.Array); ok {
+			switch compareArrays(filter, docValue) {
+			case equal:
+				return equal
+			case greater:
+				return greater
+			case less:
+				return less
+			}
+			return notEqual
+		}
+
 		for i := 0; i < docValue.Len(); i++ {
 			arrValue := must.NotFail(docValue.Get(i))
 			switch arrValue.(type) {
@@ -283,11 +304,44 @@ func matchDocuments(a, b *types.Document) bool {
 		log.Panicf("%v is nil", b)
 	}
 
-	keys := a.Keys()
-	if !slices.Equal(keys, b.Keys()) {
+	if !slices.Equal(a.Keys(), b.Keys()) {
 		return false
 	}
 	return reflect.DeepEqual(a.Map(), b.Map())
+}
+
+// compareDocuments compares 2 documents.
+func compareDocuments(f, d *types.Document) compareResult {
+	if f == nil {
+		log.Panicf("%v is nil", f)
+	}
+	if d == nil {
+		log.Panicf("%v is nil", d)
+	}
+
+	if !slices.Equal(f.Keys(), d.Keys()) {
+		return notEqual
+	}
+
+	compareResult := notEqual
+	for kf, vf := range f.Map() {
+		vd := d.Map()[kf]
+		res := compare(vd, vf)
+		if res == notEqual {
+			return notEqual
+		}
+		if res == equal {
+			continue
+		}
+		if compareResult == notEqual {
+			compareResult = res
+		}
+		if compareResult != res {
+			return notEqual
+		}
+	}
+
+	return compareResult
 }
 
 // matchArrays returns true if a filter array equals exactly the specified array or
@@ -314,4 +368,90 @@ func matchArrays(filterArr, docArr *types.Array) bool {
 	}
 
 	return false
+}
+
+// compareArrays compares indices of the filter array according to
+// indices of the document array and return documents which array is greater or lesser
+func compareArrays(filterArr, docArr *types.Array) compareResult {
+	if docArr.Len() == 0 && filterArr.Len() == 0 {
+		return equal
+	}
+
+	compareResult := notEqual
+	for i := 0; i < docArr.Len(); i++ {
+		arrValue := must.NotFail(docArr.Get(i))
+		switch docArrValue := arrValue.(type) {
+		case *types.Array:
+			if filterArrValue, ok := must.NotFail(filterArr.Get(0)).(*types.Array); ok {
+				for i := 0; i < docArrValue.Len(); i++ {
+					arrSubValue := must.NotFail(docArrValue.Get(i))
+					if _, ok := arrSubValue.(*types.Array); ok {
+						continue
+					}
+
+					filterArrValue := must.NotFail(filterArrValue.Get(i))
+					res := compare(arrSubValue, filterArrValue)
+					if res == notEqual {
+						return notEqual
+					}
+
+					// define which way filter array is going to be (greater or lesser)
+					if compareResult == notEqual {
+						compareResult = res
+					}
+					// if a conflict occurs on subsequent iterations, for example,
+					// one value is greater and the other is lesser, return not eq
+					if compareResult != res {
+						return notEqual
+					}
+				}
+			} else {
+				return greater
+			}
+		case *types.Document:
+			if filterValue, ok := must.NotFail(filterArr.Get(i)).(*types.Document); ok {
+				res := compareDocuments(filterValue, docArrValue)
+				if res == notEqual {
+					return notEqual
+				}
+				if compareResult == notEqual {
+					compareResult = res
+				}
+				if compareResult != res {
+					return notEqual
+				}
+			} else {
+				return greater
+			}
+
+		default:
+			// check the last element, if it is not an array return greater, bcs
+			// there are not enough elements in the filter array
+			if i >= filterArr.Len() && docArr.Len()-1 == i {
+				return greater
+			}
+
+			// skip element for possibly similar doc subarray
+			if i >= filterArr.Len() {
+				continue
+			}
+
+			filterValue := must.NotFail(filterArr.Get(i))
+			res := compare(docArrValue, filterValue)
+			if res == notEqual {
+				return notEqual
+			}
+			if res == equal {
+				continue
+			}
+			if compareResult == notEqual {
+				compareResult = res
+			}
+			if compareResult != res {
+				return notEqual
+			}
+		}
+	}
+
+	return compareResult
 }
