@@ -107,7 +107,7 @@ func waitForPostgresPort(ctx context.Context, port uint16) error {
 
 	for ctx.Err() == nil {
 		var pgPool *pgdb.Pool
-		pgPool, err := pgdb.NewPool(fmt.Sprintf("postgres://postgres@127.0.0.1:%d/ferretdb", port), logger.Desugar(), false)
+		pgPool, err := pgdb.NewPool(ctx, fmt.Sprintf("postgres://postgres@127.0.0.1:%d/ferretdb", port), logger.Desugar(), false)
 		if err == nil {
 			pgPool.Close()
 
@@ -256,7 +256,7 @@ func printDiagnosticData(runError error, logger *zap.SugaredLogger) {
 
 	fmt.Printf(`Looks like something went wrong..
 Please file an issue with all that information below:
-	
+
 	OS: %s
 	Arch: %s
 	Version: %s
@@ -344,7 +344,7 @@ func run(ctx context.Context, logger *zap.SugaredLogger) error {
 	}
 
 	var pgPool *pgdb.Pool
-	pgPool, err = pgdb.NewPool("postgres://postgres@127.0.0.1:5432/ferretdb", logger.Desugar(), false)
+	pgPool, err = pgdb.NewPool(ctx, "postgres://postgres@127.0.0.1:5432/ferretdb", logger.Desugar(), false)
 	if err != nil {
 		return err
 	}

@@ -53,7 +53,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err.Code != 0 {
 				require.Nil(t, tc.expectedIDs)
-				assertEqualError(t, tc.err, err)
+				AssertEqualError(t, tc.err, err)
 				return
 			}
 			require.NoError(t, err)
@@ -61,7 +61,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
-			assert.Equal(t, tc.expectedIDs, collectIDs(t, actual))
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
 		})
 	}
 }
