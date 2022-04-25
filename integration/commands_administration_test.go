@@ -73,6 +73,107 @@ func TestCommandsAdministrationCreateDropList(t *testing.T) {
 	assert.Contains(t, names, name)
 }
 
+// assertDatabases checks that expected and actual listDatabases results are similar.
+func assertDatabases(t *testing.T, expected, actual mongo.ListDatabasesResult) {
+	t.Helper()
+
+	var sizeSum int64
+	assert.NotZero(t, actual.TotalSize)
+
+	require.Len(t, actual.Databases, len(expected.Databases), "%+v", actual)
+	for i, a := range actual.Databases {
+		e := expected.Databases[i]
+		require.Equal(t, e.Name, a.Name)
+
+		assert.Zero(t, e.SizeOnDisk)
+
+		if a.Empty {
+			assert.Zero(t, a.SizeOnDisk, "%+v", a)
+			continue
+		}
+
+		// to make comparison easier
+		assert.NotZero(t, a.SizeOnDisk, "%+v", a)
+		sizeSum += a.SizeOnDisk
+		actual.Databases[i].SizeOnDisk = 0
+	}
+
+	// That's not true for PostgreSQL, where a sum of `pg_total_relation_size` result for all schemas
+	// is not equal to `pg_database_size` for the whole database.
+	// assert.Equal(t, sizeSum, actual.TotalSize)
+	actual.TotalSize = sizeSum
+
+	expected.TotalSize = sizeSum
+	assert.Equal(t, expected, actual)
+}
+
+//nolint:paralleltest // we test a global list of databases
+func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
+	ctx, collection := setupWithOpts(t, &setupOpts{
+		databaseName: "admin",
+	})
+	client := collection.Database().Client()
+	name := collection.Name()
+
+	// drop remnants of the previous failed run
+	_ = client.Database(name).Drop(ctx)
+
+	filter := bson.D{{
+		"name", bson.D{{
+			"$in", bson.A{"monila", "values", "admin", name},
+		}},
+	}}
+	names, err := client.ListDatabaseNames(ctx, filter)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"admin", "monila", "values"}, names)
+
+	actual, err := client.ListDatabases(ctx, filter)
+	require.NoError(t, err)
+
+	expectedBefore := mongo.ListDatabasesResult{
+		Databases: []mongo.DatabaseSpecification{{
+			Name: "admin",
+		}, {
+			Name: "monila",
+		}, {
+			Name: "values",
+		}},
+	}
+	assertDatabases(t, expectedBefore, actual)
+
+	// there is no explicit command to create database, so create collection instead
+	err = client.Database(name).CreateCollection(ctx, name)
+	require.NoError(t, err)
+
+	actual, err = client.ListDatabases(ctx, filter)
+	require.NoError(t, err)
+
+	expectedAfter := mongo.ListDatabasesResult{
+		Databases: []mongo.DatabaseSpecification{{
+			Name: "admin",
+		}, {
+			Name: "monila",
+		}, {
+			Name: name,
+		}, {
+			Name: "values",
+		}},
+	}
+	assertDatabases(t, expectedAfter, actual)
+
+	err = client.Database(name).Drop(ctx)
+	require.NoError(t, err)
+
+	// drop manually to check error
+	var res bson.D
+	err = client.Database(name).RunCommand(ctx, bson.D{{"dropDatabase", 1}}).Decode(&res)
+	require.NoError(t, err)
+
+	actual, err = client.ListDatabases(ctx, filter)
+	require.NoError(t, err)
+	assertDatabases(t, expectedBefore, actual)
+}
+
 func TestCommandsAdministrationGetParameter(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setupWithOpts(t, &setupOpts{
