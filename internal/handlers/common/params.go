@@ -85,16 +85,16 @@ var (
 // such as used in the limit, $size, etc.
 func GetWholeNumberParam(value any) (int64, error) {
 	switch value := value.(type) {
-	case int32:
-		return int64(value), nil
-	case int64:
-		return value, nil
 	case float64:
 		// TODO check float negative zero (math.Copysig(0, -1))
 		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) {
 			return 0, errNotWholeNumber
 		}
 		return int64(value), nil
+	case int32:
+		return int64(value), nil
+	case int64:
+		return value, nil
 	default:
 		return 0, errUnexpectedType
 	}
@@ -121,20 +121,6 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 
 			bitmask |= 1 << uint64(math.Min(float64(b), 63))
 		}
-	case int32:
-		// {field: {$bitsAllClear: bitmask}}
-		if mask < 0 {
-			return 0, errNegativeNumber
-		}
-
-		bitmask = uint64(mask)
-	case int64:
-		// {field: {$bitsAllClear: bitmask}}
-		if mask < 0 {
-			return 0, errNegativeNumber
-		}
-
-		bitmask = uint64(mask)
 
 	case float64:
 		// {field: {$bitsAllClear: bitmask}}
@@ -164,6 +150,22 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 				bitmask |= 1 << 63
 			}
 		}
+
+	case int32:
+		// {field: {$bitsAllClear: bitmask}}
+		if mask < 0 {
+			return 0, errNegativeNumber
+		}
+
+		bitmask = uint64(mask)
+
+	case int64:
+		// {field: {$bitsAllClear: bitmask}}
+		if mask < 0 {
+			return 0, errNegativeNumber
+		}
+
+		bitmask = uint64(mask)
 
 	default:
 		return 0, errNotBinaryMask
