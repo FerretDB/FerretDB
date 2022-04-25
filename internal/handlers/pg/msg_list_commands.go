@@ -12,52 +12,43 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dummy
+package pg
 
 import (
 	"context"
-	"testing"
+	"sort"
 
-	"github.com/stretchr/testify/assert"
+	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-func TestDummyHandler(t *testing.T) {
-	t.Parallel()
+// MsgListCommands returns a list of currently supported commands.
+func (h *Handler) MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	var reply wire.OpMsg
 
-	h := New()
-	ctx := context.Background()
-	var msg wire.OpMsg
-	err := msg.SetSections(wire.OpMsgSection{
+	cmdList := must.NotFail(types.NewDocument())
+	names := maps.Keys(common.Commands)
+	sort.Strings(names)
+	for _, name := range names {
+		cmdList.Set(name, must.NotFail(types.NewDocument(
+			"help", common.Commands[name].Help,
+		)))
+	}
+
+	err := reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"commands", must.NotFail(types.NewDocument()),
+			"commands", cmdList,
 			"ok", float64(1),
 		))},
 	})
-	assert.NoError(t, err)
-
-	errNotImplemented := common.NewErrorMsg(common.ErrNotImplemented, "I'm a dummy, not a handler")
-	for k, command := range common.Commands {
-		t.Log(k)
-		_, _ = command.Handler(h, ctx, &msg)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
-	msgq := &wire.OpQuery{
-		Flags:              0,
-		FullCollectionName: "admin.$cmd",
-		NumberToSkip:       0,
-		NumberToReturn:     -1,
-		Query: must.NotFail(types.NewDocument(
-			"ismaster", true,
-			"loadBalanced", false,
-		)),
-		ReturnFieldsSelector: nil,
-	}
-	assert.NoError(t, err)
-	_, err = h.MsgQueryCmd(ctx, msgq)
-	assert.Equal(t, err, errNotImplemented)
+	return &reply, nil
 }

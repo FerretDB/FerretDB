@@ -170,7 +170,7 @@ func (h *Handler) MsgDebugPanic(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 	return nil, common.NewErrorMsg(common.ErrNotImplemented, "I'm a dummy, not a handler")
 }
 
-// MsgQueryCmd used for debugging purposes.
+// MsgQueryCmd used to query user command.
 func (h *Handler) MsgQueryCmd(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
 	return nil, common.NewErrorMsg(common.ErrNotImplemented, "I'm a dummy, not a handler")
 }
