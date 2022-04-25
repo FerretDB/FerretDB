@@ -25,11 +25,8 @@ import (
 // Handler data struct.
 type Handler struct{}
 
-// NewOpts represents handler configuration.
-type NewOpts struct{}
-
 // New returns a new handler.
-func New(opts *NewOpts) common.Handler {
+func New() common.Handler {
 	return new(Handler)
 }
 
