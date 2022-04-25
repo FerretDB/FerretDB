@@ -20,6 +20,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -35,20 +36,15 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/301
-	// if err = common.UnimplementedNonDefault(document, "nameOnly", func(v any) bool {
-	// 	nameOnly, ok := v.(bool)
-	// 	return ok && !nameOnly
-	// }); err != nil {
-	// 	return nil, err
-	// }
-
 	common.Ignored(document, h.l, "comment", "authorizedDatabases")
 
 	databaseNames, err := h.pgPool.Schemas(ctx)
 	if err != nil {
 		return nil, err
 	}
+
+	v, _ := document.Get("nameOnly")
+	nameOnly, _ := v.(bool)
 
 	databases := types.MakeArray(len(databaseNames))
 	for _, databaseName := range databaseNames {
@@ -66,21 +62,26 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
-
 			sizeOnDisk += tableSize
 		}
 
-		d := types.MustNewDocument(
+		d := must.NotFail(types.NewDocument(
 			"name", databaseName,
 			"sizeOnDisk", sizeOnDisk,
 			"empty", sizeOnDisk == 0,
-		)
+		))
 
 		matches, err := common.FilterDocument(d, filter)
 		if err != nil {
 			return nil, err
 		}
+
 		if matches {
+			if nameOnly {
+				d = must.NotFail(types.NewDocument(
+					"name", databaseName,
+				))
+			}
 			if err = databases.Append(d); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
@@ -95,12 +96,12 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{types.MustNewDocument(
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"databases", databases,
 			"totalSize", totalSize,
 			"totalSizeMb", totalSize/1024/1024,
 			"ok", float64(1),
-		)},
+		))},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
