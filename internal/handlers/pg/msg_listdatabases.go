@@ -43,8 +43,8 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	nameOnly, err := common.GetOptionalParam(document, "nameOnly", false)
-	if err != nil {
+	var nameOnly bool
+	if nameOnly, err = common.GetOptionalParam(document, "nameOnly", false); err != nil {
 		return nil, err
 	}
 
@@ -95,6 +95,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 		err = reply.SetSections(wire.OpMsgSection{
 			Documents: []*types.Document{must.NotFail(types.NewDocument(
 				"databases", databases,
+				"ok", float64(1),
 			))},
 		})
 		if err != nil {
