@@ -16,6 +16,7 @@ package dummy
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -42,37 +43,24 @@ func TestDummyHandler(t *testing.T) {
 
 	errNotImplemented := common.NewErrorMsg(common.ErrNotImplemented, "I'm a dummy, not a handler")
 
-	for _, fn := range []func(context.Context, *wire.OpMsg) (*wire.OpMsg, error){
-		h.MsgBuildInfo,
-		h.MsgCollStats,
-		h.MsgCreate,
-		h.MsgDataSize,
-		h.MsgDBStats,
-		h.MsgDrop,
-		h.MsgDropDatabase,
-		h.MsgGetCmdLineOpts,
-		h.MsgGetLog,
-		h.MsgGetParameter,
-		h.MsgHostInfo,
-		h.MsgIsMaster,
-		h.MsgHello,
-		h.MsgListCollections,
-		h.MsgListDatabases,
-		h.MsgPing,
-		h.MsgServerStatus,
-		h.MsgWhatsMyURI,
-		h.MsgCount,
-		h.MsgCreateIndexes,
-		h.MsgDelete,
-		h.MsgFind,
-		h.MsgFindAndModify,
-		h.MsgInsert,
-		h.MsgUpdate,
-		h.MsgDebugError,
-		h.MsgDebugPanic,
-	} {
-		_, err := fn(ctx, &msg)
-		assert.Equal(t, err, errNotImplemented)
+	for k, command := range common.Commands {
+		t.Log(k)
+
+		switch k {
+		case "debug_panic":
+			continue
+
+		case "debug_error":
+			_, err := command.Handler(h, ctx, &msg)
+			assert.Equal(t, err, errors.New("debug_error"))
+
+		case "listCommands":
+			assert.Nil(t, command.Handler, k)
+
+		default:
+			_, err := command.Handler(h, ctx, &msg)
+			assert.Equal(t, err, errNotImplemented, k)
+		}
 	}
 
 	msgq := new(wire.OpQuery)

@@ -17,6 +17,7 @@ package pg
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync/atomic"
 	"time"
@@ -204,9 +205,9 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg, cmd string) 
 		return listCommands(ctx, msg)
 	}
 
-	if cmd, ok := commands[cmd]; ok {
-		if cmd.handler != nil {
-			return cmd.handler(h, ctx, msg)
+	if cmd, ok := common.Commands[cmd]; ok {
+		if cmd.Handler != nil {
+			return cmd.Handler(h, ctx, msg)
 		}
 	}
 
@@ -221,4 +222,22 @@ func (h *Handler) handleOpQuery(ctx context.Context, query *wire.OpQuery, cmd st
 
 	msg := fmt.Sprintf("handleOpQuery: unhandled collection %q", query.FullCollectionName)
 	return nil, common.NewErrorMsg(common.ErrNotImplemented, msg)
+}
+
+// MsgQueryCmd used for debugging purposes.
+// XXX: now it cannot be called from handleOpMsg
+// but the presence of the function is necessary to implement common.Handler interface
+// in the process of extracting common handler interface.
+func (h *Handler) MsgQueryCmd(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
+	panic("unreachable code")
+}
+
+// MsgDebugError used for debugging purposes.
+func (h *Handler) MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	return nil, errors.New("debug_error")
+}
+
+// MsgDebugPanic used for debugging purposes.
+func (h *Handler) MsgDebugPanic(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	panic("debug_panic")
 }
