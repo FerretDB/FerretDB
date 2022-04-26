@@ -22,11 +22,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestEvalutionMod(t *testing.T) {
+func TestQueryEvaluationMod(t *testing.T) {
 	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
 		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
 	}
@@ -396,6 +399,39 @@ func TestEvalutionMod(t *testing.T) {
 				AssertEqualError(t, tc.err, err)
 				return
 			}
+			require.NoError(t, err)
+
+			var actual []bson.D
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
+		})
+	}
+}
+
+func TestQueryEvaluationRegex(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t, shareddata.Scalars)
+
+	for name, tc := range map[string]struct {
+		value       any
+		expectedIDs []any
+	}{
+		"Regex": {
+			value:       primitive.Regex{Pattern: "foo"},
+			expectedIDs: []any{"string"},
+		},
+		"RegexWithOption": {
+			value:       primitive.Regex{Pattern: "42", Options: "i"},
+			expectedIDs: []any{"string-double", "string-whole"},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			filter := bson.D{{"value", bson.D{{"$regex", tc.value}}}}
+			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			require.NoError(t, err)
 
 			var actual []bson.D
