@@ -321,7 +321,6 @@ func filterFieldArraySlice(docValue *types.Array, projectionValue any) error {
 			elementsToSkip = docValue.Len() + elementsToSkip
 		}
 	}
-
 	subslice, err := docValue.Subslice(elementsToSkip, elementsToReturn)
 	if err != nil {
 		panic(fmt.Sprintf("unexpected error: %v", err))
