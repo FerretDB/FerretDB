@@ -22,7 +22,7 @@ import (
 
 // Command represents a handler command.
 type Command struct {
-	// Help is show in help function
+	// Help is shown in the help function
 	Help string
 
 	// Handler processes command
