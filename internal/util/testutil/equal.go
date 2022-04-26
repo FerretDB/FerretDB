@@ -27,40 +27,39 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // AssertEqual asserts that two BSON values are equal.
-func AssertEqual[T types.Type](t testing.TB, expected, actual T) bool {
-	t.Helper()
+func AssertEqual[T types.Type](tb testing.TB, expected, actual T) bool {
+	tb.Helper()
 
-	if Equal(expected, actual) {
+	if equal(tb, expected, actual) {
 		return true
 	}
 
-	expectedS, actualS, diff := diffValues(t, expected, actual)
+	expectedS, actualS, diff := diffValues(tb, expected, actual)
 	msg := fmt.Sprintf("Not equal: \nexpected: %s\nactual  : %s\n%s", expectedS, actualS, diff)
-	return assert.Fail(t, msg)
+	return assert.Fail(tb, msg)
 }
 
 // AssertNotEqual asserts that two BSON values are not equal.
-func AssertNotEqual[T types.Type](t testing.TB, expected, actual T) bool {
-	t.Helper()
+func AssertNotEqual[T types.Type](tb testing.TB, expected, actual T) bool {
+	tb.Helper()
 
-	if !Equal(expected, actual) {
+	if !equal(tb, expected, actual) {
 		return true
 	}
 
 	// The diff of equal values should be empty, but produce it anyway to catch subtle bugs.
-	expectedS, actualS, diff := diffValues(t, expected, actual)
+	expectedS, actualS, diff := diffValues(tb, expected, actual)
 	msg := fmt.Sprintf("Unexpected equal: \nexpected: %s\nactual  : %s\n%s", expectedS, actualS, diff)
-	return assert.Fail(t, msg)
+	return assert.Fail(tb, msg)
 }
 
 // diffValues returns a readable form of given values and the difference between them.
-func diffValues[T types.Type](t testing.TB, expected, actual T) (expectedS string, actualS string, diff string) {
-	expectedS = Dump(t, expected)
-	actualS = Dump(t, actual)
+func diffValues[T types.Type](tb testing.TB, expected, actual T) (expectedS string, actualS string, diff string) {
+	expectedS = Dump(tb, expected)
+	actualS = Dump(tb, actual)
 
 	var err error
 	diff, err = difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
@@ -70,54 +69,45 @@ func diffValues[T types.Type](t testing.TB, expected, actual T) (expectedS strin
 		ToFile:   "actual",
 		Context:  1,
 	})
-	require.NoError(t, err)
+	require.NoError(tb, err)
 
 	return
 }
 
-// Equal compares any BSON values.
-func Equal[T types.Type](v1, v2 T) bool {
-	return equal(v1, v2)
-}
+// equal compares any BSON values in a way that is useful for tests:
+//  * float64 NaNs are equal to each other;
+//  * time.Time values are compared using Equal method.
+//
+// This function is for tests; it should not try to convert values to different types before comparing them.
+func equal(tb testing.TB, v1, v2 any) bool {
+	tb.Helper()
 
-// equal compares any BSON values.
-func equal(v1, v2 any) bool {
 	switch v1 := v1.(type) {
 	case *types.Document:
 		d, ok := v2.(*types.Document)
 		if !ok {
 			return false
 		}
-		if !equalDocuments(v1, d) {
-			return false
-		}
+		return equalDocuments(tb, v1, d)
 
 	case *types.Array:
 		a, ok := v2.(*types.Array)
 		if !ok {
 			return false
 		}
-		if !equalArrays(v1, a) {
-			return false
-		}
+		return equalArrays(tb, v1, a)
 
 	default:
-		if !equalScalars(v1, v2) {
-			return false
-		}
+		return equalScalars(tb, v1, v2)
 	}
-
-	return true
 }
 
-// equalDocuments compares BSON documents. Nils are not allowed.
-func equalDocuments(v1, v2 *types.Document) bool {
-	if v1 == nil {
-		panic("v1 is nil")
-	}
-	if v2 == nil {
-		panic("v2 is nil")
-	}
+// equalDocuments compares BSON documents.
+func equalDocuments(tb testing.TB, v1, v2 *types.Document) bool {
+	tb.Helper()
+
+	require.NotNil(tb, v1)
+	require.NotNil(tb, v2)
 
 	keys := v1.Keys()
 	if !slices.Equal(keys, v2.Keys()) {
@@ -125,9 +115,13 @@ func equalDocuments(v1, v2 *types.Document) bool {
 	}
 
 	for _, k := range keys {
-		f1 := must.NotFail(v1.Get(k))
-		f2 := must.NotFail(v2.Get(k))
-		if !equal(f1, f2) {
+		f1, err := v1.Get(k)
+		require.NoError(tb, err)
+
+		f2, err := v2.Get(k)
+		require.NoError(tb, err)
+
+		if !equal(tb, f1, f2) {
 			return false
 		}
 	}
@@ -135,14 +129,12 @@ func equalDocuments(v1, v2 *types.Document) bool {
 	return true
 }
 
-// equalArrays compares BSON arrays. Nils are not allowed.
-func equalArrays(v1, v2 *types.Array) bool {
-	if v1 == nil {
-		panic("v1 is nil")
-	}
-	if v2 == nil {
-		panic("v2 is nil")
-	}
+// equalArrays compares BSON arrays.
+func equalArrays(tb testing.TB, v1, v2 *types.Array) bool {
+	tb.Helper()
+
+	require.NotNil(tb, v1)
+	require.NotNil(tb, v2)
 
 	l := v1.Len()
 	if l != v2.Len() {
@@ -150,9 +142,13 @@ func equalArrays(v1, v2 *types.Array) bool {
 	}
 
 	for i := 0; i < l; i++ {
-		el1 := must.NotFail(v1.Get(i))
-		el2 := must.NotFail(v2.Get(i))
-		if !equal(el1, el2) {
+		el1, err := v1.Get(i)
+		require.NoError(tb, err)
+
+		el2, err := v2.Get(i)
+		require.NoError(tb, err)
+
+		if !equal(tb, el1, el2) {
 			return false
 		}
 	}
@@ -160,10 +156,13 @@ func equalArrays(v1, v2 *types.Array) bool {
 	return true
 }
 
-// equalScalars compares BSON scalar values in a way that is useful for tests:
-//  * float64 NaNs are equal to each other;
-//  * time.Time values are compared using Equal method.
-func equalScalars(v1, v2 any) bool {
+// equalScalars compares BSON scalar values.
+func equalScalars(tb testing.TB, v1, v2 any) bool {
+	tb.Helper()
+
+	require.NotNil(tb, v1)
+	require.NotNil(tb, v2)
+
 	switch s1 := v1.(type) {
 	case float64:
 		s2, ok := v2.(float64)
@@ -243,6 +242,7 @@ func equalScalars(v1, v2 any) bool {
 		return s1 == s2
 
 	default:
-		panic(fmt.Sprintf("unhandled types %T, %T", v1, v2))
+		tb.Fatalf("unhandled types %T, %T", v1, v2)
+		panic("not reached")
 	}
 }
