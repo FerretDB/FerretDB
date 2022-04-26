@@ -1476,3 +1476,47 @@ func TestQueryComparisonNe(t *testing.T) {
 		})
 	}
 }
+
+func TestQueryComparisonMultipleOperators(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+
+	for name, tc := range map[string]struct {
+		filter      any
+		expectedIDs []any
+		err         mongo.CommandError
+	}{
+		"InLteGte": {
+			filter: bson.D{
+				{"_id", bson.D{{"$in", bson.A{"int32"}}}},
+				{"value", bson.D{{"$lte", int32(42)}, {"$gte", int32(0)}}},
+			},
+			expectedIDs: []any{"int32"},
+		},
+		"NinEqNe": {
+			filter: bson.D{
+				{"_id", bson.D{{"$nin", bson.A{"int64"}}, {"$ne", "int32"}}},
+				{"value", bson.D{{"$eq", int32(42)}}},
+			},
+			expectedIDs: []any{"array", "array-three", "double-whole"},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			if tc.err.Code != 0 {
+				require.Nil(t, tc.expectedIDs)
+				AssertEqualError(t, tc.err, err)
+				return
+			}
+			require.NoError(t, err)
+
+			var actual []bson.D
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
+		})
+	}
+}
