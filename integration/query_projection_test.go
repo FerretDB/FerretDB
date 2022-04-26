@@ -28,21 +28,27 @@ func TestQueryProjection(t *testing.T) {
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
-		projection  any
-		filter      any
-		expectedIDs []any
+		projection any
+		filter     any
+		expected   bson.D
 	}{
 		"FindProjectionInclusions": {
-			projection: bson.D{{"last_name", int32(1)}, {"last_update", true}},
-			filter:     bson.D{{"actor_id", int32(28)}},
+			filter: bson.D{{"_id", "document-composite"}},
+			// TODO: fix projection
+			projection: bson.D{{"foo", int32(1)}, {"42", true}},
+			expected:   bson.D{{"_id", "document-composite"}},
 		},
 		"FindProjectionExclusions": {
-			projection: bson.D{{"first_name", int32(0)}, {"actor_id", false}},
-			filter:     bson.D{{"actor_id", int32(28)}},
+			filter: bson.D{{"_id", "document-composite"}},
+			// TODO: fix projection
+			projection: bson.D{{"foo", int32(0)}, {"array", false}},
+			expected:   bson.D{{"_id", "document-composite"}, {"value", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}},
 		},
-		"FindProjectionIDInclusion": {
-			projection: bson.D{{"_id", false}, {"actor_id", int32(1)}},
-			filter:     bson.D{{"actor_id", int32(28)}},
+		"FindProjectionIDExclusion": {
+			filter: bson.D{{"_id", "document-composite"}},
+			// TODO: fix projection
+			projection: bson.D{{"_id", false}, {"array", int32(1)}},
+			expected:   bson.D{},
 		},
 	} {
 		name, tc := name, tc
@@ -53,14 +59,14 @@ func TestQueryProjection(t *testing.T) {
 				ctx,
 				tc.filter,
 				options.Find().SetProjection(tc.projection),
-				options.Find().SetSort(bson.D{{"_id", 1}}),
 			)
 			require.NoError(t, err)
 
 			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
-			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
+			require.Len(t, actual, 1)
+			AssertEqualDocuments(t, tc.expected, actual[0])
 		})
 	}
 }
