@@ -242,13 +242,6 @@ func equalScalars(v1, v2 any) bool {
 		}
 		return s1 == s2
 
-	case types.CString:
-		s2, ok := v2.(types.CString)
-		if !ok {
-			return false
-		}
-		return s1 == s2
-
 	default:
 		panic(fmt.Sprintf("unhandled types %T, %T", v1, v2))
 	}
