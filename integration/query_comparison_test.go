@@ -60,21 +60,21 @@ func TestQueryComparisonImplicit(t *testing.T) {
 			filter:      bson.D{{"value", bson.A{int32(42), "foo", nil}}},
 			expectedIDs: []any{"array-three"},
 		},
+		"ArrayNoSuchField": {
+			filter:      bson.D{{"no-such-field", bson.A{42}}},
+			expectedIDs: []any{},
+		},
 		"ArrayEmbedded": {
 			filter:      bson.D{{"value", bson.A{bson.A{int32(42), "foo"}, nil}}},
 			expectedIDs: []any{"array-embedded"},
-		},
-		"ArrayEmbeddedNoSuchField": {
-			filter:      bson.D{{"no-such-field.some[0]", 42}},
-			expectedIDs: []any{},
 		},
 		"ArrayShuffledValues": {
 			filter:      bson.D{{"value", bson.A{"foo", nil, int32(42)}}},
 			expectedIDs: []any{},
 		},
-		"ArrayValue": {
-			filter:      bson.D{{"value", "foo"}},
-			expectedIDs: []any{"array-three", "string"},
+		"ArrayDotNotationNoSuchField": {
+			filter:      bson.D{{"value.some[0]", bson.A{42}}},
+			expectedIDs: []any{},
 		},
 
 		"Double": {
