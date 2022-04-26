@@ -34,19 +34,19 @@ func TestQueryProjection(t *testing.T) {
 	}{
 		"FindProjectionInclusions": {
 			filter: bson.D{{"_id", "document-composite"}},
-			// TODO: fix projection
+			// TODO: https://github.com/FerretDB/FerretDB/issues/537
 			projection: bson.D{{"foo", int32(1)}, {"42", true}},
 			expected:   bson.D{{"_id", "document-composite"}},
 		},
 		"FindProjectionExclusions": {
 			filter: bson.D{{"_id", "document-composite"}},
-			// TODO: fix projection
+			// TODO: https://github.com/FerretDB/FerretDB/issues/537
 			projection: bson.D{{"foo", int32(0)}, {"array", false}},
 			expected:   bson.D{{"_id", "document-composite"}, {"value", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}},
 		},
 		"FindProjectionIDExclusion": {
 			filter: bson.D{{"_id", "document-composite"}},
-			// TODO: fix projection
+			// TODO: https://github.com/FerretDB/FerretDB/issues/537
 			projection: bson.D{{"_id", false}, {"array", int32(1)}},
 			expected:   bson.D{},
 		},
@@ -55,11 +55,7 @@ func TestQueryProjection(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			cursor, err := collection.Find(
-				ctx,
-				tc.filter,
-				options.Find().SetProjection(tc.projection),
-			)
+			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetProjection(tc.projection))
 			require.NoError(t, err)
 
 			var actual []bson.D

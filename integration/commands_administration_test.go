@@ -200,7 +200,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 }
 
 func TestStatisticsCommands(t *testing.T) {
-	t.Skip("TODO: response deltas investigation needed")
+	t.Skip("TODO: https://github.com/FerretDB/FerretDB/issues/536")
 	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
