@@ -36,14 +36,21 @@ func TestQueryProjectionElemMatch(t *testing.T) {
 				"value",
 				bson.D{{"$elemMatch", bson.D{{"field", bson.D{{"$eq", 42}}}}}},
 			}},
-			expectedIDs: []any{"document-composite-2"},
+			expectedIDs: []any{
+				"document-composite-2",
+			},
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			cursor, err := collection.Find(ctx, bson.D{}, options.Find().SetSort(bson.D{{"_id", 1}}))
+			cursor, err := collection.Find(
+				ctx,
+				bson.D{{"_id", "document-composite-2"}},
+				options.Find().SetProjection(tc.projection),
+				options.Find().SetSort(bson.D{{"_id", 1}}),
+			)
 			require.NoError(t, err)
 
 			var actual []bson.D
