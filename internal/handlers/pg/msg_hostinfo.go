@@ -36,7 +36,7 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, lazyerrors.Error(err)
 	}
 
-	osInfo := make(map[string]string)
+	osInfo := map[string]string{}
 
 	if runtime.GOOS == "linux" {
 		file, err := os.Open("/etc/os-release")

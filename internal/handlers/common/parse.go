@@ -26,7 +26,7 @@ import (
 func ParseOSRelease(reader io.Reader) (map[string]string, error) {
 	scanner := bufio.NewScanner(reader)
 
-	configParams := make(map[string]string)
+	configParams := map[string]string{}
 
 	for scanner.Scan() {
 		str := strings.Split(scanner.Text(), "=")
