@@ -70,7 +70,7 @@ func TestEvalutionMod(t *testing.T) {
 	for name, tc := range map[string]struct {
 		filter      bson.D
 		expectedIDs []any
-		err         mongo.CommandError
+		err         *mongo.CommandError
 	}{
 		"Int32": {
 			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{4000, 80}}}}},
@@ -146,7 +146,7 @@ func TestEvalutionMod(t *testing.T) {
 		},
 		"MaxInt64_overflowDivisor": {
 			filter: bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854776833e+18, 0}}}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `malformed mod, divisor value is invalid :: caused by :: Out of bounds coercing to integral value`,
@@ -154,7 +154,7 @@ func TestEvalutionMod(t *testing.T) {
 		},
 		"MaxInt64_overflowBoth": {
 			filter: bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854776833e+18, 9.223372036854776833e+18}}}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `malformed mod, divisor value is invalid :: caused by :: Out of bounds coercing to integral value`,
@@ -202,7 +202,7 @@ func TestEvalutionMod(t *testing.T) {
 		},
 		"MinInt64_overflowDivisor": {
 			filter: bson.D{{"value", bson.D{{"$mod", bson.A{-9.223372036854776833e+18, 0}}}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `malformed mod, divisor value is invalid :: caused by :: Out of bounds coercing to integral value`,
@@ -210,7 +210,7 @@ func TestEvalutionMod(t *testing.T) {
 		},
 		"MinInt64_overflowBoth": {
 			filter: bson.D{{"value", bson.D{{"$mod", bson.A{-9.223372036854776833e+18, -9.223372036854776833e+18}}}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `malformed mod, divisor value is invalid :: caused by :: Out of bounds coercing to integral value`,
@@ -218,7 +218,7 @@ func TestEvalutionMod(t *testing.T) {
 		},
 		"Float64_1": {
 			filter: bson.D{{"value", bson.D{{"$mod", bson.A{1.79769e+307, 0}}}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `malformed mod, divisor value is invalid :: caused by :: Out of bounds coercing to integral value`,
@@ -226,7 +226,7 @@ func TestEvalutionMod(t *testing.T) {
 		},
 		"Float64_2": {
 			filter: bson.D{{"value", bson.D{{"$mod", bson.A{math.MaxFloat64, 0}}}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `malformed mod, divisor value is invalid :: caused by :: Out of bounds coercing to integral value`,
@@ -234,7 +234,7 @@ func TestEvalutionMod(t *testing.T) {
 		},
 		"Float64_3": {
 			filter: bson.D{{"value", bson.D{{"$mod", bson.A{math.MaxFloat64, math.MaxFloat64}}}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `malformed mod, divisor value is invalid :: caused by :: Out of bounds coercing to integral value`,
@@ -266,7 +266,7 @@ func TestEvalutionMod(t *testing.T) {
 		},
 		"DivisorZero": {
 			filter: bson.D{{"value", bson.D{{"$mod", bson.A{0, 1}}}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `divisor cannot be 0`,
@@ -274,7 +274,7 @@ func TestEvalutionMod(t *testing.T) {
 		},
 		"ZeroNegativeDevisor": {
 			filter: bson.D{{"$mod", bson.A{math.Copysign(0, -1), 1}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `unknown top level operator: $mod. If you have a field name that starts with a '$' symbol, consider using $getField or $setField.`,
@@ -282,7 +282,7 @@ func TestEvalutionMod(t *testing.T) {
 		},
 		"DivisorSmallestNonzeroFloat64": {
 			filter: bson.D{{"value", bson.D{{"$mod", bson.A{math.SmallestNonzeroFloat64, 1}}}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `divisor cannot be 0`,
@@ -294,7 +294,7 @@ func TestEvalutionMod(t *testing.T) {
 		},
 		"EmptyArray": {
 			filter: bson.D{{"value", bson.D{{"$mod", bson.A{}}}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `malformed mod, not enough elements`,
@@ -302,7 +302,7 @@ func TestEvalutionMod(t *testing.T) {
 		},
 		"NotEnoughElements": {
 			filter: bson.D{{"value", bson.D{{"$mod", bson.A{1}}}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `malformed mod, not enough elements`,
@@ -310,7 +310,7 @@ func TestEvalutionMod(t *testing.T) {
 		},
 		"TooManyElements": {
 			filter: bson.D{{"value", bson.D{{"$mod", bson.A{1, 2, 3}}}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `malformed mod, too many elements`,
@@ -318,7 +318,7 @@ func TestEvalutionMod(t *testing.T) {
 		},
 		"DivisorNotNumber": {
 			filter: bson.D{{"value", bson.D{{"$mod", bson.A{"1", 2}}}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `malformed mod, divisor not a number`,
@@ -326,7 +326,7 @@ func TestEvalutionMod(t *testing.T) {
 		},
 		"RemainderNotNumber": {
 			filter: bson.D{{"value", bson.D{{"$mod", bson.A{1, "2"}}}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `malformed mod, remainder not a number`,
@@ -334,7 +334,7 @@ func TestEvalutionMod(t *testing.T) {
 		},
 		"Nil": {
 			filter: bson.D{{"value", bson.D{{"$mod", bson.A{nil, 3}}}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `malformed mod, divisor not a number`,
@@ -342,7 +342,7 @@ func TestEvalutionMod(t *testing.T) {
 		},
 		"DivisorNaN": {
 			filter: bson.D{{"value", bson.D{{"$mod", bson.A{math.NaN(), 1}}}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 2,
 				Name: "BadValue",
 				Message: `malformed mod, divisor value is invalid :: caused by :: ` +
@@ -351,7 +351,7 @@ func TestEvalutionMod(t *testing.T) {
 		},
 		"RemainderNaN": {
 			filter: bson.D{{"value", bson.D{{"$mod", bson.A{1, math.NaN()}}}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 2,
 				Name: "BadValue",
 				Message: `malformed mod, remainder value is invalid :: caused by :: ` +
@@ -360,7 +360,7 @@ func TestEvalutionMod(t *testing.T) {
 		},
 		"InfinityNegative": {
 			filter: bson.D{{"value", bson.D{{"$mod", bson.A{1, math.Inf(-1)}}}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 2,
 				Name: "BadValue",
 				Message: `malformed mod, remainder value is invalid :: caused by :: ` +
@@ -369,7 +369,7 @@ func TestEvalutionMod(t *testing.T) {
 		},
 		"Infinity": {
 			filter: bson.D{{"value", bson.D{{"$mod", bson.A{1, math.Inf(0)}}}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 2,
 				Name: "BadValue",
 				Message: `malformed mod, remainder value is invalid :: caused by :: ` +
@@ -378,7 +378,7 @@ func TestEvalutionMod(t *testing.T) {
 		},
 		"InfinityPositive": {
 			filter: bson.D{{"value", bson.D{{"$mod", bson.A{math.Inf(+1), 0}}}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 2,
 				Name: "BadValue",
 				Message: `malformed mod, divisor value is invalid :: caused by :: ` +
@@ -391,9 +391,9 @@ func TestEvalutionMod(t *testing.T) {
 			t.Parallel()
 
 			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err.Code != 0 {
+			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, tc.err, err)
+				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)

@@ -29,6 +29,8 @@ type ErrorCode int32
 
 const (
 	// For ProtocolError only.
+	ErrWeird = ErrorCode(0) // WeirdError
+
 	errInternalError = ErrorCode(1) // InternalError
 
 	ErrBadValue          = ErrorCode(2)     // BadValue
@@ -56,9 +58,6 @@ type Error struct {
 //
 // Code can't be zero, err can't be nil.
 func NewError(code ErrorCode, err error) error {
-	if code == 0 {
-		panic("code is 0")
-	}
 	if err == nil {
 		panic("err is nil")
 	}

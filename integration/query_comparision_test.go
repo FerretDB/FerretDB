@@ -375,7 +375,7 @@ func TestQueryComparisonGt(t *testing.T) {
 	for name, tc := range map[string]struct {
 		value       any
 		expectedIDs []any
-		err         mongo.CommandError
+		err         *mongo.CommandError
 	}{
 		// TODO document, array
 
@@ -462,7 +462,7 @@ func TestQueryComparisonGt(t *testing.T) {
 
 		"Regex": {
 			value: primitive.Regex{Pattern: "foo"},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: "Can't have RegEx as arg to predicate over field 'value'.",
@@ -524,9 +524,9 @@ func TestQueryComparisonGt(t *testing.T) {
 
 			filter := bson.D{{"value", bson.D{{"$gt", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err.Code != 0 {
+			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, tc.err, err)
+				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)
@@ -547,7 +547,7 @@ func TestQueryComparisonGte(t *testing.T) {
 	for name, tc := range map[string]struct {
 		value       any
 		expectedIDs []any
-		err         mongo.CommandError
+		err         *mongo.CommandError
 	}{
 		// TODO document, array
 
@@ -631,7 +631,7 @@ func TestQueryComparisonGte(t *testing.T) {
 
 		"Regex": {
 			value: primitive.Regex{Pattern: "foo"},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: "Can't have RegEx as arg to predicate over field 'value'.",
@@ -685,9 +685,9 @@ func TestQueryComparisonGte(t *testing.T) {
 
 			filter := bson.D{{"value", bson.D{{"$gte", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err.Code != 0 {
+			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, tc.err, err)
+				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)
@@ -708,7 +708,7 @@ func TestQueryComparisonLt(t *testing.T) {
 	for name, tc := range map[string]struct {
 		value       any
 		expectedIDs []any
-		err         mongo.CommandError
+		err         *mongo.CommandError
 	}{
 		// TODO document, array
 
@@ -794,7 +794,7 @@ func TestQueryComparisonLt(t *testing.T) {
 
 		"Regex": {
 			value: primitive.Regex{Pattern: "foo"},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: "Can't have RegEx as arg to predicate over field 'value'.",
@@ -855,9 +855,9 @@ func TestQueryComparisonLt(t *testing.T) {
 
 			filter := bson.D{{"value", bson.D{{"$lt", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err.Code != 0 {
+			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, tc.err, err)
+				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)
@@ -878,7 +878,7 @@ func TestQueryComparisonLte(t *testing.T) {
 	for name, tc := range map[string]struct {
 		value       any
 		expectedIDs []any
-		err         mongo.CommandError
+		err         *mongo.CommandError
 	}{
 		// TODO document, array
 
@@ -968,7 +968,7 @@ func TestQueryComparisonLte(t *testing.T) {
 
 		"Regex": {
 			value: primitive.Regex{Pattern: "foo"},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: "Can't have RegEx as arg to predicate over field 'value'.",
@@ -1022,9 +1022,9 @@ func TestQueryComparisonLte(t *testing.T) {
 
 			filter := bson.D{{"value", bson.D{{"$lte", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err.Code != 0 {
+			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, tc.err, err)
+				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)
@@ -1055,7 +1055,7 @@ func TestQueryComparisonNin(t *testing.T) {
 	for name, tc := range map[string]struct {
 		value       any
 		expectedIDs []any
-		err         mongo.CommandError
+		err         *mongo.CommandError
 	}{
 		"ForScalarDataTypes": {
 			value:       scalarDataTypesFilter,
@@ -1081,7 +1081,7 @@ func TestQueryComparisonNin(t *testing.T) {
 
 		"$regex": {
 			value: bson.A{bson.D{{"$regex", "/foo/"}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `cannot nest $ under $in`,
@@ -1109,7 +1109,7 @@ func TestQueryComparisonNin(t *testing.T) {
 
 		"NilInsteadOfArray": {
 			value: nil,
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `$nin needs an array`,
@@ -1117,7 +1117,7 @@ func TestQueryComparisonNin(t *testing.T) {
 		},
 		"StringInsteadOfArray": {
 			value: "foo",
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `$nin needs an array`,
@@ -1130,9 +1130,9 @@ func TestQueryComparisonNin(t *testing.T) {
 
 			filter := bson.D{{"value", bson.D{{"$nin", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err.Code != 0 {
+			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, tc.err, err)
+				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)
@@ -1163,7 +1163,7 @@ func TestQueryComparisonIn(t *testing.T) {
 	for name, tc := range map[string]struct {
 		value       any
 		expectedIDs []any
-		err         mongo.CommandError
+		err         *mongo.CommandError
 	}{
 		"ForScalarDataTypes": {
 			value: scalarDataTypesFilter,
@@ -1190,7 +1190,7 @@ func TestQueryComparisonIn(t *testing.T) {
 
 		"$regex": {
 			value: bson.A{bson.D{{"$regex", "/foo/"}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `cannot nest $ under $in`,
@@ -1203,7 +1203,7 @@ func TestQueryComparisonIn(t *testing.T) {
 
 		"NilInsteadOfArray": {
 			value: nil,
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `$in needs an array`,
@@ -1211,7 +1211,7 @@ func TestQueryComparisonIn(t *testing.T) {
 		},
 		"StringInsteadOfArray": {
 			value: "foo",
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `$in needs an array`,
@@ -1224,9 +1224,9 @@ func TestQueryComparisonIn(t *testing.T) {
 
 			filter := bson.D{{"value", bson.D{{"$in", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err.Code != 0 {
+			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, tc.err, err)
+				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)
@@ -1247,7 +1247,7 @@ func TestQueryComparisonNe(t *testing.T) {
 	for name, tc := range map[string]struct {
 		value        any
 		unexpectedID string
-		err          mongo.CommandError
+		err          *mongo.CommandError
 	}{
 		"Document": {
 			value:        bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}},
@@ -1398,7 +1398,7 @@ func TestQueryComparisonNe(t *testing.T) {
 
 		"Regex": {
 			value: primitive.Regex{Pattern: "foo"},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `Can't have regex as arg to $ne.`,
@@ -1411,8 +1411,8 @@ func TestQueryComparisonNe(t *testing.T) {
 
 			filter := bson.D{{"value", bson.D{{"$ne", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err.Code != 0 {
-				AssertEqualError(t, tc.err, err)
+			if tc.err != nil {
+				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)
