@@ -16,7 +16,6 @@ package handlers
 
 import (
 	"context"
-	"strconv"
 	"testing"
 	"time"
 
@@ -29,7 +28,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
-	"github.com/FerretDB/FerretDB/internal/util/version"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -115,47 +113,6 @@ func TestReadOnlyHandlers(t *testing.T) {
 	}
 
 	testCases := map[string]testCase{
-		"BuildInfo": {
-			req: types.MustNewDocument(
-				"buildInfo", int32(1),
-			),
-			resp: types.MustNewDocument(
-				"version", "5.0.42",
-				"gitVersion", version.Get().Commit,
-				"modules", must.NotFail(types.NewArray()),
-				"sysInfo", "deprecated",
-				"versionArray", must.NotFail(types.NewArray(int32(5), int32(0), int32(42), int32(0))),
-				"bits", int32(strconv.IntSize),
-				"debug", version.Get().Debug,
-				"maxBsonObjectSize", int32(16777216),
-				"buildEnvironment", must.NotFail(types.NewDocument()),
-				"ok", float64(1),
-			),
-		},
-
-		"CollStats": {
-			req: types.MustNewDocument(
-				"collStats", "film",
-			),
-			reqSetDB: true,
-			resp: types.MustNewDocument(
-				"ns", "monila.film",
-				"count", int32(1_000),
-				"size", int32(1_228_800),
-				"storageSize", int32(1_196_032),
-				"totalIndexSize", int32(0),
-				"totalSize", int32(1_228_800),
-				"scaleFactor", int32(1),
-				"ok", float64(1),
-			),
-			compareFunc: func(t testing.TB, _, expected, actual *types.Document) {
-				testutil.CompareAndSetByPathNum(t, expected, actual, 300, "count") // that's not a number of rows
-				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "size")
-				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "storageSize")
-				testutil.CompareAndSetByPathNum(t, expected, actual, 32_768, "totalSize")
-				testutil.AssertEqual(t, expected, actual)
-			},
-		},
 
 		"CountAllActors": {
 			req: types.MustNewDocument(

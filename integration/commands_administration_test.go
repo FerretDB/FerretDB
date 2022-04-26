@@ -15,12 +15,16 @@
 package integration
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestCommandsAdministrationCreateDropList(t *testing.T) {
@@ -192,4 +196,66 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 	keys := CollectKeys(t, actual)
 	assert.Contains(t, keys, "quiet")
 	assert.Equal(t, false, m["quiet"])
+}
+
+func TestBuildInfo(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setupWithOpts(t, &setupOpts{
+		databaseName: "admin",
+	})
+
+	var actual bson.D
+	err := collection.Database().RunCommand(ctx, bson.D{{"buildInfo", int32(1)}}).Decode(&actual)
+	require.NoError(t, err)
+
+	m := actual.Map()
+	t.Log(m)
+
+	assert.Equal(t, 1.0, m["ok"])
+
+	info := map[string]any{
+		"version":           "5.0.42",
+		"modules":           primitive.A{},
+		"sysInfo":           "deprecated",
+		"versionArray":      primitive.A{int32(5), int32(0), int32(42), int32(0)},
+		"bits":              int32(strconv.IntSize),
+		"maxBsonObjectSize": int32(16777216),
+		"buildEnvironment":  primitive.D{},
+		"ok":                1.0,
+	}
+
+	keys := CollectKeys(t, actual)
+	for key, value := range info {
+		assert.Contains(t, keys, key)
+		assert.Equal(t, value, m[key])
+	}
+}
+
+func TestCollStats(t *testing.T) {
+	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+
+	var actual bson.D
+	err := collection.Database().RunCommand(ctx, bson.D{{"collStats", collection.Name()}}).Decode(&actual)
+	require.NoError(t, err)
+
+	m := actual.Map()
+
+	assert.Equal(t, 1.0, m["ok"])
+
+	stats := map[string]any{
+		"count":          int32(42),
+		"ns":             "testcollstats.testcollstats",
+		"ok":             1.0,
+		"scaleFactor":    int32(1),
+		"size":           int32(16384),
+		"storageSize":    int32(8192),
+		"totalIndexSize": int32(0),
+		"totalSize":      int32(16384),
+	}
+
+	keys := CollectKeys(t, actual)
+	for key, value := range stats {
+		assert.Contains(t, keys, key)
+		assert.Equal(t, value, m[key])
+	}
 }
