@@ -17,6 +17,7 @@ package pg
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync/atomic"
 	"time"
@@ -111,7 +112,7 @@ func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody
 		requests.WithLabelValues(command).Inc()
 
 		resHeader.OpCode = wire.OP_REPLY
-		resBody, err = h.handleOpQuery(ctx, query, command)
+		resBody, err = h.CmdQuery(ctx, query)
 
 	case wire.OP_REPLY:
 		fallthrough
@@ -199,14 +200,9 @@ func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody
 }
 
 func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg, cmd string) (*wire.OpMsg, error) {
-	// special case to avoid circular dependency
-	if cmd == "listCommands" {
-		return listCommands(ctx, msg)
-	}
-
-	if cmd, ok := commands[cmd]; ok {
-		if cmd.handler != nil {
-			return cmd.handler(h, ctx, msg)
+	if cmd, ok := common.Commands[cmd]; ok {
+		if cmd.Handler != nil {
+			return cmd.Handler(h, ctx, msg)
 		}
 	}
 
@@ -214,11 +210,12 @@ func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg, cmd string) 
 	return nil, common.NewErrorMsg(common.ErrCommandNotFound, errMsg)
 }
 
-func (h *Handler) handleOpQuery(ctx context.Context, query *wire.OpQuery, cmd string) (*wire.OpReply, error) {
-	if query.FullCollectionName == "admin.$cmd" {
-		return h.QueryCmd(ctx, query)
-	}
+// MsgDebugError used for debugging purposes.
+func (h *Handler) MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	return nil, errors.New("debug_error")
+}
 
-	msg := fmt.Sprintf("handleOpQuery: unhandled collection %q", query.FullCollectionName)
-	return nil, common.NewErrorMsg(common.ErrNotImplemented, msg)
+// MsgDebugPanic used for debugging purposes.
+func (h *Handler) MsgDebugPanic(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	panic("debug_panic")
 }

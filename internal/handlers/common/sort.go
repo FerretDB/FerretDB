@@ -23,12 +23,14 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+//go:generate ../../../bin/stringer -linecomment -type sortType
+
 // sortType represents sort type for $sort aggregation.
-type sortType int
+type sortType int8
 
 const (
-	ascending sortType = iota
-	descending
+	ascending  sortType = 1  // asc
+	descending sortType = -1 // desc
 )
 
 // SortDocuments sorts given documents in place according to the given sorting conditions.
@@ -73,24 +75,24 @@ func lessFunc(sortKey string, sortType sortType) func(a, b *types.Document) bool
 			return false
 		}
 
-		result := compare(aField, bField)
+		result := types.Compare(aField, bField)
 
 		switch result {
-		case less:
+		case types.Less:
 			switch sortType {
 			case ascending:
 				return true
 			case descending:
 				return false
 			}
-		case greater:
+		case types.Greater:
 			switch sortType {
 			case ascending:
 				return false
 			case descending:
 				return true
 			}
-		case notEqual, equal:
+		case types.NotEqual, types.Equal:
 			return false
 		}
 
