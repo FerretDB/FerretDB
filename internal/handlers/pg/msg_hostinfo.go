@@ -15,7 +15,6 @@
 package pg
 
 import (
-	"bufio"
 	"context"
 	"os"
 	"runtime"
@@ -23,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -39,7 +39,13 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	osInfo := make(map[string]string)
 
 	if runtime.GOOS == "linux" {
-		osInfo, err = readOSRelease()
+		file, err := os.Open("/etc/os-release")
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		defer file.Close()
+
+		osInfo, err = common.ParseOSRelease(file)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -69,28 +75,4 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	}
 
 	return &reply, nil
-}
-
-func readOSRelease() (map[string]string, error) {
-	file, err := os.Open("/etc/os-release")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-
-	configParams := make(map[string]string)
-
-	for scanner.Scan() {
-		str := strings.Split(scanner.Text(), "=")
-
-		configParams[str[0]] = str[1]
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return configParams, nil
 }
