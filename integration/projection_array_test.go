@@ -12,7 +12,9 @@ import (
 func TestProjectionQuerySlice(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t)
-	_, err := collection.InsertMany(ctx, []any{})
+	_, err := collection.InsertOne(ctx, []any{
+		bson.D{{"_id", "array"}, {"value", bson.A{1, 2, 3, 4}}},
+	})
 	require.NoError(t, err)
 	type testCase struct {
 		projection bson.D
@@ -24,27 +26,32 @@ func TestProjectionQuerySlice(t *testing.T) {
 		t.Parallel()
 		for name, tc := range map[string]testCase{
 			"InvalidType": {
-				projection: nil,
+				projection: bson.D{{"value", bson.D{{"$slice", "string"}}}},
 				expected:   nil,
 				err:        mongo.CommandError{},
 			},
-			"PositiveInBounds": {
-				projection: nil,
+			"Positive<Len": {
+				projection: bson.D{{"value", bson.D{{"$slice", 2}}}},
 				expected:   nil,
 				err:        mongo.CommandError{},
 			},
-			"PositiveOutOfBounds": {
-				projection: nil,
+			"Positive>=Len": {
+				projection: bson.D{{"value", bson.D{{"$slice", 10}}}},
 				expected:   nil,
 				err:        mongo.CommandError{},
 			},
-			"NegativeInBounds": {
-				projection: nil,
+			"NegativeAbs>Len": {
+				projection: bson.D{{"value", bson.D{{"$slice", -10}}}},
 				expected:   nil,
 				err:        mongo.CommandError{},
 			},
-			"NegativeOutOfBounds": {
-				projection: nil,
+			"NegativeAbs=Len": {
+				projection: bson.D{{"value", bson.D{{"$slice", -4}}}},
+				expected:   nil,
+				err:        mongo.CommandError{},
+			},
+			"NegativeAbs<Len": {
+				projection: bson.D{{"value", bson.D{{"$slice", -3}}}},
 				expected:   nil,
 				err:        mongo.CommandError{},
 			},
@@ -58,43 +65,44 @@ func TestProjectionQuerySlice(t *testing.T) {
 	t.Run("MultipleArgs", func(t *testing.T) {
 		t.Parallel()
 		for name, tc := range map[string]testCase{
+			// $slice: [ <number to skip>, <number to return> ]
 			"InvalidNumberOfArgs": {
-				projection: nil,
+				projection: bson.D{{"value", bson.D{{"$slice", bson.A{1, 2, 3}}}}},
 				expected:   nil,
 				err:        mongo.CommandError{},
 			},
 			"ToSkipInvalidType": {
-				projection: nil,
+				projection: bson.D{{"value", bson.D{{"$slice", bson.A{"string", 2}}}}},
 				expected:   nil,
 				err:        mongo.CommandError{},
 			},
 			"ToReturnInvalidValue": { // can't be negative
-				projection: nil,
+				projection: bson.D{{"value", bson.D{{"$slice", bson.A{1, -2}}}}},
 				expected:   nil,
 				err:        mongo.CommandError{},
 			},
 			"ToReturnInvalidType": {
-				projection: nil,
+				projection: bson.D{{"value", bson.D{{"$slice", bson.A{1, "string"}}}}},
 				expected:   nil,
 				err:        mongo.CommandError{},
 			},
 			"ToSkip>=0_ToReturn>Len": {
-				projection: nil,
+				projection: bson.D{{"value", bson.D{{"$slice", bson.A{2, 5}}}}},
 				expected:   nil,
 				err:        mongo.CommandError{},
 			},
 			"ToSkip>=0_ToReturn<=Len": {
-				projection: nil,
+				projection: bson.D{{"value", bson.D{{"$slice", bson.A{2, 3}}}}},
 				expected:   nil,
 				err:        mongo.CommandError{},
 			},
 			"ToSkip<0_ToReturn<=Len": {
-				projection: nil,
+				projection: bson.D{{"value", bson.D{{"$slice", bson.A{-2, 4}}}}},
 				expected:   nil,
 				err:        mongo.CommandError{},
 			},
 			"ToSkip<0_ToReturn>Len": {
-				projection: nil,
+				projection: bson.D{{"value", bson.D{{"$slice", bson.A{-3, 10}}}}},
 				expected:   nil,
 				err:        mongo.CommandError{},
 			},
