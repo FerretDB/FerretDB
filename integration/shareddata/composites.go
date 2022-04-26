@@ -25,9 +25,10 @@ var Composites = &Values[string]{
 		"document-composite": bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}},
 		"document-empty":     bson.D{},
 
-		"array":          bson.A{int32(42)},
-		"array-three":    bson.A{int32(42), "foo", nil},
-		"array-embedded": bson.A{bson.A{int32(42), "foo"}, nil},
-		"array-empty":    bson.A{},
+		"array":                   bson.A{int32(42)},
+		"array-three":             bson.A{int32(42), "foo", nil},
+		"array-embedded":          bson.A{bson.A{int32(42), "foo"}, nil},
+		"array-embedded-document": bson.A{bson.D{{"foo", int32(42)}}},
+		"array-empty":             bson.A{},
 	},
 }

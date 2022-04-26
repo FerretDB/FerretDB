@@ -49,7 +49,7 @@ func TestQueryComparisonImplicit(t *testing.T) {
 		},
 		"DocumentDotNotation": {
 			filter:      bson.D{{"value.foo", int32(42)}},
-			expectedIDs: []any{"document", "document-composite"},
+			expectedIDs: []any{"array-embedded-document", "document", "document-composite"},
 		},
 
 		"Array": {
@@ -59,6 +59,10 @@ func TestQueryComparisonImplicit(t *testing.T) {
 		"ArrayEmbedded": {
 			filter:      bson.D{{"value", bson.A{bson.A{int32(42), "foo"}, nil}}},
 			expectedIDs: []any{"array-embedded"},
+		},
+		"ArrayEmpty": {
+			filter:      bson.D{{"value", bson.A{}}},
+			expectedIDs: []any{"array-empty"},
 		},
 		"ArrayShuffledValues": {
 			filter:      bson.D{{"value", bson.A{"foo", nil, int32(42)}}},
@@ -76,7 +80,7 @@ func TestQueryComparisonImplicit(t *testing.T) {
 		"NoSuchFieldNull": {
 			filter: bson.D{{"no-such-field", nil}},
 			expectedIDs: []any{
-				"array", "array-embedded", "array-empty", "array-three",
+				"array", "array-embedded", "array-embedded-document", "array-empty", "array-three",
 				"binary", "binary-empty",
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
@@ -137,7 +141,7 @@ func TestQueryComparisonEq(t *testing.T) {
 		},
 		"DocumentDotNotation": {
 			filter:      bson.D{{"value.foo", bson.D{{"$eq", int32(42)}}}},
-			expectedIDs: []any{"document", "document-composite"},
+			expectedIDs: []any{"array-embedded-document", "document", "document-composite"},
 		},
 
 		"Array": {
@@ -335,7 +339,7 @@ func TestQueryComparisonEq(t *testing.T) {
 		"NoSuchFieldNull": {
 			filter: bson.D{{"no-such-field", bson.D{{"$eq", nil}}}},
 			expectedIDs: []any{
-				"array", "array-embedded", "array-empty", "array-three",
+				"array", "array-embedded", "array-embedded-document", "array-empty", "array-three",
 				"binary", "binary-empty",
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
@@ -377,7 +381,26 @@ func TestQueryComparisonGt(t *testing.T) {
 		expectedIDs []any
 		err         mongo.CommandError
 	}{
-		// TODO document, array
+
+		"Document": {
+			value:       bson.D{{"foo", int32(41)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}},
+			expectedIDs: []any{"array-embedded-document", "document", "document-composite"},
+		},
+
+		"ArrayShuffledValues": {
+			value:       bson.A{"foo", nil, int32(42)},
+			expectedIDs: []any{"array-embedded", "array-embedded-document"},
+		},
+
+		"Array": {
+			value:       bson.A{int32(41)},
+			expectedIDs: []any{"array", "array-embedded", "array-embedded-document", "array-three"},
+		},
+
+		"ArrayGtThanExisting": {
+			value:       bson.A{int32(42)},
+			expectedIDs: []any{"array-embedded", "array-embedded-document", "array-three"},
+		},
 
 		"Double": {
 			value: 41.13,
@@ -1059,7 +1082,7 @@ func TestQueryComparisonNin(t *testing.T) {
 	}{
 		"ForScalarDataTypes": {
 			value:       scalarDataTypesFilter,
-			expectedIDs: []any{"array-empty", "document", "document-composite", "document-empty"},
+			expectedIDs: []any{"array-embedded-document", "array-empty", "document", "document-composite", "document-empty"},
 		},
 		"ForCompositeDataTypes": {
 			value: compositeDataTypesFilter,
@@ -1090,7 +1113,7 @@ func TestQueryComparisonNin(t *testing.T) {
 		"Regex": {
 			value: bson.A{primitive.Regex{Pattern: "foo", Options: "i"}},
 			expectedIDs: []any{
-				"array", "array-embedded", "array-empty",
+				"array", "array-embedded", "array-embedded-document", "array-empty",
 				"binary", "binary-empty",
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
@@ -1185,7 +1208,7 @@ func TestQueryComparisonIn(t *testing.T) {
 		},
 		"ForCompositeDataTypes": {
 			value:       compositeDataTypesFilter,
-			expectedIDs: []any{"array", "array-embedded", "array-empty", "array-three", "document", "document-composite", "document-empty"},
+			expectedIDs: []any{"array", "array-embedded", "array-embedded-document", "array-empty", "array-three", "document", "document-composite", "document-empty"},
 		},
 
 		"$regex": {
