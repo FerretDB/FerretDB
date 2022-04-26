@@ -37,7 +37,7 @@ type Handler interface {
 	// MsgDataSize returns the size of the collection in bytes.
 	MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
-	// MsgDBStats Returns the statistics of the database.
+	// MsgDBStats returns the statistics of the database.
 	MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
 	// MsgDrop drops the collection.
@@ -106,6 +106,6 @@ type Handler interface {
 	// MsgDebugPanic used for debugging purposes.
 	MsgDebugPanic(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
-	// QueryCmd runs query operation command.
-	QueryCmd(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error)
+	// CmdQuery runs query operation command.
+	CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error)
 }

@@ -25,8 +25,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgQueryCmd runs query operation command.
-func (h *Handler) MsgQueryCmd(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
+// CmdQuery runs query operation command.
+func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
 	if query.FullCollectionName == "admin.$cmd" {
 		switch cmd := query.Query.Command(); cmd {
 		case "ismaster", "isMaster": // both are valid
@@ -50,11 +50,11 @@ func (h *Handler) MsgQueryCmd(ctx context.Context, query *wire.OpQuery) (*wire.O
 			return reply, nil
 
 		default:
-			msg := fmt.Sprintf("MsgQueryCmd: unhandled command %q", cmd)
+			msg := fmt.Sprintf("CmdQuery: unhandled command %q", cmd)
 			return nil, common.NewErrorMsg(common.ErrNotImplemented, msg)
 		}
 	}
 
-	msg := fmt.Sprintf("MsgQueryCmd: unhandled collection %q", query.FullCollectionName)
+	msg := fmt.Sprintf("CmdQuery: unhandled collection %q", query.FullCollectionName)
 	return nil, common.NewErrorMsg(common.ErrNotImplemented, msg)
 }

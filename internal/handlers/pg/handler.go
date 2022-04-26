@@ -112,7 +112,7 @@ func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody
 		requests.WithLabelValues(command).Inc()
 
 		resHeader.OpCode = wire.OP_REPLY
-		resBody, err = h.MsgQueryCmd(ctx, query)
+		resBody, err = h.CmdQuery(ctx, query)
 
 	case wire.OP_REPLY:
 		fallthrough

@@ -43,7 +43,9 @@ func TestDummyHandler(t *testing.T) {
 	errNotImplemented := common.NewErrorMsg(common.ErrNotImplemented, "I'm a dummy, not a handler")
 	for k, command := range common.Commands {
 		t.Log(k)
-		_, _ = command.Handler(h, ctx, &msg)
+		var err error
+		_, err = command.Handler(h, ctx, &msg)
+		assert.Equal(t, err, errNotImplemented)
 	}
 
 	msgq := &wire.OpQuery{
@@ -53,6 +55,6 @@ func TestDummyHandler(t *testing.T) {
 		)),
 	}
 	assert.NoError(t, err)
-	_, err = h.MsgQueryCmd(ctx, msgq)
+	_, err = h.CmdQuery(ctx, msgq)
 	assert.Equal(t, err, errNotImplemented)
 }

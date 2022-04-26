@@ -22,23 +22,26 @@ import (
 
 // Command represents a handler command.
 type Command struct {
-	Help    string
+	// Help is show in help function
+	Help string
+
+	// Handler processes command
 	Handler func(Handler, context.Context, *wire.OpMsg) (*wire.OpMsg, error)
 }
 
-// Commands is a list of commands that common.Handler interface can support.
+// Commands is a map of commands that common.Handler interface can support.
+// order of entries matches the interface definition.
 var Commands = map[string]Command{
 	"listCommands": {
-		Help:    "Returns information about the currently supported commands.",
+		Help:    "Returns a list of currently supported commands.",
 		Handler: (Handler).MsgListCommands,
 	},
-
 	"buildInfo": {
 		Help:    "Returns a summary of the build information.",
 		Handler: (Handler).MsgBuildInfo,
 	},
 	"collStats": {
-		Help:    "Storage data for a collection.",
+		Help:    "Returns storage data for a collection.",
 		Handler: (Handler).MsgCollStats,
 	},
 	"create": {
@@ -109,7 +112,6 @@ var Commands = map[string]Command{
 		Help:    "An internal command.",
 		Handler: (Handler).MsgWhatsMyURI,
 	},
-
 	"count": {
 		Help:    "Returns the count of documents that's matched by the query.",
 		Handler: (Handler).MsgCount,
@@ -138,13 +140,10 @@ var Commands = map[string]Command{
 		Help:    "Updates documents that are matched by the query.",
 		Handler: (Handler).MsgUpdate,
 	},
-
-	// internal commands
 	"debug_error": {
 		Help:    "Used for debugging purposes.",
 		Handler: (Handler).MsgDebugError,
 	},
-
 	"debug_panic": {
 		Help:    "Used for debugging purposes.",
 		Handler: (Handler).MsgDebugPanic,
