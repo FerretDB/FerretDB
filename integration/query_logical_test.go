@@ -62,6 +62,16 @@ func TestQueryLogicalAnd(t *testing.T) {
 				Name:    "BadValue",
 			},
 		},
+		"AndOr": {
+			filter: bson.A{
+				bson.D{{"value", bson.D{{"$gt", 42}}}},
+				bson.D{{"$or", bson.A{
+					bson.D{{"value", bson.D{{"$lt", 0}}}},
+					bson.D{{"value", bson.D{{"$lt", 42}}}},
+				}}},
+			},
+			expectedIDs: []any{},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {

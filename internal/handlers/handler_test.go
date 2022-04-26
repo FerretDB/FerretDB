@@ -188,64 +188,6 @@ func TestFind(t *testing.T) {
 				),
 			),
 		},
-
-		"AndOr": {
-			schemas: []string{"monila"},
-			req: types.MustNewDocument(
-				"find", "actor",
-				"filter", types.MustNewDocument(
-					"$and", types.MustNewArray(
-						types.MustNewDocument(
-							"first_name", "CHRISTIAN",
-						),
-						types.MustNewDocument(
-							"$or", types.MustNewArray(
-								types.MustNewDocument(
-									"last_name", "GABLE",
-								),
-								types.MustNewDocument(
-									"last_name", "NEESON",
-								),
-							),
-						),
-					),
-				),
-				"sort", types.MustNewDocument(
-					"actor_id", int32(1),
-				),
-				"limit", float64(1),
-			),
-			resp: types.MustNewArray(
-				types.MustNewDocument(
-					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x0a},
-					"actor_id", int32(10),
-					"first_name", "CHRISTIAN",
-					"last_name", "GABLE",
-					"last_update", lastUpdate,
-				),
-			),
-		},
-		"Nor": {
-			schemas: []string{"monila"},
-			req: types.MustNewDocument(
-				"find", "actor",
-				"filter", types.MustNewDocument(
-					"$nor", types.MustNewArray(
-						types.MustNewDocument("actor_id", types.MustNewDocument("$gt", int32(2))),
-						types.MustNewDocument("first_name", "PENELOPE"),
-					),
-				),
-			),
-			resp: types.MustNewArray(
-				types.MustNewDocument(
-					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x02},
-					"actor_id", int32(2),
-					"first_name", "NICK",
-					"last_name", "WAHLBERG",
-					"last_update", lastUpdate,
-				),
-			),
-		},
 	}
 
 	for name, tc := range testCases { //nolint:paralleltest // false positive
