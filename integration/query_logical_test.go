@@ -220,6 +220,26 @@ func TestQueryLogicalNot(t *testing.T) {
 		expectedIDs []any
 		err         mongo.CommandError
 	}{
+		"Not": {
+			filter: bson.D{{"value", bson.D{{"$not", bson.D{{"$eq", 42}}}}}},
+			expectedIDs: []any{
+				"array-embedded", "array-empty",
+				"binary", "binary-empty",
+				"bool-false", "bool-true",
+				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
+				"document", "document-composite", "document-empty",
+				"double", "double-max", "double-nan",
+				"double-negative-infinity", "double-negative-zero",
+				"double-positive-infinity", "double-smallest", "double-zero",
+				"int32-max", "int32-min", "int32-zero",
+				"int64-max", "int64-min", "int64-zero",
+				"null",
+				"objectid", "objectid-empty",
+				"regex", "regex-empty",
+				"string", "string-double", "string-empty", "string-whole",
+				"timestamp", "timestamp-i",
+			},
+		},
 		"IDNull": {
 			filter: bson.D{{"_id", bson.D{{"$not", nil}}}},
 			err: mongo.CommandError{
@@ -284,6 +304,10 @@ func TestQueryLogicalNot(t *testing.T) {
 				"string", "string-double", "string-empty", "string-whole",
 				"timestamp", "timestamp-i",
 			},
+		},
+		"NestedNot": {
+			filter:      bson.D{{"value", bson.D{{"$not", bson.D{{"$not", bson.D{{"$eq", 42}}}}}}}},
+			expectedIDs: []any{"array", "array-three", "double-whole", "int32", "int64"},
 		},
 	} {
 		name, tc := name, tc

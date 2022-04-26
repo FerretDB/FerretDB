@@ -188,62 +188,7 @@ func TestFind(t *testing.T) {
 				),
 			),
 		},
-		"Not": {
-			schemas: []string{"monila"},
-			req: types.MustNewDocument(
-				"find", "actor",
-				"filter", types.MustNewDocument(
-					"last_name", types.MustNewDocument(
-						"$not", types.MustNewDocument(
-							"$eq", "GUINESS",
-						),
-					),
-				),
-				"sort", types.MustNewDocument(
-					"actor_id", int32(1),
-				),
-				"limit", int32(1),
-			),
-			resp: types.MustNewArray(
-				types.MustNewDocument(
-					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x02},
-					"actor_id", int32(2),
-					"first_name", "NICK",
-					"last_name", "WAHLBERG",
-					"last_update", lastUpdate,
-				),
-			),
-		},
-		"NestedNot": {
-			schemas: []string{"monila"},
-			req: types.MustNewDocument(
-				"find", "actor",
-				"filter", types.MustNewDocument(
-					"last_name", types.MustNewDocument(
-						"$not", types.MustNewDocument(
-							"$not", types.MustNewDocument(
-								"$not", types.MustNewDocument(
-									"$eq", "GUINESS",
-								),
-							),
-						),
-					),
-				),
-				"sort", types.MustNewDocument(
-					"actor_id", int32(1),
-				),
-				"limit", int64(1),
-			),
-			resp: types.MustNewArray(
-				types.MustNewDocument(
-					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x02},
-					"actor_id", int32(2),
-					"first_name", "NICK",
-					"last_name", "WAHLBERG",
-					"last_update", lastUpdate,
-				),
-			),
-		},
+
 		"AndOr": {
 			schemas: []string{"monila"},
 			req: types.MustNewDocument(
