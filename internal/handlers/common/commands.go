@@ -30,7 +30,7 @@ type Command struct {
 }
 
 // Commands is a map of commands that common.Handler interface can support.
-// order of entries matches the interface definition.
+// Order of entries matches the interface definition.
 var Commands = map[string]Command{
 	"listCommands": {
 		Help:    "Returns a list of currently supported commands.",
