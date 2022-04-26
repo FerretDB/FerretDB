@@ -16,7 +16,6 @@ package common
 
 import (
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -83,11 +82,11 @@ func hasSameTypeElements(array *types.Array) bool {
 		case *types.Array:
 			cur = "array"
 		case float64:
-			if element != math.Trunc(element) || math.IsNaN(element) || math.IsInf(element, 0) {
-				cur = "double"
-			} else {
+			if _, err := GetWholeNumberParam(element); err == nil {
 				// float that could be converted to int should be compared as int
 				cur = "int"
+			} else {
+				cur = "double"
 			}
 		case string:
 			cur = "string"

@@ -77,11 +77,13 @@ var (
 	errUnexpectedType = fmt.Errorf("unexpected type")
 	errNotWholeNumber = fmt.Errorf("not a whole number")
 	errNegativeNumber = fmt.Errorf("negative number")
-	errNotBinaryMask  = fmt.Errorf("not a binary mask")
 )
 
 // GetWholeNumberParam checks if the given value is int32, int64, or float64 containing a whole number,
 // such as used in the limit, $size, etc.
+//
+// It returns errNotWholeNumber for non-whole float64 values,
+// and errUnexpectedType for types other than int32, int64, float64.
 func GetWholeNumberParam(value any) (int64, error) {
 	switch value := value.(type) {
 	case int32:
@@ -89,7 +91,6 @@ func GetWholeNumberParam(value any) (int64, error) {
 	case int64:
 		return value, nil
 	case float64:
-		// TODO check float negative zero (math.Copysig(0, -1))
 		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) {
 			return 0, errNotWholeNumber
 		}
@@ -99,89 +100,48 @@ func GetWholeNumberParam(value any) (int64, error) {
 	}
 }
 
-// getBinaryMaskParam matches value type, returning types.Binary and error if match failed.
-// Possible values are: position array ([1,3,5] == 010101), whole number value and types.Binary value.
+// getBinaryMaskParam matches value type, returning error if match failed.
+//
+// Possible values are: position array ([1,3,5] == 010101), types.Binary, or whole number.
 func getBinaryMaskParam(value any) (types.Binary, error) {
-	var mask types.Binary
-	var err error
-
 	switch value := value.(type) {
 	case *types.Array:
 		// {field: {$bitsAllClear: [position1, position2]}}
-		mask, err = types.BinaryFromArray(value)
+		mask, err := types.BinaryFromArray(value)
 		if err != nil {
 			return types.Binary{}, NewError(ErrBadValue, err)
 		}
 
-	case int32:
-		// {field: {$bitsAllClear: bitmask}}
-		if value < 0 {
-			return types.Binary{}, errNegativeNumber
-		}
+		return mask, nil
 
-		mask, err = types.BinaryFromInt(int64(value))
-		if err != nil {
-			return types.Binary{}, NewError(ErrBadValue, err)
-		}
-	case int64:
-		// {field: {$bitsAllClear: bitmask}}
-		if value < 0 {
-			return types.Binary{}, errNegativeNumber
-		}
-
-		mask, err = types.BinaryFromInt(value)
-		if err != nil {
-			return types.Binary{}, NewError(ErrBadValue, err)
-		}
-	case float64:
-		// TODO check float negative zero
-		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) {
-			return types.Binary{}, errNotWholeNumber
-		}
-		mask, err = types.BinaryFromInt(int64(value))
-		if err != nil {
-			return types.Binary{}, err
-		}
-	case types.Binary:
-		// {field: {$bitsAllClear: BinData()}}
-		mask = value
 	default:
-		return types.Binary{}, errNotBinaryMask
+		return getBinaryParam(value)
 	}
-	return mask, nil
 }
 
-// getBinaryParam matches value type, returning types.Binary and error if match failed.
+// getBinaryMaskParam matches value type, returning error if match failed.
 func getBinaryParam(value any) (types.Binary, error) {
-	var res types.Binary
-	var err error
-
 	switch value := value.(type) {
-	case int32:
-		res, err = types.BinaryFromInt(int64(value))
-		if err != nil {
-			return types.Binary{}, err
-		}
-	case int64:
-		res, err = types.BinaryFromInt(value)
-		if err != nil {
-			return types.Binary{}, err
-		}
-	case float64:
-		// TODO check float negative zero
-		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) {
-			return types.Binary{}, errNotWholeNumber
-		}
-		res, err = types.BinaryFromInt(int64(value))
-		if err != nil {
-			return types.Binary{}, err
-		}
 	case types.Binary:
 		return value, nil
+
 	default:
-		return types.Binary{}, NewErrorMsg(ErrBadValue, "not matched")
+		i, err := GetWholeNumberParam(value)
+		if err != nil {
+			return types.Binary{}, err
+		}
+
+		if i < 0 {
+			return types.Binary{}, errNegativeNumber
+		}
+
+		mask, err := types.BinaryFromInt(i)
+		if err != nil {
+			return types.Binary{}, NewError(ErrBadValue, err)
+		}
+
+		return mask, nil
 	}
-	return res, nil
 }
 
 // getBinaryParams creates types.Binary for field and mask from given values returning types.Binary or error.

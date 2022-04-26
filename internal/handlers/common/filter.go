@@ -676,6 +676,7 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 	case int64:
 		field = f
 	case float64:
+		// TODO https://github.com/FerretDB/FerretDB/issues/525
 		if math.IsNaN(f) || math.IsInf(f, 0) {
 			return false, nil
 		}
@@ -702,6 +703,7 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 	case int64:
 		divisor = d
 	case float64:
+		// TODO https://github.com/FerretDB/FerretDB/issues/525
 		if math.IsNaN(d) || math.IsInf(d, 0) {
 			return false, NewErrorMsg(ErrBadValue, `malformed mod, divisor value is invalid :: caused by :: `+
 				`Unable to coerce NaN/Inf to integral type`)
@@ -727,6 +729,7 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 	case int64:
 		remainder = r
 	case float64:
+		// TODO https://github.com/FerretDB/FerretDB/issues/525
 		if math.IsNaN(r) || math.IsInf(r, 0) {
 			return false, NewErrorMsg(ErrBadValue, `malformed mod, remainder value is invalid :: caused by :: `+
 				`Unable to coerce NaN/Inf to integral type`)
@@ -785,6 +788,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 
 			switch exprValue := exprValue.(type) {
 			case float64:
+				// TODO https://github.com/FerretDB/FerretDB/issues/525
 				if math.IsNaN(exprValue) || math.IsInf(exprValue, 0) {
 					return false, NewErrorMsg(ErrBadValue, `Invalid numerical type code: `+
 						strings.Trim(strings.ToLower(fmt.Sprintf("%v", exprValue)), "+"))
@@ -846,6 +850,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 		return false, nil
 
 	case float64:
+		// TODO https://github.com/FerretDB/FerretDB/issues/525
 		if math.IsNaN(exprValue) || math.IsInf(exprValue, 0) {
 			return false, NewErrorMsg(ErrBadValue, `Invalid numerical type code: `+
 				strings.Trim(strings.ToLower(fmt.Sprintf("%v", exprValue)), "+"))
