@@ -21,9 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 func TestDummyHandler(t *testing.T) {
@@ -36,10 +33,6 @@ func TestDummyHandler(t *testing.T) {
 		_, err := command.Handler(h, ctx, nil)
 		assert.Equal(t, err, errNotImplemented, k)
 	}
-
-	msgq := &wire.OpQuery{
-		Query: must.NotFail(types.NewDocument()),
-	}
-	_, err := h.CmdQuery(ctx, msgq)
+	_, err := h.CmdQuery(ctx, nil)
 	assert.Equal(t, err, errNotImplemented)
 }
