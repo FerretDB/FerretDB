@@ -31,7 +31,6 @@ func TestDummyHandler(t *testing.T) {
 
 	h := New()
 	ctx := context.Background()
-
 	errNotImplemented := common.NewErrorMsg(common.ErrNotImplemented, "I'm a dummy, not a handler")
 	for k, command := range common.Commands {
 		_, err := command.Handler(h, ctx, nil)
