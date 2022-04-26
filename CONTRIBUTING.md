@@ -30,14 +30,18 @@ You can also [install `task` globally](https://taskfile.dev/#/installation), but
 With `task` installed, you may do the following:
 
 1. Install development tools with `task init`.
-2. Start the development environment with `task env-up`.
+2. Download required Docker images with `task env-pull`.
+3. Start the development environment with `task env-up`.
    This will start PostgreSQL and MongoDB containers, filling them with identical sets of test data.
-3. Run all tests in another terminal window with `task test`.
-4. Start FerretDB with `task run`.
+4. Run all tests in another terminal window with `task test`.
+5. Start FerretDB with `task run`.
    This will start it in a development mode where all requests are handled by FerretDB, but also routed to MongoDB.
    The differences in response are then logged and the FerretDB response is sent back to the client.
-5. Run `mongosh` with `task mongosh`.
+6. Run `mongosh` with `task mongosh`.
    This allows you to run commands against FerretDB.
+7. Change the code.
+8. Run `task fmt` to format source code.
+9. Run `task lint` to run linter checks.
 
 You can see all available `task` tasks with `task -l`.
 
