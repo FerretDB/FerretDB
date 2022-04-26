@@ -21,6 +21,7 @@
 // Composite types
 //  *types.Document  {"$k": ["<key 1>", "<key 2>", ...], "<key 1>": <value 1>, "<key 2>": <value 2>, ...}
 //  *types.Array     JSON array
+//
 // Scalar types
 //  float64          {"$f": JSON number} or {"$f": "Infinity|-Infinity|NaN"}
 //  string           JSON string
@@ -34,7 +35,6 @@
 //  types.Timestamp  {"$t": "<number as string>"}
 //  int64            {"$l": "<number as string>"}
 //  TODO Decimal128  {"$n": "<number as string>"}
-//  types.CString    {"$c": "<string without terminating 0x0>"}
 package fjson
 
 import (
@@ -104,8 +104,6 @@ func fromFJSON(v fjsontype) any {
 		return types.Timestamp(*v)
 	case *int64Type:
 		return int64(*v)
-	case *cstringType:
-		return types.CString(*v)
 	}
 
 	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
@@ -140,8 +138,6 @@ func toFJSON(v any) fjsontype {
 		return pointer.To(timestampType(v))
 	case int64:
 		return pointer.To(int64Type(v))
-	case types.CString:
-		return pointer.To(cstringType(v))
 	}
 
 	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
@@ -194,10 +190,6 @@ func Unmarshal(data []byte) (any, error) {
 			res = &o
 		case v["$l"] != nil:
 			var o int64Type
-			err = o.UnmarshalJSON(data)
-			res = &o
-		case v["$c"] != nil:
-			var o cstringType
 			err = o.UnmarshalJSON(data)
 			res = &o
 		default:

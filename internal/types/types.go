@@ -41,7 +41,6 @@
 //  int32            *bson.int32Type      *fjson.int32Type      32-bit integer
 //  types.Timestamp  *bson.timestampType  *fjson.timestampType  Timestamp
 //  int64            *bson.int64Type      *fjson.int64Type      64-bit integer
-//  types.CString    *bson.CString        *fjson.cstringType    Zero-terminated UTF-8 string
 package types
 
 import (
@@ -53,7 +52,7 @@ const MaxDocumentLen = 16777216
 
 // ScalarType represents scalar type.
 type ScalarType interface {
-	float64 | string | Binary | ObjectID | bool | time.Time | NullType | Regex | int32 | Timestamp | int64 | CString
+	float64 | string | Binary | ObjectID | bool | time.Time | NullType | Regex | int32 | Timestamp | int64
 }
 
 // CompositeType represents composite type - *Document or *Array.
@@ -77,9 +76,6 @@ type CompositeTypeInterface interface {
 //go-sumtype:decl CompositeTypeInterface
 
 type (
-	// CString represents BSON type CString that used as document field name, etc.
-	CString string
-
 	// Timestamp represents BSON type Timestamp.
 	Timestamp uint64
 
@@ -124,8 +120,6 @@ func validateValue(value any) error {
 	case Timestamp:
 		return nil
 	case int64:
-		return nil
-	case CString:
 		return nil
 	default:
 		return fmt.Errorf("types.validateValue: unsupported type: %[1]T (%[1]v)", value)
@@ -188,8 +182,6 @@ func deepCopy(value any) any {
 	case Timestamp:
 		return value
 	case int64:
-		return value
-	case CString:
 		return value
 
 	default:
