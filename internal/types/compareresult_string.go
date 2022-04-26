@@ -8,19 +8,29 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[equal-0]
-	_ = x[less - -1]
-	_ = x[greater-1]
+	_ = x[Equal-0]
+	_ = x[Less - -1]
+	_ = x[Greater-1]
+	_ = x[NotEqual-127]
 }
 
-const _CompareResult_name = "<=>"
+const (
+	_CompareResult_name_0 = "<==>"
+	_CompareResult_name_1 = "!="
+)
 
-var _CompareResult_index = [...]uint8{0, 1, 2, 3}
+var (
+	_CompareResult_index_0 = [...]uint8{0, 1, 3, 4}
+)
 
 func (i CompareResult) String() string {
-	i -= -1
-	if i < 0 || i >= CompareResult(len(_CompareResult_index)-1) {
-		return "CompareResult(" + strconv.FormatInt(int64(i+-1), 10) + ")"
+	switch {
+	case -1 <= i && i <= 1:
+		i -= -1
+		return _CompareResult_name_0[_CompareResult_index_0[i]:_CompareResult_index_0[i+1]]
+	case i == 127:
+		return _CompareResult_name_1
+	default:
+		return "CompareResult(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _CompareResult_name[_CompareResult_index[i]:_CompareResult_index[i+1]]
 }

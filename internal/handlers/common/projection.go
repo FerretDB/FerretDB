@@ -35,6 +35,41 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 		}
 		v := must.NotFail(projection.Get(k))
 		switch v := v.(type) {
+		case *types.Document:
+			for _, projectionType := range v.Keys() {
+				supportedProjectionTypes := []string{"$elemMatch"}
+				if !slices.Contains(supportedProjectionTypes, projectionType) {
+					err = lazyerrors.Errorf("projecion of %s is not supported", projectionType)
+					return
+				}
+
+				switch projectionType {
+				case "$elemMatch":
+					inclusion = true
+				default:
+					panic(projectionType + " not supported")
+				}
+			}
+
+		case float64, int32, int64:
+			if types.Compare(v, int32(0)) == types.Equal {
+				if inclusion {
+					err = NewError(ErrProjectionExIn,
+						fmt.Errorf("Cannot do exclusion on field %s in inclusion projection", k),
+					)
+					return
+				}
+				exclusion = true
+			} else {
+				if exclusion {
+					err = NewError(ErrProjectionInEx,
+						fmt.Errorf("Cannot do inclusion on field %s in exclusion projection", k),
+					)
+					return
+				}
+				inclusion = true
+			}
+
 		case bool:
 			if v {
 				if exclusion {
@@ -54,40 +89,6 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 				exclusion = true
 			}
 
-		case int32, int64, float64:
-			if compareScalars(v, int32(0)) == equal {
-				if inclusion {
-					err = NewError(ErrProjectionExIn,
-						fmt.Errorf("Cannot do exclusion on field %s in inclusion projection", k),
-					)
-					return
-				}
-				exclusion = true
-			} else {
-				if exclusion {
-					err = NewError(ErrProjectionInEx,
-						fmt.Errorf("Cannot do inclusion on field %s in exclusion projection", k),
-					)
-					return
-				}
-				inclusion = true
-			}
-
-		case *types.Document:
-			for _, projectionType := range v.Keys() {
-				supportedProjectionTypes := []string{"$elemMatch"}
-				if !slices.Contains(supportedProjectionTypes, projectionType) {
-					err = lazyerrors.Errorf("projecion of %s is not supported", projectionType)
-					return
-				}
-
-				switch projectionType {
-				case "$elemMatch":
-					inclusion = true
-				default:
-					panic(projectionType + " not supported")
-				}
-			}
 		default:
 			err = lazyerrors.Errorf("unsupported operation %s %v (%T)", k, v, v)
 			return
@@ -133,19 +134,19 @@ func projectDocument(inclusion bool, doc *types.Document, projection *types.Docu
 		}
 
 		switch projectionVal := projectionVal.(type) { // found in the projection
-		case bool: // field: bool
-			if !projectionVal {
-				doc.Remove(k1)
-			}
-
-		case int32, int64, float64: // field: number
-			if compareScalars(projectionVal, int32(0)) == equal {
-				doc.Remove(k1)
-			}
-
 		case *types.Document: // field: { $elemMatch: { field2: value }}
 			if err := applyComplexProjection(k1, doc, projectionVal); err != nil {
 				return err
+			}
+
+		case float64, int32, int64: // field: number
+			if types.Compare(projectionVal, int32(0)) == types.Equal {
+				doc.Remove(k1)
+			}
+
+		case bool: // field: bool
+			if !projectionVal {
+				doc.Remove(k1)
 			}
 
 		default:
@@ -216,7 +217,7 @@ func filterFieldArrayElemMatch(k1 string, doc, conditions *types.Document, docVa
 						doc.RemoveByPath(k1, strconv.Itoa(j))
 						continue
 					}
-					if compareScalars(docVal, elemMatchFieldCondition) == equal {
+					if types.Compare(docVal, elemMatchFieldCondition) == types.Equal {
 						// elemMatch to return first matching, all others are to be removed
 						found = j
 						break
