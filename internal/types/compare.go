@@ -60,10 +60,7 @@ func Compare(a, b any) CompareResult {
 				continue
 			}
 
-			switch res := compareScalars(v, b); res {
-			case NotEqual:
-				continue
-			default:
+			if res := compareScalars(v, b); res != NotEqual {
 				return res
 			}
 		}
