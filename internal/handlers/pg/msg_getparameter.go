@@ -16,7 +16,9 @@ package pg
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -24,65 +26,69 @@ import (
 
 // MsgGetParameter OpMsg used to get parameter.
 func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+	cmd, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	getPrm, err := document.Get("getParameter")
+	getPrm, err := cmd.Get("getParameter")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	// SELECT * FROM 'admin'
 	resDB := types.MustNewDocument(
+		"writePeriodicNoops", true,
 		"quiet", false,
 		"ok", float64(1),
 	)
 
 	var reply wire.OpMsg
+	var errMsg error
+	resDoc := types.MustNewDocument()
 	if getPrm == "*" {
-		err = reply.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{resDB},
-		})
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+		resDoc = resDB
+
 	} else {
-		keys := document.Keys()
-		res := types.MustNewDocument()
+		keys := cmd.Keys()
 		for _, k := range keys {
 			if k == "getParameter" || k == "comment" || k == "$db" {
 				continue
 			}
+
 			item, err := resDB.Get(k)
 			if err != nil {
-				return nil, lazyerrors.Error(err)
+				continue
 			}
-			err = res.Set(k, item)
 
+			err = resDoc.Set(k, item)
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 		}
 
-		err = reply.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{res},
-		})
-		if err != nil {
-			return nil, lazyerrors.Error(err)
+		if resDoc.Len() < 1 {
+			err = resDoc.Set("ok", float64(0))
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+			errMsg = common.NewErrorMsg(common.ErrorCode(0), "no option found to get")
+		} else {
+			err = resDoc.Set("ok", float64(1))
 		}
 	}
 
-	// comment, err := document.Get("comment")
-	// if err == nil {
-	// 	common.Ignored(document, h.l, fmt.Sprint(comment))
-	// }
+	err = reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{resDoc},
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
-	return &reply, nil
+	comment, err := cmd.Get("comment")
+	if err == nil {
+		common.Ignored(cmd, h.l, fmt.Sprint(comment))
+	}
 
-	// fmt.Printf("h: %+v\n", h)
-	//	fmt.Printf("msg: %+v\n", msg)
-	//	fmt.Printf("document: %+v\n", document)
-	// TODO https://github.com/FerretDB/FerretDB/issues/449
+	return &reply, errMsg
 }

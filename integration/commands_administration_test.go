@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -182,16 +181,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 	})
 
 	var actual bson.D
-	err := collection.Database().RunCommand(ctx, bson.D{{"getParameter", "*"}, {"quiet", 1}, {"comment", "TEST"}}).Decode(&actual)
-	require.NoError(t, err)
+	err := collection.Database().RunCommand(ctx, bson.D{{"getParameter", "1"}, {"quie", 1}, {"comment", "TEST"}}).Decode(&actual)
+	AssertEqualError(t, mongo.CommandError{Code: 0, Name: "", Message: `no option found to get`}, err)
 
-	m := actual.Map()
-	fmt.Printf("%+v\n", m)
-	t.Log(m)
-
-	assert.Equal(t, 1.0, m["ok"])
-
-	keys := CollectKeys(t, actual)
-	assert.Contains(t, keys, "quiet")
-	assert.Equal(t, false, m["quiet"])
 }
