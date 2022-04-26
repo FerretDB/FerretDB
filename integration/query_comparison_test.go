@@ -144,6 +144,10 @@ func TestQueryComparisonImplicit(t *testing.T) {
 				"timestamp", "timestamp-i",
 			},
 		},
+		"NoSuchFieldDotNotation": {
+			filter:      bson.D{{"value.no-such-field", 42}},
+			expectedIDs: []any{},
+		},
 
 		"ValueNumber": {
 			filter:      bson.D{{"value", 42}},
