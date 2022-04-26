@@ -326,5 +326,4 @@ func TestStatisticsCommands(t *testing.T) {
 			}
 		})
 	}
-
 }
