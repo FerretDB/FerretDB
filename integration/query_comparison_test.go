@@ -51,6 +51,10 @@ func TestQueryComparisonImplicit(t *testing.T) {
 			filter:      bson.D{{"value.foo", int32(42)}},
 			expectedIDs: []any{"document", "document-composite"},
 		},
+		"DocumentDotNotationNoSuchField": {
+			filter:      bson.D{{"value.no-such-field", 42}},
+			expectedIDs: []any{},
+		},
 
 		"Array": {
 			filter:      bson.D{{"value", bson.A{int32(42), "foo", nil}}},
@@ -143,10 +147,6 @@ func TestQueryComparisonImplicit(t *testing.T) {
 				"string", "string-double", "string-empty", "string-whole",
 				"timestamp", "timestamp-i",
 			},
-		},
-		"NoSuchFieldDotNotation": {
-			filter:      bson.D{{"value.no-such-field", 42}},
-			expectedIDs: []any{},
 		},
 
 		"ValueNumber": {
