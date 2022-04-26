@@ -76,6 +76,24 @@ func Unmarshal(data *driver.Document) (*types.Document, error) {
 	return doc, nil
 }
 
+// fromTJSON converts from Tigris data types to FerretDB data type
+func fromTJSON(v any) any {
+	if v == nil {
+		return types.Null
+	}
+	switch v := v.(type) {
+	case string:
+		// timestamp, regex, etc
+		return v
+		
+	case float64:
+		return v
+
+	default:
+		panic(fmt.Sprintf("not implemented: %T", v))
+	}
+}
+
 // Marshal encodes the given *types.Document to a tigris driver.Document.
 func Marshal(v *types.Document) (*driver.Document, error) {
 	if v == nil {
@@ -112,9 +130,6 @@ type regexJSON struct {
 
 // toTJSON converts FerretDB types to Tigris data type representation
 func toTJSON(v any) any {
-	if v == nil {
-		return types.Null
-	}
 	switch v := v.(type) {
 	case string:
 		return v
@@ -156,7 +171,7 @@ func toTJSON(v any) any {
 		return a
 
 	default:
-		panic(fmt.Sprintf("not reached: %T", v))
+		panic(fmt.Sprintf("not implemented: %T", v))
 	}
 }
 
