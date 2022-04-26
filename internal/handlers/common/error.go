@@ -125,6 +125,7 @@ func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
 			ErrFailedToParse,
 			fmt.Sprintf("Expected an integer: %s: %#v", operator, maskValue),
 		)
+
 	case errNegativeNumber:
 		if _, ok := maskValue.(float64); ok {
 			return NewErrorMsg(
@@ -136,11 +137,13 @@ func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
 			ErrFailedToParse,
 			fmt.Sprintf(`Expected a positive number in: %s: %v`, operator, maskValue),
 		)
+
 	case errNotBinaryMask:
 		return NewErrorMsg(
 			ErrBadValue,
 			fmt.Sprintf(`value takes an Array, a number, or a BinData but received: %s: %#v`, operator, maskValue),
 		)
+
 	default:
 		return err
 	}
