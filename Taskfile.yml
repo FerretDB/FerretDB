@@ -25,7 +25,7 @@ tasks:
       - go mod verify
 
   init:
-    desc: 'Install development tools'
+    desc: "Install development tools"
     deps: [gen-version, init-tools, init-integration]
     cmds:
       - go mod tidy
@@ -41,66 +41,67 @@ tasks:
       - docker-compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --detach
 
   env-up:
-    desc: 'Start development environment'
+    desc: "Start development environment"
     deps: [env-up-detach, env-setup]
     cmds:
       - docker-compose logs --follow
 
   env-pull:
+    desc: "Pull development environment's Docker images"
     cmds:
-      - docker-compose pull --include-deps --quiet
+      - docker-compose pull --include-deps
 
   env-down:
-    desc: 'Stop development environment'
+    desc: "Stop development environment"
     cmds:
       - docker-compose down --remove-orphans --volumes
 
   gen:
-    desc: 'Generate code'
+    desc: "Generate code"
     cmds:
       - go generate -x ./...
       - task: fmt
 
   fmt:
-    desc: 'Format code'
+    desc: "Format code"
     cmds:
       - bin/goimports{{exeExt}} -format-only -local=github.com/FerretDB/FerretDB -w .
       - bin/gofumpt{{exeExt}} -w .
 
   test:
-    desc: 'Run all unit and integration tests in parallel'
+    desc: "Run all unit and integration tests in parallel"
     deps: [test-unit, test-integration]
 
   test-unit-short:
-    desc: 'Run short unit tests'
+    desc: "Run short unit tests"
     cmds:
       - go test -short -race -shuffle=on -coverprofile=cover.txt ./...
 
   test-unit:
-    desc: 'Run all unit tests'
+    desc: "Run all unit tests"
     cmds:
       - go test -race -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
       - go test -race -shuffle=on -bench=. -benchtime=1x ./...
 
   test-integration:
-    desc: 'Run all integration tests in parallel'
+    desc: "Run all integration tests in parallel"
     deps:
       - task: test-integration-db
-        vars: { DB: 'FerretDB' }
+        vars: { DB: "FerretDB" }
       - task: test-integration-db
-        vars: { DB: 'MongoDB' }
+        vars: { DB: "MongoDB" }
 
   test-integration-ferretdb:
-    desc: 'Run integration tests for FerretDB'
+    desc: "Run integration tests for FerretDB"
     cmds:
       - task: test-integration-db
-        vars: { DB: 'FerretDB' }
+        vars: { DB: "FerretDB" }
 
   test-integration-mongodb:
-    desc: 'Run integration tests for MongoDB'
+    desc: "Run integration tests for MongoDB"
     cmds:
       - task: test-integration-db
-        vars: { DB: 'MongoDB' }
+        vars: { DB: "MongoDB" }
 
   test-integration-db:
     dir: integration
@@ -108,7 +109,7 @@ tasks:
       - go test -count=1 -race -shuffle=on -coverprofile=integration.txt -coverpkg=../... -port={{.DB}}
 
   bench-short:
-    desc: 'Benchmark for about 20 seconds (with default BENCHTIME)'
+    desc: "Benchmark for about 20 seconds (with default BENCHTIME)"
     cmds:
       - go test -list='Benchmark.*' ./...
       - echo 'Running four functions for {{.BENCHTIME}} each...'
@@ -128,7 +129,7 @@ tasks:
   # Those commands should still run tests (i.e., should not have -run=XXX flags)
   # to fill seed corpus for fuzz tests that use WriteSeedCorpusFile (e.g., FuzzHandler).
   fuzz:
-    desc: 'Fuzz for about 2 minutes (with default FUZZTIME)'
+    desc: "Fuzz for about 2 minutes (with default FUZZTIME)"
     cmds:
       - go test -list='Fuzz.*' ./...
       - echo 'Running eight functions for {{.FUZZTIME}} each...'
@@ -142,26 +143,26 @@ tasks:
       - go test -fuzz=FuzzHandler -fuzztime={{.FUZZTIME}} ./internal/handlers/
 
   fuzz-corpus:
-    desc: 'Sync seed and generated fuzz corpora with FUZZCORPUS'
+    desc: "Sync seed and generated fuzz corpora with FUZZCORPUS"
     cmds:
       - go run ./cmd/fuzztool/fuzztool.go -dst={{.FUZZCORPUS}} -src=generated
       - go run ./cmd/fuzztool/fuzztool.go -dst={{.FUZZCORPUS}} -src=seed
       - go run ./cmd/fuzztool/fuzztool.go -src={{.FUZZCORPUS}} -dst=generated
 
   build-testcover:
-    desc: 'Build bin/ferretdb-testcover'
+    desc: "Build bin/ferretdb-testcover"
     deps: [gen-version]
     cmds:
       - go test -c -o=bin/ferretdb-testcover -trimpath -tags=testcover -race -coverpkg=./... ./cmd/ferretdb
 
   run:
-    desc: 'Run FerretDB'
+    desc: "Run FerretDB"
     deps: [build-testcover]
     cmds:
       - bin/ferretdb-testcover -test.coverprofile=cover.txt -mode=diff-normal -listen-addr=:27017
 
   lint:
-    desc: 'Run linters'
+    desc: "Run linters"
     deps:
       - lint-golangci-lint-required
       - lint-go-sumtype
@@ -188,26 +189,26 @@ tasks:
       - ../bin/go-consistent -pedantic ./...
 
   docs-fmt:
-    desc: 'Markdown formatter and linter'
+    desc: "Markdown formatter and linter"
     cmds:
       - >
         docker run --rm -v $PWD:/workdir ghcr.io/igorshubovych/markdownlint-cli:v0.31.1
         --fix --dot --ignore CHANGELOG.md '**/*.md'
 
   psql:
-    desc: 'Run psql'
+    desc: "Run psql"
     cmds:
       - docker-compose exec postgres psql -U postgres -d ferretdb
 
   mongosh:
-    desc: 'Run MongoDB shell (`mongosh`)'
+    desc: "Run MongoDB shell (`mongosh`)"
     cmds:
       - >
         docker-compose exec mongodb mongosh mongodb://host.docker.internal:27017/monila?heartbeatFrequencyMS=300000
         --verbose --eval 'disableTelemetry()' --shell
 
   mongo:
-    desc: 'Run legacy `mongo` shell'
+    desc: "Run legacy `mongo` shell"
     cmds:
       - >
         docker-compose exec mongodb mongo mongodb://host.docker.internal:27017/monila?heartbeatFrequencyMS=300000
