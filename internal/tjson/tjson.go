@@ -38,6 +38,8 @@ package tjson
 
 import (
 	"encoding/json"
+	"fmt"
+	"time"
 
 	"github.com/tigrisdata/tigrisdb-client-go/driver"
 
@@ -84,13 +86,78 @@ func Marshal(v *types.Document) (*driver.Document, error) {
 		return nil, err
 	}
 
-	b, err := json.Marshal(v.Map())
+	doc := toTJSON(v)
+
+	b, err := json.Marshal(doc)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	d := driver.Document(b)
 	return &d, nil
+}
+
+type timestampJSON struct {
+	D uint64 `json:"$d"`
+}
+
+type objectIDJSON struct {
+	O [12]byte `json:"$o"`
+}
+
+type regexJSON struct {
+	R string `json:"$r"`
+	O string `json:"o"`
+}
+
+// toTJSON converts FerretDB types to Tigris data type representation
+func toTJSON(v any) any {
+	if v == nil {
+		return types.Null
+	}
+	switch v := v.(type) {
+	case string:
+		return v
+
+	case float64:
+		return v
+
+	case types.Binary:
+		return v
+
+	case types.ObjectID:
+		return objectIDJSON{O: v}
+
+	case time.Time:
+		return v
+
+	case types.NullType:
+		return nil
+
+	case types.Timestamp:
+		return timestampJSON{D: uint64(v)}
+
+	case types.Regex:
+		return regexJSON{R: v.Pattern, O: v.Options}
+
+	case *types.Document:
+		keys := v.Keys()
+		d := make(map[string]any, len(keys))
+		for _, k := range keys {
+			d[k] = toTJSON(must.NotFail(v.Get(k)))
+		}
+		return d
+
+	case *types.Array:
+		a := make([]any, v.Len())
+		for i := 0; i <= v.Len(); i++ {
+			a[i] = toTJSON(must.NotFail(v.Get(i)))
+		}
+		return a
+
+	default:
+		panic(fmt.Sprintf("not reached: %T", v))
+	}
 }
 
 // checkUnmarshalSupported returns nil if the conversion from Tigris document to Ferret document is supported.
