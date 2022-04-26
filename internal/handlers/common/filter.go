@@ -105,12 +105,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 			return false, nil // no error - the field is just not present
 		}
 
-		switch docValue := docValue.(type) {
-		case *types.Document, *types.Array:
-			return compare(docValue, filterValue) == equal, nil
-		}
-
-		return compareScalars(docValue, filterValue) == equal, nil
+		return types.Compare(docValue, filterValue) == types.Equal, nil
 	}
 }
 
@@ -242,7 +237,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				}
 				return false, nil
 			default:
-				if compare(fieldValue, exprValue) != equal {
+				if types.Compare(fieldValue, exprValue) != types.Equal {
 					return false, nil
 				}
 			}
@@ -266,7 +261,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				return false, NewErrorMsg(ErrBadValue, "Can't have regex as arg to $ne.")
 
 			default:
-				if compare(fieldValue, exprValue) == equal {
+				if types.Compare(fieldValue, exprValue) == types.Equal {
 					return false, nil
 				}
 			}
@@ -277,7 +272,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewErrorMsg(ErrBadValue, msg)
 			}
-			if compare(fieldValue, exprValue) != greater {
+			if types.Compare(fieldValue, exprValue) != types.Greater {
 				return false, nil
 			}
 
@@ -287,7 +282,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewErrorMsg(ErrBadValue, msg)
 			}
-			if c := compare(fieldValue, exprValue); c != greater && c != equal {
+			if c := types.Compare(fieldValue, exprValue); c != types.Greater && c != types.Equal {
 				return false, nil
 			}
 
@@ -297,7 +292,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewErrorMsg(ErrBadValue, msg)
 			}
-			if c := compare(fieldValue, exprValue); c != less {
+			if c := types.Compare(fieldValue, exprValue); c != types.Less {
 				return false, nil
 			}
 
@@ -307,7 +302,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewErrorMsg(ErrBadValue, msg)
 			}
-			if c := compare(fieldValue, exprValue); c != less && c != equal {
+			if c := types.Compare(fieldValue, exprValue); c != types.Less && c != types.Equal {
 				return false, nil
 			}
 
@@ -350,7 +345,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 					continue
 
 				default:
-					if compare(fieldValue, arrValue) == equal {
+					if types.Compare(fieldValue, arrValue) == types.Equal {
 						found = true
 						break
 					}
@@ -399,7 +394,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 					continue
 
 				default:
-					if compare(fieldValue, arrValue) == equal {
+					if types.Compare(fieldValue, arrValue) == types.Equal {
 						found = true
 						break
 					}
@@ -524,7 +519,7 @@ func filterFieldRegex(fieldValue any, regex types.Regex) (bool, error) {
 		}
 
 	case types.Regex:
-		return compareScalars(fieldValue, regex) == equal, nil
+		return types.Compare(fieldValue, regex) == types.Equal, nil
 	}
 
 	return false, nil
