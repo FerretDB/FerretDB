@@ -32,23 +32,16 @@ func TestDummyHandler(t *testing.T) {
 	h := New()
 	ctx := context.Background()
 	var msg wire.OpMsg
-	err := msg.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"commands", must.NotFail(types.NewDocument()),
-			"ok", float64(1),
-		))},
-	})
-	assert.NoError(t, err)
 
 	errNotImplemented := common.NewErrorMsg(common.ErrNotImplemented, "I'm a dummy, not a handler")
 	for k, command := range common.Commands {
-		_, err = command.Handler(h, ctx, &msg)
+		_, err := command.Handler(h, ctx, &msg)
 		assert.Equal(t, err, errNotImplemented, k)
 	}
 
 	msgq := &wire.OpQuery{
 		Query: must.NotFail(types.NewDocument()),
 	}
-	_, err = h.CmdQuery(ctx, msgq)
+	_, err := h.CmdQuery(ctx, msgq)
 	assert.Equal(t, err, errNotImplemented)
 }
