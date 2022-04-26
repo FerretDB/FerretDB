@@ -414,23 +414,27 @@ func TestQueryEvaluationRegex(t *testing.T) {
 	ctx, collection := setup(t, shareddata.Scalars)
 
 	for name, tc := range map[string]struct {
-		value       any
+		filter      any
 		expectedIDs []any
 	}{
 		"Regex": {
-			value:       primitive.Regex{Pattern: "foo"},
+			filter:      bson.D{{"$regex", primitive.Regex{Pattern: "foo"}}},
 			expectedIDs: []any{"string"},
 		},
 		"RegexWithOption": {
-			value:       primitive.Regex{Pattern: "42", Options: "i"},
+			filter:      bson.D{{"$regex", primitive.Regex{Pattern: "42", Options: "i"}}},
 			expectedIDs: []any{"string-double", "string-whole"},
+		},
+		"RegexStringOption": {
+			filter:      bson.D{{"$regex", "foo"}, {"$options", "i"}},
+			expectedIDs: []any{"regex", "string"},
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			filter := bson.D{{"value", bson.D{{"$regex", tc.value}}}}
+			filter := bson.D{{"value", tc.filter}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			require.NoError(t, err)
 
