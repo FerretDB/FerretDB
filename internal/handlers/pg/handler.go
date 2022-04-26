@@ -50,17 +50,16 @@ type Handler struct {
 type NewOpts struct {
 	PgPool    *pgdb.Pool
 	L         *zap.Logger
-	Metrics   *Metrics
 	PeerAddr  string
 	StartTime time.Time
 }
 
 // New returns a new handler.
-func New(opts *NewOpts) *Handler {
+func New(opts *NewOpts) common.Handler {
 	return &Handler{
 		pgPool:    opts.PgPool,
 		l:         opts.L,
-		metrics:   opts.Metrics,
+		metrics:   NewMetrics(),
 		peerAddr:  opts.PeerAddr,
 		startTime: opts.StartTime,
 	}
@@ -218,4 +217,19 @@ func (h *Handler) MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 // MsgDebugPanic used for debugging purposes.
 func (h *Handler) MsgDebugPanic(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	panic("debug_panic")
+}
+
+// Collect implements prometheus.Collector.
+func (h *Handler) Collect(ch chan<- prometheus.Metric) {
+	h.metrics.Collect(ch)
+}
+
+// Describe implements prometheus.Collector.
+func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
+	h.metrics.Describe(ch)
+}
+
+// Close prepares handler for graceful shutdown: closes connections, channels etc.
+func (h *Handler) Close() {
+	h.pgPool.Close()
 }

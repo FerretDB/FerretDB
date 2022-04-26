@@ -26,8 +26,7 @@ import (
 	"github.com/pmezard/go-difflib/difflib"
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/pg"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/proxy"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
@@ -56,27 +55,28 @@ type conn struct {
 	netConn net.Conn
 	mode    Mode
 	l       *zap.SugaredLogger
-	h       *pg.Handler
+	h       common.Handler
 	proxy   *proxy.Handler
 }
 
 // newConnOpts represents newConn options.
 type newConnOpts struct {
-	netConn         net.Conn
-	mode            Mode
-	l               *zap.Logger
-	pgPool          *pgdb.Pool
-	proxyAddr       string
-	handlersMetrics *pg.Metrics
-	startTime       time.Time
+	netConn   net.Conn
+	mode      Mode
+	l         *zap.Logger
+	handler   common.Handler
+	proxyAddr string
+	startTime time.Time
 }
 
 // newConn creates a new client connection for given net.Conn.
 func newConn(opts *newConnOpts) (*conn, error) {
+	if opts.handler == nil {
+		panic("handler required")
+	}
+
 	prefix := fmt.Sprintf("// %s -> %s ", opts.netConn.RemoteAddr(), opts.netConn.LocalAddr())
 	l := opts.l.Named(prefix)
-
-	peerAddr := opts.netConn.RemoteAddr().String()
 
 	var p *proxy.Handler
 	if opts.mode != NormalMode {
@@ -86,18 +86,11 @@ func newConn(opts *newConnOpts) (*conn, error) {
 		}
 	}
 
-	handlerOpts := &pg.NewOpts{
-		PgPool:    opts.pgPool,
-		L:         l,
-		PeerAddr:  peerAddr,
-		Metrics:   opts.handlersMetrics,
-		StartTime: opts.startTime,
-	}
 	return &conn{
 		netConn: opts.netConn,
 		mode:    opts.mode,
 		l:       l.Sugar(),
-		h:       pg.New(handlerOpts),
+		h:       opts.handler,
 		proxy:   p,
 	}, nil
 }

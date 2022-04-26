@@ -44,7 +44,7 @@ type setupOpts struct {
 // Using shared objects helps us spot concurrency bugs.
 // If some test is failing and the log output is confusing, and you are tempted to move setup call to subtest,
 // instead run that single test with `go test -run test/name`.
-func setup(t testing.TB, opts *setupOpts) (context.Context, *pg.Handler, *pgdb.Pool) {
+func setup(t testing.TB, opts *setupOpts) (context.Context, common.Handler, *pgdb.Pool) {
 	t.Helper()
 
 	if opts == nil {
@@ -64,13 +64,12 @@ func setup(t testing.TB, opts *setupOpts) (context.Context, *pg.Handler, *pgdb.P
 		PgPool:   pool,
 		L:        l,
 		PeerAddr: "127.0.0.1:12345",
-		Metrics:  pg.NewMetrics(),
 	})
 
 	return ctx, handler, pool
 }
 
-func handle(ctx context.Context, t *testing.T, handler *pg.Handler, req *types.Document) *types.Document {
+func handle(ctx context.Context, t *testing.T, handler common.Handler, req *types.Document) *types.Document {
 	t.Helper()
 
 	var reqMsg wire.OpMsg
@@ -102,6 +101,7 @@ func handle(ctx context.Context, t *testing.T, handler *pg.Handler, req *types.D
 
 func TestFind(t *testing.T) {
 	t.Parallel()
+
 	ctx, handler, _ := setup(t, &setupOpts{
 		poolOpts: &testutil.PoolOpts{
 			ReadOnly: true,
@@ -421,6 +421,7 @@ func TestFind(t *testing.T) {
 
 func TestReadOnlyHandlers(t *testing.T) {
 	t.Parallel()
+
 	ctx, handler, _ := setup(t, &setupOpts{
 		poolOpts: &testutil.PoolOpts{
 			ReadOnly: true,
