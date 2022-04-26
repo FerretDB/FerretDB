@@ -418,24 +418,27 @@ func TestQueryEvaluationRegex(t *testing.T) {
 		expectedIDs []any
 	}{
 		"Regex": {
-			filter:      bson.D{{"$regex", primitive.Regex{Pattern: "foo"}}},
+			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "foo"}}}}},
 			expectedIDs: []any{"string"},
 		},
 		"RegexWithOption": {
-			filter:      bson.D{{"$regex", primitive.Regex{Pattern: "42", Options: "i"}}},
+			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "42", Options: "i"}}}}},
 			expectedIDs: []any{"string-double", "string-whole"},
 		},
 		"RegexStringOption": {
-			filter:      bson.D{{"$regex", "foo"}, {"$options", "i"}},
+			filter:      bson.D{{"value", bson.D{{"$regex", "foo"}, {"$options", "i"}}}},
 			expectedIDs: []any{"regex", "string"},
+		},
+		"RegexNoSuchField": {
+			filter:      bson.D{{"no-such-field", bson.D{{"$regex", primitive.Regex{Pattern: "foo"}}}}},
+			expectedIDs: []any{},
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			filter := bson.D{{"value", tc.filter}}
-			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			require.NoError(t, err)
 
 			var actual []bson.D
