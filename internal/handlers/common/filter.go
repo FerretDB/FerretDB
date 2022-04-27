@@ -52,17 +52,16 @@ func FilterDocument(doc, filter *types.Document) (bool, error) {
 func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) (bool, error) {
 	if strings.ContainsRune(filterKey, '.') {
 		// {field1./.../.fieldN: filterValue}
-		path := strings.Split(filterKey, ".")
-		// we pass the path without the last key because we want {fieldN: *someValue*}, not just *someValue*
-		docValue, err := doc.GetByPath(path[:len(path)-1]...)
-		if err != nil {
+		var docValue any
+		var err error
+		if filterKey, docValue, err = doc.GetPairByPath(filterKey); err != nil {
 			return false, nil // no error - the field is just not present
 		}
+
 		var ok bool
 		if doc, ok = docValue.(*types.Document); !ok {
 			return false, nil // no error - the field is just not present
 		}
-		filterKey = path[len(path)-1]
 	}
 
 	if strings.HasPrefix(filterKey, "$") {

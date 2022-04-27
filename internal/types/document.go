@@ -258,10 +258,15 @@ func (d *Document) Get(key string) (any, error) {
 	return nil, fmt.Errorf("types.Document.Get: key not found: %q", key)
 }
 
-// GetByPath returns a value by path - a sequence of indexes and keys.
-func (d *Document) GetByPath(path ...string) (any, error) {
-	p := strings.Join(path, ".")
-	return getByPath(d, p)
+// GetPairByPath returns key/index and value pair by path - a sequence of indexes and keys separated by dots.
+func (d *Document) GetPairByPath(path string) (string, any, error) {
+	return getPairByPath(d, path)
+}
+
+// GetByPath returns a value by path - a sequence of indexes and keys separated by dots.
+func (d *Document) GetByPath(path string) (any, error) {
+	_, v, err := getPairByPath(d, path)
+	return v, err
 }
 
 // Set sets the value for the given key, replacing any existing value.
@@ -322,7 +327,9 @@ func (d *Document) Remove(key string) {
 }
 
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
-func (d *Document) RemoveByPath(keys ...string) {
+func (d *Document) RemoveByPath(path string) {
+	keys := strings.Split(path, ".")
+
 	if len(keys) == 0 {
 		return
 	}

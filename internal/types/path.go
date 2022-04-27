@@ -20,32 +20,31 @@ import (
 	"strings"
 )
 
-// getByPath returns a value by path - a sequence of indexes and keys separated by dots.
-func getByPath[T CompositeTypeInterface](comp T, path string) (any, error) {
-	var next any = comp
-	for _, p := range strings.Split(path, ".") {
-		switch s := next.(type) {
+// getPairByPath returns key/index and value pair by path - a sequence of indexes and keys separated by dots.
+func getPairByPath[T CompositeTypeInterface](comp T, path string) (string, any, error) {
+	var key string
+	var value any = comp
+	for _, key = range strings.Split(path, ".") {
+		switch v := value.(type) {
 		case *Document:
 			var err error
-			next, err = s.Get(p)
-			if err != nil {
-				return nil, fmt.Errorf("types.getByPath: %w", err)
+			if value, err = v.Get(key); err != nil {
+				return "", nil, fmt.Errorf("types.getPairByPath: %w", err)
 			}
 
 		case *Array:
-			index, err := strconv.Atoi(p)
+			i, err := strconv.Atoi(key)
 			if err != nil {
-				return nil, fmt.Errorf("types.getByPath: %w", err)
+				return "", nil, fmt.Errorf("types.getPairByPath: %w", err)
 			}
-			next, err = s.Get(index)
-			if err != nil {
-				return nil, fmt.Errorf("types.getByPath: %w", err)
+			if value, err = v.Get(i); err != nil {
+				return "", nil, fmt.Errorf("types.getPairByPath: %w", err)
 			}
 
 		default:
-			return nil, fmt.Errorf("types.getByPath: can't access %T by path %q", next, p)
+			return "", nil, fmt.Errorf("types.getPairByPath: can't access %T by path %q", value, key)
 		}
 	}
 
-	return next, nil
+	return key, value, nil
 }

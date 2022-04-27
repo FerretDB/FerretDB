@@ -15,7 +15,6 @@
 package types
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,13 +28,13 @@ func TestRemoveByPath(t *testing.T) {
 
 	type testCase struct {
 		name string
-		path []string
+		path string
 		res  any
 		err  string
 	}
 	for _, tc := range []testCase{{ //nolint:paralleltest // false positive
 		name: "not found no error, ismaster field removed",
-		path: []string{"ismaster", "0"},
+		path: "ismaster.0",
 		res: MustNewDocument(
 			"ismaster", true,
 			"client", MustNewArray(
@@ -59,14 +58,14 @@ func TestRemoveByPath(t *testing.T) {
 		),
 	}, {
 		name: "removed entire client field",
-		path: []string{"client"},
+		path: "client",
 		res: MustNewDocument(
 			"ismaster", true,
 			"value", must.NotFail(NewArray("none")),
 		),
 	}, {
 		name: "only 1d array element of client field is removed",
-		path: []string{"client", "1"},
+		path: "client.1",
 		res: MustNewDocument(
 			"ismaster", true,
 			"client", MustNewArray(
@@ -85,7 +84,7 @@ func TestRemoveByPath(t *testing.T) {
 		),
 	}, {
 		name: "not found, element must be on place, no error",
-		path: []string{"client", "3"},
+		path: "client.3",
 		res: MustNewDocument(
 			"ismaster", true,
 			"client", MustNewArray(
@@ -109,7 +108,7 @@ func TestRemoveByPath(t *testing.T) {
 		),
 	}, {
 		name: "not found, no error doc is same",
-		path: []string{"compression", "invalid"},
+		path: "compression.invalid",
 		res: MustNewDocument(
 			"ismaster", true,
 			"client", MustNewArray(
@@ -133,7 +132,7 @@ func TestRemoveByPath(t *testing.T) {
 		),
 	}} {
 		tc := tc
-		t.Run(fmt.Sprint(tc.path), func(t *testing.T) {
+		t.Run(tc.path, func(t *testing.T) {
 			t.Parallel()
 
 			doc := MustNewDocument(
@@ -158,13 +157,13 @@ func TestRemoveByPath(t *testing.T) {
 				"value", must.NotFail(NewArray("none")),
 			)
 
-			doc.RemoveByPath(tc.path...)
+			doc.RemoveByPath(tc.path)
 			assert.Equal(t, tc.res, doc, tc.name)
 		})
 	}
 }
 
-func TestGetByPath(t *testing.T) {
+func TestGetPairByPath(t *testing.T) {
 	t.Parallel()
 
 	doc := MustNewDocument(
@@ -190,51 +189,58 @@ func TestGetByPath(t *testing.T) {
 	)
 
 	type testCase struct {
-		path string
-		res  any
-		err  string
+		path  string
+		key   string
+		value any
+		err   string
 	}
 
 	for _, tc := range []testCase{{ //nolint:paralleltest // false positive
-		path: "compression.0",
-		res:  "none",
+		path:  "compression.0",
+		key:   "0",
+		value: "none",
 	}, {
-		path: "compression",
-		res:  must.NotFail(NewArray("none")),
+		path:  "compression",
+		key:   "compression",
+		value: must.NotFail(NewArray("none")),
 	}, {
 		path: "client.driver",
-		res: MustNewDocument(
+		key:  "driver",
+		value: MustNewDocument(
 			"name", "nodejs",
 			"version", "4.0.0-beta.6",
 		),
 	}, {
 		path: "client.0",
-		err:  `types.getByPath: types.Document.Get: key not found: "0"`,
+		err:  `types.getPairByPath: types.Document.Get: key not found: "0"`,
 	}, {
 		path: "compression.invalid",
-		err:  `types.getByPath: strconv.Atoi: parsing "invalid": invalid syntax`,
+		err:  `types.getPairByPath: strconv.Atoi: parsing "invalid": invalid syntax`,
 	}, {
 		path: "client.missing",
-		err:  `types.getByPath: types.Document.Get: key not found: "missing"`,
+		err:  `types.getPairByPath: types.Document.Get: key not found: "missing"`,
 	}, {
 		path: "compression.1",
-		err:  `types.getByPath: types.Array.Get: index 1 is out of bounds [0-1)`,
+		err:  `types.getPairByPath: types.Array.Get: index 1 is out of bounds [0-1)`,
 	}, {
 		path: "compression.0.invalid",
-		err:  `types.getByPath: can't access string by path "invalid"`,
+		err:  `types.getPairByPath: can't access string by path "invalid"`,
 	}} {
 		tc := tc
-		t.Run(fmt.Sprint(tc.path), func(t *testing.T) {
+		t.Run(tc.path, func(t *testing.T) {
 			t.Parallel()
 
-			res, err := getByPath(doc, tc.path)
-			if tc.err == "" {
-				require.NoError(t, err)
-				assert.Equal(t, tc.res, res)
-			} else {
-				assert.Empty(t, res)
+			key, value, err := getPairByPath(doc, tc.path)
+			if tc.err != "" {
+				assert.Empty(t, key)
+				assert.Empty(t, value)
 				assert.EqualError(t, err, tc.err)
+				return
 			}
+
+			require.NoError(t, err)
+			assert.Equal(t, tc.key, key)
+			assert.Equal(t, tc.value, value)
 		})
 	}
 }

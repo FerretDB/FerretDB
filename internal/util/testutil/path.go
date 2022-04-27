@@ -26,12 +26,11 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-// GetByPath returns a value by path - a sequence of indexes and keys.
-func GetByPath[T types.CompositeTypeInterface](tb testing.TB, comp T, path ...string) any {
+// GetByPath returns a value by path - a sequence of indexes and keys separated by dots.
+func GetByPath[T types.CompositeTypeInterface](tb testing.TB, comp T, path string) any {
 	tb.Helper()
 
-	p := strings.Join(path, ".")
-	res, err := comp.GetByPath(p)
+	res, err := comp.GetByPath(path)
 	require.NoError(tb, err)
 	return res
 }
@@ -39,14 +38,14 @@ func GetByPath[T types.CompositeTypeInterface](tb testing.TB, comp T, path ...st
 // SetByPath sets the value by path - a sequence of indexes and keys.
 //
 // The path must exist.
-func SetByPath[T types.CompositeTypeInterface](tb testing.TB, comp T, value any, path ...string) {
+func SetByPath[T types.CompositeTypeInterface](tb testing.TB, comp T, value any, path string) {
 	tb.Helper()
 
 	l := len(path)
 	require.NotZero(tb, l, "path is empty")
 
 	var next any = comp
-	for i, p := range path {
+	for i, p := range strings.Split(path, ".") {
 		last := i == l-1
 		switch c := next.(type) {
 		case *types.Document:
@@ -79,29 +78,29 @@ func SetByPath[T types.CompositeTypeInterface](tb testing.TB, comp T, value any,
 
 // CompareAndSetByPathNum asserts that two values with the same path in two objects (documents or arrays)
 // are within a given numerical delta, then updates the expected object with the actual value.
-func CompareAndSetByPathNum[T types.CompositeTypeInterface](tb testing.TB, expected, actual T, delta float64, path ...string) {
+func CompareAndSetByPathNum[T types.CompositeTypeInterface](tb testing.TB, expected, actual T, delta float64, path string) {
 	tb.Helper()
 
-	expectedV := GetByPath(tb, expected, path...)
-	actualV := GetByPath(tb, actual, path...)
+	expectedV := GetByPath(tb, expected, path)
+	actualV := GetByPath(tb, actual, path)
 	assert.IsType(tb, expectedV, actualV)
 	assert.InDelta(tb, expectedV, actualV, delta)
 
-	SetByPath(tb, expected, actualV, path...)
+	SetByPath(tb, expected, actualV, path)
 }
 
 // CompareAndSetByPathTime asserts that two values with the same path in two objects (documents or arrays)
 // are within a given time delta, then updates the expected object with the actual value.
 //
 //nolint:lll // will be fixed when CompositeTypeInterface is removed
-func CompareAndSetByPathTime[T types.CompositeTypeInterface](tb testing.TB, expected, actual T, delta time.Duration, path ...string) {
+func CompareAndSetByPathTime[T types.CompositeTypeInterface](tb testing.TB, expected, actual T, delta time.Duration, path string) {
 	tb.Helper()
 
-	expectedV := GetByPath(tb, expected, path...)
-	actualV := GetByPath(tb, actual, path...)
+	expectedV := GetByPath(tb, expected, path)
+	actualV := GetByPath(tb, actual, path)
 	assert.IsType(tb, expectedV, actualV)
 	require.IsType(tb, time.Time{}, actualV)
 	assert.WithinDuration(tb, expectedV.(time.Time), actualV.(time.Time), delta)
 
-	SetByPath(tb, expected, actualV, path...)
+	SetByPath(tb, expected, actualV, path)
 }
