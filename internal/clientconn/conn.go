@@ -248,7 +248,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 	}
 }
 
-// route routes to common.Router and measures all the result
+// route routes to common.Router and measures all the result.
 func (c *conn) route(h common.Handler, ctx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody,
 ) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) {
 	var err error

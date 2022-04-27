@@ -101,7 +101,6 @@ func handle(ctx context.Context, t *testing.T, handler common.Handler, req *type
 
 func TestFind(t *testing.T) {
 	t.Parallel()
-
 	ctx, handler, _ := setup(t, &setupOpts{
 		poolOpts: &testutil.PoolOpts{
 			ReadOnly: true,
