@@ -31,7 +31,7 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		return nil, lazyerrors.Error(err)
 	}
 
-	getPrm, err := cmd.Get("getParameter")
+	getParameter, err := cmd.Get("getParameter")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -47,7 +47,7 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	var reply wire.OpMsg
 	var errNoFound error
 	var resDoc *types.Document
-	if getPrm == "*" {
+	if getParameter == "*" {
 		resDoc = resDB
 	} else {
 		resDoc, errNoFound, err = selectParam(cmd, resDB)
@@ -72,9 +72,9 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 }
 
 // selectParam is makes a selection of the requested parameters received from database 'admin'.
-func selectParam(cmd, resDB *types.Document) (doc *types.Document, errNoFound error, err error) {
+func selectParam(command, resDB *types.Document) (doc *types.Document, errNoFound error, err error) {
 	doc = types.MustNewDocument()
-	keys := cmd.Keys()
+	keys := command.Keys()
 
 	for _, k := range keys {
 		if k == "getParameter" || k == "comment" || k == "$db" {
@@ -96,12 +96,12 @@ func selectParam(cmd, resDB *types.Document) (doc *types.Document, errNoFound er
 			return nil, nil, err
 		}
 		errNoFound = common.NewErrorMsg(common.ErrorCode(0), "no option found to get")
-	} else {
-		err := doc.Set("ok", float64(1))
-		if err != nil {
-			return nil, nil, err
-		}
+		return doc, errNoFound, nil
 	}
 
-	return doc, errNoFound, nil
+	err = doc.Set("ok", float64(1))
+	if err != nil {
+		return nil, nil, err
+	}
+	return doc, nil, nil
 }

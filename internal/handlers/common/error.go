@@ -92,10 +92,10 @@ func (e *Error) Unwrap() error {
 
 // Document returns wire protocol error document.
 func (e *Error) Document() *types.Document {
-	d := types.MustNewDocument(
+	d := must.NotFail(types.NewDocument(
 		"ok", float64(0),
 		"errmsg", e.err.Error(),
-	)
+	))
 	if e.code != errUnset {
 		must.NoError(d.Set("code", int32(e.code)))
 		must.NoError(d.Set("codeName", e.code.String()))
