@@ -75,6 +75,9 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 			errMsg = common.NewErrorMsg(common.ErrorCode(0), "no option found to get")
 		} else {
 			err = resDoc.Set("ok", float64(1))
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
 		}
 	}
 
