@@ -41,6 +41,34 @@ func UpdateDocument(doc, update *types.Document) error {
 				}
 			}
 
+		case "$push":
+			pushDoc, err := AssertType[*types.Document](updateV)
+			if err != nil {
+				return err
+			}
+
+			for _, pushKey := range pushDoc.Keys() {
+				pushValue := must.NotFail(pushDoc.Get(pushKey))
+
+				v, err := doc.Get(pushKey)
+				if err != nil {
+					// key not found, set array with a single element
+					a := must.NotFail(types.NewArray(pushValue))
+					if err = doc.Set(pushKey, a); err != nil {
+						return lazyerrors.Error(err)
+					}
+					continue
+				}
+
+				a, err := AssertType[*types.Array](v)
+				if err != nil {
+					return err
+				}
+				if err = a.Append(pushValue); err != nil {
+					return lazyerrors.Error(err)
+				}
+			}
+
 		default:
 			return NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
 		}

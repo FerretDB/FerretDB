@@ -108,20 +108,27 @@ func AssertEqualDocuments(t testing.TB, expected, actual bson.D) bool {
 	return testutil.AssertEqual(t, expectedDoc, actualDoc)
 }
 
-// AssertEqualError asserts that expected error is the same as actual, ignoring the Raw part.
-func AssertEqualError(t testing.TB, expected mongo.CommandError, actual error) bool {
+// AssertEqualError asserts that expected error is the same as actual,
+// ignoring the Raw part of mongo.XXX errors.
+func AssertEqualError(t testing.TB, expected, actual error) bool {
 	t.Helper()
 
-	a, ok := actual.(mongo.CommandError)
-	if !ok {
+	switch a := actual.(type) {
+	case mongo.CommandError:
+		a.Raw = nil
+		return assert.Equal(t, expected, a)
+
+	case mongo.WriteException:
+		a.Raw = nil
+		for i, w := range a.WriteErrors {
+			w.Raw = nil
+			a.WriteErrors[i] = w
+		}
+		return assert.Equal(t, expected, a)
+
+	default:
 		return assert.Equal(t, expected, actual)
 	}
-
-	// raw part might be useful if assertion fails
-	require.Nil(t, expected.Raw)
-	expected.Raw = a.Raw
-
-	return assert.Equal(t, expected, a)
 }
 
 // CollectIDs returns all _id values from given documents.
