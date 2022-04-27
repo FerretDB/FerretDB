@@ -180,7 +180,7 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 }
 
 func TestCommandsAdministrationGetParameter(t *testing.T) {
-	//	t.Parallel()
+	t.Parallel()
 	ctx, collection := setupWithOpts(t, &setupOpts{
 		databaseName: "admin",
 	})
@@ -226,7 +226,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			//			t.Parallel()
+			t.Parallel()
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.filter).Decode(&actual)
