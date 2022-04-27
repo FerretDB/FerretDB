@@ -32,7 +32,7 @@ func TestRemoveByPath(t *testing.T) {
 		res  any
 		err  string
 	}
-	for _, tc := range []testCase{{ //nolint:paralleltest // false positive
+	for _, tc := range []testCase{{
 		name: "not found no error, ismaster field removed",
 		path: "ismaster.0",
 		res: MustNewDocument(
@@ -195,7 +195,7 @@ func TestGetPairByPath(t *testing.T) {
 		err   string
 	}
 
-	for _, tc := range []testCase{{ //nolint:paralleltest // false positive
+	for _, tc := range []testCase{{
 		path:  "compression.0",
 		key:   "0",
 		value: "none",

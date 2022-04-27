@@ -43,7 +43,7 @@ func TestSetByPath(t *testing.T) {
 		res   any
 	}
 
-	for _, tc := range []testCase{{ //nolint:paralleltest // false positive
+	for _, tc := range []testCase{{
 		path:  "compression.0",
 		value: "zstd",
 		res: types.MustNewDocument(

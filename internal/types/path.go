@@ -23,12 +23,12 @@ import (
 // getPairByPath returns key/index and value pair by path - a sequence of indexes and keys separated by dots.
 func getPairByPath[T CompositeTypeInterface](comp T, path string) (string, any, error) {
 	var key string
-	var value any = comp
+	var val any = comp
 	for _, key = range strings.Split(path, ".") {
-		switch v := value.(type) {
+		switch v := val.(type) {
 		case *Document:
 			var err error
-			if value, err = v.Get(key); err != nil {
+			if val, err = v.Get(key); err != nil {
 				return "", nil, fmt.Errorf("types.getPairByPath: %w", err)
 			}
 
@@ -37,14 +37,14 @@ func getPairByPath[T CompositeTypeInterface](comp T, path string) (string, any, 
 			if err != nil {
 				return "", nil, fmt.Errorf("types.getPairByPath: %w", err)
 			}
-			if value, err = v.Get(i); err != nil {
+			if val, err = v.Get(i); err != nil {
 				return "", nil, fmt.Errorf("types.getPairByPath: %w", err)
 			}
 
 		default:
-			return "", nil, fmt.Errorf("types.getPairByPath: can't access %T by path %q", value, key)
+			return "", nil, fmt.Errorf("types.getPairByPath: can't access %T by path %q", val, key)
 		}
 	}
 
-	return key, value, nil
+	return key, val, nil
 }

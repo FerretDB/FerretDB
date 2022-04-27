@@ -41,37 +41,39 @@ func GetByPath[T types.CompositeTypeInterface](tb testing.TB, comp T, path strin
 func SetByPath[T types.CompositeTypeInterface](tb testing.TB, comp T, value any, path string) {
 	tb.Helper()
 
-	l := len(path)
+	parts := strings.Split(path, ".")
+	l := len(parts)
 	require.NotZero(tb, l, "path is empty")
 
-	var next any = comp
-	for i, p := range strings.Split(path, ".") {
+	var val any = comp
+	for i, key := range parts {
 		last := i == l-1
-		switch c := next.(type) {
+
+		switch v := val.(type) {
 		case *types.Document:
 			var err error
-			next, err = c.Get(p)
+			val, err = v.Get(key)
 			require.NoError(tb, err)
 
 			if last {
-				err = c.Set(p, value)
+				err = v.Set(key, value)
 				require.NoError(tb, err)
 			}
 
 		case *types.Array:
-			index, err := strconv.Atoi(p)
+			index, err := strconv.Atoi(key)
 			require.NoError(tb, err)
 
-			next, err = c.Get(index)
+			val, err = v.Get(index)
 			require.NoError(tb, err)
 
 			if last {
-				err = c.Set(index, value)
+				err = v.Set(index, value)
 				require.NoError(tb, err)
 			}
 
 		default:
-			tb.Fatalf("can't access %T by path %q", next, p)
+			tb.Fatalf("can't access %T by path %q", val, key)
 		}
 	}
 }
