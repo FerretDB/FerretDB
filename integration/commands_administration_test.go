@@ -15,12 +15,17 @@
 package integration
 
 import (
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestCommandsAdministrationCreateDropList(t *testing.T) {
@@ -192,4 +197,128 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 	keys := CollectKeys(t, actual)
 	assert.Contains(t, keys, "quiet")
 	assert.Equal(t, false, m["quiet"])
+}
+
+func TestStatisticsCommands(t *testing.T) {
+	t.Skip("TODO: https://github.com/FerretDB/FerretDB/issues/536")
+	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+
+	for name, tc := range map[string]struct {
+		command  any
+		response bson.D
+	}{
+		"BuildInfo": {
+			command: bson.D{{"buildInfo", int32(1)}},
+			response: bson.D{
+				{"version", "5.0.42"},
+				{"gitVersion", "123"},
+				{"modules", primitive.A{}},
+				{"sysInfo", "deprecated"},
+				{"versionArray", primitive.A{int32(5), int32(0), int32(42), int32(0)}},
+				{"bits", int32(strconv.IntSize)},
+				{"debug", false},
+				{"maxBsonObjectSize", int32(16777216)},
+				{"buildEnvironment", bson.D{}},
+				{"ok", 1.0},
+			},
+		},
+		"CollStats": {
+			command: bson.D{{"collStats", collection.Name()}},
+			response: bson.D{
+				{"ns", collection.Database().Name() + "." + collection.Name()},
+				{"count", int32(43)},
+				{"size", int32(16384)},
+				{"storageSize", int32(8192)},
+				{"totalIndexSize", int32(0)},
+				{"totalSize", int32(16384)},
+				{"scaleFactor", int32(1)},
+				{"ok", 1.0},
+			},
+		},
+		"DataSize": {
+			command: bson.D{{"dataSize", collection.Database().Name() + "." + collection.Name()}},
+			response: bson.D{
+				{"estimate", false},
+				{"size", int32(106_496)},
+				{"numObjects", int32(210)},
+				{"millis", int32(20)},
+				{"ok", float64(1)},
+			},
+		},
+		"DataSizeCollectionNotExist": {
+			command: bson.D{{"dataSize", "some-database.some-collection"}},
+			response: bson.D{
+				{"size", int32(0)},
+				{"numObjects", int32(0)},
+				{"millis", int32(20)},
+				{"ok", float64(1)},
+			},
+		},
+		"DBStats": {
+			command: bson.D{{"dbStats", int32(1)}},
+			response: bson.D{
+				{"db", collection.Database().Name()},
+				{"collections", int32(1)},
+				{"views", int32(0)},
+				{"objects", int32(43)},
+				{"avgObjSize", 481.88235294117646},
+				{"dataSize", float64(8192)},
+				{"indexes", int32(0)},
+				{"indexSize", float64(0)},
+				{"totalSize", float64(16384)},
+				{"scaleFactor", float64(1)},
+				{"ok", float64(1)},
+			},
+		},
+		"DBStatsWithScale": {
+			command: bson.D{{"dbStats", int32(1)}, {"scale", float64(1_000)}},
+			response: bson.D{
+				{"db", collection.Database().Name()},
+				{"collections", int32(1)},
+				{"views", int32(0)},
+				{"objects", int32(43)},
+				{"avgObjSize", 433.0},
+				{"dataSize", 8.192},
+				{"indexes", int32(0)},
+				{"indexSize", float64(0)},
+				{"totalSize", 16.384},
+				{"scaleFactor", float64(1_000)},
+				{"ok", float64(1)},
+			},
+		},
+		"ServerStatus": {
+			command: bson.D{{"serverStatus", int32(1)}},
+			response: bson.D{
+				{"host", ""},
+				{"version", "5.0.42"},
+				{"process", "handlers.test"},
+				{"pid", int64(0)},
+				{"uptime", int64(0)},
+				{"uptimeMillis", int64(0)},
+				{"uptimeEstimate", int64(0)},
+				{"localTime", primitive.DateTime(time.Now().Unix())},
+				{"catalogStats", bson.D{
+					{"collections", int32(1)},
+					{"capped", int32(0)},
+					{"timeseries", int32(0)},
+					{"views", int32(0)},
+					{"internalCollections", int32(0)},
+					{"internalViews", int32(0)},
+				}},
+				{"freeMonitoring", bson.D{{"state", "disabled"}}},
+				{"ok", float64(1)},
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+			require.NoError(t, err)
+
+			AssertEqualDocuments(t, tc.response, actual)
+		})
+	}
 }
