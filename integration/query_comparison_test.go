@@ -51,10 +51,18 @@ func TestQueryComparisonImplicit(t *testing.T) {
 			filter:      bson.D{{"value.foo", int32(42)}},
 			expectedIDs: []any{"document", "document-composite"},
 		},
+		"DocumentDotNotationNoSuchField": {
+			filter:      bson.D{{"no-such-field.some", 42}},
+			expectedIDs: []any{},
+		},
 
 		"Array": {
 			filter:      bson.D{{"value", bson.A{int32(42), "foo", nil}}},
 			expectedIDs: []any{"array-three"},
+		},
+		"ArrayNoSuchField": {
+			filter:      bson.D{{"no-such-field", bson.A{42}}},
+			expectedIDs: []any{},
 		},
 		"ArrayEmbedded": {
 			filter:      bson.D{{"value", bson.A{bson.A{int32(42), "foo"}, nil}}},
@@ -63,6 +71,58 @@ func TestQueryComparisonImplicit(t *testing.T) {
 		"ArrayShuffledValues": {
 			filter:      bson.D{{"value", bson.A{"foo", nil, int32(42)}}},
 			expectedIDs: []any{},
+		},
+		"ArrayDotNotationNoSuchField": {
+			filter:      bson.D{{"value.some[0]", bson.A{42}}},
+			expectedIDs: []any{},
+		},
+
+		"Double": {
+			filter:      bson.D{{"value", 42.13}},
+			expectedIDs: []any{"double"},
+		},
+		"DoubleNegativeInfinity": {
+			filter:      bson.D{{"value", math.Inf(-1)}},
+			expectedIDs: []any{"double-negative-infinity"},
+		},
+		"DoublePositiveInfinity": {
+			filter:      bson.D{{"value", math.Inf(+1)}},
+			expectedIDs: []any{"double-positive-infinity"},
+		},
+		"DoubleMax": {
+			filter:      bson.D{{"value", math.MaxFloat64}},
+			expectedIDs: []any{"double-max"},
+		},
+		"DoubleSmallest": {
+			filter:      bson.D{{"value", math.SmallestNonzeroFloat64}},
+			expectedIDs: []any{"double-smallest"},
+		},
+
+		"String": {
+			filter:      bson.D{{"value", "foo"}},
+			expectedIDs: []any{"array-three", "string"},
+		},
+		"StringEmpty": {
+			filter:      bson.D{{"value", ""}},
+			expectedIDs: []any{"string-empty"},
+		},
+
+		"Binary": {
+			filter:      bson.D{{"value", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}},
+			expectedIDs: []any{"binary"},
+		},
+		"BinaryEmpty": {
+			filter:      bson.D{{"value", primitive.Binary{}}},
+			expectedIDs: []any{"binary-empty"},
+		},
+
+		"BoolFalse": {
+			filter:      bson.D{{"value", false}},
+			expectedIDs: []any{"bool-false"},
+		},
+		"BoolTrue": {
+			filter:      bson.D{{"value", true}},
+			expectedIDs: []any{"bool-true"},
 		},
 
 		"IDNull": {
@@ -1421,6 +1481,50 @@ func TestQueryComparisonNe(t *testing.T) {
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			assert.NotContains(t, CollectIDs(t, actual), tc.unexpectedID)
+		})
+	}
+}
+
+func TestQueryComparisonMultipleOperators(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+
+	for name, tc := range map[string]struct {
+		filter      any
+		expectedIDs []any
+		err         mongo.CommandError
+	}{
+		"InLteGte": {
+			filter: bson.D{
+				{"_id", bson.D{{"$in", bson.A{"int32"}}}},
+				{"value", bson.D{{"$lte", int32(42)}, {"$gte", int32(0)}}},
+			},
+			expectedIDs: []any{"int32"},
+		},
+		"NinEqNe": {
+			filter: bson.D{
+				{"_id", bson.D{{"$nin", bson.A{"int64"}}, {"$ne", "int32"}}},
+				{"value", bson.D{{"$eq", int32(42)}}},
+			},
+			expectedIDs: []any{"array", "array-three", "double-whole"},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			if tc.err.Code != 0 {
+				require.Nil(t, tc.expectedIDs)
+				AssertEqualError(t, tc.err, err)
+				return
+			}
+			require.NoError(t, err)
+
+			var actual []bson.D
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
 		})
 	}
 }

@@ -25,7 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// isProjectionInclusion: projection can be only inclusion or exlusion. Validate and return true if inclusion.
+// isProjectionInclusion: projection can be only inclusion or exclusion. Validate and return true if inclusion.
 // Exception for the _id field.
 func isProjectionInclusion(projection *types.Document) (inclusion bool, err error) {
 	var exclusion bool
@@ -39,7 +39,7 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 			for _, projectionType := range v.Keys() {
 				supportedProjectionTypes := []string{"$elemMatch"}
 				if !slices.Contains(supportedProjectionTypes, projectionType) {
-					err = lazyerrors.Errorf("projecion of %s is not supported", projectionType)
+					err = lazyerrors.Errorf("projection of %s is not supported", projectionType)
 					return
 				}
 

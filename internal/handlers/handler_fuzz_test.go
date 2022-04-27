@@ -17,14 +17,55 @@ package handlers
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
+
+type setupOpts struct {
+	noLogging bool
+	poolOpts  *testutil.PoolOpts
+}
+
+// setup creates shared objects for testing.
+//
+// Using shared objects helps us spot concurrency bugs.
+// If some test is failing and the log output is confusing, and you are tempted to move setup call to subtest,
+// instead run that single test with `go test -run test/name`.
+func setup(t testing.TB, opts *setupOpts) (context.Context, *pg.Handler, *pgdb.Pool) {
+	t.Helper()
+
+	if opts == nil {
+		opts = new(setupOpts)
+	}
+
+	var l *zap.Logger
+	if opts.noLogging {
+		l = zap.NewNop()
+	} else {
+		l = zaptest.NewLogger(t)
+	}
+
+	ctx := testutil.Ctx(t)
+	pool := testutil.Pool(ctx, t, opts.poolOpts, l)
+	handler := pg.New(&pg.NewOpts{
+		PgPool:   pool,
+		L:        l,
+		PeerAddr: "127.0.0.1:12345",
+		Metrics:  pg.NewMetrics(),
+	})
+
+	return ctx, handler, pool
+}
 
 // addToSeedCorpus adds given header and message body to handler's fuzzing seed corpus.
 //
