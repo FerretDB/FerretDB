@@ -16,6 +16,7 @@ package common
 
 import (
 	"fmt"
+	"math/rand"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -23,9 +24,26 @@ import (
 )
 
 // UpdateDocument updates the given document with a series of update operators.
-func UpdateDocument(doc, update *types.Document) error {
-	for _, updateOp := range update.Keys() {
-		updateV := must.NotFail(update.Get(updateOp))
+func UpdateDocument(doc *types.Document, update any) error {
+	var updateDoc *types.Document
+	var isUpdateArray bool
+	for {
+		switch update := update.(type) {
+		case *types.Array:
+			updateDoc = must.NotFail(update.Get(0)).(*types.Document)
+			isUpdateArray = true
+			break
+		case *types.Document:
+			updateDoc = update
+			break
+		default:
+			return NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", update))
+		}
+		break
+	}
+
+	for _, updateOp := range updateDoc.Keys() {
+		updateV := must.NotFail(updateDoc.Get(updateOp))
 
 		switch updateOp {
 		case "$set":
@@ -36,6 +54,12 @@ func UpdateDocument(doc, update *types.Document) error {
 
 			for _, setKey := range setDoc.Keys() {
 				setValue := must.NotFail(setDoc.Get(setKey))
+				if exprs, ok := setValue.(*types.Document); ok && isUpdateArray {
+					expr := exprs.Keys()
+					if expr[0] == "$rand" {
+						setValue = rand.Float64()
+					}
+				}
 				if err = doc.Set(setKey, setValue); err != nil {
 					return lazyerrors.Error(err)
 				}

@@ -72,3 +72,31 @@ func TestUpdateUpsert(t *testing.T) {
 	require.NoError(t, err)
 	AssertEqualDocuments(t, bson.D{{"_id", id}, {"foo", "qux"}}, doc)
 }
+
+func TestUpdateRand(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	filter := bson.D{{"foo", "random"}}
+	inserted, err := collection.InsertOne(ctx, filter)
+	require.NoError(t, err)
+
+	update := bson.A{bson.D{{"$set", bson.D{{"foo", bson.M{"$rand": bson.D{}}}}}}}
+	res, err := collection.UpdateOne(ctx, bson.D{{"_id", inserted.InsertedID}}, update)
+	require.NoError(t, err)
+
+	expected := &mongo.UpdateResult{
+		MatchedCount:  1,
+		ModifiedCount: 1,
+		UpsertedCount: 0,
+	}
+	require.Equal(t, expected, res)
+
+	var doc bson.D
+	err = collection.FindOne(ctx, bson.D{{"_id", inserted.InsertedID}}).Decode(&doc)
+	require.NoError(t, err)
+
+	fooVal := doc.Map()["foo"]
+	assert.GreaterOrEqual(t, fooVal.(float64), 0.0)
+	assert.LessOrEqual(t, fooVal.(float64), 1.0)
+}
