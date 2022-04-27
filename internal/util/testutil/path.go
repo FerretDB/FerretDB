@@ -30,9 +30,9 @@ import (
 func GetByPath[T types.CompositeTypeInterface](tb testing.TB, comp T, path string) any {
 	tb.Helper()
 
-	res, err := comp.GetByPath(path)
+	_, value, err := comp.GetPairByPath(path)
 	require.NoError(tb, err)
-	return res
+	return value
 }
 
 // SetByPath sets the value by path - a sequence of indexes and keys.

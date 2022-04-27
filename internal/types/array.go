@@ -87,12 +87,6 @@ func (a *Array) GetPairByPath(path string) (string, any, error) {
 	return getPairByPath(a, path)
 }
 
-// GetByPath returns a value by path - a sequence of indexes and keys separated by dots.
-func (a *Array) GetByPath(path string) (any, error) {
-	_, v, err := getPairByPath(a, path)
-	return v, err
-}
-
 // Set sets the value at the given index.
 func (a *Array) Set(index int, value any) error {
 	if l := a.Len(); index < 0 || index >= l {

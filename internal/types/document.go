@@ -263,12 +263,6 @@ func (d *Document) GetPairByPath(path string) (string, any, error) {
 	return getPairByPath(d, path)
 }
 
-// GetByPath returns a value by path - a sequence of indexes and keys separated by dots.
-func (d *Document) GetByPath(path string) (any, error) {
-	_, v, err := getPairByPath(d, path)
-	return v, err
-}
-
 // Set sets the value for the given key, replacing any existing value.
 //
 // As a special case, _id always becomes the first key.

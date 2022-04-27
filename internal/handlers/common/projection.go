@@ -167,7 +167,7 @@ func applyComplexProjection(k1 string, doc, projectionVal *types.Document) (err 
 		// if the corresponding value is not an array, skip
 
 		var docValueA any
-		docValueA, err = doc.GetByPath(k1)
+		_, docValueA, err = doc.GetPairByPath(k1)
 		if err != nil {
 			continue
 		}
