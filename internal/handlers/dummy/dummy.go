@@ -18,8 +18,6 @@ package dummy
 import (
 	"context"
 
-	"github.com/prometheus/client_golang/prometheus"
-
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
@@ -30,11 +28,6 @@ type Handler struct{}
 // New returns a new handler.
 func New() common.Handler {
 	return new(Handler)
-}
-
-// Handle handles the message.
-func (h *Handler) Handle(context.Context, *wire.MsgHeader, wire.MsgBody) (*wire.MsgHeader, wire.MsgBody, bool) {
-	return nil, nil, false
 }
 
 // MsgListCommands returns information about the currently supported commands.

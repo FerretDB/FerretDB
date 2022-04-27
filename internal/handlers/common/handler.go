@@ -17,16 +17,11 @@ package common
 import (
 	"context"
 
-	"github.com/prometheus/client_golang/prometheus"
-
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // Handler interface represents common commands handlers.
 type Handler interface {
-	// Handle handles the message.
-	Handle(context.Context, *wire.MsgHeader, wire.MsgBody) (*wire.MsgHeader, wire.MsgBody, bool)
-
 	// MsgListCommands returns a list of currently supported commands.
 	MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
