@@ -183,13 +183,13 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 	var actual bson.D
 	err := collection.Database().RunCommand(ctx, bson.D{{"getParameter", "*"}}).Decode(&actual)
 	require.NoError(t, err)
-
 	m := actual.Map()
-	t.Log(m)
-
 	assert.Equal(t, 1.0, m["ok"])
 
 	keys := CollectKeys(t, actual)
 	assert.Contains(t, keys, "quiet")
 	assert.Equal(t, false, m["quiet"])
+
+	err = collection.Database().RunCommand(ctx, bson.D{{"getParameter", "1"}}).Decode(&actual)
+	AssertEqualError(t, mongo.CommandError{Code: 0, Name: "", Message: `no option found to get`}, err)
 }

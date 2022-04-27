@@ -8,7 +8,7 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[ErrWeird-0]
+	_ = x[errUnset-0]
 	_ = x[errInternalError-1]
 	_ = x[ErrBadValue-2]
 	_ = x[ErrFailedToParse-9]
@@ -23,7 +23,7 @@ func _() {
 }
 
 const (
-	_ErrorCode_name_0 = "WeirdErrorInternalErrorBadValue"
+	_ErrorCode_name_0 = "InternalErrorBadValue"
 	_ErrorCode_name_1 = "FailedToParse"
 	_ErrorCode_name_2 = "NamespaceNotFound"
 	_ErrorCode_name_3 = "NamespaceExists"
@@ -35,7 +35,7 @@ const (
 )
 
 var (
-	_ErrorCode_index_0 = [...]uint8{0, 10, 23, 31}
+	_ErrorCode_index_0 = [...]uint8{0, 0, 13, 21}
 	_ErrorCode_index_7 = [...]uint8{0, 13, 26}
 )
 

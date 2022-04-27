@@ -28,9 +28,9 @@ import (
 type ErrorCode int32
 
 const (
-	// For ProtocolError only.
-	ErrWeird = ErrorCode(0) // WeirdError
+	errUnset = ErrorCode(0) //
 
+	// For ProtocolError only.
 	errInternalError = ErrorCode(1) // InternalError
 
 	ErrBadValue          = ErrorCode(2)     // BadValue

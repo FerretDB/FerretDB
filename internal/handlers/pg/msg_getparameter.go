@@ -16,6 +16,7 @@ package pg
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -25,25 +26,69 @@ import (
 
 // MsgGetParameter OpMsg used to get parameter.
 func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+	cmd, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/449
+	getPrm, err := cmd.Get("getParameter")
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
-	common.Ignored(document, h.l, "comment")
+	// SELECT * FROM 'admin'
+	resDB := types.MustNewDocument(
+		"writePeriodicNoops", true,
+		"quiet", false,
+		"ok", float64(1),
+	)
 
 	var reply wire.OpMsg
+	var errMsg error
+	resDoc := types.MustNewDocument()
+	if getPrm == "*" {
+		resDoc = resDB
+
+	} else {
+		keys := cmd.Keys()
+		for _, k := range keys {
+			if k == "getParameter" || k == "comment" || k == "$db" {
+				continue
+			}
+
+			item, err := resDB.Get(k)
+			if err != nil {
+				continue
+			}
+
+			err = resDoc.Set(k, item)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+		}
+
+		if resDoc.Len() < 1 {
+			err = resDoc.Set("ok", float64(0))
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+			errMsg = common.NewErrorMsg(common.ErrorCode(0), "no option found to get")
+		} else {
+			err = resDoc.Set("ok", float64(1))
+		}
+	}
+
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{types.MustNewDocument(
-			"quiet", false,
-			"ok", float64(1),
-		)},
+		Documents: []*types.Document{resDoc},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &reply, nil
+	comment, err := cmd.Get("comment")
+	if err == nil {
+		common.Ignored(cmd, h.l, fmt.Sprint(comment))
+	}
+
+	return &reply, errMsg
 }
