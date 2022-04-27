@@ -42,7 +42,7 @@ func TestQueryArraySize(t *testing.T) {
 	for name, tc := range map[string]struct {
 		filter      bson.D
 		expectedIDs []any
-		err         mongo.CommandError
+		err         *mongo.CommandError
 	}{
 		"int32": {
 			filter:      bson.D{{"value", bson.D{{"$size", int32(2)}}}},
@@ -70,7 +70,7 @@ func TestQueryArraySize(t *testing.T) {
 		},
 		"InvalidType": {
 			filter: bson.D{{"value", bson.D{{"$size", bson.D{{"$gt", 1}}}}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `$size needs a number`,
@@ -78,7 +78,7 @@ func TestQueryArraySize(t *testing.T) {
 		},
 		"NotWhole": {
 			filter: bson.D{{"value", bson.D{{"$size", 2.1}}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `$size must be a whole number`,
@@ -86,7 +86,7 @@ func TestQueryArraySize(t *testing.T) {
 		},
 		"NaN": {
 			filter: bson.D{{"value", bson.D{{"$size", math.NaN()}}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `$size must be a whole number`,
@@ -94,7 +94,7 @@ func TestQueryArraySize(t *testing.T) {
 		},
 		"Infinity": {
 			filter: bson.D{{"value", bson.D{{"$size", math.Inf(1)}}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `$size must be a whole number`,
@@ -102,7 +102,7 @@ func TestQueryArraySize(t *testing.T) {
 		},
 		"Negative": {
 			filter: bson.D{{"value", bson.D{{"$size", -1}}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `$size may not be negative`,
@@ -110,7 +110,7 @@ func TestQueryArraySize(t *testing.T) {
 		},
 		"InvalidUse": {
 			filter: bson.D{{"$size", 2}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 2,
 				Name: "BadValue",
 				Message: `unknown top level operator: $size. ` +
@@ -123,9 +123,9 @@ func TestQueryArraySize(t *testing.T) {
 			t.Parallel()
 
 			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err.Code != 0 {
+			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, tc.err, err)
+				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)
