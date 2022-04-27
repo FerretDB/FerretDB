@@ -41,7 +41,7 @@ type setupOpts struct {
 // Using shared objects helps us spot concurrency bugs.
 // If some test is failing and the log output is confusing, and you are tempted to move setup call to subtest,
 // instead run that single test with `go test -run test/name`.
-func setup(t testing.TB, opts *setupOpts) (context.Context, *pg.Handler, *pgdb.Pool) {
+func setup(t testing.TB, opts *setupOpts) (context.Context, common.Handler, *pgdb.Pool) {
 	t.Helper()
 
 	if opts == nil {
@@ -61,7 +61,6 @@ func setup(t testing.TB, opts *setupOpts) (context.Context, *pg.Handler, *pgdb.P
 		PgPool:   pool,
 		L:        l,
 		PeerAddr: "127.0.0.1:12345",
-		Metrics:  pg.NewMetrics(),
 	})
 
 	return ctx, handler, pool
