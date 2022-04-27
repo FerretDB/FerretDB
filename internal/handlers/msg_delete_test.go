@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -31,7 +32,7 @@ func TestDelete(t *testing.T) {
 	ctx, h, pool := setup(t, nil)
 	schema := testutil.Schema(ctx, t, pool)
 
-	header := wire.MsgHeader{
+	header := &wire.MsgHeader{
 		OpCode: wire.OP_MSG,
 	}
 
@@ -52,7 +53,7 @@ func TestDelete(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			_, _, closeConn := h.Handle(ctx, &header, &msg)
+			_, _, closeConn, _ := common.Route(h, ctx, header, &msg)
 			require.False(t, closeConn)
 		}
 
@@ -72,7 +73,7 @@ func TestDelete(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			_, resBody, closeConn := h.Handle(ctx, &header, &msg)
+			_, resBody, closeConn, _ := common.Route(h, ctx, header, &msg)
 			require.False(t, closeConn, "%s", resBody.String())
 		}
 
@@ -146,7 +147,7 @@ func TestDelete(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				_, resBody, closeConn := h.Handle(ctx, &header, &reqMsg)
+				_, resBody, closeConn, _ := common.Route(h, ctx, header, &reqMsg)
 				require.False(t, closeConn, "%s", resBody.String())
 
 				actual, err := resBody.(*wire.OpMsg).Document()

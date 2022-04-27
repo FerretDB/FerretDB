@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -51,7 +52,7 @@ func TestUpdate(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		_, resBody, closeConn := h.Handle(ctx, header, &msg)
+		_, resBody, closeConn, _ := common.Route(h, ctx, header, &msg)
 		require.False(t, closeConn, "%s", resBody.String())
 	}
 
@@ -76,6 +77,6 @@ func TestUpdate(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	_, resBody, closeConn := h.Handle(ctx, header, &msg)
+	_, resBody, closeConn, _ := common.Route(h, ctx, header, &msg)
 	require.False(t, closeConn, "%s", resBody.String())
 }

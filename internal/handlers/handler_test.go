@@ -90,7 +90,7 @@ func handle(ctx context.Context, t *testing.T, handler common.Handler, req *type
 	// TODO
 	// addToSeedCorpus(t, &reqHeader, &reqMsg)
 
-	_, resBody, closeConn := handler.Handle(ctx, &reqHeader, &reqMsg)
+	_, resBody, closeConn, _ := common.Route(handler, ctx, &reqHeader, &reqMsg)
 	require.False(t, closeConn, "%s", resBody.String())
 
 	actual, err := resBody.(*wire.OpMsg).Document()

@@ -119,6 +119,7 @@ func (l *Listener) Run(ctx context.Context) error {
 				l:         l.opts.Logger.Named(prefix), // original unnamed logger
 				proxyAddr: l.opts.ProxyAddr,
 				handler:   l.opts.Handler,
+				m:         l.metrics,
 				startTime: l.startTime,
 			}
 			conn, e := newConn(opts)
@@ -160,11 +161,9 @@ func (l *Listener) Addr() net.Addr {
 // Describe implements prometheus.Collector.
 func (l *Listener) Describe(ch chan<- *prometheus.Desc) {
 	l.metrics.Describe(ch)
-	l.handler.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
 func (l *Listener) Collect(ch chan<- prometheus.Metric) {
 	l.metrics.Collect(ch)
-	l.handler.Collect(ch)
 }

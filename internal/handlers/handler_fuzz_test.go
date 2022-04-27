@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
@@ -66,6 +67,6 @@ func FuzzHandler(f *testing.F) {
 		}
 
 		// check only panics for now
-		handler.Handle(ctx, reqHeader, reqBody)
+		common.Route(handler, ctx, reqHeader, reqBody)
 	})
 }
