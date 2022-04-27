@@ -23,7 +23,7 @@ func _() {
 }
 
 const (
-	_ErrorCode_name_0 = "InternalErrorBadValue"
+	_ErrorCode_name_0 = "UnsetInternalErrorBadValue"
 	_ErrorCode_name_1 = "FailedToParse"
 	_ErrorCode_name_2 = "NamespaceNotFound"
 	_ErrorCode_name_3 = "NamespaceExists"
@@ -35,7 +35,7 @@ const (
 )
 
 var (
-	_ErrorCode_index_0 = [...]uint8{0, 0, 13, 21}
+	_ErrorCode_index_0 = [...]uint8{0, 5, 18, 26}
 	_ErrorCode_index_7 = [...]uint8{0, 13, 26}
 )
 

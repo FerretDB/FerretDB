@@ -29,7 +29,7 @@ import (
 type ErrorCode int32
 
 const (
-	errUnset = ErrorCode(0) //
+	errUnset = ErrorCode(0) // Unset
 
 	// For ProtocolError only.
 	errInternalError = ErrorCode(1) // InternalError
