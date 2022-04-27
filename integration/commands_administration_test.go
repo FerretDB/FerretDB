@@ -180,16 +180,67 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 		databaseName: "admin",
 	})
 
-	var actual bson.D
-	err := collection.Database().RunCommand(ctx, bson.D{{"getParameter", "*"}}).Decode(&actual)
-	require.NoError(t, err)
-	m := actual.Map()
-	assert.Equal(t, 1.0, m["ok"])
+	for name, tc := range map[string]struct {
+		filter     bson.D
+		expected   map[string]any
+		noExpected []string
+		err        *mongo.CommandError
+	}{
+		"AllParameters": {
+			filter: bson.D{{"getParameter", "*"}},
+			expected: map[string]any{
+				"acceptApiVersion2": false,
+				"authSchemaVersion": int32(5),
+				"quiet":             false,
+				"ok":                float64(1),
+			},
+		},
+		"ExistingParameters": {
+			filter: bson.D{{"getParameter", 1}, {"quiet", 1}},
+			expected: map[string]any{
+				"quiet": false,
+				"ok":    float64(1),
+			},
+		},
+		"NonexistentParameters": {
+			filter: bson.D{{"getParameter", 1}, {"quiet", 1}, {"quiet_other", 1}},
+			expected: map[string]any{
+				"quiet": false,
+				"ok":    float64(1),
+			},
+			noExpected: []string{"quiet_other"},
+		},
+		"EmptyParameters": {
+			filter: bson.D{{"getParameter", 1}},
+			err:    &mongo.CommandError{Code: 0, Name: "", Message: `no option found to get`},
+		},
+		"OnlyNonexistentParameters": {
+			filter: bson.D{{"getParameter", 1}, {"quiet_other", 1}},
+			err:    &mongo.CommandError{Code: 0, Name: "", Message: `no option found to get`},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			//		t.Parallel()
 
-	keys := CollectKeys(t, actual)
-	assert.Contains(t, keys, "quiet")
-	assert.Equal(t, false, m["quiet"])
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, tc.filter).Decode(&actual)
+			if tc.err != nil {
+				AssertEqualError(t, *tc.err, err)
+				return
+			}
+			require.NoError(t, err)
 
-	err = collection.Database().RunCommand(ctx, bson.D{{"getParameter", "1"}}).Decode(&actual)
-	AssertEqualError(t, mongo.CommandError{Code: 0, Name: "", Message: `no option found to get`}, err)
+			m := actual.Map()
+			k := CollectKeys(t, actual)
+
+			for key, item := range tc.expected {
+				assert.Contains(t, k, key)
+				assert.Equal(t, m[key], item)
+			}
+			for _, key := range tc.noExpected {
+				assert.NotContains(t, k, key)
+			}
+		})
+	}
 }

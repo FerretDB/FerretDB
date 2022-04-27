@@ -38,7 +38,8 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	// SELECT * FROM 'admin'
 	resDB := types.MustNewDocument(
-		"writePeriodicNoops", true,
+		"acceptApiVersion2", false,
+		"authSchemaVersion", int32(5),
 		"quiet", false,
 		"ok", float64(1),
 	)
