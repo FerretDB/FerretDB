@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
@@ -107,6 +108,6 @@ func FuzzHandler(f *testing.F) {
 		}
 
 		// check only panics for now
-		common.Route(handler, ctx, reqHeader, reqBody)
+		clientconn.Route(handler, ctx, reqHeader, reqBody)
 	})
 }

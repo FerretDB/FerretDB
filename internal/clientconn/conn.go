@@ -249,7 +249,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 	}
 }
 
-// route routes to common.Route and measures all the results.
+// route is mostly for wrapping with metrics measurements the Route func.
 func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody,
 ) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) {
 	requests := c.m.requests.MustCurryWith(prometheus.Labels{"opcode": reqHeader.OpCode.String()})
@@ -291,7 +291,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	requests.WithLabelValues(command).Inc()
 
 	if err == nil {
-		resHeader, resBody, closeConn, result = common.Route(c.h, ctx, reqHeader, reqBody)
+		resHeader, resBody, closeConn, result = Route(c.h, ctx, reqHeader, reqBody)
 	}
 
 	if result != nil && *result == "unexpected" {

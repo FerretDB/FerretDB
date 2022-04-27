@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -53,7 +53,7 @@ func TestDelete(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			_, _, closeConn, _ := common.Route(h, ctx, header, &msg)
+			_, _, closeConn, _ := clientconn.Route(h, ctx, header, &msg)
 			require.False(t, closeConn)
 		}
 
@@ -73,7 +73,7 @@ func TestDelete(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			_, resBody, closeConn, _ := common.Route(h, ctx, header, &msg)
+			_, resBody, closeConn, _ := clientconn.Route(h, ctx, header, &msg)
 			require.False(t, closeConn, "%s", resBody.String())
 		}
 
@@ -147,7 +147,7 @@ func TestDelete(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				_, resBody, closeConn, _ := common.Route(h, ctx, header, &reqMsg)
+				_, resBody, closeConn, _ := clientconn.Route(h, ctx, header, &reqMsg)
 				require.False(t, closeConn, "%s", resBody.String())
 
 				actual, err := resBody.(*wire.OpMsg).Document()
