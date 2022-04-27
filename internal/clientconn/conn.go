@@ -291,7 +291,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	requests.WithLabelValues(command).Inc()
 
 	if err == nil {
-		resHeader, resBody, closeConn, result = Route(c.h, ctx, reqHeader, reqBody)
+		resHeader, resBody, closeConn, result = common.Route(c.h, ctx, reqHeader, reqBody)
 	}
 
 	if result != nil && *result == "unexpected" {
