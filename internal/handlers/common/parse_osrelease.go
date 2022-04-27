@@ -27,17 +27,13 @@ func ParseOSRelease(reader io.Reader) (string, string, error) {
 	scanner := bufio.NewScanner(reader)
 
 	configParams := map[string]string{}
-
 	for scanner.Scan() {
 		str := strings.Split(scanner.Text(), "=")
-
 		if len(str) == 1 {
 			continue
 		}
-
 		configParams[str[0]] = str[1]
 	}
-
 	if err := scanner.Err(); err != nil {
 		return "", "", lazyerrors.Error(err)
 	}
