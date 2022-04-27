@@ -45,40 +45,15 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	)
 
 	var reply wire.OpMsg
-	var errMsg error
-	resDoc := types.MustNewDocument()
+	var errNoFound error
+	var resDoc *types.Document
 	if getPrm == "*" {
 		resDoc = resDB
 
 	} else {
-		keys := cmd.Keys()
-		for _, k := range keys {
-			if k == "getParameter" || k == "comment" || k == "$db" {
-				continue
-			}
-
-			item, err := resDB.Get(k)
-			if err != nil {
-				continue
-			}
-
-			err = resDoc.Set(k, item)
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-		}
-
-		if resDoc.Len() < 1 {
-			err = resDoc.Set("ok", float64(0))
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-			errMsg = common.NewErrorMsg(common.ErrorCode(0), "no option found to get")
-		} else {
-			err = resDoc.Set("ok", float64(1))
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
+		resDoc, errNoFound, err = selectParam(cmd, resDB)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
 		}
 	}
 
@@ -94,5 +69,40 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		common.Ignored(cmd, h.l, fmt.Sprint(comment))
 	}
 
-	return &reply, errMsg
+	return &reply, errNoFound
+}
+
+// selectParam is makes a selection of the requested parameters received from database 'admin'.
+func selectParam(cmd, resDB *types.Document) (doc *types.Document, errNoFound error, err error) {
+	doc = types.MustNewDocument()
+	keys := cmd.Keys()
+	for _, k := range keys {
+		if k == "getParameter" || k == "comment" || k == "$db" {
+			continue
+		}
+
+		item, err := resDB.Get(k)
+		if err != nil {
+			continue
+		}
+
+		err = doc.Set(k, item)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	if doc.Len() < 1 {
+		err := doc.Set("ok", float64(0))
+		if err != nil {
+			return nil, nil, err
+		}
+		errNoFound = common.NewErrorMsg(common.ErrorCode(0), "no option found to get")
+	} else {
+		err := doc.Set("ok", float64(1))
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	return doc, errNoFound, nil
 }
