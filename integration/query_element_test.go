@@ -104,7 +104,7 @@ func TestQueryElementType(t *testing.T) {
 	for name, tc := range map[string]struct {
 		v           any
 		expectedIDs []any
-		err         mongo.CommandError
+		err         *mongo.CommandError
 	}{
 		"Document": {
 			v:           "object",
@@ -178,7 +178,7 @@ func TestQueryElementType(t *testing.T) {
 
 		"BadTypeCode": {
 			v: 42,
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Message: "Invalid numerical type code: 42",
 				Name:    "BadValue",
@@ -186,7 +186,7 @@ func TestQueryElementType(t *testing.T) {
 		},
 		"BadTypeName": {
 			v: "float",
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Message: "Unknown type name alias: float",
 				Name:    "BadValue",
@@ -214,7 +214,7 @@ func TestQueryElementType(t *testing.T) {
 		},
 		"TypeArrayBadValue": {
 			v: []any{"binData", -123},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Message: "Invalid numerical type code: -123",
 				Name:    "BadValue",
@@ -222,7 +222,7 @@ func TestQueryElementType(t *testing.T) {
 		},
 		"TypeArrayBadValueNan": {
 			v: []any{"binData", math.NaN()},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Message: "Invalid numerical type code: nan",
 				Name:    "BadValue",
@@ -230,7 +230,7 @@ func TestQueryElementType(t *testing.T) {
 		},
 		"TypeArrayBadValuePlusInf": {
 			v: []any{"binData", math.Inf(1)},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Message: "Invalid numerical type code: inf",
 				Name:    "BadValue",
@@ -238,7 +238,7 @@ func TestQueryElementType(t *testing.T) {
 		},
 		"TypeArrayBadValueMinusInf": {
 			v: []any{"binData", math.Inf(-1)},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Message: "Invalid numerical type code: -inf",
 				Name:    "BadValue",
@@ -246,7 +246,7 @@ func TestQueryElementType(t *testing.T) {
 		},
 		"TypeArrayBadValueNegativeFloat": {
 			v: []any{"binData", -1.123},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Message: "Invalid numerical type code: -1.123",
 				Name:    "BadValue",
@@ -263,9 +263,9 @@ func TestQueryElementType(t *testing.T) {
 
 			filter := bson.D{{"value", bson.D{{"$type", tc.v}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err.Code != 0 {
+			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, tc.err, err)
+				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)
