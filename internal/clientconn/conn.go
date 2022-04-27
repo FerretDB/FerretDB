@@ -249,7 +249,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 	}
 }
 
-// route routes to common.Router and measures all the results.
+// route routes to common.Route and measures all the results.
 func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody,
 ) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) {
 	requests := c.m.requests.MustCurryWith(prometheus.Labels{"opcode": reqHeader.OpCode.String()})
