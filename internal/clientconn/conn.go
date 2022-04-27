@@ -23,6 +23,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/AlekSi/pointer"
 	"github.com/pmezard/go-difflib/difflib"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
@@ -173,7 +174,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 		var resBody wire.MsgBody
 		var resCloseConn bool
 		if c.mode != ProxyMode {
-			resHeader, resBody, resCloseConn = c.route(c.h, ctx, reqHeader, reqBody)
+			resHeader, resBody, resCloseConn = c.route(ctx, reqHeader, reqBody)
 		}
 
 		// send request to proxy unless we are in normal mode
@@ -249,10 +250,12 @@ func (c *conn) run(ctx context.Context) (err error) {
 }
 
 // route routes to common.Router and measures all the results.
-func (c *conn) route(h common.Handler, ctx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody,
+func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody,
 ) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) {
-	var err error
 	requests := c.m.requests.MustCurryWith(prometheus.Labels{"opcode": reqHeader.OpCode.String()})
+
+	var err error
+	var result *string
 	var command string
 	switch reqHeader.OpCode {
 	case wire.OP_MSG:
@@ -283,11 +286,13 @@ func (c *conn) route(h common.Handler, ctx context.Context, reqHeader *wire.MsgH
 		fallthrough
 	default:
 		err = lazyerrors.Errorf("unexpected OpCode %s", reqHeader.OpCode)
+		result = pointer.ToString("unexpected")
 	}
 	requests.WithLabelValues(command).Inc()
 
-	var result *string
-	resHeader, resBody, closeConn, result = common.Route(c.h, ctx, reqHeader, reqBody)
+	if err == nil {
+		resHeader, resBody, closeConn, result = common.Route(c.h, ctx, reqHeader, reqBody)
+	}
 
 	if result != nil && *result == "unexpected" {
 		c.l.Error("Handler error for unexpected response opcode",
