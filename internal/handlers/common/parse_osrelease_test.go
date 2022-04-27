@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handlers
+package common
 
 import (
 	"bytes"
@@ -20,8 +20,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/FerretDB/FerretDB/internal/handlers/pg"
 )
 
 func TestParseOSRelease(t *testing.T) {
@@ -92,10 +90,10 @@ REDHAT_SUPPORT_PRODUCT_VERSION=7.6
 	for key, testCase := range testCases {
 		osReleaseReader := bytes.NewReader([]byte(osReleaseFilesData[key]))
 
-		osName, osVersion, err := pg.ParseOSRelease(osReleaseReader)
+		osName, osVersion, err := ParseOSRelease(osReleaseReader)
 		require.NoError(t, err)
 
-		assert.Equal(t, testCase["NAME"], osName, "expected: %s\nactual  : %s", testCase["NAME"], osName)
-		assert.Equal(t, testCase["VERSION"], osVersion, "expected: %s\nactual  : %s", testCase["VERSION"], osVersion)
+		assert.Equal(t, testCase["NAME"], osName)
+		assert.Equal(t, testCase["VERSION"], osVersion)
 	}
 }
