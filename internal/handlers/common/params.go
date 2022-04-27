@@ -58,11 +58,10 @@ func GetOptionalParam[T types.Type](doc *types.Document, key string, defaultValu
 }
 
 // GetCompositeParam returns doc's value of composite data type for key or protocol error for missing or invalid parameter.
-func GetCompositeParam(doc *types.Document, key string) (zero any, err error) {
+func GetCompositeParam(doc *types.Document, key string) (any, error) {
 	v, err := doc.Get(key)
 	if err != nil {
-		msg := fmt.Sprintf("required parameter %q is missing", key)
-		return zero, NewErrorMsg(ErrBadValue, msg)
+		return nil, NewErrorMsg(ErrBadValue, fmt.Sprintf("required parameter %q is missing", key))
 	}
 
 	switch v := v.(type) {
@@ -71,8 +70,7 @@ func GetCompositeParam(doc *types.Document, key string) (zero any, err error) {
 	case *types.Array:
 		return v, nil
 	default:
-		msg := fmt.Sprintf("composite parameter %q has type %T", key, v)
-		return zero, NewErrorMsg(ErrBadValue, msg)
+		return nil, NewErrorMsg(ErrBadValue, fmt.Sprintf("composite parameter %q has type %T", key, v))
 	}
 }
 
