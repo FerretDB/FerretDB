@@ -15,14 +15,15 @@
 package pg
 
 import (
+	"bufio"
 	"context"
+	"io"
 	"os"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -36,7 +37,7 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, lazyerrors.Error(err)
 	}
 
-	osInfo := map[string]string{}
+	var osName, osVersion string
 
 	if runtime.GOOS == "linux" {
 		file, err := os.Open("/etc/os-release")
@@ -45,7 +46,7 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		}
 		defer file.Close()
 
-		osInfo, err = common.ParseOSRelease(file)
+		osName, osVersion, err = ParseOSRelease(file)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -63,8 +64,8 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 			),
 			"os", types.MustNewDocument(
 				"type", strings.Title(runtime.GOOS),
-				"name", osInfo["NAME"],
-				"version", osInfo["VERSION"],
+				"name", osName,
+				"version", osVersion,
 			),
 			"extra", types.MustNewDocument(),
 			"ok", float64(1),
@@ -75,4 +76,27 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	}
 
 	return &reply, nil
+}
+
+// ParseOSRelease parses the etc/os-release file.
+func ParseOSRelease(reader io.Reader) (string, string, error) {
+	scanner := bufio.NewScanner(reader)
+
+	configParams := map[string]string{}
+
+	for scanner.Scan() {
+		str := strings.Split(scanner.Text(), "=")
+
+		if len(str) == 1 {
+			continue
+		}
+
+		configParams[str[0]] = str[1]
+	}
+
+	if err := scanner.Err(); err != nil {
+		return "", "", lazyerrors.Error(err)
+	}
+
+	return configParams["NAME"], configParams["VERSION"], nil
 }

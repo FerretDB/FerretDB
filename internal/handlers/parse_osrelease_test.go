@@ -12,15 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package integration
+package handlers
 
 import (
 	"bytes"
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg"
 )
 
 func TestParseOSRelease(t *testing.T) {
@@ -53,49 +54,48 @@ PRIVACY_POLICY_URL=https://www.ubuntu.com/legal/terms-and-policies/privacy-polic
 VERSION_CODENAME=bionic
 UBUNTU_CODENAME=bionic
 `,
+		"redHat": `NAME=Red Hat Enterprise Linux Server
+VERSION=7.6 (Maipo)
+ID=rhel
+ID_LIKE=fedora
+VARIANT=Server
+VARIANT_ID=server
+VERSION_ID=7.6
+PRETTY_NAME=Red Hat Enterprise Linux
+ANSI_COLOR=0;31
+CPE_NAME=cpe:/o:redhat:enterprise_linux:7.6:GA:server
+HOME_URL=https://www.redhat.com/
+BUG_REPORT_URL=https://bugzilla.redhat.com/
+
+REDHAT_BUGZILLA_PRODUCT=Red Hat Enterprise Linux 7
+REDHAT_BUGZILLA_PRODUCT_VERSION=7.6
+REDHAT_SUPPORT_PRODUCT=Red Hat Enterprise Linux
+REDHAT_SUPPORT_PRODUCT_VERSION=7.6
+`,
 	}
 
 	testCases := map[string]map[string]string{
 		"linuxMintOsRelease": {
-			"NAME":               "Linux Mint",
-			"VERSION":            "20.3 (Una)",
-			"ID":                 "linuxmint",
-			"ID_LIKE":            "ubuntu",
-			"PRETTY_NAME":        "Linux Mint 20.3",
-			"VERSION_ID":         "20.3",
-			"HOME_URL":           "https://www.linuxmint.com/",
-			"SUPPORT_URL":        "https://forums.linuxmint.com/",
-			"BUG_REPORT_URL":     "http://linuxmint-troubleshooting-guide.readthedocs.io/en/latest/",
-			"PRIVACY_POLICY_URL": "https://www.linuxmint.com/",
-			"VERSION_CODENAME":   "una",
-			"UBUNTU_CODENAME":    "focal",
+			"NAME":    "Linux Mint",
+			"VERSION": "20.3 (Una)",
 		},
 		"ubuntuOsRelease": {
-			"NAME":               "Ubuntu",
-			"VERSION":            "18.04 LTS (Bionic Beaver)",
-			"ID":                 "ubuntu",
-			"ID_LIKE":            "debian",
-			"PRETTY_NAME":        "Ubuntu 18.04 LTS",
-			"VERSION_ID":         "18.04",
-			"HOME_URL":           "https://www.ubuntu.com/",
-			"SUPPORT_URL":        "https://help.ubuntu.com/",
-			"BUG_REPORT_URL":     "https://bugs.launchpad.net/ubuntu/",
-			"PRIVACY_POLICY_URL": "https://www.ubuntu.com/legal/terms-and-policies/privacy-policy",
-			"VERSION_CODENAME":   "bionic",
-			"UBUNTU_CODENAME":    "bionic",
+			"NAME":    "Ubuntu",
+			"VERSION": "18.04 LTS (Bionic Beaver)",
+		},
+		"redHat": {
+			"NAME":    "Red Hat Enterprise Linux Server",
+			"VERSION": "7.6 (Maipo)",
 		},
 	}
 
 	for key, testCase := range testCases {
 		osReleaseReader := bytes.NewReader([]byte(osReleaseFilesData[key]))
 
-		osRelease, err := common.ParseOSRelease(osReleaseReader)
+		osName, osVersion, err := pg.ParseOSRelease(osReleaseReader)
 		require.NoError(t, err)
 
-		for testCaseKey, testCaseValue := range testCase {
-			if testCaseValue != osRelease[testCaseKey] {
-				t.Fatalf("values are not the same, actual: %s, expected: %s", testCaseValue, osRelease[testCaseKey])
-			}
-		}
+		assert.Equal(t, testCase["NAME"], osName, "expected: %s\nactual  : %s", testCase["NAME"], osName)
+		assert.Equal(t, testCase["VERSION"], osVersion, "expected: %s\nactual  : %s", testCase["VERSION"], osVersion)
 	}
 }
