@@ -17,6 +17,7 @@ package types
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"unicode/utf8"
 
 	"golang.org/x/exp/slices"
@@ -259,7 +260,8 @@ func (d *Document) Get(key string) (any, error) {
 
 // GetByPath returns a value by path - a sequence of indexes and keys.
 func (d *Document) GetByPath(path ...string) (any, error) {
-	return getByPath(d, path...)
+	p := strings.Join(path, ".")
+	return getByPath(d, p)
 }
 
 // Set sets the value for the given key, replacing any existing value.

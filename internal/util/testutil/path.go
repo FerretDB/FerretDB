@@ -16,6 +16,7 @@ package testutil
 
 import (
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -29,7 +30,8 @@ import (
 func GetByPath[T types.CompositeTypeInterface](tb testing.TB, comp T, path ...string) any {
 	tb.Helper()
 
-	res, err := comp.GetByPath(path...)
+	p := strings.Join(path, ".")
+	res, err := comp.GetByPath(p)
 	require.NoError(tb, err)
 	return res
 }

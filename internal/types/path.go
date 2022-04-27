@@ -17,12 +17,13 @@ package types
 import (
 	"fmt"
 	"strconv"
+	"strings"
 )
 
-// getByPath returns a value by path - a sequence of indexes and keys.
-func getByPath[T CompositeTypeInterface](comp T, path ...string) (any, error) {
+// getByPath returns a value by path - a sequence of indexes and keys separated by dots.
+func getByPath[T CompositeTypeInterface](comp T, path string) (any, error) {
 	var next any = comp
-	for _, p := range path {
+	for _, p := range strings.Split(path, ".") {
 		switch s := next.(type) {
 		case *Document:
 			var err error

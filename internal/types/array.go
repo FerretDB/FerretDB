@@ -14,7 +14,10 @@
 
 package types
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // Array represents BSON array.
 //
@@ -84,7 +87,8 @@ func (a *Array) Get(index int) (any, error) {
 
 // GetByPath returns a value by path - a sequence of indexes and keys.
 func (a *Array) GetByPath(path ...string) (any, error) {
-	return getByPath(a, path...)
+	p := strings.Join(path, ".")
+	return getByPath(a, p)
 }
 
 // Set sets the value at the given index.

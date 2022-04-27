@@ -190,44 +190,44 @@ func TestGetByPath(t *testing.T) {
 	)
 
 	type testCase struct {
-		path []string
+		path string
 		res  any
 		err  string
 	}
 
 	for _, tc := range []testCase{{ //nolint:paralleltest // false positive
-		path: []string{"compression", "0"},
+		path: "compression.0",
 		res:  "none",
 	}, {
-		path: []string{"compression"},
+		path: "compression",
 		res:  must.NotFail(NewArray("none")),
 	}, {
-		path: []string{"client", "driver"},
+		path: "client.driver",
 		res: MustNewDocument(
 			"name", "nodejs",
 			"version", "4.0.0-beta.6",
 		),
 	}, {
-		path: []string{"client", "0"},
+		path: "client.0",
 		err:  `types.getByPath: types.Document.Get: key not found: "0"`,
 	}, {
-		path: []string{"compression", "invalid"},
+		path: "compression.invalid",
 		err:  `types.getByPath: strconv.Atoi: parsing "invalid": invalid syntax`,
 	}, {
-		path: []string{"client", "missing"},
+		path: "client.missing",
 		err:  `types.getByPath: types.Document.Get: key not found: "missing"`,
 	}, {
-		path: []string{"compression", "1"},
+		path: "compression.1",
 		err:  `types.getByPath: types.Array.Get: index 1 is out of bounds [0-1)`,
 	}, {
-		path: []string{"compression", "0", "invalid"},
+		path: "compression.0.invalid",
 		err:  `types.getByPath: can't access string by path "invalid"`,
 	}} {
 		tc := tc
 		t.Run(fmt.Sprint(tc.path), func(t *testing.T) {
 			t.Parallel()
 
-			res, err := getByPath(doc, tc.path...)
+			res, err := getByPath(doc, tc.path)
 			if tc.err == "" {
 				require.NoError(t, err)
 				assert.Equal(t, tc.res, res)
