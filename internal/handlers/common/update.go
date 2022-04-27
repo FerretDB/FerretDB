@@ -27,19 +27,15 @@ import (
 func UpdateDocument(doc *types.Document, update any) error {
 	var updateDoc *types.Document
 	var isUpdateArray bool
-	for {
-		switch update := update.(type) {
-		case *types.Array:
-			updateDoc = must.NotFail(update.Get(0)).(*types.Document)
-			isUpdateArray = true
-			break
-		case *types.Document:
-			updateDoc = update
-			break
-		default:
-			return NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", update))
-		}
-		break
+
+	switch update := update.(type) {
+	case *types.Array:
+		updateDoc = must.NotFail(update.Get(0)).(*types.Document)
+		isUpdateArray = true
+	case *types.Document:
+		updateDoc = update
+	default:
+		return NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", update))
 	}
 
 	for _, updateOp := range updateDoc.Keys() {
