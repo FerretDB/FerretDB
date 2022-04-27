@@ -186,13 +186,13 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 	})
 
 	for name, tc := range map[string]struct {
-		filter     bson.D
+		command    bson.D
 		expected   map[string]any
-		noExpected []string
+		unexpected []string
 		err        *mongo.CommandError
 	}{
 		"AllParameters": {
-			filter: bson.D{{"getParameter", "*"}},
+			command: bson.D{{"getParameter", "*"}},
 			expected: map[string]any{
 				"acceptApiVersion2": false,
 				"authSchemaVersion": int32(5),
@@ -201,27 +201,27 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 			},
 		},
 		"ExistingParameters": {
-			filter: bson.D{{"getParameter", 1}, {"quiet", 1}},
+			command: bson.D{{"getParameter", 1}, {"quiet", 1}},
 			expected: map[string]any{
 				"quiet": false,
 				"ok":    float64(1),
 			},
 		},
 		"NonexistentParameters": {
-			filter: bson.D{{"getParameter", 1}, {"quiet", 1}, {"quiet_other", 1}},
+			command: bson.D{{"getParameter", 1}, {"quiet", 1}, {"quiet_other", 1}},
 			expected: map[string]any{
 				"quiet": false,
 				"ok":    float64(1),
 			},
-			noExpected: []string{"quiet_other"},
+			unexpected: []string{"quiet_other"},
 		},
 		"EmptyParameters": {
-			filter: bson.D{{"getParameter", 1}},
-			err:    &mongo.CommandError{Code: 0, Name: "", Message: `no option found to get`},
+			command: bson.D{{"getParameter", 1}},
+			err:     &mongo.CommandError{Code: 0, Name: "", Message: `no option found to get`},
 		},
 		"OnlyNonexistentParameters": {
-			filter: bson.D{{"getParameter", 1}, {"quiet_other", 1}},
-			err:    &mongo.CommandError{Code: 0, Name: "", Message: `no option found to get`},
+			command: bson.D{{"getParameter", 1}, {"quiet_other", 1}},
+			err:     &mongo.CommandError{Code: 0, Name: "", Message: `no option found to get`},
 		},
 	} {
 		name, tc := name, tc
@@ -229,7 +229,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 			t.Parallel()
 
 			var actual bson.D
-			err := collection.Database().RunCommand(ctx, tc.filter).Decode(&actual)
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 			if tc.err != nil {
 				AssertEqualError(t, *tc.err, err)
 				return
@@ -243,7 +243,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 				assert.Contains(t, k, key)
 				assert.Equal(t, m[key], item)
 			}
-			for _, key := range tc.noExpected {
+			for _, key := range tc.unexpected {
 				assert.NotContains(t, k, key)
 			}
 		})
