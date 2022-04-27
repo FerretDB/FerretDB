@@ -38,7 +38,6 @@ package tjson
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/tigrisdata/tigrisdb-client-go/driver"
@@ -62,9 +61,13 @@ func Unmarshal(data *driver.Document) (*types.Document, error) {
 
 	pairs := make([]any, 2*len(v))
 	var i int
-	for k, v := range v {
+	for k, val := range v {
 		pairs[i] = k
-		pairs[i+1] = v
+		retVal, err := fromTJSON(val)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		pairs[i+1] = retVal
 		i += 2
 	}
 
@@ -76,22 +79,74 @@ func Unmarshal(data *driver.Document) (*types.Document, error) {
 	return doc, nil
 }
 
-// fromTJSON converts from Tigris data types to FerretDB data type
-func fromTJSON(v any) any {
+// fromTJSON converts from Tigris data types to FerretDB data type.
+func fromTJSON(v any) (any, error) {
 	if v == nil {
-		return types.Null
+		return types.Null, nil
 	}
 	switch v := v.(type) {
-	case string:
-		// timestamp, regex, etc
-		return v
-		
+	case map[string]any:
+		doc := new(types.Document)
+		for k, val := range v {
+			retVal, err := fromTJSON(val)
+			if err != nil {
+				return nil, lazyerrors.Errorf("cannot fromTJSON %s->%v", k, val)
+			}
+			if err = doc.Set(k, retVal); err != nil {
+				return nil, lazyerrors.Errorf("cannot fromTJSON: %s", err)
+			}
+		}
+		return doc, nil
+
+	case []any:
+		for i := range v {
+			if _, err := fromTJSON(v[i]); err != nil {
+				return nil, lazyerrors.Errorf("cannot fromTJSON %d->%v", i, v[i])
+			}
+		}
+		arr, err := types.NewArray(v...)
+		if err != nil {
+			return nil, lazyerrors.Errorf("cannot fromTJSON: %s", err)
+		}
+		return arr, nil
+
 	case float64:
-		return v
+		return v, nil
+
+	case string:
+
+		var val map[any]any
+		err := json.Unmarshal([]byte(v), &val)
+		if err != nil {
+			return v, nil // it's not a map - return string as is
+		}
+
+		if _, ok := val["$o"]; ok {
+			var objectIDVal types.ObjectID
+			err := json.Unmarshal([]byte(v), &objectIDVal)
+			return objectIDVal, err
+		}
+
+		if _, ok := val["$r"]; ok {
+			var regexVal types.Regex
+			err := json.Unmarshal([]byte(v), &regexVal)
+			return regexVal, err
+		}
+
+		if _, ok := val["$d"]; ok {
+			var ts types.Timestamp
+			err := json.Unmarshal([]byte(v), &ts)
+			return ts, err
+		}
+
+	case bool:
+		return v, nil
 
 	default:
-		panic(fmt.Sprintf("not implemented: %T", v))
+		return nil, lazyerrors.Errorf("%T not supported", v)
 	}
+
+	panic("unreachable code")
 }
 
 // Marshal encodes the given *types.Document to a tigris driver.Document.
@@ -128,33 +183,9 @@ type regexJSON struct {
 	O string `json:"o"`
 }
 
-// toTJSON converts FerretDB types to Tigris data type representation
+// toTJSON converts FerretDB types to Tigris data type representation.
 func toTJSON(v any) any {
 	switch v := v.(type) {
-	case string:
-		return v
-
-	case float64:
-		return v
-
-	case types.Binary:
-		return v
-
-	case types.ObjectID:
-		return objectIDJSON{O: v}
-
-	case time.Time:
-		return v
-
-	case types.NullType:
-		return nil
-
-	case types.Timestamp:
-		return timestampJSON{D: uint64(v)}
-
-	case types.Regex:
-		return regexJSON{R: v.Pattern, O: v.Options}
-
 	case *types.Document:
 		keys := v.Keys()
 		d := make(map[string]any, len(keys))
@@ -170,8 +201,35 @@ func toTJSON(v any) any {
 		}
 		return a
 
+	case float64:
+		return v
+
+	case string:
+		return v
+
+	case types.Binary:
+		return v
+
+	case types.ObjectID:
+		return objectIDJSON{O: v}
+
+	case bool:
+		return v
+
+	case time.Time:
+		return v
+
+	case types.NullType:
+		return nil
+
+	case types.Regex:
+		return regexJSON{R: v.Pattern, O: v.Options}
+
+	case types.Timestamp:
+		return timestampJSON{D: uint64(v)}
+
 	default:
-		panic(fmt.Sprintf("not implemented: %T", v))
+		return lazyerrors.Errorf("%T not supported", v)
 	}
 }
 
@@ -182,7 +240,7 @@ func checkUnmarshalSupported(v any) error {
 	}
 
 	switch v := v.(type) {
-	case bool, string, float64:
+	case float64, bool, string:
 		return nil
 
 	case []any:
@@ -213,7 +271,7 @@ func checkMarshalSupported(v any) error {
 	}
 
 	switch v := v.(type) {
-	case bool, string, float64:
+	case float64, bool, string:
 		return nil
 
 	case *types.Array:
