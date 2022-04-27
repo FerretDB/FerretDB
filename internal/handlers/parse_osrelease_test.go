@@ -16,9 +16,9 @@ package handlers
 
 import (
 	"bytes"
-	"github.com/stretchr/testify/assert"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/pg"
