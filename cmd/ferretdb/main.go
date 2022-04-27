@@ -44,7 +44,7 @@ var (
 	proxyAddrF       = flag.String("proxy-addr", "127.0.0.1:37017", "")
 	versionF         = flag.Bool("version", false, "print version to stdout (full version, commit, branch, dirty flag) and exit")
 	testConnTimeoutF = flag.Duration("test-conn-timeout", 0, "test: set connection timeout")
-	handlerF         = flag.String("handler", "pg", "handler: can be pg or dummy")
+	handlerF         = flag.String("handler", "pg", "set backend handler (pg, dummy)")
 )
 
 func main() {
@@ -91,8 +91,6 @@ func main() {
 	go debug.RunHandler(ctx, *debugAddrF, logger.Named("debug"))
 
 	var h common.Handler
-
-	startTime := time.Now()
 	switch *handlerF {
 	case "pg":
 		pgPool, err := pgdb.NewPool(ctx, *postgresqlURLF, logger, false)
@@ -102,7 +100,7 @@ func main() {
 		handlerOpts := &pg.NewOpts{
 			PgPool:    pgPool,
 			L:         logger,
-			StartTime: startTime,
+			StartTime: time.Now(),
 		}
 		h = pg.New(handlerOpts)
 
