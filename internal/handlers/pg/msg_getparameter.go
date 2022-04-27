@@ -49,7 +49,6 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	var resDoc *types.Document
 	if getPrm == "*" {
 		resDoc = resDB
-
 	} else {
 		resDoc, errNoFound, err = selectParam(cmd, resDB)
 		if err != nil {
@@ -76,21 +75,21 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 func selectParam(cmd, resDB *types.Document) (doc *types.Document, errNoFound error, err error) {
 	doc = types.MustNewDocument()
 	keys := cmd.Keys()
+
 	for _, k := range keys {
 		if k == "getParameter" || k == "comment" || k == "$db" {
 			continue
 		}
-
 		item, err := resDB.Get(k)
 		if err != nil {
 			continue
 		}
-
 		err = doc.Set(k, item)
 		if err != nil {
 			return nil, nil, err
 		}
 	}
+
 	if doc.Len() < 1 {
 		err := doc.Set("ok", float64(0))
 		if err != nil {
