@@ -41,7 +41,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 	for name, tc := range map[string]struct {
 		value       any
 		expectedIDs []any
-		err         mongo.CommandError
+		err         *mongo.CommandError
 	}{
 		"Array": {
 			value: primitive.A{1, 5},
@@ -53,7 +53,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		},
 		"ArrayNegativeBitPositionValue": {
 			value: primitive.A{-1},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: "bit positions must be >= 0 but got: 0: -1",
@@ -61,7 +61,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		},
 		"ArrayBadValue": {
 			value: primitive.A{"123"},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `bit positions must be an integer but got: 0: "123"`,
@@ -70,7 +70,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 
 		"Double": {
 			value: 1.2,
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected an integer: $bitsAllClear: 1.2",
@@ -86,7 +86,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		},
 		"DoubleNegativeValue": {
 			value: float64(-1),
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected a positive number in: $bitsAllClear: -1.0",
@@ -95,7 +95,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 
 		"String": {
 			value: "123",
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: "value takes an Array, a number, or a BinData but received: $bitsAllClear: \"123\"",
@@ -137,7 +137,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		},
 		"Int32NegativeValue": {
 			value: int32(-1),
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected a positive number in: $bitsAllClear: -1",
@@ -154,7 +154,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		},
 		"Int64NegativeValue": {
 			value: int64(-1),
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected a positive number in: $bitsAllClear: -1",
@@ -167,9 +167,9 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 
 			filter := bson.D{{"value", bson.D{{"$bitsAllClear", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err.Code != 0 {
+			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, tc.err, err)
+				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)
@@ -195,7 +195,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 	for name, tc := range map[string]struct {
 		value       any
 		expectedIDs []any
-		err         mongo.CommandError
+		err         *mongo.CommandError
 	}{
 		"Array": {
 			value:       primitive.A{1, 5},
@@ -203,7 +203,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 		},
 		"ArrayNegativeBitPositionValue": {
 			value: primitive.A{-1},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: "bit positions must be >= 0 but got: 0: -1",
@@ -211,7 +211,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 		},
 		"ArrayBadValue": {
 			value: primitive.A{"123"},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `bit positions must be an integer but got: 0: "123"`,
@@ -220,7 +220,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 
 		"Double": {
 			value: 1.2,
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected an integer: $bitsAllSet: 1.2",
@@ -232,7 +232,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 		},
 		"DoubleNegativeValue": {
 			value: -1.0,
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected a positive number in: $bitsAllSet: -1.0",
@@ -241,7 +241,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 
 		"String": {
 			value: "123",
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: "value takes an Array, a number, or a BinData but received: $bitsAllSet: \"123\"",
@@ -263,7 +263,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 		},
 		"Int32NegativeValue": {
 			value: int32(-1),
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected a positive number in: $bitsAllSet: -1",
@@ -276,7 +276,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 		},
 		"Int64NegativeValue": {
 			value: int64(-1),
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected a positive number in: $bitsAllSet: -1",
@@ -289,9 +289,9 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 
 			filter := bson.D{{"value", bson.D{{"$bitsAllSet", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err.Code != 0 {
+			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, tc.err, err)
+				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)
@@ -317,7 +317,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 	for name, tc := range map[string]struct {
 		value       any
 		expectedIDs []any
-		err         mongo.CommandError
+		err         *mongo.CommandError
 	}{
 		"Array": {
 			value: primitive.A{1, 5},
@@ -329,7 +329,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		},
 		"ArrayNegativeBitPositionValue": {
 			value: primitive.A{-1},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: "bit positions must be >= 0 but got: 0: -1",
@@ -337,7 +337,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		},
 		"ArrayBadValue": {
 			value: primitive.A{"123"},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `bit positions must be an integer but got: 0: "123"`,
@@ -346,7 +346,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 
 		"Double": {
 			value: 1.2,
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected an integer: $bitsAnyClear: 1.2",
@@ -362,7 +362,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		},
 		"DoubleNegativeValue": {
 			value: -1.0,
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected a positive number in: $bitsAnyClear: -1.0",
@@ -371,7 +371,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 
 		"String": {
 			value: "123",
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: "value takes an Array, a number, or a BinData but received: $bitsAnyClear: \"123\"",
@@ -405,7 +405,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		},
 		"Int32NegativeValue": {
 			value: int32(-1),
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected a positive number in: $bitsAnyClear: -1",
@@ -422,7 +422,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		},
 		"Int64NegativeValue": {
 			value: int64(-1),
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected a positive number in: $bitsAnyClear: -1",
@@ -435,9 +435,9 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 
 			filter := bson.D{{"value", bson.D{{"$bitsAnyClear", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err.Code != 0 {
+			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, tc.err, err)
+				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)
@@ -463,7 +463,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 	for name, tc := range map[string]struct {
 		value       any
 		expectedIDs []any
-		err         mongo.CommandError
+		err         *mongo.CommandError
 	}{
 		"Array": {
 			value: primitive.A{1, 5},
@@ -475,7 +475,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 		},
 		"ArrayNegativeBitPositionValue": {
 			value: primitive.A{-1},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: "bit positions must be >= 0 but got: 0: -1",
@@ -483,7 +483,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 		},
 		"ArrayBadValue": {
 			value: primitive.A{"123"},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `bit positions must be an integer but got: 0: "123"`,
@@ -492,7 +492,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 
 		"Double": {
 			value: 1.2,
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected an integer: $bitsAnySet: 1.2",
@@ -508,7 +508,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 		},
 		"DoubleNegativeValue": {
 			value: -1.0,
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected a positive number in: $bitsAnySet: -1.0",
@@ -517,7 +517,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 
 		"String": {
 			value: "123",
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: "value takes an Array, a number, or a BinData but received: $bitsAnySet: \"123\"",
@@ -543,7 +543,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 		},
 		"Int32NegativeValue": {
 			value: int32(-1),
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected a positive number in: $bitsAnySet: -1",
@@ -560,7 +560,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 		},
 		"Int64NegativeValue": {
 			value: int64(-1),
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected a positive number in: $bitsAnySet: -1",
@@ -573,9 +573,9 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 
 			filter := bson.D{{"value", bson.D{{"$bitsAnySet", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err.Code != 0 {
+			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, tc.err, err)
+				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)
