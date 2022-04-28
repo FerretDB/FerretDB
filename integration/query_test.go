@@ -74,9 +74,8 @@ func TestQueryBadFindType(t *testing.T) {
 	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
-		command  bson.D
-		response bson.D
-		err      *mongo.CommandError
+		command bson.D
+		err     *mongo.CommandError
 	}{
 		"Document": {
 			command: bson.D{
@@ -233,12 +232,6 @@ func TestQueryBadFindType(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-
-			m := actual.Map()
-
-			assert.Equal(t, 1.0, m["ok"])
-
-			AssertEqualDocuments(t, tc.response, actual)
 		})
 	}
 }
@@ -248,9 +241,8 @@ func TestQuerySort(t *testing.T) {
 	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
-		command  bson.D
-		response bson.D
-		err      *mongo.CommandError
+		command bson.D
+		err     *mongo.CommandError
 	}{
 		"BadSortType": {
 			command: bson.D{
@@ -276,12 +268,6 @@ func TestQuerySort(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-
-			m := actual.Map()
-
-			assert.Equal(t, 1.0, m["ok"])
-
-			AssertEqualDocuments(t, tc.response, actual)
 		})
 	}
 }
