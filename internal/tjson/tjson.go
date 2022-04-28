@@ -125,7 +125,6 @@ func fromTJSON(v any) (any, error) {
 		return v, nil
 
 	case string:
-
 		var val map[any]any
 		err := json.Unmarshal([]byte(v), &val)
 		if err != nil {
