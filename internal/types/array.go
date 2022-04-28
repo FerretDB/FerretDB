@@ -14,7 +14,10 @@
 
 package types
 
-import "fmt"
+import (
+	"fmt"
+	"golang.org/x/exp/constraints"
+)
 
 // Array represents BSON array.
 //
@@ -116,4 +119,22 @@ func (a *Array) Append(values ...any) error {
 
 	a.s = append(a.s, values...)
 	return nil
+}
+
+// SubsliceArray returns a slice of the array, sharing the same underlying space and elements.
+func SubsliceArray[Index constraints.Integer](a *Array, low, high Index) (*Array, error) {
+	l := a.Len()
+
+	if low < 0 || Compare(low, l) == Greater {
+		return nil, fmt.Errorf("types.Array.Subslice: low index %d is out of bounds [0-%d)", low, l)
+	}
+
+	if high < 0 || Compare(high, l) == Greater {
+		return nil, fmt.Errorf("types.Array.Subslice: high index %d is out of bounds [0-%d)", high, l)
+	}
+
+	if high < low {
+		return nil, fmt.Errorf("types.Array.Subslice: high index %d is less low index %d", high, low)
+	}
+	return &Array{s: a.s[low:high]}, nil
 }
