@@ -138,3 +138,37 @@ func init() {
 		aliasToTypeCode[i.String()] = i
 	}
 }
+
+// AliasFromType returns type alias name for given value.
+func AliasFromType(v any) string {
+	switch v := v.(type) {
+	case *types.Document:
+		return "object"
+	case *types.Array:
+		return "array"
+	case float64:
+		return "double"
+	case string:
+		return "string"
+	case types.Binary:
+		return "binData"
+	case types.ObjectID:
+		return "objectId"
+	case bool:
+		return "bool"
+	case time.Time:
+		return "date"
+	case types.NullType:
+		return "null"
+	case types.Regex:
+		return "regex"
+	case int32:
+		return "int"
+	case types.Timestamp:
+		return "timestamp"
+	case int64:
+		return "long"
+	default:
+		panic(fmt.Sprintf("not supported type %T", v))
+	}
+}

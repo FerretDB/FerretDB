@@ -2,10 +2,12 @@ package integration
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -64,6 +66,214 @@ func TestQueryCount(t *testing.T) {
 			keys := CollectKeys(t, actual)
 			assert.Contains(t, keys, "n")
 			assert.Equal(t, tc.response, m["n"])
+		})
+	}
+}
+
+func TestQueryFindType(t *testing.T) {
+	t.Parallel()
+	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
+	ctx, collection := setup(t, providers...)
+
+	for name, tc := range map[string]struct {
+		command  bson.D
+		response bson.D
+		err      *mongo.CommandError
+	}{
+		"BadFindTypeDocument": {
+			command: bson.D{
+				{"find", bson.D{}},
+				{"projection", bson.D{{"value", "some"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type object",
+			},
+		},
+		"BadFindTypeArray": {
+			command: bson.D{
+				{"find", primitive.A{}},
+				{"projection", bson.D{{"value", "some"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type array",
+			},
+		},
+		"BadFindTypeDouble": {
+			command: bson.D{
+				{"find", 3.14},
+				{"projection", bson.D{{"value", "some"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type double",
+			},
+		},
+		"BadFindTypeDoubleWhole": {
+			command: bson.D{
+				{"find", 42.0},
+				{"projection", bson.D{{"value", "some"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type double",
+			},
+		},
+		"BadFindTypeBinary": {
+			command: bson.D{
+				{"find", primitive.Binary{}},
+				{"projection", bson.D{{"value", "some"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type binData",
+			},
+		},
+		"BadFindTypeBool": {
+			command: bson.D{
+				{"find", true},
+				{"projection", bson.D{{"value", "some"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type bool",
+			},
+		},
+		"BadFindTypeDate": {
+			command: bson.D{
+				{"find", time.Now()},
+				{"projection", bson.D{{"value", "some"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type date",
+			},
+		},
+		"BadFindTypeNull": {
+			command: bson.D{
+				{"find", nil},
+				{"projection", bson.D{{"value", "some"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type null",
+			},
+		},
+		"BadFindTypeRegex": {
+			command: bson.D{
+				{"find", primitive.Regex{Pattern: "/foo/"}},
+				{"projection", bson.D{{"value", "some"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type regex",
+			},
+		},
+		"BadFindTypeInt": {
+			command: bson.D{
+				{"find", int32(42)},
+				{"projection", bson.D{{"value", "some"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type int",
+			},
+		},
+		"BadFindTypeTimestamp": {
+			command: bson.D{
+				{"find", primitive.Timestamp{}},
+				{"projection", bson.D{{"value", "some"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type timestamp",
+			},
+		},
+		"BadFindTypeLong": {
+			command: bson.D{
+				{"find", int64(42)},
+				{"projection", bson.D{{"value", "some"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type long",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+			if tc.err != nil {
+				AssertEqualError(t, *tc.err, err)
+				return
+			}
+			require.NoError(t, err)
+
+			m := actual.Map()
+
+			assert.Equal(t, 1.0, m["ok"])
+
+			AssertEqualDocuments(t, tc.response, actual)
+		})
+	}
+}
+
+func TestQuerySort(t *testing.T) {
+	t.Parallel()
+	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
+	ctx, collection := setup(t, providers...)
+
+	for name, tc := range map[string]struct {
+		command  bson.D
+		response bson.D
+		err      *mongo.CommandError
+	}{
+		"BadSortType": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"projection", bson.D{{"value", "some"}}},
+				{"sort", "123"},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "Expected field sortto be of type object",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+			if tc.err != nil {
+				AssertEqualError(t, *tc.err, err)
+				return
+			}
+			require.NoError(t, err)
+
+			m := actual.Map()
+
+			assert.Equal(t, 1.0, m["ok"])
+
+			AssertEqualDocuments(t, tc.response, actual)
 		})
 	}
 }
