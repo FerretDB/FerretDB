@@ -17,6 +17,7 @@ package clientconn
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 
 	"github.com/AlekSi/pointer"
 	"github.com/prometheus/client_golang/prometheus"
@@ -144,7 +145,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	}
 	resHeader.MessageLength = int32(wire.MsgHeaderLen + len(b))
 
-	// resHeader.RequestID = atomic.AddInt32(&h.lastRequestID, 1) // XXX: not set anywhere
+	resHeader.RequestID = atomic.AddInt32(&c.lastRequestID, 1)
 	resHeader.ResponseTo = reqHeader.RequestID
 
 	if result == nil {

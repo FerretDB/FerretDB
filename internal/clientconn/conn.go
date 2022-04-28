@@ -52,12 +52,13 @@ var AllModes = []Mode{NormalMode, ProxyMode, DiffNormalMode, DiffProxyMode}
 
 // conn represents client connection.
 type conn struct {
-	netConn net.Conn
-	mode    Mode
-	l       *zap.SugaredLogger
-	h       common.Handler
-	m       *ListenerMetrics
-	proxy   *proxy.Handler
+	netConn       net.Conn
+	mode          Mode
+	l             *zap.SugaredLogger
+	h             common.Handler
+	m             *ListenerMetrics
+	proxy         *proxy.Handler
+	lastRequestID int32
 }
 
 // newConnOpts represents newConn options.
