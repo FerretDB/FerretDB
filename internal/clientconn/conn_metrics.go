@@ -16,13 +16,13 @@ package clientconn
 
 import "github.com/prometheus/client_golang/prometheus"
 
-// ConnMetrics represents listener metrics.
+// ConnMetrics represents conn metrics.
 type ConnMetrics struct {
 	requests  *prometheus.CounterVec
 	responses *prometheus.CounterVec
 }
 
-// NewConnMetrics creates new listener metrics.
+// NewConnMetrics creates new conn metrics.
 func NewConnMetrics() *ConnMetrics {
 	return &ConnMetrics{
 		requests: prometheus.NewCounterVec(
