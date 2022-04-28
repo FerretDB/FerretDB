@@ -5,7 +5,7 @@
 /vendor/
 cover.txt
 cover.html
-integration.txt
+integration-*.txt
 old.txt
 new.txt
 

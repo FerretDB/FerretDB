@@ -107,13 +107,13 @@ tasks:
   test-integration-db:
     dir: integration
     cmds:
-      - go test -count=1 -race -shuffle=on -coverprofile=integration.txt -coverpkg=../... -port={{.DB}}
+      - go test -count=1 -race -shuffle=on -coverprofile=integration-{{.DB}}.txt -coverpkg=../... -port={{.DB}}
 
   test-integration-tigris:
     desc: 'Run integration tests for FerretDB with Tigris backend'
     dir: integration/tigris
     cmds:
-      - go test -count=1 -race -shuffle=on -coverprofile=integration.txt -coverpkg=../...
+      - go test -count=1 -race -shuffle=on -coverprofile=integration-tigris.txt -coverpkg=../...
 
   bench-short:
     desc: "Benchmark for about 20 seconds (with default BENCHTIME)"
