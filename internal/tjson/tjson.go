@@ -24,16 +24,15 @@
 //  types.NullType   null
 //  bool             true / false values
 //  string           string
-//  int32            integer
-//  float64          number - 8 bytes (64-bit IEEE 754-2008 binary floating point)
-//  Decimal128       not implemented - number as string
-//  int64            not implemented - number as string
-//  types.Binary     not implemented - binary field
-//  types.ObjectID   not implemented - string
-//  time.Time        not implemented - date-time string
-//  types.Timestamp  not implemented - <number as string>
-//  types.CString    not implemented - <string without terminating 0x0>
-//  types.Regex      not implemented - <string without terminating 0x0>
+//  int32            not implemented
+//  float64          number
+//  Decimal128       not implemented
+//  int64            not implemented
+//  types.Binary     binary field
+//  types.ObjectID   {$o: string}
+//  time.Time        not implemented
+//  types.Timestamp  {$t: uint64}
+//  types.Regex      {$r: <pattern>, o: <options>}
 package tjson
 
 import (
@@ -46,6 +45,19 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
+
+type timestampJSON struct {
+	T uint64 `json:"$t"`
+}
+
+type objectIDJSON struct {
+	O [12]byte `json:"$o"`
+}
+
+type regexJSON struct {
+	R string `json:"$r"`
+	O string `json:"o"`
+}
 
 // Unmarshal decodes the given tigris data type *driver.Document to a *types.Document.
 func Unmarshal(data *driver.Document) (*types.Document, error) {
@@ -133,7 +145,7 @@ func fromTJSON(v any) (any, error) {
 			return regexVal, err
 		}
 
-		if _, ok := val["$d"]; ok {
+		if _, ok := val["$t"]; ok {
 			var ts types.Timestamp
 			err := json.Unmarshal([]byte(v), &ts)
 			return ts, err
@@ -168,19 +180,6 @@ func Marshal(v *types.Document) (*driver.Document, error) {
 
 	d := driver.Document(b)
 	return &d, nil
-}
-
-type timestampJSON struct {
-	D uint64 `json:"$d"`
-}
-
-type objectIDJSON struct {
-	O [12]byte `json:"$o"`
-}
-
-type regexJSON struct {
-	R string `json:"$r"`
-	O string `json:"o"`
 }
 
 // toTJSON converts FerretDB types to Tigris data type representation.
@@ -226,7 +225,7 @@ func toTJSON(v any) any {
 		return regexJSON{R: v.Pattern, O: v.Options}
 
 	case types.Timestamp:
-		return timestampJSON{D: uint64(v)}
+		return timestampJSON{T: uint64(v)}
 
 	default:
 		return lazyerrors.Errorf("%T not supported", v)
