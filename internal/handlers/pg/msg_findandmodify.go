@@ -38,8 +38,6 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	// TODO https://github.com/FerretDB/FerretDB/issues/164
 
 	unimplementedFields := []string{
-		"sort",
-		"update",
 		"arrayFilters",
 		"let",
 	}
@@ -86,7 +84,43 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
+	var sort *types.Document
+	var ok bool
+	sortParam, err := document.Get("sort")
+	if err == nil {
+		sort, ok = sortParam.(*types.Document)
+		if !ok {
+			return nil, common.NewErrorMsg(
+				common.ErrTypeMismatch,
+				fmt.Sprintf("BSON field 'findAndModify.sort' is the wrong type '%T', expected type 'object'", sortParam),
+			)
+		}
+	}
+
+	var update *types.Document
+	updateParam, err := document.Get("update")
+	if err != nil {
+		if !remove {
+			return nil, common.NewErrorMsg(common.ErrFailedToParse, "Either an update or remove=true must be specified")
+		}
+
+		return nil, err
+	}
+	switch updateParam := updateParam.(type) {
+	case *types.Document:
+		update = updateParam
+	case types.Array:
+		return nil, common.NewErrorMsg(common.ErrNotImplemented, "Aggregation pipelines are not supported yet")
+	default:
+		return nil, common.NewErrorMsg(common.ErrBadValue, "Bad sort value")
+	}
+
 	fetchedDocs, err := h.fetch(ctx, db, collection)
+	if err != nil {
+		return nil, err
+	}
+
+	err = common.SortDocuments(fetchedDocs, sort)
 	if err != nil {
 		return nil, err
 	}
@@ -116,6 +150,24 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		if _, err := h.pgPool.Exec(ctx, sql, id); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+
+		var reply wire.OpMsg
+		err = reply.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{types.MustNewDocument(
+				"lastErrorObject", types.MustNewDocument("n", int32(1)),
+				"value", types.MustConvertDocument(resDocs[0]),
+				"ok", float64(1),
+			)},
+		})
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		return &reply, nil
+	}
+
+	if len(resDocs) == 1 && update != nil {
+		// TODO: process update
+		return nil, nil
 	}
 
 	var reply wire.OpMsg
