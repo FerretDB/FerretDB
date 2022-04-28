@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"strconv"
 	"testing"
 	"time"
@@ -191,7 +192,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 		unexpected []string
 		err        *mongo.CommandError
 	}{
-		"AllParameters": {
+		"AllParameters_1": {
 			command: bson.D{{"getParameter", "*"}},
 			expected: map[string]any{
 				"acceptApiVersion2": false,
@@ -200,15 +201,63 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 				"ok":                float64(1),
 			},
 		},
+		"AllParameters_2": {
+			command: bson.D{{"getParameter", "*"}, {"quiet", 1}, {"comment", "getParameter test"}},
+			expected: map[string]any{
+				"acceptApiVersion2": false,
+				"authSchemaVersion": int32(5),
+				"quiet":             false,
+				"ok":                float64(1),
+			},
+		},
+		"AllParameters_3": {
+			command: bson.D{{"getParameter", "*"}, {"quiet", 1}, {"quiet_other", 1}, {"comment", "getParameter test"}},
+			expected: map[string]any{
+				"acceptApiVersion2": false,
+				"authSchemaVersion": int32(5),
+				"quiet":             false,
+				"ok":                float64(1),
+			},
+		},
+		"AllParameters_4": {
+			command: bson.D{{"getParameter", "*"}, {"quiet_other", 1}, {"comment", "getParameter test"}},
+			expected: map[string]any{
+				"acceptApiVersion2": false,
+				"authSchemaVersion": int32(5),
+				"quiet":             false,
+				"ok":                float64(1),
+			},
+		},
 		"ExistingParameters": {
-			command: bson.D{{"getParameter", 1}, {"quiet", 1}},
+			command: bson.D{{"getParameter", 1}, {"quiet", 1}, {"comment", "getParameter test"}},
+			expected: map[string]any{
+				"quiet": false,
+				"ok":    float64(1),
+			},
+		},
+		"Zero": {
+			command: bson.D{{"getParameter", 0}, {"quiet", 1}, {"comment", "getParameter test"}},
+			expected: map[string]any{
+				"quiet": false,
+				"ok":    float64(1),
+			},
+		},
+		"NaN": {
+			command: bson.D{{"getParameter", math.NaN()}, {"quiet", 1}, {"comment", "getParameter test"}},
+			expected: map[string]any{
+				"quiet": false,
+				"ok":    float64(1),
+			},
+		},
+		"Nil": {
+			command: bson.D{{"getParameter", nil}, {"quiet", 1}, {"comment", "getParameter test"}},
 			expected: map[string]any{
 				"quiet": false,
 				"ok":    float64(1),
 			},
 		},
 		"NonexistentParameters": {
-			command: bson.D{{"getParameter", 1}, {"quiet", 1}, {"quiet_other", 1}},
+			command: bson.D{{"getParameter", 1}, {"quiet", 1}, {"quiet_other", 1}, {"comment", "getParameter test"}},
 			expected: map[string]any{
 				"quiet": false,
 				"ok":    float64(1),
@@ -216,11 +265,11 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 			unexpected: []string{"quiet_other"},
 		},
 		"EmptyParameters": {
-			command: bson.D{{"getParameter", 1}},
+			command: bson.D{{"getParameter", 1}, {"comment", "getParameter test"}},
 			err:     &mongo.CommandError{Code: 0, Name: "", Message: `no option found to get`},
 		},
 		"OnlyNonexistentParameters": {
-			command: bson.D{{"getParameter", 1}, {"quiet_other", 1}},
+			command: bson.D{{"getParameter", 1}, {"quiet_other", 1}, {"comment", "getParameter test"}},
 			err:     &mongo.CommandError{Code: 0, Name: "", Message: `no option found to get`},
 		},
 	} {

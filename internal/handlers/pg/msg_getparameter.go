@@ -16,7 +16,6 @@ package pg
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -26,17 +25,16 @@ import (
 
 // MsgGetParameter OpMsg used to get parameter.
 func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	cmd, err := msg.Document()
+	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	getParameter, err := cmd.Get("getParameter")
+	command, err := document.Get("getParameter")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	// SELECT * FROM 'admin'
 	resDB := types.MustNewDocument(
 		"acceptApiVersion2", false,
 		"authSchemaVersion", int32(5),
@@ -45,32 +43,30 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	)
 
 	var reply wire.OpMsg
-	var errNoFound error
 	resDoc := resDB
-	if getParameter != "*" {
-		resDoc, errNoFound, err = selectParam(cmd, resDB)
+	if command != "*" {
+		resDoc, err = selectParam(document, resDB)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 	}
 
-	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{resDoc},
-	})
+	err = reply.SetSections(wire.OpMsgSection{Documents: []*types.Document{resDoc}})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	comment, err := cmd.Get("comment")
-	if err == nil {
-		common.Ignored(cmd, h.l, fmt.Sprint(comment))
+	common.Ignored(document, h.l, "comment")
+
+	if resDoc.Len() < 2 {
+		return &reply, common.NewErrorMsg(common.ErrorCode(0), "no option found to get")
 	}
 
-	return &reply, errNoFound
+	return &reply, nil
 }
 
-// selectParam is makes a selection of the requested parameters received from database 'admin'.
-func selectParam(command, resDB *types.Document) (doc *types.Document, errNoFound error, err error) {
+// selectParam is makes a selection of requested parameters.
+func selectParam(command, resDB *types.Document) (doc *types.Document, err error) {
 	doc = types.MustNewDocument()
 	keys := command.Keys()
 
@@ -84,22 +80,21 @@ func selectParam(command, resDB *types.Document) (doc *types.Document, errNoFoun
 		}
 		err = doc.Set(k, item)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 	}
 
 	if doc.Len() < 1 {
 		err := doc.Set("ok", float64(0))
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
-		errNoFound = common.NewErrorMsg(common.ErrorCode(0), "no option found to get")
-		return doc, errNoFound, nil
+		return doc, nil
 	}
 
 	err = doc.Set("ok", float64(1))
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	return doc, nil, nil
+	return doc, nil
 }
