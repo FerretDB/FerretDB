@@ -53,7 +53,7 @@ jobs:
       - name: Upload coverage information
         uses: codecov/codecov-action@v3
         with:
-          files: ./integration/integration.txt
+          files: ./integration/integration-tigris.txt
           flags: integration,tigris
 
       - name: Check dirty
