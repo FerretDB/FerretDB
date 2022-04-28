@@ -47,13 +47,13 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	var reply wire.OpMsg
 	var errNoFound error
 	var resDoc *types.Document
-	if getParameter == "*" {
-		resDoc = resDB
-	} else {
+	if getParameter != "*" {
 		resDoc, errNoFound, err = selectParam(cmd, resDB)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+	} else {
+		resDoc = resDB
 	}
 
 	err = reply.SetSections(wire.OpMsgSection{
