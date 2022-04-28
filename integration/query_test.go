@@ -70,7 +70,7 @@ func TestQueryCount(t *testing.T) {
 	}
 }
 
-func TestQueryFindType(t *testing.T) {
+func TestQueryBadFindType(t *testing.T) {
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
 	ctx, collection := setup(t, providers...)
@@ -80,7 +80,7 @@ func TestQueryFindType(t *testing.T) {
 		response bson.D
 		err      *mongo.CommandError
 	}{
-		"BadFindTypeDocument": {
+		"Document": {
 			command: bson.D{
 				{"find", bson.D{}},
 				{"projection", bson.D{{"value", "some"}}},
@@ -91,7 +91,7 @@ func TestQueryFindType(t *testing.T) {
 				Message: "collection name has invalid type object",
 			},
 		},
-		"BadFindTypeArray": {
+		"Array": {
 			command: bson.D{
 				{"find", primitive.A{}},
 				{"projection", bson.D{{"value", "some"}}},
@@ -102,7 +102,7 @@ func TestQueryFindType(t *testing.T) {
 				Message: "collection name has invalid type array",
 			},
 		},
-		"BadFindTypeDouble": {
+		"Double": {
 			command: bson.D{
 				{"find", 3.14},
 				{"projection", bson.D{{"value", "some"}}},
@@ -113,7 +113,7 @@ func TestQueryFindType(t *testing.T) {
 				Message: "collection name has invalid type double",
 			},
 		},
-		"BadFindTypeDoubleWhole": {
+		"DoubleWhole": {
 			command: bson.D{
 				{"find", 42.0},
 				{"projection", bson.D{{"value", "some"}}},
@@ -124,7 +124,7 @@ func TestQueryFindType(t *testing.T) {
 				Message: "collection name has invalid type double",
 			},
 		},
-		"BadFindTypeBinary": {
+		"Binary": {
 			command: bson.D{
 				{"find", primitive.Binary{}},
 				{"projection", bson.D{{"value", "some"}}},
@@ -135,7 +135,18 @@ func TestQueryFindType(t *testing.T) {
 				Message: "collection name has invalid type binData",
 			},
 		},
-		"BadFindTypeBool": {
+		"ObjectID": {
+			command: bson.D{
+				{"find", primitive.ObjectID{}},
+				{"projection", bson.D{{"value", "some"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type objectID",
+			},
+		},
+		"Bool": {
 			command: bson.D{
 				{"find", true},
 				{"projection", bson.D{{"value", "some"}}},
@@ -146,7 +157,7 @@ func TestQueryFindType(t *testing.T) {
 				Message: "collection name has invalid type bool",
 			},
 		},
-		"BadFindTypeDate": {
+		"Date": {
 			command: bson.D{
 				{"find", time.Now()},
 				{"projection", bson.D{{"value", "some"}}},
@@ -157,7 +168,7 @@ func TestQueryFindType(t *testing.T) {
 				Message: "collection name has invalid type date",
 			},
 		},
-		"BadFindTypeNull": {
+		"Null": {
 			command: bson.D{
 				{"find", nil},
 				{"projection", bson.D{{"value", "some"}}},
@@ -168,7 +179,7 @@ func TestQueryFindType(t *testing.T) {
 				Message: "collection name has invalid type null",
 			},
 		},
-		"BadFindTypeRegex": {
+		"Regex": {
 			command: bson.D{
 				{"find", primitive.Regex{Pattern: "/foo/"}},
 				{"projection", bson.D{{"value", "some"}}},
@@ -179,7 +190,7 @@ func TestQueryFindType(t *testing.T) {
 				Message: "collection name has invalid type regex",
 			},
 		},
-		"BadFindTypeInt": {
+		"Int": {
 			command: bson.D{
 				{"find", int32(42)},
 				{"projection", bson.D{{"value", "some"}}},
@@ -190,7 +201,7 @@ func TestQueryFindType(t *testing.T) {
 				Message: "collection name has invalid type int",
 			},
 		},
-		"BadFindTypeTimestamp": {
+		"Timestamp": {
 			command: bson.D{
 				{"find", primitive.Timestamp{}},
 				{"projection", bson.D{{"value", "some"}}},
@@ -201,7 +212,7 @@ func TestQueryFindType(t *testing.T) {
 				Message: "collection name has invalid type timestamp",
 			},
 		},
-		"BadFindTypeLong": {
+		"Long": {
 			command: bson.D{
 				{"find", int64(42)},
 				{"projection", bson.D{{"value", "some"}}},
