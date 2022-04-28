@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -33,6 +34,21 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	var osName, osVersion string
+
+	if runtime.GOOS == "linux" {
+		file, err := os.Open("/etc/os-release")
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		defer file.Close()
+
+		osName, osVersion, err = common.ParseOSRelease(file)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	var reply wire.OpMsg
@@ -47,8 +63,8 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 			),
 			"os", types.MustNewDocument(
 				"type", strings.Title(runtime.GOOS),
-				"name", "", // TODO https://github.com/FerretDB/FerretDB/issues/447
-				"version", "",
+				"name", osName,
+				"version", osVersion,
 			),
 			"extra", types.MustNewDocument(),
 			"ok", float64(1),
