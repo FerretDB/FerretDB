@@ -16,53 +16,49 @@ package clientconn
 
 import "github.com/prometheus/client_golang/prometheus"
 
-const (
-	namespace = "ferretdb"
-	subsystem = "client"
-)
-
 // ListenerMetrics represents listener metrics.
-type ListenerMetrics struct {
-	connectedClients prometheus.Gauge
-	accepts          *prometheus.CounterVec
+type ConnMetrics struct {
+	requests  *prometheus.CounterVec
+	responses *prometheus.CounterVec
 }
 
 // NewListenerMetrics creates new listener metrics.
-func NewListenerMetrics() *ListenerMetrics {
-	return &ListenerMetrics{
-		connectedClients: prometheus.NewGauge(
-			prometheus.GaugeOpts{
-				Namespace: namespace,
-				Subsystem: subsystem,
-				Name:      "connected",
-				Help:      "The current number of connected clients.",
-			},
-		),
-		accepts: prometheus.NewCounterVec(
+func NewConnMetrics() *ConnMetrics {
+	return &ConnMetrics{
+		requests: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: namespace,
 				Subsystem: subsystem,
-				Name:      "accepts_total",
-				Help:      "Total number of accepted client connections.",
+				Name:      "requests_total",
+				Help:      "Total number of requests.",
 			},
-			[]string{"error"},
+			[]string{"opcode", "command"},
+		),
+		responses: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace: namespace,
+				Subsystem: subsystem,
+				Name:      "responses_total",
+				Help:      "Total number of responses.",
+			},
+			[]string{"opcode", "command", "result"},
 		),
 	}
 }
 
 // Describe implements prometheus.Collector.
-func (lm *ListenerMetrics) Describe(ch chan<- *prometheus.Desc) {
-	lm.connectedClients.Describe(ch)
-	lm.accepts.Describe(ch)
+func (lm *ConnMetrics) Describe(ch chan<- *prometheus.Desc) {
+	lm.requests.Describe(ch)
+	lm.responses.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
-func (lm *ListenerMetrics) Collect(ch chan<- prometheus.Metric) {
-	lm.connectedClients.Collect(ch)
-	lm.accepts.Collect(ch)
+func (lm *ConnMetrics) Collect(ch chan<- prometheus.Metric) {
+	lm.requests.Collect(ch)
+	lm.responses.Collect(ch)
 }
 
 // check interfaces
 var (
-	_ prometheus.Collector = (*ListenerMetrics)(nil)
+	_ prometheus.Collector = (*ConnMetrics)(nil)
 )

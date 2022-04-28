@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/pmezard/go-difflib/difflib"
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -56,7 +57,7 @@ type conn struct {
 	mode          Mode
 	l             *zap.SugaredLogger
 	h             common.Handler
-	m             *ListenerMetrics
+	m             *ConnMetrics
 	proxy         *proxy.Handler
 	lastRequestID int32
 }
@@ -67,7 +68,6 @@ type newConnOpts struct {
 	mode      Mode
 	l         *zap.Logger
 	handler   common.Handler
-	m         *ListenerMetrics
 	proxyAddr string
 	startTime time.Time
 }
@@ -76,10 +76,6 @@ type newConnOpts struct {
 func newConn(opts *newConnOpts) (*conn, error) {
 	if opts.handler == nil {
 		panic("handler required")
-	}
-
-	if opts.m == nil {
-		panic("metrics required")
 	}
 
 	prefix := fmt.Sprintf("// %s -> %s ", opts.netConn.RemoteAddr(), opts.netConn.LocalAddr())
@@ -98,7 +94,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 		mode:    opts.mode,
 		l:       l.Sugar(),
 		h:       opts.handler,
-		m:       opts.m,
+		m:       NewConnMetrics(),
 		proxy:   p,
 	}, nil
 }
@@ -244,4 +240,14 @@ func (c *conn) run(ctx context.Context) (err error) {
 			return
 		}
 	}
+}
+
+// Describe implements prometheus.Collector.
+func (l *conn) Describe(ch chan<- *prometheus.Desc) {
+	l.m.Describe(ch)
+}
+
+// Collect implements prometheus.Collector.
+func (l *conn) Collect(ch chan<- prometheus.Metric) {
+	l.m.Collect(ch)
 }
