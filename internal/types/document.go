@@ -243,13 +243,10 @@ func (d *Document) add(key string, value any) error {
 	return nil
 }
 
-// Has returns true if the given key is present in the document.
-func (d *Document) Has(key string) bool {
-	_, ok := d.m[key]
-	return ok
-}
-
 // Get returns a value at the given key.
+//
+// The only possible error is missing key.
+// Callers can rely on that and use `if err != nil` check.
 func (d *Document) Get(key string) (any, error) {
 	if value, ok := d.m[key]; ok {
 		return value, nil

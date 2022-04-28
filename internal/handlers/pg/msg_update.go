@@ -126,7 +126,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			if err = common.UpdateDocument(doc, u); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
-			if !doc.Has("_id") {
+			if _, err = doc.Get("_id"); err != nil {
 				must.NoError(doc.Set("_id", types.NewObjectID()))
 			}
 
