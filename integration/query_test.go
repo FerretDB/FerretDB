@@ -141,7 +141,7 @@ func TestQueryBadFindType(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "collection name has invalid type objectID",
+				Message: "collection name has invalid type objectId",
 			},
 		},
 		"Bool": {
