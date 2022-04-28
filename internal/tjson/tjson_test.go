@@ -25,9 +25,9 @@ import (
 )
 
 func TestUnmarshalTJSON(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
-	for name, tc := range map[string]struct {
+	for name, tc := range map[string]struct { //nolint:paralleltest // false positive
 		in  driver.Document
 		out *types.Document
 		err error
