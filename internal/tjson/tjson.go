@@ -240,7 +240,7 @@ func checkUnmarshalSupported(v any) error {
 	}
 
 	switch v := v.(type) {
-	case float64, bool, string:
+	case float64, string, bool:
 		return nil
 
 	case []any:
@@ -271,7 +271,7 @@ func checkMarshalSupported(v any) error {
 	}
 
 	switch v := v.(type) {
-	case float64, bool, string:
+	case float64, string, bool:
 		return nil
 
 	case *types.Array:
