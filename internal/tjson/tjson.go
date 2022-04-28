@@ -70,24 +70,19 @@ func Unmarshal(data *driver.Document) (*types.Document, error) {
 	if err = checkUnmarshalSupported(v); err != nil {
 		return nil, err
 	}
-
-	pairs := make([]any, 2*len(v))
-	var i int
-	for k, val := range v {
-		pairs[i] = k
-		retVal, err := fromTJSON(val)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-		pairs[i+1] = retVal
-		i += 2
+	keys := make([]string, len(v))
+	i := 0
+	for k := range v {
+		keys[i] = k
+		i++
 	}
+	v["$k"] = keys
 
-	doc, err := types.NewDocument(pairs...)
+	docAny, err := fromTJSON(v)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-
+	doc := docAny.(*types.Document)
 	return doc, nil
 }
 
@@ -99,10 +94,14 @@ func fromTJSON(v any) (any, error) {
 	switch v := v.(type) {
 	case map[string]any:
 		doc := new(types.Document)
-		for k, val := range v {
-			retVal, err := fromTJSON(val)
+		keys, ok := v["$k"].([]string)
+		if !ok {
+			return nil, lazyerrors.New("keys in $k absent")
+		}
+		for _, k := range keys {
+			retVal, err := fromTJSON(v[k])
 			if err != nil {
-				return nil, lazyerrors.Errorf("cannot fromTJSON %s->%v", k, val)
+				return nil, lazyerrors.Errorf("cannot fromTJSON %s->%v", k, v[k])
 			}
 			if err = doc.Set(k, retVal); err != nil {
 				return nil, lazyerrors.Errorf("cannot fromTJSON: %s", err)
@@ -191,6 +190,7 @@ func toTJSON(v any) any {
 		for _, k := range keys {
 			d[k] = toTJSON(must.NotFail(v.Get(k)))
 		}
+		d["$k"] = keys
 		return d
 
 	case *types.Array:
