@@ -23,15 +23,11 @@ import (
 	"net"
 	"time"
 
-	"github.com/AlekSi/pointer"
 	"github.com/pmezard/go-difflib/difflib"
-	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/proxy"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -247,64 +243,4 @@ func (c *conn) run(ctx context.Context) (err error) {
 			return
 		}
 	}
-}
-
-// route is mostly for wrapping with metrics measurements the Route func.
-func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody,
-) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) {
-	requests := c.m.requests.MustCurryWith(prometheus.Labels{"opcode": reqHeader.OpCode.String()})
-
-	var err error
-	var result *string
-	var command string
-	switch reqHeader.OpCode {
-	case wire.OP_MSG:
-		msg := reqBody.(*wire.OpMsg)
-		var document *types.Document
-		document, err = msg.Document()
-		command = document.Command()
-
-	case wire.OP_QUERY:
-		query := reqBody.(*wire.OpQuery)
-		command = query.Query.Command()
-
-	case wire.OP_REPLY:
-		fallthrough
-	case wire.OP_UPDATE:
-		fallthrough
-	case wire.OP_INSERT:
-		fallthrough
-	case wire.OP_GET_BY_OID:
-		fallthrough
-	case wire.OP_GET_MORE:
-		fallthrough
-	case wire.OP_DELETE:
-		fallthrough
-	case wire.OP_KILL_CURSORS:
-		fallthrough
-	case wire.OP_COMPRESSED:
-		fallthrough
-	default:
-		err = lazyerrors.Errorf("unexpected OpCode %s", reqHeader.OpCode)
-		result = pointer.ToString("unexpected")
-	}
-	requests.WithLabelValues(command).Inc()
-
-	if err == nil {
-		resHeader, resBody, closeConn, result = common.Route(c.h, ctx, reqHeader, reqBody)
-	}
-
-	if result != nil && *result == "unexpected" {
-		c.l.Error("Handler error for unexpected response opcode",
-			zap.Error(err), zap.Stringer("opcode", resHeader.OpCode),
-		)
-	}
-	c.m.responses.WithLabelValues(resHeader.OpCode.String(), command, *result).Inc()
-
-	// do not spend time dumping if we are not going to log it
-	if c.l.Desugar().Core().Enabled(zap.DebugLevel) {
-		c.l.Debugf("Response header: %s", resHeader)
-		c.l.Debugf("Response message:\n%s\n\n\n", resBody)
-	}
-	return
 }

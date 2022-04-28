@@ -12,14 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package clientconn
 
 import (
 	"context"
 	"fmt"
 
 	"github.com/AlekSi/pointer"
+	"github.com/prometheus/client_golang/prometheus"
+	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -35,13 +38,16 @@ import (
 // They should not panic on bad input, but may do so in "impossible" cases.
 // They also should not use recover(). That allows us to use fuzzing.
 // (Panics terminate the connection without a response on a different level.)
-func Route(h Handler, ctx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody,
-) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool, result *string) {
+func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody,
+) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) {
+	requests := c.m.requests.MustCurryWith(prometheus.Labels{"opcode": reqHeader.OpCode.String()})
 	var command string
+	var result *string
 	defer func() {
 		if result == nil {
 			result = pointer.ToString("panic")
 		}
+		c.m.responses.WithLabelValues(resHeader.OpCode.String(), command, *result).Inc()
 	}()
 
 	resHeader = new(wire.MsgHeader)
@@ -55,13 +61,13 @@ func Route(h Handler, ctx context.Context, reqHeader *wire.MsgHeader, reqBody wi
 
 		if err == nil {
 			resHeader.OpCode = wire.OP_MSG
-			resBody, err = handleOpMsg(h, ctx, msg, command)
+			resBody, err = c.handleOpMsg(ctx, msg, command)
 		}
 
 	case wire.OP_QUERY:
 		query := reqBody.(*wire.OpQuery)
 		resHeader.OpCode = wire.OP_REPLY
-		resBody, err = h.CmdQuery(ctx, query)
+		resBody, err = c.h.CmdQuery(ctx, query)
 
 	case wire.OP_REPLY:
 		fallthrough
@@ -82,12 +88,13 @@ func Route(h Handler, ctx context.Context, reqHeader *wire.MsgHeader, reqBody wi
 	default:
 		err = lazyerrors.Errorf("unexpected OpCode %s", reqHeader.OpCode)
 	}
+	requests.WithLabelValues(command).Inc()
 
 	// set body for error
 	if err != nil {
 		switch resHeader.OpCode {
 		case wire.OP_MSG:
-			protoErr, recoverable := ProtocolError(err)
+			protoErr, recoverable := common.ProtocolError(err)
 			closeConn = !recoverable
 			var res wire.OpMsg
 			err = res.SetSections(wire.OpMsgSection{
@@ -121,6 +128,9 @@ func Route(h Handler, ctx context.Context, reqHeader *wire.MsgHeader, reqBody wi
 			// do not panic to make fuzzing easier
 			closeConn = true
 			result = pointer.ToString("unexpected")
+			c.l.Error("Handler error for unexpected response opcode",
+				zap.Error(err), zap.Stringer("opcode", resHeader.OpCode),
+			)
 			return
 		}
 	}
@@ -141,16 +151,21 @@ func Route(h Handler, ctx context.Context, reqHeader *wire.MsgHeader, reqBody wi
 		result = pointer.ToString("ok")
 	}
 
+	// do not spend time dumping if we are not going to log it
+	if c.l.Desugar().Core().Enabled(zap.DebugLevel) {
+		c.l.Debugf("Response header: %s", resHeader)
+		c.l.Debugf("Response message:\n%s\n\n\n", resBody)
+	}
 	return
 }
 
-func handleOpMsg(h Handler, ctx context.Context, msg *wire.OpMsg, cmd string) (*wire.OpMsg, error) {
-	if cmd, ok := Commands[cmd]; ok {
+func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, cmd string) (*wire.OpMsg, error) {
+	if cmd, ok := common.Commands[cmd]; ok {
 		if cmd.Handler != nil {
-			return cmd.Handler(h, ctx, msg)
+			return cmd.Handler(c.h, ctx, msg)
 		}
 	}
 
 	errMsg := fmt.Sprintf("no such command: '%s'", cmd)
-	return nil, NewErrorMsg(ErrCommandNotFound, errMsg)
+	return nil, common.NewErrorMsg(common.ErrCommandNotFound, errMsg)
 }
