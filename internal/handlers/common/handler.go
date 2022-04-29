@@ -22,7 +22,6 @@ import (
 
 // Handler interface represents common commands handlers.
 type Handler interface {
-
 	// MsgBuildInfo returns a summary of the build information.
 	MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
