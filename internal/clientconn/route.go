@@ -55,11 +55,10 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	var err error
 	switch reqHeader.OpCode {
 	case wire.OP_MSG:
-		msg := reqBody.(*wire.OpMsg)
-		command = document.Command()
-
 		var document *types.Document
+		msg := reqBody.(*wire.OpMsg)
 		document, err = msg.Document()
+		command = document.Command()
 		if err == nil {
 			resHeader.OpCode = wire.OP_MSG
 			resBody, err = c.handleOpMsg(ctx, msg, command)
