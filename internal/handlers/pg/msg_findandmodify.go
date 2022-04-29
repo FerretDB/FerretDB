@@ -109,10 +109,10 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	switch updateParam := updateParam.(type) {
 	case *types.Document:
 		update = updateParam
-	case types.Array:
+	case *types.Array:
 		return nil, common.NewErrorMsg(common.ErrNotImplemented, "Aggregation pipelines are not supported yet")
 	default:
-		return nil, common.NewErrorMsg(common.ErrBadValue, "Bad sort value")
+		return nil, common.NewErrorMsg(common.ErrBadValue, "Bad update value")
 	}
 
 	fetchedDocs, err := h.fetch(ctx, db, collection)
