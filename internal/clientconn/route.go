@@ -58,6 +58,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		var document *types.Document
 		msg := reqBody.(*wire.OpMsg)
 		document, err = msg.Document()
+
 		command = document.Command()
 		if err == nil {
 			resHeader.OpCode = wire.OP_MSG
