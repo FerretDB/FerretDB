@@ -200,6 +200,10 @@ func (h *Handler) Handle(ctx context.Context, reqHeader *wire.MsgHeader, reqBody
 }
 
 func (h *Handler) handleOpMsg(ctx context.Context, msg *wire.OpMsg, cmd string) (*wire.OpMsg, error) {
+	if cmd == "listCommands" {
+		return h.MsgListCommands(ctx, msg)
+	}
+
 	if cmd, ok := common.Commands[cmd]; ok {
 		if cmd.Handler != nil {
 			return cmd.Handler(h, ctx, msg)
