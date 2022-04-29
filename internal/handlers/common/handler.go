@@ -22,8 +22,6 @@ import (
 
 // Handler interface represents common commands handlers.
 type Handler interface {
-	// MsgListCommands returns a list of currently supported commands.
-	MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
 	// MsgBuildInfo returns a summary of the build information.
 	MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
@@ -99,12 +97,6 @@ type Handler interface {
 
 	// MsgUpdate updates documents that are matched by the query.
 	MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
-
-	// MsgDebugError used for debugging purposes.
-	MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
-
-	// MsgDebugPanic used for debugging purposes.
-	MsgDebugPanic(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
 	// CmdQuery runs query operation command.
 	CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error)

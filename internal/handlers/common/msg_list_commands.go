@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pg
+package common
 
 import (
 	"context"
@@ -20,7 +20,6 @@ import (
 
 	"golang.org/x/exp/maps"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -28,15 +27,15 @@ import (
 )
 
 // MsgListCommands returns a list of currently supported commands.
-func (h *Handler) MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 
 	cmdList := must.NotFail(types.NewDocument())
-	names := maps.Keys(common.Commands)
+	names := maps.Keys(Commands)
 	sort.Strings(names)
 	for _, name := range names {
 		cmdList.Set(name, must.NotFail(types.NewDocument(
-			"help", common.Commands[name].Help,
+			"help", Commands[name].Help,
 		)))
 	}
 
