@@ -305,8 +305,8 @@ func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.A
 			return nil, NewErrorMsg(ErrInvalidArg,
 				fmt.Sprintf(
 					"Invalid $slice syntax. The given syntax { $slice: %s } "+
-						"did not match the find() syntax because :: Location31273: "+
-						"$slice only supports numbers and [skip, limit] arrays :: "+
+						"did not match the find() syntax because :: Location31272: "+
+						"$slice array argument should be of form [skip, limit] :: "+
 						"The given syntax did not match the expression "+
 						"$slice syntax. :: caused by :: "+
 						"Expression $slice takes at least 2 arguments, and at most 3, but %d were passed in.",
