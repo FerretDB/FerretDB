@@ -22,6 +22,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+//go:generate ../../../bin/stringer -linecomment -type updateOperator
+
 // UpdateDocument updates the given document with a series of update operators.
 func UpdateDocument(doc, update *types.Document) error {
 	for _, updateOp := range update.Keys() {
@@ -47,4 +49,43 @@ func UpdateDocument(doc, update *types.Document) error {
 	}
 
 	return nil
+}
+
+type updateOperator int8
+
+const (
+	updateCurrentDate = updateOperator(1) // $currentDate
+	updateInc         = updateOperator(2) // $inc
+	updateMin         = updateOperator(3) // $min
+	updateMax         = updateOperator(4) // $max
+	updateMul         = updateOperator(5) // $mul
+	updateRename      = updateOperator(6) // $rename
+	updateSet         = updateOperator(7) // $set
+	updateSetOnInsert = updateOperator(8) // $setOnInsert
+	updateUnset       = updateOperator(9) // $unset
+)
+
+var updateOperators = map[string]updateOperator{}
+
+func init() {
+	for _, i := range []updateOperator{
+		updateCurrentDate, updateInc, updateMin, updateMax,
+		updateMul, updateRename, updateSet, updateSetOnInsert, updateUnset,
+	} {
+		updateOperators[i.String()] = i
+	}
+}
+
+func isUpdateOperator(operator string) bool {
+	_, ok := updateOperators[operator]
+	return ok
+}
+
+func HasUpdateOperator(d *types.Document) bool {
+	for k := range d.Map() {
+		if isUpdateOperator(k) {
+			return true
+		}
+	}
+	return false
 }

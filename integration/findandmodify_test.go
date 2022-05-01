@@ -64,23 +64,6 @@ func TestFindAndModifySimple(t *testing.T) {
 				Name:    "FailedToParse",
 			},
 		},
-		"UpdateAggregation": {
-			command: bson.D{
-				{"findAndModify", collection.Name()},
-				{"update", primitive.A{}},
-				{"sort", bson.D{{"_id", int32(1)}}},
-			},
-			response: bson.D{
-				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
-				{"value",
-					bson.D{
-						{"_id", "array"},
-						{"value", primitive.A{int32(42)}},
-					},
-				},
-				{"ok", 1.0},
-			},
-		},
 		"BadSortType": {
 			command: bson.D{
 				{"findAndModify", collection.Name()},
@@ -122,9 +105,13 @@ func TestFindAndModifyUpdate(t *testing.T) {
 		err      *mongo.CommandError
 	}{
 		"Update": {
-			query:    bson.D{{"_id", "int32"}},
-			update:   bson.D{{"_id", "int32"}, {"value", int32(43)}},
-			response: bson.D{{"_id", "int32"}, {"value", int32(42)}},
+			query:  bson.D{{"_id", "int32"}},
+			update: bson.D{{"_id", "int32"}, {"value", int32(43)}},
+			response: bson.D{
+				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updateExisting", true}}},
+				{"value", bson.D{{"_id", "int32"}, {"value", int32(42)}}},
+				{"ok", 1.0},
+			},
 		},
 	} {
 		name, tc := name, tc
@@ -147,10 +134,7 @@ func TestFindAndModifyUpdate(t *testing.T) {
 			m := actual.Map()
 			assert.Equal(t, 1.0, m["ok"])
 
-			assert.Contains(t, m, "value")
-			value := m["value"].(bson.D)
-
-			AssertEqualDocuments(t, tc.response, value)
+			AssertEqualDocuments(t, tc.response, actual)
 
 			err = collection.FindOne(ctx, tc.query).Decode(&actual)
 			if tc.err != nil {

@@ -17,11 +17,13 @@ package pg
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -75,6 +77,13 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
+	if collection == "" {
+		return nil, common.NewErrorMsg(
+			common.ErrInvalidNamespace,
+			fmt.Sprintf("Invalid namespace specified '%s.'", db),
+		)
+	}
+
 	var query *types.Document
 	var remove bool
 	if query, err = common.GetOptionalParam(document, "query", query); err != nil {
@@ -99,20 +108,18 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	var update *types.Document
 	updateParam, err := document.Get("update")
-	if err != nil {
-		if !remove {
-			return nil, common.NewErrorMsg(common.ErrFailedToParse, "Either an update or remove=true must be specified")
-		}
-
-		return nil, err
+	if err != nil && !remove {
+		return nil, common.NewErrorMsg(common.ErrFailedToParse, "Either an update or remove=true must be specified")
 	}
-	switch updateParam := updateParam.(type) {
-	case *types.Document:
-		update = updateParam
-	case *types.Array:
-		return nil, common.NewErrorMsg(common.ErrNotImplemented, "Aggregation pipelines are not supported yet")
-	default:
-		return nil, common.NewErrorMsg(common.ErrBadValue, "Bad update value")
+	if err == nil {
+		switch updateParam := updateParam.(type) {
+		case *types.Document:
+			update = updateParam
+		case *types.Array:
+			return nil, common.NewErrorMsg(common.ErrNotImplemented, "Aggregation pipelines are not supported yet")
+		default:
+			return nil, common.NewErrorMsg(common.ErrBadValue, "Bad update value")
+		}
 	}
 
 	fetchedDocs, err := h.fetch(ctx, db, collection)
@@ -167,7 +174,55 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	if len(resDocs) == 1 && update != nil {
 		// TODO: process update
-		return nil, nil
+		if common.HasUpdateOperator(update) {
+			err := common.UpdateDocument(resDocs[0], update)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			var p pgdb.Placeholder
+			placeholders := make([]string, len(resDocs))
+			ids := make([]any, len(resDocs))
+			for i, doc := range resDocs {
+				placeholders[i] = p.Next()
+				id := must.NotFail(doc.Get("_id"))
+				ids[i] = must.NotFail(fjson.Marshal(id))
+			}
+
+			sql := fmt.Sprintf(
+				"DELETE FROM %s WHERE _jsonb->'_id' IN (%s)",
+				pgx.Identifier{db, collection}.Sanitize(), strings.Join(placeholders, ", "),
+			)
+			_, err := h.pgPool.Exec(ctx, sql, ids...)
+			if err != nil {
+				// TODO check error code
+				return nil, common.NewError(common.ErrNamespaceNotFound, fmt.Errorf("delete: ns not found: %w", err))
+			}
+
+			sql = fmt.Sprintf("INSERT INTO %s (_jsonb) VALUES ($1)", pgx.Identifier{db, collection}.Sanitize())
+			b, err := fjson.Marshal(update)
+			if err != nil {
+				return nil, err
+			}
+
+			if _, err = h.pgPool.Exec(ctx, sql, b); err != nil {
+				return nil, err
+			}
+		}
+
+		var reply wire.OpMsg
+		err = reply.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{types.MustNewDocument(
+				"lastErrorObject", types.MustNewDocument("n", int32(1), "updateExisting", true),
+				"value", types.MustConvertDocument(resDocs[0]),
+				"ok", float64(1),
+			)},
+		})
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return &reply, nil
 	}
 
 	var reply wire.OpMsg
