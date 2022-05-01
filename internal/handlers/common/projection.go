@@ -318,7 +318,8 @@ func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.A
 			return nil, NewErrorMsg(ErrSliceFirstArg,
 				fmt.Sprintf(
 					"First argument to $slice must be an array, but is of type: %s",
-					types.String(must.NotFail(arr.Get(0)))),
+					types.String(must.NotFail(arr.Get(0))),
+				),
 			)
 		}
 		var skip, limit int
@@ -327,7 +328,7 @@ func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.A
 			switch v := must.NotFail(arr.Get(i)).(type) {
 			// TODO what do we do with int64?
 			case types.NullType:
-				return nil, nil
+				return nil, nil //nolint:nilnil // nil is a valid value
 			case float64:
 				if math.IsNaN(v) {
 					arg[i] = 0
@@ -344,7 +345,8 @@ func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.A
 				return nil, NewErrorMsg(ErrSliceFirstArg,
 					fmt.Sprintf(
 						"First argument to $slice must be an array, but is of type: %s",
-						types.String(must.NotFail(arr.Get(0)))),
+						types.String(must.NotFail(arr.Get(0))),
+					),
 				)
 			}
 
@@ -352,7 +354,8 @@ func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.A
 				return nil, NewErrorMsg(ErrSliceFirstArg,
 					fmt.Sprintf(
 						"First argument to $slice must be an array, but is of type: %s",
-						types.String(must.NotFail(arr.Get(0)))),
+						types.String(must.NotFail(arr.Get(0))),
+					),
 				)
 			}
 		}

@@ -16,9 +16,9 @@ package types
 
 import (
 	"fmt"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"golang.org/x/exp/constraints"
 	"strings"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // Array represents BSON array.
@@ -61,7 +61,7 @@ func MustNewArray(values ...any) *Array {
 func (a *Array) compositeType() {}
 
 func (a *Array) String() string {
-	b := &strings.Builder{}
+	b := new(strings.Builder)
 	b.WriteString("[")
 	for i := 0; i < a.Len(); i++ {
 		// TODO obviously this won't work correctly with structs
@@ -137,22 +137,4 @@ func (a *Array) Append(values ...any) error {
 
 	a.s = append(a.s, values...)
 	return nil
-}
-
-// SubsliceArray returns a slice of the array, sharing the same underlying space and elements.
-func SubsliceArray[Index constraints.Integer](a *Array, low, high Index) (*Array, error) {
-	l := a.Len()
-
-	if low < 0 || Compare(low, l) == Greater {
-		return nil, fmt.Errorf("types.Array.Subslice: low index %d is out of bounds [0-%d)", low, l)
-	}
-
-	if high < 0 || Compare(high, l) == Greater {
-		return nil, fmt.Errorf("types.Array.Subslice: high index %d is out of bounds [0-%d)", high, l)
-	}
-
-	if high < low {
-		return nil, fmt.Errorf("types.Array.Subslice: high index %d is less low index %d", high, low)
-	}
-	return &Array{s: a.s[low:high]}, nil
 }
