@@ -88,6 +88,10 @@ type (
 // Null represents BSON value Null.
 var Null = NullType{}
 
+func (n NullType) String() string {
+	return "null"
+}
+
 // validateValue validates value.
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/260

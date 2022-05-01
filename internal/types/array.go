@@ -16,7 +16,9 @@ package types
 
 import (
 	"fmt"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"golang.org/x/exp/constraints"
+	"strings"
 )
 
 // Array represents BSON array.
@@ -57,6 +59,22 @@ func MustNewArray(values ...any) *Array {
 }
 
 func (a *Array) compositeType() {}
+
+func (a *Array) String() string {
+	b := &strings.Builder{}
+	b.WriteString("[")
+	for i := 0; i < a.Len(); i++ {
+		// TODO obviously this won't work correctly with structs
+		b.WriteString(fmt.Sprintf(" %v", must.NotFail(a.Get(i))))
+		if i < a.Len()-1 {
+			b.WriteRune(',')
+		} else {
+			b.WriteRune(' ')
+		}
+	}
+	b.WriteString("]")
+	return b.String()
+}
 
 // DeepCopy returns a deep copy of this Array.
 func (a *Array) DeepCopy() *Array {
