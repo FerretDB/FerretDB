@@ -315,8 +315,8 @@ func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.A
 			// this is the error MongoDB 5.0 is returning in this case
 			return nil, NewErrorMsg(ErrSliceFirstArg,
 				fmt.Sprintf(
-					"First argument to $slice must be an array, but is of type: %T",
-					must.NotFail(arr.Get(0))),
+					"First argument to $slice must be an array, but is of type: %s",
+					types.String(must.NotFail(arr.Get(0)))),
 			)
 		}
 		var skip, limit int
@@ -341,16 +341,16 @@ func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.A
 			default:
 				return nil, NewErrorMsg(ErrSliceFirstArg,
 					fmt.Sprintf(
-						"First argument to $slice must be an array, but is of type: %T",
-						must.NotFail(arr.Get(0))),
+						"First argument to $slice must be an array, but is of type: %s",
+						types.String(must.NotFail(arr.Get(0)))),
 				)
 			}
 
 			if i == 1 && arg[i] < 0 { // limit can't be negative in case of 2 arguments
 				return nil, NewErrorMsg(ErrSliceFirstArg,
 					fmt.Sprintf(
-						"First argument to $slice must be an array, but is of type: %T",
-						must.NotFail(arr.Get(0))),
+						"First argument to $slice must be an array, but is of type: %s",
+						types.String(must.NotFail(arr.Get(0)))),
 				)
 			}
 		}
