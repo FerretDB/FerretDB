@@ -16,6 +16,7 @@ package common
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 
 	"golang.org/x/exp/slices"
@@ -196,11 +197,13 @@ func applyComplexProjection(k1 string, doc, projectionVal *types.Document) (err 
 				return
 			}
 			projectionVal := must.NotFail(projectionVal.Get(projectionType))
-			err = filterFieldArraySlice(arr, projectionVal)
+			res, err := filterFieldArraySlice(arr, projectionVal)
 			if err != nil {
-				return NewError(ErrBadValue, lazyerrors.Errorf("applyComplexProjection: %w", err))
+				return err
+			} else if res == nil {
+				must.NoError(doc.Set(k1, types.Null))
 			}
-
+			must.NoError(doc.Set(k1, res))
 		default:
 			return NewError(ErrCommandNotFound,
 				lazyerrors.Errorf("applyComplexProjection: unknown projection operator: %q", projectionType),
@@ -255,78 +258,135 @@ func filterFieldArrayElemMatch(k1 string, doc, conditions *types.Document, docVa
 }
 
 // filterFieldArraySlice is a function that implements $slice projection query.
-func filterFieldArraySlice(docValue *types.Array, projectionValue any) error {
-	var elementsToSkip, elementsToReturn int
+func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.Array, error) {
 	switch projectionValue.(type) {
-	// TODO can it have type int64?
-	case int32:
-		n := projectionValue.(int)
-		if n >= docValue.Len() || n <= -1*docValue.Len() {
-			// if abs(n) >= docValue.Len(), just return the whole array
-			// (even if n < 0; that's how MongoDB does it)
-			return nil
-		}
-		// now we are confident that abs(n) < docValue.Len()
-		if n >= 0 {
-			elementsToSkip, elementsToReturn = 0, n
-		} else {
-			// for example: n = -2, docValue.Len() = 5; then
-			// elementsToSkip, elementsToReturn = 3, 2; i.e. the last 2 elements
-			elementsToSkip, elementsToReturn = docValue.Len()+n, -1*n
-		}
-	case *types.Array:
-		arr := projectionValue.(*types.Array)
-		if arr.Len() != 2 {
-			return NewError(ErrBadValue,
-				lazyerrors.Errorf("filterFieldArraySlice: expression $slice takes array of size 2,"+
-					" but array of size %d was provided", arr.Len(),
-				))
+	// TODO what do we do with int64?
+	case int32, float64:
+		var n int
+		switch pr := projectionValue.(type) {
+		case float64:
+			if math.IsNaN(pr) {
+				n = 0
+				// is it ok to cut float64 value if it doesn't fit in int?
+			} else if math.IsInf(pr, -1) || n < math.MinInt32 {
+				n = math.MinInt32
+			} else if math.IsInf(pr, +1) || n > math.MaxInt32 {
+				n = math.MaxInt32
+			} else {
+				n = int(pr)
+			}
+		default:
+			n = int(projectionValue.(int32))
 		}
 
-		pair := [2]int{}
-		for i := range pair {
-			var ok bool
-			pair[i], ok = must.NotFail(arr.Get(i)).(int)
-			if !ok {
-				return NewError(ErrBadValue,
-					lazyerrors.Errorf("filterFieldArraySlice: argument %d for expression $slice was expected"+
-						" to be int, but got value of type: %T", i, must.NotFail(arr.Get(i)),
-					))
+		// negative n is OK in case of a single argument
+		var skip, limit int
+		if n < 0 {
+			skip, limit = docValue.Len()+n, docValue.Len()
+			n *= -1
+		} else {
+			skip, limit = 0, n
+		}
+		if n < docValue.Len() {
+			var res *types.Array
+			res = types.MakeArray(limit)
+			for i := skip; i < limit; i++ {
+				must.NoError(res.Append(must.NotFail(docValue.Get(i))))
+			}
+			return res, nil
+		}
+		// otherwise return docValue as is
+		return docValue, nil
+	case *types.Array:
+		arr := projectionValue.(*types.Array)
+		if arr.Len() < 2 || arr.Len() > 3 {
+			return nil, NewErrorMsg(ErrInvalidArg,
+				fmt.Sprintf(
+					"Invalid $slice syntax. The given syntax { $slice: %s } "+
+						"did not match the find() syntax because :: Location31273: "+
+						"$slice only supports numbers and [skip, limit] arrays :: "+
+						"The given syntax did not match the expression "+
+						"$slice syntax. :: caused by :: "+
+						"Expression $slice takes at least 2 arguments, and at most 3, but %d were passed in.",
+					projectionValue,
+					arr.Len(),
+				))
+		} else if arr.Len() == 3 {
+			// this is the error MongoDB 5.0 is returning in this case
+			return nil, NewErrorMsg(ErrSliceFirstArg,
+				fmt.Sprintf(
+					"First argument to $slice must be an array, but is of type: %T",
+					must.NotFail(arr.Get(0))),
+			)
+		}
+		var skip, limit int
+		arg := [2]int{}
+		for i := range arg {
+			switch v := must.NotFail(arr.Get(i)).(type) {
+			// TODO what do we do with int64?
+			case types.NullType:
+				return nil, nil
+			case float64:
+				if math.IsNaN(v) {
+					arg[i] = 0
+				} else if math.IsInf(v, -1) || arg[i] < math.MinInt32 {
+					arg[i] = math.MinInt32
+				} else if math.IsInf(v, +1) || arg[i] > math.MaxInt32 {
+					arg[i] = math.MaxInt32
+				} else {
+					arg[i] = int(v)
+				}
+			case int32:
+				arg[i] = int(v)
+			default:
+				return nil, NewErrorMsg(ErrSliceFirstArg,
+					fmt.Sprintf(
+						"First argument to $slice must be an array, but is of type: %T",
+						must.NotFail(arr.Get(0))),
+				)
+			}
+
+			if i == 1 && arg[i] < 0 { // limit can't be negative in case of 2 arguments
+				return nil, NewErrorMsg(ErrSliceFirstArg,
+					fmt.Sprintf(
+						"First argument to $slice must be an array, but is of type: %T",
+						must.NotFail(arr.Get(0))),
+				)
 			}
 		}
 
-		n := pair[1]
-		if n <= 0 {
-			return NewError(ErrBadValue,
-				lazyerrors.Errorf("filterFieldArraySlice: argument 1 for expression $slice was expected"+
-					" to be positive, but got value: %d", n,
-				))
-		} else if n >= docValue.Len() {
-			n = docValue.Len()
-		}
-		elementsToReturn = n
-		// now we are confident that elementsToReturn is <= docValue.Len()
+		skip, limit = arg[0], arg[1]
 
-		elementsToSkip = pair[0]
-		if elementsToSkip >= docValue.Len() {
-			// skip all elements, so no elements to return
-			elementsToSkip, elementsToReturn = 0, 0
-		} else if elementsToSkip <= -1*docValue.Len() {
-			// skip no elements
-			elementsToSkip = 0
+		if skip < 0 {
+			if -1*skip >= docValue.Len() {
+				skip = 0
+			} else {
+				skip = docValue.Len() + skip
+			}
+		} else {
+			if skip > docValue.Len() {
+				return types.MakeArray(0), nil
+			}
 		}
-		// now we are confident that abs(elementsToSkip) < docValue.Len()
+		limit += skip
+		if limit >= docValue.Len() {
+			limit = docValue.Len()
+		}
+		var res *types.Array
+		res = types.MakeArray(limit)
+		for i := skip; i < limit; i++ {
+			must.NoError(res.Append(must.NotFail(docValue.Get(i))))
+		}
+		return res, nil
 
-		if elementsToSkip < 0 {
-			// if elementsToSkip < 0, then skip first docValue.Len() + elementsToSkip elements
-			elementsToSkip = docValue.Len() + elementsToSkip
-		}
+	default:
+		return nil, NewErrorMsg(ErrInvalidArg,
+			fmt.Sprintf("Invalid $slice syntax. The given syntax { $slice: %s } "+
+				"did not match the find() syntax because :: Location31273: "+
+				"$slice only supports numbers and [skip, limit] arrays :: "+
+				"The given syntax did not match the expression $slice syntax. :: caused by :: "+
+				"Expression $slice takes at least 2 arguments, and at most 3, but 1 were passed in.",
+				projectionValue,
+			))
 	}
-	subslice, err := types.SubsliceArray(docValue, elementsToSkip, elementsToReturn)
-	if err != nil {
-		panic(fmt.Sprintf("unexpected error: %v", err))
-	}
-	docValue = subslice
-
-	return nil
 }
