@@ -26,19 +26,34 @@ func TestProjectionQuerySlice(t *testing.T) {
 	}
 
 	for name, tc := range map[string]testCase{
-		"SingleArgString": {
-			projection:    bson.D{{"value", bson.D{{"$slice", "string"}}}},
-			expectedArray: nil,
-			err: &mongo.CommandError{
-				Code: 28667,
-				Name: "Location28667",
-				Message: `Invalid $slice syntax. The given syntax { $slice: string } ` +
-					`did not match the find() syntax because :: Location31273: $slice only supports numbers ` +
-					`and [skip, limit] arrays :: The given syntax did not match the expression $slice syntax. ` +
-					`:: caused by :: Expression $slice takes at least 2 arguments, and at most 3, ` +
-					`but 1 were passed in.`,
-			},
-		},
+		//"SingleArgString": {
+		//	projection:    bson.D{{"value", bson.D{{"$slice", "string"}}}},
+		//	expectedArray: nil,
+		//	err: &mongo.CommandError{
+		//		Code: 28667,
+		//		Name: "Location28667",
+		//		Message: "Invalid $slice syntax. The given syntax { $slice: \"string\" } " +
+		//			"did not match the find() syntax because :: Location31273: " +
+		//			"$slice only supports numbers and [skip, limit] arrays " +
+		//			":: The given syntax did not match the expression $slice syntax. " +
+		//			":: caused by :: Expression $slice takes at least 2 arguments, and at most 3, " +
+		//			"but 1 were passed in.",
+		//	},
+		//},
+		//"SingleArgDocument": {
+		//	projection:    bson.D{{"value", bson.D{{"$slice", bson.D{"a", 3}}}}},
+		//	expectedArray: nil,
+		//	err: &mongo.CommandError{
+		//		Code: 28667,
+		//		Name: "Location28667",
+		//		Message: "Invalid $slice syntax. The given syntax { $slice: { a: 3 } } " +
+		//			"did not match the find() syntax because :: Location31273: " +
+		//			"$slice only supports numbers and [skip, limit] arrays " +
+		//			":: The given syntax did not match the expression $slice syntax. " +
+		//			":: caused by :: Expression $slice takes at least 2 arguments, and at most 3, " +
+		//			"but 1 were passed in.",
+		//	},
+		//},
 		"SkipIsString": {
 			projection:    bson.D{{"value", bson.D{{"$slice", bson.A{"string", 5}}}}},
 			expectedArray: nil,
@@ -64,8 +79,8 @@ func TestProjectionQuerySlice(t *testing.T) {
 				Code: 28667,
 				Name: "Location28667",
 				Message: "Invalid $slice syntax. The given syntax { $slice: [] } " +
-					"did not match the find() syntax because :: Location31273: " +
-					"$slice only supports numbers and [skip, limit] arrays :: " +
+					"did not match the find() syntax because :: Location31272: " +
+					"$slice array argument should be of form [skip, limit] :: " +
 					"The given syntax did not match the expression " +
 					"$slice syntax. :: caused by :: " +
 					"Expression $slice takes at least 2 arguments, and at most 3, but 0 were passed in.",
@@ -78,8 +93,8 @@ func TestProjectionQuerySlice(t *testing.T) {
 				Code: 28667,
 				Name: "Location28667",
 				Message: "Invalid $slice syntax. The given syntax { $slice: [ 1, 2, 3, 4 ] } " +
-					"did not match the find() syntax because :: Location31273: " +
-					"$slice only supports numbers and [skip, limit] arrays :: " +
+					"did not match the find() syntax because :: Location31272: " +
+					"$slice array argument should be of form [skip, limit] :: " +
 					"The given syntax did not match the expression " +
 					"$slice syntax. :: caused by :: " +
 					"Expression $slice takes at least 2 arguments, and at most 3, but 4 were passed in.",
@@ -142,12 +157,11 @@ func TestProjectionQuerySlice(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 28667,
 				Name: "Location28667",
-				Message: "Invalid $slice syntax. The given syntax { $slice: null } " +
-					"did not match the find() syntax because :: Location31273: $slice only supports " +
-					"numbers and [skip, limit] arrays :: " +
-					"The given syntax did not match the expression $slice syntax. " +
-					":: caused by :: Expression $slice takes at least 2 arguments, " +
-					"and at most 3, but 1 were passed in.",
+				Message: "Invalid $slice syntax. " +
+					"The given syntax { $slice: null } did not match the find() syntax " +
+					"because :: Location31273: $slice only supports numbers and [skip, limit] arrays :: " +
+					"The given syntax did not match the expression $slice syntax. :: caused by :: " +
+					"Expression $slice takes at least 2 arguments, and at most 3, but 1 were passed in.",
 			},
 		},
 		"NullInArr": {
@@ -156,9 +170,9 @@ func TestProjectionQuerySlice(t *testing.T) {
 				Code: 28667,
 				Name: "Location28667",
 				Message: "Invalid $slice syntax. The given syntax { $slice: [ null ] } " +
-					"did not match the find() syntax because :: Location31273: $slice only supports " +
-					"numbers and [skip, limit] arrays :: " +
-					"The given syntax did not match the expression $slice syntax. " +
+					"did not match the find() syntax because :: Location31272: " +
+					"$slice array argument should be of form [skip, limit] " +
+					":: The given syntax did not match the expression $slice syntax. " +
 					":: caused by :: Expression $slice takes at least 2 arguments, " +
 					"and at most 3, but 1 were passed in.",
 			},
