@@ -99,17 +99,28 @@ func TestFindAndModifyUpdate(t *testing.T) {
 	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
-		query    bson.D
-		update   bson.D
-		response bson.D
-		err      *mongo.CommandError
+		query       bson.D
+		update      bson.D
+		response    bson.D
+		checkUpdate bool
+		err         *mongo.CommandError
 	}{
-		"Update": {
-			query:  bson.D{{"_id", "int32"}},
-			update: bson.D{{"_id", "int32"}, {"value", int32(43)}},
+		"UpdateExisting": {
+			query:       bson.D{{"_id", "int32"}},
+			update:      bson.D{{"_id", "int32"}, {"value", int32(43)}},
+			checkUpdate: true,
 			response: bson.D{
-				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updateExisting", true}}},
+				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
 				{"value", bson.D{{"_id", "int32"}, {"value", int32(42)}}},
+				{"ok", 1.0},
+			},
+		},
+		"UpdateNotExisted": {
+			query:       bson.D{{"_id", "no-such-id"}},
+			update:      bson.D{{"_id", "int32"}, {"value", int32(43)}},
+			checkUpdate: false,
+			response: bson.D{
+				{"lastErrorObject", bson.D{{"n", int32(0)}, {"updatedExisting", false}}},
 				{"ok", 1.0},
 			},
 		},
@@ -135,6 +146,10 @@ func TestFindAndModifyUpdate(t *testing.T) {
 			assert.Equal(t, 1.0, m["ok"])
 
 			AssertEqualDocuments(t, tc.response, actual)
+
+			if !tc.checkUpdate {
+				return
+			}
 
 			err = collection.FindOne(ctx, tc.query).Decode(&actual)
 			if tc.err != nil {

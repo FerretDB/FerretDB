@@ -213,7 +213,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		var reply wire.OpMsg
 		err = reply.SetSections(wire.OpMsgSection{
 			Documents: []*types.Document{types.MustNewDocument(
-				"lastErrorObject", types.MustNewDocument("n", int32(1), "updateExisting", true),
+				"lastErrorObject", types.MustNewDocument("n", int32(1), "updatedExisting", true),
 				"value", types.MustConvertDocument(resDocs[0]),
 				"ok", float64(1),
 			)},
@@ -228,6 +228,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{types.MustNewDocument(
+			"lastErrorObject", types.MustNewDocument("n", int32(0), "updatedExisting", false),
 			"ok", float64(1),
 		)},
 	})
