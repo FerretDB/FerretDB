@@ -47,7 +47,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	for _, field := range []string{"new", "upsert"} {
+	for _, field := range []string{"upsert"} {
 		if err := common.UnimplementedNonDefault(document, field, func(v any) bool {
 			b, ok := v.(bool)
 			return ok && !b
@@ -122,6 +122,11 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		}
 	}
 
+	var returnNewDocument bool
+	if returnNewDocument, err = common.GetOptionalParam(document, "new", returnNewDocument); err != nil {
+		return nil, err
+	}
+
 	fetchedDocs, err := h.fetch(ctx, db, collection)
 	if err != nil {
 		return nil, err
@@ -173,7 +178,6 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	}
 
 	if len(resDocs) == 1 && update != nil {
-		// TODO: process update
 		if common.HasUpdateOperator(update) {
 			err := common.UpdateDocument(resDocs[0], update)
 			if err != nil {
@@ -211,10 +215,14 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		}
 
 		var reply wire.OpMsg
+		resultDoc := resDocs[0]
+		if returnNewDocument {
+			resultDoc = update
+		}
 		err = reply.SetSections(wire.OpMsgSection{
 			Documents: []*types.Document{types.MustNewDocument(
 				"lastErrorObject", types.MustNewDocument("n", int32(1), "updatedExisting", true),
-				"value", types.MustConvertDocument(resDocs[0]),
+				"value", types.MustConvertDocument(resultDoc),
 				"ok", float64(1),
 			)},
 		})
