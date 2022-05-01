@@ -200,10 +200,12 @@ func applyComplexProjection(k1 string, doc, projectionVal *types.Document) (err 
 			res, err := filterFieldArraySlice(arr, projectionVal)
 			if err != nil {
 				return err
-			} else if res == nil {
-				must.NoError(doc.Set(k1, types.Null))
 			}
-			must.NoError(doc.Set(k1, res))
+			if res == nil {
+				must.NoError(doc.Set(k1, types.Null))
+			} else {
+				must.NoError(doc.Set(k1, res))
+			}
 		default:
 			return NewError(ErrCommandNotFound,
 				lazyerrors.Errorf("applyComplexProjection: unknown projection operator: %q", projectionType),
