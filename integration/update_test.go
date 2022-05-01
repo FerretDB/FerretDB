@@ -72,3 +72,24 @@ func TestUpdateUpsert(t *testing.T) {
 	require.NoError(t, err)
 	AssertEqualDocuments(t, bson.D{{"_id", id}, {"foo", "qux"}}, doc)
 }
+
+func TestUpdateOne(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t, shareddata.Composites)
+
+	t.Run("Empty$set", func(t *testing.T) {
+		// empty $set arg modifies no documents
+		update := bson.D{{"$set", bson.D{}}}
+		res, err := collection.UpdateOne(ctx, bson.D{}, update)
+		require.NoError(t, err)
+		assert.Equal(t, int64(0), res.ModifiedCount)
+	})
+
+	t.Run("$setSameValue", func(t *testing.T) {
+		filter := bson.D{{"value", bson.D{{"foo", 42}}}}
+		update := bson.D{{"$set", filter}}
+		res, err := collection.UpdateOne(ctx, filter, update)
+		require.NoError(t, err)
+		assert.Equal(t, int64(0), res.ModifiedCount)
+	})
+}
