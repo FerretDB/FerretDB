@@ -184,7 +184,12 @@ func TestProjectionQuerySlice(t *testing.T) {
 			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
-			assert.Equal(t, tc.expectedArray, actual[0].Map()["value"])
+
+			if tc.expectedArray == nil {
+				assert.Nil(t, actual[0].Map()["value"])
+			} else {
+				assert.Equal(t, tc.expectedArray, actual[0].Map()["value"])
+			}
 		})
 	}
 }
