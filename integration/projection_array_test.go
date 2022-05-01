@@ -1,13 +1,14 @@
 package integration
 
 import (
+	"math"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"math"
-	"testing"
 )
 
 func TestProjectionQuerySlice(t *testing.T) {
