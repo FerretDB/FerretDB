@@ -18,9 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgx/v4"
-
-	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -58,6 +55,89 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	command := document.Command()
 
+	p, err := h.findAndModifyValidateFields(document, command)
+	if err != nil {
+		return nil, err
+	}
+
+	fetchedDocs, err := h.fetch(ctx, p.db, p.collection)
+	if err != nil {
+		return nil, err
+	}
+
+	err = common.SortDocuments(fetchedDocs, p.sort)
+	if err != nil {
+		return nil, err
+	}
+
+	resDocs := make([]*types.Document, 0, 16)
+	for _, doc := range fetchedDocs {
+		matches, err := common.FilterDocument(doc, p.query)
+		if err != nil {
+			return nil, err
+		}
+
+		if !matches {
+			continue
+		}
+
+		resDocs = append(resDocs, doc)
+	}
+
+	// findAndModify always works with a single document
+	if resDocs, err = common.LimitDocuments(resDocs, 1); err != nil {
+		return nil, err
+	}
+
+	if len(resDocs) == 1 && p.remove {
+		_, err = h.delete(ctx, resDocs, p.db, p.collection)
+		if err != nil {
+			return nil, err
+		}
+
+		var reply wire.OpMsg
+		err = reply.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{types.MustNewDocument(
+				"lastErrorObject", types.MustNewDocument("n", int32(1)),
+				"value", types.MustConvertDocument(resDocs[0]),
+				"ok", float64(1),
+			)},
+		})
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		return &reply, nil
+	}
+
+	if len(resDocs) == 1 && p.update != nil {
+		return h.update(ctx, p.update, resDocs, p.db, p.collection, p.returnNewDocument)
+	}
+	if p.update != nil && p.upsert {
+		return h.upsert(ctx, p.update, err, p.db, p.collection)
+	}
+
+	var reply wire.OpMsg
+	err = reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{types.MustNewDocument(
+			"lastErrorObject", types.MustNewDocument("n", int32(0), "updatedExisting", false),
+			"ok", float64(1),
+		)},
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &reply, nil
+}
+
+type findAndModifyParams struct {
+	db, collection                    string
+	query, sort, update               *types.Document
+	remove, upsert, returnNewDocument bool
+}
+
+func (h *Handler) findAndModifyValidateFields(document *types.Document, command string) (*findAndModifyParams, error) {
+	var err error
 	var db, collection string
 	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
@@ -112,84 +192,25 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	}
 
 	var returnNewDocument bool
-	if returnNewDocument, err = common.GetOptionalParam(document, "new", returnNewDocument); err != nil {
+	if returnNewDocument, err = common.GetOptionalParam(document, "returnNewDocument", returnNewDocument); err != nil {
 		return nil, err
 	}
 
 	var upsert bool
-	if upsert, err = common.GetOptionalParam(document, "new", upsert); err != nil {
+	if upsert, err = common.GetOptionalParam(document, "returnNewDocument", upsert); err != nil {
 		return nil, err
 	}
 
-	fetchedDocs, err := h.fetch(ctx, db, collection)
-	if err != nil {
-		return nil, err
-	}
-
-	err = common.SortDocuments(fetchedDocs, sort)
-	if err != nil {
-		return nil, err
-	}
-
-	resDocs := make([]*types.Document, 0, 16)
-	for _, doc := range fetchedDocs {
-		matches, err := common.FilterDocument(doc, query)
-		if err != nil {
-			return nil, err
-		}
-
-		if !matches {
-			continue
-		}
-
-		resDocs = append(resDocs, doc)
-	}
-
-	// findAndModify always works with a single document
-	if resDocs, err = common.LimitDocuments(resDocs, 1); err != nil {
-		return nil, err
-	}
-
-	if len(resDocs) == 1 && remove {
-		id := must.NotFail(fjson.Marshal(must.NotFail(resDocs[0].Get("_id"))))
-		sql := fmt.Sprintf("DELETE FROM %s WHERE _jsonb->'_id' IN ($1)", pgx.Identifier{db, collection}.Sanitize())
-		if _, err := h.pgPool.Exec(ctx, sql, id); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		var reply wire.OpMsg
-		err = reply.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{types.MustNewDocument(
-				"lastErrorObject", types.MustNewDocument("n", int32(1)),
-				"value", types.MustConvertDocument(resDocs[0]),
-				"ok", float64(1),
-			)},
-		})
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-		return &reply, nil
-	}
-
-	if len(resDocs) == 1 && update != nil {
-		return h.update(ctx, update, resDocs, db, collection, returnNewDocument)
-	}
-	if update != nil && upsert {
-		return h.upsert(ctx, update, err, db, collection)
-	}
-
-	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{types.MustNewDocument(
-			"lastErrorObject", types.MustNewDocument("n", int32(0), "updatedExisting", false),
-			"ok", float64(1),
-		)},
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return &reply, nil
+	return &findAndModifyParams{
+		db:                db,
+		collection:        collection,
+		query:             query,
+		update:            update,
+		sort:              sort,
+		remove:            remove,
+		upsert:            upsert,
+		returnNewDocument: returnNewDocument,
+	}, nil
 }
 
 func (h *Handler) upsert(ctx context.Context, update *types.Document, err error, db string, collection string) (*wire.OpMsg, error) {
