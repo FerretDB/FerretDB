@@ -313,7 +313,8 @@ func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.A
 					projectionValue,
 					arr.Len(),
 				))
-		} 
+		}
+
 		if arr.Len() == 3 {
 			// this is the error MongoDB 5.0 is returning in this case
 			return nil, NewErrorMsg(ErrSliceFirstArg,
@@ -323,6 +324,7 @@ func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.A
 				),
 			)
 		}
+
 		var skip, limit int
 		arg := [2]int{}
 		for i := range arg {
