@@ -259,7 +259,7 @@ func filterFieldArrayElemMatch(k1 string, doc, conditions *types.Document, docVa
 	return
 }
 
-// filterFieldArraySlice is a function that implements $slice projection query.
+// filterFieldArraySlice implements $slice projection query.
 func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.Array, error) {
 	switch projectionValue.(type) {
 	// TODO what do we do with int64?
