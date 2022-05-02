@@ -17,13 +17,11 @@ package pg
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -45,15 +43,6 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	}
 	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
 		return nil, err
-	}
-
-	for _, field := range []string{"upsert"} {
-		if err := common.UnimplementedNonDefault(document, field, func(v any) bool {
-			b, ok := v.(bool)
-			return ok && !b
-		}); err != nil {
-			return nil, err
-		}
 	}
 
 	ignoredFields := []string{
@@ -127,6 +116,11 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
+	var upsert bool
+	if upsert, err = common.GetOptionalParam(document, "new", upsert); err != nil {
+		return nil, err
+	}
+
 	fetchedDocs, err := h.fetch(ctx, db, collection)
 	if err != nil {
 		return nil, err
@@ -184,32 +178,13 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				return nil, err
 			}
 		} else {
-			var p pgdb.Placeholder
-			placeholders := make([]string, len(resDocs))
-			ids := make([]any, len(resDocs))
-			for i, doc := range resDocs {
-				placeholders[i] = p.Next()
-				id := must.NotFail(doc.Get("_id"))
-				ids[i] = must.NotFail(fjson.Marshal(id))
-			}
-
-			sql := fmt.Sprintf(
-				"DELETE FROM %s WHERE _jsonb->'_id' IN (%s)",
-				pgx.Identifier{db, collection}.Sanitize(), strings.Join(placeholders, ", "),
-			)
-			_, err := h.pgPool.Exec(ctx, sql, ids...)
-			if err != nil {
-				// TODO check error code
-				return nil, common.NewError(common.ErrNamespaceNotFound, fmt.Errorf("delete: ns not found: %w", err))
-			}
-
-			sql = fmt.Sprintf("INSERT INTO %s (_jsonb) VALUES ($1)", pgx.Identifier{db, collection}.Sanitize())
-			b, err := fjson.Marshal(update)
+			_, err := h.delete(ctx, resDocs, db, collection)
 			if err != nil {
 				return nil, err
 			}
 
-			if _, err = h.pgPool.Exec(ctx, sql, b); err != nil {
+			err = h.insert(ctx, update, db, collection)
+			if err != nil {
 				return nil, err
 			}
 		}
@@ -223,6 +198,35 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			Documents: []*types.Document{types.MustNewDocument(
 				"lastErrorObject", types.MustNewDocument("n", int32(1), "updatedExisting", true),
 				"value", types.MustConvertDocument(resultDoc),
+				"ok", float64(1),
+			)},
+		})
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return &reply, nil
+	}
+	if update != nil && upsert {
+		if common.HasUpdateOperator(update) {
+			// TODO: skip upsert with update operators for now
+			return nil, common.NewErrorMsg(common.ErrNotImplemented, "upsert with update operators not implemented")
+		} else {
+			err = h.insert(ctx, update, db, collection)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		var reply wire.OpMsg
+		err = reply.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{types.MustNewDocument(
+				"lastErrorObject", types.MustNewDocument(
+					"n", int32(1),
+					"updatedExisting", false,
+					"upserted", must.NotFail(update.Get("_id")),
+				),
+				"value", types.MustConvertDocument(update),
 				"ok", float64(1),
 			)},
 		})

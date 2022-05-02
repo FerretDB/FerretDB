@@ -67,14 +67,8 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, lazyerrors.Error(err)
 		}
 
-		d := doc.(*types.Document)
-		sql := fmt.Sprintf("INSERT INTO %s (_jsonb) VALUES ($1)", pgx.Identifier{db, collection}.Sanitize())
-		b, err := fjson.Marshal(d)
+		err = h.insert(ctx, doc, db, collection)
 		if err != nil {
-			return nil, err
-		}
-
-		if _, err = h.pgPool.Exec(ctx, sql, b); err != nil {
 			return nil, err
 		}
 
@@ -93,4 +87,19 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	return &reply, nil
+}
+
+func (h *Handler) insert(ctx context.Context, doc any, db string, collection string) error {
+	d := doc.(*types.Document)
+	sql := fmt.Sprintf("INSERT INTO %s (_jsonb) VALUES ($1)", pgx.Identifier{db, collection}.Sanitize())
+	b, err := fjson.Marshal(d)
+	if err != nil {
+		return err
+	}
+
+	if _, err = h.pgPool.Exec(ctx, sql, b); err != nil {
+		return err
+	}
+
+	return nil
 }
