@@ -328,10 +328,10 @@ func removeByPath(v any, keys ...string) {
 	if len(keys) == 0 {
 		return
 	}
+
 	key := keys[0]
 	switch v := v.(type) {
 	case *Document:
-
 		if _, ok := v.m[key]; !ok {
 			return
 		}
@@ -353,7 +353,7 @@ func removeByPath(v any, keys ...string) {
 			v.s = append(v.s[:i], v.s[i+1:]...)
 			return
 		}
-		removeByPath(v, keys[1:]...)
+		removeByPath(v.s[i], keys[1:]...)
 	default:
 		// no such path: scalar value
 	}
