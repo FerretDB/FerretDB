@@ -172,75 +172,83 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	}
 
 	if len(resDocs) == 1 && update != nil {
-		if common.HasUpdateOperator(update) {
-			err := common.UpdateDocument(resDocs[0], update)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			_, err := h.delete(ctx, resDocs, db, collection)
-			if err != nil {
-				return nil, err
-			}
-
-			err = h.insert(ctx, update, db, collection)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		var reply wire.OpMsg
-		resultDoc := resDocs[0]
-		if returnNewDocument {
-			resultDoc = update
-		}
-		err = reply.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{types.MustNewDocument(
-				"lastErrorObject", types.MustNewDocument("n", int32(1), "updatedExisting", true),
-				"value", types.MustConvertDocument(resultDoc),
-				"ok", float64(1),
-			)},
-		})
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		return &reply, nil
+		return h.update(ctx, update, resDocs, db, collection, returnNewDocument)
 	}
 	if update != nil && upsert {
-		if common.HasUpdateOperator(update) {
-			// TODO: skip upsert with update operators for now
-			return nil, common.NewErrorMsg(common.ErrNotImplemented, "upsert with update operators not implemented")
-		} else {
-			err = h.insert(ctx, update, db, collection)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		var reply wire.OpMsg
-		err = reply.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{types.MustNewDocument(
-				"lastErrorObject", types.MustNewDocument(
-					"n", int32(1),
-					"updatedExisting", false,
-					"upserted", must.NotFail(update.Get("_id")),
-				),
-				"value", types.MustConvertDocument(update),
-				"ok", float64(1),
-			)},
-		})
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		return &reply, nil
+		return h.upsert(ctx, update, err, db, collection)
 	}
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{types.MustNewDocument(
 			"lastErrorObject", types.MustNewDocument("n", int32(0), "updatedExisting", false),
+			"ok", float64(1),
+		)},
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &reply, nil
+}
+
+func (h *Handler) upsert(ctx context.Context, update *types.Document, err error, db string, collection string) (*wire.OpMsg, error) {
+	if common.HasUpdateOperator(update) {
+		// TODO: skip upsert with update operators for now
+		return nil, common.NewErrorMsg(common.ErrNotImplemented, "upsert with update operators not implemented")
+	} else {
+		err = h.insert(ctx, update, db, collection)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var reply wire.OpMsg
+	err = reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{types.MustNewDocument(
+			"lastErrorObject", types.MustNewDocument(
+				"n", int32(1),
+				"updatedExisting", false,
+				"upserted", must.NotFail(update.Get("_id")),
+			),
+			"value", types.MustConvertDocument(update),
+			"ok", float64(1),
+		)},
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &reply, nil
+}
+
+func (h *Handler) update(ctx context.Context, update *types.Document, resDocs []*types.Document, db string, collection string, returnNewDocument bool) (*wire.OpMsg, error) {
+	if common.HasUpdateOperator(update) {
+		err := common.UpdateDocument(resDocs[0], update)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		_, err := h.delete(ctx, resDocs, db, collection)
+		if err != nil {
+			return nil, err
+		}
+
+		err = h.insert(ctx, update, db, collection)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var reply wire.OpMsg
+	resultDoc := resDocs[0]
+	if returnNewDocument {
+		resultDoc = update
+	}
+	err := reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{types.MustNewDocument(
+			"lastErrorObject", types.MustNewDocument("n", int32(1), "updatedExisting", true),
+			"value", types.MustConvertDocument(resultDoc),
 			"ok", float64(1),
 		)},
 	})
