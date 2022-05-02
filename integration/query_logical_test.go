@@ -34,7 +34,7 @@ func TestQueryLogicalAnd(t *testing.T) {
 	for name, tc := range map[string]struct {
 		filter      any
 		expectedIDs []any
-		err         mongo.CommandError
+		err         *mongo.CommandError
 	}{
 		"And": {
 			filter: bson.A{
@@ -45,7 +45,7 @@ func TestQueryLogicalAnd(t *testing.T) {
 		},
 		"BadInput": {
 			filter: nil,
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Message: "$and must be an array",
 				Name:    "BadValue",
@@ -56,11 +56,21 @@ func TestQueryLogicalAnd(t *testing.T) {
 				bson.D{{"value", bson.D{{"$gt", 0}}}},
 				nil,
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Message: "$or/$and/$nor entries need to be full objects",
 				Name:    "BadValue",
 			},
+		},
+		"AndOr": {
+			filter: bson.A{
+				bson.D{{"value", bson.D{{"$gt", 42}}}},
+				bson.D{{"$or", bson.A{
+					bson.D{{"value", bson.D{{"$lt", 0}}}},
+					bson.D{{"value", bson.D{{"$lt", 42}}}},
+				}}},
+			},
+			expectedIDs: []any{},
 		},
 	} {
 		name, tc := name, tc
@@ -69,9 +79,9 @@ func TestQueryLogicalAnd(t *testing.T) {
 
 			filter := bson.D{{"$and", tc.filter}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err.Code != 0 {
+			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, tc.err, err)
+				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)
@@ -91,7 +101,7 @@ func TestQueryLogicalOr(t *testing.T) {
 	for name, tc := range map[string]struct {
 		filter      any
 		expectedIDs []any
-		err         mongo.CommandError
+		err         *mongo.CommandError
 	}{
 		"Or": {
 			filter: bson.A{
@@ -106,7 +116,7 @@ func TestQueryLogicalOr(t *testing.T) {
 		},
 		"BadInput": {
 			filter: nil,
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Message: "$or must be an array",
 				Name:    "BadValue",
@@ -117,7 +127,7 @@ func TestQueryLogicalOr(t *testing.T) {
 				bson.D{{"value", bson.D{{"$gt", 0}}}},
 				nil,
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Message: "$or/$and/$nor entries need to be full objects",
 				Name:    "BadValue",
@@ -130,9 +140,9 @@ func TestQueryLogicalOr(t *testing.T) {
 
 			filter := bson.D{{"$or", tc.filter}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err.Code != 0 {
+			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, tc.err, err)
+				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)
@@ -152,7 +162,7 @@ func TestQueryLogicalNor(t *testing.T) {
 	for name, tc := range map[string]struct {
 		filter      any
 		expectedIDs []any
-		err         mongo.CommandError
+		err         *mongo.CommandError
 	}{
 		"Nor": {
 			filter: bson.A{
@@ -171,7 +181,7 @@ func TestQueryLogicalNor(t *testing.T) {
 		},
 		"BadInput": {
 			filter: nil,
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Message: "$nor must be an array",
 				Name:    "BadValue",
@@ -182,7 +192,7 @@ func TestQueryLogicalNor(t *testing.T) {
 				bson.D{{"value", bson.D{{"$gt", 0}}}},
 				nil,
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Message: "$or/$and/$nor entries need to be full objects",
 				Name:    "BadValue",
@@ -195,9 +205,9 @@ func TestQueryLogicalNor(t *testing.T) {
 
 			filter := bson.D{{"$nor", tc.filter}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err.Code != 0 {
+			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, tc.err, err)
+				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)
@@ -218,11 +228,31 @@ func TestQueryLogicalNot(t *testing.T) {
 	for name, tc := range map[string]struct {
 		filter      bson.D
 		expectedIDs []any
-		err         mongo.CommandError
+		err         *mongo.CommandError
 	}{
+		"Not": {
+			filter: bson.D{{"value", bson.D{{"$not", bson.D{{"$eq", 42}}}}}},
+			expectedIDs: []any{
+				"array-embedded", "array-empty",
+				"binary", "binary-empty",
+				"bool-false", "bool-true",
+				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
+				"document", "document-composite", "document-empty",
+				"double", "double-max", "double-nan",
+				"double-negative-infinity", "double-negative-zero",
+				"double-positive-infinity", "double-smallest", "double-zero",
+				"int32-max", "int32-min", "int32-zero",
+				"int64-max", "int64-min", "int64-zero",
+				"null",
+				"objectid", "objectid-empty",
+				"regex", "regex-empty",
+				"string", "string-double", "string-empty", "string-whole",
+				"timestamp", "timestamp-i",
+			},
+		},
 		"IDNull": {
 			filter: bson.D{{"_id", bson.D{{"$not", nil}}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: "$not needs a regex or a document",
@@ -285,15 +315,19 @@ func TestQueryLogicalNot(t *testing.T) {
 				"timestamp", "timestamp-i",
 			},
 		},
+		"NestedNot": {
+			filter:      bson.D{{"value", bson.D{{"$not", bson.D{{"$not", bson.D{{"$eq", 42}}}}}}}},
+			expectedIDs: []any{"array", "array-three", "double-whole", "int32", "int64"},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
 			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err.Code != 0 {
+			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, tc.err, err)
+				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)
