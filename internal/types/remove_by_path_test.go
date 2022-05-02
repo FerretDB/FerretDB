@@ -12,26 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testutil
+package types
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRemoveByPath(t *testing.T) {
 	t.Parallel()
 
-	deepDoc := must.NotFail(types.NewDocument(
+	deepDoc := must.NotFail(NewDocument(
 		"xxx", "yyy",
 		"bar", float64(42.13),
-		"baz", must.NotFail(types.NewDocument(
+		"baz", must.NotFail(NewDocument(
 			"foo", "bar",
 			"bar", float64(42.13),
-			"baz", must.NotFail(types.NewDocument(
+			"baz", must.NotFail(NewDocument(
 				"foo", "baz",
 				"bar", float64(42.13),
 				"baz", int32(1000),
@@ -39,177 +39,177 @@ func TestRemoveByPath(t *testing.T) {
 		)),
 	))
 
-	sourceDoc := must.NotFail(types.NewDocument(
+	sourceDoc := must.NotFail(NewDocument(
 		"ismaster", true,
-		"client", must.NotFail(types.NewArray(
-			must.NotFail(types.NewDocument(
+		"client", must.NotFail(NewArray(
+			must.NotFail(NewDocument(
 				"document", "abc",
 				"score", float64(42.13),
 				"age", int32(1000),
 				"foo", deepDoc.DeepCopy(),
 			)),
-			must.NotFail(types.NewDocument(
+			must.NotFail(NewDocument(
 				"document", "def",
 				"score", float64(42.13),
 				"age", int32(1000),
 			)),
-			must.NotFail(types.NewDocument(
+			must.NotFail(NewDocument(
 				"document", "jkl",
 				"score", int32(24),
 				"age", int32(1002),
 			)),
 		)),
-		"value", must.NotFail(types.NewArray("none")),
+		"value", must.NotFail(NewArray("none")),
 	))
 
 	type testCase struct {
 		name string
 		path []string
-		res  *types.Document
+		res  *Document
 	}
 	for _, tc := range []testCase{ //nolint:paralleltest // false positive
 		{
 			name: "test deep removal",
 			path: []string{"client", "0", "foo", "baz", "baz", "baz"},
-			res: must.NotFail(types.NewDocument(
+			res: must.NotFail(NewDocument(
 				"ismaster", true,
-				"client", must.NotFail(types.NewArray(
-					must.NotFail(types.NewDocument(
+				"client", must.NotFail(NewArray(
+					must.NotFail(NewDocument(
 						"document", "abc",
 						"score", float64(42.13),
 						"age", int32(1000),
-						"foo", must.NotFail(types.NewDocument(
+						"foo", must.NotFail(NewDocument(
 							"xxx", "yyy",
 							"bar", float64(42.13),
-							"baz", must.NotFail(types.NewDocument(
+							"baz", must.NotFail(NewDocument(
 								"foo", "bar",
 								"bar", float64(42.13),
-								"baz", must.NotFail(types.NewDocument(
+								"baz", must.NotFail(NewDocument(
 									"foo", "baz",
 									"bar", float64(42.13),
 								)),
 							)),
 						)),
 					)),
-					must.NotFail(types.NewDocument(
+					must.NotFail(NewDocument(
 						"document", "def",
 						"score", float64(42.13),
 						"age", int32(1000),
 					)),
-					must.NotFail(types.NewDocument(
+					must.NotFail(NewDocument(
 						"document", "jkl",
 						"score", int32(24),
 						"age", int32(1002),
 					)),
 				)),
-				"value", must.NotFail(types.NewArray("none")),
+				"value", must.NotFail(NewArray("none")),
 			)),
 		},
 		{
 			name: "not found no error, ismaster field removed",
 			path: []string{"ismaster", "0"},
-			res: must.NotFail(types.NewDocument(
+			res: must.NotFail(NewDocument(
 				"ismaster", true,
-				"client", must.NotFail(types.NewArray(
-					must.NotFail(types.NewDocument(
+				"client", must.NotFail(NewArray(
+					must.NotFail(NewDocument(
 						"document", "abc",
 						"score", float64(42.13),
 						"age", int32(1000),
 						"foo", deepDoc.DeepCopy(),
 					)),
-					must.NotFail(types.NewDocument(
+					must.NotFail(NewDocument(
 						"document", "def",
 						"score", float64(42.13),
 						"age", int32(1000),
 					)),
-					must.NotFail(types.NewDocument(
+					must.NotFail(NewDocument(
 						"document", "jkl",
 						"score", int32(24),
 						"age", int32(1002),
 					)),
 				)),
-				"value", must.NotFail(types.NewArray("none")),
+				"value", must.NotFail(NewArray("none")),
 			)),
 		},
 		{
 			name: "removed entire client field",
 			path: []string{"client"},
-			res: must.NotFail(types.NewDocument(
+			res: must.NotFail(NewDocument(
 				"ismaster", true,
-				"value", must.NotFail(types.NewArray("none")),
+				"value", must.NotFail(NewArray("none")),
 			)),
 		},
 		{
 			name: "only 1d array element of client field is removed",
 			path: []string{"client", "1"},
-			res: must.NotFail(types.NewDocument(
+			res: must.NotFail(NewDocument(
 				"ismaster", true,
-				"client", must.NotFail(types.NewArray(
-					must.NotFail(types.NewDocument(
+				"client", must.NotFail(NewArray(
+					must.NotFail(NewDocument(
 						"document", "abc",
 						"score", float64(42.13),
 						"age", int32(1000),
 						"foo", deepDoc.DeepCopy(),
 					)),
-					must.NotFail(types.NewDocument(
+					must.NotFail(NewDocument(
 						"document", "jkl",
 						"score", int32(24),
 						"age", int32(1002),
 					)),
 				)),
-				"value", must.NotFail(types.NewArray("none")),
+				"value", must.NotFail(NewArray("none")),
 			)),
 		},
 		{
 			name: "not found, element must be on place, no error",
 			path: []string{"client", "3"},
-			res: must.NotFail(types.NewDocument(
+			res: must.NotFail(NewDocument(
 				"ismaster", true,
-				"client", must.NotFail(types.NewArray(
-					must.NotFail(types.NewDocument(
+				"client", must.NotFail(NewArray(
+					must.NotFail(NewDocument(
 						"document", "abc",
 						"score", float64(42.13),
 						"age", int32(1000),
 						"foo", deepDoc.DeepCopy(),
 					)),
-					must.NotFail(types.NewDocument(
+					must.NotFail(NewDocument(
 						"document", "def",
 						"score", float64(42.13),
 						"age", int32(1000),
 					)),
-					must.NotFail(types.NewDocument(
+					must.NotFail(NewDocument(
 						"document", "jkl",
 						"score", int32(24),
 						"age", int32(1002),
 					)),
 				)),
-				"value", must.NotFail(types.NewArray("none")),
+				"value", must.NotFail(NewArray("none")),
 			)),
 		},
 		{
 			name: "not found, no error doc is same",
 			path: []string{"compression", "invalid"},
-			res: must.NotFail(types.NewDocument(
+			res: must.NotFail(NewDocument(
 				"ismaster", true,
-				"client", must.NotFail(types.NewArray(
-					must.NotFail(types.NewDocument(
+				"client", must.NotFail(NewArray(
+					must.NotFail(NewDocument(
 						"document", "abc",
 						"score", float64(42.13),
 						"age", int32(1000),
 						"foo", deepDoc.DeepCopy(),
 					)),
-					must.NotFail(types.NewDocument(
+					must.NotFail(NewDocument(
 						"document", "def",
 						"score", float64(42.13),
 						"age", int32(1000),
 					)),
-					must.NotFail(types.NewDocument(
+					must.NotFail(NewDocument(
 						"document", "jkl",
 						"score", int32(24),
 						"age", int32(1002),
 					)),
 				)),
-				"value", must.NotFail(types.NewArray("none")),
+				"value", must.NotFail(NewArray("none")),
 			)),
 		},
 	} {
@@ -219,9 +219,7 @@ func TestRemoveByPath(t *testing.T) {
 
 			doc := sourceDoc.DeepCopy()
 			doc.RemoveByPath(tc.path...)
-			if !AssertEqual(t, tc.res, doc) {
-				t.FailNow()
-			}
+			assert.Equal(t, tc.res, doc, tc.name)
 		})
 	}
 }
