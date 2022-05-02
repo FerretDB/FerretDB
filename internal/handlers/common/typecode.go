@@ -143,6 +143,7 @@ func AliasFromType(v any) string {
 	}
 }
 
+// isWholeNumber checks is the given value represents a whole number type.
 func isWholeNumber(v any) bool {
 	switch v := v.(type) {
 	case float64:
