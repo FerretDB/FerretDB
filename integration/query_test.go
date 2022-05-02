@@ -260,11 +260,8 @@ func TestQueryBadSortType(t *testing.T) {
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
-			if tc.err != nil {
-				AssertEqualError(t, *tc.err, err)
-				return
-			}
-			require.NoError(t, err)
+			require.Error(t, err)
+			AssertEqualError(t, *tc.err, err)
 		})
 	}
 }
