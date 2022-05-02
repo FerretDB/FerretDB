@@ -27,6 +27,43 @@ import (
 func TestRemoveByPath(t *testing.T) {
 	t.Parallel()
 
+	deepDoc := must.NotFail(NewDocument(
+		"xxx", "yyy",
+		"bar", float64(42.13),
+		"baz", must.NotFail(NewDocument(
+			"foo", "bar",
+			"bar", float64(42.13),
+			"baz", must.NotFail(NewDocument(
+				"foo", "baz",
+				"bar", float64(42.13),
+				"baz", int32(1000),
+			)),
+		)),
+	))
+
+	sourceDoc := must.NotFail(NewDocument(
+		"ismaster", true,
+		"client", must.NotFail(NewArray(
+			must.NotFail(NewDocument(
+				"document", "abc",
+				"score", float64(42.13),
+				"age", int32(1000),
+				"foo", deepDoc.DeepCopy(),
+			)),
+			must.NotFail(NewDocument(
+				"document", "def",
+				"score", float64(42.13),
+				"age", int32(1000),
+			)),
+			must.NotFail(NewDocument(
+				"document", "jkl",
+				"score", int32(24),
+				"age", int32(1002),
+			)),
+		)),
+		"value", must.NotFail(NewArray("none")),
+	))
+
 	type testCase struct {
 		name string
 		path []string
@@ -43,6 +80,7 @@ func TestRemoveByPath(t *testing.T) {
 						"document", "abc",
 						"score", float64(42.13),
 						"age", int32(1000),
+						"foo", deepDoc.DeepCopy(),
 					)),
 					must.NotFail(NewDocument(
 						"document", "def",
@@ -76,6 +114,7 @@ func TestRemoveByPath(t *testing.T) {
 						"document", "abc",
 						"score", float64(42.13),
 						"age", int32(1000),
+						"foo", deepDoc.DeepCopy(),
 					)),
 					must.NotFail(NewDocument(
 						"document", "jkl",
@@ -96,6 +135,7 @@ func TestRemoveByPath(t *testing.T) {
 						"document", "abc",
 						"score", float64(42.13),
 						"age", int32(1000),
+						"foo", deepDoc.DeepCopy(),
 					)),
 					must.NotFail(NewDocument(
 						"document", "def",
@@ -121,6 +161,7 @@ func TestRemoveByPath(t *testing.T) {
 						"document", "abc",
 						"score", float64(42.13),
 						"age", int32(1000),
+						"foo", deepDoc.DeepCopy(),
 					)),
 					must.NotFail(NewDocument(
 						"document", "def",
@@ -141,28 +182,7 @@ func TestRemoveByPath(t *testing.T) {
 		t.Run(fmt.Sprint(tc.path), func(t *testing.T) {
 			t.Parallel()
 
-			doc := must.NotFail(NewDocument(
-				"ismaster", true,
-				"client", must.NotFail(NewArray(
-					must.NotFail(NewDocument(
-						"document", "abc",
-						"score", float64(42.13),
-						"age", int32(1000),
-					)),
-					must.NotFail(NewDocument(
-						"document", "def",
-						"score", float64(42.13),
-						"age", int32(1000),
-					)),
-					must.NotFail(NewDocument(
-						"document", "jkl",
-						"score", int32(24),
-						"age", int32(1002),
-					)),
-				)),
-				"value", must.NotFail(NewArray("none")),
-			))
-
+			doc := sourceDoc.DeepCopy()
 			doc.RemoveByPath(tc.path...)
 			assert.Equal(t, tc.res, doc, tc.name)
 		})
