@@ -32,8 +32,6 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/164
-
 	unimplementedFields := []string{
 		"arrayFilters",
 		"let",
