@@ -233,7 +233,7 @@ func TestQueryBadFindType(t *testing.T) {
 	}
 }
 
-func TestQuerySort(t *testing.T) {
+func TestQueryBadSortType(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
