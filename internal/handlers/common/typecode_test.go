@@ -39,11 +39,11 @@ func TestHasSameTypeElements(t *testing.T) {
 			same:  true,
 		},
 		"IntDouble": {
-			array: must.NotFail(types.NewArray(int32(1), float64(42.3))),
+			array: must.NotFail(types.NewArray(int32(1), 42.3)),
 			same:  false,
 		},
 		"IntDoubleWhole": {
-			array: must.NotFail(types.NewArray(int32(1), float64(42.0))),
+			array: must.NotFail(types.NewArray(int32(1), 42.0)),
 			same:  true,
 		},
 		"IntLong": {
