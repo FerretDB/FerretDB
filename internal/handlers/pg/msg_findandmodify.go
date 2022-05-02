@@ -55,7 +55,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	command := document.Command()
 
-	p, err := h.findAndModifyValidateFields(document, command)
+	p, err := prepareFindAndModifyParams(document, command)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +136,7 @@ type findAndModifyParams struct {
 	remove, upsert, returnNewDocument bool
 }
 
-func (h *Handler) findAndModifyValidateFields(document *types.Document, command string) (*findAndModifyParams, error) {
+func prepareFindAndModifyParams(document *types.Document, command string) (*findAndModifyParams, error) {
 	var err error
 	var db, collection string
 	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
