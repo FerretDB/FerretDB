@@ -44,10 +44,15 @@ func TestFindAndModifySimple(t *testing.T) {
 			},
 		},
 		"EmptyQueryRemove": {
-			command: bson.D{{"findAndModify", collection.Name()}, {"query", bson.D{}}, {"remove", true}},
+			command: bson.D{
+				{"findAndModify", collection.Name()},
+				{"query", bson.D{}},
+				{"remove", true},
+			},
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}}},
-				{"value",
+				{
+					"value",
 					bson.D{
 						{"_id", "binary"},
 						{"value", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}},
