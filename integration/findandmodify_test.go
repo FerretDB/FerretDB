@@ -81,6 +81,18 @@ func TestFindAndModifySimple(t *testing.T) {
 				Message: "BSON field 'findAndModify.sort' is the wrong type 'string', expected type 'object'",
 			},
 		},
+		"BadRemoveType": {
+			command: bson.D{
+				{"findAndModify", collection.Name()},
+				{"query", bson.D{}},
+				{"remove", "123"},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'findAndModify.remove' is the wrong type 'string', expected types '[bool, long, int, decimal, double']",
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
