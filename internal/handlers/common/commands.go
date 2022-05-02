@@ -136,4 +136,17 @@ var Commands = map[string]Command{
 		Help:    "Updates documents that are matched by the query.",
 		Handler: (Handler).MsgUpdate,
 	},
+
+	"listCommands": {
+		Help:    "Returns a list of currently supported commands.",
+		Handler: nil,
+	},
+	"debug_error": {
+		Help:    "Used for debugging purposes.",
+		Handler: nil,
+	},
+	"debug_panic": {
+		Help:    "Used for debugging purposes.",
+		Handler: nil,
+	},
 }

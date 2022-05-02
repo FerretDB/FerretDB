@@ -16,6 +16,7 @@ package common
 
 import (
 	"context"
+	"errors"
 	"sort"
 
 	"golang.org/x/exp/maps"
@@ -50,4 +51,14 @@ func MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) 
 	}
 
 	return &reply, nil
+}
+
+// MsgDebugError used for debugging purposes.
+func MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	return nil, errors.New("debug_error")
+}
+
+// MsgDebugPanic used for debugging purposes.
+func MsgDebugPanic(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	panic("debug_panic")
 }

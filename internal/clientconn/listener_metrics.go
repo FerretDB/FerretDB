@@ -25,10 +25,11 @@ const (
 type ListenerMetrics struct {
 	connectedClients prometheus.Gauge
 	accepts          *prometheus.CounterVec
+	connMetrics      *ConnMetrics
 }
 
-// NewListenerMetrics creates new listener metrics.
-func NewListenerMetrics() *ListenerMetrics {
+// newListenerMetrics creates new listener metrics.
+func newListenerMetrics() *ListenerMetrics {
 	return &ListenerMetrics{
 		connectedClients: prometheus.NewGauge(
 			prometheus.GaugeOpts{
@@ -47,6 +48,7 @@ func NewListenerMetrics() *ListenerMetrics {
 			},
 			[]string{"error"},
 		),
+		connMetrics: newConnMetrics(),
 	}
 }
 
@@ -54,12 +56,14 @@ func NewListenerMetrics() *ListenerMetrics {
 func (lm *ListenerMetrics) Describe(ch chan<- *prometheus.Desc) {
 	lm.connectedClients.Describe(ch)
 	lm.accepts.Describe(ch)
+	lm.connMetrics.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
 func (lm *ListenerMetrics) Collect(ch chan<- prometheus.Metric) {
 	lm.connectedClients.Collect(ch)
 	lm.accepts.Collect(ch)
+	lm.connMetrics.Collect(ch)
 }
 
 // check interfaces

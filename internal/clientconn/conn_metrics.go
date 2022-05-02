@@ -22,8 +22,8 @@ type ConnMetrics struct {
 	responses *prometheus.CounterVec
 }
 
-// NewConnMetrics creates new conn metrics.
-func NewConnMetrics() *ConnMetrics {
+// newConnMetrics creates new conn metrics.
+func newConnMetrics() *ConnMetrics {
 	return &ConnMetrics{
 		requests: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
@@ -47,15 +47,15 @@ func NewConnMetrics() *ConnMetrics {
 }
 
 // Describe implements prometheus.Collector.
-func (lm *ConnMetrics) Describe(ch chan<- *prometheus.Desc) {
-	lm.requests.Describe(ch)
-	lm.responses.Describe(ch)
+func (cm *ConnMetrics) Describe(ch chan<- *prometheus.Desc) {
+	cm.requests.Describe(ch)
+	cm.responses.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
-func (lm *ConnMetrics) Collect(ch chan<- prometheus.Metric) {
-	lm.requests.Collect(ch)
-	lm.responses.Collect(ch)
+func (cm *ConnMetrics) Collect(ch chan<- prometheus.Metric) {
+	cm.requests.Collect(ch)
+	cm.responses.Collect(ch)
 }
 
 // check interfaces

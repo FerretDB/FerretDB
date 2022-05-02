@@ -56,7 +56,7 @@ type NewListenerOpts struct {
 func NewListener(opts *NewListenerOpts) *Listener {
 	return &Listener{
 		opts:      opts,
-		metrics:   NewListenerMetrics(),
+		metrics:   newListenerMetrics(),
 		startTime: opts.StartTime,
 		handler:   opts.Handler,
 		listening: make(chan struct{}),
@@ -114,12 +114,13 @@ func (l *Listener) Run(ctx context.Context) error {
 
 			prefix := fmt.Sprintf("// %s -> %s ", netConn.RemoteAddr(), netConn.LocalAddr())
 			opts := &newConnOpts{
-				netConn:   netConn,
-				mode:      l.opts.Mode,
-				l:         l.opts.Logger.Named(prefix), // original unnamed logger
-				proxyAddr: l.opts.ProxyAddr,
-				handler:   l.opts.Handler,
-				startTime: l.startTime,
+				netConn:     netConn,
+				mode:        l.opts.Mode,
+				l:           l.opts.Logger.Named(prefix), // original unnamed logger
+				proxyAddr:   l.opts.ProxyAddr,
+				handler:     l.opts.Handler,
+				connMetrics: newConnMetrics(),
+				startTime:   l.startTime,
 			}
 			conn, e := newConn(opts)
 			if e != nil {

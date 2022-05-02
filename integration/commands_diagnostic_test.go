@@ -86,4 +86,8 @@ func TestCommandsDiagnosticListCommands(t *testing.T) {
 
 	assert.Equal(t, 1.0, m["ok"])
 	assert.Equal(t, []string{"commands", "ok"}, CollectKeys(t, actual))
+
+	commands := m["commands"].(bson.D)
+	listCommands := commands.Map()["listCommands"].(bson.D)
+	assert.NotEmpty(t, listCommands.Map()["help"].(string))
 }

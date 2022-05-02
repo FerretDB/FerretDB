@@ -21,14 +21,18 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"sync/atomic"
 	"time"
 
+	"github.com/AlekSi/pointer"
 	"github.com/pmezard/go-difflib/difflib"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/proxy"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -58,18 +62,19 @@ type conn struct {
 	l             *zap.SugaredLogger
 	h             common.Handler
 	m             *ConnMetrics
-	proxy         *proxy.Handler
+	proxy         *proxy.Router
 	lastRequestID int32
 }
 
 // newConnOpts represents newConn options.
 type newConnOpts struct {
-	netConn   net.Conn
-	mode      Mode
-	l         *zap.Logger
-	handler   common.Handler
-	proxyAddr string
-	startTime time.Time
+	netConn     net.Conn
+	mode        Mode
+	l           *zap.Logger
+	handler     common.Handler
+	connMetrics *ConnMetrics
+	proxyAddr   string
+	startTime   time.Time
 }
 
 // newConn creates a new client connection for given net.Conn.
@@ -81,7 +86,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	prefix := fmt.Sprintf("// %s -> %s ", opts.netConn.RemoteAddr(), opts.netConn.LocalAddr())
 	l := opts.l.Named(prefix)
 
-	var p *proxy.Handler
+	var p *proxy.Router
 	if opts.mode != NormalMode {
 		var err error
 		if p, err = proxy.New(opts.proxyAddr); err != nil {
@@ -94,7 +99,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 		mode:    opts.mode,
 		l:       l.Sugar(),
 		h:       opts.handler,
-		m:       NewConnMetrics(),
+		m:       opts.connMetrics,
 		proxy:   p,
 	}, nil
 }
@@ -178,7 +183,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 				panic("proxy addr was nil")
 			}
 
-			proxyHeader, proxyBody, _ = c.proxy.Handle(ctx, reqHeader, reqBody)
+			proxyHeader, proxyBody, _ = c.proxy.Route(ctx, reqHeader, reqBody)
 
 			// do not spend time dumping if we are not going to log it
 			if c.l.Desugar().Core().Enabled(zap.DebugLevel) {
@@ -240,6 +245,158 @@ func (c *conn) run(ctx context.Context) (err error) {
 			return
 		}
 	}
+}
+
+// Route routes the message.
+//
+// Route's possible returns:
+//  * normal response body;
+//  * protocol error (*common.Error, possibly wrapped) - it will be returned to the client;
+//  * any other error - it will be returned to the client as InternalError before terminating connection.
+//
+// Handlers to which it routes, should not panic on bad input, but may do so in "impossible" cases.
+// They also should not use recover(). That allows us to use fuzzing.
+func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
+	requests := c.m.requests.MustCurryWith(prometheus.Labels{"opcode": reqHeader.OpCode.String()})
+	var command string
+	var result *string
+	defer func() {
+		if result == nil {
+			result = pointer.ToString("panic")
+		}
+		c.m.responses.WithLabelValues(resHeader.OpCode.String(), command, *result).Inc()
+	}()
+
+	resHeader = new(wire.MsgHeader)
+	var err error
+	switch reqHeader.OpCode {
+	case wire.OP_MSG:
+		var document *types.Document
+		msg := reqBody.(*wire.OpMsg)
+		document, err = msg.Document()
+
+		command = document.Command()
+		if err == nil {
+			resHeader.OpCode = wire.OP_MSG
+			resBody, err = c.handleOpMsg(ctx, msg, command)
+		}
+
+	case wire.OP_QUERY:
+		query := reqBody.(*wire.OpQuery)
+		resHeader.OpCode = wire.OP_REPLY
+		resBody, err = c.h.CmdQuery(ctx, query)
+
+	case wire.OP_REPLY:
+		fallthrough
+	case wire.OP_UPDATE:
+		fallthrough
+	case wire.OP_INSERT:
+		fallthrough
+	case wire.OP_GET_BY_OID:
+		fallthrough
+	case wire.OP_GET_MORE:
+		fallthrough
+	case wire.OP_DELETE:
+		fallthrough
+	case wire.OP_KILL_CURSORS:
+		fallthrough
+	case wire.OP_COMPRESSED:
+		fallthrough
+	default:
+		err = lazyerrors.Errorf("unexpected OpCode %s", reqHeader.OpCode)
+	}
+	requests.WithLabelValues(command).Inc()
+
+	// set body for error
+	if err != nil {
+		switch resHeader.OpCode {
+		case wire.OP_MSG:
+			protoErr, recoverable := common.ProtocolError(err)
+			closeConn = !recoverable
+			var res wire.OpMsg
+			err = res.SetSections(wire.OpMsgSection{
+				Documents: []*types.Document{protoErr.Document()},
+			})
+			if err != nil {
+				panic(err)
+			}
+			resBody = &res
+			result = pointer.ToString(protoErr.Code().String())
+
+		case wire.OP_QUERY:
+			fallthrough
+		case wire.OP_REPLY:
+			fallthrough
+		case wire.OP_UPDATE:
+			fallthrough
+		case wire.OP_INSERT:
+			fallthrough
+		case wire.OP_GET_BY_OID:
+			fallthrough
+		case wire.OP_GET_MORE:
+			fallthrough
+		case wire.OP_DELETE:
+			fallthrough
+		case wire.OP_KILL_CURSORS:
+			fallthrough
+		case wire.OP_COMPRESSED:
+			fallthrough
+		default:
+			// do not panic to make fuzzing easier
+			closeConn = true
+			result = pointer.ToString("unexpected")
+			c.l.Error("Handler error for unexpected response opcode",
+				zap.Error(err), zap.Stringer("opcode", resHeader.OpCode),
+			)
+			return
+		}
+	}
+
+	// TODO Don't call MarshalBinary there. Fix header in the caller?
+	// https://github.com/FerretDB/FerretDB/issues/273
+	b, err := resBody.MarshalBinary()
+	if err != nil {
+		result = nil
+		panic(err)
+	}
+	resHeader.MessageLength = int32(wire.MsgHeaderLen + len(b))
+
+	resHeader.RequestID = atomic.AddInt32(&c.lastRequestID, 1)
+	resHeader.ResponseTo = reqHeader.RequestID
+
+	if result == nil {
+		result = pointer.ToString("ok")
+	}
+
+	// do not spend time dumping if we are not going to log it
+	if c.l.Desugar().Core().Enabled(zap.DebugLevel) {
+		c.l.Debugf("Response header: %s", resHeader)
+		c.l.Debugf("Response message:\n%s\n\n\n", resBody)
+	}
+	return
+}
+
+func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, cmd string) (*wire.OpMsg, error) {
+	switch cmd {
+	case "listCommands":
+		return common.MsgListCommands(ctx, msg)
+
+	case "debug_error":
+		return common.MsgDebugError(ctx, msg)
+
+	case "debug_panic":
+		return common.MsgDebugError(ctx, msg)
+
+	default:
+		if cmd, ok := common.Commands[cmd]; ok {
+			if cmd.Handler != nil {
+				return cmd.Handler(c.h, ctx, msg)
+			}
+		}
+	}
+
+	errMsg := fmt.Sprintf("no such command: '%s'", cmd)
+	return nil, common.NewErrorMsg(common.ErrCommandNotFound, errMsg)
 }
 
 // Describe implements prometheus.Collector.
