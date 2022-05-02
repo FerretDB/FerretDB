@@ -343,8 +343,7 @@ func (d *Document) RemoveByPath(keys ...string) {
 	case *Array:
 		i, err := strconv.Atoi(key2)
 		if err != nil {
-			panic("wrong path " + key2)
-			// return
+			return // no such path
 		}
 		if i > len(x.s)-1 {
 			return
