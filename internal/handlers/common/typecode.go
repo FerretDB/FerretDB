@@ -77,40 +77,10 @@ func hasSameTypeElements(array *types.Array) bool {
 
 		element := must.NotFail(array.Get(i))
 
-		switch element := element.(type) {
-		case *types.Document:
-			cur = "object"
-		case *types.Array:
-			cur = "array"
-		case float64:
-			if element != math.Trunc(element) || math.IsNaN(element) || math.IsInf(element, 0) {
-				cur = "double"
-			} else {
-				// float that could be converted to int should be compared as int
-				cur = "int"
-			}
-		case string:
-			cur = "string"
-		case types.Binary:
-			cur = "binData"
-		case types.ObjectID:
-			cur = "objectId"
-		case bool:
-			cur = "bool"
-		case time.Time:
-			cur = "date"
-		case types.NullType:
-			cur = "null"
-		case types.Regex:
-			cur = "regex"
-		case int32:
-			cur = "int"
-		case types.Timestamp:
-			cur = "timestamp"
-		case int64:
-			cur = "int"
-		default:
-			return false
+		if isWholeNumber(element) {
+			cur = typeCodeNumber.String()
+		} else {
+			cur = AliasFromType(element)
 		}
 
 		if prev == "" {
@@ -136,5 +106,53 @@ func init() {
 		typeCodeRegex, typeCodeInt, typeCodeTimestamp, typeCodeLong, typeCodeNumber,
 	} {
 		aliasToTypeCode[i.String()] = i
+	}
+}
+
+// AliasFromType returns type alias name for given value.
+func AliasFromType(v any) string {
+	switch v := v.(type) {
+	case *types.Document:
+		return typeCodeObject.String()
+	case *types.Array:
+		return typeCodeArray.String()
+	case float64:
+		return typeCodeDouble.String()
+	case string:
+		return typeCodeString.String()
+	case types.Binary:
+		return typeCodeBinData.String()
+	case types.ObjectID:
+		return typeCodeObjectID.String()
+	case bool:
+		return typeCodeBool.String()
+	case time.Time:
+		return typeCodeDate.String()
+	case types.NullType:
+		return typeCodeNull.String()
+	case types.Regex:
+		return typeCodeRegex.String()
+	case int32:
+		return typeCodeInt.String()
+	case types.Timestamp:
+		return typeCodeTimestamp.String()
+	case int64:
+		return typeCodeLong.String()
+	default:
+		panic(fmt.Sprintf("not supported type %T", v))
+	}
+}
+
+// isWholeNumber checks is the given value represents a whole number type.
+func isWholeNumber(v any) bool {
+	switch v := v.(type) {
+	case float64:
+		return !(v != math.Trunc(v) || math.IsNaN(v) || math.IsInf(v, 0))
+	case int32:
+		return true
+	case int64:
+		return true
+	default:
+		return false
 	}
 }
