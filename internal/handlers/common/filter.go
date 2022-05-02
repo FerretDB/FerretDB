@@ -53,7 +53,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 	if strings.ContainsRune(filterKey, '.') {
 		// {field1./.../.fieldN: filterValue}
 		path := strings.Split(filterKey, ".")
-		// we pass the path without the last key because we same {fieldN: *someValue*}, not just *someValue*
+		// we pass the path without the last key because we want {fieldN: *someValue*}, not just *someValue*
 		docValue, err := doc.GetByPath(path[:len(path)-1]...)
 		if err != nil {
 			return false, nil // no error - the field is just not present
