@@ -39,7 +39,7 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 			for _, projectionType := range v.Keys() {
 				supportedProjectionTypes := []string{"$elemMatch"}
 				if !slices.Contains(supportedProjectionTypes, projectionType) {
-					err = lazyerrors.Errorf("projection of %s is not supported", projectionType)
+					err = NewErrorMsg(ErrProjectionElemMatchOnNested, "Cannot use $elemMatch projection on a nested field.")
 					return
 				}
 

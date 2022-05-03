@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -76,24 +77,59 @@ func TestQueryProjectionElemMatch(t *testing.T) {
 		bson.D{
 			{"_id", "document-composite-2"},
 			{"value", bson.A{
+				bson.D{{"field", int32(40)}},
 				bson.D{{"field", int32(42)}},
 				bson.D{{"field", int32(44)}},
+				bson.D{{"field", bson.D{{"field", int32(42)}}}},
+			}},
+		},
+		bson.D{
+			{"_id", "document-composite-3"},
+			{"value", bson.A{
+				bson.D{{"field", int32(40)}},
+				bson.D{{"field", bson.D{{"field", int32(41)}}}},
+				bson.D{{"field", bson.D{{"field", int32(42)}}}},
 			}},
 		},
 	})
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
+		filterID    string
 		projection  any
 		expectedIDs []any
+		err         *mongo.CommandError
 	}{
 		"ElemMatch": {
+			filterID: "document-composite-2",
 			projection: bson.D{{
 				"value",
 				bson.D{{"$elemMatch", bson.D{{"field", bson.D{{"$eq", 42}}}}}},
 			}},
 			expectedIDs: []any{
 				"document-composite-2",
+			},
+		},
+		"ElemMatchNested1": {
+			filterID: "document-composite-3",
+			projection: bson.D{{
+				"value",
+				bson.D{{"$elemMatch", bson.D{{"field", bson.D{{"field", bson.D{{"$eq", 42}}}}}}}},
+			}},
+			expectedIDs: []any{
+				"document-composite-3",
+			},
+		},
+		"ElemMatchNested2": {
+			filterID: "document-composite-3",
+			projection: bson.D{{
+				"value",
+				bson.D{{"field", bson.D{{"field", bson.D{{"$elemMatch", bson.D{{"$eq", 42}}}}}}}},
+			}},
+			err: &mongo.CommandError{
+				Code:    31275,
+				Name:    "Location31275",
+				Message: "Cannot use $elemMatch projection on a nested field.",
 			},
 		},
 	} {
@@ -103,15 +139,22 @@ func TestQueryProjectionElemMatch(t *testing.T) {
 
 			cursor, err := collection.Find(
 				ctx,
-				bson.D{{"_id", "document-composite-2"}},
+				bson.D{{"_id", tc.filterID}},
 				options.Find().SetProjection(tc.projection),
 				options.Find().SetSort(bson.D{{"_id", 1}}),
 			)
-			require.NoError(t, err)
 
+			if tc.err != nil {
+				require.Nil(t, tc.expectedIDs)
+				AssertEqualError(t, *tc.err, err)
+				return
+			}
+
+			require.NoError(t, err)
 			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
+
 			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
 		})
 	}
