@@ -56,17 +56,27 @@ func TestFindAndModifySimple(t *testing.T) {
 		"NewIntNonZero": {
 			command: bson.D{
 				{"findAndModify", collection.Name()},
-				{"query", bson.D{}},
+				{"query", bson.D{{"_id", "int32"}}},
 				{"update", bson.D{{"_id", "int32"}, {"value", int32(43)}}},
 				{"new", int32(11)},
+			},
+			response: bson.D{
+				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
+				{"value", bson.D{{"_id", "int32"}, {"value", int32(43)}}},
+				{"ok", 1.0},
 			},
 		},
 		"NewIntZero": {
 			command: bson.D{
 				{"findAndModify", collection.Name()},
-				{"query", bson.D{}},
+				{"query", bson.D{{"_id", "int32"}}},
 				{"update", bson.D{{"_id", "int32"}, {"value", int32(43)}}},
 				{"new", int32(0)},
+			},
+			response: bson.D{
+				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
+				{"value", bson.D{{"_id", "int32"}, {"value", int32(42)}}},
+				{"ok", 1.0},
 			},
 		},
 	} {
@@ -96,7 +106,7 @@ func TestFindAndModifyErrors(t *testing.T) {
 			command: bson.D{{"findAndModify", ""}},
 			err: &mongo.CommandError{
 				Code:    73,
-				Message: "Invalid namespace specified 'testfindandmodifysimple.'",
+				Message: "Invalid namespace specified 'testfindandmodifyerrors.'",
 				Name:    "InvalidNamespace",
 			},
 		},
@@ -177,7 +187,6 @@ func TestFindAndModifyErrors(t *testing.T) {
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 
 			AssertEqualError(t, *tc.err, err)
-			require.NoError(t, err)
 		})
 	}
 }
