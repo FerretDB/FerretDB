@@ -34,7 +34,7 @@ func TestUnknownFilterOperator(t *testing.T) {
 	filter := bson.D{{"value", bson.D{{"$someUnknownOperator", 42}}}}
 	errExpected := mongo.CommandError{Code: 2, Name: "BadValue", Message: "unknown operator: $someUnknownOperator"}
 	_, err := collection.Find(ctx, filter)
-	AssertEqualError(t, errExpected, err)
+	AssertEqualError(t, errExpected, "", err)
 }
 
 func TestQueryCount(t *testing.T) {
@@ -242,7 +242,7 @@ func TestQueryBadFindType(t *testing.T) {
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 			require.Error(t, err)
-			AssertEqualError(t, *tc.err, err)
+			AssertEqualError(t, *tc.err, "", err)
 		})
 	}
 }
@@ -254,7 +254,21 @@ func TestQueryBadSortType(t *testing.T) {
 	for name, tc := range map[string]struct {
 		command bson.D
 		err     *mongo.CommandError
+		message string
 	}{
+		"BadSortTypeDouble": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"projection", bson.D{{"value", "some"}}},
+				{"sort", 42.13},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "Expected field sortto be of type object",
+			},
+			message: "Expected field sort to be of type object",
+		},
 		"BadSortType": {
 			command: bson.D{
 				{"find", collection.Name()},
@@ -266,6 +280,7 @@ func TestQueryBadSortType(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "Expected field sortto be of type object",
 			},
+			message: "Expected field sort to be of type object",
 		},
 	} {
 		name, tc := name, tc
@@ -275,7 +290,7 @@ func TestQueryBadSortType(t *testing.T) {
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 			require.Error(t, err)
-			AssertEqualError(t, *tc.err, err)
+			AssertEqualError(t, *tc.err, tc.message, err)
 		})
 	}
 }

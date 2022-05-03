@@ -265,7 +265,7 @@ func TestQueryElementType(t *testing.T) {
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, *tc.err, err)
+				AssertEqualError(t, *tc.err, "", err)
 				return
 			}
 			require.NoError(t, err)

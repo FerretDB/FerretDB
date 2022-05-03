@@ -109,7 +109,7 @@ func AssertEqualDocuments(t testing.TB, expected, actual bson.D) bool {
 }
 
 // AssertEqualError asserts that expected error is the same as actual, ignoring the Raw part.
-func AssertEqualError(t testing.TB, expected mongo.CommandError, actual error) bool {
+func AssertEqualError(t testing.TB, expected mongo.CommandError, altMessage string, actual error) bool {
 	t.Helper()
 
 	a, ok := actual.(mongo.CommandError)
@@ -121,20 +121,14 @@ func AssertEqualError(t testing.TB, expected mongo.CommandError, actual error) b
 	require.Nil(t, expected.Raw)
 	expected.Raw = a.Raw
 
-	return assert.Equal(t, expected, a)
-}
-
-// AssertEqualErrors asserts that any of the expected errors is the same as actual, ignoring the Raw part.
-func AssertEqualErrors(t testing.TB, actual error, expected ...*mongo.CommandError) bool {
-	t.Helper()
-
-	for _, e := range expected {
-		if e != nil {
-			return AssertEqualError(t, *e, actual)
-		}
+	message := expected.Message
+	if altMessage != "" {
+		message = altMessage
 	}
 
-	return false
+	return assert.Equal(t, expected.Code, a.Code) &&
+		assert.Equal(t, message, a.Message) &&
+		assert.Equal(t, expected.Name, a.Name)
 }
 
 // CollectIDs returns all _id values from given documents.
