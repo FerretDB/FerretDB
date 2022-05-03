@@ -33,16 +33,8 @@ func TestFindAndModifySimple(t *testing.T) {
 	for name, tc := range map[string]struct {
 		command  any
 		response bson.D
-		err      *mongo.CommandError
+		//err      *mongo.CommandError
 	}{
-		"EmptyCollectionName": {
-			command: bson.D{{"findAndModify", ""}},
-			err: &mongo.CommandError{
-				Code:    73,
-				Message: "Invalid namespace specified 'testfindandmodifysimple.'",
-				Name:    "InvalidNamespace",
-			},
-		},
 		"EmptyQueryRemove": {
 			command: bson.D{
 				{"findAndModify", collection.Name()},
@@ -59,6 +51,53 @@ func TestFindAndModifySimple(t *testing.T) {
 					},
 				},
 				{"ok", 1.0},
+			},
+		},
+		"NewIntNonZero": {
+			command: bson.D{
+				{"findAndModify", collection.Name()},
+				{"query", bson.D{}},
+				{"update", bson.D{{"_id", "int32"}, {"value", int32(43)}}},
+				{"new", int32(11)},
+			},
+		},
+		"NewIntZero": {
+			command: bson.D{
+				{"findAndModify", collection.Name()},
+				{"query", bson.D{}},
+				{"update", bson.D{{"_id", "int32"}, {"value", int32(43)}}},
+				{"new", int32(0)},
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+			require.NoError(t, err)
+
+			AssertEqualDocuments(t, tc.response, actual)
+		})
+	}
+}
+
+func TestFindAndModifyErrors(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+
+	for name, tc := range map[string]struct {
+		command   any
+		err       *mongo.CommandError
+		ferretErr *mongo.CommandError
+	}{
+		"EmptyCollectionName": {
+			command: bson.D{{"findAndModify", ""}},
+			err: &mongo.CommandError{
+				Code:    73,
+				Message: "Invalid namespace specified 'testfindandmodifysimple.'",
+				Name:    "InvalidNamespace",
 			},
 		},
 		"NotEnoughParameters": {
@@ -93,6 +132,42 @@ func TestFindAndModifySimple(t *testing.T) {
 				Message: "BSON field 'findAndModify.remove' is the wrong type 'string', expected types '[bool, long, int, decimal, double']",
 			},
 		},
+		"BadUpdateType": {
+			command: bson.D{
+				{"findAndModify", collection.Name()},
+				{"query", bson.D{}},
+				{"update", "123"},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "Update argument must be either an object or an array",
+			},
+		},
+		"BadNewType": {
+			command: bson.D{
+				{"findAndModify", collection.Name()},
+				{"query", bson.D{}},
+				{"new", "123"},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'findAndModify.new' is the wrong type 'string', expected types '[bool, long, int, decimal, double']",
+			},
+		},
+		"BadUpsertType": {
+			command: bson.D{
+				{"findAndModify", collection.Name()},
+				{"query", bson.D{}},
+				{"upsert", "123"},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'findAndModify.upsert' is the wrong type 'string', expected types '[bool, long, int, decimal, double']",
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -100,13 +175,9 @@ func TestFindAndModifySimple(t *testing.T) {
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
-			if tc.err != nil {
-				AssertEqualError(t, *tc.err, err)
-				return
-			}
-			require.NoError(t, err)
 
-			AssertEqualDocuments(t, tc.response, actual)
+			AssertEqualError(t, *tc.err, err)
+			require.NoError(t, err)
 		})
 	}
 }

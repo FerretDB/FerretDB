@@ -152,25 +152,25 @@ func prepareFindAndModifyParams(document *types.Document, command string) (*find
 	}
 
 	var query *types.Document
-	var remove bool
 	if query, err = common.GetOptionalParam(document, "query", query); err != nil {
 		return nil, err
 	}
-	if remove, err = common.GetOptionalParam(document, "remove", remove); err != nil {
+
+	var remove bool
+	if remove, err = getFindAndModifyValue(document, "remove", remove); err != nil {
 		return nil, err
 	}
-
 	var sort *types.Document
-	var ok bool
-	sortParam, err := document.Get("sort")
-	if err == nil {
-		sort, ok = sortParam.(*types.Document)
-		if !ok {
-			return nil, common.NewErrorMsg(
-				common.ErrTypeMismatch,
-				fmt.Sprintf("BSON field 'findAndModify.sort' is the wrong type '%T', expected type 'object'", sortParam),
-			)
-		}
+	if sort, err = getFindAndModifyValue(document, "sort", sort); err != nil {
+		return nil, err
+	}
+	var returnNewDocument bool
+	if returnNewDocument, err = getFindAndModifyValue(document, "new", returnNewDocument); err != nil {
+		return nil, err
+	}
+	var upsert bool
+	if upsert, err = getFindAndModifyValue(document, "remove", upsert); err != nil {
+		return nil, err
 	}
 
 	var update *types.Document
@@ -185,18 +185,8 @@ func prepareFindAndModifyParams(document *types.Document, command string) (*find
 		case *types.Array:
 			return nil, common.NewErrorMsg(common.ErrNotImplemented, "Aggregation pipelines are not supported yet")
 		default:
-			return nil, common.NewErrorMsg(common.ErrBadValue, "Bad update value")
+			return nil, common.NewErrorMsg(common.ErrFailedToParse, "Update argument must be either an object or an array")
 		}
-	}
-
-	var returnNewDocument bool
-	if returnNewDocument, err = common.GetOptionalParam(document, "returnNewDocument", returnNewDocument); err != nil {
-		return nil, err
-	}
-
-	var upsert bool
-	if upsert, err = common.GetOptionalParam(document, "returnNewDocument", upsert); err != nil {
-		return nil, err
 	}
 
 	return &findAndModifyParams{
@@ -209,6 +199,24 @@ func prepareFindAndModifyParams(document *types.Document, command string) (*find
 		upsert:            upsert,
 		returnNewDocument: returnNewDocument,
 	}, nil
+}
+
+func getFindAndModifyValue[T types.Type](document *types.Document, parameterName string, defaultValue T) (T, error) {
+	value, err := document.Get(parameterName)
+	if err == nil {
+		result, ok := value.(T)
+		if !ok {
+			return defaultValue, common.NewErrorMsg(
+				common.ErrTypeMismatch,
+				fmt.Sprintf(`BSON field 'findAndModify.%s' is the wrong type '%T',`+
+					` expected type %T`, parameterName, value, defaultValue,
+				),
+			)
+		}
+
+		return result, nil
+	}
+	return defaultValue, nil
 }
 
 func (h *Handler) upsert(ctx context.Context, update *types.Document, err error, db string, collection string) (*wire.OpMsg, error) {
