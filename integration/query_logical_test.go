@@ -81,7 +81,7 @@ func TestQueryLogicalAnd(t *testing.T) {
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, *tc.err, err)
+				AssertEqualError(t, *tc.err, "", err)
 				return
 			}
 			require.NoError(t, err)
@@ -142,7 +142,7 @@ func TestQueryLogicalOr(t *testing.T) {
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, *tc.err, err)
+				AssertEqualError(t, *tc.err, "", err)
 				return
 			}
 			require.NoError(t, err)
@@ -207,7 +207,7 @@ func TestQueryLogicalNor(t *testing.T) {
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, *tc.err, err)
+				AssertEqualError(t, *tc.err, "", err)
 				return
 			}
 			require.NoError(t, err)
@@ -327,7 +327,7 @@ func TestQueryLogicalNot(t *testing.T) {
 			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, *tc.err, err)
+				AssertEqualError(t, *tc.err, "", err)
 				return
 			}
 			require.NoError(t, err)
