@@ -25,7 +25,7 @@ services:
       - tigrisdata:/var/fdb
 
   tigrisdb:
-    image: tigrisdata/tigrisdb:main
+    image: tigrisdata/tigris:latest
     container_name: ferretdb_tigrisdb
     ports:
       - 127.0.0.1:8081:8081
