@@ -33,7 +33,6 @@ func TestFindAndModifySimple(t *testing.T) {
 	for name, tc := range map[string]struct {
 		command  any
 		response bson.D
-		//err      *mongo.CommandError
 	}{
 		"EmptyQueryRemove": {
 			command: bson.D{
@@ -98,9 +97,8 @@ func TestFindAndModifyErrors(t *testing.T) {
 	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
-		command   any
-		err       *mongo.CommandError
-		ferretErr *mongo.CommandError
+		command any
+		err     *mongo.CommandError
 	}{
 		"EmptyCollectionName": {
 			command: bson.D{{"findAndModify", ""}},
