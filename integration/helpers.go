@@ -124,6 +124,19 @@ func AssertEqualError(t testing.TB, expected mongo.CommandError, actual error) b
 	return assert.Equal(t, expected, a)
 }
 
+// AssertEqualErrors asserts that any of the expected errors is the same as actual, ignoring the Raw part.
+func AssertEqualErrors(t testing.TB, actual error, expected ...*mongo.CommandError) bool {
+	t.Helper()
+
+	for _, e := range expected {
+		if e != nil {
+			return AssertEqualError(t, *e, actual)
+		}
+	}
+
+	return false
+}
+
 // CollectIDs returns all _id values from given documents.
 //
 // The order is preserved.
