@@ -586,7 +586,7 @@ func TestQueryComparisonGt(t *testing.T) {
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, *tc.err, "", err)
+				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)
@@ -747,7 +747,7 @@ func TestQueryComparisonGte(t *testing.T) {
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, *tc.err, "", err)
+				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)
@@ -917,7 +917,7 @@ func TestQueryComparisonLt(t *testing.T) {
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, *tc.err, "", err)
+				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)
@@ -1084,7 +1084,7 @@ func TestQueryComparisonLte(t *testing.T) {
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, *tc.err, "", err)
+				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)
@@ -1192,7 +1192,7 @@ func TestQueryComparisonNin(t *testing.T) {
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, *tc.err, "", err)
+				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)
@@ -1286,7 +1286,7 @@ func TestQueryComparisonIn(t *testing.T) {
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, *tc.err, "", err)
+				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)
@@ -1472,7 +1472,7 @@ func TestQueryComparisonNe(t *testing.T) {
 			filter := bson.D{{"value", bson.D{{"$ne", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
-				AssertEqualError(t, *tc.err, "", err)
+				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)
@@ -1516,7 +1516,7 @@ func TestQueryComparisonMultipleOperators(t *testing.T) {
 			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, *tc.err, "", err)
+				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)

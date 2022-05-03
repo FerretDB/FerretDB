@@ -34,7 +34,7 @@ func TestUnknownFilterOperator(t *testing.T) {
 	filter := bson.D{{"value", bson.D{{"$someUnknownOperator", 42}}}}
 	errExpected := mongo.CommandError{Code: 2, Name: "BadValue", Message: "unknown operator: $someUnknownOperator"}
 	_, err := collection.Find(ctx, filter)
-	AssertEqualError(t, errExpected, "", err)
+	AssertEqualError(t, errExpected, err)
 }
 
 func TestQueryCount(t *testing.T) {
@@ -242,7 +242,7 @@ func TestQueryBadFindType(t *testing.T) {
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 			require.Error(t, err)
-			AssertEqualError(t, *tc.err, "", err)
+			AssertEqualError(t, *tc.err, err)
 		})
 	}
 }
@@ -290,7 +290,7 @@ func TestQueryBadSortType(t *testing.T) {
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 			require.Error(t, err)
-			AssertEqualError(t, *tc.err, tc.message, err)
+			AssertEqualErrorMessage(t, *tc.err, tc.message, err)
 		})
 	}
 }

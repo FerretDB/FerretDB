@@ -109,7 +109,23 @@ func AssertEqualDocuments(t testing.TB, expected, actual bson.D) bool {
 }
 
 // AssertEqualError asserts that expected error is the same as actual, ignoring the Raw part.
-func AssertEqualError(t testing.TB, expected mongo.CommandError, altMessage string, actual error) bool {
+func AssertEqualError(t testing.TB, expected mongo.CommandError, actual error) bool {
+	t.Helper()
+
+	a, ok := actual.(mongo.CommandError)
+	if !ok {
+		return assert.Equal(t, expected, actual)
+	}
+
+	// raw part might be useful if assertion fails
+	require.Nil(t, expected.Raw)
+	expected.Raw = a.Raw
+
+	return assert.Equal(t, expected, a)
+}
+
+// AssertEqualErrorMessage asserts that expected error is the same as actual, ignoring the Raw part.
+func AssertEqualErrorMessage(t testing.TB, expected mongo.CommandError, altMessage string, actual error) bool {
 	t.Helper()
 
 	a, ok := actual.(mongo.CommandError)
