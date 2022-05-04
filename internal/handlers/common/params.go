@@ -195,11 +195,11 @@ func GetBoolOptionalParam(doc *types.Document, key string) (bool, error) {
 	var result bool
 	switch v := v.(type) {
 	case float64:
-		result = v == 0
+		result = v != 0
 	case bool:
 		result = v
 	case int32, int64:
-		result = v == 0
+		result = v != 0
 	default:
 		return false, NewErrorMsg(
 			ErrTypeMismatch,
