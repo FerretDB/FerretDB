@@ -151,25 +151,26 @@ func prepareFindAndModifyParams(document *types.Document, command string) (*find
 		)
 	}
 
+	var remove bool
+	if remove, err = common.GetBoolOptionalParam(document, "remove"); err != nil {
+		return nil, err
+	}
+	var returnNewDocument bool
+	if returnNewDocument, err = common.GetBoolOptionalParam(document, "new"); err != nil {
+		return nil, err
+	}
+	var upsert bool
+	if upsert, err = common.GetBoolOptionalParam(document, "upsert"); err != nil {
+		return nil, err
+	}
+
 	var query *types.Document
 	if query, err = common.GetOptionalParam(document, "query", query); err != nil {
 		return nil, err
 	}
 
-	var remove bool
-	if remove, err = getFindAndModifyValue(document, "remove", remove); err != nil {
-		return nil, err
-	}
 	var sort *types.Document
-	if sort, err = getFindAndModifyValue(document, "sort", sort); err != nil {
-		return nil, err
-	}
-	var returnNewDocument bool
-	if returnNewDocument, err = getFindAndModifyValue(document, "new", returnNewDocument); err != nil {
-		return nil, err
-	}
-	var upsert bool
-	if upsert, err = getFindAndModifyValue(document, "remove", upsert); err != nil {
+	if sort, err = common.GetOptionalParam(document, "sort", sort); err != nil {
 		return nil, err
 	}
 
@@ -199,24 +200,6 @@ func prepareFindAndModifyParams(document *types.Document, command string) (*find
 		upsert:            upsert,
 		returnNewDocument: returnNewDocument,
 	}, nil
-}
-
-func getFindAndModifyValue[T types.Type](document *types.Document, parameterName string, defaultValue T) (T, error) {
-	value, err := document.Get(parameterName)
-	if err == nil {
-		result, ok := value.(T)
-		if !ok {
-			return defaultValue, common.NewErrorMsg(
-				common.ErrTypeMismatch,
-				fmt.Sprintf(`BSON field 'findAndModify.%s' is the wrong type '%T',`+
-					` expected type %T`, parameterName, value, defaultValue,
-				),
-			)
-		}
-
-		return result, nil
-	}
-	return defaultValue, nil
 }
 
 func (h *Handler) upsert(ctx context.Context, update *types.Document, err error, db string, collection string) (*wire.OpMsg, error) {

@@ -97,8 +97,9 @@ func TestFindAndModifyErrors(t *testing.T) {
 	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
-		command any
-		err     *mongo.CommandError
+		command    any
+		err        *mongo.CommandError
+		altMessage string
 	}{
 		"EmptyCollectionName": {
 			command: bson.D{{"findAndModify", ""}},
@@ -125,8 +126,9 @@ func TestFindAndModifyErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
-				Message: "BSON field 'findAndModify.sort' is the wrong type 'string', expected type 'object'",
+				Message: "BSON field 'sort' is the wrong type 'string', expected type 'object'",
 			},
+			altMessage: "BSON field 'sort' is the wrong type 'string', expected type 'object'",
 		},
 		"BadRemoveType": {
 			command: bson.D{
@@ -139,6 +141,7 @@ func TestFindAndModifyErrors(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'findAndModify.remove' is the wrong type 'string', expected types '[bool, long, int, decimal, double']",
 			},
+			altMessage: "BSON field 'remove' is the wrong type 'string', expected type 'bool'",
 		},
 		"BadUpdateType": {
 			command: bson.D{
@@ -163,6 +166,7 @@ func TestFindAndModifyErrors(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'findAndModify.new' is the wrong type 'string', expected types '[bool, long, int, decimal, double']",
 			},
+			altMessage: "BSON field 'new' is the wrong type 'string', expected type 'bool'",
 		},
 		"BadUpsertType": {
 			command: bson.D{
@@ -175,6 +179,7 @@ func TestFindAndModifyErrors(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'findAndModify.upsert' is the wrong type 'string', expected types '[bool, long, int, decimal, double']",
 			},
+			altMessage: "BSON field 'upsert' is the wrong type 'string', expected type 'bool'",
 		},
 	} {
 		name, tc := name, tc
@@ -184,7 +189,7 @@ func TestFindAndModifyErrors(t *testing.T) {
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 
-			AssertEqualError(t, *tc.err, err)
+			AssertEqualAltError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }

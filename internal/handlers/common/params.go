@@ -50,8 +50,10 @@ func GetOptionalParam[T types.Type](doc *types.Document, key string, defaultValu
 
 	res, ok := v.(T)
 	if !ok {
-		msg := fmt.Sprintf("parameter %q has type %T (expected %T)", key, v, defaultValue)
-		return defaultValue, NewErrorMsg(ErrBadValue, msg)
+		msg := fmt.Sprintf(`BSON field '%s' is the wrong type '%s', `+
+			`expected type '%s'`, key, AliasFromType(v), AliasFromType(defaultValue),
+		)
+		return defaultValue, NewErrorMsg(ErrTypeMismatch, msg)
 	}
 
 	return res, nil
@@ -182,4 +184,28 @@ func parseTypeCode(alias string) (typeCode, error) {
 	}
 
 	return code, nil
+}
+
+func GetBoolOptionalParam(doc *types.Document, key string) (bool, error) {
+	v, err := doc.Get(key)
+	if err != nil {
+		return false, nil
+	}
+
+	var result bool
+	switch v := v.(type) {
+	case float64:
+		result = v == 0
+	case bool:
+		result = v
+	case int32, int64:
+		result = v == 0
+	default:
+		return false, NewErrorMsg(
+			ErrTypeMismatch,
+			fmt.Sprintf(`BSON field '%s' is the wrong type '%s', expected type 'bool'`, key, AliasFromType(v)),
+		)
+	}
+
+	return result, nil
 }
