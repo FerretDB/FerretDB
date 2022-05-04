@@ -266,11 +266,11 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 		},
 		"EmptyParameters": {
 			command: bson.D{{"getParameter", 1}, {"comment", "getParameter test"}},
-			err:     &mongo.CommandError{Code: 0, Name: "", Message: `no option found to get`},
+			err:     &mongo.CommandError{Message: `no option found to get`},
 		},
 		"OnlyNonexistentParameters": {
 			command: bson.D{{"getParameter", 1}, {"quiet_other", 1}, {"comment", "getParameter test"}},
-			err:     &mongo.CommandError{Code: 0, Name: "", Message: `no option found to get`},
+			err:     &mongo.CommandError{Message: `no option found to get`},
 		},
 	} {
 		name, tc := name, tc
