@@ -170,7 +170,7 @@ func prepareFindAndModifyParams(document *types.Document, command string) (*find
 	}
 
 	var update *types.Document
-	updateParam, err := document.Get("updateOneDocument")
+	updateParam, err := document.Get("update")
 	if err != nil && !remove {
 		return nil, common.NewErrorMsg(common.ErrFailedToParse, "Either an update or remove=true must be specified")
 	}
@@ -200,7 +200,6 @@ func prepareFindAndModifyParams(document *types.Document, command string) (*find
 func (h *Handler) upsert(ctx context.Context, db, collection string, update *types.Document) (*wire.OpMsg, error) {
 	if common.HasUpdateOperator(update) {
 		// TODO: skip upsert with update operators for now
-
 		return nil, common.NewErrorMsg(common.ErrNotImplemented, "upsert with update operators not implemented")
 	} else {
 		err := h.insert(ctx, update, db, collection)
