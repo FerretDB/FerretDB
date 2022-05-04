@@ -19,12 +19,16 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/dummy"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
@@ -40,6 +44,7 @@ var (
 	proxyAddrF       = flag.String("proxy-addr", "127.0.0.1:37017", "")
 	versionF         = flag.Bool("version", false, "print version to stdout (full version, commit, branch, dirty flag) and exit")
 	testConnTimeoutF = flag.Duration("test-conn-timeout", 0, "test: set connection timeout")
+	handlerF         = flag.String("handler", "pg", "set backend handler (pg, dummy)")
 )
 
 func main() {
@@ -85,24 +90,41 @@ func main() {
 
 	go debug.RunHandler(ctx, *debugAddrF, logger.Named("debug"))
 
-	pgPool, err := pgdb.NewPool(ctx, *postgresqlURLF, logger, false)
-	if err != nil {
-		logger.Fatal(err.Error())
+	var h common.Handler
+	switch *handlerF {
+	case "pg":
+		pgPool, err := pgdb.NewPool(ctx, *postgresqlURLF, logger, false)
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+		handlerOpts := &pg.NewOpts{
+			PgPool:    pgPool,
+			L:         logger,
+			StartTime: time.Now(),
+		}
+		h = pg.New(handlerOpts)
+
+	case "dummy":
+		h = dummy.New()
+
+	default:
+		panic("unknown handler")
 	}
-	defer pgPool.Close()
+
+	defer h.Close()
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		ListenAddr:      *listenAddrF,
 		ProxyAddr:       *proxyAddrF,
 		Mode:            clientconn.Mode(*modeF),
-		PgPool:          pgPool,
+		Handler:         h,
 		Logger:          logger,
 		TestConnTimeout: *testConnTimeoutF,
 	})
 
 	prometheus.DefaultRegisterer.MustRegister(l)
 
-	err = l.Run(ctx)
+	err := l.Run(ctx)
 	if err == nil || err == context.Canceled {
 		logger.Info("Listener stopped")
 	} else {
