@@ -23,6 +23,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -32,6 +33,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -159,11 +161,18 @@ func setupListener(t *testing.T, ctx context.Context, logger *zap.Logger) int {
 		mode = clientconn.DiffNormalMode
 	}
 
+	handlerOpts := &pg.NewOpts{
+		PgPool:    pgPool,
+		L:         logger,
+		StartTime: time.Now(),
+	}
+	h := pg.New(handlerOpts)
+
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		ListenAddr: "127.0.0.1:0",
 		ProxyAddr:  proxyAddr,
 		Mode:       mode,
-		PgPool:     pgPool,
+		Handler:    h,
 		Logger:     logger,
 	})
 
