@@ -119,7 +119,7 @@ func (l *Listener) Run(ctx context.Context) error {
 				l:           l.opts.Logger.Named(prefix), // original unnamed logger
 				proxyAddr:   l.opts.ProxyAddr,
 				handler:     l.opts.Handler,
-				connMetrics: newConnMetrics(),
+				connMetrics: l.metrics.connMetrics,
 				startTime:   l.startTime,
 			}
 			conn, e := newConn(opts)
