@@ -125,7 +125,7 @@ func AssertEqualError(t testing.TB, expected mongo.CommandError, actual error) b
 }
 
 // AssertEqualAltError asserts that expected error is the same as actual
-// using altMessage for message if set and ignoring the Raw part.
+// using altMessage for CommandError.Message if set and ignoring the Raw part.
 func AssertEqualAltError(t testing.TB, expected mongo.CommandError, altMessage string, actual error) bool {
 	t.Helper()
 
