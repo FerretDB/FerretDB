@@ -138,13 +138,12 @@ func AssertEqualAltError(t testing.TB, expected mongo.CommandError, altMessage s
 	require.Nil(t, expected.Raw)
 	expected.Raw = a.Raw
 
-	if !assert.ObjectsAreEqual(expected, a) { // compare with expected
-		// compare with expected with altMessage
-		expected.Message = altMessage
+	if assert.ObjectsAreEqual(expected, a) {
 		return assert.Equal(t, expected, a)
 	}
 
-	return assert.Equal(t, expected, actual)
+	expected.Message = altMessage
+	return assert.Equal(t, expected, a)
 }
 
 // CollectIDs returns all _id values from given documents.

@@ -252,9 +252,9 @@ func TestQueryBadSortType(t *testing.T) {
 	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
-		command bson.D
-		err     *mongo.CommandError
-		message string
+		command    bson.D
+		err        *mongo.CommandError
+		altMessage string
 	}{
 		"BadSortTypeDouble": {
 			command: bson.D{
@@ -267,7 +267,7 @@ func TestQueryBadSortType(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "Expected field sortto be of type object",
 			},
-			message: "Expected field sort to be of type object",
+			altMessage: "Expected field sort to be of type object",
 		},
 		"BadSortType": {
 			command: bson.D{
@@ -280,7 +280,7 @@ func TestQueryBadSortType(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "Expected field sortto be of type object",
 			},
-			message: "Expected field sort to be of type object",
+			altMessage: "Expected field sort to be of type object",
 		},
 	} {
 		name, tc := name, tc
@@ -290,7 +290,7 @@ func TestQueryBadSortType(t *testing.T) {
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 			require.Error(t, err)
-			AssertEqualAltError(t, *tc.err, tc.message, err)
+			AssertEqualAltError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }
