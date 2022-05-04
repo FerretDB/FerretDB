@@ -30,8 +30,10 @@ func TestDummyHandler(t *testing.T) {
 	ctx := context.Background()
 	errNotImplemented := common.NewErrorMsg(common.ErrNotImplemented, "I'm a dummy, not a handler")
 	for k, command := range common.Commands {
-		_, err := command.Handler(h, ctx, nil)
-		assert.Equal(t, err, errNotImplemented, k)
+		if command.Handler != nil {
+			_, err := command.Handler(h, ctx, nil)
+			assert.Equal(t, err, errNotImplemented, k)
+		}
 	}
 	_, err := h.CmdQuery(ctx, nil)
 	assert.Equal(t, err, errNotImplemented)
