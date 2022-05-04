@@ -280,12 +280,8 @@ func TestFindAndModifyUpsert(t *testing.T) {
 	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
-		query             bson.D
-		updated           bson.D
-		response          bson.D
-		err               *mongo.CommandError
-		skipUpdateCheck   bool
-		returnNewDocument bool
+		query    bson.D
+		response bson.D
 	}{
 		"Upsert": {
 			query: bson.D{
@@ -294,13 +290,12 @@ func TestFindAndModifyUpsert(t *testing.T) {
 				{"update", bson.D{{"$set", bson.D{{"value", int32(43)}}}}},
 				{"upsert", true},
 			},
-			updated: bson.D{{"_id", "int32"}, {"value", int32(43)}},
 			response: bson.D{
 				{"lastErrorObject", bson.D{
 					{"n", int32(1)},
 					{"updatedExisting", true},
 				}},
-				{"value", bson.D{{"_id", "int32"}, {"value", int32(43)}}},
+				{"value", bson.D{{"_id", "int32"}, {"value", int32(42)}}},
 				{"ok", 1.0},
 			},
 		},
@@ -311,29 +306,12 @@ func TestFindAndModifyUpsert(t *testing.T) {
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.query).Decode(&actual)
-			if tc.err != nil {
-				AssertEqualError(t, *tc.err, err)
-				return
-			}
 			require.NoError(t, err)
 
 			m := actual.Map()
 			assert.Equal(t, 1.0, m["ok"])
 
 			AssertEqualDocuments(t, tc.response, actual)
-
-			if tc.skipUpdateCheck {
-				return
-			}
-
-			err = collection.FindOne(ctx, tc.query).Decode(&actual)
-			if tc.err != nil {
-				AssertEqualError(t, *tc.err, err)
-				return
-			}
-			require.NoError(t, err)
-
-			AssertEqualDocuments(t, tc.updated, actual)
 		})
 	}
 }
