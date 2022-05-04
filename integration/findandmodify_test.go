@@ -211,7 +211,7 @@ func TestFindAndModifyUpdate(t *testing.T) {
 			update: bson.D{{"_id", "int32"}, {"value", int32(43)}},
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
-				{"value", bson.D{{"_id", "int32"}, {"value", int32(43)}}},
+				{"value", bson.D{{"_id", "int32"}, {"value", int32(42)}}},
 				{"ok", 1.0},
 			},
 		},
