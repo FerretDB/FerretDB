@@ -12,24 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pg
+package clientconn
 
 import "github.com/prometheus/client_golang/prometheus"
 
-const (
-	namespace = "ferretdb"
-	subsystem = "handler"
-)
-
-// Metrics represents handler metrics.
-type Metrics struct {
+// ConnMetrics represents conn metrics.
+type ConnMetrics struct {
 	requests  *prometheus.CounterVec
 	responses *prometheus.CounterVec
 }
 
-// NewMetrics creates new handler metrics.
-func NewMetrics() *Metrics {
-	return &Metrics{
+// newConnMetrics creates new conn metrics.
+func newConnMetrics() *ConnMetrics {
+	return &ConnMetrics{
 		requests: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: namespace,
@@ -52,18 +47,18 @@ func NewMetrics() *Metrics {
 }
 
 // Describe implements prometheus.Collector.
-func (lm *Metrics) Describe(ch chan<- *prometheus.Desc) {
-	lm.requests.Describe(ch)
-	lm.responses.Describe(ch)
+func (cm *ConnMetrics) Describe(ch chan<- *prometheus.Desc) {
+	cm.requests.Describe(ch)
+	cm.responses.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
-func (lm *Metrics) Collect(ch chan<- prometheus.Metric) {
-	lm.requests.Collect(ch)
-	lm.responses.Collect(ch)
+func (cm *ConnMetrics) Collect(ch chan<- prometheus.Metric) {
+	cm.requests.Collect(ch)
+	cm.responses.Collect(ch)
 }
 
 // check interfaces
 var (
-	_ prometheus.Collector = (*Metrics)(nil)
+	_ prometheus.Collector = (*ConnMetrics)(nil)
 )
