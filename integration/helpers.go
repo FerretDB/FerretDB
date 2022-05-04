@@ -139,7 +139,7 @@ func AssertEqualAltError(t testing.TB, expected mongo.CommandError, altMessage s
 	expected.Raw = a.Raw
 
 	if assert.ObjectsAreEqual(expected, a) {
-		return assert.Equal(t, expected, a)
+		return true
 	}
 
 	expected.Message = altMessage
