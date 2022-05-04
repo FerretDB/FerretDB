@@ -94,16 +94,13 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		}
 
 		var reply wire.OpMsg
-		err = reply.SetSections(wire.OpMsgSection{
+		must.NoError(reply.SetSections(wire.OpMsgSection{
 			Documents: []*types.Document{types.MustNewDocument(
 				"lastErrorObject", types.MustNewDocument("n", int32(1)),
 				"value", types.MustConvertDocument(resDocs[0]),
 				"ok", float64(1),
 			)},
-		})
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+		}))
 		return &reply, nil
 	}
 
@@ -115,15 +112,12 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	}
 
 	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{
+	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{types.MustNewDocument(
 			"lastErrorObject", types.MustNewDocument("n", int32(0), "updatedExisting", false),
 			"ok", float64(1),
 		)},
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	}))
 
 	return &reply, nil
 }

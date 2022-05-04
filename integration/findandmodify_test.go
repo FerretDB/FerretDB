@@ -126,7 +126,7 @@ func TestFindAndModifyErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
-				Message: "BSON field 'sort' is the wrong type 'string', expected type 'object'",
+				Message: "BSON field 'findAndModify.sort' is the wrong type 'string', expected type 'object'",
 			},
 			altMessage: "BSON field 'sort' is the wrong type 'string', expected type 'object'",
 		},
@@ -211,7 +211,7 @@ func TestFindAndModifyUpdate(t *testing.T) {
 			update: bson.D{{"_id", "int32"}, {"value", int32(43)}},
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
-				{"value", bson.D{{"_id", "int32"}, {"value", int32(42)}}},
+				{"value", bson.D{{"_id", "int32"}, {"value", int32(43)}}},
 				{"ok", 1.0},
 			},
 		},
