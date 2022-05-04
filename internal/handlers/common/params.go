@@ -59,6 +59,29 @@ func GetOptionalParam[T types.Type](doc *types.Document, key string, defaultValu
 	return res, nil
 }
 
+// GetBoolOptionalParam returns doc's bool value for key, or protocol error for invalid parameter.
+// Non-zero value for double, long and int return true.
+func GetBoolOptionalParam(doc *types.Document, key string) (bool, error) {
+	v, err := doc.Get(key)
+	if err != nil {
+		return false, nil
+	}
+
+	switch v := v.(type) {
+	case float64:
+		return v != 0, nil
+	case bool:
+		return v, nil
+	case int32, int64:
+		return v != 0, nil
+	default:
+		return false, NewErrorMsg(
+			ErrTypeMismatch,
+			fmt.Sprintf(`BSON field '%s' is the wrong type '%s', expected type 'bool'`, key, AliasFromType(v)),
+		)
+	}
+}
+
 // AssertType asserts value's type, returning protocol error for unexpected types.
 //
 // If a custom error is needed, use a normal Go type assertion instead:
@@ -184,28 +207,4 @@ func parseTypeCode(alias string) (typeCode, error) {
 	}
 
 	return code, nil
-}
-
-func GetBoolOptionalParam(doc *types.Document, key string) (bool, error) {
-	v, err := doc.Get(key)
-	if err != nil {
-		return false, nil
-	}
-
-	var result bool
-	switch v := v.(type) {
-	case float64:
-		result = v != 0
-	case bool:
-		result = v
-	case int32, int64:
-		result = v != 0
-	default:
-		return false, NewErrorMsg(
-			ErrTypeMismatch,
-			fmt.Sprintf(`BSON field '%s' is the wrong type '%s', expected type 'bool'`, key, AliasFromType(v)),
-		)
-	}
-
-	return result, nil
 }
