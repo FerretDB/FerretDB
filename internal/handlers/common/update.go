@@ -29,7 +29,7 @@ func UpdateDocument(doc, update *types.Document) error {
 	for _, updateOp := range update.Keys() {
 		updateV := must.NotFail(update.Get(updateOp))
 
-		switch updateOperators[updateOp] {
+		switch updateOperators[updateOp] { //nolint:exhaustive // not implemented yet.
 		case updateSet:
 			setDoc, err := AssertType[*types.Document](updateV)
 			if err != nil {
