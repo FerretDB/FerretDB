@@ -1,5 +1,61 @@
 # Changelog
 
+## [v0.2.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.2.0) (2022-05-04)
+
+### What's Changed
+
+This release implements all required functionality to support [CLA Assistant](https://github.com/cla-assistant/cla-assistant).
+More details will be available shortly in [our blog](https://www.ferretdb.io/blog/).
+
+### New Features 🎉
+* Add support for `$nin` operator by @ribaraka in https://github.com/FerretDB/FerretDB/pull/459
+* Support querying with dot notation for documents by @GinGin3203 in https://github.com/FerretDB/FerretDB/pull/483
+* Add support for `$ne` operator by @ribaraka in https://github.com/FerretDB/FerretDB/pull/464
+* Add basic `findAndModify` implementation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/501
+* Add support for `$in` operator by @ribaraka in https://github.com/FerretDB/FerretDB/pull/499
+
+### Fixed Bugs 🐛
+* Fix large numbers comparision by @DoodgeMatvey in https://github.com/FerretDB/FerretDB/pull/466
+* Fix panic on receiving a filter query with unknown operator by @GinGin3203 in https://github.com/FerretDB/FerretDB/pull/517
+* Fix bitwise operators by @w84thesun in https://github.com/FerretDB/FerretDB/pull/488
+
+### Enhancements 🛠
+* Return better errors for unimplemented operations by @AlekSi in https://github.com/FerretDB/FerretDB/pull/504
+* Implement `nameOnly` for `listDatabases` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/524
+* Improve `hostInfo` command's `os` response by @DoodgeMatvey in https://github.com/FerretDB/FerretDB/pull/509
+
+### Documentation 📄
+* Mention force pushes by @AlekSi in https://github.com/FerretDB/FerretDB/pull/500
+* Update guidelines by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/496
+* Document `task env-pull` target by @AlekSi in https://github.com/FerretDB/FerretDB/pull/528
+
+### Other Changes 🤖
+* Stabilize tests by always sorting results by @AlekSi in https://github.com/FerretDB/FerretDB/pull/490
+* Skip one test for now by @AlekSi in https://github.com/FerretDB/FerretDB/pull/494
+* Bump MongoDB version by @AlekSi in https://github.com/FerretDB/FerretDB/pull/495
+* Use `goimports` to group imports on `task fmt` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/498
+* Make default Docker arguments a bit more useful by @AlekSi in https://github.com/FerretDB/FerretDB/pull/502
+* Export helpers that will be used in other package by @AlekSi in https://github.com/FerretDB/FerretDB/pull/505
+* Correctly override `FUZZTIME` on CI by @AlekSi in https://github.com/FerretDB/FerretDB/pull/506
+* Pass context to PostgreSQL pool by @AlekSi in https://github.com/FerretDB/FerretDB/pull/507
+* Bump dependencies by @AlekSi in https://github.com/FerretDB/FerretDB/pull/514
+* Remove `Array.Subslice` method by @AlekSi in https://github.com/FerretDB/FerretDB/pull/515
+* Remove `types.CString` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/529
+* Make test helpers harder to misuse by @AlekSi in https://github.com/FerretDB/FerretDB/pull/530
+* Move existing comparision code to `types` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/531
+* Extract common interface for handlers by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/521
+* Move all handler test to integration tests by @w84thesun in https://github.com/FerretDB/FerretDB/pull/523
+* Use `nil` errors instead of empty values by @fenogentov in https://github.com/FerretDB/FerretDB/pull/542
+* Delete old tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/543
+* Add tests for `sort` and `find` parameters type by @w84thesun in https://github.com/FerretDB/FerretDB/pull/544
+
+## New Contributors
+* @DoodgeMatvey made their first contribution in https://github.com/FerretDB/FerretDB/pull/466
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/14?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v0.1.1...v0.2.0).
+
+
 ## [v0.1.1](https://github.com/FerretDB/FerretDB/releases/tag/v0.1.1) (2022-04-19)
 
 ### New Features 🎉
