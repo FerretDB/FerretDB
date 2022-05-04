@@ -29,8 +29,8 @@ func UpdateDocument(doc, update *types.Document) error {
 	for _, updateOp := range update.Keys() {
 		updateV := must.NotFail(update.Get(updateOp))
 
-		switch updateOp {
-		case "$set":
+		switch updateOperators[updateOp] {
+		case updateSet:
 			setDoc, err := AssertType[*types.Document](updateV)
 			if err != nil {
 				return err
@@ -51,6 +51,7 @@ func UpdateDocument(doc, update *types.Document) error {
 	return nil
 }
 
+// updateOperator represents update operators aliases.
 type updateOperator int8
 
 const (
@@ -65,6 +66,7 @@ const (
 	updateUnset       = updateOperator(9) // $unset
 )
 
+// updateOperators matches update operator string to the corresponding updateOperator value.
 var updateOperators = map[string]updateOperator{}
 
 func init() {
@@ -76,14 +78,10 @@ func init() {
 	}
 }
 
-func isUpdateOperator(operator string) bool {
-	_, ok := updateOperators[operator]
-	return ok
-}
-
+// HasUpdateOperator checks if document has updates operators.
 func HasUpdateOperator(d *types.Document) bool {
 	for k := range d.Map() {
-		if isUpdateOperator(k) {
+		if _, ok := updateOperators[k]; ok {
 			return true
 		}
 	}
