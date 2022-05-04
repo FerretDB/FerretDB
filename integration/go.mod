@@ -7,7 +7,7 @@ replace github.com/FerretDB/FerretDB => ../
 require (
 	github.com/FerretDB/FerretDB v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.7.1
-	go.mongodb.org/mongo-driver v1.9.0
+	go.mongodb.org/mongo-driver v1.9.1
 	go.uber.org/zap v1.21.0
 	golang.org/x/exp v0.0.0-20220414153411-bcd21879b8fd
 )
