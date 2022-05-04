@@ -53,24 +53,24 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	command := document.Command()
 
-	p, err := prepareFindAndModifyParams(document, command)
+	params, err := prepareFindAndModifyParams(document, command)
 	if err != nil {
 		return nil, err
 	}
 
-	fetchedDocs, err := h.fetch(ctx, p.db, p.collection)
+	fetchedDocs, err := h.fetch(ctx, params.db, params.collection)
 	if err != nil {
 		return nil, err
 	}
 
-	err = common.SortDocuments(fetchedDocs, p.sort)
+	err = common.SortDocuments(fetchedDocs, params.sort)
 	if err != nil {
 		return nil, err
 	}
 
 	resDocs := make([]*types.Document, 0, 16)
 	for _, doc := range fetchedDocs {
-		matches, err := common.FilterDocument(doc, p.query)
+		matches, err := common.FilterDocument(doc, params.query)
 		if err != nil {
 			return nil, err
 		}
@@ -87,8 +87,8 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	if len(resDocs) == 1 && p.remove {
-		_, err = h.delete(ctx, resDocs, p.db, p.collection)
+	if len(resDocs) == 1 && params.remove {
+		_, err = h.delete(ctx, resDocs, params.db, params.collection)
 		if err != nil {
 			return nil, err
 		}
@@ -104,11 +104,12 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return &reply, nil
 	}
 
-	if len(resDocs) == 1 && p.update != nil {
-		return h.update(ctx, p.update, resDocs, p.db, p.collection, p.returnNewDocument)
+	if len(resDocs) == 1 && params.update != nil {
+		return h.update(ctx, params.update, resDocs, params.db, params.collection, params.returnNewDocument)
 	}
-	if p.update != nil && p.upsert {
-		return h.upsert(ctx, p.update, err, p.db, p.collection)
+
+	if params.update != nil && params.upsert {
+		return h.upsert(ctx, params.update, err, params.db, params.collection)
 	}
 
 	var reply wire.OpMsg
@@ -208,7 +209,7 @@ func (h *Handler) upsert(ctx context.Context, update *types.Document, err error,
 	}
 
 	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{
+	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{types.MustNewDocument(
 			"lastErrorObject", types.MustNewDocument(
 				"n", int32(1),
@@ -218,10 +219,7 @@ func (h *Handler) upsert(ctx context.Context, update *types.Document, err error,
 			"value", types.MustConvertDocument(update),
 			"ok", float64(1),
 		)},
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	}))
 
 	return &reply, nil
 }
@@ -249,16 +247,13 @@ func (h *Handler) update(ctx context.Context, update *types.Document, resDocs []
 	if returnNewDocument {
 		resultDoc = update
 	}
-	err := reply.SetSections(wire.OpMsgSection{
+	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{types.MustNewDocument(
 			"lastErrorObject", types.MustNewDocument("n", int32(1), "updatedExisting", true),
 			"value", types.MustConvertDocument(resultDoc),
 			"ok", float64(1),
 		)},
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	}))
 
 	return &reply, nil
 }
