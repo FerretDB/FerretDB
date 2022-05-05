@@ -142,28 +142,7 @@ func TestRemoveByPath(t *testing.T) {
 		},
 		"not found, no error doc is same": {
 			path: []string{"compression", "invalid"},
-			res: must.NotFail(NewDocument(
-				"ismaster", true,
-				"client", must.NotFail(NewArray(
-					must.NotFail(NewDocument(
-						"document", "abc",
-						"score", float64(42.13),
-						"age", int32(1000),
-						"foo", deepDoc.DeepCopy(),
-					)),
-					must.NotFail(NewDocument(
-						"document", "def",
-						"score", float64(42.13),
-						"age", int32(1000),
-					)),
-					must.NotFail(NewDocument(
-						"document", "jkl",
-						"score", int32(24),
-						"age", int32(1002),
-					)),
-				)),
-				"value", must.NotFail(NewArray("none")),
-			)),
+			res:  sourceDoc.DeepCopy(),
 		},
 	} {
 		tc := tc
