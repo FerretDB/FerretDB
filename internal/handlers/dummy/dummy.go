@@ -30,11 +30,6 @@ func New() common.Handler {
 	return new(Handler)
 }
 
-// MsgListCommands returns information about the currently supported commands.
-func (h *Handler) MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, common.NewErrorMsg(common.ErrNotImplemented, "I'm a dummy, not a handler")
-}
-
 // MsgBuildInfo returns a summary of the build information.
 func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	return nil, common.NewErrorMsg(common.ErrNotImplemented, "I'm a dummy, not a handler")
@@ -160,20 +155,13 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return nil, common.NewErrorMsg(common.ErrNotImplemented, "I'm a dummy, not a handler")
 }
 
-// MsgDebugError used for debugging purposes.
-func (h *Handler) MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, common.NewErrorMsg(common.ErrNotImplemented, "I'm a dummy, not a handler")
-}
-
-// MsgDebugPanic used for debugging purposes.
-func (h *Handler) MsgDebugPanic(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, common.NewErrorMsg(common.ErrNotImplemented, "I'm a dummy, not a handler")
-}
-
 // CmdQuery runs query operation command.
 func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
 	return nil, common.NewErrorMsg(common.ErrNotImplemented, "I'm a dummy, not a handler")
 }
+
+// Close prepares handler for graceful shutdown: closes connections, channels etc.
+func (h *Handler) Close() {}
 
 // check interfaces
 var (
