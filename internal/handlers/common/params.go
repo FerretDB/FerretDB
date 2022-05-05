@@ -72,7 +72,9 @@ func GetBoolOptionalParam(doc *types.Document, key string) (bool, error) {
 		return v != 0, nil
 	case bool:
 		return v, nil
-	case int32, int64:
+	case int32:
+		return v != 0, nil
+	case int64:
 		return v != 0, nil
 	default:
 		msg := fmt.Sprintf(`BSON field '%s' is the wrong type '%s', expected type 'bool'`, key, AliasFromType(v))
