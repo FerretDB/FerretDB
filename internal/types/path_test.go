@@ -71,6 +71,16 @@ func TestRemoveByPath(t *testing.T) {
 	}
 	for _, tc := range []testCase{ //nolint:paralleltest // false positive
 		{
+			name: "no keys in path",
+			path: []string{},
+			res:  sourceDoc.DeepCopy(),
+		},
+		{
+			name: "array index exceded",
+			path: []string{"client", "5", "baz"},
+			res:  sourceDoc.DeepCopy(),
+		},
+		{
 			name: "test deep removal",
 			path: []string{"client", "0", "foo", "baz", "baz", "baz"},
 			res: must.NotFail(NewDocument(
@@ -220,10 +230,53 @@ func TestRemoveByPath(t *testing.T) {
 			t.Parallel()
 
 			doc := sourceDoc.DeepCopy()
-			removeByPath(doc, tc.path...)
+			RemoveByPath(doc, tc.path...)
 			assert.Equal(t, tc.res, doc, tc.name)
 		})
 	}
+
+	t.Run("test array remove by path", func(t *testing.T) {
+		t.Parallel()
+
+		src := must.NotFail(NewArray(
+			"0", float64(42.13), int32(1000), "2",
+			must.NotFail(NewDocument(
+				"document", "abc",
+				"score", float64(42.13),
+				"age", int32(1000),
+				"foo", deepDoc.DeepCopy(),
+			)),
+			must.NotFail(NewArray("1", "2", "3")),
+		))
+
+		type testCase struct {
+			name     string
+			path     []string
+			expected *Array
+		}
+
+		for _, tc := range []testCase{
+			{
+				name:     "array: remove by path",
+				path:     []string{"4"},
+				expected: must.NotFail(NewArray("0", float64(42.13), int32(1000), "2", must.NotFail(NewArray("1", "2", "3")))),
+			},
+			{
+				name:     "array: index exceded",
+				path:     []string{},
+				expected: src.DeepCopy(),
+			},
+		} {
+			tc := tc
+			t.Run(fmt.Sprint(tc.path), func(t *testing.T) {
+				t.Parallel()
+
+				arr := src.DeepCopy()
+				arr.RemoveByPath(tc.path...)
+				assert.Equal(t, tc.expected, arr, tc.name)
+			})
+		}
+	})
 }
 
 func TestGetByPath(t *testing.T) {
