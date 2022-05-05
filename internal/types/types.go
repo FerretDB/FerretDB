@@ -45,6 +45,8 @@ package types
 
 import (
 	"fmt"
+	"github.com/FerretDB/FerretDB/internal/util/must"
+	"strings"
 	"time"
 )
 
@@ -193,19 +195,30 @@ func deepCopy(value any) any {
 	}
 }
 
-// String is needed to conveniently inform about type or value
-// mismatch when returning an error. For example,
-// when informing that `int32` is an invalid type, in the
-// error message we would like to get `int` and not `int32`.
-func String(v any) string {
-	switch v.(type) {
+// Binary | ObjectID | time.Time | NullType | Regex | Timestamp |
+// JSONSyntax formats a FerretDB value as it's JSON counterpart.
+func JSONSyntax(value any) string {
+	switch value := value.(type) {
+	case int32, int64, bool, float64:
+		return fmt.Sprintf("%v", value)
+	case string:
+		return fmt.Sprintf("%q", value)
 	case NullType:
 		return "null"
-	case int32:
-		return "int"
-	case int64, float64:
-		return "double"
+	case *Array:
+		b := new(strings.Builder)
+		b.WriteString("[")
+		for i := 0; i < value.Len(); i++ {
+			b.WriteString(JSONSyntax(must.NotFail(value.Get(i))))
+			if i < value.Len()-1 {
+				b.WriteRune(',')
+			} else {
+				b.WriteRune(' ')
+			}
+		}
+		b.WriteString("]")
+		return b.String()
 	default:
-		return fmt.Sprintf("%s", v)
+		panic(fmt.Sprintf("types.JSONSyntax: unsupported type: %[1]T (%[1]value)", value))
 	}
 }

@@ -1,9 +1,10 @@
 package integration
 
 import (
-	"go.mongodb.org/mongo-driver/mongo"
 	"math"
 	"testing"
+
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

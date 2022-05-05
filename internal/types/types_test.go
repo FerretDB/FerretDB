@@ -52,3 +52,41 @@ func TestDeepCopy(t *testing.T) {
 		assert.NotEqual(t, o1, o2)
 	})
 }
+
+func TestJSONSyntax(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		input    any
+		expected string
+		err      error
+	}{
+		"String": {
+			input:    "input_string",
+			expected: "\"input_string\"",
+		},
+		"Float64": {
+			input:    float64(42.000042),
+			expected: "42.000042",
+		},
+		"Int32": {
+			input:    int32(12345),
+			expected: "12345",
+		},
+		"Int64": {
+			input:    int64(12345),
+			expected: "12345",
+		},
+		"Bool": {
+			input:    true,
+			expected: "true",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			res := JSONSyntax(tc.input)
+
+			assert.Equal(t, tc.expected, res)
+		})
+	}
+}

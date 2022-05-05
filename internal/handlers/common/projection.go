@@ -320,7 +320,7 @@ func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.A
 			return nil, NewErrorMsg(ErrSliceFirstArg,
 				fmt.Sprintf(
 					"First argument to $slice must be an array, but is of type: %s",
-					types.String(must.NotFail(arr.Get(0))),
+					AliasFromType(must.NotFail(arr.Get(0))),
 				),
 			)
 		}
@@ -345,21 +345,18 @@ func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.A
 			case int32:
 				arg[i] = int(v)
 			default:
-				return nil, NewErrorMsg(ErrSliceFirstArg,
-					fmt.Sprintf(
-						"First argument to $slice must be an array, but is of type: %s",
-						types.String(must.NotFail(arr.Get(0))),
-					),
-				)
+				return nil, NewErrorMsg(ErrSliceFirstArg, fmt.Sprintf(
+					"First argument to $slice must be an array, but is of type: %s",
+					AliasFromType(must.NotFail(arr.Get(0))),
+				))
 			}
 
 			if i == 1 && arg[i] < 0 { // limit can't be negative in case of 2 arguments
 				return nil, NewErrorMsg(ErrSliceFirstArg,
 					fmt.Sprintf(
 						"First argument to $slice must be an array, but is of type: %s",
-						types.String(must.NotFail(arr.Get(0))),
-					),
-				)
+						AliasFromType(must.NotFail(arr.Get(0))),
+					))
 			}
 		}
 
