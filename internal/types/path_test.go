@@ -220,7 +220,7 @@ func TestRemoveByPath(t *testing.T) {
 			t.Parallel()
 
 			doc := sourceDoc.DeepCopy()
-			doc.RemoveByPath(tc.path...)
+			removeByPath(doc, tc.path...)
 			assert.Equal(t, tc.res, doc, tc.name)
 		})
 	}
