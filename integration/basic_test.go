@@ -99,7 +99,7 @@ func TestFindCommentMethod(t *testing.T) {
 	ctx, collection := setup(t, shareddata.Scalars)
 
 	var doc bson.D
-	opts := options.FindOne().SetComment("some test text")
+	opts := options.FindOne().SetComment("*/ 1; DROP DATABASE postgres --")
 	err := collection.FindOne(ctx, bson.D{{"_id", "string"}}, opts).Decode(&doc)
 	require.NoError(t, err)
 }
@@ -109,6 +109,6 @@ func TestFindCommentQuery(t *testing.T) {
 	ctx, collection := setup(t, shareddata.Scalars)
 
 	var doc bson.D
-	err := collection.FindOne(ctx, bson.M{"_id": "string", "$comment": "some test text"}).Decode(&doc)
+	err := collection.FindOne(ctx, bson.M{"_id": "string", "$comment": "*/ 1; DROP DATABASE postgres --"}).Decode(&doc)
 	require.NoError(t, err)
 }

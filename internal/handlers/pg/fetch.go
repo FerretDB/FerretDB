@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/jackc/pgx/v4"
 
@@ -77,7 +78,10 @@ func nextRow(rows pgx.Rows) (*types.Document, error) {
 func (h *Handler) protoFetch(ctx context.Context, param fetchParam) ([]*types.Document, error) {
 	var sql string
 	if param.comment != "" {
+		param.comment = strings.ReplaceAll(param.comment, "/*", "/ *")
+		param.comment = strings.ReplaceAll(param.comment, "*/", "* /")
 		param.comment = fmt.Sprintf("/* %s */", param.comment)
+
 		sql = fmt.Sprintf(`SELECT %s _jsonb FROM %s`, param.comment, pgx.Identifier{param.db, param.collection}.Sanitize())
 	} else {
 		sql = fmt.Sprintf(`SELECT _jsonb FROM %s`, pgx.Identifier{param.db, param.collection}.Sanitize())
