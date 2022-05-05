@@ -19,6 +19,7 @@ import (
 	"strconv"
 )
 
+// RemoveByPath removes document by path, doing nothing if the key does not exist.
 func RemoveByPath[T CompositeTypeInterface](comp T, keys ...string) {
 	removeByPath(comp, keys...)
 }
