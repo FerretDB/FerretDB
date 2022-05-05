@@ -93,3 +93,22 @@ func TestInsertFind(t *testing.T) {
 		})
 	}
 }
+
+func TestFindCommentMethod(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t, shareddata.Scalars)
+
+	var doc bson.D
+	opts := options.FindOne().SetComment("some test text")
+	err := collection.FindOne(ctx, bson.D{{"_id", "string"}}, opts).Decode(&doc)
+	require.NoError(t, err)
+}
+
+func TestFindCommentQuery(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t, shareddata.Scalars)
+
+	var doc bson.D
+	err := collection.FindOne(ctx, bson.M{"_id": "string", "$comment": "some test text"}).Decode(&doc)
+	require.NoError(t, err)
+}
