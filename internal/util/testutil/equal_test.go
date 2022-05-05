@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestEqual(t *testing.T) {
@@ -27,13 +28,13 @@ func TestEqual(t *testing.T) {
 
 	AssertEqual(
 		t,
-		types.MustNewDocument("foo", "bar", "baz", int32(42)),
-		types.MustNewDocument("foo", "bar", "baz", int32(42)),
+		must.NotFail(types.NewDocument("foo", "bar", "baz", int32(42))),
+		must.NotFail(types.NewDocument("foo", "bar", "baz", int32(42))),
 	)
 	AssertNotEqual(
 		t,
-		types.MustNewDocument("foo", "bar", "baz", int32(42)),
-		types.MustNewDocument("baz", int32(42), "foo", "bar"),
+		must.NotFail(types.NewDocument("foo", "bar", "baz", int32(42))),
+		must.NotFail(types.NewDocument("baz", int32(42), "foo", "bar")),
 	)
 
 	AssertEqual(t, math.NaN(), math.NaN())
