@@ -276,8 +276,8 @@ func TestFindAndModifyUpsert(t *testing.T) {
 		"Upsert": {
 			query: bson.D{
 				{"findAndModify", collection.Name()},
-				{"query", bson.D{{"_id", "int64"}}},
-				{"update", bson.D{{"$set", bson.D{{"value", int64(43)}}}}},
+				{"query", bson.D{{"_id", "double"}}},
+				{"update", bson.D{{"$set", bson.D{{"value", 43.13}}}}},
 				{"upsert", true},
 			},
 			response: bson.D{
@@ -285,7 +285,7 @@ func TestFindAndModifyUpsert(t *testing.T) {
 					{"n", int32(1)},
 					{"updatedExisting", true},
 				}},
-				{"value", bson.D{{"_id", "int64"}, {"value", int64(42)}}},
+				{"value", bson.D{{"_id", "double"}, {"value", 42.13}}},
 				{"ok", 1.0},
 			},
 		},
