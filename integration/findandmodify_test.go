@@ -51,6 +51,32 @@ func TestFindAndModifySimple(t *testing.T) {
 				{"ok", 1.0},
 			},
 		},
+		"NewDoubleNonZero": {
+			command: bson.D{
+				{"findAndModify", collection.Name()},
+				{"query", bson.D{{"_id", "double-smallest"}}},
+				{"update", bson.D{{"_id", "double-smallest"}, {"value", int32(43)}}},
+				{"new", 11.0},
+			},
+			response: bson.D{
+				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
+				{"value", bson.D{{"_id", "double-smallest"}, {"value", int32(43)}}},
+				{"ok", 1.0},
+			},
+		},
+		"NewDoubleZero": {
+			command: bson.D{
+				{"findAndModify", collection.Name()},
+				{"query", bson.D{{"_id", "double-zero"}}},
+				{"update", bson.D{{"_id", "double-zero"}, {"value", 43.0}}},
+				{"new", 0.0},
+			},
+			response: bson.D{
+				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
+				{"value", bson.D{{"_id", "double-zero"}, {"value", 0.0}}},
+				{"ok", 1.0},
+			},
+		},
 		"NewIntNonZero": {
 			command: bson.D{
 				{"findAndModify", collection.Name()},
@@ -67,13 +93,39 @@ func TestFindAndModifySimple(t *testing.T) {
 		"NewIntZero": {
 			command: bson.D{
 				{"findAndModify", collection.Name()},
-				{"query", bson.D{{"_id", "double-whole"}}},
-				{"update", bson.D{{"_id", "double-whole"}, {"value", 43.0}}},
+				{"query", bson.D{{"_id", "int32-zero"}}},
+				{"update", bson.D{{"_id", "int32-zero"}, {"value", int32(43)}}},
 				{"new", int32(0)},
 			},
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
-				{"value", bson.D{{"_id", "double-whole"}, {"value", 42.0}}},
+				{"value", bson.D{{"_id", "int32-zero"}, {"value", int32(0)}}},
+				{"ok", 1.0},
+			},
+		},
+		"NewLongNonZero": {
+			command: bson.D{
+				{"findAndModify", collection.Name()},
+				{"query", bson.D{{"_id", "int64"}}},
+				{"update", bson.D{{"_id", "int64"}, {"value", int64(43)}}},
+				{"new", int64(11)},
+			},
+			response: bson.D{
+				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
+				{"value", bson.D{{"_id", "int64"}, {"value", int64(43)}}},
+				{"ok", 1.0},
+			},
+		},
+		"NewLongZero": {
+			command: bson.D{
+				{"findAndModify", collection.Name()},
+				{"query", bson.D{{"_id", "int64-zero"}}},
+				{"update", bson.D{{"_id", "int64-zero"}, {"value", int64(43)}}},
+				{"new", int64(0)},
+			},
+			response: bson.D{
+				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
+				{"value", bson.D{{"_id", "int64-zero"}, {"value", int64(0)}}},
 				{"ok", 1.0},
 			},
 		},
