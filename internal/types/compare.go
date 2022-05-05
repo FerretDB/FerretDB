@@ -31,156 +31,166 @@ import (
 // CompareResult represents the result of a comparison.
 type CompareResult int8
 
+// Values match results of comparison functions such as bytes.Compare.
+// They do not match MongoDB `sort` values where 1 means ascending order and -1 means descending.
 const (
-	Equal    CompareResult = 0   // ==
-	Less     CompareResult = -1  // <
-	Greater  CompareResult = 1   // >
+	Equal   CompareResult = 0  // ==
+	Less    CompareResult = -1 // <
+	Greater CompareResult = 1  // >
+
+	// TODO Remove once it is no longer needed.
+	// It should not be needed.
 	NotEqual CompareResult = 127 // !=
 )
 
-// Compare compares BSON values.
-func Compare(a, b any) CompareResult {
-	if a == nil {
-		panic("a is nil")
+// Compare compares any BSON values in the same way as MongoDB does it for filtering or sorting.
+//
+// It converts types as needed; that may result in different types being equal.
+// For that reason, it typically should not be used in tests.
+//
+// Compare and contrast with test helpers in testutil package.
+func Compare(v1, v2 any) CompareResult {
+	if v1 == nil {
+		panic("v1 is nil")
 	}
-	if b == nil {
-		panic("b is nil")
+	if v2 == nil {
+		panic("v2 is nil")
 	}
 
-	switch a := a.(type) {
+	switch v1 := v1.(type) {
 	case *Document:
 		// TODO: implement document comparing
 		return NotEqual
 
 	case *Array:
-		for i := 0; i < a.Len(); i++ {
-			v := must.NotFail(a.Get(i))
+		for i := 0; i < v1.Len(); i++ {
+			v := must.NotFail(v1.Get(i))
 			switch v.(type) {
 			case *Document, *Array:
 				continue
 			}
 
-			if res := compareScalars(v, b); res != NotEqual {
+			if res := compareScalars(v, v2); res != NotEqual {
 				return res
 			}
 		}
 		return NotEqual
 
 	default:
-		return compareScalars(a, b)
+		return compareScalars(v1, v2)
 	}
 }
 
 // compareScalars compares BSON scalar values.
-func compareScalars(a, b any) CompareResult {
-	compareEnsureScalar(a)
-	compareEnsureScalar(b)
+func compareScalars(v1, v2 any) CompareResult {
+	compareEnsureScalar(v1)
+	compareEnsureScalar(v2)
 
-	switch a := a.(type) {
+	switch v1 := v1.(type) {
 	case float64:
-		switch b := b.(type) {
+		switch v2 := v2.(type) {
 		case float64:
-			if math.IsNaN(a) && math.IsNaN(b) {
+			if math.IsNaN(v1) && math.IsNaN(v2) {
 				return Equal
 			}
-			return compareOrdered(a, b)
+			return compareOrdered(v1, v2)
 		case int32:
-			return compareNumbers(a, int64(b))
+			return compareNumbers(v1, int64(v2))
 		case int64:
-			return compareNumbers(a, b)
+			return compareNumbers(v1, v2)
 		default:
 			return NotEqual
 		}
 
 	case string:
-		b, ok := b.(string)
+		v2, ok := v2.(string)
 		if ok {
-			return compareOrdered(a, b)
+			return compareOrdered(v1, v2)
 		}
 		return NotEqual
 
 	case Binary:
-		b, ok := b.(Binary)
+		v2, ok := v2.(Binary)
 		if !ok {
 			return NotEqual
 		}
-		al, bl := len(a.B), len(b.B)
-		if al != bl {
-			return compareOrdered(al, bl)
+		v1l, v2l := len(v1.B), len(v2.B)
+		if v1l != v2l {
+			return compareOrdered(v1l, v2l)
 		}
-		if a.Subtype != b.Subtype {
-			return compareOrdered(a.Subtype, b.Subtype)
+		if v1.Subtype != v2.Subtype {
+			return compareOrdered(v1.Subtype, v2.Subtype)
 		}
-		return CompareResult(bytes.Compare(a.B, b.B))
+		return CompareResult(bytes.Compare(v1.B, v2.B))
 
 	case ObjectID:
-		b, ok := b.(ObjectID)
+		v2, ok := v2.(ObjectID)
 		if !ok {
 			return NotEqual
 		}
-		return CompareResult(bytes.Compare(a[:], b[:]))
+		return CompareResult(bytes.Compare(v1[:], v2[:]))
 
 	case bool:
-		b, ok := b.(bool)
+		v2, ok := v2.(bool)
 		if !ok {
 			return NotEqual
 		}
-		if a == b {
+		if v1 == v2 {
 			return Equal
 		}
-		if b {
+		if v2 {
 			return Less
 		}
 		return Greater
 
 	case time.Time:
-		b, ok := b.(time.Time)
+		v2, ok := v2.(time.Time)
 		if !ok {
 			return NotEqual
 		}
-		return compareOrdered(a.UnixMilli(), b.UnixMilli())
+		return compareOrdered(v1.UnixMilli(), v2.UnixMilli())
 
 	case NullType:
-		_, ok := b.(NullType)
+		_, ok := v2.(NullType)
 		if ok {
 			return Equal
 		}
 		return NotEqual
 
 	case Regex:
-		b, ok := b.(Regex)
-		if ok && a == b {
+		v2, ok := v2.(Regex)
+		if ok && v1 == v2 {
 			return Equal
 		}
 		return NotEqual
 
 	case int32:
-		switch b := b.(type) {
+		switch v2 := v2.(type) {
 		case float64:
-			return compareInvert(compareNumbers(b, int64(a)))
+			return compareInvert(compareNumbers(v2, int64(v1)))
 		case int32:
-			return compareOrdered(a, b)
+			return compareOrdered(v1, v2)
 		case int64:
-			return compareOrdered(int64(a), b)
+			return compareOrdered(int64(v1), v2)
 		default:
 			return NotEqual
 		}
 
 	case Timestamp:
-		b, ok := b.(Timestamp)
+		v2, ok := v2.(Timestamp)
 		if ok {
-			return compareOrdered(a, b)
+			return compareOrdered(v1, v2)
 		}
 		return NotEqual
 
 	case int64:
-		switch b := b.(type) {
+		switch v2 := v2.(type) {
 		case float64:
-			return compareInvert(compareNumbers(b, a))
+			return compareInvert(compareNumbers(v2, v1))
 		case int32:
-			return compareOrdered(a, int64(b))
+			return compareOrdered(v1, int64(v2))
 		case int64:
-			return compareOrdered(a, b)
+			return compareOrdered(v1, v2)
 		default:
 			return NotEqual
 		}
@@ -200,7 +210,7 @@ func compareEnsureScalar(v any) {
 		return
 	}
 
-	panic(fmt.Sprintf("unhandled type %T", v))
+	panic(fmt.Sprintf("non-scalar type %T", v))
 }
 
 // compareInvert swaps Less and Greater, keeping Equal and NotEqual.
