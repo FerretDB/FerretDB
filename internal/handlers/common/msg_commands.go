@@ -28,7 +28,8 @@ import (
 )
 
 // MsgListCommands returns a list of currently supported commands.
-func MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// Cannot add this func in Commands bcz of initialization loop.
+func MsgListCommands(_ Handler, ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 
 	cmdList := must.NotFail(types.NewDocument())
@@ -54,11 +55,11 @@ func MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) 
 }
 
 // MsgDebugError used for debugging purposes.
-func MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func MsgDebugError(_ Handler, _ context.Context, _ *wire.OpMsg) (*wire.OpMsg, error) {
 	return nil, errors.New("debug_error")
 }
 
 // MsgDebugPanic used for debugging purposes.
-func MsgDebugPanic(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func MsgDebugPanic(_ Handler, _ context.Context, _ *wire.OpMsg) (*wire.OpMsg, error) {
 	panic("debug_panic")
 }

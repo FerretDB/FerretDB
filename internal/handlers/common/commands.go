@@ -143,10 +143,10 @@ var Commands = map[string]Command{
 	},
 	"debug_error": {
 		Help:    "Used for debugging purposes.",
-		Handler: nil,
+		Handler: MsgDebugError,
 	},
 	"debug_panic": {
 		Help:    "Used for debugging purposes.",
-		Handler: nil,
+		Handler: MsgDebugPanic,
 	},
 }
