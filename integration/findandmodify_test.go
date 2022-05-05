@@ -68,13 +68,13 @@ func TestFindAndModifySimple(t *testing.T) {
 		"NewIntZero": {
 			command: bson.D{
 				{"findAndModify", collection.Name()},
-				{"query", bson.D{{"_id", "int32"}}},
-				{"update", bson.D{{"_id", "int32"}, {"value", int32(43)}}},
+				{"query", bson.D{{"_id", "int64"}}},
+				{"update", bson.D{{"_id", "int64"}, {"value", int64(43)}}},
 				{"new", int32(0)},
 			},
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
-				{"value", bson.D{{"_id", "int32"}, {"value", int32(42)}}},
+				{"value", bson.D{{"_id", "int64"}, {"value", int64(42)}}},
 				{"ok", 1.0},
 			},
 		},
@@ -207,11 +207,11 @@ func TestFindAndModifyUpdate(t *testing.T) {
 		returnNewDocument bool
 	}{
 		"Replace": {
-			query:  bson.D{{"_id", "int32"}},
-			update: bson.D{{"_id", "int32"}, {"value", int32(43)}},
+			query:  bson.D{{"_id", "int64"}},
+			update: bson.D{{"_id", "int64"}, {"value", int64(43)}},
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
-				{"value", bson.D{{"_id", "int32"}, {"value", int32(42)}}},
+				{"value", bson.D{{"_id", "int64"}, {"value", int64(42)}}},
 				{"ok", 1.0},
 			},
 		},
@@ -286,8 +286,8 @@ func TestFindAndModifyUpsert(t *testing.T) {
 		"Upsert": {
 			query: bson.D{
 				{"findAndModify", collection.Name()},
-				{"query", bson.D{{"_id", "int32"}}},
-				{"update", bson.D{{"$set", bson.D{{"value", int32(43)}}}}},
+				{"query", bson.D{{"_id", "int64"}}},
+				{"update", bson.D{{"$set", bson.D{{"value", int64(43)}}}}},
 				{"upsert", true},
 			},
 			response: bson.D{
@@ -295,7 +295,7 @@ func TestFindAndModifyUpsert(t *testing.T) {
 					{"n", int32(1)},
 					{"updatedExisting", true},
 				}},
-				{"value", bson.D{{"_id", "int32"}, {"value", int32(42)}}},
+				{"value", bson.D{{"_id", "int64"}, {"value", int64(42)}}},
 				{"ok", 1.0},
 			},
 		},
