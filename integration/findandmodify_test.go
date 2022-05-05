@@ -27,7 +27,6 @@ import (
 )
 
 func TestFindAndModifySimple(t *testing.T) {
-	t.Parallel()
 	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
@@ -81,8 +80,6 @@ func TestFindAndModifySimple(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 			require.NoError(t, err)
@@ -93,7 +90,6 @@ func TestFindAndModifySimple(t *testing.T) {
 }
 
 func TestFindAndModifyErrors(t *testing.T) {
-	t.Parallel()
 	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
@@ -184,8 +180,6 @@ func TestFindAndModifyErrors(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 
@@ -195,7 +189,6 @@ func TestFindAndModifyErrors(t *testing.T) {
 }
 
 func TestFindAndModifyUpdate(t *testing.T) {
-	t.Parallel()
 	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
@@ -237,8 +230,6 @@ func TestFindAndModifyUpdate(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx,
 				bson.D{
@@ -276,7 +267,6 @@ func TestFindAndModifyUpdate(t *testing.T) {
 }
 
 func TestFindAndModifyUpsert(t *testing.T) {
-	t.Parallel()
 	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
@@ -302,8 +292,6 @@ func TestFindAndModifyUpsert(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.query).Decode(&actual)
 			require.NoError(t, err)
