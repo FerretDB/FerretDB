@@ -69,6 +69,7 @@ type Type interface {
 type CompositeTypeInterface interface {
 	CompositeType
 	GetByPath(path ...string) (any, error)
+	RemoveByPath(path ...string)
 
 	compositeType() // seal for go-sumtype
 }
