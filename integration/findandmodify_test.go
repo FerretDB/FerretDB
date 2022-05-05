@@ -67,13 +67,13 @@ func TestFindAndModifySimple(t *testing.T) {
 		"NewIntZero": {
 			command: bson.D{
 				{"findAndModify", collection.Name()},
-				{"query", bson.D{{"_id", "int64"}}},
-				{"update", bson.D{{"_id", "int64"}, {"value", int64(43)}}},
+				{"query", bson.D{{"_id", "double-whole"}}},
+				{"update", bson.D{{"_id", "double-whole"}, {"value", 43.0}}},
 				{"new", int32(0)},
 			},
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
-				{"value", bson.D{{"_id", "int64"}, {"value", int64(42)}}},
+				{"value", bson.D{{"_id", "double-whole"}, {"value", 42.0}}},
 				{"ok", 1.0},
 			},
 		},
