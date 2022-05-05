@@ -76,12 +76,7 @@ func TestRemoveByPath(t *testing.T) {
 			res:  sourceDoc.DeepCopy(),
 		},
 		{
-			name: "array index exceded",
-			path: []string{"client", "5", "baz"},
-			res:  sourceDoc.DeepCopy(),
-		},
-		{
-			name: "test deep removal",
+			name: "test deep removal ok",
 			path: []string{"client", "0", "foo", "baz", "baz", "baz"},
 			res: must.NotFail(NewDocument(
 				"ismaster", true,
@@ -118,30 +113,9 @@ func TestRemoveByPath(t *testing.T) {
 			)),
 		},
 		{
-			name: "not found no error, ismaster field removed",
+			name: "not found no error",
 			path: []string{"ismaster", "0"},
-			res: must.NotFail(NewDocument(
-				"ismaster", true,
-				"client", must.NotFail(NewArray(
-					must.NotFail(NewDocument(
-						"document", "abc",
-						"score", float64(42.13),
-						"age", int32(1000),
-						"foo", deepDoc.DeepCopy(),
-					)),
-					must.NotFail(NewDocument(
-						"document", "def",
-						"score", float64(42.13),
-						"age", int32(1000),
-					)),
-					must.NotFail(NewDocument(
-						"document", "jkl",
-						"score", int32(24),
-						"age", int32(1002),
-					)),
-				)),
-				"value", must.NotFail(NewArray("none")),
-			)),
+			res:  sourceDoc.DeepCopy(),
 		},
 		{
 			name: "removed entire client field",
@@ -162,32 +136,6 @@ func TestRemoveByPath(t *testing.T) {
 						"score", float64(42.13),
 						"age", int32(1000),
 						"foo", deepDoc.DeepCopy(),
-					)),
-					must.NotFail(NewDocument(
-						"document", "jkl",
-						"score", int32(24),
-						"age", int32(1002),
-					)),
-				)),
-				"value", must.NotFail(NewArray("none")),
-			)),
-		},
-		{
-			name: "not found, element must be on place, no error",
-			path: []string{"client", "3"},
-			res: must.NotFail(NewDocument(
-				"ismaster", true,
-				"client", must.NotFail(NewArray(
-					must.NotFail(NewDocument(
-						"document", "abc",
-						"score", float64(42.13),
-						"age", int32(1000),
-						"foo", deepDoc.DeepCopy(),
-					)),
-					must.NotFail(NewDocument(
-						"document", "def",
-						"score", float64(42.13),
-						"age", int32(1000),
 					)),
 					must.NotFail(NewDocument(
 						"document", "jkl",
@@ -263,7 +211,17 @@ func TestRemoveByPath(t *testing.T) {
 			},
 			{
 				name:     "array: index exceded",
+				path:     []string{"11"},
+				expected: src.DeepCopy(),
+			},
+			{
+				name:     "array: empty path",
 				path:     []string{},
+				expected: src.DeepCopy(),
+			},
+			{
+				name:     "array: index is not number",
+				path:     []string{"abcd"},
 				expected: src.DeepCopy(),
 			},
 		} {
