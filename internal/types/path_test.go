@@ -64,19 +64,16 @@ func TestRemoveByPath(t *testing.T) {
 		"value", must.NotFail(NewArray("none")),
 	))
 
-	type testCase struct {
-		name string
+	//nolint:paralleltest // false positive
+	for name, tc := range map[string]struct {
 		path []string
 		res  *Document
-	}
-	for _, tc := range []testCase{ //nolint:paralleltest // false positive
-		{
-			name: "no keys in path",
+	}{
+		"no keys in path": {
 			path: []string{},
 			res:  sourceDoc.DeepCopy(),
 		},
-		{
-			name: "test deep removal ok",
+		"test deep removal ok": {
 			path: []string{"client", "0", "foo", "baz", "baz", "baz"},
 			res: must.NotFail(NewDocument(
 				"ismaster", true,
@@ -112,21 +109,18 @@ func TestRemoveByPath(t *testing.T) {
 				"value", must.NotFail(NewArray("none")),
 			)),
 		},
-		{
-			name: "not found no error",
+		"not found no error": {
 			path: []string{"ismaster", "0"},
 			res:  sourceDoc.DeepCopy(),
 		},
-		{
-			name: "removed entire client field",
+		"removed entire client field": {
 			path: []string{"client"},
 			res: must.NotFail(NewDocument(
 				"ismaster", true,
 				"value", must.NotFail(NewArray("none")),
 			)),
 		},
-		{
-			name: "only 1d array element of client field is removed",
+		"only 1d array element of client field is removed": {
 			path: []string{"client", "1"},
 			res: must.NotFail(NewDocument(
 				"ismaster", true,
@@ -146,8 +140,7 @@ func TestRemoveByPath(t *testing.T) {
 				"value", must.NotFail(NewArray("none")),
 			)),
 		},
-		{
-			name: "not found, no error doc is same",
+		"not found, no error doc is same": {
 			path: []string{"compression", "invalid"},
 			res: must.NotFail(NewDocument(
 				"ismaster", true,
@@ -174,12 +167,12 @@ func TestRemoveByPath(t *testing.T) {
 		},
 	} {
 		tc := tc
-		t.Run(fmt.Sprint(tc.path), func(t *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
 			doc := sourceDoc.DeepCopy()
 			RemoveByPath(doc, tc.path...)
-			assert.Equal(t, tc.res, doc, tc.name)
+			assert.Equal(t, tc.res, doc, name)
 		})
 	}
 
@@ -197,41 +190,34 @@ func TestRemoveByPath(t *testing.T) {
 			must.NotFail(NewArray("1", "2", "3")),
 		))
 
-		type testCase struct {
-			name     string
+		for name, tc := range map[string]struct {
 			path     []string
 			expected *Array
-		}
-
-		for _, tc := range []testCase{
-			{
-				name:     "array: remove by path",
+		}{
+			"array: remove by path": {
 				path:     []string{"4"},
 				expected: must.NotFail(NewArray("0", float64(42.13), int32(1000), "2", must.NotFail(NewArray("1", "2", "3")))),
 			},
-			{
-				name:     "array: index exceded",
+			"array: index exceded": {
 				path:     []string{"11"},
 				expected: src.DeepCopy(),
 			},
-			{
-				name:     "array: empty path",
+			"array: empty path": {
 				path:     []string{},
 				expected: src.DeepCopy(),
 			},
-			{
-				name:     "array: index is not number",
+			"array: index is not number": {
 				path:     []string{"abcd"},
 				expected: src.DeepCopy(),
 			},
 		} {
 			tc := tc
-			t.Run(fmt.Sprint(tc.path), func(t *testing.T) {
+			t.Run(name, func(t *testing.T) {
 				t.Parallel()
 
 				arr := src.DeepCopy()
 				arr.RemoveByPath(tc.path...)
-				assert.Equal(t, tc.expected, arr, tc.name)
+				assert.Equal(t, tc.expected, arr, name)
 			})
 		}
 	})
