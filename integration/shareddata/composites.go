@@ -29,5 +29,11 @@ var Composites = &Values[string]{
 		"array-three":    bson.A{int32(42), "foo", nil},
 		"array-embedded": bson.A{bson.A{int32(42), "foo"}, nil},
 		"array-empty":    bson.A{},
+
+		// TODO https://github.com/FerretDB/FerretDB/issues/457
+		// "document-null":              bson.D{{"foo", nil}},
+		// "document-composite-reverse": bson.D{{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)}},
+		// "array-three-reverse":        bson.A{nil, "foo", int32(42)},
+		// "array-null":                 bson.A{nil},
 	},
 }

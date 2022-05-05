@@ -26,6 +26,8 @@ import (
 )
 
 // matchDocuments returns true if 2 documents are equal.
+//
+// TODO move into types.Compare.
 func matchDocuments(a, b *types.Document) bool {
 	if a == nil {
 		log.Panicf("%v is nil", a)
@@ -43,6 +45,8 @@ func matchDocuments(a, b *types.Document) bool {
 
 // matchArrays returns true if a filter array equals exactly the specified array or
 // array contains an element that equals the array.
+//
+// TODO move into types.Compare.
 func matchArrays(filterArr, docArr *types.Array) bool {
 	if filterArr == nil {
 		log.Panicf("%v is nil", filterArr)
