@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"go.uber.org/zap"
 
@@ -157,9 +158,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				return nil, lazyerrors.Error(err)
 			}
 
-			sql := fmt.Sprintf("UPDATE %s SET _jsonb = $1 WHERE _jsonb->'_id' = $2", pgx.Identifier{db, collection}.Sanitize())
-			id := must.NotFail(doc.Get("_id"))
-			tag, err := h.pgPool.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)), must.NotFail(fjson.Marshal(id)))
+			tag, err := h.update(ctx, db, collection, doc)
 			if err != nil {
 				return nil, err
 			}
@@ -186,4 +185,14 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	return &reply, nil
+}
+
+func (h *Handler) update(ctx context.Context, db string, collection string, doc *types.Document) (pgconn.CommandTag, error) {
+	sql := fmt.Sprintf("UPDATE %s SET _jsonb = $1 WHERE _jsonb->'_id' = $2", pgx.Identifier{db, collection}.Sanitize())
+	id := must.NotFail(doc.Get("_id"))
+	tag, err := h.pgPool.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)), must.NotFail(fjson.Marshal(id)))
+	if err != nil {
+		return nil, err
+	}
+	return tag, nil
 }

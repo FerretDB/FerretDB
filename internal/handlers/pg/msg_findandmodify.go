@@ -106,12 +106,18 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	if len(resDocs) == 1 && params.update != nil {
 		if common.HasUpdateOperator(params.update) {
-			err := common.UpdateDocument(resDocs[0], params.update)
+			upsert := resDocs[0].DeepCopy()
+			err = common.UpdateDocument(upsert, params.update)
+			if err != nil {
+				return nil, err
+			}
+
+			_, err = h.update(ctx, params.db, params.collection, upsert)
 			if err != nil {
 				return nil, err
 			}
 		} else {
-			_, err := h.delete(ctx, resDocs, params.db, params.collection)
+			_, err = h.delete(ctx, resDocs, params.db, params.collection)
 			if err != nil {
 				return nil, err
 			}
