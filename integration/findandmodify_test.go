@@ -27,15 +27,14 @@ import (
 )
 
 func TestFindAndModifySimple(t *testing.T) {
-	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		command  any
+		command  bson.D
 		response bson.D
 	}{
 		"EmptyQueryRemove": {
 			command: bson.D{
-				{"findAndModify", collection.Name()},
 				{"query", bson.D{}},
 				{"remove", true},
 			},
@@ -53,7 +52,6 @@ func TestFindAndModifySimple(t *testing.T) {
 		},
 		"NewDoubleNonZero": {
 			command: bson.D{
-				{"findAndModify", collection.Name()},
 				{"query", bson.D{{"_id", "double-smallest"}}},
 				{"update", bson.D{{"_id", "double-smallest"}, {"value", int32(43)}}},
 				{"new", 11.0},
@@ -66,7 +64,6 @@ func TestFindAndModifySimple(t *testing.T) {
 		},
 		"NewDoubleZero": {
 			command: bson.D{
-				{"findAndModify", collection.Name()},
 				{"query", bson.D{{"_id", "double-zero"}}},
 				{"update", bson.D{{"_id", "double-zero"}, {"value", 43.0}}},
 				{"new", 0.0},
@@ -79,7 +76,6 @@ func TestFindAndModifySimple(t *testing.T) {
 		},
 		"NewIntNonZero": {
 			command: bson.D{
-				{"findAndModify", collection.Name()},
 				{"query", bson.D{{"_id", "int32"}}},
 				{"update", bson.D{{"_id", "int32"}, {"value", int32(43)}}},
 				{"new", int32(11)},
@@ -92,7 +88,6 @@ func TestFindAndModifySimple(t *testing.T) {
 		},
 		"NewIntZero": {
 			command: bson.D{
-				{"findAndModify", collection.Name()},
 				{"query", bson.D{{"_id", "int32-zero"}}},
 				{"update", bson.D{{"_id", "int32-zero"}, {"value", int32(43)}}},
 				{"new", int32(0)},
@@ -105,7 +100,6 @@ func TestFindAndModifySimple(t *testing.T) {
 		},
 		"NewLongNonZero": {
 			command: bson.D{
-				{"findAndModify", collection.Name()},
 				{"query", bson.D{{"_id", "int64"}}},
 				{"update", bson.D{{"_id", "int64"}, {"value", int64(43)}}},
 				{"new", int64(11)},
@@ -118,7 +112,6 @@ func TestFindAndModifySimple(t *testing.T) {
 		},
 		"NewLongZero": {
 			command: bson.D{
-				{"findAndModify", collection.Name()},
 				{"query", bson.D{{"_id", "int64-zero"}}},
 				{"update", bson.D{{"_id", "int64-zero"}, {"value", int64(43)}}},
 				{"new", int64(0)},
@@ -132,8 +125,13 @@ func TestFindAndModifySimple(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+
+			command := append(bson.D{{"findAndModify", collection.Name()}}, tc.command...)
+
 			var actual bson.D
-			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 			require.NoError(t, err)
 
 			AssertEqualDocuments(t, tc.response, actual)
@@ -141,24 +139,43 @@ func TestFindAndModifySimple(t *testing.T) {
 	}
 }
 
-func TestFindAndModifyErrors(t *testing.T) {
-	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+func TestFindAndModifyEmptyCollectionName(t *testing.T) {
+	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		command    any
 		err        *mongo.CommandError
 		altMessage string
 	}{
 		"EmptyCollectionName": {
-			command: bson.D{{"findAndModify", ""}},
 			err: &mongo.CommandError{
 				Code:    73,
-				Message: "Invalid namespace specified 'testfindandmodifyerrors.'",
+				Message: "Invalid namespace specified 'testfindandmodifyemptycollectionname-emptycollectionname.'",
 				Name:    "InvalidNamespace",
 			},
 		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, bson.D{{"findAndModify", ""}}).Decode(&actual)
+
+			AssertEqualError(t, *tc.err, err)
+		})
+	}
+}
+
+func TestFindAndModifyErrors(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		command    bson.D
+		err        *mongo.CommandError
+		altMessage string
+	}{
 		"NotEnoughParameters": {
-			command: bson.D{{"findAndModify", collection.Name()}},
 			err: &mongo.CommandError{
 				Code:    9,
 				Message: "Either an update or remove=true must be specified",
@@ -167,7 +184,6 @@ func TestFindAndModifyErrors(t *testing.T) {
 		},
 		"BadSortType": {
 			command: bson.D{
-				{"findAndModify", collection.Name()},
 				{"update", bson.D{}},
 				{"sort", "123"},
 			},
@@ -180,7 +196,6 @@ func TestFindAndModifyErrors(t *testing.T) {
 		},
 		"BadRemoveType": {
 			command: bson.D{
-				{"findAndModify", collection.Name()},
 				{"query", bson.D{}},
 				{"remove", "123"},
 			},
@@ -193,7 +208,6 @@ func TestFindAndModifyErrors(t *testing.T) {
 		},
 		"BadUpdateType": {
 			command: bson.D{
-				{"findAndModify", collection.Name()},
 				{"query", bson.D{}},
 				{"update", "123"},
 			},
@@ -205,7 +219,6 @@ func TestFindAndModifyErrors(t *testing.T) {
 		},
 		"BadNewType": {
 			command: bson.D{
-				{"findAndModify", collection.Name()},
 				{"query", bson.D{}},
 				{"new", "123"},
 			},
@@ -218,7 +231,6 @@ func TestFindAndModifyErrors(t *testing.T) {
 		},
 		"BadUpsertType": {
 			command: bson.D{
-				{"findAndModify", collection.Name()},
 				{"query", bson.D{}},
 				{"upsert", "123"},
 			},
@@ -232,8 +244,12 @@ func TestFindAndModifyErrors(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+
+			command := append(bson.D{{"findAndModify", collection.Name()}}, tc.command...)
 			var actual bson.D
-			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 
 			AssertEqualAltError(t, *tc.err, tc.altMessage, err)
 		})
@@ -241,7 +257,7 @@ func TestFindAndModifyErrors(t *testing.T) {
 }
 
 func TestFindAndModifyUpdate(t *testing.T) {
-	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+	t.Parallel()
 
 	for name, tc := range map[string]struct {
 		query             bson.D
@@ -282,15 +298,18 @@ func TestFindAndModifyUpdate(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+
+			command := bson.D{
+				{"findAndModify", collection.Name()},
+				{"query", tc.query},
+				{"update", tc.update},
+				{"new", tc.returnNewDocument},
+			}
+
 			var actual bson.D
-			err := collection.Database().RunCommand(ctx,
-				bson.D{
-					{"findAndModify", collection.Name()},
-					{"query", tc.query},
-					{"update", tc.update},
-					{"new", tc.returnNewDocument},
-				},
-			).Decode(&actual)
+			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 			if tc.err != nil {
 				AssertEqualError(t, *tc.err, err)
 				return
@@ -319,15 +338,14 @@ func TestFindAndModifyUpdate(t *testing.T) {
 }
 
 func TestFindAndModifyUpsert(t *testing.T) {
-	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		query    bson.D
+		command  bson.D
 		response bson.D
 	}{
 		"Upsert": {
-			query: bson.D{
-				{"findAndModify", collection.Name()},
+			command: bson.D{
 				{"query", bson.D{{"_id", "double"}}},
 				{"update", bson.D{{"$set", bson.D{{"value", 43.13}}}}},
 				{"upsert", true},
@@ -344,8 +362,13 @@ func TestFindAndModifyUpsert(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+
+			command := append(bson.D{{"findAndModify", collection.Name()}}, tc.command...)
+
 			var actual bson.D
-			err := collection.Database().RunCommand(ctx, tc.query).Decode(&actual)
+			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 			require.NoError(t, err)
 
 			m := actual.Map()
