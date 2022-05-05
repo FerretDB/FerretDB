@@ -16,7 +16,7 @@ package shareddata
 
 // BigNumbersData contains big numbers of different types for tests.
 //
-// This shared data set is not frozen yet, but please add to it only if it is really shared.
+// TODO Merge into Scalars. https://github.com/FerretDB/FerretDB/issues/558
 var BigNumbersData = &Values[string]{
 	data: map[string]any{
 		"int64-big":  int64(2 << 61),
