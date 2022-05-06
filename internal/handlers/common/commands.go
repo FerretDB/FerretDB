@@ -149,4 +149,8 @@ var Commands = map[string]Command{
 		Help:    "Used for debugging purposes.",
 		Handler: MsgDebugPanic,
 	},
+	"connectionStatus": {
+		Help:    "Returns information about the current connection, specifically the state of authenticated users and their available permissions.",
+		Handler: MsgConnectionStatus,
+	},
 }
