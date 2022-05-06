@@ -193,7 +193,19 @@ func deepCopy(value any) any {
 	}
 }
 
-// JSONSyntax formats a FerretDB value as it's JSON counterpart.
+// JSONSyntax formats a FerretDB value as it's JSON counterpart. This is useful when embedding an invalid value in an
+// error.
+// For example, consider a query:
+// 	db.values.find( { *someFilter* }, { arr: { $slice: { a: { b: 3 }, b: [ 1, 2 ], x: 3 } } } )
+//
+// This query returns an error that starts with:
+// 	"Invalid $slice syntax. The given syntax { $slice: { a: { b: 3 }, b: [ 1, 2 ], x: 3 } } did not match the find()
+// 	syntax because :: /.../"
+//
+// This function makes sure that, continuing with the example, the value in the { $slice: /.../ } clause gets formatted
+// correctly, which isn't the case by default. It differs from fjson package in its purpose: while fjson package aims
+// to format values according FJSON standard, JSONSyntax is needed to visually match the output of MongoDB in the
+// particular case of embedding a provided value into an error message.
 func JSONSyntax(value any) string {
 	switch value := value.(type) {
 	case int32, int64, bool, float64:
@@ -215,6 +227,21 @@ func JSONSyntax(value any) string {
 			}
 		}
 		b.WriteString("]")
+		return b.String()
+	case *Document:
+		b := new(strings.Builder)
+		b.WriteString("{")
+		for i, key := range value.Keys() {
+			b.WriteString(fmt.Sprintf(" %s: ", key))
+			b.WriteString(JSONSyntax(must.NotFail(value.Get(key))))
+
+			if i < len(value.Keys())-1 {
+				b.WriteRune(',')
+			} else {
+				b.WriteRune(' ')
+			}
+		}
+		b.WriteString("}")
 		return b.String()
 	default:
 		panic(fmt.Sprintf("types.JSONSyntax: unsupported type: %[1]T (%[1]value)", value))

@@ -18,11 +18,10 @@ import (
 	"math"
 	"testing"
 
-	"go.mongodb.org/mongo-driver/mongo"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -147,20 +146,22 @@ func TestProjectionQuerySlice(t *testing.T) {
 		expectedArray bson.A
 		err           *mongo.CommandError
 	}{
-		//"SingleArgDocument": {
-		//	projection:    bson.D{{"value", bson.D{{"$slice", bson.D{"a", 3}}}}},
-		//	expectedArray: nil,
-		//	err: &mongo.CommandError{
-		//		Code: 28667,
-		//		Name: "Location28667",
-		//		Message: "Invalid $slice syntax. The given syntax { $slice: { a: 3 } } " +
-		//			"did not match the find() syntax because :: Location31273: " +
-		//			"$slice only supports numbers and [skip, limit] arrays " +
-		//			":: The given syntax did not match the expression $slice syntax. " +
-		//			":: caused by :: Expression $slice takes at least 2 arguments, and at most 3, " +
-		//			"but 1 were passed in.",
-		//	},
-		//},
+		"SingleArgDocument": {
+			projection: bson.D{{"value", bson.D{
+				{"$slice", bson.D{{"a", bson.D{{"b", 3}}}, {"b", "string"}}},
+			}}},
+			expectedArray: nil,
+			err: &mongo.CommandError{
+				Code: 28667,
+				Name: "Location28667",
+				Message: "Invalid $slice syntax. The given syntax { $slice: { a: { b: 3 }, b: \"string\" } } " +
+					"did not match the find() syntax because :: Location31273: " +
+					"$slice only supports numbers and [skip, limit] arrays " +
+					":: The given syntax did not match the expression $slice syntax. " +
+					":: caused by :: Expression $slice takes at least 2 arguments, and at most 3, " +
+					"but 1 were passed in.",
+			},
+		},
 		"SingleArgString": {
 			projection:    bson.D{{"value", bson.D{{"$slice", "string"}}}},
 			expectedArray: nil,

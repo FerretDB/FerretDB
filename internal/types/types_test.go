@@ -83,6 +83,12 @@ func TestJSONSyntax(t *testing.T) {
 			input:    true,
 			expected: "true",
 		},
+		"Document": {
+			input: must.NotFail(NewDocument("a", must.NotFail(NewDocument("b", int32(3))),
+				"b", "string", "x", must.NotFail(NewArray(42.5, Null, int64(93))),
+			)),
+			expected: "{ a: { b: 3 }, b: \"string\", x: [ 42.5, null, 93 ] }",
+		},
 		"Array": {
 			input:    must.NotFail(NewArray(int64(1), Null, "string", 42.5, false, must.NotFail(NewArray(int32(5))))),
 			expected: "[ 1, null, \"string\", 42.5, false, [ 5 ] ]",
