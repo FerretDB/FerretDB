@@ -82,7 +82,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 	if sort, err = common.GetOptionalParam(document, "sort", sort); err != nil {
-		return nil, common.NewErrorMsg(common.ErrTypeMismatch, "Expected field sortto be of type object")
+		return nil, common.NewErrorMsg(common.ErrTypeMismatch, "Expected field sort to be of type object")
 	}
 	if projection, err = common.GetOptionalParam(document, "projection", projection); err != nil {
 		return nil, err
