@@ -262,7 +262,6 @@ func filterFieldArrayElemMatch(k1 string, doc, conditions *types.Document, docVa
 // filterFieldArraySlice implements $slice projection query.
 func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.Array, error) {
 	switch projectionValue.(type) {
-	// TODO what do we do with int64?
 	case int32, int64, float64:
 		var n int
 		switch pr := projectionValue.(type) {
@@ -335,7 +334,6 @@ func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.A
 		arg := [2]int{}
 		for i := range arg {
 			switch v := must.NotFail(arr.Get(i)).(type) {
-			// TODO what do we do with int64?
 			case types.NullType:
 				return nil, nil //nolint:nilnil // nil is a valid value
 			case float64:
