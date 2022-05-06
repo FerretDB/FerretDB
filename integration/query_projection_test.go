@@ -66,6 +66,11 @@ func TestQueryProjection(t *testing.T) {
 			projection: bson.D{{"_id", false}, {"array", int32(1)}},
 			expected:   bson.D{},
 		},
+		"ProjectionSliceNonArrayField": {
+			filter:     bson.D{{"_id", "document"}},
+			projection: bson.D{{"_id", bson.D{{"$slice", 1}}}},
+			expected:   bson.D{{"_id", "document"}, {"value", bson.D{{"foo", int32(42)}}}},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -206,6 +211,15 @@ func TestProjectionQuerySlice(t *testing.T) {
 					"The given syntax did not match the expression " +
 					"$slice syntax. :: caused by :: " +
 					"Expression $slice takes at least 2 arguments, and at most 3, but 0 were passed in.",
+			},
+		},
+		"ThreeArgs": {
+			projection:    bson.D{{"value", bson.D{{"$slice", bson.A{"string", 2, 3}}}}},
+			expectedArray: nil,
+			err: &mongo.CommandError{
+				Code:    28724,
+				Name:    "Location28724",
+				Message: "First argument to $slice must be an array, but is of type: string",
 			},
 		},
 		"TooManyArgs": {
