@@ -91,10 +91,6 @@ type (
 // Null represents BSON value Null.
 var Null = NullType{}
 
-func (n NullType) String() string {
-	return "null"
-}
-
 // validateValue validates value.
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/260
@@ -196,7 +192,6 @@ func deepCopy(value any) any {
 	}
 }
 
-// Binary | ObjectID | time.Time | NullType | Regex | Timestamp |
 // JSONSyntax formats a FerretDB value as it's JSON counterpart.
 func JSONSyntax(value any) string {
 	switch value := value.(type) {
@@ -210,6 +205,7 @@ func JSONSyntax(value any) string {
 		b := new(strings.Builder)
 		b.WriteString("[")
 		for i := 0; i < value.Len(); i++ {
+			b.WriteRune(' ')
 			b.WriteString(JSONSyntax(must.NotFail(value.Get(i))))
 			if i < value.Len()-1 {
 				b.WriteRune(',')

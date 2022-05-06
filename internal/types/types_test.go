@@ -15,9 +15,9 @@
 package types
 
 import (
-	"testing"
-
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestDeepCopy(t *testing.T) {
@@ -80,6 +80,10 @@ func TestJSONSyntax(t *testing.T) {
 		"Bool": {
 			input:    true,
 			expected: "true",
+		},
+		"Array": {
+			input:    must.NotFail(NewArray(int64(1), Null, "string", 42.5, false, must.NotFail(NewArray(int32(5))))),
+			expected: "[ 1, null, \"string\", 42.5, false, [ 5 ] ]",
 		},
 	} {
 		name, tc := name, tc
