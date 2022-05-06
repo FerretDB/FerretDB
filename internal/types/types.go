@@ -241,12 +241,22 @@ func JSONSyntax(value any) string {
 		return fmt.Sprintf("%v", value)
 	case string:
 		return fmt.Sprintf("%q", value)
+	case Binary: // TODO
+		return "JSONSyntax: Binary"
+	case ObjectID: // TODO
+		return "JSONSyntax: ObjectID"
 	case bool:
 		return fmt.Sprintf("%v", value)
+	case time.Time: // TODO
+		return "JSONSyntax: time.Time"
 	case NullType:
 		return "null"
+	case Regex: // TODO
+		return "JSONSyntax: Regex"
 	case int32:
 		return fmt.Sprintf("%v", value)
+	case Timestamp: // TODO
+		return "JSONSyntax: Timestamp"
 	case int64:
 		return fmt.Sprintf("%v", value)
 	default:
