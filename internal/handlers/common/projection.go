@@ -263,22 +263,28 @@ func filterFieldArrayElemMatch(k1 string, doc, conditions *types.Document, docVa
 func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.Array, error) {
 	switch projectionValue.(type) {
 	// TODO what do we do with int64?
-	case int32, float64:
+	case int32, int64, float64:
 		var n int
 		switch pr := projectionValue.(type) {
 		case float64:
 			if math.IsNaN(pr) {
-				n = 0
-				// is it ok to cut float64 value if it doesn't fit in int?
-			} else if math.IsInf(pr, -1) || n < math.MinInt32 {
-				n = math.MinInt32
-			} else if math.IsInf(pr, +1) || n > math.MaxInt32 {
-				n = math.MaxInt32
+			} else if math.IsInf(pr, -1) || n < math.MinInt {
+				n = math.MinInt
+			} else if math.IsInf(pr, +1) || n > math.MaxInt {
+				n = math.MaxInt
 			} else {
 				n = int(pr)
 			}
-		default:
-			n = int(projectionValue.(int32))
+		case int64:
+			if pr > math.MaxInt {
+				n = math.MaxInt
+			} else if pr < math.MinInt {
+				n = math.MinInt
+			} else {
+				n = int(pr)
+			}
+		case int32:
+			n = int(pr)
 		}
 
 		// negative n is OK in case of a single argument
@@ -335,10 +341,18 @@ func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.A
 			case float64:
 				if math.IsNaN(v) {
 					arg[i] = 0
-				} else if math.IsInf(v, -1) || arg[i] < math.MinInt32 {
-					arg[i] = math.MinInt32
-				} else if math.IsInf(v, +1) || arg[i] > math.MaxInt32 {
-					arg[i] = math.MaxInt32
+				} else if math.IsInf(v, -1) || arg[i] < math.MinInt {
+					arg[i] = math.MinInt
+				} else if math.IsInf(v, +1) || arg[i] > math.MaxInt {
+					arg[i] = math.MaxInt
+				} else {
+					arg[i] = int(v)
+				}
+			case int64:
+				if v > math.MaxInt {
+					arg[i] = math.MaxInt
+				} else if v < math.MinInt {
+					arg[i] = math.MinInt
 				} else {
 					arg[i] = int(v)
 				}

@@ -15,9 +15,11 @@
 package types
 
 import (
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestDeepCopy(t *testing.T) {
@@ -56,10 +58,10 @@ func TestDeepCopy(t *testing.T) {
 func TestJSONSyntax(t *testing.T) {
 	t.Parallel()
 
-	for name, tc := range map[string]struct {
+	for name, tc := range map[string]struct { //nolint:paralleltest // "Range statement for test TestJSONSyntax
+		// does not use range value in test Run", but it actually does
 		input    any
 		expected string
-		err      error
 	}{
 		"String": {
 			input:    "input_string",
@@ -88,8 +90,8 @@ func TestJSONSyntax(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			res := JSONSyntax(tc.input)
-
 			assert.Equal(t, tc.expected, res)
 		})
 	}

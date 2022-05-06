@@ -45,9 +45,10 @@ package types
 
 import (
 	"fmt"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"strings"
 	"time"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 const MaxDocumentLen = 16777216

@@ -221,6 +221,10 @@ func TestProjectionQuerySlice(t *testing.T) {
 					"Expression $slice takes at least 2 arguments, and at most 3, but 4 were passed in.",
 			},
 		},
+		"Int64SingleArg": {
+			projection:    bson.D{{"value", bson.D{{"$slice", int64(2)}}}},
+			expectedArray: bson.A{int32(1), int32(2)},
+		},
 		"PositiveSingleArg": {
 			projection:    bson.D{{"value", bson.D{{"$slice", 2}}}},
 			expectedArray: bson.A{int32(1), int32(2)},
@@ -248,6 +252,14 @@ func TestProjectionQuerySlice(t *testing.T) {
 		"NegativeSkip": {
 			projection:    bson.D{{"value", bson.D{{"$slice", bson.A{-3, 2}}}}},
 			expectedArray: bson.A{int32(2), int32(3)},
+		},
+		"NegativeLimitSkipInt64": {
+			projection: bson.D{{"value", bson.D{{"$slice", bson.A{int64(3), -2}}}}},
+			err: &mongo.CommandError{
+				Code:    28724,
+				Name:    "Location28724",
+				Message: "First argument to $slice must be an array, but is of type: long",
+			},
 		},
 		"NegativeLimitSkipInt": {
 			projection: bson.D{{"value", bson.D{{"$slice", bson.A{3, -2}}}}},
@@ -305,11 +317,8 @@ func TestProjectionQuerySlice(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			cursor, err := collection.Find(
-				ctx, bson.D{},
-				options.Find().SetProjection(tc.projection),
-			)
-
+			res := collection.FindOne(ctx, bson.D{}, options.FindOne().SetProjection(tc.projection))
+			err = res.Err()
 			if tc.err != nil {
 				require.Nil(t, tc.expectedArray)
 				AssertEqualError(t, *tc.err, err)
@@ -317,14 +326,14 @@ func TestProjectionQuerySlice(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			var actual []bson.D
-			err = cursor.All(ctx, &actual)
+			var actual bson.D
+			err = res.Decode(&actual)
 			require.NoError(t, err)
 
 			if tc.expectedArray == nil {
-				assert.Nil(t, actual[0].Map()["value"])
+				assert.Nil(t, actual.Map()["value"])
 			} else {
-				assert.Equal(t, tc.expectedArray, actual[0].Map()["value"])
+				assert.Equal(t, tc.expectedArray, actual.Map()["value"])
 			}
 		})
 	}
