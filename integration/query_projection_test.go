@@ -347,9 +347,9 @@ func TestProjectionQuerySlice(t *testing.T) {
 
 			if tc.expectedArray == nil {
 				assert.Nil(t, actual.Map()["value"])
-			} else {
-				assert.Equal(t, tc.expectedArray, actual.Map()["value"])
+				return
 			}
+			assert.Equal(t, tc.expectedArray, actual.Map()["value"])
 		})
 	}
 }

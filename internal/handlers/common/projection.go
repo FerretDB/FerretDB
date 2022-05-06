@@ -193,7 +193,6 @@ func applyComplexProjection(k1 string, doc, projectionVal *types.Document) (err 
 			// $slice works only for arrays, so docValue must be an array
 			arr, ok := docValue.(*types.Array)
 			if !ok {
-				doc.Remove(k1)
 				return
 			}
 			projectionVal := must.NotFail(projectionVal.Get(projectionType))
@@ -203,9 +202,9 @@ func applyComplexProjection(k1 string, doc, projectionVal *types.Document) (err 
 			}
 			if res == nil {
 				must.NoError(doc.Set(k1, types.Null))
-			} else {
-				must.NoError(doc.Set(k1, res))
+				return nil
 			}
+			must.NoError(doc.Set(k1, res))
 		default:
 			return NewError(ErrCommandNotFound,
 				lazyerrors.Errorf("applyComplexProjection: unknown projection operator: %q", projectionType),
@@ -267,21 +266,27 @@ func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.A
 		switch pr := projectionValue.(type) {
 		case float64:
 			if math.IsNaN(pr) {
-			} else if math.IsInf(pr, -1) || n < math.MinInt {
-				n = math.MinInt
-			} else if math.IsInf(pr, +1) || n > math.MaxInt {
-				n = math.MaxInt
-			} else {
-				n = int(pr)
+				break // because n == 0 already
 			}
+			if math.IsInf(pr, -1) || n < math.MinInt {
+				n = math.MinInt
+				break
+			}
+			if math.IsInf(pr, +1) || n > math.MaxInt {
+				n = math.MaxInt
+				break
+			}
+			n = int(pr)
 		case int64:
 			if pr > math.MaxInt {
 				n = math.MaxInt
-			} else if pr < math.MinInt {
-				n = math.MinInt
-			} else {
-				n = int(pr)
+				break
 			}
+			if pr < math.MinInt {
+				n = math.MinInt
+				break
+			}
+			n = int(pr)
 		case int32:
 			n = int(pr)
 		}
@@ -338,14 +343,17 @@ func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.A
 				return nil, nil //nolint:nilnil // nil is a valid value
 			case float64:
 				if math.IsNaN(v) {
-					arg[i] = 0
-				} else if math.IsInf(v, -1) || arg[i] < math.MinInt {
-					arg[i] = math.MinInt
-				} else if math.IsInf(v, +1) || arg[i] > math.MaxInt {
-					arg[i] = math.MaxInt
-				} else {
-					arg[i] = int(v)
+					break // because arg[i] == 0 already
 				}
+				if math.IsInf(v, -1) || arg[i] < math.MinInt {
+					arg[i] = math.MinInt
+					break
+				}
+				if math.IsInf(v, +1) || arg[i] > math.MaxInt {
+					arg[i] = math.MaxInt
+					break
+				}
+				arg[i] = int(v)
 			case int64:
 				if v > math.MaxInt {
 					arg[i] = math.MaxInt
