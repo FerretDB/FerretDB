@@ -208,26 +208,6 @@ func deepCopy(value any) any {
 // provided value into an error message. In contrast, fjson package aims to format values according to FJSON standard.
 func JSONSyntax(value any) string {
 	switch value := value.(type) {
-	case int32, int64, bool, float64:
-		return fmt.Sprintf("%v", value)
-	case string:
-		return fmt.Sprintf("%q", value)
-	case NullType:
-		return "null"
-	case *Array:
-		b := new(strings.Builder)
-		b.WriteString("[")
-		for i := 0; i < value.Len(); i++ {
-			b.WriteRune(' ')
-			b.WriteString(JSONSyntax(must.NotFail(value.Get(i))))
-			if i < value.Len()-1 {
-				b.WriteRune(',')
-			} else {
-				b.WriteRune(' ')
-			}
-		}
-		b.WriteString("]")
-		return b.String()
 	case *Document:
 		b := new(strings.Builder)
 		b.WriteString("{")
@@ -243,6 +223,32 @@ func JSONSyntax(value any) string {
 		}
 		b.WriteString("}")
 		return b.String()
+	case *Array:
+		b := new(strings.Builder)
+		b.WriteString("[")
+		for i := 0; i < value.Len(); i++ {
+			b.WriteRune(' ')
+			b.WriteString(JSONSyntax(must.NotFail(value.Get(i))))
+			if i < value.Len()-1 {
+				b.WriteRune(',')
+			} else {
+				b.WriteRune(' ')
+			}
+		}
+		b.WriteString("]")
+		return b.String()
+	case float64:
+		return fmt.Sprintf("%v", value)
+	case string:
+		return fmt.Sprintf("%q", value)
+	case bool:
+		return fmt.Sprintf("%v", value)
+	case NullType:
+		return "null"
+	case int32:
+		return fmt.Sprintf("%v", value)
+	case int64:
+		return fmt.Sprintf("%v", value)
 	default:
 		panic(fmt.Sprintf("types.JSONSyntax: unsupported type: %[1]T (%[1]value)", value))
 	}
