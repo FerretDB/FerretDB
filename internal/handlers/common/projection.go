@@ -15,6 +15,7 @@
 package common
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
@@ -320,7 +321,7 @@ func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.A
 						"The given syntax did not match the expression "+
 						"$slice syntax. :: caused by :: "+
 						"Expression $slice takes at least 2 arguments, and at most 3, but %d were passed in.",
-					types.JSONSyntax(projectionValue),
+					string(must.NotFail(json.Marshal(projectionValue))),
 					arr.Len(),
 				))
 		}
@@ -411,7 +412,7 @@ func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.A
 				"$slice only supports numbers and [skip, limit] arrays :: "+
 				"The given syntax did not match the expression $slice syntax. :: caused by :: "+
 				"Expression $slice takes at least 2 arguments, and at most 3, but 1 were passed in.",
-				types.JSONSyntax(projectionValue),
+				string(must.NotFail(json.Marshal(projectionValue))),
 			))
 	}
 }

@@ -18,8 +18,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestDeepCopy(t *testing.T) {
@@ -53,52 +51,4 @@ func TestDeepCopy(t *testing.T) {
 		o1[0] = 0
 		assert.NotEqual(t, o1, o2)
 	})
-}
-
-func TestJSONSyntax(t *testing.T) {
-	t.Parallel()
-
-	for name, tc := range map[string]struct { //nolint:paralleltest // "Range statement for test TestJSONSyntax
-		// does not use range value in test Run", but it actually does
-		input    any
-		expected string
-	}{
-		"String": {
-			input:    "input_string",
-			expected: "\"input_string\"",
-		},
-		"Float64": {
-			input:    float64(42.000042),
-			expected: "42.000042",
-		},
-		"Int32": {
-			input:    int32(12345),
-			expected: "12345",
-		},
-		"Int64": {
-			input:    int64(12345),
-			expected: "12345",
-		},
-		"Bool": {
-			input:    true,
-			expected: "true",
-		},
-		"Document": {
-			input: must.NotFail(NewDocument("a", must.NotFail(NewDocument("b", int32(3))),
-				"b", "string", "x", must.NotFail(NewArray(42.5, Null, int64(93))),
-			)),
-			expected: "{ a: { b: 3 }, b: \"string\", x: [ 42.5, null, 93 ] }",
-		},
-		"Array": {
-			input:    must.NotFail(NewArray(int64(1), Null, "string", 42.5, false, must.NotFail(NewArray(int32(5))))),
-			expected: "[ 1, null, \"string\", 42.5, false, [ 5 ] ]",
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			res := JSONSyntax(tc.input)
-			assert.Equal(t, tc.expected, res)
-		})
-	}
 }

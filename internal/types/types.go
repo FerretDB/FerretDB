@@ -45,10 +45,7 @@ package types
 
 import (
 	"fmt"
-	"strings"
 	"time"
-
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 const MaxDocumentLen = 16777216
@@ -190,76 +187,5 @@ func deepCopy(value any) any {
 
 	default:
 		panic(fmt.Sprintf("types.deepCopy: unsupported type: %[1]T (%[1]v)", value))
-	}
-}
-
-// JSONSyntax formats a FerretDB value as it's JSON counterpart. This is useful when embedding an invalid value in an
-// error.
-// For example, consider a query:
-// 	db.values.find( { *someFilter* }, { arr: { $slice: { a: { b: 3 }, b: [ 1, 2 ], x: 3 } } } )
-//
-// This query returns an error that starts with:
-// 	"Invalid $slice syntax. The given syntax { $slice: { a: { b: 3 }, b: [ 1, 2 ], x: 3 } } did not match the find()
-// 	syntax because :: /.../"
-//
-// JSONSyntax makes sure that the value in the { $slice: /.../ } clause gets formatted correctly.
-// It differs from fjson package in its purpose.
-// JSONSyntax is needed to match the output of MongoDB in the visually particular case of embedding a
-// provided value into an error message. In contrast, fjson package aims to format values according to FJSON standard.
-func JSONSyntax(value any) string {
-	switch value := value.(type) {
-	case *Document:
-		b := new(strings.Builder)
-		b.WriteString("{")
-		for i, key := range value.Keys() {
-			b.WriteString(fmt.Sprintf(" %s: ", key))
-			b.WriteString(JSONSyntax(must.NotFail(value.Get(key))))
-
-			if i < len(value.Keys())-1 {
-				b.WriteRune(',')
-			} else {
-				b.WriteRune(' ')
-			}
-		}
-		b.WriteString("}")
-		return b.String()
-	case *Array:
-		b := new(strings.Builder)
-		b.WriteString("[")
-		for i := 0; i < value.Len(); i++ {
-			b.WriteRune(' ')
-			b.WriteString(JSONSyntax(must.NotFail(value.Get(i))))
-			if i < value.Len()-1 {
-				b.WriteRune(',')
-			} else {
-				b.WriteRune(' ')
-			}
-		}
-		b.WriteString("]")
-		return b.String()
-	case float64:
-		return fmt.Sprintf("%v", value)
-	case string:
-		return fmt.Sprintf("%q", value)
-	case Binary: // TODO
-		return "JSONSyntax: Binary"
-	case ObjectID: // TODO
-		return "JSONSyntax: ObjectID"
-	case bool:
-		return fmt.Sprintf("%v", value)
-	case time.Time: // TODO
-		return "JSONSyntax: time.Time"
-	case NullType:
-		return "null"
-	case Regex: // TODO
-		return "JSONSyntax: Regex"
-	case int32:
-		return fmt.Sprintf("%v", value)
-	case Timestamp: // TODO
-		return "JSONSyntax: Timestamp"
-	case int64:
-		return fmt.Sprintf("%v", value)
-	default:
-		panic(fmt.Sprintf("types.JSONSyntax: unsupported type: %[1]T (%[1]value)", value))
 	}
 }
