@@ -202,10 +202,10 @@ func deepCopy(value any) any {
 // 	"Invalid $slice syntax. The given syntax { $slice: { a: { b: 3 }, b: [ 1, 2 ], x: 3 } } did not match the find()
 // 	syntax because :: /.../"
 //
-// This function makes sure that, continuing with the example, the value in the { $slice: /.../ } clause gets formatted
-// correctly, which isn't the case by default. It differs from fjson package in its purpose: while fjson package aims
-// to format values according FJSON standard, JSONSyntax is needed to visually match the output of MongoDB in the
-// particular case of embedding a provided value into an error message.
+// JSONSyntax makes sure that the value in the { $slice: /.../ } clause gets formatted correctly.
+// It differs from fjson package in its purpose.
+// JSONSyntax is needed to match the output of MongoDB in the visually particular case of embedding a
+// provided value into an error message. In contrast, fjson package aims to format values according to FJSON standard.
 func JSONSyntax(value any) string {
 	switch value := value.(type) {
 	case int32, int64, bool, float64:
