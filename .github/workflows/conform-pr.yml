@@ -1,8 +1,9 @@
 ---
 name: Conform PR
 on:
-  # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request
   pull_request:
+    # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request
+    # List all types to make it easier to enable new ones when they are needed.
     types:
       # - assigned
       # - unassigned
@@ -35,4 +36,4 @@ jobs:
 
     steps:
       - name: Conform PR
-        uses: FerretDB/github-actions/conform-pr@main
+        uses: ./conform-pr

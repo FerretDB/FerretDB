@@ -1,8 +1,8 @@
 # FerretDB
 
-[![Go](https://github.com/FerretDB/FerretDB/actions/workflows/go.yml/badge.svg)](https://github.com/FerretDB/FerretDB/actions/workflows/go.yml)
-[![Integration](https://github.com/FerretDB/FerretDB/actions/workflows/integration.yml/badge.svg)](https://github.com/FerretDB/FerretDB/actions/workflows/integration.yml)
-[![Docker](https://github.com/FerretDB/FerretDB/actions/workflows/docker.yml/badge.svg)](https://github.com/FerretDB/FerretDB/actions/workflows/docker.yml)
+[![Go](https://github.com/FerretDB/FerretDB/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/FerretDB/FerretDB/actions/workflows/go.yml)
+[![Integration](https://github.com/FerretDB/FerretDB/actions/workflows/integration.yml/badge.svg?branch=main)](https://github.com/FerretDB/FerretDB/actions/workflows/integration.yml)
+[![Docker](https://github.com/FerretDB/FerretDB/actions/workflows/docker.yml/badge.svg?branch=main)](https://github.com/FerretDB/FerretDB/actions/workflows/docker.yml)
 [![codecov](https://codecov.io/gh/FerretDB/FerretDB/branch/main/graph/badge.svg?token=JZ56XFT3DM)](https://codecov.io/gh/FerretDB/FerretDB)
 
 FerretDB (previously MangoDB) was founded to become the de-facto open-source substitute to MongoDB.
@@ -25,7 +25,8 @@ Recognizing this, FerretDB is here to fill that gap.
 FerretDB will be compatible with MongoDB drivers and will strive to serve as a drop-in replacement for MongoDB.
 
 Currently, the project is in its early stages and welcomes all contributors.
-See our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1) and [contributing guidelines](CONTRIBUTING.md).
+See our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1)
+and [contributing guidelines](CONTRIBUTING.md).
 
 ### Known differences
 
