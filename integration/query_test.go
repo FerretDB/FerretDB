@@ -23,11 +23,12 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestUnknownFilterOperator(t *testing.T) {
+func TestQueryUnknownFilterOperator(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t, shareddata.Scalars)
 
@@ -35,6 +36,136 @@ func TestUnknownFilterOperator(t *testing.T) {
 	errExpected := mongo.CommandError{Code: 2, Name: "BadValue", Message: "unknown operator: $someUnknownOperator"}
 	_, err := collection.Find(ctx, filter)
 	AssertEqualError(t, errExpected, err)
+}
+
+func TestQuerySort(t *testing.T) {
+	t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/457")
+
+	t.Parallel()
+	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+
+	for name, tc := range map[string]struct {
+		sort        bson.D
+		expectedIDs []any
+	}{
+		"Asc": {
+			sort: bson.D{{"value", 1}, {"_id", 1}},
+			expectedIDs: []any{
+				"array-empty",
+				"array-embedded",
+				"array-null",
+				"array-three",
+				"array-three-reverse",
+				"null",
+				"double-nan",
+				"double-negative-infinity",
+				"int64-min",
+				"int32-min",
+				"double-negative-zero",
+				"double-zero",
+				"int32-zero",
+				"int64-zero",
+				"double-smallest",
+				"array",
+				"double-whole",
+				"int32",
+				"int64",
+				"double",
+				"int32-max",
+				"int64-max",
+				"double-max",
+				"double-positive-infinity",
+				"string-empty",
+				"string-whole",
+				"string-double",
+				"string",
+				"document-empty",
+				"document-null",
+				"document",
+				"document-composite",
+				"document-composite-reverse",
+				"binary-empty",
+				"binary",
+				"objectid-empty",
+				"objectid",
+				"bool-false",
+				"bool-true",
+				"datetime-year-min",
+				"datetime-epoch",
+				"datetime",
+				"datetime-year-max",
+				"timestamp-i",
+				"timestamp",
+				"regex-empty",
+				"regex",
+			},
+		},
+		"Desc": {
+			sort: bson.D{{"value", -1}, {"_id", 1}},
+			expectedIDs: []any{
+				"regex",
+				"regex-empty",
+				"timestamp",
+				"timestamp-i",
+				"datetime-year-max",
+				"datetime",
+				"datetime-epoch",
+				"datetime-year-min",
+				"bool-true",
+				"bool-false",
+				"objectid",
+				"objectid-empty",
+				"binary",
+				"binary-empty",
+				"array-embedded",
+				"document-composite-reverse",
+				"document-composite",
+				"document",
+				"document-null",
+				"document-empty",
+				"array-three",
+				"array-three-reverse",
+				"string",
+				"string-double",
+				"string-whole",
+				"string-empty",
+				"double-positive-infinity",
+				"double-max",
+				"int64-max",
+				"int32-max",
+				"double",
+				"array",
+				"double-whole",
+				"int32",
+				"int64",
+				"double-smallest",
+				"double-negative-zero",
+				"double-zero",
+				"int32-zero",
+				"int64-zero",
+				"int32-min",
+				"int64-min",
+				"double-negative-infinity",
+				"double-nan",
+				"array-null",
+				"null",
+				"array-empty",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			cursor, err := collection.Find(ctx, bson.D{}, options.Find().SetSort(tc.sort))
+			require.NoError(t, err)
+
+			var actual []bson.D
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
+		})
+	}
 }
 
 func TestQueryCount(t *testing.T) {
@@ -252,9 +383,23 @@ func TestQueryBadSortType(t *testing.T) {
 	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
-		command bson.D
-		err     *mongo.CommandError
+		command    bson.D
+		err        *mongo.CommandError
+		altMessage string
 	}{
+		"BadSortTypeDouble": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"projection", bson.D{{"value", "some"}}},
+				{"sort", 42.13},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "Expected field sortto be of type object",
+			},
+			altMessage: "Expected field sort to be of type object",
+		},
 		"BadSortType": {
 			command: bson.D{
 				{"find", collection.Name()},
@@ -266,6 +411,7 @@ func TestQueryBadSortType(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "Expected field sortto be of type object",
 			},
+			altMessage: "Expected field sort to be of type object",
 		},
 	} {
 		name, tc := name, tc
@@ -275,7 +421,7 @@ func TestQueryBadSortType(t *testing.T) {
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 			require.Error(t, err)
-			AssertEqualError(t, *tc.err, err)
+			AssertEqualAltError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }

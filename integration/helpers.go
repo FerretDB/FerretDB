@@ -124,6 +124,28 @@ func AssertEqualError(t testing.TB, expected mongo.CommandError, actual error) b
 	return assert.Equal(t, expected, a)
 }
 
+// AssertEqualAltError asserts that expected error is the same as actual
+// using altMessage for CommandError.Message if set and ignoring the Raw part.
+func AssertEqualAltError(t testing.TB, expected mongo.CommandError, altMessage string, actual error) bool {
+	t.Helper()
+
+	a, ok := actual.(mongo.CommandError)
+	if !ok {
+		return assert.Equal(t, expected, actual)
+	}
+
+	// raw part might be useful if assertion fails
+	require.Nil(t, expected.Raw)
+	expected.Raw = a.Raw
+
+	if assert.ObjectsAreEqual(expected, a) {
+		return true
+	}
+
+	expected.Message = altMessage
+	return assert.Equal(t, expected, a)
+}
+
 // CollectIDs returns all _id values from given documents.
 //
 // The order is preserved.

@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 )
@@ -30,8 +31,14 @@ func TestDummyHandler(t *testing.T) {
 	ctx := context.Background()
 	errNotImplemented := common.NewErrorMsg(common.ErrNotImplemented, "I'm a dummy, not a handler")
 	for k, command := range common.Commands {
-		_, err := command.Handler(h, ctx, nil)
-		assert.Equal(t, err, errNotImplemented, k)
+		if slices.Contains([]string{"debug_error", "debug_panic"}, k) {
+			assert.NotNil(t, command.Handler)
+			continue
+		}
+		if command.Handler != nil {
+			_, err := command.Handler(h, ctx, nil)
+			assert.Equal(t, err, errNotImplemented, k)
+		}
 	}
 	_, err := h.CmdQuery(ctx, nil)
 	assert.Equal(t, err, errNotImplemented)

@@ -26,7 +26,7 @@ import (
 func TestHasSameTypeElements(t *testing.T) {
 	t.Parallel()
 
-	for name, tc := range map[string]struct {
+	for name, tc := range map[string]struct { //nolint:paralleltest // false positive
 		array *types.Array
 		same  bool
 	}{

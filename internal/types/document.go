@@ -16,7 +16,6 @@ package types
 
 import (
 	"fmt"
-	"strconv"
 	"unicode/utf8"
 
 	"golang.org/x/exp/slices"
@@ -321,39 +320,7 @@ func (d *Document) Remove(key string) {
 
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
 func (d *Document) RemoveByPath(keys ...string) {
-	if len(keys) == 0 {
-		return
-	}
-
-	key := keys[0]
-	if _, ok := d.m[key]; !ok {
-		return
-	}
-
-	if len(keys) == 1 {
-		d.Remove(key)
-		return
-	}
-
-	key2 := keys[1]
-	switch x := d.m[key].(type) {
-	case *Document:
-		d.Remove(key2)
-
-	case *Array:
-		i, err := strconv.Atoi(key2)
-		if err != nil {
-			panic("wrong path " + key2)
-			// return
-		}
-		if i > len(x.s)-1 {
-			return
-		}
-		x.s = append(x.s[:i], x.s[i+1:]...)
-	default:
-		// no path further: scalar value
-	}
-	return
+	removeByPath(d, keys...)
 }
 
 // check interfaces
