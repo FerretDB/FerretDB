@@ -136,6 +136,10 @@ var Commands = map[string]Command{
 		Help:    "Updates documents that are matched by the query.",
 		Handler: (Handler).MsgUpdate,
 	},
+	"connectionStatus": {
+		Help:    "Returns information about the current connection, specifically the state of authenticated users and their available permissions.",
+		Handler: (Handler).MsgConnectionStatus,
+	},
 
 	"listCommands": {
 		Help:    "Returns a list of currently supported commands.",
@@ -148,9 +152,5 @@ var Commands = map[string]Command{
 	"debug_panic": {
 		Help:    "Used for debugging purposes.",
 		Handler: MsgDebugPanic,
-	},
-	"connectionStatus": {
-		Help:    "Returns information about the current connection, specifically the state of authenticated users and their available permissions.",
-		Handler: MsgConnectionStatus,
 	},
 }

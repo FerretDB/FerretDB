@@ -322,7 +322,3 @@ func TestStatisticsCommands(t *testing.T) {
 		})
 	}
 }
-
-func TestCommandsAdministrationConnectionStatus(t *testing.T) {
-	t.Parallel()
-}
