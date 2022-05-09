@@ -19,12 +19,16 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/dummy"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
@@ -39,10 +43,10 @@ var (
 	modeF            = flag.String("mode", string(clientconn.AllModes[0]), fmt.Sprintf("operation mode: %v", clientconn.AllModes))
 	postgresqlURLF   = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/ferretdb", "PostgreSQL URL")
 	tigrisURLF       = flag.String("tigris-url", "localhost:8081", "Tigris URL")
-	backendTypeF     = flag.String("backendType", "tigris", "Backend type to be used, can be tigris, tg and postgres, pg")
 	proxyAddrF       = flag.String("proxy-addr", "127.0.0.1:37017", "")
 	versionF         = flag.Bool("version", false, "print version to stdout (full version, commit, branch, dirty flag) and exit")
 	testConnTimeoutF = flag.Duration("test-conn-timeout", 0, "test: set connection timeout")
+	handlerF         = flag.String("handler", "pg", "set backend handler (pg, tg, dummy)")
 )
 
 func main() {
@@ -88,43 +92,53 @@ func main() {
 
 	go debug.RunHandler(ctx, *debugAddrF, logger.Named("debug"))
 
-	listenerOpts := &clientconn.NewListenerOpts{
-		ListenAddr:      *listenAddrF,
-		ProxyAddr:       *proxyAddrF,
-		Mode:            clientconn.Mode(*modeF),
-		Logger:          logger,
-		TestConnTimeout: *testConnTimeoutF,
-	}
-
-	var l *clientconn.Listener
-	switch *backendTypeF {
+	var h common.Handler
+	switch *handlerF {
 	case "pg", "postgres":
 		pgPool, err := pgdb.NewPool(ctx, *postgresqlURLF, logger, false)
 		if err != nil {
 			logger.Fatal(err.Error())
 		}
-		listenerOpts.PgPool = pgPool
-		defer pgPool.Close()
-		l = clientconn.NewPgListener(listenerOpts)
+		handlerOpts := &pg.NewOpts{
+			PgPool:    pgPool,
+			L:         logger,
+			StartTime: time.Now(),
+		}
+		h = pg.New(handlerOpts)
 
 	case "tg", "tigris":
 		tgConn, err := tigris.NewConn(*tigrisURLF, logger, false)
 		if err != nil {
 			logger.Fatal(err.Error())
 		}
-		listenerOpts.TgConn = tgConn
-		defer tgConn.Close()
-		l = clientconn.NewTigrisListener(listenerOpts)
+		tgHandlerOpts := &tigris.NewOpts{
+			Conn:      tgConn,
+			L:         logger,
+			StartTime: time.Now(),
+		}
+		h = tigris.New(tgHandlerOpts)
+
+	case "dummy":
+		h = dummy.New()
 
 	default:
-		msg := *backendTypeF + " not supported"
-		logger.Fatal(msg)
+		panic("unknown handler")
 	}
+
+	defer h.Close()
+
+	l := clientconn.NewListener(&clientconn.NewListenerOpts{
+		ListenAddr:      *listenAddrF,
+		ProxyAddr:       *proxyAddrF,
+		Mode:            clientconn.Mode(*modeF),
+		Handler:         h,
+		Logger:          logger,
+		TestConnTimeout: *testConnTimeoutF,
+	})
 
 	prometheus.DefaultRegisterer.MustRegister(l)
 
-	var err error
-	err = l.Run(ctx)
+	err := l.Run(ctx)
 	if err == nil || err == context.Canceled {
 		logger.Info("Listener stopped")
 	} else {
