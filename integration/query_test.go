@@ -498,9 +498,13 @@ func TestDotNotation(t *testing.T) {
 		filter      bson.D
 		expectedIDs []any
 	}{
+		"DocumentDeepNested": {
+			filter:      bson.D{{"foo.bar.baz.qux.quz", int32(42)}},
+			expectedIDs: []any{"document-deeply-nested"},
+		},
 		"Document": {
 			filter:      bson.D{{"foo.bar.baz", bson.D{{"qux.quz", int32(42)}}}},
-			expectedIDs: []any{"document-deeply-nested"},
+			expectedIDs: []any{},
 		},
 	} {
 		name, tc := name, tc
