@@ -49,7 +49,7 @@ func UpdateDocument(doc, update *types.Document) error {
 	return nil
 }
 
-var updateOperators map[string]struct{}
+var updateOperators = map[string]struct{}{}
 
 func init() {
 	for _, o := range []string{
