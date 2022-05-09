@@ -481,12 +481,13 @@ func TestDotNotation(t *testing.T) {
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{
 			{"_id", "document-deeply-nested"},
-			{"foo",
-				bson.D{{"bar",
-					bson.D{{"baz",
-						bson.D{{"qux",
-							bson.D{{"quz", int32(42)}},
-						}},
+			{
+				"foo",
+				bson.D{{
+					"bar",
+					bson.D{{
+						"baz",
+						bson.D{{"qux", bson.D{{"quz", int32(42)}}}},
 					}},
 				}},
 			},
