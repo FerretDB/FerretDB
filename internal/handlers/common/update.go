@@ -22,8 +22,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-//go:generate ../../../bin/stringer -linecomment -type updateOperator
-
 // UpdateDocument updates the given document with a series of update operators.
 func UpdateDocument(doc, update *types.Document) error {
 	for _, updateOp := range update.Keys() {
