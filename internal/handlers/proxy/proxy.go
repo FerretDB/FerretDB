@@ -23,21 +23,21 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// Handler "handles" messages by sending them to another wire protocol compatible service.
-type Handler struct {
+// Router "handles" messages by sending them to another wire protocol compatible service.
+type Router struct {
 	conn net.Conn
 	bufr *bufio.Reader
 	bufw *bufio.Writer
 }
 
-// New creates a new Handler for a service with given address.
-func New(addr string) (*Handler, error) {
+// New creates a new Router for a service with given address.
+func New(addr string) (*Router, error) {
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Handler{
+	return &Router{
 		conn: conn,
 		bufr: bufio.NewReader(conn),
 		bufw: bufio.NewWriter(conn),
@@ -45,24 +45,24 @@ func New(addr string) (*Handler, error) {
 }
 
 // Close stops the handler.
-func (h *Handler) Close() {
-	h.conn.Close()
+func (r *Router) Close() {
+	r.conn.Close()
 }
 
-// Handle "handles" the message by sending it to another wire protocol compatible service.
-func (h *Handler) Handle(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody) (*wire.MsgHeader, wire.MsgBody, bool) {
+// Route routes the message by sending it to another wire protocol compatible service.
+func (r *Router) Route(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody) (*wire.MsgHeader, wire.MsgBody, bool) {
 	deadline, _ := ctx.Deadline()
-	h.conn.SetDeadline(deadline)
+	r.conn.SetDeadline(deadline)
 
-	if err := wire.WriteMessage(h.bufw, header, body); err != nil {
+	if err := wire.WriteMessage(r.bufw, header, body); err != nil {
 		panic(err)
 	}
 
-	if err := h.bufw.Flush(); err != nil {
+	if err := r.bufw.Flush(); err != nil {
 		panic(err)
 	}
 
-	resHeader, resBody, err := wire.ReadMessage(h.bufr)
+	resHeader, resBody, err := wire.ReadMessage(r.bufr)
 	if err != nil {
 		panic(err)
 	}

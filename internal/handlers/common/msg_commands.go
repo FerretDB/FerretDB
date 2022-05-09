@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pg
+package common
 
 import (
 	"context"
+	"errors"
 	"sort"
 
 	"golang.org/x/exp/maps"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -28,15 +28,16 @@ import (
 )
 
 // MsgListCommands returns a list of currently supported commands.
-func (h *Handler) MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// Cannot add this func in Commands bcz of initialization loop.
+func MsgListCommands(_ Handler, ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 
 	cmdList := must.NotFail(types.NewDocument())
-	names := maps.Keys(common.Commands)
+	names := maps.Keys(Commands)
 	sort.Strings(names)
 	for _, name := range names {
 		cmdList.Set(name, must.NotFail(types.NewDocument(
-			"help", common.Commands[name].Help,
+			"help", Commands[name].Help,
 		)))
 	}
 
@@ -51,4 +52,14 @@ func (h *Handler) MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	}
 
 	return &reply, nil
+}
+
+// MsgDebugError used for debugging purposes.
+func MsgDebugError(_ Handler, _ context.Context, _ *wire.OpMsg) (*wire.OpMsg, error) {
+	return nil, errors.New("debug_error")
+}
+
+// MsgDebugPanic used for debugging purposes.
+func MsgDebugPanic(_ Handler, _ context.Context, _ *wire.OpMsg) (*wire.OpMsg, error) {
+	panic("debug_panic")
 }

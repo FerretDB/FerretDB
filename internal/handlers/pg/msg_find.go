@@ -16,6 +16,7 @@ package pg
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -64,8 +65,16 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
-	if collection, err = common.GetRequiredParam[string](document, command); err != nil {
+	collectionParam, err := document.Get(command)
+	if err != nil {
 		return nil, err
+	}
+	collection, ok := collectionParam.(string)
+	if !ok {
+		return nil, common.NewErrorMsg(
+			common.ErrBadValue,
+			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+		)
 	}
 
 	var filter, sort, projection *types.Document
@@ -73,7 +82,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 	if sort, err = common.GetOptionalParam(document, "sort", sort); err != nil {
-		return nil, err
+		return nil, common.NewErrorMsg(common.ErrTypeMismatch, "Expected field sort to be of type object")
 	}
 	if projection, err = common.GetOptionalParam(document, "projection", projection); err != nil {
 		return nil, err

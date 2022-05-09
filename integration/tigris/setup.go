@@ -20,6 +20,7 @@ import (
 	"net"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"github.com/tigrisdata/tigrisdb-client-go/driver"
@@ -142,10 +143,17 @@ func setupListener(t *testing.T, ctx context.Context, logger *zap.Logger) int {
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
-	l := clientconn.NewTigrisListener(&clientconn.NewListenerOpts{
+	tgHandlerOpts := &tigris.NewOpts{
+		Conn:      tgConn,
+		L:         logger,
+		StartTime: time.Now(),
+	}
+	handler := tigris.New(tgHandlerOpts)
+
+	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		ListenAddr: "127.0.0.1:0",
 		Mode:       clientconn.NormalMode,
-		TgConn:     tgConn,
+		Handler:    handler,
 		Logger:     logger,
 	})
 
