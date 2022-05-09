@@ -17,7 +17,7 @@ package tigris
 import (
 	"context"
 
-	"github.com/tigrisdata/tigrisdb-client-go/driver"
+	"github.com/tigrisdata/tigris-client-go/driver"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
@@ -69,8 +69,9 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
+	tigrisDB := h.client.conn.UseDatabase(db)
 	var schema driver.Schema
-	if err := h.client.conn.CreateOrUpdateCollection(ctx, db, collection, schema); err != nil && err != pgdb.ErrAlreadyExist {
+	if err := tigrisDB.CreateOrUpdateCollection(ctx, collection, schema); err != nil && err != pgdb.ErrAlreadyExist {
 		return nil, lazyerrors.Error(err)
 	}
 

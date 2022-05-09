@@ -23,7 +23,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"github.com/tigrisdata/tigrisdb-client-go/driver"
+	"github.com/tigrisdata/tigris-client-go/config"
+	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
@@ -76,8 +77,10 @@ func setupWithOpts(t *testing.T, opts *setupOpts) (context.Context, *mongo.Colle
 
 	tigrisAddress := "127.0.0.1:8081"
 
-	conf := new(driver.Config)
-	c, err := driver.NewDriver(ctx, tigrisAddress, conf)
+	conf := &config.Driver{
+		URL: tigrisAddress,
+	}
+	c, err := driver.NewDriver(ctx, conf)
 	require.NoError(t, err)
 
 	t.Log("recreate db", databaseName)
@@ -104,7 +107,7 @@ func setupWithOpts(t *testing.T, opts *setupOpts) (context.Context, *mongo.Colle
   }`)
 
 	t.Log("create collection", databaseName, collectionName)
-	err = c.CreateOrUpdateCollection(ctx, databaseName, collectionName, collectionSchema)
+	err = c.UseDatabase(databaseName).CreateOrUpdateCollection(ctx, collectionName, collectionSchema)
 	require.NoError(t, err)
 
 	db := client.Database(databaseName)

@@ -20,6 +20,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -44,18 +45,18 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
-
-	names, err := h.client.conn.ListCollections(ctx, db)
+	tigrisDB := h.client.conn.UseDatabase(db)
+	names, err := tigrisDB.ListCollections(ctx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	collections := types.MakeArray(len(names))
 	for _, n := range names {
-		d := types.MustNewDocument(
+		d := must.NotFail(types.NewDocument(
 			"name", n,
 			"type", "collection",
-		)
+		))
 		if err = collections.Append(d); err != nil {
 			return nil, lazyerrors.Error(err)
 		}

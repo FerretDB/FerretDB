@@ -17,7 +17,7 @@ package tigris
 import (
 	"context"
 
-	"github.com/tigrisdata/tigrisdb-client-go/driver"
+	"github.com/tigrisdata/tigris-client-go/driver"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/tjson"
@@ -51,6 +51,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
+	tigrisDB := h.client.conn.UseDatabase(db)
 	var inserted int32
 	for i := 0; i < docs.Len(); i++ {
 		doc := must.NotFail(docs.Get(i)).(*types.Document)
@@ -59,7 +60,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
-		if _, err = h.client.conn.Insert(ctx, db, collection, []driver.Document{*tigrisDoc}); err != nil {
+		if _, err = tigrisDB.Insert(ctx, collection, []driver.Document{*tigrisDoc}); err != nil {
 			return nil, err
 		}
 

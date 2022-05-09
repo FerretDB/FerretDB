@@ -17,7 +17,7 @@ package tigris
 import (
 	"context"
 
-	"github.com/tigrisdata/tigrisdb-client-go/driver"
+	"github.com/tigrisdata/tigris-client-go/driver"
 
 	"github.com/FerretDB/FerretDB/internal/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -29,7 +29,9 @@ import (
 // TODO https://github.com/FerretDB/FerretDB/issues/372
 func (h *Handler) fetch(ctx context.Context, db, collection string) ([]*types.Document, error) {
 	readOpts := new(driver.ReadOptions)
-	iterator, err := h.client.conn.Read(ctx, db, collection, driver.Filter("{}"), nil, readOpts)
+
+	tigrisDB := h.client.conn.UseDatabase(db)
+	iterator, err := tigrisDB.Read(ctx, collection, driver.Filter("{}"), nil, readOpts)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

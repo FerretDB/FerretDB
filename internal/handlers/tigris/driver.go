@@ -17,24 +17,31 @@ package tigris
 import (
 	"context"
 
-	"github.com/tigrisdata/tigrisdb-client-go/driver"
+	"github.com/tigrisdata/tigris-client-go/config"
+	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
+
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 type Client struct {
-	conn driver.Driver
+	connString string
+	conn       driver.Driver
 }
 
 // NewConn creates a gRPC connection to the Tigris database backend.
 func NewConn(connString string, logger *zap.Logger, lazy bool) (*Client, error) {
 	ctx := context.TODO()
-	conf := new(driver.Config)
-	c, err := driver.NewDriver(ctx, connString, conf)
+	conf := &config.Driver{
+		URL: connString,
+	}
+	c, err := driver.NewDriver(ctx, conf)
 	if err != nil {
-		panic(err)
+		return nil, lazyerrors.Errorf("cannot connect to %s: %w", connString, err)
 	}
 	res := &Client{
-		conn: c,
+		connString: connString,
+		conn:       c,
 	}
 	if !lazy {
 		err = res.Check(ctx)
@@ -47,6 +54,8 @@ func (cli *Client) Close() error {
 }
 
 func (cli *Client) Check(ctx context.Context) error {
-	_, err := cli.conn.ListDatabases(ctx)
-	return err
+	if _, err := cli.conn.ListDatabases(ctx); err != nil {
+		return lazyerrors.Errorf("cannot connect to %s: %w", cli.connString, err)
+	}
+	return nil
 }
