@@ -29,8 +29,8 @@ func UpdateDocument(doc, update *types.Document) error {
 	for _, updateOp := range update.Keys() {
 		updateV := must.NotFail(update.Get(updateOp))
 
-		switch updateOperators[updateOp] { //nolint:exhaustive // not implemented yet
-		case updateSet:
+		switch updateOp { //nolint:exhaustive // not implemented yet
+		case "$set":
 			setDoc, err := AssertType[*types.Document](updateV)
 			if err != nil {
 				return err
@@ -51,30 +51,14 @@ func UpdateDocument(doc, update *types.Document) error {
 	return nil
 }
 
-// updateOperator represents update operators aliases.
-type updateOperator int8
-
-const (
-	updateCurrentDate = updateOperator(1) // $currentDate
-	updateInc         = updateOperator(2) // $inc
-	updateMin         = updateOperator(3) // $min
-	updateMax         = updateOperator(4) // $max
-	updateMul         = updateOperator(5) // $mul
-	updateRename      = updateOperator(6) // $rename
-	updateSet         = updateOperator(7) // $set
-	updateSetOnInsert = updateOperator(8) // $setOnInsert
-	updateUnset       = updateOperator(9) // $unset
-)
-
-// updateOperators matches update operator string to the corresponding updateOperator value.
-var updateOperators = map[string]updateOperator{}
+var updateOperators map[string]struct{}
 
 func init() {
-	for _, i := range []updateOperator{
-		updateCurrentDate, updateInc, updateMin, updateMax,
-		updateMul, updateRename, updateSet, updateSetOnInsert, updateUnset,
+	for _, o := range []string{
+		"$currentDate", "$inc", "$min", "$max",
+		"$mul", "$rename", "$set", "$setOnInsert", "$unset",
 	} {
-		updateOperators[i.String()] = i
+		updateOperators[o] = struct{}{}
 	}
 }
 
