@@ -36,4 +36,4 @@ jobs:
 
     steps:
       - name: Conform PR
-        uses: ./conform-pr
+        uses: FerretDB/github-actions/conform-pr@main
