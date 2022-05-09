@@ -100,7 +100,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	}
 
 	if len(resDocs) == 1 && params.remove {
-		_, err = h.delete(ctx, resDocs, params.db, params.collection)
+		_, err = h.delete(ctx, params.db, params.collection, resDocs)
 		if err != nil {
 			return nil, err
 		}
@@ -116,7 +116,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return &reply, nil
 	}
 
-	if common.HasUpdateOperator(params.update) {
+	if common.HasUpdateOperator(params.update) { //nolint:nestif // no way to make it simple now
 		upsert := resDocs[0].DeepCopy()
 		err = common.UpdateDocument(upsert, params.update)
 		if err != nil {
@@ -128,12 +128,12 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			return nil, err
 		}
 	} else {
-		_, err = h.delete(ctx, resDocs, params.db, params.collection)
+		_, err = h.delete(ctx, params.db, params.collection, resDocs)
 		if err != nil {
 			return nil, err
 		}
 
-		err = h.insert(ctx, params.update, params.db, params.collection)
+		err = h.insert(ctx, params.db, params.collection, params.update)
 		if err != nil {
 			return nil, err
 		}

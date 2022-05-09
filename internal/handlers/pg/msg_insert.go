@@ -67,7 +67,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, lazyerrors.Error(err)
 		}
 
-		err = h.insert(ctx, doc, db, collection)
+		err = h.insert(ctx, db, collection, doc)
 		if err != nil {
 			return nil, err
 		}
@@ -89,7 +89,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
-func (h *Handler) insert(ctx context.Context, doc any, db string, collection string) error {
+func (h *Handler) insert(ctx context.Context, db string, collection string, doc any) error {
 	d := doc.(*types.Document)
 	sql := fmt.Sprintf("INSERT INTO %s (_jsonb) VALUES ($1)", pgx.Identifier{db, collection}.Sanitize())
 	b, err := fjson.Marshal(d)

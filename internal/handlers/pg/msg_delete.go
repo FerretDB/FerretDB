@@ -108,7 +108,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			continue
 		}
 
-		tag, err := h.delete(ctx, resDocs, db, collection)
+		tag, err := h.delete(ctx, db, collection, resDocs)
 		if err != nil {
 			return nil, err
 		}
@@ -130,7 +130,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
-func (h *Handler) delete(ctx context.Context, resDocs []*types.Document, db string, collection string) (pgconn.CommandTag, error) {
+func (h *Handler) delete(ctx context.Context, db string, collection string, resDocs []*types.Document) (pgconn.CommandTag, error) {
 	var p pgdb.Placeholder
 	placeholders := make([]string, len(resDocs))
 	ids := make([]any, len(resDocs))
