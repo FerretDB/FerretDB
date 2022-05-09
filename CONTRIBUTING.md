@@ -127,13 +127,20 @@ Our code most of the standard Go conventions,
 documented on [CodeReviewComments wiki page](https://github.com/golang/go/wiki/CodeReviewComments).
 Some of our idiosyncrasies:
 
-1. TODO.
+1. We use type switches over BSON types in many places in our code.
+   The order of `case`s follows this order: <https://pkg.go.dev/github.com/FerretDB/FerretDB/internal/types#hdr-Mapping>
+   It may seem random, but it is only pseudo-random and follows BSON spec: <https://bsonspec.org/spec.html>
 
-TODO:
+### Submitting code changes
 
-1. Run `task fmt` to format source code.
-2. Run `task lint` to run linter checks.
+Before submitting a pull request, please make sure that:
+
+1. Tests are added for new functionality or fixed bugs.
+2. Code is regenerated if needed (`task gen`).
+3. Code is formatted (`task fmt`).
+4. Test pass (`task test`).
+5. Linters pass (`task lint`).
 
 ## Contributing documentation
 
-`task docs-fmt`
+Please format documentation with `task docs-fmt`.
