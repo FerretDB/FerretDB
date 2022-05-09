@@ -27,7 +27,7 @@ func UpdateDocument(doc, update *types.Document) error {
 	for _, updateOp := range update.Keys() {
 		updateV := must.NotFail(update.Get(updateOp))
 
-		switch updateOp { //nolint:exhaustive // not implemented yet
+		switch updateOp {
 		case "$set":
 			setDoc, err := AssertType[*types.Document](updateV)
 			if err != nil {
