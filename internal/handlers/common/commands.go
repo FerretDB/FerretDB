@@ -32,10 +32,6 @@ type Command struct {
 // Commands is a map of commands that common.Handler interface can support.
 // Order of entries matches the interface definition.
 var Commands = map[string]Command{
-	"listCommands": {
-		Help:    "Returns a list of currently supported commands.",
-		Handler: (Handler).MsgListCommands,
-	},
 	"buildInfo": {
 		Help:    "Returns a summary of the build information.",
 		Handler: (Handler).MsgBuildInfo,
@@ -140,12 +136,17 @@ var Commands = map[string]Command{
 		Help:    "Updates documents that are matched by the query.",
 		Handler: (Handler).MsgUpdate,
 	},
+
+	"listCommands": {
+		Help:    "Returns a list of currently supported commands.",
+		Handler: nil,
+	},
 	"debug_error": {
 		Help:    "Used for debugging purposes.",
-		Handler: (Handler).MsgDebugError,
+		Handler: MsgDebugError,
 	},
 	"debug_panic": {
 		Help:    "Used for debugging purposes.",
-		Handler: (Handler).MsgDebugPanic,
+		Handler: MsgDebugPanic,
 	},
 }

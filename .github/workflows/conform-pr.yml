@@ -1,0 +1,39 @@
+---
+name: Conform PR
+on:
+  pull_request:
+    # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request
+    # List all types to make it easier to enable new ones when they are needed.
+    types:
+      # - assigned
+      # - unassigned
+      # - labeled
+      # - unlabeled
+      - opened
+      - edited
+      # - closed
+      - reopened
+      - synchronize
+      # - converted_to_draft
+      # - ready_for_review
+      # - locked
+      # - unlocked
+      # - review_requested
+      # - review_request_removed
+      # - auto_merge_enabled
+      # - auto_merge_disabled
+
+# Stop pending and in-progress jobs of this workflow.
+# https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#example-only-cancel-in-progress-jobs-or-runs-for-the-current-workflow
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  conform-pr:
+    name: Conform PR
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Conform PR
+        uses: FerretDB/github-actions/conform-pr@main

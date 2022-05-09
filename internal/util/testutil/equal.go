@@ -79,6 +79,8 @@ func diffValues[T types.Type](tb testing.TB, expected, actual T) (expectedS stri
 //  * time.Time values are compared using Equal method.
 //
 // This function is for tests; it should not try to convert values to different types before comparing them.
+//
+// Compare and contrast with types.Compare function.
 func equal(tb testing.TB, v1, v2 any) bool {
 	tb.Helper()
 

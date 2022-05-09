@@ -117,3 +117,8 @@ func (a *Array) Append(values ...any) error {
 	a.s = append(a.s, values...)
 	return nil
 }
+
+// RemoveByPath removes document by path, doing nothing if the key does not exist.
+func (a *Array) RemoveByPath(keys ...string) {
+	removeByPath(a, keys...)
+}
