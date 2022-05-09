@@ -94,11 +94,11 @@ func (h *Handler) insert(ctx context.Context, doc any, db string, collection str
 	sql := fmt.Sprintf("INSERT INTO %s (_jsonb) VALUES ($1)", pgx.Identifier{db, collection}.Sanitize())
 	b, err := fjson.Marshal(d)
 	if err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
 
 	if _, err = h.pgPool.Exec(ctx, sql, b); err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
 
 	return nil

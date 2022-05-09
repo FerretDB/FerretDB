@@ -192,7 +192,7 @@ func (h *Handler) update(ctx context.Context, db string, collection string, doc 
 	id := must.NotFail(doc.Get("_id"))
 	tag, err := h.pgPool.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)), must.NotFail(fjson.Marshal(id)))
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 	return tag, nil
 }
