@@ -32,6 +32,11 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	command := document.Command()
 
+	getParameter, err := document.Get(command)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	resDB := types.MustNewDocument(
 		"acceptApiVersion2", false,
 		"authSchemaVersion", int32(5),
@@ -41,7 +46,7 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	var reply wire.OpMsg
 	resDoc := resDB
-	if command != "*" {
+	if getParameter != "*" {
 		resDoc, err = selectParam(document, resDB)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
@@ -63,9 +68,9 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 }
 
 // selectParam is makes a selection of requested parameters.
-func selectParam(command, resDB *types.Document) (doc *types.Document, err error) {
+func selectParam(document, resDB *types.Document) (doc *types.Document, err error) {
 	doc = types.MustNewDocument()
-	keys := command.Keys()
+	keys := document.Keys()
 
 	for _, k := range keys {
 		if k == "getParameter" || k == "comment" || k == "$db" {
