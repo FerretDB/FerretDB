@@ -198,6 +198,7 @@ func projectDocument(inclusion bool, doc *types.Document, projection *types.Docu
 			}
 
 		case *types.Array: // in projection doc: { k1: [value1, value2... ], k1Projection = [ value1, value2.. ]
+			// it' switch over elemMatch projection
 			return NewError(ErrElemMatchObjectRequired,
 				fmt.Errorf("elemMatch: Invalid argument, object required, but got %T", k1Projection),
 			)
@@ -215,7 +216,7 @@ func projectDocument(inclusion bool, doc *types.Document, projection *types.Docu
 			}
 
 		default:
-			return lazyerrors.Errorf("unsupported operation %s %v (%T)", fieldLevel1, k1Val, k1Val)
+			return lazyerrors.Errorf("unsupported projection operation %s %v (%T)", fieldLevel1, k1Val, k1Val)
 		}
 	}
 	return nil
@@ -223,16 +224,20 @@ func projectDocument(inclusion bool, doc *types.Document, projection *types.Docu
 
 func applyDocProjection(k1 string, doc *types.Document, k1Projection *types.Document) error {
 	var err error
+
 	for _, projectionName := range k1Projection.Keys() {
 		if projectionName != "$elemMatch" {
 			panic(projectionName + " not supported!") // checks must be done in projection check func above
 		}
+
 		conditions := must.NotFail(k1Projection.Get(projectionName)).(*types.Document)
+
 		var found bool
 		found, err = findDocElemMatch(k1, doc, conditions)
 		if err != nil {
 			return err
 		}
+
 		if !found {
 			doc.Remove(k1)
 			return nil
