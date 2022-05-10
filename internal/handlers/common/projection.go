@@ -27,12 +27,12 @@ import (
 
 // isProjectionInclusion: projection can be only inclusion or exclusion. Validate and return true if inclusion.
 // Exception for the _id field.
-func isProjectionInclusion(projection *types.Document) (inclusion bool, err error) {
-	inclusion, _, err = validateElemMatchProjectionDocument(projection, 0, false, false)
-	return
+func isProjectionInclusion(projection *types.Document) (bool, error) {
+	inclusion, _, err := validateExpression(projection, 0, false, false)
+	return inclusion, err
 }
 
-func validateElemMatchProjectionDocument(projection *types.Document, depth int, inclusion, exclusion bool) (bool, bool, error) {
+func validateExpression(projection *types.Document, depth int, inclusion, exclusion bool) (bool, bool, error) {
 	var err error
 	for _, k := range projection.Keys() {
 		if k == "_id" { // _id is a special case and can be both
@@ -53,7 +53,7 @@ func validateElemMatchProjectionDocument(projection *types.Document, depth int, 
 						)
 						return false, false, err
 					}
-					inclusion, exclusion, err = validateElemMatchProjectionDocument(val, depth+1, inclusion, exclusion)
+					inclusion, exclusion, err = validateExpression(val, depth+1, inclusion, exclusion)
 					return inclusion, exclusion, err
 
 				default:
@@ -199,29 +199,30 @@ func projectDocument(inclusion bool, doc *types.Document, projection *types.Docu
 	return nil
 }
 
-func applyDocProjection(k1 string, doc *types.Document, k1Projection *types.Document) (err error) {
+func applyDocProjection(k1 string, doc *types.Document, k1Projection *types.Document) error {
+	var err error
 	for _, projectionName := range k1Projection.Keys() {
 		if projectionName != "$elemMatch" {
 			panic(projectionName + " not supported!") // checks must be done in projection check func above
 		}
-		var found int
 		conditions := must.NotFail(k1Projection.Get(projectionName)).(*types.Document)
+		var found bool
 		found, err = findDocElemMatch(k1, doc, conditions)
 		if err != nil {
-			return
+			return err
 		}
-		if found < 0 {
+		if !found {
 			doc.Remove(k1)
-			return
+			return nil
 		}
 	}
-	return
+	return err
 }
 
-func findInArray(k1, k2 string, value any, doc *types.Document, compareRes []types.CompareResult) (found int, err error) {
+func findInArray(k1, k2 string, value any, doc *types.Document, compareRes []types.CompareResult) bool {
 	docValueArray := must.NotFail(doc.GetByPath(k1)).(*types.Array)
 
-	found = -1
+	found := -1
 	for j := 0; j < docValueArray.Len(); j++ {
 		e, err := docValueArray.Get(j)
 		if err != nil {
@@ -264,14 +265,13 @@ func findInArray(k1, k2 string, value any, doc *types.Document, compareRes []typ
 
 	if found < 0 {
 		doc.RemoveByPath(k1)
-		return
 	}
-	return
+	return found >= 0
 }
 
 // findDocElemMatch is for elemMatch conditions.
-func findDocElemMatch(k1 string, doc, conditions *types.Document) (found int, err error) {
-	found = -1 // >= 0 means found
+func findDocElemMatch(k1 string, doc, conditions *types.Document) (bool, error) {
+	found := false
 
 	// for sure it's here - see code above
 	docValueA := must.NotFail(doc.GetByPath(k1))
@@ -280,7 +280,7 @@ func findDocElemMatch(k1 string, doc, conditions *types.Document) (found int, er
 	docValueArray, ok := docValueA.(*types.Array)
 	if !ok {
 		doc.Remove(k1)
-		return
+		return found, nil
 	}
 
 	for k2, condition := range conditions.Map() {
@@ -288,43 +288,44 @@ func findDocElemMatch(k1 string, doc, conditions *types.Document) (found int, er
 		// in condition: { $eq: 42 }
 		case *types.Document:
 			for operand, value := range condition.Map() {
+				var err error
 				switch operand {
 				case "$eq":
-					found, err = findInArray(k1, k2, value, doc, []types.CompareResult{types.Equal})
+					found = findInArray(k1, k2, value, doc, []types.CompareResult{types.Equal})
 
 				case "$ne":
-					found, err = findInArray(k1, k2, value, doc, []types.CompareResult{types.Less, types.Greater})
+					found = findInArray(k1, k2, value, doc, []types.CompareResult{types.Less, types.Greater})
 
 				case "$gt":
-					found, err = findInArray(k1, k2, value, doc, []types.CompareResult{types.Greater})
+					found = findInArray(k1, k2, value, doc, []types.CompareResult{types.Greater})
 
 				case "$gte":
-					found, err = findInArray(k1, k2, value, doc, []types.CompareResult{types.Greater, types.Equal})
+					found = findInArray(k1, k2, value, doc, []types.CompareResult{types.Greater, types.Equal})
 
 				case "$lt":
-					found, err = findInArray(k1, k2, value, doc, []types.CompareResult{types.Less})
+					found = findInArray(k1, k2, value, doc, []types.CompareResult{types.Less})
 
 				case "$lte":
-					found, err = findInArray(k1, k2, value, doc, []types.CompareResult{types.Less, types.Equal})
+					found = findInArray(k1, k2, value, doc, []types.CompareResult{types.Less, types.Equal})
 
 				case "$nin":
 					switch inValue := value.(type) {
 					case *types.Array:
 						for i := 0; i < inValue.Len(); i++ {
 							x := must.NotFail(inValue.Get(i))
-							found, err = findInArray(k1, k2, x, doc,
+							found = findInArray(k1, k2, x, doc,
 								[]types.CompareResult{types.Less, types.Greater, types.NotEqual},
 							)
-							if found >= 0 {
-								return
+							if found {
+								return found, err
 							}
 						}
 					default:
 						err = NewErrorMsg(ErrBadValue, "$nin needs an array")
-						return
+						return found, err
 					}
-					if found < 0 {
-						return
+					if !found {
+						return found, err
 					}
 
 				case "$in":
@@ -332,17 +333,17 @@ func findDocElemMatch(k1 string, doc, conditions *types.Document) (found int, er
 					case *types.Array:
 						for i := 0; i < inValue.Len(); i++ {
 							x := must.NotFail(inValue.Get(i))
-							found, err = findInArray(k1, k2, x, doc, []types.CompareResult{types.Equal})
-							if found >= 0 {
-								return
+							found = findInArray(k1, k2, x, doc, []types.CompareResult{types.Equal})
+							if found {
+								return found, err
 							}
 						}
 					default:
 						err = NewErrorMsg(ErrBadValue, "array values supported for $in only")
-						return
+						return found, err
 					}
-					if found < 0 {
-						return
+					if !found {
+						return found, err
 					}
 
 					// operand is not an operand possible: <scalar value> OR field: {nested projection}
@@ -359,12 +360,12 @@ func findDocElemMatch(k1 string, doc, conditions *types.Document) (found int, er
 								continue
 							}
 							if types.Compare(docVal, value) == types.Equal {
-								found = j
+								found = true
 								break
 							}
 						default: // field2: value
 							if types.Compare(e, value) == types.Equal {
-								found = j
+								found = true
 								break
 							}
 						}
@@ -372,10 +373,11 @@ func findDocElemMatch(k1 string, doc, conditions *types.Document) (found int, er
 						j = j - 1
 					}
 					err = NewErrorMsg(ErrBadValue, k2+" not supported")
-					return
+					return found, err
 				}
+				return found, err
 			}
 		}
 	}
-	return
+	return found, nil
 }
