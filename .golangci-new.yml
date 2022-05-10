@@ -8,12 +8,6 @@ linters-settings:
   lll:
     line-length: 130
     tab-width: 4
-  nolintlint:
-    allow-unused: false
-    allow-leading-space: false
-    allow-no-explanation: []
-    require-explanation: true
-    require-specific: true
   stylecheck:
     go: '1.18'
     checks: ['all']
@@ -43,6 +37,7 @@ linters:
     - govet
     - ineffassign
     - misspell
+    - nolintlint
     - staticcheck
 
     # TODO configure and enable one by one

@@ -49,6 +49,12 @@ linters-settings:
   misspell:
     ignore-words:
       - guiness # present in the test dataset
+  nolintlint:
+    allow-unused: false
+    allow-leading-space: false
+    allow-no-explanation: []
+    require-explanation: true
+    require-specific: true
   staticcheck:
     go: '1.18'
     checks: ['all']
@@ -67,6 +73,7 @@ linters:
     - govet
     - ineffassign
     - misspell
+    - nolintlint
     - staticcheck
 
 issues:
