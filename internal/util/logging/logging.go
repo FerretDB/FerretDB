@@ -19,11 +19,7 @@ import (
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-
-	"container/ring"
 )
-
-var LogRAM = ring.New(1024)
 
 // Setup initializes logging with a given level.
 func Setup(level zapcore.Level) {
@@ -36,8 +32,8 @@ func Setup(level zapcore.Level) {
 	}
 
 	logger = logger.WithOptions(zap.Hooks(func(entry zapcore.Entry) error {
-		LogRAM.Value = entry
-		LogRAM = LogRAM.Next()
+		logram.Value = entry
+		logram = logram.Next()
 		return nil
 	}))
 
