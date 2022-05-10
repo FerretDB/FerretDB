@@ -5,12 +5,6 @@ linters-settings:
   goconst:
     min-occurrences: 5
     ignore-tests: true
-  godot:
-    scope: toplevel
-    exclude:
-      - go-sumtype:decl
-      - check interfaces
-    capital: true
   lll:
     line-length: 130
     tab-width: 4
@@ -24,15 +18,15 @@ linters-settings:
     require-explanation: true
     require-specific: true
   stylecheck:
-    go: "1.18"
-    checks: ["all"]
+    go: '1.18'
+    checks: ['all']
     dot-import-whitelist: []
     initialisms: []
     http-status-code-whitelist: []
   unparam:
     check-exported: true
   unused:
-    go: "1.18"
+    go: '1.18'
   whitespace:
     multi-if: false
     multi-func: false
@@ -41,8 +35,10 @@ linters:
   enable-all: true
   disable:
     # checked by the other configuration
+    - depguard
     - exhaustive
     - gci
+    - godot
     - godox
     - goheader
     - goimports
