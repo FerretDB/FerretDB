@@ -38,6 +38,7 @@ func validateProjectionExpression(projection *types.Document) (bool, error) {
 	return inclusion, err
 }
 
+// validateExpression validates projection condition document against projection rules.
 func validateExpression(projection *types.Document, depth int, inclusion, exclusion bool) (bool, bool, error) {
 	var err error
 	for _, k := range projection.Keys() {
@@ -57,7 +58,8 @@ func validateExpression(projection *types.Document, depth int, inclusion, exclus
 
 		default: // scalar
 			if k == projectionElemMatch {
-				err = NewError(ErrElemMatchObjectRequired,
+				err = NewError(
+					ErrElemMatchObjectRequired,
 					fmt.Errorf("elemMatch: Invalid argument, object required, but got %T", v),
 				)
 				return false, false, err
@@ -69,13 +71,15 @@ func validateExpression(projection *types.Document, depth int, inclusion, exclus
 	return inclusion, exclusion, err
 }
 
+// validateScalarProjectionExpression checks {field: value} in projection condition.
 func validateScalarProjectionExpression(v any, field string, inclusion, exclusion bool) (bool, bool, error) {
 	var err error
 	switch v := v.(type) {
 	case float64, int32, int64:
 		if types.Compare(v, int32(0)) == types.Equal {
 			if inclusion {
-				err = NewError(ErrElemMatchExclusionInInclusion,
+				err = NewError(
+					ErrElemMatchExclusionInInclusion,
 					fmt.Errorf("Cannot do exclusion on field %s in inclusion projection", field),
 				)
 				return false, false, err
@@ -83,7 +87,8 @@ func validateScalarProjectionExpression(v any, field string, inclusion, exclusio
 			exclusion = true
 		} else {
 			if exclusion {
-				err = NewError(ErrElemMatchInclusionInExclusion,
+				err = NewError(
+					ErrElemMatchInclusionInExclusion,
 					fmt.Errorf("Cannot do inclusion on field %s in exclusion projection", field),
 				)
 				return false, false, err
@@ -94,7 +99,8 @@ func validateScalarProjectionExpression(v any, field string, inclusion, exclusio
 	case bool:
 		if v {
 			if exclusion {
-				err = NewError(ErrElemMatchInclusionInExclusion,
+				err = NewError(
+					ErrElemMatchInclusionInExclusion,
 					fmt.Errorf("Cannot do inclusion on field %s in exclusion projection", field),
 				)
 				return false, false, err
@@ -102,7 +108,8 @@ func validateScalarProjectionExpression(v any, field string, inclusion, exclusio
 			inclusion = true
 		} else {
 			if inclusion {
-				err = NewError(ErrElemMatchExclusionInInclusion,
+				err = NewError(
+					ErrElemMatchExclusionInInclusion,
 					fmt.Errorf("Cannot do exclusion on field %s in inclusion projection", field),
 				)
 				return false, false, err
@@ -116,6 +123,7 @@ func validateScalarProjectionExpression(v any, field string, inclusion, exclusio
 	return inclusion, exclusion, err
 }
 
+// validateDocProjectionExpression validates projection condition documents, i.e. {field: {"$eq": 42}}.
 func validateDocProjectionExpression(v *types.Document, depth int, inclusion, exclusion bool) (bool, bool, error) {
 	var err error
 	for _, key := range v.Keys() {
@@ -190,6 +198,7 @@ func ProjectDocuments(docs []*types.Document, projection *types.Document) error 
 	return nil
 }
 
+// projectDocument gets top-level document to apply projection.
 func projectDocument(inclusion bool, doc *types.Document, projection *types.Document) error {
 	projectionMap := projection.Map()
 
@@ -236,6 +245,7 @@ func projectDocument(inclusion bool, doc *types.Document, projection *types.Docu
 	return nil
 }
 
+// applyDocProjection gets second level document with projction.
 func applyDocProjection(k1 string, doc *types.Document, k1Projection *types.Document) error {
 	var err error
 
@@ -284,6 +294,7 @@ func applyDocProjection(k1 string, doc *types.Document, k1Projection *types.Docu
 	return err
 }
 
+// findInArray makes look up for the array element in the projection condition.
 func findInArray(k1, k2 string, value any, doc *types.Document, compareRes []types.CompareResult) bool {
 	docValueArray := must.NotFail(doc.GetByPath(k1)).(*types.Array)
 
