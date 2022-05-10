@@ -47,31 +47,31 @@ func TestFindAndModifySimple(t *testing.T) {
 						{"value", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}},
 					},
 				},
-				{"ok", 1.0},
+				{"ok", float64(1)},
 			},
 		},
 		"NewDoubleNonZero": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "double-smallest"}}},
 				{"update", bson.D{{"_id", "double-smallest"}, {"value", int32(43)}}},
-				{"new", 11.0},
+				{"new", float64(42)},
 			},
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
 				{"value", bson.D{{"_id", "double-smallest"}, {"value", int32(43)}}},
-				{"ok", 1.0},
+				{"ok", float64(1)},
 			},
 		},
 		"NewDoubleZero": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "double-zero"}}},
 				{"update", bson.D{{"_id", "double-zero"}, {"value", 43.0}}},
-				{"new", 0.0},
+				{"new", float64(0)},
 			},
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
 				{"value", bson.D{{"_id", "double-zero"}, {"value", 0.0}}},
-				{"ok", 1.0},
+				{"ok", float64(1)},
 			},
 		},
 		"NewIntNonZero": {
@@ -83,7 +83,7 @@ func TestFindAndModifySimple(t *testing.T) {
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
 				{"value", bson.D{{"_id", "int32"}, {"value", int32(43)}}},
-				{"ok", 1.0},
+				{"ok", float64(1)},
 			},
 		},
 		"NewIntZero": {
@@ -95,7 +95,7 @@ func TestFindAndModifySimple(t *testing.T) {
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
 				{"value", bson.D{{"_id", "int32-zero"}, {"value", int32(0)}}},
-				{"ok", 1.0},
+				{"ok", float64(1)},
 			},
 		},
 		"NewLongNonZero": {
@@ -107,7 +107,7 @@ func TestFindAndModifySimple(t *testing.T) {
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
 				{"value", bson.D{{"_id", "int64"}, {"value", int64(43)}}},
-				{"ok", 1.0},
+				{"ok", float64(1)},
 			},
 		},
 		"NewLongZero": {
@@ -119,7 +119,7 @@ func TestFindAndModifySimple(t *testing.T) {
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
 				{"value", bson.D{{"_id", "int64-zero"}, {"value", int64(0)}}},
-				{"ok", 1.0},
+				{"ok", float64(1)},
 			},
 		},
 	} {
@@ -273,7 +273,7 @@ func TestFindAndModifyUpdate(t *testing.T) {
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
 				{"value", bson.D{{"_id", "int64"}, {"value", int64(42)}}},
-				{"ok", 1.0},
+				{"ok", float64(1)},
 			},
 		},
 		"ReplaceReturnNew": {
@@ -283,7 +283,7 @@ func TestFindAndModifyUpdate(t *testing.T) {
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
 				{"value", bson.D{{"_id", "int32"}, {"value", int32(43)}}},
-				{"ok", 1.0},
+				{"ok", float64(1)},
 			},
 		},
 		"UpdateNotExisted": {
@@ -292,7 +292,7 @@ func TestFindAndModifyUpdate(t *testing.T) {
 			skipUpdateCheck: true,
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(0)}, {"updatedExisting", false}}},
-				{"ok", 1.0},
+				{"ok", float64(1)},
 			},
 		},
 	} {
@@ -317,7 +317,7 @@ func TestFindAndModifyUpdate(t *testing.T) {
 			require.NoError(t, err)
 
 			m := actual.Map()
-			assert.Equal(t, 1.0, m["ok"])
+			assert.Equal(t, float64(1), m["ok"])
 
 			AssertEqualDocuments(t, tc.response, actual)
 
@@ -356,7 +356,7 @@ func TestFindAndModifyUpsert(t *testing.T) {
 					{"updatedExisting", true},
 				}},
 				{"value", bson.D{{"_id", "double"}, {"value", 42.13}}},
-				{"ok", 1.0},
+				{"ok", float64(1)},
 			},
 		},
 	} {
@@ -372,7 +372,7 @@ func TestFindAndModifyUpsert(t *testing.T) {
 			require.NoError(t, err)
 
 			m := actual.Map()
-			assert.Equal(t, 1.0, m["ok"])
+			assert.Equal(t, float64(1), m["ok"])
 
 			AssertEqualDocuments(t, tc.response, actual)
 		})
