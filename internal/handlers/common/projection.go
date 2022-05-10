@@ -16,6 +16,7 @@ package common
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 
 	"golang.org/x/exp/slices"
@@ -23,6 +24,11 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+)
+
+const (
+	projectionElemMatch = "$elemMatch"
+	projectionSlice     = "$slice"
 )
 
 // validateProjectionExpression: projection can be only inclusion or exclusion. Validate and return true if inclusion.
@@ -42,6 +48,7 @@ func validateExpression(projection *types.Document, depth int, inclusion, exclus
 		v := must.NotFail(projection.Get(k))
 		switch v := v.(type) {
 		case *types.Document:
+
 			inclusion, exclusion, err = validateDocProjectionExpression(v, depth, inclusion, exclusion)
 
 		case *types.Array:
@@ -49,12 +56,13 @@ func validateExpression(projection *types.Document, depth int, inclusion, exclus
 			return false, false, err
 
 		default: // scalar
-			if k == "$elemMatch" {
+			if k == projectionElemMatch {
 				err = NewError(ErrElemMatchObjectRequired,
 					fmt.Errorf("elemMatch: Invalid argument, object required, but got %T", v),
 				)
 				return false, false, err
 			}
+
 			inclusion, exclusion, err = validateScalarProjectionExpression(v, k, inclusion, exclusion)
 		}
 	}
@@ -102,7 +110,7 @@ func validateScalarProjectionExpression(v any, field string, inclusion, exclusio
 			exclusion = true
 		}
 	default:
-		err = NewError(ErrNotImplemented, fmt.Errorf("validateScalarProjectionExpression: %v %T is not supported", v, v))
+		err = NewError(ErrNotImplemented, fmt.Errorf("%v of (%T) is not supported", v, v))
 		return inclusion, exclusion, err
 	}
 	return inclusion, exclusion, err
@@ -111,10 +119,15 @@ func validateScalarProjectionExpression(v any, field string, inclusion, exclusio
 func validateDocProjectionExpression(v *types.Document, depth int, inclusion, exclusion bool) (bool, bool, error) {
 	var err error
 	for _, key := range v.Keys() {
+		if key == projectionSlice {
+			return false, false, nil
+		}
+
 		val := must.NotFail(v.Get(key))
 		switch val := val.(type) {
 		case *types.Document:
-			if key == "$elemMatch" && depth >= 1 {
+
+			if key == projectionElemMatch && depth >= 1 {
 				err = NewErrorMsg(ErrElemMatchNestedField,
 					"Cannot use $elemMatch projection on a nested field.",
 				)
@@ -123,7 +136,8 @@ func validateDocProjectionExpression(v *types.Document, depth int, inclusion, ex
 			inclusion, exclusion, err = validateExpression(val, depth+1, inclusion, exclusion)
 
 		case *types.Array:
-			if key == "$elemMatch" {
+
+			if key == projectionElemMatch {
 				err = NewErrorMsg(ErrElemMatchObjectRequired, "elemMatch: Invalid argument, object required, but got array")
 				return false, false, err
 			}
@@ -144,7 +158,7 @@ func validateDocProjectionExpression(v *types.Document, depth int, inclusion, ex
 					err = NewErrorMsg(ErrBadValue, "$in needs an array")
 					return false, false, err
 				}
-			case "$nin", "$not":
+			case "$nin", "$not", projectionSlice:
 				exclusion = true
 
 			default: // $mod, etc
@@ -226,21 +240,45 @@ func applyDocProjection(k1 string, doc *types.Document, k1Projection *types.Docu
 	var err error
 
 	for _, projectionName := range k1Projection.Keys() {
-		if projectionName != "$elemMatch" {
-			panic(projectionName + " not supported!") // checks must be done in projection check func above
-		}
+		switch projectionName {
+		case projectionElemMatch:
+			conditions := must.NotFail(k1Projection.Get(projectionName)).(*types.Document)
 
-		conditions := must.NotFail(k1Projection.Get(projectionName)).(*types.Document)
+			var found bool
+			found, err = findDocElemMatch(k1, doc, conditions)
+			if err != nil {
+				return err
+			}
 
-		var found bool
-		found, err = findDocElemMatch(k1, doc, conditions)
-		if err != nil {
-			return err
-		}
+			if !found {
+				doc.Remove(k1)
+				return nil
+			}
 
-		if !found {
-			doc.Remove(k1)
-			return nil
+		case projectionSlice:
+			var docValue any
+			docValue, err = doc.Get(k1)
+			if err != nil { // the field can't be obtained, so there is nothing to do
+				return err
+			}
+			// $slice works only for arrays, so docValue must be an array
+			arr, ok := docValue.(*types.Array)
+			if !ok {
+				return err
+			}
+			projectionVal := must.NotFail(k1Projection.Get(projectionName))
+			res, err := filterFieldArraySlice(arr, projectionVal)
+			if err != nil {
+				return err
+			}
+			if res == nil {
+				must.NoError(doc.Set(k1, types.Null))
+				return nil
+			}
+			must.NoError(doc.Set(k1, res))
+
+		default:
+			return NewErrorMsg(ErrCommandNotFound, projectionName+" not supported")
 		}
 	}
 	return err
@@ -427,4 +465,168 @@ func findDocElemMatch(k1 string, doc, conditions *types.Document) (bool, error) 
 		}
 	}
 	return found, nil
+}
+
+// filterFieldArraySlice implements $slice projection query.
+func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.Array, error) {
+	switch projectionValue := projectionValue.(type) {
+	case int32, int64, float64:
+		return projectionSliceSingleArg(docValue, projectionValue), nil
+
+	case *types.Array:
+		if projectionValue.Len() < 2 || projectionValue.Len() > 3 {
+			return nil, NewErrorMsg(ErrInvalidArg,
+				fmt.Sprintf(
+					"Invalid $slice syntax. The given syntax "+
+						"did not match the find() syntax because :: Location31272: "+
+						"$slice array argument should be of form [skip, limit] :: "+
+						"The given syntax did not match the expression "+
+						"$slice syntax. :: caused by :: "+
+						"Expression $slice takes at least 2 arguments, and at most 3, but %d were passed in.",
+					projectionValue.Len(),
+				))
+		}
+
+		if projectionValue.Len() == 3 {
+			// this is the error MongoDB 5.0 is returning in this case
+			return nil, NewErrorMsg(ErrSliceFirstArg,
+				fmt.Sprintf(
+					"First argument to $slice must be an array, but is of type: %s",
+					AliasFromType(must.NotFail(projectionValue.Get(0))),
+				),
+			)
+		}
+
+		return projectionSliceMultiArgs(docValue, projectionValue)
+
+	default:
+		return nil, NewErrorMsg(ErrInvalidArg,
+			"Invalid $slice syntax. The given syntax "+
+				"did not match the find() syntax because :: Location31273: "+
+				"$slice only supports numbers and [skip, limit] arrays :: "+
+				"The given syntax did not match the expression $slice syntax. :: caused by :: "+
+				"Expression $slice takes at least 2 arguments, and at most 3, but 1 were passed in.",
+		)
+	}
+}
+
+func projectionSliceSingleArg(arr *types.Array, arg any) *types.Array {
+	var n int
+	switch v := arg.(type) {
+	case float64:
+		if math.IsNaN(v) {
+			break // because n == 0 already
+		}
+		if math.IsInf(v, -1) || v < math.MinInt {
+			n = math.MinInt
+			break
+		}
+		if math.IsInf(v, +1) || v > math.MaxInt {
+			n = math.MaxInt
+			break
+		}
+		n = int(v)
+	case int64:
+		if v > math.MaxInt {
+			n = math.MaxInt
+			break
+		}
+		if v < math.MinInt {
+			n = math.MinInt
+			break
+		}
+		n = int(v)
+	case int32:
+		n = int(v)
+	}
+
+	// negative n is OK in case of a single argument
+	var skip, limit int
+	if n < 0 {
+		skip, limit = arr.Len()+n, arr.Len()
+		n = -n
+	} else {
+		skip, limit = 0, n
+	}
+	if n < arr.Len() {
+		res := types.MakeArray(limit)
+		for i := skip; i < limit; i++ {
+			must.NoError(res.Append(must.NotFail(arr.Get(i))))
+		}
+		return res
+	}
+	// otherwise return arr as is
+	return arr
+}
+
+func projectionSliceMultiArgs(arr, args *types.Array) (*types.Array, error) {
+	var skip, limit int
+	pair := [2]int{}
+	for i := range pair {
+		switch v := must.NotFail(args.Get(i)).(type) {
+		case types.NullType:
+			return nil, nil //nolint:nilnil // nil is a valid value
+		case float64:
+			if math.IsNaN(v) {
+				break // because pair[i] == 0 already
+			}
+			if math.IsInf(v, -1) || v < math.MinInt {
+				pair[i] = math.MinInt
+				break
+			}
+			if math.IsInf(v, +1) || v > math.MaxInt {
+				pair[i] = math.MaxInt
+				break
+			}
+			pair[i] = int(v)
+		case int64:
+			if v > math.MaxInt {
+				pair[i] = math.MaxInt
+				break
+			}
+			if v < math.MinInt {
+				pair[i] = math.MinInt
+				break
+			}
+			pair[i] = int(v)
+		case int32:
+			pair[i] = int(v)
+		default:
+			return nil, NewErrorMsg(ErrSliceFirstArg, fmt.Sprintf(
+				"First argument to $slice must be an array, but is of type: %s",
+				AliasFromType(must.NotFail(args.Get(0))),
+			))
+		}
+
+		if i == 1 && pair[i] < 0 { // limit can't be negative in case of 2 arguments
+			return nil, NewErrorMsg(ErrSliceFirstArg,
+				fmt.Sprintf(
+					"First argument to $slice must be an array, but is of type: %s",
+					AliasFromType(must.NotFail(args.Get(0))),
+				))
+		}
+	}
+
+	skip, limit = pair[0], pair[1]
+
+	if skip < 0 {
+		if -skip >= arr.Len() {
+			skip = 0
+		} else {
+			skip = arr.Len() + skip
+		}
+	} else {
+		if skip > arr.Len() {
+			return types.MakeArray(0), nil
+		}
+	}
+	limit += skip
+	if limit >= arr.Len() {
+		limit = arr.Len()
+	}
+	res := types.MakeArray(limit)
+	for i := skip; i < limit; i++ {
+		must.NoError(res.Append(must.NotFail(arr.Get(i))))
+	}
+	return res, nil
 }
