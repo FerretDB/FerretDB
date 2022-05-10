@@ -19,67 +19,68 @@ import (
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 var (
 	handshake1 = testCase{
 		name: "handshake1",
-		v: MustConvertDocument(types.MustNewDocument(
+		v: MustConvertDocument(must.NotFail(types.NewDocument(
 			"ismaster", true,
-			"client", types.MustNewDocument(
-				"driver", types.MustNewDocument(
+			"client", must.NotFail(types.NewDocument(
+				"driver", must.NotFail(types.NewDocument(
 					"name", "nodejs",
 					"version", "4.0.0-beta.6",
-				),
-				"os", types.MustNewDocument(
+				)),
+				"os", must.NotFail(types.NewDocument(
 					"type", "Darwin",
 					"name", "darwin",
 					"architecture", "x64",
 					"version", "20.6.0",
-				),
+				)),
 				"platform", "Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",
-				"application", types.MustNewDocument(
+				"application", must.NotFail(types.NewDocument(
 					"name", "mongosh 1.0.1",
-				),
-			),
+				)),
+			)),
 			"compression", types.MustNewArray("none"),
 			"loadBalanced", false,
-		)),
+		))),
 		b: testutil.MustParseDumpFile("testdata", "handshake1.hex"),
 	}
 
 	handshake2 = testCase{
 		name: "handshake2",
-		v: MustConvertDocument(types.MustNewDocument(
+		v: MustConvertDocument(must.NotFail(types.NewDocument(
 			"ismaster", true,
-			"client", types.MustNewDocument(
-				"driver", types.MustNewDocument(
+			"client", must.NotFail(types.NewDocument(
+				"driver", must.NotFail(types.NewDocument(
 					"name", "nodejs",
 					"version", "4.0.0-beta.6",
-				),
-				"os", types.MustNewDocument(
+				)),
+				"os", must.NotFail(types.NewDocument(
 					"type", "Darwin",
 					"name", "darwin",
 					"architecture", "x64",
 					"version", "20.6.0",
-				),
+				)),
 				"platform", "Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",
-				"application", types.MustNewDocument(
+				"application", must.NotFail(types.NewDocument(
 					"name", "mongosh 1.0.1",
-				),
-			),
+				)),
+			)),
 			"compression", types.MustNewArray("none"),
 			"loadBalanced", false,
-		)),
+		))),
 		b: testutil.MustParseDumpFile("testdata", "handshake2.hex"),
 	}
 
 	handshake3 = testCase{
 		name: "handshake3",
-		v: MustConvertDocument(types.MustNewDocument(
+		v: MustConvertDocument(must.NotFail(types.NewDocument(
 			"buildInfo", int32(1),
-			"lsid", types.MustNewDocument(
+			"lsid", must.NotFail(types.NewDocument(
 				"id", types.Binary{
 					Subtype: types.BinaryUUID,
 					B: []byte{
@@ -87,15 +88,15 @@ var (
 						0xb8, 0xe7, 0xa3, 0xa3, 0x2e, 0xc2, 0x56, 0xbe,
 					},
 				},
-			),
+			)),
 			"$db", "admin",
-		)),
+		))),
 		b: testutil.MustParseDumpFile("testdata", "handshake3.hex"),
 	}
 
 	handshake4 = testCase{
 		name: "handshake4",
-		v: MustConvertDocument(types.MustNewDocument(
+		v: MustConvertDocument(must.NotFail(types.NewDocument(
 			"version", "5.0.0",
 			"gitVersion", "1184f004a99660de6f5e745573419bda8a28c0e9",
 			"modules", types.MustNewArray(),
@@ -103,11 +104,11 @@ var (
 			"javascriptEngine", "mozjs",
 			"sysInfo", "deprecated",
 			"versionArray", types.MustNewArray(int32(5), int32(0), int32(0), int32(0)),
-			"openssl", types.MustNewDocument(
+			"openssl", must.NotFail(types.NewDocument(
 				"running", "OpenSSL 1.1.1f  31 Mar 2020",
 				"compiled", "OpenSSL 1.1.1f  31 Mar 2020",
-			),
-			"buildEnvironment", types.MustNewDocument(
+			)),
+			"buildEnvironment", must.NotFail(types.NewDocument(
 				"distmod", "ubuntu2004",
 				"distarch", "x86_64",
 				"cc", "/opt/mongodbtoolchain/v3/bin/gcc: gcc (GCC) 8.5.0",
@@ -129,19 +130,19 @@ var (
 					"BOOST_SYSTEM_NO_DEPRECATED BOOST_MATH_NO_LONG_DOUBLE_MATH_FUNCTIONS "+
 					"BOOST_ENABLE_ASSERT_DEBUG_HANDLER BOOST_LOG_NO_SHORTHAND_NAMES BOOST_LOG_USE_NATIVE_SYSLOG "+
 					"BOOST_LOG_WITHOUT_THREAD_ATTR ABSL_FORCE_ALIGNED_ACCESS",
-			),
+			)),
 			"bits", int32(64),
 			"debug", false,
 			"maxBsonObjectSize", int32(16777216),
 			"storageEngines", types.MustNewArray("devnull", "ephemeralForTest", "wiredTiger"),
 			"ok", float64(1),
-		)),
+		))),
 		b: testutil.MustParseDumpFile("testdata", "handshake4.hex"),
 	}
 
 	all = testCase{
 		name: "all",
-		v: MustConvertDocument(types.MustNewDocument(
+		v: MustConvertDocument(must.NotFail(types.NewDocument(
 			"binary", types.MustNewArray(
 				types.Binary{Subtype: types.BinaryUser, B: []byte{0x42}},
 				types.Binary{Subtype: types.BinaryGeneric, B: []byte{}},
@@ -154,7 +155,7 @@ var (
 			"objectID", types.MustNewArray(types.ObjectID{0x42}, types.ObjectID{}),
 			"string", types.MustNewArray("foo", ""),
 			"timestamp", types.MustNewArray(types.Timestamp(42), types.Timestamp(0)),
-		)),
+		))),
 		b: testutil.MustParseDumpFile("testdata", "all.hex"),
 	}
 
