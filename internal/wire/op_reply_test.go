@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -37,12 +38,12 @@ var replyTestCases = []testCase{{
 		CursorID:       0,
 		StartingFrom:   0,
 		NumberReturned: 1,
-		Documents: []*types.Document{types.MustNewDocument(
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"ismaster", true,
-			"topologyVersion", types.MustNewDocument(
+			"topologyVersion", must.NotFail(types.NewDocument(
 				"processId", types.ObjectID{0x60, 0xfb, 0xed, 0x53, 0x71, 0xfe, 0x1b, 0xae, 0x70, 0x33, 0x95, 0x05},
 				"counter", int64(0),
-			),
+			)),
 			"maxBsonObjectSize", int32(16777216),
 			"maxMessageSizeBytes", int32(48000000),
 			"maxWriteBatchSize", int32(100000),
@@ -53,7 +54,7 @@ var replyTestCases = []testCase{{
 			"maxWireVersion", int32(13),
 			"readOnly", false,
 			"ok", float64(1),
-		)},
+		))},
 	},
 }, {
 	name:    "handshake4",
@@ -70,12 +71,12 @@ var replyTestCases = []testCase{{
 		CursorID:       0,
 		StartingFrom:   0,
 		NumberReturned: 1,
-		Documents: []*types.Document{types.MustNewDocument(
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"ismaster", true,
-			"topologyVersion", types.MustNewDocument(
+			"topologyVersion", must.NotFail(types.NewDocument(
 				"processId", types.ObjectID{0x60, 0xfb, 0xed, 0x53, 0x71, 0xfe, 0x1b, 0xae, 0x70, 0x33, 0x95, 0x05},
 				"counter", int64(0),
-			),
+			)),
 			"maxBsonObjectSize", int32(16777216),
 			"maxMessageSizeBytes", int32(48000000),
 			"maxWriteBatchSize", int32(100000),
@@ -86,7 +87,7 @@ var replyTestCases = []testCase{{
 			"maxWireVersion", int32(13),
 			"readOnly", false,
 			"ok", float64(1),
-		)},
+		))},
 	},
 }}
 

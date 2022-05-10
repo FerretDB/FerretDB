@@ -25,6 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -42,7 +43,7 @@ func formatResponse(size, rows, millis int32, showEstimate bool) (*wire.OpMsg, e
 
 	var reply wire.OpMsg
 	err := reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{types.MustNewDocument(pairs...)},
+		Documents: []*types.Document{must.NotFail(types.NewDocument(pairs...))},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)

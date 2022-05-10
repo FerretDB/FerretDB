@@ -28,14 +28,14 @@ func TestSetByPath(t *testing.T) {
 	t.Parallel()
 
 	newDoc := func() *types.Document {
-		return types.MustNewDocument(
-			"client", types.MustNewDocument(
-				"driver", types.MustNewDocument(
+		return must.NotFail(types.NewDocument(
+			"client", must.NotFail(types.NewDocument(
+				"driver", must.NotFail(types.NewDocument(
 					"name", "nodejs",
-				),
-			),
+				)),
+			)),
 			"compression", must.NotFail(types.NewArray("none")),
-		)
+		))
 	}
 
 	type testCase struct {
@@ -47,21 +47,21 @@ func TestSetByPath(t *testing.T) {
 	for _, tc := range []testCase{{ //nolint:paralleltest // false positive
 		path:  []string{"compression", "0"},
 		value: "zstd",
-		res: types.MustNewDocument(
-			"client", types.MustNewDocument(
-				"driver", types.MustNewDocument(
+		res: must.NotFail(types.NewDocument(
+			"client", must.NotFail(types.NewDocument(
+				"driver", must.NotFail(types.NewDocument(
 					"name", "nodejs",
-				),
-			),
+				)),
+			)),
 			"compression", must.NotFail(types.NewArray("zstd")),
-		),
+		)),
 	}, {
 		path:  []string{"client"},
 		value: "foo",
-		res: types.MustNewDocument(
+		res: must.NotFail(types.NewDocument(
 			"client", "foo",
 			"compression", must.NotFail(types.NewArray("none")),
-		),
+		)),
 	}} {
 		tc := tc
 		t.Run(fmt.Sprint(tc.path), func(t *testing.T) {

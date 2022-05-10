@@ -62,7 +62,7 @@ func (query *OpQuery) readFrom(bufr *bufio.Reader) error {
 	if err := q.ReadFrom(bufr); err != nil {
 		return err
 	}
-	query.Query = types.MustConvertDocument(&q)
+	query.Query = must.NotFail(types.ConvertDocument(&q))
 
 	if _, err := bufr.Peek(1); err == nil {
 		var r bson.Document
@@ -70,7 +70,7 @@ func (query *OpQuery) readFrom(bufr *bufio.Reader) error {
 			return err
 		}
 
-		tr := types.MustConvertDocument(&r)
+		tr := must.NotFail(types.ConvertDocument(&r))
 		query.ReturnFieldsSelector = tr
 	}
 

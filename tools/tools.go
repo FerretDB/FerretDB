@@ -15,7 +15,7 @@
 //go:build go1.18
 // +build go1.18
 
-package tools // import "github.com/FerretDB/FerretDB/tools"
+package tools
 
 import (
 	_ "github.com/BurntSushi/go-sumtype"

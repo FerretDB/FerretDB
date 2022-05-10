@@ -319,7 +319,7 @@ func TestStatisticsCommands(t *testing.T) {
 				{"debug", false},
 				{"maxBsonObjectSize", int32(16777216)},
 				{"buildEnvironment", bson.D{}},
-				{"ok", 1.0},
+				{"ok", float64(1)},
 			},
 		},
 		"CollStats": {
@@ -332,7 +332,7 @@ func TestStatisticsCommands(t *testing.T) {
 				{"totalIndexSize", int32(0)},
 				{"totalSize", int32(16384)},
 				{"scaleFactor", int32(1)},
-				{"ok", 1.0},
+				{"ok", float64(1)},
 			},
 		},
 		"DataSize": {
