@@ -169,7 +169,7 @@ tasks:
       - lint-go-consistent
       - lint-go-consistent-integration
     cmds:
-      - bin/golangci-lint run --config=.golangci.yml
+      - bin/golangci-lint run --config=.golangci.yml --new-from-rev=main
 
   lint-golangci-lint-required:
     cmds:

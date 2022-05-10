@@ -1,15 +1,12 @@
 ---
-# Almost all linters; some of them are optional.
+# Almost all linters for new code; some of them are optional.
 
 run:
   modules-download-mode: readonly
   issues-exit-code: 0
 
 linters-settings:
-  depguard:
-    list-type: blacklist
-    packages:
-      - github.com/FerretDB/FerretDB/internal/bson
+  # copy from required (keep in sync)
   exhaustive:
     default-signifies-exhaustive: false
   gci:
@@ -17,15 +14,6 @@ linters-settings:
       - standard
       - default
       - prefix(github.com/FerretDB/FerretDB)
-  goconst:
-    min-occurrences: 5
-    ignore-tests: true
-  godot:
-    scope: toplevel
-    exclude:
-      - go-sumtype:decl
-      - check interfaces
-    capital: true
   godox:
     keywords:
       - BUG
@@ -48,6 +36,24 @@ linters-settings:
       limitations under the License.
   goimports:
     local-prefixes: github.com/FerretDB/FerretDB
+  staticcheck:
+    go: "1.18"
+    checks: ["all"]
+
+  # the rest
+  depguard:
+    list-type: blacklist
+    packages:
+      - github.com/FerretDB/FerretDB/internal/bson
+  goconst:
+    min-occurrences: 5
+    ignore-tests: true
+  godot:
+    scope: toplevel
+    exclude:
+      - go-sumtype:decl
+      - check interfaces
+    capital: true
   gosimple:
     go: "1.18"
     checks: ["all"]
@@ -63,9 +69,6 @@ linters-settings:
     allow-no-explanation: []
     require-explanation: true
     require-specific: true
-  staticcheck:
-    go: "1.18"
-    checks: ["all"]
   stylecheck:
     go: "1.18"
     checks: ["all"]
@@ -110,19 +113,15 @@ linters:
     - varnamelen
     - wrapcheck
 
-    # TODO enable when goanalysis_metalinter supports generics
+    # TODO https://github.com/golangci/golangci-lint/issues/2649
     - bodyclose
     - contextcheck
-    - gosimple
     - nilerr
     - noctx
     - rowserrcheck
     - sqlclosecheck
-    - staticcheck
     - structcheck
-    - stylecheck
     - tparallel
-    - unused
     - wastedassign
 
     - golint      # deprecated
