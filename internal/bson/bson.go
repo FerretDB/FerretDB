@@ -26,6 +26,7 @@ import (
 	"github.com/AlekSi/pointer"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 type bsontype interface {
@@ -44,7 +45,7 @@ type bsontype interface {
 func fromBSON(v bsontype) any {
 	switch v := v.(type) {
 	case *Document:
-		return types.MustConvertDocument(v)
+		return must.NotFail(types.ConvertDocument(v))
 	case *arrayType:
 		return pointer.To(types.Array(*v))
 	case *doubleType:
