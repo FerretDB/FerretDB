@@ -94,6 +94,7 @@ func TestQueryProjectionElemMatch(t *testing.T) {
 				bson.D{{"field", int32(41)}},
 				bson.D{{"field", int32(42)}},
 				bson.D{{"field", bson.D{{"field", int32(43)}}}},
+				bson.D{{"field", bson.A{int32(44)}}},
 			}},
 		},
 		"document-composite-3": {
@@ -117,7 +118,7 @@ func TestQueryProjectionElemMatch(t *testing.T) {
 		expected   []bson.D
 		err        *mongo.CommandError
 	}{
-		"ElemMatchMalformed": {
+		"ElemMatchMalformedArray": {
 			filterIDs:  bson.A{"document-composite-3", "document-composite-2"},
 			projection: bson.D{{"value", bson.D{{"$elemMatch", bson.A{"field", "$eq", 42}}}}},
 			err: &mongo.CommandError{
@@ -126,7 +127,7 @@ func TestQueryProjectionElemMatch(t *testing.T) {
 				Message: "elemMatch: Invalid argument, object required, but got array",
 			},
 		},
-		"ElemMatchObjectRequired": {
+		"ElemMatchMalformedString": {
 			filterIDs:  bson.A{"document-composite-3", "document-composite-2"},
 			projection: bson.D{{"value", bson.D{{"field", bson.D{{"$elemMatch", ""}}}}}},
 			err: &mongo.CommandError{
@@ -135,11 +136,44 @@ func TestQueryProjectionElemMatch(t *testing.T) {
 				Message: "elemMatch: Invalid argument, object required, but got string",
 			},
 		},
+		"ElemMatchNestedErr": {
+			filterIDs:  bson.A{"document-composite-3", "document-composite-2"},
+			projection: bson.D{{"value", bson.D{{"field", bson.D{{"field", bson.D{{"$elemMatch", bson.D{{"$eq", 42}}}}}}}}}},
+			err: &mongo.CommandError{
+				Code:    31275,
+				Name:    "Location31275",
+				Message: "Cannot use $elemMatch projection on a nested field.",
+			},
+		},
+		// "ElemMatchNestedFieldEmpty": {
+		// 	filterIDs:  bson.A{"document-composite-3", "document-composite-2"},
+		// 	projection: bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"field", bson.D{{"field", bson.D{{"$eq", 42}}}}}}}}}},
+		// 	expected: []bson.D{
+		// 		{{"_id", "document-composite-2"}},
+		// 		{{"_id", "document-composite-3"}},
+		// 	},
+		// },
 		"ElemMatchEq": {
 			filterIDs:  bson.A{"document-composite-3", "document-composite-2"},
 			projection: bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"field", bson.D{{"$eq", 42}}}}}}}},
 			expected: []bson.D{
 				{{"_id", "document-composite-2"}, {"value", bson.A{bson.D{{"field", int32(42)}}}}},
+				{{"_id", "document-composite-3"}},
+			},
+		},
+		"ElemMatchEqArrayNotFound": {
+			filterIDs:  bson.A{"document-composite-3", "document-composite-2"},
+			projection: bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"field", bson.D{{"$eq", bson.A{42}}}}}}}}},
+			expected: []bson.D{
+				{{"_id", "document-composite-2"}},
+				{{"_id", "document-composite-3"}},
+			},
+		},
+		"ElemMatchEqArrayFound": {
+			filterIDs:  bson.A{"document-composite-3", "document-composite-2"},
+			projection: bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"field", bson.D{{"$eq", bson.A{44}}}}}}}}},
+			expected: []bson.D{
+				{{"_id", "document-composite-2"}, {"value", bson.A{bson.D{{"field", bson.A{int32(44)}}}}}},
 				{{"_id", "document-composite-3"}},
 			},
 		},
@@ -215,15 +249,6 @@ func TestQueryProjectionElemMatch(t *testing.T) {
 				Code:    2,
 				Name:    "BadValue",
 				Message: "$nin needs an array",
-			},
-		},
-		"ElemMatchNestedErr": {
-			filterIDs:  bson.A{"document-composite-3", "document-composite-2"},
-			projection: bson.D{{"value", bson.D{{"field", bson.D{{"field", bson.D{{"$elemMatch", bson.D{{"$eq", 42}}}}}}}}}},
-			err: &mongo.CommandError{
-				Code:    31275,
-				Name:    "Location31275",
-				Message: "Cannot use $elemMatch projection on a nested field.",
 			},
 		},
 	} {

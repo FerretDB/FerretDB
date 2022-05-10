@@ -250,6 +250,7 @@ func findInArray(k1, k2 string, value any, doc *types.Document, compareRes []typ
 	docValueArray := must.NotFail(doc.GetByPath(k1)).(*types.Array)
 
 	found := -1
+fieldArray:
 	for j := 0; j < docValueArray.Len(); j++ {
 		e, err := docValueArray.Get(j)
 		if err != nil {
@@ -272,7 +273,24 @@ func findInArray(k1, k2 string, value any, doc *types.Document, compareRes []typ
 			}
 			switch value := value.(type) {
 			// TODO https://github.com/FerretDB/FerretDB/issues/439 resolve in nested
-			case *types.Document, *types.Array:
+			case *types.Document:
+
+			case *types.Array:
+				// value in expression is an array
+				// and it is the target array of the doc
+				for i := 0; i < e.Len(); i++ {
+					arrV := must.NotFail(value.Get(i))
+					switch d := d.(type) {
+					case *types.Array:
+						cmp := types.Compare(d, arrV)
+						if slices.Contains(compareRes, cmp) {
+							found = j
+							continue fieldArray
+						}
+					default:
+						continue
+					}
+				}
 
 			default:
 				cmp := types.Compare(d, value)
