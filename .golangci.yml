@@ -63,6 +63,9 @@ linters-settings:
     checks: ['all']
   unused:
     go: '1.18'
+  whitespace:
+    multi-if: false
+    multi-func: false
 
 linters:
   disable-all: true
@@ -82,6 +85,7 @@ linters:
     - nolintlint
     - staticcheck
     - unused
+    - whitespace
 
 issues:
   exclude-use-default: false

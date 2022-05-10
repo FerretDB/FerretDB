@@ -5,9 +5,6 @@ linters-settings:
   goconst:
     min-occurrences: 5
     ignore-tests: true
-  whitespace:
-    multi-if: false
-    multi-func: false
 
 linters:
   enable-all: true
@@ -28,6 +25,7 @@ linters:
     - nolintlint
     - staticcheck
     - unused
+    - whitespace
 
     # TODO configure and enable one by one
     - asciicheck
