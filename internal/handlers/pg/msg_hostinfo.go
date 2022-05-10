@@ -19,7 +19,6 @@ import (
 	"os"
 	"runtime"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -63,7 +62,7 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 				"cpuArch", runtime.GOARCH,
 			)),
 			"os", must.NotFail(types.NewDocument(
-				"type", strings.Title(runtime.GOOS),
+				"type", runtime.GOOS,
 				"name", osName,
 				"version", osVersion,
 			)),
