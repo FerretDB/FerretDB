@@ -312,15 +312,18 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			if !ok {
 				return false, NewErrorMsg(ErrBadValue, "$in needs an array")
 			}
+
 			var found bool
 			for i := 0; i < arr.Len(); i++ {
-				arrValue := must.NotFail(arr.Get(i))
-				switch arrValue := arrValue.(type) {
+				if found {
+					break
+				}
+
+				switch arrValue := must.NotFail(arr.Get(i)).(type) {
 				case *types.Array:
 					fieldValue, ok := fieldValue.(*types.Array)
 					if ok && matchArrays(fieldValue, arrValue) {
 						found = true
-						break
 					}
 				case *types.Document:
 					for _, key := range arrValue.Keys() {
@@ -331,7 +334,6 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 					fieldValue, ok := fieldValue.(*types.Document)
 					if ok && matchDocuments(fieldValue, arrValue) {
 						found = true
-						break
 					}
 				case types.Regex:
 					match, err := filterFieldRegex(fieldValue, arrValue)
@@ -340,17 +342,14 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 						return false, err
 					case match:
 						found = true
-						break
 					}
-					continue
-
 				default:
 					if types.Compare(fieldValue, arrValue) == types.Equal {
 						found = true
-						break
 					}
 				}
 			}
+
 			if !found {
 				return false, nil
 			}
@@ -361,15 +360,18 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			if !ok {
 				return false, NewErrorMsg(ErrBadValue, "$nin needs an array")
 			}
+
 			var found bool
 			for i := 0; i < arr.Len(); i++ {
-				arrValue := must.NotFail(arr.Get(i))
-				switch arrValue := arrValue.(type) {
+				if found {
+					break
+				}
+
+				switch arrValue := must.NotFail(arr.Get(i)).(type) {
 				case *types.Array:
 					fieldValue, ok := fieldValue.(*types.Array)
 					if ok && matchArrays(fieldValue, arrValue) {
 						found = true
-						break
 					}
 				case *types.Document:
 					for _, key := range arrValue.Keys() {
@@ -380,7 +382,6 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 					fieldValue, ok := fieldValue.(*types.Document)
 					if ok && matchDocuments(fieldValue, arrValue) {
 						found = true
-						break
 					}
 				case types.Regex:
 					match, err := filterFieldRegex(fieldValue, arrValue)
@@ -389,17 +390,14 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 						return false, err
 					case match:
 						found = true
-						break
 					}
-					continue
-
 				default:
 					if types.Compare(fieldValue, arrValue) == types.Equal {
 						found = true
-						break
 					}
 				}
 			}
+
 			if found {
 				return false, nil
 			}
@@ -508,12 +506,12 @@ func filterFieldRegex(fieldValue any, regex types.Regex) (bool, error) {
 
 	case *types.Array:
 		for i := 0; i < fieldValue.Len(); i++ {
-			arrValue := must.NotFail(fieldValue.Get(i)).(any)
+			arrValue := must.NotFail(fieldValue.Get(i))
 			s, isString := arrValue.(string)
 			if !isString {
 				continue
 			}
-			if re.MatchString(s) == true {
+			if re.MatchString(s) {
 				return true, nil
 			}
 		}
