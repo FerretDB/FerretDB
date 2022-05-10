@@ -25,6 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -83,10 +84,10 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{types.MustNewDocument(
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"n", inserted,
 			"ok", float64(1),
-		)},
+		))},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
