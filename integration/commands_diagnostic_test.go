@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"fmt"
 	"math"
 	"runtime"
 	"testing"
@@ -129,6 +128,21 @@ func TestCommandsDiagnosticConnectionStatus(t *testing.T) {
 			},
 			unexpected: []string{"authenticatedUserPrivileges"},
 		},
+		"ConnectionStatusZero": {
+			command: bson.D{{"connectionStatus", 0}, {"showPrivileges", true}},
+			expected: map[string]any{
+				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}, {"authenticatedUserPrivileges", primitive.A{}}},
+				"ok":       float64(1),
+			},
+		},
+		"ShowPrivilegesZero": {
+			command: bson.D{{"connectionStatus", 1}, {"showPrivileges", 0}},
+			expected: map[string]any{
+				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}},
+				"ok":       float64(1),
+			},
+			unexpected: []string{"authenticatedUserPrivileges"},
+		},
 		"ConnectionStatusNil": {
 			command: bson.D{{"connectionStatus", nil}, {"showPrivileges", true}},
 			expected: map[string]any{
@@ -186,8 +200,64 @@ func TestCommandsDiagnosticConnectionStatus(t *testing.T) {
 				"ok":       float64(1),
 			},
 		},
-		"onnectionStatusFloat64": {
+		"ConnectionStatusFloat64": {
 			command: bson.D{{"connectionStatus", float64(1)}, {"showPrivileges", true}},
+			expected: map[string]any{
+				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}, {"authenticatedUserPrivileges", primitive.A{}}},
+				"ok":       float64(1),
+			},
+		},
+		"ConnectionStatusInfinity": {
+			command: bson.D{{"connectionStatus", math.Inf(0)}, {"showPrivileges", true}},
+			expected: map[string]any{
+				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}, {"authenticatedUserPrivileges", primitive.A{}}},
+				"ok":       float64(1),
+			},
+		},
+		"ShowPrivilegesInfinity": {
+			command: bson.D{{"connectionStatus", 1}, {"showPrivileges", math.Inf(0)}},
+			expected: map[string]any{
+				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}, {"authenticatedUserPrivileges", primitive.A{}}},
+				"ok":       float64(1),
+			},
+		},
+		"ConnectionStatusInfinityPositive": {
+			command: bson.D{{"connectionStatus", math.Inf(+1)}, {"showPrivileges", true}},
+			expected: map[string]any{
+				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}, {"authenticatedUserPrivileges", primitive.A{}}},
+				"ok":       float64(1),
+			},
+		},
+		"ShowPrivilegesInfinityPositive": {
+			command: bson.D{{"connectionStatus", 1}, {"showPrivileges", math.Inf(+1)}},
+			expected: map[string]any{
+				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}, {"authenticatedUserPrivileges", primitive.A{}}},
+				"ok":       float64(1),
+			},
+		},
+		"ConnectionStatusInfinityNegative": {
+			command: bson.D{{"connectionStatus", math.Inf(-1)}, {"showPrivileges", true}},
+			expected: map[string]any{
+				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}, {"authenticatedUserPrivileges", primitive.A{}}},
+				"ok":       float64(1),
+			},
+		},
+		"ShowPrivilegesInfinityNegative": {
+			command: bson.D{{"connectionStatus", 1}, {"showPrivileges", math.Inf(-1)}},
+			expected: map[string]any{
+				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}, {"authenticatedUserPrivileges", primitive.A{}}},
+				"ok":       float64(1),
+			},
+		},
+		"ConnectionStatusSmallestNonzeroFloat64": {
+			command: bson.D{{"connectionStatus", math.SmallestNonzeroFloat64}, {"showPrivileges", true}},
+			expected: map[string]any{
+				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}, {"authenticatedUserPrivileges", primitive.A{}}},
+				"ok":       float64(1),
+			},
+		},
+		"ShowPrivilegesSmallestNonzeroFloat64": {
+			command: bson.D{{"connectionStatus", 1}, {"showPrivileges", math.SmallestNonzeroFloat64}},
 			expected: map[string]any{
 				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}, {"authenticatedUserPrivileges", primitive.A{}}},
 				"ok":       float64(1),
@@ -202,16 +272,12 @@ func TestCommandsDiagnosticConnectionStatus(t *testing.T) {
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 			if tc.err != nil {
 				AssertEqualError(t, *tc.err, err)
-				fmt.Println("err:", err)
-				fmt.Println("err:", tc.err)
 				return
 			}
 			require.NoError(t, err)
 
 			m := actual.Map()
 			k := CollectKeys(t, actual)
-
-			fmt.Println(m)
 
 			for key, item := range tc.expected {
 				assert.Contains(t, k, key)
