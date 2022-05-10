@@ -339,7 +339,6 @@ fieldArray:
 				continue
 			}
 			switch value := value.(type) {
-
 			// TODO https://github.com/FerretDB/FerretDB/issues/439 add tests
 			case *types.Document:
 
