@@ -1,7 +1,8 @@
 ---
-# TODO
+# Linters that should pass for all code.
 
 linters-settings:
+  # asciicheck
   depguard:
     list-type: blacklist
     packages:
@@ -73,6 +74,7 @@ linters-settings:
 linters:
   disable-all: true
   enable:
+    - asciicheck
     - depguard
     - exhaustive
     - gci

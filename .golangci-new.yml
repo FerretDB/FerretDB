@@ -1,5 +1,5 @@
 ---
-# TODO
+# New or experimental linters that should pass (or be reconfigured) for new code.
 
 linters-settings:
 
@@ -7,6 +7,7 @@ linters:
   enable-all: true
   disable:
     # checked by the other configuration
+    - asciicheck
     - depguard
     - exhaustive
     - gci
@@ -26,7 +27,6 @@ linters:
     - whitespace
 
     # TODO configure and enable one by one
-    - asciicheck
     - bidichk
     - containedctx
     - cyclop
