@@ -48,7 +48,7 @@ var (
 					"name", "mongosh 1.0.1",
 				)),
 			)),
-			"compression", types.MustNewArray("none"),
+			"compression", must.NotFail(types.NewArray("none")),
 			"loadBalanced", false,
 		))),
 		j: `{"$k":["ismaster","client","compression","loadBalanced"],"ismaster":true,` +
@@ -79,7 +79,7 @@ var (
 					"name", "mongosh 1.0.1",
 				)),
 			)),
-			"compression", types.MustNewArray("none"),
+			"compression", must.NotFail(types.NewArray("none")),
 			"loadBalanced", false,
 		))),
 		j: `{"$k":["ismaster","client","compression","loadBalanced"],"ismaster":true,` +
@@ -114,11 +114,11 @@ var (
 		v: convertDocument(must.NotFail(types.NewDocument(
 			"version", "5.0.0",
 			"gitVersion", "1184f004a99660de6f5e745573419bda8a28c0e9",
-			"modules", types.MustNewArray(),
+			"modules", must.NotFail(types.NewArray()),
 			"allocator", "tcmalloc",
 			"javascriptEngine", "mozjs",
 			"sysInfo", "deprecated",
-			"versionArray", types.MustNewArray(int32(5), int32(0), int32(0), int32(0)),
+			"versionArray", must.NotFail(types.NewArray(int32(5), int32(0), int32(0), int32(0))),
 			"openssl", must.NotFail(types.NewDocument(
 				"running", "OpenSSL 1.1.1f  31 Mar 2020",
 				"compiled", "OpenSSL 1.1.1f  31 Mar 2020",
@@ -149,7 +149,7 @@ var (
 			"bits", int32(64),
 			"debug", false,
 			"maxBsonObjectSize", int32(16777216),
-			"storageEngines", types.MustNewArray("devnull", "ephemeralForTest", "wiredTiger"),
+			"storageEngines", must.NotFail(types.NewArray("devnull", "ephemeralForTest", "wiredTiger")),
 			"ok", float64(1),
 		))),
 		j: `{"$k":["version","gitVersion","modules","allocator","javascriptEngine","sysInfo","versionArray",` +
@@ -184,18 +184,18 @@ var (
 	all = testCase{
 		name: "all",
 		v: convertDocument(must.NotFail(types.NewDocument(
-			"binary", types.MustNewArray(
+			"binary", must.NotFail(types.NewArray(
 				types.Binary{Subtype: types.BinaryUser, B: []byte{0x42}},
 				types.Binary{Subtype: types.BinaryGeneric, B: []byte{}},
-			),
-			"bool", types.MustNewArray(true, false),
-			"datetime", types.MustNewArray(time.Date(2021, 7, 27, 9, 35, 42, 123000000, time.UTC).Local(), time.Time{}.Local()),
-			"double", types.MustNewArray(42.13, 0.0),
-			"int32", types.MustNewArray(int32(42), int32(0)),
-			"int64", types.MustNewArray(int64(42), int64(0)),
-			"objectID", types.MustNewArray(types.ObjectID{0x42}, types.ObjectID{}),
-			"string", types.MustNewArray("foo", ""),
-			"timestamp", types.MustNewArray(types.Timestamp(42), types.Timestamp(0)),
+			)),
+			"bool", must.NotFail(types.NewArray(true, false)),
+			"datetime", must.NotFail(types.NewArray(time.Date(2021, 7, 27, 9, 35, 42, 123000000, time.UTC).Local(), time.Time{}.Local())),
+			"double", must.NotFail(types.NewArray(42.13, 0.0)),
+			"int32", must.NotFail(types.NewArray(int32(42), int32(0))),
+			"int64", must.NotFail(types.NewArray(int64(42), int64(0))),
+			"objectID", must.NotFail(types.NewArray(types.ObjectID{0x42}, types.ObjectID{})),
+			"string", must.NotFail(types.NewArray("foo", "")),
+			"timestamp", must.NotFail(types.NewArray(types.Timestamp(42), types.Timestamp(0))),
 		))),
 		j: `{"$k":["binary","bool","datetime","double","int32","int64","objectID","string","timestamp"],` +
 			`"binary":[{"$b":"Qg==","s":128},{"$b":"","s":0}],"bool":[true,false],` +

@@ -35,7 +35,7 @@ func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"version", versionValue,
 			"gitVersion", version.Get().Commit,
-			"modules", types.MustNewArray(),
+			"modules", must.NotFail(types.NewArray()),
 			"sysInfo", "deprecated",
 			"versionArray", must.NotFail(types.NewArray(int32(5), int32(0), int32(42), int32(0))),
 			"bits", int32(strconv.IntSize),
