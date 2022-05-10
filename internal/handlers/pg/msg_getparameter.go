@@ -30,10 +30,7 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		return nil, lazyerrors.Error(err)
 	}
 
-	command, err := document.Get("getParameter")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	command := document.Command()
 
 	resDB := types.MustNewDocument(
 		"acceptApiVersion2", false,
