@@ -192,7 +192,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 	m := actual.Map()
 	t.Log(m)
 
-	assert.Equal(t, 1.0, m["ok"])
+	assert.Equal(t, float64(1), m["ok"])
 
 	keys := CollectKeys(t, actual)
 	assert.Contains(t, keys, "quiet")
@@ -219,7 +219,7 @@ func TestStatisticsCommands(t *testing.T) {
 				{"debug", false},
 				{"maxBsonObjectSize", int32(16777216)},
 				{"buildEnvironment", bson.D{}},
-				{"ok", 1.0},
+				{"ok", float64(1)},
 			},
 		},
 		"CollStats": {
@@ -232,7 +232,7 @@ func TestStatisticsCommands(t *testing.T) {
 				{"totalIndexSize", int32(0)},
 				{"totalSize", int32(16384)},
 				{"scaleFactor", int32(1)},
-				{"ok", 1.0},
+				{"ok", float64(1)},
 			},
 		},
 		"DataSize": {
