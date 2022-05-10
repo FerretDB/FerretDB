@@ -217,7 +217,7 @@ func TestFindAndModifyErrors(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'findAndModify.remove' is the wrong type 'string', expected types '[bool, long, int, decimal, double']",
 			},
-			altMessage: "BSON field 'remove' is the wrong type 'string', expected type 'bool'",
+			altMessage: "BSON field 'remove' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'",
 		},
 		"BadUpdateType": {
 			command: bson.D{
@@ -240,7 +240,7 @@ func TestFindAndModifyErrors(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'findAndModify.new' is the wrong type 'string', expected types '[bool, long, int, decimal, double']",
 			},
-			altMessage: "BSON field 'new' is the wrong type 'string', expected type 'bool'",
+			altMessage: "BSON field 'new' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'",
 		},
 		"BadUpsertType": {
 			command: bson.D{
@@ -252,7 +252,7 @@ func TestFindAndModifyErrors(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'findAndModify.upsert' is the wrong type 'string', expected types '[bool, long, int, decimal, double']",
 			},
-			altMessage: "BSON field 'upsert' is the wrong type 'string', expected type 'bool'",
+			altMessage: "BSON field 'upsert' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'",
 		},
 	} {
 		name, tc := name, tc
