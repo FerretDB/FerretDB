@@ -1139,7 +1139,7 @@ func TestQueryComparisonNin(t *testing.T) {
 			},
 		},
 
-		"$regex": {
+		"RegexString": {
 			value: bson.A{bson.D{{"$regex", "/foo/"}}},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -1248,7 +1248,7 @@ func TestQueryComparisonIn(t *testing.T) {
 			expectedIDs: []any{"array", "array-embedded", "array-empty", "array-three", "document", "document-composite", "document-empty"},
 		},
 
-		"$regex": {
+		"RegexString": {
 			value: bson.A{bson.D{{"$regex", "/foo/"}}},
 			err: &mongo.CommandError{
 				Code:    2,
