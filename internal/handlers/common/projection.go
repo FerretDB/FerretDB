@@ -42,94 +42,103 @@ func validateExpression(projection *types.Document, depth int, inclusion, exclus
 		v := must.NotFail(projection.Get(k))
 		switch v := v.(type) {
 		case *types.Document:
+			inclusion, exclusion, err = validateDocProjectionExpression(v, depth, inclusion, exclusion)
 
-			for _, key := range v.Keys() {
-				val := must.NotFail(v.Get(key))
-				switch val := val.(type) {
-				case *types.Document:
-					if key == "$elemMatch" && depth >= 1 {
-						err = NewErrorMsg(ErrElemMatchNestedField,
-							"Cannot use $elemMatch projection on a nested field.",
-						)
-						return false, false, err
-					}
-					inclusion, exclusion, err = validateExpression(val, depth+1, inclusion, exclusion)
-					return inclusion, exclusion, err
-
-				default:
-					switch key {
-					case "$eq",
-						"$ne",
-						"$gt", "$gte",
-						"$lt", "$lte":
-						inclusion = true
-
-					case "$in":
-						switch must.NotFail(v.Get(key)).(type) {
-						case *types.Array:
-							// ok
-						default:
-							err = NewErrorMsg(ErrBadValue, "$in needs an array")
-							return false, false, err
-						}
-					case "$nin", "$not":
-						exclusion = true
-
-					default: // $mod, etc
-						err = NewErrorMsg(ErrNotImplemented, key+" is not supported")
-						return inclusion, exclusion, err
-					}
-				}
-			}
-		default: // scalars and arrays
-
+		default: // scalar
 			if k == "$elemMatch" {
 				err = NewError(ErrElemMatchObjectRequired,
 					fmt.Errorf("elemMatch: Invalid argument, object required, but got %T", v),
 				)
 				return false, false, err
 			}
+			inclusion, exclusion, err = validateScalarProjectionExpression(v, k, inclusion, exclusion)
+		}
+	}
+	return inclusion, exclusion, err
+}
 
-			switch v := v.(type) {
-			case float64, int32, int64:
-				if types.Compare(v, int32(0)) == types.Equal {
-					if inclusion {
-						err = NewError(ErrElemMatchExclusionInInclusion,
-							fmt.Errorf("Cannot do exclusion on field %s in inclusion projection", k),
-						)
-						return false, false, err
-					}
-					exclusion = true
-				} else {
-					if exclusion {
-						err = NewError(ErrElemMatchInclusionInExclusion,
-							fmt.Errorf("Cannot do inclusion on field %s in exclusion projection", k),
-						)
-						return false, false, err
-					}
-					inclusion = true
-				}
-
-			case bool:
-				if v {
-					if exclusion {
-						err = NewError(ErrElemMatchInclusionInExclusion,
-							fmt.Errorf("Cannot do inclusion on field %s in exclusion projection", k),
-						)
-						return false, false, err
-					}
-					inclusion = true
-				} else {
-					if inclusion {
-						err = NewError(ErrElemMatchExclusionInInclusion,
-							fmt.Errorf("Cannot do exclusion on field %s in inclusion projection", k),
-						)
-						return false, false, err
-					}
-					exclusion = true
-				}
+func validateScalarProjectionExpression(v any, field string, inclusion, exclusion bool) (bool, bool, error) {
+	var err error
+	switch v := v.(type) {
+	case float64, int32, int64:
+		if types.Compare(v, int32(0)) == types.Equal {
+			if inclusion {
+				err = NewError(ErrElemMatchExclusionInInclusion,
+					fmt.Errorf("Cannot do exclusion on field %s in inclusion projection", field),
+				)
+				return false, false, err
 			}
+			exclusion = true
+		} else {
+			if exclusion {
+				err = NewError(ErrElemMatchInclusionInExclusion,
+					fmt.Errorf("Cannot do inclusion on field %s in exclusion projection", field),
+				)
+				return false, false, err
+			}
+			inclusion = true
+		}
+
+	case bool:
+		if v {
+			if exclusion {
+				err = NewError(ErrElemMatchInclusionInExclusion,
+					fmt.Errorf("Cannot do inclusion on field %s in exclusion projection", field),
+				)
+				return false, false, err
+			}
+			inclusion = true
+		} else {
+			if inclusion {
+				err = NewError(ErrElemMatchExclusionInInclusion,
+					fmt.Errorf("Cannot do exclusion on field %s in inclusion projection", field),
+				)
+				return false, false, err
+			}
+			exclusion = true
+		}
+	}
+	return inclusion, exclusion, err
+}
+
+func validateDocProjectionExpression(v *types.Document, depth int, inclusion, exclusion bool) (bool, bool, error) {
+	var err error
+	for _, key := range v.Keys() {
+		val := must.NotFail(v.Get(key))
+		switch val := val.(type) {
+		case *types.Document:
+			if key == "$elemMatch" && depth >= 1 {
+				err = NewErrorMsg(ErrElemMatchNestedField,
+					"Cannot use $elemMatch projection on a nested field.",
+				)
+				return false, false, err
+			}
+			inclusion, exclusion, err = validateExpression(val, depth+1, inclusion, exclusion)
 			return inclusion, exclusion, err
+
+		default:
+			switch key {
+			case "$eq",
+				"$ne",
+				"$gt", "$gte",
+				"$lt", "$lte":
+				inclusion = true
+
+			case "$in":
+				switch must.NotFail(v.Get(key)).(type) {
+				case *types.Array:
+					// ok
+				default:
+					err = NewErrorMsg(ErrBadValue, "$in needs an array")
+					return false, false, err
+				}
+			case "$nin", "$not":
+				exclusion = true
+
+			default: // $mod, etc
+				err = NewErrorMsg(ErrNotImplemented, key+" is not supported")
+				return inclusion, exclusion, err
+			}
 		}
 	}
 	return inclusion, exclusion, err
