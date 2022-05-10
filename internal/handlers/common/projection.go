@@ -44,6 +44,10 @@ func validateExpression(projection *types.Document, depth int, inclusion, exclus
 		case *types.Document:
 			inclusion, exclusion, err = validateDocProjectionExpression(v, depth, inclusion, exclusion)
 
+		case *types.Array:
+			err = NewErrorMsg(ErrElemMatchObjectRequired, "elemMatch: Invalid argument, object required, but got array")
+			return false, false, err
+
 		default: // scalar
 			if k == "$elemMatch" {
 				err = NewError(ErrElemMatchObjectRequired,
@@ -98,7 +102,7 @@ func validateScalarProjectionExpression(v any, field string, inclusion, exclusio
 			exclusion = true
 		}
 	default:
-		err = NewError(ErrNotImplemented, fmt.Errorf("validateScalarProjectionExpression: %T is not supported", v))
+		err = NewError(ErrNotImplemented, fmt.Errorf("validateScalarProjectionExpression: %v %T is not supported", v, v))
 		return inclusion, exclusion, err
 	}
 	return inclusion, exclusion, err
@@ -117,7 +121,12 @@ func validateDocProjectionExpression(v *types.Document, depth int, inclusion, ex
 				return false, false, err
 			}
 			inclusion, exclusion, err = validateExpression(val, depth+1, inclusion, exclusion)
-			return inclusion, exclusion, err
+
+		case *types.Array:
+			if key == "$elemMatch" {
+				err = NewErrorMsg(ErrElemMatchObjectRequired, "elemMatch: Invalid argument, object required, but got array")
+				return false, false, err
+			}
 
 		default:
 			switch key {
@@ -189,7 +198,9 @@ func projectDocument(inclusion bool, doc *types.Document, projection *types.Docu
 			}
 
 		case *types.Array: // in projection doc: { k1: [value1, value2... ], k1Projection = [ value1, value2.. ]
-			return NewErrorMsg(ErrNotImplemented, fieldLevel1+" array not supported")
+			return NewError(ErrElemMatchObjectRequired,
+				fmt.Errorf("elemMatch: Invalid argument, object required, but got %T", k1Projection),
+			)
 
 		case float64, // in projection doc: { k1: k1Projection } where k1Projection is a number
 			int32,

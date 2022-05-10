@@ -117,6 +117,24 @@ func TestQueryProjectionElemMatch(t *testing.T) {
 		expected   []bson.D
 		err        *mongo.CommandError
 	}{
+		"ElemMatchMalformed": {
+			filterIDs:  bson.A{"document-composite-3", "document-composite-2"},
+			projection: bson.D{{"value", bson.D{{"$elemMatch", bson.A{"field", "$eq", 42}}}}},
+			err: &mongo.CommandError{
+				Code:    31274,
+				Name:    "Location31274",
+				Message: "elemMatch: Invalid argument, object required, but got array",
+			},
+		},
+		"ElemMatchObjectRequired": {
+			filterIDs:  bson.A{"document-composite-3", "document-composite-2"},
+			projection: bson.D{{"value", bson.D{{"field", bson.D{{"$elemMatch", ""}}}}}},
+			err: &mongo.CommandError{
+				Code:    31274,
+				Name:    "Location31274",
+				Message: "elemMatch: Invalid argument, object required, but got string",
+			},
+		},
 		"ElemMatchEq": {
 			filterIDs:  bson.A{"document-composite-3", "document-composite-2"},
 			projection: bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"field", bson.D{{"$eq", 42}}}}}}}},
@@ -197,15 +215,6 @@ func TestQueryProjectionElemMatch(t *testing.T) {
 				Code:    2,
 				Name:    "BadValue",
 				Message: "$nin needs an array",
-			},
-		},
-		"ElemMatchObjectRequired": {
-			filterIDs:  bson.A{"document-composite-3", "document-composite-2"},
-			projection: bson.D{{"value", bson.D{{"field", bson.D{{"$elemMatch", ""}}}}}},
-			err: &mongo.CommandError{
-				Code:    31274,
-				Name:    "Location31274",
-				Message: "elemMatch: Invalid argument, object required, but got string",
 			},
 		},
 		"ElemMatchNestedErr": {
