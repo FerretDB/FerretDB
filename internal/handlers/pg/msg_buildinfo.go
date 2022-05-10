@@ -32,7 +32,7 @@ const versionValue = "5.0.42"
 func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 	err := reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{types.MustNewDocument(
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"version", versionValue,
 			"gitVersion", version.Get().Commit,
 			"modules", types.MustNewArray(),
@@ -43,7 +43,7 @@ func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			"maxBsonObjectSize", int32(types.MaxDocumentLen),
 			"buildEnvironment", version.Get().BuildEnvironment,
 			"ok", float64(1),
-		)},
+		))},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
