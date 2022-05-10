@@ -25,6 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -66,7 +67,7 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 				"name", osName,
 				"version", osVersion,
 			),
-			"extra", types.MustNewDocument(),
+			"extra", must.NotFail(types.NewDocument()),
 			"ok", float64(1),
 		)},
 	})
