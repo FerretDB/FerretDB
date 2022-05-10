@@ -8,14 +8,6 @@ linters-settings:
   lll:
     line-length: 130
     tab-width: 4
-  stylecheck:
-    go: '1.18'
-    checks: ['all']
-    dot-import-whitelist: []
-    initialisms: []
-    http-status-code-whitelist: []
-  unparam:
-    check-exported: true
   whitespace:
     multi-if: false
     multi-func: false
@@ -89,6 +81,7 @@ linters:
     - predeclared
     - promlinter
     - revive
+    - stylecheck
     - tagliatelle
     - tenv
     - thelper
