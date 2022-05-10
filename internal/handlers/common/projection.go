@@ -97,6 +97,9 @@ func validateScalarProjectionExpression(v any, field string, inclusion, exclusio
 			}
 			exclusion = true
 		}
+	default:
+		err = NewError(ErrNotImplemented, fmt.Errorf("validateScalarProjectionExpression: %T is not supported", v))
+		return inclusion, exclusion, err
 	}
 	return inclusion, exclusion, err
 }
