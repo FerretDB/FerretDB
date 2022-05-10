@@ -48,6 +48,7 @@ linters:
     - godox
     - goheader
     - goimports
+    - gosimple
     - govet
     - ineffassign
     - staticcheck
