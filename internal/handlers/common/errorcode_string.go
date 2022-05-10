@@ -17,54 +17,35 @@ func _() {
 	_ = x[ErrCommandNotFound-59]
 	_ = x[ErrNotImplemented-238]
 	_ = x[ErrSortBadValue-15974]
+	_ = x[ErrInvalidArg-28667]
+	_ = x[ErrSliceFirstArg-28724]
 	_ = x[ErrProjectionInEx-31253]
 	_ = x[ErrProjectionExIn-31254]
 	_ = x[ErrRegexOptions-51075]
 }
 
-const (
-	_ErrorCode_name_0 = "InternalErrorBadValue"
-	_ErrorCode_name_1 = "FailedToParse"
-	_ErrorCode_name_2 = "TypeMismatch"
-	_ErrorCode_name_3 = "NamespaceNotFound"
-	_ErrorCode_name_4 = "NamespaceExists"
-	_ErrorCode_name_5 = "CommandNotFound"
-	_ErrorCode_name_6 = "NotImplemented"
-	_ErrorCode_name_7 = "Location15974"
-	_ErrorCode_name_8 = "Location31253Location31254"
-	_ErrorCode_name_9 = "Location51075"
-)
+const _ErrorCode_name = "InternalErrorBadValueFailedToParseTypeMismatchNamespaceNotFoundNamespaceExistsCommandNotFoundNotImplementedLocation15974Location28667Location28724Location31253Location31254Location51075"
 
-var (
-	_ErrorCode_index_0 = [...]uint8{0, 13, 21}
-	_ErrorCode_index_8 = [...]uint8{0, 13, 26}
-)
+var _ErrorCode_map = map[ErrorCode]string{
+	1:     _ErrorCode_name[0:13],
+	2:     _ErrorCode_name[13:21],
+	9:     _ErrorCode_name[21:34],
+	14:    _ErrorCode_name[34:46],
+	26:    _ErrorCode_name[46:63],
+	48:    _ErrorCode_name[63:78],
+	59:    _ErrorCode_name[78:93],
+	238:   _ErrorCode_name[93:107],
+	15974: _ErrorCode_name[107:120],
+	28667: _ErrorCode_name[120:133],
+	28724: _ErrorCode_name[133:146],
+	31253: _ErrorCode_name[146:159],
+	31254: _ErrorCode_name[159:172],
+	51075: _ErrorCode_name[172:185],
+}
 
 func (i ErrorCode) String() string {
-	switch {
-	case 1 <= i && i <= 2:
-		i -= 1
-		return _ErrorCode_name_0[_ErrorCode_index_0[i]:_ErrorCode_index_0[i+1]]
-	case i == 9:
-		return _ErrorCode_name_1
-	case i == 14:
-		return _ErrorCode_name_2
-	case i == 26:
-		return _ErrorCode_name_3
-	case i == 48:
-		return _ErrorCode_name_4
-	case i == 59:
-		return _ErrorCode_name_5
-	case i == 238:
-		return _ErrorCode_name_6
-	case i == 15974:
-		return _ErrorCode_name_7
-	case 31253 <= i && i <= 31254:
-		i -= 31253
-		return _ErrorCode_name_8[_ErrorCode_index_8[i]:_ErrorCode_index_8[i+1]]
-	case i == 51075:
-		return _ErrorCode_name_9
-	default:
-		return "ErrorCode(" + strconv.FormatInt(int64(i), 10) + ")"
+	if str, ok := _ErrorCode_map[i]; ok {
+		return str
 	}
+	return "ErrorCode(" + strconv.FormatInt(int64(i), 10) + ")"
 }

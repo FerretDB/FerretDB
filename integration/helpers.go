@@ -25,6 +25,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -37,7 +38,7 @@ func Convert(t testing.TB, v any) any {
 	switch v := v.(type) {
 	// composite types
 	case primitive.D:
-		doc := types.MustNewDocument()
+		doc := must.NotFail(types.NewDocument())
 		for _, e := range v {
 			doc.Set(e.Key, Convert(t, e.Value))
 		}
