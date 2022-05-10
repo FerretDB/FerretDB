@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -71,6 +72,18 @@ func TestFindAndModifySimple(t *testing.T) {
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
 				{"value", bson.D{{"_id", "double-zero"}, {"value", 0.0}}},
+				{"ok", float64(1)},
+			},
+		},
+		"NewDoubleNaN": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "double-zero"}}},
+				{"update", bson.D{{"_id", "double-zero"}, {"value", 43.0}}},
+				{"new", math.NaN()},
+			},
+			response: bson.D{
+				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
+				{"value", bson.D{{"_id", "double-zero"}, {"value", float64(43)}}},
 				{"ok", float64(1)},
 			},
 		},
