@@ -151,14 +151,14 @@ func TestQueryProjectionElemMatch(t *testing.T) {
 				Message: "Cannot use $elemMatch projection on a nested field.",
 			},
 		},
-		// "ElemMatchNestedFieldEmpty": {
-		// 	filterIDs:  bson.A{"document-composite-3", "document-composite-2"},
-		// 	projection: bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"field", bson.D{{"field", bson.D{{"$eq", 42}}}}}}}}}},
-		// 	expected: []bson.D{
-		// 		{{"_id", "document-composite-2"}},
-		// 		{{"_id", "document-composite-3"}},
-		// 	},
-		// },
+		"ElemMatchNestedFieldEmpty": {
+			filterIDs:  bson.A{"document-composite-3", "document-composite-2"},
+			projection: bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"field", bson.D{{"field", bson.D{{"$eq", 42}}}}}}}}}},
+			expected: []bson.D{
+				{{"_id", "document-composite-2"}},
+				{{"_id", "document-composite-3"}},
+			},
+		},
 		"ElemMatchEq": {
 			filterIDs:  bson.A{"document-composite-3", "document-composite-2"},
 			projection: bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"field", bson.D{{"$eq", 42}}}}}}}},

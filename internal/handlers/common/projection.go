@@ -136,7 +136,8 @@ func validateDocProjectionExpression(v *types.Document, depth int, inclusion, ex
 		case *types.Document:
 
 			if key == projectionElemMatch && depth >= 1 {
-				err = NewErrorMsg(ErrElemMatchNestedField,
+				err = NewErrorMsg(
+					ErrElemMatchNestedField,
 					"Cannot use $elemMatch projection on a nested field.",
 				)
 				return false, false, err
@@ -146,7 +147,10 @@ func validateDocProjectionExpression(v *types.Document, depth int, inclusion, ex
 		case *types.Array:
 
 			if key == projectionElemMatch {
-				err = NewErrorMsg(ErrElemMatchObjectRequired, "elemMatch: Invalid argument, object required, but got array")
+				err = NewErrorMsg(
+					ErrElemMatchObjectRequired,
+					"elemMatch: Invalid argument, object required, but got array",
+				)
 				return false, false, err
 			}
 
@@ -222,7 +226,8 @@ func projectDocument(inclusion bool, doc *types.Document, projection *types.Docu
 
 		case *types.Array: // in projection doc: { k1: [value1, value2... ], k1Projection = [ value1, value2.. ]
 			// it's a switch over elemMatch projection
-			return NewError(ErrElemMatchObjectRequired,
+			return NewError(
+				ErrElemMatchObjectRequired,
 				fmt.Errorf("elemMatch: Invalid argument, object required, but got %T", k1Projection),
 			)
 
@@ -255,7 +260,7 @@ func applyDocProjection(k1 string, doc *types.Document, k1Projection *types.Docu
 			conditions := must.NotFail(k1Projection.Get(projectionName)).(*types.Document)
 
 			var found bool
-			found, err = findDocElemMatch(k1, doc, conditions)
+			found, err = findDocElemMatch(doc, conditions, k1)
 			if err != nil {
 				return err
 			}
@@ -295,8 +300,17 @@ func applyDocProjection(k1 string, doc *types.Document, k1Projection *types.Docu
 }
 
 // findInArray makes look up for the array element in the projection condition.
-func findInArray(k1, k2 string, value any, doc *types.Document, compareRes []types.CompareResult) bool {
-	docValueArray := must.NotFail(doc.GetByPath(k1)).(*types.Array)
+func findInArray(value any, doc *types.Document, compareRes []types.CompareResult, path ...string) bool {
+	docValueArrayI, err := doc.GetByPath(path[:len(path)-1]...)
+	if err != nil {
+		doc.RemoveByPath(path[:len(path)-1]...)
+		return false
+	}
+	docValueArray, ok := docValueArrayI.(*types.Array)
+	if !ok {
+		doc.RemoveByPath(path[:len(path)-1]...)
+		return false
+	}
 
 	found := -1
 fieldArray:
@@ -306,22 +320,27 @@ fieldArray:
 			continue
 		}
 
+		arrayPath := make([]string, len(path))
+		copy(arrayPath, path)
+		arrayPath[len(arrayPath)-1] = strconv.Itoa(j)
+
 		if found >= 0 {
-			doc.RemoveByPath(k1, strconv.Itoa(j))
+			doc.RemoveByPath(arrayPath...)
 			j -= 1
 			continue
 		}
 		switch e := e.(type) {
 		case *types.Document:
 			var d any
-			d, err = e.Get(k2)
+			d, err = e.Get(path[len(path)-1])
 			if err != nil {
-				doc.RemoveByPath(k1, strconv.Itoa(j))
+				doc.RemoveByPath(arrayPath...)
 				j -= 1
 				continue
 			}
 			switch value := value.(type) {
-			// TODO https://github.com/FerretDB/FerretDB/issues/439 resolve in nested
+
+			// TODO https://github.com/FerretDB/FerretDB/issues/439 add tests
 			case *types.Document:
 
 			case *types.Array:
@@ -329,6 +348,7 @@ fieldArray:
 				// and it is the target array of the doc
 				for i := 0; i < e.Len(); i++ {
 					arrV := must.NotFail(value.Get(i))
+
 					switch d := d.(type) {
 					case *types.Array:
 						cmp := types.Compare(d, arrV)
@@ -349,131 +369,167 @@ fieldArray:
 				}
 			}
 
-			doc.RemoveByPath(k1, strconv.Itoa(j))
+			doc.RemoveByPath(arrayPath...)
 			j -= 1
 
 		default:
-			doc.RemoveByPath(k1, strconv.Itoa(j))
+			doc.RemoveByPath(arrayPath...)
 			j -= 1
 			continue
 		}
 	}
 
 	if found < 0 {
-		doc.RemoveByPath(k1)
+		doc.RemoveByPath(path[:len(path)-1]...)
 	}
 	return found >= 0
 }
 
 // findDocElemMatch is for elemMatch conditions.
-func findDocElemMatch(k1 string, doc, conditions *types.Document) (bool, error) {
+func findDocElemMatch(doc, condition *types.Document, path ...string) (bool, error) {
+	if len(path) == 0 {
+		panic("call elemMatchCondition with zero path")
+	}
+
+	found := false
+	var err error
+	for nextLevel, condition := range condition.Map() {
+		levelPath := make([]string, len(path)+1)
+		copy(levelPath, path)
+		levelPath[len(path)] = nextLevel
+
+		switch condition := condition.(type) {
+		case *types.Document:
+			found, err = elemMatchProcessOperand(doc, condition, levelPath...)
+			if err != nil {
+				return false, err
+			}
+		}
+	}
+	return found, nil
+}
+
+// elemMatchCondition: in condition: { $eq: 42 }.
+func elemMatchProcessOperand(doc, condition *types.Document, path ...string) (bool, error) {
+	var err error
+	found := false
+	for operand, value := range condition.Map() {
+		levelPath := make([]string, len(path)+1)
+		copy(levelPath, path)
+		levelPath[len(path)] = operand
+
+		switch operand {
+		case "$eq":
+			found = findInArray(value, doc, []types.CompareResult{types.Equal}, path...)
+
+		case "$ne":
+			found = findInArray(value, doc, []types.CompareResult{types.Less, types.Greater}, path...)
+
+		case "$gt":
+			found = findInArray(value, doc, []types.CompareResult{types.Greater}, path...)
+
+		case "$gte":
+			found = findInArray(value, doc, []types.CompareResult{types.Greater, types.Equal}, path...)
+
+		case "$lt":
+			found = findInArray(value, doc, []types.CompareResult{types.Less}, path...)
+
+		case "$lte":
+			found = findInArray(value, doc, []types.CompareResult{types.Less, types.Equal}, path...)
+
+		case "$nin":
+			switch inValue := value.(type) {
+			case *types.Array:
+				for i := 0; i < inValue.Len(); i++ {
+					x := must.NotFail(inValue.Get(i))
+					found = findInArray(x, doc,
+						[]types.CompareResult{types.Less, types.Greater, types.NotEqual}, path...,
+					)
+					if found {
+						return found, err
+					}
+				}
+			default:
+				err = NewErrorMsg(ErrBadValue, "$nin needs an array")
+				return found, err
+			}
+			if !found {
+				return found, err
+			}
+
+		case "$in":
+			switch inValue := value.(type) {
+			case *types.Array:
+				for i := 0; i < inValue.Len(); i++ {
+					x := must.NotFail(inValue.Get(i))
+					found = findInArray(x, doc, []types.CompareResult{types.Equal}, path...)
+					if found {
+						return found, err
+					}
+				}
+			default:
+				err = NewErrorMsg(ErrBadValue, "array values supported for $in only")
+				return found, err
+			}
+			if !found {
+				return found, err
+			}
+
+			// <scalar value> OR field: {nested projection}
+		default:
+			switch value := value.(type) {
+			case *types.Document:
+				return elemMatchProcessOperand(doc, value, levelPath...)
+			}
+			found, err = elemMatchDefaultOperand(doc, value, levelPath...)
+		}
+		return found, err
+	}
+
+	return found, err
+}
+
+func elemMatchDefaultOperand(doc *types.Document, conditionValue any, path ...string) (bool, error) {
 	found := false
 
-	// for sure it's here - see code above
-	docValueA := must.NotFail(doc.GetByPath(k1))
+	docValueA := must.NotFail(doc.GetByPath(path...))
 
 	// $elemMatch works only for arrays, it must be an array
 	docValueArray, ok := docValueA.(*types.Array)
 	if !ok {
-		doc.Remove(k1)
+		doc.RemoveByPath(path...)
 		return found, nil
 	}
 
-	for k2, condition := range conditions.Map() {
-		switch condition := condition.(type) {
-		// in condition: { $eq: 42 }
+	for j := 0; j < docValueArray.Len(); j++ {
+		e, err := docValueArray.Get(j)
+		if err != nil {
+			continue // removed items
+		}
+		arrayPath := make([]string, len(path))
+		copy(arrayPath, path)
+		arrayPath[len(arrayPath)-1] = strconv.Itoa(j)
+
+		switch e := e.(type) {
 		case *types.Document:
-			for operand, value := range condition.Map() {
-				var err error
-				switch operand {
-				case "$eq":
-					found = findInArray(k1, k2, value, doc, []types.CompareResult{types.Equal})
-
-				case "$ne":
-					found = findInArray(k1, k2, value, doc, []types.CompareResult{types.Less, types.Greater})
-
-				case "$gt":
-					found = findInArray(k1, k2, value, doc, []types.CompareResult{types.Greater})
-
-				case "$gte":
-					found = findInArray(k1, k2, value, doc, []types.CompareResult{types.Greater, types.Equal})
-
-				case "$lt":
-					found = findInArray(k1, k2, value, doc, []types.CompareResult{types.Less})
-
-				case "$lte":
-					found = findInArray(k1, k2, value, doc, []types.CompareResult{types.Less, types.Equal})
-
-				case "$nin":
-					switch inValue := value.(type) {
-					case *types.Array:
-						for i := 0; i < inValue.Len(); i++ {
-							x := must.NotFail(inValue.Get(i))
-							found = findInArray(k1, k2, x, doc,
-								[]types.CompareResult{types.Less, types.Greater, types.NotEqual},
-							)
-							if found {
-								return found, err
-							}
-						}
-					default:
-						err = NewErrorMsg(ErrBadValue, "$nin needs an array")
-						return found, err
-					}
-					if !found {
-						return found, err
-					}
-
-				case "$in":
-					switch inValue := value.(type) {
-					case *types.Array:
-						for i := 0; i < inValue.Len(); i++ {
-							x := must.NotFail(inValue.Get(i))
-							found = findInArray(k1, k2, x, doc, []types.CompareResult{types.Equal})
-							if found {
-								return found, err
-							}
-						}
-					default:
-						err = NewErrorMsg(ErrBadValue, "array values supported for $in only")
-						return found, err
-					}
-					if !found {
-						return found, err
-					}
-
-					// operand is not an operand possible: <scalar value> OR field: {nested projection}
-				default:
-
-					for j := 0; j < docValueArray.Len(); j++ {
-						e := must.NotFail(docValueArray.Get(j))
-
-						switch e := e.(type) {
-						case *types.Document:
-							docVal, err := e.Get(k2)
-							if err != nil {
-								doc.RemoveByPath(k1, strconv.Itoa(j))
-								continue
-							}
-							if types.Compare(docVal, value) == types.Equal {
-								found = true
-								break
-							}
-						default: // field2: value
-							if types.Compare(e, value) == types.Equal {
-								found = true
-								break
-							}
-						}
-						doc.RemoveByPath(k1, strconv.Itoa(j))
-						j = j - 1
-					}
-					err = NewErrorMsg(ErrBadValue, k2+" not supported")
-					return found, err
-				}
-				return found, err
+			docVal, err := e.GetByPath(path[:len(path)-1]...)
+			if err != nil {
+				doc.RemoveByPath(arrayPath...)
+				j -= 1
+				continue
+			}
+			if types.Compare(docVal, conditionValue) == types.Equal {
+				found = true
+				break
+			}
+		default: // field2: value
+			if types.Compare(e, conditionValue) == types.Equal {
+				found = true
+				break
 			}
 		}
+		doc.RemoveByPath(arrayPath...)
+		j -= 1
 	}
 	return found, nil
 }
