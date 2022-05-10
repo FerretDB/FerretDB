@@ -25,9 +25,9 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// isProjectionInclusion: projection can be only inclusion or exclusion. Validate and return true if inclusion.
+// validateProjectionExpression: projection can be only inclusion or exclusion. Validate and return true if inclusion.
 // Exception for the _id field.
-func isProjectionInclusion(projection *types.Document) (bool, error) {
+func validateProjectionExpression(projection *types.Document) (bool, error) {
 	inclusion, _, err := validateExpression(projection, 0, false, false)
 	return inclusion, err
 }
@@ -153,7 +153,7 @@ func ProjectDocuments(docs []*types.Document, projection *types.Document) error 
 		return nil
 	}
 
-	inclusion, err := isProjectionInclusion(projection)
+	inclusion, err := validateProjectionExpression(projection)
 	if err != nil {
 		return err
 	}
@@ -164,48 +164,47 @@ func ProjectDocuments(docs []*types.Document, projection *types.Document) error 
 			return err
 		}
 	}
-
 	return nil
 }
 
 func projectDocument(inclusion bool, doc *types.Document, projection *types.Document) error {
 	projectionMap := projection.Map()
 
-	for k1, k1Val := range doc.Map() {
-		k1Projection, ok := projectionMap[k1]
+	for fieldLevel1, k1Val := range doc.Map() {
+		k1Projection, ok := projectionMap[fieldLevel1]
 		if !ok {
-			if k1 == "_id" { // if _id is not in projection map, do not do anything with it
+			if fieldLevel1 == "_id" { // if _id is not in projection map, do not do anything with it
 				continue
 			}
 			if inclusion { // k1 from doc is absent in projection, remove from doc only if projection type inclusion
-				doc.Remove(k1)
+				doc.Remove(fieldLevel1)
 			}
 			continue
 		}
 
 		switch k1Projection := k1Projection.(type) { // found in the projection
 		case *types.Document: // in projection doc: k1: { k2: value }}, k1Projection == { k2: value }}
-			if err := applyDocProjection(k1, doc, k1Projection); err != nil {
+			if err := applyDocProjection(fieldLevel1, doc, k1Projection); err != nil {
 				return err
 			}
 
 		case *types.Array: // in projection doc: { k1: [value1, value2... ], k1Projection = [ value1, value2.. ]
-			return NewErrorMsg(ErrNotImplemented, k1+" not supported")
+			return NewErrorMsg(ErrNotImplemented, fieldLevel1+" array not supported")
 
 		case float64, // in projection doc: { k1: k1Projection } where k1Projection is a number
 			int32,
 			int64:
 			if types.Compare(k1Projection, int32(0)) == types.Equal {
-				doc.Remove(k1)
+				doc.Remove(fieldLevel1)
 			}
 
 		case bool: // in projection doc: { k1: k1Projection }
 			if !k1Projection {
-				doc.Remove(k1)
+				doc.Remove(fieldLevel1)
 			}
 
 		default:
-			return lazyerrors.Errorf("unsupported operation %s %v (%T)", k1, k1Val, k1Val)
+			return lazyerrors.Errorf("unsupported operation %s %v (%T)", fieldLevel1, k1Val, k1Val)
 		}
 	}
 	return nil
@@ -256,7 +255,9 @@ func findInArray(k1, k2 string, value any, doc *types.Document, compareRes []typ
 				continue
 			}
 			switch value := value.(type) {
-			case *types.Document, *types.Array: // TODO
+			// TODO https://github.com/FerretDB/FerretDB/issues/439 resolve in nested
+			case *types.Document, *types.Array:
+
 			default:
 				cmp := types.Compare(d, value)
 				if slices.Contains(compareRes, cmp) {
