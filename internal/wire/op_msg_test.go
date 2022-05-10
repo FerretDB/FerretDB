@@ -33,9 +33,9 @@ var msgTestCases = []testCase{{
 	},
 	msgBody: &OpMsg{
 		sections: []OpMsgSection{{
-			Documents: []*types.Document{types.MustNewDocument(
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
 				"buildInfo", int32(1),
-				"lsid", types.MustNewDocument(
+				"lsid", must.NotFail(types.NewDocument(
 					"id", types.Binary{
 						Subtype: types.BinaryUUID,
 						B: []byte{
@@ -43,9 +43,9 @@ var msgTestCases = []testCase{{
 							0xb8, 0xe7, 0xa3, 0xa3, 0x2e, 0xc2, 0x56, 0xbe,
 						},
 					},
-				),
+				)),
 				"$db", "admin",
-			)},
+			))},
 		}},
 	},
 }, {
@@ -60,7 +60,7 @@ var msgTestCases = []testCase{{
 	},
 	msgBody: &OpMsg{
 		sections: []OpMsgSection{{
-			Documents: []*types.Document{types.MustNewDocument(
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
 				"version", "5.0.0",
 				"gitVersion", "1184f004a99660de6f5e745573419bda8a28c0e9",
 				"modules", must.NotFail(types.NewArray()),
@@ -68,11 +68,11 @@ var msgTestCases = []testCase{{
 				"javascriptEngine", "mozjs",
 				"sysInfo", "deprecated",
 				"versionArray", must.NotFail(types.NewArray(int32(5), int32(0), int32(0), int32(0))),
-				"openssl", types.MustNewDocument(
+				"openssl", must.NotFail(types.NewDocument(
 					"running", "OpenSSL 1.1.1f  31 Mar 2020",
 					"compiled", "OpenSSL 1.1.1f  31 Mar 2020",
-				),
-				"buildEnvironment", types.MustNewDocument(
+				)),
+				"buildEnvironment", must.NotFail(types.NewDocument(
 					"distmod", "ubuntu2004",
 					"distarch", "x86_64",
 					"cc", "/opt/mongodbtoolchain/v3/bin/gcc: gcc (GCC) 8.5.0",
@@ -95,13 +95,13 @@ var msgTestCases = []testCase{{
 						"BOOST_MATH_NO_LONG_DOUBLE_MATH_FUNCTIONS BOOST_ENABLE_ASSERT_DEBUG_HANDLER "+
 						"BOOST_LOG_NO_SHORTHAND_NAMES BOOST_LOG_USE_NATIVE_SYSLOG "+
 						"BOOST_LOG_WITHOUT_THREAD_ATTR ABSL_FORCE_ALIGNED_ACCESS",
-				),
+				)),
 				"bits", int32(64),
 				"debug", false,
 				"maxBsonObjectSize", int32(16777216),
 				"storageEngines", must.NotFail(types.NewArray("devnull", "ephemeralForTest", "wiredTiger")),
 				"ok", float64(1),
-			)},
+			))},
 		}},
 	},
 }, {
@@ -114,32 +114,32 @@ var msgTestCases = []testCase{{
 	},
 	msgBody: &OpMsg{
 		sections: []OpMsgSection{{
-			Documents: []*types.Document{types.MustNewDocument(
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
 				"insert", "actor",
 				"ordered", true,
-				"writeConcern", types.MustNewDocument(
+				"writeConcern", must.NotFail(types.NewDocument(
 					"w", "majority",
-				),
+				)),
 				"$db", "monila",
-			)},
+			))},
 		}, {
 			Kind:       1,
 			Identifier: "documents",
 			Documents: []*types.Document{
-				types.MustNewDocument(
+				must.NotFail(types.NewDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01},
 					"actor_id", int32(1),
 					"first_name", "PENELOPE",
 					"last_name", "GUINESS",
 					"last_update", lastUpdate,
-				),
-				types.MustNewDocument(
+				)),
+				must.NotFail(types.NewDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x02},
 					"actor_id", int32(2),
 					"first_name", "NICK",
 					"last_name", "WAHLBERG",
 					"last_update", lastUpdate,
-				),
+				)),
 			},
 		}},
 	},
