@@ -46,7 +46,7 @@ var (
 	proxyAddrF       = flag.String("proxy-addr", "127.0.0.1:37017", "")
 	versionF         = flag.Bool("version", false, "print version to stdout (full version, commit, branch, dirty flag) and exit")
 	testConnTimeoutF = flag.Duration("test-conn-timeout", 0, "test: set connection timeout")
-	handlerF         = flag.String("handler", "pg", "set backend handler (pg, tg, dummy)")
+	handlerF         = flag.String("handler", "tg", "set backend handler (pg, tg, dummy)")
 )
 
 func main() {
@@ -122,7 +122,7 @@ func main() {
 		h = dummy.New()
 
 	default:
-		panic("unknown handler")
+		panic("unknown handler " + *handlerF)
 	}
 
 	defer h.Close()

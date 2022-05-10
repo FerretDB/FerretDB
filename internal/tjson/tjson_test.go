@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/tigrisdata/tigrisdb-client-go/driver"
+	"github.com/tigrisdata/tigris-client-go/driver"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -60,8 +60,11 @@ func TestUnmarshalTJSON(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			v, err := Unmarshal(&tc.in)
-			assert.Equal(t, tc.err, err, name)
+			v, err := Unmarshal(tc.in)
+			if !assert.Equal(t, tc.err, err, name) {
+				t.Log(err)
+			}
+
 			if tc.err == nil {
 				assert.Equal(t, tc.out, v, name)
 			}
