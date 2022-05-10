@@ -19,10 +19,8 @@ import (
 	"os"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
-
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -65,7 +63,7 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 				"cpuArch", runtime.GOARCH,
 			)),
 			"os", must.NotFail(types.NewDocument(
-				"type", cases.Title(language.AmericanEnglish).String(runtime.GOOS),
+				"type", strings.Title(runtime.GOOS),
 				"name", osName,
 				"version", osVersion,
 			)),
