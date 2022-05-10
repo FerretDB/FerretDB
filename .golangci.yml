@@ -46,6 +46,9 @@ linters-settings:
     checks: ['all']
   # govet
   # ineffassign
+  misspell:
+    ignore-words:
+      - guiness # present in the test dataset
   staticcheck:
     go: '1.18'
     checks: ['all']
@@ -63,6 +66,7 @@ linters:
     - gosimple
     - govet
     - ineffassign
+    - misspell
     - staticcheck
 
 issues:

@@ -8,9 +8,6 @@ linters-settings:
   lll:
     line-length: 130
     tab-width: 4
-  misspell:
-    ignore-words:
-      - guiness # present in the test dataset
   nolintlint:
     allow-unused: false
     allow-leading-space: false
@@ -45,6 +42,7 @@ linters:
     - gosimple
     - govet
     - ineffassign
+    - misspell
     - staticcheck
 
     # TODO configure and enable one by one
