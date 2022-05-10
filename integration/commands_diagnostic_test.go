@@ -39,7 +39,7 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 	m := actual.Map()
 	t.Log(m)
 
-	assert.Equal(t, 1.0, m["ok"])
+	assert.Equal(t, float64(1), m["ok"])
 	assert.Equal(t, []string{"totalLinesWritten", "log", "ok"}, CollectKeys(t, actual))
 
 	assert.IsType(t, int32(0), m["totalLinesWritten"])
@@ -56,7 +56,7 @@ func TestCommandsDiagnosticHostInfo(t *testing.T) {
 	m := actual.Map()
 	t.Log(m)
 
-	assert.Equal(t, 1.0, m["ok"])
+	assert.Equal(t, float64(1), m["ok"])
 	assert.Equal(t, []string{"system", "os", "extra", "ok"}, CollectKeys(t, actual))
 
 	os := m["os"].(bson.D)
@@ -87,7 +87,7 @@ func TestCommandsDiagnosticListCommands(t *testing.T) {
 	m := actual.Map()
 	t.Log(m)
 
-	assert.Equal(t, 1.0, m["ok"])
+	assert.Equal(t, float64(1), m["ok"])
 	assert.Equal(t, []string{"commands", "ok"}, CollectKeys(t, actual))
 
 	commands := m["commands"].(bson.D)

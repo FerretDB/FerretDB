@@ -25,6 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -53,22 +54,22 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{types.MustNewDocument(
-			"system", types.MustNewDocument(
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"system", must.NotFail(types.NewDocument(
 				"currentTime", now,
 				"hostname", hostname,
 				"cpuAddrSize", int32(strconv.IntSize),
 				"numCores", int32(runtime.NumCPU()),
 				"cpuArch", runtime.GOARCH,
-			),
-			"os", types.MustNewDocument(
-				"type", strings.Title(runtime.GOOS),
+			)),
+			"os", must.NotFail(types.NewDocument(
+				"type", strings.Title(runtime.GOOS), //nolint:staticcheck // good enough for GOOS
 				"name", osName,
 				"version", osVersion,
-			),
-			"extra", types.MustNewDocument(),
+			)),
+			"extra", must.NotFail(types.NewDocument()),
 			"ok", float64(1),
-		)},
+		))},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)

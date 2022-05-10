@@ -5,6 +5,7 @@ run:
   modules-download-mode: readonly
   issues-exit-code: 1
 
+# keep in sync with the other file
 linters-settings:
   exhaustive:
     default-signifies-exhaustive: false
@@ -47,11 +48,10 @@ linters:
     - godox
     - goheader
     - goimports
+    - gosimple
     - govet
     - ineffassign
-
-    # TODO enable when goanalysis_metalinter supports generics
-    # - staticcheck
+    - staticcheck
 
 issues:
   exclude-use-default: false

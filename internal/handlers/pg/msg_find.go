@@ -21,6 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -133,14 +134,14 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{types.MustNewDocument(
-			"cursor", types.MustNewDocument(
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"cursor", must.NotFail(types.NewDocument(
 				"firstBatch", firstBatch,
 				"id", int64(0), // TODO
 				"ns", db+"."+collection,
-			),
+			)),
 			"ok", float64(1),
-		)},
+		))},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
