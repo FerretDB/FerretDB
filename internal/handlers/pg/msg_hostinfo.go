@@ -63,7 +63,7 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 				"cpuArch", runtime.GOARCH,
 			)),
 			"os", must.NotFail(types.NewDocument(
-				"type", strings.Title(runtime.GOOS),
+				"type", strings.Title(runtime.GOOS), //nolint:staticcheck // good enough for GOOS
 				"name", osName,
 				"version", osVersion,
 			)),
