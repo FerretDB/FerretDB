@@ -148,7 +148,10 @@ var (
 				types.Binary{Subtype: types.BinaryGeneric, B: []byte{}},
 			)),
 			"bool", must.NotFail(types.NewArray(true, false)),
-			"datetime", must.NotFail(types.NewArray(time.Date(2021, 7, 27, 9, 35, 42, 123000000, time.UTC).Local(), time.Time{}.Local())),
+			"datetime", must.NotFail(types.NewArray(
+				time.Date(2021, 7, 27, 9, 35, 42, 123000000, time.UTC).Local(),
+				time.Time{}.Local(),
+			)),
 			"double", must.NotFail(types.NewArray(42.13, 0.0)),
 			"int32", must.NotFail(types.NewArray(int32(42), int32(0))),
 			"int64", must.NotFail(types.NewArray(int64(42), int64(0))),
