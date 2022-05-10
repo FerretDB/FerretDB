@@ -16,6 +16,7 @@ package pg
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -45,16 +46,6 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	}
 	common.Ignored(document, h.l, ignoredFields...)
 
-	command := document.Command()
-
-	var db, collection string
-	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-	if collection, err = common.GetRequiredParam[string](document, command); err != nil {
-		return nil, err
-	}
-
 	var filter *types.Document
 	if filter, err = common.GetOptionalParam(document, "query", filter); err != nil {
 		return nil, err
@@ -67,7 +58,23 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		}
 	}
 
-	fetchedDocs, err := h.fetch(ctx, db, collection)
+	var sp sqlParam
+	if sp.db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
+	}
+	collectionParam, err := document.Get(document.Command())
+	if err != nil {
+		return nil, err
+	}
+	var ok bool
+	if sp.collection, ok = collectionParam.(string); !ok {
+		return nil, common.NewErrorMsg(
+			common.ErrBadValue,
+			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+		)
+	}
+
+	fetchedDocs, err := h.fetch(ctx, sp)
 	if err != nil {
 		return nil, err
 	}

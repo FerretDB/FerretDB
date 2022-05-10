@@ -16,7 +16,6 @@ package pg
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"strings"
 
@@ -27,11 +26,26 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// sqlParam represents options/parameters used for sql query.
+type sqlParam struct {
+	db         string
+	collection string
+	comment    string
+}
+
 // fetch fetches all documents from the given database and collection.
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/372
-func (h *Handler) fetch(ctx context.Context, db, collection string) ([]*types.Document, error) {
-	sql := fmt.Sprintf(`SELECT _jsonb FROM %s`, pgx.Identifier{db, collection}.Sanitize())
+func (h *Handler) fetch(ctx context.Context, param sqlParam) ([]*types.Document, error) {
+	sql := `SELECT `
+	if param.comment != "" {
+		param.comment = strings.ReplaceAll(param.comment, "/*", "/ *")
+		param.comment = strings.ReplaceAll(param.comment, "*/", "* /")
+
+		sql += `/* ` + param.comment + ` */ `
+	}
+	sql += `_jsonb FROM ` + pgx.Identifier{param.db, param.collection}.Sanitize()
+
 	rows, err := h.pgPool.Query(ctx, sql)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -73,41 +87,4 @@ func nextRow(rows pgx.Rows) (*types.Document, error) {
 	}
 
 	return doc.(*types.Document), nil
-}
-
-func (h *Handler) protoFetch(ctx context.Context, param fetchParam) ([]*types.Document, error) {
-	var sql string
-	if param.comment != "" {
-		param.comment = strings.ReplaceAll(param.comment, "/*", "/ *")
-		param.comment = strings.ReplaceAll(param.comment, "*/", "* /")
-		param.comment = fmt.Sprintf("/* %s */", param.comment)
-
-		sql = fmt.Sprintf(`SELECT %s _jsonb FROM %s`, param.comment, pgx.Identifier{param.db, param.collection}.Sanitize())
-	} else {
-		sql = fmt.Sprintf(`SELECT _jsonb FROM %s`, pgx.Identifier{param.db, param.collection}.Sanitize())
-	}
-
-	rows, err := h.pgPool.Query(ctx, sql)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-	defer rows.Close()
-
-	var res []*types.Document
-	for {
-		doc, err := nextRow(rows)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-		res = append(res, doc)
-	}
-
-	return res, nil
-}
-
-type fetchParam struct {
-	db, collection, comment string
 }
