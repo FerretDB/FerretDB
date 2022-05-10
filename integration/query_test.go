@@ -205,7 +205,7 @@ func TestQueryCount(t *testing.T) {
 
 			m := actual.Map()
 
-			assert.Equal(t, 1.0, m["ok"])
+			assert.Equal(t, float64(1), m["ok"])
 
 			keys := CollectKeys(t, actual)
 			assert.Contains(t, keys, "n")
