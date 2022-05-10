@@ -153,6 +153,8 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	return &reply, nil
 }
 
+// findAndModifyParams represent all findAndModify requests' fields.
+// It's filled by calling prepareFindAndModifyParams.
 type findAndModifyParams struct {
 	db, collection                    string
 	query, sort, update               *types.Document
