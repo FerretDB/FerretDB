@@ -242,11 +242,16 @@ func findInArray(k1, k2 string, value any, doc *types.Document, compareRes []typ
 				j -= 1
 				continue
 			}
-			cmp := types.Compare(d, value)
-			if slices.Contains(compareRes, cmp) {
-				found = j
-				continue
+			switch value := value.(type) {
+			case *types.Document, *types.Array: // TODO
+			default:
+				cmp := types.Compare(d, value)
+				if slices.Contains(compareRes, cmp) {
+					found = j
+					continue
+				}
 			}
+
 			doc.RemoveByPath(k1, strconv.Itoa(j))
 			j -= 1
 
@@ -301,6 +306,26 @@ func findDocElemMatch(k1 string, doc, conditions *types.Document) (found int, er
 
 				case "$lte":
 					found, err = findInArray(k1, k2, value, doc, []types.CompareResult{types.Less, types.Equal})
+
+				case "$nin":
+					switch inValue := value.(type) {
+					case *types.Array:
+						for i := 0; i < inValue.Len(); i++ {
+							x := must.NotFail(inValue.Get(i))
+							found, err = findInArray(k1, k2, x, doc,
+								[]types.CompareResult{types.Less, types.Greater, types.NotEqual},
+							)
+							if found >= 0 {
+								return
+							}
+						}
+					default:
+						err = NewErrorMsg(ErrBadValue, "$nin needs an array")
+						return
+					}
+					if found < 0 {
+						return
+					}
 
 				case "$in":
 					switch inValue := value.(type) {

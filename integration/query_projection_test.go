@@ -183,6 +183,23 @@ func TestQueryProjectionElemMatch(t *testing.T) {
 				{{"_id", "document-composite-3"}},
 			},
 		},
+		"ElemMatchNin": {
+			filterIDs:  bson.A{"document-composite-3", "document-composite-2"},
+			projection: bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"field", bson.D{{"$nin", bson.A{40}}}}}}}}},
+			expected: []bson.D{
+				{{"_id", "document-composite-2"}, {"value", bson.A{bson.D{{"field", int32(41)}}}}},
+				{{"_id", "document-composite-3"}, {"value", bson.A{bson.D{{"field", int32(10)}}}}},
+			},
+		},
+		"ElemMatchNinErr": {
+			filterIDs:  bson.A{"document-composite-3", "document-composite-2"},
+			projection: bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"field", bson.D{{"$nin", int32(40)}}}}}}}},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "$nin needs an array",
+			},
+		},
 		"ElemMatchObjectRequired": {
 			filterIDs:  bson.A{"document-composite-3", "document-composite-2"},
 			projection: bson.D{{"value", bson.D{{"field", bson.D{{"$elemMatch", ""}}}}}},
