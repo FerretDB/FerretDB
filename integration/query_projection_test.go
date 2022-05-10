@@ -138,7 +138,7 @@ func TestQueryProjectionElemMatch(t *testing.T) {
 	}
 }
 
-func TestProjectionQuerySlice(t *testing.T) {
+func TestQueryProjectionSlice(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t)
 	_, err := collection.InsertOne(ctx,
@@ -156,7 +156,6 @@ func TestProjectionQuerySlice(t *testing.T) {
 			projection: bson.D{{"value", bson.D{
 				{"$slice", bson.D{{"a", bson.D{{"b", 3}}}, {"b", "string"}}},
 			}}},
-			expectedArray: nil,
 			err: &mongo.CommandError{
 				Code: 28667,
 				Name: "Location28667",
@@ -167,7 +166,7 @@ func TestProjectionQuerySlice(t *testing.T) {
 					":: caused by :: Expression $slice takes at least 2 arguments, and at most 3, " +
 					"but 1 were passed in.",
 			},
-			altMessage: "Invalid $slice syntax. The given syntax { $slice: {} } " +
+			altMessage: "Invalid $slice syntax. The given syntax " +
 				"did not match the find() syntax because :: Location31273: " +
 				"$slice only supports numbers and [skip, limit] arrays " +
 				":: The given syntax did not match the expression $slice syntax. " +
@@ -175,8 +174,7 @@ func TestProjectionQuerySlice(t *testing.T) {
 				"but 1 were passed in.",
 		},
 		"SingleArgString": {
-			projection:    bson.D{{"value", bson.D{{"$slice", "string"}}}},
-			expectedArray: nil,
+			projection: bson.D{{"value", bson.D{{"$slice", "string"}}}},
 			err: &mongo.CommandError{
 				Code: 28667,
 				Name: "Location28667",
@@ -187,10 +185,15 @@ func TestProjectionQuerySlice(t *testing.T) {
 					":: caused by :: Expression $slice takes at least 2 arguments, and at most 3, " +
 					"but 1 were passed in.",
 			},
+			altMessage: "Invalid $slice syntax. The given syntax " +
+				"did not match the find() syntax because :: Location31273: " +
+				"$slice only supports numbers and [skip, limit] arrays " +
+				":: The given syntax did not match the expression $slice syntax. " +
+				":: caused by :: Expression $slice takes at least 2 arguments, and at most 3, " +
+				"but 1 were passed in.",
 		},
 		"SkipIsString": {
-			projection:    bson.D{{"value", bson.D{{"$slice", bson.A{"string", 5}}}}},
-			expectedArray: nil,
+			projection: bson.D{{"value", bson.D{{"$slice", bson.A{"string", 5}}}}},
 			err: &mongo.CommandError{
 				Code:    28724,
 				Name:    "Location28724",
@@ -198,8 +201,7 @@ func TestProjectionQuerySlice(t *testing.T) {
 			},
 		},
 		"LimitIsString": {
-			projection:    bson.D{{"value", bson.D{{"$slice", bson.A{int32(2), "string"}}}}},
-			expectedArray: nil,
+			projection: bson.D{{"value", bson.D{{"$slice", bson.A{int32(2), "string"}}}}},
 			err: &mongo.CommandError{
 				Code:    28724,
 				Name:    "Location28724",
@@ -207,8 +209,7 @@ func TestProjectionQuerySlice(t *testing.T) {
 			},
 		},
 		"ArgEmptyArr": {
-			projection:    bson.D{{"value", bson.D{{"$slice", bson.A{}}}}},
-			expectedArray: nil,
+			projection: bson.D{{"value", bson.D{{"$slice", bson.A{}}}}},
 			err: &mongo.CommandError{
 				Code: 28667,
 				Name: "Location28667",
@@ -219,7 +220,7 @@ func TestProjectionQuerySlice(t *testing.T) {
 					"$slice syntax. :: caused by :: " +
 					"Expression $slice takes at least 2 arguments, and at most 3, but 0 were passed in.",
 			},
-			altMessage: "Invalid $slice syntax. The given syntax { $slice: {} } " +
+			altMessage: "Invalid $slice syntax. The given syntax " +
 				"did not match the find() syntax because :: Location31272: " +
 				"$slice array argument should be of form [skip, limit] :: " +
 				"The given syntax did not match the expression " +
@@ -227,8 +228,7 @@ func TestProjectionQuerySlice(t *testing.T) {
 				"Expression $slice takes at least 2 arguments, and at most 3, but 0 were passed in.",
 		},
 		"ThreeArgs": {
-			projection:    bson.D{{"value", bson.D{{"$slice", bson.A{"string", 2, 3}}}}},
-			expectedArray: nil,
+			projection: bson.D{{"value", bson.D{{"$slice", bson.A{"string", 2, 3}}}}},
 			err: &mongo.CommandError{
 				Code:    28724,
 				Name:    "Location28724",
@@ -236,8 +236,7 @@ func TestProjectionQuerySlice(t *testing.T) {
 			},
 		},
 		"TooManyArgs": {
-			projection:    bson.D{{"value", bson.D{{"$slice", bson.A{1, 2, 3, 4}}}}},
-			expectedArray: nil,
+			projection: bson.D{{"value", bson.D{{"$slice", bson.A{1, 2, 3, 4}}}}},
 			err: &mongo.CommandError{
 				Code: 28667,
 				Name: "Location28667",
@@ -248,7 +247,7 @@ func TestProjectionQuerySlice(t *testing.T) {
 					"$slice syntax. :: caused by :: " +
 					"Expression $slice takes at least 2 arguments, and at most 3, but 4 were passed in.",
 			},
-			altMessage: "Invalid $slice syntax. The given syntax { $slice: {} } " +
+			altMessage: "Invalid $slice syntax. The given syntax " +
 				"did not match the find() syntax because :: Location31272: " +
 				"$slice array argument should be of form [skip, limit] :: " +
 				"The given syntax did not match the expression " +
@@ -331,7 +330,7 @@ func TestProjectionQuerySlice(t *testing.T) {
 					"Expression $slice takes at least 2 arguments, and at most 3, but 1 were passed in.",
 			},
 			altMessage: "Invalid $slice syntax. " +
-				"The given syntax { $slice: {} } did not match the find() syntax " +
+				"The given syntax did not match the find() syntax " +
 				"because :: Location31273: $slice only supports numbers and [skip, limit] arrays :: " +
 				"The given syntax did not match the expression $slice syntax. :: caused by :: " +
 				"Expression $slice takes at least 2 arguments, and at most 3, but 1 were passed in.",
@@ -348,7 +347,7 @@ func TestProjectionQuerySlice(t *testing.T) {
 					":: caused by :: Expression $slice takes at least 2 arguments, " +
 					"and at most 3, but 1 were passed in.",
 			},
-			altMessage: "Invalid $slice syntax. The given syntax { $slice: {} } " +
+			altMessage: "Invalid $slice syntax. The given syntax " +
 				"did not match the find() syntax because :: Location31272: " +
 				"$slice array argument should be of form [skip, limit] " +
 				":: The given syntax did not match the expression $slice syntax. " +
@@ -356,8 +355,7 @@ func TestProjectionQuerySlice(t *testing.T) {
 				"and at most 3, but 1 were passed in.",
 		},
 		"NullInPair": {
-			projection:    bson.D{{"value", bson.D{{"$slice", bson.A{2, nil}}}}},
-			expectedArray: nil,
+			projection: bson.D{{"value", bson.D{{"$slice", bson.A{2, nil}}}}},
 		},
 	} {
 		name, tc := name, tc

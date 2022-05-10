@@ -15,7 +15,6 @@
 package common
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
@@ -263,156 +262,162 @@ func filterFieldArrayElemMatch(k1 string, doc, conditions *types.Document, docVa
 func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.Array, error) {
 	switch projectionValue.(type) {
 	case int32, int64, float64:
-		var n int
-		switch pr := projectionValue.(type) {
-		case float64:
-			if math.IsNaN(pr) {
-				break // because n == 0 already
-			}
-			if math.IsInf(pr, -1) || n < math.MinInt {
-				n = math.MinInt
-				break
-			}
-			if math.IsInf(pr, +1) || n > math.MaxInt {
-				n = math.MaxInt
-				break
-			}
-			n = int(pr)
-		case int64:
-			if pr > math.MaxInt {
-				n = math.MaxInt
-				break
-			}
-			if pr < math.MinInt {
-				n = math.MinInt
-				break
-			}
-			n = int(pr)
-		case int32:
-			n = int(pr)
-		}
-
-		// negative n is OK in case of a single argument
-		var skip, limit int
-		if n < 0 {
-			skip, limit = docValue.Len()+n, docValue.Len()
-			n *= -1
-		} else {
-			skip, limit = 0, n
-		}
-		if n < docValue.Len() {
-			var res *types.Array
-			res = types.MakeArray(limit)
-			for i := skip; i < limit; i++ {
-				must.NoError(res.Append(must.NotFail(docValue.Get(i))))
-			}
-			return res, nil
-		}
-		// otherwise return docValue as is
-		return docValue, nil
+		return projectionSliceSingleArg(docValue, projectionValue), nil
 	case *types.Array:
-		arr := projectionValue.(*types.Array)
-		if arr.Len() < 2 || arr.Len() > 3 {
+		projectionArgs := projectionValue.(*types.Array)
+		if projectionArgs.Len() < 2 || projectionArgs.Len() > 3 {
 			return nil, NewErrorMsg(ErrInvalidArg,
 				fmt.Sprintf(
-					"Invalid $slice syntax. The given syntax { $slice: %s } "+
+					"Invalid $slice syntax. The given syntax "+
 						"did not match the find() syntax because :: Location31272: "+
 						"$slice array argument should be of form [skip, limit] :: "+
 						"The given syntax did not match the expression "+
 						"$slice syntax. :: caused by :: "+
 						"Expression $slice takes at least 2 arguments, and at most 3, but %d were passed in.",
-					string(must.NotFail(json.Marshal(projectionValue))),
-					arr.Len(),
+					projectionArgs.Len(),
 				))
 		}
 
-		if arr.Len() == 3 {
+		if projectionArgs.Len() == 3 {
 			// this is the error MongoDB 5.0 is returning in this case
 			return nil, NewErrorMsg(ErrSliceFirstArg,
 				fmt.Sprintf(
 					"First argument to $slice must be an array, but is of type: %s",
-					AliasFromType(must.NotFail(arr.Get(0))),
+					AliasFromType(must.NotFail(projectionArgs.Get(0))),
 				),
 			)
 		}
 
-		var skip, limit int
-		arg := [2]int{}
-		for i := range arg {
-			switch v := must.NotFail(arr.Get(i)).(type) {
-			case types.NullType:
-				return nil, nil //nolint:nilnil // nil is a valid value
-			case float64:
-				if math.IsNaN(v) {
-					break // because arg[i] == 0 already
-				}
-				if math.IsInf(v, -1) || arg[i] < math.MinInt {
-					arg[i] = math.MinInt
-					break
-				}
-				if math.IsInf(v, +1) || arg[i] > math.MaxInt {
-					arg[i] = math.MaxInt
-					break
-				}
-				arg[i] = int(v)
-			case int64:
-				if v > math.MaxInt {
-					arg[i] = math.MaxInt
-				} else if v < math.MinInt {
-					arg[i] = math.MinInt
-				} else {
-					arg[i] = int(v)
-				}
-			case int32:
-				arg[i] = int(v)
-			default:
-				return nil, NewErrorMsg(ErrSliceFirstArg, fmt.Sprintf(
-					"First argument to $slice must be an array, but is of type: %s",
-					AliasFromType(must.NotFail(arr.Get(0))),
-				))
-			}
-
-			if i == 1 && arg[i] < 0 { // limit can't be negative in case of 2 arguments
-				return nil, NewErrorMsg(ErrSliceFirstArg,
-					fmt.Sprintf(
-						"First argument to $slice must be an array, but is of type: %s",
-						AliasFromType(must.NotFail(arr.Get(0))),
-					))
-			}
-		}
-
-		skip, limit = arg[0], arg[1]
-
-		if skip < 0 {
-			if -1*skip >= docValue.Len() {
-				skip = 0
-			} else {
-				skip = docValue.Len() + skip
-			}
-		} else {
-			if skip > docValue.Len() {
-				return types.MakeArray(0), nil
-			}
-		}
-		limit += skip
-		if limit >= docValue.Len() {
-			limit = docValue.Len()
-		}
-		var res *types.Array
-		res = types.MakeArray(limit)
-		for i := skip; i < limit; i++ {
-			must.NoError(res.Append(must.NotFail(docValue.Get(i))))
-		}
-		return res, nil
+		return projectionSliceMultiArgs(docValue, projectionArgs)
 
 	default:
 		return nil, NewErrorMsg(ErrInvalidArg,
-			fmt.Sprintf("Invalid $slice syntax. The given syntax { $slice: %s } "+
+			"Invalid $slice syntax. The given syntax "+
 				"did not match the find() syntax because :: Location31273: "+
 				"$slice only supports numbers and [skip, limit] arrays :: "+
 				"The given syntax did not match the expression $slice syntax. :: caused by :: "+
 				"Expression $slice takes at least 2 arguments, and at most 3, but 1 were passed in.",
-				string(must.NotFail(json.Marshal(projectionValue))),
-			))
+		)
 	}
+}
+
+func projectionSliceSingleArg(arr *types.Array, arg any) *types.Array {
+	var n int
+	switch v := arg.(type) {
+	case float64:
+		if math.IsNaN(v) {
+			break // because n == 0 already
+		}
+		if math.IsInf(v, -1) || v < math.MinInt {
+			n = math.MinInt
+			break
+		}
+		if math.IsInf(v, +1) || v > math.MaxInt {
+			n = math.MaxInt
+			break
+		}
+		n = int(v)
+	case int64:
+		if v > math.MaxInt {
+			n = math.MaxInt
+			break
+		}
+		if v < math.MinInt {
+			n = math.MinInt
+			break
+		}
+		n = int(v)
+	case int32:
+		n = int(v)
+	}
+
+	// negative n is OK in case of a single argument
+	var skip, limit int
+	if n < 0 {
+		skip, limit = arr.Len()+n, arr.Len()
+		n = -n
+	} else {
+		skip, limit = 0, n
+	}
+	if n < arr.Len() {
+		res := types.MakeArray(limit)
+		for i := skip; i < limit; i++ {
+			must.NoError(res.Append(must.NotFail(arr.Get(i))))
+		}
+		return res
+	}
+	// otherwise return arr as is
+	return arr
+}
+
+func projectionSliceMultiArgs(arr, args *types.Array) (*types.Array, error) {
+	var skip, limit int
+	pair := [2]int{}
+	for i := range pair {
+		switch v := must.NotFail(args.Get(i)).(type) {
+		case types.NullType:
+			return nil, nil //nolint:nilnil // nil is a valid value
+		case float64:
+			if math.IsNaN(v) {
+				break // because pair[i] == 0 already
+			}
+			if math.IsInf(v, -1) || v < math.MinInt {
+				pair[i] = math.MinInt
+				break
+			}
+			if math.IsInf(v, +1) || v > math.MaxInt {
+				pair[i] = math.MaxInt
+				break
+			}
+			pair[i] = int(v)
+		case int64:
+			if v > math.MaxInt {
+				pair[i] = math.MaxInt
+				break
+			}
+			if v < math.MinInt {
+				pair[i] = math.MinInt
+				break
+			}
+			pair[i] = int(v)
+		case int32:
+			pair[i] = int(v)
+		default:
+			return nil, NewErrorMsg(ErrSliceFirstArg, fmt.Sprintf(
+				"First argument to $slice must be an array, but is of type: %s",
+				AliasFromType(must.NotFail(args.Get(0))),
+			))
+		}
+
+		if i == 1 && pair[i] < 0 { // limit can't be negative in case of 2 arguments
+			return nil, NewErrorMsg(ErrSliceFirstArg,
+				fmt.Sprintf(
+					"First argument to $slice must be an array, but is of type: %s",
+					AliasFromType(must.NotFail(args.Get(0))),
+				))
+		}
+	}
+
+	skip, limit = pair[0], pair[1]
+
+	if skip < 0 {
+		if -skip >= arr.Len() {
+			skip = 0
+		} else {
+			skip = arr.Len() + skip
+		}
+	} else {
+		if skip > arr.Len() {
+			return types.MakeArray(0), nil
+		}
+	}
+	limit += skip
+	if limit >= arr.Len() {
+		limit = arr.Len()
+	}
+	res := types.MakeArray(limit)
+	for i := skip; i < limit; i++ {
+		must.NoError(res.Append(must.NotFail(arr.Get(i))))
+	}
+	return res, nil
 }
