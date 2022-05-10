@@ -84,8 +84,7 @@ func TestQueryProjection(t *testing.T) {
 
 func TestQueryProjectionElemMatch(t *testing.T) {
 	t.Parallel()
-	providers := []shareddata.Provider{shareddata.Composites}
-	ctx, collection := setup(t, providers...)
+	ctx, collection := setup(t)
 
 	testData := map[string]bson.D{
 		"document-composite-2": {
