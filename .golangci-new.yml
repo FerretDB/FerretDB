@@ -5,9 +5,6 @@ linters-settings:
   goconst:
     min-occurrences: 5
     ignore-tests: true
-  lll:
-    line-length: 130
-    tab-width: 4
   whitespace:
     multi-if: false
     multi-func: false
@@ -26,6 +23,7 @@ linters:
     - gosimple
     - govet
     - ineffassign
+    - lll
     - misspell
     - nolintlint
     - staticcheck
