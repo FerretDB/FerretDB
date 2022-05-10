@@ -17,7 +17,7 @@ package tigris
 import (
 	"context"
 
-	api "github.com/tigrisdata/tigrisdb-client-go/api/server/v1"
+	api "github.com/tigrisdata/tigris-client-go/api/server/v1"
 	"google.golang.org/grpc/codes"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -42,13 +42,15 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
+
 	if collection, err = common.GetRequiredParam[string](document, command); err != nil {
 		return nil, err
 	}
 
-	if err = h.client.conn.DropCollection(ctx, db, collection); err != nil {
+	tigrisDB := h.client.conn.UseDatabase(db)
+	if err = tigrisDB.DropCollection(ctx, collection); err != nil {
 		switch err := err.(type) {
-		case *api.TigrisDBError:
+		case *api.TigrisError:
 			// TODO: database not found DatabaseNotFound error
 			// is hidden in codes.InvalidArgument due to same gRPC status codes
 			if err.Code == codes.NotFound ||
