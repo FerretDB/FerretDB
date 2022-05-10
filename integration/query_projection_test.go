@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -86,28 +87,118 @@ func TestQueryProjectionElemMatch(t *testing.T) {
 	providers := []shareddata.Provider{shareddata.Composites}
 	ctx, collection := setup(t, providers...)
 
-	_, err := collection.InsertMany(ctx, []any{
-		bson.D{
+	testData := map[string]bson.D{
+		"document-composite-2": {
 			{"_id", "document-composite-2"},
 			{"value", bson.A{
+				bson.D{{"field", int32(40)}},
+				bson.D{{"field", int32(41)}},
 				bson.D{{"field", int32(42)}},
-				bson.D{{"field", int32(44)}},
+				bson.D{{"field", bson.D{{"field", int32(43)}}}},
 			}},
 		},
+		"document-composite-3": {
+			{"_id", "document-composite-3"},
+			{"value", bson.A{
+				bson.D{{"field", int32(10)}},
+				bson.D{{"field", bson.D{{"field", int32(11)}}}},
+				bson.D{{"field", bson.D{{"field", int32(12)}}}},
+			}},
+		},
+	}
+
+	_, err := collection.InsertMany(ctx, []any{
+		testData["document-composite-2"], testData["document-composite-3"],
 	})
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
-		projection  any
-		expectedIDs []any
+		filterIDs  bson.A
+		projection bson.D
+		expected   []bson.D
+		err        *mongo.CommandError
 	}{
-		"ElemMatch": {
-			projection: bson.D{{
-				"value",
-				bson.D{{"$elemMatch", bson.D{{"field", bson.D{{"$eq", 42}}}}}},
-			}},
-			expectedIDs: []any{
-				"document-composite-2",
+		"ElemMatchEq": {
+			filterIDs:  bson.A{"document-composite-3", "document-composite-2"},
+			projection: bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"field", bson.D{{"$eq", 42}}}}}}}},
+			expected: []bson.D{
+				{{"_id", "document-composite-2"}, {"value", bson.A{bson.D{{"field", int32(42)}}}}},
+				{{"_id", "document-composite-3"}},
+			},
+		},
+		"ElemMatchNe": {
+			filterIDs:  bson.A{"document-composite-3", "document-composite-2"},
+			projection: bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"field", bson.D{{"$ne", 42}}}}}}}},
+			expected: []bson.D{
+				{{"_id", "document-composite-2"}, {"value", bson.A{bson.D{{"field", int32(40)}}}}},
+				{{"_id", "document-composite-3"}, {"value", bson.A{bson.D{{"field", int32(10)}}}}},
+			},
+		},
+		"ElemMatchGt": {
+			filterIDs:  bson.A{"document-composite-3", "document-composite-2"},
+			projection: bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"field", bson.D{{"$gt", 13}}}}}}}},
+			expected: []bson.D{
+				{{"_id", "document-composite-2"}, {"value", bson.A{bson.D{{"field", int32(40)}}}}},
+				{{"_id", "document-composite-3"}},
+			},
+		},
+		"ElemMatchGte": {
+			filterIDs:  bson.A{"document-composite-3", "document-composite-2"},
+			projection: bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"field", bson.D{{"$gte", 13}}}}}}}},
+			expected: []bson.D{
+				{{"_id", "document-composite-2"}, {"value", bson.A{bson.D{{"field", int32(40)}}}}},
+				{{"_id", "document-composite-3"}},
+			},
+		},
+		"ElemMatchLt": {
+			filterIDs:  bson.A{"document-composite-3", "document-composite-2"},
+			projection: bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"field", bson.D{{"$lt", 10}}}}}}}},
+			expected: []bson.D{
+				{{"_id", "document-composite-2"}},
+				{{"_id", "document-composite-3"}},
+			},
+		},
+		"ElemMatchLte": {
+			filterIDs:  bson.A{"document-composite-3", "document-composite-2"},
+			projection: bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"field", bson.D{{"$lte", 10}}}}}}}},
+			expected: []bson.D{
+				{{"_id", "document-composite-2"}},
+				{{"_id", "document-composite-3"}, {"value", bson.A{bson.D{{"field", int32(10)}}}}},
+			},
+		},
+		"ElemMatchInErr": {
+			filterIDs:  bson.A{"document-composite-3", "document-composite-2"},
+			projection: bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"field", bson.D{{"$in", 41}}}}}}}},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "$in needs an array",
+			},
+		},
+		"ElemMatchIn": {
+			filterIDs:  bson.A{"document-composite-3", "document-composite-2"},
+			projection: bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"field", bson.D{{"$in", bson.A{41}}}}}}}}},
+			expected: []bson.D{
+				{{"_id", "document-composite-2"}, {"value", bson.A{bson.D{{"field", int32(41)}}}}},
+				{{"_id", "document-composite-3"}},
+			},
+		},
+		"ElemMatchObjectRequired": {
+			filterIDs:  bson.A{"document-composite-3", "document-composite-2"},
+			projection: bson.D{{"value", bson.D{{"field", bson.D{{"$elemMatch", ""}}}}}},
+			err: &mongo.CommandError{
+				Code:    31274,
+				Name:    "Location31274",
+				Message: "elemMatch: Invalid argument, object required, but got string",
+			},
+		},
+		"ElemMatchNestedErr": {
+			filterIDs:  bson.A{"document-composite-3", "document-composite-2"},
+			projection: bson.D{{"value", bson.D{{"field", bson.D{{"field", bson.D{{"$elemMatch", bson.D{{"$eq", 42}}}}}}}}}},
+			err: &mongo.CommandError{
+				Code:    31275,
+				Name:    "Location31275",
+				Message: "Cannot use $elemMatch projection on a nested field.",
 			},
 		},
 	} {
@@ -117,16 +208,23 @@ func TestQueryProjectionElemMatch(t *testing.T) {
 
 			cursor, err := collection.Find(
 				ctx,
-				bson.D{{"_id", "document-composite-2"}},
+				bson.D{{"_id", bson.D{{"$in", tc.filterIDs}}}},
 				options.Find().SetProjection(tc.projection),
 				options.Find().SetSort(bson.D{{"_id", 1}}),
 			)
+
+			if tc.err != nil {
+				require.Nil(t, tc.expected)
+				AssertEqualError(t, *tc.err, err)
+				return
+			}
 			require.NoError(t, err)
 
 			var actual []bson.D
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
-			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
+
+			assert.Equal(t, tc.expected, actual)
 		})
 	}
 }

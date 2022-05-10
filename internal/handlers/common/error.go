@@ -31,17 +31,20 @@ const (
 	// For ProtocolError only.
 	errInternalError = ErrorCode(1) // InternalError
 
-	ErrBadValue          = ErrorCode(2)     // BadValue
-	ErrFailedToParse     = ErrorCode(9)     // FailedToParse
-	ErrTypeMismatch      = ErrorCode(14)    // TypeMismatch
-	ErrNamespaceNotFound = ErrorCode(26)    // NamespaceNotFound
-	ErrNamespaceExists   = ErrorCode(48)    // NamespaceExists
-	ErrCommandNotFound   = ErrorCode(59)    // CommandNotFound
-	ErrNotImplemented    = ErrorCode(238)   // NotImplemented
-	ErrSortBadValue      = ErrorCode(15974) // Location15974
-	ErrProjectionInEx    = ErrorCode(31253) // Location31253
-	ErrProjectionExIn    = ErrorCode(31254) // Location31254
-	ErrRegexOptions      = ErrorCode(51075) // Location51075
+	ErrBadValue                      = ErrorCode(2)     // BadValue
+	ErrFailedToParse                 = ErrorCode(9)     // FailedToParse
+	ErrTypeMismatch                  = ErrorCode(14)    // TypeMismatch
+	ErrNamespaceNotFound             = ErrorCode(26)    // NamespaceNotFound
+	ErrNamespaceExists               = ErrorCode(48)    // NamespaceExists
+	ErrCommandNotFound               = ErrorCode(59)    // CommandNotFound
+	ErrNotImplemented                = ErrorCode(238)   // NotImplemented
+	ErrSortBadValue                  = ErrorCode(15974) // Location15974
+	ErrElemMatchInclusionInExclusion = ErrorCode(31253) // Location31253
+	ErrElemMatchExclusionInInclusion = ErrorCode(31254) // Location31254
+	ErrElemMatchPositional           = ErrorCode(31255) // Location31255
+	ErrElemMatchObjectRequired       = ErrorCode(31274) // Location31274
+	ErrElemMatchNestedField          = ErrorCode(31275) // Location31275
+	ErrRegexOptions                  = ErrorCode(51075) // Location51075
 )
 
 // Error represents wire protocol error.

@@ -28,73 +28,111 @@ import (
 // isProjectionInclusion: projection can be only inclusion or exclusion. Validate and return true if inclusion.
 // Exception for the _id field.
 func isProjectionInclusion(projection *types.Document) (inclusion bool, err error) {
-	var exclusion bool
+	inclusion, _, err = validateElemMatchProjectionDocument(projection, 0, false, false)
+	return
+}
+
+func validateElemMatchProjectionDocument(projection *types.Document, depth int, inclusion, exclusion bool) (bool, bool, error) {
+	var err error
 	for _, k := range projection.Keys() {
 		if k == "_id" { // _id is a special case and can be both
 			continue
 		}
+
 		v := must.NotFail(projection.Get(k))
 		switch v := v.(type) {
 		case *types.Document:
-			for _, projectionType := range v.Keys() {
-				supportedProjectionTypes := []string{"$elemMatch"}
-				if !slices.Contains(supportedProjectionTypes, projectionType) {
-					err = lazyerrors.Errorf("projection of %s is not supported", projectionType)
-					return
-				}
 
-				switch projectionType {
-				case "$elemMatch":
-					inclusion = true
+			for _, key := range v.Keys() {
+				val := must.NotFail(v.Get(key))
+				switch val := val.(type) {
+				case *types.Document:
+					if key == "$elemMatch" && depth >= 1 {
+						err = NewErrorMsg(ErrElemMatchNestedField,
+							"Cannot use $elemMatch projection on a nested field.",
+						)
+						return false, false, err
+					}
+					inclusion, exclusion, err = validateElemMatchProjectionDocument(val, depth+1, inclusion, exclusion)
+					return inclusion, exclusion, err
+
 				default:
-					panic(projectionType + " not supported")
+					switch key {
+					case "$eq",
+						"$ne",
+						"$gt", "$gte",
+						"$lt", "$lte":
+						inclusion = true
+
+					case "$in":
+						switch must.NotFail(v.Get(key)).(type) {
+						case *types.Array:
+							// ok
+						default:
+							err = NewErrorMsg(ErrBadValue, "$in needs an array")
+							return false, false, err
+						}
+					case "$nin", "$not":
+						exclusion = true
+
+					default: // $mod, etc
+						err = NewErrorMsg(ErrNotImplemented, key+" is not supported")
+						return inclusion, exclusion, err
+					}
 				}
 			}
+		default: // scalars and arrays
 
-		case float64, int32, int64:
-			if types.Compare(v, int32(0)) == types.Equal {
-				if inclusion {
-					err = NewError(ErrProjectionExIn,
-						fmt.Errorf("Cannot do exclusion on field %s in inclusion projection", k),
-					)
-					return
-				}
-				exclusion = true
-			} else {
-				if exclusion {
-					err = NewError(ErrProjectionInEx,
-						fmt.Errorf("Cannot do inclusion on field %s in exclusion projection", k),
-					)
-					return
-				}
-				inclusion = true
+			if k == "$elemMatch" {
+				err = NewError(ErrElemMatchObjectRequired,
+					fmt.Errorf("elemMatch: Invalid argument, object required, but got %T", v),
+				)
+				return false, false, err
 			}
 
-		case bool:
-			if v {
-				if exclusion {
-					err = NewError(ErrProjectionInEx,
-						fmt.Errorf("Cannot do inclusion on field %s in exclusion projection", k),
-					)
-					return
+			switch v := v.(type) {
+			case float64, int32, int64:
+				if types.Compare(v, int32(0)) == types.Equal {
+					if inclusion {
+						err = NewError(ErrElemMatchExclusionInInclusion,
+							fmt.Errorf("Cannot do exclusion on field %s in inclusion projection", k),
+						)
+						return false, false, err
+					}
+					exclusion = true
+				} else {
+					if exclusion {
+						err = NewError(ErrElemMatchInclusionInExclusion,
+							fmt.Errorf("Cannot do inclusion on field %s in exclusion projection", k),
+						)
+						return false, false, err
+					}
+					inclusion = true
 				}
-				inclusion = true
-			} else {
-				if inclusion {
-					err = NewError(ErrProjectionExIn,
-						fmt.Errorf("Cannot do exclusion on field %s in inclusion projection", k),
-					)
-					return
-				}
-				exclusion = true
-			}
 
-		default:
-			err = lazyerrors.Errorf("unsupported operation %s %v (%T)", k, v, v)
-			return
+			case bool:
+				if v {
+					if exclusion {
+						err = NewError(ErrElemMatchInclusionInExclusion,
+							fmt.Errorf("Cannot do inclusion on field %s in exclusion projection", k),
+						)
+						return false, false, err
+					}
+					inclusion = true
+				} else {
+					if inclusion {
+						err = NewError(ErrElemMatchExclusionInInclusion,
+							fmt.Errorf("Cannot do exclusion on field %s in inclusion projection", k),
+						)
+						return false, false, err
+					}
+					exclusion = true
+				}
+			}
+			return inclusion, exclusion, err
 		}
 	}
-	return
+	return inclusion, exclusion, err
 }
 
 // ProjectDocuments modifies given documents in places according to the given projection.
@@ -121,8 +159,8 @@ func ProjectDocuments(docs []*types.Document, projection *types.Document) error 
 func projectDocument(inclusion bool, doc *types.Document, projection *types.Document) error {
 	projectionMap := projection.Map()
 
-	for k1 := range doc.Map() {
-		projectionVal, ok := projectionMap[k1]
+	for k1, k1Val := range doc.Map() {
+		k1Projection, ok := projectionMap[k1]
 		if !ok {
 			if k1 == "_id" { // if _id is not in projection map, do not do anything with it
 				continue
@@ -133,57 +171,45 @@ func projectDocument(inclusion bool, doc *types.Document, projection *types.Docu
 			continue
 		}
 
-		switch projectionVal := projectionVal.(type) { // found in the projection
-		case *types.Document: // field: { $elemMatch: { field2: value }}
-			if err := applyComplexProjection(k1, doc, projectionVal); err != nil {
+		switch k1Projection := k1Projection.(type) { // found in the projection
+		case *types.Document: // in projection doc: k1: { k2: value }}, k1Projection == { k2: value }}
+			if err := applyDocProjection(k1, doc, k1Projection); err != nil {
 				return err
 			}
 
-		case float64, int32, int64: // field: number
-			if types.Compare(projectionVal, int32(0)) == types.Equal {
+		case *types.Array: // in projection doc: { k1: [value1, value2... ], k1Projection = [ value1, value2.. ]
+			return NewErrorMsg(ErrNotImplemented, k1+" not supported")
+
+		case float64, // in projection doc: { k1: k1Projection } where k1Projection is a number
+			int32,
+			int64:
+			if types.Compare(k1Projection, int32(0)) == types.Equal {
 				doc.Remove(k1)
 			}
 
-		case bool: // field: bool
-			if !projectionVal {
+		case bool: // in projection doc: { k1: k1Projection }
+			if !k1Projection {
 				doc.Remove(k1)
 			}
 
 		default:
-			return lazyerrors.Errorf("unsupported operation %s %v (%T)", k1, projectionVal, projectionVal)
+			return lazyerrors.Errorf("unsupported operation %s %v (%T)", k1, k1Val, k1Val)
 		}
 	}
 	return nil
 }
 
-func applyComplexProjection(k1 string, doc, projectionVal *types.Document) (err error) {
-	for _, projectionType := range projectionVal.Keys() {
-		supportedProjections := []string{"$elemMatch"}
-		if !slices.Contains(supportedProjections, projectionType) {
-			return fmt.Errorf("projecion %s is not supported", projectionType)
+func applyDocProjection(k1 string, doc *types.Document, k1Projection *types.Document) (err error) {
+	for _, projectionName := range k1Projection.Keys() {
+		if projectionName != "$elemMatch" {
+			panic(projectionName + " not supported!") // checks must be done in projection check func above
 		}
-
-		// for now it's only $elemMatch further
-		// if the corresponding value is not an array, skip
-
-		var docValueA any
-		docValueA, err = doc.GetByPath(k1)
+		var found int
+		conditions := must.NotFail(k1Projection.Get(projectionName)).(*types.Document)
+		found, err = findDocElemMatch(k1, doc, conditions)
 		if err != nil {
-			continue
-		}
-
-		// $elemMatch works only for arrays, it must be an array
-		docValueArray, ok := docValueA.(*types.Array)
-		if !ok {
-			doc.Remove(k1)
 			return
 		}
-
-		// get the elemMatch conditions
-		conditions := must.NotFail(projectionVal.Get(projectionType)).(*types.Document)
-
-		var found int
-		found, err = filterFieldArrayElemMatch(k1, doc, conditions, docValueArray)
 		if found < 0 {
 			doc.Remove(k1)
 			return
@@ -192,43 +218,137 @@ func applyComplexProjection(k1 string, doc, projectionVal *types.Document) (err 
 	return
 }
 
-// filterFieldArrayElemMatch is for elemMatch conditions.
-func filterFieldArrayElemMatch(k1 string, doc, conditions *types.Document, docValueArray *types.Array) (found int, err error) {
-	for k2ConditionField, conditionValue := range conditions.Map() {
-		switch elemMatchFieldCondition := conditionValue.(type) {
-		case *types.Document: // TODO field2: { $gte: 10 }
+func findInArray(k1, k2 string, value any, doc *types.Document, compareRes []types.CompareResult) (found int, err error) {
+	docValueArray := must.NotFail(doc.GetByPath(k1)).(*types.Array)
 
-		case *types.Array:
-			panic("unexpected code")
+	found = -1
+	for j := 0; j < docValueArray.Len(); j++ {
+		e, err := docValueArray.Get(j)
+		if err != nil {
+			continue
+		}
 
-		default: // field2: value
-			found = -1 // >= 0 means found
-
-			for j := 0; j < docValueArray.Len(); j++ {
-				var cmpVal any
-				cmpVal, err = docValueArray.Get(j)
-				if err != nil {
-					continue
-				}
-				switch cmpVal := cmpVal.(type) {
-				case *types.Document:
-					docVal, err := cmpVal.Get(k2ConditionField)
-					if err != nil {
-						doc.RemoveByPath(k1, strconv.Itoa(j))
-						continue
-					}
-					if types.Compare(docVal, elemMatchFieldCondition) == types.Equal {
-						// elemMatch to return first matching, all others are to be removed
-						found = j
-						break
-					}
-					doc.RemoveByPath(k1, strconv.Itoa(j))
-					j = j - 1
-				}
+		if found >= 0 {
+			doc.RemoveByPath(k1, strconv.Itoa(j))
+			j -= 1
+			continue
+		}
+		switch e := e.(type) {
+		case *types.Document:
+			var d any
+			d, err = e.Get(k2)
+			if err != nil {
+				doc.RemoveByPath(k1, strconv.Itoa(j))
+				j -= 1
+				continue
 			}
+			cmp := types.Compare(d, value)
+			if slices.Contains(compareRes, cmp) {
+				found = j
+				continue
+			}
+			doc.RemoveByPath(k1, strconv.Itoa(j))
+			j -= 1
 
-			if found < 0 {
-				return
+		default:
+			doc.RemoveByPath(k1, strconv.Itoa(j))
+			j -= 1
+			continue
+		}
+	}
+
+	if found < 0 {
+		doc.RemoveByPath(k1)
+		return
+	}
+	return
+}
+
+// findDocElemMatch is for elemMatch conditions.
+func findDocElemMatch(k1 string, doc, conditions *types.Document) (found int, err error) {
+	found = -1 // >= 0 means found
+
+	// for sure it's here - see code above
+	docValueA := must.NotFail(doc.GetByPath(k1))
+
+	// $elemMatch works only for arrays, it must be an array
+	docValueArray, ok := docValueA.(*types.Array)
+	if !ok {
+		doc.Remove(k1)
+		return
+	}
+
+	for k2, condition := range conditions.Map() {
+		switch condition := condition.(type) {
+		// in condition: { $eq: 42 }
+		case *types.Document:
+			for operand, value := range condition.Map() {
+				switch operand {
+				case "$eq":
+					found, err = findInArray(k1, k2, value, doc, []types.CompareResult{types.Equal})
+
+				case "$ne":
+					found, err = findInArray(k1, k2, value, doc, []types.CompareResult{types.Less, types.Greater})
+
+				case "$gt":
+					found, err = findInArray(k1, k2, value, doc, []types.CompareResult{types.Greater})
+
+				case "$gte":
+					found, err = findInArray(k1, k2, value, doc, []types.CompareResult{types.Greater, types.Equal})
+
+				case "$lt":
+					found, err = findInArray(k1, k2, value, doc, []types.CompareResult{types.Less})
+
+				case "$lte":
+					found, err = findInArray(k1, k2, value, doc, []types.CompareResult{types.Less, types.Equal})
+
+				case "$in":
+					switch inValue := value.(type) {
+					case *types.Array:
+						for i := 0; i < inValue.Len(); i++ {
+							x := must.NotFail(inValue.Get(i))
+							found, err = findInArray(k1, k2, x, doc, []types.CompareResult{types.Equal})
+							if found >= 0 {
+								return
+							}
+						}
+					default:
+						err = NewErrorMsg(ErrBadValue, "array values supported for $in only")
+						return
+					}
+					if found < 0 {
+						return
+					}
+
+					// operand is not an operand possible: <scalar value> OR field: {nested projection}
+				default:
+
+					for j := 0; j < docValueArray.Len(); j++ {
+						e := must.NotFail(docValueArray.Get(j))
+
+						switch e := e.(type) {
+						case *types.Document:
+							docVal, err := e.Get(k2)
+							if err != nil {
+								doc.RemoveByPath(k1, strconv.Itoa(j))
+								continue
+							}
+							if types.Compare(docVal, value) == types.Equal {
+								found = j
+								break
+							}
+						default: // field2: value
+							if types.Compare(e, value) == types.Equal {
+								found = j
+								break
+							}
+						}
+						doc.RemoveByPath(k1, strconv.Itoa(j))
+						j = j - 1
+					}
+					err = NewErrorMsg(ErrBadValue, k2+" not supported")
+					return
+				}
 			}
 		}
 	}
