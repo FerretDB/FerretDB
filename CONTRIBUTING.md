@@ -64,13 +64,13 @@ You can see all available `task` tasks with `task -l`.
 
 ### Code Overview
 
-Package `cmd` provides commands implementation.
-`ferretdb` is the main FerretDB binary; others are tools for development.
-  s
-Package `tools` uses "tools.go" approach to fix tools versions.
+The directory `cmd` provides commands implementation.
+Its subdirectory `ferretdb` is the main FerretDB binary; others are tools for development.
+
+The package `tools` uses ["tools.go" approach](https://github.com/golang/go/issues/25922#issuecomment-402918061) to fix tools versions.
 They are installed into `bin/` by `cd tools; go generate -x`.
 
-`internal` subpackages contain most of the FerretDB code:
+The `internal` subpackages contain most of the FerretDB code:
 
 * `types` package provides Go types matching BSON types that don't have built-in Go equivalents:
   we use `int32` for BSON's int32, but `types.ObjectID` for BSON's ObjectId.
