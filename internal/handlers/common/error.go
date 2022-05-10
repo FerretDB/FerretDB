@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 //go:generate ../../../bin/stringer -linecomment -type ErrorCode
@@ -39,6 +40,8 @@ const (
 	ErrCommandNotFound   = ErrorCode(59)    // CommandNotFound
 	ErrNotImplemented    = ErrorCode(238)   // NotImplemented
 	ErrSortBadValue      = ErrorCode(15974) // Location15974
+	ErrInvalidArg        = ErrorCode(28667) // Location28667
+	ErrSliceFirstArg     = ErrorCode(28724) // Location28724
 	ErrProjectionInEx    = ErrorCode(31253) // Location31253
 	ErrProjectionExIn    = ErrorCode(31254) // Location31254
 	ErrRegexOptions      = ErrorCode(51075) // Location51075
@@ -93,12 +96,12 @@ func (e *Error) Unwrap() error {
 
 // Document returns wire protocol error document.
 func (e *Error) Document() *types.Document {
-	return types.MustNewDocument(
+	return must.NotFail(types.NewDocument(
 		"ok", float64(0),
 		"errmsg", e.err.Error(),
 		"code", int32(e.code),
 		"codeName", e.code.String(),
-	)
+	))
 }
 
 // ProtocolError converts any error to wire protocol error.
