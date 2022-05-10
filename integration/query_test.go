@@ -425,3 +425,112 @@ func TestQueryBadSortType(t *testing.T) {
 		})
 	}
 }
+
+func TestQueryExactMatches(t *testing.T) {
+	t.Parallel()
+	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
+	ctx, collection := setup(t, providers...)
+
+	_, err := collection.InsertMany(ctx, []any{
+		bson.D{
+			{"_id", "document-two-fields"},
+			{"foo", "bar"},
+			{"baz", int32(42)},
+		},
+		bson.D{
+			{"_id", "document-value-two-fields"},
+			{"value", bson.D{{"foo", "bar"}, {"baz", int32(42)}}},
+		},
+	})
+	require.NoError(t, err)
+
+	for name, tc := range map[string]struct {
+		filter      bson.D
+		expectedIDs []any
+	}{
+		"Document": {
+			filter:      bson.D{{"foo", "bar"}, {"baz", int32(42)}},
+			expectedIDs: []any{"document-two-fields"},
+		},
+		"DocumentChangedFieldsOrder": {
+			filter:      bson.D{{"baz", int32(42)}, {"foo", "bar"}},
+			expectedIDs: []any{"document-two-fields"},
+		},
+		"DocumentValueFields": {
+			filter:      bson.D{{"value", bson.D{{"foo", "bar"}, {"baz", int32(42)}}}},
+			expectedIDs: []any{"document-value-two-fields"},
+		},
+
+		"Array": {
+			filter:      bson.D{{"value", bson.A{int32(42), "foo", nil}}},
+			expectedIDs: []any{"array-three"},
+		},
+		"ArrayChangedOrder": {
+			filter:      bson.D{{"value", bson.A{int32(42), nil, "foo"}}},
+			expectedIDs: []any{},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			require.NoError(t, err)
+
+			var actual []bson.D
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
+		})
+	}
+}
+
+func TestDotNotation(t *testing.T) {
+	t.Parallel()
+	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
+	ctx, collection := setup(t, providers...)
+
+	_, err := collection.InsertMany(ctx, []any{
+		bson.D{
+			{"_id", "document-deeply-nested"},
+			{
+				"foo",
+				bson.D{{
+					"bar",
+					bson.D{{
+						"baz",
+						bson.D{{"qux", bson.D{{"quz", int32(42)}}}},
+					}},
+				}},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	for name, tc := range map[string]struct {
+		filter      bson.D
+		expectedIDs []any
+	}{
+		"DocumentDeepNested": {
+			filter:      bson.D{{"foo.bar.baz.qux.quz", int32(42)}},
+			expectedIDs: []any{"document-deeply-nested"},
+		},
+		"Document": {
+			filter:      bson.D{{"foo.bar.baz", bson.D{{"qux.quz", int32(42)}}}},
+			expectedIDs: []any{},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			require.NoError(t, err)
+
+			var actual []bson.D
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
+		})
+	}
+}
