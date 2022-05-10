@@ -111,7 +111,7 @@ func validateScalarProjectionExpression(v any, field string, inclusion, exclusio
 		}
 	default:
 		err = NewError(ErrNotImplemented, fmt.Errorf("%v of (%T) is not supported", v, v))
-		return inclusion, exclusion, err
+		return false, false, err
 	}
 	return inclusion, exclusion, err
 }
@@ -212,7 +212,7 @@ func projectDocument(inclusion bool, doc *types.Document, projection *types.Docu
 			}
 
 		case *types.Array: // in projection doc: { k1: [value1, value2... ], k1Projection = [ value1, value2.. ]
-			// it' switch over elemMatch projection
+			// it's a switch over elemMatch projection
 			return NewError(ErrElemMatchObjectRequired,
 				fmt.Errorf("elemMatch: Invalid argument, object required, but got %T", k1Projection),
 			)
