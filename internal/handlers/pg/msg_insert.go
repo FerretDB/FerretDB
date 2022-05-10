@@ -90,6 +90,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
+// delete prepares and executes actual INSERT request to Postgres.
 func (h *Handler) insert(ctx context.Context, db string, collection string, doc any) error {
 	d := doc.(*types.Document)
 	sql := fmt.Sprintf("INSERT INTO %s (_jsonb) VALUES ($1)", pgx.Identifier{db, collection}.Sanitize())

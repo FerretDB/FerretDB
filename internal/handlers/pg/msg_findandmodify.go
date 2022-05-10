@@ -51,9 +51,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	}
 	common.Ignored(document, h.l, ignoredFields...)
 
-	command := document.Command()
-
-	params, err := prepareFindAndModifyParams(document, command)
+	params, err := prepareFindAndModifyParams(document)
 	if err != nil {
 		return nil, err
 	}
@@ -161,8 +159,12 @@ type findAndModifyParams struct {
 	remove, upsert, returnNewDocument bool
 }
 
-func prepareFindAndModifyParams(document *types.Document, command string) (*findAndModifyParams, error) {
+// prepareFindAndModifyParams prepares findAndModify request fields.
+func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams, error) {
 	var err error
+
+	command := document.Command()
+
 	var db, collection string
 	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err

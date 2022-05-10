@@ -130,6 +130,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
+// delete prepares and executes actual DELETE request to Postgres.
 func (h *Handler) delete(
 	ctx context.Context, db string, collection string, resDocs []*types.Document,
 ) (pgconn.CommandTag, error) {
