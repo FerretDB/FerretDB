@@ -432,7 +432,15 @@ func TestQueryExactMatches(t *testing.T) {
 	ctx, collection := setup(t, providers...)
 
 	_, err := collection.InsertMany(ctx, []any{
-		bson.D{{"_id", "document-two-fields"}, {"foo", "bar"}, {"baz", int32(42)}},
+		bson.D{
+			{"_id", "document-two-fields"},
+			{"foo", "bar"},
+			{"baz", int32(42)},
+		},
+		bson.D{
+			{"_id", "document-value-two-fields"},
+			{"value", bson.D{{"foo", "bar"}, {"baz", int32(42)}}},
+		},
 	})
 	require.NoError(t, err)
 
@@ -447,6 +455,10 @@ func TestQueryExactMatches(t *testing.T) {
 		"DocumentChangedFieldsOrder": {
 			filter:      bson.D{{"baz", int32(42)}, {"foo", "bar"}},
 			expectedIDs: []any{"document-two-fields"},
+		},
+		"DocumentValueFields": {
+			filter:      bson.D{{"value", bson.D{{"foo", "bar"}, {"baz", int32(42)}}}},
+			expectedIDs: []any{"document-value-two-fields"},
 		},
 
 		"Array": {
