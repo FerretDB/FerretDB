@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 //go:generate ../../../bin/stringer -linecomment -type ErrorCode
@@ -95,12 +96,12 @@ func (e *Error) Unwrap() error {
 
 // Document returns wire protocol error document.
 func (e *Error) Document() *types.Document {
-	return types.MustNewDocument(
+	return must.NotFail(types.NewDocument(
 		"ok", float64(0),
 		"errmsg", e.err.Error(),
 		"code", int32(e.code),
 		"codeName", e.code.String(),
-	)
+	))
 }
 
 // ProtocolError converts any error to wire protocol error.

@@ -101,15 +101,6 @@ func NewDocument(pairs ...any) (*Document, error) {
 	return doc, nil
 }
 
-// MustNewDocument is a NewDocument that panics in case of error.
-//
-// TODO Remove this function.
-//
-// Deprecated: use `must.NotFail(NewDocument(...))` instead.
-func MustNewDocument(pairs ...any) *Document {
-	return must.NotFail(NewDocument(pairs...))
-}
-
 func (*Document) compositeType() {}
 
 // DeepCopy returns a deep copy of this Document.
