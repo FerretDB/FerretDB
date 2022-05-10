@@ -2,9 +2,6 @@
 # TODO
 
 linters-settings:
-  goconst:
-    min-occurrences: 5
-    ignore-tests: true
 
 linters:
   enable-all: true
@@ -13,6 +10,7 @@ linters:
     - depguard
     - exhaustive
     - gci
+    - goconst
     - godot
     - godox
     - goheader

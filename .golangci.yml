@@ -8,6 +8,9 @@ linters-settings:
       - github.com/FerretDB/FerretDB/internal/bson
   exhaustive:
     default-signifies-exhaustive: false
+  goconst:
+    min-occurrences: 5
+    ignore-tests: true
   gci:
     sections:
       - standard
@@ -73,6 +76,7 @@ linters:
     - depguard
     - exhaustive
     - gci
+    - goconst
     - godot
     - godox
     - goheader
