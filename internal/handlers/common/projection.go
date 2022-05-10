@@ -469,13 +469,13 @@ func findDocElemMatch(k1 string, doc, conditions *types.Document) (bool, error) 
 
 // filterFieldArraySlice implements $slice projection query.
 func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.Array, error) {
-	switch projectionValue.(type) {
+	switch projectionValue := projectionValue.(type) {
 	case int32, int64, float64:
 		return projectionSliceSingleArg(docValue, projectionValue), nil
 	case *types.Array:
-		projectionArgs := projectionValue.(*types.Array)
-		if projectionArgs.Len() < 2 || projectionArgs.Len() > 3 {
-			return nil, NewErrorMsg(ErrInvalidArg,
+		if projectionValue.Len() < 2 || projectionValue.Len() > 3 {
+			return nil, NewErrorMsg(
+				ErrInvalidArg,
 				fmt.Sprintf(
 					"Invalid $slice syntax. The given syntax "+
 						"did not match the find() syntax because :: Location31272: "+
@@ -483,24 +483,27 @@ func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.A
 						"The given syntax did not match the expression "+
 						"$slice syntax. :: caused by :: "+
 						"Expression $slice takes at least 2 arguments, and at most 3, but %d were passed in.",
-					projectionArgs.Len(),
-				))
-		}
-
-		if projectionArgs.Len() == 3 {
-			// this is the error MongoDB 5.0 is returning in this case
-			return nil, NewErrorMsg(ErrSliceFirstArg,
-				fmt.Sprintf(
-					"First argument to $slice must be an array, but is of type: %s",
-					AliasFromType(must.NotFail(projectionArgs.Get(0))),
+					projectionValue.Len(),
 				),
 			)
 		}
 
-		return projectionSliceMultiArgs(docValue, projectionArgs)
+		if projectionValue.Len() == 3 {
+			// this is the error MongoDB 5.0 is returning in this case
+			return nil, NewErrorMsg(
+				ErrSliceFirstArg,
+				fmt.Sprintf(
+					"First argument to $slice must be an array, but is of type: %s",
+					AliasFromType(must.NotFail(projectionValue.Get(0))),
+				),
+			)
+		}
+
+		return projectionSliceMultiArgs(docValue, projectionValue)
 
 	default:
-		return nil, NewErrorMsg(ErrInvalidArg,
+		return nil, NewErrorMsg(
+			ErrInvalidArg,
 			"Invalid $slice syntax. The given syntax "+
 				"did not match the find() syntax because :: Location31273: "+
 				"$slice only supports numbers and [skip, limit] arrays :: "+
@@ -592,18 +595,23 @@ func projectionSliceMultiArgs(arr, args *types.Array) (*types.Array, error) {
 		case int32:
 			pair[i] = int(v)
 		default:
-			return nil, NewErrorMsg(ErrSliceFirstArg, fmt.Sprintf(
-				"First argument to $slice must be an array, but is of type: %s",
-				AliasFromType(must.NotFail(args.Get(0))),
-			))
-		}
-
-		if i == 1 && pair[i] < 0 { // limit can't be negative in case of 2 arguments
-			return nil, NewErrorMsg(ErrSliceFirstArg,
+			return nil, NewErrorMsg(
+				ErrSliceFirstArg,
 				fmt.Sprintf(
 					"First argument to $slice must be an array, but is of type: %s",
 					AliasFromType(must.NotFail(args.Get(0))),
-				))
+				),
+			)
+		}
+
+		if i == 1 && pair[i] < 0 { // limit can't be negative in case of 2 arguments
+			return nil, NewErrorMsg(
+				ErrSliceFirstArg,
+				fmt.Sprintf(
+					"First argument to $slice must be an array, but is of type: %s",
+					AliasFromType(must.NotFail(args.Get(0))),
+				),
+			)
 		}
 	}
 
