@@ -137,7 +137,7 @@ func validateDocProjectionExpression(v *types.Document, depth int, inclusion, ex
 				inclusion = true
 
 			case "$in":
-				switch must.NotFail(v.Get(key)).(type) {
+				switch val.(type) {
 				case *types.Array:
 					// ok
 				default:
