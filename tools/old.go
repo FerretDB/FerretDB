@@ -15,7 +15,7 @@
 //go:build !go1.18
 // +build !go1.18
 
-package tools // import "github.com/FerretDB/FerretDB/tools"
+package tools
 
 // The version of Go used in `go generate` command is old - we know that from the build tags above.
 // Let the user know.
