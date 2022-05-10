@@ -1,12 +1,11 @@
 ---
-# Almost all linters for new code; some of them are optional.
-
-run:
-  modules-download-mode: readonly
-  issues-exit-code: 0
+# TODO
 
 linters-settings:
-  # copy from required (keep in sync)
+  depguard:
+    list-type: blacklist
+    packages:
+      - github.com/FerretDB/FerretDB/internal/bson
   exhaustive:
     default-signifies-exhaustive: false
   gci:
@@ -36,101 +35,28 @@ linters-settings:
       limitations under the License.
   goimports:
     local-prefixes: github.com/FerretDB/FerretDB
+  gosimple:
+    go: "1.18"
+    checks: ["all"]
+  # govet
+  # ineffassign
   staticcheck:
     go: "1.18"
     checks: ["all"]
 
-  # the rest
-  depguard:
-    list-type: blacklist
-    packages:
-      - github.com/FerretDB/FerretDB/internal/bson
-  goconst:
-    min-occurrences: 5
-    ignore-tests: true
-  godot:
-    scope: toplevel
-    exclude:
-      - go-sumtype:decl
-      - check interfaces
-    capital: true
-  gosimple:
-    go: "1.18"
-    checks: ["all"]
-  lll:
-    line-length: 130
-    tab-width: 4
-  misspell:
-    ignore-words:
-      - guiness # present in the test dataset
-  nolintlint:
-    allow-unused: false
-    allow-leading-space: false
-    allow-no-explanation: []
-    require-explanation: true
-    require-specific: true
-  stylecheck:
-    go: "1.18"
-    checks: ["all"]
-    dot-import-whitelist: []
-    initialisms: []
-    http-status-code-whitelist: []
-  unparam:
-    check-exported: true
-  unused:
-    go: "1.18"
-  whitespace:
-    multi-if: false
-    multi-func: false
-
 linters:
-  enable-all: true
-  disable:
-    # TODO configure and enable one by one
-    - cyclop
-    - dupl
-    - errcheck
-    - errname
-    - errorlint
-    - exhaustivestruct
-    - forcetypeassert
-    - funlen
-    - gochecknoglobals
-    - gochecknoinits
-    - gocognit
-    - gocritic
-    - gocyclo
-    - goerr113
-    - gomnd
-    - gosec
-    - ifshort
-    - ireturn
-    - maintidx
-    - nakedret
-    - revive
-    - thelper
-    - unparam
-    - varnamelen
-    - wrapcheck
-
-    # TODO https://github.com/golangci/golangci-lint/issues/2649
-    - bodyclose
-    - contextcheck
-    - nilerr
-    - noctx
-    - rowserrcheck
-    - sqlclosecheck
-    - structcheck
-    - tparallel
-    - wastedassign
-
-    - golint      # deprecated
-    - interfacer  # deprecated
-    - maligned    # deprecated
-    - nlreturn    # too annoying
-    - scopelint   # deprecated
-    - testpackage # we test internals
-    - wsl         # too annoying
+  disable-all: true
+  enable:
+    - depguard
+    - exhaustive
+    - gci
+    - godox
+    - goheader
+    - goimports
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
 
 issues:
   exclude-use-default: false

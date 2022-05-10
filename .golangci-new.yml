@@ -1,0 +1,134 @@
+---
+# TODO
+
+linters-settings:
+  goconst:
+    min-occurrences: 5
+    ignore-tests: true
+  godot:
+    scope: toplevel
+    exclude:
+      - go-sumtype:decl
+      - check interfaces
+    capital: true
+  lll:
+    line-length: 130
+    tab-width: 4
+  misspell:
+    ignore-words:
+      - guiness # present in the test dataset
+  nolintlint:
+    allow-unused: false
+    allow-leading-space: false
+    allow-no-explanation: []
+    require-explanation: true
+    require-specific: true
+  stylecheck:
+    go: "1.18"
+    checks: ["all"]
+    dot-import-whitelist: []
+    initialisms: []
+    http-status-code-whitelist: []
+  unparam:
+    check-exported: true
+  unused:
+    go: "1.18"
+  whitespace:
+    multi-if: false
+    multi-func: false
+
+linters:
+  enable-all: true
+  disable:
+    # checked by the other configuration
+    - exhaustive
+    - gci
+    - godox
+    - goheader
+    - goimports
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+
+    # TODO configure and enable one by one
+    - asciicheck
+    - bidichk
+    - containedctx
+    - cyclop
+    - deadcode
+    - decorder
+    - dogsled
+    - dupl
+    - durationcheck
+    - errcheck
+    - errchkjson
+    - errname
+    - errorlint
+    - execinquery
+    - exhaustivestruct
+    - exhaustruct
+    - exportloopref
+    - forbidigo
+    - forcetypeassert
+    - funlen
+    - gochecknoglobals
+    - gochecknoinits
+    - gocognit
+    - gocritic
+    - gocyclo
+    - goerr113
+    - gofmt
+    - gofumpt
+    - gomnd
+    - gomoddirectives
+    - gomodguard
+    - goprintffuncname
+    - gosec
+    - grouper
+    - ifshort
+    - importas
+    - ireturn
+    - maintidx
+    - makezero
+    - nakedret
+    - nestif
+    - nilnil
+    - nonamedreturns
+    - nosprintfhostport
+    - paralleltest
+    - prealloc
+    - predeclared
+    - promlinter
+    - revive
+    - tagliatelle
+    - tenv
+    - thelper
+    - typecheck
+    - unconvert
+    - varcheck
+    - varnamelen
+    - wrapcheck
+
+    # TODO https://github.com/golangci/golangci-lint/issues/2649
+    - bodyclose
+    - contextcheck
+    - nilerr
+    - noctx
+    - rowserrcheck
+    - sqlclosecheck
+    - structcheck
+    - tparallel
+    - unparam
+    - wastedassign
+
+    - golint      # deprecated
+    - interfacer  # deprecated
+    - maligned    # deprecated
+    - nlreturn    # too annoying
+    - scopelint   # deprecated
+    - testpackage # we test internals
+    - wsl         # too annoying
+
+issues:
+  exclude-use-default: false
