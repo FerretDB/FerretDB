@@ -50,8 +50,9 @@ func GetOptionalParam[T types.Type](doc *types.Document, key string, defaultValu
 
 	res, ok := v.(T)
 	if !ok {
-		msg := fmt.Sprintf(`BSON field '%s' is the wrong type '%s', `+
-			`expected type '%s'`, key, AliasFromType(v), AliasFromType(defaultValue),
+		msg := fmt.Sprintf(
+			`BSON field '%s' is the wrong type '%s', expected type '%s'`,
+			key, AliasFromType(v), AliasFromType(defaultValue),
 		)
 		return defaultValue, NewErrorMsg(ErrTypeMismatch, msg)
 	}
