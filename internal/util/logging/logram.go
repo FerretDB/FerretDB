@@ -33,14 +33,14 @@ type record struct {
 // logRAM structure storage of log records in memory.
 type logRAM struct {
 	records map[int64]*record
-	mu      *sync.RWMutex
+	mu      sync.RWMutex
 }
 
 // NewLogRAM is creating entries log in memory.
 func NewLogRAM() *logRAM {
 	return &logRAM{
-		records: make(map[int64]*record),
-		mu:      &sync.RWMutex{},
+		records: map[int64]*record{},
+		mu:      sync.RWMutex{},
 	}
 }
 
