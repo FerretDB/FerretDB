@@ -17,10 +17,12 @@ package logging
 import (
 	"sync"
 	"time"
+
+	"go.uber.org/zap/zapcore"
 )
 
 type record struct {
-	Level      string
+	Level      zapcore.Level
 	Time       time.Time
 	LoggerName string
 	Message    string
@@ -37,16 +39,39 @@ type logRAM struct {
 // NewLogRAM is creating entries log in memory.
 func NewLogRAM() *logRAM {
 	return &logRAM{
-		log: [1024]*record{},
-		mu:  sync.RWMutex{},
+		mu: sync.RWMutex{},
 	}
 }
 
 // append adding entry in logram.
-func (l *logRAM) append(rec *record) {
+func (l *logRAM) append(entry zapcore.Entry) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	l.counter = (l.counter + 1) % 1024
+	rec := &record{
+		Level:      entry.Level,
+		Time:       entry.Time,
+		LoggerName: entry.LoggerName,
+		Message:    entry.Message,
+		Stack:      entry.Stack,
+	}
+
 	l.log[l.counter] = rec
+	l.counter = (l.counter + 1) % 1024
+}
+
+func (l *logRAM) getLogRAM() (entrys []zapcore.Entry) {
+	for _, r := range l.log {
+		if r != nil {
+			e := zapcore.Entry{
+				Level:      r.Level,
+				Time:       r.Time,
+				LoggerName: r.LoggerName,
+				Message:    r.Message,
+				Stack:      r.Stack,
+			}
+			entrys = append(entrys, e)
+		}
+	}
+	return
 }

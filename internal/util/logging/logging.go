@@ -34,16 +34,7 @@ func Setup(level zapcore.Level) {
 	logram := NewLogRAM()
 
 	logger = logger.WithOptions(zap.Hooks(func(entry zapcore.Entry) error {
-		r := &record{
-			Level:      entry.Level.String(),
-			Time:       entry.Time,
-			LoggerName: entry.LoggerName,
-			Message:    entry.Message,
-			Stack:      entry.Stack,
-		}
-
-		logram.append(r)
-
+		logram.append(entry)
 		return nil
 	}))
 
