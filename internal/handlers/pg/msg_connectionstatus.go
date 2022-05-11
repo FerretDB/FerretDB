@@ -25,7 +25,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgConnectionStatus returns information about the current connection, specifically the state of authenticated users and their available permissions.
+// MsgConnectionStatus returns information about the current connection,
+// specifically the state of authenticated users and their available permissions.
 func (h *Handler) MsgConnectionStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 
@@ -74,7 +75,8 @@ func (h *Handler) MsgConnectionStatus(ctx context.Context, msg *wire.OpMsg) (*wi
 	return &reply, nil
 }
 
-// getParamShowPrivileges returns doc's value for key, default value for missing parameter, or protocol error for invalid parameter.
+// getParamShowPrivileges returns doc's value for key,
+// default value for missing parameter, or protocol error for invalid parameter.
 func getParamShowPrivileges(doc *types.Document) (bool, error) {
 	v, err := doc.Get("showPrivileges")
 	if err != nil {

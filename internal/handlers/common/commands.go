@@ -137,7 +137,8 @@ var Commands = map[string]Command{
 		Handler: (Handler).MsgUpdate,
 	},
 	"connectionStatus": {
-		Help:    "Returns information about the current connection, specifically the state of authenticated users and their available permissions.",
+		Help: `Returns information about the current connection, ` +
+			`specifically the state of authenticated users and their available permissions.`,
 		Handler: (Handler).MsgConnectionStatus,
 	},
 
