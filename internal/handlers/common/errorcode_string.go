@@ -22,7 +22,7 @@ func _() {
 	_ = x[ErrProjectionInEx-31253]
 	_ = x[ErrProjectionExIn-31254]
 	_ = x[ErrRegexOptions-51075]
-	_ = x[ErrRegexMissingClosingBracket-51091]
+	_ = x[ErrRegexMissingParen-51091]
 }
 
 const _ErrorCode_name = "InternalErrorBadValueFailedToParseTypeMismatchNamespaceNotFoundNamespaceExistsCommandNotFoundNotImplementedLocation15974Location28667Location28724Location31253Location31254Location51075Location51091"
