@@ -26,11 +26,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-const (
-	projectionElemMatch = "$elemMatch"
-	projectionSlice     = "$slice"
-)
-
 // validateProjectionExpression: projection can be only inclusion or exclusion. Validate and return true if inclusion.
 // Exception for the _id field.
 func validateProjectionExpression(projection *types.Document) (bool, error) {
@@ -57,7 +52,7 @@ func validateExpression(projection *types.Document, depth int, inclusion, exclus
 			return false, false, err
 
 		default: // scalar
-			if k == projectionElemMatch {
+			if k == "$elemMatch" {
 				err = NewError(
 					ErrElemMatchObjectRequired,
 					fmt.Errorf("elemMatch: Invalid argument, object required, but got %T", v),
@@ -127,7 +122,7 @@ func validateScalarProjectionExpression(v any, field string, inclusion, exclusio
 func validateDocProjectionExpression(v *types.Document, depth int, inclusion, exclusion bool) (bool, bool, error) {
 	var err error
 	for _, key := range v.Keys() {
-		if key == projectionSlice {
+		if key == "$slice" {
 			return false, false, nil
 		}
 
@@ -135,7 +130,7 @@ func validateDocProjectionExpression(v *types.Document, depth int, inclusion, ex
 		switch val := val.(type) {
 		case *types.Document:
 
-			if key == projectionElemMatch && depth >= 1 {
+			if key == "$elemMatch" && depth >= 1 {
 				err = NewErrorMsg(
 					ErrElemMatchNestedField,
 					"Cannot use $elemMatch projection on a nested field.",
@@ -146,7 +141,7 @@ func validateDocProjectionExpression(v *types.Document, depth int, inclusion, ex
 
 		case *types.Array:
 
-			if key == projectionElemMatch {
+			if key == "$elemMatch" {
 				err = NewErrorMsg(
 					ErrElemMatchObjectRequired,
 					"elemMatch: Invalid argument, object required, but got array",
@@ -170,7 +165,7 @@ func validateDocProjectionExpression(v *types.Document, depth int, inclusion, ex
 					err = NewErrorMsg(ErrBadValue, "$in needs an array")
 					return false, false, err
 				}
-			case "$nin", "$not", projectionSlice:
+			case "$nin", "$not", "$slice":
 				exclusion = true
 
 			default: // $mod, etc
@@ -256,7 +251,7 @@ func applyDocProjection(k1 string, doc *types.Document, k1Projection *types.Docu
 
 	for _, projectionName := range k1Projection.Keys() {
 		switch projectionName {
-		case projectionElemMatch:
+		case "$elemMatch":
 			conditions := must.NotFail(k1Projection.Get(projectionName)).(*types.Document)
 
 			var found bool
@@ -270,7 +265,7 @@ func applyDocProjection(k1 string, doc *types.Document, k1Projection *types.Docu
 				return nil
 			}
 
-		case projectionSlice:
+		case "$slice":
 			var docValue any
 			docValue, err = doc.Get(k1)
 			if err != nil { // the field can't be obtained, so there is nothing to do
