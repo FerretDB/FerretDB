@@ -72,6 +72,29 @@ func TestQueryLogicalAnd(t *testing.T) {
 			},
 			expectedIDs: []any{},
 		},
+		"AndAnd": {
+			filter: bson.A{
+				bson.D{{"$and", bson.A{
+					bson.D{{"value", bson.D{{"$gt", int32(0)}}}},
+					bson.D{{"value", bson.D{{"$lte", int32(42)}}}},
+				}}},
+				bson.D{{"value", bson.D{{"$type", "int"}}}},
+			},
+			expectedIDs: []any{"int32"},
+		},
+		"AndAndAnd": {
+			filter: bson.A{
+				bson.D{{"$and", bson.A{
+					bson.D{{"value", bson.D{{"$gt", int32(0)}}}},
+					bson.D{{"$and", bson.A{
+						bson.D{{"value", bson.D{{"$lt", int32(43)}}}},
+						bson.D{{"value", bson.D{{"$eq", int32(42)}}}},
+					}}},
+				}}},
+				bson.D{{"value", bson.D{{"$type", "int"}}}},
+			},
+			expectedIDs: []any{"int32"},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -112,6 +135,29 @@ func TestQueryLogicalOr(t *testing.T) {
 				"double-negative-infinity", "double-negative-zero",
 				"double-smallest", "double-zero",
 				"int32-min", "int32-zero", "int64-min", "int64-zero",
+			},
+		},
+		"OrAnd": {
+			filter: bson.A{
+				bson.D{{"$and", bson.A{
+					bson.D{},
+					bson.D{},
+				}}},
+				bson.D{},
+			},
+			expectedIDs: []any{
+				"binary", "binary-empty",
+				"bool-false", "bool-true",
+				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
+				"double", "double-max", "double-nan", "double-negative-infinity", "double-negative-zero",
+				"double-positive-infinity", "double-smallest", "double-whole", "double-zero",
+				"int32", "int32-max", "int32-min", "int32-zero",
+				"int64", "int64-max", "int64-min", "int64-zero",
+				"null",
+				"objectid", "objectid-empty",
+				"regex", "regex-empty",
+				"string", "string-double", "string-empty", "string-whole",
+				"timestamp", "timestamp-i",
 			},
 		},
 		"BadInput": {
