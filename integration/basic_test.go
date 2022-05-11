@@ -97,18 +97,28 @@ func TestInsertFind(t *testing.T) {
 func TestFindCommentMethod(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t, shareddata.Scalars)
+	name := collection.Name()
+	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
+	require.NoError(t, err)
+	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
 
 	var doc bson.D
-	opts := options.FindOne().SetComment("*/ 1; DROP DATABASE postgres --")
-	err := collection.FindOne(ctx, bson.D{{"_id", "string"}}, opts).Decode(&doc)
+	opts := options.FindOne().SetComment(comment)
+	err = collection.FindOne(ctx, bson.D{{"_id", "string"}}, opts).Decode(&doc)
 	require.NoError(t, err)
+	assert.Contains(t, databaseNames, name)
 }
 
 func TestFindCommentQuery(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t, shareddata.Scalars)
+	name := collection.Name()
+	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
+	require.NoError(t, err)
+	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
 
 	var doc bson.D
-	err := collection.FindOne(ctx, bson.M{"_id": "string", "$comment": "*/ 1; DROP DATABASE postgres --"}).Decode(&doc)
+	err = collection.FindOne(ctx, bson.M{"_id": "string", "$comment": comment}).Decode(&doc)
 	require.NoError(t, err)
+	assert.Contains(t, databaseNames, name)
 }
