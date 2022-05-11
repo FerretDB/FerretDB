@@ -15,7 +15,6 @@ require (
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect; always use @latest
 	golang.org/x/exp v0.0.0-20220414153411-bcd21879b8fd
 	golang.org/x/sys v0.0.0-20220422013727-9388b58f7150
-	golang.org/x/text v0.3.7 // indirect
 )
 
 require (
@@ -36,6 +35,7 @@ require (
 	github.com/prometheus/procfs v0.7.3 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
+	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/protobuf v1.26.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
