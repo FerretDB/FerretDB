@@ -32,37 +32,37 @@ type record struct {
 
 // logRAM structure storage of log records in memory.
 type logRAM struct {
-	records map[int64]*record
-	mu      sync.RWMutex
+	log map[time.Time]*record
+	mu  sync.RWMutex
 }
 
 // NewLogRAM is creating entries log in memory.
 func NewLogRAM() *logRAM {
 	return &logRAM{
-		records: map[int64]*record{},
-		mu:      sync.RWMutex{},
+		log: map[time.Time]*record{},
+		mu:  sync.RWMutex{},
 	}
 }
 
-// append adding a log entry.
-func (l *logRAM) append(id int64, r *record) {
+// append adding entry in logram.
+func (l *logRAM) append(r *record) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	if len(l.records) > 1024 {
+	if len(l.log) > 1023 {
 		l.delete()
 	}
 
-	l.records[id] = r
+	l.log[r.Time] = r
 }
 
-// deleting log entry with minimal id.
+// deleting is deletes oldest entry in logram.
 func (l *logRAM) delete() {
-	var i int64 = 0
-	for k := range l.records {
-		if k > i || i == 0 {
-			i = k
+	t := time.Now()
+	for k := range l.log {
+		if t.After(k) {
+			t = k
 		}
 	}
-	delete(l.records, i)
+	delete(l.log, t)
 }
