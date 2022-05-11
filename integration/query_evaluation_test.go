@@ -414,7 +414,7 @@ func TestQueryEvaluationRegex(t *testing.T) {
 	ctx, collection := setup(t, shareddata.Scalars)
 
 	_, err := collection.InsertMany(ctx, []any{
-		bson.D{{"_id", "regex-multiline"}, {"value", "multi\nline"}},
+		bson.D{{"_id", "multiline-string"}, {"value", "bar\nfoo"}},
 	})
 	require.NoError(t, err)
 
@@ -424,7 +424,7 @@ func TestQueryEvaluationRegex(t *testing.T) {
 	}{
 		"Regex": {
 			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "foo"}}}}},
-			expectedIDs: []any{"string"},
+			expectedIDs: []any{"multiline-string", "string"},
 		},
 		"RegexWithOption": {
 			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "42", Options: "i"}}}}},
@@ -432,11 +432,15 @@ func TestQueryEvaluationRegex(t *testing.T) {
 		},
 		"RegexStringOptionMatchCaseInsensitive": {
 			filter:      bson.D{{"value", bson.D{{"$regex", "foo"}, {"$options", "i"}}}},
-			expectedIDs: []any{"regex", "string"},
+			expectedIDs: []any{"multiline-string", "regex", "string"},
 		},
 		"RegexStringOptionMatchLineEnd": {
-			filter:      bson.D{{"value", bson.D{{"$regex", "m.*line"}, {"$options", "s"}}}},
-			expectedIDs: []any{"regex-multiline"},
+			filter:      bson.D{{"value", bson.D{{"$regex", "b.*foo"}, {"$options", "s"}}}},
+			expectedIDs: []any{"multiline-string"},
+		},
+		"RegexStringOptionMatchMultiline": {
+			filter:      bson.D{{"value", bson.D{{"$regex", "^foo"}, {"$options", "m"}}}},
+			expectedIDs: []any{"multiline-string", "string"},
 		},
 		"RegexNoSuchField": {
 			filter:      bson.D{{"no-such-field", bson.D{{"$regex", primitive.Regex{Pattern: "foo"}}}}},
@@ -448,7 +452,7 @@ func TestQueryEvaluationRegex(t *testing.T) {
 		},
 		"RegexBadOption": {
 			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "foo", Options: "123"}}}}},
-			expectedIDs: []any{"string"},
+			expectedIDs: []any{"multiline-string", "string"},
 		},
 	} {
 		name, tc := name, tc

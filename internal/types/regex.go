@@ -34,6 +34,8 @@ func (r Regex) Compile() (*regexp.Regexp, error) {
 			opts += "i"
 		case 's':
 			opts += "s"
+		case 'm':
+			opts += "m"
 		default:
 			continue
 		}
