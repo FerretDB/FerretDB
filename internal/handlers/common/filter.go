@@ -82,7 +82,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 			return false, nil // no error - the field is just not present
 		}
 		if docValue, ok := docValue.(*types.Array); ok {
-			return matchArrays(docValue, filterValue), nil
+			return matchArrays(filterValue, docValue), nil
 		}
 		return false, nil
 
@@ -197,6 +197,18 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 
 // filterFieldExpr handles {field: {expr}} or {field: {document}} filter.
 func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document) (bool, error) {
+	// check if both documents are empty
+	if expr.Len() == 0 {
+		fieldValue, err := doc.Get(filterKey)
+		if err != nil {
+			return false, nil
+		}
+		if fieldValue, ok := fieldValue.(*types.Document); ok && fieldValue.Len() == 0 {
+			return true, nil
+		}
+		return false, nil
+	}
+
 	for _, exprKey := range expr.Keys() {
 		if exprKey == "$options" {
 			// handled by $regex
@@ -318,7 +330,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				switch arrValue := arrValue.(type) {
 				case *types.Array:
 					fieldValue, ok := fieldValue.(*types.Array)
-					if ok && matchArrays(fieldValue, arrValue) {
+					if ok && matchArrays(arrValue, fieldValue) {
 						found = true
 						break
 					}
@@ -367,7 +379,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				switch arrValue := arrValue.(type) {
 				case *types.Array:
 					fieldValue, ok := fieldValue.(*types.Array)
-					if ok && matchArrays(fieldValue, arrValue) {
+					if ok && matchArrays(arrValue, fieldValue) {
 						found = true
 						break
 					}
