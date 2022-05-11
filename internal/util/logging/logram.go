@@ -30,20 +30,21 @@ type record struct {
 	Stack      string
 }
 
-// logRAM structure storage of log records in memory
+// logRAM structure storage of log records in memory.
 type logRAM struct {
 	records map[int64]*record
 	mu      *sync.RWMutex
 }
 
-// NewLogRAM is creating entries log in memory
+// NewLogRAM is creating entries log in memory.
 func NewLogRAM() *logRAM {
 	return &logRAM{
 		records: make(map[int64]*record),
+		mu:      &sync.RWMutex{},
 	}
 }
 
-// append adding a log entry
+// append adding a log entry.
 func (l *logRAM) append(id int64, r *record) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -55,10 +56,10 @@ func (l *logRAM) append(id int64, r *record) {
 	l.records[id] = r
 }
 
-// deleting log entry with minimal id
+// deleting log entry with minimal id.
 func (l *logRAM) delete() {
 	var i int64 = 0
-	for k, _ := range l.records {
+	for k := range l.records {
 		if k > i || i == 0 {
 			i = k
 		}
