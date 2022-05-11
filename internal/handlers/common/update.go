@@ -48,24 +48,3 @@ func UpdateDocument(doc, update *types.Document) error {
 
 	return nil
 }
-
-var updateOperators = map[string]struct{}{}
-
-func init() {
-	for _, o := range []string{
-		"$currentDate", "$inc", "$min", "$max",
-		"$mul", "$rename", "$set", "$setOnInsert", "$unset",
-	} {
-		updateOperators[o] = struct{}{}
-	}
-}
-
-// HasUpdateOperator checks if document has updates operators.
-func HasUpdateOperator(d *types.Document) bool {
-	for k := range d.Map() {
-		if _, ok := updateOperators[k]; ok {
-			return true
-		}
-	}
-	return false
-}

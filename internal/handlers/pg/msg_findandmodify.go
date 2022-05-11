@@ -114,7 +114,14 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return &reply, nil
 	}
 
-	if common.HasUpdateOperator(params.update) { //nolint:nestif // no way to make it simple now
+	var hasUpdateOperators bool
+	for k := range params.update.Map() {
+		if _, ok := updateOperators[k]; ok {
+			hasUpdateOperators = true
+		}
+	}
+
+	if hasUpdateOperators { //nolint:nestif // no way to make it simple now
 		upsert := resDocs[0].DeepCopy()
 		err = common.UpdateDocument(upsert, params.update)
 		if err != nil {
@@ -233,4 +240,12 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 		upsert:            upsert,
 		returnNewDocument: returnNewDocument,
 	}, nil
+}
+
+var updateOperators = map[string]struct{}{}
+
+func init() {
+	for _, o := range []string{"$currentDate", "$inc", "$min", "$max", "$mul", "$rename", "$set", "$setOnInsert", "$unset"} {
+		updateOperators[o] = struct{}{}
+	}
 }
