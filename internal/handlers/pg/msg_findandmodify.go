@@ -18,9 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgx/v4"
-
-	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -59,28 +56,11 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	fetchedDocs, err := h.fetch(ctx, params.db, params.collection)
+	fetchedDocs, err := h.fetch(ctx, params.sqlParam)
 	if err != nil {
 		return nil, err
 	}
 
-	var sp sqlParam
-	if sp.db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-	collectionParam, err := document.Get(document.Command())
-	if err != nil {
-		return nil, err
-	}
-	var ok bool
-	if sp.collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewErrorMsg(
-			common.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
-		)
-	}
-
-	fetchedDocs, err := h.fetch(ctx, sp)
 	err = common.SortDocuments(fetchedDocs, params.sort)
 	if err != nil {
 		return nil, err
@@ -105,13 +85,6 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	if len(resDocs) == 1 && remove {
-		id := must.NotFail(fjson.Marshal(must.NotFail(resDocs[0].Get("_id"))))
-		sql := fmt.Sprintf("DELETE FROM %s WHERE _jsonb->'_id' IN ($1)", pgx.Identifier{sp.db, sp.collection}.Sanitize())
-		if _, err := h.pgPool.Exec(ctx, sql, id); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-	}
 	if len(resDocs) == 0 {
 		var reply wire.OpMsg
 		must.NoError(reply.SetSections(wire.OpMsgSection{
@@ -125,7 +98,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	}
 
 	if len(resDocs) == 1 && params.remove {
-		_, err = h.delete(ctx, params.db, params.collection, resDocs)
+		_, err = h.delete(ctx, params.sqlParam, resDocs)
 		if err != nil {
 			return nil, err
 		}
@@ -148,17 +121,17 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			return nil, err
 		}
 
-		_, err = h.update(ctx, params.db, params.collection, upsert)
+		_, err = h.update(ctx, params.sqlParam, upsert)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		_, err = h.delete(ctx, params.db, params.collection, resDocs)
+		_, err = h.delete(ctx, params.sqlParam, resDocs)
 		if err != nil {
 			return nil, err
 		}
 
-		err = h.insert(ctx, params.db, params.collection, params.update)
+		err = h.insert(ctx, params.sqlParam, params.update)
 		if err != nil {
 			return nil, err
 		}
@@ -183,7 +156,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 // findAndModifyParams represent all findAndModify requests' fields.
 // It's filled by calling prepareFindAndModifyParams.
 type findAndModifyParams struct {
-	db, collection                    string
+	sqlParam                          sqlParam
 	query, sort, update               *types.Document
 	remove, upsert, returnNewDocument bool
 }
@@ -249,8 +222,10 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 	}
 
 	return &findAndModifyParams{
-		db:                db,
-		collection:        collection,
+		sqlParam: sqlParam{
+			db:         db,
+			collection: collection,
+		},
 		query:             query,
 		update:            update,
 		sort:              sort,

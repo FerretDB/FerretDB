@@ -193,7 +193,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
-// delete prepares and executes actual DELETE request to Postgres.
+// update prepares and executes actual UPDATE request to Postgres.
 func (h *Handler) update(ctx context.Context, sp sqlParam, doc *types.Document) (pgconn.CommandTag, error) {
 	sql := "UPDATE " + pgx.Identifier{sp.db, sp.collection}.Sanitize() +
 		" SET _jsonb = $1 WHERE _jsonb->'_id' = $2"

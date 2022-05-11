@@ -38,14 +38,20 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	common.Ignored(document, h.l, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
 
-	command := document.Command()
-
-	var db, collection string
-	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	var sp sqlParam
+	if sp.db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
-	if collection, err = common.GetRequiredParam[string](document, command); err != nil {
+	collectionParam, err := document.Get(document.Command())
+	if err != nil {
 		return nil, err
+	}
+	var ok bool
+	if sp.collection, ok = collectionParam.(string); !ok {
+		return nil, common.NewErrorMsg(
+			common.ErrBadValue,
+			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+		)
 	}
 
 	var docs *types.Array
@@ -53,12 +59,12 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	created, err := h.pgPool.EnsureTableExist(ctx, db, collection)
+	created, err := h.pgPool.EnsureTableExist(ctx, sp.db, sp.collection)
 	if err != nil {
 		return nil, err
 	}
 	if created {
-		h.l.Info("Created table.", zap.String("schema", db), zap.String("table", collection))
+		h.l.Info("Created table.", zap.String("schema", sp.db), zap.String("table", sp.collection))
 	}
 
 	var inserted int32
@@ -68,7 +74,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, lazyerrors.Error(err)
 		}
 
-		err = h.insert(ctx, db, collection, doc)
+		err = h.insert(ctx, sp, doc)
 		if err != nil {
 			return nil, err
 		}
@@ -90,10 +96,10 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
-// delete prepares and executes actual INSERT request to Postgres.
-func (h *Handler) insert(ctx context.Context, db string, collection string, doc any) error {
+// insert prepares and executes actual INSERT request to Postgres.
+func (h *Handler) insert(ctx context.Context, sp sqlParam, doc any) error {
 	d := doc.(*types.Document)
-	sql := fmt.Sprintf("INSERT INTO %s (_jsonb) VALUES ($1)", pgx.Identifier{db, collection}.Sanitize())
+	sql := fmt.Sprintf("INSERT INTO %s (_jsonb) VALUES ($1)", pgx.Identifier{sp.db, sp.collection}.Sanitize())
 	b, err := fjson.Marshal(d)
 	if err != nil {
 		return lazyerrors.Error(err)
