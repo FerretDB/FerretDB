@@ -31,19 +31,20 @@ import (
 // For array operators must be arrays in condition values.
 // Validate and return true if inclusion.
 func validateProjectionExpression(projection *types.Document) (bool, error) {
-	inclusion, _, err := validateExpression(projection, 0, false, false)
+	inclusion, _, err := validateProjectionExpressionRecursive(projection, 0, false, false)
 	return inclusion, err
 }
 
-// validateExpression validates projection condition document against projection rules.
-func validateExpression(projection *types.Document, depth int, inclusion, exclusion bool) (bool, bool, error) {
+// validateProjectionExpressionRecursive validates projection condition
+// document against projection rules, recursively.
+func validateProjectionExpressionRecursive(projection *types.Document, depth int, inclusion, exclusion bool) (bool, bool, error) {
 	var err error
-	for _, k := range projection.Keys() {
-		if k == "_id" { // _id is a special case and can be both
+	for _, conditionKey := range projection.Keys() {
+		if conditionKey == "_id" { // _id is a special case and can be both
 			continue
 		}
 
-		v := must.NotFail(projection.Get(k))
+		v := must.NotFail(projection.Get(conditionKey))
 		switch v := v.(type) {
 		case *types.Document:
 			inclusion, exclusion, err = validateDocProjectionExpression(v, depth, inclusion, exclusion)
@@ -53,7 +54,7 @@ func validateExpression(projection *types.Document, depth int, inclusion, exclus
 			return false, false, err
 
 		default:
-			if k == "$elemMatch" {
+			if conditionKey == "$elemMatch" {
 				err = NewError(
 					ErrElemMatchObjectRequired,
 					fmt.Errorf("elemMatch: Invalid argument, object required, but got %T", v),
@@ -61,14 +62,15 @@ func validateExpression(projection *types.Document, depth int, inclusion, exclus
 				return false, false, err
 			}
 
-			inclusion, exclusion, err = validateScalarProjectionExpression(v, k, inclusion, exclusion)
+			inclusion, exclusion, err = validateScalarProjectionExpression(conditionKey, v, inclusion, exclusion)
 		}
 	}
 	return inclusion, exclusion, err
 }
 
-// validateScalarProjectionExpression checks {field: value} in projection condition.
-func validateScalarProjectionExpression(v any, field string, inclusion, exclusion bool) (bool, bool, error) {
+// validateScalarProjectionExpression validates projection expression {conditionKey: v}
+// in projection condition, where v is a scalar value.
+func validateScalarProjectionExpression(conditionKey string, v any, inclusion, exclusion bool) (bool, bool, error) {
 	var err error
 	switch v := v.(type) {
 	case float64, int32, int64:
@@ -76,7 +78,7 @@ func validateScalarProjectionExpression(v any, field string, inclusion, exclusio
 			if inclusion {
 				err = NewError(
 					ErrElemMatchExclusionInInclusion,
-					fmt.Errorf("Cannot do exclusion on field %s in inclusion projection", field),
+					fmt.Errorf("Cannot do exclusion on field %s in inclusion projection", conditionKey),
 				)
 				return false, false, err
 			}
@@ -85,7 +87,7 @@ func validateScalarProjectionExpression(v any, field string, inclusion, exclusio
 			if exclusion {
 				err = NewError(
 					ErrElemMatchInclusionInExclusion,
-					fmt.Errorf("Cannot do inclusion on field %s in exclusion projection", field),
+					fmt.Errorf("Cannot do inclusion on field %s in exclusion projection", conditionKey),
 				)
 				return false, false, err
 			}
@@ -97,7 +99,7 @@ func validateScalarProjectionExpression(v any, field string, inclusion, exclusio
 			if exclusion {
 				err = NewError(
 					ErrElemMatchInclusionInExclusion,
-					fmt.Errorf("Cannot do inclusion on field %s in exclusion projection", field),
+					fmt.Errorf("Cannot do inclusion on field %s in exclusion projection", conditionKey),
 				)
 				return false, false, err
 			}
@@ -106,7 +108,7 @@ func validateScalarProjectionExpression(v any, field string, inclusion, exclusio
 			if inclusion {
 				err = NewError(
 					ErrElemMatchExclusionInInclusion,
-					fmt.Errorf("Cannot do exclusion on field %s in inclusion projection", field),
+					fmt.Errorf("Cannot do exclusion on field %s in inclusion projection", conditionKey),
 				)
 				return false, false, err
 			}
@@ -119,7 +121,7 @@ func validateScalarProjectionExpression(v any, field string, inclusion, exclusio
 	return inclusion, exclusion, err
 }
 
-// validateDocProjectionExpression validates projection condition documents, i.e. {field: {"$eq": 42}}.
+// validateDocProjectionExpression validates projection expression document.
 func validateDocProjectionExpression(v *types.Document, depth int, inclusion, exclusion bool) (bool, bool, error) {
 	var err error
 	for _, key := range v.Keys() {
@@ -139,7 +141,7 @@ func validateDocProjectionExpression(v *types.Document, depth int, inclusion, ex
 				)
 				return false, false, err
 			}
-			inclusion, exclusion, err = validateExpression(val, depth+1, inclusion, exclusion)
+			inclusion, exclusion, err = validateProjectionExpressionRecursive(val, depth+1, inclusion, exclusion)
 
 		case *types.Array:
 
@@ -180,7 +182,7 @@ func validateDocProjectionExpression(v *types.Document, depth int, inclusion, ex
 	return inclusion, exclusion, err
 }
 
-// ProjectDocuments modifies given documents in places according to the given projection.
+// ProjectDocuments modifies given documents in place according to the projection.
 func ProjectDocuments(docs []*types.Document, projection *types.Document) error {
 	if projection.Len() == 0 {
 		return nil
@@ -200,7 +202,8 @@ func ProjectDocuments(docs []*types.Document, projection *types.Document) error 
 	return nil
 }
 
-// projectDocument gets top-level document to apply projection.
+// projectDocument modifies document in place according to the projection.
+//
 func projectDocument(inclusion bool, doc *types.Document, projection *types.Document) error {
 	projectionMap := projection.Map()
 
@@ -218,7 +221,7 @@ func projectDocument(inclusion bool, doc *types.Document, projection *types.Docu
 
 		switch k1Projection := k1Projection.(type) {
 		case *types.Document: // in projection doc: k1: { k2: value }}
-			if err := applyDocProjection(fieldLevel1, doc, k1Projection); err != nil {
+			if err := applyDocumentProjection(fieldLevel1, doc, k1Projection); err != nil {
 				return err
 			}
 
@@ -248,8 +251,9 @@ func projectDocument(inclusion bool, doc *types.Document, projection *types.Docu
 	return nil
 }
 
-// applyDocProjection gets second level document with projction.
-func applyDocProjection(k1 string, doc *types.Document, k1Projection *types.Document) error {
+// applyDocumentProjection modifies document according to projection.
+// It works with 1s level of projection document where the projection type is set.
+func applyDocumentProjection(fieldLevel1 string, doc *types.Document, k1Projection *types.Document) error {
 	var err error
 
 	for _, projectionName := range k1Projection.Keys() {
@@ -258,19 +262,19 @@ func applyDocProjection(k1 string, doc *types.Document, k1Projection *types.Docu
 			conditions := must.NotFail(k1Projection.Get(projectionName)).(*types.Document)
 
 			var found bool
-			found, err = findDocElemMatch(doc, conditions, k1)
+			found, err = applyElemMatchProjectionOnDocument(doc, conditions, fieldLevel1)
 			if err != nil {
 				return err
 			}
 
 			if !found {
-				doc.Remove(k1)
+				doc.Remove(fieldLevel1)
 				return nil
 			}
 
 		case "$slice":
 			var docValue any
-			docValue, err = doc.Get(k1)
+			docValue, err = doc.Get(fieldLevel1)
 			if err != nil { // the field can't be obtained, so there is nothing to do
 				return err
 			}
@@ -285,10 +289,10 @@ func applyDocProjection(k1 string, doc *types.Document, k1Projection *types.Docu
 				return err
 			}
 			if res == nil {
-				must.NoError(doc.Set(k1, types.Null))
+				must.NoError(doc.Set(fieldLevel1, types.Null))
 				return nil
 			}
-			must.NoError(doc.Set(k1, res))
+			must.NoError(doc.Set(fieldLevel1, res))
 
 		default:
 			return NewErrorMsg(ErrCommandNotFound, projectionName+" not supported")
@@ -297,8 +301,12 @@ func applyDocProjection(k1 string, doc *types.Document, k1Projection *types.Docu
 	return err
 }
 
-// findInArray makes look up for the array element in the projection condition.
-func findInArray(value any, doc *types.Document, compareRes []types.CompareResult, path ...string) bool {
+// modifyArray works with the final element where projection actually applied, and does:
+// * checks that document has array on specified path and removes it if it's not an array.
+// * makes look up for the array element in the projection condition.
+// * removes array elements that do not match compareRes
+// * returns true in case value found - to make deletion on high level possible.
+func modifyArray(doc *types.Document, conditionValue any, compareRes []types.CompareResult, path ...string) bool {
 	docValueArrayI, err := doc.GetByPath(path[:len(path)-1]...)
 	if err != nil {
 		doc.RemoveByPath(path[:len(path)-1]...)
@@ -336,7 +344,7 @@ fieldArray:
 				j -= 1
 				continue
 			}
-			switch value := value.(type) {
+			switch value := conditionValue.(type) {
 			// TODO https://github.com/FerretDB/FerretDB/issues/439 add tests
 			case *types.Document:
 
@@ -381,22 +389,22 @@ fieldArray:
 	return found >= 0
 }
 
-// findDocElemMatch is for elemMatch conditions.
-func findDocElemMatch(doc, condition *types.Document, path ...string) (bool, error) {
+// applyElemMatchProjectionOnDocument modifies document according to projection conditions.
+func applyElemMatchProjectionOnDocument(doc, projectionCondition *types.Document, path ...string) (bool, error) {
 	if len(path) == 0 {
 		panic("call findDocElemMatch with zero path")
 	}
 
 	found := false
 	var err error
-	for nextLevel, condition := range condition.Map() {
+	for nextLevel, condition := range projectionCondition.Map() {
 		levelPath := make([]string, len(path)+1)
 		copy(levelPath, path)
 		levelPath[len(path)] = nextLevel
 
 		switch condition := condition.(type) {
 		case *types.Document:
-			found, err = elemMatchProcessOperand(doc, condition, levelPath...)
+			found, err = elemMatchModifyDocumentRecursive(doc, condition, levelPath...)
 			if err != nil {
 				return false, err
 			}
@@ -405,36 +413,38 @@ func findDocElemMatch(doc, condition *types.Document, path ...string) (bool, err
 	return found, nil
 }
 
-// elemMatchProcessOperand: in condition: { $eq: 42 }.
-func elemMatchProcessOperand(doc, condition *types.Document, path ...string) (bool, error) {
+// elemMatchModifyDocumentRecursive modifies document for $elemMatch projection.
+// Projection condition could be nested, so the function is recursive.
+// End case example: { $eq: 42 }.
+func elemMatchModifyDocumentRecursive(doc, condition *types.Document, path ...string) (bool, error) {
 	var err error
 	found := false
-	for operand, value := range condition.Map() {
+	for operand, conditionValue := range condition.Map() {
 		switch operand {
 		case "$eq":
-			found = findInArray(value, doc, []types.CompareResult{types.Equal}, path...)
+			found = modifyArray(doc, conditionValue, []types.CompareResult{types.Equal}, path...)
 
 		case "$ne":
-			found = findInArray(value, doc, []types.CompareResult{types.Less, types.Greater}, path...)
+			found = modifyArray(doc, conditionValue, []types.CompareResult{types.Less, types.Greater}, path...)
 
 		case "$gt":
-			found = findInArray(value, doc, []types.CompareResult{types.Greater}, path...)
+			found = modifyArray(doc, conditionValue, []types.CompareResult{types.Greater}, path...)
 
 		case "$gte":
-			found = findInArray(value, doc, []types.CompareResult{types.Greater, types.Equal}, path...)
+			found = modifyArray(doc, conditionValue, []types.CompareResult{types.Greater, types.Equal}, path...)
 
 		case "$lt":
-			found = findInArray(value, doc, []types.CompareResult{types.Less}, path...)
+			found = modifyArray(doc, conditionValue, []types.CompareResult{types.Less}, path...)
 
 		case "$lte":
-			found = findInArray(value, doc, []types.CompareResult{types.Less, types.Equal}, path...)
+			found = modifyArray(doc, conditionValue, []types.CompareResult{types.Less, types.Equal}, path...)
 
 		case "$nin":
-			switch inValue := value.(type) {
+			switch inValue := conditionValue.(type) {
 			case *types.Array:
 				for i := 0; i < inValue.Len(); i++ {
-					x := must.NotFail(inValue.Get(i))
-					found = findInArray(x, doc,
+					conditionArrayValue := must.NotFail(inValue.Get(i))
+					found = modifyArray(doc, conditionArrayValue,
 						[]types.CompareResult{types.Less, types.Greater, types.NotEqual}, path...,
 					)
 					if found {
@@ -450,11 +460,11 @@ func elemMatchProcessOperand(doc, condition *types.Document, path ...string) (bo
 			}
 
 		case "$in":
-			switch inValue := value.(type) {
+			switch inValue := conditionValue.(type) {
 			case *types.Array:
 				for i := 0; i < inValue.Len(); i++ {
-					x := must.NotFail(inValue.Get(i))
-					found = findInArray(x, doc, []types.CompareResult{types.Equal}, path...)
+					conditionArrayValue := must.NotFail(inValue.Get(i))
+					found = modifyArray(doc, conditionArrayValue, []types.CompareResult{types.Equal}, path...)
 					if found {
 						return found, err
 					}
@@ -473,11 +483,11 @@ func elemMatchProcessOperand(doc, condition *types.Document, path ...string) (bo
 			copy(levelPath, path)
 			levelPath[len(path)] = operand
 
-			switch value := value.(type) {
+			switch value := conditionValue.(type) {
 			case *types.Document:
-				return elemMatchProcessOperand(doc, value, levelPath...)
+				return elemMatchModifyDocumentRecursive(doc, value, levelPath...)
 			}
-			found, err = elemMatchScalarConditionValue(doc, value, levelPath...)
+			found, err = elemMatchApplyScalarCondition(doc, conditionValue, levelPath...)
 		}
 		return found, err
 	}
@@ -485,8 +495,11 @@ func elemMatchProcessOperand(doc, condition *types.Document, path ...string) (bo
 	return found, err
 }
 
-// elemMatchScalarConditionValue is for matching array field: <scalar value>.
-func elemMatchScalarConditionValue(doc *types.Document, conditionValue any, path ...string) (bool, error) {
+// elemMatchApplyScalarCondition expectts conditionValue to be a scalar
+// and removes from corresponding paths of document those array items that do not match
+// the condition.
+// If related path doesn't contain array, it is removed.
+func elemMatchApplyScalarCondition(doc *types.Document, conditionValue any, path ...string) (bool, error) {
 	docValueA := must.NotFail(doc.GetByPath(path...))
 
 	// $elemMatch works only for arrays, it must be an array
