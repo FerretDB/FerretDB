@@ -26,9 +26,10 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// validateProjectionExpression: projection can be only inclusion or exclusion.
-// For array operators must be arrays in condition values. Validate and return true if inclusion.
-// Exception for the _id field.
+// validateProjectionExpression: validates projection expression.
+// $elemMatch projection can be only inclusion or exclusion.
+// For array operators must be arrays in condition values.
+// Validate and return true if inclusion.
 func validateProjectionExpression(projection *types.Document) (bool, error) {
 	inclusion, _, err := validateExpression(projection, 0, false, false)
 	return inclusion, err
@@ -51,7 +52,7 @@ func validateExpression(projection *types.Document, depth int, inclusion, exclus
 			err = NewErrorMsg(ErrElemMatchObjectRequired, "elemMatch: Invalid argument, object required, but got array")
 			return false, false, err
 
-		default: // scalar
+		default:
 			if k == "$elemMatch" {
 				err = NewError(
 					ErrElemMatchObjectRequired,
