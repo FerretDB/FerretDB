@@ -17,8 +17,6 @@ package logging
 import (
 	"sync"
 	"time"
-
-	"go.uber.org/zap/zapcore"
 )
 
 type record struct {
@@ -26,43 +24,29 @@ type record struct {
 	Time       time.Time
 	LoggerName string
 	Message    string
-	Caller     zapcore.EntryCaller
 	Stack      string
 }
 
 // logRAM structure storage of log records in memory.
 type logRAM struct {
-	log map[time.Time]*record
-	mu  sync.RWMutex
+	counter int64
+	log     [1024]*record
+	mu      sync.RWMutex
 }
 
 // NewLogRAM is creating entries log in memory.
 func NewLogRAM() *logRAM {
 	return &logRAM{
-		log: map[time.Time]*record{},
+		log: [1024]*record{},
 		mu:  sync.RWMutex{},
 	}
 }
 
 // append adding entry in logram.
-func (l *logRAM) append(r *record) {
+func (l *logRAM) append(rec *record) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	if len(l.log) > 1023 {
-		l.delete()
-	}
-
-	l.log[r.Time] = r
-}
-
-// deleting is deletes oldest entry in logram.
-func (l *logRAM) delete() {
-	t := time.Now()
-	for k := range l.log {
-		if t.After(k) {
-			t = k
-		}
-	}
-	delete(l.log, t)
+	l.counter = (l.counter + 1) % 1024
+	l.log[l.counter] = rec
 }

@@ -39,7 +39,6 @@ func Setup(level zapcore.Level) {
 			Time:       entry.Time,
 			LoggerName: entry.LoggerName,
 			Message:    entry.Message,
-			Caller:     entry.Caller,
 			Stack:      entry.Stack,
 		}
 
