@@ -15,15 +15,12 @@
 package integration
 
 import (
-	"math"
 	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func TestCommandsDiagnosticGetLog(t *testing.T) {
@@ -96,196 +93,14 @@ func TestCommandsDiagnosticListCommands(t *testing.T) {
 }
 
 func TestCommandsDiagnosticConnectionStatus(t *testing.T) {
-	//	t.Parallel()
+	t.Parallel()
 	ctx, collection := setup(t)
 
-	for name, tc := range map[string]struct {
-		command    bson.D
-		expected   map[string]any
-		unexpected []string
-		err        *mongo.CommandError
-	}{
-		"NoShowPrivileges": {
-			command: bson.D{{"connectionStatus", 1}},
-			expected: map[string]any{
-				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}},
-				"ok":       float64(1),
-			},
-			unexpected: []string{"authenticatedUserPrivileges"},
-		},
-		"ShowPrivilegesTrue": {
-			command: bson.D{{"connectionStatus", 1}, {"showPrivileges", true}},
-			expected: map[string]any{
-				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}, {"authenticatedUserPrivileges", primitive.A{}}},
-				"ok":       float64(1),
-			},
-		},
-		"ShowPrivilegesFalse": {
-			command: bson.D{{"connectionStatus", 1}, {"showPrivileges", false}},
-			expected: map[string]any{
-				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}},
-				"ok":       float64(1),
-			},
-			unexpected: []string{"authenticatedUserPrivileges"},
-		},
-		"ConnectionStatusZero": {
-			command: bson.D{{"connectionStatus", 0}, {"showPrivileges", true}},
-			expected: map[string]any{
-				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}, {"authenticatedUserPrivileges", primitive.A{}}},
-				"ok":       float64(1),
-			},
-		},
-		"ShowPrivilegesZero": {
-			command: bson.D{{"connectionStatus", 1}, {"showPrivileges", 0}},
-			expected: map[string]any{
-				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}},
-				"ok":       float64(1),
-			},
-			unexpected: []string{"authenticatedUserPrivileges"},
-		},
-		"ConnectionStatusNil": {
-			command: bson.D{{"connectionStatus", nil}, {"showPrivileges", true}},
-			expected: map[string]any{
-				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}, {"authenticatedUserPrivileges", primitive.A{}}},
-				"ok":       float64(1),
-			},
-		},
-		"ShowPrivilegesNil": {
-			command: bson.D{{"connectionStatus", 1}, {"showPrivileges", nil}},
-			expected: map[string]any{
-				"ok": float64(0),
-			},
-			err: &mongo.CommandError{
-				Code:    14,
-				Name:    "TypeMismatch",
-				Message: `Expected boolean or number type for field "showPrivileges", found null`,
-			},
-		},
-		"ConnectionStatusNaN": {
-			command: bson.D{{"connectionStatus", math.NaN()}, {"showPrivileges", true}},
-			expected: map[string]any{
-				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}, {"authenticatedUserPrivileges", primitive.A{}}},
-				"ok":       float64(1),
-			},
-		},
-		"ConnectionStatusBool": {
-			command: bson.D{{"connectionStatus", true}, {"showPrivileges", true}},
-			expected: map[string]any{
-				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}, {"authenticatedUserPrivileges", primitive.A{}}},
-				"ok":       float64(1),
-			},
-		},
-		"ConnectionStatusString": {
-			command: bson.D{{"connectionStatus", "1"}, {"showPrivileges", true}},
-			expected: map[string]any{
-				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}, {"authenticatedUserPrivileges", primitive.A{}}},
-				"ok":       float64(1),
-			},
-		},
-		"ShowPrivilegesString": {
-			command: bson.D{{"connectionStatus", 1}, {"showPrivileges", "true"}},
-			expected: map[string]any{
-				"ok": float64(0),
-			},
-			err: &mongo.CommandError{
-				Code:    14,
-				Name:    "TypeMismatch",
-				Message: `Expected boolean or number type for field "showPrivileges", found string`,
-			},
-		},
-		"ShowPrivilegesInt64": {
-			command: bson.D{{"connectionStatus", 1}, {"showPrivileges", int64(1)}},
-			expected: map[string]any{
-				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}, {"authenticatedUserPrivileges", primitive.A{}}},
-				"ok":       float64(1),
-			},
-		},
-		"ConnectionStatusFloat64": {
-			command: bson.D{{"connectionStatus", float64(1)}, {"showPrivileges", true}},
-			expected: map[string]any{
-				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}, {"authenticatedUserPrivileges", primitive.A{}}},
-				"ok":       float64(1),
-			},
-		},
-		"ConnectionStatusInfinity": {
-			command: bson.D{{"connectionStatus", math.Inf(0)}, {"showPrivileges", true}},
-			expected: map[string]any{
-				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}, {"authenticatedUserPrivileges", primitive.A{}}},
-				"ok":       float64(1),
-			},
-		},
-		"ShowPrivilegesInfinity": {
-			command: bson.D{{"connectionStatus", 1}, {"showPrivileges", math.Inf(0)}},
-			expected: map[string]any{
-				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}, {"authenticatedUserPrivileges", primitive.A{}}},
-				"ok":       float64(1),
-			},
-		},
-		"ConnectionStatusInfinityPositive": {
-			command: bson.D{{"connectionStatus", math.Inf(+1)}, {"showPrivileges", true}},
-			expected: map[string]any{
-				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}, {"authenticatedUserPrivileges", primitive.A{}}},
-				"ok":       float64(1),
-			},
-		},
-		"ShowPrivilegesInfinityPositive": {
-			command: bson.D{{"connectionStatus", 1}, {"showPrivileges", math.Inf(+1)}},
-			expected: map[string]any{
-				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}, {"authenticatedUserPrivileges", primitive.A{}}},
-				"ok":       float64(1),
-			},
-		},
-		"ConnectionStatusInfinityNegative": {
-			command: bson.D{{"connectionStatus", math.Inf(-1)}, {"showPrivileges", true}},
-			expected: map[string]any{
-				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}, {"authenticatedUserPrivileges", primitive.A{}}},
-				"ok":       float64(1),
-			},
-		},
-		"ShowPrivilegesInfinityNegative": {
-			command: bson.D{{"connectionStatus", 1}, {"showPrivileges", math.Inf(-1)}},
-			expected: map[string]any{
-				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}, {"authenticatedUserPrivileges", primitive.A{}}},
-				"ok":       float64(1),
-			},
-		},
-		"ConnectionStatusSmallestNonzeroFloat64": {
-			command: bson.D{{"connectionStatus", math.SmallestNonzeroFloat64}, {"showPrivileges", true}},
-			expected: map[string]any{
-				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}, {"authenticatedUserPrivileges", primitive.A{}}},
-				"ok":       float64(1),
-			},
-		},
-		"ShowPrivilegesSmallestNonzeroFloat64": {
-			command: bson.D{{"connectionStatus", 1}, {"showPrivileges", math.SmallestNonzeroFloat64}},
-			expected: map[string]any{
-				"authInfo": bson.D{{"authenticatedUsers", primitive.A{}}, {"authenticatedUserRoles", primitive.A{}}, {"authenticatedUserPrivileges", primitive.A{}}},
-				"ok":       float64(1),
-			},
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			//			t.Parallel()
+	var actual bson.D
+	err := collection.Database().RunCommand(ctx, bson.D{{"connectionStatus", "*"}}).Decode(&actual)
+	require.NoError(t, err)
 
-			var actual bson.D
-			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
-			if tc.err != nil {
-				AssertEqualError(t, *tc.err, err)
-				return
-			}
-			require.NoError(t, err)
+	ok := actual.Map()["ok"]
 
-			m := actual.Map()
-			k := CollectKeys(t, actual)
-
-			for key, item := range tc.expected {
-				assert.Contains(t, k, key)
-				assert.Equal(t, m[key], item)
-			}
-			for _, key := range tc.unexpected {
-				assert.NotContains(t, k, key)
-			}
-		})
-	}
+	assert.Equal(t, float64(1), ok)
 }
