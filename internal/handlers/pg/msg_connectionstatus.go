@@ -25,7 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgConnectionStatus
+// MsgConnectionStatus returns information about the current connection, specifically the state of authenticated users and their available permissions.
 func (h *Handler) MsgConnectionStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 
@@ -60,11 +60,13 @@ func (h *Handler) MsgConnectionStatus(ctx context.Context, msg *wire.OpMsg) (*wi
 	}
 
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"authInfo", authInfo,
-			"ok", float64(1),
-		)),
-		}})
+		Documents: []*types.Document{
+			must.NotFail(types.NewDocument(
+				"authInfo", authInfo,
+				"ok", float64(1),
+			)),
+		},
+	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -89,7 +91,7 @@ func getParamShowPrivileges(doc *types.Document) (bool, error) {
 	case int64:
 		return v != int64(0), nil
 	case types.NullType:
-		msg := fmt.Sprintf(`Expected boolean or number type for field "showPrivileges", found null`)
+		msg := `Expected boolean or number type for field "showPrivileges", found null`
 		return false, common.NewErrorMsg(common.ErrTypeMismatch, msg)
 	default:
 		msg := fmt.Sprintf("Expected boolean or number type for field \"showPrivileges\", found %T", v)
