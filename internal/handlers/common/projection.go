@@ -26,7 +26,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// validateProjectionExpression: projection can be only inclusion or exclusion. Validate and return true if inclusion.
+// validateProjectionExpression: projection can be only inclusion or exclusion.
+// For array operators must be arrays in condition values. Validate and return true if inclusion.
 // Exception for the _id field.
 func validateProjectionExpression(projection *types.Document) (bool, error) {
 	inclusion, _, err := validateExpression(projection, 0, false, false)
@@ -44,7 +45,6 @@ func validateExpression(projection *types.Document, depth int, inclusion, exclus
 		v := must.NotFail(projection.Get(k))
 		switch v := v.(type) {
 		case *types.Document:
-
 			inclusion, exclusion, err = validateDocProjectionExpression(v, depth, inclusion, exclusion)
 
 		case *types.Array:
@@ -122,8 +122,8 @@ func validateScalarProjectionExpression(v any, field string, inclusion, exclusio
 func validateDocProjectionExpression(v *types.Document, depth int, inclusion, exclusion bool) (bool, bool, error) {
 	var err error
 	for _, key := range v.Keys() {
-		if key == "$slice" {
-			return false, false, nil
+		if key == "$slice" { // TODO: no check for $slice at the moment
+			return false, true, nil
 		}
 
 		val := must.NotFail(v.Get(key))
@@ -158,6 +158,7 @@ func validateDocProjectionExpression(v *types.Document, depth int, inclusion, ex
 				inclusion = true
 
 			case "$in":
+				inclusion = true
 				switch val.(type) {
 				case *types.Array:
 					// ok
@@ -170,7 +171,7 @@ func validateDocProjectionExpression(v *types.Document, depth int, inclusion, ex
 
 			default: // $mod, etc
 				err = NewErrorMsg(ErrNotImplemented, key+" is not supported")
-				return inclusion, exclusion, err
+				return false, false, err
 			}
 		}
 	}
@@ -213,27 +214,27 @@ func projectDocument(inclusion bool, doc *types.Document, projection *types.Docu
 			continue
 		}
 
-		switch k1Projection := k1Projection.(type) { // found in the projection
-		case *types.Document: // in projection doc: k1: { k2: value }}, k1Projection == { k2: value }}
+		switch k1Projection := k1Projection.(type) {
+		case *types.Document: // in projection doc: k1: { k2: value }}
 			if err := applyDocProjection(fieldLevel1, doc, k1Projection); err != nil {
 				return err
 			}
 
-		case *types.Array: // in projection doc: { k1: [value1, value2... ], k1Projection = [ value1, value2.. ]
+		case *types.Array: // in projection doc: { k1: [value1, value2... ]
 			// it's a switch over elemMatch projection
 			return NewError(
 				ErrElemMatchObjectRequired,
 				fmt.Errorf("elemMatch: Invalid argument, object required, but got %T", k1Projection),
 			)
 
-		case float64, // in projection doc: { k1: k1Projection } where k1Projection is a number
+		case float64, // in projection doc: { k1: <number> }
 			int32,
 			int64:
 			if types.Compare(k1Projection, int32(0)) == types.Equal {
 				doc.Remove(fieldLevel1)
 			}
 
-		case bool: // in projection doc: { k1: k1Projection }
+		case bool: // in projection doc: { k1: true|false }
 			if !k1Projection {
 				doc.Remove(fieldLevel1)
 			}
@@ -362,7 +363,6 @@ fieldArray:
 					continue
 				}
 			}
-
 			doc.RemoveByPath(arrayPath...)
 			j -= 1
 
@@ -382,7 +382,7 @@ fieldArray:
 // findDocElemMatch is for elemMatch conditions.
 func findDocElemMatch(doc, condition *types.Document, path ...string) (bool, error) {
 	if len(path) == 0 {
-		panic("call elemMatchCondition with zero path")
+		panic("call findDocElemMatch with zero path")
 	}
 
 	found := false
@@ -403,15 +403,11 @@ func findDocElemMatch(doc, condition *types.Document, path ...string) (bool, err
 	return found, nil
 }
 
-// elemMatchCondition: in condition: { $eq: 42 }.
+// elemMatchProcessOperand: in condition: { $eq: 42 }.
 func elemMatchProcessOperand(doc, condition *types.Document, path ...string) (bool, error) {
 	var err error
 	found := false
 	for operand, value := range condition.Map() {
-		levelPath := make([]string, len(path)+1)
-		copy(levelPath, path)
-		levelPath[len(path)] = operand
-
 		switch operand {
 		case "$eq":
 			found = findInArray(value, doc, []types.CompareResult{types.Equal}, path...)
@@ -469,13 +465,17 @@ func elemMatchProcessOperand(doc, condition *types.Document, path ...string) (bo
 				return found, err
 			}
 
-			// <scalar value> OR field: {nested projection}
+			// field: <scalar value> OR field: {nested projection}
 		default:
+			levelPath := make([]string, len(path)+1)
+			copy(levelPath, path)
+			levelPath[len(path)] = operand
+
 			switch value := value.(type) {
 			case *types.Document:
 				return elemMatchProcessOperand(doc, value, levelPath...)
 			}
-			found, err = elemMatchDefaultOperand(doc, value, levelPath...)
+			found, err = elemMatchScalarConditionValue(doc, value, levelPath...)
 		}
 		return found, err
 	}
@@ -483,18 +483,18 @@ func elemMatchProcessOperand(doc, condition *types.Document, path ...string) (bo
 	return found, err
 }
 
-func elemMatchDefaultOperand(doc *types.Document, conditionValue any, path ...string) (bool, error) {
-	found := false
-
+// elemMatchScalarConditionValue is for matching array field: <scalar value>.
+func elemMatchScalarConditionValue(doc *types.Document, conditionValue any, path ...string) (bool, error) {
 	docValueA := must.NotFail(doc.GetByPath(path...))
 
 	// $elemMatch works only for arrays, it must be an array
 	docValueArray, ok := docValueA.(*types.Array)
 	if !ok {
 		doc.RemoveByPath(path...)
-		return found, nil
+		return false, nil
 	}
 
+	found := false
 	for j := 0; j < docValueArray.Len(); j++ {
 		e, err := docValueArray.Get(j)
 		if err != nil {
