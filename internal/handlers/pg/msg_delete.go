@@ -43,16 +43,6 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 	common.Ignored(document, h.l, "ordered", "writeConcern")
 
-	command := document.Command()
-
-	var db, collection string
-	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-	if collection, err = common.GetRequiredParam[string](document, command); err != nil {
-		return nil, err
-	}
-
 	var deletes *types.Array
 	if deletes, err = common.GetOptionalParam(document, "deletes", deletes); err != nil {
 		return nil, err
@@ -81,7 +71,23 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			}
 		}
 
-		fetchedDocs, err := h.fetch(ctx, db, collection)
+		var sp sqlParam
+		if sp.db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+			return nil, err
+		}
+		collectionParam, err := document.Get(document.Command())
+		if err != nil {
+			return nil, err
+		}
+		var ok bool
+		if sp.collection, ok = collectionParam.(string); !ok {
+			return nil, common.NewErrorMsg(
+				common.ErrBadValue,
+				fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+			)
+		}
+
+		fetchedDocs, err := h.fetch(ctx, sp)
 		if err != nil {
 			return nil, err
 		}
@@ -108,7 +114,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			continue
 		}
 
-		tag, err := h.delete(ctx, db, collection, resDocs)
+		tag, err := h.delete(ctx, sp, resDocs)
 		if err != nil {
 			return nil, err
 		}
@@ -131,7 +137,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // delete prepares and executes actual DELETE request to Postgres.
-func (h *Handler) delete(ctx context.Context, db, collection string, resDocs []*types.Document) (pgconn.CommandTag, error) {
+func (h *Handler) delete(ctx context.Context, sp sqlParam, resDocs []*types.Document) (pgconn.CommandTag, error) {
 	var p pgdb.Placeholder
 	placeholders := make([]string, len(resDocs))
 	ids := make([]any, len(resDocs))

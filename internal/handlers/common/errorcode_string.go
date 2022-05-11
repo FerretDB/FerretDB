@@ -8,6 +8,7 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
+	_ = x[errUnset-0]
 	_ = x[errInternalError-1]
 	_ = x[ErrBadValue-2]
 	_ = x[ErrFailedToParse-9]
@@ -25,24 +26,24 @@ func _() {
 	_ = x[ErrRegexOptions-51075]
 }
 
-const _ErrorCode_name = "InternalErrorBadValueFailedToParseTypeMismatchNamespaceNotFoundNamespaceExistsCommandNotFoundInvalidNamespaceNotImplementedLocation15974Location28667Location28724Location31253Location31254Location51075"
+const _ErrorCode_name = "UnsetInternalErrorBadValueFailedToParseTypeMismatchNamespaceNotFoundNamespaceExistsCommandNotFoundNotImplementedLocation15974Location28667Location28724Location31253Location31254Location51075"
 
 var _ErrorCode_map = map[ErrorCode]string{
-	1:     _ErrorCode_name[0:13],
-	2:     _ErrorCode_name[13:21],
-	9:     _ErrorCode_name[21:34],
-	14:    _ErrorCode_name[34:46],
-	26:    _ErrorCode_name[46:63],
-	48:    _ErrorCode_name[63:78],
-	59:    _ErrorCode_name[78:93],
-	73:    _ErrorCode_name[93:109],
-	238:   _ErrorCode_name[109:123],
-	15974: _ErrorCode_name[123:136],
-	28667: _ErrorCode_name[136:149],
-	28724: _ErrorCode_name[149:162],
-	31253: _ErrorCode_name[162:175],
-	31254: _ErrorCode_name[175:188],
-	51075: _ErrorCode_name[188:201],
+	0:     _ErrorCode_name[0:5],
+	1:     _ErrorCode_name[5:18],
+	2:     _ErrorCode_name[18:26],
+	9:     _ErrorCode_name[26:39],
+	14:    _ErrorCode_name[39:51],
+	26:    _ErrorCode_name[51:68],
+	48:    _ErrorCode_name[68:83],
+	59:    _ErrorCode_name[83:98],
+	238:   _ErrorCode_name[98:112],
+	15974: _ErrorCode_name[112:125],
+	28667: _ErrorCode_name[125:138],
+	28724: _ErrorCode_name[138:151],
+	31253: _ErrorCode_name[151:164],
+	31254: _ErrorCode_name[164:177],
+	51075: _ErrorCode_name[177:190],
 }
 
 func (i ErrorCode) String() string {

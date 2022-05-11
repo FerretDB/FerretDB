@@ -18,11 +18,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/jackc/pgx/v4"
 )
 
 // MsgFindAndModify inserts, updates, or deletes, and returns a document matched by the query.
@@ -61,6 +63,23 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
+	var sp sqlParam
+	if sp.db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
+	}
+	collectionParam, err := document.Get(document.Command())
+	if err != nil {
+		return nil, err
+	}
+	var ok bool
+	if sp.collection, ok = collectionParam.(string); !ok {
+		return nil, common.NewErrorMsg(
+			common.ErrBadValue,
+			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+		)
+	}
+
+	fetchedDocs, err := h.fetch(ctx, sp)
 	err = common.SortDocuments(fetchedDocs, params.sort)
 	if err != nil {
 		return nil, err
@@ -85,6 +104,13 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
+	if len(resDocs) == 1 && remove {
+		id := must.NotFail(fjson.Marshal(must.NotFail(resDocs[0].Get("_id"))))
+		sql := fmt.Sprintf("DELETE FROM %s WHERE _jsonb->'_id' IN ($1)", pgx.Identifier{sp.db, sp.collection}.Sanitize())
+		if _, err := h.pgPool.Exec(ctx, sql, id); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
 	if len(resDocs) == 0 {
 		var reply wire.OpMsg
 		must.NoError(reply.SetSections(wire.OpMsgSection{
