@@ -18,15 +18,13 @@ import (
 	"fmt"
 	"regexp"
 	"regexp/syntax"
-	"strings"
 )
 
 var (
-	ErrMissingParen   = fmt.Errorf("Regular expression is invalid: missing )")
-	ErrMissingBracket = fmt.Errorf("Regular expression is invalid: missing terminating ] for character class")
-	ErrInvalidEscape  = fmt.Errorf(
-		"Regular expression is invalid: PCRE does not support \\L, \\l, \\N{name}, \\U, or \\u",
-	)
+	ErrOptionNotImplemented = fmt.Errorf("regex: option not implemented")
+	ErrMissingParen         = fmt.Errorf("Regular expression is invalid: missing )")
+	ErrMissingBracket       = fmt.Errorf("Regular expression is invalid: missing terminating ] for character class")
+	ErrInvalidEscape        = fmt.Errorf("Regular expression is invalid: PCRE does not support \\L, \\l, \\N{name}, \\U, or \\u")
 	ErrMissingTerminator    = fmt.Errorf("Regular expression is invalid: syntax error in subpattern name (missing terminator)")
 	ErrUnmatchedParentheses = fmt.Errorf("Regular expression is invalid: unmatched parentheses")
 	ErrTrailingBackslash    = fmt.Errorf("Regular expression is invalid: \\ at end of pattern")
@@ -45,7 +43,6 @@ type Regex struct {
 // Compile returns Go Regexp object.
 func (r Regex) Compile() (*regexp.Regexp, error) {
 	var opts string
-	var stripComments bool
 	for _, o := range r.Options {
 		switch o {
 		case 'i':
@@ -53,24 +50,13 @@ func (r Regex) Compile() (*regexp.Regexp, error) {
 		case 'm':
 			opts += "m"
 		case 'x':
-			stripComments = true
+			return nil, ErrOptionNotImplemented
 		default:
 			continue
 		}
 	}
 
 	expr := r.Pattern
-	if stripComments {
-		for strings.Contains(expr, "#") {
-			commentStart := strings.Index(expr, "#")
-			commentEnd := strings.Index(expr, "\n")
-			if commentEnd == -1 {
-				return nil, ErrMissingParen
-			}
-			expr = expr[:commentStart] + expr[commentEnd+1:]
-		}
-	}
-
 	if opts != "" {
 		expr = "(?" + opts + "s" + ")" + expr
 	} else {
@@ -83,7 +69,7 @@ func (r Regex) Compile() (*regexp.Regexp, error) {
 	}
 
 	if err, ok := err.(*syntax.Error); ok {
-		switch err.Code {
+		switch err.Code { //nolint:exhaustive // all necessary cases covered
 		case syntax.ErrInvalidCharRange:
 			return nil, ErrInvalidClassRange
 		case syntax.ErrInvalidEscape:
@@ -106,10 +92,6 @@ func (r Regex) Compile() (*regexp.Regexp, error) {
 			return nil, ErrTrailingBackslash
 		case syntax.ErrUnexpectedParen:
 			return nil, ErrUnmatchedParentheses
-		case syntax.ErrInternalError, syntax.ErrInvalidCharClass, syntax.ErrInvalidUTF8:
-			return nil, fmt.Errorf("types.Regex.Compile: %w", err)
-		default:
-			return nil, fmt.Errorf("types.Regex.Compile: %w", err)
 		}
 	}
 	return nil, fmt.Errorf("types.Regex.Compile: %w", err)
