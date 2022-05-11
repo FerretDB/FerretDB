@@ -32,6 +32,8 @@ func (r Regex) Compile() (*regexp.Regexp, error) {
 		switch o {
 		case 'i':
 			opts += "i"
+		case 's':
+			opts += "s"
 		default:
 			return nil, fmt.Errorf("types.Regex.Compile: unhandled regex option %v (%v)", o, r)
 		}

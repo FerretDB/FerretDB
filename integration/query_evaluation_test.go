@@ -413,6 +413,11 @@ func TestQueryEvaluationRegex(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t, shareddata.Scalars)
 
+	_, err := collection.InsertMany(ctx, []any{
+		bson.D{{"_id", "regex-multiline"}, {"value", "multi\nline"}},
+	})
+	require.NoError(t, err)
+
 	for name, tc := range map[string]struct {
 		filter      any
 		expectedIDs []any
@@ -425,9 +430,13 @@ func TestQueryEvaluationRegex(t *testing.T) {
 			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "42", Options: "i"}}}}},
 			expectedIDs: []any{"string-double", "string-whole"},
 		},
-		"RegexStringOption": {
+		"RegexStringOptionMatchCaseInsensitive": {
 			filter:      bson.D{{"value", bson.D{{"$regex", "foo"}, {"$options", "i"}}}},
 			expectedIDs: []any{"regex", "string"},
+		},
+		"RegexStringOptionMatchLineEnd": {
+			filter:      bson.D{{"value", bson.D{{"$regex", "m.*line"}, {"$options", "s"}}}},
+			expectedIDs: []any{"regex-multiline"},
 		},
 		"RegexNoSuchField": {
 			filter:      bson.D{{"no-such-field", bson.D{{"$regex", primitive.Regex{Pattern: "foo"}}}}},
