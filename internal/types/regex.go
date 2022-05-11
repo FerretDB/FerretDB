@@ -106,6 +106,8 @@ func (r Regex) Compile() (*regexp.Regexp, error) {
 			return nil, ErrTrailingBackslash
 		case syntax.ErrUnexpectedParen:
 			return nil, ErrUnmatchedParentheses
+		case syntax.ErrInternalError, syntax.ErrInvalidCharClass, syntax.ErrInvalidUTF8:
+			return nil, fmt.Errorf("types.Regex.Compile: %w", err)
 		default:
 			return nil, fmt.Errorf("types.Regex.Compile: %w", err)
 		}
