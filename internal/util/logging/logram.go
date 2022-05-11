@@ -14,10 +14,54 @@
 
 package logging
 
-import "container/ring"
+import (
+	"sync"
+	"time"
 
-var logram = ring.New(1024)
+	"go.uber.org/zap/zapcore"
+)
 
-func GetLogRam() *ring.Ring {
-	return logram
+type record struct {
+	Level      string
+	Time       time.Time
+	LoggerName string
+	Message    string
+	Caller     zapcore.EntryCaller
+	Stack      string
+}
+
+// logRAM structure storage of log records in memory
+type logRAM struct {
+	records map[int64]*record
+	mu      *sync.RWMutex
+}
+
+// NewLogRAM is creating entries log in memory
+func NewLogRAM() *logRAM {
+	return &logRAM{
+		records: make(map[int64]*record),
+	}
+}
+
+// append adding a log entry
+func (l *logRAM) append(id int64, r *record) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if len(l.records) > 1024 {
+		l.delete()
+	}
+
+	l.records[id] = r
+}
+
+// deleting log entry with minimal id
+func (l *logRAM) delete() {
+	var i int64 = 0
+	for k, _ := range l.records {
+		if k > i || i == 0 {
+			i = k
+		}
+	}
+	delete(l.records, i)
 }

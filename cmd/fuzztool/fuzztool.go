@@ -149,7 +149,9 @@ func copyFile(src, dst string) error {
 }
 
 // copyCorpus copies all new corpus files from srcRoot to dstRoot.
-func copyCorpus(srcRoot, dstRoot string, logger *zap.SugaredLogger) {
+func copyCorpus(srcRoot, dstRoot string) {
+	logger := zap.S()
+
 	srcFiles, err := collectFiles(srcRoot, logger)
 	if err != nil {
 		logger.Fatal(err)
@@ -233,5 +235,5 @@ func main() {
 	}
 
 	logger.Infof("Copying from %s to %s.", src, dst)
-	copyCorpus(src, dst, logger)
+	copyCorpus(src, dst)
 }

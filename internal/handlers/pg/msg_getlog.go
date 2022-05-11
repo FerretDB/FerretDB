@@ -36,13 +36,6 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	// logram := logging.GetLogRam()
-	// logram.Do(func(a any) {
-	// 	fmt.Println(logram.Value)
-	// })
-
-	// getLog == "*" -> [{names [global startupWarnings]} {ok 1}]
-
 	if l := document.Map()["getLog"]; l != "startupWarnings" {
 		errMsg := fmt.Sprintf("MsgGetLog: unhandled getLog value %q", l)
 		return nil, common.NewErrorMsg(common.ErrNotImplemented, errMsg)

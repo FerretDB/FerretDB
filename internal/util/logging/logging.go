@@ -31,17 +31,30 @@ func Setup(level zapcore.Level) {
 		log.Fatal(err)
 	}
 
+	logram := NewLogRAM()
+	var id int64 = 0
+
 	logger = logger.WithOptions(zap.Hooks(func(entry zapcore.Entry) error {
-		logram.Value = entry
-		logram = logram.Next()
+		r := &record{
+			Level:      entry.Level.String(),
+			Time:       entry.Time,
+			LoggerName: entry.LoggerName,
+			Message:    entry.Message,
+			Caller:     entry.Caller,
+			Stack:      entry.Stack,
+		}
+
+		id++
+		logram.append(id, r)
+
 		return nil
 	}))
 
-	SetupWithLogger(logger)
+	setupWithLogger(logger)
 }
 
-// SetupWithLogger initializes logging with a given logger and its level.
-func SetupWithLogger(logger *zap.Logger) {
+// setupWithLogger initializes logging with a given logger and its level.
+func setupWithLogger(logger *zap.Logger) {
 	zap.ReplaceGlobals(logger)
 
 	if _, err := zap.RedirectStdLogAt(logger, zap.InfoLevel); err != nil {
