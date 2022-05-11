@@ -415,6 +415,10 @@ func TestQueryEvaluationRegex(t *testing.T) {
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{{"_id", "multiline-string"}, {"value", "bar\nfoo"}},
+		bson.D{
+			{"_id", "document-nested-strings"},
+			{"value", bson.D{{"foo", bson.D{{"bar", "quz"}}}}},
+		},
 	})
 	require.NoError(t, err)
 
@@ -425,6 +429,10 @@ func TestQueryEvaluationRegex(t *testing.T) {
 		"Regex": {
 			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "foo"}}}}},
 			expectedIDs: []any{"multiline-string", "string"},
+		},
+		"RegexNested": {
+			filter:      bson.D{{"value.foo.bar", bson.D{{"$regex", primitive.Regex{Pattern: "quz"}}}}},
+			expectedIDs: []any{"document-nested-strings"},
 		},
 		"RegexWithOption": {
 			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "42", Options: "i"}}}}},
