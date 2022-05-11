@@ -69,7 +69,7 @@ func (r Regex) Compile() (*regexp.Regexp, error) {
 	}
 
 	if err, ok := err.(*syntax.Error); ok {
-		switch err.Code { //nolint:exhaustive // all necessary cases covered
+		switch err.Code {
 		case syntax.ErrInvalidCharRange:
 			return nil, ErrInvalidClassRange
 		case syntax.ErrInvalidEscape:
@@ -92,6 +92,8 @@ func (r Regex) Compile() (*regexp.Regexp, error) {
 			return nil, ErrTrailingBackslash
 		case syntax.ErrUnexpectedParen:
 			return nil, ErrUnmatchedParentheses
+		case syntax.ErrInternalError, syntax.ErrInvalidCharClass, syntax.ErrInvalidUTF8:
+			return nil, fmt.Errorf("types.Regex.Compile: %w", err)
 		}
 	}
 	return nil, fmt.Errorf("types.Regex.Compile: %w", err)
