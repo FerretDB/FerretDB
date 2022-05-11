@@ -123,7 +123,8 @@ func validateScalarProjectionExpression(v any, field string, inclusion, exclusio
 func validateDocProjectionExpression(v *types.Document, depth int, inclusion, exclusion bool) (bool, bool, error) {
 	var err error
 	for _, key := range v.Keys() {
-		if key == "$slice" { // TODO: no check for $slice at the moment
+		// TODO: https://github.com/FerretDB/FerretDB/issues/362 no check for $slice at the moment
+		if key == "$slice" {
 			return false, true, nil
 		}
 
