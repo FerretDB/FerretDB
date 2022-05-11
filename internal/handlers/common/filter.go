@@ -185,6 +185,9 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 		}
 		return true, nil
 
+	case "$comment":
+		return true, nil
+
 	default:
 		msg := fmt.Sprintf(
 			`unknown top level operator: %s. `+
