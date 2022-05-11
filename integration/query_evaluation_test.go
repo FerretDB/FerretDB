@@ -421,6 +421,7 @@ func TestQueryEvaluationRegex(t *testing.T) {
 	for name, tc := range map[string]struct {
 		filter      any
 		expectedIDs []any
+		err         *mongo.CommandError
 	}{
 		"Regex": {
 			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "foo"}}}}},
@@ -442,6 +443,26 @@ func TestQueryEvaluationRegex(t *testing.T) {
 			filter:      bson.D{{"value", bson.D{{"$regex", "^foo"}, {"$options", "m"}}}},
 			expectedIDs: []any{"multiline-string", "string"},
 		},
+		"RegexStringOptionCommentAtTheStart": {
+			filter:      bson.D{{"value", bson.D{{"$regex", "#sample comment\nfoo"}, {"$options", "x"}}}},
+			expectedIDs: []any{"multiline-string", "string"},
+		},
+		"RegexStringOptionCommentInTheMiddle": {
+			filter:      bson.D{{"value", bson.D{{"$regex", "f#sample comment\noo"}, {"$options", "x"}}}},
+			expectedIDs: []any{"multiline-string", "string"},
+		},
+		"RegexStringOptionCommentAtTheEnd": {
+			filter:      bson.D{{"value", bson.D{{"$regex", "foo#sample comment\n"}, {"$options", "x"}}}},
+			expectedIDs: []any{"multiline-string", "string"},
+		},
+		"RegexStringOptionBadCommentAtEnd": {
+			filter: bson.D{{"value", bson.D{{"$regex", "foo#sample comment"}, {"$options", "x"}}}},
+			err: &mongo.CommandError{
+				Code:    51091,
+				Name:    "Location51091",
+				Message: "Regular expression is invalid: missing )",
+			},
+		},
 		"RegexNoSuchField": {
 			filter:      bson.D{{"no-such-field", bson.D{{"$regex", primitive.Regex{Pattern: "foo"}}}}},
 			expectedIDs: []any{},
@@ -460,6 +481,11 @@ func TestQueryEvaluationRegex(t *testing.T) {
 			t.Parallel()
 
 			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			if tc.err != nil {
+				require.Nil(t, tc.expectedIDs)
+				AssertEqualError(t, *tc.err, err)
+				return
+			}
 			require.NoError(t, err)
 
 			var actual []bson.D
