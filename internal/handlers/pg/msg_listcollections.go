@@ -20,6 +20,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -60,10 +61,10 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 
 	collections := types.MakeArray(len(names))
 	for _, n := range names {
-		d := types.MustNewDocument(
+		d := must.NotFail(types.NewDocument(
 			"name", n,
 			"type", "collection",
-		)
+		))
 		if err = collections.Append(d); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -71,14 +72,14 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{types.MustNewDocument(
-			"cursor", types.MustNewDocument(
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"cursor", must.NotFail(types.NewDocument(
 				"id", int64(0),
 				"ns", db+".$cmd.listCollections",
 				"firstBatch", collections,
-			),
+			)),
 			"ok", float64(1),
-		)},
+		))},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)

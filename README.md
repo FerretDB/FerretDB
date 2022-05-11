@@ -1,8 +1,8 @@
 # FerretDB
 
-[![Go](https://github.com/FerretDB/FerretDB/actions/workflows/go.yml/badge.svg)](https://github.com/FerretDB/FerretDB/actions/workflows/go.yml)
-[![Integration](https://github.com/FerretDB/FerretDB/actions/workflows/integration.yml/badge.svg)](https://github.com/FerretDB/FerretDB/actions/workflows/integration.yml)
-[![Docker](https://github.com/FerretDB/FerretDB/actions/workflows/docker.yml/badge.svg)](https://github.com/FerretDB/FerretDB/actions/workflows/docker.yml)
+[![Go](https://github.com/FerretDB/FerretDB/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/FerretDB/FerretDB/actions/workflows/go.yml)
+[![Integration](https://github.com/FerretDB/FerretDB/actions/workflows/integration.yml/badge.svg?branch=main)](https://github.com/FerretDB/FerretDB/actions/workflows/integration.yml)
+[![Docker](https://github.com/FerretDB/FerretDB/actions/workflows/docker.yml/badge.svg?branch=main)](https://github.com/FerretDB/FerretDB/actions/workflows/docker.yml)
 [![codecov](https://codecov.io/gh/FerretDB/FerretDB/branch/main/graph/badge.svg?token=JZ56XFT3DM)](https://codecov.io/gh/FerretDB/FerretDB)
 
 FerretDB (previously MangoDB) was founded to become the de-facto open-source substitute to MongoDB.
@@ -10,26 +10,29 @@ FerretDB is an open-source proxy, converting the MongoDB wire protocol queries t
 
 ## Why do we need FerretDB?
 
-MongoDB was originally an eye-opening technology for many of us developers, empowering us to build applications faster
-than using relational databases. In its early days, its ease-to-use and well-documented drivers made MongoDB one of the
-simplest database solutions available. However, as time passed, MongoDB abandoned its open-source roots; changing the
-license to SSPL - making it unusable for many open source and early stage commercial projects.
+MongoDB was originally an eye-opening technology for many of us developers,
+empowering us to build applications faster than using relational databases.
+In its early days, its ease-to-use and well-documented drivers made MongoDB one of the simplest database solutions available.
+However, as time passed, MongoDB abandoned its open-source roots;
+changing the license to SSPL - making it unusable for many open source and early-stage commercial projects.
 
-Most MongoDB users are not in need of many advanced features offered by MongoDB; however, they are in need of an easy
-to use open-source database solution. Recognizing this, FerretDB is here to fill that gap.
+Most MongoDB users do not require any advanced features offered by MongoDB;
+however, they need an easy-to-use open-source database solution.
+Recognizing this, FerretDB is here to fill that gap.
 
-## Scope
+## Scope and current state
 
 FerretDB will be compatible with MongoDB drivers and will strive to serve as a drop-in replacement for MongoDB.
 
-## Current state
+Currently, the project is in its early stages and welcomes all contributors.
+See our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1)
+and [contributing guidelines](CONTRIBUTING.md).
 
-What you see here is a tech demo - intended to show a proof of concept.
-Over the next couple of months we will be adding more.
-See [this example](https://github.com/FerretDB/example) for a short demonstration.
+### Known differences
 
-FerretDB is in its very early stages and welcomes all contributors.
-See our [CONTRIBUTING.md](CONTRIBUTING.md).
+1. FerretDB uses the same protocol error names and codes, but the exact error messages may be different in some cases.
+
+If you encounter some other difference in behavior, please [join our community](#community) to report a problem.
 
 ## Quickstart
 

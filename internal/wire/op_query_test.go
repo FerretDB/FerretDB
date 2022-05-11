@@ -37,27 +37,27 @@ var queryTestCases = []testCase{{
 		FullCollectionName: "admin.$cmd",
 		NumberToSkip:       0,
 		NumberToReturn:     -1,
-		Query: types.MustNewDocument(
+		Query: must.NotFail(types.NewDocument(
 			"ismaster", true,
-			"client", types.MustNewDocument(
-				"driver", types.MustNewDocument(
+			"client", must.NotFail(types.NewDocument(
+				"driver", must.NotFail(types.NewDocument(
 					"name", "nodejs",
 					"version", "4.0.0-beta.6",
-				),
-				"os", types.MustNewDocument(
+				)),
+				"os", must.NotFail(types.NewDocument(
 					"type", "Darwin",
 					"name", "darwin",
 					"architecture", "x64",
 					"version", "20.6.0",
-				),
+				)),
 				"platform", "Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",
-				"application", types.MustNewDocument(
+				"application", must.NotFail(types.NewDocument(
 					"name", "mongosh 1.0.1",
-				),
-			),
+				)),
+			)),
 			"compression", must.NotFail(types.NewArray("none")),
 			"loadBalanced", false,
-		),
+		)),
 		ReturnFieldsSelector: nil,
 	},
 }, {
@@ -75,27 +75,27 @@ var queryTestCases = []testCase{{
 		FullCollectionName: "admin.$cmd",
 		NumberToSkip:       0,
 		NumberToReturn:     -1,
-		Query: types.MustNewDocument(
+		Query: must.NotFail(types.NewDocument(
 			"ismaster", true,
-			"client", types.MustNewDocument(
-				"driver", types.MustNewDocument(
+			"client", must.NotFail(types.NewDocument(
+				"driver", must.NotFail(types.NewDocument(
 					"name", "nodejs",
 					"version", "4.0.0-beta.6",
-				),
-				"os", types.MustNewDocument(
+				)),
+				"os", must.NotFail(types.NewDocument(
 					"type", "Darwin",
 					"name", "darwin",
 					"architecture", "x64",
 					"version", "20.6.0",
-				),
+				)),
 				"platform", "Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",
-				"application", types.MustNewDocument(
+				"application", must.NotFail(types.NewDocument(
 					"name", "mongosh 1.0.1",
-				),
-			),
+				)),
+			)),
 			"compression", must.NotFail(types.NewArray("none")),
 			"loadBalanced", false,
-		),
+		)),
 		ReturnFieldsSelector: nil,
 	},
 }}
