@@ -16,8 +16,8 @@ package pg
 
 import (
 	"context"
-	"fmt"
 	"io"
+	"strings"
 
 	"github.com/jackc/pgx/v4"
 
@@ -26,11 +26,26 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// sqlParam represents options/parameters used for sql query.
+type sqlParam struct {
+	db         string
+	collection string
+	comment    string
+}
+
 // fetch fetches all documents from the given database and collection.
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/372
-func (h *Handler) fetch(ctx context.Context, db, collection string) ([]*types.Document, error) {
-	sql := fmt.Sprintf(`SELECT _jsonb FROM %s`, pgx.Identifier{db, collection}.Sanitize())
+func (h *Handler) fetch(ctx context.Context, param sqlParam) ([]*types.Document, error) {
+	sql := `SELECT `
+	if param.comment != "" {
+		param.comment = strings.ReplaceAll(param.comment, "/*", "/ *")
+		param.comment = strings.ReplaceAll(param.comment, "*/", "* /")
+
+		sql += `/* ` + param.comment + ` */ `
+	}
+	sql += `_jsonb FROM ` + pgx.Identifier{param.db, param.collection}.Sanitize()
+
 	rows, err := h.pgPool.Query(ctx, sql)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
