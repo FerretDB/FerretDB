@@ -43,14 +43,20 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 	common.Ignored(document, h.l, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
 
-	command := document.Command()
-
-	var db, collection string
-	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	var sp sqlParam
+	if sp.db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
-	if collection, err = common.GetRequiredParam[string](document, command); err != nil {
+	collectionParam, err := document.Get(document.Command())
+	if err != nil {
 		return nil, err
+	}
+	var ok bool
+	if sp.collection, ok = collectionParam.(string); !ok {
+		return nil, common.NewErrorMsg(
+			common.ErrBadValue,
+			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+		)
 	}
 
 	var updates *types.Array
@@ -58,12 +64,12 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	created, err := h.pgPool.EnsureTableExist(ctx, db, collection)
+	created, err := h.pgPool.EnsureTableExist(ctx, sp.db, sp.collection)
 	if err != nil {
 		return nil, err
 	}
 	if created {
-		h.l.Info("Created table.", zap.String("schema", db), zap.String("table", collection))
+		h.l.Info("Created table.", zap.String("schema", sp.db), zap.String("table", sp.collection))
 	}
 
 	var matched, modified int32
@@ -97,7 +103,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		fetchedDocs, err := h.fetch(ctx, db, collection)
+		fetchedDocs, err := h.fetch(ctx, sp)
 		if err != nil {
 			return nil, err
 		}
@@ -135,7 +141,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				"_id", must.NotFail(doc.Get("_id")),
 			))))
 
-			sql := fmt.Sprintf("INSERT INTO %s (_jsonb) VALUES ($1)", pgx.Identifier{db, collection}.Sanitize())
+			sql := fmt.Sprintf("INSERT INTO %s (_jsonb) VALUES ($1)", pgx.Identifier{sp.db, sp.collection}.Sanitize())
 			b, err := fjson.Marshal(doc)
 			if err != nil {
 				return nil, err
@@ -157,7 +163,8 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				return nil, lazyerrors.Error(err)
 			}
 
-			sql := fmt.Sprintf("UPDATE %s SET _jsonb = $1 WHERE _jsonb->'_id' = $2", pgx.Identifier{db, collection}.Sanitize())
+			sql := "UPDATE " + pgx.Identifier{sp.db, sp.collection}.Sanitize() +
+				" SET _jsonb = $1 WHERE _jsonb->'_id' = $2"
 			id := must.NotFail(doc.Get("_id"))
 			tag, err := h.pgPool.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)), must.NotFail(fjson.Marshal(id)))
 			if err != nil {
