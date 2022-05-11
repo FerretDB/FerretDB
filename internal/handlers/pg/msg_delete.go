@@ -149,7 +149,7 @@ func (h *Handler) delete(ctx context.Context, sp sqlParam, resDocs []*types.Docu
 
 	sql := fmt.Sprintf(
 		"DELETE FROM %s WHERE _jsonb->'_id' IN (%s)",
-		pgx.Identifier{db, collection}.Sanitize(), strings.Join(placeholders, ", "),
+		pgx.Identifier{sp.db, sp.collection}.Sanitize(), strings.Join(placeholders, ", "),
 	)
 	tag, err := h.pgPool.Exec(ctx, sql, ids...)
 	if err != nil {
