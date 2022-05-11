@@ -35,7 +35,7 @@ func (r Regex) Compile() (*regexp.Regexp, error) {
 		case 's':
 			opts += "s"
 		default:
-			return nil, fmt.Errorf("types.Regex.Compile: unhandled regex option %v (%v)", o, r)
+			continue
 		}
 	}
 

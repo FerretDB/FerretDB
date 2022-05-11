@@ -446,6 +446,10 @@ func TestQueryEvaluationRegex(t *testing.T) {
 			filter:      bson.D{{"no-such-field", bson.D{{"$regex", "foo"}}}},
 			expectedIDs: []any{},
 		},
+		"RegexBadOption": {
+			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "foo", Options: "123"}}}}},
+			expectedIDs: []any{"string"},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
