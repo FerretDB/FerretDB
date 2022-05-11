@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func TestCommandsDiagnosticGetLog(t *testing.T) {
@@ -29,17 +30,37 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 		databaseName: "admin",
 	})
 
-	var actual bson.D
-	err := collection.Database().RunCommand(ctx, bson.D{{"getLog", "startupWarnings"}}).Decode(&actual)
-	require.NoError(t, err)
+	for name, tc := range map[string]struct {
+		command  bson.D
+		expected map[string]any
+		err      *mongo.CommandError
+	}{
+		"GetLogList": {
+			command:  bson.D{{"getLog", "*"}},
+			expected: map[string]any{"ok": float64(1)},
+		},
+		"GetLogGlobal": {
+			command:  bson.D{{"getLog", "global"}},
+			expected: map[string]any{"ok": float64(1)},
+		},
+		"GetLogStartupWarnings": {
+			command:  bson.D{{"getLog", "startupWarnings"}},
+			expected: map[string]any{"ok": float64(1)},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-	m := actual.Map()
-	t.Log(m)
-
-	assert.Equal(t, float64(1), m["ok"])
-	assert.Equal(t, []string{"totalLinesWritten", "log", "ok"}, CollectKeys(t, actual))
-
-	assert.IsType(t, int32(0), m["totalLinesWritten"])
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+			if tc.err != nil {
+				AssertEqualError(t, *tc.err, err)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
 }
 
 func TestCommandsDiagnosticHostInfo(t *testing.T) {
