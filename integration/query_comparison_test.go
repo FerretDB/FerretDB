@@ -97,6 +97,10 @@ func TestQueryComparisonImplicit(t *testing.T) {
 			filter:      bson.D{{"value", math.SmallestNonzeroFloat64}},
 			expectedIDs: []any{"double-smallest"},
 		},
+		"DoubleNaN": {
+			filter:      bson.D{{"value", math.NaN()}},
+			expectedIDs: []any{"double-nan"},
+		},
 
 		"String": {
 			filter:      bson.D{{"value", "foo"}},
