@@ -51,10 +51,10 @@ const (
 // Compare and contrast with test helpers in testutil package.
 func Compare(v1, v2 any) CompareResult {
 	if v1 == nil {
-		panic("v1 is nil")
+		panic("compare: v1 is nil")
 	}
 	if v2 == nil {
-		panic("v2 is nil")
+		panic("compare: v2 is nil")
 	}
 
 	switch v1 := v1.(type) {
