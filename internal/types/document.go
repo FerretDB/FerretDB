@@ -19,8 +19,6 @@ import (
 	"unicode/utf8"
 
 	"golang.org/x/exp/slices"
-
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // Common interface with bson.Document.
@@ -60,13 +58,6 @@ func ConvertDocument(d document) (*Document, error) {
 	return doc, nil
 }
 
-// MustConvertDocument is a ConvertDocument that panics in case of error.
-//
-// Deprecated: use `must.NotFail(ConvertDocument(...))` instead.
-func MustConvertDocument(d document) *Document {
-	return must.NotFail(ConvertDocument(d))
-}
-
 // NewDocument creates a document with the given key/value pairs.
 func NewDocument(pairs ...any) (*Document, error) {
 	l := len(pairs)
@@ -99,15 +90,6 @@ func NewDocument(pairs ...any) (*Document, error) {
 	}
 
 	return doc, nil
-}
-
-// MustNewDocument is a NewDocument that panics in case of error.
-//
-// TODO Remove this function.
-//
-// Deprecated: use `must.NotFail(NewDocument(...))` instead.
-func MustNewDocument(pairs ...any) *Document {
-	return must.NotFail(NewDocument(pairs...))
 }
 
 func (*Document) compositeType() {}

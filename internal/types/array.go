@@ -42,17 +42,6 @@ func NewArray(values ...any) (*Array, error) {
 	return &Array{s: values}, nil
 }
 
-// MustNewArray is a NewArray that panics in case of error.
-//
-// Deprecated: use `must.NotFail(NewArray(...))` instead.
-func MustNewArray(values ...any) *Array {
-	a, err := NewArray(values...)
-	if err != nil {
-		panic(err)
-	}
-	return a
-}
-
 func (a *Array) compositeType() {}
 
 // DeepCopy returns a deep copy of this Array.

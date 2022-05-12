@@ -36,7 +36,7 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 	m := actual.Map()
 	t.Log(m)
 
-	assert.Equal(t, 1.0, m["ok"])
+	assert.Equal(t, float64(1), m["ok"])
 	assert.Equal(t, []string{"totalLinesWritten", "log", "ok"}, CollectKeys(t, actual))
 
 	assert.IsType(t, int32(0), m["totalLinesWritten"])
@@ -53,7 +53,7 @@ func TestCommandsDiagnosticHostInfo(t *testing.T) {
 	m := actual.Map()
 	t.Log(m)
 
-	assert.Equal(t, 1.0, m["ok"])
+	assert.Equal(t, float64(1), m["ok"])
 	assert.Equal(t, []string{"system", "os", "extra", "ok"}, CollectKeys(t, actual))
 
 	os := m["os"].(bson.D)
@@ -84,10 +84,23 @@ func TestCommandsDiagnosticListCommands(t *testing.T) {
 	m := actual.Map()
 	t.Log(m)
 
-	assert.Equal(t, 1.0, m["ok"])
+	assert.Equal(t, float64(1), m["ok"])
 	assert.Equal(t, []string{"commands", "ok"}, CollectKeys(t, actual))
 
 	commands := m["commands"].(bson.D)
 	listCommands := commands.Map()["listCommands"].(bson.D)
 	assert.NotEmpty(t, listCommands.Map()["help"].(string))
+}
+
+func TestCommandsDiagnosticConnectionStatus(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	var actual bson.D
+	err := collection.Database().RunCommand(ctx, bson.D{{"connectionStatus", "*"}}).Decode(&actual)
+	require.NoError(t, err)
+
+	ok := actual.Map()["ok"]
+
+	assert.Equal(t, float64(1), ok)
 }

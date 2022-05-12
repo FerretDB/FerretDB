@@ -26,6 +26,7 @@ import (
 	"github.com/AlekSi/pointer"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 type bsontype interface {
@@ -38,13 +39,13 @@ type bsontype interface {
 
 //go-sumtype:decl bsontype
 
-//nolint:deadcode // remove later if it is not needed
+//nolint:deadcode,unused // remove later if it is not needed
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/260
 func fromBSON(v bsontype) any {
 	switch v := v.(type) {
 	case *Document:
-		return types.MustConvertDocument(v)
+		return must.NotFail(types.ConvertDocument(v))
 	case *arrayType:
 		return pointer.To(types.Array(*v))
 	case *doubleType:
@@ -76,7 +77,7 @@ func fromBSON(v bsontype) any {
 	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
 }
 
-//nolint:deadcode // remove later if it is not needed
+//nolint:deadcode,unused // remove later if it is not needed
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/260
 func toBSON(v any) bsontype {

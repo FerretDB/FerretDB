@@ -178,7 +178,7 @@ func TestQueryCount(t *testing.T) {
 	}{
 		"CountAllDocuments": {
 			command:  bson.D{{"count", collection.Name()}},
-			response: 43,
+			response: 49,
 		},
 		"CountExactlyOneDocument": {
 			command: bson.D{
@@ -192,7 +192,7 @@ func TestQueryCount(t *testing.T) {
 				{"count", collection.Name()},
 				{"query", bson.D{{"value", bson.D{{"$type", "array"}}}}},
 			},
-			response: 4,
+			response: 6,
 		},
 	} {
 		name, tc := name, tc
@@ -205,7 +205,7 @@ func TestQueryCount(t *testing.T) {
 
 			m := actual.Map()
 
-			assert.Equal(t, 1.0, m["ok"])
+			assert.Equal(t, float64(1), m["ok"])
 
 			keys := CollectKeys(t, actual)
 			assert.Contains(t, keys, "n")
@@ -422,6 +422,115 @@ func TestQueryBadSortType(t *testing.T) {
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 			require.Error(t, err)
 			AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+		})
+	}
+}
+
+func TestQueryExactMatches(t *testing.T) {
+	t.Parallel()
+	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
+	ctx, collection := setup(t, providers...)
+
+	_, err := collection.InsertMany(ctx, []any{
+		bson.D{
+			{"_id", "document-two-fields"},
+			{"foo", "bar"},
+			{"baz", int32(42)},
+		},
+		bson.D{
+			{"_id", "document-value-two-fields"},
+			{"value", bson.D{{"foo", "bar"}, {"baz", int32(42)}}},
+		},
+	})
+	require.NoError(t, err)
+
+	for name, tc := range map[string]struct {
+		filter      bson.D
+		expectedIDs []any
+	}{
+		"Document": {
+			filter:      bson.D{{"foo", "bar"}, {"baz", int32(42)}},
+			expectedIDs: []any{"document-two-fields"},
+		},
+		"DocumentChangedFieldsOrder": {
+			filter:      bson.D{{"baz", int32(42)}, {"foo", "bar"}},
+			expectedIDs: []any{"document-two-fields"},
+		},
+		"DocumentValueFields": {
+			filter:      bson.D{{"value", bson.D{{"foo", "bar"}, {"baz", int32(42)}}}},
+			expectedIDs: []any{"document-value-two-fields"},
+		},
+
+		"Array": {
+			filter:      bson.D{{"value", bson.A{int32(42), "foo", nil}}},
+			expectedIDs: []any{"array-three"},
+		},
+		"ArrayChangedOrder": {
+			filter:      bson.D{{"value", bson.A{int32(42), nil, "foo"}}},
+			expectedIDs: []any{},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			require.NoError(t, err)
+
+			var actual []bson.D
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
+		})
+	}
+}
+
+func TestDotNotation(t *testing.T) {
+	t.Parallel()
+	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
+	ctx, collection := setup(t, providers...)
+
+	_, err := collection.InsertMany(ctx, []any{
+		bson.D{
+			{"_id", "document-deeply-nested"},
+			{
+				"foo",
+				bson.D{{
+					"bar",
+					bson.D{{
+						"baz",
+						bson.D{{"qux", bson.D{{"quz", int32(42)}}}},
+					}},
+				}},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	for name, tc := range map[string]struct {
+		filter      bson.D
+		expectedIDs []any
+	}{
+		"DocumentDeepNested": {
+			filter:      bson.D{{"foo.bar.baz.qux.quz", int32(42)}},
+			expectedIDs: []any{"document-deeply-nested"},
+		},
+		"Document": {
+			filter:      bson.D{{"foo.bar.baz", bson.D{{"qux.quz", int32(42)}}}},
+			expectedIDs: []any{},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			require.NoError(t, err)
+
+			var actual []bson.D
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
 		})
 	}
 }

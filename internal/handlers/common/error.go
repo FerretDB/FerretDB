@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 //go:generate ../../../bin/stringer -linecomment -type ErrorCode
@@ -28,6 +29,8 @@ import (
 type ErrorCode int32
 
 const (
+	errUnset = ErrorCode(0) // Unset
+
 	// For ProtocolError only.
 	errInternalError = ErrorCode(1) // InternalError
 
@@ -39,6 +42,8 @@ const (
 	ErrCommandNotFound   = ErrorCode(59)    // CommandNotFound
 	ErrNotImplemented    = ErrorCode(238)   // NotImplemented
 	ErrSortBadValue      = ErrorCode(15974) // Location15974
+	ErrInvalidArg        = ErrorCode(28667) // Location28667
+	ErrSliceFirstArg     = ErrorCode(28724) // Location28724
 	ErrProjectionInEx    = ErrorCode(31253) // Location31253
 	ErrProjectionExIn    = ErrorCode(31254) // Location31254
 	ErrRegexOptions      = ErrorCode(51075) // Location51075
@@ -57,9 +62,6 @@ type Error struct {
 //
 // Code can't be zero, err can't be nil.
 func NewError(code ErrorCode, err error) error {
-	if code == 0 {
-		panic("code is 0")
-	}
 	if err == nil {
 		panic("err is nil")
 	}
@@ -93,12 +95,15 @@ func (e *Error) Unwrap() error {
 
 // Document returns wire protocol error document.
 func (e *Error) Document() *types.Document {
-	return types.MustNewDocument(
+	d := must.NotFail(types.NewDocument(
 		"ok", float64(0),
 		"errmsg", e.err.Error(),
-		"code", int32(e.code),
-		"codeName", e.code.String(),
-	)
+	))
+	if e.code != errUnset {
+		must.NoError(d.Set("code", int32(e.code)))
+		must.NoError(d.Set("codeName", e.code.String()))
+	}
+	return d
 }
 
 // ProtocolError converts any error to wire protocol error.
