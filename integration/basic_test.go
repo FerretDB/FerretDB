@@ -67,7 +67,7 @@ func TestFindNothing(t *testing.T) {
 
 func TestInsertFind(t *testing.T) {
 	t.Parallel()
-	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites, shareddata.BigNumbersData}
+	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
 	ctx, collection := setup(t, providers...)
 
 	var docs []bson.D
@@ -92,4 +92,33 @@ func TestInsertFind(t *testing.T) {
 			AssertEqualDocuments(t, expected, actual[0])
 		})
 	}
+}
+
+func TestFindCommentMethod(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t, shareddata.Scalars)
+	name := collection.Name()
+	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
+	require.NoError(t, err)
+	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
+
+	var doc bson.D
+	opts := options.FindOne().SetComment(comment)
+	err = collection.FindOne(ctx, bson.D{{"_id", "string"}}, opts).Decode(&doc)
+	require.NoError(t, err)
+	assert.Contains(t, databaseNames, name)
+}
+
+func TestFindCommentQuery(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t, shareddata.Scalars)
+	name := collection.Name()
+	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
+	require.NoError(t, err)
+	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
+
+	var doc bson.D
+	err = collection.FindOne(ctx, bson.M{"_id": "string", "$comment": comment}).Decode(&doc)
+	require.NoError(t, err)
+	assert.Contains(t, databaseNames, name)
 }

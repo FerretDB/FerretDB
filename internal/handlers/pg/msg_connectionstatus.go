@@ -17,44 +17,20 @@ package pg
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgDropDatabase removes the current database.
-func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	common.Ignored(document, h.l, "writeConcern", "comment")
-
-	var db string
-	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-
-	res := must.NotFail(types.NewDocument())
-	err = h.pgPool.DropSchema(ctx, db)
-	switch err {
-	case nil:
-		res.Set("dropped", db)
-	case pgdb.ErrNotExist:
-		// nothing
-	default:
-		return nil, lazyerrors.Error(err)
-	}
-
-	res.Set("ok", float64(1))
-
+// MsgConnectionStatus returns information about the current connection,
+// specifically the state of authenticated users and their available permissions.
+func (h *Handler) MsgConnectionStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{res},
+	err := reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"ok", float64(1),
+		))},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)

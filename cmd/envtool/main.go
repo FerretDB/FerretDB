@@ -232,7 +232,7 @@ func printDiagnosticData(runError error, logger *zap.SugaredLogger) {
 	if composeError != nil {
 		composeVersion = composeError.Error()
 	} else {
-		composeVersion = string(buffer.Bytes())
+		composeVersion = buffer.String()
 	}
 	buffer.Reset()
 
@@ -241,7 +241,7 @@ func printDiagnosticData(runError error, logger *zap.SugaredLogger) {
 	if dockerError != nil {
 		dockerVersion = dockerError.Error()
 	} else {
-		dockerVersion = string(buffer.Bytes())
+		dockerVersion = buffer.String()
 	}
 
 	buffer.Reset()
@@ -251,7 +251,7 @@ func printDiagnosticData(runError error, logger *zap.SugaredLogger) {
 	if gitError != nil {
 		gitVersion = gitError.Error()
 	} else {
-		gitVersion = string(buffer.Bytes())
+		gitVersion = buffer.String()
 	}
 
 	info := version.Get()

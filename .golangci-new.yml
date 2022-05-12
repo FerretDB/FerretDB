@@ -1,0 +1,112 @@
+---
+# New or experimental linters that should pass (or be reconfigured) for new code.
+
+run:
+  timeout: 2m
+
+linters-settings:
+
+linters:
+  enable-all: true
+  disable:
+    # checked by the other configuration
+    - asciicheck
+    - depguard
+    - exhaustive
+    - gci
+    - goconst
+    - godot
+    - godox
+    - goheader
+    - goimports
+    - gosimple
+    - govet
+    - ineffassign
+    - lll
+    - misspell
+    - nolintlint
+    - staticcheck
+    - unused
+    - whitespace
+
+    # TODO configure and enable one by one
+    - bidichk
+    - containedctx
+    - cyclop
+    - deadcode
+    - decorder
+    - dogsled
+    - dupl
+    - durationcheck
+    - errcheck
+    - errchkjson
+    - errname
+    - errorlint
+    - execinquery
+    - exhaustivestruct
+    - exhaustruct
+    - exportloopref
+    - forbidigo
+    - forcetypeassert
+    - funlen
+    - gochecknoglobals
+    - gochecknoinits
+    - gocognit
+    - gocritic
+    - gocyclo
+    - goerr113
+    - gofmt
+    - gofumpt
+    - gomnd
+    - gomoddirectives
+    - gomodguard
+    - goprintffuncname
+    - gosec
+    - grouper
+    - ifshort
+    - importas
+    - ireturn
+    - maintidx
+    - makezero
+    - nakedret
+    - nestif
+    - nilnil
+    - nonamedreturns
+    - nosprintfhostport
+    - paralleltest
+    - prealloc
+    - predeclared
+    - promlinter
+    - revive
+    - stylecheck
+    - tagliatelle
+    - tenv
+    - thelper
+    - typecheck
+    - unconvert
+    - varcheck
+    - varnamelen
+    - wrapcheck
+
+    # TODO https://github.com/golangci/golangci-lint/issues/2649
+    - bodyclose
+    - contextcheck
+    - nilerr
+    - noctx
+    - rowserrcheck
+    - sqlclosecheck
+    - structcheck
+    - tparallel
+    - unparam
+    - wastedassign
+
+    - golint      # deprecated
+    - interfacer  # deprecated
+    - maligned    # deprecated
+    - nlreturn    # too annoying
+    - scopelint   # deprecated
+    - testpackage # we test internals
+    - wsl         # too annoying
+
+issues:
+  exclude-use-default: false
