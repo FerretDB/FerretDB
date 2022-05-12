@@ -91,3 +91,16 @@ func TestCommandsDiagnosticListCommands(t *testing.T) {
 	listCommands := commands.Map()["listCommands"].(bson.D)
 	assert.NotEmpty(t, listCommands.Map()["help"].(string))
 }
+
+func TestCommandsDiagnosticConnectionStatus(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	var actual bson.D
+	err := collection.Database().RunCommand(ctx, bson.D{{"connectionStatus", "*"}}).Decode(&actual)
+	require.NoError(t, err)
+
+	ok := actual.Map()["ok"]
+
+	assert.Equal(t, float64(1), ok)
+}

@@ -46,9 +46,9 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"Array": {
 			value: primitive.A{1, 5},
 			expectedIDs: []any{
-				"double-negative-zero", "double-zero",
+				"double-big", "double-negative-zero", "double-zero",
 				"int32-min", "int32-zero",
-				"int64-min", "int64-zero",
+				"int64-big", "int64-min", "int64-zero",
 			},
 		},
 		"ArrayNegativeBitPositionValue": {
@@ -79,9 +79,9 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"DoubleWhole": {
 			value: 2.0,
 			expectedIDs: []any{
-				"double-negative-zero", "double-zero",
+				"double-big", "double-negative-zero", "double-zero",
 				"int32-min", "int32-zero",
-				"int64-min", "int64-zero",
+				"int64-big", "int64-min", "int64-zero",
 			},
 		},
 		"DoubleNegativeValue": {
@@ -105,34 +105,34 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"Binary": {
 			value: primitive.Binary{Data: []byte{2}},
 			expectedIDs: []any{
-				"double-negative-zero", "double-zero",
+				"double-big", "double-negative-zero", "double-zero",
 				"int32-min", "int32-zero",
-				"int64-min", "int64-zero",
+				"int64-big", "int64-min", "int64-zero",
 			},
 		},
 		"BinaryWithZeroBytes": {
 			value: primitive.Binary{Data: []byte{0, 0, 2}},
 			expectedIDs: []any{
-				"double-negative-zero", "double-whole", "double-zero",
+				"double-big", "double-negative-zero", "double-whole", "double-zero",
 				"int32", "int32-min", "int32-zero",
-				"int64", "int64-min", "int64-zero",
+				"int64", "int64-big", "int64-min", "int64-zero",
 			},
 		},
 		"Binary9Bytes": {
 			value: primitive.Binary{Data: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9}},
 			expectedIDs: []any{
-				"double-negative-zero", "double-whole", "double-zero",
+				"double-big", "double-negative-zero", "double-whole", "double-zero",
 				"int32", "int32-zero",
-				"int64", "int64-zero",
+				"int64", "int64-big", "int64-zero",
 			},
 		},
 
 		"Int32": {
 			value: int32(2),
 			expectedIDs: []any{
-				"double-negative-zero", "double-zero",
+				"double-big", "double-negative-zero", "double-zero",
 				"int32-min", "int32-zero",
-				"int64-min", "int64-zero",
+				"int64-big", "int64-min", "int64-zero",
 			},
 		},
 		"Int32NegativeValue": {
@@ -322,9 +322,9 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		"Array": {
 			value: primitive.A{1, 5},
 			expectedIDs: []any{
-				"double-negative-zero", "double-zero",
+				"double-big", "double-negative-zero", "double-zero",
 				"int32-min", "int32-zero",
-				"int64-min", "int64-zero",
+				"int64-big", "int64-min", "int64-zero",
 			},
 		},
 		"ArrayNegativeBitPositionValue": {
@@ -355,9 +355,9 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		"DoubleWhole": {
 			value: 2.0,
 			expectedIDs: []any{
-				"double-negative-zero", "double-zero",
+				"double-big", "double-negative-zero", "double-zero",
 				"int32-min", "int32-zero",
-				"int64-min", "int64-zero",
+				"int64-big", "int64-min", "int64-zero",
 			},
 		},
 		"DoubleNegativeValue": {
@@ -381,26 +381,26 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		"Binary": {
 			value: primitive.Binary{Data: []byte{2}},
 			expectedIDs: []any{
-				"double-negative-zero", "double-zero",
+				"double-big", "double-negative-zero", "double-zero",
 				"int32-min", "int32-zero",
-				"int64-min", "int64-zero",
+				"int64-big", "int64-min", "int64-zero",
 			},
 		},
 		"BinaryWithZeroBytes": {
 			value: primitive.Binary{Data: []byte{0, 0, 2}},
 			expectedIDs: []any{
-				"double-negative-zero", "double-whole", "double-zero",
+				"double-big", "double-negative-zero", "double-whole", "double-zero",
 				"int32", "int32-min", "int32-zero",
-				"int64", "int64-min", "int64-zero",
+				"int64", "int64-big", "int64-min", "int64-zero",
 			},
 		},
 
 		"Int32": {
 			value: int32(2),
 			expectedIDs: []any{
-				"double-negative-zero", "double-zero",
+				"double-big", "double-negative-zero", "double-zero",
 				"int32-min", "int32-zero",
-				"int64-min", "int64-zero",
+				"int64-big", "int64-min", "int64-zero",
 			},
 		},
 		"Int32NegativeValue": {
@@ -415,9 +415,9 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		"Int64Max": {
 			value: math.MaxInt64,
 			expectedIDs: []any{
-				"double-negative-zero", "double-whole", "double-zero",
+				"double-big", "double-negative-zero", "double-whole", "double-zero",
 				"int32", "int32-max", "int32-min", "int32-zero",
-				"int64", "int64-min", "int64-zero",
+				"int64", "int64-big", "int64-min", "int64-zero",
 			},
 		},
 		"Int64NegativeValue": {
@@ -553,9 +553,9 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 		"Int64Max": {
 			value: math.MaxInt64,
 			expectedIDs: []any{
-				"double-whole",
+				"double-big", "double-whole",
 				"int32", "int32-max", "int32-min",
-				"int64", "int64-max",
+				"int64", "int64-big", "int64-max",
 			},
 		},
 		"Int64NegativeValue": {

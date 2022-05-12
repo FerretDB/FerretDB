@@ -35,6 +35,7 @@ var Scalars = &Values[string]{
 		"double-positive-infinity": math.Inf(+1),
 		"double-negative-infinity": math.Inf(-1),
 		"double-nan":               math.NaN(),
+		"double-big":               float64(2 << 60),
 
 		"string":        "foo",
 		"string-double": "42.13",
@@ -79,6 +80,7 @@ var Scalars = &Values[string]{
 		"int64-zero": int64(0),
 		"int64-max":  int64(math.MaxInt64),
 		"int64-min":  int64(math.MinInt64),
+		"int64-big":  int64(2 << 61),
 
 		// no 128-bit decimal floating point (yet)
 
