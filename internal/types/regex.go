@@ -49,6 +49,8 @@ func (r Regex) Compile() (*regexp.Regexp, error) {
 			opts += "i"
 		case 'm':
 			opts += "m"
+		case 's':
+			opts += "s"
 		case 'x':
 			// TODO: https://github.com/FerretDB/FerretDB/issues/592
 			return nil, ErrOptionNotImplemented
@@ -59,9 +61,7 @@ func (r Regex) Compile() (*regexp.Regexp, error) {
 
 	expr := r.Pattern
 	if opts != "" {
-		expr = "(?" + opts + "s" + ")" + expr
-	} else {
-		expr = "(?" + "s" + ")" + expr
+		expr = "(?" + opts + ")" + expr
 	}
 
 	re, err := regexp.Compile(expr)
