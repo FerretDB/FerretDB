@@ -48,6 +48,7 @@ const (
 	ErrProjectionInEx    = ErrorCode(31253) // Location31253
 	ErrProjectionExIn    = ErrorCode(31254) // Location31254
 	ErrRegexOptions      = ErrorCode(51075) // Location51075
+	ErrRegexMissingParen = ErrorCode(51091) // Location51091
 )
 
 // Error represents wire protocol error.
