@@ -100,6 +100,10 @@ type Handler interface {
 	// CmdQuery runs query operation command.
 	CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error)
 
+	// MsgConnectionStatus information about the current connection,
+	// specifically the state of authenticated users and their available permissions.
+	MsgConnectionStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
 	// Close prepares handler for graceful shutdown: closes connections, channels etc.
 	Close()
 }
