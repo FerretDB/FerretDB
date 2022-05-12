@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -71,4 +72,81 @@ func TestUpdateUpsert(t *testing.T) {
 	err = collection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&doc)
 	require.NoError(t, err)
 	AssertEqualDocuments(t, bson.D{{"_id", id}, {"foo", "qux"}}, doc)
+}
+
+func TestUpdateIncOperatorErrors(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		filter bson.D
+		update bson.D
+		err    *mongo.WriteError
+	}{
+		"BadIncType": {
+			filter: bson.D{{"_id", "document-composite"}},
+			update: bson.D{{"$inc", bson.D{{"value", "bad value"}}}},
+			err: &mongo.WriteError{
+				Code:    14,
+				Message: `Cannot increment with non-numeric argument: {value: "bad value"}`,
+			},
+		},
+		"IncOnNullValue": {
+			filter: bson.D{{"_id", "document-null"}},
+			update: bson.D{{"$inc", bson.D{{"value.foo", int32(1)}}}},
+			err: &mongo.WriteError{
+				Code:    14,
+				Message: `Cannot apply $inc to a value of non-numeric type. {_id: "document-null"} has the field 'foo' of non-numeric type null`,
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup(t, shareddata.Composites)
+
+			_, err := collection.UpdateOne(ctx, tc.filter, tc.update)
+			if tc.err != nil {
+				AssertEqualWriteError(t, tc.err, err)
+				return
+			}
+			require.NoError(t, err)
+
+			var actual bson.D
+			err = collection.FindOne(ctx, tc.filter).Decode(&actual)
+			require.NoError(t, err)
+
+			t.Log(actual)
+		})
+	}
+}
+
+func TestUpdateIncOperator(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		filter bson.D
+		update bson.D
+		result bson.D
+	}{
+		"IncIntValueWithFloatIncrement": {
+			filter: bson.D{{"_id", "document"}},
+			update: bson.D{{"$inc", bson.D{{"value.foo", math.NaN()}}}},
+			result: bson.D{{"_id", "document"}, {"value", bson.D{{"foo", math.NaN()}}}},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup(t, shareddata.Composites)
+
+			_, err := collection.UpdateOne(ctx, tc.filter, tc.update)
+			require.NoError(t, err)
+
+			var actual bson.D
+			err = collection.FindOne(ctx, tc.filter).Decode(&actual)
+			require.NoError(t, err)
+
+			AssertEqualDocuments(t, tc.result, actual)
+		})
+	}
 }

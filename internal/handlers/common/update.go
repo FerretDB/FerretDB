@@ -40,7 +40,6 @@ func UpdateDocument(doc, update *types.Document) error {
 					return lazyerrors.Error(err)
 				}
 			}
-
 		default:
 			return NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
 		}
