@@ -45,12 +45,8 @@ func (r Regex) Compile() (*regexp.Regexp, error) {
 	var opts string
 	for _, o := range r.Options {
 		switch o {
-		case 'i':
-			opts += "i"
-		case 'm':
-			opts += "m"
-		case 's':
-			opts += "s"
+		case 'i', 'm', 's':
+			opts += string(o)
 		case 'x':
 			// TODO: https://github.com/FerretDB/FerretDB/issues/592
 			return nil, ErrOptionNotImplemented
