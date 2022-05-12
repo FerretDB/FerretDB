@@ -90,18 +90,18 @@ func TestUpdateIncOperatorErrors(t *testing.T) {
 			},
 		},
 		"IncOnNullValue": {
-			filter: bson.D{{"_id", "document-null"}},
-			update: bson.D{{"$inc", bson.D{{"value.foo", int32(1)}}}},
+			filter: bson.D{{"_id", "string"}},
+			update: bson.D{{"$inc", bson.D{{"value", int32(1)}}}},
 			err: &mongo.WriteError{
 				Code:    14,
-				Message: `Cannot apply $inc to a value of non-numeric type. {_id: "document-null"} has the field 'foo' of non-numeric type null`,
+				Message: `Cannot apply $inc to a value of non-numeric type. {_id: "string"} has the field 'value' of non-numeric type string`,
 			},
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t, shareddata.Composites)
+			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 			_, err := collection.UpdateOne(ctx, tc.filter, tc.update)
 			if tc.err != nil {
@@ -161,6 +161,11 @@ func TestUpdateIncOperator(t *testing.T) {
 			filter: bson.D{{"_id", "int64"}},
 			update: bson.D{{"$inc", bson.D{{"value", int64(1)}}}},
 			result: bson.D{{"_id", "int64"}, {"value", int64(43)}},
+		},
+		"LongNegativeIncrement": {
+			filter: bson.D{{"_id", "int64"}},
+			update: bson.D{{"$inc", bson.D{{"value", int64(-1)}}}},
+			result: bson.D{{"_id", "int64"}, {"value", int64(41)}},
 		},
 
 		"NotExistentField": {
