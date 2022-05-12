@@ -1,6 +1,9 @@
 ---
 # New or experimental linters that should pass (or be reconfigured) for new code.
 
+run:
+  timeout: 2m
+
 linters-settings:
 
 linters:
