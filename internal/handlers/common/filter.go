@@ -511,8 +511,11 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 // for pattern matching strings in queries, even if the strings are in an array.
 func filterFieldRegex(fieldValue any, regex types.Regex) (bool, error) {
 	re, err := regex.Compile()
+	if err != nil && err == types.ErrOptionNotImplemented {
+		return false, NewErrorMsg(ErrNotImplemented, `option 'x' not implemented`)
+	}
 	if err != nil {
-		return false, err
+		return false, NewError(ErrRegexMissingParen, err)
 	}
 
 	switch fieldValue := fieldValue.(type) {
