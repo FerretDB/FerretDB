@@ -15,6 +15,7 @@
 package logging
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -40,7 +41,7 @@ type logRAM struct {
 // NewLogRAM is creating entries log in memory.
 func NewLogRAM(size int64) *logRAM {
 	if size < 1 {
-		size = 1
+		panic(fmt.Sprintf("logram size %d", size))
 	}
 
 	return &logRAM{
@@ -50,7 +51,7 @@ func NewLogRAM(size int64) *logRAM {
 	}
 }
 
-// append adding entry in logram.
+// append is adding entry in logram.
 func (l *logRAM) append(entry zapcore.Entry) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -67,18 +68,25 @@ func (l *logRAM) append(entry zapcore.Entry) {
 	l.counter = (l.counter + 1) % l.size
 }
 
+// getLogRAM returns entrys from logRAM
 func (l *logRAM) getLogRAM() (entrys []zapcore.Entry) {
-	for _, r := range l.log {
-		if r != nil {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+
+	for i := int64(0); i < l.size; i++ {
+		k := (i + l.counter) % l.size
+
+		if l.log[k] != nil {
 			e := zapcore.Entry{
-				Level:      r.Level,
-				Time:       r.Time,
-				LoggerName: r.LoggerName,
-				Message:    r.Message,
-				Stack:      r.Stack,
+				Level:      l.log[k].Level,
+				Time:       l.log[k].Time,
+				LoggerName: l.log[k].LoggerName,
+				Message:    l.log[k].Message,
+				Stack:      l.log[k].Stack,
 			}
 			entrys = append(entrys, e)
 		}
 	}
+
 	return
 }
