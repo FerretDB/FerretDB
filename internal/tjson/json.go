@@ -24,6 +24,7 @@ import (
 	"github.com/AlekSi/pointer"
 	jsoniter "github.com/json-iterator/go"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -39,12 +40,12 @@ type tjsontype interface {
 //go-sumtype:decl tjsontype
 
 // fromTJSON converts tjsontype value to matching built-in or types' package value.
-func fromTJSON(v tjsontype) any {
+func fromTJSON(v tjsontype) (any, error) {
 	switch v := v.(type) {
 	case *documentType:
 		return pointer.To(types.Document(*v))
-	case *arrayType:
-		return pointer.To(types.Array(*v))
+	// case *arrayType:
+
 	case *doubleType:
 		return float64(*v)
 	case *stringType:
@@ -61,12 +62,15 @@ func fromTJSON(v tjsontype) any {
 		return types.Null
 	case *regexType:
 		return types.Regex(*v)
-	case *int32Type:
-		return int32(*v)
+	// case *int32Type:
+
 	case *timestampType:
 		return types.Timestamp(*v)
-	case *int64Type:
-		return int64(*v)
+	default:
+		return nil, common.NewErrorMsg(
+			common.ErrNotImplemented,
+			"int64 not supported yet",
+		)
 	}
 
 	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work

@@ -33,9 +33,8 @@ func (dt *dateTimeType) String() string {
 	return time.Time(*dt).Format(time.RFC3339Nano)
 }
 
-type dateTimeJSON struct {
-	D int64 `json:"$d"`
-}
+// string in RFC 3339
+type dateTimeJSON string
 
 // UnmarshalJSON implements tjsontype interface.
 func (dt *dateTimeType) UnmarshalJSON(data []byte) error {
@@ -55,16 +54,19 @@ func (dt *dateTimeType) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	// TODO Use .UTC(): https://github.com/FerretDB/FerretDB/issues/43
-	*dt = dateTimeType(time.UnixMilli(o.D))
+	t, err := time.Parse(time.RFC3339, string(o))
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	*dt = dateTimeType(t)
 	return nil
 }
 
 // MarshalJSON implements tjsontype interface.
 func (dt *dateTimeType) MarshalJSON() ([]byte, error) {
-	res, err := json.Marshal(dateTimeJSON{
-		D: time.Time(*dt).UnixMilli(),
-	})
+
+	res, err := json.Marshal(dateTimeJSON(time.Time(*dt).UTC().Format(time.RFC3339)))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
