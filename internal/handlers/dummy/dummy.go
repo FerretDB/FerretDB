@@ -160,6 +160,12 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 	return nil, common.NewErrorMsg(common.ErrNotImplemented, "I'm a dummy, not a handler")
 }
 
+// MsgConnectionStatus information about the current connection,
+// specifically the state of authenticated users and their available permissions.
+func (h *Handler) MsgConnectionStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	return nil, common.NewErrorMsg(common.ErrNotImplemented, "I'm a dummy, not a handler")
+}
+
 // Close prepares handler for graceful shutdown: closes connections, channels etc.
 func (h *Handler) Close() {}
 
