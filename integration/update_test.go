@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -128,16 +127,58 @@ func TestUpdateIncOperator(t *testing.T) {
 		update bson.D
 		result bson.D
 	}{
-		"IncIntValueWithFloatIncrement": {
+		"DoubleDoubleIncrement": {
+			filter: bson.D{{"_id", "double"}},
+			update: bson.D{{"$inc", bson.D{{"value", float64(42.13)}}}},
+			result: bson.D{{"_id", "double"}, {"value", float64(84.26)}},
+		},
+		"DoubleDoubleNegativeIncrement": {
+			filter: bson.D{{"_id", "double"}},
+			update: bson.D{{"$inc", bson.D{{"value", float64(-42.13)}}}},
+			result: bson.D{{"_id", "double"}, {"value", float64(0)}},
+		},
+		"DoubleIncrementIntField": {
+			filter: bson.D{{"_id", "int32"}},
+			update: bson.D{{"$inc", bson.D{{"value", float64(1.13)}}}},
+			result: bson.D{{"_id", "int32"}, {"value", float64(43.13)}},
+		},
+		"DoubleIntIncrement": {
+			filter: bson.D{{"_id", "double"}},
+			update: bson.D{{"$inc", bson.D{{"value", int32(1)}}}},
+			result: bson.D{{"_id", "double"}, {"value", float64(43.13)}},
+		},
+		"Int": {
+			filter: bson.D{{"_id", "int32"}},
+			update: bson.D{{"$inc", bson.D{{"value", int32(1)}}}},
+			result: bson.D{{"_id", "int32"}, {"value", int32(43)}},
+		},
+		"IntNegativeIncrement": {
+			filter: bson.D{{"_id", "int32"}},
+			update: bson.D{{"$inc", bson.D{{"value", int32(-1)}}}},
+			result: bson.D{{"_id", "int32"}, {"value", int32(41)}},
+		},
+		"Long": {
+			filter: bson.D{{"_id", "int64"}},
+			update: bson.D{{"$inc", bson.D{{"value", int64(1)}}}},
+			result: bson.D{{"_id", "int64"}, {"value", int64(43)}},
+		},
+
+		"NotExistentField": {
+			filter: bson.D{{"_id", "int32"}},
+			update: bson.D{{"$inc", bson.D{{"foo", int32(1)}}}},
+			result: bson.D{{"_id", "int32"}, {"value", int32(42)}, {"foo", int32(1)}},
+		},
+
+		"DotNotationDouble": {
 			filter: bson.D{{"_id", "document"}},
-			update: bson.D{{"$inc", bson.D{{"value.foo", math.NaN()}}}},
-			result: bson.D{{"_id", "document"}, {"value", bson.D{{"foo", math.NaN()}}}},
+			update: bson.D{{"$inc", bson.D{{"value.foo", int32(1)}}}},
+			result: bson.D{{"_id", "document"}, {"value", bson.D{{"foo", int32(43)}}}},
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t, shareddata.Composites)
+			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 			_, err := collection.UpdateOne(ctx, tc.filter, tc.update)
 			require.NoError(t, err)
