@@ -72,6 +72,29 @@ func TestQueryLogicalAnd(t *testing.T) {
 			},
 			expectedIDs: []any{},
 		},
+		"AndAnd": {
+			filter: bson.A{
+				bson.D{{"$and", bson.A{
+					bson.D{{"value", bson.D{{"$gt", int32(0)}}}},
+					bson.D{{"value", bson.D{{"$lte", int32(42)}}}},
+				}}},
+				bson.D{{"value", bson.D{{"$type", "int"}}}},
+			},
+			expectedIDs: []any{"int32"},
+		},
+		"AndAndAnd": {
+			filter: bson.A{
+				bson.D{{"$and", bson.A{
+					bson.D{{"value", bson.D{{"$gt", int32(0)}}}},
+					bson.D{{"$and", bson.A{
+						bson.D{{"value", bson.D{{"$lt", int32(43)}}}},
+						bson.D{{"value", bson.D{{"$eq", int32(42)}}}},
+					}}},
+				}}},
+				bson.D{{"value", bson.D{{"$type", "int"}}}},
+			},
+			expectedIDs: []any{"int32"},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -112,6 +135,29 @@ func TestQueryLogicalOr(t *testing.T) {
 				"double-negative-infinity", "double-negative-zero",
 				"double-smallest", "double-zero",
 				"int32-min", "int32-zero", "int64-min", "int64-zero",
+			},
+		},
+		"OrAnd": {
+			filter: bson.A{
+				bson.D{{"$and", bson.A{
+					bson.D{},
+					bson.D{},
+				}}},
+				bson.D{},
+			},
+			expectedIDs: []any{
+				"binary", "binary-empty",
+				"bool-false", "bool-true",
+				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
+				"double", "double-big", "double-max", "double-nan", "double-negative-infinity", "double-negative-zero",
+				"double-positive-infinity", "double-smallest", "double-whole", "double-zero",
+				"int32", "int32-max", "int32-min", "int32-zero",
+				"int64", "int64-big", "int64-max", "int64-min", "int64-zero",
+				"null",
+				"objectid", "objectid-empty",
+				"regex", "regex-empty",
+				"string", "string-double", "string-empty", "string-whole",
+				"timestamp", "timestamp-i",
 			},
 		},
 		"BadInput": {
@@ -233,16 +279,16 @@ func TestQueryLogicalNot(t *testing.T) {
 		"Not": {
 			filter: bson.D{{"value", bson.D{{"$not", bson.D{{"$eq", 42}}}}}},
 			expectedIDs: []any{
-				"array-embedded", "array-empty",
+				"array-embedded", "array-empty", "array-null",
 				"binary", "binary-empty",
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
-				"document", "document-composite", "document-empty",
-				"double", "double-max", "double-nan",
+				"document", "document-composite", "document-composite-reverse", "document-empty", "document-null",
+				"double", "double-big", "double-max", "double-nan",
 				"double-negative-infinity", "double-negative-zero",
 				"double-positive-infinity", "double-smallest", "double-zero",
 				"int32-max", "int32-min", "int32-zero",
-				"int64-max", "int64-min", "int64-zero",
+				"int64-big", "int64-max", "int64-min", "int64-zero",
 				"null",
 				"objectid", "objectid-empty",
 				"regex", "regex-empty",
@@ -265,11 +311,11 @@ func TestQueryLogicalNot(t *testing.T) {
 				"binary", "binary-empty",
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
-				"document", "document-composite", "document-empty",
-				"double", "double-max", "double-nan", "double-negative-infinity", "double-negative-zero",
+				"document", "document-composite", "document-composite-reverse", "document-empty", "document-null",
+				"double", "double-big", "double-max", "double-nan", "double-negative-infinity", "double-negative-zero",
 				"double-positive-infinity", "double-smallest", "double-whole", "double-zero",
 				"int32", "int32-max", "int32-min", "int32-zero",
-				"int64", "int64-max", "int64-min", "int64-zero",
+				"int64", "int64-big", "int64-max", "int64-min", "int64-zero",
 				"objectid", "objectid-empty",
 				"regex", "regex-empty",
 				"string", "string-double", "string-empty", "string-whole",
@@ -279,15 +325,15 @@ func TestQueryLogicalNot(t *testing.T) {
 		"ValueRegex": {
 			filter: bson.D{{"value", bson.D{{"$not", primitive.Regex{Pattern: "^fo"}}}}},
 			expectedIDs: []any{
-				"array", "array-embedded", "array-empty",
+				"array", "array-embedded", "array-empty", "array-null",
 				"binary", "binary-empty",
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
-				"document", "document-composite", "document-empty",
-				"double", "double-max", "double-nan", "double-negative-infinity", "double-negative-zero",
+				"document", "document-composite", "document-composite-reverse", "document-empty", "document-null",
+				"double", "double-big", "double-max", "double-nan", "double-negative-infinity", "double-negative-zero",
 				"double-positive-infinity", "double-smallest", "double-whole", "double-zero",
 				"int32", "int32-max", "int32-min", "int32-zero",
-				"int64", "int64-max", "int64-min", "int64-zero",
+				"int64", "int64-big", "int64-max", "int64-min", "int64-zero",
 				"null",
 				"objectid", "objectid-empty",
 				"regex", "regex-empty",
@@ -298,16 +344,16 @@ func TestQueryLogicalNot(t *testing.T) {
 		"NoSuchFieldRegex": {
 			filter: bson.D{{"no-such-field", bson.D{{"$not", primitive.Regex{Pattern: "/someregex/"}}}}},
 			expectedIDs: []any{
-				"array", "array-embedded", "array-empty", "array-three",
+				"array", "array-embedded", "array-empty", "array-null", "array-three", "array-three-reverse",
 				"binary", "binary-empty",
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
-				"document", "document-composite", "document-empty",
-				"double", "double-max", "double-nan",
+				"document", "document-composite", "document-composite-reverse", "document-empty", "document-null",
+				"double", "double-big", "double-max", "double-nan",
 				"double-negative-infinity", "double-negative-zero", "double-positive-infinity",
 				"double-smallest", "double-whole", "double-zero",
 				"int32", "int32-max", "int32-min", "int32-zero",
-				"int64", "int64-max", "int64-min", "int64-zero",
+				"int64", "int64-big", "int64-max", "int64-min", "int64-zero",
 				"null",
 				"objectid", "objectid-empty",
 				"regex", "regex-empty",
@@ -317,7 +363,7 @@ func TestQueryLogicalNot(t *testing.T) {
 		},
 		"NestedNot": {
 			filter:      bson.D{{"value", bson.D{{"$not", bson.D{{"$not", bson.D{{"$eq", 42}}}}}}}},
-			expectedIDs: []any{"array", "array-three", "double-whole", "int32", "int64"},
+			expectedIDs: []any{"array", "array-three", "array-three-reverse", "double-whole", "int32", "int64"},
 		},
 	} {
 		name, tc := name, tc

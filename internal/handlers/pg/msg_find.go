@@ -52,31 +52,12 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		"hint",
 		"batchSize",
 		"singleBatch",
-		"comment",
 		"maxTimeMS",
 		"readConcern",
 		"max",
 		"min",
 	}
 	common.Ignored(document, h.l, ignoredFields...)
-
-	command := document.Command()
-
-	var db, collection string
-	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-	collectionParam, err := document.Get(command)
-	if err != nil {
-		return nil, err
-	}
-	collection, ok := collectionParam.(string)
-	if !ok {
-		return nil, common.NewErrorMsg(
-			common.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
-		)
-	}
 
 	var filter, sort, projection *types.Document
 	if filter, err = common.GetOptionalParam(document, "filter", filter); err != nil {
@@ -96,7 +77,31 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		}
 	}
 
-	fetchedDocs, err := h.fetch(ctx, db, collection)
+	var sp sqlParam
+	if sp.db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
+	}
+	collectionParam, err := document.Get(document.Command())
+	if err != nil {
+		return nil, err
+	}
+	var ok bool
+	if sp.collection, ok = collectionParam.(string); !ok {
+		return nil, common.NewErrorMsg(
+			common.ErrBadValue,
+			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+		)
+	}
+	// comment set through options.FindOne().SetComment() method
+	if sp.comment, err = common.GetOptionalParam(document, "comment", sp.comment); err != nil {
+		return nil, err
+	}
+	// comment in query, e.g. db.collection.find({$comment: "test"})
+	if sp.comment, err = common.GetOptionalParam(filter, "$comment", sp.comment); err != nil {
+		return nil, err
+	}
+
+	fetchedDocs, err := h.fetch(ctx, sp)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +143,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			"cursor", must.NotFail(types.NewDocument(
 				"firstBatch", firstBatch,
 				"id", int64(0), // TODO
-				"ns", db+"."+collection,
+				"ns", sp.db+"."+sp.collection,
 			)),
 			"ok", float64(1),
 		))},

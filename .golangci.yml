@@ -1,11 +1,8 @@
 ---
-# Almost all linters; some of them are optional.
-
-run:
-  modules-download-mode: readonly
-  issues-exit-code: 0
+# Linters that should pass for all code.
 
 linters-settings:
+  # asciicheck
   depguard:
     list-type: blacklist
     packages:
@@ -49,8 +46,10 @@ linters-settings:
   goimports:
     local-prefixes: github.com/FerretDB/FerretDB
   gosimple:
-    go: "1.18"
-    checks: ["all"]
+    go: '1.18'
+    checks: ['all']
+  # govet
+  # ineffassign
   lll:
     line-length: 130
     tab-width: 4
@@ -64,74 +63,35 @@ linters-settings:
     require-explanation: true
     require-specific: true
   staticcheck:
-    go: "1.18"
-    checks: ["all"]
-  stylecheck:
-    go: "1.18"
-    checks: ["all"]
-    dot-import-whitelist: []
-    initialisms: []
-    http-status-code-whitelist: []
-  unparam:
-    check-exported: true
+    go: '1.18'
+    checks: ['all']
   unused:
-    go: "1.18"
+    go: '1.18'
   whitespace:
     multi-if: false
     multi-func: false
 
 linters:
-  enable-all: true
-  disable:
-    # TODO configure and enable one by one
-    - cyclop
-    - dupl
-    - errcheck
-    - errname
-    - errorlint
-    - exhaustivestruct
-    - forcetypeassert
-    - funlen
-    - gochecknoglobals
-    - gochecknoinits
-    - gocognit
-    - gocritic
-    - gocyclo
-    - goerr113
-    - gomnd
-    - gosec
-    - ifshort
-    - ireturn
-    - maintidx
-    - nakedret
-    - revive
-    - thelper
-    - unparam
-    - varnamelen
-    - wrapcheck
-
-    # TODO enable when goanalysis_metalinter supports generics
-    - bodyclose
-    - contextcheck
+  disable-all: true
+  enable:
+    - asciicheck
+    - depguard
+    - exhaustive
+    - gci
+    - goconst
+    - godot
+    - godox
+    - goheader
+    - goimports
     - gosimple
-    - nilerr
-    - noctx
-    - rowserrcheck
-    - sqlclosecheck
+    - govet
+    - ineffassign
+    - lll
+    - misspell
+    - nolintlint
     - staticcheck
-    - structcheck
-    - stylecheck
-    - tparallel
     - unused
-    - wastedassign
-
-    - golint      # deprecated
-    - interfacer  # deprecated
-    - maligned    # deprecated
-    - nlreturn    # too annoying
-    - scopelint   # deprecated
-    - testpackage # we test internals
-    - wsl         # too annoying
+    - whitespace
 
 issues:
   exclude-use-default: false

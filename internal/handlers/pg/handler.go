@@ -35,8 +35,6 @@ type Handler struct {
 	l         *zap.Logger
 	peerAddr  string
 	startTime time.Time
-
-	lastRequestID int32
 }
 
 // NewOpts represents handler configuration.
