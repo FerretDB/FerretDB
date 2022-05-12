@@ -183,3 +183,43 @@ func parseTypeCode(alias string) (typeCode, error) {
 
 	return code, nil
 }
+
+func addNumbers(v1, v2 any) (any, error) {
+	switch v1 := v1.(type) {
+	case float64:
+		switch v2 := v2.(type) {
+		case float64:
+			return v1 + v2, nil
+		case int32:
+			return v1 + float64(v2), nil
+		case int64:
+			return v1 + float64(v2), nil
+		default:
+			return nil, fmt.Errorf("bad type")
+		}
+	case int32:
+		switch v2 := v2.(type) {
+		case float64:
+			return v2 + float64(v1), nil
+		case int32:
+			return v1 + v2, nil
+		case int64:
+			return v2 + int64(v1), nil
+		default:
+			return nil, fmt.Errorf("bad type")
+		}
+	case int64:
+		switch v2 := v2.(type) {
+		case float64:
+			return v2 + float64(v1), nil
+		case int32:
+			return v1 + int64(v2), nil
+		case int64:
+			return v1 + v2, nil
+		default:
+			return nil, fmt.Errorf("bad type")
+		}
+	default:
+		return nil, fmt.Errorf("bad type")
+	}
+}
