@@ -31,7 +31,7 @@ func Setup(level zapcore.Level) {
 		log.Fatal(err)
 	}
 
-	logram := NewLogRAM()
+	logram := NewLogRAM(1024)
 
 	logger = logger.WithOptions(zap.Hooks(func(entry zapcore.Entry) error {
 		logram.append(entry)

@@ -31,15 +31,22 @@ type record struct {
 
 // logRAM structure storage of log records in memory.
 type logRAM struct {
+	size    int64
 	counter int64
-	log     [1024]*record
+	log     []*record
 	mu      sync.RWMutex
 }
 
 // NewLogRAM is creating entries log in memory.
-func NewLogRAM() *logRAM {
+func NewLogRAM(size int64) *logRAM {
+	if size < 1 {
+		size = 1
+	}
+
 	return &logRAM{
-		mu: sync.RWMutex{},
+		size: size,
+		log:  make([]*record, size),
+		mu:   sync.RWMutex{},
 	}
 }
 
@@ -57,7 +64,7 @@ func (l *logRAM) append(entry zapcore.Entry) {
 	}
 
 	l.log[l.counter] = rec
-	l.counter = (l.counter + 1) % 1024
+	l.counter = (l.counter + 1) % l.size
 }
 
 func (l *logRAM) getLogRAM() (entrys []zapcore.Entry) {
