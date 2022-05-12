@@ -1,6 +1,9 @@
 ---
 # Linters that should pass for all code.
 
+run:
+  timeout: 2m
+
 linters-settings:
   # asciicheck
   depguard:
