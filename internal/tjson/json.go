@@ -33,8 +33,8 @@ import (
 type tjsontype interface {
 	tjsontype() // seal for go-sumtype
 
-	json.Unmarshaler
-	json.Marshaler
+	MarshalJSON() ([]byte, error)
+	UnmarshalJSON(data []byte) error
 }
 
 //go-sumtype:decl tjsontype
@@ -44,6 +44,7 @@ func fromTJSON(v tjsontype) (any, error) {
 	switch v := v.(type) {
 	case *documentType:
 		return pointer.To(types.Document(*v)), nil
+
 	// case *arrayType:
 	case *doubleType:
 		return float64(*v), nil
@@ -109,26 +110,7 @@ func toTJSON(v any) tjsontype {
 }
 
 // Unmarshal decodes the tjson to build-in.
-func Unmarshal(data []byte) (any, error) {
-	var err error
-	var mp map[string][]byte
-	if err = jsoniter.Unmarshal(data, &mp); err != nil {
-		return nil, err
-	}
-	var res tjsontype
-	if len(mp) == 0 {
-		return new(types.Document), nil
-	}
-	for _, v := range mp {
-		res, err := unmarshalField(v)
-		if err != nil {
-			return nil, err
-		}
-	}
-}
-
-func unmarshalField(v []byte, schema map[string]any) (tjsontype, error) {
-
+func Unmarshal(v []byte, schema map[string]any) (any, error) {
 	fieldType, ok := schema["type"]
 	if !ok {
 		return nil, lazyerrors.Errorf("canont find field type")
@@ -145,25 +127,29 @@ func unmarshalField(v []byte, schema map[string]any) (tjsontype, error) {
 			var o binaryType
 			err = o.UnmarshalJSON(v)
 			res = &o
+			break
 		}
 		if _, ok := obj["$o"]; ok {
 			var o objectIDType
 			err = o.UnmarshalJSON(v)
 			res = &o
+			break
 		}
 		if _, ok := obj["$r"]; ok {
 			var o regexType
 			err = o.UnmarshalJSON(v)
 			res = &o
+			break
 		}
 		if _, ok := obj["$t"]; ok {
 			var o timestampType
 			err = o.UnmarshalJSON(v)
 			res = &o
+			break
 		}
 
 		var o documentType
-		err = o.UnmarshalJSON(v)
+		err = o.UnmarshalJSON(v, schema)
 		res = &o
 	case "array":
 		err = common.NewErrorMsg(common.ErrNotImplemented, "arrays not supported yet")
@@ -185,7 +171,6 @@ func unmarshalField(v []byte, schema map[string]any) (tjsontype, error) {
 				res = &o
 			}
 		}
-
 	case "$k":
 
 	default:

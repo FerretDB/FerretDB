@@ -25,11 +25,8 @@ import (
 // documentType represents BSON Document type.
 type documentType types.Document
 
-// tjsontype implements tjsontype interface.
-func (doc *documentType) tjsontype() {}
-
 // UnmarshalJSON implements tjsontype interface.
-func (doc *documentType) UnmarshalJSON(data []byte) error {
+func (doc *documentType) UnmarshalJSON(data []byte, schema map[string]any) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -64,7 +61,7 @@ func (doc *documentType) UnmarshalJSON(data []byte) error {
 		if !ok {
 			return lazyerrors.Errorf("tjson.Document.UnmarshalJSON: missing key %q", key)
 		}
-		v, err := Unmarshal(b)
+		v, err := Unmarshal(b, schema)
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
@@ -118,8 +115,3 @@ func (doc *documentType) MarshalJSON() ([]byte, error) {
 	buf.WriteByte('}')
 	return buf.Bytes(), nil
 }
-
-// check interfaces
-var (
-	_ tjsontype = (*documentType)(nil)
-)
