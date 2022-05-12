@@ -1203,7 +1203,7 @@ func TestQueryComparisonNin(t *testing.T) {
 			},
 		},
 
-		"$regex": {
+		"RegexString": {
 			value: bson.A{bson.D{{"$regex", "/foo/"}}},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -1315,7 +1315,7 @@ func TestQueryComparisonIn(t *testing.T) {
 			},
 		},
 
-		"$regex": {
+		"RegexString": {
 			value: bson.A{bson.D{{"$regex", "/foo/"}}},
 			err: &mongo.CommandError{
 				Code:    2,
