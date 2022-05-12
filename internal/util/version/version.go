@@ -24,6 +24,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 //go:generate go run ./generate.go
@@ -66,7 +67,7 @@ func init() {
 		return
 	}
 
-	info.BuildEnvironment = types.MustNewDocument()
+	info.BuildEnvironment = must.NotFail(types.NewDocument())
 	for _, s := range buildInfo.Settings {
 		info.BuildEnvironment.Set(s.Key, s.Value)
 

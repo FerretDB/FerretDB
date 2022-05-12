@@ -164,16 +164,16 @@ tasks:
   lint:
     desc: "Run linters"
     deps:
-      - lint-golangci-lint-required
+      - lint-golangci-lint
       - lint-go-sumtype
       - lint-go-consistent
       - lint-go-consistent-integration
     cmds:
-      - bin/golangci-lint run --config=.golangci.yml
+      - bin/golangci-lint run --config=.golangci-new.yml --new-from-rev=main
 
-  lint-golangci-lint-required:
+  lint-golangci-lint:
     cmds:
-      - bin/golangci-lint run --config=.golangci-required.yml
+      - bin/golangci-lint run --config=.golangci.yml
 
   lint-go-sumtype:
     cmds:
