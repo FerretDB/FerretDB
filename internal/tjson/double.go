@@ -17,7 +17,6 @@ package tjson
 import (
 	"bytes"
 	"encoding/json"
-	"math"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -28,9 +27,7 @@ type doubleType float64
 // tjsontype implements tjsontype interface.
 func (d *doubleType) tjsontype() {}
 
-type doubleJSON struct {
-	F any `json:"$f"`
-}
+type doubleJSON float64
 
 // UnmarshalJSON implements tjsontype interface.
 func (d *doubleType) UnmarshalJSON(data []byte) error {
@@ -49,44 +46,14 @@ func (d *doubleType) UnmarshalJSON(data []byte) error {
 	if err := checkConsumed(dec, r); err != nil {
 		return lazyerrors.Error(err)
 	}
-
-	switch f := o.F.(type) {
-	case float64:
-		*d = doubleType(f)
-	case string:
-		switch f {
-		case "Infinity":
-			*d = doubleType(math.Inf(1))
-		case "-Infinity":
-			*d = doubleType(math.Inf(-1))
-		case "NaN":
-			*d = doubleType(math.NaN())
-		default:
-			return lazyerrors.Errorf("tjson.Double.UnmarshalJSON: unexpected string %q", f)
-		}
-	default:
-		return lazyerrors.Errorf("tjson.Double.UnmarshalJSON: unexpected type %[1]T: %[1]v", f)
-	}
-
+	*d = doubleType(o)
 	return nil
 }
 
 // MarshalJSON implements tjsontype interface.
 func (d *doubleType) MarshalJSON() ([]byte, error) {
 	f := float64(*d)
-	var o doubleJSON
-	switch {
-	case math.IsInf(f, 1):
-		o.F = "Infinity"
-	case math.IsInf(f, -1):
-		o.F = "-Infinity"
-	case math.IsNaN(f):
-		o.F = "NaN"
-	default:
-		o.F = f
-	}
-
-	res, err := json.Marshal(o)
+	res, err := json.Marshal(f)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

@@ -196,7 +196,7 @@ var (
 			"objectID", must.NotFail(types.NewArray(types.ObjectID{0x42}, types.ObjectID{})),
 			"string", must.NotFail(types.NewArray("foo", "")),
 			"timestamp", must.NotFail(types.NewArray(types.Timestamp(42), types.Timestamp(0))),
-		)),
+		))),
 		j: `{"$k":["binary","bool","datetime","double","int32","int64","objectID","string","timestamp"],` +
 			`"binary":[{"$b":"Qg==","s":128},{"$b":"","s":0}],"bool":[true,false],` +
 			`"datetime":[{"$d":1627378542123},{"$d":-62135596800000}],"double":[{"$f":42.13},{"$f":0}],` +

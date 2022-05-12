@@ -58,7 +58,7 @@ func (doc *documentType) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Errorf("tjson.Document.UnmarshalJSON: %d elements in $k, %d in total", len(keys), len(rawMessages))
 	}
 
-	td := types.MustNewDocument()
+	td := new(types.Document)
 	for _, key := range keys {
 		b, ok = rawMessages[key]
 		if !ok {
@@ -74,7 +74,7 @@ func (doc *documentType) UnmarshalJSON(data []byte) error {
 	}
 
 	*doc = documentType(*td)
-	return nil
+	return nilinternal/tjson/json.go:46
 }
 
 // MarshalJSON implements tjsontype interface.

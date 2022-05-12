@@ -44,6 +44,7 @@ func fromTJSON(v tjsontype) (any, error) {
 	switch v := v.(type) {
 	case *documentType:
 		return pointer.To(types.Document(*v))
+
 	// case *arrayType:
 
 	case *doubleType:
@@ -81,8 +82,8 @@ func toTJSON(v any) tjsontype {
 	switch v := v.(type) {
 	case *types.Document:
 		return pointer.To(documentType(*v))
-	case *types.Array:
-		return pointer.To(arrayType(*v))
+
+	// case *types.Array:
 	case float64:
 		return pointer.To(doubleType(v))
 	case string:
@@ -99,12 +100,12 @@ func toTJSON(v any) tjsontype {
 		return pointer.To(nullType(v))
 	case types.Regex:
 		return pointer.To(regexType(v))
-	case int32:
-		return pointer.To(int32Type(v))
+		// case int32:
+
 	case types.Timestamp:
 		return pointer.To(timestampType(v))
-	case int64:
-		return pointer.To(int64Type(v))
+		// case int64:
+
 	}
 
 	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
