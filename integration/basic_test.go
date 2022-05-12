@@ -67,7 +67,7 @@ func TestFindNothing(t *testing.T) {
 
 func TestInsertFind(t *testing.T) {
 	t.Parallel()
-	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites, shareddata.BigNumbersData}
+	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
 	ctx, collection := setup(t, providers...)
 
 	var docs []bson.D

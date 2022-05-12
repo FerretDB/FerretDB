@@ -178,7 +178,7 @@ func TestQueryCount(t *testing.T) {
 	}{
 		"CountAllDocuments": {
 			command:  bson.D{{"count", collection.Name()}},
-			response: 47,
+			response: 49,
 		},
 		"CountExactlyOneDocument": {
 			command: bson.D{
