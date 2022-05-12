@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"strconv"
 	"testing"
 	"time"
@@ -185,18 +186,117 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 		databaseName: "admin",
 	})
 
-	var actual bson.D
-	err := collection.Database().RunCommand(ctx, bson.D{{"getParameter", "*"}}).Decode(&actual)
-	require.NoError(t, err)
+	for name, tc := range map[string]struct {
+		command    bson.D
+		expected   map[string]any
+		unexpected []string
+		err        *mongo.CommandError
+	}{
+		"AllParameters_1": {
+			command: bson.D{{"getParameter", "*"}},
+			expected: map[string]any{
+				"acceptApiVersion2": false,
+				"authSchemaVersion": int32(5),
+				"quiet":             false,
+				"ok":                float64(1),
+			},
+		},
+		"AllParameters_2": {
+			command: bson.D{{"getParameter", "*"}, {"quiet", 1}, {"comment", "getParameter test"}},
+			expected: map[string]any{
+				"acceptApiVersion2": false,
+				"authSchemaVersion": int32(5),
+				"quiet":             false,
+				"ok":                float64(1),
+			},
+		},
+		"AllParameters_3": {
+			command: bson.D{{"getParameter", "*"}, {"quiet", 1}, {"quiet_other", 1}, {"comment", "getParameter test"}},
+			expected: map[string]any{
+				"acceptApiVersion2": false,
+				"authSchemaVersion": int32(5),
+				"quiet":             false,
+				"ok":                float64(1),
+			},
+		},
+		"AllParameters_4": {
+			command: bson.D{{"getParameter", "*"}, {"quiet_other", 1}, {"comment", "getParameter test"}},
+			expected: map[string]any{
+				"acceptApiVersion2": false,
+				"authSchemaVersion": int32(5),
+				"quiet":             false,
+				"ok":                float64(1),
+			},
+		},
+		"ExistingParameters": {
+			command: bson.D{{"getParameter", 1}, {"quiet", 1}, {"comment", "getParameter test"}},
+			expected: map[string]any{
+				"quiet": false,
+				"ok":    float64(1),
+			},
+		},
+		"Zero": {
+			command: bson.D{{"getParameter", 0}, {"quiet", 1}, {"comment", "getParameter test"}},
+			expected: map[string]any{
+				"quiet": false,
+				"ok":    float64(1),
+			},
+		},
+		"NaN": {
+			command: bson.D{{"getParameter", math.NaN()}, {"quiet", 1}, {"comment", "getParameter test"}},
+			expected: map[string]any{
+				"quiet": false,
+				"ok":    float64(1),
+			},
+		},
+		"Nil": {
+			command: bson.D{{"getParameter", nil}, {"quiet", 1}, {"comment", "getParameter test"}},
+			expected: map[string]any{
+				"quiet": false,
+				"ok":    float64(1),
+			},
+		},
+		"NonexistentParameters": {
+			command: bson.D{{"getParameter", 1}, {"quiet", 1}, {"quiet_other", 1}, {"comment", "getParameter test"}},
+			expected: map[string]any{
+				"quiet": false,
+				"ok":    float64(1),
+			},
+			unexpected: []string{"quiet_other"},
+		},
+		"EmptyParameters": {
+			command: bson.D{{"getParameter", 1}, {"comment", "getParameter test"}},
+			err:     &mongo.CommandError{Message: `no option found to get`},
+		},
+		"OnlyNonexistentParameters": {
+			command: bson.D{{"getParameter", 1}, {"quiet_other", 1}, {"comment", "getParameter test"}},
+			err:     &mongo.CommandError{Message: `no option found to get`},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-	m := actual.Map()
-	t.Log(m)
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+			if tc.err != nil {
+				AssertEqualError(t, *tc.err, err)
+				return
+			}
+			require.NoError(t, err)
 
-	assert.Equal(t, float64(1), m["ok"])
+			m := actual.Map()
+			k := CollectKeys(t, actual)
 
-	keys := CollectKeys(t, actual)
-	assert.Contains(t, keys, "quiet")
-	assert.Equal(t, false, m["quiet"])
+			for key, item := range tc.expected {
+				assert.Contains(t, k, key)
+				assert.Equal(t, m[key], item)
+			}
+			for _, key := range tc.unexpected {
+				assert.NotContains(t, k, key)
+			}
+		})
+	}
 }
 
 func TestStatisticsCommands(t *testing.T) {
