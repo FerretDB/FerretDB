@@ -74,7 +74,7 @@ func (doc *documentType) UnmarshalJSON(data []byte) error {
 	}
 
 	*doc = documentType(*td)
-	return nilinternal/tjson/json.go:46
+	return nil
 }
 
 // MarshalJSON implements tjsontype interface.

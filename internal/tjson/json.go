@@ -43,30 +43,27 @@ type tjsontype interface {
 func fromTJSON(v tjsontype) (any, error) {
 	switch v := v.(type) {
 	case *documentType:
-		return pointer.To(types.Document(*v))
-
+		return pointer.To(types.Document(*v)), nil
 	// case *arrayType:
-
 	case *doubleType:
-		return float64(*v)
+		return float64(*v), nil
 	case *stringType:
-		return string(*v)
+		return string(*v), nil
 	case *binaryType:
-		return types.Binary(*v)
+		return types.Binary(*v), nil
 	case *objectIDType:
-		return types.ObjectID(*v)
+		return types.ObjectID(*v), nil
 	case *boolType:
-		return bool(*v)
+		return bool(*v), nil
 	case *dateTimeType:
-		return time.Time(*v)
+		return time.Time(*v), nil
 	case *nullType:
-		return types.Null
+		return types.Null, nil
 	case *regexType:
-		return types.Regex(*v)
+		return types.Regex(*v), nil
 	// case *int32Type:
-
 	case *timestampType:
-		return types.Timestamp(*v)
+		return types.Timestamp(*v), nil
 	default:
 		return nil, common.NewErrorMsg(
 			common.ErrNotImplemented,
@@ -111,10 +108,10 @@ func toTJSON(v any) tjsontype {
 	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
 }
 
-// Unmarshal decodes the given tjson-encoded data.
+// Unmarshal decodes the tjson to build-in.
 func Unmarshal(data []byte) (any, error) {
 	var err error
-	var mp map[string]jsoniter.RawMessage
+	var mp map[string][]byte
 	if err = jsoniter.Unmarshal(data, &mp); err != nil {
 		return nil, err
 	}
@@ -122,46 +119,79 @@ func Unmarshal(data []byte) (any, error) {
 	if len(mp) == 0 {
 		return new(types.Document), nil
 	}
-
-	for _, keyVal := range mp {
-		switch string(keyVal[:2]) {
-		case "$f":
-			var o doubleType
-			err = o.UnmarshalJSON(data)
-			res = &o
-		case "$k":
-			var o documentType
-			err = o.UnmarshalJSON(data)
-			res = &o
-		case "$b":
-			var o binaryType
-			err = o.UnmarshalJSON(data)
-			res = &o
-		case "$o":
-			var o objectIDType
-			err = o.UnmarshalJSON(data)
-			res = &o
-		case "$d":
-			var o dateTimeType
-			err = o.UnmarshalJSON(data)
-			res = &o
-		case "$r":
-			var o regexType
-			err = o.UnmarshalJSON(data)
-			res = &o
-		case "$t":
-			var o timestampType
-			err = o.UnmarshalJSON(data)
-			res = &o
-		case "$l":
-			var o int64Type
-			err = o.UnmarshalJSON(data)
-			res = &o
-		default:
-			err = lazyerrors.Errorf("tjson.Unmarshal: unhandled map %#v", keyVal)
+	for _, v := range mp {
+		res, err := unmarshalField(v)
+		if err != nil {
+			return nil, err
 		}
 	}
-	return fromTJSON(res), err
+}
+
+func unmarshalField(v []byte, schema map[string]any) (tjsontype, error) {
+
+	fieldType, ok := schema["type"]
+	if !ok {
+		return nil, lazyerrors.Errorf("canont find field type")
+	}
+	var err error
+	var res tjsontype
+	switch fieldType {
+	case "object":
+		var obj map[string]any
+		if err = jsoniter.Unmarshal(v, &obj); err != nil {
+			return nil, err
+		}
+		if _, ok := obj["$b"]; ok {
+			var o binaryType
+			err = o.UnmarshalJSON(v)
+			res = &o
+		}
+		if _, ok := obj["$o"]; ok {
+			var o objectIDType
+			err = o.UnmarshalJSON(v)
+			res = &o
+		}
+		if _, ok := obj["$r"]; ok {
+			var o regexType
+			err = o.UnmarshalJSON(v)
+			res = &o
+		}
+		if _, ok := obj["$t"]; ok {
+			var o timestampType
+			err = o.UnmarshalJSON(v)
+			res = &o
+		}
+
+		var o documentType
+		err = o.UnmarshalJSON(v)
+		res = &o
+	case "array":
+		err = common.NewErrorMsg(common.ErrNotImplemented, "arrays not supported yet")
+
+	case "boolean":
+		var o boolType
+		err = o.UnmarshalJSON(v)
+		res = &o
+
+	case "string":
+		var obj map[string]any
+		if err = jsoniter.Unmarshal(v, &obj); err != nil {
+			return nil, err
+		}
+		if format, ok := obj["format"]; ok {
+			if format == "date-time" {
+				var o dateTimeType
+				err = o.UnmarshalJSON(v)
+				res = &o
+			}
+		}
+
+	case "$k":
+
+	default:
+		err = lazyerrors.Errorf("tjson.Unmarshal: unhandled map %#v", v)
+	}
+	return res, nil
 }
 
 // Marshal encodes given built-in or types' package value into tjson.
