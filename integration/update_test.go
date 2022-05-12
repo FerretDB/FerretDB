@@ -168,16 +168,24 @@ func TestUpdateIncOperator(t *testing.T) {
 			result: bson.D{{"_id", "int64"}, {"value", int64(41)}},
 		},
 
-		"NotExistentField": {
+		"FieldNotExist": {
 			filter: bson.D{{"_id", "int32"}},
 			update: bson.D{{"$inc", bson.D{{"foo", int32(1)}}}},
 			result: bson.D{{"_id", "int32"}, {"value", int32(42)}, {"foo", int32(1)}},
 		},
 
-		"DotNotationDouble": {
+		"DotNotationInt": {
 			filter: bson.D{{"_id", "document"}},
 			update: bson.D{{"$inc", bson.D{{"value.foo", int32(1)}}}},
 			result: bson.D{{"_id", "document"}, {"value", bson.D{{"foo", int32(43)}}}},
+		},
+		"DotNotationFieldNotExist": {
+			filter: bson.D{{"_id", "document"}},
+			update: bson.D{{"$inc", bson.D{{"value.no-such-field", int32(1)}}}},
+			result: bson.D{
+				{"_id", "document"},
+				{"value", bson.D{{"foo", int32(42)}, {"no-such-field", int32(1)}}},
+			},
 		},
 	} {
 		name, tc := name, tc
