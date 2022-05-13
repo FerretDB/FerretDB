@@ -82,7 +82,7 @@ func TestUpdateIncOperatorErrors(t *testing.T) {
 		err    *mongo.WriteError
 	}{
 		"BadIncType": {
-			filter: bson.D{{"_id", "document-composite"}},
+			filter: bson.D{{"_id", "string"}},
 			update: bson.D{{"$inc", bson.D{{"value", "bad value"}}}},
 			err: &mongo.WriteError{
 				Code:    14,
@@ -101,7 +101,7 @@ func TestUpdateIncOperatorErrors(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := setup(t, shareddata.Scalars)
 
 			_, err := collection.UpdateOne(ctx, tc.filter, tc.update)
 			if tc.err != nil {

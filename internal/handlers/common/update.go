@@ -58,7 +58,15 @@ func UpdateDocument(doc, update *types.Document) error {
 				docValue := must.NotFail(doc.Get(incKey))
 				incremented, err := addNumbers(incValue, docValue)
 				if err != nil {
-					return err
+					return NewWriteErrorMsg(
+						ErrTypeMismatch,
+						fmt.Sprintf(
+							`Cannot apply $inc to a value of non-numeric type. {_id: "%s"} has the field '%s' of non-numeric type %s`,
+							must.NotFail(doc.Get("_id")),
+							incKey,
+							AliasFromType(docValue),
+						),
+					)
 				}
 				must.NoError(doc.Set(incKey, incremented))
 			}

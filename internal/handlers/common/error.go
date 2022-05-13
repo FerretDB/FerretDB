@@ -107,11 +107,17 @@ func (e *Error) Document() *types.Document {
 	return d
 }
 
+type ProtoErr interface {
+	Error() string
+	Code() ErrorCode
+	Document() *types.Document
+}
+
 // ProtocolError converts any error to wire protocol error.
 //
 // Nil panics, *Error (possibly wrapped) is returned unwrapped with true,
 // any other value is wrapped with InternalError and returned with false.
-func ProtocolError(err error) (*Error, bool) {
+func ProtocolError(err error) (ProtoErr, bool) {
 	if err == nil {
 		panic("err is nil")
 	}
@@ -119,6 +125,11 @@ func ProtocolError(err error) (*Error, bool) {
 	var e *Error
 	if errors.As(err, &e) {
 		return e, true
+	}
+
+	var writeErr *WriteErrors
+	if errors.As(err, &writeErr) {
+		return writeErr, true
 	}
 
 	return NewError(errInternalError, err).(*Error), false
@@ -157,7 +168,87 @@ func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
 	}
 }
 
+type WriteErrors []WriteError
+
+// Error implements error interface.
+func (we *WriteErrors) Error() string {
+	var err string
+	for _, e := range *we {
+		err += e.Error() + ","
+	}
+
+	return err
+}
+
+// Code returns error code.
+func (we *WriteErrors) Code() ErrorCode {
+	for _, e := range *we {
+		return e.code
+	}
+	return errUnset
+}
+
+// Unwrap implements standard error unwrapping interface.
+func (we *WriteErrors) Unwrap() error {
+	for _, e := range *we {
+		return &e
+	}
+	return nil
+}
+
+func (we WriteErrors) Document() *types.Document {
+	errs := must.NotFail(types.NewArray())
+	for _, e := range we {
+		must.NoError(errs.Append(e.Document()))
+	}
+
+	d := must.NotFail(types.NewDocument(
+		"ok", float64(1),
+		"writeErrors", errs,
+	))
+	return d
+}
+
+type WriteError struct {
+	index int64
+	code  ErrorCode
+	err   error
+}
+
+func (we WriteError) Document() *types.Document {
+	d := must.NotFail(types.NewDocument(
+		"index", we.index,
+		"code", int32(we.code),
+		"errmsg", we.err.Error(),
+	))
+	return d
+}
+
+// Error implements error interface.
+func (we *WriteError) Error() string {
+	return fmt.Sprintf("%[1]s (%[1]d): %[2]v", we.code, we.err)
+}
+
+// Code returns error code.
+func (we *WriteError) Code() ErrorCode {
+	return we.code
+}
+
+// Unwrap implements standard error unwrapping interface.
+func (we *WriteError) Unwrap() error {
+	return we.err
+}
+
+func NewWriteErrorMsg(code ErrorCode, msg string) error {
+	return &WriteErrors{{
+		index: 0,
+		code:  code,
+		err:   errors.New(msg),
+	}}
+}
+
 // check interfaces
 var (
 	_ error = (*Error)(nil)
+	_ error = (*WriteError)(nil)
 )
