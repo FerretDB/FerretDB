@@ -46,8 +46,12 @@ func UpdateDocument(doc, update *types.Document) error {
 			if err != nil {
 				return NewWriteErrorMsg(
 					ErrFailedToParse,
-					fmt.Sprintf(`Modifiers operate on fields but we found type string instead.`+
-						` For example: {$mod: {<field>: ...}} not {%s: %#v}`, updateOp, updateV),
+					fmt.Sprintf(
+						`Modifiers operate on fields but we found type string instead. `+
+							`For example: {$mod: {<field>: ...}} not {%s: %#v}`,
+						updateOp,
+						updateV,
+					),
 				)
 			}
 
