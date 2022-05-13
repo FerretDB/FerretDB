@@ -36,7 +36,6 @@ func (h *Handler) fetch(ctx context.Context, db, collection string) ([]*types.Do
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO preserve fields order
 	var res []*types.Document
 	elem := new(driver.Document)
 	for iterator.Next(elem) {
