@@ -34,7 +34,7 @@ type tjsontype interface {
 	tjsontype() // seal for go-sumtype
 
 	MarshalJSON() ([]byte, error)
-	UnmarshalJSON(data []byte) error
+	// UnmarshalJSON(data []byte) error
 }
 
 //go-sumtype:decl tjsontype
@@ -43,7 +43,7 @@ type tjsontype interface {
 func fromTJSON(v tjsontype) (any, error) {
 	switch v := v.(type) {
 	case *documentType:
-		return pointer.To(types.Document(*v)), nil
+		return v.MarshalJSON()
 
 	// case *arrayType:
 	case *doubleType:
@@ -76,10 +76,12 @@ func fromTJSON(v tjsontype) (any, error) {
 }
 
 // toTJSON converts built-in or types' package value to tjsontype value.
-func toTJSON(v any) tjsontype {
+func toTJSON(v any, schema map[string]any) tjsontype {
 	switch v := v.(type) {
 	case *types.Document:
-		return pointer.To(documentType(*v))
+		var o documentType
+		_ = o.UnmarshalJSON(v, schema)
+		return &o
 
 	// case *types.Array:
 	case float64:
@@ -116,7 +118,7 @@ func Unmarshal(v []byte, schema map[string]any) (any, error) {
 		return nil, lazyerrors.Errorf("canont find field type")
 	}
 	var err error
-	var res tjsontype
+	var res any
 	switch fieldType {
 	case "object":
 		var obj map[string]any

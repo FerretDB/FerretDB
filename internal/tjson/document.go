@@ -25,8 +25,11 @@ import (
 // documentType represents BSON Document type.
 type documentType types.Document
 
-// UnmarshalJSON implements tjsontype interface.
-func (doc *documentType) UnmarshalJSON(data []byte, schema map[string]any) error {
+// tjsontype implements tjsontype interface.
+func (dt *documentType) tjsontype() {}
+
+// UnmarshalJSON build-in doc to tigris doc.
+func (doc *documentType) UnmarshalJSON(doc *types.Document, schema map[string]any) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -61,7 +64,12 @@ func (doc *documentType) UnmarshalJSON(data []byte, schema map[string]any) error
 		if !ok {
 			return lazyerrors.Errorf("tjson.Document.UnmarshalJSON: missing key %q", key)
 		}
-		v, err := Unmarshal(b, schema)
+		var fieldSchema map[string]any
+		fieldSchema, ok = schema[key].(map[string]any)
+		if !ok {
+			return lazyerrors.Errorf("tjson.Document.UnmarshalJSON: missing schema for %q", key)
+		}
+		v, err := Unmarshal(b, fieldSchema)
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
@@ -74,7 +82,7 @@ func (doc *documentType) UnmarshalJSON(data []byte, schema map[string]any) error
 	return nil
 }
 
-// MarshalJSON implements tjsontype interface.
+// MarshalJSON: tigris doc to build-in doc
 func (doc *documentType) MarshalJSON() ([]byte, error) {
 	td := types.Document(*doc)
 
@@ -115,3 +123,8 @@ func (doc *documentType) MarshalJSON() ([]byte, error) {
 	buf.WriteByte('}')
 	return buf.Bytes(), nil
 }
+
+// check interfaces
+var (
+	_ tjsontype = (*documentType)(nil)
+)
