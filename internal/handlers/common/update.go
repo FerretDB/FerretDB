@@ -16,6 +16,7 @@ package common
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -23,7 +24,8 @@ import (
 )
 
 // UpdateDocument updates the given document with a series of update operators.
-func UpdateDocument(doc, update *types.Document) error {
+func UpdateDocument(doc, update *types.Document) (*types.Document, error) {
+	result := doc.DeepCopy()
 	for _, updateOp := range update.Keys() {
 		updateV := must.NotFail(update.Get(updateOp))
 
@@ -31,20 +33,20 @@ func UpdateDocument(doc, update *types.Document) error {
 		case "$set":
 			setDoc, err := AssertType[*types.Document](updateV)
 			if err != nil {
-				return err
+				return nil, err
 			}
 
 			for _, setKey := range setDoc.Keys() {
 				setValue := must.NotFail(setDoc.Get(setKey))
-				if err = doc.Set(setKey, setValue); err != nil {
-					return lazyerrors.Error(err)
+				if err = result.Set(setKey, setValue); err != nil {
+					return nil, lazyerrors.Error(err)
 				}
 			}
 
 		case "$inc":
 			incDoc, err := AssertType[*types.Document](updateV)
 			if err != nil {
-				return NewWriteErrorMsg(
+				return nil, NewWriteErrorMsg(
 					ErrFailedToParse,
 					fmt.Sprintf(
 						`Modifiers operate on fields but we found type string instead. `+
@@ -56,46 +58,56 @@ func UpdateDocument(doc, update *types.Document) error {
 			}
 
 			for _, incKey := range incDoc.Keys() {
+				if strings.ContainsRune(incKey, '.') {
+					return nil, NewErrorMsg(ErrNotImplemented, "dot notation not supported yet")
+				}
+
 				incValue := must.NotFail(incDoc.Get(incKey))
 
 				if !doc.Has(incKey) {
-					must.NoError(doc.Set(incKey, incValue))
-					continue
+					must.NoError(result.Set(incKey, incValue))
+					return result, nil
 				}
 
 				docValue := must.NotFail(doc.Get(incKey))
+
 				incremented, err := addNumbers(incValue, docValue)
-				if err != nil {
-					switch err {
-					case errBadLeftOperandType:
-						return NewWriteErrorMsg(
-							ErrTypeMismatch,
-							fmt.Sprintf(
-								`Cannot increment with non-numeric argument: {%s: %#v}`,
-								incKey,
-								incValue,
-							),
-						)
-					case errBadRightOperandType:
-						return NewWriteErrorMsg(
-							ErrTypeMismatch,
-							fmt.Sprintf(
-								`Cannot apply $inc to a value of non-numeric type. `+
-									`{_id: "%s"} has the field '%s' of non-numeric type %s`,
-								must.NotFail(doc.Get("_id")),
-								incKey,
-								AliasFromType(docValue),
-							),
-						)
-					}
+				if err == nil {
+					must.NoError(result.Set(incKey, incremented))
+
+					return result, nil
 				}
-				must.NoError(doc.Set(incKey, incremented))
+
+				switch err {
+				case errBadLeftOperandType:
+					return nil, NewWriteErrorMsg(
+						ErrTypeMismatch,
+						fmt.Sprintf(
+							`Cannot increment with non-numeric argument: {%s: %#v}`,
+							incKey,
+							incValue,
+						),
+					)
+				case errBadRightOperandType:
+					return nil, NewWriteErrorMsg(
+						ErrTypeMismatch,
+						fmt.Sprintf(
+							`Cannot apply $inc to a value of non-numeric type. `+
+								`{_id: "%s"} has the field '%s' of non-numeric type %s`,
+							must.NotFail(doc.Get("_id")),
+							incKey,
+							AliasFromType(docValue),
+						),
+					)
+				default:
+					return nil, err
+				}
 			}
 
 		default:
-			return NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
+			return nil, NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
 		}
 	}
 
-	return nil
+	return result, nil
 }
