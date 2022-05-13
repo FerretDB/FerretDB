@@ -107,6 +107,7 @@ func (e *Error) Document() *types.Document {
 	return d
 }
 
+// ProtoErr represents protocol error type
 type ProtoErr interface {
 	Error() string
 	Code() ErrorCode
@@ -116,6 +117,7 @@ type ProtoErr interface {
 // ProtocolError converts any error to wire protocol error.
 //
 // Nil panics, *Error (possibly wrapped) is returned unwrapped with true,
+// *WriteErrors is returned unwrapped with true,
 // any other value is wrapped with InternalError and returned with false.
 func ProtocolError(err error) (ProtoErr, bool) {
 	if err == nil {
@@ -196,6 +198,7 @@ func (we *WriteErrors) Unwrap() error {
 	return nil
 }
 
+// Document returns wire protocol error document.
 func (we WriteErrors) Document() *types.Document {
 	errs := must.NotFail(types.NewArray())
 	for _, e := range we {
@@ -209,12 +212,14 @@ func (we WriteErrors) Document() *types.Document {
 	return d
 }
 
+// WriteError represents protocol write error.
 type WriteError struct {
 	index int64
 	code  ErrorCode
 	err   error
 }
 
+// Document returns wire protocol error document.
 func (we WriteError) Document() *types.Document {
 	d := must.NotFail(types.NewDocument(
 		"index", we.index,
@@ -239,6 +244,7 @@ func (we *WriteError) Unwrap() error {
 	return we.err
 }
 
+// NewWriteErrorMsg creates new protocol write error with given ErrorCode and message.
 func NewWriteErrorMsg(code ErrorCode, msg string) error {
 	return &WriteErrors{{
 		index: 0,

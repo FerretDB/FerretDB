@@ -128,8 +128,8 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				continue
 			}
 
-			var doc *types.Document
-			if doc, err = common.UpdateDocument(doc, u); err != nil {
+			doc := q.DeepCopy()
+			if err = common.UpdateDocument(doc, u); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 			if !doc.Has("_id") {
@@ -159,15 +159,14 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		matched += int32(len(resDocs))
 
 		for _, doc := range resDocs {
-			var updated *types.Document
-			if updated, err = common.UpdateDocument(doc, u); err != nil {
+			if err = common.UpdateDocument(doc, u); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 
 			sql := "UPDATE " + pgx.Identifier{sp.db, sp.collection}.Sanitize() +
 				" SET _jsonb = $1 WHERE _jsonb->'_id' = $2"
-			id := must.NotFail(updated.Get("_id"))
-			tag, err := h.pgPool.Exec(ctx, sql, must.NotFail(fjson.Marshal(updated)), must.NotFail(fjson.Marshal(id)))
+			id := must.NotFail(doc.Get("_id"))
+			tag, err := h.pgPool.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)), must.NotFail(fjson.Marshal(id)))
 			if err != nil {
 				return nil, err
 			}
