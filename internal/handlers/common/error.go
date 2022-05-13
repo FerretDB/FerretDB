@@ -170,6 +170,7 @@ func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
 	}
 }
 
+// WriteErrors represents slice of protocol write errors.
 type WriteErrors []WriteError
 
 // Error implements error interface.
