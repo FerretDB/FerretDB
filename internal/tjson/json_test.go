@@ -29,6 +29,7 @@ type testCase struct {
 	name   string
 	v      tjsontype
 	j      string
+	s      map[string]any
 	canonJ string // canonical form without extra object fields, zero values, etc.
 	jErr   string // unwrapped
 }
@@ -84,26 +85,11 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() tjsontype) {
 				t.Parallel()
 
 				v := newFunc()
-				err := v.Unmarshal([]byte(tc.j))
+				err := v.Unmarshal([]byte(tc.j), tc.s)
 
 				if tc.jErr == "" {
 					require.NoError(t, err)
 					assertEqualWithNaN(t, tc.v, v)
-					return
-				}
-
-				require.Error(t, err)
-				require.Equal(t, tc.jErr, lastErr(err).Error())
-			})
-
-			t.Run("Unmarshal", func(t *testing.T) {
-				t.Parallel()
-
-				v, err := Unmarshal([]byte(tc.j))
-
-				if tc.jErr == "" {
-					require.NoError(t, err)
-					assertEqualWithNaN(t, tc.v, toTJSON(v))
 					return
 				}
 
@@ -118,7 +104,7 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() tjsontype) {
 
 				t.Parallel()
 
-				actualJ, err := tc.v.Marshal()
+				actualJ, err := tc.v.Marshal(tc.s)
 				require.NoError(t, err)
 				expectedJ := tc.j
 				if tc.canonJ != "" {
@@ -134,7 +120,7 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() tjsontype) {
 
 				t.Parallel()
 
-				actualJ, err := Marshal(tc.v)
+				actualJ, err := Marshal(tc.v, tc.s)
 				require.NoError(t, err)
 				expectedJ := tc.j
 				if tc.canonJ != "" {
@@ -154,7 +140,7 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() tjsontype) {
 		}
 	}
 
-	f.Fuzz(func(t *testing.T, j string) {
+	f.Fuzz(func(t *testing.T, j string, s map[string]any) {
 		t.Parallel()
 
 		// raw "null" should never reach Unmarshal due to the way encoding/json works
@@ -167,13 +153,14 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() tjsontype) {
 		// Instead, we compare second results.
 
 		v := newFunc()
-		if err := v.Unmarshal([]byte(j)); err != nil {
+		if err := v.Unmarshal([]byte(j), s); err != nil {
 			t.Skip()
 		}
 
 		// test Marshal
 		{
-			b, err := v.Marshal()
+
+			b, err := v.Marshal(s)
 			require.NoError(t, err)
 			j = string(b)
 		}
@@ -181,14 +168,14 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() tjsontype) {
 		// test Unmarshal
 		{
 			actualV := newFunc()
-			err := actualV.Unmarshal([]byte(j))
+			err := actualV.Unmarshal([]byte(j), s)
 			require.NoError(t, err)
 			assertEqualWithNaN(t, v, actualV)
 		}
 	})
 }
 
-func benchmark(b *testing.B, testCases []testCase, newFunc func() tjsontype) {
+func benchmark(b *testing.B, testCases []testCase, newFunc func() tjsontype, schema map[string]any) {
 	for _, tc := range testCases {
 		tc := tc
 		b.Run(tc.name, func(b *testing.B) {
@@ -203,7 +190,7 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() tjsontype) {
 
 				for i := 0; i < b.N; i++ {
 					v = newFunc()
-					err = v.Unmarshal(data)
+					err = v.Unmarshal(data, schema)
 				}
 
 				b.StopTimer()
