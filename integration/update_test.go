@@ -98,9 +98,25 @@ func TestUpdateIncOperatorErrors(t *testing.T) {
 				Message: `Cannot increment with non-numeric argument: {value: "bad value"}`,
 			},
 		},
-		"IncOnNullValue": {
+		"DoubleIncOnNullValue": {
+			filter: bson.D{{"_id", "string"}},
+			update: bson.D{{"$inc", bson.D{{"value", float64(1)}}}},
+			err: &mongo.WriteError{
+				Code:    14,
+				Message: `Cannot apply $inc to a value of non-numeric type. {_id: "string"} has the field 'value' of non-numeric type string`,
+			},
+		},
+		"IntIncOnNullValue": {
 			filter: bson.D{{"_id", "string"}},
 			update: bson.D{{"$inc", bson.D{{"value", int32(1)}}}},
+			err: &mongo.WriteError{
+				Code:    14,
+				Message: `Cannot apply $inc to a value of non-numeric type. {_id: "string"} has the field 'value' of non-numeric type string`,
+			},
+		},
+		"LongIncOnNullValue": {
+			filter: bson.D{{"_id", "string"}},
+			update: bson.D{{"$inc", bson.D{{"value", int64(1)}}}},
 			err: &mongo.WriteError{
 				Code:    14,
 				Message: `Cannot apply $inc to a value of non-numeric type. {_id: "string"} has the field 'value' of non-numeric type string`,
@@ -136,12 +152,12 @@ func TestUpdateIncOperator(t *testing.T) {
 		update bson.D
 		result bson.D
 	}{
-		"DoubleDoubleIncrement": {
+		"DoubleIncrement": {
 			filter: bson.D{{"_id", "double"}},
 			update: bson.D{{"$inc", bson.D{{"value", float64(42.13)}}}},
 			result: bson.D{{"_id", "double"}, {"value", float64(84.26)}},
 		},
-		"DoubleDoubleNegativeIncrement": {
+		"DoubleNegativeIncrement": {
 			filter: bson.D{{"_id", "double"}},
 			update: bson.D{{"$inc", bson.D{{"value", float64(-42.13)}}}},
 			result: bson.D{{"_id", "double"}, {"value", float64(0)}},
@@ -151,12 +167,22 @@ func TestUpdateIncOperator(t *testing.T) {
 			update: bson.D{{"$inc", bson.D{{"value", float64(1.13)}}}},
 			result: bson.D{{"_id", "int32"}, {"value", float64(43.13)}},
 		},
+		"DoubleIncrementLongField": {
+			filter: bson.D{{"_id", "int64"}},
+			update: bson.D{{"$inc", bson.D{{"value", float64(1.13)}}}},
+			result: bson.D{{"_id", "int64"}, {"value", float64(43.13)}},
+		},
 		"DoubleIntIncrement": {
 			filter: bson.D{{"_id", "double"}},
 			update: bson.D{{"$inc", bson.D{{"value", int32(1)}}}},
 			result: bson.D{{"_id", "double"}, {"value", float64(43.13)}},
 		},
-		"Int": {
+		"DoubleLongIncrement": {
+			filter: bson.D{{"_id", "double"}},
+			update: bson.D{{"$inc", bson.D{{"value", int64(1)}}}},
+			result: bson.D{{"_id", "double"}, {"value", float64(43.13)}},
+		},
+		"IntIncrement": {
 			filter: bson.D{{"_id", "int32"}},
 			update: bson.D{{"$inc", bson.D{{"value", int32(1)}}}},
 			result: bson.D{{"_id", "int32"}, {"value", int32(43)}},
@@ -166,7 +192,17 @@ func TestUpdateIncOperator(t *testing.T) {
 			update: bson.D{{"$inc", bson.D{{"value", int32(-1)}}}},
 			result: bson.D{{"_id", "int32"}, {"value", int32(41)}},
 		},
-		"Long": {
+		"IntIncrementDoubleField": {
+			filter: bson.D{{"_id", "double"}},
+			update: bson.D{{"$inc", bson.D{{"value", int32(1)}}}},
+			result: bson.D{{"_id", "double"}, {"value", float64(43.13)}},
+		},
+		"IntIncrementLongField": {
+			filter: bson.D{{"_id", "int64"}},
+			update: bson.D{{"$inc", bson.D{{"value", int32(1)}}}},
+			result: bson.D{{"_id", "int64"}, {"value", int64(43)}},
+		},
+		"LongIncrement": {
 			filter: bson.D{{"_id", "int64"}},
 			update: bson.D{{"$inc", bson.D{{"value", int64(1)}}}},
 			result: bson.D{{"_id", "int64"}, {"value", int64(43)}},
@@ -175,6 +211,16 @@ func TestUpdateIncOperator(t *testing.T) {
 			filter: bson.D{{"_id", "int64"}},
 			update: bson.D{{"$inc", bson.D{{"value", int64(-1)}}}},
 			result: bson.D{{"_id", "int64"}, {"value", int64(41)}},
+		},
+		"LongIncrementDoubleField": {
+			filter: bson.D{{"_id", "double"}},
+			update: bson.D{{"$inc", bson.D{{"value", int64(1)}}}},
+			result: bson.D{{"_id", "double"}, {"value", float64(43.13)}},
+		},
+		"LongIncrementIntField": {
+			filter: bson.D{{"_id", "int32"}},
+			update: bson.D{{"$inc", bson.D{{"value", int64(1)}}}},
+			result: bson.D{{"_id", "int32"}, {"value", int64(43)}},
 		},
 
 		"FieldNotExist": {
