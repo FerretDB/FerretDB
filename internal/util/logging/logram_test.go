@@ -15,7 +15,7 @@
 package logging
 
 import (
-	"math/rand"
+	"strconv"
 	"testing"
 	"time"
 
@@ -26,13 +26,13 @@ import (
 var test_entrys = []zapcore.Entry{}
 
 func init() {
-	for i := 0; i < 2048; i++ {
-		l := zapcore.Level(rand.Intn(6) - 1)
+	for i := 0; i < 20; i++ {
+		l := zapcore.Level(i%7 - 1)
 		en := zapcore.Entry{
 			Level:      l,
 			Time:       time.Now(),
 			LoggerName: "logger_" + l.String(),
-			Message:    "Test message in logger " + l.String(),
+			Message:    "message " + strconv.Itoa(i+1),
 		}
 
 		test_entrys = append(test_entrys, en)
@@ -42,26 +42,67 @@ func init() {
 func TestLogRAM(t *testing.T) {
 	t.Parallel()
 
-	size := int64(512)
-	logram := NewLogRAM(size)
+	for name, tc := range map[string]struct {
+		size        int64
+		numEntries  int64
+		msgPanic    string
+		bufferMsg   []any
+		expectedMsg []any
+	}{
+		"PanicNegativSize": {
+			size:     -2,
+			msgPanic: "logram size -2",
+		},
+		"PanicZeroSize": {
+			size:     0,
+			msgPanic: "logram size 0",
+		},
+		"Append3of6": {
+			size:        6,
+			numEntries:  3,
+			bufferMsg:   []any{"message 1", "message 2", "message 3"},
+			expectedMsg: []any{"message 1", "message 2", "message 3"},
+		},
+		"Append20of6": {
+			size:        6,
+			numEntries:  20,
+			bufferMsg:   []any{"message 19", "message 20", "message 15", "message 16", "message 17", "message 18"},
+			expectedMsg: []any{"message 15", "message 16", "message 17", "message 18", "message 19", "message 20"},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			if tc.msgPanic != "" {
+				assert.PanicsWithValue(t, tc.msgPanic, func() { NewLogRAM(tc.size) })
+				return
+			}
 
-	for j := 0; j < 100; j++ {
-		logram.append(test_entrys[j])
+			logram := NewLogRAM(tc.size)
+
+			for i := int64(0); i < tc.numEntries; i++ {
+				logram.append(test_entrys[i])
+			}
+
+			assert.Len(t, logram.log, int(tc.size))
+
+			actualLog := logram.getLogRAM()
+			assert.Len(t, logram.getLogRAM(), len(tc.expectedMsg))
+
+			actualBufferMsg := getMsg(logram.log)
+			actualMsg := getMsg(actualLog)
+
+			assert.Equal(t, tc.bufferMsg, actualBufferMsg)
+			assert.Equal(t, tc.expectedMsg, actualMsg)
+		})
 	}
+}
 
-	ln_ram := int64(len(logram.log))
-	ln_log := int64(len(logram.getLogRAM()))
-
-	assert.Equal(t, size, ln_ram)
-	assert.Equal(t, int64(100), ln_log)
-
-	for j := 100; j < 2048; j++ {
-		logram.append(test_entrys[j])
+func getMsg(rs []*zapcore.Entry) (actual []any) {
+	for _, r := range rs {
+		if r != nil {
+			actual = append(actual, r.Message)
+		}
 	}
-
-	ln_ram = int64(len(logram.log))
-	ln_log = int64(len(logram.getLogRAM()))
-
-	assert.Equal(t, size, ln_ram)
-	assert.Equal(t, size, ln_log)
+	return
 }

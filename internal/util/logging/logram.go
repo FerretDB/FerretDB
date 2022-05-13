@@ -34,7 +34,7 @@ type record struct {
 type logRAM struct {
 	size    int64
 	counter int64
-	log     []*record
+	log     []*zapcore.Entry
 	mu      sync.RWMutex
 }
 
@@ -46,7 +46,7 @@ func NewLogRAM(size int64) *logRAM {
 
 	return &logRAM{
 		size: size,
-		log:  make([]*record, size),
+		log:  make([]*zapcore.Entry, size),
 		mu:   sync.RWMutex{},
 	}
 }
@@ -56,7 +56,7 @@ func (l *logRAM) append(entry zapcore.Entry) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	rec := &record{
+	rec := &zapcore.Entry{
 		Level:      entry.Level,
 		Time:       entry.Time,
 		LoggerName: entry.LoggerName,
@@ -68,8 +68,8 @@ func (l *logRAM) append(entry zapcore.Entry) {
 	l.counter = (l.counter + 1) % l.size
 }
 
-// getLogRAM returns entrys from logRAM
-func (l *logRAM) getLogRAM() (entrys []zapcore.Entry) {
+// getLogRAM returns entrys from logRAM.
+func (l *logRAM) getLogRAM() (entrys []*zapcore.Entry) {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 
@@ -77,7 +77,7 @@ func (l *logRAM) getLogRAM() (entrys []zapcore.Entry) {
 		k := (i + l.counter) % l.size
 
 		if l.log[k] != nil {
-			e := zapcore.Entry{
+			e := &zapcore.Entry{
 				Level:      l.log[k].Level,
 				Time:       l.log[k].Time,
 				LoggerName: l.log[k].LoggerName,
