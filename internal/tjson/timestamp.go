@@ -32,8 +32,8 @@ type timestampJSON struct {
 	T uint64 `json:"$t,string"`
 }
 
-// UnmarshalJSON implements tjsontype interface.
-func (ts *timestampType) UnmarshalJSON(data []byte) error {
+// Unmarshal implements tjsontype interface.
+func (ts *timestampType) Unmarshal(data []byte, _ map[string]any) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -54,9 +54,9 @@ func (ts *timestampType) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON implements tjsontype interface.
+// Marshal implements tjsontype interface.
 // From FerretDB format to Tigris string '"$t":<value>'
-func (ts *timestampType) MarshalJSON() ([]byte, error) {
+func (ts *timestampType) Marshal(_ map[string]any) ([]byte, error) {
 	res, err := json.Marshal(timestampJSON{
 		T: uint64(*ts),
 	})

@@ -33,8 +33,8 @@ type objectIDJSON struct {
 	O string `json:"$o"`
 }
 
-// UnmarshalJSON implements tjsontype interface.
-func (obj *objectIDType) UnmarshalJSON(data []byte) error {
+// Unmarshal implements tjsontype interface.
+func (obj *objectIDType) Unmarshal(data []byte, _ map[string]any) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -56,15 +56,15 @@ func (obj *objectIDType) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 	if len(b) != 12 {
-		return lazyerrors.Errorf("tjson.ObjectID.UnmarshalJSON: %d bytes", len(b))
+		return lazyerrors.Errorf("tjson.ObjectID.Unmarshal: %d bytes", len(b))
 	}
 	copy(obj[:], b)
 
 	return nil
 }
 
-// MarshalJSON implements tjsontype interface.
-func (obj *objectIDType) MarshalJSON() ([]byte, error) {
+// Marshal implements tjsontype interface.
+func (obj *objectIDType) Marshal(_ map[string]any) ([]byte, error) {
 	res, err := json.Marshal(objectIDJSON{
 		O: hex.EncodeToString(obj[:]),
 	})

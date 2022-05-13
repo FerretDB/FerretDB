@@ -27,8 +27,8 @@ type boolType bool
 // tjsontype implements tjsontype interface.
 func (b *boolType) tjsontype() {}
 
-// UnmarshalJSON implements tjsontype interface.
-func (b *boolType) UnmarshalJSON(data []byte) error {
+// Unmarshal implements tjsontype interface.
+func (b *boolType) Unmarshal(data []byte, _ map[string]any) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -49,8 +49,8 @@ func (b *boolType) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON implements tjsontype interface.
-func (b *boolType) MarshalJSON() ([]byte, error) {
+// Marshal implements tjsontype interface.
+func (b *boolType) Marshal(_ map[string]any) ([]byte, error) {
 	res, err := json.Marshal(bool(*b))
 	if err != nil {
 		return nil, lazyerrors.Error(err)

@@ -20,6 +20,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	jsoniter "github.com/json-iterator/go"
 )
 
 // documentType represents BSON Document type.
@@ -28,48 +29,19 @@ type documentType types.Document
 // tjsontype implements tjsontype interface.
 func (dt *documentType) tjsontype() {}
 
-// UnmarshalJSON build-in doc to tigris doc.
-func (doc *documentType) UnmarshalJSON(doc *types.Document, schema map[string]any) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
+// Unmarshal tigris document to build-in
+func (dt *documentType) Unmarshal(doc []byte, schema map[string]any) error {
+	var obj map[string][]byte
+	if err := jsoniter.Unmarshal(doc, &obj); err != nil {
+		return err
 	}
-
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-
-	var rawMessages map[string]json.RawMessage
-	if err := dec.Decode(&rawMessages); err != nil {
-		return lazyerrors.Error(err)
-	}
-	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	b, ok := rawMessages["$k"]
-	if !ok {
-		return lazyerrors.Errorf("tjson.Document.UnmarshalJSON: missing $k")
-	}
-
-	var keys []string
-	if err := json.Unmarshal(b, &keys); err != nil {
-		return lazyerrors.Error(err)
-	}
-	if len(keys)+1 != len(rawMessages) {
-		return lazyerrors.Errorf("tjson.Document.UnmarshalJSON: %d elements in $k, %d in total", len(keys), len(rawMessages))
-	}
-
 	td := new(types.Document)
-	for _, key := range keys {
-		b, ok = rawMessages[key]
+	for key, val := range obj {
+		fieldSchema, ok := schema[key].(map[string]any)
 		if !ok {
-			return lazyerrors.Errorf("tjson.Document.UnmarshalJSON: missing key %q", key)
+			return lazyerrors.Errorf("tjson.Document.Unmarshal: missing schema for %q", key)
 		}
-		var fieldSchema map[string]any
-		fieldSchema, ok = schema[key].(map[string]any)
-		if !ok {
-			return lazyerrors.Errorf("tjson.Document.UnmarshalJSON: missing schema for %q", key)
-		}
-		v, err := Unmarshal(b, fieldSchema)
+		v, err := Unmarshal(val, fieldSchema)
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
@@ -77,19 +49,17 @@ func (doc *documentType) UnmarshalJSON(doc *types.Document, schema map[string]an
 			return lazyerrors.Error(err)
 		}
 	}
-
-	*doc = documentType(*td)
+	*dt = documentType(*td)
 	return nil
 }
 
-// MarshalJSON: tigris doc to build-in doc
-func (doc *documentType) MarshalJSON() ([]byte, error) {
-	td := types.Document(*doc)
+// Marshal: build-in and schema to tigris doc
+func (d *documentType) Marshal(schema map[string]any) ([]byte, error) {
+	doc := types.Document(*d)
 
 	var buf bytes.Buffer
-
 	buf.WriteString(`{"$k":`)
-	keys := td.Keys()
+	keys := doc.Keys()
 	if keys == nil {
 		keys = []string{}
 	}
@@ -99,24 +69,25 @@ func (doc *documentType) MarshalJSON() ([]byte, error) {
 	}
 	buf.Write(b)
 
-	for _, key := range keys {
-		buf.WriteByte(',')
-
+	for _, key := range doc.Keys() {
+		value, err := doc.Get(key)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		fieldSchema, ok := schema[key].(map[string]any)
+		if !ok {
+			return nil, lazyerrors.Errorf("tjson.Document.Marshal: missing schema for %q", key)
+		}
 		if b, err = json.Marshal(key); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+		buf.WriteByte(',')
 		buf.Write(b)
 		buf.WriteByte(':')
-
-		value, err := td.Get(key)
+		b, err := Marshal(value, fieldSchema)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
-		b, err := Marshal(value)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
 		buf.Write(b)
 	}
 

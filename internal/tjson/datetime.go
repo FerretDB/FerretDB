@@ -36,8 +36,8 @@ func (dt *dateTimeType) String() string {
 // string in RFC 3339
 type dateTimeJSON string
 
-// UnmarshalJSON implements tjsontype interface.
-func (dt *dateTimeType) UnmarshalJSON(data []byte) error {
+// Unmarshal implements tjsontype interface.
+func (dt *dateTimeType) Unmarshal(data []byte, _ map[string]any) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -63,8 +63,8 @@ func (dt *dateTimeType) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON implements tjsontype interface.
-func (dt *dateTimeType) MarshalJSON() ([]byte, error) {
+// Marshal implements tjsontype interface.
+func (dt *dateTimeType) Marshal(_ map[string]any) ([]byte, error) {
 
 	res, err := json.Marshal(dateTimeJSON(time.Time(*dt).UTC().Format(time.RFC3339)))
 	if err != nil {

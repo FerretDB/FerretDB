@@ -17,14 +17,9 @@ package tjson
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"time"
 
-	"github.com/AlekSi/pointer"
-	jsoniter "github.com/json-iterator/go"
-
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -33,166 +28,127 @@ import (
 type tjsontype interface {
 	tjsontype() // seal for go-sumtype
 
-	MarshalJSON() ([]byte, error)
-	// UnmarshalJSON(data []byte) error
+	Marshal(map[string]any) ([]byte, error)
+	Unmarshal([]byte, map[string]any) error
 }
 
 //go-sumtype:decl tjsontype
 
-// fromTJSON converts tjsontype value to matching built-in or types' package value.
-func fromTJSON(v tjsontype) (any, error) {
-	switch v := v.(type) {
-	case *documentType:
-		return v.MarshalJSON()
-
-	// case *arrayType:
-	case *doubleType:
-		return float64(*v), nil
-	case *stringType:
-		return string(*v), nil
-	case *binaryType:
-		return types.Binary(*v), nil
-	case *objectIDType:
-		return types.ObjectID(*v), nil
-	case *boolType:
-		return bool(*v), nil
-	case *dateTimeType:
-		return time.Time(*v), nil
-	case *nullType:
-		return types.Null, nil
-	case *regexType:
-		return types.Regex(*v), nil
-	// case *int32Type:
-	case *timestampType:
-		return types.Timestamp(*v), nil
-	default:
-		return nil, common.NewErrorMsg(
-			common.ErrNotImplemented,
-			"int64 not supported yet",
-		)
-	}
-
-	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
-}
-
-// toTJSON converts built-in or types' package value to tjsontype value.
-func toTJSON(v any, schema map[string]any) tjsontype {
-	switch v := v.(type) {
-	case *types.Document:
-		var o documentType
-		_ = o.UnmarshalJSON(v, schema)
-		return &o
-
-	// case *types.Array:
-	case float64:
-		return pointer.To(doubleType(v))
-	case string:
-		return pointer.To(stringType(v))
-	case types.Binary:
-		return pointer.To(binaryType(v))
-	case types.ObjectID:
-		return pointer.To(objectIDType(v))
-	case bool:
-		return pointer.To(boolType(v))
-	case time.Time:
-		return pointer.To(dateTimeType(v))
-	case types.NullType:
-		return pointer.To(nullType(v))
-	case types.Regex:
-		return pointer.To(regexType(v))
-		// case int32:
-
-	case types.Timestamp:
-		return pointer.To(timestampType(v))
-		// case int64:
-
-	}
-
-	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
-}
-
-// Unmarshal decodes the tjson to build-in.
+// Unmarshal decodes tigris format to build-in.
 func Unmarshal(v []byte, schema map[string]any) (any, error) {
 	fieldType, ok := schema["type"]
 	if !ok {
 		return nil, lazyerrors.Errorf("canont find field type")
 	}
+
 	var err error
 	var res any
 	switch fieldType {
 	case "object":
-		var obj map[string]any
-		if err = jsoniter.Unmarshal(v, &obj); err != nil {
-			return nil, err
+		properties, ok := schema["properties"].(map[string]any)
+		if !ok {
+			return nil, lazyerrors.Errorf("tjson.Document.Marshal: missing properties in schema")
 		}
-		if _, ok := obj["$b"]; ok {
+		if _, ok := properties["$b"]; ok {
 			var o binaryType
-			err = o.UnmarshalJSON(v)
+			err = o.Unmarshal(v, schema)
 			res = &o
-			break
+			return res, err
 		}
-		if _, ok := obj["$o"]; ok {
+		if _, ok := properties["$o"]; ok {
 			var o objectIDType
-			err = o.UnmarshalJSON(v)
+			err = o.Unmarshal(v, schema)
 			res = &o
-			break
+			return res, err
 		}
-		if _, ok := obj["$r"]; ok {
+		if _, ok := properties["$r"]; ok {
 			var o regexType
-			err = o.UnmarshalJSON(v)
+			err = o.Unmarshal(v, schema)
 			res = &o
-			break
+			return res, err
 		}
-		if _, ok := obj["$t"]; ok {
+		if _, ok := properties["$t"]; ok {
 			var o timestampType
-			err = o.UnmarshalJSON(v)
+			err = o.Unmarshal(v, schema)
 			res = &o
-			break
+			return res, err
 		}
-
 		var o documentType
-		err = o.UnmarshalJSON(v, schema)
+		err = o.Unmarshal(v, schema)
 		res = &o
+
 	case "array":
-		err = common.NewErrorMsg(common.ErrNotImplemented, "arrays not supported yet")
+		err = lazyerrors.Errorf("arrays not supported yet")
 
 	case "boolean":
 		var o boolType
-		err = o.UnmarshalJSON(v)
+		err = o.Unmarshal(v, schema)
 		res = &o
 
 	case "string":
-		var obj map[string]any
-		if err = jsoniter.Unmarshal(v, &obj); err != nil {
-			return nil, err
-		}
-		if format, ok := obj["format"]; ok {
+		if format, ok := schema["format"]; ok {
 			if format == "date-time" {
 				var o dateTimeType
-				err = o.UnmarshalJSON(v)
+				err = o.Unmarshal(v, schema)
 				res = &o
+				return res, err
 			}
 		}
-	case "$k":
+		res = string(v)
 
 	default:
 		err = lazyerrors.Errorf("tjson.Unmarshal: unhandled map %#v", v)
 	}
-	return res, nil
+	return res, err
 }
 
-// Marshal encodes given built-in or types' package value into tjson.
-func Marshal(v any) ([]byte, error) {
-	if v == nil {
-		panic("v is nil")
+// Marshal build-in to tigris
+func Marshal(v any, schema map[string]any) ([]byte, error) {
+	fieldType, ok := schema["type"]
+	if !ok {
+		return nil, lazyerrors.Errorf("canont find field type")
 	}
+	switch v := v.(type) {
+	case *types.Document:
+		if fieldType != "object" {
+			return nil, lazyerrors.Errorf("wrong schema %s for types.Document", fieldType)
+		}
+		d := documentType(*v)
+		return d.Marshal(schema)
 
-	b, err := toTJSON(v).MarshalJSON()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+	// case *types.Array:
+	case float64:
+		d := doubleType(v)
+		return d.Marshal(schema)
+	case string:
+		s := stringType(v)
+		return s.Marshal(schema)
+	case types.Binary:
+		b := binaryType(v)
+		return b.Marshal(schema)
+	case types.ObjectID:
+		o := objectIDType(v)
+		return o.Marshal(schema)
+	case bool:
+		b := boolType(v)
+		return b.Marshal(schema)
+	case time.Time:
+		t := dateTimeType(v)
+		return t.Marshal(schema)
+	case types.NullType:
+		n := nullType(v)
+		return n.Marshal(schema)
+	case types.Regex:
+		r := regexType(v)
+		return r.Marshal(schema)
+		// case int32:
+
+	case types.Timestamp:
+		t := timestampType(v)
+		return t.Marshal(schema)
+		// case int64:
 	}
-
-	return b, nil
+	return nil, lazyerrors.Errorf("%T is not supported", v)
 }
 
 // checkConsumed returns error if decoder or reader have buffered or unread data.

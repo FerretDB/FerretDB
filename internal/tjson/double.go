@@ -29,8 +29,8 @@ func (d *doubleType) tjsontype() {}
 
 type doubleJSON float64
 
-// UnmarshalJSON implements tjsontype interface.
-func (d *doubleType) UnmarshalJSON(data []byte) error {
+// Unmarshal implements tjsontype interface.
+func (d *doubleType) Unmarshal(data []byte, _ map[string]any) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -50,8 +50,8 @@ func (d *doubleType) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON implements tjsontype interface.
-func (d *doubleType) MarshalJSON() ([]byte, error) {
+// Marshal implements tjsontype interface.
+func (d *doubleType) Marshal(_ map[string]any) ([]byte, error) {
 	f := float64(*d)
 	res, err := json.Marshal(f)
 	if err != nil {

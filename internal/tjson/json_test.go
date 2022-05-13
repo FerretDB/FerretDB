@@ -80,11 +80,11 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() tjsontype) {
 				}
 			}
 
-			t.Run("UnmarshalJSON", func(t *testing.T) {
+			t.Run("Unmarshal", func(t *testing.T) {
 				t.Parallel()
 
 				v := newFunc()
-				err := v.UnmarshalJSON([]byte(tc.j))
+				err := v.Unmarshal([]byte(tc.j))
 
 				if tc.jErr == "" {
 					require.NoError(t, err)
@@ -111,14 +111,14 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() tjsontype) {
 				require.Equal(t, tc.jErr, lastErr(err).Error())
 			})
 
-			t.Run("MarshalJSON", func(t *testing.T) {
+			t.Run("Marshal", func(t *testing.T) {
 				if tc.v == nil {
 					t.Skip("v is nil")
 				}
 
 				t.Parallel()
 
-				actualJ, err := tc.v.MarshalJSON()
+				actualJ, err := tc.v.Marshal()
 				require.NoError(t, err)
 				expectedJ := tc.j
 				if tc.canonJ != "" {
@@ -134,7 +134,7 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() tjsontype) {
 
 				t.Parallel()
 
-				actualJ, err := Marshal(fromTJSON(tc.v))
+				actualJ, err := Marshal(tc.v)
 				require.NoError(t, err)
 				expectedJ := tc.j
 				if tc.canonJ != "" {
@@ -157,31 +157,31 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() tjsontype) {
 	f.Fuzz(func(t *testing.T, j string) {
 		t.Parallel()
 
-		// raw "null" should never reach UnmarshalJSON due to the way encoding/json works
+		// raw "null" should never reach Unmarshal due to the way encoding/json works
 		if j == "null" {
 			t.Skip()
 		}
 
 		// j may not be a canonical form.
-		// We can't compare it with MarshalJSON() result directly.
+		// We can't compare it with Marshal() result directly.
 		// Instead, we compare second results.
 
 		v := newFunc()
-		if err := v.UnmarshalJSON([]byte(j)); err != nil {
+		if err := v.Unmarshal([]byte(j)); err != nil {
 			t.Skip()
 		}
 
-		// test MarshalJSON
+		// test Marshal
 		{
-			b, err := v.MarshalJSON()
+			b, err := v.Marshal()
 			require.NoError(t, err)
 			j = string(b)
 		}
 
-		// test UnmarshalJSON
+		// test Unmarshal
 		{
 			actualV := newFunc()
-			err := actualV.UnmarshalJSON([]byte(j))
+			err := actualV.Unmarshal([]byte(j))
 			require.NoError(t, err)
 			assertEqualWithNaN(t, v, actualV)
 		}
@@ -192,7 +192,7 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() tjsontype) {
 	for _, tc := range testCases {
 		tc := tc
 		b.Run(tc.name, func(b *testing.B) {
-			b.Run("UnmarshalJSON", func(b *testing.B) {
+			b.Run("Unmarshal", func(b *testing.B) {
 				data := []byte(tc.j)
 				var v tjsontype
 				var err error
@@ -203,7 +203,7 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() tjsontype) {
 
 				for i := 0; i < b.N; i++ {
 					v = newFunc()
-					err = v.UnmarshalJSON(data)
+					err = v.Unmarshal(data)
 				}
 
 				b.StopTimer()

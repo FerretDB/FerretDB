@@ -33,9 +33,9 @@ type regexJSON struct {
 	O string `json:"o"`
 }
 
-// UnmarshalJSON implements tjsontype interface.
+// Unmarshal implements tjsontype interface.
 // From Tigris string '{"$r": <value>, "o": <options> }' to FerretDB regex type
-func (regex *regexType) UnmarshalJSON(data []byte) error {
+func (regex *regexType) Unmarshal(data []byte, _ map[string]any) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -59,9 +59,9 @@ func (regex *regexType) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON implements tjsontype interface.
+// Marshal implements tjsontype interface.
 // From FerretDB format to Tigris string '{"$r":<value>,"o":<options> }'
-func (regex *regexType) MarshalJSON() ([]byte, error) {
+func (regex *regexType) Marshal(_ map[string]any) ([]byte, error) {
 	res, err := json.Marshal(regexJSON{
 		R: regex.Pattern,
 		O: regex.Options,
