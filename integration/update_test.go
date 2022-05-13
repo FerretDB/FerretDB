@@ -83,6 +83,15 @@ func TestUpdateIncOperatorErrors(t *testing.T) {
 	}{
 		"BadIncType": {
 			filter: bson.D{{"_id", "string"}},
+			update: bson.D{{"$inc", "string"}},
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: `Modifiers operate on fields but we found type string instead.` +
+					` For example: {$mod: {<field>: ...}} not {$inc: "string"}`,
+			},
+		},
+		"BadIncValue": {
+			filter: bson.D{{"_id", "string"}},
 			update: bson.D{{"$inc", bson.D{{"value", "bad value"}}}},
 			err: &mongo.WriteError{
 				Code:    14,

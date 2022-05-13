@@ -44,7 +44,11 @@ func UpdateDocument(doc, update *types.Document) error {
 		case "$inc":
 			incDoc, err := AssertType[*types.Document](updateV)
 			if err != nil {
-				return err
+				return NewWriteErrorMsg(
+					ErrFailedToParse,
+					fmt.Sprintf(`Modifiers operate on fields but we found type string instead.`+
+						` For example: {$mod: {<field>: ...}} not {%s: %#v}`, updateOp, updateV),
+				)
 			}
 
 			for _, incKey := range incDoc.Keys() {
@@ -58,15 +62,28 @@ func UpdateDocument(doc, update *types.Document) error {
 				docValue := must.NotFail(doc.Get(incKey))
 				incremented, err := addNumbers(incValue, docValue)
 				if err != nil {
-					return NewWriteErrorMsg(
-						ErrTypeMismatch,
-						fmt.Sprintf(
-							`Cannot apply $inc to a value of non-numeric type. {_id: "%s"} has the field '%s' of non-numeric type %s`,
-							must.NotFail(doc.Get("_id")),
-							incKey,
-							AliasFromType(docValue),
-						),
-					)
+					switch err {
+					case errBadLeftOperandType:
+						return NewWriteErrorMsg(
+							ErrTypeMismatch,
+							fmt.Sprintf(
+								`Cannot increment with non-numeric argument: {%s: %#v}`,
+								incKey,
+								incValue,
+							),
+						)
+					case errBadRightOperandType:
+						return NewWriteErrorMsg(
+							ErrTypeMismatch,
+							fmt.Sprintf(
+								`Cannot apply $inc to a value of non-numeric type. `+
+									`{_id: "%s"} has the field '%s' of non-numeric type %s`,
+								must.NotFail(doc.Get("_id")),
+								incKey,
+								AliasFromType(docValue),
+							),
+						)
+					}
 				}
 				must.NoError(doc.Set(incKey, incremented))
 			}
