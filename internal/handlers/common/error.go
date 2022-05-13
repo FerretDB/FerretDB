@@ -107,7 +107,7 @@ func (e *Error) Document() *types.Document {
 	return d
 }
 
-// ProtoErr represents protocol error type
+// ProtoErr represents protocol error type.
 type ProtoErr interface {
 	Error() string
 	Code() ErrorCode
