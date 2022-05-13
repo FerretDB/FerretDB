@@ -17,18 +17,9 @@ package logging
 import (
 	"fmt"
 	"sync"
-	"time"
 
 	"go.uber.org/zap/zapcore"
 )
-
-type record struct {
-	Level      zapcore.Level
-	Time       time.Time
-	LoggerName string
-	Message    string
-	Stack      string
-}
 
 // logRAM structure storage of log records in memory.
 type logRAM struct {
