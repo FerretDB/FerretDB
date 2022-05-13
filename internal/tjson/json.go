@@ -17,8 +17,11 @@ package tjson
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"time"
+
+	"github.com/AlekSi/pointer"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -34,51 +37,106 @@ type tjsontype interface {
 
 //go-sumtype:decl tjsontype
 
-// Unmarshal build-in to tigris.
-func Unmarshal(v any, schema map[string]any) ([]byte, error) {
-	fieldType, ok := schema["type"]
-	if !ok {
-		return nil, lazyerrors.Errorf("canont find field type")
+// fromFJSON converts tjsontype value to matching built-in or types' package value.
+func fromTJSON(v tjsontype) any {
+	switch v := v.(type) {
+	case *documentType:
+		return pointer.To(types.Document(*v))
+	case *doubleType:
+		return float64(*v)
+	case *stringType:
+		return string(*v)
+	case *binaryType:
+		return types.Binary(*v)
+	case *objectIDType:
+		return types.ObjectID(*v)
+	case *boolType:
+		return bool(*v)
+	case *dateTimeType:
+		return time.Time(*v)
+	case *nullType:
+		return types.Null
+	case *regexType:
+		return types.Regex(*v)
+	case *timestampType:
+		return types.Timestamp(*v)
 	}
+
+	panic("not reached")
+}
+
+// toTJSON converts built-in or types' package value to tjsontype value.
+func toTJSON(v any) tjsontype {
 	switch v := v.(type) {
 	case *types.Document:
+		return pointer.To(documentType(*v))
+	case float64:
+		return pointer.To(doubleType(v))
+	case string:
+		return pointer.To(stringType(v))
+	case types.Binary:
+		return pointer.To(binaryType(v))
+	case types.ObjectID:
+		return pointer.To(objectIDType(v))
+	case bool:
+		return pointer.To(boolType(v))
+	case time.Time:
+		return pointer.To(dateTimeType(v))
+	case types.NullType:
+		return pointer.To(nullType(v))
+	case types.Regex:
+		return pointer.To(regexType(v))
+	case types.Timestamp:
+		return pointer.To(timestampType(v))
+	}
+
+	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
+}
+
+// Unmarshal build-in to tigris.
+func Unmarshal(v any, schema map[string]any) ([]byte, error) {
+	tv := toTJSON(v)
+
+	switch v := tv.(type) {
+	case *documentType:
+		fieldType, ok := schema["type"]
+		if !ok {
+			return nil, lazyerrors.Errorf("cannot find field type %v", schema)
+		}
 		if fieldType != "object" {
 			return nil, lazyerrors.Errorf("wrong schema %s for types.Document", fieldType)
 		}
 		d := documentType(*v)
 		return d.Unmarshal(schema)
 
-	// case *types.Array:
-	case float64:
-		d := doubleType(v)
+	case *doubleType:
+		d := doubleType(*v)
 		return d.Unmarshal(schema)
-	case string:
-		s := stringType(v)
+	case *stringType:
+		s := stringType(*v)
 		return s.Unmarshal(schema)
-	case types.Binary:
-		b := binaryType(v)
+	case *binaryType:
+		b := binaryType(*v)
 		return b.Unmarshal(schema)
-	case types.ObjectID:
-		o := objectIDType(v)
+	case *objectIDType:
+		o := objectIDType(*v)
 		return o.Unmarshal(schema)
-	case bool:
-		b := boolType(v)
+	case *boolType:
+		b := boolType(*v)
 		return b.Unmarshal(schema)
-	case time.Time:
-		t := dateTimeType(v)
+	case *dateTimeType:
+		t := dateTimeType(*v)
 		return t.Unmarshal(schema)
-	case types.NullType:
-		n := nullType(v)
+	case *nullType:
+		n := nullType(*v)
 		return n.Unmarshal(schema)
-	case types.Regex:
-		r := regexType(v)
+	case *regexType:
+		r := regexType(*v)
 		return r.Unmarshal(schema)
-		// case int32:
-
-	case types.Timestamp:
-		t := timestampType(v)
+	case *timestampType:
+		t := timestampType(*v)
 		return t.Unmarshal(schema)
-		// case int64:
+
 	}
 	return nil, lazyerrors.Errorf("%T is not supported", v)
 }
@@ -91,7 +149,7 @@ func Marshal(v []byte, schema map[string]any) (any, error) {
 	}
 
 	var err error
-	var res any
+	var res tjsontype
 	switch fieldType {
 	case "object":
 		properties, ok := schema["properties"].(map[string]any)
@@ -102,25 +160,25 @@ func Marshal(v []byte, schema map[string]any) (any, error) {
 			var o binaryType
 			err = o.Marshal(v, schema)
 			res = &o
-			return res, err
+			break
 		}
 		if _, ok := properties["$o"]; ok {
 			var o objectIDType
 			err = o.Marshal(v, schema)
 			res = &o
-			return res, err
+			break
 		}
 		if _, ok := properties["$r"]; ok {
 			var o regexType
 			err = o.Marshal(v, schema)
 			res = &o
-			return res, err
+			break
 		}
 		if _, ok := properties["$t"]; ok {
 			var o timestampType
 			err = o.Marshal(v, schema)
 			res = &o
-			return res, err
+			break
 		}
 		var o documentType
 		err = o.Marshal(v, schema)
@@ -140,15 +198,17 @@ func Marshal(v []byte, schema map[string]any) (any, error) {
 				var o dateTimeType
 				err = o.Marshal(v, schema)
 				res = &o
-				return res, err
+				break
 			}
 		}
-		res = string(v)
+		var o stringType
+		err = o.Marshal(v, schema)
+		res = &o
 
 	default:
 		err = lazyerrors.Errorf("tjson.Unmarshal: unhandled map %#v", v)
 	}
-	return res, err
+	return fromTJSON(res), err
 }
 
 // checkConsumed returns error if decoder or reader have buffered or unread data.

@@ -27,11 +27,11 @@ import (
 
 type testCase struct {
 	name   string
-	v      tjsontype
-	j      string
-	s      map[string]any
-	canonJ string // canonical form without extra object fields, zero values, etc.
-	jErr   string // unwrapped
+	v      tjsontype      // build-in
+	j      string         // tigris
+	s      map[string]any // schema
+	canonJ string         // canonical form without extra object fields, zero values, etc.
+	jErr   string         // unwrapped
 }
 
 // assertEqualWithNaN is assert.Equal that also can compare NaNs.
