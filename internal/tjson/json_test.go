@@ -81,15 +81,14 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() tjsontype) {
 				}
 			}
 
-			t.Run("Unmarshal", func(t *testing.T) {
+			t.Run("Marshal", func(t *testing.T) {
 				t.Parallel()
 
-				v := newFunc()
-				err := v.Unmarshal([]byte(tc.j), tc.s)
+				actualBuildIn, err := Marshal([]byte(tc.j), tc.s)
 
 				if tc.jErr == "" {
 					require.NoError(t, err)
-					assertEqualWithNaN(t, tc.v, v)
+					assertEqualWithNaN(t, tc.v, actualBuildIn)
 					return
 				}
 
@@ -97,14 +96,13 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() tjsontype) {
 				require.Equal(t, tc.jErr, lastErr(err).Error())
 			})
 
-			t.Run("Marshal", func(t *testing.T) {
+			t.Run("Unmarshal", func(t *testing.T) {
 				if tc.v == nil {
 					t.Skip("v is nil")
 				}
-
 				t.Parallel()
 
-				actualJ, err := tc.v.Marshal(tc.s)
+				actualJ, err := Unmarshal(tc.v, tc.s)
 				require.NoError(t, err)
 				expectedJ := tc.j
 				if tc.canonJ != "" {
@@ -120,13 +118,11 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() tjsontype) {
 
 				t.Parallel()
 
-				actualJ, err := Marshal(tc.v, tc.s)
+				actualF, err := Marshal([]byte(tc.j), tc.s)
 				require.NoError(t, err)
-				expectedJ := tc.j
-				if tc.canonJ != "" {
-					expectedJ = tc.canonJ
-				}
-				assert.Equal(t, expectedJ, string(actualJ))
+				expectedF := tc.v
+
+				assert.Equal(t, expectedF, actualF)
 			})
 		})
 	}
@@ -153,33 +149,33 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() tjsontype) {
 		// Instead, we compare second results.
 
 		v := newFunc()
-		if err := v.Unmarshal([]byte(j), s); err != nil {
-			t.Skip()
-		}
-
-		// test Marshal
 		{
-
-			b, err := v.Marshal(s)
+			err := v.Marshal([]byte(j), s)
 			require.NoError(t, err)
-			j = string(b)
 		}
 
 		// test Unmarshal
 		{
+			b, err := v.Unmarshal(s)
+			require.NoError(t, err)
+			j = string(b)
+		}
+
+		// test Marshal
+		{
 			actualV := newFunc()
-			err := actualV.Unmarshal([]byte(j), s)
+			err := actualV.Marshal([]byte(j), s)
 			require.NoError(t, err)
 			assertEqualWithNaN(t, v, actualV)
 		}
 	})
 }
 
-func benchmark(b *testing.B, testCases []testCase, newFunc func() tjsontype, schema map[string]any) {
+func benchmark(b *testing.B, testCases []testCase, newFunc func() tjsontype) {
 	for _, tc := range testCases {
 		tc := tc
 		b.Run(tc.name, func(b *testing.B) {
-			b.Run("Unmarshal", func(b *testing.B) {
+			b.Run("Marshal", func(b *testing.B) {
 				data := []byte(tc.j)
 				var v tjsontype
 				var err error
@@ -190,7 +186,7 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() tjsontype, sch
 
 				for i := 0; i < b.N; i++ {
 					v = newFunc()
-					err = v.Unmarshal(data, schema)
+					err = v.Marshal(data, tc.s)
 				}
 
 				b.StopTimer()

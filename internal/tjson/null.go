@@ -26,14 +26,14 @@ type nullType types.NullType
 // tjsontype implements tjsontype interface.
 func (*nullType) tjsontype() {}
 
-// Unmarshal implements tjsontype interface.
-func (*nullType) Unmarshal(data []byte, _ map[string]any) error {
-	panic(fmt.Sprintf("must not be called, was called with %s", string(data)))
+// Unmarshal build-in to tigris.
+func (*nullType) Unmarshal(_ map[string]any) ([]byte, error) {
+	return []byte("null"), nil
 }
 
-// Marshal implements tjsontype interface.
-func (*nullType) Marshal(_ map[string]any) ([]byte, error) {
-	return []byte("null"), nil
+// Marshal tigris to build-in.
+func (*nullType) Marshal(data []byte, _ map[string]any) error {
+	panic(fmt.Sprintf("must not be called, was called with %s", string(data)))
 }
 
 // check interfaces

@@ -20,12 +20,21 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
+var binarySchema = map[string]any{
+	"type": "object",
+	"properties": map[string]any{
+		"$b": map[string]any{"type": "string", "format": "byte"},   // binary data
+		"s":  map[string]any{"type": "integer", "format": "int32"}, // binary subtype
+	},
+}
+
 var binaryTestCases = []testCase{{
 	name: "foo",
 	v: &binaryType{
 		Subtype: types.BinaryUser,
 		B:       []byte("foo"),
 	},
+	s: binarySchema,
 	j: `{"$b":"Zm9v","s":128}`,
 }, {
 	name: "empty",
@@ -33,6 +42,7 @@ var binaryTestCases = []testCase{{
 		Subtype: types.BinaryGeneric,
 		B:       []byte{},
 	},
+	s:      binarySchema,
 	j:      `{"$b":""}`,
 	canonJ: `{"$b":"","s":0}`,
 }, {
@@ -41,6 +51,7 @@ var binaryTestCases = []testCase{{
 		Subtype: 0xff,
 		B:       []byte{},
 	},
+	s: binarySchema,
 	j: `{"$b":"","s":255}`,
 }, {
 	name: "extra JSON fields",

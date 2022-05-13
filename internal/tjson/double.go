@@ -29,12 +29,21 @@ func (d *doubleType) tjsontype() {}
 
 type doubleJSON float64
 
-// Unmarshal implements tjsontype interface.
-func (d *doubleType) Unmarshal(data []byte, _ map[string]any) error {
+// Unmarshal build-in to tigris.
+func (d *doubleType) Unmarshal(_ map[string]any) ([]byte, error) {
+	f := float64(*d)
+	res, err := json.Marshal(f)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	return res, nil
+}
+
+// Marshal tigris to build-in.
+func (d *doubleType) Marshal(data []byte, _ map[string]any) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
-
 	r := bytes.NewReader(data)
 	dec := json.NewDecoder(r)
 	dec.DisallowUnknownFields()
@@ -48,16 +57,6 @@ func (d *doubleType) Unmarshal(data []byte, _ map[string]any) error {
 	}
 	*d = doubleType(o)
 	return nil
-}
-
-// Marshal implements tjsontype interface.
-func (d *doubleType) Marshal(_ map[string]any) ([]byte, error) {
-	f := float64(*d)
-	res, err := json.Marshal(f)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-	return res, nil
 }
 
 // check interfaces

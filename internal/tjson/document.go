@@ -20,41 +20,16 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	jsoniter "github.com/json-iterator/go"
 )
 
 // documentType represents BSON Document type.
 type documentType types.Document
 
 // tjsontype implements tjsontype interface.
-func (dt *documentType) tjsontype() {}
+func (d *documentType) tjsontype() {}
 
-// Unmarshal tigris document to build-in
-func (dt *documentType) Unmarshal(doc []byte, schema map[string]any) error {
-	var obj map[string][]byte
-	if err := jsoniter.Unmarshal(doc, &obj); err != nil {
-		return err
-	}
-	td := new(types.Document)
-	for key, val := range obj {
-		fieldSchema, ok := schema[key].(map[string]any)
-		if !ok {
-			return lazyerrors.Errorf("tjson.Document.Unmarshal: missing schema for %q", key)
-		}
-		v, err := Unmarshal(val, fieldSchema)
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-		if err = td.Set(key, v); err != nil {
-			return lazyerrors.Error(err)
-		}
-	}
-	*dt = documentType(*td)
-	return nil
-}
-
-// Marshal: build-in and schema to tigris doc
-func (d *documentType) Marshal(schema map[string]any) ([]byte, error) {
+// Unmarshal build-in to tigris.
+func (d *documentType) Unmarshal(schema map[string]any) ([]byte, error) {
 	doc := types.Document(*d)
 
 	var buf bytes.Buffer
@@ -84,7 +59,7 @@ func (d *documentType) Marshal(schema map[string]any) ([]byte, error) {
 		buf.WriteByte(',')
 		buf.Write(b)
 		buf.WriteByte(':')
-		b, err := Marshal(value, fieldSchema)
+		b, err := Unmarshal(value, fieldSchema)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -93,6 +68,34 @@ func (d *documentType) Marshal(schema map[string]any) ([]byte, error) {
 
 	buf.WriteByte('}')
 	return buf.Bytes(), nil
+}
+
+// Marshal: tigris to build-in.
+func (d *documentType) Marshal(data []byte, schema map[string]any) error {
+	var obj map[string][]byte
+	if err := json.Unmarshal(data, &obj); err != nil {
+		return err
+	}
+	td := new(types.Document)
+	for key, val := range schema {
+		fieldSchema, ok := val.(map[string]any)
+		if !ok {
+			return lazyerrors.Errorf("tjson.Document.Unmarshal: malformed schema for %q", key)
+		}
+		dataVal, ok := obj[key]
+		if !ok {
+			continue
+		}
+		v, err := Marshal(dataVal, fieldSchema)
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+		if err = td.Set(key, v); err != nil {
+			return lazyerrors.Error(err)
+		}
+	}
+	*d = documentType(*td)
+	return nil
 }
 
 // check interfaces

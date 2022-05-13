@@ -34,7 +34,18 @@ type objectIDJSON struct {
 }
 
 // Unmarshal implements tjsontype interface.
-func (obj *objectIDType) Unmarshal(data []byte, _ map[string]any) error {
+func (obj *objectIDType) Unmarshal(_ map[string]any) ([]byte, error) {
+	res, err := json.Marshal(objectIDJSON{
+		O: hex.EncodeToString(obj[:]),
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	return res, nil
+}
+
+// Marshal implements tjsontype interface.
+func (obj *objectIDType) Marshal(data []byte, _ map[string]any) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -61,17 +72,6 @@ func (obj *objectIDType) Unmarshal(data []byte, _ map[string]any) error {
 	copy(obj[:], b)
 
 	return nil
-}
-
-// Marshal implements tjsontype interface.
-func (obj *objectIDType) Marshal(_ map[string]any) ([]byte, error) {
-	res, err := json.Marshal(objectIDJSON{
-		O: hex.EncodeToString(obj[:]),
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-	return res, nil
 }
 
 // check interfaces

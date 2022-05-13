@@ -28,7 +28,16 @@ type stringType string
 func (str *stringType) tjsontype() {}
 
 // Unmarshal implements tjsontype interface.
-func (str *stringType) Unmarshal(data []byte, _ map[string]any) error {
+func (str *stringType) Unmarshal(_ map[string]any) ([]byte, error) {
+	res, err := json.Marshal(string(*str))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	return res, nil
+}
+
+// Marshal implements tjsontype interface.
+func (str *stringType) Marshal(data []byte, _ map[string]any) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -47,15 +56,6 @@ func (str *stringType) Unmarshal(data []byte, _ map[string]any) error {
 
 	*str = stringType(o)
 	return nil
-}
-
-// Marshal implements tjsontype interface.
-func (str *stringType) Marshal(_ map[string]any) ([]byte, error) {
-	res, err := json.Marshal(string(*str))
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-	return res, nil
 }
 
 // check interfaces
