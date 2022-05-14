@@ -8,13 +8,13 @@ require (
 	github.com/jackc/pgerrcode v0.0.0-20220416144525-469b46aa5efa
 	github.com/jackc/pgx/v4 v4.16.1
 	github.com/pmezard/go-difflib v1.0.0
-	github.com/prometheus/client_golang v1.12.1
+	github.com/prometheus/client_golang v1.12.2
 	github.com/prometheus/common v0.34.0
 	github.com/stretchr/testify v1.7.1
 	go.uber.org/zap v1.21.0
-	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect; always use @latest
-	golang.org/x/exp v0.0.0-20220414153411-bcd21879b8fd
-	golang.org/x/sys v0.0.0-20220422013727-9388b58f7150
+	golang.org/x/crypto v0.0.0-20220513210258-46612604a0f9 // indirect; always use @latest
+	golang.org/x/exp v0.0.0-20220428152302-39d4317da171
+	golang.org/x/sys v0.0.0-20220513210249-45d2b4557a2a
 )
 
 require (

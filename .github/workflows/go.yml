@@ -10,7 +10,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: '42 3 * * *'
+    - cron: '42 2 * * *'
 
 env:
   GOPATH: /home/runner/go
