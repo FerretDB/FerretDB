@@ -1,10 +1,15 @@
-FROM scratch
-
 ARG VERSION
 ARG COMMIT
-ARG TARGETARCH
 
-ADD bin/ferretdb-${TARGETARCH} /ferretdb
+FROM golang:1.18.2 AS build
+
+WORKDIR /src
+ADD . .
+RUN CGO_ENABLED=0 go test -c -trimpath -o=bin/ferretdb -tags=testcover -coverpkg=./... ./cmd/ferretdb
+
+FROM scratch
+
+COPY --from=build /src/bin/ferretdb /ferretdb
 
 EXPOSE 27017
 
