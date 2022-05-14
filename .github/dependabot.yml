@@ -6,33 +6,33 @@ updates:
     labels: [deps]
     schedule:
       interval: "weekly"
-      day: "saturday"
-      time: "04:42"
+      day: "thursday"
+      time: "01:42"
   - package-ecosystem: "docker"
     directory: "/"
     labels: [deps]
     schedule:
       interval: "weekly"
-      day: "saturday"
-      time: "04:42"
+      day: "thursday"
+      time: "01:42"
   - package-ecosystem: "gomod"
     directory: "/"
     labels: [deps]
     schedule:
       interval: "weekly"
-      day: "saturday"
-      time: "04:42"
+      day: "thursday"
+      time: "01:42"
   - package-ecosystem: "gomod"
     directory: "/integration"
     labels: [deps]
     schedule:
       interval: "weekly"
-      day: "saturday"
-      time: "04:42"
+      day: "thursday"
+      time: "01:42"
   - package-ecosystem: "gomod"
     directory: "/tools"
     labels: [deps]
     schedule:
       interval: "weekly"
-      day: "saturday"
-      time: "04:42"
+      day: "thursday"
+      time: "01:42"
