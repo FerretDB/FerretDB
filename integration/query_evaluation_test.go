@@ -413,21 +413,42 @@ func TestQueryEvaluationRegex(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t, shareddata.Scalars)
 
+	_, err := collection.InsertMany(ctx, []any{
+		bson.D{{"_id", "multiline-string"}, {"value", "bar\nfoo"}},
+		bson.D{
+			{"_id", "document-nested-strings"},
+			{"value", bson.D{{"foo", bson.D{{"bar", "quz"}}}}},
+		},
+	})
+	require.NoError(t, err)
+
 	for name, tc := range map[string]struct {
 		filter      any
 		expectedIDs []any
 	}{
 		"Regex": {
 			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "foo"}}}}},
-			expectedIDs: []any{"string"},
+			expectedIDs: []any{"multiline-string", "string"},
+		},
+		"RegexNested": {
+			filter:      bson.D{{"value.foo.bar", bson.D{{"$regex", primitive.Regex{Pattern: "quz"}}}}},
+			expectedIDs: []any{"document-nested-strings"},
 		},
 		"RegexWithOption": {
 			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "42", Options: "i"}}}}},
 			expectedIDs: []any{"string-double", "string-whole"},
 		},
-		"RegexStringOption": {
+		"RegexStringOptionMatchCaseInsensitive": {
 			filter:      bson.D{{"value", bson.D{{"$regex", "foo"}, {"$options", "i"}}}},
-			expectedIDs: []any{"regex", "string"},
+			expectedIDs: []any{"multiline-string", "regex", "string"},
+		},
+		"RegexStringOptionMatchLineEnd": {
+			filter:      bson.D{{"value", bson.D{{"$regex", "b.*foo"}, {"$options", "s"}}}},
+			expectedIDs: []any{"multiline-string"},
+		},
+		"RegexStringOptionMatchMultiline": {
+			filter:      bson.D{{"value", bson.D{{"$regex", "^foo"}, {"$options", "m"}}}},
+			expectedIDs: []any{"multiline-string", "string"},
 		},
 		"RegexNoSuchField": {
 			filter:      bson.D{{"no-such-field", bson.D{{"$regex", primitive.Regex{Pattern: "foo"}}}}},
@@ -436,6 +457,10 @@ func TestQueryEvaluationRegex(t *testing.T) {
 		"RegexNoSuchFieldString": {
 			filter:      bson.D{{"no-such-field", bson.D{{"$regex", "foo"}}}},
 			expectedIDs: []any{},
+		},
+		"RegexBadOption": {
+			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "foo", Options: "123"}}}}},
+			expectedIDs: []any{"multiline-string", "string"},
 		},
 	} {
 		name, tc := name, tc
@@ -449,6 +474,146 @@ func TestQueryEvaluationRegex(t *testing.T) {
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
+		})
+	}
+}
+
+func TestQueryEvaluationRegexErrors(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t, shareddata.Scalars)
+
+	_, err := collection.InsertMany(ctx, []any{
+		bson.D{{"_id", "multiline-string"}, {"value", "bar\nfoo"}},
+	})
+	require.NoError(t, err)
+
+	for name, tc := range map[string]struct {
+		filter any
+		err    *mongo.CommandError
+	}{
+		"MissingClosingParen": {
+			filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "g(-z]+ng  wrong regex"}}}}},
+			err: &mongo.CommandError{
+				Code:    51091,
+				Name:    "Location51091",
+				Message: "Regular expression is invalid: missing )",
+			},
+		},
+		"MissingClosingBracket": {
+			filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "g[-z+ng  wrong regex"}}}}},
+			err: &mongo.CommandError{
+				Code:    51091,
+				Name:    "Location51091",
+				Message: "Regular expression is invalid: missing terminating ] for character class",
+			},
+		},
+		"InvalidEscape": {
+			filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "\\uZ"}}}}},
+			err: &mongo.CommandError{
+				Code:    51091,
+				Name:    "Location51091",
+				Message: "Regular expression is invalid: PCRE does not support \\L, \\l, \\N{name}, \\U, or \\u",
+			},
+		},
+		"NamedCapture": {
+			filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "(?P<name)"}}}}},
+			err: &mongo.CommandError{
+				Code:    51091,
+				Name:    "Location51091",
+				Message: "Regular expression is invalid: syntax error in subpattern name (missing terminator)",
+			},
+		},
+		"UnexpectedParen": {
+			filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: ")"}}}}},
+			err: &mongo.CommandError{
+				Code:    51091,
+				Name:    "Location51091",
+				Message: "Regular expression is invalid: unmatched parentheses",
+			},
+		},
+		"TrailingBackslash": {
+			filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: `abc\`}}}}},
+			err: &mongo.CommandError{
+				Code:    51091,
+				Name:    "Location51091",
+				Message: "Regular expression is invalid: \\ at end of pattern",
+			},
+		},
+		"InvalidRepetition": {
+			filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: `a**`}}}}},
+			err: &mongo.CommandError{
+				Code:    51091,
+				Name:    "Location51091",
+				Message: "Regular expression is invalid: nothing to repeat",
+			},
+		},
+		"MissingRepetitionArgumentStar": {
+			filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: `*`}}}}},
+			err: &mongo.CommandError{
+				Code:    51091,
+				Name:    "Location51091",
+				Message: "Regular expression is invalid: nothing to repeat",
+			},
+		},
+		"MissingRepetitionArgumentPlus": {
+			filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: `+`}}}}},
+			err: &mongo.CommandError{
+				Code:    51091,
+				Name:    "Location51091",
+				Message: "Regular expression is invalid: nothing to repeat",
+			},
+		},
+		"MissingRepetitionArgumentQuestion": {
+			filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: `?`}}}}},
+			err: &mongo.CommandError{
+				Code:    51091,
+				Name:    "Location51091",
+				Message: "Regular expression is invalid: nothing to repeat",
+			},
+		},
+		"InvalidClassRange": {
+			filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: `[z-a]`}}}}},
+			err: &mongo.CommandError{
+				Code:    51091,
+				Name:    "Location51091",
+				Message: "Regular expression is invalid: range out of order in character class",
+			},
+		},
+		"InvalidNestedRepetitionOperatorStar": {
+			filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: `a**`}}}}},
+			err: &mongo.CommandError{
+				Code:    51091,
+				Name:    "Location51091",
+				Message: "Regular expression is invalid: nothing to repeat",
+			},
+		},
+		"InvalidPerlOp": {
+			filter: bson.D{{"value", bson.D{{"$regex", `(?z)`}}}},
+			err: &mongo.CommandError{
+				Code:    51091,
+				Name:    "Location51091",
+				Message: "Regular expression is invalid: unrecognized character after (? or (?-",
+			},
+		},
+		"InvalidRepeatSize": {
+			filter: bson.D{{"value", bson.D{{"$regex", `(aa){3,10001}`}}}},
+			err: &mongo.CommandError{
+				Code:    51091,
+				Name:    "Location51091",
+				Message: "Regular expression is invalid: regular expression is too large",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			if tc.err != nil {
+				AssertEqualError(t, *tc.err, err)
+				return
+			}
+			require.NoError(t, err)
 		})
 	}
 }
