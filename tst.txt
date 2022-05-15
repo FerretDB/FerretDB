@@ -1,0 +1,25 @@
+-test.shuffle 1652594995310595099
+2022-05-15T09:09:55.312+0300	INFO	debug	debug/debug.go:59	Starting debug server on http://127.0.0.1:39227/
+--- FAIL: TestCommandsAdministrationGetParameter (0.18s)
+    --- FAIL: TestCommandsAdministrationGetParameter/ShowDetailsAllParameters (0.00s)
+        commands_administration_test.go:300: 
+            	Error Trace:	commands_administration_test.go:300
+            	Error:      	Received unexpected error:
+            	            	no option found to get
+            	Test:       	TestCommandsAdministrationGetParameter/ShowDetailsAllParameters
+    --- FAIL: TestCommandsAdministrationGetParameter/ShowDetails (0.00s)
+        commands_administration_test.go:306: 
+            	Error Trace:	commands_administration_test.go:306
+            	Error:      	[]string{"quiet", "ok"} does not contain "quie"
+            	Test:       	TestCommandsAdministrationGetParameter/ShowDetails
+        commands_administration_test.go:307: 
+            	Error Trace:	commands_administration_test.go:307
+            	Error:      	Not equal: 
+            	            	expected: <nil>(<nil>)
+            	            	actual  : bool(false)
+            	Test:       	TestCommandsAdministrationGetParameter/ShowDetails
+    setup.go:118: Keeping database "admin" and collection "testcommandsadministrationgetparameter" for debugging.
+FAIL
+coverage: 7.4% of statements in ../...
+exit status 1
+FAIL	github.com/FerretDB/FerretDB/integration	1.942s

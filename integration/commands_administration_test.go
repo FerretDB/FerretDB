@@ -272,6 +272,20 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 			command: bson.D{{"getParameter", 1}, {"quiet_other", 1}, {"comment", "getParameter test"}},
 			err:     &mongo.CommandError{Message: `no option found to get`},
 		},
+		"ShowDetails": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}}}, {"quiet", 1}, {"comment", "getParameter test"}},
+			expected: map[string]any{
+				"quie": false,
+				"ok":   float64(1),
+			},
+		},
+		"ShowDetailsAllParameters": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", true}}}},
+			expected: map[string]any{
+				"quie": false,
+				"ok":   float64(1),
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
