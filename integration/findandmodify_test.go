@@ -261,6 +261,7 @@ func TestFindAndModifyErrors(t *testing.T) {
 			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 			command := append(bson.D{{"findAndModify", collection.Name()}}, tc.command...)
+
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 
@@ -273,7 +274,8 @@ func TestFindAndModifyUpdate(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		query             bson.D
+		command           bson.D
+		query             any
 		update            bson.D
 		response          bson.D
 		err               *mongo.CommandError
@@ -281,7 +283,22 @@ func TestFindAndModifyUpdate(t *testing.T) {
 		returnNewDocument bool
 	}{
 		"Replace": {
-			query:  bson.D{{"_id", "int64"}},
+			query: bson.D{{"_id", "int64"}},
+			command: bson.D{
+				{"update", bson.D{{"_id", "int64"}, {"value", int64(43)}}},
+			},
+			update: bson.D{{"_id", "int64"}, {"value", int64(43)}},
+			response: bson.D{
+				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
+				{"value", bson.D{{"_id", "int64"}, {"value", int64(42)}}},
+				{"ok", float64(1)},
+			},
+		},
+		"ReplaceWithoutID": {
+			query: bson.D{{"_id", "int64"}},
+			command: bson.D{
+				{"update", bson.D{{"value", int64(43)}}},
+			},
 			update: bson.D{{"_id", "int64"}, {"value", int64(43)}},
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
@@ -290,19 +307,36 @@ func TestFindAndModifyUpdate(t *testing.T) {
 			},
 		},
 		"ReplaceReturnNew": {
-			query:             bson.D{{"_id", "int32"}},
-			update:            bson.D{{"_id", "int32"}, {"value", int32(43)}},
-			returnNewDocument: true,
+			query: bson.D{{"_id", "int32"}},
+			command: bson.D{
+				{"update", bson.D{{"_id", "int32"}, {"value", int32(43)}}},
+				{"new", true},
+			},
+			update: bson.D{{"_id", "int32"}, {"value", int32(43)}},
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
 				{"value", bson.D{{"_id", "int32"}, {"value", int32(43)}}},
 				{"ok", float64(1)},
 			},
 		},
-		"UpdateNotExisted": {
-			query:           bson.D{{"_id", "no-such-id"}},
-			update:          bson.D{{"_id", "int32"}, {"value", int32(43)}},
-			skipUpdateCheck: true,
+		"UpdateNotExistedIdInQuery": {
+			query: bson.D{{"_id", "no-such-id"}},
+			command: bson.D{
+				{"update", bson.D{{"value", int32(43)}}},
+			},
+			response: bson.D{
+				{"lastErrorObject", bson.D{{"n", int32(0)}, {"updatedExisting", false}}},
+				{"ok", float64(1)},
+			},
+		},
+		"UpdateNotExistedIdNotInQuery": {
+			query: bson.D{{"$and", bson.A{
+				bson.D{{"value", bson.D{{"$gt", 0}}}},
+				bson.D{{"value", bson.D{{"$lt", 0}}}},
+			}}},
+			command: bson.D{
+				{"update", bson.D{{"value", int32(43)}}},
+			},
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(0)}, {"updatedExisting", false}}},
 				{"ok", float64(1)},
@@ -314,12 +348,8 @@ func TestFindAndModifyUpdate(t *testing.T) {
 			t.Parallel()
 			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
-			command := bson.D{
-				{"findAndModify", collection.Name()},
-				{"query", tc.query},
-				{"update", tc.update},
-				{"new", tc.returnNewDocument},
-			}
+			command := bson.D{{"findAndModify", collection.Name()}, {"query", tc.query}}
+			command = append(command, tc.command...)
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
@@ -334,18 +364,16 @@ func TestFindAndModifyUpdate(t *testing.T) {
 
 			AssertEqualDocuments(t, tc.response, actual)
 
-			if tc.skipUpdateCheck {
-				return
-			}
+			if tc.update != nil {
+				err = collection.FindOne(ctx, tc.query).Decode(&actual)
+				if tc.err != nil {
+					AssertEqualError(t, *tc.err, err)
+					return
+				}
+				require.NoError(t, err)
 
-			err = collection.FindOne(ctx, tc.query).Decode(&actual)
-			if tc.err != nil {
-				AssertEqualError(t, *tc.err, err)
-				return
+				AssertEqualDocuments(t, tc.update, actual)
 			}
-			require.NoError(t, err)
-
-			AssertEqualDocuments(t, tc.update, actual)
 		})
 	}
 }
@@ -372,11 +400,84 @@ func TestFindAndModifyUpsert(t *testing.T) {
 				{"ok", float64(1)},
 			},
 		},
+		"UpsertNew": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "double"}}},
+				{"update", bson.D{{"$set", bson.D{{"value", 43.13}}}}},
+				{"upsert", true},
+				{"new", true},
+			},
+			response: bson.D{
+				{"lastErrorObject", bson.D{
+					{"n", int32(1)},
+					{"updatedExisting", true},
+				}},
+				{"value", bson.D{{"_id", "double"}, {"value", 43.13}}},
+				{"ok", float64(1)},
+			},
+		},
+		"UpsertNoSuchDocument": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "no-such-doc"}}},
+				{"update", bson.D{{"$set", bson.D{{"value", 43.13}}}}},
+				{"upsert", true},
+				{"new", true},
+			},
+			response: bson.D{
+				{"lastErrorObject", bson.D{
+					{"n", int32(1)},
+					{"updatedExisting", false},
+					{"upserted", "no-such-doc"},
+				}},
+				{"value", bson.D{{"_id", "no-such-doc"}, {"value", 43.13}}},
+				{"ok", float64(1)},
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+
+			command := append(bson.D{{"findAndModify", collection.Name()}}, tc.command...)
+
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+			require.NoError(t, err)
+
+			m := actual.Map()
+			assert.Equal(t, float64(1), m["ok"])
+
+			AssertEqualDocuments(t, tc.response, actual)
+		})
+	}
+}
+
+func TestFindAndModifyRemove(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		command  bson.D
+		response bson.D
+	}{
+		"Remove": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "double"}}},
+				{"remove", true},
+			},
+			response: bson.D{
+				{"lastErrorObject", bson.D{
+					{"n", int32(1)},
+				}},
+				{"value", bson.D{{"_id", "double"}, {"value", 42.13}}},
+				{"ok", float64(1)},
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup(t, shareddata.Scalars)
 
 			command := append(bson.D{{"findAndModify", collection.Name()}}, tc.command...)
 

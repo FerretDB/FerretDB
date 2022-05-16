@@ -85,11 +85,68 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	if len(resDocs) == 0 {
+	if params.update != nil { // we have update part
+		var upsert *types.Document
+
+		if params.upsert { //  we have upsert flag
+			upsert, err = h.upsert(ctx, resDocs, params)
+			if err != nil {
+				return nil, err
+			}
+		} else { // process update as usual
+			if len(resDocs) == 0 {
+				var reply wire.OpMsg
+				must.NoError(reply.SetSections(wire.OpMsgSection{
+					Documents: []*types.Document{must.NotFail(types.NewDocument(
+						"lastErrorObject", must.NotFail(types.NewDocument("n", int32(0), "updatedExisting", false)),
+						"ok", float64(1),
+					))},
+				}))
+
+				return &reply, nil
+			}
+
+			if params.hasUpdateOperators {
+				upsert = resDocs[0].DeepCopy()
+				err = common.UpdateDocument(upsert, params.update)
+				if err != nil {
+					return nil, err
+				}
+
+				_, err = h.update(ctx, params.sqlParam, upsert)
+				if err != nil {
+					return nil, err
+				}
+
+			} else {
+				upsert = params.update
+
+				if !upsert.Has("_id") {
+					must.NoError(upsert.Set("_id", must.NotFail(resDocs[0].Get("_id"))))
+				}
+
+				_, err = h.update(ctx, params.sqlParam, upsert)
+				if err != nil {
+					return nil, err
+				}
+
+			}
+
+		}
+
+		var resultDoc = resDocs[0]
+		if params.returnNewDocument {
+			resultDoc = upsert
+		}
+
 		var reply wire.OpMsg
 		must.NoError(reply.SetSections(wire.OpMsgSection{
 			Documents: []*types.Document{must.NotFail(types.NewDocument(
-				"lastErrorObject", must.NotFail(types.NewDocument("n", int32(0), "updatedExisting", false)),
+				"lastErrorObject", must.NotFail(types.NewDocument(
+					"n", int32(1),
+					"updatedExisting", len(resDocs) > 0,
+				)),
+				"value", resultDoc,
 				"ok", float64(1),
 			))},
 		}))
@@ -97,7 +154,19 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return &reply, nil
 	}
 
-	if len(resDocs) == 1 && params.remove {
+	if params.remove {
+		if len(resDocs) == 0 {
+			var reply wire.OpMsg
+			must.NoError(reply.SetSections(wire.OpMsgSection{
+				Documents: []*types.Document{must.NotFail(types.NewDocument(
+					"lastErrorObject", must.NotFail(types.NewDocument("n", int32(0), "updatedExisting", false)),
+					"ok", float64(1),
+				))},
+			}))
+
+			return &reply, nil
+		}
+
 		_, err = h.delete(ctx, params.sqlParam, resDocs)
 		if err != nil {
 			return nil, err
@@ -114,77 +183,39 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return &reply, nil
 	}
 
-	var hasUpdateOperators bool
-	for k := range params.update.Map() {
-		if _, ok := updateOperators[k]; ok {
-			hasUpdateOperators = true
-		}
-	}
-
-	if hasUpdateOperators { //nolint:nestif // no way to make it simple now
-		upsert := resDocs[0].DeepCopy()
-		err = common.UpdateDocument(upsert, params.update)
-		if err != nil {
-			return nil, err
-		}
-
-		_, err = h.update(ctx, params.sqlParam, upsert)
-		if err != nil {
-			return nil, err
-		}
-
-		var reply wire.OpMsg
-		resultDoc := resDocs[0]
-		if params.returnNewDocument {
-			resultDoc = params.update
-		}
-		must.NoError(reply.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{must.NotFail(types.NewDocument(
-				"lastErrorObject", must.NotFail(types.NewDocument("n", int32(1), "updatedExisting", true)),
-				"value", resultDoc,
-				"ok", float64(1),
-			))},
-		}))
-
-		return &reply, nil
-	}
-
-	if params.upsert {
-		_, err = h.delete(ctx, params.sqlParam, resDocs)
-		if err != nil {
-			return nil, err
-		}
-
-		err = h.insert(ctx, params.sqlParam, params.update)
-		if err != nil {
-			return nil, err
-		}
-
-		var reply wire.OpMsg
-		resultDoc := resDocs[0]
-		if params.returnNewDocument {
-			resultDoc = params.update
-		}
-		must.NoError(reply.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{must.NotFail(types.NewDocument(
-				"lastErrorObject", must.NotFail(types.NewDocument("n", int32(1), "updatedExisting", true)),
-				"value", resultDoc,
-				"ok", float64(1),
-			))},
-		}))
-
-		return &reply, nil
-	}
-
 	return nil, lazyerrors.New("bad flags combination")
+}
+
+func (h *Handler) upsert(ctx context.Context, resDocs []*types.Document, params *findAndModifyParams) (*types.Document, error) {
+	return nil, lazyerrors.New("not implemented yet")
+	//var upsert *types.Document
+	//
+	//if params.hasUpdateOperators {
+	//	upsert = must.NotFail(types.NewDocument())
+	//	err := common.UpdateDocument(upsert, params.update)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//}
+	//
+	//if !upsert.Has("_id") {
+	//	must.NoError(upsert.Set("_id", types.NewObjectID()))
+	//}
+	//
+	//err := h.insert(ctx, params.sqlParam, upsert)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//return upsert, nil
 }
 
 // findAndModifyParams represent all findAndModify requests' fields.
 // It's filled by calling prepareFindAndModifyParams.
 type findAndModifyParams struct {
-	sqlParam                          sqlParam
-	query, sort, update               *types.Document
-	remove, upsert, returnNewDocument bool
+	sqlParam                              sqlParam
+	query, sort, update                   *types.Document
+	remove, upsert                        bool
+	returnNewDocument, hasUpdateOperators bool
 }
 
 // prepareFindAndModifyParams prepares findAndModify request fields.
@@ -247,17 +278,25 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 		}
 	}
 
+	var hasUpdateOperators bool
+	for k := range update.Map() {
+		if _, ok := updateOperators[k]; ok {
+			hasUpdateOperators = true
+		}
+	}
+
 	return &findAndModifyParams{
 		sqlParam: sqlParam{
 			db:         db,
 			collection: collection,
 		},
-		query:             query,
-		update:            update,
-		sort:              sort,
-		remove:            remove,
-		upsert:            upsert,
-		returnNewDocument: returnNewDocument,
+		query:              query,
+		update:             update,
+		sort:               sort,
+		remove:             remove,
+		upsert:             upsert,
+		returnNewDocument:  returnNewDocument,
+		hasUpdateOperators: hasUpdateOperators,
 	}, nil
 }
 
