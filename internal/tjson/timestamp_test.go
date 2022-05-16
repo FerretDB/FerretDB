@@ -17,21 +17,24 @@ package tjson
 import (
 	"testing"
 
-	"github.com/AlekSi/pointer"
+	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 var timestampTestCases = []testCase{{
 	name: "one",
-	v:    pointer.To(timestampType(1)),
-	j:    `{"$t":"1"}`,
+	v:    types.Timestamp(1652700697465990022),
+	j:    `{"$t":"1652700697465990022"}`,
+	s:    timestampSchema,
 }, {
 	name: "zero",
-	v:    pointer.To(timestampType(0)),
+	v:    types.Timestamp(0),
 	j:    `{"$t":"0"}`,
+	s:    timestampSchema,
 }, {
 	name: "EOF",
 	j:    `{`,
 	jErr: `unexpected EOF`,
+	s:    timestampSchema,
 }}
 
 func TestTimestamp(t *testing.T) {

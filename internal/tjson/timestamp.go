@@ -32,6 +32,13 @@ type timestampJSON struct {
 	T uint64 `json:"$t,string"`
 }
 
+var timestampSchema = map[string]any{
+	"type": "object",
+	"properties": map[string]any{
+		"$t": map[string]any{"type": "string"},
+	},
+}
+
 // Unmarshal implements tjsontype interface.
 func (ts *timestampType) Unmarshal(d_ map[string]any) ([]byte, error) {
 	res, err := json.Marshal(timestampJSON{
