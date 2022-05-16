@@ -30,17 +30,16 @@ import (
 func (h *Handler) fetch(ctx context.Context, db, collection string) ([]*types.Document, error) {
 	readOpts := new(driver.ReadOptions)
 
-	tigrisDB := h.client.conn.UseDatabase(db)
-	iterator, err := tigrisDB.Read(ctx, collection, driver.Filter("{}"), nil, readOpts)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
 	schema, err := h.describe(ctx, db, collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
+	tigrisDB := h.client.conn.UseDatabase(db)
+	iterator, err := tigrisDB.Read(ctx, collection, driver.Filter("{}"), nil, readOpts)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 	var res []*types.Document
 	elem := new(driver.Document)
 	for iterator.Next(elem) {
