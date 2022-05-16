@@ -20,36 +20,17 @@ import (
 	"github.com/tigrisdata/tigris-client-go/driver"
 
 	"github.com/FerretDB/FerretDB/internal/tjson"
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// fetch fetches all documents from the given database and collection.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/372
-func (h *Handler) fetch(ctx context.Context, db, collection string) ([]*types.Document, error) {
-	readOpts := new(driver.ReadOptions)
-
+// describe gets the collection schema and presents it in build-in map[string]any.
+func (h *Handler) describe(ctx context.Context, db, collection string) (map[string]any, error) {
+	var res *driver.DescribeCollectionResponse
+	var err error
 	tigrisDB := h.client.conn.UseDatabase(db)
-	iterator, err := tigrisDB.Read(ctx, collection, driver.Filter("{}"), nil, readOpts)
+	res, err = tigrisDB.DescribeCollection(ctx, collection, new(driver.CollectionOptions))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-
-	schema, err := h.describe(ctx, db, collection)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	var res []*types.Document
-	elem := new(driver.Document)
-	for iterator.Next(elem) {
-		doc, err := tjson.Marshal([]byte(*elem), schema)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-		res = append(res, doc.(*types.Document))
-	}
-
-	return res, nil
+	return tjson.ParseSchema(res.Schema)
 }

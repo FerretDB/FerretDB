@@ -37,12 +37,75 @@
 package tjson
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
+
+// ParseSchema returns build-in description based on tigris schema description.
+func ParseSchema(data []byte) (map[string]any, error) {
+	var a map[string]any
+	if err := json.Unmarshal(data, &a); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	properties, ok := a["properties"]
+	if !ok {
+		return nil, lazyerrors.Errorf("cannot find properties")
+	}
+	return parseSchema(properties)
+}
+
+// parseSchema recursively parses tigris schema description.
+func parseSchema(in any) (map[string]any, error) {
+	switch in := in.(type) {
+	case map[string]any:
+		schema := make(map[string]any)
+		for k, v := range in {
+			var valSchema map[string]any
+			var err error
+			switch v := v.(type) {
+			case map[string]any:
+				key, ok := v["type"]
+				if !ok {
+					continue
+				}
+				switch key {
+				case "object":
+					properties, ok := in["properties"]
+					if !ok {
+						return nil, lazyerrors.Errorf("cannot find properties")
+					}
+					valSchema, err = parseSchema(properties)
+
+				case "array":
+					return nil, fmt.Errorf("arrays not supported")
+				case "boolean":
+					valSchema = boolSchema
+				case "string":
+					valSchema = stringSchema
+				case "integer":
+					err = lazyerrors.Errorf("integer not supported")
+				case "number":
+					err = lazyerrors.Errorf("float64 not supported")
+				default:
+					continue // descitpions etc
+				}
+			default:
+				// ok
+			}
+			if err != nil {
+				return nil, err
+			}
+			schema[k] = valSchema
+		}
+		return schema, nil
+	}
+	panic("unreachable code")
+}
 
 // DocumentSchema creates description of json schema doc in Tigris data format and adds $k to keep order.
 func DocumentSchema(doc *types.Document) (map[string]any, error) {

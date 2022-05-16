@@ -51,16 +51,22 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
+	var schema map[string]any
+	if docs.Len() > 0 {
+		if schema, err = tjson.DocumentSchema(must.NotFail(docs.Get(0)).(*types.Document)); err != nil {
+			return nil, err
+		}
+	}
 	tigrisDB := h.client.conn.UseDatabase(db)
 	var inserted int32
 	for i := 0; i < docs.Len(); i++ {
 		doc := must.NotFail(docs.Get(i)).(*types.Document)
 
-		tigrisDoc, err := tjson.Marshal(doc)
+		tigrisDoc, err := tjson.Unmarshal(doc, schema)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
-		if _, err = tigrisDB.Insert(ctx, collection, []driver.Document{*tigrisDoc}); err != nil {
+		if _, err = tigrisDB.Insert(ctx, collection, []driver.Document{tigrisDoc}); err != nil {
 			return nil, err
 		}
 

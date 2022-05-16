@@ -114,7 +114,6 @@ func Unmarshal(v any, schema map[string]any) ([]byte, error) {
 	case *timestampType:
 		t := timestampType(*v)
 		return t.Unmarshal(schema)
-
 	}
 	return nil, lazyerrors.Errorf("%T is not supported", v)
 }

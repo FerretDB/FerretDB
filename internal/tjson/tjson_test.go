@@ -130,3 +130,46 @@ func TestDocumentSchema(t *testing.T) {
 		})
 	}
 }
+
+func TestParseSchema(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct { //nolint:paralleltest // false positive
+		raw    string
+		schema map[string]any
+		err    error
+	}{
+		"doc": {
+			raw: `{ "name": "user", "description": "Collection of documents with details of users",` +
+				`"properties": { "id": { "description": "A unique identifier for the user", "type": "string" },` +
+				`"name": { "description": "Name of the user", "type": "string", "maxLength": 100 },` +
+				`"active": { "description": "User account active", "type": "boolean" } }, "primary_key": ["id"] }`,
+			schema: map[string]any{
+				"id":     map[string]any{"type": "string"},
+				"name":   map[string]any{"type": "string"},
+				"active": map[string]any{"type": "boolean"},
+			},
+		},
+		"array": {
+			raw: `{ "name": "user", properties": { "id": {"type": "array" }}}`,
+			err: errors.New("arrays not supported yet"),
+		},
+		"int": {
+			raw: `{ "name": "user", properties": { "id": {"type": "integer" }}}`,
+			err: errors.New("int32 not supported yet"),
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			actual, err := ParseSchema([]byte(tc.raw))
+			if tc.err != nil {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.schema, actual)
+		})
+	}
+}

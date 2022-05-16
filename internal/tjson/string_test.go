@@ -14,9 +14,7 @@
 
 package tjson
 
-import (
-	"testing"
-)
+import "testing"
 
 var stringTestCases = []testCase{{
 	name: "foo",
