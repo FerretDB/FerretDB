@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"time"
 
 	"github.com/AlekSi/pointer"
 
@@ -40,10 +39,6 @@ type tjsontype interface {
 // fromTJSON converts tjsontype value to matching built-in or types' package value.
 func fromTJSON(v tjsontype) any {
 	switch v := v.(type) {
-	case *documentType:
-		return pointer.To(types.Document(*v))
-	case *doubleType:
-		return float64(*v)
 	case *stringType:
 		return string(*v)
 	case *binaryType:
@@ -52,8 +47,6 @@ func fromTJSON(v tjsontype) any {
 		return types.ObjectID(*v)
 	case *boolType:
 		return bool(*v)
-	case *dateTimeType:
-		return time.Time(*v)
 	case *nullType:
 		return types.Null
 	case *regexType:
@@ -68,10 +61,6 @@ func fromTJSON(v tjsontype) any {
 // toTJSON converts built-in or types' package value to tjsontype value.
 func toTJSON(v any) tjsontype {
 	switch v := v.(type) {
-	case *types.Document:
-		return pointer.To(documentType(*v))
-	case float64:
-		return pointer.To(doubleType(v))
 	case string:
 		return pointer.To(stringType(v))
 	case types.Binary:
@@ -80,8 +69,6 @@ func toTJSON(v any) tjsontype {
 		return pointer.To(objectIDType(v))
 	case bool:
 		return pointer.To(boolType(v))
-	case time.Time:
-		return pointer.To(dateTimeType(v))
 	case types.NullType:
 		return pointer.To(nullType(v))
 	case types.Regex:
@@ -98,20 +85,6 @@ func Unmarshal(v any, schema map[string]any) ([]byte, error) {
 	tv := toTJSON(v)
 
 	switch v := tv.(type) {
-	case *documentType:
-		fieldType, ok := schema["type"]
-		if !ok {
-			return nil, lazyerrors.Errorf("types.Document: wrong schema")
-		}
-		if fieldType != "object" {
-			return nil, lazyerrors.Errorf("types.Document: schema type have %s, must be 'object'", fieldType)
-		}
-		d := documentType(*v)
-		return d.Unmarshal(schema)
-
-	case *doubleType:
-		d := doubleType(*v)
-		return d.Unmarshal(schema)
 	case *stringType:
 		s := stringType(*v)
 		return s.Unmarshal(schema)
@@ -124,9 +97,6 @@ func Unmarshal(v any, schema map[string]any) ([]byte, error) {
 	case *boolType:
 		b := boolType(*v)
 		return b.Unmarshal(schema)
-	case *dateTimeType:
-		t := dateTimeType(*v)
-		return t.Unmarshal(schema)
 	case *nullType:
 		n := nullType(*v)
 		return n.Unmarshal(schema)
@@ -180,10 +150,6 @@ func Marshal(v []byte, schema map[string]any) (any, error) {
 			res = &o
 			break
 		}
-		var o documentType
-		err = o.Marshal(v, schema)
-		res = &o
-
 	case "array":
 		err = lazyerrors.Errorf("arrays not supported yet")
 
@@ -193,14 +159,6 @@ func Marshal(v []byte, schema map[string]any) (any, error) {
 		res = &o
 
 	case "string":
-		if format, ok := schema["format"]; ok {
-			if format == "date-time" {
-				var o dateTimeType
-				err = o.Marshal(v, schema)
-				res = &o
-				break
-			}
-		}
 		var o stringType
 		err = o.Marshal(v, schema)
 		res = &o
