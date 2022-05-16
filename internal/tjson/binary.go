@@ -32,6 +32,14 @@ type binaryJSON struct {
 	S byte   `json:"s"`
 }
 
+var binarySchema = map[string]any{
+	"type": "object",
+	"properties": map[string]any{
+		"$b": map[string]any{"type": "string", "format": "byte"},   // binary data
+		"s":  map[string]any{"type": "integer", "format": "int32"}, // binary subtype
+	},
+}
+
 // Unmarshal build-in to tigris.
 func (bin *binaryType) Unmarshal(_ map[string]any) ([]byte, error) {
 	res, err := json.Marshal(binaryJSON{

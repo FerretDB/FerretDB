@@ -20,14 +20,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-var binarySchema = map[string]any{
-	"type": "object",
-	"properties": map[string]any{
-		"$b": map[string]any{"type": "string", "format": "byte"},   // binary data
-		"s":  map[string]any{"type": "integer", "format": "int32"}, // binary subtype
-	},
-}
-
 var binaryTestCases = []testCase{{
 	name: "foo",
 	v: types.Binary{
