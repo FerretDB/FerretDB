@@ -37,7 +37,7 @@ type tjsontype interface {
 
 //go-sumtype:decl tjsontype
 
-// fromFJSON converts tjsontype value to matching built-in or types' package value.
+// fromTJSON converts tjsontype value to matching built-in or types' package value.
 func fromTJSON(v tjsontype) any {
 	switch v := v.(type) {
 	case *documentType:
@@ -62,7 +62,7 @@ func fromTJSON(v tjsontype) any {
 		return types.Timestamp(*v)
 	}
 
-	panic("not reached")
+	panic(fmt.Sprintf("not reached: %T", v))
 }
 
 // toTJSON converts built-in or types' package value to tjsontype value.
@@ -90,7 +90,7 @@ func toTJSON(v any) tjsontype {
 		return pointer.To(timestampType(v))
 	}
 
-	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
+	panic(fmt.Sprintf("not reached: %T", v))
 }
 
 // Unmarshal build-in to tigris.
@@ -101,10 +101,10 @@ func Unmarshal(v any, schema map[string]any) ([]byte, error) {
 	case *documentType:
 		fieldType, ok := schema["type"]
 		if !ok {
-			return nil, lazyerrors.Errorf("cannot find field type %v", schema)
+			return nil, lazyerrors.Errorf("types.Document: wrong schema")
 		}
 		if fieldType != "object" {
-			return nil, lazyerrors.Errorf("wrong schema %s for types.Document", fieldType)
+			return nil, lazyerrors.Errorf("types.Document: schema type have %s, must be 'object'", fieldType)
 		}
 		d := documentType(*v)
 		return d.Unmarshal(schema)

@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // binaryType represents BSON Binary data type.
@@ -40,7 +39,7 @@ func (bin *binaryType) Unmarshal(_ map[string]any) ([]byte, error) {
 		S: byte(bin.Subtype),
 	})
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 	return res, nil
 }
@@ -54,10 +53,10 @@ func (bin *binaryType) Marshal(data []byte, _ map[string]any) error {
 	var o binaryJSON
 	err := dec.Decode(&o)
 	if err != nil {
-		return lazyerrors.Error(err)
+		return err
 	}
 	if err = checkConsumed(dec, r); err != nil {
-		return lazyerrors.Error(err)
+		return err
 	}
 
 	bin.B = o.B

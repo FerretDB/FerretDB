@@ -27,7 +27,7 @@ import (
 
 type testCase struct {
 	name   string
-	v      tjsontype      // build-in
+	v      any            // build-in
 	j      string         // tigris
 	s      map[string]any // schema
 	canonJ string         // canonical form without extra object fields, zero values, etc.
@@ -119,6 +119,13 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() tjsontype) {
 				t.Parallel()
 
 				actualF, err := Marshal([]byte(tc.j), tc.s)
+
+				if tc.jErr != "" {
+					require.Error(t, err)
+					require.Equal(t, tc.jErr, lastErr(err).Error())
+					return
+				}
+
 				require.NoError(t, err)
 				expectedF := tc.v
 

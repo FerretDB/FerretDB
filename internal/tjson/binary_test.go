@@ -30,7 +30,7 @@ var binarySchema = map[string]any{
 
 var binaryTestCases = []testCase{{
 	name: "foo",
-	v: &binaryType{
+	v: types.Binary{
 		Subtype: types.BinaryUser,
 		B:       []byte("foo"),
 	},
@@ -38,7 +38,7 @@ var binaryTestCases = []testCase{{
 	j: `{"$b":"Zm9v","s":128}`,
 }, {
 	name: "empty",
-	v: &binaryType{
+	v: types.Binary{
 		Subtype: types.BinaryGeneric,
 		B:       []byte{},
 	},
@@ -47,7 +47,7 @@ var binaryTestCases = []testCase{{
 	canonJ: `{"$b":"","s":0}`,
 }, {
 	name: "invalid subtype",
-	v: &binaryType{
+	v: types.Binary{
 		Subtype: 0xff,
 		B:       []byte{},
 	},
@@ -55,16 +55,18 @@ var binaryTestCases = []testCase{{
 	j: `{"$b":"","s":255}`,
 }, {
 	name: "extra JSON fields",
-	v: &binaryType{
+	v: types.Binary{
 		Subtype: types.BinaryUser,
 		B:       []byte("foo"),
 	},
+	s:      binarySchema,
 	j:      `{"$b":"Zm9v","s":128,"foo":"bar"}`,
 	canonJ: `{"$b":"Zm9v","s":128}`,
 	jErr:   `json: unknown field "foo"`,
 }, {
 	name: "EOF",
 	j:    `{`,
+	s:    binarySchema,
 	jErr: `unexpected EOF`,
 }}
 
