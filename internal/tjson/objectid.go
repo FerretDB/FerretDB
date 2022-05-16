@@ -33,6 +33,13 @@ type objectIDJSON struct {
 	O string `json:"$o"`
 }
 
+var objectSchema = map[string]any{
+	"type": "object",
+	"properties": map[string]any{
+		"$o": map[string]any{"type": "string"},
+	},
+}
+
 // Unmarshal implements tjsontype interface.
 func (obj *objectIDType) Unmarshal(_ map[string]any) ([]byte, error) {
 	res, err := json.Marshal(objectIDJSON{

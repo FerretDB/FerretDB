@@ -17,17 +17,19 @@ package tjson
 import (
 	"testing"
 
-	"github.com/AlekSi/pointer"
+	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 var objectIDTestCases = []testCase{{
 	name: "normal",
-	v:    pointer.To(objectIDType{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01}),
+	v:    types.ObjectID{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01},
 	j:    `{"$o":"010101010101010101010101"}`,
+	s:    objectSchema,
 }, {
 	name: "EOF",
 	j:    `{`,
 	jErr: `unexpected EOF`,
+	s:    objectSchema,
 }}
 
 func TestObjectID(t *testing.T) {
