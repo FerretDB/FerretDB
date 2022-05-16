@@ -34,13 +34,10 @@ type CompareResult int8
 // Values match results of comparison functions such as bytes.Compare.
 // They do not match MongoDB `sort` values where 1 means ascending order and -1 means descending.
 const (
-	Equal   CompareResult = 0  // ==
-	Less    CompareResult = -1 // <
-	Greater CompareResult = 1  // >
-
-	// TODO Remove once it is no longer needed.
-	// It should not be needed.
-	NotEqual CompareResult = 127 // !=
+	Equal        CompareResult = 0   // ==
+	Less         CompareResult = -1  // <
+	Greater      CompareResult = 1   // >
+	Incomparable CompareResult = 127 // !=
 )
 
 // Compare compares any BSON values in the same way as MongoDB does it for filtering or sorting.
@@ -50,17 +47,15 @@ const (
 //
 // Compare and contrast with test helpers in testutil package.
 func Compare(v1, v2 any) CompareResult {
-	if v1 == nil {
-		panic("compare: v1 is nil")
-	}
-	if v2 == nil {
-		panic("compare: v2 is nil")
+	if v1 == nil || v2 == nil {
+		panic(fmt.Sprintf("compare: values should not be nil, "+
+			"v1 is %v, v2 is %v", v1, v2))
 	}
 
 	switch v1 := v1.(type) {
 	case *Document:
 		// TODO: implement document comparing
-		return NotEqual
+		return Incomparable
 
 	case *Array:
 		for i := 0; i < v1.Len(); i++ {
@@ -70,11 +65,11 @@ func Compare(v1, v2 any) CompareResult {
 				continue
 			}
 
-			if res := compareScalars(v, v2); res != NotEqual {
+			if res := compareScalars(v, v2); res != Incomparable {
 				return res
 			}
 		}
-		return NotEqual
+		return Incomparable
 
 	default:
 		return compareScalars(v1, v2)
@@ -99,7 +94,7 @@ func compareScalars(v1, v2 any) CompareResult {
 		case int64:
 			return compareNumbers(v1, v2)
 		default:
-			return NotEqual
+			return Incomparable
 		}
 
 	case string:
@@ -107,12 +102,12 @@ func compareScalars(v1, v2 any) CompareResult {
 		if ok {
 			return compareOrdered(v1, v2)
 		}
-		return NotEqual
+		return Incomparable
 
 	case Binary:
 		v2, ok := v2.(Binary)
 		if !ok {
-			return NotEqual
+			return Incomparable
 		}
 		v1l, v2l := len(v1.B), len(v2.B)
 		if v1l != v2l {
@@ -126,14 +121,14 @@ func compareScalars(v1, v2 any) CompareResult {
 	case ObjectID:
 		v2, ok := v2.(ObjectID)
 		if !ok {
-			return NotEqual
+			return Incomparable
 		}
 		return CompareResult(bytes.Compare(v1[:], v2[:]))
 
 	case bool:
 		v2, ok := v2.(bool)
 		if !ok {
-			return NotEqual
+			return Incomparable
 		}
 		if v1 == v2 {
 			return Equal
@@ -146,7 +141,7 @@ func compareScalars(v1, v2 any) CompareResult {
 	case time.Time:
 		v2, ok := v2.(time.Time)
 		if !ok {
-			return NotEqual
+			return Incomparable
 		}
 		return compareOrdered(v1.UnixMilli(), v2.UnixMilli())
 
@@ -155,14 +150,16 @@ func compareScalars(v1, v2 any) CompareResult {
 		if ok {
 			return Equal
 		}
-		return NotEqual
+		return Incomparable
 
 	case Regex:
 		v2, ok := v2.(Regex)
-		if ok && v1 == v2 {
-			return Equal
+		if ok {
+			v1 := must.NotFail(v1.Compile())
+			v2 := must.NotFail(v2.Compile())
+			return compareOrdered(v1.String(), v2.String())
 		}
-		return NotEqual
+		return Incomparable
 
 	case int32:
 		switch v2 := v2.(type) {
@@ -173,7 +170,7 @@ func compareScalars(v1, v2 any) CompareResult {
 		case int64:
 			return compareOrdered(int64(v1), v2)
 		default:
-			return NotEqual
+			return Incomparable
 		}
 
 	case Timestamp:
@@ -181,7 +178,7 @@ func compareScalars(v1, v2 any) CompareResult {
 		if ok {
 			return compareOrdered(v1, v2)
 		}
-		return NotEqual
+		return Incomparable
 
 	case int64:
 		switch v2 := v2.(type) {
@@ -192,7 +189,7 @@ func compareScalars(v1, v2 any) CompareResult {
 		case int64:
 			return compareOrdered(v1, v2)
 		default:
-			return NotEqual
+			return Incomparable
 		}
 	}
 
@@ -213,7 +210,7 @@ func compareEnsureScalar(v any) {
 	panic(fmt.Sprintf("non-scalar type %T", v))
 }
 
-// compareInvert swaps Less and Greater, keeping Equal and NotEqual.
+// compareInvert swaps Less and Greater, keeping Equal and Incomparable.
 func compareInvert(res CompareResult) CompareResult {
 	switch res {
 	case Equal:
@@ -222,8 +219,8 @@ func compareInvert(res CompareResult) CompareResult {
 		return Greater
 	case Greater:
 		return Less
-	case NotEqual:
-		return NotEqual
+	case Incomparable:
+		return Incomparable
 	}
 
 	panic("not reached")
@@ -239,14 +236,14 @@ func compareOrdered[T constraints.Ordered](a, b T) CompareResult {
 	case a > b:
 		return Greater
 	default:
-		return NotEqual
+		return Incomparable
 	}
 }
 
 // compareNumbers compares BSON numbers.
 func compareNumbers(a float64, b int64) CompareResult {
 	if math.IsNaN(a) {
-		return NotEqual
+		return Incomparable
 	}
 
 	// TODO figure out correct precision
@@ -254,4 +251,123 @@ func compareNumbers(a float64, b int64) CompareResult {
 	bigB := new(big.Float).SetInt64(b).SetPrec(100000)
 
 	return CompareResult(bigA.Cmp(bigB))
+}
+
+// dataTypeOrderResult represents the comparison order of data types.
+type dataTypeOrderResult uint8
+
+const (
+	_ dataTypeOrderResult = iota
+	minKeyDataType
+	nullDataType
+	nanDataType
+	numbersDataType
+	stringDataType
+	objectDataType
+	arrayDataType
+	binDataType
+	objectIdDataType
+	booleanDataType
+	dateDataType
+	timestampDataType
+	regexDataType
+	maxKeyDataType
+)
+
+// defineDataType define which type has value and returns a sequence the type has.
+func defineDataType(value any) dataTypeOrderResult {
+	switch value := value.(type) {
+	case NullType:
+		return nullDataType
+	case float64:
+		if math.IsNaN(value) {
+			return nanDataType
+		}
+		return numbersDataType
+	case int32, int64:
+		return numbersDataType
+	case string:
+		return stringDataType
+	case bool:
+		return booleanDataType
+	case Binary:
+		return binDataType
+	case ObjectID:
+		return objectIdDataType
+	case time.Time:
+		return dateDataType
+	case Timestamp:
+		return timestampDataType
+	case Regex:
+		return regexDataType
+	}
+
+	panic(fmt.Sprintf("value cannot be defined, value is %v, data type of value is %T", value, value))
+}
+
+// numberDataTypeOrderResult represents the comparison order of numbers.
+type numberDataTypeOrderResult uint8
+
+const (
+	_ numberDataTypeOrderResult = iota
+	doubleNegativeZero
+	doubleDT
+	int32DT
+	int64DT
+)
+
+// defineNumberDataType define which number type has value and returns a sequence the type has.
+func defineNumberDataType(value any) numberDataTypeOrderResult {
+	switch value := value.(type) {
+	case int64:
+		return int64DT
+	case float64:
+		if value == 0 && math.Signbit(value) {
+			return doubleNegativeZero
+		}
+		return doubleDT
+	case int32:
+		return int32DT
+	}
+
+	panic(fmt.Sprintf("defineNumberDataType: value cannot be defined, value is %v, data type of value is %T", value, value))
+}
+
+// CompareOrder defines the data type for the two values and compares them. When the types are equal, it compares using Compare.
+func CompareOrder(a, b any, order string) CompareResult {
+	if a == nil || b == nil {
+		panic(fmt.Sprintf("compareOrder: values should not be nil, "+
+			"a is %v, b is %v", a, b))
+	}
+
+	aType := defineDataType(a)
+	bType := defineDataType(b)
+	if aType == bType {
+		res := Compare(a, b)
+		if res == Equal && aType == numbersDataType {
+			aNumberType := defineNumberDataType(a)
+			bNumberType := defineNumberDataType(b)
+			switch {
+			case aNumberType < bNumberType && order == "asc":
+				return Less
+			case aNumberType > bNumberType && order == "asc":
+				return Greater
+			case aNumberType < bNumberType && order == "desc":
+				return Greater
+			case aNumberType > bNumberType && order == "desc":
+				return Less
+			}
+		}
+
+		return res
+	}
+
+	switch {
+	case aType < bType:
+		return Less
+	case aType > bType:
+		return Greater
+	}
+
+	panic("CompareOrder: not reached")
 }

@@ -168,6 +168,115 @@ func TestQuerySort(t *testing.T) {
 	}
 }
 
+func TestQuerySortValue(t *testing.T) {
+	ctx, collection := setup(t, shareddata.Scalars)
+
+	for name, tc := range map[string]struct {
+		sort        bson.D
+		expectedIDs []any
+	}{
+		"AscValueScalar": {
+			sort: bson.D{{"value", 1}},
+			expectedIDs: []any{
+				"null",
+				"double-nan",
+				"double-negative-infinity",
+				"int64-min",
+				"int32-min",
+				"double-negative-zero",
+				"double-zero",
+				"int32-zero",
+				"int64-zero",
+				"double-smallest",
+				"double-whole",
+				"int32",
+				"int64",
+				"double",
+				"int32-max",
+				"double-big",
+				"int64-big",
+				"int64-max",
+				"double-max",
+				"double-positive-infinity",
+				"string-empty",
+				"string-whole",
+				"string-double",
+				"string",
+				"binary-empty",
+				"binary",
+				"objectid-empty",
+				"objectid",
+				"bool-false",
+				"bool-true",
+				"datetime-year-min",
+				"datetime-epoch",
+				"datetime",
+				"datetime-year-max",
+				"timestamp-i",
+				"timestamp",
+				"regex-empty",
+				"regex",
+			},
+		},
+		"DescValueScalar": {
+			sort: bson.D{{"value", -1}},
+			expectedIDs: []any{
+				"regex",
+				"regex-empty",
+				"timestamp",
+				"timestamp-i",
+				"datetime-year-max",
+				"datetime",
+				"datetime-epoch",
+				"datetime-year-min",
+				"bool-true",
+				"bool-false",
+				"objectid",
+				"objectid-empty",
+				"binary",
+				"binary-empty",
+				"string",
+				"string-double",
+				"string-whole",
+				"string-empty",
+				"double-positive-infinity",
+				"double-max",
+				"int64-max",
+				"int64-big",
+				"double-big",
+				"int32-max",
+				"double",
+				"double-whole",
+				"int32",
+				"int64",
+				"double-smallest",
+				"double-negative-zero",
+				"double-zero",
+				"int32-zero",
+				"int64-zero",
+				"int32-min",
+				"int64-min",
+				"double-negative-infinity",
+				"double-nan",
+				"null",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			cursor, err := collection.Find(ctx, bson.D{}, options.Find().SetSort(tc.sort))
+			require.NoError(t, err)
+
+			var actual []bson.D
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
+		})
+	}
+}
+
 func TestQueryCount(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)

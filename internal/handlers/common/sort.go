@@ -75,7 +75,7 @@ func lessFunc(sortKey string, sortType sortType) func(a, b *types.Document) bool
 			return false
 		}
 
-		result := types.Compare(aField, bField)
+		result := types.CompareOrder(aField, bField, sortType.String())
 
 		switch result {
 		case types.Less:
@@ -92,7 +92,7 @@ func lessFunc(sortKey string, sortType sortType) func(a, b *types.Document) bool
 			case descending:
 				return true
 			}
-		case types.NotEqual, types.Equal:
+		case types.Incomparable, types.Equal:
 			return false
 		}
 
