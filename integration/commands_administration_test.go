@@ -273,17 +273,25 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 			err:     &mongo.CommandError{Message: `no option found to get`},
 		},
 		"ShowDetails": {
-			command: bson.D{{"getParameter", bson.D{{"showDetails", true}}}, {"quiet", 1}, {"comment", "getParameter test"}},
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}}}, {"quiet", true}},
 			expected: map[string]any{
-				"quie": false,
-				"ok":   float64(1),
+				"quiet": false,
+				"ok":    float64(1),
 			},
+		},
+		"ShowDetailsNoParameter": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}}}},
+			err:     &mongo.CommandError{Message: `no option found to get`},
 		},
 		"ShowDetailsAllParameters": {
 			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", true}}}},
+			err:     &mongo.CommandError{Message: `no option found to get`},
+		},
+		"ShowDetailsAllParameters_2": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", true}}}, {"quiet", true}},
 			expected: map[string]any{
-				"quie": false,
-				"ok":   float64(1),
+				"quiet": false,
+				"ok":    float64(1),
 			},
 		},
 	} {
@@ -293,6 +301,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+
 			if tc.err != nil {
 				AssertEqualError(t, *tc.err, err)
 				return
