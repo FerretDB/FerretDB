@@ -156,7 +156,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			var reply wire.OpMsg
 			must.NoError(reply.SetSections(wire.OpMsgSection{
 				Documents: []*types.Document{must.NotFail(types.NewDocument(
-					"lastErrorObject", must.NotFail(types.NewDocument("n", int32(0), "updatedExisting", false)),
+					"lastErrorObject", must.NotFail(types.NewDocument("n", int32(0))),
 					"ok", float64(1),
 				))},
 			}))
@@ -185,25 +185,6 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 func (h *Handler) upsert(ctx context.Context, resDocs []*types.Document, params *findAndModifyParams) (*types.Document, error) {
 	return nil, lazyerrors.New("not implemented yet")
-	//var upsert *types.Document
-	//
-	//if params.hasUpdateOperators {
-	//	upsert = must.NotFail(types.NewDocument())
-	//	err := common.UpdateDocument(upsert, params.update)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//}
-	//
-	//if !upsert.Has("_id") {
-	//	must.NoError(upsert.Set("_id", types.NewObjectID()))
-	//}
-	//
-	//err := h.insert(ctx, params.sqlParam, upsert)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//return upsert, nil
 }
 
 // findAndModifyParams represent all findAndModify requests' fields.

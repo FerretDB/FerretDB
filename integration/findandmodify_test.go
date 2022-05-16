@@ -342,6 +342,31 @@ func TestFindAndModifyUpdate(t *testing.T) {
 				{"ok", float64(1)},
 			},
 		},
+		"UpdateOperatorSet": {
+			query: bson.D{{"_id", "int64"}},
+			command: bson.D{
+				{"update", bson.D{{"$set", bson.D{{"value", int64(43)}}}}},
+			},
+			update: bson.D{{"_id", "int64"}, {"value", int64(43)}},
+			response: bson.D{
+				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
+				{"value", bson.D{{"_id", "int64"}, {"value", int64(42)}}},
+				{"ok", float64(1)},
+			},
+		},
+		"UpdateOperatorSetReturnNew": {
+			query: bson.D{{"_id", "int64"}},
+			command: bson.D{
+				{"update", bson.D{{"$set", bson.D{{"value", int64(43)}}}}},
+				{"new", true},
+			},
+			update: bson.D{{"_id", "int64"}, {"value", int64(43)}},
+			response: bson.D{
+				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
+				{"value", bson.D{{"_id", "int64"}, {"value", int64(43)}}},
+				{"ok", float64(1)},
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -488,10 +513,7 @@ func TestFindAndModifyRemove(t *testing.T) {
 				{"remove", true},
 			},
 			response: bson.D{
-				{"lastErrorObject", bson.D{
-					{"n", int32(1)},
-				}},
-				{"value", bson.D{{"_id", "double"}, {"value", 42.13}}},
+				{"lastErrorObject", bson.D{{"n", int32(0)}}},
 				{"ok", float64(1)},
 			},
 		},
