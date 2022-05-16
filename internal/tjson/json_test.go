@@ -191,7 +191,7 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() tjsontype) {
 
 				if tc.jErr == "" {
 					require.NoError(b, err)
-					assertEqualWithNaN(b, tc.v, v)
+					assertEqualWithNaN(b, &tc.v, v)
 					return
 				}
 
