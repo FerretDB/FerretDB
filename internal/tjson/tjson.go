@@ -63,7 +63,7 @@ func ParseSchema(data []byte) (map[string]any, error) {
 func parseSchema(in any) (map[string]any, error) {
 	switch in := in.(type) {
 	case map[string]any:
-		schema := make(map[string]any)
+		schema := make(map[string]any, len(in))
 		for k, v := range in {
 			var valSchema map[string]any
 			var err error
