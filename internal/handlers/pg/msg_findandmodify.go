@@ -117,7 +117,6 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				if err != nil {
 					return nil, err
 				}
-
 			} else {
 				upsert = params.update
 
@@ -129,9 +128,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				if err != nil {
 					return nil, err
 				}
-
 			}
-
 		}
 
 		var resultDoc = resDocs[0]

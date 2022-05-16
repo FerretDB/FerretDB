@@ -473,6 +473,28 @@ func TestFindAndModifyRemove(t *testing.T) {
 				{"ok", float64(1)},
 			},
 		},
+		"RemoveEmptyQueryResult": {
+			command: bson.D{
+				{
+					"query",
+					bson.D{{
+						"$and",
+						bson.A{
+							bson.D{{"value", bson.D{{"$gt", 0}}}},
+							bson.D{{"value", bson.D{{"$lt", 0}}}},
+						},
+					}},
+				},
+				{"remove", true},
+			},
+			response: bson.D{
+				{"lastErrorObject", bson.D{
+					{"n", int32(1)},
+				}},
+				{"value", bson.D{{"_id", "double"}, {"value", 42.13}}},
+				{"ok", float64(1)},
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
