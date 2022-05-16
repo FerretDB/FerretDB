@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/AlekSi/pointer"
 
@@ -47,6 +48,8 @@ func fromTJSON(v tjsontype) any {
 		return types.ObjectID(*v)
 	case *boolType:
 		return bool(*v)
+	case *dateTimeType:
+		return time.Time(*v)
 	case *nullType:
 		return types.Null
 	case *regexType:
@@ -69,6 +72,8 @@ func toTJSON(v any) tjsontype {
 		return pointer.To(objectIDType(v))
 	case bool:
 		return pointer.To(boolType(v))
+	case time.Time:
+		return pointer.To(dateTimeType(v))
 	case types.NullType:
 		return pointer.To(nullType(v))
 	case types.Regex:
@@ -97,6 +102,9 @@ func Unmarshal(v any, schema map[string]any) ([]byte, error) {
 	case *boolType:
 		b := boolType(*v)
 		return b.Unmarshal(schema)
+	case *dateTimeType:
+		t := dateTimeType(*v)
+		return t.Unmarshal(schema)
 	case *nullType:
 		n := nullType(*v)
 		return n.Unmarshal(schema)
@@ -159,6 +167,15 @@ func Marshal(v []byte, schema map[string]any) (any, error) {
 		res = &o
 
 	case "string":
+		if format, ok := schema["format"]; ok {
+			if format == "date-time" {
+				var o dateTimeType
+				err = o.Marshal(v, schema)
+				res = &o
+				break
+			}
+		}
+
 		var o stringType
 		err = o.Marshal(v, schema)
 		res = &o
