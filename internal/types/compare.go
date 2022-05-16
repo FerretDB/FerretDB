@@ -48,8 +48,7 @@ const (
 // Compare and contrast with test helpers in testutil package.
 func Compare(v1, v2 any) CompareResult {
 	if v1 == nil || v2 == nil {
-		panic(fmt.Sprintf("compare: values should not be nil, "+
-			"v1 is %v, v2 is %v", v1, v2))
+		panic(fmt.Sprintf("compare: values should not be nil, v1 is %v, v2 is %v", v1, v2))
 	}
 
 	switch v1 := v1.(type) {
@@ -336,8 +335,7 @@ func defineNumberDataType(value any) numberDataTypeOrderResult {
 // CompareOrder defines the data type for the two values and compares them. When the types are equal, it compares using Compare.
 func CompareOrder(a, b any, order string) CompareResult {
 	if a == nil || b == nil {
-		panic(fmt.Sprintf("compareOrder: values should not be nil, "+
-			"a is %v, b is %v", a, b))
+		panic(fmt.Sprintf("compareOrder: values should not be nil, a is %v, b is %v", a, b))
 	}
 
 	aType := defineDataType(a)
