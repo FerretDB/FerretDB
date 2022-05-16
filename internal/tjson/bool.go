@@ -27,6 +27,8 @@ type boolType bool
 // tjsontype implements tjsontype interface.
 func (b *boolType) tjsontype() {}
 
+var boolSchema = map[string]any{"type": "boolean"}
+
 // Unmarshal build-in to tigris.
 func (b *boolType) Unmarshal(_ map[string]any) ([]byte, error) {
 	res, err := json.Marshal(bool(*b))
