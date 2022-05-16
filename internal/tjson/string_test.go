@@ -16,22 +16,23 @@ package tjson
 
 import (
 	"testing"
-
-	"github.com/AlekSi/pointer"
 )
 
 var stringTestCases = []testCase{{
 	name: "foo",
-	v:    pointer.To(stringType("foo")),
+	v:    "foo",
 	j:    `"foo"`,
+	s:    stringSchema,
 }, {
 	name: "empty",
-	v:    pointer.To(stringType("")),
+	v:    "",
 	j:    `""`,
+	s:    stringSchema,
 }, {
 	name: "zero",
-	v:    pointer.To(stringType("\x00")),
+	v:    "\x00",
 	j:    `"\u0000"`,
+	s:    stringSchema,
 }}
 
 func TestString(t *testing.T) {

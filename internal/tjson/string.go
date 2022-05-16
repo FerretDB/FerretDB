@@ -27,6 +27,8 @@ type stringType string
 // tjsontype implements tjsontype interface.
 func (str *stringType) tjsontype() {}
 
+var stringSchema = map[string]any{"type": "string"}
+
 // Unmarshal implements tjsontype interface.
 func (str *stringType) Unmarshal(_ map[string]any) ([]byte, error) {
 	res, err := json.Marshal(string(*str))
