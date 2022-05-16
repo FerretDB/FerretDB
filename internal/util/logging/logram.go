@@ -26,7 +26,7 @@ type logRAM struct {
 	size    int64
 	counter int64
 	log     []*zapcore.Entry
-	mu      sync.RWMutex
+	sync.RWMutex
 }
 
 // NewLogRAM is creating entries log in memory.
@@ -38,14 +38,13 @@ func NewLogRAM(size int64) *logRAM {
 	return &logRAM{
 		size: size,
 		log:  make([]*zapcore.Entry, size),
-		mu:   sync.RWMutex{},
 	}
 }
 
 // append is adding entry in logram.
 func (l *logRAM) append(entry zapcore.Entry) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
+	l.Lock()
+	defer l.Unlock()
 
 	rec := &zapcore.Entry{
 		Level:      entry.Level,
@@ -61,8 +60,8 @@ func (l *logRAM) append(entry zapcore.Entry) {
 
 // getLogRAM returns entrys from logRAM.
 func (l *logRAM) getLogRAM() (entrys []*zapcore.Entry) {
-	l.mu.RLock()
-	defer l.mu.RUnlock()
+	l.RLock()
+	defer l.RUnlock()
 
 	for i := int64(0); i < l.size; i++ {
 		k := (i + l.counter) % l.size
