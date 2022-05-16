@@ -132,7 +132,24 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		if err != nil {
 			return nil, err
 		}
-	} else {
+
+		var reply wire.OpMsg
+		resultDoc := resDocs[0]
+		if params.returnNewDocument {
+			resultDoc = params.update
+		}
+		must.NoError(reply.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"lastErrorObject", must.NotFail(types.NewDocument("n", int32(1), "updatedExisting", true)),
+				"value", resultDoc,
+				"ok", float64(1),
+			))},
+		}))
+
+		return &reply, nil
+	}
+
+	if params.upsert {
 		_, err = h.delete(ctx, params.sqlParam, resDocs)
 		if err != nil {
 			return nil, err
@@ -142,22 +159,24 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		if err != nil {
 			return nil, err
 		}
+
+		var reply wire.OpMsg
+		resultDoc := resDocs[0]
+		if params.returnNewDocument {
+			resultDoc = params.update
+		}
+		must.NoError(reply.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"lastErrorObject", must.NotFail(types.NewDocument("n", int32(1), "updatedExisting", true)),
+				"value", resultDoc,
+				"ok", float64(1),
+			))},
+		}))
+
+		return &reply, nil
 	}
 
-	var reply wire.OpMsg
-	resultDoc := resDocs[0]
-	if params.returnNewDocument {
-		resultDoc = params.update
-	}
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"lastErrorObject", must.NotFail(types.NewDocument("n", int32(1), "updatedExisting", true)),
-			"value", resultDoc,
-			"ok", float64(1),
-		))},
-	}))
-
-	return &reply, nil
+	return nil, lazyerrors.New("bad flags combination")
 }
 
 // findAndModifyParams represent all findAndModify requests' fields.
