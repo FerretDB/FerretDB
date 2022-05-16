@@ -16,10 +16,13 @@ package pg
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -44,7 +47,6 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	ignoredFields := []string{
 		"bypassDocumentValidation",
 		"writeConcern",
-		"maxTimeMS",
 		"collation",
 		"hint",
 		"comment",
@@ -56,8 +58,19 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	fetchedDocs, err := h.fetch(ctx, params.sqlParam)
+	runCtx, runCancel := ctxutil.WithDelay(ctx.Done(), 10*time.Second)
+	defer runCancel()
+	if params.maxTimeMS != 0 {
+		runCtx, runCancel = context.WithTimeout(ctx, time.Duration(params.maxTimeMS)*time.Millisecond)
+		defer runCancel()
+	}
+
+	fetchedDocs, err := h.fetch(runCtx, params.sqlParam)
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return nil, fmt.Errorf("context deadline exceeded, maxTimeMS: %v", params.maxTimeMS)
+		}
+
 		return nil, err
 	}
 
@@ -264,6 +277,7 @@ type findAndModifyParams struct {
 	query, sort, update                   *types.Document
 	remove, upsert                        bool
 	returnNewDocument, hasUpdateOperators bool
+	maxTimeMS                             int32
 }
 
 // prepareFindAndModifyParams prepares findAndModify request fields.
@@ -307,6 +321,11 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 
 	var sort *types.Document
 	if sort, err = common.GetOptionalParam(document, "sort", sort); err != nil {
+		return nil, err
+	}
+
+	var maxTimeMS int32
+	if maxTimeMS, err = common.GetOptionalParam(document, "maxTimeMS", maxTimeMS); err != nil {
 		return nil, err
 	}
 
@@ -358,6 +377,7 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 		upsert:             upsert,
 		returnNewDocument:  returnNewDocument,
 		hasUpdateOperators: hasUpdateOperators,
+		maxTimeMS:          maxTimeMS,
 	}, nil
 }
 

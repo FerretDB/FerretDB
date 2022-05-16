@@ -16,8 +16,11 @@ package pg
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -52,7 +55,6 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		"hint",
 		"batchSize",
 		"singleBatch",
-		"maxTimeMS",
 		"readConcern",
 		"max",
 		"min",
@@ -60,6 +62,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	common.Ignored(document, h.l, ignoredFields...)
 
 	var filter, sort, projection *types.Document
+	var maxTimeMS int32
 	if filter, err = common.GetOptionalParam(document, "filter", filter); err != nil {
 		return nil, err
 	}
@@ -68,6 +71,17 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 	if projection, err = common.GetOptionalParam(document, "projection", projection); err != nil {
 		return nil, err
+	}
+	if maxTimeMS, err = common.GetOptionalParam(document, "maxTimeMS", maxTimeMS); err != nil {
+		return nil, err
+	}
+
+	// TODO: what time should I set for delay?
+	runCtx, runCancel := ctxutil.WithDelay(ctx.Done(), 10*time.Second)
+	defer runCancel()
+	if maxTimeMS != 0 {
+		runCtx, runCancel = context.WithTimeout(ctx, time.Duration(maxTimeMS)*time.Millisecond)
+		defer runCancel()
 	}
 
 	var limit int64
@@ -104,8 +118,12 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		}
 	}
 
-	fetchedDocs, err := h.fetch(ctx, sp)
+	fetchedDocs, err := h.fetch(runCtx, sp)
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return nil, fmt.Errorf("context deadline exceeded, maxTimeMS: %v", maxTimeMS)
+		}
+
 		return nil, err
 	}
 
