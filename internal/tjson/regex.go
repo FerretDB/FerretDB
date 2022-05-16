@@ -33,6 +33,14 @@ type regexJSON struct {
 	O string `json:"o"`
 }
 
+var regexSchema = map[string]any{
+	"type": "object",
+	"properties": map[string]any{
+		"$r": map[string]any{"type": "string"},
+		"o":  map[string]any{"type": "string"},
+	},
+}
+
 // Unmarshal build-in to tigris.
 func (regex *regexType) Unmarshal(_ map[string]any) ([]byte, error) {
 	res, err := json.Marshal(regexJSON{
