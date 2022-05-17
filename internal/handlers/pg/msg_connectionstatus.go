@@ -29,6 +29,11 @@ func (h *Handler) MsgConnectionStatus(ctx context.Context, msg *wire.OpMsg) (*wi
 	var reply wire.OpMsg
 	err := reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"authInfo", must.NotFail(types.NewDocument(
+				"authenticatedUsers", must.NotFail(types.NewArray()),
+				"authenticatedUserRoles", must.NotFail(types.NewArray()),
+				"authenticatedUserPrivileges", must.NotFail(types.NewArray()),
+			)),
 			"ok", float64(1),
 		))},
 	})
