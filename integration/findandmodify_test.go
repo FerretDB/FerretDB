@@ -458,6 +458,54 @@ func TestFindAndModifyUpsert(t *testing.T) {
 				{"ok", float64(1)},
 			},
 		},
+		"UpsertNoSuchReplaceDocument": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "no-such-doc"}}},
+				{"update", bson.D{{"value", 43.13}}},
+				{"upsert", true},
+				{"new", true},
+			},
+			response: bson.D{
+				{"lastErrorObject", bson.D{
+					{"n", int32(1)},
+					{"updatedExisting", false},
+					{"upserted", "no-such-doc"},
+				}},
+				{"value", bson.D{{"_id", "no-such-doc"}, {"value", 43.13}}},
+				{"ok", float64(1)},
+			},
+		},
+		"UpsertReplace": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "double"}}},
+				{"update", bson.D{{"value", 43.13}}},
+				{"upsert", true},
+			},
+			response: bson.D{
+				{"lastErrorObject", bson.D{
+					{"n", int32(1)},
+					{"updatedExisting", true},
+				}},
+				{"value", bson.D{{"_id", "double"}, {"value", 42.13}}},
+				{"ok", float64(1)},
+			},
+		},
+		"UpsertReplaceReturnNew": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "double"}}},
+				{"update", bson.D{{"value", 43.13}}},
+				{"upsert", true},
+				{"new", true},
+			},
+			response: bson.D{
+				{"lastErrorObject", bson.D{
+					{"n", int32(1)},
+					{"updatedExisting", true},
+				}},
+				{"value", bson.D{{"_id", "double"}, {"value", 43.13}}},
+				{"ok", float64(1)},
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -474,6 +522,61 @@ func TestFindAndModifyUpsert(t *testing.T) {
 			assert.Equal(t, float64(1), m["ok"])
 
 			AssertEqualDocuments(t, tc.response, actual)
+		})
+	}
+}
+
+func TestFindAndModifyUpsertComplex(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		command         bson.D
+		lastErrorObject bson.D
+		value           bson.D
+	}{
+		"UpsertNoSuchDocumentNoIdInQuery": {
+			command: bson.D{
+				{"query", bson.D{{
+					"$and",
+					bson.A{
+						bson.D{{"value", bson.D{{"$gt", 0}}}},
+						bson.D{{"value", bson.D{{"$lt", 0}}}},
+					},
+				}}},
+				{"update", bson.D{{"$set", bson.D{{"value", 43.13}}}}},
+				{"upsert", true},
+			},
+			lastErrorObject: bson.D{
+				{"n", int32(1)},
+				{"updatedExisting", false},
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+
+			command := append(bson.D{{"findAndModify", collection.Name()}}, tc.command...)
+
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+			require.NoError(t, err)
+
+			m := actual.Map()
+			assert.Equal(t, float64(1), m["ok"])
+
+			leb, ok := m["lastErrorObject"].(bson.D)
+			if !ok {
+				t.Fatal(actual)
+			}
+
+			for _, v := range leb {
+				if v.Key == "upserted" {
+					continue
+				}
+				assert.Equal(t, tc.lastErrorObject.Map()[v.Key], v.Value)
+			}
 		})
 	}
 }

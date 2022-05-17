@@ -192,8 +192,12 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	return nil, lazyerrors.New("bad flags combination")
 }
 
-func (h *Handler) upsert(ctx context.Context, resDocs []*types.Document, params *findAndModifyParams) (*types.Document, bool, error) {
-	if len(resDocs) == 0 {
+// upsert inserts new document if no documents in query result or updates given document.
+// When inserting new document we must check that `_id` is present, so we must extract `_id` from query or generate new one.
+func (h *Handler) upsert(
+	ctx context.Context, docs []*types.Document, params *findAndModifyParams,
+) (*types.Document, bool, error) {
+	if len(docs) == 0 {
 		upsert := must.NotFail(types.NewDocument())
 
 		if params.hasUpdateOperators {
@@ -221,7 +225,7 @@ func (h *Handler) upsert(ctx context.Context, resDocs []*types.Document, params 
 		return upsert, true, nil
 	}
 
-	upsert := resDocs[0].DeepCopy()
+	upsert := docs[0].DeepCopy()
 
 	if params.hasUpdateOperators {
 		err := common.UpdateDocument(upsert, params.update)
