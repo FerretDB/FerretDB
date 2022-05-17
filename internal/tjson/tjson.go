@@ -109,8 +109,7 @@ func parseSchema(in any) (map[string]any, error) {
 
 // DocumentSchema creates description of json schema doc in Tigris data format and adds $k to keep order.
 func DocumentSchema(doc *types.Document) (map[string]any, error) {
-	schema := make(map[string]any, doc.Len()+1)
-
+	schema := make(map[string]any, doc.Len()+2)
 	for _, key := range doc.Keys() {
 		v := must.NotFail(doc.Get(key))
 		valueSchema, err := valueSchema(v)
@@ -120,7 +119,12 @@ func DocumentSchema(doc *types.Document) (map[string]any, error) {
 		schema[key] = valueSchema
 	}
 	schema["$k"] = doc.Keys()
-	return schema, nil
+
+	externalSchema := make(map[string]any, 3)
+	externalSchema["$k"] = []string{"type", "properties"}
+	externalSchema["type"] = "object"
+	externalSchema["properties"] = schema
+	return externalSchema, nil
 }
 
 // valueSchema returns schema for value.
@@ -140,6 +144,7 @@ func valueSchema(v any) (map[string]any, error) {
 
 	case types.Binary:
 		schema := map[string]any{
+			"$k":   []string{"type", "properties"},
 			"type": "object",
 			"properties": map[string]any{
 				"$b": map[string]any{"type": "string", "format": "byte"},   // binary data
@@ -150,6 +155,7 @@ func valueSchema(v any) (map[string]any, error) {
 
 	case types.ObjectID:
 		return map[string]any{
+			"$k":   []string{"type", "properties"},
 			"type": "object",
 			"properties": map[string]any{
 				"$o": map[string]any{"type": "string"},
@@ -170,6 +176,7 @@ func valueSchema(v any) (map[string]any, error) {
 
 	case types.Regex:
 		return map[string]any{
+			"$k":   []string{"type", "properties"},
 			"type": "object",
 			"properties": map[string]any{
 				"$r": map[string]any{"type": "string"},
@@ -182,6 +189,7 @@ func valueSchema(v any) (map[string]any, error) {
 
 	case types.Timestamp:
 		return map[string]any{
+			"$k":   []string{"type", "properties"},
 			"type": "object",
 			"properties": map[string]any{
 				"$t": map[string]any{"type": "string"},

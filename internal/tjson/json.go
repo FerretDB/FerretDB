@@ -41,7 +41,7 @@ type tjsontype interface {
 func fromTJSON(v tjsontype) any {
 	switch v := v.(type) {
 	case *documentType:
-		return types.Document(*v)
+		return pointer.To(types.Document(*v))
 	case *doubleType:
 		return float64(*v)
 	case *stringType:
@@ -70,8 +70,8 @@ func toTJSON(v any) tjsontype {
 	switch v := v.(type) {
 	case tjsontype:
 		return v
-	case types.Document:
-		return pointer.To(documentType(v))
+	case *types.Document:
+		return pointer.To(documentType(*v))
 	case float64:
 		return pointer.To(doubleType(v))
 	case string:
@@ -138,7 +138,7 @@ func Marshal(v any, schema map[string]any) ([]byte, error) {
 func Unmarshal(v []byte, schema map[string]any) (any, error) {
 	fieldType, ok := schema["type"]
 	if !ok {
-		return nil, lazyerrors.Errorf("canont find field type")
+		return nil, lazyerrors.Errorf("canont find field type %v", schema)
 	}
 
 	var err error
