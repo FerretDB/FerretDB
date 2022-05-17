@@ -31,8 +31,8 @@ import (
 type tjsontype interface {
 	tjsontype() // seal for go-sumtype
 
-	Marshal(schema map[string]any) ([]byte, error)           // build-in to tigris.
 	Unmarshal(tigrisDoc []byte, schema map[string]any) error // tigris to build-in
+	Marshal(schema map[string]any) ([]byte, error)           // build-in to tigris.
 }
 
 //go-sumtype:decl tjsontype
@@ -40,6 +40,8 @@ type tjsontype interface {
 // fromTJSON converts tjsontype value to matching built-in or types' package value.
 func fromTJSON(v tjsontype) any {
 	switch v := v.(type) {
+	case *doubleType:
+		return float64(*v)
 	case *stringType:
 		return string(*v)
 	case *binaryType:
@@ -58,12 +60,16 @@ func fromTJSON(v tjsontype) any {
 		return types.Timestamp(*v)
 	}
 
-	panic(fmt.Sprintf("not reached: %T", v))
+	panic(fmt.Sprintf("fromTJSON: not reached: %T", v))
 }
 
 // toTJSON converts built-in or types' package value to tjsontype value.
 func toTJSON(v any) tjsontype {
 	switch v := v.(type) {
+	case tjsontype:
+		return v
+	case float64:
+		return pointer.To(doubleType(v))
 	case string:
 		return pointer.To(stringType(v))
 	case types.Binary:
@@ -82,7 +88,7 @@ func toTJSON(v any) tjsontype {
 		return pointer.To(timestampType(v))
 	}
 
-	panic(fmt.Sprintf("not reached: %T", v))
+	panic(fmt.Sprintf("toTJSON not reached: %T", v))
 }
 
 // Marshal build-in to tigris.
@@ -90,6 +96,10 @@ func Marshal(v any, schema map[string]any) ([]byte, error) {
 	tv := toTJSON(v)
 
 	switch v := tv.(type) {
+
+	case *doubleType:
+		d := doubleType(*v)
+		return d.Marshal(schema)
 	case *stringType:
 		s := stringType(*v)
 		return s.Marshal(schema)
@@ -157,8 +167,14 @@ func Unmarshal(v []byte, schema map[string]any) (any, error) {
 			res = &o
 			break
 		}
+
 	case "array":
 		err = lazyerrors.Errorf("arrays not supported yet")
+
+	case "number":
+		var o doubleType
+		err = o.Unmarshal(v, schema)
+		res = &o
 
 	case "boolean":
 		var o boolType

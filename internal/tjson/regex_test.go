@@ -17,17 +17,17 @@ package tjson
 import (
 	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/AlekSi/pointer"
 )
 
 var regexTestCases = []testCase{{
 	name: "normal",
-	v:    types.Regex{Pattern: "hoffman", Options: "i"},
+	v:    pointer.To(regexType{Pattern: "hoffman", Options: "i"}),
 	j:    `{"$r":"hoffman","o":"i"}`,
 	s:    regexSchema,
 }, {
 	name: "empty",
-	v:    types.Regex{Pattern: "", Options: ""},
+	v:    pointer.To(regexType{Pattern: "", Options: ""}),
 	j:    `{"$r":"","o":""}`,
 	s:    regexSchema,
 }, {

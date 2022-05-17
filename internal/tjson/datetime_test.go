@@ -17,26 +17,28 @@ package tjson
 import (
 	"testing"
 	"time"
+
+	"github.com/AlekSi/pointer"
 )
 
 var dateTimeTestCases = []testCase{{
 	name: "2021",
-	v:    time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC),
+	v:    pointer.To(dateTimeType(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))),
 	j:    `"2021-11-01T10:18:42.123Z"`,
 	s:    dateTimeSchema,
 }, {
 	name: "unix_zero",
-	v:    time.Unix(0, 0).UTC(),
+	v:    pointer.To(dateTimeType(time.Unix(0, 0).UTC())),
 	j:    `"1970-01-01T00:00:00Z"`,
 	s:    dateTimeSchema,
 }, {
 	name: "0",
-	v:    time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC),
+	v:    pointer.To(dateTimeType(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC))),
 	j:    `"0000-01-01T00:00:00Z"`,
 	s:    dateTimeSchema,
 }, {
 	name: "9999",
-	v:    time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC),
+	v:    pointer.To(dateTimeType(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC))),
 	j:    `"9999-12-31T23:59:59.999Z"`,
 	s:    dateTimeSchema,
 }, {

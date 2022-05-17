@@ -14,17 +14,21 @@
 
 package tjson
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/AlekSi/pointer"
+)
 
 var boolTestCases = []testCase{{
 	name: "false",
-	v:    false,
+	v:    pointer.To(boolType(false)),
 	s:    boolSchema,
 	j:    `false`,
 }, {
 	name: "true",
 	s:    boolSchema,
-	v:    true,
+	v:    pointer.To(boolType(true)),
 	j:    `true`,
 }}
 

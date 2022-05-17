@@ -22,7 +22,7 @@ import (
 
 var binaryTestCases = []testCase{{
 	name: "foo",
-	v: types.Binary{
+	v: &binaryType{
 		Subtype: types.BinaryUser,
 		B:       []byte("foo"),
 	},
@@ -30,7 +30,7 @@ var binaryTestCases = []testCase{{
 	j: `{"$b":"Zm9v","s":128}`,
 }, {
 	name: "empty",
-	v: types.Binary{
+	v: &binaryType{
 		Subtype: types.BinaryGeneric,
 		B:       []byte{},
 	},
@@ -39,7 +39,7 @@ var binaryTestCases = []testCase{{
 	canonJ: `{"$b":"","s":0}`,
 }, {
 	name: "invalid subtype",
-	v: types.Binary{
+	v: &binaryType{
 		Subtype: 0xff,
 		B:       []byte{},
 	},
@@ -47,7 +47,7 @@ var binaryTestCases = []testCase{{
 	j: `{"$b":"","s":255}`,
 }, {
 	name: "extra JSON fields",
-	v: types.Binary{
+	v: &binaryType{
 		Subtype: types.BinaryUser,
 		B:       []byte("foo"),
 	},

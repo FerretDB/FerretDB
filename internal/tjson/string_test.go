@@ -14,21 +14,25 @@
 
 package tjson
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/AlekSi/pointer"
+)
 
 var stringTestCases = []testCase{{
 	name: "foo",
-	v:    "foo",
+	v:    pointer.To(stringType("foo")),
 	j:    `"foo"`,
 	s:    stringSchema,
 }, {
 	name: "empty",
-	v:    "",
+	v:    pointer.To(stringType("")),
 	j:    `""`,
 	s:    stringSchema,
 }, {
 	name: "zero",
-	v:    "\x00",
+	v:    pointer.To(stringType("\x00")),
 	j:    `"\u0000"`,
 	s:    stringSchema,
 }}

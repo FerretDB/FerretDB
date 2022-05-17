@@ -26,7 +26,7 @@ import (
 
 type testCase struct {
 	name   string
-	v      any            // build-in
+	v      tjsontype      // build-in
 	j      string         // tigris
 	s      map[string]any // schema
 	canonJ string         // canonical form without extra object fields, zero values, etc.
@@ -71,14 +71,15 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() tjsontype) {
 				}
 			}
 
-			t.Run("Unmarshal", func(t *testing.T) {
+			t.Run("UnmarshalJSON", func(t *testing.T) {
 				t.Parallel()
 
-				actualBuildIn, err := Unmarshal([]byte(tc.j), tc.s)
+				v := newFunc()
+				err := v.Unmarshal([]byte(tc.j), tc.s)
 
 				if tc.jErr == "" {
 					require.NoError(t, err)
-					assertEqualWithNaN(t, tc.v, actualBuildIn)
+					assertEqualWithNaN(t, tc.v, v)
 					return
 				}
 
@@ -86,13 +87,34 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() tjsontype) {
 				require.Equal(t, tc.jErr, lastErr(err).Error())
 			})
 
-			t.Run("Marshal", func(t *testing.T) {
+			t.Run("Unmarshal", func(t *testing.T) {
+				t.Parallel()
+
+				v, err := Unmarshal([]byte(tc.j), tc.s)
+
+				if tc.jErr == "" {
+					require.NoError(t, err)
+					assertEqualWithNaN(t, tc.v, toTJSON(v))
+					return
+				}
+
+				require.Error(t, err)
+				require.Equal(t, tc.jErr, lastErr(err).Error())
+			})
+
+			t.Run("MarshalJSON", func(t *testing.T) {
 				if tc.v == nil {
 					t.Skip("v is nil")
 				}
+
 				t.Parallel()
 
-				actualJ, err := Marshal(tc.v, tc.s)
+				actualJ, err := tc.v.Marshal(tc.s)
+				if tc.jErr != "" {
+					require.Error(t, err)
+					require.Equal(t, tc.jErr, lastErr(err).Error())
+					return
+				}
 				require.NoError(t, err)
 				expectedJ := tc.j
 				if tc.canonJ != "" {
@@ -101,15 +123,14 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() tjsontype) {
 				assert.Equal(t, expectedJ, string(actualJ))
 			})
 
-			t.Run("Unmarshal", func(t *testing.T) {
+			t.Run("Marshal", func(t *testing.T) {
 				if tc.v == nil {
 					t.Skip("v is nil")
 				}
 
 				t.Parallel()
 
-				actualF, err := Unmarshal([]byte(tc.j), tc.s)
-
+				actualJ, err := Marshal(toTJSON(tc.v), tc.s)
 				if tc.jErr != "" {
 					require.Error(t, err)
 					require.Equal(t, tc.jErr, lastErr(err).Error())
@@ -117,9 +138,11 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() tjsontype) {
 				}
 
 				require.NoError(t, err)
-				expectedF := tc.v
-
-				assert.Equal(t, expectedF, actualF)
+				expectedJ := tc.j
+				if tc.canonJ != "" {
+					expectedJ = tc.canonJ
+				}
+				assert.Equal(t, expectedJ, string(actualJ))
 			})
 		})
 	}

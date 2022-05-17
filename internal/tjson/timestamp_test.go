@@ -17,17 +17,17 @@ package tjson
 import (
 	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/AlekSi/pointer"
 )
 
 var timestampTestCases = []testCase{{
 	name: "one",
-	v:    types.Timestamp(1652700697465990022),
+	v:    pointer.To(timestampType(1652700697465990022)),
 	j:    `{"$t":"1652700697465990022"}`,
 	s:    timestampSchema,
 }, {
 	name: "zero",
-	v:    types.Timestamp(0),
+	v:    pointer.To(timestampType(0)),
 	j:    `{"$t":"0"}`,
 	s:    timestampSchema,
 }, {
