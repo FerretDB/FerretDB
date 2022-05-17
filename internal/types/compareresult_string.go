@@ -16,7 +16,7 @@ func _() {
 
 const (
 	_CompareResult_name_0 = "<==>"
-	_CompareResult_name_1 = "!="
+	_CompareResult_name_1 = "<>"
 )
 
 var (
