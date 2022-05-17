@@ -51,6 +51,8 @@ var _ErrorCode_map = map[ErrorCode]string{
 	31275: _ErrorCode_name[203:216],
 	51075: _ErrorCode_name[216:229],
 	51091: _ErrorCode_name[229:242],
+	51075: _ErrorCode_name[177:190],
+	51091: _ErrorCode_name[190:203],
 }
 
 func (i ErrorCode) String() string {
