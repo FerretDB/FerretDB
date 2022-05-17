@@ -215,6 +215,7 @@ func (we WriteErrors) Document() *types.Document {
 
 // WriteError represents protocol write error.
 type WriteError struct {
+	// The index determines the operation that caused error.
 	index int64
 	code  ErrorCode
 	err   error
