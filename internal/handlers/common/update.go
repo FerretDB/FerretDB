@@ -23,28 +23,39 @@ import (
 )
 
 // UpdateDocument updates the given document with a series of update operators.
-func UpdateDocument(doc, update *types.Document) error {
+func UpdateDocument(doc, update *types.Document) (skip bool, err error) {
+	skip = true
 	for _, updateOp := range update.Keys() {
 		updateV := must.NotFail(update.Get(updateOp))
 
 		switch updateOp {
 		case "$set":
-			setDoc, err := AssertType[*types.Document](updateV)
+			var setDoc *types.Document
+			setDoc, err = AssertType[*types.Document](updateV)
 			if err != nil {
-				return err
+				return
+			}
+
+			if len(setDoc.Keys()) == 0 {
+				return
 			}
 
 			for _, setKey := range setDoc.Keys() {
 				setValue := must.NotFail(setDoc.Get(setKey))
+				if doc.Has(setKey) {
+					skip = skip && (must.NotFail(doc.Get(setKey)) == setValue)
+				}
 				if err = doc.Set(setKey, setValue); err != nil {
-					return lazyerrors.Error(err)
+					skip, err = false, lazyerrors.Error(err)
+					return
 				}
 			}
 
 		default:
-			return NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
+			skip, err = false, NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
+			return
 		}
 	}
 
-	return nil
+	return
 }

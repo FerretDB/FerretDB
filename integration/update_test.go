@@ -72,3 +72,43 @@ func TestUpdateUpsert(t *testing.T) {
 	require.NoError(t, err)
 	AssertEqualDocuments(t, bson.D{{"_id", id}, {"foo", "qux"}}, doc)
 }
+
+func TestUpdateOne(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t, shareddata.Composites)
+
+	for name, tc := range map[string]struct {
+		filter   bson.D
+		update   bson.D
+		expected *mongo.UpdateResult
+		err      *mongo.CommandError
+	}{
+		"Empty$set": {
+			filter: bson.D{{"_id", "document"}},
+			update: bson.D{{"$set", bson.D{}}},
+			expected: &mongo.UpdateResult{
+				MatchedCount: 1,
+			},
+			err: nil,
+		},
+		"SameValue$set": {
+			filter: bson.D{{"_id", "document"}},
+			update: bson.D{{"$set", bson.D{{"_id", "document"}}}},
+			expected: &mongo.UpdateResult{
+				MatchedCount: 1,
+			},
+			err: nil,
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			res, err := collection.UpdateOne(ctx, tc.filter, tc.update)
+			if tc.err != nil {
+				AssertEqualError(t, *tc.err, err)
+			}
+			require.NoError(t, err)
+			assert.EqualValues(t, tc.expected, res)
+		})
+	}
+}
