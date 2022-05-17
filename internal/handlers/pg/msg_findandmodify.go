@@ -90,7 +90,13 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		var upserted bool
 
 		if params.upsert { //  we have upsert flag
-			upsert, upserted, err = h.upsert(ctx, resDocs, params)
+			p := &upsertParams{
+				hasUpdateOperators: params.hasUpdateOperators,
+				query:              params.query,
+				update:             params.update,
+				sqlParam:           params.sqlParam,
+			}
+			upsert, upserted, err = h.upsert(ctx, resDocs, p)
 			if err != nil {
 				return nil, err
 			}
@@ -192,11 +198,16 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	return nil, lazyerrors.New("bad flags combination")
 }
 
+// upsertParams represent parameters for Handler.upsert method.
+type upsertParams struct {
+	hasUpdateOperators bool
+	query, update      *types.Document
+	sqlParam           sqlParam
+}
+
 // upsert inserts new document if no documents in query result or updates given document.
-// When inserting new document we must check that `_id` is present, so we must extract `_id` from query or generate new one.
-func (h *Handler) upsert(
-	ctx context.Context, docs []*types.Document, params *findAndModifyParams,
-) (*types.Document, bool, error) {
+// When inserting new document we must check that `_id` is present, so we must extract `_id` from query or generate a new one.
+func (h *Handler) upsert(ctx context.Context, docs []*types.Document, params *upsertParams) (*types.Document, bool, error) {
 	if len(docs) == 0 {
 		upsert := must.NotFail(types.NewDocument())
 
