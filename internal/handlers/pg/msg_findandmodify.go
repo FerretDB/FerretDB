@@ -87,9 +87,10 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	if params.update != nil { // we have update part
 		var upsert *types.Document
+		var upserted bool
 
 		if params.upsert { //  we have upsert flag
-			upsert, err = h.upsert(ctx, resDocs, params)
+			upsert, upserted, err = h.upsert(ctx, resDocs, params)
 			if err != nil {
 				return nil, err
 			}
@@ -131,18 +132,26 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			}
 		}
 
-		resultDoc := resDocs[0]
-		if params.returnNewDocument {
+		var resultDoc *types.Document
+		if params.returnNewDocument || len(resDocs) == 0 {
 			resultDoc = upsert
+		} else {
+			resultDoc = resDocs[0]
+		}
+
+		lastErrorObject := must.NotFail(types.NewDocument(
+			"n", int32(1),
+			"updatedExisting", len(resDocs) > 0,
+		))
+
+		if upserted {
+			must.NoError(lastErrorObject.Set("upserted", must.NotFail(resultDoc.Get("_id"))))
 		}
 
 		var reply wire.OpMsg
 		must.NoError(reply.SetSections(wire.OpMsgSection{
 			Documents: []*types.Document{must.NotFail(types.NewDocument(
-				"lastErrorObject", must.NotFail(types.NewDocument(
-					"n", int32(1),
-					"updatedExisting", len(resDocs) > 0,
-				)),
+				"lastErrorObject", lastErrorObject,
 				"value", resultDoc,
 				"ok", float64(1),
 			))},
@@ -183,8 +192,54 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	return nil, lazyerrors.New("bad flags combination")
 }
 
-func (h *Handler) upsert(ctx context.Context, resDocs []*types.Document, params *findAndModifyParams) (*types.Document, error) {
-	return nil, lazyerrors.New("not implemented yet")
+func (h *Handler) upsert(ctx context.Context, resDocs []*types.Document, params *findAndModifyParams) (*types.Document, bool, error) {
+	if len(resDocs) == 0 {
+		upsert := must.NotFail(types.NewDocument())
+
+		if params.hasUpdateOperators {
+			err := common.UpdateDocument(upsert, params.update)
+			if err != nil {
+				return nil, false, err
+			}
+		} else {
+			upsert = params.update
+		}
+
+		if !upsert.Has("_id") {
+			if params.query.Has("_id") {
+				must.NoError(upsert.Set("_id", must.NotFail(params.query.Get("_id"))))
+			} else {
+				must.NoError(upsert.Set("_id", types.NewObjectID()))
+			}
+		}
+
+		err := h.insert(ctx, params.sqlParam, upsert)
+		if err != nil {
+			return nil, false, err
+		}
+
+		return upsert, true, nil
+	}
+
+	upsert := resDocs[0].DeepCopy()
+
+	if params.hasUpdateOperators {
+		err := common.UpdateDocument(upsert, params.update)
+		if err != nil {
+			return nil, false, err
+		}
+	} else {
+		for _, k := range params.update.Keys() {
+			must.NoError(upsert.Set(k, must.NotFail(params.update.Get(k))))
+		}
+	}
+
+	_, err := h.update(ctx, params.sqlParam, upsert)
+	if err != nil {
+		return nil, false, err
+	}
+
+	return upsert, false, nil
 }
 
 // findAndModifyParams represent all findAndModify requests' fields.
