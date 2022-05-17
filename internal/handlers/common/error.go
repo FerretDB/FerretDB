@@ -50,7 +50,7 @@ const (
 	ErrElemMatchObjectRequired       = ErrorCode(31274) // Location31274
 	ErrElemMatchNestedField          = ErrorCode(31275) // Location31275
 	ErrRegexOptions                  = ErrorCode(51075) // Location51075
-	ErrRegexMissingParen = ErrorCode(51091) // Location51091
+	ErrRegexMissingParen             = ErrorCode(51091) // Location51091
 )
 
 // Error represents wire protocol error.
