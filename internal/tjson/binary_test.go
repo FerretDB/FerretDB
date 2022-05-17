@@ -46,16 +46,6 @@ var binaryTestCases = []testCase{{
 	s: binarySchema,
 	j: `{"$b":"","s":255}`,
 }, {
-	name: "extra JSON fields",
-	v: &binaryType{
-		Subtype: types.BinaryUser,
-		B:       []byte("foo"),
-	},
-	s:      binarySchema,
-	j:      `{"$b":"Zm9v","s":128,"foo":"bar"}`,
-	canonJ: `{"$b":"Zm9v","s":128}`,
-	jErr:   `json: unknown field "foo"`,
-}, {
 	name: "EOF",
 	j:    `{`,
 	s:    binarySchema,
