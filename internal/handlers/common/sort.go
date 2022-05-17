@@ -15,7 +15,6 @@
 package common
 
 import (
-	"fmt"
 	"sort"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -49,7 +48,7 @@ func SortDocuments(docs []*types.Document, sort *types.Document) error {
 
 		sortType, err := getSortType(sortField)
 		if err != nil {
-			return NewErrorMsg(ErrSortBadValue, fmt.Sprintf("%v: %v: %#v", err, sortKey, sortField))
+			return err
 		}
 
 		sortFuncs[i] = lessFunc(sortKey, sortType)
@@ -161,6 +160,6 @@ func getSortType(value any) (sortType, error) {
 	case -1:
 		return descending, nil
 	default:
-		return 0, NewErrorMsg(ErrBadValue, `Illegal key in $sort specification`)
+		return 0, NewErrorMsg(ErrLocation15975, "$sort key ordering must be 1 (for ascending) or -1 (for descending)")
 	}
 }

@@ -174,6 +174,7 @@ func TestQuerySortValue(t *testing.T) {
 	for name, tc := range map[string]struct {
 		sort        bson.D
 		expectedIDs []any
+		err         *mongo.CommandError
 	}{
 		"AscValueScalar": {
 			sort: bson.D{{"value", 1}},
@@ -261,12 +262,25 @@ func TestQuerySortValue(t *testing.T) {
 				"null",
 			},
 		},
+		"BadSortValue": {
+			sort: bson.D{{"value", 11}},
+			err: &mongo.CommandError{
+				Code:    15975,
+				Name:    "Location15975",
+				Message: "$sort key ordering must be 1 (for ascending) or -1 (for descending)",
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
 			cursor, err := collection.Find(ctx, bson.D{}, options.Find().SetSort(tc.sort))
+			if tc.err != nil {
+				require.Nil(t, tc.expectedIDs)
+				AssertEqualError(t, *tc.err, err)
+				return
+			}
 			require.NoError(t, err)
 
 			var actual []bson.D

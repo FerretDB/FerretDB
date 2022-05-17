@@ -18,7 +18,7 @@ func _() {
 	_ = x[ErrCommandNotFound-59]
 	_ = x[ErrInvalidNamespace-73]
 	_ = x[ErrNotImplemented-238]
-	_ = x[ErrSortBadValue-15974]
+	_ = x[ErrLocation15975-15975]
 	_ = x[ErrInvalidArg-28667]
 	_ = x[ErrSliceFirstArg-28724]
 	_ = x[ErrProjectionInEx-31253]
@@ -40,7 +40,7 @@ var _ErrorCode_map = map[ErrorCode]string{
 	59:    _ErrorCode_name[83:98],
 	73:    _ErrorCode_name[98:114],
 	238:   _ErrorCode_name[114:128],
-	15974: _ErrorCode_name[128:141],
+	15975: _ErrorCode_name[128:141],
 	28667: _ErrorCode_name[141:154],
 	28724: _ErrorCode_name[154:167],
 	31253: _ErrorCode_name[167:180],

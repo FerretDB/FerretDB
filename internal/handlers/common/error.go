@@ -42,7 +42,7 @@ const (
 	ErrCommandNotFound   = ErrorCode(59)    // CommandNotFound
 	ErrInvalidNamespace  = ErrorCode(73)    // InvalidNamespace
 	ErrNotImplemented    = ErrorCode(238)   // NotImplemented
-	ErrSortBadValue      = ErrorCode(15974) // Location15974
+	ErrLocation15975     = ErrorCode(15975) // Location15975
 	ErrInvalidArg        = ErrorCode(28667) // Location28667
 	ErrSliceFirstArg     = ErrorCode(28724) // Location28724
 	ErrProjectionInEx    = ErrorCode(31253) // Location31253

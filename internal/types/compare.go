@@ -37,7 +37,7 @@ const (
 	Equal        CompareResult = 0   // ==
 	Less         CompareResult = -1  // <
 	Greater      CompareResult = 1   // >
-	Incomparable CompareResult = 127 // !=
+	Incomparable CompareResult = 127 // <>
 )
 
 // Compare compares any BSON values in the same way as MongoDB does it for filtering or sorting.
@@ -276,29 +276,31 @@ const (
 // defineDataType define which type has value and returns a sequence the type has.
 func defineDataType(value any) dataTypeOrderResult {
 	switch value := value.(type) {
-	case NullType:
-		return nullDataType
 	case float64:
 		if math.IsNaN(value) {
 			return nanDataType
 		}
 		return numbersDataType
-	case int32, int64:
-		return numbersDataType
 	case string:
 		return stringDataType
-	case bool:
-		return booleanDataType
 	case Binary:
 		return binDataType
 	case ObjectID:
 		return objectIdDataType
+	case bool:
+		return booleanDataType
 	case time.Time:
 		return dateDataType
-	case Timestamp:
-		return timestampDataType
+	case NullType:
+		return nullDataType
 	case Regex:
 		return regexDataType
+	case int32:
+		return numbersDataType
+	case Timestamp:
+		return timestampDataType
+	case int64:
+		return numbersDataType
 	}
 
 	panic(fmt.Sprintf("value cannot be defined, value is %v, data type of value is %T", value, value))
@@ -318,8 +320,6 @@ const (
 // defineNumberDataType define which number type has value and returns a sequence the type has.
 func defineNumberDataType(value any) numberDataTypeOrderResult {
 	switch value := value.(type) {
-	case int64:
-		return int64DT
 	case float64:
 		if value == 0 && math.Signbit(value) {
 			return doubleNegativeZero
@@ -327,6 +327,8 @@ func defineNumberDataType(value any) numberDataTypeOrderResult {
 		return doubleDT
 	case int32:
 		return int32DT
+	case int64:
+		return int64DT
 	}
 
 	panic(fmt.Sprintf("defineNumberDataType: value cannot be defined, value is %v, data type of value is %T", value, value))
