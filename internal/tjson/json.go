@@ -31,8 +31,8 @@ import (
 type tjsontype interface {
 	tjsontype() // seal for go-sumtype
 
-	Unmarshal(tigrisDoc []byte, schema map[string]any) error // tigris to build-in
 	Marshal(schema map[string]any) ([]byte, error)           // build-in to tigris.
+	Unmarshal(tigrisDoc []byte, schema map[string]any) error // tigris to build-in
 }
 
 //go-sumtype:decl tjsontype
