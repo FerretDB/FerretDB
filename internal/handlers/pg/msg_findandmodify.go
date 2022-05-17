@@ -131,7 +131,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			}
 		}
 
-		var resultDoc = resDocs[0]
+		resultDoc := resDocs[0]
 		if params.returnNewDocument {
 			resultDoc = upsert
 		}
