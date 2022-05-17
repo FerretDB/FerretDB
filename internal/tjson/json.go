@@ -31,8 +31,8 @@ import (
 type tjsontype interface {
 	tjsontype() // seal for go-sumtype
 
-	Marshal(tigrisDoc []byte, schema map[string]any) error // tigris to build-in
-	Unmarshal(schema map[string]any) ([]byte, error)       // build-in to tigris.
+	Unmarshal(tigrisDoc []byte, schema map[string]any) error // tigris to build-in
+	Marshal(schema map[string]any) ([]byte, error)           // build-in to tigris.
 }
 
 //go-sumtype:decl tjsontype
@@ -85,41 +85,41 @@ func toTJSON(v any) tjsontype {
 	panic(fmt.Sprintf("not reached: %T", v))
 }
 
-// Unmarshal build-in to tigris.
-func Unmarshal(v any, schema map[string]any) ([]byte, error) {
+// Marshal build-in to tigris.
+func Marshal(v any, schema map[string]any) ([]byte, error) {
 	tv := toTJSON(v)
 
 	switch v := tv.(type) {
 	case *stringType:
 		s := stringType(*v)
-		return s.Unmarshal(schema)
+		return s.Marshal(schema)
 	case *binaryType:
 		b := binaryType(*v)
-		return b.Unmarshal(schema)
+		return b.Marshal(schema)
 	case *objectIDType:
 		o := objectIDType(*v)
-		return o.Unmarshal(schema)
+		return o.Marshal(schema)
 	case *boolType:
 		b := boolType(*v)
-		return b.Unmarshal(schema)
+		return b.Marshal(schema)
 	case *dateTimeType:
 		t := dateTimeType(*v)
-		return t.Unmarshal(schema)
+		return t.Marshal(schema)
 	case *nullType:
 		n := nullType(*v)
-		return n.Unmarshal(schema)
+		return n.Marshal(schema)
 	case *regexType:
 		r := regexType(*v)
-		return r.Unmarshal(schema)
+		return r.Marshal(schema)
 	case *timestampType:
 		t := timestampType(*v)
-		return t.Unmarshal(schema)
+		return t.Marshal(schema)
 	}
 	return nil, lazyerrors.Errorf("%T is not supported", v)
 }
 
-// Marshal tigris to build-in.
-func Marshal(v []byte, schema map[string]any) (any, error) {
+// Unmarshal tigris to build-in.
+func Unmarshal(v []byte, schema map[string]any) (any, error) {
 	fieldType, ok := schema["type"]
 	if !ok {
 		return nil, lazyerrors.Errorf("canont find field type")
@@ -131,29 +131,29 @@ func Marshal(v []byte, schema map[string]any) (any, error) {
 	case "object":
 		properties, ok := schema["properties"].(map[string]any)
 		if !ok {
-			return nil, lazyerrors.Errorf("tjson.Document.Marshal: missing properties in schema")
+			return nil, lazyerrors.Errorf("tjson.Document.Unmarshal: missing properties in schema")
 		}
 		if _, ok := properties["$b"]; ok {
 			var o binaryType
-			err = o.Marshal(v, schema)
+			err = o.Unmarshal(v, schema)
 			res = &o
 			break
 		}
 		if _, ok := properties["$o"]; ok {
 			var o objectIDType
-			err = o.Marshal(v, schema)
+			err = o.Unmarshal(v, schema)
 			res = &o
 			break
 		}
 		if _, ok := properties["$r"]; ok {
 			var o regexType
-			err = o.Marshal(v, schema)
+			err = o.Unmarshal(v, schema)
 			res = &o
 			break
 		}
 		if _, ok := properties["$t"]; ok {
 			var o timestampType
-			err = o.Marshal(v, schema)
+			err = o.Unmarshal(v, schema)
 			res = &o
 			break
 		}
@@ -162,25 +162,25 @@ func Marshal(v []byte, schema map[string]any) (any, error) {
 
 	case "boolean":
 		var o boolType
-		err = o.Marshal(v, schema)
+		err = o.Unmarshal(v, schema)
 		res = &o
 
 	case "string":
 		if format, ok := schema["format"]; ok {
 			if format == "date-time" {
 				var o dateTimeType
-				err = o.Marshal(v, schema)
+				err = o.Unmarshal(v, schema)
 				res = &o
 				break
 			}
 		}
 
 		var o stringType
-		err = o.Marshal(v, schema)
+		err = o.Unmarshal(v, schema)
 		res = &o
 
 	default:
-		err = lazyerrors.Errorf("tjson.Unmarshal: unhandled map %#v", v)
+		err = lazyerrors.Errorf("tjson.Marshal: unhandled map %#v", v)
 	}
 	return fromTJSON(res), err
 }

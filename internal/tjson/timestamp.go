@@ -39,8 +39,8 @@ var timestampSchema = map[string]any{
 	},
 }
 
-// Unmarshal implements tjsontype interface.
-func (ts *timestampType) Unmarshal(d_ map[string]any) ([]byte, error) {
+// Marshal implements tjsontype interface.
+func (ts *timestampType) Marshal(d_ map[string]any) ([]byte, error) {
 	res, err := json.Marshal(timestampJSON{
 		T: uint64(*ts),
 	})
@@ -50,8 +50,8 @@ func (ts *timestampType) Unmarshal(d_ map[string]any) ([]byte, error) {
 	return res, nil
 }
 
-// Marshal implements tjsontype interface.
-func (ts *timestampType) Marshal(data []byte, _ map[string]any) error {
+// Unmarshal implements tjsontype interface.
+func (ts *timestampType) Unmarshal(data []byte, _ map[string]any) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}

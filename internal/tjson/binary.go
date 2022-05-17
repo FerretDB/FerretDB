@@ -40,8 +40,8 @@ var binarySchema = map[string]any{
 	},
 }
 
-// Unmarshal build-in to tigris.
-func (bin *binaryType) Unmarshal(_ map[string]any) ([]byte, error) {
+// Marshal build-in to tigris.
+func (bin *binaryType) Marshal(_ map[string]any) ([]byte, error) {
 	res, err := json.Marshal(binaryJSON{
 		B: bin.B,
 		S: byte(bin.Subtype),
@@ -52,8 +52,8 @@ func (bin *binaryType) Unmarshal(_ map[string]any) ([]byte, error) {
 	return res, nil
 }
 
-// Marshal tigris to build-in.
-func (bin *binaryType) Marshal(data []byte, _ map[string]any) error {
+// Unmarshal tigris to build-in.
+func (bin *binaryType) Unmarshal(data []byte, _ map[string]any) error {
 	r := bytes.NewReader(data)
 	dec := json.NewDecoder(r)
 	dec.DisallowUnknownFields()

@@ -29,8 +29,8 @@ func (str *stringType) tjsontype() {}
 
 var stringSchema = map[string]any{"type": "string"}
 
-// Unmarshal implements tjsontype interface.
-func (str *stringType) Unmarshal(_ map[string]any) ([]byte, error) {
+// Marshal implements tjsontype interface.
+func (str *stringType) Marshal(_ map[string]any) ([]byte, error) {
 	res, err := json.Marshal(string(*str))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -38,8 +38,8 @@ func (str *stringType) Unmarshal(_ map[string]any) ([]byte, error) {
 	return res, nil
 }
 
-// Marshal implements tjsontype interface.
-func (str *stringType) Marshal(data []byte, _ map[string]any) error {
+// Unmarshal implements tjsontype interface.
+func (str *stringType) Unmarshal(data []byte, _ map[string]any) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
