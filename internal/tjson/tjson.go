@@ -92,7 +92,7 @@ func parseSchema(in any) (map[string]any, error) {
 				case "number":
 					err = lazyerrors.Errorf("float64 not supported")
 				default:
-					continue // descitpions etc
+					continue // descriptions etc
 				}
 			default:
 				// ok
