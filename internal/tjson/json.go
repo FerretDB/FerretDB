@@ -91,7 +91,7 @@ func toTJSON(v any) tjsontype {
 	panic(fmt.Sprintf("toTJSON not reached: %T", v))
 }
 
-// Marshal build-in to tigris.
+// Marshal built-in to tigris.
 func Marshal(v any, schema map[string]any) ([]byte, error) {
 	tv := toTJSON(v)
 
