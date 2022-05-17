@@ -29,7 +29,7 @@ func (b *boolType) tjsontype() {}
 
 var boolSchema = map[string]any{"type": "boolean"}
 
-// Marshal build-in to tigris.
+// Marshal built-in to tigris.
 func (b *boolType) Marshal(_ map[string]any) ([]byte, error) {
 	res, err := json.Marshal(bool(*b))
 	if err != nil {
@@ -38,7 +38,7 @@ func (b *boolType) Marshal(_ map[string]any) ([]byte, error) {
 	return res, nil
 }
 
-// Unmarshal tigris to build-in.
+// Unmarshal tigris to built-in.
 func (b *boolType) Unmarshal(data []byte, _ map[string]any) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")

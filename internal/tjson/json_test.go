@@ -26,7 +26,7 @@ import (
 
 type testCase struct {
 	name   string
-	v      tjsontype      // build-in
+	v      tjsontype      // built-in
 	j      string         // tigris
 	s      map[string]any // schema
 	canonJ string         // canonical form without extra object fields, zero values, etc.

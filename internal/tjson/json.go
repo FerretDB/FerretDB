@@ -31,8 +31,8 @@ import (
 type tjsontype interface {
 	tjsontype() // seal for go-sumtype
 
-	Unmarshal(tigrisDoc []byte, schema map[string]any) error // tigris to build-in
-	Marshal(schema map[string]any) ([]byte, error)           // build-in to tigris.
+	Unmarshal(tigrisDoc []byte, schema map[string]any) error // tigris to built-in
+	Marshal(schema map[string]any) ([]byte, error)           // built-in to tigris.
 }
 
 //go-sumtype:decl tjsontype
@@ -95,7 +95,7 @@ func toTJSON(v any) tjsontype {
 	panic(fmt.Sprintf("toTJSON not reached: %T", v))
 }
 
-// Marshal build-in to tigris.
+// Marshal built-in to tigris.
 func Marshal(v any, schema map[string]any) ([]byte, error) {
 	tv := toTJSON(v)
 
