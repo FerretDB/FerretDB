@@ -108,23 +108,23 @@ func TestQueryElementType(t *testing.T) {
 	}{
 		"Document": {
 			v:           "object",
-			expectedIDs: []any{"document", "document-composite", "document-empty"},
+			expectedIDs: []any{"document", "document-composite", "document-composite-reverse", "document-empty", "document-null"},
 		},
 		"Array": {
 			v:           "array",
-			expectedIDs: []any{"array", "array-embedded", "array-empty", "array-three"},
+			expectedIDs: []any{"array", "array-embedded", "array-empty", "array-null", "array-three", "array-three-reverse"},
 		},
 		"Double": {
 			v: "double",
 			expectedIDs: []any{
-				"double", "double-max", "double-nan",
+				"double", "double-big", "double-max", "double-nan",
 				"double-negative-infinity", "double-negative-zero", "double-positive-infinity",
 				"double-smallest", "double-whole", "double-zero",
 			},
 		},
 		"String": {
 			v:           "string",
-			expectedIDs: []any{"array-three", "string", "string-double", "string-empty", "string-whole"},
+			expectedIDs: []any{"array-three", "array-three-reverse", "string", "string-double", "string-empty", "string-whole"},
 		},
 		"Binary": {
 			v:           "binData",
@@ -144,7 +144,7 @@ func TestQueryElementType(t *testing.T) {
 		},
 		"Null": {
 			v:           "null",
-			expectedIDs: []any{"array-embedded", "array-three", "null"},
+			expectedIDs: []any{"array-embedded", "array-null", "array-three", "array-three-reverse", "null"},
 		},
 		"Regex": {
 			v:           "regex",
@@ -152,7 +152,7 @@ func TestQueryElementType(t *testing.T) {
 		},
 		"Integer": {
 			v:           "int",
-			expectedIDs: []any{"array", "array-three", "int32", "int32-max", "int32-min", "int32-zero"},
+			expectedIDs: []any{"array", "array-three", "array-three-reverse", "int32", "int32-max", "int32-min", "int32-zero"},
 		},
 		"Timestamp": {
 			v:           "timestamp",
@@ -160,19 +160,19 @@ func TestQueryElementType(t *testing.T) {
 		},
 		"Long": {
 			v:           "long",
-			expectedIDs: []any{"int64", "int64-max", "int64-min", "int64-zero"},
+			expectedIDs: []any{"int64", "int64-big", "int64-max", "int64-min", "int64-zero"},
 		},
 
 		"Number": {
 			v: "number",
 			expectedIDs: []any{
-				"array", "array-three",
-				"double", "double-max", "double-nan",
+				"array", "array-three", "array-three-reverse",
+				"double", "double-big", "double-max", "double-nan",
 				"double-negative-infinity", "double-negative-zero",
 				"double-positive-infinity", "double-smallest",
 				"double-whole", "double-zero",
 				"int32", "int32-max", "int32-min", "int32-zero",
-				"int64", "int64-max", "int64-min", "int64-zero",
+				"int64", "int64-big", "int64-max", "int64-min", "int64-zero",
 			},
 		},
 
@@ -194,11 +194,11 @@ func TestQueryElementType(t *testing.T) {
 		},
 		"IntegerNumericalInput": {
 			v:           16,
-			expectedIDs: []any{"array", "array-three", "int32", "int32-max", "int32-min", "int32-zero"},
+			expectedIDs: []any{"array", "array-three", "array-three-reverse", "int32", "int32-max", "int32-min", "int32-zero"},
 		},
 		"FloatTypeCode": {
 			v:           16.0,
-			expectedIDs: []any{"array", "array-three", "int32", "int32-max", "int32-min", "int32-zero"},
+			expectedIDs: []any{"array", "array-three", "array-three-reverse", "int32", "int32-max", "int32-min", "int32-zero"},
 		},
 		"TypeArrayAliases": {
 			v:           []any{"bool", "binData"},

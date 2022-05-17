@@ -42,16 +42,6 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 	common.Ignored(document, h.l, "ordered", "writeConcern")
 
-	command := document.Command()
-
-	var db, collection string
-	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-	if collection, err = common.GetRequiredParam[string](document, command); err != nil {
-		return nil, err
-	}
-
 	var deletes *types.Array
 	if deletes, err = common.GetOptionalParam(document, "deletes", deletes); err != nil {
 		return nil, err
@@ -80,7 +70,23 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			}
 		}
 
-		fetchedDocs, err := h.fetch(ctx, db, collection)
+		var sp sqlParam
+		if sp.db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+			return nil, err
+		}
+		collectionParam, err := document.Get(document.Command())
+		if err != nil {
+			return nil, err
+		}
+		var ok bool
+		if sp.collection, ok = collectionParam.(string); !ok {
+			return nil, common.NewErrorMsg(
+				common.ErrBadValue,
+				fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+			)
+		}
+
+		fetchedDocs, err := h.fetch(ctx, sp)
 		if err != nil {
 			return nil, err
 		}
@@ -118,7 +124,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		sql := fmt.Sprintf(
 			"DELETE FROM %s WHERE _jsonb->'_id' IN (%s)",
-			pgx.Identifier{db, collection}.Sanitize(), strings.Join(placeholders, ", "),
+			pgx.Identifier{sp.db, sp.collection}.Sanitize(), strings.Join(placeholders, ", "),
 		)
 		tag, err := h.pgPool.Exec(ctx, sql, ids...)
 		if err != nil {

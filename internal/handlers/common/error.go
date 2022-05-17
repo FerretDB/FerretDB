@@ -29,6 +29,8 @@ import (
 type ErrorCode int32
 
 const (
+	errUnset = ErrorCode(0) // Unset
+
 	// For ProtocolError only.
 	errInternalError = ErrorCode(1) // InternalError
 
@@ -48,6 +50,7 @@ const (
 	ErrElemMatchObjectRequired       = ErrorCode(31274) // Location31274
 	ErrElemMatchNestedField          = ErrorCode(31275) // Location31275
 	ErrRegexOptions                  = ErrorCode(51075) // Location51075
+	ErrRegexMissingParen = ErrorCode(51091) // Location51091
 )
 
 // Error represents wire protocol error.
@@ -63,9 +66,6 @@ type Error struct {
 //
 // Code can't be zero, err can't be nil.
 func NewError(code ErrorCode, err error) error {
-	if code == 0 {
-		panic("code is 0")
-	}
 	if err == nil {
 		panic("err is nil")
 	}
@@ -99,12 +99,15 @@ func (e *Error) Unwrap() error {
 
 // Document returns wire protocol error document.
 func (e *Error) Document() *types.Document {
-	return must.NotFail(types.NewDocument(
+	d := must.NotFail(types.NewDocument(
 		"ok", float64(0),
 		"errmsg", e.err.Error(),
-		"code", int32(e.code),
-		"codeName", e.code.String(),
 	))
+	if e.code != errUnset {
+		must.NoError(d.Set("code", int32(e.code)))
+		must.NoError(d.Set("codeName", e.code.String()))
+	}
+	return d
 }
 
 // ProtocolError converts any error to wire protocol error.

@@ -17,6 +17,21 @@ package types
 import (
 	"fmt"
 	"regexp"
+	"regexp/syntax"
+)
+
+var (
+	ErrOptionNotImplemented = fmt.Errorf("regex: option not implemented")
+	ErrMissingParen         = fmt.Errorf("Regular expression is invalid: missing )")
+	ErrMissingBracket       = fmt.Errorf("Regular expression is invalid: missing terminating ] for character class")
+	ErrInvalidEscape        = fmt.Errorf("Regular expression is invalid: PCRE does not support \\L, \\l, \\N{name}, \\U, or \\u")
+	ErrMissingTerminator    = fmt.Errorf("Regular expression is invalid: syntax error in subpattern name (missing terminator)")
+	ErrUnmatchedParentheses = fmt.Errorf("Regular expression is invalid: unmatched parentheses")
+	ErrTrailingBackslash    = fmt.Errorf("Regular expression is invalid: \\ at end of pattern")
+	ErrNothingToRepeat      = fmt.Errorf("Regular expression is invalid: nothing to repeat")
+	ErrInvalidClassRange    = fmt.Errorf("Regular expression is invalid: range out of order in character class")
+	ErrUnsupportedPerlOp    = fmt.Errorf("Regular expression is invalid: unrecognized character after (? or (?-")
+	ErrInvalidRepeatSize    = fmt.Errorf("Regular expression is invalid: regular expression is too large")
 )
 
 // Regex represents BSON type Regex.
@@ -30,10 +45,13 @@ func (r Regex) Compile() (*regexp.Regexp, error) {
 	var opts string
 	for _, o := range r.Options {
 		switch o {
-		case 'i':
-			opts += "i"
+		case 'i', 'm', 's':
+			opts += string(o)
+		case 'x':
+			// TODO: https://github.com/FerretDB/FerretDB/issues/592
+			return nil, ErrOptionNotImplemented
 		default:
-			return nil, fmt.Errorf("types.Regex.Compile: unhandled regex option %v (%v)", o, r)
+			continue
 		}
 	}
 
@@ -43,9 +61,37 @@ func (r Regex) Compile() (*regexp.Regexp, error) {
 	}
 
 	re, err := regexp.Compile(expr)
-	if err != nil {
-		return nil, fmt.Errorf("types.Regex.Compile: %w", err)
+	if err == nil {
+		return re, nil
 	}
 
-	return re, nil
+	if err, ok := err.(*syntax.Error); ok {
+		switch err.Code {
+		case syntax.ErrInvalidCharRange:
+			return nil, ErrInvalidClassRange
+		case syntax.ErrInvalidEscape:
+			return nil, ErrInvalidEscape
+		case syntax.ErrInvalidNamedCapture:
+			return nil, ErrMissingTerminator
+		case syntax.ErrInvalidPerlOp:
+			return nil, ErrUnsupportedPerlOp
+		case syntax.ErrInvalidRepeatOp:
+			return nil, ErrNothingToRepeat
+		case syntax.ErrInvalidRepeatSize:
+			return nil, ErrInvalidRepeatSize
+		case syntax.ErrMissingBracket:
+			return nil, ErrMissingBracket
+		case syntax.ErrMissingParen:
+			return nil, ErrMissingParen
+		case syntax.ErrMissingRepeatArgument:
+			return nil, ErrNothingToRepeat
+		case syntax.ErrTrailingBackslash:
+			return nil, ErrTrailingBackslash
+		case syntax.ErrUnexpectedParen:
+			return nil, ErrUnmatchedParentheses
+		case syntax.ErrInternalError, syntax.ErrInvalidCharClass, syntax.ErrInvalidUTF8:
+			return nil, fmt.Errorf("types.Regex.Compile: %w", err)
+		}
+	}
+	return nil, fmt.Errorf("types.Regex.Compile: %w", err)
 }
