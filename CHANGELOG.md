@@ -48,7 +48,7 @@
 * @rumyantseva made their first contribution in https://github.com/FerretDB/FerretDB/pull/574
 * @AlphaB made their first contribution in https://github.com/FerretDB/FerretDB/pull/595
 
-[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/15?closed=1).
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/16?closed=1).
 [All commits](https://github.com/FerretDB/FerretDB/compare/v0.2.0...v0.2.1).
 
 
