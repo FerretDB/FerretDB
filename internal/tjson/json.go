@@ -96,7 +96,6 @@ func Marshal(v any, schema map[string]any) ([]byte, error) {
 	tv := toTJSON(v)
 
 	switch v := tv.(type) {
-
 	case *doubleType:
 		d := doubleType(*v)
 		return d.Marshal(schema)
