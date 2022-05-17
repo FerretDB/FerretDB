@@ -23,7 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// describe gets the collection schema and presents it in build-in map[string]any.
+// describe gets the collection schema and presents it in built-in map[string]any.
 func (h *Handler) describe(ctx context.Context, db, collection string) (map[string]any, error) {
 	var res *driver.DescribeCollectionResponse
 	var err error
