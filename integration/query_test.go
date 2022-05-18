@@ -536,6 +536,19 @@ func TestQueryBadSortType(t *testing.T) {
 			},
 			altMessage: "Expected field sort to be of type object",
 		},
+		"BadSortTypeValue": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"projection", bson.D{{"value", 42}}},
+				{"sort", bson.D{{"asc", "123"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    15974,
+				Name:    "Location15974",
+				Message: `Illegal key in $sort specification: asc: "123"`,
+			},
+			altMessage: "Illegal key in $sort specification",
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {

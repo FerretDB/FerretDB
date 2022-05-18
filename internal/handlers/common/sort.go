@@ -146,7 +146,7 @@ func getSortType(value any) (sortType, error) {
 	if err != nil {
 		switch err {
 		case errUnexpectedType:
-			return 0, NewErrorMsg(ErrBadValue, `Illegal key in $sort specification`)
+			return 0, NewErrorMsg(ErrLocation15974, `Illegal key in $sort specification`)
 		case errNotWholeNumber:
 			return 0, NewErrorMsg(ErrBadValue, "$sort must be a whole number")
 		default:
