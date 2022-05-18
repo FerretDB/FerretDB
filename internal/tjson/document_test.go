@@ -16,6 +16,7 @@ package tjson
 
 import (
 	"testing"
+	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -102,27 +103,87 @@ func loadVals() {
 				`{"$k":["double"],"double":42.13}` +
 				`}`,
 		},
+		{
+			name: "dateTimeZero",
+			v: convertDocument(
+				must.NotFail(types.NewDocument("dateTime", time.Time{})),
+			),
+			j: `{"$k":["type","properties"],"type":"object","properties":` +
+				`{"$k":["dateTime"],"dateTime":"0001-01-01T00:00:00Z"}` +
+				`}`,
+		},
+		{
+			name: "datetime123",
+			v: convertDocument(
+				must.NotFail(types.NewDocument("datetime123", time.Date(2021, 7, 27, 9, 35, 42, 123000000, time.UTC).Local())),
+			),
+			j: `{"$k":["type","properties"],"type":"object","properties":` +
+				`{"$k":["datetime123"],"datetime123":"2021-07-27T12:35:42.123+03:00"}` +
+				`}`,
+		},
+		{
+			name: "true",
+			v: convertDocument(
+				must.NotFail(types.NewDocument("bool", true)),
+			),
+			j: `{"$k":["type","properties"],"type":"object","properties":` +
+				`{"$k":["bool"],"bool":true}` +
+				`}`,
+		},
+		{
+			name: "false",
+			v: convertDocument(
+				must.NotFail(types.NewDocument("bool", false)),
+			),
+			j: `{"$k":["type","properties"],"type":"object","properties":` +
+				`{"$k":["bool"],"bool":false}` +
+				`}`,
+		},
+		{
+			name: "binaryEmpty",
+			v: convertDocument(
+				must.NotFail(types.NewDocument("binaryEmpty", types.Binary{Subtype: types.BinaryGeneric, B: []byte{}})),
+			),
+			j: `{"$k":["type","properties"],"type":"object","properties":` +
+				`{"$k":["binaryEmpty"],"binaryEmpty":{"$b":"","s":0}}` +
+				`}`,
+		},
+		{
+			name: "binary",
+			v: convertDocument(
+				must.NotFail(types.NewDocument("binaryEmpty", types.Binary{Subtype: types.BinaryGeneric, B: []byte{0x42}})),
+			),
+			j: `{"$k":["type","properties"],"type":"object","properties":` +
+				`{"$k":["binaryEmpty"],"binaryEmpty":{"$b":"Qg==","s":0}}` +
+				`}`,
+		},
+		{
+			name: "doc",
+			v: convertDocument(
+				must.NotFail(types.NewDocument(
+					"lsid", must.NotFail(types.NewDocument(
+						"id", types.Binary{
+							Subtype: types.BinaryUUID,
+							B: []byte{
+								0xa3, 0x19, 0xf2, 0xb4, 0xa1, 0x75, 0x40, 0xc7,
+								0xb8, 0xe7, 0xa3, 0xa3, 0x2e, 0xc2, 0x56, 0xbe,
+							},
+						},
+					)),
+				)),
+			),
+			j: `{"$k":["type","properties"],"type":"object","properties":{` +
+				`"$k":["lsid"],"lsid":{"$k":["type","properties"],"type":"object","properties":{` +
+				`"$k":["id"],"id":{"$b":"oxnytKF1QMe456OjLsJWvg==","s":4}}}` +
+				`}}`,
+		},
 	}
 
 	for i := range documentTestCases {
 		v := fromTJSON(documentTestCases[i].v).(*types.Document)
-		documentTestCases[i].s = must.NotFail(DocumentSchema(v))
+		schema := must.NotFail(DocumentSchema(v))
+		documentTestCases[i].s = schema
 	}
-	// "lsid", must.NotFail(types.NewDocument(
-	// 	"id", types.Binary{
-	// 		Subtype: types.BinaryUUID,
-	// 		B: []byte{
-	// 			0xa3, 0x19, 0xf2, 0xb4, 0xa1, 0x75, 0x40, 0xc7,
-	// 			0xb8, 0xe7, 0xa3, 0xa3, 0x2e, 0xc2, 0x56, 0xbe,
-	// 		},
-	// 	},
-	// )),
-	// "binary42", types.Binary{Subtype: types.BinaryUser, B: []byte{0x42}},
-	// "binaryEmpty", types.Binary{Subtype: types.BinaryGeneric, B: []byte{}},
-	// "true", true,
-	// "false", false,
-	// "datetime123", time.Date(2021, 7, 27, 9, 35, 42, 123000000, time.UTC).Local(),
-	// "dateTime", time.Time{}.Local(),
 }
 
 func TestDocument(t *testing.T) {

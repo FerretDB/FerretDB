@@ -86,7 +86,17 @@ func parseSchema(in any) (map[string]any, error) {
 				case "boolean":
 					valSchema = boolSchema
 				case "string":
-					valSchema = stringSchema
+					format, ok := v["format"]
+					if ok {
+						switch format {
+						case "date-time":
+							valSchema = dateTimeSchema
+						default:
+							return nil, fmt.Errorf("formaat %s not suported", format)
+						}
+					} else {
+						valSchema = stringSchema
+					}
 				case "integer":
 					err = lazyerrors.Errorf("integer not supported")
 				case "number":
@@ -166,6 +176,7 @@ func valueSchema(v any) (map[string]any, error) {
 		return map[string]any{"type": "boolean"}, nil
 
 	case time.Time:
+		fmt.Printf("\nTIME %v", v)
 		return map[string]any{
 			"type":   "string",
 			"format": "date-time",

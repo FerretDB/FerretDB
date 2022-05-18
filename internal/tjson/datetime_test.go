@@ -21,6 +21,7 @@ import (
 	"github.com/AlekSi/pointer"
 )
 
+// TODO: local time parsing.
 var dateTimeTestCases = []testCase{{
 	name: "2021",
 	v:    pointer.To(dateTimeType(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))),
@@ -30,6 +31,11 @@ var dateTimeTestCases = []testCase{{
 	name: "unix_zero",
 	v:    pointer.To(dateTimeType(time.Unix(0, 0).UTC())),
 	j:    `"1970-01-01T00:00:00Z"`,
+	s:    dateTimeSchema,
+}, {
+	name: "time_zero",
+	v:    pointer.To(dateTimeType(time.Time{})),
+	j:    `"0001-01-01T00:00:00Z"`,
 	s:    dateTimeSchema,
 }, {
 	name: "0",

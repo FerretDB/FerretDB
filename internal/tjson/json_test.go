@@ -33,10 +33,9 @@ type testCase struct {
 	jErr   string         // unwrapped
 }
 
-// assertEqualWithNaN is assert.Equal that also can compare NaNs.
-func assertEqualWithNaN(t testing.TB, expected, actual any) {
+// assertEqual is assert.Equal with details in msg.
+func assertEqual(t testing.TB, expected, actual any) {
 	t.Helper()
-
 	assert.Equal(t, expected, actual, "expected: %s\nactual  : %s", expected, actual)
 }
 
@@ -79,7 +78,7 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() tjsontype) {
 
 				if tc.jErr == "" {
 					require.NoError(t, err)
-					assertEqualWithNaN(t, tc.v, v)
+					assertEqual(t, tc.v, v)
 					return
 				}
 
@@ -94,7 +93,7 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() tjsontype) {
 
 				if tc.jErr == "" {
 					require.NoError(t, err)
-					assertEqualWithNaN(t, tc.v, toTJSON(v))
+					assertEqual(t, tc.v, toTJSON(v))
 					return
 				}
 
@@ -187,7 +186,7 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() tjsontype) {
 			actualV := newFunc()
 			err := actualV.Unmarshal([]byte(j), s)
 			require.NoError(t, err)
-			assertEqualWithNaN(t, v, actualV)
+			assertEqual(t, v, actualV)
 		}
 	})
 }
@@ -214,7 +213,7 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() tjsontype) {
 
 				if tc.jErr == "" {
 					require.NoError(b, err)
-					assertEqualWithNaN(b, &tc.v, v)
+					assertEqual(b, &tc.v, v)
 					return
 				}
 

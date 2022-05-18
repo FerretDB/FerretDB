@@ -110,8 +110,8 @@ func (d *documentType) Unmarshal(data []byte, schema map[string]any) error {
 		keyOrder, ok = keyOrderI.([]string)
 	}
 	if !ok {
-		i := 0
-		for k, _ := range properties {
+		var i int
+		for k := range properties {
 			keyOrder[i] = k
 			i++
 		}
