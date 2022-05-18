@@ -40,8 +40,6 @@ type tjsontype interface {
 // fromTJSON converts tjsontype value to matching built-in or types' package value.
 func fromTJSON(v tjsontype) any {
 	switch v := v.(type) {
-	case *documentType:
-		return types.Document(*v)
 	case *doubleType:
 		return float64(*v)
 	case *stringType:
@@ -70,8 +68,6 @@ func toTJSON(v any) tjsontype {
 	switch v := v.(type) {
 	case tjsontype:
 		return v
-	case types.Document:
-		return pointer.To(documentType(v))
 	case float64:
 		return pointer.To(doubleType(v))
 	case string:
@@ -100,9 +96,6 @@ func Marshal(v any, schema map[string]any) ([]byte, error) {
 	tv := toTJSON(v)
 
 	switch v := tv.(type) {
-	case *documentType:
-		d := documentType(*v)
-		return d.Marshal(schema)
 	case *doubleType:
 		d := doubleType(*v)
 		return d.Marshal(schema)
@@ -173,9 +166,6 @@ func Unmarshal(v []byte, schema map[string]any) (any, error) {
 			res = &o
 			break
 		}
-		var o documentType
-		err = o.Unmarshal(v, schema)
-		res = &o
 	case "array":
 		err = lazyerrors.Errorf("arrays not supported yet")
 
