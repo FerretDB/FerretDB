@@ -56,7 +56,7 @@ func (d *doubleType) UnmarshalJSON(data []byte) error {
 	case string:
 		switch f {
 		case "Infinity":
-			*d = doubleType(math.Inf(1))
+			*d = doubleType(math.Inf(+1))
 		case "-Infinity":
 			*d = doubleType(math.Inf(-1))
 		case "NaN":
