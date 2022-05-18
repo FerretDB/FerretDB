@@ -41,7 +41,7 @@ func (h *Handler) fetch(ctx context.Context, db, collection string) ([]*types.Do
 	elem := new(driver.Document)
 	for iterator.Next(elem) {
 		var doc *types.Document
-		doc, err := tjson.Unmarshal(elem)
+		doc, err := tjson.UnmarshalOld(elem)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
