@@ -62,7 +62,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	for i := 0; i < docs.Len(); i++ {
 		doc := must.NotFail(docs.Get(i)).(*types.Document)
 
-		tigrisDoc, err := tjson.Marshal(doc, schema)
+		tigrisDoc, err := tjson.MarshalOld(doc)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
