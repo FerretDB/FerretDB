@@ -87,7 +87,7 @@ type docFormat struct {
 	Properties map[string]json.RawMessage `json:"properties"`
 }
 
-// Unmarshal: tigris to build-in.
+// Unmarshal: tigris to built-in.
 func (d *documentType) Unmarshal(data []byte, schema map[string]any) error {
 	schemaTypeI, ok := schema["type"]
 	if !ok {
