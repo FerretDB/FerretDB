@@ -72,7 +72,7 @@ func loadVals() {
 				must.NotFail(types.NewDocument("objectEmpty", types.ObjectID{})),
 			),
 			j: `{"$k":["type","properties"],"type":"object","properties":` +
-				`{"$k":["objectEmpty"],"objectEmpty":{"$o":0}}` +
+				`{"$k":["objectEmpty"],"objectEmpty":{"$o":"000000000000000000000000"}}` +
 				`}`,
 		},
 		{
@@ -81,7 +81,7 @@ func loadVals() {
 				must.NotFail(types.NewDocument("objectID42", types.ObjectID{0x42})),
 			),
 			j: `{"$k":["type","properties"],"type":"object","properties":` +
-				`{"$k":["objectID42"],"objectID42":{"$o":42}}` +
+				`{"$k":["objectID42"],"objectID42":{"$o":"420000000000000000000000"}}` +
 				`}`,
 		},
 		{
@@ -90,7 +90,7 @@ func loadVals() {
 				must.NotFail(types.NewDocument("doubleZero", float64(0.0))),
 			),
 			j: `{"$k":["type","properties"],"type":"object","properties":` +
-				`{"$k":["doubleZero"],"doubleZero":0}}` +
+				`{"$k":["doubleZero"],"doubleZero":0}` +
 				`}`,
 		},
 		{
@@ -99,7 +99,7 @@ func loadVals() {
 				must.NotFail(types.NewDocument("double", float64(42.13))),
 			),
 			j: `{"$k":["type","properties"],"type":"object","properties":` +
-				`{"$k":["double"],"double":42.13}}` +
+				`{"$k":["double"],"double":42.13}` +
 				`}`,
 		},
 	}
