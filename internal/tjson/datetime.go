@@ -53,7 +53,7 @@ func (dt *dateTimeType) Marshal(_ map[string]any) ([]byte, error) {
 }
 
 // Unmarshal tigris to build-in.
-func (dt *dateTimeType) Unmarshal(data []byte, schema map[string]any) error {
+func (dt *dateTimeType) Unmarshal(data []byte, _ map[string]any) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
