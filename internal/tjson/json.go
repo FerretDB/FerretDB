@@ -100,9 +100,6 @@ func Marshal(v any, schema map[string]any) ([]byte, error) {
 	tv := toTJSON(v)
 
 	switch v := tv.(type) {
-	case *documentType:
-		d := documentType(*v)
-		return d.Marshal(schema)
 	case *doubleType:
 		d := doubleType(*v)
 		return d.Marshal(schema)
@@ -173,9 +170,6 @@ func Unmarshal(v []byte, schema map[string]any) (any, error) {
 			res = &o
 			break
 		}
-		var o documentType
-		err = o.Unmarshal(v, schema)
-		res = &o
 	case "array":
 		err = lazyerrors.Errorf("arrays not supported yet")
 
