@@ -51,44 +51,56 @@ func TestDocumentSchema(t *testing.T) {
 				)),
 			)),
 			schema: map[string]any{
-				"readOnly": map[string]any{"type": "boolean"},
-				"ok":       map[string]any{"type": "number"},
-				"regex": map[string]any{
-					"type": "object",
-					"properties": map[string]any{
-						"$r": map[string]any{"type": "string"},
-						"o":  map[string]any{"type": "string"},
-					},
-				},
-				"timestamp": map[string]any{
-					"type": "object",
-					"properties": map[string]any{
-						"$t": map[string]any{"type": "string"},
-					},
-				},
-				"binary": map[string]any{
-					"type": "object",
-					"properties": map[string]any{
-						"$b": map[string]any{"type": "string", "format": "byte"},   // binary data
-						"s":  map[string]any{"type": "integer", "format": "int32"}, // binary subtype
-					},
-				},
-				"doc": map[string]any{
-					"_id": map[string]any{
+				"$k":   []string{"type", "properties"},
+				"type": "object",
+				"properties": map[string]any{
+					"readOnly": map[string]any{"type": "boolean"},
+					"ok":       map[string]any{"type": "number"},
+					"regex": map[string]any{
+						"$k":   []string{"type", "properties"},
 						"type": "object",
 						"properties": map[string]any{
-							"$o": map[string]any{"type": "string"},
+							"$r": map[string]any{"type": "string"},
+							"o":  map[string]any{"type": "string"},
 						},
 					},
-					"actor_id":   map[string]any{"type": "number"},
-					"first_name": map[string]any{"type": "string"},
-					"last_update": map[string]any{
-						"type":   "string",
-						"format": "date-time",
+					"timestamp": map[string]any{
+						"$k":   []string{"type", "properties"},
+						"type": "object",
+						"properties": map[string]any{
+							"$t": map[string]any{"type": "string"},
+						},
 					},
-					"$k": []string{"_id", "actor_id", "first_name", "last_update"},
+					"binary": map[string]any{
+						"$k":   []string{"type", "properties"},
+						"type": "object",
+						"properties": map[string]any{
+							"$b": map[string]any{"type": "string", "format": "byte"},   // binary data
+							"s":  map[string]any{"type": "integer", "format": "int32"}, // binary subtype
+						},
+					},
+					"doc": map[string]any{
+						"$k":   []string{"type", "properties"},
+						"type": "object",
+						"properties": map[string]any{
+							"_id": map[string]any{
+								"$k":   []string{"type", "properties"},
+								"type": "object",
+								"properties": map[string]any{
+									"$o": map[string]any{"type": "string"},
+								},
+							},
+							"actor_id":   map[string]any{"type": "number"},
+							"first_name": map[string]any{"type": "string"},
+							"last_update": map[string]any{
+								"type":   "string",
+								"format": "date-time",
+							},
+							"$k": []string{"_id", "actor_id", "first_name", "last_update"},
+						},
+					},
+					"$k": []string{"readOnly", "ok", "regex", "timestamp", "binary", "doc"},
 				},
-				"$k": []string{"readOnly", "ok", "regex", "timestamp", "binary", "doc"},
 			},
 		},
 		"array": {
