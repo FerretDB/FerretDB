@@ -27,8 +27,12 @@ var doubleTestCases = []testCase{{
 	j:    `{"$f":42.13}`,
 }, {
 	name: "zero",
-	v:    pointer.To(doubleType(0)),
+	v:    pointer.To(doubleType(math.Copysign(0, +1))),
 	j:    `{"$f":0}`,
+}, {
+	name: "negative zero",
+	v:    pointer.To(doubleType(math.Copysign(0, -1))),
+	j:    `{"$f":"-0"}`,
 }, {
 	name: "max float64",
 	v:    pointer.To(doubleType(math.MaxFloat64)),
@@ -39,7 +43,7 @@ var doubleTestCases = []testCase{{
 	j:    `{"$f":5e-324}`,
 }, {
 	name: "+Infinity",
-	v:    pointer.To(doubleType(math.Inf(1))),
+	v:    pointer.To(doubleType(math.Inf(+1))),
 	j:    `{"$f":"Infinity"}`,
 }, {
 	name: "-Infinity",
