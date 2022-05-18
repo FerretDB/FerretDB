@@ -32,7 +32,7 @@ var doubleTestCases = []testCase{{
 }, {
 	name: "negative zero",
 	v:    pointer.To(doubleType(math.Copysign(0, -1))),
-	j:    `{"$f":-0}`,
+	j:    `{"$f":"-0"}`,
 }, {
 	name: "max float64",
 	v:    pointer.To(doubleType(math.MaxFloat64)),
