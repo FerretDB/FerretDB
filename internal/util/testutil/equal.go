@@ -76,6 +76,7 @@ func diffValues[T types.Type](tb testing.TB, expected, actual T) (expectedS stri
 
 // equal compares any BSON values in a way that is useful for tests:
 //  * float64 NaNs are equal to each other;
+//  * float64 zero values are compared with sign (math.Copysign(0, -1) != math.Copysign(0, +1));
 //  * time.Time values are compared using Equal method.
 //
 // This function is for tests; it should not try to convert values to different types before comparing them.
@@ -173,6 +174,9 @@ func equalScalars(tb testing.TB, v1, v2 any) bool {
 		}
 		if math.IsNaN(s1) {
 			return math.IsNaN(s2)
+		}
+		if s1 == 0 && s2 == 0 {
+			return math.Signbit(s1) == math.Signbit(s2)
 		}
 		return s1 == s2
 

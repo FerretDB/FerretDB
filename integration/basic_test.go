@@ -77,7 +77,8 @@ func TestInsertFind(t *testing.T) {
 
 	for _, expected := range docs {
 		expected := expected
-		id := expected.Map()["_id"]
+		id, ok := expected.Map()["_id"]
+		require.True(t, ok)
 
 		t.Run(fmt.Sprint(id), func(t *testing.T) {
 			t.Parallel()

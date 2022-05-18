@@ -315,7 +315,7 @@ func TestQueryProjectionSlice(t *testing.T) {
 			expectedArray: bson.A{},
 		},
 		"ArgInf": {
-			projection:    bson.D{{"value", bson.D{{"$slice", math.Inf(1)}}}},
+			projection:    bson.D{{"value", bson.D{{"$slice", math.Inf(+1)}}}},
 			expectedArray: bson.A{int32(1), int32(2), int32(3), int32(4)},
 		},
 		"SingleArgNull": {
