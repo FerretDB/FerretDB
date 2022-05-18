@@ -28,7 +28,7 @@ type documentType types.Document
 // tjsontype implements tjsontype interface.
 func (d *documentType) tjsontype() {}
 
-// Marshal build-in to tigris.
+// Marshal built-in to tigris.
 func (d *documentType) Marshal(schema map[string]any) ([]byte, error) {
 	doc := types.Document(*d)
 	var buf bytes.Buffer
