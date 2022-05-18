@@ -215,16 +215,13 @@ func (we WriteErrors) Document() *types.Document {
 
 // WriteError represents protocol write error.
 type WriteError struct {
-	// The index determines the operation that caused error.
-	index int64
-	code  ErrorCode
-	err   error
+	code ErrorCode
+	err  error
 }
 
 // Document returns wire protocol error document.
 func (we WriteError) Document() *types.Document {
 	d := must.NotFail(types.NewDocument(
-		"index", we.index,
 		"code", int32(we.code),
 		"errmsg", we.err.Error(),
 	))
@@ -249,9 +246,8 @@ func (we *WriteError) Unwrap() error {
 // NewWriteErrorMsg creates new protocol write error with given ErrorCode and message.
 func NewWriteErrorMsg(code ErrorCode, msg string) error {
 	return &WriteErrors{{
-		index: 0,
-		code:  code,
-		err:   errors.New(msg),
+		code: code,
+		err:  errors.New(msg),
 	}}
 }
 
