@@ -195,6 +195,40 @@ func TestFindAndModifyErrors(t *testing.T) {
 				Name:    "FailedToParse",
 			},
 		},
+		"UpdateAndRemove": {
+			command: bson.D{
+				{"update", bson.D{}},
+				{"remove", true},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "Cannot specify both an update and remove=true",
+			},
+		},
+		"UpsertAndRemove": {
+			command: bson.D{
+				{"upsert", true},
+				{"remove", true},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "Cannot specify both upsert=true and remove=true ",
+			},
+			altMessage: "Cannot specify both upsert=true and remove=true",
+		},
+		"NewAndRemove": {
+			command: bson.D{
+				{"new", true},
+				{"remove", true},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "Cannot specify both new=true and remove=true; 'remove' always returns the deleted document",
+			},
+		},
 		"BadSortType": {
 			command: bson.D{
 				{"update", bson.D{}},

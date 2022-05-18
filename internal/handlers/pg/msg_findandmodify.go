@@ -326,6 +326,19 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 		}
 	}
 
+	if update != nil && remove {
+		return nil, common.NewErrorMsg(common.ErrFailedToParse, "Cannot specify both an update and remove=true")
+	}
+	if upsert && remove {
+		return nil, common.NewErrorMsg(common.ErrFailedToParse, "Cannot specify both upsert=true and remove=true")
+	}
+	if returnNewDocument && remove {
+		return nil, common.NewErrorMsg(
+			common.ErrFailedToParse,
+			"Cannot specify both new=true and remove=true; 'remove' always returns the deleted document",
+		)
+	}
+
 	var hasUpdateOperators bool
 	for k := range update.Map() {
 		if _, ok := updateOperators[k]; ok {
