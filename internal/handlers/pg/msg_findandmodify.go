@@ -35,13 +35,13 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	unimplementedFields := []string{
 		"arrayFilters",
 		"let",
+		"fields",
 	}
 	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
 		return nil, err
 	}
 
 	ignoredFields := []string{
-		"fields",
 		"bypassDocumentValidation",
 		"writeConcern",
 		"maxTimeMS",
