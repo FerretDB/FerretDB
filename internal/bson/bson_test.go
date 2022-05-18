@@ -34,20 +34,29 @@ type testCase struct {
 	bErr string // unwrapped
 }
 
-// assertEqualWithNaN is assert.Equal that also can compare NaNs.
-func assertEqualWithNaN(t testing.TB, expected, actual any) {
-	t.Helper()
+// assertEqual is assert.Equal that also can compare NaNs and ±0.
+func assertEqual(tb testing.TB, expected, actual any, msgAndArgs ...any) bool {
+	tb.Helper()
 
-	if expectedD, ok := expected.(*doubleType); ok {
-		require.IsType(t, expected, actual)
-		actualD := actual.(*doubleType)
-		if math.IsNaN(float64(*expectedD)) {
-			assert.True(t, math.IsNaN(float64(*actualD)))
-			return
+	switch expected := expected.(type) {
+	// should not be possible, check just in case
+	case doubleType, float64:
+		tb.Fatalf("unexpected type %[1]T: %[1]v", expected)
+
+	case *doubleType:
+		require.IsType(tb, expected, actual, msgAndArgs...)
+		e := float64(*expected)
+		a := float64(*actual.(*doubleType))
+		if math.IsNaN(e) || math.IsNaN(a) {
+			return assert.Equal(tb, math.IsNaN(e), math.IsNaN(a), msgAndArgs...)
 		}
+		if e == 0 && a == 0 {
+			return assert.Equal(tb, math.Signbit(e), math.Signbit(a), msgAndArgs...)
+		}
+		// fallthrough to regular assert.Equal below
 	}
 
-	assert.Equal(t, expected, actual, "expected: %s\nactual  : %s", expected, actual)
+	return assert.Equal(tb, expected, actual, msgAndArgs...)
 }
 
 // lastErr returns the last error in error chain.
@@ -79,7 +88,7 @@ func testBinary(t *testing.T, testCases []testCase, newFunc func() bsontype) {
 				err := v.ReadFrom(bufr)
 				if tc.bErr == "" {
 					assert.NoError(t, err)
-					assertEqualWithNaN(t, tc.v, v)
+					assertEqual(t, tc.v, v)
 					assert.Zero(t, br.Len(), "not all br bytes were consumed")
 					assert.Zero(t, bufr.Buffered(), "not all bufr bytes were consumed")
 					return
@@ -98,14 +107,14 @@ func testBinary(t *testing.T, testCases []testCase, newFunc func() bsontype) {
 
 				actualB, err := tc.v.MarshalBinary()
 				require.NoError(t, err)
-				if !assert.Equal(t, tc.b, actualB, "actual:\n%s", hex.Dump(actualB)) {
+				if !assertEqual(t, tc.b, actualB, "actual:\n%s", hex.Dump(actualB)) {
 					// unmarshal again to compare BSON values
 					v := newFunc()
 					br := bytes.NewReader(actualB)
 					bufr := bufio.NewReader(br)
 					err := v.ReadFrom(bufr)
 					assert.NoError(t, err)
-					if assert.Equal(t, tc.v, v, "expected: %s\nactual  : %s", tc.v, v) {
+					if assertEqual(t, tc.v, v, "expected: %s\nactual  : %s", tc.v, v) {
 						t.Log("BSON values are equal after unmarshalling")
 					}
 					assert.Zero(t, br.Len(), "not all br bytes were consumed")
@@ -204,7 +213,7 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() bsontype) {
 
 				if tc.bErr == "" {
 					assert.NoError(b, readErr)
-					assertEqualWithNaN(b, tc.v, v)
+					assertEqual(b, tc.v, v)
 					assert.Zero(b, br.Len(), "not all br bytes were consumed")
 					assert.Zero(b, bufr.Buffered(), "not all bufr bytes were consumed")
 					return
