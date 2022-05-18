@@ -176,7 +176,6 @@ func valueSchema(v any) (map[string]any, error) {
 		return map[string]any{"type": "boolean"}, nil
 
 	case time.Time:
-		fmt.Printf("\nTIME %v", v)
 		return map[string]any{
 			"type":   "string",
 			"format": "date-time",
