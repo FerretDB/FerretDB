@@ -34,7 +34,7 @@ var dateTimeTestCases = []testCase{{
 	s:    dateTimeSchema,
 }, {
 	name: "time_zero",
-	v:    pointer.To(dateTimeType(time.Time{})),
+	v:    pointer.To(dateTimeType(time.Time{}.UTC())),
 	j:    `"0001-01-01T00:00:00Z"`,
 	s:    dateTimeSchema,
 }, {

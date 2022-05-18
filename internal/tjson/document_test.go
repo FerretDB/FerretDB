@@ -106,7 +106,7 @@ func loadVals() {
 		{
 			name: "dateTimeZero",
 			v: convertDocument(
-				must.NotFail(types.NewDocument("dateTime", time.Time{})),
+				must.NotFail(types.NewDocument("dateTime", time.Time{}.UTC())),
 			),
 			j: `{"$k":["type","properties"],"type":"object","properties":` +
 				`{"$k":["dateTime"],"dateTime":"0001-01-01T00:00:00Z"}` +
@@ -115,10 +115,10 @@ func loadVals() {
 		{
 			name: "datetime123",
 			v: convertDocument(
-				must.NotFail(types.NewDocument("datetime123", time.Date(2021, 7, 27, 9, 35, 42, 123000000, time.UTC).Local())),
+				must.NotFail(types.NewDocument("datetime123", time.Date(2021, 7, 27, 9, 35, 42, 123000000, time.UTC))),
 			),
 			j: `{"$k":["type","properties"],"type":"object","properties":` +
-				`{"$k":["datetime123"],"datetime123":"2021-07-27T12:35:42.123+03:00"}` +
+				`{"$k":["datetime123"],"datetime123":"2021-07-27T09:35:42.123Z"}` +
 				`}`,
 		},
 		{
@@ -193,9 +193,11 @@ func TestDocument(t *testing.T) {
 }
 
 func FuzzDocument(f *testing.F) {
+	loadVals()
 	fuzzJSON(f, documentTestCases, func() tjsontype { return new(documentType) })
 }
 
 func BenchmarkDocument(b *testing.B) {
+	loadVals()
 	benchmark(b, documentTestCases, func() tjsontype { return new(documentType) })
 }
