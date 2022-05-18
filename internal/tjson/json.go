@@ -134,7 +134,7 @@ func Marshal(v any, schema map[string]any) ([]byte, error) {
 	return nil, lazyerrors.Errorf("%T is not supported", v)
 }
 
-// Unmarshal tigris to build-in.
+// Unmarshal tigris to built-in.
 func Unmarshal(v []byte, schema map[string]any) (any, error) {
 	fieldType, ok := schema["type"]
 	if !ok {
