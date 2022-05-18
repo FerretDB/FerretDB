@@ -63,8 +63,6 @@ func (d *doubleType) UnmarshalJSON(data []byte) error {
 			*d = doubleType(math.Inf(-1))
 		case "NaN":
 			*d = doubleType(math.NaN())
-		case "-0":
-			*d = doubleType(math.Copysign(0, -1))
 		default:
 			return lazyerrors.Errorf("fjson.Double.UnmarshalJSON: unexpected string %q", f)
 		}
@@ -88,8 +86,6 @@ func (d *doubleType) MarshalJSON() ([]byte, error) {
 		o.F = "-Infinity"
 	case math.IsNaN(f):
 		o.F = "NaN"
-	case f == 0 && math.Signbit(f):
-		o.F = "-0"
 	default:
 		o.F = f
 	}

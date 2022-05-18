@@ -37,7 +37,7 @@ const (
 	Equal        CompareResult = 0   // ==
 	Less         CompareResult = -1  // <
 	Greater      CompareResult = 1   // >
-	Incomparable CompareResult = 127 // <>
+	Incomparable CompareResult = 127 // ≹
 )
 
 // Compare compares any BSON values in the same way as MongoDB does it for filtering or sorting.
