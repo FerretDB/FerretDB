@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -142,7 +143,7 @@ func TestQueryArraySize(t *testing.T) {
 
 func TestQueryArrayDotNotation(t *testing.T) {
 	t.Parallel()
-	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
+	providers := []shareddata.Provider{shareddata.Composites}
 	ctx, collection := setup(t, providers...)
 
 	_, err := collection.InsertMany(ctx, []any{
@@ -186,6 +187,10 @@ func TestQueryArrayDotNotation(t *testing.T) {
 			filter:      bson.D{{"value.document.0", bson.D{{"$lt", int32(42)}}}},
 			expectedIDs: []any{},
 		},
+		"FieldPositionField": {
+			filter:      bson.D{{"value.array.2.foo", "bar"}},
+			expectedIDs: []any{},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -198,6 +203,52 @@ func TestQueryArrayDotNotation(t *testing.T) {
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
+		})
+	}
+}
+
+func TestQueryArrayDotNotationErrors(t *testing.T) {
+	t.Parallel()
+	providers := []shareddata.Provider{shareddata.Composites}
+	ctx, collection := setup(t, providers...)
+
+	_, err := collection.InsertMany(ctx, []any{
+		bson.D{{"_id", "array-double"}, {"value", bson.A{float64(1)}}},
+		bson.D{
+			{"_id", "document-array-field"},
+			{"value", bson.D{{"array", bson.A{int32(0), nil}}}},
+		},
+		bson.D{
+			{"_id", "document-document-field"},
+			{"value", bson.D{{"document", bson.D{{"foo", nil}}}}},
+		},
+	})
+	require.NoError(t, err)
+
+	for name, tc := range map[string]struct {
+		filter bson.D
+		err    *mongo.CommandError
+	}{
+
+		"FieldPositionQueryRegex": {
+			filter: bson.D{{"value.array.0", bson.D{{"$lt", primitive.Regex{Pattern: "^$"}}}}},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "Can't have RegEx as arg to predicate over field 'value.array.0'.",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			if tc.err != nil {
+				AssertEqualError(t, *tc.err, err)
+				return
+			}
+			require.NoError(t, err)
 		})
 	}
 }
