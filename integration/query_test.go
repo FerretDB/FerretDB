@@ -639,7 +639,7 @@ func TestQueryBadMaxTimeMSType(t *testing.T) {
 			command: bson.D{
 				{"find", collection.Name()},
 				{"projection", bson.D{{"value", "some"}}},
-				{"maxTimeMS", math.MaxInt64},
+				{"maxTimeMS", math.Inf(+1)},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -725,6 +725,19 @@ func TestQueryBadMaxTimeMSType(t *testing.T) {
 				Message: "maxTimeMS must be a number",
 			},
 			altMessage: "maxTimeMS must be a number",
+		},
+		"BadMaxTimeMSTypeNegativeInt32": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"projection", bson.D{{"value", "some"}}},
+				{"maxTimeMS", -1123123},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "-1123123 value for maxTimeMS is out of range",
+			},
+			altMessage: "-1123123 value for maxTimeMS is out of range",
 		},
 	} {
 		name, tc := name, tc
