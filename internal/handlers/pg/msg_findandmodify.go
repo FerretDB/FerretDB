@@ -76,6 +76,10 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	err = common.SortDocuments(fetchedDocs, params.sort)
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return nil, fmt.Errorf("operation exceeded time limit")
+		}
+
 		return nil, err
 	}
 

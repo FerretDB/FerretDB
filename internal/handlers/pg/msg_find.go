@@ -133,6 +133,10 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	fetchedDocs, err := h.fetch(runCtx, sp)
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return nil, fmt.Errorf("operation exceeded time limit")
+		}
+
 		return nil, err
 	}
 

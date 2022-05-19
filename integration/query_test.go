@@ -609,6 +609,19 @@ func TestQueryBadMaxTimeMSType(t *testing.T) {
 			},
 			altMessage: "maxTimeMS has non-integral value",
 		},
+		"BadMaxTimeMSNegativeDouble": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"projection", bson.D{{"value", "some"}}},
+				{"maxTimeMS", -14245345234123245.55},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "-14245345234123246 value for maxTimeMS is out of range",
+			},
+			altMessage: "-14245345234123246 value for maxTimeMS is out of range",
+		},
 		"BadMaxTimeMSTypeString": {
 			command: bson.D{
 				{"find", collection.Name()},
@@ -674,19 +687,6 @@ func TestQueryBadMaxTimeMSType(t *testing.T) {
 			},
 			altMessage: "-9223372036854775808 value for maxTimeMS is out of range",
 		},
-		"BadMaxTimeMSFloat64Negative": {
-			command: bson.D{
-				{"find", collection.Name()},
-				{"projection", bson.D{{"value", "some"}}},
-				{"maxTimeMS", -14245345234123245.55},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "-14245345234123246 value for maxTimeMS is out of range",
-			},
-			altMessage: "-14245345234123246 value for maxTimeMS is out of range",
-		},
 		"BadMaxTimeMSNull": {
 			command: bson.D{
 				{"find", collection.Name()},
@@ -735,6 +735,37 @@ func TestQueryBadMaxTimeMSType(t *testing.T) {
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 			require.Error(t, err)
 			AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+		})
+	}
+}
+
+func TestQueryMaxTimeMSAvailableValues(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+
+	for name, tc := range map[string]struct {
+		command any
+	}{
+		"MaxTimeMSZero": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", 0},
+			},
+		},
+		"MaxTimeMSInt32": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", 1000},
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+			require.NoError(t, err)
 		})
 	}
 }
