@@ -81,7 +81,7 @@ func TestLogRAM(t *testing.T) {
 			logram := NewLogRAM(tc.size)
 
 			for i := int64(0); i < tc.numEntries; i++ {
-				logram.append(test_entrys[i])
+				logram.append(&test_entrys[i])
 			}
 
 			assert.Len(t, logram.log, int(tc.size))
