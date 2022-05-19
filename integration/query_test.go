@@ -755,7 +755,7 @@ func TestQueryMaxTimeMSAvailableValues(t *testing.T) {
 		"MaxTimeMSInt32": {
 			command: bson.D{
 				{"find", collection.Name()},
-				{"maxTimeMS", 1000},
+				{"maxTimeMS", 10000},
 			},
 		},
 	} {
