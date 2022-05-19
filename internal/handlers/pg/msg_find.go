@@ -195,26 +195,26 @@ func getErrorForInvalidMaxTimeMS(document *types.Document) error {
 		return nil
 	}
 
-	switch v.(type) {
+	switch maxTimeMS := v.(type) {
 	case float64:
-		if math.IsInf(v.(float64), -1) {
+		if math.IsInf(maxTimeMS, -1) {
 			return common.NewErrorMsg(
 				common.ErrBadValue,
 				fmt.Sprintf("%v value for maxTimeMS is out of range", math.MinInt64),
 			)
 		}
 
-		if math.IsInf(v.(float64), +1) {
+		if math.IsInf(maxTimeMS, +1) {
 			return common.NewErrorMsg(
 				common.ErrBadValue,
 				fmt.Sprintf("%v value for maxTimeMS is out of range", math.MaxInt64),
 			)
 		}
 
-		if v.(float64) > math.MaxInt32 || v.(float64) < math.MinInt32 {
+		if maxTimeMS > math.MaxInt32 || maxTimeMS < math.MinInt32 {
 			return common.NewErrorMsg(
 				common.ErrBadValue,
-				fmt.Sprintf("%v value for maxTimeMS is out of range", int64(v.(float64))),
+				fmt.Sprintf("%v value for maxTimeMS is out of range", int64(maxTimeMS)),
 			)
 		}
 
