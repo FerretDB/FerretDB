@@ -57,16 +57,16 @@ func (l *logRAM) append(entry *zapcore.Entry) {
 }
 
 // getLogRAM returns entrys from logRAM.
-func (l *logRAM) getLogRAM() []*zapcore.Entry {
+func (l *logRAM) getLogRAM() []zapcore.Entry {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 
-	var entries []*zapcore.Entry
+	var entries []zapcore.Entry
 	for i := int64(0); i < l.len(); i++ {
 		k := (i + l.counter) % l.len()
 
 		if l.log[k] != nil {
-			e := &zapcore.Entry{
+			e := zapcore.Entry{
 				Level:      l.log[k].Level,
 				Time:       l.log[k].Time,
 				LoggerName: l.log[k].LoggerName,

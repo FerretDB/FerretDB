@@ -15,7 +15,7 @@
 package logging
 
 import (
-	"strconv"
+	"fmt"
 	"testing"
 	"time"
 
@@ -23,31 +23,10 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var test_entrys = []zapcore.Entry{}
-
-func init() {
-	for i := 0; i < 20; i++ {
-		l := zapcore.Level(i%7 - 1)
-		en := zapcore.Entry{
-			Level:      l,
-			Time:       time.Now(),
-			LoggerName: "logger_" + l.String(),
-			Message:    "message " + strconv.Itoa(i+1),
-		}
-
-		test_entrys = append(test_entrys, en)
-	}
-}
-
 func TestLogRAM(t *testing.T) {
-	t.Parallel()
-
 	for name, tc := range map[string]struct {
-		size        int64
-		numEntries  int64
-		msgPanic    string
-		bufferMsg   []any
-		expectedMsg []any
+		size     int64
+		msgPanic string
 	}{
 		"PanicNegativSize": {
 			size:     -2,
@@ -57,52 +36,143 @@ func TestLogRAM(t *testing.T) {
 			size:     0,
 			msgPanic: "logram size 0",
 		},
-		"Append3of6": {
-			size:        6,
-			numEntries:  3,
-			bufferMsg:   []any{"message 1", "message 2", "message 3"},
-			expectedMsg: []any{"message 1", "message 2", "message 3"},
-		},
-		"Append20of6": {
-			size:        6,
-			numEntries:  20,
-			bufferMsg:   []any{"message 19", "message 20", "message 15", "message 16", "message 17", "message 18"},
-			expectedMsg: []any{"message 15", "message 16", "message 17", "message 18", "message 19", "message 20"},
-		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			if tc.msgPanic != "" {
-				assert.PanicsWithValue(t, tc.msgPanic, func() { NewLogRAM(tc.size) })
-				return
-			}
-
-			logram := NewLogRAM(tc.size)
-
-			for i := int64(0); i < tc.numEntries; i++ {
-				logram.append(&test_entrys[i])
-			}
-
-			assert.Len(t, logram.log, int(tc.size))
-
-			actualLog := logram.getLogRAM()
-			assert.Len(t, logram.getLogRAM(), len(tc.expectedMsg))
-
-			actualBufferMsg := getMsg(logram.log)
-			actualMsg := getMsg(actualLog)
-
-			assert.Equal(t, tc.bufferMsg, actualBufferMsg)
-			assert.Equal(t, tc.expectedMsg, actualMsg)
+			assert.PanicsWithValue(t, tc.msgPanic, func() { NewLogRAM(tc.size) })
 		})
 	}
-}
 
-func getMsg(rs []*zapcore.Entry) (actual []any) {
-	for _, r := range rs {
-		if r != nil {
-			actual = append(actual, r.Message)
-		}
+	logram := NewLogRAM(3)
+	for n, tc := range []struct {
+		inLog    zapcore.Entry
+		expected []zapcore.Entry
+	}{
+		{
+			inLog: zapcore.Entry{
+				Level:      1,
+				Time:       time.Date(2022, 12, 31, 11, 59, 1, 0, time.UTC),
+				LoggerName: "logger_1",
+				Message:    "message 1",
+			},
+			expected: []zapcore.Entry{
+				{
+					Level:      1,
+					Time:       time.Date(2022, 12, 31, 11, 59, 1, 0, time.UTC),
+					LoggerName: "logger_1",
+					Message:    "message 1",
+				},
+			},
+		}, {
+			inLog: zapcore.Entry{
+				Level:      2,
+				Time:       time.Date(2022, 12, 31, 11, 59, 2, 0, time.UTC),
+				LoggerName: "logger_2",
+				Message:    "message 2",
+			},
+			expected: []zapcore.Entry{
+				{
+					Level:      1,
+					Time:       time.Date(2022, 12, 31, 11, 59, 1, 0, time.UTC),
+					LoggerName: "logger_1",
+					Message:    "message 1",
+				},
+				{
+					Level:      2,
+					Time:       time.Date(2022, 12, 31, 11, 59, 2, 0, time.UTC),
+					LoggerName: "logger_2",
+					Message:    "message 2",
+				},
+			},
+		}, {
+			inLog: zapcore.Entry{
+				Level:      3,
+				Time:       time.Date(2022, 12, 31, 11, 59, 3, 0, time.UTC),
+				LoggerName: "logger_3",
+				Message:    "message 3",
+			},
+			expected: []zapcore.Entry{
+				{
+					Level:      1,
+					Time:       time.Date(2022, 12, 31, 11, 59, 1, 0, time.UTC),
+					LoggerName: "logger_1",
+					Message:    "message 1",
+				},
+				{
+					Level:      2,
+					Time:       time.Date(2022, 12, 31, 11, 59, 2, 0, time.UTC),
+					LoggerName: "logger_2",
+					Message:    "message 2",
+				},
+				{
+					Level:      3,
+					Time:       time.Date(2022, 12, 31, 11, 59, 3, 0, time.UTC),
+					LoggerName: "logger_3",
+					Message:    "message 3",
+				},
+			},
+		}, {
+			inLog: zapcore.Entry{
+				Level:      4,
+				Time:       time.Date(2022, 12, 31, 11, 59, 4, 0, time.UTC),
+				LoggerName: "logger_4",
+				Message:    "message 4",
+			},
+			expected: []zapcore.Entry{
+				{
+					Level:      2,
+					Time:       time.Date(2022, 12, 31, 11, 59, 2, 0, time.UTC),
+					LoggerName: "logger_2",
+					Message:    "message 2",
+				},
+				{
+					Level:      3,
+					Time:       time.Date(2022, 12, 31, 11, 59, 3, 0, time.UTC),
+					LoggerName: "logger_3",
+					Message:    "message 3",
+				},
+				{
+					Level:      4,
+					Time:       time.Date(2022, 12, 31, 11, 59, 4, 0, time.UTC),
+					LoggerName: "logger_4",
+					Message:    "message 4",
+				},
+			},
+		}, {
+			inLog: zapcore.Entry{
+				Level:      5,
+				Time:       time.Date(2022, 12, 31, 11, 59, 5, 0, time.UTC),
+				LoggerName: "logger_5",
+				Message:    "message 5",
+			},
+			expected: []zapcore.Entry{
+				{
+					Level:      3,
+					Time:       time.Date(2022, 12, 31, 11, 59, 3, 0, time.UTC),
+					LoggerName: "logger_3",
+					Message:    "message 3",
+				},
+				{
+					Level:      4,
+					Time:       time.Date(2022, 12, 31, 11, 59, 4, 0, time.UTC),
+					LoggerName: "logger_4",
+					Message:    "message 4",
+				},
+				{
+					Level:      5,
+					Time:       time.Date(2022, 12, 31, 11, 59, 5, 0, time.UTC),
+					LoggerName: "logger_5",
+					Message:    "message 5",
+				},
+			},
+		},
+	} {
+		name := fmt.Sprintf("AppendGet_%d", n)
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+			logram.append(&tc.inLog)
+			actual := logram.getLogRAM()
+			assert.Equal(t, tc.expected, actual)
+		})
 	}
-	return
 }
