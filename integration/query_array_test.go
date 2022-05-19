@@ -23,6 +23,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestQueryArraySize(t *testing.T) {
@@ -128,6 +130,60 @@ func TestQueryArraySize(t *testing.T) {
 				AssertEqualError(t, *tc.err, err)
 				return
 			}
+			require.NoError(t, err)
+
+			var actual []bson.D
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
+		})
+	}
+}
+
+func TestQueryArrayDotNotation(t *testing.T) {
+	t.Parallel()
+	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
+	ctx, collection := setup(t, providers...)
+
+	_, err := collection.InsertMany(ctx, []any{
+		bson.D{{"_id", "array-double"}, {"value", bson.A{float64(1)}}},
+		bson.D{
+			{"_id", "document-array-field"},
+			{"value", bson.D{{"array", bson.A{int32(0), nil}}}},
+		},
+	})
+	require.NoError(t, err)
+
+	for name, tc := range map[string]struct {
+		filter      bson.D
+		expectedIDs []any
+	}{
+		"Position": {
+			filter:      bson.D{{"value.0", bson.D{{"$type", "double"}}}},
+			expectedIDs: []any{"array-double"},
+		},
+		"NoSuchFieldPosition": {
+			filter:      bson.D{{"value.some.0", bson.A{42}}},
+			expectedIDs: []any{},
+		},
+		"Field": {
+			filter:      bson.D{{"value.array", int32(42)}},
+			expectedIDs: []any{"document-composite", "document-composite-reverse"},
+		},
+		"FieldPosition": {
+			filter:      bson.D{{"value.array.0", int32(42)}},
+			expectedIDs: []any{"document-composite", "document-composite-reverse"},
+		},
+		"FieldPositionQuery": {
+			filter:      bson.D{{"value.array.0", bson.D{{"$lt", int32(42)}}}},
+			expectedIDs: []any{"document-array-field"},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			require.NoError(t, err)
 
 			var actual []bson.D
