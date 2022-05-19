@@ -212,24 +212,10 @@ func TestQueryArrayDotNotationErrors(t *testing.T) {
 	providers := []shareddata.Provider{shareddata.Composites}
 	ctx, collection := setup(t, providers...)
 
-	_, err := collection.InsertMany(ctx, []any{
-		bson.D{{"_id", "array-double"}, {"value", bson.A{float64(1)}}},
-		bson.D{
-			{"_id", "document-array-field"},
-			{"value", bson.D{{"array", bson.A{int32(0), nil}}}},
-		},
-		bson.D{
-			{"_id", "document-document-field"},
-			{"value", bson.D{{"document", bson.D{{"foo", nil}}}}},
-		},
-	})
-	require.NoError(t, err)
-
 	for name, tc := range map[string]struct {
 		filter bson.D
 		err    *mongo.CommandError
 	}{
-
 		"FieldPositionQueryRegex": {
 			filter: bson.D{{"value.array.0", bson.D{{"$lt", primitive.Regex{Pattern: "^$"}}}}},
 			err: &mongo.CommandError{
