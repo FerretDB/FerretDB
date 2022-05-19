@@ -43,10 +43,8 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	var nameOnly bool
-	if nameOnly, err = common.GetOptionalParam(document, "nameOnly", false); err != nil {
-		return nil, err
-	}
+	// TODO https://github.com/FerretDB/FerretDB/issues/591
+	nameOnly, _ := common.GetOptionalParam(document, "nameOnly", false)
 
 	databases := types.MakeArray(len(databaseNames))
 	for _, databaseName := range databaseNames {
