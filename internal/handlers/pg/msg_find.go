@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -73,11 +74,23 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 	if maxTimeMS, err = common.GetOptionalParam(document, "maxTimeMS", maxTimeMS); err != nil {
+		var commonErr *common.Error
+		if errors.As(err, &commonErr) {
+			return nil, getErrorForInvalidMaxTimeMS(document)
+		}
+
 		return nil, err
 	}
 
+	if maxTimeMS < 0 {
+		return nil, common.NewErrorMsg(
+			common.ErrBadValue,
+			fmt.Sprintf("%v value for maxTimeMS is out of range", maxTimeMS),
+		)
+	}
+
 	// TODO: what time should I set for delay?
-	runCtx, runCancel := ctxutil.WithDelay(ctx.Done(), 10*time.Second)
+	runCtx, runCancel := ctxutil.WithDelay(ctx.Done(), 40*time.Second)
 	defer runCancel()
 	if maxTimeMS != 0 {
 		runCtx, runCancel = context.WithTimeout(ctx, time.Duration(maxTimeMS)*time.Millisecond)
@@ -120,10 +133,6 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	fetchedDocs, err := h.fetch(runCtx, sp)
 	if err != nil {
-		if errors.Is(err, context.DeadlineExceeded) {
-			return nil, fmt.Errorf("context deadline exceeded, maxTimeMS: %v", maxTimeMS)
-		}
-
 		return nil, err
 	}
 
@@ -174,4 +183,44 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	return &reply, nil
+}
+
+func getErrorForInvalidMaxTimeMS(document *types.Document) error {
+	v, err := document.Get("maxTimeMS")
+	if err != nil {
+		return nil
+	}
+
+	switch v.(type) {
+	case float64:
+		if math.IsInf(v.(float64), -1) {
+			return common.NewErrorMsg(
+				common.ErrBadValue,
+				fmt.Sprintf("%v value for maxTimeMS is out of range", math.MinInt64),
+			)
+		}
+
+		if math.IsInf(v.(float64), +1) {
+			return common.NewErrorMsg(
+				common.ErrBadValue,
+				fmt.Sprintf("%v value for maxTimeMS is out of range", math.MaxInt64),
+			)
+		}
+
+		if v.(float64) > math.MaxInt32 || v.(float64) < math.MinInt32 {
+			return common.NewErrorMsg(
+				common.ErrBadValue,
+				fmt.Sprintf("%v value for maxTimeMS is out of range", int64(v.(float64))),
+			)
+		}
+
+		return common.NewErrorMsg(common.ErrBadValue, "maxTimeMS has non-integral value")
+	case int64:
+		return common.NewErrorMsg(
+			common.ErrBadValue,
+			fmt.Sprintf("%v value for maxTimeMS is out of range", v),
+		)
+	default:
+		return common.NewErrorMsg(common.ErrBadValue, "maxTimeMS must be a number")
+	}
 }
