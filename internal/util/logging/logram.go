@@ -23,9 +23,9 @@ import (
 
 // logRAM structure storage of log records in memory.
 type logRAM struct {
-	mu      sync.RWMutex
-	log     []*zapcore.Entry
-	counter int64
+	mu    sync.RWMutex
+	log   []*zapcore.Entry
+	index int64
 }
 
 // NewLogRAM is creating entries log in memory.
@@ -52,18 +52,18 @@ func (l *logRAM) append(entry *zapcore.Entry) {
 		Stack:      entry.Stack,
 	}
 
-	l.log[l.counter] = rec
-	l.counter = (l.counter + 1) % l.len()
+	l.log[l.index] = rec
+	l.index = (l.index + 1) % int64(len(l.log))
 }
 
 // getLogRAM returns entrys from logRAM.
-func (l *logRAM) getLogRAM() []zapcore.Entry {
+func (l *logRAM) getLogRAM() []*zapcore.Entry {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 
-	var entries []zapcore.Entry
-	for i := int64(0); i < l.len(); i++ {
-		k := (i + l.counter) % l.len()
+	var entries []*zapcore.Entry
+	for i := int64(0); i < int64(len(l.log)); i++ {
+		k := (i + l.index) % int64(len(l.log))
 
 		if l.log[k] != nil {
 			e := zapcore.Entry{
@@ -73,13 +73,9 @@ func (l *logRAM) getLogRAM() []zapcore.Entry {
 				Message:    l.log[k].Message,
 				Stack:      l.log[k].Stack,
 			}
-			entries = append(entries, e)
+			entries = append(entries, &e)
 		}
 	}
 
 	return entries
-}
-
-func (l *logRAM) len() int64 {
-	return int64(len(l.log))
 }

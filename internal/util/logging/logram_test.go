@@ -43,7 +43,7 @@ func TestLogRAM(t *testing.T) {
 		})
 	}
 
-	logram := NewLogRAM(3)
+	logram := NewLogRAM(2)
 	for n, tc := range []struct {
 		inLog    zapcore.Entry
 		expected []zapcore.Entry
@@ -93,12 +93,6 @@ func TestLogRAM(t *testing.T) {
 			},
 			expected: []zapcore.Entry{
 				{
-					Level:      1,
-					Time:       time.Date(2022, 12, 31, 11, 59, 1, 0, time.UTC),
-					LoggerName: "logger_1",
-					Message:    "message 1",
-				},
-				{
 					Level:      2,
 					Time:       time.Date(2022, 12, 31, 11, 59, 2, 0, time.UTC),
 					LoggerName: "logger_2",
@@ -109,60 +103,6 @@ func TestLogRAM(t *testing.T) {
 					Time:       time.Date(2022, 12, 31, 11, 59, 3, 0, time.UTC),
 					LoggerName: "logger_3",
 					Message:    "message 3",
-				},
-			},
-		}, {
-			inLog: zapcore.Entry{
-				Level:      4,
-				Time:       time.Date(2022, 12, 31, 11, 59, 4, 0, time.UTC),
-				LoggerName: "logger_4",
-				Message:    "message 4",
-			},
-			expected: []zapcore.Entry{
-				{
-					Level:      2,
-					Time:       time.Date(2022, 12, 31, 11, 59, 2, 0, time.UTC),
-					LoggerName: "logger_2",
-					Message:    "message 2",
-				},
-				{
-					Level:      3,
-					Time:       time.Date(2022, 12, 31, 11, 59, 3, 0, time.UTC),
-					LoggerName: "logger_3",
-					Message:    "message 3",
-				},
-				{
-					Level:      4,
-					Time:       time.Date(2022, 12, 31, 11, 59, 4, 0, time.UTC),
-					LoggerName: "logger_4",
-					Message:    "message 4",
-				},
-			},
-		}, {
-			inLog: zapcore.Entry{
-				Level:      5,
-				Time:       time.Date(2022, 12, 31, 11, 59, 5, 0, time.UTC),
-				LoggerName: "logger_5",
-				Message:    "message 5",
-			},
-			expected: []zapcore.Entry{
-				{
-					Level:      3,
-					Time:       time.Date(2022, 12, 31, 11, 59, 3, 0, time.UTC),
-					LoggerName: "logger_3",
-					Message:    "message 3",
-				},
-				{
-					Level:      4,
-					Time:       time.Date(2022, 12, 31, 11, 59, 4, 0, time.UTC),
-					LoggerName: "logger_4",
-					Message:    "message 4",
-				},
-				{
-					Level:      5,
-					Time:       time.Date(2022, 12, 31, 11, 59, 5, 0, time.UTC),
-					LoggerName: "logger_5",
-					Message:    "message 5",
 				},
 			},
 		},
@@ -172,7 +112,9 @@ func TestLogRAM(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			logram.append(&tc.inLog)
 			actual := logram.getLogRAM()
-			assert.Equal(t, tc.expected, actual)
+			for i, exp := range tc.expected {
+				assert.Equal(t, exp, *actual[i])
+			}
 		})
 	}
 }
