@@ -151,6 +151,10 @@ func TestQueryArrayDotNotation(t *testing.T) {
 			{"_id", "document-array-field"},
 			{"value", bson.D{{"array", bson.A{int32(0), nil}}}},
 		},
+		bson.D{
+			{"_id", "document-document-field"},
+			{"value", bson.D{{"document", bson.D{{"foo", nil}}}}},
+		},
 	})
 	require.NoError(t, err)
 
@@ -177,6 +181,10 @@ func TestQueryArrayDotNotation(t *testing.T) {
 		"FieldPositionQuery": {
 			filter:      bson.D{{"value.array.0", bson.D{{"$lt", int32(42)}}}},
 			expectedIDs: []any{"document-array-field"},
+		},
+		"FieldPositionQueryNonArray": {
+			filter:      bson.D{{"value.document.0", bson.D{{"$lt", int32(42)}}}},
+			expectedIDs: []any{},
 		},
 	} {
 		name, tc := name, tc
