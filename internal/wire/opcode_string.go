@@ -11,7 +11,7 @@ func _() {
 	_ = x[OpCodeReply-1]
 	_ = x[OpCodeUpdate-2001]
 	_ = x[OpCodeInsert-2002]
-	_ = x[OpCodeGetByOid-2003]
+	_ = x[OpCodeGetByOID-2003]
 	_ = x[OpCodeQuery-2004]
 	_ = x[OpCodeGetMore-2005]
 	_ = x[OpCodeDelete-2006]

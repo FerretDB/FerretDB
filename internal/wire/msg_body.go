@@ -77,7 +77,7 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 		fallthrough
 	case OpCodeInsert:
 		fallthrough
-	case OpCodeGetByOid:
+	case OpCodeGetByOID:
 		fallthrough
 	case OpCodeGetMore:
 		fallthrough

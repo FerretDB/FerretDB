@@ -292,7 +292,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		fallthrough
 	case wire.OpCodeInsert:
 		fallthrough
-	case wire.OpCodeGetByOid:
+	case wire.OpCodeGetByOID:
 		fallthrough
 	case wire.OpCodeGetMore:
 		fallthrough
@@ -331,7 +331,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			fallthrough
 		case wire.OpCodeInsert:
 			fallthrough
-		case wire.OpCodeGetByOid:
+		case wire.OpCodeGetByOID:
 			fallthrough
 		case wire.OpCodeGetMore:
 			fallthrough

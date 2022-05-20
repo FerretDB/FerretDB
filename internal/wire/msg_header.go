@@ -26,19 +26,44 @@ import (
 
 //go:generate ../../bin/stringer -linecomment -type OpCode
 
+// OpCode represents wire operation code.
 type OpCode int32
 
 const (
-	OpCodeReply       = OpCode(1)    // OP_REPLY
-	OpCodeUpdate      = OpCode(2001) // OP_UPDATE
-	OpCodeInsert      = OpCode(2002) // OP_INSERT
-	OpCodeGetByOid    = OpCode(2003) // OP_GET_BY_OID
-	OpCodeQuery       = OpCode(2004) // OP_QUERY
-	OpCodeGetMore     = OpCode(2005) // OP_GET_MORE
-	OpCodeDelete      = OpCode(2006) // OP_DELETE
+	// OpCodeReply is sent by the database in response to an OP_QUERY or OP_GET_MORE message.
+	// Deprecated.
+	OpCodeReply = OpCode(1) // OP_REPLY
+
+	// OpCodeUpdate used to update a document in a collection.
+	OpCodeUpdate = OpCode(2001) // OP_UPDATE
+
+	// OpCodeInsert is used to insert one or more documents into a collection
+	// Deprecated.
+	OpCodeInsert = OpCode(2002) // OP_INSERT
+
+	// OpCodeGetByOID reserverd wire op code.
+	OpCodeGetByOID = OpCode(2003) // OP_GET_BY_OID
+
+	// OpCodeQuery is used to query the database for documents in a collection.
+	// Deprecated.
+	OpCodeQuery = OpCode(2004) // OP_QUERY
+
+	// OpCodeGetMore is used to query the database for documents in a collection.
+	// Deprecated.
+	OpCodeGetMore = OpCode(2005) // OP_GET_MORE
+
+	// OpCodeDelete is used to remove one or more documents from a collection.
+	// Deprecated.
+	OpCodeDelete = OpCode(2006) // OP_DELETE
+
+	// OpCodeKillCursors is used to close an active cursor in the database.
 	OpCodeKillCursors = OpCode(2007) // OP_KILL_CURSORS
-	OpCodeCompressed  = OpCode(2012) // OP_COMPRESSED
-	OpCodeMsg         = OpCode(2013) // OP_MSG
+
+	// OpCodeCompressed contains the original compressed opcode message alongside the metadata necessary to process and decompress it.
+	OpCodeCompressed = OpCode(2012) // OP_COMPRESSED
+
+	// OpCodeMsg is for both client requests and database replies.
+	OpCodeMsg = OpCode(2013) // OP_MSG
 )
 
 // MsgHeader in general, each message consists of a standard message header followed by request-specific data.
