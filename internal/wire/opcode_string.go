@@ -21,14 +21,14 @@ func _() {
 }
 
 const (
-	_OpCode_name_0 = "OpCodeReply"
-	_OpCode_name_1 = "OpCodeUpdateOpCodeInsertOpCodeGetByOidOpCodeQueryOpCodeGetMoreOpCodeDeleteOpCodeKillCursors"
-	_OpCode_name_2 = "OpCodeCompressedOpCodeMsg"
+	_OpCode_name_0 = "OP_REPLY"
+	_OpCode_name_1 = "OP_UPDATEOP_INSERTOP_GET_BY_OIDOP_QUERYOP_GET_MOREOP_DELETEOP_KILL_CURSORS"
+	_OpCode_name_2 = "OP_COMPRESSEDOP_MSG"
 )
 
 var (
-	_OpCode_index_1 = [...]uint8{0, 12, 24, 38, 49, 62, 74, 91}
-	_OpCode_index_2 = [...]uint8{0, 16, 25}
+	_OpCode_index_1 = [...]uint8{0, 9, 18, 31, 39, 50, 59, 74}
+	_OpCode_index_2 = [...]uint8{0, 13, 19}
 )
 
 func (i OpCode) String() string {

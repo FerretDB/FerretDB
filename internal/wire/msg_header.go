@@ -29,16 +29,16 @@ import (
 type OpCode int32
 
 const (
-	OpCodeReply       = OpCode(1)    // OpCodeReply
-	OpCodeUpdate      = OpCode(2001) // OpCodeUpdate
-	OpCodeInsert      = OpCode(2002) // OpCodeInsert
-	OpCodeGetByOid    = OpCode(2003) // OpCodeGetByOid
-	OpCodeQuery       = OpCode(2004) // OpCodeQuery
-	OpCodeGetMore     = OpCode(2005) // OpCodeGetMore
-	OpCodeDelete      = OpCode(2006) // OpCodeDelete
-	OpCodeKillCursors = OpCode(2007) // OpCodeKillCursors
-	OpCodeCompressed  = OpCode(2012) // OpCodeCompressed
-	OpCodeMsg         = OpCode(2013) // OpCodeMsg
+	OpCodeReply       = OpCode(1)    // OP_REPLY
+	OpCodeUpdate      = OpCode(2001) // OP_UPDATE
+	OpCodeInsert      = OpCode(2002) // OP_INSERT
+	OpCodeGetByOid    = OpCode(2003) // OP_GET_BY_OID
+	OpCodeQuery       = OpCode(2004) // OP_QUERY
+	OpCodeGetMore     = OpCode(2005) // OP_GET_MORE
+	OpCodeDelete      = OpCode(2006) // OP_DELETE
+	OpCodeKillCursors = OpCode(2007) // OP_KILL_CURSORS
+	OpCodeCompressed  = OpCode(2012) // OP_COMPRESSED
+	OpCodeMsg         = OpCode(2013) // OP_MSG
 )
 
 // MsgHeader in general, each message consists of a standard message header followed by request-specific data.
