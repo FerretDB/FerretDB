@@ -270,6 +270,22 @@ func TestQuerySortValue(t *testing.T) {
 				Message: "$sort key ordering must be 1 (for ascending) or -1 (for descending)",
 			},
 		},
+		"BadSortZeroValue": {
+			sort: bson.D{{"value", 0}},
+			err: &mongo.CommandError{
+				Code:    15975,
+				Name:    "Location15975",
+				Message: "$sort key ordering must be 1 (for ascending) or -1 (for descending)",
+			},
+		},
+		"BadSortNullValue": {
+			sort: bson.D{{"value", nil}},
+			err: &mongo.CommandError{
+				Code:    15974,
+				Name:    "Location15974",
+				Message: "Illegal key in $sort specification: value: null",
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -547,7 +563,7 @@ func TestQueryBadSortType(t *testing.T) {
 				Name:    "Location15974",
 				Message: `Illegal key in $sort specification: asc: "123"`,
 			},
-			altMessage: "Illegal key in $sort specification",
+			altMessage: `Illegal key in $sort specification: asc: 123`,
 		},
 	} {
 		name, tc := name, tc

@@ -15,21 +15,12 @@
 package common
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-)
-
-//go:generate ../../../bin/stringer -linecomment -type sortType
-
-// sortType represents sort type for $sort aggregation.
-type sortType int8
-
-const (
-	ascending  sortType = 1  // asc
-	descending sortType = -1 // desc
 )
 
 // SortDocuments sorts given documents in place according to the given sorting conditions.
@@ -45,8 +36,7 @@ func SortDocuments(docs []*types.Document, sort *types.Document) error {
 	sortFuncs := make([]sortFunc, len(sort.Keys()))
 	for i, sortKey := range sort.Keys() {
 		sortField := must.NotFail(sort.Get(sortKey))
-
-		sortType, err := getSortType(sortField)
+		sortType, err := getSortType(sortKey, sortField)
 		if err != nil {
 			return err
 		}
@@ -62,7 +52,7 @@ func SortDocuments(docs []*types.Document, sort *types.Document) error {
 
 // lessFunc takes sort key and type and returns sort.Interface's Less function which
 // compares selected key of 2 documents.
-func lessFunc(sortKey string, sortType sortType) func(a, b *types.Document) bool {
+func lessFunc(sortKey string, sortType types.SortType) func(a, b *types.Document) bool {
 	return func(a, b *types.Document) bool {
 		aField, err := a.Get(sortKey)
 		if err != nil {
@@ -74,21 +64,21 @@ func lessFunc(sortKey string, sortType sortType) func(a, b *types.Document) bool
 			return false
 		}
 
-		result := types.CompareOrder(aField, bField, sortType.String())
+		result := types.CompareOrder(aField, bField, sortType)
 
 		switch result {
 		case types.Less:
 			switch sortType {
-			case ascending:
+			case types.Ascending:
 				return true
-			case descending:
+			case types.Descending:
 				return false
 			}
 		case types.Greater:
 			switch sortType {
-			case ascending:
+			case types.Ascending:
 				return false
-			case descending:
+			case types.Descending:
 				return true
 			}
 		case types.Incomparable, types.Equal:
@@ -140,13 +130,16 @@ func (ds *docsSorter) Less(i, j int) bool {
 	return ds.sorts[k](p, q)
 }
 
-// getSortType determines sortType from input sort value.
-func getSortType(value any) (sortType, error) {
+// getSortType determines SortType from input sort value.
+func getSortType(key, value any) (types.SortType, error) {
 	sortValue, err := GetWholeNumberParam(value)
 	if err != nil {
 		switch err {
 		case errUnexpectedType:
-			return 0, NewErrorMsg(ErrLocation15974, `Illegal key in $sort specification`)
+			if _, ok := value.(types.NullType); ok {
+				value = "null"
+			}
+			return 0, NewErrorMsg(ErrLocation15974, fmt.Sprintf(`Illegal key in $sort specification: %v: %v`, key, value))
 		case errNotWholeNumber:
 			return 0, NewErrorMsg(ErrBadValue, "$sort must be a whole number")
 		default:
@@ -156,9 +149,9 @@ func getSortType(value any) (sortType, error) {
 
 	switch sortValue {
 	case 1:
-		return ascending, nil
+		return types.Ascending, nil
 	case -1:
-		return descending, nil
+		return types.Descending, nil
 	default:
 		return 0, NewErrorMsg(ErrLocation15975, "$sort key ordering must be 1 (for ascending) or -1 (for descending)")
 	}

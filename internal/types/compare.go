@@ -27,6 +27,9 @@ import (
 )
 
 //go:generate ../../bin/stringer -linecomment -type CompareResult
+//go:generate ../../bin/stringer -linecomment -type dataTypeOrderResult
+//go:generate ../../bin/stringer -linecomment -type numberDataTypeOrderResult
+//go:generate ../../bin/stringer -linecomment -type SortType
 
 // CompareResult represents the result of a comparison.
 type CompareResult int8
@@ -40,7 +43,7 @@ const (
 	Incomparable CompareResult = 127 // ≹
 )
 
-// Compare compares any BSON values in the same way as MongoDB does it for filtering or sorting.
+// Compare compares any BSON values in the same way as MongoDB does it for filtering.
 //
 // It converts types as needed; that may result in different types being equal.
 // For that reason, it typically should not be used in tests.
@@ -257,7 +260,6 @@ type dataTypeOrderResult uint8
 
 const (
 	_ dataTypeOrderResult = iota
-	minKeyDataType
 	nullDataType
 	nanDataType
 	numbersDataType
@@ -270,7 +272,6 @@ const (
 	dateDataType
 	timestampDataType
 	regexDataType
-	maxKeyDataType
 )
 
 // defineDataType define which type has value and returns a sequence the type has.
@@ -301,9 +302,9 @@ func defineDataType(value any) dataTypeOrderResult {
 		return timestampDataType
 	case int64:
 		return numbersDataType
+	default:
+		panic(fmt.Sprintf("value cannot be defined, value is %[1]v, data type of value is %[1]T", value))
 	}
-
-	panic(fmt.Sprintf("value cannot be defined, value is %v, data type of value is %T", value, value))
 }
 
 // numberDataTypeOrderResult represents the comparison order of numbers.
@@ -334,10 +335,19 @@ func defineNumberDataType(value any) numberDataTypeOrderResult {
 	panic(fmt.Sprintf("defineNumberDataType: value cannot be defined, value is %v, data type of value is %T", value, value))
 }
 
-// CompareOrder defines the data type for the two values and compares them. When the types are equal, it compares using Compare.
-func CompareOrder(a, b any, order string) CompareResult {
+// SortType represents sort type for $sort aggregation.
+type SortType int8
+
+const (
+	Ascending  SortType = 1  // asc
+	Descending SortType = -1 // desc
+)
+
+// CompareOrder defines the data type for the two values and compares them.
+// When the types are equal, it compares their values using Compare.
+func CompareOrder(a, b any, order SortType) CompareResult {
 	if a == nil || b == nil {
-		panic(fmt.Sprintf("compareOrder: values should not be nil, a is %v, b is %v", a, b))
+		panic(fmt.Sprintf("CompareOrder: values should not be nil, a is %v, b is %v", a, b))
 	}
 
 	aType := defineDataType(a)
@@ -348,13 +358,13 @@ func CompareOrder(a, b any, order string) CompareResult {
 			aNumberType := defineNumberDataType(a)
 			bNumberType := defineNumberDataType(b)
 			switch {
-			case aNumberType < bNumberType && order == "asc":
+			case aNumberType < bNumberType && order == Ascending:
 				return Less
-			case aNumberType > bNumberType && order == "asc":
+			case aNumberType > bNumberType && order == Ascending:
 				return Greater
-			case aNumberType < bNumberType && order == "desc":
+			case aNumberType < bNumberType && order == Descending:
 				return Greater
-			case aNumberType > bNumberType && order == "desc":
+			case aNumberType > bNumberType && order == Descending:
 				return Less
 			}
 		}
