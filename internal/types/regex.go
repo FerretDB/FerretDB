@@ -33,7 +33,7 @@ var (
 	// ErrInvalidEscape for invalid escape errors.
 	ErrInvalidEscape = fmt.Errorf("Regular expression is invalid: PCRE does not support \\L, \\l, \\N{name}, \\U, or \\u")
 
-	// ErrMissingTerminator for syntax error in subpattern name (missing terminator
+	// ErrMissingTerminator for syntax error in subpattern name (missing terminator.
 	ErrMissingTerminator = fmt.Errorf("Regular expression is invalid: syntax error in subpattern name (missing terminator)")
 
 	// ErrUnmatchedParentheses for unmatched parentheses.
@@ -48,6 +48,7 @@ var (
 	// ErrInvalidClassRange for range out of order in character class error.
 	ErrInvalidClassRange = fmt.Errorf("Regular expression is invalid: range out of order in character class")
 
+	//nolint:godot // false positive
 	// ErrUnsupportedPerlOp for unrecognized character after (? or (?-.
 	ErrUnsupportedPerlOp = fmt.Errorf("Regular expression is invalid: unrecognized character after (? or (?-")
 
