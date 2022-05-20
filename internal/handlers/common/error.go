@@ -40,7 +40,7 @@ const (
 	// ErrFailedToParse failed to parse user input.
 	ErrFailedToParse = ErrorCode(9) // FailedToParse
 
-	// ErrTypeMismatch occurs while comparing variables.
+	// ErrTypeMismatch for $sort, when it is expected field sort to be of type object but is has other type.
 	ErrTypeMismatch = ErrorCode(14) // TypeMismatch
 
 	// ErrNamespaceNotFound when a collection is not found.
