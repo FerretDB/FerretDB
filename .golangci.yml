@@ -95,6 +95,7 @@ linters:
     - staticcheck
     - unused
     - whitespace
+    - revive
 
 issues:
   exclude-use-default: false

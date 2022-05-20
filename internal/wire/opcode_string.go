@@ -8,27 +8,27 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[OP_REPLY-1]
-	_ = x[OP_UPDATE-2001]
-	_ = x[OP_INSERT-2002]
-	_ = x[OP_GET_BY_OID-2003]
-	_ = x[OP_QUERY-2004]
-	_ = x[OP_GET_MORE-2005]
-	_ = x[OP_DELETE-2006]
-	_ = x[OP_KILL_CURSORS-2007]
-	_ = x[OP_COMPRESSED-2012]
-	_ = x[OP_MSG-2013]
+	_ = x[OpCodeReply-1]
+	_ = x[OpCodeUpdate-2001]
+	_ = x[OpCodeInsert-2002]
+	_ = x[OpCodeGetByOid-2003]
+	_ = x[OpCodeQuery-2004]
+	_ = x[OpCodeGetMore-2005]
+	_ = x[OpCodeDelete-2006]
+	_ = x[OpCodeKillCursors-2007]
+	_ = x[OpCodeCompressed-2012]
+	_ = x[OpCodeMsg-2013]
 }
 
 const (
-	_OpCode_name_0 = "OP_REPLY"
-	_OpCode_name_1 = "OP_UPDATEOP_INSERTOP_GET_BY_OIDOP_QUERYOP_GET_MOREOP_DELETEOP_KILL_CURSORS"
-	_OpCode_name_2 = "OP_COMPRESSEDOP_MSG"
+	_OpCode_name_0 = "OpCodeReply"
+	_OpCode_name_1 = "OpCodeUpdateOpCodeInsertOpCodeGetByOidOpCodeQueryOpCodeGetMoreOpCodeDeleteOpCodeKillCursors"
+	_OpCode_name_2 = "OpCodeCompressedOpCodeMsg"
 )
 
 var (
-	_OpCode_index_1 = [...]uint8{0, 9, 18, 31, 39, 50, 59, 74}
-	_OpCode_index_2 = [...]uint8{0, 13, 19}
+	_OpCode_index_1 = [...]uint8{0, 12, 24, 38, 49, 62, 74, 91}
+	_OpCode_index_2 = [...]uint8{0, 16, 25}
 )
 
 func (i OpCode) String() string {
