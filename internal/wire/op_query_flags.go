@@ -30,6 +30,7 @@ const (
 	OpQueryPartial         = OpQueryFlagBit(1 << 7) // Partial
 )
 
+// OpQueryFlags enables String() and FlagSet methods for flags.
 type OpQueryFlags flags
 
 func opQueryFlagBitStringer(bit flagBit) string {

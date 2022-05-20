@@ -65,6 +65,7 @@ type Type interface {
 	ScalarType | CompositeType
 }
 
+// CompositeTypeInterface consists of Document and Array.
 // TODO remove once we have go-sumtype equivalent?
 type CompositeTypeInterface interface {
 	CompositeType

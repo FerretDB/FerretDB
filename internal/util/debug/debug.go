@@ -27,6 +27,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// RunHandler runs debug handler.
 func RunHandler(ctx context.Context, addr string, l *zap.Logger) {
 	stdL, err := zap.NewStdLogAt(l, zap.WarnLevel)
 	if err != nil {

@@ -392,11 +392,11 @@ func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, cmd string) (*w
 }
 
 // Describe implements prometheus.Collector.
-func (l *conn) Describe(ch chan<- *prometheus.Desc) {
-	l.m.Describe(ch)
+func (c *conn) Describe(ch chan<- *prometheus.Desc) {
+	c.m.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
-func (l *conn) Collect(ch chan<- prometheus.Metric) {
-	l.m.Collect(ch)
+func (c *conn) Collect(ch chan<- prometheus.Metric) {
+	c.m.Collect(ch)
 }
