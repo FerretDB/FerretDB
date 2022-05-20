@@ -16,10 +16,10 @@ package debug
 
 import (
 	"context"
-	_ "expvar"
+	_ "expvar" // for metrics
 	"net"
 	"net/http"
-	_ "net/http/pprof"
+	_ "net/http/pprof" // debug pprof
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"

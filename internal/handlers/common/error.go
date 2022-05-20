@@ -34,6 +34,7 @@ const (
 	// For ProtocolError only.
 	errInternalError = ErrorCode(1) // InternalError
 
+	// ErrBadValue for wrong input
 	ErrBadValue          = ErrorCode(2)     // BadValue
 	ErrFailedToParse     = ErrorCode(9)     // FailedToParse
 	ErrTypeMismatch      = ErrorCode(14)    // TypeMismatch

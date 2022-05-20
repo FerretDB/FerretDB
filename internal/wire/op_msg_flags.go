@@ -22,9 +22,14 @@ import "fmt"
 type OpMsgFlagBit flagBit
 
 const (
-	OpMsgChecksumPresent = OpMsgFlagBit(1 << 0)  // checksumPresent
-	OpMsgMoreToCome      = OpMsgFlagBit(1 << 1)  // moreToCome
-	OpMsgExhaustAllowed  = OpMsgFlagBit(1 << 16) // exhaustAllowed
+	// OpMsgChecksumPresent the message ends with 4 bytes containing a CRC-32C checksum.
+	OpMsgChecksumPresent = OpMsgFlagBit(1 << 0) // checksumPresent
+
+	// OpMsgMoreToCome specifies that another message will follow this one without further action from the receiver.
+	OpMsgMoreToCome = OpMsgFlagBit(1 << 1) // moreToCome
+
+	// OpMsgExhaustAllowed: the client is prepared for multiple replies to this request using the moreToCome bit.
+	OpMsgExhaustAllowed = OpMsgFlagBit(1 << 16) // exhaustAllowed
 )
 
 // OpMsgFlags type unint32.
