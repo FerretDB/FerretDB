@@ -41,7 +41,7 @@ const (
 	// Deprecated.
 	OpCodeInsert = OpCode(2002) // OP_INSERT
 
-	// OpCodeGetByOID reserverd wire op code.
+	// OpCodeGetByOID reserved wire op code.
 	OpCodeGetByOID = OpCode(2003) // OP_GET_BY_OID
 
 	// OpCodeQuery is used to query the database for documents in a collection.
@@ -59,7 +59,8 @@ const (
 	// OpCodeKillCursors is used to close an active cursor in the database.
 	OpCodeKillCursors = OpCode(2007) // OP_KILL_CURSORS
 
-	// OpCodeCompressed contains the original compressed opcode message alongside the metadata necessary to process and decompress it.
+	// OpCodeCompressed contains the original compressed opcode message alongside the metadata
+	// necessary to process and decompress it.
 	OpCodeCompressed = OpCode(2012) // OP_COMPRESSED
 
 	// OpCodeMsg is for both client requests and database replies.
