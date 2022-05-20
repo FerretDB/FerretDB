@@ -18,25 +18,37 @@ import "fmt"
 
 //go:generate ../../bin/stringer -linecomment -type OpReplyFlagBit
 
+// OpReplyFlagBit is a bit vector to specify OP_REPLY flags.
 type OpReplyFlagBit flagBit
 
 const (
-	OpReplyCursorNotFound   = OpReplyFlagBit(1 << 0) // CursorNotFound
-	OpReplyQueryFailure     = OpReplyFlagBit(1 << 1) // QueryFailure
+	// OpReplyCursorNotFound is set when the cursor id is not valid at the server.
+	OpReplyCursorNotFound = OpReplyFlagBit(1 << 0) // CursorNotFound
+
+	// OpReplyQueryFailure is set when query has failed.
+	OpReplyQueryFailure = OpReplyFlagBit(1 << 1) // QueryFailure
+
+	// OpReplyShardConfigStale is set when it needs to update config from the server.
+	// Drivers should ignore this.
 	OpReplyShardConfigStale = OpReplyFlagBit(1 << 2) // ShardConfigStale
-	OpReplyAwaitCapable     = OpReplyFlagBit(1 << 3) // AwaitCapable
+
+	// OpReplyAwaitCapable is set when the server supports the AwaitData Query option.
+	OpReplyAwaitCapable = OpReplyFlagBit(1 << 3) // AwaitCapable
 )
 
+// OpReplyFlags are OP_REPLY flags.
 type OpReplyFlags flags
 
 func opReplyFlagBitStringer(bit flagBit) string {
 	return OpReplyFlagBit(bit).String()
 }
 
+// String returns string value for OP_REPLY.
 func (f OpReplyFlags) String() string {
 	return flags(f).string(opReplyFlagBitStringer)
 }
 
+// FlagSet returns true if the flag is set.
 func (f OpReplyFlags) FlagSet(bit OpReplyFlagBit) bool {
 	return f&OpReplyFlags(bit) != 0
 }

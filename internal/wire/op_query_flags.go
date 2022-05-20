@@ -18,6 +18,7 @@ import "fmt"
 
 //go:generate ../../bin/stringer -linecomment -type OpQueryFlagBit
 
+// OpQueryFlagBit an integer bitmask containing message flags.
 type OpQueryFlagBit flagBit
 
 const (
