@@ -21,17 +21,38 @@ import (
 )
 
 var (
+	// ErrOptionNotImplemented for unimplemented regex option.
 	ErrOptionNotImplemented = fmt.Errorf("regex: option not implemented")
-	ErrMissingParen         = fmt.Errorf("Regular expression is invalid: missing )")
-	ErrMissingBracket       = fmt.Errorf("Regular expression is invalid: missing terminating ] for character class")
-	ErrInvalidEscape        = fmt.Errorf("Regular expression is invalid: PCRE does not support \\L, \\l, \\N{name}, \\U, or \\u")
-	ErrMissingTerminator    = fmt.Errorf("Regular expression is invalid: syntax error in subpattern name (missing terminator)")
+
+	// ErrMissingParen for missing parentheses in regex expression.
+	ErrMissingParen = fmt.Errorf("Regular expression is invalid: missing )")
+
+	// ErrMissingBracket for missing terminating ] for character class.
+	ErrMissingBracket = fmt.Errorf("Regular expression is invalid: missing terminating ] for character class")
+
+	// ErrInvalidEscape for invalid escape errors.
+	ErrInvalidEscape = fmt.Errorf("Regular expression is invalid: PCRE does not support \\L, \\l, \\N{name}, \\U, or \\u")
+
+	// ErrMissingTerminator for syntax error in subpattern name (missing terminator
+	ErrMissingTerminator = fmt.Errorf("Regular expression is invalid: syntax error in subpattern name (missing terminator)")
+
+	// ErrUnmatchedParentheses for unmatched parentheses.
 	ErrUnmatchedParentheses = fmt.Errorf("Regular expression is invalid: unmatched parentheses")
-	ErrTrailingBackslash    = fmt.Errorf("Regular expression is invalid: \\ at end of pattern")
-	ErrNothingToRepeat      = fmt.Errorf("Regular expression is invalid: nothing to repeat")
-	ErrInvalidClassRange    = fmt.Errorf("Regular expression is invalid: range out of order in character class")
-	ErrUnsupportedPerlOp    = fmt.Errorf("Regular expression is invalid: unrecognized character after (? or (?-")
-	ErrInvalidRepeatSize    = fmt.Errorf("Regular expression is invalid: regular expression is too large")
+
+	// ErrTrailingBackslash for \\ at end of pattern.
+	ErrTrailingBackslash = fmt.Errorf("Regular expression is invalid: \\ at end of pattern")
+
+	// ErrNothingToRepeat for nothing to repeat error.
+	ErrNothingToRepeat = fmt.Errorf("Regular expression is invalid: nothing to repeat")
+
+	// ErrInvalidClassRange for range out of order in character class error.
+	ErrInvalidClassRange = fmt.Errorf("Regular expression is invalid: range out of order in character class")
+
+	// ErrUnsupportedPerlOp for unrecognized character after (? or (?-.
+	ErrUnsupportedPerlOp = fmt.Errorf("Regular expression is invalid: unrecognized character after (? or (?-")
+
+	// ErrInvalidRepeatSize if regular expression is too large.
+	ErrInvalidRepeatSize = fmt.Errorf("Regular expression is invalid: regular expression is too large")
 )
 
 // Regex represents BSON type Regex.

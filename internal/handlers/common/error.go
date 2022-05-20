@@ -25,7 +25,7 @@ import (
 
 //go:generate ../../../bin/stringer -linecomment -type ErrorCode
 
-// ErrorCode represents wire protocol error code.
+// ErrorCode represents FerretDB error codes.
 type ErrorCode int32
 
 const (
@@ -34,20 +34,46 @@ const (
 	// For ProtocolError only.
 	errInternalError = ErrorCode(1) // InternalError
 
-	// ErrBadValue for wrong input
-	ErrBadValue          = ErrorCode(2)     // BadValue
-	ErrFailedToParse     = ErrorCode(9)     // FailedToParse
-	ErrTypeMismatch      = ErrorCode(14)    // TypeMismatch
-	ErrNamespaceNotFound = ErrorCode(26)    // NamespaceNotFound
-	ErrNamespaceExists   = ErrorCode(48)    // NamespaceExists
-	ErrCommandNotFound   = ErrorCode(59)    // CommandNotFound
-	ErrNotImplemented    = ErrorCode(238)   // NotImplemented
-	ErrSortBadValue      = ErrorCode(15974) // Location15974
-	ErrInvalidArg        = ErrorCode(28667) // Location28667
-	ErrSliceFirstArg     = ErrorCode(28724) // Location28724
-	ErrProjectionInEx    = ErrorCode(31253) // Location31253
-	ErrProjectionExIn    = ErrorCode(31254) // Location31254
-	ErrRegexOptions      = ErrorCode(51075) // Location51075
+	// ErrBadValue for wrong input.
+	ErrBadValue = ErrorCode(2) // BadValue
+
+	// ErrFailedToParse failed to parse user input.
+	ErrFailedToParse = ErrorCode(9) // FailedToParse
+
+	// ErrTypeMismatch occurs while comparing variables.
+	ErrTypeMismatch = ErrorCode(14) // TypeMismatch
+
+	// ErrNamespaceNotFound when a collection is not found.
+	ErrNamespaceNotFound = ErrorCode(26) // NamespaceNotFound
+
+	// ErrNamespaceExists when a collection already exists.
+	ErrNamespaceExists = ErrorCode(48) // NamespaceExists
+
+	// ErrCommandNotFound on unknown command input.
+	ErrCommandNotFound = ErrorCode(59) // CommandNotFound
+
+	// ErrNotImplemented on not implemented flag or command.
+	ErrNotImplemented = ErrorCode(238) // NotImplemented
+
+	// ErrSortBadValue bad value in sort input.
+	ErrSortBadValue = ErrorCode(15974) // Location15974
+
+	// ErrInvalidArg invalid argument in projection document.
+	ErrInvalidArg = ErrorCode(28667) // Location28667
+
+	// ErrSliceFirstArg for $slice, when the first argument is not an array.
+	ErrSliceFirstArg = ErrorCode(28724) // Location28724
+
+	// ErrProjectionInEx for $elemMatch, when inclusion statement occured while projection document already marked as exlusion.
+	ErrProjectionInEx = ErrorCode(31253) // Location31253
+
+	// ErrProjectionExIn for $elemMatch, when exlusion statement occured while projection document already marked as inclusion.
+	ErrProjectionExIn = ErrorCode(31254) // Location31254
+
+	// ErrRegexOptions error in regex options.
+	ErrRegexOptions = ErrorCode(51075) // Location51075
+
+	// ErrRegexMissingParen missing parentheses in regex expression.
 	ErrRegexMissingParen = ErrorCode(51091) // Location51091
 )
 
