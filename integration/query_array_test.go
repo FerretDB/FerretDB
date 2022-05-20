@@ -148,6 +148,7 @@ func TestQueryArrayDotNotation(t *testing.T) {
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{{"_id", "array-double"}, {"value", bson.A{float64(1)}}},
+		bson.D{{"_id", "array-strings"}, {"value", bson.A{"foo", "bar", "baz"}}},
 		bson.D{
 			{"_id", "document-array-field"},
 			{"value", bson.D{{"array", bson.A{int32(0), nil}}}},
@@ -166,6 +167,10 @@ func TestQueryArrayDotNotation(t *testing.T) {
 		"Position": {
 			filter:      bson.D{{"value.0", bson.D{{"$type", "double"}}}},
 			expectedIDs: []any{"array-double"},
+		},
+		"PositionRegex": {
+			filter:      bson.D{{"value.0", primitive.Regex{Pattern: "foo"}}},
+			expectedIDs: []any{"array-strings"},
 		},
 		"NoSuchFieldPosition": {
 			filter:      bson.D{{"value.some.0", bson.A{42}}},
