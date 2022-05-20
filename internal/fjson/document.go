@@ -124,3 +124,22 @@ func (doc *documentType) MarshalJSON() ([]byte, error) {
 var (
 	_ fjsontype = (*documentType)(nil)
 )
+
+// validateDoubleKeys checks duplicate keys in document
+func (doc *documentType) validateDoubleKeys() bool {
+	td := types.Document(*doc)
+	keys := td.Keys()
+	if keys == nil {
+		keys = []string{}
+	}
+
+	for i := 0; i < len(keys); i++ {
+		for j := 0; j < len(keys); j++ {
+			if keys[i] == keys[j] {
+				return false
+			}
+		}
+	}
+
+	return true
+}

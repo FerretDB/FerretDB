@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -533,4 +534,25 @@ func TestDotNotation(t *testing.T) {
 			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
 		})
 	}
+}
+
+func TestDocDoubleKeys(t *testing.T) {
+	ctx, collection := setup(t)
+
+	_, err := collection.InsertMany(ctx, []any{
+		bson.D{
+			{"_id", "nomatch"},
+			{"first", true},
+			{"second", ""},
+			{"third", ""},
+		},
+		// bson.D{
+		// 	{"_id", "match"},
+		// 	{"first", true},
+		// 	{"second", ""},
+		// 	{"first", ""},
+		// },
+	})
+	fmt.Println(err)
+	require.NoError(t, err)
 }
