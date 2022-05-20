@@ -229,7 +229,7 @@ func TestQueryElementType(t *testing.T) {
 			},
 		},
 		"TypeArrayBadValuePlusInf": {
-			v: []any{"binData", math.Inf(1)},
+			v: []any{"binData", math.Inf(+1)},
 			err: &mongo.CommandError{
 				Code:    2,
 				Message: "Invalid numerical type code: inf",
