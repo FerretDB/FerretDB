@@ -18,17 +18,33 @@ import "fmt"
 
 //go:generate ../../bin/stringer -linecomment -type OpQueryFlagBit
 
-// OpQueryFlagBit an integer bitmask containing message flags.
+// OpQueryFlagBit an integer bitmask for the operation.
 type OpQueryFlagBit flagBit
 
 const (
-	OpQueryTailableCursor  = OpQueryFlagBit(1 << 1) // TailableCursor
-	OpQuerySlaveOk         = OpQueryFlagBit(1 << 2) // SlaveOk
-	OpQueryOplogReplay     = OpQueryFlagBit(1 << 3) // OplogReplay
+	// OpQueryTailableCursor is set when cursor is not closed when the last data is retrieved.
+	OpQueryTailableCursor = OpQueryFlagBit(1 << 1) // TailableCursor
+
+	// OpQuerySlaveOk allow query of replica slave.
+	OpQuerySlaveOk = OpQueryFlagBit(1 << 2) // SlaveOk
+
+	// OpQueryOplogReplay enables optimization to the find command.
+	// Deprecated.
+	OpQueryOplogReplay = OpQueryFlagBit(1 << 3) // OplogReplay
+
+	// OpQueryNoCursorTimeout do not let idle cursors timeout after an inactivity period.
 	OpQueryNoCursorTimeout = OpQueryFlagBit(1 << 4) // NoCursorTimeout
-	OpQueryAwaitData       = OpQueryFlagBit(1 << 5) // AwaitData
-	OpQueryExhaust         = OpQueryFlagBit(1 << 6) // Exhaust
-	OpQueryPartial         = OpQueryFlagBit(1 << 7) // Partial
+
+	// OpQueryAwaitData at the end of the data, block for a while rather than returning no data.
+	// After a timeout period, we do return as normal. Use with OpQueryTailableCursor.
+	OpQueryAwaitData = OpQueryFlagBit(1 << 5) // AwaitData
+
+	// OpQueryExhaust stream the data down full blast in multiple "more" packages, on the assumption that
+	// the client will fully read all data.
+	OpQueryExhaust = OpQueryFlagBit(1 << 6) // Exhaust
+
+	// OpQueryPartial get partial results from a mongos if some shards are down (instead of throwing an error).
+	OpQueryPartial = OpQueryFlagBit(1 << 7) // Partial
 )
 
 // OpQueryFlags enables String() and FlagSet methods for flags.
@@ -38,10 +54,12 @@ func opQueryFlagBitStringer(bit flagBit) string {
 	return OpQueryFlagBit(bit).String()
 }
 
+// String interface implementation for query flags.
 func (f OpQueryFlags) String() string {
 	return flags(f).string(opQueryFlagBitStringer)
 }
 
+// FlagSet return true if flag set.
 func (f OpQueryFlags) FlagSet(bit OpQueryFlagBit) bool {
 	return f&OpQueryFlags(bit) != 0
 }

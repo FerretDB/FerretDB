@@ -26,6 +26,7 @@ import (
 
 //go:generate ../../bin/stringer -linecomment -type OpCode
 
+// OpCode represents request type.
 type OpCode int32
 
 const (

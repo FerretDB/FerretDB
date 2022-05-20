@@ -28,7 +28,7 @@ const (
 	// OpMsgMoreToCome specifies that another message will follow this one without further action from the receiver.
 	OpMsgMoreToCome = OpMsgFlagBit(1 << 1) // moreToCome
 
-	// OpMsgExhaustAllowed: the client is prepared for multiple replies to this request using the moreToCome bit.
+	// OpMsgExhaustAllowed is when the client is prepared for multiple replies to this request using the moreToCome bit.
 	OpMsgExhaustAllowed = OpMsgFlagBit(1 << 16) // exhaustAllowed
 )
 
