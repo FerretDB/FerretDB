@@ -546,12 +546,12 @@ func TestDocDoubleKeys(t *testing.T) {
 			{"second", ""},
 			{"third", ""},
 		},
-		// bson.D{
-		// 	{"_id", "match"},
-		// 	{"first", true},
-		// 	{"second", ""},
-		// 	{"first", ""},
-		// },
+		bson.D{
+			{"_id", "match"},
+			{"first", true},
+			{"second", ""},
+			{"first", ""},
+		},
 	})
 	fmt.Println(err)
 	require.NoError(t, err)
