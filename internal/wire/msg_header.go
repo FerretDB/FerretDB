@@ -30,40 +30,34 @@ import (
 type OpCode int32
 
 const (
-	// OpCodeReply is sent by the database in response to an OP_QUERY or OP_GET_MORE message.
-	// Deprecated.
+	// OpCodeReply is deprecated.
 	OpCodeReply = OpCode(1) // OP_REPLY
 
 	// OpCodeUpdate is used to update a document in a collection.
 	OpCodeUpdate = OpCode(2001) // OP_UPDATE
 
-	// OpCodeInsert is used to insert one or more documents into a collection
-	// Deprecated.
+	// OpCodeInsert is deprecated.
 	OpCodeInsert = OpCode(2002) // OP_INSERT
 
 	// OpCodeGetByOID reserved wire op code.
 	OpCodeGetByOID = OpCode(2003) // OP_GET_BY_OID
 
-	// OpCodeQuery is used to query the database for documents in a collection.
-	// Deprecated.
+	// OpCodeQuery is deprecated.
 	OpCodeQuery = OpCode(2004) // OP_QUERY
 
-	// OpCodeGetMore is used to query the database for documents in a collection.
-	// Deprecated.
+	// OpCodeGetMore is deprecated.
 	OpCodeGetMore = OpCode(2005) // OP_GET_MORE
 
-	// OpCodeDelete is used to remove one or more documents from a collection.
-	// Deprecated.
+	// OpCodeDelete is deprecated.
 	OpCodeDelete = OpCode(2006) // OP_DELETE
 
 	// OpCodeKillCursors is used to close an active cursor in the database.
 	OpCodeKillCursors = OpCode(2007) // OP_KILL_CURSORS
 
-	// OpCodeCompressed contains the original compressed opcode message alongside the metadata
-	// necessary to process and decompress it.
+	// OpCodeCompressed is used for compressed messages.
 	OpCodeCompressed = OpCode(2012) // OP_COMPRESSED
 
-	// OpCodeMsg is for both client requests and database replies.
+	// OpCodeMsg is used for client-server communication.
 	OpCodeMsg = OpCode(2013) // OP_MSG
 )
 
