@@ -43,8 +43,8 @@ func UpdateDocument(doc, update *types.Document) error {
 			}
 
 		case "$inc":
-			incDoc, err := AssertType[*types.Document](updateV)
-			if err != nil {
+			incDoc, ok := updateV.(*types.Document)
+			if !ok {
 				return NewWriteErrorMsg(
 					ErrFailedToParse,
 					fmt.Sprintf(
