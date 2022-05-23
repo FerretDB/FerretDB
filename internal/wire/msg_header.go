@@ -33,13 +33,13 @@ const (
 	// OpCodeReply is deprecated.
 	OpCodeReply = OpCode(1) // OP_REPLY
 
-	// OpCodeUpdate is used to update a document in a collection.
+	// OpCodeUpdate is deprecated.
 	OpCodeUpdate = OpCode(2001) // OP_UPDATE
 
 	// OpCodeInsert is deprecated.
 	OpCodeInsert = OpCode(2002) // OP_INSERT
 
-	// OpCodeGetByOID reserved wire op code.
+	// OpCodeGetByOID is deprecated.
 	OpCodeGetByOID = OpCode(2003) // OP_GET_BY_OID
 
 	// OpCodeQuery is deprecated.
@@ -51,7 +51,7 @@ const (
 	// OpCodeDelete is deprecated.
 	OpCodeDelete = OpCode(2006) // OP_DELETE
 
-	// OpCodeKillCursors is used to close an active cursor in the database.
+	// OpCodeKillCursors is deprecated.
 	OpCodeKillCursors = OpCode(2007) // OP_KILL_CURSORS
 
 	// OpCodeCompressed is used for compressed messages.
