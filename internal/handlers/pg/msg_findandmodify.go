@@ -18,9 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgx/v4"
-
-	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -35,29 +32,16 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/164
-
 	unimplementedFields := []string{
-		"sort",
-		"update",
 		"arrayFilters",
 		"let",
+		"fields",
 	}
 	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
 		return nil, err
 	}
 
-	for _, field := range []string{"new", "upsert"} {
-		if err := common.UnimplementedNonDefault(document, field, func(v any) bool {
-			b, ok := v.(bool)
-			return ok && !b
-		}); err != nil {
-			return nil, err
-		}
-	}
-
 	ignoredFields := []string{
-		"fields",
 		"bypassDocumentValidation",
 		"writeConcern",
 		"maxTimeMS",
@@ -67,39 +51,24 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	}
 	common.Ignored(document, h.l, ignoredFields...)
 
-	var query *types.Document
-	var remove bool
-	if query, err = common.GetOptionalParam(document, "query", query); err != nil {
-		return nil, err
-	}
-	if remove, err = common.GetOptionalParam(document, "remove", remove); err != nil {
-		return nil, err
-	}
-
-	var sp sqlParam
-	if sp.db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-	collectionParam, err := document.Get(document.Command())
+	params, err := prepareFindAndModifyParams(document)
 	if err != nil {
 		return nil, err
 	}
-	var ok bool
-	if sp.collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewErrorMsg(
-			common.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
-		)
+
+	fetchedDocs, err := h.fetch(ctx, params.sqlParam)
+	if err != nil {
+		return nil, err
 	}
 
-	fetchedDocs, err := h.fetch(ctx, sp)
+	err = common.SortDocuments(fetchedDocs, params.sort)
 	if err != nil {
 		return nil, err
 	}
 
 	resDocs := make([]*types.Document, 0, 16)
 	for _, doc := range fetchedDocs {
-		matches, err := common.FilterDocument(doc, query)
+		matches, err := common.FilterDocument(doc, params.query)
 		if err != nil {
 			return nil, err
 		}
@@ -116,23 +85,286 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	if len(resDocs) == 1 && remove {
-		id := must.NotFail(fjson.Marshal(must.NotFail(resDocs[0].Get("_id"))))
-		sql := fmt.Sprintf("DELETE FROM %s WHERE _jsonb->'_id' IN ($1)", pgx.Identifier{sp.db, sp.collection}.Sanitize())
-		if _, err := h.pgPool.Exec(ctx, sql, id); err != nil {
-			return nil, lazyerrors.Error(err)
+	if params.update != nil { // we have update part
+		var upsert *types.Document
+		var upserted bool
+
+		if params.upsert { //  we have upsert flag
+			p := &upsertParams{
+				hasUpdateOperators: params.hasUpdateOperators,
+				query:              params.query,
+				update:             params.update,
+				sqlParam:           params.sqlParam,
+			}
+			upsert, upserted, err = h.upsert(ctx, resDocs, p)
+			if err != nil {
+				return nil, err
+			}
+		} else { // process update as usual
+			if len(resDocs) == 0 {
+				var reply wire.OpMsg
+				must.NoError(reply.SetSections(wire.OpMsgSection{
+					Documents: []*types.Document{must.NotFail(types.NewDocument(
+						"lastErrorObject", must.NotFail(types.NewDocument("n", int32(0), "updatedExisting", false)),
+						"ok", float64(1),
+					))},
+				}))
+
+				return &reply, nil
+			}
+
+			if params.hasUpdateOperators {
+				upsert = resDocs[0].DeepCopy()
+				err = common.UpdateDocument(upsert, params.update)
+				if err != nil {
+					return nil, err
+				}
+
+				_, err = h.update(ctx, params.sqlParam, upsert)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				upsert = params.update
+
+				if !upsert.Has("_id") {
+					must.NoError(upsert.Set("_id", must.NotFail(resDocs[0].Get("_id"))))
+				}
+
+				_, err = h.update(ctx, params.sqlParam, upsert)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+
+		var resultDoc *types.Document
+		if params.returnNewDocument || len(resDocs) == 0 {
+			resultDoc = upsert
+		} else {
+			resultDoc = resDocs[0]
+		}
+
+		lastErrorObject := must.NotFail(types.NewDocument(
+			"n", int32(1),
+			"updatedExisting", len(resDocs) > 0,
+		))
+
+		if upserted {
+			must.NoError(lastErrorObject.Set("upserted", must.NotFail(resultDoc.Get("_id"))))
+		}
+
+		var reply wire.OpMsg
+		must.NoError(reply.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"lastErrorObject", lastErrorObject,
+				"value", resultDoc,
+				"ok", float64(1),
+			))},
+		}))
+
+		return &reply, nil
+	}
+
+	if params.remove {
+		if len(resDocs) == 0 {
+			var reply wire.OpMsg
+			must.NoError(reply.SetSections(wire.OpMsgSection{
+				Documents: []*types.Document{must.NotFail(types.NewDocument(
+					"lastErrorObject", must.NotFail(types.NewDocument("n", int32(0))),
+					"ok", float64(1),
+				))},
+			}))
+
+			return &reply, nil
+		}
+
+		_, err = h.delete(ctx, params.sqlParam, resDocs)
+		if err != nil {
+			return nil, err
+		}
+
+		var reply wire.OpMsg
+		must.NoError(reply.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"lastErrorObject", must.NotFail(types.NewDocument("n", int32(1))),
+				"value", resDocs[0],
+				"ok", float64(1),
+			))},
+		}))
+		return &reply, nil
+	}
+
+	return nil, lazyerrors.New("bad flags combination")
+}
+
+// upsertParams represent parameters for Handler.upsert method.
+type upsertParams struct {
+	hasUpdateOperators bool
+	query, update      *types.Document
+	sqlParam           sqlParam
+}
+
+// upsert inserts new document if no documents in query result or updates given document.
+// When inserting new document we must check that `_id` is present, so we must extract `_id` from query or generate a new one.
+func (h *Handler) upsert(ctx context.Context, docs []*types.Document, params *upsertParams) (*types.Document, bool, error) {
+	if len(docs) == 0 {
+		upsert := must.NotFail(types.NewDocument())
+
+		if params.hasUpdateOperators {
+			err := common.UpdateDocument(upsert, params.update)
+			if err != nil {
+				return nil, false, err
+			}
+		} else {
+			upsert = params.update
+		}
+
+		if !upsert.Has("_id") {
+			if params.query.Has("_id") {
+				must.NoError(upsert.Set("_id", must.NotFail(params.query.Get("_id"))))
+			} else {
+				must.NoError(upsert.Set("_id", types.NewObjectID()))
+			}
+		}
+
+		err := h.insert(ctx, params.sqlParam, upsert)
+		if err != nil {
+			return nil, false, err
+		}
+
+		return upsert, true, nil
+	}
+
+	upsert := docs[0].DeepCopy()
+
+	if params.hasUpdateOperators {
+		err := common.UpdateDocument(upsert, params.update)
+		if err != nil {
+			return nil, false, err
+		}
+	} else {
+		for _, k := range params.update.Keys() {
+			must.NoError(upsert.Set(k, must.NotFail(params.update.Get(k))))
 		}
 	}
 
-	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"ok", float64(1),
-		))},
-	})
+	_, err := h.update(ctx, params.sqlParam, upsert)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, false, err
 	}
 
-	return &reply, nil
+	return upsert, false, nil
+}
+
+// findAndModifyParams represent all findAndModify requests' fields.
+// It's filled by calling prepareFindAndModifyParams.
+type findAndModifyParams struct {
+	sqlParam                              sqlParam
+	query, sort, update                   *types.Document
+	remove, upsert                        bool
+	returnNewDocument, hasUpdateOperators bool
+}
+
+// prepareFindAndModifyParams prepares findAndModify request fields.
+func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams, error) {
+	var err error
+
+	command := document.Command()
+
+	var db, collection string
+	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
+	}
+	if collection, err = common.GetRequiredParam[string](document, command); err != nil {
+		return nil, err
+	}
+
+	if collection == "" {
+		return nil, common.NewErrorMsg(
+			common.ErrInvalidNamespace,
+			fmt.Sprintf("Invalid namespace specified '%s.'", db),
+		)
+	}
+
+	var remove bool
+	if remove, err = common.GetBoolOptionalParam(document, "remove"); err != nil {
+		return nil, err
+	}
+	var returnNewDocument bool
+	if returnNewDocument, err = common.GetBoolOptionalParam(document, "new"); err != nil {
+		return nil, err
+	}
+	var upsert bool
+	if upsert, err = common.GetBoolOptionalParam(document, "upsert"); err != nil {
+		return nil, err
+	}
+
+	var query *types.Document
+	if query, err = common.GetOptionalParam(document, "query", query); err != nil {
+		return nil, err
+	}
+
+	var sort *types.Document
+	if sort, err = common.GetOptionalParam(document, "sort", sort); err != nil {
+		return nil, err
+	}
+
+	var update *types.Document
+	updateParam, err := document.Get("update")
+	if err != nil && !remove {
+		return nil, common.NewErrorMsg(common.ErrFailedToParse, "Either an update or remove=true must be specified")
+	}
+	if err == nil {
+		switch updateParam := updateParam.(type) {
+		case *types.Document:
+			update = updateParam
+		case *types.Array:
+			return nil, common.NewErrorMsg(common.ErrNotImplemented, "Aggregation pipelines are not supported yet")
+		default:
+			return nil, common.NewErrorMsg(common.ErrFailedToParse, "Update argument must be either an object or an array")
+		}
+	}
+
+	if update != nil && remove {
+		return nil, common.NewErrorMsg(common.ErrFailedToParse, "Cannot specify both an update and remove=true")
+	}
+	if upsert && remove {
+		return nil, common.NewErrorMsg(common.ErrFailedToParse, "Cannot specify both upsert=true and remove=true")
+	}
+	if returnNewDocument && remove {
+		return nil, common.NewErrorMsg(
+			common.ErrFailedToParse,
+			"Cannot specify both new=true and remove=true; 'remove' always returns the deleted document",
+		)
+	}
+
+	var hasUpdateOperators bool
+	for k := range update.Map() {
+		if _, ok := updateOperators[k]; ok {
+			hasUpdateOperators = true
+		}
+	}
+
+	return &findAndModifyParams{
+		sqlParam: sqlParam{
+			db:         db,
+			collection: collection,
+		},
+		query:              query,
+		update:             update,
+		sort:               sort,
+		remove:             remove,
+		upsert:             upsert,
+		returnNewDocument:  returnNewDocument,
+		hasUpdateOperators: hasUpdateOperators,
+	}, nil
+}
+
+var updateOperators = map[string]struct{}{}
+
+func init() {
+	for _, o := range []string{"$currentDate", "$inc", "$min", "$max", "$mul", "$rename", "$set", "$setOnInsert", "$unset"} {
+		updateOperators[o] = struct{}{}
+	}
 }
