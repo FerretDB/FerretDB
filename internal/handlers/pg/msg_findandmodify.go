@@ -113,8 +113,12 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				update:             params.update,
 				sqlParam:           params.sqlParam,
 			}
-			upsert, upserted, err = h.upsert(ctx, resDocs, p)
+			upsert, upserted, err = h.upsert(runCtx, resDocs, p)
 			if err != nil {
+				if errors.Is(err, context.DeadlineExceeded) {
+					return nil, fmt.Errorf("context deadline exceeded, maxTimeMS: %v", params.maxTimeMS)
+				}
+
 				return nil, err
 			}
 		} else { // process update as usual
@@ -137,8 +141,12 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					return nil, err
 				}
 
-				_, err = h.update(ctx, params.sqlParam, upsert)
+				_, err = h.update(runCtx, params.sqlParam, upsert)
 				if err != nil {
+					if errors.Is(err, context.DeadlineExceeded) {
+						return nil, fmt.Errorf("context deadline exceeded, maxTimeMS: %v", params.maxTimeMS)
+					}
+
 					return nil, err
 				}
 			} else {
@@ -148,8 +156,12 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					must.NoError(upsert.Set("_id", must.NotFail(resDocs[0].Get("_id"))))
 				}
 
-				_, err = h.update(ctx, params.sqlParam, upsert)
+				_, err = h.update(runCtx, params.sqlParam, upsert)
 				if err != nil {
+					if errors.Is(err, context.DeadlineExceeded) {
+						return nil, fmt.Errorf("context deadline exceeded, maxTimeMS: %v", params.maxTimeMS)
+					}
+
 					return nil, err
 				}
 			}
@@ -196,8 +208,12 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			return &reply, nil
 		}
 
-		_, err = h.delete(ctx, params.sqlParam, resDocs)
+		_, err = h.delete(runCtx, params.sqlParam, resDocs)
 		if err != nil {
+			if errors.Is(err, context.DeadlineExceeded) {
+				return nil, fmt.Errorf("context deadline exceeded, maxTimeMS: %v", params.maxTimeMS)
+			}
+
 			return nil, err
 		}
 
@@ -330,7 +346,19 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 
 	var maxTimeMS int32
 	if maxTimeMS, err = common.GetOptionalParam(document, "maxTimeMS", maxTimeMS); err != nil {
+		var commonErr *common.Error
+		if errors.As(err, &commonErr) {
+			return nil, getErrorForInvalidMaxTimeMS(document)
+		}
+
 		return nil, err
+	}
+
+	if maxTimeMS < 0 {
+		return nil, common.NewErrorMsg(
+			common.ErrBadValue,
+			fmt.Sprintf("%v value for maxTimeMS is out of range", maxTimeMS),
+		)
 	}
 
 	var update *types.Document
