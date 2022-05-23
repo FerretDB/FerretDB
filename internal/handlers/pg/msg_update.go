@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"go.uber.org/zap"
 
@@ -163,10 +164,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				return nil, lazyerrors.Error(err)
 			}
 
-			sql := "UPDATE " + pgx.Identifier{sp.db, sp.collection}.Sanitize() +
-				" SET _jsonb = $1 WHERE _jsonb->'_id' = $2"
-			id := must.NotFail(doc.Get("_id"))
-			tag, err := h.pgPool.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)), must.NotFail(fjson.Marshal(id)))
+			tag, err := h.update(ctx, sp, doc)
 			if err != nil {
 				return nil, err
 			}
@@ -193,4 +191,16 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	return &reply, nil
+}
+
+// update prepares and executes actual UPDATE request to Postgres.
+func (h *Handler) update(ctx context.Context, sp sqlParam, doc *types.Document) (pgconn.CommandTag, error) {
+	sql := "UPDATE " + pgx.Identifier{sp.db, sp.collection}.Sanitize() +
+		" SET _jsonb = $1 WHERE _jsonb->'_id' = $2"
+	id := must.NotFail(doc.Get("_id"))
+	tag, err := h.pgPool.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)), must.NotFail(fjson.Marshal(id)))
+	if err != nil {
+		return nil, err
+	}
+	return tag, nil
 }
