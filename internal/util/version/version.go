@@ -40,7 +40,7 @@ var (
 	branch string
 )
 
-// Info contains this build details.
+// Info contains current build details.
 type Info struct {
 	Version          string
 	Commit           string
@@ -52,7 +52,7 @@ type Info struct {
 
 var info *Info
 
-// Get returns info.
+// Get returns current build's info.
 func Get() *Info {
 	return info
 }
