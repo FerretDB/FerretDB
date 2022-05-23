@@ -218,7 +218,7 @@ func getErrorForInvalidMaxTimeMS(document *types.Document) error {
 			)
 		}
 
-		return common.NewErrorMsg(common.ErrBadValue, "maxTimeMS has non-integral value")
+		return common.NewErrorMsg(common.ErrBadValue, "maxTimeMS must be an integer")
 	case int64:
 		return common.NewErrorMsg(
 			common.ErrBadValue,

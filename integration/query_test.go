@@ -607,7 +607,7 @@ func TestQueryBadMaxTimeMSType(t *testing.T) {
 				Name:    "BadValue",
 				Message: "maxTimeMS has non-integral value",
 			},
-			altMessage: "maxTimeMS has non-integral value",
+			altMessage: "maxTimeMS must be an integer",
 		},
 		"BadMaxTimeMSNegativeDouble": {
 			command: bson.D{
