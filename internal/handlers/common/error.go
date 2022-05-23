@@ -117,8 +117,7 @@ type ProtoErr interface {
 
 // ProtocolError converts any error to wire protocol error.
 //
-// Nil panics, *Error (possibly wrapped) is returned unwrapped with true,
-// *WriteErrors is returned unwrapped with true,
+// Nil panics, *Error or *WriteError (possibly wrapped) is returned unwrapped with true,
 // any other value is wrapped with InternalError and returned with false.
 func ProtocolError(err error) (ProtoErr, bool) {
 	if err == nil {
