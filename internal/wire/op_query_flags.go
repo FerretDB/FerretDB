@@ -22,7 +22,7 @@ import "fmt"
 type OpQueryFlagBit flagBit
 
 const (
-	// OpQueryTailableCursor indicates that cursor will not be closed.
+	// OpQueryTailableCursor indicates that the cursor will not be closed.
 	OpQueryTailableCursor = OpQueryFlagBit(1 << 1) // TailableCursor
 
 	// OpQuerySlaveOk indicates that query can run on a replica slave.

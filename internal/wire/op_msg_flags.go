@@ -18,7 +18,7 @@ import "fmt"
 
 //go:generate ../../bin/stringer -linecomment -type OpMsgFlagBit
 
-// OpMsgFlagBit indicates OpMsg format.
+// OpMsgFlagBit integer is a bitmask encoding flags that modify the format and behavior of OpMsg.
 type OpMsgFlagBit flagBit
 
 const (
