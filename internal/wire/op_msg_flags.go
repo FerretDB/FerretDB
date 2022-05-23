@@ -18,17 +18,17 @@ import "fmt"
 
 //go:generate ../../bin/stringer -linecomment -type OpMsgFlagBit
 
-// OpMsgFlagBit integer is a bitmask encoding flags that modify the format and behavior of OpMsg.
+// OpMsgFlagBit indicates OpMsg format.
 type OpMsgFlagBit flagBit
 
 const (
-	// OpMsgChecksumPresent the message ends with 4 bytes containing a CRC-32C checksum.
+	// OpMsgChecksumPresent there is a CRC-32C checksum in a message.
 	OpMsgChecksumPresent = OpMsgFlagBit(1 << 0) // checksumPresent
 
-	// OpMsgMoreToCome specifies that another message will follow this one without further action from the receiver.
+	// OpMsgMoreToCome there is another message coming, no need to do anything for it.
 	OpMsgMoreToCome = OpMsgFlagBit(1 << 1) // moreToCome
 
-	// OpMsgExhaustAllowed is when the client is prepared for multiple replies to this request using the moreToCome bit.
+	// OpMsgExhaustAllowed indicates that client can handle multiple replies.
 	OpMsgExhaustAllowed = OpMsgFlagBit(1 << 16) // exhaustAllowed
 )
 
