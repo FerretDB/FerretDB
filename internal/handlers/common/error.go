@@ -85,7 +85,7 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("%[1]s (%[1]d): %[2]v", e.code, e.err)
 }
 
-// Code returns error code.
+// Code implements ProtoErr interface.
 func (e *Error) Code() ErrorCode {
 	return e.code
 }
@@ -110,8 +110,10 @@ func (e *Error) Document() *types.Document {
 
 // ProtoErr represents protocol error type.
 type ProtoErr interface {
-	Error() string
+	error
+	// Code returns ErrorCode.
 	Code() ErrorCode
+	// Document returns *types.Document.
 	Document() *types.Document
 }
 
@@ -170,6 +172,14 @@ func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
 	}
 }
 
+// NewWriteErrorMsg creates new protocol write error with given ErrorCode and message.
+func NewWriteErrorMsg(code ErrorCode, msg string) error {
+	return &WriteErrors{{
+		code: code,
+		err:  errors.New(msg),
+	}}
+}
+
 // WriteErrors represents slice of protocol write errors.
 type WriteErrors []WriteError
 
@@ -183,7 +193,7 @@ func (we *WriteErrors) Error() string {
 	return err
 }
 
-// Code returns error code.
+// Code implements ProtoErr interface.
 func (we *WriteErrors) Code() ErrorCode {
 	for _, e := range *we {
 		return e.code
@@ -199,7 +209,7 @@ func (we *WriteErrors) Unwrap() error {
 	return nil
 }
 
-// Document returns wire protocol error document.
+// Document implements ProtoErr interface..
 func (we *WriteErrors) Document() *types.Document {
 	errs := must.NotFail(types.NewArray())
 	for _, e := range *we {
@@ -224,7 +234,7 @@ func (we *WriteError) Error() string {
 	return fmt.Sprintf("%[1]s (%[1]d): %[2]v", we.code, we.err)
 }
 
-// Code returns error code.
+// Code implements ProtoErr interface.
 func (we *WriteError) Code() ErrorCode {
 	return we.code
 }
@@ -234,15 +244,7 @@ func (we *WriteError) Unwrap() error {
 	return we.err
 }
 
-// NewWriteErrorMsg creates new protocol write error with given ErrorCode and message.
-func NewWriteErrorMsg(code ErrorCode, msg string) error {
-	return &WriteErrors{{
-		code: code,
-		err:  errors.New(msg),
-	}}
-}
-
-// Document returns wire protocol error document.
+// Document implements ProtoErr interface.
 func (we *WriteError) Document() *types.Document {
 	d := must.NotFail(types.NewDocument(
 		"code", int32(we.code),
