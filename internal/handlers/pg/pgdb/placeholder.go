@@ -16,10 +16,10 @@ package pgdb
 
 import "strconv"
 
-// Placeholder is a numbered mark where to put variable in the postgresql query.
+// Placeholder stores the number of the relevant placeholder of the query.
 type Placeholder int
 
-// Next increases the identifier value for the next variable.
+// Next increases the identifier value for the next variable in the postgresql query.
 func (p *Placeholder) Next() string {
 	*p++
 	return "$" + strconv.Itoa(int(*p))
