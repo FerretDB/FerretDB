@@ -163,6 +163,11 @@ func TestUpdateIncOperator(t *testing.T) {
 			update: bson.D{{"$inc", bson.D{{"value", math.NaN()}}}},
 			result: bson.D{{"_id", "double"}, {"value", math.NaN()}},
 		},
+		"DoubleIncrementPlusInfinity": {
+			filter: bson.D{{"_id", "double-nan"}},
+			update: bson.D{{"$inc", bson.D{{"value", math.Inf(+1)}}}},
+			result: bson.D{{"_id", "double-nan"}, {"value", math.NaN()}},
+		},
 		"DoubleNegativeIncrement": {
 			filter: bson.D{{"_id", "double"}},
 			update: bson.D{{"$inc", bson.D{{"value", float64(-42.13)}}}},
