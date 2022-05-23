@@ -89,7 +89,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		)
 	}
 
-	// TODO: what time should I set for delay?
+	// TODO: What time should I set for delay?
 	runCtx, runCancel := ctxutil.WithDelay(ctx.Done(), 40*time.Second)
 	defer runCancel()
 	if maxTimeMS != 0 {
