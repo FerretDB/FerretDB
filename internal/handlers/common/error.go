@@ -34,37 +34,37 @@ const (
 	// For ProtocolError only.
 	errInternalError = ErrorCode(1) // InternalError
 
-	// ErrBadValue for wrong input.
+	// ErrBadValue indicates wrong input.
 	ErrBadValue = ErrorCode(2) // BadValue
 
-	// ErrFailedToParse failed to parse user input.
+	// ErrFailedToParse indicates user input parsing failure.
 	ErrFailedToParse = ErrorCode(9) // FailedToParse
 
-	// ErrTypeMismatch for $sort, the expression in the $sort must be an object and error thrown when it is not an object.
+	// ErrTypeMismatch for $sort, indicates that the expression in the $sort is not an object.
 	ErrTypeMismatch = ErrorCode(14) // TypeMismatch
 
-	// ErrNamespaceNotFound when a collection is not found.
+	// ErrNamespaceNotFound indicates that a collection is not found.
 	ErrNamespaceNotFound = ErrorCode(26) // NamespaceNotFound
 
-	// ErrNamespaceExists when a collection already exists.
+	// ErrNamespaceExists indicates that the collection already exists.
 	ErrNamespaceExists = ErrorCode(48) // NamespaceExists
 
-	// ErrCommandNotFound on unknown command input.
+	// ErrCommandNotFound indicates unknown command input.
 	ErrCommandNotFound = ErrorCode(59) // CommandNotFound
 
-	// ErrInvalidNamespace when collection name is empty.
+	// ErrInvalidNamespace indicates that the collection name is empty.
 	ErrInvalidNamespace = ErrorCode(73) // InvalidNamespace
 
-	// ErrNotImplemented on not implemented flag or command.
+	// ErrNotImplemented indicates that flag or command is not implemented.
 	ErrNotImplemented = ErrorCode(238) // NotImplemented
 
-	// ErrSortBadValue bad value in sort input.
+	// ErrSortBadValue indicates bad value in sort input.
 	ErrSortBadValue = ErrorCode(15974) // Location15974
 
-	// ErrInvalidArg invalid argument in projection document.
+	// ErrInvalidArg indicates invalid argument in projection document.
 	ErrInvalidArg = ErrorCode(28667) // Location28667
 
-	// ErrSliceFirstArg for $slice, when the first argument is not an array.
+	// ErrSliceFirstArg for $slice, indicates that the first argument is not an array.
 	ErrSliceFirstArg = ErrorCode(28724) // Location28724
 
 	// ErrProjectionInEx for $elemMatch, when inclusion statement occurred while projection document already marked as exlusion.
@@ -73,10 +73,10 @@ const (
 	// ErrProjectionExIn for $elemMatch, when exlusion statement occurred while projection document already marked as inclusion.
 	ErrProjectionExIn = ErrorCode(31254) // Location31254
 
-	// ErrRegexOptions error in regex options.
+	// ErrRegexOptions indicates regex options error.
 	ErrRegexOptions = ErrorCode(51075) // Location51075
 
-	// ErrRegexMissingParen missing parentheses in regex expression.
+	// ErrRegexMissingParen indicates missing parentheses in regex expression.
 	ErrRegexMissingParen = ErrorCode(51091) // Location51091
 )
 
