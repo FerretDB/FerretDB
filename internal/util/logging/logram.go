@@ -44,15 +44,7 @@ func (l *logRAM) append(entry *zapcore.Entry) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	rec := &zapcore.Entry{
-		Level:      entry.Level,
-		Time:       entry.Time,
-		LoggerName: entry.LoggerName,
-		Message:    entry.Message,
-		Stack:      entry.Stack,
-	}
-
-	l.log[l.index] = rec
+	l.log[l.index] = entry
 	l.index = (l.index + 1) % int64(len(l.log))
 }
 
@@ -66,14 +58,7 @@ func (l *logRAM) getLogRAM() []*zapcore.Entry {
 		k := (i + l.index) % int64(len(l.log))
 
 		if l.log[k] != nil {
-			e := zapcore.Entry{
-				Level:      l.log[k].Level,
-				Time:       l.log[k].Time,
-				LoggerName: l.log[k].LoggerName,
-				Message:    l.log[k].Message,
-				Stack:      l.log[k].Stack,
-			}
-			entries = append(entries, &e)
+			entries = append(entries, l.log[k])
 		}
 	}
 

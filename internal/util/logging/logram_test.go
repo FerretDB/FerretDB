@@ -55,14 +55,12 @@ func TestLogRAM(t *testing.T) {
 				LoggerName: "logger_1",
 				Message:    "message 1",
 			},
-			expected: []zapcore.Entry{
-				{
-					Level:      1,
-					Time:       time.Date(2022, 12, 31, 11, 59, 1, 0, time.UTC),
-					LoggerName: "logger_1",
-					Message:    "message 1",
-				},
-			},
+			expected: []zapcore.Entry{{
+				Level:      1,
+				Time:       time.Date(2022, 12, 31, 11, 59, 1, 0, time.UTC),
+				LoggerName: "logger_1",
+				Message:    "message 1",
+			}},
 		}, {
 			inLog: zapcore.Entry{
 				Level:      2,
@@ -70,20 +68,17 @@ func TestLogRAM(t *testing.T) {
 				LoggerName: "logger_2",
 				Message:    "message 2",
 			},
-			expected: []zapcore.Entry{
-				{
-					Level:      1,
-					Time:       time.Date(2022, 12, 31, 11, 59, 1, 0, time.UTC),
-					LoggerName: "logger_1",
-					Message:    "message 1",
-				},
-				{
-					Level:      2,
-					Time:       time.Date(2022, 12, 31, 11, 59, 2, 0, time.UTC),
-					LoggerName: "logger_2",
-					Message:    "message 2",
-				},
-			},
+			expected: []zapcore.Entry{{
+				Level:      1,
+				Time:       time.Date(2022, 12, 31, 11, 59, 1, 0, time.UTC),
+				LoggerName: "logger_1",
+				Message:    "message 1",
+			}, {
+				Level:      2,
+				Time:       time.Date(2022, 12, 31, 11, 59, 2, 0, time.UTC),
+				LoggerName: "logger_2",
+				Message:    "message 2",
+			}},
 		}, {
 			inLog: zapcore.Entry{
 				Level:      3,
@@ -91,20 +86,17 @@ func TestLogRAM(t *testing.T) {
 				LoggerName: "logger_3",
 				Message:    "message 3",
 			},
-			expected: []zapcore.Entry{
-				{
-					Level:      2,
-					Time:       time.Date(2022, 12, 31, 11, 59, 2, 0, time.UTC),
-					LoggerName: "logger_2",
-					Message:    "message 2",
-				},
-				{
-					Level:      3,
-					Time:       time.Date(2022, 12, 31, 11, 59, 3, 0, time.UTC),
-					LoggerName: "logger_3",
-					Message:    "message 3",
-				},
-			},
+			expected: []zapcore.Entry{{
+				Level:      2,
+				Time:       time.Date(2022, 12, 31, 11, 59, 2, 0, time.UTC),
+				LoggerName: "logger_2",
+				Message:    "message 2",
+			}, {
+				Level:      3,
+				Time:       time.Date(2022, 12, 31, 11, 59, 3, 0, time.UTC),
+				LoggerName: "logger_3",
+				Message:    "message 3",
+			}},
 		},
 	} {
 		name := fmt.Sprintf("AppendGet_%d", n)
