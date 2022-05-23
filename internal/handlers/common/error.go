@@ -40,6 +40,7 @@ const (
 	ErrNamespaceNotFound = ErrorCode(26)    // NamespaceNotFound
 	ErrNamespaceExists   = ErrorCode(48)    // NamespaceExists
 	ErrCommandNotFound   = ErrorCode(59)    // CommandNotFound
+	ErrInvalidNamespace  = ErrorCode(73)    // InvalidNamespace
 	ErrNotImplemented    = ErrorCode(238)   // NotImplemented
 	ErrSortBadValue      = ErrorCode(15974) // Location15974
 	ErrInvalidArg        = ErrorCode(28667) // Location28667
