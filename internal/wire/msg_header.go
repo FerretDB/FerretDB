@@ -34,7 +34,7 @@ const (
 	// Deprecated.
 	OpCodeReply = OpCode(1) // OP_REPLY
 
-	// OpCodeUpdate used to update a document in a collection.
+	// OpCodeUpdate is used to update a document in a collection.
 	OpCodeUpdate = OpCode(2001) // OP_UPDATE
 
 	// OpCodeInsert is used to insert one or more documents into a collection
