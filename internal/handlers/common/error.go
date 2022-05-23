@@ -51,7 +51,38 @@ const (
 	ErrRegexMissingParen = ErrorCode(51091) // Location51091
 )
 
-// Error represents wire protocol error.
+// ProtoErr represents protocol error type.
+type ProtoErr interface {
+	error
+	// Code returns ErrorCode.
+	Code() ErrorCode
+	// Document returns *types.Document.
+	Document() *types.Document
+}
+
+// ProtocolError converts any error to wire protocol error.
+//
+// Nil panics, *Error or *WriteError (possibly wrapped) is returned unwrapped with true,
+// any other value is wrapped with InternalError and returned with false.
+func ProtocolError(err error) (ProtoErr, bool) {
+	if err == nil {
+		panic("err is nil")
+	}
+
+	var e *Error
+	if errors.As(err, &e) {
+		return e, true
+	}
+
+	var writeErr *WriteErrors
+	if errors.As(err, &writeErr) {
+		return writeErr, true
+	}
+
+	return NewError(errInternalError, err).(*Error), false
+}
+
+// Error represents wire command protocol error.
 type Error struct {
 	err  error
 	code ErrorCode
@@ -108,69 +139,8 @@ func (e *Error) Document() *types.Document {
 	return d
 }
 
-// ProtoErr represents protocol error type.
-type ProtoErr interface {
-	error
-	// Code returns ErrorCode.
-	Code() ErrorCode
-	// Document returns *types.Document.
-	Document() *types.Document
-}
-
-// ProtocolError converts any error to wire protocol error.
-//
-// Nil panics, *Error or *WriteError (possibly wrapped) is returned unwrapped with true,
-// any other value is wrapped with InternalError and returned with false.
-func ProtocolError(err error) (ProtoErr, bool) {
-	if err == nil {
-		panic("err is nil")
-	}
-
-	var e *Error
-	if errors.As(err, &e) {
-		return e, true
-	}
-
-	var writeErr *WriteErrors
-	if errors.As(err, &writeErr) {
-		return writeErr, true
-	}
-
-	return NewError(errInternalError, err).(*Error), false
-}
-
-// formatBitwiseOperatorErr formats protocol error for given internal error and bitwise operator.
-// Mask value used in error message.
-func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
-	switch err {
-	case errNotWholeNumber:
-		return NewErrorMsg(
-			ErrFailedToParse,
-			fmt.Sprintf("Expected an integer: %s: %#v", operator, maskValue),
-		)
-
-	case errNegativeNumber:
-		if _, ok := maskValue.(float64); ok {
-			return NewErrorMsg(
-				ErrFailedToParse,
-				fmt.Sprintf(`Expected a positive number in: %s: %.1f`, operator, maskValue),
-			)
-		}
-		return NewErrorMsg(
-			ErrFailedToParse,
-			fmt.Sprintf(`Expected a positive number in: %s: %v`, operator, maskValue),
-		)
-
-	case errNotBinaryMask:
-		return NewErrorMsg(
-			ErrBadValue,
-			fmt.Sprintf(`value takes an Array, a number, or a BinData but received: %s: %#v`, operator, maskValue),
-		)
-
-	default:
-		return err
-	}
-}
+// WriteErrors represents slice of protocol write errors.
+type WriteErrors []WriteError
 
 // NewWriteErrorMsg creates new protocol write error with given ErrorCode and message.
 func NewWriteErrorMsg(code ErrorCode, msg string) error {
@@ -179,9 +149,6 @@ func NewWriteErrorMsg(code ErrorCode, msg string) error {
 		err:  errors.New(msg),
 	}}
 }
-
-// WriteErrors represents slice of protocol write errors.
-type WriteErrors []WriteError
 
 // Error implements error interface.
 func (we *WriteErrors) Error() string {
@@ -224,6 +191,7 @@ func (we *WriteErrors) Document() *types.Document {
 }
 
 // WriteError represents protocol write error.
+// It required to build the correct write error result.
 type WriteError struct {
 	code ErrorCode
 	err  error
@@ -245,6 +213,7 @@ func (we *WriteError) Unwrap() error {
 }
 
 // Document implements ProtoErr interface.
+// Fields "code" and "errmsg" must always be filled in so that clients can parse the error message.
 func (we *WriteError) Document() *types.Document {
 	d := must.NotFail(types.NewDocument(
 		"code", int32(we.code),
@@ -253,8 +222,42 @@ func (we *WriteError) Document() *types.Document {
 	return d
 }
 
+// formatBitwiseOperatorErr formats protocol error for given internal error and bitwise operator.
+// Mask value used in error message.
+func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
+	switch err {
+	case errNotWholeNumber:
+		return NewErrorMsg(
+			ErrFailedToParse,
+			fmt.Sprintf("Expected an integer: %s: %#v", operator, maskValue),
+		)
+
+	case errNegativeNumber:
+		if _, ok := maskValue.(float64); ok {
+			return NewErrorMsg(
+				ErrFailedToParse,
+				fmt.Sprintf(`Expected a positive number in: %s: %.1f`, operator, maskValue),
+			)
+		}
+		return NewErrorMsg(
+			ErrFailedToParse,
+			fmt.Sprintf(`Expected a positive number in: %s: %v`, operator, maskValue),
+		)
+
+	case errNotBinaryMask:
+		return NewErrorMsg(
+			ErrBadValue,
+			fmt.Sprintf(`value takes an Array, a number, or a BinData but received: %s: %#v`, operator, maskValue),
+		)
+
+	default:
+		return err
+	}
+}
+
 // check interfaces
 var (
 	_ error = (*Error)(nil)
 	_ error = (*WriteError)(nil)
+	_ error = (*WriteErrors)(nil)
 )
