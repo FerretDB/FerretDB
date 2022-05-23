@@ -22,17 +22,16 @@ import "fmt"
 type OpReplyFlagBit flagBit
 
 const (
-	// OpReplyCursorNotFound is set when the cursor id is not valid at the server.
+	// OpReplyCursorNotFound indicates that the cursor is no longer exist at the server.
 	OpReplyCursorNotFound = OpReplyFlagBit(1 << 0) // CursorNotFound
 
-	// OpReplyQueryFailure is set when query has failed.
+	// OpReplyQueryFailure reports query has failed.
 	OpReplyQueryFailure = OpReplyFlagBit(1 << 1) // QueryFailure
 
-	// OpReplyShardConfigStale is set when it needs to update config from the server.
-	// Drivers should ignore this.
+	// OpReplyShardConfigStale indicates that shard config is outdated.
 	OpReplyShardConfigStale = OpReplyFlagBit(1 << 2) // ShardConfigStale
 
-	// OpReplyAwaitCapable is set when the server supports the AwaitData Query option.
+	// OpReplyAwaitCapable indicates server supports AwaitData Query option.
 	OpReplyAwaitCapable = OpReplyFlagBit(1 << 3) // AwaitCapable
 )
 
