@@ -217,7 +217,7 @@ func parseTypeCode(alias string) (typeCode, error) {
 }
 
 // addNumbers returns the result of v1 and v2 addition and error if addition failed.
-// v1 and v2 could be float64, int32, int64.
+// The v1 and v2 parameters could be float64, int32, int64.
 // The result would be the biggest type possible, ie int32 + int64 produce int64 result.
 func addNumbers(v1, v2 any) (any, error) {
 	switch v1 := v1.(type) {
