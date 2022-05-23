@@ -27,8 +27,12 @@ var doubleTestCases = []testCase{{
 	b:    []byte{0x71, 0x3d, 0x0a, 0xd7, 0xa3, 0x10, 0x45, 0x40},
 }, {
 	name: "zero",
-	v:    pointer.To(doubleType(0)),
+	v:    pointer.To(doubleType(math.Copysign(0, +1))),
 	b:    []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+}, {
+	name: "negative zero",
+	v:    pointer.To(doubleType(math.Copysign(0, -1))),
+	b:    []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80},
 }, {
 	name: "max float64",
 	v:    pointer.To(doubleType(math.MaxFloat64)),
@@ -39,7 +43,7 @@ var doubleTestCases = []testCase{{
 	b:    []byte{0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
 }, {
 	name: "+Infinity",
-	v:    pointer.To(doubleType(math.Inf(1))),
+	v:    pointer.To(doubleType(math.Inf(+1))),
 	b:    []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf0, 0x7f},
 }, {
 	name: "-Infinity",
