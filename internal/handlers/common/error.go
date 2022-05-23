@@ -52,6 +52,9 @@ const (
 	// ErrCommandNotFound on unknown command input.
 	ErrCommandNotFound = ErrorCode(59) // CommandNotFound
 
+	// ErrInvalidNamespace when collection name is empty.
+	ErrInvalidNamespace = ErrorCode(73) // InvalidNamespace
+
 	// ErrNotImplemented on not implemented flag or command.
 	ErrNotImplemented = ErrorCode(238) // NotImplemented
 
