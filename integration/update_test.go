@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -156,6 +157,11 @@ func TestUpdateIncOperator(t *testing.T) {
 			filter: bson.D{{"_id", "double"}},
 			update: bson.D{{"$inc", bson.D{{"value", float64(42.13)}}}},
 			result: bson.D{{"_id", "double"}, {"value", float64(84.26)}},
+		},
+		"DoubleIncrementNaN": {
+			filter: bson.D{{"_id", "double"}},
+			update: bson.D{{"$inc", bson.D{{"value", math.NaN()}}}},
+			result: bson.D{{"_id", "double"}, {"value", math.NaN()}},
 		},
 		"DoubleNegativeIncrement": {
 			filter: bson.D{{"_id", "double"}},

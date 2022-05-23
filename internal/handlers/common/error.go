@@ -200,9 +200,9 @@ func (we *WriteErrors) Unwrap() error {
 }
 
 // Document returns wire protocol error document.
-func (we WriteErrors) Document() *types.Document {
+func (we *WriteErrors) Document() *types.Document {
 	errs := must.NotFail(types.NewArray())
-	for _, e := range we {
+	for _, e := range *we {
 		must.NoError(errs.Append(e.Document()))
 	}
 
@@ -217,15 +217,6 @@ func (we WriteErrors) Document() *types.Document {
 type WriteError struct {
 	code ErrorCode
 	err  error
-}
-
-// Document returns wire protocol error document.
-func (we WriteError) Document() *types.Document {
-	d := must.NotFail(types.NewDocument(
-		"code", int32(we.code),
-		"errmsg", we.err.Error(),
-	))
-	return d
 }
 
 // Error implements error interface.
@@ -249,6 +240,15 @@ func NewWriteErrorMsg(code ErrorCode, msg string) error {
 		code: code,
 		err:  errors.New(msg),
 	}}
+}
+
+// Document returns wire protocol error document.
+func (we *WriteError) Document() *types.Document {
+	d := must.NotFail(types.NewDocument(
+		"code", int32(we.code),
+		"errmsg", we.err.Error(),
+	))
+	return d
 }
 
 // check interfaces
