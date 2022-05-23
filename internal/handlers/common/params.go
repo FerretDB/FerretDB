@@ -50,11 +50,41 @@ func GetOptionalParam[T types.Type](doc *types.Document, key string, defaultValu
 
 	res, ok := v.(T)
 	if !ok {
-		msg := fmt.Sprintf("parameter %q has type %T (expected %T)", key, v, defaultValue)
-		return defaultValue, NewErrorMsg(ErrBadValue, msg)
+		msg := fmt.Sprintf(
+			`BSON field '%s' is the wrong type '%s', expected type '%s'`,
+			key, AliasFromType(v), AliasFromType(defaultValue),
+		)
+		return defaultValue, NewErrorMsg(ErrTypeMismatch, msg)
 	}
 
 	return res, nil
+}
+
+// GetBoolOptionalParam returns doc's bool value for key, or protocol error for invalid parameter.
+// Non-zero value for double, long and int return true.
+func GetBoolOptionalParam(doc *types.Document, key string) (bool, error) {
+	v, err := doc.Get(key)
+	if err != nil {
+		return false, nil
+	}
+
+	switch v := v.(type) {
+	case float64:
+		return v != 0, nil
+	case bool:
+		return v, nil
+	case int32:
+		return v != 0, nil
+	case int64:
+		return v != 0, nil
+	default:
+		msg := fmt.Sprintf(
+			`BSON field '%s' is the wrong type '%s', expected types '[bool, long, int, decimal, double]'`,
+			key,
+			AliasFromType(v),
+		)
+		return false, NewErrorMsg(ErrTypeMismatch, msg)
+	}
 }
 
 // AssertType asserts value's type, returning protocol error for unexpected types.
