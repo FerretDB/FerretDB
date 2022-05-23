@@ -42,20 +42,20 @@ type Regex struct {
 
 // Compile returns Go Regexp object.
 func (r Regex) Compile() (*regexp.Regexp, error) {
+	expr := r.Pattern
+
 	var opts string
 	for _, o := range r.Options {
 		switch o {
 		case 'i', 'm', 's':
 			opts += string(o)
 		case 'x':
-			// TODO: https://github.com/FerretDB/FerretDB/issues/592
-			return nil, ErrOptionNotImplemented
+			expr = freeSpacingParse(expr)
 		default:
 			continue
 		}
 	}
 
-	expr := r.Pattern
 	if opts != "" {
 		expr = "(?" + opts + ")" + expr
 	}
@@ -94,4 +94,56 @@ func (r Regex) Compile() (*regexp.Regexp, error) {
 		}
 	}
 	return nil, fmt.Errorf("types.Regex.Compile: %w", err)
+}
+
+/*
+r := regex.Compile("^         # Assert that position = beginning of string
+
+  #########   Lookahead   ##########
+  (?=       # Start lookahead
+     \D*       # Match any non-digits
+     \d        # Match one digit
+  )         # End lookahead
+
+  ######## Matching Section ########
+  \w*       # Match any word chars
+  [A-Z]     # Match one upper-case letter
+  \w*       # Match any word chars
+
+  $         # Assert that position = end of string
+");
+^(?=\D*\d)\w*[A-Z]\w*$
+*/
+
+func freeSpacingParse(expr string) string {
+	commentBlock, backslash := false, false
+	outExpr := ""
+
+	for _, c := range expr {
+		if !backslash {
+			if commentBlock {
+				if c == '\n' {
+					commentBlock = false
+				}
+				continue
+			}
+
+			if c == '\\' {
+				backslash = true
+			}
+
+			if c == ' ' || c == '\n' || c == '\t' { // ignore spaces and newlines
+				continue
+			}
+
+			if c == '#' { // handle comments
+				commentBlock = true
+				continue
+			}
+		} else {
+			backslash = false
+		}
+		outExpr += string(c)
+	}
+	return outExpr
 }
