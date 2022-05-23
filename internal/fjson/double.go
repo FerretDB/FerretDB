@@ -55,8 +55,10 @@ func (d *doubleType) UnmarshalJSON(data []byte) error {
 		*d = doubleType(f)
 	case string:
 		switch f {
+		case "-0":
+			*d = doubleType(math.Copysign(0, -1))
 		case "Infinity":
-			*d = doubleType(math.Inf(1))
+			*d = doubleType(math.Inf(+1))
 		case "-Infinity":
 			*d = doubleType(math.Inf(-1))
 		case "NaN":
@@ -76,6 +78,8 @@ func (d *doubleType) MarshalJSON() ([]byte, error) {
 	f := float64(*d)
 	var o doubleJSON
 	switch {
+	case f == 0 && math.Signbit(f):
+		o.F = "-0"
 	case math.IsInf(f, 1):
 		o.F = "Infinity"
 	case math.IsInf(f, -1):

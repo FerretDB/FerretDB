@@ -93,7 +93,7 @@ func TestQueryArraySize(t *testing.T) {
 			},
 		},
 		"Infinity": {
-			filter: bson.D{{"value", bson.D{{"$size", math.Inf(1)}}}},
+			filter: bson.D{{"value", bson.D{{"$size", math.Inf(+1)}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
