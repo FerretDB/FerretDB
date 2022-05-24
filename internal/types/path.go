@@ -37,7 +37,7 @@ func (p Path) Slice() []string {
 	return path
 }
 
-// Element returns path element specified by the index.
+// Element returns path element specified by the index or empty string if index has bad value.
 func (p Path) Element(index int) string {
 	if index < 0 || index > len(p.s) {
 		return ""
@@ -45,13 +45,13 @@ func (p Path) Element(index int) string {
 	return p.s[index]
 }
 
-// RemoveFirstElement returns new path without first path element.
-func (p Path) RemoveFirstElement() Path {
-	if len(p.s) < 1 {
+// Remove returns new path with removed path element specified by index or the same path if index has bad value.
+func (p Path) Remove(index int) Path {
+	if index < 0 || index > len(p.s) {
 		return p
 	}
-	path := Path{s: make([]string, len(p.s)-1)}
-	copy(path.s, p.s[1:])
+	path := NewPath(p.s...)
+	path.s = append(path.s[:index], path.s[index+1:]...)
 	return path
 }
 
@@ -120,7 +120,7 @@ func removeByPath(v any, path Path) {
 			v.Remove(key)
 			return
 		}
-		removeByPath(v.m[key], path.RemoveFirstElement())
+		removeByPath(v.m[key], path.Remove(0))
 
 	case *Array:
 		i, err := strconv.Atoi(key)
@@ -134,7 +134,7 @@ func removeByPath(v any, path Path) {
 			v.s = append(v.s[:i], v.s[i+1:]...)
 			return
 		}
-		removeByPath(v.s[i], path.RemoveFirstElement())
+		removeByPath(v.s[i], path.Remove(0))
 	default:
 		// no such path: scalar value
 	}
