@@ -155,6 +155,40 @@ func AssertEqualAltError(t testing.TB, expected mongo.CommandError, altMessage s
 	return assert.Equal(t, expected, a)
 }
 
+// AssertEqualWriteError compares expected mongo.WriteError Message and Code with actual error.
+func AssertEqualWriteError(t *testing.T, expected *mongo.WriteError, alt string, actual error) bool {
+	t.Helper()
+
+	actualEx, ok := actual.(mongo.WriteException)
+	if ok {
+		if len(actualEx.WriteErrors) != 1 {
+			return assert.Equal(t, expected, actual)
+		}
+		actualWE := actualEx.WriteErrors[0]
+		if !assert.Equal(t, int(expected.Code), int(actualWE.Code)) {
+			return false
+		}
+		if expected.Message == actualWE.Message {
+			return true
+		}
+		expected.Message = alt
+		return assert.Equal(t, expected.Message, actualWE.Message)
+	}
+
+	actualE, ok := actual.(mongo.WriteError)
+	if !ok {
+		return assert.Equal(t, expected, actual)
+	}
+	if !assert.Equal(t, expected.Code, actualE.Code) {
+		return false
+	}
+	if expected.Message == actualE.Message {
+		return true
+	}
+	expected.Message = alt
+	return assert.Equal(t, expected.Message, actualE.Message)
+}
+
 // CollectIDs returns all _id values from given documents.
 //
 // The order is preserved.

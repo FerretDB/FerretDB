@@ -17,47 +17,25 @@ package integration
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-// AssertEqualWriteError compares expected mongo.WriteError Message and Code with actual error.
-func AssertEqualWriteError(t *testing.T, expected *mongo.WriteError, actual error) bool {
-	t.Helper()
-
-	actualEx, ok := actual.(mongo.WriteException)
-	if ok {
-		if len(actualEx.WriteErrors) != 1 {
-			return assert.Equal(t, expected, actual)
-		}
-		actualWE := actualEx.WriteErrors[0]
-		return assert.Equal(t, expected.Message, actualWE.Message) &&
-			assert.Equal(t, int(expected.Code), int(actualWE.Code))
-	}
-
-	actualE, ok := actual.(mongo.WriteError)
-	if !ok {
-		return assert.Equal(t, expected, actual)
-	}
-
-	return assert.Equal(t, expected.Message, actualE.Message) &&
-		assert.Equal(t, expected.Code, actualE.Code)
+type testCase struct {
+	filter bson.D
+	update bson.D
+	err    *mongo.WriteError
+	alt    string
 }
 
 func TestSetOperator(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
-	for name, tc := range map[string]struct {
-		filter bson.D
-		update bson.D
-		result bson.D
-		err    *mongo.WriteError
-	}{
-		"BadSetType": {
+	for name, tc := range map[string]testCase{
+		"BadSetString": {
 			filter: bson.D{{"_id", "string"}},
 			update: bson.D{{"$set", "string"}},
 			err: &mongo.WriteError{
@@ -66,7 +44,18 @@ func TestSetOperator(t *testing.T) {
 					"For example: {$mod: {<field>: ...}} not {$set: \"string\"}",
 			},
 		},
-		"SetArray": {
+		"BadSetDouble": {
+			filter: bson.D{{"_id", "string"}},
+			update: bson.D{{"$set", float64(42.12345)}},
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type double instead. " +
+					"For example: {$mod: {<field>: ...}} not {$set: 42.12345}",
+			},
+			alt: "Modifiers operate on fields but we found type double instead. " +
+				"For example: {$mod: {<field>: ...}} not {$set: 42.12}",
+		},
+		"BadSetArray": {
 			filter: bson.D{{"_id", "string"}},
 			update: bson.D{{"$set", bson.A{}}},
 			err: &mongo.WriteError{
@@ -83,7 +72,7 @@ func TestSetOperator(t *testing.T) {
 			_, err := collection.UpdateOne(ctx, tc.filter, tc.update)
 			if tc.err != nil {
 				t.Log(err)
-				AssertEqualWriteError(t, tc.err, err)
+				AssertEqualWriteError(t, tc.err, tc.alt, err)
 				return
 			}
 		})

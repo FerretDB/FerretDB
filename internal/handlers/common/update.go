@@ -47,6 +47,12 @@ func UpdateDocument(doc, update *types.Document) error {
 						`For example: {$mod: {<field>: ...}} not {$set: []}`,
 				)
 
+			case float64:
+				return NewWriteErrorMsg(
+					ErrFailedToParse,
+					fmt.Sprintf(`Modifiers operate on fields but we found type double instead. `+
+						`For example: {$mod: {<field>: ...}} not {$set: %.2f}`, setDoc,
+					))
 			default:
 				return NewWriteErrorMsg(
 					ErrFailedToParse,
