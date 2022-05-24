@@ -213,7 +213,8 @@ func (we *WriteError) Unwrap() error {
 }
 
 // Document implements ProtoErr interface.
-// Fields "code" and "errmsg" must always be filled in so that clients can parse the error message.
+// Fields "code" and "errmsg" must always be filled in so that clients can parse the error message,
+// otherwise mongo client would parse it as a CommandError.
 func (we *WriteError) Document() *types.Document {
 	d := must.NotFail(types.NewDocument(
 		"code", int32(we.code),
