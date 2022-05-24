@@ -17,17 +17,67 @@ package types
 import (
 	"fmt"
 	"strconv"
+	"strings"
 )
 
+// Path represents field path type.
+type Path struct {
+	s []string
+}
+
+// Len returns path length.
+func (p Path) Len() int {
+	return len(p.s)
+}
+
+// Get returns path slice.
+func (p Path) Get() []string {
+	path := make([]string, len(p.s))
+	copy(path, p.s)
+	return path
+}
+
+// GetLastElement returns last path element.
+func (p Path) GetLastElement() string {
+	if len(p.s) == 0 {
+		return ""
+	}
+	return p.s[len(p.s)-1]
+}
+
+// RemoveFirstElement returns new path without first path element.
+func (p Path) RemoveFirstElement() Path {
+	if len(p.s) < 2 {
+		return p
+	}
+	path := Path{s: make([]string, len(p.s)-1)}
+	copy(path.s, p.s[1:])
+	return path
+}
+
+// NewPath returns Path from strings slice.
+func NewPath(path ...string) Path {
+	p := Path{s: make([]string, len(path))}
+	copy(p.s, path)
+	return p
+}
+
+// NewPathFromString returns Path from path string.
+func NewPathFromString(s string) Path {
+	path := strings.Split(s, ".")
+
+	return NewPath(path...)
+}
+
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
-func RemoveByPath[T CompositeTypeInterface](comp T, keys ...string) {
-	removeByPath(comp, keys...)
+func RemoveByPath[T CompositeTypeInterface](comp T, path Path) {
+	removeByPath(comp, path)
 }
 
 // getByPath returns a value by path - a sequence of indexes and keys.
-func getByPath[T CompositeTypeInterface](comp T, path ...string) (any, error) {
+func getByPath[T CompositeTypeInterface](comp T, path Path) (any, error) {
 	var next any = comp
-	for _, p := range path {
+	for _, p := range path.Get() {
 		switch s := next.(type) {
 		case *Document:
 			var err error
@@ -54,22 +104,23 @@ func getByPath[T CompositeTypeInterface](comp T, path ...string) (any, error) {
 	return next, nil
 }
 
-func removeByPath(v any, keys ...string) {
-	if len(keys) == 0 {
+func removeByPath(v any, path Path) {
+	if path.Len() == 0 {
 		return
 	}
 
-	key := keys[0]
+	p := path.Get()
+	key := p[0]
 	switch v := v.(type) {
 	case *Document:
 		if _, ok := v.m[key]; !ok {
 			return
 		}
-		if len(keys) == 1 {
+		if path.Len() == 1 {
 			v.Remove(key)
 			return
 		}
-		removeByPath(v.m[key], keys[1:]...)
+		removeByPath(v.m[key], path.RemoveFirstElement())
 
 	case *Array:
 		i, err := strconv.Atoi(key)
@@ -79,11 +130,11 @@ func removeByPath(v any, keys ...string) {
 		if i > len(v.s)-1 {
 			return // no such path
 		}
-		if len(keys) == 1 {
+		if path.Len() == 1 {
 			v.s = append(v.s[:i], v.s[i+1:]...)
 			return
 		}
-		removeByPath(v.s[i], keys[1:]...)
+		removeByPath(v.s[i], path.RemoveFirstElement())
 	default:
 		// no such path: scalar value
 	}

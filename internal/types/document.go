@@ -239,8 +239,8 @@ func (d *Document) Get(key string) (any, error) {
 }
 
 // GetByPath returns a value by path - a sequence of indexes and keys.
-func (d *Document) GetByPath(path ...string) (any, error) {
-	return getByPath(d, path...)
+func (d *Document) GetByPath(path Path) (any, error) {
+	return getByPath(d, path)
 }
 
 // Set sets the value for the given key, replacing any existing value.
@@ -301,8 +301,8 @@ func (d *Document) Remove(key string) {
 }
 
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
-func (d *Document) RemoveByPath(keys ...string) {
-	removeByPath(d, keys...)
+func (d *Document) RemoveByPath(path Path) {
+	removeByPath(d, path)
 }
 
 // check interfaces
