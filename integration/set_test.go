@@ -20,8 +20,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 type testCase struct {
@@ -29,12 +27,12 @@ type testCase struct {
 	update bson.D
 	result any
 	err    *mongo.WriteError
+	stat   *mongo.UpdateResult
 	alt    string
 }
 
 func TestSetOperator(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]testCase{
 		"BadSetString": {
@@ -70,11 +68,31 @@ func TestSetOperator(t *testing.T) {
 			id:     "string",
 			update: bson.D{{"$set", bson.D{}}},
 			result: "foo",
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 0,
+				UpsertedCount: 0,
+			},
+		},
+		"SetValueString": {
+			id:     "string",
+			update: bson.D{{"$set", bson.D{{"value", "ok value"}}}},
+			result: "ok value",
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
+			ctx, collection := setup(t)
+			_, err := collection.InsertMany(ctx, []any{
+				bson.D{{"_id", "string"}, {"value", "foo"}},
+			})
+			require.NoError(t, err)
 
 			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
 			if tc.err != nil {
@@ -82,13 +100,7 @@ func TestSetOperator(t *testing.T) {
 				AssertEqualWriteError(t, tc.err, tc.alt, err)
 				return
 			}
-
-			expected := &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 0,
-				UpsertedCount: 0,
-			}
-			require.Equal(t, expected, res)
+			require.Equal(t, tc.stat, res)
 
 			var actual bson.D
 			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
