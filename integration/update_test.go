@@ -251,7 +251,7 @@ func TestUpdateIncOperator(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := setup(t, shareddata.Scalars)
 
 			_, err := collection.UpdateOne(ctx, tc.filter, tc.update)
 			require.NoError(t, err)
