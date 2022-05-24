@@ -34,8 +34,8 @@ func UpdateDocument(doc, update *types.Document) error {
 				return NewWriteErrorMsg(
 					ErrFailedToParse,
 					fmt.Sprintf("Modifiers operate on fields but we found type string instead. "+
-						"For example: {$mod: {<field>: ...}} not {$set: \"%T\"}", updateV),
-				)
+						"For example: {$mod: {<field>: ...}} not {$set: \"%T\"}", updateV,
+					))
 			}
 
 			var err error
