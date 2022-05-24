@@ -37,7 +37,7 @@ func (p Path) Slice() []string {
 	return path
 }
 
-// Element returns path element specified by the index or empty string if index has bad value.
+// Element returns path element specified by the index or empty string if index below 0 or greater than Path len.
 func (p Path) Element(index int) string {
 	if index < 0 || index > len(p.s) {
 		return ""
@@ -45,7 +45,7 @@ func (p Path) Element(index int) string {
 	return p.s[index]
 }
 
-// Remove returns new path with removed path element specified by index or the same path if index has bad value.
+// Remove returns new path with removed path element specified by index or the same path if index below 0 or greater than Path len.
 func (p Path) Remove(index int) Path {
 	if index < 0 || index > len(p.s) {
 		return p
