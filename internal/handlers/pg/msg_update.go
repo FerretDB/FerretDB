@@ -130,7 +130,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			}
 
 			doc := q.DeepCopy()
-			if err = common.UpdateDocument(doc, u); err != nil {
+			if _, err = common.UpdateDocument(doc, u); err != nil {
 				return nil, err
 			}
 			if !doc.Has("_id") {
@@ -160,15 +160,20 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		matched += int32(len(resDocs))
 
 		for _, doc := range resDocs {
-			if err = common.UpdateDocument(doc, u); err != nil {
+			var changed bool
+			changed, err = common.UpdateDocument(doc, u)
+			if err != nil {
 				return nil, err
+			}
+
+			if !changed {
+				continue
 			}
 
 			tag, err := h.update(ctx, sp, doc)
 			if err != nil {
 				return nil, err
 			}
-
 			modified += int32(tag.RowsAffected())
 		}
 	}

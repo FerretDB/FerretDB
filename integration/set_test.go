@@ -17,6 +17,7 @@ package integration
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
@@ -24,8 +25,9 @@ import (
 )
 
 type testCase struct {
-	filter bson.D
+	id     string
 	update bson.D
+	result any
 	err    *mongo.WriteError
 	alt    string
 }
@@ -36,7 +38,7 @@ func TestSetOperator(t *testing.T) {
 
 	for name, tc := range map[string]testCase{
 		"BadSetString": {
-			filter: bson.D{{"_id", "string"}},
+			id:     "string",
 			update: bson.D{{"$set", "string"}},
 			err: &mongo.WriteError{
 				Code: 9,
@@ -45,7 +47,7 @@ func TestSetOperator(t *testing.T) {
 			},
 		},
 		"BadSetDouble": {
-			filter: bson.D{{"_id", "string"}},
+			id:     "string",
 			update: bson.D{{"$set", float64(42.12345)}},
 			err: &mongo.WriteError{
 				Code: 9,
@@ -56,7 +58,7 @@ func TestSetOperator(t *testing.T) {
 				"For example: {$mod: {<field>: ...}} not {$set: 42.12}",
 		},
 		"BadSetArray": {
-			filter: bson.D{{"_id", "string"}},
+			id:     "string",
 			update: bson.D{{"$set", bson.A{}}},
 			err: &mongo.WriteError{
 				Code: 9,
@@ -64,16 +66,36 @@ func TestSetOperator(t *testing.T) {
 					"For example: {$mod: {<field>: ...}} not {$set: []}",
 			},
 		},
+		"SetEmptyDoc": {
+			id:     "string",
+			update: bson.D{{"$set", bson.D{}}},
+			result: "foo",
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			_, err := collection.UpdateOne(ctx, tc.filter, tc.update)
+			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
 			if tc.err != nil {
 				t.Log(err)
 				AssertEqualWriteError(t, tc.err, tc.alt, err)
 				return
+			}
+
+			expected := &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 0,
+				UpsertedCount: 0,
+			}
+			require.Equal(t, expected, res)
+
+			var actual bson.D
+			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
+			require.NoError(t, err)
+			expectedRes := bson.D{{"_id", "string"}, {"value", tc.result}}
+			if !AssertEqualDocuments(t, expectedRes, actual) {
+				t.FailNow()
 			}
 		})
 	}

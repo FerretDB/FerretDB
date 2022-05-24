@@ -23,7 +23,8 @@ import (
 )
 
 // UpdateDocument updates the given document with a series of update operators.
-func UpdateDocument(doc, update *types.Document) error {
+// Returns true if document was changed.
+func UpdateDocument(doc, update *types.Document) (bool, error) {
 	for _, updateOp := range update.Keys() {
 		updateV := must.NotFail(update.Get(updateOp))
 
@@ -31,30 +32,33 @@ func UpdateDocument(doc, update *types.Document) error {
 		case "$set":
 			switch setDoc := updateV.(type) {
 			case *types.Document:
+				if setDoc.Len() == 0 {
+					return false, nil
+				}
 				var err error
 				for _, setKey := range setDoc.Keys() {
 					setValue := must.NotFail(setDoc.Get(setKey))
 					if err = doc.Set(setKey, setValue); err != nil {
-						return lazyerrors.Error(err)
+						return false, lazyerrors.Error(err)
 					}
 				}
-				return nil
+				return true, nil
 
 			case *types.Array:
-				return NewWriteErrorMsg(
+				return false, NewWriteErrorMsg(
 					ErrFailedToParse,
 					`Modifiers operate on fields but we found type array instead. `+
 						`For example: {$mod: {<field>: ...}} not {$set: []}`,
 				)
 
 			case float64:
-				return NewWriteErrorMsg(
+				return false, NewWriteErrorMsg(
 					ErrFailedToParse,
 					fmt.Sprintf(`Modifiers operate on fields but we found type double instead. `+
 						`For example: {$mod: {<field>: ...}} not {$set: %.2f}`, setDoc,
 					))
 			default:
-				return NewWriteErrorMsg(
+				return false, NewWriteErrorMsg(
 					ErrFailedToParse,
 					fmt.Sprintf("Modifiers operate on fields but we found type %[1]T instead. "+
 						"For example: {$mod: {<field>: ...}} not {$set: \"%[1]T\"}", updateV,
@@ -62,9 +66,9 @@ func UpdateDocument(doc, update *types.Document) error {
 			}
 
 		default:
-			return NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
+			return false, NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
 		}
 	}
 
-	return nil
+	return true, nil
 }
