@@ -47,7 +47,7 @@ func (p Path) LastElement() string {
 
 // RemoveFirstElement returns new path without first path element.
 func (p Path) RemoveFirstElement() Path {
-	if len(p.s) < 2 {
+	if len(p.s) < 1 {
 		return p
 	}
 	path := Path{s: make([]string, len(p.s)-1)}
