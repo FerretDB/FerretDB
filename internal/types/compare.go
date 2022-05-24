@@ -27,9 +27,6 @@ import (
 )
 
 //go:generate ../../bin/stringer -linecomment -type CompareResult
-//go:generate ../../bin/stringer -linecomment -type dataTypeOrderResult
-//go:generate ../../bin/stringer -linecomment -type numberDataTypeOrderResult
-//go:generate ../../bin/stringer -linecomment -type SortType
 
 // CompareResult represents the result of a comparison.
 type CompareResult int8
@@ -50,8 +47,11 @@ const (
 //
 // Compare and contrast with test helpers in testutil package.
 func Compare(v1, v2 any) CompareResult {
-	if v1 == nil || v2 == nil {
-		panic(fmt.Sprintf("compare: values should not be nil, v1 is %v, v2 is %v", v1, v2))
+	if v1 == nil {
+		panic("compare: v1 is nil")
+	}
+	if v2 == nil {
+		panic("compare: v2 is nil")
 	}
 
 	switch v1 := v1.(type) {
@@ -253,131 +253,4 @@ func compareNumbers(a float64, b int64) CompareResult {
 	bigB := new(big.Float).SetInt64(b).SetPrec(100000)
 
 	return CompareResult(bigA.Cmp(bigB))
-}
-
-// dataTypeOrderResult represents the comparison order of data types.
-type dataTypeOrderResult uint8
-
-const (
-	_ dataTypeOrderResult = iota
-	nullDataType
-	nanDataType
-	numbersDataType
-	stringDataType
-	objectDataType
-	arrayDataType
-	binDataType
-	objectIdDataType
-	booleanDataType
-	dateDataType
-	timestampDataType
-	regexDataType
-)
-
-// defineDataType define which type has value and returns a sequence the type has.
-func defineDataType(value any) dataTypeOrderResult {
-	switch value := value.(type) {
-	case float64:
-		if math.IsNaN(value) {
-			return nanDataType
-		}
-		return numbersDataType
-	case string:
-		return stringDataType
-	case Binary:
-		return binDataType
-	case ObjectID:
-		return objectIdDataType
-	case bool:
-		return booleanDataType
-	case time.Time:
-		return dateDataType
-	case NullType:
-		return nullDataType
-	case Regex:
-		return regexDataType
-	case int32:
-		return numbersDataType
-	case Timestamp:
-		return timestampDataType
-	case int64:
-		return numbersDataType
-	default:
-		panic(fmt.Sprintf("value cannot be defined, value is %[1]v, data type of value is %[1]T", value))
-	}
-}
-
-// numberDataTypeOrderResult represents the comparison order of numbers.
-type numberDataTypeOrderResult uint8
-
-const (
-	_ numberDataTypeOrderResult = iota
-	doubleNegativeZero
-	doubleDT
-	int32DT
-	int64DT
-)
-
-// defineNumberDataType define which number type has value and returns a sequence the type has.
-func defineNumberDataType(value any) numberDataTypeOrderResult {
-	switch value := value.(type) {
-	case float64:
-		if value == 0 && math.Signbit(value) {
-			return doubleNegativeZero
-		}
-		return doubleDT
-	case int32:
-		return int32DT
-	case int64:
-		return int64DT
-	}
-
-	panic(fmt.Sprintf("defineNumberDataType: value cannot be defined, value is %v, data type of value is %T", value, value))
-}
-
-// SortType represents sort type for $sort aggregation.
-type SortType int8
-
-const (
-	Ascending  SortType = 1  // asc
-	Descending SortType = -1 // desc
-)
-
-// CompareOrder defines the data type for the two values and compares them.
-// When the types are equal, it compares their values using Compare.
-func CompareOrder(a, b any, order SortType) CompareResult {
-	if a == nil || b == nil {
-		panic(fmt.Sprintf("CompareOrder: values should not be nil, a is %v, b is %v", a, b))
-	}
-
-	aType := defineDataType(a)
-	bType := defineDataType(b)
-	if aType == bType {
-		res := Compare(a, b)
-		if res == Equal && aType == numbersDataType {
-			aNumberType := defineNumberDataType(a)
-			bNumberType := defineNumberDataType(b)
-			switch {
-			case aNumberType < bNumberType && order == Ascending:
-				return Less
-			case aNumberType > bNumberType && order == Ascending:
-				return Greater
-			case aNumberType < bNumberType && order == Descending:
-				return Greater
-			case aNumberType > bNumberType && order == Descending:
-				return Less
-			}
-		}
-
-		return res
-	}
-
-	switch {
-	case aType < bType:
-		return Less
-	case aType > bType:
-		return Greater
-	}
-
-	panic("CompareOrder: not reached")
 }

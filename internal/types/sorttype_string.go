@@ -13,8 +13,8 @@ func _() {
 }
 
 const (
-	_SortType_name_0 = "desc"
-	_SortType_name_1 = "asc"
+	_SortType_name_0 = "Descending"
+	_SortType_name_1 = "Ascending"
 )
 
 func (i SortType) String() string {
