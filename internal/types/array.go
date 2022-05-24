@@ -65,7 +65,7 @@ func (a *Array) Len() int {
 // Get returns a value at the given index.
 func (a *Array) Get(index int) (any, error) {
 	if l := a.Len(); index < 0 || index >= l {
-		return nil, fmt.Errorf("types.Array.Slice: index %d is out of bounds [0-%d)", index, l)
+		return nil, fmt.Errorf("types.Array.Get: index %d is out of bounds [0-%d)", index, l)
 	}
 
 	return a.s[index], nil
