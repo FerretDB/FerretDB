@@ -45,7 +45,8 @@ func (p Path) Element(index int) string {
 	return p.s[index]
 }
 
-// Remove returns new path with removed path element specified by index or the same path if index below 0 or greater than Path len.
+// Remove returns new path with removed path element specified by index.
+// If index below 0 or greater than Path len it would return the same value.
 func (p Path) Remove(index int) Path {
 	if index < 0 || index > len(p.s) {
 		return p
