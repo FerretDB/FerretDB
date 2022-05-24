@@ -16,38 +16,12 @@ package pg
 
 import (
 	"context"
-	"strconv"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/version"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// For clients that check version.
-const versionValue = "5.0.42"
-
-// MsgBuildInfo returns an OpMsg with the build information.
+// MsgBuildInfo implements HandlerInterface.
 func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	var reply wire.OpMsg
-	err := reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"version", versionValue,
-			"gitVersion", version.Get().Commit,
-			"modules", must.NotFail(types.NewArray()),
-			"sysInfo", "deprecated",
-			"versionArray", must.NotFail(types.NewArray(int32(5), int32(0), int32(42), int32(0))),
-			"bits", int32(strconv.IntSize),
-			"debug", version.Get().Debug,
-			"maxBsonObjectSize", int32(types.MaxDocumentLen),
-			"buildEnvironment", version.Get().BuildEnvironment,
-			"ok", float64(1),
-		))},
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return &reply, nil
+	return common.MsgBuildInfo(ctx, msg)
 }

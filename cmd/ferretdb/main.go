@@ -26,8 +26,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/dummy"
+	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
@@ -44,7 +43,7 @@ var (
 	proxyAddrF       = flag.String("proxy-addr", "127.0.0.1:37017", "")
 	versionF         = flag.Bool("version", false, "print version to stdout (full version, commit, branch, dirty flag) and exit")
 	testConnTimeoutF = flag.Duration("test-conn-timeout", 0, "test: set connection timeout")
-	handlerF         = flag.String("handler", "pg", "set backend handler (pg, dummy)")
+	handlerF         = flag.String("handler", "pg", "set backend handler (pg)")
 )
 
 func main() {
@@ -90,7 +89,7 @@ func main() {
 
 	go debug.RunHandler(ctx, *debugAddrF, logger.Named("debug"))
 
-	var h common.Handler
+	var h handlers.Interface
 	switch *handlerF {
 	case "pg":
 		pgPool, err := pgdb.NewPool(ctx, *postgresqlURLF, logger, false)
@@ -103,9 +102,6 @@ func main() {
 			StartTime: time.Now(),
 		}
 		h = pg.New(handlerOpts)
-
-	case "dummy":
-		h = dummy.New()
 
 	default:
 		panic("unknown handler")

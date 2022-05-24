@@ -29,7 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgGetLog is an administrative command that returns the most recent 1024 logged events.
+// MsgGetLog implements HandlerInterface.
 func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {

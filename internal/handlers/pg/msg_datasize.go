@@ -29,30 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-func formatResponse(size, rows, millis int32, showEstimate bool) (*wire.OpMsg, error) {
-	var pairs []any
-	if showEstimate {
-		pairs = append(pairs, "estimate", false)
-	}
-	pairs = append(pairs,
-		"size", size,
-		"numObjects", rows,
-		"millis", millis,
-		"ok", float64(1),
-	)
-
-	var reply wire.OpMsg
-	err := reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(pairs...))},
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return &reply, nil
-}
-
-// MsgDataSize returns the size of the collection in bytes.
+// MsgDataSize implements HandlerInterface.
 func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
@@ -87,4 +64,27 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	}
 
 	return formatResponse(stats.SizeTotal, stats.Rows, millis, true)
+}
+
+func formatResponse(size, rows, millis int32, showEstimate bool) (*wire.OpMsg, error) {
+	var pairs []any
+	if showEstimate {
+		pairs = append(pairs, "estimate", false)
+	}
+	pairs = append(pairs,
+		"size", size,
+		"numObjects", rows,
+		"millis", millis,
+		"ok", float64(1),
+	)
+
+	var reply wire.OpMsg
+	err := reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(pairs...))},
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &reply, nil
 }
