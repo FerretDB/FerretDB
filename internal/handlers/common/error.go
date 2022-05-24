@@ -140,6 +140,7 @@ func (e *Error) Document() *types.Document {
 }
 
 // WriteErrors represents slice of protocol write errors.
+// It could be returned for Update, Insert, Delete, Replace operations.
 type WriteErrors []WriteError
 
 // NewWriteErrorMsg creates new protocol write error with given ErrorCode and message.
@@ -176,7 +177,8 @@ func (we *WriteErrors) Unwrap() error {
 	return nil
 }
 
-// Document implements ProtoErr interface..
+// Document implements ProtoErr interface.
+// "writeErrors" field must present in result document so that clients could parse it as WriteErrors.
 func (we *WriteErrors) Document() *types.Document {
 	errs := must.NotFail(types.NewArray())
 	for _, e := range *we {
