@@ -34,19 +34,6 @@ func GetByPath[T types.CompositeTypeInterface](tb testing.TB, comp T, path types
 	return res
 }
 
-// CompareAndSetByPathNum asserts that two values with the same path in two objects (documents or arrays)
-// are within a given numerical delta, then updates the expected object with the actual value.
-func CompareAndSetByPathNum[T types.CompositeTypeInterface](tb testing.TB, expected, actual T, delta float64, path types.Path) {
-	tb.Helper()
-
-	expectedV := GetByPath(tb, expected, path)
-	actualV := GetByPath(tb, actual, path)
-	assert.IsType(tb, expectedV, actualV)
-	assert.InDelta(tb, expectedV, actualV, delta)
-
-	SetByPath(tb, expected, actualV, path)
-}
-
 // SetByPath sets the value by path - a sequence of indexes and keys.
 //
 // The path must exist.
@@ -86,6 +73,19 @@ func SetByPath[T types.CompositeTypeInterface](tb testing.TB, comp T, value any,
 			tb.Fatalf("can't access %T by path %q", next, p)
 		}
 	}
+}
+
+// CompareAndSetByPathNum asserts that two values with the same path in two objects (documents or arrays)
+// are within a given numerical delta, then updates the expected object with the actual value.
+func CompareAndSetByPathNum[T types.CompositeTypeInterface](tb testing.TB, expected, actual T, delta float64, path types.Path) {
+	tb.Helper()
+
+	expectedV := GetByPath(tb, expected, path)
+	actualV := GetByPath(tb, actual, path)
+	assert.IsType(tb, expectedV, actualV)
+	assert.InDelta(tb, expectedV, actualV, delta)
+
+	SetByPath(tb, expected, actualV, path)
 }
 
 // CompareAndSetByPathTime asserts that two values with the same path in two objects (documents or arrays)
