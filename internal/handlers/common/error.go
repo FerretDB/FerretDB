@@ -62,7 +62,7 @@ type ProtoErr interface {
 
 // ProtocolError converts any error to wire protocol error.
 //
-// Nil panics, *Error or *WriteError (possibly wrapped) is returned unwrapped with true,
+// Nil panics, *Error or *WriteErrors (possibly wrapped) is returned unwrapped with true,
 // any other value is wrapped with InternalError and returned with false.
 func ProtocolError(err error) (ProtoErr, bool) {
 	if err == nil {
@@ -144,13 +144,13 @@ func (e *Error) Document() *types.Document {
 
 // WriteErrors represents slice of protocol write errors.
 // It could be returned for Update, Insert, Delete, Replace operations.
-type WriteErrors []WriteError
+type WriteErrors []writeError
 
 // NewWriteErrorMsg creates new protocol write error with given ErrorCode and message.
 func NewWriteErrorMsg(code ErrorCode, msg string) error {
 	return &WriteErrors{{
 		code: code,
-		err:  errors.New(msg),
+		err:  msg,
 	}}
 }
 
@@ -158,7 +158,7 @@ func NewWriteErrorMsg(code ErrorCode, msg string) error {
 func (we *WriteErrors) Error() string {
 	var err string
 	for _, e := range *we {
-		err += e.Error() + ","
+		err += e.err + ","
 	}
 
 	return err
@@ -175,17 +175,22 @@ func (we *WriteErrors) Code() ErrorCode {
 // Unwrap implements standard error unwrapping interface.
 func (we *WriteErrors) Unwrap() error {
 	for _, e := range *we {
-		return &e
+		return errors.New(e.err)
 	}
 	return nil
 }
 
 // Document implements ProtoErr interface.
 // "writeErrors" field must present in result document so that clients could parse it as WriteErrors.
+// Fields "code" and "errmsg" must always be filled in so that clients can parse the error message,
+// otherwise mongo client would parse it as a CommandError.
 func (we *WriteErrors) Document() *types.Document {
 	errs := must.NotFail(types.NewArray())
 	for _, e := range *we {
-		must.NoError(errs.Append(e.Document()))
+		must.NoError(errs.Append(must.NotFail(types.NewDocument(
+			"code", int32(e.code),
+			"errmsg", e.err,
+		))))
 	}
 
 	d := must.NotFail(types.NewDocument(
@@ -195,37 +200,11 @@ func (we *WriteErrors) Document() *types.Document {
 	return d
 }
 
-// WriteError represents protocol write error.
+// writeError represents protocol write error.
 // It required to build the correct write error result.
-type WriteError struct {
+type writeError struct {
 	code ErrorCode
-	err  error
-}
-
-// Error implements error interface.
-func (we *WriteError) Error() string {
-	return fmt.Sprintf("%[1]s (%[1]d): %[2]v", we.code, we.err)
-}
-
-// Code implements ProtoErr interface.
-func (we *WriteError) Code() ErrorCode {
-	return we.code
-}
-
-// Unwrap implements standard error unwrapping interface.
-func (we *WriteError) Unwrap() error {
-	return we.err
-}
-
-// Document implements ProtoErr interface.
-// Fields "code" and "errmsg" must always be filled in so that clients can parse the error message,
-// otherwise mongo client would parse it as a CommandError.
-func (we *WriteError) Document() *types.Document {
-	d := must.NotFail(types.NewDocument(
-		"code", int32(we.code),
-		"errmsg", we.err.Error(),
-	))
-	return d
+	err  string
 }
 
 // formatBitwiseOperatorErr formats protocol error for given internal error and bitwise operator.
@@ -264,9 +243,7 @@ func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
 // check interfaces
 var (
 	_ error    = (*Error)(nil)
-	_ error    = (*WriteError)(nil)
 	_ error    = (*WriteErrors)(nil)
 	_ ProtoErr = (*Error)(nil)
-	_ ProtoErr = (*WriteError)(nil)
 	_ ProtoErr = (*WriteErrors)(nil)
 )
