@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
@@ -84,13 +83,6 @@ func TestSetOperator(t *testing.T) {
 				AssertEqualWriteError(t, tc.err, err)
 				return
 			}
-			require.NoError(t, err)
-
-			var actual bson.D
-			err = collection.FindOne(ctx, tc.filter).Decode(&actual)
-			require.NoError(t, err)
-
-			AssertEqualDocuments(t, tc.result, actual)
 		})
 	}
 }
