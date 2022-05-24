@@ -77,7 +77,7 @@ func UpdateDocument(doc, update *types.Document) error {
 				}
 
 				switch err {
-				case errBadLeftOperandType:
+				case errUnexpectedLeftOpType:
 					return NewWriteErrorMsg(
 						ErrTypeMismatch,
 						fmt.Sprintf(
@@ -86,7 +86,7 @@ func UpdateDocument(doc, update *types.Document) error {
 							incValue,
 						),
 					)
-				case errBadRightOperandType:
+				case errUnexpectedRightOpType:
 					return NewWriteErrorMsg(
 						ErrTypeMismatch,
 						fmt.Sprintf(

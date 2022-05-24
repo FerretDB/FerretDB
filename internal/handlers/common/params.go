@@ -105,12 +105,12 @@ func AssertType[T types.Type](value any) (T, error) {
 }
 
 var (
-	errUnexpectedType      = fmt.Errorf("unexpected type")
-	errNotWholeNumber      = fmt.Errorf("not a whole number")
-	errNegativeNumber      = fmt.Errorf("negative number")
-	errNotBinaryMask       = fmt.Errorf("not a binary mask")
-	errBadLeftOperandType  = fmt.Errorf("bad left operand type")
-	errBadRightOperandType = fmt.Errorf("bad right operand type")
+	errUnexpectedType        = fmt.Errorf("unexpected type")
+	errNotWholeNumber        = fmt.Errorf("not a whole number")
+	errNegativeNumber        = fmt.Errorf("negative number")
+	errNotBinaryMask         = fmt.Errorf("not a binary mask")
+	errUnexpectedLeftOpType  = fmt.Errorf("unexpected left operand type")
+	errUnexpectedRightOpType = fmt.Errorf("unexpected right operand type")
 )
 
 // GetWholeNumberParam checks if the given value is int32, int64, or float64 containing a whole number,
@@ -230,7 +230,7 @@ func addNumbers(v1, v2 any) (any, error) {
 		case int64:
 			return v1 + float64(v2), nil
 		default:
-			return nil, errBadRightOperandType
+			return nil, errUnexpectedRightOpType
 		}
 	case int32:
 		switch v2 := v2.(type) {
@@ -241,7 +241,7 @@ func addNumbers(v1, v2 any) (any, error) {
 		case int64:
 			return v2 + int64(v1), nil
 		default:
-			return nil, errBadRightOperandType
+			return nil, errUnexpectedRightOpType
 		}
 	case int64:
 		switch v2 := v2.(type) {
@@ -252,9 +252,9 @@ func addNumbers(v1, v2 any) (any, error) {
 		case int64:
 			return v1 + v2, nil
 		default:
-			return nil, errBadRightOperandType
+			return nil, errUnexpectedRightOpType
 		}
 	default:
-		return nil, errBadLeftOperandType
+		return nil, errUnexpectedLeftOpType
 	}
 }
