@@ -115,7 +115,7 @@ const (
 	Descending SortType = -1
 )
 
-// CompareOrder defines the data type for the two values and compares them.
+// CompareOrder detects the data type for two values and compares them.
 // When the types are equal, it compares their values using Compare.
 func CompareOrder(a, b any, order SortType) CompareResult {
 	if a == nil {
@@ -128,35 +128,40 @@ func CompareOrder(a, b any, order SortType) CompareResult {
 	aType := detectDataType(a)
 	bType := detectDataType(b)
 	switch {
-	case aType == bType:
-		res := Compare(a, b)
-
-		if !(res == Equal && aType == numbersDataType) {
-			return res
-		}
-
-		aNumberType := detectNumberType(a)
-		bNumberType := detectNumberType(b)
-		switch {
-		case aNumberType < bNumberType && order == Ascending:
-			return Less
-		case aNumberType > bNumberType && order == Ascending:
-			return Greater
-		case aNumberType < bNumberType && order == Descending:
-			return Greater
-		case aNumberType > bNumberType && order == Descending:
-			return Less
-		default:
-			return res
-		}
-
 	case aType < bType:
 		return Less
-
 	case aType > bType:
 		return Greater
-
 	default:
-		panic("CompareOrder: not reached")
+		res := Compare(a, b)
+		if res == Equal && aType == numbersDataType {
+			return compareNumberOrder(a, b, order)
+		}
+		return res
+	}
+}
+
+// compareNumberOrder detects the number type for two values and compares them.
+func compareNumberOrder(a, b any, order SortType) CompareResult {
+	if a == nil {
+		panic("compareNumberOrder: a is nil")
+	}
+	if b == nil {
+		panic("compareNumberOrder: b is nil")
+	}
+
+	aNumberType := detectNumberType(a)
+	bNumberType := detectNumberType(b)
+	switch {
+	case aNumberType < bNumberType && order == Ascending:
+		return Less
+	case aNumberType > bNumberType && order == Ascending:
+		return Greater
+	case aNumberType < bNumberType && order == Descending:
+		return Greater
+	case aNumberType > bNumberType && order == Descending:
+		return Less
+	default:
+		return Equal
 	}
 }
