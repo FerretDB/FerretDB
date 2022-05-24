@@ -30,7 +30,7 @@ import (
 type OpCode int32
 
 const (
-	// OpCodeReply is deprecated.
+	// OpCodeReply used in handshake reply. OpCodeReply is deprecated.
 	OpCodeReply = OpCode(1) // OP_REPLY
 
 	// OpCodeUpdate is deprecated.
@@ -42,7 +42,7 @@ const (
 	// OpCodeGetByOID is deprecated.
 	OpCodeGetByOID = OpCode(2003) // OP_GET_BY_OID
 
-	// OpCodeQuery is deprecated.
+	// OpCodeQuery is used for query operation command. OpCodeQuery is deprecated.
 	OpCodeQuery = OpCode(2004) // OP_QUERY
 
 	// OpCodeGetMore is deprecated.
