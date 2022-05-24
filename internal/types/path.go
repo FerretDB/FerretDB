@@ -20,7 +20,7 @@ import (
 	"strings"
 )
 
-// Path represents field path type.
+// Path represents field path type. It should be used wherever we work with paths or dot notation.
 type Path struct {
 	s []string
 }
@@ -30,15 +30,15 @@ func (p Path) Len() int {
 	return len(p.s)
 }
 
-// Get returns path slice.
-func (p Path) Get() []string {
+// Slice returns path slice copy.
+func (p Path) Slice() []string {
 	path := make([]string, len(p.s))
 	copy(path, p.s)
 	return path
 }
 
-// GetLastElement returns last path element.
-func (p Path) GetLastElement() string {
+// LastElement returns last path element.
+func (p Path) LastElement() string {
 	if len(p.s) == 0 {
 		return ""
 	}
@@ -77,7 +77,7 @@ func RemoveByPath[T CompositeTypeInterface](comp T, path Path) {
 // getByPath returns a value by path - a sequence of indexes and keys.
 func getByPath[T CompositeTypeInterface](comp T, path Path) (any, error) {
 	var next any = comp
-	for _, p := range path.Get() {
+	for _, p := range path.Slice() {
 		switch s := next.(type) {
 		case *Document:
 			var err error
@@ -110,7 +110,7 @@ func removeByPath(v any, path Path) {
 		return
 	}
 
-	p := path.Get()
+	p := path.Slice()
 	key := p[0]
 	switch v := v.(type) {
 	case *Document:

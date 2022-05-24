@@ -62,7 +62,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 		if doc, ok = docValue.(*types.Document); !ok {
 			return false, nil // no error - the field is just not present
 		}
-		filterKey = path.GetLastElement()
+		filterKey = path.LastElement()
 	}
 
 	if strings.HasPrefix(filterKey, "$") {

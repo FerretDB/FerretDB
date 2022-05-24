@@ -44,7 +44,7 @@ func SetByPath[T types.CompositeTypeInterface](tb testing.TB, comp T, value any,
 	require.NotZero(tb, l, "path is empty")
 
 	var next any = comp
-	for i, p := range path.Get() {
+	for i, p := range path.Slice() {
 		last := i == l-1
 		switch c := next.(type) {
 		case *types.Document:
