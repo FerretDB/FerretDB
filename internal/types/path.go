@@ -45,6 +45,14 @@ func (p Path) LastElement() string {
 	return p.s[len(p.s)-1]
 }
 
+// FirstElement returns first path element.
+func (p Path) FirstElement() string {
+	if len(p.s) == 0 {
+		return ""
+	}
+	return p.s[0]
+}
+
 // RemoveFirstElement returns new path without first path element.
 func (p Path) RemoveFirstElement() Path {
 	if len(p.s) < 1 {
@@ -110,8 +118,7 @@ func removeByPath(v any, path Path) {
 		return
 	}
 
-	p := path.Slice()
-	key := p[0]
+	key := path.FirstElement()
 	switch v := v.(type) {
 	case *Document:
 		if _, ok := v.m[key]; !ok {
