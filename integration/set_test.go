@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -35,7 +36,7 @@ func TestSetOperator(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]testCase{
-		"BadSetString": {
+		"SetString": {
 			id:     "string",
 			update: bson.D{{"$set", "string"}},
 			err: &mongo.WriteError{
@@ -44,7 +45,7 @@ func TestSetOperator(t *testing.T) {
 					"For example: {$mod: {<field>: ...}} not {$set: \"string\"}",
 			},
 		},
-		"BadSetDouble": {
+		"SetDouble": {
 			id:     "string",
 			update: bson.D{{"$set", float64(42.12345)}},
 			err: &mongo.WriteError{
@@ -55,7 +56,16 @@ func TestSetOperator(t *testing.T) {
 			alt: "Modifiers operate on fields but we found type double instead. " +
 				"For example: {$mod: {<field>: ...}} not {$set: 42.12}",
 		},
-		"BadSetArray": {
+		"SetNaN": {
+			id:     "string",
+			update: bson.D{{"$set", math.NaN()}},
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type double instead. " +
+					"For example: {$mod: {<field>: ...}} not {$set: nan.0}",
+			},
+		},
+		"SetArray": {
 			id:     "string",
 			update: bson.D{{"$set", bson.A{}}},
 			err: &mongo.WriteError{
@@ -74,7 +84,7 @@ func TestSetOperator(t *testing.T) {
 				UpsertedCount: 0,
 			},
 		},
-		"SetValueString": {
+		"OkSetString": {
 			id:     "string",
 			update: bson.D{{"$set", bson.D{{"value", "ok value"}}}},
 			result: "ok value",
