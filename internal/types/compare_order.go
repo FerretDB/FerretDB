@@ -21,7 +21,7 @@ import (
 )
 
 //go:generate ../../bin/stringer -linecomment -type compareTypeOrderResult
-//go:generate ../../bin/stringer -linecomment -type numericOrderResult
+//go:generate ../../bin/stringer -linecomment -type numberOrderResult
 //go:generate ../../bin/stringer -linecomment -type SortType
 
 // compareTypeOrderResult represents the comparison order of data types.
@@ -33,7 +33,7 @@ const (
 	nanDataType
 	numbersDataType
 	stringDataType
-	objectDataType
+	documentDataType
 	arrayDataType
 	binDataType
 	objectIdDataType
@@ -76,19 +76,19 @@ func detectDataType(value any) compareTypeOrderResult {
 	}
 }
 
-// numericOrderResult represents the comparison order of numbers.
-type numericOrderResult uint8
+// numberOrderResult represents the comparison order of numbers.
+type numberOrderResult uint8
 
 const (
-	_ numericOrderResult = iota
+	_ numberOrderResult = iota
 	doubleNegativeZero
 	doubleDT
 	int32DT
 	int64DT
 )
 
-// defineNumberDataType returns a sequence for float64, int32 and int64 types.
-func defineNumberDataType(value any) numericOrderResult {
+// detectNumberType returns a sequence for float64, int32 and int64 types.
+func detectNumberType(value any) numberOrderResult {
 	switch value := value.(type) {
 	case float64:
 		if value == 0 && math.Signbit(value) {
@@ -100,7 +100,7 @@ func defineNumberDataType(value any) numericOrderResult {
 	case int64:
 		return int64DT
 	default:
-		panic(fmt.Sprintf("defineNumberDataType: value cannot be defined, value is %[1]v, data type of value is %[1]T", value))
+		panic(fmt.Sprintf("detectNumberType: value cannot be defined, value is %[1]v, data type of value is %[1]T", value))
 	}
 }
 
@@ -131,24 +131,24 @@ func CompareOrder(a, b any, order SortType) CompareResult {
 	case aType == bType:
 		res := Compare(a, b)
 
-		if res == Equal && aType == numbersDataType {
-			aNumberType := defineNumberDataType(a)
-			bNumberType := defineNumberDataType(b)
-			switch {
-			case aNumberType < bNumberType && order == Ascending:
-				return Less
-			case aNumberType > bNumberType && order == Ascending:
-				return Greater
-			case aNumberType < bNumberType && order == Descending:
-				return Greater
-			case aNumberType > bNumberType && order == Descending:
-				return Less
-			default:
-				return res
-			}
+		if !(res == Equal && aType == numbersDataType) {
+			return res
 		}
 
-		return res
+		aNumberType := detectNumberType(a)
+		bNumberType := detectNumberType(b)
+		switch {
+		case aNumberType < bNumberType && order == Ascending:
+			return Less
+		case aNumberType > bNumberType && order == Ascending:
+			return Greater
+		case aNumberType < bNumberType && order == Descending:
+			return Greater
+		case aNumberType > bNumberType && order == Descending:
+			return Less
+		default:
+			return res
+		}
 
 	case aType < bType:
 		return Less

@@ -12,7 +12,7 @@ func _() {
 	_ = x[nanDataType-2]
 	_ = x[numbersDataType-3]
 	_ = x[stringDataType-4]
-	_ = x[objectDataType-5]
+	_ = x[documentDataType-5]
 	_ = x[arrayDataType-6]
 	_ = x[binDataType-7]
 	_ = x[objectIdDataType-8]
@@ -22,9 +22,9 @@ func _() {
 	_ = x[regexDataType-12]
 }
 
-const _compareTypeOrderResult_name = "nullDataTypenanDataTypenumbersDataTypestringDataTypeobjectDataTypearrayDataTypebinDataTypeobjectIdDataTypebooleanDataTypedateDataTypetimestampDataTyperegexDataType"
+const _compareTypeOrderResult_name = "nullDataTypenanDataTypenumbersDataTypestringDataTypedocumentDataTypearrayDataTypebinDataTypeobjectIdDataTypebooleanDataTypedateDataTypetimestampDataTyperegexDataType"
 
-var _compareTypeOrderResult_index = [...]uint8{0, 12, 23, 38, 52, 66, 79, 90, 106, 121, 133, 150, 163}
+var _compareTypeOrderResult_index = [...]uint8{0, 12, 23, 38, 52, 68, 81, 92, 108, 123, 135, 152, 165}
 
 func (i compareTypeOrderResult) String() string {
 	i -= 1
