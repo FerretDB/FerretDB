@@ -66,6 +66,15 @@ func TestSetOperator(t *testing.T) {
 					"For example: {$mod: {<field>: ...}} not {$set: \"string\"}",
 			},
 		},
+		"SetArray": {
+			filter: bson.D{{"_id", "string"}},
+			update: bson.D{{"$set", bson.A{}}},
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type array instead. " +
+					"For example: {$mod: {<field>: ...}} not {$set: []}",
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {

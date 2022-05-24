@@ -29,21 +29,30 @@ func UpdateDocument(doc, update *types.Document) error {
 
 		switch updateOp {
 		case "$set":
-			setDoc, ok := updateV.(*types.Document)
-			if !ok {
+			switch setDoc := updateV.(type) {
+			case *types.Document:
+				var err error
+				for _, setKey := range setDoc.Keys() {
+					setValue := must.NotFail(setDoc.Get(setKey))
+					if err = doc.Set(setKey, setValue); err != nil {
+						return lazyerrors.Error(err)
+					}
+				}
+				return nil
+
+			case *types.Array:
 				return NewWriteErrorMsg(
 					ErrFailedToParse,
-					fmt.Sprintf("Modifiers operate on fields but we found type string instead. "+
-						"For example: {$mod: {<field>: ...}} not {$set: \"%T\"}", updateV,
-					))
-			}
+					`Modifiers operate on fields but we found type array instead. `+
+						`For example: {$mod: {<field>: ...}} not {$set: []}`,
+				)
 
-			var err error
-			for _, setKey := range setDoc.Keys() {
-				setValue := must.NotFail(setDoc.Get(setKey))
-				if err = doc.Set(setKey, setValue); err != nil {
-					return lazyerrors.Error(err)
-				}
+			default:
+				return NewWriteErrorMsg(
+					ErrFailedToParse,
+					fmt.Sprintf("Modifiers operate on fields but we found type %[1]T instead. "+
+						"For example: {$mod: {<field>: ...}} not {$set: \"%[1]T\"}", updateV,
+					))
 			}
 
 		default:
