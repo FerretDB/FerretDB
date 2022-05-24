@@ -168,6 +168,7 @@ func TestQuerySort(t *testing.T) {
 	}
 }
 
+// TODO: https://github.com/FerretDB/FerretDB/issues/636
 func TestQuerySortValue(t *testing.T) {
 	ctx, collection := setup(t, shareddata.Scalars)
 

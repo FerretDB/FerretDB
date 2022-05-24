@@ -33,8 +33,8 @@ const (
 	nanDataType
 	numbersDataType
 	stringDataType
-	documentDataType
-	arrayDataType
+	documentDataType // TODO: https://github.com/FerretDB/FerretDB/issues/457
+	arrayDataType    // TODO: https://github.com/FerretDB/FerretDB/issues/457
 	binDataType
 	objectIdDataType
 	booleanDataType
