@@ -39,7 +39,7 @@ func (p Path) Slice() []string {
 
 // Element returns path element specified by the index.
 func (p Path) Element(index int) string {
-	if len(p.s) < index || index < 0 {
+	if index < 0 || index > len(p.s) {
 		return ""
 	}
 	return p.s[index]
