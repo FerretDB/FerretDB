@@ -26,7 +26,7 @@ import (
 type testCase struct {
 	id     string
 	update bson.D
-	result any
+	result bson.D
 	err    *mongo.WriteError
 	stat   *mongo.UpdateResult
 	alt    string
@@ -77,7 +77,7 @@ func TestSetOperator(t *testing.T) {
 		"SetEmptyDoc": {
 			id:     "string",
 			update: bson.D{{"$set", bson.D{}}},
-			result: "foo",
+			result: bson.D{{"_id", "string"}, {"value", "foo"}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 0,
@@ -87,12 +87,22 @@ func TestSetOperator(t *testing.T) {
 		"OkSetString": {
 			id:     "string",
 			update: bson.D{{"$set", bson.D{{"value", "ok value"}}}},
-			result: "ok value",
+			result: bson.D{{"_id", "string"}, {"value", "ok value"}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 1,
 				UpsertedCount: 0,
 			},
+		},
+		"FieldNotExist": {
+			id:     "string",
+			update: bson.D{{"$set", bson.D{{"foo", int32(1)}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			result: bson.D{{"_id", "string"}, {"value", "foo"}, {"foo", int32(1)}},
 		},
 	} {
 		name, tc := name, tc
@@ -115,8 +125,7 @@ func TestSetOperator(t *testing.T) {
 			var actual bson.D
 			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
 			require.NoError(t, err)
-			expectedRes := bson.D{{"_id", "string"}, {"value", tc.result}}
-			if !AssertEqualDocuments(t, expectedRes, actual) {
+			if !AssertEqualDocuments(t, tc.result, actual) {
 				t.FailNow()
 			}
 		})
