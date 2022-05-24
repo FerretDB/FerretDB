@@ -130,7 +130,6 @@ func TestUpdateIncOperatorErrors(t *testing.T) {
 			ctx, collection := setup(t, shareddata.Scalars)
 
 			_, err := collection.UpdateOne(ctx, tc.filter, tc.update)
-
 			require.NotNil(t, tc.err)
 			AssertEqualWriteError(t, tc.err, err)
 		})
