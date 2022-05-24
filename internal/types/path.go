@@ -55,14 +55,14 @@ func (p Path) Remove(index int) Path {
 	return path
 }
 
-// NewPath returns Path from strings slice.
+// NewPath returns Path from a strings slice. Provided strings slice would be copied into a new Path.
 func NewPath(path ...string) Path {
 	p := Path{s: make([]string, len(path))}
 	copy(p.s, path)
 	return p
 }
 
-// NewPathFromString returns Path from path string.
+// NewPathFromString returns Path from path string. Path string should contain fields separated with '.'.
 func NewPathFromString(s string) Path {
 	path := strings.Split(s, ".")
 
