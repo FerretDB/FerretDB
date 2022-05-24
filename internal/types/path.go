@@ -104,6 +104,7 @@ func getByPath[T CompositeTypeInterface](comp T, path Path) (any, error) {
 	return next, nil
 }
 
+// removeByPath removes path elements for given value, which could be *Document or *Array.
 func removeByPath(v any, path Path) {
 	if path.Len() == 0 {
 		return
