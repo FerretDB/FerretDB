@@ -99,7 +99,7 @@ func TestUpdateIncOperatorErrors(t *testing.T) {
 				Message: `Cannot apply $inc to a value of non-numeric type. {_id: "array"} has the field 'value' of non-numeric type array`,
 			},
 		},
-		"BadIncType": {
+		"IncOnString": {
 			filter: bson.D{{"_id", "string"}},
 			update: bson.D{{"$inc", "string"}},
 			err: &mongo.WriteError{
@@ -108,7 +108,7 @@ func TestUpdateIncOperatorErrors(t *testing.T) {
 					` For example: {$mod: {<field>: ...}} not {$inc: "string"}`,
 			},
 		},
-		"BadIncValue": {
+		"IncWithStringValue": {
 			filter: bson.D{{"_id", "string"}},
 			update: bson.D{{"$inc", bson.D{{"value", "bad value"}}}},
 			err: &mongo.WriteError{
