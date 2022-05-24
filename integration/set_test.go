@@ -28,12 +28,6 @@ import (
 func AssertEqualWriteError(t *testing.T, expected *mongo.WriteError, actual error) bool {
 	t.Helper()
 
-	actualC, ok := actual.(mongo.CommandError)
-	if ok {
-		return assert.Equal(t, expected.Message, actualC.Message) &&
-			assert.Equal(t, int(expected.Code), int(actualC.Code))
-	}
-
 	actualEx, ok := actual.(mongo.WriteException)
 	if ok {
 		if len(actualEx.WriteErrors) != 1 {

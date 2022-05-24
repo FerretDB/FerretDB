@@ -31,11 +31,11 @@ func UpdateDocument(doc, update *types.Document) error {
 		case "$set":
 			setDoc, ok := updateV.(*types.Document)
 			if !ok {
-				return NewError(
+				return NewWriteErrorMsg(
 					ErrFailedToParse,
-					fmt.Errorf("Modifiers operate on fields but we found type string instead. "+
-						"For example: {$mod: {<field>: ...}} not {$set: \"%T\"}", updateV,
-					))
+					fmt.Sprintf("Modifiers operate on fields but we found type string instead. "+
+						"For example: {$mod: {<field>: ...}} not {$set: \"%T\"}", updateV),
+				)
 			}
 
 			var err error
