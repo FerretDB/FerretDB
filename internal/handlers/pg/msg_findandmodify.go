@@ -16,13 +16,11 @@ package pg
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -58,28 +56,19 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	runCtx, runCancel := ctxutil.WithDelay(ctx.Done(), 10*time.Second)
+	runCtx, runCancel := context.WithTimeout(ctx, time.Duration(params.maxTimeMS)*time.Millisecond)
 	defer runCancel()
-	if params.maxTimeMS != 0 {
-		runCtx, runCancel = context.WithTimeout(ctx, time.Duration(params.maxTimeMS)*time.Millisecond)
-		defer runCancel()
+	if params.maxTimeMS == 0 {
+		runCtx = ctx
 	}
 
 	fetchedDocs, err := h.fetch(runCtx, params.sqlParam)
 	if err != nil {
-		if errors.Is(err, context.DeadlineExceeded) {
-			return nil, fmt.Errorf("context deadline exceeded, maxTimeMS: %v", params.maxTimeMS)
-		}
-
 		return nil, err
 	}
 
 	err = common.SortDocuments(fetchedDocs, params.sort)
 	if err != nil {
-		if errors.Is(err, context.DeadlineExceeded) {
-			return nil, fmt.Errorf("operation exceeded time limit")
-		}
-
 		return nil, err
 	}
 
@@ -115,10 +104,6 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			}
 			upsert, upserted, err = h.upsert(runCtx, resDocs, p)
 			if err != nil {
-				if errors.Is(err, context.DeadlineExceeded) {
-					return nil, fmt.Errorf("context deadline exceeded, maxTimeMS: %v", params.maxTimeMS)
-				}
-
 				return nil, err
 			}
 		} else { // process update as usual
@@ -143,10 +128,6 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 				_, err = h.update(runCtx, params.sqlParam, upsert)
 				if err != nil {
-					if errors.Is(err, context.DeadlineExceeded) {
-						return nil, fmt.Errorf("context deadline exceeded, maxTimeMS: %v", params.maxTimeMS)
-					}
-
 					return nil, err
 				}
 			} else {
@@ -158,10 +139,6 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 				_, err = h.update(runCtx, params.sqlParam, upsert)
 				if err != nil {
-					if errors.Is(err, context.DeadlineExceeded) {
-						return nil, fmt.Errorf("context deadline exceeded, maxTimeMS: %v", params.maxTimeMS)
-					}
-
 					return nil, err
 				}
 			}
@@ -210,10 +187,6 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 		_, err = h.delete(runCtx, params.sqlParam, resDocs)
 		if err != nil {
-			if errors.Is(err, context.DeadlineExceeded) {
-				return nil, fmt.Errorf("context deadline exceeded, maxTimeMS: %v", params.maxTimeMS)
-			}
-
 			return nil, err
 		}
 
@@ -344,21 +317,9 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 		return nil, err
 	}
 
-	var maxTimeMS int32
-	if maxTimeMS, err = common.GetOptionalParam(document, "maxTimeMS", maxTimeMS); err != nil {
-		var commonErr *common.Error
-		if errors.As(err, &commonErr) {
-			return nil, getErrorForInvalidMaxTimeMS(document)
-		}
-
+	maxTimeMS, err := getMaxTimeMSParameter(document)
+	if err != nil {
 		return nil, err
-	}
-
-	if maxTimeMS < 0 {
-		return nil, common.NewErrorMsg(
-			common.ErrBadValue,
-			fmt.Sprintf("%v value for maxTimeMS is out of range", maxTimeMS),
-		)
 	}
 
 	var update *types.Document

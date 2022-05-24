@@ -23,7 +23,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -63,7 +62,6 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	common.Ignored(document, h.l, ignoredFields...)
 
 	var filter, sort, projection *types.Document
-	var maxTimeMS int32
 	if filter, err = common.GetOptionalParam(document, "filter", filter); err != nil {
 		return nil, err
 	}
@@ -73,28 +71,16 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	if projection, err = common.GetOptionalParam(document, "projection", projection); err != nil {
 		return nil, err
 	}
-	if maxTimeMS, err = common.GetOptionalParam(document, "maxTimeMS", maxTimeMS); err != nil {
-		var commonErr *common.Error
-		if errors.As(err, &commonErr) {
-			return nil, getErrorForInvalidMaxTimeMS(document)
-		}
 
+	maxTimeMS, err := getMaxTimeMSParameter(document)
+	if err != nil {
 		return nil, err
 	}
 
-	if maxTimeMS < 0 {
-		return nil, common.NewErrorMsg(
-			common.ErrBadValue,
-			fmt.Sprintf("%v value for maxTimeMS is out of range", maxTimeMS),
-		)
-	}
-
-	// TODO: What time should I set for delay?
-	runCtx, runCancel := ctxutil.WithDelay(ctx.Done(), 40*time.Second)
+	runCtx, runCancel := context.WithTimeout(ctx, time.Duration(maxTimeMS)*time.Millisecond)
 	defer runCancel()
-	if maxTimeMS != 0 {
-		runCtx, runCancel = context.WithTimeout(ctx, time.Duration(maxTimeMS)*time.Millisecond)
-		defer runCancel()
+	if maxTimeMS == 0 {
+		runCtx = ctx
 	}
 
 	var limit int64
@@ -133,10 +119,6 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	fetchedDocs, err := h.fetch(runCtx, sp)
 	if err != nil {
-		if errors.Is(err, context.DeadlineExceeded) {
-			return nil, fmt.Errorf("operation exceeded time limit")
-		}
-
 		return nil, err
 	}
 
@@ -187,6 +169,28 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	return &reply, nil
+}
+
+func getMaxTimeMSParameter(document *types.Document) (int32, error) {
+	var maxTimeMS int32
+	maxTimeMSParam, err := common.GetOptionalParam(document, "maxTimeMS", maxTimeMS)
+	if err != nil {
+		var commonErr *common.Error
+		if errors.As(err, &commonErr) {
+			return 0, getErrorForInvalidMaxTimeMS(document)
+		}
+
+		return 0, err
+	}
+
+	if maxTimeMSParam < 0 {
+		return 0, common.NewErrorMsg(
+			common.ErrBadValue,
+			fmt.Sprintf("%v value for maxTimeMS is out of range", maxTimeMSParam),
+		)
+	}
+
+	return maxTimeMSParam, nil
 }
 
 func getErrorForInvalidMaxTimeMS(document *types.Document) error {
