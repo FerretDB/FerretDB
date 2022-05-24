@@ -37,20 +37,12 @@ func (p Path) Slice() []string {
 	return path
 }
 
-// LastElement returns last path element.
-func (p Path) LastElement() string {
-	if len(p.s) == 0 {
+// Element returns path element specified by the index.
+func (p Path) Element(index int) string {
+	if len(p.s) < index || index < 0 {
 		return ""
 	}
-	return p.s[len(p.s)-1]
-}
-
-// FirstElement returns first path element.
-func (p Path) FirstElement() string {
-	if len(p.s) == 0 {
-		return ""
-	}
-	return p.s[0]
+	return p.s[index]
 }
 
 // RemoveFirstElement returns new path without first path element.
@@ -118,7 +110,7 @@ func removeByPath(v any, path Path) {
 		return
 	}
 
-	key := path.FirstElement()
+	key := path.Element(0)
 	switch v := v.(type) {
 	case *Document:
 		if _, ok := v.m[key]; !ok {
