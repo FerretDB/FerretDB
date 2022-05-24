@@ -82,7 +82,10 @@ func ProtocolError(err error) (ProtoErr, bool) {
 	return NewError(errInternalError, err).(*Error), false
 }
 
-// Error represents wire command protocol error.
+// CommandError represents wire protocol command error.
+type CommandError = Error
+
+// Error is a deprecated name for CommandError; use the later in the new code instead.
 type Error struct {
 	err  error
 	code ErrorCode
