@@ -82,6 +82,23 @@ func TestUpdateIncOperatorErrors(t *testing.T) {
 		update bson.D
 		err    *mongo.WriteError
 	}{
+		"IncOnDocument": {
+			filter: bson.D{{"_id", "document"}},
+			update: bson.D{{"$inc", bson.D{{"value", int32(1)}}}},
+			err: &mongo.WriteError{
+				Code: 14,
+				Message: `Cannot apply $inc to a value of non-numeric type. ` +
+					`{_id: "document"} has the field 'value' of non-numeric type object`,
+			},
+		},
+		"IncOnArray": {
+			filter: bson.D{{"_id", "array"}},
+			update: bson.D{{"$inc", bson.D{{"value", int32(1)}}}},
+			err: &mongo.WriteError{
+				Code:    14,
+				Message: `Cannot apply $inc to a value of non-numeric type. {_id: "array"} has the field 'value' of non-numeric type array`,
+			},
+		},
 		"BadIncType": {
 			filter: bson.D{{"_id", "string"}},
 			update: bson.D{{"$inc", "string"}},
@@ -127,7 +144,7 @@ func TestUpdateIncOperatorErrors(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t, shareddata.Scalars)
+			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 			_, err := collection.UpdateOne(ctx, tc.filter, tc.update)
 			require.NotNil(t, tc.err)
