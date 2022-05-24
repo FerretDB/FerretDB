@@ -263,7 +263,10 @@ func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
 
 // check interfaces
 var (
-	_ error = (*Error)(nil)
-	_ error = (*WriteError)(nil)
-	_ error = (*WriteErrors)(nil)
+	_ error    = (*Error)(nil)
+	_ error    = (*WriteError)(nil)
+	_ error    = (*WriteErrors)(nil)
+	_ ProtoErr = (*Error)(nil)
+	_ ProtoErr = (*WriteError)(nil)
+	_ ProtoErr = (*WriteErrors)(nil)
 )
