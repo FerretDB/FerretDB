@@ -131,7 +131,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 			doc := q.DeepCopy()
 			if err = common.UpdateDocument(doc, u); err != nil {
-				return nil, lazyerrors.Error(err)
+				return nil, err
 			}
 			if !doc.Has("_id") {
 				must.NoError(doc.Set("_id", types.NewObjectID()))
@@ -161,7 +161,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		for _, doc := range resDocs {
 			if err = common.UpdateDocument(doc, u); err != nil {
-				return nil, lazyerrors.Error(err)
+				return nil, err
 			}
 
 			tag, err := h.update(ctx, sp, doc)

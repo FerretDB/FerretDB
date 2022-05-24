@@ -29,11 +29,16 @@ func UpdateDocument(doc, update *types.Document) error {
 
 		switch updateOp {
 		case "$set":
-			setDoc, err := AssertType[*types.Document](updateV)
-			if err != nil {
-				return err
+			setDoc, ok := updateV.(*types.Document)
+			if !ok {
+				return NewError(
+					ErrFailedToParse,
+					fmt.Errorf("Modifiers operate on fields but we found type string instead. "+
+						"For example: {$mod: {<field>: ...}} not {$set: \"%T\"}", updateV,
+					))
 			}
 
+			var err error
 			for _, setKey := range setDoc.Keys() {
 				setValue := must.NotFail(setDoc.Get(setKey))
 				if err = doc.Set(setKey, setValue); err != nil {
