@@ -54,7 +54,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 		// {field1./.../.fieldN: filterValue}
 		path := types.NewPathFromString(filterKey)
 		// we pass the path without the last key because we want {fieldN: *someValue*}, not just *someValue*
-		docValue, err := doc.GetByPath(path.Remove(path.Len() - 1))
+		docValue, err := doc.GetByPath(path.TrimSuffix())
 		if err != nil {
 			return false, nil // no error - the field is just not present
 		}
@@ -62,7 +62,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 		if doc, ok = docValue.(*types.Document); !ok {
 			return false, nil // no error - the field is just not present
 		}
-		filterKey = path.Element(path.Len() - 1)
+		filterKey = path.Suffix()
 	}
 
 	if strings.HasPrefix(filterKey, "$") {

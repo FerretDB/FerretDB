@@ -25,37 +25,6 @@ type Path struct {
 	s []string
 }
 
-// Len returns path length.
-func (p Path) Len() int {
-	return len(p.s)
-}
-
-// Slice returns path slice copy.
-func (p Path) Slice() []string {
-	path := make([]string, len(p.s))
-	copy(path, p.s)
-	return path
-}
-
-// Element returns path element specified by the index or empty string if index below 0 or greater than Path len.
-func (p Path) Element(index int) string {
-	if index < 0 || index > len(p.s) {
-		return ""
-	}
-	return p.s[index]
-}
-
-// Remove returns new path with removed path element specified by index.
-// If index below 0 or greater than Path len it would return the same value.
-func (p Path) Remove(index int) Path {
-	if index < 0 || index > len(p.s) {
-		return p
-	}
-	path := NewPath(p.s...)
-	path.s = append(path.s[:index], path.s[index+1:]...)
-	return path
-}
-
 // NewPath returns Path from a strings slice. Provided strings slice would be copied into a new Path.
 func NewPath(path ...string) Path {
 	p := Path{s: make([]string, len(path))}
@@ -68,6 +37,50 @@ func NewPathFromString(s string) Path {
 	path := strings.Split(s, ".")
 
 	return NewPath(path...)
+}
+
+// Len returns path length.
+func (p Path) Len() int {
+	return len(p.s)
+}
+
+// Slice returns path slice copy.
+func (p Path) Slice() []string {
+	path := make([]string, len(p.s))
+	copy(path, p.s)
+	return path
+}
+
+// Suffix returns the first path element.
+func (p Path) Suffix() string {
+	if len(p.s) == 0 {
+		return ""
+	}
+	return p.s[p.Len()-1]
+}
+
+// Prefix returns the last path element.
+func (p Path) Prefix() string {
+	if len(p.s) == 0 {
+		return ""
+	}
+	return p.s[0]
+}
+
+// TrimSuffix returns a copy of path without suffix.
+func (p Path) TrimSuffix() Path {
+	if len(p.s) == 0 {
+		return p
+	}
+	return NewPath(p.s[:p.Len()-1]...)
+}
+
+// TrimPrefix returns a copy of path without prefix.
+func (p Path) TrimPrefix() Path {
+	if len(p.s) == 0 {
+		return p
+	}
+	return NewPath(p.s[1:]...)
 }
 
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
@@ -111,7 +124,7 @@ func removeByPath(v any, path Path) {
 		return
 	}
 
-	key := path.Element(0)
+	key := path.Prefix()
 	switch v := v.(type) {
 	case *Document:
 		if _, ok := v.m[key]; !ok {
@@ -121,7 +134,7 @@ func removeByPath(v any, path Path) {
 			v.Remove(key)
 			return
 		}
-		removeByPath(v.m[key], path.Remove(0))
+		removeByPath(v.m[key], path.TrimPrefix())
 
 	case *Array:
 		i, err := strconv.Atoi(key)
@@ -135,7 +148,7 @@ func removeByPath(v any, path Path) {
 			v.s = append(v.s[:i], v.s[i+1:]...)
 			return
 		}
-		removeByPath(v.s[i], path.Remove(0))
+		removeByPath(v.s[i], path.TrimPrefix())
 	default:
 		// no such path: scalar value
 	}
