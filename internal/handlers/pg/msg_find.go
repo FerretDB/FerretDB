@@ -171,6 +171,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	return &reply, nil
 }
 
+// getMaxTimeMSParameter gets maxTimeMS optional parameter.
 func getMaxTimeMSParameter(document *types.Document) (int32, error) {
 	var maxTimeMS int32
 	maxTimeMSParam, err := common.GetOptionalParam(document, "maxTimeMS", maxTimeMS)
@@ -193,6 +194,7 @@ func getMaxTimeMSParameter(document *types.Document) (int32, error) {
 	return maxTimeMSParam, nil
 }
 
+// getErrorForInvalidMaxTimeMS returns error for invalid maxTimeMS type.
 func getErrorForInvalidMaxTimeMS(document *types.Document) error {
 	v, err := document.Get("maxTimeMS")
 	if err != nil {
