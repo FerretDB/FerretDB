@@ -25,7 +25,7 @@ import (
 
 //go:generate ../../../bin/stringer -linecomment -type ErrorCode
 
-// ErrorCode represents wire protocol error code
+// ErrorCode represents wire protocol error code.
 type ErrorCode int32
 
 const (
