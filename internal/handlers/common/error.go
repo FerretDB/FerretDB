@@ -64,13 +64,15 @@ const (
 	// ErrInvalidArg indicates invalid argument in projection document.
 	ErrInvalidArg = ErrorCode(28667) // Location28667
 
-	// ErrSliceFirstArg for $slice, indicates that the first argument is not an array.
+	// ErrSliceFirstArg for $slice indicates that the first argument is not an array.
 	ErrSliceFirstArg = ErrorCode(28724) // Location28724
 
-	// ErrProjectionInEx for $elemMatch, when inclusion statement occurred while projection document already marked as exlusion.
+	// ErrProjectionInEx for $elemMatch indicates that inclusion statement found
+	// while projection document already marked as exlusion.
 	ErrProjectionInEx = ErrorCode(31253) // Location31253
 
-	// ErrProjectionExIn for $elemMatch, when exlusion statement occurred while projection document already marked as inclusion.
+	// ErrProjectionExIn for $elemMatch indicates that exlusion statement found
+	// while projection document already marked as inclusion.
 	ErrProjectionExIn = ErrorCode(31254) // Location31254
 
 	// ErrRegexOptions indicates regex options error.
