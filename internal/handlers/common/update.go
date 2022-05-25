@@ -46,7 +46,6 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				for _, setKey := range setDoc.Keys() {
 					setValue := must.NotFail(setDoc.Get(setKey))
 					if err = doc.Set(setKey, setValue); err != nil {
-						NewWriteErrorMsg(ErrFailedToParse, fmt.Sprintf(msgFmt, "array", "[]"))
 						return false, err
 					}
 				}
