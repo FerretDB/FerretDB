@@ -159,38 +159,29 @@ func AssertEqualAltError(t testing.TB, expected mongo.CommandError, altMessage s
 func AssertEqualWriteError(t *testing.T, expected *mongo.WriteError, alt string, actual error) bool {
 	t.Helper()
 
+	var actualWE mongo.WriteError
 	actualEx, ok := actual.(mongo.WriteException)
 	if ok {
 		if len(actualEx.WriteErrors) != 1 {
 			return assert.Equal(t, expected, actual)
 		}
-		actualWE := actualEx.WriteErrors[0]
-		if int(expected.Code) != int(actualWE.Code) {
-			return false
+		actualWE = actualEx.WriteErrors[0]
+	} else {
+		actualWE, ok = actual.(mongo.WriteError)
+		if !ok {
+			return assert.Equal(t, expected, actual)
 		}
-		if expected.Message == actualWE.Message {
-			return true
-		}
-		if alt != "" {
-			expected.Message = alt
-			return expected.Message == actualWE.Message
-		}
-		return false
 	}
 
-	actualE, ok := actual.(mongo.WriteError)
-	if !ok {
-		return assert.Equal(t, expected, actual)
-	}
-	if int(expected.Code) != int(actualE.Code) {
+	if int(expected.Code) != int(actualWE.Code) {
 		return false
 	}
-	if expected.Message == actualE.Message {
+	if expected.Message == actualWE.Message {
 		return true
 	}
 	if alt != "" {
 		expected.Message = alt
-		return expected.Message == actualE.Message
+		return expected.Message == actualWE.Message
 	}
 	return false
 }
