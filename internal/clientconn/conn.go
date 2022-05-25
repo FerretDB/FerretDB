@@ -218,7 +218,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 				return
 			}
 
-			c.l.Infof("Header diff:\n%s\nBody diff:\n%s\n\n", diffHeader, diffBody)
+			c.l.Debugf("Header diff:\n%s\nBody diff:\n%s\n\n", diffHeader, diffBody)
 		}
 
 		// replace response with one from proxy in proxy and diff-proxy modes
@@ -228,7 +228,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 		}
 
 		if resHeader == nil || resBody == nil {
-			c.l.Info("no response to send to client")
+			c.l.Debugf("no response to send to client")
 			return
 		}
 
@@ -247,7 +247,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 	}
 }
 
-// Route routes the message.
+// route send request to a handler's command based on the op code provided in the request header.
 //
 // Route's possible returns:
 //  * normal response body;
