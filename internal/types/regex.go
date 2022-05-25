@@ -21,38 +21,38 @@ import (
 )
 
 var (
-	// ErrOptionNotImplemented for unimplemented regex option.
+	// ErrOptionNotImplemented indicates unimplemented regex option.
 	ErrOptionNotImplemented = fmt.Errorf("regex: option not implemented")
 
-	// ErrMissingParen for missing parentheses in regex expression.
+	// ErrMissingParen indicates missing parentheses in regex expression.
 	ErrMissingParen = fmt.Errorf("Regular expression is invalid: missing )")
 
-	// ErrMissingBracket for missing terminating ] for character class.
+	// ErrMissingBracket indicates missing terminating ] for character class.
 	ErrMissingBracket = fmt.Errorf("Regular expression is invalid: missing terminating ] for character class")
 
-	// ErrInvalidEscape for invalid escape errors.
+	// ErrInvalidEscape indicates invalid escape errors.
 	ErrInvalidEscape = fmt.Errorf("Regular expression is invalid: PCRE does not support \\L, \\l, \\N{name}, \\U, or \\u")
 
-	// ErrMissingTerminator for syntax error in subpattern name (missing terminator.
+	// ErrMissingTerminator indicates syntax error in subpattern name (missing terminator)..
 	ErrMissingTerminator = fmt.Errorf("Regular expression is invalid: syntax error in subpattern name (missing terminator)")
 
-	// ErrUnmatchedParentheses for unmatched parentheses.
+	// ErrUnmatchedParentheses indicates unmatched parentheses.
 	ErrUnmatchedParentheses = fmt.Errorf("Regular expression is invalid: unmatched parentheses")
 
-	// ErrTrailingBackslash for \\ at end of pattern.
+	// ErrTrailingBackslash indicates \\ at end of the pattern.
 	ErrTrailingBackslash = fmt.Errorf("Regular expression is invalid: \\ at end of pattern")
 
-	// ErrNothingToRepeat for nothing to repeat error.
+	// ErrNothingToRepeat indicates invalid regex: nothing to repeat.
 	ErrNothingToRepeat = fmt.Errorf("Regular expression is invalid: nothing to repeat")
 
-	// ErrInvalidClassRange for range out of order in character class error.
+	// ErrInvalidClassRange indicates that range out of order in character class.
 	ErrInvalidClassRange = fmt.Errorf("Regular expression is invalid: range out of order in character class")
 
 	//nolint:godot // false positive
-	// ErrUnsupportedPerlOp for unrecognized character after (? or (?-.
+	// ErrUnsupportedPerlOp indicates for unrecognized character after (? or (?-.
 	ErrUnsupportedPerlOp = fmt.Errorf("Regular expression is invalid: unrecognized character after (? or (?-")
 
-	// ErrInvalidRepeatSize if regular expression is too large.
+	// ErrInvalidRepeatSize indicates that the regular expression is too large.
 	ErrInvalidRepeatSize = fmt.Errorf("Regular expression is invalid: regular expression is too large")
 )
 

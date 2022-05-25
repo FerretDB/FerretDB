@@ -44,7 +44,7 @@ var (
 	// ErrNotExist is an error when schema or table does not exist while attempting to access it.
 	ErrNotExist = fmt.Errorf("schema or table does not exist")
 
-	// ErrAlreadyExist is an error when schema or table already exists while creating it.
+	// ErrAlreadyExist is an error when a schema or table already exists while creating it.
 	ErrAlreadyExist = fmt.Errorf("schema or table already exist")
 )
 

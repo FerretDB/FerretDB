@@ -20,28 +20,28 @@ package types
 type BinarySubtype byte
 
 const (
-	// BinaryGeneric BSON generic binary subtype.
+	// BinaryGeneric represents a BSON generic binary subtype.
 	BinaryGeneric = BinarySubtype(0x00) // generic
 
-	// BinaryFunction BSON function.
+	// BinaryFunction represents a BSON function.
 	BinaryFunction = BinarySubtype(0x01) // function
 
-	// BinaryGenericOld BSON generic-old.
+	// BinaryGenericOld represents a BSON generic-old.
 	BinaryGenericOld = BinarySubtype(0x02) // generic-old
 
-	// BinaryUUIDOld BSON UUID old.
+	// BinaryUUIDOld represents a BSON UUID old.
 	BinaryUUIDOld = BinarySubtype(0x03) // uuid-old
 
-	// BinaryUUID BSON UUID.
+	// BinaryUUID represents a BSON UUID.
 	BinaryUUID = BinarySubtype(0x04) // uuid
 
-	// BinaryMD5 BSON md5.
+	// BinaryMD5 represents a BSON md5.
 	BinaryMD5 = BinarySubtype(0x05) // md5
 
-	// BinaryEncrypted Encrypted BSON value.
+	// BinaryEncrypted represents a Encrypted BSON value.
 	BinaryEncrypted = BinarySubtype(0x06) // encrypted
 
-	// BinaryUser User defined.
+	// BinaryUser represents a  User defined.
 	BinaryUser = BinarySubtype(0x80) // user
 )
 

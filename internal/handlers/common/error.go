@@ -25,7 +25,7 @@ import (
 
 //go:generate ../../../bin/stringer -linecomment -type ErrorCode
 
-// ErrorCode represents FerretDB error codes.
+// ErrorCode represents wire protocol error code
 type ErrorCode int32
 
 const (
@@ -40,7 +40,7 @@ const (
 	// ErrFailedToParse indicates user input parsing failure.
 	ErrFailedToParse = ErrorCode(9) // FailedToParse
 
-	// ErrTypeMismatch for $sort, indicates that the expression in the $sort is not an object.
+	// ErrTypeMismatch for $sort indicates that the expression in the $sort is not an object.
 	ErrTypeMismatch = ErrorCode(14) // TypeMismatch
 
 	// ErrNamespaceNotFound indicates that a collection is not found.
@@ -55,7 +55,7 @@ const (
 	// ErrInvalidNamespace indicates that the collection name is empty.
 	ErrInvalidNamespace = ErrorCode(73) // InvalidNamespace
 
-	// ErrNotImplemented indicates that flag or command is not implemented.
+	// ErrNotImplemented indicates that a flag or command is not implemented.
 	ErrNotImplemented = ErrorCode(238) // NotImplemented
 
 	// ErrSortBadValue indicates bad value in sort input.

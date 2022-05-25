@@ -82,6 +82,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	if opts.handler == nil {
 		panic("handler required")
 	}
+
 	prefix := fmt.Sprintf("// %s -> %s ", opts.netConn.RemoteAddr(), opts.netConn.LocalAddr())
 	l := opts.l.Named(prefix)
 

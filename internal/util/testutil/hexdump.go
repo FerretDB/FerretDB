@@ -25,7 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// ParseDump parse string to bytes, in tests.
+// ParseDump parses string to bytes, in tests.
 func ParseDump(tb testing.TB, s string) []byte {
 	tb.Helper()
 
@@ -34,7 +34,7 @@ func ParseDump(tb testing.TB, s string) []byte {
 	return b
 }
 
-// ParseDumpFile parse file input to bytes, in tests.
+// ParseDumpFile parses file input to bytes, in tests.
 func ParseDumpFile(tb testing.TB, path ...string) []byte {
 	tb.Helper()
 
