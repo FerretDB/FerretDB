@@ -36,6 +36,16 @@ func TestSetOperatorOnString(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]testCase{
+		"SetMany": {
+			id:     "string",
+			update: bson.D{{"$set", bson.D{{"foo", int32(1)}, {"bar", bson.A{}}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			result: bson.D{{"_id", "string"}, {"value", "foo"}, {"bar", bson.A{}}, {"foo", int32(1)}},
+		},
 		"SetNilOperand": {
 			id:     "string",
 			update: bson.D{{"$set", nil}},

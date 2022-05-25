@@ -16,6 +16,7 @@ package common
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -43,6 +44,8 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 					return false, nil
 				}
 				var err error
+
+				sort.Strings(setDoc.Keys())
 				for _, setKey := range setDoc.Keys() {
 					setValue := must.NotFail(setDoc.Get(setKey))
 					if err = doc.Set(setKey, setValue); err != nil {
