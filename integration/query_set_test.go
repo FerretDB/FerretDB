@@ -106,8 +106,10 @@ func TestSetOperatorOnString(t *testing.T) {
 			err: &mongo.WriteError{
 				Code: 9,
 				Message: "Modifiers operate on fields but we found type array instead. " +
-					"For example: {$mod: {<field>: ...}} not {$set: array}",
+					"For example: {$mod: {<field>: ...}} not {$set: []}",
 			},
+			alt: "Modifiers operate on fields but we found type array instead. " +
+				"For example: {$mod: {<field>: ...}} not {$set: array}",
 		},
 		"SetEmptyDoc": {
 			id:     "string",
