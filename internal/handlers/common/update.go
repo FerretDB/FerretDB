@@ -18,7 +18,6 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -30,6 +29,14 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 		switch updateOp {
 		case "$set":
+			msgFmt := `Modifiers operate on fields but we found type %s instead. ` +
+				`For example: {$mod: {<field>: ...}} not {$set: %s}`
+
+			if updateV == nil ||
+				updateV == types.Null {
+				return false, NewWriteErrorMsg(ErrFailedToParse, fmt.Sprintf(msgFmt, "null", "null"))
+			}
+
 			switch setDoc := updateV.(type) {
 			case *types.Document:
 				if setDoc.Len() == 0 {
@@ -39,17 +46,14 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				for _, setKey := range setDoc.Keys() {
 					setValue := must.NotFail(setDoc.Get(setKey))
 					if err = doc.Set(setKey, setValue); err != nil {
-						return false, lazyerrors.Error(err)
+						NewWriteErrorMsg(ErrFailedToParse, fmt.Sprintf(msgFmt, "array", "[]"))
+						return false, err
 					}
 				}
 				return true, nil
 
 			case *types.Array:
-				return false, NewWriteErrorMsg(
-					ErrFailedToParse,
-					`Modifiers operate on fields but we found type array instead. `+
-						`For example: {$mod: {<field>: ...}} not {$set: []}`,
-				)
+				return false, NewWriteErrorMsg(ErrFailedToParse, fmt.Sprintf(msgFmt, "array", "[]"))
 
 			case float64:
 				return false, NewWriteErrorMsg(

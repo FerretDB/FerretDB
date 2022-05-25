@@ -32,10 +32,19 @@ type testCase struct {
 	alt    string
 }
 
-func TestSetOperator(t *testing.T) {
+func TestSetOperatorOnString(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]testCase{
+		"SetNilOperand": {
+			id:     "string",
+			update: bson.D{{"$set", nil}},
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type null instead. " +
+					"For example: {$mod: {<field>: ...}} not {$set: null}",
+			},
+		},
 		"SetString": {
 			id:     "string",
 			update: bson.D{{"$set", "string"}},
@@ -140,6 +149,101 @@ func TestSetOperator(t *testing.T) {
 
 			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
 			if tc.err != nil {
+				if !AssertEqualWriteError(t, tc.err, tc.alt, err) {
+					t.Logf("%[1]T %[1]v", err)
+					t.FailNow()
+				}
+				return
+			}
+			require.Equal(t, tc.stat, res)
+
+			var actual bson.D
+			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
+			require.NoError(t, err)
+			if !AssertEqualDocuments(t, tc.result, actual) {
+				t.FailNow()
+			}
+		})
+	}
+}
+
+func TestSetOperatorDoubleVal(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]testCase{
+		"SetDouble": {
+			id:     "double",
+			update: bson.D{{"$set", bson.D{{"value", float64(1)}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			result: bson.D{{"_id", "double"}, {"value", float64(1)}},
+		},
+		"SetNaN": {
+			id:     "double",
+			update: bson.D{{"$set", bson.D{{"value", math.NaN()}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			result: bson.D{{"_id", "double"}, {"value", math.NaN()}},
+		},
+		"SetEmptyArray": {
+			id:     "double",
+			update: bson.D{{"$set", bson.D{{"value", bson.A{}}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			result: bson.D{{"_id", "double"}, {"value", bson.A{}}},
+		},
+		"SetNull": {
+			id:     "double",
+			update: bson.D{{"$set", bson.D{{"value", nil}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			result: bson.D{{"_id", "double"}, {"value", nil}},
+		},
+		"SetInt32": {
+			id:     "double",
+			update: bson.D{{"$set", bson.D{{"value", int32(1)}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			result: bson.D{{"_id", "double"}, {"value", int32(1)}},
+		},
+		"SetInf": {
+			id:     "double",
+			update: bson.D{{"$set", bson.D{{"value", math.Inf(+1)}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			result: bson.D{{"_id", "double"}, {"value", math.Inf(+1)}},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup(t)
+			_, err := collection.InsertMany(ctx, []any{
+				bson.D{{"_id", "double"}, {"value", float64(0.0)}},
+			})
+			require.NoError(t, err)
+
+			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
+			if tc.err != nil {
+				t.Log(err)
 				if !AssertEqualWriteError(t, tc.err, tc.alt, err) {
 					t.Log(err)
 					t.FailNow()

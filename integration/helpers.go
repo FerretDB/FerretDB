@@ -169,11 +169,13 @@ func AssertEqualWriteError(t *testing.T, expected *mongo.WriteError, alt string,
 	} else {
 		actualWE, ok = actual.(mongo.WriteError)
 		if !ok {
+			t.Log("compare", expected, actual)
 			return assert.Equal(t, expected, actual)
 		}
 	}
 
 	if int(expected.Code) != int(actualWE.Code) {
+		t.Log("codes are not equal", expected.Code, actualWE.Code)
 		return false
 	}
 	if expected.Message == actualWE.Message {
