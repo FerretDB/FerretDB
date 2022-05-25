@@ -29,13 +29,6 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 		switch updateOp {
 		case "$set":
-			msgFmt := `Modifiers operate on fields but we found type %s instead. ` +
-				`For example: {$mod: {<field>: ...}} not {$set: %s}`
-
-			if updateV == nil ||
-				updateV == types.Null {
-				return false, NewWriteErrorMsg(ErrFailedToParse, fmt.Sprintf(msgFmt, "null", "null"))
-			}
 
 			switch setDoc := updateV.(type) {
 			case *types.Document:
@@ -50,22 +43,10 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 					}
 				}
 				return true, nil
-
-			case *types.Array:
-				return false, NewWriteErrorMsg(ErrFailedToParse, fmt.Sprintf(msgFmt, "array", "[]"))
-
-			case float64:
-				return false, NewWriteErrorMsg(
-					ErrFailedToParse,
-					fmt.Sprintf(`Modifiers operate on fields but we found type double instead. `+
-						`For example: {$mod: {<field>: ...}} not {$set: %.2f}`, setDoc,
-					))
 			default:
-				return false, NewWriteErrorMsg(
-					ErrFailedToParse,
-					fmt.Sprintf("Modifiers operate on fields but we found type %[1]T instead. "+
-						"For example: {$mod: {<field>: ...}} not {$set: \"%[1]T\"}", updateV,
-					))
+				msgFmt := fmt.Sprintf(`Modifiers operate on fields but we found type %[1]s instead. `+
+					`For example: {$mod: {<field>: ...}} not {$set: %[1]s}`, AliasFromType(updateV))
+				return false, NewWriteErrorMsg(ErrFailedToParse, msgFmt)
 			}
 
 		default:

@@ -181,6 +181,8 @@ func AssertEqualWriteError(t *testing.T, expected *mongo.WriteError, alt string,
 	if expected.Message == actualWE.Message {
 		return true
 	}
+	t.Log(expected.Message)
+	t.Log(actualWE.Message)
 	if alt != "" {
 		expected.Message = alt
 		return expected.Message == actualWE.Message

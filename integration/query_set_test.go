@@ -53,6 +53,8 @@ func TestSetOperatorOnString(t *testing.T) {
 				Message: "Modifiers operate on fields but we found type string instead. " +
 					"For example: {$mod: {<field>: ...}} not {$set: \"string\"}",
 			},
+			alt: "Modifiers operate on fields but we found type string instead. " +
+				"For example: {$mod: {<field>: ...}} not {$set: string}",
 		},
 		"SetDouble": {
 			id:     "string",
@@ -63,7 +65,7 @@ func TestSetOperatorOnString(t *testing.T) {
 					"For example: {$mod: {<field>: ...}} not {$set: 42.12345}",
 			},
 			alt: "Modifiers operate on fields but we found type double instead. " +
-				"For example: {$mod: {<field>: ...}} not {$set: 42.12}",
+				"For example: {$mod: {<field>: ...}} not {$set: double}",
 		},
 		"SetNaN": {
 			id:     "string",
@@ -74,7 +76,7 @@ func TestSetOperatorOnString(t *testing.T) {
 					"For example: {$mod: {<field>: ...}} not {$set: nan.0}",
 			},
 			alt: "Modifiers operate on fields but we found type double instead. " +
-				"For example: {$mod: {<field>: ...}} not {$set: NaN}",
+				"For example: {$mod: {<field>: ...}} not {$set: double}",
 		},
 		"SetInf": {
 			id:     "string",
@@ -85,7 +87,7 @@ func TestSetOperatorOnString(t *testing.T) {
 					"For example: {$mod: {<field>: ...}} not {$set: inf.0}",
 			},
 			alt: "Modifiers operate on fields but we found type double instead. " +
-				"For example: {$mod: {<field>: ...}} not {$set: +Inf}",
+				"For example: {$mod: {<field>: ...}} not {$set: double}",
 		},
 		"SetMinusInf": {
 			id:     "string",
@@ -96,7 +98,7 @@ func TestSetOperatorOnString(t *testing.T) {
 					"For example: {$mod: {<field>: ...}} not {$set: -inf.0}",
 			},
 			alt: "Modifiers operate on fields but we found type double instead. " +
-				"For example: {$mod: {<field>: ...}} not {$set: -Inf}",
+				"For example: {$mod: {<field>: ...}} not {$set: double}",
 		},
 		"SetArray": {
 			id:     "string",
@@ -104,7 +106,7 @@ func TestSetOperatorOnString(t *testing.T) {
 			err: &mongo.WriteError{
 				Code: 9,
 				Message: "Modifiers operate on fields but we found type array instead. " +
-					"For example: {$mod: {<field>: ...}} not {$set: []}",
+					"For example: {$mod: {<field>: ...}} not {$set: array}",
 			},
 		},
 		"SetEmptyDoc": {
