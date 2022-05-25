@@ -165,7 +165,7 @@ func AssertEqualWriteError(t *testing.T, expected *mongo.WriteError, alt string,
 			return assert.Equal(t, expected, actual)
 		}
 		actualWE := actualEx.WriteErrors[0]
-		if !assert.Equal(t, int(expected.Code), int(actualWE.Code)) {
+		if int(expected.Code) != int(actualWE.Code) {
 			return false
 		}
 		if expected.Message == actualWE.Message {
@@ -173,7 +173,7 @@ func AssertEqualWriteError(t *testing.T, expected *mongo.WriteError, alt string,
 		}
 		if alt != "" {
 			expected.Message = alt
-			return assert.Equal(t, expected.Message, actualWE.Message)
+			return expected.Message == actualWE.Message
 		}
 		return false
 	}
@@ -182,7 +182,7 @@ func AssertEqualWriteError(t *testing.T, expected *mongo.WriteError, alt string,
 	if !ok {
 		return assert.Equal(t, expected, actual)
 	}
-	if !assert.Equal(t, expected.Code, actualE.Code) {
+	if int(expected.Code) != int(actualE.Code) {
 		return false
 	}
 	if expected.Message == actualE.Message {
@@ -190,7 +190,7 @@ func AssertEqualWriteError(t *testing.T, expected *mongo.WriteError, alt string,
 	}
 	if alt != "" {
 		expected.Message = alt
-		return assert.Equal(t, expected.Message, actualE.Message)
+		return expected.Message == actualE.Message
 	}
 	return false
 }

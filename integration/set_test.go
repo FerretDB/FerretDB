@@ -64,6 +64,30 @@ func TestSetOperator(t *testing.T) {
 				Message: "Modifiers operate on fields but we found type double instead. " +
 					"For example: {$mod: {<field>: ...}} not {$set: nan.0}",
 			},
+			alt: "Modifiers operate on fields but we found type double instead. " +
+				"For example: {$mod: {<field>: ...}} not {$set: NaN}",
+		},
+		"SetInf": {
+			id:     "string",
+			update: bson.D{{"$set", math.Inf(+1)}},
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type double instead. " +
+					"For example: {$mod: {<field>: ...}} not {$set: inf.0}",
+			},
+			alt: "Modifiers operate on fields but we found type double instead. " +
+				"For example: {$mod: {<field>: ...}} not {$set: +Inf}",
+		},
+		"SetMinusInf": {
+			id:     "string",
+			update: bson.D{{"$set", math.Inf(-1)}},
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type double instead. " +
+					"For example: {$mod: {<field>: ...}} not {$set: -inf.0}",
+			},
+			alt: "Modifiers operate on fields but we found type double instead. " +
+				"For example: {$mod: {<field>: ...}} not {$set: -Inf}",
 		},
 		"SetArray": {
 			id:     "string",
@@ -116,8 +140,10 @@ func TestSetOperator(t *testing.T) {
 
 			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
 			if tc.err != nil {
-				t.Log(err)
-				AssertEqualWriteError(t, tc.err, tc.alt, err)
+				if !AssertEqualWriteError(t, tc.err, tc.alt, err) {
+					t.Log(err)
+					t.FailNow()
+				}
 				return
 			}
 			require.Equal(t, tc.stat, res)
