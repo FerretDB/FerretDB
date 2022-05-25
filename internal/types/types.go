@@ -48,7 +48,7 @@ import (
 	"time"
 )
 
-// MaxDocumentLen is maximum BSON object size.
+// MaxDocumentLen is the maximum BSON object size.
 const MaxDocumentLen = 16777216
 
 // ScalarType represents scalar type.
