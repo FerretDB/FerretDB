@@ -93,5 +93,4 @@ func TestAssertEqualWriteError(t *testing.T) {
 		equal := AssertEqualWriteError(t, tc.err1, tc.alt, tc.err2)
 		assert.Equal(t, tc.equal, equal, name)
 	}
-
 }
