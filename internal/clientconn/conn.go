@@ -84,12 +84,12 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	}
 
 	prefix := fmt.Sprintf("// %s -> %s ", opts.netConn.RemoteAddr(), opts.netConn.LocalAddr())
-	l := opts.l.Named(prefix)
+	l := opts.l.Named(prefix).Sugar()
 
 	var p *proxy.Router
 	if opts.mode != NormalMode {
 		var err error
-		if p, err = proxy.New(opts.proxyAddr); err != nil {
+		if p, err = proxy.New(opts.proxyAddr, l); err != nil {
 			return nil, err
 		}
 	}
@@ -97,7 +97,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	return &conn{
 		netConn: opts.netConn,
 		mode:    opts.mode,
-		l:       l.Sugar(),
+		l:       l,
 		h:       opts.handler,
 		m:       opts.connMetrics,
 		proxy:   p,
@@ -184,12 +184,6 @@ func (c *conn) run(ctx context.Context) (err error) {
 			}
 
 			proxyHeader, proxyBody, _ = c.proxy.Route(ctx, reqHeader, reqBody)
-
-			// do not spend time dumping if we are not going to log it
-			if c.l.Desugar().Core().Enabled(zap.DebugLevel) {
-				c.l.Debugf("Proxy header: %s", proxyHeader)
-				c.l.Debugf("Proxy message:\n%s\n\n\n", proxyBody)
-			}
 		}
 
 		// diff in diff mode
