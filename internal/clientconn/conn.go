@@ -270,37 +270,37 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	resHeader = new(wire.MsgHeader)
 	var err error
 	switch reqHeader.OpCode {
-	case wire.OP_MSG:
+	case wire.OpCodeMsg:
 		var document *types.Document
 		msg := reqBody.(*wire.OpMsg)
 		document, err = msg.Document()
 
 		command = document.Command()
 		if err == nil {
-			resHeader.OpCode = wire.OP_MSG
+			resHeader.OpCode = wire.OpCodeMsg
 			resBody, err = c.handleOpMsg(ctx, msg, command)
 		}
 
-	case wire.OP_QUERY:
+	case wire.OpCodeQuery:
 		query := reqBody.(*wire.OpQuery)
-		resHeader.OpCode = wire.OP_REPLY
+		resHeader.OpCode = wire.OpCodeReply
 		resBody, err = c.h.CmdQuery(ctx, query)
 
-	case wire.OP_REPLY:
+	case wire.OpCodeReply:
 		fallthrough
-	case wire.OP_UPDATE:
+	case wire.OpCodeUpdate:
 		fallthrough
-	case wire.OP_INSERT:
+	case wire.OpCodeInsert:
 		fallthrough
-	case wire.OP_GET_BY_OID:
+	case wire.OpCodeGetByOID:
 		fallthrough
-	case wire.OP_GET_MORE:
+	case wire.OpCodeGetMore:
 		fallthrough
-	case wire.OP_DELETE:
+	case wire.OpCodeDelete:
 		fallthrough
-	case wire.OP_KILL_CURSORS:
+	case wire.OpCodeKillCursors:
 		fallthrough
-	case wire.OP_COMPRESSED:
+	case wire.OpCodeCompressed:
 		fallthrough
 	default:
 		err = lazyerrors.Errorf("unexpected OpCode %s", reqHeader.OpCode)
@@ -310,7 +310,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	// set body for error
 	if err != nil {
 		switch resHeader.OpCode {
-		case wire.OP_MSG:
+		case wire.OpCodeMsg:
 			protoErr, recoverable := common.ProtocolError(err)
 			closeConn = !recoverable
 			var res wire.OpMsg
@@ -323,23 +323,23 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			resBody = &res
 			result = pointer.ToString(protoErr.Code().String())
 
-		case wire.OP_QUERY:
+		case wire.OpCodeQuery:
 			fallthrough
-		case wire.OP_REPLY:
+		case wire.OpCodeReply:
 			fallthrough
-		case wire.OP_UPDATE:
+		case wire.OpCodeUpdate:
 			fallthrough
-		case wire.OP_INSERT:
+		case wire.OpCodeInsert:
 			fallthrough
-		case wire.OP_GET_BY_OID:
+		case wire.OpCodeGetByOID:
 			fallthrough
-		case wire.OP_GET_MORE:
+		case wire.OpCodeGetMore:
 			fallthrough
-		case wire.OP_DELETE:
+		case wire.OpCodeDelete:
 			fallthrough
-		case wire.OP_KILL_CURSORS:
+		case wire.OpCodeKillCursors:
 			fallthrough
-		case wire.OP_COMPRESSED:
+		case wire.OpCodeCompressed:
 			fallthrough
 		default:
 			// do not panic to make fuzzing easier
