@@ -16,36 +16,48 @@ package common
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // UpdateDocument updates the given document with a series of update operators.
-func UpdateDocument(doc, update *types.Document) error {
+// Returns true if document was changed.
+func UpdateDocument(doc, update *types.Document) (bool, error) {
 	for _, updateOp := range update.Keys() {
 		updateV := must.NotFail(update.Get(updateOp))
 
 		switch updateOp {
 		case "$set",
 			"$setOnInsert":
-			setDoc, err := AssertType[*types.Document](updateV)
-			if err != nil {
-				return err
-			}
-
-			for _, setKey := range setDoc.Keys() {
-				setValue := must.NotFail(setDoc.Get(setKey))
-				if err = doc.Set(setKey, setValue); err != nil {
-					return lazyerrors.Error(err)
+			switch setDoc := updateV.(type) {
+			case *types.Document:
+				if setDoc.Len() == 0 {
+					return false, nil
 				}
+				var err error
+
+				sort.Strings(setDoc.Keys())
+				for _, setKey := range setDoc.Keys() {
+					setValue := must.NotFail(setDoc.Get(setKey))
+					if err = doc.Set(setKey, setValue); err != nil {
+						return false, err
+					}
+				}
+				return true, nil
+			default:
+				msgFmt := fmt.Sprintf(`Modifiers operate on fields but we found type %[1]s instead. `+
+					`For example: {$mod: {<field>: ...}} not {$set: %[1]s}`,
+					AliasFromType(updateV),
+				)
+				return false, NewWriteErrorMsg(ErrFailedToParse, msgFmt)
 			}
 
 		default:
-			return NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
+			return false, NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
 		}
 	}
 
-	return nil
+	return true, nil
 }
