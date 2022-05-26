@@ -8,16 +8,16 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[OP_REPLY-1]
-	_ = x[OP_UPDATE-2001]
-	_ = x[OP_INSERT-2002]
-	_ = x[OP_GET_BY_OID-2003]
-	_ = x[OP_QUERY-2004]
-	_ = x[OP_GET_MORE-2005]
-	_ = x[OP_DELETE-2006]
-	_ = x[OP_KILL_CURSORS-2007]
-	_ = x[OP_COMPRESSED-2012]
-	_ = x[OP_MSG-2013]
+	_ = x[OpCodeReply-1]
+	_ = x[OpCodeUpdate-2001]
+	_ = x[OpCodeInsert-2002]
+	_ = x[OpCodeGetByOID-2003]
+	_ = x[OpCodeQuery-2004]
+	_ = x[OpCodeGetMore-2005]
+	_ = x[OpCodeDelete-2006]
+	_ = x[OpCodeKillCursors-2007]
+	_ = x[OpCodeCompressed-2012]
+	_ = x[OpCodeMsg-2013]
 }
 
 const (
