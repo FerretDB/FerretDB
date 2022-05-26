@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// LogRAM implements zap logging entry interception
+// and storage of last 1024 entry in ring buffer in memory.
 package logging
 
 import (
@@ -20,6 +22,8 @@ import (
 
 	"go.uber.org/zap/zapcore"
 )
+
+var LogRAM *logRAM
 
 // logRAM structure storage of log records in memory.
 type logRAM struct {
@@ -48,8 +52,8 @@ func (l *logRAM) append(entry *zapcore.Entry) {
 	l.index = (l.index + 1) % int64(len(l.log))
 }
 
-// getLogRAM returns entrys from logRAM.
-func (l *logRAM) getLogRAM() []*zapcore.Entry {
+// Get returns entrys from logRAM.
+func (l *logRAM) Get() []*zapcore.Entry {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 
