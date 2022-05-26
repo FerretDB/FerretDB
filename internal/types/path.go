@@ -51,7 +51,7 @@ func (p Path) Slice() []string {
 	return path
 }
 
-// Suffix returns the first path element.
+// Suffix returns the last path element.
 func (p Path) Suffix() string {
 	if len(p.s) == 0 {
 		return ""
