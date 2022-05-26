@@ -218,6 +218,10 @@ func getErrorForInvalidMaxTimeMS(document *types.Document) error {
 			)
 		}
 
+		if maxTimeMS == math.Trunc(maxTimeMS) {
+			return nil
+		}
+
 		return common.NewErrorMsg(common.ErrBadValue, "maxTimeMS must be an integer")
 	case int64:
 		if maxTimeMS < math.MaxInt32 && maxTimeMS > math.MinInt32 {

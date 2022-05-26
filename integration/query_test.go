@@ -759,22 +759,40 @@ func TestQueryMaxTimeMSAvailableValues(t *testing.T) {
 	for name, tc := range map[string]struct {
 		command any
 	}{
-		"MaxTimeMSZero": {
+		"Double": {
 			command: bson.D{
 				{"find", collection.Name()},
-				{"maxTimeMS", 0},
+				{"maxTimeMS", float64(10000)},
 			},
 		},
-		"MaxTimeMSInt32": {
+		"DoubleZero": {
 			command: bson.D{
 				{"find", collection.Name()},
-				{"maxTimeMS", 10000},
+				{"maxTimeMS", float64(0)},
 			},
 		},
-		"MaxTimeMSInt64": {
+		"Int32": {
 			command: bson.D{
 				{"find", collection.Name()},
-				{"maxTimeMS", int64(1000)},
+				{"maxTimeMS", int32(10000)},
+			},
+		},
+		"Int32Zero": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", int32(0)},
+			},
+		},
+		"Int64": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", int64(10000)},
+			},
+		},
+		"Int64Zero": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", int64(0)},
 			},
 		},
 	} {
