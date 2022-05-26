@@ -144,9 +144,16 @@ func TestUpdateIncOperatorErrors(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := setup(t)
 
-			_, err := collection.UpdateOne(ctx, tc.filter, tc.update)
+			_, err := collection.InsertMany(ctx, []any{
+				bson.D{{"_id", "document"}, {"value", bson.D{{"foo", "bar"}}}},
+				bson.D{{"_id", "array"}, {"value", bson.A{"foo"}}},
+				bson.D{{"_id", "string"}, {"value", "foo"}},
+			})
+			require.NoError(t, err)
+
+			_, err = collection.UpdateOne(ctx, tc.filter, tc.update)
 			require.NotNil(t, tc.err)
 			AssertEqualWriteError(t, tc.err, err)
 		})
@@ -251,9 +258,17 @@ func TestUpdateIncOperator(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t, shareddata.Scalars)
+			ctx, collection := setup(t)
 
-			_, err := collection.UpdateOne(ctx, tc.filter, tc.update)
+			_, err := collection.InsertMany(ctx, []any{
+				bson.D{{"_id", "double"}, {"value", 42.13}},
+				bson.D{{"_id", "double-nan"}, {"value", math.NaN()}},
+				bson.D{{"_id", "int32"}, {"value", int32(42)}},
+				bson.D{{"_id", "int64"}, {"value", int64(42)}},
+			})
+			require.NoError(t, err)
+
+			_, err = collection.UpdateOne(ctx, tc.filter, tc.update)
 			require.NoError(t, err)
 
 			var actual bson.D
