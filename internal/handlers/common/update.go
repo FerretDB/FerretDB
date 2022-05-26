@@ -28,7 +28,8 @@ func UpdateDocument(doc, update *types.Document) error {
 		updateV := must.NotFail(update.Get(updateOp))
 
 		switch updateOp {
-		case "$set":
+		case "$set",
+			"$setOnInsert":
 			setDoc, err := AssertType[*types.Document](updateV)
 			if err != nil {
 				return err
