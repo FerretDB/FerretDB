@@ -49,7 +49,7 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 	}
 
 	switch header.OpCode {
-	case OP_REPLY:
+	case OpCodeReply:
 		var reply OpReply
 		if err := reply.UnmarshalBinary(b); err != nil {
 			return nil, nil, lazyerrors.Error(err)
@@ -57,7 +57,7 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 
 		return &header, &reply, nil
 
-	case OP_MSG:
+	case OpCodeMsg:
 		var msg OpMsg
 		if err := msg.UnmarshalBinary(b); err != nil {
 			return nil, nil, lazyerrors.Error(err)
@@ -65,7 +65,7 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 
 		return &header, &msg, nil
 
-	case OP_QUERY:
+	case OpCodeQuery:
 		var query OpQuery
 		if err := query.UnmarshalBinary(b); err != nil {
 			return nil, nil, lazyerrors.Error(err)
@@ -73,19 +73,19 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 
 		return &header, &query, nil
 
-	case OP_UPDATE:
+	case OpCodeUpdate:
 		fallthrough
-	case OP_INSERT:
+	case OpCodeInsert:
 		fallthrough
-	case OP_GET_BY_OID:
+	case OpCodeGetByOID:
 		fallthrough
-	case OP_GET_MORE:
+	case OpCodeGetMore:
 		fallthrough
-	case OP_DELETE:
+	case OpCodeDelete:
 		fallthrough
-	case OP_KILL_CURSORS:
+	case OpCodeKillCursors:
 		fallthrough
-	case OP_COMPRESSED:
+	case OpCodeCompressed:
 		fallthrough
 
 	default:

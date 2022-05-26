@@ -30,7 +30,7 @@ var queryTestCases = []testCase{{
 		MessageLength: 372,
 		RequestID:     1,
 		ResponseTo:    0,
-		OpCode:        OP_QUERY,
+		OpCode:        OpCodeQuery,
 	},
 	msgBody: &OpQuery{
 		Flags:              0,
@@ -68,7 +68,7 @@ var queryTestCases = []testCase{{
 		MessageLength: 372,
 		RequestID:     2,
 		ResponseTo:    0,
-		OpCode:        OP_QUERY,
+		OpCode:        OpCodeQuery,
 	},
 	msgBody: &OpQuery{
 		Flags:              0,
