@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,14 +30,80 @@ func TestSetOnInsert(t *testing.T) {
 
 	for name, tc := range map[string]struct {
 		filter      bson.D
-		setOnInsert bson.D
+		setOnInsert any
 		res         bson.D
+		err         *mongo.WriteError
+		alt         string
 	}{
+		"doc": {
+			filter:      bson.D{{"_id", "doc"}},
+			setOnInsert: bson.D{{"value", bson.D{}}},
+			res:         bson.D{{"_id", "doc"}, {"value", bson.D{}}},
+		},
+		"array": {
+			filter:      bson.D{{"_id", "array"}},
+			setOnInsert: bson.D{{"value", bson.A{}}},
+			res:         bson.D{{"_id", "array"}, {"value", bson.A{}}},
+		},
 		"double": {
 			filter:      bson.D{{"_id", "double"}},
 			setOnInsert: bson.D{{"value", 43.13}},
 			res:         bson.D{{"_id", "double"}, {"value", 43.13}},
 		},
+		"NaN": {
+			filter:      bson.D{{"_id", "double-nan"}},
+			setOnInsert: bson.D{{"value", math.NaN()}},
+			res:         bson.D{{"_id", "double-nan"}, {"value", math.NaN()}},
+		},
+		"string": {
+			filter:      bson.D{{"_id", "string"}},
+			setOnInsert: bson.D{{"value", "abcd"}},
+			res:         bson.D{{"_id", "string"}, {"value", "abcd"}},
+		},
+		"nil": {
+			filter:      bson.D{{"_id", "nil"}},
+			setOnInsert: bson.D{{"value", nil}},
+			res:         bson.D{{"_id", "nil"}, {"value", nil}},
+		},
+		"empty-doc": {
+			filter:      bson.D{{"_id", "doc"}},
+			setOnInsert: bson.D{},
+			res:         bson.D{{"_id", "doc"}},
+		},
+		"empty-array": {
+			filter:      bson.D{{"_id", "array"}},
+			setOnInsert: bson.A{},
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type array instead. " +
+					"For example: {$mod: {<field>: ...}} not {$setOnInsert: []}",
+			},
+			alt: "Modifiers operate on fields but we found type array instead. " +
+				"For example: {$mod: {<field>: ...}} not {$setOnInsert: array}",
+		},
+		"double-double": {
+			filter:      bson.D{{"_id", "double"}},
+			setOnInsert: 43.13,
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type double instead. " +
+					"For example: {$mod: {<field>: ...}} not {$setOnInsert: 43.13}",
+			},
+			alt: "Modifiers operate on fields but we found type double instead. " +
+				"For example: {$mod: {<field>: ...}} not {$setOnInsert: double}",
+		},
+		// "err-NaN": {
+		// 	filter:      bson.D{{"_id", "double-nan"}},
+		// 	setOnInsert: math.NaN(),
+		// },
+		// "err-string": {
+		// 	filter:      bson.D{{"_id", "string"}},
+		// 	setOnInsert: "any string",
+		// },
+		// "err-nil": {
+		// 	filter:      bson.D{{"_id", "nil"}},
+		// 	setOnInsert: nil,
+		// },
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -52,6 +119,14 @@ func TestSetOnInsert(t *testing.T) {
 
 			opts := options.Update().SetUpsert(true)
 			res, err = collection.UpdateOne(ctx, tc.filter, bson.D{{"$setOnInsert", tc.setOnInsert}}, opts)
+			if tc.err != nil {
+				if !AssertEqualWriteError(t, tc.err, "", err) {
+					t.Logf("%[1]T %[1]v", err)
+					t.FailNow()
+				}
+				return
+			}
+
 			require.NoError(t, err)
 			id := res.UpsertedID
 			assert.NotEmpty(t, id)

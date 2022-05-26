@@ -48,8 +48,9 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				return true, nil
 			default:
 				msgFmt := fmt.Sprintf(`Modifiers operate on fields but we found type %[1]s instead. `+
-					`For example: {$mod: {<field>: ...}} not {$set: %[1]s}`,
+					`For example: {$mod: {<field>: ...}} not {%s: %[1]s}`,
 					AliasFromType(updateV),
+					updateOp,
 				)
 				return false, NewWriteErrorMsg(ErrFailedToParse, msgFmt)
 			}
