@@ -85,7 +85,8 @@ func ProtocolError(err error) (ProtoErr, bool) {
 // CommandError represents wire protocol command error.
 type CommandError = Error
 
-// Error is a deprecated name for CommandError; use the later in the new code instead.
+
+// Error is a deprecated name for CommandError; instead, use the later version in the new code.
 type Error struct {
 	err  error
 	code ErrorCode
@@ -142,11 +143,11 @@ func (e *Error) Document() *types.Document {
 	return d
 }
 
-// WriteErrors represents slice of protocol write errors.
-// It could be returned for Update, Insert, Delete, Replace operations.
+// WriteErrors represents a slice of protocol write errors.
+// It could be returned for Update, Insert, Delete, and Replace operations.
 type WriteErrors []writeError
 
-// NewWriteErrorMsg creates new protocol write error with given ErrorCode and message.
+// NewWriteErrorMsg creates a new protocol write error with given ErrorCode and message.
 func NewWriteErrorMsg(code ErrorCode, msg string) error {
 	return &WriteErrors{{
 		code: code,
@@ -172,7 +173,7 @@ func (we *WriteErrors) Code() ErrorCode {
 	return errUnset
 }
 
-// Unwrap implements standard error unwrapping interface.
+// Unwrap implements a standard error unwrapping interface.
 func (we *WriteErrors) Unwrap() error {
 	for _, e := range *we {
 		return errors.New(e.err)
@@ -181,18 +182,20 @@ func (we *WriteErrors) Unwrap() error {
 }
 
 // Document implements ProtoErr interface.
-// "writeErrors" field must present in result document so that clients could parse it as WriteErrors.
-// Fields "code" and "errmsg" must always be filled in so that clients can parse the error message,
-// otherwise mongo client would parse it as a CommandError.
 func (we *WriteErrors) Document() *types.Document {
 	errs := must.NotFail(types.NewArray())
 	for _, e := range *we {
+		// Fields "code" and "errmsg" must always be filled in so that clients can parse the error message.
+		// Otherwise, the mongo client would parse it as a CommandError.
 		must.NoError(errs.Append(must.NotFail(types.NewDocument(
 			"code", int32(e.code),
 			"errmsg", e.err,
 		))))
 	}
+	return errUnset
+}
 
+	// "writeErrors" field must be present in the result document so that clients can parse it as WriteErrors.
 	d := must.NotFail(types.NewDocument(
 		"ok", float64(1),
 		"writeErrors", errs,
@@ -242,8 +245,6 @@ func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
 
 // check interfaces
 var (
-	_ error    = (*Error)(nil)
-	_ error    = (*WriteErrors)(nil)
 	_ ProtoErr = (*Error)(nil)
 	_ ProtoErr = (*WriteErrors)(nil)
 )

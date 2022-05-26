@@ -17,6 +17,7 @@ package common
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -52,6 +53,66 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 					AliasFromType(updateV),
 				)
 				return false, NewWriteErrorMsg(ErrFailedToParse, msgFmt)
+			}
+
+		case "$inc":
+			incDoc, ok := updateV.(*types.Document)
+			if !ok {
+				return NewWriteErrorMsg(
+					ErrFailedToParse,
+					fmt.Sprintf(
+						`Modifiers operate on fields but we found type string instead. `+
+							`For example: {$mod: {<field>: ...}} not {%s: %#v}`,
+						updateOp,
+						updateV,
+					),
+				)
+			}
+
+			for _, incKey := range incDoc.Keys() {
+				if strings.ContainsRune(incKey, '.') {
+					return NewErrorMsg(ErrNotImplemented, "dot notation not supported yet")
+				}
+
+				incValue := must.NotFail(incDoc.Get(incKey))
+
+				if !doc.Has(incKey) {
+					must.NoError(doc.Set(incKey, incValue))
+					return nil
+				}
+
+				docValue := must.NotFail(doc.Get(incKey))
+
+				incremented, err := addNumbers(incValue, docValue)
+				if err == nil {
+					must.NoError(doc.Set(incKey, incremented))
+					continue
+				}
+
+				switch err {
+				case errUnexpectedLeftOpType:
+					return NewWriteErrorMsg(
+						ErrTypeMismatch,
+						fmt.Sprintf(
+							`Cannot increment with non-numeric argument: {%s: %#v}`,
+							incKey,
+							incValue,
+						),
+					)
+				case errUnexpectedRightOpType:
+					return NewWriteErrorMsg(
+						ErrTypeMismatch,
+						fmt.Sprintf(
+							`Cannot apply $inc to a value of non-numeric type. `+
+								`{_id: "%s"} has the field '%s' of non-numeric type %s`,
+							must.NotFail(doc.Get("_id")),
+							incKey,
+							AliasFromType(docValue),
+						),
+					)
+				default:
+					return err
+				}
 			}
 
 		default:
