@@ -184,3 +184,22 @@ func CollectKeys(t testing.TB, doc bson.D) []string {
 
 	return res
 }
+
+// AssertEqualWriteError compares expected mongo.WriteError Message and Code with actual error.
+func AssertEqualWriteError(t *testing.T, expected *mongo.WriteError, actual error) bool {
+	t.Helper()
+
+	writeException, ok := actual.(mongo.WriteException)
+	if !ok {
+		return assert.Equal(t, expected, actual)
+	}
+
+	if len(writeException.WriteErrors) != 1 {
+		return assert.Equal(t, expected, actual)
+	}
+
+	actualWriteErr := writeException.WriteErrors[0]
+
+	return assert.Equal(t, expected.Message, actualWriteErr.Message) &&
+		assert.Equal(t, expected.Code, actualWriteErr.Code)
+}
