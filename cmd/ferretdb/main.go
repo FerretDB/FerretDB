@@ -27,6 +27,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/handlers"
+	"github.com/FerretDB/FerretDB/internal/handlers/dummy"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
@@ -43,7 +44,7 @@ var (
 	proxyAddrF       = flag.String("proxy-addr", "127.0.0.1:37017", "")
 	versionF         = flag.Bool("version", false, "print version to stdout (full version, commit, branch, dirty flag) and exit")
 	testConnTimeoutF = flag.Duration("test-conn-timeout", 0, "test: set connection timeout")
-	handlerF         = flag.String("handler", "pg", "set backend handler (pg)")
+	handlerF         = flag.String("handler", "pg", "set backend handler (pg, dummy)")
 )
 
 func main() {
@@ -102,6 +103,9 @@ func main() {
 			StartTime: time.Now(),
 		}
 		h = pg.New(handlerOpts)
+
+	case "dummy":
+		h = dummy.New()
 
 	default:
 		panic("unknown handler")
