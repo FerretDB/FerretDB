@@ -77,6 +77,14 @@ func TestSetOnInsert(t *testing.T) {
 			setOnInsert: bson.D{},
 			res:         bson.D{{"_id", "doc"}},
 		},
+		// "empty-initial": {
+		// 	filter:      bson.D{},
+		// 	setOnInsert: bson.D{},
+		// },
+		// "nil-filter": {
+		// 	filter:      nil,
+		// 	setOnInsert: bson.D{},
+		// },
 		"empty-array": {
 			filter:      bson.D{{"_id", "array"}},
 			setOnInsert: bson.A{},
