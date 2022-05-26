@@ -16,7 +16,6 @@ package pg
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math"
 	"time"
@@ -176,12 +175,7 @@ func getMaxTimeMSParameter(document *types.Document) (int32, error) {
 	var maxTimeMS int32
 	maxTimeMSParam, err := common.GetOptionalParam(document, "maxTimeMS", maxTimeMS)
 	if err != nil {
-		var commonErr *common.Error
-		if errors.As(err, &commonErr) {
-			return 0, getErrorForInvalidMaxTimeMS(document)
-		}
-
-		return 0, err
+		return 0, getErrorForInvalidMaxTimeMS(document)
 	}
 
 	if maxTimeMSParam < 0 {
@@ -226,6 +220,10 @@ func getErrorForInvalidMaxTimeMS(document *types.Document) error {
 
 		return common.NewErrorMsg(common.ErrBadValue, "maxTimeMS must be an integer")
 	case int64:
+		if maxTimeMS < math.MaxInt32 && maxTimeMS > math.MinInt32 {
+			return nil
+		}
+
 		return common.NewErrorMsg(
 			common.ErrBadValue,
 			fmt.Sprintf("%v value for maxTimeMS is out of range", v),

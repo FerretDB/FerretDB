@@ -771,6 +771,12 @@ func TestQueryMaxTimeMSAvailableValues(t *testing.T) {
 				{"maxTimeMS", 10000},
 			},
 		},
+		"MaxTimeMSInt64": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", int64(1000)},
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
