@@ -35,7 +35,7 @@ type logRAM struct {
 // NewLogRAM is creating entries log in memory.
 func NewLogRAM(size int64) *logRAM {
 	if size < 1 {
-		panic(fmt.Sprintf("logram size %d", size))
+		panic(fmt.Sprintf("logram size must be at least 1, but %d provided", size))
 	}
 
 	return &logRAM{
