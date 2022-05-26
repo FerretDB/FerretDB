@@ -93,13 +93,13 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		var q, u *types.Document
-		var upsert bool
 		if q, err = common.GetOptionalParam(update, "q", q); err != nil {
 			return nil, err
 		}
 		if u, err = common.GetOptionalParam(update, "u", u); err != nil {
 			return nil, err
 		}
+		var upsert bool
 		if upsert, err = common.GetOptionalParam(update, "upsert", upsert); err != nil {
 			return nil, err
 		}
@@ -130,7 +130,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			}
 
 			doc := q.DeepCopy()
-			if _, err = common.UpdateDocument(doc, u); err != nil {
+			if _, err = common.UpdateDocument(doc, u, upsert); err != nil {
 				return nil, err
 			}
 			if !doc.Has("_id") {
@@ -161,7 +161,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		for _, doc := range resDocs {
 			var changed bool
-			changed, err = common.UpdateDocument(doc, u)
+			changed, err = common.UpdateDocument(doc, u, upsert)
 			if err != nil {
 				return nil, err
 			}

@@ -115,7 +115,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 			if params.hasUpdateOperators {
 				upsert = resDocs[0].DeepCopy()
-				_, err = common.UpdateDocument(upsert, params.update)
+				_, err = common.UpdateDocument(upsert, params.update, false)
 				if err != nil {
 					return nil, err
 				}
@@ -212,7 +212,7 @@ func (h *Handler) upsert(ctx context.Context, docs []*types.Document, params *up
 		upsert := must.NotFail(types.NewDocument())
 
 		if params.hasUpdateOperators {
-			_, err := common.UpdateDocument(upsert, params.update)
+			_, err := common.UpdateDocument(upsert, params.update, true)
 			if err != nil {
 				return nil, false, err
 			}
@@ -239,7 +239,7 @@ func (h *Handler) upsert(ctx context.Context, docs []*types.Document, params *up
 	upsert := docs[0].DeepCopy()
 
 	if params.hasUpdateOperators {
-		_, err := common.UpdateDocument(upsert, params.update)
+		_, err := common.UpdateDocument(upsert, params.update, true)
 		if err != nil {
 			return nil, false, err
 		}

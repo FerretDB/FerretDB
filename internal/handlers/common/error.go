@@ -85,7 +85,6 @@ func ProtocolError(err error) (ProtoErr, bool) {
 // CommandError represents wire protocol command error.
 type CommandError = Error
 
-
 // Error is a deprecated name for CommandError; instead, use the later version in the new code.
 type Error struct {
 	err  error
@@ -192,8 +191,6 @@ func (we *WriteErrors) Document() *types.Document {
 			"errmsg", e.err,
 		))))
 	}
-	return errUnset
-}
 
 	// "writeErrors" field must be present in the result document so that clients can parse it as WriteErrors.
 	d := must.NotFail(types.NewDocument(

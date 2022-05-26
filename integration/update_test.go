@@ -155,7 +155,7 @@ func TestUpdateIncOperatorErrors(t *testing.T) {
 
 			_, err = collection.UpdateOne(ctx, tc.filter, tc.update)
 			require.NotNil(t, tc.err)
-			AssertEqualWriteError(t, tc.err, err)
+			AssertEqualWriteError(t, tc.err, "", err)
 		})
 	}
 }

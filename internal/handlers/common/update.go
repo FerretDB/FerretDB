@@ -25,7 +25,7 @@ import (
 
 // UpdateDocument updates the given document with a series of update operators.
 // Returns true if document was changed.
-func UpdateDocument(doc, update *types.Document) (bool, error) {
+func UpdateDocument(doc, update *types.Document, upsert bool) (bool, error) {
 	for _, updateOp := range update.Keys() {
 		updateV := must.NotFail(update.Get(updateOp))
 
@@ -39,6 +39,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				}
 				var err error
 
+				fmt.Println("UPSERT", upsert)
 				sort.Strings(setDoc.Keys())
 				for _, setKey := range setDoc.Keys() {
 					setValue := must.NotFail(setDoc.Get(setKey))
@@ -58,7 +59,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 		case "$inc":
 			incDoc, ok := updateV.(*types.Document)
 			if !ok {
-				return NewWriteErrorMsg(
+				return false, NewWriteErrorMsg(
 					ErrFailedToParse,
 					fmt.Sprintf(
 						`Modifiers operate on fields but we found type string instead. `+
@@ -71,14 +72,14 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 			for _, incKey := range incDoc.Keys() {
 				if strings.ContainsRune(incKey, '.') {
-					return NewErrorMsg(ErrNotImplemented, "dot notation not supported yet")
+					return false, NewErrorMsg(ErrNotImplemented, "dot notation not supported yet")
 				}
 
 				incValue := must.NotFail(incDoc.Get(incKey))
 
 				if !doc.Has(incKey) {
 					must.NoError(doc.Set(incKey, incValue))
-					return nil
+					return false, nil
 				}
 
 				docValue := must.NotFail(doc.Get(incKey))
@@ -91,7 +92,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 				switch err {
 				case errUnexpectedLeftOpType:
-					return NewWriteErrorMsg(
+					return false, NewWriteErrorMsg(
 						ErrTypeMismatch,
 						fmt.Sprintf(
 							`Cannot increment with non-numeric argument: {%s: %#v}`,
@@ -100,7 +101,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 						),
 					)
 				case errUnexpectedRightOpType:
-					return NewWriteErrorMsg(
+					return false, NewWriteErrorMsg(
 						ErrTypeMismatch,
 						fmt.Sprintf(
 							`Cannot apply $inc to a value of non-numeric type. `+
@@ -111,7 +112,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 						),
 					)
 				default:
-					return err
+					return false, err
 				}
 			}
 
