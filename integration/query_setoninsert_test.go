@@ -92,18 +92,39 @@ func TestSetOnInsert(t *testing.T) {
 			alt: "Modifiers operate on fields but we found type double instead. " +
 				"For example: {$mod: {<field>: ...}} not {$setOnInsert: double}",
 		},
-		// "err-NaN": {
-		// 	filter:      bson.D{{"_id", "double-nan"}},
-		// 	setOnInsert: math.NaN(),
-		// },
-		// "err-string": {
-		// 	filter:      bson.D{{"_id", "string"}},
-		// 	setOnInsert: "any string",
-		// },
-		// "err-nil": {
-		// 	filter:      bson.D{{"_id", "nil"}},
-		// 	setOnInsert: nil,
-		// },
+		"err-NaN": {
+			filter:      bson.D{{"_id", "double-nan"}},
+			setOnInsert: math.NaN(),
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type double instead. " +
+					"For example: {$mod: {<field>: ...}} not {$setOnInsert: nan.0}",
+			},
+			alt: "Modifiers operate on fields but we found type double instead. " +
+				"For example: {$mod: {<field>: ...}} not {$setOnInsert: double}",
+		},
+		"err-string": {
+			filter:      bson.D{{"_id", "string"}},
+			setOnInsert: "any string",
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type string instead. " +
+					"For example: {$mod: {<field>: ...}} not {$setOnInsert: \"any string\"}",
+			},
+			alt: "Modifiers operate on fields but we found type string instead. " +
+				"For example: {$mod: {<field>: ...}} not {$setOnInsert: string}",
+		},
+		"err-nil": {
+			filter:      bson.D{{"_id", "nil"}},
+			setOnInsert: nil,
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type null instead. " +
+					"For example: {$mod: {<field>: ...}} not {$setOnInsert: null}",
+			},
+			alt: "Modifiers operate on fields but we found type null instead. " +
+				"For example: {$mod: {<field>: ...}} not {$setOnInsert: null}",
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -120,7 +141,7 @@ func TestSetOnInsert(t *testing.T) {
 			opts := options.Update().SetUpsert(true)
 			res, err = collection.UpdateOne(ctx, tc.filter, bson.D{{"$setOnInsert", tc.setOnInsert}}, opts)
 			if tc.err != nil {
-				if !AssertEqualWriteError(t, tc.err, "", err) {
+				if !AssertEqualWriteError(t, tc.err, tc.alt, err) {
 					t.Logf("%[1]T %[1]v", err)
 					t.FailNow()
 				}
