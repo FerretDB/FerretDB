@@ -26,19 +26,39 @@ import (
 
 //go:generate ../../bin/stringer -linecomment -type OpCode
 
+// OpCode represents wire operation code.
 type OpCode int32
 
 const (
-	OP_REPLY        = OpCode(1)    // OP_REPLY
-	OP_UPDATE       = OpCode(2001) // OP_UPDATE
-	OP_INSERT       = OpCode(2002) // OP_INSERT
-	OP_GET_BY_OID   = OpCode(2003) // OP_GET_BY_OID
-	OP_QUERY        = OpCode(2004) // OP_QUERY
-	OP_GET_MORE     = OpCode(2005) // OP_GET_MORE
-	OP_DELETE       = OpCode(2006) // OP_DELETE
-	OP_KILL_CURSORS = OpCode(2007) // OP_KILL_CURSORS
-	OP_COMPRESSED   = OpCode(2012) // OP_COMPRESSED
-	OP_MSG          = OpCode(2013) // OP_MSG
+	// OpCodeReply used in handshake reply. OpCodeReply is deprecated.
+	OpCodeReply = OpCode(1) // OP_REPLY
+
+	// OpCodeUpdate is deprecated.
+	OpCodeUpdate = OpCode(2001) // OP_UPDATE
+
+	// OpCodeInsert is deprecated.
+	OpCodeInsert = OpCode(2002) // OP_INSERT
+
+	// OpCodeGetByOID is deprecated.
+	OpCodeGetByOID = OpCode(2003) // OP_GET_BY_OID
+
+	// OpCodeQuery is used for query operation command. OpCodeQuery is deprecated.
+	OpCodeQuery = OpCode(2004) // OP_QUERY
+
+	// OpCodeGetMore is deprecated.
+	OpCodeGetMore = OpCode(2005) // OP_GET_MORE
+
+	// OpCodeDelete is deprecated.
+	OpCodeDelete = OpCode(2006) // OP_DELETE
+
+	// OpCodeKillCursors is deprecated.
+	OpCodeKillCursors = OpCode(2007) // OP_KILL_CURSORS
+
+	// OpCodeCompressed is used for compressed messages.
+	OpCodeCompressed = OpCode(2012) // OP_COMPRESSED
+
+	// OpCodeMsg is used for client-server communication.
+	OpCodeMsg = OpCode(2013) // OP_MSG
 )
 
 // MsgHeader in general, each message consists of a standard message header followed by request-specific data.
