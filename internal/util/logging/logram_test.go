@@ -31,11 +31,11 @@ func TestLogRAM(t *testing.T) {
 	}{
 		"PanicNegativSize": {
 			size:     -2,
-			msgPanic: "logram size -2",
+			msgPanic: "logram size must be at least 1, but -2 provided",
 		},
 		"PanicZeroSize": {
 			size:     0,
-			msgPanic: "logram size 0",
+			msgPanic: "logram size must be at least 1, but 0 provided",
 		},
 	} {
 		name, tc := name, tc
