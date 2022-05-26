@@ -26,7 +26,7 @@ type Path struct {
 }
 
 // NewPath returns Path from a strings slice. Provided strings slice would be copied into a new Path.
-func NewPath(path ...string) Path {
+func NewPath(s []string) Path {
 	p := Path{s: make([]string, len(path))}
 	copy(p.s, path)
 	return p
