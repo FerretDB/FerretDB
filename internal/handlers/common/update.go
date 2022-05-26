@@ -38,8 +38,6 @@ func UpdateDocument(doc, update *types.Document, upsert bool) (bool, error) {
 					return false, nil
 				}
 				var err error
-
-				fmt.Println("UPSERT", upsert)
 				sort.Strings(setDoc.Keys())
 				for _, setKey := range setDoc.Keys() {
 					setValue := must.NotFail(setDoc.Get(setKey))

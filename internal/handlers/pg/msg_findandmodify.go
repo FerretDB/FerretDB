@@ -115,7 +115,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 			if params.hasUpdateOperators {
 				upsert = resDocs[0].DeepCopy()
-				_, err = common.UpdateDocument(upsert, params.update, false)
+				_, err = common.UpdateDocument(upsert, params.update, true)
 				if err != nil {
 					return nil, err
 				}
