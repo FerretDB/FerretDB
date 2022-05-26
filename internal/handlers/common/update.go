@@ -25,7 +25,7 @@ import (
 
 // UpdateDocument updates the given document with a series of update operators.
 // Returns true if document was changed.
-func UpdateDocument(doc, update *types.Document, upsert bool) (bool, error) {
+func UpdateDocument(doc, update *types.Document) (bool, error) {
 	for _, updateOp := range update.Keys() {
 		updateV := must.NotFail(update.Get(updateOp))
 
@@ -77,7 +77,7 @@ func UpdateDocument(doc, update *types.Document, upsert bool) (bool, error) {
 
 				if !doc.Has(incKey) {
 					must.NoError(doc.Set(incKey, incValue))
-					return false, nil
+					return true, nil
 				}
 
 				docValue := must.NotFail(doc.Get(incKey))
