@@ -28,9 +28,16 @@ import (
 func TestSetOnInsert(t *testing.T) {
 	t.Parallel()
 
+	notModified := &mongo.UpdateResult{
+		MatchedCount:  0,
+		ModifiedCount: 0,
+		UpsertedCount: 1,
+	}
+
 	for name, tc := range map[string]struct {
 		filter      bson.D
 		setOnInsert any
+		stat        *mongo.UpdateResult
 		res         bson.D
 		err         *mongo.WriteError
 		alt         string
@@ -131,14 +138,9 @@ func TestSetOnInsert(t *testing.T) {
 			t.Parallel()
 			var err error
 			ctx, collection := setup(t)
-			expectedRes := &mongo.UpdateResult{
-				MatchedCount:  0,
-				ModifiedCount: 0,
-				UpsertedCount: 1,
-			}
-			var res *mongo.UpdateResult
 
 			opts := options.Update().SetUpsert(true)
+			var res *mongo.UpdateResult
 			res, err = collection.UpdateOne(ctx, tc.filter, bson.D{{"$setOnInsert", tc.setOnInsert}}, opts)
 			if tc.err != nil {
 				if !AssertEqualWriteError(t, tc.err, tc.alt, err) {
@@ -152,6 +154,10 @@ func TestSetOnInsert(t *testing.T) {
 			id := res.UpsertedID
 			assert.NotEmpty(t, id)
 			res.UpsertedID = nil
+			expectedRes := notModified
+			if tc.stat != nil {
+				expectedRes = tc.stat
+			}
 			assert.Equal(t, expectedRes, res)
 
 			var actual bson.D
