@@ -16,7 +16,6 @@ package pg
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -145,50 +144,18 @@ func extractParam(document *types.Document) (showDetails, allParameters bool, er
 	}
 
 	if param, ok := getPrm.(*types.Document); ok {
-		var errType string
-		show, _ := param.Get("showDetails")
-		showDetails, errType = convertBool(show)
-		if errType != "" {
-			s := fmt.Sprintf(`BSON field 'getParameter.showDetails' is the wrong type '%s', `+
-				`expected types '[bool, long, int, decimal, double']`, errType,
-			)
-			return false, false, common.NewErrorMsg(common.ErrTypeMismatch, s)
+		showDetails, err = common.GetBoolOptionalParam(param, "showDetails")
+		if err != nil {
+			return false, false, lazyerrors.Error(err)
 		}
-
-		all, _ := param.Get("allParameters")
-		allParameters, errType = convertBool(all)
-		if errType != "" {
-			s := fmt.Sprintf(`BSON field 'getParameter.allParameters' is the wrong type '%s', `+
-				`expected types '[bool, long, int, decimal, double']`, errType,
-			)
-			return false, false, common.NewErrorMsg(common.ErrTypeMismatch, s)
-		}
-	} else {
-		if getPrm == "*" {
-			allParameters = true
+		allParameters, err = common.GetBoolOptionalParam(param, "allParameters")
+		if err != nil {
+			return false, false, lazyerrors.Error(err)
 		}
 	}
+	if getPrm == "*" {
+		allParameters = true
+	}
+
 	return showDetails, allParameters, nil
-}
-
-// convertBool converts numeric types to bool type.
-func convertBool(v any) (val bool, errType string) {
-	if v == nil {
-		return false, ""
-	}
-
-	switch v := v.(type) {
-	case types.NullType:
-		return false, ""
-	case bool:
-		return v, ""
-	case int32:
-		return v != 0, ""
-	case int64:
-		return v != 0, ""
-	case float64:
-		return v != 0, ""
-	default:
-		return false, fmt.Sprintf("%+T", v)
-	}
 }

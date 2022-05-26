@@ -181,7 +181,7 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 }
 
 func TestCommandsAdministrationGetParameter(t *testing.T) {
-	t.Parallel()
+	//	t.Parallel()
 	ctx, collection := setupWithOpts(t, &setupOpts{
 		databaseName: "admin",
 	})
@@ -191,6 +191,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 		expected   map[string]any
 		unexpected []string
 		err        *mongo.CommandError
+		altMessage string
 	}{
 		"GetParameter_Asterisk1": {
 			command: bson.D{{"getParameter", "*"}},
@@ -279,7 +280,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 			command: bson.D{{"getParameter", 1}, {"quiet_other", 1}, {"comment", "getParameter test"}},
 			err:     &mongo.CommandError{Message: `no option found to get`},
 		},
-		"ShowDetails_True": {
+		"ShowDetailsTrue": {
 			command: bson.D{{"getParameter", bson.D{{"showDetails", true}}}, {"quiet", true}},
 			expected: map[string]any{
 				"quiet": bson.D{
@@ -291,7 +292,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 			},
 			unexpected: []string{"acceptApiVersion2"},
 		},
-		"ShowDetails_False": {
+		"ShowDetailsFalse": {
 			command: bson.D{{"getParameter", bson.D{{"showDetails", false}}}, {"quiet", true}},
 			expected: map[string]any{
 				"quiet": false,
@@ -307,7 +308,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 			command: bson.D{{"getParameter", bson.D{{"showDetails", false}}}},
 			err:     &mongo.CommandError{Message: `no option found to get`},
 		},
-		"AllParameters_True": {
+		"AllParametersTrue": {
 			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", true}}}},
 			expected: map[string]any{
 				"quiet": bson.D{
@@ -323,11 +324,11 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 				"ok": float64(1),
 			},
 		},
-		"AllParameters_False_MissingParameter": {
+		"AllParametersFalse_MissingParameter": {
 			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", false}}}},
 			err:     &mongo.CommandError{Message: `no option found to get`},
 		},
-		"AllParameters_False_PresentParameter": {
+		"AllParametersFalse_PresentParameter": {
 			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", false}}}, {"quiet", true}},
 			expected: map[string]any{
 				"quiet": bson.D{
@@ -339,7 +340,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 			},
 			unexpected: []string{"acceptApiVersion2"},
 		},
-		"AllParameters_False_NonexistentParameter": {
+		"AllParametersFalse_NonexistentParameter": {
 			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", false}}}, {"quiet_other", true}},
 			err:     &mongo.CommandError{Message: `no option found to get`},
 		},
@@ -445,6 +446,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: `BSON field 'getParameter.showDetails' is the wrong type 'string', expected types '[bool, long, int, decimal, double']`,
 			},
+			altMessage: `BSON field 'showDetails' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'`,
 		},
 		"AllParameters_NegativeInt": {
 			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", int64(-1)}}}, {"quiet", true}},
@@ -563,17 +565,19 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: `BSON field 'getParameter.allParameters' is the wrong type 'string', expected types '[bool, long, int, decimal, double']`,
 			},
+			altMessage: `BSON field 'allParameters' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'`,
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+			//	t.Parallel()
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 
 			if tc.err != nil {
-				AssertEqualError(t, *tc.err, err)
+				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+				//				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)
