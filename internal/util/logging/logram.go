@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// LogRAM implements zap logging entry interception
-// and storage of last 1024 entry in ring buffer in memory.
+// LogRAM implements zap logging entry interception and stores the last 1024 entries in the ring buffer in memory.
 package logging
 
 import (
@@ -25,14 +24,14 @@ import (
 
 var LogRAM *logRAM
 
-// logRAM structure storage of log records in memory.
+// logRAM is a storage of log records in memory.
 type logRAM struct {
 	mu    sync.RWMutex
 	log   []*zapcore.Entry
 	index int64
 }
 
-// NewLogRAM is creating entries log in memory.
+// NewLogRAM creates entries log in memory.
 func NewLogRAM(size int64) *logRAM {
 	if size < 1 {
 		panic(fmt.Sprintf("logram size %d", size))
@@ -43,7 +42,7 @@ func NewLogRAM(size int64) *logRAM {
 	}
 }
 
-// append is adding entry in logram.
+// append adds an entry in logram.
 func (l *logRAM) append(entry *zapcore.Entry) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -52,7 +51,7 @@ func (l *logRAM) append(entry *zapcore.Entry) {
 	l.index = (l.index + 1) % int64(len(l.log))
 }
 
-// Get returns entrys from logRAM.
+// Get returns entries from logRAM.
 func (l *logRAM) Get() []*zapcore.Entry {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
