@@ -32,7 +32,7 @@ var errNotImplemented = common.NewErrorMsg(common.ErrNotImplemented, "I'm a stub
 //  * debugError;
 //  * getCmdLineOpts;
 //  * hostInfo;
-//  * listCommands;
+//  * listCommands.
 type Handler struct{}
 
 // New returns a new handler.
