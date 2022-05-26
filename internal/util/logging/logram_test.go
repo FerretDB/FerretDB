@@ -48,64 +48,56 @@ func TestLogRAM(t *testing.T) {
 	for n, tc := range []struct {
 		inLog    zapcore.Entry
 		expected []zapcore.Entry
-	}{
-		{
-			inLog: zapcore.Entry{
-				Level:      1,
-				Time:       time.Date(2022, 12, 31, 11, 59, 1, 0, time.UTC),
-				LoggerName: "logger_1",
-				Message:    "message 1",
-			},
-			expected: []zapcore.Entry{
-				{
-					Level:      1,
-					Time:       time.Date(2022, 12, 31, 11, 59, 1, 0, time.UTC),
-					LoggerName: "logger_1",
-					Message:    "message 1",
-				},
-			},
-		}, {
-			inLog: zapcore.Entry{
-				Level:      2,
-				Time:       time.Date(2022, 12, 31, 11, 59, 2, 0, time.UTC),
-				LoggerName: "logger_2",
-				Message:    "message 2",
-			},
-			expected: []zapcore.Entry{
-				{
-					Level:      1,
-					Time:       time.Date(2022, 12, 31, 11, 59, 1, 0, time.UTC),
-					LoggerName: "logger_1",
-					Message:    "message 1",
-				}, {
-					Level:      2,
-					Time:       time.Date(2022, 12, 31, 11, 59, 2, 0, time.UTC),
-					LoggerName: "logger_2",
-					Message:    "message 2",
-				},
-			},
-		}, {
-			inLog: zapcore.Entry{
-				Level:      3,
-				Time:       time.Date(2022, 12, 31, 11, 59, 3, 0, time.UTC),
-				LoggerName: "logger_3",
-				Message:    "message 3",
-			},
-			expected: []zapcore.Entry{
-				{
-					Level:      2,
-					Time:       time.Date(2022, 12, 31, 11, 59, 2, 0, time.UTC),
-					LoggerName: "logger_2",
-					Message:    "message 2",
-				}, {
-					Level:      3,
-					Time:       time.Date(2022, 12, 31, 11, 59, 3, 0, time.UTC),
-					LoggerName: "logger_3",
-					Message:    "message 3",
-				},
-			},
+	}{{
+		inLog: zapcore.Entry{
+			Level:      1,
+			Time:       time.Date(2022, 12, 31, 11, 59, 1, 0, time.UTC),
+			LoggerName: "logger_1",
+			Message:    "message 1",
 		},
-	} {
+		expected: []zapcore.Entry{{
+			Level:      1,
+			Time:       time.Date(2022, 12, 31, 11, 59, 1, 0, time.UTC),
+			LoggerName: "logger_1",
+			Message:    "message 1",
+		}},
+	}, {
+		inLog: zapcore.Entry{
+			Level:      2,
+			Time:       time.Date(2022, 12, 31, 11, 59, 2, 0, time.UTC),
+			LoggerName: "logger_2",
+			Message:    "message 2",
+		},
+		expected: []zapcore.Entry{{
+			Level:      1,
+			Time:       time.Date(2022, 12, 31, 11, 59, 1, 0, time.UTC),
+			LoggerName: "logger_1",
+			Message:    "message 1",
+		}, {
+			Level:      2,
+			Time:       time.Date(2022, 12, 31, 11, 59, 2, 0, time.UTC),
+			LoggerName: "logger_2",
+			Message:    "message 2",
+		}},
+	}, {
+		inLog: zapcore.Entry{
+			Level:      3,
+			Time:       time.Date(2022, 12, 31, 11, 59, 3, 0, time.UTC),
+			LoggerName: "logger_3",
+			Message:    "message 3",
+		},
+		expected: []zapcore.Entry{{
+			Level:      2,
+			Time:       time.Date(2022, 12, 31, 11, 59, 2, 0, time.UTC),
+			LoggerName: "logger_2",
+			Message:    "message 2",
+		}, {
+			Level:      3,
+			Time:       time.Date(2022, 12, 31, 11, 59, 3, 0, time.UTC),
+			LoggerName: "logger_3",
+			Message:    "message 3",
+		}},
+	}} {
 		name := fmt.Sprintf("AppendGet_%d", n)
 		tc := tc
 		t.Run(name, func(t *testing.T) {
@@ -122,21 +114,19 @@ func TestLogRAM(t *testing.T) {
 	for n, tc := range []struct {
 		addMsg   string
 		expected []string
-	}{
-		{
-			addMsg:   "Test message 1",
-			expected: []string{"Test message 1"},
-		}, {
-			addMsg:   "Test message 2",
-			expected: []string{"Test message 1", "Test message 2"},
-		}, {
-			addMsg:   "Test message 3",
-			expected: []string{"Test message 1", "Test message 2", "Test message 3"},
-		}, {
-			addMsg:   "Test message 4",
-			expected: []string{"Test message 1", "Test message 2", "Test message 3", "Test message 4"},
-		},
-	} {
+	}{{
+		addMsg:   "Test message 1",
+		expected: []string{"Test message 1"},
+	}, {
+		addMsg:   "Test message 2",
+		expected: []string{"Test message 1", "Test message 2"},
+	}, {
+		addMsg:   "Test message 3",
+		expected: []string{"Test message 1", "Test message 2", "Test message 3"},
+	}, {
+		addMsg:   "Test message 4",
+		expected: []string{"Test message 1", "Test message 2", "Test message 3", "Test message 4"},
+	}} {
 		name := fmt.Sprintf("ZapHooks_%d", n)
 		tc := tc
 		t.Run(name, func(t *testing.T) {
