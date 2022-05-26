@@ -181,18 +181,18 @@ func (we *WriteErrors) Unwrap() error {
 }
 
 // Document implements ProtoErr interface.
-//  "writeErrors" field must be present in the result document so that clients can parse it as WriteErrors.
-// Fields "code" and "errmsg" must always be filled in so that clients can parse the error message.
-// Otherwise, the mongo client would parse it as a CommandError.
 func (we *WriteErrors) Document() *types.Document {
 	errs := must.NotFail(types.NewArray())
 	for _, e := range *we {
+		// Fields "code" and "errmsg" must always be filled in so that clients can parse the error message.
+		// Otherwise, the mongo client would parse it as a CommandError.
 		must.NoError(errs.Append(must.NotFail(types.NewDocument(
 			"code", int32(e.code),
 			"errmsg", e.err,
 		))))
 	}
 
+	// "writeErrors" field must be present in the result document so that clients can parse it as WriteErrors.
 	d := must.NotFail(types.NewDocument(
 		"ok", float64(1),
 		"writeErrors", errs,
@@ -242,8 +242,6 @@ func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
 
 // check interfaces
 var (
-	_ error    = (*Error)(nil)
-	_ error    = (*WriteErrors)(nil)
 	_ ProtoErr = (*Error)(nil)
 	_ ProtoErr = (*WriteErrors)(nil)
 )
