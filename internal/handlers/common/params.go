@@ -262,3 +262,64 @@ func addNumbers(v1, v2 any) (any, error) {
 		return nil, errUnexpectedLeftOpType
 	}
 }
+
+// GetPositiveNumber returns doc's value for key or protocol error for missing or invalid parameter.
+func GetPositiveNumber(document *types.Document, key string) (int32, error) {
+	v, err := document.Get(key)
+	if err != nil {
+		return 0, nil
+	}
+
+	var value int32
+	switch param := v.(type) {
+	case float64:
+		if math.IsInf(param, -1) {
+			return 0, NewErrorMsg(
+				ErrBadValue,
+				fmt.Sprintf("%v value for %s is out of range", math.MinInt64, key),
+			)
+		}
+
+		if math.IsInf(param, +1) {
+			return 0, NewErrorMsg(
+				ErrBadValue,
+				fmt.Sprintf("%v value for %s is out of range", math.MaxInt64, key),
+			)
+		}
+
+		if param > math.MaxInt32 || param < math.MinInt32 {
+			return 0, NewErrorMsg(
+				ErrBadValue,
+				fmt.Sprintf("%v value for %s is out of range", int64(param), key),
+			)
+		}
+
+		if param != math.Trunc(param) {
+			return 0, NewErrorMsg(ErrBadValue, fmt.Sprintf("%s must be an integer", key))
+		}
+
+		value = int32(param)
+	case int32:
+		value = param
+	case int64:
+		if param > math.MaxInt32 || param < math.MinInt32 {
+			return 0, NewErrorMsg(
+				ErrBadValue,
+				fmt.Sprintf("%v value for %s is out of range", v, key),
+			)
+		}
+
+		value = int32(param)
+	default:
+		return 0, NewErrorMsg(ErrBadValue, fmt.Sprintf("%s must be a number", key))
+	}
+
+	if value < 0 {
+		return 0, NewErrorMsg(
+			ErrBadValue,
+			fmt.Sprintf("%v value for %s is out of range", value, key),
+		)
+	}
+
+	return value, nil
+}

@@ -317,7 +317,7 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 		return nil, err
 	}
 
-	maxTimeMS, err := getMaxTimeMSParameter(document)
+	maxTimeMS, err := common.GetPositiveNumber(document, "maxTimeMS")
 	if err != nil {
 		return nil, err
 	}

@@ -17,7 +17,6 @@ package pg
 import (
 	"context"
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -71,7 +70,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	maxTimeMS, err := getMaxTimeMSParameter(document)
+	maxTimeMS, err := common.GetPositiveNumber(document, "maxTimeMS")
 	if err != nil {
 		return nil, err
 	}
@@ -168,71 +167,4 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	return &reply, nil
-}
-
-// getMaxTimeMSParameter gets maxTimeMS optional parameter.
-func getMaxTimeMSParameter(document *types.Document) (int32, error) {
-	var maxTimeMS int32
-	maxTimeMSParam, err := common.GetOptionalParam(document, "maxTimeMS", maxTimeMS)
-	if err != nil {
-		return 0, getErrorForInvalidMaxTimeMS(document)
-	}
-
-	if maxTimeMSParam < 0 {
-		return 0, common.NewErrorMsg(
-			common.ErrBadValue,
-			fmt.Sprintf("%v value for maxTimeMS is out of range", maxTimeMSParam),
-		)
-	}
-
-	return maxTimeMSParam, nil
-}
-
-// getErrorForInvalidMaxTimeMS returns error for invalid maxTimeMS type.
-func getErrorForInvalidMaxTimeMS(document *types.Document) error {
-	v, err := document.Get("maxTimeMS")
-	if err != nil {
-		return nil
-	}
-
-	switch maxTimeMS := v.(type) {
-	case float64:
-		if math.IsInf(maxTimeMS, -1) {
-			return common.NewErrorMsg(
-				common.ErrBadValue,
-				fmt.Sprintf("%v value for maxTimeMS is out of range", math.MinInt64),
-			)
-		}
-
-		if math.IsInf(maxTimeMS, +1) {
-			return common.NewErrorMsg(
-				common.ErrBadValue,
-				fmt.Sprintf("%v value for maxTimeMS is out of range", math.MaxInt64),
-			)
-		}
-
-		if maxTimeMS > math.MaxInt32 || maxTimeMS < math.MinInt32 {
-			return common.NewErrorMsg(
-				common.ErrBadValue,
-				fmt.Sprintf("%v value for maxTimeMS is out of range", int64(maxTimeMS)),
-			)
-		}
-
-		if maxTimeMS == math.Trunc(maxTimeMS) {
-			return nil
-		}
-
-		return common.NewErrorMsg(common.ErrBadValue, "maxTimeMS must be an integer")
-	case int64:
-		if maxTimeMS < math.MaxInt32 && maxTimeMS > math.MinInt32 {
-			return nil
-		}
-
-		return common.NewErrorMsg(
-			common.ErrBadValue,
-			fmt.Sprintf("%v value for maxTimeMS is out of range", v),
-		)
-	default:
-		return common.NewErrorMsg(common.ErrBadValue, "maxTimeMS must be a number")
-	}
 }
