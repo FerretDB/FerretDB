@@ -31,7 +31,7 @@ var replyTestCases = []testCase{{
 		MessageLength: 319,
 		RequestID:     290,
 		ResponseTo:    1,
-		OpCode:        OP_REPLY,
+		OpCode:        OpCodeReply,
 	},
 	msgBody: &OpReply{
 		ResponseFlags:  OpReplyFlags(OpReplyAwaitCapable),
@@ -64,7 +64,7 @@ var replyTestCases = []testCase{{
 		MessageLength: 319,
 		RequestID:     291,
 		ResponseTo:    2,
-		OpCode:        OP_REPLY,
+		OpCode:        OpCodeReply,
 	},
 	msgBody: &OpReply{
 		ResponseFlags:  OpReplyFlags(OpReplyAwaitCapable),
