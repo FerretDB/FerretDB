@@ -22,9 +22,9 @@ func _() {
 	_ = x[regexDataType-12]
 }
 
-const _compareTypeOrderResult_name = "nullDataTypenanDataTypenumbersDataTypestringDataTypeTODO: https://github.com/FerretDB/FerretDB/issues/457TODO: https://github.com/FerretDB/FerretDB/issues/457binDataTypeobjectIdDataTypebooleanDataTypedateDataTypetimestampDataTyperegexDataType"
+const _compareTypeOrderResult_name = "nullDataTypenanDataTypenumbersDataTypestringDataTypedocumentDataTypearrayDataTypebinDataTypeobjectIdDataTypebooleanDataTypedateDataTypetimestampDataTyperegexDataType"
 
-var _compareTypeOrderResult_index = [...]uint8{0, 12, 23, 38, 52, 105, 158, 169, 185, 200, 212, 229, 242}
+var _compareTypeOrderResult_index = [...]uint8{0, 12, 23, 38, 52, 68, 81, 92, 108, 123, 135, 152, 165}
 
 func (i compareTypeOrderResult) String() string {
 	i -= 1

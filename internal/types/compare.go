@@ -32,7 +32,7 @@ import (
 type CompareResult int8
 
 // Values match results of comparison functions such as bytes.Compare.
-// They do not match MongoDB `sort` values where 1 means ascending order and -1 means descending.
+// They do not match MongoDB SortType values where 1 means ascending order and -1 means descending.
 const (
 	Equal        CompareResult = 0   // ==
 	Less         CompareResult = -1  // <

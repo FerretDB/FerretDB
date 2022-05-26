@@ -131,7 +131,7 @@ func (ds *docsSorter) Less(i, j int) bool {
 }
 
 // getSortType determines SortType from input sort value.
-func getSortType(key, value any) (types.SortType, error) {
+func getSortType(key string, value any) (types.SortType, error) {
 	sortValue, err := GetWholeNumberParam(value)
 	if err != nil {
 		switch err {
