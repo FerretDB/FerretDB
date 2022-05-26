@@ -67,7 +67,7 @@ func (p Path) Prefix() string {
 	return p.s[0]
 }
 
-// TrimSuffix returns a copy of path without suffix.
+// TrimSuffix returns a path without the last element.
 func (p Path) TrimSuffix() Path {
 	if len(p.s) == 0 {
 		return p
