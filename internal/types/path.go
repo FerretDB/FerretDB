@@ -21,12 +21,13 @@ import (
 )
 
 // Path represents field path type. It should be used wherever we work with paths or dot notation.
+// Path should be stored and passed as value. All of its methods return new values, not modifying the receiver's state.
 type Path struct {
 	s []string
 }
 
 // NewPath returns Path from a strings slice. Provided strings slice would be copied into a new Path.
-func NewPath(s []string) Path {
+func NewPath(path []string) Path {
 	p := Path{s: make([]string, len(path))}
 	copy(p.s, path)
 	return p
@@ -36,7 +37,12 @@ func NewPath(s []string) Path {
 func NewPathFromString(s string) Path {
 	path := strings.Split(s, ".")
 
-	return NewPath(path...)
+	return NewPath(path)
+}
+
+// String returns dot-separated path value.
+func (p Path) String() string {
+	return strings.Join(p.s, ".")
 }
 
 // Len returns path length.
@@ -44,7 +50,7 @@ func (p Path) Len() int {
 	return len(p.s)
 }
 
-// Slice returns path slice copy.
+// Slice returns path values array.
 func (p Path) Slice() []string {
 	path := make([]string, len(p.s))
 	copy(path, p.s)
@@ -59,7 +65,7 @@ func (p Path) Suffix() string {
 	return p.s[p.Len()-1]
 }
 
-// Prefix returns the last path element.
+// Prefix returns the first path element.
 func (p Path) Prefix() string {
 	if len(p.s) == 0 {
 		return ""
@@ -72,15 +78,15 @@ func (p Path) TrimSuffix() Path {
 	if len(p.s) == 0 {
 		return p
 	}
-	return NewPath(p.s[:p.Len()-1]...)
+	return NewPath(p.s[:p.Len()-1])
 }
 
-// TrimPrefix returns a copy of path without prefix.
+// TrimPrefix returns a copy of path without the first element.
 func (p Path) TrimPrefix() Path {
 	if len(p.s) == 0 {
 		return p
 	}
-	return NewPath(p.s[1:]...)
+	return NewPath(p.s[1:])
 }
 
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
