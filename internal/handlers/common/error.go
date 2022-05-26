@@ -141,6 +141,7 @@ func (e *Error) Document() *types.Document {
 	}
 	return d
 }
+
 // WriteErrors represents a slice of protocol write errors.
 // It could be returned for Update, Insert, Delete, and Replace operations.
 type WriteErrors []writeError
@@ -190,8 +191,7 @@ func (we *WriteErrors) Document() *types.Document {
 			"errmsg", e.err,
 		))))
 	}
-	return errUnset
-}
+
 	// "writeErrors" field must be present in the result document so that clients can parse it as WriteErrors.
 	d := must.NotFail(types.NewDocument(
 		"ok", float64(1),

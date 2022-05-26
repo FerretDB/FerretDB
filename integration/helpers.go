@@ -155,6 +155,36 @@ func AssertEqualAltError(t testing.TB, expected mongo.CommandError, altMessage s
 	return assert.Equal(t, expected, a)
 }
 
+// CollectIDs returns all _id values from given documents.
+//
+// The order is preserved.
+func CollectIDs(t testing.TB, docs []bson.D) []any {
+	t.Helper()
+
+	ids := make([]any, len(docs))
+	for i, doc := range docs {
+		id, ok := doc.Map()["_id"]
+		require.True(t, ok)
+		ids[i] = id
+	}
+
+	return ids
+}
+
+// CollectKeys returns document keys.
+//
+// The order is preserved.
+func CollectKeys(t testing.TB, doc bson.D) []string {
+	t.Helper()
+
+	res := make([]string, len(doc))
+	for i, e := range doc {
+		res[i] = e.Key
+	}
+
+	return res
+}
+
 // AssertEqualWriteError compares expected mongo.WriteError Message and Code with actual error.
 func AssertEqualWriteError(t *testing.T, expected *mongo.WriteError, alt string, actual error) bool {
 	t.Helper()
@@ -188,53 +218,4 @@ func AssertEqualWriteError(t *testing.T, expected *mongo.WriteError, alt string,
 		return expected.Message == actualWE.Message
 	}
 	return false
-}
-
-// CollectIDs returns all _id values from given documents.
-//
-// The order is preserved.
-func CollectIDs(t testing.TB, docs []bson.D) []any {
-	t.Helper()
-
-	ids := make([]any, len(docs))
-	for i, doc := range docs {
-		id, ok := doc.Map()["_id"]
-		require.True(t, ok)
-		ids[i] = id
-	}
-
-	return ids
-}
-
-// CollectKeys returns document keys.
-//
-// The order is preserved.
-func CollectKeys(t testing.TB, doc bson.D) []string {
-	t.Helper()
-
-	res := make([]string, len(doc))
-	for i, e := range doc {
-		res[i] = e.Key
-	}
-
-	return res
-}
-
-// AssertEqualWriteError compares expected mongo.WriteError Message and Code with actual error.
-func AssertEqualWriteError(t *testing.T, expected *mongo.WriteError, actual error) bool {
-	t.Helper()
-
-	writeException, ok := actual.(mongo.WriteException)
-	if !ok {
-		return assert.Equal(t, expected, actual)
-	}
-
-	if len(writeException.WriteErrors) != 1 {
-		return assert.Equal(t, expected, actual)
-	}
-
-	actualWriteErr := writeException.WriteErrors[0]
-
-	return assert.Equal(t, expected.Message, actualWriteErr.Message) &&
-		assert.Equal(t, expected.Code, actualWriteErr.Code)
 }

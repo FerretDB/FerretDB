@@ -32,13 +32,13 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 		switch updateOp {
 		case "$set",
 			"$setOnInsert":
+
 			switch setDoc := updateV.(type) {
 			case *types.Document:
 				if setDoc.Len() == 0 {
 					return false, nil
 				}
 				var err error
-
 				sort.Strings(setDoc.Keys())
 				for _, setKey := range setDoc.Keys() {
 					setValue := must.NotFail(setDoc.Get(setKey))
@@ -59,7 +59,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 		case "$inc":
 			incDoc, ok := updateV.(*types.Document)
 			if !ok {
-				return NewWriteErrorMsg(
+				return false, NewWriteErrorMsg(
 					ErrFailedToParse,
 					fmt.Sprintf(
 						`Modifiers operate on fields but we found type string instead. `+
@@ -72,14 +72,14 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 			for _, incKey := range incDoc.Keys() {
 				if strings.ContainsRune(incKey, '.') {
-					return NewErrorMsg(ErrNotImplemented, "dot notation not supported yet")
+					return false, NewErrorMsg(ErrNotImplemented, "dot notation not supported yet")
 				}
 
 				incValue := must.NotFail(incDoc.Get(incKey))
 
 				if !doc.Has(incKey) {
 					must.NoError(doc.Set(incKey, incValue))
-					return nil
+					return true, nil
 				}
 
 				docValue := must.NotFail(doc.Get(incKey))
@@ -92,7 +92,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 				switch err {
 				case errUnexpectedLeftOpType:
-					return NewWriteErrorMsg(
+					return false, NewWriteErrorMsg(
 						ErrTypeMismatch,
 						fmt.Sprintf(
 							`Cannot increment with non-numeric argument: {%s: %#v}`,
@@ -101,7 +101,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 						),
 					)
 				case errUnexpectedRightOpType:
-					return NewWriteErrorMsg(
+					return false, NewWriteErrorMsg(
 						ErrTypeMismatch,
 						fmt.Sprintf(
 							`Cannot apply $inc to a value of non-numeric type. `+
@@ -112,7 +112,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 						),
 					)
 				default:
-					return err
+					return false, err
 				}
 			}
 
