@@ -138,7 +138,12 @@ func removeByPath(v any, path Path) {
 		return
 	}
 
-	key := path.Prefix()
+	var key string
+	if path.Len() == 1 {
+		key = path.Slice()[0]
+	} else {
+		key = path.Prefix()
+	}
 	switch v := v.(type) {
 	case *Document:
 		if _, ok := v.m[key]; !ok {
