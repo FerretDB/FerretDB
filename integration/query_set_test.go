@@ -141,6 +141,16 @@ func TestSetOperatorOnString(t *testing.T) {
 				UpsertedCount: 0,
 			},
 		},
+		"SetArrayNil": {
+			id:     "string",
+			update: bson.D{{"$set", bson.D{{"value", bson.A{nil}}}}},
+			result: bson.D{{"_id", "string"}, {"value", bson.A{nil}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+		},
 		"FieldNotExist": {
 			id:     "string",
 			update: bson.D{{"$set", bson.D{{"foo", int32(1)}}}},
