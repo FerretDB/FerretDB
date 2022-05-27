@@ -116,11 +116,15 @@ r := regex.Compile("^         # Assert that position = beginning of string
 */
 
 func freeSpacingParse(expr string) string {
-	commentBlock, backslash := false, false
+	commentBlock, backslash, bracket := false, false, false
 	outExpr := ""
 
 	for _, c := range expr {
-		if !backslash {
+		if bracket {
+			if c == ']' {
+				bracket = false
+			}
+		} else if !backslash {
 			if commentBlock {
 				if c == '\n' {
 					commentBlock = false
@@ -130,12 +134,22 @@ func freeSpacingParse(expr string) string {
 
 			if c == '\\' {
 				backslash = true
+			} else if c == '[' {
+				bracket = true
 			}
+
+			// TODO: character classes [a fdasdf]
+			//
+			//(A)\1 2 == AA2 != (a)\12 - A\n (12==\n)
+			//\p{Nd} is valid  (\p{12}) but \p{1 2} is not
+			//
 
 			if c == ' ' || c == '\n' || c == '\t' { // ignore spaces and newlines
 				continue
 			}
 
+			// ^sdf# <- is that a comment or char
+			// should I validate # only after min 1 space?
 			if c == '#' { // handle comments
 				commentBlock = true
 				continue
