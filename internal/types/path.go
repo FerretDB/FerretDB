@@ -140,7 +140,7 @@ func removeByPath(v any, path Path) {
 
 	var key string
 	if path.Len() == 1 {
-		key = path.Slice()[0]
+		key = path.String()
 	} else {
 		key = path.Prefix()
 	}
