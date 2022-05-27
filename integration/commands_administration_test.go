@@ -577,7 +577,6 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 
 			if tc.err != nil {
 				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
-				//				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)
