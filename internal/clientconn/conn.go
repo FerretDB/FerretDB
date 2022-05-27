@@ -426,5 +426,6 @@ func (c *conn) logResponse(resHeader *wire.MsgHeader, resBody wire.MsgBody, clos
 
 	c.l.Desugar().Check(level, fmt.Sprintf("Response header: %s", resHeader)).Write()
 	c.l.Desugar().Check(level, fmt.Sprintf("Response message:\n%s\n\n\n", resBody)).Write()
+
 	return level
 }
