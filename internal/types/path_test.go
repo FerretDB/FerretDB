@@ -206,7 +206,6 @@ func TestRemoveByPathArray(t *testing.T) {
 			assert.Equal(t, tc.expected, arr, name)
 		})
 	}
-
 }
 
 func TestGetByPath(t *testing.T) {
