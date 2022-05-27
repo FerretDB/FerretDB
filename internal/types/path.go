@@ -52,7 +52,7 @@ func (p Path) Len() int {
 
 // Slice returns path values array.
 func (p Path) Slice() []string {
-	path := make([]string, len(p.s))
+	path := make([]string, p.Len())
 	copy(path, p.s)
 	return path
 }
@@ -67,7 +67,7 @@ func (p Path) Suffix() string {
 
 // Prefix returns the first path element.
 func (p Path) Prefix() string {
-	if len(p.s) == 0 {
+	if p.Len() == 0 {
 		return ""
 	}
 	return p.s[0]
@@ -75,7 +75,7 @@ func (p Path) Prefix() string {
 
 // TrimSuffix returns a path without the last element.
 func (p Path) TrimSuffix() Path {
-	if len(p.s) == 0 {
+	if p.Len() == 0 {
 		return p
 	}
 	return NewPath(p.s[:p.Len()-1])
@@ -83,7 +83,7 @@ func (p Path) TrimSuffix() Path {
 
 // TrimPrefix returns a copy of path without the first element.
 func (p Path) TrimPrefix() Path {
-	if len(p.s) == 0 {
+	if p.Len() == 0 {
 		return p
 	}
 	return NewPath(p.s[1:])
