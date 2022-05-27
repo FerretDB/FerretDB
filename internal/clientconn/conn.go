@@ -33,6 +33,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/proxy"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -89,7 +90,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	var p *proxy.Router
 	if opts.mode != NormalMode {
 		var err error
-		if p, err = proxy.New(opts.proxyAddr, l); err != nil {
+		if p, err = proxy.New(opts.proxyAddr); err != nil {
 			return nil, err
 		}
 	}
@@ -173,6 +174,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 		var resCloseConn bool
 		if c.mode != ProxyMode {
 			resHeader, resBody, resCloseConn = c.route(ctx, reqHeader, reqBody)
+			logResponse(c.l, resHeader, resBody, resCloseConn)
 		}
 
 		// send request to proxy unless we are in normal mode
@@ -184,7 +186,11 @@ func (c *conn) run(ctx context.Context) (err error) {
 			}
 
 			proxyHeader, proxyBody, _ = c.proxy.Route(ctx, reqHeader, reqBody)
+			logResponse(c.l, resHeader, resBody, resCloseConn)
 		}
+
+		// ??? Diff is only used when debug level is enabled. The only place where diff is shown is in the logs.
+		// Should we check log level before calculating diff ???
 
 		// diff in diff mode
 		if c.mode == DiffNormalMode || c.mode == DiffProxyMode {
@@ -241,7 +247,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 	}
 }
 
-// route send request to a handler's command based on the op code provided in the request header.
+// route sends request to a handler's command based on the op code provided in the request header.
 //
 // Route's possible returns:
 //  * normal response body;
@@ -308,12 +314,9 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			protoErr, recoverable := common.ProtocolError(err)
 			closeConn = !recoverable
 			var res wire.OpMsg
-			err = res.SetSections(wire.OpMsgSection{
+			must.NoError(res.SetSections(wire.OpMsgSection{
 				Documents: []*types.Document{protoErr.Document()},
-			})
-			if err != nil {
-				panic(err)
-			}
+			}))
 			resBody = &res
 			result = pointer.ToString(protoErr.Code().String())
 
@@ -361,12 +364,6 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	if result == nil {
 		result = pointer.ToString("ok")
 	}
-
-	// do not spend time dumping if we are not going to log it
-	if c.l.Desugar().Core().Enabled(zap.DebugLevel) {
-		c.l.Debugf("Response header: %s", resHeader)
-		c.l.Debugf("Response message:\n%s\n\n\n", resBody)
-	}
 	return
 }
 
@@ -393,4 +390,33 @@ func (l *conn) Describe(ch chan<- *prometheus.Desc) {
 // Collect implements prometheus.Collector.
 func (l *conn) Collect(ch chan<- prometheus.Metric) {
 	l.m.Collect(ch)
+}
+
+// logResponse logs response's header and body.
+// If op code is not OP_MSG, it always logs as a debug.
+// For the OP_MSG code, the level depends on the type of error.
+// If there is no errors in the response, it will be logged as a debug.
+// If there is an error in the response, and connection is closed, it will be logged as an error.
+// If there is an error in the response, and connection is not closed, it will be logged as a warning.
+func logResponse(logger *zap.SugaredLogger, resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) {
+	level := zap.DebugLevel
+
+	if resHeader.OpCode == wire.OP_MSG {
+		doc, err := resBody.(*wire.OpMsg).Document()
+		must.NoError(err)
+
+		ok, err := doc.Get("ok")
+		must.NoError(err)
+
+		if ok.(float64) != 1 {
+			if closeConn {
+				level = zap.ErrorLevel
+			} else {
+				level = zap.WarnLevel
+			}
+		}
+	}
+
+	logger.Desugar().Check(level, fmt.Sprintf("Response header: %s", resHeader)).Write()
+	logger.Desugar().Check(level, fmt.Sprintf("Response message:\n%s\n\n\n", resBody)).Write()
 }

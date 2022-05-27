@@ -20,8 +20,6 @@ import (
 	"context"
 	"net"
 
-	"go.uber.org/zap"
-
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -30,11 +28,10 @@ type Router struct {
 	conn net.Conn
 	bufr *bufio.Reader
 	bufw *bufio.Writer
-	l    *zap.SugaredLogger
 }
 
 // New creates a new Router for a service with given address.
-func New(addr string, logger *zap.SugaredLogger) (*Router, error) {
+func New(addr string) (*Router, error) {
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		return nil, err
@@ -44,7 +41,6 @@ func New(addr string, logger *zap.SugaredLogger) (*Router, error) {
 		conn: conn,
 		bufr: bufio.NewReader(conn),
 		bufw: bufio.NewWriter(conn),
-		l:    logger,
 	}, nil
 }
 
@@ -69,12 +65,6 @@ func (r *Router) Route(ctx context.Context, header *wire.MsgHeader, body wire.Ms
 	resHeader, resBody, err := wire.ReadMessage(r.bufr)
 	if err != nil {
 		panic(err)
-	}
-
-	// do not spend time dumping if we are not going to log it
-	if r.l.Desugar().Core().Enabled(zap.DebugLevel) {
-		r.l.Debugf("Proxy header: %s", resHeader)
-		r.l.Debugf("Proxy message:\n%s\n\n\n", resBody)
 	}
 	return resHeader, resBody, false
 }
