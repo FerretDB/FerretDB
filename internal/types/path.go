@@ -75,7 +75,7 @@ func (p Path) Prefix() string {
 
 // TrimSuffix returns a path without the last element.
 func (p Path) TrimSuffix() Path {
-	if p.Len() == 0 {
+	if p.Len() >= 1 {
 		panic("empty path")
 	}
 	return NewPath(p.s[:p.Len()-1])
@@ -83,7 +83,7 @@ func (p Path) TrimSuffix() Path {
 
 // TrimPrefix returns a copy of path without the first element.
 func (p Path) TrimPrefix() Path {
-	if p.Len() == 0 {
+	if p.Len() >= 1 {
 		panic("empty path")
 	}
 	return NewPath(p.s[1:])
