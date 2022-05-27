@@ -180,12 +180,13 @@ func TestSetOnInsertMore(t *testing.T) {
 	}
 
 	for name, tc := range map[string]struct {
-		filter bson.D
-		query  bson.D
-		stat   *mongo.UpdateResult
-		res    bson.D
-		err    *mongo.WriteError
-		alt    string
+		filter         bson.D
+		query          bson.D
+		stat           *mongo.UpdateResult
+		res            bson.D
+		err            *mongo.WriteError
+		notImplemented bool
+		alt            string
 	}{
 		"tandem-set-setoninsert": {
 			filter: bson.D{{"_id", "test"}},
@@ -209,24 +210,68 @@ func TestSetOnInsertMore(t *testing.T) {
 		},
 		"unknown-operator": {
 			filter: bson.D{{"_id", "test"}},
-			query: bson.D{
-				{"$foo", bson.D{{"foo", int32(1)}}},
-			},
+			query:  bson.D{{"$foo", bson.D{{"foo", int32(1)}}}},
 			err: &mongo.WriteError{
 				Code:    9,
 				Message: "Unknown modifier: $foo. Expected a valid update modifier or pipeline-style update specified as an array",
 			},
 		},
+		"set-dot-notation": {
+			filter: bson.D{{"_id", "string"}},
+			query:  bson.D{{"$set", bson.D{{"foo.bar.baz", int32(1)}}}},
+			res: bson.D{
+				{"_id", "string"},
+				{"value", "foo"},
+				{"foo", bson.D{{"bar", bson.D{{"baz", int32(1)}}}}},
+			},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			notImplemented: true,
+		},
+		"setoninsert-dot-notation": {
+			filter:         bson.D{{"_id", "test"}},
+			query:          bson.D{{"$setOnInsert", bson.D{{"foo.bar.baz", int32(1)}}}},
+			res:            bson.D{{"_id", "test"}, {"foo", bson.D{{"bar", bson.D{{"baz", int32(1)}}}}}},
+			notImplemented: true,
+		},
+		"inc-dot-notation": {
+			filter: bson.D{{"_id", "int32"}},
+			query:  bson.D{{"$inc", bson.D{{"value.foo.bar.baz", int32(1)}}}},
+			res: bson.D{
+				{"_id", "int32"},
+				{"value", bson.D{{"foo", bson.D{{"bar", bson.D{{"baz", int32(1)}}}}}}},
+			},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  0,
+				ModifiedCount: 0,
+				UpsertedCount: 1,
+			},
+			notImplemented: true,
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			var err error
 			ctx, collection := setup(t)
+			var err error
+			_, err = collection.InsertMany(ctx, []any{
+				bson.D{{"_id", "string"}, {"value", "foo"}},
+			})
+			require.NoError(t, err)
 
 			opts := options.Update().SetUpsert(true)
 			var res *mongo.UpdateResult
 			res, err = collection.UpdateOne(ctx, tc.filter, tc.query, opts)
+
+			if tc.notImplemented {
+				if dbByPort() == "ferretdb" &&
+					IsUnimplemented(t, err) {
+					return
+				}
+			}
 			if tc.err != nil {
 				if !AssertEqualAltWriteError(t, tc.err, tc.alt, err) {
 					t.Logf("%[1]T %[1]v", err)
@@ -236,9 +281,8 @@ func TestSetOnInsertMore(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			id := res.UpsertedID
-			assert.NotEmpty(t, id)
 			res.UpsertedID = nil
+
 			expectedRes := notModified
 			if tc.stat != nil {
 				expectedRes = tc.stat

@@ -204,6 +204,17 @@ func AssertEqualWriteError(t *testing.T, expected *mongo.WriteError, actual erro
 		assert.Equal(t, expected.Code, actualWriteErr.Code)
 }
 
+// IsUnimplemented returns true if the error code is unimplemented.
+func IsUnimplemented(t *testing.T, actual error) bool {
+	actualCE, ok := actual.(mongo.CommandError)
+	if ok {
+		if actualCE.Code == 238 {
+			return true
+		}
+	}
+	return false
+}
+
 // AssertEqualAltWriteError compares expected mongo.WriteError Message and Code with actual error.
 func AssertEqualAltWriteError(t *testing.T, expected *mongo.WriteError, alt string, actual error) bool {
 	t.Helper()

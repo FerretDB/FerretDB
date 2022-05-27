@@ -75,6 +75,15 @@ func getDocument(op string, update *types.Document) (*types.Document, error) {
 	updateExpression := must.NotFail(update.Get(op))
 	switch doc := updateExpression.(type) {
 	case *types.Document:
+		for _, v := range doc.Keys() {
+			if strings.Contains(v, ".") {
+				return nil, NewError(
+					ErrNotImplemented,
+					fmt.Errorf("Dot notation is not implemented"),
+				)
+			}
+		}
+
 		return doc, nil
 	default:
 		msgFmt := fmt.Sprintf(`Modifiers operate on fields but we found type %[1]s instead. `+

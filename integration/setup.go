@@ -72,7 +72,7 @@ func setupWithOpts(t *testing.T, opts *setupOpts) (context.Context, *mongo.Colle
 		ownDatabase = true
 	}
 
-	logger := zaptest.NewLogger(t, zaptest.Level(zap.DebugLevel))
+	logger := zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel))
 
 	port, err := strconv.Atoi(*startupPortF)
 	if err != nil {
@@ -219,4 +219,18 @@ func startup(t *testing.T) {
 	ctx := context.Background()
 
 	go debug.RunHandler(ctx, "127.0.0.1:0", zap.L().Named("debug"))
+}
+
+// dbByPort returns database name by port.
+func dbByPort() string {
+	switch *startupPortF {
+	case "0":
+		return "ferretdb"
+	case "27017":
+		return "default"
+	case "37017":
+		return "mongodb"
+	default:
+		panic("unknown")
+	}
 }
