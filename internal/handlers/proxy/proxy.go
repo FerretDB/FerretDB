@@ -66,5 +66,6 @@ func (r *Router) Route(ctx context.Context, header *wire.MsgHeader, body wire.Ms
 	if err != nil {
 		panic(err)
 	}
+
 	return resHeader, resBody, false
 }
