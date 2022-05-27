@@ -72,8 +72,8 @@ func (a *Array) Get(index int) (any, error) {
 }
 
 // GetByPath returns a value by path - a sequence of indexes and keys.
-func (a *Array) GetByPath(path ...string) (any, error) {
-	return getByPath(a, path...)
+func (a *Array) GetByPath(path Path) (any, error) {
+	return getByPath(a, path)
 }
 
 // Set sets the value at the given index.
@@ -108,6 +108,6 @@ func (a *Array) Append(values ...any) error {
 }
 
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
-func (a *Array) RemoveByPath(keys ...string) {
-	removeByPath(a, keys...)
+func (a *Array) RemoveByPath(path Path) {
+	removeByPath(a, path)
 }

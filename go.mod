@@ -12,9 +12,10 @@ require (
 	github.com/prometheus/common v0.34.0
 	github.com/stretchr/testify v1.7.1
 	go.uber.org/zap v1.21.0
-	golang.org/x/crypto v0.0.0-20220513210258-46612604a0f9 // indirect; always use @latest
-	golang.org/x/exp v0.0.0-20220428152302-39d4317da171
-	golang.org/x/sys v0.0.0-20220513210249-45d2b4557a2a
+	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect; always use @latest
+	golang.org/x/exp v0.0.0-20220518171630-0b5c67f07fdf
+	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9
+	gopkg.in/yaml.v3 v3.0.0 // indirect; https://github.com/advisories/GHSA-hp87-p4gw-j4gq
 )
 
 require (
@@ -37,5 +38,4 @@ require (
 	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/protobuf v1.26.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )

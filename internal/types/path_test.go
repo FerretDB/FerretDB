@@ -66,15 +66,11 @@ func TestRemoveByPath(t *testing.T) {
 
 	//nolint:paralleltest // false positive
 	for name, tc := range map[string]struct {
-		path []string
+		path Path
 		res  *Document
 	}{
-		"no keys in path": {
-			path: []string{},
-			res:  sourceDoc.DeepCopy(),
-		},
 		"test deep removal ok": {
-			path: []string{"client", "0", "foo", "baz", "baz", "baz"},
+			path: NewPath([]string{"client", "0", "foo", "baz", "baz", "baz"}),
 			res: must.NotFail(NewDocument(
 				"ismaster", true,
 				"client", must.NotFail(NewArray(
@@ -110,18 +106,18 @@ func TestRemoveByPath(t *testing.T) {
 			)),
 		},
 		"not found no error": {
-			path: []string{"ismaster", "0"},
+			path: NewPath([]string{"ismaster", "0"}),
 			res:  sourceDoc.DeepCopy(),
 		},
 		"removed entire client field": {
-			path: []string{"client"},
+			path: NewPath([]string{"client"}),
 			res: must.NotFail(NewDocument(
 				"ismaster", true,
 				"value", must.NotFail(NewArray("none")),
 			)),
 		},
 		"only 1d array element of client field is removed": {
-			path: []string{"client", "1"},
+			path: NewPath([]string{"client", "1"}),
 			res: must.NotFail(NewDocument(
 				"ismaster", true,
 				"client", must.NotFail(NewArray(
@@ -141,7 +137,7 @@ func TestRemoveByPath(t *testing.T) {
 			)),
 		},
 		"not found, no error doc is same": {
-			path: []string{"compression", "invalid"},
+			path: NewPath([]string{"compression", "invalid"}),
 			res:  sourceDoc.DeepCopy(),
 		},
 	} {
@@ -150,56 +146,66 @@ func TestRemoveByPath(t *testing.T) {
 			t.Parallel()
 
 			doc := sourceDoc.DeepCopy()
-			RemoveByPath(doc, tc.path...)
+			RemoveByPath(doc, tc.path)
 			assert.Equal(t, tc.res, doc, name)
 		})
 	}
+}
 
-	t.Run("test array remove by path", func(t *testing.T) {
-		t.Parallel()
+func TestRemoveByPathArray(t *testing.T) {
+	t.Parallel()
 
-		src := must.NotFail(NewArray(
-			"0", float64(42.13), int32(1000), "2",
-			must.NotFail(NewDocument(
-				"document", "abc",
-				"score", float64(42.13),
-				"age", int32(1000),
-				"foo", deepDoc.DeepCopy(),
+	deepDoc := must.NotFail(NewDocument(
+		"xxx", "yyy",
+		"bar", float64(42.13),
+		"baz", must.NotFail(NewDocument(
+			"foo", "bar",
+			"bar", float64(42.13),
+			"baz", must.NotFail(NewDocument(
+				"foo", "baz",
+				"bar", float64(42.13),
+				"baz", int32(1000),
 			)),
-			must.NotFail(NewArray("1", "2", "3")),
-		))
+		)),
+	))
 
-		for name, tc := range map[string]struct {
-			path     []string
-			expected *Array
-		}{
-			"array: remove by path": {
-				path:     []string{"4"},
-				expected: must.NotFail(NewArray("0", float64(42.13), int32(1000), "2", must.NotFail(NewArray("1", "2", "3")))),
-			},
-			"array: index exceded": {
-				path:     []string{"11"},
-				expected: src.DeepCopy(),
-			},
-			"array: empty path": {
-				path:     []string{},
-				expected: src.DeepCopy(),
-			},
-			"array: index is not number": {
-				path:     []string{"abcd"},
-				expected: src.DeepCopy(),
-			},
-		} {
-			tc := tc
-			t.Run(name, func(t *testing.T) {
-				t.Parallel()
+	src := must.NotFail(NewArray(
+		"0", float64(42.13), int32(1000), "2",
+		must.NotFail(NewDocument(
+			"document", "abc",
+			"score", float64(42.13),
+			"age", int32(1000),
+			"foo", deepDoc.DeepCopy(),
+		)),
+		must.NotFail(NewArray("1", "2", "3")),
+	))
 
-				arr := src.DeepCopy()
-				arr.RemoveByPath(tc.path...)
-				assert.Equal(t, tc.expected, arr, name)
-			})
-		}
-	})
+	for name, tc := range map[string]struct {
+		path     Path
+		expected *Array
+	}{
+		"array: remove by path": {
+			path:     NewPath([]string{"4"}),
+			expected: must.NotFail(NewArray("0", float64(42.13), int32(1000), "2", must.NotFail(NewArray("1", "2", "3")))),
+		},
+		"array: index exceeded": {
+			path:     NewPath([]string{"11"}),
+			expected: src.DeepCopy(),
+		},
+		"array: index is not number": {
+			path:     NewPath([]string{"abcd"}),
+			expected: src.DeepCopy(),
+		},
+	} {
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			arr := src.DeepCopy()
+			arr.RemoveByPath(tc.path)
+			assert.Equal(t, tc.expected, arr, name)
+		})
+	}
 }
 
 func TestGetByPath(t *testing.T) {
@@ -228,44 +234,44 @@ func TestGetByPath(t *testing.T) {
 	))
 
 	type testCase struct {
-		path []string
+		path Path
 		res  any
 		err  string
 	}
 
 	for _, tc := range []testCase{{ //nolint:paralleltest // false positive
-		path: []string{"compression", "0"},
+		path: NewPath([]string{"compression", "0"}),
 		res:  "none",
 	}, {
-		path: []string{"compression"},
+		path: NewPath([]string{"compression"}),
 		res:  must.NotFail(NewArray("none")),
 	}, {
-		path: []string{"client", "driver"},
+		path: NewPath([]string{"client", "driver"}),
 		res: must.NotFail(NewDocument(
 			"name", "nodejs",
 			"version", "4.0.0-beta.6",
 		)),
 	}, {
-		path: []string{"client", "0"},
+		path: NewPath([]string{"client", "0"}),
 		err:  `types.getByPath: types.Document.Get: key not found: "0"`,
 	}, {
-		path: []string{"compression", "invalid"},
+		path: NewPath([]string{"compression", "invalid"}),
 		err:  `types.getByPath: strconv.Atoi: parsing "invalid": invalid syntax`,
 	}, {
-		path: []string{"client", "missing"},
+		path: NewPath([]string{"client", "missing"}),
 		err:  `types.getByPath: types.Document.Get: key not found: "missing"`,
 	}, {
-		path: []string{"compression", "1"},
+		path: NewPath([]string{"compression", "1"}),
 		err:  `types.getByPath: types.Array.Get: index 1 is out of bounds [0-1)`,
 	}, {
-		path: []string{"compression", "0", "invalid"},
+		path: NewPath([]string{"compression", "0", "invalid"}),
 		err:  `types.getByPath: can't access string by path "invalid"`,
 	}} {
 		tc := tc
 		t.Run(fmt.Sprint(tc.path), func(t *testing.T) {
 			t.Parallel()
 
-			res, err := getByPath(doc, tc.path...)
+			res, err := getByPath(doc, tc.path)
 			if tc.err == "" {
 				require.NoError(t, err)
 				assert.Equal(t, tc.res, res)
