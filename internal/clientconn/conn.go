@@ -408,7 +408,7 @@ func (c *conn) Collect(ch chan<- prometheus.Metric) {
 func (c *conn) logResponse(resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) zapcore.Level {
 	level := zap.DebugLevel
 
-	if resHeader.OpCode == wire.OP_MSG {
+	if resHeader.OpCode == wire.OpCodeMsg {
 		doc, err := resBody.(*wire.OpMsg).Document()
 		must.NoError(err)
 
