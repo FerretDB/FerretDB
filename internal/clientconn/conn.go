@@ -28,6 +28,7 @@ import (
 	"github.com/pmezard/go-difflib/difflib"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/proxy"
@@ -168,13 +169,17 @@ func (c *conn) run(ctx context.Context) (err error) {
 			c.l.Debugf("Request message:\n%s\n\n\n", reqBody)
 		}
 
+		// diffLogLevel provides the level of logging for the diff between the "normal" and "proxy" responses.
+		// It is set to the highest level of logging used to log response.
+		var diffLogLevel zapcore.Level
+
 		// handle request unless we are in proxy mode
 		var resHeader *wire.MsgHeader
 		var resBody wire.MsgBody
 		var resCloseConn bool
 		if c.mode != ProxyMode {
 			resHeader, resBody, resCloseConn = c.route(ctx, reqHeader, reqBody)
-			logResponse(c.l, resHeader, resBody, resCloseConn)
+			diffLogLevel = logResponse(c.l, resHeader, resBody, resCloseConn)
 		}
 
 		// send request to proxy unless we are in normal mode
@@ -186,11 +191,13 @@ func (c *conn) run(ctx context.Context) (err error) {
 			}
 
 			proxyHeader, proxyBody, _ = c.proxy.Route(ctx, reqHeader, reqBody)
-			logResponse(c.l, resHeader, resBody, resCloseConn)
+			if level := logResponse(c.l, resHeader, resBody, resCloseConn); level != diffLogLevel {
+				// In principle, normal and proxy responses should be logged with the same level
+				// as they behave the same way. If it's not true, there is a bug somewhere, so
+				// we should log the diff as an error.
+				diffLogLevel = zap.ErrorLevel
+			}
 		}
-
-		// ??? Diff is only used when debug level is enabled. The only place where diff is shown is in the logs.
-		// Should we check log level before calculating diff ???
 
 		// diff in diff mode
 		if c.mode == DiffNormalMode || c.mode == DiffProxyMode {
@@ -218,7 +225,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 				return
 			}
 
-			c.l.Debugf("Header diff:\n%s\nBody diff:\n%s\n\n", diffHeader, diffBody)
+			c.l.Desugar().Check(diffLogLevel, fmt.Sprintf("Header diff:\n%s\nBody diff:\n%s\n\n", diffHeader, diffBody)).Write()
 		}
 
 		// replace response with one from proxy in proxy and diff-proxy modes
@@ -392,13 +399,13 @@ func (l *conn) Collect(ch chan<- prometheus.Metric) {
 	l.m.Collect(ch)
 }
 
-// logResponse logs response's header and body.
+// logResponse logs response's header and body and returns the log level that was used.
 // If op code is not OP_MSG, it always logs as a debug.
 // For the OP_MSG code, the level depends on the type of error.
 // If there is no errors in the response, it will be logged as a debug.
 // If there is an error in the response, and connection is closed, it will be logged as an error.
 // If there is an error in the response, and connection is not closed, it will be logged as a warning.
-func logResponse(logger *zap.SugaredLogger, resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) {
+func logResponse(logger *zap.SugaredLogger, resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) zapcore.Level {
 	level := zap.DebugLevel
 
 	if resHeader.OpCode == wire.OP_MSG {
@@ -419,4 +426,5 @@ func logResponse(logger *zap.SugaredLogger, resHeader *wire.MsgHeader, resBody w
 
 	logger.Desugar().Check(level, fmt.Sprintf("Response header: %s", resHeader)).Write()
 	logger.Desugar().Check(level, fmt.Sprintf("Response message:\n%s\n\n\n", resBody)).Write()
+	return level
 }
