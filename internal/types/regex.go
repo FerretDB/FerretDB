@@ -96,25 +96,6 @@ func (r Regex) Compile() (*regexp.Regexp, error) {
 	return nil, fmt.Errorf("types.Regex.Compile: %w", err)
 }
 
-/*
-r := regex.Compile("^         # Assert that position = beginning of string
-
-  #########   Lookahead   ##########
-  (?=       # Start lookahead
-     \D*       # Match any non-digits
-     \d        # Match one digit
-  )         # End lookahead
-
-  ######## Matching Section ########
-  \w*       # Match any word chars
-  [A-Z]     # Match one upper-case letter
-  \w*       # Match any word chars
-
-  $         # Assert that position = end of string
-");
-^(?=\D*\d)\w*[A-Z]\w*$
-*/
-
 func freeSpacingParse(expr string) string {
 	commentBlock, backslash, bracket := false, false, false
 	outExpr := ""

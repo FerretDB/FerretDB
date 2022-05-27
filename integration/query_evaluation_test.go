@@ -419,6 +419,8 @@ func TestQueryEvaluationRegex(t *testing.T) {
 			{"_id", "document-nested-strings"},
 			{"value", bson.D{{"foo", bson.D{{"bar", "quz"}}}}},
 		},
+		bson.D{{"_id", "space-in-curly-brackets"}, {"value", "o{1 0}"}},
+		bson.D{{"_id", "ten-times-o"}, {"value", "oooooooooo"}},
 	})
 	require.NoError(t, err)
 
@@ -450,6 +452,19 @@ func TestQueryEvaluationRegex(t *testing.T) {
 			filter:      bson.D{{"value", bson.D{{"$regex", "^foo"}, {"$options", "m"}}}},
 			expectedIDs: []any{"multiline-string", "string"},
 		},
+		"RegexWithOptionMatchFreeSpacingSpaceInCurlyBrackets": {
+			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "o{1 0}", Options: "x"}}}}},
+			expectedIDs: []any{},
+		},
+		"RegexWithOptionMatchFreeSpacingEscapeSpaceInCurlyBracket": {
+			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "o{1\\ 0}", Options: "x"}}}}},
+			expectedIDs: []any{"space-in-curly-brackets"},
+		},
+		//"RegexWithOptionMatchFreeSpacingSpaceInCurlyBrackets": {
+		//	filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "o{1 0}", Options: "x"}}}}},
+		//	expectedIDs: []any{},
+		//},
+
 		"RegexNoSuchField": {
 			filter:      bson.D{{"no-such-field", bson.D{{"$regex", primitive.Regex{Pattern: "foo"}}}}},
 			expectedIDs: []any{},
