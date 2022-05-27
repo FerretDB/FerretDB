@@ -143,7 +143,7 @@ func TestSetOnInsert(t *testing.T) {
 			var res *mongo.UpdateResult
 			res, err = collection.UpdateOne(ctx, tc.filter, bson.D{{"$setOnInsert", tc.setOnInsert}}, opts)
 			if tc.err != nil {
-				if !AssertEqualWriteError(t, tc.err, tc.alt, err) {
+				if !AssertEqualAltWriteError(t, tc.err, tc.alt, err) {
 					t.Logf("%[1]T %[1]v", err)
 					t.FailNow()
 				}
@@ -228,7 +228,7 @@ func TestSetOnInsertMore(t *testing.T) {
 			var res *mongo.UpdateResult
 			res, err = collection.UpdateOne(ctx, tc.filter, tc.query, opts)
 			if tc.err != nil {
-				if !AssertEqualWriteError(t, tc.err, tc.alt, err) {
+				if !AssertEqualAltWriteError(t, tc.err, tc.alt, err) {
 					t.Logf("%[1]T %[1]v", err)
 					t.FailNow()
 				}

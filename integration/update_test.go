@@ -81,6 +81,7 @@ func TestUpdateIncOperatorErrors(t *testing.T) {
 		filter bson.D
 		update bson.D
 		err    *mongo.WriteError
+		alt    string
 	}{
 		"IncOnDocument": {
 			filter: bson.D{{"_id", "document"}},
@@ -107,6 +108,8 @@ func TestUpdateIncOperatorErrors(t *testing.T) {
 				Message: `Modifiers operate on fields but we found type string instead.` +
 					` For example: {$mod: {<field>: ...}} not {$inc: "string"}`,
 			},
+			alt: `Modifiers operate on fields but we found type string instead.` +
+				` For example: {$mod: {<field>: ...}} not {$inc: string}`,
 		},
 		"IncWithStringValue": {
 			filter: bson.D{{"_id", "string"}},
@@ -155,7 +158,7 @@ func TestUpdateIncOperatorErrors(t *testing.T) {
 
 			_, err = collection.UpdateOne(ctx, tc.filter, tc.update)
 			require.NotNil(t, tc.err)
-			AssertEqualWriteError(t, tc.err, "", err)
+			AssertEqualAltWriteError(t, tc.err, tc.alt, err)
 		})
 	}
 }

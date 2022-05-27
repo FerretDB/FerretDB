@@ -36,7 +36,7 @@ func TestSetOperatorOnString(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]testCase{
-		"SetMany": {
+		"Many": {
 			id:     "string",
 			update: bson.D{{"$set", bson.D{{"foo", int32(1)}, {"bar", bson.A{}}}}},
 			stat: &mongo.UpdateResult{
@@ -46,7 +46,7 @@ func TestSetOperatorOnString(t *testing.T) {
 			},
 			result: bson.D{{"_id", "string"}, {"value", "foo"}, {"bar", bson.A{}}, {"foo", int32(1)}},
 		},
-		"SetNilOperand": {
+		"NilOperand": {
 			id:     "string",
 			update: bson.D{{"$set", nil}},
 			err: &mongo.WriteError{
@@ -55,7 +55,7 @@ func TestSetOperatorOnString(t *testing.T) {
 					"For example: {$mod: {<field>: ...}} not {$set: null}",
 			},
 		},
-		"SetString": {
+		"String": {
 			id:     "string",
 			update: bson.D{{"$set", "string"}},
 			err: &mongo.WriteError{
@@ -66,7 +66,7 @@ func TestSetOperatorOnString(t *testing.T) {
 			alt: "Modifiers operate on fields but we found type string instead. " +
 				"For example: {$mod: {<field>: ...}} not {$set: string}",
 		},
-		"SetDouble": {
+		"Double": {
 			id:     "string",
 			update: bson.D{{"$set", float64(42.12345)}},
 			err: &mongo.WriteError{
@@ -77,7 +77,7 @@ func TestSetOperatorOnString(t *testing.T) {
 			alt: "Modifiers operate on fields but we found type double instead. " +
 				"For example: {$mod: {<field>: ...}} not {$set: double}",
 		},
-		"SetNaN": {
+		"NaN": {
 			id:     "string",
 			update: bson.D{{"$set", math.NaN()}},
 			err: &mongo.WriteError{
@@ -88,7 +88,7 @@ func TestSetOperatorOnString(t *testing.T) {
 			alt: "Modifiers operate on fields but we found type double instead. " +
 				"For example: {$mod: {<field>: ...}} not {$set: double}",
 		},
-		"SetInf": {
+		"Inf": {
 			id:     "string",
 			update: bson.D{{"$set", math.Inf(+1)}},
 			err: &mongo.WriteError{
@@ -99,7 +99,7 @@ func TestSetOperatorOnString(t *testing.T) {
 			alt: "Modifiers operate on fields but we found type double instead. " +
 				"For example: {$mod: {<field>: ...}} not {$set: double}",
 		},
-		"SetMinusInf": {
+		"MinusInf": {
 			id:     "string",
 			update: bson.D{{"$set", math.Inf(-1)}},
 			err: &mongo.WriteError{
@@ -110,7 +110,7 @@ func TestSetOperatorOnString(t *testing.T) {
 			alt: "Modifiers operate on fields but we found type double instead. " +
 				"For example: {$mod: {<field>: ...}} not {$set: double}",
 		},
-		"SetArray": {
+		"Array": {
 			id:     "string",
 			update: bson.D{{"$set", bson.A{}}},
 			err: &mongo.WriteError{
@@ -121,7 +121,7 @@ func TestSetOperatorOnString(t *testing.T) {
 			alt: "Modifiers operate on fields but we found type array instead. " +
 				"For example: {$mod: {<field>: ...}} not {$set: array}",
 		},
-		"SetEmptyDoc": {
+		"EmptyDoc": {
 			id:     "string",
 			update: bson.D{{"$set", bson.D{}}},
 			result: bson.D{{"_id", "string"}, {"value", "foo"}},
@@ -163,7 +163,7 @@ func TestSetOperatorOnString(t *testing.T) {
 
 			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
 			if tc.err != nil {
-				if !AssertEqualWriteError(t, tc.err, tc.alt, err) {
+				if !AssertEqualAltWriteError(t, tc.err, tc.alt, err) {
 					t.Logf("%[1]T %[1]v", err)
 					t.FailNow()
 				}
@@ -185,7 +185,7 @@ func TestSetOperatorDoubleVal(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]testCase{
-		"SetDouble": {
+		"Double": {
 			id:     "double",
 			update: bson.D{{"$set", bson.D{{"value", float64(1)}}}},
 			stat: &mongo.UpdateResult{
@@ -195,7 +195,7 @@ func TestSetOperatorDoubleVal(t *testing.T) {
 			},
 			result: bson.D{{"_id", "double"}, {"value", float64(1)}},
 		},
-		"SetNaN": {
+		"NaN": {
 			id:     "double",
 			update: bson.D{{"$set", bson.D{{"value", math.NaN()}}}},
 			stat: &mongo.UpdateResult{
@@ -205,7 +205,7 @@ func TestSetOperatorDoubleVal(t *testing.T) {
 			},
 			result: bson.D{{"_id", "double"}, {"value", math.NaN()}},
 		},
-		"SetEmptyArray": {
+		"EmptyArray": {
 			id:     "double",
 			update: bson.D{{"$set", bson.D{{"value", bson.A{}}}}},
 			stat: &mongo.UpdateResult{
@@ -215,7 +215,7 @@ func TestSetOperatorDoubleVal(t *testing.T) {
 			},
 			result: bson.D{{"_id", "double"}, {"value", bson.A{}}},
 		},
-		"SetNull": {
+		"Null": {
 			id:     "double",
 			update: bson.D{{"$set", bson.D{{"value", nil}}}},
 			stat: &mongo.UpdateResult{
@@ -225,7 +225,7 @@ func TestSetOperatorDoubleVal(t *testing.T) {
 			},
 			result: bson.D{{"_id", "double"}, {"value", nil}},
 		},
-		"SetInt32": {
+		"Int32": {
 			id:     "double",
 			update: bson.D{{"$set", bson.D{{"value", int32(1)}}}},
 			stat: &mongo.UpdateResult{
@@ -235,7 +235,7 @@ func TestSetOperatorDoubleVal(t *testing.T) {
 			},
 			result: bson.D{{"_id", "double"}, {"value", int32(1)}},
 		},
-		"SetInf": {
+		"Inf": {
 			id:     "double",
 			update: bson.D{{"$set", bson.D{{"value", math.Inf(+1)}}}},
 			stat: &mongo.UpdateResult{
@@ -258,7 +258,7 @@ func TestSetOperatorDoubleVal(t *testing.T) {
 			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
 			if tc.err != nil {
 				t.Log(err)
-				if !AssertEqualWriteError(t, tc.err, tc.alt, err) {
+				if !AssertEqualAltWriteError(t, tc.err, tc.alt, err) {
 					t.Log(err)
 					t.FailNow()
 				}
