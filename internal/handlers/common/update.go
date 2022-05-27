@@ -23,6 +23,54 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// ValidateUpdateQuery validates update statement.
+func ValidateUpdateQuery(update *types.Document) (err error) {
+	set, err := getDocument("$set", update)
+	if err != nil {
+		return err
+	}
+	_, err = getDocument("$setOnInsert", update)
+	if err != nil {
+		return err
+	}
+
+	inc, err := getDocument("$inc", update)
+	if err != nil {
+		return err
+	}
+
+	if set != nil && inc != nil {
+		for _, setKey := range set.Keys() {
+			if inc.Has(setKey) {
+				return NewWriteErrorMsg(
+					ErrConflictingUpdateOperators,
+					fmt.Sprintf("Updating the path '%[1]s' would create a conflict at '%[1]s'", setKey),
+				)
+			}
+		}
+	}
+	return nil
+}
+
+// getDocument gets document by key `op` and returns WriteError error if it is not a document.
+func getDocument(op string, update *types.Document) (*types.Document, error) {
+	if !update.Has(op) {
+		return nil, nil
+	}
+	updateExpression := must.NotFail(update.Get(op))
+	switch doc := updateExpression.(type) {
+	case *types.Document:
+		return doc, nil
+	default:
+		msgFmt := fmt.Sprintf(`Modifiers operate on fields but we found type %[1]s instead. `+
+			`For example: {$mod: {<field>: ...}} not {%s: %[1]s}`,
+			AliasFromType(updateExpression),
+			op,
+		)
+		return nil, NewWriteErrorMsg(ErrFailedToParse, msgFmt)
+	}
+}
+
 // UpdateDocument updates the given document with a series of update operators.
 // Returns true if document was changed.
 func UpdateDocument(doc, update *types.Document) (bool, error) {

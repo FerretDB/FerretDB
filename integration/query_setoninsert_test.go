@@ -187,13 +187,25 @@ func TestSetOnInsertMore(t *testing.T) {
 		err    *mongo.WriteError
 		alt    string
 	}{
-		"empty-initial": {
+		"tandem-set-setoninsert": {
 			filter: bson.D{{"_id", "test"}},
 			query: bson.D{
 				{"$set", bson.D{{"foo", int32(12)}}},
 				{"$setOnInsert", bson.D{{"value", math.NaN()}}},
 			},
 			res: bson.D{{"_id", "test"}, {"foo", int32(12)}, {"value", math.NaN()}},
+		},
+		"trio": {
+			filter: bson.D{{"_id", "test"}},
+			query: bson.D{
+				{"$set", bson.D{{"foo", int32(12)}}},
+				{"$inc", bson.D{{"foo", int32(1)}}},
+				{"$setOnInsert", bson.D{{"value", math.NaN()}}},
+			},
+			err: &mongo.WriteError{
+				Code:    40,
+				Message: "Updating the path 'foo' would create a conflict at 'foo'",
+			},
 		},
 	} {
 		name, tc := name, tc
