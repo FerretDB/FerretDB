@@ -173,7 +173,7 @@ func TestSetOperatorOnString(t *testing.T) {
 
 			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
 			if tc.err != nil {
-				if !AssertEqualWriteError(t, tc.err, tc.alt, err) {
+				if !AssertEqualAltWriteError(t, tc.err, tc.alt, err) {
 					t.Logf("%[1]T %[1]v", err)
 					t.FailNow()
 				}
@@ -268,7 +268,7 @@ func TestSetOperatorDoubleVal(t *testing.T) {
 			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
 			if tc.err != nil {
 				t.Log(err)
-				if !AssertEqualWriteError(t, tc.err, tc.alt, err) {
+				if !AssertEqualAltWriteError(t, tc.err, tc.alt, err) {
 					t.Log(err)
 					t.FailNow()
 				}

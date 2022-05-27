@@ -22,7 +22,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func TestAssertEqualWriteError(t *testing.T) {
+func TestAssertEqualAltWriteError(t *testing.T) {
 	t.Parallel()
 
 	type testCase struct {
@@ -90,7 +90,7 @@ func TestAssertEqualWriteError(t *testing.T) {
 			equal: false,
 		},
 	} {
-		equal := AssertEqualWriteError(t, tc.err1, tc.alt, tc.err2)
+		equal := AssertEqualAltWriteError(t, tc.err1, tc.alt, tc.err2)
 		assert.Equal(t, tc.equal, equal, name)
 	}
 }
