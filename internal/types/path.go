@@ -28,6 +28,14 @@ type Path struct {
 
 // NewPath returns Path from a strings slice.
 func NewPath(path []string) Path {
+	if len(path) == 0 {
+		panic("empty path")
+	}
+	for _, s := range path {
+		if s == "" {
+			panic("path element must not be empty")
+		}
+	}
 	p := Path{s: make([]string, len(path))}
 	copy(p.s, path)
 	return p
@@ -60,15 +68,15 @@ func (p Path) Slice() []string {
 // Suffix returns the last path element.
 func (p Path) Suffix() string {
 	if len(p.s) == 0 {
-		return ""
+		panic("path should have more than 1 element")
 	}
 	return p.s[p.Len()-1]
 }
 
 // Prefix returns the first path element.
 func (p Path) Prefix() string {
-	if p.Len() == 0 {
-		return ""
+	if p.Len() <= 1 {
+		panic("path should have more than 1 element")
 	}
 	return p.s[0]
 }
