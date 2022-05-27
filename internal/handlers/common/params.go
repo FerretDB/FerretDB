@@ -279,21 +279,18 @@ func GetPositiveNumber(document *types.Document, key string) (int32, error) {
 				fmt.Sprintf("%v value for %s is out of range", math.MinInt64, key),
 			)
 		}
-
 		if math.IsInf(param, +1) {
 			return 0, NewErrorMsg(
 				ErrBadValue,
 				fmt.Sprintf("%v value for %s is out of range", math.MaxInt64, key),
 			)
 		}
-
 		if param > math.MaxInt32 || param < math.MinInt32 {
 			return 0, NewErrorMsg(
 				ErrBadValue,
 				fmt.Sprintf("%v value for %s is out of range", int64(param), key),
 			)
 		}
-
 		if param != math.Trunc(param) {
 			return 0, NewErrorMsg(ErrBadValue, fmt.Sprintf("%s must be an integer", key))
 		}

@@ -77,8 +77,8 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	runCtx, runCancel := context.WithTimeout(ctx, time.Duration(maxTimeMS)*time.Millisecond)
 	defer runCancel()
-	if maxTimeMS == 0 {
-		runCtx = ctx
+	if maxTimeMS != 0 {
+		ctx = runCtx
 	}
 
 	var limit int64
@@ -115,7 +115,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		}
 	}
 
-	fetchedDocs, err := h.fetch(runCtx, sp)
+	fetchedDocs, err := h.fetch(ctx, sp)
 	if err != nil {
 		return nil, err
 	}

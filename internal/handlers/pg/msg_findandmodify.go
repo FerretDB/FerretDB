@@ -58,11 +58,11 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	runCtx, runCancel := context.WithTimeout(ctx, time.Duration(params.maxTimeMS)*time.Millisecond)
 	defer runCancel()
-	if params.maxTimeMS == 0 {
-		runCtx = ctx
+	if params.maxTimeMS != 0 {
+		ctx = runCtx
 	}
 
-	fetchedDocs, err := h.fetch(runCtx, params.sqlParam)
+	fetchedDocs, err := h.fetch(ctx, params.sqlParam)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				update:             params.update,
 				sqlParam:           params.sqlParam,
 			}
-			upsert, upserted, err = h.upsert(runCtx, resDocs, p)
+			upsert, upserted, err = h.upsert(ctx, resDocs, p)
 			if err != nil {
 				return nil, err
 			}
@@ -126,7 +126,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					return nil, err
 				}
 
-				_, err = h.update(runCtx, params.sqlParam, upsert)
+				_, err = h.update(ctx, params.sqlParam, upsert)
 				if err != nil {
 					return nil, err
 				}
@@ -137,7 +137,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					must.NoError(upsert.Set("_id", must.NotFail(resDocs[0].Get("_id"))))
 				}
 
-				_, err = h.update(runCtx, params.sqlParam, upsert)
+				_, err = h.update(ctx, params.sqlParam, upsert)
 				if err != nil {
 					return nil, err
 				}
@@ -185,7 +185,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			return &reply, nil
 		}
 
-		_, err = h.delete(runCtx, params.sqlParam, resDocs)
+		_, err = h.delete(ctx, params.sqlParam, resDocs)
 		if err != nil {
 			return nil, err
 		}
