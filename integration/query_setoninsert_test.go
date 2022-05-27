@@ -207,6 +207,16 @@ func TestSetOnInsertMore(t *testing.T) {
 				Message: "Updating the path 'foo' would create a conflict at 'foo'",
 			},
 		},
+		"unknown-operator": {
+			filter: bson.D{{"_id", "test"}},
+			query: bson.D{
+				{"$foo", bson.D{{"foo", int32(1)}}},
+			},
+			err: &mongo.WriteError{
+				Code:    9,
+				Message: "Unknown modifier: $foo. Expected a valid update modifier or pipeline-style update specified as an array",
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {

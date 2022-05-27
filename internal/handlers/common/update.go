@@ -49,6 +49,21 @@ func ValidateUpdateQuery(update *types.Document) (err error) {
 			}
 		}
 	}
+
+	for _, updateOp := range update.Keys() {
+		switch updateOp {
+		case "$set",
+			"$setOnInsert",
+			"$inc":
+			// supported
+		default:
+			return NewWriteErrorMsg(
+				ErrFailedToParse,
+				fmt.Sprintf("Unknown modifier: %s. Expected a valid update modifier or pipeline-style "+
+					"update specified as an array", updateOp,
+				))
+		}
+	}
 	return nil
 }
 
@@ -167,7 +182,11 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 
 		default:
-			return false, NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
+			return false, NewWriteErrorMsg(
+				ErrFailedToParse,
+				fmt.Sprintf("Unknown modifier: %s. Expected a valid update modifier or pipeline-style "+
+					"update specified as an array", updateOp,
+				))
 		}
 	}
 
