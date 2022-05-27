@@ -32,6 +32,7 @@ linters-settings:
       - FIXME
       - HACK
   goheader:
+    # Please do not update it, including bumping a year.
     template: |-
       Copyright 2021 FerretDB Inc.
 
