@@ -86,7 +86,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	}
 
 	prefix := fmt.Sprintf("// %s -> %s ", opts.netConn.RemoteAddr(), opts.netConn.LocalAddr())
-	l := opts.l.Named(prefix).Sugar()
+	l := opts.l.Named(prefix)
 
 	var p *proxy.Router
 	if opts.mode != NormalMode {
@@ -99,7 +99,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	return &conn{
 		netConn: opts.netConn,
 		mode:    opts.mode,
-		l:       l,
+		l:       l.Sugar(),
 		h:       opts.handler,
 		m:       opts.connMetrics,
 		proxy:   p,
@@ -179,7 +179,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 		var resCloseConn bool
 		if c.mode != ProxyMode {
 			resHeader, resBody, resCloseConn = c.route(ctx, reqHeader, reqBody)
-			diffLogLevel = logResponse(c.l, resHeader, resBody, resCloseConn)
+			diffLogLevel = c.logResponse(resHeader, resBody, resCloseConn)
 		}
 
 		// send request to proxy unless we are in normal mode
@@ -191,7 +191,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 			}
 
 			proxyHeader, proxyBody, _ = c.proxy.Route(ctx, reqHeader, reqBody)
-			if level := logResponse(c.l, resHeader, resBody, resCloseConn); level != diffLogLevel {
+			if level := c.logResponse(resHeader, resBody, resCloseConn); level != diffLogLevel {
 				// In principle, normal and proxy responses should be logged with the same level
 				// as they behave the same way. If it's not true, there is a bug somewhere, so
 				// we should log the diff as an error.
@@ -390,13 +390,13 @@ func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, cmd string) (*w
 }
 
 // Describe implements prometheus.Collector.
-func (l *conn) Describe(ch chan<- *prometheus.Desc) {
-	l.m.Describe(ch)
+func (c *conn) Describe(ch chan<- *prometheus.Desc) {
+	c.m.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
-func (l *conn) Collect(ch chan<- prometheus.Metric) {
-	l.m.Collect(ch)
+func (c *conn) Collect(ch chan<- prometheus.Metric) {
+	c.m.Collect(ch)
 }
 
 // logResponse logs response's header and body and returns the log level that was used.
@@ -405,7 +405,7 @@ func (l *conn) Collect(ch chan<- prometheus.Metric) {
 // If there is no errors in the response, it will be logged as a debug.
 // If there is an error in the response, and connection is closed, it will be logged as an error.
 // If there is an error in the response, and connection is not closed, it will be logged as a warning.
-func logResponse(logger *zap.SugaredLogger, resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) zapcore.Level {
+func (c *conn) logResponse(resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) zapcore.Level {
 	level := zap.DebugLevel
 
 	if resHeader.OpCode == wire.OP_MSG {
@@ -424,7 +424,7 @@ func logResponse(logger *zap.SugaredLogger, resHeader *wire.MsgHeader, resBody w
 		}
 	}
 
-	logger.Desugar().Check(level, fmt.Sprintf("Response header: %s", resHeader)).Write()
-	logger.Desugar().Check(level, fmt.Sprintf("Response message:\n%s\n\n\n", resBody)).Write()
+	c.l.Desugar().Check(level, fmt.Sprintf("Response header: %s", resHeader)).Write()
+	c.l.Desugar().Check(level, fmt.Sprintf("Response message:\n%s\n\n\n", resBody)).Write()
 	return level
 }
