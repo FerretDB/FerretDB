@@ -26,17 +26,17 @@ import (
 // UpdateDocument updates the given document with a series of update operators.
 // Returns true if document was changed.
 func UpdateDocument(doc, update *types.Document) (bool, error) {
+	var changed bool
 	for _, updateOp := range update.Keys() {
 		updateV := must.NotFail(update.Get(updateOp))
 
 		switch updateOp {
 		case "$set",
 			"$setOnInsert":
-
 			switch setDoc := updateV.(type) {
 			case *types.Document:
 				if setDoc.Len() == 0 {
-					return false, nil
+					return changed, nil
 				}
 				var err error
 				sort.Strings(setDoc.Keys())
@@ -46,7 +46,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 						return false, err
 					}
 				}
-				return true, nil
+				changed = true
 			default:
 				msgFmt := fmt.Sprintf(`Modifiers operate on fields but we found type %[1]s instead. `+
 					`For example: {$mod: {<field>: ...}} not {%s: %[1]s}`,
@@ -72,14 +72,15 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 			for _, incKey := range incDoc.Keys() {
 				if strings.ContainsRune(incKey, '.') {
-					return false, NewErrorMsg(ErrNotImplemented, "dot notation not supported yet")
+					return changed, NewErrorMsg(ErrNotImplemented, "dot notation not supported yet")
 				}
 
 				incValue := must.NotFail(incDoc.Get(incKey))
 
 				if !doc.Has(incKey) {
 					must.NoError(doc.Set(incKey, incValue))
-					return true, nil
+					changed = true
+					continue
 				}
 
 				docValue := must.NotFail(doc.Get(incKey))
@@ -87,6 +88,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				incremented, err := addNumbers(incValue, docValue)
 				if err == nil {
 					must.NoError(doc.Set(incKey, incremented))
+					changed = true
 					continue
 				}
 
@@ -121,5 +123,5 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 		}
 	}
 
-	return true, nil
+	return changed, nil
 }

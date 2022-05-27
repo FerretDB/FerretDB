@@ -77,14 +77,6 @@ func TestSetOnInsert(t *testing.T) {
 			setOnInsert: bson.D{},
 			res:         bson.D{{"_id", "doc"}},
 		},
-		// "empty-initial": {
-		// 	filter:      bson.D{},
-		// 	setOnInsert: bson.D{},
-		// },
-		// "nil-filter": {
-		// 	filter:      nil,
-		// 	setOnInsert: bson.D{},
-		// },
 		"empty-array": {
 			filter:      bson.D{{"_id", "array"}},
 			setOnInsert: bson.A{},
@@ -150,6 +142,69 @@ func TestSetOnInsert(t *testing.T) {
 			opts := options.Update().SetUpsert(true)
 			var res *mongo.UpdateResult
 			res, err = collection.UpdateOne(ctx, tc.filter, bson.D{{"$setOnInsert", tc.setOnInsert}}, opts)
+			if tc.err != nil {
+				if !AssertEqualWriteError(t, tc.err, tc.alt, err) {
+					t.Logf("%[1]T %[1]v", err)
+					t.FailNow()
+				}
+				return
+			}
+
+			require.NoError(t, err)
+			id := res.UpsertedID
+			assert.NotEmpty(t, id)
+			res.UpsertedID = nil
+			expectedRes := notModified
+			if tc.stat != nil {
+				expectedRes = tc.stat
+			}
+			assert.Equal(t, expectedRes, res)
+
+			var actual bson.D
+			err = collection.FindOne(ctx, tc.filter).Decode(&actual)
+			require.NoError(t, err)
+			if !AssertEqualDocuments(t, tc.res, actual) {
+				t.FailNow()
+			}
+		})
+	}
+}
+
+func TestSetOnInsertMore(t *testing.T) {
+	t.Parallel()
+
+	notModified := &mongo.UpdateResult{
+		MatchedCount:  0,
+		ModifiedCount: 0,
+		UpsertedCount: 1,
+	}
+
+	for name, tc := range map[string]struct {
+		filter bson.D
+		query  bson.D
+		stat   *mongo.UpdateResult
+		res    bson.D
+		err    *mongo.WriteError
+		alt    string
+	}{
+		"empty-initial": {
+			filter: bson.D{{"_id", "test"}},
+			query: bson.D{
+				{"$set", bson.D{{"foo", int32(12)}}},
+				{"$setOnInsert", bson.D{{"value", math.NaN()}}},
+			},
+			res: bson.D{{"_id", "test"}, {"foo", int32(12)}, {"value", math.NaN()}},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			var err error
+			ctx, collection := setup(t)
+
+			opts := options.Update().SetUpsert(true)
+			var res *mongo.UpdateResult
+			res, err = collection.UpdateOne(ctx, tc.filter, tc.query, opts)
 			if tc.err != nil {
 				if !AssertEqualWriteError(t, tc.err, tc.alt, err) {
 					t.Logf("%[1]T %[1]v", err)
