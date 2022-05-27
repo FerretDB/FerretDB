@@ -20,8 +20,8 @@ import (
 	"strings"
 )
 
-// Path represents field path type. It should be used wherever we work with paths or dot notation.
-// Path should be stored and passed as value. All of its methods return new values, not modifying the receiver's state.
+// Path represents the field path type. It should be used wherever we work with paths or dot notation.
+// Path should be stored and passed as a value. Its methods return new values, not modifying the receiver's state.
 type Path struct {
 	s []string
 }
