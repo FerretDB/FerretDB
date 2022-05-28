@@ -30,7 +30,7 @@ import (
 )
 
 func TestQueryEvaluationMod(t *testing.T) {
-	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+	if runtime.GOARCH == "arm64" {
 		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
 	}
 
