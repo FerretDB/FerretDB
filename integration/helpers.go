@@ -155,36 +155,6 @@ func AssertEqualAltError(t testing.TB, expected mongo.CommandError, altMessage s
 	return assert.Equal(t, expected, a)
 }
 
-// CollectIDs returns all _id values from given documents.
-//
-// The order is preserved.
-func CollectIDs(t testing.TB, docs []bson.D) []any {
-	t.Helper()
-
-	ids := make([]any, len(docs))
-	for i, doc := range docs {
-		id, ok := doc.Map()["_id"]
-		require.True(t, ok)
-		ids[i] = id
-	}
-
-	return ids
-}
-
-// CollectKeys returns document keys.
-//
-// The order is preserved.
-func CollectKeys(t testing.TB, doc bson.D) []string {
-	t.Helper()
-
-	res := make([]string, len(doc))
-	for i, e := range doc {
-		res[i] = e.Key
-	}
-
-	return res
-}
-
 // AssertEqualWriteError compares expected mongo.WriteError Message and Code with actual error.
 func AssertEqualWriteError(t *testing.T, expected *mongo.WriteError, actual error) bool {
 	t.Helper()
@@ -230,12 +200,39 @@ func AssertEqualAltWriteError(t *testing.T, expected *mongo.WriteError, alt stri
 	if expected.Message == actualWE.Message {
 		return true
 	}
-	t.Log(expected.Message)
-	t.Log(actualWE.Message)
-	t.Log(alt)
 	if alt != "" {
 		expected.Message = alt
 		return expected.Message == actualWE.Message
 	}
 	return false
+}
+
+// CollectIDs returns all _id values from given documents.
+//
+// The order is preserved.
+func CollectIDs(t testing.TB, docs []bson.D) []any {
+	t.Helper()
+
+	ids := make([]any, len(docs))
+	for i, doc := range docs {
+		id, ok := doc.Map()["_id"]
+		require.True(t, ok)
+		ids[i] = id
+	}
+
+	return ids
+}
+
+// CollectKeys returns document keys.
+//
+// The order is preserved.
+func CollectKeys(t testing.TB, doc bson.D) []string {
+	t.Helper()
+
+	res := make([]string, len(doc))
+	for i, e := range doc {
+		res[i] = e.Key
+	}
+
+	return res
 }

@@ -23,19 +23,17 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type testCase struct {
-	id     string
-	update bson.D
-	result bson.D
-	err    *mongo.WriteError
-	stat   *mongo.UpdateResult
-	alt    string
-}
-
 func TestSetOperatorOnString(t *testing.T) {
 	t.Parallel()
 
-	for name, tc := range map[string]testCase{
+	for name, tc := range map[string]struct {
+		id     string
+		update bson.D
+		result bson.D
+		err    *mongo.WriteError
+		stat   *mongo.UpdateResult
+		alt    string
+	}{
 		"Many": {
 			id:     "string",
 			update: bson.D{{"$set", bson.D{{"foo", int32(1)}, {"bar", bson.A{}}}}},
@@ -194,7 +192,14 @@ func TestSetOperatorOnString(t *testing.T) {
 func TestSetOperatorDoubleVal(t *testing.T) {
 	t.Parallel()
 
-	for name, tc := range map[string]testCase{
+	for name, tc := range map[string]struct {
+		id     string
+		update bson.D
+		result bson.D
+		err    *mongo.WriteError
+		stat   *mongo.UpdateResult
+		alt    string
+	}{
 		"Double": {
 			id:     "double",
 			update: bson.D{{"$set", bson.D{{"value", float64(1)}}}},
