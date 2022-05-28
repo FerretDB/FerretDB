@@ -64,50 +64,6 @@ func TestSetOperatorOnString(t *testing.T) {
 			alt: "Modifiers operate on fields but we found type string instead. " +
 				"For example: {$mod: {<field>: ...}} not {$set: string}",
 		},
-		"Double": {
-			id:     "string",
-			update: bson.D{{"$set", float64(42.12345)}},
-			err: &mongo.WriteError{
-				Code: 9,
-				Message: "Modifiers operate on fields but we found type double instead. " +
-					"For example: {$mod: {<field>: ...}} not {$set: 42.12345}",
-			},
-			alt: "Modifiers operate on fields but we found type double instead. " +
-				"For example: {$mod: {<field>: ...}} not {$set: double}",
-		},
-		"NaN": {
-			id:     "string",
-			update: bson.D{{"$set", math.NaN()}},
-			err: &mongo.WriteError{
-				Code: 9,
-				Message: "Modifiers operate on fields but we found type double instead. " +
-					"For example: {$mod: {<field>: ...}} not {$set: nan.0}",
-			},
-			alt: "Modifiers operate on fields but we found type double instead. " +
-				"For example: {$mod: {<field>: ...}} not {$set: double}",
-		},
-		"Inf": {
-			id:     "string",
-			update: bson.D{{"$set", math.Inf(+1)}},
-			err: &mongo.WriteError{
-				Code: 9,
-				Message: "Modifiers operate on fields but we found type double instead. " +
-					"For example: {$mod: {<field>: ...}} not {$set: inf.0}",
-			},
-			alt: "Modifiers operate on fields but we found type double instead. " +
-				"For example: {$mod: {<field>: ...}} not {$set: double}",
-		},
-		"MinusInf": {
-			id:     "string",
-			update: bson.D{{"$set", math.Inf(-1)}},
-			err: &mongo.WriteError{
-				Code: 9,
-				Message: "Modifiers operate on fields but we found type double instead. " +
-					"For example: {$mod: {<field>: ...}} not {$set: -inf.0}",
-			},
-			alt: "Modifiers operate on fields but we found type double instead. " +
-				"For example: {$mod: {<field>: ...}} not {$set: double}",
-		},
 		"Array": {
 			id:     "string",
 			update: bson.D{{"$set", bson.A{}}},
