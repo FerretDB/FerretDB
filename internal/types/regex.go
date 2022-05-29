@@ -96,48 +96,99 @@ func (r Regex) Compile() (*regexp.Regexp, error) {
 	return nil, fmt.Errorf("types.Regex.Compile: %w", err)
 }
 
+/*
+TODO:
+
+			o{1 0} 	=> o{10}
+			o{10}	=> oooooooooo
+			o\{1 0}	=> o{10}
+
+			PROBLEM:
+			if the function takes "o{1 0}" as an argument
+			1) it will remove all whitespaces => o{10}
+			2) it'll pass "o{10} to regexp
+			3) the regexp return "oooooooooo" in place of "o{10}"
+
+			SOLUTION: precede every "{" with an escape character of it
+*/
+// Returns true if expr is a valid ending of Quantifier
+// TODO: Make this cleaner
+func isQuantifier(expr string) bool {
+	comma, numAfterComma := false, false
+	for i, c := range expr {
+		switch {
+		case '0' <= c && c <= '9':
+			if comma && !numAfterComma {
+				numAfterComma = true
+			}
+			continue
+		case c == ',':
+			if comma { // {1,2,}
+				return false
+			}
+			if i < 1 { // {,1}
+				return false
+			}
+			comma = true
+		case c == '}':
+			if i < 1 { // {}
+				return false
+			}
+			if comma != numAfterComma { // {1,}
+				return false
+			}
+			return true
+		default:
+			return false
+		}
+	}
+	return false // ""
+}
+
 func freeSpacingParse(expr string) string {
-	commentBlock, backslash, bracket := false, false, false
+	commentBlock, backslash, bracket, curly := false, false, false, false
 	outExpr := ""
 
-	for _, c := range expr {
-		if bracket {
+	for i, c := range expr {
+		switch {
+		case curly:
+			if c == '}' {
+				curly = false
+			}
+
+		case bracket:
 			if c == ']' {
 				bracket = false
 			}
-		} else if !backslash {
-			if commentBlock {
-				if c == '\n' {
-					commentBlock = false
+
+		case !backslash && commentBlock:
+			if c == '\n' {
+				commentBlock = false
+			}
+			continue
+
+		case !backslash:
+			switch c {
+			case '{':
+				if !isQuantifier(expr[i+1:]) {
+					outExpr += "\\"
+				} else {
+					curly = true
 				}
-				continue
-			}
-
-			if c == '\\' {
+			case '\\': // escape characters
 				backslash = true
-			} else if c == '[' {
+			case '[': // square brackets content shouldn't be modified
 				bracket = true
-			}
-
-			// TODO: character classes [a fdasdf]
-			//
-			//(A)\1 2 == AA2 != (a)\12 - A\n (12==\n)
-			//\p{Nd} is valid  (\p{12}) but \p{1 2} is not
-			//
-
-			if c == ' ' || c == '\n' || c == '\t' { // ignore spaces and newlines
-				continue
-			}
-
-			// ^sdf# <- is that a comment or char
-			// should I validate # only after min 1 space?
-			if c == '#' { // handle comments
+			case '#': // commments
 				commentBlock = true
 				continue
+			case ' ', '\n', '\t': // remove whitespaces
+				continue
 			}
-		} else {
+		default:
 			backslash = false
 		}
+
 		outExpr += string(c)
 	}
 	return outExpr

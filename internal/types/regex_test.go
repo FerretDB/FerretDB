@@ -27,14 +27,12 @@ func TestFreeSpacingParse(t *testing.T) {
 		expected string
 	}{
 		"EmptyExpr": {``, ""},
-		"MultilineExpr": {`^ # comment
-			### section comment ###
-			(?=  # comment
-				\D* # comment
-				\d  # comment
-			)`, `^(?=\D*\d)`},
+		"MultilineExpr": {"(?=\t\t # Start lookahead\n\t\\" +
+			"D*\t # non-digits\n\t\\d\t # one digit\n)\n\n## matching\n\\w*\t\t#word chars\n[A-Z] \t# one upper-case\n\\" +
+			"w*# word chars\n$\t\t# end of string\n", "(?=\\D*\\d)\\w*[A-Z]\\w*$"},
 		"WhitespaceEscapes": {`a\ b[ ]c`, `a\ b[ ]c`},
 		"SpaceEscapeChar":   {`\ d`, `\ d`},
+		"Quantifier":        {"o{1 0}", "o\\{10}"},
 		//"SpaceInToken":         {`(A)\1 2`, `(A)\1 2`},
 		//"SpaceInCurlyBrackets": {`\p{1 2}`, `\p{1 2}`},
 	} {
@@ -43,6 +41,32 @@ func TestFreeSpacingParse(t *testing.T) {
 			t.Parallel()
 
 			require.Equal(t, tc.expected, freeSpacingParse(tc.input))
+		})
+	}
+}
+
+func TestIsQuantifier(t *testing.T) {
+	t.Parallel()
+	for name, tc := range map[string]struct {
+		input    string
+		expected bool
+	}{
+		"Digits":               {"1532}", true},
+		"ContentAfterBrackets": {"1532}4a,,{}", true},
+		"Range":                {"12,33}", true},
+		"EmptyInput":           {"", false},
+		"EmptyBrackets":        {"}", false},
+		"NonDigits":            {"12sd}", false},
+		"Space":                {"4, 3}", false},
+		"MultipleCommas":       {"1,2,3}", false},
+		"EmptyBeforeComma":     {",2}", false},
+		"EmptyAfterComma":      {"1,}", false},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			require.Equal(t, tc.expected, isQuantifier(tc.input))
 		})
 	}
 }

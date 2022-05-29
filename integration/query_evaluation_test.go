@@ -423,6 +423,7 @@ func TestQueryEvaluationRegex(t *testing.T) {
 		bson.D{{"_id", "curly-brackets-without-space"}, {"value", "o{10}"}},
 		bson.D{{"_id", "ten-times-o"}, {"value", "oooooooooo"}},
 		bson.D{{"_id", "string-with-number"}, {"value", "foo9Bar"}},
+		bson.D{{"_id", "string-with-square-bracket"}, {"value", "]"}},
 	})
 	require.NoError(t, err)
 
@@ -454,12 +455,25 @@ func TestQueryEvaluationRegex(t *testing.T) {
 			filter:      bson.D{{"value", bson.D{{"$regex", "^foo"}, {"$options", "m"}}}},
 			expectedIDs: []any{"multiline-string", "string", "string-with-number"},
 		},
-		"RegexWithOptionMatchFreeSpacingEscape": {
-			filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "(?=\t\t # Start lookahead\n\t\\" +
-				"D*\t # non-digits\n\t\\d\t # one digit\n)\n\n## matching\n\\w*\t\t# word chars\n[A-Z] \t# one upper-case\n\\" +
-				"w*\t \t# word chars\n$\t\t# end of string\n", Options: "x"}}}}},
+		"RegexWithOptionMatchFreeSpacing": {
+			filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "### regex ###\n" +
+				"[fgh]\t# one of these characters\n\\w*\t\t#word chars \n\\d# digit\n[A-Z]\t# one " +
+				"upper-case\n\\w*\t\t# word chars\n", Options: "x"}}}}},
 			expectedIDs: []any{"string-with-number"},
 		},
+
+		// Go doesn't support lookaheads
+		//"RegexWithOptionMatchFreeSpacing": {
+		//	filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "(?=\t\t # Start lookahead\n\t\\" +
+		//		"D*\t # non-digits\n\t\\d\t # one digit\n)\n\n## matching\n\\w*\t\t#word chars\n[A-Z] \t# one upper-case\n\\" +
+		//		"w*# word chars\n$\t\t# end of string\n", Options: "x"}}}}},
+		//	expectedIDs: []any{"string-with-number"},
+		//},
+		// "RegexWithOptionMatchLookahead": {
+		// 	filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "(?=\\D*\\d)\\w*[A-Z]\\w*$"}}}}},
+		// 	expectedIDs: []any{"string-with-number"},
+		// },
+
 		"RegexWithOptionMatchFreeSpacingTab": {
 			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "\t\to{1 0}", Options: "x"}}}}},
 			expectedIDs: []any{"curly-brackets-without-space"},
@@ -467,6 +481,14 @@ func TestQueryEvaluationRegex(t *testing.T) {
 		"RegexWithOptionMatchFreeSpacingSpaceInCurlyBrackets": {
 			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "o{1 0}", Options: "x"}}}}},
 			expectedIDs: []any{"curly-brackets-without-space"},
+		},
+		"RegexWithOptionMatchFreeSpacingQuantifier": {
+			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "o{10}", Options: "x"}}}}},
+			expectedIDs: []any{"ten-times-o"},
+		},
+		"RegexWithOptionMatchFreeSpacingQuantifierRange": {
+			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "o{9,10}", Options: "x"}}}}},
+			expectedIDs: []any{"ten-times-o"},
 		},
 		"RegexWithOptionMatchFreeSpacingEscapeSpaceInCurlyBracket": {
 			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "o{1\\ 0}", Options: "x"}}}}},
@@ -476,7 +498,10 @@ func TestQueryEvaluationRegex(t *testing.T) {
 			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "[ ]", Options: "x"}}}}},
 			expectedIDs: []any{"space-in-curly-brackets"},
 		},
-
+		"RegexWithOptionMatchFreeSpacingEscapeInSquareBrackets": {
+			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "[\\]]", Options: "x"}}}}},
+			expectedIDs: []any{"string-with-square-bracket"},
+		},
 		"RegexNoSuchField": {
 			filter:      bson.D{{"no-such-field", bson.D{{"$regex", primitive.Regex{Pattern: "foo"}}}}},
 			expectedIDs: []any{},
