@@ -21,18 +21,18 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// RecentEntries implements zap logging entry interception
-// and stores the last 1024 entries in the ring buffer in memory.
+// RecentEntries implements zap logging entries interception
+// and stores the last 1024 entries in circular buffer in memory.
 var RecentEntries *circularBuffer
 
-// logRAM is a storage of log records in memory.
+// circularBuffer is a storage of log records in memory.
 type circularBuffer struct {
 	mu    sync.RWMutex
 	log   []*zapcore.Entry
 	index int64
 }
 
-// NewLogRAM creates entries log in memory.
+// NewCircularBuffer cretes circular buffer for log entries in memory.
 func NewCircularBuffer(size int64) *circularBuffer {
 	if size < 1 {
 		panic(fmt.Sprintf("logram size must be at least 1, but %d provided", size))
@@ -43,7 +43,7 @@ func NewCircularBuffer(size int64) *circularBuffer {
 	}
 }
 
-// append adds an entry in logram.
+// append adds an entry in circularBuffer.
 func (l *circularBuffer) append(entry *zapcore.Entry) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -52,7 +52,7 @@ func (l *circularBuffer) append(entry *zapcore.Entry) {
 	l.index = (l.index + 1) % int64(len(l.log))
 }
 
-// Get returns entries from logRAM.
+// Get returns entries from circularBuffer.
 func (l *circularBuffer) Get() []*zapcore.Entry {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
