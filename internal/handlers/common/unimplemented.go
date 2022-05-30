@@ -16,6 +16,7 @@ package common
 
 import (
 	"fmt"
+	"strings"
 
 	"go.uber.org/zap"
 
@@ -57,4 +58,29 @@ func Ignored(doc *types.Document, l *zap.Logger, fields ...string) {
 			l.Debug("ignoring field", zap.String("command", doc.Command()), zap.String("field", field))
 		}
 	}
+}
+
+func UnimplementedDot(doc *types.Document, fields ...string) error {
+	for _, field := range fields {
+		if v, err := doc.Get(field); err == nil || v != nil {
+			if reqField, ok := v.(*types.Document); ok {
+				for _, k := range reqField.Keys() {
+					if strings.ContainsRune(k, '.') {
+						err = fmt.Errorf("%s: dot notation support for field %q is not implemented yet", doc.Command(), field)
+						return NewError(ErrNotImplemented, err)
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func UnsupportedDot(field string) error {
+	if strings.ContainsRune(field, '.') {
+		err := fmt.Errorf("dot notation is not supported")
+		return NewError(ErrNotImplemented, err)
+	}
+	return nil
 }
