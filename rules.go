@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"go/ast"
 
@@ -10,14 +9,14 @@ import (
 )
 
 var Analyzer = &analysis.Analyzer{
-	Name:             "checkswitch",
-	Doc:              "reports checkswitch",
-	Flags:            flag.FlagSet{},
-	Run:              run,
-	RunDespiteErrors: false,
-	Requires:         []*analysis.Analyzer{},
-	ResultType:       nil,
-	FactTypes:        []analysis.Fact{},
+	Name: "checkswitch",
+	Doc:  "reports checkswitch",
+	//	Flags:            flag.FlagSet{},
+	Run: run,
+	//	RunDespiteErrors: true,
+	//	Requires:         []*analysis.Analyzer{},
+	//	ResultType:       nil,
+	//	FactTypes:        []analysis.Fact{},
 }
 
 func main() {
@@ -25,20 +24,20 @@ func main() {
 }
 
 // перевести на мап[тип]индекс.
-var correctOrder = []string{
-	"Document",
-	"Array",
-	"float64",
-	"string",
-	"Binary",
-	"ObjectID",
-	"bool",
-	"time.Time",
-	"NullType",
-	"Regex",
-	"int32",
-	"Timestamp",
-	"int64",
+var orderTypes = map[string]int{
+	"Document":  0,
+	"Array":     1,
+	"float64":   2,
+	"string":    3,
+	"Binary":    4,
+	"ObjectID":  5,
+	"bool":      6,
+	"time.Time": 7,
+	"NullType":  8,
+	"Regex":     9,
+	"int32":     10,
+	"Timestamp": 11,
+	"int64":     12,
 }
 
 func run(pass *analysis.Pass) (interface{}, error) {
@@ -50,9 +49,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			//	fmt.Printf("%+v\n", n)
 			case *ast.TypeSwitchStmt:
 				var name string
-
 				for _, el := range n.Body.List {
-					//ast.Print(pass.Fset, n.Body.List)
 					for _, cs := range el.(*ast.CaseClause).List {
 						switch cs := cs.(type) {
 						case *ast.StarExpr:
@@ -60,21 +57,17 @@ func run(pass *analysis.Pass) (interface{}, error) {
 								name = sexp.Sel.Name
 								// name = fmt.Sprintf("%s.%s", sexp.X.(*ast.Ident).Name, sexp.X.(*ast.Ident).Name)
 							}
-
 						case *ast.SelectorExpr:
 							name = fmt.Sprintf("%s.%s", cs.X, cs.Sel.Name)
 
 						case *ast.Ident:
 							name = cs.Name
 						}
-						//	fmt.Printf("%+v\n", cs)
 
-						iSl := indexSlice(name)
-						if iSl == -1 {
-							continue
-						}
-						if iSl < idx {
-							fmt.Println("неправильный порядок case:", pass.Fset.Position(n.Switch), ":", name)
+						iSl, ok := orderTypes[name]
+						if ok && (iSl < idx) {
+							pass.Reportf(n.Pos(), "non-observance of the preferred order of types")
+
 						}
 						idx = iSl
 					}
@@ -86,14 +79,4 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	}
 
 	return nil, nil
-}
-
-func indexSlice(typeCase string) int {
-	for idx, tp := range correctOrder {
-		if tp == typeCase {
-			return idx
-		}
-	}
-
-	return -1
 }
