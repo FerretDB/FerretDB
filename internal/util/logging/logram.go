@@ -35,7 +35,7 @@ type circularBuffer struct {
 // NewCircularBuffer cretes circular buffer for log entries in memory.
 func NewCircularBuffer(size int64) *circularBuffer {
 	if size < 1 {
-		panic(fmt.Sprintf("logram size must be at least 1, but %d provided", size))
+		panic(fmt.Sprintf("buffer size must be at least 1, but %d provided", size))
 	}
 
 	return &circularBuffer{
