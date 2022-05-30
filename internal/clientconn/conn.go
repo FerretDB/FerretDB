@@ -409,7 +409,7 @@ func (c *conn) logResponse(resHeader *wire.MsgHeader, resBody wire.MsgBody, clos
 	level := zap.DebugLevel
 
 	if resHeader.OpCode == wire.OpCodeMsg {
-		doc, err := resBody.(*wire.OpMsg).Document()
+		doc := must.NotFail(resBody.(*wire.OpMsg).Document())
 		must.NoError(err)
 
 		ok, err := doc.Get("ok")
