@@ -313,6 +313,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	default:
 		err = lazyerrors.Errorf("unexpected OpCode %s", reqHeader.OpCode)
 	}
+
 	requests.WithLabelValues(command).Inc()
 
 	// set body for error
@@ -352,6 +353,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 				"Handler error for unhandled response opcode",
 				zap.Error(err), zap.Stringer("opcode", resHeader.OpCode),
 			)
+			return
 
 		default:
 			// do not panic to make fuzzing easier
