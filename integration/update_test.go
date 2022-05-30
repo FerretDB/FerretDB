@@ -614,13 +614,12 @@ func TestSetOnInsertMore(t *testing.T) {
 	}
 
 	for name, tc := range map[string]struct {
-		filter         bson.D
-		query          bson.D
-		stat           *mongo.UpdateResult
-		res            bson.D
-		err            *mongo.WriteError
-		notImplemented bool
-		alt            string
+		filter bson.D
+		query  bson.D
+		stat   *mongo.UpdateResult
+		res    bson.D
+		err    *mongo.WriteError
+		alt    string
 	}{
 		"setoninsert-set": {
 			filter: bson.D{{"_id", "test"}},
@@ -650,41 +649,6 @@ func TestSetOnInsertMore(t *testing.T) {
 				Message: "Unknown modifier: $foo. Expected a valid update modifier or pipeline-style update specified as an array",
 			},
 		},
-		"set-dot-notation": {
-			filter: bson.D{{"_id", "string"}},
-			query:  bson.D{{"$set", bson.D{{"foo.bar.baz", int32(1)}}}},
-			res: bson.D{
-				{"_id", "string"},
-				{"value", "foo"},
-				{"foo", bson.D{{"bar", bson.D{{"baz", int32(1)}}}}},
-			},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-			notImplemented: true,
-		},
-		"setoninsert-dot-notation": {
-			filter:         bson.D{{"_id", "test"}},
-			query:          bson.D{{"$setOnInsert", bson.D{{"foo.bar.baz", int32(1)}}}},
-			res:            bson.D{{"_id", "test"}, {"foo", bson.D{{"bar", bson.D{{"baz", int32(1)}}}}}},
-			notImplemented: true,
-		},
-		"inc-dot-notation": {
-			filter: bson.D{{"_id", "int32"}},
-			query:  bson.D{{"$inc", bson.D{{"value.foo.bar.baz", int32(1)}}}},
-			res: bson.D{
-				{"_id", "int32"},
-				{"value", bson.D{{"foo", bson.D{{"bar", bson.D{{"baz", int32(1)}}}}}}},
-			},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  0,
-				ModifiedCount: 0,
-				UpsertedCount: 1,
-			},
-			notImplemented: true,
-		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -699,14 +663,6 @@ func TestSetOnInsertMore(t *testing.T) {
 			opts := options.Update().SetUpsert(true)
 			var res *mongo.UpdateResult
 			res, err = collection.UpdateOne(ctx, tc.filter, tc.query, opts)
-
-			if tc.notImplemented && dbByPort() == "ferretdb" && err != nil {
-				if actualCE, ok := err.(mongo.CommandError); ok {
-					if actualCE.Code == 238 { // not implemented
-						return
-					}
-				}
-			}
 
 			if tc.err != nil {
 				require.Nil(t, tc.res)
