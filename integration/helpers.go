@@ -174,8 +174,8 @@ func AssertEqualWriteError(t *testing.T, expected *mongo.WriteError, actual erro
 		assert.Equal(t, expected.Code, actualWriteErr.Code)
 }
 
-// AssertEqualAltWriteError compares expected mongo.WriteError Message and Code with actual error.
-func AssertEqualAltWriteError(t *testing.T, expected *mongo.WriteError, alt string, actual error) bool {
+// AssertEqualAltWriteException compares expected mongo.WriteError Message and Code with actual error.
+func AssertEqualAltWriteException(t *testing.T, expected *mongo.WriteError, alt string, actual error) bool {
 	t.Helper()
 
 	var actualWE mongo.WriteError
@@ -185,12 +185,8 @@ func AssertEqualAltWriteError(t *testing.T, expected *mongo.WriteError, alt stri
 			return assert.Equal(t, expected, actual)
 		}
 		actualWE = actualEx.WriteErrors[0]
-	} else {
-		actualWE, ok = actual.(mongo.WriteError)
-		if !ok {
-			return assert.Equal(t, expected, actual)
-		}
 	}
+
 	assert.Equal(t, int(expected.Code), int(actualWE.Code), "codes are not equal", expected.Code, actualWE.Code)
 	if assert.ObjectsAreEqual(expected.Message, actualWE.Message) {
 		return true
