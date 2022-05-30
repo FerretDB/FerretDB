@@ -235,8 +235,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 		}
 
 		if resHeader == nil || resBody == nil {
-			c.l.Debugf("no response to send to client")
-			return
+			panic("no response to send to client")
 		}
 
 		if err = wire.WriteMessage(bufw, resHeader, resBody); err != nil {
@@ -256,10 +255,10 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 // route sends request to a handler's command based on the op code provided in the request header.
 //
-// Route's possible returns:
-//  * normal response body;
-//  * protocol error (*common.Error, possibly wrapped) - it will be returned to the client;
-//  * any other error - it will be returned to the client as InternalError before terminating connection.
+// The possible resBody returns:
+//  * normal response  - to be returned to the client, closeConn is false;
+//  * protocol error (*common.Error, possibly wrapped) - to be returned to the client, closeConn is false;
+//  * any other error - to be returned to the client as InternalError before terminating connection, closeConn is true.
 //
 // Handlers to which it routes, should not panic on bad input, but may do so in "impossible" cases.
 // They also should not use recover(). That allows us to use fuzzing.
@@ -410,10 +409,8 @@ func (c *conn) logResponse(resHeader *wire.MsgHeader, resBody wire.MsgBody, clos
 
 	if resHeader.OpCode == wire.OpCodeMsg {
 		doc := must.NotFail(resBody.(*wire.OpMsg).Document())
-		must.NoError(err)
 
-		ok, err := doc.Get("ok")
-		must.NoError(err)
+		ok := must.NotFail(doc.Get("ok"))
 
 		if ok.(float64) != 1 {
 			if closeConn {
