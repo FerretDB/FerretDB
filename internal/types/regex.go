@@ -96,25 +96,11 @@ func (r Regex) Compile() (*regexp.Regexp, error) {
 	return nil, fmt.Errorf("types.Regex.Compile: %w", err)
 }
 
-/*
-TODO:
-
-			o{1 0} 	=> o{10}
-			o{10}	=> oooooooooo
-			o\{1 0}	=> o{10}
-
-			PROBLEM:
-			if the function takes "o{1 0}" as an argument
-			1) it will remove all whitespaces => o{10}
-			2) it'll pass "o{10} to regexp
-			3) the regexp return "oooooooooo" in place of "o{10}"
-
-			SOLUTION: precede every "{" with an escape character of it
-*/
-// Returns true if expr is a valid ending of Quantifier
-// TODO: Make this cleaner
+// Returns true if expr is a valid ending of Quantifier.
+// Remember to do not pass opening paren to expr!
 func isQuantifier(expr string) bool {
 	comma, numAfterComma := false, false
+
 	for i, c := range expr {
 		switch {
 		case '0' <= c && c <= '9':
@@ -123,44 +109,48 @@ func isQuantifier(expr string) bool {
 			}
 			continue
 		case c == ',':
-			if comma { // {1,2,}
+			if comma { // quantifier shouldn't have more than one comma
 				return false
 			}
-			if i < 1 { // {,1}
+			// if there's a comma, make sure that there's a number before it
+			if i < 1 {
 				return false
 			}
 			comma = true
 		case c == '}':
-			if i < 1 { // {}
+			if i < 1 { // quantifier should have at least one digit inside
 				return false
 			}
-			if comma != numAfterComma { // {1,}
-				return false
-			}
-			return true
+			// if there's a comma, make sure that there's a number after it
+			return comma == numAfterComma
 		default:
-			return false
+			return false // character not accepted in quantifier
 		}
 	}
-	return false // ""
+	return false // empty string
 }
 
+// Convert free spacing expressions into one liners that are accepted
+// by Google RE2 engine.
 func freeSpacingParse(expr string) string {
-	commentBlock, backslash, bracket, curly := false, false, false, false
+	commentBlock, backslash, bracket, quantifier := false, false, false, false
 	outExpr := ""
 
 	for i, c := range expr {
 		switch {
-		case curly:
+		// if we now that we're in quantifier we can just push its content to output
+		case quantifier:
 			if c == '}' {
-				curly = false
+				quantifier = false
 			}
 
+		// character sets content shouldn't be modified
 		case bracket:
 			if c == ']' {
 				bracket = false
 			}
 
+		// if we're in comment we shouldn't evaluate any character until newline
 		case !backslash && commentBlock:
 			if c == '\n' {
 				commentBlock = false
@@ -171,18 +161,18 @@ func freeSpacingParse(expr string) string {
 			switch c {
 			case '{':
 				if !isQuantifier(expr[i+1:]) {
-					outExpr += "\\"
+					outExpr += "\\" // o\{10} will match "o{10}" instead of "oooooooooo"
 				} else {
-					curly = true
+					quantifier = true
 				}
 			case '\\': // escape characters
 				backslash = true
-			case '[': // square brackets content shouldn't be modified
+			case '[':
 				bracket = true
 			case '#': // commments
 				commentBlock = true
 				continue
-			case ' ', '\n', '\t': // remove whitespaces
+			case ' ', '\n', '\t':
 				continue
 			}
 		default:

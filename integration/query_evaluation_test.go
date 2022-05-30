@@ -461,19 +461,6 @@ func TestQueryEvaluationRegex(t *testing.T) {
 				"upper-case\n\\w*\t\t# word chars\n", Options: "x"}}}}},
 			expectedIDs: []any{"string-with-number"},
 		},
-
-		// Go doesn't support lookaheads
-		//"RegexWithOptionMatchFreeSpacing": {
-		//	filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "(?=\t\t # Start lookahead\n\t\\" +
-		//		"D*\t # non-digits\n\t\\d\t # one digit\n)\n\n## matching\n\\w*\t\t#word chars\n[A-Z] \t# one upper-case\n\\" +
-		//		"w*# word chars\n$\t\t# end of string\n", Options: "x"}}}}},
-		//	expectedIDs: []any{"string-with-number"},
-		//},
-		// "RegexWithOptionMatchLookahead": {
-		// 	filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "(?=\\D*\\d)\\w*[A-Z]\\w*$"}}}}},
-		// 	expectedIDs: []any{"string-with-number"},
-		// },
-
 		"RegexWithOptionMatchFreeSpacingTab": {
 			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "\t\to{1 0}", Options: "x"}}}}},
 			expectedIDs: []any{"curly-brackets-without-space"},

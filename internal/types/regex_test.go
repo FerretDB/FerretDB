@@ -33,8 +33,6 @@ func TestFreeSpacingParse(t *testing.T) {
 		"WhitespaceEscapes": {`a\ b[ ]c`, `a\ b[ ]c`},
 		"SpaceEscapeChar":   {`\ d`, `\ d`},
 		"Quantifier":        {"o{1 0}", "o\\{10}"},
-		//"SpaceInToken":         {`(A)\1 2`, `(A)\1 2`},
-		//"SpaceInCurlyBrackets": {`\p{1 2}`, `\p{1 2}`},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
