@@ -103,7 +103,7 @@ func isQuantifier(expr string) bool {
 
 	for i, c := range expr {
 		switch {
-		case '0' <= c && c <= '9':
+		case c >= '0' && c <= '9':
 			if comma && !numAfterComma {
 				numAfterComma = true
 			}
@@ -167,9 +167,9 @@ func freeSpacingParse(expr string) string {
 				}
 			case '\\': // escape characters
 				backslash = true
-			case '[':
+			case '[': // character sets
 				bracket = true
-			case '#': // commments
+			case '#': // comments
 				commentBlock = true
 				continue
 			case ' ', '\n', '\t':
