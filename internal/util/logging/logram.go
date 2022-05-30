@@ -56,7 +56,8 @@ func (l *logRAM) Get() []*zapcore.Entry {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 
-	var entries []*zapcore.Entry
+	n := len(l.log)
+	entries = make([]*zapcore.Entry, 0, n)
 	for i := int64(0); i < int64(len(l.log)); i++ {
 		k := (i + l.index) % int64(len(l.log))
 
