@@ -489,21 +489,6 @@ func TestSetOnInsert(t *testing.T) {
 			setOnInsert: bson.D{{"value", bson.A{}}},
 			res:         bson.D{{"_id", "array"}, {"value", bson.A{}}},
 		},
-		"double": {
-			filter:      bson.D{{"_id", "double"}},
-			setOnInsert: bson.D{{"value", 43.13}},
-			res:         bson.D{{"_id", "double"}, {"value", 43.13}},
-		},
-		"NaN": {
-			filter:      bson.D{{"_id", "double-nan"}},
-			setOnInsert: bson.D{{"value", math.NaN()}},
-			res:         bson.D{{"_id", "double-nan"}, {"value", math.NaN()}},
-		},
-		"string": {
-			filter:      bson.D{{"_id", "string"}},
-			setOnInsert: bson.D{{"value", "abcd"}},
-			res:         bson.D{{"_id", "string"}, {"value", "abcd"}},
-		},
 		"nil": {
 			filter:      bson.D{{"_id", "nil"}},
 			setOnInsert: bson.D{{"value", nil}},
