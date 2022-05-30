@@ -60,6 +60,7 @@ func Ignored(doc *types.Document, l *zap.Logger, fields ...string) {
 	}
 }
 
+// UnimplementedDot returns ErrNotImplemented if document's field contains a dot-separated path.
 func UnimplementedDot(doc *types.Document, fields ...string) error {
 	for _, field := range fields {
 		if v, err := doc.Get(field); err == nil || v != nil {
@@ -77,10 +78,11 @@ func UnimplementedDot(doc *types.Document, fields ...string) error {
 	return nil
 }
 
+// UnsupportedDot returns ErrDottedFieldName if field contains dot.
 func UnsupportedDot(field string) error {
 	if strings.ContainsRune(field, '.') {
-		err := fmt.Errorf("dot notation is not supported")
-		return NewError(ErrNotImplemented, err)
+		err := fmt.Errorf("can't use dot notation for: %s", field)
+		return NewError(ErrDottedFieldName, err)
 	}
 	return nil
 }

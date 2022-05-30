@@ -51,6 +51,14 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	}
 	common.Ignored(document, h.l, ignoredFields...)
 
+	unimplementedDotNotationFields := []string{
+		"query",
+		"update",
+	}
+	if err := common.UnimplementedDot(document, unimplementedDotNotationFields...); err != nil {
+		return nil, err
+	}
+
 	params, err := prepareFindAndModifyParams(document)
 	if err != nil {
 		return nil, err

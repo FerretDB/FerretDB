@@ -51,6 +51,9 @@ const (
 	// ErrNamespaceExists indicates that the collection already exists.
 	ErrNamespaceExists = ErrorCode(48) // NamespaceExists
 
+	// ErrDottedFieldName indicates that field has dot in its name.
+	ErrDottedFieldName = ErrorCode(57) // DottedFieldName
+
 	// ErrCommandNotFound indicates unknown command input.
 	ErrCommandNotFound = ErrorCode(59) // CommandNotFound
 
