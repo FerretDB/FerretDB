@@ -92,13 +92,16 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
 		)
 	}
-	// comment set through options.FindOne().SetComment() method
+
+	// get comment from options.FindOne().SetComment() method
 	if sp.comment, err = common.GetOptionalParam(document, "comment", sp.comment); err != nil {
 		return nil, err
 	}
-	// comment in query, e.g. db.collection.find({$comment: "test"})
-	if sp.comment, err = common.GetOptionalParam(filter, "$comment", sp.comment); err != nil {
-		return nil, err
+	// get comment from query, e.g. db.collection.find({$comment: "test"})
+	if filter != nil {
+		if sp.comment, err = common.GetOptionalParam(filter, "$comment", sp.comment); err != nil {
+			return nil, err
+		}
 	}
 
 	fetchedDocs, err := h.fetch(ctx, sp)
