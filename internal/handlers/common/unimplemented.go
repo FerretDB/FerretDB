@@ -54,14 +54,21 @@ func UnimplementedNonDefault(doc *types.Document, field string, isDefault func(v
 // UnimplementedDot returns ErrNotImplemented if document's field contains a dot-separated path.
 func UnimplementedDot(doc *types.Document, fields ...string) error {
 	for _, field := range fields {
-		if v, err := doc.Get(field); err == nil || v != nil {
-			if reqField, ok := v.(*types.Document); ok {
-				for _, k := range reqField.Keys() {
-					if strings.ContainsRune(k, '.') {
-						err = fmt.Errorf("%s: dot notation support for field %q is not implemented yet", doc.Command(), field)
-						return NewError(ErrNotImplemented, err)
-					}
-				}
+		v, err := doc.Get(field)
+		if err != nil || v == nil {
+
+			continue
+		}
+
+		reqField, ok := v.(*types.Document)
+		if !ok {
+			continue
+		}
+
+		for _, k := range reqField.Keys() {
+			if strings.ContainsRune(k, '.') {
+				err = fmt.Errorf("%s: dot notation support for field %q is not implemented yet", doc.Command(), field)
+				return NewError(ErrNotImplemented, err)
 			}
 		}
 	}
