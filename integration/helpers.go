@@ -188,23 +188,18 @@ func AssertEqualAltWriteError(t *testing.T, expected *mongo.WriteError, alt stri
 	} else {
 		actualWE, ok = actual.(mongo.WriteError)
 		if !ok {
-			t.Log("compare", expected, actual)
 			return assert.Equal(t, expected, actual)
 		}
 	}
-
-	if int(expected.Code) != int(actualWE.Code) {
-		t.Log("codes are not equal", expected.Code, actualWE.Code)
-		return false
-	}
-	if expected.Message == actualWE.Message {
+	assert.Equal(t, int(expected.Code), int(actualWE.Code), "codes are not equal", expected.Code, actualWE.Code)
+	if assert.ObjectsAreEqual(expected.Message, actualWE.Message) {
 		return true
 	}
 	if alt != "" {
 		expected.Message = alt
-		return expected.Message == actualWE.Message
 	}
-	return false
+	return assert.Equal(t, expected.Message, actualWE.Message) &&
+		assert.Equal(t, expected.Code, actualWE.Code)
 }
 
 // CollectIDs returns all _id values from given documents.
