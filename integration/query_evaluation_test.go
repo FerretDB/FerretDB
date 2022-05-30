@@ -276,11 +276,11 @@ func TestQueryEvaluationMod(t *testing.T) {
 			},
 		},
 		"ZeroNegativeDevisor": {
-			filter: bson.D{{"$mod", bson.A{math.Copysign(0, -1), 1}}},
+			filter: bson.D{{"value", bson.D{{"$mod", bson.A{math.Copysign(0, -1), 1}}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: `unknown top level operator: $mod. If you have a field name that starts with a '$' symbol, consider using $getField or $setField.`,
+				Message: `divisor cannot be 0`,
 			},
 		},
 		"DivisorSmallestNonzeroFloat64": {
