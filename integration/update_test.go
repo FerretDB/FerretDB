@@ -445,12 +445,14 @@ func TestUpdateSet(t *testing.T) {
 
 			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
 			if tc.err != nil {
+				require.Nil(t, tc.result)
 				if !AssertEqualAltWriteError(t, tc.err, tc.alt, err) {
-					t.Logf("%[1]T %[1]v", err)
 					t.FailNow()
 				}
 				return
 			}
+
+			require.NoError(t, err)
 			require.Equal(t, tc.stat, res)
 
 			var actual bson.D
