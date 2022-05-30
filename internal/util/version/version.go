@@ -40,11 +40,11 @@ var (
 	branch string
 )
 
-// Fake MongoDB version for clients that check it.
-var (
-	MongoDBVersion      = "5.0.42"
-	MongoDBVersionArray = must.NotFail(types.NewArray(int32(5), int32(0), int32(42), int32(0)))
-)
+// MongoDBVersion is a fake MongoDB version for clients that check major.minor to adjust their behavior.
+const MongoDBVersion = "5.0.42"
+
+// MongoDBVersionArray is MongoDBVersion, but as an array.
+var MongoDBVersionArray = must.NotFail(types.NewArray(int32(5), int32(0), int32(42), int32(0)))
 
 type Info struct {
 	Version          string
