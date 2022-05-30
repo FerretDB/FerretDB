@@ -456,9 +456,7 @@ func TestUpdateSet(t *testing.T) {
 			var actual bson.D
 			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
 			require.NoError(t, err)
-			if !AssertEqualDocuments(t, tc.result, actual) {
-				t.FailNow()
-			}
+			AssertEqualDocuments(t, tc.result, actual)
 		})
 	}
 }
