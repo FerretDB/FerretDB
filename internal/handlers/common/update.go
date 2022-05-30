@@ -37,11 +37,10 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				if setDoc.Len() == 0 {
 					return false, nil
 				}
-				var err error
 				sort.Strings(setDoc.Keys())
 				for _, setKey := range setDoc.Keys() {
 					setValue := must.NotFail(setDoc.Get(setKey))
-					if err = doc.Set(setKey, setValue); err != nil {
+					if err := doc.Set(setKey, setValue); err != nil {
 						return false, err
 					}
 				}
