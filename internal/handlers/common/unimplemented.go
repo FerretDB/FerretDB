@@ -51,15 +51,6 @@ func UnimplementedNonDefault(doc *types.Document, field string, isDefault func(v
 	return NewError(ErrNotImplemented, err)
 }
 
-// Ignored logs a message if doc has any of the given fields.
-func Ignored(doc *types.Document, l *zap.Logger, fields ...string) {
-	for _, field := range fields {
-		if v, err := doc.Get(field); err == nil || v != nil {
-			l.Debug("ignoring field", zap.String("command", doc.Command()), zap.String("field", field))
-		}
-	}
-}
-
 // UnimplementedDot returns ErrNotImplemented if document's field contains a dot-separated path.
 func UnimplementedDot(doc *types.Document, fields ...string) error {
 	for _, field := range fields {
@@ -85,4 +76,13 @@ func UnsupportedDot(field string) error {
 		return NewError(ErrDottedFieldName, err)
 	}
 	return nil
+}
+
+// Ignored logs a message if doc has any of the given fields.
+func Ignored(doc *types.Document, l *zap.Logger, fields ...string) {
+	for _, field := range fields {
+		if v, err := doc.Get(field); err == nil || v != nil {
+			l.Debug("ignoring field", zap.String("command", doc.Command()), zap.String("field", field))
+		}
+	}
 }
