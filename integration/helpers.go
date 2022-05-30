@@ -118,7 +118,7 @@ func AssertEqualError(t testing.TB, expected mongo.CommandError, actual error) b
 		return assert.Equal(t, expected, actual)
 	}
 
-	// raw part might be useful if assertion fails
+	// set expected fields that might be helpful in the test output
 	require.Nil(t, expected.Raw)
 	expected.Raw = a.Raw
 
@@ -143,7 +143,7 @@ func AssertEqualAltError(t testing.TB, expected mongo.CommandError, altMessage s
 		return assert.Equal(t, expected, actual)
 	}
 
-	// raw part might be useful if assertion fails
+	// set expected fields that might be helpful in the test output
 	require.Nil(t, expected.Raw)
 	expected.Raw = a.Raw
 
@@ -155,47 +155,54 @@ func AssertEqualAltError(t testing.TB, expected mongo.CommandError, altMessage s
 	return assert.Equal(t, expected, a)
 }
 
-// AssertEqualWriteError compares expected mongo.WriteError Message and Code with actual error.
-func AssertEqualWriteError(t *testing.T, expected *mongo.WriteError, actual error) bool {
+// AssertEqualWriteError asserts that the expected error is the same as the actual.
+func AssertEqualWriteError(t *testing.T, expected mongo.WriteError, actual error) bool {
 	t.Helper()
 
-	writeException, ok := actual.(mongo.WriteException)
+	we, ok := actual.(mongo.WriteException)
 	if !ok {
 		return assert.Equal(t, expected, actual)
 	}
 
-	if len(writeException.WriteErrors) != 1 {
+	if len(we.WriteErrors) != 1 {
 		return assert.Equal(t, expected, actual)
 	}
 
-	actualWriteErr := writeException.WriteErrors[0]
+	a := we.WriteErrors[0]
 
-	return assert.Equal(t, expected.Message, actualWriteErr.Message) &&
-		assert.Equal(t, expected.Code, actualWriteErr.Code)
+	// set expected fields that might be helpful in the test output
+	require.Nil(t, expected.Raw)
+	expected.Raw = a.Raw
+
+	return assert.Equal(t, expected, a)
 }
 
-// AssertEqualAltWriteException compares expected mongo.WriteError Message and Code with actual error.
-func AssertEqualAltWriteException(t *testing.T, expected *mongo.WriteError, alt string, actual error) bool {
+// AssertEqualAltWriteError asserts that the expected error is the same as the actual;
+// the alternative error message may be provided if FerretDB is unable to produce exactly the same text as MongoDB.
+func AssertEqualAltWriteError(t *testing.T, expected mongo.WriteError, altMessage string, actual error) bool {
 	t.Helper()
 
-	var actualWE mongo.WriteError
-	actualEx, ok := actual.(mongo.WriteException)
-	if ok {
-		if len(actualEx.WriteErrors) != 1 {
-			return assert.Equal(t, expected, actual)
-		}
-		actualWE = actualEx.WriteErrors[0]
+	we, ok := actual.(mongo.WriteException)
+	if !ok {
+		return assert.Equal(t, expected, actual)
 	}
 
-	assert.Equal(t, int(expected.Code), int(actualWE.Code), "codes are not equal", expected.Code, actualWE.Code)
-	if assert.ObjectsAreEqual(expected.Message, actualWE.Message) {
+	if len(we.WriteErrors) != 1 {
+		return assert.Equal(t, expected, actual)
+	}
+
+	a := we.WriteErrors[0]
+
+	// set expected fields that might be helpful in the test output
+	require.Nil(t, expected.Raw)
+	expected.Raw = a.Raw
+
+	if assert.ObjectsAreEqual(expected, a) {
 		return true
 	}
-	if alt != "" {
-		expected.Message = alt
-	}
-	return assert.Equal(t, expected.Message, actualWE.Message) &&
-		assert.Equal(t, expected.Code, actualWE.Code)
+
+	expected.Message = altMessage
+	return assert.Equal(t, expected, a)
 }
 
 // CollectIDs returns all _id values from given documents.

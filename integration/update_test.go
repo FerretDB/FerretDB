@@ -155,7 +155,7 @@ func TestUpdateIncOperatorErrors(t *testing.T) {
 
 			_, err = collection.UpdateOne(ctx, tc.filter, tc.update)
 			require.NotNil(t, tc.err)
-			AssertEqualWriteError(t, tc.err, err)
+			AssertEqualWriteError(t, *tc.err, err)
 		})
 	}
 }
@@ -446,7 +446,7 @@ func TestUpdateSet(t *testing.T) {
 			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
 			if tc.err != nil {
 				require.Nil(t, tc.result)
-				AssertEqualAltWriteException(t, tc.err, tc.alt, err)
+				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
 				return
 			}
 
