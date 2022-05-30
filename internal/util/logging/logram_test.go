@@ -24,7 +24,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-func TestLogRAM(t *testing.T) {
+func TestCircularBuffer(t *testing.T) {
 	for name, tc := range map[string]struct {
 		size     int64
 		msgPanic string
