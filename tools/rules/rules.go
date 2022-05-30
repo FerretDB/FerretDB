@@ -1,3 +1,17 @@
+// Copyright 2021 FerretDB Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package main
 
 import (
@@ -8,22 +22,7 @@ import (
 	"golang.org/x/tools/go/analysis/singlechecker"
 )
 
-var Analyzer = &analysis.Analyzer{
-	Name: "checkswitch",
-	Doc:  "reports checkswitch",
-	//	Flags:            flag.FlagSet{},
-	Run: run,
-	//	RunDespiteErrors: true,
-	//	Requires:         []*analysis.Analyzer{},
-	//	ResultType:       nil,
-	//	FactTypes:        []analysis.Fact{},
-}
-
-func main() {
-	singlechecker.Main(Analyzer)
-}
-
-// перевести на мап[тип]индекс.
+// orderTypes is preferred order of the types in the switch.
 var orderTypes = map[string]int{
 	"Document":  0,
 	"Array":     1,
@@ -38,6 +37,16 @@ var orderTypes = map[string]int{
 	"int32":     10,
 	"Timestamp": 11,
 	"int64":     12,
+}
+
+var Analyzer = &analysis.Analyzer{
+	Name: "checkerswitch",
+	Doc:  "checking the preferred order of types in the switch",
+	Run:  run,
+}
+
+func main() {
+	singlechecker.Main(Analyzer)
 }
 
 func run(pass *analysis.Pass) (interface{}, error) {
