@@ -56,7 +56,6 @@ func UnimplementedDot(doc *types.Document, fields ...string) error {
 	for _, field := range fields {
 		v, err := doc.Get(field)
 		if err != nil || v == nil {
-
 			continue
 		}
 
