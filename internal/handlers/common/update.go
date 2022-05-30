@@ -37,7 +37,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			switch setDoc := updateV.(type) {
 			case *types.Document:
 				if setDoc.Len() == 0 {
-					return false, nil
+					continue
 				}
 				sort.Strings(setDoc.Keys())
 				for _, setKey := range setDoc.Keys() {
