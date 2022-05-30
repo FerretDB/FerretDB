@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// LogRAM implements zap logging entry interception and stores the last 1024 entries in the ring buffer in memory.
 package logging
 
 import (
@@ -22,28 +21,30 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var LogRAM *logRAM
+// RecentEntries implements zap logging entry interception
+// and stores the last 1024 entries in the ring buffer in memory.
+var RecentEntries *circularBuffer
 
 // logRAM is a storage of log records in memory.
-type logRAM struct {
+type circularBuffer struct {
 	mu    sync.RWMutex
 	log   []*zapcore.Entry
 	index int64
 }
 
 // NewLogRAM creates entries log in memory.
-func NewLogRAM(size int64) *logRAM {
+func NewCircularBuffer(size int64) *circularBuffer {
 	if size < 1 {
 		panic(fmt.Sprintf("logram size must be at least 1, but %d provided", size))
 	}
 
-	return &logRAM{
+	return &circularBuffer{
 		log: make([]*zapcore.Entry, size),
 	}
 }
 
 // append adds an entry in logram.
-func (l *logRAM) append(entry *zapcore.Entry) {
+func (l *circularBuffer) append(entry *zapcore.Entry) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -52,12 +53,12 @@ func (l *logRAM) append(entry *zapcore.Entry) {
 }
 
 // Get returns entries from logRAM.
-func (l *logRAM) Get() []*zapcore.Entry {
+func (l *circularBuffer) Get() []*zapcore.Entry {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 
 	n := len(l.log)
-	entries = make([]*zapcore.Entry, 0, n)
+	entries := make([]*zapcore.Entry, 0, n)
 	for i := int64(0); i < int64(len(l.log)); i++ {
 		k := (i + l.index) % int64(len(l.log))
 

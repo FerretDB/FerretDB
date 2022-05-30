@@ -31,10 +31,10 @@ func Setup(level zapcore.Level) {
 		log.Fatal(err)
 	}
 
-	LogRAM = NewLogRAM(1024)
+	RecentEntries = NewCircularBuffer(1024)
 
 	logger = logger.WithOptions(zap.Hooks(func(entry zapcore.Entry) error {
-		LogRAM.append(&entry)
+		RecentEntries.append(&entry)
 		return nil
 	}))
 

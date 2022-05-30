@@ -40,11 +40,11 @@ func TestLogRAM(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			assert.PanicsWithValue(t, tc.msgPanic, func() { NewLogRAM(tc.size) })
+			assert.PanicsWithValue(t, tc.msgPanic, func() { NewCircularBuffer(tc.size) })
 		})
 	}
 
-	logram := NewLogRAM(2)
+	logram := NewCircularBuffer(2)
 	for n, tc := range []struct {
 		inLog    zapcore.Entry
 		expected []zapcore.Entry
@@ -131,7 +131,7 @@ func TestLogRAM(t *testing.T) {
 		tc := tc
 		t.Run(name, func(t *testing.T) {
 			logger.Info(tc.addMsg)
-			actual := LogRAM.Get()
+			actual := RecentEntries.Get()
 			for i, exp := range tc.expected {
 				assert.Equal(t, exp, actual[i].Message)
 			}
