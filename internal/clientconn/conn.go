@@ -308,7 +308,8 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	case wire.OpCodeKillCursors:
 		fallthrough
 	case wire.OpCodeCompressed:
-		fallthrough
+		err = lazyerrors.Errorf("unhandled OpCode %s", reqHeader.OpCode)
+
 	default:
 		err = lazyerrors.Errorf("unexpected OpCode %s", reqHeader.OpCode)
 	}
@@ -344,12 +345,20 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		case wire.OpCodeKillCursors:
 			fallthrough
 		case wire.OpCodeCompressed:
-			fallthrough
+			// do not panic to make fuzzing easier
+			closeConn = true
+			result = pointer.ToString("unhandled")
+			c.l.Error(
+				"Handler error for unhandled response opcode",
+				zap.Error(err), zap.Stringer("opcode", resHeader.OpCode),
+			)
+
 		default:
 			// do not panic to make fuzzing easier
 			closeConn = true
 			result = pointer.ToString("unexpected")
-			c.l.Error("Handler error for unexpected response opcode",
+			c.l.Error(
+				"Handler error for unexpected response opcode",
 				zap.Error(err), zap.Stringer("opcode", resHeader.OpCode),
 			)
 			return

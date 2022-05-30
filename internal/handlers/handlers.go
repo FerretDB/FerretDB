@@ -23,13 +23,17 @@ import (
 
 // Interface contains methods that should be implemented by all handlers.
 //
+// Those methods are called to handle clients' requests sent over wire protocol.
+// MsgXXX methods handle OP_MSG commands.
+// CmdQuery handles a limited subset of OP_QUERY messages.
+//
 // Please keep methods documentation in sync with commands help text in the handlers/common package.
 type Interface interface {
 	// Close gracefully shutdowns handler.
 	Close()
 
 	// CmdQuery queries collections for documents.
-	// Used by deprecated OP_QUERY message.
+	// Used by deprecated OP_QUERY message during connection handshake with an old client.
 	CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error)
 
 	// OP_MSG commands, sorted alphabetically

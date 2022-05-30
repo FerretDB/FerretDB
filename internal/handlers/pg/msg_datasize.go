@@ -23,6 +23,7 @@ import (
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -55,31 +56,31 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	started := time.Now()
 	stats, err := h.pgPool.TableStats(ctx, db, collection)
 	elapses := time.Since(started)
-	millis := int32(elapses.Milliseconds())
+
+	addEstimate := true
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return formatResponse(0, 0, millis, false)
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return nil, lazyerrors.Error(err)
 		}
-		return nil, lazyerrors.Error(err)
+
+		// return zeroes for non-existent collection
+		stats = new(pgdb.TableStats)
+		addEstimate = false
 	}
 
-	return formatResponse(stats.SizeTotal, stats.Rows, millis, true)
-}
-
-func formatResponse(size, rows, millis int32, showEstimate bool) (*wire.OpMsg, error) {
 	var pairs []any
-	if showEstimate {
+	if addEstimate {
 		pairs = append(pairs, "estimate", false)
 	}
 	pairs = append(pairs,
-		"size", size,
-		"numObjects", rows,
-		"millis", millis,
+		"size", stats.SizeTotal,
+		"numObjects", stats.Rows,
+		"millis", int32(elapses.Milliseconds()),
 		"ok", float64(1),
 	)
 
 	var reply wire.OpMsg
-	err := reply.SetSections(wire.OpMsgSection{
+	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(pairs...))},
 	})
 	if err != nil {
