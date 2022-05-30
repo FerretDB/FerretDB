@@ -622,7 +622,7 @@ func TestSetOnInsertMore(t *testing.T) {
 		notImplemented bool
 		alt            string
 	}{
-		"tandem-set-setoninsert": {
+		"setoninsert-set": {
 			filter: bson.D{{"_id", "test"}},
 			query: bson.D{
 				{"$set", bson.D{{"foo", int32(12)}}},
@@ -700,12 +700,14 @@ func TestSetOnInsertMore(t *testing.T) {
 			var res *mongo.UpdateResult
 			res, err = collection.UpdateOne(ctx, tc.filter, tc.query, opts)
 
-			if tc.notImplemented {
-				if dbByPort() == "ferretdb" &&
-					isUnimplemented(t, err) {
-					return
+			if tc.notImplemented && dbByPort() == "ferretdb" && err != nil {
+				if actualCE, ok := err.(mongo.CommandError); ok {
+					if actualCE.Code == 238 { // not implemented
+						return
+					}
 				}
 			}
+
 			if tc.err != nil {
 				require.Nil(t, tc.res)
 				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
@@ -727,15 +729,4 @@ func TestSetOnInsertMore(t *testing.T) {
 			AssertEqualDocuments(t, tc.res, actual)
 		})
 	}
-}
-
-// isUnimplemented returns true if the error code is unimplemented.
-func isUnimplemented(t *testing.T, actual error) bool {
-	actualCE, ok := actual.(mongo.CommandError)
-	if ok {
-		if actualCE.Code == 238 {
-			return true
-		}
-	}
-	return false
 }
