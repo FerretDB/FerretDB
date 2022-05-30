@@ -158,7 +158,7 @@ func TestUpdateIncOperatorErrors(t *testing.T) {
 
 			_, err = collection.UpdateOne(ctx, tc.filter, tc.update)
 			require.NotNil(t, tc.err)
-			AssertEqualAltWriteError(t, tc.err, tc.alt, err)
+			AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
 		})
 	}
 }
@@ -449,9 +449,7 @@ func TestUpdateSet(t *testing.T) {
 			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
 			if tc.err != nil {
 				require.Nil(t, tc.result)
-				if !AssertEqualAltWriteError(t, tc.err, tc.alt, err) {
-					t.FailNow()
-				}
+				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
 				return
 			}
 
@@ -461,9 +459,7 @@ func TestUpdateSet(t *testing.T) {
 			var actual bson.D
 			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
 			require.NoError(t, err)
-			if !AssertEqualDocuments(t, tc.result, actual) {
-				t.FailNow()
-			}
+			AssertEqualDocuments(t, tc.result, actual)
 		})
 	}
 }
@@ -586,7 +582,7 @@ func TestSetOnInsert(t *testing.T) {
 			var res *mongo.UpdateResult
 			res, err = collection.UpdateOne(ctx, tc.filter, bson.D{{"$setOnInsert", tc.setOnInsert}}, opts)
 			if tc.err != nil {
-				if !AssertEqualAltWriteError(t, tc.err, tc.alt, err) {
+				if !AssertEqualAltWriteError(t, *tc.err, tc.alt, err) {
 					t.Logf("%[1]T %[1]v", err)
 					t.FailNow()
 				}
@@ -716,7 +712,7 @@ func TestSetOnInsertMore(t *testing.T) {
 				}
 			}
 			if tc.err != nil {
-				if !AssertEqualAltWriteError(t, tc.err, tc.alt, err) {
+				if !AssertEqualAltWriteError(t, *tc.err, tc.alt, err) {
 					t.Logf("%[1]T %[1]v", err)
 					t.FailNow()
 				}
