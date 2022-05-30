@@ -17,6 +17,7 @@ package types
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -41,6 +42,28 @@ func TestFreeSpacingParse(t *testing.T) {
 			require.Equal(t, tc.expected, freeSpacingParse(tc.input))
 		})
 	}
+}
+
+func FuzzIsFreeSpacingParse(f *testing.F) {
+	for _, tc := range []string{
+		"### regex ###\n[fgh]\t# one of these characters\n\\w*\t\t#word chars \n\\" +
+			"d# digit\n[A-Z]\t# one upper-case\n\\w*\t\t# word chars\n",
+		"\t\to{1 0}",
+		"o{1 0}",
+		"o{10}",
+		"o{9,10}",
+		"o{1\\ 0}",
+		"[ ]",
+		"[\\]]",
+		`\ d`,
+		`a\ b[ ]c`,
+	} {
+		f.Add(tc)
+	}
+	f.Fuzz(func(t *testing.T, expr string) {
+		t.Parallel()
+		assert.NotPanics(t, func() { _ = freeSpacingParse(expr) })
+	})
 }
 
 func TestIsQuantifier(t *testing.T) {

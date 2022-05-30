@@ -141,6 +141,7 @@ tasks:
       - go test -fuzz=FuzzQuery -fuzztime={{.FUZZTIME}} ./internal/wire/
       - go test -fuzz=FuzzReply -fuzztime={{.FUZZTIME}} ./internal/wire/
       - go test -fuzz=FuzzHandler -fuzztime={{.FUZZTIME}} ./internal/handlers/
+      - go test -fuzz=FuzzIsFreeSpacingParse -fuzztime={{.FUZZTIME}} ./internal/types/
 
   fuzz-corpus:
     desc: "Sync seed and generated fuzz corpora with FUZZCORPUS"
