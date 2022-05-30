@@ -51,9 +51,7 @@ func TestUpdateUpsert(t *testing.T) {
 	var doc bson.D
 	err = collection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&doc)
 	require.NoError(t, err)
-	if !AssertEqualDocuments(t, bson.D{{"_id", id}, {"foo", "baz"}}, doc) {
-		t.FailNow()
-	}
+	AssertEqualDocuments(t, bson.D{{"_id", id}, {"foo", "baz"}}, doc)
 
 	// this upsert updates document
 	filter = bson.D{{"foo", "baz"}}
@@ -601,9 +599,7 @@ func TestSetOnInsert(t *testing.T) {
 			var actual bson.D
 			err = collection.FindOne(ctx, tc.filter).Decode(&actual)
 			require.NoError(t, err)
-			if !AssertEqualDocuments(t, tc.res, actual) {
-				t.FailNow()
-			}
+			AssertEqualDocuments(t, tc.res, actual)
 		})
 	}
 }
@@ -728,9 +724,7 @@ func TestSetOnInsertMore(t *testing.T) {
 			var actual bson.D
 			err = collection.FindOne(ctx, tc.filter).Decode(&actual)
 			require.NoError(t, err)
-			if !AssertEqualDocuments(t, tc.res, actual) {
-				t.FailNow()
-			}
+			AssertEqualDocuments(t, tc.res, actual)
 		})
 	}
 }
