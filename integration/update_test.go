@@ -582,10 +582,8 @@ func TestSetOnInsert(t *testing.T) {
 			var res *mongo.UpdateResult
 			res, err = collection.UpdateOne(ctx, tc.filter, bson.D{{"$setOnInsert", tc.setOnInsert}}, opts)
 			if tc.err != nil {
-				if !AssertEqualAltWriteError(t, *tc.err, tc.alt, err) {
-					t.Logf("%[1]T %[1]v", err)
-					t.FailNow()
-				}
+				require.Nil(t, tc.res)
+				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
 				return
 			}
 
@@ -593,6 +591,7 @@ func TestSetOnInsert(t *testing.T) {
 			id := res.UpsertedID
 			assert.NotEmpty(t, id)
 			res.UpsertedID = nil
+
 			expectedRes := notModified
 			if tc.stat != nil {
 				expectedRes = tc.stat
@@ -712,10 +711,8 @@ func TestSetOnInsertMore(t *testing.T) {
 				}
 			}
 			if tc.err != nil {
-				if !AssertEqualAltWriteError(t, *tc.err, tc.alt, err) {
-					t.Logf("%[1]T %[1]v", err)
-					t.FailNow()
-				}
+				require.Nil(t, tc.res)
+				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
 				return
 			}
 
