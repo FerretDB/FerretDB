@@ -29,7 +29,7 @@ var msgTestCases = []testCase{{
 	msgHeader: &MsgHeader{
 		MessageLength: 92,
 		RequestID:     3,
-		OpCode:        OP_MSG,
+		OpCode:        OpCodeMsg,
 	},
 	msgBody: &OpMsg{
 		sections: []OpMsgSection{{
@@ -56,7 +56,7 @@ var msgTestCases = []testCase{{
 		MessageLength: 1931,
 		RequestID:     292,
 		ResponseTo:    3,
-		OpCode:        OP_MSG,
+		OpCode:        OpCodeMsg,
 	},
 	msgBody: &OpMsg{
 		sections: []OpMsgSection{{
@@ -110,7 +110,7 @@ var msgTestCases = []testCase{{
 	msgHeader: &MsgHeader{
 		MessageLength: 327,
 		RequestID:     7,
-		OpCode:        OP_MSG,
+		OpCode:        OpCodeMsg,
 	},
 	msgBody: &OpMsg{
 		sections: []OpMsgSection{{
