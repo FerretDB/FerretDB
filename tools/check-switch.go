@@ -76,7 +76,6 @@ func run(pass *analysis.Pass) (interface{}, error) {
 						iSl, ok := orderTypes[name]
 						if ok && (iSl < idx) {
 							pass.Reportf(n.Pos(), "non-observance of the preferred order of types")
-
 						}
 						idx = iSl
 					}
