@@ -16,6 +16,7 @@ package common
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"strings"
 	"time"
@@ -450,6 +451,13 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				return false, err
 			}
 
+		case "$all":
+			// {field: {$all: [value, another_value, ...]}}
+			res, err := filterFieldExprAll(fieldValue, exprValue)
+			if !res || err != nil {
+				return false, err
+			}
+
 		case "$bitsAllClear":
 			// {field: {$bitsAllClear: value}}
 			res, err := filterFieldExprBitsAllClear(fieldValue, exprValue)
@@ -600,6 +608,12 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 		return false, nil
 	}
 
+	return true, nil
+}
+
+// filterFieldExprSize handles {field: {$all: [value, another_value, ...]}} filter.
+func filterFieldExprAll(fieldValue any, allValue any) (bool, error) {
+	log.Fatalf("I'm here!\n\n%v\n\n%v\n\n", fieldValue, &allValue)
 	return true, nil
 }
 
