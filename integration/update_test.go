@@ -465,16 +465,33 @@ func TestUpdateRename(t *testing.T) {
 	//	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		filter bson.D
-		update bson.D
-		result bson.D
-		err    *mongo.WriteError
+		filter   bson.D
+		update   bson.D
+		expected map[string]any
+		err      *mongo.WriteError
 	}{
-		"rename_one": {
+		"rename_oneField": {
 			filter: bson.D{{"_id", "1"}},
-			update: bson.D{{"$rename", bson.D{{"value", "weight"}}}},
-			result: bson.D{{"_id", "1"}, {"weight", "test_1"}},
-		},
+			update: bson.D{{"$rename", bson.D{{"name", "nickname"}}}},
+			expected: map[string]any{
+				"_id":      "1",
+				"nickname": "alex",
+			}},
+		"rename_manyField": {
+			filter: bson.D{{"_id", "1"}},
+			update: bson.D{{"$rename", bson.D{{"name", "nickname"}, {"phone", "mobile"}}}},
+			expected: map[string]any{
+				"_id":      "1",
+				"nickname": "alex",
+				"mobile":   "9012345678",
+			}},
+		"rename_fieldInt": {
+			filter: bson.D{{"_id", "1"}},
+			update: bson.D{{"$rename", bson.D{{"name", 1}}}},
+			err: &mongo.WriteError{
+				Code:    2,
+				Message: `The 'to' field for $rename must be a string: name: 1`,
+			}},
 		"rename_string": {
 			filter: bson.D{{"_id", "1"}},
 			update: bson.D{{"$rename", "string"}},
@@ -482,8 +499,7 @@ func TestUpdateRename(t *testing.T) {
 				Code: 9,
 				Message: `Modifiers operate on fields but we found type string instead.` +
 					` For example: {$mod: {<field>: ...}} not {$rename: "string"}`,
-			},
-		},
+			}},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -491,8 +507,8 @@ func TestUpdateRename(t *testing.T) {
 			ctx, collection := setup(t)
 
 			_, err := collection.InsertMany(ctx, []any{
-				bson.D{{"_id", "1"}, {"value", "test_1"}},
-				bson.D{{"_id", "2"}, {"value", "test_2"}},
+				bson.D{{"_id", "1"}, {"name", "alex"}, {"phone", "9012345678"}},
+				bson.D{{"_id", "2"}, {"name", "bob"}},
 			})
 			require.NoError(t, err)
 
@@ -507,7 +523,15 @@ func TestUpdateRename(t *testing.T) {
 			err = collection.FindOne(ctx, tc.filter).Decode(&actual)
 			require.NoError(t, err)
 
-			AssertEqualDocuments(t, tc.result, actual)
+			m := actual.Map()
+			k := CollectKeys(t, actual)
+
+			for key, item := range tc.expected {
+				assert.Contains(t, k, key)
+				assert.Equal(t, m[key], item)
+			}
+
+			//			AssertEqualDocuments(t, tc.result, actual)
 		})
 	}
 }

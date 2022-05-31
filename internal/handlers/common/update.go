@@ -138,6 +138,16 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 					docValue := must.NotFail(doc.Get(renameKey))
 					doc.Remove(renameKey)
 					newKey := renameMap[renameKey]
+					if _, ok := newKey.(string); !ok {
+						return false, NewWriteErrorMsg(
+							ErrBadValue,
+							fmt.Sprintf(
+								`The 'to' field for $rename must be a string: %s: %#v`,
+								renameKey,
+								newKey,
+							),
+						)
+					}
 					must.NoError(doc.Set(newKey.(string), docValue))
 				}
 			}
