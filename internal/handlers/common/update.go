@@ -49,8 +49,9 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				}
 				changed = true
 			default:
-				msgFmt := fmt.Sprintf(`Modifiers operate on fields but we found type %[1]s instead. `+
-					`For example: {$mod: {<field>: ...}} not {$set: %[1]s}`,
+				msgFmt := fmt.Sprintf(
+					`Modifiers operate on fields but we found type %[1]s instead. `+
+						`For example: {$mod: {<field>: ...}} not {$set: %[1]s}`,
 					AliasFromType(updateV),
 				)
 				return false, NewWriteErrorMsg(ErrFailedToParse, msgFmt)
@@ -148,7 +149,9 @@ func ValidateUpdateOperators(update *types.Document) error {
 			if inc.Has(setKey) {
 				return NewWriteErrorMsg(
 					ErrConflictingUpdateOperators,
-					fmt.Sprintf("Updating the path '%[1]s' would create a conflict at '%[1]s'", setKey),
+					fmt.Sprintf(
+						"Updating the path '%[1]s' would create a conflict at '%[1]s'", setKey,
+					),
 				)
 			}
 		}
@@ -156,15 +159,18 @@ func ValidateUpdateOperators(update *types.Document) error {
 
 	for _, updateOp := range update.Keys() {
 		switch updateOp {
-		case "$set",
-			"$setOnInsert",
-			"$inc":
+		case "$inc":
+			fallthrough
+		case "$set":
+			fallthrough
+		case "$setOnInsert":
 			// supported
 		default:
 			return NewWriteErrorMsg(
 				ErrFailedToParse,
-				fmt.Sprintf("Unknown modifier: %s. Expected a valid update modifier or pipeline-style "+
-					"update specified as an array", updateOp,
+				fmt.Sprintf(
+					"Unknown modifier: %s. Expected a valid update modifier or pipeline-style "+
+						"update specified as an array", updateOp,
 				))
 		}
 	}
@@ -181,17 +187,15 @@ func getUpdateOperatorDocument(op string, update *types.Document) (*types.Docume
 	case *types.Document:
 		for _, v := range doc.Keys() {
 			if strings.Contains(v, ".") {
-				return nil, NewError(
-					ErrNotImplemented,
-					fmt.Errorf("Dot notation is not implemented"),
-				)
+				return nil, NewError(ErrNotImplemented, fmt.Errorf("Dot notation is not implemented"))
 			}
 		}
 
 		return doc, nil
 	default:
-		msgFmt := fmt.Sprintf(`Modifiers operate on fields but we found type %[1]s instead. `+
-			`For example: {$mod: {<field>: ...}} not {%s: %[1]s}`,
+		msgFmt := fmt.Sprintf(
+			`Modifiers operate on fields but we found type %[1]s instead. `+
+				`For example: {$mod: {<field>: ...}} not {%s: %[1]s}`,
 			AliasFromType(updateExpression),
 			op,
 		)
