@@ -17,6 +17,7 @@ package integration
 import (
 	"math"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,6 +26,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 func TestUpdateUpsert(t *testing.T) {
@@ -457,6 +459,144 @@ func TestUpdateSet(t *testing.T) {
 			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
 			require.NoError(t, err)
 			AssertEqualDocuments(t, tc.result, actual)
+		})
+	}
+}
+
+func TestCurrentDate(t *testing.T) {
+	t.Parallel()
+	secondsLate := float64(2) // seconds late from now
+
+	for name, tc := range map[string]struct {
+		id     string
+		update bson.D
+		result bson.D
+		path   []string
+		err    *mongo.WriteError
+		stat   *mongo.UpdateResult
+		alt    string
+	}{
+		"true": {
+			id:     "double",
+			update: bson.D{{"$currentDate", bson.D{{"value", true}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+		},
+		"false": {
+			id:     "double",
+			update: bson.D{{"$currentDate", bson.D{{"value", false}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+		},
+		"timestamp": {
+			id:     "double",
+			update: bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "timestamp"}}}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+		},
+		"Timestamp": {
+			id:     "double",
+			update: bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "Timestamp"}}}}}},
+			err: &mongo.WriteError{
+				Code:    0,
+				Message: "The '$type' string field is required to be 'date' or 'timestamp': {$currentDate: {field : {$type: 'date'}}}",
+			},
+		},
+		"date": {
+			id:     "double",
+			update: bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "date"}}}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+		},
+		"no-field": {
+			id:     "double",
+			update: bson.D{{"$currentDate", bson.D{{"unexsistent", bson.D{{"$type", "date"}}}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			path: []string{"unexsistent"},
+		},
+		"empty-operand-expression": {
+			id:     "double",
+			update: bson.D{{"$currentDate", bson.D{}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 0,
+				UpsertedCount: 0,
+			},
+			result: bson.D{{"_id", "double"}, {"value", float64(42.13)}},
+		},
+		"unrecognized-option": {
+			id: "array",
+			update: bson.D{{
+				"$currentDate",
+				bson.D{{
+					"value",
+					bson.D{{
+						"array", bson.D{{"unexsistent", bson.D{}}},
+					}},
+				}},
+			}},
+			err: &mongo.WriteError{
+				Code:    0,
+				Message: "Unrecognized $currentDate option: array",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+
+			expected := time.Now()
+			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
+			if tc.err != nil {
+				require.Nil(t, tc.path)
+				require.Nil(t, tc.stat)
+				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tc.stat, res)
+
+			var actual bson.D
+			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
+			require.NoError(t, err)
+
+			if tc.result != nil {
+				AssertEqualDocuments(t, tc.result, actual)
+				return
+			}
+
+			if len(tc.path) == 0 {
+				tc.path = []string{"value"}
+			}
+			actualVal, err := ConvertDocument(t, actual).GetByPath(types.NewPath(tc.path))
+			require.NoError(t, err)
+
+			switch actualVal := actualVal.(type) {
+			case time.Time:
+				d := actualVal.Sub(expected)
+				assert.Less(t, math.Abs(d.Seconds()), secondsLate)
+
+			default:
+				t.FailNow()
+			}
 		})
 	}
 }
