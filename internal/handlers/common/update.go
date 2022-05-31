@@ -125,8 +125,8 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 	return changed, nil
 }
 
-// ValidateUpdateQuery validates update statement.
-func ValidateUpdateQuery(update *types.Document) (err error) {
+// ValidateUpdateOperators validates update statement.
+func ValidateUpdateOperators(update *types.Document) (err error) {
 	set, err := getUpdateOperatorDocument("$set", update)
 	if err != nil {
 		return err

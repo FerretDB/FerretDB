@@ -99,7 +99,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 		if u != nil {
-			if err = common.ValidateUpdateQuery(u); err != nil {
+			if err = common.ValidateUpdateOperators(u); err != nil {
 				return nil, err
 			}
 		}
