@@ -39,13 +39,13 @@ func TestSetByPath(t *testing.T) {
 	}
 
 	type testCase struct {
-		path  []string
+		path  types.Path
 		value any
 		res   any
 	}
 
 	for _, tc := range []testCase{{ //nolint:paralleltest // false positive
-		path:  []string{"compression", "0"},
+		path:  types.NewPath([]string{"compression", "0"}),
 		value: "zstd",
 		res: must.NotFail(types.NewDocument(
 			"client", must.NotFail(types.NewDocument(
@@ -56,7 +56,7 @@ func TestSetByPath(t *testing.T) {
 			"compression", must.NotFail(types.NewArray("zstd")),
 		)),
 	}, {
-		path:  []string{"client"},
+		path:  types.NewPath([]string{"client"}),
 		value: "foo",
 		res: must.NotFail(types.NewDocument(
 			"client", "foo",
@@ -68,9 +68,9 @@ func TestSetByPath(t *testing.T) {
 			t.Parallel()
 
 			doc := newDoc()
-			SetByPath(t, doc, tc.value, tc.path...)
+			SetByPath(t, doc, tc.value, tc.path)
 			assert.Equal(t, tc.res, doc)
-			assert.Equal(t, tc.value, GetByPath(t, doc, tc.path...))
+			assert.Equal(t, tc.value, GetByPath(t, doc, tc.path))
 		})
 	}
 }
