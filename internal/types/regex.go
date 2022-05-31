@@ -48,8 +48,7 @@ var (
 	// ErrInvalidClassRange indicates that range out of order in character class.
 	ErrInvalidClassRange = fmt.Errorf("Regular expression is invalid: range out of order in character class")
 
-	//nolint:godot // false positive
-	// ErrUnsupportedPerlOp indicates for unrecognized character after (? or (?-.
+	// ErrUnsupportedPerlOp indicates unrecognized character after the grouping sequence start.
 	ErrUnsupportedPerlOp = fmt.Errorf("Regular expression is invalid: unrecognized character after (? or (?-")
 
 	// ErrInvalidRepeatSize indicates that the regular expression is too large.
