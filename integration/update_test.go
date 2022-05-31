@@ -479,7 +479,7 @@ func TestUpdateSetOnInsertOperator(t *testing.T) {
 		err         *mongo.WriteError
 		alt         string
 	}{
-		"Doc": {
+		"Document": {
 			filter:      bson.D{{"_id", "doc"}},
 			setOnInsert: bson.D{{"value", bson.D{}}},
 			res:         bson.D{{"_id", "doc"}, {"value", bson.D{}}},
