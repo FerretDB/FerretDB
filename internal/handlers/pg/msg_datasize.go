@@ -23,36 +23,14 @@ import (
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-func formatResponse(size, rows, millis int32, showEstimate bool) (*wire.OpMsg, error) {
-	var pairs []any
-	if showEstimate {
-		pairs = append(pairs, "estimate", false)
-	}
-	pairs = append(pairs,
-		"size", size,
-		"numObjects", rows,
-		"millis", millis,
-		"ok", float64(1),
-	)
-
-	var reply wire.OpMsg
-	err := reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(pairs...))},
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return &reply, nil
-}
-
-// MsgDataSize returns the size of the collection in bytes.
+// MsgDataSize implements HandlerInterface.
 func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
@@ -78,13 +56,36 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	started := time.Now()
 	stats, err := h.pgPool.TableStats(ctx, db, collection)
 	elapses := time.Since(started)
-	millis := int32(elapses.Milliseconds())
+
+	addEstimate := true
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return formatResponse(0, 0, millis, false)
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return nil, lazyerrors.Error(err)
 		}
+
+		// return zeroes for non-existent collection
+		stats = new(pgdb.TableStats)
+		addEstimate = false
+	}
+
+	var pairs []any
+	if addEstimate {
+		pairs = append(pairs, "estimate", false)
+	}
+	pairs = append(pairs,
+		"size", stats.SizeTotal,
+		"numObjects", stats.Rows,
+		"millis", int32(elapses.Milliseconds()),
+		"ok", float64(1),
+	)
+
+	var reply wire.OpMsg
+	err = reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(pairs...))},
+	})
+	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return formatResponse(stats.SizeTotal, stats.Rows, millis, true)
+	return &reply, nil
 }

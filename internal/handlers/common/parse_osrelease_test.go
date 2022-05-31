@@ -90,7 +90,7 @@ REDHAT_SUPPORT_PRODUCT_VERSION=7.6
 	for key, testCase := range testCases {
 		osReleaseReader := bytes.NewReader([]byte(osReleaseFilesData[key]))
 
-		osName, osVersion, err := ParseOSRelease(osReleaseReader)
+		osName, osVersion, err := parseOSRelease(osReleaseReader)
 		require.NoError(t, err)
 
 		assert.Equal(t, testCase["NAME"], osName)

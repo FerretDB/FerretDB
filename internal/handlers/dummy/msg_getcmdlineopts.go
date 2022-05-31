@@ -16,30 +16,12 @@ package dummy
 
 import (
 	"context"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-func TestDummyHandler(t *testing.T) {
-	t.Parallel()
-
-	h := New()
-	ctx := context.Background()
-	errNotImplemented := common.NewErrorMsg(common.ErrNotImplemented, "I'm a dummy, not a handler")
-	for k, command := range common.Commands {
-		if slices.Contains([]string{"debug_error", "debug_panic"}, k) {
-			assert.NotNil(t, command.Handler)
-			continue
-		}
-		if command.Handler != nil {
-			_, err := command.Handler(h, ctx, nil)
-			assert.Equal(t, err, errNotImplemented, k)
-		}
-	}
-	_, err := h.CmdQuery(ctx, nil)
-	assert.Equal(t, err, errNotImplemented)
+// MsgGetCmdLineOpts implements HandlerInterface.
+func (h *Handler) MsgGetCmdLineOpts(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	return common.MsgGetCmdLineOpts(ctx, msg)
 }

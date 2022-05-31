@@ -24,8 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgListCollections retrieves information (i.e. the name and options)
-// about the collections and views in a database.
+// MsgListCollections implements HandlerInterface.
 func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
