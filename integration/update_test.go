@@ -51,7 +51,9 @@ func TestUpdateUpsert(t *testing.T) {
 	var doc bson.D
 	err = collection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&doc)
 	require.NoError(t, err)
-	AssertEqualDocuments(t, bson.D{{"_id", id}, {"foo", "baz"}}, doc)
+	if !AssertEqualDocuments(t, bson.D{{"_id", id}, {"foo", "baz"}}, doc) {
+		t.FailNow()
+	}
 
 	// this upsert updates document
 	filter = bson.D{{"foo", "baz"}}
