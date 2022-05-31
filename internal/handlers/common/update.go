@@ -163,7 +163,8 @@ func ValidateUpdateOperators(update *types.Document) error {
 		default:
 			return NewWriteErrorMsg(
 				ErrFailedToParse,
-				fmt.Sprintf("Unknown modifier: %s. Expected a valid update modifier or pipeline-style "+
+				fmt.Sprintf(
+				    "Unknown modifier: %s. Expected a valid update modifier or pipeline-style "+
 					"update specified as an array", updateOp,
 				))
 		}
