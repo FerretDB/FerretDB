@@ -23,7 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgPing OpMsg containing a ping, used to test whether a server is responding to commands.
+// MsgPing implements HandlerInterface.
 func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	if err := h.pgPool.Ping(ctx); err != nil {
 		return nil, err

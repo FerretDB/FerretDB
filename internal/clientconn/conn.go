@@ -28,11 +28,14 @@ import (
 	"github.com/pmezard/go-difflib/difflib"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
+	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/proxy"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -60,7 +63,7 @@ type conn struct {
 	netConn       net.Conn
 	mode          Mode
 	l             *zap.SugaredLogger
-	h             common.Handler
+	h             handlers.Interface
 	m             *ConnMetrics
 	proxy         *proxy.Router
 	lastRequestID int32
@@ -71,7 +74,7 @@ type newConnOpts struct {
 	netConn     net.Conn
 	mode        Mode
 	l           *zap.Logger
-	handler     common.Handler
+	handler     handlers.Interface
 	connMetrics *ConnMetrics
 	proxyAddr   string
 	startTime   time.Time
@@ -167,12 +170,17 @@ func (c *conn) run(ctx context.Context) (err error) {
 			c.l.Debugf("Request message:\n%s\n\n\n", reqBody)
 		}
 
+		// diffLogLevel provides the level of logging for the diff between the "normal" and "proxy" responses.
+		// It is set to the highest level of logging used to log response.
+		var diffLogLevel zapcore.Level
+
 		// handle request unless we are in proxy mode
 		var resHeader *wire.MsgHeader
 		var resBody wire.MsgBody
 		var resCloseConn bool
 		if c.mode != ProxyMode {
 			resHeader, resBody, resCloseConn = c.route(ctx, reqHeader, reqBody)
+			diffLogLevel = c.logResponse(resHeader, resBody, resCloseConn)
 		}
 
 		// send request to proxy unless we are in normal mode
@@ -184,11 +192,11 @@ func (c *conn) run(ctx context.Context) (err error) {
 			}
 
 			proxyHeader, proxyBody, _ = c.proxy.Route(ctx, reqHeader, reqBody)
-
-			// do not spend time dumping if we are not going to log it
-			if c.l.Desugar().Core().Enabled(zap.DebugLevel) {
-				c.l.Debugf("Proxy header: %s", proxyHeader)
-				c.l.Debugf("Proxy message:\n%s\n\n\n", proxyBody)
+			if level := c.logResponse(resHeader, resBody, resCloseConn); level != diffLogLevel {
+				// In principle, normal and proxy responses should be logged with the same level
+				// as they behave the same way. If it's not true, there is a bug somewhere, so
+				// we should log the diff as an error.
+				diffLogLevel = zap.ErrorLevel
 			}
 		}
 
@@ -218,7 +226,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 				return
 			}
 
-			c.l.Infof("Header diff:\n%s\nBody diff:\n%s\n\n", diffHeader, diffBody)
+			c.l.Desugar().Check(diffLogLevel, fmt.Sprintf("Header diff:\n%s\nBody diff:\n%s\n\n", diffHeader, diffBody)).Write()
 		}
 
 		// replace response with one from proxy in proxy and diff-proxy modes
@@ -228,8 +236,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 		}
 
 		if resHeader == nil || resBody == nil {
-			c.l.Info("no response to send to client")
-			return
+			panic("no response to send to client")
 		}
 
 		if err = wire.WriteMessage(bufw, resHeader, resBody); err != nil {
@@ -247,12 +254,12 @@ func (c *conn) run(ctx context.Context) (err error) {
 	}
 }
 
-// Route routes the message.
+// route sends request to a handler's command based on the op code provided in the request header.
 //
-// Route's possible returns:
-//  * normal response body;
-//  * protocol error (*common.Error, possibly wrapped) - it will be returned to the client;
-//  * any other error - it will be returned to the client as InternalError before terminating connection.
+// The possible resBody returns:
+//  * normal response  - to be returned to the client, closeConn is false;
+//  * protocol error (*common.Error, possibly wrapped) - to be returned to the client, closeConn is false;
+//  * any other error - to be returned to the client as InternalError before terminating connection, closeConn is true.
 //
 // Handlers to which it routes, should not panic on bad input, but may do so in "impossible" cases.
 // They also should not use recover(). That allows us to use fuzzing.
@@ -301,10 +308,12 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	case wire.OpCodeKillCursors:
 		fallthrough
 	case wire.OpCodeCompressed:
-		fallthrough
+		err = lazyerrors.Errorf("unhandled OpCode %s", reqHeader.OpCode)
+
 	default:
 		err = lazyerrors.Errorf("unexpected OpCode %s", reqHeader.OpCode)
 	}
+
 	requests.WithLabelValues(command).Inc()
 
 	// set body for error
@@ -314,12 +323,9 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			protoErr, recoverable := common.ProtocolError(err)
 			closeConn = !recoverable
 			var res wire.OpMsg
-			err = res.SetSections(wire.OpMsgSection{
+			must.NoError(res.SetSections(wire.OpMsgSection{
 				Documents: []*types.Document{protoErr.Document()},
-			})
-			if err != nil {
-				panic(err)
-			}
+			}))
 			resBody = &res
 			result = pointer.ToString(protoErr.Code().String())
 
@@ -340,12 +346,21 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		case wire.OpCodeKillCursors:
 			fallthrough
 		case wire.OpCodeCompressed:
-			fallthrough
+			// do not panic to make fuzzing easier
+			closeConn = true
+			result = pointer.ToString("unhandled")
+			c.l.Error(
+				"Handler error for unhandled response opcode",
+				zap.Error(err), zap.Stringer("opcode", resHeader.OpCode),
+			)
+			return
+
 		default:
 			// do not panic to make fuzzing easier
 			closeConn = true
 			result = pointer.ToString("unexpected")
-			c.l.Error("Handler error for unexpected response opcode",
+			c.l.Error(
+				"Handler error for unexpected response opcode",
 				zap.Error(err), zap.Stringer("opcode", resHeader.OpCode),
 			)
 			return
@@ -367,20 +382,10 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	if result == nil {
 		result = pointer.ToString("ok")
 	}
-
-	// do not spend time dumping if we are not going to log it
-	if c.l.Desugar().Core().Enabled(zap.DebugLevel) {
-		c.l.Debugf("Response header: %s", resHeader)
-		c.l.Debugf("Response message:\n%s\n\n\n", resBody)
-	}
 	return
 }
 
 func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, cmd string) (*wire.OpMsg, error) {
-	if cmd == "listCommands" {
-		return common.MsgListCommands(c.h, ctx, msg)
-	}
-
 	if cmd, ok := common.Commands[cmd]; ok {
 		if cmd.Handler != nil {
 			return cmd.Handler(c.h, ctx, msg)
@@ -392,11 +397,40 @@ func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, cmd string) (*w
 }
 
 // Describe implements prometheus.Collector.
-func (l *conn) Describe(ch chan<- *prometheus.Desc) {
-	l.m.Describe(ch)
+func (c *conn) Describe(ch chan<- *prometheus.Desc) {
+	c.m.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
-func (l *conn) Collect(ch chan<- prometheus.Metric) {
-	l.m.Collect(ch)
+func (c *conn) Collect(ch chan<- prometheus.Metric) {
+	c.m.Collect(ch)
+}
+
+// logResponse logs response's header and body and returns the log level that was used.
+// If op code is not OP_MSG, it always logs as a debug.
+// For the OP_MSG code, the level depends on the type of error.
+// If there is no errors in the response, it will be logged as a debug.
+// If there is an error in the response, and connection is closed, it will be logged as an error.
+// If there is an error in the response, and connection is not closed, it will be logged as a warning.
+func (c *conn) logResponse(resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) zapcore.Level {
+	level := zap.DebugLevel
+
+	if resHeader.OpCode == wire.OpCodeMsg {
+		doc := must.NotFail(resBody.(*wire.OpMsg).Document())
+
+		ok := must.NotFail(doc.Get("ok"))
+
+		if ok.(float64) != 1 {
+			if closeConn {
+				level = zap.ErrorLevel
+			} else {
+				level = zap.WarnLevel
+			}
+		}
+	}
+
+	c.l.Desugar().Check(level, fmt.Sprintf("Response header: %s", resHeader)).Write()
+	c.l.Desugar().Check(level, fmt.Sprintf("Response message:\n%s\n\n\n", resBody)).Write()
+
+	return level
 }

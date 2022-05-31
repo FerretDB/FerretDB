@@ -19,6 +19,7 @@ func _() {
 	_ = x[ErrInvalidNamespace-73]
 	_ = x[ErrNotImplemented-238]
 	_ = x[ErrSortBadValue-15974]
+	_ = x[ErrSortBadOrder-15975]
 	_ = x[ErrInvalidArg-28667]
 	_ = x[ErrSliceFirstArg-28724]
 	_ = x[ErrProjectionInEx-31253]
@@ -27,7 +28,7 @@ func _() {
 	_ = x[ErrRegexMissingParen-51091]
 }
 
-const _ErrorCode_name = "UnsetInternalErrorBadValueFailedToParseTypeMismatchNamespaceNotFoundNamespaceExistsCommandNotFoundInvalidNamespaceNotImplementedLocation15974Location28667Location28724Location31253Location31254Location51075Location51091"
+const _ErrorCode_name = "UnsetInternalErrorBadValueFailedToParseTypeMismatchNamespaceNotFoundNamespaceExistsCommandNotFoundInvalidNamespaceNotImplementedLocation15974Location15975Location28667Location28724Location31253Location31254Location51075Location51091"
 
 var _ErrorCode_map = map[ErrorCode]string{
 	0:     _ErrorCode_name[0:5],
@@ -41,12 +42,13 @@ var _ErrorCode_map = map[ErrorCode]string{
 	73:    _ErrorCode_name[98:114],
 	238:   _ErrorCode_name[114:128],
 	15974: _ErrorCode_name[128:141],
-	28667: _ErrorCode_name[141:154],
-	28724: _ErrorCode_name[154:167],
-	31253: _ErrorCode_name[167:180],
-	31254: _ErrorCode_name[180:193],
-	51075: _ErrorCode_name[193:206],
-	51091: _ErrorCode_name[206:219],
+	15975: _ErrorCode_name[141:154],
+	28667: _ErrorCode_name[154:167],
+	28724: _ErrorCode_name[167:180],
+	31253: _ErrorCode_name[180:193],
+	31254: _ErrorCode_name[193:206],
+	51075: _ErrorCode_name[206:219],
+	51091: _ErrorCode_name[219:232],
 }
 
 func (i ErrorCode) String() string {

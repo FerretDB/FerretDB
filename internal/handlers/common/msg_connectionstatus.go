@@ -16,10 +16,6 @@ package common
 
 import (
 	"context"
-	"errors"
-	"sort"
-
-	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -27,23 +23,16 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgListCommands returns a list of currently supported commands.
-// Cannot add this func in Commands bcz of initialization loop.
-func MsgListCommands(_ Handler, ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// MsgConnectionStatus is a common implementation of the connectionStatus command.
+func MsgConnectionStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
-
-	cmdList := must.NotFail(types.NewDocument())
-	names := maps.Keys(Commands)
-	sort.Strings(names)
-	for _, name := range names {
-		cmdList.Set(name, must.NotFail(types.NewDocument(
-			"help", Commands[name].Help,
-		)))
-	}
-
 	err := reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"commands", cmdList,
+			"authInfo", must.NotFail(types.NewDocument(
+				"authenticatedUsers", must.NotFail(types.NewArray()),
+				"authenticatedUserRoles", must.NotFail(types.NewArray()),
+				"authenticatedUserPrivileges", must.NotFail(types.NewArray()),
+			)),
 			"ok", float64(1),
 		))},
 	})
@@ -52,14 +41,4 @@ func MsgListCommands(_ Handler, ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 	}
 
 	return &reply, nil
-}
-
-// MsgDebugError used for debugging purposes.
-func MsgDebugError(_ Handler, _ context.Context, _ *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, errors.New("debug_error")
-}
-
-// MsgDebugPanic used for debugging purposes.
-func MsgDebugPanic(_ Handler, _ context.Context, _ *wire.OpMsg) (*wire.OpMsg, error) {
-	panic("debug_panic")
 }

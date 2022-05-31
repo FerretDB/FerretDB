@@ -168,6 +168,146 @@ func TestQuerySort(t *testing.T) {
 	}
 }
 
+// TODO: https://github.com/FerretDB/FerretDB/issues/636
+func TestQuerySortValue(t *testing.T) {
+	ctx, collection := setup(t, shareddata.Scalars)
+
+	for name, tc := range map[string]struct {
+		sort        bson.D
+		expectedIDs []any
+		err         *mongo.CommandError
+	}{
+		"AscValueScalar": {
+			sort: bson.D{{"value", 1}},
+			expectedIDs: []any{
+				"null",
+				"double-nan",
+				"double-negative-infinity",
+				"int64-min",
+				"int32-min",
+				"double-negative-zero",
+				"double-zero",
+				"int32-zero",
+				"int64-zero",
+				"double-smallest",
+				"double-whole",
+				"int32",
+				"int64",
+				"double",
+				"int32-max",
+				"double-big",
+				"int64-big",
+				"int64-max",
+				"double-max",
+				"double-positive-infinity",
+				"string-empty",
+				"string-whole",
+				"string-double",
+				"string",
+				"binary-empty",
+				"binary",
+				"objectid-empty",
+				"objectid",
+				"bool-false",
+				"bool-true",
+				"datetime-year-min",
+				"datetime-epoch",
+				"datetime",
+				"datetime-year-max",
+				"timestamp-i",
+				"timestamp",
+				"regex-empty",
+				"regex",
+			},
+		},
+		"DescValueScalar": {
+			sort: bson.D{{"value", -1}},
+			expectedIDs: []any{
+				"regex",
+				"regex-empty",
+				"timestamp",
+				"timestamp-i",
+				"datetime-year-max",
+				"datetime",
+				"datetime-epoch",
+				"datetime-year-min",
+				"bool-true",
+				"bool-false",
+				"objectid",
+				"objectid-empty",
+				"binary",
+				"binary-empty",
+				"string",
+				"string-double",
+				"string-whole",
+				"string-empty",
+				"double-positive-infinity",
+				"double-max",
+				"int64-max",
+				"int64-big",
+				"double-big",
+				"int32-max",
+				"double",
+				"double-whole",
+				"int32",
+				"int64",
+				"double-smallest",
+				"double-negative-zero",
+				"double-zero",
+				"int32-zero",
+				"int64-zero",
+				"int32-min",
+				"int64-min",
+				"double-negative-infinity",
+				"double-nan",
+				"null",
+			},
+		},
+		"BadSortValue": {
+			sort: bson.D{{"value", 11}},
+			err: &mongo.CommandError{
+				Code:    15975,
+				Name:    "Location15975",
+				Message: "$sort key ordering must be 1 (for ascending) or -1 (for descending)",
+			},
+		},
+		"BadSortZeroValue": {
+			sort: bson.D{{"value", 0}},
+			err: &mongo.CommandError{
+				Code:    15975,
+				Name:    "Location15975",
+				Message: "$sort key ordering must be 1 (for ascending) or -1 (for descending)",
+			},
+		},
+		"BadSortNullValue": {
+			sort: bson.D{{"value", nil}},
+			err: &mongo.CommandError{
+				Code:    15974,
+				Name:    "Location15974",
+				Message: "Illegal key in $sort specification: value: null",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			cursor, err := collection.Find(ctx, bson.D{}, options.Find().SetSort(tc.sort))
+			if tc.err != nil {
+				require.Nil(t, tc.expectedIDs)
+				AssertEqualError(t, *tc.err, err)
+				return
+			}
+			require.NoError(t, err)
+
+			var actual []bson.D
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
+		})
+	}
+}
+
 func TestQueryCount(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
@@ -412,6 +552,19 @@ func TestQueryBadSortType(t *testing.T) {
 				Message: "Expected field sortto be of type object",
 			},
 			altMessage: "Expected field sort to be of type object",
+		},
+		"BadSortTypeValue": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"projection", bson.D{{"value", 42}}},
+				{"sort", bson.D{{"asc", "123"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    15974,
+				Name:    "Location15974",
+				Message: `Illegal key in $sort specification: asc: "123"`,
+			},
+			altMessage: `Illegal key in $sort specification: asc: 123`,
 		},
 	} {
 		name, tc := name, tc
