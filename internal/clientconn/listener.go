@@ -26,7 +26,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -35,7 +35,7 @@ import (
 type Listener struct {
 	opts      *NewListenerOpts
 	metrics   *ListenerMetrics
-	handler   common.Handler
+	handler   handlers.Interface
 	startTime time.Time
 	listener  net.Listener
 	listening chan struct{}
@@ -46,7 +46,7 @@ type NewListenerOpts struct {
 	ListenAddr      string
 	ProxyAddr       string
 	Mode            Mode
-	Handler         common.Handler
+	Handler         handlers.Interface
 	Logger          *zap.Logger
 	TestConnTimeout time.Duration
 	StartTime       time.Time

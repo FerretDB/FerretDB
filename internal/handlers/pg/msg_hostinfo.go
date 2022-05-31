@@ -16,64 +16,12 @@ package pg
 
 import (
 	"context"
-	"os"
-	"runtime"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgHostInfo returns an OpMsg with the host information.
+// MsgHostInfo implements HandlerInterface.
 func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	now := time.Now().UTC()
-	hostname, err := os.Hostname()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	var osName, osVersion string
-
-	if runtime.GOOS == "linux" {
-		file, err := os.Open("/etc/os-release")
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-		defer file.Close()
-
-		osName, osVersion, err = common.ParseOSRelease(file)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-	}
-
-	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"system", must.NotFail(types.NewDocument(
-				"currentTime", now,
-				"hostname", hostname,
-				"cpuAddrSize", int32(strconv.IntSize),
-				"numCores", int32(runtime.NumCPU()),
-				"cpuArch", runtime.GOARCH,
-			)),
-			"os", must.NotFail(types.NewDocument(
-				"type", strings.Title(runtime.GOOS), //nolint:staticcheck // good enough for GOOS
-				"name", osName,
-				"version", osVersion,
-			)),
-			"extra", must.NotFail(types.NewDocument()),
-			"ok", float64(1),
-		))},
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return &reply, nil
+	return common.MsgHostInfo(ctx, msg)
 }

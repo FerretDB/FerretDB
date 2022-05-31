@@ -22,8 +22,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// ParseOSRelease parses the etc/os-release file.
-func ParseOSRelease(reader io.Reader) (string, string, error) {
+// parseOSRelease parses the /etc/os-release file.
+func parseOSRelease(reader io.Reader) (string, string, error) {
 	scanner := bufio.NewScanner(reader)
 
 	configParams := map[string]string{}

@@ -30,6 +30,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/proxy"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -62,7 +63,7 @@ type conn struct {
 	netConn       net.Conn
 	mode          Mode
 	l             *zap.SugaredLogger
-	h             common.Handler
+	h             handlers.Interface
 	m             *ConnMetrics
 	proxy         *proxy.Router
 	lastRequestID int32
@@ -73,7 +74,7 @@ type newConnOpts struct {
 	netConn     net.Conn
 	mode        Mode
 	l           *zap.Logger
-	handler     common.Handler
+	handler     handlers.Interface
 	connMetrics *ConnMetrics
 	proxyAddr   string
 	startTime   time.Time
@@ -307,10 +308,12 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	case wire.OpCodeKillCursors:
 		fallthrough
 	case wire.OpCodeCompressed:
-		fallthrough
+		err = lazyerrors.Errorf("unhandled OpCode %s", reqHeader.OpCode)
+
 	default:
 		err = lazyerrors.Errorf("unexpected OpCode %s", reqHeader.OpCode)
 	}
+
 	requests.WithLabelValues(command).Inc()
 
 	// set body for error
@@ -343,12 +346,21 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		case wire.OpCodeKillCursors:
 			fallthrough
 		case wire.OpCodeCompressed:
-			fallthrough
+			// do not panic to make fuzzing easier
+			closeConn = true
+			result = pointer.ToString("unhandled")
+			c.l.Error(
+				"Handler error for unhandled response opcode",
+				zap.Error(err), zap.Stringer("opcode", resHeader.OpCode),
+			)
+			return
+
 		default:
 			// do not panic to make fuzzing easier
 			closeConn = true
 			result = pointer.ToString("unexpected")
-			c.l.Error("Handler error for unexpected response opcode",
+			c.l.Error(
+				"Handler error for unexpected response opcode",
 				zap.Error(err), zap.Stringer("opcode", resHeader.OpCode),
 			)
 			return
@@ -374,10 +386,6 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 }
 
 func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, cmd string) (*wire.OpMsg, error) {
-	if cmd == "listCommands" {
-		return common.MsgListCommands(c.h, ctx, msg)
-	}
-
 	if cmd, ok := common.Commands[cmd]; ok {
 		if cmd.Handler != nil {
 			return cmd.Handler(c.h, ctx, msg)
