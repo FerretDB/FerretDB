@@ -113,6 +113,13 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 // ValidateUpdateOperators validates update statement.
 func ValidateUpdateOperators(update *types.Document) error {
 	var err error
+	if err = checkAllModifiersSupported(update); err != nil {
+		return err
+	}
+	inc, err := getUpdateOperatorDocument("$inc", update)
+	if err != nil {
+		return err
+	}
 	set, err := getUpdateOperatorDocument("$set", update)
 	if err != nil {
 		return err
@@ -121,25 +128,14 @@ func ValidateUpdateOperators(update *types.Document) error {
 	if err != nil {
 		return err
 	}
-
-	inc, err := getUpdateOperatorDocument("$inc", update)
-	if err != nil {
+	if err = checkConflictingChanges(set, inc); err != nil {
 		return err
 	}
+	return nil
+}
 
-	if set != nil && inc != nil {
-		for _, setKey := range set.Keys() {
-			if inc.Has(setKey) {
-				return NewWriteErrorMsg(
-					ErrConflictingUpdateOperators,
-					fmt.Sprintf(
-						"Updating the path '%[1]s' would create a conflict at '%[1]s'", setKey,
-					),
-				)
-			}
-		}
-	}
-
+// checkAllModifiersSupported checks that update document contains only modifiers that are supported.
+func checkAllModifiersSupported(update *types.Document) error {
 	for _, updateOp := range update.Keys() {
 		switch updateOp {
 		case "$inc":
@@ -155,6 +151,28 @@ func ValidateUpdateOperators(update *types.Document) error {
 					"Unknown modifier: %s. Expected a valid update modifier or pipeline-style "+
 						"update specified as an array", updateOp,
 				))
+		}
+	}
+	return nil
+}
+
+// checkConflictingChanges checks if there are the same keys in these documents and returns an error, if any.
+func checkConflictingChanges(a, b *types.Document) error {
+	if a == nil {
+		return nil
+	}
+	if b == nil {
+		return nil
+	}
+
+	for _, key := range a.Keys() {
+		if b.Has(key) {
+			return NewWriteErrorMsg(
+				ErrConflictingUpdateOperators,
+				fmt.Sprintf(
+					"Updating the path '%[1]s' would create a conflict at '%[1]s'", key,
+				),
+			)
 		}
 	}
 	return nil
