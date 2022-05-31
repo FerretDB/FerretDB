@@ -612,6 +612,20 @@ func TestUpdateMany(t *testing.T) {
 			},
 			res: bson.D{{"_id", "test"}, {"foo", int32(12)}, {"value", math.NaN()}},
 		},
+		"SetTwoFields": {
+			filter: bson.D{{"_id", "test"}},
+			update: bson.D{
+				{"$set", bson.D{{"foo", int32(12)}, {"value", math.NaN()}}},
+			},
+			res: bson.D{{"_id", "test"}, {"foo", int32(12)}, {"value", math.NaN()}},
+		},
+		"IncTwoFields": {
+			filter: bson.D{{"_id", "test"}},
+			update: bson.D{
+				{"$inc", bson.D{{"foo", int32(12)}, {"value", int32(1)}}},
+			},
+			res: bson.D{{"_id", "test"}, {"foo", int32(12)}, {"value", int32(1)}},
+		},
 		"SetIncSetOnInsert": {
 			filter: bson.D{{"_id", "test"}},
 			update: bson.D{
