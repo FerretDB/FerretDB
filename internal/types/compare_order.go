@@ -125,6 +125,9 @@ func CompareOrder(a, b any, order SortType) CompareResult {
 	if b == nil {
 		panic("CompareOrder: b is nil")
 	}
+	if order != Ascending && order != Descending {
+		panic(fmt.Sprintf("CompareOrder: order is %v", order))
+	}
 
 	aType := detectDataType(a)
 	bType := detectDataType(b)
