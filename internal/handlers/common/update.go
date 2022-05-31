@@ -113,6 +113,35 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				}
 			}
 
+		case "$rename":
+			renameDoc, ok := updateV.(*types.Document)
+			if !ok {
+				return false, NewWriteErrorMsg(
+					ErrFailedToParse,
+					fmt.Sprintf(
+						`Modifiers operate on fields but we found type string instead. `+
+							`For example: {$mod: {<field>: ...}} not {%s: %#v}`,
+						updateOp,
+						updateV,
+					),
+				)
+			}
+
+			renameMap := renameDoc.Map()
+
+			for _, renameKey := range renameDoc.Keys() {
+				if strings.ContainsRune(renameKey, '.') {
+					return false, NewErrorMsg(ErrNotImplemented, "dot notation not supported yet")
+				}
+
+				if doc.Has(renameKey) {
+					docValue := must.NotFail(doc.Get(renameKey))
+					doc.Remove(renameKey)
+					newKey := renameMap[renameKey]
+					must.NoError(doc.Set(newKey.(string), docValue))
+				}
+			}
+
 		default:
 			return false, NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
 		}

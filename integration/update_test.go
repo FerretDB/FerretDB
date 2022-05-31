@@ -460,3 +460,54 @@ func TestUpdateSet(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdateRename(t *testing.T) {
+	//	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		filter bson.D
+		update bson.D
+		result bson.D
+		err    *mongo.WriteError
+	}{
+		"rename_one": {
+			filter: bson.D{{"_id", "1"}},
+			update: bson.D{{"$rename", bson.D{{"value", "weight"}}}},
+			result: bson.D{{"_id", "1"}, {"weight", "test_1"}},
+		},
+		"rename_string": {
+			filter: bson.D{{"_id", "1"}},
+			update: bson.D{{"$rename", "string"}},
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: `Modifiers operate on fields but we found type string instead.` +
+					` For example: {$mod: {<field>: ...}} not {$rename: "string"}`,
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			//			t.Parallel()
+			ctx, collection := setup(t)
+
+			_, err := collection.InsertMany(ctx, []any{
+				bson.D{{"_id", "1"}, {"value", "test_1"}},
+				bson.D{{"_id", "2"}, {"value", "test_2"}},
+			})
+			require.NoError(t, err)
+
+			_, err = collection.UpdateOne(ctx, tc.filter, tc.update)
+			if tc.err != nil {
+				require.NotNil(t, tc.err)
+				AssertEqualWriteError(t, *tc.err, err)
+				return
+			}
+
+			var actual bson.D
+			err = collection.FindOne(ctx, tc.filter).Decode(&actual)
+			require.NoError(t, err)
+
+			AssertEqualDocuments(t, tc.result, actual)
+		})
+	}
+}
