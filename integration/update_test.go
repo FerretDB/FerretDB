@@ -108,8 +108,7 @@ func TestUpdateIncOperatorErrors(t *testing.T) {
 				Message: `Modifiers operate on fields but we found type string instead.` +
 					` For example: {$mod: {<field>: ...}} not {$inc: "string"}`,
 			},
-			alt: `Modifiers operate on fields but we found type string instead.` +
-				` For example: {$mod: {<field>: ...}} not {$inc: string}`,
+			alt: "Modifiers operate on fields but we found another type instead",
 		},
 		"IncWithStringValue": {
 			filter: bson.D{{"_id", "string"}},
@@ -312,6 +311,7 @@ func TestUpdateSet(t *testing.T) {
 				Message: "Modifiers operate on fields but we found type null instead. " +
 					"For example: {$mod: {<field>: ...}} not {$set: null}",
 			},
+			alt: "Modifiers operate on fields but we found another type instead",
 		},
 		"String": {
 			id:     "string",
@@ -321,8 +321,7 @@ func TestUpdateSet(t *testing.T) {
 				Message: "Modifiers operate on fields but we found type string instead. " +
 					"For example: {$mod: {<field>: ...}} not {$set: \"string\"}",
 			},
-			alt: "Modifiers operate on fields but we found type string instead. " +
-				"For example: {$mod: {<field>: ...}} not {$set: string}",
+			alt: "Modifiers operate on fields but we found another type instead",
 		},
 		"Array": {
 			id:     "string",
@@ -332,8 +331,7 @@ func TestUpdateSet(t *testing.T) {
 				Message: "Modifiers operate on fields but we found type array instead. " +
 					"For example: {$mod: {<field>: ...}} not {$set: []}",
 			},
-			alt: "Modifiers operate on fields but we found type array instead. " +
-				"For example: {$mod: {<field>: ...}} not {$set: array}",
+			alt: "Modifiers operate on fields but we found another type instead",
 		},
 		"EmptyDoc": {
 			id:     "string",
@@ -509,8 +507,7 @@ func TestUpdateSetOnInsertOperator(t *testing.T) {
 				Message: "Modifiers operate on fields but we found type array instead. " +
 					"For example: {$mod: {<field>: ...}} not {$setOnInsert: []}",
 			},
-			alt: "Modifiers operate on fields but we found type array instead. " +
-				"For example: {$mod: {<field>: ...}} not {$setOnInsert: array}",
+			alt: "Modifiers operate on fields but we found another type instead",
 		},
 		"DoubleDouble": {
 			filter:      bson.D{{"_id", "double"}},
@@ -520,8 +517,7 @@ func TestUpdateSetOnInsertOperator(t *testing.T) {
 				Message: "Modifiers operate on fields but we found type double instead. " +
 					"For example: {$mod: {<field>: ...}} not {$setOnInsert: 43.13}",
 			},
-			alt: "Modifiers operate on fields but we found type double instead. " +
-				"For example: {$mod: {<field>: ...}} not {$setOnInsert: double}",
+			alt: "Modifiers operate on fields but we found another type instead",
 		},
 		"ErrNaN": {
 			filter:      bson.D{{"_id", "double-nan"}},
@@ -531,8 +527,7 @@ func TestUpdateSetOnInsertOperator(t *testing.T) {
 				Message: "Modifiers operate on fields but we found type double instead. " +
 					"For example: {$mod: {<field>: ...}} not {$setOnInsert: nan.0}",
 			},
-			alt: "Modifiers operate on fields but we found type double instead. " +
-				"For example: {$mod: {<field>: ...}} not {$setOnInsert: double}",
+			alt: "Modifiers operate on fields but we found another type instead",
 		},
 		"ErrString": {
 			filter:      bson.D{{"_id", "string"}},
@@ -542,8 +537,7 @@ func TestUpdateSetOnInsertOperator(t *testing.T) {
 				Message: "Modifiers operate on fields but we found type string instead. " +
 					"For example: {$mod: {<field>: ...}} not {$setOnInsert: \"any string\"}",
 			},
-			alt: "Modifiers operate on fields but we found type string instead. " +
-				"For example: {$mod: {<field>: ...}} not {$setOnInsert: string}",
+			alt: "Modifiers operate on fields but we found another type instead",
 		},
 		"ErrNil": {
 			filter:      bson.D{{"_id", "nil"}},
@@ -553,8 +547,7 @@ func TestUpdateSetOnInsertOperator(t *testing.T) {
 				Message: "Modifiers operate on fields but we found type null instead. " +
 					"For example: {$mod: {<field>: ...}} not {$setOnInsert: null}",
 			},
-			alt: "Modifiers operate on fields but we found type null instead. " +
-				"For example: {$mod: {<field>: ...}} not {$setOnInsert: null}",
+			alt: "Modifiers operate on fields but we found another type instead",
 		},
 	} {
 		name, tc := name, tc

@@ -176,12 +176,6 @@ func getUpdateOperatorDocument(op string, update *types.Document) (*types.Docume
 
 		return doc, nil
 	default:
-		msgFmt := fmt.Sprintf(
-			`Modifiers operate on fields but we found type %[1]s instead. `+
-				`For example: {$mod: {<field>: ...}} not {%s: %[1]s}`,
-			AliasFromType(updateExpression),
-			op,
-		)
-		return nil, NewWriteErrorMsg(ErrFailedToParse, msgFmt)
+		return nil, NewWriteErrorMsg(ErrFailedToParse, "Modifiers operate on fields but we found another type instead")
 	}
 }
