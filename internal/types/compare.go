@@ -60,6 +60,10 @@ func Compare(v1, v2 any) CompareResult {
 		return Incomparable
 
 	case *Array:
+		if v2, ok := v2.(*Array); ok {
+			return CompareArrays(v1, v2)
+		}
+
 		for i := 0; i < v1.Len(); i++ {
 			v := must.NotFail(v1.Get(i))
 			switch v.(type) {
@@ -253,4 +257,101 @@ func compareNumbers(a float64, b int64) CompareResult {
 	bigB := new(big.Float).SetInt64(b).SetPrec(100000)
 
 	return CompareResult(bigA.Cmp(bigB))
+}
+
+// CompareArrays compares indices of a filter array according to indices of a document array;
+// returns Equal when a document array contains another array(subarray) that equals filter array.
+func CompareArrays(filterArr, docArr *Array) CompareResult {
+	if docArr.Len() == 0 && filterArr.Len() == 0 {
+		return Equal
+	}
+	if filterArr.Len() == 0 {
+		return Incomparable
+	}
+
+	EntireArrayResult, subArrayEquality := Incomparable, Incomparable
+
+	for i := 0; i < docArr.Len(); i++ {
+		arrValue := must.NotFail(docArr.Get(i))
+		switch arrValue := arrValue.(type) {
+		case *Array:
+			filterArrValue := must.NotFail(filterArr.Get(i))
+			switch filterArrValue := filterArrValue.(type) {
+			case *Array:
+				res := CompareArrays(filterArrValue, arrValue)
+				res = handleSubArrayComparingResult(i, &res, &EntireArrayResult, &subArrayEquality)
+				continue
+
+			default:
+				res := CompareArrays(filterArr, arrValue)
+				res = handleSubArrayComparingResult(i, &res, &EntireArrayResult, &subArrayEquality)
+			}
+			continue
+
+		//TODO: case Document
+		//case *Document
+
+		default:
+			if i+1 > filterArr.Len() {
+				if EntireArrayResult == Equal {
+					EntireArrayResult = Incomparable
+				}
+				continue // looking for next element is array that might fit filter query
+			}
+
+			filterValue := must.NotFail(filterArr.Get(i))
+			switch filterValue := filterValue.(type) {
+			case *Array, *Document:
+				if EntireArrayResult == Equal {
+					EntireArrayResult = Incomparable
+				}
+				continue
+			default:
+				res := CompareOrder(arrValue, filterValue, Ascending)
+				if EntireArrayResult == Incomparable && i == 0 { // set first non-Incomparable result
+					EntireArrayResult = res
+				}
+
+				if EntireArrayResult != res {
+					EntireArrayResult = Incomparable
+					continue
+				}
+
+				// both arrays are not equal if there are still elements in filter array
+				if filterArr.Len() > i+1 &&
+					docArr.Len() == i+1 &&
+					EntireArrayResult == Equal {
+					EntireArrayResult = Incomparable
+				}
+			}
+		}
+	}
+
+	if subArrayEquality == Equal && !(filterArr.Len() > docArr.Len()) {
+		return subArrayEquality
+	}
+
+	return EntireArrayResult
+}
+
+// handleSubArrayComparingResult determines on the first iteration what result the comparison will follow (e.g. gt, ls, eq)
+// detects inconsistency in iterations; detects equality for subbaray.
+func handleSubArrayComparingResult(iterator int, resultFromComparing, entireArrayResult, subArrayEquality *CompareResult) CompareResult {
+	if *resultFromComparing == Incomparable {
+		return Incomparable
+	}
+
+	if *entireArrayResult == Incomparable && iterator == 0 {
+		entireArrayResult = resultFromComparing
+	}
+
+	if *resultFromComparing == Equal {
+		*subArrayEquality = Equal
+	}
+
+	if entireArrayResult != resultFromComparing {
+		return Incomparable
+	}
+
+	return *resultFromComparing
 }

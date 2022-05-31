@@ -92,6 +92,10 @@ func TestQueryComparisonImplicit(t *testing.T) {
 			filter:      bson.D{{"value", bson.A{bson.A{int32(42), "foo"}, nil}}},
 			expectedIDs: []any{"array-embedded"},
 		},
+		"LongArrayEmbedded": {
+			filter:      bson.D{{"value", bson.A{bson.A{int32(42), "foo"}, nil, "foo"}}},
+			expectedIDs: []any{},
+		},
 		"ArraySlice": {
 			filter:      bson.D{{"value", bson.A{int32(42), "foo"}}},
 			expectedIDs: []any{"array-embedded"},
@@ -255,6 +259,10 @@ func TestQueryComparisonEq(t *testing.T) {
 		"ArrayEmbedded": {
 			filter:      bson.D{{"value", bson.D{{"$eq", bson.A{bson.A{int32(42), "foo"}, nil}}}}},
 			expectedIDs: []any{"array-embedded"},
+		},
+		"LongArrayEmbedded": {
+			filter:      bson.D{{"value", bson.D{{"$eq", bson.A{bson.A{int32(42), "foo"}, nil, "foo"}}}}},
+			expectedIDs: []any{},
 		},
 		"ArraySlice": {
 			filter:      bson.D{{"value", bson.D{{"$eq", bson.A{int32(42), "foo"}}}}},
@@ -1392,6 +1400,10 @@ func TestQueryComparisonNe(t *testing.T) {
 		"ArrayEmbedded": {
 			value:        bson.A{bson.A{int32(42), "foo"}, nil},
 			unexpectedID: "array-embedded",
+		},
+		"LongArrayEmbedded": {
+			value:        bson.A{bson.A{int32(42), "foo"}, nil, "foo"},
+			unexpectedID: "",
 		},
 		"ArrayShuffledValues": {
 			value:        bson.A{"foo", nil, int32(42)},

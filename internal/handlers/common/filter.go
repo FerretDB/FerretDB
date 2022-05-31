@@ -82,7 +82,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 			return false, nil // no error - the field is just not present
 		}
 		if docValue, ok := docValue.(*types.Array); ok {
-			return matchArrays(filterValue, docValue), nil
+			return types.CompareArrays(filterValue, docValue) == types.Equal, nil
 		}
 		return false, nil
 
@@ -248,7 +248,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				return false, nil
 			case *types.Array:
 				if fieldValue, ok := fieldValue.(*types.Array); ok {
-					return matchArrays(exprValue, fieldValue), nil
+					return types.CompareArrays(exprValue, fieldValue) == types.Equal, nil
 				}
 				return false, nil
 			default:
@@ -268,7 +268,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 			case *types.Array:
 				if fieldValue, ok := fieldValue.(*types.Array); ok {
-					return !matchArrays(exprValue, fieldValue), nil
+					return types.CompareArrays(exprValue, fieldValue) != types.Equal, nil
 				}
 				return false, nil
 
@@ -337,7 +337,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				switch arrValue := must.NotFail(arr.Get(i)).(type) {
 				case *types.Array:
 					fieldValue, ok := fieldValue.(*types.Array)
-					if ok && matchArrays(arrValue, fieldValue) {
+					if ok && types.CompareArrays(arrValue, fieldValue) == types.Equal {
 						found = true
 					}
 				case *types.Document:
@@ -385,7 +385,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				switch arrValue := must.NotFail(arr.Get(i)).(type) {
 				case *types.Array:
 					fieldValue, ok := fieldValue.(*types.Array)
-					if ok && matchArrays(arrValue, fieldValue) {
+					if ok && types.CompareArrays(arrValue, fieldValue) == types.Equal {
 						found = true
 					}
 				case *types.Document:
