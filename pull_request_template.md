@@ -1,19 +1,19 @@
-# Description
+## Description
 
 This PR closes #${issue_number}.
 
-<!-- Write a description to explain changes that are not described in the initatial issues
-and the reasons behind them. -->
+<!-- Write a description to explain changes that are not described in the initatial issues.
+What were the reasons for those changes?
+Which decisions did you make and why? 
+What else should reviewers know about your changes? -->
 
-<!-- Which decisions did you make and why? -->
+## Testing
 
-<!-- What else should reviewers know about your changes? -->
+<!-- How did you test your changes?
+Which new tests did you add?
+Did you run anything manually? -->
 
-# Testing
-
-<!-- How did you test your changes? What new tests did you add? Did you run something manually? -->
-
-# Checklist
+## Checklist
 
 - [ ] Code is regenerated if needed (`task gen`).
 - [ ] Code is formatted (`task fmt`).
