@@ -31,8 +31,9 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 		updateV := must.NotFail(update.Get(updateOp))
 
 		switch updateOp {
-		case "$set",
-			"$setOnInsert":
+		case "$set":
+			fallthrough
+		case "$setOnInsert":
 
 			switch setDoc := updateV.(type) {
 			case *types.Document:
