@@ -599,14 +599,14 @@ func TestUpdateMany(t *testing.T) {
 
 	for name, tc := range map[string]struct {
 		filter bson.D
-		query  bson.D
+		update bson.D
 		stat   *mongo.UpdateResult
 		res    bson.D
 		err    *mongo.WriteError
 	}{
 		"SetSetOnInsert": {
 			filter: bson.D{{"_id", "test"}},
-			query: bson.D{
+			update: bson.D{
 				{"$set", bson.D{{"foo", int32(12)}}},
 				{"$setOnInsert", bson.D{{"value", math.NaN()}}},
 			},
@@ -614,7 +614,7 @@ func TestUpdateMany(t *testing.T) {
 		},
 		"SetIncSetOnInsert": {
 			filter: bson.D{{"_id", "test"}},
-			query: bson.D{
+			update: bson.D{
 				{"$set", bson.D{{"foo", int32(12)}}},
 				{"$inc", bson.D{{"foo", int32(1)}}},
 				{"$setOnInsert", bson.D{{"value", math.NaN()}}},
@@ -626,7 +626,7 @@ func TestUpdateMany(t *testing.T) {
 		},
 		"UnknownOperator": {
 			filter: bson.D{{"_id", "test"}},
-			query:  bson.D{{"$foo", bson.D{{"foo", int32(1)}}}},
+			update: bson.D{{"$foo", bson.D{{"foo", int32(1)}}}},
 			err: &mongo.WriteError{
 				Code:    9,
 				Message: "Unknown modifier: $foo. Expected a valid update modifier or pipeline-style update specified as an array",
@@ -645,7 +645,7 @@ func TestUpdateMany(t *testing.T) {
 
 			opts := options.Update().SetUpsert(true)
 			var res *mongo.UpdateResult
-			res, err = collection.UpdateOne(ctx, tc.filter, tc.query, opts)
+			res, err = collection.UpdateOne(ctx, tc.filter, tc.update, opts)
 
 			if tc.err != nil {
 				require.Nil(t, tc.res)
