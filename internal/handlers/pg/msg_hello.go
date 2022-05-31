@@ -24,7 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgHello returns a document that describes the role of the instance.
+// MsgHello implements HandlerInterface.
 func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	if err := h.pgPool.Ping(ctx); err != nil {
 		return nil, err

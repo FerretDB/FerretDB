@@ -24,7 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgListDatabases command provides a list of all existing databases along with basic statistics about them.
+// MsgListDatabases implements HandlerInterface.
 func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
