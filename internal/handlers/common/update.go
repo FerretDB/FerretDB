@@ -35,41 +35,24 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			fallthrough
 		case "$setOnInsert":
 
-			switch setDoc := updateV.(type) {
-			case *types.Document:
-				if setDoc.Len() == 0 {
-					continue
-				}
-				sort.Strings(setDoc.Keys())
-				for _, setKey := range setDoc.Keys() {
-					setValue := must.NotFail(setDoc.Get(setKey))
-					if err := doc.Set(setKey, setValue); err != nil {
-						return false, err
-					}
-				}
-				changed = true
-			default:
-				msgFmt := fmt.Sprintf(
-					`Modifiers operate on fields but we found type %[1]s instead. `+
-						`For example: {$mod: {<field>: ...}} not {$set: %[1]s}`,
-					AliasFromType(updateV),
-				)
-				return false, NewWriteErrorMsg(ErrFailedToParse, msgFmt)
+			// expecting here a document since all checks were made in ValidateUpdateOperators func
+			setDoc := updateV.(*types.Document)
+
+			if setDoc.Len() == 0 {
+				continue
 			}
+			sort.Strings(setDoc.Keys())
+			for _, setKey := range setDoc.Keys() {
+				setValue := must.NotFail(setDoc.Get(setKey))
+				if err := doc.Set(setKey, setValue); err != nil {
+					return false, err
+				}
+			}
+			changed = true
 
 		case "$inc":
-			incDoc, ok := updateV.(*types.Document)
-			if !ok {
-				return false, NewWriteErrorMsg(
-					ErrFailedToParse,
-					fmt.Sprintf(
-						`Modifiers operate on fields but we found type string instead. `+
-							`For example: {$mod: {<field>: ...}} not {%s: %#v}`,
-						updateOp,
-						updateV,
-					),
-				)
-			}
+			// expecting here a document since all checks were made in ValidateUpdateOperators func
+			incDoc := updateV.(*types.Document)
 
 			for _, incKey := range incDoc.Keys() {
 				if strings.ContainsRune(incKey, '.') {
