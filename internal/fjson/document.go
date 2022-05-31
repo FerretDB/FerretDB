@@ -125,7 +125,7 @@ var (
 	_ fjsontype = (*documentType)(nil)
 )
 
-// validateDoubleKeys checks duplicate keys in document
+// validateDoubleKeys checks duplicate keys in document.
 func (doc *documentType) validateDoubleKeys() bool {
 	td := types.Document(*doc)
 	keys := td.Keys()
