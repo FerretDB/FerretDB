@@ -11,12 +11,12 @@ func _() {
 	_ = x[Equal-0]
 	_ = x[Less - -1]
 	_ = x[Greater-1]
-	_ = x[NotEqual-127]
+	_ = x[Incomparable-127]
 }
 
 const (
 	_CompareResult_name_0 = "<==>"
-	_CompareResult_name_1 = "!="
+	_CompareResult_name_1 = "≹"
 )
 
 var (

@@ -61,6 +61,9 @@ const (
 	// ErrSortBadValue indicates bad value in sort input.
 	ErrSortBadValue = ErrorCode(15974) // Location15974
 
+	// ErrSortBadOrder indicates bad sort order input.
+	ErrSortBadOrder = ErrorCode(15975) // Location15975
+
 	// ErrInvalidArg indicates invalid argument in projection document.
 	ErrInvalidArg = ErrorCode(28667) // Location28667
 
