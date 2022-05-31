@@ -476,7 +476,7 @@ func TestCurrentDate(t *testing.T) {
 		stat   *mongo.UpdateResult
 		alt    string
 	}{
-		"true": {
+		"True": {
 			id:     "double",
 			update: bson.D{{"$currentDate", bson.D{{"value", true}}}},
 			stat: &mongo.UpdateResult{
@@ -485,7 +485,16 @@ func TestCurrentDate(t *testing.T) {
 				UpsertedCount: 0,
 			},
 		},
-		"false": {
+		"TwoTrue": {
+			id:     "double",
+			update: bson.D{{"$currentDate", bson.D{{"value", true}, {"unexistent", true}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+		},
+		"False": {
 			id:     "double",
 			update: bson.D{{"$currentDate", bson.D{{"value", false}}}},
 			stat: &mongo.UpdateResult{
@@ -494,7 +503,7 @@ func TestCurrentDate(t *testing.T) {
 				UpsertedCount: 0,
 			},
 		},
-		"int32": {
+		"Int32": {
 			id:     "double",
 			update: bson.D{{"$currentDate", bson.D{{"value", int32(1)}}}},
 			err: &mongo.WriteError{
@@ -502,7 +511,7 @@ func TestCurrentDate(t *testing.T) {
 				Message: "int is not valid type for $currentDate. Please use a boolean ('true') or a $type expression ({$type: 'timestamp/date'}).",
 			},
 		},
-		"timestamp": {
+		"Timestamp": {
 			id:     "double",
 			update: bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "timestamp"}}}}}},
 			stat: &mongo.UpdateResult{
@@ -511,7 +520,7 @@ func TestCurrentDate(t *testing.T) {
 				UpsertedCount: 0,
 			},
 		},
-		"Timestamp": {
+		"TimestampCapitalised": {
 			id:     "double",
 			update: bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "Timestamp"}}}}}},
 			err: &mongo.WriteError{
@@ -519,7 +528,7 @@ func TestCurrentDate(t *testing.T) {
 				Message: "The '$type' string field is required to be 'date' or 'timestamp': {$currentDate: {field : {$type: 'date'}}}",
 			},
 		},
-		"date": {
+		"Date": {
 			id:     "double",
 			update: bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "date"}}}}}},
 			stat: &mongo.UpdateResult{
@@ -528,7 +537,7 @@ func TestCurrentDate(t *testing.T) {
 				UpsertedCount: 0,
 			},
 		},
-		"no-field": {
+		"NoField": {
 			id:     "double",
 			update: bson.D{{"$currentDate", bson.D{{"unexsistent", bson.D{{"$type", "date"}}}}}},
 			stat: &mongo.UpdateResult{
@@ -538,7 +547,7 @@ func TestCurrentDate(t *testing.T) {
 			},
 			path: []string{"unexsistent"},
 		},
-		"empty-operand-expression": {
+		"EmptyOperandExpression": {
 			id:     "double",
 			update: bson.D{{"$currentDate", bson.D{}}},
 			stat: &mongo.UpdateResult{
@@ -548,7 +557,7 @@ func TestCurrentDate(t *testing.T) {
 			},
 			result: bson.D{{"_id", "double"}, {"value", float64(42.13)}},
 		},
-		"unrecognized-option": {
+		"UnrecognizedOption": {
 			id: "array",
 			update: bson.D{{
 				"$currentDate",
@@ -594,6 +603,11 @@ func TestCurrentDate(t *testing.T) {
 			if len(tc.path) == 0 {
 				tc.path = []string{"value"}
 			}
+
+			// TODO replace palceholder that shapes errors if other paths were modified.
+			t.Log(actual)
+
+			t.FailNow()
 			actualVal, err := ConvertDocument(t, actual).GetByPath(types.NewPath(tc.path))
 			require.NoError(t, err)
 

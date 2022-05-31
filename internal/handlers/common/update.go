@@ -30,6 +30,16 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 		updateV := must.NotFail(update.Get(updateOp))
 
 		switch updateOp {
+		case "$curentDate":
+			dateDoc := updateV.(types.Document)
+
+			sort.Strings(dateDoc.Keys())
+			for _, setKey := range dateDoc.Keys() {
+				setValue := must.NotFail(dateDoc.Get(setKey))
+				if err := doc.Set(setKey, setValue); err != nil {
+					return false, err
+				}
+			}
 		case "$set":
 
 			switch setDoc := updateV.(type) {
