@@ -32,18 +32,15 @@ import (
 type CompareResult int8
 
 // Values match results of comparison functions such as bytes.Compare.
-// They do not match MongoDB `sort` values where 1 means ascending order and -1 means descending.
+// They do not match MongoDB SortType values where 1 means ascending order and -1 means descending.
 const (
-	Equal   CompareResult = 0  // ==
-	Less    CompareResult = -1 // <
-	Greater CompareResult = 1  // >
-
-	// TODO Remove once it is no longer needed.
-	// It should not be needed.
-	NotEqual CompareResult = 127 // !=
+	Equal        CompareResult = 0   // ==
+	Less         CompareResult = -1  // <
+	Greater      CompareResult = 1   // >
+	Incomparable CompareResult = 127 // ≹
 )
 
-// Compare compares any BSON values in the same way as MongoDB does it for filtering or sorting.
+// Compare compares any BSON values in the same way as MongoDB does it for filtering.
 //
 // It converts types as needed; that may result in different types being equal.
 // For that reason, it typically should not be used in tests.
@@ -60,7 +57,7 @@ func Compare(v1, v2 any) CompareResult {
 	switch v1 := v1.(type) {
 	case *Document:
 		// TODO: implement document comparing
-		return NotEqual
+		return Incomparable
 
 	case *Array:
 		for i := 0; i < v1.Len(); i++ {
@@ -70,11 +67,11 @@ func Compare(v1, v2 any) CompareResult {
 				continue
 			}
 
-			if res := compareScalars(v, v2); res != NotEqual {
+			if res := compareScalars(v, v2); res != Incomparable {
 				return res
 			}
 		}
-		return NotEqual
+		return Incomparable
 
 	default:
 		return compareScalars(v1, v2)
@@ -99,7 +96,7 @@ func compareScalars(v1, v2 any) CompareResult {
 		case int64:
 			return compareNumbers(v1, v2)
 		default:
-			return NotEqual
+			return Incomparable
 		}
 
 	case string:
@@ -107,12 +104,12 @@ func compareScalars(v1, v2 any) CompareResult {
 		if ok {
 			return compareOrdered(v1, v2)
 		}
-		return NotEqual
+		return Incomparable
 
 	case Binary:
 		v2, ok := v2.(Binary)
 		if !ok {
-			return NotEqual
+			return Incomparable
 		}
 		v1l, v2l := len(v1.B), len(v2.B)
 		if v1l != v2l {
@@ -126,14 +123,14 @@ func compareScalars(v1, v2 any) CompareResult {
 	case ObjectID:
 		v2, ok := v2.(ObjectID)
 		if !ok {
-			return NotEqual
+			return Incomparable
 		}
 		return CompareResult(bytes.Compare(v1[:], v2[:]))
 
 	case bool:
 		v2, ok := v2.(bool)
 		if !ok {
-			return NotEqual
+			return Incomparable
 		}
 		if v1 == v2 {
 			return Equal
@@ -146,7 +143,7 @@ func compareScalars(v1, v2 any) CompareResult {
 	case time.Time:
 		v2, ok := v2.(time.Time)
 		if !ok {
-			return NotEqual
+			return Incomparable
 		}
 		return compareOrdered(v1.UnixMilli(), v2.UnixMilli())
 
@@ -155,14 +152,16 @@ func compareScalars(v1, v2 any) CompareResult {
 		if ok {
 			return Equal
 		}
-		return NotEqual
+		return Incomparable
 
 	case Regex:
 		v2, ok := v2.(Regex)
-		if ok && v1 == v2 {
-			return Equal
+		if ok {
+			v1 := must.NotFail(v1.Compile())
+			v2 := must.NotFail(v2.Compile())
+			return compareOrdered(v1.String(), v2.String())
 		}
-		return NotEqual
+		return Incomparable
 
 	case int32:
 		switch v2 := v2.(type) {
@@ -173,7 +172,7 @@ func compareScalars(v1, v2 any) CompareResult {
 		case int64:
 			return compareOrdered(int64(v1), v2)
 		default:
-			return NotEqual
+			return Incomparable
 		}
 
 	case Timestamp:
@@ -181,7 +180,7 @@ func compareScalars(v1, v2 any) CompareResult {
 		if ok {
 			return compareOrdered(v1, v2)
 		}
-		return NotEqual
+		return Incomparable
 
 	case int64:
 		switch v2 := v2.(type) {
@@ -192,7 +191,7 @@ func compareScalars(v1, v2 any) CompareResult {
 		case int64:
 			return compareOrdered(v1, v2)
 		default:
-			return NotEqual
+			return Incomparable
 		}
 	}
 
@@ -213,7 +212,7 @@ func compareEnsureScalar(v any) {
 	panic(fmt.Sprintf("non-scalar type %T", v))
 }
 
-// compareInvert swaps Less and Greater, keeping Equal and NotEqual.
+// compareInvert swaps Less and Greater, keeping Equal and Incomparable.
 func compareInvert(res CompareResult) CompareResult {
 	switch res {
 	case Equal:
@@ -222,8 +221,8 @@ func compareInvert(res CompareResult) CompareResult {
 		return Greater
 	case Greater:
 		return Less
-	case NotEqual:
-		return NotEqual
+	case Incomparable:
+		return Incomparable
 	}
 
 	panic("not reached")
@@ -239,14 +238,14 @@ func compareOrdered[T constraints.Ordered](a, b T) CompareResult {
 	case a > b:
 		return Greater
 	default:
-		return NotEqual
+		return Incomparable
 	}
 }
 
 // compareNumbers compares BSON numbers.
 func compareNumbers(a float64, b int64) CompareResult {
 	if math.IsNaN(a) {
-		return NotEqual
+		return Incomparable
 	}
 
 	// TODO figure out correct precision

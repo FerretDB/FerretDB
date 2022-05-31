@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"go.uber.org/zap"
 
@@ -129,8 +130,8 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			}
 
 			doc := q.DeepCopy()
-			if err = common.UpdateDocument(doc, u); err != nil {
-				return nil, lazyerrors.Error(err)
+			if _, err = common.UpdateDocument(doc, u); err != nil {
+				return nil, err
 			}
 			if !doc.Has("_id") {
 				must.NoError(doc.Set("_id", types.NewObjectID()))
@@ -159,18 +160,19 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		matched += int32(len(resDocs))
 
 		for _, doc := range resDocs {
-			if err = common.UpdateDocument(doc, u); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			sql := "UPDATE " + pgx.Identifier{sp.db, sp.collection}.Sanitize() +
-				" SET _jsonb = $1 WHERE _jsonb->'_id' = $2"
-			id := must.NotFail(doc.Get("_id"))
-			tag, err := h.pgPool.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)), must.NotFail(fjson.Marshal(id)))
+			changed, err := common.UpdateDocument(doc, u)
 			if err != nil {
 				return nil, err
 			}
 
+			if !changed {
+				continue
+			}
+
+			tag, err := h.update(ctx, sp, doc)
+			if err != nil {
+				return nil, err
+			}
 			modified += int32(tag.RowsAffected())
 		}
 	}
@@ -193,4 +195,16 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	return &reply, nil
+}
+
+// update prepares and executes actual UPDATE request to Postgres.
+func (h *Handler) update(ctx context.Context, sp sqlParam, doc *types.Document) (pgconn.CommandTag, error) {
+	sql := "UPDATE " + pgx.Identifier{sp.db, sp.collection}.Sanitize() +
+		" SET _jsonb = $1 WHERE _jsonb->'_id' = $2"
+	id := must.NotFail(doc.Get("_id"))
+	tag, err := h.pgPool.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)), must.NotFail(fjson.Marshal(id)))
+	if err != nil {
+		return nil, err
+	}
+	return tag, nil
 }
