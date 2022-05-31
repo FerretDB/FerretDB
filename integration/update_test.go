@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -470,6 +471,7 @@ func TestUpdateRename(t *testing.T) {
 		expected map[string]any
 		err      *mongo.WriteError
 	}{
+
 		"rename_oneField": {
 			filter: bson.D{{"_id", "1"}},
 			update: bson.D{{"$rename", bson.D{{"name", "nickname"}}}},
@@ -492,7 +494,35 @@ func TestUpdateRename(t *testing.T) {
 				Code:    2,
 				Message: `The 'to' field for $rename must be a string: name: 1`,
 			}},
-		"rename_string": {
+		"rename_fieldDoc": {
+			filter: bson.D{{"_id", "1"}},
+			update: bson.D{{"$rename", bson.D{{"name", primitive.D{{}}}}}},
+			err: &mongo.WriteError{
+				Code:    2,
+				Message: `The 'to' field for $rename must be a string: name: { : null }`,
+			}},
+		"rename_fieldArray": {
+			filter: bson.D{{"_id", "1"}},
+			update: bson.D{{"$rename", bson.D{{"name", primitive.A{}}}}},
+			err: &mongo.WriteError{
+				Code:    2,
+				Message: `The 'to' field for $rename must be a string: name: []`,
+			}},
+		"rename_fieldNaN": {
+			filter: bson.D{{"_id", "1"}},
+			update: bson.D{{"$rename", bson.D{{"name", math.NaN()}}}},
+			err: &mongo.WriteError{
+				Code:    2,
+				Message: `The 'to' field for $rename must be a string: name: nan.0`,
+			}},
+		// "rename_fieldNil": {
+		// 	filter: bson.D{{"_id", "1"}},
+		// 	update: bson.D{{"$rename", bson.D{{"name", nil}}}},
+		// 	err: &mongo.WriteError{
+		// 		Code:    2,
+		// 		Message: `The 'to' field for $rename must be a string: name: null`,
+		// 	}},
+		"rename_String": {
 			filter: bson.D{{"_id", "1"}},
 			update: bson.D{{"$rename", "string"}},
 			err: &mongo.WriteError{
@@ -500,6 +530,15 @@ func TestUpdateRename(t *testing.T) {
 				Message: `Modifiers operate on fields but we found type string instead.` +
 					` For example: {$mod: {<field>: ...}} not {$rename: "string"}`,
 			}},
+		"rename_Nil": {
+			filter: bson.D{{"_id", "1"}},
+			update: bson.D{{"$rename", nil}},
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: `Modifiers operate on fields but we found type null instead.` +
+					` For example: {$mod: {<field>: ...}} not {$rename: null}`,
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
