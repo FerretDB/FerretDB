@@ -462,7 +462,7 @@ func TestUpdateSet(t *testing.T) {
 	}
 }
 
-func TestSetOnInsert(t *testing.T) {
+func TestUpdateSetOnInsertOperator(t *testing.T) {
 	t.Parallel()
 
 	notModified := &mongo.UpdateResult{
@@ -558,12 +558,11 @@ func TestSetOnInsert(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			var err error
 			ctx, collection := setup(t)
 
 			opts := options.Update().SetUpsert(true)
 			var res *mongo.UpdateResult
-			res, err = collection.UpdateOne(ctx, tc.filter, bson.D{{"$setOnInsert", tc.setOnInsert}}, opts)
+			res, err := collection.UpdateOne(ctx, tc.filter, bson.D{{"$setOnInsert", tc.setOnInsert}}, opts)
 			if tc.err != nil {
 				require.Nil(t, tc.res)
 				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
@@ -639,8 +638,8 @@ func TestSetOnInsertMore(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			ctx, collection := setup(t)
-			var err error
-			_, err = collection.InsertMany(ctx, []any{
+
+			_, err := collection.InsertMany(ctx, []any{
 				bson.D{{"_id", "string"}, {"value", "foo"}},
 			})
 			require.NoError(t, err)
