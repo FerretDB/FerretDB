@@ -479,27 +479,27 @@ func TestUpdateSetOnInsertOperator(t *testing.T) {
 		err         *mongo.WriteError
 		alt         string
 	}{
-		"doc": {
+		"Doc": {
 			filter:      bson.D{{"_id", "doc"}},
 			setOnInsert: bson.D{{"value", bson.D{}}},
 			res:         bson.D{{"_id", "doc"}, {"value", bson.D{}}},
 		},
-		"array": {
+		"Array": {
 			filter:      bson.D{{"_id", "array"}},
 			setOnInsert: bson.D{{"value", bson.A{}}},
 			res:         bson.D{{"_id", "array"}, {"value", bson.A{}}},
 		},
-		"nil": {
+		"Nil": {
 			filter:      bson.D{{"_id", "nil"}},
 			setOnInsert: bson.D{{"value", nil}},
 			res:         bson.D{{"_id", "nil"}, {"value", nil}},
 		},
-		"empty-doc": {
+		"EmptyDoc": {
 			filter:      bson.D{{"_id", "doc"}},
 			setOnInsert: bson.D{},
 			res:         bson.D{{"_id", "doc"}},
 		},
-		"empty-array": {
+		"EmptyArray": {
 			filter:      bson.D{{"_id", "array"}},
 			setOnInsert: bson.A{},
 			err: &mongo.WriteError{
@@ -510,7 +510,7 @@ func TestUpdateSetOnInsertOperator(t *testing.T) {
 			alt: "Modifiers operate on fields but we found type array instead. " +
 				"For example: {$mod: {<field>: ...}} not {$setOnInsert: array}",
 		},
-		"double-double": {
+		"DoubleDouble": {
 			filter:      bson.D{{"_id", "double"}},
 			setOnInsert: 43.13,
 			err: &mongo.WriteError{
@@ -521,7 +521,7 @@ func TestUpdateSetOnInsertOperator(t *testing.T) {
 			alt: "Modifiers operate on fields but we found type double instead. " +
 				"For example: {$mod: {<field>: ...}} not {$setOnInsert: double}",
 		},
-		"err-NaN": {
+		"ErrNaN": {
 			filter:      bson.D{{"_id", "double-nan"}},
 			setOnInsert: math.NaN(),
 			err: &mongo.WriteError{
@@ -532,7 +532,7 @@ func TestUpdateSetOnInsertOperator(t *testing.T) {
 			alt: "Modifiers operate on fields but we found type double instead. " +
 				"For example: {$mod: {<field>: ...}} not {$setOnInsert: double}",
 		},
-		"err-string": {
+		"ErrString": {
 			filter:      bson.D{{"_id", "string"}},
 			setOnInsert: "any string",
 			err: &mongo.WriteError{
@@ -543,7 +543,7 @@ func TestUpdateSetOnInsertOperator(t *testing.T) {
 			alt: "Modifiers operate on fields but we found type string instead. " +
 				"For example: {$mod: {<field>: ...}} not {$setOnInsert: string}",
 		},
-		"err-nil": {
+		"ErrNil": {
 			filter:      bson.D{{"_id", "nil"}},
 			setOnInsert: nil,
 			err: &mongo.WriteError{
@@ -588,7 +588,7 @@ func TestUpdateSetOnInsertOperator(t *testing.T) {
 	}
 }
 
-func TestSetOnInsertMore(t *testing.T) {
+func TestUpdateMany(t *testing.T) {
 	t.Parallel()
 
 	notModified := &mongo.UpdateResult{
@@ -603,9 +603,8 @@ func TestSetOnInsertMore(t *testing.T) {
 		stat   *mongo.UpdateResult
 		res    bson.D
 		err    *mongo.WriteError
-		alt    string
 	}{
-		"setoninsert-set": {
+		"SetSetOnInsert": {
 			filter: bson.D{{"_id", "test"}},
 			query: bson.D{
 				{"$set", bson.D{{"foo", int32(12)}}},
@@ -613,7 +612,7 @@ func TestSetOnInsertMore(t *testing.T) {
 			},
 			res: bson.D{{"_id", "test"}, {"foo", int32(12)}, {"value", math.NaN()}},
 		},
-		"trio": {
+		"SetIncSetOnInsert": {
 			filter: bson.D{{"_id", "test"}},
 			query: bson.D{
 				{"$set", bson.D{{"foo", int32(12)}}},
@@ -625,7 +624,7 @@ func TestSetOnInsertMore(t *testing.T) {
 				Message: "Updating the path 'foo' would create a conflict at 'foo'",
 			},
 		},
-		"unknown-operator": {
+		"UnknownOperator": {
 			filter: bson.D{{"_id", "test"}},
 			query:  bson.D{{"$foo", bson.D{{"foo", int32(1)}}}},
 			err: &mongo.WriteError{
@@ -650,7 +649,7 @@ func TestSetOnInsertMore(t *testing.T) {
 
 			if tc.err != nil {
 				require.Nil(t, tc.res)
-				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
+				AssertEqualWriteError(t, *tc.err, err)
 				return
 			}
 

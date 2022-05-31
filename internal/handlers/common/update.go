@@ -127,16 +127,16 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 // ValidateUpdateQuery validates update statement.
 func ValidateUpdateQuery(update *types.Document) (err error) {
-	set, err := getDocument("$set", update)
+	set, err := getUpdateOperatorDocument("$set", update)
 	if err != nil {
 		return err
 	}
-	_, err = getDocument("$setOnInsert", update)
+	_, err = getUpdateOperatorDocument("$setOnInsert", update)
 	if err != nil {
 		return err
 	}
 
-	inc, err := getDocument("$inc", update)
+	inc, err := getUpdateOperatorDocument("$inc", update)
 	if err != nil {
 		return err
 	}
@@ -169,8 +169,8 @@ func ValidateUpdateQuery(update *types.Document) (err error) {
 	return nil
 }
 
-// getDocument gets document by key `op` and returns WriteError error if it is not a document.
-func getDocument(op string, update *types.Document) (*types.Document, error) {
+// getUpdateOperatorDocument gets document by key `op` and returns WriteError error if it is not a document.
+func getUpdateOperatorDocument(op string, update *types.Document) (*types.Document, error) {
 	if !update.Has(op) {
 		return nil, nil
 	}
