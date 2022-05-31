@@ -51,7 +51,7 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 	}
 
 	switch header.OpCode {
-	case OpCodeReply:
+	case OpCodeReply: // not sent by clients, but we should be able to read replies from a proxy
 		var reply OpReply
 		if err := reply.UnmarshalBinary(b); err != nil {
 			return nil, nil, lazyerrors.Error(err)
@@ -88,10 +88,10 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 	case OpCodeKillCursors:
 		fallthrough
 	case OpCodeCompressed:
-		fallthrough
+		return nil, nil, lazyerrors.Errorf("unhandled opcode %s", header.OpCode)
 
 	default:
-		return nil, nil, lazyerrors.Errorf("unhandled opcode %s", header.OpCode)
+		return nil, nil, lazyerrors.Errorf("unexpected opcode %s", header.OpCode)
 	}
 }
 

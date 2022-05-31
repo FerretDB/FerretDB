@@ -16,18 +16,15 @@
 package pg
 
 import (
-	"context"
-	"errors"
 	"time"
 
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// Handler data struct.
+// Handler implements handlers.Interface on top of PostgreSQL.
 type Handler struct {
 	// TODO replace those fields with
 	// opts *NewOpts
@@ -46,7 +43,7 @@ type NewOpts struct {
 }
 
 // New returns a new handler.
-func New(opts *NewOpts) common.Handler {
+func New(opts *NewOpts) handlers.Interface {
 	return &Handler{
 		pgPool:    opts.PgPool,
 		l:         opts.L,
@@ -55,17 +52,12 @@ func New(opts *NewOpts) common.Handler {
 	}
 }
 
-// MsgDebugError used for debugging purposes.
-func (h *Handler) MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, errors.New("debug_error")
-}
-
-// MsgDebugPanic used for debugging purposes.
-func (h *Handler) MsgDebugPanic(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	panic("debug_panic")
-}
-
-// Close prepares handler for graceful shutdown: closes connections, channels etc.
+// Close implements HandlerInterface.
 func (h *Handler) Close() {
 	h.pgPool.Close()
 }
+
+// check interfaces
+var (
+	_ handlers.Interface = (*Handler)(nil)
+)

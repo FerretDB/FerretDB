@@ -40,7 +40,12 @@ var (
 	branch string
 )
 
-// Info contains current build details.
+// MongoDBVersion is a fake MongoDB version for clients that check major.minor to adjust their behavior.
+const MongoDBVersion = "5.0.42"
+
+// MongoDBVersionArray is MongoDBVersion, but as an array.
+var MongoDBVersionArray = must.NotFail(types.NewArray(int32(5), int32(0), int32(42), int32(0)))
+
 type Info struct {
 	Version          string
 	Commit           string
