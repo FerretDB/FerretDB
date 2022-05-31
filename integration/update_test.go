@@ -494,6 +494,14 @@ func TestCurrentDate(t *testing.T) {
 				UpsertedCount: 0,
 			},
 		},
+		"int32": {
+			id:     "double",
+			update: bson.D{{"$currentDate", bson.D{{"value", int32(1)}}}},
+			err: &mongo.WriteError{
+				Code:    2,
+				Message: "int is not valid type for $currentDate. Please use a boolean ('true') or a $type expression ({$type: 'timestamp/date'}).",
+			},
+		},
 		"timestamp": {
 			id:     "double",
 			update: bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "timestamp"}}}}}},
@@ -507,7 +515,7 @@ func TestCurrentDate(t *testing.T) {
 			id:     "double",
 			update: bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "Timestamp"}}}}}},
 			err: &mongo.WriteError{
-				Code:    0,
+				Code:    2,
 				Message: "The '$type' string field is required to be 'date' or 'timestamp': {$currentDate: {field : {$type: 'date'}}}",
 			},
 		},
@@ -552,7 +560,7 @@ func TestCurrentDate(t *testing.T) {
 				}},
 			}},
 			err: &mongo.WriteError{
-				Code:    0,
+				Code:    2,
 				Message: "Unrecognized $currentDate option: array",
 			},
 		},
