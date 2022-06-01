@@ -24,6 +24,53 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// processCurrentdateFieldExpression changes document according to $currentDate operator.
+func processCurrentdateFieldExpression(doc *types.Document, currentDateExpression any) (bool, error) {
+	switch currentDateExpression := currentDateExpression.(type) {
+	case *types.Document:
+		now := time.Now()
+		sort.Strings(currentDateExpression.Keys())
+
+		for _, field := range currentDateExpression.Keys() {
+			setValue := must.NotFail(currentDateExpression.Get(field))
+			switch setValue := setValue.(type) {
+			case bool:
+				if err := doc.Set(field, now); err != nil {
+					return false, err
+				}
+
+			case *types.Document:
+				currentDateType, err := setValue.Get("$type")
+				if err != nil { // default is date
+					if err := doc.Set(field, now); err != nil {
+						return false, err
+					}
+					continue
+				}
+				switch currentDateType := currentDateType.(type) {
+				case string:
+					switch currentDateType {
+					case "timestamp":
+						if err := doc.Set(field, now.UnixNano()); err != nil {
+							return false, err
+						}
+					case "date":
+						if err := doc.Set(field, now); err != nil {
+							return false, err
+						}
+					default:
+						return false, NewWriteErrorMsg(ErrBadValue, "The '$type' string field is required to be 'date' or 'timestamp'")
+					}
+				default:
+					return false, NewWriteErrorMsg(ErrBadValue, "The '$type' string field is required to be 'date' or 'timestamp'")
+				}
+			default:
+				return false, NewWriteErrorMsg(ErrBadValue, "The '$type' string field is required to be 'date' or 'timestamp'")
+			}
+		}
+	}
+}
+
 // UpdateDocument updates the given document with a series of update operators.
 // Returns true if document was changed.
 func UpdateDocument(doc, update *types.Document) (bool, error) {
@@ -32,47 +79,8 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 		switch updateOp {
 		case "$curentDate":
-			dateDoc, ok := updateV.(types.Document)
-			if !ok {
-			}
-
-			sort.Strings(dateDoc.Keys())
-			for _, setKey := range dateDoc.Keys() {
-				now := time.Now()
-				setValue := must.NotFail(dateDoc.Get(setKey))
-				switch setValue := setValue.(type) {
-				case bool:
-					if err := doc.Set(setKey, now); err != nil {
-						return false, err
-					}
-
-				case *types.Document:
-					currentDateType, err := setValue.Get("$type")
-					if err != nil {
-						// default is date
-						if err := doc.Set(setKey, now); err != nil {
-							return false, err
-						}
-					}
-					switch currentDateType := currentDateType.(type) {
-					case string:
-						switch currentDateType {
-						case "timestamp":
-							if err := doc.Set(setKey, now.UnixNano()); err != nil {
-								return false, err
-							}
-						case "date":
-							if err := doc.Set(setKey, now); err != nil {
-								return false, err
-							}
-						default:
-							return false, NewWriteErrorMsg(ErrBadValue, "The '$type' string field is required to be 'date' or 'timestamp'")
-						}
-					default:
-						return false, NewWriteErrorMsg(ErrBadValue, "The '$type' string field is required to be 'date' or 'timestamp'")
-					}
-				}
-
+			if err := processCurrentdateFieldExpression(doc, updateV); err != nil {
+				return false, err
 			}
 		case "$set":
 

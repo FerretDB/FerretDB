@@ -476,6 +476,46 @@ func TestCurrentDate(t *testing.T) {
 		stat   *mongo.UpdateResult
 		alt    string
 	}{
+		"DocumentEmpty": {
+			id:     "double",
+			update: bson.D{{"$currentDate", bson.D{}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 0,
+				UpsertedCount: 0,
+			},
+			result: bson.D{{"_id", "double"}, {"value", float64(42.13)}},
+		},
+		"Array": {
+			id:     "double",
+			update: bson.D{{"$currentDate", bson.A{}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 0,
+				UpsertedCount: 0,
+			},
+			result: bson.D{{"_id", "double"}, {"value", float64(42.13)}},
+		},
+		"WrongInt32": {
+			id:     "double",
+			update: bson.D{{"$currentDate", int32(1)}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 0,
+				UpsertedCount: 0,
+			},
+			result: bson.D{{"_id", "double"}, {"value", float64(42.13)}},
+		},
+		"Nil": {
+			id:     "double",
+			update: bson.D{{"$currentDate", nil}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 0,
+				UpsertedCount: 0,
+			},
+			result: bson.D{{"_id", "double"}, {"value", float64(42.13)}},
+		},
 		"True": {
 			id:     "double",
 			update: bson.D{{"$currentDate", bson.D{{"value", true}}}},
@@ -502,36 +542,6 @@ func TestCurrentDate(t *testing.T) {
 				ModifiedCount: 1,
 				UpsertedCount: 0,
 			},
-		},
-		"Nil": {
-			id:     "double",
-			update: bson.D{{"$currentDate", nil}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 0,
-				UpsertedCount: 0,
-			},
-			result: bson.D{{"_id", "double"}, {"value", float64(42.13)}},
-		},
-		"DocumentEmpty": {
-			id:     "double",
-			update: bson.D{{"$currentDate", bson.D{}}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 0,
-				UpsertedCount: 0,
-			},
-			result: bson.D{{"_id", "double"}, {"value", float64(42.13)}},
-		},
-		"Array": {
-			id:     "double",
-			update: bson.D{{"$currentDate", bson.A{}}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 0,
-				UpsertedCount: 0,
-			},
-			result: bson.D{{"_id", "double"}, {"value", float64(42.13)}},
 		},
 		"Int32": {
 			id:     "double",
