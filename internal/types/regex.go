@@ -33,7 +33,7 @@ var (
 	// ErrInvalidEscape indicates invalid escape errors.
 	ErrInvalidEscape = fmt.Errorf("Regular expression is invalid: PCRE does not support \\L, \\l, \\N{name}, \\U, or \\u")
 
-	// ErrMissingTerminator indicates syntax error in subpattern name (missing terminator)..
+	// ErrMissingTerminator indicates syntax error in subpattern name (missing terminator).
 	ErrMissingTerminator = fmt.Errorf("Regular expression is invalid: syntax error in subpattern name (missing terminator)")
 
 	// ErrUnmatchedParentheses indicates unmatched parentheses.
