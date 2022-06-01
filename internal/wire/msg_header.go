@@ -72,8 +72,11 @@ type MsgHeader struct {
 }
 
 const (
+	// MsgHeaderLen is an expected len of the header.
 	MsgHeaderLen = 16
-	MaxMsgLen    = 48000000
+
+	// MaxMsgLen is the maximum message length.
+	MaxMsgLen = 48000000
 )
 
 func (msg *MsgHeader) readFrom(r *bufio.Reader) error {
