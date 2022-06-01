@@ -20,6 +20,7 @@ import (
 	"testing"
 )
 
+// Ctx returns test context.
 func Ctx(tb testing.TB) context.Context {
 	tb.Helper()
 
