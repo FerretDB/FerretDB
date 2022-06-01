@@ -509,12 +509,12 @@ func TestCurrentDate(t *testing.T) {
 		"Nil": {
 			id:     "double",
 			update: bson.D{{"$currentDate", nil}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 0,
-				UpsertedCount: 0,
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type null instead. " +
+					"For example: {$mod: {<field>: ...}} not {$currentDate: null}",
 			},
-			result: bson.D{{"_id", "double"}, {"value", float64(42.13)}},
+			alt: "Modifiers operate on fields but we found another type instead",
 		},
 		"True": {
 			id:     "double",
