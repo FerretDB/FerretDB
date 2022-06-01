@@ -54,6 +54,7 @@ linters-settings:
     checks: ["all"]
   # govet
   # ineffassign
+
   lll:
     line-length: 130
     tab-width: 4
@@ -90,13 +91,13 @@ linters:
     - gosimple
     - govet
     - ineffassign
+    - revive
     - lll
     - misspell
     - nolintlint
     - staticcheck
     - unused
     - whitespace
-    - revive
 
 issues:
   exclude-use-default: false
