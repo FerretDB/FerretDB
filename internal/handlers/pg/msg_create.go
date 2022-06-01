@@ -68,6 +68,10 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
+	if err := common.UnsupportedDot(collection); err != nil {
+		return nil, err
+	}
+
 	if err := h.pgPool.CreateSchema(ctx, db); err != nil && err != pgdb.ErrAlreadyExist {
 		return nil, lazyerrors.Error(err)
 	}
