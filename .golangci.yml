@@ -58,7 +58,6 @@ linters-settings:
     ignore-generated-header: true
     severity: warning
     enableAllRules: true
-
   lll:
     line-length: 130
     tab-width: 4
@@ -95,10 +94,10 @@ linters:
     - gosimple
     - govet
     - ineffassign
-    - revive
     - lll
     - misspell
     - nolintlint
+    - revive
     - staticcheck
     - unused
     - whitespace
