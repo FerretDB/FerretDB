@@ -45,6 +45,15 @@ func processCurrentdateFieldExpression(doc *types.Document, currentDateExpressio
 				changed = true
 
 			case *types.Document:
+				for _, k := range setValue.Keys() {
+					if k != "$type" {
+						return false,
+							NewWriteErrorMsg(
+								ErrBadValue,
+								fmt.Sprintf("Unrecognized $currentDate option: %s", k),
+							)
+					}
+				}
 				currentDateType, err := setValue.Get("$type")
 				if err != nil { // default is date
 					if err := doc.Set(field, now); err != nil {

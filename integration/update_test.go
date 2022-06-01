@@ -610,18 +610,6 @@ func TestCurrentDate(t *testing.T) {
 				Message: "Unrecognized $currentDate option: array",
 			},
 		},
-		"NestedFields": {
-			id: "document-composite",
-			update: bson.D{{
-				"value",
-				bson.D{{
-					"document",
-					bson.D{{
-						"$currentDate", bson.D{{"unexsistent", bson.D{}}},
-					}},
-				}},
-			}},
-		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {

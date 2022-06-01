@@ -234,39 +234,3 @@ func CollectKeys(t testing.TB, doc bson.D) []string {
 
 	return res
 }
-
-// // checkDate replaces end-value that equals `from` with `to`.
-// func checkDate(t testing.TB, v any, now time.Time, placeholder string, maxTimeDeltaSeconds float64) {
-// 	switch v := v.(type) {
-// 	case *types.Document:
-// 		for _, k := range v.Keys() {
-// 			val := must.NotFail(v.Get(k))
-
-// 			if k == placeholder {
-// 				assertDatesDeltaLess(t, val, now, maxTimeDeltaSeconds)
-// 			}
-
-// 			switch val := val.(type) {
-// 			case *types.Document:
-// 				if err := checkDate(val, from, to); err != nil {
-// 					return err
-// 				}
-// 			}
-// 		}
-
-// 	case *types.Array:
-// 		for i := 0; i < v.Len(); i++ {
-// 			elem, err := v.Get(i)
-// 			if err != nil {
-// 				continue
-// 			}
-// 			assertDatesDeltaLess(t, val, now, maxTimeDeltaSeconds)
-// 		}
-// 	}
-// 	return nil
-// }
-
-// func assertDatesDeltaLess(t *testing.T, val time.Time, now time.Time, maxTimeDeltaSeconds float64) {
-// 	d := val.Sub(now)
-// 	assert.Less(t, math.Abs(d.Seconds()), maxTimeDeltaSeconds)
-// }
