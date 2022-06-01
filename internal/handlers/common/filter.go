@@ -243,11 +243,6 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 					return matchDocuments(exprValue, fieldValue), nil
 				}
 				return false, nil
-			case *types.Array:
-				if fieldValue, ok := fieldValue.(*types.Array); ok {
-					return types.CompareArrays(exprValue, fieldValue) == types.Equal, nil
-				}
-				return false, nil
 			default:
 				if types.Compare(fieldValue, exprValue) != types.Equal {
 					return false, nil
@@ -262,16 +257,8 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 					return !matchDocuments(exprValue, fieldValue), nil
 				}
 				return false, nil
-
-			case *types.Array:
-				if fieldValue, ok := fieldValue.(*types.Array); ok {
-					return types.CompareArrays(exprValue, fieldValue) != types.Equal, nil
-				}
-				return false, nil
-
 			case types.Regex:
 				return false, NewErrorMsg(ErrBadValue, "Can't have regex as arg to $ne.")
-
 			default:
 				if types.Compare(fieldValue, exprValue) == types.Equal {
 					return false, nil
@@ -332,11 +319,6 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				}
 
 				switch arrValue := must.NotFail(arr.Get(i)).(type) {
-				case *types.Array:
-					fieldValue, ok := fieldValue.(*types.Array)
-					if ok && types.CompareArrays(arrValue, fieldValue) == types.Equal {
-						found = true
-					}
 				case *types.Document:
 					for _, key := range arrValue.Keys() {
 						if strings.HasPrefix(key, "$") {
@@ -380,11 +362,6 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				}
 
 				switch arrValue := must.NotFail(arr.Get(i)).(type) {
-				case *types.Array:
-					fieldValue, ok := fieldValue.(*types.Array)
-					if ok && types.CompareArrays(arrValue, fieldValue) == types.Equal {
-						found = true
-					}
 				case *types.Document:
 					for _, key := range arrValue.Keys() {
 						if strings.HasPrefix(key, "$") {
