@@ -508,7 +508,7 @@ func TestUpdateRename(t *testing.T) {
 			altMessage: `The 'to' field for $rename must be a string: name: object`,
 		},
 
-		// TODO issues 673
+		// TODO issues #673
 		/* "FieldDoc": {
 			filter: bson.D{{"_id", "1"}},
 			update: bson.D{{"$rename", bson.D{{"name", bson.D{{}}}}}},
@@ -573,7 +573,7 @@ func TestUpdateRename(t *testing.T) {
 			update: bson.D{{"$rename", primitive.D{}}},
 		},
 
-		// TODO issues 673
+		// TODO issues #673
 		/* "RenameDoc_1": {
 			filter: bson.D{{"_id", "1"}},
 			update: bson.D{{"$rename", bson.D{{}}}},
