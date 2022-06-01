@@ -118,13 +118,15 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			if !ok {
 				return false, NewWriteErrorMsg(
 					ErrFailedToParse,
-					fmt.Sprintf(
-						`Modifiers operate on fields but we found type string instead. `+
-							`For example: {$mod: {<field>: ...}} not {%s: %#v}`,
-						updateOp,
-						updateV,
+					fmt.Sprintf(`Modifiers operate on fields but we found type %[1]s instead. `+
+						`For example: {$mod: {<field>: ...}} not {$rename: %[1]s}`,
+						AliasFromType(updateV),
 					),
 				)
+			}
+
+			if renameDoc.Len() == 0 {
+				return false, nil
 			}
 
 			renameMap := renameDoc.Map()
@@ -142,9 +144,8 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 						return false, NewWriteErrorMsg(
 							ErrBadValue,
 							fmt.Sprintf(
-								`The 'to' field for $rename must be a string: %s: %#v`,
-								renameKey,
-								newKey,
+								`The 'to' field for $rename must be a string: %s: %s`,
+								renameKey, AliasFromType(newKey),
 							),
 						)
 					}

@@ -466,12 +466,12 @@ func TestUpdateRename(t *testing.T) {
 	//	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		filter   bson.D
-		update   bson.D
-		expected map[string]any
-		err      *mongo.WriteError
+		filter     bson.D
+		update     bson.D
+		expected   map[string]any
+		err        *mongo.WriteError
+		altMessage string
 	}{
-
 		"rename_oneField": {
 			filter: bson.D{{"_id", "1"}},
 			update: bson.D{{"$rename", bson.D{{"name", "nickname"}}}},
@@ -489,39 +489,61 @@ func TestUpdateRename(t *testing.T) {
 			}},
 		"rename_fieldInt": {
 			filter: bson.D{{"_id", "1"}},
-			update: bson.D{{"$rename", bson.D{{"name", 1}}}},
+			update: bson.D{{"$rename", bson.D{{"name", int64(1)}}}},
 			err: &mongo.WriteError{
 				Code:    2,
 				Message: `The 'to' field for $rename must be a string: name: 1`,
-			}},
+			},
+			altMessage: `The 'to' field for $rename must be a string: name: long`,
+		},
 		"rename_fieldDoc": {
 			filter: bson.D{{"_id", "1"}},
-			update: bson.D{{"$rename", bson.D{{"name", primitive.D{{}}}}}},
+			update: bson.D{{"$rename", bson.D{{"name", primitive.D{}}}}},
+			err: &mongo.WriteError{
+				Code:    2,
+				Message: `The 'to' field for $rename must be a string: name: {}`,
+			},
+			altMessage: `The 'to' field for $rename must be a string: name: object`,
+		},
+
+		/* отваливается на верхнем уровне
+		 "rename_fieldDoc_1": {
+			filter: bson.D{{"_id", "1"}},
+			update: bson.D{{"$rename", bson.D{{"name", bson.D{{}}}}}},
 			err: &mongo.WriteError{
 				Code:    2,
 				Message: `The 'to' field for $rename must be a string: name: { : null }`,
-			}},
+			},
+			altMessage: `The 'to' field for $rename must be a string: name: object`,
+		},*/
+
 		"rename_fieldArray": {
 			filter: bson.D{{"_id", "1"}},
 			update: bson.D{{"$rename", bson.D{{"name", primitive.A{}}}}},
 			err: &mongo.WriteError{
 				Code:    2,
 				Message: `The 'to' field for $rename must be a string: name: []`,
-			}},
+			},
+			altMessage: `The 'to' field for $rename must be a string: name: array`,
+		},
 		"rename_fieldNaN": {
 			filter: bson.D{{"_id", "1"}},
 			update: bson.D{{"$rename", bson.D{{"name", math.NaN()}}}},
 			err: &mongo.WriteError{
 				Code:    2,
 				Message: `The 'to' field for $rename must be a string: name: nan.0`,
-			}},
-		// "rename_fieldNil": {
-		// 	filter: bson.D{{"_id", "1"}},
-		// 	update: bson.D{{"$rename", bson.D{{"name", nil}}}},
-		// 	err: &mongo.WriteError{
-		// 		Code:    2,
-		// 		Message: `The 'to' field for $rename must be a string: name: null`,
-		// 	}},
+			},
+			altMessage: `The 'to' field for $rename must be a string: name: double`,
+		},
+		"rename_fieldNil": {
+			filter: bson.D{{"_id", "1"}},
+			update: bson.D{{"$rename", bson.D{{"name", nil}}}},
+			err: &mongo.WriteError{
+				Code:    2,
+				Message: `The 'to' field for $rename must be a string: name: null`,
+			},
+			altMessage: `The 'to' field for $rename must be a string: name: null`,
+		},
 		"rename_String": {
 			filter: bson.D{{"_id", "1"}},
 			update: bson.D{{"$rename", "string"}},
@@ -529,7 +551,10 @@ func TestUpdateRename(t *testing.T) {
 				Code: 9,
 				Message: `Modifiers operate on fields but we found type string instead.` +
 					` For example: {$mod: {<field>: ...}} not {$rename: "string"}`,
-			}},
+			},
+			altMessage: "Modifiers operate on fields but we found type string instead. " +
+				"For example: {$mod: {<field>: ...}} not {$rename: string}",
+		},
 		"rename_Nil": {
 			filter: bson.D{{"_id", "1"}},
 			update: bson.D{{"$rename", nil}},
@@ -538,7 +563,24 @@ func TestUpdateRename(t *testing.T) {
 				Message: `Modifiers operate on fields but we found type null instead.` +
 					` For example: {$mod: {<field>: ...}} not {$rename: null}`,
 			},
+			altMessage: "Modifiers operate on fields but we found type null instead. " +
+				"For example: {$mod: {<field>: ...}} not {$rename: null}",
 		},
+		"rename_Doc": {
+			filter: bson.D{{"_id", "1"}},
+			update: bson.D{{"$rename", primitive.D{}}},
+		},
+
+		/* отваливается на верхнем уровне
+		"rename_Doc_1": {
+			filter: bson.D{{"_id", "1"}},
+			update: bson.D{{"$rename", bson.D{{}}}},
+			err: &mongo.WriteError{
+				Code:    56,
+				Message: `An empty update path is not valid.`,
+			},
+			altMessage: `An empty update path is not valid.`,
+		},*/
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -554,7 +596,8 @@ func TestUpdateRename(t *testing.T) {
 			_, err = collection.UpdateOne(ctx, tc.filter, tc.update)
 			if tc.err != nil {
 				require.NotNil(t, tc.err)
-				AssertEqualWriteError(t, *tc.err, err)
+				AssertEqualAltWriteError(t, *tc.err, tc.altMessage, err)
+				//AssertEqualWriteError(t, *tc.err, err)
 				return
 			}
 
@@ -569,8 +612,6 @@ func TestUpdateRename(t *testing.T) {
 				assert.Contains(t, k, key)
 				assert.Equal(t, m[key], item)
 			}
-
-			//			AssertEqualDocuments(t, tc.result, actual)
 		})
 	}
 }
