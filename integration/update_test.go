@@ -26,7 +26,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 func TestUpdateUpsert(t *testing.T) {
@@ -465,7 +464,9 @@ func TestUpdateSet(t *testing.T) {
 
 func TestCurrentDate(t *testing.T) {
 	t.Parallel()
-	secondsLate := float64(2) // seconds late from now
+
+	// maximum amount of seconds can differ the value in placeholder from actual value
+	maxTimeDeltaSeconds := float64(2)
 	datePlaceholder := "$$date"
 
 	for name, tc := range map[string]struct {
@@ -644,13 +645,9 @@ func TestCurrentDate(t *testing.T) {
 				return
 			}
 
-			// TODO replace palceholder that shapes errors if other paths were modified.
-			t.Log(actual)
 			require.NoError(t, err)
 
 			actualVal := ConvertDocument(t, actual)
-			err = actualVal.Replace(datePlaceholder, now)
-			require.NoError(t, err)
 
 			switch actualVal := actualVal.(type) {
 			case time.Time:

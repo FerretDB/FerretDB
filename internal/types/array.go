@@ -111,8 +111,3 @@ func (a *Array) Append(values ...any) error {
 func (a *Array) RemoveByPath(path Path) {
 	removeByPath(a, path)
 }
-
-// Replace replaces end-value that equals `from` with `to`.
-func (a *Array) Replace(from, to any) error {
-	return replace(a, from, to)
-}

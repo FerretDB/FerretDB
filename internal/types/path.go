@@ -179,35 +179,3 @@ func removeByPath(v any, path Path) {
 		// no such path: scalar value
 	}
 }
-
-// replace replaces end-value that equals `from` with `to`.
-func replace(v any, from, to any) error {
-	var err error
-	switch v := v.(type) {
-	case *Document:
-		for _, k := range v.Keys() {
-			val := must.NotFail(v.Get(k))
-			if Compare(val, from) == Equal {
-				if err = v.Set(k, to); err != nil {
-					return err
-				}
-			}
-			switch val := val.(type) {
-			case *Document:
-				if err := replace(val, from, to); err != nil {
-					return err
-				}
-			}
-		}
-
-	case *Array:
-		for i := 0; i < v.Len(); i++ {
-			if Compare(v.s[i], from) == Equal {
-				if err = v.Set(i, to); err != nil {
-					return err
-				}
-			}
-		}
-	}
-	return nil
-}
