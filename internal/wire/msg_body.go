@@ -23,6 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// MsgBody is a wire protocol message body.
 type MsgBody interface {
 	readFrom(*bufio.Reader) error
 	encoding.BinaryUnmarshaler
@@ -34,6 +35,7 @@ type MsgBody interface {
 
 //go-sumtype:decl MsgBody
 
+// ReadMessage reads from reader and returns wire header and body.
 func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 	var header MsgHeader
 	if err := header.readFrom(r); err != nil {
@@ -93,6 +95,7 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 	}
 }
 
+// WriteMessage validates msg and headers and writes them to the writer.
 func WriteMessage(w *bufio.Writer, header *MsgHeader, msg MsgBody) error {
 	b, err := msg.MarshalBinary()
 	if err != nil {
