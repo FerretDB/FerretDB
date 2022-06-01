@@ -35,7 +35,6 @@ func (str *stringType) UnmarshalJSON(data []byte) error {
 
 	r := bytes.NewReader(data)
 	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
 
 	var o string
 	if err := dec.Decode(&o); err != nil {

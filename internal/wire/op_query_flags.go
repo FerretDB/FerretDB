@@ -18,28 +18,45 @@ import "fmt"
 
 //go:generate ../../bin/stringer -linecomment -type OpQueryFlagBit
 
+// OpQueryFlagBit an integer bitmask for the operation.
 type OpQueryFlagBit flagBit
 
 const (
-	OpQueryTailableCursor  = OpQueryFlagBit(1 << 1) // TailableCursor
-	OpQuerySlaveOk         = OpQueryFlagBit(1 << 2) // SlaveOk
-	OpQueryOplogReplay     = OpQueryFlagBit(1 << 3) // OplogReplay
+	// OpQueryTailableCursor indicates that the cursor will not be closed.
+	OpQueryTailableCursor = OpQueryFlagBit(1 << 1) // TailableCursor
+
+	// OpQuerySlaveOk indicates that query can run on a replica slave.
+	OpQuerySlaveOk = OpQueryFlagBit(1 << 2) // SlaveOk
+
+	// OpQueryOplogReplay is deprecated.
+	OpQueryOplogReplay = OpQueryFlagBit(1 << 3) // OplogReplay
+
+	// OpQueryNoCursorTimeout disables cursor timeouts.
 	OpQueryNoCursorTimeout = OpQueryFlagBit(1 << 4) // NoCursorTimeout
-	OpQueryAwaitData       = OpQueryFlagBit(1 << 5) // AwaitData
-	OpQueryExhaust         = OpQueryFlagBit(1 << 6) // Exhaust
-	OpQueryPartial         = OpQueryFlagBit(1 << 7) // Partial
+
+	// OpQueryAwaitData together with OpQueryTailableCursor, waits for data instead of returning it.
+	OpQueryAwaitData = OpQueryFlagBit(1 << 5) // AwaitData
+
+	// OpQueryExhaust indicates that server can divide data into multiple streams and expect that client can handle it.
+	OpQueryExhaust = OpQueryFlagBit(1 << 6) // Exhaust
+
+	// OpQueryPartial ignore error and give partial results.
+	OpQueryPartial = OpQueryFlagBit(1 << 7) // Partial
 )
 
+// OpQueryFlags enables String() and FlagSet methods for flags.
 type OpQueryFlags flags
 
 func opQueryFlagBitStringer(bit flagBit) string {
 	return OpQueryFlagBit(bit).String()
 }
 
+// String interface implementation for query flags.
 func (f OpQueryFlags) String() string {
 	return flags(f).string(opQueryFlagBitStringer)
 }
 
+// FlagSet return true if flag set.
 func (f OpQueryFlags) FlagSet(bit OpQueryFlagBit) bool {
 	return f&OpQueryFlags(bit) != 0
 }

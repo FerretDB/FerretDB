@@ -16,10 +16,10 @@ package debug
 
 import (
 	"context"
-	_ "expvar"
+	_ "expvar" // for metrics
 	"net"
 	"net/http"
-	_ "net/http/pprof"
+	_ "net/http/pprof" // debug pprof
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -27,6 +27,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// RunHandler runs debug handler.
 func RunHandler(ctx context.Context, addr string, l *zap.Logger) {
 	stdL, err := zap.NewStdLogAt(l, zap.WarnLevel)
 	if err != nil {
