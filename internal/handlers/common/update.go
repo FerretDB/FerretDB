@@ -97,7 +97,8 @@ func processCurrentdateFieldExpression(doc *types.Document, currentDateExpressio
 				return false,
 					NewWriteErrorMsg(
 						ErrBadValue,
-						"The '$type' string field is required to be 'date' or 'timestamp'",
+						fmt.Sprintf("%s is not valid type for $currentDate. Please use a boolean ('true') "+
+							"or a $type expression ({$type: 'timestamp/date'}).", AliasFromType(setValue)),
 					)
 			}
 		}
