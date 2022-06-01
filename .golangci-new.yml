@@ -77,7 +77,6 @@ linters:
     - prealloc
     - predeclared
     - promlinter
-    - revive
     - stylecheck
     - tagliatelle
     - tenv
@@ -100,13 +99,13 @@ linters:
     - unparam
     - wastedassign
 
-    - golint      # deprecated
-    - interfacer  # deprecated
-    - maligned    # deprecated
-    - nlreturn    # too annoying
-    - scopelint   # deprecated
+    - golint # deprecated
+    - interfacer # deprecated
+    - maligned # deprecated
+    - nlreturn # too annoying
+    - scopelint # deprecated
     - testpackage # we test internals
-    - wsl         # too annoying
+    - wsl # too annoying
 
 issues:
   exclude-use-default: false
