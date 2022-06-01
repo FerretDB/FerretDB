@@ -566,6 +566,7 @@ func TestCurrentDate(t *testing.T) {
 				ModifiedCount: 1,
 				UpsertedCount: 0,
 			},
+			result: bson.D{{"_id", "double"}, {"value", now.Unix()}},
 		},
 		"TimestampCapitalised": {
 			id:     "double",
@@ -574,6 +575,7 @@ func TestCurrentDate(t *testing.T) {
 				Code:    2,
 				Message: "The '$type' string field is required to be 'date' or 'timestamp': {$currentDate: {field : {$type: 'date'}}}",
 			},
+			alt: "The '$type' string field is required to be 'date' or 'timestamp'",
 		},
 		"Date": {
 			id:     "double",
@@ -627,27 +629,31 @@ func TestCurrentDate(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, tc.stat, res)
 
-			var actual bson.D
-			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
+			var actualB bson.D
+			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actualB)
 			require.NoError(t, err)
 
 			if tc.result != nil {
-				AssertEqualDocuments(t, tc.result, actual)
+				AssertEqualDocuments(t, tc.result, actualB)
 				return
 			}
 			if len(tc.paths) == 0 {
 				tc.paths = []types.Path{types.NewPathFromString("value")}
 			}
+			expected := ConvertDocument(t, tc.result)
+			actual := ConvertDocument(t, actualB)
+			t.Log(actual)
+			t.Log(tc.result)
 			for _, path := range tc.paths {
 				testutil.CompareAndSetByPathTime(
 					t,
-					ConvertDocument(t, tc.result),
-					ConvertDocument(t, actual),
+					expected,
+					actual,
 					maxTimeDelta,
 					path,
 				)
 			}
-			AssertEqualDocuments(t, tc.result, actual)
+			assert.Equal(t, expected, actual)
 		})
 	}
 }
