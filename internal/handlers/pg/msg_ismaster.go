@@ -24,7 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgIsMaster returns a document that describes the role of the instance.
+// MsgIsMaster implements HandlerInterface.
 func (h *Handler) MsgIsMaster(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	if err := h.pgPool.Ping(ctx); err != nil {
 		return nil, err
