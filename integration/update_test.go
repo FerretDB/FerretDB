@@ -487,7 +487,8 @@ func TestUpdateRename(t *testing.T) {
 			expected: map[string]any{
 				"_id":      "1",
 				"nickname": "alex",
-			}},
+			},
+		},
 		"ManyField": {
 			filter: bson.D{{"_id", "1"}},
 			update: bson.D{{"$rename", bson.D{{"name", "nickname"}, {"phone", "mobile"}}}},
@@ -495,7 +496,8 @@ func TestUpdateRename(t *testing.T) {
 				"_id":      "1",
 				"nickname": "alex",
 				"mobile":   "9012345678",
-			}},
+			},
+		},
 		"FieldInt": {
 			filter: bson.D{{"_id", "1"}},
 			update: bson.D{{"$rename", bson.D{{"name", int64(1)}}}},
@@ -606,7 +608,7 @@ func TestUpdateRename(t *testing.T) {
 			if tc.err != nil {
 				require.NotNil(t, tc.err)
 				AssertEqualAltWriteError(t, *tc.err, tc.altMessage, err)
-				//AssertEqualWriteError(t, *tc.err, err)
+				// AssertEqualWriteError(t, *tc.err, err)
 				return
 			}
 
