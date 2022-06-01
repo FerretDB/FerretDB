@@ -25,7 +25,10 @@ import (
 )
 
 // processCurrentdateFieldExpression changes document according to $currentDate operator.
+// If the document was changed it returns true.
 func processCurrentdateFieldExpression(doc *types.Document, currentDateExpression any) (bool, error) {
+	var changed bool
+	var err error
 	switch currentDateExpression := currentDateExpression.(type) {
 	case *types.Document:
 		now := time.Now()
@@ -33,11 +36,13 @@ func processCurrentdateFieldExpression(doc *types.Document, currentDateExpressio
 
 		for _, field := range currentDateExpression.Keys() {
 			setValue := must.NotFail(currentDateExpression.Get(field))
+
 			switch setValue := setValue.(type) {
 			case bool:
-				if err := doc.Set(field, now); err != nil {
+				if err = doc.Set(field, now); err != nil {
 					return false, err
 				}
+				changed = true
 
 			case *types.Document:
 				currentDateType, err := setValue.Get("$type")
@@ -45,8 +50,10 @@ func processCurrentdateFieldExpression(doc *types.Document, currentDateExpressio
 					if err := doc.Set(field, now); err != nil {
 						return false, err
 					}
+					changed = true
 					continue
 				}
+
 				switch currentDateType := currentDateType.(type) {
 				case string:
 					switch currentDateType {
@@ -54,34 +61,44 @@ func processCurrentdateFieldExpression(doc *types.Document, currentDateExpressio
 						if err := doc.Set(field, now.UnixNano()); err != nil {
 							return false, err
 						}
+						changed = true
 					case "date":
 						if err := doc.Set(field, now); err != nil {
 							return false, err
 						}
+						changed = true
+
 					default:
 						return false, NewWriteErrorMsg(ErrBadValue, "The '$type' string field is required to be 'date' or 'timestamp'")
 					}
+
 				default:
 					return false, NewWriteErrorMsg(ErrBadValue, "The '$type' string field is required to be 'date' or 'timestamp'")
 				}
+
 			default:
 				return false, NewWriteErrorMsg(ErrBadValue, "The '$type' string field is required to be 'date' or 'timestamp'")
 			}
 		}
 	}
+	return changed, nil
 }
 
 // UpdateDocument updates the given document with a series of update operators.
 // Returns true if document was changed.
 func UpdateDocument(doc, update *types.Document) (bool, error) {
+	var changed bool
+	var err error
 	for _, updateOp := range update.Keys() {
 		updateV := must.NotFail(update.Get(updateOp))
 
 		switch updateOp {
-		case "$curentDate":
-			if err := processCurrentdateFieldExpression(doc, updateV); err != nil {
+		case "$currentDate":
+			changed, err = processCurrentdateFieldExpression(doc, updateV)
+			if err != nil {
 				return false, err
 			}
+
 		case "$set":
 
 			switch setDoc := updateV.(type) {
@@ -170,5 +187,5 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 		}
 	}
 
-	return true, nil
+	return changed, nil
 }
