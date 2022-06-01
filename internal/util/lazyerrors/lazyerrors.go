@@ -52,6 +52,7 @@ func (e withStack) Unwrap() error {
 	return e.error
 }
 
+// New returns new error based on string, enriched with callers.
 func New(s string) error {
 	return withStack{
 		error: errors.New(s),
@@ -59,6 +60,7 @@ func New(s string) error {
 	}
 }
 
+// Error returns new error based on err and ensures err is not nil.
 func Error(err error) error {
 	if err == nil {
 		panic("err is nil")
@@ -70,6 +72,7 @@ func Error(err error) error {
 	}
 }
 
+// Errorf returns formatted error enriched with callers.
 func Errorf(format string, a ...any) error {
 	return withStack{
 		error: fmt.Errorf(format, a...),
