@@ -50,8 +50,8 @@ linters-settings:
   goimports:
     local-prefixes: github.com/FerretDB/FerretDB
   gosimple:
-    go: '1.18'
-    checks: ['all']
+    go: "1.18"
+    checks: ["all"]
   # govet
   # ineffassign
   lll:
@@ -67,10 +67,10 @@ linters-settings:
     require-explanation: true
     require-specific: true
   staticcheck:
-    go: '1.18'
-    checks: ['all']
+    go: "1.18"
+    checks: ["all"]
   unused:
-    go: '1.18'
+    go: "1.18"
   whitespace:
     multi-if: false
     multi-func: false
@@ -96,6 +96,7 @@ linters:
     - staticcheck
     - unused
     - whitespace
+    - revive
 
 issues:
   exclude-use-default: false
