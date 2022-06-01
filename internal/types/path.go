@@ -18,8 +18,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // Path represents the field path type. It should be used wherever we work with paths or dot notation.
@@ -102,11 +100,6 @@ func (p Path) TrimPrefix() Path {
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
 func RemoveByPath[T CompositeTypeInterface](comp T, path Path) {
 	removeByPath(comp, path)
-}
-
-// Replace replaces end-value that equals `from` with `to`.
-func Replace[T CompositeTypeInterface](comp T, from, to any) error {
-	return replace(comp, from, to)
 }
 
 // getByPath returns a value by path - a sequence of indexes and keys.
