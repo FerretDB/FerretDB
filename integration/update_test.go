@@ -466,6 +466,7 @@ func TestUpdateSet(t *testing.T) {
 func TestCurrentDate(t *testing.T) {
 	t.Parallel()
 	secondsLate := float64(2) // seconds late from now
+	datePlaceholder := "$$date"
 
 	for name, tc := range map[string]struct {
 		id     string
@@ -524,6 +525,7 @@ func TestCurrentDate(t *testing.T) {
 				ModifiedCount: 1,
 				UpsertedCount: 0,
 			},
+			result: bson.D{{"_id", "double"}, {"value", datePlaceholder}},
 		},
 		"TwoTrue": {
 			id:     "double",
@@ -621,7 +623,7 @@ func TestCurrentDate(t *testing.T) {
 			t.Parallel()
 			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
-			expected := time.Now()
+			now := time.Now() // have to be nearby Update statement to be closer to time Update runs.
 			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
 			if tc.err != nil {
 				require.Nil(t, tc.path)
@@ -642,20 +644,17 @@ func TestCurrentDate(t *testing.T) {
 				return
 			}
 
-			if len(tc.path) == 0 {
-				tc.path = []string{"value"}
-			}
-
 			// TODO replace palceholder that shapes errors if other paths were modified.
 			t.Log(actual)
+			require.NoError(t, err)
 
-			t.FailNow()
-			actualVal, err := ConvertDocument(t, actual).GetByPath(types.NewPath(tc.path))
+			actualVal := ConvertDocument(t, actual)
+			err = actualVal.Replace(datePlaceholder, now)
 			require.NoError(t, err)
 
 			switch actualVal := actualVal.(type) {
 			case time.Time:
-				d := actualVal.Sub(expected)
+				d := actualVal.Sub(now)
 				assert.Less(t, math.Abs(d.Seconds()), secondsLate)
 
 			default:

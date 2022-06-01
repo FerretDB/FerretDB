@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // Path represents the field path type. It should be used wherever we work with paths or dot notation.
@@ -102,6 +104,11 @@ func RemoveByPath[T CompositeTypeInterface](comp T, path Path) {
 	removeByPath(comp, path)
 }
 
+// Replace replaces end-value that equals `from` with `to`.
+func Replace[T CompositeTypeInterface](comp T, from, to any) error {
+	return replace(comp, from, to)
+}
+
 // getByPath returns a value by path - a sequence of indexes and keys.
 func getByPath[T CompositeTypeInterface](comp T, path Path) (any, error) {
 	var next any = comp
@@ -171,4 +178,36 @@ func removeByPath(v any, path Path) {
 	default:
 		// no such path: scalar value
 	}
+}
+
+// replace replaces end-value that equals `from` with `to`.
+func replace(v any, from, to any) error {
+	var err error
+	switch v := v.(type) {
+	case *Document:
+		for _, k := range v.Keys() {
+			val := must.NotFail(v.Get(k))
+			if Compare(val, from) == Equal {
+				if err = v.Set(k, to); err != nil {
+					return err
+				}
+			}
+			switch val := val.(type) {
+			case *Document:
+				if err := replace(val, from, to); err != nil {
+					return err
+				}
+			}
+		}
+
+	case *Array:
+		for i := 0; i < v.Len(); i++ {
+			if Compare(v.s[i], from) == Equal {
+				if err = v.Set(i, to); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
 }

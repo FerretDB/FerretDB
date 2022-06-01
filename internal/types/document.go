@@ -119,7 +119,7 @@ func isValidKey(key string) bool {
 // validate checks if the document is valid.
 func (d *Document) validate() error {
 	if d == nil {
-		panic("types.Document.validate: d is nil")
+		panic("types.Document.validate: d is nil")Replace
 	}
 
 	if len(d.m) != len(d.keys) {
@@ -303,6 +303,11 @@ func (d *Document) Remove(key string) {
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
 func (d *Document) RemoveByPath(path Path) {
 	removeByPath(d, path)
+}
+
+// Replace replaces end-value that equals `from` with `to`.
+func (d *Document) Replace(from, to any) error {
+	return replace(d, from, to)
 }
 
 // check interfaces
