@@ -433,6 +433,15 @@ func TestUpdateSet(t *testing.T) {
 			},
 			result: bson.D{{"_id", "double"}, {"value", math.Inf(+1)}},
 		},
+		// "tst_emptyDoc": {
+		// 	id:     "double1",
+		// 	update: bson.D{{"$set", bson.D{{}}}},
+		// 	err: &mongo.WriteError{
+		// 		Code:    56,
+		// 		Message: "An empty update path is not valid.",
+		// 	},
+		// 	alt: "An empty update path is not valid.",
+		// },
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -472,14 +481,14 @@ func TestUpdateRename(t *testing.T) {
 		err        *mongo.WriteError
 		altMessage string
 	}{
-		"rename_oneField": {
+		"OneField": {
 			filter: bson.D{{"_id", "1"}},
 			update: bson.D{{"$rename", bson.D{{"name", "nickname"}}}},
 			expected: map[string]any{
 				"_id":      "1",
 				"nickname": "alex",
 			}},
-		"rename_manyField": {
+		"ManyField": {
 			filter: bson.D{{"_id", "1"}},
 			update: bson.D{{"$rename", bson.D{{"name", "nickname"}, {"phone", "mobile"}}}},
 			expected: map[string]any{
@@ -487,7 +496,7 @@ func TestUpdateRename(t *testing.T) {
 				"nickname": "alex",
 				"mobile":   "9012345678",
 			}},
-		"rename_fieldInt": {
+		"FieldInt": {
 			filter: bson.D{{"_id", "1"}},
 			update: bson.D{{"$rename", bson.D{{"name", int64(1)}}}},
 			err: &mongo.WriteError{
@@ -496,7 +505,7 @@ func TestUpdateRename(t *testing.T) {
 			},
 			altMessage: `The 'to' field for $rename must be a string: name: long`,
 		},
-		"rename_fieldDoc": {
+		"FieldDoc": {
 			filter: bson.D{{"_id", "1"}},
 			update: bson.D{{"$rename", bson.D{{"name", primitive.D{}}}}},
 			err: &mongo.WriteError{
@@ -507,7 +516,7 @@ func TestUpdateRename(t *testing.T) {
 		},
 
 		/* отваливается на верхнем уровне
-		 "rename_fieldDoc_1": {
+		 "FieldDoc": {
 			filter: bson.D{{"_id", "1"}},
 			update: bson.D{{"$rename", bson.D{{"name", bson.D{{}}}}}},
 			err: &mongo.WriteError{
@@ -517,7 +526,7 @@ func TestUpdateRename(t *testing.T) {
 			altMessage: `The 'to' field for $rename must be a string: name: object`,
 		},*/
 
-		"rename_fieldArray": {
+		"FieldArray": {
 			filter: bson.D{{"_id", "1"}},
 			update: bson.D{{"$rename", bson.D{{"name", primitive.A{}}}}},
 			err: &mongo.WriteError{
@@ -526,7 +535,7 @@ func TestUpdateRename(t *testing.T) {
 			},
 			altMessage: `The 'to' field for $rename must be a string: name: array`,
 		},
-		"rename_fieldNaN": {
+		"FieldNaN": {
 			filter: bson.D{{"_id", "1"}},
 			update: bson.D{{"$rename", bson.D{{"name", math.NaN()}}}},
 			err: &mongo.WriteError{
@@ -535,7 +544,7 @@ func TestUpdateRename(t *testing.T) {
 			},
 			altMessage: `The 'to' field for $rename must be a string: name: double`,
 		},
-		"rename_fieldNil": {
+		"FieldNil": {
 			filter: bson.D{{"_id", "1"}},
 			update: bson.D{{"$rename", bson.D{{"name", nil}}}},
 			err: &mongo.WriteError{
@@ -544,7 +553,7 @@ func TestUpdateRename(t *testing.T) {
 			},
 			altMessage: `The 'to' field for $rename must be a string: name: null`,
 		},
-		"rename_String": {
+		"RenameString": {
 			filter: bson.D{{"_id", "1"}},
 			update: bson.D{{"$rename", "string"}},
 			err: &mongo.WriteError{
@@ -555,7 +564,7 @@ func TestUpdateRename(t *testing.T) {
 			altMessage: "Modifiers operate on fields but we found type string instead. " +
 				"For example: {$mod: {<field>: ...}} not {$rename: string}",
 		},
-		"rename_Nil": {
+		"RenameNil": {
 			filter: bson.D{{"_id", "1"}},
 			update: bson.D{{"$rename", nil}},
 			err: &mongo.WriteError{
@@ -566,13 +575,13 @@ func TestUpdateRename(t *testing.T) {
 			altMessage: "Modifiers operate on fields but we found type null instead. " +
 				"For example: {$mod: {<field>: ...}} not {$rename: null}",
 		},
-		"rename_Doc": {
+		"RenameDoc": {
 			filter: bson.D{{"_id", "1"}},
 			update: bson.D{{"$rename", primitive.D{}}},
 		},
 
 		/* отваливается на верхнем уровне
-		"rename_Doc_1": {
+		"RenameDoc": {
 			filter: bson.D{{"_id", "1"}},
 			update: bson.D{{"$rename", bson.D{{}}}},
 			err: &mongo.WriteError{
