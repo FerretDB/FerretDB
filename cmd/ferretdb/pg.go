@@ -12,23 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build testcover
-// +build testcover
-
 package main
 
 import (
-	"os"
-	"testing"
+	"time"
+
+	"github.com/FerretDB/FerretDB/internal/handlers"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 )
 
-// TestCover allows us to run FerretDB with coverage enabled.
-func TestCover(t *testing.T) {
-	main()
-}
+func init() {
+	registeredHandlers["pg"] = func(opts *newHandlerOpts) (handlers.Interface, error) {
+		pgPool, err := pgdb.NewPool(opts.ctx, *postgresqlURLF, opts.logger, false)
+		if err != nil {
+			return nil, err
+		}
 
-// TestMain ensures that command-line flags are initialized correctly when FerretDB is run with coverage enabled.
-func TestMain(m *testing.M) {
-	initFlags()
-	os.Exit(m.Run())
+		handlerOpts := &pg.NewOpts{
+			PgPool:    pgPool,
+			L:         opts.logger,
+			StartTime: time.Now(),
+		}
+		return pg.New(handlerOpts), nil
+	}
 }
