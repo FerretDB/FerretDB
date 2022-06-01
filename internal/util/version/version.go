@@ -57,6 +57,7 @@ type Info struct {
 
 var info *Info
 
+// Get returns current build's info.
 func Get() *Info {
 	return info
 }
