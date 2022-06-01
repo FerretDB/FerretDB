@@ -14,6 +14,4 @@
 
 package tigris
 
-import (
-	_ "github.com/tigrisdata/tigris-client-go/driver" // TODO
-)
+import _ "github.com/tigrisdata/tigris-client-go/driver" // TODO
