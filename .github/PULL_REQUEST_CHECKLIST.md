@@ -15,3 +15,6 @@ Pull Request checklist:
 - no extra test coverage - see the principle of having less code for simplicity and removing the artificial complexity.
 - remove named parameters that we don't use.
 - code consistency and similarity.
+- must not treat fluky tests as lightly, ok
+- sort alphabetically linters and bulks of variables
+- for specific types, use one order everywhere
