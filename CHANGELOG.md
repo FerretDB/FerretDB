@@ -1,5 +1,39 @@
 # Changelog
 
+## [v0.3.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.3.0) (2022-06-01)
+
+### New Features 🎉
+* Support `findAndModify` by @w84thesun in https://github.com/FerretDB/FerretDB/pull/548
+* Support `$inc` field `update` operator by @w84thesun in https://github.com/FerretDB/FerretDB/pull/596
+* Support `$set` field update operator by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/634
+
+### Fixed Bugs 🐛
+* Improve negative zero handling by @AlekSi in https://github.com/FerretDB/FerretDB/pull/613
+
+### Enhancements 🛠
+* Added support for sorting scalar data types by @ribaraka in https://github.com/FerretDB/FerretDB/pull/607
+
+### Other Changes 🤖
+* Better `-0` handling in tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/616
+* Bump github.com/golangci/golangci-lint from 1.46.1 to 1.46.2 in /tools by @dependabot in https://github.com/FerretDB/FerretDB/pull/617
+* Bump PostgreSQL and MongoDB versions by @AlekSi in https://github.com/FerretDB/FerretDB/pull/599
+* Rename `OP_*` constants to `OpCode*` constants  by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/620
+* Bump gopkg.in/yaml.v3 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/646
+* Bump gopkg.in/yaml.v3 in tools by @AlekSi in https://github.com/FerretDB/FerretDB/pull/648
+* Make `Path` type by @w84thesun in https://github.com/FerretDB/FerretDB/pull/635
+* Fix incorrect test for `$mod` operator by @fenogentov in https://github.com/FerretDB/FerretDB/pull/645
+* Skip test on all ARM64 OSes by @AlekSi in https://github.com/FerretDB/FerretDB/pull/652
+* Add more visibility for the router/proxy error log levels by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/650
+* Update CODEOWNERS by @AlekSi in https://github.com/FerretDB/FerretDB/pull/655
+* Sync dummy and pg handlers by @AlekSi in https://github.com/FerretDB/FerretDB/pull/641
+* Panic on unexpected order values by @AlekSi in https://github.com/FerretDB/FerretDB/pull/668
+* Add some comments to the functions and variables by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/619
+* Remove dead code by @AlekSi in https://github.com/FerretDB/FerretDB/pull/669
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/15?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v0.2.1...v0.3.0).
+
+
 ## [v0.2.1](https://github.com/FerretDB/FerretDB/releases/tag/v0.2.1) (2022-05-17)
 
 ### New Features 🎉
