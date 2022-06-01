@@ -489,12 +489,12 @@ func TestCurrentDate(t *testing.T) {
 		"Array": {
 			id:     "double",
 			update: bson.D{{"$currentDate", bson.A{}}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 0,
-				UpsertedCount: 0,
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type array instead. " +
+					"For example: {$mod: {<field>: ...}} not {$currentDate: []}",
 			},
-			result: bson.D{{"_id", "double"}, {"value", float64(42.13)}},
+			alt: "Modifiers operate on fields but we found another type instead",
 		},
 		"WrongInt32": {
 			id:     "double",

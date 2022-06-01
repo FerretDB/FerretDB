@@ -80,6 +80,8 @@ func processCurrentdateFieldExpression(doc *types.Document, currentDateExpressio
 				return false, NewWriteErrorMsg(ErrBadValue, "The '$type' string field is required to be 'date' or 'timestamp'")
 			}
 		}
+	default:
+		return false, NewWriteErrorMsg(ErrFailedToParse, "Modifiers operate on fields but we found another type instead")
 	}
 	return changed, nil
 }
