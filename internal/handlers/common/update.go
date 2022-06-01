@@ -150,7 +150,8 @@ func checkAllModifiersSupported(update *types.Document) error {
 				fmt.Sprintf(
 					"Unknown modifier: %s. Expected a valid update modifier or pipeline-style "+
 						"update specified as an array", updateOp,
-				))
+				)
+			)
 		}
 	}
 	return nil
