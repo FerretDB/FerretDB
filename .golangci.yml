@@ -54,6 +54,10 @@ linters-settings:
     checks: ["all"]
   # govet
   # ineffassign
+  revive:
+    ignore-generated-header: true
+    severity: warning
+    enableAllRules: true
 
   lll:
     line-length: 130
