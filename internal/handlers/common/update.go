@@ -116,15 +116,15 @@ func ValidateUpdateOperators(update *types.Document) error {
 	if err = checkAllModifiersSupported(update); err != nil {
 		return err
 	}
-	inc, err := getUpdateOperatorDocument("$inc", update)
+	inc, err := extractValueFromUpdateOperator("$inc", update)
 	if err != nil {
 		return err
 	}
-	set, err := getUpdateOperatorDocument("$set", update)
+	set, err := extractValueFromUpdateOperator("$set", update)
 	if err != nil {
 		return err
 	}
-	_, err = getUpdateOperatorDocument("$setOnInsert", update)
+	_, err = extractValueFromUpdateOperator("$setOnInsert", update)
 	if err != nil {
 		return err
 	}
@@ -178,8 +178,17 @@ func checkConflictingChanges(a, b *types.Document) error {
 	return nil
 }
 
-// getUpdateOperatorDocument gets document by key `op` and returns WriteError error if it is not a document.
-func getUpdateOperatorDocument(op string, update *types.Document) (*types.Document, error) {
+// extractValueFromUpdateOperator gets operator `op` value and returns WriteError error if it is not a document.
+// For example, for update document
+// ```go
+// bson.D{
+// 	{"$set", bson.D{{"foo", int32(12)}}},
+// 	{"$inc", bson.D{{"foo", int32(1)}}},
+// 	{"$setOnInsert", bson.D{{"value", math.NaN()}}},
+// },
+// ```
+// The result returned for $setOnInsert operator is `bson.D{{"value", math.NaN()}`.
+func extractValueFromUpdateOperator(op string, update *types.Document) (*types.Document, error) {
 	if !update.Has(op) {
 		return nil, nil
 	}
