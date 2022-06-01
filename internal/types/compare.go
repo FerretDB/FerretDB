@@ -16,7 +16,6 @@ package types
 
 import (
 	"bytes"
-	"fmt"
 	"math"
 	"math/big"
 	"time"
@@ -46,46 +45,47 @@ const (
 // For that reason, it typically should not be used in tests.
 //
 // Compare and contrast with test helpers in testutil package.
-func Compare(v1, v2 any) CompareResult {
-	if v1 == nil {
-		panic("compare: v1 is nil")
+func Compare(docValue, filterValue any) CompareResult {
+	if docValue == nil {
+		panic("compare: docValue is nil")
 	}
-	if v2 == nil {
-		panic("compare: v2 is nil")
+	if filterValue == nil {
+		panic("compare: filterValue is nil")
 	}
 
-	switch v1 := v1.(type) {
+	switch docValue := docValue.(type) {
 	case *Document:
 		// TODO: implement document comparing
 		return Incomparable
 
 	case *Array:
-		if v2, ok := v2.(*Array); ok {
-			return CompareArrays(v1, v2)
+		if filterArr, ok := filterValue.(*Array); ok {
+			return CompareArrays(filterArr, docValue)
 		}
 
-		for i := 0; i < v1.Len(); i++ {
-			v := must.NotFail(v1.Get(i))
-			switch v.(type) {
+		for i := 0; i < docValue.Len(); i++ {
+			docValue := must.NotFail(docValue.Get(i))
+			switch docValue.(type) {
 			case *Document, *Array:
 				continue
 			}
 
-			if res := compareScalars(v, v2); res != Incomparable {
+			if res := compareScalars(docValue, filterValue); res != Incomparable {
 				return res
 			}
 		}
 		return Incomparable
 
 	default:
-		return compareScalars(v1, v2)
+		return compareScalars(docValue, filterValue)
 	}
 }
 
 // compareScalars compares BSON scalar values.
 func compareScalars(v1, v2 any) CompareResult {
-	compareEnsureScalar(v1)
-	compareEnsureScalar(v2)
+	if !isScalar(v1) || !isScalar(v2) {
+		return Incomparable
+	}
 
 	switch v1 := v1.(type) {
 	case float64:
@@ -202,18 +202,18 @@ func compareScalars(v1, v2 any) CompareResult {
 	panic("not reached")
 }
 
-// compareEnsureScalar panics if v is not a BSON scalar value.
-func compareEnsureScalar(v any) {
+// isScalar check if v is a BSON scalar value.
+func isScalar(v any) bool {
 	if v == nil {
 		panic("v is nil")
 	}
 
 	switch v.(type) {
 	case float64, string, Binary, ObjectID, bool, time.Time, NullType, Regex, int32, Timestamp, int64:
-		return
+		return true
 	}
 
-	panic(fmt.Sprintf("non-scalar type %T", v))
+	return false
 }
 
 // compareInvert swaps Less and Greater, keeping Equal and Incomparable.
@@ -288,8 +288,8 @@ func CompareArrays(filterArr, docArr *Array) CompareResult {
 			}
 			continue
 
-		//TODO: case Document
-		//case *Document
+		// TODO: case Document
+		// case *Document
 
 		default:
 			if i+1 > filterArr.Len() {
@@ -336,7 +336,10 @@ func CompareArrays(filterArr, docArr *Array) CompareResult {
 
 // handleSubArrayComparingResult determines on the first iteration what result the comparison will follow (e.g. gt, ls, eq)
 // detects inconsistency in iterations; detects equality for subbaray.
-func handleSubArrayComparingResult(iterator int, resultFromComparing, entireArrayResult, subArrayEquality *CompareResult) CompareResult {
+func handleSubArrayComparingResult(
+	iterator int,
+	resultFromComparing, entireArrayResult, subArrayEquality *CompareResult,
+) CompareResult {
 	if *resultFromComparing == Incomparable {
 		return Incomparable
 	}

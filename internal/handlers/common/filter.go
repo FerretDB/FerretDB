@@ -81,10 +81,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 		if err != nil {
 			return false, nil // no error - the field is just not present
 		}
-		if docValue, ok := docValue.(*types.Array); ok {
-			return types.CompareArrays(filterValue, docValue) == types.Equal, nil
-		}
-		return false, nil
+		return types.Compare(docValue, filterValue) == types.Equal, nil
 
 	case types.Regex:
 		// {field: /regex/}
