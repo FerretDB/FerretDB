@@ -22,10 +22,10 @@ linters:
     - gosimple
     - govet
     - ineffassign
-    - revive
     - lll
     - misspell
     - nolintlint
+    - revive
     - staticcheck
     - unused
     - whitespace
