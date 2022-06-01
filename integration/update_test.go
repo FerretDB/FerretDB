@@ -17,6 +17,7 @@ package integration
 import (
 	"math"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,6 +26,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestUpdateUpsert(t *testing.T) {
@@ -465,14 +468,16 @@ func TestCurrentDate(t *testing.T) {
 	t.Parallel()
 
 	// maximum amount of seconds can differ the value in placeholder from actual value
-	// maxTimeDeltaSeconds := float64(2)
-	datePlaceholder := "$$date"
+	maxTimeDelta := time.Duration(2 * time.Second)
+
+	// have to be nearby Update statement to be closer to time Update runs.
+	now := time.Now()
 
 	for name, tc := range map[string]struct {
 		id     string
 		update bson.D
 		result bson.D
-		path   []string
+		paths  []types.Path
 		err    *mongo.WriteError
 		stat   *mongo.UpdateResult
 		alt    string
@@ -525,7 +530,7 @@ func TestCurrentDate(t *testing.T) {
 				ModifiedCount: 1,
 				UpsertedCount: 0,
 			},
-			result: bson.D{{"_id", "double"}, {"value", datePlaceholder}},
+			result: bson.D{{"_id", "double"}, {"value", now}},
 		},
 		"TwoTrue": {
 			id:     "double",
@@ -587,7 +592,7 @@ func TestCurrentDate(t *testing.T) {
 				ModifiedCount: 1,
 				UpsertedCount: 0,
 			},
-			path: []string{"unexsistent"},
+			paths: []types.Path{types.NewPathFromString("unexsistent")},
 		},
 		"UnrecognizedOption": {
 			id: "array",
@@ -623,39 +628,38 @@ func TestCurrentDate(t *testing.T) {
 			t.Parallel()
 			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
-			// now := time.Now() // have to be nearby Update statement to be closer to time Update runs.
-			_, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
+			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
 			if tc.err != nil {
-				require.Nil(t, tc.path)
+				require.Nil(t, tc.paths)
 				require.Nil(t, tc.stat)
 				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
 				return
 			}
 
-			// require.NoError(t, err)
-			// require.Equal(t, tc.stat, res)
+			require.NoError(t, err)
+			require.Equal(t, tc.stat, res)
 
-			// var actual bson.D
-			// err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
-			// require.NoError(t, err)
+			var actual bson.D
+			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
+			require.NoError(t, err)
 
-			// if tc.result != nil {
-			// 	AssertEqualDocuments(t, tc.result, actual)
-			// 	return
-			// }
-
-			// require.NoError(t, err)
-
-			// actualVal := ConvertDocument(t, actual)
-
-			// switch actualVal := actualVal.(type) {
-			// case time.Time:
-			// 	d := actualVal.Sub(now)
-			// 	assert.Less(t, math.Abs(d.Seconds()), secondsLate)
-
-			// default:
-			// 	t.FailNow()
-			// }
+			if tc.result != nil {
+				AssertEqualDocuments(t, tc.result, actual)
+				return
+			}
+			if len(tc.paths) == 0 {
+				tc.paths = []types.Path{types.NewPathFromString("value")}
+			}
+			for _, path := range tc.paths {
+				testutil.CompareAndSetByPathTime(
+					t,
+					ConvertDocument(t, tc.result),
+					ConvertDocument(t, actual),
+					maxTimeDelta,
+					path,
+				)
+			}
+			AssertEqualDocuments(t, tc.result, actual)
 		})
 	}
 }
