@@ -499,12 +499,12 @@ func TestCurrentDate(t *testing.T) {
 		"WrongInt32": {
 			id:     "double",
 			update: bson.D{{"$currentDate", int32(1)}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 0,
-				UpsertedCount: 0,
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type int instead. " +
+					"For example: {$mod: {<field>: ...}} not {$currentDate: 1}",
 			},
-			result: bson.D{{"_id", "double"}, {"value", float64(42.13)}},
+			alt: "Modifiers operate on fields but we found another type instead",
 		},
 		"Nil": {
 			id:     "double",
