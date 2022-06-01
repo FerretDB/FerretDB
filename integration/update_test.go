@@ -433,15 +433,6 @@ func TestUpdateSet(t *testing.T) {
 			},
 			result: bson.D{{"_id", "double"}, {"value", math.Inf(+1)}},
 		},
-		// "tst_emptyDoc": {
-		// 	id:     "double1",
-		// 	update: bson.D{{"$set", bson.D{{}}}},
-		// 	err: &mongo.WriteError{
-		// 		Code:    56,
-		// 		Message: "An empty update path is not valid.",
-		// 	},
-		// 	alt: "An empty update path is not valid.",
-		// },
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -472,7 +463,7 @@ func TestUpdateSet(t *testing.T) {
 }
 
 func TestUpdateRename(t *testing.T) {
-	//	t.Parallel()
+	t.Parallel()
 
 	for name, tc := range map[string]struct {
 		filter     bson.D
@@ -517,8 +508,8 @@ func TestUpdateRename(t *testing.T) {
 			altMessage: `The 'to' field for $rename must be a string: name: object`,
 		},
 
-		/* отваливается на верхнем уровне
-		 "FieldDoc": {
+		// TODO issues 673
+		/* "FieldDoc": {
 			filter: bson.D{{"_id", "1"}},
 			update: bson.D{{"$rename", bson.D{{"name", bson.D{{}}}}}},
 			err: &mongo.WriteError{
@@ -526,7 +517,7 @@ func TestUpdateRename(t *testing.T) {
 				Message: `The 'to' field for $rename must be a string: name: { : null }`,
 			},
 			altMessage: `The 'to' field for $rename must be a string: name: object`,
-		},*/
+		}, */
 
 		"FieldArray": {
 			filter: bson.D{{"_id", "1"}},
@@ -582,8 +573,8 @@ func TestUpdateRename(t *testing.T) {
 			update: bson.D{{"$rename", primitive.D{}}},
 		},
 
-		/* отваливается на верхнем уровне
-		"RenameDoc": {
+		// TODO issues 673
+		/* "RenameDoc_1": {
 			filter: bson.D{{"_id", "1"}},
 			update: bson.D{{"$rename", bson.D{{}}}},
 			err: &mongo.WriteError{
@@ -591,11 +582,11 @@ func TestUpdateRename(t *testing.T) {
 				Message: `An empty update path is not valid.`,
 			},
 			altMessage: `An empty update path is not valid.`,
-		},*/
+		}, */
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			//			t.Parallel()
+			t.Parallel()
 			ctx, collection := setup(t)
 
 			_, err := collection.InsertMany(ctx, []any{
@@ -608,7 +599,6 @@ func TestUpdateRename(t *testing.T) {
 			if tc.err != nil {
 				require.NotNil(t, tc.err)
 				AssertEqualAltWriteError(t, *tc.err, tc.altMessage, err)
-				// AssertEqualWriteError(t, *tc.err, err)
 				return
 			}
 
