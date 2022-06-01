@@ -503,6 +503,36 @@ func TestCurrentDate(t *testing.T) {
 				UpsertedCount: 0,
 			},
 		},
+		"Nil": {
+			id:     "double",
+			update: bson.D{{"$currentDate", nil}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 0,
+				UpsertedCount: 0,
+			},
+			result: bson.D{{"_id", "double"}, {"value", float64(42.13)}},
+		},
+		"DocumentEmpty": {
+			id:     "double",
+			update: bson.D{{"$currentDate", bson.D{}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 0,
+				UpsertedCount: 0,
+			},
+			result: bson.D{{"_id", "double"}, {"value", float64(42.13)}},
+		},
+		"Array": {
+			id:     "double",
+			update: bson.D{{"$currentDate", bson.A{}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 0,
+				UpsertedCount: 0,
+			},
+			result: bson.D{{"_id", "double"}, {"value", float64(42.13)}},
+		},
 		"Int32": {
 			id:     "double",
 			update: bson.D{{"$currentDate", bson.D{{"value", int32(1)}}}},
@@ -547,16 +577,6 @@ func TestCurrentDate(t *testing.T) {
 			},
 			path: []string{"unexsistent"},
 		},
-		"EmptyOperandExpression": {
-			id:     "double",
-			update: bson.D{{"$currentDate", bson.D{}}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 0,
-				UpsertedCount: 0,
-			},
-			result: bson.D{{"_id", "double"}, {"value", float64(42.13)}},
-		},
 		"UnrecognizedOption": {
 			id: "array",
 			update: bson.D{{
@@ -572,6 +592,18 @@ func TestCurrentDate(t *testing.T) {
 				Code:    2,
 				Message: "Unrecognized $currentDate option: array",
 			},
+		},
+		"NestedFields": {
+			id: "document-composite",
+			update: bson.D{{
+				"value",
+				bson.D{{
+					"document",
+					bson.D{{
+						"$currentDate", bson.D{{"unexsistent", bson.D{}}},
+					}},
+				}},
+			}},
 		},
 	} {
 		name, tc := name, tc

@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -31,14 +32,47 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 		switch updateOp {
 		case "$curentDate":
-			dateDoc := updateV.(types.Document)
+			dateDoc, ok := updateV.(types.Document)
+			if !ok {
+			}
 
 			sort.Strings(dateDoc.Keys())
 			for _, setKey := range dateDoc.Keys() {
+				now := time.Now()
 				setValue := must.NotFail(dateDoc.Get(setKey))
-				if err := doc.Set(setKey, setValue); err != nil {
-					return false, err
+				switch setValue := setValue.(type) {
+				case bool:
+					if err := doc.Set(setKey, now); err != nil {
+						return false, err
+					}
+
+				case *types.Document:
+					currentDateType, err := setValue.Get("$type")
+					if err != nil {
+						// default is date
+						if err := doc.Set(setKey, now); err != nil {
+							return false, err
+						}
+					}
+					switch currentDateType := currentDateType.(type) {
+					case string:
+						switch currentDateType {
+						case "timestamp":
+							if err := doc.Set(setKey, now.UnixNano()); err != nil {
+								return false, err
+							}
+						case "date":
+							if err := doc.Set(setKey, now); err != nil {
+								return false, err
+							}
+						default:
+							return false, NewWriteErrorMsg(ErrBadValue, "The '$type' string field is required to be 'date' or 'timestamp'")
+						}
+					default:
+						return false, NewWriteErrorMsg(ErrBadValue, "The '$type' string field is required to be 'date' or 'timestamp'")
+					}
 				}
+
 			}
 		case "$set":
 
