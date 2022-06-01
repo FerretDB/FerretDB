@@ -30,9 +30,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgUpdate updates documents that are matched by the query.
-//
-//nolint:nestif // TODO refactor to simplify
+// MsgUpdate implements HandlerInterface.
 func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
@@ -152,8 +150,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				return nil, err
 			}
 
-			matched += 1
-
+			matched++
 			continue
 		}
 

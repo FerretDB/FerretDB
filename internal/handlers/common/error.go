@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package common provides common code for all handlers.
 package common
 
 import (
@@ -34,21 +33,54 @@ const (
 	// For ProtocolError only.
 	errInternalError = ErrorCode(1) // InternalError
 
-	ErrBadValue          = ErrorCode(2)     // BadValue
-	ErrFailedToParse     = ErrorCode(9)     // FailedToParse
-	ErrTypeMismatch      = ErrorCode(14)    // TypeMismatch
-	ErrNamespaceNotFound = ErrorCode(26)    // NamespaceNotFound
-	ErrNamespaceExists   = ErrorCode(48)    // NamespaceExists
-	ErrCommandNotFound   = ErrorCode(59)    // CommandNotFound
-	ErrInvalidNamespace  = ErrorCode(73)    // InvalidNamespace
-	ErrNotImplemented    = ErrorCode(238)   // NotImplemented
-	ErrSortBadValue      = ErrorCode(15974) // Location15974
-	ErrSortBadOrder      = ErrorCode(15975) // Location15975
-	ErrInvalidArg        = ErrorCode(28667) // Location28667
-	ErrSliceFirstArg     = ErrorCode(28724) // Location28724
-	ErrProjectionInEx    = ErrorCode(31253) // Location31253
-	ErrProjectionExIn    = ErrorCode(31254) // Location31254
-	ErrRegexOptions      = ErrorCode(51075) // Location51075
+	// ErrBadValue indicates wrong input.
+	ErrBadValue = ErrorCode(2) // BadValue
+
+	// ErrFailedToParse indicates user input parsing failure.
+	ErrFailedToParse = ErrorCode(9) // FailedToParse
+
+	// ErrTypeMismatch for $sort indicates that the expression in the $sort is not an object.
+	ErrTypeMismatch = ErrorCode(14) // TypeMismatch
+
+	// ErrNamespaceNotFound indicates that a collection is not found.
+	ErrNamespaceNotFound = ErrorCode(26) // NamespaceNotFound
+
+	// ErrNamespaceExists indicates that the collection already exists.
+	ErrNamespaceExists = ErrorCode(48) // NamespaceExists
+
+	// ErrCommandNotFound indicates unknown command input.
+	ErrCommandNotFound = ErrorCode(59) // CommandNotFound
+
+	// ErrInvalidNamespace indicates that the collection name is empty.
+	ErrInvalidNamespace = ErrorCode(73) // InvalidNamespace
+
+	// ErrNotImplemented indicates that a flag or command is not implemented.
+	ErrNotImplemented = ErrorCode(238) // NotImplemented
+
+	// ErrSortBadValue indicates bad value in sort input.
+	ErrSortBadValue = ErrorCode(15974) // Location15974
+
+	// ErrSortBadOrder indicates bad sort order input.
+	ErrSortBadOrder = ErrorCode(15975) // Location15975
+
+	// ErrInvalidArg indicates invalid argument in projection document.
+	ErrInvalidArg = ErrorCode(28667) // Location28667
+
+	// ErrSliceFirstArg for $slice indicates that the first argument is not an array.
+	ErrSliceFirstArg = ErrorCode(28724) // Location28724
+
+	// ErrProjectionInEx for $elemMatch indicates that inclusion statement found
+	// while projection document already marked as exlusion.
+	ErrProjectionInEx = ErrorCode(31253) // Location31253
+
+	// ErrProjectionExIn for $elemMatch indicates that exlusion statement found
+	// while projection document already marked as inclusion.
+	ErrProjectionExIn = ErrorCode(31254) // Location31254
+
+	// ErrRegexOptions indicates regex options error.
+	ErrRegexOptions = ErrorCode(51075) // Location51075
+
+	// ErrRegexMissingParen indicates missing parentheses in regex expression.
 	ErrRegexMissingParen = ErrorCode(51091) // Location51091
 )
 
