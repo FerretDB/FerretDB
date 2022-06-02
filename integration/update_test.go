@@ -469,10 +469,9 @@ func TestCurrentDate(t *testing.T) {
 	t.Parallel()
 
 	// maxTimeDelta is a maximum amount of seconds can differ the value in placeholder from actual value
-	maxTimeDelta := time.Duration(2 * time.Second)
+	maxTimeDelta := time.Duration(30 * time.Second)
 
 	now := primitive.NewDateTimeFromTime(time.Now().UTC())
-	nowTimestamp := primitive.Timestamp{T: uint32(time.Now().UTC().Unix()), I: uint32(0)}
 
 	for name, tc := range map[string]struct {
 		id     string
@@ -567,17 +566,6 @@ func TestCurrentDate(t *testing.T) {
 				Message: "int is not valid type for $currentDate. Please use a boolean ('true') or a $type expression ({$type: 'timestamp/date'}).",
 			},
 		},
-		"Timestamp": {
-			id:     "double",
-			update: bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "timestamp"}}}}}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-			paths:  []types.Path{types.NewPathFromString("value")},
-			result: bson.D{{"_id", "double"}, {"value", nowTimestamp}},
-		},
 		"TimestampCapitalised": {
 			id:     "double",
 			update: bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "Timestamp"}}}}}},
@@ -645,8 +633,8 @@ func TestCurrentDate(t *testing.T) {
 			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actualB)
 			require.NoError(t, err)
 
-			actual := ConvertDocument(t, actualB)
 			expected := ConvertDocument(t, tc.result)
+			actual := ConvertDocument(t, actualB)
 
 			for _, path := range tc.paths {
 				testutil.CompareAndSetByPathTime(

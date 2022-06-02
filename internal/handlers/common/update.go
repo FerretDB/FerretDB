@@ -67,10 +67,11 @@ func processCurrentdateFieldExpression(doc *types.Document, currentDateExpressio
 				case string:
 					switch currentDateType {
 					case "timestamp":
-						if err := doc.Set(field, now); err != nil {
-							return false, err
-						}
-						changed = true
+						return false,
+							NewWriteErrorMsg(
+								ErrNotImplemented,
+								"timestamp of $surrentDate is not implemented",
+							)
 					case "date":
 						if err := doc.Set(field, now); err != nil {
 							return false, err
@@ -174,7 +175,8 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 				if !doc.Has(incKey) {
 					must.NoError(doc.Set(incKey, incValue))
-					return true, nil
+					changed = true
+					continue
 				}
 
 				docValue := must.NotFail(doc.Get(incKey))
@@ -182,6 +184,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				incremented, err := addNumbers(incValue, docValue)
 				if err == nil {
 					must.NoError(doc.Set(incKey, incremented))
+					changed = true
 					continue
 				}
 
