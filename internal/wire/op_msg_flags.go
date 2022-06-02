@@ -22,9 +22,14 @@ import "fmt"
 type OpMsgFlagBit flagBit
 
 const (
-	OpMsgChecksumPresent = OpMsgFlagBit(1 << 0)  // checksumPresent
-	OpMsgMoreToCome      = OpMsgFlagBit(1 << 1)  // moreToCome
-	OpMsgExhaustAllowed  = OpMsgFlagBit(1 << 16) // exhaustAllowed
+	// OpMsgChecksumPresent indicates that there is a CRC-32C checksum in a message.
+	OpMsgChecksumPresent = OpMsgFlagBit(1 << 0) // checksumPresent
+
+	// OpMsgMoreToCome indicates that there is another message coming, no need to do anything for it.
+	OpMsgMoreToCome = OpMsgFlagBit(1 << 1) // moreToCome
+
+	// OpMsgExhaustAllowed indicates that client can handle multiple replies.
+	OpMsgExhaustAllowed = OpMsgFlagBit(1 << 16) // exhaustAllowed
 )
 
 // OpMsgFlags type unint32.
