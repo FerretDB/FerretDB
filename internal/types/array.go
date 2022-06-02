@@ -134,8 +134,11 @@ func (a *Array) ContainsAll(b *Array) bool {
 		return false
 	}
 
-	// TODO: sort a
-	// TODO: sort b
+	// TODO: This place can be significantly improved:
+	// Sort a.
+	// Sort b.
+	// Use Index instead of Contains.
+	// Remember the last index found and always start from there when searching for the next value.
 
 	for _, v := range b.s {
 		if !a.Contains(v) {
