@@ -54,10 +54,6 @@ linters-settings:
     checks: ["all"]
   # govet
   # ineffassign
-  revive:
-    ignore-generated-header: true
-    severity: warning
-    enableAllRules: true
   lll:
     line-length: 130
     tab-width: 4
@@ -70,6 +66,10 @@ linters-settings:
     allow-no-explanation: []
     require-explanation: true
     require-specific: true
+  revive:
+    ignore-generated-header: true
+    severity: warning
+    enableAllRules: true
   staticcheck:
     go: "1.18"
     checks: ["all"]
