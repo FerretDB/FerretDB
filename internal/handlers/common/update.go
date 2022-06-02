@@ -51,14 +51,13 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			changed = true
 
 		case "$unset":
-			switch setDoc := updateV.(type) {
+			switch unsetDoc := updateV.(type) {
 			case *types.Document:
-				if setDoc.Len() == 0 {
+				if unsetDoc.Len() == 0 {
 					continue
 				}
-				sort.Strings(setDoc.Keys())
-				for _, setKey := range setDoc.Keys() {
-					doc.Remove(setKey)
+				for _, key := range unsetDoc.Keys() {
+					doc.Remove(key)
 				}
 				changed = true
 			default:
