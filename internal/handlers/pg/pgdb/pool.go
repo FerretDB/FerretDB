@@ -41,7 +41,10 @@ const (
 )
 
 var (
-	ErrNotExist     = fmt.Errorf("schema or table does not exist")
+	// ErrNotExist indicates that there is no such schema or table.
+	ErrNotExist = fmt.Errorf("schema or table does not exist")
+
+	// ErrAlreadyExist indicates that a schema or table already exists.
 	ErrAlreadyExist = fmt.Errorf("schema or table already exist")
 )
 
