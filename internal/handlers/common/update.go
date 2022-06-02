@@ -24,79 +24,98 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// CheckCurrentdateFieldExpression checks $currentDate input on correctness.
-func CheckCurrentdateFieldExpression(update *types.Document) error {
+// UpdateDocument updates the given document with a series of update operators.
+// Returns true if document was changed.
+func UpdateDocument(doc, update *types.Document) (bool, error) {
+	var changed bool
+	var err error
 	for _, updateOp := range update.Keys() {
-		if updateOp != "$currentDate" {
-			continue
-		}
+		updateV := must.NotFail(update.Get(updateOp))
 
-		currentDateExpression, err := update.Get("$currentDate")
-		if err != nil {
-			return nil
-		}
+		switch updateOp {
+		case "$currentDate":
+			changed, err = processCurrentdateFieldExpression(doc, updateV)
+			if err != nil {
+				return false, err
+			}
 
-		switch currentDateExpression := currentDateExpression.(type) {
-		case *types.Document:
-			for _, field := range currentDateExpression.Keys() {
-				setValue := must.NotFail(currentDateExpression.Get(field))
+		case "$set":
+			fallthrough
+		case "$setOnInsert":
 
-				switch setValue := setValue.(type) {
-				case bool:
-					// ok
+			// expecting here a document since all checks were made in ValidateUpdateOperators func
+			setDoc := updateV.(*types.Document)
 
-				case *types.Document:
-					for _, k := range setValue.Keys() {
-						if k != "$type" {
-							return NewWriteErrorMsg(
-								ErrBadValue,
-								fmt.Sprintf("Unrecognized $currentDate option: %s", k),
-							)
-						}
-					}
-					currentDateType, err := setValue.Get("$type")
-					if err != nil { // default is date
-						continue
-					}
-
-					switch currentDateType := currentDateType.(type) {
-					case string:
-						switch currentDateType {
-						case "timestamp":
-							// ok
-						case "date":
-							// ok
-						default:
-							return NewWriteErrorMsg(
-								ErrBadValue,
-								"The '$type' string field is required to be 'date' or 'timestamp'",
-							)
-						}
-
-					default:
-						return NewWriteErrorMsg(
-							ErrBadValue,
-							"The '$type' string field is required to be 'date' or 'timestamp'",
-						)
-					}
-
-				default:
-					return NewWriteErrorMsg(
-						ErrBadValue,
-						fmt.Sprintf("%s is not valid type for $currentDate. Please use a boolean ('true') "+
-							"or a $type expression ({$type: 'timestamp/date'}).", AliasFromType(setValue),
-						),
-					)
+			if setDoc.Len() == 0 {
+				continue
+			}
+			sort.Strings(setDoc.Keys())
+			for _, setKey := range setDoc.Keys() {
+				setValue := must.NotFail(setDoc.Get(setKey))
+				if err := doc.Set(setKey, setValue); err != nil {
+					return false, err
 				}
 			}
+			changed = true
+
+		case "$inc":
+			// expecting here a document since all checks were made in ValidateUpdateOperators func
+			incDoc := updateV.(*types.Document)
+
+			for _, incKey := range incDoc.Keys() {
+				if strings.ContainsRune(incKey, '.') {
+					return false, NewErrorMsg(ErrNotImplemented, "dot notation not supported yet")
+				}
+
+				incValue := must.NotFail(incDoc.Get(incKey))
+
+				if !doc.Has(incKey) {
+					must.NoError(doc.Set(incKey, incValue))
+					changed = true
+					continue
+				}
+
+				docValue := must.NotFail(doc.Get(incKey))
+
+				incremented, err := addNumbers(incValue, docValue)
+				if err == nil {
+					must.NoError(doc.Set(incKey, incremented))
+					changed = true
+					continue
+				}
+
+				switch err {
+				case errUnexpectedLeftOpType:
+					return false, NewWriteErrorMsg(
+						ErrTypeMismatch,
+						fmt.Sprintf(
+							`Cannot increment with non-numeric argument: {%s: %#v}`,
+							incKey,
+							incValue,
+						),
+					)
+				case errUnexpectedRightOpType:
+					return false, NewWriteErrorMsg(
+						ErrTypeMismatch,
+						fmt.Sprintf(
+							`Cannot apply $inc to a value of non-numeric type. `+
+								`{_id: "%s"} has the field '%s' of non-numeric type %s`,
+							must.NotFail(doc.Get("_id")),
+							incKey,
+							AliasFromType(docValue),
+						),
+					)
+				default:
+					return false, err
+				}
+			}
+
 		default:
-			return NewWriteErrorMsg(
-				ErrFailedToParse,
-				"Modifiers operate on fields but we found another type instead",
-			)
+			return false, NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
 		}
 	}
-	return nil
+
+	return changed, nil
 }
 
 // processCurrentdateFieldExpression changes document according to $currentDate operator.
@@ -169,110 +188,181 @@ func processCurrentdateFieldExpression(doc *types.Document, currentDateExpressio
 	return changed, nil
 }
 
-// UpdateDocument updates the given document with a series of update operators.
-// Returns true if document was changed.
-func UpdateDocument(doc, update *types.Document) (bool, error) {
-	var changed bool
+// ValidateUpdateOperators validates update statement.
+func ValidateUpdateOperators(update *types.Document) error {
 	var err error
-	for _, updateOp := range update.Keys() {
-		updateV := must.NotFail(update.Get(updateOp))
+	if err = checkAllModifiersSupported(update); err != nil {
+		return err
+	}
+	inc, err := extractValueFromUpdateOperator("$inc", update)
+	if err != nil {
+		return err
+	}
+	set, err := extractValueFromUpdateOperator("$set", update)
+	if err != nil {
+		return err
+	}
+	_, err = extractValueFromUpdateOperator("$setOnInsert", update)
+	if err != nil {
+		return err
+	}
+	if err = checkConflictingChanges(set, inc); err != nil {
+		return err
+	}
+	if err = checkCurrentdateFieldExpression(update); err != nil {
+		return err
+	}
+	return nil
+}
 
+// checkAllModifiersSupported checks that update document contains only modifiers that are supported.
+func checkAllModifiersSupported(update *types.Document) error {
+	for _, updateOp := range update.Keys() {
 		switch updateOp {
 		case "$currentDate":
-			changed, err = processCurrentdateFieldExpression(doc, updateV)
-			if err != nil {
-				return false, err
-			}
-
-		case "$set":
-
-			switch setDoc := updateV.(type) {
-			case *types.Document:
-				if setDoc.Len() == 0 {
-					return false, nil
-				}
-				sort.Strings(setDoc.Keys())
-				for _, setKey := range setDoc.Keys() {
-					setValue := must.NotFail(setDoc.Get(setKey))
-					if err := doc.Set(setKey, setValue); err != nil {
-						return false, err
-					}
-				}
-				return true, nil
-			default:
-				msgFmt := fmt.Sprintf(`Modifiers operate on fields but we found type %[1]s instead. `+
-					`For example: {$mod: {<field>: ...}} not {$set: %[1]s}`,
-					AliasFromType(updateV),
-				)
-				return false, NewWriteErrorMsg(ErrFailedToParse, msgFmt)
-			}
-
+			fallthrough
 		case "$inc":
-			incDoc, ok := updateV.(*types.Document)
-			if !ok {
-				return false, NewWriteErrorMsg(
-					ErrFailedToParse,
-					fmt.Sprintf(
-						`Modifiers operate on fields but we found type string instead. `+
-							`For example: {$mod: {<field>: ...}} not {%s: %#v}`,
-						updateOp,
-						updateV,
-					),
-				)
-			}
-
-			for _, incKey := range incDoc.Keys() {
-				if strings.ContainsRune(incKey, '.') {
-					return false, NewErrorMsg(ErrNotImplemented, "dot notation not supported yet")
-				}
-
-				incValue := must.NotFail(incDoc.Get(incKey))
-
-				if !doc.Has(incKey) {
-					must.NoError(doc.Set(incKey, incValue))
-					changed = true
-					continue
-				}
-
-				docValue := must.NotFail(doc.Get(incKey))
-
-				incremented, err := addNumbers(incValue, docValue)
-				if err == nil {
-					must.NoError(doc.Set(incKey, incremented))
-					changed = true
-					continue
-				}
-
-				switch err {
-				case errUnexpectedLeftOpType:
-					return false, NewWriteErrorMsg(
-						ErrTypeMismatch,
-						fmt.Sprintf(
-							`Cannot increment with non-numeric argument: {%s: %#v}`,
-							incKey,
-							incValue,
-						),
-					)
-				case errUnexpectedRightOpType:
-					return false, NewWriteErrorMsg(
-						ErrTypeMismatch,
-						fmt.Sprintf(
-							`Cannot apply $inc to a value of non-numeric type. `+
-								`{_id: "%s"} has the field '%s' of non-numeric type %s`,
-							must.NotFail(doc.Get("_id")),
-							incKey,
-							AliasFromType(docValue),
-						),
-					)
-				default:
-					return false, err
-				}
-			}
-
+			fallthrough
+		case "$set":
+			fallthrough
+		case "$setOnInsert":
+			// supported
 		default:
-			return false, NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
+			return NewWriteErrorMsg(
+				ErrFailedToParse,
+				fmt.Sprintf(
+					"Unknown modifier: %s. Expected a valid update modifier or pipeline-style "+
+						"update specified as an array", updateOp,
+				),
+			)
 		}
 	}
+	return nil
+}
 
-	return changed, nil
+// checkConflictingChanges checks if there are the same keys in these documents and returns an error, if any.
+func checkConflictingChanges(a, b *types.Document) error {
+	if a == nil {
+		return nil
+	}
+	if b == nil {
+		return nil
+	}
+
+	for _, key := range a.Keys() {
+		if b.Has(key) {
+			return NewWriteErrorMsg(
+				ErrConflictingUpdateOperators,
+				fmt.Sprintf(
+					"Updating the path '%[1]s' would create a conflict at '%[1]s'", key,
+				),
+			)
+		}
+	}
+	return nil
+}
+
+// extractValueFromUpdateOperator gets operator "op" value and returns WriteError error if it is not a document.
+// For example, for update document
+//
+//  bson.D{
+// 	{"$set", bson.D{{"foo", int32(12)}}},
+// 	{"$inc", bson.D{{"foo", int32(1)}}},
+// 	{"$setOnInsert", bson.D{{"value", math.NaN()}}},
+//  }
+//
+// The result returned for "$setOnInsert" operator is
+//  bson.D{{"value", math.NaN()}}.
+func extractValueFromUpdateOperator(op string, update *types.Document) (*types.Document, error) {
+	if !update.Has(op) {
+		return nil, nil
+	}
+	updateExpression := must.NotFail(update.Get(op))
+	switch doc := updateExpression.(type) {
+	case *types.Document:
+		for _, v := range doc.Keys() {
+			if strings.Contains(v, ".") {
+				return nil, NewError(ErrNotImplemented, fmt.Errorf("Dot notation is not implemented"))
+			}
+		}
+
+		return doc, nil
+	default:
+		return nil, NewWriteErrorMsg(ErrFailedToParse, "Modifiers operate on fields but we found another type instead")
+	}
+}
+
+// checkCurrentdateFieldExpression checks $currentDate input on correctness.
+func checkCurrentdateFieldExpression(update *types.Document) error {
+	for _, updateOp := range update.Keys() {
+		if updateOp != "$currentDate" {
+			continue
+		}
+
+		currentDateExpression, err := update.Get("$currentDate")
+		if err != nil {
+			return nil
+		}
+
+		switch currentDateExpression := currentDateExpression.(type) {
+		case *types.Document:
+			for _, field := range currentDateExpression.Keys() {
+				setValue := must.NotFail(currentDateExpression.Get(field))
+
+				switch setValue := setValue.(type) {
+				case bool:
+					// ok
+
+				case *types.Document:
+					for _, k := range setValue.Keys() {
+						if k != "$type" {
+							return NewWriteErrorMsg(
+								ErrBadValue,
+								fmt.Sprintf("Unrecognized $currentDate option: %s", k),
+							)
+						}
+					}
+					currentDateType, err := setValue.Get("$type")
+					if err != nil { // default is date
+						continue
+					}
+
+					switch currentDateType := currentDateType.(type) {
+					case string:
+						switch currentDateType {
+						case "timestamp":
+							// ok
+						case "date":
+							// ok
+						default:
+							return NewWriteErrorMsg(
+								ErrBadValue,
+								"The '$type' string field is required to be 'date' or 'timestamp'",
+							)
+						}
+
+					default:
+						return NewWriteErrorMsg(
+							ErrBadValue,
+							"The '$type' string field is required to be 'date' or 'timestamp'",
+						)
+					}
+
+				default:
+					return NewWriteErrorMsg(
+						ErrBadValue,
+						fmt.Sprintf("%s is not valid type for $currentDate. Please use a boolean ('true') "+
+							"or a $type expression ({$type: 'timestamp/date'}).", AliasFromType(setValue),
+						),
+					)
+				}
+			}
+		default:
+			return NewWriteErrorMsg(
+				ErrFailedToParse,
+				"Modifiers operate on fields but we found another type instead",
+			)
+		}
+	}
+	return nil
 }

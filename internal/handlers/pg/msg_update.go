@@ -98,8 +98,10 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		if u, err = common.GetOptionalParam(update, "u", u); err != nil {
 			return nil, err
 		}
-		if err = common.CheckCurrentdateFieldExpression(u); err != nil {
-			return nil, err
+		if u != nil {
+			if err = common.ValidateUpdateOperators(u); err != nil {
+				return nil, err
+			}
 		}
 		if upsert, err = common.GetOptionalParam(update, "upsert", upsert); err != nil {
 			return nil, err
