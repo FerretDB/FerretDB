@@ -25,6 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// ParseDump parses string to bytes, in tests.
 func ParseDump(tb testing.TB, s string) []byte {
 	tb.Helper()
 
@@ -33,6 +34,7 @@ func ParseDump(tb testing.TB, s string) []byte {
 	return b
 }
 
+// ParseDumpFile parses file input to bytes, in tests.
 func ParseDumpFile(tb testing.TB, path ...string) []byte {
 	tb.Helper()
 
@@ -41,6 +43,7 @@ func ParseDumpFile(tb testing.TB, path ...string) []byte {
 	return ParseDump(tb, string(b))
 }
 
+// MustParseDumpFile panics if fails to parse file input to byte array.
 func MustParseDumpFile(path ...string) []byte {
 	b := must.NotFail(os.ReadFile(filepath.Join(path...)))
 	return must.NotFail(hex.ParseDump(string(b)))

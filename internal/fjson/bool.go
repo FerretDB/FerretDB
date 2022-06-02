@@ -35,7 +35,6 @@ func (b *boolType) UnmarshalJSON(data []byte) error {
 
 	r := bytes.NewReader(data)
 	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
 
 	var o bool
 	if err := dec.Decode(&o); err != nil {

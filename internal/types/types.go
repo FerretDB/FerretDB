@@ -48,6 +48,7 @@ import (
 	"time"
 )
 
+// MaxDocumentLen is the maximum BSON object size.
 const MaxDocumentLen = 16777216
 
 // ScalarType represents scalar type.
@@ -65,6 +66,7 @@ type Type interface {
 	ScalarType | CompositeType
 }
 
+// CompositeTypeInterface consists of Document and Array.
 // TODO remove once we have go-sumtype equivalent?
 type CompositeTypeInterface interface {
 	CompositeType

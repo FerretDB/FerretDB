@@ -32,7 +32,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
@@ -160,7 +160,7 @@ func setupMongoDB(ctx context.Context) {
 	logger.Infof("Done in %s.", time.Since(start))
 }
 
-func setupMonilaAndValues(ctx context.Context, handler common.Handler) {
+func setupMonilaAndValues(ctx context.Context, handler handlers.Interface) {
 	start := time.Now()
 	logger := zap.S().Named("postgres.monila_and_values")
 

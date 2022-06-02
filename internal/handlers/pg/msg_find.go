@@ -25,7 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgFind returns documents matched by the query.
+// MsgFind implements HandlerInterface.
 func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {

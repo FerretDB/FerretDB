@@ -24,7 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgCreateIndexes creates indexes on a collection.
+// MsgCreateIndexes implements HandlerInterface.
 func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/78
 
