@@ -12,5 +12,114 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package handlers hosts wire protocol commands handlers.
+// Package handlers provides an interface for all handlers.
 package handlers
+
+import (
+	"context"
+
+	"github.com/FerretDB/FerretDB/internal/wire"
+)
+
+// Interface contains methods that should be implemented by all handlers.
+//
+// Those methods are called to handle clients' requests sent over wire protocol.
+// MsgXXX methods handle OP_MSG commands.
+// CmdQuery handles a limited subset of OP_QUERY messages.
+//
+// Please keep methods documentation in sync with commands help text in the handlers/common package.
+type Interface interface {
+	// Close gracefully shutdowns handler.
+	Close()
+
+	// CmdQuery queries collections for documents.
+	// Used by deprecated OP_QUERY message during connection handshake with an old client.
+	CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error)
+
+	// OP_MSG commands, sorted alphabetically
+
+	// MsgBuildInfo returns a summary of the build information.
+	MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgCollStats returns storage data for a collection.
+	MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgConnectionStatus returns information about the current connection,
+	// specifically the state of authenticated users and their available permissions.
+	MsgConnectionStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgCount returns the count of documents that's matched by the query.
+	MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgCreate creates the collection.
+	MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgCreateIndexes creates indexes on a collection.
+	MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgDataSize returns the size of the collection in bytes.
+	MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgDBStats returns the statistics of the database.
+	MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgDebugError returns error for debugging
+	MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgDelete deletes documents matched by the query.
+	MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgDrop drops the collection.
+	MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgDropDatabase drops production database.
+	MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgFind returns documents matched by the query.
+	MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgFindAndModify inserts, updates, or deletes, and returns a document matched by the query.
+	MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgGetCmdLineOpts returns a summary of all runtime and configuration options.
+	MsgGetCmdLineOpts(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgGetLog returns the most recent logged events from memory.
+	MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgGetParameter returns the value of the parameter.
+	MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgHello returns the role of the FerretDB instance.
+	MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgHostInfo returns a summary of the system information.
+	MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgInsert inserts documents into the database.
+	MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgIsMaster returns the role of the FerretDB instance.
+	MsgIsMaster(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgListCollections returns the information of the collections and views in the database.
+	MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgListCommands returns a list of supported commands.
+	MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgListDatabases returns a summary of all the databases.
+	MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgPing returns a pong response.
+	MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgServerStatus returns an overview of the databases state.
+	MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgUpdate updates documents that are matched by the query.
+	MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgWhatsMyURI returns peer information.
+	MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+}
