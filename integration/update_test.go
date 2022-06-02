@@ -550,6 +550,7 @@ func TestCurrentDate(t *testing.T) {
 				ModifiedCount: 1,
 				UpsertedCount: 0,
 			},
+			result: bson.D{{"_id", "double"}, {"value", now}},
 		},
 		"Int32": {
 			id:     "double",
