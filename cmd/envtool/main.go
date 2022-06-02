@@ -288,9 +288,9 @@ Please file an issue with all that information below:
 }
 
 func setupLogger(debug bool) *zap.SugaredLogger {
-	logging.Setup("info")
+	logging.Setup(zap.InfoLevel)
 	if debug {
-		logging.Setup("debug")
+		logging.Setup(zap.DebugLevel)
 	}
 	logger := zap.S()
 	return logger

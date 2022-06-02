@@ -24,6 +24,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/handlers"
@@ -50,7 +51,12 @@ var (
 
 func main() {
 	flag.Parse()
-	logging.Setup(*logLevel)
+
+	level, err := zapcore.ParseLevel(*logLevel)
+	if err != nil {
+		level = zapcore.DebugLevel
+	}
+	logging.Setup(level)
 	logger := zap.L()
 
 	info := version.Get()
@@ -125,7 +131,7 @@ func main() {
 
 	prometheus.DefaultRegisterer.MustRegister(l)
 
-	err := l.Run(ctx)
+	err = l.Run(ctx)
 	if err == nil || err == context.Canceled {
 		logger.Info("Listener stopped")
 	} else {

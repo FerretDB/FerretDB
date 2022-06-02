@@ -188,9 +188,9 @@ func main() {
 		os.Exit(2)
 	}
 
-	logging.Setup("info")
+	logging.Setup(zap.InfoLevel)
 	if *debugF {
-		logging.Setup("debug")
+		logging.Setup(zap.DebugLevel)
 	}
 	logger := zap.S()
 
