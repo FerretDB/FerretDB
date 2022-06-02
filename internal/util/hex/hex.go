@@ -22,10 +22,12 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// Dump makes a hex dump of byte array.
 func Dump(b []byte) string {
 	return hex.Dump(b)
 }
 
+// ParseDump decodes from hex dump to the byte array.
 func ParseDump(s string) ([]byte, error) {
 	var res []byte
 
