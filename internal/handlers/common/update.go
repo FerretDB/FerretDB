@@ -50,6 +50,21 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 			changed = true
 
+		case "$unset":
+			switch setDoc := updateV.(type) {
+			case *types.Document:
+				if setDoc.Len() == 0 {
+					continue
+				}
+				sort.Strings(setDoc.Keys())
+				for _, setKey := range setDoc.Keys() {
+					doc.Remove(setKey)
+				}
+				changed = true
+			default:
+				panic("Modifiers operate on fields but we found another type instead")
+			}
+
 		case "$inc":
 			// expecting here a document since all checks were made in ValidateUpdateOperators func
 			incDoc := updateV.(*types.Document)
@@ -124,6 +139,10 @@ func ValidateUpdateOperators(update *types.Document) error {
 	if err != nil {
 		return err
 	}
+	_, err = extractValueFromUpdateOperator("$unset", update)
+	if err != nil {
+		return err
+	}
 	_, err = extractValueFromUpdateOperator("$setOnInsert", update)
 	if err != nil {
 		return err
@@ -143,6 +162,8 @@ func checkAllModifiersSupported(update *types.Document) error {
 		case "$set":
 			fallthrough
 		case "$setOnInsert":
+			fallthrough
+		case "$unset":
 			// supported
 		default:
 			return NewWriteErrorMsg(
