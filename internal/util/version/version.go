@@ -46,6 +46,7 @@ const MongoDBVersion = "5.0.42"
 // MongoDBVersionArray is MongoDBVersion, but as an array.
 var MongoDBVersionArray = must.NotFail(types.NewArray(int32(5), int32(0), int32(42), int32(0)))
 
+// Info provides details about the current build.
 type Info struct {
 	Version          string
 	Commit           string

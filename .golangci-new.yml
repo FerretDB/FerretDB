@@ -25,6 +25,7 @@ linters:
     - lll
     - misspell
     - nolintlint
+    - revive
     - staticcheck
     - unused
     - whitespace
@@ -77,7 +78,6 @@ linters:
     - prealloc
     - predeclared
     - promlinter
-    - revive
     - stylecheck
     - tagliatelle
     - tenv
