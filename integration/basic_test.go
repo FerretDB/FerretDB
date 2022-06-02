@@ -95,8 +95,8 @@ func TestInsertFind(t *testing.T) {
 	}
 }
 
+//nolint:paralleltest // we test a global list of databases
 func TestFindCommentMethod(t *testing.T) {
-	t.Parallel()
 	ctx, collection := setup(t, shareddata.Scalars)
 	name := collection.Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
@@ -110,8 +110,8 @@ func TestFindCommentMethod(t *testing.T) {
 	assert.Contains(t, databaseNames, name)
 }
 
+//nolint:paralleltest // we test a global list of databases
 func TestFindCommentQuery(t *testing.T) {
-	t.Parallel()
 	ctx, collection := setup(t, shareddata.Scalars)
 	name := collection.Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
