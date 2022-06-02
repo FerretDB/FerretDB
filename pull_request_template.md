@@ -22,7 +22,7 @@ Did you run anything manually? -->
 - [ ] Linters passed (`task lint`).
 - [ ] PR assignee is set.
 - [ ] PR labels are set.
-- [ ] Project and milestone are set.
+- [ ] Project and iternation are set.
 - [ ] Critical codecov complaints are considered.
 - [ ] PR title and body are in accordance with the Conform PR GitHub Action.
 - [ ] Other GitHub Actions passed.
