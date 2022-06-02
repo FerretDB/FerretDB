@@ -63,9 +63,8 @@ func (b boolType) WriteTo(w *bufio.Writer) error {
 func (b boolType) MarshalBinary() ([]byte, error) {
 	if b {
 		return []byte{1}, nil
-	} else {
-		return []byte{0}, nil
 	}
+	return []byte{0}, nil
 }
 
 // check interfaces
