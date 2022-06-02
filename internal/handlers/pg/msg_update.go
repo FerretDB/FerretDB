@@ -103,6 +103,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				return nil, err
 			}
 		}
+
 		if upsert, err = common.GetOptionalParam(update, "upsert", upsert); err != nil {
 			return nil, err
 		}

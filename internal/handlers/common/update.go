@@ -209,7 +209,7 @@ func ValidateUpdateOperators(update *types.Document) error {
 	if err = checkConflictingChanges(set, inc); err != nil {
 		return err
 	}
-	if err = checkCurrentdateFieldExpression(update); err != nil {
+	if err = checkCurrentDateFieldExpression(update); err != nil {
 		return err
 	}
 	return nil
@@ -292,55 +292,43 @@ func extractValueFromUpdateOperator(op string, update *types.Document) (*types.D
 	}
 }
 
-// checkCurrentdateFieldExpression checks $currentDate input on correctness.
-func checkCurrentdateFieldExpression(update *types.Document) error {
-	for _, updateOp := range update.Keys() {
-		if updateOp != "$currentDate" {
-			continue
-		}
+// checkCurrentDateFieldExpression checks $currentDate input on correctness.
+func checkCurrentDateFieldExpression(update *types.Document) error {
+	currentDateExpression, err := update.Get("$currentDate")
+	if err != nil {
+		return nil // it is ok: key is absent
+	}
 
-		currentDateExpression, err := update.Get("$currentDate")
-		if err != nil {
-			return nil
-		}
+	switch currentDateExpression := currentDateExpression.(type) {
+	case *types.Document:
+		for _, field := range currentDateExpression.Keys() {
+			setValue := must.NotFail(currentDateExpression.Get(field))
 
-		switch currentDateExpression := currentDateExpression.(type) {
-		case *types.Document:
-			for _, field := range currentDateExpression.Keys() {
-				setValue := must.NotFail(currentDateExpression.Get(field))
+			switch setValue := setValue.(type) {
+			case bool:
+				// ok
 
-				switch setValue := setValue.(type) {
-				case bool:
-					// ok
-
-				case *types.Document:
-					for _, k := range setValue.Keys() {
-						if k != "$type" {
-							return NewWriteErrorMsg(
-								ErrBadValue,
-								fmt.Sprintf("Unrecognized $currentDate option: %s", k),
-							)
-						}
+			case *types.Document:
+				for _, k := range setValue.Keys() {
+					if k != "$type" {
+						return NewWriteErrorMsg(
+							ErrBadValue,
+							fmt.Sprintf("Unrecognized $currentDate option: %s", k),
+						)
 					}
-					currentDateType, err := setValue.Get("$type")
-					if err != nil { // default is date
-						continue
-					}
+				}
+				currentDateType, err := setValue.Get("$type")
+				if err != nil { // default is date
+					continue
+				}
 
-					switch currentDateType := currentDateType.(type) {
-					case string:
-						switch currentDateType {
-						case "timestamp":
-							// ok
-						case "date":
-							// ok
-						default:
-							return NewWriteErrorMsg(
-								ErrBadValue,
-								"The '$type' string field is required to be 'date' or 'timestamp'",
-							)
-						}
-
+				switch currentDateType := currentDateType.(type) {
+				case string:
+					switch currentDateType {
+					case "timestamp":
+						// ok
+					case "date":
+						// ok
 					default:
 						return NewWriteErrorMsg(
 							ErrBadValue,
@@ -351,18 +339,24 @@ func checkCurrentdateFieldExpression(update *types.Document) error {
 				default:
 					return NewWriteErrorMsg(
 						ErrBadValue,
-						fmt.Sprintf("%s is not valid type for $currentDate. Please use a boolean ('true') "+
-							"or a $type expression ({$type: 'timestamp/date'}).", AliasFromType(setValue),
-						),
+						"The '$type' string field is required to be 'date' or 'timestamp'",
 					)
 				}
+
+			default:
+				return NewWriteErrorMsg(
+					ErrBadValue,
+					fmt.Sprintf("%s is not valid type for $currentDate. Please use a boolean ('true') "+
+						"or a $type expression ({$type: 'timestamp/date'}).", AliasFromType(setValue),
+					),
+				)
 			}
-		default:
-			return NewWriteErrorMsg(
-				ErrFailedToParse,
-				"Modifiers operate on fields but we found another type instead",
-			)
 		}
+	default:
+		return NewWriteErrorMsg(
+			ErrFailedToParse,
+			"Modifiers operate on fields but we found another type instead",
+		)
 	}
 	return nil
 }

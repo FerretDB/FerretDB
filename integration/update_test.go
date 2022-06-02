@@ -811,6 +811,15 @@ func TestCurrentDate(t *testing.T) {
 			paths:  []types.Path{types.NewPathFromString("value")},
 			result: bson.D{{"_id", "double"}, {"value", now}},
 		},
+		"WrongType": {
+			id:     "double",
+			update: bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", bson.D{{"abcd", int32(1)}}}}}}}},
+			err: &mongo.WriteError{
+				Code:    2,
+				Message: "The '$type' string field is required to be 'date' or 'timestamp': {$currentDate: {field : {$type: 'date'}}}",
+			},
+			alt: "The '$type' string field is required to be 'date' or 'timestamp'",
+		},
 		"NoField": {
 			id:     "double",
 			update: bson.D{{"$currentDate", bson.D{{"unexsistent", bson.D{{"$type", "date"}}}}}},
