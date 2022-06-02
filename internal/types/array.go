@@ -14,7 +14,9 @@
 
 package types
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // Array represents BSON array.
 //
@@ -110,4 +112,36 @@ func (a *Array) Append(values ...any) error {
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
 func (a *Array) RemoveByPath(path Path) {
 	removeByPath(a, path)
+}
+
+// Contains checks if the Array contains the given value.
+func (a *Array) Contains(value any) bool {
+	for _, v := range a.s {
+		if v == value {
+			return true
+		}
+	}
+	return false
+}
+
+// ContainsAll checks if the Array contains all the given values of the Array b.
+// Currently, this algorithm is O(n^2) without any performance tuning.
+// Possible improvement: to sorts both arrays before comparing.
+// If sorting is implemented, calling of the Contains function will be O(n*log(n)) instead of O(n^2).
+func (a *Array) ContainsAll(b *Array) bool {
+	if a.Len() < b.Len() {
+		// TODO: How to validate that all the values in b are unique?
+		return false
+	}
+
+	// TODO: sort a
+	// TODO: sort b
+
+	for _, v := range b.s {
+		if !a.Contains(v) {
+			return false
+		}
+	}
+
+	return true
 }

@@ -16,7 +16,6 @@ package common
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"strings"
 	"time"
@@ -612,8 +611,26 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 }
 
 // filterFieldExprSize handles {field: {$all: [value, another_value, ...]}} filter.
+// The main purpose of $all is to filter arrays.
+// In principle, it is possible to filter non-arrays: {field: {$all: [value]}},
+// but such statement is equivalent to {field: value}.
 func filterFieldExprAll(fieldValue any, allValue any) (bool, error) {
-	log.Fatalf("I'm here!\n\n%v\n\n%v\n\n", fieldValue, &allValue)
+	query, ok := allValue.(*types.Array)
+	if !ok {
+		return false, NewErrorMsg(ErrBadValue, "$all needs an array")
+	}
+
+	switch value := fieldValue.(type) {
+	case *types.Array:
+		return value.ContainsAll(query), nil
+	default:
+		for i := 0; i < query.Len(); i++ {
+			if types.Compare(value, must.NotFail(query.Get(i))) != types.Equal {
+				return false, nil
+			}
+		}
+	}
+
 	return true, nil
 }
 
