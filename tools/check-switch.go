@@ -54,8 +54,6 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		ast.Inspect(file, func(n ast.Node) bool {
 			var idx int
 			switch n := n.(type) {
-			case *ast.CommentGroup:
-			//	fmt.Printf("%+v\n", n)
 			case *ast.TypeSwitchStmt:
 				var name string
 				for _, el := range n.Body.List {
