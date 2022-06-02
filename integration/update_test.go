@@ -472,6 +472,7 @@ func TestCurrentDate(t *testing.T) {
 	maxTimeDelta := time.Duration(2 * time.Second)
 
 	now := primitive.NewDateTimeFromTime(time.Now().UTC())
+	nowTimestamp := primitive.Timestamp{T: uint32(time.Now().UTC().Unix()), I: uint32(0)}
 
 	for name, tc := range map[string]struct {
 		id     string
@@ -530,6 +531,7 @@ func TestCurrentDate(t *testing.T) {
 				ModifiedCount: 1,
 				UpsertedCount: 0,
 			},
+			paths:  []types.Path{types.NewPathFromString("value")},
 			result: bson.D{{"_id", "double"}, {"value", now}},
 		},
 		"TwoTrue": {
@@ -539,6 +541,10 @@ func TestCurrentDate(t *testing.T) {
 				MatchedCount:  1,
 				ModifiedCount: 1,
 				UpsertedCount: 0,
+			},
+			paths: []types.Path{
+				types.NewPathFromString("value"),
+				types.NewPathFromString("unexistent"),
 			},
 			result: bson.D{{"_id", "double"}, {"value", now}, {"unexistent", now}},
 		},
@@ -550,6 +556,7 @@ func TestCurrentDate(t *testing.T) {
 				ModifiedCount: 1,
 				UpsertedCount: 0,
 			},
+			paths:  []types.Path{types.NewPathFromString("value")},
 			result: bson.D{{"_id", "double"}, {"value", now}},
 		},
 		"Int32": {
@@ -568,7 +575,8 @@ func TestCurrentDate(t *testing.T) {
 				ModifiedCount: 1,
 				UpsertedCount: 0,
 			},
-			result: bson.D{{"_id", "double"}, {"value", now}},
+			paths:  []types.Path{types.NewPathFromString("value")},
+			result: bson.D{{"_id", "double"}, {"value", nowTimestamp}},
 		},
 		"TimestampCapitalised": {
 			id:     "double",
@@ -587,6 +595,7 @@ func TestCurrentDate(t *testing.T) {
 				ModifiedCount: 1,
 				UpsertedCount: 0,
 			},
+			paths:  []types.Path{types.NewPathFromString("value")},
 			result: bson.D{{"_id", "double"}, {"value", now}},
 		},
 		"NoField": {
@@ -636,11 +645,9 @@ func TestCurrentDate(t *testing.T) {
 			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actualB)
 			require.NoError(t, err)
 
-			if len(tc.paths) == 0 {
-				tc.paths = []types.Path{types.NewPathFromString("value")}
-			}
 			actual := ConvertDocument(t, actualB)
 			expected := ConvertDocument(t, tc.result)
+
 			for _, path := range tc.paths {
 				testutil.CompareAndSetByPathTime(
 					t,
