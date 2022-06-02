@@ -24,6 +24,84 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// CheckCurrentdateFieldExpression checks $currentDate input on correctness.
+func CheckCurrentdateFieldExpression(update *types.Document) error {
+	for _, updateOp := range update.Keys() {
+		if updateOp != "$currentDate" {
+			continue
+		}
+
+		currentDateExpression, err := update.Get("$currentDate")
+		if err != nil {
+			return nil
+		}
+
+		switch currentDateExpression := currentDateExpression.(type) {
+		case *types.Document:
+			for _, field := range currentDateExpression.Keys() {
+				setValue := must.NotFail(currentDateExpression.Get(field))
+
+				switch setValue := setValue.(type) {
+				case bool:
+					// ok
+
+				case *types.Document:
+					for _, k := range setValue.Keys() {
+						if k != "$type" {
+							return NewWriteErrorMsg(
+								ErrBadValue,
+								fmt.Sprintf("Unrecognized $currentDate option: %s", k),
+							)
+						}
+					}
+					currentDateType, err := setValue.Get("$type")
+					if err != nil { // default is date
+						continue
+					}
+
+					switch currentDateType := currentDateType.(type) {
+					case string:
+						switch currentDateType {
+						case "timestamp":
+							return NewWriteErrorMsg(
+								ErrNotImplemented,
+								"timestamp of $surrentDate is not implemented",
+							)
+						case "date":
+							// ok
+						default:
+							return NewWriteErrorMsg(
+								ErrBadValue,
+								"The '$type' string field is required to be 'date' or 'timestamp'",
+							)
+						}
+
+					default:
+						return NewWriteErrorMsg(
+							ErrBadValue,
+							"The '$type' string field is required to be 'date' or 'timestamp'",
+						)
+					}
+
+				default:
+					return NewWriteErrorMsg(
+						ErrBadValue,
+						fmt.Sprintf("%s is not valid type for $currentDate. Please use a boolean ('true') "+
+							"or a $type expression ({$type: 'timestamp/date'}).", AliasFromType(setValue),
+						),
+					)
+				}
+			}
+		default:
+			return NewWriteErrorMsg(
+				ErrFailedToParse,
+				"Modifiers operate on fields but we found another type instead",
+			)
+		}
+	}
+	return nil
+}
+
 // processCurrentdateFieldExpression changes document according to $currentDate operator.
 // If the document was changed it returns true.
 func processCurrentdateFieldExpression(doc *types.Document, currentDateExpression any) (bool, error) {
@@ -47,11 +125,7 @@ func processCurrentdateFieldExpression(doc *types.Document, currentDateExpressio
 			case *types.Document:
 				for _, k := range setValue.Keys() {
 					if k != "$type" {
-						return false,
-							NewWriteErrorMsg(
-								ErrBadValue,
-								fmt.Sprintf("Unrecognized $currentDate option: %s", k),
-							)
+						panic(fmt.Sprintf("Unrecognized $currentDate option: %s", k))
 					}
 				}
 				currentDateType, err := setValue.Get("$type")
@@ -79,37 +153,21 @@ func processCurrentdateFieldExpression(doc *types.Document, currentDateExpressio
 						changed = true
 
 					default:
-						return false,
-							NewWriteErrorMsg(
-								ErrBadValue,
-								"The '$type' string field is required to be 'date' or 'timestamp'",
-							)
+						panic("The '$type' string field is required to be 'date' or 'timestamp'")
 					}
 
 				default:
-					return false,
-						NewWriteErrorMsg(
-							ErrBadValue,
-							"The '$type' string field is required to be 'date' or 'timestamp'",
-						)
+					panic("The '$type' string field is required to be 'date' or 'timestamp'")
 				}
 
 			default:
-				return false,
-					NewWriteErrorMsg(
-						ErrBadValue,
-						fmt.Sprintf("%s is not valid type for $currentDate. Please use a boolean ('true') "+
-							"or a $type expression ({$type: 'timestamp/date'}).", AliasFromType(setValue),
-						),
-					)
+				panic("not valid type for $currentDate. Please use a boolean ('true') " +
+					"or a $type expression ({$type: 'timestamp/date'}).",
+				)
 			}
 		}
 	default:
-		return false,
-			NewWriteErrorMsg(
-				ErrFailedToParse,
-				"Modifiers operate on fields but we found another type instead",
-			)
+		panic("Modifiers operate on fields but we found another type instead")
 	}
 	return changed, nil
 }
