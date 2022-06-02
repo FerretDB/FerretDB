@@ -22,9 +22,14 @@ import (
 )
 
 // Setup initializes logging with a given level.
-func Setup(level zapcore.Level) {
+func Setup(level string) {
+	levelLog, err := zapcore.ParseLevel(level)
+	if err != nil {
+		levelLog = zapcore.DebugLevel
+	}
+
 	config := zap.NewDevelopmentConfig()
-	config.Level = zap.NewAtomicLevelAt(level)
+	config.Level = zap.NewAtomicLevelAt(levelLog)
 
 	logger, err := config.Build()
 	if err != nil {

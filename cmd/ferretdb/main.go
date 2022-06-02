@@ -45,12 +45,13 @@ var (
 	versionF         = flag.Bool("version", false, "print version to stdout (full version, commit, branch, dirty flag) and exit")
 	testConnTimeoutF = flag.Duration("test-conn-timeout", 0, "test: set connection timeout")
 	handlerF         = flag.String("handler", "pg", "set backend handler (pg, dummy)")
+	logLevel         = flag.String("log-level", "info", "set backend handler (debug/info/warn/error)")
 )
 
 func main() {
-	logging.Setup(zap.DebugLevel)
-	logger := zap.L()
 	flag.Parse()
+	logging.Setup(*logLevel)
+	logger := zap.L()
 
 	info := version.Get()
 
