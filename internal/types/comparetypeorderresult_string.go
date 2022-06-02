@@ -15,14 +15,14 @@ func _() {
 	_ = x[documentDataType-5]
 	_ = x[arrayDataType-6]
 	_ = x[binDataType-7]
-	_ = x[objectIdDataType-8]
+	_ = x[objectIDDataType-8]
 	_ = x[booleanDataType-9]
 	_ = x[dateDataType-10]
 	_ = x[timestampDataType-11]
 	_ = x[regexDataType-12]
 }
 
-const _compareTypeOrderResult_name = "nullDataTypenanDataTypenumbersDataTypestringDataTypedocumentDataTypearrayDataTypebinDataTypeobjectIdDataTypebooleanDataTypedateDataTypetimestampDataTyperegexDataType"
+const _compareTypeOrderResult_name = "nullDataTypenanDataTypenumbersDataTypestringDataTypedocumentDataTypearrayDataTypebinDataTypeobjectIDDataTypebooleanDataTypedateDataTypetimestampDataTyperegexDataType"
 
 var _compareTypeOrderResult_index = [...]uint8{0, 12, 23, 38, 52, 68, 81, 92, 108, 123, 135, 152, 165}
 

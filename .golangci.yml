@@ -66,6 +66,10 @@ linters-settings:
     allow-no-explanation: []
     require-explanation: true
     require-specific: true
+  revive:
+    ignore-generated-header: true
+    severity: warning
+    enableAllRules: true
   staticcheck:
     go: "1.18"
     checks: ["all"]
@@ -93,6 +97,7 @@ linters:
     - lll
     - misspell
     - nolintlint
+    - revive
     - staticcheck
     - unused
     - whitespace
