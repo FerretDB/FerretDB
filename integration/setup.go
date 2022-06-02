@@ -214,7 +214,7 @@ func startup(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	logging.Setup(zap.DebugLevel)
+	logging.Setup("debug")
 
 	ctx := context.Background()
 
