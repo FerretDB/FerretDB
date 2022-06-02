@@ -597,7 +597,8 @@ func TestCurrentDate(t *testing.T) {
 				ModifiedCount: 1,
 				UpsertedCount: 0,
 			},
-			paths: []types.Path{types.NewPathFromString("unexsistent")},
+			paths:  []types.Path{types.NewPathFromString("unexsistent")},
+			result: bson.D{{"_id", "double"}, {"value", 42.13}, {"unexsistent", now}},
 		},
 		"UnrecognizedOption": {
 			id: "array",
@@ -651,10 +652,7 @@ func TestCurrentDate(t *testing.T) {
 				expected.RemoveByPath(path)
 				actual.RemoveByPath(path)
 			}
-
-			// t.Logf("expected %#v", expected)
-			// t.Logf("actual %#v", actual)
-			// assert.Equal(t, expected, actual)
+			assert.Equal(t, expected, actual)
 		})
 	}
 }
