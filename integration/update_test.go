@@ -472,6 +472,7 @@ func TestCurrentDate(t *testing.T) {
 	maxTimeDelta := time.Duration(30 * time.Second)
 
 	now := primitive.NewDateTimeFromTime(time.Now().UTC())
+	nowTimestamp := primitive.Timestamp{T: uint32(time.Now().UTC().Unix()), I: uint32(0)}
 
 	for name, tc := range map[string]struct {
 		id     string
@@ -565,6 +566,17 @@ func TestCurrentDate(t *testing.T) {
 				Code:    2,
 				Message: "int is not valid type for $currentDate. Please use a boolean ('true') or a $type expression ({$type: 'timestamp/date'}).",
 			},
+		},
+		"Timestamp": {
+			id:     "double",
+			update: bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "timestamp"}}}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			paths:  []types.Path{types.NewPathFromString("value")},
+			result: bson.D{{"_id", "double"}, {"value", nowTimestamp}},
 		},
 		"TimestampCapitalised": {
 			id:     "double",

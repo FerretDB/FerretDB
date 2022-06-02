@@ -63,10 +63,7 @@ func CheckCurrentdateFieldExpression(update *types.Document) error {
 					case string:
 						switch currentDateType {
 						case "timestamp":
-							return NewWriteErrorMsg(
-								ErrNotImplemented,
-								"timestamp of $surrentDate is not implemented",
-							)
+							// ok
 						case "date":
 							// ok
 						default:
@@ -141,11 +138,11 @@ func processCurrentdateFieldExpression(doc *types.Document, currentDateExpressio
 				case string:
 					switch currentDateType {
 					case "timestamp":
-						return false,
-							NewWriteErrorMsg(
-								ErrNotImplemented,
-								"timestamp of $surrentDate is not implemented",
-							)
+						if err := doc.Set(field, types.NextTimestamp(uint64(now.UTC().Unix()))); err != nil {
+							return false, err
+						}
+						changed = true
+
 					case "date":
 						if err := doc.Set(field, now); err != nil {
 							return false, err
