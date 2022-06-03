@@ -711,11 +711,14 @@ func TestUpdateWeirdCases(t *testing.T) {
 			t.Parallel()
 			ctx, collection := setup(t)
 
-			_, err := collection.InsertMany(ctx, []any{
-				bson.D{
-					{"_id", "document"},
-					{"value", bson.D{{"foo", bson.D{{"bar", int32(1)}}}}}},
-			})
+			_, err := collection.InsertMany(
+				ctx,
+				[]any{
+					bson.D{
+						{"_id", "document"},
+						{"value", bson.D{{"foo", bson.D{{"bar", int32(1)}}}}}},
+				},
+			)
 			require.NoError(t, err)
 
 			res := collection.Database().RunCommand(
