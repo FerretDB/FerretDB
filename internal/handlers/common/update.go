@@ -102,6 +102,40 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				}
 			}
 
+		case "$mul":
+			mulDoc, ok := updateV.(*types.Document)
+			if !ok {
+				return false, NewWriteErrorMsg(
+					ErrFailedToParse,
+					fmt.Sprintf(`Modifiers operate on fields but we found type %[1]s instead. `+
+						`For example: {$mod: {<field>: ...}} not {$rename: %[1]s}`,
+						AliasFromType(updateV),
+					),
+				)
+			}
+
+			if mulDoc.Len() == 0 {
+				return false, nil
+			}
+
+			mulMap := mulDoc.Map()
+
+			for _, mulKey := range mulDoc.Keys() {
+				if strings.ContainsRune(mulKey, '.') {
+					return false, NewErrorMsg(ErrNotImplemented, "dot notation not supported yet")
+				}
+
+				if doc.Has(mulKey) {
+					docValue := must.NotFail(doc.Get(mulKey))
+					mulValue := mulMap[mulKey]
+
+					multiplication := docValue * mulValue
+
+					must.NoError(doc.Set(mulKey, multiplication))
+				}
+
+			}
+
 		default:
 			return false, NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
 		}
