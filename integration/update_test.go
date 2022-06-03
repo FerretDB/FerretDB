@@ -716,7 +716,8 @@ func TestUpdateWeirdCases(t *testing.T) {
 				[]any{
 					bson.D{
 						{"_id", "document"},
-						{"value", bson.D{{"foo", bson.D{{"bar", int32(1)}}}}}},
+						{"value", bson.D{{"foo", bson.D{{"bar", int32(1)}}}}},
+					},
 				},
 			)
 			require.NoError(t, err)
