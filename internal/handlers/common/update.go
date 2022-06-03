@@ -26,46 +26,33 @@ import (
 // UpdateDocument updates the given document with a series of update operators.
 // Returns true if document was changed.
 func UpdateDocument(doc, update *types.Document) (bool, error) {
+	var changed bool
 	for _, updateOp := range update.Keys() {
 		updateV := must.NotFail(update.Get(updateOp))
 
 		switch updateOp {
 		case "$set":
+			fallthrough
+		case "$setOnInsert":
 
-			switch setDoc := updateV.(type) {
-			case *types.Document:
-				if setDoc.Len() == 0 {
-					return false, nil
-				}
-				sort.Strings(setDoc.Keys())
-				for _, setKey := range setDoc.Keys() {
-					setValue := must.NotFail(setDoc.Get(setKey))
-					if err := doc.Set(setKey, setValue); err != nil {
-						return false, err
-					}
-				}
-				return true, nil
-			default:
-				msgFmt := fmt.Sprintf(`Modifiers operate on fields but we found type %[1]s instead. `+
-					`For example: {$mod: {<field>: ...}} not {$set: %[1]s}`,
-					AliasFromType(updateV),
-				)
-				return false, NewWriteErrorMsg(ErrFailedToParse, msgFmt)
+			// expecting here a document since all checks were made in ValidateUpdateOperators func
+			setDoc := updateV.(*types.Document)
+
+			if setDoc.Len() == 0 {
+				continue
 			}
+			sort.Strings(setDoc.Keys())
+			for _, setKey := range setDoc.Keys() {
+				setValue := must.NotFail(setDoc.Get(setKey))
+				if err := doc.Set(setKey, setValue); err != nil {
+					return false, err
+				}
+			}
+			changed = true
 
 		case "$inc":
-			incDoc, ok := updateV.(*types.Document)
-			if !ok {
-				return false, NewWriteErrorMsg(
-					ErrFailedToParse,
-					fmt.Sprintf(
-						`Modifiers operate on fields but we found type string instead. `+
-							`For example: {$mod: {<field>: ...}} not {%s: %#v}`,
-						updateOp,
-						updateV,
-					),
-				)
-			}
+			// expecting here a document since all checks were made in ValidateUpdateOperators func
+			incDoc := updateV.(*types.Document)
 
 			for _, incKey := range incDoc.Keys() {
 				if strings.ContainsRune(incKey, '.') {
@@ -76,7 +63,8 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 				if !doc.Has(incKey) {
 					must.NoError(doc.Set(incKey, incValue))
-					return true, nil
+					changed = true
+					continue
 				}
 
 				docValue := must.NotFail(doc.Get(incKey))
@@ -84,6 +72,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				incremented, err := addNumbers(incValue, docValue)
 				if err == nil {
 					must.NoError(doc.Set(incKey, incremented))
+					changed = true
 					continue
 				}
 
@@ -118,5 +107,104 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 		}
 	}
 
-	return true, nil
+	return changed, nil
+}
+
+// ValidateUpdateOperators validates update statement.
+func ValidateUpdateOperators(update *types.Document) error {
+	var err error
+	if err = checkAllModifiersSupported(update); err != nil {
+		return err
+	}
+	inc, err := extractValueFromUpdateOperator("$inc", update)
+	if err != nil {
+		return err
+	}
+	set, err := extractValueFromUpdateOperator("$set", update)
+	if err != nil {
+		return err
+	}
+	_, err = extractValueFromUpdateOperator("$setOnInsert", update)
+	if err != nil {
+		return err
+	}
+	if err = checkConflictingChanges(set, inc); err != nil {
+		return err
+	}
+	return nil
+}
+
+// checkAllModifiersSupported checks that update document contains only modifiers that are supported.
+func checkAllModifiersSupported(update *types.Document) error {
+	for _, updateOp := range update.Keys() {
+		switch updateOp {
+		case "$inc":
+			fallthrough
+		case "$set":
+			fallthrough
+		case "$setOnInsert":
+			// supported
+		default:
+			return NewWriteErrorMsg(
+				ErrFailedToParse,
+				fmt.Sprintf(
+					"Unknown modifier: %s. Expected a valid update modifier or pipeline-style "+
+						"update specified as an array", updateOp,
+				),
+			)
+		}
+	}
+	return nil
+}
+
+// checkConflictingChanges checks if there are the same keys in these documents and returns an error, if any.
+func checkConflictingChanges(a, b *types.Document) error {
+	if a == nil {
+		return nil
+	}
+	if b == nil {
+		return nil
+	}
+
+	for _, key := range a.Keys() {
+		if b.Has(key) {
+			return NewWriteErrorMsg(
+				ErrConflictingUpdateOperators,
+				fmt.Sprintf(
+					"Updating the path '%[1]s' would create a conflict at '%[1]s'", key,
+				),
+			)
+		}
+	}
+	return nil
+}
+
+// extractValueFromUpdateOperator gets operator "op" value and returns WriteError error if it is not a document.
+// For example, for update document
+//
+//  bson.D{
+// 	{"$set", bson.D{{"foo", int32(12)}}},
+// 	{"$inc", bson.D{{"foo", int32(1)}}},
+// 	{"$setOnInsert", bson.D{{"value", math.NaN()}}},
+//  }
+//
+// The result returned for "$setOnInsert" operator is
+//  bson.D{{"value", math.NaN()}}.
+func extractValueFromUpdateOperator(op string, update *types.Document) (*types.Document, error) {
+	if !update.Has(op) {
+		return nil, nil
+	}
+	updateExpression := must.NotFail(update.Get(op))
+	switch doc := updateExpression.(type) {
+	case *types.Document:
+		for _, v := range doc.Keys() {
+			if strings.Contains(v, ".") {
+				return nil, NewError(ErrNotImplemented, fmt.Errorf("Dot notation is not implemented"))
+			}
+		}
+
+		return doc, nil
+	default:
+		return nil, NewWriteErrorMsg(ErrFailedToParse, "Modifiers operate on fields but we found another type instead")
+	}
 }
