@@ -162,15 +162,15 @@ func TestQueryArrayAll(t *testing.T) {
 		expectedIDs []any
 		err         *mongo.CommandError
 	}{
-		"string": {
+		"String": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{"1"}}}}},
 			expectedIDs: []any{"array-many", "array-one", "array-three", "array-two"},
 		},
-		"float": {
+		"Float": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{12.5}}}}},
 			expectedIDs: []any{"array-many", "float"},
 		},
-		"multi_all": {
+		"MultiAll": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{"1", 2}}}}},
 			expectedIDs: []any{"array-many", "array-three"},
 		},
@@ -195,7 +195,7 @@ func TestQueryArrayAll(t *testing.T) {
 	}
 
 	// Handle a case when the value for $all is a scalar.
-	t.Run("$all_needs_an_array", func(t *testing.T) {
+	t.Run("Op$allNeedsAnArray", func(t *testing.T) {
 		filter := bson.D{{"value", bson.D{{"$all", "1"}}}}
 		cur, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 		require.EqualError(t, err, "(BadValue) $all needs an array")
