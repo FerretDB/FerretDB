@@ -77,3 +77,78 @@ func TestArray(t *testing.T) {
 		assert.Equal(t, int32(42), b.s[0])
 	})
 }
+
+func TestArrayContains(t *testing.T) {
+	for name, tc := range map[string]struct {
+		array    *Array
+		filter   any
+		expected bool
+	}{
+		"string": {
+			array:    must.NotFail(NewArray("foo", "bar")),
+			filter:   "foo",
+			expected: true,
+		},
+		"string_negative": {
+			array:    must.NotFail(NewArray("foo", "bar")),
+			filter:   "hello",
+			expected: false,
+		},
+		"int32": {
+			array:    must.NotFail(NewArray(int32(42), int32(43), int32(45))),
+			filter:   int32(43),
+			expected: true,
+		},
+		"int32_negative": {
+			array:    must.NotFail(NewArray(int32(42), int32(43), int32(45))),
+			filter:   int32(44),
+			expected: false,
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tc.expected, tc.array.Contains(tc.filter))
+		})
+	}
+}
+
+func TestArrayContainsAll(t *testing.T) {
+	for name, tc := range map[string]struct {
+		array    *Array
+		filter   *Array
+		expected bool
+	}{
+		"string": {
+			array:    must.NotFail(NewArray("foo", "bar")),
+			filter:   must.NotFail(NewArray("foo", "bar")),
+			expected: true,
+		},
+		"string_negative": {
+			array:    must.NotFail(NewArray("foo", "bar")),
+			filter:   must.NotFail(NewArray("foo", "hello")),
+			expected: false,
+		},
+		"int32": {
+			array:    must.NotFail(NewArray(int32(42), int32(43), int32(45))),
+			filter:   must.NotFail(NewArray(int32(42), int32(43))),
+			expected: true,
+		},
+		"int32_negative": {
+			array:    must.NotFail(NewArray(int32(42), int32(43), int32(45))),
+			filter:   must.NotFail(NewArray(int32(44))),
+			expected: false,
+		},
+		"int32_negative_many": {
+			array:    must.NotFail(NewArray(int32(42), int32(43), int32(45))),
+			filter:   must.NotFail(NewArray(int32(42), int32(44))),
+			expected: false,
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tc.expected, tc.array.ContainsAll(tc.filter))
+		})
+	}
+}
