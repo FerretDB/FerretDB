@@ -140,18 +140,14 @@ func checkAllModifiersSupported(update *types.Document) error {
 			fallthrough
 		case "$setOnInsert":
 			// supported
-		case "$currentDate", "$min", "$max", "$mul", "$rename", "$unset":
-			return NewWriteErrorMsg(ErrNotImplemented, fmt.Sprintf("%s not implemented yet", updateOp))
 		default:
-			if strings.Contains(updateOp, "$") {
-				return NewWriteErrorMsg(
-					ErrFailedToParse,
-					fmt.Sprintf(
-						"Unknown modifier: %s. Expected a valid update modifier or pipeline-style "+
-							"update specified as an array", updateOp,
-					),
-				)
-			}
+			return NewWriteErrorMsg(
+				ErrFailedToParse,
+				fmt.Sprintf(
+					"Unknown modifier: %s. Expected a valid update modifier or pipeline-style "+
+						"update specified as an array", updateOp,
+				),
+			)
 		}
 	}
 	return nil
@@ -199,7 +195,7 @@ func extractValueFromUpdateOperator(op string, update *types.Document) (*types.D
 	case *types.Document:
 		for _, v := range doc.Keys() {
 			if strings.Contains(v, ".") {
-				return nil, NewError(ErrNotImplemented, fmt.Errorf("dot notation is not supported for operator %s yet", op))
+				return nil, NewError(ErrNotImplemented, fmt.Errorf("dot notation for operator %s is not supported yet", op))
 			}
 		}
 
