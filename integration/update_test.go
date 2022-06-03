@@ -674,7 +674,7 @@ func TestUpdateMany(t *testing.T) {
 	}
 }
 
-func TestUpdateWeirdCases(t *testing.T) {
+func TestUpdateReplaceDocuments(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
