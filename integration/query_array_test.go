@@ -137,3 +137,68 @@ func TestQueryArraySize(t *testing.T) {
 		})
 	}
 }
+
+// TestQueryArrayAll covers the case where the $all operator is used on an array or scalar.
+func TestQueryArrayAll(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	// Valid cases when the value for $all is an array.
+	_, err := collection.InsertMany(ctx, []any{
+		bson.D{{"_id", "array-empty"}, {"value", bson.A{}}},
+		bson.D{{"_id", "array-one"}, {"value", bson.A{"1"}}},
+		bson.D{{"_id", "array-two"}, {"value", bson.A{"1", nil}}},
+		bson.D{{"_id", "array-three"}, {"value", bson.A{"1", 2, math.NaN()}}},
+		bson.D{{"_id", "array-many"}, {"value", bson.A{"1", 2, math.NaN(), 12.5}}},
+		bson.D{{"_id", "string"}, {"value", "12"}},
+		bson.D{{"_id", "int"}, {"value", 12}},
+		bson.D{{"_id", "float"}, {"value", 12.5}},
+		bson.D{{"_id", "document"}, {"value", bson.D{{"value", bson.A{"1", 2}}}}},
+	})
+	require.NoError(t, err)
+
+	for name, tc := range map[string]struct {
+		filter      bson.D
+		expectedIDs []any
+		err         *mongo.CommandError
+	}{
+		"string": {
+			filter:      bson.D{{"value", bson.D{{"$all", bson.A{"1"}}}}},
+			expectedIDs: []any{"array-many", "array-one", "array-three", "array-two"},
+		},
+		"float": {
+			filter:      bson.D{{"value", bson.D{{"$all", bson.A{12.5}}}}},
+			expectedIDs: []any{"array-many", "float"},
+		},
+		"multi_all": {
+			filter:      bson.D{{"value", bson.D{{"$all", bson.A{"1", 2}}}}},
+			expectedIDs: []any{"array-many", "array-three"},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			if tc.err != nil {
+				require.Nil(t, tc.expectedIDs)
+				AssertEqualError(t, *tc.err, err)
+				return
+			}
+			require.NoError(t, err)
+
+			var actual []bson.D
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
+		})
+	}
+
+	// Handle a case when the value for $all is a scalar.
+	t.Run("$all_needs_an_array", func(t *testing.T) {
+		filter := bson.D{{"value", bson.D{{"$all", "1"}}}}
+		cur, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+		require.EqualError(t, err, "(BadValue) $all needs an array")
+		assert.Nil(t, cur)
+	})
+}
