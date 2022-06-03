@@ -61,7 +61,7 @@ func TestUpdateRename(t *testing.T) {
 			},
 			altMessage: `The 'to' field for $rename must be a string: name: long`,
 		},
-		"FieldDoc": {
+		"FieldDocument": {
 			filter: bson.D{{"_id", "1"}},
 			update: bson.D{{"$rename", bson.D{{"name", primitive.D{}}}}},
 			err: &mongo.WriteError{
@@ -82,12 +82,21 @@ func TestUpdateRename(t *testing.T) {
 			altMessage: `The 'to' field for $rename must be a string: name: object`,
 		}, */
 
-		"FieldArray": {
+		"FieldEmptyArray": {
 			filter: bson.D{{"_id", "1"}},
 			update: bson.D{{"$rename", bson.D{{"name", primitive.A{}}}}},
 			err: &mongo.WriteError{
 				Code:    2,
 				Message: `The 'to' field for $rename must be a string: name: []`,
+			},
+			altMessage: `The 'to' field for $rename must be a string: name: array`,
+		},
+		"FieldArray": {
+			filter: bson.D{{"_id", "1"}},
+			update: bson.D{{"$rename", bson.D{{"name", primitive.A{"nickname", "alias"}}}}},
+			err: &mongo.WriteError{
+				Code:    2,
+				Message: `The 'to' field for $rename must be a string: name: [ "nickname", "alias" ]`,
 			},
 			altMessage: `The 'to' field for $rename must be a string: name: array`,
 		},
@@ -117,8 +126,7 @@ func TestUpdateRename(t *testing.T) {
 				Message: `Modifiers operate on fields but we found type string instead.` +
 					` For example: {$mod: {<field>: ...}} not {$rename: "string"}`,
 			},
-			altMessage: "Modifiers operate on fields but we found type string instead. " +
-				"For example: {$mod: {<field>: ...}} not {$rename: string}",
+			altMessage: `Modifiers operate on fields but we found another type instead`,
 		},
 		"RenameNil": {
 			filter: bson.D{{"_id", "1"}},
@@ -128,8 +136,7 @@ func TestUpdateRename(t *testing.T) {
 				Message: `Modifiers operate on fields but we found type null instead.` +
 					` For example: {$mod: {<field>: ...}} not {$rename: null}`,
 			},
-			altMessage: "Modifiers operate on fields but we found type null instead. " +
-				"For example: {$mod: {<field>: ...}} not {$rename: null}",
+			altMessage: `Modifiers operate on fields but we found another type instead`,
 		},
 		"RenameDoc": {
 			filter: bson.D{{"_id", "1"}},

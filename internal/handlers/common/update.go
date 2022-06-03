@@ -103,20 +103,8 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 
 		case "$rename":
-			renameDoc, ok := updateV.(*types.Document)
-			if !ok {
-				return false, NewWriteErrorMsg(
-					ErrFailedToParse,
-					fmt.Sprintf(`Modifiers operate on fields but we found type %[1]s instead. `+
-						`For example: {$mod: {<field>: ...}} not {$rename: %[1]s}`,
-						AliasFromType(updateV),
-					),
-				)
-			}
-
-			if renameDoc.Len() == 0 {
-				return false, nil
-			}
+			// {$rename: {<field1>: <newName1>, <field2>: <newName2>, ... }}
+			renameDoc := updateV.(*types.Document)
 
 			renameMap := renameDoc.Map()
 
@@ -139,6 +127,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 						)
 					}
 					must.NoError(doc.Set(newKey.(string), docValue))
+					changed = true
 				}
 			}
 
@@ -164,6 +153,10 @@ func ValidateUpdateOperators(update *types.Document) error {
 	if err != nil {
 		return err
 	}
+	_, err = extractValueFromUpdateOperator("$rename", update)
+	if err != nil {
+		return err
+	}
 	_, err = extractValueFromUpdateOperator("$setOnInsert", update)
 	if err != nil {
 		return err
@@ -183,6 +176,8 @@ func checkAllModifiersSupported(update *types.Document) error {
 		case "$set":
 			fallthrough
 		case "$setOnInsert":
+			fallthrough
+		case "$rename":
 			// supported
 		default:
 			return NewWriteErrorMsg(
