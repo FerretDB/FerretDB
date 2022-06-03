@@ -178,6 +178,10 @@ func TestQueryArrayAll(t *testing.T) {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{"1", nil}}}}},
 			expectedIDs: []any{"array-two"},
 		},
+		"MultiAllWithNaN": {
+			filter:      bson.D{{"value", bson.D{{"$all", bson.A{"1", math.NaN()}}}}},
+			expectedIDs: []any{"array-many", "array-three"},
+		},
 		"NotFound": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{"hello"}}}}},
 			expectedIDs: []any{},

@@ -14,7 +14,9 @@
 
 package types
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // Array represents BSON array.
 //
@@ -115,7 +117,7 @@ func (a *Array) RemoveByPath(path Path) {
 // Contains checks if the Array contains the given value.
 func (a *Array) Contains(value any) bool {
 	for _, v := range a.s {
-		if v == value {
+		if Compare(v, value) != Equal {
 			return true
 		}
 	}
