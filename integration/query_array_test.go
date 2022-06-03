@@ -174,6 +174,14 @@ func TestQueryArrayAll(t *testing.T) {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{"1", 2}}}}},
 			expectedIDs: []any{"array-many", "array-three"},
 		},
+		"MultiAllWithNil": {
+			filter:      bson.D{{"value", bson.D{{"$all", bson.A{"1", nil}}}}},
+			expectedIDs: []any{"array-two"},
+		},
+		"NotFound": {
+			filter:      bson.D{{"value", bson.D{{"$all", bson.A{"hello"}}}}},
+			expectedIDs: []any{},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
