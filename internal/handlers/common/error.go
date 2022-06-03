@@ -45,6 +45,9 @@ const (
 	// ErrNamespaceNotFound indicates that a collection is not found.
 	ErrNamespaceNotFound = ErrorCode(26) // NamespaceNotFound
 
+	// ErrConflictingUpdateOperators indicates that $set, $inc or $setOnInsert were used together.
+	ErrConflictingUpdateOperators = ErrorCode(40) // ConflictingUpdateOperators
+
 	// ErrNamespaceExists indicates that the collection already exists.
 	ErrNamespaceExists = ErrorCode(48) // NamespaceExists
 

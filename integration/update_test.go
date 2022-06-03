@@ -81,6 +81,7 @@ func TestUpdateIncOperatorErrors(t *testing.T) {
 		filter bson.D
 		update bson.D
 		err    *mongo.WriteError
+		alt    string
 	}{
 		"IncOnDocument": {
 			filter: bson.D{{"_id", "document"}},
@@ -107,6 +108,7 @@ func TestUpdateIncOperatorErrors(t *testing.T) {
 				Message: `Modifiers operate on fields but we found type string instead.` +
 					` For example: {$mod: {<field>: ...}} not {$inc: "string"}`,
 			},
+			alt: "Modifiers operate on fields but we found another type instead",
 		},
 		"IncWithStringValue": {
 			filter: bson.D{{"_id", "string"}},
@@ -155,7 +157,7 @@ func TestUpdateIncOperatorErrors(t *testing.T) {
 
 			_, err = collection.UpdateOne(ctx, tc.filter, tc.update)
 			require.NotNil(t, tc.err)
-			AssertEqualWriteError(t, *tc.err, err)
+			AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
 		})
 	}
 }
@@ -309,6 +311,7 @@ func TestUpdateSet(t *testing.T) {
 				Message: "Modifiers operate on fields but we found type null instead. " +
 					"For example: {$mod: {<field>: ...}} not {$set: null}",
 			},
+			alt: "Modifiers operate on fields but we found another type instead",
 		},
 		"String": {
 			id:     "string",
@@ -318,8 +321,7 @@ func TestUpdateSet(t *testing.T) {
 				Message: "Modifiers operate on fields but we found type string instead. " +
 					"For example: {$mod: {<field>: ...}} not {$set: \"string\"}",
 			},
-			alt: "Modifiers operate on fields but we found type string instead. " +
-				"For example: {$mod: {<field>: ...}} not {$set: string}",
+			alt: "Modifiers operate on fields but we found another type instead",
 		},
 		"Array": {
 			id:     "string",
@@ -329,8 +331,7 @@ func TestUpdateSet(t *testing.T) {
 				Message: "Modifiers operate on fields but we found type array instead. " +
 					"For example: {$mod: {<field>: ...}} not {$set: []}",
 			},
-			alt: "Modifiers operate on fields but we found type array instead. " +
-				"For example: {$mod: {<field>: ...}} not {$set: array}",
+			alt: "Modifiers operate on fields but we found another type instead",
 		},
 		"EmptyDoc": {
 			id:     "string",
@@ -457,6 +458,218 @@ func TestUpdateSet(t *testing.T) {
 			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
 			require.NoError(t, err)
 			AssertEqualDocuments(t, tc.result, actual)
+		})
+	}
+}
+
+func TestUpdateSetOnInsertOperator(t *testing.T) {
+	t.Parallel()
+
+	notModified := &mongo.UpdateResult{
+		MatchedCount:  0,
+		ModifiedCount: 0,
+		UpsertedCount: 1,
+	}
+
+	for name, tc := range map[string]struct {
+		filter      bson.D
+		setOnInsert any
+		stat        *mongo.UpdateResult
+		res         bson.D
+		err         *mongo.WriteError
+		alt         string
+	}{
+		"Array": {
+			filter:      bson.D{{"_id", "array"}},
+			setOnInsert: bson.D{{"value", bson.A{}}},
+			res:         bson.D{{"_id", "array"}, {"value", bson.A{}}},
+		},
+		"Nil": {
+			filter:      bson.D{{"_id", "nil"}},
+			setOnInsert: bson.D{{"value", nil}},
+			res:         bson.D{{"_id", "nil"}, {"value", nil}},
+		},
+		"EmptyDoc": {
+			filter:      bson.D{{"_id", "doc"}},
+			setOnInsert: bson.D{},
+			res:         bson.D{{"_id", "doc"}},
+		},
+		"EmptyArray": {
+			filter:      bson.D{{"_id", "array"}},
+			setOnInsert: bson.A{},
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type array instead. " +
+					"For example: {$mod: {<field>: ...}} not {$setOnInsert: []}",
+			},
+			alt: "Modifiers operate on fields but we found another type instead",
+		},
+		"DoubleDouble": {
+			filter:      bson.D{{"_id", "double"}},
+			setOnInsert: 43.13,
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type double instead. " +
+					"For example: {$mod: {<field>: ...}} not {$setOnInsert: 43.13}",
+			},
+			alt: "Modifiers operate on fields but we found another type instead",
+		},
+		"ErrNaN": {
+			filter:      bson.D{{"_id", "double-nan"}},
+			setOnInsert: math.NaN(),
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type double instead. " +
+					"For example: {$mod: {<field>: ...}} not {$setOnInsert: nan.0}",
+			},
+			alt: "Modifiers operate on fields but we found another type instead",
+		},
+		"ErrString": {
+			filter:      bson.D{{"_id", "string"}},
+			setOnInsert: "any string",
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type string instead. " +
+					"For example: {$mod: {<field>: ...}} not {$setOnInsert: \"any string\"}",
+			},
+			alt: "Modifiers operate on fields but we found another type instead",
+		},
+		"ErrNil": {
+			filter:      bson.D{{"_id", "nil"}},
+			setOnInsert: nil,
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type null instead. " +
+					"For example: {$mod: {<field>: ...}} not {$setOnInsert: null}",
+			},
+			alt: "Modifiers operate on fields but we found another type instead",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup(t)
+
+			opts := options.Update().SetUpsert(true)
+			var res *mongo.UpdateResult
+			res, err := collection.UpdateOne(ctx, tc.filter, bson.D{{"$setOnInsert", tc.setOnInsert}}, opts)
+			if tc.err != nil {
+				require.Nil(t, tc.res)
+				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
+				return
+			}
+
+			require.NoError(t, err)
+			id := res.UpsertedID
+			assert.NotEmpty(t, id)
+			res.UpsertedID = nil
+
+			expectedRes := notModified
+			if tc.stat != nil {
+				expectedRes = tc.stat
+			}
+			assert.Equal(t, expectedRes, res)
+
+			var actual bson.D
+			err = collection.FindOne(ctx, tc.filter).Decode(&actual)
+			require.NoError(t, err)
+			AssertEqualDocuments(t, tc.res, actual)
+		})
+	}
+}
+
+func TestUpdateMany(t *testing.T) {
+	t.Parallel()
+
+	notModified := &mongo.UpdateResult{
+		MatchedCount:  0,
+		ModifiedCount: 0,
+		UpsertedCount: 1,
+	}
+
+	for name, tc := range map[string]struct {
+		filter bson.D
+		update bson.D
+		stat   *mongo.UpdateResult
+		res    bson.D
+		err    *mongo.WriteError
+	}{
+		"SetSetOnInsert": {
+			filter: bson.D{{"_id", "test"}},
+			update: bson.D{
+				{"$set", bson.D{{"foo", int32(12)}}},
+				{"$setOnInsert", bson.D{{"value", math.NaN()}}},
+			},
+			res: bson.D{{"_id", "test"}, {"foo", int32(12)}, {"value", math.NaN()}},
+		},
+		"SetTwoFields": {
+			filter: bson.D{{"_id", "test"}},
+			update: bson.D{
+				{"$set", bson.D{{"foo", int32(12)}, {"value", math.NaN()}}},
+			},
+			res: bson.D{{"_id", "test"}, {"foo", int32(12)}, {"value", math.NaN()}},
+		},
+		"IncTwoFields": {
+			filter: bson.D{{"_id", "test"}},
+			update: bson.D{
+				{"$inc", bson.D{{"foo", int32(12)}, {"value", int32(1)}}},
+			},
+			res: bson.D{{"_id", "test"}, {"foo", int32(12)}, {"value", int32(1)}},
+		},
+		"SetIncSetOnInsert": {
+			filter: bson.D{{"_id", "test"}},
+			update: bson.D{
+				{"$set", bson.D{{"foo", int32(12)}}},
+				{"$inc", bson.D{{"foo", int32(1)}}},
+				{"$setOnInsert", bson.D{{"value", math.NaN()}}},
+			},
+			err: &mongo.WriteError{
+				Code:    40,
+				Message: "Updating the path 'foo' would create a conflict at 'foo'",
+			},
+		},
+		"UnknownOperator": {
+			filter: bson.D{{"_id", "test"}},
+			update: bson.D{{"$foo", bson.D{{"foo", int32(1)}}}},
+			err: &mongo.WriteError{
+				Code:    9,
+				Message: "Unknown modifier: $foo. Expected a valid update modifier or pipeline-style update specified as an array",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup(t)
+
+			_, err := collection.InsertMany(ctx, []any{
+				bson.D{{"_id", "string"}, {"value", "foo"}},
+			})
+			require.NoError(t, err)
+
+			opts := options.Update().SetUpsert(true)
+			var res *mongo.UpdateResult
+			res, err = collection.UpdateOne(ctx, tc.filter, tc.update, opts)
+
+			if tc.err != nil {
+				require.Nil(t, tc.res)
+				AssertEqualWriteError(t, *tc.err, err)
+				return
+			}
+
+			require.NoError(t, err)
+			res.UpsertedID = nil
+
+			expectedRes := notModified
+			if tc.stat != nil {
+				expectedRes = tc.stat
+			}
+			assert.Equal(t, expectedRes, res)
+
+			var actual bson.D
+			err = collection.FindOne(ctx, tc.filter).Decode(&actual)
+			require.NoError(t, err)
+			AssertEqualDocuments(t, tc.res, actual)
 		})
 	}
 }

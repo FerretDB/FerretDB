@@ -42,7 +42,11 @@ type command struct {
 // Please keep help text in sync with handlers.Interface methods documentation.
 var Commands = map[string]command{
 	// sorted alphabetically
-	"buildInfo": {
+	"buildinfo": {
+		Help:    "Returns a summary of the build information.",
+		Handler: (handlers.Interface).MsgBuildInfo,
+	},
+	"buildInfo": { // both `buildinfo` and `buildInfo` are valid
 		Help:    "Returns a summary of the build information.",
 		Handler: (handlers.Interface).MsgBuildInfo,
 	},
