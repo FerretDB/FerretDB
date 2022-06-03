@@ -698,13 +698,6 @@ func TestUpdateWeirdCases(t *testing.T) {
 			query:        bson.D{{"_id", "document"}},
 			res:          bson.D{{"_id", "document"}, {"value.foo.0", int32(1)}},
 		},
-		"SetInnerField": {
-			filter:       bson.D{{"value.foo.bar", bson.D{{"$eq", int32(1)}}}},
-			update:       bson.D{{"$set", bson.D{{"value.foo.baz", int32(1)}}}},
-			updateResult: bson.D{{"n", int32(1)}, {"nModified", int32(1)}, {"ok", float64(1)}},
-			query:        bson.D{{"_id", "document"}},
-			res:          bson.D{{"_id", "document"}, {"value", bson.D{{"foo", bson.D{{"bar", int32(1)}, {"baz", int32(1)}}}}}},
-		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {

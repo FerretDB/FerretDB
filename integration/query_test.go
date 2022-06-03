@@ -640,34 +640,36 @@ func TestQueryExactMatches(t *testing.T) {
 
 func TestDotNotation(t *testing.T) {
 	t.Parallel()
-	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
-	ctx, collection := setup(t, providers...)
+	ctx, collection := setup(t)
 
-	_, err := collection.InsertMany(ctx, []any{
-		bson.D{
-			{"_id", "document-deeply-nested"},
-			{
-				"foo",
-				bson.D{
-					{
-						"bar",
-						bson.D{{
-							"baz",
-							bson.D{{"qux", bson.D{{"quz", int32(42)}}}},
-						}},
+	_, err := collection.InsertMany(
+		ctx,
+		[]any{
+			bson.D{
+				{"_id", "document-deeply-nested"},
+				{
+					"foo",
+					bson.D{
+						{
+							"bar",
+							bson.D{{
+								"baz",
+								bson.D{{"qux", bson.D{{"quz", int32(42)}}}},
+							}},
+						},
+						{
+							"qaz",
+							bson.A{bson.D{{"baz", int32(1)}}},
+						},
 					},
-					{
-						"qaz",
-						bson.A{bson.D{{"baz", int32(1)}}},
-					},
-					{
-						"$",
-						int32(123),
-					},
+				},
+				{
+					"wsx",
+					bson.A{bson.D{{"edc", bson.A{bson.D{{"rfv", int32(1)}}}}}},
 				},
 			},
 		},
-	})
+	)
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
@@ -687,8 +689,8 @@ func TestDotNotation(t *testing.T) {
 			filter:      bson.D{{"foo.qaz.0.baz", int32(1)}},
 			expectedIDs: []any{"document-deeply-nested"},
 		},
-		"FieldWithDollarName": {
-			filter:      bson.D{{"foo.$", int32(123)}},
+		"FieldArrayFieldArrayField": {
+			filter:      bson.D{{"wsx.0.edc.0.rfv", int32(1)}},
 			expectedIDs: []any{"document-deeply-nested"},
 		},
 	} {

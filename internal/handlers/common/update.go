@@ -140,14 +140,18 @@ func checkAllModifiersSupported(update *types.Document) error {
 			fallthrough
 		case "$setOnInsert":
 			// supported
+		case "$currentDate", "$min", "$max", "$mul", "$rename", "$unset":
+			return NewWriteErrorMsg(ErrNotImplemented, fmt.Sprintf("%s not implemented yet", updateOp))
 		default:
-			return NewWriteErrorMsg(
-				ErrFailedToParse,
-				fmt.Sprintf(
-					"Unknown modifier: %s. Expected a valid update modifier or pipeline-style "+
-						"update specified as an array", updateOp,
-				),
-			)
+			if strings.Contains(updateOp, "$") {
+				return NewWriteErrorMsg(
+					ErrFailedToParse,
+					fmt.Sprintf(
+						"Unknown modifier: %s. Expected a valid update modifier or pipeline-style "+
+							"update specified as an array", updateOp,
+					),
+				)
+			}
 		}
 	}
 	return nil
