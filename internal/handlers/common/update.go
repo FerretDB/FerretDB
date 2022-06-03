@@ -22,6 +22,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"golang.org/x/exp/slices"
 )
 
 // UpdateDocument updates the given document with a series of update operators.
@@ -294,6 +295,7 @@ func checkCurrentDateFieldExpression(update *types.Document) error {
 			continue
 
 		case *types.Document:
+
 			for _, k := range setValue.Keys() {
 				if k != "$type" {
 					return NewWriteErrorMsg(
@@ -307,20 +309,14 @@ func checkCurrentDateFieldExpression(update *types.Document) error {
 				continue
 			}
 
-			currentDateType, ok := currentDateType.(string)
+			currentDateTypeString, ok := currentDateType.(string)
 			if !ok {
 				return NewWriteErrorMsg(
 					ErrBadValue,
 					"The '$type' string field is required to be 'date' or 'timestamp'",
 				)
 			}
-
-			switch currentDateType {
-			case "timestamp":
-				// ok
-			case "date":
-				// ok
-			default:
+			if !slices.Contains([]string{"date", "timestamp"}, currentDateTypeString) {
 				return NewWriteErrorMsg(
 					ErrBadValue,
 					"The '$type' string field is required to be 'date' or 'timestamp'",
