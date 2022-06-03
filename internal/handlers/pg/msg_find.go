@@ -59,13 +59,6 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 	common.Ignored(document, h.l, ignoredFields...)
 
-	unimplementedDotFields := []string{
-		"query",
-	}
-	if err = common.UnimplementedDot(document, unimplementedDotFields...); err != nil {
-		return nil, err
-	}
-
 	var filter, sort, projection *types.Document
 	if filter, err = common.GetOptionalParam(document, "filter", filter); err != nil {
 		return nil, err

@@ -648,13 +648,23 @@ func TestDotNotation(t *testing.T) {
 			{"_id", "document-deeply-nested"},
 			{
 				"foo",
-				bson.D{{
-					"bar",
-					bson.D{{
-						"baz",
-						bson.D{{"qux", bson.D{{"quz", int32(42)}}}},
-					}},
-				}},
+				bson.D{
+					{
+						"bar",
+						bson.D{{
+							"baz",
+							bson.D{{"qux", bson.D{{"quz", int32(42)}}}},
+						}},
+					},
+					{
+						"qaz",
+						bson.A{bson.D{{"baz", int32(1)}}},
+					},
+					{
+						"$",
+						int32(123),
+					},
+				},
 			},
 		},
 	})
@@ -663,14 +673,23 @@ func TestDotNotation(t *testing.T) {
 	for name, tc := range map[string]struct {
 		filter      bson.D
 		expectedIDs []any
+		err         *mongo.CommandError
 	}{
-		"DocumentDeepNested": {
+		"DeeplyNested": {
 			filter:      bson.D{{"foo.bar.baz.qux.quz", int32(42)}},
 			expectedIDs: []any{"document-deeply-nested"},
 		},
-		"Document": {
+		"DottedField": {
 			filter:      bson.D{{"foo.bar.baz", bson.D{{"qux.quz", int32(42)}}}},
 			expectedIDs: []any{},
+		},
+		"FieldArrayField": {
+			filter:      bson.D{{"foo.qaz.0.baz", int32(1)}},
+			expectedIDs: []any{"document-deeply-nested"},
+		},
+		"FieldWithDollarName": {
+			filter:      bson.D{{"foo.$", int32(123)}},
+			expectedIDs: []any{"document-deeply-nested"},
 		},
 	} {
 		name, tc := name, tc
@@ -678,6 +697,10 @@ func TestDotNotation(t *testing.T) {
 			t.Parallel()
 
 			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			if tc.err != nil {
+				AssertEqualError(t, *tc.err, err)
+				return
+			}
 			require.NoError(t, err)
 
 			var actual []bson.D

@@ -16,7 +16,6 @@ package common
 
 import (
 	"fmt"
-	"strings"
 
 	"go.uber.org/zap"
 
@@ -49,39 +48,6 @@ func UnimplementedNonDefault(doc *types.Document, field string, isDefault func(v
 
 	err = fmt.Errorf("%s: support for field %q with non-default value %v is not implemented yet", doc.Command(), field, v)
 	return NewError(ErrNotImplemented, err)
-}
-
-// UnimplementedDot returns ErrNotImplemented if document's field contains a dot-separated path.
-func UnimplementedDot(doc *types.Document, fields ...string) error {
-	for _, field := range fields {
-		v, err := doc.Get(field)
-		if err != nil || v == nil {
-			continue
-		}
-
-		reqField, ok := v.(*types.Document)
-		if !ok {
-			continue
-		}
-
-		for _, k := range reqField.Keys() {
-			if strings.ContainsRune(k, '.') {
-				err = fmt.Errorf("%s: dot notation support for field %q is not implemented yet", doc.Command(), field)
-				return NewError(ErrNotImplemented, err)
-			}
-		}
-	}
-
-	return nil
-}
-
-// UnsupportedDot returns ErrDottedFieldName if field contains dot.
-func UnsupportedDot(field string) error {
-	if strings.ContainsRune(field, '.') {
-		err := fmt.Errorf("can't use dot notation for: %s", field)
-		return NewError(ErrDottedFieldName, err)
-	}
-	return nil
 }
 
 // Ignored logs a message if doc has any of the given fields.
