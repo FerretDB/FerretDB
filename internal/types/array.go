@@ -127,11 +127,6 @@ func (a *Array) Contains(value any) bool {
 // Possible improvement: to sorts both arrays before comparing.
 // If sorting is implemented, calling of the Contains function will be O(n*log(n)) instead of O(n^2).
 func (a *Array) ContainsAll(b *Array) bool {
-	if a.Len() < b.Len() {
-		// TODO: How to validate that all the values in b are unique?
-		return false
-	}
-
 	// TODO: This place can be significantly improved:
 	// Sort a.
 	// Sort b.
