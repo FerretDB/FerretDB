@@ -14,9 +14,7 @@
 
 package types
 
-import (
-	"fmt"
-)
+import "fmt"
 
 // Array represents BSON array.
 //
