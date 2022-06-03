@@ -166,6 +166,10 @@ func TestQueryArrayAll(t *testing.T) {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{"1"}}}}},
 			expectedIDs: []any{"array-many", "array-one", "array-three", "array-two"},
 		},
+		"StringRepeated": {
+			filter:      bson.D{{"value", bson.D{{"$all", bson.A{"1", "1", "1", "1"}}}}},
+			expectedIDs: []any{"array-many", "array-one", "array-three", "array-two"},
+		},
 		"Float": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{12.5}}}}},
 			expectedIDs: []any{"array-many", "float"},
