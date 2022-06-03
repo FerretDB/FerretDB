@@ -23,6 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// MsgBody is a wire protocol message body.
 type MsgBody interface {
 	readFrom(*bufio.Reader) error
 	encoding.BinaryUnmarshaler
@@ -34,6 +35,7 @@ type MsgBody interface {
 
 //go-sumtype:decl MsgBody
 
+// ReadMessage reads from reader and returns wire header and body.
 func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 	var header MsgHeader
 	if err := header.readFrom(r); err != nil {
@@ -49,7 +51,7 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 	}
 
 	switch header.OpCode {
-	case OP_REPLY:
+	case OpCodeReply: // not sent by clients, but we should be able to read replies from a proxy
 		var reply OpReply
 		if err := reply.UnmarshalBinary(b); err != nil {
 			return nil, nil, lazyerrors.Error(err)
@@ -57,7 +59,7 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 
 		return &header, &reply, nil
 
-	case OP_MSG:
+	case OpCodeMsg:
 		var msg OpMsg
 		if err := msg.UnmarshalBinary(b); err != nil {
 			return nil, nil, lazyerrors.Error(err)
@@ -65,7 +67,7 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 
 		return &header, &msg, nil
 
-	case OP_QUERY:
+	case OpCodeQuery:
 		var query OpQuery
 		if err := query.UnmarshalBinary(b); err != nil {
 			return nil, nil, lazyerrors.Error(err)
@@ -73,26 +75,27 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 
 		return &header, &query, nil
 
-	case OP_UPDATE:
+	case OpCodeUpdate:
 		fallthrough
-	case OP_INSERT:
+	case OpCodeInsert:
 		fallthrough
-	case OP_GET_BY_OID:
+	case OpCodeGetByOID:
 		fallthrough
-	case OP_GET_MORE:
+	case OpCodeGetMore:
 		fallthrough
-	case OP_DELETE:
+	case OpCodeDelete:
 		fallthrough
-	case OP_KILL_CURSORS:
+	case OpCodeKillCursors:
 		fallthrough
-	case OP_COMPRESSED:
-		fallthrough
+	case OpCodeCompressed:
+		return nil, nil, lazyerrors.Errorf("unhandled opcode %s", header.OpCode)
 
 	default:
-		return nil, nil, lazyerrors.Errorf("unhandled opcode %s", header.OpCode)
+		return nil, nil, lazyerrors.Errorf("unexpected opcode %s", header.OpCode)
 	}
 }
 
+// WriteMessage validates msg and headers and writes them to the writer.
 func WriteMessage(w *bufio.Writer, header *MsgHeader, msg MsgBody) error {
 	b, err := msg.MarshalBinary()
 	if err != nil {

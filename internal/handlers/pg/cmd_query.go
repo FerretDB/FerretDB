@@ -25,7 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// CmdQuery runs query operation command.
+// CmdQuery implements HandlerInterface.
 func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
 	if query.FullCollectionName == "admin.$cmd" {
 		switch cmd := query.Query.Command(); cmd {

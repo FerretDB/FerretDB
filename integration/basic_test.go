@@ -40,10 +40,14 @@ func TestMostCommandsAreCaseSensitive(t *testing.T) {
 	res = db.RunCommand(ctx, bson.D{{"listCollections", 1}})
 	assert.NoError(t, res.Err())
 
-	// special case
+	// special cases from the old `mongo` shell
 	res = db.RunCommand(ctx, bson.D{{"ismaster", 1}})
 	assert.NoError(t, res.Err())
 	res = db.RunCommand(ctx, bson.D{{"isMaster", 1}})
+	assert.NoError(t, res.Err())
+	res = db.RunCommand(ctx, bson.D{{"buildinfo", 1}})
+	assert.NoError(t, res.Err())
+	res = db.RunCommand(ctx, bson.D{{"buildInfo", 1}})
 	assert.NoError(t, res.Err())
 }
 
@@ -77,7 +81,8 @@ func TestInsertFind(t *testing.T) {
 
 	for _, expected := range docs {
 		expected := expected
-		id := expected.Map()["_id"]
+		id, ok := expected.Map()["_id"]
+		require.True(t, ok)
 
 		t.Run(fmt.Sprint(id), func(t *testing.T) {
 			t.Parallel()
@@ -94,8 +99,8 @@ func TestInsertFind(t *testing.T) {
 	}
 }
 
+//nolint:paralleltest // we test a global list of databases
 func TestFindCommentMethod(t *testing.T) {
-	t.Parallel()
 	ctx, collection := setup(t, shareddata.Scalars)
 	name := collection.Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
@@ -109,8 +114,8 @@ func TestFindCommentMethod(t *testing.T) {
 	assert.Contains(t, databaseNames, name)
 }
 
+//nolint:paralleltest // we test a global list of databases
 func TestFindCommentQuery(t *testing.T) {
-	t.Parallel()
 	ctx, collection := setup(t, shareddata.Scalars)
 	name := collection.Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})

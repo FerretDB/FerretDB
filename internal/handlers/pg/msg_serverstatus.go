@@ -24,10 +24,11 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/version"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgServerStatus OpMsg used to get a server status.
+// MsgServerStatus implements HandlerInterface.
 func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
@@ -59,7 +60,7 @@ func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"host", host,
-			"version", versionValue,
+			"version", version.MongoDBVersion,
 			"process", filepath.Base(exec),
 			"pid", int64(os.Getpid()),
 			"uptime", int64(uptime.Seconds()),

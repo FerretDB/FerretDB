@@ -1,5 +1,91 @@
 # Changelog
 
+## [v0.3.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.3.0) (2022-06-01)
+
+### New Features 🎉
+* Support `findAndModify` by @w84thesun in https://github.com/FerretDB/FerretDB/pull/548
+* Support `$inc` field `update` operator by @w84thesun in https://github.com/FerretDB/FerretDB/pull/596
+* Support `$set` field update operator by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/634
+
+### Fixed Bugs 🐛
+* Improve negative zero handling by @AlekSi in https://github.com/FerretDB/FerretDB/pull/613
+
+### Enhancements 🛠
+* Added support for sorting scalar data types by @ribaraka in https://github.com/FerretDB/FerretDB/pull/607
+
+### Other Changes 🤖
+* Better `-0` handling in tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/616
+* Bump github.com/golangci/golangci-lint from 1.46.1 to 1.46.2 in /tools by @dependabot in https://github.com/FerretDB/FerretDB/pull/617
+* Bump PostgreSQL and MongoDB versions by @AlekSi in https://github.com/FerretDB/FerretDB/pull/599
+* Rename `OP_*` constants to `OpCode*` constants  by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/620
+* Bump gopkg.in/yaml.v3 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/646
+* Bump gopkg.in/yaml.v3 in tools by @AlekSi in https://github.com/FerretDB/FerretDB/pull/648
+* Make `Path` type by @w84thesun in https://github.com/FerretDB/FerretDB/pull/635
+* Fix incorrect test for `$mod` operator by @fenogentov in https://github.com/FerretDB/FerretDB/pull/645
+* Skip test on all ARM64 OSes by @AlekSi in https://github.com/FerretDB/FerretDB/pull/652
+* Add more visibility for the router/proxy error log levels by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/650
+* Update CODEOWNERS by @AlekSi in https://github.com/FerretDB/FerretDB/pull/655
+* Sync dummy and pg handlers by @AlekSi in https://github.com/FerretDB/FerretDB/pull/641
+* Panic on unexpected order values by @AlekSi in https://github.com/FerretDB/FerretDB/pull/668
+* Add some comments to the functions and variables by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/619
+* Remove dead code by @AlekSi in https://github.com/FerretDB/FerretDB/pull/669
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/15?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v0.2.1...v0.3.0).
+
+
+## [v0.2.1](https://github.com/FerretDB/FerretDB/releases/tag/v0.2.1) (2022-05-17)
+
+### New Features 🎉
+* Support `$slice` projection query operator by @GinGin3203 in https://github.com/FerretDB/FerretDB/pull/518
+* Support `$comment` query operator by @ribaraka in https://github.com/FerretDB/FerretDB/pull/563
+* Support basic `connectionStatus` diagnostic command by @fenogentov in https://github.com/FerretDB/FerretDB/pull/572
+* Support `$regex` evaluation query operator by @w84thesun in https://github.com/FerretDB/FerretDB/pull/588
+
+### Enhancements 🛠
+* Support querying documents by @w84thesun in https://github.com/FerretDB/FerretDB/pull/573
+* Improve comparison of arrays and documents by @ribaraka in https://github.com/FerretDB/FerretDB/pull/589
+* Support `getParameter`'s parameters by @fenogentov in https://github.com/FerretDB/FerretDB/pull/535
+* Add stubs to make VSCode plugin work by @AlekSi in https://github.com/FerretDB/FerretDB/pull/603
+
+### Documentation 📄
+* Add conform CI workflow, improve docs by @AlekSi in https://github.com/FerretDB/FerretDB/pull/566
+* Update CONTRIBUTING.md with typo fix and a tiny correction by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/574
+* Add note about forks by @AlekSi in https://github.com/FerretDB/FerretDB/pull/575
+
+### Other Changes 🤖
+* Bump go.mongodb.org/mongo-driver from 1.9.0 to 1.9.1 in /integration by @dependabot in https://github.com/FerretDB/FerretDB/pull/555
+* Add missing `//nolint` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/556
+* Set the handler to use via a command-line flag and remove debug handlers from interface by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/534
+* Add tests for `RemoveByPath` by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/549
+* Add `altMessage` to `AssertEqualError` by @w84thesun in https://github.com/FerretDB/FerretDB/pull/550
+* Add documentation for values comparision by @AlekSi in https://github.com/FerretDB/FerretDB/pull/559
+* Add `debug` and `panic` msg handlers to `Command` map by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/561
+* Add `RemoveByPath` for `Array` and `CompositeTypeInterface` by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/560
+* Bump docker/login-action from 1 to 2 by @dependabot in https://github.com/FerretDB/FerretDB/pull/565
+* Bump pgx version by @AlekSi in https://github.com/FerretDB/FerretDB/pull/570
+* Use `float64(x)` for `ok` everywhere by @AlekSi in https://github.com/FerretDB/FerretDB/pull/577
+* Improve `AssertEqualAltError` documentation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/578
+* Remove `types.MustNewDocument` in some places by @AlekSi in https://github.com/FerretDB/FerretDB/pull/579
+* Remove `MustNewDocument` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/581
+* Remove `MustNewArray` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/582
+* Remove `MustConvertDocument` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/583
+* Enable `staticcheck` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/580
+* Enable `gosimple` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/584
+* Change the way linters work by @AlekSi in https://github.com/FerretDB/FerretDB/pull/586
+* Merge `BigNumbersData` into `Scalars` by @AlphaB in https://github.com/FerretDB/FerretDB/pull/595
+* Set `GOLANGCI_LINT_CACHE` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/597
+* Increase `golangci-lint` timeout by @AlekSi in https://github.com/FerretDB/FerretDB/pull/598
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/604
+
+## New Contributors
+* @rumyantseva made their first contribution in https://github.com/FerretDB/FerretDB/pull/574
+* @AlphaB made their first contribution in https://github.com/FerretDB/FerretDB/pull/595
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/16?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v0.2.0...v0.2.1).
+
+
 ## [v0.2.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.2.0) (2022-05-04)
 
 ### What's Changed

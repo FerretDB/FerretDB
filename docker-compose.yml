@@ -1,15 +1,15 @@
 # This file is used for the development of FerretDB, not for actually running it.
 ---
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
-    image: postgres:14.2
+    image: postgres:14.3
     container_name: ferretdb_postgres
     ports:
       - 127.0.0.1:5432:5432
     extra_hosts:
-      - 'host.docker.internal:host-gateway'
+      - "host.docker.internal:host-gateway"
     environment:
       # UTC−03:30/−02:30. Set to catch timezone problems.
       - TZ=America/St_Johns
@@ -18,12 +18,12 @@ services:
 
   # for proxy mode and mongosh
   mongodb:
-    image: mongo:5.0.7
+    image: mongo:5.0.8
     container_name: ferretdb_mongodb
     ports:
       - 127.0.0.1:37017:27017
     extra_hosts:
-      - 'host.docker.internal:host-gateway'
+      - "host.docker.internal:host-gateway"
     environment:
       # Always UTC+05:45. Set to catch timezone problems.
       - TZ=Asia/Kathmandu

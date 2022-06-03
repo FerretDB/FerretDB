@@ -17,25 +17,11 @@ package pg
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgGetCmdLineOpts returns a document containing command line options used to start the given FerretDB.
+// MsgGetCmdLineOpts implements HandlerInterface.
 func (h *Handler) MsgGetCmdLineOpts(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	var reply wire.OpMsg
-	err := reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"argv", must.NotFail(types.NewArray("ferretdb")),
-			"parsed", must.NotFail(types.NewDocument()),
-			"ok", float64(1),
-		))},
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return &reply, nil
+	return common.MsgGetCmdLineOpts(ctx, msg)
 }
