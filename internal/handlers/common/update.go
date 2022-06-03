@@ -120,70 +120,49 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 // processCurrentdateFieldExpression changes document according to $currentDate operator.
 // If the document was changed it returns true.
-func processCurrentdateFieldExpression(doc *types.Document, currentDateExpression any) (bool, error) {
+func processCurrentdateFieldExpression(doc *types.Document, currentDateVal any) (bool, error) {
 	var changed bool
 	var err error
-	switch currentDateExpression := currentDateExpression.(type) {
-	case *types.Document:
-		now := time.Now()
-		sort.Strings(currentDateExpression.Keys())
+	currentDateExpression := currentDateVal.(*types.Document)
 
-		for _, field := range currentDateExpression.Keys() {
-			setValue := must.NotFail(currentDateExpression.Get(field))
+	now := time.Now()
+	sort.Strings(currentDateExpression.Keys())
 
-			switch setValue := setValue.(type) {
-			case bool:
-				if err = doc.Set(field, now); err != nil {
+	for _, field := range currentDateExpression.Keys() {
+		currentDateField := must.NotFail(currentDateExpression.Get(field))
+
+		switch currentDateField := currentDateField.(type) {
+		case bool:
+			if err = doc.Set(field, now); err != nil {
+				return false, err
+			}
+			changed = true
+
+		case *types.Document:
+			currentDateType, err := currentDateField.Get("$type")
+			if err != nil { // default is date
+				if err := doc.Set(field, now); err != nil {
+					return false, err
+				}
+				changed = true
+				continue
+			}
+
+			currentDateType = currentDateType.(string)
+			switch currentDateType {
+			case "timestamp":
+				if err := doc.Set(field, types.NextTimestamp(uint64(now.UTC().Unix()))); err != nil {
 					return false, err
 				}
 				changed = true
 
-			case *types.Document:
-				for _, k := range setValue.Keys() {
-					if k != "$type" {
-						panic(fmt.Sprintf("Unrecognized $currentDate option: %s", k))
-					}
+			case "date":
+				if err := doc.Set(field, now); err != nil {
+					return false, err
 				}
-				currentDateType, err := setValue.Get("$type")
-				if err != nil { // default is date
-					if err := doc.Set(field, now); err != nil {
-						return false, err
-					}
-					changed = true
-					continue
-				}
-
-				switch currentDateType := currentDateType.(type) {
-				case string:
-					switch currentDateType {
-					case "timestamp":
-						if err := doc.Set(field, types.NextTimestamp(uint64(now.UTC().Unix()))); err != nil {
-							return false, err
-						}
-						changed = true
-
-					case "date":
-						if err := doc.Set(field, now); err != nil {
-							return false, err
-						}
-						changed = true
-
-					default:
-						panic("The '$type' string field is required to be 'date' or 'timestamp'")
-					}
-
-				default:
-					panic("The '$type' string field is required to be 'date' or 'timestamp'")
-				}
-
-			default:
-				panic("not valid type for $currentDate. Please use a boolean ('true') " +
-					"or a $type expression ({$type: 'timestamp/date'}).",
-				)
+				changed = true
 			}
 		}
-	default:
-		panic("Modifiers operate on fields but we found another type instead")
 	}
 	return changed, nil
 }
