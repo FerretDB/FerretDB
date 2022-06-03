@@ -675,7 +675,6 @@ func TestDotNotation(t *testing.T) {
 	for name, tc := range map[string]struct {
 		filter      bson.D
 		expectedIDs []any
-		err         *mongo.CommandError
 	}{
 		"DeeplyNested": {
 			filter:      bson.D{{"foo.bar.baz.qux.quz", int32(42)}},
@@ -699,10 +698,6 @@ func TestDotNotation(t *testing.T) {
 			t.Parallel()
 
 			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err != nil {
-				AssertEqualError(t, *tc.err, err)
-				return
-			}
 			require.NoError(t, err)
 
 			var actual []bson.D
