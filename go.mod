@@ -15,7 +15,7 @@ require (
 	go.uber.org/zap v1.21.0
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect; always use @latest
 	golang.org/x/exp v0.0.0-20220518171630-0b5c67f07fdf
-	golang.org/x/sys v0.0.0-20220513210249-45d2b4557a2a
+	golang.org/x/sys v0.0.0-20220503163025-988cb79eb6c6
 	gopkg.in/yaml.v3 v3.0.0 // indirect; https://github.com/advisories/GHSA-hp87-p4gw-j4gq
 )
 
