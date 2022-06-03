@@ -51,18 +51,14 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			changed = true
 
 		case "$unset":
-			switch unsetDoc := updateV.(type) {
-			case *types.Document:
-				if unsetDoc.Len() == 0 {
-					continue
-				}
-				for _, key := range unsetDoc.Keys() {
-					doc.Remove(key)
-				}
-				changed = true
-			default:
-				panic("Modifiers operate on fields but we found another type instead")
+			unsetDoc := updateV.(*types.Document)
+			if unsetDoc.Len() == 0 {
+				continue
 			}
+			for _, key := range unsetDoc.Keys() {
+				doc.Remove(key)
+			}
+			changed = true
 
 		case "$inc":
 			// expecting here a document since all checks were made in ValidateUpdateOperators func
