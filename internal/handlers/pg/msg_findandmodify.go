@@ -56,10 +56,11 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	runCtx, runCancel := context.WithTimeout(ctx, time.Duration(params.maxTimeMS)*time.Millisecond)
-	defer runCancel()
 	if params.maxTimeMS != 0 {
-		ctx = runCtx
+		ctxWithTimeout, runCancel := context.WithTimeout(ctx, time.Duration(params.maxTimeMS)*time.Millisecond)
+		defer runCancel()
+
+		ctx = ctxWithTimeout
 	}
 
 	fetchedDocs, err := h.fetch(ctx, params.sqlParam)

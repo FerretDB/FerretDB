@@ -122,7 +122,7 @@ var (
 func GetWholeNumberParam(value any) (int64, error) {
 	switch value := value.(type) {
 	case float64:
-		// TODO check float negative zero (math.Copysig(0, -1))
+		// TODO check float negative zero (math.Copysign(0, -1))
 		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) {
 			return 0, errNotWholeNumber
 		}
@@ -270,47 +270,26 @@ func GetPositiveNumber(document *types.Document, key string) (int32, error) {
 		return 0, nil
 	}
 
-	var value int32
-	switch param := v.(type) {
-	case float64:
-		if math.IsInf(param, -1) {
-			return 0, NewErrorMsg(
-				ErrBadValue,
-				fmt.Sprintf("%v value for %s is out of range", math.MinInt64, key),
-			)
+	wholeNumberParam, err := GetWholeNumberParam(v)
+	if err != nil {
+		switch err {
+		case errUnexpectedType:
+			return 0, NewErrorMsg(ErrBadValue, fmt.Sprintf("%s must be a number", key))
+		case errNotWholeNumber:
+			return 0, NewErrorMsg(ErrBadValue, fmt.Sprintf("%s must be a whole number", key))
+		default:
+			return 0, err
 		}
-		if math.IsInf(param, +1) {
-			return 0, NewErrorMsg(
-				ErrBadValue,
-				fmt.Sprintf("%v value for %s is out of range", math.MaxInt64, key),
-			)
-		}
-		if param > math.MaxInt32 || param < math.MinInt32 {
-			return 0, NewErrorMsg(
-				ErrBadValue,
-				fmt.Sprintf("%v value for %s is out of range", int64(param), key),
-			)
-		}
-		if param != math.Trunc(param) {
-			return 0, NewErrorMsg(ErrBadValue, fmt.Sprintf("%s must be an integer", key))
-		}
-
-		value = int32(param)
-	case int32:
-		value = param
-	case int64:
-		if param > math.MaxInt32 || param < math.MinInt32 {
-			return 0, NewErrorMsg(
-				ErrBadValue,
-				fmt.Sprintf("%v value for %s is out of range", v, key),
-			)
-		}
-
-		value = int32(param)
-	default:
-		return 0, NewErrorMsg(ErrBadValue, fmt.Sprintf("%s must be a number", key))
 	}
 
+	if wholeNumberParam > math.MaxInt32 || wholeNumberParam < math.MinInt32 {
+		return 0, NewErrorMsg(
+			ErrBadValue,
+			fmt.Sprintf("%v value for %s is out of range", int64(wholeNumberParam), key),
+		)
+	}
+
+	value := int32(wholeNumberParam)
 	if value < 0 {
 		return 0, NewErrorMsg(
 			ErrBadValue,

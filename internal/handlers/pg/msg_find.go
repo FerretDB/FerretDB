@@ -75,10 +75,11 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	runCtx, runCancel := context.WithTimeout(ctx, time.Duration(maxTimeMS)*time.Millisecond)
-	defer runCancel()
 	if maxTimeMS != 0 {
-		ctx = runCtx
+		ctxWithTimeout, runCancel := context.WithTimeout(ctx, time.Duration(maxTimeMS)*time.Millisecond)
+		defer runCancel()
+
+		ctx = ctxWithTimeout
 	}
 
 	var limit int64

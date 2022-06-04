@@ -607,7 +607,7 @@ func TestQueryBadMaxTimeMSType(t *testing.T) {
 				Name:    "BadValue",
 				Message: "maxTimeMS has non-integral value",
 			},
-			altMessage: "maxTimeMS must be an integer",
+			altMessage: "maxTimeMS must be a whole number",
 		},
 		"BadMaxTimeMSNegativeDouble": {
 			command: bson.D{
@@ -634,32 +634,6 @@ func TestQueryBadMaxTimeMSType(t *testing.T) {
 				Message: "maxTimeMS must be a number",
 			},
 			altMessage: "maxTimeMS must be a number",
-		},
-		"BadMaxTimeMSPlusInfinity": {
-			command: bson.D{
-				{"find", collection.Name()},
-				{"projection", bson.D{{"value", "some"}}},
-				{"maxTimeMS", math.Inf(+1)},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "parameter \"maxTimeMS\" has type float64 (expected uint32)",
-			},
-			altMessage: "9223372036854775807 value for maxTimeMS is out of range",
-		},
-		"BadMaxTimeMSMinusInfinity": {
-			command: bson.D{
-				{"find", collection.Name()},
-				{"projection", bson.D{{"value", "some"}}},
-				{"maxTimeMS", math.Inf(-1)},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "-9223372036854775808 value for maxTimeMS is out of range",
-			},
-			altMessage: "-9223372036854775808 value for maxTimeMS is out of range",
 		},
 		"BadMaxTimeMSMaxInt64": {
 			command: bson.D{
@@ -738,6 +712,20 @@ func TestQueryBadMaxTimeMSType(t *testing.T) {
 				Message: "-1123123 value for maxTimeMS is out of range",
 			},
 			altMessage: "-1123123 value for maxTimeMS is out of range",
+		},
+
+		"BadMaxTimeMSTypeStringFindAndModify": {
+			command: bson.D{
+				{"findAndModify", collection.Name()},
+				{"projection", bson.D{{"value", "some"}}},
+				{"maxTimeMS", "string"},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "maxTimeMS must be a number",
+			},
+			altMessage: "maxTimeMS must be a number",
 		},
 	} {
 		name, tc := name, tc
