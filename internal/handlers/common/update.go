@@ -127,7 +127,7 @@ func processCurrentdateFieldExpression(doc *types.Document, currentDateVal any) 
 	var err error
 	currentDateExpression := currentDateVal.(*types.Document)
 
-	now := time.Now()
+	now := time.Now().UTC()
 	sort.Strings(currentDateExpression.Keys())
 
 	for _, field := range currentDateExpression.Keys() {
@@ -153,7 +153,7 @@ func processCurrentdateFieldExpression(doc *types.Document, currentDateVal any) 
 			currentDateType = currentDateType.(string)
 			switch currentDateType {
 			case "timestamp":
-				if err := doc.Set(field, types.NextTimestamp(uint64(now.UTC().Unix()))); err != nil {
+				if err := doc.Set(field, types.NextTimestamp(uint64(now.Unix()))); err != nil {
 					return false, err
 				}
 				changed = true
