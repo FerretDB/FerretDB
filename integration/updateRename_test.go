@@ -171,6 +171,7 @@ func TestUpdateRename(t *testing.T) {
 				AssertEqualAltWriteError(t, *tc.err, tc.altMessage, err)
 				return
 			}
+			require.NoError(t, err)
 
 			var actual bson.D
 			err = collection.FindOne(ctx, tc.filter).Decode(&actual)
