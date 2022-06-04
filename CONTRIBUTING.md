@@ -147,4 +147,4 @@ Before submitting a pull request, please make sure that:
 
 ## Contributing documentation
 
-Please format documentation with `task docs-fmt`.
+Please format and lint documentation with `task docs`.

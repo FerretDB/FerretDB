@@ -7,6 +7,19 @@ vars:
   FUZZCORPUS: ../fuzz-corpus
 
 tasks:
+  # invoked when `task` is run without arguments
+  default:
+    deps: [all]
+
+  all:
+    desc: "Generate, format, build, test and lint code and documentation"
+    cmds:
+      - task: gen
+      - task: build-testcover
+      - task: test
+      - task: lint
+      - task: docs
+
   gen-version:
     cmds:
       - go generate -x ./internal/util/version
@@ -57,7 +70,7 @@ tasks:
       - docker-compose down --remove-orphans --volumes
 
   gen:
-    desc: "Generate code"
+    desc: "Generate (and format) code"
     cmds:
       - go generate -x ./...
       - task: fmt
@@ -188,11 +201,12 @@ tasks:
     cmds:
       - ../bin/go-consistent -pedantic ./...
 
-  docs-fmt:
-    desc: "Markdown formatter and linter"
+  # TODO move Docker image to Docker Compose, use some dependabot-like tool that supports Docker Compose updates
+  docs:
+    desc: "Format and lint documentation"
     cmds:
       - >
-        docker run --rm -v $PWD:/workdir ghcr.io/igorshubovych/markdownlint-cli:v0.31.1
+        docker run --platform=linux/amd64 --rm -v $PWD:/workdir ghcr.io/igorshubovych/markdownlint-cli:v0.31.1
         --fix --dot --ignore CHANGELOG.md '**/*.md'
 
   psql:
