@@ -35,18 +35,18 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
-// newHandlerOpts represents configuration for all handlers.
+// newHandler represents a function that constructs a new handler.
+type newHandler func(opts *newHandlerOpts) (handlers.Interface, error)
+
+// newHandlerOpts represents common configuration for constructing handlers.
 //
-// Some fields may be unused by some handlers.
+// Handler-specific configuration is passed via command-line flags directly.
 type newHandlerOpts struct {
 	ctx    context.Context
 	logger *zap.Logger
 }
 
-// newHandler is a function that constructs a new handler.
-type newHandler func(opts *newHandlerOpts) (handlers.Interface, error)
-
-// registeredHandlers map handler names for constructors.
+// registeredHandlers maps handler names to constructors.
 var registeredHandlers = map[string]newHandler{}
 
 var (
@@ -57,13 +57,13 @@ var (
 	debugAddrF  = flag.String("debug-addr", "127.0.0.1:8088", "debug address")
 	modeF       = flag.String("mode", string(clientconn.AllModes[0]), fmt.Sprintf("operation mode: %v", clientconn.AllModes))
 
-	handlerF       = flag.String("handler", "pg", "<set in initFlags()>")
-	postgresqlURLF = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/ferretdb", "PostgreSQL URL")
+	handlerF = flag.String("handler", "pg", "<set in initFlags()>")
 
 	testConnTimeoutF = flag.Duration("test-conn-timeout", 0, "test: set connection timeout")
 )
 
-// initFlags sets the usage text for the -handler flag after all handlers are registered by init() functions.
+// initFlags improves flags settings after all global flags are initialized
+// and all handler constructors are registered.
 func initFlags() {
 	handlers := maps.Keys(registeredHandlers)
 	slices.Sort(handlers)

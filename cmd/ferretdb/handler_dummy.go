@@ -15,25 +15,13 @@
 package main
 
 import (
-	"time"
-
 	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
+	"github.com/FerretDB/FerretDB/internal/handlers/dummy"
 )
 
+// init registers `dummy` stub handler that is always enabled.
 func init() {
-	registeredHandlers["pg"] = func(opts *newHandlerOpts) (handlers.Interface, error) {
-		pgPool, err := pgdb.NewPool(opts.ctx, *postgresqlURLF, opts.logger, false)
-		if err != nil {
-			return nil, err
-		}
-
-		handlerOpts := &pg.NewOpts{
-			PgPool:    pgPool,
-			L:         opts.logger,
-			StartTime: time.Now(),
-		}
-		return pg.New(handlerOpts), nil
+	registeredHandlers["dummy"] = func(*newHandlerOpts) (handlers.Interface, error) {
+		return dummy.New()
 	}
 }
