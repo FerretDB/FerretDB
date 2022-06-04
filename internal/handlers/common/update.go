@@ -191,7 +191,6 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 								mulKey,
 								AliasFromType(docValue),
 							))
-
 					}
 
 					changed = true
