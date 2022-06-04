@@ -16,6 +16,7 @@ package common
 
 import (
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 
@@ -128,12 +129,57 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				if doc.Has(mulKey) {
 					docValue := must.NotFail(doc.Get(mulKey))
 					mulValue := mulMap[mulKey]
+					var res any
 
-					multiplication := docValue * mulValue
+					switch d := docValue.(type) {
+					case int32:
+						switch m := mulValue.(type) {
+						case int32:
+							res = d * m
+							if int64(res.(int32)) != int64(d)*int64(m) {
+								res = int64(d) * int64(m)
+							}
+						case int64:
+							res = int64(d) * m
+							if float64(res.(int64)) != float64(d)*float64(m) {
+								res = d
+							}
+						case float64:
+							res = float64(d) * m
+						}
+					case int64:
+						switch m := mulValue.(type) {
+						case int32:
+							res = d * int64(m)
 
-					must.NoError(doc.Set(mulKey, multiplication))
+							if res.(int64) != d*int64(m) {
+								res = int64(d) * int64(m)
+							}
+							if float64(res.(int64)) != float64(d)*float64(m) {
+								res = math.MaxInt64
+							}
+						case int64:
+							res = d * m
+							if float64(res.(int64)) != float64(d)*float64(m) {
+								res = math.MaxInt64
+							}
+						case float64:
+							res = float64(d) * m
+						}
+					case float64:
+						switch m := mulValue.(type) {
+						case int32:
+							res = d * float64(m)
+						case int64:
+							res = d * float64(m)
+						case float64:
+							res = d * m
+						}
+					}
+
+					changed = true
+					must.NoError(doc.Set(mulKey, res))
 				}
-
 			}
 
 		default:
@@ -162,6 +208,10 @@ func ValidateUpdateOperators(update *types.Document) error {
 	if err != nil {
 		return err
 	}
+	_, err = extractValueFromUpdateOperator("$mul", update)
+	if err != nil {
+		return err
+	}
 	if err = checkConflictingChanges(set, inc); err != nil {
 		return err
 	}
@@ -177,6 +227,8 @@ func checkAllModifiersSupported(update *types.Document) error {
 		case "$set":
 			fallthrough
 		case "$setOnInsert":
+			fallthrough
+		case "$mul":
 			// supported
 		default:
 			return NewWriteErrorMsg(

@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,7 +25,37 @@ import (
 )
 
 func TestUpdateMul(t *testing.T) {
-	t.Parallel()
+	//	t.Parallel()
+	ctx, collection := setup(t)
+
+	_, err := collection.InsertMany(ctx, []any{
+		bson.D{{"_id", "zero_zero"}, {"value", 0}},
+		bson.D{{"_id", "zero_int32"}, {"value", 0}},
+		bson.D{{"_id", "zero_int64"}, {"value", 0}},
+		bson.D{{"_id", "zero_float64"}, {"value", 0}},
+		bson.D{{"_id", "int32_zero"}, {"value", int32(1000)}},
+		bson.D{{"_id", "int64_zero"}, {"value", int64(1000)}},
+		bson.D{{"_id", "float64_zero"}, {"value", float64(1000)}},
+
+		bson.D{{"_id", "int32_int32"}, {"value", int32(10)}},
+		bson.D{{"_id", "int32_int64"}, {"value", int32(10)}},
+		bson.D{{"_id", "int32_float64"}, {"value", int32(10)}},
+		bson.D{{"_id", "int32_maxInt32"}, {"value", int32(10)}},
+		bson.D{{"_id", "int32_maxInt64"}, {"value", int32(2)}},
+
+		bson.D{{"_id", "int64_int32"}, {"value", int64(10)}},
+		bson.D{{"_id", "int64_int64"}, {"value", int64(10)}},
+		bson.D{{"_id", "int64_float64"}, {"value", int64(10)}},
+		bson.D{{"_id", "int64_maxInt32"}, {"value", int64(2)}},
+		bson.D{{"_id", "int64_maxInt64"}, {"value", int64(2)}},
+
+		bson.D{{"_id", "maxInt32_maxInt32"}, {"value", math.MaxInt32}},
+		bson.D{{"_id", "maxInt64_maxInt64"}, {"value", math.MaxInt64}},
+
+		bson.D{{"_id", "maxInt64_int32"}, {"value", math.MaxInt64}},
+		bson.D{{"_id", "maxInt64_int64"}, {"value", math.MaxInt64}},
+	})
+	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
 		filter     bson.D
@@ -33,14 +64,112 @@ func TestUpdateMul(t *testing.T) {
 		err        *mongo.WriteError
 		altMessage string
 	}{
-		"OneI": {
-			filter: bson.D{{"_id", "1"}},
-			update: bson.D{{"$mul", bson.D{{"value", 10}}}},
-			expected: map[string]any{
-				"_id":   "1",
-				"value": 100,
-			},
+		"Zero_Zero": {
+			filter:   bson.D{{"_id", "zero_zero"}},
+			update:   bson.D{{"$mul", bson.D{{"value", 0}}}},
+			expected: map[string]any{"_id": "zero_zero", "value": int32(0)},
 		},
+		"Zero_Int32": {
+			filter:   bson.D{{"_id", "zero_int32"}},
+			update:   bson.D{{"$mul", bson.D{{"value", int32(10)}}}},
+			expected: map[string]any{"_id": "zero_int32", "value": int32(0)},
+		},
+		"Zero_Int64": {
+			filter:   bson.D{{"_id", "zero_int64"}},
+			update:   bson.D{{"$mul", bson.D{{"value", int64(10)}}}},
+			expected: map[string]any{"_id": "zero_int64", "value": int64(0)},
+		},
+		"Zero_Float64": {
+			filter:   bson.D{{"_id", "zero_float64"}},
+			update:   bson.D{{"$mul", bson.D{{"value", float64(10)}}}},
+			expected: map[string]any{"_id": "zero_float64", "value": float64(0)},
+		},
+		"Int32_Zero": {
+			filter:   bson.D{{"_id", "int32_zero"}},
+			update:   bson.D{{"$mul", bson.D{{"value", 0}}}},
+			expected: map[string]any{"_id": "int32_zero", "value": int32(0)},
+		},
+		"Int64_Zero": {
+			filter:   bson.D{{"_id", "int64_zero"}},
+			update:   bson.D{{"$mul", bson.D{{"value", 0}}}},
+			expected: map[string]any{"_id": "int64_zero", "value": int64(0)},
+		},
+		"Float64_Zero": {
+			filter:   bson.D{{"_id", "float64_zero"}},
+			update:   bson.D{{"$mul", bson.D{{"value", 0}}}},
+			expected: map[string]any{"_id": "float64_zero", "value": float64(0)},
+		},
+		"Int32_Int32": {
+			filter:   bson.D{{"_id", "int32_int32"}},
+			update:   bson.D{{"$mul", bson.D{{"value", int32(10)}}}},
+			expected: map[string]any{"_id": "int32_int32", "value": int32(100)},
+		},
+		"Int32_Int64": {
+			filter:   bson.D{{"_id", "int32_int64"}},
+			update:   bson.D{{"$mul", bson.D{{"value", int64(10)}}}},
+			expected: map[string]any{"_id": "int32_int64", "value": int64(100)},
+		},
+		"Int32_Float64": {
+			filter:   bson.D{{"_id", "int32_float64"}},
+			update:   bson.D{{"$mul", bson.D{{"value", float64(10)}}}},
+			expected: map[string]any{"_id": "int32_float64", "value": float64(100)},
+		},
+		"Int32_MaxInt32": {
+			filter:   bson.D{{"_id", "int32_maxInt32"}},
+			update:   bson.D{{"$mul", bson.D{{"value", math.MaxInt32}}}},
+			expected: map[string]any{"_id": "int32_maxInt32", "value": int64(21474836470)},
+		},
+		"Int32_MaxInt64": {
+			filter:   bson.D{{"_id", "int32_maxInt64"}},
+			update:   bson.D{{"$mul", bson.D{{"value", math.MaxInt64}}}},
+			expected: map[string]any{"_id": "int32_maxInt64", "value": int32(2)},
+		},
+		"Int64_Int32": {
+			filter:   bson.D{{"_id", "int64_int32"}},
+			update:   bson.D{{"$mul", bson.D{{"value", int32(10)}}}},
+			expected: map[string]any{"_id": "int64_int32", "value": int64(100)},
+		},
+		"Int64_Int64": {
+			filter:   bson.D{{"_id", "int64_int64"}},
+			update:   bson.D{{"$mul", bson.D{{"value", int64(10)}}}},
+			expected: map[string]any{"_id": "int64_int64", "value": int64(100)},
+		},
+		"Int64_Float64": {
+			filter:   bson.D{{"_id", "int64_float64"}},
+			update:   bson.D{{"$mul", bson.D{{"value", float64(10)}}}},
+			expected: map[string]any{"_id": "int64_float64", "value": float64(100)},
+		},
+		"Int64_MaxInt32": {
+			filter:   bson.D{{"_id", "int64_maxInt32"}},
+			update:   bson.D{{"$mul", bson.D{{"value", math.MaxInt32}}}},
+			expected: map[string]any{"_id": "int64_maxInt32", "value": int64(4294967294)},
+		},
+		"Int64_MaxInt64": {
+			filter:   bson.D{{"_id", "int64_maxInt64"}},
+			update:   bson.D{{"$mul", bson.D{{"value", math.MaxInt64}}}},
+			expected: map[string]any{"_id": "int64_maxInt64", "value": int64(2)},
+		},
+		"MaxInt64_MaxInt64": {
+			filter:   bson.D{{"_id", "maxInt64_maxInt64"}},
+			update:   bson.D{{"$mul", bson.D{{"value", math.MaxInt64}}}},
+			expected: map[string]any{"_id": "maxInt64_maxInt64", "value": int64(math.MaxInt64)},
+		},
+		"MaxInt64_Int32": {
+			filter:   bson.D{{"_id", "maxInt64_int32"}},
+			update:   bson.D{{"$mul", bson.D{{"value", int32(2)}}}},
+			expected: map[string]any{"_id": "maxInt64_int32", "value": int64(math.MaxInt64)},
+		},
+		"MaxInt64_Int64": {
+			filter:   bson.D{{"_id", "maxInt64_int64"}},
+			update:   bson.D{{"$mul", bson.D{{"value", int64(2)}}}},
+			expected: map[string]any{"_id": "maxInt64_int64", "value": int64(math.MaxInt64)},
+		},
+
+		// "Float64_Zero": {
+		// 	filter:   bson.D{{"_id", "float64_zero"}},
+		// 	update:   bson.D{{"$mul", bson.D{{"value", 0}}}},
+		// 	expected: map[string]any{"_id": "float64_zero", "value": float64(0)},
+		// },
 
 		// "FieldDoc": {
 		// 	filter: bson.D{{"_id", "1"}},
@@ -76,14 +205,7 @@ func TestUpdateMul(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			ctx, collection := setup(t)
-
-			_, err := collection.InsertMany(ctx, []any{
-				bson.D{{"_id", "1"}, {"value", 10}},
-				bson.D{{"_id", "2"}, {"value", 1}},
-			})
-			require.NoError(t, err)
+			//	t.Parallel()
 
 			_, err = collection.UpdateOne(ctx, tc.filter, tc.update)
 			if tc.err != nil {
