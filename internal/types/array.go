@@ -124,15 +124,9 @@ func (a *Array) Contains(value any) bool {
 
 // ContainsAll checks if the Array contains all the given values of the Array b.
 // Currently, this algorithm is O(n^2) without any performance tuning.
-// Possible improvement: to sorts both arrays before comparing.
-// If sorting is implemented, calling of the Contains function will be O(n*log(n)) instead of O(n^2).
+//
+// Important! This place can be significantly improved if a more performant algorithm is chosen.
 func (a *Array) ContainsAll(b *Array) bool {
-	// TODO: This place can be significantly improved:
-	// Sort a.
-	// Sort b.
-	// Use Index instead of Contains.
-	// Remember the last index found and always start from there when searching for the next value.
-
 	for _, v := range b.s {
 		if !a.Contains(v) {
 			return false
