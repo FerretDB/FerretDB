@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestArray(t *testing.T) {
@@ -108,7 +109,7 @@ func TestArrayContains(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tc.expected, tc.array.Contains(tc.filter))
+			testutil.AssertEqual(t, tc.expected, tc.array.Contains(tc.filter))
 		})
 	}
 }
@@ -148,7 +149,7 @@ func TestArrayContainsAll(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tc.expected, tc.array.ContainsAll(tc.filter))
+			testutil.AssertEqual(t, tc.expected, tc.array.ContainsAll(tc.filter))
 		})
 	}
 }
