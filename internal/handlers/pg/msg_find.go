@@ -70,7 +70,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	maxTimeMS, err := common.GetPositiveNumber(document, "maxTimeMS")
+	maxTimeMS, err := common.GetPositiveNumber(document, "maxTimeMS", true)
 	if err != nil {
 		return nil, err
 	}
