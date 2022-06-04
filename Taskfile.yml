@@ -223,11 +223,17 @@ tasks:
     cmds:
       - >
         docker buildx build --builder=ferretdb
+        --build-arg BASE_IMAGE={{.BASE_IMAGE}}
+        --build-arg BUILD_ARGS="{{.BUILD_ARGS}}"
+        --build-arg CGO_ENABLED={{.CGO_ENABLED}}
         --build-arg VERSION={{.VERSION}}
         --build-arg COMMIT={{.COMMIT}}
         --tag=ferretdb-local
         --load .
     vars:
+      BASE_IMAGE: golang:1.18.3
+      BUILD_ARGS: -race -coverpkg=./...
+      CGO_ENABLED: 1
       COMMIT:
         sh: cat internal/util/version/commit.txt
       VERSION:

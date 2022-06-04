@@ -1,13 +1,17 @@
-ARG VERSION
+ARG BASE_IMAGE=scratch
 ARG COMMIT
+ARG VERSION
 
-FROM golang:1.18.2 AS build
+FROM golang:1.18.3 AS build
+
+ARG BUILD_ARGS=
+ARG CGO_ENABLED=0
 
 WORKDIR /src
 ADD . .
-RUN CGO_ENABLED=0 go test -c -trimpath -o=bin/ferretdb -tags=testcover -coverpkg=./... ./cmd/ferretdb
+RUN CGO_ENABLED=${CGO_ENABLED} go test -c -trimpath -o=bin/ferretdb -tags=testcover ${BUILD_ARGS} ./cmd/ferretdb
 
-FROM scratch
+FROM ${BASE_IMAGE}
 
 COPY --from=build /src/bin/ferretdb /ferretdb
 
