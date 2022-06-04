@@ -129,72 +129,14 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				if doc.Has(mulKey) {
 					docValue := must.NotFail(doc.Get(mulKey))
 					mulValue := mulMap[mulKey]
-					var res any
 
-					switch d := docValue.(type) {
-					case int32:
-						switch m := mulValue.(type) {
-						case int32:
-							res = d * m
-							if int64(res.(int32)) != int64(d)*int64(m) {
-								res = int64(d) * int64(m)
-							}
-						case int64:
-							res = int64(d) * m
-							if float64(d)*float64(m) > float64(math.MaxInt64) {
-								return false, NewWriteErrorMsg(ErrBadValue, `Failed to apply $mul operations to current value`)
-							}
-						case float64:
-							res = float64(d) * m
-						default:
-							return false, NewWriteErrorMsg(ErrTypeMismatch, `Cannot multiply with non-numeric argument`)
-						}
-					case int64:
-						switch m := mulValue.(type) {
-						case int32:
-							res = d * int64(m)
-
-							// if res.(int64) != d*int64(m) {
-							// 	res = int64(d) * int64(m)
-							// }
-							if float64(res.(int64)) != float64(d)*float64(m) {
-								return false, NewWriteErrorMsg(ErrBadValue, `Failed to apply $mul operations to current value`)
-							}
-						case int64:
-							res = d * m
-							if float64(res.(int64)) != float64(d)*float64(m) {
-								return false, NewWriteErrorMsg(ErrBadValue, `Failed to apply $mul operations to current value`)
-							}
-						case float64:
-							res = float64(d) * m
-						default:
-							return false, NewWriteErrorMsg(ErrTypeMismatch, `Cannot multiply with non-numeric argument`)
-						}
-					case float64:
-						switch m := mulValue.(type) {
-						case int32:
-							res = d * float64(m)
-						case int64:
-							res = d * float64(m)
-						case float64:
-							res = d * m
-						default:
-							return false, NewWriteErrorMsg(ErrTypeMismatch, `Cannot multiply with non-numeric argument`)
-						}
-					default:
-						return false, NewWriteErrorMsg(
-							ErrTypeMismatch,
-							fmt.Sprintf(
-								`Cannot apply $mul to a value of non-numeric type. `+
-									`{_id: "%s"} has the field '%s' of non-numeric type %s`,
-								must.NotFail(doc.Get("_id")),
-								mulKey,
-								AliasFromType(docValue),
-							))
+					result, err := multNumbers(docValue, mulValue)
+					if err != nil {
+						return false, err
 					}
 
 					changed = true
-					must.NoError(doc.Set(mulKey, res))
+					must.NoError(doc.Set(mulKey, result))
 				}
 			}
 
@@ -309,4 +251,63 @@ func extractValueFromUpdateOperator(op string, update *types.Document) (*types.D
 	default:
 		return nil, NewWriteErrorMsg(ErrFailedToParse, "Modifiers operate on fields but we found another type instead")
 	}
+}
+
+func multNumbers(a, b any) (result any, err error) {
+
+	switch d := a.(type) {
+	case int32:
+		switch m := b.(type) {
+		case int32:
+			result = d * m
+			if int64(result.(int32)) != int64(d)*int64(m) {
+				result = int64(d) * int64(m)
+			}
+		case int64:
+			result = int64(d) * m
+			if float64(d)*float64(m) > float64(math.MaxInt64) {
+				return false, NewWriteErrorMsg(ErrBadValue, `Failed to apply $mul operations to current value`)
+			}
+		case float64:
+			result = float64(d) * m
+		default:
+			return false, NewWriteErrorMsg(ErrTypeMismatch, `Cannot multiply with non-numeric argument`)
+		}
+
+	case int64:
+		switch m := b.(type) {
+		case int32:
+			result = d * int64(m)
+			if float64(result.(int64)) != float64(d)*float64(m) {
+				return false, NewWriteErrorMsg(ErrBadValue, `Failed to apply $mul operations to current value`)
+			}
+		case int64:
+			result = d * m
+			if float64(result.(int64)) != float64(d)*float64(m) {
+				return false, NewWriteErrorMsg(ErrBadValue, `Failed to apply $mul operations to current value`)
+			}
+		case float64:
+			result = float64(d) * m
+		default:
+			return false, NewWriteErrorMsg(ErrTypeMismatch, `Cannot multiply with non-numeric argument`)
+		}
+
+	case float64:
+		switch m := b.(type) {
+		case int32:
+			result = d * float64(m)
+		case int64:
+			result = d * float64(m)
+		case float64:
+			result = d * m
+		default:
+			return false, NewWriteErrorMsg(ErrTypeMismatch, `Cannot multiply with non-numeric argument`)
+		}
+
+	default:
+		return false, NewWriteErrorMsg(ErrTypeMismatch, `Cannot apply $mul to a value of non-numeric type`)
+
+	}
+
+	return result, nil
 }

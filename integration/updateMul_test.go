@@ -357,7 +357,7 @@ func TestUpdateMul(t *testing.T) {
 				Code:    14,
 				Message: `Cannot apply $mul to a value of non-numeric type. {_id: "nil_int64"} has the field 'value' of non-numeric type null`,
 			},
-			altMessage: `Cannot apply $mul to a value of non-numeric type. {_id: "nil_int64"} has the field 'value' of non-numeric type null`,
+			altMessage: `Cannot apply $mul to a value of non-numeric type`,
 		},
 		"Int64_Nil": {
 			filter: bson.D{{"_id", "int64_nil"}},
@@ -375,7 +375,7 @@ func TestUpdateMul(t *testing.T) {
 				Code:    14,
 				Message: `Cannot apply $mul to a value of non-numeric type. {_id: "nan_int64"} has the field 'value' of non-numeric type null`,
 			},
-			altMessage: `Cannot apply $mul to a value of non-numeric type. {_id: "nan_int64"} has the field 'value' of non-numeric type null`,
+			altMessage: `Cannot apply $mul to a value of non-numeric type`,
 		},
 		"Int64_NaN": {
 			filter:   bson.D{{"_id", "int64_nan"}},
