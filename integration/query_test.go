@@ -717,7 +717,6 @@ func TestQueryBadMaxTimeMSType(t *testing.T) {
 		"BadMaxTimeMSTypeStringFindAndModify": {
 			command: bson.D{
 				{"findAndModify", collection.Name()},
-				{"projection", bson.D{{"value", "some"}}},
 				{"maxTimeMS", "string"},
 			},
 			err: &mongo.CommandError{
