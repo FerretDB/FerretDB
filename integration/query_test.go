@@ -687,3 +687,18 @@ func TestDotNotation(t *testing.T) {
 		})
 	}
 }
+
+// TestFindCollectionNotExists tests that a query to a non existing collection doesn't fail but returns an empty result.
+func TestFindCollectionNotExists(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup(t)
+
+	cursor, err := collection.Database().Collection("doesnotexist").Find(ctx, bson.D{})
+	require.NoError(t, err)
+
+	var actual []bson.D
+	err = cursor.All(ctx, &actual)
+	require.NoError(t, err)
+	require.Len(t, actual, 0)
+}
