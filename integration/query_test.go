@@ -334,6 +334,13 @@ func TestQueryCount(t *testing.T) {
 			},
 			response: 6,
 		},
+		"CountNonExistingCollection": {
+			command: bson.D{
+				{"count", "doesnotexist"},
+				{"query", bson.D{{"value", true}}},
+			},
+			response: 0,
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -688,8 +695,8 @@ func TestDotNotation(t *testing.T) {
 	}
 }
 
-// TestFindCollectionNotExists tests that a query to a non existing collection doesn't fail but returns an empty result.
-func TestFindCollectionNotExists(t *testing.T) {
+// TestQueryNonExistingCollection tests that a query to a non existing collection doesn't fail but returns an empty result.
+func TestQueryNonExistingCollection(t *testing.T) {
 	t.Parallel()
 
 	ctx, collection := setup(t)
