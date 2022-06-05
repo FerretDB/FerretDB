@@ -254,7 +254,6 @@ func extractValueFromUpdateOperator(op string, update *types.Document) (*types.D
 }
 
 func multNumbers(a, b any) (result any, err error) {
-
 	switch d := a.(type) {
 	case int32:
 		switch m := b.(type) {
@@ -306,7 +305,6 @@ func multNumbers(a, b any) (result any, err error) {
 
 	default:
 		return false, NewWriteErrorMsg(ErrTypeMismatch, `Cannot apply $mul to a value of non-numeric type`)
-
 	}
 
 	return result, nil
