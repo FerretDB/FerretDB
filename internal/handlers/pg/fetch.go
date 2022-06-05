@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v4"
+	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -53,6 +54,10 @@ func (h *Handler) fetch(ctx context.Context, param sqlParam) ([]*types.Document,
 		return nil, lazyerrors.Error(cerr)
 	}
 	if !collectionExists {
+		h.l.Info(
+			"Table doesn't exist, handling a case to deal with a non-existing collection.",
+			zap.String("schema", param.db), zap.String("table", param.collection),
+		)
 		return []*types.Document{}, nil
 	}
 
