@@ -143,7 +143,6 @@ func TestQueryArrayAll(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t)
 
-	// Valid cases when the value for $all is an array.
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{{"_id", "array-empty"}, {"value", bson.A{}}},
 		bson.D{{"_id", "array-one"}, {"value", bson.A{"1"}}},
@@ -160,35 +159,69 @@ func TestQueryArrayAll(t *testing.T) {
 	for name, tc := range map[string]struct {
 		filter      bson.D
 		expectedIDs []any
-		err         *mongo.CommandError
+		expectedErr *mongo.CommandError
 	}{
 		"String": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{"1"}}}}},
 			expectedIDs: []any{"array-many", "array-one", "array-three", "array-two"},
+			expectedErr: nil,
 		},
 		"StringRepeated": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{"1", "1", "1", "1"}}}}},
 			expectedIDs: []any{"array-many", "array-one", "array-three", "array-two"},
+			expectedErr: nil,
 		},
 		"Float": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{12.5}}}}},
 			expectedIDs: []any{"array-many", "float"},
+			expectedErr: nil,
 		},
 		"MultiAll": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{"1", 2}}}}},
 			expectedIDs: []any{"array-many", "array-three"},
+			expectedErr: nil,
 		},
 		"MultiAllWithNil": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{"1", nil}}}}},
 			expectedIDs: []any{"array-two"},
+			expectedErr: nil,
 		},
 		"MultiAllWithNaN": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{"1", math.NaN()}}}}},
 			expectedIDs: []any{"array-many", "array-three"},
+			expectedErr: nil,
 		},
 		"NotFound": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{"hello"}}}}},
 			expectedIDs: []any{},
+			expectedErr: nil,
+		},
+		"$allNeedsAnArrayInt": {
+			filter:      bson.D{{"value", bson.D{{"$all", 1}}}},
+			expectedIDs: nil,
+			expectedErr: &mongo.CommandError{
+				Code:    2,
+				Message: "$all needs an array",
+				Name:    "BadValue",
+			},
+		},
+		"$allNeedsAnArrayNan": {
+			filter:      bson.D{{"value", bson.D{{"$all", math.NaN()}}}},
+			expectedIDs: nil,
+			expectedErr: &mongo.CommandError{
+				Code:    2,
+				Message: "$all needs an array",
+				Name:    "BadValue",
+			},
+		},
+		"$allNeedsAnArrayNil": {
+			filter:      bson.D{{"value", bson.D{{"$all", nil}}}},
+			expectedIDs: nil,
+			expectedErr: &mongo.CommandError{
+				Code:    2,
+				Message: "$all needs an array",
+				Name:    "BadValue",
+			},
 		},
 	} {
 		name, tc := name, tc
@@ -196,9 +229,9 @@ func TestQueryArrayAll(t *testing.T) {
 			t.Parallel()
 
 			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err != nil {
+			if tc.expectedErr != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, *tc.err, err)
+				AssertEqualError(t, *tc.expectedErr, err)
 				return
 			}
 			require.NoError(t, err)
@@ -209,12 +242,4 @@ func TestQueryArrayAll(t *testing.T) {
 			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
 		})
 	}
-
-	// Handle a case when the value for $all is a scalar.
-	t.Run("Op$allNeedsAnArray", func(t *testing.T) {
-		filter := bson.D{{"value", bson.D{{"$all", "1"}}}}
-		cur, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-		require.EqualError(t, err, "(BadValue) $all needs an array")
-		assert.Nil(t, cur)
-	})
 }
