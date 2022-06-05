@@ -28,6 +28,7 @@ type binaryType types.Binary
 // tjsontype implements tjsontype interface.
 func (bin *binaryType) tjsontype() {}
 
+// binaryJSON is a JSON object representation of the binaryType.
 type binaryJSON struct {
 	B []byte `json:"$b"`
 	S byte   `json:"s"`

@@ -29,6 +29,7 @@ import (
 // SchemaType represents JSON value type in JSON Schema.
 type SchemaType string
 
+// JSON value types defined by the JSON Schema.
 const (
 	Integer SchemaType = "integer"
 	Number  SchemaType = "number"
@@ -41,6 +42,7 @@ const (
 // SchemaFormat represents additional information about JSON value type in JSON Schema.
 type SchemaFormat string
 
+// JSON value formats.
 const (
 	EmptyFormat SchemaFormat = ""
 
