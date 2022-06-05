@@ -17,10 +17,11 @@ package integration
 import (
 	"testing"
 
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 // TestDeleteSimple checks simple cases of doc deletion.
