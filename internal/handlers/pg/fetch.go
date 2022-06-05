@@ -47,17 +47,17 @@ func (h *Handler) fetch(ctx context.Context, param sqlParam) ([]*types.Document,
 	}
 	sql += `_jsonb FROM ` + pgx.Identifier{param.db, param.collection}.Sanitize()
 
+	// Special case: check if collection exists at all
+	collectionExists, cerr := h.pgPool.TableExists(ctx, param.db, param.collection)
+	if cerr != nil {
+		return nil, lazyerrors.Error(cerr)
+	}
+	if !collectionExists {
+		return []*types.Document{}, nil
+	}
+
 	rows, err := h.pgPool.Query(ctx, sql)
 	if err != nil {
-		// Special case: check if collection exists at all
-		collectionExists, cerr := h.collectionExists(ctx, param)
-		if cerr != nil {
-			return nil, lazyerrors.Error(cerr)
-		}
-		if !collectionExists {
-			return []*types.Document{}, nil
-		}
-
 		return nil, lazyerrors.Error(err)
 	}
 	defer rows.Close()
@@ -75,30 +75,6 @@ func (h *Handler) fetch(ctx context.Context, param sqlParam) ([]*types.Document,
 	}
 
 	return res, nil
-}
-
-// collectionExists checks if the given collection exists in the given database.
-// TODO: how to write an integration test for this particular function?
-func (h *Handler) collectionExists(ctx context.Context, param sqlParam) (bool, error) {
-	sql := `SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_schema = $1 AND table_name = $2)`
-	rows, err := h.pgPool.Query(ctx, sql, param.db, param.collection)
-	if err != nil {
-		return false, lazyerrors.Error(err)
-	}
-	defer rows.Close()
-
-	var exists bool
-	if !rows.Next() {
-		if err := rows.Err(); err != nil {
-			return false, lazyerrors.Error(err)
-		}
-		return false, io.EOF
-	}
-	if err := rows.Scan(&exists); err != nil {
-		return false, lazyerrors.Error(err)
-	}
-
-	return exists, nil
 }
 
 // nextRow returns the next document from the given rows.

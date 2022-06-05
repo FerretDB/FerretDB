@@ -348,16 +348,14 @@ func (pgPool *Pool) DropTable(ctx context.Context, schema, table string) error {
 	}
 }
 
-// EnsureTableExist ensures that given FerretDB database / PostgreSQL schema and FerretDB collection / PostgreSQL table exist.
+// CreateTableIfNotExists ensures that given FerretDB database / PostgreSQL schema
+// and FerretDB collection / PostgreSQL table exist.
 //
 // True is returned if table was created.
-func (pgPool *Pool) EnsureTableExist(ctx context.Context, db, collection string) (bool, error) {
-	tables, err := pgPool.Tables(ctx, db)
-	if err != nil {
-		return false, lazyerrors.Error(err)
-	}
-
-	if slices.Contains(tables, collection) {
+func (pgPool *Pool) CreateTableIfNotExists(ctx context.Context, db, collection string) (bool, error) {
+	if exists, err := pgPool.TableExists(ctx, db, collection); err != nil {
+		return false, err
+	} else if exists {
 		return false, nil
 	}
 
@@ -376,6 +374,17 @@ func (pgPool *Pool) EnsureTableExist(ctx context.Context, db, collection string)
 	}
 
 	return true, nil
+}
+
+// TableExists returns true if given FerretDB database / PostgreSQL schema
+// and FerretDB collection / PostgreSQL table exist.
+func (pgPool *Pool) TableExists(ctx context.Context, db, collection string) (bool, error) {
+	tables, err := pgPool.Tables(ctx, db)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	return slices.Contains(tables, collection), nil
 }
 
 // TableStats returns a set of statistics for FerretDB collection / PostgreSQL table.
