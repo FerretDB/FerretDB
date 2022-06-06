@@ -25,11 +25,10 @@ import (
 // Setup initializes logging with a given level.
 func Setup(level zapcore.Level) {
 	var config zap.Config
-	if level == zapcore.DebugLevel {
+	if level <= zapcore.DebugLevel {
 		config = zap.Config{
 			Level:            zap.NewAtomicLevelAt(level),
 			Development:      true,
-			Sampling:         new(zap.SamplingConfig),
 			Encoding:         "console",
 			EncoderConfig:    zap.NewDevelopmentEncoderConfig(),
 			OutputPaths:      []string{"stderr"},
@@ -44,7 +43,7 @@ func Setup(level zapcore.Level) {
 				Thereafter: 100,
 			},
 			Encoding:         "json",
-			EncoderConfig:    zap.NewDevelopmentEncoderConfig(),
+			EncoderConfig:    zap.NewProductionEncoderConfig(),
 			OutputPaths:      []string{"stderr"},
 			ErrorOutputPaths: []string{"stderr"},
 		}
