@@ -51,15 +51,21 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 			changed = true
 
+		case "$unset":
+			unsetDoc := updateV.(*types.Document)
+			if unsetDoc.Len() == 0 {
+				continue
+			}
+			for _, key := range unsetDoc.Keys() {
+				doc.Remove(key)
+			}
+			changed = true
+
 		case "$inc":
 			// expecting here a document since all checks were made in ValidateUpdateOperators func
 			incDoc := updateV.(*types.Document)
 
 			for _, incKey := range incDoc.Keys() {
-				if strings.ContainsRune(incKey, '.') {
-					return false, NewErrorMsg(ErrNotImplemented, "dot notation not supported yet")
-				}
-
 				incValue := must.NotFail(incDoc.Get(incKey))
 
 				if !doc.Has(incKey) {
@@ -162,6 +168,10 @@ func ValidateUpdateOperators(update *types.Document) error {
 	if err != nil {
 		return err
 	}
+	_, err = extractValueFromUpdateOperator("$unset", update)
+	if err != nil {
+		return err
+	}
 	_, err = extractValueFromUpdateOperator("$setOnInsert", update)
 	if err != nil {
 		return err
@@ -187,6 +197,8 @@ func checkAllModifiersSupported(update *types.Document) error {
 		case "$setOnInsert":
 			fallthrough
 		case "$mul":
+			fallthrough
+		case "$unset":
 			// supported
 		default:
 			return NewWriteErrorMsg(
@@ -243,7 +255,7 @@ func extractValueFromUpdateOperator(op string, update *types.Document) (*types.D
 	case *types.Document:
 		for _, v := range doc.Keys() {
 			if strings.Contains(v, ".") {
-				return nil, NewError(ErrNotImplemented, fmt.Errorf("Dot notation is not implemented"))
+				return nil, NewError(ErrNotImplemented, fmt.Errorf("dot notation for operator %s is not supported yet", op))
 			}
 		}
 
