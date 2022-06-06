@@ -279,12 +279,12 @@ func CompareArrays(filterArr, docArr *Array) CompareResult {
 			switch filterArrValue := filterArrValue.(type) {
 			case *Array:
 				res := CompareArrays(filterArrValue, arrValue)
-				res = handleSubArrayComparingResult(i, &res, &EntireArrayResult, &subArrayEquality)
+				res = handleSubArrayComparingResult(&res, &EntireArrayResult, &subArrayEquality)
 				continue
 
 			default:
 				res := CompareArrays(filterArr, arrValue)
-				res = handleSubArrayComparingResult(i, &res, &EntireArrayResult, &subArrayEquality)
+				res = handleSubArrayComparingResult(&res, &EntireArrayResult, &subArrayEquality)
 			}
 			continue
 
@@ -336,16 +336,9 @@ func CompareArrays(filterArr, docArr *Array) CompareResult {
 
 // handleSubArrayComparingResult determines on the first iteration what result the comparison will follow (e.g. gt, ls, eq)
 // detects inconsistency in iterations; detects equality for subbaray.
-func handleSubArrayComparingResult(
-	iterator int,
-	resultFromComparing, entireArrayResult, subArrayEquality *CompareResult,
-) CompareResult {
+func handleSubArrayComparingResult(resultFromComparing, entireArrayResult, subArrayEquality *CompareResult) CompareResult {
 	if *resultFromComparing == Incomparable {
 		return Incomparable
-	}
-
-	if *entireArrayResult == Incomparable && iterator == 0 {
-		entireArrayResult = resultFromComparing
 	}
 
 	if *resultFromComparing == Equal {
