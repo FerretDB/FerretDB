@@ -50,6 +50,16 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 			changed = true
 
+		case "$unset":
+			unsetDoc := updateV.(*types.Document)
+			if unsetDoc.Len() == 0 {
+				continue
+			}
+			for _, key := range unsetDoc.Keys() {
+				doc.Remove(key)
+			}
+			changed = true
+
 		case "$inc":
 			// expecting here a document since all checks were made in ValidateUpdateOperators func
 			incDoc := updateV.(*types.Document)
@@ -120,6 +130,10 @@ func ValidateUpdateOperators(update *types.Document) error {
 	if err != nil {
 		return err
 	}
+	_, err = extractValueFromUpdateOperator("$unset", update)
+	if err != nil {
+		return err
+	}
 	_, err = extractValueFromUpdateOperator("$setOnInsert", update)
 	if err != nil {
 		return err
@@ -139,6 +153,8 @@ func checkAllModifiersSupported(update *types.Document) error {
 		case "$set":
 			fallthrough
 		case "$setOnInsert":
+			fallthrough
+		case "$unset":
 			// supported
 		default:
 			return NewWriteErrorMsg(
