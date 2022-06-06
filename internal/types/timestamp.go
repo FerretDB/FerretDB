@@ -35,7 +35,6 @@ func NewTimestamp(sec int64, inc uint32) Timestamp {
 }
 
 // NextTimestamp returns a timestamp from seconds and an internal ops counter.
-// TODO: get low-order 4 bytes for the inc instead of internal counter?
 func NextTimestamp(sec int64) Timestamp {
 	inc := atomic.AddUint32(&timestampCounter, 1)
 	sec <<= 32
