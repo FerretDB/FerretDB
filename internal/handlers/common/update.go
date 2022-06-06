@@ -118,7 +118,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				docValue := must.NotFail(doc.Get(maxKey))
 				newValue := maxMap[maxKey]
 				c := types.Compare(docValue, newValue)
-				if c == types.Greater {
+				if c == types.Less {
 					must.NoError(doc.Set(maxKey, newValue))
 					changed = true
 				}

@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -48,7 +49,22 @@ func TestUpdateMax(t *testing.T) {
 		// bson.D{{"_id", "positiveInfinity_zero"}, {"value", math.Inf(+1)}},
 		// bson.D{{"_id", "negativeInfinity_zero"}, {"value", math.Inf(-1)}},
 		// bson.D{{"_id", "negativeZero_zero"}, {"value", math.Copysign(0, -1)}},
-		bson.D{{"_id", "int32_int32"}, {"value", int32(10)}},
+
+		bson.D{{"_id", "zero<SmallestNonzeroFloat64"}, {"value", 0}},
+		bson.D{{"_id", "zero<negativeZero"}, {"value", int64(0)}},
+		bson.D{{"_id", "zero<infinity"}, {"value", int64(0)}},
+		// bson.D{{"_id", "positiveInfinity<zero"}, {"value", math.Inf(+1)}},
+		// bson.D{{"_id", "negativeInfinity<zero"}, {"value", math.Inf(-1)}},
+		bson.D{{"_id", "negativeInfinity<positiveInfinity"}, {"value", math.Inf(-1)}},
+		bson.D{{"_id", "int64<nan"}, {"value", int64(0)}},
+
+		bson.D{{"_id", "int32<int32"}, {"value", int32(100)}},
+		bson.D{{"_id", "int32>int32"}, {"value", int32(100)}},
+		bson.D{{"_id", "int32<int64"}, {"value", int32(100)}},
+		bson.D{{"_id", "int64>int32"}, {"value", int64(100)}},
+		bson.D{{"_id", "int64>float64"}, {"value", int64(100)}},
+		bson.D{{"_id", "float64>int32"}, {"value", float64(math.MaxInt64)}},
+		bson.D{{"_id", "maxInt64>floatMaxInt64"}, {"value", math.MaxInt64}},
 		// bson.D{{"_id", "int32_int64"}, {"value", int32(10)}},
 		// bson.D{{"_id", "int32_float64"}, {"value", int32(10)}},
 		// bson.D{{"_id", "int32_maxInt32"}, {"value", int32(10)}},
@@ -208,11 +224,75 @@ func TestUpdateMax(t *testing.T) {
 		// 	update:   bson.D{{"$mul", bson.D{{"value", 0}}}},
 		// 	expected: bson.D{{"_id", "float64_zero"}, {"value", float64(0)}},
 		// },
-		// "Int32_Int32": {
-		// 	filter:   bson.D{{"_id", "int32_int32"}},
-		// 	update:   bson.D{{"$max", bson.D{{"value", int32(10)}}}},
-		// 	expected: bson.D{{"_id", "int32_int32"}, {"value", int32(100)}},
+
+		//////////////////////////////////////
+
+		// "zero<SmallestNonzeroFloat64": {
+		// 	filter:   bson.D{{"_id", "zero<SmallestNonzeroFloat64"}},
+		// 	update:   bson.D{{"$max", bson.D{{"value", math.SmallestNonzeroFloat64}}}},
+		// 	expected: bson.D{{"_id", "zero<SmallestNonzeroFloat64"}, {"value", math.SmallestNonzeroFloat64}},
 		// },
+		// "zero<negativeZero": {
+		// 	filter:   bson.D{{"_id", "zero<negativeZero"}},
+		// 	update:   bson.D{{"$max", bson.D{{"value", math.Copysign(0, -1)}}}},
+		// 	expected: bson.D{{"_id", "zero<negativeZero"}, {"value", int64(0)}},
+		// },
+		// "zero<infinity": {
+		// 	filter:   bson.D{{"_id", "zero<infinity"}},
+		// 	update:   bson.D{{"$max", bson.D{{"value", math.Inf(0)}}}},
+		// 	expected: bson.D{{"_id", "zero<infinity"}, {"value", math.Inf(0)}},
+		// },
+		"int64<nan": {
+			filter:   bson.D{{"_id", "int64<nan"}},
+			update:   bson.D{{"$max", bson.D{{"value", math.NaN()}}}},
+			expected: bson.D{{"_id", "int64<nan"}, {"value", int64(0)}},
+		},
+
+		// "negativeInfinity<positiveInfinity": {
+		// 	filter:   bson.D{{"_id", "negativeInfinity<positiveInfinity"}},
+		// 	update:   bson.D{{"$max", bson.D{{"value", math.Inf(+1)}}}},
+		// 	expected: bson.D{{"_id", "negativeInfinity<positiveInfinity"}, {"value", math.Inf(+1)}},
+		// },
+
+		// "Int32<Int32": {
+		// 	filter:   bson.D{{"_id", "int32<int32"}},
+		// 	update:   bson.D{{"$max", bson.D{{"value", int32(1000)}}}},
+		// 	expected: bson.D{{"_id", "int32<int32"}, {"value", int32(1000)}},
+		// },
+		// "Int32>Int32": {
+		// 	filter:   bson.D{{"_id", "int32>int32"}},
+		// 	update:   bson.D{{"$max", bson.D{{"value", int32(10)}}}},
+		// 	expected: bson.D{{"_id", "int32>int32"}, {"value", int32(100)}},
+		// },
+		// "Int32<Int64": {
+		// 	filter:   bson.D{{"_id", "int32>int32"}},
+		// 	update:   bson.D{{"$max", bson.D{{"value", int64(10000)}}}},
+		// 	expected: bson.D{{"_id", "int32>int32"}, {"value", int64(10000)}},
+		// },
+		// "Int64>Int32": {
+		// 	filter:   bson.D{{"_id", "int64>int32"}},
+		// 	update:   bson.D{{"$max", bson.D{{"value", int64(10)}}}},
+		// 	expected: bson.D{{"_id", "int64>int32"}, {"value", int64(100)}},
+		// },
+		// "Int64>float64": {
+		// 	filter:   bson.D{{"_id", "int64>float64"}},
+		// 	update:   bson.D{{"$max", bson.D{{"value", float64(99.9)}}}},
+		// 	expected: bson.D{{"_id", "int64>float64"}, {"value", int64(100)}},
+		// },
+		// "float64>Int32": {
+		// 	filter:   bson.D{{"_id", "float64>int32"}},
+		// 	update:   bson.D{{"$max", bson.D{{"value", int32(10)}}}},
+		// 	expected: bson.D{{"_id", "float64>int32"}, {"value", float64(math.MaxInt64)}},
+		// },
+
+		// "maxInt64>floatMaxInt64": {
+		// 	filter:   bson.D{{"_id", "maxInt64>floatMaxInt64"}},
+		// 	update:   bson.D{{"$max", bson.D{{"value", float64(math.MaxInt64)}}}},
+		// 	expected: bson.D{{"_id", "maxInt64>floatMaxInt64"}, {"value", float64(math.MaxInt64)}},
+		// },
+
+		/////////////////////////////////////////
+
 		// "Int32_Int64": {
 		// 	filter:   bson.D{{"_id", "int32_int64"}},
 		// 	update:   bson.D{{"$mul", bson.D{{"value", int64(10)}}}},
