@@ -612,8 +612,7 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 
 // filterFieldExprSize handles {field: {$all: [value, another_value, ...]}} filter.
 // The main purpose of $all is to filter arrays.
-// In principle, it is possible to filter non-arrays: {field: {$all: [value]}},
-// but such statement is equivalent to {field: value}.
+// It is possible to filter non-arrays: {field: {$all: [value]}}, but such statement is equivalent to {field: value}.
 func filterFieldExprAll(fieldValue any, allValue any) (bool, error) {
 	query, ok := allValue.(*types.Array)
 	if !ok {
