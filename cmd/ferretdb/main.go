@@ -18,6 +18,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -54,7 +55,7 @@ func main() {
 
 	level, err := zapcore.ParseLevel(*logLevel)
 	if err != nil {
-		level = zapcore.DebugLevel
+		log.Fatal(err)
 	}
 	logging.Setup(level)
 	logger := zap.L()
