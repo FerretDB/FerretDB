@@ -16,6 +16,7 @@ package common
 
 import (
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 
@@ -108,6 +109,43 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				}
 			}
 
+		case "$mul":
+			mulDoc, ok := updateV.(*types.Document)
+			if !ok {
+				return false, NewWriteErrorMsg(
+					ErrFailedToParse,
+					fmt.Sprintf(`Modifiers operate on fields but we found type %[1]s instead. `+
+						`For example: {$mod: {<field>: ...}} not {$rename: %[1]s}`,
+						AliasFromType(updateV),
+					),
+				)
+			}
+
+			if mulDoc.Len() == 0 {
+				return false, nil
+			}
+
+			mulMap := mulDoc.Map()
+
+			for _, mulKey := range mulDoc.Keys() {
+				if strings.ContainsRune(mulKey, '.') {
+					return false, NewErrorMsg(ErrNotImplemented, "dot notation not supported yet")
+				}
+
+				if doc.Has(mulKey) {
+					docValue := must.NotFail(doc.Get(mulKey))
+					mulValue := mulMap[mulKey]
+
+					result, err := multNumbers(docValue, mulValue)
+					if err != nil {
+						return false, err
+					}
+
+					changed = true
+					must.NoError(doc.Set(mulKey, result))
+				}
+			}
+
 		default:
 			return false, NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
 		}
@@ -138,6 +176,10 @@ func ValidateUpdateOperators(update *types.Document) error {
 	if err != nil {
 		return err
 	}
+	_, err = extractValueFromUpdateOperator("$mul", update)
+	if err != nil {
+		return err
+	}
 	if err = checkConflictingChanges(set, inc); err != nil {
 		return err
 	}
@@ -153,6 +195,8 @@ func checkAllModifiersSupported(update *types.Document) error {
 		case "$set":
 			fallthrough
 		case "$setOnInsert":
+			fallthrough
+		case "$mul":
 			fallthrough
 		case "$unset":
 			// supported
@@ -219,4 +263,61 @@ func extractValueFromUpdateOperator(op string, update *types.Document) (*types.D
 	default:
 		return nil, NewWriteErrorMsg(ErrFailedToParse, "Modifiers operate on fields but we found another type instead")
 	}
+}
+
+func multNumbers(a, b any) (result any, err error) {
+	switch d := a.(type) {
+	case int32:
+		switch m := b.(type) {
+		case int32:
+			result = d * m
+			if int64(result.(int32)) != int64(d)*int64(m) {
+				result = int64(d) * int64(m)
+			}
+		case int64:
+			result = int64(d) * m
+			if float64(d)*float64(m) > float64(math.MaxInt64) {
+				return false, NewWriteErrorMsg(ErrBadValue, `Failed to apply $mul operations to current value`)
+			}
+		case float64:
+			result = float64(d) * m
+		default:
+			return false, NewWriteErrorMsg(ErrTypeMismatch, `Cannot multiply with non-numeric argument`)
+		}
+
+	case int64:
+		switch m := b.(type) {
+		case int32:
+			result = d * int64(m)
+			if float64(result.(int64)) != float64(d)*float64(m) {
+				return false, NewWriteErrorMsg(ErrBadValue, `Failed to apply $mul operations to current value`)
+			}
+		case int64:
+			result = d * m
+			if float64(result.(int64)) != float64(d)*float64(m) {
+				return false, NewWriteErrorMsg(ErrBadValue, `Failed to apply $mul operations to current value`)
+			}
+		case float64:
+			result = float64(d) * m
+		default:
+			return false, NewWriteErrorMsg(ErrTypeMismatch, `Cannot multiply with non-numeric argument`)
+		}
+
+	case float64:
+		switch m := b.(type) {
+		case int32:
+			result = d * float64(m)
+		case int64:
+			result = d * float64(m)
+		case float64:
+			result = d * m
+		default:
+			return false, NewWriteErrorMsg(ErrTypeMismatch, `Cannot multiply with non-numeric argument`)
+		}
+
+	default:
+		return false, NewWriteErrorMsg(ErrTypeMismatch, `Cannot apply $mul to a value of non-numeric type`)
+	}
+
+	return result, nil
 }
