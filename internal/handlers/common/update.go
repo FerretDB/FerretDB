@@ -115,10 +115,6 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			renameMap := renameDoc.Map()
 
 			for _, renameKey := range renameDoc.Keys() {
-				if strings.ContainsRune(renameKey, '.') {
-					return false, NewErrorMsg(ErrNotImplemented, "dot notation not supported yet")
-				}
-
 				if doc.Has(renameKey) {
 					docValue := must.NotFail(doc.Get(renameKey))
 					doc.Remove(renameKey)
