@@ -27,15 +27,17 @@ type (
 // timestampCounter is an ordinal number for timestamps in the system.
 var timestampCounter uint32
 
-// NewTimestamp returns a timestamp from seconds and an increment.
-func NewTimestamp(sec int64, c uint32) Timestamp {
+// NewTimestamp returns a timestamp from time and an increment.
+func NewTimestamp(t time.Time, c uint32) Timestamp {
+	sec := t.UTC().Unix()
 	sec <<= 32
 	sec |= int64(c)
 	return Timestamp(sec)
 }
 
-// NextTimestamp returns a timestamp from seconds and an internal ops counter.
-func NextTimestamp(sec int64) Timestamp {
+// NextTimestamp returns a timestamp from time and an internal ops counter.
+func NextTimestamp(t time.Time) Timestamp {
+	sec := t.UTC().Unix()
 	c := atomic.AddUint32(&timestampCounter, 1)
 	sec <<= 32
 	sec |= int64(c)
@@ -45,5 +47,5 @@ func NextTimestamp(sec int64) Timestamp {
 // DateTime returns time.Time ignoring increment.
 func DateTime(t Timestamp) time.Time {
 	t >>= 32
-	return time.UnixMilli(int64(t))
+	return time.UnixMilli(int64(t)).UTC()
 }
