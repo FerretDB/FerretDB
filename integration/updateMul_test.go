@@ -25,7 +25,7 @@ import (
 )
 
 func TestUpdateMul(t *testing.T) {
-	//	t.Parallel()
+	// t.Parallel()
 	ctx, collection := setup(t)
 
 	_, err := collection.InsertMany(ctx, []any{
@@ -87,12 +87,14 @@ func TestUpdateMul(t *testing.T) {
 		bson.D{{"_id", "minInt64_negativeInt64"}, {"value", math.MinInt64}},
 		bson.D{{"_id", "int64_document"}, {"value", int64(300)}},
 		bson.D{{"_id", "int64_array"}, {"value", int64(300)}},
+		bson.D{{"_id", "int64_string"}, {"value", int64(300)}},
 		bson.D{{"_id", "document_int64"}, {"value", primitive.D{}}},
 		bson.D{{"_id", "array_int64"}, {"value", primitive.A{}}},
+		bson.D{{"_id", "string_int64"}, {"value", "string"}},
 
-		//		bson.D{{"_id", "tst_1"}, {"value", bson.D{{}}}}, // connection(127.0.0.1:40833[-7]) socket was unexpectedly closed: EOF
-		//		bson.D{{"_id", "tst_2"}, {"value", int64(1)}},
-		//		bson.D{{"_id", "tst_3"}, {"value", "string"}},
+		// bson.D{{"_id", "tst_1"}, {"value", bson.D{{}}}}, // connection(127.0.0.1:40833[-7]) socket was unexpectedly closed: EOF
+		// bson.D{{"_id", "tst_2"}, {"value", int64(1)}},
+		// bson.D{{"_id", "tst_3"}, {"value", "string"}},
 	})
 	require.NoError(t, err)
 
@@ -447,6 +449,15 @@ func TestUpdateMul(t *testing.T) {
 			},
 			altMessage: `Cannot multiply with non-numeric argument`,
 		},
+		"Int64_String": {
+			filter: bson.D{{"_id", "int64_string"}},
+			update: bson.D{{"$mul", bson.D{{"value", "string"}}}},
+			err: &mongo.WriteError{
+				Code:    14,
+				Message: `Cannot multiply with non-numeric argument: {value: "string"}`,
+			},
+			altMessage: `Cannot multiply with non-numeric argument`,
+		},
 		"Document_Int64": {
 			filter: bson.D{{"_id", "document_int64"}},
 			update: bson.D{{"$mul", bson.D{{"value", int64(300)}}}},
@@ -462,6 +473,15 @@ func TestUpdateMul(t *testing.T) {
 			err: &mongo.WriteError{
 				Code:    14,
 				Message: `Cannot apply $mul to a value of non-numeric type. {_id: "array_int64"} has the field 'value' of non-numeric type array`,
+			},
+			altMessage: `Cannot apply $mul to a value of non-numeric type`,
+		},
+		"String_Int64": {
+			filter: bson.D{{"_id", "string_int64"}},
+			update: bson.D{{"$mul", bson.D{{"value", int64(1)}}}},
+			err: &mongo.WriteError{
+				Code:    14,
+				Message: `Cannot apply $mul to a value of non-numeric type. {_id: "string_int64"} has the field 'value' of non-numeric type string`,
 			},
 			altMessage: `Cannot apply $mul to a value of non-numeric type`,
 		},
@@ -486,24 +506,7 @@ func TestUpdateMul(t *testing.T) {
 		// 	},
 		// 	altMessage: `Cannot multiply with non-numeric argument`,
 		// },
-		// "TST3": {
-		// 	filter: bson.D{{"_id", "tst_3"}},
-		// 	update: bson.D{{"$mul", bson.D{{"value", int64(1)}}}},
-		// 	err: &mongo.WriteError{
-		// 		Code:    14,
-		// 		Message: `Cannot apply $mul to a value of non-numeric type. {_id: "tst_3"} has the field 'value' of non-numeric type string`,
-		// 	},
-		// 	altMessage: `Cannot apply $mul to a value of non-numeric type`,
-		// },
-		// "TST4": {
-		// 	filter: bson.D{{"_id", "tst_2"}},
-		// 	update: bson.D{{"$mul", bson.D{{"value", "string"}}}},
-		// 	err: &mongo.WriteError{
-		// 		Code:    14,
-		// 		Message: `Cannot multiply with non-numeric argument: {value: "string"}`,
-		// 	},
-		// 	altMessage: `Cannot multiply with non-numeric argument`,
-		// },
+
 		// "TST5": { // TODO issues #673
 		// 	filter: bson.D{{"_id", "tst_2"}},
 		// 	update: bson.D{{"$mul", bson.D{{}}}},
