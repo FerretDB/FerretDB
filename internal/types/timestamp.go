@@ -24,8 +24,8 @@ type (
 	Timestamp uint64
 )
 
-// timestampOperationCounter is an ordinal number for timestamps in the system.
-var timestampOperationCounter uint64
+// timestampCounter is an ordinal number for timestamps in the system.
+var timestampCounter uint64
 
 // NewTimestamp returns a timestamp from seconds and an increment.
 func NewTimestamp(sec, inc uint64) Timestamp {
@@ -37,7 +37,7 @@ func NewTimestamp(sec, inc uint64) Timestamp {
 // NextTimestamp returns a timestamp from seconds and an internal ops counter.
 // TODO: get low-order 4 bytes for the inc instead of internal counter?
 func NextTimestamp(sec uint64) Timestamp {
-	inc := atomic.AddUint64(&timestampOperationCounter, 1)
+	inc := atomic.AddUint64(&timestampCounter, 1)
 	sec <<= 32
 	sec |= inc
 	return Timestamp(sec)
