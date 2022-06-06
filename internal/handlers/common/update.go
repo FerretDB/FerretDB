@@ -36,7 +36,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 		switch updateOp {
 		case "$currentDate":
-			changed, err = processCurrentdateFieldExpression(doc, updateV)
+			changed, err = processCurrentDateFieldExpression(doc, updateV)
 			if err != nil {
 				return false, err
 			}
@@ -130,9 +130,9 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 	return changed, nil
 }
 
-// processCurrentdateFieldExpression changes document according to $currentDate operator.
+// processCurrentDateFieldExpression changes document according to $currentDate operator.
 // If the document was changed it returns true.
-func processCurrentdateFieldExpression(doc *types.Document, currentDateVal any) (bool, error) {
+func processCurrentDateFieldExpression(doc *types.Document, currentDateVal any) (bool, error) {
 	var changed bool
 	var err error
 	currentDateExpression := currentDateVal.(*types.Document)
@@ -204,7 +204,7 @@ func ValidateUpdateOperators(update *types.Document) error {
 	if err = checkConflictingChanges(set, inc); err != nil {
 		return err
 	}
-	if err = checkCurrentDateFieldExpression(update); err != nil {
+	if err = validateCurrentDateExpression(update); err != nil {
 		return err
 	}
 	return nil
@@ -289,8 +289,8 @@ func extractValueFromUpdateOperator(op string, update *types.Document) (*types.D
 	}
 }
 
-// checkCurrentDateFieldExpression checks $currentDate input on correctness.
-func checkCurrentDateFieldExpression(update *types.Document) error {
+// validateCurrentDateExpression validates $currentDate input on correctness.
+func validateCurrentDateExpression(update *types.Document) error {
 	currentDateTopField, err := update.Get("$currentDate")
 	if err != nil {
 		return nil // it is ok: key is absent
