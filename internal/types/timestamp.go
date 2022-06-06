@@ -28,17 +28,17 @@ type (
 var timestampCounter uint32
 
 // NewTimestamp returns a timestamp from seconds and an increment.
-func NewTimestamp(sec int64, inc uint32) Timestamp {
+func NewTimestamp(sec int64, c uint32) Timestamp {
 	sec <<= 32
-	sec |= int64(inc)
+	sec |= int64(c)
 	return Timestamp(sec)
 }
 
 // NextTimestamp returns a timestamp from seconds and an internal ops counter.
 func NextTimestamp(sec int64) Timestamp {
-	inc := atomic.AddUint32(&timestampCounter, 1)
+	c := atomic.AddUint32(&timestampCounter, 1)
 	sec <<= 32
-	sec |= int64(inc)
+	sec |= int64(c)
 	return Timestamp(sec)
 }
 
