@@ -102,6 +102,19 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				}
 			}
 
+		case "$max":
+			// {$max: {<field1>: <value1>, ... }}
+			maxDoc := updateV.(*types.Document)
+
+			maxMap := maxDoc.Map()
+
+			for _, maxKey := range maxDoc.Keys() {
+				if strings.ContainsRune(maxKey, '.') {
+					return false, NewErrorMsg(ErrNotImplemented, "dot notation not supported yet")
+				}
+
+			}
+
 		default:
 			return false, NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
 		}
@@ -124,6 +137,10 @@ func ValidateUpdateOperators(update *types.Document) error {
 	if err != nil {
 		return err
 	}
+	_, err = extractValueFromUpdateOperator("$max", update)
+	if err != nil {
+		return err
+	}
 	_, err = extractValueFromUpdateOperator("$setOnInsert", update)
 	if err != nil {
 		return err
@@ -139,6 +156,8 @@ func checkAllModifiersSupported(update *types.Document) error {
 	for _, updateOp := range update.Keys() {
 		switch updateOp {
 		case "$inc":
+			fallthrough
+		case "$max":
 			fallthrough
 		case "$set":
 			fallthrough
