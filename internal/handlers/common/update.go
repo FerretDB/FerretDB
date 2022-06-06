@@ -115,7 +115,13 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			maxMap := maxDoc.Map()
 
 			for _, maxKey := range maxDoc.Keys() {
-
+				docValue := must.NotFail(doc.Get(maxKey))
+				newValue := maxMap[maxKey]
+				c := types.Compare(docValue, newValue)
+				if c == types.Greater {
+					must.NoError(doc.Set(maxKey, newValue))
+					changed = true
+				}
 			}
 
 		default:
