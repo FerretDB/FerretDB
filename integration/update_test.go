@@ -593,6 +593,7 @@ func TestUpdateMany(t *testing.T) {
 		stat   *mongo.UpdateResult
 		res    bson.D
 		err    *mongo.WriteError
+		alt    string
 	}{
 		"SetSetOnInsert": {
 			filter: bson.D{{"_id", "test"}},
@@ -628,6 +629,46 @@ func TestUpdateMany(t *testing.T) {
 				Message: "Updating the path 'foo' would create a conflict at 'foo'",
 			},
 		},
+		"UnsetString": {
+			filter: bson.D{{"_id", "string"}},
+			update: bson.D{{"$unset", bson.D{{"value", int32(1)}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			res: bson.D{{"_id", "string"}},
+		},
+		"UnsetEmpty": {
+			filter: bson.D{{"_id", "string"}},
+			update: bson.D{{"$unset", bson.D{}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 0,
+				UpsertedCount: 0,
+			},
+			res: bson.D{{"_id", "string"}, {"value", "foo"}},
+		},
+		"UnsetField": {
+			filter: bson.D{{"_id", "document-composite"}},
+			update: bson.D{{"$unset", bson.D{{"value", bson.D{{"array", int32(1)}}}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  0,
+				ModifiedCount: 0,
+				UpsertedCount: 1,
+			},
+			res: bson.D{{"_id", "document-composite"}},
+		},
+		"UnsetEmptyArray": {
+			filter: bson.D{{"_id", "document-composite"}},
+			update: bson.D{{"$unset", bson.A{}}},
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type array instead. " +
+					"For example: {$mod: {<field>: ...}} not {$unset: []}",
+			},
+			alt: "Modifiers operate on fields but we found another type instead",
+		},
 		"UnknownOperator": {
 			filter: bson.D{{"_id", "test"}},
 			update: bson.D{{"$foo", bson.D{{"foo", int32(1)}}}},
@@ -653,7 +694,7 @@ func TestUpdateMany(t *testing.T) {
 
 			if tc.err != nil {
 				require.Nil(t, tc.res)
-				AssertEqualWriteError(t, *tc.err, err)
+				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
 				return
 			}
 
