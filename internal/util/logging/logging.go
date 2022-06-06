@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package logging provides logging helpers.
 package logging
 
 import (
@@ -31,11 +32,18 @@ func Setup(level zapcore.Level) {
 		log.Fatal(err)
 	}
 
-	SetupWithLogger(logger)
+	RecentEntries = NewCircularBuffer(1024)
+
+	logger = logger.WithOptions(zap.Hooks(func(entry zapcore.Entry) error {
+		RecentEntries.append(&entry)
+		return nil
+	}))
+
+	setupWithLogger(logger)
 }
 
-// SetupWithLogger initializes logging with a given logger and its level.
-func SetupWithLogger(logger *zap.Logger) {
+// setupWithLogger initializes logging with a given logger and its level.
+func setupWithLogger(logger *zap.Logger) {
 	zap.ReplaceGlobals(logger)
 
 	if _, err := zap.RedirectStdLogAt(logger, zap.InfoLevel); err != nil {
