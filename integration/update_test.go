@@ -722,8 +722,8 @@ func TestUpdateMany(t *testing.T) {
 func TestCurrentDate(t *testing.T) {
 	t.Parallel()
 
-	// maxTimeDelta is a maximum amount of seconds can differ the value in placeholder from actual value
-	maxTimeDelta := time.Duration(30 * time.Second)
+	// maxDifference is a maximum amount of seconds can differ the value in placeholder from actual value
+	maxDifference := time.Duration(60 * time.Second)
 
 	now := primitive.NewDateTimeFromTime(time.Now().UTC())
 	nowTimestamp := primitive.Timestamp{T: uint32(time.Now().UTC().Unix()), I: uint32(0)}
@@ -916,7 +916,7 @@ func TestCurrentDate(t *testing.T) {
 					t,
 					expected,
 					actual,
-					maxTimeDelta,
+					maxDifference,
 					path,
 				)
 				expected.RemoveByPath(path)
