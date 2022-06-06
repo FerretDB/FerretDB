@@ -101,7 +101,7 @@ func TestQueryComparisonImplicit(t *testing.T) {
 			expectedIDs: []any{},
 		},
 		"ArrayDotNotationNoSuchField": {
-			filter:      bson.D{{"value.some[0]", bson.A{42}}},
+			filter:      bson.D{{"value.some.0", bson.A{42}}},
 			expectedIDs: []any{},
 		},
 
