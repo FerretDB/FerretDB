@@ -163,7 +163,7 @@ func processCurrentDateFieldExpression(doc *types.Document, currentDateVal any) 
 			currentDateType = currentDateType.(string)
 			switch currentDateType {
 			case "timestamp":
-				if err := doc.Set(field, types.NextTimestamp(uint64(now.Unix()))); err != nil {
+				if err := doc.Set(field, types.NextTimestamp(now.Unix())); err != nil {
 					return false, err
 				}
 				changed = true
