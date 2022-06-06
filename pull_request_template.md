@@ -21,7 +21,8 @@ Did you run anything manually? -->
 - [ ] Tests passed (`task test`).
 - [ ] Linters passed (`task lint`).
 - [ ] PR assignee is set.
-- [ ] PR labels are set.
+- [ ] PR labels are set (the same as in the issue).
+- [ ] Milestone is set (the same as in the issue).
 - [ ] Project and iternation are set.
 - [ ] Critical codecov complaints are considered.
 - [ ] PR title and body are in accordance with the Conform PR GitHub Action.
