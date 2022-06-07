@@ -18,6 +18,8 @@
 package main
 
 import (
+	"flag"
+
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris"
 )
