@@ -18,6 +18,7 @@ import (
 	"math"
 	"testing"
 
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -141,20 +142,11 @@ func TestQueryArraySize(t *testing.T) {
 // TestQueryArrayAll covers the case where the $all operator is used on an array or scalar.
 func TestQueryArrayAll(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := setup(t, shareddata.Composites, shareddata.Scalars)
 
-	_, err := collection.InsertMany(ctx, []any{
-		bson.D{{"_id", "array-empty"}, {"value", bson.A{}}},
-		bson.D{{"_id", "array-one"}, {"value", bson.A{"1"}}},
-		bson.D{{"_id", "array-two"}, {"value", bson.A{"1", nil}}},
-		bson.D{{"_id", "array-three"}, {"value", bson.A{"1", 2, math.NaN()}}},
-		bson.D{{"_id", "array-many"}, {"value", bson.A{"1", 2, math.NaN(), 12.5}}},
-		bson.D{{"_id", "string"}, {"value", "12"}},
-		bson.D{{"_id", "int"}, {"value", 12}},
-		bson.D{{"_id", "float"}, {"value", 12.5}},
-		bson.D{{"_id", "document"}, {"value", bson.D{{"value", bson.A{"1", 2}}}}},
-	})
-	require.NoError(t, err)
+	// Add extra data to cover $all-specific cases
+	//_, err := collection.InsertMany(ctx, []any{})
+	//require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
 		filter      bson.D
@@ -162,16 +154,26 @@ func TestQueryArrayAll(t *testing.T) {
 		expectedErr *mongo.CommandError
 	}{
 		"String": {
-			filter:      bson.D{{"value", bson.D{{"$all", bson.A{"1"}}}}},
-			expectedIDs: []any{"array-many", "array-one", "array-three", "array-two"},
+			filter:      bson.D{{"value", bson.D{{"$all", bson.A{"foo"}}}}},
+			expectedIDs: []any{"array-three", "array-three-reverse", "string"},
 			expectedErr: nil,
 		},
 		"StringRepeated": {
-			filter:      bson.D{{"value", bson.D{{"$all", bson.A{"1", "1", "1", "1"}}}}},
-			expectedIDs: []any{"array-many", "array-one", "array-three", "array-two"},
+			filter:      bson.D{{"value", bson.D{{"$all", bson.A{"foo", "foo", "foo"}}}}},
+			expectedIDs: []any{"array-three", "array-three-reverse", "string"},
 			expectedErr: nil,
 		},
-		"Float": {
+		"Int32": {
+			filter:      bson.D{{"value", bson.D{{"$all", bson.A{int32(42)}}}}},
+			expectedIDs: []any{"array", "array-three", "array-three-reverse", "int32", "int64"},
+			expectedErr: nil,
+		},
+		"Nil": {
+			filter:      bson.D{{"value", bson.D{{"$all", bson.A{nil}}}}},
+			expectedIDs: []any{"array-embeded", "array-null", "array-three", "array-three-reverse"},
+			expectedErr: nil,
+		},
+		/*"Float": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{12.5}}}}},
 			expectedIDs: []any{"array-many", "float"},
 			expectedErr: nil,
@@ -222,7 +224,7 @@ func TestQueryArrayAll(t *testing.T) {
 				Message: "$all needs an array",
 				Name:    "BadValue",
 			},
-		},
+		},*/
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
