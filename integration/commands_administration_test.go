@@ -300,7 +300,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 }
 
 func TestStatisticsCommands(t *testing.T) {
-	t.Skip("TODO: https://github.com/FerretDB/FerretDB/issues/536")
+	t.Parallel()
 	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
