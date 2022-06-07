@@ -12,23 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build testcover
-// +build testcover
+//go:build tigris
+// +build tigris
 
 package main
 
 import (
-	"os"
-	"testing"
+	"flag"
+
+	"github.com/FerretDB/FerretDB/internal/handlers"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris"
 )
 
-// TestCover allows us to run FerretDB with coverage enabled.
-func TestCover(t *testing.T) {
-	main()
-}
+// `tigris` handler flags.
+var (
+	tigrisURLF = flag.String("tigris-url", "127.0.0.1:8081", "Tigris URL")
+)
 
-// TestMain ensures that command-line flags are initialized correctly when FerretDB is run with coverage enabled.
-func TestMain(m *testing.M) {
-	initFlags()
-	os.Exit(m.Run())
+// init registers `tigris` handler for Tigris that is enabled only when compiled with `tigris` build tag.
+func init() {
+	registeredHandlers["tigris"] = func(*newHandlerOpts) (handlers.Interface, error) {
+		return tigris.New()
+	}
 }
