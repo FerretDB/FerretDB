@@ -26,7 +26,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestCommandsAdministrationCreateDropList(t *testing.T) {
@@ -299,9 +300,49 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 	}
 }
 
-func TestStatisticsCommands(t *testing.T) {
+func TestCommandsAdministrationBuildInfo(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup(t)
+
+	var actual bson.D
+	command := bson.D{{"buildInfo", int32(1)}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+	assert.Regexp(t, `^5\.0\.`, must.NotFail(doc.Get("version")))
+	assert.NotEmpty(t, must.NotFail(doc.Get("gitVersion")))
+
+	_, ok := must.NotFail(doc.Get("modules")).(*types.Array)
+	assert.True(t, ok)
+
+	assert.Equal(t, "deprecated", must.NotFail(doc.Get("sysInfo")))
+
+	versionArray, ok := must.NotFail(doc.Get("versionArray")).(*types.Array)
+	assert.True(t, ok)
+	assert.Equal(t, int32(5), must.NotFail(versionArray.Get(0)))
+	assert.Equal(t, int32(0), must.NotFail(versionArray.Get(1)))
+
+	assert.Equal(t, int32(strconv.IntSize), must.NotFail(doc.Get("bits")))
+	assert.False(t, must.NotFail(doc.Get("debug")).(bool))
+
+	assert.Equal(t, int32(16777216), must.NotFail(doc.Get("maxBsonObjectSize")))
+	_, ok = must.NotFail(doc.Get("buildEnvironment")).(*types.Document)
+	assert.True(t, ok)
+}
+
+func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
+	t.Skip("TODO: https://github.com/FerretDB/FerretDB/issues/536")
+	// TODO
+}
+
+func TestStatisticsCommands(t *testing.T) {
+	t.Skip("TODO: https://github.com/FerretDB/FerretDB/issues/536")
+
+	t.Parallel()
+	ctx, collection := setup(t)
 
 	for name, tc := range map[string]struct {
 		command  any
