@@ -166,7 +166,8 @@ func setupListener(t *testing.T, ctx context.Context, logger *zap.Logger) int {
 		L:         logger,
 		StartTime: time.Now(),
 	}
-	h := pg.New(handlerOpts)
+	h, err := pg.New(handlerOpts)
+	require.NoError(t, err)
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		ListenAddr: "127.0.0.1:0",

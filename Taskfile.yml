@@ -153,7 +153,7 @@ tasks:
     desc: "Build bin/ferretdb-testcover"
     deps: [gen-version]
     cmds:
-      - go test -c -o=bin/ferretdb-testcover -trimpath -tags=testcover -race -coverpkg=./... ./cmd/ferretdb
+      - go test -c -o=bin/ferretdb-testcover -trimpath -tags=testcover,tigris -race -coverpkg=./... ./cmd/ferretdb
 
   run:
     desc: "Run FerretDB"
@@ -224,8 +224,8 @@ tasks:
       CGO_ENABLED: 0
       GOOS: linux
     cmds:
-      - GOARCH=arm64 go test -c -o=bin/ferretdb-arm64 -trimpath -tags=testcover -coverpkg=./... ./cmd/ferretdb
-      - GOARCH=amd64 go test -c -o=bin/ferretdb-amd64 -trimpath -tags=testcover -coverpkg=./... ./cmd/ferretdb
+      - GOARCH=arm64 go test -c -o=bin/ferretdb-arm64 -trimpath -tags=testcover,tigris -coverpkg=./... ./cmd/ferretdb
+      - GOARCH=amd64 go test -c -o=bin/ferretdb-amd64 -trimpath -tags=testcover,tigris -coverpkg=./... ./cmd/ferretdb
 
   docker-local:
     deps: [docker-build]
