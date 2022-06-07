@@ -47,6 +47,7 @@ type newHandlerOpts struct {
 }
 
 // registeredHandlers maps handler names to constructors.
+// The values for `registeredHandlers` must be set through the `init()` functions of the corresponding handlers so that we can control which handlers will be included in the build with build tags.
 var registeredHandlers = map[string]newHandler{}
 
 var (
