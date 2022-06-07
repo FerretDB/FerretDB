@@ -47,5 +47,5 @@ func NextTimestamp(t time.Time) Timestamp {
 // DateTime returns time.Time ignoring increment.
 func DateTime(t Timestamp) time.Time {
 	t >>= 32
-	return time.UnixMilli(int64(t)).UTC()
+	return time.Unix(int64(t), 0).UTC()
 }
