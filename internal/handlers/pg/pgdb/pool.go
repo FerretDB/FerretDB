@@ -353,9 +353,11 @@ func (pgPool *Pool) DropTable(ctx context.Context, schema, table string) error {
 //
 // True is returned if table was created.
 func (pgPool *Pool) CreateTableIfNotExists(ctx context.Context, db, collection string) (bool, error) {
-	if exists, err := pgPool.TableExists(ctx, db, collection); err != nil {
-		return false, err
-	} else if exists {
+	exists, err := pgPool.TableExists(ctx, db, collection)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+	if exists {
 		return false, nil
 	}
 
