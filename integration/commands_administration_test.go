@@ -353,6 +353,22 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 	assert.LessOrEqual(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
 }
 
+func TestCommandsAdministrationDataSize(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	var actual bson.D
+	command := bson.D{{"dataSize", collection.Database().Name() + "." + collection.Name()}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("size")))
+	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("numObjects")))
+	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("millis")))
+}
+
 func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
 	t.Skip("TODO: https://github.com/FerretDB/FerretDB/issues/536")
 	// TODO
@@ -368,16 +384,6 @@ func TestStatisticsCommands(t *testing.T) {
 		command  any
 		response bson.D
 	}{
-		"DataSize": {
-			command: bson.D{{"dataSize", collection.Database().Name() + "." + collection.Name()}},
-			response: bson.D{
-				{"estimate", false},
-				{"size", int32(106_496)},
-				{"numObjects", int32(210)},
-				{"millis", int32(20)},
-				{"ok", float64(1)},
-			},
-		},
 		"DataSizeCollectionNotExist": {
 			command: bson.D{{"dataSize", "some-database.some-collection"}},
 			response: bson.D{
