@@ -27,6 +27,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestCommandsAdministrationCreateDropList(t *testing.T) {
@@ -297,6 +298,26 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCommandsAdministrationCollStats(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	var actual bson.D
+	command := bson.D{{"collStats", collection.Name()}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
+	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("count")))
+	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("size")))
+	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("storageSize")))
+	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("totalIndexSize")))
+	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("totalSize")))
+	assert.LessOrEqual(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
 }
 
 func TestStatisticsCommands(t *testing.T) {
