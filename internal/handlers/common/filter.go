@@ -81,10 +81,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 		if err != nil {
 			return false, nil // no error - the field is just not present
 		}
-		if docValue, ok := docValue.(*types.Array); ok {
-			return matchArrays(filterValue, docValue), nil
-		}
-		return false, nil
+		return types.Compare(docValue, filterValue) == types.Equal, nil
 
 	case types.Regex:
 		// {field: /regex/}
@@ -246,11 +243,6 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 					return matchDocuments(exprValue, fieldValue), nil
 				}
 				return false, nil
-			case *types.Array:
-				if fieldValue, ok := fieldValue.(*types.Array); ok {
-					return matchArrays(exprValue, fieldValue), nil
-				}
-				return false, nil
 			default:
 				if types.Compare(fieldValue, exprValue) != types.Equal {
 					return false, nil
@@ -265,16 +257,8 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 					return !matchDocuments(exprValue, fieldValue), nil
 				}
 				return false, nil
-
-			case *types.Array:
-				if fieldValue, ok := fieldValue.(*types.Array); ok {
-					return !matchArrays(exprValue, fieldValue), nil
-				}
-				return false, nil
-
 			case types.Regex:
 				return false, NewErrorMsg(ErrBadValue, "Can't have regex as arg to $ne.")
-
 			default:
 				if types.Compare(fieldValue, exprValue) == types.Equal {
 					return false, nil
@@ -335,11 +319,6 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				}
 
 				switch arrValue := must.NotFail(arr.Get(i)).(type) {
-				case *types.Array:
-					fieldValue, ok := fieldValue.(*types.Array)
-					if ok && matchArrays(arrValue, fieldValue) {
-						found = true
-					}
 				case *types.Document:
 					for _, key := range arrValue.Keys() {
 						if strings.HasPrefix(key, "$") {
@@ -383,11 +362,6 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				}
 
 				switch arrValue := must.NotFail(arr.Get(i)).(type) {
-				case *types.Array:
-					fieldValue, ok := fieldValue.(*types.Array)
-					if ok && matchArrays(arrValue, fieldValue) {
-						found = true
-					}
 				case *types.Document:
 					for _, key := range arrValue.Keys() {
 						if strings.HasPrefix(key, "$") {
