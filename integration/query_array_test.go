@@ -163,6 +163,7 @@ func TestQueryArrayDotNotation(t *testing.T) {
 	for name, tc := range map[string]struct {
 		filter      bson.D
 		expectedIDs []any
+		err         *mongo.CommandError
 	}{
 		"PositionDouble": {
 			filter:      bson.D{{"value.0", bson.D{{"$type", "double"}}}},
@@ -204,31 +205,7 @@ func TestQueryArrayDotNotation(t *testing.T) {
 			filter:      bson.D{{"value.array.2.foo", "bar"}},
 			expectedIDs: []any{},
 		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
 
-			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			require.NoError(t, err)
-
-			var actual []bson.D
-			err = cursor.All(ctx, &actual)
-			require.NoError(t, err)
-			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
-		})
-	}
-}
-
-func TestQueryArrayDotNotationErrors(t *testing.T) {
-	t.Parallel()
-	providers := []shareddata.Provider{shareddata.Composites}
-	ctx, collection := setup(t, providers...)
-
-	for name, tc := range map[string]struct {
-		filter bson.D
-		err    *mongo.CommandError
-	}{
 		"FieldPositionQueryRegex": {
 			filter: bson.D{{"value.array.0", bson.D{{"$lt", primitive.Regex{Pattern: "^$"}}}}},
 			err: &mongo.CommandError{
@@ -242,12 +219,17 @@ func TestQueryArrayDotNotationErrors(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			_, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
 				AssertEqualError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)
+
+			var actual []bson.D
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
 		})
 	}
 }
