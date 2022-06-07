@@ -333,6 +333,26 @@ func TestCommandsAdministrationBuildInfo(t *testing.T) {
 	assert.True(t, ok)
 }
 
+func TestCommandsAdministrationCollStats(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	var actual bson.D
+	command := bson.D{{"collStats", collection.Name()}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
+	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("count")))
+	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("size")))
+	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("storageSize")))
+	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("totalIndexSize")))
+	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("totalSize")))
+	assert.LessOrEqual(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
+}
+
 func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
 	t.Skip("TODO: https://github.com/FerretDB/FerretDB/issues/536")
 	// TODO
@@ -348,34 +368,6 @@ func TestStatisticsCommands(t *testing.T) {
 		command  any
 		response bson.D
 	}{
-		"BuildInfo": {
-			command: bson.D{{"buildInfo", int32(1)}},
-			response: bson.D{
-				{"version", "5.0.42"},
-				{"gitVersion", "123"},
-				{"modules", primitive.A{}},
-				{"sysInfo", "deprecated"},
-				{"versionArray", primitive.A{int32(5), int32(0), int32(42), int32(0)}},
-				{"bits", int32(strconv.IntSize)},
-				{"debug", false},
-				{"maxBsonObjectSize", int32(16777216)},
-				{"buildEnvironment", bson.D{}},
-				{"ok", float64(1)},
-			},
-		},
-		"CollStats": {
-			command: bson.D{{"collStats", collection.Name()}},
-			response: bson.D{
-				{"ns", collection.Database().Name() + "." + collection.Name()},
-				{"count", int32(43)},
-				{"size", int32(16384)},
-				{"storageSize", int32(8192)},
-				{"totalIndexSize", int32(0)},
-				{"totalSize", int32(16384)},
-				{"scaleFactor", int32(1)},
-				{"ok", float64(1)},
-			},
-		},
 		"DataSize": {
 			command: bson.D{{"dataSize", collection.Database().Name() + "." + collection.Name()}},
 			response: bson.D{
