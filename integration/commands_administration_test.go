@@ -364,9 +364,9 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 
 	doc := ConvertDocument(t, actual)
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-	assert.Equal(t, int32(0), must.NotFail(doc.Get("size")))
+	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("size")))
 	assert.Equal(t, int32(0), must.NotFail(doc.Get("numObjects")))
-	assert.Equal(t, int32(0), must.NotFail(doc.Get("millis")))
+	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("millis")))
 }
 
 func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
@@ -380,9 +380,9 @@ func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
 
 	doc := ConvertDocument(t, actual)
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-	assert.Equal(t, int32(0), must.NotFail(doc.Get("size")))
-	assert.Equal(t, int32(0), must.NotFail(doc.Get("numObjects")))
-	assert.Equal(t, int32(0), must.NotFail(doc.Get("millis")))
+	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("size")))
+	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("numObjects")))
+	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("millis")))
 }
 
 func TestCommandsAdministrationDBStats(t *testing.T) {
@@ -398,6 +398,7 @@ func TestCommandsAdministrationDBStats(t *testing.T) {
 
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 	assert.Equal(t, collection.Database().Name(), must.NotFail(doc.Get("db")))
+	assert.Equal(t, int32(1), must.NotFail(doc.Get("collections")))
 	assert.Equal(t, int32(0), must.NotFail(doc.Get("views")))
 	assert.Equal(t, int32(0), must.NotFail(doc.Get("objects")))
 	assert.Equal(t, float64(0), must.NotFail(doc.Get("avgObjSize")))
@@ -406,6 +407,30 @@ func TestCommandsAdministrationDBStats(t *testing.T) {
 	assert.LessOrEqual(t, float64(0), must.NotFail(doc.Get("indexSize")))
 	assert.LessOrEqual(t, float64(0), must.NotFail(doc.Get("totalSize")))
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("scaleFactor")))
+}
+
+func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	var actual bson.D
+	command := bson.D{{"dbStats", int32(1)}, {"scale", float64(1_000)}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+	assert.Equal(t, collection.Database().Name(), must.NotFail(doc.Get("db")))
+	assert.Equal(t, int32(1), must.NotFail(doc.Get("collections")))
+	assert.Equal(t, int32(0), must.NotFail(doc.Get("views")))
+	assert.Equal(t, int32(0), must.NotFail(doc.Get("objects")))
+	assert.Equal(t, float64(0), must.NotFail(doc.Get("avgObjSize")))
+	assert.Equal(t, float64(0), must.NotFail(doc.Get("dataSize")))
+	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("indexes")))
+	assert.LessOrEqual(t, float64(0), must.NotFail(doc.Get("indexSize")))
+	assert.LessOrEqual(t, float64(0), must.NotFail(doc.Get("totalSize")))
+	assert.Equal(t, float64(1000), must.NotFail(doc.Get("scaleFactor")))
 }
 
 func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
@@ -423,22 +448,6 @@ func TestStatisticsCommands(t *testing.T) {
 		command  any
 		response bson.D
 	}{
-		"DBStatsWithScale": {
-			command: bson.D{{"dbStats", int32(1)}, {"scale", float64(1_000)}},
-			response: bson.D{
-				{"db", collection.Database().Name()},
-				{"collections", int32(1)},
-				{"views", int32(0)},
-				{"objects", int32(43)},
-				{"avgObjSize", 433.0},
-				{"dataSize", 8.192},
-				{"indexes", int32(0)},
-				{"indexSize", float64(0)},
-				{"totalSize", 16.384},
-				{"scaleFactor", float64(1_000)},
-				{"ok", float64(1)},
-			},
-		},
 		"ServerStatus": {
 			command: bson.D{{"serverStatus", int32(1)}},
 			response: bson.D{

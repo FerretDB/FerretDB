@@ -47,6 +47,11 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
+	var avgObjSize float64
+	if stats.CountRows > 0 {
+		avgObjSize = float64(stats.SizeSchema) / float64(stats.CountRows)
+	}
+
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
@@ -55,7 +60,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			// TODO https://github.com/FerretDB/FerretDB/issues/176
 			"views", int32(0),
 			"objects", stats.CountRows,
-			"avgObjSize", float64(stats.SizeSchema)/float64(stats.CountRows),
+			"avgObjSize", avgObjSize,
 			"dataSize", float64(stats.SizeSchema)/scale,
 			"indexes", stats.CountIndexes,
 			"indexSize", float64(stats.SizeIndexes)/scale,
