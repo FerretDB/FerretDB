@@ -9,7 +9,7 @@ ARG CGO_ENABLED=0
 
 WORKDIR /src
 ADD . .
-RUN CGO_ENABLED=${CGO_ENABLED} go test -c -trimpath -o=bin/ferretdb -tags=testcover,tigris ${BUILD_ARGS} ./cmd/ferretdb
+RUN CGO_ENABLED=${CGO_ENABLED} go test -v -c -o=bin/ferretdb -trimpath -tags=testcover,tigris ${BUILD_ARGS} ./cmd/ferretdb
 
 FROM ${BASE_IMAGE}
 
