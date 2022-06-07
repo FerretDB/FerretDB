@@ -263,15 +263,11 @@ func addNumbers(v1, v2 any) (any, error) {
 	}
 }
 
-// GetPositiveNumber returns doc's value for key or protocol error for missing or invalid parameter.
-func GetPositiveNumber(document *types.Document, key string, isOptional bool) (int32, error) {
+// GetOptionalPositiveNumber returns doc's value for key or protocol error for missing or invalid parameter.
+func GetOptionalPositiveNumber(document *types.Document, key string) (int32, error) {
 	v, err := document.Get(key)
 	if err != nil {
-		if isOptional {
-			return 0, nil
-		}
-
-		return 0, err
+		return 0, nil
 	}
 
 	wholeNumberParam, err := GetWholeNumberParam(v)
