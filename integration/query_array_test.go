@@ -212,6 +212,66 @@ func TestQueryArrayDotNotation(t *testing.T) {
 
 			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
+				require.Nil(t, tc.expectedIDs)
+				AssertEqualError(t, *tc.err, err)
+				return
+			}
+			require.NoError(t, err)
+
+			var actual []bson.D
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
+		})
+	}
+}
+
+func TestQueryElemMatchOperator(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+
+	for name, tc := range map[string]struct {
+		filter      bson.D
+		expectedIDs []any
+		err         *mongo.CommandError
+	}{
+
+		"DoubleTarget": {
+			filter:      bson.D{{"_id", "double"}, {"value", bson.D{{"$elemMatch", bson.D{{"$gt", 0}}}}}},
+			expectedIDs: []any{},
+		},
+		"GtZero": {
+			filter:      bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"$gt", int32(0)}}}}}},
+			expectedIDs: []any{"array", "array-three", "array-three-reverse"},
+		},
+		"GtLt": {
+			filter: bson.D{
+				{"value", bson.D{
+					{"$elemMatch", bson.D{
+						{"$gt", int32(0)},
+						{"$lt", int32(43)},
+					}},
+				}},
+			},
+			expectedIDs: []any{"array", "array-three", "array-three-reverse"},
+		},
+
+		"UnexpectedFilter": {
+			filter: bson.D{{"value", bson.D{{"$elemMatch", "foo"}}}},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "$elemMatch needs an Object",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			if tc.err != nil {
+				require.Nil(t, tc.expectedIDs)
 				AssertEqualError(t, *tc.err, err)
 				return
 			}
