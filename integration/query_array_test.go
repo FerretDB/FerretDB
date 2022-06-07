@@ -25,6 +25,39 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+func TestQueryArrayEqual(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	_, err := collection.InsertMany(ctx, []any{
+		bson.D{{"_id", "array-embeded-special"}, {"value", bson.A{bson.A{"42", "foo"}}}},
+	})
+	require.NoError(t, err)
+
+	for name, tc := range map[string]struct {
+		filter      bson.D
+		expectedIDs []any
+	}{
+		"Embeded": {
+			filter:      bson.D{{"value", bson.A{"42", "foo"}}},
+			expectedIDs: []any{"array-embeded-special"},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			require.NoError(t, err)
+
+			var actual []bson.D
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
+		})
+	}
+}
+
 func TestQueryArraySize(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t)
