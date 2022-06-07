@@ -165,15 +165,24 @@ func TestQueryArrayDotNotation(t *testing.T) {
 		expectedIDs []any
 		err         *mongo.CommandError
 	}{
-		"PositionDouble": {
+		"PositionIndexGreaterThanArrayLength": {
+			filter:      bson.D{{"value.5", bson.D{{"$type", "double"}}}},
+			expectedIDs: []any{},
+		},
+		"PositionIndexAtTheEndOfArray": {
+			filter:      bson.D{{"value.1", bson.D{{"$type", "double"}}}},
+			expectedIDs: []any{},
+		},
+
+		"PositionTypeDouble": {
 			filter:      bson.D{{"value.0", bson.D{{"$type", "double"}}}},
 			expectedIDs: []any{"array-double"},
 		},
-		"PositionString": {
+		"PositionTypeString": {
 			filter:      bson.D{{"value.0", bson.D{{"$type", "string"}}}},
 			expectedIDs: []any{"array-strings"},
 		},
-		"PositionNull": {
+		"PositionTypeNull": {
 			filter:      bson.D{{"value.0", bson.D{{"$type", "null"}}}},
 			expectedIDs: []any{"array-null", "array-three-reverse"},
 		},
@@ -181,6 +190,11 @@ func TestQueryArrayDotNotation(t *testing.T) {
 			filter:      bson.D{{"value.0", primitive.Regex{Pattern: "foo"}}},
 			expectedIDs: []any{"array-strings"},
 		},
+		"PositionArray": {
+			filter:      bson.D{{"value.0", primitive.A{}}},
+			expectedIDs: []any{},
+		},
+
 		"NoSuchFieldPosition": {
 			filter:      bson.D{{"value.some.0", bson.A{42}}},
 			expectedIDs: []any{},

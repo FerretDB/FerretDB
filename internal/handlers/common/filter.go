@@ -70,7 +70,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 				return false, nil
 			}
 
-			if docValue.Len() == 0 {
+			if docValue.Len() == 0 || docValue.Len() <= index {
 				return false, nil
 			}
 
@@ -81,7 +81,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 
 			// We shouldn't compare with embedded array values.
 			if _, ok := value.(*types.Array); ok {
-				value = types.MakeArray(0)
+				return false, nil
 			}
 
 			doc = must.NotFail(types.NewDocument(filterKey, value))
