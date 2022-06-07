@@ -164,16 +164,20 @@ func TestQueryArrayDotNotation(t *testing.T) {
 		filter      bson.D
 		expectedIDs []any
 	}{
-		"Position": {
+		"PositionDouble": {
 			filter:      bson.D{{"value.0", bson.D{{"$type", "double"}}}},
 			expectedIDs: []any{"array-double"},
 		},
-		"PositionRegex": {
-			filter:      bson.D{{"value.0", primitive.Regex{Pattern: "foo"}}},
+		"PositionString": {
+			filter:      bson.D{{"value.0", bson.D{{"$type", "string"}}}},
 			expectedIDs: []any{"array-strings"},
 		},
-		"PositionType": {
-			filter:      bson.D{{"value.0", bson.D{{"$type", "string"}}}},
+		"PositionNull": {
+			filter:      bson.D{{"value.0", bson.D{{"$type", "null"}}}},
+			expectedIDs: []any{"array-null", "array-three-reverse"},
+		},
+		"PositionRegex": {
+			filter:      bson.D{{"value.0", primitive.Regex{Pattern: "foo"}}},
 			expectedIDs: []any{"array-strings"},
 		},
 		"NoSuchFieldPosition": {
