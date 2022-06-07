@@ -407,9 +407,12 @@ func (c *conn) Collect(ch chan<- prometheus.Metric) {
 }
 
 // logResponse logs response's header and body and returns the log level that was used.
-// The param who should represent the type of the response, for example just "Response" or "Proxy Response".
-// If op code is not OP_MSG, it always logs as a debug.
-// For the OP_MSG code, the level depends on the type of error.
+//
+// The param `who` will be used in logs and should represent the type of the response,
+// for example "Response" or "Proxy Response".
+//
+// If response op code is not `OP_MSG`, it always logs as a debug.
+// For the `OP_MSG` code, the level depends on the type of error.
 // If there is no errors in the response, it will be logged as a debug.
 // If there is an error in the response, and connection is closed, it will be logged as an error.
 // If there is an error in the response, and connection is not closed, it will be logged as a warning.
