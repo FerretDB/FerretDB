@@ -16,24 +16,26 @@ package fjson
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// int64Type represents BSON 64-bit integer type.
-type int64Type int64
+// objectIDType represents BSON ObjectId type.
+type objectIDType types.ObjectID
 
 // fjsontype implements fjsontype interface.
-func (i *int64Type) fjsontype() {}
+func (obj *objectIDType) fjsontype() {}
 
-// int64JSON is a JSON object representation of the int64Type.
-type int64JSON struct {
-	L int64 `json:"$l,string"`
+// objectIDJSON is a JSON object representation of the objectIDType.
+type objectIDJSON struct {
+	O string `json:"$o"`
 }
 
 // UnmarshalJSON implements fjsontype interface.
-func (i *int64Type) UnmarshalJSON(data []byte) error {
+func (obj *objectIDType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -42,7 +44,7 @@ func (i *int64Type) UnmarshalJSON(data []byte) error {
 	dec := json.NewDecoder(r)
 	dec.DisallowUnknownFields()
 
-	var o int64JSON
+	var o objectIDJSON
 	if err := dec.Decode(&o); err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -50,14 +52,22 @@ func (i *int64Type) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	*i = int64Type(o.L)
+	b, err := hex.DecodeString(o.O)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+	if len(b) != types.ObjectIDLen {
+		return lazyerrors.Errorf("fjson.ObjectID.UnmarshalJSON: %d bytes", len(b))
+	}
+	copy(obj[:], b)
+
 	return nil
 }
 
 // MarshalJSON implements fjsontype interface.
-func (i *int64Type) MarshalJSON() ([]byte, error) {
-	res, err := json.Marshal(int64JSON{
-		L: int64(*i),
+func (obj *objectIDType) MarshalJSON() ([]byte, error) {
+	res, err := json.Marshal(objectIDJSON{
+		O: hex.EncodeToString(obj[:]),
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -67,5 +77,5 @@ func (i *int64Type) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ fjsontype = (*int64Type)(nil)
+	_ fjsontype = (*objectIDType)(nil)
 )

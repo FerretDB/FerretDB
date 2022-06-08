@@ -12,37 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package fjson
+package tjson
 
 import (
 	"bytes"
 	"encoding/json"
 
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// int64Type represents BSON 64-bit integer type.
-type int64Type int64
+// objectIDType represents BSON ObjectId type.
+type objectIDType types.ObjectID
 
-// fjsontype implements fjsontype interface.
-func (i *int64Type) fjsontype() {}
+// tjsontype implements tjsontype interface.
+func (obj *objectIDType) tjsontype() {}
 
-// int64JSON is a JSON object representation of the int64Type.
-type int64JSON struct {
-	L int64 `json:"$l,string"`
-}
-
-// UnmarshalJSON implements fjsontype interface.
-func (i *int64Type) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (obj *objectIDType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
 
 	r := bytes.NewReader(data)
 	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
 
-	var o int64JSON
+	var o []byte
 	if err := dec.Decode(&o); err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -50,15 +45,17 @@ func (i *int64Type) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	*i = int64Type(o.L)
+	if l := len(o); l != types.ObjectIDLen {
+		return lazyerrors.Errorf("unexpected len %d", l)
+	}
+
+	copy((*obj)[:], o)
 	return nil
 }
 
-// MarshalJSON implements fjsontype interface.
-func (i *int64Type) MarshalJSON() ([]byte, error) {
-	res, err := json.Marshal(int64JSON{
-		L: int64(*i),
-	})
+// MarshalJSON implements tjsontype interface.
+func (obj *objectIDType) MarshalJSON() ([]byte, error) {
+	res, err := json.Marshal([]byte((*obj)[:]))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -67,5 +64,5 @@ func (i *int64Type) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ fjsontype = (*int64Type)(nil)
+	_ tjsontype = (*objectIDType)(nil)
 )

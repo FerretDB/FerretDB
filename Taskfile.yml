@@ -7,6 +7,19 @@ vars:
   FUZZCORPUS: ../fuzz-corpus
 
 tasks:
+  # invoked when `task` is run without arguments
+  default:
+    deps: [all]
+
+  all:
+    desc: "Generate, format, build, test and lint code and documentation"
+    cmds:
+      - task: gen
+      - task: build-testcover
+      - task: test
+      - task: lint
+      - task: docs
+
   gen-version:
     cmds:
       - go generate -x ./internal/util/version
@@ -38,7 +51,9 @@ tasks:
 
   env-up-detach:
     cmds:
-      - docker-compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --detach
+      - >
+        docker-compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --detach
+        postgres mongodb
 
   env-up:
     desc: "Start development environment"
@@ -57,7 +72,7 @@ tasks:
       - docker-compose down --remove-orphans --volumes
 
   gen:
-    desc: "Generate code"
+    desc: "Generate (and format) code"
     cmds:
       - go generate -x ./...
       - task: fmt
@@ -188,12 +203,10 @@ tasks:
     cmds:
       - ../bin/go-consistent -pedantic ./...
 
-  docs-fmt:
-    desc: "Markdown formatter and linter"
+  docs:
+    desc: "Format and lint documentation"
     cmds:
-      - >
-        docker run --rm -v $PWD:/workdir ghcr.io/igorshubovych/markdownlint-cli:v0.31.1
-        --fix --dot --ignore CHANGELOG.md '**/*.md'
+      - docker-compose run --rm markdownlint --fix --dot --ignore CHANGELOG.md '**/*.md'
 
   psql:
     desc: "Run psql"
