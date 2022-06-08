@@ -21,8 +21,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestQueryArraySize(t *testing.T) {
@@ -125,6 +128,90 @@ func TestQueryArraySize(t *testing.T) {
 			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
+				AssertEqualError(t, *tc.err, err)
+				return
+			}
+			require.NoError(t, err)
+
+			var actual []bson.D
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
+		})
+	}
+}
+
+func TestQueryArrayDotNotation(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+
+	for name, tc := range map[string]struct {
+		filter      bson.D
+		expectedIDs []any
+		err         *mongo.CommandError
+	}{
+		"PositionIndexGreaterThanArrayLength": {
+			filter:      bson.D{{"value.5", bson.D{{"$type", "double"}}}},
+			expectedIDs: []any{},
+		},
+		"PositionIndexAtTheEndOfArray": {
+			filter:      bson.D{{"value.1", bson.D{{"$type", "double"}}}},
+			expectedIDs: []any{},
+		},
+
+		"PositionTypeNull": {
+			filter:      bson.D{{"value.0", bson.D{{"$type", "null"}}}},
+			expectedIDs: []any{"array-null", "array-three-reverse"},
+		},
+		"PositionRegex": {
+			filter:      bson.D{{"value.1", primitive.Regex{Pattern: "foo"}}},
+			expectedIDs: []any{"array-three", "array-three-reverse"},
+		},
+		"PositionArray": {
+			filter:      bson.D{{"value.0", primitive.A{}}},
+			expectedIDs: []any{},
+		},
+
+		"NoSuchFieldPosition": {
+			filter:      bson.D{{"value.some.0", bson.A{42}}},
+			expectedIDs: []any{},
+		},
+		"Field": {
+			filter:      bson.D{{"value.array", int32(42)}},
+			expectedIDs: []any{"document-composite", "document-composite-reverse"},
+		},
+		"FieldPosition": {
+			filter:      bson.D{{"value.array.0", int32(42)}},
+			expectedIDs: []any{"document-composite", "document-composite-reverse"},
+		},
+		"FieldPositionQuery": {
+			filter:      bson.D{{"value.array.0", bson.D{{"$gte", int32(42)}}}},
+			expectedIDs: []any{"document-composite", "document-composite-reverse"},
+		},
+		"FieldPositionQueryNonArray": {
+			filter:      bson.D{{"value.document.0", bson.D{{"$lt", int32(42)}}}},
+			expectedIDs: []any{},
+		},
+		"FieldPositionField": {
+			filter:      bson.D{{"value.array.2.foo", "bar"}},
+			expectedIDs: []any{},
+		},
+
+		"FieldPositionQueryRegex": {
+			filter: bson.D{{"value.array.0", bson.D{{"$lt", primitive.Regex{Pattern: "^$"}}}}},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "Can't have RegEx as arg to predicate over field 'value.array.0'.",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			if tc.err != nil {
 				AssertEqualError(t, *tc.err, err)
 				return
 			}
