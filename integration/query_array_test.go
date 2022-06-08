@@ -246,7 +246,7 @@ func TestQueryElemMatchOperator(t *testing.T) {
 			filter:      bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"$gt", int32(0)}}}}}},
 			expectedIDs: []any{"array", "array-three", "array-three-reverse"},
 		},
-		"GtZeroWithType": {
+		"GtZeroWithTypeArray": {
 			filter: bson.D{
 				{"value", bson.D{
 					{"$elemMatch", bson.D{
@@ -256,6 +256,17 @@ func TestQueryElemMatchOperator(t *testing.T) {
 				}},
 			},
 			expectedIDs: []any{"array", "array-three", "array-three-reverse"},
+		},
+		"GtZeroWithTypeString": {
+			filter: bson.D{
+				{"value", bson.D{
+					{"$elemMatch", bson.D{
+						{"$gt", int32(0)},
+					}},
+					{"$type", "string"},
+				}},
+			},
+			expectedIDs: []any{"array-three", "array-three-reverse"},
 		},
 		"GtLt": {
 			filter: bson.D{
