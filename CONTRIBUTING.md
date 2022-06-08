@@ -140,10 +140,7 @@ Some of our idiosyncrasies:
 Before submitting a pull request, please make sure that:
 
 1. Tests are added for new functionality or fixed bugs.
-2. Code is regenerated if needed (`task gen`).
-3. Code is formatted (`task fmt`).
-4. Test pass (`task test`).
-5. Linters pass (`task lint`).
+2. `task all` passes.
 
 ## Contributing documentation
 
