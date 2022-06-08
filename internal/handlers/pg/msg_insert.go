@@ -90,7 +90,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 // insert prepares and executes actual INSERT request to Postgres.
 func (h *Handler) insert(ctx context.Context, sp sqlParam, doc any) error {
-	created, err := h.pgPool.CreateTableIfNotExists(ctx, sp.db, sp.collection)
+	created, err := h.pgPool.CreateTableIfNotExist(ctx, sp.db, sp.collection)
 	if err != nil {
 		return err
 	}

@@ -348,12 +348,12 @@ func (pgPool *Pool) DropTable(ctx context.Context, schema, table string) error {
 	}
 }
 
-// CreateTableIfNotExists ensures that given FerretDB database / PostgreSQL schema
+// CreateTableIfNotExist ensures that given FerretDB database / PostgreSQL schema
 // and FerretDB collection / PostgreSQL table exist.
 // If needed, it creates both schema and table.
 //
 // True is returned if table was created.
-func (pgPool *Pool) CreateTableIfNotExists(ctx context.Context, db, collection string) (bool, error) {
+func (pgPool *Pool) CreateTableIfNotExist(ctx context.Context, db, collection string) (bool, error) {
 	exists, err := pgPool.TableExists(ctx, db, collection)
 	if err != nil {
 		return false, lazyerrors.Error(err)

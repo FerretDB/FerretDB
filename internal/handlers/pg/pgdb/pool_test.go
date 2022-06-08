@@ -188,81 +188,116 @@ func TestConcurrentCreate(t *testing.T) {
 	}
 }
 
-func TestPool_TableExists(t *testing.T) {
+func TestTableExists(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
 	pool := testutil.Pool(ctx, t, nil, zaptest.NewLogger(t))
 
-	schemaName := testutil.SchemaName(t)
-	tableName := testutil.TableName(t)
+	t.Run("SchemaDoesNotExistTableDoesNotExist", func(t *testing.T) {
+		t.Parallel()
 
-	t.Cleanup(func() {
-		pool.DropSchema(ctx, schemaName)
+		schemaName := testutil.SchemaName(t) + "emp"
+		tableName := testutil.TableName(t) + "emp"
+
+		t.Cleanup(func() {
+			pool.DropSchema(ctx, schemaName)
+		})
+
+		ok, err := pool.TableExists(ctx, schemaName, tableName)
+		require.NoError(t, err)
+		assert.False(t, ok)
 	})
 
-	// Case 1: schema does not exist, table does not exist
-	{
+	t.Run("SchemaExistsTableDoesNotExist", func(t *testing.T) {
+		t.Parallel()
+
+		schemaName := testutil.SchemaName(t) + "sch"
+		tableName := testutil.TableName(t) + "sch"
+
+		pool.CreateSchema(ctx, schemaName)
+
+		t.Cleanup(func() {
+			pool.DropSchema(ctx, schemaName)
+		})
+
 		ok, err := pool.TableExists(ctx, schemaName, tableName)
 		require.NoError(t, err)
 		assert.False(t, ok)
-	}
+	})
 
-	// Case 2: schema exists, table does not exist
-	{
-		err := pool.CreateSchema(ctx, schemaName)
-		require.NoError(t, err)
+	t.Run("SchemaExistsTableExists", func(t *testing.T) {
+		t.Parallel()
 
-		ok, err := pool.TableExists(ctx, schemaName, tableName)
-		require.NoError(t, err)
-		assert.False(t, ok)
-	}
+		schemaName := testutil.SchemaName(t) + "tab"
+		tableName := testutil.TableName(t) + "tab"
 
-	// Case 3: schema exists, table exists
-	{
-		err := pool.CreateTable(ctx, schemaName, tableName)
-		require.NoError(t, err)
+		pool.CreateSchema(ctx, schemaName)
+		pool.CreateTable(ctx, schemaName, tableName)
+
+		t.Cleanup(func() {
+			pool.DropSchema(ctx, schemaName)
+		})
 
 		ok, err := pool.TableExists(ctx, schemaName, tableName)
 		require.NoError(t, err)
 		assert.True(t, ok)
-	}
+	})
 }
 
-func TestPool_CreateTableIfNotExists(t *testing.T) {
+func TestCreateTableIfNotExist(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
 	pool := testutil.Pool(ctx, t, nil, zaptest.NewLogger(t))
 
-	schemaName := testutil.SchemaName(t)
-	tableName := testutil.TableName(t)
+	t.Run("SchemaDoesNotExistTableDoesNotExist", func(t *testing.T) {
+		t.Parallel()
 
-	t.Cleanup(func() {
-		pool.DropSchema(ctx, schemaName)
+		schemaName := testutil.SchemaName(t) + "emp"
+		tableName := testutil.TableName(t) + "emp"
+
+		t.Cleanup(func() {
+			pool.DropSchema(ctx, schemaName)
+		})
+
+		ok, err := pool.CreateTableIfNotExist(ctx, schemaName, tableName)
+		require.NoError(t, err)
+		assert.True(t, ok)
 	})
 
-	// Case 1: schema does not exist, table does not exist
-	{
-		created, err := pool.CreateTableIfNotExists(ctx, schemaName, tableName)
+	t.Run("SchemaExistsTableDoesNotExist", func(t *testing.T) {
+		t.Parallel()
+
+		schemaName := testutil.SchemaName(t) + "sch"
+		tableName := testutil.TableName(t) + "sch"
+
+		pool.CreateSchema(ctx, schemaName)
+
+		t.Cleanup(func() {
+			pool.DropSchema(ctx, schemaName)
+		})
+
+		created, err := pool.CreateTableIfNotExist(ctx, schemaName, tableName)
 		require.NoError(t, err)
 		assert.True(t, created)
-	}
+	})
 
-	// Case 2: schema exists, table does not exist
-	{
-		err := pool.DropTable(ctx, schemaName, tableName)
-		require.NoError(t, err)
+	t.Run("SchemaExistsTableExists", func(t *testing.T) {
+		t.Parallel()
 
-		created, err := pool.CreateTableIfNotExists(ctx, schemaName, tableName)
-		require.NoError(t, err)
-		assert.True(t, created)
-	}
+		schemaName := testutil.SchemaName(t) + "tab"
+		tableName := testutil.TableName(t) + "tab"
 
-	// Case 3: schema exists, table exists
-	{
-		created, err := pool.CreateTableIfNotExists(ctx, schemaName, tableName)
+		pool.CreateSchema(ctx, schemaName)
+		pool.CreateTable(ctx, schemaName, tableName)
+
+		t.Cleanup(func() {
+			pool.DropSchema(ctx, schemaName)
+		})
+
+		created, err := pool.CreateTableIfNotExist(ctx, schemaName, tableName)
 		require.NoError(t, err)
 		assert.False(t, created)
-	}
+	})
 }
