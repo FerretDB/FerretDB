@@ -143,22 +143,7 @@ func TestQueryArraySize(t *testing.T) {
 
 func TestQueryArrayDotNotation(t *testing.T) {
 	t.Parallel()
-	providers := []shareddata.Provider{shareddata.Composites}
-	ctx, collection := setup(t, providers...)
-
-	_, err := collection.InsertMany(ctx, []any{
-		bson.D{{"_id", "array-double"}, {"value", bson.A{float64(1)}}},
-		bson.D{{"_id", "array-strings"}, {"value", bson.A{"foo", "bar", "baz"}}},
-		bson.D{
-			{"_id", "document-array-field"},
-			{"value", bson.D{{"array", bson.A{int32(0), nil}}}},
-		},
-		bson.D{
-			{"_id", "document-document-field"},
-			{"value", bson.D{{"document", bson.D{{"foo", nil}}}}},
-		},
-	})
-	require.NoError(t, err)
+	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
 		filter      bson.D
@@ -174,21 +159,13 @@ func TestQueryArrayDotNotation(t *testing.T) {
 			expectedIDs: []any{},
 		},
 
-		"PositionTypeDouble": {
-			filter:      bson.D{{"value.0", bson.D{{"$type", "double"}}}},
-			expectedIDs: []any{"array-double"},
-		},
-		"PositionTypeString": {
-			filter:      bson.D{{"value.0", bson.D{{"$type", "string"}}}},
-			expectedIDs: []any{"array-strings"},
-		},
 		"PositionTypeNull": {
 			filter:      bson.D{{"value.0", bson.D{{"$type", "null"}}}},
 			expectedIDs: []any{"array-null", "array-three-reverse"},
 		},
 		"PositionRegex": {
-			filter:      bson.D{{"value.0", primitive.Regex{Pattern: "foo"}}},
-			expectedIDs: []any{"array-strings"},
+			filter:      bson.D{{"value.1", primitive.Regex{Pattern: "foo"}}},
+			expectedIDs: []any{"array-three", "array-three-reverse"},
 		},
 		"PositionArray": {
 			filter:      bson.D{{"value.0", primitive.A{}}},
@@ -208,8 +185,8 @@ func TestQueryArrayDotNotation(t *testing.T) {
 			expectedIDs: []any{"document-composite", "document-composite-reverse"},
 		},
 		"FieldPositionQuery": {
-			filter:      bson.D{{"value.array.0", bson.D{{"$lt", int32(42)}}}},
-			expectedIDs: []any{"document-array-field"},
+			filter:      bson.D{{"value.array.0", bson.D{{"$gte", int32(42)}}}},
+			expectedIDs: []any{"document-composite", "document-composite-reverse"},
 		},
 		"FieldPositionQueryNonArray": {
 			filter:      bson.D{{"value.document.0", bson.D{{"$lt", int32(42)}}}},
