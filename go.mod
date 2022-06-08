@@ -10,13 +10,13 @@ require (
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/prometheus/client_golang v1.12.2
 	github.com/prometheus/common v0.34.0
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.7.2
 	github.com/tigrisdata/tigris-client-go v1.0.0-alpha.14
 	go.uber.org/zap v1.21.0
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect; always use @latest
 	golang.org/x/exp v0.0.0-20220518171630-0b5c67f07fdf
 	golang.org/x/sys v0.0.0-20220503163025-988cb79eb6c6
-	gopkg.in/yaml.v3 v3.0.0 // indirect; https://github.com/advisories/GHSA-hp87-p4gw-j4gq
+	gopkg.in/yaml.v3 v3.0.1 // indirect; https://github.com/advisories/GHSA-hp87-p4gw-j4gq
 )
 
 require (
