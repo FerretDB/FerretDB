@@ -237,7 +237,10 @@ func TestQueryElemMatchOperator(t *testing.T) {
 	}{
 
 		"DoubleTarget": {
-			filter:      bson.D{{"_id", "double"}, {"value", bson.D{{"$elemMatch", bson.D{{"$gt", 0}}}}}},
+			filter: bson.D{
+				{"_id", "double"},
+				{"value", bson.D{{"$elemMatch", bson.D{{"$gt", int32(0)}}}}},
+			},
 			expectedIDs: []any{},
 		},
 		"GtZero": {
@@ -256,7 +259,15 @@ func TestQueryElemMatchOperator(t *testing.T) {
 			expectedIDs: []any{"array", "array-three", "array-three-reverse"},
 		},
 
-		"UnexpectedFilter": {
+		"UnexpectedFilterArray": {
+			filter: bson.D{{"value", bson.D{{"$elemMatch", bson.A{}}}}},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "$elemMatch needs an Object",
+			},
+		},
+		"UnexpectedFilterString": {
 			filter: bson.D{{"value", bson.D{{"$elemMatch", "foo"}}}},
 			err: &mongo.CommandError{
 				Code:    2,

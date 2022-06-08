@@ -495,6 +495,13 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				return false, err
 			}
 
+		case "$elemMatch":
+			// {field: {$elemMatch: value}}
+			res, err := filterFieldExprElemMatch(doc, filterKey, exprValue)
+			if !res || err != nil {
+				return false, err
+			}
+
 		default:
 			return false, NewErrorMsg(ErrBadValue, fmt.Sprintf("unknown operator: %s", exprKey))
 		}
@@ -1083,4 +1090,22 @@ func filterFieldValueByTypeCode(fieldValue any, code typeCode) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func filterFieldExprElemMatch(doc *types.Document, filterKey string, exprValue any) (bool, error) {
+	expr, ok := exprValue.(*types.Document)
+	if !ok {
+		return false, NewErrorMsg(ErrBadValue, fmt.Sprintf("$elemMatch needs an Object"))
+	}
+
+	value, err := doc.Get(filterKey)
+	if err != nil {
+		return false, nil
+	}
+
+	if _, ok := value.(*types.Array); !ok {
+		return false, nil
+	}
+
+	return filterFieldExpr(doc, filterKey, expr)
 }
