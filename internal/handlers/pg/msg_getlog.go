@@ -19,6 +19,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"go.uber.org/zap/zapcore"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -40,14 +42,12 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
 	if _, ok := getLog.(string); !ok {
-		// 	"errmsg" : "Argument to getLog must be of type String; found nan.0 of type double",
-		// 	"code" : 14.0,
-		// 	"codeName" : "TypeMismatch"
+		return nil, common.NewErrorMsg(common.ErrTypeMismatch, "Argument to getLog must be of type String")
 	}
 
-	resDoc := must.NotFail(types.NewDocument())
-
+	var resDoc *types.Document
 	switch getLog {
 	case "*":
 		resDoc = must.NotFail(types.NewDocument(
@@ -56,9 +56,46 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	case "global":
-		entries := logging.RecentEntries.Get()
-		var log types.Array
-		for _, e := range entries {
+		log, err := requirRecordsLog(zapcore.DebugLevel)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		resDoc = must.NotFail(types.NewDocument(
+			"log", &log,
+			"totalLinesWritten", int64(log.Len()),
+			"ok", float64(1),
+		))
+
+	case "startupWarnings":
+		log, err := requirRecordsLog(zapcore.WarnLevel)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		resDoc = must.NotFail(types.NewDocument(
+			"log", &log,
+			"totalLinesWritten", int64(log.Len()),
+			"ok", float64(1),
+		))
+
+	default:
+		errMsg := fmt.Sprintf("no RamLog named: %s", getLog)
+		return nil, common.NewErrorMsg(0, errMsg)
+	}
+
+	var reply wire.OpMsg
+	err = reply.SetSections(wire.OpMsgSection{Documents: []*types.Document{resDoc}})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &reply, nil
+}
+
+// requirRecordsLog returns an array of records from logging buffer with given level.
+func requirRecordsLog(level zapcore.Level) (log types.Array, err error) {
+	entries := logging.RecentEntries.Get()
+	for _, e := range entries {
+		if e.Level >= level {
 			b, err := json.Marshal(map[string]any{
 				"t":   e.Time,
 				"l":   e.Level,
@@ -68,46 +105,13 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				"s":   e.Stack,
 			})
 			if err != nil {
-				return nil, lazyerrors.Error(err)
+				return types.Array{}, err
 			}
 			if err = log.Append(string(b)); err != nil {
-				return nil, lazyerrors.Error(err)
+				return types.Array{}, err
 			}
 		}
-		resDoc = must.NotFail(types.NewDocument(
-			"log", &log,
-			"totalLinesWritten", len(entries),
-			"ok", float64(1),
-		))
-
-	case "startupWarnings":
-
-	default:
-		errMsg := fmt.Sprintf("no RamLog named: %s", getLog)
-		return nil, common.NewErrorMsg(0, errMsg)
 	}
 
-	// if l := document.Map()["getLog"]; l != "startupWarnings" {
-	// 	errMsg := fmt.Sprintf("MsgGetLog: unhandled getLog value %q", l)
-	// 	return nil, common.NewErrorMsg(common.ErrNotImplemented, errMsg)
-	// }
-
-	// var pv string
-	// err = h.pgPool.QueryRow(ctx, "SHOW server_version").Scan(&pv)
-	// if err != nil {
-	// 	return nil, lazyerrors.Error(err)
-	// }
-
-	// pv, _, _ = strings.Cut(pv, " ")
-	// mv := version.Get()
-
-	// }
-
-	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{Documents: []*types.Document{resDoc}})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return &reply, nil
+	return log, nil
 }

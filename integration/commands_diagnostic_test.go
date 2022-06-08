@@ -15,92 +15,22 @@
 package integration
 
 import (
+	"math"
 	"runtime"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.uber.org/zap"
 )
 
-// startFields := []zap.Field{
-// 	zap.String("version", info.Version),
-// 	zap.String("commit", info.Commit),
-// 	zap.String("branch", info.Branch),
-// 	zap.Bool("dirty", info.Dirty),
-// }
-// for _, k := range info.BuildEnvironment.Keys() {
-// 	v := must.NotFail(info.BuildEnvironment.Get(k))
-// 	startFields = append(startFields, zap.Any(k, v))
-// }
-// logger.Info("Starting FerretDB "+info.Version+"...", startFields...)
-/////////////////////////////////
-// startFields := zap.Field{
-// 	Key:       "strt",
-// 	Type:      1,
-// 	Integer:   1,
-// 	String:    "tst",
-// 	Interface: nil,
-// }
-// logger.Debug("Starting test", startFields)
-
-// collections := types.MakeArray(len(names))
-// 	for _, n := range names {
-// 		d := must.NotFail(types.NewDocument(
-// 			"name", n,
-// 			"type", "collection",
-// 		))
-// 		if err = collections.Append(d); err != nil {
-// 			return nil, lazyerrors.Error(err)
-// 		}
-// 	}
-
-// 	var reply wire.OpMsg
-// 	must.NoError(reply.SetSections(wire.OpMsgSection{
-// 		Documents: []*types.Document{must.NotFail(types.NewDocument(
-// 			"cursor", must.NotFail(types.NewDocument(
-// 				"id", int64(0),
-// 				"ns", db+".$cmd.listCollections",
-// 				"firstBatch", collections,
-// 			)),
-// 			"ok", float64(1),
-// 		))},
-// 	}))
-
 func TestCommandsDiagnosticGetLog(t *testing.T) {
-
-	// bson.D{{"getLog", "*"}}
-	// bson.A(bson.A{"global", "startupWarnings"})
-	//
-	// bson.D{{"getLog", "global"}
-	// {  	"totalLinesWritten" : 18307.0,
-	// 	"log" : [],
-	// 	"ok" : 1.0
-	// }
-	//
-	// bson.D{getLog:"non-existent name"}
-	// { 	"ok" : 0.0,
-	// 	"errmsg" : "no RamLog named: non-existent name"
-	// }
-	//
-	// bson.D{getLog:NaN}
-	// { 		"ok" : 0.0,
-	// 	"errmsg" : "Argument to getLog must be of type String; found nan.0 of type double",
-	// 	"code" : 14.0,
-	// 	"codeName" : "TypeMismatch"
-	// }
-
-	//	t.Parallel()
-	logging.Setup(zap.DebugLevel)
-	logger := zap.L()
+	t.Parallel()
 
 	ctx, collection := setupWithOpts(t, &setupOpts{
 		databaseName: "admin",
 	})
-	logger.Info("TST")
 
 	for name, tc := range map[string]struct {
 		command  bson.D
@@ -118,12 +48,19 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 		"Global": {
 			command: bson.D{{"getLog", "global"}},
 			expected: map[string]any{
-				"totalLinesWritten": 0,
+				"totalLinesWritten": int64(1024),
 				"log":               bson.A{},
 				"ok":                float64(1),
 			},
 		},
-
+		"StartupWarnings": {
+			command: bson.D{{"getLog", "startupWarnings"}},
+			expected: map[string]any{
+				"totalLinesWritten": int64(1024),
+				"log":               bson.A{},
+				"ok":                float64(1),
+			},
+		},
 		"NonExistentName": {
 			command: bson.D{{"getLog", "nonExistentName"}},
 			err: &mongo.CommandError{
@@ -132,6 +69,24 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 			},
 			alt: "no RamLog named: nonExistentName",
 		},
+		"Nil": {
+			command: bson.D{{"getLog", nil}},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: `Argument to getLog must be of type String; found null of type null`,
+			},
+			alt: "Argument to getLog must be of type String",
+		},
+		"NaN": {
+			command: bson.D{{"getLog", math.NaN()}},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: `Argument to getLog must be of type String; found nan.0 of type double`,
+			},
+			alt: "Argument to getLog must be of type String",
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -139,7 +94,6 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
-
 			if err != nil {
 				AssertEqualAltError(t, *tc.err, tc.alt, err)
 				return
