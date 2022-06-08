@@ -51,7 +51,7 @@ tasks:
 
   env-up-detach:
     cmds:
-      - docker-compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --detach
+      - docker-compose up postgres mongodb --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --detach
 
   env-up:
     desc: "Start development environment"
@@ -201,13 +201,11 @@ tasks:
     cmds:
       - ../bin/go-consistent -pedantic ./...
 
-  # TODO move Docker image to Docker Compose, use some dependabot-like tool that supports Docker Compose updates
   docs:
     desc: "Format and lint documentation"
     cmds:
       - >
-        docker run --platform=linux/amd64 --rm -v $PWD:/workdir ghcr.io/igorshubovych/markdownlint-cli:v0.31.1
-        --fix --dot --ignore CHANGELOG.md '**/*.md'
+        docker-compose run --rm markdownlint --fix --dot --ignore CHANGELOG.md '**/*.md'
 
   psql:
     desc: "Run psql"
