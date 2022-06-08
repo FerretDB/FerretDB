@@ -12,31 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+//go:build tigris
+// +build tigris
+
+package main
 
 import (
-	"log"
-	"reflect"
+	"flag"
 
-	"golang.org/x/exp/slices"
-
-	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/handlers"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris"
 )
 
-// matchDocuments returns true if 2 documents are equal.
-//
-// TODO move into types.Compare.
-func matchDocuments(a, b *types.Document) bool {
-	if a == nil {
-		log.Panicf("%v is nil", a)
-	}
-	if b == nil {
-		log.Panicf("%v is nil", b)
-	}
+// `tigris` handler flags.
+var (
+	tigrisURLF = flag.String("tigris-url", "127.0.0.1:8081", "Tigris URL")
+)
 
-	keys := a.Keys()
-	if !slices.Equal(keys, b.Keys()) {
-		return false
+// init registers `tigris` handler for Tigris that is enabled only when compiled with `tigris` build tag.
+func init() {
+	registeredHandlers["tigris"] = func(*newHandlerOpts) (handlers.Interface, error) {
+		return tigris.New()
 	}
-	return reflect.DeepEqual(a.Map(), b.Map())
 }

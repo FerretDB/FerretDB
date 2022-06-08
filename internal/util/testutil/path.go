@@ -98,8 +98,19 @@ func CompareAndSetByPathTime[T types.CompositeTypeInterface](tb testing.TB, expe
 	expectedV := GetByPath(tb, expected, path)
 	actualV := GetByPath(tb, actual, path)
 	assert.IsType(tb, expectedV, actualV)
-	require.IsType(tb, time.Time{}, actualV)
-	assert.WithinDuration(tb, expectedV.(time.Time), actualV.(time.Time), delta)
+
+	switch actualV := actualV.(type) {
+	case time.Time:
+		assert.WithinDuration(tb, expectedV.(time.Time), actualV, delta)
+
+	case types.Timestamp:
+		expectedT := types.DateTime(expectedV.(types.Timestamp))
+		actualT := types.DateTime(actualV)
+		assert.WithinDuration(tb, expectedT, actualT, delta)
+
+	default:
+		tb.FailNow()
+	}
 
 	SetByPath(tb, expected, actualV, path)
 }
