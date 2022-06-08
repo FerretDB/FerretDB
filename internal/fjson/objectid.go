@@ -29,6 +29,7 @@ type objectIDType types.ObjectID
 // fjsontype implements fjsontype interface.
 func (obj *objectIDType) fjsontype() {}
 
+// objectIDJSON is a JSON object representation of the objectIDType.
 type objectIDJSON struct {
 	O string `json:"$o"`
 }
@@ -55,7 +56,7 @@ func (obj *objectIDType) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
-	if len(b) != 12 {
+	if len(b) != types.ObjectIDLen {
 		return lazyerrors.Errorf("fjson.ObjectID.UnmarshalJSON: %d bytes", len(b))
 	}
 	copy(obj[:], b)
