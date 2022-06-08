@@ -51,7 +51,9 @@ tasks:
 
   env-up-detach:
     cmds:
-      - docker-compose up postgres mongodb --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --detach
+      - >
+        docker-compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --detach
+        postgres mongodb
 
   env-up:
     desc: "Start development environment"
@@ -204,8 +206,7 @@ tasks:
   docs:
     desc: "Format and lint documentation"
     cmds:
-      - >
-        docker-compose run --rm markdownlint --fix --dot --ignore CHANGELOG.md '**/*.md'
+      - docker-compose run --rm markdownlint --fix --dot --ignore CHANGELOG.md '**/*.md'
 
   psql:
     desc: "Run psql"
