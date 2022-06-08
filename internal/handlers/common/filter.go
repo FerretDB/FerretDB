@@ -493,9 +493,6 @@ func filterFieldRegex(fieldValue any, regex types.Regex) (bool, error) {
 	}
 
 	switch fieldValue := fieldValue.(type) {
-	case string:
-		return re.MatchString(fieldValue), nil
-
 	case *types.Array:
 		for i := 0; i < fieldValue.Len(); i++ {
 			arrValue := must.NotFail(fieldValue.Get(i))
@@ -507,6 +504,9 @@ func filterFieldRegex(fieldValue any, regex types.Regex) (bool, error) {
 				return true, nil
 			}
 		}
+
+	case string:
+		return re.MatchString(fieldValue), nil
 
 	case types.Regex:
 		return types.Compare(fieldValue, regex) == types.Equal, nil
@@ -756,10 +756,6 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 	var field, divisor, remainder int64
 
 	switch f := fieldValue.(type) {
-	case int32:
-		field = int64(f)
-	case int64:
-		field = f
 	case float64:
 		if math.IsNaN(f) || math.IsInf(f, 0) {
 			return false, nil
@@ -769,6 +765,13 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 		if f != float64(field) {
 			return false, nil
 		}
+
+	case int32:
+		field = int64(f)
+
+	case int64:
+		field = f
+
 	default:
 		return false, nil
 	}
