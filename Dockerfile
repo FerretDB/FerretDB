@@ -1,4 +1,3 @@
-ARG BASE_IMAGE=scratch
 ARG COMMIT
 ARG VERSION
 
@@ -11,7 +10,7 @@ WORKDIR /src
 ADD . .
 RUN CGO_ENABLED=${CGO_ENABLED} go test -x -c -o=bin/ferretdb -trimpath -tags=testcover,tigris ${BUILD_ARGS} ./cmd/ferretdb
 
-FROM ${BASE_IMAGE}
+FROM golang:1.18.3
 
 COPY --from=build /src/bin/ferretdb /ferretdb
 
