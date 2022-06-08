@@ -684,9 +684,9 @@ func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
 
 	doc := ConvertDocument(t, actual)
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("size")))
-	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("numObjects")))
-	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("millis")))
+	assert.Equal(t, int32(0), must.NotFail(doc.Get("size")))
+	assert.Equal(t, int32(0), must.NotFail(doc.Get("numObjects")))
+	assert.Equal(t, int32(0), must.NotFail(doc.Get("millis")))
 }
 
 func TestCommandsAdministrationDBStats(t *testing.T) {

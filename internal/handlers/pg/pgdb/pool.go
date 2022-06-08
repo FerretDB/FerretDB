@@ -403,9 +403,10 @@ func (pgPool *Pool) TableStats(ctx context.Context, schema, table string) (*Tabl
 	return &res, nil
 }
 
-// SchemaStats returns a set of statistics for FerretDB database / PostgreSQL schema.
-func (pgPool *Pool) SchemaStats(ctx context.Context, schema string) (*DBStats, error) {
+// SchemaStats returns a set of statistics for FerretDB database / PostgreSQL schema and table.
+func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) (*DBStats, error) {
 	var res DBStats
+
 	sql := `
     SELECT COUNT(distinct t.table_name)                                                             AS CountTables,
            COALESCE(SUM(s.n_live_tup), 0)                                                           AS CountRows,
@@ -422,8 +423,13 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema string) (*DBStats, e
                                          AND i.tablename = t.table_name
      WHERE t.table_schema = $1`
 
+	args := []any{schema}
+	if collection != "" {
+		sql = sql + " AND t.table_schema = $2"
+		args = append(args, collection)
+	}
 	res.Name = schema
-	err := pgPool.QueryRow(ctx, sql, schema).
+	err := pgPool.QueryRow(ctx, sql, args...).
 		Scan(&res.CountTables, &res.CountRows, &res.SizeTotal, &res.SizeIndexes, &res.SizeSchema, &res.CountIndexes)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
