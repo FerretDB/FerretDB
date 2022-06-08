@@ -1100,10 +1100,7 @@ func filterFieldExprElemMatch(doc *types.Document, filterKey string, exprValue a
 		return false, NewErrorMsg(ErrBadValue, "$elemMatch needs an Object")
 	}
 
-	value, err := doc.Get(filterKey)
-	if err != nil {
-		return false, nil
-	}
+	value := must.NotFail(doc.Get(filterKey))
 
 	if _, ok := value.(*types.Array); !ok {
 		return false, nil
