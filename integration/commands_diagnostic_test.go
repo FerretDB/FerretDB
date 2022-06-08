@@ -18,28 +18,145 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.uber.org/zap"
 )
 
+// startFields := []zap.Field{
+// 	zap.String("version", info.Version),
+// 	zap.String("commit", info.Commit),
+// 	zap.String("branch", info.Branch),
+// 	zap.Bool("dirty", info.Dirty),
+// }
+// for _, k := range info.BuildEnvironment.Keys() {
+// 	v := must.NotFail(info.BuildEnvironment.Get(k))
+// 	startFields = append(startFields, zap.Any(k, v))
+// }
+// logger.Info("Starting FerretDB "+info.Version+"...", startFields...)
+/////////////////////////////////
+// startFields := zap.Field{
+// 	Key:       "strt",
+// 	Type:      1,
+// 	Integer:   1,
+// 	String:    "tst",
+// 	Interface: nil,
+// }
+// logger.Debug("Starting test", startFields)
+
+// collections := types.MakeArray(len(names))
+// 	for _, n := range names {
+// 		d := must.NotFail(types.NewDocument(
+// 			"name", n,
+// 			"type", "collection",
+// 		))
+// 		if err = collections.Append(d); err != nil {
+// 			return nil, lazyerrors.Error(err)
+// 		}
+// 	}
+
+// 	var reply wire.OpMsg
+// 	must.NoError(reply.SetSections(wire.OpMsgSection{
+// 		Documents: []*types.Document{must.NotFail(types.NewDocument(
+// 			"cursor", must.NotFail(types.NewDocument(
+// 				"id", int64(0),
+// 				"ns", db+".$cmd.listCollections",
+// 				"firstBatch", collections,
+// 			)),
+// 			"ok", float64(1),
+// 		))},
+// 	}))
+
 func TestCommandsDiagnosticGetLog(t *testing.T) {
-	t.Parallel()
+
+	// bson.D{{"getLog", "*"}}
+	// bson.A(bson.A{"global", "startupWarnings"})
+	//
+	// bson.D{{"getLog", "global"}
+	// {  	"totalLinesWritten" : 18307.0,
+	// 	"log" : [],
+	// 	"ok" : 1.0
+	// }
+	//
+	// bson.D{getLog:"non-existent name"}
+	// { 	"ok" : 0.0,
+	// 	"errmsg" : "no RamLog named: non-existent name"
+	// }
+	//
+	// bson.D{getLog:NaN}
+	// { 		"ok" : 0.0,
+	// 	"errmsg" : "Argument to getLog must be of type String; found nan.0 of type double",
+	// 	"code" : 14.0,
+	// 	"codeName" : "TypeMismatch"
+	// }
+
+	//	t.Parallel()
+	logging.Setup(zap.DebugLevel)
+	logger := zap.L()
+
 	ctx, collection := setupWithOpts(t, &setupOpts{
 		databaseName: "admin",
 	})
+	logger.Info("TST")
 
-	var actual bson.D
-	err := collection.Database().RunCommand(ctx, bson.D{{"getLog", "startupWarnings"}}).Decode(&actual)
-	require.NoError(t, err)
+	for name, tc := range map[string]struct {
+		command  bson.D
+		expected map[string]any
+		err      *mongo.CommandError
+		alt      string
+	}{
+		"Asterisk": {
+			command: bson.D{{"getLog", "*"}},
+			expected: map[string]any{
+				"names": bson.A(bson.A{"global", "startupWarnings"}),
+				"ok":    float64(1),
+			},
+		},
+		"Global": {
+			command: bson.D{{"getLog", "global"}},
+			expected: map[string]any{
+				"totalLinesWritten": 0,
+				"log":               bson.A{},
+				"ok":                float64(1),
+			},
+		},
 
-	m := actual.Map()
-	t.Log(m)
+		"NonExistentName": {
+			command: bson.D{{"getLog", "nonExistentName"}},
+			err: &mongo.CommandError{
+				Code:    0,
+				Message: `no RamLog named: nonExistentName`,
+			},
+			alt: "no RamLog named: nonExistentName",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-	assert.Equal(t, float64(1), m["ok"])
-	assert.Equal(t, []string{"totalLinesWritten", "log", "ok"}, CollectKeys(t, actual))
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 
-	assert.IsType(t, int32(0), m["totalLinesWritten"])
+			if err != nil {
+				AssertEqualAltError(t, *tc.err, tc.alt, err)
+				return
+			}
+			require.NoError(t, err)
+
+			m := actual.Map()
+			k := CollectKeys(t, actual)
+
+			for key, item := range tc.expected {
+				assert.Contains(t, k, key)
+				if key != "log" && key != "totalLinesWritten" {
+					assert.Equal(t, m[key], item)
+				}
+			}
+		})
+	}
 }
 
 func TestCommandsDiagnosticHostInfo(t *testing.T) {
