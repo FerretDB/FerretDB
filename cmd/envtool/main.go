@@ -355,7 +355,10 @@ func run(ctx context.Context, logger *zap.SugaredLogger) error {
 		L:         logger.Desugar(),
 		StartTime: time.Now(),
 	}
-	h := pg.New(handlerOpts)
+	h, err := pg.New(handlerOpts)
+	if err != nil {
+		return err
+	}
 
 	for _, db := range []string{`monila`, `values`, `test`} {
 		if err := pgPool.CreateSchema(ctx, db); err != nil {

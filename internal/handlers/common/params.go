@@ -69,6 +69,8 @@ func GetBoolOptionalParam(doc *types.Document, key string) (bool, error) {
 	}
 
 	switch v := v.(type) {
+	case types.NullType:
+		return false, nil
 	case float64:
 		return v != 0, nil
 	case bool:
