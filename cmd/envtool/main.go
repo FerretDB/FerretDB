@@ -353,7 +353,7 @@ func run(ctx context.Context, logger *zap.SugaredLogger) error {
 	handlerOpts := &pg.NewOpts{
 		PgPool:    pgPool,
 		L:         logger.Desugar(),
-		PeerAddr:  "127.0.0.1:0",
+		PeerAddr:  "",
 		StartTime: time.Now(),
 	}
 	h, err := pg.New(handlerOpts)
