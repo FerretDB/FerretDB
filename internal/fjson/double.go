@@ -28,6 +28,7 @@ type doubleType float64
 // fjsontype implements fjsontype interface.
 func (d *doubleType) fjsontype() {}
 
+// doubleJSON is a JSON object representation of the doubleType.
 type doubleJSON struct {
 	F any `json:"$f"`
 }
