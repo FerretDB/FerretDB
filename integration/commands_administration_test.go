@@ -18,12 +18,10 @@ import (
 	"math"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -433,54 +431,44 @@ func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
 	assert.Equal(t, float64(1000), must.NotFail(doc.Get("scaleFactor")))
 }
 
-func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
-	t.Skip("TODO: https://github.com/FerretDB/FerretDB/issues/536")
-	// TODO
-}
-
-func TestStatisticsCommands(t *testing.T) {
-	t.Skip("TODO: https://github.com/FerretDB/FerretDB/issues/536")
-
+func TestCommandsAdministrationServerStatus(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t)
 
-	for name, tc := range map[string]struct {
-		command  any
-		response bson.D
-	}{
-		"ServerStatus": {
-			command: bson.D{{"serverStatus", int32(1)}},
-			response: bson.D{
-				{"host", ""},
-				{"version", "5.0.42"},
-				{"process", "handlers.test"},
-				{"pid", int64(0)},
-				{"uptime", int64(0)},
-				{"uptimeMillis", int64(0)},
-				{"uptimeEstimate", int64(0)},
-				{"localTime", primitive.DateTime(time.Now().Unix())},
-				{"catalogStats", bson.D{
-					{"collections", int32(1)},
-					{"capped", int32(0)},
-					{"timeseries", int32(0)},
-					{"views", int32(0)},
-					{"internalCollections", int32(0)},
-					{"internalViews", int32(0)},
-				}},
-				{"freeMonitoring", bson.D{{"state", "disabled"}}},
-				{"ok", float64(1)},
-			},
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+	var actual bson.D
+	command := bson.D{{"serverStatus", int32(1)}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
 
-			var actual bson.D
-			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
-			require.NoError(t, err)
+	doc := ConvertDocument(t, actual)
 
-			AssertEqualDocuments(t, tc.response, actual)
-		})
-	}
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+
+	freeMonitoring, ok := must.NotFail(doc.Get("freeMonitoring")).(*types.Document)
+	assert.True(t, ok)
+	assert.NotEmpty(t, must.NotFail(freeMonitoring.Get("state")))
+
+	assert.NotEmpty(t, must.NotFail(doc.Get("host")))
+	assert.Regexp(t, `^5\.0\.`, must.NotFail(doc.Get("version")))
+	assert.NotEmpty(t, must.NotFail(doc.Get("process")))
+	assert.LessOrEqual(t, int64(0), must.NotFail(doc.Get("pid")))
+	assert.LessOrEqual(t, float64(0), must.NotFail(doc.Get("uptime")))
+	assert.LessOrEqual(t, int64(0), must.NotFail(doc.Get("uptimeMillis")))
+	assert.LessOrEqual(t, int64(0), must.NotFail(doc.Get("uptimeEstimate")))
+	assert.NotEmpty(t, must.NotFail(doc.Get("localTime")))
+
+	catalogStats, ok := must.NotFail(doc.Get("catalogStats")).(*types.Document)
+	assert.True(t, ok)
+
+	assert.LessOrEqual(t, int32(1), must.NotFail(catalogStats.Get("collections")))
+	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("capped")))
+	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("timeseries")))
+	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("views")))
+	assert.LessOrEqual(t, int32(0), must.NotFail(catalogStats.Get("internalCollections")))
+	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("internalViews")))
+}
+
+func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
+	t.Skip("TODO: https://github.com/FerretDB/FerretDB/issues/536")
+	// TODO
 }
