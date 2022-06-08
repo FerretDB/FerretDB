@@ -1092,6 +1092,8 @@ func filterFieldValueByTypeCode(fieldValue any, code typeCode) (bool, error) {
 	return true, nil
 }
 
+// filterFieldExprElemMatch handles {field: {$elemMatch: value}}.
+// Returns false if doc value is not an array.
 func filterFieldExprElemMatch(doc *types.Document, filterKey string, exprValue any) (bool, error) {
 	expr, ok := exprValue.(*types.Document)
 	if !ok {
