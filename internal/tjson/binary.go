@@ -12,28 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package fjson
+package tjson
 
 import (
 	"bytes"
 	"encoding/json"
 
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// int64Type represents BSON 64-bit integer type.
-type int64Type int64
+// binaryType represents BSON Binary data type.
+type binaryType types.Binary
 
-// fjsontype implements fjsontype interface.
-func (i *int64Type) fjsontype() {}
+// tjsontype implements tjsontype interface.
+func (bin *binaryType) tjsontype() {}
 
-// int64JSON is a JSON object representation of the int64Type.
-type int64JSON struct {
-	L int64 `json:"$l,string"`
+// binaryJSON is a JSON object representation of the binaryType.
+type binaryJSON struct {
+	B []byte `json:"$b"`
+	S byte   `json:"s"`
 }
 
-// UnmarshalJSON implements fjsontype interface.
-func (i *int64Type) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (bin *binaryType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -42,22 +44,25 @@ func (i *int64Type) UnmarshalJSON(data []byte) error {
 	dec := json.NewDecoder(r)
 	dec.DisallowUnknownFields()
 
-	var o int64JSON
-	if err := dec.Decode(&o); err != nil {
+	var o binaryJSON
+	err := dec.Decode(&o)
+	if err != nil {
 		return lazyerrors.Error(err)
 	}
-	if err := checkConsumed(dec, r); err != nil {
+	if err = checkConsumed(dec, r); err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	*i = int64Type(o.L)
+	bin.B = o.B
+	bin.Subtype = types.BinarySubtype(o.S)
 	return nil
 }
 
-// MarshalJSON implements fjsontype interface.
-func (i *int64Type) MarshalJSON() ([]byte, error) {
-	res, err := json.Marshal(int64JSON{
-		L: int64(*i),
+// MarshalJSON implements tjsontype interface.
+func (bin *binaryType) MarshalJSON() ([]byte, error) {
+	res, err := json.Marshal(binaryJSON{
+		B: bin.B,
+		S: byte(bin.Subtype),
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -67,5 +72,5 @@ func (i *int64Type) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ fjsontype = (*int64Type)(nil)
+	_ tjsontype = (*binaryType)(nil)
 )
