@@ -63,7 +63,7 @@ func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.O
 			"version", version.MongoDBVersion,
 			"process", filepath.Base(exec),
 			"pid", int64(os.Getpid()),
-			"uptime", int64(uptime.Seconds()),
+			"uptime", uptime.Seconds(),
 			"uptimeMillis", uptime.Milliseconds(),
 			"uptimeEstimate", int64(uptime.Seconds()),
 			"localTime", time.Now(),

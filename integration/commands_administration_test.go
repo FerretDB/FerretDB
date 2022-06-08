@@ -18,14 +18,17 @@ import (
 	"math"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestCommandsAdministrationCreateDropList(t *testing.T) {
@@ -455,7 +458,15 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	assert.LessOrEqual(t, float64(0), must.NotFail(doc.Get("uptime")))
 	assert.LessOrEqual(t, int64(0), must.NotFail(doc.Get("uptimeMillis")))
 	assert.LessOrEqual(t, int64(0), must.NotFail(doc.Get("uptimeEstimate")))
-	assert.NotEmpty(t, must.NotFail(doc.Get("localTime")))
+
+	expectedLocalTime := ConvertDocument(t, bson.D{{"localTime", primitive.NewDateTimeFromTime(time.Now())}})
+	testutil.CompareAndSetByPathTime(
+		t,
+		expectedLocalTime,
+		doc,
+		time.Duration(2*time.Second),
+		types.NewPathFromString("localTime"),
+	)
 
 	catalogStats, ok := must.NotFail(doc.Get("catalogStats")).(*types.Document)
 	assert.True(t, ok)
