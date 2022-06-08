@@ -79,7 +79,6 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 				return false, err
 			}
 
-			// We shouldn't compare with embedded array values.
 			if _, ok := value.(*types.Array); ok {
 				return false, nil
 			}
