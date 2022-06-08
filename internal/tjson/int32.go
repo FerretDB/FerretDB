@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package fjson
+package tjson
 
 import (
 	"bytes"
@@ -21,28 +21,22 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// int64Type represents BSON 64-bit integer type.
-type int64Type int64
+// int32Type represents BSON 32-bit integer type.
+type int32Type int32
 
-// fjsontype implements fjsontype interface.
-func (i *int64Type) fjsontype() {}
+// tjsontype implements tjsontype interface.
+func (i *int32Type) tjsontype() {}
 
-// int64JSON is a JSON object representation of the int64Type.
-type int64JSON struct {
-	L int64 `json:"$l,string"`
-}
-
-// UnmarshalJSON implements fjsontype interface.
-func (i *int64Type) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (i *int32Type) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
 
 	r := bytes.NewReader(data)
 	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
 
-	var o int64JSON
+	var o int32
 	if err := dec.Decode(&o); err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -50,15 +44,13 @@ func (i *int64Type) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	*i = int64Type(o.L)
+	*i = int32Type(o)
 	return nil
 }
 
-// MarshalJSON implements fjsontype interface.
-func (i *int64Type) MarshalJSON() ([]byte, error) {
-	res, err := json.Marshal(int64JSON{
-		L: int64(*i),
-	})
+// MarshalJSON implements tjsontype interface.
+func (i *int32Type) MarshalJSON() ([]byte, error) {
+	res, err := json.Marshal(int32(*i))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -67,5 +59,5 @@ func (i *int64Type) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ fjsontype = (*int64Type)(nil)
+	_ tjsontype = (*int32Type)(nil)
 )
