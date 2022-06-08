@@ -6,7 +6,7 @@ replace github.com/FerretDB/FerretDB => ../
 
 require (
 	github.com/FerretDB/FerretDB v0.0.0-00010101000000-000000000000
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.7.2
 	go.mongodb.org/mongo-driver v1.9.1
 	go.uber.org/zap v1.21.0
 	golang.org/x/exp v0.0.0-20220518171630-0b5c67f07fdf
@@ -50,5 +50,5 @@ require (
 	golang.org/x/sys v0.0.0-20220513210249-45d2b4557a2a // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
