@@ -1097,7 +1097,7 @@ func filterFieldValueByTypeCode(fieldValue any, code typeCode) (bool, error) {
 func filterFieldExprElemMatch(doc *types.Document, filterKey string, exprValue any) (bool, error) {
 	expr, ok := exprValue.(*types.Document)
 	if !ok {
-		return false, NewErrorMsg(ErrBadValue, fmt.Sprintf("$elemMatch needs an Object"))
+		return false, NewErrorMsg(ErrBadValue, "$elemMatch needs an Object")
 	}
 
 	value, err := doc.Get(filterKey)
