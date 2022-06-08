@@ -4,7 +4,9 @@ version: "3.8"
 
 services:
   postgres:
-    image: postgres:14.3
+    build:
+      context: ./build/deps
+      dockerfile: postgres.Dockerfile
     container_name: ferretdb_postgres
     depends_on: [test_db]
     ports:
@@ -19,7 +21,9 @@ services:
 
   # for proxy mode and mongosh
   mongodb:
-    image: mongo:5.0.8
+    build:
+      context: ./build/deps
+      dockerfile: mongo.Dockerfile
     container_name: ferretdb_mongodb
     depends_on: [test_db]
     ports:
@@ -39,7 +43,9 @@ services:
       - test_db_mongodb:/test_db/mongodb:ro
 
   markdownlint:
-    image: ghcr.io/igorshubovych/markdownlint-cli:v0.31.1
+    build:
+      context: ./build/deps
+      dockerfile: markdownlint.Dockerfile
     container_name: ferretdb_markdownlint
     volumes:
       - .:/workdir
