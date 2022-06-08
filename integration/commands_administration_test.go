@@ -469,6 +469,15 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 }
 
 func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
-	t.Skip("TODO: https://github.com/FerretDB/FerretDB/issues/536")
-	// TODO
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	var actual bson.D
+	command := bson.D{{"whatsmyuri", int32(1)}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+	assert.Regexp(t, `^(\d+)\.(\d+)\.(\d+)\.(\d+)(\:\d+)?`, must.NotFail(doc.Get("you")))
 }
