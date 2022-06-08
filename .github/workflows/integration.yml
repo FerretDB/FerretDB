@@ -64,6 +64,13 @@ jobs:
           files: ./integration/integration-${{ matrix.db }}.txt
           flags: integration,${{ matrix.db }}
 
+      # we don't want them on CI
+      - name: Clean test and fuzz caches
+        if: always()
+        run: |
+          go clean -testcache
+          go clean -fuzzcache
+
       - name: Check dirty
         run: |
           git status

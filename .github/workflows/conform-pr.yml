@@ -35,5 +35,10 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
+      - name: Setup Go
+        uses: FerretDB/github-actions/setup-go@main
+        with:
+          cache-key: conform-pr
+
       - name: Conform PR
         uses: FerretDB/github-actions/conform-pr@main
