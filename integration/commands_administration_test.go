@@ -652,20 +652,11 @@ func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
 	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
 	assert.Equal(t, int32(0), must.NotFail(doc.Get("count")))
 
-	expected := must.NotFail(types.NewDocument("size", float64(8012)))
-	testutil.CompareAndSetByPathNum(t, expected, doc, 8012, types.NewPathFromString("size"))
-
-	expected = must.NotFail(types.NewDocument("storageSize", float64(4096)))
-	testutil.CompareAndSetByPathNum(t, expected, doc, 8012, types.NewPathFromString("storageSize"))
-
-	expected = must.NotFail(types.NewDocument("totalIndexSize", float64(4096)))
-	testutil.CompareAndSetByPathNum(t, expected, doc, 8012, types.NewPathFromString("totalIndexSize"))
-
-	expected = must.NotFail(types.NewDocument("totalSize", float64(4096)))
-	testutil.CompareAndSetByPathNum(t, expected, doc, 8012, types.NewPathFromString("totalSize"))
-
-	expected = must.NotFail(types.NewDocument("scaleFactor", float64(4096)))
-	testutil.CompareAndSetByPathNum(t, expected, doc, 8012, types.NewPathFromString("scaleFactor"))
+	testutil.AssertInThreshold(t, doc, "size", float64(8012), 8_012)
+	testutil.AssertInThreshold(t, doc, "storageSize", float64(4096), 8_012)
+	testutil.AssertInThreshold(t, doc, "totalIndexSize", float64(4096), 8_012)
+	testutil.AssertInThreshold(t, doc, "totalSize", float64(4096), 8_012)
+	testutil.AssertInThreshold(t, doc, "scaleFactor", float64(4096), 8_012)
 }
 
 func TestCommandsAdministrationCollStats(t *testing.T) {
@@ -681,20 +672,11 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
 
-	expected := must.NotFail(types.NewDocument("size", float64(8012)))
-	testutil.CompareAndSetByPathNum(t, expected, doc, 16024, types.NewPathFromString("size"))
-
-	expected = must.NotFail(types.NewDocument("storageSize", float64(4096)))
-	testutil.CompareAndSetByPathNum(t, expected, doc, 8012, types.NewPathFromString("storageSize"))
-
-	expected = must.NotFail(types.NewDocument("totalIndexSize", float64(4096)))
-	testutil.CompareAndSetByPathNum(t, expected, doc, 8012, types.NewPathFromString("totalIndexSize"))
-
-	expected = must.NotFail(types.NewDocument("totalSize", float64(4096)))
-	testutil.CompareAndSetByPathNum(t, expected, doc, 16024, types.NewPathFromString("totalSize"))
-
-	expected = must.NotFail(types.NewDocument("scaleFactor", float64(4096)))
-	testutil.CompareAndSetByPathNum(t, expected, doc, 8012, types.NewPathFromString("scaleFactor"))
+	testutil.AssertInThreshold(t, doc, "size", float64(8012), 16_024)
+	testutil.AssertInThreshold(t, doc, "storageSize", float64(4096), 8_012)
+	testutil.AssertInThreshold(t, doc, "totalIndexSize", float64(4096), 8_012)
+	testutil.AssertInThreshold(t, doc, "totalSize", float64(4096), 16_024)
+	testutil.AssertInThreshold(t, doc, "scaleFactor", float64(4096), 8_012)
 }
 
 func TestCommandsAdministrationDataSize(t *testing.T) {
@@ -709,11 +691,8 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 	doc := ConvertDocument(t, actual)
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 
-	expected := must.NotFail(types.NewDocument("size", float64(8012)))
-	testutil.CompareAndSetByPathNum(t, expected, doc, 10_000, types.NewPathFromString("size"))
-
-	expected = must.NotFail(types.NewDocument("millis", float64(100)))
-	testutil.CompareAndSetByPathNum(t, expected, doc, 100, types.NewPathFromString("millis"))
+	testutil.AssertInThreshold(t, doc, "size", float64(8012), 10_000)
+	testutil.AssertInThreshold(t, doc, "millis", float64(100), 100)
 }
 
 func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
@@ -729,10 +708,11 @@ func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 	assert.Equal(t, int32(0), must.NotFail(doc.Get("size")))
 	assert.Equal(t, int32(0), must.NotFail(doc.Get("numObjects")))
-	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("millis")))
+
+	testutil.AssertInThreshold(t, doc, "millis", float64(100), 100)
 }
 
-func TestCommandsAdministrationDBStats(t *testing.T) {
+func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t)
 
@@ -750,9 +730,11 @@ func TestCommandsAdministrationDBStats(t *testing.T) {
 	assert.Equal(t, int32(0), must.NotFail(doc.Get("objects")))
 	assert.Equal(t, float64(0), must.NotFail(doc.Get("avgObjSize")))
 	assert.Equal(t, float64(0), must.NotFail(doc.Get("dataSize")))
-	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("indexes")))
-	assert.LessOrEqual(t, float64(0), must.NotFail(doc.Get("indexSize")))
-	assert.LessOrEqual(t, float64(0), must.NotFail(doc.Get("totalSize")))
+
+	testutil.AssertInThreshold(t, doc, "indexes", float64(10), 1)
+	testutil.AssertInThreshold(t, doc, "indexSize", float64(10), 1)
+	testutil.AssertInThreshold(t, doc, "totalSize", float64(10), 1)
+
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("scaleFactor")))
 }
 
