@@ -18,6 +18,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
+	"time"
 
 	"go.uber.org/zap/zapcore"
 
@@ -26,6 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/version"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -70,9 +73,36 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	case "startupWarnings":
-		log, err := requirRecordsLog(zapcore.WarnLevel)
+		var pv string
+		err = h.pgPool.QueryRow(ctx, "SHOW server_version").Scan(&pv)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
+		}
+		pv, _, _ = strings.Cut(pv, " ")
+		mv := version.Get()
+
+		var log types.Array
+		for _, line := range []string{
+			"Powered by 🥭 FerretDB " + mv.Version + " and PostgreSQL " + pv + ".",
+			"Please star us on GitHub: https://github.com/FerretDB/FerretDB",
+		} {
+			b, err := json.Marshal(map[string]any{
+				"msg":  line,
+				"tags": []string{"startupWarnings"},
+				"s":    "I",
+				"c":    "STORAGE",
+				"id":   42000,
+				"ctx":  "initandlisten",
+				"t": map[string]string{
+					"$date": time.Now().UTC().Format("2006-01-02T15:04:05.999Z07:00"),
+				},
+			})
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+			if err = log.Append(string(b)); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
 		}
 		resDoc = must.NotFail(types.NewDocument(
 			"log", &log,
@@ -100,7 +130,9 @@ func requirRecordsLog(level zapcore.Level) (log types.Array, err error) {
 	for _, e := range entries {
 		if e.Level >= level {
 			b, err := json.Marshal(map[string]any{
-				"t":   e.Time,
+				"t": map[string]time.Time{
+					"$date": e.Time,
+				},
 				"l":   e.Level,
 				"ln":  e.LoggerName,
 				"msg": e.Message,
