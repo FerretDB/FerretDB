@@ -740,7 +740,7 @@ func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
 
 func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 	var actual bson.D
 	command := bson.D{{"dbStats", int32(1)}, {"scale", float64(1_000)}}
@@ -753,13 +753,12 @@ func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
 	assert.Equal(t, collection.Database().Name(), must.NotFail(doc.Get("db")))
 	assert.Equal(t, int32(1), must.NotFail(doc.Get("collections")))
 	assert.Equal(t, int32(0), must.NotFail(doc.Get("views")))
-	assert.Equal(t, int32(0), must.NotFail(doc.Get("objects")))
-	assert.Equal(t, float64(0), must.NotFail(doc.Get("avgObjSize")))
-	assert.Equal(t, float64(0), must.NotFail(doc.Get("dataSize")))
 	assert.Equal(t, float64(1000), must.NotFail(doc.Get("scaleFactor")))
+
+	testutil.AssertInThreshold(t, doc, "dataSize", float64(2.161), 10)
+
 	testutil.AssertInThreshold(t, doc, "indexes", float64(1), 1)
 	testutil.AssertInThreshold(t, doc, "indexSize", float64(0), 4060)
-	testutil.AssertInThreshold(t, doc, "totalSize", float64(8.192), 0)
 }
 
 func TestCommandsAdministrationServerStatus(t *testing.T) {
