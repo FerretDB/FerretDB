@@ -21,6 +21,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -1094,10 +1096,21 @@ func filterFieldValueByTypeCode(fieldValue any, code typeCode) (bool, error) {
 
 // filterFieldExprElemMatch handles {field: {$elemMatch: value}}.
 // Returns false if doc value is not an array.
+// TODO: https://github.com/FerretDB/FerretDB/issues/364
 func filterFieldExprElemMatch(doc *types.Document, filterKey string, exprValue any) (bool, error) {
 	expr, ok := exprValue.(*types.Document)
 	if !ok {
 		return false, NewErrorMsg(ErrBadValue, "$elemMatch needs an Object")
+	}
+
+	for _, key := range expr.Keys() {
+		if slices.Contains([]string{"$text", "$where"}, key) {
+			return false, NewErrorMsg(ErrBadValue, fmt.Sprintf("%s can only be applied to the top-level document", key))
+		}
+
+		if expr.Len() > 1 && !strings.HasPrefix(key, "$") {
+			return false, NewErrorMsg(ErrBadValue, fmt.Sprintf("unknown operator: %s", key))
+		}
 	}
 
 	value := must.NotFail(doc.Get(filterKey))
