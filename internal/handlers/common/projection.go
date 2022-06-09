@@ -161,13 +161,18 @@ func projectDocument(inclusion bool, doc *types.Document, projection *types.Docu
 				return err
 			}
 
-		case float64, int32, int64: // field: number
+		case float64: // field: number
 			if types.Compare(projectionVal, int32(0)) == types.Equal {
 				doc.Remove(k1)
 			}
 
 		case bool: // field: bool
 			if !projectionVal {
+				doc.Remove(k1)
+			}
+
+		case int32, int64: // field: number
+			if types.Compare(projectionVal, int32(0)) == types.Equal {
 				doc.Remove(k1)
 			}
 
