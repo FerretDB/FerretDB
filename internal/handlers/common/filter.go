@@ -515,9 +515,6 @@ func filterFieldRegex(fieldValue any, regex types.Regex) (bool, error) {
 	}
 
 	switch fieldValue := fieldValue.(type) {
-	case string:
-		return re.MatchString(fieldValue), nil
-
 	case *types.Array:
 		for i := 0; i < fieldValue.Len(); i++ {
 			arrValue := must.NotFail(fieldValue.Get(i))
@@ -529,6 +526,9 @@ func filterFieldRegex(fieldValue any, regex types.Regex) (bool, error) {
 				return true, nil
 			}
 		}
+
+	case string:
+		return re.MatchString(fieldValue), nil
 
 	case types.Regex:
 		return types.Compare(fieldValue, regex) == types.Equal, nil
@@ -778,10 +778,6 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 	var field, divisor, remainder int64
 
 	switch f := fieldValue.(type) {
-	case int32:
-		field = int64(f)
-	case int64:
-		field = f
 	case float64:
 		if math.IsNaN(f) || math.IsInf(f, 0) {
 			return false, nil
@@ -791,6 +787,13 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 		if f != float64(field) {
 			return false, nil
 		}
+
+	case int32:
+		field = int64(f)
+
+	case int64:
+		field = f
+
 	default:
 		return false, nil
 	}
@@ -804,10 +807,6 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 	}
 
 	switch d := must.NotFail(arr.Get(0)).(type) {
-	case int32:
-		divisor = int64(d)
-	case int64:
-		divisor = d
 	case float64:
 		if math.IsNaN(d) || math.IsInf(d, 0) {
 			return false, NewErrorMsg(ErrBadValue, `malformed mod, divisor value is invalid :: caused by :: `+
@@ -824,15 +823,18 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 		if d != float64(divisor) && field != 0 && d < 9.223372036854775296e+18 {
 			return false, nil
 		}
+
+	case int32:
+		divisor = int64(d)
+
+	case int64:
+		divisor = d
+
 	default:
 		return false, NewErrorMsg(ErrBadValue, `malformed mod, divisor not a number`)
 	}
 
 	switch r := must.NotFail(arr.Get(1)).(type) {
-	case int32:
-		remainder = int64(r)
-	case int64:
-		remainder = r
 	case float64:
 		if math.IsNaN(r) || math.IsInf(r, 0) {
 			return false, NewErrorMsg(ErrBadValue, `malformed mod, remainder value is invalid :: caused by :: `+
@@ -847,6 +849,13 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 		if r != float64(remainder) {
 			return false, nil
 		}
+
+	case int32:
+		remainder = int64(r)
+
+	case int64:
+		remainder = r
+
 	default:
 		return false, NewErrorMsg(ErrBadValue, `malformed mod, remainder not a number`)
 	}
@@ -1016,12 +1025,12 @@ func filterFieldValueByTypeCode(fieldValue any, code typeCode) (bool, error) {
 	}
 
 	switch code {
-	case typeCodeObject:
-		if _, ok := fieldValue.(*types.Document); !ok {
-			return false, nil
-		}
 	case typeCodeArray:
 		if _, ok := fieldValue.(*types.Array); !ok {
+			return false, nil
+		}
+	case typeCodeObject:
+		if _, ok := fieldValue.(*types.Document); !ok {
 			return false, nil
 		}
 	case typeCodeDouble:
@@ -1071,7 +1080,7 @@ func filterFieldValueByTypeCode(fieldValue any, code typeCode) (bool, error) {
 	case typeCodeNumber:
 		// typeCodeNumber should match int32, int64 and float64 types
 		switch fieldValue.(type) {
-		case int32, int64, float64:
+		case float64, int32, int64:
 			return true, nil
 		default:
 			return false, nil
