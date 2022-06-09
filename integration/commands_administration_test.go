@@ -756,10 +756,10 @@ func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
 	assert.Equal(t, int32(0), must.NotFail(doc.Get("objects")))
 	assert.Equal(t, float64(0), must.NotFail(doc.Get("avgObjSize")))
 	assert.Equal(t, float64(0), must.NotFail(doc.Get("dataSize")))
-	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("indexes")))
-	assert.LessOrEqual(t, float64(0), must.NotFail(doc.Get("indexSize")))
-	assert.LessOrEqual(t, float64(0), must.NotFail(doc.Get("totalSize")))
 	assert.Equal(t, float64(1000), must.NotFail(doc.Get("scaleFactor")))
+	testutil.AssertInThreshold(t, doc, "indexes", float64(1), 1)
+	testutil.AssertInThreshold(t, doc, "indexSize", float64(0), 4060)
+	testutil.AssertInThreshold(t, doc, "totalSize", float64(8192), 0)
 }
 
 func TestCommandsAdministrationServerStatus(t *testing.T) {
@@ -782,10 +782,11 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	assert.NotEmpty(t, must.NotFail(doc.Get("host")))
 	assert.Regexp(t, `^5\.0\.`, must.NotFail(doc.Get("version")))
 	assert.NotEmpty(t, must.NotFail(doc.Get("process")))
-	assert.LessOrEqual(t, int64(0), must.NotFail(doc.Get("pid")))
-	assert.LessOrEqual(t, float64(0), must.NotFail(doc.Get("uptime")))
-	assert.LessOrEqual(t, int64(0), must.NotFail(doc.Get("uptimeMillis")))
-	assert.LessOrEqual(t, int64(0), must.NotFail(doc.Get("uptimeEstimate")))
+
+	testutil.AssertInThreshold(t, doc, "pid", float64(1), 5_000_000)
+	testutil.AssertInThreshold(t, doc, "uptime", float64(0), 600)
+	testutil.AssertInThreshold(t, doc, "uptimeMillis", float64(0), 600_000)
+	testutil.AssertInThreshold(t, doc, "uptimeEstimate", float64(0), 6000)
 
 	expectedLocalTime := ConvertDocument(t, bson.D{{"localTime", primitive.NewDateTimeFromTime(time.Now())}})
 	testutil.CompareAndSetByPathTime(
@@ -799,11 +800,13 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	catalogStats, ok := must.NotFail(doc.Get("catalogStats")).(*types.Document)
 	assert.True(t, ok)
 
-	assert.LessOrEqual(t, int32(1), must.NotFail(catalogStats.Get("collections")))
-	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("capped")))
+	testutil.AssertInThreshold(t, catalogStats, "collections", float64(1), 1)
+	testutil.AssertInThreshold(t, catalogStats, "capped", float64(0), 0)
+	testutil.AssertInThreshold(t, catalogStats, "timeseries", float64(0), 0)
+	testutil.AssertInThreshold(t, catalogStats, "internalCollections", float64(3), 3)
+
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("timeseries")))
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("views")))
-	assert.LessOrEqual(t, int32(0), must.NotFail(catalogStats.Get("internalCollections")))
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("internalViews")))
 }
 
