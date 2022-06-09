@@ -373,6 +373,38 @@ func TestUpdateSet(t *testing.T) {
 			},
 			result: bson.D{{"_id", "string"}, {"value", "foo"}, {"foo", int32(1)}},
 		},
+		"SetSameValueString": {
+			id:     "string",
+			update: bson.D{{"$set", bson.D{{"value", "foo"}}}},
+			result: bson.D{{"_id", "string"}, {"value", "foo"}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 0,
+				UpsertedCount: 0,
+			},
+		},
+		//"SetSameValueArr": {
+		//	id: "string",
+		//	update: bson.D{{"$set", bson.D{{"value",
+		//		bson.A{1, "foo", nil, bson.D{{"foo", "bar"}}}}}}},
+		//	result: bson.D{{"_id", "string"}, {"value",
+		//		bson.A{1, "foo", nil, bson.D{{"foo", "bar"}}}}},
+		//	stat: &mongo.UpdateResult{
+		//		MatchedCount:  1,
+		//		ModifiedCount: 0,
+		//		UpsertedCount: 0,
+		//	},
+		//},
+		//"SetSameValueDoc": {
+		//	id:     "string",
+		//	update: bson.D{{"$set", bson.D{{"value", bson.D{{"foo", "bar"}}}}}},
+		//	result: bson.D{{"_id", "string"}, {"value", bson.D{{"foo", "bar"}}}},
+		//	stat: &mongo.UpdateResult{
+		//		MatchedCount:  1,
+		//		ModifiedCount: 0,
+		//		UpsertedCount: 0,
+		//	},
+		//},
 		"Double": {
 			id:     "double",
 			update: bson.D{{"$set", bson.D{{"value", float64(1)}}}},
@@ -615,6 +647,17 @@ func TestUpdateMany(t *testing.T) {
 				{"$inc", bson.D{{"foo", int32(12)}, {"value", int32(1)}}},
 			},
 			res: bson.D{{"_id", "test"}, {"foo", int32(12)}, {"value", int32(1)}},
+		},
+		"SetSetOnInsertConflict": {
+			filter: bson.D{{"_id", "test"}},
+			update: bson.D{
+				{"$set", bson.D{{"foo", "string1"}}},
+				{"$setOnInsert", bson.D{{"foo", "string2"}}},
+			},
+			err: &mongo.WriteError{
+				Code:    40,
+				Message: "Updating the path 'foo' would create a conflict at 'foo'",
+			},
 		},
 		"SetIncSetOnInsert": {
 			filter: bson.D{{"_id", "test"}},
