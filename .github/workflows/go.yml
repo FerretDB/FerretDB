@@ -17,7 +17,7 @@ env:
   GOCACHE: /home/runner/go/cache
   GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
   GOMODCACHE: /home/runner/go/mod
-  GOPROXY: https://proxy.golang.org # remove direct
+  GOPROXY: https://proxy.golang.org
 
 jobs:
   test:
@@ -60,6 +60,13 @@ jobs:
           files: ./cover.txt
           flags: unit
 
+      # we don't want them on CI
+      - name: Clean test and fuzz caches
+        if: always()
+        run: |
+          go clean -testcache
+          go clean -fuzzcache
+
       - name: Check dirty
         run: |
           git status
@@ -70,6 +77,11 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
+      - name: Setup Go
+        uses: FerretDB/github-actions/setup-go@main
+        with:
+          cache-key: lint
+
       - name: Run linters
         uses: FerretDB/github-actions/linters@main
 
@@ -173,11 +185,12 @@ jobs:
           name: linux-logs
           path: /tmp/logs
 
-      # To prevent Setup Go's cache to include it.
-      # See https://github.com/golang/go/issues/48901.
-      - name: Clear generated corpus
+      # we don't want them on CI
+      - name: Clean test and fuzz caches
         if: always()
-        run: go clean -fuzzcache
+        run: |
+          go clean -testcache
+          go clean -fuzzcache
 
       - name: Check dirty
         run: |
