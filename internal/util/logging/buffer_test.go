@@ -130,7 +130,7 @@ func TestCircularBuffer(t *testing.T) {
 		name := fmt.Sprintf("ZapHooks_%d", n)
 		tc := tc
 		t.Run(name, func(t *testing.T) {
-			logger.Debug(tc.addMsg)
+			logger.Info(tc.addMsg)
 			actual := RecentEntries.Get()
 			for i, exp := range tc.expected {
 				assert.Equal(t, exp, actual[i].Message)
