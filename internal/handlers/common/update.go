@@ -20,6 +20,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -193,7 +195,7 @@ func ValidateUpdateOperators(update *types.Document) error {
 	if err != nil {
 		return err
 	}
-	unset, err = extractValueFromUpdateOperator("$unset", update)
+	unset, err := extractValueFromUpdateOperator("$unset", update)
 	if err != nil {
 		return err
 	}
