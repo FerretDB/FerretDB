@@ -285,6 +285,10 @@ func TestQueryElemMatchOperator(t *testing.T) {
 			},
 			expectedIDs: []any{"array", "array-embedded", "array-null", "array-three", "array-three-reverse"},
 		},
+		"NotLt": {
+			filter:      bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"$not", bson.D{{"$lt", int32(43)}}}}}}}},
+			expectedIDs: []any{"array-embedded", "array-null", "array-three", "array-three-reverse"},
+		},
 
 		"UnexpectedFilterString": {
 			filter: bson.D{{"value", bson.D{{"$elemMatch", "foo"}}}},
@@ -312,9 +316,10 @@ func TestQueryElemMatchOperator(t *testing.T) {
 		},
 		"GtField": {
 			filter: bson.D{{"value", bson.D{
-				{"$elemMatch", bson.D{
-					{"$gt", int32(0)},
-					{"foo", int32(42)}},
+				{
+					"$elemMatch", bson.D{
+						{"$gt", int32(0)},
+						{"foo", int32(42)}},
 				},
 			}}},
 			err: &mongo.CommandError{
