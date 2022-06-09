@@ -731,9 +731,9 @@ func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
 	assert.Equal(t, float64(0), must.NotFail(doc.Get("avgObjSize")))
 	assert.Equal(t, float64(0), must.NotFail(doc.Get("dataSize")))
 
-	testutil.AssertInThreshold(t, doc, "indexes", float64(10), 1)
-	testutil.AssertInThreshold(t, doc, "indexSize", float64(10), 1)
-	testutil.AssertInThreshold(t, doc, "totalSize", float64(10), 1)
+	testutil.AssertInThreshold(t, doc, "indexes", float64(1), 1)
+	testutil.AssertInThreshold(t, doc, "indexSize", float64(4096), 0)
+	testutil.AssertInThreshold(t, doc, "totalSize", float64(8192), 0)
 
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("scaleFactor")))
 }

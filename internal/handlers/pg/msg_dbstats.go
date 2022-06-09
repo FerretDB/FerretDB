@@ -36,17 +36,6 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	if sp.db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
-	collectionParam, err := document.Get(document.Command())
-	if err != nil {
-		return nil, err
-	}
-	var ok bool
-	if sp.collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewErrorMsg(
-			common.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
-		)
-	}
 
 	m := document.Map()
 	scale, ok := m["scale"].(float64)
@@ -54,7 +43,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		scale = 1
 	}
 
-	stats, err := h.pgPool.SchemaStats(ctx, sp.db, sp.collection)
+	stats, err := h.pgPool.SchemaStats(ctx, sp.db, "")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -64,6 +53,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		avgObjSize = float64(stats.SizeRelation) / float64(stats.CountRows)
 	}
 
+	fmt.Printf("\n%#v", stats)
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(

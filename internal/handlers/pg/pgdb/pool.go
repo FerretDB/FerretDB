@@ -390,7 +390,7 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 
 	args := []any{schema}
 	if collection != "" {
-		sql = sql + " AND t.table_schema = $2"
+		sql = sql + " AND t.table_name = $2"
 		args = append(args, collection)
 	}
 
