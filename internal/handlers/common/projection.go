@@ -345,6 +345,10 @@ func projectionSliceSingleArg(arr *types.Array, arg any) *types.Array {
 			break
 		}
 		n = int(v)
+
+	case int32:
+		n = int(v)
+
 	case int64:
 		if v > math.MaxInt {
 			n = math.MaxInt
@@ -354,8 +358,6 @@ func projectionSliceSingleArg(arr *types.Array, arg any) *types.Array {
 			n = math.MinInt
 			break
 		}
-		n = int(v)
-	case int32:
 		n = int(v)
 	}
 
@@ -383,8 +385,6 @@ func projectionSliceMultiArgs(arr, args *types.Array) (*types.Array, error) {
 	pair := [2]int{}
 	for i := range pair {
 		switch v := must.NotFail(args.Get(i)).(type) {
-		case types.NullType:
-			return nil, nil //nolint:nilnil // nil is a valid value
 		case float64:
 			if math.IsNaN(v) {
 				break // because pair[i] == 0 already
@@ -398,6 +398,13 @@ func projectionSliceMultiArgs(arr, args *types.Array) (*types.Array, error) {
 				break
 			}
 			pair[i] = int(v)
+
+		case types.NullType:
+			return nil, nil //nolint:nilnil // nil is a valid value
+
+		case int32:
+			pair[i] = int(v)
+
 		case int64:
 			if v > math.MaxInt {
 				pair[i] = math.MaxInt
@@ -408,8 +415,7 @@ func projectionSliceMultiArgs(arr, args *types.Array) (*types.Array, error) {
 				break
 			}
 			pair[i] = int(v)
-		case int32:
-			pair[i] = int(v)
+
 		default:
 			return nil, NewErrorMsg(
 				ErrSliceFirstArg,
