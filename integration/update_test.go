@@ -308,7 +308,6 @@ func TestUpdateSet(t *testing.T) {
 			},
 			result: bson.D{{"_id", "string"}, {"value", "foo"}, {"bar", bson.A{}}, {"foo", int32(1)}},
 		},
-
 		"NilOperand": {
 			id:     "string",
 			update: bson.D{{"$set", nil}},
