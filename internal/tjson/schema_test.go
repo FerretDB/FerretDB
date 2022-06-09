@@ -29,9 +29,10 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 		Description: "FerretDB users collection",
 		Properties: map[string]*Schema{
 			"$k":      {Type: Array, Items: stringSchema},
-			"_id":     int64Schema,
+			"_id":     objectIDSchema,
 			"name":    stringSchema,
 			"balance": doubleSchema,
+			"data":    binarySchema,
 		},
 		PrimaryKey: []string{"_id"},
 	}
@@ -45,8 +46,15 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 		"description": "FerretDB users collection",
 		"properties": {
 			"$k": {"type": "array", "items": {"type": "string"}},
-			"_id": {"type": "integer"},
+			"_id": {"type": "string", "format": "byte"},
 			"balance": {"type": "number"},
+			"data": {
+				"type": "object",
+				"properties": {
+					"$b": {"type": "string", "format": "byte"},
+					"s": {"type": "integer", "format": "int32"}
+				}
+			},
 			"name": {"type": "string"}
 		},
 		"primary_key": ["_id"]

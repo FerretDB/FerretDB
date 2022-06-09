@@ -159,9 +159,22 @@ func Unmarshal(data []byte, schema *Schema) (any, error) {
 			err = lazyerrors.Errorf("tjson.Unmarshal: unhandled format %q for type %q", f, t)
 		}
 	case String:
-		var o stringType
-		err = o.UnmarshalJSON(data)
-		res = &o
+		switch f := schema.Format; f {
+		case EmptyFormat:
+			var o stringType
+			err = o.UnmarshalJSON(data)
+			res = &o
+		case Byte:
+			var o objectIDType
+			err = o.UnmarshalJSON(data)
+			res = &o
+		case UUID, DateTime:
+			fallthrough
+		case Double, Float, Int64, Int32:
+			fallthrough
+		default:
+			err = lazyerrors.Errorf("tjson.Unmarshal: unhandled format %q for type %q", f, t)
+		}
 	case Boolean:
 		var o boolType
 		err = o.UnmarshalJSON(data)
@@ -184,8 +197,8 @@ func Unmarshal(data []byte, schema *Schema) (any, error) {
 			var o documentType
 			err = o.UnmarshalJSONWithSchema(data, schema)
 			res = &o
-		case v["$o"] != nil:
-			var o objectIDType
+		case v["$b"] != nil:
+			var o binaryType
 			err = o.UnmarshalJSON(data)
 			res = &o
 		default:
