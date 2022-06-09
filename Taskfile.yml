@@ -176,6 +176,12 @@ tasks:
     cmds:
       - bin/ferretdb-testcover -test.coverprofile=cover.txt -mode=diff-normal -listen-addr=:27017
 
+  run-proxy:
+    desc: "Run FerretDB in diff-proxy mode"
+    deps: [build-testcover]
+    cmds:
+      - bin/ferretdb-testcover -test.coverprofile=cover.txt -mode=diff-proxy -listen-addr=:27017
+
   lint:
     desc: "Run linters"
     deps:

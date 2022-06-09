@@ -17,10 +17,11 @@ package dummy
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgHello implements HandlerInterface.
 func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, errNotImplemented
+	return nil, notImplemented(must.NotFail(msg.Document()).Command())
 }
