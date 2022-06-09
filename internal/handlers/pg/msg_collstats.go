@@ -41,7 +41,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	stats, err := h.pgPool.TableStats(ctx, db, collection)
+	stats, err := h.pgPool.SchemaStats(ctx, db, collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -50,9 +50,9 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"ns", db+"."+collection,
-			"count", stats.Rows,
+			"count", stats.CountRows,
 			"size", stats.SizeTotal,
-			"storageSize", stats.SizeTable,
+			"storageSize", stats.SizeRelation,
 			"totalIndexSize", stats.SizeIndexes,
 			"totalSize", stats.SizeTotal,
 			"scaleFactor", int32(1),

@@ -53,24 +53,14 @@ type Pool struct {
 	*pgxpool.Pool
 }
 
-// TableStats describes some statistics for a table.
-type TableStats struct {
-	Table       string
-	TableType   string
-	SizeTotal   int32
-	SizeIndexes int32
-	SizeTable   int32
-	Rows        int32
-}
-
-// DBStats describes some statistics for a database.
+// DBStats describes statistics for a database.
 type DBStats struct {
 	Name         string
 	CountTables  int32
 	CountRows    int32
 	SizeTotal    int64
 	SizeIndexes  int64
-	SizeSchema   int64
+	SizeRelation int64
 	CountIndexes int32
 }
 
@@ -378,31 +368,6 @@ func (pgPool *Pool) EnsureTableExist(ctx context.Context, db, collection string)
 	return true, nil
 }
 
-// TableStats returns a set of statistics for FerretDB collection / PostgreSQL table.
-func (pgPool *Pool) TableStats(ctx context.Context, schema, table string) (*TableStats, error) {
-	var res TableStats
-	sql := `
-    SELECT table_name, table_type,
-           pg_total_relation_size('"'||t.table_schema||'"."'||t.table_name||'"'),
-           pg_indexes_size('"'||t.table_schema||'"."'||t.table_name||'"'),
-           pg_relation_size('"'||t.table_schema||'"."'||t.table_name||'"'),
-           COALESCE(s.n_live_tup, 0)
-      FROM information_schema.tables AS t
-      LEFT OUTER
-      JOIN pg_stat_user_tables AS s ON s.schemaname = t.table_schema
-                                      and s.relname = t.table_name
-     WHERE t.table_schema = $1
-       AND t.table_name = $2`
-
-	err := pgPool.QueryRow(ctx, sql, schema, table).
-		Scan(&res.Table, &res.TableType, &res.SizeTotal, &res.SizeIndexes, &res.SizeTable, &res.Rows)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return &res, nil
-}
-
 // SchemaStats returns a set of statistics for FerretDB database / PostgreSQL schema and table.
 func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) (*DBStats, error) {
 	var res DBStats
@@ -412,7 +377,7 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
            COALESCE(SUM(s.n_live_tup), 0)                                                           AS CountRows,
            COALESCE(SUM(pg_total_relation_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)  AS SizeTotal,
            COALESCE(SUM(pg_indexes_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)         AS SizeIndexes,
-           COALESCE(SUM(pg_relation_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)        AS SizeSchema,
+           COALESCE(SUM(pg_relation_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)        AS SizeRelation,
            COUNT(distinct i.indexname)                                                              AS CountIndexes
       FROM information_schema.tables AS t
       LEFT OUTER
@@ -428,12 +393,12 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 		sql = sql + " AND t.table_schema = $2"
 		args = append(args, collection)
 	}
+
 	res.Name = schema
 	err := pgPool.QueryRow(ctx, sql, args...).
-		Scan(&res.CountTables, &res.CountRows, &res.SizeTotal, &res.SizeIndexes, &res.SizeSchema, &res.CountIndexes)
+		Scan(&res.CountTables, &res.CountRows, &res.SizeTotal, &res.SizeIndexes, &res.SizeRelation, &res.CountIndexes)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-
 	return &res, nil
 }

@@ -26,6 +26,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -637,7 +638,7 @@ func TestCommandsAdministrationBuildInfo(t *testing.T) {
 	assert.True(t, ok)
 }
 
-func TestCommandsAdministrationCollStats(t *testing.T) {
+func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t)
 
@@ -649,36 +650,66 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 	doc := ConvertDocument(t, actual)
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
-	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("count")))
-	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("size")))
-	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("storageSize")))
-	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("totalIndexSize")))
-	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("totalSize")))
-	assert.LessOrEqual(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
+	assert.Equal(t, int32(0), must.NotFail(doc.Get("count")))
+
+	expected := must.NotFail(types.NewDocument("size", float64(8012)))
+	testutil.CompareAndSetByPathNum(t, expected, doc, 8012, types.NewPathFromString("size"))
+
+	expected = must.NotFail(types.NewDocument("storageSize", float64(4096)))
+	testutil.CompareAndSetByPathNum(t, expected, doc, 8012, types.NewPathFromString("storageSize"))
+
+	expected = must.NotFail(types.NewDocument("totalIndexSize", float64(4096)))
+	testutil.CompareAndSetByPathNum(t, expected, doc, 8012, types.NewPathFromString("totalIndexSize"))
+
+	expected = must.NotFail(types.NewDocument("totalSize", float64(4096)))
+	testutil.CompareAndSetByPathNum(t, expected, doc, 8012, types.NewPathFromString("totalSize"))
+
+	expected = must.NotFail(types.NewDocument("scaleFactor", float64(4096)))
+	testutil.CompareAndSetByPathNum(t, expected, doc, 8012, types.NewPathFromString("scaleFactor"))
 }
 
-func TestCommandsAdministrationDataSize(t *testing.T) {
+func TestCommandsAdministrationCollStats(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
-
-	_, err := collection.InsertMany(ctx, []any{
-		bson.D{{"_id", "one"}, {"value", int32(1)}},
-	})
-	require.NoError(t, err)
+	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 	var actual bson.D
-	command := bson.D{{"dataSize", collection.Database().Name() + "." + collection.Name()}}
-	err = collection.Database().RunCommand(ctx, command).Decode(&actual)
+	command := bson.D{{"collStats", collection.Name()}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 	require.NoError(t, err)
 
 	doc := ConvertDocument(t, actual)
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
 
+	expected := must.NotFail(types.NewDocument("size", float64(8012)))
+	testutil.CompareAndSetByPathNum(t, expected, doc, 16024, types.NewPathFromString("size"))
+
+	expected = must.NotFail(types.NewDocument("storageSize", float64(4096)))
+	testutil.CompareAndSetByPathNum(t, expected, doc, 8012, types.NewPathFromString("storageSize"))
+
+	expected = must.NotFail(types.NewDocument("totalIndexSize", float64(4096)))
+	testutil.CompareAndSetByPathNum(t, expected, doc, 8012, types.NewPathFromString("totalIndexSize"))
+
+	expected = must.NotFail(types.NewDocument("totalSize", float64(4096)))
+	testutil.CompareAndSetByPathNum(t, expected, doc, 16024, types.NewPathFromString("totalSize"))
+
+	expected = must.NotFail(types.NewDocument("scaleFactor", float64(4096)))
+	testutil.CompareAndSetByPathNum(t, expected, doc, 8012, types.NewPathFromString("scaleFactor"))
+}
+
+func TestCommandsAdministrationDataSize(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+
+	var actual bson.D
+	command := bson.D{{"dataSize", collection.Database().Name() + "." + collection.Name()}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 	assert.LessOrEqual(t, int32(1), must.NotFail(doc.Get("size")))
-	// TODO: numObjects fails with `1`: check it is not the problem of estimated n_live_tup under the hood.
-	// numObjects for MongoDB 1
-	// numObjects for FerretDB with Pg backend: 0
-	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("numObjects")))
+
 	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("millis")))
 }
 
