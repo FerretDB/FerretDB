@@ -115,7 +115,7 @@ func (a *Array) RemoveByPath(path Path) {
 // Contains checks if the Array contains the given value.
 func (a *Array) Contains(value any) bool {
 	for _, v := range a.s {
-		if Compare(v, value) == Equal {
+		if CompareToDo(v, value) == Equal {
 			return true
 		}
 	}

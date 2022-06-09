@@ -247,6 +247,32 @@ func TestQueryArrayAll(t *testing.T) {
 			expectedIDs: []any{"array-three", "array-three-reverse", "string"},
 			expectedErr: nil,
 		},
+		"ArrayTODO": {
+			filter: bson.D{{
+				"value",
+				bson.D{{
+					"$all",
+					bson.A{
+						bson.A{int32(42), "foo"},
+					},
+				}},
+			}},
+			expectedIDs: []any{"array-embedded"},
+			expectedErr: nil,
+		},
+		"ArrayTODO2": {
+			filter: bson.D{{
+				"value",
+				bson.D{{
+					"$all",
+					bson.A{
+						bson.A{"foo", int32(42)},
+					},
+				}},
+			}},
+			expectedIDs: []any{},
+			expectedErr: nil,
+		},
 		"StringRepeated": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{"foo", "foo", "foo"}}}}},
 			expectedIDs: []any{"array-three", "array-three-reverse", "string"},
@@ -310,6 +336,11 @@ func TestQueryArrayAll(t *testing.T) {
 		"Empty": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{}}}}},
 			expectedIDs: []any{},
+			expectedErr: nil,
+		},
+		"EmptyNested": {
+			filter:      bson.D{{"value", bson.D{{"$all", bson.A{bson.A{}}}}}},
+			expectedIDs: []any{"array-empty", "array-empty-nested"},
 			expectedErr: nil,
 		},
 		"NotFound": {
