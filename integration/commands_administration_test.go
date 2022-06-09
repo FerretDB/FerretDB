@@ -673,8 +673,7 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 
 	doc := ConvertDocument(t, actual)
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-	t.Log(must.NotFail(doc.Get("size")))
-	t.Log(must.NotFail(doc.Get("numObjects")))
+
 	assert.LessOrEqual(t, int32(1), must.NotFail(doc.Get("size")))
 	assert.Equal(t, int32(1), must.NotFail(doc.Get("numObjects")))
 	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("millis")))
