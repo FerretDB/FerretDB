@@ -85,14 +85,12 @@ var (
 		Type: Object,
 		Properties: map[string]*Schema{
 			"$b": {Type: String, Format: Byte},
-			"s":  {Type: String},
+			"s":  int32Schema,
 		},
 	}
 	objectIDSchema = &Schema{
-		Type: Object,
-		Properties: map[string]*Schema{
-			"$o": {Type: String},
-		},
+		Type:   String,
+		Format: Byte,
 	}
 	boolSchema = &Schema{
 		Type: Boolean,
