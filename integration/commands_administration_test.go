@@ -661,15 +661,22 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t)
 
+	_, err := collection.InsertMany(ctx, []any{
+		bson.D{{"_id", "one"}, {"value", int32(1)}},
+	})
+	require.NoError(t, err)
+
 	var actual bson.D
 	command := bson.D{{"dataSize", collection.Database().Name() + "." + collection.Name()}}
-	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	err = collection.Database().RunCommand(ctx, command).Decode(&actual)
 	require.NoError(t, err)
 
 	doc := ConvertDocument(t, actual)
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("size")))
-	assert.Equal(t, int32(0), must.NotFail(doc.Get("numObjects")))
+	t.Log(must.NotFail(doc.Get("size")))
+	t.Log(must.NotFail(doc.Get("numObjects")))
+	assert.LessOrEqual(t, int32(1), must.NotFail(doc.Get("size")))
+	assert.Equal(t, int32(1), must.NotFail(doc.Get("numObjects")))
 	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("millis")))
 }
 
@@ -686,7 +693,7 @@ func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 	assert.Equal(t, int32(0), must.NotFail(doc.Get("size")))
 	assert.Equal(t, int32(0), must.NotFail(doc.Get("numObjects")))
-	assert.Equal(t, int32(0), must.NotFail(doc.Get("millis")))
+	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("millis")))
 }
 
 func TestCommandsAdministrationDBStats(t *testing.T) {

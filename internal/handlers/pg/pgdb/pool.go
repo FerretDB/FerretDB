@@ -396,6 +396,12 @@ func (pgPool *Pool) TableStats(ctx context.Context, schema, table string) (*Tabl
 
 	err := pgPool.QueryRow(ctx, sql, schema, table).
 		Scan(&res.Table, &res.TableType, &res.SizeTotal, &res.SizeIndexes, &res.SizeTable, &res.Rows)
+
+	fmt.Printf("sql %s\n", sql)
+	fmt.Printf("RES %#v\n", res)
+	fmt.Printf("s %s %s\n", schema, table)
+	fmt.Printf("ERR %#v\n", err)
+
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
