@@ -49,9 +49,9 @@ func (h *Handler) fetch(ctx context.Context, param sqlParam) ([]*types.Document,
 	sql += `_jsonb FROM ` + pgx.Identifier{param.db, param.collection}.Sanitize()
 
 	// Special case: check if collection exists at all
-	collectionExists, cerr := h.pgPool.TableExists(ctx, param.db, param.collection)
-	if cerr != nil {
-		return nil, lazyerrors.Error(cerr)
+	collectionExists, err := h.pgPool.TableExists(ctx, param.db, param.collection)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 	if !collectionExists {
 		h.l.Info(

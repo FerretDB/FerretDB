@@ -96,8 +96,8 @@ func TestCreateDrop(t *testing.T) {
 	t.Run("SchemaDoesNotExistTableDoesNotExist", func(t *testing.T) {
 		t.Parallel()
 
-		schemaName := testutil.SchemaName(t) + "empty"
-		tableName := testutil.TableName(t) + "empty"
+		schemaName := testutil.SchemaName(t)
+		tableName := testutil.TableName(t)
 
 		t.Cleanup(func() {
 			pool.DropSchema(ctx, schemaName)
@@ -125,8 +125,8 @@ func TestCreateDrop(t *testing.T) {
 	t.Run("SchemaExistsTableDoesNotExist", func(t *testing.T) {
 		t.Parallel()
 
-		schemaName := testutil.SchemaName(t) + "schema"
-		tableName := testutil.TableName(t) + "schema"
+		schemaName := testutil.SchemaName(t)
+		tableName := testutil.TableName(t)
 
 		t.Cleanup(func() {
 			pool.DropSchema(ctx, schemaName)
@@ -160,8 +160,8 @@ func TestCreateDrop(t *testing.T) {
 	t.Run("SchemaExistsTableExists", func(t *testing.T) {
 		t.Parallel()
 
-		schemaName := testutil.SchemaName(t) + "table"
-		tableName := testutil.TableName(t) + "table"
+		schemaName := testutil.SchemaName(t)
+		tableName := testutil.TableName(t)
 
 		t.Cleanup(func() {
 			pool.DropSchema(ctx, schemaName)
@@ -265,8 +265,8 @@ func TestTableExists(t *testing.T) {
 	t.Run("SchemaDoesNotExistTableDoesNotExist", func(t *testing.T) {
 		t.Parallel()
 
-		schemaName := testutil.SchemaName(t) + "emp"
-		tableName := testutil.TableName(t) + "emp"
+		schemaName := testutil.SchemaName(t)
+		tableName := testutil.TableName(t)
 
 		t.Cleanup(func() {
 			pool.DropSchema(ctx, schemaName)
@@ -280,8 +280,8 @@ func TestTableExists(t *testing.T) {
 	t.Run("SchemaExistsTableDoesNotExist", func(t *testing.T) {
 		t.Parallel()
 
-		schemaName := testutil.SchemaName(t) + "sch"
-		tableName := testutil.TableName(t) + "sch"
+		schemaName := testutil.SchemaName(t)
+		tableName := testutil.TableName(t)
 
 		pool.CreateSchema(ctx, schemaName)
 
@@ -297,8 +297,8 @@ func TestTableExists(t *testing.T) {
 	t.Run("SchemaExistsTableExists", func(t *testing.T) {
 		t.Parallel()
 
-		schemaName := testutil.SchemaName(t) + "tab"
-		tableName := testutil.TableName(t) + "tab"
+		schemaName := testutil.SchemaName(t)
+		tableName := testutil.TableName(t)
 
 		pool.CreateSchema(ctx, schemaName)
 		pool.CreateTable(ctx, schemaName, tableName)
@@ -322,8 +322,8 @@ func TestCreateTableIfNotExist(t *testing.T) {
 	t.Run("SchemaDoesNotExistTableDoesNotExist", func(t *testing.T) {
 		t.Parallel()
 
-		schemaName := testutil.SchemaName(t) + "emp"
-		tableName := testutil.TableName(t) + "emp"
+		schemaName := testutil.SchemaName(t)
+		tableName := testutil.TableName(t)
 
 		t.Cleanup(func() {
 			pool.DropSchema(ctx, schemaName)
@@ -337,8 +337,8 @@ func TestCreateTableIfNotExist(t *testing.T) {
 	t.Run("SchemaExistsTableDoesNotExist", func(t *testing.T) {
 		t.Parallel()
 
-		schemaName := testutil.SchemaName(t) + "sch"
-		tableName := testutil.TableName(t) + "sch"
+		schemaName := testutil.SchemaName(t)
+		tableName := testutil.TableName(t)
 
 		pool.CreateSchema(ctx, schemaName)
 
@@ -354,8 +354,8 @@ func TestCreateTableIfNotExist(t *testing.T) {
 	t.Run("SchemaExistsTableExists", func(t *testing.T) {
 		t.Parallel()
 
-		schemaName := testutil.SchemaName(t) + "tab"
-		tableName := testutil.TableName(t) + "tab"
+		schemaName := testutil.SchemaName(t)
+		tableName := testutil.TableName(t)
 
 		pool.CreateSchema(ctx, schemaName)
 		pool.CreateTable(ctx, schemaName, tableName)
