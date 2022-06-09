@@ -470,29 +470,28 @@ func TestUpdateSet(t *testing.T) {
 
 func TestUpdateTimestamp(t *testing.T) {
 	t.Parallel()
-	t.Run("Timestamp", func(t *testing.T) {
-		ctx, collection := setup(t)
 
-		now := time.Now().UTC()
-		nowUnix := now.Unix()
-		nowTimestamp := primitive.Timestamp{T: uint32(nowUnix), I: uint32(0)}
-		expected := bson.D{{"_id", "timestamp"}, {"value", nowTimestamp}}
-		_, err := collection.InsertMany(ctx, []any{expected})
-		require.NoError(t, err)
+	ctx, collection := setup(t)
 
-		var actual bson.D
-		err = collection.FindOne(ctx, bson.D{{"_id", "timestamp"}}).Decode(&actual)
-		require.NoError(t, err)
+	now := time.Now().UTC()
+	nowUnix := now.Unix()
+	nowTimestamp := primitive.Timestamp{T: uint32(nowUnix), I: uint32(0)}
+	expected := bson.D{{"_id", "timestamp"}, {"value", nowTimestamp}}
+	_, err := collection.InsertMany(ctx, []any{expected})
+	require.NoError(t, err)
 
-		AssertEqualDocuments(t, expected, actual)
-		doc := ConvertDocument(t, actual)
-		v, ok := must.NotFail(doc.Get("value")).(types.Timestamp)
-		assert.True(t, ok)
+	var actual bson.D
+	err = collection.FindOne(ctx, bson.D{{"_id", "timestamp"}}).Decode(&actual)
+	require.NoError(t, err)
 
-		// nanoseconds are not stored by timestamp
-		actualTime := types.DateTime(v).Truncate(time.Second)
-		assert.Equal(t, now.Truncate(time.Second), actualTime)
-	})
+	AssertEqualDocuments(t, expected, actual)
+	doc := ConvertDocument(t, actual)
+	v, ok := must.NotFail(doc.Get("value")).(types.Timestamp)
+	assert.True(t, ok)
+
+	// nanoseconds are not stored by timestamp
+	actualTime := types.DateTime(v).Truncate(time.Second)
+	assert.Equal(t, now.Truncate(time.Second), actualTime)
 }
 
 func TestUpdateSetOnInsertOperator(t *testing.T) {
