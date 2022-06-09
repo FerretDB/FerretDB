@@ -54,7 +54,7 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 				}
 			}
 
-		case float64, int32, int64:
+		case float64:
 			if types.Compare(v, int32(0)) == types.Equal {
 				if inclusion {
 					err = NewError(ErrProjectionExIn,
@@ -90,6 +90,25 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 					return
 				}
 				exclusion = true
+			}
+
+		case int32, int64:
+			if types.Compare(v, int32(0)) == types.Equal {
+				if inclusion {
+					err = NewError(ErrProjectionExIn,
+						fmt.Errorf("Cannot do exclusion on field %s in inclusion projection", k),
+					)
+					return
+				}
+				exclusion = true
+			} else {
+				if exclusion {
+					err = NewError(ErrProjectionInEx,
+						fmt.Errorf("Cannot do inclusion on field %s in exclusion projection", k),
+					)
+					return
+				}
+				inclusion = true
 			}
 
 		default:
