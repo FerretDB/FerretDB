@@ -36,7 +36,6 @@ import (
 
 //go:generate go run check.go
 
-//go:generate go build -v -o ../bin/ check-switch/check-switch.go
 //go:generate go build -v -o ../bin/ github.com/BurntSushi/go-sumtype
 //go:generate go build -v -o ../bin/ github.com/go-task/task/v3/cmd/task
 //go:generate go build -v -o ../bin/ github.com/golangci/golangci-lint/cmd/golangci-lint
