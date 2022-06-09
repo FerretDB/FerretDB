@@ -36,14 +36,10 @@ func Setup(level zapcore.Level) {
 		}
 	} else {
 		config = zap.Config{
-			Level:       zap.NewAtomicLevelAt(level),
-			Development: false,
-			Sampling: &zap.SamplingConfig{
-				Initial:    100,
-				Thereafter: 100,
-			},
-			Encoding:         "json",
-			EncoderConfig:    zap.NewProductionEncoderConfig(),
+			Level:            zap.NewAtomicLevelAt(level),
+			Development:      false,
+			Encoding:         "console",
+			EncoderConfig:    zap.NewDevelopmentEncoderConfig(),
 			OutputPaths:      []string{"stderr"},
 			ErrorOutputPaths: []string{"stderr"},
 		}
