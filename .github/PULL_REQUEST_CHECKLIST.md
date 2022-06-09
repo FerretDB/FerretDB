@@ -20,3 +20,6 @@ Pull Request checklist:
 - [ ] for specific types use one order everywhere.
 - [ ] godoc should look OK, check with `godoc -index -play -timestamps -http=127.0.0.1:6060`
 - [ ] documentation must be updated to corresponded changes.
+- [ ] variable names, function names etc should tell us themselves what do they do, be clear and not misleading (Code Complete by Steve McConnel)
+- [ ] code smells removed (long varible names, long parameter list, repeating code etc) https://refactoring.guru/
+- [ ] big functions also should be extracted into smaller ones
