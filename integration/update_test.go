@@ -387,28 +387,37 @@ func TestUpdateSet(t *testing.T) {
 				UpsertedCount: 0,
 			},
 		},
-		//"SetSameValueArr": {
-		//	id: "string",
-		//	update: bson.D{{"$set", bson.D{{"value",
-		//		bson.A{1, "foo", nil, bson.D{{"foo", "bar"}}}}}}},
-		//	result: bson.D{{"_id", "string"}, {"value",
-		//		bson.A{1, "foo", nil, bson.D{{"foo", "bar"}}}}},
-		//	stat: &mongo.UpdateResult{
-		//		MatchedCount:  1,
-		//		ModifiedCount: 0,
-		//		UpsertedCount: 0,
-		//	},
-		//},
-		//"SetSameValueDoc": {
-		//	id:     "string",
-		//	update: bson.D{{"$set", bson.D{{"value", bson.D{{"foo", "bar"}}}}}},
-		//	result: bson.D{{"_id", "string"}, {"value", bson.D{{"foo", "bar"}}}},
-		//	stat: &mongo.UpdateResult{
-		//		MatchedCount:  1,
-		//		ModifiedCount: 0,
-		//		UpsertedCount: 0,
-		//	},
-		//},
+		"SetSameValueComposite": {
+			id: "composite",
+			update: bson.D{{"$set", bson.D{
+				{"array", bson.A{
+					int32(1), nil, "foo",
+					bson.D{
+						{
+							"document",
+							bson.D{{"double", float64(0.0)}, {"string", "foo"}},
+						},
+					},
+				}},
+			}}},
+			result: bson.D{
+				{"_id", "composite"},
+				{"array", bson.A{
+					int32(1), nil, "foo",
+					bson.D{
+						{
+							"document",
+							bson.D{{"double", float64(0.0)}, {"string", "foo"}},
+						},
+					},
+				}},
+			},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 0,
+				UpsertedCount: 0,
+			},
+		},
 		"Double": {
 			id:     "double",
 			update: bson.D{{"$set", bson.D{{"value", float64(1)}}}},
@@ -477,6 +486,18 @@ func TestUpdateSet(t *testing.T) {
 			_, err := collection.InsertMany(ctx, []any{
 				bson.D{{"_id", "string"}, {"value", "foo"}},
 				bson.D{{"_id", "double"}, {"value", float64(0.0)}},
+				bson.D{
+					{"_id", "composite"},
+					{"array", bson.A{
+						int32(1), nil, "foo",
+						bson.D{
+							{
+								"document",
+								bson.D{{"double", float64(0.0)}, {"string", "foo"}},
+							},
+						},
+					}},
+				},
 			})
 			require.NoError(t, err)
 

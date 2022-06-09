@@ -55,9 +55,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			for _, setKey := range setDoc.Keys() {
 				setValue := must.NotFail(setDoc.Get(setKey))
 
-				// TODO Right now this only works for scalars, because types.Compare doesn't support *types.Document
-				// and also doesn't handle the case when an element of an array or document is nil
-				if doc.Has(setKey) && must.NotFail(doc.Get(setKey)) == setValue {
+				if doc.Has(setKey) && types.Compare(must.NotFail(doc.Get(setKey)), setValue) == types.Equal {
 					continue
 				}
 				if err := doc.Set(setKey, setValue); err != nil {
