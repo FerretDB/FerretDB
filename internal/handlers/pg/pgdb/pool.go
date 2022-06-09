@@ -41,7 +41,10 @@ const (
 )
 
 var (
-	ErrNotExist     = fmt.Errorf("schema or table does not exist")
+	// ErrNotExist indicates that there is no such schema or table.
+	ErrNotExist = fmt.Errorf("schema or table does not exist")
+
+	// ErrAlreadyExist indicates that a schema or table already exists.
 	ErrAlreadyExist = fmt.Errorf("schema or table already exist")
 )
 
@@ -292,7 +295,7 @@ func (pgPool *Pool) DropSchema(ctx context.Context, schema string) error {
 	}
 }
 
-// CreateTable creates a new FerretDB collection / PostgreSQL jsonb1 table in existing schema.
+// CreateTable creates a new FerretDB collection / PostgreSQL table in existing schema.
 //
 // It returns ErrAlreadyExist if table already exist, ErrNotExist is schema does not exist.
 func (pgPool *Pool) CreateTable(ctx context.Context, schema, table string) error {

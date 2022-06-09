@@ -37,7 +37,7 @@ const (
 	documentDataType
 	arrayDataType
 	binDataType
-	objectIdDataType
+	objectIDDataType
 	booleanDataType
 	dateDataType
 	timestampDataType
@@ -57,7 +57,7 @@ func detectDataType(value any) compareTypeOrderResult {
 	case Binary:
 		return binDataType
 	case ObjectID:
-		return objectIdDataType
+		return objectIDDataType
 	case bool:
 		return booleanDataType
 	case time.Time:
@@ -124,6 +124,9 @@ func CompareOrder(a, b any, order SortType) CompareResult {
 	}
 	if b == nil {
 		panic("CompareOrder: b is nil")
+	}
+	if order != Ascending && order != Descending {
+		panic(fmt.Sprintf("CompareOrder: order is %v", order))
 	}
 
 	aType := detectDataType(a)

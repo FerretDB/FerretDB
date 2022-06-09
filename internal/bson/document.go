@@ -73,7 +73,7 @@ func MustConvertDocument(d document) *Document {
 
 func (doc *Document) bsontype() {}
 
-// Returns the map of key values associated with the Document.
+// Map returns the map of key values associated with the Document.
 func (doc *Document) Map() map[string]any {
 	return doc.m
 }
