@@ -59,14 +59,6 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	created, err := h.pgPool.EnsureTableExist(ctx, sp.db, sp.collection)
-	if err != nil {
-		return nil, err
-	}
-	if created {
-		h.l.Info("Created table.", zap.String("schema", sp.db), zap.String("table", sp.collection))
-	}
-
 	var inserted int32
 	for i := 0; i < docs.Len(); i++ {
 		doc, err := docs.Get(i)
@@ -98,6 +90,14 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 // insert prepares and executes actual INSERT request to Postgres.
 func (h *Handler) insert(ctx context.Context, sp sqlParam, doc any) error {
+	created, err := h.pgPool.CreateTableIfNotExist(ctx, sp.db, sp.collection)
+	if err != nil {
+		return err
+	}
+	if created {
+		h.l.Info("Created table.", zap.String("schema", sp.db), zap.String("table", sp.collection))
+	}
+
 	d := doc.(*types.Document)
 	sql := fmt.Sprintf("INSERT INTO %s (_jsonb) VALUES ($1)", pgx.Identifier{sp.db, sp.collection}.Sanitize())
 	b, err := fjson.Marshal(d)
