@@ -708,9 +708,12 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 
 	doc := ConvertDocument(t, actual)
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-	assert.LessOrEqual(t, int32(1), must.NotFail(doc.Get("size")))
 
-	assert.LessOrEqual(t, int32(0), must.NotFail(doc.Get("millis")))
+	expected := must.NotFail(types.NewDocument("size", float64(8012)))
+	testutil.CompareAndSetByPathNum(t, expected, doc, 10_000, types.NewPathFromString("size"))
+
+	expected = must.NotFail(types.NewDocument("millis", float64(100)))
+	testutil.CompareAndSetByPathNum(t, expected, doc, 100, types.NewPathFromString("millis"))
 }
 
 func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
