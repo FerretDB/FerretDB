@@ -379,7 +379,6 @@ func (pgPool *Pool) TableExists(ctx context.Context, db, collection string) (boo
 	return slices.Contains(tables, collection), nil
 }
 
-
 // SchemaStats returns a set of statistics for FerretDB database / PostgreSQL schema and table.
 func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) (*DBStats, error) {
 	var res DBStats
