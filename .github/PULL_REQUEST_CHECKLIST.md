@@ -19,3 +19,4 @@ Pull Request checklist:
 - [ ] sort alphabetically linters and bulks of variables
 - [ ] for specific types use one order everywhere.
 - [ ] godoc should look OK, check with `godoc -index -play -timestamps -http=127.0.0.1:6060`
+- [ ] documentation must be updated to corresponded changes.
