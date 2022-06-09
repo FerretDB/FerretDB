@@ -759,7 +759,7 @@ func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
 	assert.Equal(t, float64(1000), must.NotFail(doc.Get("scaleFactor")))
 	testutil.AssertInThreshold(t, doc, "indexes", float64(1), 1)
 	testutil.AssertInThreshold(t, doc, "indexSize", float64(0), 4060)
-	testutil.AssertInThreshold(t, doc, "totalSize", float64(8192), 0)
+	testutil.AssertInThreshold(t, doc, "totalSize", float64(8.192), 0)
 }
 
 func TestCommandsAdministrationServerStatus(t *testing.T) {
@@ -800,7 +800,7 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	catalogStats, ok := must.NotFail(doc.Get("catalogStats")).(*types.Document)
 	assert.True(t, ok)
 
-	testutil.AssertInThreshold(t, catalogStats, "collections", float64(1), 1)
+	testutil.AssertInThreshold(t, catalogStats, "collections", float64(1), 50)
 	testutil.AssertInThreshold(t, catalogStats, "capped", float64(0), 0)
 	testutil.AssertInThreshold(t, catalogStats, "timeseries", float64(0), 0)
 	testutil.AssertInThreshold(t, catalogStats, "internalCollections", float64(3), 3)
