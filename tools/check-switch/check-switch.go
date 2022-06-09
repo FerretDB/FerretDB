@@ -57,25 +57,54 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			case *ast.TypeSwitchStmt:
 				var name string
 				for _, el := range n.Body.List {
-					for _, cs := range el.(*ast.CaseClause).List {
-						switch cs := cs.(type) {
-						case *ast.StarExpr:
-							if sexp, ok := cs.X.(*ast.SelectorExpr); ok {
-								name = sexp.Sel.Name
-								// name = fmt.Sprintf("%s.%s", sexp.X.(*ast.Ident).Name, sexp.X.(*ast.Ident).Name)
+					if len(el.(*ast.CaseClause).List) < 1 {
+						continue
+					}
+					firstTypeCase := el.(*ast.CaseClause).List[0]
+					switch firstTypeCase := firstTypeCase.(type) {
+					case *ast.StarExpr:
+						if sexp, ok := firstTypeCase.X.(*ast.SelectorExpr); ok {
+							name = sexp.Sel.Name
+							// name = fmt.Sprintf("%s.%s", sexp.X.(*ast.Ident).Name, sexp.X.(*ast.Ident).Name)
+						}
+
+					case *ast.SelectorExpr:
+						name = fmt.Sprintf("%s.%s", firstTypeCase.X, firstTypeCase.Sel.Name)
+
+					case *ast.Ident:
+						name = firstTypeCase.Name
+					}
+
+					idxSl, ok := orderTypes[name]
+					if ok && (idxSl < idx) {
+						pass.Reportf(n.Pos(), "non-observance of the preferred order of types")
+					}
+					idx = idxSl
+
+					if len(el.(*ast.CaseClause).List) > 1 {
+						subidx := idx
+						for i := 0; i < len(el.(*ast.CaseClause).List); i++ {
+							cs := el.(*ast.CaseClause).List[i]
+							switch cs := cs.(type) {
+							case *ast.StarExpr:
+								if sexp, ok := cs.X.(*ast.SelectorExpr); ok {
+									name = sexp.Sel.Name
+									// name = fmt.Sprintf("%s.%s", sexp.X.(*ast.Ident).Name, sexp.X.(*ast.Ident).Name)
+								}
+
+							case *ast.SelectorExpr:
+								name = fmt.Sprintf("%s.%s", cs.X, cs.Sel.Name)
+
+							case *ast.Ident:
+								name = cs.Name
 							}
-						case *ast.SelectorExpr:
-							name = fmt.Sprintf("%s.%s", cs.X, cs.Sel.Name)
 
-						case *ast.Ident:
-							name = cs.Name
+							subidxSl, ok := orderTypes[name]
+							if ok && (subidxSl < subidx) {
+								pass.Reportf(n.Pos(), "non-observance of the preferred order of types")
+							}
+							subidx = subidxSl
 						}
-
-						iSl, ok := orderTypes[name]
-						if ok && (iSl < idx) {
-							pass.Reportf(n.Pos(), "non-observance of the preferred order of types")
-						}
-						idx = iSl
 					}
 				}
 			}
