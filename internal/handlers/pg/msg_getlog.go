@@ -85,6 +85,5 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-
 	return &reply, nil
 }
