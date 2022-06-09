@@ -90,13 +90,13 @@ tasks:
   test-unit-short:
     desc: "Run short unit tests"
     cmds:
-      - go test -short -race -shuffle=on -coverprofile=cover.txt ./...
+      - go test -short -count=1 -race -shuffle=on -coverprofile=cover.txt ./...
 
   test-unit:
     desc: "Run all unit tests"
     cmds:
-      - go test -race -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
-      - go test -race -shuffle=on -bench=. -benchtime=1x ./...
+      - go test -count=1 -race -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
+      - go test -count=1 -race -shuffle=on -bench=. -benchtime=1x ./...
 
   test-integration:
     desc: "Run all integration tests in parallel"
@@ -175,6 +175,12 @@ tasks:
     deps: [build-testcover]
     cmds:
       - bin/ferretdb-testcover -test.coverprofile=cover.txt -mode=diff-normal -listen-addr=:27017
+
+  run-proxy:
+    desc: "Run FerretDB in diff-proxy mode"
+    deps: [build-testcover]
+    cmds:
+      - bin/ferretdb-testcover -test.coverprofile=cover.txt -mode=diff-proxy -listen-addr=:27017
 
   lint:
     desc: "Run linters"
