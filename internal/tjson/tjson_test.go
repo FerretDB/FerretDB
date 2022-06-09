@@ -26,10 +26,11 @@ import (
 
 func TestMarshalUnmarshal(t *testing.T) {
 	expected, err := types.NewDocument(
-		"_id", types.ObjectID{},
+		"_id", types.ObjectID{0x00, 0x01, 0x02, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c},
 		"string", "foo",
 		"int32", int32(42),
 		"int64", int64(123),
+		"binary", types.Binary{Subtype: types.BinaryUser, B: []byte{0x42}},
 	)
 	require.NoError(t, err)
 
@@ -44,6 +45,7 @@ func TestMarshalUnmarshal(t *testing.T) {
 			"string": stringSchema,
 			"int32":  int32Schema,
 			"int64":  int64Schema,
+			"binary": binarySchema,
 		},
 		PrimaryKey: []string{"_id"},
 	}
@@ -54,11 +56,12 @@ func TestMarshalUnmarshal(t *testing.T) {
 	actualB = testutil.IndentJSON(t, actualB)
 
 	expectedB := testutil.IndentJSON(t, []byte(`{
-		"$k": ["_id", "string", "int32", "int64"],
-		"_id": {"$o": "000000000000000000000000"},
+		"$k": ["_id", "string", "int32", "int64", "binary"],
+		"_id": "AAECBAUGBwgJCgsM",
 		"string": "foo",
 		"int32": 42,
-		"int64": 123
+		"int64": 123,
+		"binary": {"$b": "Qg==", "s": 128}
 	}`))
 	assert.Equal(t, string(expectedB), string(actualB))
 

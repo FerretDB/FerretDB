@@ -46,7 +46,7 @@ jobs:
         run: bin/task init
 
       - name: Regenerate and reformat
-        run: bin/task gen fmt docs-fmt
+        run: bin/task -p gen docs
 
       - name: Wait for and setup environment
         run: bin/task env-setup
