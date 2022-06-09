@@ -252,19 +252,34 @@ func TestQueryArrayAll(t *testing.T) {
 			expectedIDs: []any{"array-three", "array-three-reverse", "string"},
 			expectedErr: nil,
 		},
-		"Int32": {
+		"StringEmpty": {
+			filter:      bson.D{{"value", bson.D{{"$all", bson.A{""}}}}},
+			expectedIDs: []any{"string-empty"},
+			expectedErr: nil,
+		},
+		"Whole": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{int32(42)}}}}},
 			expectedIDs: []any{"array", "array-three", "array-three-reverse", "double-whole", "int32", "int64"},
 			expectedErr: nil,
 		},
-		"Nil": {
-			filter:      bson.D{{"value", bson.D{{"$all", bson.A{nil}}}}},
-			expectedIDs: []any{"array-embedded", "array-null", "array-three", "array-three-reverse", "null"},
+		"Zero": {
+			filter:      bson.D{{"value", bson.D{{"$all", bson.A{math.Copysign(0, +1)}}}}},
+			expectedIDs: []any{"double-negative-zero", "double-zero", "int32-zero", "int64-zero"},
 			expectedErr: nil,
 		},
-		"ScalarDouble": {
+		"Double": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{42.13}}}}},
 			expectedIDs: []any{"double"},
+			expectedErr: nil,
+		},
+		"DoubleMax": {
+			filter:      bson.D{{"value", bson.D{{"$all", bson.A{math.MaxFloat64}}}}},
+			expectedIDs: []any{"double-max"},
+			expectedErr: nil,
+		},
+		"DoubleMin": {
+			filter:      bson.D{{"value", bson.D{{"$all", bson.A{math.SmallestNonzeroFloat64}}}}},
+			expectedIDs: []any{"double-smallest"},
 			expectedErr: nil,
 		},
 		"ArrayDouble": {
@@ -282,9 +297,19 @@ func TestQueryArrayAll(t *testing.T) {
 			expectedIDs: []any{"array-three", "array-three-reverse"},
 			expectedErr: nil,
 		},
+		"Nil": {
+			filter:      bson.D{{"value", bson.D{{"$all", bson.A{nil}}}}},
+			expectedIDs: []any{"array-embedded", "array-null", "array-three", "array-three-reverse", "null"},
+			expectedErr: nil,
+		},
 		"NaN": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{math.NaN()}}}}},
 			expectedIDs: []any{"array-nan", "double-nan"},
+			expectedErr: nil,
+		},
+		"Empty": {
+			filter:      bson.D{{"value", bson.D{{"$all", bson.A{}}}}},
+			expectedIDs: []any{},
 			expectedErr: nil,
 		},
 		"NotFound": {
