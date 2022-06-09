@@ -16,7 +16,6 @@ package types
 
 import (
 	"bytes"
-	"fmt"
 	"math"
 	"math/big"
 	"time"
@@ -46,42 +45,47 @@ const (
 // For that reason, it typically should not be used in tests.
 //
 // Compare and contrast with test helpers in testutil package.
-func Compare(v1, v2 any) CompareResult {
-	if v1 == nil {
-		panic("compare: v1 is nil")
+func Compare(docValue, filterValue any) CompareResult {
+	if docValue == nil {
+		panic("compare: docValue is nil")
 	}
-	if v2 == nil {
-		panic("compare: v2 is nil")
+	if filterValue == nil {
+		panic("compare: filterValue is nil")
 	}
 
-	switch v1 := v1.(type) {
+	switch docValue := docValue.(type) {
 	case *Document:
 		// TODO: implement document comparing
 		return Incomparable
 
 	case *Array:
-		for i := 0; i < v1.Len(); i++ {
-			v := must.NotFail(v1.Get(i))
-			switch v.(type) {
+		if filterArr, ok := filterValue.(*Array); ok {
+			return compareArrays(filterArr, docValue)
+		}
+
+		for i := 0; i < docValue.Len(); i++ {
+			docValue := must.NotFail(docValue.Get(i))
+			switch docValue.(type) {
 			case *Document, *Array:
 				continue
 			}
 
-			if res := compareScalars(v, v2); res != Incomparable {
+			if res := compareScalars(docValue, filterValue); res != Incomparable {
 				return res
 			}
 		}
 		return Incomparable
 
 	default:
-		return compareScalars(v1, v2)
+		return compareScalars(docValue, filterValue)
 	}
 }
 
 // compareScalars compares BSON scalar values.
 func compareScalars(v1, v2 any) CompareResult {
-	compareEnsureScalar(v1)
-	compareEnsureScalar(v2)
+	if !isScalar(v1) || !isScalar(v2) {
+		return Incomparable
+	}
 
 	switch v1 := v1.(type) {
 	case float64:
@@ -198,18 +202,18 @@ func compareScalars(v1, v2 any) CompareResult {
 	panic("not reached")
 }
 
-// compareEnsureScalar panics if v is not a BSON scalar value.
-func compareEnsureScalar(v any) {
+// isScalar check if v is a BSON scalar value.
+func isScalar(v any) bool {
 	if v == nil {
 		panic("v is nil")
 	}
 
 	switch v.(type) {
 	case float64, string, Binary, ObjectID, bool, time.Time, NullType, Regex, int32, Timestamp, int64:
-		return
+		return true
 	}
 
-	panic(fmt.Sprintf("non-scalar type %T", v))
+	return false
 }
 
 // compareInvert swaps Less and Greater, keeping Equal and Incomparable.
@@ -253,4 +257,97 @@ func compareNumbers(a float64, b int64) CompareResult {
 	bigB := new(big.Float).SetInt64(b).SetPrec(100000)
 
 	return CompareResult(bigA.Cmp(bigB))
+}
+
+// compareArrays compares indices of a filter array according to indices of a document array;
+// returns Equal when a document array contains another array(subarray) that equals filter array.
+func compareArrays(filterArr, docArr *Array) CompareResult {
+	if docArr.Len() == 0 && filterArr.Len() == 0 {
+		return Equal
+	}
+	if filterArr.Len() == 0 {
+		return Incomparable
+	}
+
+	entireArrayResult, subArrayEquality := Incomparable, Incomparable
+
+	for i := 0; i < docArr.Len(); i++ {
+		arrValue := must.NotFail(docArr.Get(i))
+		switch arrValue := arrValue.(type) {
+		case *Array:
+			filterArrValue := must.NotFail(filterArr.Get(i))
+			switch filterArrValue := filterArrValue.(type) {
+			case *Array:
+				res := compareArrays(filterArrValue, arrValue)
+				res = handleSubArrayComparingResult(&res, &entireArrayResult, &subArrayEquality)
+				continue
+
+			default:
+				res := compareArrays(filterArr, arrValue)
+				res = handleSubArrayComparingResult(&res, &entireArrayResult, &subArrayEquality)
+			}
+			continue
+
+		// TODO: case Document
+		// case *Document
+
+		default:
+			if i+1 > filterArr.Len() {
+				if entireArrayResult == Equal {
+					entireArrayResult = Incomparable
+				}
+				continue // looking for next element is array that might fit filter query
+			}
+
+			filterValue := must.NotFail(filterArr.Get(i))
+			switch filterValue := filterValue.(type) {
+			case *Array, *Document:
+				if entireArrayResult == Equal {
+					entireArrayResult = Incomparable
+				}
+				continue
+			default:
+				res := CompareOrder(arrValue, filterValue, Ascending)
+				if entireArrayResult == Incomparable && i == 0 { // set first non-Incomparable result
+					entireArrayResult = res
+				}
+
+				if entireArrayResult != res {
+					entireArrayResult = Incomparable
+					continue
+				}
+
+				// both arrays are not equal if there are still elements in filter array
+				if filterArr.Len() > i+1 &&
+					docArr.Len() == i+1 &&
+					entireArrayResult == Equal {
+					entireArrayResult = Incomparable
+				}
+			}
+		}
+	}
+
+	if subArrayEquality == Equal && !(filterArr.Len() > docArr.Len()) {
+		return subArrayEquality
+	}
+
+	return entireArrayResult
+}
+
+// handleSubArrayComparingResult determines on the first iteration what result the comparison will follow (e.g. gt, ls, eq)
+// detects inconsistency in iterations; detects equality for subbaray.
+func handleSubArrayComparingResult(resultFromComparing, entireArrayResult, subArrayEquality *CompareResult) CompareResult {
+	if *resultFromComparing == Incomparable {
+		return Incomparable
+	}
+
+	if *resultFromComparing == Equal {
+		*subArrayEquality = Equal
+	}
+
+	if entireArrayResult != resultFromComparing {
+		return Incomparable
+	}
+
+	return *resultFromComparing
 }

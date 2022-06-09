@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -27,10 +28,17 @@ import (
 // Returns true if document was changed.
 func UpdateDocument(doc, update *types.Document) (bool, error) {
 	var changed bool
+	var err error
 	for _, updateOp := range update.Keys() {
 		updateV := must.NotFail(update.Get(updateOp))
 
 		switch updateOp {
+		case "$currentDate":
+			changed, err = processCurrentDateFieldExpression(doc, updateV)
+			if err != nil {
+				return false, err
+			}
+
 		case "$set":
 			fallthrough
 		case "$setOnInsert":
@@ -56,15 +64,21 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				changed = true
 			}
 
+		case "$unset":
+			unsetDoc := updateV.(*types.Document)
+			if unsetDoc.Len() == 0 {
+				continue
+			}
+			for _, key := range unsetDoc.Keys() {
+				doc.Remove(key)
+			}
+			changed = true
+
 		case "$inc":
 			// expecting here a document since all checks were made in ValidateUpdateOperators func
 			incDoc := updateV.(*types.Document)
 
 			for _, incKey := range incDoc.Keys() {
-				if strings.ContainsRune(incKey, '.') {
-					return false, NewErrorMsg(ErrNotImplemented, "dot notation not supported yet")
-				}
-
 				incValue := must.NotFail(incDoc.Get(incKey))
 
 				if !doc.Has(incKey) {
@@ -116,6 +130,55 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 	return changed, nil
 }
 
+// processCurrentDateFieldExpression changes document according to $currentDate operator.
+// If the document was changed it returns true.
+func processCurrentDateFieldExpression(doc *types.Document, currentDateVal any) (bool, error) {
+	var changed bool
+	var err error
+	currentDateExpression := currentDateVal.(*types.Document)
+
+	now := time.Now().UTC()
+	sort.Strings(currentDateExpression.Keys())
+
+	for _, field := range currentDateExpression.Keys() {
+		currentDateField := must.NotFail(currentDateExpression.Get(field))
+
+		switch currentDateField := currentDateField.(type) {
+		case bool:
+			if err = doc.Set(field, now); err != nil {
+				return false, err
+			}
+			changed = true
+
+		case *types.Document:
+			currentDateType, err := currentDateField.Get("$type")
+			if err != nil { // default is date
+				if err := doc.Set(field, now); err != nil {
+					return false, err
+				}
+				changed = true
+				continue
+			}
+
+			currentDateType = currentDateType.(string)
+			switch currentDateType {
+			case "timestamp":
+				if err := doc.Set(field, types.NextTimestamp(now)); err != nil {
+					return false, err
+				}
+				changed = true
+
+			case "date":
+				if err := doc.Set(field, now); err != nil {
+					return false, err
+				}
+				changed = true
+			}
+		}
+	}
+	return changed, nil
+}
+
 // ValidateUpdateOperators validates update statement.
 func ValidateUpdateOperators(update *types.Document) error {
 	var err error
@@ -130,11 +193,18 @@ func ValidateUpdateOperators(update *types.Document) error {
 	if err != nil {
 		return err
 	}
+	unset, err = extractValueFromUpdateOperator("$unset", update)
+	if err != nil {
+		return err
+	}
 	setOnInsert, err := extractValueFromUpdateOperator("$setOnInsert", update)
 	if err != nil {
 		return err
 	}
-	if err = checkConflictingChanges(set, inc, setOnInsert); err != nil {
+	if err = checkConflictingChanges(set, inc, unset, setOnInsert); err != nil {
+		return err
+	}
+	if err = validateCurrentDateExpression(update); err != nil {
 		return err
 	}
 	return nil
@@ -144,11 +214,15 @@ func ValidateUpdateOperators(update *types.Document) error {
 func checkAllModifiersSupported(update *types.Document) error {
 	for _, updateOp := range update.Keys() {
 		switch updateOp {
+		case "$currentDate":
+			fallthrough
 		case "$inc":
 			fallthrough
 		case "$set":
 			fallthrough
 		case "$setOnInsert":
+			fallthrough
+		case "$unset":
 			// supported
 		default:
 			return NewWriteErrorMsg(
@@ -204,7 +278,7 @@ func extractValueFromUpdateOperator(op string, update *types.Document) (*types.D
 	case *types.Document:
 		for _, v := range doc.Keys() {
 			if strings.Contains(v, ".") {
-				return nil, NewError(ErrNotImplemented, fmt.Errorf("Dot notation is not implemented"))
+				return nil, NewError(ErrNotImplemented, fmt.Errorf("dot notation for operator %s is not supported yet", op))
 			}
 		}
 
@@ -212,4 +286,67 @@ func extractValueFromUpdateOperator(op string, update *types.Document) (*types.D
 	default:
 		return nil, NewWriteErrorMsg(ErrFailedToParse, "Modifiers operate on fields but we found another type instead")
 	}
+}
+
+// validateCurrentDateExpression validates $currentDate input on correctness.
+func validateCurrentDateExpression(update *types.Document) error {
+	currentDateTopField, err := update.Get("$currentDate")
+	if err != nil {
+		return nil // it is ok: key is absent
+	}
+
+	currentDateExpression, ok := currentDateTopField.(*types.Document)
+	if !ok {
+		return NewWriteErrorMsg(
+			ErrFailedToParse,
+			"Modifiers operate on fields but we found another type instead",
+		)
+	}
+
+	for _, field := range currentDateExpression.Keys() {
+		setValue := must.NotFail(currentDateExpression.Get(field))
+
+		switch setValue := setValue.(type) {
+		case bool:
+			continue
+
+		case *types.Document:
+			for _, k := range setValue.Keys() {
+				if k != "$type" {
+					return NewWriteErrorMsg(
+						ErrBadValue,
+						fmt.Sprintf("Unrecognized $currentDate option: %s", k),
+					)
+				}
+			}
+			currentDateType, err := setValue.Get("$type")
+			if err != nil { // ok, default is date
+				continue
+			}
+
+			currentDateTypeString, ok := currentDateType.(string)
+			if !ok {
+				return NewWriteErrorMsg(
+					ErrBadValue,
+					"The '$type' string field is required to be 'date' or 'timestamp'",
+				)
+			}
+			if !slices.Contains([]string{"date", "timestamp"}, currentDateTypeString) {
+				return NewWriteErrorMsg(
+					ErrBadValue,
+					"The '$type' string field is required to be 'date' or 'timestamp'",
+				)
+			}
+
+		default:
+			return NewWriteErrorMsg(
+				ErrBadValue,
+				fmt.Sprintf("%s is not valid type for $currentDate. Please use a boolean ('true') "+
+					"or a $type expression ({$type: 'timestamp/date'}).", AliasFromType(setValue),
+				),
+			)
+		}
+	}
+
+	return nil
 }

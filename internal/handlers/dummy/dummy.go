@@ -36,8 +36,8 @@ var errNotImplemented = common.NewErrorMsg(common.ErrNotImplemented, "I'm a stub
 type Handler struct{}
 
 // New returns a new handler.
-func New() handlers.Interface {
-	return new(Handler)
+func New() (handlers.Interface, error) {
+	return new(Handler), nil
 }
 
 // Close implements handlers.Interface.
