@@ -807,10 +807,6 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 	}
 
 	switch d := must.NotFail(arr.Get(0)).(type) {
-	case int32:
-		divisor = int64(d)
-	case int64:
-		divisor = d
 	case float64:
 		if math.IsNaN(d) || math.IsInf(d, 0) {
 			return false, NewErrorMsg(ErrBadValue, `malformed mod, divisor value is invalid :: caused by :: `+
@@ -827,6 +823,13 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 		if d != float64(divisor) && field != 0 && d < 9.223372036854775296e+18 {
 			return false, nil
 		}
+
+	case int32:
+		divisor = int64(d)
+
+	case int64:
+		divisor = d
+
 	default:
 		return false, NewErrorMsg(ErrBadValue, `malformed mod, divisor not a number`)
 	}
