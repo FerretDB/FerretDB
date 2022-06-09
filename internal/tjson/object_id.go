@@ -16,7 +16,6 @@ package tjson
 
 import (
 	"bytes"
-	"encoding/hex"
 	"encoding/json"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -29,11 +28,6 @@ type objectIDType types.ObjectID
 // tjsontype implements tjsontype interface.
 func (obj *objectIDType) tjsontype() {}
 
-// objectIDJSON is a JSON object representation of the objectIDType.
-type objectIDJSON struct {
-	O string `json:"$o"`
-}
-
 // UnmarshalJSON implements the json.Unmarshaler interface.
 func (obj *objectIDType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
@@ -42,9 +36,8 @@ func (obj *objectIDType) UnmarshalJSON(data []byte) error {
 
 	r := bytes.NewReader(data)
 	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
 
-	var o objectIDJSON
+	var o []byte
 	if err := dec.Decode(&o); err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -52,23 +45,17 @@ func (obj *objectIDType) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	b, err := hex.DecodeString(o.O)
-	if err != nil {
-		return lazyerrors.Error(err)
+	if l := len(o); l != types.ObjectIDLen {
+		return lazyerrors.Errorf("unexpected len %d", l)
 	}
-	if len(b) != types.ObjectIDLen {
-		return lazyerrors.Errorf("tjson.ObjectID.UnmarshalJSON: %d bytes", len(b))
-	}
-	copy(obj[:], b)
 
+	copy((*obj)[:], o)
 	return nil
 }
 
 // MarshalJSON implements tjsontype interface.
 func (obj *objectIDType) MarshalJSON() ([]byte, error) {
-	res, err := json.Marshal(objectIDJSON{
-		O: hex.EncodeToString(obj[:]),
-	})
+	res, err := json.Marshal([]byte((*obj)[:]))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
