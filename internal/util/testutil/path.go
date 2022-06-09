@@ -81,7 +81,7 @@ func AssertInThreshold(t testing.TB, doc *types.Document, key string, v any, del
 	t.Helper()
 
 	expected := must.NotFail(types.NewDocument(key, v))
-	CompareAndSetByPathNum(t, expected, doc, 1, types.NewPathFromString(key))
+	CompareAndSetByPathNum(t, expected, doc, delta, types.NewPathFromString(key))
 }
 
 // CompareAndSetByPathNum asserts that two values with the same path in two objects (documents or arrays)
