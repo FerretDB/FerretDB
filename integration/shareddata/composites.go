@@ -14,7 +14,11 @@
 
 package shareddata
 
-import "go.mongodb.org/mongo-driver/bson"
+import (
+	"math"
+
+	"go.mongodb.org/mongo-driver/bson"
+)
 
 // Composites contain composite values for tests.
 //
@@ -28,10 +32,13 @@ var Composites = &Values[string]{
 		"document-empty":             bson.D{},
 
 		"array":               bson.A{int32(42)},
+		"array-double":        bson.A{42.42},
 		"array-three":         bson.A{int32(42), "foo", nil},
 		"array-three-reverse": bson.A{nil, "foo", int32(42)},
 		"array-embedded":      bson.A{bson.A{int32(42), "foo"}, nil},
 		"array-empty":         bson.A{},
+		"array-empty-nested":  bson.A{bson.A{}},
+		"array-nan":           bson.A{math.NaN()},
 		"array-null":          bson.A{nil},
 	},
 }

@@ -169,7 +169,7 @@ func TestQueryArrayDotNotation(t *testing.T) {
 		},
 		"PositionArray": {
 			filter:      bson.D{{"value.0", primitive.A{}}},
-			expectedIDs: []any{},
+			expectedIDs: []any{"array-empty-nested"},
 		},
 
 		"NoSuchFieldPosition": {
