@@ -29,11 +29,23 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  GOPATH: /home/runner/go
+  GOCACHE: /home/runner/go/cache
+  GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
+  GOMODCACHE: /home/runner/go/mod
+  GOPROXY: https://proxy.golang.org
+
 jobs:
   conform-pr:
     name: Conform PR
     runs-on: ubuntu-20.04
 
     steps:
+      - name: Setup Go
+        uses: FerretDB/github-actions/setup-go@main
+        with:
+          cache-key: conform-pr
+
       - name: Conform PR
         uses: FerretDB/github-actions/conform-pr@main

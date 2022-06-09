@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package fjson
+package tjson
 
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -26,13 +27,17 @@ import (
 // documentType represents BSON Document type.
 type documentType types.Document
 
-// fjsontype implements fjsontype interface.
-func (doc *documentType) fjsontype() {}
+// tjsontype implements tjsontype interface.
+func (doc *documentType) tjsontype() {}
 
-// UnmarshalJSON implements fjsontype interface.
-func (doc *documentType) UnmarshalJSON(data []byte) error {
+// UnmarshalJSONWithSchema unmarshals the JSON data with given JSON Schema.
+func (doc *documentType) UnmarshalJSONWithSchema(data []byte, schema *Schema) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
+	}
+
+	if schema.Type != Object {
+		panic(fmt.Sprintf("unexpected type %q", schema.Type))
 	}
 
 	r := bytes.NewReader(data)
@@ -48,7 +53,7 @@ func (doc *documentType) UnmarshalJSON(data []byte) error {
 
 	b, ok := rawMessages["$k"]
 	if !ok {
-		return lazyerrors.Errorf("fjson.documentType.UnmarshalJSON: missing $k")
+		return lazyerrors.Errorf("tjson.documentType.UnmarshalJSONWithSchema: missing $k")
 	}
 
 	var keys []string
@@ -56,16 +61,23 @@ func (doc *documentType) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 	if len(keys)+1 != len(rawMessages) {
-		return lazyerrors.Errorf("fjson.documentType.UnmarshalJSON: %d elements in $k, %d in total", len(keys), len(rawMessages))
+		return lazyerrors.Errorf(
+			"tjson.documentType.UnmarshalJSONWithSchema: %d elements in $k, %d in total",
+			len(keys), len(rawMessages),
+		)
 	}
 
 	td := must.NotFail(types.NewDocument())
 	for _, key := range keys {
 		b, ok = rawMessages[key]
 		if !ok {
-			return lazyerrors.Errorf("fjson.documentType.UnmarshalJSON: missing key %q", key)
+			return lazyerrors.Errorf("tjson.documentType.UnmarshalJSONWithSchema: missing key %q", key)
 		}
-		v, err := Unmarshal(b)
+		s := schema.Properties[key]
+		if s == nil {
+			return lazyerrors.Errorf("tjson.documentType.UnmarshalJSONWithSchema: no schema for key %q", key)
+		}
+		v, err := Unmarshal(b, s)
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
@@ -78,7 +90,7 @@ func (doc *documentType) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON implements fjsontype interface.
+// MarshalJSON implements tjsontype interface.
 func (doc *documentType) MarshalJSON() ([]byte, error) {
 	td := types.Document(*doc)
 
@@ -122,5 +134,5 @@ func (doc *documentType) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ fjsontype = (*documentType)(nil)
+	_ tjsontype = (*documentType)(nil)
 )

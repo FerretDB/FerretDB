@@ -295,7 +295,7 @@ func (pgPool *Pool) DropSchema(ctx context.Context, schema string) error {
 	}
 }
 
-// CreateTable creates a new FerretDB collection / PostgreSQL jsonb1 table in existing schema.
+// CreateTable creates a new FerretDB collection / PostgreSQL table in existing schema.
 //
 // It returns ErrAlreadyExist if table already exist, ErrNotExist is schema does not exist.
 func (pgPool *Pool) CreateTable(ctx context.Context, schema, table string) error {
