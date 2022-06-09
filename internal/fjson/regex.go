@@ -28,6 +28,7 @@ type regexType types.Regex
 // fjsontype implements fjsontype interface.
 func (regex *regexType) fjsontype() {}
 
+// regexJSON is a JSON object representation of the regexType.
 type regexJSON struct {
 	R string `json:"$r"`
 	O string `json:"o"`

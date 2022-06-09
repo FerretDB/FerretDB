@@ -28,6 +28,7 @@ type timestampType types.Timestamp
 // fjsontype implements fjsontype interface.
 func (ts *timestampType) fjsontype() {}
 
+// timestampJSON is a JSON object representation of the timestampType.
 type timestampJSON struct {
 	T uint64 `json:"$t,string"`
 }

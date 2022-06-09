@@ -17,6 +17,7 @@ package common
 import (
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 	"time"
 
@@ -58,11 +59,32 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 		if err != nil {
 			return false, nil // no error - the field is just not present
 		}
-		var ok bool
-		if doc, ok = docValue.(*types.Document); !ok {
-			return false, nil // no error - the field is just not present
+
+		switch docValue := docValue.(type) {
+		case *types.Document:
+			doc = docValue
+			filterKey = path.Suffix()
+		case *types.Array:
+			index, err := strconv.Atoi(path.Suffix())
+			if err != nil {
+				return false, nil
+			}
+
+			if docValue.Len() == 0 || docValue.Len() <= index {
+				return false, nil
+			}
+
+			value, err := docValue.Get(index)
+			if err != nil {
+				return false, err
+			}
+
+			if _, ok := value.(*types.Array); ok {
+				return false, nil
+			}
+
+			doc = must.NotFail(types.NewDocument(filterKey, value))
 		}
-		filterKey = path.Suffix()
 	}
 
 	if strings.HasPrefix(filterKey, "$") {
