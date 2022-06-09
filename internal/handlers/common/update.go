@@ -305,9 +305,6 @@ func validateCurrentDateExpression(update *types.Document) error {
 		setValue := must.NotFail(currentDateExpression.Get(field))
 
 		switch setValue := setValue.(type) {
-		case bool:
-			continue
-
 		case *types.Document:
 			for _, k := range setValue.Keys() {
 				if k != "$type" {
@@ -335,6 +332,9 @@ func validateCurrentDateExpression(update *types.Document) error {
 					"The '$type' string field is required to be 'date' or 'timestamp'",
 				)
 			}
+
+		case bool:
+			continue
 
 		default:
 			return NewWriteErrorMsg(
