@@ -285,8 +285,6 @@ func filterFieldArrayElemMatch(k1 string, doc, conditions *types.Document, docVa
 // filterFieldArraySlice implements $slice projection query.
 func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.Array, error) {
 	switch projectionValue := projectionValue.(type) {
-	case int32, int64, float64:
-		return projectionSliceSingleArg(docValue, projectionValue), nil
 	case *types.Array:
 		if projectionValue.Len() < 2 || projectionValue.Len() > 3 {
 			return nil, NewErrorMsg(
@@ -315,6 +313,9 @@ func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.A
 		}
 
 		return projectionSliceMultiArgs(docValue, projectionValue)
+
+	case float64, int32, int64:
+		return projectionSliceSingleArg(docValue, projectionValue), nil
 
 	default:
 		return nil, NewErrorMsg(
