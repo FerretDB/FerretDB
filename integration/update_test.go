@@ -531,8 +531,8 @@ func TestUpdateTimestamp(t *testing.T) {
 		testutil.CompareAndSetByPathTime(t, actualY, actualX, maxDifference, types.NewPathFromString("value"))
 	})
 
-	// 1. store bson.Timestamp
-	// 2. read it back, and check if values equal
+	// store bson.Timestamp
+	// read it back, and check if values equal
 	t.Run("timestamp", func(t *testing.T) {
 		t.Parallel()
 
