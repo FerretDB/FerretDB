@@ -441,6 +441,13 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				return false, err
 			}
 
+		case "$elemMatch":
+			// {field: {$elemMatch: value}}
+			res, err := filterFieldExprElemMatch(doc, filterKey, exprValue)
+			if !res || err != nil {
+				return false, err
+			}
+
 		case "$size":
 			// {field: {$size: value}}
 			res, err := filterFieldExprSize(fieldValue, exprValue)
@@ -493,13 +500,6 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 		case "$type":
 			// {field: {$type: value}}
 			res, err := filterFieldExprType(fieldValue, exprValue)
-			if !res || err != nil {
-				return false, err
-			}
-
-		case "$elemMatch":
-			// {field: {$elemMatch: value}}
-			res, err := filterFieldExprElemMatch(doc, filterKey, exprValue)
 			if !res || err != nil {
 				return false, err
 			}
