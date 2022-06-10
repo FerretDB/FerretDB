@@ -76,12 +76,11 @@ func SetByPath[T types.CompositeTypeInterface](tb testing.TB, comp T, value any,
 	}
 }
 
-// AssertInThreshold asserts that a document has a key with a value and it is can fluctuate within a given numerical delta.
-func AssertInThreshold(t testing.TB, doc *types.Document, key string, v any, delta float64) {
-	t.Helper()
+// AssertInThreshold asserts that a document has a key with a value and it is within a given numerical delta.
+func AssertInThreshold(tb testing.TB, doc *types.Document, key string, v any, delta float64) {
+	tb.Helper()
 
-	expected := must.NotFail(types.NewDocument(key, v))
-	CompareAndSetByPathNum(t, expected, doc, delta, types.NewPathFromString(key))
+	assert.InDelta(tb, v, must.NotFail(doc.Get(key)), delta)
 }
 
 // CompareAndSetByPathNum asserts that two values with the same path in two objects (documents or arrays)
