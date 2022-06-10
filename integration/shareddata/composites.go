@@ -38,7 +38,7 @@ var Composites = &Values[string]{
 		"array-embedded":      bson.A{bson.A{int32(42), "foo"}, nil},
 		"array-empty":         bson.A{},
 
-		// TODO: This case demonstrates some bugs.
+		// TODO: This case demonstrates a bug, see https://github.com/FerretDB/FerretDB/issues/732
 		// "array-empty-nested": bson.A{bson.A{}},
 
 		"array-null": bson.A{nil},
