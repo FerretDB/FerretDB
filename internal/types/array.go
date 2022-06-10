@@ -116,6 +116,7 @@ func (a *Array) RemoveByPath(path Path) {
 	removeByPath(a, path)
 }
 
+// Min returns the minimum value from the array.
 func (a *Array) Min() any {
 	if a == nil || a.Len() == 0 {
 		panic("cannot get Min value; array is nil or empty")
@@ -132,6 +133,7 @@ func (a *Array) Min() any {
 	return min
 }
 
+// Max returns the maximum value from the array.
 func (a *Array) Max() any {
 	if a == nil || a.Len() == 0 {
 		panic("cannot get Max value; array is nil or empty")
