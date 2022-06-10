@@ -93,39 +93,107 @@ func TestCreateDrop(t *testing.T) {
 	ctx := testutil.Ctx(t)
 	pool := testutil.Pool(ctx, t, nil, zaptest.NewLogger(t))
 
-	schemaName := testutil.SchemaName(t)
-	tableName := testutil.TableName(t)
+	t.Run("SchemaDoesNotExistTableDoesNotExist", func(t *testing.T) {
+		t.Parallel()
 
-	t.Cleanup(func() {
-		pool.DropSchema(ctx, schemaName)
+		schemaName := testutil.SchemaName(t)
+		tableName := testutil.TableName(t)
+
+		t.Cleanup(func() {
+			pool.DropSchema(ctx, schemaName)
+		})
+
+		// Schema does not exist ->
+		// - table drop is not possible
+		// - schema drop is not possible
+		// - table creation is not possible
+		// - shema creation is possible
+
+		err := pool.DropTable(ctx, schemaName, tableName)
+		require.Equal(t, pgdb.ErrNotExist, err)
+
+		err = pool.DropSchema(ctx, schemaName)
+		require.Equal(t, pgdb.ErrNotExist, err)
+
+		err = pool.CreateTable(ctx, schemaName, tableName)
+		require.Equal(t, pgdb.ErrNotExist, err)
+
+		err = pool.CreateSchema(ctx, schemaName)
+		require.NoError(t, err)
 	})
 
-	err := pool.CreateTable(ctx, schemaName, tableName)
-	require.Equal(t, pgdb.ErrNotExist, err)
+	t.Run("SchemaExistsTableDoesNotExist", func(t *testing.T) {
+		t.Parallel()
 
-	err = pool.CreateSchema(ctx, schemaName)
-	require.NoError(t, err)
+		schemaName := testutil.SchemaName(t)
+		tableName := testutil.TableName(t)
 
-	err = pool.CreateSchema(ctx, schemaName)
-	require.Equal(t, pgdb.ErrAlreadyExist, err)
+		t.Cleanup(func() {
+			pool.DropSchema(ctx, schemaName)
+		})
 
-	err = pool.CreateTable(ctx, schemaName, tableName)
-	require.NoError(t, err)
+		err := pool.CreateSchema(ctx, schemaName)
+		require.NoError(t, err)
 
-	err = pool.CreateTable(ctx, schemaName, tableName)
-	require.Equal(t, pgdb.ErrAlreadyExist, err)
+		// Schema exists ->
+		// - schema creation is not possible
+		// - table drop is not possible
+		// - table creation is possible
+		// - schema drop is possible (only once)
 
-	err = pool.DropTable(ctx, schemaName, tableName)
-	require.NoError(t, err)
+		err = pool.CreateSchema(ctx, schemaName)
+		require.Equal(t, pgdb.ErrAlreadyExist, err)
 
-	err = pool.DropTable(ctx, schemaName, tableName)
-	require.Equal(t, pgdb.ErrNotExist, err)
+		err = pool.DropTable(ctx, schemaName, tableName)
+		require.Equal(t, pgdb.ErrNotExist, err)
 
-	err = pool.DropSchema(ctx, schemaName)
-	require.NoError(t, err)
+		err = pool.CreateTable(ctx, schemaName, tableName)
+		require.NoError(t, err)
 
-	err = pool.DropSchema(ctx, schemaName)
-	require.Equal(t, pgdb.ErrNotExist, err)
+		err = pool.DropSchema(ctx, schemaName)
+		require.NoError(t, err)
+
+		err = pool.DropSchema(ctx, schemaName)
+		require.Equal(t, pgdb.ErrNotExist, err)
+	})
+
+	t.Run("SchemaExistsTableExists", func(t *testing.T) {
+		t.Parallel()
+
+		schemaName := testutil.SchemaName(t)
+		tableName := testutil.TableName(t)
+
+		t.Cleanup(func() {
+			pool.DropSchema(ctx, schemaName)
+		})
+
+		err := pool.CreateSchema(ctx, schemaName)
+		require.NoError(t, err)
+
+		err = pool.CreateTable(ctx, schemaName, tableName)
+		require.NoError(t, err)
+
+		// Table exists ->
+		// - table creation is not possible
+		// - schema creation is not possible
+		// - table drop is possible (only once)
+		// - schema drop is possible
+
+		err = pool.CreateTable(ctx, schemaName, tableName)
+		require.Equal(t, pgdb.ErrAlreadyExist, err)
+
+		err = pool.CreateSchema(ctx, schemaName)
+		require.Equal(t, pgdb.ErrAlreadyExist, err)
+
+		err = pool.DropTable(ctx, schemaName, tableName)
+		require.NoError(t, err)
+
+		err = pool.DropTable(ctx, schemaName, tableName)
+		require.Equal(t, pgdb.ErrNotExist, err)
+
+		err = pool.DropSchema(ctx, schemaName)
+		require.NoError(t, err)
+	})
 }
 
 func TestConcurrentCreate(t *testing.T) {
@@ -186,4 +254,118 @@ func TestConcurrentCreate(t *testing.T) {
 			assert.Equal(t, pgdb.ErrAlreadyExist, pool.CreateSchema(ctx, schemaName))
 		}
 	}
+}
+
+func TestTableExists(t *testing.T) {
+	t.Parallel()
+
+	ctx := testutil.Ctx(t)
+	pool := testutil.Pool(ctx, t, nil, zaptest.NewLogger(t))
+
+	t.Run("SchemaDoesNotExistTableDoesNotExist", func(t *testing.T) {
+		t.Parallel()
+
+		schemaName := testutil.SchemaName(t)
+		tableName := testutil.TableName(t)
+
+		t.Cleanup(func() {
+			pool.DropSchema(ctx, schemaName)
+		})
+
+		ok, err := pool.TableExists(ctx, schemaName, tableName)
+		require.NoError(t, err)
+		assert.False(t, ok)
+	})
+
+	t.Run("SchemaExistsTableDoesNotExist", func(t *testing.T) {
+		t.Parallel()
+
+		schemaName := testutil.SchemaName(t)
+		tableName := testutil.TableName(t)
+
+		pool.CreateSchema(ctx, schemaName)
+
+		t.Cleanup(func() {
+			pool.DropSchema(ctx, schemaName)
+		})
+
+		ok, err := pool.TableExists(ctx, schemaName, tableName)
+		require.NoError(t, err)
+		assert.False(t, ok)
+	})
+
+	t.Run("SchemaExistsTableExists", func(t *testing.T) {
+		t.Parallel()
+
+		schemaName := testutil.SchemaName(t)
+		tableName := testutil.TableName(t)
+
+		pool.CreateSchema(ctx, schemaName)
+		pool.CreateTable(ctx, schemaName, tableName)
+
+		t.Cleanup(func() {
+			pool.DropSchema(ctx, schemaName)
+		})
+
+		ok, err := pool.TableExists(ctx, schemaName, tableName)
+		require.NoError(t, err)
+		assert.True(t, ok)
+	})
+}
+
+func TestCreateTableIfNotExist(t *testing.T) {
+	t.Parallel()
+
+	ctx := testutil.Ctx(t)
+	pool := testutil.Pool(ctx, t, nil, zaptest.NewLogger(t))
+
+	t.Run("SchemaDoesNotExistTableDoesNotExist", func(t *testing.T) {
+		t.Parallel()
+
+		schemaName := testutil.SchemaName(t)
+		tableName := testutil.TableName(t)
+
+		t.Cleanup(func() {
+			pool.DropSchema(ctx, schemaName)
+		})
+
+		ok, err := pool.CreateTableIfNotExist(ctx, schemaName, tableName)
+		require.NoError(t, err)
+		assert.True(t, ok)
+	})
+
+	t.Run("SchemaExistsTableDoesNotExist", func(t *testing.T) {
+		t.Parallel()
+
+		schemaName := testutil.SchemaName(t)
+		tableName := testutil.TableName(t)
+
+		pool.CreateSchema(ctx, schemaName)
+
+		t.Cleanup(func() {
+			pool.DropSchema(ctx, schemaName)
+		})
+
+		created, err := pool.CreateTableIfNotExist(ctx, schemaName, tableName)
+		require.NoError(t, err)
+		assert.True(t, created)
+	})
+
+	t.Run("SchemaExistsTableExists", func(t *testing.T) {
+		t.Parallel()
+
+		schemaName := testutil.SchemaName(t)
+		tableName := testutil.TableName(t)
+
+		pool.CreateSchema(ctx, schemaName)
+		pool.CreateTable(ctx, schemaName, tableName)
+
+		t.Cleanup(func() {
+			pool.DropSchema(ctx, schemaName)
+		})
+
+		created, err := pool.CreateTableIfNotExist(ctx, schemaName, tableName)
+		require.NoError(t, err)
+		assert.False(t, created)
+	})
 }
