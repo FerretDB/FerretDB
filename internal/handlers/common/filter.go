@@ -1098,6 +1098,12 @@ func filterFieldValueByTypeCode(fieldValue any, code typeCode) (bool, error) {
 // Returns false if doc value is not an array.
 // TODO: https://github.com/FerretDB/FerretDB/issues/364
 func filterFieldExprElemMatch(doc *types.Document, filterKey string, exprValue any) (bool, error) {
+	value := must.NotFail(doc.Get(filterKey))
+
+	if _, ok := value.(*types.Array); !ok {
+		return false, nil
+	}
+
 	expr, ok := exprValue.(*types.Document)
 	if !ok {
 		return false, NewErrorMsg(ErrBadValue, "$elemMatch needs an Object")
@@ -1108,15 +1114,13 @@ func filterFieldExprElemMatch(doc *types.Document, filterKey string, exprValue a
 			return false, NewErrorMsg(ErrBadValue, fmt.Sprintf("%s can only be applied to the top-level document", key))
 		}
 
+		if slices.Contains([]string{"$ne", "$not", "$and"}, key) {
+			return false, NewErrorMsg(ErrNotImplemented, fmt.Sprintf("$elemMatch: support for %s not implemented yet", key))
+		}
+
 		if expr.Len() > 1 && !strings.HasPrefix(key, "$") {
 			return false, NewErrorMsg(ErrBadValue, fmt.Sprintf("unknown operator: %s", key))
 		}
-	}
-
-	value := must.NotFail(doc.Get(filterKey))
-
-	if _, ok := value.(*types.Array); !ok {
-		return false, nil
 	}
 
 	return filterFieldExpr(doc, filterKey, expr)

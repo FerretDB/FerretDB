@@ -279,20 +279,6 @@ func TestQueryElemMatchOperator(t *testing.T) {
 			},
 			expectedIDs: []any{"array", "array-three", "array-three-reverse"},
 		},
-		"NeLt": {
-			filter: bson.D{
-				{"value", bson.D{{"$elemMatch", bson.D{{"$ne", bson.D{{"$lt", int32(43)}}}}}}},
-			},
-			expectedIDs: []any{"array", "array-embedded", "array-null", "array-three", "array-three-reverse"},
-		},
-		"NotLt": {
-			filter:      bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"$not", bson.D{{"$lt", int32(43)}}}}}}}},
-			expectedIDs: []any{"array-embedded", "array-null", "array-three", "array-three-reverse"},
-		},
-		"NotGt": {
-			filter:      bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"$not", bson.D{{"$gt", int32(43)}}}}}}}},
-			expectedIDs: []any{"array", "array-embedded", "array-null", "array-three", "array-three-reverse"},
-		},
 
 		"UnexpectedFilterString": {
 			filter: bson.D{{"value", bson.D{{"$elemMatch", "foo"}}}},
@@ -332,14 +318,6 @@ func TestQueryElemMatchOperator(t *testing.T) {
 				Code:    2,
 				Name:    "BadValue",
 				Message: "unknown operator: foo",
-			},
-		},
-		"And": {
-			filter: bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"$and", bson.A{bson.D{{"$gt", int32(0)}}}}}}}}},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "unknown top level operator: $gt. If you have a field name that starts with a '$' symbol, consider using $getField or $setField.",
 			},
 		},
 	} {
