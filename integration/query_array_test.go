@@ -156,7 +156,7 @@ func TestQueryArrayDotNotation(t *testing.T) {
 		},
 		"PositionIndexAtTheEndOfArray": {
 			filter:      bson.D{{"value.1", bson.D{{"$type", "double"}}}},
-			expectedIDs: []any{},
+			expectedIDs: []any{"array-two"},
 		},
 
 		"PositionTypeNull": {
@@ -167,10 +167,9 @@ func TestQueryArrayDotNotation(t *testing.T) {
 			filter:      bson.D{{"value.1", primitive.Regex{Pattern: "foo"}}},
 			expectedIDs: []any{"array-three", "array-three-reverse"},
 		},
-		// !!!! TODO: Bug in ferret, doesn't find nested !!!!
 		"PositionArray": {
 			filter:      bson.D{{"value.0", primitive.A{}}},
-			expectedIDs: []any{"array-empty-nested"},
+			expectedIDs: []any{},
 		},
 
 		"NoSuchFieldPosition": {
