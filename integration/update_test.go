@@ -472,7 +472,7 @@ func TestUpdateTimestamp(t *testing.T) {
 
 	ctx, collection := setup(t)
 
-	now := time.Now().UTC()
+	now := time.Now()
 	nowUnix := now.Unix()
 	nowTimestamp := primitive.Timestamp{T: uint32(nowUnix), I: uint32(0)}
 	expected := bson.D{{"_id", "timestamp"}, {"value", nowTimestamp}}
@@ -489,7 +489,7 @@ func TestUpdateTimestamp(t *testing.T) {
 	assert.True(t, ok)
 
 	// nanoseconds are not stored by timestamp
-	actualTime := types.DateTime(v).Truncate(time.Second)
+	actualTime := v.Time().Truncate(time.Second)
 	assert.Equal(t, now.Truncate(time.Second), actualTime)
 }
 
