@@ -111,7 +111,7 @@ func TestQueryComparisonImplicit(t *testing.T) {
 
 		"Double": {
 			filter:      bson.D{{"value", 42.13}},
-			expectedIDs: []any{"double"},
+			expectedIDs: []any{"array-two", "double"},
 		},
 		"DoubleNegativeInfinity": {
 			filter:      bson.D{{"value", math.Inf(-1)}},
@@ -287,7 +287,7 @@ func TestQueryComparisonEq(t *testing.T) {
 
 		"Double": {
 			filter:      bson.D{{"value", bson.D{{"$eq", 42.13}}}},
-			expectedIDs: []any{"double"},
+			expectedIDs: []any{"array-two", "double"},
 		},
 		"DoubleWhole": {
 			filter:      bson.D{{"value", bson.D{{"$eq", 42.0}}}},
@@ -1019,7 +1019,7 @@ func TestQueryComparisonLte(t *testing.T) {
 		"Double": {
 			value: 42.13,
 			expectedIDs: []any{
-				"array", "array-three", "array-three-reverse",
+				"array", "array-three", "array-three-reverse", "array-two",
 				"double", "double-negative-infinity", "double-negative-zero", "double-smallest", "double-whole", "double-zero",
 				"int32", "int32-min", "int32-zero",
 				"int64", "int64-min", "int64-zero",
