@@ -346,13 +346,6 @@ func TestQueryArrayAll(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t, shareddata.Composites, shareddata.Scalars)
 
-	// Add extra data to cover $all-specific cases
-	_, err := collection.InsertMany(ctx, []any{
-		bson.D{{"_id", "array-double"}, {"value", bson.A{42.42}}},
-		bson.D{{"_id", "array-nan"}, {"value", bson.A{math.NaN()}}},
-	})
-	require.NoError(t, err)
-
 	for name, tc := range map[string]struct {
 		filter      bson.D
 		expectedIDs []any
@@ -361,32 +354,6 @@ func TestQueryArrayAll(t *testing.T) {
 		"String": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{"foo"}}}}},
 			expectedIDs: []any{"array-three", "array-three-reverse", "string"},
-			expectedErr: nil,
-		},
-		"ArrayTODO": {
-			filter: bson.D{{
-				"value",
-				bson.D{{
-					"$all",
-					bson.A{
-						bson.A{int32(42), "foo"},
-					},
-				}},
-			}},
-			expectedIDs: []any{"array-embedded"},
-			expectedErr: nil,
-		},
-		"ArrayTODO2": {
-			filter: bson.D{{
-				"value",
-				bson.D{{
-					"$all",
-					bson.A{
-						bson.A{"foo", int32(42)},
-					},
-				}},
-			}},
-			expectedIDs: []any{},
 			expectedErr: nil,
 		},
 		"StringRepeated": {
@@ -411,7 +378,7 @@ func TestQueryArrayAll(t *testing.T) {
 		},
 		"Double": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{42.13}}}}},
-			expectedIDs: []any{"double"},
+			expectedIDs: []any{"array-two", "double"},
 			expectedErr: nil,
 		},
 		"DoubleMax": {
@@ -424,11 +391,17 @@ func TestQueryArrayAll(t *testing.T) {
 			expectedIDs: []any{"double-smallest"},
 			expectedErr: nil,
 		},
-		"ArrayDouble": {
-			filter:      bson.D{{"value", bson.D{{"$all", bson.A{42.42}}}}},
-			expectedIDs: []any{"array-double"},
+		"NaN": {
+			filter:      bson.D{{"value", bson.D{{"$all", bson.A{math.NaN()}}}}},
+			expectedIDs: []any{"array-two", "double-nan"},
 			expectedErr: nil,
 		},
+		"Nil": {
+			filter:      bson.D{{"value", bson.D{{"$all", bson.A{nil}}}}},
+			expectedIDs: []any{"array-embedded", "array-null", "array-three", "array-three-reverse", "null"},
+			expectedErr: nil,
+		},
+
 		"MultiAll": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{"foo", 42}}}}},
 			expectedIDs: []any{"array-three", "array-three-reverse"},
@@ -439,16 +412,17 @@ func TestQueryArrayAll(t *testing.T) {
 			expectedIDs: []any{"array-three", "array-three-reverse"},
 			expectedErr: nil,
 		},
-		"Nil": {
-			filter:      bson.D{{"value", bson.D{{"$all", bson.A{nil}}}}},
-			expectedIDs: []any{"array-embedded", "array-null", "array-three", "array-three-reverse", "null"},
+		"ArrayEmbeddedEqual": {
+			filter:      bson.D{{"value", bson.D{{"$all", bson.A{bson.A{int32(42), "foo"}}}}}},
+			expectedIDs: []any{"array-embedded"},
 			expectedErr: nil,
 		},
-		"NaN": {
-			filter:      bson.D{{"value", bson.D{{"$all", bson.A{math.NaN()}}}}},
-			expectedIDs: []any{"array-nan", "double-nan"},
+		"ArrayEmbeddedReverseOrder": {
+			filter:      bson.D{{"value", bson.D{{"$all", bson.A{bson.A{"foo", int32(42)}}}}}},
+			expectedIDs: []any{},
 			expectedErr: nil,
 		},
+
 		"Empty": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{}}}}},
 			expectedIDs: []any{},
@@ -456,14 +430,16 @@ func TestQueryArrayAll(t *testing.T) {
 		},
 		"EmptyNested": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{bson.A{}}}}}},
-			expectedIDs: []any{"array-empty", "array-empty-nested"},
+			expectedIDs: []any{"array-empty"},
 			expectedErr: nil,
 		},
+
 		"NotFound": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{"hello"}}}}},
 			expectedIDs: []any{},
 			expectedErr: nil,
 		},
+
 		"$allNeedsAnArrayInt": {
 			filter:      bson.D{{"value", bson.D{{"$all", 1}}}},
 			expectedIDs: nil,

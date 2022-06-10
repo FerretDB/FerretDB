@@ -81,43 +81,6 @@ func Compare(docValue, filterValue any) CompareResult {
 	}
 }
 
-func CompareToDo(docValue, filterValue any) CompareResult {
-	if docValue == nil {
-		panic("compare: docValue is nil")
-	}
-	if filterValue == nil {
-		panic("compare: filterValue is nil")
-	}
-
-	switch docValue := docValue.(type) {
-	case *Document:
-		// TODO: implement document comparing
-		return Incomparable
-
-	case *Array:
-		if filterArr, ok := filterValue.(*Array); ok {
-			return compareArrays(filterArr, docValue)
-		}
-
-		for i := 0; i < docValue.Len(); i++ {
-			docValue := must.NotFail(docValue.Get(i))
-			switch docValue.(type) {
-			case *Document, *Array:
-				continue
-			}
-
-			res := compareScalars(docValue, filterValue)
-			if res == Incomparable {
-				return res
-			}
-		}
-		return Equal
-
-	default:
-		return compareScalars(docValue, filterValue)
-	}
-}
-
 // compareScalars compares BSON scalar values.
 func compareScalars(v1, v2 any) CompareResult {
 	if !isScalar(v1) || !isScalar(v2) {

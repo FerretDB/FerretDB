@@ -153,7 +153,7 @@ func (a *Array) Max() any {
 // Contains checks if the Array contains the given value.
 func (a *Array) Contains(value any) bool {
 	for _, v := range a.s {
-		if CompareToDo(v, value) == Equal {
+		if Compare(v, value) == Equal {
 			return true
 		}
 	}
