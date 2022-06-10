@@ -470,27 +470,93 @@ func TestUpdateSet(t *testing.T) {
 func TestUpdateTimestamp(t *testing.T) {
 	t.Parallel()
 
-	ctx, collection := setup(t)
+	// store the current timestamp with $currentDate operator;
+	// read it, check that it is close to the current time;
+	// write a new timestamp value with the same time;
+	// read it back, and check that it is still close to the current time.
+	t.Run("currentDateReadBack", func(t *testing.T) {
+		maxDifference := time.Duration(2 * time.Second)
+		now := time.Now()
+		nowTimestamp := primitive.Timestamp{T: uint32(now.Unix()), I: uint32(0)}
+		id := "string-empty"
 
-	now := time.Now()
-	nowUnix := now.Unix()
-	nowTimestamp := primitive.Timestamp{T: uint32(nowUnix), I: uint32(0)}
-	expected := bson.D{{"_id", "timestamp"}, {"value", nowTimestamp}}
-	_, err := collection.InsertMany(ctx, []any{expected})
-	require.NoError(t, err)
+		tc := struct {
+			id     string
+			update bson.D
+			result bson.D
+			paths  []types.Path
+			stat   *mongo.UpdateResult
+			alt    string
+		}{
+			id:     id,
+			update: bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "timestamp"}}}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			paths:  []types.Path{types.NewPathFromString("value")},
+			result: bson.D{{"_id", id}, {"value", nowTimestamp}},
+		}
 
-	var actual bson.D
-	err = collection.FindOne(ctx, bson.D{{"_id", "timestamp"}}).Decode(&actual)
-	require.NoError(t, err)
+		ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
-	AssertEqualDocuments(t, expected, actual)
-	doc := ConvertDocument(t, actual)
-	v, ok := must.NotFail(doc.Get("value")).(types.Timestamp)
-	assert.True(t, ok)
+		res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
+		require.NoError(t, err)
+		require.Equal(t, tc.stat, res)
 
-	// nanoseconds are not stored by timestamp
-	actualTime := v.Time().Truncate(time.Second)
-	assert.Equal(t, now.Truncate(time.Second), actualTime)
+		var actualB bson.D
+		err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actualB)
+		require.NoError(t, err)
+
+		expected := ConvertDocument(t, tc.result)
+		actualX := ConvertDocument(t, actualB)
+
+		for _, path := range tc.paths {
+			testutil.CompareAndSetByPathTime(t, expected, actualX, maxDifference, path)
+		}
+
+		// set timestamp manually
+		updateB := bson.D{{"$set", bson.D{{"value", nowTimestamp}}}}
+		expectedB := bson.D{{"_id", id}, {"value", nowTimestamp}}
+		res, err = collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, updateB)
+		require.NoError(t, err)
+		require.Equal(t, tc.stat, res)
+
+		err = collection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&actualB)
+		require.NoError(t, err)
+
+		AssertEqualDocuments(t, expectedB, actualB)
+		actualY := ConvertDocument(t, actualB)
+		testutil.CompareAndSetByPathTime(t, actualY, actualX, maxDifference, types.NewPathFromString("value"))
+	})
+
+	// 1. store bson.Timestamp
+	// 2. read it back, and check if values equal
+	t.Run("timestamp", func(t *testing.T) {
+		t.Parallel()
+
+		ctx, collection := setup(t)
+
+		now := time.Now()
+		nowTimestamp := primitive.Timestamp{T: uint32(now.Unix()), I: uint32(0)}
+		expected := bson.D{{"_id", "timestamp"}, {"value", nowTimestamp}}
+		_, err := collection.InsertMany(ctx, []any{expected})
+		require.NoError(t, err)
+
+		var actual bson.D
+		err = collection.FindOne(ctx, bson.D{{"_id", "timestamp"}}).Decode(&actual)
+		require.NoError(t, err)
+
+		AssertEqualDocuments(t, expected, actual)
+		doc := ConvertDocument(t, actual)
+		v, ok := must.NotFail(doc.Get("value")).(types.Timestamp)
+		assert.True(t, ok)
+
+		// nanoseconds are not stored by timestamp
+		actualTime := v.Time().Truncate(time.Second)
+		assert.Equal(t, now.Truncate(time.Second), actualTime)
+	})
 }
 
 func TestUpdateSetOnInsertOperator(t *testing.T) {
