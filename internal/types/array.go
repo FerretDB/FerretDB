@@ -14,7 +14,11 @@
 
 package types
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
+)
 
 // Array represents BSON array.
 //
@@ -110,4 +114,38 @@ func (a *Array) Append(values ...any) error {
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
 func (a *Array) RemoveByPath(path Path) {
 	removeByPath(a, path)
+}
+
+// Min returns the minimum value from the array.
+func (a *Array) Min() any {
+	if a == nil || a.Len() == 0 {
+		panic("cannot get Min value; array is nil or empty")
+	}
+
+	min := must.NotFail(a.Get(0))
+	for i := 1; i < a.Len(); i++ {
+		value := must.NotFail(a.Get(i))
+		if CompareOrder(min, value, Ascending) == Greater {
+			min = value
+		}
+	}
+
+	return min
+}
+
+// Max returns the maximum value from the array.
+func (a *Array) Max() any {
+	if a == nil || a.Len() == 0 {
+		panic("cannot get Max value; array is nil or empty")
+	}
+
+	max := must.NotFail(a.Get(0))
+	for i := 1; i < a.Len(); i++ {
+		value := must.NotFail(a.Get(i))
+		if CompareOrder(max, value, Ascending) == Less {
+			max = value
+		}
+	}
+
+	return max
 }
