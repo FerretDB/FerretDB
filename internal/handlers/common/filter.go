@@ -1114,7 +1114,13 @@ func filterFieldExprElemMatch(doc *types.Document, filterKey string, exprValue a
 			return false, NewErrorMsg(ErrBadValue, fmt.Sprintf("%s can only be applied to the top-level document", key))
 		}
 
-		if slices.Contains([]string{"$ne", "$not", "$and", "$or", "$nor"}, key) {
+		// TODO: https://github.com/FerretDB/FerretDB/issues/730
+		if slices.Contains([]string{"$and", "$or", "$nor"}, key) {
+			return false, NewErrorMsg(ErrNotImplemented, fmt.Sprintf("$elemMatch: support for %s not implemented yet", key))
+		}
+
+		// TODO: https://github.com/FerretDB/FerretDB/issues/731
+		if slices.Contains([]string{"$ne", "$not"}, key) {
 			return false, NewErrorMsg(ErrNotImplemented, fmt.Sprintf("$elemMatch: support for %s not implemented yet", key))
 		}
 
