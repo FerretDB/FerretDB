@@ -81,11 +81,10 @@ func TestQueryComparisonImplicit(t *testing.T) {
 			expectedIDs: []any{"array-null"},
 		},
 		// !!!! TODO: Bug in ferret, doesn't find nested !!!!
-		/*
-			"ArrayEmpty": {
-				filter:      bson.D{{"value", bson.A{}}},
-				expectedIDs: []any{"array-empty", "array-empty-nested"},
-			},*/
+		"ArrayEmpty": {
+			filter:      bson.D{{"value", bson.A{}}},
+			expectedIDs: []any{"array-empty", "array-empty-nested"},
+		},
 		"ArrayNoSuchField": {
 			filter:      bson.D{{"no-such-field", bson.A{42}}},
 			expectedIDs: []any{},
@@ -282,11 +281,11 @@ func TestQueryComparisonEq(t *testing.T) {
 			filter:      bson.D{{"value", bson.D{{"$eq", bson.A{nil}}}}},
 			expectedIDs: []any{"array-null"},
 		},
-		// !!!! TODO: Bug in Ferret, doesn't find nested !!!
-		/*"ArrayEmpty": {
+		// !!!! TODO: Bug in ferret, doesn't find nested !!!
+		"ArrayEmpty": {
 			filter:      bson.D{{"value", bson.D{{"$eq", bson.A{}}}}},
 			expectedIDs: []any{"array-empty", "array-empty-nested"},
-		},*/
+		},
 
 		"Double": {
 			filter:      bson.D{{"value", bson.D{{"$eq", 42.13}}}},
