@@ -21,6 +21,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -435,6 +437,13 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			// {field: {$regex: exprValue}}
 			optionsAny, _ := expr.Get("$options")
 			res, err := filterFieldExprRegex(fieldValue, exprValue, optionsAny)
+			if !res || err != nil {
+				return false, err
+			}
+
+		case "$elemMatch":
+			// {field: {$elemMatch: value}}
+			res, err := filterFieldExprElemMatch(doc, filterKey, exprValue)
 			if !res || err != nil {
 				return false, err
 			}
@@ -1083,4 +1092,42 @@ func filterFieldValueByTypeCode(fieldValue any, code typeCode) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// filterFieldExprElemMatch handles {field: {$elemMatch: value}}.
+// Returns false if doc value is not an array.
+// TODO: https://github.com/FerretDB/FerretDB/issues/364
+func filterFieldExprElemMatch(doc *types.Document, filterKey string, exprValue any) (bool, error) {
+	value := must.NotFail(doc.Get(filterKey))
+
+	if _, ok := value.(*types.Array); !ok {
+		return false, nil
+	}
+
+	expr, ok := exprValue.(*types.Document)
+	if !ok {
+		return false, NewErrorMsg(ErrBadValue, "$elemMatch needs an Object")
+	}
+
+	for _, key := range expr.Keys() {
+		if slices.Contains([]string{"$text", "$where"}, key) {
+			return false, NewErrorMsg(ErrBadValue, fmt.Sprintf("%s can only be applied to the top-level document", key))
+		}
+
+		// TODO: https://github.com/FerretDB/FerretDB/issues/730
+		if slices.Contains([]string{"$and", "$or", "$nor"}, key) {
+			return false, NewErrorMsg(ErrNotImplemented, fmt.Sprintf("$elemMatch: support for %s not implemented yet", key))
+		}
+
+		// TODO: https://github.com/FerretDB/FerretDB/issues/731
+		if slices.Contains([]string{"$ne", "$not"}, key) {
+			return false, NewErrorMsg(ErrNotImplemented, fmt.Sprintf("$elemMatch: support for %s not implemented yet", key))
+		}
+
+		if expr.Len() > 1 && !strings.HasPrefix(key, "$") {
+			return false, NewErrorMsg(ErrBadValue, fmt.Sprintf("unknown operator: %s", key))
+		}
+	}
+
+	return filterFieldExpr(doc, filterKey, expr)
 }
