@@ -939,13 +939,7 @@ func TestCurrentDate(t *testing.T) {
 			actual := ConvertDocument(t, actualB)
 
 			for _, path := range tc.paths {
-				testutil.CompareAndSetByPathTime(
-					t,
-					expected,
-					actual,
-					maxDifference,
-					path,
-				)
+				testutil.CompareAndSetByPathTime(t, expected, actual, maxDifference, path)
 				expected.RemoveByPath(path)
 				actual.RemoveByPath(path)
 			}
