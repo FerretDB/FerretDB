@@ -156,7 +156,7 @@ func TestQueryArrayDotNotation(t *testing.T) {
 		},
 		"PositionIndexAtTheEndOfArray": {
 			filter:      bson.D{{"value.1", bson.D{{"$type", "double"}}}},
-			expectedIDs: []any{},
+			expectedIDs: []any{"array-two"},
 		},
 
 		"PositionTypeNull": {
@@ -244,7 +244,7 @@ func TestQueryElemMatchOperator(t *testing.T) {
 		},
 		"GtZero": {
 			filter:      bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"$gt", int32(0)}}}}}},
-			expectedIDs: []any{"array", "array-three", "array-three-reverse"},
+			expectedIDs: []any{"array", "array-three", "array-three-reverse", "array-two"},
 		},
 		"GtZeroWithTypeArray": {
 			filter: bson.D{
@@ -255,7 +255,7 @@ func TestQueryElemMatchOperator(t *testing.T) {
 					{"$type", "array"},
 				}},
 			},
-			expectedIDs: []any{"array", "array-three", "array-three-reverse"},
+			expectedIDs: []any{"array", "array-three", "array-three-reverse", "array-two"},
 		},
 		"GtZeroWithTypeString": {
 			filter: bson.D{
@@ -277,7 +277,7 @@ func TestQueryElemMatchOperator(t *testing.T) {
 					}},
 				}},
 			},
-			expectedIDs: []any{"array", "array-three", "array-three-reverse"},
+			expectedIDs: []any{"array", "array-three", "array-three-reverse", "array-two"},
 		},
 
 		"UnexpectedFilterString": {
