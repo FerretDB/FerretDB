@@ -18,9 +18,17 @@
 package main
 
 import (
+	"os"
 	"testing"
 )
 
+// TestCover allows us to run FerretDB with coverage enabled.
 func TestCover(t *testing.T) {
 	main()
+}
+
+// TestMain ensures that command-line flags are initialized correctly when FerretDB is run with coverage enabled.
+func TestMain(m *testing.M) {
+	initFlags()
+	os.Exit(m.Run())
 }

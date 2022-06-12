@@ -12,38 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package fjson
+package tjson
 
 import (
 	"bytes"
-	"encoding/hex"
 	"encoding/json"
 
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// objectIDType represents BSON ObjectId type.
-type objectIDType types.ObjectID
+// boolType represents BSON Boolean type.
+type boolType bool
 
-// fjsontype implements fjsontype interface.
-func (obj *objectIDType) fjsontype() {}
+// tjsontype implements tjsontype interface.
+func (b *boolType) tjsontype() {}
 
-type objectIDJSON struct {
-	O string `json:"$o"`
-}
-
-// UnmarshalJSON implements fjsontype interface.
-func (obj *objectIDType) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (b *boolType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
 
 	r := bytes.NewReader(data)
 	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
 
-	var o objectIDJSON
+	var o bool
 	if err := dec.Decode(&o); err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -51,23 +44,13 @@ func (obj *objectIDType) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	b, err := hex.DecodeString(o.O)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-	if len(b) != 12 {
-		return lazyerrors.Errorf("fjson.ObjectID.UnmarshalJSON: %d bytes", len(b))
-	}
-	copy(obj[:], b)
-
+	*b = boolType(o)
 	return nil
 }
 
-// MarshalJSON implements fjsontype interface.
-func (obj *objectIDType) MarshalJSON() ([]byte, error) {
-	res, err := json.Marshal(objectIDJSON{
-		O: hex.EncodeToString(obj[:]),
-	})
+// MarshalJSON implements tjsontype interface.
+func (b *boolType) MarshalJSON() ([]byte, error) {
+	res, err := json.Marshal(bool(*b))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -76,5 +59,5 @@ func (obj *objectIDType) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ fjsontype = (*objectIDType)(nil)
+	_ tjsontype = (*boolType)(nil)
 )

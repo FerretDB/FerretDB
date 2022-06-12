@@ -318,7 +318,7 @@ func TestQueryCount(t *testing.T) {
 	}{
 		"CountAllDocuments": {
 			command:  bson.D{{"count", collection.Name()}},
-			response: 49,
+			response: 50,
 		},
 		"CountExactlyOneDocument": {
 			command: bson.D{
@@ -332,7 +332,14 @@ func TestQueryCount(t *testing.T) {
 				{"count", collection.Name()},
 				{"query", bson.D{{"value", bson.D{{"$type", "array"}}}}},
 			},
-			response: 6,
+			response: 7,
+		},
+		"CountNonExistingCollection": {
+			command: bson.D{
+				{"count", "doesnotexist"},
+				{"query", bson.D{{"value", true}}},
+			},
+			response: 0,
 		},
 	} {
 		name, tc := name, tc
@@ -706,4 +713,19 @@ func TestDotNotation(t *testing.T) {
 			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
 		})
 	}
+}
+
+// TestQueryNonExistingCollection tests that a query to a non existing collection doesn't fail but returns an empty result.
+func TestQueryNonExistingCollection(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup(t)
+
+	cursor, err := collection.Database().Collection("doesnotexist").Find(ctx, bson.D{})
+	require.NoError(t, err)
+
+	var actual []bson.D
+	err = cursor.All(ctx, &actual)
+	require.NoError(t, err)
+	require.Len(t, actual, 0)
 }

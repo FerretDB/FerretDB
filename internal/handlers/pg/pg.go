@@ -43,13 +43,14 @@ type NewOpts struct {
 }
 
 // New returns a new handler.
-func New(opts *NewOpts) handlers.Interface {
-	return &Handler{
+func New(opts *NewOpts) (handlers.Interface, error) {
+	h := &Handler{
 		pgPool:    opts.PgPool,
 		l:         opts.L,
 		peerAddr:  opts.PeerAddr,
 		startTime: opts.StartTime,
 	}
+	return h, nil
 }
 
 // Close implements HandlerInterface.

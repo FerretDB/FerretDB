@@ -50,7 +50,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// fjsontype is a type that can be marshaled to/from FJSON.
+// fjsontype is a type that can be marshaled from/to FJSON.
 type fjsontype interface {
 	fjsontype() // seal for go-sumtype
 
@@ -160,12 +160,12 @@ func Unmarshal(data []byte) (any, error) {
 	switch v := v.(type) {
 	case map[string]any:
 		switch {
-		case v["$f"] != nil:
-			var o doubleType
-			err = o.UnmarshalJSON(data)
-			res = &o
 		case v["$k"] != nil:
 			var o documentType
+			err = o.UnmarshalJSON(data)
+			res = &o
+		case v["$f"] != nil:
+			var o doubleType
 			err = o.UnmarshalJSON(data)
 			res = &o
 		case v["$b"] != nil:
@@ -195,12 +195,12 @@ func Unmarshal(data []byte) (any, error) {
 		default:
 			err = lazyerrors.Errorf("fjson.Unmarshal: unhandled map %v", v)
 		}
-	case string:
-		res = pointer.To(stringType(v))
 	case []any:
 		var o arrayType
 		err = o.UnmarshalJSON(data)
 		res = &o
+	case string:
+		res = pointer.To(stringType(v))
 	case bool:
 		res = pointer.To(boolType(v))
 	case nil:

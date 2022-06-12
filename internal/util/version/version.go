@@ -65,9 +65,10 @@ func Get() *Info {
 
 func init() {
 	info = &Info{
-		Version: strings.TrimSpace(version),
-		Commit:  strings.TrimSpace(commit),
-		Branch:  strings.TrimSpace(branch),
+		Version:          strings.TrimSpace(version),
+		Commit:           strings.TrimSpace(commit),
+		Branch:           strings.TrimSpace(branch),
+		BuildEnvironment: must.NotFail(types.NewDocument()),
 	}
 
 	buildInfo, ok := debug.ReadBuildInfo()
@@ -75,9 +76,8 @@ func init() {
 		return
 	}
 
-	info.BuildEnvironment = must.NotFail(types.NewDocument())
 	for _, s := range buildInfo.Settings {
-		info.BuildEnvironment.Set(s.Key, s.Value)
+		must.NoError(info.BuildEnvironment.Set(s.Key, s.Value))
 
 		switch s.Key {
 		case "vcs.revision":
@@ -87,9 +87,9 @@ func init() {
 				))
 			}
 		case "vcs.modified":
-			info.Dirty, _ = strconv.ParseBool(s.Value)
+			info.Dirty = must.NotFail(strconv.ParseBool(s.Value))
 		case "-race":
-			if raceEnabled, _ := strconv.ParseBool(s.Value); raceEnabled {
+			if must.NotFail(strconv.ParseBool(s.Value)) {
 				info.Debug = true
 			}
 		case "-tags":

@@ -20,9 +20,7 @@ import (
 
 	"golang.org/x/exp/slices"
 
-	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // matchDocuments returns true if 2 documents are equal.
@@ -41,32 +39,4 @@ func matchDocuments(a, b *types.Document) bool {
 		return false
 	}
 	return reflect.DeepEqual(a.Map(), b.Map())
-}
-
-// matchArrays returns true if a filter array equals exactly the specified array or
-// array contains an element that equals the array.
-//
-// TODO move into types.Compare.
-func matchArrays(filterArr, docArr *types.Array) bool {
-	if filterArr == nil {
-		log.Panicf("%v is nil", filterArr)
-	}
-	if docArr == nil {
-		log.Panicf("%v is nil", docArr)
-	}
-
-	if string(must.NotFail(fjson.Marshal(filterArr))) == string(must.NotFail(fjson.Marshal(docArr))) {
-		return true
-	}
-
-	for i := 0; i < docArr.Len(); i++ {
-		arrValue := must.NotFail(docArr.Get(i))
-		if arrValue, ok := arrValue.(*types.Array); ok {
-			if string(must.NotFail(fjson.Marshal(filterArr))) == string(must.NotFail(fjson.Marshal(arrValue))) {
-				return true
-			}
-		}
-	}
-
-	return false
 }

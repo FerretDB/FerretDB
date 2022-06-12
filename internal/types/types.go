@@ -79,9 +79,6 @@ type CompositeTypeInterface interface {
 //go-sumtype:decl CompositeTypeInterface
 
 type (
-	// Timestamp represents BSON type Timestamp.
-	Timestamp uint64
-
 	// NullType represents BSON type Null.
 	//
 	// Most callers should use types.Null value instead.

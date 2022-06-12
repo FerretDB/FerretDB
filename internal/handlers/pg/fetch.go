@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v4"
+	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -34,6 +35,7 @@ type sqlParam struct {
 }
 
 // fetch fetches all documents from the given database and collection.
+// If collection doesn't exist it returns an empty slice and no error.
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/372
 func (h *Handler) fetch(ctx context.Context, param sqlParam) ([]*types.Document, error) {
@@ -45,6 +47,19 @@ func (h *Handler) fetch(ctx context.Context, param sqlParam) ([]*types.Document,
 		sql += `/* ` + param.comment + ` */ `
 	}
 	sql += `_jsonb FROM ` + pgx.Identifier{param.db, param.collection}.Sanitize()
+
+	// Special case: check if collection exists at all
+	collectionExists, err := h.pgPool.TableExists(ctx, param.db, param.collection)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	if !collectionExists {
+		h.l.Info(
+			"Table doesn't exist, handling a case to deal with a non-existing collection.",
+			zap.String("schema", param.db), zap.String("table", param.collection),
+		)
+		return []*types.Document{}, nil
+	}
 
 	rows, err := h.pgPool.Query(ctx, sql)
 	if err != nil {

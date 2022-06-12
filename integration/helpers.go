@@ -17,6 +17,7 @@ package integration
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -76,7 +77,7 @@ func Convert(t testing.TB, v any) any {
 	case int32:
 		return v
 	case primitive.Timestamp:
-		return types.Timestamp(uint64(v.I)<<32 + uint64(v.T))
+		return types.NewTimestamp(time.UnixMilli(int64(v.T)), v.I)
 	case int64:
 		return v
 	default:

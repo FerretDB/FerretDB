@@ -191,8 +191,9 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 		expected   map[string]any
 		unexpected []string
 		err        *mongo.CommandError
+		altMessage string
 	}{
-		"AllParameters_1": {
+		"GetParameter_Asterisk1": {
 			command: bson.D{{"getParameter", "*"}},
 			expected: map[string]any{
 				"acceptApiVersion2": false,
@@ -201,7 +202,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 				"ok":                float64(1),
 			},
 		},
-		"AllParameters_2": {
+		"GetParameter_Asterisk2": {
 			command: bson.D{{"getParameter", "*"}, {"quiet", 1}, {"comment", "getParameter test"}},
 			expected: map[string]any{
 				"acceptApiVersion2": false,
@@ -210,7 +211,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 				"ok":                float64(1),
 			},
 		},
-		"AllParameters_3": {
+		"GetParameter_Asterisk3": {
 			command: bson.D{{"getParameter", "*"}, {"quiet", 1}, {"quiet_other", 1}, {"comment", "getParameter test"}},
 			expected: map[string]any{
 				"acceptApiVersion2": false,
@@ -219,7 +220,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 				"ok":                float64(1),
 			},
 		},
-		"AllParameters_4": {
+		"GetParameter_Asterisk4": {
 			command: bson.D{{"getParameter", "*"}, {"quiet_other", 1}, {"comment", "getParameter test"}},
 			expected: map[string]any{
 				"acceptApiVersion2": false,
@@ -228,29 +229,36 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 				"ok":                float64(1),
 			},
 		},
-		"ExistingParameters": {
+		"GetParameter_Int": {
 			command: bson.D{{"getParameter", 1}, {"quiet", 1}, {"comment", "getParameter test"}},
 			expected: map[string]any{
 				"quiet": false,
 				"ok":    float64(1),
 			},
 		},
-		"Zero": {
+		"GetParameter_Zero": {
 			command: bson.D{{"getParameter", 0}, {"quiet", 1}, {"comment", "getParameter test"}},
 			expected: map[string]any{
 				"quiet": false,
 				"ok":    float64(1),
 			},
 		},
-		"NaN": {
+		"GetParameter_NaN": {
 			command: bson.D{{"getParameter", math.NaN()}, {"quiet", 1}, {"comment", "getParameter test"}},
 			expected: map[string]any{
 				"quiet": false,
 				"ok":    float64(1),
 			},
 		},
-		"Nil": {
+		"GetParameter_Nil": {
 			command: bson.D{{"getParameter", nil}, {"quiet", 1}, {"comment", "getParameter test"}},
+			expected: map[string]any{
+				"quiet": false,
+				"ok":    float64(1),
+			},
+		},
+		"GetParameter_String": {
+			command: bson.D{{"getParameter", "1"}, {"quiet", 1}, {"comment", "getParameter test"}},
 			expected: map[string]any{
 				"quiet": false,
 				"ok":    float64(1),
@@ -272,6 +280,293 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 			command: bson.D{{"getParameter", 1}, {"quiet_other", 1}, {"comment", "getParameter test"}},
 			err:     &mongo.CommandError{Message: `no option found to get`},
 		},
+		"ShowDetailsTrue": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"ok": float64(1),
+			},
+			unexpected: []string{"acceptApiVersion2"},
+		},
+		"ShowDetailsFalse": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", false}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": false,
+				"ok":    float64(1),
+			},
+			unexpected: []string{"acceptApiVersion2"},
+		},
+		"ShowDetails_NoParameter_1": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}}}},
+			err:     &mongo.CommandError{Message: `no option found to get`},
+		},
+		"ShowDetails_NoParameter_2": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", false}}}},
+			err:     &mongo.CommandError{Message: `no option found to get`},
+		},
+		"AllParametersTrue": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", true}}}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"tlsMode": bson.D{
+					{"value", "disabled"},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", false},
+				},
+				"ok": float64(1),
+			},
+		},
+		"AllParametersFalse_MissingParameter": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", false}}}},
+			err:     &mongo.CommandError{Message: `no option found to get`},
+		},
+		"AllParametersFalse_PresentParameter": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", false}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"ok": float64(1),
+			},
+			unexpected: []string{"acceptApiVersion2"},
+		},
+		"AllParametersFalse_NonexistentParameter": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", false}}}, {"quiet_other", true}},
+			err:     &mongo.CommandError{Message: `no option found to get`},
+		},
+		"ShowDetailsFalse_AllParametersTrue": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", false}, {"allParameters", true}}}},
+			expected: map[string]any{
+				"acceptApiVersion2": false,
+				"authSchemaVersion": int32(5),
+				"quiet":             false,
+				"ok":                float64(1),
+			},
+		},
+		"ShowDetailsFalse_AllParametersFalse_1": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", false}, {"allParameters", false}}}},
+			err:     &mongo.CommandError{Message: `no option found to get`},
+		},
+		"ShowDetailsFalse_AllParametersFalse_2": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", false}, {"allParameters", false}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": false,
+				"ok":    float64(1),
+			},
+			unexpected: []string{"acceptApiVersion2"},
+		},
+		"ShowDetails_NegativeInt": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", int64(-1)}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"ok": float64(1),
+			},
+		},
+		"ShowDetails_PositiveInt": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", int64(1)}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"ok": float64(1),
+			},
+		},
+		"ShowDetails_ZeroInt": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", int64(0)}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": false,
+				"ok":    float64(1),
+			},
+			unexpected: []string{"acceptApiVersion2"},
+		},
+		"ShowDetails_ZeroFloat": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", float64(0)}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": false,
+				"ok":    float64(1),
+			},
+			unexpected: []string{"acceptApiVersion2"},
+		},
+		"ShowDetails_SmallestNonzeroFloat": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", math.SmallestNonzeroFloat64}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"ok": float64(1),
+			},
+		},
+		"ShowDetails_Nil": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", nil}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": false,
+				"ok":    float64(1),
+			},
+		},
+		"ShowDetails_NaN": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", math.NaN()}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"ok": float64(1),
+			},
+		},
+		"ShowDetails_NegatuveZero": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", math.Copysign(0, -1)}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": false,
+				"ok":    float64(1),
+			},
+		},
+		"ShowDetails_String": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", "1"}}}, {"quiet", true}},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: `BSON field 'getParameter.showDetails' is the wrong type 'string', expected types '[bool, long, int, decimal, double']`,
+			},
+			altMessage: `BSON field 'showDetails' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'`,
+		},
+		"AllParameters_NegativeInt": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", int64(-1)}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"tlsMode": bson.D{
+					{"value", "disabled"},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", false},
+				},
+				"ok": float64(1),
+			},
+		},
+		"AllParameters_PositiveInt": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", int64(1)}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"tlsMode": bson.D{
+					{"value", "disabled"},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", false},
+				},
+				"ok": float64(1),
+			},
+		},
+		"AllParameters_ZeroInt": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", int64(0)}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"ok": float64(1),
+			},
+		},
+		"AllParameters_ZeroFloat": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", float64(0)}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"ok": float64(1),
+			},
+		},
+		"AllParameters_SmallestNonzeroFloat": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", math.SmallestNonzeroFloat64}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"tlsMode": bson.D{
+					{"value", "disabled"},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", false},
+				},
+				"ok": float64(1),
+			},
+		},
+		"AllParameters_Nil": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", nil}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"ok": float64(1),
+			},
+			unexpected: []string{"acceptApiVersion2"},
+		},
+		"AllParameters_NaN": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", math.NaN()}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"tlsMode": bson.D{
+					{"value", "disabled"},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", false},
+				},
+				"ok": float64(1),
+			},
+		},
+		"AllParameters_NegatuveZero": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", math.Copysign(0, -1)}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"ok": float64(1),
+			},
+			unexpected: []string{"acceptApiVersion2"},
+		},
+		"AllParameters_String": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", "1"}}}, {"quiet", true}},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: `BSON field 'getParameter.allParameters' is the wrong type 'string', expected types '[bool, long, int, decimal, double']`,
+			},
+			altMessage: `BSON field 'allParameters' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'`,
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -279,21 +574,29 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+
 			if tc.err != nil {
-				AssertEqualError(t, *tc.err, err)
+				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
 				return
 			}
 			require.NoError(t, err)
 
 			m := actual.Map()
-			k := CollectKeys(t, actual)
+			keys := CollectKeys(t, actual)
 
-			for key, item := range tc.expected {
-				assert.Contains(t, k, key)
-				assert.Equal(t, m[key], item)
+			for k, item := range tc.expected {
+				assert.Contains(t, keys, k)
+				assert.IsType(t, item, m[k])
+				if it, ok := item.(primitive.D); ok {
+					z := m[k].(primitive.D)
+					AssertEqualDocuments(t, it, z)
+				} else {
+					assert.Equal(t, m[k], item)
+				}
 			}
-			for _, key := range tc.unexpected {
-				assert.NotContains(t, k, key)
+
+			for _, k := range tc.unexpected {
+				assert.NotContains(t, keys, k)
 			}
 		})
 	}

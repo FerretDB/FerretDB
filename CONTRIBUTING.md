@@ -75,8 +75,12 @@ The `internal` subpackages contain most of the FerretDB code:
 * `types` package provides Go types matching BSON types that don't have built-in Go equivalents:
   we use `int32` for BSON's int32, but `types.ObjectID` for BSON's ObjectId.
 * `fjson` provides converters from/to FJSON for built-in and `types` types.
-  FJSON adds some extensions to JSON for keeping object keys in order, preserving BSON type information, etc.
-  FJSON is used by `jsonb1` handler/storage.
+  FJSON adds some extensions to JSON for keeping object keys in order,
+  preserving BSON type information in the values themselves, etc.
+  It is used by `pg` handler.
+* `tjson` provides converters from/to JSON with JSON Schema for built-in and `types` types.
+  BSON type information is preserved either in the schema (where possible) or in the values themselves.
+  It is used by `tigris` handler.
 * `bson` package provides converters from/to BSON for built-in and `types` types.
 * `wire` package provides wire protocol implementation.
 * `clientconn` package provides client connection implementation.
@@ -136,11 +140,8 @@ Some of our idiosyncrasies:
 Before submitting a pull request, please make sure that:
 
 1. Tests are added for new functionality or fixed bugs.
-2. Code is regenerated if needed (`task gen`).
-3. Code is formatted (`task fmt`).
-4. Test pass (`task test`).
-5. Linters pass (`task lint`).
+2. `task all` passes.
 
 ## Contributing documentation
 
-Please format documentation with `task docs-fmt`.
+Please format and lint documentation with `task docs`.

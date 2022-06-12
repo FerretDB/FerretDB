@@ -14,7 +14,11 @@
 
 package shareddata
 
-import "go.mongodb.org/mongo-driver/bson"
+import (
+	"math"
+
+	"go.mongodb.org/mongo-driver/bson"
+)
 
 // Composites contain composite values for tests.
 //
@@ -28,10 +32,14 @@ var Composites = &Values[string]{
 		"document-empty":             bson.D{},
 
 		"array":               bson.A{int32(42)},
+		"array-two":           bson.A{42.13, math.NaN()},
 		"array-three":         bson.A{int32(42), "foo", nil},
 		"array-three-reverse": bson.A{nil, "foo", int32(42)},
 		"array-embedded":      bson.A{bson.A{int32(42), "foo"}, nil},
 		"array-empty":         bson.A{},
 		"array-null":          bson.A{nil},
+
+		// TODO: This case demonstrates a bug, see https://github.com/FerretDB/FerretDB/issues/732
+		// "array-empty-nested": bson.A{bson.A{}},
 	},
 }

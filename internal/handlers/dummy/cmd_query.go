@@ -22,5 +22,5 @@ import (
 
 // CmdQuery implements HandlerInterface.
 func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
-	return nil, errNotImplemented
+	return nil, notImplemented(query.Query.Command())
 }

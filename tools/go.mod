@@ -18,7 +18,7 @@ require (
 	github.com/reviewdog/reviewdog v0.14.1
 	golang.org/x/perf v0.0.0-20220411212318-84e58bfe0a7e
 	golang.org/x/tools v0.1.11-0.20220316014157-77aa08bb151a
-	gopkg.in/yaml.v3 v3.0.0 // indirect; https://github.com/advisories/GHSA-hp87-p4gw-j4gq
+	gopkg.in/yaml.v3 v3.0.1 // indirect; https://github.com/advisories/GHSA-hp87-p4gw-j4gq
 	mvdan.cc/gofumpt v0.3.1
 )
 

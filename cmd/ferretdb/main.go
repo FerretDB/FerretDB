@@ -19,37 +19,64 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"time"
+	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
 	"go.uber.org/zap"
+	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/dummy"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
-//nolint:gochecknoglobals // flags are defined there to be visible in `bin/ferretdb-testcover -h` output
+// newHandler represents a function that constructs a new handler.
+type newHandler func(opts *newHandlerOpts) (handlers.Interface, error)
+
+// newHandlerOpts represents common configuration for constructing handlers.
+//
+// Handler-specific configuration is passed via command-line flags directly.
+type newHandlerOpts struct {
+	ctx    context.Context
+	logger *zap.Logger
+}
+
+// registeredHandlers maps handler names to constructors.
+// The values for `registeredHandlers` must be set through the `init()` functions of the corresponding handlers
+// so that we can control which handlers will be included in the build with build tags.
+var registeredHandlers = map[string]newHandler{}
+
 var (
-	debugAddrF       = flag.String("debug-addr", "127.0.0.1:8088", "debug address")
-	listenAddrF      = flag.String("listen-addr", "127.0.0.1:27017", "listen address")
-	modeF            = flag.String("mode", string(clientconn.AllModes[0]), fmt.Sprintf("operation mode: %v", clientconn.AllModes))
-	postgresqlURLF   = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/ferretdb", "PostgreSQL URL")
-	proxyAddrF       = flag.String("proxy-addr", "127.0.0.1:37017", "")
-	versionF         = flag.Bool("version", false, "print version to stdout (full version, commit, branch, dirty flag) and exit")
+	versionF = flag.Bool("version", false, "print version to stdout (full version, commit, branch, dirty flag) and exit")
+
+	listenAddrF = flag.String("listen-addr", "127.0.0.1:27017", "listen address")
+	proxyAddrF  = flag.String("proxy-addr", "127.0.0.1:37017", "proxy address")
+	debugAddrF  = flag.String("debug-addr", "127.0.0.1:8088", "debug address")
+	modeF       = flag.String("mode", string(clientconn.AllModes[0]), fmt.Sprintf("operation mode: %v", clientconn.AllModes))
+
+	handlerF = flag.String("handler", "pg", "<set in initFlags()>")
+
 	testConnTimeoutF = flag.Duration("test-conn-timeout", 0, "test: set connection timeout")
-	handlerF         = flag.String("handler", "pg", "set backend handler (pg, dummy)")
 )
+
+// initFlags improves flags settings after all global flags are initialized
+// and all handler constructors are registered.
+func initFlags() {
+	handlers := maps.Keys(registeredHandlers)
+	slices.Sort(handlers)
+	flag.Lookup("handler").Usage = "backend handler: " + strings.Join(handlers, ", ")
+}
 
 func main() {
 	logging.Setup(zap.DebugLevel)
 	logger := zap.L()
+
+	initFlags()
 	flag.Parse()
 
 	info := version.Get()
@@ -62,13 +89,17 @@ func main() {
 		return
 	}
 
-	logger.Info(
-		"Starting FerretDB "+info.Version+"...",
+	startFields := []zap.Field{
 		zap.String("version", info.Version),
 		zap.String("commit", info.Commit),
 		zap.String("branch", info.Branch),
 		zap.Bool("dirty", info.Dirty),
-	)
+	}
+	for _, k := range info.BuildEnvironment.Keys() {
+		v := must.NotFail(info.BuildEnvironment.Get(k))
+		startFields = append(startFields, zap.Any(k, v))
+	}
+	logger.Info("Starting FerretDB "+info.Version+"...", startFields...)
 
 	var found bool
 	for _, m := range clientconn.AllModes {
@@ -90,27 +121,17 @@ func main() {
 
 	go debug.RunHandler(ctx, *debugAddrF, logger.Named("debug"))
 
-	var h handlers.Interface
-	switch *handlerF {
-	case "pg":
-		pgPool, err := pgdb.NewPool(ctx, *postgresqlURLF, logger, false)
-		if err != nil {
-			logger.Fatal(err.Error())
-		}
-		handlerOpts := &pg.NewOpts{
-			PgPool:    pgPool,
-			L:         logger,
-			StartTime: time.Now(),
-		}
-		h = pg.New(handlerOpts)
-
-	case "dummy":
-		h = dummy.New()
-
-	default:
-		panic("unknown handler")
+	newHandler := registeredHandlers[*handlerF]
+	if newHandler == nil {
+		logger.Sugar().Fatalf("Unknown backend handler %q.", *handlerF)
 	}
-
+	h, err := newHandler(&newHandlerOpts{
+		ctx:    ctx,
+		logger: logger,
+	})
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
 	defer h.Close()
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
@@ -124,7 +145,7 @@ func main() {
 
 	prometheus.DefaultRegisterer.MustRegister(l)
 
-	err := l.Run(ctx)
+	err = l.Run(ctx)
 	if err == nil || err == context.Canceled {
 		logger.Info("Listener stopped")
 	} else {

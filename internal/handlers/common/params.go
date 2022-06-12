@@ -60,8 +60,10 @@ func GetOptionalParam[T types.Type](doc *types.Document, key string, defaultValu
 	return res, nil
 }
 
-// GetBoolOptionalParam returns doc's bool value for key, or protocol error for invalid parameter.
-// Non-zero value for double, long and int return true.
+// GetBoolOptionalParam returns doc's bool value for key.
+// Non-zero double, long, and int values return true.
+// Zero values for those types, as well as nulls and missing fields, return false.
+// Other types return a protocol error.
 func GetBoolOptionalParam(doc *types.Document, key string) (bool, error) {
 	v, err := doc.Get(key)
 	if err != nil {
@@ -69,6 +71,8 @@ func GetBoolOptionalParam(doc *types.Document, key string) (bool, error) {
 	}
 
 	switch v := v.(type) {
+	case types.NullType:
+		return false, nil
 	case float64:
 		return v != 0, nil
 	case bool:

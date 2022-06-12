@@ -27,6 +27,7 @@ type int64Type int64
 // fjsontype implements fjsontype interface.
 func (i *int64Type) fjsontype() {}
 
+// int64JSON is a JSON object representation of the int64Type.
 type int64JSON struct {
 	L int64 `json:"$l,string"`
 }

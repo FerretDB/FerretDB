@@ -12,10 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package dummy provides a basic handler implementation.
-//
-// The whole package can be copied to start a new handler implementation.
-package dummy
+// Package tigris provides Tigris handler.
+package tigris
 
 import (
 	"github.com/FerretDB/FerretDB/internal/handlers"
@@ -23,21 +21,14 @@ import (
 )
 
 // errNotImplemented is returned by stubs.
-var errNotImplemented = common.NewErrorMsg(common.ErrNotImplemented, "I'm a stub, not a real handler")
+var errNotImplemented = common.NewErrorMsg(common.ErrNotImplemented, "This command is not implemented for Tigris yet")
 
-// Handler implements handlers.Interface by stubbing all methods except the following handler-independent commands:
-//
-//  * buildInfo;
-//  * connectionStatus;
-//  * debugError;
-//  * getCmdLineOpts;
-//  * hostInfo;
-//  * listCommands.
+// Handler implements handlers.Interface on top of Tigris.
 type Handler struct{}
 
 // New returns a new handler.
-func New() handlers.Interface {
-	return new(Handler)
+func New() (handlers.Interface, error) {
+	return new(Handler), nil
 }
 
 // Close implements handlers.Interface.

@@ -33,8 +33,15 @@ func Dump[T types.Type](tb testing.TB, o T) string {
 	b, err := fjson.Marshal(o)
 	require.NoError(tb, err)
 
+	return string(IndentJSON(tb, b))
+}
+
+// IndentJSON returns an indented form of the JSON input.
+func IndentJSON(tb testing.TB, b []byte) []byte {
+	tb.Helper()
+
 	dst := bytes.NewBuffer(make([]byte, 0, len(b)))
-	err = json.Indent(dst, b, "", "  ")
+	err := json.Indent(dst, b, "", "  ")
 	require.NoError(tb, err)
-	return dst.String()
+	return dst.Bytes()
 }

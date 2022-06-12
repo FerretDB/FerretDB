@@ -33,6 +33,7 @@ func (dt *dateTimeType) String() string {
 	return time.Time(*dt).Format(time.RFC3339Nano)
 }
 
+// dateTimeJSON is a JSON object representation of the dateTimeType.
 type dateTimeJSON struct {
 	D int64 `json:"$d"`
 }

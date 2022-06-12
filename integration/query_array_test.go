@@ -21,8 +21,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestQueryArraySize(t *testing.T) {
@@ -115,6 +118,206 @@ func TestQueryArraySize(t *testing.T) {
 				Name: "BadValue",
 				Message: `unknown top level operator: $size. ` +
 					`If you have a field name that starts with a '$' symbol, consider using $getField or $setField.`,
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			if tc.err != nil {
+				require.Nil(t, tc.expectedIDs)
+				AssertEqualError(t, *tc.err, err)
+				return
+			}
+			require.NoError(t, err)
+
+			var actual []bson.D
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
+		})
+	}
+}
+
+func TestQueryArrayDotNotation(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+
+	for name, tc := range map[string]struct {
+		filter      bson.D
+		expectedIDs []any
+		err         *mongo.CommandError
+	}{
+		"PositionIndexGreaterThanArrayLength": {
+			filter:      bson.D{{"value.5", bson.D{{"$type", "double"}}}},
+			expectedIDs: []any{},
+		},
+		"PositionIndexAtTheEndOfArray": {
+			filter:      bson.D{{"value.1", bson.D{{"$type", "double"}}}},
+			expectedIDs: []any{"array-two"},
+		},
+
+		"PositionTypeNull": {
+			filter:      bson.D{{"value.0", bson.D{{"$type", "null"}}}},
+			expectedIDs: []any{"array-null", "array-three-reverse"},
+		},
+		"PositionRegex": {
+			filter:      bson.D{{"value.1", primitive.Regex{Pattern: "foo"}}},
+			expectedIDs: []any{"array-three", "array-three-reverse"},
+		},
+		"PositionArray": {
+			filter:      bson.D{{"value.0", primitive.A{}}},
+			expectedIDs: []any{},
+		},
+
+		"NoSuchFieldPosition": {
+			filter:      bson.D{{"value.some.0", bson.A{42}}},
+			expectedIDs: []any{},
+		},
+		"Field": {
+			filter:      bson.D{{"value.array", int32(42)}},
+			expectedIDs: []any{"document-composite", "document-composite-reverse"},
+		},
+		"FieldPosition": {
+			filter:      bson.D{{"value.array.0", int32(42)}},
+			expectedIDs: []any{"document-composite", "document-composite-reverse"},
+		},
+		"FieldPositionQuery": {
+			filter:      bson.D{{"value.array.0", bson.D{{"$gte", int32(42)}}}},
+			expectedIDs: []any{"document-composite", "document-composite-reverse"},
+		},
+		"FieldPositionQueryNonArray": {
+			filter:      bson.D{{"value.document.0", bson.D{{"$lt", int32(42)}}}},
+			expectedIDs: []any{},
+		},
+		"FieldPositionField": {
+			filter:      bson.D{{"value.array.2.foo", "bar"}},
+			expectedIDs: []any{},
+		},
+
+		"FieldPositionQueryRegex": {
+			filter: bson.D{{"value.array.0", bson.D{{"$lt", primitive.Regex{Pattern: "^$"}}}}},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "Can't have RegEx as arg to predicate over field 'value.array.0'.",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			if tc.err != nil {
+				require.Nil(t, tc.expectedIDs)
+				AssertEqualError(t, *tc.err, err)
+				return
+			}
+			require.NoError(t, err)
+
+			var actual []bson.D
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
+		})
+	}
+}
+
+func TestQueryElemMatchOperator(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+
+	for name, tc := range map[string]struct {
+		filter      bson.D
+		expectedIDs []any
+		err         *mongo.CommandError
+	}{
+		"DoubleTarget": {
+			filter: bson.D{
+				{"_id", "double"},
+				{"value", bson.D{{"$elemMatch", bson.D{{"$gt", int32(0)}}}}},
+			},
+			expectedIDs: []any{},
+		},
+		"GtZero": {
+			filter:      bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"$gt", int32(0)}}}}}},
+			expectedIDs: []any{"array", "array-three", "array-three-reverse", "array-two"},
+		},
+		"GtZeroWithTypeArray": {
+			filter: bson.D{
+				{"value", bson.D{
+					{"$elemMatch", bson.D{
+						{"$gt", int32(0)},
+					}},
+					{"$type", "array"},
+				}},
+			},
+			expectedIDs: []any{"array", "array-three", "array-three-reverse", "array-two"},
+		},
+		"GtZeroWithTypeString": {
+			filter: bson.D{
+				{"value", bson.D{
+					{"$elemMatch", bson.D{
+						{"$gt", int32(0)},
+					}},
+					{"$type", "string"},
+				}},
+			},
+			expectedIDs: []any{"array-three", "array-three-reverse"},
+		},
+		"GtLt": {
+			filter: bson.D{
+				{"value", bson.D{
+					{"$elemMatch", bson.D{
+						{"$gt", int32(0)},
+						{"$lt", int32(43)},
+					}},
+				}},
+			},
+			expectedIDs: []any{"array", "array-three", "array-three-reverse", "array-two"},
+		},
+
+		"UnexpectedFilterString": {
+			filter: bson.D{{"value", bson.D{{"$elemMatch", "foo"}}}},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "$elemMatch needs an Object",
+			},
+		},
+		"WhereInsideElemMatch": {
+			filter: bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"$where", "123"}}}}}},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "$where can only be applied to the top-level document",
+			},
+		},
+		"TextInsideElemMatch": {
+			filter: bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"$text", "123"}}}}}},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "$text can only be applied to the top-level document",
+			},
+		},
+		"GtField": {
+			filter: bson.D{{"value", bson.D{
+				{
+					"$elemMatch",
+					bson.D{
+						{"$gt", int32(0)},
+						{"foo", int32(42)},
+					},
+				},
+			}}},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "unknown operator: foo",
 			},
 		},
 	} {
