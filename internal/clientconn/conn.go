@@ -180,7 +180,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 		var resCloseConn bool
 		if c.mode != ProxyMode {
 			resHeader, resBody, resCloseConn = c.route(ctx, reqHeader, reqBody)
-			diffLogLevel = c.logResponse(resHeader, resBody, resCloseConn)
+			diffLogLevel = c.logResponse("Response", resHeader, resBody, resCloseConn)
 		}
 
 		// send request to proxy unless we are in normal mode
@@ -192,7 +192,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 			}
 
 			proxyHeader, proxyBody, _ = c.proxy.Route(ctx, reqHeader, reqBody)
-			if level := c.logResponse(resHeader, resBody, resCloseConn); level != diffLogLevel {
+			if level := c.logResponse("Proxy response", proxyHeader, proxyBody, resCloseConn); level != diffLogLevel {
 				// In principle, normal and proxy responses should be logged with the same level
 				// as they behave the same way. If it's not true, there is a bug somewhere, so
 				// we should log the diff as an error.
@@ -407,12 +407,16 @@ func (c *conn) Collect(ch chan<- prometheus.Metric) {
 }
 
 // logResponse logs response's header and body and returns the log level that was used.
-// If op code is not OP_MSG, it always logs as a debug.
-// For the OP_MSG code, the level depends on the type of error.
+//
+// The param `who` will be used in logs and should represent the type of the response,
+// for example "Response" or "Proxy Response".
+//
+// If response op code is not `OP_MSG`, it always logs as a debug.
+// For the `OP_MSG` code, the level depends on the type of error.
 // If there is no errors in the response, it will be logged as a debug.
 // If there is an error in the response, and connection is closed, it will be logged as an error.
 // If there is an error in the response, and connection is not closed, it will be logged as a warning.
-func (c *conn) logResponse(resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) zapcore.Level {
+func (c *conn) logResponse(who string, resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) zapcore.Level {
 	level := zap.DebugLevel
 
 	if resHeader.OpCode == wire.OpCodeMsg {
@@ -429,8 +433,8 @@ func (c *conn) logResponse(resHeader *wire.MsgHeader, resBody wire.MsgBody, clos
 		}
 	}
 
-	c.l.Desugar().Check(level, fmt.Sprintf("Response header: %s", resHeader)).Write()
-	c.l.Desugar().Check(level, fmt.Sprintf("Response message:\n%s\n\n\n", resBody)).Write()
+	c.l.Desugar().Check(level, fmt.Sprintf("%s header: %s", who, resHeader)).Write()
+	c.l.Desugar().Check(level, fmt.Sprintf("%s message:\n%s\n\n\n", who, resBody)).Write()
 
 	return level
 }
