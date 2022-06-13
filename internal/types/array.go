@@ -16,6 +16,7 @@ package types
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -150,10 +151,10 @@ func (a *Array) Max() any {
 	return max
 }
 
-// Contains checks if the Array contains the given value.
+// Contains checks if the Array contains the exact given value.
 func (a *Array) Contains(value any) bool {
 	for _, v := range a.s {
-		if Compare(v, value) == Equal {
+		if reflect.DeepEqual(v, value) {
 			return true
 		}
 	}

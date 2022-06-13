@@ -222,6 +222,11 @@ func TestArrayContains(t *testing.T) {
 			filter:   "foo",
 			expected: true,
 		},
+		"StringNested": {
+			array:    must.NotFail(NewArray(must.NotFail(NewArray("foo", "bar")))),
+			filter:   "foo",
+			expected: false,
+		},
 		"StringNegative": {
 			array:    must.NotFail(NewArray("foo", "bar")),
 			filter:   "hello",
@@ -236,6 +241,11 @@ func TestArrayContains(t *testing.T) {
 			array:    must.NotFail(NewArray(int32(42), int32(43), int32(45))),
 			filter:   int32(44),
 			expected: false,
+		},
+		"Multi": {
+			array:    must.NotFail(NewArray(int32(42), "foo", Null)),
+			filter:   Null,
+			expected: true,
 		},
 	} {
 		name, tc := name, tc
