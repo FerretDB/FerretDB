@@ -43,3 +43,23 @@ var Composites = &Values[string]{
 		// "array-empty-nested": bson.A{bson.A{}},
 	},
 }
+
+// ArraySet contains various array variations for tests.
+//
+// This shared data set is not frozen yet, but please add to it only if it is really shared.
+var ArraySet = &Values[string]{
+	data: map[string]any{
+		"array-one":              bson.A{int32(42)},
+		"array-two":              bson.A{42, "foo"},
+		"array-three":            bson.A{int32(42), "foo", nil},
+		"array-three-reverse":    bson.A{nil, "foo", int32(42)},
+		"array-empty":            bson.A{},
+		"array-null":             bson.A{nil},
+		"array-empty-nested":     bson.A{bson.A{}},
+		"array-two-empty-nested": bson.A{nil, bson.A{}},
+		"array-embedded":         bson.A{bson.A{"42", "foo"}},
+		"array-first-embedded":   bson.A{bson.A{int32(42), "foo"}, nil},
+		"array-middle-embedded":  bson.A{nil, bson.A{int32(42), "foo"}, nil},
+		"array-last-embedded":    bson.A{nil, bson.A{int32(42), "foo"}},
+	},
+}

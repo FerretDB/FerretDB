@@ -340,3 +340,76 @@ func TestQueryElemMatchOperator(t *testing.T) {
 		})
 	}
 }
+
+func TestArrayEquality(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t, shareddata.ArraySet)
+
+	for name, tc := range map[string]struct {
+		array       bson.A
+		expectedIDs []any
+	}{
+		"One": {
+			array:       bson.A{int32(42)},
+			expectedIDs: []any{"array-one"},
+		},
+		"Two": {
+			array:       bson.A{42, "foo"},
+			expectedIDs: []any{"array-first-embedded", "array-last-embedded", "array-middle-embedded", "array-two"},
+		},
+		"Three": {
+			array:       bson.A{int32(42), "foo", nil},
+			expectedIDs: []any{"array-three"},
+		},
+		"Three-reverse": {
+			array:       bson.A{nil, "foo", int32(42)},
+			expectedIDs: []any{"array-three-reverse"},
+		},
+		"Empty": {
+			array:       bson.A{},
+			expectedIDs: []any{"array-empty", "array-empty-nested", "array-two-empty-nested"},
+		},
+		"Null": {
+			array:       bson.A{nil},
+			expectedIDs: []any{"array-null"},
+		},
+		"EmptyNested": {
+			array:       bson.A{bson.A{}},
+			expectedIDs: []any{"array-empty-nested"},
+		},
+		"TwoEmptyNested": {
+			array:       bson.A{nil, bson.A{}},
+			expectedIDs: []any{"array-two-empty-nested"},
+		},
+		"OneEmbedded": {
+			array:       bson.A{bson.A{"42", "foo"}},
+			expectedIDs: []any{"array-embedded"},
+		},
+		"FirstEmbedded": {
+			array:       bson.A{bson.A{int32(42), "foo"}, nil},
+			expectedIDs: []any{"array-first-embedded"},
+		},
+		"MiddleEmbedded": {
+			array:       bson.A{nil, bson.A{int32(42), "foo"}, nil},
+			expectedIDs: []any{"array-middle-embedded"},
+		},
+		"LastEmbedded": {
+			array:       bson.A{nil, bson.A{int32(42), "foo"}},
+			expectedIDs: []any{"array-last-embedded"},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			filter := bson.D{{"value", tc.array}}
+			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			require.NoError(t, err)
+
+			var actual []bson.D
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
+		})
+	}
+}
