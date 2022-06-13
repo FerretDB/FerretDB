@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // GetByPath returns a value by path - a sequence of indexes and keys.
@@ -74,13 +73,6 @@ func SetByPath[T types.CompositeTypeInterface](tb testing.TB, comp T, value any,
 			tb.Fatalf("can't access %T by path %q", next, p)
 		}
 	}
-}
-
-// AssertInThreshold asserts that a document has a key with a value and it is within a given numerical delta.
-func AssertInThreshold(tb testing.TB, doc *types.Document, key string, v any, delta float64) {
-	tb.Helper()
-
-	assert.InDelta(tb, v, must.NotFail(doc.Get(key)), delta)
 }
 
 // CompareAndSetByPathNum asserts that two values with the same path in two objects (documents or arrays)

@@ -651,12 +651,12 @@ func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
 	assert.Equal(t, int32(0), must.NotFail(doc.Get("count")))
+	assert.Equal(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
 
-	testutil.AssertInThreshold(t, doc, "size", float64(8012), 8_012)
-	testutil.AssertInThreshold(t, doc, "storageSize", float64(4096), 8_012)
-	testutil.AssertInThreshold(t, doc, "totalIndexSize", float64(4096), 8_012)
-	testutil.AssertInThreshold(t, doc, "totalSize", float64(4096), 8_012)
-	testutil.AssertInThreshold(t, doc, "scaleFactor", float64(4096), 8_012)
+	assert.InDelta(t, float64(8012), must.NotFail(doc.Get("size")), 8_012)
+	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("storageSize")), 8_012)
+	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalIndexSize")), 8_012)
+	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalSize")), 8_012)
 }
 
 func TestCommandsAdministrationCollStats(t *testing.T) {
@@ -670,13 +670,13 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 
 	doc := ConvertDocument(t, actual)
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+	assert.Equal(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
 	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
 
-	testutil.AssertInThreshold(t, doc, "size", float64(8012), 16_024)
-	testutil.AssertInThreshold(t, doc, "storageSize", float64(4096), 8_012)
-	testutil.AssertInThreshold(t, doc, "totalIndexSize", float64(4096), 8_012)
-	testutil.AssertInThreshold(t, doc, "totalSize", float64(4096), 16_024)
-	testutil.AssertInThreshold(t, doc, "scaleFactor", float64(4096), 8_012)
+	assert.InDelta(t, float64(8012), must.NotFail(doc.Get("size")), 16_024)
+	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("storageSize")), 8_012)
+	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalIndexSize")), 8_012)
+	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalSize")), 16_024)
 }
 
 func TestCommandsAdministrationDataSize(t *testing.T) {
@@ -691,8 +691,8 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 	doc := ConvertDocument(t, actual)
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 
-	testutil.AssertInThreshold(t, doc, "size", float64(8012), 10_000)
-	testutil.AssertInThreshold(t, doc, "millis", float64(100), 100)
+	assert.InDelta(t, float64(8012), must.NotFail(doc.Get("size")), 16_024)
+	assert.InDelta(t, float64(100), must.NotFail(doc.Get("millis")), 100)
 }
 
 func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
@@ -709,7 +709,7 @@ func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
 	assert.Equal(t, int32(0), must.NotFail(doc.Get("size")))
 	assert.Equal(t, int32(0), must.NotFail(doc.Get("numObjects")))
 
-	testutil.AssertInThreshold(t, doc, "millis", float64(100), 100)
+	assert.InDelta(t, float64(100), must.NotFail(doc.Get("millis")), 100)
 }
 
 func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
@@ -731,10 +731,10 @@ func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
 	assert.Equal(t, float64(0), must.NotFail(doc.Get("avgObjSize")))
 	assert.Equal(t, float64(0), must.NotFail(doc.Get("dataSize")))
 
-	testutil.AssertInThreshold(t, doc, "indexes", float64(1), 1)
-	testutil.AssertInThreshold(t, doc, "indexSize", float64(4096), 4_096)
-	testutil.AssertInThreshold(t, doc, "totalSize", float64(8192), 0)
+	assert.InDelta(t, float64(1), must.NotFail(doc.Get("indexes")), 1)
+	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("indexSize")), 4_096)
 
+	assert.InDelta(t, float64(1), must.NotFail(doc.Get("totalSize")), 8192)
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("scaleFactor")))
 }
 
@@ -755,10 +755,9 @@ func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
 	assert.Equal(t, int32(0), must.NotFail(doc.Get("views")))
 	assert.Equal(t, float64(1000), must.NotFail(doc.Get("scaleFactor")))
 
-	testutil.AssertInThreshold(t, doc, "dataSize", float64(2.161), 10)
-
-	testutil.AssertInThreshold(t, doc, "indexes", float64(1), 1)
-	testutil.AssertInThreshold(t, doc, "indexSize", float64(0), 4060)
+	assert.InDelta(t, float64(2.161), must.NotFail(doc.Get("dataSize")), 10)
+	assert.InDelta(t, float64(1), must.NotFail(doc.Get("indexes")), 1)
+	assert.InDelta(t, float64(0), must.NotFail(doc.Get("indexSize")), 4060)
 }
 
 func TestCommandsAdministrationServerStatus(t *testing.T) {
@@ -782,28 +781,21 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	assert.Regexp(t, `^5\.0\.`, must.NotFail(doc.Get("version")))
 	assert.NotEmpty(t, must.NotFail(doc.Get("process")))
 
-	testutil.AssertInThreshold(t, doc, "pid", float64(1), 5_000_000)
-	testutil.AssertInThreshold(t, doc, "uptime", float64(0), 600)
-	testutil.AssertInThreshold(t, doc, "uptimeMillis", float64(0), 600_000)
-	testutil.AssertInThreshold(t, doc, "uptimeEstimate", float64(0), 6000)
+	assert.InDelta(t, float64(1), must.NotFail(doc.Get("pid")), 5_000_000)
+	assert.InDelta(t, float64(0), must.NotFail(doc.Get("uptime")), 600)
+	assert.InDelta(t, float64(0), must.NotFail(doc.Get("uptimeMillis")), 600_000)
+	assert.InDelta(t, float64(0), must.NotFail(doc.Get("uptimeEstimate")), 6000)
 
 	expectedLocalTime := ConvertDocument(t, bson.D{{"localTime", primitive.NewDateTimeFromTime(time.Now())}})
-	testutil.CompareAndSetByPathTime(
-		t,
-		expectedLocalTime,
-		doc,
-		time.Duration(2*time.Second),
-		types.NewPathFromString("localTime"),
-	)
+	testutil.CompareAndSetByPathTime(t, expectedLocalTime, doc, time.Duration(2*time.Second), types.NewPathFromString("localTime"))
 
 	catalogStats, ok := must.NotFail(doc.Get("catalogStats")).(*types.Document)
 	assert.True(t, ok)
 
-	testutil.AssertInThreshold(t, catalogStats, "collections", float64(1), 50)
-	testutil.AssertInThreshold(t, catalogStats, "capped", float64(0), 0)
-	testutil.AssertInThreshold(t, catalogStats, "timeseries", float64(0), 0)
-	testutil.AssertInThreshold(t, catalogStats, "internalCollections", float64(3), 3)
+	assert.InDelta(t, float64(1), must.NotFail(catalogStats.Get("collections")), 50)
+	assert.InDelta(t, float64(3), must.NotFail(catalogStats.Get("internalCollections")), 3)
 
+	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("capped")))
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("timeseries")))
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("views")))
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("internalViews")))
