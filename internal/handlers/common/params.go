@@ -263,7 +263,7 @@ func addNumbers(v1, v2 any) (any, error) {
 	}
 }
 
-// GetOptionalPositiveNumber returns doc's value for key or protocol error for missing or invalid parameter.
+// GetOptionalPositiveNumber returns doc's value for key or protocol error for invalid parameter.
 func GetOptionalPositiveNumber(document *types.Document, key string) (int32, error) {
 	v, err := document.Get(key)
 	if err != nil {
@@ -276,6 +276,13 @@ func GetOptionalPositiveNumber(document *types.Document, key string) (int32, err
 		case errUnexpectedType:
 			return 0, NewErrorMsg(ErrBadValue, fmt.Sprintf("%s must be a number", key))
 		case errNotWholeNumber:
+			if _, ok := v.(float64); ok {
+				return 0, NewErrorMsg(
+					ErrBadValue,
+					fmt.Sprintf("%v has non-integral value", key),
+				)
+			}
+
 			return 0, NewErrorMsg(ErrBadValue, fmt.Sprintf("%s must be a whole number", key))
 		default:
 			return 0, err

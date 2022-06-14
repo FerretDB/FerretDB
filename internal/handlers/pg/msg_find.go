@@ -76,8 +76,8 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	if maxTimeMS != 0 {
-		ctxWithTimeout, runCancel := context.WithTimeout(ctx, time.Duration(maxTimeMS)*time.Millisecond)
-		defer runCancel()
+		ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Duration(maxTimeMS)*time.Millisecond)
+		defer cancel()
 
 		ctx = ctxWithTimeout
 	}
