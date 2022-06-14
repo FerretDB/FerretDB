@@ -112,12 +112,12 @@ func TestQueryElementType(t *testing.T) {
 		},
 		"Array": {
 			v:           "array",
-			expectedIDs: []any{"array", "array-embedded", "array-empty", "array-null", "array-three", "array-three-reverse"},
+			expectedIDs: []any{"array", "array-embedded", "array-empty", "array-null", "array-three", "array-three-reverse", "array-two"},
 		},
 		"Double": {
 			v: "double",
 			expectedIDs: []any{
-				"double", "double-big", "double-max", "double-nan",
+				"array-two", "double", "double-big", "double-max", "double-nan",
 				"double-negative-infinity", "double-negative-zero", "double-positive-infinity",
 				"double-smallest", "double-whole", "double-zero",
 			},
@@ -166,7 +166,7 @@ func TestQueryElementType(t *testing.T) {
 		"Number": {
 			v: "number",
 			expectedIDs: []any{
-				"array", "array-three", "array-three-reverse",
+				"array", "array-three", "array-three-reverse", "array-two",
 				"double", "double-big", "double-max", "double-nan",
 				"double-negative-infinity", "double-negative-zero",
 				"double-positive-infinity", "double-smallest",
