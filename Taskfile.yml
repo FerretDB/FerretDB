@@ -262,11 +262,15 @@ tasks:
       - test {{.DOCKER_IMAGE}}
       - >
         docker buildx build --builder=ferretdb --platform=linux/arm64,linux/amd64
+        --build-arg BUILD_ARGS="{{.BUILD_ARGS}}"
+        --build-arg CGO_ENABLED={{.CGO_ENABLED}}
         --build-arg VERSION={{.VERSION}}
         --build-arg COMMIT={{.COMMIT}}
         --tag={{.DOCKER_IMAGE}}
         --push .
     vars:
+      BUILD_ARGS:
+      CGO_ENABLED: 0
       COMMIT:
         sh: cat internal/util/version/commit.txt
       VERSION:
