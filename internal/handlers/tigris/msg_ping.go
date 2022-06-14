@@ -24,8 +24,7 @@ import (
 
 // MsgPing implements HandlerInterface.
 func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	_, err := h.driver.Info(ctx)
-	if err != nil {
+	if _, err := h.driver.Info(ctx); err != nil {
 		return nil, err
 	}
 
