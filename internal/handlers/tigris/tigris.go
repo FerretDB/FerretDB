@@ -17,6 +17,7 @@ package tigris
 
 import (
 	"context"
+	"time"
 
 	"github.com/tigrisdata/tigris-client-go/config"
 	"github.com/tigrisdata/tigris-client-go/driver"
@@ -41,7 +42,8 @@ type NewOpts struct {
 // Handler implements handlers.Interface on top of Tigris.
 type Handler struct {
 	*NewOpts
-	driver driver.Driver
+	driver    driver.Driver
+	startTime time.Time
 }
 
 // New returns a new handler.
@@ -55,8 +57,9 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 	}
 
 	h := &Handler{
-		NewOpts: opts,
-		driver:  driver,
+		NewOpts:   opts,
+		driver:    driver,
+		startTime: time.Now(),
 	}
 	return h, nil
 }

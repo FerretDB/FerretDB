@@ -23,5 +23,6 @@ import (
 
 // MsgDelete implements HandlerInterface.
 func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	// TODO
 	return nil, notImplemented(must.NotFail(msg.Document()).Command())
 }

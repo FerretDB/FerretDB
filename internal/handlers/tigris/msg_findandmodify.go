@@ -23,5 +23,6 @@ import (
 
 // MsgFindAndModify implements HandlerInterface.
 func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	// TODO
 	return nil, notImplemented(must.NotFail(msg.Document()).Command())
 }

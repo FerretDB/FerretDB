@@ -23,5 +23,6 @@ import (
 
 // MsgDropDatabase implements HandlerInterface.
 func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	// TODO
 	return nil, notImplemented(must.NotFail(msg.Document()).Command())
 }
