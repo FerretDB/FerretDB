@@ -140,9 +140,6 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			"ok", float64(1),
 		))},
 	}))
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
 
 	return &reply, nil
 }
