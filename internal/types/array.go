@@ -16,6 +16,7 @@ package types
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -151,23 +152,25 @@ func (a *Array) Max() any {
 }
 
 // Contains checks if the Array contains the given value.
-func (a *Array) Contains(filter any) bool {
-	if filter, ok := filter.(*Array); ok {
-		if compareArrays(a, filter) == Equal {
-			return true
-		}
+func (a *Array) Contains(filterValue any) bool {
+	if filterValue, ok := filterValue.(float64); ok && filterValue == math.Nan() {
+		// TODO: handle NaN
 	}
-	for _, v := range a.s {
-		if _, ok := v.(*Array); ok {
-			if a.Len() > 1 {
-				continue
-			}
-		}
 
-		if Compare(v, filter) == Equal {
+	// special case: if `a` and `filterValue` are equal,
+	// we consider that `a` contains `filterValue`.
+	if reflect.DeepEqual(a, filterValue) {
+		return true
+	}
+
+	// otherwise, we check if at least one element of `a`
+	// is equal to `filterValue`.
+	for _, elem := range a.s {
+		if reflect.DeepEqual(elem, filterValue) {
 			return true
 		}
 	}
+
 	return false
 }
 
