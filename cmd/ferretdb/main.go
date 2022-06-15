@@ -64,16 +64,22 @@ var (
 	handlerF = flag.String("handler", "pg", "<set in initFlags()>")
 
 	testConnTimeoutF = flag.Duration("test-conn-timeout", 0, "test: set connection timeout")
-	logLevel         = flag.String("log-level", "INFO", "<set in initFlags()>")
+	logLevel         = flag.String("log-level", "info", "<set in initFlags()>")
 )
 
 // initFlags improves flags settings after all global flags are initialized
+//
 // and all handler constructors are registered.
 func initFlags() {
 	handlers := maps.Keys(registeredHandlers)
 	slices.Sort(handlers)
 	flag.Lookup("handler").Usage = "backend handler: " + strings.Join(handlers, ", ")
-	flag.Lookup("log-level").Usage = "sets logging levels"
+
+	var levels []string
+	for _, l := range []zapcore.Level{zapcore.DebugLevel, zapcore.ErrorLevel, zapcore.WarnLevel, zapcore.ErrorLevel} {
+		levels = append(levels, l.String())
+	}
+	flag.Lookup("log-level").Usage = "log level: " + strings.Join(levels, ", ")
 }
 
 func main() {
