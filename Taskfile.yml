@@ -286,3 +286,7 @@ tasks:
     vars:
       VERSION:
         sh: cat internal/util/version/version.txt
+
+  build:
+    cmds:
+      - go build -v -o ./bin/ ./cmd/ferretdb

@@ -15,7 +15,7 @@ for development is available as completely open source software"
 homepage: "http://ferretdb.com"
 license: "Apache License 2.0"
 contents:
-  - src: ./build/
+  - src: ./bin/ferretdb
     dst: /usr/local/bin
 
 
