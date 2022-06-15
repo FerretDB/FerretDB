@@ -624,6 +624,10 @@ func filterFieldExprAll(fieldValue any, allValue any) (bool, error) {
 		return false, NewErrorMsg(ErrBadValue, "$all needs an array")
 	}
 
+	if query.Len() == 0 {
+		return false, nil
+	}
+
 	switch value := fieldValue.(type) {
 	case *types.Array:
 		return value.ContainsAll(query), nil
