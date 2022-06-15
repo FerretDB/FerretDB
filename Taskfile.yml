@@ -277,6 +277,12 @@ tasks:
       VERSION:
         sh: cat internal/util/version/version.txt
 
-  build-nfpm:
+  nfpm:
     cmds:
-      - nfpm rpm -f .nfpm.yaml -t ./build/deb
+      - mkdir -p ./build/deb
+      - mkdir -p ./build/rpm
+      - nfpm pkg -f .nfpm.yaml -t ./build/deb/ferretdb_{{.VERSION}}.deb
+      - nfpm pkg -f .nfpm.yaml -t ./build/rpm/ferretdb_{{.VERSION}}.rpm
+    vars:
+      VERSION:
+        sh: cat internal/util/version/version.txt

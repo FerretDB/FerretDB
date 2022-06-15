@@ -2,31 +2,20 @@
 #
 # check https://nfpm.goreleaser.com/configuration for detailed usage
 #
-name: "FerretDB"
+name: "ferretdb"
 arch: "amd64"
 platform: "linux"
-version: "v1.0.0"
+version: v0.3.0
+prerelease: 57-g9653ab8-dirty
 section: "default"
 priority: "extra"
-replaces:
-- foobar
-provides:
-- bar
-depends:
-- foo
-- bar
-recommends:
-- whatever
-suggests:
-- something-else
-conflicts:
-- not-foo
-- not-bar
-maintainer: "Fenogentov <support@ferretdb.com>"
-description: "d e s c r i p t i o n"
-vendor: "FooBarCorp"
+maintainer: FerretDB <support@ferretdb.com>
+description: "Ideal solution for anyone looking for MongoDB |
+for development is available as completely open source software"
 homepage: "http://ferretdb.com"
-license: "MIT"
+license: "Apache License 2.0"
 contents:
-- src: ./cmd/ferretdb
+  - src: ./build/
+    dst: /usr/local/bin
+
 
