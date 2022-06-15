@@ -276,3 +276,7 @@ tasks:
         sh: cat internal/util/version/commit.txt
       VERSION:
         sh: cat internal/util/version/version.txt
+
+  build-nfpm:
+    cmds:
+      - nfpm rpm -f .nfpm.yaml -t ./build/deb
