@@ -1,0 +1,32 @@
+# nfpm example config file
+#
+# check https://nfpm.goreleaser.com/configuration for detailed usage
+#
+name: "FerretDB"
+arch: "amd64"
+platform: "linux"
+version: "v1.0.0"
+section: "default"
+priority: "extra"
+replaces:
+- foobar
+provides:
+- bar
+depends:
+- foo
+- bar
+recommends:
+- whatever
+suggests:
+- something-else
+conflicts:
+- not-foo
+- not-bar
+maintainer: "Fenogentov <support@ferretdb.com>"
+description: "d e s c r i p t i o n"
+vendor: "FooBarCorp"
+homepage: "http://ferretdb.com"
+license: "MIT"
+contents:
+- src: ./cmd/ferretdb
+
