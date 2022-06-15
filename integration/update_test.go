@@ -418,6 +418,16 @@ func TestUpdateSet(t *testing.T) {
 				UpsertedCount: 0,
 			},
 		},
+		"SetSameValueNull": {
+			id:     "null",
+			update: bson.D{{"$set", bson.D{{"value", nil}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 0,
+				UpsertedCount: 0,
+			},
+			result: bson.D{{"_id", "null"}, {"value", nil}},
+		},
 		"Double": {
 			id:     "double",
 			update: bson.D{{"$set", bson.D{{"value", float64(1)}}}},
@@ -486,6 +496,7 @@ func TestUpdateSet(t *testing.T) {
 			_, err := collection.InsertMany(ctx, []any{
 				bson.D{{"_id", "string"}, {"value", "foo"}},
 				bson.D{{"_id", "double"}, {"value", float64(0.0)}},
+				bson.D{{"_id", "null"}, {"value", nil}},
 				bson.D{
 					{"_id", "composite"},
 					{"array", bson.A{
