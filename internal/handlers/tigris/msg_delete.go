@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/tigrisdata/tigris-client-go/driver"
 	"github.com/tigrisdata/tigris-client-go/filter"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -141,7 +142,15 @@ func (h *Handler) delete(ctx context.Context, fp fetchParam, docs []*types.Docum
 		ids[i] = filter.Eq("_id", tjson.ObjectID(id))
 	}
 
-	f := must.NotFail(filter.Or(ids...).Build())
+	var f driver.Filter
+	switch len(ids) {
+	case 0:
+		f = filter.All
+	case 1:
+		f = must.NotFail(ids[0].Build())
+	default:
+		f = must.NotFail(filter.Or(ids...).Build())
+	}
 	h.L.Sugar().Debugf("Filter: %s", f)
 
 	_, err := h.driver.UseDatabase(fp.db).Delete(ctx, fp.collection, f)

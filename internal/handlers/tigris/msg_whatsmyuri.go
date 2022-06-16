@@ -23,5 +23,6 @@ import (
 
 // MsgWhatsMyURI implements HandlerInterface.
 func (h *Handler) MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	// TODO
 	return nil, notImplemented(must.NotFail(msg.Document()).Command())
 }

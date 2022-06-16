@@ -23,5 +23,6 @@ import (
 
 // MsgDBStats implements HandlerInterface.
 func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	// TODO
 	return nil, notImplemented(must.NotFail(msg.Document()).Command())
 }
