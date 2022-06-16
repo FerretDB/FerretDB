@@ -29,7 +29,7 @@ services:
     ports:
       - 127.0.0.1:4500:4500
     volumes:
-      - tigrisdata:/var/fdb
+      - tigrisdata:/var/lib/foundationdb
 
   tigris:
     build:
@@ -37,6 +37,7 @@ services:
       dockerfile: tigris.Dockerfile
     container_name: ferretdb_tigris
     depends_on: [tigris_fdb]
+    restart: on-failure
     command: bash -c 'fdbcli --exec "configure new single memory" && /server/service'
     ports:
       - 127.0.0.1:8081:8081
