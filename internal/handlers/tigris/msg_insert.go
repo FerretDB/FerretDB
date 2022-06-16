@@ -108,6 +108,7 @@ func (h *Handler) insert(ctx context.Context, fp fetchParam, doc *types.Document
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
+	h.L.Sugar().Debugf("Document:\n%s", b)
 
 	_, err = h.driver.UseDatabase(fp.db).Insert(ctx, fp.collection, []driver.Document{b})
 	if err != nil {
