@@ -80,8 +80,9 @@ func initFlags() {
 	slices.Sort(handlers)
 
 	f := flag.Lookup("handler")
-	f.DefValue = "pg"
 	f.Usage = "backend handler: " + strings.Join(handlers, ", ")
+	f.DefValue = "pg"
+	must.NoError(f.Value.Set(f.DefValue))
 
 	levels := []string{
 		zapcore.DebugLevel.String(),
@@ -91,8 +92,9 @@ func initFlags() {
 	}
 
 	f = flag.Lookup("log-level")
-	f.DefValue = zapcore.DebugLevel.String()
 	f.Usage = "log level: " + strings.Join(levels, ", ")
+	f.DefValue = zapcore.DebugLevel.String()
+	must.NoError(f.Value.Set(f.DefValue))
 }
 
 func main() {
