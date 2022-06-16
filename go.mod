@@ -11,7 +11,7 @@ require (
 	github.com/prometheus/client_golang v1.12.2
 	github.com/prometheus/common v0.34.0
 	github.com/stretchr/testify v1.7.2
-	github.com/tigrisdata/tigris-client-go v1.0.0-alpha.16
+	github.com/tigrisdata/tigris-client-go v1.0.0-alpha.18
 	go.uber.org/zap v1.21.0
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect; always use @latest
 	golang.org/x/exp v0.0.0-20220608143224-64259d1afd70
@@ -32,6 +32,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/gnostic v0.6.9 // indirect
 	github.com/google/uuid v1.3.0 // indirect
+	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.10.2 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
