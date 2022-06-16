@@ -19,8 +19,12 @@ services:
       - POSTGRES_HOST_AUTH_METHOD=trust
       - POSTGRES_DB=ferretdb
 
+  # Tigris configuration is based on https://github.com/tigrisdata/tigris/blob/main/test/docker/docker-compose.yml
+
   tigris_fdb:
-    image: foundationdb/foundationdb:6.3.23
+    build:
+      context: ./build/deps
+      dockerfile: tigris_fdb.Dockerfile
     container_name: ferretdb_tigris_fdb
     ports:
       - 127.0.0.1:4500:4500
@@ -28,9 +32,11 @@ services:
       - tigrisdata:/var/fdb
 
   tigris:
-    image: tigrisdata/tigris:latest
+    build:
+      context: ./build/deps
+      dockerfile: tigris.Dockerfile
     container_name: ferretdb_tigris
-    restart: on-failure
+    depends_on: [tigris_fdb]
     command: bash -c 'fdbcli --exec "configure new single memory" && /server/service'
     ports:
       - 127.0.0.1:8081:8081
