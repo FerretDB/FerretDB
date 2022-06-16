@@ -19,6 +19,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/stretchr/testify/assert"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -251,7 +253,9 @@ func TestArrayContains(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tc.expected, tc.array.Contains(tc.filter))
+			contains, err := tc.array.Contains(tc.filter)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expected, contains)
 		})
 	}
 }
@@ -291,7 +295,9 @@ func TestArrayContainsAll(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tc.expected, tc.array.ContainsAll(tc.filter))
+			contains, err := tc.array.ContainsAll(tc.filter)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expected, contains)
 		})
 	}
 }

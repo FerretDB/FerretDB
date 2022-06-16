@@ -16,6 +16,7 @@ package types
 
 import (
 	"fmt"
+	"math"
 	"reflect"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -152,38 +153,43 @@ func (a *Array) Max() any {
 }
 
 // Contains checks if the Array contains the given value.
-func (a *Array) Contains(filterValue any) bool {
-	if filterValue, ok := filterValue.(float64); ok && filterValue == math.Nan() {
-		// TODO: handle NaN
+func (a *Array) Contains(filterValue any) (bool, error) {
+	if filterValue, ok := filterValue.(float64); ok && math.IsNaN(filterValue) {
+		return false, fmt.Errorf("NaN is not implemented in $all")
 	}
 
 	// special case: if `a` and `filterValue` are equal,
 	// we consider that `a` contains `filterValue`.
 	if reflect.DeepEqual(a, filterValue) {
-		return true
+		return true, nil
 	}
 
 	// otherwise, we check if at least one element of `a`
 	// is equal to `filterValue`.
 	for _, elem := range a.s {
 		if reflect.DeepEqual(elem, filterValue) {
-			return true
+			return true, nil
 		}
 	}
 
-	return false
+	return false, nil
 }
 
 // ContainsAll checks if the Array contains all the given values of the Array b.
 // Currently, this algorithm is O(n^2) without any performance tuning.
 //
 // Important! This place can be significantly improved if a more performant algorithm is chosen.
-func (a *Array) ContainsAll(b *Array) bool {
+func (a *Array) ContainsAll(b *Array) (bool, error) {
 	for _, v := range b.s {
-		if !a.Contains(v) {
-			return false
+		contains, err := a.Contains(v)
+		if err != nil {
+			return false, err
+		}
+
+		if !contains {
+			return false, nil
 		}
 	}
 
-	return true
+	return true, nil
 }
