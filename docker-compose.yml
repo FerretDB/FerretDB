@@ -8,7 +8,7 @@ services:
       context: ./build/deps
       dockerfile: postgres.Dockerfile
     container_name: ferretdb_postgres
-    depends_on: [ test_db ]
+    depends_on: [test_db]
     ports:
       - 5432:5432
     extra_hosts:
@@ -48,7 +48,7 @@ services:
       context: ./build/deps
       dockerfile: tigris.Dockerfile
     container_name: ferretdb_tigris
-    depends_on: [ tigris_fdb ]
+    depends_on: [tigris_fdb]
     restart: on-failure
     command: bash -c 'fdbcli --exec "configure new single memory" && /server/service'
     environment:
@@ -65,7 +65,7 @@ services:
       context: ./build/deps
       dockerfile: mongo.Dockerfile
     container_name: ferretdb_mongodb
-    depends_on: [ test_db ]
+    depends_on: [test_db]
     ports:
       - 37017:27017
     extra_hosts:
