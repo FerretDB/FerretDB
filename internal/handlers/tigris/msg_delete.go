@@ -137,9 +137,8 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 func (h *Handler) delete(ctx context.Context, fp fetchParam, docs []*types.Document) (int, error) {
 	ids := make([]filter.Expr, len(docs))
 	for i, doc := range docs {
-		id := must.NotFail(doc.Get("_id"))
-		b := must.NotFail(tjson.Marshal(id))
-		ids[i] = filter.Eq("_id", b)
+		id := must.NotFail(doc.Get("_id")).(types.ObjectID)
+		ids[i] = filter.Eq("_id", tjson.ObjectID(id))
 	}
 
 	f := must.NotFail(filter.Or(ids...).Build())
