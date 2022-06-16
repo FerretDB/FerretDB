@@ -214,9 +214,10 @@ func TestArrayMinMax(t *testing.T) {
 
 func TestArrayContains(t *testing.T) {
 	for name, tc := range map[string]struct {
-		array    *Array
-		filter   any
-		expected bool
+		array       *Array
+		filter      any
+		expected    bool
+		expectedErr error
 	}{
 		"String": {
 			array:    must.NotFail(NewArray("foo", "bar")),
@@ -248,13 +249,22 @@ func TestArrayContains(t *testing.T) {
 			filter:   Null,
 			expected: true,
 		},
+		"NaN": {
+			array:       must.NotFail(NewArray(int32(42), "foo", Null)),
+			filter:      math.NaN(),
+			expected:    false,
+			expectedErr: ErrNaNIsNotImplemented,
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			contains, err := tc.array.Contains(tc.filter)
-			require.NoError(t, err)
-			assert.Equal(t, tc.expected, contains)
+
+			if tc.expectedErr == nil {
+				require.NoError(t, err)
+				assert.Equal(t, tc.expected, contains)
+			}
 		})
 	}
 }
