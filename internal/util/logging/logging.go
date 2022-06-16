@@ -27,21 +27,29 @@ func Setup(level zapcore.Level) {
 	var config zap.Config
 	if level <= zapcore.DebugLevel {
 		config = zap.Config{
-			Level:            zap.NewAtomicLevelAt(level),
-			Development:      true,
-			Encoding:         "console",
-			EncoderConfig:    zap.NewDevelopmentEncoderConfig(),
-			OutputPaths:      []string{"stderr"},
-			ErrorOutputPaths: []string{"stderr"},
+			Level:             zap.NewAtomicLevelAt(level),
+			Development:       true,
+			DisableCaller:     false,
+			DisableStacktrace: false,
+			Sampling:          nil,
+			Encoding:          "console",
+			EncoderConfig:     zap.NewDevelopmentEncoderConfig(),
+			OutputPaths:       []string{"stderr"},
+			ErrorOutputPaths:  []string{"stderr"},
+			InitialFields:     nil,
 		}
 	} else {
 		config = zap.Config{
-			Level:            zap.NewAtomicLevelAt(level),
-			Development:      false,
-			Encoding:         "console",
-			EncoderConfig:    zap.NewDevelopmentEncoderConfig(),
-			OutputPaths:      []string{"stderr"},
-			ErrorOutputPaths: []string{"stderr"},
+			Level:             zap.NewAtomicLevelAt(level),
+			Development:       false,
+			DisableCaller:     false,
+			DisableStacktrace: false,
+			Sampling:          nil,
+			Encoding:          "console",
+			EncoderConfig:     zap.NewDevelopmentEncoderConfig(),
+			OutputPaths:       []string{"stderr"},
+			ErrorOutputPaths:  []string{"stderr"},
+			InitialFields:     nil,
 		}
 	}
 
