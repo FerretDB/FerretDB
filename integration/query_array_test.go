@@ -391,11 +391,6 @@ func TestQueryArrayAll(t *testing.T) {
 			expectedIDs: []any{"double-smallest"},
 			expectedErr: nil,
 		},
-		"NaN": {
-			filter:      bson.D{{"value", bson.D{{"$all", bson.A{math.NaN()}}}}},
-			expectedIDs: []any{"array-two", "double-nan"},
-			expectedErr: nil,
-		},
 		"Nil": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{nil}}}}},
 			expectedIDs: []any{"array-embedded", "array-null", "array-three", "array-three-reverse", "null"},
@@ -438,6 +433,16 @@ func TestQueryArrayAll(t *testing.T) {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{"hello"}}}}},
 			expectedIDs: []any{},
 			expectedErr: nil,
+		},
+
+		"NaNIsNotImplemented": {
+			filter:      bson.D{{"value", bson.D{{"$all", bson.A{math.NaN()}}}}},
+			expectedIDs: nil,
+			expectedErr: &mongo.CommandError{
+				Code:    2,
+				Message: "NaN is not implemented in $all",
+				Name:    "BadValue",
+			},
 		},
 
 		"$allNeedsAnArrayInt": {

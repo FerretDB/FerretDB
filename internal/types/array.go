@@ -15,12 +15,16 @@
 package types
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"reflect"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
+
+// ErrNaNIsNotImplemented should be used in operations where NaN support is not implemented.
+var ErrNaNIsNotImplemented = errors.New("NaN is not implemented")
 
 // Array represents BSON array.
 //
@@ -155,7 +159,7 @@ func (a *Array) Max() any {
 // Contains checks if the Array contains the given value.
 func (a *Array) Contains(filterValue any) (bool, error) {
 	if filterValue, ok := filterValue.(float64); ok && math.IsNaN(filterValue) {
-		return false, fmt.Errorf("NaN is not implemented in $all")
+		return false, ErrNaNIsNotImplemented
 	}
 
 	// special case: if `a` and `filterValue` are equal,

@@ -630,7 +630,15 @@ func filterFieldExprAll(fieldValue any, allValue any) (bool, error) {
 
 	switch value := fieldValue.(type) {
 	case *types.Array:
-		return value.ContainsAll(query), nil
+		contains, err := value.ContainsAll(query)
+		if err == types.ErrNaNIsNotImplemented {
+			return false, NewErrorMsg(ErrBadValue, "NaN is not implemented in $all")
+		}
+		if err != nil {
+			return false, err
+		}
+		return contains, nil
+
 	default:
 		for i := 0; i < query.Len(); i++ {
 			if types.Compare(value, must.NotFail(query.Get(i))) != types.Equal {
