@@ -15,7 +15,6 @@
 package types
 
 import (
-	"errors"
 	"fmt"
 	"math"
 	"reflect"
@@ -24,7 +23,7 @@ import (
 )
 
 // ErrNaNIsNotImplemented should be used in operations where NaN support is not implemented.
-var ErrNaNIsNotImplemented = errors.New("NaN is not implemented")
+var ErrNaNIsNotImplemented = fmt.Errorf("NaN is not implemented")
 
 // Array represents BSON array.
 //
