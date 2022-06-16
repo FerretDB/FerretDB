@@ -61,7 +61,7 @@ var (
 	debugAddrF  = flag.String("debug-addr", "127.0.0.1:8088", "debug address")
 	modeF       = flag.String("mode", string(clientconn.AllModes[0]), fmt.Sprintf("operation mode: %v", clientconn.AllModes))
 
-	handlerF = flag.String("handler", "pg", "<set in initFlags()>")
+	handlerF = flag.String("handler", "<set in initFlags()>", "<set in initFlags()>")
 
 	logLevelF = flag.String("log-level", "<set in initFlags()>", "<set in initFlags()>")
 
