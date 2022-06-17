@@ -286,10 +286,14 @@ tasks:
     deps: [build]
     vars: 
       VERSION: 
-        sh: cat ../../internal/util/version/version.txt
+
     dir:  build/deb
     cmds:
-      - nfpm pkg --config ../../.nfpm.yml --packager deb --target ferretdb_{{.VERSION}}.deb
+      - echo ${VERSION}
+      - nfpm pkg --config ../../.nfpm.yml --packager deb --target ferretdb_${VERSION}.deb
+    env:
+      VERSION:
+        sh: cat ../../internal/util/version/version.txt | grep -oP '^(.+?)(?=-)'
 
   nfpm_rpm:
     deps: [build]
@@ -298,7 +302,10 @@ tasks:
         sh: cat ../../internal/util/version/version.txt
     dir:  build/rpm
     cmds:
-      - nfpm pkg --config ../../.nfpm.yml --packager rpm --target ferretdb_{{.VERSION}}.rpm
+      - nfpm pkg --config ../../.nfpm.yml --packager rpm --target ferretdb_${VERSION}.rpm
+    env:
+      VERSION:
+        sh: cat ../../internal/util/version/version.txt | grep -oP '^(.+?)(?=-)'
 
  
  

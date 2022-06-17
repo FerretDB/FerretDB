@@ -5,14 +5,13 @@
 name: "ferretdb"
 arch: "amd64"
 platform: "linux"
-version: v0.3.0
-prerelease: 57-g9653ab8-dirty
-section: "default"
+version: "${VERSION}"
+section: "database"
 priority: "extra"
 maintainer: FerretDB <support@ferretdb.com>
-description: "is an open source proxy that converts MongoDB 5.0+ wire protocol queries to SQL using PostgreSQL as the database engine"
+description: "it is an open source proxy,which converts MongoDB 5.0+ wire protocol queries to SQL using PostgreSQL as the database engine."
 homepage: "http://ferretdb.com"
-license: "Apache License 2.0"
+license: Apache License 2
 contents:
   - src: ../../bin/ferretdb
     dst: /usr/bin/ferretdb
