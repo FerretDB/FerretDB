@@ -8,7 +8,7 @@ We are interested in all contributions, big or small, in code or documentation.
 But unless you are fixing a very small issue like a typo,
 we kindly ask you first to [create an issue](https://github.com/FerretDB/FerretDB/issues/new/choose),
 to leave a comment on an existing issue if you want to work on it,
-or to [join our Slack chat](./README.md#community) and leave a message for us there.
+or to [join our Slack chat or another community place](./README.md#community) and leave a message for us there.
 This way, you will get help from us and avoid wasted efforts if something can't be worked on right now
 or someone is already working on it.
 
