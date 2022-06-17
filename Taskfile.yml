@@ -286,11 +286,19 @@ tasks:
     deps: [build]
     vars: 
       VERSION: 
-        sh: cat ./internal/util/version/version.txt
+        sh: cat ../../internal/util/version/version.txt
     dir:  build/deb
     cmds:
       - nfpm pkg --config ../../.nfpm.yml --packager deb --target ferretdb_{{.VERSION}}.deb
 
+  nfpm_rpm:
+    deps: [build]
+    vars: 
+      VERSION: 
+        sh: cat ../../internal/util/version/version.txt
+    dir:  build/rpm
+    cmds:
+      - nfpm pkg --config ../../.nfpm.yml --packager rpm --target ferretdb_{{.VERSION}}.rpm
 
  
  
