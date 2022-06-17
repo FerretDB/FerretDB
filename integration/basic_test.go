@@ -40,10 +40,14 @@ func TestMostCommandsAreCaseSensitive(t *testing.T) {
 	res = db.RunCommand(ctx, bson.D{{"listCollections", 1}})
 	assert.NoError(t, res.Err())
 
-	// special case
+	// special cases from the old `mongo` shell
 	res = db.RunCommand(ctx, bson.D{{"ismaster", 1}})
 	assert.NoError(t, res.Err())
 	res = db.RunCommand(ctx, bson.D{{"isMaster", 1}})
+	assert.NoError(t, res.Err())
+	res = db.RunCommand(ctx, bson.D{{"buildinfo", 1}})
+	assert.NoError(t, res.Err())
+	res = db.RunCommand(ctx, bson.D{{"buildInfo", 1}})
 	assert.NoError(t, res.Err())
 }
 
