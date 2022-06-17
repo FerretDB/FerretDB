@@ -20,7 +20,7 @@ The supported way of developing FerretDB is to modify and run it on the host
 (Linux, macOS, or Windows with [WSL2](https://docs.microsoft.com/en-us/windows/wsl/)),
 with PostgreSQL and other dependencies running inside Docker Compose.
 
-You will need Go 1.18 as FerretDB extensively uses ([fuzzing](https://go.dev/doc/tutorial/fuzz))
+You will need Go 1.18 as FerretDB extensively uses ([fuzzing](https://go.dev/doc/tutorial/fuzz)
 and [generics](https://go.dev/doc/tutorial/generics)).
 If your package manager doesn't provide it yet,
 please install it from [go.dev](https://go.dev/dl/).
@@ -42,7 +42,7 @@ To run development commands, you should first install the [`task`](https://taskf
 You can do this by changing the directory to `tools` (`cd tools`) and running `go generate -x`.
 That will install `task` into the `bin` directory (`bin/task` on Linux and macOS, `bin\task.exe` on Windows).
 You can then add `./bin` to `$PATH` either manually (`export PATH=./bin:$PATH` in `bash`)
-or using something like (`direnv` (`.envrc` files)[https://direnv.net],
+or using something like [`direnv`](https://direnv.net) (`.envrc` files),
 or replace every invocation of `task` with explicit `bin/task`.
 You can also [install `task` globally](https://taskfile.dev/#/installation),
 but that might lead to the version skew.
