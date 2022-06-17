@@ -20,8 +20,8 @@ The supported way of developing FerretDB is to modify and run it on the host
 (Linux, macOS, or Windows with [WSL2](https://docs.microsoft.com/en-us/windows/wsl/)),
 with PostgreSQL and other dependencies running inside Docker Compose.
 
-You will need Go 1.18 as FerretDB extensively uses ([fuzzing](https://go.dev/doc/tutorial/fuzz)
-and [generics](https://go.dev/doc/tutorial/generics)).
+You will need Go 1.18 as FerretDB extensively uses [fuzzing](https://go.dev/doc/tutorial/fuzz)
+and [generics](https://go.dev/doc/tutorial/generics).
 If your package manager doesn't provide it yet,
 please install it from [go.dev](https://go.dev/dl/).
 
