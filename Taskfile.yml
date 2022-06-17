@@ -277,16 +277,31 @@ tasks:
       VERSION:
         sh: cat internal/util/version/version.txt
 
-  nfpm:
-    cmds:
-      - mkdir -p ./build/deb
-      - mkdir -p ./build/rpm
-      - nfpm pkg -f .nfpm.yaml -t ./build/deb/ferretdb_{{.VERSION}}.deb
-      - nfpm pkg -f .nfpm.yaml -t ./build/rpm/ferretdb_{{.VERSION}}.rpm
-    vars:
-      VERSION:
-        sh: cat internal/util/version/version.txt
-
   build:
     cmds:
       - go build -v -o ./bin/ ./cmd/ferretdb
+
+  nfpm_deb:
+    deps: [build]
+    dir:  build/deb
+    cmds:
+      - nfpm pkg --config ../../.nfpm.yml --packager deb --target ferretdb_{{.VERSION}}.deb
+    vars:
+      VERSION:
+        sh: cat ../../internal/util/version/version.txt
+
+  nfpm_rpm:
+    deps: [build]
+    dir:  build/rpm
+    cmds:
+      - nfpm pkg --config ../../.nfpm.yml --packager rpm --target ferretdb_{{.VERSION}}.rpm
+    vars:
+      VERSION:
+        sh: cat ../../internal/util/version/version.txt
+
+  pack:
+    cmds:
+      - task: build
+      - task: nfpm_deb
+      - task: nfpm_rpm
+ 

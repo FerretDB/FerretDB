@@ -45,3 +45,5 @@ import (
 //go:generate go build -v -o ../bin/ golang.org/x/tools/cmd/goimports
 //go:generate go build -v -o ../bin/ golang.org/x/tools/cmd/stringer
 //go:generate go build -v -o ../bin/ mvdan.cc/gofumpt
+
+//go:generate go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
