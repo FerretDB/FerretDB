@@ -307,5 +307,7 @@ tasks:
       VERSION:
         sh: cat ../../internal/util/version/version.txt | grep -oP '^(.+?)(?=-)'
 
- 
- 
+  packager:
+    cmds:
+      - task: nfpm_deb
+      - task: nfpm_rpm
