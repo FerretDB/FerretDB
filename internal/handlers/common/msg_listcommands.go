@@ -107,6 +107,11 @@ var Commands = map[string]command{
 		Help:    "Returns a summary of all runtime and configuration options.",
 		Handler: (handlers.Interface).MsgGetCmdLineOpts,
 	},
+	"getFreeMonitoringStatus": {
+		Help: "Returns the status of whether free Cloud monitoring is " +
+			"enabled for standalone or replica sets (including shards).",
+		Handler: (handlers.Interface).MsgGetFreeMonitoringStatus,
+	},
 	"getLog": {
 		Help:    "Returns the most recent logged events from memory.",
 		Handler: (handlers.Interface).MsgGetLog,

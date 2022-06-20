@@ -84,6 +84,10 @@ type Interface interface {
 	// MsgGetCmdLineOpts returns a summary of all runtime and configuration options.
 	MsgGetCmdLineOpts(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
+	// MsgGetFreeMonitoringStatus returns the status of whether free Cloud monitoring is
+	// enabled for standalone or replica sets (including shards).
+	MsgGetFreeMonitoringStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
 	// MsgGetLog returns the most recent logged events from memory.
 	MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
