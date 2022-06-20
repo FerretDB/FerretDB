@@ -1,3 +1,5 @@
+---
+
 # Checklist
 
 * [ ] I read [CONTRIBUTING.md](../CONTRIBUTING.md).
