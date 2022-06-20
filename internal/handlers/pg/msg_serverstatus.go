@@ -51,7 +51,7 @@ func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	uptime := time.Since(h.startTime)
 
-	stats, err := h.pgPool.SchemaStats(ctx, db)
+	stats, err := h.pgPool.SchemaStats(ctx, db, "")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -63,7 +63,7 @@ func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.O
 			"version", version.MongoDBVersion,
 			"process", filepath.Base(exec),
 			"pid", int64(os.Getpid()),
-			"uptime", int64(uptime.Seconds()),
+			"uptime", uptime.Seconds(),
 			"uptimeMillis", uptime.Milliseconds(),
 			"uptimeEstimate", int64(uptime.Seconds()),
 			"localTime", time.Now(),

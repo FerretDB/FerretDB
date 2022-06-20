@@ -27,6 +27,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestCommandsAdministrationCreateDropList(t *testing.T) {
@@ -191,8 +194,9 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 		expected   map[string]any
 		unexpected []string
 		err        *mongo.CommandError
+		altMessage string
 	}{
-		"AllParameters_1": {
+		"GetParameter_Asterisk1": {
 			command: bson.D{{"getParameter", "*"}},
 			expected: map[string]any{
 				"acceptApiVersion2": false,
@@ -201,7 +205,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 				"ok":                float64(1),
 			},
 		},
-		"AllParameters_2": {
+		"GetParameter_Asterisk2": {
 			command: bson.D{{"getParameter", "*"}, {"quiet", 1}, {"comment", "getParameter test"}},
 			expected: map[string]any{
 				"acceptApiVersion2": false,
@@ -210,7 +214,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 				"ok":                float64(1),
 			},
 		},
-		"AllParameters_3": {
+		"GetParameter_Asterisk3": {
 			command: bson.D{{"getParameter", "*"}, {"quiet", 1}, {"quiet_other", 1}, {"comment", "getParameter test"}},
 			expected: map[string]any{
 				"acceptApiVersion2": false,
@@ -219,7 +223,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 				"ok":                float64(1),
 			},
 		},
-		"AllParameters_4": {
+		"GetParameter_Asterisk4": {
 			command: bson.D{{"getParameter", "*"}, {"quiet_other", 1}, {"comment", "getParameter test"}},
 			expected: map[string]any{
 				"acceptApiVersion2": false,
@@ -228,29 +232,36 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 				"ok":                float64(1),
 			},
 		},
-		"ExistingParameters": {
+		"GetParameter_Int": {
 			command: bson.D{{"getParameter", 1}, {"quiet", 1}, {"comment", "getParameter test"}},
 			expected: map[string]any{
 				"quiet": false,
 				"ok":    float64(1),
 			},
 		},
-		"Zero": {
+		"GetParameter_Zero": {
 			command: bson.D{{"getParameter", 0}, {"quiet", 1}, {"comment", "getParameter test"}},
 			expected: map[string]any{
 				"quiet": false,
 				"ok":    float64(1),
 			},
 		},
-		"NaN": {
+		"GetParameter_NaN": {
 			command: bson.D{{"getParameter", math.NaN()}, {"quiet", 1}, {"comment", "getParameter test"}},
 			expected: map[string]any{
 				"quiet": false,
 				"ok":    float64(1),
 			},
 		},
-		"Nil": {
+		"GetParameter_Nil": {
 			command: bson.D{{"getParameter", nil}, {"quiet", 1}, {"comment", "getParameter test"}},
+			expected: map[string]any{
+				"quiet": false,
+				"ok":    float64(1),
+			},
+		},
+		"GetParameter_String": {
+			command: bson.D{{"getParameter", "1"}, {"quiet", 1}, {"comment", "getParameter test"}},
 			expected: map[string]any{
 				"quiet": false,
 				"ok":    float64(1),
@@ -272,6 +283,293 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 			command: bson.D{{"getParameter", 1}, {"quiet_other", 1}, {"comment", "getParameter test"}},
 			err:     &mongo.CommandError{Message: `no option found to get`},
 		},
+		"ShowDetailsTrue": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"ok": float64(1),
+			},
+			unexpected: []string{"acceptApiVersion2"},
+		},
+		"ShowDetailsFalse": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", false}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": false,
+				"ok":    float64(1),
+			},
+			unexpected: []string{"acceptApiVersion2"},
+		},
+		"ShowDetails_NoParameter_1": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}}}},
+			err:     &mongo.CommandError{Message: `no option found to get`},
+		},
+		"ShowDetails_NoParameter_2": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", false}}}},
+			err:     &mongo.CommandError{Message: `no option found to get`},
+		},
+		"AllParametersTrue": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", true}}}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"tlsMode": bson.D{
+					{"value", "disabled"},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", false},
+				},
+				"ok": float64(1),
+			},
+		},
+		"AllParametersFalse_MissingParameter": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", false}}}},
+			err:     &mongo.CommandError{Message: `no option found to get`},
+		},
+		"AllParametersFalse_PresentParameter": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", false}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"ok": float64(1),
+			},
+			unexpected: []string{"acceptApiVersion2"},
+		},
+		"AllParametersFalse_NonexistentParameter": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", false}}}, {"quiet_other", true}},
+			err:     &mongo.CommandError{Message: `no option found to get`},
+		},
+		"ShowDetailsFalse_AllParametersTrue": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", false}, {"allParameters", true}}}},
+			expected: map[string]any{
+				"acceptApiVersion2": false,
+				"authSchemaVersion": int32(5),
+				"quiet":             false,
+				"ok":                float64(1),
+			},
+		},
+		"ShowDetailsFalse_AllParametersFalse_1": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", false}, {"allParameters", false}}}},
+			err:     &mongo.CommandError{Message: `no option found to get`},
+		},
+		"ShowDetailsFalse_AllParametersFalse_2": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", false}, {"allParameters", false}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": false,
+				"ok":    float64(1),
+			},
+			unexpected: []string{"acceptApiVersion2"},
+		},
+		"ShowDetails_NegativeInt": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", int64(-1)}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"ok": float64(1),
+			},
+		},
+		"ShowDetails_PositiveInt": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", int64(1)}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"ok": float64(1),
+			},
+		},
+		"ShowDetails_ZeroInt": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", int64(0)}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": false,
+				"ok":    float64(1),
+			},
+			unexpected: []string{"acceptApiVersion2"},
+		},
+		"ShowDetails_ZeroFloat": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", float64(0)}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": false,
+				"ok":    float64(1),
+			},
+			unexpected: []string{"acceptApiVersion2"},
+		},
+		"ShowDetails_SmallestNonzeroFloat": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", math.SmallestNonzeroFloat64}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"ok": float64(1),
+			},
+		},
+		"ShowDetails_Nil": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", nil}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": false,
+				"ok":    float64(1),
+			},
+		},
+		"ShowDetails_NaN": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", math.NaN()}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"ok": float64(1),
+			},
+		},
+		"ShowDetails_NegatuveZero": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", math.Copysign(0, -1)}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": false,
+				"ok":    float64(1),
+			},
+		},
+		"ShowDetails_String": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", "1"}}}, {"quiet", true}},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: `BSON field 'getParameter.showDetails' is the wrong type 'string', expected types '[bool, long, int, decimal, double']`,
+			},
+			altMessage: `BSON field 'showDetails' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'`,
+		},
+		"AllParameters_NegativeInt": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", int64(-1)}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"tlsMode": bson.D{
+					{"value", "disabled"},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", false},
+				},
+				"ok": float64(1),
+			},
+		},
+		"AllParameters_PositiveInt": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", int64(1)}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"tlsMode": bson.D{
+					{"value", "disabled"},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", false},
+				},
+				"ok": float64(1),
+			},
+		},
+		"AllParameters_ZeroInt": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", int64(0)}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"ok": float64(1),
+			},
+		},
+		"AllParameters_ZeroFloat": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", float64(0)}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"ok": float64(1),
+			},
+		},
+		"AllParameters_SmallestNonzeroFloat": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", math.SmallestNonzeroFloat64}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"tlsMode": bson.D{
+					{"value", "disabled"},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", false},
+				},
+				"ok": float64(1),
+			},
+		},
+		"AllParameters_Nil": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", nil}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"ok": float64(1),
+			},
+			unexpected: []string{"acceptApiVersion2"},
+		},
+		"AllParameters_NaN": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", math.NaN()}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"tlsMode": bson.D{
+					{"value", "disabled"},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", false},
+				},
+				"ok": float64(1),
+			},
+		},
+		"AllParameters_NegatuveZero": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", math.Copysign(0, -1)}}}, {"quiet", true}},
+			expected: map[string]any{
+				"quiet": bson.D{
+					{"value", false},
+					{"settableAtRuntime", true},
+					{"settableAtStartup", true},
+				},
+				"ok": float64(1),
+			},
+			unexpected: []string{"acceptApiVersion2"},
+		},
+		"AllParameters_String": {
+			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", "1"}}}, {"quiet", true}},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: `BSON field 'getParameter.allParameters' is the wrong type 'string', expected types '[bool, long, int, decimal, double']`,
+			},
+			altMessage: `BSON field 'allParameters' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'`,
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -279,146 +577,240 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+
 			if tc.err != nil {
-				AssertEqualError(t, *tc.err, err)
+				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
 				return
 			}
 			require.NoError(t, err)
 
 			m := actual.Map()
-			k := CollectKeys(t, actual)
+			keys := CollectKeys(t, actual)
 
-			for key, item := range tc.expected {
-				assert.Contains(t, k, key)
-				assert.Equal(t, m[key], item)
+			for k, item := range tc.expected {
+				assert.Contains(t, keys, k)
+				assert.IsType(t, item, m[k])
+				if it, ok := item.(primitive.D); ok {
+					z := m[k].(primitive.D)
+					AssertEqualDocuments(t, it, z)
+				} else {
+					assert.Equal(t, m[k], item)
+				}
 			}
-			for _, key := range tc.unexpected {
-				assert.NotContains(t, k, key)
+
+			for _, k := range tc.unexpected {
+				assert.NotContains(t, keys, k)
 			}
 		})
 	}
 }
 
-func TestStatisticsCommands(t *testing.T) {
-	t.Skip("TODO: https://github.com/FerretDB/FerretDB/issues/536")
+func TestCommandsAdministrationBuildInfo(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	var actual bson.D
+	command := bson.D{{"buildInfo", int32(1)}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+	assert.Regexp(t, `^5\.0\.`, must.NotFail(doc.Get("version")))
+	assert.NotEmpty(t, must.NotFail(doc.Get("gitVersion")))
+
+	_, ok := must.NotFail(doc.Get("modules")).(*types.Array)
+	assert.True(t, ok)
+
+	assert.Equal(t, "deprecated", must.NotFail(doc.Get("sysInfo")))
+
+	versionArray, ok := must.NotFail(doc.Get("versionArray")).(*types.Array)
+	assert.True(t, ok)
+	assert.Equal(t, int32(5), must.NotFail(versionArray.Get(0)))
+	assert.Equal(t, int32(0), must.NotFail(versionArray.Get(1)))
+
+	assert.Equal(t, int32(strconv.IntSize), must.NotFail(doc.Get("bits")))
+	assert.False(t, must.NotFail(doc.Get("debug")).(bool))
+
+	assert.Equal(t, int32(16777216), must.NotFail(doc.Get("maxBsonObjectSize")))
+	_, ok = must.NotFail(doc.Get("buildEnvironment")).(*types.Document)
+	assert.True(t, ok)
+}
+
+func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	var actual bson.D
+	command := bson.D{{"collStats", collection.Name()}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
+	assert.Equal(t, int32(0), must.NotFail(doc.Get("count")))
+	assert.Equal(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
+
+	assert.InDelta(t, float64(8012), must.NotFail(doc.Get("size")), 8_012)
+	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("storageSize")), 8_012)
+	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalIndexSize")), 8_012)
+	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalSize")), 8_012)
+}
+
+func TestCommandsAdministrationCollStats(t *testing.T) {
+	t.Parallel()
 	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
-	for name, tc := range map[string]struct {
-		command  any
-		response bson.D
-	}{
-		"BuildInfo": {
-			command: bson.D{{"buildInfo", int32(1)}},
-			response: bson.D{
-				{"version", "5.0.42"},
-				{"gitVersion", "123"},
-				{"modules", primitive.A{}},
-				{"sysInfo", "deprecated"},
-				{"versionArray", primitive.A{int32(5), int32(0), int32(42), int32(0)}},
-				{"bits", int32(strconv.IntSize)},
-				{"debug", false},
-				{"maxBsonObjectSize", int32(16777216)},
-				{"buildEnvironment", bson.D{}},
-				{"ok", float64(1)},
-			},
-		},
-		"CollStats": {
-			command: bson.D{{"collStats", collection.Name()}},
-			response: bson.D{
-				{"ns", collection.Database().Name() + "." + collection.Name()},
-				{"count", int32(43)},
-				{"size", int32(16384)},
-				{"storageSize", int32(8192)},
-				{"totalIndexSize", int32(0)},
-				{"totalSize", int32(16384)},
-				{"scaleFactor", int32(1)},
-				{"ok", float64(1)},
-			},
-		},
-		"DataSize": {
-			command: bson.D{{"dataSize", collection.Database().Name() + "." + collection.Name()}},
-			response: bson.D{
-				{"estimate", false},
-				{"size", int32(106_496)},
-				{"numObjects", int32(210)},
-				{"millis", int32(20)},
-				{"ok", float64(1)},
-			},
-		},
-		"DataSizeCollectionNotExist": {
-			command: bson.D{{"dataSize", "some-database.some-collection"}},
-			response: bson.D{
-				{"size", int32(0)},
-				{"numObjects", int32(0)},
-				{"millis", int32(20)},
-				{"ok", float64(1)},
-			},
-		},
-		"DBStats": {
-			command: bson.D{{"dbStats", int32(1)}},
-			response: bson.D{
-				{"db", collection.Database().Name()},
-				{"collections", int32(1)},
-				{"views", int32(0)},
-				{"objects", int32(43)},
-				{"avgObjSize", 481.88235294117646},
-				{"dataSize", float64(8192)},
-				{"indexes", int32(0)},
-				{"indexSize", float64(0)},
-				{"totalSize", float64(16384)},
-				{"scaleFactor", float64(1)},
-				{"ok", float64(1)},
-			},
-		},
-		"DBStatsWithScale": {
-			command: bson.D{{"dbStats", int32(1)}, {"scale", float64(1_000)}},
-			response: bson.D{
-				{"db", collection.Database().Name()},
-				{"collections", int32(1)},
-				{"views", int32(0)},
-				{"objects", int32(43)},
-				{"avgObjSize", 433.0},
-				{"dataSize", 8.192},
-				{"indexes", int32(0)},
-				{"indexSize", float64(0)},
-				{"totalSize", 16.384},
-				{"scaleFactor", float64(1_000)},
-				{"ok", float64(1)},
-			},
-		},
-		"ServerStatus": {
-			command: bson.D{{"serverStatus", int32(1)}},
-			response: bson.D{
-				{"host", ""},
-				{"version", "5.0.42"},
-				{"process", "handlers.test"},
-				{"pid", int64(0)},
-				{"uptime", int64(0)},
-				{"uptimeMillis", int64(0)},
-				{"uptimeEstimate", int64(0)},
-				{"localTime", primitive.DateTime(time.Now().Unix())},
-				{"catalogStats", bson.D{
-					{"collections", int32(1)},
-					{"capped", int32(0)},
-					{"timeseries", int32(0)},
-					{"views", int32(0)},
-					{"internalCollections", int32(0)},
-					{"internalViews", int32(0)},
-				}},
-				{"freeMonitoring", bson.D{{"state", "disabled"}}},
-				{"ok", float64(1)},
-			},
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+	var actual bson.D
+	command := bson.D{{"collStats", collection.Name()}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
 
-			var actual bson.D
-			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
-			require.NoError(t, err)
+	doc := ConvertDocument(t, actual)
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+	assert.Equal(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
+	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
 
-			AssertEqualDocuments(t, tc.response, actual)
-		})
-	}
+	assert.InDelta(t, float64(8012), must.NotFail(doc.Get("size")), 16_024)
+	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("storageSize")), 8_012)
+	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalIndexSize")), 8_012)
+	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalSize")), 16_024)
+}
+
+func TestCommandsAdministrationDataSize(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+
+	var actual bson.D
+	command := bson.D{{"dataSize", collection.Database().Name() + "." + collection.Name()}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+
+	assert.InDelta(t, float64(8012), must.NotFail(doc.Get("size")), 16_024)
+	assert.InDelta(t, float64(100), must.NotFail(doc.Get("millis")), 100)
+}
+
+func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	var actual bson.D
+	command := bson.D{{"dataSize", "some-database.some-collection"}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+	assert.Equal(t, int32(0), must.NotFail(doc.Get("size")))
+	assert.Equal(t, int32(0), must.NotFail(doc.Get("numObjects")))
+
+	assert.InDelta(t, float64(100), must.NotFail(doc.Get("millis")), 100)
+}
+
+func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	var actual bson.D
+	command := bson.D{{"dbStats", int32(1)}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+	assert.Equal(t, collection.Database().Name(), must.NotFail(doc.Get("db")))
+	assert.Equal(t, int32(1), must.NotFail(doc.Get("collections")))
+	assert.Equal(t, int32(0), must.NotFail(doc.Get("views")))
+	assert.Equal(t, int32(0), must.NotFail(doc.Get("objects")))
+	assert.Equal(t, float64(0), must.NotFail(doc.Get("avgObjSize")))
+	assert.Equal(t, float64(0), must.NotFail(doc.Get("dataSize")))
+
+	assert.InDelta(t, float64(1), must.NotFail(doc.Get("indexes")), 1)
+	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("indexSize")), 4_096)
+
+	assert.InDelta(t, float64(1), must.NotFail(doc.Get("totalSize")), 8192)
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("scaleFactor")))
+}
+
+func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+
+	var actual bson.D
+	command := bson.D{{"dbStats", int32(1)}, {"scale", float64(1_000)}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+	assert.Equal(t, collection.Database().Name(), must.NotFail(doc.Get("db")))
+	assert.Equal(t, int32(1), must.NotFail(doc.Get("collections")))
+	assert.Equal(t, int32(0), must.NotFail(doc.Get("views")))
+	assert.Equal(t, float64(1000), must.NotFail(doc.Get("scaleFactor")))
+
+	assert.InDelta(t, float64(2.161), must.NotFail(doc.Get("dataSize")), 10)
+	assert.InDelta(t, float64(1), must.NotFail(doc.Get("indexes")), 1)
+	assert.InDelta(t, float64(0), must.NotFail(doc.Get("indexSize")), 4060)
+}
+
+func TestCommandsAdministrationServerStatus(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	var actual bson.D
+	command := bson.D{{"serverStatus", int32(1)}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+
+	freeMonitoring, ok := must.NotFail(doc.Get("freeMonitoring")).(*types.Document)
+	assert.True(t, ok)
+	assert.NotEmpty(t, must.NotFail(freeMonitoring.Get("state")))
+
+	assert.NotEmpty(t, must.NotFail(doc.Get("host")))
+	assert.Regexp(t, `^5\.0\.`, must.NotFail(doc.Get("version")))
+	assert.NotEmpty(t, must.NotFail(doc.Get("process")))
+
+	assert.InDelta(t, float64(1), must.NotFail(doc.Get("pid")), 5_000_000)
+	assert.InDelta(t, float64(0), must.NotFail(doc.Get("uptime")), 600)
+	assert.InDelta(t, float64(0), must.NotFail(doc.Get("uptimeMillis")), 600_000)
+	assert.InDelta(t, float64(0), must.NotFail(doc.Get("uptimeEstimate")), 6000)
+
+	expectedLocalTime := ConvertDocument(t, bson.D{{"localTime", primitive.NewDateTimeFromTime(time.Now())}})
+	testutil.CompareAndSetByPathTime(t, expectedLocalTime, doc, time.Duration(2*time.Second), types.NewPathFromString("localTime"))
+
+	catalogStats, ok := must.NotFail(doc.Get("catalogStats")).(*types.Document)
+	assert.True(t, ok)
+
+	assert.InDelta(t, float64(1), must.NotFail(catalogStats.Get("collections")), 50)
+	assert.InDelta(t, float64(3), must.NotFail(catalogStats.Get("internalCollections")), 3)
+
+	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("capped")))
+	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("timeseries")))
+	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("views")))
+	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("internalViews")))
+}
+
+func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	var actual bson.D
+	command := bson.D{{"whatsmyuri", int32(1)}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+	assert.Regexp(t, `^(\d+)\.(\d+)\.(\d+)\.(\d+)(\:\d+)?`, must.NotFail(doc.Get("you")))
 }

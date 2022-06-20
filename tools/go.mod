@@ -12,13 +12,13 @@ replace golang.org/x/tools => github.com/AlekSi/tools v0.1.11-0.20220510134747-9
 
 require (
 	github.com/BurntSushi/go-sumtype v0.0.0-20190304192233-fcb4a6205bdc
-	github.com/go-task/task/v3 v3.12.1
+	github.com/go-task/task/v3 v3.13.0
 	github.com/golangci/golangci-lint v1.46.2 // sync with GitHub Actions workflow
 	github.com/quasilyte/go-consistent v0.0.0-20220429160651-4e46040fbc82
 	github.com/reviewdog/reviewdog v0.14.1
 	golang.org/x/perf v0.0.0-20220411212318-84e58bfe0a7e
 	golang.org/x/tools v0.1.11-0.20220316014157-77aa08bb151a
-	gopkg.in/yaml.v3 v3.0.0 // indirect; https://github.com/advisories/GHSA-hp87-p4gw-j4gq
+	gopkg.in/yaml.v3 v3.0.1 // indirect; https://github.com/advisories/GHSA-hp87-p4gw-j4gq
 	mvdan.cc/gofumpt v0.3.1
 )
 
@@ -174,7 +174,7 @@ require (
 	github.com/ssgreg/nlreturn/v2 v2.2.1 // indirect
 	github.com/stbenjam/no-sprintf-host-port v0.1.1 // indirect
 	github.com/stretchr/objx v0.1.1 // indirect
-	github.com/stretchr/testify v1.7.1 // indirect
+	github.com/stretchr/testify v1.7.2 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/sylvia7788/contextcheck v1.0.4 // indirect
 	github.com/tdakkota/asciicheck v0.1.1 // indirect
@@ -213,6 +213,6 @@ require (
 	honnef.co/go/tools v0.3.1 // indirect
 	mvdan.cc/interfacer v0.0.0-20180901003855-c20040233aed // indirect
 	mvdan.cc/lint v0.0.0-20170908181259-adc824a0674b // indirect
-	mvdan.cc/sh/v3 v3.4.3 // indirect
+	mvdan.cc/sh/v3 v3.5.1 // indirect
 	mvdan.cc/unparam v0.0.0-20211214103731-d0ef000c54e5 // indirect
 )
