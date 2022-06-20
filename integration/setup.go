@@ -164,6 +164,7 @@ func setupListener(t *testing.T, ctx context.Context, logger *zap.Logger) int {
 	handlerOpts := &pg.NewOpts{
 		PgPool:    pgPool,
 		L:         logger,
+		PeerAddr:  "127.0.0.1:0",
 		StartTime: time.Now(),
 	}
 	h, err := pg.New(handlerOpts)
