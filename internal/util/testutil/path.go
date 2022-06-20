@@ -15,6 +15,7 @@
 package testutil
 
 import (
+	"fmt"
 	"strconv"
 	"testing"
 	"time"
@@ -103,12 +104,12 @@ func CompareAndSetByPathTime[T types.CompositeTypeInterface](tb testing.TB, expe
 		assert.WithinDuration(tb, expectedV.(time.Time), actualV, delta)
 
 	case types.Timestamp:
-		expectedT := types.DateTime(expectedV.(types.Timestamp))
-		actualT := types.DateTime(actualV)
+		expectedT := expectedV.(types.Timestamp).Time()
+		actualT := actualV.Time()
 		assert.WithinDuration(tb, expectedT, actualT, delta)
 
 	default:
-		tb.FailNow()
+		assert.Fail(tb, fmt.Sprintf("expected time.Time or types.Timestamp, got %T %T", expected, actual))
 	}
 
 	SetByPath(tb, expected, actualV, path)
