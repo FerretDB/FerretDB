@@ -109,3 +109,6 @@ issues:
     - linters: [depguard]
       path: internal/wire
       text: bson
+    - linters: [depguard]
+      path: internal\\wire
+      text: bson
