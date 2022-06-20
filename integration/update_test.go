@@ -472,8 +472,7 @@ func TestUpdateTimestamp(t *testing.T) {
 	// store the current timestamp with $currentDate operator;
 	t.Run("currentDateReadBack", func(t *testing.T) {
 		maxDifference := time.Duration(2 * time.Second)
-		now := time.Now()
-		nowTimestamp := primitive.Timestamp{T: uint32(now.Unix()), I: uint32(0)}
+		nowTimestamp := primitive.Timestamp{T: uint32(time.Now().Unix()), I: uint32(0)}
 		id := "string-empty"
 
 		update := bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "timestamp"}}}}}}
