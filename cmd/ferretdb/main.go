@@ -18,12 +18,14 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 
@@ -59,7 +61,9 @@ var (
 	debugAddrF  = flag.String("debug-addr", "127.0.0.1:8088", "debug address")
 	modeF       = flag.String("mode", string(clientconn.AllModes[0]), fmt.Sprintf("operation mode: %v", clientconn.AllModes))
 
-	handlerF = flag.String("handler", "pg", "<set in initFlags()>")
+	handlerF = flag.String("handler", "<set in initFlags()>", "<set in initFlags()>")
+
+	logLevelF = flag.String("log-level", "<set in initFlags()>", "<set in initFlags()>")
 
 	testConnTimeoutF = flag.Duration("test-conn-timeout", 0, "test: set connection timeout")
 )
@@ -67,17 +71,42 @@ var (
 // initFlags improves flags settings after all global flags are initialized
 // and all handler constructors are registered.
 func initFlags() {
+	_, ok := registeredHandlers["pg"]
+	if !ok {
+		panic("no pg handler registered")
+	}
+
 	handlers := maps.Keys(registeredHandlers)
 	slices.Sort(handlers)
-	flag.Lookup("handler").Usage = "backend handler: " + strings.Join(handlers, ", ")
+
+	f := flag.Lookup("handler")
+	f.Usage = "backend handler: " + strings.Join(handlers, ", ")
+	f.DefValue = "pg"
+	must.NoError(f.Value.Set(f.DefValue))
+
+	levels := []string{
+		zapcore.DebugLevel.String(),
+		zapcore.InfoLevel.String(),
+		zapcore.WarnLevel.String(),
+		zapcore.ErrorLevel.String(),
+	}
+
+	f = flag.Lookup("log-level")
+	f.Usage = "log level: " + strings.Join(levels, ", ")
+	f.DefValue = zapcore.DebugLevel.String()
+	must.NoError(f.Value.Set(f.DefValue))
 }
 
 func main() {
-	logging.Setup(zap.DebugLevel)
-	logger := zap.L()
-
 	initFlags()
 	flag.Parse()
+
+	level, err := zapcore.ParseLevel(*logLevelF)
+	if err != nil {
+		log.Fatal(err)
+	}
+	logging.Setup(level)
+	logger := zap.L()
 
 	info := version.Get()
 
