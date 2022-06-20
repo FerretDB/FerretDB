@@ -513,7 +513,7 @@ func TestUpdateTimestamp(t *testing.T) {
 
 		AssertEqualDocuments(t, expectedB, actualB)
 		actualY := ConvertDocument(t, actualB)
-		testutil.CompareAndSetByPathTime(t, actualY, actualX, maxDifference, types.NewPathFromString("value"))
+		testutil.CompareAndSetByPathTime(t, actualY, actualX, maxDifference, path)
 	})
 }
 
