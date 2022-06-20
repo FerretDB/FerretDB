@@ -40,7 +40,7 @@ func MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 			"maxBsonObjectSize", int32(types.MaxDocumentLen),
 			"buildEnvironment", version.Get().BuildEnvironment,
 
-			// out extensions
+			// our extensions
 			"ferretdbVersion", version.Get().Version,
 
 			"ok", float64(1),

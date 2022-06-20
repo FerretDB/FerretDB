@@ -54,7 +54,7 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	db, collection := targets[0], targets[1]
 
 	started := time.Now()
-	stats, err := h.pgPool.TableStats(ctx, db, collection)
+	stats, err := h.pgPool.SchemaStats(ctx, db, collection)
 	elapses := time.Since(started)
 
 	addEstimate := true
@@ -64,7 +64,7 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		}
 
 		// return zeroes for non-existent collection
-		stats = new(pgdb.TableStats)
+		stats = new(pgdb.DBStats)
 		addEstimate = false
 	}
 
@@ -73,8 +73,8 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		pairs = append(pairs, "estimate", false)
 	}
 	pairs = append(pairs,
-		"size", stats.SizeTotal,
-		"numObjects", stats.Rows,
+		"size", int32(stats.SizeTotal),
+		"numObjects", stats.CountRows,
 		"millis", int32(elapses.Milliseconds()),
 		"ok", float64(1),
 	)
