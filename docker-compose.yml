@@ -1,15 +1,18 @@
 # This file is used for the development of FerretDB, not for actually running it.
 ---
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
-    image: postgres:14.3
+    build:
+      context: ./build/deps
+      dockerfile: postgres.Dockerfile
     container_name: ferretdb_postgres
+    depends_on: [test_db]
     ports:
       - 127.0.0.1:5432:5432
     extra_hosts:
-      - 'host.docker.internal:host-gateway'
+      - "host.docker.internal:host-gateway"
     environment:
       # UTC−03:30/−02:30. Set to catch timezone problems.
       - TZ=America/St_Johns
@@ -18,12 +21,16 @@ services:
 
   # for proxy mode and mongosh
   mongodb:
-    image: mongo:5.0.8
+    build:
+      context: ./build/deps
+      dockerfile: mongo.Dockerfile
     container_name: ferretdb_mongodb
+    depends_on: [test_db]
+    command: --enableFreeMonitoring off
     ports:
       - 127.0.0.1:37017:27017
     extra_hosts:
-      - 'host.docker.internal:host-gateway'
+      - "host.docker.internal:host-gateway"
     environment:
       # Always UTC+05:45. Set to catch timezone problems.
       - TZ=Asia/Kathmandu
@@ -35,6 +42,14 @@ services:
     container_name: ferretdb_test_db
     volumes:
       - test_db_mongodb:/test_db/mongodb:ro
+
+  markdownlint:
+    build:
+      context: ./build/deps
+      dockerfile: markdownlint.Dockerfile
+    container_name: ferretdb_markdownlint
+    volumes:
+      - .:/workdir
 
 volumes:
   test_db_mongodb:

@@ -48,7 +48,7 @@ func (doc *documentType) UnmarshalJSON(data []byte) error {
 
 	b, ok := rawMessages["$k"]
 	if !ok {
-		return lazyerrors.Errorf("fjson.Document.UnmarshalJSON: missing $k")
+		return lazyerrors.Errorf("fjson.documentType.UnmarshalJSON: missing $k")
 	}
 
 	var keys []string
@@ -56,14 +56,14 @@ func (doc *documentType) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 	if len(keys)+1 != len(rawMessages) {
-		return lazyerrors.Errorf("fjson.Document.UnmarshalJSON: %d elements in $k, %d in total", len(keys), len(rawMessages))
+		return lazyerrors.Errorf("fjson.documentType.UnmarshalJSON: %d elements in $k, %d in total", len(keys), len(rawMessages))
 	}
 
 	td := must.NotFail(types.NewDocument())
 	for _, key := range keys {
 		b, ok = rawMessages[key]
 		if !ok {
-			return lazyerrors.Errorf("fjson.Document.UnmarshalJSON: missing key %q", key)
+			return lazyerrors.Errorf("fjson.documentType.UnmarshalJSON: missing key %q", key)
 		}
 		v, err := Unmarshal(b)
 		if err != nil {

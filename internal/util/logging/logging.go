@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package logging provides logging helpers.
 package logging
 
 import (
@@ -23,19 +24,52 @@ import (
 
 // Setup initializes logging with a given level.
 func Setup(level zapcore.Level) {
-	config := zap.NewDevelopmentConfig()
-	config.Level = zap.NewAtomicLevelAt(level)
+	var config zap.Config
+	if level <= zapcore.DebugLevel {
+		config = zap.Config{
+			Level:             zap.NewAtomicLevelAt(level),
+			Development:       true,
+			DisableCaller:     false,
+			DisableStacktrace: false,
+			Sampling:          nil,
+			Encoding:          "console",
+			EncoderConfig:     zap.NewDevelopmentEncoderConfig(),
+			OutputPaths:       []string{"stderr"},
+			ErrorOutputPaths:  []string{"stderr"},
+			InitialFields:     nil,
+		}
+	} else {
+		config = zap.Config{
+			Level:             zap.NewAtomicLevelAt(level),
+			Development:       false,
+			DisableCaller:     false,
+			DisableStacktrace: false,
+			Sampling:          nil,
+			Encoding:          "console",
+			EncoderConfig:     zap.NewDevelopmentEncoderConfig(),
+			OutputPaths:       []string{"stderr"},
+			ErrorOutputPaths:  []string{"stderr"},
+			InitialFields:     nil,
+		}
+	}
 
 	logger, err := config.Build()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	SetupWithLogger(logger)
+	RecentEntries = NewCircularBuffer(1024)
+
+	logger = logger.WithOptions(zap.Hooks(func(entry zapcore.Entry) error {
+		RecentEntries.append(&entry)
+		return nil
+	}))
+
+	setupWithLogger(logger)
 }
 
-// SetupWithLogger initializes logging with a given logger and its level.
-func SetupWithLogger(logger *zap.Logger) {
+// setupWithLogger initializes logging with a given logger and its level.
+func setupWithLogger(logger *zap.Logger) {
 	zap.ReplaceGlobals(logger)
 
 	if _, err := zap.RedirectStdLogAt(logger, zap.InfoLevel); err != nil {

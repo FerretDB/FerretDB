@@ -318,7 +318,7 @@ func TestQueryCount(t *testing.T) {
 	}{
 		"CountAllDocuments": {
 			command:  bson.D{{"count", collection.Name()}},
-			response: 49,
+			response: 50,
 		},
 		"CountExactlyOneDocument": {
 			command: bson.D{
@@ -332,7 +332,14 @@ func TestQueryCount(t *testing.T) {
 				{"count", collection.Name()},
 				{"query", bson.D{{"value", bson.D{{"$type", "array"}}}}},
 			},
-			response: 6,
+			response: 7,
+		},
+		"CountNonExistingCollection": {
+			command: bson.D{
+				{"count", "doesnotexist"},
+				{"query", bson.D{{"value", true}}},
+			},
+			response: 0,
 		},
 	} {
 		name, tc := name, tc
@@ -640,37 +647,57 @@ func TestQueryExactMatches(t *testing.T) {
 
 func TestDotNotation(t *testing.T) {
 	t.Parallel()
-	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
-	ctx, collection := setup(t, providers...)
+	ctx, collection := setup(t)
 
-	_, err := collection.InsertMany(ctx, []any{
-		bson.D{
-			{"_id", "document-deeply-nested"},
-			{
-				"foo",
-				bson.D{{
-					"bar",
-					bson.D{{
-						"baz",
-						bson.D{{"qux", bson.D{{"quz", int32(42)}}}},
-					}},
-				}},
+	_, err := collection.InsertMany(
+		ctx,
+		[]any{
+			bson.D{
+				{"_id", "document-deeply-nested"},
+				{
+					"foo",
+					bson.D{
+						{
+							"bar",
+							bson.D{{
+								"baz",
+								bson.D{{"qux", bson.D{{"quz", int32(42)}}}},
+							}},
+						},
+						{
+							"qaz",
+							bson.A{bson.D{{"baz", int32(1)}}},
+						},
+					},
+				},
+				{
+					"wsx",
+					bson.A{bson.D{{"edc", bson.A{bson.D{{"rfv", int32(1)}}}}}},
+				},
 			},
 		},
-	})
+	)
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
 		filter      bson.D
 		expectedIDs []any
 	}{
-		"DocumentDeepNested": {
+		"DeeplyNested": {
 			filter:      bson.D{{"foo.bar.baz.qux.quz", int32(42)}},
 			expectedIDs: []any{"document-deeply-nested"},
 		},
-		"Document": {
+		"DottedField": {
 			filter:      bson.D{{"foo.bar.baz", bson.D{{"qux.quz", int32(42)}}}},
 			expectedIDs: []any{},
+		},
+		"FieldArrayField": {
+			filter:      bson.D{{"foo.qaz.0.baz", int32(1)}},
+			expectedIDs: []any{"document-deeply-nested"},
+		},
+		"FieldArrayFieldArrayField": {
+			filter:      bson.D{{"wsx.0.edc.0.rfv", int32(1)}},
+			expectedIDs: []any{"document-deeply-nested"},
 		},
 	} {
 		name, tc := name, tc
@@ -686,4 +713,19 @@ func TestDotNotation(t *testing.T) {
 			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
 		})
 	}
+}
+
+// TestQueryNonExistingCollection tests that a query to a non existing collection doesn't fail but returns an empty result.
+func TestQueryNonExistingCollection(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup(t)
+
+	cursor, err := collection.Database().Collection("doesnotexist").Find(ctx, bson.D{})
+	require.NoError(t, err)
+
+	var actual []bson.D
+	err = cursor.All(ctx, &actual)
+	require.NoError(t, err)
+	require.Len(t, actual, 0)
 }

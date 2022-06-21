@@ -41,7 +41,10 @@ const (
 )
 
 var (
-	ErrNotExist     = fmt.Errorf("schema or table does not exist")
+	// ErrNotExist indicates that there is no such schema or table.
+	ErrNotExist = fmt.Errorf("schema or table does not exist")
+
+	// ErrAlreadyExist indicates that a schema or table already exists.
 	ErrAlreadyExist = fmt.Errorf("schema or table already exist")
 )
 
@@ -50,24 +53,14 @@ type Pool struct {
 	*pgxpool.Pool
 }
 
-// TableStats describes some statistics for a table.
-type TableStats struct {
-	Table       string
-	TableType   string
-	SizeTotal   int32
-	SizeIndexes int32
-	SizeTable   int32
-	Rows        int32
-}
-
-// DBStats describes some statistics for a database.
+// DBStats describes statistics for a database.
 type DBStats struct {
 	Name         string
 	CountTables  int32
 	CountRows    int32
 	SizeTotal    int64
 	SizeIndexes  int64
-	SizeSchema   int64
+	SizeRelation int64
 	CountIndexes int32
 }
 
@@ -292,7 +285,7 @@ func (pgPool *Pool) DropSchema(ctx context.Context, schema string) error {
 	}
 }
 
-// CreateTable creates a new FerretDB collection / PostgreSQL jsonb1 table in existing schema.
+// CreateTable creates a new FerretDB collection / PostgreSQL table in existing schema.
 //
 // It returns ErrAlreadyExist if table already exist, ErrNotExist is schema does not exist.
 func (pgPool *Pool) CreateTable(ctx context.Context, schema, table string) error {
@@ -345,16 +338,17 @@ func (pgPool *Pool) DropTable(ctx context.Context, schema, table string) error {
 	}
 }
 
-// EnsureTableExist ensures that given FerretDB database / PostgreSQL schema and FerretDB collection / PostgreSQL table exist.
+// CreateTableIfNotExist ensures that given FerretDB database / PostgreSQL schema
+// and FerretDB collection / PostgreSQL table exist.
+// If needed, it creates both schema and table.
 //
 // True is returned if table was created.
-func (pgPool *Pool) EnsureTableExist(ctx context.Context, db, collection string) (bool, error) {
-	tables, err := pgPool.Tables(ctx, db)
+func (pgPool *Pool) CreateTableIfNotExist(ctx context.Context, db, collection string) (bool, error) {
+	exists, err := pgPool.TableExists(ctx, db, collection)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
-
-	if slices.Contains(tables, collection) {
+	if exists {
 		return false, nil
 	}
 
@@ -375,40 +369,26 @@ func (pgPool *Pool) EnsureTableExist(ctx context.Context, db, collection string)
 	return true, nil
 }
 
-// TableStats returns a set of statistics for FerretDB collection / PostgreSQL table.
-func (pgPool *Pool) TableStats(ctx context.Context, schema, table string) (*TableStats, error) {
-	var res TableStats
-	sql := `
-    SELECT table_name, table_type,
-           pg_total_relation_size('"'||t.table_schema||'"."'||t.table_name||'"'),
-           pg_indexes_size('"'||t.table_schema||'"."'||t.table_name||'"'),
-           pg_relation_size('"'||t.table_schema||'"."'||t.table_name||'"'),
-           COALESCE(s.n_live_tup, 0)
-      FROM information_schema.tables AS t
-      LEFT OUTER
-      JOIN pg_stat_user_tables AS s ON s.schemaname = t.table_schema
-                                      and s.relname = t.table_name
-     WHERE t.table_schema = $1
-       AND t.table_name = $2`
-
-	err := pgPool.QueryRow(ctx, sql, schema, table).
-		Scan(&res.Table, &res.TableType, &res.SizeTotal, &res.SizeIndexes, &res.SizeTable, &res.Rows)
+// TableExists returns true if both FerretDB database / PostgreSQL schema and PostgreSQL table exist.
+func (pgPool *Pool) TableExists(ctx context.Context, db, collection string) (bool, error) {
+	tables, err := pgPool.Tables(ctx, db)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return false, lazyerrors.Error(err)
 	}
 
-	return &res, nil
+	return slices.Contains(tables, collection), nil
 }
 
-// SchemaStats returns a set of statistics for FerretDB database / PostgreSQL schema.
-func (pgPool *Pool) SchemaStats(ctx context.Context, schema string) (*DBStats, error) {
+// SchemaStats returns a set of statistics for FerretDB database / PostgreSQL schema and table.
+func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) (*DBStats, error) {
 	var res DBStats
+
 	sql := `
     SELECT COUNT(distinct t.table_name)                                                             AS CountTables,
            COALESCE(SUM(s.n_live_tup), 0)                                                           AS CountRows,
            COALESCE(SUM(pg_total_relation_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)  AS SizeTotal,
            COALESCE(SUM(pg_indexes_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)         AS SizeIndexes,
-           COALESCE(SUM(pg_relation_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)        AS SizeSchema,
+           COALESCE(SUM(pg_relation_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)        AS SizeRelation,
            COUNT(distinct i.indexname)                                                              AS CountIndexes
       FROM information_schema.tables AS t
       LEFT OUTER
@@ -419,12 +399,17 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema string) (*DBStats, e
                                          AND i.tablename = t.table_name
      WHERE t.table_schema = $1`
 
+	args := []any{schema}
+	if collection != "" {
+		sql = sql + " AND t.table_name = $2"
+		args = append(args, collection)
+	}
+
 	res.Name = schema
-	err := pgPool.QueryRow(ctx, sql, schema).
-		Scan(&res.CountTables, &res.CountRows, &res.SizeTotal, &res.SizeIndexes, &res.SizeSchema, &res.CountIndexes)
+	err := pgPool.QueryRow(ctx, sql, args...).
+		Scan(&res.CountTables, &res.CountRows, &res.SizeTotal, &res.SizeIndexes, &res.SizeRelation, &res.CountIndexes)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-
 	return &res, nil
 }
