@@ -39,9 +39,6 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	// "Powered by 🥭 FerretDB " + mv.Version + " and PostgreSQL " + pv + ".",
-	// "Please star us on GitHub: https://github.com/FerretDB/FerretDB",
-
 	command := document.Command()
 
 	getLog, err := document.Get(command)
