@@ -23,7 +23,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func TestCommandsAdministrationGetFreeMonitoringStatus(t *testing.T) {
+func TestCommandsFreeMonitoringGetFreeMonitoringStatus(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setupWithOpts(t, &setupOpts{
 		databaseName: "admin",
