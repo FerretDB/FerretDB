@@ -792,7 +792,7 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	catalogStats, ok := must.NotFail(doc.Get("catalogStats")).(*types.Document)
 	assert.True(t, ok)
 
-	assert.InDelta(t, float64(1), must.NotFail(catalogStats.Get("collections")), 50)
+	assert.InDelta(t, float64(51), must.NotFail(catalogStats.Get("collections")), 50)
 	assert.InDelta(t, float64(3), must.NotFail(catalogStats.Get("internalCollections")), 3)
 
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("capped")))
