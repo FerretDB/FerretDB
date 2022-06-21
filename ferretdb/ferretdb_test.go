@@ -22,11 +22,11 @@ import (
 
 // ExampleRun is a testable example for Run func.
 func ExampleRun() {
-	ctx, _ := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	conf := Config{ConnectionString: "postgres://postgres@127.0.0.1:5432/ferretdb"}
 
 	Run(ctx, conf)
-
+	cancel()
 	fmt.Println(GetConnectionString())
 	// Output: postgres://postgres@127.0.0.1:5432/ferretdb
 }

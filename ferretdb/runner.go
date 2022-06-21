@@ -31,7 +31,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
-// config with a Connection string
+// config is a FerretDB library config.
 var config Config
 
 // Config ConnectionString contains a string connecting to the backend.
