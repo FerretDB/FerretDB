@@ -64,7 +64,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, lazyerrors.Error(err)
 		}
 		resDoc = must.NotFail(types.NewDocument(
-			"log", &log,
+			"log", log,
 			"totalLinesWritten", int64(log.Len()),
 			"ok", float64(1),
 		))
@@ -126,7 +126,6 @@ func requirRecordsLog(level zapcore.Level) (*types.Array, error) {
 	entries := logging.RecentEntries.Get(level)
 	log := new(types.Array)
 	for _, e := range entries {
-		//		if e.Level >= level {
 		b, err := json.Marshal(map[string]any{
 			"t": map[string]time.Time{
 				"$date": e.Time,
@@ -143,7 +142,6 @@ func requirRecordsLog(level zapcore.Level) (*types.Array, error) {
 		if err = log.Append(string(b)); err != nil {
 			return nil, err
 		}
-		//		}
 	}
 
 	return log, nil

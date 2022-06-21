@@ -52,7 +52,8 @@ func (l *circularBuffer) append(entry *zapcore.Entry) {
 	l.index = (l.index + 1) % int64(len(l.log))
 }
 
-// Get returns entries from circularBuffer.
+// Get returns entries from circularBuffer
+// with less than given logging level.
 func (l *circularBuffer) Get(level zapcore.Level) []*zapcore.Entry {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
