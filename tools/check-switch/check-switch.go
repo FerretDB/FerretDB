@@ -55,6 +55,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	for _, file := range pass.Files {
 		ast.Inspect(file, func(n ast.Node) bool {
 			var idx int
+			var lastName string
 			switch n := n.(type) {
 			case *ast.TypeSwitchStmt:
 				var name string
@@ -79,18 +80,10 @@ func run(pass *analysis.Pass) (interface{}, error) {
 
 					idxSl, ok := orderTypes[name]
 					if ok && (idxSl < idx) {
-						//						var ls string
-						//						for a, b := range orderTypes {
-						//							if b == idx {
-						//								ls = a
-						//								break
-						//							}
-						//						}
-						//						msg := fmt.Sprintf("non-observance of the preferred order of types: %s <-> %s", ls, name)
-						//						fmt.Println(msg)
-						pass.Reportf(n.Pos(), "T S T")
+						msg := fmt.Sprintf("non-observance of the preferred order of types: %s <-> %s", lastName, name)
+						pass.Reportf(n.Pos(), msg)
 					}
-					idx = idxSl
+					idx, lastName = idxSl, name
 
 					if len(el.(*ast.CaseClause).List) > 1 {
 						subidx := idx
