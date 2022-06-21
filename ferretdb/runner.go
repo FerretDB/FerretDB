@@ -17,11 +17,9 @@ package ferretdb
 
 import (
 	"context"
-	"os"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/common/expfmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -90,7 +88,7 @@ func run(ctx context.Context, conf Config) error {
 	}
 	logger.Info("Starting FerretDB "+info.Version+"...", startFields...)
 
-	ctx, stop := notifyAppTermination(context.Background())
+	ctx, stop := notifyAppTermination(ctx)
 	go func() {
 		<-ctx.Done()
 		logger.Info("Stopping...")
@@ -128,16 +126,6 @@ func run(ctx context.Context, conf Config) error {
 		logger.Info("Listener stopped")
 	} else {
 		logger.Error("Listener stopped", zap.Error(err))
-	}
-
-	mfs, err := prometheus.DefaultGatherer.Gather()
-	if err != nil {
-		panic(err)
-	}
-	for _, mf := range mfs {
-		if _, err := expfmt.MetricFamilyToText(os.Stderr, mf); err != nil {
-			panic(err)
-		}
 	}
 	return nil
 }
