@@ -161,15 +161,19 @@ func TestQueryArrayDotNotation(t *testing.T) {
 
 		"PositionTypeNull": {
 			filter:      bson.D{{"value.0", bson.D{{"$type", "null"}}}},
-			expectedIDs: []any{"array-null", "array-three-reverse"},
+			expectedIDs: []any{"array-last-embedded", "array-middle-embedded", "array-null", "array-three-reverse"},
 		},
 		"PositionRegex": {
 			filter:      bson.D{{"value.1", primitive.Regex{Pattern: "foo"}}},
 			expectedIDs: []any{"array-three", "array-three-reverse"},
 		},
 		"PositionArray": {
-			filter:      bson.D{{"value.0", primitive.A{}}},
-			expectedIDs: []any{},
+			filter:      bson.D{{"value.0", bson.A{"42", "foo"}}},
+			expectedIDs: []any{"array-embedded"},
+		},
+		"PositionArrayEmpty": {
+			filter:      bson.D{{"value.0", bson.A{}}},
+			expectedIDs: []any{"array-empty-nested"},
 		},
 
 		"NoSuchFieldPosition": {
@@ -343,7 +347,7 @@ func TestQueryElemMatchOperator(t *testing.T) {
 
 func TestArrayEquality(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.ArraySet)
+	ctx, collection := setup(t, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
 		array       bson.A
@@ -351,11 +355,11 @@ func TestArrayEquality(t *testing.T) {
 	}{
 		"One": {
 			array:       bson.A{int32(42)},
-			expectedIDs: []any{"array-one"},
+			expectedIDs: []any{"array"},
 		},
 		"Two": {
 			array:       bson.A{42, "foo"},
-			expectedIDs: []any{"array-first-embedded", "array-last-embedded", "array-middle-embedded", "array-two"},
+			expectedIDs: []any{"array-first-embedded", "array-last-embedded", "array-middle-embedded"},
 		},
 		"Three": {
 			array:       bson.A{int32(42), "foo", nil},
@@ -367,7 +371,7 @@ func TestArrayEquality(t *testing.T) {
 		},
 		"Empty": {
 			array:       bson.A{},
-			expectedIDs: []any{"array-empty", "array-empty-nested", "array-two-empty-nested"},
+			expectedIDs: []any{"array-empty", "array-empty-nested"},
 		},
 		"Null": {
 			array:       bson.A{nil},
@@ -376,10 +380,6 @@ func TestArrayEquality(t *testing.T) {
 		"EmptyNested": {
 			array:       bson.A{bson.A{}},
 			expectedIDs: []any{"array-empty-nested"},
-		},
-		"TwoEmptyNested": {
-			array:       bson.A{nil, bson.A{}},
-			expectedIDs: []any{"array-two-empty-nested"},
 		},
 		"OneEmbedded": {
 			array:       bson.A{bson.A{"42", "foo"}},
