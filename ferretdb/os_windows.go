@@ -12,26 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build tigris
-// +build tigris
-
 package ferretdb
 
 import (
-	"flag"
+	"context"
+	"os"
+	"os/signal"
 
-	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/tigris"
+	"golang.org/x/sys/windows"
 )
 
-// `tigris` handler flags.
-var (
-	tigrisURLF = flag.String("tigris-url", "127.0.0.1:8081", "Tigris URL")
-)
-
-// init registers `tigris` handler for Tigris that is enabled only when compiled with `tigris` build tag.
-func init() {
-	registeredHandlers["tigris"] = func(*newHandlerOpts) (handlers.Interface, error) {
-		return tigris.New()
-	}
+// notifyAppTermination in os_windows.go file is for unix-related code.
+func notifyAppTermination(parent context.Context) (context.Context, context.CancelFunc) {
+	return signal.NotifyContext(parent, windows.SIGTERM, windows.SIGINT, os.Interrupt)
 }

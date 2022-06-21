@@ -12,22 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package provides support for the embedded use-case.
 package ferretdb
 
 import (
 	"context"
-	"flag"
-	"fmt"
-	"log"
 	"os"
-	"strings"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/handlers"
@@ -37,12 +33,10 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
-// configuration type Config struct { GoodName string }
-
 // Config ConnectionString contains a string connecting to the backend.
-// "postgres://user@postgres:5432/ferretdb" - then it's postgres
+// "postgres://user@postgres:5432/ferretdb" - then it's postgres.
 type Config struct {
-	ConetionString string
+	ConnectionString string
 }
 
 // registeredHandlers maps handler names to constructors.
@@ -61,56 +55,25 @@ type newHandlerOpts struct {
 	logger *zap.Logger
 }
 
-// initFlags improves flags settings after all global flags are initialized
-// and all handler constructors are registered.
-func initFlags(config *Config) {
+// run function that runs embedded proxy until ctx is canceled.
+func run(ctx context.Context, config Config) error {
+	initPgHandler(config)
+	listenAddr := "127.0.0.1:27017"
+	proxyAddr := "127.0.0.1:37017"
+	debugAddr := "127.0.0.1:8088"
+	mode := clientconn.NormalMode
+	handler := "pg"
+	testConnTimeout := time.Duration(0)
+
 	_, ok := registeredHandlers["pg"]
 	if !ok {
 		panic("no pg handler registered")
 	}
 
-	handlers := maps.Keys(registeredHandlers)
-	slices.Sort(handlers)
-
-	f := flag.Lookup("handler")
-	f.Usage = "backend handler: " + strings.Join(handlers, ", ")
-	f.DefValue = "pg"
-	must.NoError(f.Value.Set(f.DefValue))
-
-	levels := []string{
-		zapcore.DebugLevel.String(),
-		zapcore.InfoLevel.String(),
-		zapcore.WarnLevel.String(),
-		zapcore.ErrorLevel.String(),
-	}
-
-	f = flag.Lookup("log-level")
-	f.Usage = "log level: " + strings.Join(levels, ", ")
-	f.DefValue = zapcore.DebugLevel.String()
-	must.NoError(f.Value.Set(f.DefValue))
-}
-
-// Run function that runs embedded proxy until ctx is canceled.
-func run(ctx context.Context, config Config) error {
-	initFlags()
-	flag.Parse()
-
-	level, err := zapcore.ParseLevel(*logLevelF)
-	if err != nil {
-		log.Fatal(err)
-	}
-	logging.Setup(level)
+	logging.Setup(zapcore.ErrorLevel)
 	logger := zap.L()
 
 	info := version.Get()
-
-	if *versionF {
-		fmt.Fprintln(os.Stdout, "version:", info.Version)
-		fmt.Fprintln(os.Stdout, "commit:", info.Commit)
-		fmt.Fprintln(os.Stdout, "branch:", info.Branch)
-		fmt.Fprintln(os.Stdout, "dirty:", info.Dirty)
-		return nil
-	}
 
 	startFields := []zap.Field{
 		zap.String("version", info.Version),
@@ -124,18 +87,6 @@ func run(ctx context.Context, config Config) error {
 	}
 	logger.Info("Starting FerretDB "+info.Version+"...", startFields...)
 
-	var found bool
-	for _, m := range clientconn.AllModes {
-		if *modeF == string(m) {
-			found = true
-			break
-		}
-	}
-	if !found {
-		logger.Sugar().Fatalf("Unknown mode %q.", *modeF)
-	}
-
-	// TODO - add ifs - not very beautiful. What are the options?
 	ctx, stop := notifyAppTermination(context.Background())
 	go func() {
 		<-ctx.Done()
@@ -143,11 +94,11 @@ func run(ctx context.Context, config Config) error {
 		stop()
 	}()
 
-	go debug.RunHandler(ctx, *debugAddrF, logger.Named("debug"))
+	go debug.RunHandler(ctx, debugAddr, logger.Named("debug"))
 
-	newHandler := registeredHandlers[*handlerF]
+	newHandler := registeredHandlers[handler]
 	if newHandler == nil {
-		logger.Sugar().Fatalf("Unknown backend handler %q.", *handlerF)
+		logger.Sugar().Fatalf("Unknown backend handler %q.", handler)
 	}
 	h, err := newHandler(&newHandlerOpts{
 		ctx:    ctx,
@@ -159,12 +110,12 @@ func run(ctx context.Context, config Config) error {
 	defer h.Close()
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		ListenAddr:      *listenAddrF,
-		ProxyAddr:       *proxyAddrF,
-		Mode:            clientconn.Mode(*modeF),
+		ListenAddr:      listenAddr,
+		ProxyAddr:       proxyAddr,
+		Mode:            clientconn.Mode(mode),
 		Handler:         h,
 		Logger:          logger,
-		TestConnTimeout: *testConnTimeoutF,
+		TestConnTimeout: testConnTimeout,
 	})
 
 	prometheus.DefaultRegisterer.MustRegister(l)
@@ -185,4 +136,5 @@ func run(ctx context.Context, config Config) error {
 			panic(err)
 		}
 	}
+	return nil
 }

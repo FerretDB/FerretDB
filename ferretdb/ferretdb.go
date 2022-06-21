@@ -16,6 +16,7 @@ package ferretdb
 
 import "context"
 
+// Run runs the FerretDB proxy as a library.
 func Run(ctx context.Context, config Config) error {
 	return run(ctx, config)
 }
