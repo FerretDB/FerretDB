@@ -781,10 +781,10 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	assert.Regexp(t, `^5\.0\.`, must.NotFail(doc.Get("version")))
 	assert.NotEmpty(t, must.NotFail(doc.Get("process")))
 
-	assert.InDelta(t, float64(1), must.NotFail(doc.Get("pid")), 5_000_000)
-	assert.InDelta(t, float64(0), must.NotFail(doc.Get("uptime")), 600)
-	assert.InDelta(t, float64(0), must.NotFail(doc.Get("uptimeMillis")), 600_000)
-	assert.InDelta(t, float64(0), must.NotFail(doc.Get("uptimeEstimate")), 6000)
+	assert.GreaterOrEqual(t, must.NotFail(doc.Get("pid")), int64(1))
+	assert.GreaterOrEqual(t, must.NotFail(doc.Get("uptime")), float64(0))
+	assert.GreaterOrEqual(t, must.NotFail(doc.Get("uptimeMillis")), int64(0))
+	assert.GreaterOrEqual(t, must.NotFail(doc.Get("uptimeEstimate")), int64(0))
 
 	expectedLocalTime := ConvertDocument(t, bson.D{{"localTime", primitive.NewDateTimeFromTime(time.Now())}})
 	testutil.CompareAndSetByPathTime(t, expectedLocalTime, doc, time.Duration(2*time.Second), types.NewPathFromString("localTime"))
