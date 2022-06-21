@@ -15,26 +15,15 @@
 package ferretdb
 
 import (
-	"time"
-
-	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
+	"context"
+	"fmt"
 )
 
-// initPgHandler registers `pg` handler for PostgreSQL that is always enabled.
-func init() {
-	registeredHandlers["pg"] = func(opts *newHandlerOpts) (handlers.Interface, error) {
-		pgPool, err := pgdb.NewPool(opts.ctx, config.ConnectionString, opts.logger, false)
-		if err != nil {
-			return nil, err
-		}
-
-		handlerOpts := &pg.NewOpts{
-			PgPool:    pgPool,
-			L:         opts.logger,
-			StartTime: time.Now(),
-		}
-		return pg.New(handlerOpts)
-	}
+// ExampleRun is a testable example for Run func.
+func ExampleRun() {
+	ctx := context.Background()
+	conf := Config{ConnectionString: "postgres://postgres@127.0.0.1:5432/ferretdb"}
+	Run(ctx, conf)
+	fmt.Println(GetConnectionString())
+	// Output: "postgres://postgres@127.0.0.1:5432/ferretdb"
 }

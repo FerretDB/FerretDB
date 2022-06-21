@@ -33,6 +33,9 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
+// config with a Connection string
+var config Config
+
 // Config ConnectionString contains a string connecting to the backend.
 // "postgres://user@postgres:5432/ferretdb" - then it's postgres.
 type Config struct {
@@ -56,8 +59,8 @@ type newHandlerOpts struct {
 }
 
 // run function that runs embedded proxy until ctx is canceled.
-func run(ctx context.Context, config Config) error {
-	initPgHandler(config)
+func run(ctx context.Context, conf Config) error {
+	config = conf
 	listenAddr := "127.0.0.1:27017"
 	proxyAddr := "127.0.0.1:37017"
 	debugAddr := "127.0.0.1:8088"

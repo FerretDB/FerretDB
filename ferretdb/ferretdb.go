@@ -20,3 +20,7 @@ import "context"
 func Run(ctx context.Context, config Config) error {
 	return run(ctx, config)
 }
+
+func GetConnectionString() string {
+	return config.ConnectionString
+}
