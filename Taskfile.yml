@@ -168,7 +168,7 @@ tasks:
     desc: "Build bin/ferretdb-testcover"
     deps: [gen-version]
     cmds:
-      - go test -c -o=bin/ferretdb-testcover -trimpath -tags=testcover,tigris -race -coverpkg=./... ./cmd/ferretdb
+      - go test -c -o=bin/ferretdb-testcover -trimpath -tags=testcover,tigris {{if not (eq OS "windows")}} -race {{end}} -coverpkg=./... ./cmd/ferretdb
 
   run:
     desc: "Run FerretDB"
