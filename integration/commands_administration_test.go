@@ -196,13 +196,6 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 		err        *mongo.CommandError
 		altMessage string
 	}{
-		"GetFreeMonitoringStatus": {
-			command: bson.D{{"getFreeMonitoringStatus", 1}},
-			expected: map[string]any{
-				"state": "disabled",
-				"ok":    float64(1),
-			},
-		},
 		"GetParameter_Asterisk1": {
 			command: bson.D{{"getParameter", "*"}},
 			expected: map[string]any{
