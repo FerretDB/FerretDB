@@ -26,6 +26,7 @@ services:
       dockerfile: mongo.Dockerfile
     container_name: ferretdb_mongodb
     depends_on: [test_db]
+    command: --enableFreeMonitoring off
     ports:
       - 127.0.0.1:37017:27017
     extra_hosts:
