@@ -24,19 +24,21 @@ import (
 
 // orderTypes is preferred order of the types in the switch.
 var orderTypes = map[string]int{
-	"Document":  0,
-	"Array":     1,
-	"float64":   2,
-	"string":    3,
-	"Binary":    4,
-	"ObjectID":  5,
-	"bool":      6,
-	"time.Time": 7,
-	"NullType":  8,
-	"Regex":     9,
-	"int32":     10,
-	"Timestamp": 11,
-	"int64":     12,
+	"Document":    0,
+	"primitive.D": 1,
+	"Array":       2,
+	"primitive.A": 3,
+	"float64":     4,
+	"string":      5,
+	"Binary":      6,
+	"ObjectID":    7,
+	"bool":        8,
+	"time.Time":   9,
+	"NullType":    10,
+	"Regex":       11,
+	"int32":       12,
+	"Timestamp":   13,
+	"int64":       14,
 }
 
 var Analyzer = &analysis.Analyzer{
@@ -77,7 +79,16 @@ func run(pass *analysis.Pass) (interface{}, error) {
 
 					idxSl, ok := orderTypes[name]
 					if ok && (idxSl < idx) {
-						pass.Reportf(n.Pos(), "non-observance of the preferred order of types")
+						//						var ls string
+						//						for a, b := range orderTypes {
+						//							if b == idx {
+						//								ls = a
+						//								break
+						//							}
+						//						}
+						//						msg := fmt.Sprintf("non-observance of the preferred order of types: %s <-> %s", ls, name)
+						//						fmt.Println(msg)
+						pass.Reportf(n.Pos(), "T S T")
 					}
 					idx = idxSl
 
