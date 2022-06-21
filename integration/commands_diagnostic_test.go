@@ -67,7 +67,6 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 				Code:    0,
 				Message: `no RamLog named: nonExistentName`,
 			},
-			alt: "no RamLog named: nonExistentName",
 		},
 		"Nil": {
 			command: bson.D{{"getLog", nil}},
