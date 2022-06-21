@@ -109,7 +109,3 @@ issues:
     - linters: [depguard]
       path: internal/wire
       text: bson
-    # required to make this rule work on Windows systems
-    - linters: [depguard]
-      path: internal\\wire
-      text: bson
