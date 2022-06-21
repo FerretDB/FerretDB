@@ -34,7 +34,7 @@ import (
 // config is a FerretDB library config.
 var config Config
 
-// Config ConnectionString contains a string connecting to the backend.
+// Config ConnectionString contains a backend connection string.
 // "postgres://user@postgres:5432/ferretdb" - then it's postgres.
 type Config struct {
 	ConnectionString string
@@ -56,7 +56,7 @@ type newHandlerOpts struct {
 	logger *zap.Logger
 }
 
-// run function that runs embedded proxy until ctx is canceled.
+// run function that runs FerretDB in NormalMode until ctx is canceled.
 func run(ctx context.Context, conf Config) error {
 	config = conf
 	listenAddr := "127.0.0.1:27017"

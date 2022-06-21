@@ -21,6 +21,7 @@ func Run(ctx context.Context, config Config) error {
 	return run(ctx, config)
 }
 
+// GetConnectionString returns the backend connection string.
 func GetConnectionString() string {
 	return config.ConnectionString
 }

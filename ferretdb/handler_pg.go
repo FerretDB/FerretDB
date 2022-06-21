@@ -22,7 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 )
 
-// initPgHandler registers `pg` handler for PostgreSQL that is always enabled.
+// init registers `pg` handler for PostgreSQL that is always enabled.
 func init() {
 	registeredHandlers["pg"] = func(opts *newHandlerOpts) (handlers.Interface, error) {
 		pgPool, err := pgdb.NewPool(opts.ctx, config.ConnectionString, opts.logger, false)
