@@ -108,8 +108,7 @@ var Commands = map[string]command{
 		Handler: (handlers.Interface).MsgGetCmdLineOpts,
 	},
 	"getFreeMonitoringStatus": {
-		Help: "Returns the status of whether free Cloud monitoring is " +
-			"enabled for standalone or replica sets (including shards).",
+		Help:    "MsgGetFreeMonitoringStatus returns the status of free Cloud monitoring",
 		Handler: (handlers.Interface).MsgGetFreeMonitoringStatus,
 	},
 	"getLog": {
