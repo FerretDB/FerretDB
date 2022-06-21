@@ -30,28 +30,12 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
-	"github.com/FerretDB/FerretDB/internal/handlers"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/register"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/version"
 )
-
-// newHandler represents a function that constructs a new handler.
-type newHandler func(opts *newHandlerOpts) (handlers.Interface, error)
-
-// newHandlerOpts represents common configuration for constructing handlers.
-//
-// Handler-specific configuration is passed via command-line flags directly.
-type newHandlerOpts struct {
-	ctx    context.Context
-	logger *zap.Logger
-}
-
-// registeredHandlers maps handler names to constructors.
-// The values for `registeredHandlers` must be set through the `init()` functions of the corresponding handlers
-// so that we can control which handlers will be included in the build with build tags.
-var registeredHandlers = map[string]newHandler{}
 
 var (
 	versionF = flag.Bool("version", false, "print version to stdout (full version, commit, branch, dirty flag) and exit")
@@ -71,12 +55,12 @@ var (
 // initFlags improves flags settings after all global flags are initialized
 // and all handler constructors are registered.
 func initFlags() {
-	_, ok := registeredHandlers["pg"]
+	_, ok := register.RegisteredHandlers["pg"]
 	if !ok {
 		panic("no pg handler registered")
 	}
 
-	handlers := maps.Keys(registeredHandlers)
+	handlers := maps.Keys(register.RegisteredHandlers)
 	slices.Sort(handlers)
 
 	f := flag.Lookup("handler")
@@ -150,13 +134,13 @@ func main() {
 
 	go debug.RunHandler(ctx, *debugAddrF, logger.Named("debug"))
 
-	newHandler := registeredHandlers[*handlerF]
+	newHandler := register.RegisteredHandlers[*handlerF]
 	if newHandler == nil {
 		logger.Sugar().Fatalf("Unknown backend handler %q.", *handlerF)
 	}
-	h, err := newHandler(&newHandlerOpts{
-		ctx:    ctx,
-		logger: logger,
+	h, err := newHandler(&register.NewHandlerOpts{
+		Ctx:    ctx,
+		Logger: logger,
 	})
 	if err != nil {
 		logger.Fatal(err.Error())

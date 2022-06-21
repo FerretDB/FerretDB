@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package register
 
 import (
 	"github.com/FerretDB/FerretDB/internal/handlers"
@@ -21,7 +21,7 @@ import (
 
 // init registers `dummy` stub handler that is always enabled.
 func init() {
-	registeredHandlers["dummy"] = func(*newHandlerOpts) (handlers.Interface, error) {
+	RegisteredHandlers["dummy"] = func(*NewHandlerOpts) (handlers.Interface, error) {
 		return dummy.New()
 	}
 }

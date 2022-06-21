@@ -19,12 +19,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
-	"github.com/FerretDB/FerretDB/internal/handlers"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/register"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -40,22 +39,6 @@ type Config struct {
 	ConnectionString string
 }
 
-// registeredHandlers maps handler names to constructors.
-// The values for `registeredHandlers` must be set through the `init()` functions of the corresponding handlers
-// so that we can control which handlers will be included in the build with build tags.
-var registeredHandlers = map[string]newHandler{}
-
-// newHandler represents a function that constructs a new handler.
-type newHandler func(opts *newHandlerOpts) (handlers.Interface, error)
-
-// newHandlerOpts represents common configuration for constructing handlers.
-//
-// Handler-specific configuration is not modifiable in the embedded use-case.
-type newHandlerOpts struct {
-	ctx    context.Context
-	logger *zap.Logger
-}
-
 // run function that runs FerretDB in NormalMode until ctx is canceled.
 func run(ctx context.Context, conf Config) error {
 	config = conf
@@ -66,7 +49,7 @@ func run(ctx context.Context, conf Config) error {
 	handler := "pg"
 	testConnTimeout := time.Duration(0)
 
-	_, ok := registeredHandlers["pg"]
+	_, ok := register.RegisteredHandlers["pg"]
 	if !ok {
 		panic("no pg handler registered")
 	}
@@ -86,24 +69,16 @@ func run(ctx context.Context, conf Config) error {
 		v := must.NotFail(info.BuildEnvironment.Get(k))
 		startFields = append(startFields, zap.Any(k, v))
 	}
-	logger.Info("Starting FerretDB "+info.Version+"...", startFields...)
-
-	ctx, stop := notifyAppTermination(ctx)
-	go func() {
-		<-ctx.Done()
-		logger.Info("Stopping...")
-		stop()
-	}()
 
 	go debug.RunHandler(ctx, debugAddr, logger.Named("debug"))
 
-	newHandler := registeredHandlers[handler]
+	newHandler := register.RegisteredHandlers[handler]
 	if newHandler == nil {
 		logger.Sugar().Fatalf("Unknown backend handler %q.", handler)
 	}
-	h, err := newHandler(&newHandlerOpts{
-		ctx:    ctx,
-		logger: logger,
+	h, err := newHandler(&register.NewHandlerOpts{
+		Ctx:    ctx,
+		Logger: logger,
 	})
 	if err != nil {
 		logger.Fatal(err.Error())
@@ -118,8 +93,6 @@ func run(ctx context.Context, conf Config) error {
 		Logger:          logger,
 		TestConnTimeout: testConnTimeout,
 	})
-
-	prometheus.DefaultRegisterer.MustRegister(l)
 
 	err = l.Run(ctx)
 	if err == nil || err == context.Canceled {

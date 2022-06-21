@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ferretdb
+package register
 
 import (
+	"flag"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers"
@@ -22,17 +23,22 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 )
 
+// `pg` handler flags.
+var (
+	postgresqlURLF = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/ferretdb", "PostgreSQL URL")
+)
+
 // init registers `pg` handler for PostgreSQL that is always enabled.
 func init() {
-	registeredHandlers["pg"] = func(opts *newHandlerOpts) (handlers.Interface, error) {
-		pgPool, err := pgdb.NewPool(opts.ctx, config.ConnectionString, opts.logger, false)
+	RegisteredHandlers["pg"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
+		pgPool, err := pgdb.NewPool(opts.Ctx, *postgresqlURLF, opts.Logger, false)
 		if err != nil {
 			return nil, err
 		}
 
 		handlerOpts := &pg.NewOpts{
 			PgPool:    pgPool,
-			L:         opts.logger,
+			L:         opts.Logger,
 			StartTime: time.Now(),
 		}
 		return pg.New(handlerOpts)
