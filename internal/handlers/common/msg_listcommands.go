@@ -108,7 +108,7 @@ var Commands = map[string]command{
 		Handler: (handlers.Interface).MsgGetCmdLineOpts,
 	},
 	"getFreeMonitoringStatus": {
-		Help:    "MsgGetFreeMonitoringStatus returns the status of free Cloud monitoring",
+		Help:    "MsgGetFreeMonitoringStatus returns the status of free Cloud monitoring.",
 		Handler: (handlers.Interface).MsgGetFreeMonitoringStatus,
 	},
 	"getLog": {
