@@ -53,24 +53,14 @@ type Pool struct {
 	*pgxpool.Pool
 }
 
-// TableStats describes some statistics for a table.
-type TableStats struct {
-	Table       string
-	TableType   string
-	SizeTotal   int32
-	SizeIndexes int32
-	SizeTable   int32
-	Rows        int32
-}
-
-// DBStats describes some statistics for a database.
+// DBStats describes statistics for a database.
 type DBStats struct {
 	Name         string
 	CountTables  int32
 	CountRows    int32
 	SizeTotal    int64
 	SizeIndexes  int64
-	SizeSchema   int64
+	SizeRelation int64
 	CountIndexes int32
 }
 
@@ -379,8 +369,7 @@ func (pgPool *Pool) CreateTableIfNotExist(ctx context.Context, db, collection st
 	return true, nil
 }
 
-// TableExists returns true if given FerretDB database / PostgreSQL schema
-// and FerretDB collection / PostgreSQL table exist.
+// TableExists returns true if both FerretDB database / PostgreSQL schema and PostgreSQL table exist.
 func (pgPool *Pool) TableExists(ctx context.Context, db, collection string) (bool, error) {
 	tables, err := pgPool.Tables(ctx, db)
 	if err != nil {
@@ -390,40 +379,16 @@ func (pgPool *Pool) TableExists(ctx context.Context, db, collection string) (boo
 	return slices.Contains(tables, collection), nil
 }
 
-// TableStats returns a set of statistics for FerretDB collection / PostgreSQL table.
-func (pgPool *Pool) TableStats(ctx context.Context, schema, table string) (*TableStats, error) {
-	var res TableStats
-	sql := `
-    SELECT table_name, table_type,
-           pg_total_relation_size('"'||t.table_schema||'"."'||t.table_name||'"'),
-           pg_indexes_size('"'||t.table_schema||'"."'||t.table_name||'"'),
-           pg_relation_size('"'||t.table_schema||'"."'||t.table_name||'"'),
-           COALESCE(s.n_live_tup, 0)
-      FROM information_schema.tables AS t
-      LEFT OUTER
-      JOIN pg_stat_user_tables AS s ON s.schemaname = t.table_schema
-                                      and s.relname = t.table_name
-     WHERE t.table_schema = $1
-       AND t.table_name = $2`
-
-	err := pgPool.QueryRow(ctx, sql, schema, table).
-		Scan(&res.Table, &res.TableType, &res.SizeTotal, &res.SizeIndexes, &res.SizeTable, &res.Rows)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return &res, nil
-}
-
-// SchemaStats returns a set of statistics for FerretDB database / PostgreSQL schema.
-func (pgPool *Pool) SchemaStats(ctx context.Context, schema string) (*DBStats, error) {
+// SchemaStats returns a set of statistics for FerretDB database / PostgreSQL schema and table.
+func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) (*DBStats, error) {
 	var res DBStats
+
 	sql := `
     SELECT COUNT(distinct t.table_name)                                                             AS CountTables,
            COALESCE(SUM(s.n_live_tup), 0)                                                           AS CountRows,
            COALESCE(SUM(pg_total_relation_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)  AS SizeTotal,
            COALESCE(SUM(pg_indexes_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)         AS SizeIndexes,
-           COALESCE(SUM(pg_relation_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)        AS SizeSchema,
+           COALESCE(SUM(pg_relation_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)        AS SizeRelation,
            COUNT(distinct i.indexname)                                                              AS CountIndexes
       FROM information_schema.tables AS t
       LEFT OUTER
@@ -434,12 +399,17 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema string) (*DBStats, e
                                          AND i.tablename = t.table_name
      WHERE t.table_schema = $1`
 
+	args := []any{schema}
+	if collection != "" {
+		sql = sql + " AND t.table_name = $2"
+		args = append(args, collection)
+	}
+
 	res.Name = schema
-	err := pgPool.QueryRow(ctx, sql, schema).
-		Scan(&res.CountTables, &res.CountRows, &res.SizeTotal, &res.SizeIndexes, &res.SizeSchema, &res.CountIndexes)
+	err := pgPool.QueryRow(ctx, sql, args...).
+		Scan(&res.CountTables, &res.CountRows, &res.SizeTotal, &res.SizeIndexes, &res.SizeRelation, &res.CountIndexes)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-
 	return &res, nil
 }
