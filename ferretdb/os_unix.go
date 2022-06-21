@@ -24,7 +24,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-// notifyAppTermination in os_unix.go file is for unix-related code.
+// notifyAppTermination is for unix-related context notify.
 func notifyAppTermination(parent context.Context) (context.Context, context.CancelFunc) {
 	return signal.NotifyContext(parent, unix.SIGTERM, unix.SIGINT)
 }

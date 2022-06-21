@@ -50,7 +50,7 @@ type newHandler func(opts *newHandlerOpts) (handlers.Interface, error)
 
 // newHandlerOpts represents common configuration for constructing handlers.
 //
-// Handler-specific configuration is passed via command-line flags directly.
+// Handler-specific configuration is not modifiable in the embedded use-case.
 type newHandlerOpts struct {
 	ctx    context.Context
 	logger *zap.Logger

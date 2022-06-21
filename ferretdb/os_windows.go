@@ -22,7 +22,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-// notifyAppTermination in os_windows.go file is for unix-related code.
+// notifyAppTermination is for windows-related context notify.
 func notifyAppTermination(parent context.Context) (context.Context, context.CancelFunc) {
 	return signal.NotifyContext(parent, windows.SIGTERM, windows.SIGINT, os.Interrupt)
 }
