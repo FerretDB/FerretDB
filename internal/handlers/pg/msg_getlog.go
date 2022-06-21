@@ -108,7 +108,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	default:
-		errMsg := fmt.Sprintf("no RamLog named: %s", getLog)
+		errMsg := fmt.Sprintf("no RecentEntries named: %s", getLog)
 		return nil, common.NewErrorMsg(0, errMsg)
 	}
 
@@ -122,27 +122,28 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // requirRecordsLog returns an array of records from logging buffer with given level.
-func requirRecordsLog(level zapcore.Level) (log types.Array, err error) {
-	entries := logging.RecentEntries.Get()
+func requirRecordsLog(level zapcore.Level) (*types.Array, error) {
+	entries := logging.RecentEntries.Get(level)
+	log := new(types.Array)
 	for _, e := range entries {
-		if e.Level >= level {
-			b, err := json.Marshal(map[string]any{
-				"t": map[string]time.Time{
-					"$date": e.Time,
-				},
-				"l":   e.Level,
-				"ln":  e.LoggerName,
-				"msg": e.Message,
-				"c":   e.Caller,
-				"s":   e.Stack,
-			})
-			if err != nil {
-				return types.Array{}, err
-			}
-			if err = log.Append(string(b)); err != nil {
-				return types.Array{}, err
-			}
+		//		if e.Level >= level {
+		b, err := json.Marshal(map[string]any{
+			"t": map[string]time.Time{
+				"$date": e.Time,
+			},
+			"l":   e.Level,
+			"ln":  e.LoggerName,
+			"msg": e.Message,
+			"c":   e.Caller,
+			"s":   e.Stack,
+		})
+		if err != nil {
+			return nil, err
 		}
+		if err = log.Append(string(b)); err != nil {
+			return nil, err
+		}
+		//		}
 	}
 
 	return log, nil

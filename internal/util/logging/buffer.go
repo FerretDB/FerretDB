@@ -53,7 +53,7 @@ func (l *circularBuffer) append(entry *zapcore.Entry) {
 }
 
 // Get returns entries from circularBuffer.
-func (l *circularBuffer) Get() []*zapcore.Entry {
+func (l *circularBuffer) Get(level zapcore.Level) []*zapcore.Entry {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 
@@ -62,7 +62,7 @@ func (l *circularBuffer) Get() []*zapcore.Entry {
 	for i := int64(0); i < int64(len(l.log)); i++ {
 		k := (i + l.index) % int64(len(l.log))
 
-		if l.log[k] != nil {
+		if l.log[k] != nil && l.log[k].Level >= level {
 			entries = append(entries, l.log[k])
 		}
 	}
