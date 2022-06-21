@@ -31,8 +31,8 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	var db string
-	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	var sp sqlParam
+	if sp.db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 
@@ -42,21 +42,26 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		scale = 1
 	}
 
-	stats, err := h.pgPool.SchemaStats(ctx, db)
+	stats, err := h.pgPool.SchemaStats(ctx, sp.db, "")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	var avgObjSize float64
+	if stats.CountRows > 0 {
+		avgObjSize = float64(stats.SizeRelation) / float64(stats.CountRows)
 	}
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"db", db,
+			"db", sp.db,
 			"collections", stats.CountTables,
 			// TODO https://github.com/FerretDB/FerretDB/issues/176
 			"views", int32(0),
 			"objects", stats.CountRows,
-			"avgObjSize", float64(stats.SizeSchema)/float64(stats.CountRows),
-			"dataSize", float64(stats.SizeSchema)/scale,
+			"avgObjSize", avgObjSize,
+			"dataSize", float64(stats.SizeRelation)/scale,
 			"indexes", stats.CountIndexes,
 			"indexSize", float64(stats.SizeIndexes)/scale,
 			"totalSize", float64(stats.SizeTotal)/scale,
