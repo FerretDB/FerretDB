@@ -16,10 +16,9 @@ package common
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -30,24 +29,22 @@ func MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
-	command := document.Command()
-
-	var action string
+	action, command := "", document.Command()
 	if action, err = GetRequiredParam[string](document, "action"); err != nil {
 		return nil, err
 	}
 
-	var reply wire.OpMsg
-
-	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"state", "disabled",
-			"message", action+" | "+command,
-			"ok", float64(1),
-		))},
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+	switch action {
+	case "enable", "disable":
+		return nil, NewErrorMsg(
+			ErrFreeMonitoringDisabled,
+			"Free Monitoring has been disabled via the command-line and/or config file",
+		)
+	default:
+		return nil, NewErrorMsg(ErrBadValue, fmt.Sprintf(
+			"Enumeration value '%s' for field '%s' is not a valid value.",
+			action,
+			command+".action",
+		))
 	}
-	return &reply, nil
 }
