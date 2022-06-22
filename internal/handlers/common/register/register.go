@@ -27,7 +27,7 @@ type NewHandler func(opts *NewHandlerOpts) (handlers.Interface, error)
 
 // NewHandlerOpts represents common configuration for constructing handlers.
 //
-// Handler-specific configuration is passed via command-line flags directly.
+// Handler-specific configuration is passed via command-line flags directly or as a parameters to the library.
 type NewHandlerOpts struct {
 	PostgreSQLConnectionString string
 	Ctx                        context.Context
