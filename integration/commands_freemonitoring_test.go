@@ -48,8 +48,8 @@ func TestCommandsFreeMonitoringGetFreeMonitoringStatus(t *testing.T) {
 		if it, ok := item.(primitive.D); ok {
 			z := m[k].(primitive.D)
 			AssertEqualDocuments(t, it, z)
-		} else {
-			assert.Equal(t, m[k], item)
+			continue
 		}
+		assert.Equal(t, m[k], item)
 	}
 }
