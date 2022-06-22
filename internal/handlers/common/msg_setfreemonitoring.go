@@ -29,7 +29,8 @@ func MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
-	action, command := "", document.Command()
+	command := document.Command()
+	var action string
 	if action, err = GetRequiredParam[string](document, "action"); err != nil {
 		return nil, err
 	}

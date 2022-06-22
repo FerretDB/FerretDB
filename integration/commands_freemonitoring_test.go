@@ -62,11 +62,10 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 	})
 
 	for name, tc := range map[string]struct {
-		command  bson.D
-		expected map[string]any
-		err      *mongo.CommandError
+		command bson.D
+		err     *mongo.CommandError
 	}{
-		"SetFreeMonitoring_Enable": {
+		"Enable": {
 			command: bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},
 			err: &mongo.CommandError{
 				Code:    50840,
@@ -74,7 +73,7 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 				Message: `Free Monitoring has been disabled via the command-line and/or config file`,
 			},
 		},
-		"SetFreeMonitoring_Disable": {
+		"Disable": {
 			command: bson.D{{"setFreeMonitoring", 1}, {"action", "disable"}},
 			err: &mongo.CommandError{
 				Code:    50840,
@@ -82,7 +81,7 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 				Message: `Free Monitoring has been disabled via the command-line and/or config file`,
 			},
 		},
-		"SetFreeMonitoring_Other": {
+		"Other": {
 			command: bson.D{{"setFreeMonitoring", 1}, {"action", "foobar"}},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -90,7 +89,7 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 				Message: `Enumeration value 'foobar' for field 'setFreeMonitoring.action' is not a valid value.`,
 			},
 		},
-		"SetFreeMonitoring_Empty": {
+		"Empty": {
 			command: bson.D{{"setFreeMonitoring", 1}, {"action", ""}},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -113,20 +112,6 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-
-			m := actual.Map()
-			keys := CollectKeys(t, actual)
-
-			for k, item := range tc.expected {
-				assert.Contains(t, keys, k)
-				assert.IsType(t, item, m[k])
-				if it, ok := item.(primitive.D); ok {
-					z := m[k].(primitive.D)
-					AssertEqualDocuments(t, it, z)
-					continue
-				}
-				assert.Equal(t, m[k], item)
-			}
 		})
 	}
 }
