@@ -24,7 +24,7 @@ import (
 
 // init registers `tigris` handler for Tigris that is enabled only when compiled with `tigris` build tag.
 func init() {
-	RegisteredHandlers["tigris"] = func(*NewHandlerOpts) (handlers.Interface, error) {
+	HandlerFunc["tigris"] = func(*NewHandlerOpts) (handlers.Interface, error) {
 		return tigris.New()
 	}
 }

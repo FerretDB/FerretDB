@@ -33,7 +33,7 @@ import (
 
 // Config ConnectionString contains a backend connection string.
 type Config struct {
-	ConnectionString string
+	PostgreSQLConnectionString string
 }
 
 // FerretDB proxy.
@@ -46,7 +46,7 @@ type FerretDB struct {
 func New(conf Config) FerretDB {
 	return FerretDB{
 		config:   conf,
-		mongoURL: transformPgConnString(conf.ConnectionString),
+		mongoURL: transformConnStringPgToMongo(conf.PostgreSQLConnectionString),
 	}
 }
 
@@ -59,7 +59,7 @@ func (fdb *FerretDB) Run(ctx context.Context, conf Config) (string, error) {
 	handler := "pg"
 	testConnTimeout := time.Duration(0)
 
-	_, ok := register.RegisteredHandlers["pg"]
+	_, ok := register.HandlerFunc["pg"]
 	if !ok {
 		panic("no pg handler registered")
 	}
@@ -82,12 +82,12 @@ func (fdb *FerretDB) Run(ctx context.Context, conf Config) (string, error) {
 
 	go debug.RunHandler(ctx, debugAddr, logger.Named("debug"))
 
-	newHandler := register.RegisteredHandlers[handler]
+	newHandler := register.HandlerFunc[handler]
 	if newHandler == nil {
 		logger.Sugar().Fatalf("Unknown backend handler %q.", handler)
 	}
 	h, err := newHandler(&register.NewHandlerOpts{
-		PostgreSQLConnectionString: conf.ConnectionString,
+		PostgreSQLConnectionString: conf.PostgreSQLConnectionString,
 		Ctx:                        ctx,
 		Logger:                     logger,
 	})
@@ -114,9 +114,9 @@ func (fdb *FerretDB) Run(ctx context.Context, conf Config) (string, error) {
 	return fdb.mongoURL, nil
 }
 
-// transformPgConnString parses postgresql connection string and returns a corresponded MongoDB connection string for the driver.
+// transformConnStringPgToMongo parses postgresql connection string and returns a corresponded MongoDB connection string for the driver.
 // I.e. transforms "postgres://postgres@127.0.0.1:5432/ferretdb" into mongodb://127.0.0.1:27017
-func transformPgConnString(connectionURL string) string {
+func transformConnStringPgToMongo(connectionURL string) string {
 	u, err := url.Parse(connectionURL)
 	if err != nil {
 		panic(err)

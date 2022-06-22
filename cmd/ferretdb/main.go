@@ -58,12 +58,12 @@ var (
 // initFlags improves flags settings after all global flags are initialized
 // and all handler constructors are registered.
 func initFlags() {
-	_, ok := register.RegisteredHandlers["pg"]
+	_, ok := register.HandlerFunc["pg"]
 	if !ok {
 		panic("no pg handler registered")
 	}
 
-	handlers := maps.Keys(register.RegisteredHandlers)
+	handlers := maps.Keys(register.HandlerFunc)
 	slices.Sort(handlers)
 
 	f := flag.Lookup("handler")
@@ -137,7 +137,7 @@ func main() {
 
 	go debug.RunHandler(ctx, *debugAddrF, logger.Named("debug"))
 
-	newHandler := register.RegisteredHandlers[*handlerF]
+	newHandler := register.HandlerFunc[*handlerF]
 	if newHandler == nil {
 		logger.Sugar().Fatalf("Unknown backend handler %q.", *handlerF)
 	}

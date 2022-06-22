@@ -34,7 +34,7 @@ type NewHandlerOpts struct {
 	Logger                     *zap.Logger
 }
 
-// RegisteredHandlers maps handler names to constructors.
-// The values for `RegisteredHandlers` must be set through the `init()` functions of the corresponding handlers
+// HandlerFunc maps handler names to constructors.
+// The values for `HandlerFunc` must be set through the `init()` functions of the corresponding handlers
 // so that we can control which handlers will be included in the build with build tags.
-var RegisteredHandlers = map[string]NewHandler{}
+var HandlerFunc = map[string]NewHandler{}
