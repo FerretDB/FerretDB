@@ -22,8 +22,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris"
 )
 
-// InitTg registers `tigris` handler for Tigris that is enabled only when compiled with `tigris` build tag.
-func InitTg() {
+// init registers `tigris` handler for Tigris that is enabled only when compiled with `tigris` build tag.
+func init() {
 	RegisteredHandlers["tigris"] = func(*NewHandlerOpts) (handlers.Interface, error) {
 		return tigris.New()
 	}

@@ -23,7 +23,7 @@ import (
 )
 
 // InitPg registers `pg` handler for PostgreSQL that is always enabled.
-func InitPg(conn string) {
+func init() {
 	RegisteredHandlers["pg"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
 		pgPool, err := pgdb.NewPool(opts.Ctx, opts.PostgreSQLConnectionString, opts.Logger, false)
 		if err != nil {

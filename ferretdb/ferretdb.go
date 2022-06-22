@@ -16,6 +16,7 @@ package ferretdb
 
 import (
 	"context"
+	"net"
 	"net/url"
 	"time"
 
@@ -41,12 +42,9 @@ type FerretDB struct {
 }
 
 func New(conf Config) FerretDB {
-	register.InitDummy()
-	register.InitPg(conf.ConnectionString)
-
 	return FerretDB{
 		config:   conf,
-		mongoURL: parsePgConnString(conf.ConnectionString),
+		mongoURL: transformPgConnString(conf.ConnectionString),
 	}
 }
 
@@ -87,8 +85,9 @@ func (fdb *FerretDB) Run(ctx context.Context, conf Config) (string, error) {
 		logger.Sugar().Fatalf("Unknown backend handler %q.", handler)
 	}
 	h, err := newHandler(&register.NewHandlerOpts{
-		Ctx:    ctx,
-		Logger: logger,
+		PostgreSQLConnectionString: conf.ConnectionString,
+		Ctx:                        ctx,
+		Logger:                     logger,
 	})
 	if err != nil {
 		logger.Fatal(err.Error())
@@ -113,17 +112,32 @@ func (fdb *FerretDB) Run(ctx context.Context, conf Config) (string, error) {
 	return fdb.mongoURL, nil
 }
 
-// parseConnString parses postgresql connection string and return a corresponded MongoDB connection string for the driver.
+// transformPgConnString parses postgresql connection string and returns a corresponded MongoDB connection string for the driver.
 // I.e. transforms "postgres://postgres@127.0.0.1:5432/ferretdb" into mongodb://127.0.0.1:27017
-func parsePgConnString(connectionURL string) string {
+func transformPgConnString(connectionURL string) string {
 	u, err := url.Parse(connectionURL)
 	if err != nil {
 		panic(err)
 	}
+
+	// change scheme
 	if u.Scheme != "postgres" {
 		panic("connection url: postgres scheme required")
 	}
 	u.Scheme = "mongodb"
-	u.Path = "" // MongoDB collections corresponds to scheme in PostgreSQL
+
+	// MongoDB collections corresponds to scheme in PostgreSQL
+	u.Path = ""
+
+	// set the port to the FerreDB port
+	host, _, err := net.SplitHostPort(u.Host)
+	if err != nil {
+		panic(err)
+	}
+	port := "27017"
+	u.Host = host + ":" + port
+
+	u.User = nil
+
 	return u.String()
 }

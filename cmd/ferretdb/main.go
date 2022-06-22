@@ -55,11 +55,6 @@ var (
 	postgresqlURLF = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/ferretdb", "PostgreSQL URL")
 )
 
-func init() {
-	register.InitDummy()
-	register.InitPg(*postgresqlURLF)
-}
-
 // initFlags improves flags settings after all global flags are initialized
 // and all handler constructors are registered.
 func initFlags() {
@@ -147,8 +142,9 @@ func main() {
 		logger.Sugar().Fatalf("Unknown backend handler %q.", *handlerF)
 	}
 	h, err := newHandler(&register.NewHandlerOpts{
-		Ctx:    ctx,
-		Logger: logger,
+		PostgreSQLConnectionString: *postgresqlURLF,
+		Ctx:                        ctx,
+		Logger:                     logger,
 	})
 	if err != nil {
 		logger.Fatal(err.Error())

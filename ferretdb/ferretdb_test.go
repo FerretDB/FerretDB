@@ -21,7 +21,7 @@ import (
 )
 
 // ExampleRun is a testable example for Run func.
-func ExampleRun() {
+func ExampleNew() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	conf := Config{ConnectionString: "postgres://postgres@127.0.0.1:5432/ferretdb"}
 
