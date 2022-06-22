@@ -33,7 +33,6 @@ import (
 var config Config
 
 // Config ConnectionString contains a backend connection string.
-// "postgres://user@postgres:5432/ferretdb" - then it's postgres.
 type Config struct {
 	ConnectionString string
 }
