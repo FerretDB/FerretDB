@@ -120,6 +120,9 @@ type Interface interface {
 	// MsgServerStatus returns an overview of the databases state.
 	MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
+	// MsgSetFreeMonitoring toggles free monitoring.
+	MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
 	// MsgUpdate updates documents that are matched by the query.
 	MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 

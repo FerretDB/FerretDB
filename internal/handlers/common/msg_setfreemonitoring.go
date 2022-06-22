@@ -29,14 +29,20 @@ func MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-	//TODO...
+
+	command := document.Command()
+
+	var action string
+	if action, err = GetRequiredParam[string](document, "action"); err != nil {
+		return nil, err
+	}
 
 	var reply wire.OpMsg
 
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"state", "disabled",
-			"message", "monitoring is not enabled",
+			"message", action+" | "+command,
 			"ok", float64(1),
 		))},
 	})

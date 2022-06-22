@@ -22,6 +22,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 )
 
 func TestCommandsFreeMonitoringGetFreeMonitoringStatus(t *testing.T) {
@@ -69,7 +71,7 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 		"SetFreeMonitoring_Enable": {
 			command: bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},
 			err: &mongo.CommandError{
-				Code:    50840,
+				Code:    common.ErrFreeMonitoringDisabled,
 				Name:    "Location50840",
 				Message: `Free Monitoring has been disabled via the command-line and/or config file`,
 			},
