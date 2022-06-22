@@ -22,6 +22,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/FerretDB/FerretDB/internal/fjson"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
+
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v4"
@@ -40,6 +45,12 @@ const (
 	// Supported locales: (For more info see: https://www.gnu.org/software/libc/manual/html_node/Standard-Locales.html)
 	localeC     = "C"
 	localePOSIX = "POSIX"
+
+	// Internal collections prefix.
+	collectionPrefix = "_ferretdb_"
+
+	// PostgreSQL max table name length.
+	maxTableNameLength = 63
 )
 
 var (
@@ -238,6 +249,10 @@ func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, error)
 			return nil, lazyerrors.Error(err)
 		}
 
+		if strings.HasPrefix(name, collectionPrefix) {
+			continue
+		}
+
 		tables = append(tables, name)
 	}
 	if err = rows.Err(); err != nil {
@@ -254,7 +269,7 @@ func (pgPool *Pool) CreateSchema(ctx context.Context, schema string) error {
 	sql := `CREATE SCHEMA ` + pgx.Identifier{schema}.Sanitize()
 	_, err := pgPool.Exec(ctx, sql)
 	if err == nil {
-		return nil
+		return pgPool.CreateSettingsTable(ctx, schema)
 	}
 
 	pgErr, ok := err.(*pgconn.PgError)
@@ -301,8 +316,13 @@ func (pgPool *Pool) DropSchema(ctx context.Context, schema string) error {
 //
 // It returns ErrAlreadyExist if table already exist, ErrNotExist is schema does not exist.
 func (pgPool *Pool) CreateTable(ctx context.Context, schema, table string) error {
+	table, err := pgPool.GetTableName(ctx, schema, table)
+	if err != nil {
+		return lazyerrors.Errorf("failed to get table name: %w", err)
+	}
+
 	sql := `CREATE TABLE ` + pgx.Identifier{schema, table}.Sanitize() + ` (_jsonb jsonb)`
-	_, err := pgPool.Exec(ctx, sql)
+	_, err = pgPool.Exec(ctx, sql)
 	if err == nil {
 		return nil
 	}
@@ -356,7 +376,12 @@ func (pgPool *Pool) DropTable(ctx context.Context, schema, table string) error {
 //
 // True is returned if table was created.
 func (pgPool *Pool) CreateTableIfNotExist(ctx context.Context, db, collection string) (bool, error) {
-	exists, err := pgPool.TableExists(ctx, db, collection)
+	table, err := pgPool.GetTableName(ctx, db, collection)
+	if err != nil {
+		return false, lazyerrors.Errorf("failed to get table name: %w", err)
+	}
+
+	exists, err := pgPool.TableExists(ctx, db, table)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
@@ -371,7 +396,7 @@ func (pgPool *Pool) CreateTableIfNotExist(ctx context.Context, db, collection st
 		return false, lazyerrors.Error(err)
 	}
 
-	if err := pgPool.CreateTable(ctx, db, collection); err != nil {
+	if err := pgPool.CreateTable(ctx, db, table); err != nil {
 		if err == ErrAlreadyExist {
 			return false, nil
 		}
@@ -446,10 +471,85 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema string) (*DBStats, e
 	return &res, nil
 }
 
-const maxTableNameLength = 64
+// CreateSettingsTable creates FerretDB settings table.
+func (pgPool *Pool) CreateSettingsTable(ctx context.Context, db string) error {
+	sql := `CREATE TABLE ` + pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize() + ` (_jsonb jsonb)`
+	_, err := pgPool.Exec(ctx, sql)
+	if err != nil {
+		return err
+	}
 
-// GetCollectionName returns the collection name from the given name.
-func (pgPool *Pool) GetCollectionName(name string) (string, error) {
+	settings := must.NotFail(types.NewDocument("collections", must.NotFail(types.NewDocument())))
+	sql = fmt.Sprintf(`INSERT INTO %s (_jsonb) VALUES ($1)`, pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize())
+	_, err = pgPool.Exec(ctx, sql, must.NotFail(fjson.Marshal(settings)))
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	return nil
+}
+
+func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (string, error) {
+	tableExists, err := pgPool.TableExists(ctx, db, collectionPrefix+"settings")
+	if err != nil {
+		return "", lazyerrors.Error(err)
+	}
+	if !tableExists {
+		err = pgPool.CreateSettingsTable(ctx, db)
+		if err != nil {
+			return "", lazyerrors.Error(err)
+		}
+	}
+
+	sql := `SELECT _jsonb FROM ` + pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize()
+	rows, err := pgPool.Query(ctx, sql)
+	if err != nil {
+		return "", lazyerrors.Error(err)
+	}
+
+	if !rows.Next() {
+		return "", fmt.Errorf("no rows returned")
+	}
+
+	var b []byte
+	if err := rows.Scan(&b); err != nil {
+		return "", lazyerrors.Error(err)
+	}
+
+	doc, err := fjson.Unmarshal(b)
+	if err != nil {
+		return "", lazyerrors.Error(err)
+	}
+
+	settings, err := common.AssertType[*types.Document](doc)
+	if err != nil {
+		return "", lazyerrors.Error(err)
+	}
+
+	collections, err := common.AssertType[*types.Document](must.NotFail(settings.Get("collections")))
+	if err != nil {
+		return "", lazyerrors.Error(err)
+	}
+
+	if collections.Has(collection) {
+		return must.NotFail(collections.Get(collection)).(string), nil
+	}
+
+	tableName := must.NotFail(getTableNameFormatted(collection))
+	must.NoError(collections.Set(collection, tableName))
+	must.NoError(settings.Set("collections", collections))
+
+	sql = `UPDATE ` + pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize() + `SET _jsonb = $1`
+	_, err = pgPool.Exec(ctx, sql, must.NotFail(fjson.Marshal(settings)))
+	if err != nil {
+		return "", lazyerrors.Error(err)
+	}
+
+	return "", nil
+}
+
+// getTableNameFormatted returns collection name in form <shortened_name>_<name_hash>.
+func getTableNameFormatted(name string) (string, error) {
 	hash32 := fnv.New32a()
 	_, err := hash32.Write([]byte(name))
 	if err != nil {

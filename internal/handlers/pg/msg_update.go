@@ -202,7 +202,12 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 // update prepares and executes actual UPDATE request to Postgres.
 func (h *Handler) update(ctx context.Context, sp sqlParam, doc *types.Document) (pgconn.CommandTag, error) {
-	sql := "UPDATE " + pgx.Identifier{sp.db, sp.collection}.Sanitize() +
+	table, err := h.pgPool.GetTableName(ctx, sp.db, sp.collection)
+	if err != nil {
+		return nil, err
+	}
+
+	sql := "UPDATE " + pgx.Identifier{sp.db, table}.Sanitize() +
 		" SET _jsonb = $1 WHERE _jsonb->'_id' = $2"
 	id := must.NotFail(doc.Get("_id"))
 	tag, err := h.pgPool.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)), must.NotFail(fjson.Marshal(id)))

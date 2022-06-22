@@ -147,9 +147,14 @@ func (h *Handler) delete(ctx context.Context, sp sqlParam, resDocs []*types.Docu
 		ids[i] = must.NotFail(fjson.Marshal(id))
 	}
 
+	table, err := h.pgPool.GetTableName(ctx, sp.db, sp.collection)
+	if err != nil {
+		return nil, err
+	}
+
 	sql := fmt.Sprintf(
 		"DELETE FROM %s WHERE _jsonb->'_id' IN (%s)",
-		pgx.Identifier{sp.db, sp.collection}.Sanitize(), strings.Join(placeholders, ", "),
+		pgx.Identifier{sp.db, table}.Sanitize(), strings.Join(placeholders, ", "),
 	)
 	tag, err := h.pgPool.Exec(ctx, sql, ids...)
 	if err != nil {

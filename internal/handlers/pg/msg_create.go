@@ -72,6 +72,10 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
+	if err := h.pgPool.CreateSettingsTable(ctx, db); err != nil && err != pgdb.ErrAlreadyExist {
+		return nil, lazyerrors.Error(err)
+	}
+
 	if err = h.pgPool.CreateTable(ctx, db, collection); err != nil {
 		if err == pgdb.ErrAlreadyExist {
 			msg := fmt.Sprintf("Collection already exists. NS: %s.%s", db, collection)

@@ -98,8 +98,13 @@ func (h *Handler) insert(ctx context.Context, sp sqlParam, doc any) error {
 		h.l.Info("Created table.", zap.String("schema", sp.db), zap.String("table", sp.collection))
 	}
 
+	table, err := h.pgPool.GetTableName(ctx, sp.db, sp.collection)
+	if err != nil {
+		return err
+	}
+
 	d := doc.(*types.Document)
-	sql := fmt.Sprintf("INSERT INTO %s (_jsonb) VALUES ($1)", pgx.Identifier{sp.db, sp.collection}.Sanitize())
+	sql := fmt.Sprintf("INSERT INTO %s (_jsonb) VALUES ($1)", pgx.Identifier{sp.db, table}.Sanitize())
 	b, err := fjson.Marshal(d)
 	if err != nil {
 		return lazyerrors.Error(err)
