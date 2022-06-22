@@ -56,7 +56,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 		// iterate over result to collect sizes
 		var sizeOnDisk int64
 		for _, c := range res.Collections {
-			_ = c // TODO
+			_ = c // TODO https://github.com/FerretDB/FerretDB/issues/776
 		}
 
 		d := must.NotFail(types.NewDocument(
