@@ -31,7 +31,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
-// Config ConnectionString contains a backend connection string.
+// Config contains a PostgreSQL backend connection string.
 type Config struct {
 	PostgreSQLConnectionString string
 }
