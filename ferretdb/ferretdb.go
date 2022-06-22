@@ -50,7 +50,7 @@ func New(conf Config) FerretDB {
 	}
 }
 
-// Run runs the FerretDB proxy as a library.
+// Run runs the FerretDB proxy as a library with logging error level, monitoring disabled, handler PostgreSQL.
 func (fdb *FerretDB) Run(ctx context.Context, conf Config) (string, error) {
 	listenAddr := "127.0.0.1:27017"
 	proxyAddr := "127.0.0.1:37017"
