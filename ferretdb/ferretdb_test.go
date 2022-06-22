@@ -23,10 +23,12 @@ import (
 // ExampleRun is a testable example for Run func.
 func ExampleRun() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	conf := Config{ConnectionString: "mongodb://127.0.0.1:27017/values"}
+	conf := Config{ConnectionString: "postgres://postgres@127.0.0.1:5432/ferretdb"}
 
-	Run(ctx, conf)
+	fdb := New(conf)
+	connStr, _ := fdb.Run(ctx, conf)
+
 	cancel()
-	fmt.Println(GetConnectionString())
-	// Output: mongodb://127.0.0.1:27017/values
+	fmt.Println(connStr)
+	// Output: mongodb://127.0.0.1:27017
 }

@@ -16,6 +16,7 @@ package ferretdb
 
 import (
 	"context"
+	"net/url"
 	"time"
 
 	"go.uber.org/zap"
@@ -29,22 +30,28 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
-// config is a FerretDB library config.
-var config Config
-
 // Config ConnectionString contains a backend connection string.
 type Config struct {
 	ConnectionString string
 }
 
-// GetConnectionString returns the backend connection string.
-func GetConnectionString() string {
-	return config.ConnectionString
+type FerretDB struct {
+	config   Config
+	mongoURL string
+}
+
+func New(conf Config) FerretDB {
+	register.InitDummy()
+	register.InitPg(conf.ConnectionString)
+
+	return FerretDB{
+		config:   conf,
+		mongoURL: parsePgConnString(conf.ConnectionString),
+	}
 }
 
 // Run runs the FerretDB proxy as a library.
-func Run(ctx context.Context, conf Config) (string, error) {
-	config = conf
+func (fdb *FerretDB) Run(ctx context.Context, conf Config) (string, error) {
 	listenAddr := "127.0.0.1:27017"
 	proxyAddr := "127.0.0.1:37017"
 	debugAddr := "127.0.0.1:8088"
@@ -103,5 +110,20 @@ func Run(ctx context.Context, conf Config) (string, error) {
 	} else {
 		logger.Error("Listener stopped", zap.Error(err))
 	}
-	return nil
+	return fdb.mongoURL, nil
+}
+
+// parseConnString parses postgresql connection string and return a corresponded MongoDB connection string for the driver.
+// I.e. transforms "postgres://postgres@127.0.0.1:5432/ferretdb" into mongodb://127.0.0.1:27017
+func parsePgConnString(connectionURL string) string {
+	u, err := url.Parse(connectionURL)
+	if err != nil {
+		panic(err)
+	}
+	if u.Scheme != "postgres" {
+		panic("connection url: postgres scheme required")
+	}
+	u.Scheme = "mongodb"
+	u.Path = "" // MongoDB collections corresponds to scheme in PostgreSQL
+	return u.String()
 }
