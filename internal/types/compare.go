@@ -272,6 +272,10 @@ func compareArrays(filterArr, docArr *Array) CompareResult {
 	for i := 0; i < docArr.Len(); i++ {
 		arrValue := must.NotFail(docArr.Get(i))
 		switch arrValue := arrValue.(type) {
+		// TODO: case Document
+		case *Document:
+			continue
+
 		case *Array:
 			filterArrValue, _ := filterArr.Get(i) // should omit error to reach case default for filterArrValue
 			switch filterArrValue := filterArrValue.(type) {
@@ -304,10 +308,6 @@ func compareArrays(filterArr, docArr *Array) CompareResult {
 			}
 			continue
 
-		// TODO: case Document
-		case *Document:
-			continue
-
 		default:
 			filterValue, err := filterArr.Get(i)
 			if err != nil {
@@ -318,7 +318,7 @@ func compareArrays(filterArr, docArr *Array) CompareResult {
 			}
 
 			switch filterValue := filterValue.(type) {
-			case *Array, *Document:
+			case *Document, *Array:
 				if entireArrayResult == Equal {
 					entireArrayResult = Incomparable
 				}

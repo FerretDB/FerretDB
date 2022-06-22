@@ -9,9 +9,9 @@ import (
 
 func switchOK(v interface{}) {
 	switch v := v.(type) {
-	case *types.Document:
-		fmt.Println(v)
 	case *types.Array:
+		fmt.Println(v)
+	case types.Document:
 		fmt.Println(v)
 	case float64:
 		fmt.Println(v)

@@ -23,39 +23,44 @@ import (
 )
 
 // orderTypes is preferred order of the types in the switch.
+// Document == *Document
+
+// case int64
+// case int32
+// ==
+// case int64, unt32
+
+// Document == types.Document == newtypes.Document
+
+// default yt
 var orderTypes = map[string]int{
-	"Document":          0,
-	"primitive.D":       1,
-	"typeCodeObject":    2,
-	"Array":             3,
-	"primitive.A":       4,
-	"typeCodeArray":     5,
-	"float64":           6,
-	"typeCodeDouble":    7,
-	"string":            8,
-	"typeCodeString":    9,
-	"Binary":            10,
-	"typeCodeBinData":   11,
-	"ObjectID":          12,
-	"typeCodeObjectID":  13,
-	"bool":              14,
-	"typeCodeBool":      15,
-	"time.Time":         16,
-	"typeCodeDate":      17,
-	"NullType":          18,
-	"typeCodeNull":      19,
-	"Regex":             20,
-	"typeCodeRegex":     21,
-	"int32":             22,
-	"typeCodeInt":       23,
-	"Timestamp":         24,
-	"typeCodeTimestamp": 25,
-	"int64":             26,
-	"typeCodeLong":      27,
-	"typeCodeNumber":    28,
-	"typeCodeDecimal":   29,
-	"typeCodeMinKey":    30,
-	"typeCodeMaxKey":    31,
+	"Document":      0,
+	"documentType":  1,
+	"Array":         2,
+	"arrayType":     3,
+	"doubleType":    4,
+	"float64":       5,
+	"string":        6,
+	"stringType":    7,
+	"Binary":        8,
+	"binaryType":    9,
+	"ObjectID":      10,
+	"objectIDType":  11,
+	"bool":          12,
+	"boolType":      13,
+	"time.Time":     14,
+	"dateTimeType":  15,
+	"NullType":      16,
+	"nullType":      17,
+	"Regex":         18,
+	"regexType":     19,
+	"int32":         20,
+	"int32Type":     21,
+	"Timestamp":     22,
+	"timestampType": 23,
+	"int64":         24,
+	"int64Type":     25,
+	"CString":       26,
 }
 
 var Analyzer = &analysis.Analyzer{
@@ -85,11 +90,13 @@ func run(pass *analysis.Pass) (interface{}, error) {
 					case *ast.StarExpr:
 						if sexp, ok := firstTypeCase.X.(*ast.SelectorExpr); ok {
 							name = sexp.Sel.Name
-							// name = fmt.Sprintf("%s.%s", sexp.X.(*ast.Ident).Name, sexp.X.(*ast.Ident).Name)
+						}
+						if sexp, ok := firstTypeCase.X.(*ast.Ident); ok {
+							name = sexp.Name
 						}
 
 					case *ast.SelectorExpr:
-						name = fmt.Sprintf("%s.%s", firstTypeCase.X, firstTypeCase.Sel.Name)
+						name = firstTypeCase.Sel.Name
 
 					case *ast.Ident:
 						name = firstTypeCase.Name
@@ -103,14 +110,16 @@ func run(pass *analysis.Pass) (interface{}, error) {
 					idx, lastName = idxSl, name
 
 					if len(el.(*ast.CaseClause).List) > 1 {
-						subidx := idx
+						subidx, sublastName := idx, lastName
 						for i := 0; i < len(el.(*ast.CaseClause).List); i++ {
 							cs := el.(*ast.CaseClause).List[i]
 							switch cs := cs.(type) {
 							case *ast.StarExpr:
 								if sexp, ok := cs.X.(*ast.SelectorExpr); ok {
 									name = sexp.Sel.Name
-									// name = fmt.Sprintf("%s.%s", sexp.X.(*ast.Ident).Name, sexp.X.(*ast.Ident).Name)
+								}
+								if sexp, ok := cs.X.(*ast.Ident); ok {
+									name = sexp.Name
 								}
 
 							case *ast.SelectorExpr:
@@ -122,9 +131,10 @@ func run(pass *analysis.Pass) (interface{}, error) {
 
 							subidxSl, ok := orderTypes[name]
 							if ok && (subidxSl < subidx) {
-								pass.Reportf(n.Pos(), "non-observance of the preferred order of types")
+								msg := fmt.Sprintf("non-observance of the preferred order of types: %s <-> %s", sublastName, name)
+								pass.Reportf(n.Pos(), msg)
 							}
-							subidx = subidxSl
+							subidx, sublastName = subidxSl, name
 						}
 					}
 				}
