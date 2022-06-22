@@ -30,18 +30,21 @@ services:
       - 4500:4500
     volumes:
       - tigrisdata:/var/fdb
+      # That will be needed for the next version of Tigris.
       # - tigrisdata:/var/lib/foundationdb
 
-      # tigris_typesense:
-      #   build:
-      #     context: ./build/deps
-      #     dockerfile: tigris_typesense.Dockerfile
-      #   container_name: ferretdb_tigris_typesense
-      #   environment:
-      #     - TYPESENSE_API_KEY=ts_test_key
-      #     - TYPESENSE_DATA_DIR=/tmp
-      #   ports:
-      #     - 8108:8108
+  # That will be needed for the next version of Tigris.
+  #
+  # tigris_typesense:
+  #   build:
+  #     context: ./build/deps
+  #     dockerfile: tigris_typesense.Dockerfile
+  #   container_name: ferretdb_tigris_typesense
+  #   environment:
+  #     - TYPESENSE_API_KEY=ts_test_key
+  #     - TYPESENSE_DATA_DIR=/tmp
+  #   ports:
+  #     - 8108:8108
 
   tigris:
     build:
@@ -51,6 +54,7 @@ services:
     depends_on: [tigris_fdb]
     restart: on-failure
     command: bash -c 'fdbcli --exec "configure new single memory" && /server/service'
+    # That will be needed for the next version of Tigris.
     # environment:
     #   - TIGRIS_SERVER_SEARCH_AUTH_KEY=ts_test_key
     #   - TIGRIS_SERVER_SEARCH_HOST=tigris_typesense
