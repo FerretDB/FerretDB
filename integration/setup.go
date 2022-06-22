@@ -171,7 +171,7 @@ func setupListener(t *testing.T, ctx context.Context, logger *zap.Logger) int {
 	require.NoError(t, err)
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		ListenAddr: ":0",
+		ListenAddr: "127.0.0.1:0",
 		ProxyAddr:  proxyAddr,
 		Mode:       mode,
 		Handler:    h,
@@ -220,5 +220,5 @@ func startup(t *testing.T) {
 
 	ctx := context.Background()
 
-	go debug.RunHandler(ctx, ":0", zap.L().Named("debug"))
+	go debug.RunHandler(ctx, "127.0.0.1:0", zap.L().Named("debug"))
 }
