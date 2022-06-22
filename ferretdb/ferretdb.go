@@ -43,7 +43,7 @@ func GetConnectionString() string {
 }
 
 // Run runs the FerretDB proxy as a library.
-func Run(ctx context.Context, conf Config) error {
+func Run(ctx context.Context, conf Config) (string, error) {
 	config = conf
 	listenAddr := "127.0.0.1:27017"
 	proxyAddr := "127.0.0.1:37017"
