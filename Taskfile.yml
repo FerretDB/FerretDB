@@ -90,13 +90,13 @@ tasks:
   test-unit-short:
     desc: "Run short unit tests"
     cmds:
-      - go test -short -count=1 -race -shuffle=on -coverprofile=cover.txt ./...
+      - go test -short -count=1 {{if ne OS "windows"}} -race {{end}} -shuffle=on -coverprofile=cover.txt ./...
 
   test-unit:
     desc: "Run all unit tests"
     cmds:
-      - go test -count=1 -race -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
-      - go test -count=1 -race -shuffle=on -bench=. -benchtime=1x ./...
+      - go test -count=1 {{if ne OS "windows"}} -race {{end}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
+      - go test -count=1 {{if ne OS "windows"}} -race {{end}} -shuffle=on -bench=. -benchtime=1x ./...
 
   test-integration:
     desc: "Run all integration tests in parallel"
@@ -121,7 +121,7 @@ tasks:
   test-integration-db:
     dir: integration
     cmds:
-      - go test -count=1 -race -shuffle=on -coverprofile=integration-{{.DB}}.txt -coverpkg=../... -port={{.DB}}
+      - go test -count=1 {{if ne OS "windows"}} -race {{end}} -shuffle=on -coverprofile=integration-{{.DB}}.txt -coverpkg=../... -port={{.DB}}
 
   bench-short:
     desc: "Benchmark for about 20 seconds (with default BENCHTIME)"
@@ -168,7 +168,7 @@ tasks:
     desc: "Build bin/ferretdb-testcover"
     deps: [gen-version]
     cmds:
-      - go test -c -o=bin/ferretdb-testcover -trimpath -tags=testcover,tigris -race -coverpkg=./... ./cmd/ferretdb
+      - go test -c -o=bin/ferretdb-testcover -trimpath -tags=testcover,tigris {{if ne OS "windows"}} -race {{end}} -coverpkg=./... ./cmd/ferretdb
 
   run:
     desc: "Run FerretDB"

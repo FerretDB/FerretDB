@@ -9,8 +9,8 @@
 #   Only a few trusted people have permission to do that.
 # * Thanks to the way `pull_request_target` trigger works, PR changes in the workflow itself are not run
 #   until they are merged.
-# * We use a short-living automatic `GITHUB_TOKEN` instead of a long-living personal access token (PAT)
-#   where possible. It also has minimal permissions.
+# * We use a short-living automatic `GITHUB_TOKEN` instead of a long-living personal access token (PAT).
+#   It also has minimal permissions.
 # * We publish Docker images from PRs as a separate package that should not be run by users.
 # * We limit what third-party actions can be used.
 #
@@ -20,9 +20,6 @@
 # multi-platform OCI tarball: https://docs.docker.com/engine/reference/commandline/buildx_build/#output
 # Unfortunately, it seems that there is no way to import that tarball in another workflow and publish it
 # as a Docker image, as strange as it sounds: https://github.com/docker/buildx/issues/186
-#
-# We also have to use PATs for a few APIs that are not available with the GitHub Apps Actions token
-# (`GITHUB_TOKEN`) because it is repository-scoped, and we want to access another repository.
 #
 # Relevant GitHub documentation is scattered. The first article gives a good overview:
 # * https://securitylab.github.com/research/github-actions-preventing-pwn-requests/
