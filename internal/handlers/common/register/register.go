@@ -17,8 +17,9 @@ package register
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handlers"
 	"go.uber.org/zap"
+
+	"github.com/FerretDB/FerretDB/internal/handlers"
 )
 
 // NewHandler represents a function that constructs a new handler.
