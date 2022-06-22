@@ -369,3 +369,34 @@ func TestCreateTableIfNotExist(t *testing.T) {
 		assert.False(t, created)
 	})
 }
+
+func TestPool_GetCollectionName(t *testing.T) {
+	t.Parallel()
+
+	for name, tt := range map[string]struct {
+		name string
+		want string
+		err  error
+	}{
+		"ShortName": {
+			name: "some_name",
+			want: "some_name_jonxgx",
+			err:  nil,
+		},
+		"LongName": {
+			name: "really_long_name_that_is_too_long_to_be_a_table_name_so_it_will_be_truncated",
+			want: "really_long_name_that_is_too_long_to_be_a_table_name_so_it__ibqjaw",
+			err:  nil,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			pgPool := new(pgdb.Pool)
+			got, err := pgPool.GetCollectionName(tt.name)
+			if tt.err != nil {
+				assert.Equal(t, tt.err, err)
+				return
+			}
+			assert.Equalf(t, tt.want, got, "GetCollectionName(%v)", tt.name)
+		})
+	}
+}

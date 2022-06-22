@@ -18,6 +18,8 @@ package pgdb
 import (
 	"context"
 	"fmt"
+	"hash/fnv"
+	"strconv"
 	"strings"
 
 	"github.com/jackc/pgconn"
@@ -442,4 +444,23 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema string) (*DBStats, e
 	}
 
 	return &res, nil
+}
+
+const maxTableNameLength = 64
+
+// GetCollectionName returns the collection name from the given name.
+func (pgPool *Pool) GetCollectionName(name string) (string, error) {
+	hash32 := fnv.New32a()
+	_, err := hash32.Write([]byte(name))
+	if err != nil {
+		return "", err
+	}
+
+	nameSymbolsLeft := maxTableNameLength - hash32.Size() - 1
+	truncateTo := len(name)
+	if truncateTo > nameSymbolsLeft {
+		truncateTo = nameSymbolsLeft
+	}
+
+	return name[:truncateTo] + "_" + strconv.FormatUint(uint64(hash32.Sum32()), 36), nil
 }
