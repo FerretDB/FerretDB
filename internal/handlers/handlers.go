@@ -84,6 +84,9 @@ type Interface interface {
 	// MsgGetCmdLineOpts returns a summary of all runtime and configuration options.
 	MsgGetCmdLineOpts(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
+	// MsgGetFreeMonitoringStatus returns a status of the free monitoring.
+	MsgGetFreeMonitoringStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
 	// MsgGetLog returns the most recent logged events from memory.
 	MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
