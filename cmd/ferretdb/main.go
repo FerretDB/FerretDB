@@ -56,10 +56,12 @@ var registeredHandlers = map[string]newHandler{}
 var (
 	versionF = flag.Bool("version", false, "print version to stdout (full version, commit, branch, dirty flag) and exit")
 
+	// Listen on localhost by default for (very basic) security.
 	listenAddrF = flag.String("listen-addr", "127.0.0.1:27017", "listen address")
 	proxyAddrF  = flag.String("proxy-addr", "127.0.0.1:37017", "proxy address")
 	debugAddrF  = flag.String("debug-addr", "127.0.0.1:8088", "debug address")
-	modeF       = flag.String("mode", string(clientconn.AllModes[0]), fmt.Sprintf("operation mode: %v", clientconn.AllModes))
+
+	modeF = flag.String("mode", string(clientconn.AllModes[0]), fmt.Sprintf("operation mode: %v", clientconn.AllModes))
 
 	handlerF = flag.String("handler", "<set in initFlags()>", "<set in initFlags()>")
 

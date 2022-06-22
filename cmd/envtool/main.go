@@ -166,15 +166,9 @@ func setupMonilaAndValues(ctx context.Context, handler handlers.Interface) {
 
 	logger.Infof("Importing databases...")
 
-	// listen on all interfaces to make mongoimport below work from inside Docker
-	addr := ":27018"
-	if runtime.GOOS == "darwin" {
-		// do not trigger macOS firewall; it works with Docker Desktop
-		addr = "127.0.0.1:27018"
-	}
-
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		ListenAddr: addr,
+		// listen on all interfaces to make mongoimport below work from inside Docker
+		ListenAddr: ":27018",
 		Mode:       "normal",
 		Handler:    handler,
 		Logger:     logger.Desugar(),
@@ -309,7 +303,7 @@ func parseFlags() *bool {
 }
 
 func run(ctx context.Context, logger *zap.SugaredLogger) error {
-	go debug.RunHandler(ctx, "127.0.0.1:8089", logger.Named("debug").Desugar())
+	go debug.RunHandler(ctx, ":8089", logger.Named("debug").Desugar())
 
 	var err error
 	composeBin, err = exec.LookPath("docker-compose")
