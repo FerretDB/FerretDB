@@ -15,16 +15,17 @@
 //go:build tigris
 // +build tigris
 
-package register
+package main
 
 import (
-	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/tigris"
+	"flag"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/common/register"
 )
 
-// InitTg registers `tigris` handler for Tigris that is enabled only when compiled with `tigris` build tag.
-func InitTg() {
-	RegisteredHandlers["tigris"] = func(*NewHandlerOpts) (handlers.Interface, error) {
-		return tigris.New()
-	}
+// `tigris` handler flags.
+var tigrisURLF = flag.String("tigris-url", "127.0.0.1:8081", "Tigris URL")
+
+func init() {
+	register.InitTg()
 }

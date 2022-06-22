@@ -15,7 +15,6 @@
 package register
 
 import (
-	"flag"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers"
@@ -23,13 +22,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 )
 
-// `pg` handler flags.
-var (
-	postgresqlURLF = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/ferretdb", "PostgreSQL URL")
-)
-
-// init registers `pg` handler for PostgreSQL that is always enabled.
-func init() {
+// InitPg registers `pg` handler for PostgreSQL that is always enabled.
+func InitPg(conn string) {
 	RegisteredHandlers["pg"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
 		pgPool, err := pgdb.NewPool(opts.Ctx, opts.PostgreSQLConnectionString, opts.Logger, false)
 		if err != nil {

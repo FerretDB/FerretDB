@@ -50,7 +50,15 @@ var (
 	logLevelF = flag.String("log-level", "<set in initFlags()>", "<set in initFlags()>")
 
 	testConnTimeoutF = flag.Duration("test-conn-timeout", 0, "test: set connection timeout")
+
+	// `pg` handler flags.
+	postgresqlURLF = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/ferretdb", "PostgreSQL URL")
 )
+
+func init() {
+	register.InitDummy()
+	register.InitPg(*postgresqlURLF)
+}
 
 // initFlags improves flags settings after all global flags are initialized
 // and all handler constructors are registered.
