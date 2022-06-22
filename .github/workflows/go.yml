@@ -24,6 +24,10 @@ jobs:
     name: Test
     runs-on: ubuntu-20.04
 
+    permissions:
+      contents: read
+      # packages: write
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
