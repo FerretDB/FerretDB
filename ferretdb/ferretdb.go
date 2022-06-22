@@ -50,7 +50,10 @@ func New(conf Config) FerretDB {
 	}
 }
 
-// Run runs the FerretDB proxy as a library with logging error level, monitoring disabled, handler PostgreSQL.
+// Run runs the FerretDB proxy as a library with
+// * error level logging
+// * monitoring disabled
+// * handler PostgreSQL.
 func (fdb *FerretDB) Run(ctx context.Context, conf Config) (string, error) {
 	listenAddr := "127.0.0.1:27017"
 	proxyAddr := "127.0.0.1:37017"
@@ -114,8 +117,9 @@ func (fdb *FerretDB) Run(ctx context.Context, conf Config) (string, error) {
 	return fdb.mongoURL, nil
 }
 
-// transformConnStringPgToMongo parses postgresql connection string and returns a corresponded MongoDB connection string for the driver.
-// I.e. transforms "postgres://postgres@127.0.0.1:5432/ferretdb" into mongodb://127.0.0.1:27017
+// transformConnStringPgToMongo parses postgresql connection string and
+// returns a corresponded MongoDB connection string for the driver.
+// I.e. transforms "postgres://postgres@127.0.0.1:5432/ferretdb" into mongodb://127.0.0.1:27017.
 func transformConnStringPgToMongo(connectionURL string) string {
 	u, err := url.Parse(connectionURL)
 	if err != nil {
