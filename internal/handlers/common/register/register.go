@@ -29,8 +29,9 @@ type NewHandler func(opts *NewHandlerOpts) (handlers.Interface, error)
 //
 // Handler-specific configuration is passed via command-line flags directly.
 type NewHandlerOpts struct {
-	Ctx    context.Context
-	Logger *zap.Logger
+	PostgreSQLConnectionString string
+	Ctx                        context.Context
+	Logger                     *zap.Logger
 }
 
 // RegisteredHandlers maps handler names to constructors.
