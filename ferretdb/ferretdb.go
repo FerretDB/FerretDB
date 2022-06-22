@@ -36,11 +36,13 @@ type Config struct {
 	ConnectionString string
 }
 
+// FerretDB proxy.
 type FerretDB struct {
 	config   Config
 	mongoURL string
 }
 
+// New returns a new FerretDB.
 func New(conf Config) FerretDB {
 	return FerretDB{
 		config:   conf,
