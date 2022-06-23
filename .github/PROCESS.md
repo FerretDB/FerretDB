@@ -32,9 +32,9 @@ Keep guides short: we don't create rules; we automate.
    With that, ideally, there shouldn't be a need to create a draft pull request.
 2. We aim to implement and merge improvements as fast as possible to continuously increase 
    [Lead Time for Changes](https://cloud.google.com/blog/products/devops-sre/using-the-four-keys-to-measure-your-devops-performance). 
-   Having too many drafts indicates that something is wrong in our processes, it needs to be discussed and changed.
+   If there are too many drafts in the repo, it might be possible that something is wrong with the processes. 
+   Such situations need to be analyzed.
 3. Rarely, there is a need to demonstrate something that shouldn't be merged. 
-   For example, a corner case that reveals a bug in the code that can't be fixed easily.
    For such cases, draft pull requests are possible.
 4. If your changes need a review, create a normal pull request. 
    After the first round of review, even if your changes are not accepted, continue working with a normal pull request.
