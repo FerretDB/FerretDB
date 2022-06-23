@@ -17,6 +17,7 @@ package ferretdb
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -25,13 +26,20 @@ import (
 // ExampleNew is a testable example for Run func.
 func ExampleNew() {
 	ctx, cancel := context.WithCancel(context.Background())
-	conf := Config{PostgreSQLConnectionString: "postgres://postgres@127.0.0.1:5432/ferretdb"}
+	conf := Config{PostgresURL: "postgres://postgres@127.0.0.1:5432/ferretdb"}
 
 	fdb := New(conf)
-	err := fdb.Run(ctx, conf)
-	if err != nil {
-		panic(err)
-	}
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err := fdb.Run(ctx, conf)
+		if err != nil {
+			panic(err)
+		}
+	}()
+	wg.Wait()
+
 	uri := fdb.GetConnectionString()
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))

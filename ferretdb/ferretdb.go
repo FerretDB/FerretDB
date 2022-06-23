@@ -25,7 +25,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
-	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/version"
@@ -33,7 +32,8 @@ import (
 
 // Config contains a PostgreSQL backend connection string.
 type Config struct {
-	PostgreSQLConnectionString string
+	PostgresURL string
+	TigrisURL   string
 }
 
 // FerretDB proxy.
@@ -46,7 +46,7 @@ type FerretDB struct {
 func New(conf Config) FerretDB {
 	return FerretDB{
 		config:   conf,
-		mongoURL: transformConnStringPgToMongo(conf.PostgreSQLConnectionString),
+		mongoURL: transformConnStringPgToMongo(conf.PostgresURL),
 	}
 }
 
@@ -55,14 +55,13 @@ func (fdb *FerretDB) GetConnectionString() string {
 	return fdb.mongoURL
 }
 
-// Run runs the FerretDB proxy as a library with
+// Run runs the FerretDB proxy as a library with:
 // * error level logging
 // * monitoring disabled
 // * handler PostgreSQL.
 func (fdb *FerretDB) Run(ctx context.Context, conf Config) error {
 	listenAddr := "127.0.0.1:27017"
 	proxyAddr := "127.0.0.1:37017"
-	debugAddr := "127.0.0.1:8088"
 	mode := clientconn.NormalMode
 	handler := "pg"
 	testConnTimeout := time.Duration(0)
@@ -88,14 +87,13 @@ func (fdb *FerretDB) Run(ctx context.Context, conf Config) error {
 		startFields = append(startFields, zap.Any(k, v))
 	}
 
-	go debug.RunHandler(ctx, debugAddr, logger.Named("debug"))
-
 	newHandler := registry.Handler[handler]
 	if newHandler == nil {
 		logger.Sugar().Fatalf("Unknown backend handler %q.", handler)
 	}
 	h, err := newHandler(&registry.NewHandlerOpts{
-		PostgresURL: conf.PostgreSQLConnectionString,
+		PostgresURL: conf.PostgresURL,
+		TigrisURL:   conf.TigrisURL,
 		Ctx:         ctx,
 		Logger:      logger,
 	})
