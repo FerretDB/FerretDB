@@ -131,6 +131,20 @@ issues:
       path: internal/util/testutil
       text: pgdb
 
+    # required to make this rules work on Windows systems
+    - linters: [depguard]
+      path: internal\\handlers\\pg
+      text: pgdb
+    - linters: [depguard]
+      path: cmd\\envtool
+      text: pgdb
+    - linters: [ depguard ]
+      path: cmd\\ferretdb
+      text: pgdb
+    - linters: [depguard]
+      path: internal\\util\\testutil
+      text: pgdb
+
     # only `pg` handler can import `fjson` package, not other handler can do that
     - linters: [depguard]
       path: internal/handlers/pg
@@ -142,7 +156,23 @@ issues:
       path: internal/util/testutil
       text: fjson
 
+    # required to make this rules work on Windows systems
+    - linters: [depguard]
+      path: internal\\handlers\\pg
+      text: fjson
+    - linters: [depguard]
+      path: internal\\wire
+      text: fjson
+    - linters: [depguard]
+      path: internal\\util\\testutil
+      text: fjson
+
     # only `tigris` handler can import `tjson` package, not other handler can do that
     - linters: [depguard]
       path: internal/handlers/tigris
+      text: tjson
+
+    # required to make this rule work on Windows systems
+    - linters: [depguard]
+      path: internal\\handlers\\tigris
       text: tjson
