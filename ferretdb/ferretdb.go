@@ -16,7 +16,6 @@ package ferretdb
 
 import (
 	"context"
-	"net/url"
 	"time"
 
 	"go.uber.org/zap"
@@ -45,7 +44,7 @@ type FerretDB struct {
 func New(conf Config) FerretDB {
 	return FerretDB{
 		config:   conf,
-		mongoURL: transformConnStringPgToMongo(conf.PostgresURL),
+		mongoURL: "mongodb://127.0.0.1:27017",
 	}
 }
 
@@ -117,25 +116,4 @@ func (fdb *FerretDB) Run(ctx context.Context, conf Config) error {
 		logger.Error("Listener stopped", zap.Error(err))
 	}
 	return nil
-}
-
-// transformConnStringPgToMongo parses postgresql connection string and
-// returns a corresponded MongoDB connection string for the driver.
-// I.e. transforms "postgres://postgres@127.0.0.1:5432/ferretdb" into mongodb://127.0.0.1:27017.
-func transformConnStringPgToMongo(connectionURL string) string {
-	u, err := url.Parse(connectionURL)
-	if err != nil {
-		panic(err)
-	}
-
-	// change scheme
-	if u.Scheme != "postgres" {
-		panic("connection url: postgres scheme required")
-	}
-	u.User = nil
-	u.Scheme = "mongodb"
-	u.Path = ""
-	u.Host = "127.0.0.1:27017"
-
-	return u.String()
 }
