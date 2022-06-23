@@ -18,7 +18,6 @@ package pgdb
 import (
 	"context"
 	"fmt"
-	"github.com/FerretDB/FerretDB/internal/fjson"
 	"hash/fnv"
 	"strings"
 
@@ -30,6 +29,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -440,7 +440,7 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 
 // CreateSettingsTable creates FerretDB settings table.
 func (pgPool *Pool) CreateSettingsTable(ctx context.Context, db string) error {
-	sql := `CREATE TABLE ` + pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize() + ` (_jsonb jsonb)`
+	sql := `CREATE TABLE ` + pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize() + ` (settings jsonb)`
 	_, err := pgPool.Exec(ctx, sql)
 	if err != nil {
 		return err
@@ -457,6 +457,8 @@ func (pgPool *Pool) CreateSettingsTable(ctx context.Context, db string) error {
 }
 
 func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (string, error) {
+	var err error
+
 	tableExists, err := pgPool.TableExists(ctx, db, collectionPrefix+"settings")
 	if err != nil {
 		return "", lazyerrors.Error(err)
@@ -468,8 +470,20 @@ func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (st
 		}
 	}
 
-	sql := `SELECT _jsonb FROM ` + pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize()
-	rows, err := pgPool.Query(ctx, sql)
+	tx, err := pgPool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return "", lazyerrors.Error(err)
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback(ctx)
+			return
+		}
+		_ = tx.Commit(ctx)
+	}()
+
+	sql := `SELECT settings FROM ` + pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize()
+	rows, err := tx.Query(ctx, sql)
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
@@ -506,13 +520,17 @@ func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (st
 	must.NoError(collections.Set(collection, tableName))
 	must.NoError(settings.Set("collections", collections))
 
-	sql = `UPDATE ` + pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize() + `SET _jsonb = $1`
-	_, err = pgPool.Exec(ctx, sql, must.NotFail(fjson.Marshal(settings)))
+	sql = `UPDATE ` + pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize() + `SET settings = $1`
+	_, err = tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(settings)))
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
 
 	return "", nil
+}
+
+func (pgPool *Pool) RemoveTableFromSettings(ctx context.Context, db, collection string) error {
+	return nil
 }
 
 // getTableNameFormatted returns collection name in form <shortened_name>_<name_hash>.
