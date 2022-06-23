@@ -26,9 +26,12 @@ func ExampleNew() {
 	conf := Config{PostgreSQLConnectionString: "postgres://postgres@127.0.0.1:5432/ferretdb"}
 
 	fdb := New(conf)
-	connStr, _ := fdb.Run(ctx, conf)
+	err := fdb.Run(ctx, conf)
+	if err != nil {
+		panic(err)
+	}
 
 	cancel()
-	fmt.Println(connStr)
+	fmt.Println(fdb.GetConnectionString())
 	// Output: mongodb://127.0.0.1:27017
 }

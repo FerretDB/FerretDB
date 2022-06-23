@@ -30,7 +30,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
-	"github.com/FerretDB/FerretDB/internal/handlers/common/register"
+	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -58,12 +58,12 @@ var (
 // initFlags improves flags settings after all global flags are initialized
 // and all handler constructors are registered.
 func initFlags() {
-	_, ok := register.HandlerFunc["pg"]
+	_, ok := registry.Handler["pg"]
 	if !ok {
 		panic("no pg handler registered")
 	}
 
-	handlers := maps.Keys(register.HandlerFunc)
+	handlers := maps.Keys(registry.Handler)
 	slices.Sort(handlers)
 
 	f := flag.Lookup("handler")
@@ -137,11 +137,11 @@ func main() {
 
 	go debug.RunHandler(ctx, *debugAddrF, logger.Named("debug"))
 
-	newHandler := register.HandlerFunc[*handlerF]
+	newHandler := registry.Handler[*handlerF]
 	if newHandler == nil {
 		logger.Sugar().Fatalf("Unknown backend handler %q.", *handlerF)
 	}
-	h, err := newHandler(&register.NewHandlerOpts{
+	h, err := newHandler(&registry.NewHandlerOpts{
 		PostgreSQLConnectionString: *postgresqlURLF,
 		Ctx:                        ctx,
 		Logger:                     logger,

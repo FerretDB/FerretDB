@@ -24,7 +24,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
-	"github.com/FerretDB/FerretDB/internal/handlers/common/register"
+	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -50,11 +50,16 @@ func New(conf Config) FerretDB {
 	}
 }
 
+// GetConnectionString returns the backend connection string.
+func (fdb *FerretDB) GetConnectionString() string {
+	return fdb.mongoURL
+}
+
 // Run runs the FerretDB proxy as a library with
 // * error level logging
 // * monitoring disabled
 // * handler PostgreSQL.
-func (fdb *FerretDB) Run(ctx context.Context, conf Config) (string, error) {
+func (fdb *FerretDB) Run(ctx context.Context, conf Config) error {
 	listenAddr := "127.0.0.1:27017"
 	proxyAddr := "127.0.0.1:37017"
 	debugAddr := "127.0.0.1:8088"
@@ -62,7 +67,7 @@ func (fdb *FerretDB) Run(ctx context.Context, conf Config) (string, error) {
 	handler := "pg"
 	testConnTimeout := time.Duration(0)
 
-	_, ok := register.HandlerFunc["pg"]
+	_, ok := registry.Handler["pg"]
 	if !ok {
 		panic("no pg handler registered")
 	}
@@ -85,11 +90,11 @@ func (fdb *FerretDB) Run(ctx context.Context, conf Config) (string, error) {
 
 	go debug.RunHandler(ctx, debugAddr, logger.Named("debug"))
 
-	newHandler := register.HandlerFunc[handler]
+	newHandler := registry.Handler[handler]
 	if newHandler == nil {
 		logger.Sugar().Fatalf("Unknown backend handler %q.", handler)
 	}
-	h, err := newHandler(&register.NewHandlerOpts{
+	h, err := newHandler(&registry.NewHandlerOpts{
 		PostgreSQLConnectionString: conf.PostgreSQLConnectionString,
 		Ctx:                        ctx,
 		Logger:                     logger,
@@ -114,7 +119,7 @@ func (fdb *FerretDB) Run(ctx context.Context, conf Config) (string, error) {
 	} else {
 		logger.Error("Listener stopped", zap.Error(err))
 	}
-	return fdb.mongoURL, nil
+	return nil
 }
 
 // transformConnStringPgToMongo parses postgresql connection string and

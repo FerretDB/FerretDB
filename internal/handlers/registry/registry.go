@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package register
+package registry
 
 import (
 	"context"
@@ -26,15 +26,13 @@ import (
 type NewHandler func(opts *NewHandlerOpts) (handlers.Interface, error)
 
 // NewHandlerOpts represents common configuration for constructing handlers.
-//
-// Handler-specific configuration is passed via command-line flags directly or as a parameters to the library.
 type NewHandlerOpts struct {
 	PostgreSQLConnectionString string
 	Ctx                        context.Context
 	Logger                     *zap.Logger
 }
 
-// HandlerFunc maps handler names to constructors.
-// The values for `HandlerFunc` must be set through the `init()` functions of the corresponding handlers
+// Handler maps handler names to constructors.
+// The values for `Handler` must be set through the `init()` functions of the corresponding handlers
 // so that we can control which handlers will be included in the build with build tags.
-var HandlerFunc = map[string]NewHandler{}
+var Handler = map[string]NewHandler{}

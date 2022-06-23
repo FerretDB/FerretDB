@@ -15,7 +15,7 @@
 //go:build tigris
 // +build tigris
 
-package register
+package registry
 
 import (
 	"github.com/FerretDB/FerretDB/internal/handlers"
@@ -24,7 +24,7 @@ import (
 
 // init registers `tigris` handler for Tigris that is enabled only when compiled with `tigris` build tag.
 func init() {
-	HandlerFunc["tigris"] = func(*NewHandlerOpts) (handlers.Interface, error) {
+	Handler["tigris"] = func(*NewHandlerOpts) (handlers.Interface, error) {
 		return tigris.New()
 	}
 }

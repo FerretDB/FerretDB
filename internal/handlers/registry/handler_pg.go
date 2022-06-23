@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package register
+package registry
 
 import (
 	"time"
@@ -24,7 +24,7 @@ import (
 
 // init registers `pg` handler for PostgreSQL that is always enabled.
 func init() {
-	HandlerFunc["pg"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
+	Handler["pg"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
 		pgPool, err := pgdb.NewPool(opts.Ctx, opts.PostgreSQLConnectionString, opts.Logger, false)
 		if err != nil {
 			return nil, err
