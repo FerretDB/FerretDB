@@ -142,9 +142,9 @@ func main() {
 		logger.Sugar().Fatalf("Unknown backend handler %q.", *handlerF)
 	}
 	h, err := newHandler(&registry.NewHandlerOpts{
-		PostgreSQLConnectionString: *postgresqlURLF,
-		Ctx:                        ctx,
-		Logger:                     logger,
+		PostgresURL: *postgresqlURLF,
+		Ctx:         ctx,
+		Logger:      logger,
 	})
 	if err != nil {
 		logger.Fatal(err.Error())

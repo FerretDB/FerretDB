@@ -95,9 +95,9 @@ func (fdb *FerretDB) Run(ctx context.Context, conf Config) error {
 		logger.Sugar().Fatalf("Unknown backend handler %q.", handler)
 	}
 	h, err := newHandler(&registry.NewHandlerOpts{
-		PostgreSQLConnectionString: conf.PostgreSQLConnectionString,
-		Ctx:                        ctx,
-		Logger:                     logger,
+		PostgresURL: conf.PostgreSQLConnectionString,
+		Ctx:         ctx,
+		Logger:      logger,
 	})
 	if err != nil {
 		logger.Fatal(err.Error())
