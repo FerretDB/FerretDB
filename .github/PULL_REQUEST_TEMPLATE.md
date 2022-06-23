@@ -1,4 +1,4 @@
-## Description
+# Description
 
 This PR closes #{issue_number}.
 

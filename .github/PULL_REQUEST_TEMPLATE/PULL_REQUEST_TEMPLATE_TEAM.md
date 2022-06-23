@@ -4,7 +4,7 @@
     information that is useful for team members.
 -->
 
-## Description
+# Description
 
 This PR closes #{issue_number}.
 
