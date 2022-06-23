@@ -109,7 +109,9 @@ func TableName(tb testing.TB) string {
 	name = strings.ReplaceAll(name, "/", "-")
 	name = strings.ReplaceAll(name, " ", "-")
 
-	require.Less(tb, len(name), 64)
+	name = pgdb.GetTableNameFormatted(name)
+
+	require.Less(tb, len(name), 63)
 	return name
 }
 

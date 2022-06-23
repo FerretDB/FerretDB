@@ -518,7 +518,7 @@ func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (st
 		return must.NotFail(collections.Get(collection)).(string), nil
 	}
 
-	tableName := must.NotFail(getTableNameFormatted(collection))
+	tableName := GetTableNameFormatted(collection)
 	must.NoError(collections.Set(collection, tableName))
 	must.NoError(settings.Set("collections", collections))
 
@@ -535,8 +535,8 @@ func (pgPool *Pool) RemoveTableFromSettings(ctx context.Context, db, collection 
 	return nil
 }
 
-// getTableNameFormatted returns collection name in form <shortened_name>_<name_hash>.
-func getTableNameFormatted(name string) (string, error) {
+// GetTableNameFormatted returns collection name in form <shortened_name>_<name_hash>.
+func GetTableNameFormatted(name string) string {
 	hash32 := fnv.New32a()
 	_ = must.NotFail(hash32.Write([]byte(name)))
 
@@ -546,5 +546,5 @@ func getTableNameFormatted(name string) (string, error) {
 		truncateTo = nameSymbolsLeft
 	}
 
-	return name[:truncateTo] + "_" + fmt.Sprintf("%x", hash32.Sum([]byte{})), nil
+	return name[:truncateTo] + "_" + fmt.Sprintf("%x", hash32.Sum([]byte{}))
 }
