@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -69,4 +70,10 @@ func TestMarshalUnmarshal(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, actual)
+
+	assert.Equal(
+		t,
+		[]byte{0x00, 0x01, 0x02, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c},
+		ObjectID(must.NotFail(expected.Get("_id")).(types.ObjectID)),
+	)
 }
