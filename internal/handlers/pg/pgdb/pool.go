@@ -18,13 +18,9 @@ package pgdb
 import (
 	"context"
 	"fmt"
+	"github.com/FerretDB/FerretDB/internal/fjson"
 	"hash/fnv"
 	"strings"
-
-	"github.com/FerretDB/FerretDB/internal/fjson"
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
@@ -34,7 +30,9 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 const (
@@ -490,14 +488,14 @@ func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (st
 		return "", lazyerrors.Error(err)
 	}
 
-	settings, err := common.AssertType[*types.Document](doc)
-	if err != nil {
-		return "", lazyerrors.Error(err)
+	settings, ok := doc.(*types.Document)
+	if !ok {
+		return "", fmt.Errorf("invalid settings document")
 	}
 
-	collections, err := common.AssertType[*types.Document](must.NotFail(settings.Get("collections")))
-	if err != nil {
-		return "", lazyerrors.Error(err)
+	collections, ok := must.NotFail(settings.Get("collections")).(*types.Document)
+	if !ok {
+		return "", fmt.Errorf("invalid settings document")
 	}
 
 	if collections.Has(collection) {
