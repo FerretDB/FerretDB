@@ -12,17 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tigris
+package pg
 
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgCollStats implements HandlerInterface.
-func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/770
-	return nil, notImplemented(must.NotFail(msg.Document()).Command())
+// MsgGetFreeMonitoringStatus implements HandlerInterface.
+func (h *Handler) MsgGetFreeMonitoringStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	return common.MsgGetFreeMonitoringStatus(ctx, msg)
 }
