@@ -435,7 +435,7 @@ func (pgPool *Pool) CreateSettingsTable(ctx context.Context, db string) error {
 		return lazyerrors.Error(err)
 	}
 
-	if slices.Contains(tables, collectionPrefix+"settings") {
+	if !slices.Contains(tables, collectionPrefix+"settings") {
 		sql := `CREATE TABLE ` + pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize() + ` (settings jsonb)`
 		_, err := pgPool.Exec(ctx, sql)
 		if err != nil {
@@ -540,7 +540,7 @@ func GetTableNameFormatted(name string) string {
 	hash32 := fnv.New32a()
 	_ = must.NotFail(hash32.Write([]byte(name)))
 
-	nameSymbolsLeft := maxTableNameLength - hash32.Size() - 1
+	nameSymbolsLeft := maxTableNameLength - hash32.Size()*2 - 1
 	truncateTo := len(name)
 	if truncateTo > nameSymbolsLeft {
 		truncateTo = nameSymbolsLeft

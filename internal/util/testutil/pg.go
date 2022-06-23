@@ -111,7 +111,7 @@ func TableName(tb testing.TB) string {
 
 	name = pgdb.GetTableNameFormatted(name)
 
-	require.Less(tb, len(name), 63)
+	require.Less(tb, len(name), 64)
 	return name
 }
 
