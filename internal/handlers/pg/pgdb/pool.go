@@ -521,10 +521,7 @@ func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (st
 // getTableNameFormatted returns collection name in form <shortened_name>_<name_hash>.
 func getTableNameFormatted(name string) (string, error) {
 	hash32 := fnv.New32a()
-	_, err := hash32.Write([]byte(name))
-	if err != nil {
-		return "", err
-	}
+	_ = must.NotFail(hash32.Write([]byte(name)))
 
 	nameSymbolsLeft := maxTableNameLength - hash32.Size() - 1
 	truncateTo := len(name)
