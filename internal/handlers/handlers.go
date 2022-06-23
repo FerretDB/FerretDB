@@ -84,6 +84,9 @@ type Interface interface {
 	// MsgGetCmdLineOpts returns a summary of all runtime and configuration options.
 	MsgGetCmdLineOpts(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
+	// MsgGetFreeMonitoringStatus returns a status of the free monitoring.
+	MsgGetFreeMonitoringStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
 	// MsgGetLog returns the most recent logged events from memory.
 	MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
@@ -116,6 +119,9 @@ type Interface interface {
 
 	// MsgServerStatus returns an overview of the databases state.
 	MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgSetFreeMonitoring toggles free monitoring.
+	MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
 	// MsgUpdate updates documents that are matched by the query.
 	MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
