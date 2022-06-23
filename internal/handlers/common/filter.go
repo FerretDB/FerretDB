@@ -82,7 +82,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 			}
 
 			if _, ok := value.(*types.Array); ok {
-				return false, nil
+				return types.Compare(value, filterValue) == types.Equal, nil
 			}
 
 			doc = must.NotFail(types.NewDocument(filterKey, value))

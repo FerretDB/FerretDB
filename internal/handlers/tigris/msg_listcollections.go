@@ -17,10 +17,69 @@ package tigris
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgListCollections implements HandlerInterface.
 func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, errNotImplemented
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if err = common.UnimplementedNonDefault(document, "filter", func(v any) bool {
+		d, ok := v.(*types.Document)
+		return ok && d.Len() == 0
+	}); err != nil {
+		return nil, err
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/301
+	// if err = common.UnimplementedNonDefault(document, "nameOnly", func(v any) bool {
+	// 	nameOnly, ok := v.(bool)
+	// 	return ok && !nameOnly
+	// }); err != nil {
+	// 	return nil, err
+	// }
+
+	common.Ignored(document, h.L, "comment", "authorizedCollections")
+
+	var db string
+	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
+	}
+
+	names, err := h.driver.UseDatabase(db).ListCollections(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	collections := types.MakeArray(len(names))
+	for _, n := range names {
+		d := must.NotFail(types.NewDocument(
+			"name", n,
+			"type", "collection",
+		))
+		if err = collections.Append(d); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"cursor", must.NotFail(types.NewDocument(
+				"id", int64(0),
+				"ns", db+".$cmd.listCollections",
+				"firstBatch", collections,
+			)),
+			"ok", float64(1),
+		))},
+	}))
+
+	return &reply, nil
 }

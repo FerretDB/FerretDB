@@ -107,6 +107,10 @@ var Commands = map[string]command{
 		Help:    "Returns a summary of all runtime and configuration options.",
 		Handler: (handlers.Interface).MsgGetCmdLineOpts,
 	},
+	"getFreeMonitoringStatus": {
+		Help:    "Returns a status of the free monitoring.",
+		Handler: (handlers.Interface).MsgGetFreeMonitoringStatus,
+	},
 	"getLog": {
 		Help:    "Returns the most recent logged events from memory.",
 		Handler: (handlers.Interface).MsgGetLog,
@@ -154,6 +158,10 @@ var Commands = map[string]command{
 	"serverStatus": {
 		Help:    "Returns an overview of the databases state.",
 		Handler: (handlers.Interface).MsgServerStatus,
+	},
+	"setFreeMonitoring": {
+		Help:    "Toggles free monitoring.",
+		Handler: (handlers.Interface).MsgSetFreeMonitoring,
 	},
 	"update": {
 		Help:    "Updates documents that are matched by the query.",

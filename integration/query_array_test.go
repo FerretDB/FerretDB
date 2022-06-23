@@ -161,15 +161,19 @@ func TestQueryArrayDotNotation(t *testing.T) {
 
 		"PositionTypeNull": {
 			filter:      bson.D{{"value.0", bson.D{{"$type", "null"}}}},
-			expectedIDs: []any{"array-null", "array-three-reverse"},
+			expectedIDs: []any{"array-last-embedded", "array-middle-embedded", "array-null", "array-three-reverse"},
 		},
 		"PositionRegex": {
 			filter:      bson.D{{"value.1", primitive.Regex{Pattern: "foo"}}},
 			expectedIDs: []any{"array-three", "array-three-reverse"},
 		},
 		"PositionArray": {
-			filter:      bson.D{{"value.0", primitive.A{}}},
-			expectedIDs: []any{},
+			filter:      bson.D{{"value.0", bson.A{"42", "foo"}}},
+			expectedIDs: []any{"array-embedded"},
+		},
+		"PositionArrayEmpty": {
+			filter:      bson.D{{"value.0", bson.A{}}},
+			expectedIDs: []any{"array-empty-nested"},
 		},
 
 		"NoSuchFieldPosition": {
@@ -331,6 +335,75 @@ func TestQueryElemMatchOperator(t *testing.T) {
 				AssertEqualError(t, *tc.err, err)
 				return
 			}
+			require.NoError(t, err)
+
+			var actual []bson.D
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
+		})
+	}
+}
+
+func TestArrayEquality(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t, shareddata.Composites)
+
+	for name, tc := range map[string]struct {
+		array       bson.A
+		expectedIDs []any
+	}{
+		"One": {
+			array:       bson.A{int32(42)},
+			expectedIDs: []any{"array"},
+		},
+		"Two": {
+			array:       bson.A{42, "foo"},
+			expectedIDs: []any{"array-first-embedded", "array-last-embedded", "array-middle-embedded"},
+		},
+		"Three": {
+			array:       bson.A{int32(42), "foo", nil},
+			expectedIDs: []any{"array-three"},
+		},
+		"Three-reverse": {
+			array:       bson.A{nil, "foo", int32(42)},
+			expectedIDs: []any{"array-three-reverse"},
+		},
+		"Empty": {
+			array:       bson.A{},
+			expectedIDs: []any{"array-empty", "array-empty-nested"},
+		},
+		"Null": {
+			array:       bson.A{nil},
+			expectedIDs: []any{"array-null"},
+		},
+		"EmptyNested": {
+			array:       bson.A{bson.A{}},
+			expectedIDs: []any{"array-empty-nested"},
+		},
+		"OneEmbedded": {
+			array:       bson.A{bson.A{"42", "foo"}},
+			expectedIDs: []any{"array-embedded"},
+		},
+		"FirstEmbedded": {
+			array:       bson.A{bson.A{int32(42), "foo"}, nil},
+			expectedIDs: []any{"array-first-embedded"},
+		},
+		"MiddleEmbedded": {
+			array:       bson.A{nil, bson.A{int32(42), "foo"}, nil},
+			expectedIDs: []any{"array-middle-embedded"},
+		},
+		"LastEmbedded": {
+			array:       bson.A{nil, bson.A{int32(42), "foo"}},
+			expectedIDs: []any{"array-last-embedded"},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			filter := bson.D{{"value", tc.array}}
+			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			require.NoError(t, err)
 
 			var actual []bson.D

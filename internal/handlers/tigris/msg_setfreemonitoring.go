@@ -17,12 +17,11 @@ package tigris
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgCollStats implements HandlerInterface.
-func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/770
-	return nil, notImplemented(must.NotFail(msg.Document()).Command())
+// MsgSetFreeMonitoring implements HandlerInterface.
+func (h *Handler) MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	return common.MsgSetFreeMonitoring(ctx, msg)
 }

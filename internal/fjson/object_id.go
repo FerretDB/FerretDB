@@ -57,7 +57,7 @@ func (obj *objectIDType) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 	if len(b) != types.ObjectIDLen {
-		return lazyerrors.Errorf("fjson.ObjectID.UnmarshalJSON: %d bytes", len(b))
+		return lazyerrors.Errorf("fjson.objectIDType.UnmarshalJSON: %d bytes", len(b))
 	}
 	copy(obj[:], b)
 

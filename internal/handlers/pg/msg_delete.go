@@ -136,12 +136,12 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
-// delete prepares and executes actual DELETE request to Postgres.
-func (h *Handler) delete(ctx context.Context, sp sqlParam, resDocs []*types.Document) (pgconn.CommandTag, error) {
+// delete deletes documents by _id.
+func (h *Handler) delete(ctx context.Context, sp sqlParam, docs []*types.Document) (pgconn.CommandTag, error) {
 	var p pgdb.Placeholder
-	placeholders := make([]string, len(resDocs))
-	ids := make([]any, len(resDocs))
-	for i, doc := range resDocs {
+	placeholders := make([]string, len(docs))
+	ids := make([]any, len(docs))
+	for i, doc := range docs {
 		placeholders[i] = p.Next()
 		id := must.NotFail(doc.Get("_id"))
 		ids[i] = must.NotFail(fjson.Marshal(id))

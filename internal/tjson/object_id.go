@@ -45,17 +45,17 @@ func (obj *objectIDType) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	if l := len(o); l != types.ObjectIDLen {
-		return lazyerrors.Errorf("unexpected len %d", l)
+	if len(o) != types.ObjectIDLen {
+		return lazyerrors.Errorf("tjson.objectIDType.UnmarshalJSON: %d bytes", len(o))
 	}
+	copy(obj[:], o)
 
-	copy((*obj)[:], o)
 	return nil
 }
 
 // MarshalJSON implements tjsontype interface.
 func (obj *objectIDType) MarshalJSON() ([]byte, error) {
-	res, err := json.Marshal([]byte((*obj)[:]))
+	res, err := json.Marshal([]byte(obj[:]))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

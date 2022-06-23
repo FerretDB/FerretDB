@@ -82,7 +82,7 @@ func TestQueryComparisonImplicit(t *testing.T) {
 		},
 		"ArrayEmpty": {
 			filter:      bson.D{{"value", bson.A{}}},
-			expectedIDs: []any{"array-empty"},
+			expectedIDs: []any{"array-empty", "array-empty-nested"},
 		},
 		"ArrayNoSuchField": {
 			filter:      bson.D{{"no-such-field", bson.A{42}}},
@@ -90,7 +90,7 @@ func TestQueryComparisonImplicit(t *testing.T) {
 		},
 		"ArrayEmbedded": {
 			filter:      bson.D{{"value", bson.A{bson.A{int32(42), "foo"}, nil}}},
-			expectedIDs: []any{"array-embedded"},
+			expectedIDs: []any{"array-first-embedded"},
 		},
 		"LongArrayEmbedded": {
 			filter:      bson.D{{"value", bson.A{bson.A{int32(42), "foo"}, nil, "foo"}}},
@@ -98,7 +98,7 @@ func TestQueryComparisonImplicit(t *testing.T) {
 		},
 		"ArraySlice": {
 			filter:      bson.D{{"value", bson.A{int32(42), "foo"}}},
-			expectedIDs: []any{"array-embedded"},
+			expectedIDs: []any{"array-first-embedded", "array-last-embedded", "array-middle-embedded"},
 		},
 		"ArrayShuffledValues": {
 			filter:      bson.D{{"value", bson.A{"foo", nil, int32(42)}}},
@@ -170,13 +170,17 @@ func TestQueryComparisonImplicit(t *testing.T) {
 			expectedIDs: []any{},
 		},
 		"ValueNull": {
-			filter:      bson.D{{"value", nil}},
-			expectedIDs: []any{"array-embedded", "array-null", "array-three", "array-three-reverse", "null"},
+			filter: bson.D{{"value", nil}},
+			expectedIDs: []any{
+				"array-first-embedded", "array-last-embedded", "array-middle-embedded", "array-null",
+				"array-three", "array-three-reverse", "null",
+			},
 		},
 		"NoSuchFieldNull": {
 			filter: bson.D{{"no-such-field", nil}},
 			expectedIDs: []any{
-				"array", "array-embedded", "array-empty", "array-null", "array-three", "array-three-reverse", "array-two",
+				"array", "array-embedded", "array-empty", "array-empty-nested", "array-first-embedded", "array-last-embedded",
+				"array-middle-embedded", "array-null", "array-three", "array-three-reverse", "array-two",
 				"binary", "binary-empty",
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
@@ -258,7 +262,7 @@ func TestQueryComparisonEq(t *testing.T) {
 		},
 		"ArrayEmbedded": {
 			filter:      bson.D{{"value", bson.D{{"$eq", bson.A{bson.A{int32(42), "foo"}, nil}}}}},
-			expectedIDs: []any{"array-embedded"},
+			expectedIDs: []any{"array-first-embedded"},
 		},
 		"LongArrayEmbedded": {
 			filter:      bson.D{{"value", bson.D{{"$eq", bson.A{bson.A{int32(42), "foo"}, nil, "foo"}}}}},
@@ -266,7 +270,7 @@ func TestQueryComparisonEq(t *testing.T) {
 		},
 		"ArraySlice": {
 			filter:      bson.D{{"value", bson.D{{"$eq", bson.A{int32(42), "foo"}}}}},
-			expectedIDs: []any{"array-embedded"},
+			expectedIDs: []any{"array-first-embedded", "array-last-embedded", "array-middle-embedded"},
 		},
 		"ArrayShuffledValues": {
 			filter:      bson.D{{"value", bson.D{{"$eq", bson.A{"foo", nil, int32(42)}}}}},
@@ -282,7 +286,7 @@ func TestQueryComparisonEq(t *testing.T) {
 		},
 		"ArrayEmpty": {
 			filter:      bson.D{{"value", bson.D{{"$eq", bson.A{}}}}},
-			expectedIDs: []any{"array-empty"},
+			expectedIDs: []any{"array-empty", "array-empty-nested"},
 		},
 
 		"Double": {
@@ -392,8 +396,11 @@ func TestQueryComparisonEq(t *testing.T) {
 		},
 
 		"Null": {
-			filter:      bson.D{{"value", bson.D{{"$eq", nil}}}},
-			expectedIDs: []any{"array-embedded", "array-null", "array-three", "array-three-reverse", "null"},
+			filter: bson.D{{"value", bson.D{{"$eq", nil}}}},
+			expectedIDs: []any{
+				"array-first-embedded", "array-last-embedded", "array-middle-embedded", "array-null", "array-three",
+				"array-three-reverse", "null",
+			},
 		},
 
 		"RegexWithoutOption": {
@@ -467,7 +474,8 @@ func TestQueryComparisonEq(t *testing.T) {
 		"NoSuchFieldNull": {
 			filter: bson.D{{"no-such-field", bson.D{{"$eq", nil}}}},
 			expectedIDs: []any{
-				"array", "array-embedded", "array-empty", "array-null", "array-three", "array-three-reverse", "array-two",
+				"array", "array-embedded", "array-empty", "array-empty-nested", "array-first-embedded", "array-last-embedded",
+				"array-middle-embedded", "array-null", "array-three", "array-three-reverse", "array-two",
 				"binary", "binary-empty",
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
@@ -759,8 +767,11 @@ func TestQueryComparisonGte(t *testing.T) {
 		},
 
 		"Null": {
-			value:       nil,
-			expectedIDs: []any{"array-embedded", "array-null", "array-three", "array-three-reverse", "null"},
+			value: nil,
+			expectedIDs: []any{
+				"array-first-embedded", "array-last-embedded", "array-middle-embedded", "array-null", "array-three",
+				"array-three-reverse", "null",
+			},
 		},
 
 		"Regex": {
@@ -1096,8 +1107,11 @@ func TestQueryComparisonLte(t *testing.T) {
 		},
 
 		"Null": {
-			value:       nil,
-			expectedIDs: []any{"array-embedded", "array-null", "array-three", "array-three-reverse", "null"},
+			value: nil,
+			expectedIDs: []any{
+				"array-first-embedded", "array-last-embedded", "array-middle-embedded", "array-null",
+				"array-three", "array-three-reverse", "null",
+			},
 		},
 
 		"Regex": {
@@ -1192,8 +1206,11 @@ func TestQueryComparisonNin(t *testing.T) {
 		err         *mongo.CommandError
 	}{
 		"ForScalarDataTypes": {
-			value:       scalarDataTypesFilter,
-			expectedIDs: []any{"array-empty", "document", "document-composite", "document-composite-reverse", "document-empty", "document-null"},
+			value: scalarDataTypesFilter,
+			expectedIDs: []any{
+				"array-embedded", "array-empty", "array-empty-nested", "document", "document-composite",
+				"document-composite-reverse", "document-empty", "document-null",
+			},
 		},
 		"ForCompositeDataTypes": {
 			value: compositeDataTypesFilter,
@@ -1224,7 +1241,8 @@ func TestQueryComparisonNin(t *testing.T) {
 		"Regex": {
 			value: bson.A{primitive.Regex{Pattern: "foo", Options: "i"}},
 			expectedIDs: []any{
-				"array", "array-embedded", "array-empty", "array-null", "array-two",
+				"array", "array-embedded", "array-empty", "array-empty-nested", "array-first-embedded", "array-last-embedded",
+				"array-middle-embedded", "array-null", "array-two",
 				"binary", "binary-empty",
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
@@ -1302,7 +1320,8 @@ func TestQueryComparisonIn(t *testing.T) {
 		"ForScalarDataTypes": {
 			value: scalarDataTypesFilter,
 			expectedIDs: []any{
-				"array", "array-embedded", "array-null", "array-three", "array-three-reverse", "array-two",
+				"array", "array-first-embedded", "array-last-embedded", "array-middle-embedded", "array-null",
+				"array-three", "array-three-reverse", "array-two",
 				"binary", "binary-empty",
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
@@ -1320,7 +1339,8 @@ func TestQueryComparisonIn(t *testing.T) {
 		"ForCompositeDataTypes": {
 			value: compositeDataTypesFilter,
 			expectedIDs: []any{
-				"array", "array-embedded", "array-empty", "array-null", "array-three", "array-three-reverse", "array-two",
+				"array", "array-embedded", "array-empty", "array-empty-nested", "array-first-embedded", "array-last-embedded",
+				"array-middle-embedded", "array-null", "array-three", "array-three-reverse", "array-two",
 				"document", "document-composite", "document-composite-reverse", "document-empty", "document-null",
 			},
 		},
@@ -1401,7 +1421,7 @@ func TestQueryComparisonNe(t *testing.T) {
 		},
 		"ArrayEmbedded": {
 			value:        bson.A{bson.A{int32(42), "foo"}, nil},
-			unexpectedID: "array-embedded",
+			unexpectedID: "array-first-embedded",
 		},
 		"LongArrayEmbedded": {
 			value:        bson.A{bson.A{int32(42), "foo"}, nil, "foo"},

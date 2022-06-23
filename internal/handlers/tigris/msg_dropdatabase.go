@@ -17,10 +17,53 @@ package tigris
 import (
 	"context"
 
+	api "github.com/tigrisdata/tigris-client-go/api/server/v1"
+	"github.com/tigrisdata/tigris-client-go/driver"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgDropDatabase implements HandlerInterface.
 func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, errNotImplemented
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	common.Ignored(document, h.L, "writeConcern", "comment")
+
+	var db string
+	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
+	}
+
+	res := must.NotFail(types.NewDocument())
+	err = h.driver.DropDatabase(ctx, db)
+	switch err := err.(type) {
+	case nil:
+		res.Set("dropped", db)
+	case *driver.Error:
+		if err.Code != api.Code_NOT_FOUND {
+			return nil, lazyerrors.Error(err)
+		}
+		// nothing otherwise
+	default:
+		return nil, lazyerrors.Error(err)
+	}
+
+	res.Set("ok", float64(1))
+
+	var reply wire.OpMsg
+	err = reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{res},
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &reply, nil
 }

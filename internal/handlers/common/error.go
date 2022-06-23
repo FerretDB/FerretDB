@@ -80,6 +80,10 @@ const (
 	// while projection document already marked as inclusion.
 	ErrProjectionExIn = ErrorCode(31254) // Location31254
 
+	// ErrFreeMonitoringDisabled indicates that free monitoring is disabled
+	// by command-line or config file.
+	ErrFreeMonitoringDisabled = ErrorCode(50840) // Location50840
+
 	// ErrRegexOptions indicates regex options error.
 	ErrRegexOptions = ErrorCode(51075) // Location51075
 

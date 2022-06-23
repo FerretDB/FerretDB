@@ -111,8 +111,11 @@ func TestQueryElementType(t *testing.T) {
 			expectedIDs: []any{"document", "document-composite", "document-composite-reverse", "document-empty", "document-null"},
 		},
 		"Array": {
-			v:           "array",
-			expectedIDs: []any{"array", "array-embedded", "array-empty", "array-null", "array-three", "array-three-reverse", "array-two"},
+			v: "array",
+			expectedIDs: []any{
+				"array", "array-embedded", "array-empty", "array-empty-nested", "array-first-embedded", "array-last-embedded",
+				"array-middle-embedded", "array-null", "array-three", "array-three-reverse", "array-two",
+			},
 		},
 		"Double": {
 			v: "double",
@@ -143,8 +146,11 @@ func TestQueryElementType(t *testing.T) {
 			expectedIDs: []any{"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min"},
 		},
 		"Null": {
-			v:           "null",
-			expectedIDs: []any{"array-embedded", "array-null", "array-three", "array-three-reverse", "null"},
+			v: "null",
+			expectedIDs: []any{
+				"array-first-embedded", "array-last-embedded", "array-middle-embedded", "array-null", "array-three",
+				"array-three-reverse", "null",
+			},
 		},
 		"Regex": {
 			v:           "regex",
