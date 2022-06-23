@@ -16,7 +16,6 @@ package ferretdb
 
 import (
 	"context"
-	"net"
 	"net/url"
 	"time"
 
@@ -133,20 +132,10 @@ func transformConnStringPgToMongo(connectionURL string) string {
 	if u.Scheme != "postgres" {
 		panic("connection url: postgres scheme required")
 	}
-	u.Scheme = "mongodb"
-
-	// MongoDB collections corresponds to scheme in PostgreSQL
-	u.Path = ""
-
-	// set the port to the FerreDB port
-	host, _, err := net.SplitHostPort(u.Host)
-	if err != nil {
-		panic(err)
-	}
-	port := "27017"
-	u.Host = host + ":" + port
-
 	u.User = nil
+	u.Scheme = "mongodb"
+	u.Path = ""
+	u.Host = "127.0.0.1:27017"
 
 	return u.String()
 }
