@@ -430,14 +430,21 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 
 // CreateSettingsTable creates FerretDB settings table.
 func (pgPool *Pool) CreateSettingsTable(ctx context.Context, db string) error {
-	sql := `CREATE TABLE ` + pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize() + ` (settings jsonb)`
-	_, err := pgPool.Exec(ctx, sql)
+	tables, err := pgPool.Tables(ctx, db)
 	if err != nil {
-		return err
+		return lazyerrors.Error(err)
+	}
+
+	if slices.Contains(tables, collectionPrefix+"settings") {
+		sql := `CREATE TABLE ` + pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize() + ` (settings jsonb)`
+		_, err := pgPool.Exec(ctx, sql)
+		if err != nil {
+			return err
+		}
 	}
 
 	settings := must.NotFail(types.NewDocument("collections", must.NotFail(types.NewDocument())))
-	sql = fmt.Sprintf(`INSERT INTO %s (_jsonb) VALUES ($1)`, pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize())
+	sql := fmt.Sprintf(`INSERT INTO %s (settings) VALUES ($1)`, pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize())
 	_, err = pgPool.Exec(ctx, sql, must.NotFail(fjson.Marshal(settings)))
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -448,6 +455,10 @@ func (pgPool *Pool) CreateSettingsTable(ctx context.Context, db string) error {
 
 func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (string, error) {
 	var err error
+
+	if err := pgPool.CreateSchema(ctx, db); err != nil && err != ErrAlreadyExist {
+		return "", lazyerrors.Error(err)
+	}
 
 	tableExists, err := pgPool.TableExists(ctx, db, collectionPrefix+"settings")
 	if err != nil {
@@ -460,20 +471,21 @@ func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (st
 		}
 	}
 
-	tx, err := pgPool.BeginTx(ctx, pgx.TxOptions{})
-	if err != nil {
-		return "", lazyerrors.Error(err)
-	}
-	defer func() {
-		if err != nil {
-			_ = tx.Rollback(ctx)
-			return
-		}
-		_ = tx.Commit(ctx)
-	}()
+	//tx, err := pgPool.Begin(ctx)
+	//if err != nil {
+	//	return "", lazyerrors.Error(err)
+	//}
+	//defer func() {
+	//	if err != nil {
+	//		fmt.Println(err)
+	//		_ = tx.Rollback(ctx)
+	//		return
+	//	}
+	//	_ = tx.Commit(ctx)
+	//}()
 
 	sql := `SELECT settings FROM ` + pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize()
-	rows, err := tx.Query(ctx, sql)
+	rows, err := pgPool.Query(ctx, sql)
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
@@ -511,12 +523,12 @@ func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (st
 	must.NoError(settings.Set("collections", collections))
 
 	sql = `UPDATE ` + pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize() + `SET settings = $1`
-	_, err = tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(settings)))
+	_, err = pgPool.Exec(ctx, sql, must.NotFail(fjson.Marshal(settings)))
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
 
-	return "", nil
+	return tableName, nil
 }
 
 func (pgPool *Pool) RemoveTableFromSettings(ctx context.Context, db, collection string) error {
