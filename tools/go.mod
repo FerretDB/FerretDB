@@ -10,7 +10,7 @@ replace github.com/quasilyte/go-consistent => github.com/AlekSi/go-consistent v0
 // https://github.com/golang/go/issues/45218
 replace golang.org/x/tools => github.com/AlekSi/tools v0.1.11-0.20220510134747-95fe08d2e093
 
-// TODO
+// TODO https://github.com/FerretDB/FerretDB/issues/781
 replace github.com/golangci/golangci-lint => github.com/FerretDB/golangci-lint v1.46.3-0.20220621153721-d8a7668e770e
 
 require (
