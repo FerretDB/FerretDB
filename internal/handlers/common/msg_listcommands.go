@@ -159,6 +159,10 @@ var Commands = map[string]command{
 		Help:    "Returns an overview of the databases state.",
 		Handler: (handlers.Interface).MsgServerStatus,
 	},
+	"setFreeMonitoring": {
+		Help:    "Toggles free monitoring.",
+		Handler: (handlers.Interface).MsgSetFreeMonitoring,
+	},
 	"update": {
 		Help:    "Updates documents that are matched by the query.",
 		Handler: (handlers.Interface).MsgUpdate,
