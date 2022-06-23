@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func TestCommandsFreeMonitoringGetFreeMonitoringStatus(t *testing.T) {
@@ -51,5 +52,66 @@ func TestCommandsFreeMonitoringGetFreeMonitoringStatus(t *testing.T) {
 			continue
 		}
 		assert.Equal(t, m[k], item)
+	}
+}
+
+func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setupWithOpts(t, &setupOpts{
+		databaseName: "admin",
+	})
+
+	for name, tc := range map[string]struct {
+		command bson.D
+		err     *mongo.CommandError
+	}{
+		"Enable": {
+			command: bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},
+			err: &mongo.CommandError{
+				Code:    50840,
+				Name:    "Location50840",
+				Message: `Free Monitoring has been disabled via the command-line and/or config file`,
+			},
+		},
+		"Disable": {
+			command: bson.D{{"setFreeMonitoring", 1}, {"action", "disable"}},
+			err: &mongo.CommandError{
+				Code:    50840,
+				Name:    "Location50840",
+				Message: `Free Monitoring has been disabled via the command-line and/or config file`,
+			},
+		},
+		"Other": {
+			command: bson.D{{"setFreeMonitoring", 1}, {"action", "foobar"}},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `Enumeration value 'foobar' for field 'setFreeMonitoring.action' is not a valid value.`,
+			},
+		},
+		"Empty": {
+			command: bson.D{{"setFreeMonitoring", 1}, {"action", ""}},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `Enumeration value '' for field 'setFreeMonitoring.action' is not a valid value.`,
+			},
+		},
+	} {
+		name, tc := name, tc
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+
+			if tc.err != nil {
+				AssertEqualError(t, *tc.err, err)
+				return
+			}
+
+			require.NoError(t, err)
+		})
 	}
 }
