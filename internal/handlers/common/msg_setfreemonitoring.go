@@ -42,10 +42,13 @@ func MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			"Free Monitoring has been disabled via the command-line and/or config file",
 		)
 	default:
-		return nil, NewErrorMsg(ErrBadValue, fmt.Sprintf(
-			"Enumeration value '%s' for field '%s' is not a valid value.",
-			action,
-			command+".action",
-		))
+		return nil, NewErrorMsg(
+			ErrBadValue,
+			fmt.Sprintf(
+				"Enumeration value '%s' for field '%s' is not a valid value.",
+				action,
+				command+".action",
+			),
+		)
 	}
 }
