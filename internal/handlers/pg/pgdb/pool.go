@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
-	"strconv"
 	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
@@ -529,5 +528,5 @@ func getTableNameFormatted(name string) (string, error) {
 		truncateTo = nameSymbolsLeft
 	}
 
-	return name[:truncateTo] + "_" + strconv.FormatUint(uint64(hash32.Sum32()), 36), nil
+	return name[:truncateTo] + "_" + fmt.Sprintf("%x", hash32.Sum([]byte{})), nil
 }
