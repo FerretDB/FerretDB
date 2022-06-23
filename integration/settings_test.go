@@ -21,7 +21,7 @@ import "testing"
 2. Check table added to settings when creating collection.
 
 All other tests for insert, update, find, findAndModify, count, remove should pass.
- */
+*/
 
 func TestSettingsTableCreation(t *testing.T) {
 	t.Skip("Skipping until we implement this")

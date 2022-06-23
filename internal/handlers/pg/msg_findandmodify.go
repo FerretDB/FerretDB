@@ -56,6 +56,12 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
+	table, err := h.pgPool.GetTableName(ctx, params.sqlParam.db, params.sqlParam.collection)
+	if err != nil {
+		return nil, err
+	}
+	params.sqlParam.collection = table
+
 	fetchedDocs, err := h.fetch(ctx, params.sqlParam)
 	if err != nil {
 		return nil, err

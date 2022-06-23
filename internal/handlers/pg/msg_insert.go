@@ -90,17 +90,17 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 // insert prepares and executes actual INSERT request to Postgres.
 func (h *Handler) insert(ctx context.Context, sp sqlParam, doc any) error {
-	created, err := h.pgPool.CreateTableIfNotExist(ctx, sp.db, sp.collection)
+	table, err := h.pgPool.GetTableName(ctx, sp.db, sp.collection)
+	if err != nil {
+		return err
+	}
+
+	created, err := h.pgPool.CreateTableIfNotExist(ctx, sp.db, table)
 	if err != nil {
 		return err
 	}
 	if created {
 		h.l.Info("Created table.", zap.String("schema", sp.db), zap.String("table", sp.collection))
-	}
-
-	table, err := h.pgPool.GetTableName(ctx, sp.db, sp.collection)
-	if err != nil {
-		return err
 	}
 
 	d := doc.(*types.Document)

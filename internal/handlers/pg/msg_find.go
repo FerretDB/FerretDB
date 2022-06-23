@@ -104,6 +104,12 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		}
 	}
 
+	table, err := h.pgPool.GetTableName(ctx, sp.db, sp.collection)
+	if err != nil {
+		return nil, err
+	}
+	sp.collection = table
+
 	fetchedDocs, err := h.fetch(ctx, sp)
 	if err != nil {
 		return nil, err
