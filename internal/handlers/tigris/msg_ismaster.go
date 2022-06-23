@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
@@ -26,7 +27,7 @@ import (
 // MsgIsMaster implements HandlerInterface.
 func (h *Handler) MsgIsMaster(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	if _, err := h.driver.Info(ctx); err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	var reply wire.OpMsg

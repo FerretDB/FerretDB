@@ -67,7 +67,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		err = h.insert(ctx, fp, doc.(*types.Document))
 		if err != nil {
-			return nil, err
+			return nil, lazyerrors.Error(err)
 		}
 
 		inserted++
