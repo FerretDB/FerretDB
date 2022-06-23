@@ -18,6 +18,9 @@ import (
 	"context"
 	"fmt"
 	"time"
+
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // ExampleNew is a testable example for Run func.
@@ -32,6 +35,17 @@ func ExampleNew() {
 	}
 
 	cancel()
-	fmt.Println(fdb.GetConnectionString())
+	uri := fdb.GetConnectionString()
+	fmt.Println(uri)
 	// Output: mongodb://127.0.0.1:27017
+
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	if err != nil {
+		panic(err)
+	}
+
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		panic(err)
+	}
 }
