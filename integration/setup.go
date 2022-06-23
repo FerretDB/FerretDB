@@ -33,7 +33,9 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
+	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -41,7 +43,8 @@ import (
 
 var (
 	startupPortF = flag.String("port", "ferretdb", "port to use")
-	proxyAddrF   = flag.String("proxy-addr", "", "use proxy for in-process listener mode")
+	handlerF     = flag.String("handler", "pg", "handler to use for in-process listener mode")
+	proxyAddrF   = flag.String("proxy-addr", "", "proxy to use for in-process listener mode")
 
 	startupOnce sync.Once
 )
@@ -55,9 +58,9 @@ type setupOpts struct {
 	providers []shareddata.Provider
 }
 
-// setupWithOpts setups the test according to given options,
+// SetupWithOpts setups the test according to given options,
 // and returns test-specific context (that is cancelled when the test ends) and database collection.
-func setupWithOpts(t *testing.T, opts *setupOpts) (context.Context, *mongo.Collection) {
+func SetupWithOpts(t *testing.T, opts *setupOpts) (context.Context, *mongo.Collection) {
 	t.Helper()
 
 	startupOnce.Do(func() { startup(t) })
@@ -139,11 +142,11 @@ func setupWithOpts(t *testing.T, opts *setupOpts) (context.Context, *mongo.Colle
 	return ctx, collection
 }
 
-// setup calls setupWithOpts with specified data providers.
-func setup(t *testing.T, providers ...shareddata.Provider) (context.Context, *mongo.Collection) {
+// Setup calls setupWithOpts with specified data providers.
+func Setup(t *testing.T, providers ...shareddata.Provider) (context.Context, *mongo.Collection) {
 	t.Helper()
 
-	return setupWithOpts(t, &setupOpts{
+	return SetupWithOpts(t, &setupOpts{
 		providers: providers,
 	})
 }
@@ -161,13 +164,29 @@ func setupListener(t *testing.T, ctx context.Context, logger *zap.Logger) int {
 		mode = clientconn.DiffNormalMode
 	}
 
-	handlerOpts := &pg.NewOpts{
-		PgPool:    pgPool,
-		L:         logger,
-		PeerAddr:  "127.0.0.1:0",
-		StartTime: time.Now(),
+	var h handlers.Interface
+	var err error
+	switch *handlerF {
+	case "pg":
+		handlerOpts := &pg.NewOpts{
+			PgPool:    pgPool,
+			L:         logger,
+			PeerAddr:  "127.0.0.1:0",
+			StartTime: time.Now(),
+		}
+		h, err = pg.New(handlerOpts)
+
+	case "tigris":
+		handlerOpts := &tigris.NewOpts{
+			TigrisURL: "127.0.0.1:8081",
+			L:         logger,
+		}
+		h, err = tigris.New(handlerOpts)
+
+	default:
+		t.Fatalf("unknown handler %q", *handlerF)
 	}
-	h, err := pg.New(handlerOpts)
+
 	require.NoError(t, err)
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
