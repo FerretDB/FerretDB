@@ -10,6 +10,9 @@ linters-settings:
     list-type: blacklist
     packages:
       - github.com/FerretDB/FerretDB/internal/bson
+      - github.com/FerretDB/FerretDB/internal/fjson
+      - github.com/FerretDB/FerretDB/internal/tjson
+      - github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb
   exhaustive:
     default-signifies-exhaustive: false
   gci:
@@ -109,7 +112,33 @@ issues:
     - linters: [depguard]
       path: internal/wire
       text: bson
-    # required to make this rule work on Windows systems
+
+    # only `pg` handler can import `pgdb` package, not other handler can do that
     - linters: [depguard]
-      path: internal\\wire
-      text: bson
+      path: internal/handlers/pg
+      text: pgdb
+    - linters: [depguard]
+      path: cmd/envtool
+      text: pgdb
+    - linters: [depguard]
+      path: cmd/ferretdb
+      text: pgdb
+    - linters: [depguard]
+      path: internal/util/testutil
+      text: pgdb
+
+    # only `pg` handler can import `fjson` package, not other handler can do that
+    - linters: [depguard]
+      path: internal/handlers/pg
+      text: fjson
+    - linters: [depguard]
+      path: internal/wire
+      text: fjson
+    - linters: [depguard]
+      path: internal/util/testutil
+      text: fjson
+
+    # only `tigris` handler can import `tjson` package, not other handler can do that
+    - linters: [depguard]
+      path: internal/handlers/tigris
+      text: tjson
