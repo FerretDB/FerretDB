@@ -17,7 +17,7 @@ package ferretdb
 import (
 	"context"
 	"fmt"
-	"sync"
+	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -29,29 +29,26 @@ func ExampleNew() {
 	conf := Config{PostgresURL: "postgres://postgres@127.0.0.1:5432/ferretdb"}
 
 	fdb := New(conf)
-	wg := sync.WaitGroup{}
-	wg.Add(1)
 	go func() {
-		defer wg.Done()
 		err := fdb.Run(ctx, conf)
 		if err != nil {
 			panic(err)
 		}
 	}()
-	wg.Wait()
 
 	uri := fdb.GetConnectionString()
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
-	if err != nil {
-		panic(err)
+	var err error
+	var client *mongo.Client
+	for i := 0; i < 5; i++ {
+		if client, err = mongo.Connect(ctx, options.Client().ApplyURI(uri)); err != nil {
+			continue
+		}
+		if err = client.Ping(ctx, nil); err != nil {
+			continue
+		}
+		time.Sleep(time.Duration(time.Second))
 	}
-
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		panic(err)
-	}
-
 	cancel()
 	fmt.Println(uri)
 	// Output: mongodb://127.0.0.1:27017
