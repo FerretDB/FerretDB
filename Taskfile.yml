@@ -53,7 +53,7 @@ tasks:
     cmds:
       - >
         docker-compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --detach
-        postgres mongodb
+        postgres mongodb {{if eq OS "linux"}}tigris{{end}}
 
   env-up:
     desc: "Start development environment"

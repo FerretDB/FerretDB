@@ -85,6 +85,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 func (h *Handler) insert(ctx context.Context, fp fetchParam, doc *types.Document) error {
+	// TODO https://github.com/FerretDB/FerretDB/issues/787
 	err := h.driver.CreateDatabase(ctx, fp.db)
 	if err != nil {
 		h.L.Warn(err.Error())

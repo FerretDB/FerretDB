@@ -49,7 +49,7 @@ services:
   tigris:
     build:
       context: ./build/deps
-      dockerfile: tigris.Dockerfile
+      dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
     container_name: ferretdb_tigris
     depends_on: [tigris_fdb]
     restart: on-failure
