@@ -14,4 +14,54 @@
 
 package tigris
 
-import _ "github.com/tigrisdata/tigris-client-go/driver" // TODO
+import (
+	"context"
+
+	"github.com/tigrisdata/tigris-client-go/driver"
+
+	"github.com/FerretDB/FerretDB/internal/tjson"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+)
+
+// fetchParam represents options/parameters used by the fetch.
+type fetchParam struct {
+	db         string
+	collection string
+}
+
+// fetch fetches all documents from the given database and collection.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/372
+func (h *Handler) fetch(ctx context.Context, param fetchParam) ([]*types.Document, error) {
+	db := h.driver.UseDatabase(param.db)
+
+	collection, err := db.DescribeCollection(ctx, param.collection)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var schema tjson.Schema
+	if err = schema.Unmarshal(collection.Schema); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	iter, err := db.Read(ctx, param.collection, driver.Filter(`{}`), nil)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	defer iter.Close()
+
+	var res []*types.Document
+	var d driver.Document
+	for iter.Next(&d) {
+		doc, err := tjson.Unmarshal(d, &schema)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		res = append(res, doc.(*types.Document))
+	}
+
+	return res, iter.Err()
+}

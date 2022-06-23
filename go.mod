@@ -9,8 +9,8 @@ require (
 	github.com/jackc/pgx/v4 v4.16.1
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/prometheus/client_golang v1.12.2
-	github.com/prometheus/common v0.34.0
-	github.com/stretchr/testify v1.7.2
+	github.com/prometheus/common v0.35.0
+	github.com/stretchr/testify v1.7.4
 	github.com/tigrisdata/tigris-client-go v1.0.0-alpha.18
 	go.uber.org/zap v1.21.0
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect; always use @latest
@@ -27,6 +27,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/deepmap/oapi-codegen v1.11.0 // indirect
+	github.com/gertd/go-pluralize v0.2.1 // indirect
 	github.com/getkin/kin-openapi v0.94.0 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
@@ -38,6 +39,7 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.10.2 // indirect
+	github.com/iancoleman/strcase v0.2.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
