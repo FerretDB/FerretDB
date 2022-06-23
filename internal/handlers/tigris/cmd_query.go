@@ -16,11 +16,45 @@ package tigris
 
 import (
 	"context"
+	"fmt"
+	"time"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // CmdQuery implements HandlerInterface.
 func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
-	return nil, errNotImplemented
+	if query.FullCollectionName == "admin.$cmd" {
+		switch cmd := query.Query.Command(); cmd {
+		case "ismaster", "isMaster": // both are valid
+			reply := &wire.OpReply{
+				NumberReturned: 1,
+				Documents: []*types.Document{must.NotFail(types.NewDocument(
+					"ismaster", true, // only lowercase
+					// topologyVersion
+					"maxBsonObjectSize", int32(types.MaxDocumentLen),
+					"maxMessageSizeBytes", int32(wire.MaxMsgLen),
+					"maxWriteBatchSize", int32(100000),
+					"localTime", time.Now(),
+					// logicalSessionTimeoutMinutes
+					// connectionId
+					"minWireVersion", int32(13),
+					"maxWireVersion", int32(13),
+					"readOnly", false,
+					"ok", float64(1),
+				))},
+			}
+			return reply, nil
+
+		default:
+			msg := fmt.Sprintf("CmdQuery: unhandled command %q", cmd)
+			return nil, common.NewErrorMsg(common.ErrNotImplemented, msg)
+		}
+	}
+
+	msg := fmt.Sprintf("CmdQuery: unhandled collection %q", query.FullCollectionName)
+	return nil, common.NewErrorMsg(common.ErrNotImplemented, msg)
 }
