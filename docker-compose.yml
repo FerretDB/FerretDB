@@ -29,9 +29,12 @@ services:
     ports:
       - 4500:4500
     volumes:
-      - tigrisdata:/var/fdb/
+      - tigrisdata:/var/fdb
+      # That will be needed for the next version of Tigris.
       # - tigrisdata:/var/lib/foundationdb
 
+  # That will be needed for the next version of Tigris.
+  #
   # tigris_typesense:
   #   build:
   #     context: ./build/deps
