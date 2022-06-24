@@ -470,7 +470,6 @@ func (pgPool *Pool) CreateSettingsTable(ctx context.Context, db string) error {
 
 // GetTableName returns the name of the table for given collection or error.
 func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (string, error) {
-	fmt.Println("GetTableName", db, collection)
 	var err error
 
 	if err := pgPool.CreateSchema(ctx, db); err != nil && err != ErrAlreadyExist {
