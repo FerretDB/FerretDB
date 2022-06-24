@@ -448,16 +448,18 @@ func (pgPool *Pool) CreateSettingsTable(ctx context.Context, db string) error {
 		return lazyerrors.Error(err)
 	}
 
-	if !slices.Contains(tables, collectionPrefix+"settings") {
-		sql := `CREATE TABLE ` + pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize() + ` (settings jsonb)`
-		_, err := pgPool.Exec(ctx, sql)
-		if err != nil {
-			return err
-		}
+	if slices.Contains(tables, collectionPrefix+"settings") {
+		return ErrAlreadyExist
+	}
+
+	sql := `CREATE TABLE ` + pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize() + ` (settings jsonb)`
+	_, err = pgPool.Exec(ctx, sql)
+	if err != nil {
+		return err
 	}
 
 	settings := must.NotFail(types.NewDocument("collections", must.NotFail(types.NewDocument())))
-	sql := fmt.Sprintf(`INSERT INTO %s (settings) VALUES ($1)`, pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize())
+	sql = fmt.Sprintf(`INSERT INTO %s (settings) VALUES ($1)`, pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize())
 	_, err = pgPool.Exec(ctx, sql, must.NotFail(fjson.Marshal(settings)))
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -466,7 +468,9 @@ func (pgPool *Pool) CreateSettingsTable(ctx context.Context, db string) error {
 	return nil
 }
 
+// GetTableName returns the name of the table for given collection or error.
 func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (string, error) {
+	fmt.Println("GetTableName", db, collection)
 	var err error
 
 	if err := pgPool.CreateSchema(ctx, db); err != nil && err != ErrAlreadyExist {
@@ -502,6 +506,7 @@ func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (st
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
+	defer rows.Close()
 
 	if !rows.Next() {
 		return "", fmt.Errorf("no rows returned")
