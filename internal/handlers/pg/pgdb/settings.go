@@ -17,13 +17,15 @@ package pgdb
 import (
 	"context"
 	"fmt"
+	"hash/fnv"
+
+	"github.com/jackc/pgx/v4"
+	"golang.org/x/exp/slices"
+
 	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/jackc/pgx/v4"
-	"golang.org/x/exp/slices"
-	"hash/fnv"
 )
 
 const (
