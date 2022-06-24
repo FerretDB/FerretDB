@@ -50,6 +50,7 @@ func ExampleNew() {
 		}
 		time.Sleep(time.Second)
 	}
+	client.Disconnect(ctx)
 	cancel()
 	fmt.Println(uri)
 	// Output: mongodb://127.0.0.1:27017
