@@ -55,7 +55,6 @@ func (fdb *FerretDB) GetConnectionString() string {
 // * handler PostgreSQL.
 func (fdb *FerretDB) Run(ctx context.Context) error {
 	listenAddr := "127.0.0.1:27017"
-	proxyAddr := "127.0.0.1:37017"
 	mode := clientconn.NormalMode
 	handler := "pg"
 	testConnTimeout := time.Duration(0)
@@ -85,7 +84,6 @@ func (fdb *FerretDB) Run(ctx context.Context) error {
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		ListenAddr:      listenAddr,
-		ProxyAddr:       proxyAddr,
 		Mode:            clientconn.Mode(mode),
 		Handler:         h,
 		Logger:          logger,
@@ -93,9 +91,7 @@ func (fdb *FerretDB) Run(ctx context.Context) error {
 	})
 
 	err = l.Run(ctx)
-	if err == nil || err == context.Canceled {
-		logger.Info("Listener stopped")
-	} else {
+	if err != nil && err != context.Canceled {
 		logger.Error("Listener stopped", zap.Error(err))
 	}
 	return nil
