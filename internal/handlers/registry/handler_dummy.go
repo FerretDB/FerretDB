@@ -21,7 +21,7 @@ import (
 
 // init registers `dummy` stub handler that is always enabled.
 func init() {
-	Handler["dummy"] = func(*NewHandlerOpts) (handlers.Interface, error) {
+	Handlers["dummy"] = func(*NewHandlerOpts) (handlers.Interface, error) {
 		return dummy.New()
 	}
 }

@@ -30,7 +30,7 @@ func ExampleNew() {
 
 	fdb := New(conf)
 	go func() {
-		err := fdb.Run(ctx, conf)
+		err := fdb.Run(ctx)
 		if err != nil {
 			panic(err)
 		}
@@ -45,6 +45,7 @@ func ExampleNew() {
 			continue
 		}
 		if err = client.Ping(ctx, nil); err != nil {
+			client.Disconnect(ctx)
 			continue
 		}
 		time.Sleep(time.Second)

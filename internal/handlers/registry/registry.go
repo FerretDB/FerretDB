@@ -25,7 +25,7 @@ import (
 // NewHandler represents a function that constructs a new handler.
 type NewHandler func(opts *NewHandlerOpts) (handlers.Interface, error)
 
-// NewHandlerOpts represents common configuration for constructing handlers.
+// NewHandlerOpts represents configuration for constructing handlers.
 type NewHandlerOpts struct {
 	PostgresURL string
 	TigrisURL   string
@@ -33,7 +33,7 @@ type NewHandlerOpts struct {
 	Logger      *zap.Logger
 }
 
-// Handler maps handler names to constructors.
-// The values for `Handler` must be set through the `init()` functions of the corresponding handlers
+// Handlers maps handler names to constructors.
+// The values for `Handlers` must be set through the `init()` functions of the corresponding handlers
 // so that we can control which handlers will be included in the build with build tags.
-var Handler = map[string]NewHandler{}
+var Handlers = map[string]NewHandler{}

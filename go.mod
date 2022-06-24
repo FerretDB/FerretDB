@@ -16,9 +16,8 @@ require (
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect; always use @latest
 	golang.org/x/exp v0.0.0-20220613132600-b0d781184e0d
 	golang.org/x/sys v0.0.0-20220615213510-4f61da869c0c
+	go.mongodb.org/mongo-driver v1.9.1
 )
-
-require go.mongodb.org/mongo-driver v1.9.1
 
 require (
 	cloud.google.com/go/compute v1.6.1 // indirect

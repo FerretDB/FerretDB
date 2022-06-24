@@ -24,11 +24,9 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
-// Config contains a PostgreSQL backend connection string.
+// Config contains a backend connection strings.
 type Config struct {
 	PostgresURL string
 	TigrisURL   string
@@ -36,35 +34,33 @@ type Config struct {
 
 // FerretDB proxy.
 type FerretDB struct {
-	config   Config
-	mongoURL string
+	config Config
 }
 
 // New returns a new FerretDB.
 func New(conf Config) FerretDB {
 	return FerretDB{
-		config:   conf,
-		mongoURL: "mongodb://127.0.0.1:27017",
+		config: conf,
 	}
 }
 
 // GetConnectionString returns the backend connection string.
 func (fdb *FerretDB) GetConnectionString() string {
-	return fdb.mongoURL
+	return "mongodb://127.0.0.1:27017"
 }
 
 // Run runs the FerretDB proxy as a library with:
 // * error level logging
 // * monitoring disabled
 // * handler PostgreSQL.
-func (fdb *FerretDB) Run(ctx context.Context, conf Config) error {
+func (fdb *FerretDB) Run(ctx context.Context) error {
 	listenAddr := "127.0.0.1:27017"
 	proxyAddr := "127.0.0.1:37017"
 	mode := clientconn.NormalMode
 	handler := "pg"
 	testConnTimeout := time.Duration(0)
 
-	_, ok := registry.Handler["pg"]
+	_, ok := registry.Handlers["pg"]
 	if !ok {
 		panic("no pg handler registered")
 	}
@@ -72,26 +68,13 @@ func (fdb *FerretDB) Run(ctx context.Context, conf Config) error {
 	logging.Setup(zapcore.ErrorLevel)
 	logger := zap.L()
 
-	info := version.Get()
-
-	startFields := []zap.Field{
-		zap.String("version", info.Version),
-		zap.String("commit", info.Commit),
-		zap.String("branch", info.Branch),
-		zap.Bool("dirty", info.Dirty),
-	}
-	for _, k := range info.BuildEnvironment.Keys() {
-		v := must.NotFail(info.BuildEnvironment.Get(k))
-		startFields = append(startFields, zap.Any(k, v))
-	}
-
-	newHandler := registry.Handler[handler]
+	newHandler := registry.Handlers[handler]
 	if newHandler == nil {
 		logger.Sugar().Fatalf("Unknown backend handler %q.", handler)
 	}
 	h, err := newHandler(&registry.NewHandlerOpts{
-		PostgresURL: conf.PostgresURL,
-		TigrisURL:   conf.TigrisURL,
+		PostgresURL: fdb.config.PostgresURL,
+		TigrisURL:   fdb.config.TigrisURL,
 		Ctx:         ctx,
 		Logger:      logger,
 	})
