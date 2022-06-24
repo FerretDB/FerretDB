@@ -39,6 +39,7 @@ type NewHandlerOpts struct {
 // so that we can control which handlers will be included in the build with build tags.
 var Handlers = map[string]NewHandler{}
 
+// New initializes a new handler.
 func New(handler string, opts NewHandlerOpts) handlers.Interface {
 	newHandler := Handlers[handler]
 	if newHandler == nil {

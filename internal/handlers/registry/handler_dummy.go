@@ -19,8 +19,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/dummy"
 )
 
-// init registers `dummy` stub handler that is always enabled.
-func init() {
+// RegisterDummy registers `dummy` stub handler.
+func RegisterDummy() {
 	Handlers["dummy"] = func(NewHandlerOpts) (handlers.Interface, error) {
 		return dummy.New()
 	}

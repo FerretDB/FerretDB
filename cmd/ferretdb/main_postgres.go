@@ -27,10 +27,10 @@ var (
 )
 
 func initHandler(opts newHandlerOpts) handlers.Interface {
-	optsT := registry.NewHandlerOpts{
+	optsPostgres := registry.NewHandlerOpts{
 		PostgresURL: *postgresqlURLF,
 		Ctx:         opts.ctx,
 		Logger:      opts.logger,
 	}
-	return registry.New("pg", optsT)
+	return registry.New("pg", optsPostgres)
 }

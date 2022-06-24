@@ -43,7 +43,7 @@ type FerretDB struct {
 func New(conf Config) FerretDB {
 	switch conf.Handler {
 	case "pg":
-		registry.RegisterPg()
+		// already initialized in init()
 	case "tigris":
 		registry.RegisterTigris()
 	default:
