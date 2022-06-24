@@ -34,6 +34,8 @@ const (
 
 	// PostgreSQL max table name length.
 	maxTableNameLength = 63
+
+	hashSuffixLength = 9
 )
 
 // CreateSettingsTable creates FerretDB settings table.
@@ -65,11 +67,17 @@ func (pgPool *Pool) CreateSettingsTable(ctx context.Context, db string) error {
 
 // GetTableName returns the name of the table for given collection or error.
 func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (string, error) {
-	if err := pgPool.CreateSchema(ctx, db); err != nil && err != ErrAlreadyExist {
-		return "", lazyerrors.Error(err)
+	var err error
+
+	schemaExists, err := pgPool.schemaExists(ctx, db)
+	if err != nil {
+		return "", err
 	}
 
-	var err error
+	if !schemaExists {
+		return GetTableNameFormatted(collection), nil
+	}
+
 	var tables []string
 	if tables, err = pgPool.tables(ctx, db); err != nil {
 		return "", lazyerrors.Error(err)
@@ -119,6 +127,29 @@ func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (st
 	return tableName, nil
 }
 
+func (pgPool *Pool) schemaExists(ctx context.Context, db string) (bool, error) {
+	sql := `SELECT nspname FROM pg_catalog.pg_namespace WHERE nspname = $1`
+	rows, err := pgPool.Query(ctx, sql, db)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return false, ErrNotExist
+	}
+
+	for rows.Next() {
+		var name string
+		must.NoError(rows.Scan(&name))
+		if name == db {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
 func (pgPool *Pool) updateSettingsTable(ctx context.Context, tx pgx.Tx, db string, settings *types.Document) error {
 	sql := `UPDATE ` + pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize() + `SET settings = $1`
 	_, err := tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(settings)))
@@ -156,6 +187,15 @@ func (pgPool *Pool) getSettingsTable(ctx context.Context, tx pgx.Tx, db string) 
 }
 
 func (pgPool *Pool) RemoveTableFromSettings(ctx context.Context, db, collection string) error {
+	schemaExists, err := pgPool.schemaExists(ctx, db)
+	if err != nil {
+		return err
+	}
+
+	if !schemaExists {
+		return nil
+	}
+
 	tx, err := pgPool.Begin(ctx)
 	if err != nil {
 		return lazyerrors.Error(err)

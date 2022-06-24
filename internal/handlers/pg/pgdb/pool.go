@@ -218,7 +218,8 @@ func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, error)
 		if strings.HasPrefix(table, collectionPrefix) {
 			continue
 		}
-		filtered = append(filtered, table)
+
+		filtered = append(filtered, table[:len(table)-hashSuffixLength])
 	}
 
 	return filtered, nil
@@ -377,7 +378,12 @@ func (pgPool *Pool) CreateTableIfNotExist(ctx context.Context, db, collection st
 		return false, lazyerrors.Error(err)
 	}
 
-	if err := pgPool.CreateTable(ctx, db, collection); err != nil {
+	table, err := pgPool.GetTableName(ctx, db, collection)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	if err := pgPool.CreateTable(ctx, db, table); err != nil {
 		if err == ErrAlreadyExist {
 			return false, nil
 		}

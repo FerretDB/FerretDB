@@ -39,6 +39,11 @@ type sqlParam struct {
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/372
 func (h *Handler) fetch(ctx context.Context, param sqlParam) ([]*types.Document, error) {
+	table, err := h.pgPool.GetTableName(ctx, param.db, param.collection)
+	if err != nil {
+		return nil, err
+	}
+
 	sql := `SELECT `
 	if param.comment != "" {
 		param.comment = strings.ReplaceAll(param.comment, "/*", "/ *")
@@ -46,17 +51,17 @@ func (h *Handler) fetch(ctx context.Context, param sqlParam) ([]*types.Document,
 
 		sql += `/* ` + param.comment + ` */ `
 	}
-	sql += `_jsonb FROM ` + pgx.Identifier{param.db, param.collection}.Sanitize()
+	sql += `_jsonb FROM ` + pgx.Identifier{param.db, table}.Sanitize()
 
 	// Special case: check if collection exists at all
-	collectionExists, err := h.pgPool.TableExists(ctx, param.db, param.collection)
+	collectionExists, err := h.pgPool.TableExists(ctx, param.db, table)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 	if !collectionExists {
 		h.l.Info(
 			"Table doesn't exist, handling a case to deal with a non-existing collection.",
-			zap.String("schema", param.db), zap.String("table", param.collection),
+			zap.String("schema", param.db), zap.String("table", table),
 		)
 		return []*types.Document{}, nil
 	}

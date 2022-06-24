@@ -56,7 +56,7 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
-	err = h.pgPool.RemoveTableFromSettings(ctx, db, table)
+	err = h.pgPool.RemoveTableFromSettings(ctx, db, collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

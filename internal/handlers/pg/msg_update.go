@@ -63,13 +63,6 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	table, err := h.pgPool.GetTableName(ctx, sp.db, sp.collection)
-	if err != nil {
-		return nil, err
-	}
-
-	sp.collection = table
-
 	created, err := h.pgPool.CreateTableIfNotExist(ctx, sp.db, sp.collection)
 	if err != nil {
 		return nil, err

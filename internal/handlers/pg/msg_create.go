@@ -83,7 +83,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	if err = h.pgPool.CreateTable(ctx, db, table); err != nil {
 		if err == pgdb.ErrAlreadyExist {
-			msg := fmt.Sprintf("Collection already exists. NS: %s.%s", db, table)
+			msg := fmt.Sprintf("Collection already exists. NS: %s.%s", db, collection)
 			return nil, common.NewErrorMsg(common.ErrNamespaceExists, msg)
 		}
 		return nil, lazyerrors.Error(err)
