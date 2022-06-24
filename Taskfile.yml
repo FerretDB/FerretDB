@@ -122,7 +122,7 @@ tasks:
   test-integration-db:
     dir: integration
     cmds:
-      - go test -count=1 {{if ne OS "windows"}} -race {{end}} -shuffle=on -coverprofile=integration-{{.DB}}.txt -coverpkg=../... -port={{.DB}}
+      - go test -count=1 -tags={{.BACKEND}} {{if ne OS "windows"}} -race {{end}} -shuffle=on -coverprofile=integration-{{.DB}}.txt -coverpkg=../... -port={{.DB}}
 
   bench-short:
     desc: "Benchmark for about 20 seconds (with default BENCHTIME)"
@@ -140,7 +140,7 @@ tasks:
   fuzz-init:
     deps: [gen-version]
     cmds:
-      - go test -count=0 ./...
+      - go test -count=0 -tags={{.BACKEND}} ./...
 
   # Those commands should still run tests (i.e., should not have -run=XXX flags)
   # to fill seed corpus for fuzz tests that use WriteSeedCorpusFile (e.g., FuzzHandler).
