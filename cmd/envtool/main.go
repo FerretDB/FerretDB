@@ -25,47 +25,17 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn"
-	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
-var (
-	composeBin string
-
-	collections = []string{
-		"actor",
-		"address",
-		"category",
-		"city",
-		"country",
-		"customer",
-		"film_actor",
-		"film_category",
-		"film",
-		"inventory",
-		"language",
-		"rental",
-		"staff",
-		"store",
-	}
-)
-
-func runCompose(args []string, stdin io.Reader, logger *zap.SugaredLogger) {
-	if err := tryCommand(composeBin, args, stdin, nil, logger); err != nil {
-		logger.Fatal(err)
-	}
-}
+var composeBin string
 
 func tryCommand(command string, args []string, stdin io.Reader, stdout io.Writer, logger *zap.SugaredLogger) error {
 	gitBin, err := exec.LookPath(command)
@@ -120,108 +90,6 @@ func waitForPostgresPort(ctx context.Context, port uint16) error {
 	}
 
 	return fmt.Errorf("failed to connect to 127.0.0.1:%d", port)
-}
-
-func setupMongoDB(ctx context.Context) {
-	start := time.Now()
-	logger := zap.S().Named("mongodb")
-
-	logger.Infof("Importing database...")
-
-	var wg sync.WaitGroup
-
-	for _, c := range collections {
-		args := fmt.Sprintf(
-			`exec -T mongodb mongoimport --uri mongodb://127.0.0.1:27017/monila `+
-				`--drop --maintainInsertionOrder --collection %[1]s /test_db/monila/%[1]s.json`,
-			c,
-		)
-
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			runCompose(strings.Split(args, " "), nil, logger)
-		}()
-	}
-
-	{
-		args := `exec -T mongodb mongoimport --uri mongodb://127.0.0.1:27017/values ` +
-			`--drop --maintainInsertionOrder --collection values /test_db/values/values.json`
-
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			runCompose(strings.Split(args, " "), nil, logger)
-		}()
-	}
-
-	wg.Wait()
-
-	logger.Infof("Done in %s.", time.Since(start))
-}
-
-func setupMonilaAndValues(ctx context.Context, handler handlers.Interface) {
-	start := time.Now()
-	logger := zap.S().Named("postgres.monila_and_values")
-
-	logger.Infof("Importing databases...")
-
-	// listen on all interfaces to make mongoimport below work from inside Docker
-	addr := ":27018"
-	if runtime.GOOS == "darwin" {
-		// do not trigger macOS firewall; it works with Docker Desktop
-		addr = "127.0.0.1:27018"
-	}
-
-	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		ListenAddr: addr,
-		Mode:       "normal",
-		Handler:    handler,
-		Logger:     logger.Desugar(),
-	})
-
-	prometheus.DefaultRegisterer.MustRegister(l)
-
-	lCtx, lCancel := context.WithCancel(ctx)
-	lDone := make(chan struct{})
-	go func() {
-		defer close(lDone)
-		l.Run(lCtx)
-	}()
-
-	var wg sync.WaitGroup
-
-	for _, c := range collections {
-		cmd := fmt.Sprintf(
-			`exec -T mongodb mongoimport --uri mongodb://host.docker.internal:27018/monila `+
-				`--drop --maintainInsertionOrder --collection %[1]s /test_db/monila/%[1]s.json`,
-			c,
-		)
-
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			runCompose(strings.Split(cmd, " "), nil, logger)
-		}()
-	}
-
-	{
-		cmd := `exec -T mongodb mongoimport --uri mongodb://host.docker.internal:27018/values ` +
-			`--drop --maintainInsertionOrder --collection values /test_db/values/values.json`
-
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			runCompose(strings.Split(cmd, " "), nil, logger)
-		}()
-	}
-
-	wg.Wait()
-
-	lCancel()
-	<-lDone
-
-	logger.Infof("Done in %s.", time.Since(start))
 }
 
 //nolint:forbidigo // Printf used to make diagnostic data easier to copy.
@@ -312,81 +180,36 @@ func run(ctx context.Context, logger *zap.SugaredLogger) error {
 	go debug.RunHandler(ctx, "127.0.0.1:8089", logger.Named("debug").Desugar())
 
 	var err error
-	composeBin, err = exec.LookPath("docker-compose")
+	if composeBin, err = exec.LookPath("docker-compose"); err != nil {
+		return err
+	}
+
+	logger.Info("Waiting for port MongoDB 37017 to be up...")
+	if err = waitForPort(ctx, 37017); err != nil {
+		return err
+	}
+
+	logger.Info("Waiting for PostgreSQL port 5432 to be up...")
+	if err = waitForPostgresPort(ctx, 5432); err != nil {
+		return err
+	}
+
+	pgPool, err := pgdb.NewPool(ctx, "postgres://postgres@127.0.0.1:5432/ferretdb", logger.Desugar(), false)
 	if err != nil {
 		return err
 	}
 
-	var wg sync.WaitGroup
-	portsCtx, portsCancel := context.WithTimeout(ctx, time.Minute)
-	defer portsCancel()
-
-	var portsCheckError error
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		logger.Info("Waiting for port 37017 to be up...")
-		portsCheckError = waitForPort(portsCtx, 37017)
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		logger.Info("Waiting for port 5432 to be up...")
-		portsCheckError = waitForPostgresPort(portsCtx, 5432)
-	}()
-
-	wg.Wait()
-
-	if portsCheckError != nil {
-		return portsCheckError
-	}
-
-	var pgPool *pgdb.Pool
-	pgPool, err = pgdb.NewPool(ctx, "postgres://postgres@127.0.0.1:5432/ferretdb", logger.Desugar(), false)
-	if err != nil {
+	if err = pgPool.CreateSchema(ctx, `test`); err != nil {
 		return err
 	}
-	handlerOpts := &pg.NewOpts{
-		PgPool:    pgPool,
-		L:         logger.Desugar(),
-		StartTime: time.Now(),
-	}
-	h, err := pg.New(handlerOpts)
-	if err != nil {
-		return err
-	}
-
-	for _, db := range []string{`monila`, `values`, `test`} {
-		if err := pgPool.CreateSchema(ctx, db); err != nil {
-			return err
-		}
-	}
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		setupMongoDB(ctx)
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		setupMonilaAndValues(ctx, h)
-	}()
-
-	wg.Wait()
 
 	for _, q := range []string{
 		`CREATE ROLE readonly NOINHERIT LOGIN`,
-		`GRANT SELECT ON ALL TABLES IN SCHEMA monila, values, test TO readonly`,
-		`GRANT USAGE ON SCHEMA monila, values, test TO readonly`,
+		`GRANT SELECT ON ALL TABLES IN SCHEMA test TO readonly`,
+		`GRANT USAGE ON SCHEMA test TO readonly`,
 		`ANALYZE`, // to make tests more stable
 	} {
-		if _, err := pgPool.Exec(ctx, q); err != nil {
+		if _, err = pgPool.Exec(ctx, q); err != nil {
 			return err
 		}
 	}
@@ -400,7 +223,7 @@ func main() {
 
 	logger := setupLogger(*debugLevel)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
 	err := run(ctx, logger)
