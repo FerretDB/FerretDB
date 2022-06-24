@@ -12,19 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build dummy
-
 package main
 
-import (
-	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/registry"
-)
+import "github.com/FerretDB/FerretDB/internal/handlers/registry"
 
-func initHandler(opts newHandlerOpts) handlers.Interface {
-	optsDummy := registry.NewHandlerOpts{
-		Ctx:    opts.ctx,
-		Logger: opts.logger,
-	}
-	return registry.New("dummy", optsDummy)
+func init() {
+	registry.RegisterDummy()
 }

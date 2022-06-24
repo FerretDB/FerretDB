@@ -20,10 +20,10 @@ import (
 )
 
 // RegisterTigris registers `tigris` handler for Tigris.
-func RegisterTigris() {
+func RegisterTigris(tigrisURL string) {
 	Handlers["tigris"] = func(opts NewHandlerOpts) (handlers.Interface, error) {
 		handlerOpts := &tigris.NewOpts{
-			TigrisURL: opts.TigrisURL,
+			TigrisURL: tigrisURL,
 			L:         opts.Logger,
 		}
 		return tigris.New(handlerOpts)

@@ -26,21 +26,16 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
+	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/version"
 )
-
-// newHandlerOpts represents common configuration for constructing handlers.
-//
-// Handler-specific configuration is passed via command-line flags directly.
-type newHandlerOpts struct {
-	ctx    context.Context
-	logger *zap.Logger
-}
 
 var (
 	versionF = flag.Bool("version", false, "print version to stdout (full version, commit, branch, dirty flag) and exit")
@@ -50,6 +45,8 @@ var (
 	debugAddrF  = flag.String("debug-addr", "127.0.0.1:8088", "debug address")
 	modeF       = flag.String("mode", string(clientconn.AllModes[0]), fmt.Sprintf("operation mode: %v", clientconn.AllModes))
 
+	handlerF = flag.String("handler", "<set in initFlags()>", "<set in initFlags()>")
+
 	logLevelF = flag.String("log-level", "<set in initFlags()>", "<set in initFlags()>")
 
 	testConnTimeoutF = flag.Duration("test-conn-timeout", 0, "test: set connection timeout")
@@ -58,6 +55,19 @@ var (
 // initFlags improves flags settings after all global flags are initialized
 // and all handler constructors are registered.
 func initFlags() {
+	_, ok := registry.Handlers["pg"]
+	if !ok {
+		panic("no pg handler registered")
+	}
+
+	handlers := maps.Keys(registry.Handlers)
+	slices.Sort(handlers)
+
+	f := flag.Lookup("handler")
+	f.Usage = "backend handler: " + strings.Join(handlers, ", ")
+	f.DefValue = "pg"
+	must.NoError(f.Value.Set(f.DefValue))
+
 	levels := []string{
 		zapcore.DebugLevel.String(),
 		zapcore.InfoLevel.String(),
@@ -65,7 +75,7 @@ func initFlags() {
 		zapcore.ErrorLevel.String(),
 	}
 
-	f := flag.Lookup("log-level")
+	f = flag.Lookup("log-level")
 	f.Usage = "log level: " + strings.Join(levels, ", ")
 	f.DefValue = zapcore.DebugLevel.String()
 	must.NoError(f.Value.Set(f.DefValue))
@@ -124,7 +134,17 @@ func main() {
 
 	go debug.RunHandler(ctx, *debugAddrF, logger.Named("debug"))
 
-	h := initHandler(newHandlerOpts{ctx, logger})
+	newHandler := registry.Handlers[*handlerF]
+	if newHandler == nil {
+		logger.Sugar().Fatalf("Unknown backend handler %q.", *handlerF)
+	}
+	h, err := newHandler(registry.NewHandlerOpts{
+		Ctx:    ctx,
+		Logger: logger,
+	})
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
 
 	defer h.Close()
 

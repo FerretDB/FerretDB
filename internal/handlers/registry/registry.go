@@ -28,10 +28,8 @@ type NewHandler func(opts NewHandlerOpts) (handlers.Interface, error)
 
 // NewHandlerOpts represents configuration for constructing handlers.
 type NewHandlerOpts struct {
-	PostgresURL string
-	TigrisURL   string
-	Ctx         context.Context
-	Logger      *zap.Logger
+	Ctx    context.Context
+	Logger *zap.Logger
 }
 
 // Handlers maps handler names to constructors.

@@ -17,7 +17,6 @@ package main
 import (
 	"flag"
 
-	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 )
 
@@ -26,11 +25,6 @@ var (
 	postgresqlURLF = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/ferretdb", "PostgreSQL URL")
 )
 
-func initHandler(opts newHandlerOpts) handlers.Interface {
-	optsPostgres := registry.NewHandlerOpts{
-		PostgresURL: *postgresqlURLF,
-		Ctx:         opts.ctx,
-		Logger:      opts.logger,
-	}
-	return registry.New("pg", optsPostgres)
+func init() {
+	registry.RegisterPg(*postgresqlURLF)
 }

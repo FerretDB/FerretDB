@@ -12,15 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build tigris && !postgres
-// +build tigris,!postgres
+//go:build tigris
+// +build tigris
 
 package main
 
 import (
 	"flag"
 
-	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 )
 
@@ -29,11 +28,6 @@ var (
 	tigrisURLF = flag.String("tigris-url", "127.0.0.1:8081", "Tigris URL")
 )
 
-func initHandler(opts newHandlerOpts) handlers.Interface {
-	optsTigris := registry.NewHandlerOpts{
-		TigrisURL: *tigrisURLF,
-		Ctx:       opts.ctx,
-		Logger:    opts.logger,
-	}
-	return registry.New("tigris", optsTigris)
+func init() {
+	registry.RegisterTigris(*tigrisURLF)
 }

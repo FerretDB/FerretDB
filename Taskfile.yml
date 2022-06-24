@@ -102,21 +102,21 @@ tasks:
     desc: "Run all integration tests in parallel"
     deps:
       - task: test-integration-db
-        vars: {DB: "FerretDB"}
+        vars: { DB: "FerretDB" }
       - task: test-integration-db
-        vars: {DB: "MongoDB"}
+        vars: { DB: "MongoDB" }
 
   test-integration-ferretdb:
     desc: "Run integration tests for FerretDB"
     cmds:
       - task: test-integration-db
-        vars: {DB: "FerretDB"}
+        vars: { DB: "FerretDB" }
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
     cmds:
       - task: test-integration-db
-        vars: {DB: "MongoDB"}
+        vars: { DB: "MongoDB" }
 
   test-integration-db:
     dir: integration
@@ -168,7 +168,7 @@ tasks:
     desc: "Build bin/ferretdb-testcover"
     deps: [gen-version]
     cmds:
-      - go test -c -o=bin/ferretdb-testcover -trimpath -tags=testcover {{if ne OS "windows"}}-race{{end}} -coverpkg=./... ./cmd/ferretdb
+      - go test -c -o=bin/ferretdb-testcover -trimpath -tags=testcover,tigris {{if ne OS "windows"}}-race{{end}} -coverpkg=./... ./cmd/ferretdb
 
   run:
     desc: "Run FerretDB"

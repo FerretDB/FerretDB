@@ -43,9 +43,9 @@ type FerretDB struct {
 func New(conf Config) FerretDB {
 	switch conf.Handler {
 	case "pg":
-		// already initialized in init()
+		registry.RegisterPg(conf.PostgresURL)
 	case "tigris":
-		registry.RegisterTigris()
+		registry.RegisterTigris(conf.TigrisURL)
 	default:
 		panic(fmt.Sprintf("Unknown backend handler %q.", conf.Handler))
 	}
@@ -77,10 +77,8 @@ func (fdb *FerretDB) Run(ctx context.Context) error {
 	}
 
 	opts := registry.NewHandlerOpts{
-		PostgresURL: fdb.config.PostgresURL,
-		TigrisURL:   fdb.config.TigrisURL,
-		Ctx:         ctx,
-		Logger:      logger,
+		Ctx:    ctx,
+		Logger: logger,
 	}
 	h := registry.New(fdb.config.Handler, opts)
 	defer h.Close()
