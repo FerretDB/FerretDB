@@ -203,6 +203,20 @@ func (pgPool *Pool) Schemas(ctx context.Context) ([]string, error) {
 	return res, nil
 }
 
+func (pgPool *Pool) Collections(ctx context.Context, schema string) ([]string, error) {
+	tables, err := pgPool.Tables(ctx, schema)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res := make([]string, 0, 2)
+	for _, table := range tables {
+		res = append(res, table[:len(table)-hashSuffixLength])
+	}
+
+	return res, nil
+}
+
 // Tables returns a sorted list of FerretDB collection / PostgreSQL table names.
 // Returns empty slice if schema does not exist.
 func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, error) {
@@ -219,7 +233,7 @@ func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, error)
 			continue
 		}
 
-		filtered = append(filtered, table[:len(table)-hashSuffixLength])
+		filtered = append(filtered, table)
 	}
 
 	return filtered, nil
