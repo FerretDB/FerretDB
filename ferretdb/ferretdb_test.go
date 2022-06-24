@@ -47,7 +47,7 @@ func ExampleNew() {
 		if err = client.Ping(ctx, nil); err != nil {
 			continue
 		}
-		time.Sleep(time.Duration(time.Second))
+		time.Sleep(time.Second)
 	}
 	cancel()
 	fmt.Println(uri)
