@@ -202,7 +202,7 @@ tasks:
 
   lint-go-consistent:
     cmds:
-      - bin/go-consistent -pedantic ./cmd/... ./internal/...
+      - bin/go-consistent -pedantic ./cmd/... ./ferretdb/... ./internal/...
 
   lint-go-consistent-integration:
     dir: integration
