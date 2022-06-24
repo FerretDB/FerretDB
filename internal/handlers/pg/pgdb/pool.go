@@ -218,6 +218,23 @@ func (pgPool *Pool) Schemas(ctx context.Context) ([]string, error) {
 func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, error) {
 	// TODO query settings table instead: https://github.com/FerretDB/FerretDB/issues/125
 
+	tables, err := pgPool.tables(ctx, schema)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	filtered := make([]string, 0, len(tables))
+	for _, table := range tables {
+		if strings.HasPrefix(table, collectionPrefix) {
+			continue
+		}
+		filtered = append(filtered, table)
+	}
+
+	return filtered, nil
+}
+
+func (pgPool *Pool) tables(ctx context.Context, schema string) ([]string, error) {
 	sql := `SELECT table_name ` +
 		`FROM information_schema.columns ` +
 		`WHERE table_schema = $1 ` +
@@ -234,10 +251,6 @@ func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, error)
 	for rows.Next() {
 		if err = rows.Scan(&name); err != nil {
 			return nil, lazyerrors.Error(err)
-		}
-
-		if strings.HasPrefix(name, collectionPrefix) {
-			continue
 		}
 
 		tables = append(tables, name)
@@ -430,7 +443,7 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 
 // CreateSettingsTable creates FerretDB settings table.
 func (pgPool *Pool) CreateSettingsTable(ctx context.Context, db string) error {
-	tables, err := pgPool.Tables(ctx, db)
+	tables, err := pgPool.tables(ctx, db)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -460,11 +473,11 @@ func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (st
 		return "", lazyerrors.Error(err)
 	}
 
-	tableExists, err := pgPool.TableExists(ctx, db, collectionPrefix+"settings")
+	tables, err := pgPool.tables(ctx, db)
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
-	if !tableExists {
+	if !slices.Contains(tables, collectionPrefix+"settings") {
 		err = pgPool.CreateSettingsTable(ctx, db)
 		if err != nil {
 			return "", lazyerrors.Error(err)
