@@ -65,20 +65,20 @@ func TestTables(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedTables := []string{
-		"actor",
-		"address",
-		"category",
-		"city",
-		"country",
-		"customer",
-		"film",
-		"film_actor",
-		"film_category",
-		"inventory",
-		"language",
-		"rental",
-		"staff",
-		"store",
+		"actor_0e8cd7ba",
+		"address_2c6a2953",
+		"category_cf2f4271",
+		"city_0dc48142",
+		"country_a59115d1",
+		"customer_a4bdaa19",
+		"film_actor_86b826c5",
+		"film_b2ea63db",
+		"film_category_25a4b144",
+		"inventory_fcfdc43f",
+		"language_b9ef387b",
+		"rental_23235147",
+		"staff_675ca4d1",
+		"store_c7e7bc2e",
 	}
 	assert.Equal(t, expectedTables, tables)
 
