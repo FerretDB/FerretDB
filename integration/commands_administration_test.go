@@ -73,7 +73,7 @@ func TestCommandsAdministrationCreateDropList(t *testing.T) {
 		Code: 48,
 		Name: "NamespaceExists",
 		Message: `Collection already exists. ` +
-			`NS: testcommandsadministrationcreatedroplist.testcommandsadministrationcreatedroplist_53d1c9c8`,
+			`NS: testcommandsadministrationcreatedroplist.testcommandsadministrationcreatedroplist`,
 	}
 	AssertEqualError(t, expectedErr, err)
 
