@@ -1,6 +1,6 @@
 # Changelog
 
-## [v0.4.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.4.0) (2022-06-23)
+## [v0.4.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.4.0) (2022-06-27, not released yet)
 
 ### What's Changed
 This release adds preliminary support for the [Tigris](https://www.tigrisdata.com) backend.
