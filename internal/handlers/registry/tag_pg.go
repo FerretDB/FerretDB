@@ -12,20 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build postgres
+
 package registry
 
-import (
-	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/tigris"
-)
-
-// RegisterTigris registers `tigris` handler for Tigris.
-func RegisterTigris() {
-	Handlers["tigris"] = func(opts NewHandlerOpts) (handlers.Interface, error) {
-		handlerOpts := &tigris.NewOpts{
-			TigrisURL: opts.TigrisURL,
-			L:         opts.Logger,
-		}
-		return tigris.New(handlerOpts)
-	}
+func init() {
+	RegisterPg()
 }

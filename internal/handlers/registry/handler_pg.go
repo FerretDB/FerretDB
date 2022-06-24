@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build postgres
-
 package registry
 
 import (
@@ -24,8 +22,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 )
 
-// init registers `pg` handler for PostgreSQL that is always registered.
-func init() {
+// RegisterPg registers `pg` handler for PostgreSQL.
+func RegisterPg() {
 	Handlers["pg"] = func(opts NewHandlerOpts) (handlers.Interface, error) {
 		pgPool, err := pgdb.NewPool(opts.Ctx, opts.PostgresURL, opts.Logger, false)
 		if err != nil {

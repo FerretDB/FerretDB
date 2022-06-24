@@ -26,11 +26,8 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
-	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -61,14 +58,6 @@ var (
 // initFlags improves flags settings after all global flags are initialized
 // and all handler constructors are registered.
 func initFlags() {
-	handlers := maps.Keys(registry.Handlers)
-	slices.Sort(handlers)
-
-	f := flag.Lookup("handler")
-	f.Usage = "backend handler: " + strings.Join(handlers, ", ")
-	f.DefValue = "pg"
-	must.NoError(f.Value.Set(f.DefValue))
-
 	levels := []string{
 		zapcore.DebugLevel.String(),
 		zapcore.InfoLevel.String(),
@@ -76,7 +65,7 @@ func initFlags() {
 		zapcore.ErrorLevel.String(),
 	}
 
-	f = flag.Lookup("log-level")
+	f := flag.Lookup("log-level")
 	f.Usage = "log level: " + strings.Join(levels, ", ")
 	f.DefValue = zapcore.DebugLevel.String()
 	must.NoError(f.Value.Set(f.DefValue))

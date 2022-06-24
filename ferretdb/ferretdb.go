@@ -16,6 +16,7 @@ package ferretdb
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go.uber.org/zap"
@@ -38,8 +39,16 @@ type FerretDB struct {
 	config Config
 }
 
-// New returns a new FerretDB.
+// New registers backend handler and returns a new FerretDB.
 func New(conf Config) FerretDB {
+	switch conf.Handler {
+	case "pg":
+		registry.RegisterPg()
+	case "tigris":
+		registry.RegisterTigris()
+	default:
+		panic(fmt.Sprintf("Unknown backend handler %q.", conf.Handler))
+	}
 	return FerretDB{
 		config: conf,
 	}
@@ -57,20 +66,14 @@ func (fdb *FerretDB) GetConnectionString() string {
 func (fdb *FerretDB) Run(ctx context.Context) error {
 	listenAddr := "127.0.0.1:27017"
 	mode := clientconn.NormalMode
-	handler := "pg"
 	testConnTimeout := time.Duration(0)
-
-	_, ok := registry.Handlers["pg"]
-	if !ok {
-		panic("no pg handler registered")
-	}
 
 	logging.Setup(zapcore.ErrorLevel)
 	logger := zap.L()
 
-	newHandler := registry.Handlers[handler]
+	newHandler := registry.Handlers[fdb.config.Handler]
 	if newHandler == nil {
-		logger.Sugar().Fatalf("Unknown backend handler %q.", handler)
+		logger.Sugar().Fatalf("Unknown backend handler %q.", fdb.config.Handler)
 	}
 
 	opts := registry.NewHandlerOpts{
