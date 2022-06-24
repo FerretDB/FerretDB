@@ -55,38 +55,6 @@ func TestValidUTF8Locale(t *testing.T) {
 	}
 }
 
-func TestTables(t *testing.T) {
-	t.Parallel()
-
-	ctx := testutil.Ctx(t)
-	pool := testutil.Pool(ctx, t, nil, zaptest.NewLogger(t))
-
-	tables, err := pool.Tables(ctx, "monila")
-	require.NoError(t, err)
-
-	expectedTables := []string{
-		"actor_0e8cd7ba",
-		"address_2c6a2953",
-		"category_cf2f4271",
-		"city_0dc48142",
-		"country_a59115d1",
-		"customer_a4bdaa19",
-		"film_actor_86b826c5",
-		"film_b2ea63db",
-		"film_category_25a4b144",
-		"inventory_fcfdc43f",
-		"language_b9ef387b",
-		"rental_23235147",
-		"staff_675ca4d1",
-		"store_c7e7bc2e",
-	}
-	assert.Equal(t, expectedTables, tables)
-
-	tables, err = pool.Tables(ctx, "pagila")
-	require.NoError(t, err)
-	assert.Empty(t, tables)
-}
-
 func TestCreateDrop(t *testing.T) {
 	t.Parallel()
 
@@ -107,7 +75,7 @@ func TestCreateDrop(t *testing.T) {
 		// - table drop is not possible
 		// - schema drop is not possible
 		// - table creation is not possible
-		// - shema creation is possible
+		// - schema creation is possible
 
 		err := pool.DropTable(ctx, schemaName, tableName)
 		require.Equal(t, pgdb.ErrNotExist, err)
@@ -120,6 +88,10 @@ func TestCreateDrop(t *testing.T) {
 
 		err = pool.CreateSchema(ctx, schemaName)
 		require.NoError(t, err)
+
+		tables, err := pool.Tables(ctx, schemaName)
+		require.NoError(t, err)
+		assert.Empty(t, tables)
 	})
 
 	t.Run("SchemaExistsTableDoesNotExist", func(t *testing.T) {
@@ -150,6 +122,10 @@ func TestCreateDrop(t *testing.T) {
 		err = pool.CreateTable(ctx, schemaName, tableName)
 		require.NoError(t, err)
 
+		tables, err := pool.Tables(ctx, schemaName)
+		require.NoError(t, err)
+		assert.Equal(t, []string{tableName}, tables)
+
 		err = pool.DropSchema(ctx, schemaName)
 		require.NoError(t, err)
 
@@ -172,6 +148,10 @@ func TestCreateDrop(t *testing.T) {
 
 		err = pool.CreateTable(ctx, schemaName, tableName)
 		require.NoError(t, err)
+
+		tables, err := pool.Tables(ctx, schemaName)
+		require.NoError(t, err)
+		assert.Equal(t, []string{tableName}, tables)
 
 		// Table exists ->
 		// - table creation is not possible
