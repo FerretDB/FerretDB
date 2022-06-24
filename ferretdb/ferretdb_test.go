@@ -25,7 +25,7 @@ import (
 // ExampleNew is a testable example for Run func.
 func ExampleNew() {
 	ctx, cancel := context.WithCancel(context.Background())
-	conf := Config{PostgresURL: "postgres://postgres@127.0.0.1:5432/ferretdb"}
+	conf := Config{Handler: "pg", PostgresURL: "postgres://postgres@127.0.0.1:5432/ferretdb"}
 
 	fdb := New(conf)
 	go func() {

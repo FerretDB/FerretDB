@@ -16,6 +16,7 @@ package registry
 
 import (
 	"context"
+	"fmt"
 
 	"go.uber.org/zap"
 
@@ -23,7 +24,7 @@ import (
 )
 
 // NewHandler represents a function that constructs a new handler.
-type NewHandler func(opts *NewHandlerOpts) (handlers.Interface, error)
+type NewHandler func(opts NewHandlerOpts) (handlers.Interface, error)
 
 // NewHandlerOpts represents configuration for constructing handlers.
 type NewHandlerOpts struct {
@@ -37,3 +38,15 @@ type NewHandlerOpts struct {
 // The values for `Handlers` must be set through the `init()` functions of the corresponding handlers
 // so that we can control which handlers will be included in the build with build tags.
 var Handlers = map[string]NewHandler{}
+
+func New(handler string, opts NewHandlerOpts) handlers.Interface {
+	newHandler := Handlers[handler]
+	if newHandler == nil {
+		panic(fmt.Sprintf("Unknown backend handler %q.", handler))
+	}
+	h, err := newHandler(opts)
+	if err != nil {
+		panic(err.Error())
+	}
+	return h
+}

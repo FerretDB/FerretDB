@@ -28,6 +28,7 @@ import (
 
 // Config contains a backend connection strings.
 type Config struct {
+	Handler     string
 	PostgresURL string
 	TigrisURL   string
 }
@@ -71,15 +72,14 @@ func (fdb *FerretDB) Run(ctx context.Context) error {
 	if newHandler == nil {
 		logger.Sugar().Fatalf("Unknown backend handler %q.", handler)
 	}
-	h, err := newHandler(&registry.NewHandlerOpts{
+
+	opts := registry.NewHandlerOpts{
 		PostgresURL: fdb.config.PostgresURL,
 		TigrisURL:   fdb.config.TigrisURL,
 		Ctx:         ctx,
 		Logger:      logger,
-	})
-	if err != nil {
-		logger.Fatal(err.Error())
 	}
+	h := registry.New(fdb.config.Handler, opts)
 	defer h.Close()
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
@@ -90,7 +90,7 @@ func (fdb *FerretDB) Run(ctx context.Context) error {
 		TestConnTimeout: testConnTimeout,
 	})
 
-	err = l.Run(ctx)
+	err := l.Run(ctx)
 	if err != nil && err != context.Canceled {
 		logger.Error("Listener stopped", zap.Error(err))
 	}

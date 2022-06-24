@@ -37,6 +37,14 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
+// newHandlerOpts represents common configuration for constructing handlers.
+//
+// Handler-specific configuration is passed via command-line flags directly.
+type newHandlerOpts struct {
+	ctx    context.Context
+	logger *zap.Logger
+}
+
 var (
 	versionF = flag.Bool("version", false, "print version to stdout (full version, commit, branch, dirty flag) and exit")
 
@@ -45,24 +53,14 @@ var (
 	debugAddrF  = flag.String("debug-addr", "127.0.0.1:8088", "debug address")
 	modeF       = flag.String("mode", string(clientconn.AllModes[0]), fmt.Sprintf("operation mode: %v", clientconn.AllModes))
 
-	handlerF = flag.String("handler", "<set in initFlags()>", "<set in initFlags()>")
-
 	logLevelF = flag.String("log-level", "<set in initFlags()>", "<set in initFlags()>")
 
 	testConnTimeoutF = flag.Duration("test-conn-timeout", 0, "test: set connection timeout")
-
-	// `pg` handler flags.
-	postgresqlURLF = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/ferretdb", "PostgreSQL URL")
 )
 
 // initFlags improves flags settings after all global flags are initialized
 // and all handler constructors are registered.
 func initFlags() {
-	_, ok := registry.Handlers["pg"]
-	if !ok {
-		panic("no pg handler registered")
-	}
-
 	handlers := maps.Keys(registry.Handlers)
 	slices.Sort(handlers)
 
@@ -137,18 +135,8 @@ func main() {
 
 	go debug.RunHandler(ctx, *debugAddrF, logger.Named("debug"))
 
-	newHandler := registry.Handlers[*handlerF]
-	if newHandler == nil {
-		logger.Sugar().Fatalf("Unknown backend handler %q.", *handlerF)
-	}
-	h, err := newHandler(&registry.NewHandlerOpts{
-		PostgresURL: *postgresqlURLF,
-		Ctx:         ctx,
-		Logger:      logger,
-	})
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
+	h := initHandler(newHandlerOpts{ctx, logger})
+
 	defer h.Close()
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{

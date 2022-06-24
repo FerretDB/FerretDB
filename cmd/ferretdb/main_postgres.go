@@ -12,23 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build tigris
-// +build tigris
+//go:build postgres
 
-package registry
+package main
 
 import (
+	"flag"
+
 	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/tigris"
+	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 )
 
-// init registers `tigris` handler for Tigris that is enabled only when compiled with `tigris` build tag.
-func init() {
-	Handlers["tigris"] = func(opts NewHandlerOpts) (handlers.Interface, error) {
-		handlerOpts := &tigris.NewOpts{
-			TigrisURL: opts.TigrisURL,
-			L:         opts.Logger,
-		}
-		return tigris.New(handlerOpts)
+// `pg` handler flags.
+var (
+	postgresqlURLF = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/ferretdb", "PostgreSQL URL")
+)
+
+func initHandler(opts newHandlerOpts) handlers.Interface {
+	optsT := registry.NewHandlerOpts{
+		PostgresURL: *postgresqlURLF,
+		Ctx:         opts.ctx,
+		Logger:      opts.logger,
 	}
+	return registry.New("pg", optsT)
 }
