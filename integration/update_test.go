@@ -770,6 +770,57 @@ func TestUpdateMany(t *testing.T) {
 	}
 }
 
+func TestMultiFlag(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		filter bson.D
+		update bson.D
+		multi  bool
+		stat   bson.D
+	}{
+		"MultiFalse": {
+			filter: bson.D{{"foo", "x"}},
+			update: bson.D{{"$set", bson.D{{"foo", "y"}}}},
+			multi:  false,
+			stat:   bson.D{{"n", int32(1)}, {"nModified", int32(1)}, {"ok", float64(1)}},
+		},
+		"MultiTrue": {
+			filter: bson.D{{"foo", "x"}},
+			update: bson.D{{"$set", bson.D{{"foo", "y"}}}},
+			multi:  true,
+			stat:   bson.D{{"n", int32(2)}, {"nModified", int32(2)}, {"ok", float64(1)}},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup(t)
+			db := collection.Database()
+
+			_, err := collection.InsertMany(ctx, []any{
+				bson.D{{"_id", "first"}, {"foo", "x"}},
+				bson.D{{"_id", "second"}, {"foo", "x"}},
+			})
+			require.NoError(t, err)
+
+			var actual bson.D
+			err = db.RunCommand(ctx,
+				bson.D{
+					{"update", collection.Name()},
+					{"updates", []any{bson.D{
+						{"q", tc.filter},
+						{"u", tc.update},
+						{"multi", tc.multi},
+					}}},
+				}).Decode(&actual)
+			require.NoError(t, err)
+
+			require.Equal(t, tc.stat, actual)
+		})
+	}
+}
+
 func TestCurrentDate(t *testing.T) {
 	t.Parallel()
 

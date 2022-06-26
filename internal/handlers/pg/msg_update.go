@@ -81,7 +81,6 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		unimplementedFields := []string{
 			"c",
-			"multi",
 			"collation",
 			"arrayFilters",
 			"hint",
@@ -92,6 +91,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		var q, u *types.Document
 		var upsert bool
+		var multi bool
 		if q, err = common.GetOptionalParam(update, "q", q); err != nil {
 			return nil, err
 		}
@@ -105,6 +105,10 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		if upsert, err = common.GetOptionalParam(update, "upsert", upsert); err != nil {
+			return nil, err
+		}
+
+		if multi, err = common.GetOptionalParam(update, "multi", multi); err != nil {
 			return nil, err
 		}
 
@@ -152,6 +156,10 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 			matched++
 			continue
+		}
+
+		if len(resDocs) > 1 && !multi {
+			resDocs = resDocs[0:1]
 		}
 
 		matched += int32(len(resDocs))
