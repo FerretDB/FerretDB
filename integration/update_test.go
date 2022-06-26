@@ -817,6 +817,22 @@ func TestMultiFlag(t *testing.T) {
 			require.NoError(t, err)
 
 			require.Equal(t, tc.stat, actual)
+
+			err = collection.FindOne(ctx, bson.D{{"_id", "first"}}).Decode(&actual)
+			require.NoError(t, err)
+
+			require.Equal(t, bson.D{{"_id", "first"}, {"foo", "y"}}, actual)
+
+			err = collection.FindOne(ctx, bson.D{{"_id", "second"}}).Decode(&actual)
+			require.NoError(t, err)
+
+			var expected bson.D
+			if tc.multi {
+				expected = bson.D{{"_id", "second"}, {"foo", "y"}}
+			} else {
+				expected = bson.D{{"_id", "second"}, {"foo", "x"}}
+			}
+			require.Equal(t, expected, actual)
 		})
 	}
 }
