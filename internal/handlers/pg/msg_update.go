@@ -91,7 +91,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		var q, u *types.Document
 		var upsert bool
-		var multi bool
+		var multi bool = true
 		if q, err = common.GetOptionalParam(update, "q", q); err != nil {
 			return nil, err
 		}

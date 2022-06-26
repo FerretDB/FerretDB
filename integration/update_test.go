@@ -776,19 +776,25 @@ func TestMultiFlag(t *testing.T) {
 	for name, tc := range map[string]struct {
 		filter bson.D
 		update bson.D
-		multi  bool
+		multi  string
 		stat   bson.D
 	}{
 		"MultiFalse": {
 			filter: bson.D{{"foo", "x"}},
 			update: bson.D{{"$set", bson.D{{"foo", "y"}}}},
-			multi:  false,
+			multi:  "false",
 			stat:   bson.D{{"n", int32(1)}, {"nModified", int32(1)}, {"ok", float64(1)}},
 		},
 		"MultiTrue": {
 			filter: bson.D{{"foo", "x"}},
 			update: bson.D{{"$set", bson.D{{"foo", "y"}}}},
-			multi:  true,
+			multi:  "true",
+			stat:   bson.D{{"n", int32(2)}, {"nModified", int32(2)}, {"ok", float64(1)}},
+		},
+		"MultiFallbackToTrue": {
+			filter: bson.D{{"foo", "x"}},
+			update: bson.D{{"$set", bson.D{{"foo", "y"}}}},
+			multi:  "",
 			stat:   bson.D{{"n", int32(2)}, {"nModified", int32(2)}, {"ok", float64(1)}},
 		},
 	} {
@@ -804,15 +810,21 @@ func TestMultiFlag(t *testing.T) {
 			})
 			require.NoError(t, err)
 
+			update := bson.D{
+				{"q", tc.filter},
+				{"u", tc.update},
+			}
+
+			if tc.multi != "" {
+				multi := tc.multi == "true"
+				update = append(update, bson.E{Key: "multi", Value: multi})
+			}
+
 			var actual bson.D
 			err = db.RunCommand(ctx,
 				bson.D{
 					{"update", collection.Name()},
-					{"updates", []any{bson.D{
-						{"q", tc.filter},
-						{"u", tc.update},
-						{"multi", tc.multi},
-					}}},
+					{"updates", []any{update}},
 				}).Decode(&actual)
 			require.NoError(t, err)
 
@@ -827,10 +839,10 @@ func TestMultiFlag(t *testing.T) {
 			require.NoError(t, err)
 
 			var expected bson.D
-			if tc.multi {
-				expected = bson.D{{"_id", "second"}, {"foo", "y"}}
-			} else {
+			if tc.multi == "false" {
 				expected = bson.D{{"_id", "second"}, {"foo", "x"}}
+			} else {
+				expected = bson.D{{"_id", "second"}, {"foo", "y"}}
 			}
 			require.Equal(t, expected, actual)
 		})
