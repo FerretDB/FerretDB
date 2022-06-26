@@ -119,7 +119,30 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 
 		default:
-			return false, NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
+			// Treats the update as a Replacement object
+			// https://www.mongodb.com/docs/manual/reference/method/db.collection.update/#std-label-update-parameter
+
+			setDoc := update
+
+			if setDoc.Len() == 0 {
+				continue
+			}
+			sort.Strings(setDoc.Keys())
+
+			for _, setKey := range doc.Keys() {
+				if !setDoc.Has(setKey) && !(setKey == "_id") {
+					doc.Remove(setKey)
+				}
+			}
+
+			for _, setKey := range setDoc.Keys() {
+				setValue := must.NotFail(setDoc.Get(setKey))
+				if err := doc.Set(setKey, setValue); err != nil {
+					return false, err
+				}
+			}
+
+			changed = true
 		}
 	}
 
@@ -221,13 +244,8 @@ func checkAllModifiersSupported(update *types.Document) error {
 		case "$unset":
 			// supported
 		default:
-			return NewWriteErrorMsg(
-				ErrFailedToParse,
-				fmt.Sprintf(
-					"Unknown modifier: %s. Expected a valid update modifier or pipeline-style "+
-						"update specified as an array", updateOp,
-				),
-			)
+			// Treats the update as a Replacement object
+			// https://www.mongodb.com/docs/manual/reference/method/db.collection.update/#std-label-update-parameter
 		}
 	}
 	return nil

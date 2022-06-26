@@ -770,6 +770,36 @@ func TestUpdateMany(t *testing.T) {
 	}
 }
 
+func TestUpdateWithReplaceDocument(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup(t)
+	db := collection.Database()
+
+	_, err := collection.InsertOne(ctx, bson.D{{"_id", "test"}, {"name", bson.D{{"first", "John"}, {"last", "Doe"}}}})
+	require.NoError(t, err)
+
+	var actual bson.D
+
+	filter := bson.D{{"_id", "test"}}
+	update := bson.D{{"_id", "test"}, {"name", bson.D{{"first", "Jane"}, {"last", "Fonda"}}}}
+	err = db.RunCommand(ctx,
+		bson.D{
+			{"update", collection.Name()},
+			{"updates", []any{bson.D{
+				{"q", filter},
+				{"u", update},
+			}}},
+		}).Decode(&actual)
+
+	require.NoError(t, err)
+	require.Equal(t, bson.D{{"n", int32(1)}, {"nModified", int32(1)}, {"ok", float64(1)}}, actual)
+
+	err = collection.FindOne(ctx, bson.D{{"_id", "test"}}).Decode(&actual)
+	require.NoError(t, err)
+	require.Equal(t, bson.D{{"_id", "test"}, {"name", bson.D{{"first", "Jane"}, {"last", "Fonda"}}}}, actual)
+}
+
 func TestCurrentDate(t *testing.T) {
 	t.Parallel()
 
