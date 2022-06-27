@@ -119,6 +119,10 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 
 		default:
+			if strings.HasPrefix(updateOp, "$") {
+				return false, NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
+			}
+
 			// Treats the update as a Replacement object
 			// https://www.mongodb.com/docs/manual/reference/method/db.collection.update/#std-label-update-parameter
 
@@ -244,7 +248,17 @@ func checkAllModifiersSupported(update *types.Document) error {
 		case "$unset":
 			// supported
 		default:
-			// Treats the update as a Replacement object
+			if strings.HasPrefix(updateOp, "$") {
+				return NewWriteErrorMsg(
+					ErrFailedToParse,
+					fmt.Sprintf(
+						"Unknown modifier: %s. Expected a valid update modifier or pipeline-style "+
+							"update specified as an array", updateOp,
+					),
+				)
+			}
+
+			// In case the operator doesn't start with $, treats the update as a Replacement object
 			// https://www.mongodb.com/docs/manual/reference/method/db.collection.update/#std-label-update-parameter
 		}
 	}
