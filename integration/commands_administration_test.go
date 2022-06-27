@@ -129,12 +129,12 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 
 	filter := bson.D{{
 		"name", bson.D{{
-			"$in", bson.A{"monila", "values", "admin", name},
+			"$in", bson.A{name, "admin"},
 		}},
 	}}
 	names, err := client.ListDatabaseNames(ctx, filter)
 	require.NoError(t, err)
-	assert.Equal(t, []string{"admin", "monila", "values"}, names)
+	assert.Equal(t, []string{"admin"}, names)
 
 	actual, err := client.ListDatabases(ctx, filter)
 	require.NoError(t, err)
@@ -142,10 +142,6 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 	expectedBefore := mongo.ListDatabasesResult{
 		Databases: []mongo.DatabaseSpecification{{
 			Name: "admin",
-		}, {
-			Name: "monila",
-		}, {
-			Name: "values",
 		}},
 	}
 	assertDatabases(t, expectedBefore, actual)
@@ -161,11 +157,7 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 		Databases: []mongo.DatabaseSpecification{{
 			Name: "admin",
 		}, {
-			Name: "monila",
-		}, {
 			Name: name,
-		}, {
-			Name: "values",
 		}},
 	}
 	assertDatabases(t, expectedAfter, actual)

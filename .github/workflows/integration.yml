@@ -68,8 +68,7 @@ jobs:
       - name: Clean test and fuzz caches
         if: always()
         run: |
-          go clean -testcache
-          go clean -fuzzcache
+          go clean -testcache -fuzzcache
 
       - name: Check dirty
         run: |

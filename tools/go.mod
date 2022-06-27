@@ -192,6 +192,7 @@ require (
 	github.com/xanzy/go-gitlab v0.63.0 // indirect
 	github.com/yagipy/maintidx v1.0.0 // indirect
 	github.com/yeya24/promlinter v0.2.0 // indirect
+	github.com/yuin/goldmark v1.4.1 // indirect
 	gitlab.com/bosi/decorder v0.2.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/build v0.0.0-20200616162219-07bebbe343e9 // indirect
