@@ -8,7 +8,6 @@ services:
       context: ./build/deps
       dockerfile: postgres.Dockerfile
     container_name: ferretdb_postgres
-    depends_on: [test_db]
     ports:
       - 5432:5432
     extra_hosts:
@@ -68,7 +67,6 @@ services:
       context: ./build/deps
       dockerfile: mongo.Dockerfile
     container_name: ferretdb_mongodb
-    depends_on: [test_db]
     command: --enableFreeMonitoring off
     ports:
       - 37017:27017
@@ -77,14 +75,6 @@ services:
     environment:
       # Always UTC+05:45. Set to catch timezone problems.
       - TZ=Asia/Kathmandu
-    volumes:
-      - test_db_mongodb:/test_db/:ro
-
-  test_db:
-    image: aleksi/test_db:mongodb-values
-    container_name: ferretdb_test_db
-    volumes:
-      - test_db_mongodb:/test_db/mongodb:ro
 
   markdownlint:
     build:
@@ -95,5 +85,4 @@ services:
       - .:/workdir
 
 volumes:
-  test_db_mongodb:
   tigrisdata:
