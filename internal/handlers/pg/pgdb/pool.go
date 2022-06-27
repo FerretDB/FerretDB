@@ -29,6 +29,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 const (
@@ -203,6 +204,7 @@ func (pgPool *Pool) Schemas(ctx context.Context) ([]string, error) {
 	return res, nil
 }
 
+// Collections returns a sorted list of FerretDB collection names.
 func (pgPool *Pool) Collections(ctx context.Context, schema string) ([]string, error) {
 	tables, err := pgPool.Tables(ctx, schema)
 	if err != nil {
@@ -219,6 +221,7 @@ func (pgPool *Pool) Collections(ctx context.Context, schema string) ([]string, e
 
 // Tables returns a sorted list of FerretDB collection / PostgreSQL table names.
 // Returns empty slice if schema does not exist.
+// All tables with prefix "_ferretdb_" are filtered out.
 func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, error) {
 	// TODO query settings table instead: https://github.com/FerretDB/FerretDB/issues/125
 
@@ -450,4 +453,28 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 		return nil, lazyerrors.Error(err)
 	}
 	return &res, nil
+}
+
+// schemaExists returns true if given schema exists.
+func (pgPool *Pool) schemaExists(ctx context.Context, db string) (bool, error) {
+	sql := `SELECT nspname FROM pg_catalog.pg_namespace WHERE nspname = $1`
+	rows, err := pgPool.Query(ctx, sql, db)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return false, nil
+	}
+
+	for rows.Next() {
+		var name string
+		must.NoError(rows.Scan(&name))
+		if name == db {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }

@@ -70,7 +70,7 @@ func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (st
 	var err error
 
 	schemaExists, err := pgPool.schemaExists(ctx, db)
-	if err != nil && err != ErrNotExist {
+	if err != nil {
 		return "", err
 	}
 
@@ -127,35 +127,14 @@ func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (st
 	return tableName, nil
 }
 
-func (pgPool *Pool) schemaExists(ctx context.Context, db string) (bool, error) {
-	sql := `SELECT nspname FROM pg_catalog.pg_namespace WHERE nspname = $1`
-	rows, err := pgPool.Query(ctx, sql, db)
-	if err != nil {
-		return false, lazyerrors.Error(err)
-	}
-	defer rows.Close()
-
-	if !rows.Next() {
-		return false, ErrNotExist
-	}
-
-	for rows.Next() {
-		var name string
-		must.NoError(rows.Scan(&name))
-		if name == db {
-			return true, nil
-		}
-	}
-
-	return false, nil
-}
-
+// updateSettingsTable updates FerretDB settings table.
 func (pgPool *Pool) updateSettingsTable(ctx context.Context, tx pgx.Tx, db string, settings *types.Document) error {
 	sql := `UPDATE ` + pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize() + `SET settings = $1`
 	_, err := tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(settings)))
 	return err
 }
 
+// getSettingsTable returns FerretDB settings table.
 func (pgPool *Pool) getSettingsTable(ctx context.Context, tx pgx.Tx, db string) (*types.Document, error) {
 	sql := `SELECT settings FROM ` + pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize()
 	rows, err := tx.Query(ctx, sql)
@@ -186,9 +165,10 @@ func (pgPool *Pool) getSettingsTable(ctx context.Context, tx pgx.Tx, db string) 
 	return settings, nil
 }
 
+// RemoveTableFromSettings removes collection from FerretDB settings table.
 func (pgPool *Pool) RemoveTableFromSettings(ctx context.Context, db, collection string) error {
 	schemaExists, err := pgPool.schemaExists(ctx, db)
-	if err != nil && err != ErrNotExist {
+	if err != nil {
 		return err
 	}
 
