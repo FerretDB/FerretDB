@@ -36,7 +36,7 @@ const (
 	maxTableNameLength = 63
 )
 
-// CreateSettingsTable creates FerretDB settings table.
+// CreateSettingsTable creates FerretDB settings table if it doesn't exist.
 func (pgPool *Pool) CreateSettingsTable(ctx context.Context, db string) error {
 	tables, err := pgPool.tables(ctx, db)
 	if err != nil {
@@ -50,7 +50,7 @@ func (pgPool *Pool) CreateSettingsTable(ctx context.Context, db string) error {
 	sql := `CREATE TABLE ` + pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize() + ` (settings jsonb)`
 	_, err = pgPool.Exec(ctx, sql)
 	if err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
 
 	settings := must.NotFail(types.NewDocument("collections", must.NotFail(types.NewDocument())))
@@ -69,7 +69,7 @@ func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (st
 
 	schemaExists, err := pgPool.schemaExists(ctx, db)
 	if err != nil {
-		return "", err
+		return "", lazyerrors.Error(err)
 	}
 
 	if !schemaExists {
@@ -104,9 +104,10 @@ func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (st
 		return "", lazyerrors.Error(err)
 	}
 
-	collections, ok := must.NotFail(settings.Get("collections")).(*types.Document)
+	collectionsDoc := must.NotFail(settings.Get("collections"))
+	collections, ok := collectionsDoc.(*types.Document)
 	if !ok {
-		return "", fmt.Errorf("invalid settings document")
+		return "", lazyerrors.Errorf("invalid collections document: %v", collectionsDoc)
 	}
 
 	if collections.Has(collection) {
@@ -142,7 +143,7 @@ func (pgPool *Pool) getSettingsTable(ctx context.Context, tx pgx.Tx, db string) 
 	defer rows.Close()
 
 	if !rows.Next() {
-		return nil, fmt.Errorf("no rows returned")
+		return nil, lazyerrors.Errorf("no settings found")
 	}
 
 	var b []byte
@@ -157,7 +158,7 @@ func (pgPool *Pool) getSettingsTable(ctx context.Context, tx pgx.Tx, db string) 
 
 	settings, ok := doc.(*types.Document)
 	if !ok {
-		return nil, fmt.Errorf("invalid settings document")
+		return nil, lazyerrors.Errorf("invalid settings document: %v", doc)
 	}
 
 	return settings, nil
@@ -167,7 +168,7 @@ func (pgPool *Pool) getSettingsTable(ctx context.Context, tx pgx.Tx, db string) 
 func (pgPool *Pool) RemoveTableFromSettings(ctx context.Context, db, collection string) error {
 	schemaExists, err := pgPool.schemaExists(ctx, db)
 	if err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
 
 	if !schemaExists {
@@ -193,7 +194,7 @@ func (pgPool *Pool) RemoveTableFromSettings(ctx context.Context, db, collection 
 
 	collections, ok := must.NotFail(settings.Get("collections")).(*types.Document)
 	if !ok {
-		return fmt.Errorf("invalid settings document")
+		return lazyerrors.Errorf("invalid settings document")
 	}
 
 	collections.Remove(collection)
