@@ -16,9 +16,9 @@ Keep guides short: we don't create rules; we automate.
 2. Pull request **title** should be accurate and descriptive as it is used in the generated changelog.
    It should not end with a dot.
    It should not mention the issue number but describe the fixed issue instead.
-3. Most of the time pull requests are related to some issues. 
+3. Most of the time pull requests are related to some issues.
    In such cases pull request **description** should mention the issue number like "Refs #123." or "Closes #456.".
-   Do not use `https://github.com/org/repo/issue/123` even if it is rendered the same on GitHub. 
+   Do not use `https://github.com/org/repo/issue/123` even if it is rendered the same on GitHub.
    If your proposes a tiny fix, there is no needed to create a new issue.
 4. We provide a pull requests template that includes suggestions and readiness checklist.
    End sentences with a dot.
@@ -46,8 +46,3 @@ Keep guides short: we don't create rules; we automate.
    Our automation will take care of notifying that person (e.g. on Slack).
 6. Draft pull requests shouldn't live long. We might start deleting stale drafts automatically.
 7. If you need a draft to live long, consider creating a draft pull request in your own fork.
-
-## Calls "to show and/or to explain"
-
-Please multiply the knowledge shared on calls and 1-1 messages by writing a separate detailed blog-post article (not in the project's source code).
-1-1s are good to check what you might have missed along the way - what seemed to you obvious and to others is not.
