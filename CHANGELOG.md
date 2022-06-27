@@ -1,6 +1,6 @@
 # Changelog
 
-## [v0.4.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.4.0) (2022-06-27, not released yet)
+## [v0.4.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.4.0) (2022-06-27)
 
 ### What's Changed
 This release adds preliminary support for the [Tigris](https://www.tigrisdata.com) backend.
@@ -67,6 +67,9 @@ We plan to reach parity with our PostgreSQL backend in the next release.
 * Bump postgres from 14.3 to 14.4 in /build/deps by @dependabot in https://github.com/FerretDB/FerretDB/pull/768
 * Use forked `golangci-lint` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/758
 * Update `conform-pr` action by @AlekSi in https://github.com/FerretDB/FerretDB/pull/783
+* Drop `test_db` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/788
+* Add `task init-clean` target by @AlekSi in https://github.com/FerretDB/FerretDB/pull/756
+* Add `godoc` to tools by @AlekSi in https://github.com/FerretDB/FerretDB/pull/789
 
 ## New Contributors
 * @noisersup made their first contribution in https://github.com/FerretDB/FerretDB/pull/751
