@@ -16,23 +16,58 @@
 package tigris
 
 import (
+	"context"
+	"time"
+
+	"github.com/tigrisdata/tigris-client-go/config"
+	"github.com/tigrisdata/tigris-client-go/driver"
+	"go.uber.org/zap"
+
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// errNotImplemented is returned by stubs.
-var errNotImplemented = common.NewErrorMsg(common.ErrNotImplemented, "This command is not implemented for Tigris yet")
+// notImplemented returns error for stub command handlers.
+func notImplemented(command string) error {
+	return common.NewErrorMsg(common.ErrNotImplemented, "I'm a stub, not a real handler for "+command)
+}
+
+// NewOpts represents handler configuration.
+type NewOpts struct {
+	TigrisURL string
+	L         *zap.Logger
+}
 
 // Handler implements handlers.Interface on top of Tigris.
-type Handler struct{}
+type Handler struct {
+	*NewOpts
+	driver    driver.Driver
+	startTime time.Time
+}
 
 // New returns a new handler.
-func New() (handlers.Interface, error) {
-	return new(Handler), nil
+func New(opts *NewOpts) (handlers.Interface, error) {
+	cfg := &config.Driver{
+		URL: opts.TigrisURL,
+	}
+	driver, err := driver.NewDriver(context.TODO(), cfg)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	h := &Handler{
+		NewOpts:   opts,
+		driver:    driver,
+		startTime: time.Now(),
+	}
+	return h, nil
 }
 
 // Close implements handlers.Interface.
-func (h *Handler) Close() {}
+func (h *Handler) Close() {
+	h.driver.Close()
+}
 
 // check interfaces
 var (
