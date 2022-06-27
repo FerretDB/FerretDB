@@ -23,16 +23,6 @@ import (
 )
 
 // orderTypes is preferred order of the types in the switch.
-// Document == *Document
-
-// case int64
-// case int32
-// ==
-// case int64, unt32
-
-// Document == types.Document == newtypes.Document
-
-// default yt
 var orderTypes = map[string]int{
 	"Document":      0,
 	"documentType":  1,
