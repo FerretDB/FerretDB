@@ -94,6 +94,7 @@ func (fdb *FerretDB) Run(ctx context.Context) error {
 	err := l.Run(ctx)
 	if err != nil && err != context.Canceled {
 		logger.Error("Listener stopped", zap.Error(err))
+		return err
 	}
 	return nil
 }
