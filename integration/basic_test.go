@@ -128,7 +128,7 @@ func TestFindCommentQuery(t *testing.T) {
 	assert.Contains(t, databaseNames, name)
 }
 
-func TestVeryLongCollectionName(t *testing.T) {
+func TestLongCollectionName(t *testing.T) {
 	t.Parallel()
 
 	ctx, collection := setup(t)
