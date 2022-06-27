@@ -12,17 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package integration
+package pgdb_test
 
 import "testing"
 
-/*
-1. Check table removed from settings when dropping collection.
-2. Check table added to settings when creating collection.
+func TestSettingsTableCollectionCreated(t *testing.T) {
+	t.Skip("Skipping until we implement this")
+}
 
-All other tests for insert, update, find, findAndModify, count, remove should pass.
-*/
-
-func TestSettingsTableCreation(t *testing.T) {
+func TestSettingsTableCollectionRemoved(t *testing.T) {
 	t.Skip("Skipping until we implement this")
 }
