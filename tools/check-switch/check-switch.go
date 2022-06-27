@@ -73,6 +73,9 @@ func main() {
 	singlechecker.Main(Analyzer)
 }
 
+// run is function to be called by driver to execute analysis on a single package.
+//
+// function analyzes presence of types in 'case' in ascending order of indexes 'orderTypes'.
 func run(pass *analysis.Pass) (interface{}, error) {
 	for _, file := range pass.Files {
 		ast.Inspect(file, func(n ast.Node) bool {
@@ -109,6 +112,8 @@ func run(pass *analysis.Pass) (interface{}, error) {
 					}
 					idx, lastName = idxSl, name
 
+					// handling with multiple types,
+					// e.g. 'case int32, int64'
 					if len(el.(*ast.CaseClause).List) > 1 {
 						subidx, sublastName := idx, lastName
 						for i := 0; i < len(el.(*ast.CaseClause).List); i++ {
