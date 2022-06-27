@@ -70,7 +70,7 @@ func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (st
 	var err error
 
 	schemaExists, err := pgPool.schemaExists(ctx, db)
-	if err != nil {
+	if err != nil && err != ErrNotExist {
 		return "", err
 	}
 
@@ -188,7 +188,7 @@ func (pgPool *Pool) getSettingsTable(ctx context.Context, tx pgx.Tx, db string) 
 
 func (pgPool *Pool) RemoveTableFromSettings(ctx context.Context, db, collection string) error {
 	schemaExists, err := pgPool.schemaExists(ctx, db)
-	if err != nil {
+	if err != nil && err != ErrNotExist {
 		return err
 	}
 
