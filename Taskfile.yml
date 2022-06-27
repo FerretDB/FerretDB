@@ -44,6 +44,13 @@ tasks:
       - go mod tidy
       - go mod verify
 
+  init-clean:
+    desc: "Clean all caches and re-install development tools"
+    cmds:
+      - bin/golangci-lint cache clean
+      - go clean -cache -testcache -modcache -fuzzcache
+      - task: init
+
   env-setup:
     deps: [gen-version]
     cmds:
