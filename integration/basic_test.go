@@ -127,3 +127,18 @@ func TestFindCommentQuery(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, databaseNames, name)
 }
+
+func TestVeryLongCollectionName(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup(t)
+
+	collectionName := "very_long_collection_name_that_is_more_than_64_characters_long_but_still_valid"
+	err := collection.Database().CreateCollection(ctx, collectionName)
+	require.NoError(t, err)
+
+	names, err := collection.Database().ListCollectionNames(ctx, bson.D{})
+	require.NoError(t, err)
+
+	assert.Contains(t, names, collectionName)
+}

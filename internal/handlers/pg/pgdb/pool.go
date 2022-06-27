@@ -28,6 +28,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -206,17 +207,23 @@ func (pgPool *Pool) Schemas(ctx context.Context) ([]string, error) {
 
 // Collections returns a sorted list of FerretDB collection names.
 func (pgPool *Pool) Collections(ctx context.Context, schema string) ([]string, error) {
-	tables, err := pgPool.Tables(ctx, schema)
+	tx, err := pgPool.Begin(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	defer tx.Rollback(ctx)
+
+	settings, err := pgPool.getSettingsTable(ctx, tx, schema)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	res := make([]string, 0, 2)
-	for _, table := range tables {
-		res = append(res, table[:len(table)-hashSuffixLength])
+	collections, ok := must.NotFail(settings.Get("collections")).(*types.Document)
+	if !ok {
+		return nil, fmt.Errorf("invalid settings document")
 	}
 
-	return res, nil
+	return collections.Keys(), nil
 }
 
 // Tables returns a sorted list of FerretDB collection / PostgreSQL table names.
@@ -463,10 +470,6 @@ func (pgPool *Pool) schemaExists(ctx context.Context, db string) (bool, error) {
 		return false, lazyerrors.Error(err)
 	}
 	defer rows.Close()
-
-	if !rows.Next() {
-		return false, nil
-	}
 
 	for rows.Next() {
 		var name string

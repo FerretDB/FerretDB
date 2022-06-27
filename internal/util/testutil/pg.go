@@ -109,7 +109,6 @@ func TableName(tb testing.TB) string {
 	name = strings.ReplaceAll(name, "/", "-")
 	name = strings.ReplaceAll(name, " ", "-")
 
-	require.Less(tb, len(name), 64)
 	return name
 }
 
