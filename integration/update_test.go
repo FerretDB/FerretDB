@@ -791,18 +791,11 @@ func TestMultiFlag(t *testing.T) {
 			multi:  "true",
 			stat:   bson.D{{"n", int32(2)}, {"nModified", int32(2)}, {"ok", float64(1)}},
 		},
-		"MultiFallbackToFalse": {
-			filter: bson.D{{"foo", "x"}},
-			update: bson.D{{"$set", bson.D{{"foo", "y"}}}},
-			multi:  "",
-			stat:   bson.D{{"n", int32(1)}, {"nModified", int32(1)}, {"ok", float64(1)}},
-		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			ctx, collection := setup(t)
-			db := collection.Database()
 
 			_, err := collection.InsertMany(ctx, []any{
 				bson.D{{"_id", "first"}, {"foo", "x"}},
@@ -812,24 +805,10 @@ func TestMultiFlag(t *testing.T) {
 
 			var actual bson.D
 
-			if tc.multi == "" {
-				err = db.RunCommand(ctx,
-					bson.D{
-						{"update", collection.Name()},
-						{"updates", []any{bson.D{
-							{"q", tc.filter},
-							{"u", tc.update},
-						}}},
-					}).Decode(&actual)
-				require.NoError(t, err)
-
-				require.Equal(t, tc.stat, actual)
+			if tc.multi == "true" {
+				collection.UpdateMany(ctx, tc.filter, tc.update)
 			} else {
-				if tc.multi == "true" {
-					collection.UpdateMany(ctx, tc.filter, tc.update)
-				} else {
-					collection.UpdateOne(ctx, tc.filter, tc.update)
-				}
+				collection.UpdateOne(ctx, tc.filter, tc.update)
 			}
 
 			err = collection.FindOne(ctx, bson.D{{"_id", "first"}}).Decode(&actual)
