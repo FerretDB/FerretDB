@@ -34,8 +34,6 @@ const (
 
 	// PostgreSQL max table name length.
 	maxTableNameLength = 63
-
-	hashSuffixLength = 9
 )
 
 // CreateSettingsTable creates FerretDB settings table.
