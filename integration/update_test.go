@@ -782,7 +782,7 @@ func TestUpdateWithReplaceDocument(t *testing.T) {
 	var actual bson.D
 
 	filter := bson.D{{"_id", "test"}}
-	update := bson.D{{"_id", "test"}, {"name", bson.D{{"first", "Jane"}, {"last", "Fonda"}}}}
+	update := bson.D{{"code", bson.D{{"simple", "yes"}}}}
 	err = db.RunCommand(ctx,
 		bson.D{
 			{"update", collection.Name()},
@@ -797,7 +797,7 @@ func TestUpdateWithReplaceDocument(t *testing.T) {
 
 	err = collection.FindOne(ctx, bson.D{{"_id", "test"}}).Decode(&actual)
 	require.NoError(t, err)
-	require.Equal(t, bson.D{{"_id", "test"}, {"name", bson.D{{"first", "Jane"}, {"last", "Fonda"}}}}, actual)
+	require.Equal(t, bson.D{{"_id", "test"}, {"code", bson.D{{"simple", "yes"}}}}, actual)
 }
 
 func TestCurrentDate(t *testing.T) {
