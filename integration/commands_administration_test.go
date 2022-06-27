@@ -129,12 +129,12 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 
 	filter := bson.D{{
 		"name", bson.D{{
-			"$in", bson.A{"monila", "values", "admin", name},
+			"$in", bson.A{name, "admin"},
 		}},
 	}}
 	names, err := client.ListDatabaseNames(ctx, filter)
 	require.NoError(t, err)
-	assert.Equal(t, []string{"admin", "monila", "values"}, names)
+	assert.Equal(t, []string{"admin"}, names)
 
 	actual, err := client.ListDatabases(ctx, filter)
 	require.NoError(t, err)
@@ -142,10 +142,6 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 	expectedBefore := mongo.ListDatabasesResult{
 		Databases: []mongo.DatabaseSpecification{{
 			Name: "admin",
-		}, {
-			Name: "monila",
-		}, {
-			Name: "values",
 		}},
 	}
 	assertDatabases(t, expectedBefore, actual)
@@ -161,11 +157,7 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 		Databases: []mongo.DatabaseSpecification{{
 			Name: "admin",
 		}, {
-			Name: "monila",
-		}, {
 			Name: name,
-		}, {
-			Name: "values",
 		}},
 	}
 	assertDatabases(t, expectedAfter, actual)
@@ -781,10 +773,10 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	assert.Regexp(t, `^5\.0\.`, must.NotFail(doc.Get("version")))
 	assert.NotEmpty(t, must.NotFail(doc.Get("process")))
 
-	assert.InDelta(t, float64(1), must.NotFail(doc.Get("pid")), 5_000_000)
-	assert.InDelta(t, float64(0), must.NotFail(doc.Get("uptime")), 600)
-	assert.InDelta(t, float64(0), must.NotFail(doc.Get("uptimeMillis")), 600_000)
-	assert.InDelta(t, float64(0), must.NotFail(doc.Get("uptimeEstimate")), 6000)
+	assert.GreaterOrEqual(t, must.NotFail(doc.Get("pid")), int64(1))
+	assert.GreaterOrEqual(t, must.NotFail(doc.Get("uptime")), float64(0))
+	assert.GreaterOrEqual(t, must.NotFail(doc.Get("uptimeMillis")), int64(0))
+	assert.GreaterOrEqual(t, must.NotFail(doc.Get("uptimeEstimate")), int64(0))
 
 	expectedLocalTime := ConvertDocument(t, bson.D{{"localTime", primitive.NewDateTimeFromTime(time.Now())}})
 	testutil.CompareAndSetByPathTime(t, expectedLocalTime, doc, time.Duration(2*time.Second), types.NewPathFromString("localTime"))
@@ -792,7 +784,7 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	catalogStats, ok := must.NotFail(doc.Get("catalogStats")).(*types.Document)
 	assert.True(t, ok)
 
-	assert.InDelta(t, float64(1), must.NotFail(catalogStats.Get("collections")), 50)
+	assert.InDelta(t, float64(51), must.NotFail(catalogStats.Get("collections")), 50)
 	assert.InDelta(t, float64(3), must.NotFail(catalogStats.Get("internalCollections")), 3)
 
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("capped")))
