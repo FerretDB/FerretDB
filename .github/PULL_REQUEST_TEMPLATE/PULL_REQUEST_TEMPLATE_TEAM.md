@@ -26,4 +26,4 @@ This PR closes #{issue_number}.
 * [ ] I added tests for new functionality or bugfixes.
 * [ ] I ran `task all`, and it passed.
 * [ ] I added/updated documentation for exported and unexported functions, variables, types, etc.
-* [ ] I checked complex documentation rendering with `godoc -index -play -timestamps -http=127.0.0.1:6060`.
+* [ ] I checked complex documentation rendering with `bin/godoc -index -play -timestamps -http=127.0.0.1:6060`.
