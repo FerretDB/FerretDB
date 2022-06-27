@@ -770,34 +770,60 @@ func TestUpdateMany(t *testing.T) {
 	}
 }
 
-func TestUpdateWithReplaceDocument(t *testing.T) {
+func TestUpdateReplaceDocuments(t *testing.T) {
 	t.Parallel()
 
-	ctx, collection := setup(t)
-	db := collection.Database()
+	for name, tc := range map[string]struct {
+		filter       bson.D
+		update       bson.D
+		updateResult bson.D
+		query        bson.D
+		res          bson.D
+	}{
+		"Replace": {
+			filter:       bson.D{{"value.foo.bar", bson.D{{"$eq", int32(1)}}}},
+			update:       bson.D{{"new-value", int32(1)}},
+			updateResult: bson.D{{"n", int32(1)}, {"nModified", int32(1)}, {"ok", float64(1)}},
+			query:        bson.D{{"_id", "document"}},
+			res:          bson.D{{"_id", "document"}, {"new-value", int32(1)}},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup(t)
 
-	_, err := collection.InsertOne(ctx, bson.D{{"_id", "test"}, {"name", bson.D{{"first", "John"}, {"last", "Doe"}}}})
-	require.NoError(t, err)
+			_, err := collection.InsertMany(
+				ctx,
+				[]any{
+					bson.D{
+						{"_id", "document"},
+						{"value", bson.D{{"foo", bson.D{{"bar", int32(1)}}}}},
+					},
+				},
+			)
+			require.NoError(t, err)
 
-	var actual bson.D
+			res := collection.Database().RunCommand(
+				ctx,
+				bson.D{
+					{"update", collection.Name()},
+					{"updates", bson.A{bson.D{{"q", tc.filter}, {"u", tc.update}}}},
+				},
+			)
+			require.NoError(t, res.Err())
 
-	filter := bson.D{{"_id", "test"}}
-	update := bson.D{{"code", bson.D{{"simple", "yes"}}}}
-	err = db.RunCommand(ctx,
-		bson.D{
-			{"update", collection.Name()},
-			{"updates", []any{bson.D{
-				{"q", filter},
-				{"u", update},
-			}}},
-		}).Decode(&actual)
+			var actual bson.D
+			err = res.Decode(&actual)
+			require.NoError(t, err)
 
-	require.NoError(t, err)
-	require.Equal(t, bson.D{{"n", int32(1)}, {"nModified", int32(1)}, {"ok", float64(1)}}, actual)
+			AssertEqualDocuments(t, tc.updateResult, actual)
 
-	err = collection.FindOne(ctx, bson.D{{"_id", "test"}}).Decode(&actual)
-	require.NoError(t, err)
-	require.Equal(t, bson.D{{"_id", "test"}, {"code", bson.D{{"simple", "yes"}}}}, actual)
+			err = collection.FindOne(ctx, tc.query).Decode(&actual)
+			require.NoError(t, err)
+			AssertEqualDocuments(t, tc.res, actual)
+		})
+	}
 }
 
 func TestCurrentDate(t *testing.T) {
