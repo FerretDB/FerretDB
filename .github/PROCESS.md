@@ -16,7 +16,7 @@ Keep guides short: we don't create rules; we automate.
 2. Pull request **title** should be accurate and descriptive as it is used in the generated changelog.
    It should not mention the issue number but describe the fixed issue instead.
 3. Most of the time pull requests are related to some issues.
-   In such cases pull request **description** should mention the issue number like "Refs #123." or "Closes #456.".
+   In such cases pull request **description** should mention the issue number like "refs #123" or "closes #456".
    Do not use `https://github.com/org/repo/issue/123` even if it is rendered the same on GitHub.
    If your proposes a tiny fix, there is no needed to create a new issue.
 4. We provide a pull requests template that includes suggestions and readiness checklist.
