@@ -218,9 +218,10 @@ func (pgPool *Pool) Collections(ctx context.Context, schema string) ([]string, e
 		return nil, lazyerrors.Error(err)
 	}
 
-	collections, ok := must.NotFail(settings.Get("collections")).(*types.Document)
+	collectionsDoc := must.NotFail(settings.Get("collections"))
+	collections, ok := collectionsDoc.(*types.Document)
 	if !ok {
-		return nil, fmt.Errorf("invalid settings document")
+		return nil, lazyerrors.Errorf("invalid settings document: %v", collectionsDoc)
 	}
 
 	return collections.Keys(), nil
