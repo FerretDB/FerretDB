@@ -54,11 +54,11 @@ func (h *Handler) fetch(ctx context.Context, param sqlParam) ([]*types.Document,
 	sql += `_jsonb FROM ` + pgx.Identifier{param.db, table}.Sanitize()
 
 	// Special case: check if collection exists at all
-	collectionExists, err := h.pgPool.TableExists(ctx, param.db, table)
+	tableExists, err := h.pgPool.TableExists(ctx, param.db, table)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-	if !collectionExists {
+	if !tableExists {
 		h.l.Info(
 			"Table doesn't exist, handling a case to deal with a non-existing collection.",
 			zap.String("schema", param.db), zap.String("table", table),
