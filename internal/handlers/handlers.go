@@ -128,4 +128,7 @@ type Interface interface {
 
 	// MsgWhatsMyURI returns peer information.
 	MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgAggregate performs an aggregation on the collection.
+	MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 }
