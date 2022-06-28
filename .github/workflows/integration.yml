@@ -10,7 +10,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: "42 3 * * *"
+    - cron: "12 3 * * *" # after Docker workflow
 
 env:
   GOPATH: /home/runner/go
