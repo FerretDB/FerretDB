@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"hash/fnv"
 
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v4"
 	"golang.org/x/exp/slices"
 
@@ -55,7 +57,23 @@ func (pgPool *Pool) createSettingsTable(ctx context.Context, tx pgx.Tx, db strin
 	sql := `CREATE TABLE ` + pgx.Identifier{db, settingsTableName}.Sanitize() + ` (settings jsonb)`
 	_, err = tx.Exec(ctx, sql)
 	if err != nil {
-		return lazyerrors.Error(err)
+		pgErr, ok := err.(*pgconn.PgError)
+		if !ok {
+			return lazyerrors.Errorf("pg.CreateTable: %w", err)
+		}
+
+		switch pgErr.Code {
+		case pgerrcode.InvalidSchemaName:
+			return ErrNotExist
+		case pgerrcode.DuplicateTable:
+			return ErrAlreadyExist
+		case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject:
+			// https://www.postgresql.org/message-id/CA+TgmoZAdYVtwBfp1FL2sMZbiHCWT4UPrzRLNnX1Nb30Ku3-gg@mail.gmail.com
+			// Reproducible by integration tests.
+			return ErrAlreadyExist
+		default:
+			return lazyerrors.Errorf("pg.CreateTable: %w", err)
+		}
 	}
 
 	settings := must.NotFail(types.NewDocument("collections", must.NotFail(types.NewDocument())))

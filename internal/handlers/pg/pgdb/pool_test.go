@@ -89,7 +89,7 @@ func TestCreateDrop(t *testing.T) {
 		err = pool.CreateSchema(ctx, schemaName)
 		require.NoError(t, err)
 
-		tables, err := pool.Tables(ctx, schemaName)
+		tables, err := pool.Collections(ctx, schemaName)
 		require.NoError(t, err)
 		assert.Empty(t, tables)
 	})
@@ -149,7 +149,7 @@ func TestCreateDrop(t *testing.T) {
 		err = pool.CreateTable(ctx, schemaName, tableName)
 		require.NoError(t, err)
 
-		tables, err := pool.Tables(ctx, schemaName)
+		tables, err := pool.Collections(ctx, schemaName)
 		require.NoError(t, err)
 		assert.Equal(t, []string{tableName}, tables)
 
@@ -252,6 +252,9 @@ func TestTableExists(t *testing.T) {
 			pool.DropSchema(ctx, schemaName)
 		})
 
+		tableName, err := pool.GetTableName(ctx, schemaName, tableName)
+		require.NoError(t, err)
+
 		ok, err := pool.TableExists(ctx, schemaName, tableName)
 		require.NoError(t, err)
 		assert.False(t, ok)
@@ -268,6 +271,9 @@ func TestTableExists(t *testing.T) {
 		t.Cleanup(func() {
 			pool.DropSchema(ctx, schemaName)
 		})
+
+		tableName, err := pool.GetTableName(ctx, schemaName, tableName)
+		require.NoError(t, err)
 
 		ok, err := pool.TableExists(ctx, schemaName, tableName)
 		require.NoError(t, err)
@@ -286,6 +292,9 @@ func TestTableExists(t *testing.T) {
 		t.Cleanup(func() {
 			pool.DropSchema(ctx, schemaName)
 		})
+
+		tableName, err := pool.GetTableName(ctx, schemaName, tableName)
+		require.NoError(t, err)
 
 		ok, err := pool.TableExists(ctx, schemaName, tableName)
 		require.NoError(t, err)

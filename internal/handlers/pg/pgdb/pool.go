@@ -359,14 +359,14 @@ func (pgPool *Pool) CreateTable(ctx context.Context, schema, collection string) 
 	}
 	defer func() {
 		if err != nil {
-			must.NoError(tx.Rollback(ctx))
+			_ = tx.Rollback(ctx)
 			return
 		}
-		must.NoError(tx.Commit(ctx))
+		_ = tx.Commit(ctx)
 	}()
 
 	if err := pgPool.createSettingsTable(ctx, tx, schema); err != nil && err != ErrAlreadyExist {
-		return lazyerrors.Error(err)
+		return err
 	}
 
 	table, err := pgPool.GetTableName(ctx, schema, collection)
