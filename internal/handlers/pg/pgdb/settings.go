@@ -43,6 +43,8 @@ const (
 // Settings table is used to store FerretDB settings like collections names mapping.
 // That table consists of a single document with settings.
 func (pgPool *Pool) CreateSettingsTable(ctx context.Context, db string) error {
+	var err error
+
 	tx, err := pgPool.Begin(ctx)
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -55,6 +57,16 @@ func (pgPool *Pool) CreateSettingsTable(ctx context.Context, db string) error {
 		must.NoError(tx.Commit(ctx))
 	}()
 
+	err = pgPool.createSettingsTable(ctx, tx, db)
+	if err != nil && err != ErrAlreadyExist {
+		return lazyerrors.Error(err)
+	}
+
+	return nil
+}
+
+// createSettingsTable creates FerretDB settings table.
+func (pgPool *Pool) createSettingsTable(ctx context.Context, tx pgx.Tx, db string) error {
 	tables, err := pgPool.tables(ctx, tx, db)
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -112,7 +124,7 @@ func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (st
 		return "", lazyerrors.Error(err)
 	}
 	if !slices.Contains(tables, settingsTableName) {
-		err = pgPool.CreateSettingsTable(ctx, db)
+		err = pgPool.createSettingsTable(ctx, tx, db)
 		if err != nil {
 			return "", lazyerrors.Error(err)
 		}
