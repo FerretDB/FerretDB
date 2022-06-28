@@ -68,7 +68,7 @@ func (fdb *FerretDB) Run(ctx context.Context) error {
 	mode := clientconn.NormalMode
 	testConnTimeout := time.Duration(0)
 
-	logging.Setup(zapcore.ErrorLevel)
+	logging.Setup(zapcore.FatalLevel)
 	logger := zap.L()
 
 	newHandler := registry.Handlers[fdb.config.Handler]
