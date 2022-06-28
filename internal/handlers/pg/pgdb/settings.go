@@ -81,6 +81,8 @@ func (pgPool *Pool) CreateSettingsTable(ctx context.Context, db string) error {
 }
 
 // GetTableName returns the name of the table for given collection or error.
+// If the settings table doesn't exist, it will be created.
+// If the record for collection doesn't exist, it will be created.
 func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (string, error) {
 	var err error
 
