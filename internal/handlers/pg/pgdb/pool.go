@@ -211,6 +211,7 @@ func (pgPool *Pool) Collections(ctx context.Context, schema string) ([]string, e
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+	// call Rollback() here as we don't change anything in the database
 	defer tx.Rollback(ctx)
 
 	settings, err := pgPool.getSettingsTable(ctx, tx, schema)
