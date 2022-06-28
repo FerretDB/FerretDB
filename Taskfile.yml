@@ -318,3 +318,4 @@ tasks:
     cmds:
       - task: nfpm_deb
       - task: nfpm_rpm
+      
