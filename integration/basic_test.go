@@ -133,12 +133,17 @@ func TestLongCollectionName(t *testing.T) {
 
 	ctx, collection := setup(t)
 
-	collectionName := "very_long_collection_name_that_is_more_than_64_characters_long_but_still_valid"
-	err := collection.Database().CreateCollection(ctx, collectionName)
+	longCollectionName := "very_long_collection_name_that_is_more_than_64_characters_long_but_still_valid"
+	err := collection.Database().CreateCollection(ctx, longCollectionName)
+	require.NoError(t, err)
+
+	sixtyThreeCharsCollectionName := "this_is_a_collection_name_that_is_63_characters_long_abcdefghij"
+	err = collection.Database().CreateCollection(ctx, sixtyThreeCharsCollectionName)
 	require.NoError(t, err)
 
 	names, err := collection.Database().ListCollectionNames(ctx, bson.D{})
 	require.NoError(t, err)
 
-	assert.Contains(t, names, collectionName)
+	assert.Contains(t, names, longCollectionName)
+	assert.Contains(t, names, sixtyThreeCharsCollectionName)
 }
