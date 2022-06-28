@@ -28,6 +28,7 @@ import (
 // CmdQuery handles a limited subset of OP_QUERY messages.
 //
 // Please keep methods documentation in sync with commands help text in the handlers/common package.
+// TODO: update docs
 type Interface interface {
 	// Close gracefully shutdowns handler.
 	Close()
