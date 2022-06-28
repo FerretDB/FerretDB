@@ -149,7 +149,7 @@ Please format and lint documentation with `task docs`.
 ## Contributing code on Windows
 In order to contribute code on Windows, please make sure that:
 * You have a Windows machine with `git` installed.
-* You have Go installed directly on your machine.
+* You have Go installed directly on your machine and have `go` in your PATH.
 * You have WSL2 (Windows Subsystem for Linux) installed.
 * You have Docker for Windows installed.
 
