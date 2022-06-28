@@ -43,7 +43,19 @@ const (
 // Settings table is used to store FerretDB settings like collections names.
 // That table consists of a single document with settings.
 func (pgPool *Pool) CreateSettingsTable(ctx context.Context, db string) error {
-	tables, err := pgPool.tables(ctx, db)
+	tx, err := pgPool.Begin(ctx)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+	defer func() {
+		if err != nil {
+			must.NoError(tx.Rollback(ctx))
+			return
+		}
+		must.NoError(tx.Commit(ctx))
+	}()
+
+	tables, err := pgPool.tables(ctx, tx, db)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -53,14 +65,14 @@ func (pgPool *Pool) CreateSettingsTable(ctx context.Context, db string) error {
 	}
 
 	sql := `CREATE TABLE ` + pgx.Identifier{db, settingsTableName}.Sanitize() + ` (settings jsonb)`
-	_, err = pgPool.Exec(ctx, sql)
+	_, err = tx.Exec(ctx, sql)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
 	settings := must.NotFail(types.NewDocument("collections", must.NotFail(types.NewDocument())))
 	sql = fmt.Sprintf(`INSERT INTO %s (settings) VALUES ($1)`, pgx.Identifier{db, settingsTableName}.Sanitize())
-	_, err = pgPool.Exec(ctx, sql, must.NotFail(fjson.Marshal(settings)))
+	_, err = tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(settings)))
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -81,17 +93,6 @@ func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (st
 		return GetTableNameFormatted(collection), nil
 	}
 
-	var tables []string
-	if tables, err = pgPool.tables(ctx, db); err != nil {
-		return "", lazyerrors.Error(err)
-	}
-	if !slices.Contains(tables, settingsTableName) {
-		err = pgPool.CreateSettingsTable(ctx, db)
-		if err != nil {
-			return "", lazyerrors.Error(err)
-		}
-	}
-
 	tx, err := pgPool.Begin(ctx)
 	if err != nil {
 		return "", lazyerrors.Error(err)
@@ -103,6 +104,17 @@ func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (st
 		}
 		must.NoError(tx.Commit(ctx))
 	}()
+
+	var tables []string
+	if tables, err = pgPool.tables(ctx, tx, db); err != nil {
+		return "", lazyerrors.Error(err)
+	}
+	if !slices.Contains(tables, settingsTableName) {
+		err = pgPool.CreateSettingsTable(ctx, db)
+		if err != nil {
+			return "", lazyerrors.Error(err)
+		}
+	}
 
 	settings, err := pgPool.getSettingsTable(ctx, tx, db)
 	if err != nil {
