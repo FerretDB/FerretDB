@@ -107,7 +107,7 @@ func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (st
 	collectionsDoc := must.NotFail(settings.Get("collections"))
 	collections, ok := collectionsDoc.(*types.Document)
 	if !ok {
-		return "", lazyerrors.Errorf("invalid collections document: %v", collectionsDoc)
+		return "", lazyerrors.Errorf("expected document but got %[1]T: %[1]v", collectionsDoc)
 	}
 
 	if collections.Has(collection) {
