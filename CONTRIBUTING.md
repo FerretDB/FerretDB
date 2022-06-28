@@ -151,7 +151,7 @@ In order to contribute code on Windows, please make sure that:
 * You have a Windows machine with `git` installed.
 * You have Go installed directly on your machine and have `go` in your PATH.
 * You have [WSL2](https://docs.microsoft.com/en-us/windows/wsl/) (Windows Subsystem for Linux) installed.
-* You have Docker for Windows installed.
+* You have [Docker for Windows](https://docs.docker.com/desktop/windows/install/) installed.
 
 To run all commands you should use Windows command prompt.
 WSL2 distros are not supported yet.
