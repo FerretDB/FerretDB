@@ -23,7 +23,9 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
+	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 )
 
@@ -45,7 +47,13 @@ func New(conf Config) FerretDB {
 	case "pg":
 		registry.RegisterPg(conf.PostgresURL)
 	case "tigris":
-		registry.RegisterTigris(conf.TigrisURL)
+		registry.Handlers["tigris"] = func(opts registry.NewHandlerOpts) (handlers.Interface, error) {
+			handlerOpts := &tigris.NewOpts{
+				TigrisURL: conf.TigrisURL,
+				L:         opts.Logger,
+			}
+			return tigris.New(handlerOpts)
+		}
 	default:
 		panic(fmt.Sprintf("Unknown backend handler %q.", conf.Handler))
 	}
