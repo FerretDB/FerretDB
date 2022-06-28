@@ -39,26 +39,29 @@ const (
 	maxTableNameLength = 63
 )
 
-// CreateSettingsTable creates FerretDB settings table if it doesn't exist.
+// createSettingsTable creates FerretDB settings table if it doesn't exist.
 // Settings table is used to store FerretDB settings like collections names mapping.
 // That table consists of a single document with settings.
-func (pgPool *Pool) CreateSettingsTable(ctx context.Context, db string) error {
-	var err error
-
-	tx, err := pgPool.Begin(ctx)
+func (pgPool *Pool) createSettingsTable(ctx context.Context, tx pgx.Tx, db string) error {
+	tables, err := pgPool.tables(ctx, tx, db)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
-	defer func() {
-		if err != nil {
-			must.NoError(tx.Rollback(ctx))
-			return
-		}
-		must.NoError(tx.Commit(ctx))
-	}()
 
-	err = pgPool.createSettingsTable(ctx, tx, db)
-	if err != nil && err != ErrAlreadyExist {
+	if slices.Contains(tables, settingsTableName) {
+		return ErrAlreadyExist
+	}
+
+	sql := `CREATE TABLE ` + pgx.Identifier{db, settingsTableName}.Sanitize() + ` (settings jsonb)`
+	_, err = tx.Exec(ctx, sql)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	settings := must.NotFail(types.NewDocument("collections", must.NotFail(types.NewDocument())))
+	sql = fmt.Sprintf(`INSERT INTO %s (settings) VALUES ($1)`, pgx.Identifier{db, settingsTableName}.Sanitize())
+	_, err = tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(settings)))
+	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
@@ -128,33 +131,6 @@ func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (st
 	}
 
 	return tableName, nil
-}
-
-// createSettingsTable creates FerretDB settings table.
-func (pgPool *Pool) createSettingsTable(ctx context.Context, tx pgx.Tx, db string) error {
-	tables, err := pgPool.tables(ctx, tx, db)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	if slices.Contains(tables, settingsTableName) {
-		return ErrAlreadyExist
-	}
-
-	sql := `CREATE TABLE ` + pgx.Identifier{db, settingsTableName}.Sanitize() + ` (settings jsonb)`
-	_, err = tx.Exec(ctx, sql)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	settings := must.NotFail(types.NewDocument("collections", must.NotFail(types.NewDocument())))
-	sql = fmt.Sprintf(`INSERT INTO %s (settings) VALUES ($1)`, pgx.Identifier{db, settingsTableName}.Sanitize())
-	_, err = tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(settings)))
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	return nil
 }
 
 // getSettingsTable returns FerretDB settings table.

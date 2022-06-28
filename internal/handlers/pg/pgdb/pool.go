@@ -291,10 +291,22 @@ func (pgPool *Pool) tables(ctx context.Context, tx pgx.Tx, schema string) ([]str
 //
 // It returns ErrAlreadyExist if schema already exist.
 func (pgPool *Pool) CreateSchema(ctx context.Context, schema string) error {
+	tx, err := pgPool.Begin(ctx)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+	defer func() {
+		if err != nil {
+			must.NoError(tx.Rollback(ctx))
+			return
+		}
+		must.NoError(tx.Commit(ctx))
+	}()
+
 	sql := `CREATE SCHEMA ` + pgx.Identifier{schema}.Sanitize()
-	_, err := pgPool.Exec(ctx, sql)
+	_, err = tx.Exec(ctx, sql)
 	if err == nil {
-		return pgPool.CreateSettingsTable(ctx, schema)
+		return pgPool.createSettingsTable(ctx, tx, schema)
 	}
 
 	pgErr, ok := err.(*pgconn.PgError)
@@ -341,7 +353,19 @@ func (pgPool *Pool) DropSchema(ctx context.Context, schema string) error {
 //
 // It returns ErrAlreadyExist if table already exist, ErrNotExist is schema does not exist.
 func (pgPool *Pool) CreateTable(ctx context.Context, schema, collection string) error {
-	if err := pgPool.CreateSettingsTable(ctx, schema); err != nil && err != ErrAlreadyExist {
+	tx, err := pgPool.Begin(ctx)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+	defer func() {
+		if err != nil {
+			must.NoError(tx.Rollback(ctx))
+			return
+		}
+		must.NoError(tx.Commit(ctx))
+	}()
+
+	if err := pgPool.createSettingsTable(ctx, tx, schema); err != nil && err != ErrAlreadyExist {
 		return lazyerrors.Error(err)
 	}
 

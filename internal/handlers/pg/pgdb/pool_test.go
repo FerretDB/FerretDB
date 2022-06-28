@@ -122,7 +122,7 @@ func TestCreateDrop(t *testing.T) {
 		err = pool.CreateTable(ctx, schemaName, tableName)
 		require.NoError(t, err)
 
-		tables, err := pool.Tables(ctx, schemaName)
+		tables, err := pool.Collections(ctx, schemaName)
 		require.NoError(t, err)
 		assert.Equal(t, []string{tableName}, tables)
 
