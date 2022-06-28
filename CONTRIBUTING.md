@@ -147,7 +147,9 @@ Before submitting a pull request, please make sure that:
 Please format and lint documentation with `task docs`.
 
 ## Contributing code on Windows
+
 In order to contribute code on Windows, please make sure that:
+
 * You have a Windows machine with `git` installed.
 * You have Go installed directly on your machine and have `go` in your PATH.
 * You have [WSL2](https://docs.microsoft.com/en-us/windows/wsl/) (Windows Subsystem for Linux) installed.
