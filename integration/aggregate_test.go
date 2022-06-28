@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,30 +23,58 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func TestSimpleMatch(t *testing.T) {
+func TestMatch(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
 
-	_, err := collection.InsertMany(ctx, []any{
-		bson.D{{"_id", 1}, {"a", 1}, {"b", 2}},
-		bson.D{{"_id", 2}, {"a", 1}, {"b", 8}},
-		bson.D{{"_id", 3}, {"a", 2}, {"b", 3}},
-	})
-	require.NoError(t, err)
+	for name, tc := range map[string]struct {
+		match    bson.D
+		expected []bson.D
+	}{
+		"Simple": {
+			match: bson.D{{"a", 1}},
+			expected: []bson.D{
+				bson.D{{"_id", int32(1)}, {"a", int32(1)}, {"b", int32(2)}},
+				bson.D{{"_id", int32(2)}, {"a", int32(1)}, {"b", int32(8)}},
+			},
+		},
+		"MultipleFields": {
+			match: bson.D{{"a", 1}, {"b", 2}},
+			expected: []bson.D{
+				bson.D{{"_id", int32(1)}, {"a", int32(1)}, {"b", int32(2)}},
+			},
+		},
+		"Nested": {
+			match: bson.D{{"c", bson.D{{"name", "Felipe"}, {"age", 12}}}},
+			expected: []bson.D{
+				bson.D{
+					{"_id", int32(3)}, {"a", int32(2)}, {"b", int32(3)},
+					{"c", bson.D{{"name", "Felipe"}, {"age", int32(12)}}}},
+			},
+		},
+	} {
+		name, tc := name, tc
 
-	match := bson.D{{"$match", bson.D{{"a", 1}}}}
-	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{match})
-	require.NoError(t, err)
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup(t)
 
-	var results []bson.D
-	if err := cursor.All(ctx, &results); err != nil {
-		t.Fatal(err)
+			_, err := collection.InsertMany(ctx, []any{
+				bson.D{{"_id", 1}, {"a", 1}, {"b", 2}},
+				bson.D{{"_id", 2}, {"a", 1}, {"b", 8}},
+				bson.D{{"_id", 3}, {"a", 2}, {"b", 3}, {"c", bson.D{{"name", "Felipe"}, {"age", 12}}}},
+			})
+			require.NoError(t, err)
+
+			match := bson.D{{"$match", tc.match}}
+			cursor, err := collection.Aggregate(ctx, mongo.Pipeline{match})
+			require.NoError(t, err)
+
+			var results []bson.D
+			if err := cursor.All(ctx, &results); err != nil {
+				t.Fatal(err)
+			}
+			assert.Equal(t, tc.expected, results)
+		})
 	}
-	assert.Equal(t, len(results), 2)
 
-	expected := []bson.D{
-		bson.D{{"_id", int32(1)}, {"a", int32(1)}, {"b", int32(2)}},
-		bson.D{{"_id", int32(2)}, {"a", int32(1)}, {"b", int32(8)}},
-	}
-	assert.Equal(t, expected, results)
 }

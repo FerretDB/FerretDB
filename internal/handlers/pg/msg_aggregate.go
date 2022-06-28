@@ -56,36 +56,28 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		)
 	}
 
-	var aggregate string
+	// var aggregate string
 	var pipeline *types.Array
-	if aggregate, err = common.GetOptionalParam(document, "aggregate", aggregate); err != nil {
-		return nil, err
-	}
+	// if aggregate, err = common.GetOptionalParam(document, "aggregate", aggregate); err != nil {
+	// 	return nil, err
+	// }
 	if pipeline, err = common.GetOptionalParam(document, "pipeline", pipeline); err != nil {
 		return nil, err
 	}
 
 	sql := `SELECT _jsonb FROM "` + sp.db + `"."` + sp.collection + `"`
 
+	var queryValues []interface{}
 	for i := 0; i < pipeline.Len(); i++ {
 		p := must.NotFail(pipeline.Get(i)).(*types.Document)
 		for _, pipelineOp := range p.Keys() {
 			switch pipelineOp {
 			case "$match":
-				values := must.NotFail(p.Get(pipelineOp)).(*types.Document)
-				fmt.Printf(" *** pipeline[%d].%s: %+v %T\n", i, pipelineOp, values, values)
+				match := must.NotFail(p.Get(pipelineOp)).(*types.Document)
+				where, values := common.AggregateMatch(match)
 
-				if len(values.Keys()) > 0 {
-					sql += " WHERE"
-				}
-
-				for i, field := range values.Keys() {
-					value := must.NotFail(values.Get(field))
-					if i > 0 {
-						sql += " AND"
-					}
-					sql += ` _jsonb->'` + field + `' = '` + fmt.Sprintf("%v", value) + `'`
-				}
+				sql += where
+				queryValues = append(queryValues, values...)
 
 			default:
 				return nil, common.NewErrorMsg(common.ErrBadValue, fmt.Sprintf("unknown pipeline operator: %s", pipelineOp))
@@ -93,8 +85,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 	}
 
-	fmt.Printf(" *** SQL: %s\n", sql)
-	rows, err := h.pgPool.Query(ctx, sql)
+	fmt.Printf(" *** SQL: %s %v %v\n", sql, queryValues, len(queryValues))
+	rows, err := h.pgPool.Query(ctx, sql, queryValues...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
