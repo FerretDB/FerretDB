@@ -40,7 +40,7 @@ const (
 )
 
 // CreateSettingsTable creates FerretDB settings table if it doesn't exist.
-// Settings table is used to store FerretDB settings like collections names.
+// Settings table is used to store FerretDB settings like collections names mapping.
 // That table consists of a single document with settings.
 func (pgPool *Pool) CreateSettingsTable(ctx context.Context, db string) error {
 	tx, err := pgPool.Begin(ctx)
