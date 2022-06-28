@@ -44,26 +44,11 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	table, err := h.pgPool.GetTableName(ctx, db, collection)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	err = h.pgPool.DropTable(ctx, db, table)
+	err = h.pgPool.DropTable(ctx, db, collection)
 	if err != nil {
 		if err == pgdb.ErrNotExist {
-			err = h.pgPool.RemoveTableFromSettings(ctx, db, collection)
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
 			return nil, common.NewErrorMsg(common.ErrNamespaceNotFound, "ns not found")
 		}
-		return nil, lazyerrors.Error(err)
-	}
-
-	err = h.pgPool.RemoveTableFromSettings(ctx, db, collection)
-	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 

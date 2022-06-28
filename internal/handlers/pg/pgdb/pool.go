@@ -340,9 +340,18 @@ func (pgPool *Pool) DropSchema(ctx context.Context, schema string) error {
 // CreateTable creates a new FerretDB collection / PostgreSQL table in existing schema.
 //
 // It returns ErrAlreadyExist if table already exist, ErrNotExist is schema does not exist.
-func (pgPool *Pool) CreateTable(ctx context.Context, schema, table string) error {
+func (pgPool *Pool) CreateTable(ctx context.Context, schema, collection string) error {
+	if err := pgPool.CreateSettingsTable(ctx, schema); err != nil && err != ErrAlreadyExist {
+		return lazyerrors.Error(err)
+	}
+
+	table, err := pgPool.GetTableName(ctx, schema, collection)
+	if err != nil {
+		return err
+	}
+
 	sql := `CREATE TABLE ` + pgx.Identifier{schema, table}.Sanitize() + ` (_jsonb jsonb)`
-	_, err := pgPool.Exec(ctx, sql)
+	_, err = pgPool.Exec(ctx, sql)
 	if err == nil {
 		return nil
 	}
@@ -369,25 +378,45 @@ func (pgPool *Pool) CreateTable(ctx context.Context, schema, table string) error
 // DropTable drops FerretDB collection / PostgreSQL table.
 //
 // It returns ErrNotExist if schema or table does not exist.
-func (pgPool *Pool) DropTable(ctx context.Context, schema, table string) error {
-	// TODO probably not CASCADE
-	sql := `DROP TABLE ` + pgx.Identifier{schema, table}.Sanitize() + `CASCADE`
-	_, err := pgPool.Exec(ctx, sql)
-	if err == nil {
-		return nil
+func (pgPool *Pool) DropTable(ctx context.Context, schema, collection string) error {
+	tx, err := pgPool.Begin(ctx)
+	if err != nil {
+		return lazyerrors.Error(err)
 	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback(ctx)
+			return
+		}
+		_ = tx.Commit(ctx)
+	}()
 
-	pgErr, ok := err.(*pgconn.PgError)
-	if !ok {
-		return lazyerrors.Errorf("pg.DropTable: %w", err)
+	table := getTableNameFormatted(collection)
+
+	tables, err := pgPool.tables(ctx, tx, schema)
+	if err != nil {
+		return lazyerrors.Error(err)
 	}
-
-	switch pgErr.Code {
-	case pgerrcode.InvalidSchemaName, pgerrcode.UndefinedTable:
+	if !slices.Contains(tables, table) {
 		return ErrNotExist
-	default:
+	}
+
+	err = pgPool.removeTableFromSettings(ctx, tx, schema, collection)
+	if err != nil && err != ErrNotExist {
+		return lazyerrors.Error(err)
+	}
+	if err == ErrNotExist {
+		return ErrNotExist
+	}
+
+	// TODO probably not CASCADE
+	sql := `DROP TABLE IF EXISTS` + pgx.Identifier{schema, table}.Sanitize() + `CASCADE`
+	_, err = tx.Exec(ctx, sql)
+	if err != nil {
 		return lazyerrors.Errorf("pg.DropTable: %w", err)
 	}
+
+	return nil
 }
 
 // CreateTableIfNotExist ensures that given FerretDB database / PostgreSQL schema
@@ -411,12 +440,7 @@ func (pgPool *Pool) CreateTableIfNotExist(ctx context.Context, db, collection st
 		return false, lazyerrors.Error(err)
 	}
 
-	table, err := pgPool.GetTableName(ctx, db, collection)
-	if err != nil {
-		return false, lazyerrors.Error(err)
-	}
-
-	if err := pgPool.CreateTable(ctx, db, table); err != nil {
+	if err := pgPool.CreateTable(ctx, db, collection); err != nil {
 		if err == ErrAlreadyExist {
 			return false, nil
 		}
