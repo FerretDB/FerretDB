@@ -207,11 +207,11 @@ func (pgPool *Pool) Schemas(ctx context.Context) ([]string, error) {
 
 // Collections returns a sorted list of FerretDB collection names.
 func (pgPool *Pool) Collections(ctx context.Context, schema string) ([]string, error) {
+	// Create transaction to pass it to `getSettingsTable` and Rollback in the end.
 	tx, err := pgPool.Begin(ctx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-	// call Rollback() here as we don't change anything in the database
 	defer tx.Rollback(ctx)
 
 	settings, err := pgPool.getSettingsTable(ctx, tx, schema)
@@ -234,11 +234,11 @@ func (pgPool *Pool) Collections(ctx context.Context, schema string) ([]string, e
 func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, error) {
 	// TODO query settings table instead: https://github.com/FerretDB/FerretDB/issues/125
 
+	// Create transaction to pass it to `tables` and Rollback in the end.
 	tx, err := pgPool.Begin(ctx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-	// call Rollback() here as we don't change anything in the database
 	defer tx.Rollback(ctx)
 
 	tables, err := pgPool.tables(ctx, tx, schema)
