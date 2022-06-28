@@ -41,7 +41,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: "42 4 * * *"
+    - cron: "42 2 * * *" # after Go workflow
 
 env:
   GOPATH: /home/runner/go
