@@ -32,6 +32,9 @@ const (
 	// Internal collections prefix.
 	collectionPrefix = "_ferretdb_"
 
+	// Settings table name.
+	settingsTableName = collectionPrefix + "settings"
+
 	// PostgreSQL max table name length.
 	maxTableNameLength = 63
 )
@@ -43,18 +46,18 @@ func (pgPool *Pool) CreateSettingsTable(ctx context.Context, db string) error {
 		return lazyerrors.Error(err)
 	}
 
-	if slices.Contains(tables, collectionPrefix+"settings") {
+	if slices.Contains(tables, settingsTableName) {
 		return ErrAlreadyExist
 	}
 
-	sql := `CREATE TABLE ` + pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize() + ` (settings jsonb)`
+	sql := `CREATE TABLE ` + pgx.Identifier{db, settingsTableName}.Sanitize() + ` (settings jsonb)`
 	_, err = pgPool.Exec(ctx, sql)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
 	settings := must.NotFail(types.NewDocument("collections", must.NotFail(types.NewDocument())))
-	sql = fmt.Sprintf(`INSERT INTO %s (settings) VALUES ($1)`, pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize())
+	sql = fmt.Sprintf(`INSERT INTO %s (settings) VALUES ($1)`, pgx.Identifier{db, settingsTableName}.Sanitize())
 	_, err = pgPool.Exec(ctx, sql, must.NotFail(fjson.Marshal(settings)))
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -80,7 +83,7 @@ func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (st
 	if tables, err = pgPool.tables(ctx, db); err != nil {
 		return "", lazyerrors.Error(err)
 	}
-	if !slices.Contains(tables, collectionPrefix+"settings") {
+	if !slices.Contains(tables, settingsTableName) {
 		err = pgPool.CreateSettingsTable(ctx, db)
 		if err != nil {
 			return "", lazyerrors.Error(err)
@@ -128,14 +131,14 @@ func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (st
 
 // updateSettingsTable updates FerretDB settings table.
 func (pgPool *Pool) updateSettingsTable(ctx context.Context, tx pgx.Tx, db string, settings *types.Document) error {
-	sql := `UPDATE ` + pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize() + `SET settings = $1`
+	sql := `UPDATE ` + pgx.Identifier{db, settingsTableName}.Sanitize() + `SET settings = $1`
 	_, err := tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(settings)))
 	return err
 }
 
 // getSettingsTable returns FerretDB settings table.
 func (pgPool *Pool) getSettingsTable(ctx context.Context, tx pgx.Tx, db string) (*types.Document, error) {
-	sql := `SELECT settings FROM ` + pgx.Identifier{db, collectionPrefix + "settings"}.Sanitize()
+	sql := `SELECT settings FROM ` + pgx.Identifier{db, settingsTableName}.Sanitize()
 	rows, err := tx.Query(ctx, sql)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
