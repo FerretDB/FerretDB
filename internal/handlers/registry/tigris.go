@@ -12,16 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+//go:build tigris
+// +build tigris
+
+package registry
 
 import (
 	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/dummy"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris"
 )
 
-// init registers `dummy` stub handler that is always enabled.
+// init registers `tigris` handler for Tigris when `tigris` build tag is provided.
 func init() {
-	registeredHandlers["dummy"] = func(*newHandlerOpts) (handlers.Interface, error) {
-		return dummy.New()
+	registry["tigris"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
+		handlerOpts := &tigris.NewOpts{
+			TigrisURL: opts.TigrisURL,
+			L:         opts.Logger,
+		}
+		return tigris.New(handlerOpts)
 	}
 }

@@ -77,7 +77,6 @@ type newConnOpts struct {
 	handler     handlers.Interface
 	connMetrics *ConnMetrics
 	proxyAddr   string
-	startTime   time.Time
 }
 
 // newConn creates a new client connection for given net.Conn.
@@ -107,7 +106,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	}, nil
 }
 
-// run runs the client connection until ctx is canceled, client disconnects,
+// run runs the client connection until ctx is done, client disconnects,
 // or fatal error or panic is encountered.
 //
 // The caller is responsible for closing the underlying net.Conn.
