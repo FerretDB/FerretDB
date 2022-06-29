@@ -4,8 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/wire"
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // TestMsgWhatsMyURI checks a special case: even if context is not set, the method shouldn't return an error or panic.
