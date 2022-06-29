@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package conninfo provides a ConnInfo struct that is used to handle connection-specificinfo
+// and can be shared through context.
 package conninfo
 
 import (
