@@ -389,27 +389,11 @@ func (pgPool *Pool) CreateTable(ctx context.Context, schema, collection string) 
 
 	sql := `CREATE TABLE IF NOT EXISTS ` + pgx.Identifier{schema, table}.Sanitize() + ` (_jsonb jsonb)`
 	_, err = tx.Exec(ctx, sql)
-	if err == nil {
-		return nil
-	}
-
-	pgErr, ok := err.(*pgconn.PgError)
-	if !ok {
+	if err != nil {
 		return lazyerrors.Errorf("pg.CreateTable: %w", err)
 	}
 
-	switch pgErr.Code {
-	case pgerrcode.InvalidSchemaName:
-		return ErrNotExist
-	case pgerrcode.DuplicateTable:
-		return ErrAlreadyExist
-	case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject:
-		// https://www.postgresql.org/message-id/CA+TgmoZAdYVtwBfp1FL2sMZbiHCWT4UPrzRLNnX1Nb30Ku3-gg@mail.gmail.com
-		// Reproducible by integration tests.
-		return ErrAlreadyExist
-	default:
-		return lazyerrors.Errorf("pg.CreateTable: %w", err)
-	}
+	return nil
 }
 
 // DropTable drops FerretDB collection / PostgreSQL table.
