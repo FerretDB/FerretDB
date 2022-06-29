@@ -90,8 +90,6 @@ func (pgPool *Pool) createSettingsTable(ctx context.Context, tx pgx.Tx, db strin
 // If the settings table doesn't exist, it will be created.
 // If the record for collection doesn't exist, it will be created.
 func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (string, error) {
-	var err error
-
 	schemaExists, err := pgPool.schemaExists(ctx, db)
 	if err != nil {
 		return "", lazyerrors.Error(err)
@@ -113,14 +111,24 @@ func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (st
 		must.NoError(tx.Commit(ctx))
 	}()
 
-	var tables []string
-	if tables, err = pgPool.tables(ctx, tx, db); err != nil {
+	table, err := pgPool.getTableName(ctx, tx, db, collection)
+	if err != nil {
+		return "", err
+	}
+
+	return table, nil
+}
+
+func (pgPool *Pool) getTableName(ctx context.Context, tx pgx.Tx, db string, collection string) (string, error) {
+	tables, err := pgPool.tables(ctx, tx, db)
+	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
+
 	if !slices.Contains(tables, settingsTableName) {
 		err = pgPool.createSettingsTable(ctx, tx, db)
 		if err != nil {
-			return "", lazyerrors.Error(err)
+			return "", err
 		}
 	}
 

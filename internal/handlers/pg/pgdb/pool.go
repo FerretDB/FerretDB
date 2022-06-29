@@ -365,11 +365,7 @@ func (pgPool *Pool) CreateTable(ctx context.Context, schema, collection string) 
 		_ = tx.Commit(ctx)
 	}()
 
-	if err := pgPool.createSettingsTable(ctx, tx, schema); err != nil && err != ErrAlreadyExist {
-		return err
-	}
-
-	table, err := pgPool.GetTableName(ctx, schema, collection)
+	table, err := pgPool.getTableName(ctx, tx, schema, collection)
 	if err != nil {
 		return err
 	}
