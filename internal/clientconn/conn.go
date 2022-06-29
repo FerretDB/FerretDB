@@ -24,6 +24,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/info"
+
 	"github.com/AlekSi/pointer"
 	"github.com/pmezard/go-difflib/difflib"
 	"github.com/prometheus/client_golang/prometheus"
@@ -273,6 +275,11 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		}
 		c.m.responses.WithLabelValues(resHeader.OpCode.String(), command, *result).Inc()
 	}()
+
+	connInfo := &info.ConnInfo{
+		PeerAddr: c.netConn.RemoteAddr(),
+	}
+	ctx = info.WithConnInfo(ctx, connInfo)
 
 	resHeader = new(wire.MsgHeader)
 	var err error

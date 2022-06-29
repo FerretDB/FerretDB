@@ -17,6 +17,8 @@ package pg
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/info"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -26,9 +28,12 @@ import (
 // MsgWhatsMyURI implements HandlerInterface.
 func (h *Handler) MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
+
+	connInfo := info.GetConnInfo(ctx)
+
 	err := reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"you", h.peerAddr,
+			"you", connInfo.PeerAddr.String(),
 			"ok", float64(1),
 		))},
 	})
