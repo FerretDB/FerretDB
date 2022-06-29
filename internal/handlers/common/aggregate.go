@@ -121,6 +121,17 @@ func MatchToSql(ctx *parseContext, key string, value interface{}) (*string, erro
 			field := FormatField("", ctx.parents)
 			sql = field + ` <> $` + fmt.Sprintf("%v", len(*ctx.values))
 
+		case "$exists":
+			parentValue := ctx.parents[len(ctx.parents)-1]
+			*ctx.values = append(*ctx.values, fmt.Sprintf("%v", parentValue))
+
+			parents := ctx.parents[:len(ctx.parents)-1]
+			field := strings.Replace(FormatField("", parents), "_jsonb", "_jsonb::jsonb", -1)
+			sql = field + ` ? $` + fmt.Sprintf("%v", len(*ctx.values))
+			if value == false {
+				sql = "NOT (" + sql + ")"
+			}
+
 		case "$in":
 			arr, ok := value.(*types.Array)
 			if !ok {
@@ -135,6 +146,21 @@ func MatchToSql(ctx *parseContext, key string, value interface{}) (*string, erro
 			*ctx.values = append(*ctx.values, arrVals)
 			field := FormatField("", ctx.parents)
 			sql = field + ` = ANY($` + fmt.Sprintf("%v", len(*ctx.values)) + `)`
+
+		case "$nin":
+			arr, ok := value.(*types.Array)
+			if !ok {
+				return nil, NewErrorMsg(ErrBadValue, "$in must be an array")
+			}
+
+			arrVals := []string{}
+			for i := 0; i < arr.Len(); i++ {
+				arrVals = append(arrVals, fmt.Sprintf("%v", must.NotFail(arr.Get(i))))
+			}
+
+			*ctx.values = append(*ctx.values, arrVals)
+			field := FormatField("", ctx.parents)
+			sql = field + ` <> ALL($` + fmt.Sprintf("%v", len(*ctx.values)) + `)`
 
 		default:
 			if strings.HasPrefix(key, "$") {

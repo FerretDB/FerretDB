@@ -86,6 +86,37 @@ func TestMatch(t *testing.T) {
 				bson.D{{"_id", int32(2)}, {"a", int32(1)}, {"b", int32(8)}},
 			},
 		},
+		"NotIn": {
+			match: bson.D{{"_id", bson.D{{"$nin", bson.A{1, 2}}}}},
+			expected: []bson.D{
+				bson.D{
+					{"_id", int32(3)}, {"a", int32(2)}, {"b", int32(3)},
+					{"c", bson.D{{"name", "Felipe"}, {"age", int32(12)}}}},
+			},
+		},
+		"Exists": {
+			match: bson.D{{"c", bson.D{{"$exists", true}}}},
+			expected: []bson.D{
+				bson.D{
+					{"_id", int32(3)}, {"a", int32(2)}, {"b", int32(3)},
+					{"c", bson.D{{"name", "Felipe"}, {"age", int32(12)}}}},
+			},
+		},
+		"ExistsFalse": {
+			match: bson.D{{"c", bson.D{{"$exists", false}}}},
+			expected: []bson.D{
+				bson.D{{"_id", int32(1)}, {"a", int32(1)}, {"b", int32(2)}},
+				bson.D{{"_id", int32(2)}, {"a", int32(1)}, {"b", int32(8)}},
+			},
+		},
+		"NestedExists": {
+			match: bson.D{{"c", bson.D{{"name", bson.D{{"$exists", true}}}}}},
+			expected: []bson.D{
+				bson.D{
+					{"_id", int32(3)}, {"a", int32(2)}, {"b", int32(3)},
+					{"c", bson.D{{"name", "Felipe"}, {"age", int32(12)}}}},
+			},
+		},
 	} {
 		name, tc := name, tc
 

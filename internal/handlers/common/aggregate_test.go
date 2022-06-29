@@ -137,3 +137,54 @@ func TestInComparatorOp(t *testing.T) {
 	assert.Equal(t, []interface{}{[]string{"1", "2"}}, values)
 	assert.Equal(t, "((_jsonb->'b' = ANY($1)))", *sql)
 }
+
+func TestNinComparatorOp(t *testing.T) {
+	t.Parallel()
+
+	doc := must.NotFail(types.NewDocument(
+		"b", must.NotFail(types.NewDocument(
+			"$nin",
+			must.NotFail(types.NewArray(int32(1), int32(2))),
+		)),
+	))
+
+	sql, values, err := AggregateMatch(doc)
+	require.NoError(t, err)
+
+	assert.Equal(t, []interface{}{[]string{"1", "2"}}, values)
+	assert.Equal(t, "((_jsonb->'b' <> ALL($1)))", *sql)
+}
+
+func TestSimpleExistsComparatorOp(t *testing.T) {
+	t.Parallel()
+
+	doc := must.NotFail(types.NewDocument(
+		"b", must.NotFail(types.NewDocument(
+			"$exists", true,
+		)),
+	))
+
+	sql, values, err := AggregateMatch(doc)
+	require.NoError(t, err)
+
+	assert.Equal(t, []interface{}{"b"}, values)
+	assert.Equal(t, "((_jsonb::jsonb ? $1))", *sql)
+}
+
+func TestNestedSimpleExistsComparatorOp(t *testing.T) {
+	t.Parallel()
+
+	doc := must.NotFail(types.NewDocument(
+		"b", must.NotFail(types.NewDocument(
+			"c", must.NotFail(types.NewDocument(
+				"$exists", true,
+			)),
+		)),
+	))
+
+	sql, values, err := AggregateMatch(doc)
+	require.NoError(t, err)
+
+	assert.Equal(t, []interface{}{"c"}, values)
+	assert.Equal(t, "(((_jsonb::jsonb->'b' ? $1)))", *sql)
+}
