@@ -411,7 +411,7 @@ func (pgPool *Pool) DropTable(ctx context.Context, schema, collection string) er
 		_ = tx.Commit(ctx)
 	}()
 
-	table := getTableNameFormatted(collection)
+	table := formatCollectionName(collection)
 
 	tables, err := pgPool.tables(ctx, tx, schema)
 	if err != nil {

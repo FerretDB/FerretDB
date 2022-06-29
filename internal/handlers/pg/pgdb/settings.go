@@ -96,7 +96,7 @@ func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (st
 	}
 
 	if !schemaExists {
-		return getTableNameFormatted(collection), nil
+		return formatCollectionName(collection), nil
 	}
 
 	tx, err := pgPool.Begin(ctx)
@@ -147,7 +147,7 @@ func (pgPool *Pool) getTableName(ctx context.Context, tx pgx.Tx, db string, coll
 		return must.NotFail(collections.Get(collection)).(string), nil
 	}
 
-	tableName := getTableNameFormatted(collection)
+	tableName := formatCollectionName(collection)
 	must.NoError(collections.Set(collection, tableName))
 	must.NoError(settings.Set("collections", collections))
 
@@ -224,8 +224,8 @@ func (pgPool *Pool) removeTableFromSettings(ctx context.Context, tx pgx.Tx, db, 
 	return nil
 }
 
-// getTableNameFormatted returns collection name in form <shortened_name>_<name_hash>.
-func getTableNameFormatted(name string) string {
+// formatCollectionName returns collection name in form <shortened_name>_<name_hash>.
+func formatCollectionName(name string) string {
 	hash32 := fnv.New32a()
 	_ = must.NotFail(hash32.Write([]byte(name)))
 
