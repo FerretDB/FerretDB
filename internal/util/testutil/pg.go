@@ -31,8 +31,8 @@ type PoolOpts struct {
 	ReadOnly bool
 }
 
-// Pool creates a new connection connection pool for testing.
-func Pool(ctx context.Context, tb testing.TB, opts *PoolOpts, l *zap.Logger) *pgdb.Pool {
+// PoolConnString returns PostgreSQL connection string for testing.
+func PoolConnString(tb testing.TB, opts *PoolOpts) string {
 	tb.Helper()
 
 	if testing.Short() {
@@ -48,7 +48,14 @@ func Pool(ctx context.Context, tb testing.TB, opts *PoolOpts, l *zap.Logger) *pg
 		username = "readonly"
 	}
 
-	pool, err := pgdb.NewPool(ctx, "postgres://"+username+"@127.0.0.1:5432/ferretdb?pool_min_conns=1", l, false)
+	return "postgres://" + username + "@127.0.0.1:5432/ferretdb?pool_min_conns=1"
+}
+
+// Pool creates a new connection connection pool for testing.
+func Pool(ctx context.Context, tb testing.TB, opts *PoolOpts, l *zap.Logger) *pgdb.Pool {
+	tb.Helper()
+
+	pool, err := pgdb.NewPool(ctx, PoolConnString(tb, opts), l, false)
 	require.NoError(tb, err)
 	tb.Cleanup(pool.Close)
 

@@ -28,7 +28,7 @@ func (h *Handler) MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 	var reply wire.OpMsg
 	err := reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"you", h.peerAddr,
+			"you", "127.0.0.1:12345", // TODO
 			"ok", float64(1),
 		))},
 	})
