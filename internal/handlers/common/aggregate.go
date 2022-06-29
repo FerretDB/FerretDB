@@ -85,6 +85,30 @@ func MatchToSql(ctx *parseContext, key string, value interface{}) (*string, erro
 			}
 			sql += ")"
 
+		case "$gt":
+			fmt.Printf("  *** Key:   %v\n", key)
+			fmt.Printf("  *** Value: %v\n", value)
+			*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
+			field := FormatField(key, ctx.parents)
+			sql = field + ` > $` + fmt.Sprintf("%v", len(*ctx.values))
+
+		case "$gte":
+			fmt.Printf("  *** Key:   %v\n", key)
+			fmt.Printf("  *** Value: %v\n", value)
+			*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
+			field := FormatField(key, ctx.parents)
+			sql = field + ` >= $` + fmt.Sprintf("%v", len(*ctx.values))
+
+		case "$lt":
+			*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
+			field := FormatField(key, ctx.parents)
+			sql = field + ` < $` + fmt.Sprintf("%v", len(*ctx.values))
+
+		case "$lte":
+			*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
+			field := FormatField(key, ctx.parents)
+			sql = field + ` <= $` + fmt.Sprintf("%v", len(*ctx.values))
+
 		default:
 			if strings.HasPrefix(key, "$") {
 				return nil, NewWriteErrorMsg(

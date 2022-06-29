@@ -69,6 +69,7 @@ func TestGetValueWithOr(t *testing.T) {
 
 func TestNestedWithOr(t *testing.T) {
 	t.Parallel()
+
 	doc := must.NotFail(types.NewDocument(
 		"a", int32(1),
 		"b", must.NotFail(types.NewDocument(
@@ -84,4 +85,22 @@ func TestNestedWithOr(t *testing.T) {
 
 	assert.Equal(t, []interface{}{"1", "2", "3", "ONE", "TWO"}, values)
 	assert.Equal(t, "('_jsonb'->'a' = $1 AND ('_jsonb'->'b'->>'c' = $2 AND '_jsonb'->'b'->>'d' = $3) AND ((('_jsonb'->'b'->>'e'->>'a' = $4) OR ('_jsonb'->'b'->>'e'->>'b' = $5))))", *sql)
+}
+
+func TestComparatorOp(t *testing.T) {
+	t.Parallel()
+
+	doc := must.NotFail(types.NewDocument(
+		"a", int32(1),
+		"b", must.NotFail(types.NewDocument(
+			"$gt", int32(1),
+			"$lte", int32(10),
+		)),
+	))
+
+	sql, values, err := AggregateMatch(doc)
+	require.NoError(t, err)
+
+	assert.Equal(t, []interface{}{"1", "1", "10"}, values)
+	assert.Equal(t, "('_jsonb'->'a' = $1 AND ('_jsonb'->'b'->>'$gt' > $2 AND '_jsonb'->'b'->>'$lte' <= $3))", *sql)
 }
