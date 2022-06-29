@@ -25,7 +25,7 @@ import (
 type contextKey string
 
 // connInfoKey stores the key for withConnInfo context value.
-const connInfoKey = contextKey("connInfo")
+var connInfoKey = contextKey{}
 
 // ConnInfo represents connection info.
 type ConnInfo struct {
