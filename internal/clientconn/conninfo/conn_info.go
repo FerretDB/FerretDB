@@ -35,11 +35,11 @@ func WithConnInfo(ctx context.Context, connInfo *ConnInfo) context.Context {
 	return context.WithValue(ctx, connInfoKey, connInfo)
 }
 
-// GetConnInfo returns the ConnInfo value stored in ctx, or nil if there is nothing stored there.
+// GetConnInfo returns the ConnInfo value stored in ctx, or empty connInfo if there is nothing stored there.
 func GetConnInfo(ctx context.Context) *ConnInfo {
 	value := ctx.Value(connInfoKey)
 	if value == nil {
-		return nil
+		return &ConnInfo{}
 	}
 
 	connInfo, ok := value.(*ConnInfo)
