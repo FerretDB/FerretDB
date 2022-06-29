@@ -23,7 +23,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -141,7 +140,7 @@ func setup(t *testing.T, providers ...shareddata.Provider) (context.Context, *mo
 	return ctx, collection
 }
 
-// setupListener starts in-process FerretDB server that runs until ctx is cancelled,
+// setupListener starts in-process FerretDB server that runs until ctx is done,
 // and returns listening port number.
 func setupListener(t *testing.T, ctx context.Context, logger *zap.Logger) int {
 	t.Helper()
@@ -155,10 +154,9 @@ func setupListener(t *testing.T, ctx context.Context, logger *zap.Logger) int {
 	}
 
 	handlerOpts := &pg.NewOpts{
-		PgPool:    pgPool,
-		L:         logger,
-		PeerAddr:  "127.0.0.1:0",
-		StartTime: time.Now(),
+		PgPool:   pgPool,
+		L:        logger,
+		PeerAddr: "127.0.0.1:0",
 	}
 	h, err := pg.New(handlerOpts)
 	require.NoError(t, err)
