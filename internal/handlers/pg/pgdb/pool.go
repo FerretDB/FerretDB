@@ -327,8 +327,8 @@ func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
 // CreateCollection creates a new FerretDB collection in existing schema.
 //
 // It returns ErrAlreadyExist if table already exist, ErrTableNotExist is schema does not exist.
-func (pgPool *Pool) CreateCollection(ctx context.Context, schema, collection string) error {
-	schemaExists, err := pgPool.schemaExists(ctx, schema)
+func (pgPool *Pool) CreateCollection(ctx context.Context, db, collection string) error {
+	schemaExists, err := pgPool.schemaExists(ctx, db)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -349,7 +349,7 @@ func (pgPool *Pool) CreateCollection(ctx context.Context, schema, collection str
 		_ = tx.Commit(ctx)
 	}()
 
-	tables, err := pgPool.tables(ctx, tx, schema)
+	tables, err := pgPool.tables(ctx, tx, db)
 	if err != nil {
 		return err
 	}
@@ -357,12 +357,12 @@ func (pgPool *Pool) CreateCollection(ctx context.Context, schema, collection str
 		return ErrAlreadyExist
 	}
 
-	table, err := pgPool.getTableName(ctx, schema, collection, tx)
+	table, err := pgPool.getTableName(ctx, tx, db, collection)
 	if err != nil {
 		return err
 	}
 
-	sql := `CREATE TABLE IF NOT EXISTS ` + pgx.Identifier{schema, table}.Sanitize() + ` (_jsonb jsonb)`
+	sql := `CREATE TABLE IF NOT EXISTS ` + pgx.Identifier{db, table}.Sanitize() + ` (_jsonb jsonb)`
 	_, err = tx.Exec(ctx, sql)
 	if err != nil {
 		return lazyerrors.Errorf("pg.CreateCollection: %w", err)
@@ -514,7 +514,7 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment 
 		must.NoError(tx.Commit(ctx))
 	}()
 
-	table, err := pgPool.getTableName(ctx, db, collection, tx)
+	table, err := pgPool.getTableName(ctx, tx, db, collection)
 	if err != nil {
 		return nil, err
 	}
@@ -529,7 +529,7 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment 
 
 	sql += `FROM ` + pgx.Identifier{db, table}.Sanitize()
 
-	rows, err := pgPool.Query(ctx, sql)
+	rows, err := tx.Query(ctx, sql)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -567,7 +567,7 @@ func (pgPool *Pool) SetDocumentByID(ctx context.Context, db, collection string, 
 		must.NoError(tx.Commit(ctx))
 	}()
 
-	table, err := pgPool.getTableName(ctx, db, collection, tx)
+	table, err := pgPool.getTableName(ctx, tx, db, collection)
 	if err != nil {
 		return 0, err
 	}
@@ -575,7 +575,7 @@ func (pgPool *Pool) SetDocumentByID(ctx context.Context, db, collection string, 
 	sql := "UPDATE " + pgx.Identifier{db, table}.Sanitize() +
 		" SET _jsonb = $1 WHERE _jsonb->'_id' = $2"
 
-	tag, err := pgPool.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)), must.NotFail(fjson.Marshal(id)))
+	tag, err := tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)), must.NotFail(fjson.Marshal(id)))
 	if err != nil {
 		return 0, err
 	}
@@ -597,7 +597,7 @@ func (pgPool *Pool) DeleteDocumentsByID(ctx context.Context, db, collection stri
 		must.NoError(tx.Commit(ctx))
 	}()
 
-	table, err := pgPool.getTableName(ctx, db, collection, tx)
+	table, err := pgPool.getTableName(ctx, tx, db, collection)
 	if err != nil {
 		return 0, err
 	}
@@ -615,7 +615,7 @@ func (pgPool *Pool) DeleteDocumentsByID(ctx context.Context, db, collection stri
 		strings.Join(placeholders, ", ") +
 		`)`
 
-	tag, err := pgPool.Exec(ctx, sql, idsMarshalled)
+	tag, err := tx.Exec(ctx, sql, idsMarshalled)
 	if err != nil {
 		return 0, err
 	}
@@ -656,7 +656,7 @@ func (pgPool *Pool) InsertDocument(ctx context.Context, db, collection string, d
 		}
 	}
 
-	table, err := pgPool.getTableName(ctx, db, collection, tx)
+	table, err := pgPool.getTableName(ctx, tx, db, collection)
 	if err != nil {
 		return err
 	}
@@ -664,7 +664,7 @@ func (pgPool *Pool) InsertDocument(ctx context.Context, db, collection string, d
 	sql := `INSERT INTO ` + pgx.Identifier{db, table}.Sanitize() +
 		` (_jsonb) VALUES ($1)`
 
-	_, err = pgPool.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)))
+	_, err = tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)))
 	if err != nil {
 		return err
 	}

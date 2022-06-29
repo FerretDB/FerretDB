@@ -89,7 +89,7 @@ func (pgPool *Pool) createSettingsTable(ctx context.Context, tx pgx.Tx, db strin
 // getTableName returns the name of the table for given collection or error.
 // If the settings table doesn't exist, it will be created.
 // If the record for collection doesn't exist, it will be created.
-func (pgPool *Pool) getTableName(ctx context.Context, db, collection string, tx pgx.Tx) (string, error) {
+func (pgPool *Pool) getTableName(ctx context.Context, tx pgx.Tx, db, collection string) (string, error) {
 	schemaExists, err := pgPool.schemaExists(ctx, db)
 	if err != nil {
 		return "", lazyerrors.Error(err)
