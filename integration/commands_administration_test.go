@@ -16,7 +16,7 @@ package integration
 
 import (
 	"math"
-	"net/netip"
+	"net"
 	"strconv"
 	"testing"
 	"time"
@@ -802,7 +802,7 @@ func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
 	client2 := setupClient(t, ctx, port)
 	collection2 := client2.Database(collection1.Database().Name()).Collection(collection1.Name())
 
-	var ports []uint16
+	var ports []string
 	for _, collection := range []*mongo.Collection{collection1, collection2} {
 		var actual bson.D
 		command := bson.D{{"whatsmyuri", int32(1)}}
@@ -811,12 +811,12 @@ func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
 
 		doc := ConvertDocument(t, actual)
 		assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-		assert.Regexp(t, `^(\d+)\.(\d+)\.(\d+)\.(\d+)(\:\d+)?`, must.NotFail(doc.Get("you")))
 
 		// record ports to compare that they are not equal for two different clients.
-		addrPort, err := netip.ParseAddrPort(must.NotFail(doc.Get("you")).(string))
+		host, port, err := net.SplitHostPort(must.NotFail(doc.Get("you")).(string))
 		require.NoError(t, err)
-		ports = append(ports, addrPort.Port())
+		assert.Equal(t, "127.0.0.1", host)
+		ports = append(ports, port)
 	}
 
 	require.Equal(t, 2, len(ports))
