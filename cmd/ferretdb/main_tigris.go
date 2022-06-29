@@ -19,23 +19,9 @@ package main
 
 import (
 	"flag"
-
-	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/tigris"
 )
 
-// `tigris` handler flags.
-var (
-	tigrisURLF = flag.String("tigris-url", "127.0.0.1:8081", "Tigris URL")
-)
-
-// init registers `tigris` handler for Tigris that is enabled only when compiled with `tigris` build tag.
+// init adds `tigris` handler flags when `tigris` build tag is provided.
 func init() {
-	registeredHandlers["tigris"] = func(opts *newHandlerOpts) (handlers.Interface, error) {
-		handlerOpts := &tigris.NewOpts{
-			TigrisURL: *tigrisURLF,
-			L:         opts.logger,
-		}
-		return tigris.New(handlerOpts)
-	}
+	flag.StringVar(&tigrisURL, "tigris-url", "127.0.0.1:8081", "Tigris URL")
 }
