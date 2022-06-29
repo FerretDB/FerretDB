@@ -22,49 +22,94 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-func MatchToSql(field string, value interface{}, joinOp string, values *[]interface{}) string {
+type parseContext struct {
+	parents []string
+	values  *[]interface{}
+}
+
+func FormatField(field string, parents []string) string {
+	if len(parents) == 0 {
+		return field
+	}
+	res := ""
+	for i, p := range parents {
+		sep := "->"
+		if i > 0 {
+			sep = "->>"
+		}
+		res += fmt.Sprintf("'%s'%s", p, sep)
+	}
+	return res + "'" + field + "'"
+}
+
+func MatchToSql(ctx *parseContext, key string, value interface{}) (*string, error) {
 	var sql string
 
 	switch v := value.(type) {
 	case *types.Document:
-		sep := "->"
-		if strings.Contains(field, "->") {
-			sep = "->>"
+		if key != "" {
+			ctx.parents = append(ctx.parents, key)
 		}
+		sql = "("
 		for i, key := range v.Keys() {
-			s := MatchToSql(field+sep+`'`+key+`'`, must.NotFail(v.Get(key)), joinOp, values)
+			value := must.NotFail(v.Get(key))
+			s, err := MatchToSql(ctx, key, value)
+			if err != nil {
+				return nil, err
+			}
 			if i > 0 {
-				sql += " " + joinOp + " "
+				sql += " AND "
 			}
-			sql += s
+			sql += *s
 		}
-	case *types.Array:
-		if strings.HasSuffix(field, "'$or'") {
-			if len(*values) > 0 {
-				sql += " " + joinOp + " "
+		sql += ")"
+
+	default:
+		switch key {
+		case "$or":
+			arr, ok := value.(*types.Array)
+			if !ok {
+				return nil, NewErrorMsg(ErrBadValue, "$or must be an array")
 			}
-			sql += "("
-			for i := 0; i < v.Len(); i++ {
-				name := strings.TrimSuffix(strings.TrimSuffix(field, "->'$or'"), "->>'$or'")
+			sql = "("
+			for i := 0; i < arr.Len(); i++ {
+				v := must.NotFail(arr.Get(i))
 				if i > 0 {
 					sql += " OR "
 				}
-				sql += MatchToSql(name, must.NotFail(v.Get(i)), "OR", values)
+				s, err := MatchToSql(ctx, "", v)
+				if err != nil {
+					return nil, err
+				}
+				sql += *s
 			}
 			sql += ")"
-		}
 
-	default:
-		*values = append(*values, fmt.Sprintf("%v", value))
-		sql = field + ` = $` + fmt.Sprintf("%v", len(*values))
+		default:
+			if strings.HasPrefix(key, "$") {
+				return nil, NewWriteErrorMsg(
+					ErrFailedToParse,
+					fmt.Sprintf(
+						"Unknown top level operator: %s. Expected a valid aggregate modifier", key,
+					),
+				)
+			}
+
+			*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
+			field := FormatField(key, ctx.parents)
+			sql = field + ` = $` + fmt.Sprintf("%v", len(*ctx.values))
+		}
 	}
 
-	return sql
+	return &sql, nil
 }
 
-func AggregateMatch(match *types.Document) (string, []interface{}) {
-	values := make([]interface{}, 0)
-	sql := MatchToSql("_jsonb", match, "AND", &values)
+func AggregateMatch(match *types.Document) (*string, []interface{}, error) {
+	ctx := parseContext{
+		parents: []string{},
+		values:  &[]interface{}{},
+	}
 
-	return sql, values
+	sql, err := MatchToSql(&ctx, "_jsonb", match)
+	return sql, *ctx.values, err
 }

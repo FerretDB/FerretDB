@@ -20,15 +20,18 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMakeSimpleQuery(t *testing.T) {
 	t.Parallel()
 
 	doc := must.NotFail(types.NewDocument("a", int32(1), "b", int32(2)))
-	sql, values := AggregateMatch(doc)
+	sql, values, err := AggregateMatch(doc)
+	require.NoError(t, err)
+
 	assert.Equal(t, []interface{}{"1", "2"}, values)
-	assert.Equal(t, "_jsonb->'a' = $1 AND _jsonb->'b' = $2", sql)
+	assert.Equal(t, "'_jsonb'->'a' = $1 AND '_jsonb'->'b' = $2", *sql)
 }
 
 func TestMakeNestedQuery(t *testing.T) {
@@ -41,19 +44,27 @@ func TestMakeNestedQuery(t *testing.T) {
 			"d", int32(3),
 		)),
 	))
-	sql, values := AggregateMatch(doc)
+	sql, values, err := AggregateMatch(doc)
+	require.NoError(t, err)
+
 	assert.Equal(t, []interface{}{"1", "2", "3"}, values)
-	assert.Equal(t, "_jsonb->'a' = $1 AND _jsonb->'b'->>'c' = $2 AND _jsonb->'b'->>'d' = $3", sql)
+	assert.Equal(t, "'_jsonb'->'a' = $1 AND '_jsonb'->'b'->>'c' = $2 AND '_jsonb'->'b'->>'d' = $3", *sql)
 }
 
 func TestGetValueWithOr(t *testing.T) {
 	t.Parallel()
 
 	doc := must.NotFail(types.NewDocument("$or",
-		must.NotFail(types.NewArray(must.NotFail(types.NewDocument("a", int32(1), "b", int32(2)))))))
-	sql, values := AggregateMatch(doc)
-	assert.Equal(t, []interface{}{"1", "2"}, values)
-	assert.Equal(t, "(_jsonb->'a' = $1 OR _jsonb->'b' = $2)", sql)
+		must.NotFail(types.NewArray(
+			must.NotFail(types.NewDocument("a", int32(1), "b", int32(2))),
+			must.NotFail(types.NewDocument("c", "ONE")),
+		)),
+	))
+	sql, values, err := AggregateMatch(doc)
+	require.NoError(t, err)
+
+	assert.Equal(t, []interface{}{"1", "2", "ONE"}, values)
+	assert.Equal(t, "((('_jsonb'->'a' = $1 AND '_jsonb'->'b' = $2) OR ('_jsonb'->'c' = $3)))", *sql)
 }
 
 func TestNestedWithOr(t *testing.T) {
@@ -65,11 +76,12 @@ func TestNestedWithOr(t *testing.T) {
 			"d", int32(3),
 		)),
 		"e", must.NotFail(types.NewDocument("$or",
-			must.NotFail(types.NewArray(must.NotFail(types.NewDocument("a", "ONE", "b", "TWO"))))),
+			must.NotFail(types.NewArray(must.NotFail(types.NewDocument("a", "ONE")), must.NotFail(types.NewDocument("b", "TWO"))))),
 		),
 	))
-	sql, values := AggregateMatch(doc)
+	sql, values, err := AggregateMatch(doc)
+	require.NoError(t, err)
 
 	assert.Equal(t, []interface{}{"1", "2", "3", "ONE", "TWO"}, values)
-	assert.Equal(t, "_jsonb->'a' = $1 AND _jsonb->'b'->>'c' = $2 AND _jsonb->'b'->>'d' = $3 AND (_jsonb->'e'->>'a' = $4 OR _jsonb->'e'->>'b' = $5)", sql)
+	assert.Equal(t, "('_jsonb'->'a' = $1 AND ('_jsonb'->'b'->>'c' = $2 AND '_jsonb'->'b'->>'d' = $3) AND ((('_jsonb'->'b'->>'e'->>'a' = $4) OR ('_jsonb'->'b'->>'e'->>'b' = $5))))", *sql)
 }

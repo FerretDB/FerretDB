@@ -74,9 +74,12 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			switch pipelineOp {
 			case "$match":
 				match := must.NotFail(p.Get(pipelineOp)).(*types.Document)
-				where, values := common.AggregateMatch(match)
+				where, values, err := common.AggregateMatch(match)
+				if err != nil {
+					return nil, err
+				}
 
-				sql += " WHERE " + where
+				sql += " WHERE " + *where
 				queryValues = append(queryValues, values...)
 
 			default:
