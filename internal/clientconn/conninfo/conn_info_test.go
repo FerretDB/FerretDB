@@ -39,6 +39,8 @@ func TestConnInfo(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			ctx := context.Background()
 			connInfo := &ConnInfo{
 				PeerAddr: tc.peerAddr,
@@ -49,10 +51,23 @@ func TestConnInfo(t *testing.T) {
 		})
 	}
 
-	// special case: if context is not set, it panics.
-	assert.Panics(t, func() { GetConnInfo(context.Background()) })
+	// special cases: if context is not set ot something wrong is set in context, it panics.
+	for name, tc := range map[string]struct {
+		ctx context.Context
+	}{
+		"EmptyContext": {
+			ctx: context.Background(),
+		},
+		"WrongValueType": {
+			ctx: context.WithValue(context.Background(), connInfoKey, "wrong value type"),
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-	// special case: if something wrong is set in context, it panics.
-	ctx := context.WithValue(context.Background(), connInfoKey, "wrong type")
-	assert.Panics(t, func() { GetConnInfo(ctx) })
+			assert.Panics(t, func() {
+				GetConnInfo(tc.ctx)
+			})
+		})
+	}
 }
