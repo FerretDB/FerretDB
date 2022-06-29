@@ -30,7 +30,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn/info"
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/proxy"
@@ -275,10 +275,10 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		c.m.responses.WithLabelValues(resHeader.OpCode.String(), command, *result).Inc()
 	}()
 
-	connInfo := &info.ConnInfo{
+	connInfo := &conninfo.ConnInfo{
 		PeerAddr: c.netConn.RemoteAddr(),
 	}
-	ctx = info.WithConnInfo(ctx, connInfo)
+	ctx = conninfo.WithConnInfo(ctx, connInfo)
 
 	resHeader = new(wire.MsgHeader)
 	var err error

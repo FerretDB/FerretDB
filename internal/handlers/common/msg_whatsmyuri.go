@@ -17,7 +17,7 @@ package common
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn/info"
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -28,7 +28,7 @@ import (
 func MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 
-	connInfo := info.GetConnInfo(ctx)
+	connInfo := conninfo.GetConnInfo(ctx)
 
 	err := reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
