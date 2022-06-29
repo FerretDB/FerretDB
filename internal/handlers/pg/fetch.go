@@ -16,13 +16,9 @@ package pg
 
 import (
 	"context"
-	"io"
-	"strings"
 
-	"github.com/jackc/pgx/v4"
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -39,72 +35,23 @@ type sqlParam struct {
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/372
 func (h *Handler) fetch(ctx context.Context, param sqlParam) ([]*types.Document, error) {
-	table, err := h.pgPool.GetTableName(ctx, param.db, param.collection)
-	if err != nil {
-		return nil, err
-	}
-
-	sql := `SELECT `
-	if param.comment != "" {
-		param.comment = strings.ReplaceAll(param.comment, "/*", "/ *")
-		param.comment = strings.ReplaceAll(param.comment, "*/", "* /")
-
-		sql += `/* ` + param.comment + ` */ `
-	}
-	sql += `_jsonb FROM ` + pgx.Identifier{param.db, table}.Sanitize()
-
 	// Special case: check if collection exists at all
-	tableExists, err := h.pgPool.TableExists(ctx, param.db, table)
+	collectionExists, err := h.pgPool.CollectionExists(ctx, param.db, param.collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-	if !tableExists {
+	if !collectionExists {
 		h.l.Info(
-			"Table doesn't exist, handling a case to deal with a non-existing collection.",
-			zap.String("schema", param.db), zap.String("table", table),
+			"Collection doesn't exist, handling a case to deal with a non-existing collection.",
+			zap.String("schema", param.db), zap.String("table", param.collection),
 		)
 		return []*types.Document{}, nil
 	}
 
-	rows, err := h.pgPool.Query(ctx, sql)
+	res, err := h.pgPool.QueryDocuments(ctx, param.db, param.collection, param.comment)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
-	}
-	defer rows.Close()
-
-	var res []*types.Document
-	for {
-		doc, err := nextRow(rows)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-		res = append(res, doc)
 	}
 
 	return res, nil
-}
-
-// nextRow returns the next document from the given rows.
-func nextRow(rows pgx.Rows) (*types.Document, error) {
-	if !rows.Next() {
-		if err := rows.Err(); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-		return nil, io.EOF
-	}
-
-	var b []byte
-	if err := rows.Scan(&b); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	doc, err := fjson.Unmarshal(b)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return doc.(*types.Document), nil
 }

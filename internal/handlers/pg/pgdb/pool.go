@@ -28,6 +28,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -231,7 +232,7 @@ func (pgPool *Pool) Collections(ctx context.Context, schema string) ([]string, e
 	return collections.Keys(), nil
 }
 
-// Tables returns a sorted list of FerretDB collection / PostgreSQL table names.
+// Tables returns a sorted list of PostgreSQL table names.
 // Returns empty slice if schema does not exist.
 // Tables with prefix "_ferretdb_" are filtered out.
 func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, error) {
@@ -261,39 +262,10 @@ func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, error)
 	return filtered, nil
 }
 
-// tables returns a list of PostgreSQL table names.
-func (pgPool *Pool) tables(ctx context.Context, tx pgx.Tx, schema string) ([]string, error) {
-	sql := `SELECT table_name ` +
-		`FROM information_schema.columns ` +
-		`WHERE table_schema = $1 ` +
-		`GROUP BY table_name ` +
-		`ORDER BY table_name`
-	rows, err := tx.Query(ctx, sql, schema)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-	defer rows.Close()
-
-	tables := make([]string, 0, 2)
-	var name string
-	for rows.Next() {
-		if err = rows.Scan(&name); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		tables = append(tables, name)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return tables, nil
-}
-
-// CreateSchema creates a new FerretDB database / PostgreSQL schema.
+// CreateDatabase creates a new FerretDB database.
 //
 // It returns ErrAlreadyExist if schema already exist.
-func (pgPool *Pool) CreateSchema(ctx context.Context, schema string) error {
+func (pgPool *Pool) CreateDatabase(ctx context.Context, db string) error {
 	tx, err := pgPool.Begin(ctx)
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -306,15 +278,15 @@ func (pgPool *Pool) CreateSchema(ctx context.Context, schema string) error {
 		must.NoError(tx.Commit(ctx))
 	}()
 
-	sql := `CREATE SCHEMA ` + pgx.Identifier{schema}.Sanitize()
+	sql := `CREATE SCHEMA ` + pgx.Identifier{db}.Sanitize()
 	_, err = tx.Exec(ctx, sql)
 	if err == nil {
-		return pgPool.createSettingsTable(ctx, tx, schema)
+		return pgPool.createSettingsTable(ctx, tx, db)
 	}
 
 	pgErr, ok := err.(*pgconn.PgError)
 	if !ok {
-		return lazyerrors.Errorf("pg.CreateSchema: %w", err)
+		return lazyerrors.Errorf("pg.CreateDatabase: %w", err)
 	}
 
 	switch pgErr.Code {
@@ -325,15 +297,15 @@ func (pgPool *Pool) CreateSchema(ctx context.Context, schema string) error {
 		// The same thing for schemas. Reproducible by integration tests.
 		return ErrAlreadyExist
 	default:
-		return lazyerrors.Errorf("pg.CreateSchema: %w", err)
+		return lazyerrors.Errorf("pg.CreateDatabase: %w", err)
 	}
 }
 
-// DropSchema drops FerretDB database / PostgreSQL schema.
+// DropDatabase drops FerretDB database.
 //
 // It returns ErrTableNotExist if schema does not exist.
-func (pgPool *Pool) DropSchema(ctx context.Context, schema string) error {
-	sql := `DROP SCHEMA ` + pgx.Identifier{schema}.Sanitize() + ` CASCADE`
+func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
+	sql := `DROP SCHEMA ` + pgx.Identifier{db}.Sanitize() + ` CASCADE`
 	_, err := pgPool.Exec(ctx, sql)
 	if err == nil {
 		return nil
@@ -341,21 +313,21 @@ func (pgPool *Pool) DropSchema(ctx context.Context, schema string) error {
 
 	pgErr, ok := err.(*pgconn.PgError)
 	if !ok {
-		return lazyerrors.Errorf("pg.DropSchema: %w", err)
+		return lazyerrors.Errorf("pg.DropDatabase: %w", err)
 	}
 
 	switch pgErr.Code {
 	case pgerrcode.InvalidSchemaName:
 		return ErrSchemaNotExist
 	default:
-		return lazyerrors.Errorf("pg.DropSchema: %w", err)
+		return lazyerrors.Errorf("pg.DropDatabase: %w", err)
 	}
 }
 
-// CreateTable creates a new FerretDB collection / PostgreSQL table in existing schema.
+// CreateCollection creates a new FerretDB collection in existing schema.
 //
 // It returns ErrAlreadyExist if table already exist, ErrTableNotExist is schema does not exist.
-func (pgPool *Pool) CreateTable(ctx context.Context, schema, collection string) error {
+func (pgPool *Pool) CreateCollection(ctx context.Context, schema, collection string) error {
 	schemaExists, err := pgPool.schemaExists(ctx, schema)
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -385,7 +357,7 @@ func (pgPool *Pool) CreateTable(ctx context.Context, schema, collection string) 
 		return ErrAlreadyExist
 	}
 
-	table, err := pgPool.getTableName(ctx, tx, schema, collection)
+	table, err := pgPool.getTableName(ctx, schema, collection, tx)
 	if err != nil {
 		return err
 	}
@@ -393,16 +365,16 @@ func (pgPool *Pool) CreateTable(ctx context.Context, schema, collection string) 
 	sql := `CREATE TABLE IF NOT EXISTS ` + pgx.Identifier{schema, table}.Sanitize() + ` (_jsonb jsonb)`
 	_, err = tx.Exec(ctx, sql)
 	if err != nil {
-		return lazyerrors.Errorf("pg.CreateTable: %w", err)
+		return lazyerrors.Errorf("pg.CreateCollection: %w", err)
 	}
 
 	return nil
 }
 
-// DropTable drops FerretDB collection / PostgreSQL table.
+// DropCollection drops FerretDB collection.
 //
 // It returns ErrTableNotExist if schema or table does not exist.
-func (pgPool *Pool) DropTable(ctx context.Context, schema, collection string) error {
+func (pgPool *Pool) DropCollection(ctx context.Context, schema, collection string) error {
 	schemaExists, err := pgPool.schemaExists(ctx, schema)
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -446,7 +418,7 @@ func (pgPool *Pool) DropTable(ctx context.Context, schema, collection string) er
 	sql := `DROP TABLE IF EXISTS` + pgx.Identifier{schema, table}.Sanitize() + `CASCADE`
 	_, err = tx.Exec(ctx, sql)
 	if err != nil {
-		return lazyerrors.Errorf("pg.DropTable: %w", err)
+		return lazyerrors.Errorf("pg.DropCollection: %w", err)
 	}
 
 	return nil
@@ -458,7 +430,7 @@ func (pgPool *Pool) DropTable(ctx context.Context, schema, collection string) er
 //
 // True is returned if table was created.
 func (pgPool *Pool) CreateTableIfNotExist(ctx context.Context, db, collection string) (bool, error) {
-	exists, err := pgPool.TableExists(ctx, db, collection)
+	exists, err := pgPool.CollectionExists(ctx, db, collection)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
@@ -469,11 +441,11 @@ func (pgPool *Pool) CreateTableIfNotExist(ctx context.Context, db, collection st
 	// Table (or even schema) does not exist. Try to create it,
 	// but keep in mind that it can be created in concurrent connection.
 
-	if err := pgPool.CreateSchema(ctx, db); err != nil && err != ErrAlreadyExist {
+	if err := pgPool.CreateDatabase(ctx, db); err != nil && err != ErrAlreadyExist {
 		return false, lazyerrors.Error(err)
 	}
 
-	if err := pgPool.CreateTable(ctx, db, collection); err != nil {
+	if err := pgPool.CreateCollection(ctx, db, collection); err != nil {
 		if err == ErrAlreadyExist {
 			return false, nil
 		}
@@ -483,14 +455,14 @@ func (pgPool *Pool) CreateTableIfNotExist(ctx context.Context, db, collection st
 	return true, nil
 }
 
-// TableExists returns true if both FerretDB database / PostgreSQL schema and PostgreSQL table exist.
-func (pgPool *Pool) TableExists(ctx context.Context, db, collection string) (bool, error) {
-	tables, err := pgPool.Tables(ctx, db)
+// CollectionExists returns true if FerretDB collection exists.
+func (pgPool *Pool) CollectionExists(ctx context.Context, db, collection string) (bool, error) {
+	collections, err := pgPool.Collections(ctx, db)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
-	return slices.Contains(tables, collection), nil
+	return slices.Contains(collections, collection), nil
 }
 
 // SchemaStats returns a set of statistics for FerretDB database / PostgreSQL schema and table.
@@ -526,6 +498,207 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 		return nil, lazyerrors.Error(err)
 	}
 	return &res, nil
+}
+
+// QueryDocuments returns a list of documents for given FerretDB database and collection.
+func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment string) ([]*types.Document, error) {
+	tx, err := pgPool.Begin(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	defer func() {
+		if err != nil {
+			must.NoError(tx.Rollback(ctx))
+			return
+		}
+		must.NoError(tx.Commit(ctx))
+	}()
+
+	table, err := pgPool.getTableName(ctx, db, collection, tx)
+	if err != nil {
+		return nil, err
+	}
+
+	sql := `SELECT _jsonb `
+	if comment != "" {
+		comment = strings.ReplaceAll(comment, "/*", "/ *")
+		comment = strings.ReplaceAll(comment, "*/", "* /")
+
+		sql += `/* ` + comment + ` */ `
+	}
+
+	sql += `FROM ` + pgx.Identifier{db, table}.Sanitize()
+
+	rows, err := pgPool.Query(ctx, sql)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	defer rows.Close()
+
+	var res []*types.Document
+	for rows.Next() {
+		var b []byte
+		if err := rows.Scan(&b); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		doc, err := fjson.Unmarshal(b)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		res = append(res, doc.(*types.Document))
+	}
+
+	return res, nil
+}
+
+// SetDocumentByID sets a document by its ID.
+func (pgPool *Pool) SetDocumentByID(ctx context.Context, db, collection string, id any, doc *types.Document) (int64, error) {
+	tx, err := pgPool.Begin(ctx)
+	if err != nil {
+		return 0, lazyerrors.Error(err)
+	}
+	defer func() {
+		if err != nil {
+			must.NoError(tx.Rollback(ctx))
+			return
+		}
+		must.NoError(tx.Commit(ctx))
+	}()
+
+	table, err := pgPool.getTableName(ctx, db, collection, tx)
+	if err != nil {
+		return 0, err
+	}
+
+	sql := "UPDATE " + pgx.Identifier{db, table}.Sanitize() +
+		" SET _jsonb = $1 WHERE _jsonb->'_id' = $2"
+
+	tag, err := pgPool.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)), must.NotFail(fjson.Marshal(id)))
+	if err != nil {
+		return 0, err
+	}
+
+	return tag.RowsAffected(), nil
+}
+
+// DeleteDocumentsByID deletes documents by given IDs.
+func (pgPool *Pool) DeleteDocumentsByID(ctx context.Context, db, collection string, ids []any) (int64, error) {
+	tx, err := pgPool.Begin(ctx)
+	if err != nil {
+		return 0, lazyerrors.Error(err)
+	}
+	defer func() {
+		if err != nil {
+			must.NoError(tx.Rollback(ctx))
+			return
+		}
+		must.NoError(tx.Commit(ctx))
+	}()
+
+	table, err := pgPool.getTableName(ctx, db, collection, tx)
+	if err != nil {
+		return 0, err
+	}
+
+	var p Placeholder
+	idsMarshalled := make([]any, len(ids))
+	placeholders := make([]string, len(ids))
+	for i, id := range ids {
+		placeholders[i] = p.Next()
+		idsMarshalled[i] = must.NotFail(fjson.Marshal(id))
+	}
+
+	sql := `DELETE FROM ` + pgx.Identifier{db, table}.Sanitize() +
+		` WHERE _jsonb->'_id' IN (` +
+		strings.Join(placeholders, ", ") +
+		`)`
+
+	tag, err := pgPool.Exec(ctx, sql, idsMarshalled)
+	if err != nil {
+		return 0, err
+	}
+
+	return tag.RowsAffected(), nil
+}
+
+// InsertDocument inserts a document into FerretDB database and collection.
+// If database or collection does not exist, it will be created.
+func (pgPool *Pool) InsertDocument(ctx context.Context, db, collection string, doc *types.Document) error {
+	tx, err := pgPool.Begin(ctx)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+	defer func() {
+		if err != nil {
+			must.NoError(tx.Rollback(ctx))
+			return
+		}
+		must.NoError(tx.Commit(ctx))
+	}()
+
+	exists, err := pgPool.CollectionExists(ctx, db, collection)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		if err := pgPool.CreateDatabase(ctx, db); err != nil && err != ErrAlreadyExist {
+			return lazyerrors.Error(err)
+		}
+
+		if err := pgPool.CreateCollection(ctx, db, collection); err != nil {
+			if err == ErrAlreadyExist {
+				return nil
+			}
+			return lazyerrors.Error(err)
+		}
+	}
+
+	table, err := pgPool.getTableName(ctx, db, collection, tx)
+	if err != nil {
+		return err
+	}
+
+	sql := `INSERT INTO ` + pgx.Identifier{db, table}.Sanitize() +
+		` (_jsonb) VALUES ($1)`
+
+	_, err = pgPool.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// tables returns a list of PostgreSQL table names.
+func (pgPool *Pool) tables(ctx context.Context, tx pgx.Tx, schema string) ([]string, error) {
+	sql := `SELECT table_name ` +
+		`FROM information_schema.columns ` +
+		`WHERE table_schema = $1 ` +
+		`GROUP BY table_name ` +
+		`ORDER BY table_name`
+	rows, err := tx.Query(ctx, sql, schema)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	defer rows.Close()
+
+	tables := make([]string, 0, 2)
+	var name string
+	for rows.Next() {
+		if err = rows.Scan(&name); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		tables = append(tables, name)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return tables, nil
 }
 
 // schemaExists returns true if given schema exists.

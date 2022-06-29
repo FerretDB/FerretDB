@@ -68,7 +68,7 @@ func TestCreateDrop(t *testing.T) {
 		tableName := testutil.TableName(t)
 
 		t.Cleanup(func() {
-			pool.DropSchema(ctx, schemaName)
+			pool.DropDatabase(ctx, schemaName)
 		})
 
 		// Schema does not exist ->
@@ -77,16 +77,16 @@ func TestCreateDrop(t *testing.T) {
 		// - table creation is not possible
 		// - schema creation is possible
 
-		err := pool.DropTable(ctx, schemaName, tableName)
+		err := pool.DropCollection(ctx, schemaName, tableName)
 		require.Equal(t, pgdb.ErrSchemaNotExist, err)
 
-		err = pool.DropSchema(ctx, schemaName)
+		err = pool.DropDatabase(ctx, schemaName)
 		require.Equal(t, pgdb.ErrSchemaNotExist, err)
 
-		err = pool.CreateTable(ctx, schemaName, tableName)
+		err = pool.CreateCollection(ctx, schemaName, tableName)
 		require.Equal(t, pgdb.ErrSchemaNotExist, err)
 
-		err = pool.CreateSchema(ctx, schemaName)
+		err = pool.CreateDatabase(ctx, schemaName)
 		require.NoError(t, err)
 
 		tables, err := pool.Collections(ctx, schemaName)
@@ -101,10 +101,10 @@ func TestCreateDrop(t *testing.T) {
 		tableName := testutil.TableName(t)
 
 		t.Cleanup(func() {
-			pool.DropSchema(ctx, schemaName)
+			pool.DropDatabase(ctx, schemaName)
 		})
 
-		err := pool.CreateSchema(ctx, schemaName)
+		err := pool.CreateDatabase(ctx, schemaName)
 		require.NoError(t, err)
 
 		// Schema exists ->
@@ -113,23 +113,23 @@ func TestCreateDrop(t *testing.T) {
 		// - table creation is possible
 		// - schema drop is possible (only once)
 
-		err = pool.CreateSchema(ctx, schemaName)
+		err = pool.CreateDatabase(ctx, schemaName)
 		require.Equal(t, pgdb.ErrAlreadyExist, err)
 
-		err = pool.DropTable(ctx, schemaName, tableName)
+		err = pool.DropCollection(ctx, schemaName, tableName)
 		require.Equal(t, pgdb.ErrTableNotExist, err)
 
-		err = pool.CreateTable(ctx, schemaName, tableName)
+		err = pool.CreateCollection(ctx, schemaName, tableName)
 		require.NoError(t, err)
 
 		tables, err := pool.Collections(ctx, schemaName)
 		require.NoError(t, err)
 		assert.Equal(t, []string{tableName}, tables)
 
-		err = pool.DropSchema(ctx, schemaName)
+		err = pool.DropDatabase(ctx, schemaName)
 		require.NoError(t, err)
 
-		err = pool.DropSchema(ctx, schemaName)
+		err = pool.DropDatabase(ctx, schemaName)
 		require.Equal(t, pgdb.ErrSchemaNotExist, err)
 	})
 
@@ -140,13 +140,13 @@ func TestCreateDrop(t *testing.T) {
 		tableName := testutil.TableName(t)
 
 		t.Cleanup(func() {
-			pool.DropSchema(ctx, schemaName)
+			pool.DropDatabase(ctx, schemaName)
 		})
 
-		err := pool.CreateSchema(ctx, schemaName)
+		err := pool.CreateDatabase(ctx, schemaName)
 		require.NoError(t, err)
 
-		err = pool.CreateTable(ctx, schemaName, tableName)
+		err = pool.CreateCollection(ctx, schemaName, tableName)
 		require.NoError(t, err)
 
 		tables, err := pool.Collections(ctx, schemaName)
@@ -159,19 +159,19 @@ func TestCreateDrop(t *testing.T) {
 		// - table drop is possible (only once)
 		// - schema drop is possible
 
-		err = pool.CreateTable(ctx, schemaName, tableName)
+		err = pool.CreateCollection(ctx, schemaName, tableName)
 		require.Equal(t, pgdb.ErrAlreadyExist, err)
 
-		err = pool.CreateSchema(ctx, schemaName)
+		err = pool.CreateDatabase(ctx, schemaName)
 		require.Equal(t, pgdb.ErrAlreadyExist, err)
 
-		err = pool.DropTable(ctx, schemaName, tableName)
+		err = pool.DropCollection(ctx, schemaName, tableName)
 		require.NoError(t, err)
 
-		err = pool.DropTable(ctx, schemaName, tableName)
+		err = pool.DropCollection(ctx, schemaName, tableName)
 		require.Equal(t, pgdb.ErrTableNotExist, err)
 
-		err = pool.DropSchema(ctx, schemaName)
+		err = pool.DropDatabase(ctx, schemaName)
 		require.NoError(t, err)
 	})
 }
@@ -204,15 +204,15 @@ func TestConcurrentCreate(t *testing.T) {
 		expectedErr int
 	}{
 		{
-			name: "CreateSchema",
+			name: "CreateDatabase",
 			f: func() error {
-				return pool.CreateSchema(ctx, schemaName)
+				return pool.CreateDatabase(ctx, schemaName)
 			},
 			expectedErr: n - 1,
 		}, {
-			name: "CreateTable",
+			name: "CreateCollection",
 			f: func() error {
-				return pool.CreateTable(ctx, schemaName, tableName)
+				return pool.CreateCollection(ctx, schemaName, tableName)
 			},
 			expectedErr: 0,
 		},
@@ -261,13 +261,10 @@ func TestTableExists(t *testing.T) {
 		tableName := testutil.TableName(t)
 
 		t.Cleanup(func() {
-			pool.DropSchema(ctx, schemaName)
+			pool.DropDatabase(ctx, schemaName)
 		})
 
-		tableName, err := pool.GetTableName(ctx, schemaName, tableName)
-		require.NoError(t, err)
-
-		ok, err := pool.TableExists(ctx, schemaName, tableName)
+		ok, err := pool.CollectionExists(ctx, schemaName, tableName)
 		require.NoError(t, err)
 		assert.False(t, ok)
 	})
@@ -278,16 +275,13 @@ func TestTableExists(t *testing.T) {
 		schemaName := testutil.SchemaName(t)
 		tableName := testutil.TableName(t)
 
-		pool.CreateSchema(ctx, schemaName)
+		pool.CreateDatabase(ctx, schemaName)
 
 		t.Cleanup(func() {
-			pool.DropSchema(ctx, schemaName)
+			pool.DropDatabase(ctx, schemaName)
 		})
 
-		tableName, err := pool.GetTableName(ctx, schemaName, tableName)
-		require.NoError(t, err)
-
-		ok, err := pool.TableExists(ctx, schemaName, tableName)
+		ok, err := pool.CollectionExists(ctx, schemaName, tableName)
 		require.NoError(t, err)
 		assert.False(t, ok)
 	})
@@ -298,17 +292,14 @@ func TestTableExists(t *testing.T) {
 		schemaName := testutil.SchemaName(t)
 		tableName := testutil.TableName(t)
 
-		pool.CreateSchema(ctx, schemaName)
-		pool.CreateTable(ctx, schemaName, tableName)
+		pool.CreateDatabase(ctx, schemaName)
+		pool.CreateCollection(ctx, schemaName, tableName)
 
 		t.Cleanup(func() {
-			pool.DropSchema(ctx, schemaName)
+			pool.DropDatabase(ctx, schemaName)
 		})
 
-		tableName, err := pool.GetTableName(ctx, schemaName, tableName)
-		require.NoError(t, err)
-
-		ok, err := pool.TableExists(ctx, schemaName, tableName)
+		ok, err := pool.CollectionExists(ctx, schemaName, tableName)
 		require.NoError(t, err)
 		assert.True(t, ok)
 	})
@@ -327,7 +318,7 @@ func TestCreateTableIfNotExist(t *testing.T) {
 		tableName := testutil.TableName(t)
 
 		t.Cleanup(func() {
-			pool.DropSchema(ctx, schemaName)
+			pool.DropDatabase(ctx, schemaName)
 		})
 
 		ok, err := pool.CreateTableIfNotExist(ctx, schemaName, tableName)
@@ -341,10 +332,10 @@ func TestCreateTableIfNotExist(t *testing.T) {
 		schemaName := testutil.SchemaName(t)
 		tableName := testutil.TableName(t)
 
-		pool.CreateSchema(ctx, schemaName)
+		pool.CreateDatabase(ctx, schemaName)
 
 		t.Cleanup(func() {
-			pool.DropSchema(ctx, schemaName)
+			pool.DropDatabase(ctx, schemaName)
 		})
 
 		created, err := pool.CreateTableIfNotExist(ctx, schemaName, tableName)
@@ -358,11 +349,11 @@ func TestCreateTableIfNotExist(t *testing.T) {
 		schemaName := testutil.SchemaName(t)
 		tableName := testutil.TableName(t)
 
-		pool.CreateSchema(ctx, schemaName)
-		pool.CreateTable(ctx, schemaName, tableName)
+		pool.CreateDatabase(ctx, schemaName)
+		pool.CreateCollection(ctx, schemaName, tableName)
 
 		t.Cleanup(func() {
-			pool.DropSchema(ctx, schemaName)
+			pool.DropDatabase(ctx, schemaName)
 		})
 
 		created, err := pool.CreateTableIfNotExist(ctx, schemaName, tableName)

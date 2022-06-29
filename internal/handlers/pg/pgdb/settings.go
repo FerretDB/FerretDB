@@ -59,7 +59,7 @@ func (pgPool *Pool) createSettingsTable(ctx context.Context, tx pgx.Tx, db strin
 	if err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if !ok {
-			return lazyerrors.Errorf("pg.CreateTable: %w", err)
+			return lazyerrors.Errorf("pg.CreateCollection: %w", err)
 		}
 
 		switch pgErr.Code {
@@ -72,7 +72,7 @@ func (pgPool *Pool) createSettingsTable(ctx context.Context, tx pgx.Tx, db strin
 			// Reproducible by integration tests.
 			return ErrAlreadyExist
 		default:
-			return lazyerrors.Errorf("pg.CreateTable: %w", err)
+			return lazyerrors.Errorf("pg.CreateCollection: %w", err)
 		}
 	}
 
@@ -86,10 +86,10 @@ func (pgPool *Pool) createSettingsTable(ctx context.Context, tx pgx.Tx, db strin
 	return nil
 }
 
-// GetTableName returns the name of the table for given collection or error.
+// getTableName returns the name of the table for given collection or error.
 // If the settings table doesn't exist, it will be created.
 // If the record for collection doesn't exist, it will be created.
-func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (string, error) {
+func (pgPool *Pool) getTableName(ctx context.Context, db, collection string, tx pgx.Tx) (string, error) {
 	schemaExists, err := pgPool.schemaExists(ctx, db)
 	if err != nil {
 		return "", lazyerrors.Error(err)
@@ -99,27 +99,6 @@ func (pgPool *Pool) GetTableName(ctx context.Context, db, collection string) (st
 		return formatCollectionName(collection), nil
 	}
 
-	tx, err := pgPool.Begin(ctx)
-	if err != nil {
-		return "", lazyerrors.Error(err)
-	}
-	defer func() {
-		if err != nil {
-			must.NoError(tx.Rollback(ctx))
-			return
-		}
-		must.NoError(tx.Commit(ctx))
-	}()
-
-	table, err := pgPool.getTableName(ctx, tx, db, collection)
-	if err != nil {
-		return "", err
-	}
-
-	return table, nil
-}
-
-func (pgPool *Pool) getTableName(ctx context.Context, tx pgx.Tx, db string, collection string) (string, error) {
 	tables, err := pgPool.tables(ctx, tx, db)
 	if err != nil {
 		return "", lazyerrors.Error(err)
