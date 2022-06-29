@@ -44,7 +44,11 @@ func FormatField(field string, parents []string) string {
 				sep = "->>"
 			}
 		}
-		res += fmt.Sprintf("'%s'%s", p, sep)
+		fmtParent := p
+		if i > 0 {
+			fmtParent = `'` + p + `'`
+		}
+		res += fmt.Sprintf("%s%s", fmtParent, sep)
 	}
 	return res
 }
