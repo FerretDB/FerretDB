@@ -31,7 +31,7 @@ func TestMakeSimpleQuery(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, []interface{}{"1", "2"}, values)
-	assert.Equal(t, "'_jsonb'->'a' = $1 AND '_jsonb'->'b' = $2", *sql)
+	assert.Equal(t, "('_jsonb'->'a' = $1 AND '_jsonb'->'b' = $2)", *sql)
 }
 
 func TestMakeNestedQuery(t *testing.T) {
@@ -48,7 +48,7 @@ func TestMakeNestedQuery(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, []interface{}{"1", "2", "3"}, values)
-	assert.Equal(t, "'_jsonb'->'a' = $1 AND '_jsonb'->'b'->>'c' = $2 AND '_jsonb'->'b'->>'d' = $3", *sql)
+	assert.Equal(t, "('_jsonb'->'a' = $1 AND ('_jsonb'->'b'->>'c' = $2 AND '_jsonb'->'b'->>'d' = $3))", *sql)
 }
 
 func TestGetValueWithOr(t *testing.T) {
@@ -87,7 +87,7 @@ func TestNestedWithOr(t *testing.T) {
 	assert.Equal(t, "('_jsonb'->'a' = $1 AND ('_jsonb'->'b'->>'c' = $2 AND '_jsonb'->'b'->>'d' = $3) AND ((('_jsonb'->'b'->>'e'->>'a' = $4) OR ('_jsonb'->'b'->>'e'->>'b' = $5))))", *sql)
 }
 
-func TestComparatorOp(t *testing.T) {
+func TestGtLteComparatorsOp(t *testing.T) {
 	t.Parallel()
 
 	doc := must.NotFail(types.NewDocument(
@@ -102,5 +102,21 @@ func TestComparatorOp(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, []interface{}{"1", "1", "10"}, values)
-	assert.Equal(t, "('_jsonb'->'a' = $1 AND ('_jsonb'->'b'->>'$gt' > $2 AND '_jsonb'->'b'->>'$lte' <= $3))", *sql)
+	assert.Equal(t, "('_jsonb'->'a' = $1 AND ('_jsonb'->'b' > $2 AND '_jsonb'->'b' <= $3))", *sql)
+}
+
+func TestNeComparatorOp(t *testing.T) {
+	t.Parallel()
+
+	doc := must.NotFail(types.NewDocument(
+		"b", must.NotFail(types.NewDocument(
+			"$ne", int32(1),
+		)),
+	))
+
+	sql, values, err := AggregateMatch(doc)
+	require.NoError(t, err)
+
+	assert.Equal(t, []interface{}{"1"}, values)
+	assert.Equal(t, "(('_jsonb'->'b' <> $1))", *sql)
 }

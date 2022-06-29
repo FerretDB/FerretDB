@@ -32,14 +32,21 @@ func FormatField(field string, parents []string) string {
 		return field
 	}
 	res := ""
-	for i, p := range parents {
-		sep := "->"
-		if i > 0 {
-			sep = "->>"
+	fields := parents
+	if field != "" {
+		fields = append(fields, field)
+	}
+	for i, p := range fields {
+		sep := ""
+		if i < len(fields)-1 {
+			sep = "->"
+			if i > 0 {
+				sep = "->>"
+			}
 		}
 		res += fmt.Sprintf("'%s'%s", p, sep)
 	}
-	return res + "'" + field + "'"
+	return res
 }
 
 func MatchToSql(ctx *parseContext, key string, value interface{}) (*string, error) {
@@ -86,28 +93,29 @@ func MatchToSql(ctx *parseContext, key string, value interface{}) (*string, erro
 			sql += ")"
 
 		case "$gt":
-			fmt.Printf("  *** Key:   %v\n", key)
-			fmt.Printf("  *** Value: %v\n", value)
 			*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
-			field := FormatField(key, ctx.parents)
+			field := FormatField("", ctx.parents)
 			sql = field + ` > $` + fmt.Sprintf("%v", len(*ctx.values))
 
 		case "$gte":
-			fmt.Printf("  *** Key:   %v\n", key)
-			fmt.Printf("  *** Value: %v\n", value)
 			*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
-			field := FormatField(key, ctx.parents)
+			field := FormatField("", ctx.parents)
 			sql = field + ` >= $` + fmt.Sprintf("%v", len(*ctx.values))
 
 		case "$lt":
 			*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
-			field := FormatField(key, ctx.parents)
+			field := FormatField("", ctx.parents)
 			sql = field + ` < $` + fmt.Sprintf("%v", len(*ctx.values))
 
 		case "$lte":
 			*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
-			field := FormatField(key, ctx.parents)
+			field := FormatField("", ctx.parents)
 			sql = field + ` <= $` + fmt.Sprintf("%v", len(*ctx.values))
+
+		case "$ne":
+			*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
+			field := FormatField("", ctx.parents)
+			sql = field + ` <> $` + fmt.Sprintf("%v", len(*ctx.values))
 
 		default:
 			if strings.HasPrefix(key, "$") {
