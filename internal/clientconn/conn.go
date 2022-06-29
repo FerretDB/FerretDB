@@ -24,14 +24,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn/info"
-
 	"github.com/AlekSi/pointer"
 	"github.com/pmezard/go-difflib/difflib"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/info"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/proxy"

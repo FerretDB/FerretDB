@@ -798,7 +798,7 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 // It connects two clients to the same server and checks that `whatsmyuri` returns different ports for these clients.
 func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
 	t.Parallel()
-	ctx, collection1, port := setupWithOpts(t, &setupOpts{})
+	ctx, collection1, port := setupWithOpts(t, new(setupOpts))
 	client2 := setupClient(t, ctx, port)
 	collection2 := client2.Database(collection1.Database().Name()).Collection(collection1.Name())
 
