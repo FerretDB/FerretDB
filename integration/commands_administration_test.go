@@ -813,9 +813,8 @@ func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
 		assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 
 		// record ports to compare that they are not equal for two different clients.
-		host, port, err := net.SplitHostPort(must.NotFail(doc.Get("you")).(string))
+		_, port, err := net.SplitHostPort(must.NotFail(doc.Get("you")).(string))
 		require.NoError(t, err)
-		assert.Equal(t, "127.0.0.1", host)
 		ports = append(ports, port)
 	}
 
