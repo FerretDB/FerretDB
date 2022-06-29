@@ -198,41 +198,54 @@ func TestConcurrentCreate(t *testing.T) {
 	schemaName := testutil.SchemaName(t)
 	tableName := testutil.TableName(t)
 
-	for _, withTable := range []bool{false, true} {
-		start := make(chan struct{})
-		res := make(chan error, n)
-		for i := 0; i < n; i++ {
-			go func() {
-				<-start
-				if withTable {
-					res <- pool.CreateTable(ctx, schemaName, tableName)
-				} else {
-					res <- pool.CreateSchema(ctx, schemaName)
-				}
-			}()
-		}
-
-		close(start)
-
-		var errors int
-		for i := 0; i < n; i++ {
-			err := <-res
-			if err == nil {
-				continue
+	for _, tc := range []struct {
+		name        string
+		f           func() error
+		expectedErr int
+	}{
+		{
+			name: "CreateSchema",
+			f: func() error {
+				return pool.CreateSchema(ctx, schemaName)
+			},
+			expectedErr: n - 1,
+		},
+		{
+			name: "CreateTable",
+			f: func() error {
+				return pool.CreateTable(ctx, schemaName, tableName)
+			},
+			expectedErr: 0,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			start := make(chan struct{})
+			res := make(chan error, n)
+			for i := 0; i < n; i++ {
+				go func() {
+					<-start
+					res <- tc.f()
+				}()
 			}
 
-			errors++
-			assert.Equal(t, pgdb.ErrAlreadyExist, err)
-		}
+			close(start)
 
-		assert.Equal(t, n-1, errors)
+			var errors int
+			for i := 0; i < n; i++ {
+				err := <-res
+				if err == nil {
+					continue
+				}
 
-		// one more time to check "normal" error (DuplicateSchema, DuplicateTable)
-		if withTable {
-			assert.Equal(t, pgdb.ErrAlreadyExist, pool.CreateTable(ctx, schemaName, tableName))
-		} else {
-			assert.Equal(t, pgdb.ErrAlreadyExist, pool.CreateSchema(ctx, schemaName))
-		}
+				errors++
+				assert.Equal(t, pgdb.ErrAlreadyExist, err)
+			}
+
+			assert.Equal(t, tc.expectedErr, errors)
+
+			// one more time to check "normal" error (DuplicateSchema, DuplicateTable)
+			assert.Equal(t, pgdb.ErrAlreadyExist, tc.f())
+		})
 	}
 }
 
