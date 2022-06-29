@@ -120,3 +120,20 @@ func TestNeComparatorOp(t *testing.T) {
 	assert.Equal(t, []interface{}{"1"}, values)
 	assert.Equal(t, "((_jsonb->'b' <> $1))", *sql)
 }
+
+func TestInComparatorOp(t *testing.T) {
+	t.Parallel()
+
+	doc := must.NotFail(types.NewDocument(
+		"b", must.NotFail(types.NewDocument(
+			"$in",
+			must.NotFail(types.NewArray(int32(1), int32(2))),
+		)),
+	))
+
+	sql, values, err := AggregateMatch(doc)
+	require.NoError(t, err)
+
+	assert.Equal(t, []interface{}{[]string{"1", "2"}}, values)
+	assert.Equal(t, "((_jsonb->'b' = ANY($1)))", *sql)
+}

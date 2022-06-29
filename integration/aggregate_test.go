@@ -79,6 +79,13 @@ func TestMatch(t *testing.T) {
 				bson.D{{"_id", int32(2)}, {"a", int32(1)}, {"b", int32(8)}},
 			},
 		},
+		"In": {
+			match: bson.D{{"_id", bson.D{{"$in", bson.A{1, 2}}}}},
+			expected: []bson.D{
+				bson.D{{"_id", int32(1)}, {"a", int32(1)}, {"b", int32(2)}},
+				bson.D{{"_id", int32(2)}, {"a", int32(1)}, {"b", int32(8)}},
+			},
+		},
 	} {
 		name, tc := name, tc
 
