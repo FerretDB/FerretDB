@@ -22,11 +22,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// FIXME sanitize input
 func MatchToSql(field string, value interface{}, joinOp string, values *[]interface{}) string {
 	var sql string
-
-	fmt.Printf("  *** field, value: %v, %v, %+v\n", field, value, value)
 
 	switch v := value.(type) {
 	case *types.Document:
@@ -60,7 +57,6 @@ func MatchToSql(field string, value interface{}, joinOp string, values *[]interf
 	default:
 		*values = append(*values, fmt.Sprintf("%v", value))
 		sql = field + ` = $` + fmt.Sprintf("%v", len(*values))
-		fmt.Printf("  *** SQL [%v] = [%v]\n", value, sql)
 	}
 
 	return sql

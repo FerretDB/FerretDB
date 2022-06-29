@@ -15,7 +15,6 @@
 package common
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -45,7 +44,6 @@ func TestMakeNestedQuery(t *testing.T) {
 	sql, values := AggregateMatch(doc)
 	assert.Equal(t, []interface{}{"1", "2", "3"}, values)
 	assert.Equal(t, "_jsonb->'a' = $1 AND _jsonb->'b'->>'c' = $2 AND _jsonb->'b'->>'d' = $3", sql)
-	fmt.Printf("  *** sql, values: %v, %v\n", sql, values)
 }
 
 func TestGetValueWithOr(t *testing.T) {
