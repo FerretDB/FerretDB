@@ -210,7 +210,16 @@ func (pgPool *Pool) Schemas(ctx context.Context) ([]string, error) {
 }
 
 // Collections returns a sorted list of FerretDB collection names.
-func (pgPool *Pool) Collections(ctx context.Context, schema string) ([]string, error) {
+func (pgPool *Pool) Collections(ctx context.Context, db string) ([]string, error) {
+	schemaExists, err := pgPool.schemaExists(ctx, db)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if !schemaExists {
+		return nil, ErrSchemaNotExist
+	}
+
 	// Create transaction to pass it to `getSettingsTable` and Rollback in the end.
 	tx, err := pgPool.Begin(ctx)
 	if err != nil {
@@ -218,7 +227,7 @@ func (pgPool *Pool) Collections(ctx context.Context, schema string) ([]string, e
 	}
 	defer tx.Rollback(ctx)
 
-	settings, err := pgPool.getSettingsTable(ctx, tx, schema)
+	settings, err := pgPool.getSettingsTable(ctx, tx, db)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -459,7 +468,10 @@ func (pgPool *Pool) CreateTableIfNotExist(ctx context.Context, db, collection st
 func (pgPool *Pool) CollectionExists(ctx context.Context, db, collection string) (bool, error) {
 	collections, err := pgPool.Collections(ctx, db)
 	if err != nil {
-		return false, lazyerrors.Error(err)
+		if err == ErrSchemaNotExist {
+			return false, nil
+		}
+		return false, err
 	}
 
 	return slices.Contains(collections, collection), nil
