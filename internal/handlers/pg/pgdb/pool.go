@@ -353,6 +353,15 @@ func (pgPool *Pool) DropSchema(ctx context.Context, schema string) error {
 //
 // It returns ErrAlreadyExist if table already exist, ErrNotExist is schema does not exist.
 func (pgPool *Pool) CreateTable(ctx context.Context, schema, collection string) error {
+	schemaExists, err := pgPool.schemaExists(ctx, schema)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if !schemaExists {
+		return ErrNotExist
+	}
+
 	tx, err := pgPool.Begin(ctx)
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -365,13 +374,21 @@ func (pgPool *Pool) CreateTable(ctx context.Context, schema, collection string) 
 		_ = tx.Commit(ctx)
 	}()
 
+	tables, err := pgPool.tables(ctx, tx, schema)
+	if err != nil {
+		return err
+	}
+	if slices.Contains(tables, formatCollectionName(collection)) {
+		return ErrAlreadyExist
+	}
+
 	table, err := pgPool.getTableName(ctx, tx, schema, collection)
 	if err != nil {
 		return err
 	}
 
-	sql := `CREATE TABLE ` + pgx.Identifier{schema, table}.Sanitize() + ` (_jsonb jsonb)`
-	_, err = pgPool.Exec(ctx, sql)
+	sql := `CREATE TABLE IF NOT EXISTS ` + pgx.Identifier{schema, table}.Sanitize() + ` (_jsonb jsonb)`
+	_, err = tx.Exec(ctx, sql)
 	if err == nil {
 		return nil
 	}
