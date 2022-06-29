@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestConnInfo(t *testing.T) {
@@ -35,10 +34,4 @@ func TestConnInfo(t *testing.T) {
 			assert.Equal(t, *connInfo, *actual)
 		})
 	}
-
-	// special case: get conn info from empty context should return empty peerAddr
-	ctx2 := context.Background()
-	actual := GetConnInfo(ctx2)
-	require.NotNil(t, actual)
-	assert.Equal(t, ConnInfo{}, *actual)
 }

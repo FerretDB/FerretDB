@@ -37,16 +37,16 @@ func WithConnInfo(ctx context.Context, connInfo *ConnInfo) context.Context {
 	return context.WithValue(ctx, connInfoKey, connInfo)
 }
 
-// GetConnInfo returns the ConnInfo value stored in ctx, or empty connInfo if there is nothing stored there.
+// GetConnInfo returns the ConnInfo value stored in ctx, or panics if connInfo is not presented there.
 func GetConnInfo(ctx context.Context) *ConnInfo {
 	value := ctx.Value(connInfoKey)
 	if value == nil {
-		return &ConnInfo{}
+		panic("connInfo is not set in context")
 	}
 
 	connInfo, ok := value.(*ConnInfo)
 	if !ok {
-		panic("connInfo stored in context with wrong value type")
+		panic("connInfo is set in context with wrong value type")
 	}
 	return connInfo
 }

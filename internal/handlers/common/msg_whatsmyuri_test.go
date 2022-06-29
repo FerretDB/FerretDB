@@ -9,9 +9,11 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// TestMsgWhatsMyURI checks a special case: even if context is not set, the method shouldn't return an error or panic.
+// TestMsgWhatsMyURI checks a special case: if context is not set, it panics.
 // The "normal" cases are covered in integration tests for MsgWhatsMyURI command.
 func TestMsgWhatsMyURI(t *testing.T) {
-	_, err := MsgWhatsMyURI(context.Background(), &wire.OpMsg{})
-	require.NoError(t, err)
+	require.Panics(t, func() {
+		_, err := MsgWhatsMyURI(context.Background(), &wire.OpMsg{})
+		require.NoError(t, err)
+	})
 }
