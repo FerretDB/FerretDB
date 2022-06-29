@@ -43,12 +43,15 @@ func MatchToSql(field string, value interface{}, joinOp string, values *[]interf
 		}
 	case *types.Array:
 		if strings.HasSuffix(field, "'$or'") {
-			if len(sql) > 0 {
+			if len(*values) > 0 {
 				sql += " " + joinOp + " "
 			}
 			sql += "("
 			for i := 0; i < v.Len(); i++ {
 				name := strings.TrimSuffix(strings.TrimSuffix(field, "->'$or'"), "->>'$or'")
+				if i > 0 {
+					sql += " OR "
+				}
 				sql += MatchToSql(name, must.NotFail(v.Get(i)), "OR", values)
 			}
 			sql += ")"

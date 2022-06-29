@@ -76,7 +76,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 				match := must.NotFail(p.Get(pipelineOp)).(*types.Document)
 				where, values := common.AggregateMatch(match)
 
-				sql += where
+				sql += " WHERE " + where
 				queryValues = append(queryValues, values...)
 
 			default:
