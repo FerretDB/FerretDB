@@ -27,7 +27,7 @@ import (
 // The "normal" cases are covered in integration tests for MsgWhatsMyURI command.
 func TestMsgWhatsMyURI(t *testing.T) {
 	require.Panics(t, func() {
-		_, err := MsgWhatsMyURI(context.Background(), &wire.OpMsg{})
+		_, err := MsgWhatsMyURI(context.Background(), new(wire.OpMsg))
 		require.NoError(t, err)
 	})
 }
