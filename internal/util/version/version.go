@@ -57,6 +57,9 @@ var (
 	info *Info
 )
 
+// unknown is a placeholder for unknown version, commit, and branch values.
+const unknown = "unknown"
+
 // Get returns current build's info.
 func Get() *Info {
 	return info
@@ -75,15 +78,15 @@ func init() {
 	MongoDBVersionArray = must.NotFail(types.NewArray(int32(major), int32(minor), int32(patch), int32(0)))
 
 	// those files are not present when FerretDB is used as library package
-	version := "unknown"
+	version := unknown
 	if b, _ := gen.ReadFile("gen/version.txt"); len(b) > 0 {
 		version = strings.TrimSpace(string(b))
 	}
-	commit := "unknown"
+	commit := unknown
 	if b, _ := gen.ReadFile("gen/commit.txt"); len(b) > 0 {
 		commit = strings.TrimSpace(string(b))
 	}
-	branch := "unknown"
+	branch := unknown
 	if b, _ := gen.ReadFile("gen/branch.txt"); len(b) > 0 {
 		branch = strings.TrimSpace(string(b))
 	}
@@ -95,7 +98,7 @@ func init() {
 		BuildEnvironment: must.NotFail(types.NewDocument()),
 	}
 
-	// do not expose extra information when when FerretDB is used as library package
+	// do not expose extra information when FerretDB is used as library package
 	buildInfo, ok := debug.ReadBuildInfo()
 	if !ok {
 		return
