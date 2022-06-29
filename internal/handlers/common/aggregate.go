@@ -23,9 +23,10 @@ import (
 )
 
 // FIXME sanitize input
-func GetValue(field string, value interface{}) ([]string, []interface{}) {
-	var fields []string
-	var values []interface{}
+func MatchToSql(field string, value interface{}, joinOp string, values *[]interface{}) string {
+	var sql string
+
+	fmt.Printf("  *** field, value: %v, %v, %+v\n", field, value, value)
 
 	switch v := value.(type) {
 	case *types.Document:
@@ -33,32 +34,38 @@ func GetValue(field string, value interface{}) ([]string, []interface{}) {
 		if strings.Contains(field, "->") {
 			sep = "->>"
 		}
-		for _, key := range v.Keys() {
-			f, v := GetValue(field+sep+`'`+key+`'`, must.NotFail(v.Get(key)))
-			fields = append(fields, f...)
-			values = append(values, v...)
+		for i, key := range v.Keys() {
+			s := MatchToSql(field+sep+`'`+key+`'`, must.NotFail(v.Get(key)), joinOp, values)
+			if i > 0 {
+				sql += " " + joinOp + " "
+			}
+			sql += s
 		}
+	case *types.Array:
+		if strings.HasSuffix(field, "'$or'") {
+			if len(sql) > 0 {
+				sql += " " + joinOp + " "
+			}
+			sql += "("
+			for i := 0; i < v.Len(); i++ {
+				name := strings.TrimSuffix(strings.TrimSuffix(field, "->'$or'"), "->>'$or'")
+				sql += MatchToSql(name, must.NotFail(v.Get(i)), "OR", values)
+			}
+			sql += ")"
+		}
+
 	default:
-		fields = append(fields, field)
-		values = append(values, fmt.Sprintf("%v", value))
+		*values = append(*values, fmt.Sprintf("%v", value))
+		sql = field + ` = $` + fmt.Sprintf("%v", len(*values))
+		fmt.Printf("  *** SQL [%v] = [%v]\n", value, sql)
 	}
 
-	return fields, values
+	return sql
 }
 
 func AggregateMatch(match *types.Document) (string, []interface{}) {
-	var where []string
+	values := make([]interface{}, 0)
+	sql := MatchToSql("_jsonb", match, "AND", &values)
 
-	sql := ``
-	if len(match.Keys()) > 0 {
-		sql += ` WHERE`
-	}
-
-	fields, values := GetValue("_jsonb", match)
-	for i, field := range fields {
-		where = append(where, fmt.Sprintf("%s = $%v", field, i+1))
-	}
-
-	sql += ` ` + strings.Join(where, ` AND `)
 	return sql, values
 }
