@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"golang.org/x/exp/constraints"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -267,7 +268,7 @@ func compareNumbers(a float64, b int64) CompareResult {
 func compareDocuments(a, b *Document) CompareResult {
 	// TODO this case needs to be revised and reworked to match MongoDB type sorting.
 	// Right now only tells if two documents are equal or not
-	if len(a.Keys()) != len(b.Keys()) {
+	if !slices.Equal(a.Keys(), b.Keys()) {
 		return Incomparable
 	}
 
@@ -331,16 +332,13 @@ func compareArrays(filterArr, docArr *Array) CompareResult {
 			// TODO this case needs to be revised and reworked to match MongoDB type sorting.
 			// Right now only tells if two documents are equal or not
 		case *Document:
-			filterValue, err := docArr.Get(i)
-			if err != nil {
-				return Incomparable
-			}
+			filterValue := must.NotFail(docArr.Get(i))
 			filterDoc, ok := filterValue.(*Document)
 			if !ok {
-				return Incomparable
+				continue
 			}
 			if compareDocuments(arrValue, filterDoc) != Equal {
-				return Incomparable
+				continue
 			}
 
 		default:
