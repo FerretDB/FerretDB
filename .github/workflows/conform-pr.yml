@@ -38,7 +38,7 @@ env:
   GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
   GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org
-  CONFORM_TOKEN: ${{ secrets.CONFORM_TOKEN }}  # GITHUB_TOKEN is not enough to query projects, so we use a special one
+  CONFORM_TOKEN: ${{ secrets.CONFORM_TOKEN }} # GITHUB_TOKEN is not enough to query projects, so we use a special one
 
 jobs:
   conform-pr:
@@ -49,9 +49,9 @@ jobs:
       # Warning! Be careful about changing the steps here as it might cause some security problems
       # (see the Attention block on the top of this file).
       - name: Setup Go
-        uses: FerretDB/github-actions/setup-go@main
+        uses: seeforschauer/github-actions/setup-go@issue-47-md
         with:
           cache-key: conform-pr
 
       - name: Conform PR
-        uses: FerretDB/github-actions/conform-pr@main
+        uses: seeforschauer/github-actions/conform-pr@issue-47-md
