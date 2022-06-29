@@ -43,8 +43,11 @@ const (
 )
 
 var (
-	// ErrNotExist indicates that there is no such schema or table.
-	ErrNotExist = fmt.Errorf("schema or table does not exist")
+	// ErrTableNotExist indicates that there is no such table.
+	ErrTableNotExist = fmt.Errorf("table does not exist")
+
+	// ErrSchemaNotExist indicates that there is no such schema.
+	ErrSchemaNotExist = fmt.Errorf("schema does not exist")
 
 	// ErrAlreadyExist indicates that a schema or table already exists.
 	ErrAlreadyExist = fmt.Errorf("schema or table already exist")
@@ -328,7 +331,7 @@ func (pgPool *Pool) CreateSchema(ctx context.Context, schema string) error {
 
 // DropSchema drops FerretDB database / PostgreSQL schema.
 //
-// It returns ErrNotExist if schema does not exist.
+// It returns ErrTableNotExist if schema does not exist.
 func (pgPool *Pool) DropSchema(ctx context.Context, schema string) error {
 	sql := `DROP SCHEMA ` + pgx.Identifier{schema}.Sanitize() + ` CASCADE`
 	_, err := pgPool.Exec(ctx, sql)
@@ -343,7 +346,7 @@ func (pgPool *Pool) DropSchema(ctx context.Context, schema string) error {
 
 	switch pgErr.Code {
 	case pgerrcode.InvalidSchemaName:
-		return ErrNotExist
+		return ErrSchemaNotExist
 	default:
 		return lazyerrors.Errorf("pg.DropSchema: %w", err)
 	}
@@ -351,7 +354,7 @@ func (pgPool *Pool) DropSchema(ctx context.Context, schema string) error {
 
 // CreateTable creates a new FerretDB collection / PostgreSQL table in existing schema.
 //
-// It returns ErrAlreadyExist if table already exist, ErrNotExist is schema does not exist.
+// It returns ErrAlreadyExist if table already exist, ErrTableNotExist is schema does not exist.
 func (pgPool *Pool) CreateTable(ctx context.Context, schema, collection string) error {
 	schemaExists, err := pgPool.schemaExists(ctx, schema)
 	if err != nil {
@@ -359,7 +362,7 @@ func (pgPool *Pool) CreateTable(ctx context.Context, schema, collection string) 
 	}
 
 	if !schemaExists {
-		return ErrNotExist
+		return ErrSchemaNotExist
 	}
 
 	tx, err := pgPool.Begin(ctx)
@@ -398,8 +401,17 @@ func (pgPool *Pool) CreateTable(ctx context.Context, schema, collection string) 
 
 // DropTable drops FerretDB collection / PostgreSQL table.
 //
-// It returns ErrNotExist if schema or table does not exist.
+// It returns ErrTableNotExist if schema or table does not exist.
 func (pgPool *Pool) DropTable(ctx context.Context, schema, collection string) error {
+	schemaExists, err := pgPool.schemaExists(ctx, schema)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if !schemaExists {
+		return ErrSchemaNotExist
+	}
+
 	tx, err := pgPool.Begin(ctx)
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -419,15 +431,15 @@ func (pgPool *Pool) DropTable(ctx context.Context, schema, collection string) er
 		return lazyerrors.Error(err)
 	}
 	if !slices.Contains(tables, table) {
-		return ErrNotExist
+		return ErrTableNotExist
 	}
 
 	err = pgPool.removeTableFromSettings(ctx, tx, schema, collection)
-	if err != nil && err != ErrNotExist {
+	if err != nil && err != ErrTableNotExist {
 		return lazyerrors.Error(err)
 	}
-	if err == ErrNotExist {
-		return ErrNotExist
+	if err == ErrTableNotExist {
+		return ErrTableNotExist
 	}
 
 	// TODO probably not CASCADE

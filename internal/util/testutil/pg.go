@@ -77,7 +77,7 @@ func Schema(ctx context.Context, tb testing.TB, pool *pgdb.Pool) string {
 	tb.Logf("Using schema %q.", schema)
 
 	err := pool.DropSchema(ctx, schema)
-	if err == pgdb.ErrNotExist {
+	if err == pgdb.ErrTableNotExist {
 		err = nil
 	}
 	require.NoError(tb, err)
@@ -92,7 +92,7 @@ func Schema(ctx context.Context, tb testing.TB, pool *pgdb.Pool) string {
 		}
 
 		err = pool.DropSchema(ctx, schema)
-		if err == pgdb.ErrNotExist { // test might delete it
+		if err == pgdb.ErrTableNotExist { // test might delete it
 			err = nil
 		}
 		require.NoError(tb, err)
@@ -122,7 +122,7 @@ func Table(ctx context.Context, tb testing.TB, pool *pgdb.Pool, db string) strin
 	tb.Logf("Using table %q.", table)
 
 	err := pool.DropTable(ctx, db, table)
-	if err == pgdb.ErrNotExist {
+	if err == pgdb.ErrTableNotExist {
 		err = nil
 	}
 	require.NoError(tb, err)

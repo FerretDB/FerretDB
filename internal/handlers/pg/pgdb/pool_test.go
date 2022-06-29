@@ -78,13 +78,13 @@ func TestCreateDrop(t *testing.T) {
 		// - schema creation is possible
 
 		err := pool.DropTable(ctx, schemaName, tableName)
-		require.Equal(t, pgdb.ErrNotExist, err)
+		require.Equal(t, pgdb.ErrSchemaNotExist, err)
 
 		err = pool.DropSchema(ctx, schemaName)
-		require.Equal(t, pgdb.ErrNotExist, err)
+		require.Equal(t, pgdb.ErrSchemaNotExist, err)
 
 		err = pool.CreateTable(ctx, schemaName, tableName)
-		require.Equal(t, pgdb.ErrNotExist, err)
+		require.Equal(t, pgdb.ErrSchemaNotExist, err)
 
 		err = pool.CreateSchema(ctx, schemaName)
 		require.NoError(t, err)
@@ -117,7 +117,7 @@ func TestCreateDrop(t *testing.T) {
 		require.Equal(t, pgdb.ErrAlreadyExist, err)
 
 		err = pool.DropTable(ctx, schemaName, tableName)
-		require.Equal(t, pgdb.ErrNotExist, err)
+		require.Equal(t, pgdb.ErrTableNotExist, err)
 
 		err = pool.CreateTable(ctx, schemaName, tableName)
 		require.NoError(t, err)
@@ -130,7 +130,7 @@ func TestCreateDrop(t *testing.T) {
 		require.NoError(t, err)
 
 		err = pool.DropSchema(ctx, schemaName)
-		require.Equal(t, pgdb.ErrNotExist, err)
+		require.Equal(t, pgdb.ErrSchemaNotExist, err)
 	})
 
 	t.Run("SchemaExistsTableExists", func(t *testing.T) {
@@ -169,7 +169,7 @@ func TestCreateDrop(t *testing.T) {
 		require.NoError(t, err)
 
 		err = pool.DropTable(ctx, schemaName, tableName)
-		require.Equal(t, pgdb.ErrNotExist, err)
+		require.Equal(t, pgdb.ErrTableNotExist, err)
 
 		err = pool.DropSchema(ctx, schemaName)
 		require.NoError(t, err)

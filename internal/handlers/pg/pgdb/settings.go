@@ -64,7 +64,7 @@ func (pgPool *Pool) createSettingsTable(ctx context.Context, tx pgx.Tx, db strin
 
 		switch pgErr.Code {
 		case pgerrcode.InvalidSchemaName:
-			return ErrNotExist
+			return ErrTableNotExist
 		case pgerrcode.DuplicateTable:
 			return ErrAlreadyExist
 		case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject:
@@ -210,7 +210,7 @@ func (pgPool *Pool) removeTableFromSettings(ctx context.Context, tx pgx.Tx, db, 
 	}
 
 	if !collections.Has(collection) {
-		return ErrNotExist
+		return ErrTableNotExist
 	}
 
 	collections.Remove(collection)
