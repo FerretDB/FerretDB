@@ -48,4 +48,11 @@ func TestConnInfo(t *testing.T) {
 			assert.Equal(t, *connInfo, *actual)
 		})
 	}
+
+	// special case: if context is not set, it panics.
+	assert.Panics(t, func() { GetConnInfo(context.Background()) })
+
+	// special case: if something wrong is set in context, it panics.
+	ctx := context.WithValue(context.Background(), connInfoKey, "wrong type")
+	assert.Panics(t, func() { GetConnInfo(ctx) })
 }
