@@ -64,10 +64,14 @@ func Get() *Info {
 }
 
 func init() {
+	version = strings.TrimSpace(version)
+	commit = strings.TrimSpace(commit)
+	branch = strings.TrimSpace(branch)
+
 	info = &Info{
-		Version:          strings.TrimSpace(version),
-		Commit:           strings.TrimSpace(commit),
-		Branch:           strings.TrimSpace(branch),
+		Version:          version,
+		Commit:           commit,
+		Branch:           branch,
 		BuildEnvironment: must.NotFail(types.NewDocument()),
 	}
 
