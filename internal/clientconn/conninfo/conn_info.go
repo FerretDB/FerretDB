@@ -22,7 +22,7 @@ import (
 )
 
 // contextKey is a special type to represent context.WithValue keys a bit more safely.
-type contextKey string
+type contextKey struct{}
 
 // connInfoKey stores the key for withConnInfo context value.
 var connInfoKey = contextKey{}
