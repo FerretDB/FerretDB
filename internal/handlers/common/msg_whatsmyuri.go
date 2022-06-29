@@ -29,10 +29,14 @@ func MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 
 	connInfo := conninfo.GetConnInfo(ctx)
+	var peerAddr string
+	if connInfo.PeerAddr != nil {
+		peerAddr = connInfo.PeerAddr.String()
+	}
 
 	err := reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"you", connInfo.PeerAddr.String(),
+			"you", peerAddr,
 			"ok", float64(1),
 		))},
 	})
