@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
