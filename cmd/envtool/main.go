@@ -199,8 +199,10 @@ func run(ctx context.Context, logger *zap.SugaredLogger) error {
 		return err
 	}
 
-	if err = pgPool.CreateSchema(ctx, `test`); err != nil {
-		return err
+	for _, schema := range []string{"admin", "test"} {
+		if err = pgPool.CreateSchema(ctx, schema); err != nil {
+			return err
+		}
 	}
 
 	for _, q := range []string{
