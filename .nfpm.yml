@@ -1,3 +1,4 @@
+---
 name: "ferretdb"
 arch: "amd64"
 platform: "linux"
@@ -11,5 +12,3 @@ license: Apache License 2
 contents:
   - src: ../../bin/ferretdb
     dst: /usr/bin/ferretdb
-
-
