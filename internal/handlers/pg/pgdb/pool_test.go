@@ -209,8 +209,7 @@ func TestConcurrentCreate(t *testing.T) {
 				return pool.CreateSchema(ctx, schemaName)
 			},
 			expectedErr: n - 1,
-		},
-		{
+		}, {
 			name: "CreateTable",
 			f: func() error {
 				return pool.CreateTable(ctx, schemaName, tableName)
