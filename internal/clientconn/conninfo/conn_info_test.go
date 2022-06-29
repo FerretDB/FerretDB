@@ -51,7 +51,7 @@ func TestConnInfo(t *testing.T) {
 		})
 	}
 
-	// special cases: if context is not set ot something wrong is set in context, it panics.
+	// special cases: if context is not set or something wrong is set in context, it panics.
 	for name, tc := range map[string]struct {
 		ctx context.Context
 	}{
