@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -44,31 +45,31 @@ func runGit(args ...string) []byte {
 func main() {
 	var wg sync.WaitGroup
 
-	// git describe --tags --dirty > version.txt
+	// git describe --tags --dirty > gen/version.txt
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 
 		b := runGit("describe", "--tags", "--dirty")
-		must.NoError(os.WriteFile("version.txt", b, 0o644))
+		must.NoError(os.WriteFile(filepath.Join("gen", "version.txt"), b, 0o644))
 	}()
 
-	// git rev-parse HEAD > commit.txt
+	// git rev-parse HEAD > gen/commit.txt
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 
 		b := runGit("rev-parse", "HEAD")
-		must.NoError(os.WriteFile("commit.txt", b, 0o644))
+		must.NoError(os.WriteFile(filepath.Join("gen", "commit.txt"), b, 0o644))
 	}()
 
-	// git branch --show-current > branch.txt
+	// git branch --show-current > gen/branch.txt
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 
 		b := runGit("branch", "--show-current")
-		must.NoError(os.WriteFile("branch.txt", b, 0o644))
+		must.NoError(os.WriteFile(filepath.Join("gen", "branch.txt"), b, 0o644))
 	}()
 
 	wg.Wait()
