@@ -19,15 +19,9 @@ package main
 
 import (
 	"flag"
-
-	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 )
 
-// `tigris` handler flags.
-var (
-	tigrisURLF = flag.String("tigris-url", "127.0.0.1:8081", "Tigris URL")
-)
-
+// init adds `tigris` handler flags when `tigris` build tag is provided.
 func init() {
-	registry.RegisterTigris(*tigrisURLF)
+	flag.StringVar(&tigrisURL, "tigris-url", "127.0.0.1:8081", "Tigris URL")
 }

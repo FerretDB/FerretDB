@@ -12,97 +12,100 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package ferretdb provides embeddable FerretDB implementation.
 package ferretdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"time"
+	"net/url"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
-	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
-	"github.com/FerretDB/FerretDB/internal/handlers/tigris"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 )
 
-// Config contains a backend connection strings.
+// Config represents FerretDB configuration.
 type Config struct {
-	Handler     string
-	PostgresURL string
-	TigrisURL   string
+	// Handler to use; one of `pg` or `tigris` (if enabled at compile-time).
+	Handler string
+
+	// PostgreSQL connection string for `pg` handler.
+	PostgreSQLURL string
+
+	// Tigris connection string for `tigris` handler.
+	TigrisURL string
 }
 
-// FerretDB proxy.
+// FerretDB represents an instance of embeddable FerretDB implementation.
 type FerretDB struct {
-	config Config
+	config     *Config
+	listenAddr string
 }
 
-// New registers backend handler and returns a new FerretDB.
-func New(conf Config) FerretDB {
-	switch conf.Handler {
-	case "pg":
-		registry.RegisterPg(conf.PostgresURL)
-	case "tigris":
-		registry.Handlers["tigris"] = func(opts registry.NewHandlerOpts) (handlers.Interface, error) {
-			handlerOpts := &tigris.NewOpts{
-				TigrisURL: conf.TigrisURL,
-				L:         opts.Logger,
-			}
-			return tigris.New(handlerOpts)
-		}
-	default:
-		panic(fmt.Sprintf("Unknown backend handler %q.", conf.Handler))
+// New creates a new instance of embeddable FerretDB implementation.
+func New(config *Config) (*FerretDB, error) {
+	f := &FerretDB{
+		config:     config,
+		listenAddr: "127.0.0.1:27017",
 	}
-	return FerretDB{
-		config: conf,
-	}
+
+	return f, nil
 }
 
-// GetConnectionString returns the backend connection string.
-func (fdb *FerretDB) GetConnectionString() string {
-	return "mongodb://127.0.0.1:27017"
-}
-
-// Run runs the FerretDB proxy as a library with:
-// * error level logging
-// * monitoring disabled
-// * handler PostgreSQL.
-func (fdb *FerretDB) Run(ctx context.Context) error {
-	listenAddr := "127.0.0.1:27017"
-	mode := clientconn.NormalMode
-	testConnTimeout := time.Duration(0)
-
-	logging.Setup(zapcore.FatalLevel)
-	logger := zap.L()
-
-	newHandler := registry.Handlers[fdb.config.Handler]
-	if newHandler == nil {
-		logger.Sugar().Fatalf("Unknown backend handler %q.", fdb.config.Handler)
+// Run runs FerretDB until ctx is done.
+//
+// When this method returns, listener and all connections are closed.
+func (f *FerretDB) Run(ctx context.Context) error {
+	newOpts := registry.NewHandlerOpts{
+		Ctx:           context.Background(),
+		Logger:        logger,
+		PostgreSQLURL: f.config.PostgreSQLURL,
+		TigrisURL:     f.config.TigrisURL,
 	}
-
-	opts := registry.NewHandlerOpts{
-		Ctx:    ctx,
-		Logger: logger,
+	h, err := registry.NewHandler(f.config.Handler, &newOpts)
+	if err != nil {
+		return fmt.Errorf("failed to construct handler: %s", err)
 	}
-	h := registry.New(fdb.config.Handler, opts)
 	defer h.Close()
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		ListenAddr:      listenAddr,
-		Mode:            clientconn.Mode(mode),
-		Handler:         h,
-		Logger:          logger,
-		TestConnTimeout: testConnTimeout,
+		ListenAddr: f.listenAddr,
+		Mode:       clientconn.NormalMode,
+		Handler:    h,
+		Logger:     logger,
 	})
 
-	err := l.Run(ctx)
-	if err != nil && err != context.Canceled {
-		logger.Error("Listener stopped", zap.Error(err))
-		return err
+	if err = l.Run(ctx); err != nil {
+		// Do not expose internal error details.
+		// If you need stable error values and/or types for some cases, please create an issue.
+		err = errors.New(err.Error())
 	}
-	return nil
+	return err
+}
+
+// MongoDBURI returns MongoDB URI for this FerretDB instance.
+func (f *FerretDB) MongoDBURI() string {
+	u := url.URL{
+		Scheme: "mongodb",
+		Host:   f.listenAddr,
+		Path:   "/",
+	}
+	return u.String()
+}
+
+// logger is a global logger used by FerretDB.
+//
+// If it is a problem for you, please create an issue.
+var logger *zap.Logger
+
+// Initialize the global logger there to avoid creating too many issues for zap users that initialize it in their
+// `main()` functions. It is still not a full solution; eventually, we should remove the usage of the global logger.
+func init() {
+	logging.Setup(zapcore.FatalLevel)
+	logger = zap.L()
 }

@@ -17,36 +17,47 @@ package ferretdb
 import (
 	"context"
 	"fmt"
+	"log"
 
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// ExampleNew is a testable example for Run func.
-func ExampleNew() {
-	ctx, cancel := context.WithCancel(context.Background())
-	conf := Config{Handler: "pg", PostgresURL: "postgres://postgres@127.0.0.1:5432/ferretdb"}
-
-	fdb := New(conf)
-	go func() {
-		err := fdb.Run(ctx)
-		if err != nil {
-			panic(err)
-		}
-	}()
-
-	uri := fdb.GetConnectionString()
-
-	var err error
-	var client *mongo.Client
-	if client, err = mongo.Connect(ctx, options.Client().ApplyURI(uri)); err != nil {
-		panic(err)
+func Example() {
+	f, err := New(&Config{
+		Handler:       "pg",
+		PostgreSQLURL: "postgres://postgres@127.0.0.1:5432/ferretdb",
+	})
+	if err != nil {
+		log.Fatal(err)
 	}
-	if err = client.Ping(ctx, nil); err != nil {
-		panic(err)
+
+	ctx := context.Background()
+
+	go f.Run(ctx)
+
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(f.MongoDBURI()))
+	if err != nil {
+		log.Fatal(err)
 	}
-	client.Disconnect(ctx)
-	cancel()
-	fmt.Println(uri)
-	// Output: mongodb://127.0.0.1:27017
+
+	filter := bson.D{{
+		"name",
+		bson.D{{
+			"$not",
+			bson.D{{
+				"$regex",
+				primitive.Regex{Pattern: "test.*"},
+			}},
+		}},
+	}}
+	collections, err := client.ListDatabaseNames(ctx, filter)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(collections)
+	// Output: [admin public]
 }

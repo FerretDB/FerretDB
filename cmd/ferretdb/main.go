@@ -26,8 +26,6 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
@@ -47,24 +45,21 @@ var (
 
 	handlerF = flag.String("handler", "<set in initFlags()>", "<set in initFlags()>")
 
+	postgreSQLURLF = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/ferretdb", "PostgreSQL URL")
+
 	logLevelF = flag.String("log-level", "<set in initFlags()>", "<set in initFlags()>")
 
 	testConnTimeoutF = flag.Duration("test-conn-timeout", 0, "test: set connection timeout")
 )
 
+// tigrisURL is a Tigris URL. It is set in the main_tigris.go.
+var tigrisURL string
+
 // initFlags improves flags settings after all global flags are initialized
 // and all handler constructors are registered.
 func initFlags() {
-	_, ok := registry.Handlers["pg"]
-	if !ok {
-		panic("no pg handler registered")
-	}
-
-	handlers := maps.Keys(registry.Handlers)
-	slices.Sort(handlers)
-
 	f := flag.Lookup("handler")
-	f.Usage = "backend handler: " + strings.Join(handlers, ", ")
+	f.Usage = "backend handler: " + strings.Join(registry.Handlers(), ", ")
 	f.DefValue = "pg"
 	must.NoError(f.Value.Set(f.DefValue))
 
@@ -134,18 +129,15 @@ func main() {
 
 	go debug.RunHandler(ctx, *debugAddrF, logger.Named("debug"))
 
-	newHandler := registry.Handlers[*handlerF]
-	if newHandler == nil {
-		logger.Sugar().Fatalf("Unknown backend handler %q.", *handlerF)
-	}
-	h, err := newHandler(registry.NewHandlerOpts{
-		Ctx:    ctx,
-		Logger: logger,
+	h, err := registry.NewHandler(*handlerF, &registry.NewHandlerOpts{
+		Ctx:           ctx,
+		Logger:        logger,
+		PostgreSQLURL: *postgreSQLURLF,
+		TigrisURL:     tigrisURL,
 	})
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
-
 	defer h.Close()
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
