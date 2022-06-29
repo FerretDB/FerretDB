@@ -295,8 +295,17 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewErrorMsg(ErrBadValue, msg)
 			}
-			if types.Compare(fieldValue, exprValue) != types.Greater {
-				return false, nil
+			fieldValueArrD, okDA := fieldValue.(*types.Array)
+			exprValueArrF, okFA := exprValue.(*types.Array)
+			if okFA && okDA {
+				res := types.CompareArrays(exprValueArrF, fieldValueArrD)
+				if res != types.Greater && res != types.GtAndLt {
+					return false, nil
+				}
+			} else {
+				if types.Compare(fieldValue, exprValue) != types.Greater {
+					return false, nil
+				}
 			}
 
 		case "$gte":
@@ -315,8 +324,17 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewErrorMsg(ErrBadValue, msg)
 			}
-			if c := types.Compare(fieldValue, exprValue); c != types.Less {
-				return false, nil
+			fieldValueArrD, okDA := fieldValue.(*types.Array)
+			exprValueArrF, okFA := exprValue.(*types.Array)
+			if okFA && okDA {
+				res := types.CompareArrays(exprValueArrF, fieldValueArrD)
+				if res != types.Less && res != types.GtAndLt {
+					return false, nil
+				}
+			} else {
+				if c := types.Compare(fieldValue, exprValue); c != types.Less {
+					return false, nil
+				}
 			}
 
 		case "$lte":
