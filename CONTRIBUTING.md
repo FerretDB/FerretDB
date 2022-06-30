@@ -16,14 +16,20 @@ You can find a list of good issues for first-time contributors [there](https://g
 
 ## Contributing code
 
-The supported way of developing FerretDB is to modify and run it on the host
-(Linux, macOS, or Windows with [WSL2](https://docs.microsoft.com/en-us/windows/wsl/)),
-with PostgreSQL and other dependencies running inside Docker Compose.
+The supported way of developing FerretDB is to modify and run it on the host (Linux, macOS, or Windows)
+with PostgreSQL and other dependencies running inside Docker containers via Docker Compose.
+On Linux, `docker` and `docker-compose` should be installed on the host.
+On macOS and Windows, [Docker Desktop](https://www.docker.com/products/docker-desktop/) should be used.
+On Windows, it should be [configured to use WSL 2](https://docs.docker.com/desktop/windows/wsl/) without any distro;
+all commands should be run on the host.
 
-You will need Go 1.18 as FerretDB extensively uses ([fuzzing](https://go.dev/doc/tutorial/fuzz))
+You will need Go 1.18 or later as FerretDB extensively uses ([fuzzing](https://go.dev/doc/tutorial/fuzz))
 and [generics](https://go.dev/doc/tutorial/generics)).
 If your package manager doesn't provide it yet,
 please install it from [go.dev](https://go.dev/dl/).
+
+You will also need `git` installed; the version provided by your package manager should do.
+On Windows, the simplest way to install it might be <https://gitforwindows.org>.
 
 ### Cloning the Repository
 
