@@ -53,6 +53,24 @@ func FormatField(field string, parents []string) string {
 	return res
 }
 
+func HandleJoin(ctx *parseContext, oper string, arr *types.Array) (string, error) {
+	sql := "("
+	for i := 0; i < arr.Len(); i++ {
+		v := must.NotFail(arr.Get(i))
+		if i > 0 {
+			sql += " " + oper + " "
+		}
+		s, err := MatchToSql(ctx, "", v)
+		if err != nil {
+			return "", err
+		}
+		sql += *s
+	}
+	sql += ")"
+
+	return sql, nil
+}
+
 func MatchToSql(ctx *parseContext, key string, value interface{}) (*string, error) {
 	var sql string
 
@@ -82,19 +100,22 @@ func MatchToSql(ctx *parseContext, key string, value interface{}) (*string, erro
 			if !ok {
 				return nil, NewErrorMsg(ErrBadValue, "$or must be an array")
 			}
-			sql = "("
-			for i := 0; i < arr.Len(); i++ {
-				v := must.NotFail(arr.Get(i))
-				if i > 0 {
-					sql += " OR "
-				}
-				s, err := MatchToSql(ctx, "", v)
-				if err != nil {
-					return nil, err
-				}
-				sql += *s
+			r, err := HandleJoin(ctx, "OR", arr)
+			if err != nil {
+				return nil, err
 			}
-			sql += ")"
+			sql = r
+
+		case "$and":
+			arr, ok := value.(*types.Array)
+			if !ok {
+				return nil, NewErrorMsg(ErrBadValue, "$and must be an array")
+			}
+			r, err := HandleJoin(ctx, "AND", arr)
+			if err != nil {
+				return nil, err
+			}
+			sql = r
 
 		case "$gt":
 			*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))

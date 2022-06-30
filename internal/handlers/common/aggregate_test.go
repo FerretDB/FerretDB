@@ -67,6 +67,22 @@ func TestGetValueWithOr(t *testing.T) {
 	assert.Equal(t, "(((_jsonb->'a' = $1 AND _jsonb->'b' = $2) OR (_jsonb->'c' = $3)))", *sql)
 }
 
+func TestGetValueWithAnd(t *testing.T) {
+	t.Parallel()
+
+	doc := must.NotFail(types.NewDocument("$and",
+		must.NotFail(types.NewArray(
+			must.NotFail(types.NewDocument("a", int32(1), "b", int32(2))),
+			must.NotFail(types.NewDocument("c", "ONE")),
+		)),
+	))
+	sql, values, err := AggregateMatch(doc)
+	require.NoError(t, err)
+
+	assert.Equal(t, []interface{}{"1", "2", "ONE"}, values)
+	assert.Equal(t, "(((_jsonb->'a' = $1 AND _jsonb->'b' = $2) AND (_jsonb->'c' = $3)))", *sql)
+}
+
 func TestNestedWithOr(t *testing.T) {
 	t.Parallel()
 

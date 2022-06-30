@@ -51,6 +51,15 @@ func TestMatch(t *testing.T) {
 					{"c", bson.D{{"name", "Felipe"}, {"age", int32(12)}}}},
 			},
 		},
+		"And": {
+			match: bson.D{{"$and", bson.A{
+				bson.D{{"a", 1}},
+				bson.D{{"b", 2}},
+			}}},
+			expected: []bson.D{
+				bson.D{{"_id", int32(1)}, {"a", int32(1)}, {"b", int32(2)}},
+			},
+		},
 		"Or": {
 			match: bson.D{{"$or", bson.A{
 				bson.D{{"a", 1}},
