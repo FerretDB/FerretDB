@@ -249,3 +249,16 @@ func TestNestedSimpleExistsComparatorOp(t *testing.T) {
 	assert.Equal(t, []interface{}{"c"}, values)
 	assert.Equal(t, "(((_jsonb::jsonb->'b' ? $1)))", *sql)
 }
+
+func TestRegexMatch(t *testing.T) {
+	t.Parallel()
+
+	doc := must.NotFail(types.NewDocument("color",
+		must.NotFail(types.NewDocument("$regex", "^red$")),
+	))
+	sql, values, err := AggregateMatch(doc)
+	require.NoError(t, err)
+
+	assert.Equal(t, []interface{}{"^red$"}, values)
+	assert.Equal(t, "((_jsonb->>'color' ~ $1))", *sql)
+}

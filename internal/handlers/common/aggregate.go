@@ -28,6 +28,10 @@ type parseContext struct {
 }
 
 func FormatField(field string, parents []string) string {
+	return FormatFieldWithSeparators(field, parents, "->", "->>")
+}
+
+func FormatFieldWithSeparators(field string, parents []string, initSep string, otherSep string) string {
 	if len(parents) == 0 {
 		return field
 	}
@@ -39,9 +43,9 @@ func FormatField(field string, parents []string) string {
 	for i, p := range fields {
 		sep := ""
 		if i < len(fields)-1 {
-			sep = "->"
+			sep = initSep
 			if i > 0 {
-				sep = "->>"
+				sep = otherSep
 			}
 		}
 		fmtParent := p
@@ -187,6 +191,11 @@ func MatchToSql(ctx *parseContext, key string, value interface{}) (*string, erro
 		sql += *s
 		sql += ")"
 
+	case "$regex":
+		*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
+		field := FormatFieldWithSeparators("", ctx.parents, "->>", "->>")
+		sql = field + ` ~ $` + fmt.Sprintf("%v", len(*ctx.values))
+
 	default:
 		if strings.HasPrefix(key, "$") {
 			return nil, NewWriteErrorMsg(
@@ -217,7 +226,6 @@ func MatchToSql(ctx *parseContext, key string, value interface{}) (*string, erro
 			sql += ")"
 
 		default:
-
 			*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
 			field := FormatField(key, ctx.parents)
 			sql = field + ` = $` + fmt.Sprintf("%v", len(*ctx.values))
