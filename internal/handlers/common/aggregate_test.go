@@ -51,7 +51,7 @@ func TestMakeNestedQuery(t *testing.T) {
 	assert.Equal(t, "(_jsonb->'a' = $1 AND (_jsonb->'b'->>'c' = $2 AND _jsonb->'b'->>'d' = $3))", *sql)
 }
 
-func TestGetValueWithOr(t *testing.T) {
+func TestOrMatch(t *testing.T) {
 	t.Parallel()
 
 	doc := must.NotFail(types.NewDocument("$or",
@@ -67,7 +67,7 @@ func TestGetValueWithOr(t *testing.T) {
 	assert.Equal(t, "(((_jsonb->'a' = $1 AND _jsonb->'b' = $2) OR (_jsonb->'c' = $3)))", *sql)
 }
 
-func TestGetValueWithAnd(t *testing.T) {
+func TestAndMatch(t *testing.T) {
 	t.Parallel()
 
 	doc := must.NotFail(types.NewDocument("$and",
@@ -83,7 +83,37 @@ func TestGetValueWithAnd(t *testing.T) {
 	assert.Equal(t, "(((_jsonb->'a' = $1 AND _jsonb->'b' = $2) AND (_jsonb->'c' = $3)))", *sql)
 }
 
-func TestGetValueWithAll(t *testing.T) {
+func TestSimpleNotMatch(t *testing.T) {
+	t.Parallel()
+
+	doc := must.NotFail(types.NewDocument("$not",
+		must.NotFail(types.NewDocument("color", "blue")),
+	))
+	sql, values, err := AggregateMatch(doc)
+	require.NoError(t, err)
+
+	assert.Equal(t, []interface{}{"blue"}, values)
+	assert.Equal(t, "(NOT ((_jsonb->'color' = $1)))", *sql)
+}
+
+func TestComplexNotMatch(t *testing.T) {
+	t.Parallel()
+
+	doc := must.NotFail(types.NewDocument("$not",
+		must.NotFail(types.NewDocument(
+			"b", must.NotFail(types.NewDocument(
+				"$gt", int32(1),
+			)),
+		)),
+	))
+	sql, values, err := AggregateMatch(doc)
+	require.NoError(t, err)
+
+	assert.Equal(t, []interface{}{"1"}, values)
+	assert.Equal(t, "(NOT (((_jsonb->'b' > $1))))", *sql)
+}
+
+func TestAllMatch(t *testing.T) {
 	t.Parallel()
 
 	doc := must.NotFail(types.NewDocument("color",

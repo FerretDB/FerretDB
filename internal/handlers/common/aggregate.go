@@ -74,139 +74,149 @@ func HandleJoin(ctx *parseContext, oper string, arr *types.Array) (string, error
 func MatchToSql(ctx *parseContext, key string, value interface{}) (*string, error) {
 	var sql string
 
-	switch v := value.(type) {
-	case *types.Document:
-		if key != "" {
-			ctx.parents = append(ctx.parents, key)
+	switch key {
+	case "$or":
+		arr, ok := value.(*types.Array)
+		if !ok {
+			return nil, NewErrorMsg(ErrBadValue, "$or must be an array")
 		}
-		sql = "("
-		for i, key := range v.Keys() {
-			value := must.NotFail(v.Get(key))
-			s, err := MatchToSql(ctx, key, value)
-			if err != nil {
-				return nil, err
-			}
-			if i > 0 {
-				sql += " AND "
-			}
-			sql += *s
+		r, err := HandleJoin(ctx, "OR", arr)
+		if err != nil {
+			return nil, err
 		}
+		sql = r
+
+	case "$and":
+		arr, ok := value.(*types.Array)
+		if !ok {
+			return nil, NewErrorMsg(ErrBadValue, "$and must be an array")
+		}
+		r, err := HandleJoin(ctx, "AND", arr)
+		if err != nil {
+			return nil, err
+		}
+		sql = r
+
+	case "$gt":
+		*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
+		field := FormatField("", ctx.parents)
+		sql = field + ` > $` + fmt.Sprintf("%v", len(*ctx.values))
+
+	case "$gte":
+		*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
+		field := FormatField("", ctx.parents)
+		sql = field + ` >= $` + fmt.Sprintf("%v", len(*ctx.values))
+
+	case "$lt":
+		*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
+		field := FormatField("", ctx.parents)
+		sql = field + ` < $` + fmt.Sprintf("%v", len(*ctx.values))
+
+	case "$lte":
+		*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
+		field := FormatField("", ctx.parents)
+		sql = field + ` <= $` + fmt.Sprintf("%v", len(*ctx.values))
+
+	case "$ne":
+		*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
+		field := FormatField("", ctx.parents)
+		sql = field + ` <> $` + fmt.Sprintf("%v", len(*ctx.values))
+
+	case "$exists":
+		parentValue := ctx.parents[len(ctx.parents)-1]
+		*ctx.values = append(*ctx.values, fmt.Sprintf("%v", parentValue))
+
+		parents := ctx.parents[:len(ctx.parents)-1]
+		field := strings.Replace(FormatField("", parents), "_jsonb", "_jsonb::jsonb", -1)
+		sql = field + ` ? $` + fmt.Sprintf("%v", len(*ctx.values))
+		if value == false {
+			sql = "NOT (" + sql + ")"
+		}
+
+	case "$in":
+		arr, ok := value.(*types.Array)
+		if !ok {
+			return nil, NewErrorMsg(ErrBadValue, "$in must be an array")
+		}
+
+		arrVals := []string{}
+		for i := 0; i < arr.Len(); i++ {
+			arrVals = append(arrVals, fmt.Sprintf("%v", must.NotFail(arr.Get(i))))
+		}
+
+		*ctx.values = append(*ctx.values, arrVals)
+		field := FormatField("", ctx.parents)
+		sql = field + ` = ANY($` + fmt.Sprintf("%v", len(*ctx.values)) + `)`
+
+	case "$nin":
+		arr, ok := value.(*types.Array)
+		if !ok {
+			return nil, NewErrorMsg(ErrBadValue, "$in must be an array")
+		}
+
+		arrVals := []string{}
+		for i := 0; i < arr.Len(); i++ {
+			arrVals = append(arrVals, fmt.Sprintf("%v", must.NotFail(arr.Get(i))))
+		}
+
+		*ctx.values = append(*ctx.values, arrVals)
+		field := FormatField("", ctx.parents)
+		sql = field + ` <> ALL($` + fmt.Sprintf("%v", len(*ctx.values)) + `)`
+
+	case "$all":
+		arr, ok := value.(*types.Array)
+		if !ok {
+			return nil, NewErrorMsg(ErrBadValue, "$all must be an array")
+		}
+
+		arrVals := []string{}
+		for i := 0; i < arr.Len(); i++ {
+			arrVals = append(arrVals, fmt.Sprintf("%v", must.NotFail(arr.Get(i))))
+		}
+
+		*ctx.values = append(*ctx.values, arrVals)
+		field := FormatField("", ctx.parents)
+		sql = field + ` @> ($` + fmt.Sprintf("%v", len(*ctx.values)) + `)`
+
+	case "$not":
+		sql = "NOT ("
+		s, err := MatchToSql(ctx, "", value)
+		if err != nil {
+			return nil, err
+		}
+		sql += *s
 		sql += ")"
 
 	default:
-		switch key {
-		case "$or":
-			arr, ok := value.(*types.Array)
-			if !ok {
-				return nil, NewErrorMsg(ErrBadValue, "$or must be an array")
+		if strings.HasPrefix(key, "$") {
+			return nil, NewWriteErrorMsg(
+				ErrFailedToParse,
+				fmt.Sprintf(
+					"Unknown top level operator: %s. Expected a valid aggregate modifier", key,
+				),
+			)
+		}
+
+		switch v := value.(type) {
+		case *types.Document:
+			if key != "" {
+				ctx.parents = append(ctx.parents, key)
 			}
-			r, err := HandleJoin(ctx, "OR", arr)
-			if err != nil {
-				return nil, err
+			sql = "("
+			for i, key := range v.Keys() {
+				value := must.NotFail(v.Get(key))
+				s, err := MatchToSql(ctx, key, value)
+				if err != nil {
+					return nil, err
+				}
+				if i > 0 {
+					sql += " AND "
+				}
+				sql += *s
 			}
-			sql = r
-
-		case "$and":
-			arr, ok := value.(*types.Array)
-			if !ok {
-				return nil, NewErrorMsg(ErrBadValue, "$and must be an array")
-			}
-			r, err := HandleJoin(ctx, "AND", arr)
-			if err != nil {
-				return nil, err
-			}
-			sql = r
-
-		case "$gt":
-			*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
-			field := FormatField("", ctx.parents)
-			sql = field + ` > $` + fmt.Sprintf("%v", len(*ctx.values))
-
-		case "$gte":
-			*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
-			field := FormatField("", ctx.parents)
-			sql = field + ` >= $` + fmt.Sprintf("%v", len(*ctx.values))
-
-		case "$lt":
-			*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
-			field := FormatField("", ctx.parents)
-			sql = field + ` < $` + fmt.Sprintf("%v", len(*ctx.values))
-
-		case "$lte":
-			*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
-			field := FormatField("", ctx.parents)
-			sql = field + ` <= $` + fmt.Sprintf("%v", len(*ctx.values))
-
-		case "$ne":
-			*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
-			field := FormatField("", ctx.parents)
-			sql = field + ` <> $` + fmt.Sprintf("%v", len(*ctx.values))
-
-		case "$exists":
-			parentValue := ctx.parents[len(ctx.parents)-1]
-			*ctx.values = append(*ctx.values, fmt.Sprintf("%v", parentValue))
-
-			parents := ctx.parents[:len(ctx.parents)-1]
-			field := strings.Replace(FormatField("", parents), "_jsonb", "_jsonb::jsonb", -1)
-			sql = field + ` ? $` + fmt.Sprintf("%v", len(*ctx.values))
-			if value == false {
-				sql = "NOT (" + sql + ")"
-			}
-
-		case "$in":
-			arr, ok := value.(*types.Array)
-			if !ok {
-				return nil, NewErrorMsg(ErrBadValue, "$in must be an array")
-			}
-
-			arrVals := []string{}
-			for i := 0; i < arr.Len(); i++ {
-				arrVals = append(arrVals, fmt.Sprintf("%v", must.NotFail(arr.Get(i))))
-			}
-
-			*ctx.values = append(*ctx.values, arrVals)
-			field := FormatField("", ctx.parents)
-			sql = field + ` = ANY($` + fmt.Sprintf("%v", len(*ctx.values)) + `)`
-
-		case "$nin":
-			arr, ok := value.(*types.Array)
-			if !ok {
-				return nil, NewErrorMsg(ErrBadValue, "$in must be an array")
-			}
-
-			arrVals := []string{}
-			for i := 0; i < arr.Len(); i++ {
-				arrVals = append(arrVals, fmt.Sprintf("%v", must.NotFail(arr.Get(i))))
-			}
-
-			*ctx.values = append(*ctx.values, arrVals)
-			field := FormatField("", ctx.parents)
-			sql = field + ` <> ALL($` + fmt.Sprintf("%v", len(*ctx.values)) + `)`
-
-		case "$all":
-			arr, ok := value.(*types.Array)
-			if !ok {
-				return nil, NewErrorMsg(ErrBadValue, "$all must be an array")
-			}
-
-			arrVals := []string{}
-			for i := 0; i < arr.Len(); i++ {
-				arrVals = append(arrVals, fmt.Sprintf("%v", must.NotFail(arr.Get(i))))
-			}
-
-			*ctx.values = append(*ctx.values, arrVals)
-			field := FormatField("", ctx.parents)
-			sql = field + ` @> ($` + fmt.Sprintf("%v", len(*ctx.values)) + `)`
+			sql += ")"
 
 		default:
-			if strings.HasPrefix(key, "$") {
-				return nil, NewWriteErrorMsg(
-					ErrFailedToParse,
-					fmt.Sprintf(
-						"Unknown top level operator: %s. Expected a valid aggregate modifier", key,
-					),
-				)
-			}
 
 			*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
 			field := FormatField(key, ctx.parents)
