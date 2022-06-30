@@ -196,7 +196,7 @@ func MatchToSql(ctx *parseContext, key string, value interface{}) (*string, erro
 
 			*ctx.values = append(*ctx.values, arrVals)
 			field := FormatField("", ctx.parents)
-			sql = field + `@> ($` + fmt.Sprintf("%v", len(*ctx.values)) + `)`
+			sql = field + ` @> ($` + fmt.Sprintf("%v", len(*ctx.values)) + `)`
 
 		default:
 			if strings.HasPrefix(key, "$") {

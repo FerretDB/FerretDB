@@ -95,7 +95,7 @@ func TestGetValueWithAll(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, []interface{}{[]string{"black", "white"}}, values)
-	assert.Equal(t, "((_jsonb->'color' = ALL($1)))", *sql)
+	assert.Equal(t, "((_jsonb->'color' @> ($1)))", *sql)
 }
 
 func TestNestedWithOr(t *testing.T) {
