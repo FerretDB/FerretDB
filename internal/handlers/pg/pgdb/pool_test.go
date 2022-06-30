@@ -201,20 +201,24 @@ func TestConcurrentCreate(t *testing.T) {
 	for _, tc := range []struct {
 		name        string
 		f           func() error
-		expectedErr int
+		compareFunc func(*testing.T, int) bool
 	}{
 		{
 			name: "CreateDatabase",
 			f: func() error {
 				return pool.CreateDatabase(ctx, schemaName)
 			},
-			expectedErr: n - 1,
+			compareFunc: func(t *testing.T, errors int) bool {
+				return assert.Equal(t, n-1, errors)
+			},
 		}, {
 			name: "CreateCollection",
 			f: func() error {
 				return pool.CreateCollection(ctx, schemaName, tableName)
 			},
-			expectedErr: 0,
+			compareFunc: func(t *testing.T, errors int) bool {
+				return assert.Less(t, errors, n-1)
+			},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -240,7 +244,7 @@ func TestConcurrentCreate(t *testing.T) {
 				assert.Equal(t, pgdb.ErrAlreadyExist, err)
 			}
 
-			assert.Equal(t, tc.expectedErr, errors)
+			tc.compareFunc(t, errors)
 
 			// one more time to check "normal" error (DuplicateSchema, DuplicateTable)
 			assert.Equal(t, pgdb.ErrAlreadyExist, tc.f())
