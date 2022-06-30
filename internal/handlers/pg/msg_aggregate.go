@@ -65,7 +65,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	sql := `SELECT _jsonb FROM "` + sp.db + `"."` + sp.collection + `"`
+	fields := "_jsonb"
+	sql := `FROM "` + sp.db + `"."` + sp.collection + `"`
 
 	var queryValues []interface{}
 	for i := 0; i < pipeline.Len(); i++ {
@@ -82,12 +83,17 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 				sql += " WHERE " + *where
 				queryValues = append(queryValues, values...)
 
+			case "$count":
+				count := must.NotFail(p.Get(pipelineOp)).(string)
+				fields = common.AggregateCount(count)
+
 			default:
 				return nil, common.NewErrorMsg(common.ErrBadValue, fmt.Sprintf("unknown pipeline operator: %s", pipelineOp))
 			}
 		}
 	}
 
+	sql = "SELECT " + fields + " " + sql
 	// fmt.Printf(" *** SQL: %s %v %v\n", sql, queryValues, len(queryValues))
 	rows, err := h.pgPool.Query(ctx, sql, queryValues...)
 	if err != nil {

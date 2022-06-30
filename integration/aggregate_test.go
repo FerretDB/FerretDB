@@ -204,3 +204,29 @@ func TestMatchRegex(t *testing.T) {
 		bson.D{{"_id", int32(3)}, {"color", "blue"}},
 	}, results)
 }
+
+func TestCount(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	_, err := collection.InsertMany(ctx, []any{
+		bson.D{{"_id", 1}, {"color", "white"}},
+		bson.D{{"_id", 2}, {"color", "black"}},
+		bson.D{{"_id", 3}, {"color", "blue"}},
+		bson.D{{"_id", 4}, {"color", "yellow"}},
+	})
+	require.NoError(t, err)
+
+	match := bson.D{{"$match", bson.D{{"color", bson.D{{"$regex", "e$"}}}}}}
+	count := bson.D{{"$count", "cnt"}}
+	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{match, count})
+	require.NoError(t, err)
+
+	var results []bson.D
+	if err := cursor.All(ctx, &results); err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, []bson.D{
+		bson.D{{"cnt", int32(2)}},
+	}, results)
+}
