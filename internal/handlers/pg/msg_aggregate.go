@@ -87,6 +87,18 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 				count := must.NotFail(p.Get(pipelineOp)).(string)
 				fields = common.AggregateCount(count)
 
+			case "$group":
+				group := must.NotFail(p.Get(pipelineOp)).(*types.Document)
+
+				groupFields, groupBy, err := common.AggregateGroup(group)
+				if err != nil {
+					return nil, err
+				}
+				if *groupBy != "" {
+					sql += " GROUP BY " + *groupBy
+				}
+				fields = *groupFields
+
 			default:
 				return nil, common.NewErrorMsg(common.ErrBadValue, fmt.Sprintf("unknown pipeline operator: %s", pipelineOp))
 			}
