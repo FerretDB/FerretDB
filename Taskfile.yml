@@ -71,7 +71,7 @@ tasks:
   env-pull:
     desc: "Pull development environment's Docker images"
     cmds:
-      - docker-compose pull --include-deps
+      - docker-compose build --pull
 
   env-down:
     desc: "Stop development environment"
