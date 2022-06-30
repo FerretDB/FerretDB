@@ -23,7 +23,7 @@ on:
       # - unlocked
       # - review_requested
       # - review_request_removed
-      # - auto_merge_enabled
+      - auto_merge_enabled # if GitHub Actions stuck, re-enable auto-merge to force rebuild
       # - auto_merge_disabled
 
 # Stop pending and in-progress jobs of this workflow.
