@@ -41,7 +41,7 @@ type Listener struct {
 	listening      chan struct{}
 }
 
-// NewListenerOpts represents netListener configuration.
+// NewListenerOpts represents Listener configuration.
 type NewListenerOpts struct {
 	ListenAddr      string
 	ListenSocket    string
@@ -52,7 +52,7 @@ type NewListenerOpts struct {
 	TestConnTimeout time.Duration
 }
 
-// NewListener returns a new netListener, configured by the NewListenerOpts argument.
+// NewListener returns a new Listener, configured by the NewListenerOpts argument.
 func NewListener(opts *NewListenerOpts) *Listener {
 	return &Listener{
 		opts:      opts,
@@ -66,7 +66,7 @@ func NewListener(opts *NewListenerOpts) *Listener {
 //
 // When this method returns, listeners and all connections are closed.
 func (l *Listener) Run(ctx context.Context) error {
-	logger := l.opts.Logger.Named("netListener")
+	logger := l.opts.Logger.Named("listener")
 
 	var err error
 	if l.netListener, err = net.Listen("tcp", l.opts.ListenAddr); err != nil {
@@ -94,8 +94,10 @@ func (l *Listener) Run(ctx context.Context) error {
 	const delay = 3 * time.Second
 
 	var wg sync.WaitGroup
-	go l.handleConn(ctx, l.netListener, logger, &wg, delay)
-	go l.handleConn(ctx, l.socketListener, logger, &wg, delay)
+	go l.handleConn(ctx, l.netListener, logger.Named("netListener"), &wg, delay)
+	if l.socketListener != nil {
+		go l.handleConn(ctx, l.socketListener, logger.Named("socketListener"), &wg, delay)
+	}
 
 	logger.Info("Waiting for all connections to stop...")
 	wg.Wait()
