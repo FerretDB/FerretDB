@@ -318,7 +318,7 @@ func (pgPool *Pool) CreateTable(ctx context.Context, schema, table string) error
 //
 // It returns ErrNotExist if schema or table does not exist.
 func (pgPool *Pool) DropTable(ctx context.Context, schema, table string) error {
-	// TODO probably not CASCADE
+	// TODO https://github.com/FerretDB/FerretDB/issues/811
 	sql := `DROP TABLE ` + pgx.Identifier{schema, table}.Sanitize() + `CASCADE`
 	_, err := pgPool.Exec(ctx, sql)
 	if err == nil {
