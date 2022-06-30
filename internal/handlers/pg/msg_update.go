@@ -146,13 +146,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				"_id", must.NotFail(doc.Get("_id")),
 			))))
 
-			sql := fmt.Sprintf("INSERT INTO %s (_jsonb) VALUES ($1)", pgx.Identifier{sp.db, sp.collection}.Sanitize())
-			b, err := fjson.Marshal(doc)
-			if err != nil {
-				return nil, err
-			}
-
-			if _, err := h.pgPool.Exec(ctx, sql, b); err != nil {
+			if err = h.insert(ctx, sp, doc); err != nil {
 				return nil, err
 			}
 
@@ -200,7 +194,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
-// update prepares and executes actual UPDATE request to Postgres.
+// update updates documents by _id.
 func (h *Handler) update(ctx context.Context, sp sqlParam, doc *types.Document) (pgconn.CommandTag, error) {
 	sql := "UPDATE " + pgx.Identifier{sp.db, sp.collection}.Sanitize() +
 		" SET _jsonb = $1 WHERE _jsonb->'_id' = $2"

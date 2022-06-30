@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package dummy
 
 import (
-	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/dummy"
+	"context"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// init registers `dummy` stub handler that is always enabled.
-func init() {
-	registeredHandlers["dummy"] = func(*newHandlerOpts) (handlers.Interface, error) {
-		return dummy.New()
-	}
+// MsgSetFreeMonitoring implements HandlerInterface.
+func (h *Handler) MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	return common.MsgSetFreeMonitoring(ctx, msg)
 }

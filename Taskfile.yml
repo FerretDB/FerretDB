@@ -44,10 +44,17 @@ tasks:
       - go mod tidy
       - go mod verify
 
+  init-clean:
+    desc: "Clean all caches and re-install development tools"
+    cmds:
+      - bin/golangci-lint cache clean
+      - go clean -cache -testcache -modcache -fuzzcache
+      - task: init
+
   env-setup:
     deps: [gen-version]
     cmds:
-      - go run ./cmd/envtool/main.go
+      - go run {{if ne OS "windows"}}-race{{end}} ./cmd/envtool/main.go
 
   env-up-detach:
     cmds:
@@ -90,38 +97,38 @@ tasks:
   test-unit-short:
     desc: "Run short unit tests"
     cmds:
-      - go test -short -count=1 {{if ne OS "windows"}} -race {{end}} -shuffle=on -coverprofile=cover.txt ./...
+      - go test -short -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=cover.txt ./...
 
   test-unit:
     desc: "Run all unit tests"
     cmds:
-      - go test -count=1 {{if ne OS "windows"}} -race {{end}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
-      - go test -count=1 {{if ne OS "windows"}} -race {{end}} -shuffle=on -bench=. -benchtime=1x ./...
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -bench=. -benchtime=1x ./...
 
   test-integration:
     desc: "Run all integration tests in parallel"
     deps:
       - task: test-integration-db
-        vars: { DB: "FerretDB" }
+        vars: {DB: "FerretDB"}
       - task: test-integration-db
-        vars: { DB: "MongoDB" }
+        vars: {DB: "MongoDB"}
 
   test-integration-ferretdb:
     desc: "Run integration tests for FerretDB"
     cmds:
       - task: test-integration-db
-        vars: { DB: "FerretDB" }
+        vars: {DB: "FerretDB"}
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
     cmds:
       - task: test-integration-db
-        vars: { DB: "MongoDB" }
+        vars: {DB: "MongoDB"}
 
   test-integration-db:
     dir: integration
     cmds:
-      - go test -count=1 {{if ne OS "windows"}} -race {{end}} -shuffle=on -coverprofile=integration-{{.DB}}.txt -coverpkg=../... -port={{.DB}}
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=integration-{{.DB}}.txt -coverpkg=../... -port={{.DB}}
 
   bench-short:
     desc: "Benchmark for about 20 seconds (with default BENCHTIME)"
@@ -160,15 +167,15 @@ tasks:
   fuzz-corpus:
     desc: "Sync seed and generated fuzz corpora with FUZZCORPUS"
     cmds:
-      - go run ./cmd/fuzztool/fuzztool.go -dst={{.FUZZCORPUS}} -src=generated
-      - go run ./cmd/fuzztool/fuzztool.go -dst={{.FUZZCORPUS}} -src=seed
-      - go run ./cmd/fuzztool/fuzztool.go -src={{.FUZZCORPUS}} -dst=generated
+      - go run {{if ne OS "windows"}}-race{{end}} ./cmd/fuzztool/fuzztool.go -dst={{.FUZZCORPUS}} -src=generated
+      - go run {{if ne OS "windows"}}-race{{end}} ./cmd/fuzztool/fuzztool.go -dst={{.FUZZCORPUS}} -src=seed
+      - go run {{if ne OS "windows"}}-race{{end}} ./cmd/fuzztool/fuzztool.go -src={{.FUZZCORPUS}} -dst=generated
 
   build-testcover:
     desc: "Build bin/ferretdb-testcover"
     deps: [gen-version]
     cmds:
-      - go test -c -o=bin/ferretdb-testcover -trimpath -tags=testcover,tigris {{if ne OS "windows"}} -race {{end}} -coverpkg=./... ./cmd/ferretdb
+      - go test -c -o=bin/ferretdb-testcover -trimpath -tags=testcover,tigris {{if ne OS "windows"}}-race{{end}} -coverpkg=./... ./cmd/ferretdb
 
   run:
     desc: "Run FerretDB"
@@ -223,14 +230,14 @@ tasks:
     desc: "Run MongoDB shell (`mongosh`)"
     cmds:
       - >
-        docker-compose exec mongodb mongosh mongodb://host.docker.internal:27017/monila?heartbeatFrequencyMS=300000
+        docker-compose exec mongodb mongosh mongodb://host.docker.internal:27017/test?heartbeatFrequencyMS=300000
         --verbose --eval 'disableTelemetry()' --shell
 
   mongo:
     desc: "Run legacy `mongo` shell"
     cmds:
       - >
-        docker-compose exec mongodb mongo mongodb://host.docker.internal:27017/monila?heartbeatFrequencyMS=300000
+        docker-compose exec mongodb mongo mongodb://host.docker.internal:27017/test?heartbeatFrequencyMS=300000
         --verbose
 
   docker-init:
