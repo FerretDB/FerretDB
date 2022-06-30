@@ -153,3 +153,28 @@ func TestMatch(t *testing.T) {
 	}
 
 }
+
+func TestMatchAll(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	_, err := collection.InsertMany(ctx, []any{
+		bson.D{{"_id", 1}, {"colors", bson.A{"white", "black"}}},
+		bson.D{{"_id", 2}, {"colors", bson.A{"white", "blue"}}},
+		bson.D{{"_id", 3}, {"colors", bson.A{"blue"}}},
+		bson.D{{"_id", 4}, {"colors", bson.A{"white"}}},
+	})
+	require.NoError(t, err)
+
+	match := bson.D{{"$match", bson.D{{"colors", bson.D{{"$all", bson.A{"white", "blue"}}}}}}}
+	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{match})
+	require.NoError(t, err)
+
+	var results []bson.D
+	if err := cursor.All(ctx, &results); err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, []bson.D{
+		bson.D{{"_id", int32(2)}, {"colors", bson.A{"white", "blue"}}},
+	}, results)
+}

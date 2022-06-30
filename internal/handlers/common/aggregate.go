@@ -183,6 +183,21 @@ func MatchToSql(ctx *parseContext, key string, value interface{}) (*string, erro
 			field := FormatField("", ctx.parents)
 			sql = field + ` <> ALL($` + fmt.Sprintf("%v", len(*ctx.values)) + `)`
 
+		case "$all":
+			arr, ok := value.(*types.Array)
+			if !ok {
+				return nil, NewErrorMsg(ErrBadValue, "$all must be an array")
+			}
+
+			arrVals := []string{}
+			for i := 0; i < arr.Len(); i++ {
+				arrVals = append(arrVals, fmt.Sprintf("%v", must.NotFail(arr.Get(i))))
+			}
+
+			*ctx.values = append(*ctx.values, arrVals)
+			field := FormatField("", ctx.parents)
+			sql = field + `@> ($` + fmt.Sprintf("%v", len(*ctx.values)) + `)`
+
 		default:
 			if strings.HasPrefix(key, "$") {
 				return nil, NewWriteErrorMsg(
