@@ -49,9 +49,9 @@ jobs:
       # Warning! Be careful about changing the steps here as it might cause some security problems
       # (see the Attention block on the top of this file).
       - name: Setup Go
-        uses: seeforschauer/github-actions/setup-go@issue-47-md
+        uses: FerretDB/github-actions/setup-go@main
         with:
           cache-key: conform-pr
 
       - name: Conform PR
-        uses: seeforschauer/github-actions/conform-pr@issue-47-md
+        uses: FerretDB/github-actions/conform-pr@main
