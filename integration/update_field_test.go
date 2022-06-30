@@ -19,13 +19,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 // This file is for tests of:
@@ -88,6 +91,206 @@ func TestUpdateFieldCurrentDateTimestamp(t *testing.T) {
 		actualY := ConvertDocument(t, actualBSON)
 		testutil.CompareAndSetByPathTime(t, actualY, actualDocument, maxDifference, path)
 	})
+}
+
+func TestUpdateFieldCurrentDate(t *testing.T) {
+	t.Parallel()
+
+	// maxDifference is a maximum amount of seconds can differ the value in placeholder from actual value
+	maxDifference := time.Duration(60 * time.Second)
+
+	now := primitive.NewDateTimeFromTime(time.Now().UTC())
+	nowTimestamp := primitive.Timestamp{T: uint32(time.Now().UTC().Unix()), I: uint32(0)}
+
+	for name, tc := range map[string]struct {
+		id     string
+		update bson.D
+		result bson.D
+		paths  []types.Path
+		err    *mongo.WriteError
+		stat   *mongo.UpdateResult
+		alt    string
+	}{
+		"DocumentEmpty": {
+			id:     "double",
+			update: bson.D{{"$currentDate", bson.D{}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 0,
+				UpsertedCount: 0,
+			},
+			result: bson.D{{"_id", "double"}, {"value", float64(42.13)}},
+		},
+		"Array": {
+			id:     "double",
+			update: bson.D{{"$currentDate", bson.A{}}},
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type array instead. " +
+					"For example: {$mod: {<field>: ...}} not {$currentDate: []}",
+			},
+			alt: "Modifiers operate on fields but we found another type instead",
+		},
+		"WrongInt32": {
+			id:     "double",
+			update: bson.D{{"$currentDate", int32(1)}},
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type int instead. " +
+					"For example: {$mod: {<field>: ...}} not {$currentDate: 1}",
+			},
+			alt: "Modifiers operate on fields but we found another type instead",
+		},
+		"Nil": {
+			id:     "double",
+			update: bson.D{{"$currentDate", nil}},
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type null instead. " +
+					"For example: {$mod: {<field>: ...}} not {$currentDate: null}",
+			},
+			alt: "Modifiers operate on fields but we found another type instead",
+		},
+		"True": {
+			id:     "double",
+			update: bson.D{{"$currentDate", bson.D{{"value", true}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			paths:  []types.Path{types.NewPathFromString("value")},
+			result: bson.D{{"_id", "double"}, {"value", now}},
+		},
+		"TwoTrue": {
+			id:     "double",
+			update: bson.D{{"$currentDate", bson.D{{"value", true}, {"unexistent", true}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			paths: []types.Path{
+				types.NewPathFromString("value"),
+				types.NewPathFromString("unexistent"),
+			},
+			result: bson.D{{"_id", "double"}, {"value", now}, {"unexistent", now}},
+		},
+		"False": {
+			id:     "double",
+			update: bson.D{{"$currentDate", bson.D{{"value", false}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			paths:  []types.Path{types.NewPathFromString("value")},
+			result: bson.D{{"_id", "double"}, {"value", now}},
+		},
+		"Int32": {
+			id:     "double",
+			update: bson.D{{"$currentDate", bson.D{{"value", int32(1)}}}},
+			err: &mongo.WriteError{
+				Code:    2,
+				Message: "int is not valid type for $currentDate. Please use a boolean ('true') or a $type expression ({$type: 'timestamp/date'}).",
+			},
+		},
+		"Timestamp": {
+			id:     "double",
+			update: bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "timestamp"}}}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			paths:  []types.Path{types.NewPathFromString("value")},
+			result: bson.D{{"_id", "double"}, {"value", nowTimestamp}},
+		},
+		"TimestampCapitalised": {
+			id:     "double",
+			update: bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "Timestamp"}}}}}},
+			err: &mongo.WriteError{
+				Code:    2,
+				Message: "The '$type' string field is required to be 'date' or 'timestamp': {$currentDate: {field : {$type: 'date'}}}",
+			},
+			alt: "The '$type' string field is required to be 'date' or 'timestamp'",
+		},
+		"Date": {
+			id:     "double",
+			update: bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "date"}}}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			paths:  []types.Path{types.NewPathFromString("value")},
+			result: bson.D{{"_id", "double"}, {"value", now}},
+		},
+		"WrongType": {
+			id:     "double",
+			update: bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", bson.D{{"abcd", int32(1)}}}}}}}},
+			err: &mongo.WriteError{
+				Code:    2,
+				Message: "The '$type' string field is required to be 'date' or 'timestamp': {$currentDate: {field : {$type: 'date'}}}",
+			},
+			alt: "The '$type' string field is required to be 'date' or 'timestamp'",
+		},
+		"NoField": {
+			id:     "double",
+			update: bson.D{{"$currentDate", bson.D{{"unexsistent", bson.D{{"$type", "date"}}}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			paths:  []types.Path{types.NewPathFromString("unexsistent")},
+			result: bson.D{{"_id", "double"}, {"value", 42.13}, {"unexsistent", now}},
+		},
+		"UnrecognizedOption": {
+			id: "array",
+			update: bson.D{{
+				"$currentDate",
+				bson.D{{
+					"value",
+					bson.D{{
+						"array", bson.D{{"unexsistent", bson.D{}}},
+					}},
+				}},
+			}},
+			err: &mongo.WriteError{
+				Code:    2,
+				Message: "Unrecognized $currentDate option: array",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+
+			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
+			if tc.err != nil {
+				require.Nil(t, tc.paths)
+				require.Nil(t, tc.stat)
+				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.stat, res)
+
+			var actualB bson.D
+			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actualB)
+			require.NoError(t, err)
+
+			expected := ConvertDocument(t, tc.result)
+			actual := ConvertDocument(t, actualB)
+
+			for _, path := range tc.paths {
+				testutil.CompareAndSetByPathTime(t, expected, actual, maxDifference, path)
+			}
+			assert.Equal(t, expected, actual)
+		})
+	}
 }
 
 func TestUpdateFieldIncErrors(t *testing.T) {
@@ -294,6 +497,302 @@ func TestUpdateFieldInc(t *testing.T) {
 			require.NoError(t, err)
 
 			AssertEqualDocuments(t, tc.result, actual)
+		})
+	}
+}
+
+func TestUpdateFieldSet(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		id     string
+		update bson.D
+		result bson.D
+		err    *mongo.WriteError
+		stat   *mongo.UpdateResult
+		alt    string
+	}{
+		"Many": {
+			id:     "string",
+			update: bson.D{{"$set", bson.D{{"foo", int32(1)}, {"bar", bson.A{}}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			result: bson.D{{"_id", "string"}, {"value", "foo"}, {"bar", bson.A{}}, {"foo", int32(1)}},
+		},
+		"NilOperand": {
+			id:     "string",
+			update: bson.D{{"$set", nil}},
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type null instead. " +
+					"For example: {$mod: {<field>: ...}} not {$set: null}",
+			},
+			alt: "Modifiers operate on fields but we found another type instead",
+		},
+		"String": {
+			id:     "string",
+			update: bson.D{{"$set", "string"}},
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type string instead. " +
+					"For example: {$mod: {<field>: ...}} not {$set: \"string\"}",
+			},
+			alt: "Modifiers operate on fields but we found another type instead",
+		},
+		"Array": {
+			id:     "string",
+			update: bson.D{{"$set", bson.A{}}},
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type array instead. " +
+					"For example: {$mod: {<field>: ...}} not {$set: []}",
+			},
+			alt: "Modifiers operate on fields but we found another type instead",
+		},
+		"EmptyDoc": {
+			id:     "string",
+			update: bson.D{{"$set", bson.D{}}},
+			result: bson.D{{"_id", "string"}, {"value", "foo"}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 0,
+				UpsertedCount: 0,
+			},
+		},
+		"OkSetString": {
+			id:     "string",
+			update: bson.D{{"$set", bson.D{{"value", "ok value"}}}},
+			result: bson.D{{"_id", "string"}, {"value", "ok value"}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+		},
+		"ArrayNil": {
+			id:     "string",
+			update: bson.D{{"$set", bson.D{{"value", bson.A{nil}}}}},
+			result: bson.D{{"_id", "string"}, {"value", bson.A{nil}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+		},
+		"FieldNotExist": {
+			id:     "string",
+			update: bson.D{{"$set", bson.D{{"foo", int32(1)}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			result: bson.D{{"_id", "string"}, {"value", "foo"}, {"foo", int32(1)}},
+		},
+		"Double": {
+			id:     "double",
+			update: bson.D{{"$set", bson.D{{"value", float64(1)}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			result: bson.D{{"_id", "double"}, {"value", float64(1)}},
+		},
+		"NaN": {
+			id:     "double",
+			update: bson.D{{"$set", bson.D{{"value", math.NaN()}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			result: bson.D{{"_id", "double"}, {"value", math.NaN()}},
+		},
+		"EmptyArray": {
+			id:     "double",
+			update: bson.D{{"$set", bson.D{{"value", bson.A{}}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			result: bson.D{{"_id", "double"}, {"value", bson.A{}}},
+		},
+		"Null": {
+			id:     "double",
+			update: bson.D{{"$set", bson.D{{"value", nil}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			result: bson.D{{"_id", "double"}, {"value", nil}},
+		},
+		"Int32": {
+			id:     "double",
+			update: bson.D{{"$set", bson.D{{"value", int32(1)}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			result: bson.D{{"_id", "double"}, {"value", int32(1)}},
+		},
+		"Inf": {
+			id:     "double",
+			update: bson.D{{"$set", bson.D{{"value", math.Inf(+1)}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			result: bson.D{{"_id", "double"}, {"value", math.Inf(+1)}},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup(t)
+			_, err := collection.InsertMany(ctx, []any{
+				bson.D{{"_id", "string"}, {"value", "foo"}},
+				bson.D{{"_id", "double"}, {"value", float64(0.0)}},
+			})
+			require.NoError(t, err)
+
+			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
+			if tc.err != nil {
+				require.Nil(t, tc.result)
+				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tc.stat, res)
+
+			var actual bson.D
+			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
+			require.NoError(t, err)
+			AssertEqualDocuments(t, tc.result, actual)
+		})
+	}
+}
+
+func TestUpdateFieldSetOnInsert(t *testing.T) {
+	t.Parallel()
+
+	notModified := &mongo.UpdateResult{
+		MatchedCount:  0,
+		ModifiedCount: 0,
+		UpsertedCount: 1,
+	}
+
+	for name, tc := range map[string]struct {
+		filter      bson.D
+		setOnInsert any
+		stat        *mongo.UpdateResult
+		res         bson.D
+		err         *mongo.WriteError
+		alt         string
+	}{
+		"Array": {
+			filter:      bson.D{{"_id", "array"}},
+			setOnInsert: bson.D{{"value", bson.A{}}},
+			res:         bson.D{{"_id", "array"}, {"value", bson.A{}}},
+		},
+		"Nil": {
+			filter:      bson.D{{"_id", "nil"}},
+			setOnInsert: bson.D{{"value", nil}},
+			res:         bson.D{{"_id", "nil"}, {"value", nil}},
+		},
+		"EmptyDoc": {
+			filter:      bson.D{{"_id", "doc"}},
+			setOnInsert: bson.D{},
+			res:         bson.D{{"_id", "doc"}},
+		},
+		"EmptyArray": {
+			filter:      bson.D{{"_id", "array"}},
+			setOnInsert: bson.A{},
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type array instead. " +
+					"For example: {$mod: {<field>: ...}} not {$setOnInsert: []}",
+			},
+			alt: "Modifiers operate on fields but we found another type instead",
+		},
+		"DoubleDouble": {
+			filter:      bson.D{{"_id", "double"}},
+			setOnInsert: 43.13,
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type double instead. " +
+					"For example: {$mod: {<field>: ...}} not {$setOnInsert: 43.13}",
+			},
+			alt: "Modifiers operate on fields but we found another type instead",
+		},
+		"ErrNaN": {
+			filter:      bson.D{{"_id", "double-nan"}},
+			setOnInsert: math.NaN(),
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type double instead. " +
+					"For example: {$mod: {<field>: ...}} not {$setOnInsert: nan.0}",
+			},
+			alt: "Modifiers operate on fields but we found another type instead",
+		},
+		"ErrString": {
+			filter:      bson.D{{"_id", "string"}},
+			setOnInsert: "any string",
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type string instead. " +
+					"For example: {$mod: {<field>: ...}} not {$setOnInsert: \"any string\"}",
+			},
+			alt: "Modifiers operate on fields but we found another type instead",
+		},
+		"ErrNil": {
+			filter:      bson.D{{"_id", "nil"}},
+			setOnInsert: nil,
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type null instead. " +
+					"For example: {$mod: {<field>: ...}} not {$setOnInsert: null}",
+			},
+			alt: "Modifiers operate on fields but we found another type instead",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup(t)
+
+			opts := options.Update().SetUpsert(true)
+			var res *mongo.UpdateResult
+			res, err := collection.UpdateOne(ctx, tc.filter, bson.D{{"$setOnInsert", tc.setOnInsert}}, opts)
+			if tc.err != nil {
+				require.Nil(t, tc.res)
+				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
+				return
+			}
+
+			require.NoError(t, err)
+			id := res.UpsertedID
+			assert.NotEmpty(t, id)
+			res.UpsertedID = nil
+
+			expectedRes := notModified
+			if tc.stat != nil {
+				expectedRes = tc.stat
+			}
+			assert.Equal(t, expectedRes, res)
+
+			var actual bson.D
+			err = collection.FindOne(ctx, tc.filter).Decode(&actual)
+			require.NoError(t, err)
+			AssertEqualDocuments(t, tc.res, actual)
 		})
 	}
 }
