@@ -643,12 +643,7 @@ func TestUpdateFieldSet(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t, shareddata.Composites)
-			_, err := collection.InsertMany(ctx, []any{
-				bson.D{{"_id", "string"}, {"value", "foo"}},
-				bson.D{{"_id", "double"}, {"value", float64(0.0)}},
-			})
-			require.NoError(t, err)
+			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
 			if tc.err != nil {
@@ -884,16 +879,11 @@ func TestUpdateFieldMixed(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t, shareddata.Composites)
-
-			_, err := collection.InsertMany(ctx, []any{
-				bson.D{{"_id", "string"}, {"value", "foo"}},
-			})
-			require.NoError(t, err)
+			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 			opts := options.Update().SetUpsert(true)
 			var res *mongo.UpdateResult
-			res, err = collection.UpdateOne(ctx, tc.filter, tc.update, opts)
+			res, err := collection.UpdateOne(ctx, tc.filter, tc.update, opts)
 
 			if tc.err != nil {
 				require.Nil(t, tc.res)
