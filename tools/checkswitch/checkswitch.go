@@ -24,61 +24,33 @@ import (
 
 // orderTypes is preferred order of the types in the switch.
 var orderTypes = map[string]int{
-	"Document":       1,
-	"documentType":   1,
-	"typeCodeObject": 1,
-
-	"Array":         2,
-	"arrayType":     2,
-	"typeCodeArray": 2,
-
-	"float64":        3,
-	"doubleType":     3,
-	"typeCodeDouble": 3,
-
-	"string":         4,
-	"stringType":     4,
-	"typeCodeString": 4,
-
-	"Binary":          5,
-	"binaryType":      5,
-	"typeCodeBinData": 5,
-
-	"ObjectID":         6,
-	"objectIDType":     6,
-	"typeCodeObjectID": 6,
-
-	"bool":         7,
-	"boolType":     7,
-	"typeCodeBool": 7,
-
-	"time.Time":    8,
-	"dateTimeType": 8,
-	"typeCodeDate": 8,
-
-	"NullType":     9,
-	"nullType":     9,
-	"typeCodeNull": 9,
-
-	"Regex":         10,
-	"regexType":     10,
-	"typeCodeRegex": 10,
-
-	"int32":       11,
-	"int32Type":   11,
-	"typeCodeInt": 11,
-
-	"Timestamp":         12,
-	"timestampType":     12,
-	"typeCodeTimestamp": 12,
-
-	"int64":        13,
-	"int64Type":    13,
-	"typeCodeLong": 13,
-
-	"typeCodeNumber": 14,
-
-	"CString": 15,
+	"Document":      1,
+	"documentType":  2,
+	"Array":         3,
+	"arrayType":     4,
+	"float64":       5,
+	"doubleType":    6,
+	"string":        7,
+	"stringType":    8,
+	"Binary":        9,
+	"binaryType":    10,
+	"ObjectID":      11,
+	"objectIDType":  12,
+	"bool":          13,
+	"boolType":      14,
+	"time.Time":     15,
+	"dateTimeType":  16,
+	"NullType":      17,
+	"nullType":      18,
+	"Regex":         19,
+	"regexType":     20,
+	"int32":         21,
+	"int32Type":     22,
+	"Timestamp":     23,
+	"timestampType": 24,
+	"int64":         25,
+	"int64Type":     26,
+	"CString":       27,
 }
 
 var Analyzer = &analysis.Analyzer{
