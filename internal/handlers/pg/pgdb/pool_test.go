@@ -217,7 +217,7 @@ func TestConcurrentCreate(t *testing.T) {
 				return pool.CreateCollection(ctx, schemaName, tableName)
 			},
 			compareFunc: func(t *testing.T, errors int) bool {
-				return assert.Less(t, errors, n-1)
+				return assert.LessOrEqual(t, errors, n-1)
 			},
 		},
 	} {
