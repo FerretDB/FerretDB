@@ -383,8 +383,7 @@ func (pgPool *Pool) CreateCollection(ctx context.Context, db, collection string)
 		return nil
 	}
 
-	tableName := formatCollectionName(collection)
-	must.NoError(collections.Set(collection, tableName))
+	must.NoError(collections.Set(collection, table))
 	must.NoError(settings.Set("collections", collections))
 
 	err = pgPool.updateSettingsTable(ctx, tx, db, settings)
@@ -648,7 +647,7 @@ func (pgPool *Pool) DeleteDocumentsByID(ctx context.Context, db, collection stri
 		strings.Join(placeholders, ", ") +
 		`)`
 
-	tag, err := tx.Exec(ctx, sql, idsMarshalled)
+	tag, err := tx.Exec(ctx, sql, idsMarshalled...)
 	if err != nil {
 		return 0, err
 	}
@@ -659,18 +658,6 @@ func (pgPool *Pool) DeleteDocumentsByID(ctx context.Context, db, collection stri
 // InsertDocument inserts a document into FerretDB database and collection.
 // If database or collection does not exist, it will be created.
 func (pgPool *Pool) InsertDocument(ctx context.Context, db, collection string, doc *types.Document) error {
-	tx, err := pgPool.Begin(ctx)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-	defer func() {
-		if err != nil {
-			must.NoError(tx.Rollback(ctx))
-			return
-		}
-		must.NoError(tx.Commit(ctx))
-	}()
-
 	exists, err := pgPool.CollectionExists(ctx, db, collection)
 	if err != nil {
 		return err
@@ -688,6 +675,18 @@ func (pgPool *Pool) InsertDocument(ctx context.Context, db, collection string, d
 			return lazyerrors.Error(err)
 		}
 	}
+
+	tx, err := pgPool.Begin(ctx)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+	defer func() {
+		if err != nil {
+			must.NoError(tx.Rollback(ctx))
+			return
+		}
+		must.NoError(tx.Commit(ctx))
+	}()
 
 	table, err := pgPool.getTableName(ctx, tx, db, collection)
 	if err != nil {
