@@ -38,7 +38,7 @@ env:
   GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
   GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org
-  CONFORM_TOKEN: ${{ secrets.CONFORM_TOKEN }} # GITHUB_TOKEN is not enough to query projects, so we use a special one
+  CONFORM_TOKEN: ${{ secrets.CONFORM_TOKEN }}  # GITHUB_TOKEN is not enough to query projects, so we use a special one
 
 jobs:
   conform-pr:

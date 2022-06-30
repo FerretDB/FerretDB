@@ -14,7 +14,7 @@
 
 package integration
 
-// This file is for tests of array update operators:
+// This file is for tests of array update operators and modifiers:
 // - `$`
 // - `$[]`
 // - `$[<identifier>]`
@@ -23,8 +23,6 @@ package integration
 // - `$pull`
 // - `$push`
 // - `$pullAll`.
-//
-// And array update operator modifiers:
 // - `$each`
 // - `$position`
 // - `$slice`
