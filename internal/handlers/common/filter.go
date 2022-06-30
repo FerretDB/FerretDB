@@ -267,6 +267,18 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 					return matchDocuments(exprValue, fieldValue), nil
 				}
 				return false, nil
+			case *types.Array:
+				fieldValueArrD, okDA := fieldValue.(*types.Array)
+				if okDA {
+					res := types.CompareArrays(exprValue, fieldValueArrD)
+					if !types.ContainsCompareResult(res, types.Equal) {
+						return false, nil
+					}
+				} else {
+					if types.Compare(fieldValue, exprValue) != types.Equal {
+						return false, nil
+					}
+				}
 			default:
 				if types.Compare(fieldValue, exprValue) != types.Equal {
 					return false, nil
@@ -299,7 +311,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			exprValueArrF, okFA := exprValue.(*types.Array)
 			if okFA && okDA {
 				res := types.CompareArrays(exprValueArrF, fieldValueArrD)
-				if res != types.Greater && res != types.GtAndLt {
+				if !types.ContainsCompareResult(res, types.Greater) {
 					return false, nil
 				}
 			} else {
@@ -328,7 +340,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			exprValueArrF, okFA := exprValue.(*types.Array)
 			if okFA && okDA {
 				res := types.CompareArrays(exprValueArrF, fieldValueArrD)
-				if res != types.Less && res != types.GtAndLt {
+				if !types.ContainsCompareResult(res, types.Less) {
 					return false, nil
 				}
 			} else {
