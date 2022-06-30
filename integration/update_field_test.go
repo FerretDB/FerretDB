@@ -32,15 +32,15 @@ import (
 )
 
 // This file is for field update operator tests:
-// - $currentDate
-// - $inc
-// - $min
-// - $max
-// - $mul
-// - $rename
-// - $set
-// - $setOnInsert
-// - $unset
+// - `$currentDate`
+// - `$inc`
+// - `$min`
+// - `$max`
+// - `$mul`
+// - `$rename`
+// - `$set`
+// - `$setOnInsert`
+// - `$unset`.
 
 func TestUpdateFieldCurrentDateTimestamp(t *testing.T) {
 	t.Parallel()
