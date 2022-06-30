@@ -31,7 +31,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-// This file is for tests of:
+// This file is for field update operator tests:
 // - $currentDate
 // - $inc
 // - $min
