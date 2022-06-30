@@ -38,6 +38,7 @@ type sqlParam struct {
 // If collection doesn't exist it returns an empty slice and no error.
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/372
+//
 func (h *Handler) fetch(ctx context.Context, param sqlParam) ([]*types.Document, error) {
 	sql := `SELECT `
 	if param.comment != "" {
