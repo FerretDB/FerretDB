@@ -26,9 +26,9 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-// This file is for all remining update tests.
+// This file is for all remaining update tests.
 
-func TestUpdateFieldUpsert(t *testing.T) {
+func TestUpdateUpsert(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t, shareddata.Composites)
 

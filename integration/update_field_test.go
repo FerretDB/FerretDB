@@ -365,7 +365,7 @@ func TestUpdateFieldIncErrors(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t)
+			ctx, collection := setup(t, shareddata.Composites)
 
 			_, err := collection.InsertMany(ctx, []any{
 				bson.D{{"_id", "document"}, {"value", bson.D{{"foo", "bar"}}}},
@@ -479,7 +479,7 @@ func TestUpdateFieldInc(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t)
+			ctx, collection := setup(t, shareddata.Composites)
 
 			_, err := collection.InsertMany(ctx, []any{
 				bson.D{{"_id", "double"}, {"value", 42.13}},
@@ -656,7 +656,7 @@ func TestUpdateFieldSet(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t)
+			ctx, collection := setup(t, shareddata.Composites)
 			_, err := collection.InsertMany(ctx, []any{
 				bson.D{{"_id", "string"}, {"value", "foo"}},
 				bson.D{{"_id", "double"}, {"value", float64(0.0)}},
@@ -767,7 +767,7 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t)
+			ctx, collection := setup(t, shareddata.Composites)
 
 			opts := options.Update().SetUpsert(true)
 			var res *mongo.UpdateResult
@@ -900,7 +900,7 @@ func TestUpdateFieldMixed(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t)
+			ctx, collection := setup(t, shareddata.Composites)
 
 			_, err := collection.InsertMany(ctx, []any{
 				bson.D{{"_id", "string"}, {"value", "foo"}},
