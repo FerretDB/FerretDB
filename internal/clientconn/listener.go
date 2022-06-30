@@ -33,16 +33,18 @@ import (
 
 // Listener accepts incoming client connections.
 type Listener struct {
-	opts      *NewListenerOpts
-	metrics   *ListenerMetrics
-	handler   handlers.Interface
-	listener  net.Listener
-	listening chan struct{}
+	opts           *NewListenerOpts
+	metrics        *ListenerMetrics
+	handler        handlers.Interface
+	netListener    net.Listener
+	socketListener net.Listener
+	listening      chan struct{}
 }
 
-// NewListenerOpts represents listener configuration.
+// NewListenerOpts represents netListener configuration.
 type NewListenerOpts struct {
 	ListenAddr      string
+	ListenSocket    string
 	ProxyAddr       string
 	Mode            Mode
 	Handler         handlers.Interface
@@ -50,7 +52,7 @@ type NewListenerOpts struct {
 	TestConnTimeout time.Duration
 }
 
-// NewListener returns a new listener, configured by the NewListenerOpts argument.
+// NewListener returns a new netListener, configured by the NewListenerOpts argument.
 func NewListener(opts *NewListenerOpts) *Listener {
 	return &Listener{
 		opts:      opts,
@@ -60,15 +62,21 @@ func NewListener(opts *NewListenerOpts) *Listener {
 	}
 }
 
-// Run runs the listener until ctx is done or some unrecoverable error occurs.
+// Run runs the listeners until ctx is done or some unrecoverable error occurs.
 //
-// When this method returns, listener and all connections are closed.
+// When this method returns, listeners and all connections are closed.
 func (l *Listener) Run(ctx context.Context) error {
-	logger := l.opts.Logger.Named("listener")
+	logger := l.opts.Logger.Named("netListener")
 
 	var err error
-	if l.listener, err = net.Listen("tcp", l.opts.ListenAddr); err != nil {
+	if l.netListener, err = net.Listen("tcp", l.opts.ListenAddr); err != nil {
 		return lazyerrors.Error(err)
+	}
+
+	if l.opts.ListenSocket != "" {
+		if l.socketListener, err = net.Listen("unix", l.opts.ListenSocket); err != nil {
+			return lazyerrors.Error(err)
+		}
 	}
 
 	close(l.listening)
@@ -77,14 +85,29 @@ func (l *Listener) Run(ctx context.Context) error {
 	// handle ctx cancelation
 	go func() {
 		<-ctx.Done()
-		l.listener.Close()
+		l.netListener.Close()
+		if l.socketListener != nil {
+			l.socketListener.Close()
+		}
 	}()
 
 	const delay = 3 * time.Second
 
 	var wg sync.WaitGroup
+	go l.handleConn(ctx, l.netListener, logger, &wg, delay)
+	go l.handleConn(ctx, l.socketListener, logger, &wg, delay)
+
+	logger.Info("Waiting for all connections to stop...")
+	wg.Wait()
+
+	return ctx.Err()
+}
+
+func (l *Listener) handleConn(
+	ctx context.Context, listener net.Listener, logger *zap.Logger, wg *sync.WaitGroup, delay time.Duration,
+) {
 	for {
-		netConn, err := l.listener.Accept()
+		netConn, err := listener.Accept()
 		if err != nil {
 			l.metrics.accepts.WithLabelValues("1").Inc()
 
@@ -142,18 +165,13 @@ func (l *Listener) Run(ctx context.Context) error {
 			}
 		}()
 	}
-
-	logger.Info("Waiting for all connections to stop...")
-	wg.Wait()
-
-	return ctx.Err()
 }
 
 // Addr returns listener's address.
 // It can be used to determine an actually used port, if it was zero.
 func (l *Listener) Addr() net.Addr {
 	<-l.listening
-	return l.listener.Addr()
+	return l.netListener.Addr()
 }
 
 // Describe implements prometheus.Collector.
