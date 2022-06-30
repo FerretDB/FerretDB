@@ -39,7 +39,7 @@ import (
 // - $setOnInsert
 // - $unset
 
-func TestUpdateTimestamp(t *testing.T) {
+func TestUpdateFieldCurrentDateTimestamp(t *testing.T) {
 	t.Parallel()
 
 	// store the current timestamp with $currentDate operator;
@@ -90,7 +90,7 @@ func TestUpdateTimestamp(t *testing.T) {
 	})
 }
 
-func TestUpdateIncOperatorErrors(t *testing.T) {
+func TestUpdateFieldIncErrors(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
@@ -178,7 +178,7 @@ func TestUpdateIncOperatorErrors(t *testing.T) {
 	}
 }
 
-func TestUpdateIncOperator(t *testing.T) {
+func TestUpdateFieldInc(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
