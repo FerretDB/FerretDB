@@ -105,7 +105,7 @@ func NewPool(ctx context.Context, connString string, logger *zap.Logger, lazy bo
 	}
 
 	res := &Pool{
-		Pool: p,
+		Pool:   p,
 		logger: logger.Named("pg.Pool"),
 	}
 
