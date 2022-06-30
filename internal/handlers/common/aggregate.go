@@ -75,6 +75,12 @@ func HandleJoin(ctx *parseContext, oper string, arr *types.Array) (string, error
 	return sql, nil
 }
 
+func AddOperator(ctx *parseContext, format string, value interface{}) string {
+	*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
+	field := FormatField("", ctx.parents)
+	return fmt.Sprintf(format, field, `$`+fmt.Sprintf("%v", len(*ctx.values)))
+}
+
 func MatchToSql(ctx *parseContext, key string, value interface{}) (*string, error) {
 	var sql string
 
@@ -102,29 +108,19 @@ func MatchToSql(ctx *parseContext, key string, value interface{}) (*string, erro
 		sql = r
 
 	case "$gt":
-		*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
-		field := FormatField("", ctx.parents)
-		sql = field + ` > $` + fmt.Sprintf("%v", len(*ctx.values))
+		sql = AddOperator(ctx, `%v > %v`, value)
 
 	case "$gte":
-		*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
-		field := FormatField("", ctx.parents)
-		sql = field + ` >= $` + fmt.Sprintf("%v", len(*ctx.values))
+		sql = AddOperator(ctx, `%v >= %v`, value)
 
 	case "$lt":
-		*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
-		field := FormatField("", ctx.parents)
-		sql = field + ` < $` + fmt.Sprintf("%v", len(*ctx.values))
+		sql = AddOperator(ctx, `%v < %v`, value)
 
 	case "$lte":
-		*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
-		field := FormatField("", ctx.parents)
-		sql = field + ` <= $` + fmt.Sprintf("%v", len(*ctx.values))
+		sql = AddOperator(ctx, `%v <= %v`, value)
 
 	case "$ne":
-		*ctx.values = append(*ctx.values, fmt.Sprintf("%v", value))
-		field := FormatField("", ctx.parents)
-		sql = field + ` <> $` + fmt.Sprintf("%v", len(*ctx.values))
+		sql = AddOperator(ctx, `%v <> %v`, value)
 
 	case "$exists":
 		parentValue := ctx.parents[len(ctx.parents)-1]
