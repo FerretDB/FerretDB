@@ -26,7 +26,7 @@ import (
 
 func TestCommandsFreeMonitoringGetFreeMonitoringStatus(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setupWithOpts(t, &setupOpts{
+	ctx, collection, _ := setupWithOpts(t, &setupOpts{
 		databaseName: "admin",
 	})
 
@@ -57,7 +57,7 @@ func TestCommandsFreeMonitoringGetFreeMonitoringStatus(t *testing.T) {
 
 func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setupWithOpts(t, &setupOpts{
+	ctx, collection, _ := setupWithOpts(t, &setupOpts{
 		databaseName: "admin",
 	})
 

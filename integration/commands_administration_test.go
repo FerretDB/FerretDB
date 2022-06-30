@@ -16,6 +16,7 @@ package integration
 
 import (
 	"math"
+	"net"
 	"strconv"
 	"testing"
 	"time"
@@ -118,7 +119,7 @@ func assertDatabases(t *testing.T, expected, actual mongo.ListDatabasesResult) {
 
 //nolint:paralleltest // we test a global list of databases
 func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
-	ctx, collection := setupWithOpts(t, &setupOpts{
+	ctx, collection, _ := setupWithOpts(t, &setupOpts{
 		databaseName: "admin",
 	})
 	client := collection.Database().Client()
@@ -177,7 +178,7 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 
 func TestCommandsAdministrationGetParameter(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setupWithOpts(t, &setupOpts{
+	ctx, collection, _ := setupWithOpts(t, &setupOpts{
 		databaseName: "admin",
 	})
 
@@ -793,16 +794,30 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("internalViews")))
 }
 
+// TestCommandsAdministrationWhatsMyURI tests the `whatsmyuri` command.
+// It connects two clients to the same server and checks that `whatsmyuri` returns different ports for these clients.
 func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection1, port := setupWithOpts(t, new(setupOpts))
+	client2 := setupClient(t, ctx, port)
+	collection2 := client2.Database(collection1.Database().Name()).Collection(collection1.Name())
 
-	var actual bson.D
-	command := bson.D{{"whatsmyuri", int32(1)}}
-	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
-	require.NoError(t, err)
+	var ports []string
+	for _, collection := range []*mongo.Collection{collection1, collection2} {
+		var actual bson.D
+		command := bson.D{{"whatsmyuri", int32(1)}}
+		err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+		require.NoError(t, err)
 
-	doc := ConvertDocument(t, actual)
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-	assert.Regexp(t, `^(\d+)\.(\d+)\.(\d+)\.(\d+)(\:\d+)?`, must.NotFail(doc.Get("you")))
+		doc := ConvertDocument(t, actual)
+		assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+
+		// record ports to compare that they are not equal for two different clients.
+		_, port, err := net.SplitHostPort(must.NotFail(doc.Get("you")).(string))
+		require.NoError(t, err)
+		ports = append(ports, port)
+	}
+
+	require.Equal(t, 2, len(ports))
+	assert.NotEqual(t, ports[0], ports[1])
 }
