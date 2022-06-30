@@ -453,7 +453,7 @@ func (pgPool *Pool) DropCollection(ctx context.Context, schema, collection strin
 		return ErrTableNotExist
 	}
 
-	// TODO probably not CASCADE
+	// TODO https://github.com/FerretDB/FerretDB/issues/811
 	sql := `DROP TABLE IF EXISTS` + pgx.Identifier{schema, table}.Sanitize() + `CASCADE`
 	_, err = tx.Exec(ctx, sql)
 	if err != nil {
