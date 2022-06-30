@@ -310,8 +310,9 @@ func TestUpdateFieldIncErrors(t *testing.T) {
 			filter: bson.D{{"_id", "array"}},
 			update: bson.D{{"$inc", bson.D{{"value", int32(1)}}}},
 			err: &mongo.WriteError{
-				Code:    14,
-				Message: `Cannot apply $inc to a value of non-numeric type. {_id: "array"} has the field 'value' of non-numeric type array`,
+				Code: 14,
+				Message: `Cannot apply $inc to a value of non-numeric type. ` +
+					`{_id: "array"} has the field 'value' of non-numeric type array`,
 			},
 		},
 		"IncOnString": {
@@ -325,7 +326,7 @@ func TestUpdateFieldIncErrors(t *testing.T) {
 			alt: "Modifiers operate on fields but we found another type instead",
 		},
 		"IncWithStringValue": {
-			filter: bson.D{{"_id", "string"}},
+			filter: bson.D{{"_id", "string-inc-error"}},
 			update: bson.D{{"$inc", bson.D{{"value", "bad value"}}}},
 			err: &mongo.WriteError{
 				Code:    14,
@@ -333,27 +334,30 @@ func TestUpdateFieldIncErrors(t *testing.T) {
 			},
 		},
 		"DoubleIncOnNullValue": {
-			filter: bson.D{{"_id", "string"}},
+			filter: bson.D{{"_id", "string-inc-error"}},
 			update: bson.D{{"$inc", bson.D{{"value", float64(1)}}}},
 			err: &mongo.WriteError{
-				Code:    14,
-				Message: `Cannot apply $inc to a value of non-numeric type. {_id: "string"} has the field 'value' of non-numeric type string`,
+				Code: 14,
+				Message: `Cannot apply $inc to a value of non-numeric type. ` +
+					`{_id: "string-inc-error"} has the field 'value' of non-numeric type string`,
 			},
 		},
 		"IntIncOnNullValue": {
-			filter: bson.D{{"_id", "string"}},
+			filter: bson.D{{"_id", "string-inc-error"}},
 			update: bson.D{{"$inc", bson.D{{"value", int32(1)}}}},
 			err: &mongo.WriteError{
-				Code:    14,
-				Message: `Cannot apply $inc to a value of non-numeric type. {_id: "string"} has the field 'value' of non-numeric type string`,
+				Code: 14,
+				Message: `Cannot apply $inc to a value of non-numeric type. ` +
+					`{_id: "string-inc-error"} has the field 'value' of non-numeric type string`,
 			},
 		},
 		"LongIncOnNullValue": {
-			filter: bson.D{{"_id", "string"}},
+			filter: bson.D{{"_id", "string-inc-error"}},
 			update: bson.D{{"$inc", bson.D{{"value", int64(1)}}}},
 			err: &mongo.WriteError{
-				Code:    14,
-				Message: `Cannot apply $inc to a value of non-numeric type. {_id: "string"} has the field 'value' of non-numeric type string`,
+				Code: 14,
+				Message: `Cannot apply $inc to a value of non-numeric type. ` +
+					`{_id: "string-inc-error"} has the field 'value' of non-numeric type string`,
 			},
 		},
 	} {
@@ -361,15 +365,13 @@ func TestUpdateFieldIncErrors(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			ctx, collection := setup(t, shareddata.Composites)
-
 			_, err := collection.InsertMany(ctx, []any{
-				bson.D{{"_id", "document"}, {"value", bson.D{{"foo", "bar"}}}},
-				bson.D{{"_id", "array"}, {"value", bson.A{"foo"}}},
-				bson.D{{"_id", "string"}, {"value", "foo"}},
+				bson.D{{"_id", "string-inc-error"}, {"value", "foo"}},
 			})
 			require.NoError(t, err)
 
 			_, err = collection.UpdateOne(ctx, tc.filter, tc.update)
+
 			require.NotNil(t, tc.err)
 			AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
 		})
