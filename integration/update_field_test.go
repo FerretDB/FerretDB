@@ -42,10 +42,9 @@ import (
 // - `$setOnInsert`
 // - `$unset`.
 
-func TestUpdateFieldCurrentDateTimestamp(t *testing.T) {
+func TestUpdateFieldCurrentDate(t *testing.T) {
 	t.Parallel()
 
-	// store the current timestamp with $currentDate operator;
 	t.Run("currentDateReadBack", func(t *testing.T) {
 		maxDifference := time.Duration(2 * time.Second)
 		nowTimestamp := primitive.Timestamp{T: uint32(time.Now().Unix()), I: uint32(0)}
@@ -61,6 +60,7 @@ func TestUpdateFieldCurrentDateTimestamp(t *testing.T) {
 
 		ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
+		// store the current timestamp with $currentDate operator;
 		update := bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "timestamp"}}}}}}
 		res, err := collection.UpdateOne(ctx, bson.D{{"_id", id}}, update)
 		require.NoError(t, err)
@@ -91,201 +91,199 @@ func TestUpdateFieldCurrentDateTimestamp(t *testing.T) {
 		actualY := ConvertDocument(t, actualBSON)
 		testutil.CompareAndSetByPathTime(t, actualY, actualDocument, maxDifference, path)
 	})
-}
 
-func TestUpdateFieldCurrentDate(t *testing.T) {
-	t.Parallel()
+	t.Run("currentDate", func(t *testing.T) {
+		// maxDifference is a maximum amount of seconds can differ the value in placeholder from actual value
+		maxDifference := time.Duration(60 * time.Second)
 
-	// maxDifference is a maximum amount of seconds can differ the value in placeholder from actual value
-	maxDifference := time.Duration(60 * time.Second)
+		now := primitive.NewDateTimeFromTime(time.Now().UTC())
+		nowTimestamp := primitive.Timestamp{T: uint32(time.Now().UTC().Unix()), I: uint32(0)}
 
-	now := primitive.NewDateTimeFromTime(time.Now().UTC())
-	nowTimestamp := primitive.Timestamp{T: uint32(time.Now().UTC().Unix()), I: uint32(0)}
+		for name, tc := range map[string]struct {
+			id     string
+			update bson.D
+			result bson.D
+			paths  []types.Path
+			err    *mongo.WriteError
+			stat   *mongo.UpdateResult
+			alt    string
+		}{
+			"DocumentEmpty": {
+				id:     "double",
+				update: bson.D{{"$currentDate", bson.D{}}},
+				stat: &mongo.UpdateResult{
+					MatchedCount:  1,
+					ModifiedCount: 0,
+					UpsertedCount: 0,
+				},
+				result: bson.D{{"_id", "double"}, {"value", float64(42.13)}},
+			},
+			"ArrayEmpty": {
+				id:     "double",
+				update: bson.D{{"$currentDate", bson.A{}}},
+				err: &mongo.WriteError{
+					Code: 9,
+					Message: "Modifiers operate on fields but we found type array instead. " +
+						"For example: {$mod: {<field>: ...}} not {$currentDate: []}",
+				},
+				alt: "Modifiers operate on fields but we found another type instead",
+			},
+			"Int32Wrong": {
+				id:     "double",
+				update: bson.D{{"$currentDate", int32(1)}},
+				err: &mongo.WriteError{
+					Code: 9,
+					Message: "Modifiers operate on fields but we found type int instead. " +
+						"For example: {$mod: {<field>: ...}} not {$currentDate: 1}",
+				},
+				alt: "Modifiers operate on fields but we found another type instead",
+			},
+			"Nil": {
+				id:     "double",
+				update: bson.D{{"$currentDate", nil}},
+				err: &mongo.WriteError{
+					Code: 9,
+					Message: "Modifiers operate on fields but we found type null instead. " +
+						"For example: {$mod: {<field>: ...}} not {$currentDate: null}",
+				},
+				alt: "Modifiers operate on fields but we found another type instead",
+			},
+			"BoolTrue": {
+				id:     "double",
+				update: bson.D{{"$currentDate", bson.D{{"value", true}}}},
+				stat: &mongo.UpdateResult{
+					MatchedCount:  1,
+					ModifiedCount: 1,
+					UpsertedCount: 0,
+				},
+				paths:  []types.Path{types.NewPathFromString("value")},
+				result: bson.D{{"_id", "double"}, {"value", now}},
+			},
+			"BoolTwoTrue": {
+				id:     "double",
+				update: bson.D{{"$currentDate", bson.D{{"value", true}, {"unexistent", true}}}},
+				stat: &mongo.UpdateResult{
+					MatchedCount:  1,
+					ModifiedCount: 1,
+					UpsertedCount: 0,
+				},
+				paths: []types.Path{
+					types.NewPathFromString("value"),
+					types.NewPathFromString("unexistent"),
+				},
+				result: bson.D{{"_id", "double"}, {"value", now}, {"unexistent", now}},
+			},
+			"BoolFalse": {
+				id:     "double",
+				update: bson.D{{"$currentDate", bson.D{{"value", false}}}},
+				stat: &mongo.UpdateResult{
+					MatchedCount:  1,
+					ModifiedCount: 1,
+					UpsertedCount: 0,
+				},
+				paths:  []types.Path{types.NewPathFromString("value")},
+				result: bson.D{{"_id", "double"}, {"value", now}},
+			},
+			"Int32": {
+				id:     "double",
+				update: bson.D{{"$currentDate", bson.D{{"value", int32(1)}}}},
+				err: &mongo.WriteError{
+					Code:    2,
+					Message: "int is not valid type for $currentDate. Please use a boolean ('true') or a $type expression ({$type: 'timestamp/date'}).",
+				},
+			},
+			"Timestamp": {
+				id:     "double",
+				update: bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "timestamp"}}}}}},
+				stat: &mongo.UpdateResult{
+					MatchedCount:  1,
+					ModifiedCount: 1,
+					UpsertedCount: 0,
+				},
+				paths:  []types.Path{types.NewPathFromString("value")},
+				result: bson.D{{"_id", "double"}, {"value", nowTimestamp}},
+			},
+			"TimestampCapitalised": {
+				id:     "double",
+				update: bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "Timestamp"}}}}}},
+				err: &mongo.WriteError{
+					Code:    2,
+					Message: "The '$type' string field is required to be 'date' or 'timestamp': {$currentDate: {field : {$type: 'date'}}}",
+				},
+				alt: "The '$type' string field is required to be 'date' or 'timestamp'",
+			},
+			"Date": {
+				id:     "double",
+				update: bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "date"}}}}}},
+				stat: &mongo.UpdateResult{
+					MatchedCount:  1,
+					ModifiedCount: 1,
+					UpsertedCount: 0,
+				},
+				paths:  []types.Path{types.NewPathFromString("value")},
+				result: bson.D{{"_id", "double"}, {"value", now}},
+			},
+			"WrongType": {
+				id:     "double",
+				update: bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", bson.D{{"abcd", int32(1)}}}}}}}},
+				err: &mongo.WriteError{
+					Code:    2,
+					Message: "The '$type' string field is required to be 'date' or 'timestamp': {$currentDate: {field : {$type: 'date'}}}",
+				},
+				alt: "The '$type' string field is required to be 'date' or 'timestamp'",
+			},
+			"NoField": {
+				id:     "double",
+				update: bson.D{{"$currentDate", bson.D{{"unexsistent", bson.D{{"$type", "date"}}}}}},
+				stat: &mongo.UpdateResult{
+					MatchedCount:  1,
+					ModifiedCount: 1,
+					UpsertedCount: 0,
+				},
+				paths:  []types.Path{types.NewPathFromString("unexsistent")},
+				result: bson.D{{"_id", "double"}, {"value", 42.13}, {"unexsistent", now}},
+			},
+			"UnrecognizedOption": {
+				id: "array",
+				update: bson.D{{
+					"$currentDate",
+					bson.D{{"value", bson.D{{"array", bson.D{{"unexsistent", bson.D{}}}}}}},
+				}},
+				err: &mongo.WriteError{
+					Code:    2,
+					Message: "Unrecognized $currentDate option: array",
+				},
+			},
+		} {
+			name, tc := name, tc
+			t.Run(name, func(t *testing.T) {
+				t.Parallel()
+				ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
-	for name, tc := range map[string]struct {
-		id     string
-		update bson.D
-		result bson.D
-		paths  []types.Path
-		err    *mongo.WriteError
-		stat   *mongo.UpdateResult
-		alt    string
-	}{
-		"DocumentEmpty": {
-			id:     "double",
-			update: bson.D{{"$currentDate", bson.D{}}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 0,
-				UpsertedCount: 0,
-			},
-			result: bson.D{{"_id", "double"}, {"value", float64(42.13)}},
-		},
-		"ArrayEmpty": {
-			id:     "double",
-			update: bson.D{{"$currentDate", bson.A{}}},
-			err: &mongo.WriteError{
-				Code: 9,
-				Message: "Modifiers operate on fields but we found type array instead. " +
-					"For example: {$mod: {<field>: ...}} not {$currentDate: []}",
-			},
-			alt: "Modifiers operate on fields but we found another type instead",
-		},
-		"Int32Wrong": {
-			id:     "double",
-			update: bson.D{{"$currentDate", int32(1)}},
-			err: &mongo.WriteError{
-				Code: 9,
-				Message: "Modifiers operate on fields but we found type int instead. " +
-					"For example: {$mod: {<field>: ...}} not {$currentDate: 1}",
-			},
-			alt: "Modifiers operate on fields but we found another type instead",
-		},
-		"Nil": {
-			id:     "double",
-			update: bson.D{{"$currentDate", nil}},
-			err: &mongo.WriteError{
-				Code: 9,
-				Message: "Modifiers operate on fields but we found type null instead. " +
-					"For example: {$mod: {<field>: ...}} not {$currentDate: null}",
-			},
-			alt: "Modifiers operate on fields but we found another type instead",
-		},
-		"BoolTrue": {
-			id:     "double",
-			update: bson.D{{"$currentDate", bson.D{{"value", true}}}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-			paths:  []types.Path{types.NewPathFromString("value")},
-			result: bson.D{{"_id", "double"}, {"value", now}},
-		},
-		"BoolTwoTrue": {
-			id:     "double",
-			update: bson.D{{"$currentDate", bson.D{{"value", true}, {"unexistent", true}}}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-			paths: []types.Path{
-				types.NewPathFromString("value"),
-				types.NewPathFromString("unexistent"),
-			},
-			result: bson.D{{"_id", "double"}, {"value", now}, {"unexistent", now}},
-		},
-		"BoolFalse": {
-			id:     "double",
-			update: bson.D{{"$currentDate", bson.D{{"value", false}}}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-			paths:  []types.Path{types.NewPathFromString("value")},
-			result: bson.D{{"_id", "double"}, {"value", now}},
-		},
-		"Int32": {
-			id:     "double",
-			update: bson.D{{"$currentDate", bson.D{{"value", int32(1)}}}},
-			err: &mongo.WriteError{
-				Code:    2,
-				Message: "int is not valid type for $currentDate. Please use a boolean ('true') or a $type expression ({$type: 'timestamp/date'}).",
-			},
-		},
-		"Timestamp": {
-			id:     "double",
-			update: bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "timestamp"}}}}}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-			paths:  []types.Path{types.NewPathFromString("value")},
-			result: bson.D{{"_id", "double"}, {"value", nowTimestamp}},
-		},
-		"TimestampCapitalised": {
-			id:     "double",
-			update: bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "Timestamp"}}}}}},
-			err: &mongo.WriteError{
-				Code:    2,
-				Message: "The '$type' string field is required to be 'date' or 'timestamp': {$currentDate: {field : {$type: 'date'}}}",
-			},
-			alt: "The '$type' string field is required to be 'date' or 'timestamp'",
-		},
-		"Date": {
-			id:     "double",
-			update: bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "date"}}}}}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-			paths:  []types.Path{types.NewPathFromString("value")},
-			result: bson.D{{"_id", "double"}, {"value", now}},
-		},
-		"WrongType": {
-			id:     "double",
-			update: bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", bson.D{{"abcd", int32(1)}}}}}}}},
-			err: &mongo.WriteError{
-				Code:    2,
-				Message: "The '$type' string field is required to be 'date' or 'timestamp': {$currentDate: {field : {$type: 'date'}}}",
-			},
-			alt: "The '$type' string field is required to be 'date' or 'timestamp'",
-		},
-		"NoField": {
-			id:     "double",
-			update: bson.D{{"$currentDate", bson.D{{"unexsistent", bson.D{{"$type", "date"}}}}}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-			paths:  []types.Path{types.NewPathFromString("unexsistent")},
-			result: bson.D{{"_id", "double"}, {"value", 42.13}, {"unexsistent", now}},
-		},
-		"UnrecognizedOption": {
-			id: "array",
-			update: bson.D{{
-				"$currentDate",
-				bson.D{{"value", bson.D{{"array", bson.D{{"unexsistent", bson.D{}}}}}}},
-			}},
-			err: &mongo.WriteError{
-				Code:    2,
-				Message: "Unrecognized $currentDate option: array",
-			},
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+				res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
+				if tc.err != nil {
+					require.Nil(t, tc.paths)
+					require.Nil(t, tc.stat)
+					AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
+					return
+				}
+				require.NoError(t, err)
+				require.Equal(t, tc.stat, res)
 
-			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
-			if tc.err != nil {
-				require.Nil(t, tc.paths)
-				require.Nil(t, tc.stat)
-				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
-				return
-			}
-			require.NoError(t, err)
-			require.Equal(t, tc.stat, res)
+				var actualB bson.D
+				err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actualB)
+				require.NoError(t, err)
 
-			var actualB bson.D
-			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actualB)
-			require.NoError(t, err)
+				expected := ConvertDocument(t, tc.result)
+				actual := ConvertDocument(t, actualB)
 
-			expected := ConvertDocument(t, tc.result)
-			actual := ConvertDocument(t, actualB)
-
-			for _, path := range tc.paths {
-				testutil.CompareAndSetByPathTime(t, expected, actual, maxDifference, path)
-			}
-			assert.Equal(t, expected, actual)
-		})
-	}
+				for _, path := range tc.paths {
+					testutil.CompareAndSetByPathTime(t, expected, actual, maxDifference, path)
+				}
+				assert.Equal(t, expected, actual)
+			})
+		}
+	})
 }
 
 func TestUpdateFieldIncErrors(t *testing.T) {
@@ -476,17 +474,9 @@ func TestUpdateFieldInc(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t, shareddata.Composites)
+			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
-			_, err := collection.InsertMany(ctx, []any{
-				bson.D{{"_id", "double"}, {"value", 42.13}},
-				bson.D{{"_id", "double-nan"}, {"value", math.NaN()}},
-				bson.D{{"_id", "int32"}, {"value", int32(42)}},
-				bson.D{{"_id", "int64"}, {"value", int64(42)}},
-			})
-			require.NoError(t, err)
-
-			_, err = collection.UpdateOne(ctx, tc.filter, tc.update)
+			_, err := collection.UpdateOne(ctx, tc.filter, tc.update)
 			require.NoError(t, err)
 
 			var actual bson.D
