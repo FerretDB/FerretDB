@@ -88,7 +88,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 	}
 
-	fmt.Printf(" *** SQL: %s %v %v\n", sql, queryValues, len(queryValues))
+	// fmt.Printf(" *** SQL: %s %v %v\n", sql, queryValues, len(queryValues))
 	rows, err := h.pgPool.Query(ctx, sql, queryValues...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
