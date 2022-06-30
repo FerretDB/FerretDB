@@ -694,9 +694,9 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 		alt         string
 	}{
 		"Array": {
-			filter:      bson.D{{"_id", "array"}},
+			filter:      bson.D{{"_id", "array-set-on-insert"}},
 			setOnInsert: bson.D{{"value", bson.A{}}},
-			res:         bson.D{{"_id", "array"}, {"value", bson.A{}}},
+			res:         bson.D{{"_id", "array-set-on-insert"}, {"value", bson.A{}}},
 		},
 		"Nil": {
 			filter:      bson.D{{"_id", "nil"}},
@@ -762,6 +762,7 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
+
 			ctx, collection := setup(t, shareddata.Composites)
 
 			opts := options.Update().SetUpsert(true)
@@ -860,14 +861,14 @@ func TestUpdateFieldMixed(t *testing.T) {
 			res: bson.D{{"_id", "string"}, {"value", "foo"}},
 		},
 		"UnsetField": {
-			filter: bson.D{{"_id", "document-composite"}},
+			filter: bson.D{{"_id", "document-composite-unset-field"}},
 			update: bson.D{{"$unset", bson.D{{"value", bson.D{{"array", int32(1)}}}}}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  0,
 				ModifiedCount: 0,
 				UpsertedCount: 1,
 			},
-			res: bson.D{{"_id", "document-composite"}},
+			res: bson.D{{"_id", "document-composite-unset-field"}},
 		},
 		"UnsetEmptyArray": {
 			filter: bson.D{{"_id", "document-composite"}},
