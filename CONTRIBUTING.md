@@ -16,7 +16,7 @@ You can find a list of good issues for first-time contributors [there](https://g
 
 ## Contributing code
 
-The supported way of developing FerretDB is to modify and run it on the host (Linux, macOS, or Windows).
+The supported way of developing FerretDB is to modify and run it on the host (Linux, macOS, or Windows)
 with PostgreSQL and other dependencies running inside Docker containers via Docker Compose.
 On Linux, `docker` and `docker-compose` should be installed on the host.
 On macOS and Windows, [Docker Desktop](https://www.docker.com/products/docker-desktop/) should be used.
