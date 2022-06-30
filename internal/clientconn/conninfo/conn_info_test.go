@@ -61,6 +61,9 @@ func TestConnInfo(t *testing.T) {
 		"WrongValueType": {
 			ctx: context.WithValue(context.Background(), connInfoKey, "wrong value type"),
 		},
+		"NilValue": {
+			ctx: context.WithValue(context.Background(), connInfoKey, nil),
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()

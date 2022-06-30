@@ -48,5 +48,10 @@ func GetConnInfo(ctx context.Context) *ConnInfo {
 	if !ok {
 		panic("connInfo is set in context with wrong value type")
 	}
+
+	if connInfo == nil {
+		panic("connInfo is set in context with nil value")
+	}
+
 	return connInfo
 }
