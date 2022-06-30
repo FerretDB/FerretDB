@@ -227,7 +227,11 @@ func (pgPool *Pool) Collections(ctx context.Context, db string) ([]string, error
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-	defer pgPool.logger.Error("failed to perform rollback", zap.Error(tx.Rollback(ctx)))
+	defer func() {
+		if err := tx.Rollback(ctx); err != nil {
+			pgPool.logger.Error("failed to perform rollback", zap.Error(err))
+		}
+	}()
 
 	settings, err := pgPool.getSettingsTable(ctx, tx, db)
 	if err != nil {
@@ -254,7 +258,11 @@ func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, error)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-	defer pgPool.logger.Error("failed to perform rollback", zap.Error(tx.Rollback(ctx)))
+	defer func() {
+		if err := tx.Rollback(ctx); err != nil {
+			pgPool.logger.Error("failed to perform rollback", zap.Error(err))
+		}
+	}()
 
 	tables, err := pgPool.tables(ctx, tx, schema)
 	if err != nil {
