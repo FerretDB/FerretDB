@@ -121,7 +121,7 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 			},
 			result: bson.D{{"_id", "double"}, {"value", float64(42.13)}},
 		},
-		"Array": {
+		"ArrayEmpty": {
 			id:     "double",
 			update: bson.D{{"$currentDate", bson.A{}}},
 			err: &mongo.WriteError{
@@ -131,7 +131,7 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 			},
 			alt: "Modifiers operate on fields but we found another type instead",
 		},
-		"WrongInt32": {
+		"Int32Wrong": {
 			id:     "double",
 			update: bson.D{{"$currentDate", int32(1)}},
 			err: &mongo.WriteError{
@@ -151,7 +151,7 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 			},
 			alt: "Modifiers operate on fields but we found another type instead",
 		},
-		"True": {
+		"BoolTrue": {
 			id:     "double",
 			update: bson.D{{"$currentDate", bson.D{{"value", true}}}},
 			stat: &mongo.UpdateResult{
@@ -162,7 +162,7 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 			paths:  []types.Path{types.NewPathFromString("value")},
 			result: bson.D{{"_id", "double"}, {"value", now}},
 		},
-		"TwoTrue": {
+		"BoolTwoTrue": {
 			id:     "double",
 			update: bson.D{{"$currentDate", bson.D{{"value", true}, {"unexistent", true}}}},
 			stat: &mongo.UpdateResult{
@@ -176,7 +176,7 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 			},
 			result: bson.D{{"_id", "double"}, {"value", now}, {"unexistent", now}},
 		},
-		"False": {
+		"BoolFalse": {
 			id:     "double",
 			update: bson.D{{"$currentDate", bson.D{{"value", false}}}},
 			stat: &mongo.UpdateResult{
@@ -250,12 +250,7 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 			id: "array",
 			update: bson.D{{
 				"$currentDate",
-				bson.D{{
-					"value",
-					bson.D{{
-						"array", bson.D{{"unexsistent", bson.D{}}},
-					}},
-				}},
+				bson.D{{"value", bson.D{{"array", bson.D{{"unexsistent", bson.D{}}}}}}},
 			}},
 			err: &mongo.WriteError{
 				Code:    2,
@@ -824,17 +819,13 @@ func TestUpdateFieldMixed(t *testing.T) {
 		},
 		"SetTwoFields": {
 			filter: bson.D{{"_id", "test"}},
-			update: bson.D{
-				{"$set", bson.D{{"foo", int32(12)}, {"value", math.NaN()}}},
-			},
-			res: bson.D{{"_id", "test"}, {"foo", int32(12)}, {"value", math.NaN()}},
+			update: bson.D{{"$set", bson.D{{"foo", int32(12)}, {"value", math.NaN()}}}},
+			res:    bson.D{{"_id", "test"}, {"foo", int32(12)}, {"value", math.NaN()}},
 		},
 		"IncTwoFields": {
 			filter: bson.D{{"_id", "test"}},
-			update: bson.D{
-				{"$inc", bson.D{{"foo", int32(12)}, {"value", int32(1)}}},
-			},
-			res: bson.D{{"_id", "test"}, {"foo", int32(12)}, {"value", int32(1)}},
+			update: bson.D{{"$inc", bson.D{{"foo", int32(12)}, {"value", int32(1)}}}},
+			res:    bson.D{{"_id", "test"}, {"foo", int32(12)}, {"value", int32(1)}},
 		},
 		"SetIncSetOnInsert": {
 			filter: bson.D{{"_id", "test"}},
