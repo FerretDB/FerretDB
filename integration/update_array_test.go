@@ -22,8 +22,9 @@ package integration
 // - `$pop`
 // - `$pull`
 // - `$push`
-// - `$pullAll`
-// and array update operator modifiers:
+// - `$pullAll`.
+//
+// And array update operator modifiers:
 // - `$each`
 // - `$position`
 // - `$slice`
