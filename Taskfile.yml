@@ -71,7 +71,7 @@ tasks:
   env-pull:
     desc: "Pull development environment's Docker images"
     cmds:
-      - docker-compose pull --include-deps
+      - docker-compose build --pull
 
   env-down:
     desc: "Stop development environment"
@@ -263,10 +263,10 @@ tasks:
         --tag=ferretdb-local
         --load .
     vars:
-      COMMIT:
-        sh: cat internal/util/version/commit.txt
       VERSION:
-        sh: cat internal/util/version/version.txt
+        sh: cat internal/util/version/gen/version.txt
+      COMMIT:
+        sh: cat internal/util/version/gen/commit.txt
 
   docker-push:
     deps: [docker-build]
@@ -279,7 +279,7 @@ tasks:
         --tag={{.DOCKER_IMAGE}}
         --push .
     vars:
-      COMMIT:
-        sh: cat internal/util/version/commit.txt
       VERSION:
-        sh: cat internal/util/version/version.txt
+        sh: cat internal/util/version/gen/version.txt
+      COMMIT:
+        sh: cat internal/util/version/gen/commit.txt
