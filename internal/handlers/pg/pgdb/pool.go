@@ -281,10 +281,10 @@ func (pgPool *Pool) CreateDatabase(ctx context.Context, db string) error {
 	}
 	defer func() {
 		if err != nil {
-			must.NoError(tx.Rollback(ctx))
+			_ = tx.Rollback(ctx)
 			return
 		}
-		must.NoError(tx.Commit(ctx))
+		_ = tx.Commit(ctx)
 	}()
 
 	sql := `CREATE SCHEMA ` + pgx.Identifier{db}.Sanitize()
@@ -358,17 +358,38 @@ func (pgPool *Pool) CreateCollection(ctx context.Context, db, collection string)
 		_ = tx.Commit(ctx)
 	}()
 
+	table := formatCollectionName(collection)
+
 	tables, err := pgPool.tables(ctx, tx, db)
 	if err != nil {
 		return err
 	}
-	if slices.Contains(tables, formatCollectionName(collection)) {
+	if slices.Contains(tables, table) {
 		return ErrAlreadyExist
 	}
 
-	table, err := pgPool.getTableName(ctx, tx, db, collection)
+	settings, err := pgPool.getSettingsTable(ctx, tx, db)
 	if err != nil {
-		return err
+		return lazyerrors.Error(err)
+	}
+
+	collectionsDoc := must.NotFail(settings.Get("collections"))
+	collections, ok := collectionsDoc.(*types.Document)
+	if !ok {
+		return lazyerrors.Errorf("expected document but got %[1]T: %[1]v", collectionsDoc)
+	}
+
+	if collections.Has(collection) {
+		return nil
+	}
+
+	tableName := formatCollectionName(collection)
+	must.NoError(collections.Set(collection, tableName))
+	must.NoError(settings.Set("collections", collections))
+
+	err = pgPool.updateSettingsTable(ctx, tx, db, settings)
+	if err != nil {
+		return lazyerrors.Error(err)
 	}
 
 	sql := `CREATE TABLE IF NOT EXISTS ` + pgx.Identifier{db, table}.Sanitize() + ` (_jsonb jsonb)`
