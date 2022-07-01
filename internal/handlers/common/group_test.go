@@ -123,6 +123,43 @@ func TestSumWithNumber(t *testing.T) {
 	}
 }
 
+func TestSumWithOperators(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		sumDoc   *types.Document
+		expected string
+	}{
+		"Int32": {
+			sumDoc: must.NotFail(types.NewDocument("$sum",
+				must.NotFail(types.NewDocument("$multiply",
+					must.NotFail(types.NewArray("$quantity", "$price")),
+				)),
+			)),
+			expected: "SELECT SUM(((CASE WHEN (_jsonb->'totalSaleAmount'->>'quantity' ? '$f') THEN (_jsonb->'totalSaleAmount'->>'quantity'->>'$f')::numeric ELSE (_jsonb->'totalSaleAmount'->>'quantity')::numeric END) * (CASE WHEN (_jsonb->'totalSaleAmount'->>'price' ? '$f') THEN (_jsonb->'totalSaleAmount'->>'price'->>'$f')::numeric ELSE (_jsonb->'totalSaleAmount'->>'price')::numeric END))) AS totalSaleAmount FROM %s",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx := NewGroupContext()
+			require.NotNil(t, ctx)
+
+			group := must.NotFail(types.NewDocument(
+				"_id", "$item",
+				"totalSaleAmount", tc.sumDoc,
+			))
+
+			err := ParseGroup(&ctx, "", group)
+			require.NoError(t, err)
+
+			assert.Equal(t, tc.expected, ctx.GetSubQuery())
+			assert.Equal(t, "DISTINCT ON (_jsonb->'item') json_build_object('$k', jsonb_build_array('_id', 'totalSaleAmount'), '_id', _jsonb->'item', 'totalSaleAmount', json_build_object('$f', totalSaleAmount)) AS _jsonb", ctx.FieldAsString())
+		})
+	}
+}
+
 func TestCountSumAsArrayError(t *testing.T) {
 	t.Parallel()
 
@@ -152,11 +189,10 @@ func TestMultiplyOperator(t *testing.T) {
 	multiplyDoc := must.NotFail(types.NewDocument("$multiply", multiply))
 
 	groupCtx := NewGroupContext()
-	err := ParseOperators(&groupCtx, "totalSaleAmount", multiplyDoc)
+	parsed, err := ParseOperators(&groupCtx, multiplyDoc)
 	require.NoError(t, err)
 
 	qty := "(CASE WHEN (_jsonb->'quantity' ? '$f') THEN (_jsonb->'quantity'->>'$f')::numeric ELSE (_jsonb->'quantity')::numeric END)"
 	price := "(CASE WHEN (_jsonb->'price' ? '$f') THEN (_jsonb->'price'->>'$f')::numeric ELSE (_jsonb->'price')::numeric END)"
-	assert.Equal(t, fmt.Sprintf("SELECT (%s * %s) AS totalSaleAmount FROM %%s", qty, price), groupCtx.GetSubQuery())
-	assert.Equal(t, "json_build_object('$k', jsonb_build_array('totalSaleAmount'), 'totalSaleAmount', totalSaleAmount) AS _jsonb", groupCtx.FieldAsString())
+	assert.Equal(t, fmt.Sprintf("(%s * %s)", qty, price), *parsed)
 }

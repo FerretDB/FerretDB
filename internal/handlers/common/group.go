@@ -109,7 +109,7 @@ func GetNumericValue(field string) string {
 	return fmt.Sprintf(`(CASE WHEN (%s ? '$f') THEN (%s->>'$f')::numeric ELSE (%s)::numeric END)`, field, field, field)
 }
 
-func ParseOperators(ctx *GroupContext, parentKey string, doc *types.Document) error {
+func ParseOperators(ctx *GroupContext, doc *types.Document) (*string, error) {
 	for _, key := range doc.Keys() {
 		value := must.NotFail(doc.Get(key))
 		switch key {
@@ -117,26 +117,22 @@ func ParseOperators(ctx *GroupContext, parentKey string, doc *types.Document) er
 			params := value.(*types.Document)
 			date, err := params.Get("date")
 			if err != nil {
-				return fmt.Errorf("Error getting 'date': %w", err)
+				return nil, fmt.Errorf("Error getting 'date': %w", err)
 			}
 			// FIXME support multiple formats - https://www.mongodb.com/docs/manual/reference/operator/aggregation/dateToString/
 			// TODO format := params.Get("format")
 			if date == nil {
-				return NewWriteErrorMsg(
+				return nil, NewWriteErrorMsg(
 					ErrFailedToParse,
 					"Missing 'date' parameter to $dateToString",
 				)
 			}
 
 			field := strings.TrimPrefix(date.(string), "$")
-			res := FormatFieldWithAncestor(field, ctx.parents, "_jsonb") + "->>'$d'"
-			ctx.AddField(parentKey, parentKey)
-			ctx.AddSubField(fmt.Sprintf("TO_CHAR(TO_TIMESTAMP((%s)::numeric / 1000), 'YYYY-MM-DD') AS %s", res, parentKey))
-			if parentKey == "_id" {
-				ctx.AddSubGroup("_id")
-			}
+			field = FormatFieldWithAncestor(field, ctx.parents, "_jsonb") + "->>'$d'"
+			res := fmt.Sprintf("TO_CHAR(TO_TIMESTAMP((%s)::numeric / 1000), 'YYYY-MM-DD')", field)
 
-			return nil
+			return &res, nil
 
 		case "$multiply":
 			params := value.(*types.Array)
@@ -152,14 +148,13 @@ func ParseOperators(ctx *GroupContext, parentKey string, doc *types.Document) er
 				}
 				fields += " * "
 			}
-			fields = "(" + strings.TrimSuffix(fields, " * ") + ") AS " + parentKey
+			fields = "(" + strings.TrimSuffix(fields, " * ") + ")"
 
-			ctx.AddField(parentKey, parentKey)
-			ctx.AddSubField(fields)
+			return &fields, nil
 		}
 	}
 
-	return nil
+	return nil, nil
 }
 
 func ParseGroup(ctx *GroupContext, key string, value interface{}) error {
@@ -167,10 +162,14 @@ func ParseGroup(ctx *GroupContext, key string, value interface{}) error {
 	case "_id":
 		switch v := value.(type) {
 		case *types.Document:
-			err := ParseOperators(ctx, key, v)
+			parsed, err := ParseOperators(ctx, v)
 			if err != nil {
 				return err
 			}
+			field := fmt.Sprintf("%s AS %s", *parsed, key)
+			ctx.AddField(key, key)
+			ctx.AddSubField(field)
+			ctx.AddSubGroup("_id")
 
 		default:
 			if strings.HasPrefix(value.(string), "$") {
@@ -187,7 +186,7 @@ func ParseGroup(ctx *GroupContext, key string, value interface{}) error {
 		ctx.AddField(ctx.GetParent(), "COUNT(*)")
 
 	case "$sum":
-		// FIXME Support array of fields to sum
+		// FIXME Support document with an operation on fields to sum, like $multiply
 
 		// FIXME we are always casting the avg to a float64, check if we can find a way
 		//       to dynamically detect int vs. float
@@ -208,10 +207,26 @@ func ParseGroup(ctx *GroupContext, key string, value interface{}) error {
 		case int32, int64, float64:
 			ctx.AddSubField(fmt.Sprintf("SUM(%v) AS %s", param, ctx.GetParent()))
 
+		case *types.Document:
+			parsed, err := ParseOperators(ctx, param)
+			if err != nil {
+				return err
+			}
+
+			key := ctx.GetParent()
+			field := "SUM(" + *parsed + ") AS " + key
+			ctx.AddSubField(field)
+
 		case *types.Array:
 			return NewWriteErrorMsg(
 				ErrFailedToParse,
 				"The $sum accumulator is a unary operator",
+			)
+
+		default:
+			return NewWriteErrorMsg(
+				ErrFailedToParse,
+				fmt.Sprintf("Invalid '%v' parameter to $sum", param),
 			)
 		}
 
