@@ -134,9 +134,21 @@ func ParseOperators(ctx *GroupContext, doc *types.Document) (*string, error) {
 
 			return &res, nil
 
-		case "$multiply":
+		case "$add", "$subtract", "$multiply", "$divide":
 			params := value.(*types.Array)
 			fields := ""
+
+			var oper string
+			switch key {
+			case "$add":
+				oper = "+"
+			case "$subtract":
+				oper = "-"
+			case "$multiply":
+				oper = "*"
+			case "$divide":
+				oper = "/"
+			}
 
 			for i := 0; i < params.Len(); i++ {
 				field := must.NotFail(params.Get(i)).(string)
@@ -149,11 +161,18 @@ func ParseOperators(ctx *GroupContext, doc *types.Document) (*string, error) {
 				} else {
 					fields += field
 				}
-				fields += " * "
+				fields += " " + oper + " "
 			}
-			fields = "(" + strings.TrimSuffix(fields, " * ") + ")"
+
+			fields = "(" + strings.TrimSuffix(fields, " "+oper+" ") + ")"
 
 			return &fields, nil
+
+		default:
+			return nil, NewWriteErrorMsg(
+				ErrFailedToParse,
+				fmt.Sprintf("Unsupported operator: %s", key),
+			)
 		}
 	}
 

@@ -130,7 +130,7 @@ func TestSumWithOperators(t *testing.T) {
 		sumDoc   *types.Document
 		expected string
 	}{
-		"Int32": {
+		"Multiply": {
 			sumDoc: must.NotFail(types.NewDocument("$sum",
 				must.NotFail(types.NewDocument("$multiply",
 					must.NotFail(types.NewArray("$quantity", "$price")),
@@ -179,20 +179,45 @@ func TestCountSumAsArrayError(t *testing.T) {
 	assert.Equal(t, "The $sum accumulator is a unary operator,", err.Error())
 }
 
-func TestMultiplyOperator(t *testing.T) {
-	t.Parallel()
+func TestArithmeticOperator(t *testing.T) {
+	for name, tc := range map[string]struct {
+		operator string
+		symbol   string
+	}{
+		"Add": {
+			operator: "$add",
+			symbol:   "+",
+		},
+		"Subtract": {
+			operator: "$subtract",
+			symbol:   "-",
+		},
+		"Multiply": {
+			operator: "$multiply",
+			symbol:   "*",
+		},
+		"Divide": {
+			operator: "$divide",
+			symbol:   "/",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-	ctx := NewGroupContext()
-	require.NotNil(t, ctx)
+			ctx := NewGroupContext()
+			require.NotNil(t, ctx)
 
-	multiply := must.NotFail(types.NewArray("$quantity", "$price"))
-	multiplyDoc := must.NotFail(types.NewDocument("$multiply", multiply))
+			fields := must.NotFail(types.NewArray("$quantity", "$price"))
+			operatorDoc := must.NotFail(types.NewDocument(tc.operator, fields))
 
-	groupCtx := NewGroupContext()
-	parsed, err := ParseOperators(&groupCtx, multiplyDoc)
-	require.NoError(t, err)
+			groupCtx := NewGroupContext()
+			parsed, err := ParseOperators(&groupCtx, operatorDoc)
+			require.NoError(t, err)
 
-	qty := "(CASE WHEN (_jsonb->'quantity' ? '$f') THEN (_jsonb->'quantity'->>'$f')::numeric ELSE (_jsonb->'quantity')::numeric END)"
-	price := "(CASE WHEN (_jsonb->'price' ? '$f') THEN (_jsonb->'price'->>'$f')::numeric ELSE (_jsonb->'price')::numeric END)"
-	assert.Equal(t, fmt.Sprintf("(%s * %s)", qty, price), *parsed)
+			qty := "(CASE WHEN (_jsonb->'quantity' ? '$f') THEN (_jsonb->'quantity'->>'$f')::numeric ELSE (_jsonb->'quantity')::numeric END)"
+			price := "(CASE WHEN (_jsonb->'price' ? '$f') THEN (_jsonb->'price'->>'$f')::numeric ELSE (_jsonb->'price')::numeric END)"
+			assert.Equal(t, fmt.Sprintf("(%s %s %s)", qty, tc.symbol, price), *parsed)
+		})
+	}
 }
