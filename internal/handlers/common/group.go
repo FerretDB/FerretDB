@@ -141,7 +141,10 @@ func ParseOperators(ctx *GroupContext, doc *types.Document) (*string, error) {
 			for i := 0; i < params.Len(); i++ {
 				field := must.NotFail(params.Get(i)).(string)
 				if strings.HasPrefix(field, "$") {
-					res := FormatFieldWithAncestor(strings.TrimPrefix(field, "$"), ctx.parents, "_jsonb")
+					fmt.Printf("  *** PARENTS: %#v", ctx.parents)
+					// FIXME we might need to consider parents here
+					// res := FormatFieldWithAncestor(strings.TrimPrefix(field, "$"), ctx.parents, "_jsonb")
+					res := FormatFieldWithAncestor(strings.TrimPrefix(field, "$"), []string{}, "_jsonb")
 					fields += GetNumericValue(res)
 				} else {
 					fields += field

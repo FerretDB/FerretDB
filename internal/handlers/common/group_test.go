@@ -136,7 +136,7 @@ func TestSumWithOperators(t *testing.T) {
 					must.NotFail(types.NewArray("$quantity", "$price")),
 				)),
 			)),
-			expected: "SELECT SUM(((CASE WHEN (_jsonb->'totalSaleAmount'->>'quantity' ? '$f') THEN (_jsonb->'totalSaleAmount'->>'quantity'->>'$f')::numeric ELSE (_jsonb->'totalSaleAmount'->>'quantity')::numeric END) * (CASE WHEN (_jsonb->'totalSaleAmount'->>'price' ? '$f') THEN (_jsonb->'totalSaleAmount'->>'price'->>'$f')::numeric ELSE (_jsonb->'totalSaleAmount'->>'price')::numeric END))) AS totalSaleAmount FROM %s",
+			expected: "SELECT SUM(((CASE WHEN (_jsonb->'quantity' ? '$f') THEN (_jsonb->'quantity'->>'$f')::numeric ELSE (_jsonb->'quantity')::numeric END) * (CASE WHEN (_jsonb->'price' ? '$f') THEN (_jsonb->'price'->>'$f')::numeric ELSE (_jsonb->'price')::numeric END))) AS totalSaleAmount FROM %s",
 		},
 	} {
 		name, tc := name, tc
