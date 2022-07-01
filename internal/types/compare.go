@@ -45,7 +45,7 @@ const (
 // For that reason, it typically should not be used in tests.
 //
 // Compare and contrast with test helpers in testutil package.
-func Compare(docValue, filterValue any) CompareResult {
+func Compare(docValue, filterValue any) []CompareResult {
 	if docValue == nil {
 		panic("compare: docValue is nil")
 	}
@@ -56,7 +56,7 @@ func Compare(docValue, filterValue any) CompareResult {
 	switch docValue := docValue.(type) {
 	case *Document:
 		// TODO: implement document comparing
-		return Incomparable
+		return []CompareResult{Incomparable}
 
 	case *Array:
 		if filterArr, ok := filterValue.(*Array); ok {
@@ -71,13 +71,13 @@ func Compare(docValue, filterValue any) CompareResult {
 			}
 
 			if res := compareScalars(docValue, filterValue); res != Incomparable {
-				return res
+				return []CompareResult{res}
 			}
 		}
-		return Incomparable
+		return []CompareResult{Incomparable}
 
 	default:
-		return compareScalars(docValue, filterValue)
+		return []CompareResult{compareScalars(docValue, filterValue)}
 	}
 }
 
@@ -260,124 +260,9 @@ func compareNumbers(a float64, b int64) CompareResult {
 }
 
 // compareArrays compares indices of a filter array according to indices of a document array;
-// returns Equal when a document array contains another array(subarray) that equals filter array.
-func compareArrays(filterArr, docArr *Array) CompareResult {
-	if docArr.Len() == 0 && filterArr.Len() == 0 {
-		return Equal
-	}
-
-	entireArrayResult := Incomparable
-	var bothHasSubArray, subArrayEqual bool
-
-	for i := 0; i < docArr.Len(); i++ {
-		arrValue := must.NotFail(docArr.Get(i))
-		switch arrValue := arrValue.(type) {
-		case *Array:
-			filterArrValue, errEmptyArray := filterArr.Get(i) // should omit error to reach case default for filterArrValue
-			switch filterArrValue := filterArrValue.(type) {
-			case *Array:
-				bothHasSubArray = true
-				res := compareArrays(filterArrValue, arrValue)
-				if i == 0 { // set first non-Incomparable result
-					entireArrayResult = res
-				}
-
-				if entireArrayResult != res {
-					entireArrayResult = Incomparable
-				}
-				continue
-
-			default:
-				_, err := arrValue.Get(0)
-				if err != nil { // empty doc Array
-					if errEmptyArray != nil {
-						return Equal
-					}
-					return Greater
-				}
-
-				res := compareArrays(filterArr, arrValue)
-				if res == Equal {
-					subArrayEqual = true
-				}
-
-				if i == 0 {
-					entireArrayResult = Greater
-					continue
-				}
-
-				if res != entireArrayResult {
-					if entireArrayResult == Equal {
-						entireArrayResult = res
-					}
-					if (res == Less && entireArrayResult == Greater) ||
-						(res == Greater && entireArrayResult == Less) {
-						return Greater
-					}
-				}
-			}
-
-		// TODO: case Document
-		case *Document:
-			continue
-
-		default:
-			filterValue, err := filterArr.Get(i)
-			if err != nil {
-				if filterArr.Len() == 0 {
-					return Greater
-				}
-
-				if entireArrayResult == Equal && docArr.Len() > filterArr.Len() {
-					entireArrayResult = Greater
-				}
-
-				continue
-			}
-
-			if i == 0 { // set first non-Incomparable result
-				entireArrayResult = CompareOrder(arrValue, filterValue, Ascending)
-				continue
-			}
-
-			res := Compare(arrValue, filterValue)
-
-			if entireArrayResult != res {
-				if entireArrayResult == Equal {
-					entireArrayResult = res
-				}
-
-				if (res == Less && entireArrayResult == Greater) ||
-					(res == Greater && entireArrayResult == Less) {
-					//return GtAndLt
-				}
-			}
-		}
-	}
-
-	if entireArrayResult == Equal && docArr.Len() < filterArr.Len() {
-		return Less
-	}
-
-	if bothHasSubArray {
-		if entireArrayResult == Greater {
-			//return GtAndLt
-		}
-		if entireArrayResult == Equal {
-			return Equal
-		}
-
-		return Less
-	}
-
-	if subArrayEqual {
-		return Equal
-	}
-
-	return entireArrayResult
-}
-
-func CompareArrays(filterArr, docArr *Array) []CompareResult {
+// returns Equal even when an array contains subarray equals to filter array;
+// returns both Less and Greater when subarrays meet filter array.
+func compareArrays(filterArr, docArr *Array) []CompareResult {
 	if filterArr.Len() == 0 && docArr.Len() == 0 {
 		return []CompareResult{Equal}
 	}
@@ -386,7 +271,7 @@ func CompareArrays(filterArr, docArr *Array) []CompareResult {
 	}
 
 	var entireArrayResult = make([]CompareResult, 0)
-	var bothHasSubArray, subArrayEquality, gtAndLt bool
+	var bothHasSubArray, subArrayEquality, gtAndLt, subArray bool
 
 	for i := 0; i < docArr.Len(); i++ {
 		docValue := must.NotFail(docArr.Get(i))
@@ -396,7 +281,7 @@ func CompareArrays(filterArr, docArr *Array) []CompareResult {
 			switch filterArrValue := filterValue.(type) {
 			case *Array:
 				bothHasSubArray = true
-				res := CompareArrays(filterArrValue, arrValue)
+				res := compareArrays(filterArrValue, arrValue)
 				if i == 0 {
 					entireArrayResult = res
 				}
@@ -411,7 +296,9 @@ func CompareArrays(filterArr, docArr *Array) []CompareResult {
 					return []CompareResult{Greater, Less}
 				}
 
-				res := CompareArrays(filterArr, arrValue)
+				subArray = true
+
+				res := compareArrays(filterArr, arrValue)
 				if ContainsCompareResult(res, Equal) {
 					subArrayEquality = true
 				}
@@ -446,6 +333,7 @@ func CompareArrays(filterArr, docArr *Array) []CompareResult {
 			if gtAndLt {
 				continue // looking for subArrayEquality
 			}
+
 			filterValue, err := filterArr.Get(i)
 			if err != nil {
 				if filterArr.Len() == 0 { // here check (instead of beginning) to get #handle empty embedded array
@@ -464,12 +352,16 @@ func CompareArrays(filterArr, docArr *Array) []CompareResult {
 				continue
 			}
 
-			res := Compare(arrValue, filterValue)
+			res := compareScalars(arrValue, filterValue)
 
-			if !ContainsCompareResult(entireArrayResult, res) {
+			if !ContainsCompareResult(entireArrayResult, res) { // check inconsistency
 				if ContainsCompareResult(entireArrayResult, Equal) {
 					entireArrayResult = deleteFromCompareResult(entireArrayResult, Equal)
 					entireArrayResult = append(entireArrayResult, res)
+				}
+
+				if !subArray {
+					continue
 				}
 
 				if (res == Less && ContainsCompareResult(entireArrayResult, Greater)) ||
@@ -478,6 +370,7 @@ func CompareArrays(filterArr, docArr *Array) []CompareResult {
 					gtAndLt = true
 				}
 			}
+
 		}
 	}
 
@@ -510,6 +403,7 @@ func CompareArrays(filterArr, docArr *Array) []CompareResult {
 	return entireArrayResult
 }
 
+// ContainsCompareResult returns true if the result is in an array
 func ContainsCompareResult[T CompareResult](result []T, value T) bool {
 	for _, v := range result {
 		if v == value {
@@ -519,6 +413,7 @@ func ContainsCompareResult[T CompareResult](result []T, value T) bool {
 	return false
 }
 
+// deleteFromCompareResult removes an element from the CompareResult array
 func deleteFromCompareResult[T CompareResult](arr []T, value T) []T {
 	for i, v := range arr {
 		if v == value {
@@ -528,3 +423,7 @@ func deleteFromCompareResult[T CompareResult](arr []T, value T) []T {
 
 	return arr
 }
+
+//func handleInconsistencyInResults()  {
+//
+//}
