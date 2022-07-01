@@ -95,16 +95,12 @@ func (c *GroupContext) GetSubQuery() string {
 	if len(c.subFields) == 0 {
 		return ""
 	}
-	sql := "SELECT "
-	for _, field := range c.subFields {
-		sql += field + ", "
+
+	sql := "SELECT " + strings.Join(c.subFields, ", ") + " FROM %s"
+
+	if len(c.subGroups) > 0 {
+		sql += " GROUP BY " + strings.Join(c.subGroups, ", ") + ", "
 	}
-	sql = strings.TrimSuffix(sql, ", ")
-	sql += " FROM %s GROUP BY "
-	for _, group := range c.subGroups {
-		sql += group + ", "
-	}
-	sql = strings.TrimSuffix(sql, ", ")
 
 	return sql
 }
