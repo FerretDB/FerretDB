@@ -32,7 +32,7 @@ func TestGroupContext(t *testing.T) {
 	ctx.AddField("_id", "1")
 	ctx.AddField("count", "COUNT(*)")
 
-	assert.Equal(t, ctx.FieldAsString(), "json_build_object('$k', jsonb_build_array('_id', 'count'), 'count', COUNT(*), '_id', 1) AS _jsonb")
+	assert.Equal(t, ctx.FieldAsString(), "json_build_object('$k', jsonb_build_array('_id', 'count'), '_id', 1, 'count', COUNT(*)) AS _jsonb")
 }
 
 func TestUnique(t *testing.T) {

@@ -92,6 +92,9 @@ func (c *GroupContext) FieldAsString() string {
 }
 
 func (c *GroupContext) GetSubQuery() string {
+	if len(c.subFields) == 0 {
+		return ""
+	}
 	sql := "SELECT "
 	for _, field := range c.subFields {
 		sql += field + ", "
@@ -111,8 +114,6 @@ func GetNumericValue(field string) string {
 }
 
 func ParseOperators(ctx *GroupContext, parentKey string, doc *types.Document) error {
-	fmt.Printf("  DOC: %#v\n", doc)
-
 	for _, key := range doc.Keys() {
 		value := must.NotFail(doc.Get(key))
 		switch key {

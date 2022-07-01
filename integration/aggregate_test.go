@@ -151,7 +151,6 @@ func TestMatch(t *testing.T) {
 			assert.Equal(t, tc.expected, results)
 		})
 	}
-
 }
 
 func TestMatchAll(t *testing.T) {
