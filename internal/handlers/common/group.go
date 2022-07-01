@@ -99,7 +99,7 @@ func (c *GroupContext) GetSubQuery() string {
 	sql := "SELECT " + strings.Join(c.subFields, ", ") + " FROM %s"
 
 	if len(c.subGroups) > 0 {
-		sql += " GROUP BY " + strings.Join(c.subGroups, ", ") + ", "
+		sql += " GROUP BY " + strings.Join(c.subGroups, ", ")
 	}
 
 	return sql
