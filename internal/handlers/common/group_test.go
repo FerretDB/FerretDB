@@ -82,6 +82,47 @@ func TestCountSumAndAverage(t *testing.T) {
 	assert.Equal(t, "SELECT TO_CHAR(TO_TIMESTAMP((_jsonb->'date'->>'$d')::numeric / 1000), 'YYYY-MM-DD') AS _id, SUM((CASE WHEN (_jsonb->'quantity' ? '$f') THEN (_jsonb->'quantity'->>'$f')::numeric ELSE (_jsonb->'quantity')::numeric END)) AS totalSaleAmount, AVG((CASE WHEN (_jsonb->'quantity' ? '$f') THEN (_jsonb->'quantity'->>'$f')::numeric ELSE (_jsonb->'quantity')::numeric END)) AS averageQuantity, SUM(1) AS count FROM %s GROUP BY _id", ctx.GetSubQuery())
 }
 
+func TestSumWithNumber(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		sumValue interface{}
+		expected string
+	}{
+		"Int32": {
+			sumValue: int32(1),
+			expected: "1",
+		},
+		"Int64": {
+			sumValue: int64(2),
+			expected: "2",
+		},
+		"Float64": {
+			sumValue: float64(0.5),
+			expected: "0.5",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx := NewGroupContext()
+			require.NotNil(t, ctx)
+
+			group := must.NotFail(types.NewDocument(
+				"_id", "$item",
+				"totalSaleAmount", must.NotFail(types.NewDocument("$sum", tc.sumValue)),
+			))
+
+			err := ParseGroup(&ctx, "", group)
+			require.NoError(t, err)
+
+			assert.Equal(t, "DISTINCT ON (_jsonb->'item') json_build_object('$k', jsonb_build_array('_id', 'totalSaleAmount'), '_id', _jsonb->'item', 'totalSaleAmount', json_build_object('$f', totalSaleAmount)) AS _jsonb", ctx.FieldAsString())
+			assert.Equal(t, fmt.Sprintf("SELECT SUM(%s) AS totalSaleAmount FROM %%s", tc.expected), ctx.GetSubQuery())
+		})
+	}
+}
+
 func TestCountSumAsArrayError(t *testing.T) {
 	t.Parallel()
 

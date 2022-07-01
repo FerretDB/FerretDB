@@ -205,7 +205,7 @@ func ParseGroup(ctx *GroupContext, key string, value interface{}) error {
 			res := FormatFieldWithAncestor(strings.TrimPrefix(param, "$"), []string{}, "_jsonb")
 			ctx.AddSubField(fmt.Sprintf("SUM(%s) AS %s", GetNumericValue(res), ctx.GetParent()))
 
-		case int32:
+		case int32, int64, float64:
 			ctx.AddSubField(fmt.Sprintf("SUM(%v) AS %s", param, ctx.GetParent()))
 
 		case *types.Array:
