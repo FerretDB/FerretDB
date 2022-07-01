@@ -56,11 +56,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		)
 	}
 
-	// var aggregate string
 	var pipeline *types.Array
-	// if aggregate, err = common.GetOptionalParam(document, "aggregate", aggregate); err != nil {
-	// 	return nil, err
-	// }
 	if pipeline, err = common.GetOptionalParam(document, "pipeline", pipeline); err != nil {
 		return nil, err
 	}
@@ -141,7 +137,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	if order != "" {
 		sql += " ORDER BY " + order
 	}
-	fmt.Printf(" *** SQL: %s %v %v\n", sql, queryValues, len(queryValues))
+	// fmt.Printf(" *** SQL: %s %v %v\n", sql, queryValues, len(queryValues))
 
 	rows, err := h.pgPool.Query(ctx, sql, queryValues...)
 	if err != nil {
