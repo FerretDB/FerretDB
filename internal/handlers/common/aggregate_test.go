@@ -27,7 +27,7 @@ func TestMakeSimpleQuery(t *testing.T) {
 	t.Parallel()
 
 	doc := must.NotFail(types.NewDocument("a", int32(1), "b", int32(2)))
-	sql, values, err := AggregateMatch(doc)
+	sql, values, err := AggregateMatch(doc, "_jsonb")
 	require.NoError(t, err)
 
 	assert.Equal(t, []interface{}{"1", "2"}, values)
@@ -44,7 +44,7 @@ func TestMakeNestedQuery(t *testing.T) {
 			"d", int32(3),
 		)),
 	))
-	sql, values, err := AggregateMatch(doc)
+	sql, values, err := AggregateMatch(doc, "_jsonb")
 	require.NoError(t, err)
 
 	assert.Equal(t, []interface{}{"1", "2", "3"}, values)
@@ -60,7 +60,7 @@ func TestOrMatch(t *testing.T) {
 			must.NotFail(types.NewDocument("c", "ONE")),
 		)),
 	))
-	sql, values, err := AggregateMatch(doc)
+	sql, values, err := AggregateMatch(doc, "_jsonb")
 	require.NoError(t, err)
 
 	assert.Equal(t, []interface{}{"1", "2", "ONE"}, values)
@@ -76,7 +76,7 @@ func TestAndMatch(t *testing.T) {
 			must.NotFail(types.NewDocument("c", "ONE")),
 		)),
 	))
-	sql, values, err := AggregateMatch(doc)
+	sql, values, err := AggregateMatch(doc, "_jsonb")
 	require.NoError(t, err)
 
 	assert.Equal(t, []interface{}{"1", "2", "ONE"}, values)
@@ -89,7 +89,7 @@ func TestSimpleNotMatch(t *testing.T) {
 	doc := must.NotFail(types.NewDocument("$not",
 		must.NotFail(types.NewDocument("color", "blue")),
 	))
-	sql, values, err := AggregateMatch(doc)
+	sql, values, err := AggregateMatch(doc, "_jsonb")
 	require.NoError(t, err)
 
 	assert.Equal(t, []interface{}{"blue"}, values)
@@ -106,7 +106,7 @@ func TestComplexNotMatch(t *testing.T) {
 			)),
 		)),
 	))
-	sql, values, err := AggregateMatch(doc)
+	sql, values, err := AggregateMatch(doc, "_jsonb")
 	require.NoError(t, err)
 
 	assert.Equal(t, []interface{}{"1"}, values)
@@ -121,7 +121,7 @@ func TestAllMatch(t *testing.T) {
 			must.NotFail(types.NewArray("black", "white")),
 		)),
 	))
-	sql, values, err := AggregateMatch(doc)
+	sql, values, err := AggregateMatch(doc, "_jsonb")
 	require.NoError(t, err)
 
 	assert.Equal(t, []interface{}{[]string{"black", "white"}}, values)
@@ -141,7 +141,7 @@ func TestNestedWithOr(t *testing.T) {
 			must.NotFail(types.NewArray(must.NotFail(types.NewDocument("a", "ONE")), must.NotFail(types.NewDocument("b", "TWO"))))),
 		),
 	))
-	sql, values, err := AggregateMatch(doc)
+	sql, values, err := AggregateMatch(doc, "_jsonb")
 	require.NoError(t, err)
 
 	assert.Equal(t, []interface{}{"1", "2", "3", "ONE", "TWO"}, values)
@@ -159,7 +159,7 @@ func TestGtLteComparatorsOp(t *testing.T) {
 		)),
 	))
 
-	sql, values, err := AggregateMatch(doc)
+	sql, values, err := AggregateMatch(doc, "_jsonb")
 	require.NoError(t, err)
 
 	assert.Equal(t, []interface{}{"1", "1", "10"}, values)
@@ -175,7 +175,7 @@ func TestNeComparatorOp(t *testing.T) {
 		)),
 	))
 
-	sql, values, err := AggregateMatch(doc)
+	sql, values, err := AggregateMatch(doc, "_jsonb")
 	require.NoError(t, err)
 
 	assert.Equal(t, []interface{}{"1"}, values)
@@ -192,7 +192,7 @@ func TestInComparatorOp(t *testing.T) {
 		)),
 	))
 
-	sql, values, err := AggregateMatch(doc)
+	sql, values, err := AggregateMatch(doc, "_jsonb")
 	require.NoError(t, err)
 
 	assert.Equal(t, []interface{}{[]string{"1", "2"}}, values)
@@ -209,7 +209,7 @@ func TestNinComparatorOp(t *testing.T) {
 		)),
 	))
 
-	sql, values, err := AggregateMatch(doc)
+	sql, values, err := AggregateMatch(doc, "_jsonb")
 	require.NoError(t, err)
 
 	assert.Equal(t, []interface{}{[]string{"1", "2"}}, values)
@@ -225,7 +225,7 @@ func TestSimpleExistsComparatorOp(t *testing.T) {
 		)),
 	))
 
-	sql, values, err := AggregateMatch(doc)
+	sql, values, err := AggregateMatch(doc, "_jsonb")
 	require.NoError(t, err)
 
 	assert.Equal(t, []interface{}{"b"}, values)
@@ -243,7 +243,7 @@ func TestNestedSimpleExistsComparatorOp(t *testing.T) {
 		)),
 	))
 
-	sql, values, err := AggregateMatch(doc)
+	sql, values, err := AggregateMatch(doc, "_jsonb")
 	require.NoError(t, err)
 
 	assert.Equal(t, []interface{}{"c"}, values)
@@ -256,7 +256,7 @@ func TestRegexMatch(t *testing.T) {
 	doc := must.NotFail(types.NewDocument("color",
 		must.NotFail(types.NewDocument("$regex", "^red$")),
 	))
-	sql, values, err := AggregateMatch(doc)
+	sql, values, err := AggregateMatch(doc, "_jsonb")
 	require.NoError(t, err)
 
 	assert.Equal(t, []interface{}{"^red$"}, values)
