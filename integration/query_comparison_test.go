@@ -784,7 +784,8 @@ func TestQueryComparisonGte(t *testing.T) {
 		},
 		"ArraySlice": {
 			value: bson.A{int32(42), "foo"},
-			expectedIDs: []any{"array-embedded", "array-empty-nested", "array-first-embedded", "array-last-embedded",
+			expectedIDs: []any{
+				"array-embedded", "array-empty-nested", "array-first-embedded", "array-last-embedded",
 				"array-middle-embedded", "array-three", "array-two",
 			},
 		},

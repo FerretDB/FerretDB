@@ -271,7 +271,7 @@ func compareArrays(filterArr, docArr *Array) []CompareResult {
 		return []CompareResult{Less}
 	}
 
-	var entireCompareResult = make([]CompareResult, 0)
+	var entireCompareResult []CompareResult
 	var subArrayEquality, gtAndLt, subArray bool
 
 	for i := 0; i < docArr.Len(); i++ {
@@ -349,7 +349,6 @@ func compareArrays(filterArr, docArr *Array) []CompareResult {
 			if !ContainsCompareResult(entireCompareResult, iterationResult) { // check inconsistency
 				entireCompareResult, gtAndLt = handleInconsistencyInResults(entireCompareResult, iterationResult, subArray)
 			}
-
 		}
 	}
 
@@ -364,7 +363,7 @@ func compareArrays(filterArr, docArr *Array) []CompareResult {
 	return entireCompareResult
 }
 
-// ContainsCompareResult returns true if the result is in an array
+// ContainsCompareResult returns true if the result is in an array.
 func ContainsCompareResult[T CompareResult](result []T, value T) bool {
 	for _, v := range result {
 		if v == value {
@@ -374,7 +373,7 @@ func ContainsCompareResult[T CompareResult](result []T, value T) bool {
 	return false
 }
 
-// deleteFromCompareResult removes an element from the CompareResult array
+// deleteFromCompareResult removes an element from the CompareResult array.
 func deleteFromCompareResult[T CompareResult](arr []T, value T) []T {
 	for i, v := range arr {
 		if v == value {
