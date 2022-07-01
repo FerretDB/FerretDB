@@ -238,12 +238,12 @@ func MatchToSql(ctx *parseContext, key string, value interface{}) (*string, erro
 	return &sql, nil
 }
 
-func AggregateMatch(match *types.Document) (*string, []interface{}, error) {
+func AggregateMatch(match *types.Document, parent string) (*string, []interface{}, error) {
 	ctx := parseContext{
 		parents: []string{},
 		values:  &[]interface{}{},
 	}
 
-	sql, err := MatchToSql(&ctx, "_jsonb", match)
+	sql, err := MatchToSql(&ctx, parent, match)
 	return sql, *ctx.values, err
 }

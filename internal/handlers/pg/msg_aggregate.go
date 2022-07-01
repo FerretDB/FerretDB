@@ -69,6 +69,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	from := `"` + sp.db + `"."` + sp.collection + `"`
 	where := ""
 	groups := ""
+	order := ""
+	hasSubquery := false
 
 	var queryValues []interface{}
 	for i := 0; i < pipeline.Len(); i++ {
@@ -77,7 +79,11 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			switch pipelineOp {
 			case "$match":
 				match := must.NotFail(p.Get(pipelineOp)).(*types.Document)
-				aggregateWhere, values, err := common.AggregateMatch(match)
+				parent := "_jsonb"
+				if hasSubquery {
+					parent = ""
+				}
+				aggregateWhere, values, err := common.AggregateMatch(match, parent)
 				if err != nil {
 					return nil, err
 				}
@@ -99,6 +105,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 				fields = res.Fields
 				if res.SubQuery != "" {
+					hasSubquery = true
 					fromAndWhere := from
 					if where != "" {
 						fromAndWhere += " WHERE " + where
@@ -109,6 +116,14 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 				if res.Groups != "" {
 					groups = res.Groups
 				}
+
+			case "$sort":
+				sort := must.NotFail(p.Get(pipelineOp)).(*types.Document)
+				sortStr, err := common.AggregateSort(sort)
+				if err != nil {
+					return nil, err
+				}
+				order = *sortStr
 
 			default:
 				return nil, common.NewErrorMsg(common.ErrBadValue, fmt.Sprintf("unknown pipeline operator: %s", pipelineOp))
@@ -123,7 +138,10 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	if groups != "" {
 		sql += " GROUP BY " + groups
 	}
-	// fmt.Printf(" *** SQL: %s %v %v\n", sql, queryValues, len(queryValues))
+	if order != "" {
+		sql += " ORDER BY " + order
+	}
+	fmt.Printf(" *** SQL: %s %v %v\n", sql, queryValues, len(queryValues))
 
 	rows, err := h.pgPool.Query(ctx, sql, queryValues...)
 	if err != nil {

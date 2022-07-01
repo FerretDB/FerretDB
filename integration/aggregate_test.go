@@ -229,3 +229,30 @@ func TestCount(t *testing.T) {
 		bson.D{{"cnt", int32(2)}},
 	}, results)
 }
+
+func TestMatchBeforeGroup(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	_, err := collection.InsertMany(ctx, []any{
+		bson.D{{"_id", 1}, {"color", "white"}, {"quantity", 1}},
+		bson.D{{"_id", 2}, {"color", "black"}, {"quantity", 5}},
+		bson.D{{"_id", 3}, {"color", "blue"}, {"quantity", 3}},
+		bson.D{{"_id", 4}, {"color", "yellow"}, {"quantity", 2}},
+	})
+	require.NoError(t, err)
+
+	match := bson.D{{"$match", bson.D{{"color", bson.D{{"$regex", "e$"}}}}}}
+	group := bson.D{{"$group", bson.D{{"averageQuantity", bson.D{{"$avg", "$quantity"}}}}}}
+	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{match, group})
+	require.NoError(t, err)
+
+	var results []bson.D
+	if err := cursor.All(ctx, &results); err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, []bson.D{
+		bson.D{{"averageQuantity", float64(2)}},
+	}, results)
+
+}
