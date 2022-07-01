@@ -80,3 +80,22 @@ func TestCountSumAndAverage(t *testing.T) {
 	assert.Equal(t, "json_build_object('$k', jsonb_build_array('_id', 'totalSaleAmount', 'averageQuantity', 'count'), '_id', _id, 'totalSaleAmount', json_build_object('$f', totalSaleAmount), 'averageQuantity', json_build_object('$f', averageQuantity), 'count', json_build_object('$f', count)) AS _jsonb", ctx.FieldAsString())
 	assert.Equal(t, "SELECT TO_CHAR(TO_TIMESTAMP((_jsonb->'date'->>'$d')::numeric / 1000), 'YYYY-MM-DD') AS _id, SUM((CASE WHEN (_jsonb->'quantity' ? '$f') THEN (_jsonb->'quantity'->>'$f')::numeric ELSE (_jsonb->'quantity')::numeric END)) AS totalSaleAmount, AVG((CASE WHEN (_jsonb->'quantity' ? '$f') THEN (_jsonb->'quantity'->>'$f')::numeric ELSE (_jsonb->'quantity')::numeric END)) AS averageQuantity, SUM(1) AS count FROM %s GROUP BY _id", ctx.GetSubQuery())
 }
+
+func TestCountSumAsArrayError(t *testing.T) {
+	t.Parallel()
+
+	ctx := NewGroupContext()
+	require.NotNil(t, ctx)
+
+	dateToString := must.NotFail(types.NewDocument("date", "$date", "format", "%Y-%m-%d"))
+	id := must.NotFail(types.NewDocument("$dateToString", dateToString))
+	sumParts := must.NotFail(types.NewArray("$item", "$price"))
+	totalSaleAmount := must.NotFail(types.NewDocument("$sum", sumParts))
+	group := must.NotFail(types.NewDocument(
+		"_id", id,
+		"totalSaleAmount", totalSaleAmount,
+	))
+
+	err := ParseGroup(&ctx, "", group)
+	assert.Equal(t, "The $sum accumulator is a unary operator,", err.Error())
+}

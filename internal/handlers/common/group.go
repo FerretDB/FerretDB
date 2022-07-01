@@ -190,6 +190,11 @@ func ParseGroup(ctx *GroupContext, key string, value interface{}) error {
 		case int32:
 			ctx.AddSubField(fmt.Sprintf("SUM(%v) AS %s", param, ctx.GetParent()))
 
+		case *types.Array:
+			return NewWriteErrorMsg(
+				ErrFailedToParse,
+				"The $sum accumulator is a unary operator",
+			)
 		}
 
 	case "$avg":
