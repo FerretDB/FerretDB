@@ -66,7 +66,9 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	fields := "_jsonb"
-	sql := `FROM "` + sp.db + `"."` + sp.collection + `"`
+	from := `"` + sp.db + `"."` + sp.collection + `"`
+	where := ""
+	groups := ""
 
 	var queryValues []interface{}
 	for i := 0; i < pipeline.Len(); i++ {
@@ -75,12 +77,12 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			switch pipelineOp {
 			case "$match":
 				match := must.NotFail(p.Get(pipelineOp)).(*types.Document)
-				where, values, err := common.AggregateMatch(match)
+				aggregateWhere, values, err := common.AggregateMatch(match)
 				if err != nil {
 					return nil, err
 				}
 
-				sql += " WHERE " + *where
+				where = *aggregateWhere
 				queryValues = append(queryValues, values...)
 
 			case "$count":
@@ -90,14 +92,26 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			case "$group":
 				group := must.NotFail(p.Get(pipelineOp)).(*types.Document)
 
-				groupFields, groupBy, err := common.AggregateGroup(group)
+				res, err := common.AggregateGroup(group)
 				if err != nil {
 					return nil, err
 				}
-				if *groupBy != "" {
-					sql += " GROUP BY " + *groupBy
+
+				fmt.Printf("  *** RES: %#v\n", res)
+				fmt.Printf("  *** FROM: %#v\n", from)
+
+				fields = res.Fields
+				if res.SubQuery != "" {
+					fromAndWhere := from
+					if where != "" {
+						fromAndWhere += " WHERE " + where
+						where = ""
+					}
+					from = "( " + fmt.Sprintf(res.SubQuery, fromAndWhere) + " ) AS subquery"
 				}
-				fields = *groupFields
+				if res.Groups != "" {
+					groups = res.Groups
+				}
 
 			default:
 				return nil, common.NewErrorMsg(common.ErrBadValue, fmt.Sprintf("unknown pipeline operator: %s", pipelineOp))
@@ -105,8 +119,15 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 	}
 
-	sql = "SELECT " + fields + " " + sql
-	// fmt.Printf(" *** SQL: %s %v %v\n", sql, queryValues, len(queryValues))
+	sql := "SELECT " + fields + " FROM " + from
+	if where != "" {
+		sql += " WHERE " + where
+	}
+	if groups != "" {
+		sql += " GROUP BY " + groups
+	}
+	fmt.Printf(" *** SQL: %s %v %v\n", sql, queryValues, len(queryValues))
+
 	rows, err := h.pgPool.Query(ctx, sql, queryValues...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)

@@ -20,32 +20,44 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"golang.org/x/exp/maps"
 )
 
 type GroupContext struct {
-	parents  []string
-	fields   map[string]interface{}
-	groups   []string
-	distinct string
+	parents   []string
+	fields    []interface{}
+	groups    []string
+	subFields []string
+	subGroups []string
+	distinct  string
 }
 
 func NewGroupContext() GroupContext {
 	ctx := GroupContext{
-		parents: []string{},
-		fields:  map[string]interface{}{},
-		groups:  []string{},
+		parents:   []string{},
+		fields:    []interface{}{},
+		subFields: []string{},
+		groups:    []string{},
+		subGroups: []string{},
 	}
 
 	return ctx
 }
 
 func (c *GroupContext) AddField(name string, value interface{}) {
-	c.fields[name] = value
+	c.fields = append(c.fields, name)
+	c.fields = append(c.fields, value)
+}
+
+func (c *GroupContext) AddSubField(value string) {
+	c.subFields = append(c.subFields, value)
 }
 
 func (c *GroupContext) AddGroup(name string) {
 	c.groups = append(c.groups, name)
+}
+
+func (c *GroupContext) AddSubGroup(name string) {
+	c.subGroups = append(c.subGroups, name)
 }
 
 func (c *GroupContext) GetParent() string {
@@ -59,34 +71,135 @@ func (c *GroupContext) FieldAsString() string {
 	}
 	str := fmt.Sprintf("%sjson_build_object('$k', jsonb_build_array(", prefix)
 
-	for _, key := range maps.Keys(c.fields) {
-		str += fmt.Sprintf("'%s', ", key)
+	for i, key := range c.fields {
+		if i%2 == 0 {
+			str += fmt.Sprintf("'%s', ", key)
+		}
 	}
 
 	str = strings.TrimSuffix(str, ", ") + "), "
 
-	for key, value := range c.fields {
-		str += fmt.Sprintf("'%s', %v, ", key, value)
+	for i, v := range c.fields {
+		if i%2 == 0 {
+			str += fmt.Sprintf("'%s', ", v)
+		} else {
+			str += fmt.Sprintf("%v, ", v)
+		}
 	}
 	str = strings.TrimSuffix(str, ", ") + ") AS _jsonb"
 
 	return str
 }
 
+func (c *GroupContext) GetSubQuery() string {
+	sql := "SELECT "
+	for _, field := range c.subFields {
+		sql += field + ", "
+	}
+	sql = strings.TrimSuffix(sql, ", ")
+	sql += " FROM %s GROUP BY "
+	for _, group := range c.subGroups {
+		sql += group + ", "
+	}
+	sql = strings.TrimSuffix(sql, ", ")
+
+	return sql
+}
+
+func ParseOperators(ctx *GroupContext, parentKey string, doc *types.Document) error {
+	fmt.Printf("  DOC: %#v\n", doc)
+
+	for _, key := range doc.Keys() {
+		value := must.NotFail(doc.Get(key))
+		switch key {
+		case "$dateToString":
+			params := value.(*types.Document)
+			date, err := params.Get("date")
+			if err != nil {
+				return fmt.Errorf("Error getting 'date': %w", err)
+			}
+			// FIXME support multiple formats - https://www.mongodb.com/docs/manual/reference/operator/aggregation/dateToString/
+			// TODO format := params.Get("format")
+			if date == nil {
+				return NewWriteErrorMsg(
+					ErrFailedToParse,
+					"Missing 'date' parameter to $dateToString",
+				)
+			}
+
+			field := strings.TrimPrefix(date.(string), "$")
+			res := FormatFieldWithAncestor(field, ctx.parents, "_jsonb") + "->>'$d'"
+			ctx.AddField(parentKey, parentKey)
+			ctx.AddSubField(fmt.Sprintf("TO_CHAR(TO_TIMESTAMP((%s)::numeric / 1000), 'YYYY-MM-DD') AS %s", res, parentKey))
+			if parentKey == "_id" {
+				ctx.AddSubGroup("_id")
+			}
+
+			return nil
+
+		}
+	}
+
+	return nil
+}
+
 func ParseGroup(ctx *GroupContext, key string, value interface{}) error {
 	switch key {
 	case "_id":
-		if strings.HasPrefix(value.(string), "$") {
-			field := strings.TrimPrefix(value.(string), "$")
-			field = FormatFieldWithAncestor(field, ctx.parents, "_jsonb")
-			ctx.distinct = field
-			ctx.AddField("_id", field)
-		} else {
-			ctx.AddField("_id", value)
+		switch v := value.(type) {
+		case *types.Document:
+			err := ParseOperators(ctx, key, v)
+			if err != nil {
+				return err
+			}
+
+		default:
+			if strings.HasPrefix(value.(string), "$") {
+				field := strings.TrimPrefix(value.(string), "$")
+				field = FormatFieldWithAncestor(field, ctx.parents, "_jsonb")
+				ctx.distinct = field
+				ctx.AddField("_id", field)
+			} else {
+				ctx.AddField("_id", value)
+			}
 		}
 
 	case "$count":
 		ctx.AddField(ctx.GetParent(), "COUNT(*)")
+
+	case "$sum":
+		ctx.AddField(ctx.GetParent(), ctx.GetParent())
+
+		switch param := value.(type) {
+		case string:
+			if !strings.HasPrefix(param, "$") {
+				return NewWriteErrorMsg(
+					ErrFailedToParse,
+					fmt.Sprintf("Invalid '%s' parameter to $sum: must start with $ (temporarily)", param),
+				)
+			}
+
+			res := FormatFieldWithAncestor(strings.TrimPrefix(param, "$"), []string{}, "_jsonb")
+			ctx.AddSubField(fmt.Sprintf("SUM((%s)::numeric) AS %s", res, ctx.GetParent()))
+
+		case int32:
+			ctx.AddSubField(fmt.Sprintf("SUM(%v) AS %s", param, ctx.GetParent()))
+
+		}
+
+	case "$avg":
+		param := value.(string)
+		if !strings.HasPrefix(param, "$") {
+			// FIXME handle constant expressions (?)
+			return NewWriteErrorMsg(
+				ErrFailedToParse,
+				fmt.Sprintf("Invalid '%s' parameter to $avg: must start with $ (temporarily)", param),
+			)
+		}
+
+		res := FormatFieldWithAncestor(strings.TrimPrefix(param, "$"), []string{}, "_jsonb")
+		ctx.AddField(ctx.GetParent(), ctx.GetParent())
+		ctx.AddSubField(fmt.Sprintf("AVG((%s)::numeric) AS %s", res, ctx.GetParent()))
 
 	default:
 		if strings.HasPrefix(key, "$") {
@@ -110,22 +223,34 @@ func ParseGroup(ctx *GroupContext, key string, value interface{}) error {
 					return err
 				}
 			}
+		default:
+			fmt.Printf("  *** BOTTOM %#v", v)
+
 		}
 	}
 
 	return nil
 }
 
-func AggregateGroup(group *types.Document) (*string, *string, error) {
+type AggregateResult struct {
+	Fields   string
+	Groups   string
+	SubQuery string
+}
+
+func AggregateGroup(group *types.Document) (*AggregateResult, error) {
 	ctx := NewGroupContext()
 
 	err := ParseGroup(&ctx, "", group)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	fields := ctx.FieldAsString()
 	groups := ""
+	subQuery := ctx.GetSubQuery()
 
-	return &fields, &groups, nil
+	res := AggregateResult{fields, groups, subQuery}
+
+	return &res, nil
 }

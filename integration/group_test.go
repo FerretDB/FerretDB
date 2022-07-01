@@ -16,7 +16,9 @@ package integration
 
 import (
 	"testing"
+	"time"
 
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -52,5 +54,61 @@ func TestGroupDistinct(t *testing.T) {
 		bson.D{{"_id", "def"}},
 		bson.D{{"_id", "jkl"}},
 		bson.D{{"_id", "xyz"}},
+	}, results)
+}
+
+func TestCountSumAndAverage(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	_, err := collection.InsertMany(ctx, []any{
+		bson.D{{"_id", 1}, {"item", "abc"}, {"price", float32(10)}, {"quantity", int32(2)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2014-03-01T08:00:00Z"))}},
+		bson.D{{"_id", 2}, {"item", "jkl"}, {"price", float32(20)}, {"quantity", int32(1)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2014-03-01T09:00:00Z"))}},
+		bson.D{{"_id", 3}, {"item", "xyz"}, {"price", float32(5)}, {"quantity", int32(10)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2014-03-15T09:00:00Z"))}},
+		bson.D{{"_id", 4}, {"item", "xyz"}, {"price", float32(5)}, {"quantity", int32(20)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2014-04-04T11:21:39.736Z"))}},
+		bson.D{{"_id", 5}, {"item", "abc"}, {"price", float32(10)}, {"quantity", int32(10)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2014-04-04T21:23:13.331Z"))}},
+		bson.D{{"_id", 6}, {"item", "def"}, {"price", float32(7.5)}, {"quantity", int32(5)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2015-06-04T05:08:13Z"))}},
+		bson.D{{"_id", 7}, {"item", "def"}, {"price", float32(7.5)}, {"quantity", int32(10)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2015-09-10T08:43:00Z"))}},
+		bson.D{{"_id", 8}, {"item", "abc"}, {"price", float32(10)}, {"quantity", int32(5)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2016-02-06T20:20:13Z"))}},
+	})
+	require.NoError(t, err)
+
+	// match := bson.D{{
+	// 	"$match", bson.D{{
+	// 		"date", bson.D{
+	// 			{"$gte", time.Date(2014, time.March, 1, 0, 0, 0, 0, time.UTC)},
+	// 			{"$lt", time.Date(2015, time.March, 1, 0, 0, 0, 0, time.UTC)},
+	// 		},
+	// 	}},
+	// }}
+	group := bson.D{{"$group", bson.D{
+		{"_id", bson.D{{"$dateToString", bson.D{{"format", "%Y-%m-%d"}, {"date", "$date"}}}}},
+		// {"totalSaleAmount", bson.D{{"$sum", bson.D{{"$multiply", bson.D{{"$price", "$quantity"}}}}}}},
+		{"totalSaleAmount", bson.D{{"$sum", "$quantity"}}},
+		{"averageQuantity", bson.D{{"$avg", "$quantity"}}},
+		{"count", bson.D{{"$sum", 1}}},
+	}}}
+	// cursor, err := collection.Aggregate(ctx, mongo.Pipeline{match, group})
+	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{group})
+	require.NoError(t, err)
+
+	var results []bson.D
+	if err := cursor.All(ctx, &results); err != nil {
+		t.Fatal(err)
+	}
+	// "2014-03-15", "totalSaleAmount" : 10, "averageQuantity" : 10.0000000000000000, "count" : 1}
+	// "2014-03-01", "totalSaleAmount" : 3, "averageQuantity" : 1.5000000000000000, "count" : 2}
+	// "2015-09-10", "totalSaleAmount" : 10, "averageQuantity" : 10.0000000000000000, "count" : 1}
+	// "2016-02-06", "totalSaleAmount" : 5, "averageQuantity" : 5.0000000000000000, "count" : 1}
+	// "2014-04-04", "totalSaleAmount" : 30, "averageQuantity" : 15.0000000000000000, "count" : 2}
+	// "2015-06-04", "totalSaleAmount" : 5, "averageQuantity" : 5.0000000000000000, "count" : 1}
+
+	assert.Equal(t, []bson.D{
+		bson.D{{"_id", "2014-03-15"}, {"totalSaleAmount", int32(10)}, {"averageQuantity", int32(10)}, {"count", int32(1)}},
+		bson.D{{"_id", "2014-03-01"}, {"totalSaleAmount", int32(3)}, {"averageQuantity", int32(1)}, {"count", int32(2)}},
+		bson.D{{"_id", "2015-09-10"}, {"totalSaleAmount", int32(10)}, {"averageQuantity", int32(10)}, {"count", int32(1)}},
+		bson.D{{"_id", "2016-02-06"}, {"totalSaleAmount", int32(5)}, {"averageQuantity", int32(5)}, {"count", int32(1)}},
+		bson.D{{"_id", "2014-04-04"}, {"totalSaleAmount", int32(30)}, {"averageQuantity", int32(15)}, {"count", int32(2)}},
+		bson.D{{"_id", "2015-06-04"}, {"totalSaleAmount", int32(5)}, {"averageQuantity", int32(5)}, {"count", int32(1)}},
 	}, results)
 }
