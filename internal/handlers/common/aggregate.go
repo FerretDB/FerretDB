@@ -27,6 +27,13 @@ type parseContext struct {
 	values  *[]interface{}
 }
 
+func FormatFieldWithAncestor(field string, parents []string, ancestor string) string {
+	newParents := make([]string, len(parents)+1)
+	copy(newParents[1:], parents)
+	newParents[0] = ancestor
+	return FormatField(field, newParents)
+}
+
 func FormatField(field string, parents []string) string {
 	return FormatFieldWithSeparators(field, parents, "->", "->>")
 }

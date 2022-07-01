@@ -17,6 +17,8 @@ package common
 import (
 	"testing"
 
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -31,4 +33,18 @@ func TestGroupContext(t *testing.T) {
 	ctx.AddField("count", "COUNT(*)")
 
 	assert.Equal(t, ctx.FieldAsString(), "json_build_object('$k', jsonb_build_array('_id', 'count'), 'count', COUNT(*), '_id', 1) AS _jsonb")
+}
+
+func TestUnique(t *testing.T) {
+	t.Parallel()
+
+	ctx := NewGroupContext()
+	require.NotNil(t, ctx)
+
+	group := must.NotFail(types.NewDocument("_id", "$item"))
+
+	err := ParseGroup(&ctx, "", group)
+	require.NoError(t, err)
+
+	assert.Equal(t, "DISTINCT ON (_jsonb->'item') json_build_object('$k', jsonb_build_array('_id'), '_id', _jsonb->'item') AS _jsonb", ctx.FieldAsString())
 }

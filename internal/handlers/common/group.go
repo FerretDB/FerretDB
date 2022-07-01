@@ -24,9 +24,10 @@ import (
 )
 
 type GroupContext struct {
-	parents []string
-	fields  map[string]interface{}
-	groups  []string
+	parents  []string
+	fields   map[string]interface{}
+	groups   []string
+	distinct string
 }
 
 func NewGroupContext() GroupContext {
@@ -52,7 +53,11 @@ func (c *GroupContext) GetParent() string {
 }
 
 func (c *GroupContext) FieldAsString() string {
-	str := "json_build_object('$k', jsonb_build_array("
+	prefix := ""
+	if c.distinct != "" {
+		prefix = "DISTINCT ON (" + c.distinct + ") "
+	}
+	str := fmt.Sprintf("%sjson_build_object('$k', jsonb_build_array(", prefix)
 
 	for _, key := range maps.Keys(c.fields) {
 		str += fmt.Sprintf("'%s', ", key)
@@ -71,7 +76,14 @@ func (c *GroupContext) FieldAsString() string {
 func ParseGroup(ctx *GroupContext, key string, value interface{}) error {
 	switch key {
 	case "_id":
-		ctx.AddField("_id", value)
+		if strings.HasPrefix(value.(string), "$") {
+			field := strings.TrimPrefix(value.(string), "$")
+			field = FormatFieldWithAncestor(field, ctx.parents, "_jsonb")
+			ctx.distinct = field
+			ctx.AddField("_id", field)
+		} else {
+			ctx.AddField("_id", value)
+		}
 
 	case "$count":
 		ctx.AddField(ctx.GetParent(), "COUNT(*)")
