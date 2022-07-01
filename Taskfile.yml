@@ -109,21 +109,21 @@ tasks:
     desc: "Run all integration tests in parallel"
     deps:
       - task: test-integration-db
-        vars: {DB: "FerretDB"}
+        vars: { DB: "FerretDB" }
       - task: test-integration-db
-        vars: {DB: "MongoDB"}
+        vars: { DB: "MongoDB" }
 
   test-integration-ferretdb:
     desc: "Run integration tests for FerretDB"
     cmds:
       - task: test-integration-db
-        vars: {DB: "FerretDB"}
+        vars: { DB: "FerretDB" }
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
     cmds:
       - task: test-integration-db
-        vars: {DB: "MongoDB"}
+        vars: { DB: "MongoDB" }
 
   test-integration-db:
     dir: integration
@@ -249,17 +249,11 @@ tasks:
     cmds:
       - >
         docker buildx build --builder=ferretdb
-        --build-arg BUILD_ARGS="{{.BUILD_ARGS}}"
-        --build-arg CGO_ENABLED={{.CGO_ENABLED}}
         --build-arg VERSION={{.VERSION}}
         --build-arg COMMIT={{.COMMIT}}
         --tag=ferretdb-local
         --load .
     vars:
-      BUILD_ARGS: -race -coverpkg=./...
-      CGO_ENABLED: 1
-      COMMIT:
-        sh: cat internal/util/version/commit.txt
       VERSION:
         sh: cat internal/util/version/gen/version.txt
       COMMIT:
@@ -271,15 +265,11 @@ tasks:
       - test {{.DOCKER_IMAGE}}
       - >
         docker buildx build --builder=ferretdb --platform=linux/arm64,linux/amd64
-        --build-arg BUILD_ARGS="{{.BUILD_ARGS}}"
-        --build-arg CGO_ENABLED={{.CGO_ENABLED}}
         --build-arg VERSION={{.VERSION}}
         --build-arg COMMIT={{.COMMIT}}
         --tag={{.DOCKER_IMAGE}}
         --push .
     vars:
-      BUILD_ARGS:
-      CGO_ENABLED: 0
       VERSION:
         sh: cat internal/util/version/gen/version.txt
       COMMIT:

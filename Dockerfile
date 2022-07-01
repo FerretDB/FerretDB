@@ -3,12 +3,9 @@ ARG VERSION
 
 FROM golang:1.18.3 AS build
 
-ARG BUILD_ARGS
-ARG CGO_ENABLED
-
 WORKDIR /src
 ADD . .
-RUN CGO_ENABLED=${CGO_ENABLED} go test -x -c -o=bin/ferretdb -trimpath -tags=testcover,tigris ${BUILD_ARGS} ./cmd/ferretdb
+RUN CGO_ENABLED=1 go test -x -c -o=bin/ferretdb -trimpath -tags=testcover,tigris -race -coverpkg=./... ./cmd/ferretdb
 
 FROM golang:1.18.3
 
