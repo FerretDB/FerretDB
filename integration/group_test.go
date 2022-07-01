@@ -98,11 +98,11 @@ func TestCountSumAndAverage(t *testing.T) {
 	}
 
 	assert.Equal(t, []bson.D{
-		bson.D{{"_id", "2014-03-15"}, {"totalSaleAmount", int32(5)}, {"averageQuantity", int32(10)}, {"count", int32(1)}},
-		bson.D{{"_id", "2014-03-01"}, {"totalSaleAmount", int32(30)}, {"averageQuantity", int32(1)}, {"count", int32(2)}},
-		bson.D{{"_id", "2015-09-10"}, {"totalSaleAmount", int32(7)}, {"averageQuantity", int32(10)}, {"count", int32(1)}},
-		bson.D{{"_id", "2016-02-06"}, {"totalSaleAmount", int32(10)}, {"averageQuantity", int32(5)}, {"count", int32(1)}},
-		bson.D{{"_id", "2014-04-04"}, {"totalSaleAmount", int32(15)}, {"averageQuantity", int32(15)}, {"count", int32(2)}},
-		bson.D{{"_id", "2015-06-04"}, {"totalSaleAmount", int32(7)}, {"averageQuantity", int32(5)}, {"count", int32(1)}},
+		bson.D{{"_id", "2014-03-15"}, {"totalSaleAmount", float64(5)}, {"averageQuantity", float64(10)}, {"count", float64(1)}},
+		bson.D{{"_id", "2014-03-01"}, {"totalSaleAmount", float64(30)}, {"averageQuantity", float64(1.5)}, {"count", float64(2)}},
+		bson.D{{"_id", "2015-09-10"}, {"totalSaleAmount", float64(7.5)}, {"averageQuantity", float64(10)}, {"count", float64(1)}},
+		bson.D{{"_id", "2016-02-06"}, {"totalSaleAmount", float64(10)}, {"averageQuantity", float64(5)}, {"count", float64(1)}},
+		bson.D{{"_id", "2014-04-04"}, {"totalSaleAmount", float64(15)}, {"averageQuantity", float64(15)}, {"count", float64(2)}},
+		bson.D{{"_id", "2015-06-04"}, {"totalSaleAmount", float64(7.5)}, {"averageQuantity", float64(5)}, {"count", float64(1)}},
 	}, results)
 }

@@ -174,7 +174,10 @@ func ParseGroup(ctx *GroupContext, key string, value interface{}) error {
 
 	case "$sum":
 		// FIXME Support array of fields to sum
-		ctx.AddField(ctx.GetParent(), ctx.GetParent())
+
+		// FIXME we are always casting the avg to a float64, check if we can find a way
+		//       to dynamically detect int vs. float
+		ctx.AddField(ctx.GetParent(), "json_build_object('$f', "+ctx.GetParent()+")")
 
 		switch param := value.(type) {
 		case string:
@@ -204,7 +207,9 @@ func ParseGroup(ctx *GroupContext, key string, value interface{}) error {
 		}
 
 		res := FormatFieldWithAncestor(strings.TrimPrefix(param, "$"), []string{}, "_jsonb")
-		ctx.AddField(ctx.GetParent(), ctx.GetParent())
+		// FIXME we are always casting the avg to a float64, check if we can find a way
+		//       to dynamically detect int vs. float
+		ctx.AddField(ctx.GetParent(), "json_build_object('$f', "+ctx.GetParent()+")")
 		ctx.AddSubField(fmt.Sprintf("AVG(%s) AS %s", GetNumericValue(res), ctx.GetParent()))
 
 	default:

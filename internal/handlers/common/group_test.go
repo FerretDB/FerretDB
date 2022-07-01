@@ -77,6 +77,6 @@ func TestCountSumAndAverage(t *testing.T) {
 	err := ParseGroup(&ctx, "", group)
 	require.NoError(t, err)
 
-	assert.Equal(t, "json_build_object('$k', jsonb_build_array('_id', 'totalSaleAmount', 'averageQuantity', 'count'), '_id', _id, 'totalSaleAmount', totalSaleAmount, 'averageQuantity', averageQuantity, 'count', count) AS _jsonb", ctx.FieldAsString())
+	assert.Equal(t, "json_build_object('$k', jsonb_build_array('_id', 'totalSaleAmount', 'averageQuantity', 'count'), '_id', _id, 'totalSaleAmount', json_build_object('$f', totalSaleAmount), 'averageQuantity', json_build_object('$f', averageQuantity), 'count', json_build_object('$f', count)) AS _jsonb", ctx.FieldAsString())
 	assert.Equal(t, "SELECT TO_CHAR(TO_TIMESTAMP((_jsonb->'date'->>'$d')::numeric / 1000), 'YYYY-MM-DD') AS _id, SUM((CASE WHEN (_jsonb->'quantity' ? '$f') THEN (_jsonb->'quantity'->>'$f')::numeric ELSE (_jsonb->'quantity')::numeric END)) AS totalSaleAmount, AVG((CASE WHEN (_jsonb->'quantity' ? '$f') THEN (_jsonb->'quantity'->>'$f')::numeric ELSE (_jsonb->'quantity')::numeric END)) AS averageQuantity, SUM(1) AS count FROM %s GROUP BY _id", ctx.GetSubQuery())
 }
