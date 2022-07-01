@@ -34,10 +34,9 @@ type sqlParam struct {
 	comment    string
 }
 
-// Fetcher
-type Fetcher struct {
-	LastError error
-	*Handler
+type fetched struct {
+	docs []*types.Document
+	err  error
 }
 
 // fetch fetches all documents from the given database and collection
@@ -51,8 +50,8 @@ type Fetcher struct {
 //
 //
 // If the collection doesn't exist, fetch returns a closed channel and no error.
-func (f *Fetcher) fetch(ctx context.Context, param sqlParam) (<-chan []*types.Document, error) {
-	cdocs := make(chan []*types.Document, 3)
+func (h *Handler) fetch(ctx context.Context, param sqlParam) (<-chan fetched, error) {
+	cdocs := make(chan fetched, 3)
 
 	sql := `SELECT `
 	if param.comment != "" {
@@ -64,12 +63,12 @@ func (f *Fetcher) fetch(ctx context.Context, param sqlParam) (<-chan []*types.Do
 	sql += `_jsonb FROM ` + pgx.Identifier{param.db, param.collection}.Sanitize()
 
 	// Special case: check if collection exists at all
-	collectionExists, err := f.pgPool.TableExists(ctx, param.db, param.collection)
+	collectionExists, err := h.pgPool.TableExists(ctx, param.db, param.collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 	if !collectionExists {
-		f.l.Info(
+		h.l.Info(
 			"Table doesn't exist, handling a case to deal with a non-existing collection.",
 			zap.String("schema", param.db), zap.String("table", param.collection),
 		)
@@ -77,7 +76,7 @@ func (f *Fetcher) fetch(ctx context.Context, param sqlParam) (<-chan []*types.Do
 		return cdocs, nil
 	}
 
-	rows, err := f.pgPool.Query(ctx, sql)
+	rows, err := h.pgPool.Query(ctx, sql)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -89,7 +88,7 @@ func (f *Fetcher) fetch(ctx context.Context, param sqlParam) (<-chan []*types.Do
 		for {
 			select {
 			case <-ctx.Done():
-				f.l.Info("got a signal to stop fetching, fetch canceled",
+				h.l.Info("got a signal to stop fetching, fetch canceled",
 					zap.String("schema", param.db), zap.String("table", param.collection),
 				)
 				return
@@ -104,13 +103,13 @@ func (f *Fetcher) fetch(ctx context.Context, param sqlParam) (<-chan []*types.Do
 					break
 				}
 				if err != nil {
-					f.LastError = lazyerrors.Error(err)
+					cdocs <- fetched{err: err}
 					return
 				}
 				res[i] = doc
 			}
 
-			cdocs <- res
+			cdocs <- fetched{docs: res}
 		}
 	}()
 
