@@ -97,9 +97,6 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 					return nil, err
 				}
 
-				fmt.Printf("  *** RES: %#v\n", res)
-				fmt.Printf("  *** FROM: %#v\n", from)
-
 				fields = res.Fields
 				if res.SubQuery != "" {
 					fromAndWhere := from
@@ -126,7 +123,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	if groups != "" {
 		sql += " GROUP BY " + groups
 	}
-	fmt.Printf(" *** SQL: %s %v %v\n", sql, queryValues, len(queryValues))
+	// fmt.Printf(" *** SQL: %s %v %v\n", sql, queryValues, len(queryValues))
 
 	rows, err := h.pgPool.Query(ctx, sql, queryValues...)
 	if err != nil {

@@ -84,7 +84,7 @@ func TestCountSumAndAverage(t *testing.T) {
 	group := bson.D{{"$group", bson.D{
 		{"_id", bson.D{{"$dateToString", bson.D{{"format", "%Y-%m-%d"}, {"date", "$date"}}}}},
 		// {"totalSaleAmount", bson.D{{"$sum", bson.D{{"$multiply", bson.D{{"$price", "$quantity"}}}}}}},
-		{"totalSaleAmount", bson.D{{"$sum", "$quantity"}}},
+		{"totalSaleAmount", bson.D{{"$sum", "$price"}}},
 		{"averageQuantity", bson.D{{"$avg", "$quantity"}}},
 		{"count", bson.D{{"$sum", 1}}},
 	}}}
@@ -96,19 +96,13 @@ func TestCountSumAndAverage(t *testing.T) {
 	if err := cursor.All(ctx, &results); err != nil {
 		t.Fatal(err)
 	}
-	// "2014-03-15", "totalSaleAmount" : 10, "averageQuantity" : 10.0000000000000000, "count" : 1}
-	// "2014-03-01", "totalSaleAmount" : 3, "averageQuantity" : 1.5000000000000000, "count" : 2}
-	// "2015-09-10", "totalSaleAmount" : 10, "averageQuantity" : 10.0000000000000000, "count" : 1}
-	// "2016-02-06", "totalSaleAmount" : 5, "averageQuantity" : 5.0000000000000000, "count" : 1}
-	// "2014-04-04", "totalSaleAmount" : 30, "averageQuantity" : 15.0000000000000000, "count" : 2}
-	// "2015-06-04", "totalSaleAmount" : 5, "averageQuantity" : 5.0000000000000000, "count" : 1}
 
 	assert.Equal(t, []bson.D{
-		bson.D{{"_id", "2014-03-15"}, {"totalSaleAmount", int32(10)}, {"averageQuantity", int32(10)}, {"count", int32(1)}},
-		bson.D{{"_id", "2014-03-01"}, {"totalSaleAmount", int32(3)}, {"averageQuantity", int32(1)}, {"count", int32(2)}},
-		bson.D{{"_id", "2015-09-10"}, {"totalSaleAmount", int32(10)}, {"averageQuantity", int32(10)}, {"count", int32(1)}},
-		bson.D{{"_id", "2016-02-06"}, {"totalSaleAmount", int32(5)}, {"averageQuantity", int32(5)}, {"count", int32(1)}},
-		bson.D{{"_id", "2014-04-04"}, {"totalSaleAmount", int32(30)}, {"averageQuantity", int32(15)}, {"count", int32(2)}},
-		bson.D{{"_id", "2015-06-04"}, {"totalSaleAmount", int32(5)}, {"averageQuantity", int32(5)}, {"count", int32(1)}},
+		bson.D{{"_id", "2014-03-15"}, {"totalSaleAmount", int32(5)}, {"averageQuantity", int32(10)}, {"count", int32(1)}},
+		bson.D{{"_id", "2014-03-01"}, {"totalSaleAmount", int32(30)}, {"averageQuantity", int32(1)}, {"count", int32(2)}},
+		bson.D{{"_id", "2015-09-10"}, {"totalSaleAmount", int32(7)}, {"averageQuantity", int32(10)}, {"count", int32(1)}},
+		bson.D{{"_id", "2016-02-06"}, {"totalSaleAmount", int32(10)}, {"averageQuantity", int32(5)}, {"count", int32(1)}},
+		bson.D{{"_id", "2014-04-04"}, {"totalSaleAmount", int32(15)}, {"averageQuantity", int32(15)}, {"count", int32(2)}},
+		bson.D{{"_id", "2015-06-04"}, {"totalSaleAmount", int32(7)}, {"averageQuantity", int32(5)}, {"count", int32(1)}},
 	}, results)
 }

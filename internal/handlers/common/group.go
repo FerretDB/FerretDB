@@ -106,6 +106,10 @@ func (c *GroupContext) GetSubQuery() string {
 	return sql
 }
 
+func GetNumericValue(field string) string {
+	return fmt.Sprintf(`(CASE WHEN (%s ? '$f') THEN (%s->>'$f')::numeric ELSE (%s)::numeric END)`, field, field, field)
+}
+
 func ParseOperators(ctx *GroupContext, parentKey string, doc *types.Document) error {
 	fmt.Printf("  DOC: %#v\n", doc)
 
@@ -168,6 +172,7 @@ func ParseGroup(ctx *GroupContext, key string, value interface{}) error {
 		ctx.AddField(ctx.GetParent(), "COUNT(*)")
 
 	case "$sum":
+		// FIXME Support array of fields to sum
 		ctx.AddField(ctx.GetParent(), ctx.GetParent())
 
 		switch param := value.(type) {
@@ -180,7 +185,7 @@ func ParseGroup(ctx *GroupContext, key string, value interface{}) error {
 			}
 
 			res := FormatFieldWithAncestor(strings.TrimPrefix(param, "$"), []string{}, "_jsonb")
-			ctx.AddSubField(fmt.Sprintf("SUM((%s)::numeric) AS %s", res, ctx.GetParent()))
+			ctx.AddSubField(fmt.Sprintf("SUM(%s) AS %s", GetNumericValue(res), ctx.GetParent()))
 
 		case int32:
 			ctx.AddSubField(fmt.Sprintf("SUM(%v) AS %s", param, ctx.GetParent()))
@@ -199,7 +204,7 @@ func ParseGroup(ctx *GroupContext, key string, value interface{}) error {
 
 		res := FormatFieldWithAncestor(strings.TrimPrefix(param, "$"), []string{}, "_jsonb")
 		ctx.AddField(ctx.GetParent(), ctx.GetParent())
-		ctx.AddSubField(fmt.Sprintf("AVG((%s)::numeric) AS %s", res, ctx.GetParent()))
+		ctx.AddSubField(fmt.Sprintf("AVG(%s) AS %s", GetNumericValue(res), ctx.GetParent()))
 
 	default:
 		if strings.HasPrefix(key, "$") {
