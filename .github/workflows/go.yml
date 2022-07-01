@@ -6,11 +6,12 @@ on:
       - opened
       - reopened
       - synchronize
+      - auto_merge_enabled # if GitHub Actions stuck, re-enable auto-merge to force rebuild
   push:
     branches:
       - main
   schedule:
-    - cron: "42 2 * * *"
+    - cron: "12 2 * * *"
 
 env:
   GOPATH: /home/runner/go
@@ -64,8 +65,7 @@ jobs:
       - name: Clean test and fuzz caches
         if: always()
         run: |
-          go clean -testcache
-          go clean -fuzzcache
+          go clean -testcache -fuzzcache
 
       - name: Check dirty
         run: |
@@ -189,8 +189,7 @@ jobs:
       - name: Clean test and fuzz caches
         if: always()
         run: |
-          go clean -testcache
-          go clean -fuzzcache
+          go clean -testcache -fuzzcache
 
       - name: Check dirty
         run: |

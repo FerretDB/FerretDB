@@ -30,6 +30,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/proxy"
@@ -77,7 +78,6 @@ type newConnOpts struct {
 	handler     handlers.Interface
 	connMetrics *ConnMetrics
 	proxyAddr   string
-	startTime   time.Time
 }
 
 // newConn creates a new client connection for given net.Conn.
@@ -107,7 +107,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	}, nil
 }
 
-// run runs the client connection until ctx is canceled, client disconnects,
+// run runs the client connection until ctx is done, client disconnects,
 // or fatal error or panic is encountered.
 //
 // The caller is responsible for closing the underlying net.Conn.
@@ -273,6 +273,11 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		}
 		c.m.responses.WithLabelValues(resHeader.OpCode.String(), command, *result).Inc()
 	}()
+
+	connInfo := &conninfo.ConnInfo{
+		PeerAddr: c.netConn.RemoteAddr(),
+	}
+	ctx = conninfo.WithConnInfo(ctx, connInfo)
 
 	resHeader = new(wire.MsgHeader)
 	var err error

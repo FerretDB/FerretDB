@@ -275,6 +275,7 @@ func extractValueFromUpdateOperator(op string, update *types.Document) (*types.D
 	case *types.Document:
 		for _, v := range doc.Keys() {
 			if strings.Contains(v, ".") {
+				// TODO https://github.com/FerretDB/FerretDB/issues/803
 				return nil, NewError(ErrNotImplemented, fmt.Errorf("dot notation for operator %s is not supported yet", op))
 			}
 		}

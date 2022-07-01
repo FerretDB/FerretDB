@@ -228,3 +228,8 @@ func Marshal(v any) ([]byte, error) {
 
 	return b, nil
 }
+
+// ObjectID returns object ID as expected by Tigris filters.
+func ObjectID(id types.ObjectID) []byte {
+	return id[:]
+}
