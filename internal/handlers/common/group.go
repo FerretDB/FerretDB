@@ -138,6 +138,24 @@ func ParseOperators(ctx *GroupContext, parentKey string, doc *types.Document) er
 
 			return nil
 
+		case "$multiply":
+			params := value.(*types.Array)
+			fields := ""
+
+			for i := 0; i < params.Len(); i++ {
+				field := must.NotFail(params.Get(i)).(string)
+				if strings.HasPrefix(field, "$") {
+					res := FormatFieldWithAncestor(strings.TrimPrefix(field, "$"), ctx.parents, "_jsonb")
+					fields += GetNumericValue(res)
+				} else {
+					fields += field
+				}
+				fields += " * "
+			}
+			fields = "(" + strings.TrimSuffix(fields, " * ") + ") AS " + parentKey
+
+			ctx.AddField(parentKey, parentKey)
+			ctx.AddSubField(fields)
 		}
 	}
 

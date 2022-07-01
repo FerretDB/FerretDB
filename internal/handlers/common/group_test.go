@@ -15,6 +15,7 @@
 package common
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -98,4 +99,23 @@ func TestCountSumAsArrayError(t *testing.T) {
 
 	err := ParseGroup(&ctx, "", group)
 	assert.Equal(t, "The $sum accumulator is a unary operator,", err.Error())
+}
+
+func TestMultiplyOperator(t *testing.T) {
+	t.Parallel()
+
+	ctx := NewGroupContext()
+	require.NotNil(t, ctx)
+
+	multiply := must.NotFail(types.NewArray("$quantity", "$price"))
+	multiplyDoc := must.NotFail(types.NewDocument("$multiply", multiply))
+
+	groupCtx := NewGroupContext()
+	err := ParseOperators(&groupCtx, "totalSaleAmount", multiplyDoc)
+	require.NoError(t, err)
+
+	qty := "(CASE WHEN (_jsonb->'quantity' ? '$f') THEN (_jsonb->'quantity'->>'$f')::numeric ELSE (_jsonb->'quantity')::numeric END)"
+	price := "(CASE WHEN (_jsonb->'price' ? '$f') THEN (_jsonb->'price'->>'$f')::numeric ELSE (_jsonb->'price')::numeric END)"
+	assert.Equal(t, fmt.Sprintf("SELECT (%s * %s) AS totalSaleAmount FROM %%s", qty, price), groupCtx.GetSubQuery())
+	assert.Equal(t, "json_build_object('$k', jsonb_build_array('totalSaleAmount'), 'totalSaleAmount', totalSaleAmount) AS _jsonb", groupCtx.FieldAsString())
 }
