@@ -44,8 +44,9 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	if err = h.pgPool.DropTable(ctx, db, collection); err != nil {
-		if err == pgdb.ErrNotExist {
+	err = h.pgPool.DropCollection(ctx, db, collection)
+	if err != nil && err != pgdb.ErrSchemaNotExist {
+		if err == pgdb.ErrTableNotExist {
 			return nil, common.NewErrorMsg(common.ErrNamespaceNotFound, "ns not found")
 		}
 		return nil, lazyerrors.Error(err)

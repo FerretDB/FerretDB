@@ -718,16 +718,16 @@ func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
 
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 	assert.Equal(t, collection.Database().Name(), must.NotFail(doc.Get("db")))
-	assert.Equal(t, int32(1), must.NotFail(doc.Get("collections")))
+	assert.InDelta(t, int32(2), must.NotFail(doc.Get("collections")), 1)
 	assert.Equal(t, int32(0), must.NotFail(doc.Get("views")))
 	assert.Equal(t, int32(0), must.NotFail(doc.Get("objects")))
 	assert.Equal(t, float64(0), must.NotFail(doc.Get("avgObjSize")))
-	assert.Equal(t, float64(0), must.NotFail(doc.Get("dataSize")))
+	assert.InDelta(t, float64(8192), must.NotFail(doc.Get("dataSize")), 8192)
 
 	assert.InDelta(t, float64(1), must.NotFail(doc.Get("indexes")), 1)
 	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("indexSize")), 4_096)
 
-	assert.InDelta(t, float64(1), must.NotFail(doc.Get("totalSize")), 8192)
+	assert.InDelta(t, float64(24576), must.NotFail(doc.Get("totalSize")), 16384)
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("scaleFactor")))
 }
 
@@ -744,11 +744,11 @@ func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
 
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 	assert.Equal(t, collection.Database().Name(), must.NotFail(doc.Get("db")))
-	assert.Equal(t, int32(1), must.NotFail(doc.Get("collections")))
+	assert.InDelta(t, int32(2), must.NotFail(doc.Get("collections")), 1)
 	assert.Equal(t, int32(0), must.NotFail(doc.Get("views")))
 	assert.Equal(t, float64(1000), must.NotFail(doc.Get("scaleFactor")))
 
-	assert.InDelta(t, float64(2.161), must.NotFail(doc.Get("dataSize")), 10)
+	assert.InDelta(t, float64(16.384), must.NotFail(doc.Get("dataSize")), 14)
 	assert.InDelta(t, float64(1), must.NotFail(doc.Get("indexes")), 1)
 	assert.InDelta(t, float64(0), must.NotFail(doc.Get("indexSize")), 4060)
 }
