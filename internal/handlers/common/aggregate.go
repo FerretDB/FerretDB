@@ -248,41 +248,65 @@ func AggregateMatch(match *types.Document, parent string) (*string, []interface{
 	return sql, *ctx.values, err
 }
 
-func parse(stage *Stage, value interface{}) error {
-	return parseKey(stage, "", value)
+func parse(node *FilterNode, value interface{}) error {
+	return parseKey(node, "", "", value)
 }
 
-func parseKey(stage *Stage, key string, value interface{}) error {
+func parseKey(node *FilterNode, key string, field string, value interface{}) error {
 	switch key {
 	case "$gt":
-		stage.SetLastFilter(">", value)
+		node.AddFilter(field, ">", value)
 
 	case "$gte":
-		stage.SetLastFilter(">=", value)
+		node.AddFilter(field, ">=", value)
 
 	case "$lt":
-		stage.SetLastFilter("<", value)
+		node.AddFilter(field, "<", value)
 
 	case "$lte":
-		stage.SetLastFilter("<=", value)
+		node.AddFilter(field, "<=", value)
 
 	case "$eq":
-		stage.SetLastFilter("=", value)
+		node.AddFilter(field, "=", value)
 
 	case "$ne":
-		stage.SetLastFilter("<>", value)
+		node.AddFilter(field, "<>", value)
 
 	case "$and":
 		arr, ok := value.(*types.Array)
 		if !ok {
 			return NewErrorMsg(ErrBadValue, "$and must be an array")
 		}
+
+		opNode := node.AddOp("AND")
 		for i := 0; i < arr.Len(); i++ {
 			v := must.NotFail(arr.Get(i))
-			if err := parseKey(stage, "", v); err != nil {
+			if err := parseKey(opNode, "", "", v); err != nil {
 				return err
 			}
 		}
+
+	case "$or":
+		arr, ok := value.(*types.Array)
+		if !ok {
+			return NewErrorMsg(ErrBadValue, "$or must be an array")
+		}
+
+		opNode := node.AddOp("OR")
+		for i := 0; i < arr.Len(); i++ {
+			v := must.NotFail(arr.Get(i))
+			if err := parseKey(opNode, "", "", v); err != nil {
+				return err
+			}
+		}
+
+	case "$exists":
+		// field: { $exists: true } or { $exists: false }
+		if value == false {
+			node = node.AddUnaryOp("NOT")
+		}
+		field, parents := ParseField(field)
+		node.AddFilter(parents, "?", field)
 
 	default:
 		if strings.HasPrefix(key, "$") {
@@ -298,10 +322,7 @@ func parseKey(stage *Stage, key string, value interface{}) error {
 		case *types.Document:
 			for _, k := range v.Keys() {
 				value := must.NotFail(v.Get(k))
-				if key != "" {
-					stage.AddFilter(key, "", nil)
-				}
-				err := parseKey(stage, k, value)
+				err := parseKey(node, k, key, value)
 				if err != nil {
 					return err
 				}
@@ -309,7 +330,7 @@ func parseKey(stage *Stage, key string, value interface{}) error {
 
 		default:
 			// defaults to equality match
-			stage.AddFilter(key, "=", value)
+			node.AddFilter(key, "=", value)
 		}
 	}
 
@@ -317,10 +338,12 @@ func parseKey(stage *Stage, key string, value interface{}) error {
 }
 
 func ParseMatchStage(match *types.Document) (*Stage, error) {
-	stage := NewStage()
-	err := parse(&stage, match)
+	root := FilterNode{}
+	err := parse(&root, match)
 	if err != nil {
 		return nil, err
 	}
+
+	stage := Stage{[]string{}, &root}
 	return &stage, nil
 }

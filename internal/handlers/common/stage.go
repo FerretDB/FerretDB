@@ -19,7 +19,13 @@ import (
 	"strings"
 )
 
+var lastValueIndex int
+
 func FieldToSql(field string) string {
+	if field == "" {
+		return "_jsonb"
+	}
+
 	sql := "_jsonb"
 	parts := strings.Split(field, ".")
 	for i, f := range parts {
@@ -32,21 +38,85 @@ func FieldToSql(field string) string {
 	return sql
 }
 
-type StageFilter struct {
-	index int
-	field string
-	op    string
-	value interface{}
+func ParseField(field string) (string, string) {
+	parts := strings.Split(field, ".")
+	return parts[len(parts)-1], strings.Join(parts[:len(parts)-1], ".")
 }
 
-func (sf *StageFilter) ToSql() (string, error) {
-	field := fmt.Sprintf("_jsonb->'%s'", sf.field)
-	return fmt.Sprintf("%s %s $%v", field, sf.op, sf.index+1), nil
+type FilterNode struct {
+	op       string
+	field    string
+	value    interface{}
+	parent   *FilterNode
+	children []*FilterNode
+	unary    bool
+}
+
+func NewFieldFilterNode(field string, op string, value interface{}, parent *FilterNode) FilterNode {
+	return FilterNode{op, field, value, parent, []*FilterNode{}, false}
+}
+
+func NewOpFilterNode(op string, parent *FilterNode) FilterNode {
+	return FilterNode{op, "", nil, parent, []*FilterNode{}, false}
+}
+
+func NewUnaryOpFilterNode(op string, parent *FilterNode) FilterNode {
+	return FilterNode{op, "", nil, parent, []*FilterNode{}, true}
+}
+
+func (node *FilterNode) ToSql() string {
+	if len(node.children) > 0 {
+		if node.unary {
+			if len(node.children) > 1 {
+				panic("unary operator with multiple children")
+			}
+			return node.op + " (" + node.children[0].ToSql() + ")"
+		}
+		strs := make([]string, len(node.children))
+		for i, child := range node.children {
+			str := child.ToSql()
+			strs[i] = str
+		}
+		return "(" + strings.Join(strs, " "+node.op+" ") + ")"
+	}
+
+	field := FieldToSql(node.field)
+	lastValueIndex += 1
+	return fmt.Sprintf("%s %s $%v", field, node.op, lastValueIndex)
+}
+
+func (node *FilterNode) AddFilter(field string, op string, value interface{}) *FilterNode {
+	child := NewFieldFilterNode(field, op, value, node)
+	node.children = append(node.children, &child)
+	return &child
+}
+
+func (node *FilterNode) AddOp(op string) *FilterNode {
+	child := NewOpFilterNode(op, node)
+	node.children = append(node.children, &child)
+	return &child
+}
+
+func (node *FilterNode) AddUnaryOp(op string) *FilterNode {
+	child := NewUnaryOpFilterNode(op, node)
+	node.children = append(node.children, &child)
+	return &child
+}
+
+func (node *FilterNode) GetValues() []interface{} {
+	values := []interface{}{}
+	if node.value != nil {
+		values = append(values, node.value)
+	}
+	for _, child := range node.children {
+		values = append(values, child.GetValues()...)
+	}
+	return values
 }
 
 type Stage struct {
-	fields  []string
-	filters []StageFilter
+	fields []string
+	root   *FilterNode
 }
 
 func NewStage() Stage {
@@ -57,16 +127,6 @@ func (s *Stage) AddField(name string) {
 	s.fields = append(s.fields, name)
 }
 
-func (s *Stage) AddFilter(field string, op string, value interface{}) {
-	index := len(s.filters)
-	s.filters = append(s.filters, StageFilter{index, field, op, value})
-}
-
-func (s *Stage) SetLastFilter(op string, value interface{}) {
-	s.filters[len(s.filters)-1].op = op
-	s.filters[len(s.filters)-1].value = value
-}
-
-func (s *Stage) GetFilters() []StageFilter {
-	return s.filters
+func (s *Stage) GetValues() []interface{} {
+	return s.root.GetValues()
 }

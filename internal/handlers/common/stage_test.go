@@ -15,7 +15,6 @@
 package common
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -27,9 +26,26 @@ import (
 func TestFieldToSql(t *testing.T) {
 	t.Parallel()
 
+	assert.Equal(t, "_jsonb", FieldToSql(""))
 	assert.Equal(t, "_jsonb->'quantity'", FieldToSql("quantity"))
 	assert.Equal(t, "_jsonb->>'item'->'quantity'", FieldToSql("item.quantity"))
 	assert.Equal(t, "_jsonb->>'item'->>'quantity'->'today'", FieldToSql("item.quantity.today"))
+}
+
+func TestParseField(t *testing.T) {
+	t.Parallel()
+
+	field, parents := ParseField("item.quantity")
+	assert.Equal(t, "quantity", field)
+	assert.Equal(t, "item", parents)
+
+	field, parents = ParseField("order.item.quantity")
+	assert.Equal(t, "quantity", field)
+	assert.Equal(t, "order.item", parents)
+
+	field, parents = ParseField("quantity")
+	assert.Equal(t, "quantity", field)
+	assert.Equal(t, "", parents)
 }
 
 func TestSimpleMatchStage(t *testing.T) {
@@ -39,7 +55,7 @@ func TestSimpleMatchStage(t *testing.T) {
 	stage, err := ParseMatchStage(doc)
 	require.NoError(t, err)
 
-	filter := stage.GetFilters()[0]
+	filter := stage.root.children[0]
 	assert.Equal(t, "quantity", filter.field)
 	assert.Equal(t, "=", filter.op)
 	assert.Equal(t, int32(1), filter.value)
@@ -54,7 +70,7 @@ func TestComplexMatchStage(t *testing.T) {
 	stage, err := ParseMatchStage(doc)
 	require.NoError(t, err)
 
-	filter := stage.GetFilters()[0]
+	filter := stage.root.children[0]
 	assert.Equal(t, "quantity", filter.field)
 	assert.Equal(t, ">", filter.op)
 	assert.Equal(t, int32(1), filter.value)
@@ -69,7 +85,7 @@ func TestNestedMatchStage(t *testing.T) {
 	stage, err := ParseMatchStage(doc)
 	require.NoError(t, err)
 
-	filter := stage.GetFilters()[0]
+	filter := stage.root.children[0]
 	assert.Equal(t, "item.quantity", filter.field)
 	assert.Equal(t, ">", filter.op)
 	assert.Equal(t, int32(1), filter.value)
@@ -84,8 +100,8 @@ func TestToSql(t *testing.T) {
 	stage, err := ParseMatchStage(doc)
 	require.NoError(t, err)
 
-	filter := stage.GetFilters()[0]
-	assert.Equal(t, "_jsonb->'quantity' > $1", must.NotFail(filter.ToSql()))
+	filter := stage.root.children[0]
+	assert.Equal(t, "_jsonb->'quantity' > $1", filter.ToSql())
 }
 
 func TestNestedToSql(t *testing.T) {
@@ -97,27 +113,60 @@ func TestNestedToSql(t *testing.T) {
 	stage, err := ParseMatchStage(doc)
 	require.NoError(t, err)
 
-	filter := stage.GetFilters()[0]
-	assert.Equal(t, "_jsonb->>'item'->'quantity' > $1", must.NotFail(filter.ToSql()))
+	filter := stage.root.children[0]
+	assert.Equal(t, "_jsonb->>'item'->'quantity' > $1", filter.ToSql())
 }
 
-func TestAndToSql(t *testing.T) {
+func TestAndOrToSql(t *testing.T) {
 	t.Parallel()
 
-	doc := must.NotFail(types.NewDocument("$and",
+	doc := must.NotFail(types.NewDocument("$or",
 		must.NotFail(types.NewArray(
-			must.NotFail(types.NewDocument("item.quantity",
-				must.NotFail(types.NewDocument("$gt", int32(1))),
+			must.NotFail(types.NewDocument("$and",
+				must.NotFail(types.NewArray(
+					must.NotFail(types.NewDocument("item.quantity",
+						must.NotFail(types.NewDocument("$gt", int32(1))),
+					)),
+					must.NotFail(types.NewDocument("daysToExp",
+						must.NotFail(types.NewDocument("$lte", int32(10))),
+					)),
+				)),
 			)),
-			must.NotFail(types.NewDocument("daysToExp",
-				must.NotFail(types.NewDocument("$lte", int32(10))),
-			)),
+			must.NotFail(types.NewDocument("valid", true)),
 		)),
 	))
 	stage, err := ParseMatchStage(doc)
 	require.NoError(t, err)
 
-	filter := stage.GetFilters()
-	fmt.Printf("  *** %#v\n", filter)
-	// assert.Equal(t, "(_jsonb->>'item'->'quantity' > $1 AND _jsonb->'daysToExp' < $2)", must.NotFail(filter.ToSql()))
+	filter := stage.root.children[0]
+	assert.Equal(t, "((_jsonb->>'item'->'quantity' > $1 AND _jsonb->'daysToExp' <= $2) OR _jsonb->'valid' = $3)", filter.ToSql())
+	assert.Equal(t, []interface{}{int32(1), int32(10), true}, stage.GetValues())
+}
+
+func TestExistsToSql(t *testing.T) {
+	t.Parallel()
+
+	doc := must.NotFail(types.NewDocument("field",
+		must.NotFail(types.NewDocument("$exists", true)),
+	))
+	stage, err := ParseMatchStage(doc)
+	require.NoError(t, err)
+
+	filter := stage.root.children[0]
+	assert.Equal(t, "_jsonb ? $1", filter.ToSql())
+	assert.Equal(t, []interface{}{"field"}, stage.GetValues())
+}
+
+func TestNotExistsToSql(t *testing.T) {
+	t.Parallel()
+
+	doc := must.NotFail(types.NewDocument("field",
+		must.NotFail(types.NewDocument("$exists", false)),
+	))
+	stage, err := ParseMatchStage(doc)
+	require.NoError(t, err)
+
+	filter := stage.root.children[0]
+	assert.Equal(t, "NOT (_jsonb ? $1)", filter.ToSql())
+	assert.Equal(t, []interface{}{"field"}, stage.GetValues())
 }
