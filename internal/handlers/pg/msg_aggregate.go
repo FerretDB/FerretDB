@@ -26,6 +26,50 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
+// $match
+//
+// Filters the document stream to allow only matching documents to pass
+// unmodified into the next pipeline stage. $match uses standard MongoDB
+// queries. For each input document, outputs either one document (a match) or
+// zero documents (no match).
+
+// $group
+//
+// Groups input documents by a specified identifier expression and applies the
+// accumulator expression(s), if specified, to each group. Consumes all input
+// documents and outputs one document per each distinct group. The output
+// documents only contain the identifier field and, if specified, accumulated
+// fields.
+
+// $ sort
+//
+// Reorders the document stream by a specified sort key. Only the order
+// changes; the documents remain unmodified. For each input document,
+// outputs one document.
+
+// Example:
+//
+// Match Phase -> (Filters Records) - Query1
+//
+//   SELECT _jsonb
+//   FROM schema.table
+//   WHERE _jsonb->'name' = 'foo'
+//
+// Group Phase -> (Filters Records) - Query2
+//
+//   SELECT
+//     _jsonb->'name', COUNT(*) AS nameCount
+//   FROM (Query1)
+//   GROUP BY _jsonb->'name'
+//
+// Wrapping Phase -> (Wraps Records into JSON)
+//
+//   SELECT json_build_object(
+//     '%k', json_build_array('name', 'nameCount'),
+//     'name', name, 'nameCount', nameCount
+//   )
+//   FROM (Query3)
+
 // MsgAggregate implements HandlerInterface.
 func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
@@ -34,7 +78,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	unimplementedFields := []string{
-		"$group",
+		"$project",
 	}
 	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
 		return nil, err
@@ -137,7 +181,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	if order != "" {
 		sql += " ORDER BY " + order
 	}
-	// fmt.Printf(" *** SQL: %s %v %v\n", sql, queryValues, len(queryValues))
+	fmt.Printf(" *** SQL: %s %v %v\n", sql, queryValues, len(queryValues))
 
 	rows, err := h.pgPool.Query(ctx, sql, queryValues...)
 	if err != nil {

@@ -109,6 +109,7 @@ func GetNumericValue(field string) string {
 	return fmt.Sprintf(`(CASE WHEN (%s ? '$f') THEN (%s->>'$f')::numeric ELSE (%s)::numeric END)`, field, field, field)
 }
 
+// https://www.mongodb.com/docs/manual/reference/operator/aggregation/#std-label-aggregation-expression-operators
 func ParseOperators(ctx *GroupContext, doc *types.Document) (*string, error) {
 	for _, key := range doc.Keys() {
 		value := must.NotFail(doc.Get(key))
