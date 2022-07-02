@@ -247,3 +247,80 @@ func AggregateMatch(match *types.Document, parent string) (*string, []interface{
 	sql, err := MatchToSql(&ctx, parent, match)
 	return sql, *ctx.values, err
 }
+
+func parse(stage *Stage, value interface{}) error {
+	return parseKey(stage, "", value)
+}
+
+func parseKey(stage *Stage, key string, value interface{}) error {
+	switch key {
+	case "$gt":
+		stage.SetLastFilter(">", value)
+
+	case "$gte":
+		stage.SetLastFilter(">=", value)
+
+	case "$lt":
+		stage.SetLastFilter("<", value)
+
+	case "$lte":
+		stage.SetLastFilter("<=", value)
+
+	case "$eq":
+		stage.SetLastFilter("=", value)
+
+	case "$ne":
+		stage.SetLastFilter("<>", value)
+
+	case "$and":
+		arr, ok := value.(*types.Array)
+		if !ok {
+			return NewErrorMsg(ErrBadValue, "$and must be an array")
+		}
+		for i := 0; i < arr.Len(); i++ {
+			v := must.NotFail(arr.Get(i))
+			if err := parseKey(stage, "", v); err != nil {
+				return err
+			}
+		}
+
+	default:
+		if strings.HasPrefix(key, "$") {
+			return NewWriteErrorMsg(
+				ErrFailedToParse,
+				fmt.Sprintf(
+					"Unknown top level operator: %s. Expected a valid aggregate modifier", key,
+				),
+			)
+		}
+
+		switch v := value.(type) {
+		case *types.Document:
+			for _, k := range v.Keys() {
+				value := must.NotFail(v.Get(k))
+				if key != "" {
+					stage.AddFilter(key, "", nil)
+				}
+				err := parseKey(stage, k, value)
+				if err != nil {
+					return err
+				}
+			}
+
+		default:
+			// defaults to equality match
+			stage.AddFilter(key, "=", value)
+		}
+	}
+
+	return nil
+}
+
+func ParseMatchStage(match *types.Document) (*Stage, error) {
+	stage := NewStage()
+	err := parse(&stage, match)
+	if err != nil {
+		return nil, err
+	}
+	return &stage, nil
+}
