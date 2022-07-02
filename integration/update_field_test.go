@@ -384,9 +384,9 @@ func TestUpdateFieldInc(t *testing.T) {
 				expected: bson.D{{"_id", "int32"}, {"value", int32(42)}, {"foo", int32(1)}},
 			},
 			"IncTwoFields": {
-				filter:   bson.D{{"_id", "test"}},
+				filter:   bson.D{{"_id", "int32"}},
 				update:   bson.D{{"$inc", bson.D{{"foo", int32(12)}, {"value", int32(1)}}}},
-				expected: bson.D{{"_id", "test"}, {"foo", int32(12)}, {"value", int32(1)}},
+				expected: bson.D{{"_id", "int32"}, {"value", int32(43)}, {"foo", int32(12)}},
 			},
 		} {
 			name, tc := name, tc
