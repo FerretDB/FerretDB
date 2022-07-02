@@ -100,13 +100,13 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 		nowTimestamp := primitive.Timestamp{T: uint32(time.Now().UTC().Unix()), I: uint32(0)}
 
 		for name, tc := range map[string]struct {
-			id     string
-			update bson.D
-			result bson.D
-			paths  []types.Path
-			err    *mongo.WriteError
-			stat   *mongo.UpdateResult
-			alt    string
+			id       string
+			update   bson.D
+			expected bson.D
+			paths    []types.Path
+			err      *mongo.WriteError
+			stat     *mongo.UpdateResult
+			alt      string
 		}{
 			"DocumentEmpty": {
 				id:     "double",
@@ -116,7 +116,7 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 					ModifiedCount: 0,
 					UpsertedCount: 0,
 				},
-				result: bson.D{{"_id", "double"}, {"value", float64(42.13)}},
+				expected: bson.D{{"_id", "double"}, {"value", float64(42.13)}},
 			},
 			"ArrayEmpty": {
 				id:     "double",
@@ -156,8 +156,8 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 					ModifiedCount: 1,
 					UpsertedCount: 0,
 				},
-				paths:  []types.Path{types.NewPathFromString("value")},
-				result: bson.D{{"_id", "double"}, {"value", now}},
+				paths:    []types.Path{types.NewPathFromString("value")},
+				expected: bson.D{{"_id", "double"}, {"value", now}},
 			},
 			"BoolTwoTrue": {
 				id:     "double",
@@ -171,7 +171,7 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 					types.NewPathFromString("value"),
 					types.NewPathFromString("unexistent"),
 				},
-				result: bson.D{{"_id", "double"}, {"value", now}, {"unexistent", now}},
+				expected: bson.D{{"_id", "double"}, {"value", now}, {"unexistent", now}},
 			},
 			"BoolFalse": {
 				id:     "double",
@@ -181,8 +181,8 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 					ModifiedCount: 1,
 					UpsertedCount: 0,
 				},
-				paths:  []types.Path{types.NewPathFromString("value")},
-				result: bson.D{{"_id", "double"}, {"value", now}},
+				paths:    []types.Path{types.NewPathFromString("value")},
+				expected: bson.D{{"_id", "double"}, {"value", now}},
 			},
 			"Int32": {
 				id:     "double",
@@ -200,8 +200,8 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 					ModifiedCount: 1,
 					UpsertedCount: 0,
 				},
-				paths:  []types.Path{types.NewPathFromString("value")},
-				result: bson.D{{"_id", "double"}, {"value", nowTimestamp}},
+				paths:    []types.Path{types.NewPathFromString("value")},
+				expected: bson.D{{"_id", "double"}, {"value", nowTimestamp}},
 			},
 			"TimestampCapitalised": {
 				id:     "double",
@@ -220,8 +220,8 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 					ModifiedCount: 1,
 					UpsertedCount: 0,
 				},
-				paths:  []types.Path{types.NewPathFromString("value")},
-				result: bson.D{{"_id", "double"}, {"value", now}},
+				paths:    []types.Path{types.NewPathFromString("value")},
+				expected: bson.D{{"_id", "double"}, {"value", now}},
 			},
 			"WrongType": {
 				id:     "double",
@@ -240,8 +240,8 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 					ModifiedCount: 1,
 					UpsertedCount: 0,
 				},
-				paths:  []types.Path{types.NewPathFromString("unexsistent")},
-				result: bson.D{{"_id", "double"}, {"value", 42.13}, {"unexsistent", now}},
+				paths:    []types.Path{types.NewPathFromString("unexsistent")},
+				expected: bson.D{{"_id", "double"}, {"value", 42.13}, {"unexsistent", now}},
 			},
 			"UnrecognizedOption": {
 				id: "array",
@@ -274,7 +274,7 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 				err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actualB)
 				require.NoError(t, err)
 
-				expected := ConvertDocument(t, tc.result)
+				expected := ConvertDocument(t, tc.expected)
 				actual := ConvertDocument(t, actualB)
 
 				for _, path := range tc.paths {
@@ -289,99 +289,104 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 func TestUpdateFieldInc(t *testing.T) {
 	t.Parallel()
 
-	t.Run("checks", func(t *testing.T) {
+	t.Run("Ok", func(t *testing.T) {
 		t.Parallel()
 
 		for name, tc := range map[string]struct {
-			filter bson.D
-			update bson.D
-			result bson.D
+			filter   bson.D
+			update   bson.D
+			expected bson.D
 		}{
 			"DoubleIncrement": {
-				filter: bson.D{{"_id", "double"}},
-				update: bson.D{{"$inc", bson.D{{"value", float64(42.13)}}}},
-				result: bson.D{{"_id", "double"}, {"value", float64(84.26)}},
+				filter:   bson.D{{"_id", "double"}},
+				update:   bson.D{{"$inc", bson.D{{"value", float64(42.13)}}}},
+				expected: bson.D{{"_id", "double"}, {"value", float64(84.26)}},
 			},
 			"DoubleIncrementNaN": {
-				filter: bson.D{{"_id", "double"}},
-				update: bson.D{{"$inc", bson.D{{"value", math.NaN()}}}},
-				result: bson.D{{"_id", "double"}, {"value", math.NaN()}},
+				filter:   bson.D{{"_id", "double"}},
+				update:   bson.D{{"$inc", bson.D{{"value", math.NaN()}}}},
+				expected: bson.D{{"_id", "double"}, {"value", math.NaN()}},
 			},
 			"DoubleIncrementPlusInfinity": {
-				filter: bson.D{{"_id", "double-nan"}},
-				update: bson.D{{"$inc", bson.D{{"value", math.Inf(+1)}}}},
-				result: bson.D{{"_id", "double-nan"}, {"value", math.NaN()}},
+				filter:   bson.D{{"_id", "double-nan"}},
+				update:   bson.D{{"$inc", bson.D{{"value", math.Inf(+1)}}}},
+				expected: bson.D{{"_id", "double-nan"}, {"value", math.NaN()}},
 			},
 			"DoubleNegativeIncrement": {
-				filter: bson.D{{"_id", "double"}},
-				update: bson.D{{"$inc", bson.D{{"value", float64(-42.13)}}}},
-				result: bson.D{{"_id", "double"}, {"value", float64(0)}},
+				filter:   bson.D{{"_id", "double"}},
+				update:   bson.D{{"$inc", bson.D{{"value", float64(-42.13)}}}},
+				expected: bson.D{{"_id", "double"}, {"value", float64(0)}},
 			},
 			"DoubleIncrementIntField": {
-				filter: bson.D{{"_id", "int32"}},
-				update: bson.D{{"$inc", bson.D{{"value", float64(1.13)}}}},
-				result: bson.D{{"_id", "int32"}, {"value", float64(43.13)}},
+				filter:   bson.D{{"_id", "int32"}},
+				update:   bson.D{{"$inc", bson.D{{"value", float64(1.13)}}}},
+				expected: bson.D{{"_id", "int32"}, {"value", float64(43.13)}},
 			},
 			"DoubleIncrementLongField": {
-				filter: bson.D{{"_id", "int64"}},
-				update: bson.D{{"$inc", bson.D{{"value", float64(1.13)}}}},
-				result: bson.D{{"_id", "int64"}, {"value", float64(43.13)}},
+				filter:   bson.D{{"_id", "int64"}},
+				update:   bson.D{{"$inc", bson.D{{"value", float64(1.13)}}}},
+				expected: bson.D{{"_id", "int64"}, {"value", float64(43.13)}},
 			},
 			"DoubleIntIncrement": {
-				filter: bson.D{{"_id", "double"}},
-				update: bson.D{{"$inc", bson.D{{"value", int32(1)}}}},
-				result: bson.D{{"_id", "double"}, {"value", float64(43.13)}},
+				filter:   bson.D{{"_id", "double"}},
+				update:   bson.D{{"$inc", bson.D{{"value", int32(1)}}}},
+				expected: bson.D{{"_id", "double"}, {"value", float64(43.13)}},
 			},
 			"DoubleLongIncrement": {
-				filter: bson.D{{"_id", "double"}},
-				update: bson.D{{"$inc", bson.D{{"value", int64(1)}}}},
-				result: bson.D{{"_id", "double"}, {"value", float64(43.13)}},
+				filter:   bson.D{{"_id", "double"}},
+				update:   bson.D{{"$inc", bson.D{{"value", int64(1)}}}},
+				expected: bson.D{{"_id", "double"}, {"value", float64(43.13)}},
 			},
 			"IntIncrement": {
-				filter: bson.D{{"_id", "int32"}},
-				update: bson.D{{"$inc", bson.D{{"value", int32(1)}}}},
-				result: bson.D{{"_id", "int32"}, {"value", int32(43)}},
+				filter:   bson.D{{"_id", "int32"}},
+				update:   bson.D{{"$inc", bson.D{{"value", int32(1)}}}},
+				expected: bson.D{{"_id", "int32"}, {"value", int32(43)}},
 			},
 			"IntNegativeIncrement": {
-				filter: bson.D{{"_id", "int32"}},
-				update: bson.D{{"$inc", bson.D{{"value", int32(-1)}}}},
-				result: bson.D{{"_id", "int32"}, {"value", int32(41)}},
+				filter:   bson.D{{"_id", "int32"}},
+				update:   bson.D{{"$inc", bson.D{{"value", int32(-1)}}}},
+				expected: bson.D{{"_id", "int32"}, {"value", int32(41)}},
 			},
 			"IntIncrementDoubleField": {
-				filter: bson.D{{"_id", "double"}},
-				update: bson.D{{"$inc", bson.D{{"value", int32(1)}}}},
-				result: bson.D{{"_id", "double"}, {"value", float64(43.13)}},
+				filter:   bson.D{{"_id", "double"}},
+				update:   bson.D{{"$inc", bson.D{{"value", int32(1)}}}},
+				expected: bson.D{{"_id", "double"}, {"value", float64(43.13)}},
 			},
 			"IntIncrementLongField": {
-				filter: bson.D{{"_id", "int64"}},
-				update: bson.D{{"$inc", bson.D{{"value", int32(1)}}}},
-				result: bson.D{{"_id", "int64"}, {"value", int64(43)}},
+				filter:   bson.D{{"_id", "int64"}},
+				update:   bson.D{{"$inc", bson.D{{"value", int32(1)}}}},
+				expected: bson.D{{"_id", "int64"}, {"value", int64(43)}},
 			},
 			"LongIncrement": {
-				filter: bson.D{{"_id", "int64"}},
-				update: bson.D{{"$inc", bson.D{{"value", int64(1)}}}},
-				result: bson.D{{"_id", "int64"}, {"value", int64(43)}},
+				filter:   bson.D{{"_id", "int64"}},
+				update:   bson.D{{"$inc", bson.D{{"value", int64(1)}}}},
+				expected: bson.D{{"_id", "int64"}, {"value", int64(43)}},
 			},
 			"LongNegativeIncrement": {
-				filter: bson.D{{"_id", "int64"}},
-				update: bson.D{{"$inc", bson.D{{"value", int64(-1)}}}},
-				result: bson.D{{"_id", "int64"}, {"value", int64(41)}},
+				filter:   bson.D{{"_id", "int64"}},
+				update:   bson.D{{"$inc", bson.D{{"value", int64(-1)}}}},
+				expected: bson.D{{"_id", "int64"}, {"value", int64(41)}},
 			},
 			"LongIncrementDoubleField": {
-				filter: bson.D{{"_id", "double"}},
-				update: bson.D{{"$inc", bson.D{{"value", int64(1)}}}},
-				result: bson.D{{"_id", "double"}, {"value", float64(43.13)}},
+				filter:   bson.D{{"_id", "double"}},
+				update:   bson.D{{"$inc", bson.D{{"value", int64(1)}}}},
+				expected: bson.D{{"_id", "double"}, {"value", float64(43.13)}},
 			},
 			"LongIncrementIntField": {
-				filter: bson.D{{"_id", "int32"}},
-				update: bson.D{{"$inc", bson.D{{"value", int64(1)}}}},
-				result: bson.D{{"_id", "int32"}, {"value", int64(43)}},
+				filter:   bson.D{{"_id", "int32"}},
+				update:   bson.D{{"$inc", bson.D{{"value", int64(1)}}}},
+				expected: bson.D{{"_id", "int32"}, {"value", int64(43)}},
 			},
 
 			"FieldNotExist": {
-				filter: bson.D{{"_id", "int32"}},
-				update: bson.D{{"$inc", bson.D{{"foo", int32(1)}}}},
-				result: bson.D{{"_id", "int32"}, {"value", int32(42)}, {"foo", int32(1)}},
+				filter:   bson.D{{"_id", "int32"}},
+				update:   bson.D{{"$inc", bson.D{{"foo", int32(1)}}}},
+				expected: bson.D{{"_id", "int32"}, {"value", int32(42)}, {"foo", int32(1)}},
+			},
+			"IncTwoFields": {
+				filter:   bson.D{{"_id", "test"}},
+				update:   bson.D{{"$inc", bson.D{{"foo", int32(12)}, {"value", int32(1)}}}},
+				expected: bson.D{{"_id", "test"}, {"foo", int32(12)}, {"value", int32(1)}},
 			},
 		} {
 			name, tc := name, tc
@@ -396,12 +401,12 @@ func TestUpdateFieldInc(t *testing.T) {
 				err = collection.FindOne(ctx, tc.filter).Decode(&actual)
 				require.NoError(t, err)
 
-				AssertEqualDocuments(t, tc.result, actual)
+				AssertEqualDocuments(t, tc.expected, actual)
 			})
 		}
 	})
 
-	t.Run("errors", func(t *testing.T) {
+	t.Run("Err", func(t *testing.T) {
 		t.Parallel()
 
 		for name, tc := range map[string]struct {
@@ -878,11 +883,6 @@ func TestUpdateFieldMixed(t *testing.T) {
 				{"$setOnInsert", bson.D{{"value", math.NaN()}}},
 			},
 			expected: bson.D{{"_id", "test"}, {"foo", int32(12)}, {"value", math.NaN()}},
-		},
-		"IncTwoFields": {
-			filter:   bson.D{{"_id", "test"}},
-			update:   bson.D{{"$inc", bson.D{{"foo", int32(12)}, {"value", int32(1)}}}},
-			expected: bson.D{{"_id", "test"}, {"foo", int32(12)}, {"value", int32(1)}},
 		},
 		"SetIncSetOnInsert": {
 			filter: bson.D{{"_id", "test"}},
