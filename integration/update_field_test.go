@@ -439,7 +439,7 @@ func TestUpdateFieldInc(t *testing.T) {
 				alt: "Modifiers operate on fields but we found another type instead",
 			},
 			"IncWithStringValue": {
-				filter: bson.D{{"_id", "string-inc-error"}},
+				filter: bson.D{{"_id", "string"}},
 				update: bson.D{{"$inc", bson.D{{"value", "bad value"}}}},
 				err: &mongo.WriteError{
 					Code:    14,
@@ -447,44 +447,39 @@ func TestUpdateFieldInc(t *testing.T) {
 				},
 			},
 			"DoubleIncOnNullValue": {
-				filter: bson.D{{"_id", "string-inc-error"}},
+				filter: bson.D{{"_id", "string"}},
 				update: bson.D{{"$inc", bson.D{{"value", float64(1)}}}},
 				err: &mongo.WriteError{
 					Code: 14,
 					Message: `Cannot apply $inc to a value of non-numeric type. ` +
-						`{_id: "string-inc-error"} has the field 'value' of non-numeric type string`,
+						`{_id: "string"} has the field 'value' of non-numeric type string`,
 				},
 			},
 			"IntIncOnNullValue": {
-				filter: bson.D{{"_id", "string-inc-error"}},
+				filter: bson.D{{"_id", "string"}},
 				update: bson.D{{"$inc", bson.D{{"value", int32(1)}}}},
 				err: &mongo.WriteError{
 					Code: 14,
 					Message: `Cannot apply $inc to a value of non-numeric type. ` +
-						`{_id: "string-inc-error"} has the field 'value' of non-numeric type string`,
+						`{_id: "string"} has the field 'value' of non-numeric type string`,
 				},
 			},
 			"LongIncOnNullValue": {
-				filter: bson.D{{"_id", "string-inc-error"}},
+				filter: bson.D{{"_id", "string"}},
 				update: bson.D{{"$inc", bson.D{{"value", int64(1)}}}},
 				err: &mongo.WriteError{
 					Code: 14,
 					Message: `Cannot apply $inc to a value of non-numeric type. ` +
-						`{_id: "string-inc-error"} has the field 'value' of non-numeric type string`,
+						`{_id: "string"} has the field 'value' of non-numeric type string`,
 				},
 			},
 		} {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
-				ctx, collection := setup(t, shareddata.Composites)
-				_, err := collection.InsertMany(ctx, []any{
-					bson.D{{"_id", "string-inc-error"}, {"value", "foo"}},
-				})
-				require.NoError(t, err)
+				ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
-				_, err = collection.UpdateOne(ctx, tc.filter, tc.update)
-
+				_, err := collection.UpdateOne(ctx, tc.filter, tc.update)
 				require.NotNil(t, tc.err)
 				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
 			})
@@ -643,6 +638,16 @@ func TestUpdateFieldSet(t *testing.T) {
 			},
 			result: bson.D{{"_id", "double"}, {"value", math.Inf(+1)}},
 		},
+		"SetTwoFields": {
+			id:     "int32-zero",
+			update: bson.D{{"$set", bson.D{{"foo", int32(12)}, {"value", math.NaN()}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			result: bson.D{{"_id", "test"}, {"foo", int32(12)}, {"value", math.NaN()}},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -670,34 +675,27 @@ func TestUpdateFieldSet(t *testing.T) {
 func TestUpdateFieldSetOnInsert(t *testing.T) {
 	t.Parallel()
 
-	notModified := &mongo.UpdateResult{
-		MatchedCount:  0,
-		ModifiedCount: 0,
-		UpsertedCount: 1,
-	}
-
 	for name, tc := range map[string]struct {
 		filter      bson.D
 		setOnInsert any
-		stat        *mongo.UpdateResult
-		res         bson.D
+		expected    bson.D
 		err         *mongo.WriteError
 		alt         string
 	}{
 		"Array": {
 			filter:      bson.D{{"_id", "array-set-on-insert"}},
 			setOnInsert: bson.D{{"value", bson.A{}}},
-			res:         bson.D{{"_id", "array-set-on-insert"}, {"value", bson.A{}}},
+			expected:    bson.D{{"_id", "array-set-on-insert"}, {"value", bson.A{}}},
 		},
 		"Nil": {
 			filter:      bson.D{{"_id", "nil"}},
 			setOnInsert: bson.D{{"value", nil}},
-			res:         bson.D{{"_id", "nil"}, {"value", nil}},
+			expected:    bson.D{{"_id", "nil"}, {"value", nil}},
 		},
 		"EmptyDoc": {
 			filter:      bson.D{{"_id", "doc"}},
 			setOnInsert: bson.D{},
-			res:         bson.D{{"_id", "doc"}},
+			expected:    bson.D{{"_id", "doc"}},
 		},
 		"EmptyArray": {
 			filter:      bson.D{{"_id", "array"}},
@@ -747,7 +745,7 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 				Message: "Modifiers operate on fields but we found type null instead. " +
 					"For example: {$mod: {<field>: ...}} not {$setOnInsert: null}",
 			},
-			alt: "Modifiers operate on fields but we found another type instead",
+			alt: "Modifiers operate on stringfields but we found another type instead",
 		},
 	} {
 		name, tc := name, tc
@@ -757,29 +755,118 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 			ctx, collection := setup(t, shareddata.Composites)
 
 			opts := options.Update().SetUpsert(true)
-			var res *mongo.UpdateResult
-			res, err := collection.UpdateOne(ctx, tc.filter, bson.D{{"$setOnInsert", tc.setOnInsert}}, opts)
+			var actualUpdateStat *mongo.UpdateResult
+			actualUpdateStat, err := collection.UpdateOne(ctx, tc.filter, bson.D{{"$setOnInsert", tc.setOnInsert}}, opts)
 			if tc.err != nil {
-				require.Nil(t, tc.res)
+				require.Nil(t, tc.expected)
 				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
 				return
 			}
 
 			require.NoError(t, err)
-			id := res.UpsertedID
+			id := actualUpdateStat.UpsertedID
 			assert.NotEmpty(t, id)
-			res.UpsertedID = nil
+			actualUpdateStat.UpsertedID = nil
 
-			expectedRes := notModified
-			if tc.stat != nil {
-				expectedRes = tc.stat
+			expectedStat := &mongo.UpdateResult{
+				MatchedCount:  0,
+				ModifiedCount: 0,
+				UpsertedCount: 1,
 			}
-			assert.Equal(t, expectedRes, res)
+			assert.Equal(t, expectedStat, actualUpdateStat)
 
 			var actual bson.D
 			err = collection.FindOne(ctx, tc.filter).Decode(&actual)
 			require.NoError(t, err)
-			AssertEqualDocuments(t, tc.res, actual)
+			AssertEqualDocuments(t, tc.expected, actual)
+		})
+	}
+}
+
+func TestUpdateFieldUnset(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		filter   bson.D
+		update   bson.D
+		stat     *mongo.UpdateResult
+		err      *mongo.WriteError
+		expected bson.D
+		alt      string
+	}{
+		"String": {
+			filter: bson.D{{"_id", "string"}},
+			update: bson.D{{"$unset", bson.D{{"value", int32(1)}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			expected: bson.D{{"_id", "string"}},
+		},
+		"Empty": {
+			filter: bson.D{{"_id", "string"}},
+			update: bson.D{{"$unset", bson.D{}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 0,
+				UpsertedCount: 0,
+			},
+			expected: bson.D{{"_id", "string"}, {"value", "foo"}},
+		},
+		"Field": {
+			filter: bson.D{{"_id", "document-composite-unset-field"}},
+			update: bson.D{{"$unset", bson.D{{"value", bson.D{{"array", int32(1)}}}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  0,
+				ModifiedCount: 0,
+				UpsertedCount: 1,
+			},
+			expected: bson.D{{"_id", "document-composite-unset-field"}},
+		},
+		"EmptyArray": {
+			filter: bson.D{{"_id", "document-composite"}},
+			update: bson.D{{"$unset", bson.A{}}},
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type array instead. " +
+					"For example: {$mod: {<field>: ...}} not {$unset: []}",
+			},
+			alt: "Modifiers operate on fields but we found another type instead",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+
+			opts := options.Update().SetUpsert(true)
+			var actualStat *mongo.UpdateResult
+			actualStat, err := collection.UpdateOne(ctx, tc.filter, tc.update, opts)
+
+			if tc.err != nil {
+				require.Nil(t, tc.expected)
+				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
+				return
+			}
+
+			require.NoError(t, err)
+			actualStat.UpsertedID = nil
+
+			expectedStat := &mongo.UpdateResult{
+				MatchedCount:  0,
+				ModifiedCount: 0,
+				UpsertedCount: 1,
+			}
+			if tc.stat != nil {
+				expectedStat = tc.stat
+			}
+			assert.Equal(t, expectedStat, actualStat)
+
+			var actual bson.D
+			err = collection.FindOne(ctx, tc.filter).Decode(&actual)
+			require.NoError(t, err)
+			AssertEqualDocuments(t, tc.expected, actual)
 		})
 	}
 }
@@ -787,19 +874,11 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 func TestUpdateFieldMixed(t *testing.T) {
 	t.Parallel()
 
-	notModified := &mongo.UpdateResult{
-		MatchedCount:  0,
-		ModifiedCount: 0,
-		UpsertedCount: 1,
-	}
-
 	for name, tc := range map[string]struct {
-		filter bson.D
-		update bson.D
-		stat   *mongo.UpdateResult
-		res    bson.D
-		err    *mongo.WriteError
-		alt    string
+		filter   bson.D
+		update   bson.D
+		expected bson.D
+		err      *mongo.WriteError
 	}{
 		"SetSetOnInsert": {
 			filter: bson.D{{"_id", "test"}},
@@ -807,17 +886,12 @@ func TestUpdateFieldMixed(t *testing.T) {
 				{"$set", bson.D{{"foo", int32(12)}}},
 				{"$setOnInsert", bson.D{{"value", math.NaN()}}},
 			},
-			res: bson.D{{"_id", "test"}, {"foo", int32(12)}, {"value", math.NaN()}},
-		},
-		"SetTwoFields": {
-			filter: bson.D{{"_id", "test"}},
-			update: bson.D{{"$set", bson.D{{"foo", int32(12)}, {"value", math.NaN()}}}},
-			res:    bson.D{{"_id", "test"}, {"foo", int32(12)}, {"value", math.NaN()}},
+			expected: bson.D{{"_id", "test"}, {"foo", int32(12)}, {"value", math.NaN()}},
 		},
 		"IncTwoFields": {
-			filter: bson.D{{"_id", "test"}},
-			update: bson.D{{"$inc", bson.D{{"foo", int32(12)}, {"value", int32(1)}}}},
-			res:    bson.D{{"_id", "test"}, {"foo", int32(12)}, {"value", int32(1)}},
+			filter:   bson.D{{"_id", "test"}},
+			update:   bson.D{{"$inc", bson.D{{"foo", int32(12)}, {"value", int32(1)}}}},
+			expected: bson.D{{"_id", "test"}, {"foo", int32(12)}, {"value", int32(1)}},
 		},
 		"SetIncSetOnInsert": {
 			filter: bson.D{{"_id", "test"}},
@@ -830,46 +904,6 @@ func TestUpdateFieldMixed(t *testing.T) {
 				Code:    40,
 				Message: "Updating the path 'foo' would create a conflict at 'foo'",
 			},
-		},
-		"UnsetString": {
-			filter: bson.D{{"_id", "string"}},
-			update: bson.D{{"$unset", bson.D{{"value", int32(1)}}}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-			res: bson.D{{"_id", "string"}},
-		},
-		"UnsetEmpty": {
-			filter: bson.D{{"_id", "string"}},
-			update: bson.D{{"$unset", bson.D{}}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 0,
-				UpsertedCount: 0,
-			},
-			res: bson.D{{"_id", "string"}, {"value", "foo"}},
-		},
-		"UnsetField": {
-			filter: bson.D{{"_id", "document-composite-unset-field"}},
-			update: bson.D{{"$unset", bson.D{{"value", bson.D{{"array", int32(1)}}}}}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  0,
-				ModifiedCount: 0,
-				UpsertedCount: 1,
-			},
-			res: bson.D{{"_id", "document-composite-unset-field"}},
-		},
-		"UnsetEmptyArray": {
-			filter: bson.D{{"_id", "document-composite"}},
-			update: bson.D{{"$unset", bson.A{}}},
-			err: &mongo.WriteError{
-				Code: 9,
-				Message: "Modifiers operate on fields but we found type array instead. " +
-					"For example: {$mod: {<field>: ...}} not {$unset: []}",
-			},
-			alt: "Modifiers operate on fields but we found another type instead",
 		},
 		"UnknownOperator": {
 			filter: bson.D{{"_id", "test"}},
@@ -886,28 +920,29 @@ func TestUpdateFieldMixed(t *testing.T) {
 			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 			opts := options.Update().SetUpsert(true)
-			var res *mongo.UpdateResult
-			res, err := collection.UpdateOne(ctx, tc.filter, tc.update, opts)
+			var actualStat *mongo.UpdateResult
+			actualStat, err := collection.UpdateOne(ctx, tc.filter, tc.update, opts)
 
 			if tc.err != nil {
-				require.Nil(t, tc.res)
-				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
+				require.Nil(t, tc.expected)
+				AssertEqualWriteError(t, *tc.err, err)
 				return
 			}
 
 			require.NoError(t, err)
-			res.UpsertedID = nil
+			actualStat.UpsertedID = nil
 
-			expectedRes := notModified
-			if tc.stat != nil {
-				expectedRes = tc.stat
+			expectedStat := &mongo.UpdateResult{
+				MatchedCount:  0,
+				ModifiedCount: 0,
+				UpsertedCount: 1,
 			}
-			assert.Equal(t, expectedRes, res)
+			assert.Equal(t, expectedStat, actualStat)
 
 			var actual bson.D
 			err = collection.FindOne(ctx, tc.filter).Decode(&actual)
 			require.NoError(t, err)
-			AssertEqualDocuments(t, tc.res, actual)
+			AssertEqualDocuments(t, tc.expected, actual)
 		})
 	}
 }
