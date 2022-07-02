@@ -248,29 +248,47 @@ func AggregateMatch(match *types.Document, parent string) (*string, []interface{
 	return sql, *ctx.values, err
 }
 
-func parse(node *FilterNode, value interface{}) error {
-	return parseKey(node, "", "", value)
+type MatchParser struct {
+	stage *Stage
+	index int
 }
 
-func parseKey(node *FilterNode, key string, field string, value interface{}) error {
+func ParseMatchStage(value interface{}) (*Stage, error) {
+	root := NewRootNode()
+	stage := Stage{[]string{}, root}
+	mp := MatchParser{&stage, 0}
+	err := mp.parse(root, "", "", value)
+	if err != nil {
+		return nil, err
+	}
+
+	return mp.stage, err
+}
+
+func (mp *MatchParser) NextIndex() int {
+	mp.index++
+	return mp.index
+}
+
+func (mp *MatchParser) parse(node *FilterNode, key string, field string, value interface{}) error {
 	switch key {
 	case "$gt":
-		node.AddFilter(field, ">", value)
+		node.AddFilter(mp.NextIndex(), field, ">", value)
 
 	case "$gte":
-		node.AddFilter(field, ">=", value)
+		node.AddFilter(mp.NextIndex(), field, ">=", value)
 
 	case "$lt":
-		node.AddFilter(field, "<", value)
+		node.AddFilter(mp.NextIndex(), field, "<", value)
 
 	case "$lte":
-		node.AddFilter(field, "<=", value)
+		node.AddFilter(mp.NextIndex(), field, "<=", value)
 
 	case "$eq":
-		node.AddFilter(field, "=", value)
+		node.AddFilter(mp.NextIndex(), field, "=", value)
 
 	case "$ne":
-		node.AddFilter(field, "<>", value)
+		node.AddFilter(mp.NextIndex(), field, "<>", value)
 
 	case "$and":
 		arr, ok := value.(*types.Array)
@@ -281,7 +299,7 @@ func parseKey(node *FilterNode, key string, field string, value interface{}) err
 		opNode := node.AddOp("AND")
 		for i := 0; i < arr.Len(); i++ {
 			v := must.NotFail(arr.Get(i))
-			if err := parseKey(opNode, "", "", v); err != nil {
+			if err := mp.parse(opNode, "", "", v); err != nil {
 				return err
 			}
 		}
@@ -295,13 +313,13 @@ func parseKey(node *FilterNode, key string, field string, value interface{}) err
 		opNode := node.AddOp("OR")
 		for i := 0; i < arr.Len(); i++ {
 			v := must.NotFail(arr.Get(i))
-			if err := parseKey(opNode, "", "", v); err != nil {
+			if err := mp.parse(opNode, "", "", v); err != nil {
 				return err
 			}
 		}
 
 	case "$not":
-		parseKey(node.AddUnaryOp("NOT"), field, field, value)
+		mp.parse(node.AddUnaryOp("NOT"), field, field, value)
 
 	case "$exists":
 		// field: { $exists: true } or { $exists: false }
@@ -311,12 +329,12 @@ func parseKey(node *FilterNode, key string, field string, value interface{}) err
 			return NewErrorMsg(ErrBadValue, "$exists must be true or false")
 		}
 		field, parents := ParseField(field)
-		node.AddFilter(parents, "?", field)
+		node.AddFilter(mp.NextIndex(), parents, "?", field)
 
-	case "$in":
+	case "$in", "$nin":
 		arr, ok := value.(*types.Array)
 		if !ok {
-			return NewErrorMsg(ErrBadValue, "$in must be an array")
+			return NewErrorMsg(ErrBadValue, key+" must be an array")
 		}
 
 		arrVals := []string{}
@@ -324,7 +342,11 @@ func parseKey(node *FilterNode, key string, field string, value interface{}) err
 			arrVals = append(arrVals, fmt.Sprintf("%v", must.NotFail(arr.Get(i))))
 		}
 
-		node.AddFilter(field, "= ANY(%s)", arrVals)
+		if key == "$nin" {
+			node = node.AddUnaryOp("NOT")
+		}
+
+		node.AddFilter(mp.NextIndex(), field, "= ANY(%s)", arrVals)
 
 	default:
 		if strings.HasPrefix(key, "$") {
@@ -340,7 +362,7 @@ func parseKey(node *FilterNode, key string, field string, value interface{}) err
 		case *types.Document:
 			for _, k := range v.Keys() {
 				value := must.NotFail(v.Get(k))
-				err := parseKey(node, k, key, value)
+				err := mp.parse(node, k, key, value)
 				if err != nil {
 					return err
 				}
@@ -348,20 +370,9 @@ func parseKey(node *FilterNode, key string, field string, value interface{}) err
 
 		default:
 			// defaults to equality match
-			node.AddFilter(key, "=", value)
+			node.AddFilter(mp.NextIndex(), key, "=", value)
 		}
 	}
 
 	return nil
-}
-
-func ParseMatchStage(match *types.Document) (*Stage, error) {
-	root := FilterNode{}
-	err := parse(&root, match)
-	if err != nil {
-		return nil, err
-	}
-
-	stage := Stage{[]string{}, &root}
-	return &stage, nil
 }

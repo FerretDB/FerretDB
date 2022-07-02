@@ -19,8 +19,6 @@ import (
 	"strings"
 )
 
-var lastValueIndex int
-
 func FieldToSql(field string) string {
 	if field == "" {
 		return "_jsonb"
@@ -44,6 +42,7 @@ func ParseField(field string) (string, string) {
 }
 
 type FilterNode struct {
+	index    int
 	op       string
 	field    string
 	value    interface{}
@@ -52,16 +51,20 @@ type FilterNode struct {
 	unary    bool
 }
 
-func NewFieldFilterNode(field string, op string, value interface{}, parent *FilterNode) FilterNode {
-	return FilterNode{op, field, value, parent, []*FilterNode{}, false}
+func NewRootNode() *FilterNode {
+	return &FilterNode{}
+}
+
+func NewFieldFilterNode(index int, field string, op string, value interface{}, parent *FilterNode) FilterNode {
+	return FilterNode{index, op, field, value, parent, []*FilterNode{}, false}
 }
 
 func NewOpFilterNode(op string, parent *FilterNode) FilterNode {
-	return FilterNode{op, "", nil, parent, []*FilterNode{}, false}
+	return FilterNode{0, op, "", nil, parent, []*FilterNode{}, false}
 }
 
 func NewUnaryOpFilterNode(op string, parent *FilterNode) FilterNode {
-	return FilterNode{op, "", nil, parent, []*FilterNode{}, true}
+	return FilterNode{0, op, "", nil, parent, []*FilterNode{}, true}
 }
 
 func (node *FilterNode) ToSql() string {
@@ -82,16 +85,15 @@ func (node *FilterNode) ToSql() string {
 	}
 
 	field := FieldToSql(node.field)
-	lastValueIndex += 1
-	opValPlaceholder := fmt.Sprintf("%s $%v", node.op, lastValueIndex)
+	opValPlaceholder := fmt.Sprintf("%s $%v", node.op, node.index)
 	if strings.Contains(node.op, "%s") {
-		opValPlaceholder = fmt.Sprintf(node.op, fmt.Sprintf("$%v", lastValueIndex))
+		opValPlaceholder = fmt.Sprintf(node.op, fmt.Sprintf("$%v", node.index))
 	}
 	return fmt.Sprintf("%s %s", field, opValPlaceholder)
 }
 
-func (node *FilterNode) AddFilter(field string, op string, value interface{}) *FilterNode {
-	child := NewFieldFilterNode(field, op, value, node)
+func (node *FilterNode) AddFilter(index int, field string, op string, value interface{}) *FilterNode {
+	child := NewFieldFilterNode(index, field, op, value, node)
 	node.children = append(node.children, &child)
 	return &child
 }

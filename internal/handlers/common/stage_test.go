@@ -186,3 +186,17 @@ func TestInToSql(t *testing.T) {
 	assert.Equal(t, "_jsonb->'field' = ANY($1)", filter.ToSql())
 	assert.Equal(t, []interface{}{[]string{"1", "2", "3"}}, stage.GetValues())
 }
+
+func TestNotInToSql(t *testing.T) {
+	t.Parallel()
+
+	doc := must.NotFail(types.NewDocument("field",
+		must.NotFail(types.NewDocument("$nin", must.NotFail(types.NewArray(int32(1), int32(2), int32(3))))),
+	))
+	stage, err := ParseMatchStage(doc)
+	require.NoError(t, err)
+
+	filter := stage.root.children[0]
+	assert.Equal(t, "NOT (_jsonb->'field' = ANY($1))", filter.ToSql())
+	assert.Equal(t, []interface{}{[]string{"1", "2", "3"}}, stage.GetValues())
+}
