@@ -300,6 +300,10 @@ func parseKey(node *FilterNode, key string, field string, value interface{}) err
 			}
 		}
 
+	case "$not":
+		node = node.AddUnaryOp("NOT")
+		parseKey(node, field, field, value)
+
 	case "$exists":
 		// field: { $exists: true } or { $exists: false }
 		if value == false {

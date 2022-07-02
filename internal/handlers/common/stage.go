@@ -68,7 +68,8 @@ func (node *FilterNode) ToSql() string {
 	if len(node.children) > 0 {
 		if node.unary {
 			if len(node.children) > 1 {
-				panic("unary operator with multiple children")
+				// FIXME re-evaluate this method of handling unary op errors
+				panic("unary operator with multiple children: " + node.op)
 			}
 			return node.op + " (" + node.children[0].ToSql() + ")"
 		}

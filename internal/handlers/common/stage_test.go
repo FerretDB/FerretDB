@@ -128,7 +128,9 @@ func TestAndOrToSql(t *testing.T) {
 						must.NotFail(types.NewDocument("$gt", int32(1))),
 					)),
 					must.NotFail(types.NewDocument("daysToExp",
-						must.NotFail(types.NewDocument("$lte", int32(10))),
+						must.NotFail(types.NewDocument("$not",
+							must.NotFail(types.NewDocument("$lte", int32(10))),
+						)),
 					)),
 				)),
 			)),
@@ -139,7 +141,7 @@ func TestAndOrToSql(t *testing.T) {
 	require.NoError(t, err)
 
 	filter := stage.root.children[0]
-	assert.Equal(t, "((_jsonb->>'item'->'quantity' > $1 AND _jsonb->'daysToExp' <= $2) OR _jsonb->'valid' = $3)", filter.ToSql())
+	assert.Equal(t, "((_jsonb->>'item'->'quantity' > $1 AND NOT (_jsonb->'daysToExp' <= $2)) OR _jsonb->'valid' = $3)", filter.ToSql())
 	assert.Equal(t, []interface{}{int32(1), int32(10), true}, stage.GetValues())
 }
 
