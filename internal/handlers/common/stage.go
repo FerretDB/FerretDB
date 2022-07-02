@@ -83,7 +83,11 @@ func (node *FilterNode) ToSql() string {
 
 	field := FieldToSql(node.field)
 	lastValueIndex += 1
-	return fmt.Sprintf("%s %s $%v", field, node.op, lastValueIndex)
+	opValPlaceholder := fmt.Sprintf("%s $%v", node.op, lastValueIndex)
+	if strings.Contains(node.op, "%s") {
+		opValPlaceholder = fmt.Sprintf(node.op, fmt.Sprintf("$%v", lastValueIndex))
+	}
+	return fmt.Sprintf("%s %s", field, opValPlaceholder)
 }
 
 func (node *FilterNode) AddFilter(field string, op string, value interface{}) *FilterNode {

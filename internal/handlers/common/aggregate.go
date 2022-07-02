@@ -301,16 +301,30 @@ func parseKey(node *FilterNode, key string, field string, value interface{}) err
 		}
 
 	case "$not":
-		node = node.AddUnaryOp("NOT")
-		parseKey(node, field, field, value)
+		parseKey(node.AddUnaryOp("NOT"), field, field, value)
 
 	case "$exists":
 		// field: { $exists: true } or { $exists: false }
 		if value == false {
 			node = node.AddUnaryOp("NOT")
+		} else if value != true {
+			return NewErrorMsg(ErrBadValue, "$exists must be true or false")
 		}
 		field, parents := ParseField(field)
 		node.AddFilter(parents, "?", field)
+
+	case "$in":
+		arr, ok := value.(*types.Array)
+		if !ok {
+			return NewErrorMsg(ErrBadValue, "$in must be an array")
+		}
+
+		arrVals := []string{}
+		for i := 0; i < arr.Len(); i++ {
+			arrVals = append(arrVals, fmt.Sprintf("%v", must.NotFail(arr.Get(i))))
+		}
+
+		node.AddFilter(field, "= ANY(%s)", arrVals)
 
 	default:
 		if strings.HasPrefix(key, "$") {
