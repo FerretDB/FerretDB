@@ -45,7 +45,7 @@ import (
 func TestUpdateFieldCurrentDate(t *testing.T) {
 	t.Parallel()
 
-	t.Run("currentDateReadBack", func(t *testing.T) {
+	t.Run("readBack", func(t *testing.T) {
 		maxDifference := time.Duration(2 * time.Second)
 		nowTimestamp := primitive.Timestamp{T: uint32(time.Now().Unix()), I: uint32(0)}
 		id := "string-empty"
@@ -646,7 +646,7 @@ func TestUpdateFieldSet(t *testing.T) {
 				ModifiedCount: 1,
 				UpsertedCount: 0,
 			},
-			result: bson.D{{"_id", "test"}, {"foo", int32(12)}, {"value", math.NaN()}},
+			result: bson.D{{"_id", "int32-zero"}, {"value", math.NaN()}, {"foo", int32(12)}},
 		},
 	} {
 		name, tc := name, tc
@@ -745,7 +745,7 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 				Message: "Modifiers operate on fields but we found type null instead. " +
 					"For example: {$mod: {<field>: ...}} not {$setOnInsert: null}",
 			},
-			alt: "Modifiers operate on stringfields but we found another type instead",
+			alt: "Modifiers operate on fields but we found another type instead",
 		},
 	} {
 		name, tc := name, tc
@@ -852,16 +852,7 @@ func TestUpdateFieldUnset(t *testing.T) {
 
 			require.NoError(t, err)
 			actualStat.UpsertedID = nil
-
-			expectedStat := &mongo.UpdateResult{
-				MatchedCount:  0,
-				ModifiedCount: 0,
-				UpsertedCount: 1,
-			}
-			if tc.stat != nil {
-				expectedStat = tc.stat
-			}
-			assert.Equal(t, expectedStat, actualStat)
+			assert.Equal(t, tc.stat, actualStat)
 
 			var actual bson.D
 			err = collection.FindOne(ctx, tc.filter).Decode(&actual)
