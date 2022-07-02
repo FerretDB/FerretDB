@@ -348,6 +348,9 @@ func (mp *MatchParser) parse(node *FilterNode, key string, field string, value i
 
 		node.AddFilter(mp.NextIndex(), field, "= ANY(%s)", arrVals)
 
+	case "$regex":
+		node.AddRawFilter(mp.NextIndex(), field, "~", value)
+
 	default:
 		if strings.HasPrefix(key, "$") {
 			return NewWriteErrorMsg(

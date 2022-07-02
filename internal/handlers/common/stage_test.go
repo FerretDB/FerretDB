@@ -26,10 +26,12 @@ import (
 func TestFieldToSql(t *testing.T) {
 	t.Parallel()
 
-	assert.Equal(t, "_jsonb", FieldToSql(""))
-	assert.Equal(t, "_jsonb->'quantity'", FieldToSql("quantity"))
-	assert.Equal(t, "_jsonb->>'item'->'quantity'", FieldToSql("item.quantity"))
-	assert.Equal(t, "_jsonb->>'item'->>'quantity'->'today'", FieldToSql("item.quantity.today"))
+	assert.Equal(t, "_jsonb", FieldToSql("", false))
+	assert.Equal(t, "_jsonb->'quantity'", FieldToSql("quantity", false))
+	assert.Equal(t, "_jsonb->>'quantity'", FieldToSql("quantity", true))
+	assert.Equal(t, "_jsonb->>'item'->'quantity'", FieldToSql("item.quantity", false))
+	assert.Equal(t, "_jsonb->>'item'->>'quantity'->'today'", FieldToSql("item.quantity.today", false))
+	assert.Equal(t, "_jsonb->>'item'->>'quantity'->>'today'", FieldToSql("item.quantity.today", true))
 }
 
 func TestParseField(t *testing.T) {
@@ -199,4 +201,16 @@ func TestNotInToSql(t *testing.T) {
 	filter := stage.root.children[0]
 	assert.Equal(t, "NOT (_jsonb->'field' = ANY($1))", filter.ToSql())
 	assert.Equal(t, []interface{}{[]string{"1", "2", "3"}}, stage.GetValues())
+}
+
+func TestRegexSql(t *testing.T) {
+	doc := must.NotFail(types.NewDocument("color",
+		must.NotFail(types.NewDocument("$regex", "^e.*")),
+	))
+	stage, err := ParseMatchStage(doc)
+	require.NoError(t, err)
+
+	filter := stage.root.children[0]
+	assert.Equal(t, "_jsonb->>'color' ~ $1", filter.ToSql())
+	assert.Equal(t, []interface{}{"^e.*"}, stage.GetValues())
 }

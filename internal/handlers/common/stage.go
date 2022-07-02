@@ -19,16 +19,20 @@ import (
 	"strings"
 )
 
-func FieldToSql(field string) string {
+func FieldToSql(field string, raw bool) string {
 	if field == "" {
 		return "_jsonb"
 	}
 
 	sql := "_jsonb"
+	sep := "->"
+	if raw {
+		sep = "->>"
+	}
 	parts := strings.Split(field, ".")
 	for i, f := range parts {
 		if i == len(parts)-1 {
-			sql += `->'` + f + `'`
+			sql += sep + `'` + f + `'`
 		} else {
 			sql += `->>'` + f + `'`
 		}
@@ -49,22 +53,23 @@ type FilterNode struct {
 	parent   *FilterNode
 	children []*FilterNode
 	unary    bool
+	raw      bool
 }
 
 func NewRootNode() *FilterNode {
 	return &FilterNode{}
 }
 
-func NewFieldFilterNode(index int, field string, op string, value interface{}, parent *FilterNode) FilterNode {
-	return FilterNode{index, op, field, value, parent, []*FilterNode{}, false}
+func NewFieldFilterNode(index int, field string, op string, value interface{}, parent *FilterNode, raw bool) FilterNode {
+	return FilterNode{index, op, field, value, parent, []*FilterNode{}, false, raw}
 }
 
 func NewOpFilterNode(op string, parent *FilterNode) FilterNode {
-	return FilterNode{0, op, "", nil, parent, []*FilterNode{}, false}
+	return FilterNode{0, op, "", nil, parent, []*FilterNode{}, false, false}
 }
 
 func NewUnaryOpFilterNode(op string, parent *FilterNode) FilterNode {
-	return FilterNode{0, op, "", nil, parent, []*FilterNode{}, true}
+	return FilterNode{0, op, "", nil, parent, []*FilterNode{}, true, false}
 }
 
 func (node *FilterNode) ToSql() string {
@@ -84,7 +89,7 @@ func (node *FilterNode) ToSql() string {
 		return "(" + strings.Join(strs, " "+node.op+" ") + ")"
 	}
 
-	field := FieldToSql(node.field)
+	field := FieldToSql(node.field, node.raw)
 	opValPlaceholder := fmt.Sprintf("%s $%v", node.op, node.index)
 	if strings.Contains(node.op, "%s") {
 		opValPlaceholder = fmt.Sprintf(node.op, fmt.Sprintf("$%v", node.index))
@@ -92,8 +97,14 @@ func (node *FilterNode) ToSql() string {
 	return fmt.Sprintf("%s %s", field, opValPlaceholder)
 }
 
+func (node *FilterNode) AddRawFilter(index int, field string, op string, value interface{}) *FilterNode {
+	child := NewFieldFilterNode(index, field, op, value, node, true)
+	node.children = append(node.children, &child)
+	return &child
+}
+
 func (node *FilterNode) AddFilter(index int, field string, op string, value interface{}) *FilterNode {
-	child := NewFieldFilterNode(index, field, op, value, node)
+	child := NewFieldFilterNode(index, field, op, value, node, false)
 	node.children = append(node.children, &child)
 	return &child
 }
