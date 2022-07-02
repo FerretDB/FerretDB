@@ -49,20 +49,20 @@ import (
 
 // Example:
 //
-// Match Phase -> (Filters Records) - Query1
+// Match Stage -> (Filters Records) - Query1
 //
 //   SELECT _jsonb
 //   FROM schema.table
 //   WHERE _jsonb->'name' = 'foo'
 //
-// Group Phase -> (Filters Records) - Query2
+// Group Stage -> (Filters Records) - Query2
 //
 //   SELECT
 //     _jsonb->'name', COUNT(*) AS nameCount
 //   FROM (Query1)
 //   GROUP BY _jsonb->'name'
 //
-// Wrapping Phase -> (Wraps Records into JSON)
+// Wrapping Stage -> (Wraps Records into JSON)
 //
 //   SELECT json_build_object(
 //     '%k', json_build_array('name', 'nameCount'),
@@ -110,26 +110,24 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	where := ""
 	groups := ""
 	order := ""
-	hasSubquery := false
 
 	var queryValues []interface{}
+	stages := []*common.Stage{}
+
 	for i := 0; i < pipeline.Len(); i++ {
 		p := must.NotFail(pipeline.Get(i)).(*types.Document)
 		for _, pipelineOp := range p.Keys() {
 			switch pipelineOp {
 			case "$match":
 				match := must.NotFail(p.Get(pipelineOp)).(*types.Document)
-				parent := "_jsonb"
-				if hasSubquery {
-					parent = ""
-				}
-				aggregateWhere, values, err := common.AggregateMatch(match, parent)
+				matchStage, err := common.ParseMatchStage(match)
 				if err != nil {
 					return nil, err
 				}
 
-				where = *aggregateWhere
-				queryValues = append(queryValues, values...)
+				fmt.Printf("  *** SQL: %s | %#v\n", matchStage.ToSql(sp.collection), matchStage.GetValues())
+
+				stages = append(stages, matchStage)
 
 			case "$count":
 				count := must.NotFail(p.Get(pipelineOp)).(string)
@@ -145,7 +143,6 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 				fields = res.Fields
 				if res.SubQuery != "" {
-					hasSubquery = true
 					fromAndWhere := from
 					if where != "" {
 						fromAndWhere += " WHERE " + where

@@ -137,14 +137,24 @@ type Stage struct {
 	root   *FilterNode
 }
 
-func NewStage() Stage {
-	return Stage{}
+func NewStage(fields []string, filterTree *FilterNode) Stage {
+	return Stage{fields, filterTree}
 }
 
-func (s *Stage) AddField(name string) {
-	s.fields = append(s.fields, name)
+func (stage *Stage) FiltersToSql() string {
+	return stage.root.ToSql()
 }
 
-func (s *Stage) GetValues() []interface{} {
-	return s.root.GetValues()
+func (stage *Stage) ToSql(table string) string {
+	fields := "*"
+	if len(stage.fields) > 0 {
+		fields = strings.Join(stage.fields, ", ")
+	}
+	sql := "SELECT " + fields + " FROM " + table + " WHERE " + stage.FiltersToSql()
+
+	return sql
+}
+
+func (stage *Stage) GetValues() []interface{} {
+	return stage.root.GetValues()
 }
