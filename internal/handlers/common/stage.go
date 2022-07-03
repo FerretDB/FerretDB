@@ -72,24 +72,27 @@ func NewUnaryOpFilterNode(op string, parent *FilterNode) FilterNode {
 	return FilterNode{0, op, "", nil, parent, []*FilterNode{}, true, false}
 }
 
-func (node *FilterNode) ToSql() string {
+func (node *FilterNode) ToSql(json bool) string {
 	if len(node.children) > 0 {
 		if node.unary {
 			if len(node.children) > 1 {
 				// FIXME re-evaluate this method of handling unary op errors
 				panic("unary operator with multiple children: " + node.op)
 			}
-			return node.op + " (" + node.children[0].ToSql() + ")"
+			return node.op + " (" + node.children[0].ToSql(json) + ")"
 		}
 		strs := make([]string, len(node.children))
 		for i, child := range node.children {
-			str := child.ToSql()
+			str := child.ToSql(json)
 			strs[i] = str
 		}
 		return "(" + strings.Join(strs, " "+node.op+" ") + ")"
 	}
 
-	field := FieldToSql(node.field, node.raw)
+	field := node.field
+	if json {
+		field = FieldToSql(node.field, node.raw)
+	}
 	opValPlaceholder := fmt.Sprintf("%s $%v", node.op, node.index)
 	if strings.Contains(node.op, "%s") {
 		opValPlaceholder = fmt.Sprintf(node.op, fmt.Sprintf("$%v", node.index))
@@ -160,19 +163,19 @@ func (stage *Stage) FieldContents() []string {
 	return contents
 }
 
-func (stage *Stage) FiltersToSql() string {
+func (stage *Stage) FiltersToSql(json bool) string {
 	if stage.root == nil {
 		return ""
 	}
-	return stage.root.ToSql()
+	return stage.root.ToSql(json)
 }
 
-func (stage *Stage) ToSql(table string) string {
+func (stage *Stage) ToSql(table string, json bool) string {
 	fields := "*"
 	if len(stage.fields) > 0 {
 		fields = strings.Join(stage.FieldContents(), ", ")
 	}
-	where := stage.FiltersToSql()
+	where := stage.FiltersToSql(json)
 	if where != "" {
 		where = " WHERE " + where
 	}
@@ -219,13 +222,22 @@ func Wrap(table string, stages []*Stage) (string, []interface{}) {
 		queryValues = append(queryValues, stage.GetValues()...)
 		from := table
 		if sql != "" {
-			from = fmt.Sprintf("("+sql+") AS query%s", i)
+			from = fmt.Sprintf("("+sql+") AS query%v", i)
 		}
-		sql = stage.ToSql(from)
+		sql = stage.ToSql(from, i < 1)
 	}
 
-	lastStage := stages[len(stages)-1]
-	sql = "SELECT " + lastStage.FieldAsJsonBuilder() + " FROM (" + sql + ") AS wrapped"
+	var stage *Stage
+	for _, s := range stages {
+		if len(s.fields) > 0 {
+			stage = s
+		}
+	}
+
+	if stage == nil {
+		return sql, queryValues
+	}
+	sql = "SELECT " + stage.FieldAsJsonBuilder() + " FROM (" + sql + ") AS wrapped"
 
 	return sql, queryValues
 }

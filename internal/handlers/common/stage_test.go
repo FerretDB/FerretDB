@@ -103,7 +103,8 @@ func TestToSql(t *testing.T) {
 	require.NoError(t, err)
 
 	filter := stage.root.children[0]
-	assert.Equal(t, "_jsonb->'quantity' > $1", filter.ToSql())
+	assert.Equal(t, "quantity > $1", filter.ToSql(false))
+	assert.Equal(t, "_jsonb->'quantity' > $1", filter.ToSql(true))
 }
 
 func TestNestedToSql(t *testing.T) {
@@ -116,7 +117,7 @@ func TestNestedToSql(t *testing.T) {
 	require.NoError(t, err)
 
 	filter := stage.root.children[0]
-	assert.Equal(t, "_jsonb->>'item'->'quantity' > $1", filter.ToSql())
+	assert.Equal(t, "_jsonb->>'item'->'quantity' > $1", filter.ToSql(true))
 }
 
 func TestAndOrToSql(t *testing.T) {
@@ -143,7 +144,7 @@ func TestAndOrToSql(t *testing.T) {
 	require.NoError(t, err)
 
 	filter := stage.root.children[0]
-	assert.Equal(t, "((_jsonb->>'item'->'quantity' > $1 AND NOT (_jsonb->'daysToExp' <= $2)) OR _jsonb->'valid' = $3)", filter.ToSql())
+	assert.Equal(t, "((_jsonb->>'item'->'quantity' > $1 AND NOT (_jsonb->'daysToExp' <= $2)) OR _jsonb->'valid' = $3)", filter.ToSql(true))
 	assert.Equal(t, []interface{}{int32(1), int32(10), true}, stage.GetValues())
 }
 
@@ -157,7 +158,7 @@ func TestExistsToSql(t *testing.T) {
 	require.NoError(t, err)
 
 	filter := stage.root.children[0]
-	assert.Equal(t, "_jsonb ? $1", filter.ToSql())
+	assert.Equal(t, "_jsonb ? $1", filter.ToSql(true))
 	assert.Equal(t, []interface{}{"field"}, stage.GetValues())
 }
 
@@ -171,7 +172,7 @@ func TestNotExistsToSql(t *testing.T) {
 	require.NoError(t, err)
 
 	filter := stage.root.children[0]
-	assert.Equal(t, "NOT (_jsonb ? $1)", filter.ToSql())
+	assert.Equal(t, "NOT (_jsonb ? $1)", filter.ToSql(true))
 	assert.Equal(t, []interface{}{"field"}, stage.GetValues())
 }
 
@@ -185,7 +186,7 @@ func TestInToSql(t *testing.T) {
 	require.NoError(t, err)
 
 	filter := stage.root.children[0]
-	assert.Equal(t, "_jsonb->'field' = ANY($1)", filter.ToSql())
+	assert.Equal(t, "_jsonb->'field' = ANY($1)", filter.ToSql(true))
 	assert.Equal(t, []interface{}{[]string{"1", "2", "3"}}, stage.GetValues())
 }
 
@@ -199,7 +200,7 @@ func TestNotInToSql(t *testing.T) {
 	require.NoError(t, err)
 
 	filter := stage.root.children[0]
-	assert.Equal(t, "NOT (_jsonb->'field' = ANY($1))", filter.ToSql())
+	assert.Equal(t, "NOT (_jsonb->'field' = ANY($1))", filter.ToSql(true))
 	assert.Equal(t, []interface{}{[]string{"1", "2", "3"}}, stage.GetValues())
 }
 
@@ -211,6 +212,6 @@ func TestRegexSql(t *testing.T) {
 	require.NoError(t, err)
 
 	filter := stage.root.children[0]
-	assert.Equal(t, "_jsonb->>'color' ~ $1", filter.ToSql())
+	assert.Equal(t, "_jsonb->>'color' ~ $1", filter.ToSql(true))
 	assert.Equal(t, []interface{}{"^e.*"}, stage.GetValues())
 }
