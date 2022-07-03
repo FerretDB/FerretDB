@@ -129,30 +129,20 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 				stages = append(stages, matchStage)
 
-			case "$count":
-				count := must.NotFail(p.Get(pipelineOp)).(string)
-				fields = common.AggregateCount(count)
+			// case "$count":
+			// 	count := must.NotFail(p.Get(pipelineOp)).(string)
+			// 	fields = common.AggregateCount(count)
 
 			case "$group":
 				group := must.NotFail(p.Get(pipelineOp)).(*types.Document)
-
-				res, err := common.AggregateGroup(group)
+				groupStage, err := common.ParseGroupStage(group)
 				if err != nil {
 					return nil, err
 				}
 
-				fields = res.Fields
-				if res.SubQuery != "" {
-					fromAndWhere := from
-					if where != "" {
-						fromAndWhere += " WHERE " + where
-						where = ""
-					}
-					from = "( " + fmt.Sprintf(res.SubQuery, fromAndWhere) + " ) AS subquery"
-				}
-				if res.Groups != "" {
-					groups = res.Groups
-				}
+				fmt.Printf("  *** GROUP: %#v\n", groupStage)
+
+				stages = append(stages, groupStage)
 
 			case "$sort":
 				sort := must.NotFail(p.Get(pipelineOp)).(*types.Document)

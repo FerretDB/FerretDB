@@ -22,95 +22,163 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-type GroupContext struct {
-	parents   []string
-	fields    []interface{}
-	groups    []string
-	subFields []string
-	subGroups []string
-	distinct  string
+type Field struct {
+	name     string
+	type_    string
+	contents interface{}
 }
 
-func NewGroupContext() GroupContext {
-	ctx := GroupContext{
-		parents:   []string{},
-		fields:    []interface{}{},
-		subFields: []string{},
-		groups:    []string{},
-		subGroups: []string{},
-	}
-
-	return ctx
+type GroupParser struct {
+	fields  []Field
+	groups  []string
+	parents []string
+	// distinct string
 }
 
-func (c *GroupContext) AddField(name string, value interface{}) {
-	c.fields = append(c.fields, name)
-	c.fields = append(c.fields, value)
+func (gp *GroupParser) AddField(name, type_ string, contents interface{}) {
+	gp.fields = append(gp.fields, Field{name, type_, contents})
 }
 
-func (c *GroupContext) AddSubField(value string) {
-	c.subFields = append(c.subFields, value)
+func (gp *GroupParser) AddGroup(name string) {
+	gp.groups = append(gp.groups, name)
 }
 
-func (c *GroupContext) AddGroup(name string) {
-	c.groups = append(c.groups, name)
+func (gp *GroupParser) AddParent(name string) {
+	gp.parents = append(gp.parents, name)
 }
 
-func (c *GroupContext) AddSubGroup(name string) {
-	c.subGroups = append(c.subGroups, name)
+func (mp *GroupParser) parse(key string, value interface{}) error {
+	return mp.parseWithParent(key, value, "")
 }
 
-func (c *GroupContext) GetParent() string {
-	return c.parents[len(c.parents)-1]
-}
+func (mp *GroupParser) parseWithParent(key string, value interface{}, parent string) error {
+	switch key {
+	case "_id":
+		switch v := value.(type) {
+		case string:
+			if strings.HasPrefix(value.(string), "$") {
+				field := strings.TrimPrefix(v, "$")
+				mp.AddField("_id", "", FormatField(field, []string{"_jsonb"}))
+				mp.AddGroup("_id")
+			} else {
+				mp.AddField("_id", "", v)
+			}
 
-func (c *GroupContext) FieldAsString() string {
-	prefix := ""
-	if c.distinct != "" {
-		prefix = "DISTINCT ON (" + c.distinct + ") "
-	}
-	str := fmt.Sprintf("%sjson_build_object('$k', jsonb_build_array(", prefix)
+		case *types.Document:
+			group, err := mp.parseOperators(value.(*types.Document), key)
+			if err != nil {
+				return err
+			}
+			mp.AddField("_id", "", *group)
+			mp.AddGroup("_id")
 
-	for i, key := range c.fields {
-		if i%2 == 0 {
-			str += fmt.Sprintf("'%s', ", key)
+		default:
+			mp.AddField("_id", "", fmt.Sprintf("%v", value))
+			mp.AddGroup("_id")
+
+		}
+
+	case "$sum":
+		// FIXME Support document with an operation on fields to sum, like $multiply
+		switch param := value.(type) {
+		case string:
+			if !strings.HasPrefix(param, "$") {
+				return NewWriteErrorMsg(
+					ErrFailedToParse,
+					fmt.Sprintf("Invalid '%s' parameter to $sum: must start with $ (temporarily)", param),
+				)
+			}
+
+			field := strings.TrimPrefix(param, "$")
+			field = FormatField(field, []string{"_jsonb"})
+			contents := fmt.Sprintf("SUM(%s)", GetNumericValue(field))
+			mp.AddField(parent, "float", contents)
+
+		case int32, int64, float64:
+			contents := fmt.Sprintf("SUM(%v)", param)
+			mp.AddField(parent, "float", contents)
+
+		case *types.Document:
+			res, err := mp.parseOperators(param, key)
+			if err != nil {
+				return err
+			}
+
+			contents := "SUM(" + *res + ")"
+			mp.AddField(parent, "float", contents)
+
+		case *types.Array:
+			return NewWriteErrorMsg(
+				ErrFailedToParse,
+				"The $sum accumulator is a unary operator",
+			)
+		}
+
+	case "$avg":
+		switch param := value.(type) {
+		case string:
+			if !strings.HasPrefix(param, "$") {
+				// FIXME handle constant expressions (?)
+				return NewWriteErrorMsg(
+					ErrFailedToParse,
+					fmt.Sprintf("Invalid '%s' parameter to $avg: must start with $ (temporarily)", param),
+				)
+			}
+
+			field := strings.TrimPrefix(param, "$")
+			field = FormatField(field, []string{"_jsonb"})
+			contents := fmt.Sprintf("AVG(%s)", GetNumericValue(field))
+			mp.AddField(parent, "float", contents)
+
+		case int32, int64, float64:
+			contents := fmt.Sprintf("AVG(%v)", param)
+			mp.AddField(parent, "float", contents)
+
+		case *types.Document:
+			res, err := mp.parseOperators(param, key)
+			if err != nil {
+				return err
+			}
+
+			contents := "AVG(" + *res + ")"
+			mp.AddField(parent, "float", contents)
+
+		case *types.Array:
+			return NewWriteErrorMsg(
+				ErrFailedToParse,
+				"The $avg accumulator is a unary operator",
+			)
+		}
+
+	default:
+		if strings.HasPrefix(key, "$") {
+			return NewWriteErrorMsg(
+				ErrFailedToParse,
+				fmt.Sprintf(
+					"Unknown top level operator: %s. Expected a valid aggregate modifier", key,
+				),
+			)
+		}
+
+		switch v := value.(type) {
+		case *types.Document:
+			for _, k := range v.Keys() {
+				value := must.NotFail(v.Get(k))
+				err := mp.parseWithParent(k, value, key)
+				if err != nil {
+					return err
+				}
+			}
+
+		default:
+			return NewErrorMsg(ErrFailedToParse, fmt.Sprintf("Could not parse $group of type: %T", v))
 		}
 	}
 
-	str = strings.TrimSuffix(str, ", ") + "), "
-
-	for i, v := range c.fields {
-		if i%2 == 0 {
-			str += fmt.Sprintf("'%s', ", v)
-		} else {
-			str += fmt.Sprintf("%v, ", v)
-		}
-	}
-	str = strings.TrimSuffix(str, ", ") + ") AS _jsonb"
-
-	return str
+	return nil
 }
 
-func (c *GroupContext) GetSubQuery() string {
-	if len(c.subFields) == 0 {
-		return ""
-	}
-
-	sql := "SELECT " + strings.Join(c.subFields, ", ") + " FROM %s"
-
-	if len(c.subGroups) > 0 {
-		sql += " GROUP BY " + strings.Join(c.subGroups, ", ")
-	}
-
-	return sql
-}
-
-func GetNumericValue(field string) string {
-	return fmt.Sprintf(`(CASE WHEN (%s ? '$f') THEN (%s->>'$f')::numeric ELSE (%s)::numeric END)`, field, field, field)
-}
-
-// https://www.mongodb.com/docs/manual/reference/operator/aggregation/#std-label-aggregation-expression-operators
-func ParseOperators(ctx *GroupContext, doc *types.Document) (*string, error) {
+func (mp *GroupParser) parseOperators(doc *types.Document, parent string) (*string, error) {
 	for _, key := range doc.Keys() {
 		value := must.NotFail(doc.Get(key))
 		switch key {
@@ -129,11 +197,10 @@ func ParseOperators(ctx *GroupContext, doc *types.Document) (*string, error) {
 				)
 			}
 
-			field := strings.TrimPrefix(date.(string), "$")
-			field = FormatFieldWithAncestor(field, ctx.parents, "_jsonb") + "->>'$d'"
-			res := fmt.Sprintf("TO_CHAR(TO_TIMESTAMP((%s)::numeric / 1000), 'YYYY-MM-DD')", field)
-
-			return &res, nil
+			name := strings.TrimPrefix(date.(string), "$")
+			field := FormatField(name, []string{"_jsonb"}) + "->>'$d'"
+			contents := fmt.Sprintf("TO_CHAR(TO_TIMESTAMP((%s)::numeric / 1000), 'YYYY-MM-DD')", field)
+			return &contents, nil
 
 		case "$add", "$subtract", "$multiply", "$divide":
 			params := value.(*types.Array)
@@ -154,7 +221,6 @@ func ParseOperators(ctx *GroupContext, doc *types.Document) (*string, error) {
 			for i := 0; i < params.Len(); i++ {
 				field := must.NotFail(params.Get(i)).(string)
 				if strings.HasPrefix(field, "$") {
-					fmt.Printf("  *** PARENTS: %#v", ctx.parents)
 					// FIXME we might need to consider parents here
 					// res := FormatFieldWithAncestor(strings.TrimPrefix(field, "$"), ctx.parents, "_jsonb")
 					res := FormatFieldWithAncestor(strings.TrimPrefix(field, "$"), []string{}, "_jsonb")
@@ -165,9 +231,8 @@ func ParseOperators(ctx *GroupContext, doc *types.Document) (*string, error) {
 				fields += " " + oper + " "
 			}
 
-			fields = "(" + strings.TrimSuffix(fields, " "+oper+" ") + ")"
-
-			return &fields, nil
+			res := strings.TrimSuffix(fields, " "+oper+" ")
+			return &res, nil
 
 		default:
 			return nil, NewWriteErrorMsg(
@@ -180,145 +245,16 @@ func ParseOperators(ctx *GroupContext, doc *types.Document) (*string, error) {
 	return nil, nil
 }
 
-func ParseGroup(ctx *GroupContext, key string, value interface{}) error {
-	switch key {
-	case "_id":
-		switch v := value.(type) {
-		case *types.Document:
-			parsed, err := ParseOperators(ctx, v)
-			if err != nil {
-				return err
-			}
-			field := fmt.Sprintf("%s AS %s", *parsed, key)
-			ctx.AddField(key, key)
-			ctx.AddSubField(field)
-			ctx.AddSubGroup("_id")
+func ParseGroupStage(group *types.Document) (*Stage, error) {
+	gp := GroupParser{}
 
-		default:
-			if strings.HasPrefix(value.(string), "$") {
-				field := strings.TrimPrefix(value.(string), "$")
-				field = FormatFieldWithAncestor(field, ctx.parents, "_jsonb")
-				ctx.distinct = field
-				ctx.AddField("_id", field)
-			} else {
-				ctx.AddField("_id", value)
-			}
-		}
-
-	case "$count":
-		ctx.AddField(ctx.GetParent(), "COUNT(*)")
-
-	case "$sum":
-		// FIXME Support document with an operation on fields to sum, like $multiply
-
-		// FIXME we are always casting the avg to a float64, check if we can find a way
-		//       to dynamically detect int vs. float
-		ctx.AddField(ctx.GetParent(), "json_build_object('$f', "+ctx.GetParent()+")")
-
-		switch param := value.(type) {
-		case string:
-			if !strings.HasPrefix(param, "$") {
-				return NewWriteErrorMsg(
-					ErrFailedToParse,
-					fmt.Sprintf("Invalid '%s' parameter to $sum: must start with $ (temporarily)", param),
-				)
-			}
-
-			res := FormatFieldWithAncestor(strings.TrimPrefix(param, "$"), []string{}, "_jsonb")
-			ctx.AddSubField(fmt.Sprintf("SUM(%s) AS %s", GetNumericValue(res), ctx.GetParent()))
-
-		case int32, int64, float64:
-			ctx.AddSubField(fmt.Sprintf("SUM(%v) AS %s", param, ctx.GetParent()))
-
-		case *types.Document:
-			parsed, err := ParseOperators(ctx, param)
-			if err != nil {
-				return err
-			}
-
-			key := ctx.GetParent()
-			field := "SUM(" + *parsed + ") AS " + key
-			ctx.AddSubField(field)
-
-		case *types.Array:
-			return NewWriteErrorMsg(
-				ErrFailedToParse,
-				"The $sum accumulator is a unary operator",
-			)
-
-		default:
-			return NewWriteErrorMsg(
-				ErrFailedToParse,
-				fmt.Sprintf("Invalid '%v' parameter to $sum", param),
-			)
-		}
-
-	case "$avg":
-		param := value.(string)
-		if !strings.HasPrefix(param, "$") {
-			// FIXME handle constant expressions (?)
-			return NewWriteErrorMsg(
-				ErrFailedToParse,
-				fmt.Sprintf("Invalid '%s' parameter to $avg: must start with $ (temporarily)", param),
-			)
-		}
-
-		res := FormatFieldWithAncestor(strings.TrimPrefix(param, "$"), []string{}, "_jsonb")
-		// FIXME we are always casting the avg to a float64, check if we can find a way
-		//       to dynamically detect int vs. float
-		ctx.AddField(ctx.GetParent(), "json_build_object('$f', "+ctx.GetParent()+")")
-		ctx.AddSubField(fmt.Sprintf("AVG(%s) AS %s", GetNumericValue(res), ctx.GetParent()))
-
-	default:
-		if strings.HasPrefix(key, "$") {
-			return NewWriteErrorMsg(
-				ErrFailedToParse,
-				fmt.Sprintf(
-					"Unknown top level operator: %s. Expected a valid aggregate modifier", key,
-				),
-			)
-		}
-
-		switch v := value.(type) {
-		case *types.Document:
-			if key != "" {
-				ctx.parents = append(ctx.parents, key)
-			}
-			for _, key := range v.Keys() {
-				value := must.NotFail(v.Get(key))
-				err := ParseGroup(ctx, key, value)
-				if err != nil {
-					return err
-				}
-			}
-		default:
-			fmt.Printf("  *** BOTTOM %#v", v)
-
-		}
-	}
-
-	return nil
-}
-
-type AggregateResult struct {
-	Fields   string
-	Groups   string
-	SubQuery string
-}
-
-func AggregateGroup(group *types.Document) (*AggregateResult, error) {
-	ctx := NewGroupContext()
-
-	err := ParseGroup(&ctx, "", group)
+	err := gp.parse("", group)
 	if err != nil {
 		return nil, err
 	}
 
-	fields := ctx.FieldAsString()
-	groups := ""
-	subQuery := ctx.GetSubQuery()
+	fmt.Printf("%+v\n", gp)
 
-	res := AggregateResult{fields, groups, subQuery}
-
-	return &res, nil
+	stage := NewStage([]string{}, nil)
+	return &stage, nil
 }
