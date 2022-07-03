@@ -1,11 +1,11 @@
-ARG COMMIT
 ARG VERSION
+ARG COMMIT
 
 FROM golang:1.18.3 AS build
 
 WORKDIR /src
 ADD . .
-RUN CGO_ENABLED=1 go test -x -c -o=bin/ferretdb -trimpath -tags=testcover,tigris -race -coverpkg=./... ./cmd/ferretdb
+RUN CGO_ENABLED=1 go test -c -o=bin/ferretdb -trimpath -tags=testcover,tigris -race -coverpkg=./... ./cmd/ferretdb
 
 FROM golang:1.18.3
 
