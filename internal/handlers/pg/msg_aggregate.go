@@ -151,16 +151,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 	}
 
-	queryValues := []interface{}{}
-	sql := ""
-	for i, stage := range stages {
-		queryValues = append(queryValues, stage.GetValues()...)
-		from := `"` + sp.db + `"."` + sp.collection + `"`
-		if sql != "" {
-			from = fmt.Sprintf("("+sql+") AS query%s", i)
-		}
-		sql = stage.ToSql(from)
-	}
+	table := `"` + sp.db + `"."` + sp.collection + `"`
+	sql, queryValues := common.Wrap(table, stages)
 
 	fmt.Printf(" *** SQL: %s %v %v\n", sql, queryValues, len(queryValues))
 

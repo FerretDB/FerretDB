@@ -258,11 +258,11 @@ func ParseGroupStage(group *types.Document) (*Stage, error) {
 	}
 
 	fmt.Printf("  *** GROUP: %#v\n", gp)
-	fields := []string{}
+
+	stage := NewStage(gp.groups, nil)
 	for _, field := range gp.fields {
-		fields = append(fields, field.ToSql())
+		stage.AddField(field.name, field.type_, field.ToSql())
 	}
 
-	stage := NewStage(fields, gp.groups, nil)
 	return &stage, nil
 }

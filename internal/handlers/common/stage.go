@@ -132,14 +132,32 @@ func (node *FilterNode) GetValues() []interface{} {
 	return values
 }
 
+type StageField struct {
+	name     string
+	type_    string
+	contents string
+}
+
 type Stage struct {
-	fields []string
+	fields []StageField
 	groups []string
 	root   *FilterNode
 }
 
-func NewStage(fields []string, groups []string, filterTree *FilterNode) Stage {
-	return Stage{fields, groups, filterTree}
+func NewStage(groups []string, filterTree *FilterNode) Stage {
+	return Stage{[]StageField{}, groups, filterTree}
+}
+
+func (stage *Stage) AddField(name, type_, contents string) {
+	stage.fields = append(stage.fields, StageField{name, type_, contents})
+}
+
+func (stage *Stage) FieldContents() []string {
+	contents := []string{}
+	for _, f := range stage.fields {
+		contents = append(contents, f.contents)
+	}
+	return contents
 }
 
 func (stage *Stage) FiltersToSql() string {
@@ -152,7 +170,7 @@ func (stage *Stage) FiltersToSql() string {
 func (stage *Stage) ToSql(table string) string {
 	fields := "*"
 	if len(stage.fields) > 0 {
-		fields = strings.Join(stage.fields, ", ")
+		fields = strings.Join(stage.FieldContents(), ", ")
 	}
 	where := stage.FiltersToSql()
 	if where != "" {
@@ -172,4 +190,42 @@ func (stage *Stage) GetValues() []interface{} {
 		return []interface{}{}
 	}
 	return stage.root.GetValues()
+}
+
+func (stage *Stage) FieldAsJsonBuilder() string {
+	prefix := ""
+	// if c.distinct != "" {
+	// 	prefix = "DISTINCT ON (" + c.distinct + ") "
+	// }
+	str := fmt.Sprintf("%sjson_build_object('$k', jsonb_build_array(", prefix)
+
+	for _, field := range stage.fields {
+		str += fmt.Sprintf("'%s', ", field.name)
+	}
+	str = strings.TrimSuffix(str, ", ") + "), "
+
+	for _, field := range stage.fields {
+		str += fmt.Sprintf("'%s', %s, ", field.name, field.name)
+	}
+	str = strings.TrimSuffix(str, ", ") + ") AS _jsonb"
+
+	return str
+}
+
+func Wrap(table string, stages []*Stage) (string, []interface{}) {
+	sql := ""
+	queryValues := []interface{}{}
+	for i, stage := range stages {
+		queryValues = append(queryValues, stage.GetValues()...)
+		from := table
+		if sql != "" {
+			from = fmt.Sprintf("("+sql+") AS query%s", i)
+		}
+		sql = stage.ToSql(from)
+	}
+
+	lastStage := stages[len(stages)-1]
+	sql = "SELECT " + lastStage.FieldAsJsonBuilder() + " FROM (" + sql + ") AS wrapped"
+
+	return sql, queryValues
 }
