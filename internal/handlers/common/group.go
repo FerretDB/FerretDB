@@ -25,7 +25,11 @@ import (
 type Field struct {
 	name     string
 	type_    string
-	contents interface{}
+	contents string
+}
+
+func (f *Field) ToSql() string {
+	return f.contents + " AS " + f.name
 }
 
 type GroupParser struct {
@@ -35,7 +39,7 @@ type GroupParser struct {
 	// distinct string
 }
 
-func (gp *GroupParser) AddField(name, type_ string, contents interface{}) {
+func (gp *GroupParser) AddField(name, type_ string, contents string) {
 	gp.fields = append(gp.fields, Field{name, type_, contents})
 }
 
@@ -253,8 +257,12 @@ func ParseGroupStage(group *types.Document) (*Stage, error) {
 		return nil, err
 	}
 
-	fmt.Printf("%+v\n", gp)
+	fmt.Printf("  *** GROUP: %#v\n", gp)
+	fields := []string{}
+	for _, field := range gp.fields {
+		fields = append(fields, field.ToSql())
+	}
 
-	stage := NewStage([]string{}, nil)
+	stage := NewStage(fields, gp.groups, nil)
 	return &stage, nil
 }

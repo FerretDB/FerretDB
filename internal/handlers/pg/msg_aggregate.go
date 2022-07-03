@@ -105,13 +105,6 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	fields := "_jsonb"
-	from := `"` + sp.db + `"."` + sp.collection + `"`
-	where := ""
-	groups := ""
-	order := ""
-
-	var queryValues []interface{}
 	stages := []*common.Stage{}
 
 	for i := 0; i < pipeline.Len(); i++ {
@@ -145,12 +138,12 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 				stages = append(stages, groupStage)
 
 			case "$sort":
-				sort := must.NotFail(p.Get(pipelineOp)).(*types.Document)
-				sortStr, err := common.AggregateSort(sort)
-				if err != nil {
-					return nil, err
-				}
-				order = *sortStr
+				// sort := must.NotFail(p.Get(pipelineOp)).(*types.Document)
+				// sortStr, err := common.AggregateSort(sort)
+				// if err != nil {
+				// 	return nil, err
+				// }
+				// order = *sortStr
 
 			default:
 				return nil, common.NewErrorMsg(common.ErrBadValue, fmt.Sprintf("unknown pipeline operator: %s", pipelineOp))
@@ -158,16 +151,17 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 	}
 
-	sql := "SELECT " + fields + " FROM " + from
-	if where != "" {
-		sql += " WHERE " + where
+	queryValues := []interface{}{}
+	sql := ""
+	for i, stage := range stages {
+		queryValues = append(queryValues, stage.GetValues()...)
+		from := `"` + sp.db + `"."` + sp.collection + `"`
+		if sql != "" {
+			from = fmt.Sprintf("("+sql+") AS query%s", i)
+		}
+		sql = stage.ToSql(from)
 	}
-	if groups != "" {
-		sql += " GROUP BY " + groups
-	}
-	if order != "" {
-		sql += " ORDER BY " + order
-	}
+
 	fmt.Printf(" *** SQL: %s %v %v\n", sql, queryValues, len(queryValues))
 
 	rows, err := h.pgPool.Query(ctx, sql, queryValues...)

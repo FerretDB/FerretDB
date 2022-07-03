@@ -134,14 +134,18 @@ func (node *FilterNode) GetValues() []interface{} {
 
 type Stage struct {
 	fields []string
+	groups []string
 	root   *FilterNode
 }
 
-func NewStage(fields []string, filterTree *FilterNode) Stage {
-	return Stage{fields, filterTree}
+func NewStage(fields []string, groups []string, filterTree *FilterNode) Stage {
+	return Stage{fields, groups, filterTree}
 }
 
 func (stage *Stage) FiltersToSql() string {
+	if stage.root == nil {
+		return ""
+	}
 	return stage.root.ToSql()
 }
 
@@ -150,11 +154,22 @@ func (stage *Stage) ToSql(table string) string {
 	if len(stage.fields) > 0 {
 		fields = strings.Join(stage.fields, ", ")
 	}
-	sql := "SELECT " + fields + " FROM " + table + " WHERE " + stage.FiltersToSql()
+	where := stage.FiltersToSql()
+	if where != "" {
+		where = " WHERE " + where
+	}
+	groupBy := ""
+	if len(stage.groups) > 0 {
+		groupBy = " GROUP BY " + strings.Join(stage.groups, ", ")
+	}
+	sql := "SELECT " + fields + " FROM " + table + where + groupBy
 
 	return sql
 }
 
 func (stage *Stage) GetValues() []interface{} {
+	if stage.root == nil {
+		return []interface{}{}
+	}
 	return stage.root.GetValues()
 }
