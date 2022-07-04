@@ -97,7 +97,7 @@ func (node *FilterNode) ToSql(json bool) string {
 	if json {
 		switch node.value.(type) {
 		case int32, float64:
-			field = GetNumericValue(FieldToSql(node.field, node.raw))
+			field = GetNumericValue(node.field)
 		default:
 			field = FieldToSql(node.field, node.raw)
 		}

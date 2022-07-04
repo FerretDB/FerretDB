@@ -269,6 +269,13 @@ func ParseGroupStage(group *types.Document) (*Stage, error) {
 }
 
 func GetNumericValue(field string) string {
+	if !strings.Contains(field, "->") && !strings.Contains(field, "->>") {
+		parts := strings.Split(field, ".")
+		field = "_jsonb"
+		for _, part := range parts {
+			field += "->'" + part + "'"
+		}
+	}
 	return fmt.Sprintf(`(CASE WHEN (%s ? '$f') THEN (%s->>'$f')::numeric ELSE (%s)::numeric END)`, field, field, field)
 }
 
