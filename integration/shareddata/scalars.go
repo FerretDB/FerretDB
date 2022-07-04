@@ -92,6 +92,6 @@ var Scalars = &Values[string]{
 // FixedScalars is an experiment and will be changed in the future.
 var FixedScalars = &Docs{
 	data: []map[string]any{
-		{"_id": "double", "double": 42.13},
+		{"_id": "double", "double_value": 42.13},
 	},
 }

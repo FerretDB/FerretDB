@@ -82,8 +82,8 @@ tasks:
     desc: "Fill `test.values` with data for experiments"
     dir: integration
     cmds:
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}}              -handler=pg     -run=TestEnvData
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -tags=tigris -handler=tigris -run=TestEnvData ./tigris
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData . -handler=pg
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData -tags=tigris ./tigris -handler=tigris
 
   gen:
     desc: "Generate (and format) code"
