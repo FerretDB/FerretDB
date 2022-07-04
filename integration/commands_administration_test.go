@@ -120,7 +120,7 @@ func assertDatabases(t *testing.T, expected, actual mongo.ListDatabasesResult) {
 //nolint:paralleltest // we test a global list of databases
 func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 	ctx, collection, _ := SetupWithOpts(t, &SetupOpts{
-		databaseName: "admin",
+		DatabaseName: "admin",
 	})
 	client := collection.Database().Client()
 	name := collection.Name()
@@ -179,7 +179,7 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 func TestCommandsAdministrationGetParameter(t *testing.T) {
 	t.Parallel()
 	ctx, collection, _ := SetupWithOpts(t, &SetupOpts{
-		databaseName: "admin",
+		DatabaseName: "admin",
 	})
 
 	for name, tc := range map[string]struct {

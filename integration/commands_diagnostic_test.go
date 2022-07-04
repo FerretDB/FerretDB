@@ -26,7 +26,7 @@ import (
 func TestCommandsDiagnosticGetLog(t *testing.T) {
 	t.Parallel()
 	ctx, collection, _ := SetupWithOpts(t, &SetupOpts{
-		databaseName: "admin",
+		DatabaseName: "admin",
 	})
 
 	var actual bson.D

@@ -27,7 +27,7 @@ import (
 func TestCommandsFreeMonitoringGetFreeMonitoringStatus(t *testing.T) {
 	t.Parallel()
 	ctx, collection, _ := SetupWithOpts(t, &SetupOpts{
-		databaseName: "admin",
+		DatabaseName: "admin",
 	})
 
 	expected := map[string]any{
@@ -58,7 +58,7 @@ func TestCommandsFreeMonitoringGetFreeMonitoringStatus(t *testing.T) {
 func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 	t.Parallel()
 	ctx, collection, _ := SetupWithOpts(t, &SetupOpts{
-		databaseName: "admin",
+		DatabaseName: "admin",
 	})
 
 	for name, tc := range map[string]struct {
