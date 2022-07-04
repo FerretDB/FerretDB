@@ -30,7 +30,7 @@ import (
 
 func TestQueryArraySize(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t)
+	ctx, collection := setup(t)
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{{"_id", "array-empty"}, {"value", bson.A{}}},
@@ -143,7 +143,7 @@ func TestQueryArraySize(t *testing.T) {
 
 func TestQueryArrayDotNotation(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
 		filter      bson.D
@@ -232,7 +232,7 @@ func TestQueryArrayDotNotation(t *testing.T) {
 
 func TestQueryElemMatchOperator(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
 		filter      bson.D
@@ -347,7 +347,7 @@ func TestQueryElemMatchOperator(t *testing.T) {
 
 func TestArrayEquality(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t, shareddata.Composites)
+	ctx, collection := setup(t, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
 		array       bson.A

@@ -14,17 +14,11 @@
 
 package tigris
 
-import (
-	"testing"
+// func TestSmoke(t *testing.T) {
+// 	t.Parallel()
+// 	ctx, collection := integration.Setup(t)
+// 	db := collection.Database()
 
-	"github.com/FerretDB/FerretDB/integration"
-)
-
-func TestSmoke(t *testing.T) {
-	t.Parallel()
-	ctx, collection := integration.Setup(t)
-	db := collection.Database()
-
-	_ = ctx
-	_ = db
-}
+// 	_ = ctx
+// 	_ = db
+// }

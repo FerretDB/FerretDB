@@ -33,7 +33,7 @@ import (
 
 func TestUpdateUpsert(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t, shareddata.Composites)
+	ctx, collection := setup(t, shareddata.Composites)
 
 	// this upsert inserts document
 	filter := bson.D{{"foo", "bar"}}
@@ -95,7 +95,7 @@ func TestUpdateTimestamp(t *testing.T) {
 		path := types.NewPathFromString("value")
 		result := bson.D{{"_id", id}, {"value", nowTimestamp}}
 
-		ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
+		ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 		update := bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "timestamp"}}}}}}
 		res, err := collection.UpdateOne(ctx, bson.D{{"_id", id}}, update)
@@ -201,7 +201,7 @@ func TestUpdateIncOperatorErrors(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := Setup(t)
+			ctx, collection := setup(t)
 
 			_, err := collection.InsertMany(ctx, []any{
 				bson.D{{"_id", "document"}, {"value", bson.D{{"foo", "bar"}}}},
@@ -315,7 +315,7 @@ func TestUpdateIncOperator(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := Setup(t)
+			ctx, collection := setup(t)
 
 			_, err := collection.InsertMany(ctx, []any{
 				bson.D{{"_id", "double"}, {"value", 42.13}},
@@ -492,7 +492,7 @@ func TestUpdateSet(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := Setup(t)
+			ctx, collection := setup(t)
 			_, err := collection.InsertMany(ctx, []any{
 				bson.D{{"_id", "string"}, {"value", "foo"}},
 				bson.D{{"_id", "double"}, {"value", float64(0.0)}},
@@ -603,7 +603,7 @@ func TestUpdateSetOnInsertOperator(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := Setup(t)
+			ctx, collection := setup(t)
 
 			opts := options.Update().SetUpsert(true)
 			var res *mongo.UpdateResult
@@ -736,7 +736,7 @@ func TestUpdateMany(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := Setup(t)
+			ctx, collection := setup(t)
 
 			_, err := collection.InsertMany(ctx, []any{
 				bson.D{{"_id", "string"}, {"value", "foo"}},
@@ -943,7 +943,7 @@ func TestCurrentDate(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
 
 			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
 			if tc.err != nil {
