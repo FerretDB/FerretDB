@@ -61,7 +61,7 @@ type FilterNode struct {
 }
 
 func NewRootNode() *FilterNode {
-	return &FilterNode{}
+	return &FilterNode{0, "AND", "", nil, nil, []*FilterNode{}, false, false}
 }
 
 func NewFieldFilterNode(index int, field string, op string, value interface{}, parent *FilterNode, raw bool) FilterNode {
