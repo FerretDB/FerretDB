@@ -16,7 +16,9 @@ package tigris
 
 // func TestSmoke(t *testing.T) {
 // 	t.Parallel()
-// 	ctx, collection := integration.Setup(t)
+// 	ctx, collection := integration.Setup(t, shareddata.FixedScalars)
+
+// 	collection.FindOne(ctx, bson.D{{"_id", "double"}}).Decode()
 // 	db := collection.Database()
 
 // 	_ = ctx

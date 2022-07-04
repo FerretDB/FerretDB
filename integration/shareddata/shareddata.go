@@ -28,23 +28,26 @@ type Provider interface {
 }
 
 // Docs stores shared data documents as maps.
-type Docs struct {
-	data []map[string]any
+type Docs[idType constraints.Ordered] struct {
+	data map[idType]map[string]any
 }
 
 // Docs implement Provider interface.
-func (docs *Docs) Docs() []bson.D {
-	res := make([]bson.D, len(docs.data))
-	for i, doc := range docs.data {
-		keys := maps.Keys(doc)
-		slices.Sort(keys)
+func (docs *Docs[idType]) Docs() []bson.D {
+	ids := maps.Keys(docs.data)
+	slices.Sort(ids)
 
-		d := make(bson.D, len(doc))
-		for i, k := range keys {
-			d[i] = bson.E{k, doc[k]}
+	res := make([]bson.D, 0, len(docs.data))
+	for _, id := range ids {
+		doc := docs.data[id]
+
+		d := make(bson.D, 0, len(doc)+1)
+		d = append(d, bson.E{"_id", id})
+		for k, v := range doc {
+			d = append(d, bson.E{k, v})
 		}
 
-		res[i] = d
+		res = append(res, d)
 	}
 
 	return res
@@ -60,9 +63,9 @@ func (values *Values[idType]) Docs() []bson.D {
 	ids := maps.Keys(values.data)
 	slices.Sort(ids)
 
-	res := make([]bson.D, len(values.data))
-	for i, id := range ids {
-		res[i] = bson.D{{"_id", id}, {"value", values.data[id]}}
+	res := make([]bson.D, 0, len(values.data))
+	for _, id := range ids {
+		res = append(res, bson.D{{"_id", id}, {"value", values.data[id]}})
 	}
 
 	return res
@@ -70,6 +73,6 @@ func (values *Values[idType]) Docs() []bson.D {
 
 // check interfaces
 var (
-	_ Provider = (*Docs)(nil)
+	_ Provider = (*Docs[string])(nil)
 	_ Provider = (*Values[string])(nil)
 )
