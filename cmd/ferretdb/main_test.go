@@ -13,7 +13,6 @@
 // limitations under the License.
 
 //go:build testcover
-// +build testcover
 
 package main
 
