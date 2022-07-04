@@ -29,9 +29,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {name: "PostgreSQL", handler: "pg", port: 0}
-          - {name: "Tigris", handler: "tigris", port: 0}
-          - {name: "MongoDB", handler: "mongodb", port: 37017}
+          - {name: "PostgreSQL", handler: "pg"}
+          - {name: "Tigris", handler: "tigris"}
+          - {name: "MongoDB", handler: "mongodb"}
 
     steps:
       - name: Checkout code
@@ -57,8 +57,8 @@ jobs:
       - name: Wait for and setup environment
         run: bin/task env-setup
 
-      - name: Run tests
-        run: bin/task test-integration-handler HANDLER=${{ matrix.handler }} PORT=${{ matrix.port }}
+      - name: Run ${{ matrix.handler }} tests
+        run: bin/task test-integration-${{ matrix.handler }}
 
       - name: Upload coverage information
         uses: codecov/codecov-action@v3

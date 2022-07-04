@@ -106,13 +106,14 @@ Other unit tests use real databases;
 you can run those with `task test-unit` after starting the environment as described above.
 
 We also have a set of "integration" tests in `integration` Go module that uses the Go MongoDB driver
-and tests either a running MongoDB-compatible database (such as FerretDB or MongoDB itself)
-or in-process FerretDB.
+and tests either a running MongoDB-compatible database (such as FerretDB or MongoDB itself) on a given port
+or in-process FerretDB (meaning that integration tests start and stop FerretDB themselves) with given handler.
 They allow us to ensure compatibility between FerretDB and MongoDB.
-You can run them with `task test-integration-ferretdb` for in-process FerretDB TODO
-(meaning that integration tests start and stop FerretDB themselves),
-`task test-integration-mongodb` for MongoDB running on port 37017 (as in our development environment),
-or `task test-integration` to run both in parallel.
+You can run them with:
+* `task test-integration-pg` for in-process FerretDB with PostgreSQL handler;
+* `task test-integration-tigris` for in-process FerretDB with Tigris handler;
+* `task test-integration-mongodb` for MongoDB running on port 37017 (as in our development environment),
+* or `task test-integration` to run all in parallel.
 
 Finally, you may run all tests in parallel with `task test`.
 If tests fail and the output is too confusing, try running them sequentially by using the commands above.

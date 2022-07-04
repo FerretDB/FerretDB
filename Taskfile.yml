@@ -115,32 +115,27 @@ tasks:
   test-integration:
     desc: "Run all integration tests in parallel"
     deps:
-      - test-integration-postgres
+      - test-integration-pg
       - test-integration-tigris
       - test-integration-mongodb
 
-  test-integration-postgres:
+  test-integration-pg:
     desc: "Run integration tests for PostgreSQL handler"
+    dir: integration
     cmds:
-      - task: test-integration-handler
-        vars: {HANDLER: "pg", PORT: 0}
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=integration-pg.txt -coverpkg=../... -handler=pg
 
   test-integration-tigris:
     desc: "Run integration tests for Tigris handler"
+    dir: integration/tigris
     cmds:
-      - task: test-integration-handler
-        vars: {HANDLER: "tigris", PORT: 0}
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -tags=tigris -shuffle=on -coverprofile=integration-tigris.txt -coverpkg=../... -handler=tigris
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
-    cmds:
-      - task: test-integration-handler
-        vars: {HANDLER: "mongodb", PORT: 37017}
-
-  test-integration-handler:
     dir: integration
     cmds:
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=integration-{{.HANDLER}}.txt -coverpkg=../... -handler={{.HANDLER}} -port={{.PORT}}
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=integration-mongodb.txt -coverpkg=../... -port=37017
 
   bench-short:
     desc: "Benchmark for about 20 seconds (with default BENCHTIME)"

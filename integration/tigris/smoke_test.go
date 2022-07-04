@@ -14,13 +14,21 @@
 
 package tigris
 
-// func TestSmoke(t *testing.T) {
-// 	t.Parallel()
-// 	ctx, collection := integration.Setup(t, shareddata.FixedScalars)
+import (
+	"testing"
 
-// 	collection.FindOne(ctx, bson.D{{"_id", "double"}}).Decode()
-// 	db := collection.Database()
+	"github.com/FerretDB/FerretDB/integration"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
+)
 
-// 	_ = ctx
-// 	_ = db
-// }
+func TestSmoke(t *testing.T) {
+	t.Parallel()
+	ctx, collection := integration.Setup(t, shareddata.FixedScalars)
+
+	var doc bson.D
+	err := collection.FindOne(ctx, bson.D{{"_id", "double"}}).Decode(&doc)
+	require.NoError(t, err)
+	integration.AssertEqualDocuments(t, bson.D{{"_id", "double"}, {"double_value", 42.13}}, doc)
+}

@@ -95,6 +95,8 @@ var Scalars = &Values[string]{
 }
 
 // FixedScalars is an experiment and will be changed in the future.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/786
 var FixedScalars = &Docs[string]{
 	data: map[string]map[string]any{
 		"double":          {"double_value": 42.13},
