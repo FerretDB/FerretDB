@@ -27,7 +27,7 @@ func TestEnvData(t *testing.T) {
 
 	// see `env-data` Taskfile target
 	ctx, collection, _ := SetupWithOpts(t, &SetupOpts{
-		databaseName: "test",
+		DatabaseName: "test",
 	})
 	collection = collection.Database().Collection("values")
 

@@ -48,10 +48,10 @@ var (
 // SetupOpts represents setup options.
 type SetupOpts struct {
 	// Database to use. If empty, temporary test-specific database is created.
-	databaseName string
+	DatabaseName string
 
 	// Data providers.
-	providers []shareddata.Provider
+	Providers []shareddata.Provider
 }
 
 // SetupWithOpts setups the test according to given options,
@@ -67,8 +67,8 @@ func SetupWithOpts(t *testing.T, opts *SetupOpts) (context.Context, *mongo.Colle
 	}
 
 	var ownDatabase bool
-	if opts.databaseName == "" {
-		opts.databaseName = testutil.SchemaName(t)
+	if opts.DatabaseName == "" {
+		opts.DatabaseName = testutil.SchemaName(t)
 		ownDatabase = true
 	}
 
@@ -89,7 +89,7 @@ func SetupWithOpts(t *testing.T, opts *SetupOpts) (context.Context, *mongo.Colle
 	t.Cleanup(cancel)
 
 	client := setupClient(t, ctx, port)
-	db := client.Database(opts.databaseName)
+	db := client.Database(opts.DatabaseName)
 	collectionName := testutil.TableName(t)
 	collection := db.Collection(collectionName)
 
@@ -106,7 +106,7 @@ func SetupWithOpts(t *testing.T, opts *SetupOpts) (context.Context, *mongo.Colle
 	// delete collection and (possibly) database unless test failed
 	t.Cleanup(func() {
 		if t.Failed() {
-			t.Logf("Keeping database %q and collection %q for debugging.", opts.databaseName, collectionName)
+			t.Logf("Keeping database %q and collection %q for debugging.", opts.DatabaseName, collectionName)
 			return
 		}
 
@@ -120,7 +120,7 @@ func SetupWithOpts(t *testing.T, opts *SetupOpts) (context.Context, *mongo.Colle
 	})
 
 	// insert all provided data
-	for _, provider := range opts.providers {
+	for _, provider := range opts.Providers {
 		for _, doc := range provider.Docs() {
 			_, err = collection.InsertOne(ctx, doc)
 			require.NoError(t, err)
@@ -135,7 +135,7 @@ func Setup(t *testing.T, providers ...shareddata.Provider) (context.Context, *mo
 	t.Helper()
 
 	ctx, collection, _ := SetupWithOpts(t, &SetupOpts{
-		providers: providers,
+		Providers: providers,
 	})
 	return ctx, collection
 }
