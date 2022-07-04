@@ -35,7 +35,7 @@ func ParseMatchStage(value interface{}) (*Stage, error) {
 		return nil, err
 	}
 
-	stage := NewStage([]string{}, root)
+	stage := NewStage("match", []string{}, root)
 	return &stage, err
 }
 

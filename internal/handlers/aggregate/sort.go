@@ -22,7 +22,7 @@ import (
 )
 
 func AddSortStage(stages *[]*Stage, sort *types.Document) error {
-	stage := NewEmptyStage()
+	stage := NewEmptyStage("sort")
 	if len(*stages) > 0 {
 		stage = *(*stages)[len(*stages)-1]
 	} else {

@@ -175,18 +175,19 @@ type StageSortField struct {
 }
 
 type Stage struct {
+	name       string
 	fields     []StageField
 	groups     []string
 	sortFields []StageSortField
 	root       *FilterNode
 }
 
-func NewEmptyStage() Stage {
-	return Stage{[]StageField{}, []string{}, []StageSortField{}, nil}
+func NewEmptyStage(name string) Stage {
+	return Stage{name, []StageField{}, []string{}, []StageSortField{}, nil}
 }
 
-func NewStage(groups []string, filterTree *FilterNode) Stage {
-	return Stage{[]StageField{}, groups, []StageSortField{}, filterTree}
+func NewStage(name string, groups []string, filterTree *FilterNode) Stage {
+	return Stage{name, []StageField{}, groups, []StageSortField{}, filterTree}
 }
 
 func (stage *Stage) AddField(name, type_, contents string) {
@@ -243,7 +244,9 @@ func (stage *Stage) ToSql(table string, json bool) string {
 	}
 	orderBy := ""
 	if len(stage.sortFields) > 0 {
-		// FIXME this is not working when we group then sort, json is true but the field is no longer json
+		if stage.name == "group" {
+			json = false
+		}
 		orderBy = " ORDER BY " + stage.SortToSql(json)
 	}
 	sql := "SELECT " + fields + " FROM " + table + where + groupBy + orderBy

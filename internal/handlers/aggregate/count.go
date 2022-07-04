@@ -17,7 +17,7 @@ package aggregate
 import "github.com/FerretDB/FerretDB/internal/handlers/common"
 
 func ParseCountStage(count interface{}) (*Stage, error) {
-	stage := NewEmptyStage()
+	stage := NewEmptyStage("count")
 	field, ok := count.(string)
 	if !ok {
 		return nil, common.NewErrorMsg(common.ErrBadValue, "the count field must be a non-empty string")

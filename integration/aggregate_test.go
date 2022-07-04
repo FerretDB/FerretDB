@@ -309,6 +309,7 @@ func TestGroupAndSort(t *testing.T) {
 		bson.D{{"_id", int32(5)}, {"item", "abc"}, {"price", int32(10)}, {"quantity", int32(10)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2014-04-04T21:23:13.331Z"))}},
 		bson.D{{"_id", int32(6)}, {"item", "def"}, {"price", float64(7.5)}, {"quantity", int32(5)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2015-06-04T05:08:13.000Z"))}},
 		bson.D{{"_id", int32(7)}, {"item", "def"}, {"price", float64(7.5)}, {"quantity", int32(10)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2015-09-10T08:43:00.000Z"))}},
+		bson.D{{"_id", int32(8)}, {"item", "abc"}, {"price", int32(10)}, {"quantity", int32(5)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2016-02-06T20:20:13.000Z"))}},
 	})
 	require.NoError(t, err)
 
