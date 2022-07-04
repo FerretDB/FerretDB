@@ -1,1 +1,1 @@
-FROM tigrisdata/tigris:main
+FROM tigrisdata/tigris-local:main
