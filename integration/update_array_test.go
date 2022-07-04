@@ -14,16 +14,52 @@
 
 package integration
 
-// This file is for tests of array update operators and modifiers:
-// - `$`
-// - `$[]`
-// - `$[<identifier>]`
-// - `$addToSet`
-// - `$pop`
-// - `$pull`
-// - `$push`
-// - `$pullAll`.
-// - `$each`
-// - `$position`
-// - `$slice`
-// - `$sort`.
+import "testing"
+
+func TestUpdateArrayPositional(t *testing.T) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/822
+}
+
+func TestUpdateArrayPositionalAll(t *testing.T) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/823
+}
+
+func TestUpdateArrayPositionalFiltered(t *testing.T) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/824
+}
+
+func TestUpdateArrayAddToSet(t *testing.T) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/825
+}
+
+func TestUpdateArrayPop(t *testing.T) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/621
+}
+
+func TestUpdateArrayPull(t *testing.T) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/826
+}
+
+func TestUpdateArrayPush(t *testing.T) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/503
+}
+
+func TestUpdateArrayPullAll(t *testing.T) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/827
+}
+
+func TestUpdateArrayEach(t *testing.T) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/828
+}
+
+func TestUpdateArrayPosition(t *testing.T) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/829
+}
+
+func TestUpdateArraySlice(t *testing.T) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/830
+}
+
+func TestUpdateArraySort(t *testing.T) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/831
+}
