@@ -157,30 +157,39 @@ type StageField struct {
 	contents string
 }
 
+type StageSortFieldDir int32
+
+const (
+	SortAsc StageSortFieldDir = iota
+	SortDesc
+)
+
+type StageSortField struct {
+	name string
+	dir  StageSortFieldDir
+}
+
 type Stage struct {
 	fields     []StageField
 	groups     []string
-	sortFields []string
+	sortFields []StageSortField
 	root       *FilterNode
 }
 
 func NewEmptyStage() Stage {
-	return Stage{[]StageField{}, []string{}, []string{}, nil}
+	return Stage{[]StageField{}, []string{}, []StageSortField{}, nil}
 }
 
 func NewStage(groups []string, filterTree *FilterNode) Stage {
-	return Stage{[]StageField{}, groups, []string{}, filterTree}
+	return Stage{[]StageField{}, groups, []StageSortField{}, filterTree}
 }
 
 func (stage *Stage) AddField(name, type_, contents string) {
 	stage.fields = append(stage.fields, StageField{name, type_, contents})
 }
 
-func (stage *Stage) AddSortField(field string, direction string) {
-	if direction != "" {
-		field = field + " " + direction
-	}
-	stage.sortFields = append(stage.sortFields, field)
+func (stage *Stage) AddSortField(name string, direction StageSortFieldDir) {
+	stage.sortFields = append(stage.sortFields, StageSortField{name, direction})
 }
 
 func (stage *Stage) FieldContents() []string {
@@ -198,8 +207,20 @@ func (stage *Stage) FiltersToSql(json bool) string {
 	return stage.root.ToSql(json)
 }
 
-func (stage *Stage) SortToSql() string {
-	return strings.Join(stage.sortFields, ", ")
+func (stage *Stage) SortToSql(json bool) string {
+	fields := make([]string, len(stage.sortFields))
+	for i, field := range stage.sortFields {
+		if json {
+			fields[i] = FieldToSql(field.name, false)
+		} else {
+			fields[i] = `"` + field.name + `"`
+		}
+		if field.dir == SortDesc {
+			fields[i] += " DESC"
+		}
+	}
+
+	return strings.Join(fields, ", ")
 }
 
 func (stage *Stage) ToSql(table string, json bool) string {

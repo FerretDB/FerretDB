@@ -36,9 +36,9 @@ func AddSortStage(stages *[]*Stage, sort *types.Document) error {
 		}
 
 		if intVal == 1 {
-			stage.AddSortField(field, "")
+			stage.AddSortField(field, SortAsc)
 		} else {
-			stage.AddSortField(field, "DESC")
+			stage.AddSortField(field, SortDesc)
 		}
 	}
 
