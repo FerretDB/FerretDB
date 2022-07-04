@@ -243,6 +243,7 @@ func (stage *Stage) ToSql(table string, json bool) string {
 	}
 	orderBy := ""
 	if len(stage.sortFields) > 0 {
+		// FIXME this is not working when we group then sort, json is true but the field is no longer json
 		orderBy = " ORDER BY " + stage.SortToSql(json)
 	}
 	sql := "SELECT " + fields + " FROM " + table + where + groupBy + orderBy

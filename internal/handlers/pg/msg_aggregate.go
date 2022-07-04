@@ -144,7 +144,10 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 				stages = append(stages, groupStage)
 
 			case "$sort":
-				sort := must.NotFail(p.Get(pipelineOp)).(*types.Document)
+				sort, ok := must.NotFail(p.Get(pipelineOp)).(*types.Document)
+				if !ok {
+					return nil, common.NewErrorMsg(common.ErrBadValue, "$sort key specification must be an object")
+				}
 				err := aggregate.AddSortStage(&stages, sort)
 				if err != nil {
 					return nil, err

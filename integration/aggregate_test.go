@@ -16,7 +16,9 @@ package integration
 
 import (
 	"testing"
+	"time"
 
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -294,6 +296,106 @@ func TestSimpleSort(t *testing.T) {
 	}, results)
 }
 
+// FIXME this is not working when we group then sort, json is true but the field is no longer json
+func TestGroupAndSort(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	_, err := collection.InsertMany(ctx, []any{
+		bson.D{{"_id", int32(1)}, {"item", "abc"}, {"price", int32(10)}, {"quantity", int32(2)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2014-03-01T08:00:00.000Z"))}},
+		bson.D{{"_id", int32(2)}, {"item", "jkl"}, {"price", int32(20)}, {"quantity", int32(1)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2014-03-01T09:00:00.000Z"))}},
+		bson.D{{"_id", int32(3)}, {"item", "xyz"}, {"price", int32(5)}, {"quantity", int32(10)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2014-03-15T09:00:00.000Z"))}},
+		bson.D{{"_id", int32(4)}, {"item", "xyz"}, {"price", int32(5)}, {"quantity", int32(20)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2014-04-04T11:21:39.736Z"))}},
+		bson.D{{"_id", int32(5)}, {"item", "abc"}, {"price", int32(10)}, {"quantity", int32(10)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2014-04-04T21:23:13.331Z"))}},
+		bson.D{{"_id", int32(6)}, {"item", "def"}, {"price", float64(7.5)}, {"quantity", int32(5)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2015-06-04T05:08:13.000Z"))}},
+		bson.D{{"_id", int32(7)}, {"item", "def"}, {"price", float64(7.5)}, {"quantity", int32(10)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2015-09-10T08:43:00.000Z"))}},
+	})
+	require.NoError(t, err)
+
+	group := bson.D{{"$group", bson.D{{"_id", bson.D{{"$dateToString", bson.D{{"date", "$date"}, {"format", "%Y-%m-%d"}}}}}}}}
+	sort := bson.D{{"$sort", bson.D{{"_id", int32(1)}}}}
+	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{group, sort})
+	require.NoError(t, err)
+
+	var results []bson.D
+	if err := cursor.All(ctx, &results); err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, []bson.D{
+		bson.D{{"_id", "2014-03-01"}},
+		bson.D{{"_id", "2014-03-15"}},
+		bson.D{{"_id", "2014-04-04"}},
+		bson.D{{"_id", "2015-06-04"}},
+		bson.D{{"_id", "2015-09-10"}},
+		bson.D{{"_id", "2016-02-06"}},
+	}, results)
+}
+
+func TestMatchAndSort(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	_, err := collection.InsertMany(ctx, []any{
+		bson.D{{"_id", int32(1)}, {"item", "abc"}, {"price", int32(10)}, {"quantity", int32(2)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2014-03-01T08:00:00.000Z"))}},
+		bson.D{{"_id", int32(2)}, {"item", "jkl"}, {"price", int32(20)}, {"quantity", int32(1)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2014-03-01T09:00:00.000Z"))}},
+		bson.D{{"_id", int32(3)}, {"item", "xyz"}, {"price", int32(5)}, {"quantity", int32(10)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2014-03-15T09:00:00.000Z"))}},
+		bson.D{{"_id", int32(4)}, {"item", "xyz"}, {"price", int32(5)}, {"quantity", int32(20)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2014-04-04T11:21:39.736Z"))}},
+		bson.D{{"_id", int32(5)}, {"item", "abc"}, {"price", int32(10)}, {"quantity", int32(10)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2014-04-04T21:23:13.331Z"))}},
+		bson.D{{"_id", int32(6)}, {"item", "def"}, {"price", float64(7.5)}, {"quantity", int32(5)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2015-06-04T05:08:13.000Z"))}},
+		bson.D{{"_id", int32(7)}, {"item", "def"}, {"price", float64(7.5)}, {"quantity", int32(10)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2015-09-10T08:43:00.000Z"))}},
+		bson.D{{"_id", int32(8)}, {"item", "abc"}, {"price", int32(10)}, {"quantity", int32(5)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2016-02-06T20:20:13.000Z"))}},
+	})
+	require.NoError(t, err)
+
+	match := bson.D{{"$match", bson.D{{"price", bson.D{{"$gt", int32(8)}}}}}}
+	sort := bson.D{{"$sort", bson.D{{"price", int32(1)}}}}
+	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{match, sort})
+	require.NoError(t, err)
+
+	var results []bson.D
+	if err := cursor.All(ctx, &results); err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, int32(1), results[0][0].Value)
+	assert.Equal(t, int32(5), results[1][0].Value)
+	assert.Equal(t, int32(8), results[2][0].Value)
+	assert.Equal(t, int32(2), results[3][0].Value)
+}
+
+func TestMatchAndSortByDate(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	_, err := collection.InsertMany(ctx, []any{
+		bson.D{{"_id", int32(1)}, {"item", "abc"}, {"price", int32(10)}, {"quantity", int32(2)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2014-03-01T08:00:00.000Z"))}},
+		bson.D{{"_id", int32(2)}, {"item", "jkl"}, {"price", int32(20)}, {"quantity", int32(1)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2014-03-01T09:00:00.000Z"))}},
+		bson.D{{"_id", int32(3)}, {"item", "xyz"}, {"price", int32(5)}, {"quantity", int32(10)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2014-03-15T09:00:00.000Z"))}},
+		bson.D{{"_id", int32(4)}, {"item", "xyz"}, {"price", int32(5)}, {"quantity", int32(20)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2014-04-04T11:21:39.736Z"))}},
+		bson.D{{"_id", int32(5)}, {"item", "abc"}, {"price", int32(10)}, {"quantity", int32(10)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2014-04-04T21:23:13.331Z"))}},
+		bson.D{{"_id", int32(6)}, {"item", "def"}, {"price", float64(7.5)}, {"quantity", int32(5)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2015-06-04T05:08:13.000Z"))}},
+		bson.D{{"_id", int32(7)}, {"item", "def"}, {"price", float64(7.5)}, {"quantity", int32(10)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2015-09-10T08:43:00.000Z"))}},
+		bson.D{{"_id", int32(8)}, {"item", "abc"}, {"price", int32(10)}, {"quantity", int32(5)}, {"date", must.NotFail(time.Parse(time.RFC3339, "2016-02-06T20:20:13.000Z"))}},
+	})
+	require.NoError(t, err)
+
+	match := bson.D{{"$match", bson.D{{"price", bson.D{{"$gt", int32(8)}}}}}}
+	sort := bson.D{{"$sort", bson.D{{"date", int32(1)}}}}
+	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{match, sort})
+	require.NoError(t, err)
+
+	var results []bson.D
+	if err := cursor.All(ctx, &results); err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, int32(1), results[0][0].Value)
+	assert.Equal(t, int32(2), results[1][0].Value)
+	assert.Equal(t, int32(5), results[2][0].Value)
+	assert.Equal(t, int32(8), results[3][0].Value)
+}
+
 func TestMatchAndCount(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t)
@@ -322,4 +424,15 @@ func TestMatchAndCount(t *testing.T) {
 	}
 
 	assert.Equal(t, []bson.D{bson.D{{"count", int32(4)}}}, results)
+}
+
+func TestInvalidSort(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	sort := bson.D{{"$sort", "count"}}
+	_, err := collection.Aggregate(ctx, mongo.Pipeline{sort})
+	require.Error(t, err)
+
+	assert.Equal(t, "(BadValue) the $sort key specification must be an object", err.Error())
 }
