@@ -48,6 +48,10 @@ import (
 // changes; the documents remain unmodified. For each input document,
 // outputs one document.
 
+// $count
+//
+// Returns a count of the number of documents at this stage of the aggregation pipeline.
+
 // Example:
 //
 // Match Stage -> (Filters Records) - Query1
@@ -121,9 +125,14 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 				stages = append(stages, matchStage)
 
-			// case "$count":
-			// 	count := must.NotFail(p.Get(pipelineOp)).(string)
-			// 	fields = common.AggregateCount(count)
+			case "$count":
+				count := must.NotFail(p.Get(pipelineOp))
+				countStage, err := aggregate.ParseCountStage(count)
+				if err != nil {
+					return nil, err
+				}
+
+				stages = append(stages, countStage)
 
 			case "$group":
 				group := must.NotFail(p.Get(pipelineOp)).(*types.Document)

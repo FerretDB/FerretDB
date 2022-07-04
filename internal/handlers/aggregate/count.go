@@ -12,8 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package aggregate
 
-func AggregateCount(count string) string {
-	return `json_build_object('$k', jsonb_build_array('` + count + `'), '` + count + `', COUNT(*)) AS _jsonb`
+import "github.com/FerretDB/FerretDB/internal/handlers/common"
+
+func ParseCountStage(count interface{}) (*Stage, error) {
+	stage := NewEmptyStage()
+	field, ok := count.(string)
+	if !ok {
+		return nil, common.NewErrorMsg(common.ErrBadValue, "the count field must be a non-empty string")
+	}
+	stage.AddField(field, "", "COUNT(*) AS "+field)
+
+	return &stage, nil
 }

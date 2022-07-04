@@ -12,18 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package aggregate
 
 import (
 	"testing"
 
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCount(t *testing.T) {
 	t.Parallel()
 
-	fields := AggregateCount("count")
+	stage, err := ParseCountStage("count")
+	assert.NoError(t, err)
 
-	assert.Equal(t, "json_build_object('$k', jsonb_build_array('count'), 'count', COUNT(*)) AS _jsonb", fields)
+	assert.Equal(t, "SELECT COUNT(*) AS count FROM table", stage.ToSql("table", true))
+}
+
+func TestCountWithDocument(t *testing.T) {
+	t.Parallel()
+
+	doc := must.NotFail(types.NewDocument("count", int32(1)))
+	_, err := ParseCountStage(doc)
+	require.Error(t, err)
+
+	assert.Equal(t, "BadValue (2): the count field must be a non-empty string", err.Error())
 }
