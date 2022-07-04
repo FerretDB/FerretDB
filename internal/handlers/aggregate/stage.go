@@ -95,7 +95,12 @@ func (node *FilterNode) ToSql(json bool) string {
 
 	field := node.field
 	if json {
-		field = FieldToSql(node.field, node.raw)
+		switch node.value.(type) {
+		case int32, float64:
+			field = GetNumericValue(FieldToSql(node.field, node.raw))
+		default:
+			field = FieldToSql(node.field, node.raw)
+		}
 	}
 	opValPlaceholder := fmt.Sprintf("%s $%v", node.op, node.index)
 	if strings.Contains(node.op, "%s") {

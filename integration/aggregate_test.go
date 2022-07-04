@@ -293,3 +293,33 @@ func TestSimpleSort(t *testing.T) {
 		bson.D{{"_id", int32(1)}, {"color", "white"}, {"quantity", int32(1)}},
 	}, results)
 }
+
+func TestMatchAndCount(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	_, err := collection.InsertMany(ctx, []any{
+		bson.D{{"_id", int32(1)}, {"item", "abc"}, {"price", int32(10)}, {"quantity", int32(2)}},
+		bson.D{{"_id", int32(2)}, {"item", "jkl"}, {"price", int32(20)}, {"quantity", int32(1)}},
+		bson.D{{"_id", int32(3)}, {"item", "xyz"}, {"price", int32(5)}, {"quantity", int32(10)}},
+		bson.D{{"_id", int32(4)}, {"item", "xyz"}, {"price", int32(5)}, {"quantity", int32(20)}},
+		bson.D{{"_id", int32(5)}, {"item", "abc"}, {"price", int32(10)}, {"quantity", int32(10)}},
+		bson.D{{"_id", int32(6)}, {"item", "def"}, {"price", float64(7.5)}, {"quantity", int32(5)}},
+		bson.D{{"_id", int32(7)}, {"item", "def"}, {"price", float64(7.5)}, {"quantity", int32(10)}},
+		bson.D{{"_id", int32(8)}, {"item", "abc"}, {"price", int32(10)}, {"quantity", int32(5)}},
+	})
+	require.NoError(t, err)
+
+	match := bson.D{{"$match", bson.D{{"price", bson.D{{"$gt", int32(8)}}}}}}
+	count := bson.D{{"$count", "count"}}
+
+	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{match, count})
+	require.NoError(t, err)
+
+	var results []bson.D
+	if err := cursor.All(ctx, &results); err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, []bson.D{bson.D{{"count", int32(4)}}}, results)
+}
