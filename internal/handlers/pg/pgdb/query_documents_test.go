@@ -16,6 +16,7 @@
 package pgdb_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -26,7 +27,9 @@ import (
 )
 
 func TestQueryDocuments(t *testing.T) {
-	ctx := testutil.Ctx(t)
+	ctx, cancel := context.WithCancel(testutil.Ctx(t))
+	defer cancel()
+
 	pool := testutil.Pool(ctx, t, nil, zaptest.NewLogger(t))
 	dbName := testutil.Schema(ctx, t, pool)
 	collectionName := testutil.Table(ctx, t, pool, dbName)
@@ -44,6 +47,16 @@ func TestQueryDocuments(t *testing.T) {
 	err = pool.InsertDocument(ctx, dbName, collectionName, doc)
 	require.NoError(t, err)
 
-	_, err = pool.QueryDocuments(ctx, dbName, collectionName, "")
+	fetchedChan, err := pool.QueryDocuments(ctx, dbName, collectionName, "")
 	require.NoError(t, err)
+
+	for {
+		fetched, ok := <-fetchedChan
+		if !ok {
+			break
+		}
+
+		require.NoError(t, fetched.Err)
+		require.Len(t, fetched.Docs, 1)
+	}
 }

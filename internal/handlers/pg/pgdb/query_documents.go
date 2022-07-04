@@ -2,6 +2,7 @@ package pgdb
 
 import (
 	"context"
+	"log"
 	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
@@ -29,13 +30,6 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment 
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-	defer func() {
-		if err != nil {
-			pgPool.logger.Error("failed to perform rollback", zap.Error(tx.Rollback(ctx)))
-			return
-		}
-		pgPool.logger.Error("failed to perform commit", zap.Error(tx.Commit(ctx)))
-	}()
 
 	table, err := pgPool.getTableName(ctx, tx, db, collection)
 	if err != nil {
@@ -60,6 +54,16 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment 
 	}
 
 	go func() {
+
+		/// ???? What to do with transaction? With channels it will hang for a lot of time
+		defer func() {
+			if err != nil {
+				pgPool.logger.Error("failed to perform rollback", zap.Error(tx.Rollback(ctx)))
+				return
+			}
+			pgPool.logger.Error("failed to perform commit", zap.Error(tx.Commit(ctx)))
+		}()
+
 		defer close(fetchedChan)
 		defer rows.Close()
 
@@ -82,7 +86,11 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment 
 			}
 
 			res := make([]*types.Document, 0, fetchedSliceCapacity)
-			for i := 0; i < len(res) && rows.Next(); i++ {
+			for i := 0; i < len(res); i++ {
+				if !rows.Next() {
+					break
+				}
+
 				var b []byte
 				if err := rows.Scan(&b); err != nil {
 					ctxCanceled = !writeFetched(ctx, fetchedChan, FetchedDocs{Err: lazyerrors.Error(err)})
@@ -96,6 +104,7 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment 
 				}
 
 				res = append(res, doc.(*types.Document))
+				log.Fatal(doc)
 			}
 
 			if ctxCanceled = !writeFetched(ctx, fetchedChan, FetchedDocs{Docs: res}); ctxCanceled {
