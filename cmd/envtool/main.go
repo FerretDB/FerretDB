@@ -157,6 +157,7 @@ Please file an issue with all that information below:
 	)
 }
 
+// setupPostgres configures PostgreSQL.
 func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
 	logger = logger.Named("postgres")
 
@@ -192,6 +193,7 @@ func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
 	return nil
 }
 
+// setupTigris configures Tigris.
 func setupTigris(ctx context.Context, logger *zap.SugaredLogger) error {
 	logger = logger.Named("tigris")
 
@@ -218,6 +220,7 @@ func setupTigris(ctx context.Context, logger *zap.SugaredLogger) error {
 	return nil
 }
 
+// run runs all setup commands.
 func run(ctx context.Context, logger *zap.SugaredLogger) error {
 	go debug.RunHandler(ctx, "127.0.0.1:8089", logger.Named("debug").Desugar())
 
