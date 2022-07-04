@@ -114,25 +114,28 @@ tasks:
 
   test-integration:
     desc: "Run all integration tests in parallel"
-    deps: [test-integration-postgres, test-integration-tigris, test-integration-mongodb]
+    deps:
+      - test-integration-postgres
+      - test-integration-tigris
+      - test-integration-mongodb
 
   test-integration-postgres:
     desc: "Run integration tests for PostgreSQL handler"
     cmds:
       - task: test-integration-handler
-        vars: {HANDLER: "PostgreSQL", PORT: 0}
+        vars: {HANDLER: "pg", PORT: 0}
 
   test-integration-tigris:
     desc: "Run integration tests for Tigris handler"
     cmds:
       - task: test-integration-handler
-        vars: {HANDLER: "Tigris", PORT: 0}
+        vars: {HANDLER: "tigris", PORT: 0}
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
     cmds:
       - task: test-integration-handler
-        vars: {HANDLER: "MongoDB", PORT: 37017}
+        vars: {HANDLER: "mongodb", PORT: 37017}
 
   test-integration-handler:
     dir: integration

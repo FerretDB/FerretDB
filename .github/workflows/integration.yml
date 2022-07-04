@@ -29,9 +29,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {name: "PostgreSQL", handler: "pg"}
-          - {name: "Tigris", handler: "tigris"}
-          - {name: "MongoDB", port: 37017}
+          - {name: "PostgreSQL", handler: "pg", port: 0}
+          - {name: "Tigris", handler: "tigris", port: 0}
+          - {name: "MongoDB", handler: "mongodb", port: 37017}
 
     steps:
       - name: Checkout code
