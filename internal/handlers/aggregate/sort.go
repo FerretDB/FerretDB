@@ -25,8 +25,8 @@ func AddSortStage(stages *[]*Stage, sort *types.Document) error {
 	stage := NewEmptyStage()
 	if len(*stages) > 0 {
 		stage = *(*stages)[len(*stages)-1]
-		*stages = append(*stages, &stage)
 	}
+	*stages = append(*stages, &stage)
 
 	for _, field := range sort.Keys() {
 		value := must.NotFail(sort.Get(field))

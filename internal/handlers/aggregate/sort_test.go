@@ -14,42 +14,60 @@
 
 package aggregate
 
-// func TestSimpleSort(t *testing.T) {
-// 	t.Parallel()
+import (
+	"testing"
 
-// 	doc := must.NotFail(types.NewDocument("field", int32(1)))
-// 	sort, err := AggregateSort(doc)
-// 	require.NoError(t, err)
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
 
-// 	assert.Equal(t, "field", *sort)
-// }
+func TestSimpleSort(t *testing.T) {
+	t.Parallel()
 
-// func TestDescendingSort(t *testing.T) {
-// 	t.Parallel()
+	doc := must.NotFail(types.NewDocument("field", int32(1)))
+	stages := []*Stage{}
+	err := AddSortStage(&stages, doc)
+	require.NoError(t, err)
 
-// 	doc := must.NotFail(types.NewDocument("field", int32(-1)))
-// 	sort, err := AggregateSort(doc)
-// 	require.NoError(t, err)
+	stage := stages[0]
+	assert.Equal(t, "field", stage.sortFields[0])
+}
 
-// 	assert.Equal(t, "field DESC", *sort)
-// }
+func TestDescendingSort(t *testing.T) {
+	t.Parallel()
 
-// func TestCompositeSortOrder(t *testing.T) {
-// 	t.Parallel()
+	doc := must.NotFail(types.NewDocument("field", int32(-1)))
+	stages := []*Stage{}
+	err := AddSortStage(&stages, doc)
+	require.NoError(t, err)
 
-// 	doc := must.NotFail(types.NewDocument("field1", int32(-1), "field2", int32(1), "field3", int32(1)))
-// 	sort, err := AggregateSort(doc)
-// 	require.NoError(t, err)
+	stage := stages[0]
+	assert.Equal(t, "field DESC", stage.sortFields[0])
+}
 
-// 	assert.Equal(t, "field1 DESC, field2, field3", *sort)
-// }
+func TestCompositeSortOrder(t *testing.T) {
+	t.Parallel()
 
-// func TestInvalidSort(t *testing.T) {
-// 	t.Parallel()
+	doc := must.NotFail(types.NewDocument("field1", int32(-1), "field2", int32(1), "field3", int32(1)))
+	stages := []*Stage{}
+	err := AddSortStage(&stages, doc)
+	require.NoError(t, err)
 
-// 	doc := must.NotFail(types.NewDocument("field", int32(0)))
-// 	_, err := AggregateSort(doc)
-// 	require.Error(t, err)
+	stage := stages[0]
+	assert.Equal(t, "field1 DESC", stage.sortFields[0])
+	assert.Equal(t, "field2", stage.sortFields[1])
+	assert.Equal(t, "field3", stage.sortFields[2])
+}
 
-// 	assert.Equal(t, "invalid sort order: 0", err.Error())
-// }
+func TestInvalidSort(t *testing.T) {
+	t.Parallel()
+
+	doc := must.NotFail(types.NewDocument("field", int32(0)))
+	stages := []*Stage{}
+	err := AddSortStage(&stages, doc)
+	require.Error(t, err)
+
+	assert.Equal(t, "invalid sort order: 0", err.Error())
+}
