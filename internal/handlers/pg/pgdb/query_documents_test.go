@@ -27,6 +27,8 @@ import (
 )
 
 func TestQueryDocuments(t *testing.T) {
+	t.Parallel()
+
 	ctx, cancel := context.WithCancel(testutil.Ctx(t))
 	defer cancel()
 

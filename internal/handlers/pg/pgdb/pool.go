@@ -332,14 +332,14 @@ func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
 
 	pgErr, ok := err.(*pgconn.PgError)
 	if !ok {
-		return lazyerrors.Errorf("pg.DropDatabase: %w", err)
+		return lazyerrors.Errorf("pgdb.DropDatabase: %w", err)
 	}
 
 	switch pgErr.Code {
 	case pgerrcode.InvalidSchemaName:
 		return ErrSchemaNotExist
 	default:
-		return lazyerrors.Errorf("pg.DropDatabase: %w", err)
+		return lazyerrors.Errorf("pgdb.DropDatabase: %w", err)
 	}
 }
 
