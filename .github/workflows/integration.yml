@@ -22,6 +22,9 @@ env:
 
 jobs:
   test:
+    name: Test ${{ matrix.handler }}
+    runs-on: ubuntu-20.04
+
     strategy:
       fail-fast: false
       matrix:
@@ -29,9 +32,6 @@ jobs:
           - {handler: "PostgreSQL", port: 0}
           - {handler: "Tigris", port: 0}
           - {handler: "MongoDB", port: 37017}
-
-    name: Test with ${{ matrix.handler }}
-    runs-on: ubuntu-20.04
 
     steps:
       - name: Checkout code
