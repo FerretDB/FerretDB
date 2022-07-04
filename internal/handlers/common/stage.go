@@ -110,7 +110,10 @@ func (node *FilterNode) AddRawFilter(index int, field string, op string, value i
 	return &child
 }
 
-func (node *FilterNode) AddFilter(index int, field string, op string, value interface{}) *FilterNode {
+func (node *FilterNode) AddFilter(index int, parent string, field string, op string, value interface{}) *FilterNode {
+	if parent != "" {
+		field = parent + "." + field
+	}
 	child := NewFieldFilterNode(index, field, op, value, node, false)
 	node.children = append(node.children, &child)
 	return &child

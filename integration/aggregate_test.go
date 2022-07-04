@@ -43,15 +43,14 @@ func TestMatch(t *testing.T) {
 				bson.D{{"_id", int32(1)}, {"a", int32(1)}, {"b", int32(2)}},
 			},
 		},
-		// FIXME support this kind of nesting
-		// "Nested": {
-		// 	match: bson.D{{"c", bson.D{{"name", "Felipe"}, {"age", 12}}}},
-		// 	expected: []bson.D{
-		// 		bson.D{
-		// 			{"_id", int32(3)}, {"a", int32(2)}, {"b", int32(3)},
-		// 			{"c", bson.D{{"name", "Felipe"}, {"age", int32(12)}}}},
-		// 	},
-		// },
+		"Nested": {
+			match: bson.D{{"c", bson.D{{"name", "Felipe"}, {"age", 12}}}},
+			expected: []bson.D{
+				bson.D{
+					{"_id", int32(3)}, {"a", int32(2)}, {"b", int32(3)},
+					{"c", bson.D{{"name", "Felipe"}, {"age", int32(12)}}}},
+			},
+		},
 		"NestedAsFlat": {
 			match: bson.D{{"c.name", "Felipe"}, {"c.age", 12}},
 			expected: []bson.D{

@@ -46,22 +46,22 @@ func (mp *MatchParser) NextIndex() int {
 func (mp *MatchParser) parse(node *FilterNode, key string, field string, value interface{}) error {
 	switch key {
 	case "$gt":
-		node.AddFilter(mp.NextIndex(), field, ">", value)
+		node.AddFilter(mp.NextIndex(), "", field, ">", value)
 
 	case "$gte":
-		node.AddFilter(mp.NextIndex(), field, ">=", value)
+		node.AddFilter(mp.NextIndex(), "", field, ">=", value)
 
 	case "$lt":
-		node.AddFilter(mp.NextIndex(), field, "<", value)
+		node.AddFilter(mp.NextIndex(), "", field, "<", value)
 
 	case "$lte":
-		node.AddFilter(mp.NextIndex(), field, "<=", value)
+		node.AddFilter(mp.NextIndex(), "", field, "<=", value)
 
 	case "$eq":
-		node.AddFilter(mp.NextIndex(), field, "=", value)
+		node.AddFilter(mp.NextIndex(), "", field, "=", value)
 
 	case "$ne":
-		node.AddFilter(mp.NextIndex(), field, "<>", value)
+		node.AddFilter(mp.NextIndex(), "", field, "<>", value)
 
 	case "$and":
 		arr, ok := value.(*types.Array)
@@ -101,7 +101,7 @@ func (mp *MatchParser) parse(node *FilterNode, key string, field string, value i
 			return NewErrorMsg(ErrBadValue, "$exists must be true or false")
 		}
 		field, parents := ParseField(field)
-		node.AddFilter(mp.NextIndex(), parents, "?", field)
+		node.AddFilter(mp.NextIndex(), "", parents, "?", field)
 
 	case "$all":
 		arr, ok := value.(*types.Array)
@@ -114,7 +114,7 @@ func (mp *MatchParser) parse(node *FilterNode, key string, field string, value i
 			arrVals = append(arrVals, fmt.Sprintf("%v", must.NotFail(arr.Get(i))))
 		}
 
-		node.AddFilter(mp.NextIndex(), field, "@> (%s)", arrVals)
+		node.AddFilter(mp.NextIndex(), "", field, "@> (%s)", arrVals)
 
 	case "$in", "$nin":
 		arr, ok := value.(*types.Array)
@@ -131,7 +131,7 @@ func (mp *MatchParser) parse(node *FilterNode, key string, field string, value i
 			node = node.AddUnaryOp("NOT")
 		}
 
-		node.AddFilter(mp.NextIndex(), field, "= ANY(%s)", arrVals)
+		node.AddFilter(mp.NextIndex(), "", field, "= ANY(%s)", arrVals)
 
 	case "$regex":
 		node.AddRawFilter(mp.NextIndex(), field, "~", value)
@@ -158,7 +158,7 @@ func (mp *MatchParser) parse(node *FilterNode, key string, field string, value i
 
 		default:
 			// defaults to equality match
-			node.AddFilter(mp.NextIndex(), key, "=", value)
+			node.AddFilter(mp.NextIndex(), field, key, "=", value)
 		}
 	}
 
