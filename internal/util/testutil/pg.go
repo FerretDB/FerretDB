@@ -16,6 +16,7 @@ package testutil
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
@@ -84,7 +85,7 @@ func Schema(ctx context.Context, tb testing.TB, pool *pgdb.Pool) string {
 	tb.Logf("Using schema %q.", schema)
 
 	err := pool.DropDatabase(ctx, schema)
-	if err == pgdb.ErrTableNotExist {
+	if errors.Is(err, pgdb.ErrTableNotExist) {
 		err = nil
 	}
 	require.NoError(tb, err)
@@ -99,7 +100,7 @@ func Schema(ctx context.Context, tb testing.TB, pool *pgdb.Pool) string {
 		}
 
 		err = pool.DropDatabase(ctx, schema)
-		if err == pgdb.ErrTableNotExist { // test might delete it
+		if errors.Is(err, pgdb.ErrTableNotExist) { // test might delete it
 			err = nil
 		}
 		require.NoError(tb, err)
@@ -129,7 +130,7 @@ func Table(ctx context.Context, tb testing.TB, pool *pgdb.Pool, db string) strin
 	tb.Logf("Using table %q.", table)
 
 	err := pool.DropCollection(ctx, db, table)
-	if err == pgdb.ErrTableNotExist {
+	if errors.Is(err, pgdb.ErrTableNotExist) {
 		err = nil
 	}
 	require.NoError(tb, err)

@@ -16,6 +16,7 @@ package pg
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -68,7 +69,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	if err := h.pgPool.CreateDatabase(ctx, db); err != nil && err != pgdb.ErrAlreadyExist {
+	if err := h.pgPool.CreateDatabase(ctx, db); err != nil && !errors.Is(err, pgdb.ErrAlreadyExist) {
 		return nil, lazyerrors.Error(err)
 	}
 
