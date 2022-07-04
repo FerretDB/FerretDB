@@ -118,8 +118,6 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 					return nil, err
 				}
 
-				fmt.Printf("  *** SQL: %s | %#v\n", matchStage.ToSql(sp.collection), matchStage.GetValues())
-
 				stages = append(stages, matchStage)
 
 			// case "$count":
@@ -152,6 +150,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	table := `"` + sp.db + `"."` + sp.collection + `"`
+
 	sql, queryValues := common.Wrap(table, stages)
 
 	fmt.Printf(" *** SQL: %s %v %v\n", sql, queryValues, len(queryValues))

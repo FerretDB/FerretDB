@@ -127,7 +127,12 @@ func (node *FilterNode) AddUnaryOp(op string) *FilterNode {
 func (node *FilterNode) GetValues() []interface{} {
 	values := []interface{}{}
 	if node.value != nil {
-		values = append(values, node.value)
+		switch node.value.(type) {
+		case float64:
+			values = append(values, GetNumericValue(fmt.Sprintf("%v", node.value)))
+		default:
+			values = append(values, node.value)
+		}
 	}
 	for _, child := range node.children {
 		values = append(values, child.GetValues()...)
@@ -208,7 +213,11 @@ func (stage *Stage) FieldAsJsonBuilder() string {
 	str = strings.TrimSuffix(str, ", ") + "), "
 
 	for _, field := range stage.fields {
-		str += fmt.Sprintf("'%s', %s, ", field.name, field.name)
+		if field.type_ == "float" {
+			str += fmt.Sprintf("'%s', json_build_object('$f', %s), ", field.name, field.name)
+		} else {
+			str += fmt.Sprintf("'%s', %s, ", field.name, field.name)
+		}
 	}
 	str = strings.TrimSuffix(str, ", ") + ") AS _jsonb"
 

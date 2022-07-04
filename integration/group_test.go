@@ -51,9 +51,9 @@ func TestGroupDistinct(t *testing.T) {
 	}
 	assert.Equal(t, []bson.D{
 		bson.D{{"_id", "abc"}},
+		bson.D{{"_id", "xyz"}},
 		bson.D{{"_id", "def"}},
 		bson.D{{"_id", "jkl"}},
-		bson.D{{"_id", "xyz"}},
 	}, results)
 }
 

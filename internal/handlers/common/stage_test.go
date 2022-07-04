@@ -215,3 +215,17 @@ func TestRegexSql(t *testing.T) {
 	assert.Equal(t, "_jsonb->>'color' ~ $1", filter.ToSql(true))
 	assert.Equal(t, []interface{}{"^e.*"}, stage.GetValues())
 }
+
+func TestGetValuesInt32(t *testing.T) {
+	t.Parallel()
+
+	node := NewFieldFilterNode(0, "field", ">", int32(1), nil, false)
+	assert.Equal(t, []interface{}{int32(1)}, node.GetValues())
+}
+
+func TestGetValuesFloat64(t *testing.T) {
+	t.Parallel()
+
+	node := NewFieldFilterNode(0, "field", ">", float64(1.5), nil, false)
+	assert.Equal(t, []interface{}{"(CASE WHEN (1.5 ? '$f') THEN (1.5->>'$f')::numeric ELSE (1.5)::numeric END)"}, node.GetValues())
+}
