@@ -231,7 +231,7 @@ func Marshal(v any) ([]byte, error) {
 
 // ObjectID returns object ID as expected by Tigris filters.
 //
-// TODO Remove that function if possible. https://github.com/FerretDB/FerretDB/issues/785
+// TODO Remove that function if possible. https://github.com/FerretDB/FerretDB/issues/683
 func ObjectID(id types.ObjectID) []byte {
 	return id[:]
 }
