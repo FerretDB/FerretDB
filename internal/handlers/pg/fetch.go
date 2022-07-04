@@ -34,12 +34,26 @@ type sqlParam struct {
 	comment    string
 }
 
-// fetch fetches all documents from the given database and collection.
-// If collection doesn't exist it returns an empty slice and no error.
+// Fetcher
+type Fetcher struct {
+	LastError error
+	*Handler
+}
+
+// fetch fetches all documents from the given database and collection
+// and sends them to the returned channel.
 //
-// TODO https://github.com/FerretDB/FerretDB/issues/372
+// The returned channel is always non-nil.
+// The channel is closed when all documents are sent; the caller should always drain the channel.
+// The returned error is the reason why the channel was closed:
+// it is nil in case all documents were sent normally (or requested collection doesn't exist),
+// error encountered during query initialization.
 //
-func (h *Handler) fetch(ctx context.Context, param sqlParam) ([]*types.Document, error) {
+//
+// If the collection doesn't exist, fetch returns a closed channel and no error.
+func (f *Fetcher) fetch(ctx context.Context, param sqlParam) (<-chan []*types.Document, error) {
+	cdocs := make(chan []*types.Document, 3)
+
 	sql := `SELECT `
 	if param.comment != "" {
 		param.comment = strings.ReplaceAll(param.comment, "/*", "/ *")
@@ -50,37 +64,57 @@ func (h *Handler) fetch(ctx context.Context, param sqlParam) ([]*types.Document,
 	sql += `_jsonb FROM ` + pgx.Identifier{param.db, param.collection}.Sanitize()
 
 	// Special case: check if collection exists at all
-	collectionExists, err := h.pgPool.TableExists(ctx, param.db, param.collection)
+	collectionExists, err := f.pgPool.TableExists(ctx, param.db, param.collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 	if !collectionExists {
-		h.l.Info(
+		f.l.Info(
 			"Table doesn't exist, handling a case to deal with a non-existing collection.",
 			zap.String("schema", param.db), zap.String("table", param.collection),
 		)
-		return []*types.Document{}, nil
+		close(cdocs)
+		return cdocs, nil
 	}
 
-	rows, err := h.pgPool.Query(ctx, sql)
+	rows, err := f.pgPool.Query(ctx, sql)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-	defer rows.Close()
 
-	var res []*types.Document
-	for {
-		doc, err := nextRow(rows)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-		res = append(res, doc)
-	}
+	go func() {
+		defer close(cdocs)
+		defer rows.Close()
 
-	return res, nil
+		for {
+			select {
+			case <-ctx.Done():
+				f.l.Info("got a signal to stop fetching, fetch canceled",
+					zap.String("schema", param.db), zap.String("table", param.collection),
+				)
+				return
+			default:
+				// fetch next batch of documents
+			}
+
+			res := make([]*types.Document, 2)
+			for i := 0; i < len(res); i++ {
+				doc, err := nextRow(rows)
+				if err == io.EOF {
+					break
+				}
+				if err != nil {
+					f.LastError = lazyerrors.Error(err)
+					return
+				}
+				res[i] = doc
+			}
+
+			cdocs <- res
+		}
+	}()
+
+	return cdocs, nil
 }
 
 // nextRow returns the next document from the given rows.
