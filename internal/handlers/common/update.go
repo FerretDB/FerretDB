@@ -118,6 +118,22 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				}
 			}
 
+		case "$max":
+			// {$max: {<field1>: <value1>, ... }}
+			maxDoc := updateV.(*types.Document)
+
+			maxMap := maxDoc.Map()
+
+			for _, maxKey := range maxDoc.Keys() {
+				docValue := must.NotFail(doc.Get(maxKey))
+				newValue := maxMap[maxKey]
+				c := types.Compare(docValue, newValue)
+				if c == types.Less {
+					must.NoError(doc.Set(maxKey, newValue))
+					changed = true
+				}
+			}
+
 		default:
 			return false, NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
 		}
@@ -189,6 +205,10 @@ func ValidateUpdateOperators(update *types.Document) error {
 	if err != nil {
 		return err
 	}
+	_, err = extractValueFromUpdateOperator("$max", update)
+	if err != nil {
+		return err
+	}
 	_, err = extractValueFromUpdateOperator("$unset", update)
 	if err != nil {
 		return err
@@ -213,6 +233,8 @@ func checkAllModifiersSupported(update *types.Document) error {
 		case "$currentDate":
 			fallthrough
 		case "$inc":
+			fallthrough
+		case "$max":
 			fallthrough
 		case "$set":
 			fallthrough
