@@ -22,7 +22,7 @@ env:
 
 jobs:
   test:
-    name: Test
+    name: Test ${{ matrix.db }}
     runs-on: ubuntu-20.04
 
     strategy:
