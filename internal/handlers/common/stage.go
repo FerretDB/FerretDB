@@ -134,6 +134,10 @@ func (node *FilterNode) GetValues() []interface{} {
 		switch node.value.(type) {
 		case float64:
 			values = append(values, GetNumericValue(fmt.Sprintf("%v", node.value)))
+
+		case int32:
+			values = append(values, fmt.Sprintf("%v", node.value))
+
 		default:
 			values = append(values, node.value)
 		}
