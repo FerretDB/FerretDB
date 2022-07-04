@@ -14,4 +14,8 @@
 
 package integration
 
-// This file is for tests of bitwise update operator `$bit`.
+import "testing"
+
+func TestUpdateBitwiseBit(t *testing.T) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/821
+}
