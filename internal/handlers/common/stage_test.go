@@ -29,9 +29,9 @@ func TestFieldToSql(t *testing.T) {
 	assert.Equal(t, "_jsonb", FieldToSql("", false))
 	assert.Equal(t, "_jsonb->'quantity'", FieldToSql("quantity", false))
 	assert.Equal(t, "_jsonb->>'quantity'", FieldToSql("quantity", true))
-	assert.Equal(t, "_jsonb->>'item'->'quantity'", FieldToSql("item.quantity", false))
-	assert.Equal(t, "_jsonb->>'item'->>'quantity'->'today'", FieldToSql("item.quantity.today", false))
-	assert.Equal(t, "_jsonb->>'item'->>'quantity'->>'today'", FieldToSql("item.quantity.today", true))
+	assert.Equal(t, "_jsonb->'item'->>'quantity'", FieldToSql("item.quantity", false))
+	assert.Equal(t, "_jsonb->'item'->'quantity'->>'today'", FieldToSql("item.quantity.today", false))
+	assert.Equal(t, "_jsonb->'item'->'quantity'->>'today'", FieldToSql("item.quantity.today", true))
 }
 
 func TestParseField(t *testing.T) {

@@ -26,15 +26,19 @@ func FieldToSql(field string, raw bool) string {
 
 	sql := "_jsonb"
 	sep := "->"
-	if raw {
-		sep = "->>"
-	}
 	parts := strings.Split(field, ".")
-	for i, f := range parts {
-		if i == len(parts)-1 {
-			sql += sep + `'` + f + `'`
-		} else {
-			sql += `->>'` + f + `'`
+	if len(parts) == 1 {
+		if raw {
+			sep = "->>"
+		}
+		sql += sep + "'" + parts[0] + "'"
+	} else {
+		for i, f := range parts {
+			if i == len(parts)-1 {
+				sql += `->>'` + f + `'`
+			} else {
+				sql += sep + `'` + f + `'`
+			}
 		}
 	}
 	return sql
