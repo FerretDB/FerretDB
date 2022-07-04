@@ -87,6 +87,9 @@ jobs:
       - name: Run init
         run: bin/task init
 
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v2
+
       - name: Initialize Docker Buildx builder
         run: bin/task docker-init
 
