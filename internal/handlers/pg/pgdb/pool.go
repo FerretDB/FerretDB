@@ -505,7 +505,7 @@ func (pgPool *Pool) CreateTableIfNotExist(ctx context.Context, db, collection st
 	}
 
 	if err := pgPool.CreateCollection(ctx, db, collection); err != nil {
-		if err == ErrAlreadyExist {
+		if errors.Is(err, ErrAlreadyExist) {
 			return false, nil
 		}
 		return false, lazyerrors.Error(err)
@@ -518,7 +518,7 @@ func (pgPool *Pool) CreateTableIfNotExist(ctx context.Context, db, collection st
 func (pgPool *Pool) CollectionExists(ctx context.Context, db, collection string) (bool, error) {
 	collections, err := pgPool.Collections(ctx, db)
 	if err != nil {
-		if err == ErrSchemaNotExist {
+		if errors.Is(err, ErrSchemaNotExist) {
 			return false, nil
 		}
 		return false, err
@@ -694,7 +694,7 @@ func (pgPool *Pool) InsertDocument(ctx context.Context, db, collection string, d
 		}
 
 		if err := pgPool.CreateCollection(ctx, db, collection); err != nil {
-			if err == ErrAlreadyExist {
+			if errors.Is(err, ErrAlreadyExist) {
 				return nil
 			}
 			return lazyerrors.Error(err)

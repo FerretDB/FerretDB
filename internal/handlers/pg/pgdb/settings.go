@@ -59,7 +59,7 @@ func (pgPool *Pool) createSettingsTable(ctx context.Context, tx pgx.Tx, db strin
 	if err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if !ok {
-			return lazyerrors.Errorf("pg.CreateCollection: %w", err)
+			return lazyerrors.Errorf("pgdb.createSettingsTable: %w", err)
 		}
 
 		switch pgErr.Code {
@@ -72,7 +72,7 @@ func (pgPool *Pool) createSettingsTable(ctx context.Context, tx pgx.Tx, db strin
 			// Reproducible by integration tests.
 			return ErrAlreadyExist
 		default:
-			return lazyerrors.Errorf("pg.CreateCollection: %w", err)
+			return lazyerrors.Errorf("pgdb.createSettingsTable: %w", err)
 		}
 	}
 
