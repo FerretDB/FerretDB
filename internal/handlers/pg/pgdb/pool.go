@@ -291,10 +291,14 @@ func (pgPool *Pool) CreateDatabase(ctx context.Context, db string) error {
 	}
 	defer func() {
 		if err != nil {
-			pgPool.logger.Error("failed to perform rollback", zap.Error(tx.Rollback(ctx)))
+			if rerr := tx.Rollback(ctx); rerr != nil {
+				pgPool.logger.Error("failed to perform rollback", zap.Error(rerr))
+			}
 			return
 		}
-		pgPool.logger.Error("failed to perform commit", zap.Error(tx.Commit(ctx)))
+		if cerr := tx.Commit(ctx); cerr != nil {
+			pgPool.logger.Error("failed to perform commit", zap.Error(cerr))
+		}
 	}()
 
 	sql := `CREATE SCHEMA ` + pgx.Identifier{db}.Sanitize()
@@ -362,10 +366,14 @@ func (pgPool *Pool) CreateCollection(ctx context.Context, db, collection string)
 	}
 	defer func() {
 		if err != nil {
-			pgPool.logger.Error("failed to perform rollback", zap.Error(tx.Rollback(ctx)))
+			if rerr := tx.Rollback(ctx); rerr != nil {
+				pgPool.logger.Error("failed to perform rollback", zap.Error(rerr))
+			}
 			return
 		}
-		pgPool.logger.Error("failed to perform commit", zap.Error(tx.Commit(ctx)))
+		if cerr := tx.Commit(ctx); cerr != nil {
+			pgPool.logger.Error("failed to perform commit", zap.Error(cerr))
+		}
 	}()
 
 	table := formatCollectionName(collection)
@@ -429,10 +437,14 @@ func (pgPool *Pool) DropCollection(ctx context.Context, schema, collection strin
 	}
 	defer func() {
 		if err != nil {
-			pgPool.logger.Error("failed to perform rollback", zap.Error(tx.Rollback(ctx)))
+			if rerr := tx.Rollback(ctx); rerr != nil {
+				pgPool.logger.Error("failed to perform rollback", zap.Error(rerr))
+			}
 			return
 		}
-		pgPool.logger.Error("failed to perform commit", zap.Error(tx.Commit(ctx)))
+		if cerr := tx.Commit(ctx); cerr != nil {
+			pgPool.logger.Error("failed to perform commit", zap.Error(cerr))
+		}
 	}()
 
 	table := formatCollectionName(collection)
@@ -550,10 +562,14 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment 
 	}
 	defer func() {
 		if err != nil {
-			pgPool.logger.Error("failed to perform rollback", zap.Error(tx.Rollback(ctx)))
+			if rerr := tx.Rollback(ctx); rerr != nil {
+				pgPool.logger.Error("failed to perform rollback", zap.Error(rerr))
+			}
 			return
 		}
-		pgPool.logger.Error("failed to perform commit", zap.Error(tx.Commit(ctx)))
+		if cerr := tx.Commit(ctx); cerr != nil {
+			pgPool.logger.Error("failed to perform commit", zap.Error(cerr))
+		}
 	}()
 
 	table, err := pgPool.getTableName(ctx, tx, db, collection)
@@ -603,10 +619,14 @@ func (pgPool *Pool) SetDocumentByID(ctx context.Context, db, collection string, 
 	}
 	defer func() {
 		if err != nil {
-			pgPool.logger.Error("failed to perform rollback", zap.Error(tx.Rollback(ctx)))
+			if rerr := tx.Rollback(ctx); rerr != nil {
+				pgPool.logger.Error("failed to perform rollback", zap.Error(rerr))
+			}
 			return
 		}
-		pgPool.logger.Error("failed to perform commit", zap.Error(tx.Commit(ctx)))
+		if cerr := tx.Commit(ctx); cerr != nil {
+			pgPool.logger.Error("failed to perform commit", zap.Error(cerr))
+		}
 	}()
 
 	table, err := pgPool.getTableName(ctx, tx, db, collection)
@@ -633,10 +653,14 @@ func (pgPool *Pool) DeleteDocumentsByID(ctx context.Context, db, collection stri
 	}
 	defer func() {
 		if err != nil {
-			pgPool.logger.Error("failed to perform rollback", zap.Error(tx.Rollback(ctx)))
+			if rerr := tx.Rollback(ctx); rerr != nil {
+				pgPool.logger.Error("failed to perform rollback", zap.Error(rerr))
+			}
 			return
 		}
-		pgPool.logger.Error("failed to perform commit", zap.Error(tx.Commit(ctx)))
+		if cerr := tx.Commit(ctx); cerr != nil {
+			pgPool.logger.Error("failed to perform commit", zap.Error(cerr))
+		}
 	}()
 
 	table, err := pgPool.getTableName(ctx, tx, db, collection)
@@ -692,10 +716,14 @@ func (pgPool *Pool) InsertDocument(ctx context.Context, db, collection string, d
 	}
 	defer func() {
 		if err != nil {
-			pgPool.logger.Error("failed to perform rollback", zap.Error(tx.Rollback(ctx)))
+			if rerr := tx.Rollback(ctx); rerr != nil {
+				pgPool.logger.Error("failed to perform rollback", zap.Error(rerr))
+			}
 			return
 		}
-		pgPool.logger.Error("failed to perform commit", zap.Error(tx.Commit(ctx)))
+		if cerr := tx.Commit(ctx); cerr != nil {
+			pgPool.logger.Error("failed to perform commit", zap.Error(cerr))
+		}
 	}()
 
 	table, err := pgPool.getTableName(ctx, tx, db, collection)
