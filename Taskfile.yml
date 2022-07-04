@@ -59,8 +59,8 @@ tasks:
   env-up-detach:
     cmds:
       - >
-        docker-compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --detach
-        postgres mongodb {{if eq OS "linux"}}tigris{{end}}
+        docker-compose up --always-recreate-deps --build --force-recreate --remove-orphans --renew-anon-volumes --detach
+        postgres mongodb tigris
 
   env-up:
     desc: "Start development environment"
@@ -113,13 +113,19 @@ tasks:
 
   test-integration:
     desc: "Run all integration tests in parallel"
-    deps: [test-integration-ferretdb, test-integration-mongodb]
+    deps: [test-integration-postgres, test-integration-tigris, test-integration-mongodb]
 
-  test-integration-ferretdb:
-    desc: "Run integration tests for FerretDB"
+  test-integration-postgres:
+    desc: "Run integration tests for PostgreSQL handler"
     cmds:
       - task: test-integration-handler
         vars: {HANDLER: "PostgreSQL", PORT: 0}
+
+  test-integration-tigris:
+    desc: "Run integration tests for Tigris handler"
+    cmds:
+      - task: test-integration-handler
+        vars: {HANDLER: "Tigris", PORT: 0}
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
@@ -130,7 +136,7 @@ tasks:
   test-integration-handler:
     dir: integration
     cmds:
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=integration-{{.HANDLER}}.txt -coverpkg=../... -port={{.PORT}}
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=integration-{{.HANDLER}}.txt -coverpkg=../... -handler={{.HANDLER}} -port={{.PORT}}
 
   bench-short:
     desc: "Benchmark for about 20 seconds (with default BENCHTIME)"

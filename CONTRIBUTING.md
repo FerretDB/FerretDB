@@ -109,7 +109,7 @@ We also have a set of "integration" tests in `integration` Go module that uses t
 and tests either a running MongoDB-compatible database (such as FerretDB or MongoDB itself)
 or in-process FerretDB.
 They allow us to ensure compatibility between FerretDB and MongoDB.
-You can run them with `task test-integration-ferretdb` for in-process FerretDB
+You can run them with `task test-integration-ferretdb` for in-process FerretDB TODO
 (meaning that integration tests start and stop FerretDB themselves),
 `task test-integration-mongodb` for MongoDB running on port 37017 (as in our development environment),
 or `task test-integration` to run both in parallel.
