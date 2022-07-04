@@ -95,7 +95,7 @@ func SetupWithOpts(t *testing.T, opts *SetupOpts) (context.Context, *mongo.Colle
 	}
 
 	// create collection explicitly in case there are no docs to insert
-	err = db.CreateCollection(ctx, collectionName)
+	err := db.CreateCollection(ctx, collectionName)
 	require.NoError(t, err)
 
 	// delete collection and (possibly) database unless test failed
