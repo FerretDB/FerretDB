@@ -47,7 +47,7 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 		path := types.NewPathFromString("value")
 		result := bson.D{{"_id", id}, {"value", nowTimestamp}}
 
-		ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+		ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
 		// store the current timestamp with $currentDate operator;
 		update := bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "timestamp"}}}}}}
@@ -247,7 +247,7 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
-				ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+				ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
 				res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
 				if tc.err != nil {
@@ -381,7 +381,7 @@ func TestUpdateFieldInc(t *testing.T) {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
-				ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+				ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
 				_, err := collection.UpdateOne(ctx, tc.filter, tc.update)
 				require.NoError(t, err)
@@ -471,7 +471,7 @@ func TestUpdateFieldInc(t *testing.T) {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
-				ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+				ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
 				_, err := collection.UpdateOne(ctx, tc.filter, tc.update)
 				require.NotNil(t, tc.err)
@@ -662,7 +662,7 @@ func TestUpdateFieldSet(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
 			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
 			if tc.err != nil {
@@ -762,7 +762,7 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx, collection := setup(t, shareddata.Composites)
+			ctx, collection := Setup(t, shareddata.Composites)
 
 			opts := options.Update().SetUpsert(true)
 			var actualUpdateStat *mongo.UpdateResult
@@ -848,7 +848,7 @@ func TestUpdateFieldUnset(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
 			opts := options.Update().SetUpsert(true)
 			var actualStat *mongo.UpdateResult
@@ -913,7 +913,7 @@ func TestUpdateFieldMixed(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
 			opts := options.Update().SetUpsert(true)
 			var actualStat *mongo.UpdateResult
