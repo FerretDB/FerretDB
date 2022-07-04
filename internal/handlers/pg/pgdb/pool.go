@@ -542,59 +542,6 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 	return &res, nil
 }
 
-// QueryDocuments returns a list of documents for given FerretDB database and collection.
-func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment string) ([]*types.Document, error) {
-	tx, err := pgPool.Begin(ctx)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-	defer func() {
-		if err != nil {
-			pgPool.logger.Error("failed to perform rollback", zap.Error(tx.Rollback(ctx)))
-			return
-		}
-		pgPool.logger.Error("failed to perform commit", zap.Error(tx.Commit(ctx)))
-	}()
-
-	table, err := pgPool.getTableName(ctx, tx, db, collection)
-	if err != nil {
-		return nil, err
-	}
-
-	sql := `SELECT _jsonb `
-	if comment != "" {
-		comment = strings.ReplaceAll(comment, "/*", "/ *")
-		comment = strings.ReplaceAll(comment, "*/", "* /")
-
-		sql += `/* ` + comment + ` */ `
-	}
-
-	sql += `FROM ` + pgx.Identifier{db, table}.Sanitize()
-
-	rows, err := tx.Query(ctx, sql)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-	defer rows.Close()
-
-	var res []*types.Document
-	for rows.Next() {
-		var b []byte
-		if err := rows.Scan(&b); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		doc, err := fjson.Unmarshal(b)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		res = append(res, doc.(*types.Document))
-	}
-
-	return res, nil
-}
-
 // SetDocumentByID sets a document by its ID.
 func (pgPool *Pool) SetDocumentByID(ctx context.Context, db, collection string, id any, doc *types.Document) (int64, error) {
 	tx, err := pgPool.Begin(ctx)

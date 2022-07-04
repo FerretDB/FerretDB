@@ -17,9 +17,10 @@ package pg
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
+
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -34,8 +35,9 @@ type sqlParam struct {
 // If collection doesn't exist it returns an empty slice and no error.
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/372
+// TODO !!! describe docs
 //
-func (h *Handler) fetch(ctx context.Context, param sqlParam) ([]*types.Document, error) {
+func (h *Handler) fetch(ctx context.Context, param sqlParam) (<-chan pgdb.FetchedDocs, error) {
 	// Special case: check if collection exists at all
 	collectionExists, err := h.pgPool.CollectionExists(ctx, param.db, param.collection)
 	if err != nil {
@@ -44,15 +46,12 @@ func (h *Handler) fetch(ctx context.Context, param sqlParam) ([]*types.Document,
 	if !collectionExists {
 		h.l.Info(
 			"Collection doesn't exist, handling a case to deal with a non-existing collection.",
-			zap.String("schema", param.db), zap.String("table", param.collection),
+			zap.String("db", param.db), zap.String("collection", param.collection),
 		)
-		return []*types.Document{}, nil
+		fetchedChan := make(chan FetchedDocs, 1)
+		close(fetchedChan)
+		return fetchedChan, nil
 	}
 
-	res, err := h.pgPool.QueryDocuments(ctx, param.db, param.collection, param.comment)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return res, nil
+	return h.pgPool.QueryDocuments(ctx, param.db, param.collection, param.comment)
 }
