@@ -88,3 +88,10 @@ var Scalars = &Values[string]{
 		// no Max key
 	},
 }
+
+// FixedScalars is an experiment and will be changed in the future.
+var FixedScalars = &Docs{
+	data: []map[string]any{
+		{"_id": "double", "value": 42.13},
+	},
+}

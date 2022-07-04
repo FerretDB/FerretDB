@@ -60,7 +60,7 @@ tasks:
     cmds:
       - >
         docker-compose up --always-recreate-deps --build --force-recreate --remove-orphans --renew-anon-volumes --detach
-        postgres mongodb tigris
+        postgres tigris mongodb
 
   env-up:
     desc: "Start development environment"
@@ -82,7 +82,8 @@ tasks:
     desc: "Fill `test.values` with data for experiments"
     dir: integration
     cmds:
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -port=FerretDB -run=TestEnvData
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}}              -handler=pg     -run=TestEnvData
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -tags=tigris -handler=tigris -run=TestEnvData ./tigris
 
   gen:
     desc: "Generate (and format) code"

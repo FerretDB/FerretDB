@@ -27,6 +27,29 @@ type Provider interface {
 	Docs() []bson.D
 }
 
+// Docs stores shared data documents as maps.
+type Docs struct {
+	data []map[string]any
+}
+
+// Docs implement Provider interface.
+func (docs *Docs) Docs() []bson.D {
+	res := make([]bson.D, len(docs.data))
+	for i, doc := range docs.data {
+		keys := maps.Keys(doc)
+		slices.Sort(keys)
+
+		d := make(bson.D, len(doc))
+		for i, k := range keys {
+			d[i] = bson.E{k, doc[k]}
+		}
+
+		res[i] = d
+	}
+
+	return res
+}
+
 // Values stores shared data documents as {"_id": key, "value": value} documents.
 type Values[idType constraints.Ordered] struct {
 	data map[idType]any
@@ -37,9 +60,9 @@ func (values *Values[idType]) Docs() []bson.D {
 	ids := maps.Keys(values.data)
 	slices.Sort(ids)
 
-	res := make([]bson.D, 0, len(values.data))
-	for _, id := range ids {
-		res = append(res, bson.D{{"_id", id}, {"value", values.data[id]}})
+	res := make([]bson.D, len(values.data))
+	for i, id := range ids {
+		res[i] = bson.D{{"_id", id}, {"value", values.data[id]}}
 	}
 
 	return res
@@ -47,5 +70,6 @@ func (values *Values[idType]) Docs() []bson.D {
 
 // check interfaces
 var (
+	_ Provider = (*Docs)(nil)
 	_ Provider = (*Values[string])(nil)
 )

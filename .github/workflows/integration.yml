@@ -22,16 +22,16 @@ env:
 
 jobs:
   test:
-    name: Test ${{ matrix.handler }}
+    name: Test ${{ matrix.name }}
     runs-on: ubuntu-20.04
 
     strategy:
       fail-fast: false
       matrix:
         include:
-          - {handler: "PostgreSQL", port: 0}
-          - {handler: "Tigris", port: 0}
-          - {handler: "MongoDB", port: 37017}
+          - {name: "PostgreSQL", handler: "pg"}
+          - {name: "Tigris", handler: "tigris"}
+          - {name: "MongoDB", port: 37017}
 
     steps:
       - name: Checkout code
