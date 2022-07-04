@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package aggregate
 
 import (
 	"fmt"
@@ -158,17 +158,29 @@ type StageField struct {
 }
 
 type Stage struct {
-	fields []StageField
-	groups []string
-	root   *FilterNode
+	fields     []StageField
+	groups     []string
+	sortFields []string
+	root       *FilterNode
+}
+
+func NewEmptyStage() Stage {
+	return Stage{[]StageField{}, []string{}, []string{}, nil}
 }
 
 func NewStage(groups []string, filterTree *FilterNode) Stage {
-	return Stage{[]StageField{}, groups, filterTree}
+	return Stage{[]StageField{}, groups, []string{}, filterTree}
 }
 
 func (stage *Stage) AddField(name, type_, contents string) {
 	stage.fields = append(stage.fields, StageField{name, type_, contents})
+}
+
+func (stage *Stage) AddSortField(field string, direction string) {
+	if direction != "" {
+		field = field + " " + direction
+	}
+	stage.sortFields = append(stage.sortFields, field)
 }
 
 func (stage *Stage) FieldContents() []string {

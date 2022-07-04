@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package aggregate
 
 import (
 	"fmt"
 	"strings"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -87,8 +88,8 @@ func (mp *GroupParser) parseWithParent(key string, value interface{}, parent str
 		switch param := value.(type) {
 		case string:
 			if !strings.HasPrefix(param, "$") {
-				return NewWriteErrorMsg(
-					ErrFailedToParse,
+				return common.NewWriteErrorMsg(
+					common.ErrFailedToParse,
 					fmt.Sprintf("Invalid '%s' parameter to $sum: must start with $ (temporarily)", param),
 				)
 			}
@@ -112,8 +113,8 @@ func (mp *GroupParser) parseWithParent(key string, value interface{}, parent str
 			mp.AddField(parent, "float", contents)
 
 		case *types.Array:
-			return NewWriteErrorMsg(
-				ErrFailedToParse,
+			return common.NewWriteErrorMsg(
+				common.ErrFailedToParse,
 				"The $sum accumulator is a unary operator",
 			)
 		}
@@ -123,8 +124,8 @@ func (mp *GroupParser) parseWithParent(key string, value interface{}, parent str
 		case string:
 			if !strings.HasPrefix(param, "$") {
 				// FIXME handle constant expressions (?)
-				return NewWriteErrorMsg(
-					ErrFailedToParse,
+				return common.NewWriteErrorMsg(
+					common.ErrFailedToParse,
 					fmt.Sprintf("Invalid '%s' parameter to $avg: must start with $ (temporarily)", param),
 				)
 			}
@@ -148,16 +149,16 @@ func (mp *GroupParser) parseWithParent(key string, value interface{}, parent str
 			mp.AddField(parent, "float", contents)
 
 		case *types.Array:
-			return NewWriteErrorMsg(
-				ErrFailedToParse,
+			return common.NewWriteErrorMsg(
+				common.ErrFailedToParse,
 				"The $avg accumulator is a unary operator",
 			)
 		}
 
 	default:
 		if strings.HasPrefix(key, "$") {
-			return NewWriteErrorMsg(
-				ErrFailedToParse,
+			return common.NewWriteErrorMsg(
+				common.ErrFailedToParse,
 				fmt.Sprintf(
 					"Unknown top level operator: %s. Expected a valid aggregate modifier", key,
 				),
@@ -175,7 +176,7 @@ func (mp *GroupParser) parseWithParent(key string, value interface{}, parent str
 			}
 
 		default:
-			return NewErrorMsg(ErrFailedToParse, fmt.Sprintf("Could not parse $group of type: %T", v))
+			return common.NewErrorMsg(common.ErrFailedToParse, fmt.Sprintf("Could not parse $group of type: %T", v))
 		}
 	}
 
@@ -190,13 +191,13 @@ func (mp *GroupParser) parseOperators(doc *types.Document, parent string) (*stri
 			params := value.(*types.Document)
 			date, err := params.Get("date")
 			if err != nil {
-				return nil, fmt.Errorf("Error getting 'date': %w", err)
+				return nil, fmt.Errorf("error getting 'date': %w", err)
 			}
 			// FIXME support multiple formats - https://www.mongodb.com/docs/manual/reference/operator/aggregation/dateToString/
 			// TODO format := params.Get("format")
 			if date == nil {
-				return nil, NewWriteErrorMsg(
-					ErrFailedToParse,
+				return nil, common.NewWriteErrorMsg(
+					common.ErrFailedToParse,
 					"Missing 'date' parameter to $dateToString",
 				)
 			}
@@ -239,8 +240,8 @@ func (mp *GroupParser) parseOperators(doc *types.Document, parent string) (*stri
 			return &res, nil
 
 		default:
-			return nil, NewWriteErrorMsg(
-				ErrFailedToParse,
+			return nil, common.NewWriteErrorMsg(
+				common.ErrFailedToParse,
 				fmt.Sprintf("Unsupported operator: %s", key),
 			)
 		}
@@ -265,4 +266,45 @@ func ParseGroupStage(group *types.Document) (*Stage, error) {
 	}
 
 	return &stage, nil
+}
+
+func GetNumericValue(field string) string {
+	return fmt.Sprintf(`(CASE WHEN (%s ? '$f') THEN (%s->>'$f')::numeric ELSE (%s)::numeric END)`, field, field, field)
+}
+
+func FormatFieldWithAncestor(field string, parents []string, ancestor string) string {
+	newParents := make([]string, len(parents)+1)
+	copy(newParents[1:], parents)
+	newParents[0] = ancestor
+	return FormatField(field, newParents)
+}
+
+func FormatField(field string, parents []string) string {
+	return FormatFieldWithSeparators(field, parents, "->", "->>")
+}
+
+func FormatFieldWithSeparators(field string, parents []string, initSep string, otherSep string) string {
+	if len(parents) == 0 {
+		return field
+	}
+	res := ""
+	fields := parents
+	if field != "" {
+		fields = append(fields, field)
+	}
+	for i, p := range fields {
+		sep := ""
+		if i < len(fields)-1 {
+			sep = initSep
+			if i > 0 {
+				sep = otherSep
+			}
+		}
+		fmtParent := p
+		if i > 0 {
+			fmtParent = `'` + p + `'`
+		}
+		res += fmt.Sprintf("%s%s", fmtParent, sep)
+	}
+	return res
 }

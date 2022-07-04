@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package aggregate
 
 import (
 	"fmt"
 	"strings"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -66,7 +67,7 @@ func (mp *MatchParser) parse(node *FilterNode, key string, field string, value i
 	case "$and":
 		arr, ok := value.(*types.Array)
 		if !ok {
-			return NewErrorMsg(ErrBadValue, "$and must be an array")
+			return common.NewErrorMsg(common.ErrBadValue, "$and must be an array")
 		}
 
 		opNode := node.AddOp("AND")
@@ -80,7 +81,7 @@ func (mp *MatchParser) parse(node *FilterNode, key string, field string, value i
 	case "$or":
 		arr, ok := value.(*types.Array)
 		if !ok {
-			return NewErrorMsg(ErrBadValue, "$or must be an array")
+			return common.NewErrorMsg(common.ErrBadValue, "$or must be an array")
 		}
 
 		opNode := node.AddOp("OR")
@@ -98,7 +99,7 @@ func (mp *MatchParser) parse(node *FilterNode, key string, field string, value i
 		if value == false {
 			node = node.AddUnaryOp("NOT")
 		} else if value != true {
-			return NewErrorMsg(ErrBadValue, "$exists must be true or false")
+			return common.NewErrorMsg(common.ErrBadValue, "$exists must be true or false")
 		}
 		field, parents := ParseField(field)
 		node.AddFilter(mp.NextIndex(), "", parents, "?", field)
@@ -106,7 +107,7 @@ func (mp *MatchParser) parse(node *FilterNode, key string, field string, value i
 	case "$all":
 		arr, ok := value.(*types.Array)
 		if !ok {
-			return NewErrorMsg(ErrBadValue, "$all must be an array")
+			return common.NewErrorMsg(common.ErrBadValue, "$all must be an array")
 		}
 
 		arrVals := []string{}
@@ -119,7 +120,7 @@ func (mp *MatchParser) parse(node *FilterNode, key string, field string, value i
 	case "$in", "$nin":
 		arr, ok := value.(*types.Array)
 		if !ok {
-			return NewErrorMsg(ErrBadValue, key+" must be an array")
+			return common.NewErrorMsg(common.ErrBadValue, key+" must be an array")
 		}
 
 		arrVals := []string{}
@@ -138,8 +139,8 @@ func (mp *MatchParser) parse(node *FilterNode, key string, field string, value i
 
 	default:
 		if strings.HasPrefix(key, "$") {
-			return NewWriteErrorMsg(
-				ErrFailedToParse,
+			return common.NewWriteErrorMsg(
+				common.ErrFailedToParse,
 				fmt.Sprintf(
 					"Unknown top level operator: %s. Expected a valid aggregate modifier", key,
 				),

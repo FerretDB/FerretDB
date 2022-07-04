@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/aggregate"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -105,7 +106,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	stages := []*common.Stage{}
+	stages := []*aggregate.Stage{}
 
 	for i := 0; i < pipeline.Len(); i++ {
 		p := must.NotFail(pipeline.Get(i)).(*types.Document)
@@ -113,7 +114,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			switch pipelineOp {
 			case "$match":
 				match := must.NotFail(p.Get(pipelineOp)).(*types.Document)
-				matchStage, err := common.ParseMatchStage(match)
+				matchStage, err := aggregate.ParseMatchStage(match)
 				if err != nil {
 					return nil, err
 				}
@@ -126,7 +127,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 			case "$group":
 				group := must.NotFail(p.Get(pipelineOp)).(*types.Document)
-				groupStage, err := common.ParseGroupStage(group)
+				groupStage, err := aggregate.ParseGroupStage(group)
 				if err != nil {
 					return nil, err
 				}
@@ -136,12 +137,11 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 				stages = append(stages, groupStage)
 
 			case "$sort":
-				// sort := must.NotFail(p.Get(pipelineOp)).(*types.Document)
-				// sortStr, err := common.AggregateSort(sort)
-				// if err != nil {
-				// 	return nil, err
-				// }
-				// order = *sortStr
+				sort := must.NotFail(p.Get(pipelineOp)).(*types.Document)
+				err := aggregate.AddSortStage(&stages, sort)
+				if err != nil {
+					return nil, err
+				}
 
 			default:
 				return nil, common.NewErrorMsg(common.ErrBadValue, fmt.Sprintf("unknown pipeline operator: %s", pipelineOp))
@@ -151,7 +151,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	table := `"` + sp.db + `"."` + sp.collection + `"`
 
-	sql, queryValues := common.Wrap(table, stages)
+	sql, queryValues := aggregate.Wrap(table, stages)
 
 	fmt.Printf(" *** SQL: %s %v %v\n", sql, queryValues, len(queryValues))
 

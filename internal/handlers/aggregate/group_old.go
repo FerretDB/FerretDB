@@ -12,50 +12,48 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package aggregate
 
-import "fmt"
+// func GetNumericValue(field string) string {
+// 	return fmt.Sprintf(`(CASE WHEN (%s ? '$f') THEN (%s->>'$f')::numeric ELSE (%s)::numeric END)`, field, field, field)
+// }
 
-func GetNumericValue(field string) string {
-	return fmt.Sprintf(`(CASE WHEN (%s ? '$f') THEN (%s->>'$f')::numeric ELSE (%s)::numeric END)`, field, field, field)
-}
+// func FormatFieldWithAncestor(field string, parents []string, ancestor string) string {
+// 	newParents := make([]string, len(parents)+1)
+// 	copy(newParents[1:], parents)
+// 	newParents[0] = ancestor
+// 	return FormatField(field, newParents)
+// }
 
-func FormatFieldWithAncestor(field string, parents []string, ancestor string) string {
-	newParents := make([]string, len(parents)+1)
-	copy(newParents[1:], parents)
-	newParents[0] = ancestor
-	return FormatField(field, newParents)
-}
+// func FormatField(field string, parents []string) string {
+// 	return FormatFieldWithSeparators(field, parents, "->", "->>")
+// }
 
-func FormatField(field string, parents []string) string {
-	return FormatFieldWithSeparators(field, parents, "->", "->>")
-}
-
-func FormatFieldWithSeparators(field string, parents []string, initSep string, otherSep string) string {
-	if len(parents) == 0 {
-		return field
-	}
-	res := ""
-	fields := parents
-	if field != "" {
-		fields = append(fields, field)
-	}
-	for i, p := range fields {
-		sep := ""
-		if i < len(fields)-1 {
-			sep = initSep
-			if i > 0 {
-				sep = otherSep
-			}
-		}
-		fmtParent := p
-		if i > 0 {
-			fmtParent = `'` + p + `'`
-		}
-		res += fmt.Sprintf("%s%s", fmtParent, sep)
-	}
-	return res
-}
+// func FormatFieldWithSeparators(field string, parents []string, initSep string, otherSep string) string {
+// 	if len(parents) == 0 {
+// 		return field
+// 	}
+// 	res := ""
+// 	fields := parents
+// 	if field != "" {
+// 		fields = append(fields, field)
+// 	}
+// 	for i, p := range fields {
+// 		sep := ""
+// 		if i < len(fields)-1 {
+// 			sep = initSep
+// 			if i > 0 {
+// 				sep = otherSep
+// 			}
+// 		}
+// 		fmtParent := p
+// 		if i > 0 {
+// 			fmtParent = `'` + p + `'`
+// 		}
+// 		res += fmt.Sprintf("%s%s", fmtParent, sep)
+// 	}
+// 	return res
+// }
 
 // type GroupContext struct {
 // 	parents   []string
