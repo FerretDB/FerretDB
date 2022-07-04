@@ -35,7 +35,7 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 	t.Parallel()
 
 	t.Run("readBack", func(t *testing.T) {
-		maxDifference := time.Duration(2 * time.Second)
+		maxDifference := time.Duration(10 * time.Second)
 		nowTimestamp := primitive.Timestamp{T: uint32(time.Now().Unix()), I: uint32(0)}
 		id := "string-empty"
 
@@ -83,7 +83,7 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 
 	t.Run("currentDate", func(t *testing.T) {
 		// maxDifference is a maximum amount of seconds can differ the value in placeholder from actual value
-		maxDifference := time.Duration(60 * time.Second)
+		maxDifference := time.Duration(2 * time.Minute)
 
 		now := primitive.NewDateTimeFromTime(time.Now().UTC())
 		nowTimestamp := primitive.Timestamp{T: uint32(time.Now().UTC().Unix()), I: uint32(0)}
