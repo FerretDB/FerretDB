@@ -198,6 +198,10 @@ func (stage *Stage) FiltersToSql(json bool) string {
 	return stage.root.ToSql(json)
 }
 
+func (stage *Stage) SortToSql() string {
+	return strings.Join(stage.sortFields, ", ")
+}
+
 func (stage *Stage) ToSql(table string, json bool) string {
 	fields := "*"
 	if len(stage.fields) > 0 {

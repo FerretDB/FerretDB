@@ -33,6 +33,7 @@ func TestSimpleSort(t *testing.T) {
 
 	stage := stages[0]
 	assert.Equal(t, "field", stage.sortFields[0])
+	assert.Equal(t, "field", stage.SortToSql())
 }
 
 func TestDescendingSort(t *testing.T) {
@@ -45,6 +46,7 @@ func TestDescendingSort(t *testing.T) {
 
 	stage := stages[0]
 	assert.Equal(t, "field DESC", stage.sortFields[0])
+	assert.Equal(t, "field DESC", stage.SortToSql())
 }
 
 func TestCompositeSortOrder(t *testing.T) {
@@ -59,6 +61,8 @@ func TestCompositeSortOrder(t *testing.T) {
 	assert.Equal(t, "field1 DESC", stage.sortFields[0])
 	assert.Equal(t, "field2", stage.sortFields[1])
 	assert.Equal(t, "field3", stage.sortFields[2])
+	assert.Equal(t, "field1 DESC, field2, field3", stage.SortToSql())
+
 }
 
 func TestInvalidSort(t *testing.T) {
