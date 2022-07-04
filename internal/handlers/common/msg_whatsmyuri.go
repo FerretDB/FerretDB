@@ -12,49 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pg
+package common
 
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgDropDatabase implements HandlerInterface.
-func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	common.Ignored(document, h.l, "writeConcern", "comment")
-
-	var db string
-	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-
-	res := must.NotFail(types.NewDocument())
-	err = h.pgPool.DropDatabase(ctx, db)
-	switch err {
-	case nil:
-		res.Set("dropped", db)
-	case pgdb.ErrSchemaNotExist:
-		// nothing
-	default:
-		return nil, lazyerrors.Error(err)
-	}
-
-	res.Set("ok", float64(1))
-
+// MsgWhatsMyURI is a common implementation of the whatsMyURI command.
+func MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{res},
+
+	connInfo := conninfo.GetConnInfo(ctx)
+	var peerAddr string
+	if connInfo.PeerAddr != nil {
+		peerAddr = connInfo.PeerAddr.String()
+	}
+
+	err := reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"you", peerAddr,
+			"ok", float64(1),
+		))},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
