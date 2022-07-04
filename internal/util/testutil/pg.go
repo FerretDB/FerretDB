@@ -84,7 +84,7 @@ func Schema(ctx context.Context, tb testing.TB, pool *pgdb.Pool) string {
 	tb.Logf("Using schema %q.", schema)
 
 	err := pool.DropDatabase(ctx, schema)
-	if err == pgdb.ErrTableNotExist {
+	if err == pgdb.ErrSchemaNotExist {
 		err = nil
 	}
 	require.NoError(tb, err)
