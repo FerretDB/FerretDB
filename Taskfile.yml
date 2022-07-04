@@ -78,6 +78,12 @@ tasks:
     cmds:
       - docker-compose down --remove-orphans --volumes
 
+  env-data:
+    desc: "Fill `test.values` with data for experiments"
+    dir: integration
+    cmds:
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -port=FerretDB -run=TestEnvData
+
   gen:
     desc: "Generate (and format) code"
     cmds:
