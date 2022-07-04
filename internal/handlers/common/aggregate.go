@@ -103,6 +103,19 @@ func (mp *MatchParser) parse(node *FilterNode, key string, field string, value i
 		field, parents := ParseField(field)
 		node.AddFilter(mp.NextIndex(), parents, "?", field)
 
+	case "$all":
+		arr, ok := value.(*types.Array)
+		if !ok {
+			return NewErrorMsg(ErrBadValue, "$all must be an array")
+		}
+
+		arrVals := []string{}
+		for i := 0; i < arr.Len(); i++ {
+			arrVals = append(arrVals, fmt.Sprintf("%v", must.NotFail(arr.Get(i))))
+		}
+
+		node.AddFilter(mp.NextIndex(), field, "@> (%s)", arrVals)
+
 	case "$in", "$nin":
 		arr, ok := value.(*types.Array)
 		if !ok {
