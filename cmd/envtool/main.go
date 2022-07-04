@@ -193,7 +193,7 @@ func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
 	return nil
 }
 
-// setupPostgres configures Tigris.
+// setupTigris configures Tigris.
 func setupTigris(ctx context.Context, logger *zap.SugaredLogger) error {
 	logger = logger.Named("tigris")
 
