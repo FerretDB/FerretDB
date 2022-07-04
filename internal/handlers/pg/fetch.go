@@ -48,7 +48,7 @@ func (h *Handler) fetch(ctx context.Context, param sqlParam) (<-chan pgdb.Fetche
 			"Collection doesn't exist, handling a case to deal with a non-existing collection.",
 			zap.String("db", param.db), zap.String("collection", param.collection),
 		)
-		fetchedChan := make(chan FetchedDocs, 1)
+		fetchedChan := make(chan pgdb.FetchedDocs, 1)
 		close(fetchedChan)
 		return fetchedChan, nil
 	}
