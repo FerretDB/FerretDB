@@ -12,28 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pgdb
+// Use _test package to avoid import cycle with testutil.
+package pgdb_test
 
 import (
 	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestQueryDocuments(t *testing.T) {
 	ctx := testutil.Ctx(t)
 	pool := testutil.Pool(ctx, t, nil, zaptest.NewLogger(t))
-
-	schemaName := testutil.SchemaName(t)
-	tableName := testutil.TableName(t)
-
-	err := pool.CreateDatabase(ctx, schemaName)
-	require.NoError(t, err)
-
-	err = pool.CreateCollection(ctx, schemaName, tableName)
-	require.NoError(t, err)
+	dbName := testutil.Schema(ctx, t, pool)
+	collectionName := testutil.Table(ctx, t, pool, dbName)
 
 	// 0 docs
 	// 1 doc
@@ -42,7 +38,12 @@ func TestQueryDocuments(t *testing.T) {
 
 	// chan full
 
-	//	pool.InsertDocument(ctx, schemaName, tableName,)
+	doc, err := types.NewDocument("id", "1")
+	require.NoError(t, err)
 
-	//	pool.QueryDocuments()
+	err = pool.InsertDocument(ctx, dbName, collectionName, doc)
+	require.NoError(t, err)
+
+	_, err = pool.QueryDocuments(ctx, dbName, collectionName, "")
+	require.NoError(t, err)
 }

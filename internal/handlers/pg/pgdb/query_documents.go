@@ -98,7 +98,7 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment 
 				res = append(res, doc.(*types.Document))
 			}
 
-			if ctxCanceled = !writeFetched(ctx, fetchedChan, FetchedDocs{Err: lazyerrors.Error(err)}); ctxCanceled {
+			if ctxCanceled = !writeFetched(ctx, fetchedChan, FetchedDocs{Docs: res}); ctxCanceled {
 				return
 			}
 		}
