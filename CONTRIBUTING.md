@@ -58,7 +58,6 @@ With `task` installed, you may do the following:
 1. Install development tools with `task init`.
 2. Download required Docker images with `task env-pull`.
 3. Start the development environment with `task env-up`.
-   This will start PostgreSQL and MongoDB containers, filling them with identical sets of test data.
 4. Run all tests in another terminal window with `task test`.
 5. Start FerretDB with `task run`.
    This will start it in a development mode where all requests are handled by FerretDB, but also routed to MongoDB.
@@ -110,8 +109,9 @@ and tests either a running MongoDB-compatible database (such as FerretDB or Mong
 or in-process FerretDB (meaning that integration tests start and stop FerretDB themselves) with given handler.
 They allow us to ensure compatibility between FerretDB and MongoDB.
 You can run them with:
-* `task test-integration-pg` for in-process FerretDB with PostgreSQL handler;
-* `task test-integration-tigris` for in-process FerretDB with Tigris handler;
+
+* `task test-integration-pg` for in-process FerretDB with `pg` handler;
+* `task test-integration-tigris` for in-process FerretDB with `tigris` handler;
 * `task test-integration-mongodb` for MongoDB running on port 37017 (as in our development environment),
 * or `task test-integration` to run all in parallel.
 
