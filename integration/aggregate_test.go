@@ -296,7 +296,6 @@ func TestSimpleSort(t *testing.T) {
 	}, results)
 }
 
-// FIXME this is not working when we group then sort, json is true but the field is no longer json
 func TestGroupAndSort(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup(t)
