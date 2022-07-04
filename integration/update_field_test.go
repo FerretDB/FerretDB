@@ -103,20 +103,20 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 			id       string
 			update   bson.D
 			expected bson.D
+			stat     *mongo.UpdateResult
 			paths    []types.Path
 			err      *mongo.WriteError
-			stat     *mongo.UpdateResult
 			alt      string
 		}{
 			"DocumentEmpty": {
-				id:     "double",
-				update: bson.D{{"$currentDate", bson.D{}}},
+				id:       "double",
+				update:   bson.D{{"$currentDate", bson.D{}}},
+				expected: bson.D{{"_id", "double"}, {"value", float64(42.13)}},
 				stat: &mongo.UpdateResult{
 					MatchedCount:  1,
 					ModifiedCount: 0,
 					UpsertedCount: 0,
 				},
-				expected: bson.D{{"_id", "double"}, {"value", float64(42.13)}},
 			},
 			"ArrayEmpty": {
 				id:     "double",
@@ -149,19 +149,20 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 				alt: "Modifiers operate on fields but we found another type instead",
 			},
 			"BoolTrue": {
-				id:     "double",
-				update: bson.D{{"$currentDate", bson.D{{"value", true}}}},
+				id:       "double",
+				update:   bson.D{{"$currentDate", bson.D{{"value", true}}}},
+				expected: bson.D{{"_id", "double"}, {"value", now}},
 				stat: &mongo.UpdateResult{
 					MatchedCount:  1,
 					ModifiedCount: 1,
 					UpsertedCount: 0,
 				},
-				paths:    []types.Path{types.NewPathFromString("value")},
-				expected: bson.D{{"_id", "double"}, {"value", now}},
+				paths: []types.Path{types.NewPathFromString("value")},
 			},
 			"BoolTwoTrue": {
-				id:     "double",
-				update: bson.D{{"$currentDate", bson.D{{"value", true}, {"unexistent", true}}}},
+				id:       "double",
+				update:   bson.D{{"$currentDate", bson.D{{"value", true}, {"unexistent", true}}}},
+				expected: bson.D{{"_id", "double"}, {"value", now}, {"unexistent", now}},
 				stat: &mongo.UpdateResult{
 					MatchedCount:  1,
 					ModifiedCount: 1,
@@ -171,18 +172,17 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 					types.NewPathFromString("value"),
 					types.NewPathFromString("unexistent"),
 				},
-				expected: bson.D{{"_id", "double"}, {"value", now}, {"unexistent", now}},
 			},
 			"BoolFalse": {
-				id:     "double",
-				update: bson.D{{"$currentDate", bson.D{{"value", false}}}},
+				id:       "double",
+				update:   bson.D{{"$currentDate", bson.D{{"value", false}}}},
+				expected: bson.D{{"_id", "double"}, {"value", now}},
 				stat: &mongo.UpdateResult{
 					MatchedCount:  1,
 					ModifiedCount: 1,
 					UpsertedCount: 0,
 				},
-				paths:    []types.Path{types.NewPathFromString("value")},
-				expected: bson.D{{"_id", "double"}, {"value", now}},
+				paths: []types.Path{types.NewPathFromString("value")},
 			},
 			"Int32": {
 				id:     "double",
@@ -193,15 +193,15 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 				},
 			},
 			"Timestamp": {
-				id:     "double",
-				update: bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "timestamp"}}}}}},
+				id:       "double",
+				update:   bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "timestamp"}}}}}},
+				expected: bson.D{{"_id", "double"}, {"value", nowTimestamp}},
 				stat: &mongo.UpdateResult{
 					MatchedCount:  1,
 					ModifiedCount: 1,
 					UpsertedCount: 0,
 				},
-				paths:    []types.Path{types.NewPathFromString("value")},
-				expected: bson.D{{"_id", "double"}, {"value", nowTimestamp}},
+				paths: []types.Path{types.NewPathFromString("value")},
 			},
 			"TimestampCapitalised": {
 				id:     "double",
@@ -213,15 +213,15 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 				alt: "The '$type' string field is required to be 'date' or 'timestamp'",
 			},
 			"Date": {
-				id:     "double",
-				update: bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "date"}}}}}},
+				id:       "double",
+				update:   bson.D{{"$currentDate", bson.D{{"value", bson.D{{"$type", "date"}}}}}},
+				expected: bson.D{{"_id", "double"}, {"value", now}},
 				stat: &mongo.UpdateResult{
 					MatchedCount:  1,
 					ModifiedCount: 1,
 					UpsertedCount: 0,
 				},
-				paths:    []types.Path{types.NewPathFromString("value")},
-				expected: bson.D{{"_id", "double"}, {"value", now}},
+				paths: []types.Path{types.NewPathFromString("value")},
 			},
 			"WrongType": {
 				id:     "double",
@@ -233,15 +233,15 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 				alt: "The '$type' string field is required to be 'date' or 'timestamp'",
 			},
 			"NoField": {
-				id:     "double",
-				update: bson.D{{"$currentDate", bson.D{{"unexsistent", bson.D{{"$type", "date"}}}}}},
+				id:       "double",
+				update:   bson.D{{"$currentDate", bson.D{{"unexsistent", bson.D{{"$type", "date"}}}}}},
+				expected: bson.D{{"_id", "sdouble"}, {"value", 42.13}, {"unexsistent", now}},
 				stat: &mongo.UpdateResult{
 					MatchedCount:  1,
 					ModifiedCount: 1,
 					UpsertedCount: 0,
 				},
-				paths:    []types.Path{types.NewPathFromString("unexsistent")},
-				expected: bson.D{{"_id", "double"}, {"value", 42.13}, {"unexsistent", now}},
+				paths: []types.Path{types.NewPathFromString("unexsistent")},
 			},
 			"UnrecognizedOption": {
 				id: "array",
@@ -506,12 +506,12 @@ func TestUpdateFieldSet(t *testing.T) {
 		"Many": {
 			id:     "string",
 			update: bson.D{{"$set", bson.D{{"foo", int32(1)}, {"bar", bson.A{}}}}},
+			result: bson.D{{"_id", "string"}, {"value", "foo"}, {"bar", bson.A{}}, {"foo", int32(1)}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 1,
 				UpsertedCount: 0,
 			},
-			result: bson.D{{"_id", "string"}, {"value", "foo"}, {"bar", bson.A{}}, {"foo", int32(1)}},
 		},
 		"NilOperand": {
 			id:     "string",
@@ -576,82 +576,82 @@ func TestUpdateFieldSet(t *testing.T) {
 		"FieldNotExist": {
 			id:     "string",
 			update: bson.D{{"$set", bson.D{{"foo", int32(1)}}}},
+			result: bson.D{{"_id", "string"}, {"value", "foo"}, {"foo", int32(1)}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 1,
 				UpsertedCount: 0,
 			},
-			result: bson.D{{"_id", "string"}, {"value", "foo"}, {"foo", int32(1)}},
 		},
 		"Double": {
 			id:     "double",
 			update: bson.D{{"$set", bson.D{{"value", float64(1)}}}},
+			result: bson.D{{"_id", "double"}, {"value", float64(1)}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 1,
 				UpsertedCount: 0,
 			},
-			result: bson.D{{"_id", "double"}, {"value", float64(1)}},
 		},
 		"NaN": {
 			id:     "double",
 			update: bson.D{{"$set", bson.D{{"value", math.NaN()}}}},
+			result: bson.D{{"_id", "double"}, {"value", math.NaN()}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 1,
 				UpsertedCount: 0,
 			},
-			result: bson.D{{"_id", "double"}, {"value", math.NaN()}},
 		},
 		"EmptyArray": {
 			id:     "double",
 			update: bson.D{{"$set", bson.D{{"value", bson.A{}}}}},
+			result: bson.D{{"_id", "double"}, {"value", bson.A{}}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 1,
 				UpsertedCount: 0,
 			},
-			result: bson.D{{"_id", "double"}, {"value", bson.A{}}},
 		},
 		"Null": {
 			id:     "double",
 			update: bson.D{{"$set", bson.D{{"value", nil}}}},
+			result: bson.D{{"_id", "double"}, {"value", nil}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 1,
 				UpsertedCount: 0,
 			},
-			result: bson.D{{"_id", "double"}, {"value", nil}},
 		},
 		"Int32": {
 			id:     "double",
 			update: bson.D{{"$set", bson.D{{"value", int32(1)}}}},
+			result: bson.D{{"_id", "double"}, {"value", int32(1)}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 1,
 				UpsertedCount: 0,
 			},
-			result: bson.D{{"_id", "double"}, {"value", int32(1)}},
 		},
 		"Inf": {
 			id:     "double",
 			update: bson.D{{"$set", bson.D{{"value", math.Inf(+1)}}}},
+			result: bson.D{{"_id", "double"}, {"value", math.Inf(+1)}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 1,
 				UpsertedCount: 0,
 			},
-			result: bson.D{{"_id", "double"}, {"value", math.Inf(+1)}},
 		},
 		"SetTwoFields": {
 			id:     "int32-zero",
 			update: bson.D{{"$set", bson.D{{"foo", int32(12)}, {"value", math.NaN()}}}},
+			result: bson.D{{"_id", "int32-zero"}, {"value", math.NaN()}, {"foo", int32(12)}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 1,
 				UpsertedCount: 0,
 			},
-			result: bson.D{{"_id", "int32-zero"}, {"value", math.NaN()}, {"foo", int32(12)}},
 		},
 	} {
 		name, tc := name, tc
@@ -794,40 +794,40 @@ func TestUpdateFieldUnset(t *testing.T) {
 	for name, tc := range map[string]struct {
 		filter   bson.D
 		update   bson.D
+		expected bson.D
 		stat     *mongo.UpdateResult
 		err      *mongo.WriteError
-		expected bson.D
 		alt      string
 	}{
 		"String": {
-			filter: bson.D{{"_id", "string"}},
-			update: bson.D{{"$unset", bson.D{{"value", int32(1)}}}},
+			filter:   bson.D{{"_id", "string"}},
+			update:   bson.D{{"$unset", bson.D{{"value", int32(1)}}}},
+			expected: bson.D{{"_id", "string"}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 1,
 				UpsertedCount: 0,
 			},
-			expected: bson.D{{"_id", "string"}},
 		},
 		"Empty": {
-			filter: bson.D{{"_id", "string"}},
-			update: bson.D{{"$unset", bson.D{}}},
+			filter:   bson.D{{"_id", "string"}},
+			update:   bson.D{{"$unset", bson.D{}}},
+			expected: bson.D{{"_id", "string"}, {"value", "foo"}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 0,
 				UpsertedCount: 0,
 			},
-			expected: bson.D{{"_id", "string"}, {"value", "foo"}},
 		},
 		"Field": {
-			filter: bson.D{{"_id", "document-composite-unset-field"}},
-			update: bson.D{{"$unset", bson.D{{"value", bson.D{{"array", int32(1)}}}}}},
+			filter:   bson.D{{"_id", "document-composite-unset-field"}},
+			update:   bson.D{{"$unset", bson.D{{"value", bson.D{{"array", int32(1)}}}}}},
+			expected: bson.D{{"_id", "document-composite-unset-field"}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  0,
 				ModifiedCount: 0,
 				UpsertedCount: 1,
 			},
-			expected: bson.D{{"_id", "document-composite-unset-field"}},
 		},
 		"EmptyArray": {
 			filter: bson.D{{"_id", "document-composite"}},
