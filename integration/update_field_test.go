@@ -235,7 +235,7 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 			"NoField": {
 				id:       "double",
 				update:   bson.D{{"$currentDate", bson.D{{"unexsistent", bson.D{{"$type", "date"}}}}}},
-				expected: bson.D{{"_id", "sdouble"}, {"value", 42.13}, {"unexsistent", now}},
+				expected: bson.D{{"_id", "double"}, {"value", 42.13}, {"unexsistent", now}},
 				stat: &mongo.UpdateResult{
 					MatchedCount:  1,
 					ModifiedCount: 1,
