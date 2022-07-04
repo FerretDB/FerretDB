@@ -30,7 +30,7 @@ import (
 
 func TestQueryUnknownFilterOperator(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars)
+	ctx, collection := Setup(t, shareddata.Scalars)
 
 	filter := bson.D{{"value", bson.D{{"$someUnknownOperator", 42}}}}
 	errExpected := mongo.CommandError{Code: 2, Name: "BadValue", Message: "unknown operator: $someUnknownOperator"}
@@ -42,7 +42,7 @@ func TestQuerySort(t *testing.T) {
 	t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/457")
 
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
 		sort        bson.D
@@ -170,7 +170,7 @@ func TestQuerySort(t *testing.T) {
 
 // TODO: https://github.com/FerretDB/FerretDB/issues/636
 func TestQuerySortValue(t *testing.T) {
-	ctx, collection := setup(t, shareddata.Scalars)
+	ctx, collection := Setup(t, shareddata.Scalars)
 
 	for name, tc := range map[string]struct {
 		sort        bson.D
@@ -310,7 +310,7 @@ func TestQuerySortValue(t *testing.T) {
 
 func TestQueryCount(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
 		command  any
@@ -363,7 +363,7 @@ func TestQueryCount(t *testing.T) {
 
 func TestQueryBadFindType(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
 		command bson.D
@@ -527,7 +527,7 @@ func TestQueryBadFindType(t *testing.T) {
 
 func TestQueryBadSortType(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
 		command    bson.D
@@ -589,7 +589,7 @@ func TestQueryBadSortType(t *testing.T) {
 func TestQueryExactMatches(t *testing.T) {
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
-	ctx, collection := setup(t, providers...)
+	ctx, collection := Setup(t, providers...)
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{
@@ -647,7 +647,7 @@ func TestQueryExactMatches(t *testing.T) {
 
 func TestDotNotation(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := Setup(t)
 
 	_, err := collection.InsertMany(
 		ctx,
@@ -719,7 +719,7 @@ func TestDotNotation(t *testing.T) {
 func TestQueryNonExistingCollection(t *testing.T) {
 	t.Parallel()
 
-	ctx, collection := setup(t)
+	ctx, collection := Setup(t)
 
 	cursor, err := collection.Database().Collection("doesnotexist").Find(ctx, bson.D{})
 	require.NoError(t, err)
