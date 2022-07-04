@@ -25,7 +25,7 @@ import (
 
 func TestCommandsDiagnosticGetLog(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setupWithOpts(t, &setupOpts{
+	ctx, collection, _ := setupWithOpts(t, &setupOpts{
 		databaseName: "admin",
 	})
 

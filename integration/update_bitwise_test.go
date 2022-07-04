@@ -12,16 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dummy
+package integration
 
-import (
-	"context"
+import "testing"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/wire"
-)
-
-// MsgWhatsMyURI implements HandlerInterface.
-func (h *Handler) MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.MsgWhatsMyURI(ctx, msg)
+func TestUpdateBitwiseBit(t *testing.T) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/821
 }

@@ -18,10 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgx/v4"
-	"go.uber.org/zap"
-
-	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -90,22 +86,15 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 // insert prepares and executes actual INSERT request to Postgres.
 func (h *Handler) insert(ctx context.Context, sp sqlParam, doc any) error {
-	created, err := h.pgPool.CreateTableIfNotExist(ctx, sp.db, sp.collection)
-	if err != nil {
-		return err
-	}
-	if created {
-		h.l.Info("Created table.", zap.String("schema", sp.db), zap.String("table", sp.collection))
-	}
-
-	d := doc.(*types.Document)
-	sql := fmt.Sprintf("INSERT INTO %s (_jsonb) VALUES ($1)", pgx.Identifier{sp.db, sp.collection}.Sanitize())
-	b, err := fjson.Marshal(d)
-	if err != nil {
-		return lazyerrors.Error(err)
+	d, ok := doc.(*types.Document)
+	if !ok {
+		return common.NewErrorMsg(
+			common.ErrBadValue,
+			fmt.Sprintf("document has invalid type %s", common.AliasFromType(doc)),
+		)
 	}
 
-	if _, err = h.pgPool.Exec(ctx, sql, b); err != nil {
+	if err := h.pgPool.InsertDocument(ctx, sp.db, sp.collection, d); err != nil {
 		return lazyerrors.Error(err)
 	}
 

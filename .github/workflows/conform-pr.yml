@@ -23,13 +23,13 @@ on:
       # - unlocked
       # - review_requested
       # - review_request_removed
-      # - auto_merge_enabled
+      - auto_merge_enabled # if GitHub Actions stuck, re-enable auto-merge to force rebuild
       # - auto_merge_disabled
 
 # Stop pending and in-progress jobs of this workflow.
-# https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#example-only-cancel-in-progress-jobs-or-runs-for-the-current-workflow
+# https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#example-using-a-fallback-value
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 env:
@@ -38,7 +38,7 @@ env:
   GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
   GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org
-  CONFORM_TOKEN: ${{ secrets.CONFORM_TOKEN }}  # GITHUB_TOKEN is not enough to query projects, so we use a special one
+  CONFORM_TOKEN: ${{ secrets.CONFORM_TOKEN }} # GITHUB_TOKEN is not enough to query projects, so we use a special one
 
 jobs:
   conform-pr:

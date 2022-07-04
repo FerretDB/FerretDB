@@ -12,16 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dummy
+package common
 
 import (
 	"context"
+	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/stretchr/testify/require"
+
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgWhatsMyURI implements HandlerInterface.
-func (h *Handler) MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.MsgWhatsMyURI(ctx, msg)
+// TestMsgWhatsMyURI checks a special case: if context is not set, it panics.
+// The "normal" cases are covered in integration tests for MsgWhatsMyURI command.
+func TestMsgWhatsMyURI(t *testing.T) {
+	require.Panics(t, func() {
+		_, err := MsgWhatsMyURI(context.Background(), new(wire.OpMsg))
+		require.NoError(t, err)
+	})
 }
