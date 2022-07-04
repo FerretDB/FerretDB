@@ -281,47 +281,69 @@ func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, error)
 	return filtered, nil
 }
 
-// CreateDatabase creates a new FerretDB database.
-//
-// It returns ErrAlreadyExist if schema already exist.
-func (pgPool *Pool) CreateDatabase(ctx context.Context, db string) error {
-	tx, err := pgPool.Begin(ctx)
-	if err != nil {
-		return lazyerrors.Error(err)
+// TODO document that error is wrapped
+func (pgPool *Pool) inTransaction(ctx context.Context, f func(pgx.Tx) error) (err error) {
+	var tx pgx.Tx
+	if tx, err = pgPool.Begin(ctx); err != nil {
+		err = lazyerrors.Error(err)
+		return
 	}
+
 	defer func() {
-		if err != nil {
-			if rerr := tx.Rollback(ctx); rerr != nil {
-				pgPool.logger.Error("failed to perform rollback", zap.Error(rerr))
-			}
+		if err == nil {
 			return
 		}
-		if cerr := tx.Commit(ctx); cerr != nil {
-			pgPool.logger.Error("failed to perform commit", zap.Error(cerr))
+		if rerr := tx.Rollback(ctx); rerr != nil {
+			pgPool.logger.Error("failed to perform rollback", zap.Error(rerr))
 		}
 	}()
 
-	sql := `CREATE SCHEMA ` + pgx.Identifier{db}.Sanitize()
-	_, err = tx.Exec(ctx, sql)
-	if err == nil {
-		return pgPool.createSettingsTable(ctx, tx, db)
+	if err = f(tx); err != nil {
+		err = lazyerrors.Error(err)
+		return
 	}
 
-	pgErr, ok := err.(*pgconn.PgError)
-	if !ok {
-		return lazyerrors.Errorf("pg.CreateDatabase: %w", err)
+	if err = tx.Commit(ctx); err != nil {
+		err = lazyerrors.Error(err)
+		return
 	}
 
-	switch pgErr.Code {
-	case pgerrcode.DuplicateSchema:
-		return ErrAlreadyExist
-	case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject:
-		// https://www.postgresql.org/message-id/CA+TgmoZAdYVtwBfp1FL2sMZbiHCWT4UPrzRLNnX1Nb30Ku3-gg@mail.gmail.com
-		// The same thing for schemas. Reproducible by integration tests.
-		return ErrAlreadyExist
-	default:
-		return lazyerrors.Errorf("pg.CreateDatabase: %w", err)
+	return
+}
+
+// CreateDatabase creates a new FerretDB database (PostgreSQL schema).
+//
+// It returns ErrAlreadyExist if schema already exist.
+func (pgPool *Pool) CreateDatabase(ctx context.Context, db string) error {
+	f := func(tx pgx.Tx) error {
+		sql := `CREATE SCHEMA ` + pgx.Identifier{db}.Sanitize()
+		_, err := tx.Exec(ctx, sql)
+		if err == nil {
+			err = pgPool.createSettingsTable(ctx, tx, db)
+		}
+
+		if err == nil {
+			return nil
+		}
+
+		pgErr, ok := err.(*pgconn.PgError)
+		if !ok {
+			return lazyerrors.Errorf("pg.CreateDatabase: %w", err)
+		}
+
+		switch pgErr.Code {
+		case pgerrcode.DuplicateSchema:
+			return ErrAlreadyExist
+		case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject:
+			// https://www.postgresql.org/message-id/CA+TgmoZAdYVtwBfp1FL2sMZbiHCWT4UPrzRLNnX1Nb30Ku3-gg@mail.gmail.com
+			// The same thing for schemas. Reproducible by integration tests.
+			return ErrAlreadyExist
+		default:
+			return lazyerrors.Errorf("pg.CreateDatabase: %w", err)
+		}
 	}
+
+	return pgPool.inTransaction(ctx, f)
 }
 
 // DropDatabase drops FerretDB database.
