@@ -262,5 +262,34 @@ func TestMatchBeforeGroup(t *testing.T) {
 	assert.Equal(t, []bson.D{
 		bson.D{{"averageQuantity", float64(2)}},
 	}, results)
+}
 
+func TestSimpleSort(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	_, err := collection.InsertMany(ctx, []any{
+		bson.D{{"_id", 1}, {"color", "white"}, {"quantity", 1}},
+		bson.D{{"_id", 2}, {"color", "black"}, {"quantity", 5}},
+		bson.D{{"_id", 3}, {"color", "blue"}, {"quantity", 3}},
+		bson.D{{"_id", 4}, {"color", "yellow"}, {"quantity", 2}},
+	})
+	require.NoError(t, err)
+
+	sort := bson.D{{"$sort", bson.D{{"quantity", -1}}}}
+
+	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{sort})
+	require.NoError(t, err)
+
+	var results []bson.D
+	if err := cursor.All(ctx, &results); err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, []bson.D{
+		bson.D{{"_id", int32(2)}, {"color", "black"}, {"quantity", int32(5)}},
+		bson.D{{"_id", int32(3)}, {"color", "blue"}, {"quantity", int32(3)}},
+		bson.D{{"_id", int32(4)}, {"color", "yellow"}, {"quantity", int32(2)}},
+		bson.D{{"_id", int32(1)}, {"color", "white"}, {"quantity", int32(1)}},
+	}, results)
 }

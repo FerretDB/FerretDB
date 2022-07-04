@@ -132,8 +132,6 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 					return nil, err
 				}
 
-				fmt.Printf("  *** GROUP: %#v\n", groupStage)
-
 				stages = append(stages, groupStage)
 
 			case "$sort":

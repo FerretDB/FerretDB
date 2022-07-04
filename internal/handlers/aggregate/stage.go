@@ -236,7 +236,11 @@ func (stage *Stage) ToSql(table string, json bool) string {
 	if len(stage.groups) > 0 {
 		groupBy = " GROUP BY " + strings.Join(stage.groups, ", ")
 	}
-	sql := "SELECT " + fields + " FROM " + table + where + groupBy
+	orderBy := ""
+	if len(stage.sortFields) > 0 {
+		orderBy = " ORDER BY " + stage.SortToSql(json)
+	}
+	sql := "SELECT " + fields + " FROM " + table + where + groupBy + orderBy
 
 	return sql
 }
