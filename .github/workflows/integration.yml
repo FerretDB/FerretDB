@@ -6,6 +6,7 @@ on:
       - opened
       - reopened
       - synchronize
+      - auto_merge_enabled # if GitHub Actions stuck, re-enable auto-merge to force rebuild
   push:
     branches:
       - main

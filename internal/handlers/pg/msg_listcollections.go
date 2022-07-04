@@ -53,7 +53,7 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 		return nil, err
 	}
 
-	names, err := h.pgPool.Tables(ctx, db)
+	names, err := h.pgPool.Collections(ctx, db)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
