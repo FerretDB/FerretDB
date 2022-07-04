@@ -118,6 +118,31 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				}
 			}
 
+		case "$rename":
+			// {$rename: {<field1>: <newName1>, <field2>: <newName2>, ... }}
+			renameDoc := updateV.(*types.Document)
+
+			renameMap := renameDoc.Map()
+
+			for _, renameKey := range renameDoc.Keys() {
+				if doc.Has(renameKey) {
+					docValue := must.NotFail(doc.Get(renameKey))
+					doc.Remove(renameKey)
+					newKey := renameMap[renameKey]
+					if _, ok := newKey.(string); !ok {
+						return false, NewWriteErrorMsg(
+							ErrBadValue,
+							fmt.Sprintf(
+								`The 'to' field for $rename must be a string: %s: %s`,
+								renameKey, AliasFromType(newKey),
+							),
+						)
+					}
+					must.NoError(doc.Set(newKey.(string), docValue))
+					changed = true
+				}
+			}
+
 		default:
 			return false, NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
 		}
@@ -189,6 +214,10 @@ func ValidateUpdateOperators(update *types.Document) error {
 	if err != nil {
 		return err
 	}
+	_, err = extractValueFromUpdateOperator("$rename", update)
+	if err != nil {
+		return err
+	}
 	_, err = extractValueFromUpdateOperator("$unset", update)
 	if err != nil {
 		return err
@@ -217,6 +246,8 @@ func checkAllModifiersSupported(update *types.Document) error {
 		case "$set":
 			fallthrough
 		case "$setOnInsert":
+			fallthrough
+		case "$rename":
 			fallthrough
 		case "$unset":
 			// supported
