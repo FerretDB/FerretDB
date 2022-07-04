@@ -415,6 +415,7 @@ func TestQueryEvaluationRegex(t *testing.T) {
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{{"_id", "multiline-string"}, {"value", "bar\nfoo"}},
+		bson.D{{"_id", "bar-without-nfoo"}, {"value", "barxyzfoo"}},
 		bson.D{
 			{"_id", "document-nested-strings"},
 			{"value", bson.D{{"foo", bson.D{{"bar", "quz"}}}}},
@@ -428,23 +429,41 @@ func TestQueryEvaluationRegex(t *testing.T) {
 	}{
 		"Regex": {
 			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "foo"}}}}},
-			expectedIDs: []any{"multiline-string", "string"},
+			expectedIDs: []any{"bar-without-nfoo", "multiline-string", "string"},
 		},
 		"RegexNested": {
 			filter:      bson.D{{"value.foo.bar", bson.D{{"$regex", primitive.Regex{Pattern: "quz"}}}}},
 			expectedIDs: []any{"document-nested-strings"},
 		},
+		// === TODO: Support Lookarounds (#653)
+		"RegexPositiveLookahead": {
+			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "bar(?=\nfoo)"}}}}},
+			expectedIDs: []any{"multiline-string"},
+		},
+		"RegexNegativeLookahead": {
+			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "bar(?!\nfoo)"}}}}},
+			expectedIDs: []any{"bar-without-nfoo"},
+		},
+		"RegexPositiveLookbehind": {
+			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "(?<=bar\n)foo"}}}}},
+			expectedIDs: []any{"multiline-string"},
+		},
+		"RegexNegativeLookbehind": {
+			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "(?<!bar\n)foo"}}}}},
+			expectedIDs: []any{"bar-without-nfoo", "string"},
+		},
+		// ===
 		"RegexWithOption": {
 			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "42", Options: "i"}}}}},
 			expectedIDs: []any{"string-double", "string-whole"},
 		},
 		"RegexStringOptionMatchCaseInsensitive": {
 			filter:      bson.D{{"value", bson.D{{"$regex", "foo"}, {"$options", "i"}}}},
-			expectedIDs: []any{"multiline-string", "regex", "string"},
+			expectedIDs: []any{"bar-without-nfoo", "multiline-string", "regex", "string"},
 		},
 		"RegexStringOptionMatchLineEnd": {
 			filter:      bson.D{{"value", bson.D{{"$regex", "b.*foo"}, {"$options", "s"}}}},
-			expectedIDs: []any{"multiline-string"},
+			expectedIDs: []any{"bar-without-nfoo", "multiline-string"},
 		},
 		"RegexStringOptionMatchMultiline": {
 			filter:      bson.D{{"value", bson.D{{"$regex", "^foo"}, {"$options", "m"}}}},
@@ -460,7 +479,7 @@ func TestQueryEvaluationRegex(t *testing.T) {
 		},
 		"RegexBadOption": {
 			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "foo", Options: "123"}}}}},
-			expectedIDs: []any{"multiline-string", "string"},
+			expectedIDs: []any{"bar-without-nfoo", "multiline-string", "string"},
 		},
 	} {
 		name, tc := name, tc
