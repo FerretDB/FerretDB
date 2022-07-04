@@ -30,9 +30,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
-	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg"
-	"github.com/FerretDB/FerretDB/internal/handlers/tigris"
+	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -149,37 +147,19 @@ func setup(t *testing.T, providers ...shareddata.Provider) (context.Context, *mo
 func setupListener(t *testing.T, ctx context.Context, logger *zap.Logger) int {
 	t.Helper()
 
-	pgPool := testutil.Pool(ctx, t, nil, logger)
+	// TODO Tigris
+	h, err := registry.NewHandler("pg", &registry.NewHandlerOpts{
+		Ctx:           ctx,
+		Logger:        logger,
+		PostgreSQLURL: testutil.PoolConnString(t, nil),
+	})
+	require.NoError(t, err)
 
 	proxyAddr := *proxyAddrF
 	mode := clientconn.NormalMode
 	if proxyAddr != "" {
 		mode = clientconn.DiffNormalMode
 	}
-
-	var h handlers.Interface
-	var err error
-	switch *handlerF {
-	case "pg":
-		handlerOpts := &pg.NewOpts{
-			PgPool:   pgPool,
-			L:        logger,
-			PeerAddr: "127.0.0.1:0",
-		}
-		h, err = pg.New(handlerOpts)
-
-	case "tigris":
-		handlerOpts := &tigris.NewOpts{
-			TigrisURL: "127.0.0.1:8081",
-			L:         logger,
-		}
-		h, err = tigris.New(handlerOpts)
-
-	default:
-		t.Fatalf("unknown handler %q", *handlerF)
-	}
-
-	require.NoError(t, err)
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		ListenAddr: "127.0.0.1:0",
@@ -204,6 +184,7 @@ func setupListener(t *testing.T, ctx context.Context, logger *zap.Logger) int {
 	// ensure that all listener's logs are written before test ends
 	t.Cleanup(func() {
 		<-done
+		h.Close()
 	})
 
 	return l.Addr().(*net.TCPAddr).Port

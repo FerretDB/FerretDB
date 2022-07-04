@@ -18,7 +18,7 @@ services:
       - POSTGRES_HOST_AUTH_METHOD=trust
       - POSTGRES_DB=ferretdb
 
-  # Tigris configuration is based on https://github.com/tigrisdata/tigris/blob/main/test/docker/docker-compose.yml
+  # Tigris configuration is based on https://github.com/tigrisdata/tigris/blob/main/docker/local/docker-compose.yaml
 
   tigris_fdb:
     build:
