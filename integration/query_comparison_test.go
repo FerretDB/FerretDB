@@ -33,7 +33,7 @@ import (
 func TestQueryComparisonImplicit(t *testing.T) {
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
-	ctx, collection := setup(t, providers...)
+	ctx, collection := Setup(t, providers...)
 
 	for name, tc := range map[string]struct {
 		filter      bson.D
@@ -225,7 +225,7 @@ func TestQueryComparisonImplicit(t *testing.T) {
 func TestQueryComparisonEq(t *testing.T) {
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
-	ctx, collection := setup(t, providers...)
+	ctx, collection := Setup(t, providers...)
 
 	for name, tc := range map[string]struct {
 		filter      bson.D
@@ -510,7 +510,7 @@ func TestQueryComparisonEq(t *testing.T) {
 func TestQueryComparisonGt(t *testing.T) {
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
-	ctx, collection := setup(t, providers...)
+	ctx, collection := Setup(t, providers...)
 
 	for name, tc := range map[string]struct {
 		value       any
@@ -733,7 +733,7 @@ func TestQueryComparisonGt(t *testing.T) {
 func TestQueryComparisonGte(t *testing.T) {
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
-	ctx, collection := setup(t, providers...)
+	ctx, collection := Setup(t, providers...)
 
 	for name, tc := range map[string]struct {
 		value       any
@@ -949,7 +949,7 @@ func TestQueryComparisonGte(t *testing.T) {
 func TestQueryComparisonLt(t *testing.T) {
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
-	ctx, collection := setup(t, providers...)
+	ctx, collection := Setup(t, providers...)
 
 	for name, tc := range map[string]struct {
 		value       any
@@ -1174,7 +1174,7 @@ func TestQueryComparisonLt(t *testing.T) {
 func TestQueryComparisonLte(t *testing.T) {
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
-	ctx, collection := setup(t, providers...)
+	ctx, collection := Setup(t, providers...)
 
 	for name, tc := range map[string]struct {
 		value       any
@@ -1399,7 +1399,7 @@ func TestQueryComparisonLte(t *testing.T) {
 func TestQueryComparisonNin(t *testing.T) {
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
-	ctx, collection := setup(t, providers...)
+	ctx, collection := Setup(t, providers...)
 
 	var scalarDataTypesFilter bson.A
 	for _, scalarDataType := range shareddata.Scalars.Docs() {
@@ -1511,7 +1511,7 @@ func TestQueryComparisonNin(t *testing.T) {
 func TestQueryComparisonIn(t *testing.T) {
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
-	ctx, collection := setup(t, providers...)
+	ctx, collection := Setup(t, providers...)
 
 	var scalarDataTypesFilter bson.A
 	for _, scalarDataType := range shareddata.Scalars.Docs() {
@@ -1610,7 +1610,7 @@ func TestQueryComparisonIn(t *testing.T) {
 func TestQueryComparisonNe(t *testing.T) {
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
-	ctx, collection := setup(t, providers...)
+	ctx, collection := Setup(t, providers...)
 
 	for name, tc := range map[string]struct {
 		value        any
@@ -1807,7 +1807,7 @@ func TestQueryComparisonNe(t *testing.T) {
 
 func TestQueryComparisonMultipleOperators(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
 		filter      any

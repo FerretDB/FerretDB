@@ -139,7 +139,7 @@ func TestFindAndModifySimple(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
 			command := append(bson.D{{"findAndModify", collection.Name()}}, tc.command...)
 
@@ -170,7 +170,7 @@ func TestFindAndModifyEmptyCollectionName(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, bson.D{{"findAndModify", ""}}).Decode(&actual)
@@ -292,7 +292,7 @@ func TestFindAndModifyErrors(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
 			command := append(bson.D{{"findAndModify", collection.Name()}}, tc.command...)
 
@@ -405,7 +405,7 @@ func TestFindAndModifyUpdate(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
 			command := bson.D{{"findAndModify", collection.Name()}, {"query", tc.query}}
 			command = append(command, tc.command...)
@@ -544,7 +544,7 @@ func TestFindAndModifyUpsert(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
 			command := append(bson.D{{"findAndModify", collection.Name()}}, tc.command...)
 
@@ -589,7 +589,7 @@ func TestFindAndModifyUpsertComplex(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
 			command := append(bson.D{{"findAndModify", collection.Name()}}, tc.command...)
 
@@ -658,7 +658,7 @@ func TestFindAndModifyRemove(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t, shareddata.Scalars)
+			ctx, collection := Setup(t, shareddata.Scalars)
 
 			command := append(bson.D{{"findAndModify", collection.Name()}}, tc.command...)
 

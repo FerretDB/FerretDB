@@ -59,8 +59,8 @@ tasks:
   env-up-detach:
     cmds:
       - >
-        docker-compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --detach
-        postgres mongodb
+        docker-compose up --always-recreate-deps --build --force-recreate --remove-orphans --renew-anon-volumes --detach
+        postgres tigris mongodb
 
   env-up:
     desc: "Start development environment"
@@ -77,6 +77,12 @@ tasks:
     desc: "Stop development environment"
     cmds:
       - docker-compose down --remove-orphans --volumes
+
+  env-data:
+    desc: "Fill `test.values` with data for experiments"
+    dir: integration
+    cmds:
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -port=FerretDB -run=TestEnvData
 
   gen:
     desc: "Generate (and format) code"
@@ -244,17 +250,8 @@ tasks:
     cmds:
       - docker buildx create --driver=docker-container --name=ferretdb
 
-  docker-build:
-    deps: [build-testcover]
-    env:
-      CGO_ENABLED: 0
-      GOOS: linux
-    cmds:
-      - GOARCH=arm64 go test -c -o=bin/ferretdb-arm64 -trimpath -tags=testcover,tigris -coverpkg=./... ./cmd/ferretdb
-      - GOARCH=amd64 go test -c -o=bin/ferretdb-amd64 -trimpath -tags=testcover,tigris -coverpkg=./... ./cmd/ferretdb
-
   docker-local:
-    deps: [docker-build]
+    deps: [gen-version]
     cmds:
       - >
         docker buildx build --builder=ferretdb
@@ -269,7 +266,7 @@ tasks:
         sh: cat internal/util/version/gen/commit.txt
 
   docker-push:
-    deps: [docker-build]
+    deps: [gen-version]
     cmds:
       - test {{.DOCKER_IMAGE}}
       - >

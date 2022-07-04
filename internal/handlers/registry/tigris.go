@@ -13,7 +13,6 @@
 // limitations under the License.
 
 //go:build tigris
-// +build tigris
 
 package registry
 
