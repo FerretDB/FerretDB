@@ -74,7 +74,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	if err = h.pgPool.CreateCollection(ctx, db, collection); err != nil {
-		if err == pgdb.ErrAlreadyExist {
+		if errors.Is(err, pgdb.ErrAlreadyExist) {
 			msg := fmt.Sprintf("Collection already exists. NS: %s.%s", db, collection)
 			return nil, common.NewErrorMsg(common.ErrNamespaceExists, msg)
 		}
