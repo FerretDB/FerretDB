@@ -36,8 +36,8 @@ and [contributing guidelines](CONTRIBUTING.md).
 2. Collection names restrictions:
 
 * collection name cannot start with the reserved prefix `_ferretdb_`.
-* collection name must not include non-latin letters, spaces, dots, dollars, dashes.
-* collection name length is no more than 119 symbols.
+* collection name must not include non-latin letters, spaces, dots, dollars or dashes.
+* collection name length must be less than 119 symbols.
 
 If you encounter some other difference in behavior, please [join our community](#community) to report a problem.
 
