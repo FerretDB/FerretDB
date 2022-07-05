@@ -45,6 +45,8 @@ const (
 )
 
 var (
+	regex = regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]{0,119}$")
+
 	// ErrTableNotExist indicates that there is no such table.
 	ErrTableNotExist = fmt.Errorf("table does not exist")
 
@@ -347,36 +349,19 @@ func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
 	}
 }
 
-// validateCollectionName validates collection name.
-// Collection name must not contain non-latin letters, spaces, dots, dollars, dashes,
-// name collection name length must be less than 119 characters.
-func (pgPool *Pool) validateCollectionName(collection string) error {
-	if len(collection) == 0 {
-		return ErrInvalidTableName
-	}
-
-	if len(collection) > 119 {
-		return ErrInvalidTableName
-	}
-
-	regex := regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]{0,119}$")
+// CreateCollection creates a new FerretDB collection in existing schema.
+//
+// It returns:
+// * ErrInvalidTableName if the table name doesn't conform restrictions.
+// * ErrAlreadyExist if table already exist.
+// * ErrTableNotExist is schema does not exist.
+func (pgPool *Pool) CreateCollection(ctx context.Context, db, collection string) error {
 	if !regex.MatchString(collection) {
 		return ErrInvalidTableName
 	}
 
 	if strings.HasPrefix(collection, collectionPrefix) {
 		return ErrInvalidTableName
-	}
-
-	return nil
-}
-
-// CreateCollection creates a new FerretDB collection in existing schema.
-//
-// It returns ErrAlreadyExist if table already exist, ErrTableNotExist is schema does not exist.
-func (pgPool *Pool) CreateCollection(ctx context.Context, db, collection string) error {
-	if err := pgPool.validateCollectionName(collection); err != nil {
-		return err
 	}
 
 	schemaExists, err := pgPool.schemaExists(ctx, db)

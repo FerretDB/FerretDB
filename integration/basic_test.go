@@ -16,6 +16,7 @@ package integration
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -134,23 +135,24 @@ func TestCollectionName(t *testing.T) {
 	t.Run("Err", func(t *testing.T) {
 		ctx, collection := Setup(t)
 
+		collectionName300 := strings.Repeat("a", 300)
+		altMsg := "Collection must not contain non-latin letters, spaces, dots, dollars, dashes and be longer than 119 characters."
 		cases := map[string]struct {
 			collection string
 			err        *mongo.CommandError
 			alt        string
 		}{
 			"TooLongForBoth": {
-				collection: "very_long_collection_name_that_fails_both_in_mongo_and_in_ferretdb_databases" +
-					"_for_ferretdb_it_fails_because_it_is_more_than_119_characters__for_mongo_it_fails_because_it_is_more_than_255_charachters_" +
-					"long_that_excludes_non_latin_letters_spaces_dots_dollars_dashes",
+				collection: collectionName300,
 				err: &mongo.CommandError{
 					Name: "InvalidNamespace",
 					Code: 73,
-					Message: "Fully qualified namespace is too long. Namespace: testcollectionname-err.very_long_collection_name_that_fails_both_in_mongo_" +
-						"and_in_ferretdb_databases_for_ferretdb_it_fails_because_it_is_more_than_119_characters__for_mongo_it_fails_because_it_is_more_than_" +
-						"255_charachters_long_that_excludes_non_latin_letters_spaces_dots_dollars_dashes Max: 255",
+					Message: fmt.Sprintf(
+						"Fully qualified namespace is too long. Namespace: testcollectionname-err.%s Max: 255",
+						collectionName300,
+					),
 				},
-				alt: "Collection must not contain non-latin letters, spaces, dots, dollars, dashes and be longer than 119 characters.",
+				alt: altMsg,
 			},
 			"WithADollarSign": {
 				collection: "collection_name_with_a-$",
@@ -159,7 +161,7 @@ func TestCollectionName(t *testing.T) {
 					Code:    73,
 					Message: `Invalid collection name: collection_name_with_a-$`,
 				},
-				alt: "Collection must not contain non-latin letters, spaces, dots, dollars, dashes and be longer than 119 characters.",
+				alt: altMsg,
 			},
 			"Empty": {
 				collection: "",
@@ -168,7 +170,7 @@ func TestCollectionName(t *testing.T) {
 					Code:    73,
 					Message: "Invalid namespace specified 'testcollectionname-err.'",
 				},
-				alt: "Collection must not contain non-latin letters, spaces, dots, dollars, dashes and be longer than 119 characters.",
+				alt: altMsg,
 			},
 		}
 
@@ -185,10 +187,10 @@ func TestCollectionName(t *testing.T) {
 	t.Run("Ok", func(t *testing.T) {
 		ctx, collection := Setup(t)
 
-		longCollectionName := "very_long_collection_name_that_is_more_than_64_characters_long_but_still_valid"
+		longCollectionName := strings.Repeat("a", 65)
 		err := collection.Database().CreateCollection(ctx, longCollectionName)
 		require.NoError(t, err)
-		sixtyThreeCharsCollectionName := "this_is_a_collection_name_that_is_63_characters_long_abcdefghij"
+		sixtyThreeCharsCollectionName := strings.Repeat("a", 63)
 		err = collection.Database().CreateCollection(ctx, sixtyThreeCharsCollectionName)
 		require.NoError(t, err)
 
