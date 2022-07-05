@@ -351,7 +351,6 @@ func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
 // It must not contain non-latin letters, spaces, dots, dollars, dashes.
 // The collection name length is no longer than 119 letters.
 func (pgPool *Pool) validateCollectionName(collection string) error {
-	// excludes non-latin letters, spaces, dots, dollars, dashes, long names
 	regex := regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]{0,119}$")
 	if regex.MatchString(collection) {
 		return ErrInvalidCollectionName
