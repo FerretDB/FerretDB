@@ -354,8 +354,8 @@ func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
 //
 // It returns:
 //  - ErrInvalidTableName - if the table name doesn't conform restrictions.
-//  - ErrAlreadyExist if table already exist.
-//  - ErrTableNotExist is schema does not exist.
+//  - ErrAlreadyExist - if table already exist.
+//  - ErrTableNotExist - is schema does not exist.
 func (pgPool *Pool) CreateCollection(ctx context.Context, db, collection string) error {
 	if !validateCollectionNameRe.MatchString(collection) {
 		return ErrInvalidTableName
