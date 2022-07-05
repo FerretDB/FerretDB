@@ -30,7 +30,7 @@ import (
 func TestQueryProjection(t *testing.T) {
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Composites}
-	ctx, collection := setup(t, providers...)
+	ctx, collection := Setup(t, providers...)
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{
@@ -91,7 +91,7 @@ func TestQueryProjection(t *testing.T) {
 func TestQueryProjectionElemMatch(t *testing.T) {
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Composites}
-	ctx, collection := setup(t, providers...)
+	ctx, collection := Setup(t, providers...)
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{
@@ -140,7 +140,7 @@ func TestQueryProjectionElemMatch(t *testing.T) {
 
 func TestQueryProjectionSlice(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := Setup(t)
 	_, err := collection.InsertOne(ctx,
 		bson.D{{"_id", "array"}, {"value", bson.A{1, 2, 3, 4}}},
 	)

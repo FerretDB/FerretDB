@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Keep both old and new styles of build tags.
+
 //go:build go1.18
 // +build go1.18
 
@@ -24,6 +26,7 @@ import (
 	_ "github.com/quasilyte/go-consistent"
 	_ "github.com/reviewdog/reviewdog/cmd/reviewdog"
 	_ "golang.org/x/perf/cmd/benchstat"
+	_ "golang.org/x/tools/cmd/godoc"
 	_ "golang.org/x/tools/cmd/goimports"
 	_ "golang.org/x/tools/cmd/stringer"
 	_ "mvdan.cc/gofumpt"
@@ -42,6 +45,7 @@ import (
 //go:generate go build -v -o ../bin/ github.com/quasilyte/go-consistent
 //go:generate go build -v -o ../bin/ github.com/reviewdog/reviewdog/cmd/reviewdog
 //go:generate go build -v -o ../bin/ golang.org/x/perf/cmd/benchstat
+//go:generate go build -v -o ../bin/ golang.org/x/tools/cmd/godoc
 //go:generate go build -v -o ../bin/ golang.org/x/tools/cmd/goimports
 //go:generate go build -v -o ../bin/ golang.org/x/tools/cmd/stringer
 //go:generate go build -v -o ../bin/ mvdan.cc/gofumpt

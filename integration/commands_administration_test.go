@@ -16,6 +16,7 @@ package integration
 
 import (
 	"math"
+	"net"
 	"strconv"
 	"testing"
 	"time"
@@ -34,7 +35,7 @@ import (
 
 func TestCommandsAdministrationCreateDropList(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := Setup(t)
 	db := collection.Database()
 	name := collection.Name()
 
@@ -118,8 +119,8 @@ func assertDatabases(t *testing.T, expected, actual mongo.ListDatabasesResult) {
 
 //nolint:paralleltest // we test a global list of databases
 func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
-	ctx, collection := setupWithOpts(t, &setupOpts{
-		databaseName: "admin",
+	ctx, collection, _ := SetupWithOpts(t, &SetupOpts{
+		DatabaseName: "admin",
 	})
 	client := collection.Database().Client()
 	name := collection.Name()
@@ -129,12 +130,12 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 
 	filter := bson.D{{
 		"name", bson.D{{
-			"$in", bson.A{"monila", "values", "admin", name},
+			"$in", bson.A{name, "admin"},
 		}},
 	}}
 	names, err := client.ListDatabaseNames(ctx, filter)
 	require.NoError(t, err)
-	assert.Equal(t, []string{"admin", "monila", "values"}, names)
+	assert.Equal(t, []string{"admin"}, names)
 
 	actual, err := client.ListDatabases(ctx, filter)
 	require.NoError(t, err)
@@ -142,10 +143,6 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 	expectedBefore := mongo.ListDatabasesResult{
 		Databases: []mongo.DatabaseSpecification{{
 			Name: "admin",
-		}, {
-			Name: "monila",
-		}, {
-			Name: "values",
 		}},
 	}
 	assertDatabases(t, expectedBefore, actual)
@@ -161,11 +158,7 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 		Databases: []mongo.DatabaseSpecification{{
 			Name: "admin",
 		}, {
-			Name: "monila",
-		}, {
 			Name: name,
-		}, {
-			Name: "values",
 		}},
 	}
 	assertDatabases(t, expectedAfter, actual)
@@ -185,8 +178,8 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 
 func TestCommandsAdministrationGetParameter(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setupWithOpts(t, &setupOpts{
-		databaseName: "admin",
+	ctx, collection, _ := SetupWithOpts(t, &SetupOpts{
+		DatabaseName: "admin",
 	})
 
 	for name, tc := range map[string]struct {
@@ -607,7 +600,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 
 func TestCommandsAdministrationBuildInfo(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := Setup(t)
 
 	var actual bson.D
 	command := bson.D{{"buildInfo", int32(1)}}
@@ -640,7 +633,7 @@ func TestCommandsAdministrationBuildInfo(t *testing.T) {
 
 func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := Setup(t)
 
 	var actual bson.D
 	command := bson.D{{"collStats", collection.Name()}}
@@ -661,7 +654,7 @@ func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
 
 func TestCommandsAdministrationCollStats(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	var actual bson.D
 	command := bson.D{{"collStats", collection.Name()}}
@@ -681,7 +674,7 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 
 func TestCommandsAdministrationDataSize(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	var actual bson.D
 	command := bson.D{{"dataSize", collection.Database().Name() + "." + collection.Name()}}
@@ -697,7 +690,7 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 
 func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := Setup(t)
 
 	var actual bson.D
 	command := bson.D{{"dataSize", "some-database.some-collection"}}
@@ -714,7 +707,7 @@ func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
 
 func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := Setup(t)
 
 	var actual bson.D
 	command := bson.D{{"dbStats", int32(1)}}
@@ -725,22 +718,22 @@ func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
 
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 	assert.Equal(t, collection.Database().Name(), must.NotFail(doc.Get("db")))
-	assert.Equal(t, int32(1), must.NotFail(doc.Get("collections")))
+	assert.InDelta(t, int32(2), must.NotFail(doc.Get("collections")), 1)
 	assert.Equal(t, int32(0), must.NotFail(doc.Get("views")))
 	assert.Equal(t, int32(0), must.NotFail(doc.Get("objects")))
 	assert.Equal(t, float64(0), must.NotFail(doc.Get("avgObjSize")))
-	assert.Equal(t, float64(0), must.NotFail(doc.Get("dataSize")))
+	assert.InDelta(t, float64(8192), must.NotFail(doc.Get("dataSize")), 8192)
 
 	assert.InDelta(t, float64(1), must.NotFail(doc.Get("indexes")), 1)
 	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("indexSize")), 4_096)
 
-	assert.InDelta(t, float64(1), must.NotFail(doc.Get("totalSize")), 8192)
+	assert.InDelta(t, float64(24576), must.NotFail(doc.Get("totalSize")), 16384)
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("scaleFactor")))
 }
 
 func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	var actual bson.D
 	command := bson.D{{"dbStats", int32(1)}, {"scale", float64(1_000)}}
@@ -751,18 +744,18 @@ func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
 
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 	assert.Equal(t, collection.Database().Name(), must.NotFail(doc.Get("db")))
-	assert.Equal(t, int32(1), must.NotFail(doc.Get("collections")))
+	assert.InDelta(t, int32(2), must.NotFail(doc.Get("collections")), 1)
 	assert.Equal(t, int32(0), must.NotFail(doc.Get("views")))
 	assert.Equal(t, float64(1000), must.NotFail(doc.Get("scaleFactor")))
 
-	assert.InDelta(t, float64(2.161), must.NotFail(doc.Get("dataSize")), 10)
+	assert.InDelta(t, float64(16.384), must.NotFail(doc.Get("dataSize")), 14)
 	assert.InDelta(t, float64(1), must.NotFail(doc.Get("indexes")), 1)
 	assert.InDelta(t, float64(0), must.NotFail(doc.Get("indexSize")), 4060)
 }
 
 func TestCommandsAdministrationServerStatus(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := Setup(t)
 
 	var actual bson.D
 	command := bson.D{{"serverStatus", int32(1)}}
@@ -801,16 +794,30 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("internalViews")))
 }
 
+// TestCommandsAdministrationWhatsMyURI tests the `whatsmyuri` command.
+// It connects two clients to the same server and checks that `whatsmyuri` returns different ports for these clients.
 func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection1, port := SetupWithOpts(t, new(SetupOpts))
+	client2 := setupClient(t, ctx, port)
+	collection2 := client2.Database(collection1.Database().Name()).Collection(collection1.Name())
 
-	var actual bson.D
-	command := bson.D{{"whatsmyuri", int32(1)}}
-	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
-	require.NoError(t, err)
+	var ports []string
+	for _, collection := range []*mongo.Collection{collection1, collection2} {
+		var actual bson.D
+		command := bson.D{{"whatsmyuri", int32(1)}}
+		err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+		require.NoError(t, err)
 
-	doc := ConvertDocument(t, actual)
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-	assert.Regexp(t, `^(\d+)\.(\d+)\.(\d+)\.(\d+)(\:\d+)?`, must.NotFail(doc.Get("you")))
+		doc := ConvertDocument(t, actual)
+		assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+
+		// record ports to compare that they are not equal for two different clients.
+		_, port, err := net.SplitHostPort(must.NotFail(doc.Get("you")).(string))
+		require.NoError(t, err)
+		ports = append(ports, port)
+	}
+
+	require.Equal(t, 2, len(ports))
+	assert.NotEqual(t, ports[0], ports[1])
 }
