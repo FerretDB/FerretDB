@@ -18,3 +18,7 @@ This PR closes #{issue_number}.
 
 * [ ] I added tests for new functionality or bugfixes.
 * [ ] I ran `task all`, and it passed.
+* [ ] I added/updated comments for both exported and unexported top-level declarations.
+* [ ] I checked comments rendering with `task godocs`.
+* [ ] (for maintainers only) I set Reviewers, Assignee, Labels, Project and project's Sprint fields.
+* [ ] I checked all relevant checklist items.
