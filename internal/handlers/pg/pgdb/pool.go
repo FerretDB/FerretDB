@@ -30,7 +30,6 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -54,6 +53,9 @@ var (
 
 	// ErrAlreadyExist indicates that a schema or table already exists.
 	ErrAlreadyExist = fmt.Errorf("schema or table already exist")
+
+	// ErrInvalidTableName indicates that a schema or table didn't passed name checks.
+	ErrInvalidTableName = fmt.Errorf("invalid table name")
 )
 
 // Pool represents PostgreSQL concurrency-safe connection pool.
@@ -350,26 +352,20 @@ func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
 // The collection name length is no longer than 119 letters.
 func (pgPool *Pool) validateCollectionName(collection string) error {
 	if len(collection) == 0 {
-		return common.NewErrorMsg(common.ErrInvalidNamespace, "Namespace is empty")
+		return ErrInvalidTableName
 	}
 
 	if len(collection) > 119 {
-		return common.NewErrorMsg(common.ErrInvalidNamespace, "Fully qualified namespace is too long.")
+		return ErrInvalidTableName
 	}
 
 	regex := regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]{0,119}$")
 	if !regex.MatchString(collection) {
-		return common.NewErrorMsg(
-			common.ErrInvalidNamespace,
-			fmt.Sprintf("Invalid collection name: %s", collection),
-		)
+		return ErrInvalidTableName
 	}
 
 	if strings.HasPrefix(collection, collectionPrefix) {
-		return common.NewErrorMsg(
-			common.ErrInvalidNamespace,
-			"Namespace must not contain start with reserved word _ferretdb_.",
-		)
+		return ErrInvalidTableName
 	}
 
 	return nil

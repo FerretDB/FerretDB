@@ -77,6 +77,10 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			msg := fmt.Sprintf("Collection already exists. NS: %s.%s", db, collection)
 			return nil, common.NewErrorMsg(common.ErrNamespaceExists, msg)
 		}
+		if err == pgdb.ErrInvalidTableName {
+			msg := "Collection must not contain non-latin letters, spaces, dots, dollars, dashes and be shorter than 119"
+			return nil, common.NewErrorMsg(common.ErrInvalidNamespace, msg)
+		}
 		return nil, lazyerrors.Error(err)
 	}
 
