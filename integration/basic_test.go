@@ -133,35 +133,69 @@ func TestCollectionName(t *testing.T) {
 
 	ctx, collection := Setup(t)
 
-	tooLongCollectionName := "very_long_collection_name_that_fails_both_in_mongo_and_in_ferretdb_databases" +
-		"_for_ferretdb_it_fails_because_it_is_more_than_119_characters__for_mongo_it_fails_because_it_is_more_than_255_charachters_" +
-		"long_that_excludes_non_latin_letters_spaces_dots_dollars_dashes"
-	err := collection.Database().CreateCollection(ctx, tooLongCollectionName)
-	require.Equal(t, fmt.Errorf("invalid collection name"), err)
+	cases := map[string]struct {
+		Collection string
+		Err        *mongo.CommandError
+		Alt        string
+	}{
+		"TooLongForBoth": {
+			Collection: "very_long_collection_name_that_fails_both_in_mongo_and_in_ferretdb_databases" +
+				"_for_ferretdb_it_fails_because_it_is_more_than_119_characters__for_mongo_it_fails_because_it_is_more_than_255_charachters_" +
+				"long_that_excludes_non_latin_letters_spaces_dots_dollars_dashes",
+			Err: &mongo.CommandError{
+				Code:    73,
+				Message: `Fully qualified namespace is too long`,
+			},
+			Alt: "Fully qualified namespace is too long",
+		},
+		"WithADot": {
+			Collection: "collection_name_with_a_dot.",
+			Err: &mongo.CommandError{
+				Code:    73,
+				Message: `Namespace must not contain non-latin letters, spaces, dots, dollars, dashes.`,
+			},
+		},
+		"WithADash": {
+			Collection: "collection_name_with_a-dash",
+			Err: &mongo.CommandError{
+				Code:    73,
+				Message: `Namespace must not contain non-latin letters, spaces, dots, dollars, dashes.`,
+			},
+		},
+		"WithADollarSign": {
+			Collection: "collection_name_with_a-$",
+			Err: &mongo.CommandError{
+				Code:    73,
+				Message: `Namespace must not contain non-latin letters, spaces, dots, dollars, dashes.`,
+			},
+		},
+		"Empty": {
+			Collection: "",
+			Err: &mongo.CommandError{
+				Code:    73,
+				Message: `Namespace is empty`,
+			},
+		},
+		"64CharLong": {
+			Collection: "very_long_collection_name_that_is_more_than_64_characters_long_but_still_valid",
+		},
+		"63CharLong": {
+			Collection: "this_is_a_collection_name_that_is_63_characters_long_abcdefghij",
+		},
+	}
 
-	ferretDBcollectionName := "_ferretdb_prefixed_collection_name"
-	err = collection.Database().CreateCollection(ctx, ferretDBcollectionName)
-	require.Equal(t, fmt.Errorf("invalid collection name"), err)
-
-	collectionNameWithADot := "collection_name_with_a_dot."
-	err = collection.Database().CreateCollection(ctx, collectionNameWithADot)
-	require.Equal(t, fmt.Errorf("invalid collection name"), err)
-
-	collectionNameWithADash := "collection_name_with_a-dash"
-	err = collection.Database().CreateCollection(ctx, collectionNameWithADash)
-	require.Equal(t, fmt.Errorf("invalid collection name"), err)
-
-	longCollectionName := "very_long_collection_name_that_is_more_than_64_characters_long_but_still_valid"
-	err = collection.Database().CreateCollection(ctx, longCollectionName)
-	require.NoError(t, err)
-
-	sixtyThreeCharsCollectionName := "this_is_a_collection_name_that_is_63_characters_long_abcdefghij"
-	err = collection.Database().CreateCollection(ctx, sixtyThreeCharsCollectionName)
-	require.NoError(t, err)
+	for _, tc := range cases {
+		err := collection.Database().CreateCollection(ctx, tc.Collection)
+		if tc.Err == nil {
+			require.NoError(t, err)
+			continue
+		}
+		AssertEqualAltError(t, *tc.Err, tc.Alt, err)
+	}
 
 	names, err := collection.Database().ListCollectionNames(ctx, bson.D{})
 	require.NoError(t, err)
 
-	assert.Contains(t, names, longCollectionName)
-	assert.Contains(t, names, sixtyThreeCharsCollectionName)
+	assert.Contains(t, names, cases["64CharLong"].Collection)
+	assert.Contains(t, names, cases["63CharLong"].Collection)
 }
