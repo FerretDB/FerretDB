@@ -143,24 +143,20 @@ func TestCollectionName(t *testing.T) {
 				"_for_ferretdb_it_fails_because_it_is_more_than_119_characters__for_mongo_it_fails_because_it_is_more_than_255_charachters_" +
 				"long_that_excludes_non_latin_letters_spaces_dots_dollars_dashes",
 			Err: &mongo.CommandError{
-				Code:    73,
-				Message: `Fully qualified namespace is too long`,
+				Code: 73,
+				Message: "Fully qualified namespace is too long. Namespace: testcollectionname.very_long_collection_name_that_fails_both_in_mongo_" +
+					"and_in_ferretdb_databases_for_ferretdb_it_fails_because_it_is_more_than_119_characters__for_mongo_it_fails_because_it_is_more_than_" +
+					"255_charachters_long_that_excludes_non_latin_letters_spaces_dots_dollars_dashes Max: 255",
 			},
 			Alt: "Fully qualified namespace is too long",
-		},
-		"WithADot": {
-			Collection: "collection_name_with_a_dot.",
-			Err: &mongo.CommandError{
-				Code:    73,
-				Message: `Namespace must not contain non-latin letters, spaces, dots, dollars, dashes.`,
-			},
 		},
 		"WithADash": {
 			Collection: "collection_name_with_a-dash",
 			Err: &mongo.CommandError{
 				Code:    73,
-				Message: `Namespace must not contain non-latin letters, spaces, dots, dollars, dashes.`,
+				Message: "Invalid collection name: collection_name_with_a-$",
 			},
+			Alt: `Namespace must not contain non-latin letters, spaces, dots, dollars, dashes.`,
 		},
 		"WithADollarSign": {
 			Collection: "collection_name_with_a-$",
@@ -173,8 +169,9 @@ func TestCollectionName(t *testing.T) {
 			Collection: "",
 			Err: &mongo.CommandError{
 				Code:    73,
-				Message: `Namespace is empty`,
+				Message: "Invalid namespace specified 'testcollectionname.'",
 			},
+			Alt: "Namespace is empty",
 		},
 		"64CharLong": {
 			Collection: "very_long_collection_name_that_is_more_than_64_characters_long_but_still_valid",
