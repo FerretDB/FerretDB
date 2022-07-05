@@ -44,6 +44,9 @@ const (
 	localePOSIX = "POSIX"
 )
 
+// Errors are wrapped with `lazyerrors.Error`,
+// so the caller needs to use `errors.Is` to check the error,
+// for example, `errors.Is(err, ErrSchemaNotExist)`.
 var (
 	// ErrTableNotExist indicates that there is no such table.
 	ErrTableNotExist = fmt.Errorf("table does not exist")
@@ -223,26 +226,24 @@ func (pgPool *Pool) Collections(ctx context.Context, db string) ([]string, error
 		return nil, ErrSchemaNotExist
 	}
 
+	var settings *types.Document
+	var serr error
 	var collections *types.Document
-	f := func(tx pgx.Tx) error {
-		settings, err := pgPool.getSettingsTable(ctx, tx, db)
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
 
-		collectionsDoc := must.NotFail(settings.Get("collections"))
-
-		var ok bool
-		collections, ok = collectionsDoc.(*types.Document)
-		if !ok {
-			return lazyerrors.Errorf("invalid settings document: %v", collectionsDoc)
-		}
-
-		return nil
-	}
-	err = pgPool.inTransaction(ctx, f)
+	err = pgPool.inTransaction(ctx, func(tx pgx.Tx) error {
+		settings, serr = pgPool.getSettingsTable(ctx, tx, db)
+		return serr
+	})
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
+	}
+
+	collectionsDoc := must.NotFail(settings.Get("collections"))
+
+	var ok bool
+	collections, ok = collectionsDoc.(*types.Document)
+	if !ok {
+		return nil, lazyerrors.Errorf("invalid settings document: %v", collectionsDoc)
 	}
 
 	return collections.Keys(), nil
@@ -255,7 +256,8 @@ func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, error)
 	// TODO query settings table instead: https://github.com/FerretDB/FerretDB/issues/125
 
 	var tables []string
-	f := func(tx pgx.Tx) error {
+
+	err := pgPool.inTransaction(ctx, func(tx pgx.Tx) error {
 		var err error
 		tables, err = pgPool.tables(ctx, tx, schema)
 		if err != nil {
@@ -263,9 +265,7 @@ func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, error)
 		}
 
 		return nil
-	}
-
-	err := pgPool.inTransaction(ctx, f)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -320,35 +320,35 @@ func (pgPool *Pool) inTransaction(ctx context.Context, f func(pgx.Tx) error) (er
 //
 // It returns ErrAlreadyExist if schema already exist.
 func (pgPool *Pool) CreateDatabase(ctx context.Context, db string) error {
-	f := func(tx pgx.Tx) error {
+	err := pgPool.inTransaction(ctx, func(tx pgx.Tx) error {
 		sql := `CREATE SCHEMA ` + pgx.Identifier{db}.Sanitize()
 		_, err := tx.Exec(ctx, sql)
+
 		if err == nil {
 			err = pgPool.createSettingsTable(ctx, tx, db)
 		}
+		return err
+	})
 
-		if err == nil {
-			return nil
-		}
-
-		pgErr, ok := err.(*pgconn.PgError)
-		if !ok {
-			return lazyerrors.Errorf("pg.CreateDatabase: %w", err)
-		}
-
-		switch pgErr.Code {
-		case pgerrcode.DuplicateSchema:
-			return ErrAlreadyExist
-		case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject:
-			// https://www.postgresql.org/message-id/CA+TgmoZAdYVtwBfp1FL2sMZbiHCWT4UPrzRLNnX1Nb30Ku3-gg@mail.gmail.com
-			// The same thing for schemas. Reproducible by integration tests.
-			return ErrAlreadyExist
-		default:
-			return lazyerrors.Errorf("pg.CreateDatabase: %w", err)
-		}
+	if err == nil {
+		return nil
 	}
 
-	return pgPool.inTransaction(ctx, f)
+	pgErr, ok := err.(*pgconn.PgError)
+	if !ok {
+		return lazyerrors.Errorf("pg.CreateDatabase: %w", err)
+	}
+
+	switch pgErr.Code {
+	case pgerrcode.DuplicateSchema:
+		return ErrAlreadyExist
+	case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject:
+		// https://www.postgresql.org/message-id/CA+TgmoZAdYVtwBfp1FL2sMZbiHCWT4UPrzRLNnX1Nb30Ku3-gg@mail.gmail.com
+		// The same thing for schemas. Reproducible by integration tests.
+		return ErrAlreadyExist
+	default:
+		return lazyerrors.Errorf("pg.CreateDatabase: %w", err)
+	}
 }
 
 // DropDatabase drops FerretDB database.
@@ -387,9 +387,8 @@ func (pgPool *Pool) CreateCollection(ctx context.Context, db, collection string)
 		return ErrSchemaNotExist
 	}
 
-	f := func(tx pgx.Tx) error {
-		table := formatCollectionName(collection)
-
+	table := formatCollectionName(collection)
+	err = pgPool.inTransaction(ctx, func(tx pgx.Tx) error {
 		tables, err := pgPool.tables(ctx, tx, db)
 		if err != nil {
 			return err
@@ -428,14 +427,9 @@ func (pgPool *Pool) CreateCollection(ctx context.Context, db, collection string)
 		}
 
 		return nil
-	}
+	})
 
-	err = pgPool.inTransaction(ctx, f)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // DropCollection drops FerretDB collection.
@@ -451,9 +445,8 @@ func (pgPool *Pool) DropCollection(ctx context.Context, schema, collection strin
 		return ErrSchemaNotExist
 	}
 
-	f := func(tx pgx.Tx) error {
-		table := formatCollectionName(collection)
-
+	table := formatCollectionName(collection)
+	err = pgPool.inTransaction(ctx, func(tx pgx.Tx) error {
 		tables, err := pgPool.tables(ctx, tx, schema)
 		if err != nil {
 			return lazyerrors.Error(err)
@@ -478,9 +471,9 @@ func (pgPool *Pool) DropCollection(ctx context.Context, schema, collection strin
 		}
 
 		return nil
-	}
+	})
 
-	return pgPool.inTransaction(ctx, f)
+	return err
 }
 
 // CreateTableIfNotExist ensures that given FerretDB database / PostgreSQL schema
@@ -565,7 +558,7 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 // QueryDocuments returns a list of documents for given FerretDB database and collection.
 func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment string) ([]*types.Document, error) {
 	var res []*types.Document
-	f := func(tx pgx.Tx) error {
+	err := pgPool.inTransaction(ctx, func(tx pgx.Tx) error {
 		table, err := pgPool.getTableName(ctx, tx, db, collection)
 		if err != nil {
 			return err
@@ -602,9 +595,7 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment 
 		}
 
 		return nil
-	}
-
-	err := pgPool.inTransaction(ctx, f)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -614,8 +605,8 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment 
 
 // SetDocumentByID sets a document by its ID.
 func (pgPool *Pool) SetDocumentByID(ctx context.Context, db, collection string, id any, doc *types.Document) (int64, error) {
-	var rowsAffected int64
-	f := func(tx pgx.Tx) error {
+	var tag pgconn.CommandTag
+	err := pgPool.inTransaction(ctx, func(tx pgx.Tx) error {
 		table, err := pgPool.getTableName(ctx, tx, db, collection)
 		if err != nil {
 			return err
@@ -624,27 +615,20 @@ func (pgPool *Pool) SetDocumentByID(ctx context.Context, db, collection string, 
 		sql := "UPDATE " + pgx.Identifier{db, table}.Sanitize() +
 			" SET _jsonb = $1 WHERE _jsonb->'_id' = $2"
 
-		tag, err := tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)), must.NotFail(fjson.Marshal(id)))
-		if err != nil {
-			return err
-		}
-
-		rowsAffected = tag.RowsAffected()
-		return nil
-	}
-
-	err := pgPool.inTransaction(ctx, f)
+		tag, err = tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)), must.NotFail(fjson.Marshal(id)))
+		return err
+	})
 	if err != nil {
 		return 0, err
 	}
 
-	return rowsAffected, nil
+	return tag.RowsAffected(), nil
 }
 
 // DeleteDocumentsByID deletes documents by given IDs.
 func (pgPool *Pool) DeleteDocumentsByID(ctx context.Context, db, collection string, ids []any) (int64, error) {
-	var rowsAffected int64
-	f := func(tx pgx.Tx) error {
+	var tag pgconn.CommandTag
+	err := pgPool.inTransaction(ctx, func(tx pgx.Tx) error {
 		table, err := pgPool.getTableName(ctx, tx, db, collection)
 		if err != nil {
 			return err
@@ -663,21 +647,14 @@ func (pgPool *Pool) DeleteDocumentsByID(ctx context.Context, db, collection stri
 			strings.Join(placeholders, ", ") +
 			`)`
 
-		tag, err := tx.Exec(ctx, sql, idsMarshalled...)
-		if err != nil {
-			return err
-		}
-
-		rowsAffected = tag.RowsAffected()
-		return nil
-	}
-
-	err := pgPool.inTransaction(ctx, f)
+		tag, err = tx.Exec(ctx, sql, idsMarshalled...)
+		return err
+	})
 	if err != nil {
 		return 0, err
 	}
 
-	return rowsAffected, nil
+	return tag.RowsAffected(), nil
 }
 
 // InsertDocument inserts a document into FerretDB database and collection.
@@ -701,7 +678,7 @@ func (pgPool *Pool) InsertDocument(ctx context.Context, db, collection string, d
 		}
 	}
 
-	f := func(tx pgx.Tx) error {
+	err = pgPool.inTransaction(ctx, func(tx pgx.Tx) error {
 		table, err := pgPool.getTableName(ctx, tx, db, collection)
 		if err != nil {
 			return err
@@ -712,9 +689,9 @@ func (pgPool *Pool) InsertDocument(ctx context.Context, db, collection string, d
 
 		_, err = tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)))
 		return err
-	}
+	})
 
-	return pgPool.inTransaction(ctx, f)
+	return err
 }
 
 // tables returns a list of PostgreSQL table names.
