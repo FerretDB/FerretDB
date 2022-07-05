@@ -18,6 +18,7 @@ package pgdb
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/jackc/pgconn"
@@ -52,6 +53,9 @@ var (
 
 	// ErrAlreadyExist indicates that a schema or table already exists.
 	ErrAlreadyExist = fmt.Errorf("schema or table already exist")
+
+	// ErrInvalidCollectionName indicates that a collection name is invalid.
+	ErrInvalidCollectionName = fmt.Errorf("invalid collection name")
 )
 
 // Pool represents PostgreSQL concurrency-safe connection pool.
@@ -343,8 +347,20 @@ func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
 	}
 }
 
-// validateCollectionName validate collection name.
+// validateCollectionName validates collection name.
+// It must not contain non-latin letters, spaces, dots, dollars, dashes.
+// The collection name length is no longer than 119 letters.
 func (pgPool *Pool) validateCollectionName(collection string) error {
+	// excludes non-latin letters, spaces, dots, dollars, dashes, long names
+	regex := regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]{0,119}$")
+	if regex.MatchString(collection) {
+		return ErrInvalidCollectionName
+	}
+
+	if strings.HasPrefix(collection, collectionPrefix) {
+		return ErrInvalidCollectionName
+	}
+
 	return nil
 }
 

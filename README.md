@@ -33,7 +33,13 @@ and [contributing guidelines](CONTRIBUTING.md).
 
 1. FerretDB uses the same protocol error names and codes, but the exact error messages may be different in some cases.
 
+2. Collection names restrictions:
+  * collection name cannot start with `_ferretdb_`
+  * collection name must not include non-latin letters, spaces, dots, dollars, dashes
+  * collection name length is no more than 119 symbols.
+
 If you encounter some other difference in behavior, please [join our community](#community) to report a problem.
+
 
 ## Quickstart
 

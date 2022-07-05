@@ -128,13 +128,29 @@ func TestFindCommentQuery(t *testing.T) {
 	assert.Contains(t, databaseNames, name)
 }
 
-func TestLongCollectionName(t *testing.T) {
+func TestCollectionName(t *testing.T) {
 	t.Parallel()
 
 	ctx, collection := Setup(t)
 
+	tooLongCollectionName := "very_long_collection_name_that_is_more_than_119_characters_long_that_excludes_non-latin_letters_spaces_dots_dollars_dashes"
+	err := collection.Database().CreateCollection(ctx, tooLongCollectionName)
+	require.Equal(t, fmt.Errorf("invalid collection name"), err)
+
+	ferretDBcollectionName := "_ferretdb_prefixed_collection_name"
+	err = collection.Database().CreateCollection(ctx, ferretDBcollectionName)
+	require.Equal(t, fmt.Errorf("invalid collection name"), err)
+
+	collectionNameWithADot := "collection_name_with_a_dot."
+	err = collection.Database().CreateCollection(ctx, collectionNameWithADot)
+	require.Equal(t, fmt.Errorf("invalid collection name"), err)
+
+	collectionNameWithADash := "collection_name_with_a-dash"
+	err = collection.Database().CreateCollection(ctx, collectionNameWithADash)
+	require.Equal(t, fmt.Errorf("invalid collection name"), err)
+
 	longCollectionName := "very_long_collection_name_that_is_more_than_64_characters_long_but_still_valid"
-	err := collection.Database().CreateCollection(ctx, longCollectionName)
+	err = collection.Database().CreateCollection(ctx, longCollectionName)
 	require.NoError(t, err)
 
 	sixtyThreeCharsCollectionName := "this_is_a_collection_name_that_is_63_characters_long_abcdefghij"
