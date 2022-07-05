@@ -15,23 +15,21 @@
 package tigris
 
 import (
-	"context"
+	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/FerretDB/FerretDB/integration"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-// MsgCreate implements HandlerInterface.
-func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/772
+func TestSmoke(t *testing.T) {
+	t.Parallel()
+	ctx, collection := integration.Setup(t, shareddata.FixedScalars)
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"ok", float64(1),
-		))},
-	}))
-
-	return &reply, nil
+	var doc bson.D
+	err := collection.FindOne(ctx, bson.D{{"_id", "double"}}).Decode(&doc)
+	require.NoError(t, err)
+	integration.AssertEqualDocuments(t, bson.D{{"_id", "double"}, {"double_value", 42.13}}, doc)
 }

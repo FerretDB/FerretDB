@@ -22,15 +22,16 @@ env:
 
 jobs:
   test:
-    name: Test ${{ matrix.db }}
+    name: Test ${{ matrix.name }}
     runs-on: ubuntu-20.04
 
     strategy:
       fail-fast: false
       matrix:
-        db:
-          - FerretDB
-          - MongoDB
+        include:
+          - {name: "PostgreSQL", handler: "pg"}
+          - {name: "Tigris", handler: "tigris"}
+          - {name: "MongoDB", handler: "mongodb"}
 
     steps:
       - name: Checkout code
@@ -56,14 +57,14 @@ jobs:
       - name: Wait for and setup environment
         run: bin/task env-setup
 
-      - name: Run tests
-        run: bin/task test-integration-db DB=${{ matrix.db }}
+      - name: Run ${{ matrix.handler }} tests
+        run: bin/task test-integration-${{ matrix.handler }}
 
       - name: Upload coverage information
         uses: codecov/codecov-action@v3
         with:
-          files: ./integration/integration-${{ matrix.db }}.txt
-          flags: integration,${{ matrix.db }}
+          files: ./integration/integration-${{ matrix.handler }}.txt
+          flags: integration,${{ matrix.handler }}
 
       # we don't want them on CI
       - name: Clean test and fuzz caches
