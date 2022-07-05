@@ -131,67 +131,70 @@ func TestFindCommentQuery(t *testing.T) {
 func TestCollectionName(t *testing.T) {
 	t.Parallel()
 
-	ctx, collection := Setup(t)
+	t.Run("Err", func(t *testing.T) {
+		ctx, collection := Setup(t)
 
-	cases := map[string]struct {
-		Collection string
-		Err        *mongo.CommandError
-		Alt        string
-	}{
-		"TooLongForBoth": {
-			Collection: "very_long_collection_name_that_fails_both_in_mongo_and_in_ferretdb_databases" +
-				"_for_ferretdb_it_fails_because_it_is_more_than_119_characters__for_mongo_it_fails_because_it_is_more_than_255_charachters_" +
-				"long_that_excludes_non_latin_letters_spaces_dots_dollars_dashes",
-			Err: &mongo.CommandError{
-				Name: "InvalidNamespace",
-				Code: 73,
-				Message: "Fully qualified namespace is too long. Namespace: testcollectionname.very_long_collection_name_that_fails_both_in_mongo_" +
-					"and_in_ferretdb_databases_for_ferretdb_it_fails_because_it_is_more_than_119_characters__for_mongo_it_fails_because_it_is_more_than_" +
-					"255_charachters_long_that_excludes_non_latin_letters_spaces_dots_dollars_dashes Max: 255",
+		cases := map[string]struct {
+			collection string
+			err        *mongo.CommandError
+			alt        string
+		}{
+			"TooLongForBoth": {
+				collection: "very_long_collection_name_that_fails_both_in_mongo_and_in_ferretdb_databases" +
+					"_for_ferretdb_it_fails_because_it_is_more_than_119_characters__for_mongo_it_fails_because_it_is_more_than_255_charachters_" +
+					"long_that_excludes_non_latin_letters_spaces_dots_dollars_dashes",
+				err: &mongo.CommandError{
+					Name: "InvalidNamespace",
+					Code: 73,
+					Message: "Fully qualified namespace is too long. Namespace: testcollectionname-err.very_long_collection_name_that_fails_both_in_mongo_" +
+						"and_in_ferretdb_databases_for_ferretdb_it_fails_because_it_is_more_than_119_characters__for_mongo_it_fails_because_it_is_more_than_" +
+						"255_charachters_long_that_excludes_non_latin_letters_spaces_dots_dollars_dashes Max: 255",
+				},
+				alt: "Fully qualified namespace is too long.",
 			},
-			Alt: "Fully qualified namespace is too long",
-		},
-		"WithADollarSign": {
-			Collection: "collection_name_with_a-$",
-			Err: &mongo.CommandError{
-				Name:    "InvalidNamespace",
-				Code:    73,
-				Message: `Invalid collection name: collection_name_with_a-$`,
+			"WithADollarSign": {
+				collection: "collection_name_with_a-$",
+				err: &mongo.CommandError{
+					Name:    "InvalidNamespace",
+					Code:    73,
+					Message: `Invalid collection name: collection_name_with_a-$`,
+				},
 			},
-			Alt: `Namespace must not contain non-latin letters, spaces, dots, dollars, dashes.`,
-		},
-		"Empty": {
-			Collection: "",
-			Err: &mongo.CommandError{
-				Name:    "InvalidNamespace",
-				Code:    73,
-				Message: "Invalid namespace specified 'testcollectionname.'",
+			"Empty": {
+				collection: "",
+				err: &mongo.CommandError{
+					Name:    "InvalidNamespace",
+					Code:    73,
+					Message: "Invalid namespace specified 'testcollectionname-err.'",
+				},
+				alt: "Namespace is empty",
 			},
-			Alt: "Namespace is empty",
-		},
-		"64CharLong": {
-			Collection: "very_long_collection_name_that_is_more_than_64_characters_long_but_still_valid",
-		},
-		"63CharLong": {
-			Collection: "this_is_a_collection_name_that_is_63_characters_long_abcdefghij",
-		},
-	}
+		}
 
-	for name, tc := range cases {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			err := collection.Database().CreateCollection(ctx, tc.Collection)
-			if tc.Err == nil {
-				require.NoError(t, err)
-				return
-			}
-			AssertEqualAltError(t, *tc.Err, tc.Alt, err)
-		})
-	}
+		for name, tc := range cases {
+			name, tc := name, tc
+			t.Run(name, func(t *testing.T) {
+				err := collection.Database().CreateCollection(ctx, tc.collection)
+				assert.NotNil(t, tc.err)
+				AssertEqualAltError(t, *tc.err, tc.alt, err)
+			})
+		}
+	})
 
-	names, err := collection.Database().ListCollectionNames(ctx, bson.D{})
-	require.NoError(t, err)
+	t.Run("Ok", func(t *testing.T) {
+		ctx, collection := Setup(t)
 
-	assert.Contains(t, names, cases["64CharLong"].Collection)
-	assert.Contains(t, names, cases["63CharLong"].Collection)
+		longCollectionName := "very_long_collection_name_that_is_more_than_64_characters_long_but_still_valid"
+		err := collection.Database().CreateCollection(ctx, longCollectionName)
+		require.NoError(t, err)
+		sixtyThreeCharsCollectionName := "this_is_a_collection_name_that_is_63_characters_long_abcdefghij"
+		err = collection.Database().CreateCollection(ctx, sixtyThreeCharsCollectionName)
+		require.NoError(t, err)
+
+		names, err := collection.Database().ListCollectionNames(ctx, bson.D{})
+		require.NoError(t, err)
+
+		assert.Contains(t, names, longCollectionName)
+		assert.Contains(t, names, sixtyThreeCharsCollectionName)
+	})
 }

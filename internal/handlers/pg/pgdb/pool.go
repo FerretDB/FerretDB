@@ -361,7 +361,7 @@ func (pgPool *Pool) validateCollectionName(collection string) error {
 	if !regex.MatchString(collection) {
 		return common.NewErrorMsg(
 			common.ErrInvalidNamespace,
-			"Namespace must not contain non-latin letters, spaces, dots, dollars, dashes.",
+			fmt.Sprintf("Invalid collection name: %s", collection),
 		)
 	}
 
