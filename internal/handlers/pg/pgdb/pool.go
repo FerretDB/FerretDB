@@ -45,7 +45,8 @@ const (
 )
 
 var (
-	regex = regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]{0,119}$")
+	// Regex validateCollectionNameRe validates collection names.
+	validateCollectionNameRe = regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]{0,119}$")
 
 	// ErrTableNotExist indicates that there is no such table.
 	ErrTableNotExist = fmt.Errorf("table does not exist")
@@ -356,7 +357,7 @@ func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
 //  - ErrAlreadyExist if table already exist.
 //  - ErrTableNotExist is schema does not exist.
 func (pgPool *Pool) CreateCollection(ctx context.Context, db, collection string) error {
-	if !regex.MatchString(collection) {
+	if !validateCollectionNameRe.MatchString(collection) {
 		return ErrInvalidTableName
 	}
 

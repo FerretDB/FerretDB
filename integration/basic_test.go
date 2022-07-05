@@ -177,8 +177,9 @@ func TestCollectionName(t *testing.T) {
 		for name, tc := range cases {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {
-				err := collection.Database().CreateCollection(ctx, tc.collection)
+				// check we didn't forget to add an error in the test cases.
 				assert.NotNil(t, tc.err)
+				err := collection.Database().CreateCollection(ctx, tc.collection)
 				AssertEqualAltError(t, *tc.err, tc.alt, err)
 			})
 		}
