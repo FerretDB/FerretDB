@@ -49,6 +49,3 @@ services:
     container_name: ferretdb_markdownlint
     volumes:
       - .:/workdir
-
-volumes:
-  tigrisdata:
