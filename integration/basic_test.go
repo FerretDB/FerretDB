@@ -133,7 +133,9 @@ func TestCollectionName(t *testing.T) {
 
 	ctx, collection := Setup(t)
 
-	tooLongCollectionName := "very_long_collection_name_that_is_more_than_119_characters_long_that_excludes_non-latin_letters_spaces_dots_dollars_dashes"
+	tooLongCollectionName := "very_long_collection_name_that_fails_both_in_mongo_and_in_ferretdb_databases" +
+		"_for_ferretdb_it_fails_because_it_is_more_than_119_characters__for_mongo_it_fails_because_it_is_more_than_255_charachters_" +
+		"long_that_excludes_non_latin_letters_spaces_dots_dollars_dashes"
 	err := collection.Database().CreateCollection(ctx, tooLongCollectionName)
 	require.Equal(t, fmt.Errorf("invalid collection name"), err)
 
