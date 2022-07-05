@@ -78,7 +78,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, common.NewErrorMsg(common.ErrNamespaceExists, msg)
 		}
 		if err == pgdb.ErrInvalidTableName {
-			msg := "Collection must not contain non-latin letters, spaces, dots, dollars, dashes and be longer than 119"
+			msg := "Collection must not contain non-latin letters, spaces, dots, dollars, dashes and be longer than 119 characters."
 			return nil, common.NewErrorMsg(common.ErrInvalidNamespace, msg)
 		}
 		return nil, lazyerrors.Error(err)

@@ -150,7 +150,7 @@ func TestCollectionName(t *testing.T) {
 						"and_in_ferretdb_databases_for_ferretdb_it_fails_because_it_is_more_than_119_characters__for_mongo_it_fails_because_it_is_more_than_" +
 						"255_charachters_long_that_excludes_non_latin_letters_spaces_dots_dollars_dashes Max: 255",
 				},
-				alt: "Collection must not contain non-latin letters, spaces, dots, dollars, dashes and be longer than 119",
+				alt: "Collection must not contain non-latin letters, spaces, dots, dollars, dashes and be longer than 119 characters.",
 			},
 			"WithADollarSign": {
 				collection: "collection_name_with_a-$",
@@ -159,7 +159,7 @@ func TestCollectionName(t *testing.T) {
 					Code:    73,
 					Message: `Invalid collection name: collection_name_with_a-$`,
 				},
-				alt: "Collection must not contain non-latin letters, spaces, dots, dollars, dashes and be longer than 119",
+				alt: "Collection must not contain non-latin letters, spaces, dots, dollars, dashes and be longer than 119 characters.",
 			},
 			"Empty": {
 				collection: "",
@@ -168,7 +168,7 @@ func TestCollectionName(t *testing.T) {
 					Code:    73,
 					Message: "Invalid namespace specified 'testcollectionname-err.'",
 				},
-				alt: "Collection must not contain non-latin letters, spaces, dots, dollars, dashes and be longer than 119",
+				alt: "Collection must not contain non-latin letters, spaces, dots, dollars, dashes and be longer than 119 characters.",
 			},
 		}
 
