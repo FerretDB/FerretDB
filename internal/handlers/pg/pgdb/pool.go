@@ -353,7 +353,7 @@ func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
 // CreateCollection creates a new FerretDB collection in existing schema.
 //
 // It returns:
-//  - ErrInvalidTableName - if the table name doesn't conform restrictions.
+//  - ErrInvalidTableName - if the table name doesn't conform to restrictions.
 //  - ErrAlreadyExist - if table already exist.
 //  - ErrTableNotExist - is schema does not exist.
 func (pgPool *Pool) CreateCollection(ctx context.Context, db, collection string) error {
