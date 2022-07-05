@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package integration
+package tigris
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/FerretDB/FerretDB/integration"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
@@ -26,7 +27,7 @@ func TestEnvData(t *testing.T) {
 	t.Parallel()
 
 	// see `env-data` Taskfile target
-	ctx, collection, _ := SetupWithOpts(t, &SetupOpts{
+	ctx, collection, _ := integration.SetupWithOpts(t, &integration.SetupOpts{
 		DatabaseName: "test",
 	})
 	collection = collection.Database().Collection("values")
@@ -34,7 +35,7 @@ func TestEnvData(t *testing.T) {
 	err := collection.Drop(ctx)
 	require.NoError(t, err)
 
-	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
+	providers := []shareddata.Provider{shareddata.FixedScalars}
 	for _, provider := range providers {
 		for _, doc := range provider.Docs() {
 			_, err = collection.InsertOne(ctx, doc)

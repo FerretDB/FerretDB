@@ -29,7 +29,7 @@ import (
 
 func TestMostCommandsAreCaseSensitive(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := Setup(t)
 	db := collection.Database()
 
 	res := db.RunCommand(ctx, bson.D{{"listcollections", 1}})
@@ -53,7 +53,7 @@ func TestMostCommandsAreCaseSensitive(t *testing.T) {
 
 func TestFindNothing(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := Setup(t)
 
 	cursor, err := collection.Find(ctx, bson.D{})
 	require.NoError(t, err)
@@ -72,7 +72,7 @@ func TestFindNothing(t *testing.T) {
 func TestInsertFind(t *testing.T) {
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
-	ctx, collection := setup(t, providers...)
+	ctx, collection := Setup(t, providers...)
 
 	var docs []bson.D
 	for _, provider := range providers {
@@ -101,7 +101,7 @@ func TestInsertFind(t *testing.T) {
 
 //nolint:paralleltest // we test a global list of databases
 func TestFindCommentMethod(t *testing.T) {
-	ctx, collection := setup(t, shareddata.Scalars)
+	ctx, collection := Setup(t, shareddata.Scalars)
 	name := collection.Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
 	require.NoError(t, err)
@@ -116,7 +116,7 @@ func TestFindCommentMethod(t *testing.T) {
 
 //nolint:paralleltest // we test a global list of databases
 func TestFindCommentQuery(t *testing.T) {
-	ctx, collection := setup(t, shareddata.Scalars)
+	ctx, collection := Setup(t, shareddata.Scalars)
 	name := collection.Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
 	require.NoError(t, err)
@@ -131,7 +131,7 @@ func TestFindCommentQuery(t *testing.T) {
 func TestLongCollectionName(t *testing.T) {
 	t.Parallel()
 
-	ctx, collection := setup(t)
+	ctx, collection := Setup(t)
 
 	longCollectionName := "very_long_collection_name_that_is_more_than_64_characters_long_but_still_valid"
 	err := collection.Database().CreateCollection(ctx, longCollectionName)

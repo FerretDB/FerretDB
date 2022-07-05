@@ -30,7 +30,7 @@ import (
 
 func TestUpdateUpsert(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Composites)
+	ctx, collection := Setup(t, shareddata.Composites)
 
 	// this upsert inserts document
 	filter := bson.D{{"foo", "bar"}}

@@ -19,8 +19,6 @@ import (
 	"flag"
 	"fmt"
 	"net"
-	"strconv"
-	"strings"
 	"sync"
 	"testing"
 
@@ -39,48 +37,45 @@ import (
 )
 
 var (
-	startupPortF = flag.String("port", "ferretdb", "port to use")
-	proxyAddrF   = flag.String("proxy-addr", "", "use proxy for in-process listener mode")
+	portF      = flag.Int("port", 0, "port to use; if 0, in-process FerretDB is used")
+	handlerF   = flag.String("handler", "pg", "handler to use for in-process FerretDB")
+	proxyAddrF = flag.String("proxy-addr", "", "proxy to use for in-process FerretDB")
 
 	startupOnce sync.Once
 )
 
-// setupOpts represents setup options.
-type setupOpts struct {
+// SetupOpts represents setup options.
+type SetupOpts struct {
 	// Database to use. If empty, temporary test-specific database is created.
-	databaseName string
+	DatabaseName string
 
 	// Data providers.
-	providers []shareddata.Provider
+	Providers []shareddata.Provider
 }
 
-// setupWithOpts setups the test according to given options,
+// SetupWithOpts setups the test according to given options,
 // and returns test-specific context (that is cancelled when the test ends), database collection
 // and the port of the running server.
-func setupWithOpts(t *testing.T, opts *setupOpts) (context.Context, *mongo.Collection, int) {
+func SetupWithOpts(t *testing.T, opts *SetupOpts) (context.Context, *mongo.Collection, int) {
 	t.Helper()
 
 	startupOnce.Do(func() { startup(t) })
 
 	if opts == nil {
-		opts = new(setupOpts)
+		opts = new(SetupOpts)
 	}
 
 	var ownDatabase bool
-	if opts.databaseName == "" {
-		opts.databaseName = testutil.SchemaName(t)
+	if opts.DatabaseName == "" {
+		opts.DatabaseName = testutil.SchemaName(t)
 		ownDatabase = true
 	}
 
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.DebugLevel))
 
-	port, err := strconv.Atoi(*startupPortF)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	ctx, cancel := context.WithCancel(context.Background())
 
+	port := *portF
 	if port == 0 {
 		port = setupListener(t, ctx, logger)
 	}
@@ -89,7 +84,7 @@ func setupWithOpts(t *testing.T, opts *setupOpts) (context.Context, *mongo.Colle
 	t.Cleanup(cancel)
 
 	client := setupClient(t, ctx, port)
-	db := client.Database(opts.databaseName)
+	db := client.Database(opts.DatabaseName)
 	collectionName := testutil.TableName(t)
 	collection := db.Collection(collectionName)
 
@@ -100,13 +95,13 @@ func setupWithOpts(t *testing.T, opts *setupOpts) (context.Context, *mongo.Colle
 	}
 
 	// create collection explicitly in case there are no docs to insert
-	err = db.CreateCollection(ctx, collectionName)
+	err := db.CreateCollection(ctx, collectionName)
 	require.NoError(t, err)
 
 	// delete collection and (possibly) database unless test failed
 	t.Cleanup(func() {
 		if t.Failed() {
-			t.Logf("Keeping database %q and collection %q for debugging.", opts.databaseName, collectionName)
+			t.Logf("Keeping database %q and collection %q for debugging.", opts.DatabaseName, collectionName)
 			return
 		}
 
@@ -120,7 +115,7 @@ func setupWithOpts(t *testing.T, opts *setupOpts) (context.Context, *mongo.Colle
 	})
 
 	// insert all provided data
-	for _, provider := range opts.providers {
+	for _, provider := range opts.Providers {
 		for _, doc := range provider.Docs() {
 			_, err = collection.InsertOne(ctx, doc)
 			require.NoError(t, err)
@@ -130,12 +125,12 @@ func setupWithOpts(t *testing.T, opts *setupOpts) (context.Context, *mongo.Colle
 	return ctx, collection, port
 }
 
-// setup calls setupWithOpts with specified data providers.
-func setup(t *testing.T, providers ...shareddata.Provider) (context.Context, *mongo.Collection) {
+// Setup calls setupWithOpts with specified data providers.
+func Setup(t *testing.T, providers ...shareddata.Provider) (context.Context, *mongo.Collection) {
 	t.Helper()
 
-	ctx, collection, _ := setupWithOpts(t, &setupOpts{
-		providers: providers,
+	ctx, collection, _ := SetupWithOpts(t, &SetupOpts{
+		Providers: providers,
 	})
 	return ctx, collection
 }
@@ -145,10 +140,11 @@ func setup(t *testing.T, providers ...shareddata.Provider) (context.Context, *mo
 func setupListener(t *testing.T, ctx context.Context, logger *zap.Logger) int {
 	t.Helper()
 
-	h, err := registry.NewHandler("pg", &registry.NewHandlerOpts{
+	h, err := registry.NewHandler(*handlerF, &registry.NewHandlerOpts{
 		Ctx:           ctx,
 		Logger:        logger,
 		PostgreSQLURL: testutil.PoolConnString(t, nil),
+		TigrisURL:     "127.0.0.1:8081",
 	})
 	require.NoError(t, err)
 
@@ -204,20 +200,6 @@ func setupClient(t *testing.T, ctx context.Context, port int) *mongo.Client {
 // startup initializes things that should be initialized only once.
 func startup(t *testing.T) {
 	t.Helper()
-
-	*startupPortF = strings.ToLower(*startupPortF)
-	switch *startupPortF {
-	case "ferretdb":
-		*startupPortF = "0"
-	case "default":
-		*startupPortF = "27017"
-	case "mongodb":
-		*startupPortF = "37017"
-	}
-
-	if _, err := strconv.Atoi(*startupPortF); err != nil {
-		t.Fatal(err)
-	}
 
 	logging.Setup(zap.DebugLevel)
 
