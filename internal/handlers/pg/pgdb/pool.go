@@ -348,7 +348,7 @@ func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
 }
 
 // validateCollectionName validates collection name.
-// collection name must not contain non-latin letters, spaces, dots, dollars, dashes,
+// Collection name must not contain non-latin letters, spaces, dots, dollars, dashes,
 // name collection name length must be less than 119 characters.
 func (pgPool *Pool) validateCollectionName(collection string) error {
 	if len(collection) == 0 {
