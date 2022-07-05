@@ -16,6 +16,7 @@ package aggregate
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -268,7 +269,15 @@ func ParseGroupStage(group *types.Document) (*Stage, error) {
 	return &stage, nil
 }
 
+func IsNumeric(s string) bool {
+	_, err := strconv.ParseFloat(s, 64)
+	return err == nil
+}
+
 func GetNumericValue(field string) string {
+	if IsNumeric(field) {
+		return field
+	}
 	if !strings.Contains(field, "->") && !strings.Contains(field, "->>") {
 		parts := strings.Split(field, ".")
 		field = "_jsonb"

@@ -104,7 +104,7 @@ func TestToSql(t *testing.T) {
 
 	filter := stage.root.children[0]
 	assert.Equal(t, "quantity > $1", filter.ToSql(false))
-	assert.Equal(t, "_jsonb->'quantity' > $1", filter.ToSql(true))
+	assert.Equal(t, "(CASE WHEN (_jsonb->'quantity' ? '$f') THEN (_jsonb->'quantity'->>'$f')::numeric ELSE (_jsonb->'quantity')::numeric END) > $1", filter.ToSql(true))
 }
 
 func TestNestedToSql(t *testing.T) {
@@ -117,7 +117,7 @@ func TestNestedToSql(t *testing.T) {
 	require.NoError(t, err)
 
 	filter := stage.root.children[0]
-	assert.Equal(t, "_jsonb->>'item'->'quantity' > $1", filter.ToSql(true))
+	assert.Equal(t, "(CASE WHEN (_jsonb->'item'->'quantity' ? '$f') THEN (_jsonb->'item'->'quantity'->>'$f')::numeric ELSE (_jsonb->'item'->'quantity')::numeric END) > $1", filter.ToSql(true))
 }
 
 func TestAndOrToSql(t *testing.T) {
@@ -144,8 +144,8 @@ func TestAndOrToSql(t *testing.T) {
 	require.NoError(t, err)
 
 	filter := stage.root.children[0]
-	assert.Equal(t, "((_jsonb->>'item'->'quantity' > $1 AND NOT (_jsonb->'daysToExp' <= $2)) OR _jsonb->'valid' = $3)", filter.ToSql(true))
-	assert.Equal(t, []interface{}{int32(1), int32(10), true}, stage.GetValues())
+	assert.Equal(t, "(((CASE WHEN (_jsonb->'item'->'quantity' ? '$f') THEN (_jsonb->'item'->'quantity'->>'$f')::numeric ELSE (_jsonb->'item'->'quantity')::numeric END) > $1 AND NOT ((CASE WHEN (_jsonb->'daysToExp' ? '$f') THEN (_jsonb->'daysToExp'->>'$f')::numeric ELSE (_jsonb->'daysToExp')::numeric END) <= $2)) OR _jsonb->'valid' = $3)", filter.ToSql(true))
+	assert.Equal(t, []interface{}{"1", "10", true}, stage.GetValues())
 }
 
 func TestExistsToSql(t *testing.T) {
@@ -220,12 +220,12 @@ func TestGetValuesInt32(t *testing.T) {
 	t.Parallel()
 
 	node := NewFieldFilterNode(0, "field", ">", int32(1), nil, false)
-	assert.Equal(t, []interface{}{int32(1)}, node.GetValues())
+	assert.Equal(t, []interface{}{"1"}, node.GetValues())
 }
 
 func TestGetValuesFloat64(t *testing.T) {
 	t.Parallel()
 
 	node := NewFieldFilterNode(0, "field", ">", float64(1.5), nil, false)
-	assert.Equal(t, []interface{}{"(CASE WHEN (1.5 ? '$f') THEN (1.5->>'$f')::numeric ELSE (1.5)::numeric END)"}, node.GetValues())
+	assert.Equal(t, []interface{}{"1.5"}, node.GetValues())
 }
