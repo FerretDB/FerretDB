@@ -111,6 +111,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	stages := []*aggregate.Stage{}
+	var project *types.Document
 
 	for i := 0; i < pipeline.Len(); i++ {
 		p := must.NotFail(pipeline.Get(i)).(*types.Document)
@@ -153,6 +154,21 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 					return nil, err
 				}
 
+			case "$project":
+				// TODO apply projections after query
+				pr, ok := must.NotFail(p.Get(pipelineOp)).(*types.Document)
+				if !ok {
+					return nil, common.NewErrorMsg(common.ErrBadValue, "the $project key specification must be an object")
+				}
+				// pr, err := aggregate.ParseProjectStage(&stages, project)
+				// if err != nil {
+				// 	return nil, err
+				// }
+
+				// fmt.Printf("  *** PROJ1: %#v\n", pr)
+
+				project = pr
+
 			default:
 				return nil, common.NewErrorMsg(common.ErrBadValue, fmt.Sprintf("unknown pipeline operator: %s", pipelineOp))
 			}
@@ -181,6 +197,13 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			return nil, lazyerrors.Error(err)
 		}
 		resDocs = append(resDocs, doc)
+	}
+
+	if project != nil {
+		err := common.ProjectDocuments(resDocs, project)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	firstBatch := types.MakeArray(len(resDocs))

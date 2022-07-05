@@ -286,6 +286,9 @@ func (stage *Stage) FieldAsJsonBuilder() string {
 }
 
 func Wrap(table string, stages []*Stage) (string, []interface{}) {
+	if len(stages) == 0 {
+		return "SELECT * FROM " + table, []interface{}{}
+	}
 	sql := ""
 	queryValues := []interface{}{}
 	for i, stage := range stages {

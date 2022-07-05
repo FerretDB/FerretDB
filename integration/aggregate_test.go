@@ -436,3 +436,42 @@ func TestInvalidSort(t *testing.T) {
 
 	assert.Equal(t, "(BadValue) the $sort key specification must be an object", err.Error())
 }
+
+func TestInclusionProjection(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup(t)
+
+	_, err := collection.InsertMany(ctx, []any{
+		bson.D{{"_id", int32(1)}, {"item", "abc"}, {"price", int32(10)}, {"quantity", int32(2)}},
+		bson.D{{"_id", int32(2)}, {"item", "jkl"}, {"price", int32(20)}, {"quantity", int32(1)}},
+		bson.D{{"_id", int32(3)}, {"item", "xyz"}, {"price", int32(5)}, {"quantity", int32(10)}},
+		bson.D{{"_id", int32(4)}, {"item", "xyz"}, {"price", int32(5)}, {"quantity", int32(20)}},
+		bson.D{{"_id", int32(5)}, {"item", "abc"}, {"price", int32(10)}, {"quantity", int32(10)}},
+		bson.D{{"_id", int32(6)}, {"item", "def"}, {"price", float64(7.5)}, {"quantity", int32(5)}},
+		bson.D{{"_id", int32(7)}, {"item", "def"}, {"price", float64(7.5)}, {"quantity", int32(10)}},
+		bson.D{{"_id", int32(8)}, {"item", "abc"}, {"price", int32(10)}, {"quantity", int32(5)}},
+	})
+	require.NoError(t, err)
+
+	project := bson.D{{"$project", bson.D{{"item", int32(1)}, {"price", int32(1)}}}}
+
+	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{project})
+	require.NoError(t, err)
+
+	var results []bson.D
+	if err := cursor.All(ctx, &results); err != nil {
+		t.Fatal(err)
+	}
+
+	expected := []bson.D{
+		bson.D{{"_id", int32(1)}, {"item", "abc"}, {"price", int32(10)}},
+		bson.D{{"_id", int32(2)}, {"item", "jkl"}, {"price", int32(20)}},
+		bson.D{{"_id", int32(3)}, {"item", "xyz"}, {"price", int32(5)}},
+		bson.D{{"_id", int32(4)}, {"item", "xyz"}, {"price", int32(5)}},
+		bson.D{{"_id", int32(5)}, {"item", "abc"}, {"price", int32(10)}},
+		bson.D{{"_id", int32(6)}, {"item", "def"}, {"price", float64(7.5)}},
+		bson.D{{"_id", int32(7)}, {"item", "def"}, {"price", float64(7.5)}},
+		bson.D{{"_id", int32(8)}, {"item", "abc"}, {"price", int32(10)}},
+	}
+	assert.Equal(t, expected, results)
+}
