@@ -19,8 +19,6 @@ import (
 	"flag"
 	"fmt"
 	"net"
-	"strconv"
-	"strings"
 	"sync"
 	"testing"
 
@@ -39,8 +37,9 @@ import (
 )
 
 var (
-	startupPortF = flag.String("port", "ferretdb", "port to use")
-	proxyAddrF   = flag.String("proxy-addr", "", "use proxy for in-process listener mode")
+	portF      = flag.Int("port", 0, "port to use; if 0, in-process FerretDB is used")
+	handlerF   = flag.String("handler", "pg", "handler to use for in-process FerretDB")
+	proxyAddrF = flag.String("proxy-addr", "", "proxy to use for in-process FerretDB")
 
 	startupOnce sync.Once
 )
@@ -74,13 +73,9 @@ func SetupWithOpts(t *testing.T, opts *SetupOpts) (context.Context, *mongo.Colle
 
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.DebugLevel))
 
-	port, err := strconv.Atoi(*startupPortF)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	ctx, cancel := context.WithCancel(context.Background())
 
+	port := *portF
 	if port == 0 {
 		port = setupListener(t, ctx, logger)
 	}
@@ -100,7 +95,7 @@ func SetupWithOpts(t *testing.T, opts *SetupOpts) (context.Context, *mongo.Colle
 	}
 
 	// create collection explicitly in case there are no docs to insert
-	err = db.CreateCollection(ctx, collectionName)
+	err := db.CreateCollection(ctx, collectionName)
 	require.NoError(t, err)
 
 	// delete collection and (possibly) database unless test failed
@@ -145,10 +140,11 @@ func Setup(t *testing.T, providers ...shareddata.Provider) (context.Context, *mo
 func setupListener(t *testing.T, ctx context.Context, logger *zap.Logger) int {
 	t.Helper()
 
-	h, err := registry.NewHandler("pg", &registry.NewHandlerOpts{
+	h, err := registry.NewHandler(*handlerF, &registry.NewHandlerOpts{
 		Ctx:           ctx,
 		Logger:        logger,
 		PostgreSQLURL: testutil.PoolConnString(t, nil),
+		TigrisURL:     "127.0.0.1:8081",
 	})
 	require.NoError(t, err)
 
@@ -204,20 +200,6 @@ func setupClient(t *testing.T, ctx context.Context, port int) *mongo.Client {
 // startup initializes things that should be initialized only once.
 func startup(t *testing.T) {
 	t.Helper()
-
-	*startupPortF = strings.ToLower(*startupPortF)
-	switch *startupPortF {
-	case "ferretdb":
-		*startupPortF = "0"
-	case "default":
-		*startupPortF = "27017"
-	case "mongodb":
-		*startupPortF = "37017"
-	}
-
-	if _, err := strconv.Atoi(*startupPortF); err != nil {
-		t.Fatal(err)
-	}
 
 	logging.Setup(zap.DebugLevel)
 
