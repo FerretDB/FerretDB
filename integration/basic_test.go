@@ -143,6 +143,7 @@ func TestCollectionName(t *testing.T) {
 				"_for_ferretdb_it_fails_because_it_is_more_than_119_characters__for_mongo_it_fails_because_it_is_more_than_255_charachters_" +
 				"long_that_excludes_non_latin_letters_spaces_dots_dollars_dashes",
 			Err: &mongo.CommandError{
+				Name: "InvalidNamespace",
 				Code: 73,
 				Message: "Fully qualified namespace is too long. Namespace: testcollectionname.very_long_collection_name_that_fails_both_in_mongo_" +
 					"and_in_ferretdb_databases_for_ferretdb_it_fails_because_it_is_more_than_119_characters__for_mongo_it_fails_because_it_is_more_than_" +
@@ -150,24 +151,19 @@ func TestCollectionName(t *testing.T) {
 			},
 			Alt: "Fully qualified namespace is too long",
 		},
-		"WithADash": {
-			Collection: "collection_name_with_a-dash",
-			Err: &mongo.CommandError{
-				Code:    73,
-				Message: "Invalid collection name: collection_name_with_a-$",
-			},
-			Alt: `Namespace must not contain non-latin letters, spaces, dots, dollars, dashes.`,
-		},
 		"WithADollarSign": {
 			Collection: "collection_name_with_a-$",
 			Err: &mongo.CommandError{
+				Name:    "InvalidNamespace",
 				Code:    73,
-				Message: `Namespace must not contain non-latin letters, spaces, dots, dollars, dashes.`,
+				Message: `Invalid collection name: collection_name_with_a-$`,
 			},
+			Alt: `Namespace must not contain non-latin letters, spaces, dots, dollars, dashes.`,
 		},
 		"Empty": {
 			Collection: "",
 			Err: &mongo.CommandError{
+				Name:    "InvalidNamespace",
 				Code:    73,
 				Message: "Invalid namespace specified 'testcollectionname.'",
 			},
@@ -181,13 +177,16 @@ func TestCollectionName(t *testing.T) {
 		},
 	}
 
-	for _, tc := range cases {
-		err := collection.Database().CreateCollection(ctx, tc.Collection)
-		if tc.Err == nil {
-			require.NoError(t, err)
-			continue
-		}
-		AssertEqualAltError(t, *tc.Err, tc.Alt, err)
+	for name, tc := range cases {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			err := collection.Database().CreateCollection(ctx, tc.Collection)
+			if tc.Err == nil {
+				require.NoError(t, err)
+				return
+			}
+			AssertEqualAltError(t, *tc.Err, tc.Alt, err)
+		})
 	}
 
 	names, err := collection.Database().ListCollectionNames(ctx, bson.D{})
