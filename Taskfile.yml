@@ -59,8 +59,8 @@ tasks:
   env-up-detach:
     cmds:
       - >
-        docker-compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --detach
-        postgres mongodb
+        docker-compose up --always-recreate-deps --build --force-recreate --remove-orphans --renew-anon-volumes --detach
+        postgres tigris mongodb
 
   env-up:
     desc: "Start development environment"
@@ -77,6 +77,13 @@ tasks:
     desc: "Stop development environment"
     cmds:
       - docker-compose down --remove-orphans --volumes
+
+  env-data:
+    desc: "Fill `test.values` with data for experiments"
+    dir: integration
+    cmds:
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData . -handler=pg
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData -tags=tigris ./tigris -handler=tigris
 
   gen:
     desc: "Generate (and format) code"
@@ -108,27 +115,27 @@ tasks:
   test-integration:
     desc: "Run all integration tests in parallel"
     deps:
-      - task: test-integration-db
-        vars: {DB: "FerretDB"}
-      - task: test-integration-db
-        vars: {DB: "MongoDB"}
+      - test-integration-pg
+      - test-integration-tigris
+      - test-integration-mongodb
 
-  test-integration-ferretdb:
-    desc: "Run integration tests for FerretDB"
+  test-integration-pg:
+    desc: "Run integration tests for PostgreSQL handler"
+    dir: integration
     cmds:
-      - task: test-integration-db
-        vars: {DB: "FerretDB"}
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=integration-pg.txt -coverpkg=../... -handler=pg
+
+  test-integration-tigris:
+    desc: "Run integration tests for Tigris handler"
+    dir: integration/tigris
+    cmds:
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -tags=tigris -shuffle=on -coverprofile=integration-tigris.txt -coverpkg=../... -handler=tigris
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
-    cmds:
-      - task: test-integration-db
-        vars: {DB: "MongoDB"}
-
-  test-integration-db:
     dir: integration
     cmds:
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=integration-{{.DB}}.txt -coverpkg=../... -port={{.DB}}
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=integration-mongodb.txt -coverpkg=../... -port=37017
 
   bench-short:
     desc: "Benchmark for about 20 seconds (with default BENCHTIME)"

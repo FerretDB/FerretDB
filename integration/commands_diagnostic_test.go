@@ -25,8 +25,8 @@ import (
 
 func TestCommandsDiagnosticGetLog(t *testing.T) {
 	t.Parallel()
-	ctx, collection, _ := setupWithOpts(t, &setupOpts{
-		databaseName: "admin",
+	ctx, collection, _ := SetupWithOpts(t, &SetupOpts{
+		DatabaseName: "admin",
 	})
 
 	var actual bson.D
@@ -44,7 +44,7 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 
 func TestCommandsDiagnosticHostInfo(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := Setup(t)
 
 	var actual bson.D
 	err := collection.Database().RunCommand(ctx, bson.D{{"hostInfo", 42}}).Decode(&actual)
@@ -75,7 +75,7 @@ func TestCommandsDiagnosticHostInfo(t *testing.T) {
 
 func TestCommandsDiagnosticListCommands(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := Setup(t)
 
 	var actual bson.D
 	err := collection.Database().RunCommand(ctx, bson.D{{"listCommands", 42}}).Decode(&actual)
@@ -94,7 +94,7 @@ func TestCommandsDiagnosticListCommands(t *testing.T) {
 
 func TestCommandsDiagnosticConnectionStatus(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := Setup(t)
 
 	var actual bson.D
 	err := collection.Database().RunCommand(ctx, bson.D{{"connectionStatus", "*"}}).Decode(&actual)

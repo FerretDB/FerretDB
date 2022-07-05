@@ -26,7 +26,7 @@ import (
 
 func TestCommandsReplicationIsMaster(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := Setup(t)
 
 	for _, command := range []string{"ismaster", "isMaster"} {
 		command := command
@@ -71,7 +71,7 @@ func TestCommandsReplicationIsMaster(t *testing.T) {
 
 func TestCommandsReplicationHello(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := Setup(t)
 
 	var actual bson.D
 	err := collection.Database().RunCommand(ctx, bson.D{{"hello", 1}}).Decode(&actual)

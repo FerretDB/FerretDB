@@ -12,17 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !windows
-
-package main
+package tigris
 
 import (
-	"context"
-	"os/signal"
+	"testing"
 
-	"golang.org/x/sys/unix"
+	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/FerretDB/FerretDB/integration"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func notifyAppTermination(parent context.Context) (context.Context, context.CancelFunc) {
-	return signal.NotifyContext(parent, unix.SIGTERM, unix.SIGINT)
+func TestSmoke(t *testing.T) {
+	t.Parallel()
+	ctx, collection := integration.Setup(t, shareddata.FixedScalars)
+
+	var doc bson.D
+	err := collection.FindOne(ctx, bson.D{{"_id", "double"}}).Decode(&doc)
+	require.NoError(t, err)
+	integration.AssertEqualDocuments(t, bson.D{{"_id", "double"}, {"double_value", 42.13}}, doc)
 }

@@ -35,7 +35,7 @@ import (
 
 func TestCommandsAdministrationCreateDropList(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := Setup(t)
 	db := collection.Database()
 	name := collection.Name()
 
@@ -119,8 +119,8 @@ func assertDatabases(t *testing.T, expected, actual mongo.ListDatabasesResult) {
 
 //nolint:paralleltest // we test a global list of databases
 func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
-	ctx, collection, _ := setupWithOpts(t, &setupOpts{
-		databaseName: "admin",
+	ctx, collection, _ := SetupWithOpts(t, &SetupOpts{
+		DatabaseName: "admin",
 	})
 	client := collection.Database().Client()
 	name := collection.Name()
@@ -178,8 +178,8 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 
 func TestCommandsAdministrationGetParameter(t *testing.T) {
 	t.Parallel()
-	ctx, collection, _ := setupWithOpts(t, &setupOpts{
-		databaseName: "admin",
+	ctx, collection, _ := SetupWithOpts(t, &SetupOpts{
+		DatabaseName: "admin",
 	})
 
 	for name, tc := range map[string]struct {
@@ -600,7 +600,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 
 func TestCommandsAdministrationBuildInfo(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := Setup(t)
 
 	var actual bson.D
 	command := bson.D{{"buildInfo", int32(1)}}
@@ -633,7 +633,7 @@ func TestCommandsAdministrationBuildInfo(t *testing.T) {
 
 func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := Setup(t)
 
 	var actual bson.D
 	command := bson.D{{"collStats", collection.Name()}}
@@ -654,7 +654,7 @@ func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
 
 func TestCommandsAdministrationCollStats(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	var actual bson.D
 	command := bson.D{{"collStats", collection.Name()}}
@@ -674,7 +674,7 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 
 func TestCommandsAdministrationDataSize(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	var actual bson.D
 	command := bson.D{{"dataSize", collection.Database().Name() + "." + collection.Name()}}
@@ -690,7 +690,7 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 
 func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := Setup(t)
 
 	var actual bson.D
 	command := bson.D{{"dataSize", "some-database.some-collection"}}
@@ -707,7 +707,7 @@ func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
 
 func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := Setup(t)
 
 	var actual bson.D
 	command := bson.D{{"dbStats", int32(1)}}
@@ -733,7 +733,7 @@ func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
 
 func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	var actual bson.D
 	command := bson.D{{"dbStats", int32(1)}, {"scale", float64(1_000)}}
@@ -755,7 +755,7 @@ func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
 
 func TestCommandsAdministrationServerStatus(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := Setup(t)
 
 	var actual bson.D
 	command := bson.D{{"serverStatus", int32(1)}}
@@ -798,7 +798,7 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 // It connects two clients to the same server and checks that `whatsmyuri` returns different ports for these clients.
 func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
 	t.Parallel()
-	ctx, collection1, port := setupWithOpts(t, new(setupOpts))
+	ctx, collection1, port := SetupWithOpts(t, new(SetupOpts))
 	client2 := setupClient(t, ctx, port)
 	collection2 := client2.Database(collection1.Database().Name()).Collection(collection1.Name())
 
