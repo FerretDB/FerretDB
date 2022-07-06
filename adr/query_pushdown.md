@@ -9,7 +9,7 @@ For now, we are ready to start supporting query pushdown.
 Let's go step by step, and first, implement a simple query pushdown for queries containing `{_id: <value>}`,
 i.e. add SQL condition `_jsonb->`+ `p.Next()` + `=` in WHERE clause passed to the PostgreSQL backend.
 
-NB: There is no new functionality from the user perspective – we already support _id values that document, for example, and that should not change.
+NB: There is no new functionality from the user perspective – we already support _id values that are documents, for example, and that should not change.
 
 ## Solution
 
