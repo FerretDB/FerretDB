@@ -22,7 +22,6 @@ require (
 	github.com/reviewdog/reviewdog v0.14.1
 	golang.org/x/perf v0.0.0-20220411212318-84e58bfe0a7e
 	golang.org/x/tools v0.1.11-0.20220316014157-77aa08bb151a
-	gopkg.in/yaml.v3 v3.0.1 // indirect; https://github.com/advisories/GHSA-hp87-p4gw-j4gq
 	mvdan.cc/gofumpt v0.3.1
 )
 
@@ -252,6 +251,7 @@ require (
 	gopkg.in/ini.v1 v1.66.4 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	honnef.co/go/tools v0.3.1 // indirect
 	mvdan.cc/interfacer v0.0.0-20180901003855-c20040233aed // indirect
 	mvdan.cc/lint v0.0.0-20170908181259-adc824a0674b // indirect
