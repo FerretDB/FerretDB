@@ -284,7 +284,8 @@ func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, error)
 
 // CreateDatabase creates a new FerretDB database (PostgreSQL schema).
 //
-// It returns (possibly wrapped) ErrAlreadyExist if schema already exist.
+// It returns (possibly wrapped) ErrAlreadyExist if schema already exist,
+// use `errors.Is` to check the error.
 func (pgPool *Pool) CreateDatabase(ctx context.Context, db string) error {
 	err := pgPool.inTransaction(ctx, func(tx pgx.Tx) error {
 		sql := `CREATE SCHEMA ` + pgx.Identifier{db}.Sanitize()
@@ -342,10 +343,19 @@ func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
 
 // CreateCollection creates a new FerretDB collection in existing schema.
 //
-// It returns ErrAlreadyExist if table already exist, ErrTableNotExist is schema does not exist.
+// It returns (possibly wrapped) ErrAlreadyExist if table already exist, ErrTableNotExist is schema does not exist,
+// use `errors.Is` to check the error.
 //
 // Deprecated: use CreateCollectionTx instead.
 func (pgPool *Pool) CreateCollection(ctx context.Context, db, collection string) error {
+	schemaExists, err := pgPool.schemaExists(ctx, db)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if !schemaExists {
+		return ErrSchemaNotExist
+	}
 	return pgPool.inTransaction(ctx, func(tx pgx.Tx) error {
 		return pgPool.CreateCollectionTx(ctx, tx, db, collection)
 	})
@@ -355,15 +365,6 @@ func (pgPool *Pool) CreateCollection(ctx context.Context, db, collection string)
 //
 // It returns ErrAlreadyExist if table already exist, ErrTableNotExist is schema does not exist.
 func (pgPool *Pool) CreateCollectionTx(ctx context.Context, tx pgx.Tx, db, collection string) error {
-	schemaExists, err := pgPool.schemaExists(ctx, db)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	if !schemaExists {
-		return ErrSchemaNotExist
-	}
-
 	table := formatCollectionName(collection)
 	tables, err := pgPool.tables(ctx, tx, db)
 	if err != nil {
@@ -407,7 +408,8 @@ func (pgPool *Pool) CreateCollectionTx(ctx context.Context, tx pgx.Tx, db, colle
 
 // DropCollection drops FerretDB collection.
 //
-// It returns ErrTableNotExist if schema or table does not exist.
+// It returns (possibly wrapped) ErrTableNotExist if schema or table does not exist,
+// use `errors.Is` to check the error.
 func (pgPool *Pool) DropCollection(ctx context.Context, schema, collection string) error {
 	schemaExists, err := pgPool.schemaExists(ctx, schema)
 	if err != nil {
