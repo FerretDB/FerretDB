@@ -4,12 +4,12 @@
 
 [The pushdown term](https://www.quora.com/What-do-we-mean-when-we-say-SQL-pushdown)
 
-Before we filtered tuples in Go code due to task complexity with some filtering operations.
-For now we are ready to start supporting query pushdown.
+Before, we filtered tuples in Go code due to task complexity with some filtering operations.
+For now, we are ready to start supporting query pushdown.
 Let's go step by step, and first, implement a simple query pushdown for queries containing `{_id: <value>}`,
 i.e. add SQL condition `_jsonb->`+ `p.Next()` + `=` in WHERE clause passed to the PostgreSQL backend.
 
-NB: There is no new functionality from user perspective – we already support _id values that are documents, for example, and that should not change.
+NB: There is no new functionality from the user perspective – we already support _id values that document, for example, and that should not change.
 
 ## Solution
 
@@ -20,7 +20,7 @@ NB: There is no new functionality from user perspective – we already support _
 To not change the behavior, let's add a build tag:
 If the build tag is enabled:
 * then for queries `{_id: <value>}`, use a simple pushdown
-* for all other queries process as usual.
+* for all other queries, process as usual.
 
 ### Examples on insert
 
@@ -48,7 +48,7 @@ Tigris API provides querying by `_id`. Let's use it.
 ## Testing
 
 * Unit-tests for fetch function, that it returns not all the collection documents but a single document when `{_id: <value>}` is queried.
-* Integrational tests for insert function that after the insert all expected records in database.
+* Integrational tests for insert function after inserting all expected records in the database.
 
 ## Cases
 
