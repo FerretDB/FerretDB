@@ -35,7 +35,7 @@ func TestQueryEvaluationMod(t *testing.T) {
 	}
 
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := Setup(t)
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{{"_id", "Zero"}, {"value", 0}},
@@ -411,7 +411,7 @@ func TestQueryEvaluationMod(t *testing.T) {
 
 func TestQueryEvaluationRegex(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars)
+	ctx, collection := Setup(t, shareddata.Scalars)
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{{"_id", "multiline-string"}, {"value", "bar\nfoo"}},
@@ -480,7 +480,7 @@ func TestQueryEvaluationRegex(t *testing.T) {
 
 func TestQueryEvaluationRegexErrors(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars)
+	ctx, collection := Setup(t, shareddata.Scalars)
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{{"_id", "multiline-string"}, {"value", "bar\nfoo"}},
