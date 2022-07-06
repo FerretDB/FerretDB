@@ -185,17 +185,13 @@ func TestCollectionName(t *testing.T) {
 	t.Run("Ok", func(t *testing.T) {
 		ctx, collection := Setup(t)
 
-		longCollectionName := strings.Repeat("a", 65)
+		longCollectionName := strings.Repeat("a", 100)
 		err := collection.Database().CreateCollection(ctx, longCollectionName)
-		require.NoError(t, err)
-		sixtyThreeCharsCollectionName := strings.Repeat("a", 63)
-		err = collection.Database().CreateCollection(ctx, sixtyThreeCharsCollectionName)
 		require.NoError(t, err)
 
 		names, err := collection.Database().ListCollectionNames(ctx, bson.D{})
 		require.NoError(t, err)
 
 		assert.Contains(t, names, longCollectionName)
-		assert.Contains(t, names, sixtyThreeCharsCollectionName)
 	})
 }
