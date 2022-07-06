@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"golang.org/x/exp/constraints"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -55,7 +56,11 @@ func Compare(docValue, filterValue any) CompareResult {
 
 	switch docValue := docValue.(type) {
 	case *Document:
-		// TODO: implement document comparing
+		// TODO this case needs to be revised and reworked to match MongoDB type sorting.
+		// Right now only tells if two documents are equal or not
+		if filterDoc, ok := filterValue.(*Document); ok {
+			return compareDocuments(docValue, filterDoc)
+		}
 		return Incomparable
 
 	case *Array:
@@ -259,6 +264,26 @@ func compareNumbers(a float64, b int64) CompareResult {
 	return CompareResult(bigA.Cmp(bigB))
 }
 
+// compareDocuments checks if two documents are equal.
+func compareDocuments(a, b *Document) CompareResult {
+	// TODO this case needs to be revised and reworked to match MongoDB type sorting.
+	// Right now only tells if two documents are equal or not
+	if !slices.Equal(a.Keys(), b.Keys()) {
+		return Incomparable
+	}
+
+	for _, k := range a.Keys() {
+		if !b.Has(k) {
+			return Incomparable
+		}
+		res := Compare(must.NotFail(a.Get(k)), must.NotFail(b.Get(k)))
+		if res != Equal {
+			return Incomparable
+		}
+	}
+	return Equal
+}
+
 // compareArrays compares indices of a filter array according to indices of a document array;
 // returns Equal when a document array contains another array(subarray) that equals filter array.
 func compareArrays(filterArr, docArr *Array) CompareResult {
@@ -304,9 +329,17 @@ func compareArrays(filterArr, docArr *Array) CompareResult {
 			}
 			continue
 
-		// TODO: case Document
+			// TODO this case needs to be revised and reworked to match MongoDB type sorting.
+			// Right now only tells if two documents are equal or not
 		case *Document:
-			continue
+			filterValue := must.NotFail(docArr.Get(i))
+			filterDoc, ok := filterValue.(*Document)
+			if !ok {
+				continue
+			}
+			if compareDocuments(arrValue, filterDoc) != Equal {
+				continue
+			}
 
 		default:
 			filterValue, err := filterArr.Get(i)

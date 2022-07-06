@@ -658,6 +658,51 @@ func TestUpdateFieldSet(t *testing.T) {
 				UpsertedCount: 0,
 			},
 		},
+		"SetSameValueString": {
+			id:     "string",
+			update: bson.D{{"$set", bson.D{{"value", "foo"}}}},
+			result: bson.D{{"_id", "string"}, {"value", "foo"}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 0,
+				UpsertedCount: 0,
+			},
+		},
+		"SetSameValueComposite": {
+			id: "document-composite",
+			update: bson.D{
+				{"$set", bson.D{
+					{"value", bson.D{
+						{"foo", int32(42)},
+						{"42", "foo"},
+						{"array", bson.A{int32(42), "foo", nil}},
+					}},
+				}},
+			},
+			result: bson.D{
+				{"_id", "document-composite"},
+				{"value", bson.D{
+					{"foo", int32(42)},
+					{"42", "foo"},
+					{"array", bson.A{int32(42), "foo", nil}},
+				}},
+			},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 0,
+				UpsertedCount: 0,
+			},
+		},
+		"SetSameValueNull": {
+			id:     "null",
+			update: bson.D{{"$set", bson.D{{"value", nil}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 0,
+				UpsertedCount: 0,
+			},
+			result: bson.D{{"_id", "null"}, {"value", nil}},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -889,7 +934,17 @@ func TestUpdateFieldMixed(t *testing.T) {
 			},
 			expected: bson.D{{"_id", "test"}, {"foo", int32(12)}, {"value", math.NaN()}},
 		},
-		"SetIncSetOnInsert": {
+		"SetSetOnInsertConflict": {
+			filter: bson.D{{"_id", "test"}},
+			update: bson.D{
+				{"$set", bson.D{{"foo", int32(1)}}},
+				{"$setOnInsert", bson.D{{"foo", int32(2)}}},
+			},
+			err: &mongo.WriteError{
+				Code:    40,
+				Message: "Updating the path 'foo' would create a conflict at 'foo'",
+			},
+		}, "SetIncSetOnInsertConflict": {
 			filter: bson.D{{"_id", "test"}},
 			update: bson.D{
 				{"$set", bson.D{{"foo", int32(12)}}},

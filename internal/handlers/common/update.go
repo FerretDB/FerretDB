@@ -54,11 +54,15 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			sort.Strings(setDoc.Keys())
 			for _, setKey := range setDoc.Keys() {
 				setValue := must.NotFail(setDoc.Get(setKey))
+
+				if doc.Has(setKey) && types.Compare(must.NotFail(doc.Get(setKey)), setValue) == types.Equal {
+					continue
+				}
 				if err := doc.Set(setKey, setValue); err != nil {
 					return false, err
 				}
+				changed = true
 			}
-			changed = true
 
 		case "$unset":
 			unsetDoc := updateV.(*types.Document)
@@ -189,15 +193,15 @@ func ValidateUpdateOperators(update *types.Document) error {
 	if err != nil {
 		return err
 	}
-	_, err = extractValueFromUpdateOperator("$unset", update)
+	unset, err := extractValueFromUpdateOperator("$unset", update)
 	if err != nil {
 		return err
 	}
-	_, err = extractValueFromUpdateOperator("$setOnInsert", update)
+	setOnInsert, err := extractValueFromUpdateOperator("$setOnInsert", update)
 	if err != nil {
 		return err
 	}
-	if err = checkConflictingChanges(set, inc); err != nil {
+	if err = checkConflictingChanges(set, inc, unset, setOnInsert); err != nil {
 		return err
 	}
 	if err = validateCurrentDateExpression(update); err != nil {
@@ -233,23 +237,22 @@ func checkAllModifiersSupported(update *types.Document) error {
 	return nil
 }
 
-// checkConflictingChanges checks if there are the same keys in these documents and returns an error, if any.
-func checkConflictingChanges(a, b *types.Document) error {
-	if a == nil {
-		return nil
-	}
-	if b == nil {
-		return nil
-	}
-
-	for _, key := range a.Keys() {
-		if b.Has(key) {
-			return NewWriteErrorMsg(
-				ErrConflictingUpdateOperators,
-				fmt.Sprintf(
-					"Updating the path '%[1]s' would create a conflict at '%[1]s'", key,
-				),
-			)
+func checkConflictingChanges(updates ...*types.Document) error {
+	updKeys := map[string]struct{}{}
+	for _, u := range updates {
+		if u == nil {
+			continue
+		}
+		for _, key := range u.Keys() {
+			if _, ok := updKeys[key]; ok {
+				return NewWriteErrorMsg(
+					ErrConflictingUpdateOperators,
+					fmt.Sprintf(
+						"Updating the path '%[1]s' would create a conflict at '%[1]s'", key,
+					),
+				)
+			}
+			updKeys[key] = struct{}{}
 		}
 	}
 	return nil
