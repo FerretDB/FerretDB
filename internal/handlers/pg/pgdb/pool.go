@@ -284,7 +284,7 @@ func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, error)
 
 // CreateDatabase creates a new FerretDB database (PostgreSQL schema).
 //
-// It returns ErrAlreadyExist if schema already exist.
+// It returns (possibly wrapped) ErrAlreadyExist if schema already exist.
 func (pgPool *Pool) CreateDatabase(ctx context.Context, db string) error {
 	err := pgPool.inTransaction(ctx, func(tx pgx.Tx) error {
 		sql := `CREATE SCHEMA ` + pgx.Identifier{db}.Sanitize()
@@ -300,9 +300,9 @@ func (pgPool *Pool) CreateDatabase(ctx context.Context, db string) error {
 		return nil
 	}
 
-	pgErr, ok := err.(*pgconn.PgError)
-	if !ok {
-		return lazyerrors.Errorf("pgdb.CreateDatabase: %w", err)
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) {
+		return lazyerrors.Error(err)
 	}
 
 	switch pgErr.Code {
@@ -313,7 +313,7 @@ func (pgPool *Pool) CreateDatabase(ctx context.Context, db string) error {
 		// The same thing for schemas. Reproducible by integration tests.
 		return ErrAlreadyExist
 	default:
-		return lazyerrors.Errorf("pgdb.CreateDatabase: %w", err)
+		return lazyerrors.Error(err)
 	}
 }
 
@@ -341,6 +341,16 @@ func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
 }
 
 // CreateCollection creates a new FerretDB collection in existing schema.
+//
+// It returns ErrAlreadyExist if table already exist, ErrTableNotExist is schema does not exist.
+//
+// Deprecated: use CreateCollectionTx instead.
+/*func (pgPool *Pool) CreateCollection(ctx context.Context, db, collection string) error {
+	// TODO make tx
+	return CreateCollectionTx(tx)
+}*/
+
+// CreateCollectionTx creates a new FerretDB collection in existing schema.
 //
 // It returns ErrAlreadyExist if table already exist, ErrTableNotExist is schema does not exist.
 func (pgPool *Pool) CreateCollection(ctx context.Context, db, collection string) error {
