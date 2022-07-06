@@ -278,7 +278,7 @@ func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, error)
 
 	filtered := make([]string, 0, len(tables))
 	for _, table := range tables {
-		if strings.HasPrefix(table, collectionPrefix) {
+		if strings.HasPrefix(table, reservedCollectionPrefix) {
 			continue
 		}
 
@@ -353,15 +353,15 @@ func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
 // CreateCollection creates a new FerretDB collection in existing schema.
 //
 // It returns:
-//  - ErrInvalidTableName - if the table name doesn't conform to restrictions.
-//  - ErrAlreadyExist - if table already exist.
-//  - ErrTableNotExist - is schema does not exist.
+//  * ErrInvalidTableName - if the table name doesn't conform to restrictions.
+//  * ErrAlreadyExist - if table already exist.
+//  * ErrTableNotExist - is schema does not exist.
 func (pgPool *Pool) CreateCollection(ctx context.Context, db, collection string) error {
 	if !validateCollectionNameRe.MatchString(collection) {
 		return ErrInvalidTableName
 	}
 
-	if strings.HasPrefix(collection, collectionPrefix) {
+	if strings.HasPrefix(collection, reservedCollectionPrefix) {
 		return ErrInvalidTableName
 	}
 
