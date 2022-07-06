@@ -30,7 +30,7 @@ import (
 
 func TestQueryBitwiseAllClear(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars)
+	ctx, collection := Setup(t, shareddata.Scalars)
 
 	// TODO: https://github.com/FerretDB/FerretDB/issues/508
 	_, err := collection.DeleteOne(ctx, bson.D{{"_id", "binary"}})
@@ -184,7 +184,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 
 func TestQueryBitwiseAllSet(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars)
+	ctx, collection := Setup(t, shareddata.Scalars)
 
 	// TODO: https://github.com/FerretDB/FerretDB/issues/508
 	_, err := collection.DeleteOne(ctx, bson.D{{"_id", "binary"}})
@@ -306,7 +306,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 
 func TestQueryBitwiseAnyClear(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars)
+	ctx, collection := Setup(t, shareddata.Scalars)
 
 	// TODO: https://github.com/FerretDB/FerretDB/issues/508
 	_, err := collection.DeleteOne(ctx, bson.D{{"_id", "binary"}})
@@ -452,7 +452,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 
 func TestQueryBitwiseAnySet(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars)
+	ctx, collection := Setup(t, shareddata.Scalars)
 
 	// TODO: https://github.com/FerretDB/FerretDB/issues/508
 	_, err := collection.DeleteOne(ctx, bson.D{{"_id", "binary"}})

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Keep both old and new styles of build tags.
+
 //go:build !go1.18
 // +build !go1.18
 

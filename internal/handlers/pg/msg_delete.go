@@ -17,14 +17,8 @@ package pg
 import (
 	"context"
 	"fmt"
-	"strings"
 
-	"github.com/jackc/pgconn"
-	"github.com/jackc/pgx/v4"
-
-	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -114,12 +108,12 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			continue
 		}
 
-		tag, err := h.delete(ctx, sp, resDocs)
+		rowsDeleted, err := h.delete(ctx, sp, resDocs)
 		if err != nil {
 			return nil, err
 		}
 
-		deleted += int32(tag.RowsAffected())
+		deleted += int32(rowsDeleted)
 	}
 
 	var reply wire.OpMsg
@@ -137,24 +131,17 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // delete deletes documents by _id.
-func (h *Handler) delete(ctx context.Context, sp sqlParam, docs []*types.Document) (pgconn.CommandTag, error) {
-	var p pgdb.Placeholder
-	placeholders := make([]string, len(docs))
+func (h *Handler) delete(ctx context.Context, sp sqlParam, docs []*types.Document) (int64, error) {
 	ids := make([]any, len(docs))
 	for i, doc := range docs {
-		placeholders[i] = p.Next()
 		id := must.NotFail(doc.Get("_id"))
-		ids[i] = must.NotFail(fjson.Marshal(id))
+		ids[i] = id
 	}
 
-	sql := fmt.Sprintf(
-		"DELETE FROM %s WHERE _jsonb->'_id' IN (%s)",
-		pgx.Identifier{sp.db, sp.collection}.Sanitize(), strings.Join(placeholders, ", "),
-	)
-	tag, err := h.pgPool.Exec(ctx, sql, ids...)
+	rowsDeleted, err := h.pgPool.DeleteDocumentsByID(ctx, sp.db, sp.collection, ids)
 	if err != nil {
 		// TODO check error code
-		return nil, common.NewError(common.ErrNamespaceNotFound, fmt.Errorf("delete: ns not found: %w", err))
+		return 0, common.NewError(common.ErrNamespaceNotFound, fmt.Errorf("delete: ns not found: %w", err))
 	}
-	return tag, nil
+	return rowsDeleted, nil
 }
