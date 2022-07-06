@@ -7,7 +7,7 @@ That requires too much memory.
 ## Solution
 
 Let's go step by step and first, implement a simple query pushdown for queries containing `{_id: <value>}`,
-i.e. add SQL condition `_id = $<placeholder>` in WHERE clause passed to the PostgreSQL backend.
+i.e. add SQL condition `_jsonb->`+ `p.Next()` + `=` in WHERE clause passed to the PostgreSQL backend.
 
 * Add a function to `pgPool` that queries `_id`  and returns a single record, nothing or error.
 * In `pg` handler, modify `(h *Handler) fetch`, add the usage of that function.
