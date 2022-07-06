@@ -227,6 +227,11 @@ func TestQueryComparisonEq(t *testing.T) {
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
 	ctx, collection := Setup(t, providers...)
 
+	_, err := collection.InsertMany(ctx, []any{
+		bson.D{{"_id", "array-doc"}, {"value", bson.A{bson.D{{"foo", "bar"}, {"n", int32(43)}}, int32(41)}}},
+	})
+	require.NoError(t, err)
+
 	for name, tc := range map[string]struct {
 		filter      bson.D
 		expectedIDs []any
@@ -263,6 +268,11 @@ func TestQueryComparisonEq(t *testing.T) {
 		"ArrayEmbedded": {
 			filter:      bson.D{{"value", bson.D{{"$eq", bson.A{bson.A{int32(42), "foo"}, nil}}}}},
 			expectedIDs: []any{"array-first-embedded"},
+		},
+		"ArrayDoc": {
+			filter: bson.D{{"value",
+				bson.D{{"$eq", bson.A{bson.D{{"foo", "bar"}, {"n", int32(43)}}, int32(41)}}}}},
+			expectedIDs: []any{"array-doc"},
 		},
 		"LongArrayEmbedded": {
 			filter:      bson.D{{"value", bson.D{{"$eq", bson.A{bson.A{int32(42), "foo"}, nil, "foo"}}}}},
@@ -474,7 +484,7 @@ func TestQueryComparisonEq(t *testing.T) {
 		"NoSuchFieldNull": {
 			filter: bson.D{{"no-such-field", bson.D{{"$eq", nil}}}},
 			expectedIDs: []any{
-				"array", "array-embedded", "array-empty", "array-empty-nested", "array-first-embedded", "array-last-embedded",
+				"array", "array-doc", "array-embedded", "array-empty", "array-empty-nested", "array-first-embedded", "array-last-embedded",
 				"array-middle-embedded", "array-null", "array-three", "array-three-reverse", "array-two",
 				"binary", "binary-empty",
 				"bool-false", "bool-true",
@@ -1401,6 +1411,11 @@ func TestQueryComparisonNe(t *testing.T) {
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
 	ctx, collection := Setup(t, providers...)
 
+	//_, err := collection.InsertMany(ctx, []any{
+	//	bson.D{{"_id", "array-doc"}, {"value", bson.A{bson.D{{"foo", "bar"}, {"n", int32(42)}}, int32(42)}}},
+	//})
+	//require.NoError(t, err)
+	//
 	for name, tc := range map[string]struct {
 		value        any
 		unexpectedID string
@@ -1430,6 +1445,14 @@ func TestQueryComparisonNe(t *testing.T) {
 		"ArrayShuffledValues": {
 			value:        bson.A{"foo", nil, int32(42)},
 			unexpectedID: "",
+		},
+		"ArrayDocNeKey": {
+			value:        bson.A{bson.D{{"foo", "bar"}}, int32(42)},
+			unexpectedID: "array-doc",
+		},
+		"ArrayDocNeValue": {
+			value:        bson.A{bson.D{{"foo", "bar"}, {"n", int32(24)}}, int32(42)},
+			unexpectedID: "array-doc",
 		},
 
 		"Double": {
