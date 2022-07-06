@@ -292,30 +292,25 @@ tasks:
     cmds:
       - go build -v -o ./bin/ ./cmd/ferretdb
 
+
   nfpm_deb:
     deps: [build]
-    vars:
-      VERSION:
-
     dir: build/deb
     cmds:
-      - echo ${VERSION}
-      - ../../bin/nfpm pkg --config ../../.nfpm.yml --packager deb --target ferretdb_${VERSION}.deb
+      - ../../bin/nfpm pkg --config ../../.nfpm.yml --packager deb --target ferretdb_${FERRETDB_VERSION}.deb
     env:
-      VERSION:
-        sh: cat ../../internal/util/version/version.txt | grep -oP '^(.+?)(?=-)'
+      FERRETDB_VERSION:
+        sh: cat ../../internal/util/version/gen/version.txt | grep -oP '^(.+?)(?=-)'
+
 
   nfpm_rpm:
     deps: [build]
-    vars:
-      VERSION:
-        sh: cat ../../internal/util/version/version.txt
     dir: build/rpm
     cmds:
-      - ../../bin/nfpm pkg --config ../../.nfpm.yml --packager rpm --target ferretdb_${VERSION}.rpm
+      - ../../bin/nfpm pkg --config ../../.nfpm.yml --packager rpm --target ferretdb_${FERRETDB_VERSION}.rpm
     env:
-      VERSION:
-        sh: cat ../../internal/util/version/version.txt | grep -oP '^(.+?)(?=-)'
+      FERRETDB_VERSION:
+        sh: cat ../../internal/util/version/gen/version.txt | grep -oP '^(.+?)(?=-)'
 
   packager:
     cmds:
