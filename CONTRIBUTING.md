@@ -150,6 +150,9 @@ Before submitting a pull request, please make sure that:
 
 1. Tests are added for new functionality or fixed bugs.
 2. `task all` passes.
+3. Comments are added or updated for all new and changed top-level declarations (functions, types, etc).
+   Both exported and unexported declarations should have comments.
+4. Comments are rendered correctly in the `task godocs` output.
 
 ## Contributing documentation
 
