@@ -29,7 +29,7 @@ import (
 
 func TestQueryElementExists(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := Setup(t)
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{{"_id", "empty-array"}, {"empty-array", []any{}}},
@@ -99,7 +99,7 @@ func TestQueryElementExists(t *testing.T) {
 func TestQueryElementType(t *testing.T) {
 	t.Parallel()
 	// TODO: add cases for "decimal" when it would be added.
-	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
 		v           any

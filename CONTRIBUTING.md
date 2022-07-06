@@ -58,13 +58,14 @@ With `task` installed, you may do the following:
 1. Install development tools with `task init`.
 2. Download required Docker images with `task env-pull`.
 3. Start the development environment with `task env-up`.
-   This will start PostgreSQL and MongoDB containers, filling them with identical sets of test data.
 4. Run all tests in another terminal window with `task test`.
 5. Start FerretDB with `task run`.
    This will start it in a development mode where all requests are handled by FerretDB, but also routed to MongoDB.
    The differences in response are then logged and the FerretDB response is sent back to the client.
-6. Run `mongosh` with `task mongosh`.
+6. Fill `values` collection in `test` database with data for experiments with `task env-data`.
+7. Run `mongosh` with `task mongosh`.
    This allows you to run commands against FerretDB.
+   For example, you can see what data was inserted by the previous command with `db.values.find()`.
 
 You can see all available `task` tasks with `task -l`.
 
@@ -104,13 +105,15 @@ Other unit tests use real databases;
 you can run those with `task test-unit` after starting the environment as described above.
 
 We also have a set of "integration" tests in `integration` Go module that uses the Go MongoDB driver
-and tests either a running MongoDB-compatible database (such as FerretDB or MongoDB itself)
-or in-process FerretDB.
+and tests either a running MongoDB-compatible database (such as FerretDB or MongoDB itself) on a given port
+or in-process FerretDB (meaning that integration tests start and stop FerretDB themselves) with given handler.
 They allow us to ensure compatibility between FerretDB and MongoDB.
-You can run them with `task test-integration-ferretdb` for in-process FerretDB
-(meaning that integration tests start and stop FerretDB themselves),
-`task test-integration-mongodb` for MongoDB running on port 37017 (as in our development environment),
-or `task test-integration` to run both in parallel.
+You can run them with:
+
+* `task test-integration-pg` for in-process FerretDB with `pg` handler;
+* `task test-integration-tigris` for in-process FerretDB with `tigris` handler;
+* `task test-integration-mongodb` for MongoDB running on port 37017 (as in our development environment),
+* or `task test-integration` to run all in parallel.
 
 Finally, you may run all tests in parallel with `task test`.
 If tests fail and the output is too confusing, try running them sequentially by using the commands above.
@@ -147,6 +150,9 @@ Before submitting a pull request, please make sure that:
 
 1. Tests are added for new functionality or fixed bugs.
 2. `task all` passes.
+3. Comments are added or updated for all new and changed top-level declarations (functions, types, etc).
+   Both exported and unexported declarations should have comments.
+4. Comments are rendered correctly in the `task godocs` output.
 
 ## Contributing documentation
 

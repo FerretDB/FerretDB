@@ -83,13 +83,13 @@ func Schema(ctx context.Context, tb testing.TB, pool *pgdb.Pool) string {
 	schema := SchemaName(tb)
 	tb.Logf("Using schema %q.", schema)
 
-	err := pool.DropSchema(ctx, schema)
-	if err == pgdb.ErrNotExist {
+	err := pool.DropDatabase(ctx, schema)
+	if err == pgdb.ErrTableNotExist {
 		err = nil
 	}
 	require.NoError(tb, err)
 
-	err = pool.CreateSchema(ctx, schema)
+	err = pool.CreateDatabase(ctx, schema)
 	require.NoError(tb, err)
 
 	tb.Cleanup(func() {
@@ -98,8 +98,8 @@ func Schema(ctx context.Context, tb testing.TB, pool *pgdb.Pool) string {
 			return
 		}
 
-		err = pool.DropSchema(ctx, schema)
-		if err == pgdb.ErrNotExist { // test might delete it
+		err = pool.DropDatabase(ctx, schema)
+		if err == pgdb.ErrTableNotExist { // test might delete it
 			err = nil
 		}
 		require.NoError(tb, err)
@@ -116,7 +116,6 @@ func TableName(tb testing.TB) string {
 	name = strings.ReplaceAll(name, "/", "-")
 	name = strings.ReplaceAll(name, " ", "-")
 
-	require.Less(tb, len(name), 64)
 	return name
 }
 
@@ -129,13 +128,13 @@ func Table(ctx context.Context, tb testing.TB, pool *pgdb.Pool, db string) strin
 	table := TableName(tb)
 	tb.Logf("Using table %q.", table)
 
-	err := pool.DropTable(ctx, db, table)
-	if err == pgdb.ErrNotExist {
+	err := pool.DropCollection(ctx, db, table)
+	if err == pgdb.ErrTableNotExist {
 		err = nil
 	}
 	require.NoError(tb, err)
 
-	err = pool.CreateTable(ctx, db, table)
+	err = pool.CreateCollection(ctx, db, table)
 	require.NoError(tb, err)
 
 	return table

@@ -12,17 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !windows
+package integration
 
-package main
+import "testing"
 
-import (
-	"context"
-	"os/signal"
-
-	"golang.org/x/sys/unix"
-)
-
-func notifyAppTermination(parent context.Context) (context.Context, context.CancelFunc) {
-	return signal.NotifyContext(parent, unix.SIGTERM, unix.SIGINT)
+func TestUpdateBitwiseBit(t *testing.T) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/821
 }
