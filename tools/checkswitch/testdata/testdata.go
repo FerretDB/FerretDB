@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/types"
+	"./types"
 )
 
 func switchOK(v interface{}) {
