@@ -1,10 +1,9 @@
 package testdata
 
 import (
+	"./types"
 	"fmt"
 	"time"
-
-	"./types"
 )
 
 func switchOK(v interface{}) {
