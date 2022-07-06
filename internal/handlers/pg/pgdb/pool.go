@@ -345,15 +345,16 @@ func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
 // It returns ErrAlreadyExist if table already exist, ErrTableNotExist is schema does not exist.
 //
 // Deprecated: use CreateCollectionTx instead.
-/*func (pgPool *Pool) CreateCollection(ctx context.Context, db, collection string) error {
-	// TODO make tx
-	return CreateCollectionTx(tx)
-}*/
+func (pgPool *Pool) CreateCollection(ctx context.Context, db, collection string) error {
+	return pgPool.inTransaction(ctx, func(tx pgx.Tx) error {
+		return pgPool.CreateCollectionTx(ctx, tx, db, collection)
+	})
+}
 
 // CreateCollectionTx creates a new FerretDB collection in existing schema.
 //
 // It returns ErrAlreadyExist if table already exist, ErrTableNotExist is schema does not exist.
-func (pgPool *Pool) CreateCollection(ctx context.Context, db, collection string) error {
+func (pgPool *Pool) CreateCollectionTx(ctx context.Context, tx pgx.Tx, db, collection string) error {
 	schemaExists, err := pgPool.schemaExists(ctx, db)
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -364,48 +365,44 @@ func (pgPool *Pool) CreateCollection(ctx context.Context, db, collection string)
 	}
 
 	table := formatCollectionName(collection)
-	err = pgPool.inTransaction(ctx, func(tx pgx.Tx) error {
-		tables, err := pgPool.tables(ctx, tx, db)
-		if err != nil {
-			return err
-		}
-		if slices.Contains(tables, table) {
-			return ErrAlreadyExist
-		}
+	tables, err := pgPool.tables(ctx, tx, db)
+	if err != nil {
+		return err
+	}
+	if slices.Contains(tables, table) {
+		return ErrAlreadyExist
+	}
 
-		settings, err := pgPool.getSettingsTable(ctx, tx, db)
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
+	settings, err := pgPool.getSettingsTable(ctx, tx, db)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
 
-		collectionsDoc := must.NotFail(settings.Get("collections"))
-		collections, ok := collectionsDoc.(*types.Document)
-		if !ok {
-			return lazyerrors.Errorf("expected document but got %[1]T: %[1]v", collectionsDoc)
-		}
+	collectionsDoc := must.NotFail(settings.Get("collections"))
+	collections, ok := collectionsDoc.(*types.Document)
+	if !ok {
+		return lazyerrors.Errorf("expected document but got %[1]T: %[1]v", collectionsDoc)
+	}
 
-		if collections.Has(collection) {
-			return nil
-		}
-
-		must.NoError(collections.Set(collection, table))
-		must.NoError(settings.Set("collections", collections))
-
-		err = pgPool.updateSettingsTable(ctx, tx, db, settings)
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		sql := `CREATE TABLE IF NOT EXISTS ` + pgx.Identifier{db, table}.Sanitize() + ` (_jsonb jsonb)`
-		_, err = tx.Exec(ctx, sql)
-		if err != nil {
-			return lazyerrors.Errorf("pgdb.CreateCollection: %w", err)
-		}
-
+	if collections.Has(collection) {
 		return nil
-	})
+	}
 
-	return err
+	must.NoError(collections.Set(collection, table))
+	must.NoError(settings.Set("collections", collections))
+
+	err = pgPool.updateSettingsTable(ctx, tx, db, settings)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	sql := `CREATE TABLE IF NOT EXISTS ` + pgx.Identifier{db, table}.Sanitize() + ` (_jsonb jsonb)`
+	_, err = tx.Exec(ctx, sql)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	return nil
 }
 
 // DropCollection drops FerretDB collection.
