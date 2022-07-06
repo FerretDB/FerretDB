@@ -82,7 +82,7 @@ type DBStats struct {
 func NewPool(ctx context.Context, connString string, logger *zap.Logger, lazy bool) (*Pool, error) {
 	config, err := pgxpool.ParseConfig(connString)
 	if err != nil {
-		return nil, fmt.Errorf("pg.NewPool: %w", err)
+		return nil, fmt.Errorf("pgdb.NewPool: %w", err)
 	}
 
 	config.LazyConnect = lazy
@@ -100,17 +100,17 @@ func NewPool(ctx context.Context, connString string, logger *zap.Logger, lazy bo
 
 	if logger.Core().Enabled(zap.DebugLevel) {
 		config.ConnConfig.LogLevel = pgx.LogLevelTrace
-		config.ConnConfig.Logger = zapadapter.NewLogger(logger.Named("pg.Pool"))
+		config.ConnConfig.Logger = zapadapter.NewLogger(logger.Named("pgdb.Pool"))
 	}
 
 	p, err := pgxpool.ConnectConfig(ctx, config)
 	if err != nil {
-		return nil, fmt.Errorf("pg.NewPool: %w", err)
+		return nil, fmt.Errorf("pgdb.NewPool: %w", err)
 	}
 
 	res := &Pool{
 		Pool:   p,
-		logger: logger.Named("pg.Pool"),
+		logger: logger.Named("pgdb.Pool"),
 	}
 
 	if !lazy {
@@ -140,32 +140,32 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 
 	rows, err := pgPool.Query(ctx, "SHOW ALL")
 	if err != nil {
-		return fmt.Errorf("pg.Pool.checkConnection: %w", err)
+		return fmt.Errorf("pgdb.Pool.checkConnection: %w", err)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		var name, setting, description string
 		if err := rows.Scan(&name, &setting, &description); err != nil {
-			return fmt.Errorf("pg.Pool.checkConnection: %w", err)
+			return fmt.Errorf("pgdb.Pool.checkConnection: %w", err)
 		}
 
 		switch name {
 		case "server_encoding":
 			if setting != encUTF8 {
-				return fmt.Errorf("pg.Pool.checkConnection: %q is %q, want %q", name, setting, encUTF8)
+				return fmt.Errorf("pgdb.Pool.checkConnection: %q is %q, want %q", name, setting, encUTF8)
 			}
 		case "client_encoding":
 			if setting != encUTF8 {
-				return fmt.Errorf("pg.Pool.checkConnection: %q is %q, want %q", name, setting, encUTF8)
+				return fmt.Errorf("pgdb.Pool.checkConnection: %q is %q, want %q", name, setting, encUTF8)
 			}
 		case "lc_collate":
 			if setting != localeC && setting != localePOSIX && !IsValidUTF8Locale(setting) {
-				return fmt.Errorf("pg.Pool.checkConnection: %q is %q", name, setting)
+				return fmt.Errorf("pgdb.Pool.checkConnection: %q is %q", name, setting)
 			}
 		case "lc_ctype":
 			if setting != localeC && setting != localePOSIX && !IsValidUTF8Locale(setting) {
-				return fmt.Errorf("pg.Pool.checkConnection: %q is %q", name, setting)
+				return fmt.Errorf("pgdb.Pool.checkConnection: %q is %q", name, setting)
 			}
 		default:
 			continue
@@ -180,7 +180,7 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 	}
 
 	if err := rows.Err(); err != nil {
-		return fmt.Errorf("pg.Pool.checkConnection: %w", err)
+		return fmt.Errorf("pgdb.Pool.checkConnection: %w", err)
 	}
 
 	return nil
@@ -282,40 +282,6 @@ func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, error)
 	return filtered, nil
 }
 
-// inTransaction wraps the given function `f` in a transaction.
-// If `f` returns an error, the transaction is rolled back.
-// Errors are wrapped with `lazyerrors.Error`,
-// so the caller needs to use `errors.Is` to check the error,
-// for example, `errors.Is(err, ErrSchemaNotExist)`.
-func (pgPool *Pool) inTransaction(ctx context.Context, f func(pgx.Tx) error) (err error) {
-	var tx pgx.Tx
-	if tx, err = pgPool.Begin(ctx); err != nil {
-		err = lazyerrors.Error(err)
-		return
-	}
-
-	defer func() {
-		if err == nil {
-			return
-		}
-		if rerr := tx.Rollback(ctx); rerr != nil {
-			pgPool.logger.Error("failed to perform rollback", zap.Error(rerr))
-		}
-	}()
-
-	if err = f(tx); err != nil {
-		err = lazyerrors.Error(err)
-		return
-	}
-
-	if err = tx.Commit(ctx); err != nil {
-		err = lazyerrors.Error(err)
-		return
-	}
-
-	return
-}
-
 // CreateDatabase creates a new FerretDB database (PostgreSQL schema).
 //
 // It returns ErrAlreadyExist if schema already exist.
@@ -336,7 +302,7 @@ func (pgPool *Pool) CreateDatabase(ctx context.Context, db string) error {
 
 	pgErr, ok := err.(*pgconn.PgError)
 	if !ok {
-		return lazyerrors.Errorf("pg.CreateDatabase: %w", err)
+		return lazyerrors.Errorf("pgdb.CreateDatabase: %w", err)
 	}
 
 	switch pgErr.Code {
@@ -347,7 +313,7 @@ func (pgPool *Pool) CreateDatabase(ctx context.Context, db string) error {
 		// The same thing for schemas. Reproducible by integration tests.
 		return ErrAlreadyExist
 	default:
-		return lazyerrors.Errorf("pg.CreateDatabase: %w", err)
+		return lazyerrors.Errorf("pgdb.CreateDatabase: %w", err)
 	}
 }
 
@@ -363,14 +329,14 @@ func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
 
 	pgErr, ok := err.(*pgconn.PgError)
 	if !ok {
-		return lazyerrors.Errorf("pg.DropDatabase: %w", err)
+		return lazyerrors.Errorf("pgdb.DropDatabase: %w", err)
 	}
 
 	switch pgErr.Code {
 	case pgerrcode.InvalidSchemaName:
 		return ErrSchemaNotExist
 	default:
-		return lazyerrors.Errorf("pg.DropDatabase: %w", err)
+		return lazyerrors.Errorf("pgdb.DropDatabase: %w", err)
 	}
 }
 
@@ -423,7 +389,7 @@ func (pgPool *Pool) CreateCollection(ctx context.Context, db, collection string)
 		sql := `CREATE TABLE IF NOT EXISTS ` + pgx.Identifier{db, table}.Sanitize() + ` (_jsonb jsonb)`
 		_, err = tx.Exec(ctx, sql)
 		if err != nil {
-			return lazyerrors.Errorf("pg.CreateCollection: %w", err)
+			return lazyerrors.Errorf("pgdb.CreateCollection: %w", err)
 		}
 
 		return nil
@@ -467,7 +433,7 @@ func (pgPool *Pool) DropCollection(ctx context.Context, schema, collection strin
 		sql := `DROP TABLE IF EXISTS` + pgx.Identifier{schema, table}.Sanitize() + `CASCADE`
 		_, err = tx.Exec(ctx, sql)
 		if err != nil {
-			return lazyerrors.Errorf("pg.DropCollection: %w", err)
+			return lazyerrors.Errorf("pgdb.DropCollection: %w", err)
 		}
 
 		return nil
@@ -741,4 +707,38 @@ func (pgPool *Pool) schemaExists(ctx context.Context, db string) (bool, error) {
 	}
 
 	return false, nil
+}
+
+// inTransaction wraps the given function `f` in a transaction.
+// If `f` returns an error, the transaction is rolled back.
+// Errors are wrapped with `lazyerrors.Error`,
+// so the caller needs to use `errors.Is` to check the error,
+// for example, `errors.Is(err, ErrSchemaNotExist)`.
+func (pgPool *Pool) inTransaction(ctx context.Context, f func(pgx.Tx) error) (err error) {
+	var tx pgx.Tx
+	if tx, err = pgPool.Begin(ctx); err != nil {
+		err = lazyerrors.Error(err)
+		return
+	}
+
+	defer func() {
+		if err == nil {
+			return
+		}
+		if rerr := tx.Rollback(ctx); rerr != nil {
+			pgPool.logger.Error("failed to perform rollback", zap.Error(rerr))
+		}
+	}()
+
+	if err = f(tx); err != nil {
+		err = lazyerrors.Error(err)
+		return
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		err = lazyerrors.Error(err)
+		return
+	}
+
+	return
 }
