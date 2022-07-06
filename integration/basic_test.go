@@ -136,7 +136,6 @@ func TestCollectionName(t *testing.T) {
 		ctx, collection := Setup(t)
 
 		collectionName300 := strings.Repeat("a", 300)
-		altMsg := "Collection must not contain non-latin letters, spaces, dots, dollars, dashes and be longer than 119 characters."
 		cases := map[string]struct {
 			collection string
 			err        *mongo.CommandError
@@ -152,7 +151,7 @@ func TestCollectionName(t *testing.T) {
 						collectionName300,
 					),
 				},
-				alt: altMsg,
+				alt: fmt.Sprintf("Invalid collection name: 'testcollectionname-err.%s'", collectionName300),
 			},
 			"WithADollarSign": {
 				collection: "collection_name_with_a-$",
@@ -161,7 +160,7 @@ func TestCollectionName(t *testing.T) {
 					Code:    73,
 					Message: `Invalid collection name: collection_name_with_a-$`,
 				},
-				alt: altMsg,
+				alt: `Invalid collection name: 'testcollectionname-err.collection_name_with_a-$'`,
 			},
 			"Empty": {
 				collection: "",
@@ -170,7 +169,7 @@ func TestCollectionName(t *testing.T) {
 					Code:    73,
 					Message: "Invalid namespace specified 'testcollectionname-err.'",
 				},
-				alt: altMsg,
+				alt: "Invalid collection name: 'testcollectionname-err.'",
 			},
 		}
 
@@ -178,7 +177,7 @@ func TestCollectionName(t *testing.T) {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {
 				// check we didn't forget to add an error in the test cases.
-				assert.NotNil(t, tc.err)
+				require.NotNil(t, *tc.err)
 				err := collection.Database().CreateCollection(ctx, tc.collection)
 				AssertEqualAltError(t, *tc.err, tc.alt, err)
 			})
