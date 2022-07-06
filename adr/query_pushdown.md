@@ -16,7 +16,9 @@ NB: There is no new functionality from the user perspective – we already suppo
 * Add a function to `pgPool` that queries `_id`  and returns a single record, nothing or error.
 * In `pg` handler, modify `(h *Handler) fetch`, add the usage of that function.
 
+
 ### Build tag
+
 To not change the behavior, let's add a build tag:
 If the build tag is enabled:
 * then for queries `{_id: <value>}`, use a simple pushdown
@@ -41,6 +43,7 @@ test_id> db.test.find()
   { _id: { foo: 'bar' } }
 ]
 ```
+
 ### Tigris
 
 Tigris API provides querying by `_id`. Let's use it.
@@ -65,6 +68,9 @@ Checks for `_id`:
 * array with nil value as an element
 * arrays of arrays
 * +/-Inf
+
+TODO: add queries
+
 
 ## Documentation
 
