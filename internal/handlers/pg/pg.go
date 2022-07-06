@@ -30,16 +30,13 @@ type Handler struct {
 	// opts *NewOpts
 	pgPool    *pgdb.Pool
 	l         *zap.Logger
-	peerAddr  string
 	startTime time.Time
 }
 
 // NewOpts represents handler configuration.
 type NewOpts struct {
-	PgPool    *pgdb.Pool
-	L         *zap.Logger
-	PeerAddr  string
-	StartTime time.Time
+	PgPool *pgdb.Pool
+	L      *zap.Logger
 }
 
 // New returns a new handler.
@@ -47,8 +44,7 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 	h := &Handler{
 		pgPool:    opts.PgPool,
 		l:         opts.L,
-		peerAddr:  opts.PeerAddr,
-		startTime: opts.StartTime,
+		startTime: time.Now(),
 	}
 	return h, nil
 }

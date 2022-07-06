@@ -36,7 +36,6 @@ type Listener struct {
 	opts      *NewListenerOpts
 	metrics   *ListenerMetrics
 	handler   handlers.Interface
-	startTime time.Time
 	listener  net.Listener
 	listening chan struct{}
 }
@@ -49,7 +48,6 @@ type NewListenerOpts struct {
 	Handler         handlers.Interface
 	Logger          *zap.Logger
 	TestConnTimeout time.Duration
-	StartTime       time.Time
 }
 
 // NewListener returns a new listener, configured by the NewListenerOpts argument.
@@ -57,13 +55,14 @@ func NewListener(opts *NewListenerOpts) *Listener {
 	return &Listener{
 		opts:      opts,
 		metrics:   newListenerMetrics(),
-		startTime: opts.StartTime,
 		handler:   opts.Handler,
 		listening: make(chan struct{}),
 	}
 }
 
-// Run runs the listener until ctx is canceled or some unrecoverable error occurs.
+// Run runs the listener until ctx is done or some unrecoverable error occurs.
+//
+// When this method returns, listener and all connections are closed.
 func (l *Listener) Run(ctx context.Context) error {
 	logger := l.opts.Logger.Named("listener")
 
@@ -120,7 +119,6 @@ func (l *Listener) Run(ctx context.Context) error {
 				proxyAddr:   l.opts.ProxyAddr,
 				handler:     l.opts.Handler,
 				connMetrics: l.metrics.connMetrics,
-				startTime:   l.startTime,
 			}
 			conn, e := newConn(opts)
 			if e != nil {

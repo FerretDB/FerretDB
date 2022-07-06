@@ -37,11 +37,12 @@ on:
       - opened
       - reopened
       - synchronize
+      - auto_merge_enabled # if GitHub Actions stuck, re-enable auto-merge to force rebuild
   push:
     branches:
       - main
   schedule:
-    - cron: "42 4 * * *"
+    - cron: "42 2 * * *" # after Go workflow
 
 env:
   GOPATH: /home/runner/go
@@ -85,6 +86,9 @@ jobs:
 
       - name: Run init
         run: bin/task init
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v2
 
       - name: Initialize Docker Buildx builder
         run: bin/task docker-init
