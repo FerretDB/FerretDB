@@ -329,14 +329,14 @@ func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
 
 	pgErr, ok := err.(*pgconn.PgError)
 	if !ok {
-		return lazyerrors.Errorf("pgdb.DropDatabase: %w", err)
+		return lazyerrors.Error(err)
 	}
 
 	switch pgErr.Code {
 	case pgerrcode.InvalidSchemaName:
 		return ErrSchemaNotExist
 	default:
-		return lazyerrors.Errorf("pgdb.DropDatabase: %w", err)
+		return lazyerrors.Error(err)
 	}
 }
 
@@ -440,7 +440,7 @@ func (pgPool *Pool) DropCollection(ctx context.Context, schema, collection strin
 		sql := `DROP TABLE IF EXISTS` + pgx.Identifier{schema, table}.Sanitize() + `CASCADE`
 		_, err = tx.Exec(ctx, sql)
 		if err != nil {
-			return lazyerrors.Errorf("pgdb.DropCollection: %w", err)
+			return lazyerrors.Error(err)
 		}
 
 		return nil
