@@ -282,8 +282,8 @@ func compareArrays(filterArr, docArr *Array) []CompareResult {
 
 	switch firstDocumentValue := firstDocumentValue.(type) {
 	case *Array:
-		if firstFilterValue, ok := firstFilterValue.(*Array); ok {
-			entireCompareResult = compareArrays(firstFilterValue, firstDocumentValue)
+		if firstFilterValueArr, ok := firstFilterValue.(*Array); ok {
+			entireCompareResult = compareArrays(firstFilterValueArr, firstDocumentValue)
 			entireCompareResult = append(entireCompareResult, Less)
 		} else {
 			_, err := firstDocumentValue.Get(0)
@@ -301,6 +301,10 @@ func compareArrays(filterArr, docArr *Array) []CompareResult {
 				subArrayEquality = true
 			}
 			entireCompareResult = append(entireCompareResult, result...)
+
+			if firstFilterValueErr != nil {
+				break
+			}
 
 			typeComparingResult := CompareOrder(firstDocumentValue, firstFilterValue, Ascending)
 			entireCompareResult = append(entireCompareResult, typeComparingResult)
