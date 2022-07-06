@@ -84,7 +84,7 @@ func TestCreateDrop(t *testing.T) {
 		require.Equal(t, pgdb.ErrSchemaNotExist, err)
 
 		err = pool.CreateCollection(ctx, schemaName, tableName)
-		require.Equal(t, pgdb.ErrSchemaNotExist, err)
+		require.ErrorIs(t, err, pgdb.ErrSchemaNotExist)
 
 		err = pool.CreateDatabase(ctx, schemaName)
 		require.NoError(t, err)
