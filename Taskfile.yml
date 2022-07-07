@@ -82,6 +82,7 @@ tasks:
     desc: "Fill `test.values` with data for experiments"
     dir: integration
     cmds:
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData . -port=37017
       - go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData . -handler=pg
       - go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData -tags=tigris ./tigris -handler=tigris
 
