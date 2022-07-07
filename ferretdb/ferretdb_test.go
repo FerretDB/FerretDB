@@ -18,11 +18,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func Example() {
@@ -34,30 +29,18 @@ func Example() {
 		log.Fatal(err)
 	}
 
-	ctx := context.Background()
+	go f.Run(context.Background())
 
-	go f.Run(ctx)
+	uri := f.MongoDBURI()
+	fmt.Println(uri)
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(f.MongoDBURI()))
-	if err != nil {
-		log.Fatal(err)
-	}
+	// Use MongoDB URI as usual. For example:
+	//
+	// import "go.mongodb.org/mongo-driver/mongo"
+	//
+	// [...]
+	//
+	// mongo.Connect(ctx, options.Client().ApplyURI(uri)
 
-	filter := bson.D{{
-		"name",
-		bson.D{{
-			"$not",
-			bson.D{{
-				"$regex",
-				primitive.Regex{Pattern: "test.*"},
-			}},
-		}},
-	}}
-	collections, err := client.ListDatabaseNames(ctx, filter)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println(collections)
-	// Output: [admin public]
+	// Output: mongodb://127.0.0.1:27017/
 }

@@ -19,6 +19,7 @@ linters:
     - godox
     - goheader
     - goimports
+    - gomodguard
     - gosimple
     - govet
     - ineffassign
@@ -61,7 +62,6 @@ linters:
     - gofumpt
     - gomnd
     - gomoddirectives
-    - gomodguard
     - goprintffuncname
     - gosec
     - grouper
