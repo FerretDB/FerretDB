@@ -43,8 +43,15 @@ test_id> db.test.find()
   { _id: { foo: 'bar' } }
 ]
 ```
+
 SQL queries examples:
+
 ```sql
+
+CREATE TABLE test (
+	_id jsonb NOT NULL DEFAULT '{}'
+);
+
 insert into test values('{"_id": 1.23}');
 insert into test values('{"_id": "s"}');
 insert into test values('{"_id": [1] }');
