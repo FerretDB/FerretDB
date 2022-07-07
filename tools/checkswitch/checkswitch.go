@@ -24,33 +24,46 @@ import (
 
 // orderTypes is preferred order of the types in the switch.
 var orderTypes = map[string]int{
-	"Document":      1,
-	"documentType":  1,
-	"Array":         2,
-	"arrayType":     2,
-	"float64":       3,
-	"doubleType":    3,
-	"string":        4,
-	"stringType":    4,
-	"Binary":        5,
-	"binaryType":    5,
-	"ObjectID":      6,
-	"objectIDType":  6,
-	"bool":          7,
-	"boolType":      7,
-	"time.Time":     8,
-	"dateTimeType":  8,
-	"NullType":      9,
-	"nullType":      9,
-	"Regex":         10,
-	"regexType":     10,
-	"int32":         11,
-	"int32Type":     11,
+	"Document":     1,
+	"documentType": 1,
+
+	"Array":     2,
+	"arrayType": 2,
+
+	"float64":    3,
+	"doubleType": 3,
+
+	"string":     4,
+	"stringType": 4,
+
+	"Binary":     5,
+	"binaryType": 5,
+
+	"ObjectID":     6,
+	"objectIDType": 6,
+
+	"bool":     7,
+	"boolType": 7,
+
+	"time.Time":    8,
+	"dateTimeType": 8,
+
+	"NullType": 9,
+	"nullType": 9,
+
+	"Regex":     10,
+	"regexType": 10,
+
+	"int32":     11,
+	"int32Type": 11,
+
 	"Timestamp":     12,
 	"timestampType": 12,
-	"int64":         13,
-	"int64Type":     13,
-	"CString":       14,
+
+	"int64":     13,
+	"int64Type": 13,
+
+	"CString": 14,
 }
 
 var Analyzer = &analysis.Analyzer{
