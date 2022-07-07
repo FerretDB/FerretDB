@@ -36,10 +36,12 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
+	common.Ignored(document, h.L, "comment") // TODO https://github.com/FerretDB/FerretDB/issues/849
 	if err := common.Unimplemented(document, "let"); err != nil {
 		return nil, err
 	}
-	common.Ignored(document, h.L, "ordered", "writeConcern")
+	common.Ignored(document, h.L, "ordered") // TODO https://github.com/FerretDB/FerretDB/issues/848
+	common.Ignored(document, h.L, "writeConcern")
 
 	var deletes *types.Array
 	if deletes, err = common.GetOptionalParam(document, "deletes", deletes); err != nil {
@@ -53,7 +55,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		if err := common.Unimplemented(d, "collation", "hint", "comment"); err != nil {
+		if err := common.Unimplemented(d, "collation", "hint"); err != nil {
 			return nil, err
 		}
 
