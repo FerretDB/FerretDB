@@ -59,7 +59,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	case "global":
-		log, err := requirRecordsLog(zapcore.DebugLevel)
+		log, err := RequirRecordsLog(zapcore.DebugLevel)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -121,8 +121,8 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
-// requirRecordsLog returns an array of records from logging buffer with given level.
-func requirRecordsLog(level zapcore.Level) (*types.Array, error) {
+// RequirRecordsLog returns an array of records from logging buffer with given level.
+func RequirRecordsLog(level zapcore.Level) (*types.Array, error) {
 	entries := logging.RecentEntries.Get(level)
 	log := new(types.Array)
 	for _, e := range entries {

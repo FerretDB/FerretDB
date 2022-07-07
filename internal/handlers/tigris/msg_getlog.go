@@ -23,9 +23,9 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/version"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -58,7 +58,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	case "global":
-		log, err := requirRecordsLog(zapcore.DebugLevel)
+		log, err := pg.RequirRecordsLog(zapcore.DebugLevel)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -121,27 +121,27 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // requirRecordsLog returns an array of records from logging buffer with given level.
-func requirRecordsLog(level zapcore.Level) (*types.Array, error) {
-	entries := logging.RecentEntries.Get(level)
-	log := new(types.Array)
-	for _, e := range entries {
-		b, err := json.Marshal(map[string]any{
-			"t": map[string]time.Time{
-				"$date": e.Time,
-			},
-			"l":   e.Level,
-			"ln":  e.LoggerName,
-			"msg": e.Message,
-			"c":   e.Caller,
-			"s":   e.Stack,
-		})
-		if err != nil {
-			return nil, err
-		}
-		if err = log.Append(string(b)); err != nil {
-			return nil, err
-		}
-	}
+// func requirRecordsLog(level zapcore.Level) (*types.Array, error) {
+// 	entries := logging.RecentEntries.Get(level)
+// 	log := new(types.Array)
+// 	for _, e := range entries {
+// 		b, err := json.Marshal(map[string]any{
+// 			"t": map[string]time.Time{
+// 				"$date": e.Time,
+// 			},
+// 			"l":   e.Level,
+// 			"ln":  e.LoggerName,
+// 			"msg": e.Message,
+// 			"c":   e.Caller,
+// 			"s":   e.Stack,
+// 		})
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		if err = log.Append(string(b)); err != nil {
+// 			return nil, err
+// 		}
+// 	}
 
-	return log, nil
-}
+// 	return log, nil
+// }
