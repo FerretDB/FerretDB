@@ -144,7 +144,7 @@ func setupListener(t *testing.T, ctx context.Context, logger *zap.Logger) int {
 		Ctx:           ctx,
 		Logger:        logger,
 		PostgreSQLURL: testutil.PoolConnString(t, nil),
-		TigrisURL:     "127.0.0.1:8081",
+		TigrisURL:     testutil.TigrisURL(t),
 	})
 	require.NoError(t, err)
 
@@ -203,7 +203,7 @@ func startup(t *testing.T) {
 
 	logging.Setup(zap.DebugLevel)
 
-	ctx := context.Background()
+	ctx := testutil.Ctx(t)
 
 	go debug.RunHandler(ctx, "127.0.0.1:0", zap.L().Named("debug"))
 }
