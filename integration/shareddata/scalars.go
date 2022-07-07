@@ -19,6 +19,8 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 const (
@@ -101,9 +103,23 @@ var FixedScalars = &Docs[string]{
 	data: map[string]map[string]any{
 		"double":          {"double_value": 42.13},
 		"double-whole":    {"double_value": 42.0},
-		"double-zero":     {"double_value": 0},
+		"double-zero":     {"double_value": 0.0},
 		"double-max":      {"double_value": math.MaxFloat64},
 		"double-smallest": {"double_value": math.SmallestNonzeroFloat64},
 		"double-big":      {"double_value": doubleBig},
+	},
+}
+
+// FixedScalars is an experiment and will be changed in the future.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/786
+var FixedScalarsIDs = &Docs[primitive.ObjectID]{
+	data: map[primitive.ObjectID]map[string]any{
+		must.NotFail(primitive.ObjectIDFromHex("000000000000000000000001")): {"double_value": 42.13},
+		must.NotFail(primitive.ObjectIDFromHex("000000000000000000000002")): {"double_value": 42.0},
+		must.NotFail(primitive.ObjectIDFromHex("000000000000000000000003")): {"double_value": 0.0},
+		must.NotFail(primitive.ObjectIDFromHex("000000000000000000000004")): {"double_value": math.MaxFloat64},
+		must.NotFail(primitive.ObjectIDFromHex("000000000000000000000005")): {"double_value": math.SmallestNonzeroFloat64},
+		must.NotFail(primitive.ObjectIDFromHex("000000000000000000000006")): {"double_value": doubleBig},
 	},
 }

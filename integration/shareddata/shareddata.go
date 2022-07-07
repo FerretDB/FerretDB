@@ -28,19 +28,14 @@ type Provider interface {
 }
 
 // Docs stores shared data documents as maps.
-type Docs[idType constraints.Ordered] struct {
+type Docs[idType comparable] struct {
 	data map[idType]map[string]any
 }
 
 // Docs implement Provider interface.
 func (docs *Docs[idType]) Docs() []bson.D {
-	ids := maps.Keys(docs.data)
-	slices.Sort(ids)
-
 	res := make([]bson.D, 0, len(docs.data))
-	for _, id := range ids {
-		doc := docs.data[id]
-
+	for id, doc := range docs.data {
 		d := make(bson.D, 0, len(doc)+1)
 		d = append(d, bson.E{"_id", id})
 		for k, v := range doc {
