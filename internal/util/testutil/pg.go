@@ -135,7 +135,7 @@ func Table(ctx context.Context, tb testing.TB, pool *pgdb.Pool, db string) strin
 	}
 	require.NoError(tb, err)
 
-	err = pool.CreateCollection(ctx, db, table)
+	err = pool.CreateCollection(ctx, pool, db, table)
 	require.NoError(tb, err)
 
 	return table

@@ -21,10 +21,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jackc/pgtype/pgxtype"
-
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgtype/pgxtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/log/zapadapter"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -347,26 +346,16 @@ func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
 //
 // It returns (possibly wrapped) ErrAlreadyExist if table already exist, ErrTableNotExist is schema does not exist,
 // use `errors.Is` to check the error.
-//
-// Deprecated: use CreateCollectionTx instead.
-func (pgPool *Pool) CreateCollection(ctx context.Context, db, collection string) error {
-	return pgPool.inTransaction(ctx, func(tx pgx.Tx) error {
-		schemaExists, err := pgPool.schemaExists(ctx, tx, db)
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
+func (pgPool *Pool) CreateCollection(ctx context.Context, querier pgxtype.Querier, db, collection string) error {
+	schemaExists, err := pgPool.schemaExists(ctx, querier, db)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
 
-		if !schemaExists {
-			return ErrSchemaNotExist
-		}
-		return pgPool.CreateCollectionTx(ctx, tx, db, collection)
-	})
-}
+	if !schemaExists {
+		return ErrSchemaNotExist
+	}
 
-// CreateCollectionTx creates a new FerretDB collection in existing schema.
-//
-// It returns ErrAlreadyExist if table already exist, ErrTableNotExist is schema does not exist.
-func (pgPool *Pool) CreateCollectionTx(ctx context.Context, querier pgxtype.Querier, db, collection string) error {
 	table := formatCollectionName(collection)
 	tables, err := pgPool.tables(ctx, querier, db)
 	if err != nil {
@@ -401,11 +390,23 @@ func (pgPool *Pool) CreateCollectionTx(ctx context.Context, querier pgxtype.Quer
 
 	sql := `CREATE TABLE IF NOT EXISTS ` + pgx.Identifier{db, table}.Sanitize() + ` (_jsonb jsonb)`
 	_, err = querier.Exec(ctx, sql)
-	if err != nil {
+	if err == nil {
+		return nil
+	}
+
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) {
 		return lazyerrors.Error(err)
 	}
 
-	return nil
+	switch pgErr.Code {
+	case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject:
+		// https://www.postgresql.org/message-id/CA+TgmoZAdYVtwBfp1FL2sMZbiHCWT4UPrzRLNnX1Nb30Ku3-gg@mail.gmail.com
+		// Reproducible by integration tests.
+		return ErrAlreadyExist
+	default:
+		return lazyerrors.Error(err)
+	}
 }
 
 // DropCollection drops FerretDB collection.
@@ -474,7 +475,8 @@ func (pgPool *Pool) CreateTableIfNotExist(ctx context.Context, db, collection st
 		return false, lazyerrors.Error(err)
 	}
 
-	if err := pgPool.CreateCollection(ctx, db, collection); err != nil {
+	// TODO: use a transaction instead of pgPool.
+	if err := pgPool.CreateCollection(ctx, pgPool, db, collection); err != nil {
 		if errors.Is(err, ErrAlreadyExist) {
 			return false, nil
 		}
@@ -647,7 +649,8 @@ func (pgPool *Pool) InsertDocument(ctx context.Context, db, collection string, d
 			return lazyerrors.Error(err)
 		}
 
-		if err := pgPool.CreateCollection(ctx, db, collection); err != nil {
+		// TODO: use a transaction instead of pgPool.
+		if err := pgPool.CreateCollection(ctx, pgPool, db, collection); err != nil {
 			if errors.Is(err, ErrAlreadyExist) {
 				return nil
 			}

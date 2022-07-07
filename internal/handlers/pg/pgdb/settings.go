@@ -19,10 +19,9 @@ import (
 	"fmt"
 	"hash/fnv"
 
-	"github.com/jackc/pgtype/pgxtype"
-
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgtype/pgxtype"
 	"github.com/jackc/pgx/v4"
 	"golang.org/x/exp/slices"
 
