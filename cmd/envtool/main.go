@@ -78,13 +78,42 @@ func waitForPort(ctx context.Context, logger *zap.SugaredLogger, port uint16) er
 
 // waitForPostgresPort waits for the given PostgreSQL port to be available until ctx is done.
 func waitForPostgresPort(ctx context.Context, logger *zap.SugaredLogger, port uint16) error {
-	logger.Infof("Waiting for port %d to be up...", port)
+	if err := waitForPort(ctx, logger, port); err != nil {
+		return err
+	}
 
 	for ctx.Err() == nil {
 		var pgPool *pgdb.Pool
 		pgPool, err := pgdb.NewPool(ctx, fmt.Sprintf("postgres://postgres@127.0.0.1:%d/ferretdb", port), logger.Desugar(), false)
 		if err == nil {
 			pgPool.Close()
+			return nil
+		}
+
+		time.Sleep(time.Second)
+	}
+
+	return fmt.Errorf("failed to connect to 127.0.0.1:%d", port)
+}
+
+// waitForTigrisPort waits for the given Tigris port to be available until ctx is done.
+func waitForTigrisPort(ctx context.Context, logger *zap.SugaredLogger, port uint16) error {
+	if err := waitForPort(ctx, logger, port); err != nil {
+		return err
+	}
+
+	cfg := &config.Driver{
+		URL: fmt.Sprintf("127.0.0.1:%d", port),
+	}
+	driver, err := driver.NewDriver(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	defer driver.Close()
+
+	for ctx.Err() == nil {
+		_, err := driver.Info(ctx)
+		if err == nil {
 			return nil
 		}
 
@@ -197,7 +226,7 @@ func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
 func setupTigris(ctx context.Context, logger *zap.SugaredLogger) error {
 	logger = logger.Named("tigris")
 
-	if err := waitForPort(ctx, logger, 8081); err != nil {
+	if err := waitForTigrisPort(ctx, logger, 8081); err != nil {
 		return err
 	}
 
