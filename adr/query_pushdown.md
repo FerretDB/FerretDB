@@ -102,54 +102,55 @@ select _jsonb->'_id' v, jsonb_typeof(_jsonb->'_id') from test;
 select jsonb_typeof(_jsonb->'_id') from test where jsonb_typeof(_jsonb->'_id') = 'number';
 
 -- number
-ferretdb=# select * from test where jsonb_typeof(_jsonb->'_id') = 'number' and (_jsonb->'_id')::numeric = 1.23;
+select * from test where jsonb_typeof(_jsonb->'_id') = 'number' and (_jsonb->'_id')::numeric = 1.23;
     _jsonb
 ---------------
  {"_id": 1.23}
 (1 row)
 
 -- string
-ferretdb=# select * from test where jsonb_typeof(_jsonb->'_id') = 'string' and (_jsonb->'_id')::text = '"s"';
+select * from test where jsonb_typeof(_jsonb->'_id') = 'string' and (_jsonb->'_id')::text = '"s"';
     _jsonb
 --------------
  {"_id": "s"}
 
 -- document
-ferretdb=# select * from test where jsonb_typeof(_jsonb->'_id') = 'object' and _jsonb->'_id' = '{"foo": "bar"}'::jsonb;
+select * from test where jsonb_typeof(_jsonb->'_id') = 'object' and _jsonb->'_id' = '{"foo": "bar"}'::jsonb;
          _jsonb
 -------------------------
  {"_id": {"foo": "bar"}}
 (1 row)
 
 -- NaN
-ferretdb=# select * from test where jsonb_typeof(_jsonb->'_id') = 'object' and _jsonb->'_id' = '{"$f":"NaN"}'::jsonb;
+select * from test where jsonb_typeof(_jsonb->'_id') = 'object' and _jsonb->'_id' = '{"$f":"NaN"}'::jsonb;
          _jsonb
 ------------------------
  {"_id": {"$f": "NaN"}}
 (1 row)
 
--- Infselect * from test where jsonb_typeof(_jsonb->'_id') = 'object' and _jsonb->'_id' = '{"$f":"-Infinity"}'::jsonb;
+-- Inf
+select * from test where jsonb_typeof(_jsonb->'_id') = 'object' and _jsonb->'_id' = '{"$f":"-Infinity"}'::jsonb;
             _jsonb
 ------------------------------
  {"_id": {"$f": "-Infinity"}}
 (1 row)
 
 -- null
-ferretdb=# select * from test where jsonb_typeof(_jsonb->'_id') = 'null';
+select * from test where jsonb_typeof(_jsonb->'_id') = 'null';
     _jsonb
 ---------------
  {"_id": null}
 (1 row)
 
 -- however
-ferretdb=# select * from test where jsonb_typeof(_jsonb->'_id') IS NULL;
+select * from test where jsonb_typeof(_jsonb->'_id') IS NULL;
  _jsonb
 --------
 (0 rows)
 
 
 -- [null]
-ferretdb=# select * from test where jsonb_typeof(_jsonb->'_id') = 'array' and _jsonb->'_id' = '[null]'::jsonb;
+select * from test where jsonb_typeof(_jsonb->'_id') = 'array' and _jsonb->'_id' = '[null]'::jsonb;
      _jsonb
 -----------------
  {"_id": [null]}
@@ -157,7 +158,7 @@ ferretdb=# select * from test where jsonb_typeof(_jsonb->'_id') = 'array' and _j
 
 
 -- [1]
-ferretdb=# select * from test where jsonb_typeof(_jsonb->'_id') = 'array' and _jsonb->'_id' = '[1]'::jsonb;
+select * from test where jsonb_typeof(_jsonb->'_id') = 'array' and _jsonb->'_id' = '[1]'::jsonb;
     _jsonb
 --------------
  {"_id": [1]}
