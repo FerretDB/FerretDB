@@ -115,7 +115,6 @@ ferretdb=# select * from test where jsonb_typeof(_jsonb->'_id') = 'string' and (
  {"_id": "s"}
 
 -- document
-select * from test where jsonb_typeof(_jsonb->'_id') = 'object' and _jsonb->'_id' = '{"foo": "bar"}'::jsonb;
 ferretdb=# select * from test where jsonb_typeof(_jsonb->'_id') = 'object' and _jsonb->'_id' = '{"foo": "bar"}'::jsonb;
          _jsonb
 -------------------------
