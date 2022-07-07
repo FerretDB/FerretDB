@@ -44,27 +44,29 @@ test_id> db.test.find()
 ]
 ```
 
-SQL queries examples:
+
+## SQL samples
 
 ```sql
-
 CREATE TABLE test (
-	_id jsonb NOT NULL DEFAULT '{}'
+	_jsonb jsonb NOT NULL DEFAULT '{}'
 );
 
 insert into test values('{"_id": 1.23}');
-insert into test values('{"_id": "s"}');
-insert into test values('{"_id": [1] }');
+insert into test values('{"_id": 1}');
+insert into test values(`{"_id": "s"}`);
 insert into test values('{"_id": {"foo": "bar"} }');
 insert into test values('{"_id": {"$f":"NaN"} }');
 insert into test values('{"_id": {"$f":"-Infinity"} }');
 insert into test values('{"_id": null }');
+insert into test values('{"_id": [1] }');
 insert into test values('{"_id": [null] }');
 insert into test values('{"_id": { "_id": [null] } }');
 insert into test values('{"_id": { "_id": { "$f":"NaN"} } }');
 
-ferretdb=# select * from test ;
-               _id
+-- output all
+select * from test;
+             _jsonb
 ---------------------------------
  {"_id": 1.23}
  {"_id": "s"}
@@ -76,7 +78,91 @@ ferretdb=# select * from test ;
  {"_id": [null]}
  {"_id": {"_id": [null]}}
  {"_id": {"_id": {"$f": "NaN"}}}
-(10 rows)
+ {"_id": 1}
+(11 rows)
+
+-- see types
+select _jsonb->'_id' v, jsonb_typeof(_jsonb->'_id') from test;
+           v            | jsonb_typeof
+------------------------+--------------
+ 1.23                   | number
+ "s"                    | string
+ [1]                    | array
+ {"foo": "bar"}         | object
+ {"$f": "NaN"}          | object
+ {"$f": "-Infinity"}    | object
+ null                   | null
+ [null]                 | array
+ {"_id": [null]}        | object
+ {"_id": {"$f": "NaN"}} | object
+ 1                      | number
+(11 rows)
+
+-- example
+select jsonb_typeof(_jsonb->'_id') from test where jsonb_typeof(_jsonb->'_id') = 'number';
+
+-- number
+ferretdb=# select * from test where jsonb_typeof(_jsonb->'_id') = 'number' and (_jsonb->'_id')::numeric = 1.23;
+    _jsonb
+---------------
+ {"_id": 1.23}
+(1 row)
+
+-- string
+ferretdb=# select * from test where jsonb_typeof(_jsonb->'_id') = 'string' and (_jsonb->'_id')::text = '"s"';
+    _jsonb
+--------------
+ {"_id": "s"}
+
+-- document
+select * from test where jsonb_typeof(_jsonb->'_id') = 'object' and _jsonb->'_id' = '{"foo": "bar"}'::jsonb;
+ferretdb=# select * from test where jsonb_typeof(_jsonb->'_id') = 'object' and _jsonb->'_id' = '{"foo": "bar"}'::jsonb;
+         _jsonb
+-------------------------
+ {"_id": {"foo": "bar"}}
+(1 row)
+
+-- NaN
+ferretdb=# select * from test where jsonb_typeof(_jsonb->'_id') = 'object' and _jsonb->'_id' = '{"$f":"NaN"}'::jsonb;
+         _jsonb
+------------------------
+ {"_id": {"$f": "NaN"}}
+(1 row)
+
+-- Infselect * from test where jsonb_typeof(_jsonb->'_id') = 'object' and _jsonb->'_id' = '{"$f":"-Infinity"}'::jsonb;
+            _jsonb
+------------------------------
+ {"_id": {"$f": "-Infinity"}}
+(1 row)
+
+-- null
+ferretdb=# select * from test where jsonb_typeof(_jsonb->'_id') = 'null';
+    _jsonb
+---------------
+ {"_id": null}
+(1 row)
+
+-- however
+ferretdb=# select * from test where jsonb_typeof(_jsonb->'_id') IS NULL;
+ _jsonb
+--------
+(0 rows)
+
+
+-- [null]
+ferretdb=# select * from test where jsonb_typeof(_jsonb->'_id') = 'array' and _jsonb->'_id' = '[null]'::jsonb;
+     _jsonb
+-----------------
+ {"_id": [null]}
+(1 row)
+
+
+-- [1]
+ferretdb=# select * from test where jsonb_typeof(_jsonb->'_id') = 'array' and _jsonb->'_id' = '[1]'::jsonb;
+    _jsonb
+--------------
+ {"_id": [1]}
+(1 row)
 
 ```
 
@@ -116,28 +202,4 @@ Document build tag in `README.md`
 ## Not in scope
 
 Not in scope:
-- Cases for `{_id: expression}` where expression are not scope:
-  - $nor
-  - $or
-  - $and
-  - $eqa
-  - $ne
-  - $gt
-  - $gte
-  - $lt
-  - $lte
-  - $in
-  - $nin
-  - $not
-  - $regex
-  - $options
-  - $elemMatch
-  - $size
-  - $bitsAllClear
-  - $bitsAllSet
-  - $bitsAnyClear
-  - $bitsAnySet
-  - $mod
-  - $exists
-  - $type
-
+- Cases for `{_id: expression}` where expression are not scope.
