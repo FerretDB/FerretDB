@@ -119,29 +119,3 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	return &reply, nil
 }
-
-// requirRecordsLog returns an array of records from logging buffer with given level.
-// func requirRecordsLog(level zapcore.Level) (*types.Array, error) {
-// 	entries := logging.RecentEntries.Get(level)
-// 	log := new(types.Array)
-// 	for _, e := range entries {
-// 		b, err := json.Marshal(map[string]any{
-// 			"t": map[string]time.Time{
-// 				"$date": e.Time,
-// 			},
-// 			"l":   e.Level,
-// 			"ln":  e.LoggerName,
-// 			"msg": e.Message,
-// 			"c":   e.Caller,
-// 			"s":   e.Stack,
-// 		})
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		if err = log.Append(string(b)); err != nil {
-// 			return nil, err
-// 		}
-// 	}
-
-// 	return log, nil
-// }
