@@ -141,7 +141,11 @@ func TestFindAndModifySimple(t *testing.T) {
 			t.Parallel()
 			ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
-			command := append(bson.D{{"findAndModify", collection.Name()}}, tc.command...)
+			command := bson.D{
+				{"findAndModify", collection.Name()},
+				{"sort", bson.D{{"_id", 1}}},
+			}
+			command = append(command, tc.command...)
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
@@ -294,7 +298,8 @@ func TestFindAndModifyErrors(t *testing.T) {
 			t.Parallel()
 			ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
-			command := append(bson.D{{"findAndModify", collection.Name()}}, tc.command...)
+			command := bson.D{{"findAndModify", collection.Name()}}
+			command = append(command, tc.command...)
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, command).Decode(&actual)

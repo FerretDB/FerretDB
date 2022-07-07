@@ -101,7 +101,7 @@ var FixedScalars = &Docs[string]{
 	data: map[string]map[string]any{
 		"double":          {"double_value": 42.13},
 		"double-whole":    {"double_value": 42.0},
-		"double-zero":     {"double_value": 0},
+		"double-zero":     {"double_value": 0.0},
 		"double-max":      {"double_value": math.MaxFloat64},
 		"double-smallest": {"double_value": math.SmallestNonzeroFloat64},
 		"double-big":      {"double_value": doubleBig},

@@ -17,8 +17,6 @@ package shareddata
 import (
 	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/exp/constraints"
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 )
 
 // Provider is implemented by shared data sets that provide documents.
@@ -28,19 +26,14 @@ type Provider interface {
 }
 
 // Docs stores shared data documents as maps.
-type Docs[idType constraints.Ordered] struct {
+type Docs[idType comparable] struct {
 	data map[idType]map[string]any
 }
 
 // Docs implement Provider interface.
 func (docs *Docs[idType]) Docs() []bson.D {
-	ids := maps.Keys(docs.data)
-	slices.Sort(ids)
-
 	res := make([]bson.D, 0, len(docs.data))
-	for _, id := range ids {
-		doc := docs.data[id]
-
+	for id, doc := range docs.data {
 		d := make(bson.D, 0, len(doc)+1)
 		d = append(d, bson.E{"_id", id})
 		for k, v := range doc {
@@ -60,12 +53,9 @@ type Values[idType constraints.Ordered] struct {
 
 // Docs implement Provider interface.
 func (values *Values[idType]) Docs() []bson.D {
-	ids := maps.Keys(values.data)
-	slices.Sort(ids)
-
 	res := make([]bson.D, 0, len(values.data))
-	for _, id := range ids {
-		res = append(res, bson.D{{"_id", id}, {"value", values.data[id]}})
+	for id, doc := range values.data {
+		res = append(res, bson.D{{"_id", id}, {"value", doc}})
 	}
 
 	return res
