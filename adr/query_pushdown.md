@@ -43,6 +43,35 @@ test_id> db.test.find()
   { _id: { foo: 'bar' } }
 ]
 ```
+SQL queries examples:
+```sql
+insert into test values('{"_id": 1.23}');
+insert into test values('{"_id": "s"}');
+insert into test values('{"_id": [1] }');
+insert into test values('{"_id": {"foo": "bar"} }');
+insert into test values('{"_id": {"$f":"NaN"} }');
+insert into test values('{"_id": {"$f":"-Infinity"} }');
+insert into test values('{"_id": null }');
+insert into test values('{"_id": [null] }');
+insert into test values('{"_id": { "_id": [null] } }');
+insert into test values('{"_id": { "_id": { "$f":"NaN"} } }');
+
+ferretdb=# select * from test ;
+               _id
+---------------------------------
+ {"_id": 1.23}
+ {"_id": "s"}
+ {"_id": [1]}
+ {"_id": {"foo": "bar"}}
+ {"_id": {"$f": "NaN"}}
+ {"_id": {"$f": "-Infinity"}}
+ {"_id": null}
+ {"_id": [null]}
+ {"_id": {"_id": [null]}}
+ {"_id": {"_id": {"$f": "NaN"}}}
+(10 rows)
+
+```
 
 ### Tigris
 
