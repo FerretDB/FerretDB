@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jackc/pgtype/pgxtype"
+
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v4"
@@ -217,7 +219,7 @@ func (pgPool *Pool) Schemas(ctx context.Context) ([]string, error) {
 
 // Collections returns a sorted list of FerretDB collection names.
 func (pgPool *Pool) Collections(ctx context.Context, db string) ([]string, error) {
-	schemaExists, err := pgPool.schemaExists(ctx, db)
+	schemaExists, err := pgPool.schemaExists(ctx, pgPool, db)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -348,7 +350,7 @@ func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
 //
 // Deprecated: use CreateCollectionTx instead.
 func (pgPool *Pool) CreateCollection(ctx context.Context, db, collection string) error {
-	schemaExists, err := pgPool.schemaExists(ctx, db)
+	schemaExists, err := pgPool.schemaExists(ctx, pgPool, db)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -411,7 +413,7 @@ func (pgPool *Pool) CreateCollectionTx(ctx context.Context, tx pgx.Tx, db, colle
 // It returns (possibly wrapped) ErrTableNotExist if schema or table does not exist,
 // use `errors.Is` to check the error.
 func (pgPool *Pool) DropCollection(ctx context.Context, schema, collection string) error {
-	schemaExists, err := pgPool.schemaExists(ctx, schema)
+	schemaExists, err := pgPool.schemaExists(ctx, pgPool, schema)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -699,9 +701,9 @@ func (pgPool *Pool) tables(ctx context.Context, tx pgx.Tx, schema string) ([]str
 }
 
 // schemaExists returns true if given schema exists.
-func (pgPool *Pool) schemaExists(ctx context.Context, db string) (bool, error) {
+func (pgPool *Pool) schemaExists(ctx context.Context, querier pgxtype.Querier, db string) (bool, error) {
 	sql := `SELECT nspname FROM pg_catalog.pg_namespace WHERE nspname = $1`
-	rows, err := pgPool.Query(ctx, sql, db)
+	rows, err := querier.Query(ctx, sql, db)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
