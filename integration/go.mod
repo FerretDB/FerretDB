@@ -9,7 +9,7 @@ require (
 	github.com/stretchr/testify v1.8.0
 	go.mongodb.org/mongo-driver v1.9.1
 	go.uber.org/zap v1.21.0
-	golang.org/x/exp v0.0.0-20220613132600-b0d781184e0d
+	golang.org/x/exp v0.0.0-20220706164943-b4a6d9510983
 )
 
 require (
@@ -56,7 +56,7 @@ require (
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.35.0 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
-	github.com/tigrisdata/tigris-client-go v1.0.0-alpha.18 // indirect
+	github.com/tigrisdata/tigris-client-go v1.0.0-alpha.19 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.0.2 // indirect
 	github.com/xdg-go/stringprep v1.0.2 // indirect
@@ -67,11 +67,11 @@ require (
 	golang.org/x/net v0.0.0-20220526153639-5463443f8c37 // indirect
 	golang.org/x/oauth2 v0.0.0-20220524215830-622c5d57e401 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/sys v0.0.0-20220627191245-f75cf1eec38b // indirect
+	golang.org/x/sys v0.0.0-20220704084225-05e143d24a9e // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220526192754-51939a95c655 // indirect
-	google.golang.org/grpc v1.46.2 // indirect
+	google.golang.org/grpc v1.47.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
