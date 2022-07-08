@@ -43,7 +43,7 @@ NB: There is no new functionality from the user perspective – we already suppo
 
 ## Solution
 
-WIP: test taable:
+WIP: test table:
 
 ```sql
 CREATE TABLE test (
@@ -165,9 +165,6 @@ Checks for `_id`:
 * array with nil value as an element
 * arrays of arrays
 * +/-Inf
-
-TODO: add queries
-
 
 ## Documentation
 
