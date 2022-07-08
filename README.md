@@ -36,7 +36,7 @@ and [contributing guidelines](CONTRIBUTING.md).
 
 2. FerretDB does not support NUL (`\0`) characters in strings.
 
-3Collection names restrictions:
+3. Collection names restrictions:
 
 * collection name cannot start with the reserved prefix `_ferretdb_`.
 * collection name must not include non-latin letters, spaces, dots, dollars or dashes.
