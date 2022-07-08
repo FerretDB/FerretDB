@@ -6,11 +6,14 @@ Select queries of the form `{_id: <value>}`
 
 ### Strings
 
-string comparison difference between MongoDB and PostgreSQL (i.e. case sensetive etc)
+string comparison difference between MongoDB and PostgreSQL i.e.
+* case sensetive
+* zero values
+* etc
 
 ### Numeric
 
-While looking for a numerica values in Postgres it might be different types as
+While looking for a numerical values in Postgres it might be different types as
 * `int32`
 * `int64`
 * `double`
@@ -19,6 +22,8 @@ While looking for a numerica values in Postgres it might be different types as
 And search should look on all.
 
 ### `NaN`, `+-Inf`
+
+
 
 ### Arrays
 
@@ -38,14 +43,7 @@ NB: There is no new functionality from the user perspective – we already suppo
 
 ## Solution
 
-### Build tag
-
-Add a build tag:
-If the build tag is enabled:
-* then for queries `{_id: <value>}`, use a simple pushdown
-* for all other queries, process as usual.
-
-## SQL samples
+WIP: test taable:
 
 ```sql
 CREATE TABLE test (
@@ -80,24 +78,6 @@ select * from test;
  {"_id": {"_id": {"$f": "NaN"}}}
  {"_id": 1}
 (11 rows)
-
--- see types
-select _jsonb->'_id' v, jsonb_typeof(_jsonb->'_id') from test;
-           v            | jsonb_typeof
-------------------------+--------------
- 1.23                   | number
- "s"                    | string
- [1]                    | array
- {"foo": "bar"}         | object
- {"$f": "NaN"}          | object
- {"$f": "-Infinity"}    | object
- null                   | null
- [null]                 | array
- {"_id": [null]}        | object
- {"_id": {"$f": "NaN"}} | object
- 1                      | number
-(11 rows)
-
 -- example
 select jsonb_typeof(_jsonb->'_id') from test where jsonb_typeof(_jsonb->'_id') = 'number';
 
@@ -172,11 +152,6 @@ Tigris API provides querying by `_id`. Let's use it.
 
 ## Testing
 
-* Unit-tests for fetch function, that it returns not all the collection documents but a single document when `{_id: <value>}` is queried.
-* Integrational tests for insert function after inserting all expected records in the database.
-
-## Cases
-
 Checks for `_id`:
 * too long `_id` variable
 * empty `_id`
@@ -196,5 +171,4 @@ TODO: add queries
 
 ## Documentation
 
-Document build tag in `README.md`
-
+Document behaviour in `README.md`
