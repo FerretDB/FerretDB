@@ -183,19 +183,19 @@ tasks:
     desc: "Build bin/ferretdb-testcover"
     deps: [gen-version]
     cmds:
-      - go test -c -o=bin/ferretdb-testcover -trimpath -tags=testcover,tigris {{if ne OS "windows"}}-race{{end}} -coverpkg=./... ./cmd/ferretdb
+      - go test -c -o=bin/ferretdb-testcover{{exeExt}} -trimpath -tags=testcover,tigris {{if ne OS "windows"}}-race{{end}} -coverpkg=./... ./cmd/ferretdb
 
   run:
     desc: "Run FerretDB"
     deps: [build-testcover]
     cmds:
-      - bin/ferretdb-testcover -test.coverprofile=cover.txt -mode=diff-normal -listen-addr=:27017
+      - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -mode=diff-normal -listen-addr=:27017
 
   run-proxy:
     desc: "Run FerretDB in diff-proxy mode"
     deps: [build-testcover]
     cmds:
-      - bin/ferretdb-testcover -test.coverprofile=cover.txt -mode=diff-proxy -listen-addr=:27017
+      - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -mode=diff-proxy -listen-addr=:27017
 
   lint:
     desc: "Run linters"
