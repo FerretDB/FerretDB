@@ -9,8 +9,8 @@ ENV CGO_ENABLED=1
 
 # split into several commands for better logging on GitHub Actions
 RUN go mod download
-RUN go build -v -o=bin/ferretdb -trimpath -tags=testcover,tigris -race                 ./cmd/ferretdb
-RUN go test  -c -o=bin/ferretdb -trimpath -tags=testcover,tigris -race -coverpkg=./... ./cmd/ferretdb
+RUN go build -v -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigris -race                 ./cmd/ferretdb
+RUN go test  -c -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigris -race -coverpkg=./... ./cmd/ferretdb
 
 FROM golang:1.18.3
 
