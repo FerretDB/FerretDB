@@ -46,13 +46,13 @@ const (
 	localePOSIX = "POSIX"
 )
 
-// Errors are wrapped with `lazyerrors.Error`,
-// so the caller needs to use `errors.Is` to check the error,
-// for example, `errors.Is(err, ErrSchemaNotExist)`.
-var (
-	// Regex validateCollectionNameRe validates collection names.
-	validateCollectionNameRe = regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]{0,119}$")
+// Regex validateCollectionNameRe validates collection names.
+var validateCollectionNameRe = regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]{0,119}$")
 
+// Errors are wrapped with lazyerrors.Error,
+// so the caller needs to use errors.Is to check the error,
+// for example, errors.Is(err, ErrSchemaNotExist).
+var (
 	// ErrTableNotExist indicates that there is no such table.
 	ErrTableNotExist = fmt.Errorf("table does not exist")
 
@@ -293,7 +293,7 @@ func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, error)
 // CreateDatabase creates a new FerretDB database (PostgreSQL schema).
 //
 // It returns (possibly wrapped) ErrAlreadyExist if schema already exist,
-// use `errors.Is` to check the error.
+// use errors.Is to check the error.
 func (pgPool *Pool) CreateDatabase(ctx context.Context, db string) error {
 	err := pgPool.inTransaction(ctx, func(tx pgx.Tx) error {
 		sql := `CREATE SCHEMA ` + pgx.Identifier{db}.Sanitize()
@@ -351,11 +351,20 @@ func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
 
 // CreateCollection creates a new FerretDB collection in existing schema.
 //
-// It returns:
-//  * ErrInvalidTableName - if the table name doesn't conform to restrictions.
-//  * ErrAlreadyExist - if table already exist.
-//  * ErrTableNotExist - is schema does not exist.
+// It returns a possibly wrapped error:
+//  * ErrInvalidTableName - if a FerretDB collection name doesn't conform to restrictions.
+//  * ErrAlreadyExist - if a FerretDB collection with the given names already exists.
+//  * ErrTableNotExist - is the required FerretDB database does not exist.
+// Please use errors.Is to check the error.
 func (pgPool *Pool) CreateCollection(ctx context.Context, querier pgxtype.Querier, db, collection string) error {
+	if !validateCollectionNameRe.MatchString(collection) {
+		return ErrInvalidTableName
+	}
+
+	if strings.HasPrefix(collection, reservedCollectionPrefix) {
+		return ErrInvalidTableName
+	}
+
 	schemaExists, err := pgPool.schemaExists(ctx, querier, db)
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -420,8 +429,8 @@ func (pgPool *Pool) CreateCollection(ctx context.Context, querier pgxtype.Querie
 
 // DropCollection drops FerretDB collection.
 //
-// It returns (possibly wrapped) ErrTableNotExist if schema or table does not exist,
-// use `errors.Is` to check the error.
+// It returns (possibly wrapped) ErrTableNotExist if schema or table does not exist.
+//  Please use errors.Is to check the error.
 func (pgPool *Pool) DropCollection(ctx context.Context, schema, collection string) error {
 	schemaExists, err := pgPool.schemaExists(ctx, pgPool, schema)
 	if err != nil {
@@ -732,11 +741,11 @@ func (pgPool *Pool) schemaExists(ctx context.Context, querier pgxtype.Querier, d
 	return false, nil
 }
 
-// inTransaction wraps the given function `f` in a transaction.
-// If `f` returns an error, the transaction is rolled back.
-// Errors are wrapped with `lazyerrors.Error`,
-// so the caller needs to use `errors.Is` to check the error,
-// for example, `errors.Is(err, ErrSchemaNotExist)`.
+// inTransaction wraps the given function f in a transaction.
+// If f returns an error, the transaction is rolled back.
+// Errors are wrapped with lazyerrors.Error,
+// so the caller needs to use errors.Is to check the error,
+// for example, errors.Is(err, ErrSchemaNotExist).
 func (pgPool *Pool) inTransaction(ctx context.Context, f func(pgx.Tx) error) (err error) {
 	var tx pgx.Tx
 	if tx, err = pgPool.Begin(ctx); err != nil {
