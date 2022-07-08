@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/jackc/pgconn"
@@ -49,6 +50,9 @@ const (
 // so the caller needs to use `errors.Is` to check the error,
 // for example, `errors.Is(err, ErrSchemaNotExist)`.
 var (
+	// Regex validateCollectionNameRe validates collection names.
+	validateCollectionNameRe = regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]{0,119}$")
+
 	// ErrTableNotExist indicates that there is no such table.
 	ErrTableNotExist = fmt.Errorf("table does not exist")
 
@@ -57,6 +61,9 @@ var (
 
 	// ErrAlreadyExist indicates that a schema or table already exists.
 	ErrAlreadyExist = fmt.Errorf("schema or table already exist")
+
+	// ErrInvalidTableName indicates that a schema or table didn't passed name checks.
+	ErrInvalidTableName = fmt.Errorf("invalid table name")
 )
 
 // Pool represents PostgreSQL concurrency-safe connection pool.
@@ -273,7 +280,7 @@ func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, error)
 
 	filtered := make([]string, 0, len(tables))
 	for _, table := range tables {
-		if strings.HasPrefix(table, collectionPrefix) {
+		if strings.HasPrefix(table, reservedCollectionPrefix) {
 			continue
 		}
 
@@ -344,8 +351,10 @@ func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
 
 // CreateCollection creates a new FerretDB collection in existing schema.
 //
-// It returns (possibly wrapped) ErrAlreadyExist if table already exist, ErrTableNotExist is schema does not exist,
-// use `errors.Is` to check the error.
+// It returns:
+//  * ErrInvalidTableName - if the table name doesn't conform to restrictions.
+//  * ErrAlreadyExist - if table already exist.
+//  * ErrTableNotExist - is schema does not exist.
 func (pgPool *Pool) CreateCollection(ctx context.Context, querier pgxtype.Querier, db, collection string) error {
 	schemaExists, err := pgPool.schemaExists(ctx, querier, db)
 	if err != nil {

@@ -33,10 +33,10 @@ import (
 
 const (
 	// Internal collections prefix.
-	collectionPrefix = "_ferretdb_"
+	reservedCollectionPrefix = "_ferretdb_"
 
 	// Settings table name.
-	settingsTableName = collectionPrefix + "settings"
+	settingsTableName = reservedCollectionPrefix + "settings"
 
 	// PostgreSQL max table name length.
 	maxTableNameLength = 63
