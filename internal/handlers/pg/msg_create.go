@@ -77,6 +77,10 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			msg := fmt.Sprintf("Collection already exists. NS: %s.%s", db, collection)
 			return nil, common.NewErrorMsg(common.ErrNamespaceExists, msg)
 		}
+		if err == pgdb.ErrInvalidTableName {
+			msg := fmt.Sprintf("Invalid collection name: '%s.%s'", db, collection)
+			return nil, common.NewErrorMsg(common.ErrInvalidNamespace, msg)
+		}
 		return nil, lazyerrors.Error(err)
 	}
 
