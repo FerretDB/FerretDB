@@ -493,7 +493,7 @@ func (pgPool *Pool) CreateTableIfNotExist(ctx context.Context, db, collection st
 		return false, lazyerrors.Error(err)
 	}
 
-	// TODO: use a transaction instead of pgPool.
+	// TODO use a transaction instead of pgPool: https://github.com/FerretDB/FerretDB/issues/866
 	if err := pgPool.CreateCollection(ctx, pgPool, db, collection); err != nil {
 		if errors.Is(err, ErrAlreadyExist) {
 			return false, nil
@@ -667,7 +667,7 @@ func (pgPool *Pool) InsertDocument(ctx context.Context, db, collection string, d
 			return lazyerrors.Error(err)
 		}
 
-		// TODO: use a transaction instead of pgPool.
+		// TODO use a transaction instead of pgPool: https://github.com/FerretDB/FerretDB/issues/866
 		if err := pgPool.CreateCollection(ctx, pgPool, db, collection); err != nil {
 			if errors.Is(err, ErrAlreadyExist) {
 				return nil
