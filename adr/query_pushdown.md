@@ -1,49 +1,49 @@
-* `{_id: <value>}`
+Select queries of the form `{_id: <value>}`
 
 ## The problem
 
 [The pushdown term](https://www.quora.com/What-do-we-mean-when-we-say-SQL-pushdown)
 
-Before, we filtered tuples in Go code due to task complexity with some filtering operations.
-For now, we are ready to start supporting query pushdown.
-Let's go step by step, and first, implement a simple query pushdown for queries containing `{_id: <value>}`,
-i.e. add SQL condition `_jsonb->`+ `p.Next()` + `=` in WHERE clause passed to the PostgreSQL backend.
+### Strings
+
+string comparison difference between MongoDB and PostgreSQL (i.e. case sensetive etc)
+
+### Numeric
+
+While looking for a numerica values in Postgres it might be different types as
+* `int32`
+* `int64`
+* `double`
+* etc
+
+And search should look on all.
+
+### `NaN`, `+-Inf`
+
+### Arrays
+
+```sh
+test> db.values.find({value: 42})
+[
+  { _id: 'double-whole', value: 42 },
+  { _id: 'int32', value: 42 },
+  { _id: 'int64', value: Long("42") },
+  { _id: 'array', value: [ 42 ] },
+  { _id: 'array-three', value: [ 42, 'foo', null ] },
+  { _id: 'array-three-reverse', value: [ null, 'foo', 42 ] }
+]
+```
 
 NB: There is no new functionality from the user perspective – we already support _id values that are documents, for example, and that should not change.
 
 ## Solution
 
-* Add a function to `pgPool` that queries `_id`  and returns a single record, nothing or error.
-* In `pg` handler, modify `(h *Handler) fetch`, add the usage of that function.
-
-
 ### Build tag
 
-To not change the behavior, let's add a build tag:
+Add a build tag:
 If the build tag is enabled:
 * then for queries `{_id: <value>}`, use a simple pushdown
 * for all other queries, process as usual.
-
-### Examples on insert
-
-```sh
-test_id> db.test.insertOne({"_id": 1.23})
-{ acknowledged: true, insertedId: 1.23 }
-test_id> db.test.insertOne({"_id": "123"})
-{ acknowledged: true, insertedId: '123' }
-test_id> db.test.insertOne({"_id": [1]})
-{ acknowledged: true, insertedId: [ 1 ] }
-test_id> db.test.insertOne({"_id": {"foo": "bar"}})
-{ acknowledged: true, insertedId: { foo: 'bar' } }
-test_id> db.test.find()
-[
-  { _id: 1.23 },
-  { _id: '123' },
-  { _id: [ 1 ] },
-  { _id: { foo: 'bar' } }
-]
-```
-
 
 ## SQL samples
 
@@ -198,8 +198,3 @@ TODO: add queries
 
 Document build tag in `README.md`
 
-
-## Not in scope
-
-Not in scope:
-- Cases for `{_id: expression}` where expression are not scope.
