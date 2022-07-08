@@ -42,9 +42,12 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	res := must.NotFail(types.NewDocument())
 	err = h.pgPool.DropDatabase(ctx, db)
-	if err == nil {
+	switch {
+	case err == nil:
 		res.Set("dropped", db)
-	} else if !errors.Is(err, pgdb.ErrSchemaNotExist) {
+	case errors.Is(err, pgdb.ErrSchemaNotExist):
+		// nothing
+	default:
 		return nil, lazyerrors.Error(err)
 	}
 
