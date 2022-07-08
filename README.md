@@ -41,6 +41,8 @@ and [contributing guidelines](CONTRIBUTING.md).
 * collection name length must be less or equal than 120 symbols.
 * collection name must not start with a number.
 
+3. FerretDB does not support NUL (`\0`) characters in strings.
+
 If you encounter some other difference in behavior, please [join our community](#community) to report a problem.
 
 ## Quickstart
