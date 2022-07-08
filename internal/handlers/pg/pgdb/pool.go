@@ -235,10 +235,10 @@ func (pgPool *Pool) Collections(ctx context.Context, db string) ([]string, error
 	}
 
 	var settings *types.Document
-	var serr error
 	var collections *types.Document
 
 	err = pgPool.inTransaction(ctx, func(tx pgx.Tx) error {
+		var serr error
 		settings, serr = pgPool.getSettingsTable(ctx, tx, db)
 		return serr
 	})
