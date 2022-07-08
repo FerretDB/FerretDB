@@ -16,7 +16,6 @@
 package pgdb_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -29,8 +28,7 @@ import (
 func TestQueryDocuments(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithCancel(testutil.Ctx(t))
-	defer cancel()
+	ctx := testutil.Ctx(t)
 
 	pool := testutil.Pool(ctx, t, nil, zaptest.NewLogger(t))
 	dbName := testutil.Schema(ctx, t, pool)
