@@ -73,7 +73,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO: use a transaction, not just h.pgPool
+	// TODO use a transaction instead of pgPool: https://github.com/FerretDB/FerretDB/issues/866
 	if err = h.pgPool.CreateCollection(ctx, h.pgPool, db, collection); err != nil {
 		if errors.Is(err, pgdb.ErrAlreadyExist) {
 			msg := fmt.Sprintf("Collection already exists. NS: %s.%s", db, collection)
