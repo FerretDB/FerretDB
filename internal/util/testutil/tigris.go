@@ -12,18 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package testutil provides testing helpers.
 package testutil
 
-import (
-	"context"
-	"testing"
-)
+import "testing"
 
-// Ctx returns test context.
-func Ctx(tb testing.TB) context.Context {
+// TigrisURL returns Tigris URL for testing.
+func TigrisURL(tb testing.TB) string {
 	tb.Helper()
 
-	// TODO handle signals to stop tests gracefully
-	return context.Background()
+	if testing.Short() {
+		tb.Skip("skipping in -short mode")
+	}
+
+	return "127.0.0.1:8081"
 }

@@ -12,18 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package testutil provides testing helpers.
-package testutil
+package tigris
 
 import (
-	"context"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/FerretDB/FerretDB/integration"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-// Ctx returns test context.
-func Ctx(tb testing.TB) context.Context {
-	tb.Helper()
+func TestSmoke(t *testing.T) {
+	t.Parallel()
+	ctx, collection := integration.Setup(t, shareddata.FixedScalars)
 
-	// TODO handle signals to stop tests gracefully
-	return context.Background()
+	var doc bson.D
+	err := collection.FindOne(ctx, bson.D{{"_id", "double"}}).Decode(&doc)
+	require.NoError(t, err)
+	integration.AssertEqualDocuments(t, bson.D{{"_id", "double"}, {"double_value", 42.13}}, doc)
 }

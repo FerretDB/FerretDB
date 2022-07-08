@@ -12,18 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package testutil provides testing helpers.
-package testutil
+package integration
 
-import (
-	"context"
-	"testing"
-)
+import "testing"
 
-// Ctx returns test context.
-func Ctx(tb testing.TB) context.Context {
-	tb.Helper()
-
-	// TODO handle signals to stop tests gracefully
-	return context.Background()
+func TestUpdateBitwiseBit(t *testing.T) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/821
 }

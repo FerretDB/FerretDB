@@ -17,38 +17,28 @@ package integration
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-// TestDeleteSimple checks simple cases of doc deletion.
-func TestDeleteSimple(t *testing.T) {
+func TestEnvData(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
-	for name, tc := range map[string]struct {
-		collection    string
-		expectedCount int64
-	}{
-		"DeleteOne": {
-			collection:    collection.Name(),
-			expectedCount: 1,
-		},
-		"DeleteFromNonExistingCollection": {
-			collection:    "doesnotexist",
-			expectedCount: 0,
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+	// see `env-data` Taskfile target
+	ctx, collection, _ := SetupWithOpts(t, &SetupOpts{
+		DatabaseName: "test",
+	})
+	collection = collection.Database().Collection("values")
 
-			cursor, err := collection.Database().Collection(tc.collection).DeleteOne(ctx, bson.D{})
+	err := collection.Drop(ctx)
+	require.NoError(t, err)
+
+	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
+	for _, provider := range providers {
+		for _, doc := range provider.Docs() {
+			_, err = collection.InsertOne(ctx, doc)
 			require.NoError(t, err)
-			assert.Equal(t, tc.expectedCount, cursor.DeletedCount)
-		})
+		}
 	}
 }
