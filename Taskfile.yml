@@ -301,7 +301,7 @@ tasks:
       - ../../bin/nfpm pkg --config ../../.nfpm.yml --packager deb --target ferretdb_${FERRETDB_VERSION}.deb
     env:
       FERRETDB_VERSION:
-        sh: cat ../../internal/util/version/gen/version.txt | grep -oP '^(.+?)(?=-)'
+        sh: git describe --tags --dirty
 
 
   nfpm_rpm:
@@ -311,7 +311,7 @@ tasks:
       - ../../bin/nfpm pkg --config ../../.nfpm.yml --packager rpm --target ferretdb_${FERRETDB_VERSION}.rpm
     env:
       FERRETDB_VERSION:
-        sh: cat ../../internal/util/version/gen/version.txt | grep -oP '^(.+?)(?=-)'
+        sh: git describe --tags --dirty
 
   packager:
     cmds:
