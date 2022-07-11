@@ -19,12 +19,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
-
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 	"golang.org/x/net/context"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -82,7 +81,7 @@ func TestQueryDocuments(t *testing.T) {
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			//t.Parallel()
+			// t.Parallel()
 
 			for _, doc := range tc.documents {
 				require.NoError(t, pool.InsertDocument(ctx, dbName, tc.collection, doc))

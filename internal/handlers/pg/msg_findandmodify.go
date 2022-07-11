@@ -68,9 +68,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			return nil, fetchedItem.Err
 		}
 
-		for _, doc := range fetchedItem.Docs {
-			fetchedDocs = append(fetchedDocs, doc)
-		}
+		fetchedDocs = append(fetchedDocs, fetchedItem.Docs...)
 	}
 
 	err = common.SortDocuments(fetchedDocs, params.sort)
