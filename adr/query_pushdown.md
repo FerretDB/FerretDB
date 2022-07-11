@@ -1,6 +1,9 @@
-Select queries of the form `{_id: <ObjectID>}`
+Select queries of the form `{_id: <ObjectID>}` (value type is `ObjectID`).
 
 ## Postgres
+
+If value type is not `ObjectID`, fallback to fetch entire table.
+If value type is `ObjectID` raise error (`fjson` unmarshal).
 
 Both work:
 
@@ -15,6 +18,9 @@ select * from test where _jsonb->'_id' = '{"$o":"507f1f77bcf86cd799439011"}'::js
 [PostgreSQL functions](https://www.postgresql.org/docs/14/functions-json.html)
 
 ## Tigris
+
+Support tables where the primary key is only one field.
+i.e. `if len(schema.PrimaryKey) > 1` fallback to fetch the entire table.
 
 ```go
 collection, err := db.DescribeCollection(ctx, param.collection)
