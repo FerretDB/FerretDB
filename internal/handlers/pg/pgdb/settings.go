@@ -21,6 +21,7 @@ import (
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgtype/pgxtype"
 	"github.com/jackc/pgx/v4"
 	"golang.org/x/exp/slices"
 
@@ -32,10 +33,10 @@ import (
 
 const (
 	// Internal collections prefix.
-	collectionPrefix = "_ferretdb_"
+	reservedCollectionPrefix = "_ferretdb_"
 
 	// Settings table name.
-	settingsTableName = collectionPrefix + "settings"
+	settingsTableName = reservedCollectionPrefix + "settings"
 
 	// PostgreSQL max table name length.
 	maxTableNameLength = 63
@@ -44,8 +45,8 @@ const (
 // createSettingsTable creates FerretDB settings table if it doesn't exist.
 // Settings table is used to store FerretDB settings like collections names mapping.
 // That table consists of a single document with settings.
-func (pgPool *Pool) createSettingsTable(ctx context.Context, tx pgx.Tx, db string) error {
-	tables, err := pgPool.tables(ctx, tx, db)
+func (pgPool *Pool) createSettingsTable(ctx context.Context, querier pgxtype.Querier, db string) error {
+	tables, err := pgPool.tables(ctx, querier, db)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -55,11 +56,11 @@ func (pgPool *Pool) createSettingsTable(ctx context.Context, tx pgx.Tx, db strin
 	}
 
 	sql := `CREATE TABLE ` + pgx.Identifier{db, settingsTableName}.Sanitize() + ` (settings jsonb)`
-	_, err = tx.Exec(ctx, sql)
+	_, err = querier.Exec(ctx, sql)
 	if err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if !ok {
-			return lazyerrors.Errorf("pg.CreateCollection: %w", err)
+			return lazyerrors.Errorf("pgdb.createSettingsTable: %w", err)
 		}
 
 		switch pgErr.Code {
@@ -72,13 +73,13 @@ func (pgPool *Pool) createSettingsTable(ctx context.Context, tx pgx.Tx, db strin
 			// Reproducible by integration tests.
 			return ErrAlreadyExist
 		default:
-			return lazyerrors.Errorf("pg.CreateCollection: %w", err)
+			return lazyerrors.Errorf("pgdb.createSettingsTable: %w", err)
 		}
 	}
 
 	settings := must.NotFail(types.NewDocument("collections", must.NotFail(types.NewDocument())))
 	sql = fmt.Sprintf(`INSERT INTO %s (settings) VALUES ($1)`, pgx.Identifier{db, settingsTableName}.Sanitize())
-	_, err = tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(settings)))
+	_, err = querier.Exec(ctx, sql, must.NotFail(fjson.Marshal(settings)))
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -89,8 +90,8 @@ func (pgPool *Pool) createSettingsTable(ctx context.Context, tx pgx.Tx, db strin
 // getTableName returns the name of the table for given collection or error.
 // If the settings table doesn't exist, it will be created.
 // If the record for collection doesn't exist, it will be created.
-func (pgPool *Pool) getTableName(ctx context.Context, tx pgx.Tx, db, collection string) (string, error) {
-	schemaExists, err := pgPool.schemaExists(ctx, db)
+func (pgPool *Pool) getTableName(ctx context.Context, querier pgxtype.Querier, db, collection string) (string, error) {
+	schemaExists, err := pgPool.schemaExists(ctx, querier, db)
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
@@ -99,19 +100,19 @@ func (pgPool *Pool) getTableName(ctx context.Context, tx pgx.Tx, db, collection 
 		return formatCollectionName(collection), nil
 	}
 
-	tables, err := pgPool.tables(ctx, tx, db)
+	tables, err := pgPool.tables(ctx, querier, db)
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
 
 	if !slices.Contains(tables, settingsTableName) {
-		err = pgPool.createSettingsTable(ctx, tx, db)
+		err = pgPool.createSettingsTable(ctx, querier, db)
 		if err != nil {
 			return "", err
 		}
 	}
 
-	settings, err := pgPool.getSettingsTable(ctx, tx, db)
+	settings, err := pgPool.getSettingsTable(ctx, querier, db)
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
@@ -130,7 +131,7 @@ func (pgPool *Pool) getTableName(ctx context.Context, tx pgx.Tx, db, collection 
 	must.NoError(collections.Set(collection, tableName))
 	must.NoError(settings.Set("collections", collections))
 
-	err = pgPool.updateSettingsTable(ctx, tx, db, settings)
+	err = pgPool.updateSettingsTable(ctx, querier, db, settings)
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
@@ -139,9 +140,9 @@ func (pgPool *Pool) getTableName(ctx context.Context, tx pgx.Tx, db, collection 
 }
 
 // getSettingsTable returns FerretDB settings table.
-func (pgPool *Pool) getSettingsTable(ctx context.Context, tx pgx.Tx, db string) (*types.Document, error) {
+func (pgPool *Pool) getSettingsTable(ctx context.Context, querier pgxtype.Querier, db string) (*types.Document, error) {
 	sql := `SELECT settings FROM ` + pgx.Identifier{db, settingsTableName}.Sanitize()
-	rows, err := tx.Query(ctx, sql)
+	rows, err := querier.Query(ctx, sql)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -170,15 +171,15 @@ func (pgPool *Pool) getSettingsTable(ctx context.Context, tx pgx.Tx, db string) 
 }
 
 // updateSettingsTable updates FerretDB settings table.
-func (pgPool *Pool) updateSettingsTable(ctx context.Context, tx pgx.Tx, db string, settings *types.Document) error {
+func (pgPool *Pool) updateSettingsTable(ctx context.Context, querier pgxtype.Querier, db string, settings *types.Document) error {
 	sql := `UPDATE ` + pgx.Identifier{db, settingsTableName}.Sanitize() + `SET settings = $1`
-	_, err := tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(settings)))
+	_, err := querier.Exec(ctx, sql, must.NotFail(fjson.Marshal(settings)))
 	return err
 }
 
 // removeTableFromSettings removes collection from FerretDB settings table.
-func (pgPool *Pool) removeTableFromSettings(ctx context.Context, tx pgx.Tx, db, collection string) error {
-	settings, err := pgPool.getSettingsTable(ctx, tx, db)
+func (pgPool *Pool) removeTableFromSettings(ctx context.Context, querier pgxtype.Querier, db, collection string) error {
+	settings, err := pgPool.getSettingsTable(ctx, querier, db)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -196,7 +197,7 @@ func (pgPool *Pool) removeTableFromSettings(ctx context.Context, tx pgx.Tx, db, 
 
 	must.NoError(settings.Set("collections", collections))
 
-	if err := pgPool.updateSettingsTable(ctx, tx, db, settings); err != nil {
+	if err := pgPool.updateSettingsTable(ctx, querier, db, settings); err != nil {
 		return lazyerrors.Error(err)
 	}
 

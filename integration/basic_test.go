@@ -16,6 +16,7 @@ package integration
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -128,22 +129,69 @@ func TestFindCommentQuery(t *testing.T) {
 	assert.Contains(t, databaseNames, name)
 }
 
-func TestLongCollectionName(t *testing.T) {
+func TestCollectionName(t *testing.T) {
 	t.Parallel()
 
-	ctx, collection := Setup(t)
+	t.Run("Err", func(t *testing.T) {
+		ctx, collection := Setup(t)
 
-	longCollectionName := "very_long_collection_name_that_is_more_than_64_characters_long_but_still_valid"
-	err := collection.Database().CreateCollection(ctx, longCollectionName)
-	require.NoError(t, err)
+		collectionName300 := strings.Repeat("a", 300)
+		cases := map[string]struct {
+			collection string
+			err        *mongo.CommandError
+			alt        string
+		}{
+			"TooLongForBoth": {
+				collection: collectionName300,
+				err: &mongo.CommandError{
+					Name: "InvalidNamespace",
+					Code: 73,
+					Message: fmt.Sprintf(
+						"Fully qualified namespace is too long. Namespace: testcollectionname-err.%s Max: 255",
+						collectionName300,
+					),
+				},
+				alt: fmt.Sprintf("Invalid collection name: 'testcollectionname-err.%s'", collectionName300),
+			},
+			"WithADollarSign": {
+				collection: "collection_name_with_a-$",
+				err: &mongo.CommandError{
+					Name:    "InvalidNamespace",
+					Code:    73,
+					Message: `Invalid collection name: collection_name_with_a-$`,
+				},
+				alt: `Invalid collection name: 'testcollectionname-err.collection_name_with_a-$'`,
+			},
+			"Empty": {
+				collection: "",
+				err: &mongo.CommandError{
+					Name:    "InvalidNamespace",
+					Code:    73,
+					Message: "Invalid namespace specified 'testcollectionname-err.'",
+				},
+				alt: "Invalid collection name: 'testcollectionname-err.'",
+			},
+		}
 
-	sixtyThreeCharsCollectionName := "this_is_a_collection_name_that_is_63_characters_long_abcdefghij"
-	err = collection.Database().CreateCollection(ctx, sixtyThreeCharsCollectionName)
-	require.NoError(t, err)
+		for name, tc := range cases {
+			name, tc := name, tc
+			t.Run(name, func(t *testing.T) {
+				err := collection.Database().CreateCollection(ctx, tc.collection)
+				AssertEqualAltError(t, *tc.err, tc.alt, err)
+			})
+		}
+	})
 
-	names, err := collection.Database().ListCollectionNames(ctx, bson.D{})
-	require.NoError(t, err)
+	t.Run("Ok", func(t *testing.T) {
+		ctx, collection := Setup(t)
 
-	assert.Contains(t, names, longCollectionName)
-	assert.Contains(t, names, sixtyThreeCharsCollectionName)
+		longCollectionName := strings.Repeat("a", 100)
+		err := collection.Database().CreateCollection(ctx, longCollectionName)
+		require.NoError(t, err)
+
+		names, err := collection.Database().ListCollectionNames(ctx, bson.D{})
+		require.NoError(t, err)
+
+		assert.Contains(t, names, longCollectionName)
+	})
 }

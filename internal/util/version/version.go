@@ -43,7 +43,7 @@ type Info struct {
 	Commit           string
 	Branch           string
 	Dirty            bool
-	Debug            bool // testcover or -race
+	Debug            bool // -tags=ferretdb_testcover or -race
 	BuildEnvironment *types.Document
 }
 
@@ -124,7 +124,7 @@ func init() {
 				info.Debug = true
 			}
 		case "-tags":
-			if slices.Contains(strings.Split(s.Value, ","), "testcover") {
+			if slices.Contains(strings.Split(s.Value, ","), "ferretdb_testcover") {
 				info.Debug = true
 			}
 		}
