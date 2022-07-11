@@ -31,9 +31,14 @@ type sqlParam struct {
 }
 
 // fetch fetches all documents from the given database and collection.
-// If collection doesn't exist it returns an empty slice and no error.
 //
-// TODO https://github.com/FerretDB/FerretDB/issues/372
+// If an error occurs before the fetching, the error is returned immediately.
+// The returned channel is always non-nil.
+// The channel is closed when all documents are sent; the caller should always drain the channel.
+// If an error occurs during fetching, the last message before closing the channel contains an error.
+// Context cancelation is not considered an error.
+//
+// If the collection doesn't exist, fetch returns a closed channel and no error.
 //
 func (h *Handler) fetch(ctx context.Context, param sqlParam) (<-chan pgdb.FetchedDocs, error) {
 	// Special case: check if collection exists at all
