@@ -3,7 +3,7 @@
 ## [v0.5.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.5.0) (2022-07-11)
 
 ### What's Changed
-This release enables the usage of FerretDB as a Go library. More information will be available in the upcoming blog post.
+This release enables the usage of FerretDB as a Go library. See [this blog post](https://www.ferretdb.io/0-5-0-release-is-out-embedding-ferretdb-into-go-programs/).
 
 ### New Features 🎉
 * Support embedded use-case by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/754
