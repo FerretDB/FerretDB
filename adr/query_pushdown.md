@@ -21,7 +21,7 @@ select * from test where _jsonb->'_id' = '{"$o":"507f1f77bcf86cd799439011"}'::js
 
 Support tables where the primary key is only one field.
 
-* if `len(schema.PrimaryKey) > 1` fallback to fetch the entire table.
+* if `len(schema.PrimaryKey) > 1` raise error.
   * because user expects single one value in `_id`.
   * to comply and be compatible with MongoDB.
 * if valaue type if not `ObjectID` raise error.
