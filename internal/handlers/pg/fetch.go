@@ -17,10 +17,9 @@ package pg
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
-
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -35,7 +34,6 @@ type sqlParam struct {
 // If collection doesn't exist it returns an empty slice and no error.
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/372
-// TODO !!! describe docs
 //
 func (h *Handler) fetch(ctx context.Context, param sqlParam) (<-chan pgdb.FetchedDocs, error) {
 	// Special case: check if collection exists at all

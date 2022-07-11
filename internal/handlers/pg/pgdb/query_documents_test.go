@@ -133,7 +133,6 @@ func TestQueryDocuments(t *testing.T) {
 	})
 }
 
-/*
 func TestQueryDocumentsConnectionLost(t *testing.T) {
 	t.Parallel()
 
@@ -157,7 +156,7 @@ func TestQueryDocumentsConnectionLost(t *testing.T) {
 	require.NoError(t, err)
 
 	<-fetchedChan
-	_, err = pool.Exec(ctx, "SELECT pg_terminate_backend(pg_backend_pid());")
+	/*_, err = pool.Exec(ctx, "SELECT pg_terminate_backend(pg_backend_pid());")
 	require.Error(t, err)
 
 	_, err = pool.Exec(ctx, "SELECT 1")
@@ -171,6 +170,5 @@ func TestQueryDocumentsConnectionLost(t *testing.T) {
 			break
 		}
 	}
-	require.NotNil(t, fetched.Err)
+	require.NotNil(t, fetched.Err)*/
 }
-*/
