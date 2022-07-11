@@ -74,23 +74,29 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		)
 	}
 
-	fetchedDocs, err := h.fetch(ctx, sp)
+	fetchedChan, err := h.fetch(ctx, sp)
 	if err != nil {
 		return nil, err
 	}
 
 	resDocs := make([]*types.Document, 0, 16)
-	for _, doc := range fetchedDocs {
-		matches, err := common.FilterDocument(doc, filter)
-		if err != nil {
-			return nil, err
+	for fetchedItem := range fetchedChan {
+		if fetchedItem.Err != nil {
+			return nil, fetchedItem.Err
 		}
 
-		if !matches {
-			continue
-		}
+		for _, doc := range fetchedItem.Docs {
+			matches, err := common.FilterDocument(doc, filter)
+			if err != nil {
+				return nil, err
+			}
 
-		resDocs = append(resDocs, doc)
+			if !matches {
+				continue
+			}
+
+			resDocs = append(resDocs, doc)
+		}
 	}
 
 	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {

@@ -83,39 +83,45 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			)
 		}
 
-		fetchedDocs, err := h.fetch(ctx, sp)
+		fetchedChan, err := h.fetch(ctx, sp)
 		if err != nil {
 			return nil, err
 		}
 
 		resDocs := make([]*types.Document, 0, 16)
-		for _, doc := range fetchedDocs {
-			matches, err := common.FilterDocument(doc, filter)
+		for fetchedItem := range fetchedChan {
+			if fetchedItem.Err != nil {
+				return nil, fetchedItem.Err
+			}
+
+			for _, doc := range fetchedItem.Docs {
+				matches, err := common.FilterDocument(doc, filter)
+				if err != nil {
+					return nil, err
+				}
+
+				if !matches {
+					continue
+				}
+
+				resDocs = append(resDocs, doc)
+			}
+
+			if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
+				return nil, err
+			}
+
+			if len(resDocs) == 0 {
+				continue
+			}
+
+			rowsDeleted, err := h.delete(ctx, sp, resDocs)
 			if err != nil {
 				return nil, err
 			}
 
-			if !matches {
-				continue
-			}
-
-			resDocs = append(resDocs, doc)
+			deleted += int32(rowsDeleted)
 		}
-
-		if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
-			return nil, err
-		}
-
-		if len(resDocs) == 0 {
-			continue
-		}
-
-		rowsDeleted, err := h.delete(ctx, sp, resDocs)
-		if err != nil {
-			return nil, err
-		}
-
-		deleted += int32(rowsDeleted)
 	}
 
 	var reply wire.OpMsg

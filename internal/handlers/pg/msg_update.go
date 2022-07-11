@@ -105,23 +105,29 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		fetchedDocs, err := h.fetch(ctx, sp)
+		fetchedChan, err := h.fetch(ctx, sp)
 		if err != nil {
 			return nil, err
 		}
 
 		resDocs := make([]*types.Document, 0, 16)
-		for _, doc := range fetchedDocs {
-			matches, err := common.FilterDocument(doc, q)
-			if err != nil {
-				return nil, err
+		for fetchedItem := range fetchedChan {
+			if fetchedItem.Err != nil {
+				return nil, fetchedItem.Err
 			}
 
-			if !matches {
-				continue
-			}
+			for _, doc := range fetchedItem.Docs {
+				matches, err := common.FilterDocument(doc, q)
+				if err != nil {
+					return nil, err
+				}
 
-			resDocs = append(resDocs, doc)
+				if !matches {
+					continue
+				}
+
+				resDocs = append(resDocs, doc)
+			}
 		}
 
 		if len(resDocs) == 0 {

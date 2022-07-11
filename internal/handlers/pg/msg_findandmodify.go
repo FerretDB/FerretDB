@@ -56,9 +56,21 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	fetchedDocs, err := h.fetch(ctx, params.sqlParam)
+	fetchedChan, err := h.fetch(ctx, params.sqlParam)
 	if err != nil {
 		return nil, err
+	}
+
+	// TODO: SortDocuments requires everything :(
+	var fetchedDocs []*types.Document
+	for fetchedItem := range fetchedChan {
+		if fetchedItem.Err != nil {
+			return nil, fetchedItem.Err
+		}
+
+		for _, doc := range fetchedItem.Docs {
+			fetchedDocs = append(fetchedDocs, doc)
+		}
 	}
 
 	err = common.SortDocuments(fetchedDocs, params.sort)
