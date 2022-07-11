@@ -16,12 +16,17 @@
 package pgdb_test
 
 import (
+	"fmt"
 	"testing"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
+	"golang.org/x/net/context"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -34,29 +39,139 @@ func TestQueryDocuments(t *testing.T) {
 	dbName := testutil.Schema(ctx, t, pool)
 	collectionName := testutil.Table(ctx, t, pool, dbName)
 
-	// 0 docs
-	// 1 doc
-	// 2 docs
-	// 3 docs
+	cases := []struct {
+		name             string
+		collection       string
+		documents        []*types.Document
+		docsPerIteration []int // how many documents should be fetched per each iteration
+		// len(docsPerIteration) is the amount of fetch iterations.
+	}{
+		{
+			name:             "empty",
+			collection:       collectionName,
+			documents:        []*types.Document{},
+			docsPerIteration: []int{},
+		},
+		{
+			name:             "one",
+			collection:       collectionName + "_one",
+			documents:        []*types.Document{must.NotFail(types.NewDocument("id", "1"))},
+			docsPerIteration: []int{1},
+		},
+		{
+			name:       "two",
+			collection: collectionName + "_two",
+			documents: []*types.Document{
+				must.NotFail(types.NewDocument("id", "1")),
+				must.NotFail(types.NewDocument("id", "2")),
+			},
+			docsPerIteration: []int{2},
+		},
+		{
+			name:       "three",
+			collection: collectionName + "_three",
+			documents: []*types.Document{
+				must.NotFail(types.NewDocument("id", "1")),
+				must.NotFail(types.NewDocument("id", "2")),
+				must.NotFail(types.NewDocument("id", "3")),
+			},
+			docsPerIteration: []int{2, 1},
+		},
+	}
 
-	// chan full
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			//t.Parallel()
 
-	doc, err := types.NewDocument("id", "1")
+			for _, doc := range tc.documents {
+				require.NoError(t, pool.InsertDocument(ctx, dbName, tc.collection, doc))
+			}
+
+			fetchedChan, err := pool.QueryDocuments(context.Background(), dbName, tc.collection, "")
+			require.NoError(t, err)
+
+			iter := 0
+			for {
+				fetched, ok := <-fetchedChan
+				if !ok {
+					break
+				}
+
+				require.NoError(t, fetched.Err)
+				require.Len(t, fetched.Docs, tc.docsPerIteration[iter], "iteration %d", iter)
+				iter++
+			}
+			require.Equal(t, len(tc.docsPerIteration), iter)
+		})
+	}
+
+	// Special case: cancel context before reading from channel.
+	t.Run("cancel_context", func(t *testing.T) {
+		for i := 1; i <= pgdb.FetchedChannelCapacity*pgdb.FetchedSliceCapacity+1; i++ {
+			require.NoError(t, pool.InsertDocument(
+				ctx, dbName, collectionName+"_cancel",
+				must.NotFail(types.NewDocument("id", fmt.Sprintf("%d", i))),
+			))
+		}
+
+		ctx, cancel := context.WithCancel(context.Background())
+		fetchedChan, err := pool.QueryDocuments(ctx, dbName, collectionName+"_cancel", "")
+		cancel()
+		require.NoError(t, err)
+
+		<-ctx.Done()
+		countDocs := 0
+		for {
+			fetched, ok := <-fetchedChan
+			if !ok {
+				break
+			}
+
+			countDocs += len(fetched.Docs)
+		}
+		require.Less(t, countDocs, pgdb.FetchedChannelCapacity*pgdb.FetchedSliceCapacity+1)
+	})
+}
+
+/*
+func TestQueryDocumentsConnectionLost(t *testing.T) {
+	t.Parallel()
+
+	ctx := testutil.Ctx(t)
+
+	//pool := testutil.Pool(ctx, t, nil, zaptest.NewLogger(t))
+	pool, err := pgdb.NewPool(ctx, testutil.PoolConnString(t, nil), zaptest.NewLogger(t), false)
 	require.NoError(t, err)
 
-	err = pool.InsertDocument(ctx, dbName, collectionName, doc)
-	require.NoError(t, err)
+	dbName := testutil.Schema(ctx, t, pool)
+	collectionName := testutil.Table(ctx, t, pool, dbName)
+
+	for i := 1; i <= pgdb.FetchedChannelCapacity*pgdb.FetchedSliceCapacity*2; i++ {
+		require.NoError(t, pool.InsertDocument(
+			ctx, dbName, collectionName,
+			must.NotFail(types.NewDocument("id", fmt.Sprintf("%d", i))),
+		))
+	}
 
 	fetchedChan, err := pool.QueryDocuments(ctx, dbName, collectionName, "")
 	require.NoError(t, err)
 
+	<-fetchedChan
+	_, err = pool.Exec(ctx, "SELECT pg_terminate_backend(pg_backend_pid());")
+	require.Error(t, err)
+
+	_, err = pool.Exec(ctx, "SELECT 1")
+	require.Error(t, err)
+
+	var fetched pgdb.FetchedDocs
 	for {
-		fetched, ok := <-fetchedChan
+		var ok bool
+		fetched, ok = <-fetchedChan
 		if !ok {
 			break
 		}
-
-		require.NoError(t, fetched.Err)
-		require.Len(t, fetched.Docs, 1)
 	}
+	require.NotNil(t, fetched.Err)
 }
+*/

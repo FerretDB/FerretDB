@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	fetchedChannelCapacity = 3
-	fetchedSliceCapacity   = 2
+	FetchedChannelCapacity = 3
+	FetchedSliceCapacity   = 2
 )
 
 type FetchedDocs struct {
@@ -26,7 +26,7 @@ type FetchedDocs struct {
 
 // QueryDocuments returns a list of documents for given FerretDB database and collection.
 func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment string) (<-chan FetchedDocs, error) {
-	fetchedChan := make(chan FetchedDocs, fetchedChannelCapacity)
+	fetchedChan := make(chan FetchedDocs, FetchedChannelCapacity)
 
 	// errBeforeFetching indicates that an error occurred before fetching started.
 	var errBeforeFetching error
@@ -93,10 +93,12 @@ func iterateFetch(ctx context.Context, fetched chan FetchedDocs, rows pgx.Rows) 
 			// fetch next batch of documents
 		}
 
-		res := make([]*types.Document, 0, fetchedSliceCapacity)
-		for i := 0; i < fetchedSliceCapacity; i++ {
+		var allFetched bool
+		res := make([]*types.Document, 0, FetchedSliceCapacity)
+		for i := 0; i < FetchedSliceCapacity; i++ {
 			if !rows.Next() {
-				return nil
+				allFetched = true
+				break
 			}
 
 			var b []byte
@@ -112,8 +114,14 @@ func iterateFetch(ctx context.Context, fetched chan FetchedDocs, rows pgx.Rows) 
 			res = append(res, doc.(*types.Document))
 		}
 
-		if err := writeFetched(ctx, fetched, FetchedDocs{Docs: res}); err != nil {
-			return err
+		if len(res) > 0 {
+			if err := writeFetched(ctx, fetched, FetchedDocs{Docs: res}); err != nil {
+				return err
+			}
+		}
+
+		if allFetched {
+			return nil
 		}
 	}
 }
