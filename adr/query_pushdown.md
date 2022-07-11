@@ -5,7 +5,7 @@ Select queries of the form `{_id: <ObjectID>}` (value type is `ObjectID`).
 If value type is not `ObjectID`, fallback to fetch entire table.
 If value type is `ObjectID` but the data in the value is somehow corrupted, raise error (`fjson` unmarshal).
 
-Both work:
+Proof of concept for a `{_id: <ObjectID>}` pushdown query, PostgreSQL:
 
 ```sql
 select * from test where (_jsonb->'_id')::jsonb->>'$o' = '507f1f77bcf86cd799439011';
@@ -23,6 +23,8 @@ Support tables where the primary key is only one field.
 
 * `if len(schema.PrimaryKey) > 1` fallback to fetch the entire table.
 * vlaue type if not `ObjectID` raise error.
+
+Proof of concept for a `{_id: <ObjectID>}` pushdown query, Tigris:
 
 ```go
 collection, err := db.DescribeCollection(ctx, param.collection)
