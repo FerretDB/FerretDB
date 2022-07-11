@@ -20,6 +20,8 @@ require (
 	google.golang.org/grpc v1.47.0
 )
 
+require golang.org/x/net v0.0.0-20220526153639-5463443f8c37
+
 require (
 	cloud.google.com/go/compute v1.6.1 // indirect
 	github.com/benbjohnson/clock v1.1.0 // indirect
@@ -54,7 +56,6 @@ require (
 	github.com/prometheus/procfs v0.7.3 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
-	golang.org/x/net v0.0.0-20220526153639-5463443f8c37 // indirect
 	golang.org/x/oauth2 v0.0.0-20220524215830-622c5d57e401 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
