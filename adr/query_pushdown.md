@@ -3,7 +3,7 @@ Select queries of the form `{_id: <ObjectID>}` (value type is `ObjectID`).
 ## Postgres
 
 If value type is not `ObjectID`, fallback to fetch entire table.
-If value type is `ObjectID` raise error (`fjson` unmarshal).
+If value type is `ObjectID` but the data in the value is somehow corrupted, raise error (`fjson` unmarshal).
 
 Both work:
 
