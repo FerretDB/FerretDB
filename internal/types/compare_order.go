@@ -144,7 +144,7 @@ func CompareOrder(a, b any, order SortType) CompareResult {
 			return compareNumberOrder(a, b, order)
 		}
 
-		// getting result at index zero because result of more than one value is only for composite data types and
+		// getting result at zero index because result with more than one value is only in composite data types and
 		// since the result can be both more and less, we will simply choose a random (by zero index; only composite)
 		return result[0]
 	}
