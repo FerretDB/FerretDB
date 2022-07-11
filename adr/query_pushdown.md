@@ -20,7 +20,9 @@ select * from test where _jsonb->'_id' = '{"$o":"507f1f77bcf86cd799439011"}'::js
 ## Tigris
 
 Support tables where the primary key is only one field.
-i.e. `if len(schema.PrimaryKey) > 1` fallback to fetch the entire table.
+
+* `if len(schema.PrimaryKey) > 1` fallback to fetch the entire table.
+* vlaue type if not `ObjectID` raise error.
 
 ```go
 collection, err := db.DescribeCollection(ctx, param.collection)
