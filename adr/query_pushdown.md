@@ -1,18 +1,27 @@
-Select queries of the form `{_id: <ObjectID>}` (value type is `ObjectID`).
+The goal of this task is to enable simple query pushdown for querier that look like `{_id: <ObjectID>}`.
+Only that field name (`_id`) is supported, and only that value type (`ObjectID`).
+
+In the future, we will add support for other fields (starting with simple scalar fields),
+other values (starting with strings, numbers, and other simple scalar values),
+other conditions like `{_id: <ObjectID>, field: value}` (so only the first part is pushed down).
 
 ## Postgres
 
-If value type is not `ObjectID`, fallback to fetch entire table.
+If field name is different, value type is not `ObjectID`, or some other condition is present,
+we should use the previous version of the code that SELECTs the whole table without any WHERE condition.
+
 If value type is `ObjectID` but the data in the value is somehow corrupted, raise error (`fjson` unmarshal).
+
+If those conditions are met, we send a SELECT query with a WHERE condition.
 
 Proof of concept for a `{_id: <ObjectID>}` pushdown query, PostgreSQL:
 
 ```sql
-select * from test where (_jsonb->'_id')::jsonb->>'$o' = '507f1f77bcf86cd799439011';
+select * from test where (_jsonb->'_id')::jsonb->>'$o' = '507f1f77bcf86cd799439011'; // will it use index?
 ```
 
 ```sql
-select * from test where _jsonb->'_id' = '{"$o":"507f1f77bcf86cd799439011"}'::jsonb;
+select * from test where _jsonb->'_id' = '{"$o":"507f1f77bcf86cd799439011"}'::jsonb; // will that one?
 ```
 
 [PostgreSQL functions](https://www.postgresql.org/docs/14/functions-json.html)
@@ -21,27 +30,19 @@ select * from test where _jsonb->'_id' = '{"$o":"507f1f77bcf86cd799439011"}'::js
 
 Support tables where the primary key is only one field.
 
+The tjson package ensures that primary key is always `["_id"]`.
+So no need to check:
 * if `len(schema.PrimaryKey) > 1` raise error.
   * because user expects single one value in `_id`.
   * to comply and be compatible with MongoDB.
-* if valaue type if not `ObjectID` raise error.
 * if `len(schema.PrimaryKey) == 0` raise error.
+
+But need to check if valaue type if not `ObjectID` (raise error in that case).
 
 Proof of concept for a `{_id: <ObjectID>}` pushdown query, Tigris:
 
 ```go
-collection, err := db.DescribeCollection(ctx, param.collection)
-if err != nil {
-    return nil, lazyerrors.Error(err)
-}
-
-var schema tjson.Schema
-if err = schema.Unmarshal(collection.Schema); err != nil {
-    return nil, lazyerrors.Error(err)
-}
-
+// primary key is always _id
 objectID:= ObjectID{0x62, 0x56, 0xc5, 0xba, 0x0b, 0xad, 0xc0, 0xff, 0xee, 0x00, 0x00, 0x01}
-primaryKey := schema.PrimaryKey // it is an array
-
-it, err := db.Read(ctx, "coll1", driver.Filter(`{"<Primary Key>" : "<ObjectID>"}`), nil)
+it, err := db.Read(ctx, "coll1", driver.Filter(`{"_id" : " $o : <ObjectID>"}`), nil)
 ```
