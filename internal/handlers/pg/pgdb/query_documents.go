@@ -29,10 +29,14 @@ import (
 )
 
 const (
-	FetchedChannelCapacity = 3
-	FetchedSliceCapacity   = 2
+	// FetchedChannelBufSize is the size of the buffer of the channel that is used in QueryDocuments.
+	FetchedChannelBufSize = 3
+	// FetchedSliceCapacity is the capacity of the slice in FetchedDocs.
+	FetchedSliceCapacity = 2
 )
 
+// FetchedDocs is a struct that contains a list of documents and an error.
+// It is used in the fetched channel returned by QueryDocuments.
 type FetchedDocs struct {
 	Docs []*types.Document
 	Err  error
@@ -40,7 +44,7 @@ type FetchedDocs struct {
 
 // QueryDocuments returns a list of documents for given FerretDB database and collection.
 func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment string) (<-chan FetchedDocs, error) {
-	fetchedChan := make(chan FetchedDocs, FetchedChannelCapacity)
+	fetchedChan := make(chan FetchedDocs, FetchedChannelBufSize)
 
 	// errBeforeFetching indicates that an error occurred before fetching started.
 	var errBeforeFetching error

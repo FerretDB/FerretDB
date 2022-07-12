@@ -107,7 +107,7 @@ func TestQueryDocuments(t *testing.T) {
 
 	// Special case: cancel context before reading from channel.
 	t.Run("cancel_context", func(t *testing.T) {
-		for i := 1; i <= pgdb.FetchedChannelCapacity*pgdb.FetchedSliceCapacity+1; i++ {
+		for i := 1; i <= pgdb.FetchedChannelBufSize*pgdb.FetchedSliceCapacity+1; i++ {
 			require.NoError(t, pool.InsertDocument(
 				ctx, dbName, collectionName+"_cancel",
 				must.NotFail(types.NewDocument("id", fmt.Sprintf("%d", i))),
@@ -129,7 +129,7 @@ func TestQueryDocuments(t *testing.T) {
 
 			countDocs += len(fetched.Docs)
 		}
-		require.Less(t, countDocs, pgdb.FetchedChannelCapacity*pgdb.FetchedSliceCapacity+1)
+		require.Less(t, countDocs, pgdb.FetchedChannelBufSize*pgdb.FetchedSliceCapacity+1)
 	})
 
 	// Special case: querying a non-existing collection.
