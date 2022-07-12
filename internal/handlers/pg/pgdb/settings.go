@@ -140,7 +140,7 @@ func (pgPool *Pool) getTableName(ctx context.Context, querier pgxtype.Querier, d
 }
 
 // getSettingsTable returns FerretDB settings table.
-func (pgPool *Pool) getSettingsTable(ctx context.Context, querier pgxtype.Querier, db string) (*types.Document, error) {
+func getSettingsTable(ctx context.Context, querier pgxtype.Querier, db string) (*types.Document, error) {
 	sql := `SELECT settings FROM ` + pgx.Identifier{db, settingsTableName}.Sanitize()
 	rows, err := querier.Query(ctx, sql)
 	if err != nil {
@@ -171,7 +171,7 @@ func (pgPool *Pool) getSettingsTable(ctx context.Context, querier pgxtype.Querie
 }
 
 // updateSettingsTable updates FerretDB settings table.
-func (pgPool *Pool) updateSettingsTable(ctx context.Context, querier pgxtype.Querier, db string, settings *types.Document) error {
+func updateSettingsTable(ctx context.Context, querier pgxtype.Querier, db string, settings *types.Document) error {
 	sql := `UPDATE ` + pgx.Identifier{db, settingsTableName}.Sanitize() + `SET settings = $1`
 	_, err := querier.Exec(ctx, sql, must.NotFail(fjson.Marshal(settings)))
 	return err
