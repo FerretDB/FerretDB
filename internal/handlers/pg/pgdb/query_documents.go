@@ -117,11 +117,13 @@ func iterateFetch(ctx context.Context, fetched chan FetchedDocs, rows pgx.Rows) 
 
 			var b []byte
 			if err := rows.Scan(&b); err != nil {
+				// TODO: cover this case this test
 				return writeFetched(ctx, fetched, FetchedDocs{Err: lazyerrors.Error(err)})
 			}
 
 			doc, err := fjson.Unmarshal(b)
 			if err != nil {
+				// TODO: cover this case this test
 				return writeFetched(ctx, fetched, FetchedDocs{Err: lazyerrors.Error(err)})
 			}
 
