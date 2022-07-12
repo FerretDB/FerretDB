@@ -7,9 +7,9 @@ Update connectionStatus to include authInfo.
 
 ## Auth Commands
 
-| #   | command      | Description                  |
-|-----|--------------|------------------------------|
-| 1   | authenticate | Authenticate with PostgreSQL |
+| #   | command      | Description                        |
+|-----|--------------|------------------------------------|
+| 1   | authenticate | Authenticate with x.509 mechanism. |
 
 
 ## Users Management Commands
