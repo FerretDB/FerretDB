@@ -419,6 +419,11 @@ func TestQueryEvaluationRegex(t *testing.T) {
 			{"_id", "document-nested-strings"},
 			{"value", bson.D{{"foo", bson.D{{"bar", "quz"}}}}},
 		},
+		bson.D{{"_id", "space-in-curly-brackets"}, {"value", "o{1 0}"}},
+		bson.D{{"_id", "curly-brackets-without-space"}, {"value", "o{10}"}},
+		bson.D{{"_id", "ten-times-o"}, {"value", "oooooooooo"}},
+		bson.D{{"_id", "string-with-number"}, {"value", "foo9Bar"}},
+		bson.D{{"_id", "string-with-square-bracket"}, {"value", "]"}},
 	})
 	require.NoError(t, err)
 
@@ -428,7 +433,7 @@ func TestQueryEvaluationRegex(t *testing.T) {
 	}{
 		"Regex": {
 			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "foo"}}}}},
-			expectedIDs: []any{"multiline-string", "string"},
+			expectedIDs: []any{"multiline-string", "string", "string-with-number"},
 		},
 		"RegexNested": {
 			filter:      bson.D{{"value.foo.bar", bson.D{{"$regex", primitive.Regex{Pattern: "quz"}}}}},
@@ -440,7 +445,7 @@ func TestQueryEvaluationRegex(t *testing.T) {
 		},
 		"RegexStringOptionMatchCaseInsensitive": {
 			filter:      bson.D{{"value", bson.D{{"$regex", "foo"}, {"$options", "i"}}}},
-			expectedIDs: []any{"multiline-string", "regex", "string"},
+			expectedIDs: []any{"multiline-string", "regex", "string", "string-with-number"},
 		},
 		"RegexStringOptionMatchLineEnd": {
 			filter:      bson.D{{"value", bson.D{{"$regex", "b.*foo"}, {"$options", "s"}}}},
@@ -448,7 +453,41 @@ func TestQueryEvaluationRegex(t *testing.T) {
 		},
 		"RegexStringOptionMatchMultiline": {
 			filter:      bson.D{{"value", bson.D{{"$regex", "^foo"}, {"$options", "m"}}}},
-			expectedIDs: []any{"multiline-string", "string"},
+			expectedIDs: []any{"multiline-string", "string", "string-with-number"},
+		},
+		"RegexWithOptionMatchFreeSpacing": {
+			filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "### regex ###\n" +
+				"[fgh]\t# one of these characters\n\\w*\t\t#word chars \n\\d# digit\n[A-Z]\t# one " +
+				"upper-case\n\\w*\t\t# word chars\n", Options: "x"}}}}},
+			expectedIDs: []any{"string-with-number"},
+		},
+		"RegexWithOptionMatchFreeSpacingTab": {
+			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "\t\to{1 0}", Options: "x"}}}}},
+			expectedIDs: []any{"curly-brackets-without-space"},
+		},
+		"RegexWithOptionMatchFreeSpacingSpaceInCurlyBrackets": {
+			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "o{1 0}", Options: "x"}}}}},
+			expectedIDs: []any{"curly-brackets-without-space"},
+		},
+		"RegexWithOptionMatchFreeSpacingQuantifier": {
+			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "o{10}", Options: "x"}}}}},
+			expectedIDs: []any{"ten-times-o"},
+		},
+		"RegexWithOptionMatchFreeSpacingQuantifierRange": {
+			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "o{9,10}", Options: "x"}}}}},
+			expectedIDs: []any{"ten-times-o"},
+		},
+		"RegexWithOptionMatchFreeSpacingEscapeSpaceInCurlyBracket": {
+			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "o{1\\ 0}", Options: "x"}}}}},
+			expectedIDs: []any{"space-in-curly-brackets"},
+		},
+		"RegexWithOptionMatchFreeSpacingSpaceInSquareBrackets": {
+			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "[ ]", Options: "x"}}}}},
+			expectedIDs: []any{"space-in-curly-brackets"},
+		},
+		"RegexWithOptionMatchFreeSpacingEscapeInSquareBrackets": {
+			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "[\\]]", Options: "x"}}}}},
+			expectedIDs: []any{"string-with-square-bracket"},
 		},
 		"RegexNoSuchField": {
 			filter:      bson.D{{"no-such-field", bson.D{{"$regex", primitive.Regex{Pattern: "foo"}}}}},
@@ -460,7 +499,7 @@ func TestQueryEvaluationRegex(t *testing.T) {
 		},
 		"RegexBadOption": {
 			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "foo", Options: "123"}}}}},
-			expectedIDs: []any{"multiline-string", "string"},
+			expectedIDs: []any{"multiline-string", "string", "string-with-number"},
 		},
 	} {
 		name, tc := name, tc
