@@ -417,7 +417,7 @@ func TestArrayEquality(t *testing.T) {
 // TestQueryArrayAll covers the case where the $all operator is used on an array or scalar.
 func TestQueryArrayAll(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Composites, shareddata.Scalars)
+	ctx, collection := Setup(t, shareddata.Composites, shareddata.Scalars)
 
 	for name, tc := range map[string]struct {
 		filter      bson.D
