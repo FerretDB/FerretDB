@@ -131,4 +131,14 @@ func TestQueryDocuments(t *testing.T) {
 		}
 		require.Less(t, countDocs, pgdb.FetchedChannelCapacity*pgdb.FetchedSliceCapacity+1)
 	})
+
+	// Special case: querying a non-existing collection.
+	t.Run("non-existing_collection", func(t *testing.T) {
+		fetchedChan, err := pool.QueryDocuments(context.Background(), dbName, collectionName+"_non-existing", "")
+		require.Error(t, err)
+		doc, ok := <-fetchedChan
+		require.False(t, ok)
+		require.Nil(t, doc.Docs)
+		require.Nil(t, doc.Err)
+	})
 }
