@@ -5,11 +5,14 @@ createUser, dropUser, etc
 Update listCommands to include requiresAuth.
 Update connectionStatus to include authInfo.
 
+# Overview of the authentication commands
+
 ## Auth Commands
 
 | #   | command      | Description                        |
 |-----|--------------|------------------------------------|
 | 1   | authenticate | Authenticate with x.509 mechanism. |
+| 2   | saslStart    | Start SASL authentication.         |
 
 
 ## Users Management Commands
@@ -32,6 +35,7 @@ Update connectionStatus to include authInfo.
 | 2   | connectionStatus | Returns connection status.  |
 
 
+# Tasks
 ## Add support for separate connection pools for each user 
 
 When a client connects with credentials specified in the connection string (username and password), authentication message would be sent to the server (`saslStart`).
@@ -45,10 +49,50 @@ To separate connection pools we should:
 * Handle `saslStart` message.
 * To distinguish between users we should add to the Handler instance a map of connection pools, where the key is the username.
 
-Questions:
+### Questions:
 * How to distinguish between users connected without authentication?
 * Should we use a different connection pool for each user (for example for each host+port pair)?
 
-Tests:
+### Tests:
 * Connect to the server with username and password in connection string twice.
 * Connect to the server with different usernames and passwords.
+
+## Add support for `createUser` command
+
+Add support for the `createUser` command with the following parameters:
+* createUser
+* pwd
+* mechanisms
+
+Not in the scope of this task:
+* customData
+* roles
+* writeConcern
+* authenticationRestrictions
+* digestPassword
+* comment
+
+User data should be stored in the PostgreSQL database (`admin` database?).
+Create a PostgreSQL user with provided credentials and auth mechanisms.
+Grant user access for all databases.
+
+### Tests:
+
+* Create user with username and password.
+* Create user with username and password and mechanisms.
+* Create user with username and password and mechanism that not supported or not exists.
+
+## Add flag `authenticationMechanisms`
+
+**Note:** This one should be discussed with the team.
+
+Add flag `authenticationMechanisms` to the FerretDB server.
+It should be an array of strings, containing the names of the supported authentication mechanisms.
+Possible values are:
+* SCRAM-SHA-1 (*not sure about this one as PostgreSQL doesn't support it*)
+* SCRAM-SHA-256
+* X509
+* GSSAPI (Kerberos)
+* PLAIN (LDAP SASL)
+
+This one will allow to restrict authentication mechanisms that could be used with `createUser`.
