@@ -465,8 +465,9 @@ func TestQueryArrayAll(t *testing.T) {
 			expectedErr: nil,
 		},
 		"Nil": {
-			filter:      bson.D{{"value", bson.D{{"$all", bson.A{nil}}}}},
-			expectedIDs: []any{"array-embedded", "array-null", "array-three", "array-three-reverse", "null"},
+			filter: bson.D{{"value", bson.D{{"$all", bson.A{nil}}}}},
+			expectedIDs: []any{"array-first-embedded", "array-last-embedded", "array-middle-embedded",
+				"array-null", "array-three", "array-three-reverse", "null"},
 			expectedErr: nil,
 		},
 
@@ -482,7 +483,7 @@ func TestQueryArrayAll(t *testing.T) {
 		},
 		"ArrayEmbeddedEqual": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{bson.A{int32(42), "foo"}}}}}},
-			expectedIDs: []any{"array-embedded"},
+			expectedIDs: []any{"array-first-embedded", "array-last-embedded", "array-middle-embedded"},
 			expectedErr: nil,
 		},
 		"ArrayEmbeddedReverseOrder": {
@@ -498,7 +499,7 @@ func TestQueryArrayAll(t *testing.T) {
 		},
 		"EmptyNested": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{bson.A{}}}}}},
-			expectedIDs: []any{"array-empty"},
+			expectedIDs: []any{"array-empty", "array-empty-nested"},
 			expectedErr: nil,
 		},
 
@@ -508,7 +509,7 @@ func TestQueryArrayAll(t *testing.T) {
 			expectedErr: nil,
 		},
 
-		"NaNIsNotImplemented": {
+		/*	"NaNIsNotImplemented": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{math.NaN()}}}}},
 			expectedIDs: nil,
 			expectedErr: &mongo.CommandError{
@@ -516,7 +517,7 @@ func TestQueryArrayAll(t *testing.T) {
 				Message: "NaN is not implemented in $all",
 				Name:    "BadValue",
 			},
-		},
+		},*/
 
 		"$allNeedsAnArrayInt": {
 			filter:      bson.D{{"value", bson.D{{"$all", 1}}}},
