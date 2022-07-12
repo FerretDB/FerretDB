@@ -38,10 +38,11 @@ import (
 var (
 	versionF = flag.Bool("version", false, "print version to stdout (full version, commit, branch, dirty flag) and exit")
 
-	listenAddrF = flag.String("listen-addr", "127.0.0.1:27017", "listen address")
-	proxyAddrF  = flag.String("proxy-addr", "127.0.0.1:37017", "proxy address")
-	debugAddrF  = flag.String("debug-addr", "127.0.0.1:8088", "debug address")
-	modeF       = flag.String("mode", string(clientconn.AllModes[0]), fmt.Sprintf("operation mode: %v", clientconn.AllModes))
+	listenAddrF   = flag.String("listen-addr", "127.0.0.1:27017", "listen address")
+	listenSocketF = flag.String("listen-socket", "", "listen socket")
+	proxyAddrF    = flag.String("proxy-addr", "127.0.0.1:37017", "proxy address")
+	debugAddrF    = flag.String("debug-addr", "127.0.0.1:8088", "debug address")
+	modeF         = flag.String("mode", string(clientconn.AllModes[0]), fmt.Sprintf("operation mode: %v", clientconn.AllModes))
 
 	handlerF = flag.String("handler", "<set in initFlags()>", "<set in initFlags()>")
 
@@ -142,6 +143,7 @@ func main() {
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		ListenAddr:      *listenAddrF,
+		ListenSocket:    *listenSocketF,
 		ProxyAddr:       *proxyAddrF,
 		Mode:            clientconn.Mode(*modeF),
 		Handler:         h,
