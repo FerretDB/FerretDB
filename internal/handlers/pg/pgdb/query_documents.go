@@ -42,7 +42,14 @@ type FetchedDocs struct {
 	Err  error
 }
 
-// QueryDocuments returns a list of documents for given FerretDB database and collection.
+// QueryDocuments returns a channel with buffer FetchedChannelBufSize
+// to fetch list of documents for given FerretDB database and collection.
+//
+// If an error occurs before fetching started, it returns a closed channel and an error.
+//
+// Fetched documents are sent to the channel as well as errors.
+// The channel is closed when the query is finished.
+// The channel is also closed if an error occurs or context cancellation is received.
 func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment string) (<-chan FetchedDocs, error) {
 	fetchedChan := make(chan FetchedDocs, FetchedChannelBufSize)
 
