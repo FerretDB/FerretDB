@@ -112,3 +112,4 @@ linters:
 
 issues:
   exclude-use-default: false
+  new-from-rev: main
