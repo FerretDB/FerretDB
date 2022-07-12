@@ -655,7 +655,7 @@ func filterFieldExprAll(fieldValue any, allValue any) (bool, error) {
 
 	default:
 		for i := 0; i < query.Len(); i++ {
-			if types.Compare(value, must.NotFail(query.Get(i))) != types.Equal {
+			if res := types.Compare(value, must.NotFail(query.Get(i))); slices.Contains(res, types.Equal) {
 				return false, nil
 			}
 		}

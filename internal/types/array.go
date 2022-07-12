@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"math"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -162,7 +164,7 @@ func (a *Array) Contains(filterValue any) (bool, error) {
 
 	// special case: if `a` and `filterValue` are equal,
 	// we consider that `a` contains `filterValue`.
-	if Compare(a, filterValue) == Equal {
+	if res := Compare(a, filterValue); slices.Contains(res, Equal) {
 		// if reflect.DeepEqual(a, filterValue)
 		return true, nil
 	}
@@ -170,7 +172,7 @@ func (a *Array) Contains(filterValue any) (bool, error) {
 	// otherwise, we check if at least one element of `a`
 	// is equal to `filterValue`.
 	for _, elem := range a.s {
-		if Compare(elem, filterValue) == Equal {
+		if res := Compare(elem, filterValue); slices.Contains(res, Equal) {
 			// if reflect.DeepEqual(elem, filterValue) {
 			return true, nil
 		}
