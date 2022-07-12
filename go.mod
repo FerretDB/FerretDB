@@ -16,11 +16,10 @@ require (
 	go.uber.org/zap v1.21.0
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect; always use @latest
 	golang.org/x/exp v0.0.0-20220706164943-b4a6d9510983
+	golang.org/x/net v0.0.0-20220526153639-5463443f8c37
 	golang.org/x/sys v0.0.0-20220704084225-05e143d24a9e
 	google.golang.org/grpc v1.47.0
 )
-
-require golang.org/x/net v0.0.0-20220526153639-5463443f8c37
 
 require (
 	cloud.google.com/go/compute v1.6.1 // indirect
