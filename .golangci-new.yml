@@ -5,6 +5,9 @@ run:
   timeout: 2m
 
 linters-settings:
+  staticcheck:
+    go: "1.18"
+    checks: ["all"]
 
 linters:
   enable-all: true
@@ -27,7 +30,6 @@ linters:
     - misspell
     - nolintlint
     - revive
-    - staticcheck
     - unused
     - whitespace
 
