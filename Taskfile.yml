@@ -84,7 +84,7 @@ tasks:
     cmds:
       - go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData . -port=37017
       - go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData . -handler=pg
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData -tags=tigris ./tigris -handler=tigris
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData -tags=ferretdb_tigris ./tigris -handler=tigris
 
   gen:
     desc: "Generate (and format) code"
@@ -130,7 +130,7 @@ tasks:
     desc: "Run integration tests for Tigris handler"
     dir: integration/tigris
     cmds:
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -tags=tigris -shuffle=on -coverprofile=integration-tigris.txt -coverpkg=../... -handler=tigris
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -tags=ferretdb_tigris -shuffle=on -coverprofile=integration-tigris.txt -coverpkg=../... -handler=tigris
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
@@ -183,7 +183,7 @@ tasks:
     desc: "Build bin/ferretdb-testcover"
     deps: [gen-version]
     cmds:
-      - go test -c -o=bin/ferretdb-testcover{{exeExt}} -trimpath -tags=testcover,tigris {{if ne OS "windows"}}-race{{end}} -coverpkg=./... ./cmd/ferretdb
+      - go test -c -o=bin/ferretdb-testcover{{exeExt}} -trimpath -tags=ferretdb_testcover,ferretdb_tigris {{if ne OS "windows"}}-race{{end}} -coverpkg=./... ./cmd/ferretdb
 
   run:
     desc: "Run FerretDB"
