@@ -54,7 +54,7 @@ const (
 	// ErrCommandNotFound indicates unknown command input.
 	ErrCommandNotFound = ErrorCode(59) // CommandNotFound
 
-	// ErrInvalidNamespace indicates that the collection name is empty.
+	// ErrInvalidNamespace indicates that the collection name is invalid.
 	ErrInvalidNamespace = ErrorCode(73) // InvalidNamespace
 
 	// ErrNotImplemented indicates that a flag or command is not implemented.
@@ -79,6 +79,10 @@ const (
 	// ErrProjectionExIn for $elemMatch indicates that exlusion statement found
 	// while projection document already marked as inclusion.
 	ErrProjectionExIn = ErrorCode(31254) // Location31254
+
+	// ErrFreeMonitoringDisabled indicates that free monitoring is disabled
+	// by command-line or config file.
+	ErrFreeMonitoringDisabled = ErrorCode(50840) // Location50840
 
 	// ErrRegexOptions indicates regex options error.
 	ErrRegexOptions = ErrorCode(51075) // Location51075

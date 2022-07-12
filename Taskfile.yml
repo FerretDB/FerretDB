@@ -44,16 +44,23 @@ tasks:
       - go mod tidy
       - go mod verify
 
+  init-clean:
+    desc: "Clean all caches and re-install development tools"
+    cmds:
+      - bin/golangci-lint cache clean
+      - go clean -cache -testcache -modcache -fuzzcache
+      - task: init
+
   env-setup:
     deps: [gen-version]
     cmds:
-      - go run ./cmd/envtool/main.go
+      - go run {{if ne OS "windows"}}-race{{end}} ./cmd/envtool/main.go
 
   env-up-detach:
     cmds:
       - >
-        docker-compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --detach
-        postgres mongodb
+        docker-compose up --always-recreate-deps --build --force-recreate --remove-orphans --renew-anon-volumes --detach
+        postgres tigris mongodb
 
   env-up:
     desc: "Start development environment"
@@ -64,12 +71,20 @@ tasks:
   env-pull:
     desc: "Pull development environment's Docker images"
     cmds:
-      - docker-compose pull --include-deps
+      - docker-compose build --pull
 
   env-down:
     desc: "Stop development environment"
     cmds:
       - docker-compose down --remove-orphans --volumes
+
+  env-data:
+    desc: "Fill `test.values` with data for experiments"
+    dir: integration
+    cmds:
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData . -port=37017
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData . -handler=pg
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData -tags=ferretdb_tigris ./tigris -handler=tigris
 
   gen:
     desc: "Generate (and format) code"
@@ -90,38 +105,38 @@ tasks:
   test-unit-short:
     desc: "Run short unit tests"
     cmds:
-      - go test -short -count=1 -race -shuffle=on -coverprofile=cover.txt ./...
+      - go test -short -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=cover.txt ./...
 
   test-unit:
     desc: "Run all unit tests"
     cmds:
-      - go test -count=1 -race -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
-      - go test -count=1 -race -shuffle=on -bench=. -benchtime=1x ./...
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -bench=. -benchtime=1x ./...
 
   test-integration:
     desc: "Run all integration tests in parallel"
     deps:
-      - task: test-integration-db
-        vars: { DB: "FerretDB" }
-      - task: test-integration-db
-        vars: { DB: "MongoDB" }
+      - test-integration-pg
+      - test-integration-tigris
+      - test-integration-mongodb
 
-  test-integration-ferretdb:
-    desc: "Run integration tests for FerretDB"
+  test-integration-pg:
+    desc: "Run integration tests for PostgreSQL handler"
+    dir: integration
     cmds:
-      - task: test-integration-db
-        vars: { DB: "FerretDB" }
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=integration-pg.txt -coverpkg=../... -handler=pg
+
+  test-integration-tigris:
+    desc: "Run integration tests for Tigris handler"
+    dir: integration/tigris
+    cmds:
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -tags=ferretdb_tigris -shuffle=on -coverprofile=integration-tigris.txt -coverpkg=../... -handler=tigris
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
-    cmds:
-      - task: test-integration-db
-        vars: { DB: "MongoDB" }
-
-  test-integration-db:
     dir: integration
     cmds:
-      - go test -count=1 -race -shuffle=on -coverprofile=integration-{{.DB}}.txt -coverpkg=../... -port={{.DB}}
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=integration-mongodb.txt -coverpkg=../... -port=37017
 
   bench-short:
     desc: "Benchmark for about 20 seconds (with default BENCHTIME)"
@@ -160,27 +175,27 @@ tasks:
   fuzz-corpus:
     desc: "Sync seed and generated fuzz corpora with FUZZCORPUS"
     cmds:
-      - go run ./cmd/fuzztool/fuzztool.go -dst={{.FUZZCORPUS}} -src=generated
-      - go run ./cmd/fuzztool/fuzztool.go -dst={{.FUZZCORPUS}} -src=seed
-      - go run ./cmd/fuzztool/fuzztool.go -src={{.FUZZCORPUS}} -dst=generated
+      - go run {{if ne OS "windows"}}-race{{end}} ./cmd/fuzztool/fuzztool.go -dst={{.FUZZCORPUS}} -src=generated
+      - go run {{if ne OS "windows"}}-race{{end}} ./cmd/fuzztool/fuzztool.go -dst={{.FUZZCORPUS}} -src=seed
+      - go run {{if ne OS "windows"}}-race{{end}} ./cmd/fuzztool/fuzztool.go -src={{.FUZZCORPUS}} -dst=generated
 
   build-testcover:
     desc: "Build bin/ferretdb-testcover"
     deps: [gen-version]
     cmds:
-      - go test -c -o=bin/ferretdb-testcover -trimpath -tags=testcover,tigris -race -coverpkg=./... ./cmd/ferretdb
+      - go test -c -o=bin/ferretdb-testcover{{exeExt}} -trimpath -tags=ferretdb_testcover,ferretdb_tigris {{if ne OS "windows"}}-race{{end}} -coverpkg=./... ./cmd/ferretdb
 
   run:
     desc: "Run FerretDB"
     deps: [build-testcover]
     cmds:
-      - bin/ferretdb-testcover -test.coverprofile=cover.txt -mode=diff-normal -listen-addr=:27017
+      - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -mode=diff-normal -listen-addr=:27017
 
   run-proxy:
     desc: "Run FerretDB in diff-proxy mode"
     deps: [build-testcover]
     cmds:
-      - bin/ferretdb-testcover -test.coverprofile=cover.txt -mode=diff-proxy -listen-addr=:27017
+      - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -mode=diff-proxy -listen-addr=:27017
 
   lint:
     desc: "Run linters"
@@ -202,7 +217,7 @@ tasks:
 
   lint-go-consistent:
     cmds:
-      - bin/go-consistent -pedantic ./cmd/... ./internal/...
+      - bin/go-consistent -pedantic ./cmd/... ./internal/... ./ferretdb/...
 
   lint-go-consistent-integration:
     dir: integration
@@ -214,6 +229,11 @@ tasks:
     cmds:
       - docker-compose run --rm markdownlint --fix --dot --ignore CHANGELOG.md '**/*.md'
 
+  godocs:
+    desc: "Serve godoc documentation at http://127.0.0.1:6060/pkg/github.com/FerretDB/FerretDB/?m=all"
+    cmds:
+      - bin/godoc -http=127.0.0.1:6060
+
   psql:
     desc: "Run psql"
     cmds:
@@ -223,31 +243,22 @@ tasks:
     desc: "Run MongoDB shell (`mongosh`)"
     cmds:
       - >
-        docker-compose exec mongodb mongosh mongodb://host.docker.internal:27017/monila?heartbeatFrequencyMS=300000
+        docker-compose exec mongodb mongosh mongodb://host.docker.internal:27017/test?heartbeatFrequencyMS=300000
         --verbose --eval 'disableTelemetry()' --shell
 
   mongo:
     desc: "Run legacy `mongo` shell"
     cmds:
       - >
-        docker-compose exec mongodb mongo mongodb://host.docker.internal:27017/monila?heartbeatFrequencyMS=300000
+        docker-compose exec mongodb mongo mongodb://host.docker.internal:27017/test?heartbeatFrequencyMS=300000
         --verbose
 
   docker-init:
     cmds:
       - docker buildx create --driver=docker-container --name=ferretdb
 
-  docker-build:
-    deps: [build-testcover]
-    env:
-      CGO_ENABLED: 0
-      GOOS: linux
-    cmds:
-      - GOARCH=arm64 go test -c -o=bin/ferretdb-arm64 -trimpath -tags=testcover,tigris -coverpkg=./... ./cmd/ferretdb
-      - GOARCH=amd64 go test -c -o=bin/ferretdb-amd64 -trimpath -tags=testcover,tigris -coverpkg=./... ./cmd/ferretdb
-
   docker-local:
-    deps: [docker-build]
+    deps: [gen-version]
     cmds:
       - >
         docker buildx build --builder=ferretdb
@@ -256,13 +267,13 @@ tasks:
         --tag=ferretdb-local
         --load .
     vars:
-      COMMIT:
-        sh: cat internal/util/version/commit.txt
       VERSION:
-        sh: cat internal/util/version/version.txt
+        sh: cat internal/util/version/gen/version.txt
+      COMMIT:
+        sh: cat internal/util/version/gen/commit.txt
 
   docker-push:
-    deps: [docker-build]
+    deps: [gen-version]
     cmds:
       - test {{.DOCKER_IMAGE}}
       - >
@@ -272,7 +283,7 @@ tasks:
         --tag={{.DOCKER_IMAGE}}
         --push .
     vars:
-      COMMIT:
-        sh: cat internal/util/version/commit.txt
       VERSION:
-        sh: cat internal/util/version/version.txt
+        sh: cat internal/util/version/gen/version.txt
+      COMMIT:
+        sh: cat internal/util/version/gen/commit.txt

@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// This file is invoked from tools.go or old.go and should work with any version of Go.
+// Keep both old and new styles of build tags.
+
 //go:build ignore
 // +build ignore
-
-// This file is invoked from tools.go or old.go and should work with any version of Go.
 
 package main
 

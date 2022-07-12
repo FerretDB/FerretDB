@@ -27,6 +27,9 @@ import (
 // MsgXXX methods handle OP_MSG commands.
 // CmdQuery handles a limited subset of OP_QUERY messages.
 //
+// Handlers are shared between all connections! Be careful when you need connection-specific information.
+// Currently, we pass connection information through context, see `ConnectionInfo` and its usage.
+//
 // Please keep methods documentation in sync with commands help text in the handlers/common package.
 type Interface interface {
 	// Close gracefully shutdowns handler.
@@ -84,6 +87,9 @@ type Interface interface {
 	// MsgGetCmdLineOpts returns a summary of all runtime and configuration options.
 	MsgGetCmdLineOpts(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
+	// MsgGetFreeMonitoringStatus returns a status of the free monitoring.
+	MsgGetFreeMonitoringStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
 	// MsgGetLog returns the most recent logged events from memory.
 	MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
@@ -116,6 +122,9 @@ type Interface interface {
 
 	// MsgServerStatus returns an overview of the databases state.
 	MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgSetFreeMonitoring toggles free monitoring.
+	MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
 	// MsgUpdate updates documents that are matched by the query.
 	MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)

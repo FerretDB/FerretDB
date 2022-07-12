@@ -1,5 +1,142 @@
 # Changelog
 
+## [v0.5.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.5.0) (2022-07-11)
+
+### What's Changed
+This release enables the usage of FerretDB as a Go library. See [this blog post](https://www.ferretdb.io/0-5-0-release-is-out-embedding-ferretdb-into-go-programs/).
+
+### New Features 🎉
+* Support embedded use-case by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/754
+* Validate collection names by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/844
+
+### Fixed Bugs 🐛
+* Fix embedded usage by @AlekSi in https://github.com/FerretDB/FerretDB/pull/798
+* Fix `whatsmyuri` command by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/796
+* Handle `null` value for `nameOnly` in `listDatabases` handler by @DoodgeMatvey in https://github.com/FerretDB/FerretDB/pull/738
+* pgdb: cover transactions with `inTransaction` function to simplify error handling by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/833
+
+### Enhancements 🛠
+* Support all valid collection names by @w84thesun in https://github.com/FerretDB/FerretDB/pull/778
+* Remove MongoDB driver "dependency" by @AlekSi in https://github.com/FerretDB/FerretDB/pull/853
+
+### Documentation 📄
+* Update contributing docs and PR template according to our best practices by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/779
+* Update contributing documentation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/843
+* Document that NUL (`\0`) strings is not supported by @w84thesun in https://github.com/FerretDB/FerretDB/pull/865
+
+### Other Changes 🤖
+* Tweak schedule of daily builds by @AlekSi in https://github.com/FerretDB/FerretDB/pull/794
+* Do not import `pg` handler explicitly by @AlekSi in https://github.com/FerretDB/FerretDB/pull/799
+* Add TODO item by @AlekSi in https://github.com/FerretDB/FerretDB/pull/804
+* Fix `task env-pull` target by @AlekSi in https://github.com/FerretDB/FerretDB/pull/810
+* Improve contributing documentation for Windows development by @w84thesun in https://github.com/FerretDB/FerretDB/pull/795
+* Fix Docker image build by @AlekSi in https://github.com/FerretDB/FerretDB/pull/805
+* Make it easier to trigger rebuilds by @AlekSi in https://github.com/FerretDB/FerretDB/pull/815
+* Use `github.head_ref` instead of `github.ref` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/814
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/817
+* Install QEMU for building Docker images by @AlekSi in https://github.com/FerretDB/FerretDB/pull/820
+* Use multi-stage docker build by @AlphaB in https://github.com/FerretDB/FerretDB/pull/605
+* Unify `update` tests by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/809
+* Add TODOs for all update operators by @AlekSi in https://github.com/FerretDB/FerretDB/pull/832
+* Add `env-data` Taskfile target by @AlekSi in https://github.com/FerretDB/FerretDB/pull/834
+* Tweak tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/837
+* Export integration tests helpers by @AlekSi in https://github.com/FerretDB/FerretDB/pull/838
+* Remove old style of `+build` tags where possible by @AlekSi in https://github.com/FerretDB/FerretDB/pull/839
+* Export fields by @AlekSi in https://github.com/FerretDB/FerretDB/pull/840
+* Update Tigris version by @AlekSi in https://github.com/FerretDB/FerretDB/pull/841
+* Create Tigris databases by @AlekSi in https://github.com/FerretDB/FerretDB/pull/842
+* Add basic CI for Tigris by @AlekSi in https://github.com/FerretDB/FerretDB/pull/784
+* Test with the `main` version of Tigris too by @AlekSi in https://github.com/FerretDB/FerretDB/pull/846
+* Wait for Tigris to be fully up by @AlekSi in https://github.com/FerretDB/FerretDB/pull/854
+* Fill MongoDB on `task env-data` too by @AlekSi in https://github.com/FerretDB/FerretDB/pull/860
+* Add CI job for short tests without environment by @AlekSi in https://github.com/FerretDB/FerretDB/pull/855
+* Add TODOs by @AlekSi in https://github.com/FerretDB/FerretDB/pull/852
+* Fix `task run` on Windows by @AlekSi in https://github.com/FerretDB/FerretDB/pull/867
+* Fix invalid variable names by @AlekSi in https://github.com/FerretDB/FerretDB/pull/868
+* Add `ferretdb_` prefix to our custom build tags by @AlekSi in https://github.com/FerretDB/FerretDB/pull/869
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/18?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v0.4.0...v0.5.0).
+
+
+## [v0.4.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.4.0) (2022-06-27)
+
+### What's Changed
+This release adds preliminary support for the [Tigris](https://www.tigrisdata.com) backend.
+We plan to reach parity with our PostgreSQL backend in the next release.
+
+### New Features 🎉
+* Support `$setOnInsert` field update operator by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/644
+* Support `$unset` field update operator by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/691
+* Support `$currentDate` field update operator by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/662
+* Support array querying by @w84thesun in https://github.com/FerretDB/FerretDB/pull/618
+* Support `$elemMatch` array query operator by @w84thesun in https://github.com/FerretDB/FerretDB/pull/707
+* Implement `getFreeMonitoringStatus` stub by @noisersup in https://github.com/FerretDB/FerretDB/pull/751
+* Implement `setFreeMonitoring` stub by @noisersup in https://github.com/FerretDB/FerretDB/pull/759
+* Implement `tigris` handler by @AlekSi in https://github.com/FerretDB/FerretDB/pull/690
+
+### Fixed Bugs 🐛
+* Handle both `buildinfo` and `buildInfo` commands by @AlekSi in https://github.com/FerretDB/FerretDB/pull/688
+* Fix a bug with proxy response logs by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/705
+* Handle `find`, `count` and `delete` correctly when collection doesn't exist by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/710
+* Fix default values for flags by @AlekSi in https://github.com/FerretDB/FerretDB/pull/743
+* Fix embedded array query bug by @ribaraka in https://github.com/FerretDB/FerretDB/pull/736
+
+### Enhancements 🛠
+* Array comparison substitution by @ribaraka in https://github.com/FerretDB/FerretDB/pull/676
+* Build `tigris` handler only if tag is present by @AlekSi in https://github.com/FerretDB/FerretDB/pull/681
+* Support getParameter's showDetails, allParameters by @fenogentov in https://github.com/FerretDB/FerretDB/pull/606
+* Make log level configurable by @fenogentov in https://github.com/FerretDB/FerretDB/pull/687
+* `$currentDate` Timestamp fix `DateTime` seconds and milliseconds bug by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/701
+
+### Documentation 📄
+* Be explicit about MongoDB version by @AlekSi in https://github.com/FerretDB/FerretDB/pull/679
+* Fix pull request template by @AlekSi in https://github.com/FerretDB/FerretDB/pull/746
+
+### Other Changes 🤖
+* Use `"` instead of `'` in all .yml files by @AlekSi in https://github.com/FerretDB/FerretDB/pull/675
+* Add empty Tigris handler by @AlekSi in https://github.com/FerretDB/FerretDB/pull/671
+* Do not test a global list of databases in parallel by @AlekSi in https://github.com/FerretDB/FerretDB/pull/678
+* Enable `revive` linter by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/672
+* More tests for dot notation support by @w84thesun in https://github.com/FerretDB/FerretDB/pull/660
+* Use circular buffer for zap logs by @fenogentov in https://github.com/FerretDB/FerretDB/pull/585
+* Fix build by @AlekSi in https://github.com/FerretDB/FerretDB/pull/703
+* Add `tjson` package by @AlekSi in https://github.com/FerretDB/FerretDB/pull/682
+* Improve function comment by @AlekSi in https://github.com/FerretDB/FerretDB/pull/712
+* Use separate encodings for ObjectID and binary by @AlekSi in https://github.com/FerretDB/FerretDB/pull/713
+* Add the default Task target by @AlekSi in https://github.com/FerretDB/FerretDB/pull/716
+* Add workaround for Dependabot by @AlekSi in https://github.com/FerretDB/FerretDB/pull/717
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/723
+* Always install Go and skip test cache by @AlekSi in https://github.com/FerretDB/FerretDB/pull/718
+* Bump mongo from 5.0.8 to 5.0.9 in /build/deps by @dependabot in https://github.com/FerretDB/FerretDB/pull/719
+* Better dummy handler errors by @AlekSi in https://github.com/FerretDB/FerretDB/pull/715
+* Add `task run-proxy` command by @AlekSi in https://github.com/FerretDB/FerretDB/pull/725
+* Add `Min` and `Max` methods to `types.Array` by @ribaraka in https://github.com/FerretDB/FerretDB/pull/726
+* Add arrays with `NaN`, `double` and nested empty array to tests' shared data by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/728
+* Bump github.com/go-task/task/v3 from 3.12.1 to 3.13.0 in /tools by @dependabot in https://github.com/FerretDB/FerretDB/pull/741
+* Disable "free monitoring" to simplify tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/748
+* Re-enable `TestStatisticsCommands` tests by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/704
+* Fix `lint-golangci-lint` task for Windows systems by @w84thesun in https://github.com/FerretDB/FerretDB/pull/752
+* Remove outdated comment by @AlekSi in https://github.com/FerretDB/FerretDB/pull/755
+* Skip `-race` flag on Windows by @w84thesun in https://github.com/FerretDB/FerretDB/pull/753
+* Fix fluky test by @AlekSi in https://github.com/FerretDB/FerretDB/pull/757
+* `tjson` improvements by @AlekSi in https://github.com/FerretDB/FerretDB/pull/760
+* Unify similar code in `pg` handler by @AlekSi in https://github.com/FerretDB/FerretDB/pull/762
+* Add Tigris environment by @AlekSi in https://github.com/FerretDB/FerretDB/pull/761
+* Bump postgres from 14.3 to 14.4 in /build/deps by @dependabot in https://github.com/FerretDB/FerretDB/pull/768
+* Use forked `golangci-lint` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/758
+* Update `conform-pr` action by @AlekSi in https://github.com/FerretDB/FerretDB/pull/783
+* Drop `test_db` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/788
+* Add `task init-clean` target by @AlekSi in https://github.com/FerretDB/FerretDB/pull/756
+* Add `godoc` to tools by @AlekSi in https://github.com/FerretDB/FerretDB/pull/789
+
+## New Contributors
+* @noisersup made their first contribution in https://github.com/FerretDB/FerretDB/pull/751
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/17?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v0.3.0...v0.4.0).
+
+
 ## [v0.3.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.3.0) (2022-06-01)
 
 ### New Features 🎉
@@ -89,7 +226,6 @@
 ## [v0.2.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.2.0) (2022-05-04)
 
 ### What's Changed
-
 This release implements all required functionality to support [CLA Assistant](https://github.com/cla-assistant/cla-assistant).
 More details will be available shortly in [our blog](https://www.ferretdb.io/blog/).
 
@@ -191,7 +327,6 @@ More details will be available shortly in [our blog](https://www.ferretdb.io/blo
 ## [v0.1.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.1.0) (2022-04-04)
 
 ### What's Changed
-
 In this release, we made a big change in the way FerretDB fetches data from PostgreSQL.
 
 Previously, we generated a single SQL query that extensively used json/jsonb PostgreSQL functions for each incoming MongoDB request, then converted fetched data.

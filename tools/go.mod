@@ -10,6 +10,9 @@ replace github.com/quasilyte/go-consistent => github.com/AlekSi/go-consistent v0
 // https://github.com/golang/go/issues/45218
 replace golang.org/x/tools => github.com/AlekSi/tools v0.1.11-0.20220510134747-95fe08d2e093
 
+// TODO https://github.com/FerretDB/FerretDB/issues/781
+replace github.com/golangci/golangci-lint => github.com/FerretDB/golangci-lint v1.46.3-0.20220621153721-d8a7668e770e
+
 require (
 	github.com/BurntSushi/go-sumtype v0.0.0-20190304192233-fcb4a6205bdc
 	github.com/go-task/task/v3 v3.13.0
@@ -18,7 +21,6 @@ require (
 	github.com/reviewdog/reviewdog v0.14.1
 	golang.org/x/perf v0.0.0-20220411212318-84e58bfe0a7e
 	golang.org/x/tools v0.1.11-0.20220316014157-77aa08bb151a
-	gopkg.in/yaml.v3 v3.0.1 // indirect; https://github.com/advisories/GHSA-hp87-p4gw-j4gq
 	mvdan.cc/gofumpt v0.3.1
 )
 
@@ -189,6 +191,7 @@ require (
 	github.com/xanzy/go-gitlab v0.63.0 // indirect
 	github.com/yagipy/maintidx v1.0.0 // indirect
 	github.com/yeya24/promlinter v0.2.0 // indirect
+	github.com/yuin/goldmark v1.4.1 // indirect
 	gitlab.com/bosi/decorder v0.2.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/build v0.0.0-20200616162219-07bebbe343e9 // indirect
@@ -210,6 +213,7 @@ require (
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/ini.v1 v1.66.4 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	honnef.co/go/tools v0.3.1 // indirect
 	mvdan.cc/interfacer v0.0.0-20180901003855-c20040233aed // indirect
 	mvdan.cc/lint v0.0.0-20170908181259-adc824a0674b // indirect

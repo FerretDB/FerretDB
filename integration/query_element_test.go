@@ -29,7 +29,7 @@ import (
 
 func TestQueryElementExists(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := Setup(t)
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{{"_id", "empty-array"}, {"empty-array", []any{}}},
@@ -99,7 +99,7 @@ func TestQueryElementExists(t *testing.T) {
 func TestQueryElementType(t *testing.T) {
 	t.Parallel()
 	// TODO: add cases for "decimal" when it would be added.
-	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
 		v           any
@@ -111,8 +111,11 @@ func TestQueryElementType(t *testing.T) {
 			expectedIDs: []any{"document", "document-composite", "document-composite-reverse", "document-empty", "document-null"},
 		},
 		"Array": {
-			v:           "array",
-			expectedIDs: []any{"array", "array-embedded", "array-empty", "array-null", "array-three", "array-three-reverse", "array-two"},
+			v: "array",
+			expectedIDs: []any{
+				"array", "array-embedded", "array-empty", "array-empty-nested", "array-first-embedded", "array-last-embedded",
+				"array-middle-embedded", "array-null", "array-three", "array-three-reverse", "array-two",
+			},
 		},
 		"Double": {
 			v: "double",
@@ -143,8 +146,11 @@ func TestQueryElementType(t *testing.T) {
 			expectedIDs: []any{"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min"},
 		},
 		"Null": {
-			v:           "null",
-			expectedIDs: []any{"array-embedded", "array-null", "array-three", "array-three-reverse", "null"},
+			v: "null",
+			expectedIDs: []any{
+				"array-first-embedded", "array-last-embedded", "array-middle-embedded", "array-null", "array-three",
+				"array-three-reverse", "null",
+			},
 		},
 		"Regex": {
 			v:           "regex",

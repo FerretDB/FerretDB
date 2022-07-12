@@ -1,5 +1,6 @@
 # FerretDB
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/FerretDB/FerretDB/ferretdb.svg)](https://pkg.go.dev/github.com/FerretDB/FerretDB/ferretdb)
 [![Go](https://github.com/FerretDB/FerretDB/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/FerretDB/FerretDB/actions/workflows/go.yml)
 [![Integration](https://github.com/FerretDB/FerretDB/actions/workflows/integration.yml/badge.svg?branch=main)](https://github.com/FerretDB/FerretDB/actions/workflows/integration.yml)
 [![Docker](https://github.com/FerretDB/FerretDB/actions/workflows/docker.yml/badge.svg?branch=main)](https://github.com/FerretDB/FerretDB/actions/workflows/docker.yml)
@@ -32,6 +33,15 @@ and [contributing guidelines](CONTRIBUTING.md).
 ### Known differences
 
 1. FerretDB uses the same protocol error names and codes, but the exact error messages may be different in some cases.
+
+2. FerretDB does not support NUL (`\0`) characters in strings.
+
+3. Collection names restrictions:
+
+* collection name cannot start with the reserved prefix `_ferretdb_`.
+* collection name must not include non-latin letters, spaces, dots, dollars or dashes.
+* collection name length must be less or equal than 120 symbols.
+* collection name must not start with a number.
 
 If you encounter some other difference in behavior, please [join our community](#community) to report a problem.
 

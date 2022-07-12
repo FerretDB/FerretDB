@@ -29,7 +29,7 @@ import (
 
 func TestQueryLogicalAnd(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars)
+	ctx, collection := Setup(t, shareddata.Scalars)
 
 	for name, tc := range map[string]struct {
 		filter      any
@@ -119,7 +119,7 @@ func TestQueryLogicalAnd(t *testing.T) {
 
 func TestQueryLogicalOr(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars)
+	ctx, collection := Setup(t, shareddata.Scalars)
 
 	for name, tc := range map[string]struct {
 		filter      any
@@ -203,7 +203,7 @@ func TestQueryLogicalOr(t *testing.T) {
 
 func TestQueryLogicalNor(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars)
+	ctx, collection := Setup(t, shareddata.Scalars)
 
 	for name, tc := range map[string]struct {
 		filter      any
@@ -269,7 +269,7 @@ func TestQueryLogicalNor(t *testing.T) {
 func TestQueryLogicalNot(t *testing.T) {
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
-	ctx, collection := setup(t, providers...)
+	ctx, collection := Setup(t, providers...)
 
 	for name, tc := range map[string]struct {
 		filter      bson.D
@@ -279,7 +279,8 @@ func TestQueryLogicalNot(t *testing.T) {
 		"Not": {
 			filter: bson.D{{"value", bson.D{{"$not", bson.D{{"$eq", 42}}}}}},
 			expectedIDs: []any{
-				"array-embedded", "array-empty", "array-null", "array-two",
+				"array-embedded", "array-empty", "array-empty-nested", "array-first-embedded", "array-last-embedded",
+				"array-middle-embedded", "array-null", "array-two",
 				"binary", "binary-empty",
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
@@ -307,7 +308,7 @@ func TestQueryLogicalNot(t *testing.T) {
 		"NotEqNull": {
 			filter: bson.D{{"value", bson.D{{"$not", bson.D{{"$eq", nil}}}}}},
 			expectedIDs: []any{
-				"array", "array-empty", "array-two",
+				"array", "array-embedded", "array-empty", "array-empty-nested", "array-two",
 				"binary", "binary-empty",
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
@@ -325,7 +326,8 @@ func TestQueryLogicalNot(t *testing.T) {
 		"ValueRegex": {
 			filter: bson.D{{"value", bson.D{{"$not", primitive.Regex{Pattern: "^fo"}}}}},
 			expectedIDs: []any{
-				"array", "array-embedded", "array-empty", "array-null", "array-two",
+				"array", "array-embedded", "array-empty", "array-empty-nested", "array-first-embedded",
+				"array-last-embedded", "array-middle-embedded", "array-null", "array-two",
 				"binary", "binary-empty",
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
@@ -344,7 +346,8 @@ func TestQueryLogicalNot(t *testing.T) {
 		"NoSuchFieldRegex": {
 			filter: bson.D{{"no-such-field", bson.D{{"$not", primitive.Regex{Pattern: "/someregex/"}}}}},
 			expectedIDs: []any{
-				"array", "array-embedded", "array-empty", "array-null", "array-three", "array-three-reverse", "array-two",
+				"array", "array-embedded", "array-empty", "array-empty-nested", "array-first-embedded", "array-last-embedded",
+				"array-middle-embedded", "array-null", "array-three", "array-three-reverse", "array-two",
 				"binary", "binary-empty",
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
