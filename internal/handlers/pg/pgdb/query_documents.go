@@ -102,6 +102,8 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment 
 	return fetchedChan, errBeforeFetching
 }
 
+// iterateFetch iterates over the rows returned by the query and sends FetchedDocs to fetched channel.
+// It returns ctx.Err() if context cancellation was received.
 func iterateFetch(ctx context.Context, fetched chan FetchedDocs, rows pgx.Rows) error {
 	for {
 		select {
