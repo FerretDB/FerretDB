@@ -16,7 +16,11 @@ package pgdb
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strings"
+
+	"go.uber.org/zap"
 
 	"github.com/jackc/pgx/v4"
 
@@ -72,7 +76,11 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment 
 
 	rows, err := tx.Query(ctx, sql)
 	if err != nil {
-		_ = tx.Rollback(ctx)
+		rerr := tx.Rollback(ctx)
+		if rerr != nil {
+			pgPool.logger.Error("rollback returned an error", zap.Error(rerr))
+		}
+
 		close(fetchedChan)
 		return fetchedChan, lazyerrors.Error(err)
 	}
@@ -80,22 +88,24 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment 
 	go func() {
 		defer close(fetchedChan)
 
-		_ = iterateFetch(ctx, fetchedChan, rows)
+		err := iterateFetch(ctx, fetchedChan, rows)
+		switch {
+		case err == nil:
+			// nothing
+		case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
+			pgPool.logger.Warn(
+				fmt.Sprintf("caught %v, stop fetching", err),
+				zap.String("db", db), zap.String("collection", collection),
+			)
+		default:
+			pgPool.logger.Error("exiting fetching with an error", zap.Error(err))
+		}
 
-		_ = tx.Rollback(ctx)
+		err = tx.Rollback(ctx)
+		if err != nil {
+			pgPool.logger.Error("rollback returned an error", zap.Error(err))
+		}
 	}()
-
-	/*switch {
-	case err == nil:
-		// nothing
-	case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
-		pgPool.logger.Warn(
-			fmt.Sprintf("caught %v, stop fetching", err),
-			zap.String("db", db), zap.String("collection", collection),
-		)
-	default:
-		pgPool.logger.Error("exiting fetching with an error", zap.Error(err))
-	}*/
 
 	return fetchedChan, nil
 }
@@ -114,21 +124,15 @@ func iterateFetch(ctx context.Context, fetched chan FetchedDocs, rows pgx.Rows) 
 
 			var b []byte
 			if err := rows.Scan(&b); err != nil {
-				// TODO: cover this case with a test
 				return writeFetched(ctx, fetched, FetchedDocs{Err: lazyerrors.Error(err)})
 			}
 
 			doc, err := fjson.Unmarshal(b)
 			if err != nil {
-				// TODO: cover this case with a test
 				return writeFetched(ctx, fetched, FetchedDocs{Err: lazyerrors.Error(err)})
 			}
 
 			res = append(res, doc.(*types.Document))
-		}
-
-		if err := rows.Err(); err != nil {
-			panic(err) // TODO
 		}
 
 		if len(res) > 0 {
@@ -138,6 +142,12 @@ func iterateFetch(ctx context.Context, fetched chan FetchedDocs, rows pgx.Rows) 
 		}
 
 		if allFetched {
+			if err := rows.Err(); err != nil {
+				if err := writeFetched(ctx, fetched, FetchedDocs{Err: lazyerrors.Error(err)}); err != nil {
+					return err
+				}
+			}
+
 			return nil
 		}
 	}
