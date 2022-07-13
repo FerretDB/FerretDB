@@ -291,19 +291,19 @@ func Tables(ctx context.Context, querier pgxtype.Querier, schema string) ([]stri
 	return filtered, nil
 }
 
-// CreateDatabase method should not be used in new code.
+// CreateDatabaseIfNotExists method should not be used in new code.
 //
-// Deprecated: use CreateDatabase function instead.
+// Deprecated: use CreateDatabaseIfNotExists function instead.
 func (pgPool *Pool) CreateDatabase(ctx context.Context, db string) error {
-	return CreateDatabase(ctx, pgPool, db)
+	return CreateDatabaseIfNotExists(ctx, pgPool, db)
 }
 
-// CreateDatabase creates a new FerretDB database (PostgreSQL schema).
+// CreateDatabaseIfNotExists creates a new FerretDB database (PostgreSQL schema).
 //
 // It returns (possibly wrapped) ErrAlreadyExist if schema already exist,
 // use errors.Is to check the error.
-func CreateDatabase(ctx context.Context, querier pgxtype.Querier, db string) error {
-	sql := `CREATE SCHEMA ` + pgx.Identifier{db}.Sanitize()
+func CreateDatabaseIfNotExists(ctx context.Context, querier pgxtype.Querier, db string) error {
+	sql := `CREATE SCHEMA IF NOT EXISTS ` + pgx.Identifier{db}.Sanitize()
 	_, err := querier.Exec(ctx, sql)
 
 	if err == nil {
@@ -361,7 +361,7 @@ func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
 //  * ErrAlreadyExist - if a FerretDB collection with the given names already exists.
 //  * ErrTableNotExist - is the required FerretDB database does not exist.
 // Please use errors.Is to check the error.
-func (pgPool *Pool) CreateCollection(ctx context.Context, querier pgxtype.Querier, db, collection string) error {
+func CreateCollection(ctx context.Context, querier pgxtype.Querier, db, collection string) error {
 	if !validateCollectionNameRe.MatchString(collection) {
 		return ErrInvalidTableName
 	}
@@ -501,7 +501,7 @@ func (pgPool *Pool) CreateTableIfNotExist(ctx context.Context, db, collection st
 	}
 
 	// TODO use a transaction instead of pgPool: https://github.com/FerretDB/FerretDB/issues/866
-	if err := pgPool.CreateCollection(ctx, pgPool, db, collection); err != nil {
+	if err := CreateCollection(ctx, pgPool, db, collection); err != nil {
 		if errors.Is(err, ErrAlreadyExist) {
 			return false, nil
 		}
@@ -631,15 +631,11 @@ func (pgPool *Pool) InsertDocument(
 	}
 
 	if !exists {
-		if err := CreateDatabase(ctx, querier, db); err != nil && !errors.Is(err, ErrAlreadyExist) {
+		if err := CreateDatabaseIfNotExists(ctx, querier, db); err != nil {
 			return lazyerrors.Error(err)
 		}
 
-		// TODO use a transaction instead of pgPool: https://github.com/FerretDB/FerretDB/issues/866
-		if err := pgPool.CreateCollection(ctx, querier, db, collection); err != nil {
-			if errors.Is(err, ErrAlreadyExist) {
-				return nil
-			}
+		if err := CreateCollection(ctx, querier, db, collection); err != nil && !errors.Is(err, ErrAlreadyExist) {
 			return lazyerrors.Error(err)
 		}
 	}
