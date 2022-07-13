@@ -116,10 +116,10 @@ func SetupWithOpts(t *testing.T, opts *SetupOpts) (context.Context, *mongo.Colle
 
 	// insert all provided data
 	for _, provider := range opts.Providers {
-		for _, doc := range provider.Docs() {
-			_, err = collection.InsertOne(ctx, doc)
-			require.NoError(t, err)
-		}
+		docs := provider.Docs()
+		res, err := collection.InsertMany(ctx, shareddata.DocsAny(docs))
+		require.NoError(t, err)
+		require.Len(t, res.InsertedIDs, len(docs))
 	}
 
 	return ctx, collection, port
