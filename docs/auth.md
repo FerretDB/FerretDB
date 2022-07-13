@@ -1,7 +1,10 @@
-FerretDB should handle the client's authentication commands and use provided credentials to authenticate in PostgreSQL.
+# Task description
 
-createUser, dropUser, etc
+* Instead of using one global PostgreSQL connection pool, separate pools should be shared by all client connections with the same username and password.
 
+* FerretDB should handle the client's authentication commands and use provided credentials to authenticate in PostgreSQL.
+
+* Implement createUser, dropUser, etc. commands.
 Update listCommands to include requiresAuth.
 Update connectionStatus to include authInfo.
 
