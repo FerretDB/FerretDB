@@ -164,11 +164,8 @@ func (c *conn) run(ctx context.Context) (err error) {
 			return
 		}
 
-		// do not spend time dumping if we are not going to log it
-		if c.l.Desugar().Core().Enabled(zap.DebugLevel) {
-			c.l.Debugf("Request header: %s", reqHeader)
-			c.l.Debugf("Request message:\n%s\n\n\n", reqBody)
-		}
+		c.l.Debugf("Request header: %s", reqHeader)
+		c.l.Debugf("Request message:\n%s\n\n\n", reqBody)
 
 		// diffLogLevel provides the level of logging for the diff between the "normal" and "proxy" responses.
 		// It is set to the highest level of logging used to log response.

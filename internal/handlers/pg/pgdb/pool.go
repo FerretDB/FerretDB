@@ -69,7 +69,7 @@ var (
 // Pool represents PostgreSQL concurrency-safe connection pool.
 type Pool struct {
 	*pgxpool.Pool
-	logger *zap.Logger
+	logger *zap.Logger // TODO remove, use Pool.Config().ConnConfig.Logger instead
 }
 
 // DBStats describes statistics for a database.
@@ -106,10 +106,9 @@ func NewPool(ctx context.Context, connString string, logger *zap.Logger, lazy bo
 	config.ConnConfig.RuntimeParams["application_name"] = "FerretDB"
 	config.ConnConfig.RuntimeParams["search_path"] = ""
 
-	if logger.Core().Enabled(zap.DebugLevel) {
-		config.ConnConfig.LogLevel = pgx.LogLevelTrace
-		config.ConnConfig.Logger = zapadapter.NewLogger(logger.Named("pgdb.Pool"))
-	}
+	// try to log everything; logger's configuration will skip extra levels if needed
+	config.ConnConfig.LogLevel = pgx.LogLevelTrace
+	config.ConnConfig.Logger = zapadapter.NewLogger(logger.Named("pgdb.Pool"))
 
 	p, err := pgxpool.ConnectConfig(ctx, config)
 	if err != nil {
