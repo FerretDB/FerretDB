@@ -212,7 +212,7 @@ tasks:
       - lint-go-consistent
       - lint-go-consistent-integration
     cmds:
-      - bin/golangci-lint run --config=.golangci-new.yml --new-from-rev=main
+      - bin/golangci-lint run --config=.golangci-new.yml
       - go vet -vettool=./bin/checkswitch ./...
 
   lint-golangci-lint:

@@ -55,7 +55,8 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 			}
 
 		case float64, int32, int64:
-			if types.Compare(v, int32(0)) == types.Equal {
+			result := types.Compare(v, int32(0))
+			if types.ContainsCompareResult(result, types.Equal) {
 				if inclusion {
 					err = NewError(ErrProjectionExIn,
 						fmt.Errorf("Cannot do exclusion on field %s in inclusion projection", k),
@@ -143,7 +144,8 @@ func projectDocument(inclusion bool, doc *types.Document, projection *types.Docu
 			}
 
 		case float64, int32, int64: // field: number
-			if types.Compare(projectionVal, int32(0)) == types.Equal {
+			result := types.Compare(projectionVal, int32(0))
+			if types.ContainsCompareResult(result, types.Equal) {
 				doc.Remove(k1)
 			}
 
@@ -240,7 +242,8 @@ func filterFieldArrayElemMatch(k1 string, doc, conditions *types.Document, docVa
 						doc.RemoveByPath(types.NewPath([]string{k1, strconv.Itoa(j)}))
 						continue
 					}
-					if types.Compare(docVal, elemMatchFieldCondition) == types.Equal {
+					result := types.Compare(docVal, elemMatchFieldCondition)
+					if types.ContainsCompareResult(result, types.Equal) {
 						// elemMatch to return first matching, all others are to be removed
 						found = j
 						break
