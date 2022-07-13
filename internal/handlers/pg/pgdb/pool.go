@@ -332,7 +332,7 @@ func CreateDatabase(ctx context.Context, querier pgxtype.Querier, db string) err
 
 // CreateDatabaseIfNotExists creates a new FerretDB database (PostgreSQL schema).
 func CreateDatabaseIfNotExists(ctx context.Context, querier pgxtype.Querier, db string) error {
-	sql := `CREATE SCHEMA ` + pgx.Identifier{db}.Sanitize()
+	sql := `CREATE SCHEMA IF NOT EXISTS ` + pgx.Identifier{db}.Sanitize()
 	_, err := querier.Exec(ctx, sql)
 
 	if err == nil {
