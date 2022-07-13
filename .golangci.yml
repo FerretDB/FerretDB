@@ -78,7 +78,9 @@ linters-settings:
     severity: warning
     enableAllRules: true
   staticcheck:
-    checks: ["all"]
+    checks:
+      - all
+      - -SA1019 # ignore deprecation errors in existing code; new code is checked by the other configuration
   # unused
   whitespace:
     multi-if: false
@@ -111,10 +113,6 @@ linters:
 issues:
   exclude-use-default: false
   exclude-rules:
-    # ignore deprecation errors in existing code; new code is checked by the other configuration
-    - linters: [staticcheck]
-      text: SA1019
-
     # only `wire` package can import `bson` package
     - linters: [depguard]
       path: internal/wire
