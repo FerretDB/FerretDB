@@ -126,7 +126,7 @@ jobs:
 
       - run: |
           git branch -a
-          git diff --relative main
+          git diff --relative origin/main
 
       - name: Run linters
         uses: FerretDB/github-actions/linters@main
