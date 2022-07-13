@@ -3,10 +3,10 @@ name: Integration
 on:
   pull_request:
     types:
+      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
       - opened
       - reopened
       - synchronize
-      - auto_merge_enabled # if GitHub Actions stuck, re-enable auto-merge to force rebuild
   push:
     branches:
       - main
@@ -24,6 +24,8 @@ jobs:
   test:
     name: Test ${{ matrix.name }}
     runs-on: ubuntu-20.04
+
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
     strategy:
       fail-fast: false
