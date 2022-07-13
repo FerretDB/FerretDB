@@ -28,7 +28,7 @@ import (
 // QueryDocuments returns a list of documents for given FerretDB database and collection.
 func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment string) ([]*types.Document, error) {
 	var res []*types.Document
-	err := pgPool.inTransaction(ctx, func(tx pgx.Tx) error {
+	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		table, err := pgPool.getTableName(ctx, tx, db, collection)
 		if err != nil {
 			return err

@@ -46,7 +46,7 @@ const (
 // Settings table is used to store FerretDB settings like collections names mapping.
 // That table consists of a single document with settings.
 func (pgPool *Pool) createSettingsTable(ctx context.Context, querier pgxtype.Querier, db string) error {
-	tables, err := pgPool.tables(ctx, querier, db)
+	tables, err := tables(ctx, querier, db)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -91,7 +91,7 @@ func (pgPool *Pool) createSettingsTable(ctx context.Context, querier pgxtype.Que
 // If the settings table doesn't exist, it will be created.
 // If the record for collection doesn't exist, it will be created.
 func (pgPool *Pool) getTableName(ctx context.Context, querier pgxtype.Querier, db, collection string) (string, error) {
-	schemaExists, err := pgPool.schemaExists(ctx, querier, db)
+	schemaExists, err := schemaExists(ctx, querier, db)
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
@@ -100,7 +100,7 @@ func (pgPool *Pool) getTableName(ctx context.Context, querier pgxtype.Querier, d
 		return formatCollectionName(collection), nil
 	}
 
-	tables, err := pgPool.tables(ctx, querier, db)
+	tables, err := tables(ctx, querier, db)
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
@@ -112,7 +112,7 @@ func (pgPool *Pool) getTableName(ctx context.Context, querier pgxtype.Querier, d
 		}
 	}
 
-	settings, err := pgPool.getSettingsTable(ctx, querier, db)
+	settings, err := getSettingsTable(ctx, querier, db)
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
@@ -131,7 +131,7 @@ func (pgPool *Pool) getTableName(ctx context.Context, querier pgxtype.Querier, d
 	must.NoError(collections.Set(collection, tableName))
 	must.NoError(settings.Set("collections", collections))
 
-	err = pgPool.updateSettingsTable(ctx, querier, db, settings)
+	err = updateSettingsTable(ctx, querier, db, settings)
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
@@ -140,7 +140,7 @@ func (pgPool *Pool) getTableName(ctx context.Context, querier pgxtype.Querier, d
 }
 
 // getSettingsTable returns FerretDB settings table.
-func (pgPool *Pool) getSettingsTable(ctx context.Context, querier pgxtype.Querier, db string) (*types.Document, error) {
+func getSettingsTable(ctx context.Context, querier pgxtype.Querier, db string) (*types.Document, error) {
 	sql := `SELECT settings FROM ` + pgx.Identifier{db, settingsTableName}.Sanitize()
 	rows, err := querier.Query(ctx, sql)
 	if err != nil {
@@ -171,15 +171,15 @@ func (pgPool *Pool) getSettingsTable(ctx context.Context, querier pgxtype.Querie
 }
 
 // updateSettingsTable updates FerretDB settings table.
-func (pgPool *Pool) updateSettingsTable(ctx context.Context, querier pgxtype.Querier, db string, settings *types.Document) error {
+func updateSettingsTable(ctx context.Context, querier pgxtype.Querier, db string, settings *types.Document) error {
 	sql := `UPDATE ` + pgx.Identifier{db, settingsTableName}.Sanitize() + `SET settings = $1`
 	_, err := querier.Exec(ctx, sql, must.NotFail(fjson.Marshal(settings)))
 	return err
 }
 
 // removeTableFromSettings removes collection from FerretDB settings table.
-func (pgPool *Pool) removeTableFromSettings(ctx context.Context, querier pgxtype.Querier, db, collection string) error {
-	settings, err := pgPool.getSettingsTable(ctx, querier, db)
+func removeTableFromSettings(ctx context.Context, querier pgxtype.Querier, db, collection string) error {
+	settings, err := getSettingsTable(ctx, querier, db)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -197,7 +197,7 @@ func (pgPool *Pool) removeTableFromSettings(ctx context.Context, querier pgxtype
 
 	must.NoError(settings.Set("collections", collections))
 
-	if err := pgPool.updateSettingsTable(ctx, querier, db, settings); err != nil {
+	if err := updateSettingsTable(ctx, querier, db, settings); err != nil {
 		return lazyerrors.Error(err)
 	}
 
