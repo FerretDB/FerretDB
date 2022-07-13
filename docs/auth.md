@@ -23,6 +23,7 @@ Update connectionStatus to include authInfo.
 |-----|--------------|------------------------------------|
 | 1   | authenticate | Authenticate with x.509 mechanism. |
 | 2   | saslStart    | Start SASL authentication.         |
+| 3   | saslContinue | Continue SASL authentication.      |
 
 
 ## Users Management Commands
