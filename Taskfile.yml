@@ -59,7 +59,7 @@ tasks:
   env-up-detach:
     cmds:
       - >
-        docker-compose up --always-recreate-deps --build --force-recreate --remove-orphans --renew-anon-volumes --timeout=0 --wait
+        docker-compose up --always-recreate-deps --build --force-recreate --remove-orphans --renew-anon-volumes --timeout=0
         postgres tigris mongodb
 
   env-up:
