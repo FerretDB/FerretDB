@@ -52,6 +52,10 @@ func PoolConnString(tb testing.TB, opts *PoolOpts) string {
 }
 
 // Pool creates a new connection connection pool for testing.
+//
+// TODO move to pg/pgdb tests.
+//
+// Deprecated: do not use in new code.
 func Pool(ctx context.Context, tb testing.TB, opts *PoolOpts, l *zap.Logger) *pgdb.Pool {
 	tb.Helper()
 
