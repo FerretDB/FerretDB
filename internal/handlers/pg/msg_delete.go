@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v4"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -83,46 +85,55 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			)
 		}
 
-		fetchedChan, err := h.fetch(ctx, sp)
-		if err != nil {
-			return nil, err
-		}
-
 		resDocs := make([]*types.Document, 0, 16)
-		for fetchedItem := range fetchedChan {
-			if fetchedItem.Err != nil {
-				return nil, fetchedItem.Err
+		err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+			fetchCtx, cancel := context.WithCancel(ctx)
+			defer cancel()
+
+			fetchedChan, err := h.fetch(fetchCtx, tx, sp)
+			if err != nil {
+				return err
 			}
 
-			for _, doc := range fetchedItem.Docs {
-				matches, err := common.FilterDocument(doc, filter)
-				if err != nil {
-					// TODO: if we exit here, the transaction will hang forever
-					return nil, err
+			for fetchedItem := range fetchedChan {
+				if fetchedItem.Err != nil {
+					return fetchedItem.Err
 				}
 
-				if !matches {
+				for _, doc := range fetchedItem.Docs {
+					matches, err := common.FilterDocument(doc, filter)
+					if err != nil {
+						return err
+					}
+
+					if !matches {
+						continue
+					}
+
+					resDocs = append(resDocs, doc)
+				}
+
+				if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
+					return err
+				}
+
+				if len(resDocs) == 0 {
 					continue
 				}
 
-				resDocs = append(resDocs, doc)
+				rowsDeleted, err := h.delete(ctx, sp, resDocs)
+				if err != nil {
+					return err
+				}
+
+				deleted += int32(rowsDeleted)
 			}
 
-			if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
-				return nil, err
-			}
+			return nil
+		})
 
-			if len(resDocs) == 0 {
-				continue
-			}
-
-			rowsDeleted, err := h.delete(ctx, sp, resDocs)
-			if err != nil {
-				// TODO: if we exit here, the transaction will hang forever
-				return nil, err
-			}
-
-			deleted += int32(rowsDeleted)
+		if err != nil {
+			return nil, err
 		}
 	}
 

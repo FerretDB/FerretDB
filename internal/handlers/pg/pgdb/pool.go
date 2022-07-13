@@ -296,7 +296,7 @@ func Tables(ctx context.Context, querier pgxtype.Querier, schema string) ([]stri
 // It returns (possibly wrapped) ErrAlreadyExist if schema already exist,
 // use errors.Is to check the error.
 func (pgPool *Pool) CreateDatabase(ctx context.Context, db string) error {
-	err := pgPool.inTransaction(ctx, func(tx pgx.Tx) error {
+	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		sql := `CREATE SCHEMA ` + pgx.Identifier{db}.Sanitize()
 		_, err := tx.Exec(ctx, sql)
 
@@ -442,7 +442,7 @@ func (pgPool *Pool) DropCollection(ctx context.Context, schema, collection strin
 	}
 
 	table := formatCollectionName(collection)
-	err = pgPool.inTransaction(ctx, func(tx pgx.Tx) error {
+	err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		tables, err := tables(ctx, tx, schema)
 		if err != nil {
 			return lazyerrors.Error(err)
@@ -562,7 +562,7 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 // SetDocumentByID sets a document by its ID.
 func (pgPool *Pool) SetDocumentByID(ctx context.Context, db, collection string, id any, doc *types.Document) (int64, error) {
 	var tag pgconn.CommandTag
-	err := pgPool.inTransaction(ctx, func(tx pgx.Tx) error {
+	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		table, err := pgPool.getTableName(ctx, tx, db, collection)
 		if err != nil {
 			return err
@@ -584,7 +584,7 @@ func (pgPool *Pool) SetDocumentByID(ctx context.Context, db, collection string, 
 // DeleteDocumentsByID deletes documents by given IDs.
 func (pgPool *Pool) DeleteDocumentsByID(ctx context.Context, db, collection string, ids []any) (int64, error) {
 	var tag pgconn.CommandTag
-	err := pgPool.inTransaction(ctx, func(tx pgx.Tx) error {
+	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		table, err := pgPool.getTableName(ctx, tx, db, collection)
 		if err != nil {
 			return err
@@ -635,7 +635,7 @@ func (pgPool *Pool) InsertDocument(ctx context.Context, db, collection string, d
 		}
 	}
 
-	err = pgPool.inTransaction(ctx, func(tx pgx.Tx) error {
+	err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		table, err := pgPool.getTableName(ctx, tx, db, collection)
 		if err != nil {
 			return err
@@ -700,12 +700,12 @@ func schemaExists(ctx context.Context, querier pgxtype.Querier, db string) (bool
 	return false, nil
 }
 
-// inTransaction wraps the given function f in a transaction.
+// InTransaction wraps the given function f in a transaction.
 // If f returns an error, the transaction is rolled back.
 // Errors are wrapped with lazyerrors.Error,
 // so the caller needs to use errors.Is to check the error,
 // for example, errors.Is(err, ErrSchemaNotExist).
-func (pgPool *Pool) inTransaction(ctx context.Context, f func(pgx.Tx) error) (err error) {
+func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (err error) {
 	var tx pgx.Tx
 	if tx, err = pgPool.Begin(ctx); err != nil {
 		err = lazyerrors.Error(err)

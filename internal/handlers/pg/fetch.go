@@ -17,6 +17,8 @@ package pg
 import (
 	"context"
 
+	"github.com/jackc/pgtype/pgxtype"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 )
 
@@ -37,6 +39,10 @@ type sqlParam struct {
 //
 // If the collection doesn't exist, fetch returns a closed channel and no error.
 //
-func (h *Handler) fetch(ctx context.Context, param sqlParam) (<-chan pgdb.FetchedDocs, error) {
-	return h.pgPool.QueryDocuments(ctx, param.db, param.collection, param.comment)
+/*func (h *Handler) fetch(ctx context.Context, param sqlParam) (<-chan pgdb.FetchedDocs, error) {
+	return h.pgPool.QueryDocuments(ctx, h.pgPool, param.db, param.collection, param.comment)
+}*/
+
+func (h *Handler) fetch(ctx context.Context, querier pgxtype.Querier, param sqlParam) (<-chan pgdb.FetchedDocs, error) {
+	return h.pgPool.QueryDocuments(ctx, querier, param.db, param.collection, param.comment)
 }

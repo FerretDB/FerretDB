@@ -22,6 +22,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/jackc/pgtype/pgxtype"
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
@@ -51,22 +52,12 @@ type FetchedDocs struct {
 // Fetched documents are sent to the channel as well as errors.
 // The channel is closed when the query is finished.
 // The channel is also closed if an error occurs or context cancellation is received.
-func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment string) (<-chan FetchedDocs, error) {
+func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier, db, collection, comment string) (<-chan FetchedDocs, error) {
 	fetchedChan := make(chan FetchedDocs, FetchedChannelBufSize)
 
-	tx, err := pgPool.Begin(ctx)
-	if err != nil {
-		close(fetchedChan)
-		return fetchedChan, lazyerrors.Error(err)
-	}
-
 	// Special case: check if collection exists at all
-	collectionExists, err := CollectionExists(ctx, tx, db, collection)
+	collectionExists, err := CollectionExists(ctx, querier, db, collection)
 	if err != nil {
-		rerr := tx.Rollback(ctx)
-		if rerr != nil {
-			pgPool.logger.Error("rollback returned an error", zap.Error(rerr))
-		}
 		close(fetchedChan)
 		return fetchedChan, lazyerrors.Error(err)
 	}
@@ -75,15 +66,11 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment 
 			"Collection doesn't exist, handling a case to deal with a non-existing collection (return empty list)",
 			zap.String("db", db), zap.String("collection", collection),
 		)
-		rerr := tx.Rollback(ctx)
-		if rerr != nil {
-			pgPool.logger.Error("rollback returned an error", zap.Error(rerr))
-		}
 		close(fetchedChan)
 		return fetchedChan, nil
 	}
 
-	table, err := pgPool.getTableName(ctx, tx, db, collection)
+	table, err := pgPool.getTableName(ctx, querier, db, collection)
 	if err != nil {
 		return fetchedChan, lazyerrors.Error(err)
 	}
@@ -97,13 +84,8 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment 
 	}
 	sql += `FROM ` + pgx.Identifier{db, table}.Sanitize()
 
-	rows, err := tx.Query(ctx, sql)
+	rows, err := querier.Query(ctx, sql)
 	if err != nil {
-		rerr := tx.Rollback(ctx)
-		if rerr != nil {
-			pgPool.logger.Error("rollback returned an error", zap.Error(rerr))
-		}
-
 		close(fetchedChan)
 		return fetchedChan, lazyerrors.Error(err)
 	}
@@ -122,11 +104,6 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment 
 			)
 		default:
 			pgPool.logger.Error("exiting fetching with an error", zap.Error(err))
-		}
-
-		err = tx.Rollback(ctx)
-		if err != nil {
-			pgPool.logger.Error("rollback returned an error", zap.Error(err))
 		}
 	}()
 
