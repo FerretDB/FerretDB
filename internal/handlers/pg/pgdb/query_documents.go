@@ -63,6 +63,10 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment 
 	// Special case: check if collection exists at all
 	collectionExists, err := CollectionExists(ctx, tx, db, collection)
 	if err != nil {
+		rerr := tx.Rollback(ctx)
+		if rerr != nil {
+			pgPool.logger.Error("rollback returned an error", zap.Error(rerr))
+		}
 		close(fetchedChan)
 		return fetchedChan, lazyerrors.Error(err)
 	}
@@ -71,6 +75,10 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment 
 			"Collection doesn't exist, handling a case to deal with a non-existing collection (return empty list)",
 			zap.String("db", db), zap.String("collection", collection),
 		)
+		rerr := tx.Rollback(ctx)
+		if rerr != nil {
+			pgPool.logger.Error("rollback returned an error", zap.Error(rerr))
+		}
 		close(fetchedChan)
 		return fetchedChan, nil
 	}

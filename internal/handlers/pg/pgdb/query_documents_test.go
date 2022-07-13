@@ -135,7 +135,7 @@ func TestQueryDocuments(t *testing.T) {
 	// Special case: querying a non-existing collection.
 	t.Run("non-existing_collection", func(t *testing.T) {
 		fetchedChan, err := pool.QueryDocuments(context.Background(), dbName, collectionName+"_non-existing", "")
-		require.Error(t, err)
+		require.NoError(t, err)
 		doc, ok := <-fetchedChan
 		require.False(t, ok)
 		require.Nil(t, doc.Docs)
