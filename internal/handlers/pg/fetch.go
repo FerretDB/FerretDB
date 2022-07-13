@@ -17,10 +17,7 @@ package pg
 import (
 	"context"
 
-	"go.uber.org/zap"
-
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // sqlParam represents options/parameters used for sql query.
@@ -41,20 +38,5 @@ type sqlParam struct {
 // If the collection doesn't exist, fetch returns a closed channel and no error.
 //
 func (h *Handler) fetch(ctx context.Context, param sqlParam) (<-chan pgdb.FetchedDocs, error) {
-	// Special case: check if collection exists at all
-	collectionExists, err := h.pgPool.CollectionExists(ctx, param.db, param.collection)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-	if !collectionExists {
-		h.l.Info(
-			"Collection doesn't exist, handling a case to deal with a non-existing collection.",
-			zap.String("db", param.db), zap.String("collection", param.collection),
-		)
-		fetchedChan := make(chan pgdb.FetchedDocs)
-		close(fetchedChan)
-		return fetchedChan, nil
-	}
-
 	return h.pgPool.QueryDocuments(ctx, param.db, param.collection, param.comment)
 }

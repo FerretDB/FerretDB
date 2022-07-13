@@ -60,6 +60,21 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment 
 		return fetchedChan, lazyerrors.Error(err)
 	}
 
+	// Special case: check if collection exists at all
+	collectionExists, err := CollectionExists(ctx, tx, db, collection)
+	if err != nil {
+		close(fetchedChan)
+		return fetchedChan, lazyerrors.Error(err)
+	}
+	if !collectionExists {
+		pgPool.logger.Info(
+			"Collection doesn't exist, handling a case to deal with a non-existing collection (return empty list)",
+			zap.String("db", db), zap.String("collection", collection),
+		)
+		close(fetchedChan)
+		return fetchedChan, nil
+	}
+
 	table, err := pgPool.getTableName(ctx, tx, db, collection)
 	if err != nil {
 		return fetchedChan, lazyerrors.Error(err)

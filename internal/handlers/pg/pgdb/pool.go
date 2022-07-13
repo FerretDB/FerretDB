@@ -504,9 +504,16 @@ func (pgPool *Pool) CreateTableIfNotExist(ctx context.Context, db, collection st
 	return true, nil
 }
 
-// CollectionExists returns true if FerretDB collection exists.
+// CollectionExists method should not be used in new code.
+//
+// Deprecated: use CollectionExists function instead.
 func (pgPool *Pool) CollectionExists(ctx context.Context, db, collection string) (bool, error) {
-	collections, err := pgPool.Collections(ctx, db)
+	return CollectionExists(ctx, pgPool, db, collection)
+}
+
+// CollectionExists returns true if FerretDB collection exists.
+func CollectionExists(ctx context.Context, querier pgxtype.Querier, db, collection string) (bool, error) {
+	collections, err := Collections(ctx, querier, db)
 	if err != nil {
 		if errors.Is(err, ErrSchemaNotExist) {
 			return false, nil
