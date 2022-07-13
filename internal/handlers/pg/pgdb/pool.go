@@ -290,19 +290,49 @@ func Tables(ctx context.Context, querier pgxtype.Querier, schema string) ([]stri
 	return filtered, nil
 }
 
-// CreateDatabaseIfNotExists method should not be used in new code.
+// CreateDatabase method should not be used in new code.
 //
-// Deprecated: use CreateDatabaseIfNotExists function instead.
+// Deprecated: use CreateDatabase function instead.
 func (pgPool *Pool) CreateDatabase(ctx context.Context, db string) error {
-	return CreateDatabaseIfNotExists(ctx, pgPool, db)
+	return CreateDatabase(ctx, pgPool, db)
 }
 
-// CreateDatabaseIfNotExists creates a new FerretDB database (PostgreSQL schema).
+// CreateDatabase creates a new FerretDB database (PostgreSQL schema).
 //
 // It returns (possibly wrapped) ErrAlreadyExist if schema already exist,
 // use errors.Is to check the error.
+func CreateDatabase(ctx context.Context, querier pgxtype.Querier, db string) error {
+	sql := `CREATE SCHEMA ` + pgx.Identifier{db}.Sanitize()
+	_, err := querier.Exec(ctx, sql)
+
+	if err == nil {
+		err = createSettingsTable(ctx, querier, db)
+	}
+
+	if err == nil {
+		return nil
+	}
+
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) {
+		return lazyerrors.Error(err)
+	}
+
+	switch pgErr.Code {
+	case pgerrcode.DuplicateSchema:
+		return ErrAlreadyExist
+	case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject:
+		// https://www.postgresql.org/message-id/CA+TgmoZAdYVtwBfp1FL2sMZbiHCWT4UPrzRLNnX1Nb30Ku3-gg@mail.gmail.com
+		// The same thing for schemas. Reproducible by integration tests.
+		return ErrAlreadyExist
+	default:
+		return lazyerrors.Error(err)
+	}
+}
+
+// CreateDatabaseIfNotExists creates a new FerretDB database (PostgreSQL schema).
 func CreateDatabaseIfNotExists(ctx context.Context, querier pgxtype.Querier, db string) error {
-	sql := `CREATE SCHEMA IF NOT EXISTS ` + pgx.Identifier{db}.Sanitize()
+	sql := `CREATE SCHEMA ` + pgx.Identifier{db}.Sanitize()
 	_, err := querier.Exec(ctx, sql)
 
 	if err == nil {
@@ -630,7 +660,7 @@ func (pgPool *Pool) InsertDocument(
 	}
 
 	if !exists {
-		if err := CreateDatabaseIfNotExists(ctx, querier, db); err != nil {
+		if err := CreateDatabase(ctx, querier, db); err != nil {
 			return lazyerrors.Error(err)
 		}
 

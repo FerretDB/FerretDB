@@ -108,13 +108,13 @@ func TestCreateDrop(t *testing.T) {
 		require.NoError(t, err)
 
 		// Schema exists ->
-		// - CreateDatabaseIfNotExists should pass
+		// - schema creation is not possible
 		// - table drop is not possible
 		// - table creation is possible
 		// - schema drop is possible (only once)
 
-		err = pgdb.CreateDatabaseIfNotExists(ctx, pool, schemaName)
-		require.NoError(t, err)
+		err = pgdb.CreateDatabase(ctx, pool, schemaName)
+		require.ErrorIs(t, err, pgdb.ErrAlreadyExist)
 
 		err = pool.DropCollection(ctx, schemaName, tableName)
 		require.ErrorIs(t, err, pgdb.ErrTableNotExist)
@@ -143,7 +143,7 @@ func TestCreateDrop(t *testing.T) {
 			pool.DropDatabase(ctx, schemaName)
 		})
 
-		err := pgdb.CreateDatabaseIfNotExists(ctx, pool, schemaName)
+		err := pgdb.CreateDatabase(ctx, pool, schemaName)
 		require.NoError(t, err)
 
 		err = pgdb.CreateCollection(ctx, pool, schemaName, tableName)
@@ -162,8 +162,8 @@ func TestCreateDrop(t *testing.T) {
 		err = pgdb.CreateCollection(ctx, pool, schemaName, tableName)
 		require.ErrorIs(t, err, pgdb.ErrAlreadyExist)
 
-		err = pgdb.CreateDatabaseIfNotExists(ctx, pool, schemaName)
-		require.NoError(t, err)
+		err = pgdb.CreateDatabase(ctx, pool, schemaName)
+		require.ErrorIs(t, err, pgdb.ErrAlreadyExist)
 
 		err = pool.DropCollection(ctx, schemaName, tableName)
 		require.NoError(t, err)
@@ -204,9 +204,9 @@ func TestConcurrentCreate(t *testing.T) {
 		compareFunc func(*testing.T, int) bool
 	}{
 		{
-			name: "CreateDatabaseIfNotExists",
+			name: "CreateDatabase",
 			f: func() error {
-				return pgdb.CreateDatabaseIfNotExists(ctx, pool, schemaName)
+				return pgdb.CreateDatabase(ctx, pool, schemaName)
 			},
 			compareFunc: func(t *testing.T, errors int) bool {
 				return assert.Equal(t, n-1, errors)
@@ -241,21 +241,13 @@ func TestConcurrentCreate(t *testing.T) {
 				}
 
 				errors++
-				if tc.name == "CreateDatabaseIfNotExists" {
-					assert.NoError(t, tc.f())
-				} else {
-					assert.ErrorIs(t, err, pgdb.ErrAlreadyExist)
-				}
+				assert.ErrorIs(t, err, pgdb.ErrAlreadyExist)
 			}
 
 			tc.compareFunc(t, errors)
 
 			// one more time to check "normal" error (DuplicateSchema, DuplicateTable)
-			if tc.name == "CreateDatabaseIfNotExists" {
-				assert.NoError(t, tc.f())
-			} else {
-				assert.ErrorIs(t, tc.f(), pgdb.ErrAlreadyExist)
-			}
+			assert.ErrorIs(t, tc.f(), pgdb.ErrAlreadyExist)
 		})
 	}
 }
