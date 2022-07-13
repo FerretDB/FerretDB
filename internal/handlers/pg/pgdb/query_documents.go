@@ -18,10 +18,11 @@ import (
 	"context"
 	"strings"
 
+	"github.com/jackc/pgx/v4"
+
 	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/jackc/pgx/v4"
 )
 
 const (
@@ -57,7 +58,6 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment 
 
 	table, err := pgPool.getTableName(ctx, tx, db, collection)
 	if err != nil {
-		close(waitFetching)
 		return fetchedChan, lazyerrors.Error(err)
 	}
 
@@ -83,7 +83,6 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment 
 		_ = iterateFetch(ctx, fetchedChan, rows)
 
 		_ = tx.Rollback(ctx)
-
 	}()
 
 	/*switch {

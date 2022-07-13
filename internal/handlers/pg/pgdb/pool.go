@@ -376,7 +376,7 @@ func (pgPool *Pool) CreateCollection(ctx context.Context, querier pgxtype.Querie
 	}
 
 	table := formatCollectionName(collection)
-	tables, err := pgPool.tables(ctx, querier, db)
+	tables, err := tables(ctx, querier, db)
 	if err != nil {
 		return err
 	}
@@ -432,7 +432,7 @@ func (pgPool *Pool) CreateCollection(ctx context.Context, querier pgxtype.Querie
 // It returns (possibly wrapped) ErrTableNotExist if schema or table does not exist.
 //  Please use errors.Is to check the error.
 func (pgPool *Pool) DropCollection(ctx context.Context, schema, collection string) error {
-	schemaExists, err := pgPool.schemaExists(ctx, pgPool, schema)
+	schemaExists, err := schemaExists(ctx, pgPool, schema)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -443,7 +443,7 @@ func (pgPool *Pool) DropCollection(ctx context.Context, schema, collection strin
 
 	table := formatCollectionName(collection)
 	err = pgPool.inTransaction(ctx, func(tx pgx.Tx) error {
-		tables, err := pgPool.tables(ctx, tx, schema)
+		tables, err := tables(ctx, tx, schema)
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
