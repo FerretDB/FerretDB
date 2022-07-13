@@ -6,7 +6,6 @@ run:
 
 linters-settings:
   staticcheck:
-    go: "1.18"
     checks: ["all"]
 
 linters:
