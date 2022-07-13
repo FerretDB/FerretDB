@@ -291,20 +291,24 @@ func Tables(ctx context.Context, querier pgxtype.Querier, schema string) ([]stri
 	return filtered, nil
 }
 
+// CreateDatabase method should not be used in new code.
+//
+// Deprecated: use CreateDatabase function instead.
+func (pgPool *Pool) CreateDatabase(ctx context.Context, db string) error {
+	return CreateDatabase(ctx, pgPool, db)
+}
+
 // CreateDatabase creates a new FerretDB database (PostgreSQL schema).
 //
 // It returns (possibly wrapped) ErrAlreadyExist if schema already exist,
 // use errors.Is to check the error.
-func (pgPool *Pool) CreateDatabase(ctx context.Context, db string) error {
-	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		sql := `CREATE SCHEMA ` + pgx.Identifier{db}.Sanitize()
-		_, err := tx.Exec(ctx, sql)
+func CreateDatabase(ctx context.Context, querier pgxtype.Querier, db string) error {
+	sql := `CREATE SCHEMA ` + pgx.Identifier{db}.Sanitize()
+	_, err := querier.Exec(ctx, sql)
 
-		if err == nil {
-			err = pgPool.createSettingsTable(ctx, tx, db)
-		}
-		return err
-	})
+	if err == nil {
+		err = createSettingsTable(ctx, querier, db)
+	}
 
 	if err == nil {
 		return nil
@@ -566,7 +570,7 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 func (pgPool *Pool) SetDocumentByID(ctx context.Context, db, collection string, id any, doc *types.Document) (int64, error) {
 	var tag pgconn.CommandTag
 	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		table, err := pgPool.getTableName(ctx, tx, db, collection)
+		table, err := getTableName(ctx, tx, db, collection)
 		if err != nil {
 			return err
 		}
@@ -588,7 +592,7 @@ func (pgPool *Pool) SetDocumentByID(ctx context.Context, db, collection string, 
 func (pgPool *Pool) DeleteDocumentsByID(ctx context.Context, db, collection string, ids []any) (int64, error) {
 	var tag pgconn.CommandTag
 	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		table, err := pgPool.getTableName(ctx, tx, db, collection)
+		table, err := getTableName(ctx, tx, db, collection)
 		if err != nil {
 			return err
 		}
@@ -618,19 +622,21 @@ func (pgPool *Pool) DeleteDocumentsByID(ctx context.Context, db, collection stri
 
 // InsertDocument inserts a document into FerretDB database and collection.
 // If database or collection does not exist, it will be created.
-func (pgPool *Pool) InsertDocument(ctx context.Context, db, collection string, doc *types.Document) error {
-	exists, err := pgPool.CollectionExists(ctx, db, collection)
+func (pgPool *Pool) InsertDocument(
+	ctx context.Context, querier pgxtype.Querier, db, collection string, doc *types.Document,
+) error {
+	exists, err := CollectionExists(ctx, querier, db, collection)
 	if err != nil {
 		return err
 	}
 
 	if !exists {
-		if err := pgPool.CreateDatabase(ctx, db); err != nil && !errors.Is(err, ErrAlreadyExist) {
+		if err := CreateDatabase(ctx, querier, db); err != nil && !errors.Is(err, ErrAlreadyExist) {
 			return lazyerrors.Error(err)
 		}
 
 		// TODO use a transaction instead of pgPool: https://github.com/FerretDB/FerretDB/issues/866
-		if err := pgPool.CreateCollection(ctx, pgPool, db, collection); err != nil {
+		if err := pgPool.CreateCollection(ctx, querier, db, collection); err != nil {
 			if errors.Is(err, ErrAlreadyExist) {
 				return nil
 			}
@@ -638,19 +644,15 @@ func (pgPool *Pool) InsertDocument(ctx context.Context, db, collection string, d
 		}
 	}
 
-	err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		table, err := pgPool.getTableName(ctx, tx, db, collection)
-		if err != nil {
-			return err
-		}
-
-		sql := `INSERT INTO ` + pgx.Identifier{db, table}.Sanitize() +
-			` (_jsonb) VALUES ($1)`
-
-		_, err = tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)))
+	table, err := getTableName(ctx, querier, db, collection)
+	if err != nil {
 		return err
-	})
+	}
 
+	sql := `INSERT INTO ` + pgx.Identifier{db, table}.Sanitize() +
+		` (_jsonb) VALUES ($1)`
+
+	_, err = querier.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)))
 	return err
 }
 

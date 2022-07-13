@@ -29,7 +29,7 @@ import (
 func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment string) ([]*types.Document, error) {
 	var res []*types.Document
 	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		table, err := pgPool.getTableName(ctx, tx, db, collection)
+		table, err := getTableName(ctx, tx, db, collection)
 		if err != nil {
 			return err
 		}
