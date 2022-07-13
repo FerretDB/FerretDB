@@ -3,7 +3,7 @@ name: Go
 on:
   pull_request:
     types:
-      - labeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
+      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
       - opened
       - reopened
       - synchronize
@@ -25,7 +25,7 @@ jobs:
     name: Short test
     runs-on: ubuntu-20.04
 
-    if: github.event_name != 'pull_request_target' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
     steps:
       - name: Checkout code
