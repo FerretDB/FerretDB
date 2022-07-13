@@ -108,13 +108,13 @@ func TestCreateDrop(t *testing.T) {
 		require.NoError(t, err)
 
 		// Schema exists ->
-		// - schema creation is not possible
+		// - CreateDatabaseIfNotExists should pass
 		// - table drop is not possible
 		// - table creation is possible
 		// - schema drop is possible (only once)
 
-		err = pool.CreateDatabase(ctx, schemaName)
-		require.ErrorIs(t, err, pgdb.ErrAlreadyExist)
+		err = pgdb.CreateDatabaseIfNotExists(ctx, pool, schemaName)
+		require.NoError(t, err)
 
 		err = pool.DropCollection(ctx, schemaName, tableName)
 		require.ErrorIs(t, err, pgdb.ErrTableNotExist)
@@ -143,7 +143,7 @@ func TestCreateDrop(t *testing.T) {
 			pool.DropDatabase(ctx, schemaName)
 		})
 
-		err := pool.CreateDatabase(ctx, schemaName)
+		err := pgdb.CreateDatabaseIfNotExists(ctx, pool, schemaName)
 		require.NoError(t, err)
 
 		err = pgdb.CreateCollection(ctx, pool, schemaName, tableName)
@@ -162,8 +162,8 @@ func TestCreateDrop(t *testing.T) {
 		err = pgdb.CreateCollection(ctx, pool, schemaName, tableName)
 		require.ErrorIs(t, err, pgdb.ErrAlreadyExist)
 
-		err = pool.CreateDatabase(ctx, schemaName)
-		require.ErrorIs(t, err, pgdb.ErrAlreadyExist)
+		err = pgdb.CreateDatabaseIfNotExists(ctx, pool, schemaName)
+		require.NoError(t, err)
 
 		err = pool.DropCollection(ctx, schemaName, tableName)
 		require.NoError(t, err)
@@ -206,7 +206,7 @@ func TestConcurrentCreate(t *testing.T) {
 		{
 			name: "CreateDatabaseIfNotExists",
 			f: func() error {
-				return pool.CreateDatabase(ctx, schemaName)
+				return pgdb.CreateDatabaseIfNotExists(ctx, pool, schemaName)
 			},
 			compareFunc: func(t *testing.T, errors int) bool {
 				return assert.Equal(t, n-1, errors)
@@ -247,7 +247,11 @@ func TestConcurrentCreate(t *testing.T) {
 			tc.compareFunc(t, errors)
 
 			// one more time to check "normal" error (DuplicateSchema, DuplicateTable)
-			assert.ErrorIs(t, tc.f(), pgdb.ErrAlreadyExist)
+			if tc.name == "CreateDatabaseIfNotExists" {
+				assert.NoError(t, tc.f())
+			} else {
+				assert.ErrorIs(t, tc.f(), pgdb.ErrAlreadyExist)
+			}
 		})
 	}
 }
