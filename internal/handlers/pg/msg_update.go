@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v4"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -105,30 +106,40 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		fetchedChan, err := h.fetch(ctx, sp)
+		resDocs := make([]*types.Document, 0, 16)
+		err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+			fetchCtx, cancel := context.WithCancel(ctx)
+			defer cancel()
+
+			fetchedChan, err := h.fetch(fetchCtx, tx, sp)
+			if err != nil {
+				return err
+			}
+
+			for fetchedItem := range fetchedChan {
+				if fetchedItem.Err != nil {
+					return fetchedItem.Err
+				}
+
+				for _, doc := range fetchedItem.Docs {
+					matches, err := common.FilterDocument(doc, q)
+					if err != nil {
+						return err
+					}
+
+					if !matches {
+						continue
+					}
+
+					resDocs = append(resDocs, doc)
+				}
+			}
+
+			return nil
+		})
+
 		if err != nil {
 			return nil, err
-		}
-
-		resDocs := make([]*types.Document, 0, 16)
-		for fetchedItem := range fetchedChan {
-			if fetchedItem.Err != nil {
-				return nil, fetchedItem.Err
-			}
-
-			for _, doc := range fetchedItem.Docs {
-				matches, err := common.FilterDocument(doc, q)
-				if err != nil {
-					// TODO: if we exit here, the transaction will hang forever
-					return nil, err
-				}
-
-				if !matches {
-					continue
-				}
-
-				resDocs = append(resDocs, doc)
-			}
 		}
 
 		if len(resDocs) == 0 {

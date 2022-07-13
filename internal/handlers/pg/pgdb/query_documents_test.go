@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v4"
-
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 	"golang.org/x/net/context"

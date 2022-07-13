@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v4"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -56,38 +58,49 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	fetchedChan, err := h.fetch(ctx, params.sqlParam)
-	if err != nil {
-		return nil, err
-	}
-
 	// TODO: SortDocuments requires everything :(
-	var fetchedDocs []*types.Document
-	for fetchedItem := range fetchedChan {
-		if fetchedItem.Err != nil {
-			return nil, fetchedItem.Err
+	resDocs := make([]*types.Document, 0, 16)
+	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		fetchCtx, cancel := context.WithCancel(ctx)
+		defer cancel()
+
+		fetchedChan, err := h.fetch(fetchCtx, tx, params.sqlParam)
+		if err != nil {
+			return err
 		}
 
-		fetchedDocs = append(fetchedDocs, fetchedItem.Docs...)
-	}
+		var fetchedDocs []*types.Document
+		for fetchedItem := range fetchedChan {
+			if fetchedItem.Err != nil {
+				return fetchedItem.Err
+			}
 
-	err = common.SortDocuments(fetchedDocs, params.sort)
+			fetchedDocs = append(fetchedDocs, fetchedItem.Docs...)
+		}
+
+		err = common.SortDocuments(fetchedDocs, params.sort)
+		if err != nil {
+			return err
+		}
+
+		for _, doc := range fetchedDocs {
+			matches, err := common.FilterDocument(doc, params.query)
+			if err != nil {
+				return err
+			}
+
+			if !matches {
+				continue
+			}
+
+			resDocs = append(resDocs, doc)
+		}
+
+		return nil
+	})
+
 	if err != nil {
 		return nil, err
-	}
-
-	resDocs := make([]*types.Document, 0, 16)
-	for _, doc := range fetchedDocs {
-		matches, err := common.FilterDocument(doc, params.query)
-		if err != nil {
-			return nil, err
-		}
-
-		if !matches {
-			continue
-		}
-
-		resDocs = append(resDocs, doc)
 	}
 
 	// findAndModify always works with a single document

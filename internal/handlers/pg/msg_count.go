@@ -108,6 +108,10 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil
 	})
 
+	if err != nil {
+		return nil, err
+	}
+
 	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
 		return nil, err
 	}

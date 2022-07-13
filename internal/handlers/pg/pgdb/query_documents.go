@@ -20,10 +20,9 @@ import (
 	"fmt"
 	"strings"
 
-	"go.uber.org/zap"
-
 	"github.com/jackc/pgtype/pgxtype"
 	"github.com/jackc/pgx/v4"
+	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -52,7 +51,9 @@ type FetchedDocs struct {
 // Fetched documents are sent to the channel as well as errors.
 // The channel is closed when the query is finished.
 // The channel is also closed if an error occurs or context cancellation is received.
-func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier, db, collection, comment string) (<-chan FetchedDocs, error) {
+func (pgPool *Pool) QueryDocuments(
+	ctx context.Context, querier pgxtype.Querier, db, collection, comment string,
+) (<-chan FetchedDocs, error) {
 	fetchedChan := make(chan FetchedDocs, FetchedChannelBufSize)
 
 	// Special case: check if collection exists at all
