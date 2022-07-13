@@ -164,7 +164,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 			return
 		}
 
-		reqConext, reqCancel := context.WithCancel(ctx)
+		reqContext, reqCancel := context.WithCancel(ctx)
 
 		// do not spend time dumping if we are not going to log it
 		if c.l.Desugar().Core().Enabled(zap.DebugLevel) {
@@ -181,7 +181,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 		var resBody wire.MsgBody
 		var resCloseConn bool
 		if c.mode != ProxyMode {
-			resHeader, resBody, resCloseConn = c.route(reqConext, reqHeader, reqBody)
+			resHeader, resBody, resCloseConn = c.route(reqContext, reqHeader, reqBody)
 			diffLogLevel = c.logResponse("Response", resHeader, resBody, resCloseConn)
 		}
 
@@ -193,7 +193,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 				panic("proxy addr was nil")
 			}
 
-			proxyHeader, proxyBody, _ = c.proxy.Route(reqConext, reqHeader, reqBody)
+			proxyHeader, proxyBody, _ = c.proxy.Route(reqContext, reqHeader, reqBody)
 			if level := c.logResponse("Proxy response", proxyHeader, proxyBody, resCloseConn); level != diffLogLevel {
 				// In principle, normal and proxy responses should be logged with the same level
 				// as they behave the same way. If it's not true, there is a bug somewhere, so
