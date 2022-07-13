@@ -17,11 +17,25 @@ If those conditions are met, we send a SELECT query with a WHERE condition.
 Proof of concept for a `{_id: <ObjectID>}` pushdown query, PostgreSQL:
 
 ```sql
-select * from test where (_jsonb->'_id')::jsonb->>'$o' = '507f1f77bcf86cd799439011'; // will it use index?
+-- this will not use these indexes:
+-- CREATE INDEX values_id_idx ON public."values" USING gin ((((_jsonb -> '_id'::text) -> '$o'::text)))
+-- CREATE INDEX values_id_idx ON values (((_jsonb ->> '_id')::text));
+select * from values where (_jsonb->'_id')::jsonb->>'$o' = '507f1f77bcf86cd799439011'; -- no, seq scan will it use index? not that indexes
 ```
 
 ```sql
-select * from test where _jsonb->'_id' = '{"$o":"507f1f77bcf86cd799439011"}'::jsonb; // will that one?
+-- this will not use these indexes:
+-- CREATE INDEX values_id_idx ON public."values" USING gin ((((_jsonb -> '_id'::text) -> '$o'::text)))
+-- CREATE INDEX values_id_idx ON values (((_jsonb ->> '_id')::text));
+select * from values where _jsonb->'_id' = '{"$o":"507f1f77bcf86cd799439011"}'::jsonb; --  will that one? // no, seq scan: conversion from jsonb to text
+```
+
+
+```sql
+-- this will not use these index, but the results are faster
+--- after planned has done it's job https://github.com/FerretDB/FerretDB/pull/847#issuecomment-1182871445:
+-- CREATE INDEX values_id_idx ON public."values" USING gin ((((_jsonb -> '_id'::text) -> '$o'::text)))
+select * from values where ((_jsonb->'_id'::text)->'$o')::text = '507f1f77bcf86cd799439011';
 ```
 
 [PostgreSQL functions](https://www.postgresql.org/docs/14/functions-json.html)
