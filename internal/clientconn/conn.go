@@ -114,7 +114,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 func (c *conn) run(ctx context.Context) (err error) {
 	done := make(chan struct{})
 
-	// handle ctx cancelation
+	// handle ctx cancellation
 	go func() {
 		select {
 		case <-done:
