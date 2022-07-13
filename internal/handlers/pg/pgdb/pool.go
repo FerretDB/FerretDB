@@ -310,7 +310,7 @@ func CreateDatabaseIfNotExists(ctx context.Context, querier pgxtype.Querier, db 
 		err = createSettingsTable(ctx, querier, db)
 	}
 
-	if err == nil {
+	if err == nil || errors.Is(err, ErrAlreadyExist) {
 		return nil
 	}
 
