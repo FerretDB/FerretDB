@@ -1,5 +1,5 @@
 ---
-# New or experimental linters that should pass (or be reconfigured) for new code.
+# New or experimental linters that should pass (or be reconfigured) for new code (compared to `origin/main`).
 
 run:
   timeout: 2m
