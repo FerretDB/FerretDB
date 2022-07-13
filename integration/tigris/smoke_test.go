@@ -15,10 +15,13 @@
 package tigris
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -26,10 +29,37 @@ import (
 
 func TestSmoke(t *testing.T) {
 	t.Parallel()
-	ctx, collection := integration.Setup(t, shareddata.FixedScalars)
 
-	var doc bson.D
-	err := collection.FindOne(ctx, bson.D{{"_id", "double"}}).Decode(&doc)
-	require.NoError(t, err)
-	integration.AssertEqualDocuments(t, bson.D{{"_id", "double"}, {"double_value", 42.13}}, doc)
+	for i, p := range []shareddata.Provider{
+		// shareddata.FixedScalars,
+		shareddata.FixedScalarsIDs,
+	} {
+		i, p := i, p
+		t.Run(fmt.Sprint(i), func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := integration.Setup(t, p)
+
+			doc := p.Docs()[0]
+			id := doc.Map()["_id"]
+			var actualDoc bson.D
+			err := collection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&actualDoc)
+			require.NoError(t, err)
+			integration.AssertEqualDocuments(t, doc, actualDoc)
+
+			updateRes, err := collection.UpdateByID(ctx, id, bson.D{{"$set", bson.D{{"double_value", 43.13}}}})
+			require.NoError(t, err)
+			expectedUpdateRes := &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+			}
+			assert.Equal(t, expectedUpdateRes, updateRes)
+
+			deleteRes, err := collection.DeleteOne(ctx, bson.D{{"_id", id}})
+			require.NoError(t, err)
+			expectedDeleteRes := &mongo.DeleteResult{
+				DeletedCount: 1,
+			}
+			assert.Equal(t, expectedDeleteRes, deleteRes)
+		})
+	}
 }
