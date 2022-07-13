@@ -651,7 +651,7 @@ func (pgPool *Pool) DeleteDocumentsByID(ctx context.Context, db, collection stri
 
 // InsertDocument inserts a document into FerretDB database and collection.
 // If database or collection does not exist, it will be created.
-func (pgPool *Pool) InsertDocument(
+func InsertDocument(
 	ctx context.Context, querier pgxtype.Querier, db, collection string, doc *types.Document,
 ) error {
 	exists, err := CollectionExists(ctx, querier, db, collection)
@@ -660,7 +660,7 @@ func (pgPool *Pool) InsertDocument(
 	}
 
 	if !exists {
-		if err := CreateDatabase(ctx, querier, db); err != nil {
+		if err := CreateDatabaseIfNotExists(ctx, querier, db); err != nil {
 			return lazyerrors.Error(err)
 		}
 
