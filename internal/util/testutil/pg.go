@@ -16,7 +16,7 @@ package testutil
 
 import (
 	"context"
-	"strings"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -62,16 +62,13 @@ func Pool(ctx context.Context, tb testing.TB, opts *PoolOpts, l *zap.Logger) *pg
 	return pool
 }
 
-// SchemaName returns a stable schema name for that test.
+// SchemaName should not be used.
+//
+// Deprecated: use DatabaseName instead.
 func SchemaName(tb testing.TB) string {
 	tb.Helper()
 
-	name := strings.ToLower(tb.Name())
-	name = strings.ReplaceAll(name, "/", "-")
-	name = strings.ReplaceAll(name, " ", "-")
-
-	require.Less(tb, len(name), 64)
-	return name
+	return DatabaseName(tb)
 }
 
 // Schema creates a new FerretDB database / PostgreSQL schema for testing.
@@ -84,7 +81,7 @@ func Schema(ctx context.Context, tb testing.TB, pool *pgdb.Pool) string {
 	tb.Logf("Using schema %q.", schema)
 
 	err := pool.DropDatabase(ctx, schema)
-	if err == pgdb.ErrTableNotExist {
+	if errors.Is(err, pgdb.ErrTableNotExist) {
 		err = nil
 	}
 	require.NoError(tb, err)
@@ -99,7 +96,7 @@ func Schema(ctx context.Context, tb testing.TB, pool *pgdb.Pool) string {
 		}
 
 		err = pool.DropDatabase(ctx, schema)
-		if err == pgdb.ErrTableNotExist { // test might delete it
+		if errors.Is(err, pgdb.ErrTableNotExist) { // test might delete it
 			err = nil
 		}
 		require.NoError(tb, err)
@@ -108,15 +105,13 @@ func Schema(ctx context.Context, tb testing.TB, pool *pgdb.Pool) string {
 	return schema
 }
 
-// TableName returns a stable table name for that test.
+// TableName should not be used.
+//
+// Deprecated: use CollectionName instead.
 func TableName(tb testing.TB) string {
 	tb.Helper()
 
-	name := strings.ToLower(tb.Name())
-	name = strings.ReplaceAll(name, "/", "-")
-	name = strings.ReplaceAll(name, " ", "-")
-
-	return name
+	return CollectionName(tb)
 }
 
 // Table creates FerretDB collection / PostgreSQL table for testing.
@@ -129,12 +124,12 @@ func Table(ctx context.Context, tb testing.TB, pool *pgdb.Pool, db string) strin
 	tb.Logf("Using table %q.", table)
 
 	err := pool.DropCollection(ctx, db, table)
-	if err == pgdb.ErrTableNotExist {
+	if errors.Is(err, pgdb.ErrTableNotExist) {
 		err = nil
 	}
 	require.NoError(tb, err)
 
-	err = pool.CreateCollection(ctx, db, table)
+	err = pool.CreateCollection(ctx, pool, db, table)
 	require.NoError(tb, err)
 
 	return table

@@ -114,7 +114,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 func (c *conn) run(ctx context.Context) (err error) {
 	done := make(chan struct{})
 
-	// handle ctx cancelation
+	// handle ctx cancellation
 	go func() {
 		select {
 		case <-done:
@@ -277,7 +277,8 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	connInfo := &conninfo.ConnInfo{
 		PeerAddr: c.netConn.RemoteAddr(),
 	}
-	ctx = conninfo.WithConnInfo(ctx, connInfo)
+	ctx, cancel := context.WithCancel(conninfo.WithConnInfo(ctx, connInfo))
+	defer cancel()
 
 	resHeader = new(wire.MsgHeader)
 	var err error

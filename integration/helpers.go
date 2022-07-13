@@ -94,7 +94,17 @@ func ConvertDocument(t testing.TB, doc bson.D) *types.Document {
 
 	var res *types.Document
 	require.IsType(t, res, v)
-	res = v.(*types.Document)
+	return v.(*types.Document)
+}
+
+// ConvertDocuments converts given driver's documents slice to FerretDB's []*types.Document.
+func ConvertDocuments(t testing.TB, docs []bson.D) []*types.Document {
+	t.Helper()
+
+	res := make([]*types.Document, len(docs))
+	for i, doc := range docs {
+		res[i] = ConvertDocument(t, doc)
+	}
 	return res
 }
 
@@ -108,6 +118,18 @@ func AssertEqualDocuments(t testing.TB, expected, actual bson.D) bool {
 	expectedDoc := ConvertDocument(t, expected)
 	actualDoc := ConvertDocument(t, actual)
 	return testutil.AssertEqual(t, expectedDoc, actualDoc)
+}
+
+// AssertEqualDocumentsSlice asserts that two document slices are equal in a way that is useful for tests
+// (NaNs are equal, etc).
+//
+// See testutil.AssertEqual for details.
+func AssertEqualDocumentsSlice(t testing.TB, expected, actual []bson.D) bool {
+	t.Helper()
+
+	expectedDocs := ConvertDocuments(t, expected)
+	actualDocs := ConvertDocuments(t, actual)
+	return testutil.AssertEqualSlices(t, expectedDocs, actualDocs)
 }
 
 // AssertEqualError asserts that the expected error is the same as the actual (ignoring the Raw part).
@@ -204,6 +226,33 @@ func AssertEqualAltWriteError(t *testing.T, expected mongo.WriteError, altMessag
 
 	expected.Message = altMessage
 	return assert.Equal(t, expected, a)
+}
+
+// UnsetRaw returns error with all Raw fields unset.
+func UnsetRaw(t testing.TB, err error) error {
+	t.Helper()
+
+	require.Error(t, err)
+
+	switch err := err.(type) {
+	case mongo.CommandError:
+		err.Raw = nil
+		return err
+
+	case mongo.WriteException:
+		if err.WriteConcernError != nil {
+			err.WriteConcernError.Raw = nil
+		}
+		for i, we := range err.WriteErrors {
+			we.Raw = nil
+			err.WriteErrors[i] = we
+		}
+		err.Raw = nil
+		return err
+
+	default:
+		return err
+	}
 }
 
 // CollectIDs returns all _id values from given documents.
