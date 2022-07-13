@@ -124,6 +124,10 @@ jobs:
         with:
           cache-key: lint
 
+      - run:
+          git branch -a
+          git diff --relative main
+
       - name: Run linters
         uses: FerretDB/github-actions/linters@main
 
