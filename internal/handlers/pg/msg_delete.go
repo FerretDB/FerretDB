@@ -97,6 +97,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			for _, doc := range fetchedItem.Docs {
 				matches, err := common.FilterDocument(doc, filter)
 				if err != nil {
+					// TODO: if we exit here, the transaction will hang forever
 					return nil, err
 				}
 
@@ -117,6 +118,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 			rowsDeleted, err := h.delete(ctx, sp, resDocs)
 			if err != nil {
+				// TODO: if we exit here, the transaction will hang forever
 				return nil, err
 			}
 

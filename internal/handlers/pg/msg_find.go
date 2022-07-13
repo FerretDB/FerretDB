@@ -118,6 +118,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		for _, doc := range fetchedItem.Docs {
 			matches, err := common.FilterDocument(doc, filter)
 			if err != nil {
+				// TODO: if we exit here, the transaction will hang forever
 				return nil, err
 			}
 

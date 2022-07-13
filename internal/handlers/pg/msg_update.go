@@ -119,6 +119,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			for _, doc := range fetchedItem.Docs {
 				matches, err := common.FilterDocument(doc, q)
 				if err != nil {
+					// TODO: if we exit here, the transaction will hang forever
 					return nil, err
 				}
 
