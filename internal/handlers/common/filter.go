@@ -82,7 +82,8 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 			}
 
 			if _, ok := value.(*types.Array); ok {
-				return types.Compare(value, filterValue) == types.Equal, nil
+				result := types.Compare(value, filterValue)
+				return types.ContainsCompareResult(result, types.Equal), nil
 			}
 
 			doc = must.NotFail(types.NewDocument(filterKey, value))
@@ -105,7 +106,8 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 		if err != nil {
 			return false, nil // no error - the field is just not present
 		}
-		return types.Compare(docValue, filterValue) == types.Equal, nil
+		result := types.Compare(docValue, filterValue)
+		return types.ContainsCompareResult(result, types.Equal), nil
 
 	case types.Regex:
 		// {field: /regex/}
@@ -126,7 +128,8 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 			return false, nil // no error - the field is just not present
 		}
 
-		return types.Compare(docValue, filterValue) == types.Equal, nil
+		result := types.Compare(docValue, filterValue)
+		return types.ContainsCompareResult(result, types.Equal), nil
 	}
 }
 
@@ -268,7 +271,8 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				}
 				return false, nil
 			default:
-				if types.Compare(fieldValue, exprValue) != types.Equal {
+				result := types.Compare(fieldValue, exprValue)
+				if !types.ContainsCompareResult(result, types.Equal) {
 					return false, nil
 				}
 			}
@@ -284,7 +288,8 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			case types.Regex:
 				return false, NewErrorMsg(ErrBadValue, "Can't have regex as arg to $ne.")
 			default:
-				if types.Compare(fieldValue, exprValue) == types.Equal {
+				result := types.Compare(fieldValue, exprValue)
+				if types.ContainsCompareResult(result, types.Equal) {
 					return false, nil
 				}
 			}
@@ -295,7 +300,8 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewErrorMsg(ErrBadValue, msg)
 			}
-			if types.Compare(fieldValue, exprValue) != types.Greater {
+			result := types.Compare(fieldValue, exprValue)
+			if !types.ContainsCompareResult(result, types.Greater) {
 				return false, nil
 			}
 
@@ -305,7 +311,9 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewErrorMsg(ErrBadValue, msg)
 			}
-			if c := types.Compare(fieldValue, exprValue); c != types.Greater && c != types.Equal {
+			result := types.Compare(fieldValue, exprValue)
+			if !types.ContainsCompareResult(result, types.Equal) &&
+				!types.ContainsCompareResult(result, types.Greater) {
 				return false, nil
 			}
 
@@ -315,7 +323,8 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewErrorMsg(ErrBadValue, msg)
 			}
-			if c := types.Compare(fieldValue, exprValue); c != types.Less {
+			result := types.Compare(fieldValue, exprValue)
+			if !types.ContainsCompareResult(result, types.Less) {
 				return false, nil
 			}
 
@@ -325,7 +334,9 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewErrorMsg(ErrBadValue, msg)
 			}
-			if c := types.Compare(fieldValue, exprValue); c != types.Less && c != types.Equal {
+			result := types.Compare(fieldValue, exprValue)
+			if !types.ContainsCompareResult(result, types.Equal) &&
+				!types.ContainsCompareResult(result, types.Less) {
 				return false, nil
 			}
 
@@ -362,7 +373,8 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 						found = true
 					}
 				default:
-					if types.Compare(fieldValue, arrValue) == types.Equal {
+					result := types.Compare(fieldValue, arrValue)
+					if types.ContainsCompareResult(result, types.Equal) {
 						found = true
 					}
 				}
@@ -405,7 +417,8 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 						found = true
 					}
 				default:
-					if types.Compare(fieldValue, arrValue) == types.Equal {
+					result := types.Compare(fieldValue, arrValue)
+					if types.ContainsCompareResult(result, types.Equal) {
 						found = true
 					}
 				}
@@ -540,7 +553,8 @@ func filterFieldRegex(fieldValue any, regex types.Regex) (bool, error) {
 		}
 
 	case types.Regex:
-		return types.Compare(fieldValue, regex) == types.Equal, nil
+		result := types.Compare(fieldValue, regex)
+		return types.ContainsCompareResult(result, types.Equal), nil
 	}
 
 	return false, nil

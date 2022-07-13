@@ -118,6 +118,8 @@ You can run them with:
 Finally, you may run all tests in parallel with `task test`.
 If tests fail and the output is too confusing, try running them sequentially by using the commands above.
 
+You can also run `task -C 1` to limit the number of concurrent tasks, which is useful for debugging.
+
 In general, we prefer integration tests over unit tests,
 tests using real databases over short tests
 and real objects over mocks.

@@ -42,6 +42,30 @@ func AssertEqual[T types.Type](tb testing.TB, expected, actual T) bool {
 	return assert.Fail(tb, msg)
 }
 
+// AssertEqual asserts that two BSON slices are equal.
+func AssertEqualSlices[T types.Type](tb testing.TB, expected, actual []T) bool {
+	tb.Helper()
+
+	allEqual := len(expected) == len(actual)
+	if allEqual {
+		for i, e := range expected {
+			a := actual[i]
+			if !equal(tb, e, a) {
+				allEqual = false
+				break
+			}
+		}
+	}
+
+	if allEqual {
+		return true
+	}
+
+	expectedS, actualS, diff := diffSlices(tb, expected, actual)
+	msg := fmt.Sprintf("Not equal: \nexpected: %s\nactual  : %s\n%s", expectedS, actualS, diff)
+	return assert.Fail(tb, msg)
+}
+
 // AssertNotEqual asserts that two BSON values are not equal.
 func AssertNotEqual[T types.Type](tb testing.TB, expected, actual T) bool {
 	tb.Helper()
@@ -56,10 +80,52 @@ func AssertNotEqual[T types.Type](tb testing.TB, expected, actual T) bool {
 	return assert.Fail(tb, msg)
 }
 
+// AssertNotEqualSlices asserts that two BSON slices are not equal.
+func AssertNotEqualSlices[T types.Type](tb testing.TB, expected, actual []T) bool {
+	tb.Helper()
+
+	allEqual := len(expected) == len(actual)
+	if allEqual {
+		for i, e := range expected {
+			a := actual[i]
+			if !equal(tb, e, a) {
+				allEqual = false
+				break
+			}
+		}
+	}
+
+	if !allEqual {
+		return true
+	}
+
+	expectedS, actualS, diff := diffSlices(tb, expected, actual)
+	msg := fmt.Sprintf("Unexpected equal: \nexpected: %s\nactual  : %s\n%s", expectedS, actualS, diff)
+	return assert.Fail(tb, msg)
+}
+
 // diffValues returns a readable form of given values and the difference between them.
 func diffValues[T types.Type](tb testing.TB, expected, actual T) (expectedS string, actualS string, diff string) {
 	expectedS = Dump(tb, expected)
 	actualS = Dump(tb, actual)
+
+	var err error
+	diff, err = difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
+		A:        difflib.SplitLines(expectedS),
+		FromFile: "expected",
+		B:        difflib.SplitLines(actualS),
+		ToFile:   "actual",
+		Context:  1,
+	})
+	require.NoError(tb, err)
+
+	return
+}
+
+// diffSlices returns a readable form of given slices and the difference between them.
+func diffSlices[T types.Type](tb testing.TB, expected, actual []T) (expectedS string, actualS string, diff string) {
+	expectedS = DumpSlice(tb, expected)
+	actualS = DumpSlice(tb, actual)
 
 	var err error
 	diff, err = difflib.GetUnifiedDiffString(difflib.UnifiedDiff{

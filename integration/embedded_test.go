@@ -62,9 +62,9 @@ func TestEmbedded(t *testing.T) {
 			}},
 		}},
 	}}
-	collections, err := client.ListDatabaseNames(ctx, filter)
+	names, err := client.ListDatabaseNames(ctx, filter)
 	require.NoError(t, err)
-	assert.Equal(t, []string{"admin", "public"}, collections)
+	assert.Equal(t, []string{"admin", "public"}, names)
 
 	cancel()
 	<-done

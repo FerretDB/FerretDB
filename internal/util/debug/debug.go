@@ -68,7 +68,7 @@ func RunHandler(ctx context.Context, addr string, l *zap.Logger) {
 
 	stopCtx, stopCancel := context.WithTimeout(context.Background(), time.Second)
 	defer stopCancel()
-	s.Shutdown(stopCtx) //nolint:contextcheck // use new context for cancelation
+	s.Shutdown(stopCtx) //nolint:contextcheck // use new context for cancellation
 
 	s.Close()
 }

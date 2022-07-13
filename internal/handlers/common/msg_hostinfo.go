@@ -19,7 +19,6 @@ import (
 	"os"
 	"runtime"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -51,6 +50,16 @@ func MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 		}
 	}
 
+	os := "unknown"
+	switch runtime.GOOS {
+	case "linux":
+		os = "Linux"
+	case "darwin":
+		os = "macOS"
+	case "windows":
+		os = "Windows"
+	}
+
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
@@ -62,7 +71,7 @@ func MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 				"cpuArch", runtime.GOARCH,
 			)),
 			"os", must.NotFail(types.NewDocument(
-				"type", strings.Title(runtime.GOOS), //nolint:staticcheck // good enough for GOOS
+				"type", os,
 				"name", osName,
 				"version", osVersion,
 			)),

@@ -281,18 +281,19 @@ func (d *Document) Set(key string, value any) error {
 	return nil
 }
 
-// Remove the given key, doing nothing if the key does not exist.
-func (d *Document) Remove(key string) {
+// Remove the given key and return its value, or nil if the key does not exist.
+func (d *Document) Remove(key string) any {
 	if _, ok := d.m[key]; !ok {
-		return
+		return nil
 	}
 
+	v := d.m[key]
 	delete(d.m, key)
 
 	for i, k := range d.keys {
 		if k == key {
 			d.keys = append(d.keys[:i], d.keys[i+1:]...)
-			return
+			return v
 		}
 	}
 

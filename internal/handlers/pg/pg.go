@@ -26,8 +26,7 @@ import (
 
 // Handler implements handlers.Interface on top of PostgreSQL.
 type Handler struct {
-	// TODO replace those fields with
-	// opts *NewOpts
+	// TODO replace those fields with embedded *NewOpts to sync with Tigris handler
 	pgPool    *pgdb.Pool
 	l         *zap.Logger
 	startTime time.Time

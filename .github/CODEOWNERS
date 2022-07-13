@@ -2,5 +2,5 @@
 # Order is important; the last matching pattern takes the most precedence.
 
 *                @AlekSi
-/integration/    @AlekSi @rumyantseva
-/internal/       @AlekSi @rumyantseva
+/integration/    @FerretDB/leads
+/internal/       @FerretDB/leads

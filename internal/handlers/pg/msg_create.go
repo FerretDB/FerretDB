@@ -16,6 +16,7 @@ package pg
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -68,14 +69,19 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	if err := h.pgPool.CreateDatabase(ctx, db); err != nil && err != pgdb.ErrAlreadyExist {
+	if err := h.pgPool.CreateDatabase(ctx, db); err != nil && !errors.Is(err, pgdb.ErrAlreadyExist) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err = h.pgPool.CreateCollection(ctx, db, collection); err != nil {
-		if err == pgdb.ErrAlreadyExist {
+	// TODO use a transaction instead of pgPool: https://github.com/FerretDB/FerretDB/issues/866
+	if err = h.pgPool.CreateCollection(ctx, h.pgPool, db, collection); err != nil {
+		if errors.Is(err, pgdb.ErrAlreadyExist) {
 			msg := fmt.Sprintf("Collection already exists. NS: %s.%s", db, collection)
 			return nil, common.NewErrorMsg(common.ErrNamespaceExists, msg)
+		}
+		if errors.Is(err, pgdb.ErrInvalidTableName) {
+			msg := fmt.Sprintf("Invalid collection name: '%s.%s'", db, collection)
+			return nil, common.NewErrorMsg(common.ErrInvalidNamespace, msg)
 		}
 		return nil, lazyerrors.Error(err)
 	}
