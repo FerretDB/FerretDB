@@ -3,10 +3,10 @@ name: Go
 on:
   pull_request:
     types:
+      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
       - opened
       - reopened
       - synchronize
-      - auto_merge_enabled # if GitHub Actions stuck, re-enable auto-merge to force rebuild
   push:
     branches:
       - main
@@ -24,6 +24,8 @@ jobs:
   short-test:
     name: Short test
     runs-on: ubuntu-20.04
+
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
     steps:
       - name: Checkout code
@@ -55,6 +57,8 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-20.04
+
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
     steps:
       - name: Checkout code
@@ -107,7 +111,14 @@ jobs:
     name: golangci-lint
     runs-on: ubuntu-20.04
 
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
         with:
@@ -119,6 +130,8 @@ jobs:
   fuzz-short:
     name: Fuzz short
     runs-on: ubuntu-20.04
+
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
     steps:
       - name: Checkout code
