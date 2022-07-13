@@ -241,7 +241,11 @@ func TestConcurrentCreate(t *testing.T) {
 				}
 
 				errors++
-				assert.ErrorIs(t, err, pgdb.ErrAlreadyExist)
+				if tc.name == "CreateDatabaseIfNotExists" {
+					assert.NoError(t, tc.f())
+				} else {
+					assert.ErrorIs(t, err, pgdb.ErrAlreadyExist)
+				}
 			}
 
 			tc.compareFunc(t, errors)
