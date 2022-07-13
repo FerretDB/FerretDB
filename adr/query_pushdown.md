@@ -16,6 +16,9 @@ If those conditions are met, we send a SELECT query with a WHERE condition.
 
 Proof of concept for a `{_id: <ObjectID>}` pushdown query, PostgreSQL:
 
+Let's just use the first one just because it is first.
+Because GIN index is not used by PostgreSQL in any queries below.
+
 ```sql
 -- this will not use these indexes:
 -- CREATE INDEX values_id_idx ON public."values" USING gin ((((_jsonb -> '_id'::text) -> '$o'::text)))
