@@ -124,7 +124,7 @@ jobs:
         with:
           cache-key: lint
 
-      - run:
+      - run: |
           git branch -a
           git diff --relative main
 
