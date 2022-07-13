@@ -10,6 +10,13 @@ Update connectionStatus to include authInfo.
 
 # Overview of the authentication commands
 
+## Useful links
+
+[MongoDB auth docs](https://github.com/mongodb/mongo/blob/a06bc8bbced8f0c60b94ed784f5f105f2f01ed5d/src/mongo/db/auth/README.md)
+
+[Authentication reference](https://www.mongodb.com/docs/manual/core/authentication/)
+[SCRAM authentication](https://www.mongodb.com/docs/manual/core/security-scram/)
+
 ## Auth Commands
 
 | #   | command      | Description                        |
@@ -40,6 +47,9 @@ Update connectionStatus to include authInfo.
 
 # Tasks
 ## Add support for separate connection pools for each user 
+
+*We will try to not store the username and password*.
+We should try to use PostreSQL's authentication mechanism.
 
 When a client connects with credentials specified in the connection string (username and password), authentication message would be sent to the server (`saslStart`).
 In order to create a new connection pool, we should use the username from the authentication message.
