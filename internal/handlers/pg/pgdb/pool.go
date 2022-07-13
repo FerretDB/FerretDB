@@ -552,54 +552,6 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 	return &res, nil
 }
 
-// QueryDocuments returns a list of documents for given FerretDB database and collection.
-func (pgPool *Pool) QueryDocuments(ctx context.Context, db, collection, comment string) ([]*types.Document, error) {
-	var res []*types.Document
-	err := pgPool.inTransaction(ctx, func(tx pgx.Tx) error {
-		table, err := pgPool.getTableName(ctx, tx, db, collection)
-		if err != nil {
-			return err
-		}
-
-		sql := `SELECT _jsonb `
-		if comment != "" {
-			comment = strings.ReplaceAll(comment, "/*", "/ *")
-			comment = strings.ReplaceAll(comment, "*/", "* /")
-
-			sql += `/* ` + comment + ` */ `
-		}
-
-		sql += `FROM ` + pgx.Identifier{db, table}.Sanitize()
-
-		rows, err := tx.Query(ctx, sql)
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-		defer rows.Close()
-
-		for rows.Next() {
-			var b []byte
-			if err := rows.Scan(&b); err != nil {
-				return lazyerrors.Error(err)
-			}
-
-			doc, err := fjson.Unmarshal(b)
-			if err != nil {
-				return lazyerrors.Error(err)
-			}
-
-			res = append(res, doc.(*types.Document))
-		}
-
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
 // SetDocumentByID sets a document by its ID.
 func (pgPool *Pool) SetDocumentByID(ctx context.Context, db, collection string, id any, doc *types.Document) (int64, error) {
 	var tag pgconn.CommandTag
