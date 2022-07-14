@@ -22,7 +22,6 @@ import (
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgtype/pgxtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/log/zapadapter"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -356,36 +355,6 @@ func (pgPool *Pool) DeleteDocumentsByID(ctx context.Context, db, collection stri
 	}
 
 	return tag.RowsAffected(), nil
-}
-
-// InsertDocument inserts a document into FerretDB database and collection.
-// If database or collection does not exist, it will be created.
-func InsertDocument(ctx context.Context, querier pgxtype.Querier, db, collection string, doc *types.Document) error {
-	exists, err := CollectionExists(ctx, querier, db, collection)
-	if err != nil {
-		return err
-	}
-
-	if !exists {
-		if err := CreateDatabaseIfNotExists(ctx, querier, db); err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		if err := CreateCollection(ctx, querier, db, collection); err != nil && !errors.Is(err, ErrAlreadyExist) {
-			return lazyerrors.Error(err)
-		}
-	}
-
-	table, err := getTableName(ctx, querier, db, collection)
-	if err != nil {
-		return err
-	}
-
-	sql := `INSERT INTO ` + pgx.Identifier{db, table}.Sanitize() +
-		` (_jsonb) VALUES ($1)`
-
-	_, err = querier.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)))
-	return err
 }
 
 // InTransaction wraps the given function f in a transaction.
