@@ -21,6 +21,7 @@ import (
 	"net"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -58,7 +59,7 @@ type SetupOpts struct {
 }
 
 // SetupWithOpts setups the test according to given options,
-// and returns test-specific context (that is cancelled when the test ends), database collection
+// and returns test-specific context (that is canceled when the test ends), database collection
 // and the port of the running server.
 func SetupWithOpts(t *testing.T, opts *SetupOpts) (context.Context, *mongo.Collection, int) {
 	t.Helper()
@@ -165,11 +166,12 @@ func setupListener(t *testing.T, ctx context.Context, logger *zap.Logger) int {
 	}
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		ListenAddr: "127.0.0.1:0",
-		ProxyAddr:  proxyAddr,
-		Mode:       mode,
-		Handler:    h,
-		Logger:     logger,
+		ListenAddr:         "127.0.0.1:0",
+		ProxyAddr:          proxyAddr,
+		Mode:               mode,
+		Handler:            h,
+		Logger:             logger,
+		TestRunCancelDelay: time.Hour, // make it easier to notice missing client's disconnects
 	})
 
 	done := make(chan struct{})
