@@ -155,7 +155,7 @@ func printDiagnosticData(runError error, logger *zap.SugaredLogger) {
 
 	info := version.Get()
 
-	fmt.Printf(`Looks like something went wrong..
+	fmt.Printf(`Looks like something went wrong.
 Please file an issue with all that information below:
 
 	OS: %s
