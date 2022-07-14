@@ -112,3 +112,8 @@ Not in the scope of this task:
 * GSSAPI Kerberos (Not sure would someone use this type of authentication)
 
 This one will allow to restrict authentication mechanisms that could be used with `createUser`.
+
+
+FerretDB starts with something like `postgres://host:1234/db` in a flag (without username and password).
+Someone connections with MongoDB clinet: `mongo://my_username:my_password@host:6789/out_db`.
+FerretDB connections to PostgreSQL on behalf of that user: `postgres://my_username:my_password@host:1234/db`.
