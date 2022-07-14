@@ -45,31 +45,43 @@ Update connectionStatus to include authInfo.
 | 2   | connectionStatus | Returns connection status.                            |
 | 3   | getParameter     | Response should be extended with authentication data. |
 
+## MongoDB's authentication mechanisms
+
+* PLAIN (Relatively easy to implement)
+* SCRAM-SHA-256 (Could be tricky because we need to deal with the user's password hash)
+* SCRAM-SHA-1 (*not sure about this one as PostgreSQL doesn't support it*)
+* X509 (It would be big and hard to implement task)
+* GSSAPI Kerberos (Needs more research on that one)
+
+
 
 # Tasks
 ## Add support for separate connection pools for each user 
 
 *We will try to not store the username and password*.
-We should try to use PostgreSQL's authentication mechanism.
+We should use PostgreSQL's authentication mechanism.
+
+As the first step we will implement PLAIN authentication mechanism.
+
+When FerretDB starts up, it should not connect to PostgreSQL.
+Parse the connection string and strip the username and password if they are present.
 
 When a client connects with credentials specified in the connection string (username and password), authentication message would be sent to the server (`saslStart`).
-In order to create a new connection pool, we should use the username from the authentication message.
+We should handle that message:
+* Check if we already have a connection pool for the user.
+* If we don't, create a new connection pool.
+* Connect to the database with provided credentials.
+* If the connection is successful, send authentication status message to the client
+* If the connection is not successful, send that message to the client.
 
+When a client sends a `saslContinue` message, we should handle it:
 When a client disconnects, we should close the connection pool.
-We should also close the system pool and all user pools when the server is shut down.
-
-To separate connection pools we should:
-* Use current connection pool as the `system` pool (we will use it later to query the database for user's credentials).
-* Handle `saslStart` message.
-* To distinguish between users we should add to the Handler instance a map of connection pools, where the key is the username.
-
-### Questions:
-* How to distinguish between users connected without authentication?
-* Should we use a different connection pool for each user (for example for each host+port pair)?
+We should close all user pools when the server is shut down.
 
 ### Tests:
 * Connect to the server with username and password in connection string twice.
 * Connect to the server with different usernames and passwords.
+* Connect to the server without username and password in connection string.
 
 ## Add support for `createUser` command
 
@@ -88,32 +100,10 @@ Not in the scope of this task:
 
 User data should be stored in the PostgreSQL database (`admin` database?).
 Create a PostgreSQL user with provided credentials and auth mechanisms.
-Grant user access for all databases.
+Grant user access for database specified in command.
 
 ### Tests:
 
 * Create user with username and password.
 * Create user with username and password and mechanisms.
 * Create user with username and password and mechanism that not supported or not exists.
-
-## Add flag `authenticationMechanisms`
-
-**Note:** This one should be discussed with the team.
-
-Add flag `authenticationMechanisms` to the FerretDB server.
-It should be an array of strings, containing the names of the supported authentication mechanisms.
-Possible values are:
-* SCRAM-SHA-256 (Most used)
-* PLAIN (Relatively easy to implement)
-
-Not in the scope of this task:
-* SCRAM-SHA-1 (*not sure about this one as PostgreSQL doesn't support it*)
-* X509 (It would be big and hard to implement task)
-* GSSAPI Kerberos (Not sure would someone use this type of authentication)
-
-This one will allow to restrict authentication mechanisms that could be used with `createUser`.
-
-
-FerretDB starts with something like `postgres://host:1234/db` in a flag (without username and password).
-Someone connections with MongoDB clinet: `mongo://my_username:my_password@host:6789/out_db`.
-FerretDB connections to PostgreSQL on behalf of that user: `postgres://my_username:my_password@host:1234/db`.
