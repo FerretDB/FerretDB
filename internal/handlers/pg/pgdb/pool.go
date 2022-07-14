@@ -201,7 +201,7 @@ func (pgPool *Pool) CreateDatabase(ctx context.Context, db string) error {
 //
 // It returns ErrTableNotExist if schema does not exist.
 //
-// TODO move to function
+// TODO Move to function, deprecate or remove method.
 func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
 	sql := `DROP SCHEMA ` + pgx.Identifier{db}.Sanitize() + ` CASCADE`
 	_, err := pgPool.Exec(ctx, sql)

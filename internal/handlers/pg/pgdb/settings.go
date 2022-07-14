@@ -55,6 +55,7 @@ func createSettingsTable(ctx context.Context, querier pgxtype.Querier, db string
 		return ErrAlreadyExist
 	}
 
+	// TODO use common code for tables/collections: use _jsonb, do not use explicit `CREATE TABLE` SQL there, etc.
 	sql := `CREATE TABLE ` + pgx.Identifier{db, settingsTableName}.Sanitize() + ` (settings jsonb)`
 	_, err = querier.Exec(ctx, sql)
 	if err != nil {
