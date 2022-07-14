@@ -46,10 +46,9 @@ select * from values where ((_jsonb->'_id'::text)->'$o')::text = '507f1f77bcf86c
 
 ## Test
 
-Integrational tests: Provide a new test flag that enables a query pushdown.
+Integration tests: Provide a new test flag that enables a query pushdown.
 Run with and without flag: results must be the same.
-When explain feature will be ready, compare query plan.
-
+When explain feature will be ready, compare the query plan.
 
 ## Tigris
 
