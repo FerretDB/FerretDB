@@ -43,12 +43,13 @@ type Listener struct {
 
 // NewListenerOpts represents listener configuration.
 type NewListenerOpts struct {
-	ListenAddr      string
-	ProxyAddr       string
-	Mode            Mode
-	Handler         handlers.Interface
-	Logger          *zap.Logger
-	TestConnTimeout time.Duration
+	ListenAddr         string
+	ProxyAddr          string
+	Mode               Mode
+	Handler            handlers.Interface
+	Logger             *zap.Logger
+	TestConnTimeout    time.Duration
+	TestRunCancelDelay time.Duration
 }
 
 // NewListener returns a new listener, configured by the NewListenerOpts argument.
@@ -81,8 +82,6 @@ func (l *Listener) Run(ctx context.Context) error {
 		l.listener.Close()
 	}()
 
-	const delay = 3 * time.Second
-
 	var wg sync.WaitGroup
 	for {
 		netConn, err := l.listener.Accept()
@@ -108,7 +107,12 @@ func (l *Listener) Run(ctx context.Context) error {
 		go func() {
 			connID := fmt.Sprintf("%s -> %s", netConn.RemoteAddr(), netConn.LocalAddr())
 
-			runCtx, runCancel := ctxutil.WithDelay(ctx.Done(), delay)
+			// give clients a few seconds to disconnect after ctx is canceled
+			runCancelDelay := l.opts.TestRunCancelDelay
+			if runCancelDelay == 0 {
+				runCancelDelay = 3 * time.Second
+			}
+			runCtx, runCancel := ctxutil.WithDelay(ctx.Done(), runCancelDelay)
 			defer runCancel()
 
 			if l.opts.TestConnTimeout != 0 {
@@ -140,7 +144,7 @@ func (l *Listener) Run(ctx context.Context) error {
 				return
 			}
 
-			e = conn.run(runCtx) //nolint:contextcheck // false positive
+			e = conn.run(runCtx)
 			if e == io.EOF {
 				logger.Info("Connection stopped")
 			} else {
