@@ -43,7 +43,7 @@ Update connectionStatus to include authInfo.
 |-----|------------------|---------------------------------------------|
 | 1   | listCommands     | Returns a list of commands.                 |
 | 2   | connectionStatus | Returns connection status.                  |
-| 3   | adminCommand     | `getParameter` response whould be extended. |
+| 3   | adminCommand     | `getParameter` response should be extended. |
 
 
 # Tasks
