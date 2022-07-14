@@ -59,7 +59,9 @@ But need to check if valaue type if not `ObjectID` (raise error in that case).
 Proof of concept for a `{_id: <ObjectID>}` pushdown query, Tigris:
 
 ```go
-// primary key is always _id
-objectID:= ObjectID{0x62, 0x56, 0xc5, 0xba, 0x0b, 0xad, 0xc0, 0xff, 0xee, 0x00, 0x00, 0x01}
-it, err := db.Read(ctx, "coll1", driver.Filter(`{"_id" : " $o : <ObjectID>"}`), nil)
+var f filter.Expr
+id := types.ObjectID{0x62, 0x56, 0xc5, 0xba, 0x0b, 0xad, 0xc0, 0xff, 0xee, 0x00, 0x00, 0x01}
+f = filter.Eq("_id", tjson.ObjectID(id))
+id.Build()
+it, err := db.Read(ctx, "coll1", f, nil)
 ```
