@@ -140,15 +140,17 @@ func (l *Listener) Run(ctx context.Context) error {
 			}
 			conn, e := newConn(opts)
 			if e != nil {
-				logger.Warn("Failed to create connection", zap.Error(e))
+				logger.Warn("Failed to create connection", zap.String("conn", connID), zap.Error(e))
 				return
 			}
 
+			logger.Info("Connection started", zap.String("conn", connID))
+
 			e = conn.run(runCtx)
 			if e == io.EOF {
-				logger.Info("Connection stopped")
+				logger.Info("Connection stopped", zap.String("conn", connID))
 			} else {
-				logger.Warn("Connection stopped", zap.Error(e))
+				logger.Warn("Connection stopped", zap.String("conn", connID), zap.Error(e))
 			}
 		}()
 	}
