@@ -17,7 +17,6 @@ package testutil
 import (
 	"context"
 	"errors"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -53,6 +52,10 @@ func PoolConnString(tb testing.TB, opts *PoolOpts) string {
 }
 
 // Pool creates a new connection connection pool for testing.
+//
+// TODO move to pg/pgdb tests.
+//
+// Deprecated: do not use in new code.
 func Pool(ctx context.Context, tb testing.TB, opts *PoolOpts, l *zap.Logger) *pgdb.Pool {
 	tb.Helper()
 
@@ -63,16 +66,13 @@ func Pool(ctx context.Context, tb testing.TB, opts *PoolOpts, l *zap.Logger) *pg
 	return pool
 }
 
-// SchemaName returns a stable schema name for that test.
+// SchemaName should not be used.
+//
+// Deprecated: use DatabaseName instead.
 func SchemaName(tb testing.TB) string {
 	tb.Helper()
 
-	name := strings.ToLower(tb.Name())
-	name = strings.ReplaceAll(name, "/", "-")
-	name = strings.ReplaceAll(name, " ", "-")
-
-	require.Less(tb, len(name), 64)
-	return name
+	return DatabaseName(tb)
 }
 
 // Schema creates a new FerretDB database / PostgreSQL schema for testing.
@@ -109,15 +109,13 @@ func Schema(ctx context.Context, tb testing.TB, pool *pgdb.Pool) string {
 	return schema
 }
 
-// TableName returns a stable table name for that test.
+// TableName should not be used.
+//
+// Deprecated: use CollectionName instead.
 func TableName(tb testing.TB) string {
 	tb.Helper()
 
-	name := strings.ToLower(tb.Name())
-	name = strings.ReplaceAll(name, "/", "_")
-	name = strings.ReplaceAll(name, " ", "_")
-
-	return name
+	return CollectionName(tb)
 }
 
 // Table creates FerretDB collection / PostgreSQL table for testing.

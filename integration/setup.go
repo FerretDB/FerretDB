@@ -41,6 +41,10 @@ var (
 	handlerF   = flag.String("handler", "pg", "handler to use for in-process FerretDB")
 	proxyAddrF = flag.String("proxy-addr", "", "proxy to use for in-process FerretDB")
 
+	// Disable noisy setup logs by default.
+	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
+	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
+
 	startupOnce sync.Once
 )
 
@@ -67,13 +71,17 @@ func SetupWithOpts(t *testing.T, opts *SetupOpts) (context.Context, *mongo.Colle
 
 	var ownDatabase bool
 	if opts.DatabaseName == "" {
-		opts.DatabaseName = testutil.SchemaName(t)
+		opts.DatabaseName = testutil.DatabaseName(t)
 		ownDatabase = true
 	}
 
-	logger := zaptest.NewLogger(t, zaptest.Level(zap.DebugLevel))
-
 	ctx, cancel := context.WithCancel(context.Background())
+
+	level := zap.NewAtomicLevelAt(zap.WarnLevel)
+	if *debugSetupF {
+		level = zap.NewAtomicLevelAt(zap.DebugLevel)
+	}
+	logger := zaptest.NewLogger(t, zaptest.Level(level), zaptest.WrapOptions(zap.AddCaller()))
 
 	port := *portF
 	if port == 0 {
@@ -85,7 +93,7 @@ func SetupWithOpts(t *testing.T, opts *SetupOpts) (context.Context, *mongo.Colle
 
 	client := setupClient(t, ctx, port)
 	db := client.Database(opts.DatabaseName)
-	collectionName := testutil.TableName(t)
+	collectionName := testutil.CollectionName(t)
 	collection := db.Collection(collectionName)
 
 	// drop remnants of the previous failed run
@@ -116,11 +124,13 @@ func SetupWithOpts(t *testing.T, opts *SetupOpts) (context.Context, *mongo.Colle
 
 	// insert all provided data
 	for _, provider := range opts.Providers {
-		for _, doc := range provider.Docs() {
-			_, err = collection.InsertOne(ctx, doc)
-			require.NoError(t, err)
-		}
+		docs := provider.Docs()
+		res, err := collection.InsertMany(ctx, shareddata.DocsAny(docs))
+		require.NoError(t, err)
+		require.Len(t, res.InsertedIDs, len(docs))
 	}
+
+	level.SetLevel(*logLevelF)
 
 	return ctx, collection, port
 }

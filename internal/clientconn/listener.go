@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"runtime/pprof"
 	"sync"
 	"time"
 
@@ -74,7 +75,7 @@ func (l *Listener) Run(ctx context.Context) error {
 	close(l.listening)
 	logger.Sugar().Infof("Listening on %s ...", l.Addr())
 
-	// handle ctx cancelation
+	// handle ctx cancellation
 	go func() {
 		<-ctx.Done()
 		l.listener.Close()
@@ -105,17 +106,30 @@ func (l *Listener) Run(ctx context.Context) error {
 
 		// run connection
 		go func() {
+			connID := fmt.Sprintf("%s -> %s", netConn.RemoteAddr(), netConn.LocalAddr())
+
+			runCtx, runCancel := ctxutil.WithDelay(ctx.Done(), delay)
+			defer runCancel()
+
+			if l.opts.TestConnTimeout != 0 {
+				runCtx, runCancel = context.WithTimeout(runCtx, l.opts.TestConnTimeout)
+				defer runCancel()
+			}
+
+			defer pprof.SetGoroutineLabels(runCtx)
+			runCtx = pprof.WithLabels(runCtx, pprof.Labels("conn", connID))
+			pprof.SetGoroutineLabels(runCtx)
+
 			defer func() {
 				netConn.Close()
 				l.metrics.connectedClients.Dec()
 				wg.Done()
 			}()
 
-			prefix := fmt.Sprintf("// %s -> %s ", netConn.RemoteAddr(), netConn.LocalAddr())
 			opts := &newConnOpts{
 				netConn:     netConn,
 				mode:        l.opts.Mode,
-				l:           l.opts.Logger.Named(prefix), // original unnamed logger
+				l:           l.opts.Logger.Named("// " + connID + " "), // derive from the original unnamed logger
 				proxyAddr:   l.opts.ProxyAddr,
 				handler:     l.opts.Handler,
 				connMetrics: l.metrics.connMetrics,
@@ -124,14 +138,6 @@ func (l *Listener) Run(ctx context.Context) error {
 			if e != nil {
 				logger.Warn("Failed to create connection", zap.Error(e))
 				return
-			}
-
-			runCtx, runCancel := ctxutil.WithDelay(ctx.Done(), delay)
-			defer runCancel()
-
-			if l.opts.TestConnTimeout != 0 {
-				runCtx, runCancel = context.WithTimeout(runCtx, l.opts.TestConnTimeout)
-				defer runCancel()
 			}
 
 			e = conn.run(runCtx) //nolint:contextcheck // false positive

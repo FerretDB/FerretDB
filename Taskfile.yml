@@ -59,7 +59,7 @@ tasks:
   env-up-detach:
     cmds:
       - >
-        docker-compose up --always-recreate-deps --build --force-recreate --remove-orphans --renew-anon-volumes --detach
+        docker-compose up --always-recreate-deps --build --force-recreate --remove-orphans --renew-anon-volumes --timeout=0 --detach
         postgres tigris mongodb
 
   env-up:
@@ -76,7 +76,7 @@ tasks:
   env-down:
     desc: "Stop development environment"
     cmds:
-      - docker-compose down --remove-orphans --volumes
+      - docker-compose down --remove-orphans --timeout=0 --volumes
 
   env-data:
     desc: "Fill `test.values` with data for experiments"
@@ -205,7 +205,7 @@ tasks:
       - lint-go-consistent
       - lint-go-consistent-integration
     cmds:
-      - bin/golangci-lint run --config=.golangci-new.yml --new-from-rev=main
+      - bin/golangci-lint run --config=.golangci-new.yml
 
   lint-golangci-lint:
     cmds:
