@@ -471,7 +471,7 @@ func (pgPool *Pool) DropCollection(ctx context.Context, schema, collection strin
 // DropCollection drops FerretDB collection.
 //
 // It returns (possibly wrapped) ErrTableNotExist if schema or table does not exist.
-//  Please use errors.Is to check the error.
+// Please use errors.Is to check the error.
 func DropCollection(ctx context.Context, querier pgxtype.Querier, schema, collection string) error {
 	schemaExists, err := schemaExists(ctx, querier, schema)
 	if err != nil {
