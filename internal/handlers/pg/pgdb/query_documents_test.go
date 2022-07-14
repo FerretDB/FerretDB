@@ -16,6 +16,7 @@
 package pgdb_test
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"github.com/jackc/pgx/v4"
@@ -23,6 +24,7 @@ import (
 	"go.uber.org/zap/zaptest"
 	"golang.org/x/net/context"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -33,9 +35,9 @@ func TestQueryDocuments(t *testing.T) {
 
 	ctx := testutil.Ctx(t)
 
-	pool := testutil.Pool(ctx, t, nil, zaptest.NewLogger(t))
-	dbName := testutil.Schema(ctx, t, pool)
-	collectionName := testutil.Table(ctx, t, pool, dbName)
+	pool := Pool(ctx, t, nil, zaptest.NewLogger(t))
+	dbName := testutil.DatabaseName(t)
+	collectionName := testutil.CollectionName(t)
 
 	cases := []struct {
 		name             string
@@ -80,34 +82,34 @@ func TestQueryDocuments(t *testing.T) {
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			// t.Parallel()
+			t.Parallel()
 
 			for _, doc := range tc.documents {
-				require.NoError(t, pool.InsertDocument(ctx, dbName, tc.collection, doc))
+				require.NoError(t, pgdb.InsertDocument(ctx, pool, dbName, tc.collection, doc))
 			}
 
-			var tx pgx.Tx
-			tx, err := pool.Begin(ctx)
-			require.NoError(t, err)
+			err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
+				fetchedChan, err := pool.QueryDocuments(ctx, tx, dbName, tc.collection, "")
+				require.NoError(t, err)
 
-			fetchedChan, err := pool.QueryDocuments(context.Background(), tx, dbName, tc.collection, "")
-			require.NoError(t, err)
+				iter := 0
+				for {
+					fetched, ok := <-fetchedChan
+					if !ok {
+						break
+					}
 
-			iter := 0
-			for {
-				fetched, ok := <-fetchedChan
-				if !ok {
-					break
+					assert.NoError(t, fetched.Err)
+					assert.Equal(t, tc.docsPerIteration[iter], len(fetched.Docs))
+					iter++
 				}
+				assert.Equal(t, len(tc.docsPerIteration), iter)
 
-				require.NoError(t, fetched.Err)
-				require.Len(t, fetched.Docs, tc.docsPerIteration[iter], "iteration %d", iter)
-				iter++
-			}
-			require.Equal(t, len(tc.docsPerIteration), iter)
+				return nil
+			})
 
-			err = tx.Commit(ctx)
 			require.NoError(t, err)
+
 		})
 	}
 

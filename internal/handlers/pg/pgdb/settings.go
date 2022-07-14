@@ -45,7 +45,7 @@ const (
 // createSettingsTable creates FerretDB settings table if it doesn't exist.
 // Settings table is used to store FerretDB settings like collections names mapping.
 // That table consists of a single document with settings.
-func (pgPool *Pool) createSettingsTable(ctx context.Context, querier pgxtype.Querier, db string) error {
+func createSettingsTable(ctx context.Context, querier pgxtype.Querier, db string) error {
 	tables, err := tables(ctx, querier, db)
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -55,6 +55,7 @@ func (pgPool *Pool) createSettingsTable(ctx context.Context, querier pgxtype.Que
 		return ErrAlreadyExist
 	}
 
+	// TODO use common code for tables/collections: use _jsonb, do not use explicit `CREATE TABLE` SQL there, etc.
 	sql := `CREATE TABLE ` + pgx.Identifier{db, settingsTableName}.Sanitize() + ` (settings jsonb)`
 	_, err = querier.Exec(ctx, sql)
 	if err != nil {
@@ -90,7 +91,7 @@ func (pgPool *Pool) createSettingsTable(ctx context.Context, querier pgxtype.Que
 // getTableName returns the name of the table for given collection or error.
 // If the settings table doesn't exist, it will be created.
 // If the record for collection doesn't exist, it will be created.
-func (pgPool *Pool) getTableName(ctx context.Context, querier pgxtype.Querier, db, collection string) (string, error) {
+func getTableName(ctx context.Context, querier pgxtype.Querier, db, collection string) (string, error) {
 	schemaExists, err := schemaExists(ctx, querier, db)
 	if err != nil {
 		return "", lazyerrors.Error(err)
@@ -106,7 +107,7 @@ func (pgPool *Pool) getTableName(ctx context.Context, querier pgxtype.Querier, d
 	}
 
 	if !slices.Contains(tables, settingsTableName) {
-		err = pgPool.createSettingsTable(ctx, querier, db)
+		err = createSettingsTable(ctx, querier, db)
 		if err != nil {
 			return "", err
 		}
@@ -178,7 +179,7 @@ func updateSettingsTable(ctx context.Context, querier pgxtype.Querier, db string
 }
 
 // removeTableFromSettings removes collection from FerretDB settings table.
-func (pgPool *Pool) removeTableFromSettings(ctx context.Context, querier pgxtype.Querier, db, collection string) error {
+func removeTableFromSettings(ctx context.Context, querier pgxtype.Querier, db, collection string) error {
 	settings, err := getSettingsTable(ctx, querier, db)
 	if err != nil {
 		return lazyerrors.Error(err)

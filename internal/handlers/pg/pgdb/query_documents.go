@@ -71,7 +71,7 @@ func (pgPool *Pool) QueryDocuments(
 		return fetchedChan, nil
 	}
 
-	table, err := pgPool.getTableName(ctx, querier, db, collection)
+	table, err := getTableName(ctx, querier, db, collection)
 	if err != nil {
 		return fetchedChan, lazyerrors.Error(err)
 	}
