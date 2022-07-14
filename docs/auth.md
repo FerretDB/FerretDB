@@ -15,6 +15,7 @@ Update connectionStatus to include authInfo.
 [MongoDB auth docs](https://github.com/mongodb/mongo/blob/a06bc8bbced8f0c60b94ed784f5f105f2f01ed5d/src/mongo/db/auth/README.md)
 
 [Authentication reference](https://www.mongodb.com/docs/manual/core/authentication/)
+
 [SCRAM authentication](https://www.mongodb.com/docs/manual/core/security-scram/)
 
 ## Auth Commands
@@ -33,10 +34,8 @@ Update connectionStatus to include authInfo.
 | 1   | createUser               | Creates user.                          |
 | 2   | dropAllUsersFromDatabase | Deletes all users from a database.     |
 | 3   | dropUser                 | Remove a single user from database.    |
-| 4   | grantRolesToUser         | Grants roles and privileges to a user. |
-| 5   | revokeRolesFromUser      | Removes roles from a user.             |
-| 6   | updateUser               | Updates a user's data.                 |
-| 7   | usersInfo                | Returns information about the users.   |
+| 4   | updateUser               | Updates a user's data.                 |
+| 5   | usersInfo                | Returns information about the users.   |
 
 ## Commands that require authentication
 
@@ -50,7 +49,7 @@ Update connectionStatus to include authInfo.
 ## Add support for separate connection pools for each user 
 
 *We will try to not store the username and password*.
-We should try to use PostreSQL's authentication mechanism.
+We should try to use PostgreSQL's authentication mechanism.
 
 When a client connects with credentials specified in the connection string (username and password), authentication message would be sent to the server (`saslStart`).
 In order to create a new connection pool, we should use the username from the authentication message.
@@ -103,10 +102,12 @@ Grant user access for all databases.
 Add flag `authenticationMechanisms` to the FerretDB server.
 It should be an array of strings, containing the names of the supported authentication mechanisms.
 Possible values are:
+* SCRAM-SHA-256 (Most used)
+* PLAIN (Relatively easy to implement)
+
+Not in the scope of this task:
 * SCRAM-SHA-1 (*not sure about this one as PostgreSQL doesn't support it*)
-* SCRAM-SHA-256
-* X509
-* GSSAPI (Kerberos)
-* PLAIN (LDAP SASL)
+* X509 (It would be big and hard to implement task)
+* GSSAPI Kerberos (Not sure would someone use this type of authentication)
 
 This one will allow to restrict authentication mechanisms that could be used with `createUser`.
