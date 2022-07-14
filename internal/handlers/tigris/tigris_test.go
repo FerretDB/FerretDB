@@ -29,7 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-var url = "localhost:8081"
+var url = "127.0.0.1:8081"
 
 func TestRead(t *testing.T) {
 	ctx := context.TODO()
