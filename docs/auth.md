@@ -39,10 +39,11 @@ Update connectionStatus to include authInfo.
 
 ## Commands that require authentication
 
-| #   | command          | Description                 |
-|-----|------------------|-----------------------------|
-| 1   | listCommands     | Returns a list of commands. |
-| 2   | connectionStatus | Returns connection status.  |
+| #   | command          | Description                                 |
+|-----|------------------|---------------------------------------------|
+| 1   | listCommands     | Returns a list of commands.                 |
+| 2   | connectionStatus | Returns connection status.                  |
+| 3   | adminCommand     | `getParameter` response whould be extended. |
 
 
 # Tasks
