@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"sync"
 
 	"github.com/jackc/pgtype/pgxtype"
 	"github.com/jackc/pgx/v4"
@@ -92,12 +91,7 @@ func (pgPool *Pool) QueryDocuments(
 		return fetchedChan, lazyerrors.Error(err)
 	}
 
-	// TODO: testing mutex to understand where the race is
-	rowsMx := new(sync.Mutex)
 	go func() {
-		rowsMx.Lock()
-		defer rowsMx.Unlock()
-
 		defer close(fetchedChan)
 
 		err := iterateFetch(ctx, fetchedChan, rows)
