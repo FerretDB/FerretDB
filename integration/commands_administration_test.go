@@ -705,6 +705,29 @@ func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
 	assert.InDelta(t, float64(100), must.NotFail(doc.Get("millis")), 100)
 }
 
+func TestCommandsAdministrationDBStats(t *testing.T) {
+	t.Parallel()
+	ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
+
+	var actual bson.D
+	command := bson.D{{"dbStats", int32(1)}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+
+	assert.Equal(t, float64(1), doc.Remove("ok"))
+	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
+	assert.Equal(t, float64(1), doc.Remove("scaleFactor"))
+
+	assert.InDelta(t, int32(1), doc.Remove("collections"), 1)
+	assert.InDelta(t, float64(8192), doc.Remove("dataSize"), 8192)
+	assert.InDelta(t, float64(16384), doc.Remove("totalSize"), 16384)
+
+	// TODO assert.Empty(t, doc.Keys())
+	// https://github.com/FerretDB/FerretDB/issues/727
+}
+
 func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
 	t.Parallel()
 	ctx, collection := Setup(t)
@@ -716,19 +739,16 @@ func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
 
 	doc := ConvertDocument(t, actual)
 
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-	assert.Equal(t, collection.Database().Name(), must.NotFail(doc.Get("db")))
-	assert.InDelta(t, int32(2), must.NotFail(doc.Get("collections")), 1)
-	assert.Equal(t, int32(0), must.NotFail(doc.Get("views")))
-	assert.Equal(t, int32(0), must.NotFail(doc.Get("objects")))
-	assert.Equal(t, float64(0), must.NotFail(doc.Get("avgObjSize")))
-	assert.InDelta(t, float64(8192), must.NotFail(doc.Get("dataSize")), 8192)
+	assert.Equal(t, float64(1), doc.Remove("ok"))
+	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
+	assert.EqualValues(t, float64(1), doc.Remove("scaleFactor")) // TODO use assert.Equal https://github.com/FerretDB/FerretDB/issues/727
 
-	assert.InDelta(t, float64(1), must.NotFail(doc.Get("indexes")), 1)
-	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("indexSize")), 4_096)
+	assert.InDelta(t, int32(1), doc.Remove("collections"), 1)
+	assert.InDelta(t, float64(8192), doc.Remove("dataSize"), 8192)
+	assert.InDelta(t, float64(16384), doc.Remove("totalSize"), 16384)
 
-	assert.InDelta(t, float64(24576), must.NotFail(doc.Get("totalSize")), 16384)
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("scaleFactor")))
+	// TODO assert.Empty(t, doc.Keys())
+	// https://github.com/FerretDB/FerretDB/issues/727
 }
 
 func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
@@ -742,15 +762,39 @@ func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
 
 	doc := ConvertDocument(t, actual)
 
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-	assert.Equal(t, collection.Database().Name(), must.NotFail(doc.Get("db")))
-	assert.InDelta(t, int32(2), must.NotFail(doc.Get("collections")), 1)
-	assert.Equal(t, int32(0), must.NotFail(doc.Get("views")))
-	assert.Equal(t, float64(1000), must.NotFail(doc.Get("scaleFactor")))
+	assert.Equal(t, float64(1), doc.Remove("ok"))
+	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
+	assert.Equal(t, float64(1000), doc.Remove("scaleFactor"))
 
-	assert.InDelta(t, float64(16.384), must.NotFail(doc.Get("dataSize")), 14)
-	assert.InDelta(t, float64(1), must.NotFail(doc.Get("indexes")), 1)
-	assert.InDelta(t, float64(0), must.NotFail(doc.Get("indexSize")), 4060)
+	assert.InDelta(t, int32(1), doc.Remove("collections"), 1)
+	assert.InDelta(t, float64(8192), doc.Remove("dataSize"), 8192)
+	assert.InDelta(t, float64(16384), doc.Remove("totalSize"), 16384)
+
+	// TODO assert.Empty(t, doc.Keys())
+	// https://github.com/FerretDB/FerretDB/issues/727
+}
+
+func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
+	t.Parallel()
+	ctx, collection := Setup(t)
+
+	var actual bson.D
+	command := bson.D{{"dbStats", int32(1)}, {"scale", float64(1_000)}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+
+	assert.Equal(t, float64(1), doc.Remove("ok"))
+	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
+	assert.EqualValues(t, float64(1000), doc.Remove("scaleFactor")) // TODO use assert.Equal https://github.com/FerretDB/FerretDB/issues/727
+
+	assert.InDelta(t, int32(1), doc.Remove("collections"), 1)
+	assert.InDelta(t, float64(8192), doc.Remove("dataSize"), 8192)
+	assert.InDelta(t, float64(16384), doc.Remove("totalSize"), 16384)
+
+	// TODO assert.Empty(t, doc.Keys())
+	// https://github.com/FerretDB/FerretDB/issues/727
 }
 
 func TestCommandsAdministrationServerStatus(t *testing.T) {
