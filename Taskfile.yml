@@ -48,7 +48,7 @@ tasks:
       - go mod verify
 
   init-clean:
-    desc: "Clean all caches and re-install development tools"
+    desc: "Clean all caches, including docker buildx and docker system volumes, and re-installs development tools"
     cmds:
       - docker buildx prune --all
       - docker system prune --all --volumes
