@@ -23,11 +23,23 @@ import (
 
 // Provider is implemented by shared data sets that provide documents.
 type Provider interface {
-	// Docs returns shared data documents. All calls should return the same data.
+	// Docs returns shared data documents.
+	// All calls should return the same set of documents, but may do so in different order.
 	Docs() []bson.D
 }
 
+// DocsAny returns a shallow copy of the documents slice.
+func DocsAny(docs []bson.D) []any {
+	res := make([]any, len(docs))
+	for i, doc := range docs {
+		res[i] = doc
+	}
+	return res
+}
+
 // Docs stores shared data documents as maps.
+//
+// TODO replace constraints.Ordered with comparable.
 type Docs[idType constraints.Ordered] struct {
 	data map[idType]map[string]any
 }
@@ -35,7 +47,7 @@ type Docs[idType constraints.Ordered] struct {
 // Docs implement Provider interface.
 func (docs *Docs[idType]) Docs() []bson.D {
 	ids := maps.Keys(docs.data)
-	slices.Sort(ids)
+	slices.Sort(ids) // TODO remove
 
 	res := make([]bson.D, 0, len(docs.data))
 	for _, id := range ids {
@@ -54,6 +66,8 @@ func (docs *Docs[idType]) Docs() []bson.D {
 }
 
 // Values stores shared data documents as {"_id": key, "value": value} documents.
+//
+// TODO replace constraints.Ordered with comparable.
 type Values[idType constraints.Ordered] struct {
 	data map[idType]any
 }
@@ -61,7 +75,7 @@ type Values[idType constraints.Ordered] struct {
 // Docs implement Provider interface.
 func (values *Values[idType]) Docs() []bson.D {
 	ids := maps.Keys(values.data)
-	slices.Sort(ids)
+	slices.Sort(ids) // TODO remove
 
 	res := make([]bson.D, 0, len(values.data))
 	for _, id := range ids {

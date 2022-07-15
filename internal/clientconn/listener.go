@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"runtime/pprof"
 	"sync"
 	"time"
 
@@ -42,12 +43,13 @@ type Listener struct {
 
 // NewListenerOpts represents listener configuration.
 type NewListenerOpts struct {
-	ListenAddr      string
-	ProxyAddr       string
-	Mode            Mode
-	Handler         handlers.Interface
-	Logger          *zap.Logger
-	TestConnTimeout time.Duration
+	ListenAddr         string
+	ProxyAddr          string
+	Mode               Mode
+	Handler            handlers.Interface
+	Logger             *zap.Logger
+	TestConnTimeout    time.Duration
+	TestRunCancelDelay time.Duration
 }
 
 // NewListener returns a new listener, configured by the NewListenerOpts argument.
@@ -74,13 +76,11 @@ func (l *Listener) Run(ctx context.Context) error {
 	close(l.listening)
 	logger.Sugar().Infof("Listening on %s ...", l.Addr())
 
-	// handle ctx cancelation
+	// handle ctx cancellation
 	go func() {
 		<-ctx.Done()
 		l.listener.Close()
 	}()
-
-	const delay = 3 * time.Second
 
 	var wg sync.WaitGroup
 	for {
@@ -105,17 +105,35 @@ func (l *Listener) Run(ctx context.Context) error {
 
 		// run connection
 		go func() {
+			connID := fmt.Sprintf("%s -> %s", netConn.RemoteAddr(), netConn.LocalAddr())
+
+			// give clients a few seconds to disconnect after ctx is canceled
+			runCancelDelay := l.opts.TestRunCancelDelay
+			if runCancelDelay == 0 {
+				runCancelDelay = 3 * time.Second
+			}
+			runCtx, runCancel := ctxutil.WithDelay(ctx.Done(), runCancelDelay)
+			defer runCancel()
+
+			if l.opts.TestConnTimeout != 0 {
+				runCtx, runCancel = context.WithTimeout(runCtx, l.opts.TestConnTimeout)
+				defer runCancel()
+			}
+
+			defer pprof.SetGoroutineLabels(runCtx)
+			runCtx = pprof.WithLabels(runCtx, pprof.Labels("conn", connID))
+			pprof.SetGoroutineLabels(runCtx)
+
 			defer func() {
 				netConn.Close()
 				l.metrics.connectedClients.Dec()
 				wg.Done()
 			}()
 
-			prefix := fmt.Sprintf("// %s -> %s ", netConn.RemoteAddr(), netConn.LocalAddr())
 			opts := &newConnOpts{
 				netConn:     netConn,
 				mode:        l.opts.Mode,
-				l:           l.opts.Logger.Named(prefix), // original unnamed logger
+				l:           l.opts.Logger.Named("// " + connID + " "), // derive from the original unnamed logger
 				proxyAddr:   l.opts.ProxyAddr,
 				handler:     l.opts.Handler,
 				connMetrics: l.metrics.connMetrics,
@@ -126,15 +144,7 @@ func (l *Listener) Run(ctx context.Context) error {
 				return
 			}
 
-			runCtx, runCancel := ctxutil.WithDelay(ctx.Done(), delay)
-			defer runCancel()
-
-			if l.opts.TestConnTimeout != 0 {
-				runCtx, runCancel = context.WithTimeout(runCtx, l.opts.TestConnTimeout)
-				defer runCancel()
-			}
-
-			e = conn.run(runCtx) //nolint:contextcheck // false positive
+			e = conn.run(runCtx)
 			if e == io.EOF {
 				logger.Info("Connection stopped")
 			} else {
