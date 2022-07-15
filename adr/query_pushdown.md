@@ -41,9 +41,6 @@ select * from values where _jsonb->'_id' = '{"$o":"507f1f77bcf86cd799439011"}'::
 select * from values where ((_jsonb->'_id'::text)->'$o')::text = '507f1f77bcf86cd799439011';
 ```
 
-[PostgreSQL functions](https://www.postgresql.org/docs/14/functions-json.html)
-
-
 ## Test
 
 Integration tests: Provide a new test flag that enables a query pushdown.
@@ -154,3 +151,13 @@ Checks for `_id`:
 
 ## Documentation
 Document behaviour in `README.md`
+
+## Useful links
+
+[PostgreSQL functions](https://www.postgresql.org/docs/14/functions-json.html)
+[MongoDB restrictions on `_id`](https://www.mongodb.com/docs/manual/reference/limits/).
+[MongoDB Comparison/Sort Order](https://www.mongodb.com/docs/manual/reference/bson-type-comparison-order/).
+
+## Questions good to ask
+
+How will we ensure that Tigris/Postgres compares values the same way as MongoDB?
