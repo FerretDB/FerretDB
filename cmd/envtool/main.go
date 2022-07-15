@@ -109,11 +109,11 @@ func waitForTigrisPort(ctx context.Context, logger *zap.SugaredLogger, port uint
 	for ctx.Err() == nil {
 		driver, err := driver.NewDriver(ctx, cfg)
 		if err == nil {
-			if _, err := driver.Info(ctx); err == nil {
-				driver.Close()
+			_, err := driver.Info(ctx)
+			driver.Close()
+			if err == nil {
 				return nil
 			}
-			driver.Close()
 		}
 
 		time.Sleep(time.Second)
