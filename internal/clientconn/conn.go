@@ -114,7 +114,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 func (c *conn) run(ctx context.Context) (err error) {
 	done := make(chan struct{})
 
-	// handle ctx cancelation
+	// handle ctx cancellation
 	go func() {
 		select {
 		case <-done:
@@ -164,11 +164,8 @@ func (c *conn) run(ctx context.Context) (err error) {
 			return
 		}
 
-		// do not spend time dumping if we are not going to log it
-		if c.l.Desugar().Core().Enabled(zap.DebugLevel) {
-			c.l.Debugf("Request header: %s", reqHeader)
-			c.l.Debugf("Request message:\n%s\n\n\n", reqBody)
-		}
+		c.l.Debugf("Request header: %s", reqHeader)
+		c.l.Debugf("Request message:\n%s\n\n\n", reqBody)
 
 		// diffLogLevel provides the level of logging for the diff between the "normal" and "proxy" responses.
 		// It is set to the highest level of logging used to log response.
@@ -277,7 +274,8 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	connInfo := &conninfo.ConnInfo{
 		PeerAddr: c.netConn.RemoteAddr(),
 	}
-	ctx = conninfo.WithConnInfo(ctx, connInfo)
+	ctx, cancel := context.WithCancel(conninfo.WithConnInfo(ctx, connInfo))
+	defer cancel()
 
 	resHeader = new(wire.MsgHeader)
 	var err error

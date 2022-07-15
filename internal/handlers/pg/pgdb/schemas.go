@@ -12,35 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ferretdb
+package pgdb
 
 import (
 	"context"
-	"fmt"
-	"log"
+
+	"github.com/jackc/pgtype/pgxtype"
+
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-func Example() {
-	f, err := New(&Config{
-		Handler:       "pg",
-		PostgreSQLURL: "postgres://postgres@127.0.0.1:5432/ferretdb",
-	})
+// schemaExists returns true if given schema exists.
+func schemaExists(ctx context.Context, querier pgxtype.Querier, db string) (bool, error) {
+	sql := `SELECT nspname FROM pg_catalog.pg_namespace WHERE nspname = $1`
+	rows, err := querier.Query(ctx, sql, db)
 	if err != nil {
-		log.Fatal(err)
+		return false, lazyerrors.Error(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var name string
+		must.NoError(rows.Scan(&name))
+		if name == db {
+			return true, nil
+		}
 	}
 
-	go f.Run(context.Background())
-
-	uri := f.MongoDBURI()
-	fmt.Println(uri)
-
-	// Use MongoDB URI as usual. For example:
-	//
-	// import "go.mongodb.org/mongo-driver/mongo"
-	//
-	// [...]
-	//
-	// mongo.Connect(ctx, options.Client().ApplyURI(uri)
-
-	// Output: mongodb://127.0.0.1:27017/
+	return false, nil
 }

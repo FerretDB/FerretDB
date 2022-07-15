@@ -517,7 +517,56 @@ func TestQueryComparisonGt(t *testing.T) {
 		expectedIDs []any
 		err         *mongo.CommandError
 	}{
-		// TODO document, array
+		// TODO document
+
+		"ArrayEmpty": {
+			value: bson.A{},
+			expectedIDs: []any{
+				"array", "array-embedded", "array-empty-nested", "array-first-embedded", "array-last-embedded",
+				"array-middle-embedded", "array-null", "array-three", "array-three-reverse", "array-two",
+			},
+		},
+		"ArrayOne": {
+			value: bson.A{int32(42)},
+			expectedIDs: []any{
+				"array-embedded", "array-empty-nested", "array-first-embedded", "array-last-embedded",
+				"array-middle-embedded", "array-three", "array-two",
+			},
+		},
+		"Array": {
+			value:       bson.A{int32(42), "foo", nil},
+			expectedIDs: []any{"array-embedded", "array-empty-nested", "array-first-embedded", "array-two"},
+		},
+		"ArrayReverse": {
+			value: bson.A{nil, "foo", int32(42)},
+			expectedIDs: []any{
+				"array", "array-embedded", "array-empty-nested", "array-first-embedded",
+				"array-last-embedded", "array-middle-embedded", "array-three", "array-two",
+			},
+		},
+		"ArrayNull": {
+			value: bson.A{nil},
+			expectedIDs: []any{
+				"array", "array-embedded", "array-empty-nested", "array-first-embedded",
+				"array-last-embedded", "array-middle-embedded", "array-three", "array-three-reverse", "array-two",
+			},
+		},
+		"ArrayEmbedded": {
+			value:       bson.A{bson.A{int32(42), "foo"}, nil},
+			expectedIDs: []any{"array-embedded"},
+		},
+		"LongArrayEmbedded": {
+			value:       bson.A{bson.A{int32(42), "foo"}, nil, "foo"},
+			expectedIDs: []any{"array-embedded"},
+		},
+		"ArraySlice": {
+			value:       bson.A{int32(42), "foo"},
+			expectedIDs: []any{"array-embedded", "array-empty-nested", "array-first-embedded", "array-three", "array-two"},
+		},
+		"ArrayShuffledValues": {
+			value:       bson.A{"foo", nil, int32(42)},
+			expectedIDs: []any{"array-embedded", "array-empty-nested", "array-first-embedded"},
+		},
 
 		"Double": {
 			value: 41.13,
@@ -691,7 +740,59 @@ func TestQueryComparisonGte(t *testing.T) {
 		expectedIDs []any
 		err         *mongo.CommandError
 	}{
-		// TODO document, array
+		// TODO document
+
+		"ArrayEmpty": {
+			value: bson.A{},
+			expectedIDs: []any{
+				"array", "array-embedded", "array-empty", "array-empty-nested", "array-first-embedded",
+				"array-last-embedded", "array-middle-embedded", "array-null", "array-three", "array-three-reverse", "array-two",
+			},
+		},
+		"ArrayOne": {
+			value: bson.A{int32(42)},
+			expectedIDs: []any{
+				"array", "array-embedded", "array-empty-nested", "array-first-embedded", "array-last-embedded",
+				"array-middle-embedded", "array-three", "array-two",
+			},
+		},
+		"Array": {
+			value:       bson.A{int32(42), "foo", nil},
+			expectedIDs: []any{"array-embedded", "array-empty-nested", "array-first-embedded", "array-three", "array-two"},
+		},
+		"ArrayReverse": {
+			value: bson.A{nil, "foo", int32(42)},
+			expectedIDs: []any{
+				"array", "array-embedded", "array-empty-nested", "array-first-embedded", "array-last-embedded",
+				"array-middle-embedded", "array-three", "array-three-reverse", "array-two",
+			},
+		},
+		"ArrayNull": {
+			value: bson.A{nil},
+			expectedIDs: []any{
+				"array", "array-embedded", "array-empty-nested", "array-first-embedded", "array-last-embedded",
+				"array-middle-embedded", "array-null", "array-three", "array-three-reverse", "array-two",
+			},
+		},
+		"ArrayEmbedded": {
+			value:       bson.A{bson.A{int32(42), "foo"}, nil},
+			expectedIDs: []any{"array-embedded", "array-first-embedded"},
+		},
+		"LongArrayEmbedded": {
+			value:       bson.A{bson.A{int32(42), "foo"}, nil, "foo"},
+			expectedIDs: []any{"array-embedded"},
+		},
+		"ArraySlice": {
+			value: bson.A{int32(42), "foo"},
+			expectedIDs: []any{
+				"array-embedded", "array-empty-nested", "array-first-embedded", "array-last-embedded",
+				"array-middle-embedded", "array-three", "array-two",
+			},
+		},
+		"ArrayShuffledValues": {
+			value:       bson.A{"foo", nil, int32(42)},
+			expectedIDs: []any{"array-embedded", "array-empty-nested", "array-first-embedded"},
+		},
 
 		"Double": {
 			value: 42.13,
@@ -855,7 +956,62 @@ func TestQueryComparisonLt(t *testing.T) {
 		expectedIDs []any
 		err         *mongo.CommandError
 	}{
-		// TODO document, array
+		// TODO document
+
+		"ArrayEmpty": {
+			value:       bson.A{},
+			expectedIDs: []any{},
+		},
+		"ArrayOne": {
+			value: bson.A{int32(42)},
+			expectedIDs: []any{
+				"array-empty", "array-empty-nested", "array-last-embedded", "array-middle-embedded",
+				"array-null", "array-three-reverse",
+			},
+		},
+		"Array": {
+			value: bson.A{int32(42), "foo", nil},
+			expectedIDs: []any{
+				"array", "array-empty", "array-empty-nested", "array-first-embedded", "array-last-embedded",
+				"array-middle-embedded", "array-null", "array-three-reverse",
+			},
+		},
+		"ArrayReverse": {
+			value:       bson.A{nil, "foo", int32(42)},
+			expectedIDs: []any{"array-empty", "array-empty-nested", "array-null"},
+		},
+		"ArrayNull": {
+			value:       bson.A{nil},
+			expectedIDs: []any{"array-empty", "array-empty-nested"},
+		},
+		"ArrayEmbedded": {
+			value: bson.A{bson.A{int32(42), "foo"}, nil},
+			expectedIDs: []any{
+				"array", "array-embedded", "array-empty", "array-empty-nested", "array-first-embedded", "array-last-embedded",
+				"array-middle-embedded", "array-null", "array-three", "array-three-reverse", "array-two",
+			},
+		},
+		"LongArrayEmbedded": {
+			value: bson.A{bson.A{int32(42), "foo"}, nil, "foo"},
+			expectedIDs: []any{
+				"array", "array-embedded", "array-empty", "array-empty-nested", "array-first-embedded", "array-last-embedded",
+				"array-middle-embedded", "array-null", "array-three", "array-three-reverse", "array-two",
+			},
+		},
+		"ArraySlice": {
+			value: bson.A{int32(42), "foo"},
+			expectedIDs: []any{
+				"array", "array-empty", "array-empty-nested", "array-last-embedded", "array-middle-embedded",
+				"array-null", "array-three-reverse",
+			},
+		},
+		"ArrayShuffledValues": {
+			value: bson.A{"foo", nil, int32(42)},
+			expectedIDs: []any{
+				"array", "array-embedded", "array-empty", "array-empty-nested", "array-first-embedded", "array-last-embedded",
+				"array-middle-embedded", "array-null", "array-three", "array-three-reverse", "array-two",
+			},
+		},
 
 		"Double": {
 			value: 43.13,
@@ -1025,7 +1181,62 @@ func TestQueryComparisonLte(t *testing.T) {
 		expectedIDs []any
 		err         *mongo.CommandError
 	}{
-		// TODO document, array
+		// TODO document
+
+		"ArrayEmpty": {
+			value:       bson.A{},
+			expectedIDs: []any{"array-empty", "array-empty-nested"},
+		},
+		"ArrayOne": {
+			value: bson.A{int32(42)},
+			expectedIDs: []any{
+				"array", "array-empty", "array-empty-nested", "array-last-embedded", "array-middle-embedded",
+				"array-null", "array-three-reverse",
+			},
+		},
+		"Array": {
+			value: bson.A{int32(42), "foo", nil},
+			expectedIDs: []any{
+				"array", "array-empty", "array-empty-nested", "array-first-embedded", "array-last-embedded",
+				"array-middle-embedded", "array-null", "array-three", "array-three-reverse",
+			},
+		},
+		"ArrayReverse": {
+			value:       bson.A{nil, "foo", int32(42)},
+			expectedIDs: []any{"array-empty", "array-empty-nested", "array-null", "array-three-reverse"},
+		},
+		"ArrayNull": {
+			value:       bson.A{nil},
+			expectedIDs: []any{"array-empty", "array-empty-nested", "array-null"},
+		},
+		"ArrayEmbedded": {
+			value: bson.A{bson.A{int32(42), "foo"}, nil},
+			expectedIDs: []any{
+				"array", "array-embedded", "array-empty", "array-empty-nested", "array-first-embedded",
+				"array-last-embedded", "array-middle-embedded", "array-null", "array-three", "array-three-reverse", "array-two",
+			},
+		},
+		"LongArrayEmbedded": {
+			value: bson.A{bson.A{int32(42), "foo"}, nil, "foo"},
+			expectedIDs: []any{
+				"array", "array-embedded", "array-empty", "array-empty-nested", "array-first-embedded",
+				"array-last-embedded", "array-middle-embedded", "array-null", "array-three", "array-three-reverse", "array-two",
+			},
+		},
+		"ArraySlice": {
+			value: bson.A{int32(42), "foo"},
+			expectedIDs: []any{
+				"array", "array-empty", "array-empty-nested", "array-first-embedded", "array-last-embedded",
+				"array-middle-embedded", "array-null", "array-three-reverse",
+			},
+		},
+		"ArrayShuffledValues": {
+			value: bson.A{"foo", nil, int32(42)},
+			expectedIDs: []any{
+				"array", "array-embedded", "array-empty", "array-empty-nested", "array-first-embedded",
+				"array-last-embedded", "array-middle-embedded", "array-null", "array-three", "array-three-reverse", "array-two",
+			},
+		},
 
 		"Double": {
 			value: 42.13,
