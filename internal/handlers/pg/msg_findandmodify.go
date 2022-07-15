@@ -61,13 +61,16 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	// TODO: SortDocuments requires everything :(
 	resDocs := make([]*types.Document, 0, 16)
 	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		fetchCtx, cancel := context.WithCancel(ctx)
-		defer cancel()
-
-		fetchedChan, err := h.fetch(fetchCtx, tx, params.sqlParam)
+		fetchedChan, err := h.fetch(ctx, tx, params.sqlParam)
 		if err != nil {
 			return err
 		}
+		defer func() {
+			// Drain the channel to prevent leaking goroutines.
+			// TODO Offer a better design instead of channels: https://github.com/FerretDB/FerretDB/issues/898.
+			for range fetchedChan {
+			}
+		}()
 
 		var fetchedDocs []*types.Document
 		for fetchedItem := range fetchedChan {

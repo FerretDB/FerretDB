@@ -108,13 +108,16 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		resDocs := make([]*types.Document, 0, 16)
 		err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-			fetchCtx, cancel := context.WithCancel(ctx)
-			defer cancel()
-
-			fetchedChan, err := h.fetch(fetchCtx, tx, sp)
+			fetchedChan, err := h.fetch(ctx, tx, sp)
 			if err != nil {
 				return err
 			}
+			defer func() {
+				// Drain the channel to prevent leaking goroutines.
+				// TODO Offer a better design instead of channels: https://github.com/FerretDB/FerretDB/issues/898.
+				for range fetchedChan {
+				}
+			}()
 
 			for fetchedItem := range fetchedChan {
 				if fetchedItem.Err != nil {
