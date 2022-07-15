@@ -58,6 +58,8 @@ Update connectionStatus to include authInfo.
 # Tasks
 ## Add support for separate connection pools for each user 
 
+We will add support for Tigris authentication once it would be clear enough.
+
 *We will try to not store the username and password*.
 We should use PostgreSQL's authentication mechanism.
 
@@ -89,6 +91,8 @@ Add support for the `createUser` command with the following parameters:
 * createUser
 * pwd
 * mechanisms
+
+We will support only PLAIN mechanism for now.
 
 Not in the scope of this task:
 * customData
