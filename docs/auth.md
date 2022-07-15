@@ -39,11 +39,12 @@ Update connectionStatus to include authInfo.
 
 ## Commands that require authentication
 
-| #   | command          | Description                                           |
-|-----|------------------|-------------------------------------------------------|
-| 1   | listCommands     | Returns a list of commands.                           |
-| 2   | connectionStatus | Returns connection status.                            |
-| 3   | getParameter     | Response should be extended with authentication data. |
+| #    | command          | Description                                           |
+|------|------------------|-------------------------------------------------------|
+| 1    | listCommands     | Returns a list of commands.                           |
+| 2    | connectionStatus | Returns connection status.                            |
+| 3    | getParameter     | Response should be extended with authentication data. |
+| 4    | serverStatus |                                                       |
 
 ## MongoDB's authentication mechanisms
 
@@ -76,7 +77,8 @@ We should handle that message:
 * If the connection is successful, send authentication status message to the client
 * If the connection is not successful, send that message to the client.
 
-When a client sends a `saslContinue` message, we should handle it:
+`saslContinue` would not be supported for now.
+
 When a client disconnects, we should close the connection pool.
 We should close all user pools when the server is shut down.
 
