@@ -16,7 +16,6 @@
 package pgdb_test
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/jackc/pgx/v4"
@@ -36,9 +35,16 @@ func TestQueryDocuments(t *testing.T) {
 
 	ctx := testutil.Ctx(t)
 
-	pool := Pool(ctx, t, nil, zaptest.NewLogger(t))
+	pool := getPool(ctx, t, nil, zaptest.NewLogger(t))
 	dbName := testutil.DatabaseName(t)
 	collectionName := testutil.CollectionName(t)
+
+	t.Cleanup(func() {
+		pool.DropDatabase(ctx, dbName)
+	})
+
+	pool.DropDatabase(ctx, dbName)
+	require.NoError(t, pgdb.CreateDatabase(ctx, pool, dbName))
 
 	cases := []struct {
 		name             string
@@ -85,23 +91,11 @@ func TestQueryDocuments(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			err := pgdb.DropCollection(ctx, pool, dbName, tc.collection)
-			if err != nil && !errors.Is(err, pgdb.ErrTableNotExist) {
-				t.Fatal(err)
-			}
-
-			t.Cleanup(func() {
-				err := pgdb.DropCollection(ctx, pool, dbName, tc.collection)
-				if err != nil && !errors.Is(err, pgdb.ErrTableNotExist) {
-					t.Fatal(err)
+			err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
+				for _, doc := range tc.documents {
+					require.NoError(t, pgdb.InsertDocument(ctx, tx, dbName, tc.collection, doc))
 				}
-			})
 
-			for _, doc := range tc.documents {
-				require.NoError(t, pgdb.InsertDocument(ctx, pool, dbName, tc.collection, doc))
-			}
-
-			err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
 				fetchedChan, err := pool.QueryDocuments(ctx, tx, dbName, tc.collection, "")
 				require.NoError(t, err)
 
@@ -122,21 +116,20 @@ func TestQueryDocuments(t *testing.T) {
 			})
 
 			require.NoError(t, err)
-
 		})
 	}
 
 	// Special case: cancel context before reading from channel.
 	/*t.Run("cancel_context", func(t *testing.T) {
 		for i := 1; i <= pgdb.FetchedChannelBufSize*pgdb.FetchedSliceCapacity+1; i++ {
-			require.NoError(t, pool.InsertDocument(
+			require.NoError(t, getPool.InsertDocument(
 				ctx, dbName, collectionName+"_cancel",
 				must.NotFail(types.NewDocument("id", fmt.Sprintf("%d", i))),
 			))
 		}
 
 		ctx, cancel := context.WithCancel(context.Background())
-		fetchedChan, err := pool.QueryDocuments(ctx, pool, dbName, collectionName+"_cancel", "")
+		fetchedChan, err := getPool.QueryDocuments(ctx, getPool, dbName, collectionName+"_cancel", "")
 		cancel()
 		require.NoError(t, err)
 

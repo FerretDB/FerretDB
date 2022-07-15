@@ -42,10 +42,10 @@ const (
 	localePOSIX = "POSIX"
 )
 
-// Pool represents PostgreSQL concurrency-safe connection pool.
+// Pool represents PostgreSQL concurrency-safe connection getPool.
 type Pool struct {
 	*pgxpool.Pool
-	logger *zap.Logger // TODO remove, use Pool.Config().ConnConfig.Logger instead
+	logger *zap.Logger // TODO remove, use getPool.Config().ConnConfig.Logger instead
 }
 
 // DBStats describes statistics for a database.
@@ -59,7 +59,7 @@ type DBStats struct {
 	CountIndexes int32
 }
 
-// NewPool returns a new concurrency-safe connection pool.
+// NewPool returns a new concurrency-safe connection getPool.
 //
 // Passed context is used only by the first checking connection.
 // Canceling it after that function returns does nothing.
@@ -84,7 +84,7 @@ func NewPool(ctx context.Context, connString string, logger *zap.Logger, lazy bo
 
 	// try to log everything; logger's configuration will skip extra levels if needed
 	config.ConnConfig.LogLevel = pgx.LogLevelTrace
-	config.ConnConfig.Logger = zapadapter.NewLogger(logger.Named("pgdb.Pool"))
+	config.ConnConfig.Logger = zapadapter.NewLogger(logger.Named("pgdb.getPool"))
 
 	p, err := pgxpool.ConnectConfig(ctx, config)
 	if err != nil {
@@ -93,7 +93,7 @@ func NewPool(ctx context.Context, connString string, logger *zap.Logger, lazy bo
 
 	res := &Pool{
 		Pool:   p,
-		logger: logger.Named("pgdb.Pool"),
+		logger: logger.Named("pgdb.getPool"),
 	}
 
 	if !lazy {
@@ -123,32 +123,32 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 
 	rows, err := pgPool.Query(ctx, "SHOW ALL")
 	if err != nil {
-		return fmt.Errorf("pgdb.Pool.checkConnection: %w", err)
+		return fmt.Errorf("pgdb.getPool.checkConnection: %w", err)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		var name, setting, description string
 		if err := rows.Scan(&name, &setting, &description); err != nil {
-			return fmt.Errorf("pgdb.Pool.checkConnection: %w", err)
+			return fmt.Errorf("pgdb.getPool.checkConnection: %w", err)
 		}
 
 		switch name {
 		case "server_encoding":
 			if setting != encUTF8 {
-				return fmt.Errorf("pgdb.Pool.checkConnection: %q is %q, want %q", name, setting, encUTF8)
+				return fmt.Errorf("pgdb.getPool.checkConnection: %q is %q, want %q", name, setting, encUTF8)
 			}
 		case "client_encoding":
 			if setting != encUTF8 {
-				return fmt.Errorf("pgdb.Pool.checkConnection: %q is %q, want %q", name, setting, encUTF8)
+				return fmt.Errorf("pgdb.getPool.checkConnection: %q is %q, want %q", name, setting, encUTF8)
 			}
 		case "lc_collate":
 			if setting != localeC && setting != localePOSIX && !IsValidUTF8Locale(setting) {
-				return fmt.Errorf("pgdb.Pool.checkConnection: %q is %q", name, setting)
+				return fmt.Errorf("pgdb.getPool.checkConnection: %q is %q", name, setting)
 			}
 		case "lc_ctype":
 			if setting != localeC && setting != localePOSIX && !IsValidUTF8Locale(setting) {
-				return fmt.Errorf("pgdb.Pool.checkConnection: %q is %q", name, setting)
+				return fmt.Errorf("pgdb.getPool.checkConnection: %q is %q", name, setting)
 			}
 		default:
 			continue
@@ -163,7 +163,7 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 	}
 
 	if err := rows.Err(); err != nil {
-		return fmt.Errorf("pgdb.Pool.checkConnection: %w", err)
+		return fmt.Errorf("pgdb.getPool.checkConnection: %w", err)
 	}
 
 	return nil
