@@ -93,6 +93,7 @@ func (pgPool *Pool) QueryDocuments(
 
 	go func() {
 		defer close(fetchedChan)
+		defer rows.Close()
 
 		err := iterateFetch(ctx, fetchedChan, rows)
 		switch {
