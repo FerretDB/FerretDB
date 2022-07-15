@@ -753,8 +753,8 @@ func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 	// https://github.com/FerretDB/FerretDB/issues/727
 }
 
+//nolint:paralleltest // we test a global server status
 func TestCommandsAdministrationServerStatus(t *testing.T) {
-	t.Parallel()
 	ctx, collection := Setup(t)
 
 	var actual bson.D
@@ -779,13 +779,12 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	assert.GreaterOrEqual(t, must.NotFail(doc.Get("uptimeMillis")), int64(0))
 	assert.GreaterOrEqual(t, must.NotFail(doc.Get("uptimeEstimate")), int64(0))
 
-	expectedLocalTime := ConvertDocument(t, bson.D{{"localTime", primitive.NewDateTimeFromTime(time.Now())}})
-	testutil.CompareAndSetByPathTime(t, expectedLocalTime, doc, time.Duration(2*time.Second), types.NewPathFromString("localTime"))
+	assert.WithinDuration(t, time.Now(), must.NotFail(doc.Get("localTime")).(time.Time), 2*time.Second)
 
 	catalogStats, ok := must.NotFail(doc.Get("catalogStats")).(*types.Document)
 	assert.True(t, ok)
 
-	assert.InDelta(t, float64(51), must.NotFail(catalogStats.Get("collections")), 50)
+	assert.InDelta(t, float64(1), must.NotFail(catalogStats.Get("collections")), 1)
 	assert.InDelta(t, float64(3), must.NotFail(catalogStats.Get("internalCollections")), 3)
 
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("capped")))
