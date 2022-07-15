@@ -1,6 +1,9 @@
 ---
 version: 3
 
+env:
+  GORACE: halt_on_error=1,history_size=2
+
 vars:
   BENCHTIME: 5s
   FUZZTIME: 15s
