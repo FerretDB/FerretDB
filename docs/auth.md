@@ -44,7 +44,7 @@ Update connectionStatus to include authInfo.
 | 1    | listCommands     | Returns a list of commands.                           |
 | 2    | connectionStatus | Returns connection status.                            |
 | 3    | getParameter     | Response should be extended with authentication data. |
-| 4    | serverStatus |                                                       |
+| 4    | serverStatus     | Should return auth info.                              |
 
 ## MongoDB's authentication mechanisms
 
