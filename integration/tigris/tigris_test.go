@@ -32,9 +32,15 @@ import (
 var url = "127.0.0.1:8081"
 
 func TestRead(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	drv, err := driver.NewDriver(ctx, &config.Driver{URL: url})
+	if err != nil {
+		panic(err)
+	}
+
+	list, err := drv.ListDatabases(ctx)
+	fmt.Printf("%#v", list)
 	if err != nil {
 		panic(err)
 	}
