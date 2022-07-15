@@ -36,9 +36,9 @@ func TestEnvData(t *testing.T) {
 
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
 	for _, provider := range providers {
-		for _, doc := range provider.Docs() {
-			_, err = collection.InsertOne(ctx, doc)
-			require.NoError(t, err)
-		}
+		docs := provider.Docs()
+		res, err := collection.InsertMany(ctx, shareddata.DocsAny(docs))
+		require.NoError(t, err)
+		require.Len(t, res.InsertedIDs, len(docs))
 	}
 }

@@ -18,7 +18,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v4"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -94,9 +97,11 @@ func (h *Handler) insert(ctx context.Context, sp sqlParam, doc any) error {
 		)
 	}
 
-	if err := h.pgPool.InsertDocument(ctx, sp.db, sp.collection, d); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	return nil
+	err := h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		if err := pgdb.InsertDocument(ctx, tx, sp.db, sp.collection, d); err != nil {
+			return lazyerrors.Error(err)
+		}
+		return nil
+	})
+	return err
 }
