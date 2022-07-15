@@ -86,9 +86,6 @@ func newConn(opts *newConnOpts) (*conn, error) {
 		panic("handler required")
 	}
 
-	prefix := fmt.Sprintf("// %s -> %s ", opts.netConn.RemoteAddr(), opts.netConn.LocalAddr())
-	l := opts.l.Named(prefix)
-
 	var p *proxy.Router
 	if opts.mode != NormalMode {
 		var err error
@@ -100,7 +97,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	return &conn{
 		netConn: opts.netConn,
 		mode:    opts.mode,
-		l:       l.Sugar(),
+		l:       opts.l.Sugar(),
 		h:       opts.handler,
 		m:       opts.connMetrics,
 		proxy:   p,
