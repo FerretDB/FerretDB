@@ -2,7 +2,7 @@
 # Linters that should pass for all code.
 
 run:
-  timeout: 2m
+  timeout: 3m
 
 linters-settings:
   # asciicheck
