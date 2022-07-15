@@ -50,6 +50,8 @@ tasks:
   init-clean:
     desc: "Clean all caches and re-install development tools"
     cmds:
+      - docker buildx prune --all
+      - docker system prune --all --volumes
       - bin/golangci-lint cache clean
       - go clean -cache -testcache -modcache -fuzzcache
       - task: init
