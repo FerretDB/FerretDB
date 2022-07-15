@@ -16,10 +16,11 @@
 package pgdb_test
 
 import (
-	"github.com/stretchr/testify/assert"
+	"errors"
 	"testing"
 
 	"github.com/jackc/pgx/v4"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 	"golang.org/x/net/context"
@@ -84,11 +85,23 @@ func TestQueryDocuments(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
+			err := pgdb.DropCollection(ctx, pool, dbName, tc.collection)
+			if err != nil && !errors.Is(err, pgdb.ErrTableNotExist) {
+				t.Fatal(err)
+			}
+
+			t.Cleanup(func() {
+				err := pgdb.DropCollection(ctx, pool, dbName, tc.collection)
+				if err != nil && !errors.Is(err, pgdb.ErrTableNotExist) {
+					t.Fatal(err)
+				}
+			})
+
 			for _, doc := range tc.documents {
 				require.NoError(t, pgdb.InsertDocument(ctx, pool, dbName, tc.collection, doc))
 			}
 
-			err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
 				fetchedChan, err := pool.QueryDocuments(ctx, tx, dbName, tc.collection, "")
 				require.NoError(t, err)
 

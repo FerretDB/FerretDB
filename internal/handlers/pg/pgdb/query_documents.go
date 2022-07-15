@@ -144,8 +144,8 @@ func iterateFetch(ctx context.Context, fetched chan FetchedDocs, rows pgx.Rows) 
 
 		if allFetched {
 			if err := rows.Err(); err != nil {
-				if err := writeFetched(ctx, fetched, FetchedDocs{Err: lazyerrors.Error(err)}); err != nil {
-					return err
+				if ferr := writeFetched(ctx, fetched, FetchedDocs{Err: lazyerrors.Error(err)}); ferr != nil {
+					return ferr
 				}
 			}
 
