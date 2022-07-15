@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/tjson"
@@ -89,7 +88,7 @@ func (h *Handler) insert(ctx context.Context, fp fetchParam, doc *types.Document
 	// TODO https://github.com/FerretDB/FerretDB/issues/787
 	err := h.driver.CreateDatabase(ctx, fp.db)
 	if err != nil {
-		h.L.Warn("CreateDatabase", zap.Error(err))
+		h.L.Sugar().Warnf("Failed to CreateDatabase: %+v", err)
 	}
 
 	schema, err := tjson.DocumentSchema(doc)
@@ -103,7 +102,7 @@ func (h *Handler) insert(ctx context.Context, fp fetchParam, doc *types.Document
 
 	err = h.driver.UseDatabase(fp.db).CreateOrUpdateCollection(ctx, fp.collection, b)
 	if err != nil {
-		h.L.Warn("CreateOrUpdateCollection", zap.Error(err))
+		h.L.Sugar().Warnf("Failed to CreateOrUpdateCollection: %+v", err)
 	}
 
 	b, err = tjson.Marshal(doc)
