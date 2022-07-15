@@ -16,9 +16,9 @@
 package pgdb_test
 
 import (
+	"fmt"
 	"testing"
 
-	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
@@ -91,45 +91,46 @@ func TestQueryDocuments(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
-				for _, doc := range tc.documents {
-					require.NoError(t, pgdb.InsertDocument(ctx, tx, dbName, tc.collection, doc))
-				}
-
-				fetchedChan, err := pool.QueryDocuments(ctx, tx, dbName, tc.collection, "")
-				require.NoError(t, err)
-
-				iter := 0
-				for {
-					fetched, ok := <-fetchedChan
-					if !ok {
-						break
-					}
-
-					assert.NoError(t, fetched.Err)
-					assert.Equal(t, tc.docsPerIteration[iter], len(fetched.Docs))
-					iter++
-				}
-				assert.Equal(t, len(tc.docsPerIteration), iter)
-
-				return nil
-			})
-
+			tx, err := pool.Begin(ctx)
 			require.NoError(t, err)
+
+			for _, doc := range tc.documents {
+				require.NoError(t, pgdb.InsertDocument(ctx, tx, dbName, tc.collection, doc))
+			}
+
+			fetchedChan, err := pool.QueryDocuments(ctx, tx, dbName, tc.collection, "")
+			require.NoError(t, err)
+
+			iter := 0
+			for {
+				fetched, ok := <-fetchedChan
+				if !ok {
+					break
+				}
+
+				assert.NoError(t, fetched.Err)
+				assert.Equal(t, tc.docsPerIteration[iter], len(fetched.Docs))
+				iter++
+			}
+			assert.Equal(t, len(tc.docsPerIteration), iter)
+
+			require.NoError(t, tx.Commit(ctx))
 		})
 	}
 
 	// Special case: cancel context before reading from channel.
-	/*t.Run("cancel_context", func(t *testing.T) {
+	t.Run("cancel_context", func(t *testing.T) {
+		tx, err := pool.Begin(ctx)
+		require.NoError(t, err)
+
 		for i := 1; i <= pgdb.FetchedChannelBufSize*pgdb.FetchedSliceCapacity+1; i++ {
-			require.NoError(t, getPool.InsertDocument(
-				ctx, dbName, collectionName+"_cancel",
+			require.NoError(t, pgdb.InsertDocument(ctx, tx, dbName, collectionName+"_cancel",
 				must.NotFail(types.NewDocument("id", fmt.Sprintf("%d", i))),
 			))
 		}
 
 		ctx, cancel := context.WithCancel(context.Background())
-		fetchedChan, err := getPool.QueryDocuments(ctx, getPool, dbName, collectionName+"_cancel", "")
+		fetchedChan, err := pool.QueryDocuments(ctx, pool, dbName, collectionName+"_cancel", "")
 		cancel()
 		require.NoError(t, err)
 
@@ -144,7 +145,9 @@ func TestQueryDocuments(t *testing.T) {
 			countDocs += len(fetched.Docs)
 		}
 		require.Less(t, countDocs, pgdb.FetchedChannelBufSize*pgdb.FetchedSliceCapacity+1)
-	})*/
+
+		require.ErrorIs(t, tx.Rollback(ctx), context.Canceled)
+	})
 
 	// Special case: querying a non-existing collection.
 	t.Run("non-existing_collection", func(t *testing.T) {
@@ -158,7 +161,6 @@ func TestQueryDocuments(t *testing.T) {
 		require.Nil(t, doc.Docs)
 		require.Nil(t, doc.Err)
 
-		err = tx.Commit(ctx)
-		require.NoError(t, err)
+		require.NoError(t, tx.Commit(ctx))
 	})
 }
