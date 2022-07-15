@@ -87,7 +87,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		resDocs := make([]*types.Document, 0, 16)
 		err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-			fetchedChan, err := h.fetch(ctx, tx, sp)
+			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp.db, sp.collection, sp.comment)
 			if err != nil {
 				return err
 			}

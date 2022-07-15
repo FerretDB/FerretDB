@@ -61,7 +61,9 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	// TODO: SortDocuments requires everything :(
 	resDocs := make([]*types.Document, 0, 16)
 	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		fetchedChan, err := h.fetch(ctx, tx, params.sqlParam)
+		fetchedChan, err := h.pgPool.QueryDocuments(
+			ctx, tx, params.sqlParam.db, params.sqlParam.collection, params.sqlParam.comment,
+		)
 		if err != nil {
 			return err
 		}
