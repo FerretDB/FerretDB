@@ -39,47 +39,13 @@ func TestRead(t *testing.T) {
 		panic(err)
 	}
 
-	list, err := drv.ListDatabases(ctx)
-	fmt.Printf("%#v", list)
-	if err != nil {
-		panic(err)
-	}
-
-	err = drv.CreateDatabase(ctx, "db1")
-	if err != nil {
-		panic(err)
-	}
-
-	doc, err := types.NewDocument(
-		"_id", types.ObjectID{0x00, 0x01, 0x02, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c},
-		"string", "foo",
-		"int32", int32(42),
-		"int64", int64(123),
-		"binary", types.Binary{Subtype: types.BinaryUser, B: []byte{0x42}},
-	)
-	if err != nil {
-		panic(err)
-	}
-	schema, err := tjson.DocumentSchema(doc)
-	if err != nil {
-		panic(err)
-	}
-	schema.Title = "coll1"
-	b := must.NotFail(schema.Marshal())
 	db := drv.UseDatabase("db1")
-	err = db.CreateOrUpdateCollection(ctx, "coll1", b)
-	if err != nil {
-		panic(err)
-	}
-	b, err = tjson.Marshal(doc)
-	if err != nil {
-		panic(err)
-	}
-	_, err = db.Insert(ctx, "coll1", []driver.Document{b})
+	_, err = db.Insert(ctx, "coll1", []driver.Document{[]byte(`{"$k":["_id","int32"],"_id":"AAECBAUGBwgJCgsM","int32":42}`)})
 	if err != nil {
 		panic(err)
 	}
 
+	doc, _ := types.NewDocument("_id", types.ObjectID{0x00, 0x01, 0x02, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c})
 	id := must.NotFail(doc.Get("_id")).(types.ObjectID)
 	f := must.NotFail(filter.Eq("_id", tjson.ObjectID(id)).Build())
 	it, err := db.Read(ctx, "coll1", f, nil)
@@ -89,9 +55,11 @@ func TestRead(t *testing.T) {
 
 	var tdoc driver.Document
 	for it.Next(&tdoc) {
+		fmt.Println("found:")
 		fmt.Printf("%s\n", string(tdoc))
 	}
 	if err := it.Err(); err != nil {
 		panic(err)
 	}
+	t.FailNow()
 }
