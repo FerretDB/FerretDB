@@ -58,7 +58,8 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	// TODO: SortDocuments requires everything :(
+	// TODO This is not very optimal as we need to fetch everything from the database,
+	// TODO and having a channel makes it even slower. Consider a fix: https://github.com/FerretDB/FerretDB/issues/898.
 	resDocs := make([]*types.Document, 0, 16)
 	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		fetchedChan, err := h.pgPool.QueryDocuments(
