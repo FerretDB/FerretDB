@@ -156,10 +156,10 @@ func TestQueryDocuments(t *testing.T) {
 
 		fetchedChan, err := pool.QueryDocuments(context.Background(), tx, dbName, collectionName+"_non-existing", "")
 		require.NoError(t, err)
-		doc, ok := <-fetchedChan
+		res, ok := <-fetchedChan
 		require.False(t, ok)
-		require.Nil(t, doc.Docs)
-		require.Nil(t, doc.Err)
+		require.Nil(t, res.Docs)
+		require.Nil(t, res.Err)
 
 		require.NoError(t, tx.Commit(ctx))
 	})
