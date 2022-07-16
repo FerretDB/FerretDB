@@ -46,10 +46,12 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	err = h.pgPool.DropCollection(ctx, db, collection)
-	if err != nil && !errors.Is(err, pgdb.ErrSchemaNotExist) {
-		if errors.Is(err, pgdb.ErrTableNotExist) {
-			return nil, common.NewErrorMsg(common.ErrNamespaceNotFound, "ns not found")
-		}
+	switch {
+	case err == nil:
+		// nothing
+	case errors.Is(err, pgdb.ErrSchemaNotExist), errors.Is(err, pgdb.ErrTableNotExist):
+		return nil, common.NewErrorMsg(common.ErrNamespaceNotFound, "ns not found")
+	default:
 		return nil, lazyerrors.Error(err)
 	}
 

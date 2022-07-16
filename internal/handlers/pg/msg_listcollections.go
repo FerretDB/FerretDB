@@ -16,8 +16,10 @@ package pg
 
 import (
 	"context"
+	"errors"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -54,7 +56,7 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 	}
 
 	names, err := h.pgPool.Collections(ctx, db)
-	if err != nil {
+	if err != nil && !errors.Is(err, pgdb.ErrSchemaNotExist) {
 		return nil, lazyerrors.Error(err)
 	}
 
