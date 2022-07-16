@@ -148,7 +148,7 @@ func CreateCollection(ctx context.Context, querier pgxtype.Querier, db, collecti
 	}
 
 	switch pgErr.Code {
-	case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject:
+	case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject, pgerrcode.DuplicateTable:
 		// https://www.postgresql.org/message-id/CA+TgmoZAdYVtwBfp1FL2sMZbiHCWT4UPrzRLNnX1Nb30Ku3-gg@mail.gmail.com
 		// Reproducible by integration tests.
 		return ErrAlreadyExist
