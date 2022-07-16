@@ -11,7 +11,7 @@ on:
       # - assigned
       # - unassigned
       # - labeled
-      # - unlabeled
+      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
       - opened
       - edited
       # - closed
@@ -23,7 +23,7 @@ on:
       # - unlocked
       # - review_requested
       # - review_request_removed
-      - auto_merge_enabled # if GitHub Actions stuck, re-enable auto-merge to force rebuild
+      # - auto_merge_enabled
       # - auto_merge_disabled
 
 # Stop pending and in-progress jobs of this workflow.
@@ -44,6 +44,8 @@ jobs:
   conform-pr:
     name: Conform PR
     runs-on: ubuntu-20.04
+
+    if: github.event_name != 'pull_request_target' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
     steps:
       # Warning! Be careful about changing the steps here as it might cause some security problems

@@ -105,16 +105,15 @@ func waitForTigrisPort(ctx context.Context, logger *zap.SugaredLogger, port uint
 	cfg := &config.Driver{
 		URL: fmt.Sprintf("127.0.0.1:%d", port),
 	}
-	driver, err := driver.NewDriver(ctx, cfg)
-	if err != nil {
-		return err
-	}
-	defer driver.Close()
 
 	for ctx.Err() == nil {
-		_, err := driver.Info(ctx)
+		driver, err := driver.NewDriver(ctx, cfg)
 		if err == nil {
-			return nil
+			_, err = driver.Info(ctx)
+			driver.Close()
+			if err == nil {
+				return nil
+			}
 		}
 
 		time.Sleep(time.Second)
@@ -155,7 +154,7 @@ func printDiagnosticData(runError error, logger *zap.SugaredLogger) {
 
 	info := version.Get()
 
-	fmt.Printf(`Looks like something went wrong..
+	fmt.Printf(`Looks like something went wrong.
 Please file an issue with all that information below:
 
 	OS: %s

@@ -1,6 +1,9 @@
 ---
 version: 3
 
+env:
+  GORACE: halt_on_error=1,history_size=2
+
 vars:
   BENCHTIME: 5s
   FUZZTIME: 15s
@@ -45,8 +48,10 @@ tasks:
       - go mod verify
 
   init-clean:
-    desc: "Clean all caches and re-install development tools"
+    desc: "Clean all caches, including docker buildx and docker system volumes, and re-install development tools"
     cmds:
+      - docker buildx prune --all
+      - docker system prune --all --volumes
       - bin/golangci-lint cache clean
       - go clean -cache -testcache -modcache -fuzzcache
       - task: init
@@ -59,7 +64,7 @@ tasks:
   env-up-detach:
     cmds:
       - >
-        docker-compose up --always-recreate-deps --build --force-recreate --remove-orphans --renew-anon-volumes --detach
+        docker-compose up --always-recreate-deps --build --force-recreate --remove-orphans --renew-anon-volumes --timeout=0 --detach
         postgres tigris mongodb
 
   env-up:
@@ -76,7 +81,7 @@ tasks:
   env-down:
     desc: "Stop development environment"
     cmds:
-      - docker-compose down --remove-orphans --volumes
+      - docker-compose down --remove-orphans --timeout=0 --volumes
 
   env-data:
     desc: "Fill `test.values` with data for experiments"
@@ -205,7 +210,7 @@ tasks:
       - lint-go-consistent
       - lint-go-consistent-integration
     cmds:
-      - bin/golangci-lint run --config=.golangci-new.yml --new-from-rev=main
+      - bin/golangci-lint run --config=.golangci-new.yml
 
   lint-golangci-lint:
     cmds:
