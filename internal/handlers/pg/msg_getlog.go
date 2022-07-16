@@ -59,7 +59,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	case "global":
-		log, err := RequirRecordsLog(zapcore.DebugLevel)
+		log, err := logging.RequireRecordsLog(zapcore.DebugLevel)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -119,30 +119,4 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	return &reply, nil
-}
-
-// RequirRecordsLog returns an array of records from logging buffer with given level.
-func RequirRecordsLog(level zapcore.Level) (*types.Array, error) {
-	entries := logging.RecentEntries.Get(level)
-	log := new(types.Array)
-	for _, e := range entries {
-		b, err := json.Marshal(map[string]any{
-			"t": map[string]time.Time{
-				"$date": e.Time,
-			},
-			"l":   e.Level,
-			"ln":  e.LoggerName,
-			"msg": e.Message,
-			"c":   e.Caller,
-			"s":   e.Stack,
-		})
-		if err != nil {
-			return nil, err
-		}
-		if err = log.Append(string(b)); err != nil {
-			return nil, err
-		}
-	}
-
-	return log, nil
 }

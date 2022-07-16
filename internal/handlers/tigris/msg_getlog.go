@@ -23,9 +23,9 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/version"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -58,7 +58,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	case "global":
-		log, err := pg.RequirRecordsLog(zapcore.DebugLevel)
+		log, err := logging.RequireRecordsLog(zapcore.DebugLevel)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -69,13 +69,10 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	case "startupWarnings":
-		//		var pv string
 		info, err := h.driver.Info(ctx)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
-		// pv, _, _ = strings.Cut(pv, " ")
-		// mv := version.Get()
 
 		var log types.Array
 		for _, line := range []string{

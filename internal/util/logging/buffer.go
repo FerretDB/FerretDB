@@ -15,9 +15,12 @@
 package logging
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
+	"time"
 
+	"github.com/FerretDB/FerretDB/internal/types"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -69,4 +72,30 @@ func (l *circularBuffer) Get(level zapcore.Level) []*zapcore.Entry {
 	}
 
 	return entries
+}
+
+// RequirRecordsLog returns an array of records from logging buffer with given level.
+func RequireRecordsLog(level zapcore.Level) (*types.Array, error) {
+	entries := RecentEntries.Get(level)
+	log := new(types.Array)
+	for _, e := range entries {
+		b, err := json.Marshal(map[string]any{
+			"t": map[string]time.Time{
+				"$date": e.Time,
+			},
+			"l":   e.Level,
+			"ln":  e.LoggerName,
+			"msg": e.Message,
+			"c":   e.Caller,
+			"s":   e.Stack,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if err = log.Append(string(b)); err != nil {
+			return nil, err
+		}
+	}
+
+	return log, nil
 }
