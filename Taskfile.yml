@@ -293,30 +293,23 @@ tasks:
       COMMIT:
         sh: cat internal/util/version/gen/commit.txt
         
-  build:
-    deps: [gen-version]
-    cmds:
-      - go build -v -o ./bin/ ./cmd/ferretdb
-
-
   nfpm_deb:
-    deps: [build]
+    deps: [build-testcover]
     dir: build/deb
     cmds:
-      - ../../bin/nfpm pkg --config ../../.nfpm.yml --packager deb --target ferretdb_${FERRETDB_VERSION}.deb
+      - ../../bin/nfpm pkg --config ../../.nfpm.yml --packager deb --target ferretdb_${VERSION}.deb
     env:
-      FERRETDB_VERSION:
-        sh: git describe --tags --dirty
-
+      VERSION:
+        sh: cat ../../internal/util/version/gen/version.txt
 
   nfpm_rpm:
-    deps: [build]
+    deps: [build-testcover]
     dir: build/rpm
     cmds:
-      - ../../bin/nfpm pkg --config ../../.nfpm.yml --packager rpm --target ferretdb_${FERRETDB_VERSION}.rpm
+      - ../../bin/nfpm pkg --config ../../.nfpm.yml --packager rpm --target ferretdb_${VERSION}.rpm
     env:
-      FERRETDB_VERSION:
-        sh: git describe --tags --dirty
+      VERSION:
+        sh: cat ../../internal/util/version/gen/version.txt
 
   packager:
     cmds:

@@ -10,5 +10,5 @@ description: "it is an open source proxy,which converts MongoDB 5.0+ wire protoc
 homepage: "http://ferretdb.com"
 license: Apache License 2
 contents:
-  - src: ../../bin/ferretdb
+  - src: ../../bin/ferretdb-testcover
     dst: /usr/bin/ferretdb
