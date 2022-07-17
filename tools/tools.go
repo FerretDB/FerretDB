@@ -23,6 +23,7 @@ import (
 	_ "github.com/BurntSushi/go-sumtype"
 	_ "github.com/go-task/task/v3/cmd/task"
 	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
+	_ "github.com/goreleaser/nfpm/v2/cmd/nfpm"
 	_ "github.com/quasilyte/go-consistent"
 	_ "github.com/reviewdog/reviewdog/cmd/reviewdog"
 	_ "golang.org/x/perf/cmd/benchstat"
@@ -42,6 +43,7 @@ import (
 //go:generate go build -v -o ../bin/ github.com/BurntSushi/go-sumtype
 //go:generate go build -v -o ../bin/ github.com/go-task/task/v3/cmd/task
 //go:generate go build -v -o ../bin/ github.com/golangci/golangci-lint/cmd/golangci-lint
+//go:generate go build -v -o ../bin/ github.com/goreleaser/nfpm/v2/cmd/nfpm
 //go:generate go build -v -o ../bin/ github.com/quasilyte/go-consistent
 //go:generate go build -v -o ../bin/ github.com/reviewdog/reviewdog/cmd/reviewdog
 //go:generate go build -v -o ../bin/ golang.org/x/perf/cmd/benchstat
