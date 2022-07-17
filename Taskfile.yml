@@ -292,3 +292,26 @@ tasks:
         sh: cat internal/util/version/gen/version.txt
       COMMIT:
         sh: cat internal/util/version/gen/commit.txt
+        
+  nfpm_deb:
+    deps: [build-testcover]
+    dir: build/deb
+    cmds:
+      - ../../bin/nfpm pkg --config ../../.nfpm.yml --packager deb --target ferretdb_${VERSION}.deb
+    env:
+      VERSION:
+        sh: cat ../../internal/util/version/gen/version.txt
+
+  nfpm_rpm:
+    deps: [build-testcover]
+    dir: build/rpm
+    cmds:
+      - ../../bin/nfpm pkg --config ../../.nfpm.yml --packager rpm --target ferretdb_${VERSION}.rpm
+    env:
+      VERSION:
+        sh: cat ../../internal/util/version/gen/version.txt
+
+  packager:
+    cmds:
+      - task: nfpm_deb
+      - task: nfpm_rpm
