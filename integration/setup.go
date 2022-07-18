@@ -103,10 +103,6 @@ func SetupWithOpts(t *testing.T, opts *SetupOpts) (context.Context, *mongo.Colle
 		_ = db.Drop(ctx)
 	}
 
-	// create collection explicitly in case there are no docs to insert
-	err := db.CreateCollection(ctx, collectionName)
-	require.NoError(t, err)
-
 	// delete collection and (possibly) database unless test failed
 	t.Cleanup(func() {
 		if t.Failed() {
@@ -114,7 +110,7 @@ func SetupWithOpts(t *testing.T, opts *SetupOpts) (context.Context, *mongo.Colle
 			return
 		}
 
-		err = collection.Drop(ctx)
+		err := collection.Drop(ctx)
 		require.NoError(t, err)
 
 		if ownDatabase {
