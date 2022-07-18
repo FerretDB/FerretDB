@@ -525,7 +525,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 			t.Parallel()
 
 			var actual bson.D
-			err := s.Collection.Database().RunCommand(s.Ctx, tc.command).Decode(&actual)
+			err := s.TargetCollection.Database().RunCommand(s.Ctx, tc.command).Decode(&actual)
 
 			if tc.err != nil {
 				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
@@ -799,10 +799,10 @@ func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
 	t.Parallel()
 
 	s := SetupWithOpts(t, nil)
-	collection1 := s.Collection
-	databaseName := s.Collection.Database().Name()
-	collectionName := s.Collection.Name()
-	collection2 := setupClient(t, s.Ctx, s.Port).Database(databaseName).Collection(collectionName)
+	collection1 := s.TargetCollection
+	databaseName := s.TargetCollection.Database().Name()
+	collectionName := s.TargetCollection.Name()
+	collection2 := setupClient(t, s.Ctx, s.TargetPort).Database(databaseName).Collection(collectionName)
 
 	var ports []string
 	for _, collection := range []*mongo.Collection{collection1, collection2} {

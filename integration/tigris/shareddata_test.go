@@ -30,7 +30,7 @@ func TestEnvData(t *testing.T) {
 	s := integration.SetupWithOpts(t, &integration.SetupOpts{
 		DatabaseName: "test",
 	})
-	collection := s.Collection.Database().Collection("values")
+	collection := s.TargetCollection.Database().Collection("values")
 
 	err := collection.Drop(s.Ctx)
 	require.NoError(t, err)

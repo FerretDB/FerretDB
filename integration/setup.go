@@ -39,7 +39,7 @@ import (
 )
 
 var (
-	portF       = flag.Int("port", 0, "first system's port for tests; if 0, in-process FerretDB is used")
+	targetPortF = flag.Int("target-port", 0, "target system's port for tests; if 0, in-process FerretDB is used")
 	proxyAddrF  = flag.String("proxy-addr", "", "proxy to use for in-process FerretDB")
 	handlerF    = flag.String("handler", "pg", "handler to use for in-process FerretDB")
 	compatPortF = flag.Int("compat-port", 37017, "second system's port for compatibility tests; if 0, they are skipped")
@@ -68,8 +68,8 @@ type SetupOpts struct {
 // SetupResult represents setup results.
 type SetupResult struct {
 	Ctx              context.Context
-	Collection       *mongo.Collection
-	Port             uint16
+	TargetCollection *mongo.Collection
+	TargetPort       uint16
 	CompatCollection *mongo.Collection
 	CompatPort       uint16
 }
@@ -96,7 +96,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	}
 	logger := zaptest.NewLogger(tb, zaptest.Level(level), zaptest.WrapOptions(zap.AddCaller()))
 
-	port := *portF
+	port := *targetPortF
 	if port == 0 {
 		port = setupListener(tb, ctx, logger)
 	}
@@ -121,8 +121,8 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 
 	return &SetupResult{
 		Ctx:              ctx,
-		Collection:       collection,
-		Port:             uint16(port),
+		TargetCollection: collection,
+		TargetPort:       uint16(port),
 		CompatCollection: compatCollection,
 		CompatPort:       uint16(compatPort),
 	}
@@ -135,7 +135,7 @@ func Setup(tb testing.TB, providers ...shareddata.Provider) (context.Context, *m
 	s := SetupWithOpts(tb, &SetupOpts{
 		Providers: providers,
 	})
-	return s.Ctx, s.Collection
+	return s.Ctx, s.TargetCollection
 }
 
 // SetupCompat setups compatibility test with specified data providers.
@@ -146,7 +146,7 @@ func SetupCompat(tb testing.TB, providers ...shareddata.Provider) (context.Conte
 		CompatTest: true,
 		Providers:  providers,
 	})
-	return s.Ctx, s.Collection, s.CompatCollection
+	return s.Ctx, s.TargetCollection, s.CompatCollection
 }
 
 // setupListener starts in-process FerretDB server that runs until ctx is done,

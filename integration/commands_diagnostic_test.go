@@ -30,7 +30,7 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 	})
 
 	var actual bson.D
-	err := s.Collection.Database().RunCommand(s.Ctx, bson.D{{"getLog", "startupWarnings"}}).Decode(&actual)
+	err := s.TargetCollection.Database().RunCommand(s.Ctx, bson.D{{"getLog", "startupWarnings"}}).Decode(&actual)
 	require.NoError(t, err)
 
 	m := actual.Map()
