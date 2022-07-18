@@ -123,32 +123,32 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 
 	rows, err := pgPool.Query(ctx, "SHOW ALL")
 	if err != nil {
-		return fmt.Errorf("pgdb.getPool.checkConnection: %w", err)
+		return fmt.Errorf("pgdb.checkConnection: %w", err)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		var name, setting, description string
 		if err := rows.Scan(&name, &setting, &description); err != nil {
-			return fmt.Errorf("pgdb.getPool.checkConnection: %w", err)
+			return fmt.Errorf("pgdb.checkConnection: %w", err)
 		}
 
 		switch name {
 		case "server_encoding":
 			if setting != encUTF8 {
-				return fmt.Errorf("pgdb.getPool.checkConnection: %q is %q, want %q", name, setting, encUTF8)
+				return fmt.Errorf("pgdb.checkConnection: %q is %q, want %q", name, setting, encUTF8)
 			}
 		case "client_encoding":
 			if setting != encUTF8 {
-				return fmt.Errorf("pgdb.getPool.checkConnection: %q is %q, want %q", name, setting, encUTF8)
+				return fmt.Errorf("pgdb.checkConnection: %q is %q, want %q", name, setting, encUTF8)
 			}
 		case "lc_collate":
 			if setting != localeC && setting != localePOSIX && !IsValidUTF8Locale(setting) {
-				return fmt.Errorf("pgdb.getPool.checkConnection: %q is %q", name, setting)
+				return fmt.Errorf("pgdb.checkConnection: %q is %q", name, setting)
 			}
 		case "lc_ctype":
 			if setting != localeC && setting != localePOSIX && !IsValidUTF8Locale(setting) {
-				return fmt.Errorf("pgdb.getPool.checkConnection: %q is %q", name, setting)
+				return fmt.Errorf("pgdb.checkConnection: %q is %q", name, setting)
 			}
 		default:
 			continue
@@ -163,7 +163,7 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 	}
 
 	if err := rows.Err(); err != nil {
-		return fmt.Errorf("pgdb.getPool.checkConnection: %w", err)
+		return fmt.Errorf("pgdb.checkConnection: %w", err)
 	}
 
 	return nil
