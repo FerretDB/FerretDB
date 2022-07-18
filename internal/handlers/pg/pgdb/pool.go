@@ -84,7 +84,7 @@ func NewPool(ctx context.Context, connString string, logger *zap.Logger, lazy bo
 
 	// try to log everything; logger's configuration will skip extra levels if needed
 	config.ConnConfig.LogLevel = pgx.LogLevelTrace
-	config.ConnConfig.Logger = zapadapter.NewLogger(logger.Named("pgdb.NewPool"))
+	config.ConnConfig.Logger = zapadapter.NewLogger(logger.Named("pgdb"))
 
 	p, err := pgxpool.ConnectConfig(ctx, config)
 	if err != nil {
@@ -93,7 +93,7 @@ func NewPool(ctx context.Context, connString string, logger *zap.Logger, lazy bo
 
 	res := &Pool{
 		Pool:   p,
-		logger: logger.Named("pgdb.NewPool"),
+		logger: logger.Named("pgdb"),
 	}
 
 	if !lazy {
