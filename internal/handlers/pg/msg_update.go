@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v4"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -105,23 +106,43 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		fetchedDocs, err := h.fetch(ctx, sp)
+		resDocs := make([]*types.Document, 0, 16)
+		err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp.db, sp.collection, sp.comment)
+			if err != nil {
+				return err
+			}
+			defer func() {
+				// Drain the channel to prevent leaking goroutines.
+				// TODO Offer a better design instead of channels: https://github.com/FerretDB/FerretDB/issues/898.
+				for range fetchedChan {
+				}
+			}()
+
+			for fetchedItem := range fetchedChan {
+				if fetchedItem.Err != nil {
+					return fetchedItem.Err
+				}
+
+				for _, doc := range fetchedItem.Docs {
+					matches, err := common.FilterDocument(doc, q)
+					if err != nil {
+						return err
+					}
+
+					if !matches {
+						continue
+					}
+
+					resDocs = append(resDocs, doc)
+				}
+			}
+
+			return nil
+		})
+
 		if err != nil {
 			return nil, err
-		}
-
-		resDocs := make([]*types.Document, 0, 16)
-		for _, doc := range fetchedDocs {
-			matches, err := common.FilterDocument(doc, q)
-			if err != nil {
-				return nil, err
-			}
-
-			if !matches {
-				continue
-			}
-
-			resDocs = append(resDocs, doc)
 		}
 
 		if len(resDocs) == 0 {
