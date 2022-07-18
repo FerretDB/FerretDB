@@ -61,6 +61,14 @@ func Databases(ctx context.Context, querier pgxtype.Querier) ([]string, error) {
 // It returns (possibly wrapped) ErrAlreadyExist if schema already exist,
 // use errors.Is to check the error.
 func CreateDatabase(ctx context.Context, querier pgxtype.Querier, db string) error {
+	if !validateDatabaseNameRe.MatchString(db) {
+		return ErrInvalidDatabaseName
+	}
+
+	if strings.HasPrefix(db, reservedCollectionPrefix) {
+		return ErrInvalidTableName
+	}
+
 	sql := `CREATE SCHEMA ` + pgx.Identifier{db}.Sanitize()
 	_, err := querier.Exec(ctx, sql)
 
