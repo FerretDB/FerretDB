@@ -47,11 +47,13 @@ func TestQueryDocuments(t *testing.T) {
 	require.NoError(t, pgdb.CreateDatabase(ctx, pool, dbName))
 
 	cases := []struct {
-		name             string
-		collection       string
-		documents        []*types.Document
-		docsPerIteration []int // how many documents should be fetched per each iteration
-		// len(docsPerIteration) is the amount of fetch iterations.
+		name       string
+		collection string
+		documents  []*types.Document
+
+		// docsPerIteration represents how many documents should be fetched per each iteration,
+		// use len(docsPerIteration) as the amount of fetch iterations.
+		docsPerIteration []int
 	}{
 		{
 			name:             "empty",
