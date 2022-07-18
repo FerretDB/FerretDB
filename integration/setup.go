@@ -19,6 +19,7 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"net/url"
 	"sync"
 	"testing"
 	"time"
@@ -38,9 +39,10 @@ import (
 )
 
 var (
-	portF      = flag.Int("port", 0, "port to use; if 0, in-process FerretDB is used")
-	handlerF   = flag.String("handler", "pg", "handler to use for in-process FerretDB")
-	proxyAddrF = flag.String("proxy-addr", "", "proxy to use for in-process FerretDB")
+	targetPortF = flag.Int("target-port", 0, "target system's port for tests; if 0, in-process FerretDB is used")
+	proxyAddrF  = flag.String("proxy-addr", "", "proxy to use for in-process FerretDB")
+	handlerF    = flag.String("handler", "pg", "handler to use for in-process FerretDB")
+	compatPortF = flag.Int("compat-port", 37017, "second system's port for compatibility tests; if 0, they are skipped")
 
 	// Disable noisy setup logs by default.
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
@@ -50,7 +52,12 @@ var (
 )
 
 // SetupOpts represents setup options.
+//
+// TODO add option to use read-only user
 type SetupOpts struct {
+	// If true, returns two client connections to different systems for compatibility test.
+	CompatTest bool
+
 	// Database to use. If empty, temporary test-specific database is created.
 	DatabaseName string
 
@@ -58,102 +65,102 @@ type SetupOpts struct {
 	Providers []shareddata.Provider
 }
 
-// SetupWithOpts setups the test according to given options,
-// and returns test-specific context (that is canceled when the test ends), database collection
-// and the port of the running server.
-func SetupWithOpts(t *testing.T, opts *SetupOpts) (context.Context, *mongo.Collection, int) {
-	t.Helper()
+// SetupResult represents setup results.
+type SetupResult struct {
+	Ctx              context.Context
+	TargetCollection *mongo.Collection
+	TargetPort       uint16
+	CompatCollection *mongo.Collection
+	CompatPort       uint16
+}
 
-	startupOnce.Do(func() { startup(t) })
+// SetupWithOpts setups the test according to given options.
+func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
+	tb.Helper()
+
+	startupOnce.Do(func() {
+		logging.Setup(zap.DebugLevel)
+
+		go debug.RunHandler(testutil.Ctx(tb), "127.0.0.1:0", zap.L().Named("debug"))
+	})
 
 	if opts == nil {
 		opts = new(SetupOpts)
 	}
 
-	var ownDatabase bool
-	if opts.DatabaseName == "" {
-		opts.DatabaseName = testutil.DatabaseName(t)
-		ownDatabase = true
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
 
 	level := zap.NewAtomicLevelAt(zap.WarnLevel)
 	if *debugSetupF {
 		level = zap.NewAtomicLevelAt(zap.DebugLevel)
 	}
-	logger := zaptest.NewLogger(t, zaptest.Level(level), zaptest.WrapOptions(zap.AddCaller()))
+	logger := zaptest.NewLogger(tb, zaptest.Level(level), zaptest.WrapOptions(zap.AddCaller()))
 
-	port := *portF
+	port := *targetPortF
 	if port == 0 {
-		port = setupListener(t, ctx, logger)
+		port = setupListener(tb, ctx, logger)
 	}
 
-	// register cleanup function after setupListener's internal registration
-	t.Cleanup(cancel)
+	// register cleanup function after setupListener registers its own to preserve full logs
+	tb.Cleanup(cancel)
 
-	client := setupClient(t, ctx, port)
-	db := client.Database(opts.DatabaseName)
-	collectionName := testutil.CollectionName(t)
-	collection := db.Collection(collectionName)
+	collection := setupCollection(tb, ctx, port, opts.DatabaseName, opts.Providers)
 
-	// drop remnants of the previous failed run
-	_ = collection.Drop(ctx)
-	if ownDatabase {
-		_ = db.Drop(ctx)
-	}
-
-	// delete collection and (possibly) database unless test failed
-	t.Cleanup(func() {
-		if t.Failed() {
-			t.Logf("Keeping database %q and collection %q for debugging.", opts.DatabaseName, collectionName)
-			return
+	var compatPort int
+	var compatCollection *mongo.Collection
+	if opts.CompatTest {
+		compatPort = *compatPortF
+		if compatPort == 0 {
+			tb.Skip("compatibility tests require second system")
 		}
 
-		err := collection.Drop(ctx)
-		require.NoError(t, err)
-
-		if ownDatabase {
-			err = db.Drop(ctx)
-			require.NoError(t, err)
-		}
-	})
-
-	// insert all provided data
-	for _, provider := range opts.Providers {
-		docs := provider.Docs()
-		res, err := collection.InsertMany(ctx, shareddata.DocsAny(docs))
-		require.NoError(t, err)
-		require.Len(t, res.InsertedIDs, len(docs))
+		compatCollection = setupCollection(tb, ctx, compatPort, opts.DatabaseName, opts.Providers)
 	}
 
 	level.SetLevel(*logLevelF)
 
-	return ctx, collection, port
+	return &SetupResult{
+		Ctx:              ctx,
+		TargetCollection: collection,
+		TargetPort:       uint16(port),
+		CompatCollection: compatCollection,
+		CompatPort:       uint16(compatPort),
+	}
 }
 
-// Setup calls setupWithOpts with specified data providers.
-func Setup(t *testing.T, providers ...shareddata.Provider) (context.Context, *mongo.Collection) {
-	t.Helper()
+// Setup setups test with specified data providers.
+func Setup(tb testing.TB, providers ...shareddata.Provider) (context.Context, *mongo.Collection) {
+	tb.Helper()
 
-	ctx, collection, _ := SetupWithOpts(t, &SetupOpts{
+	s := SetupWithOpts(tb, &SetupOpts{
 		Providers: providers,
 	})
-	return ctx, collection
+	return s.Ctx, s.TargetCollection
+}
+
+// SetupCompat setups compatibility test with specified data providers.
+func SetupCompat(tb testing.TB, providers ...shareddata.Provider) (context.Context, *mongo.Collection, *mongo.Collection) {
+	tb.Helper()
+
+	s := SetupWithOpts(tb, &SetupOpts{
+		CompatTest: true,
+		Providers:  providers,
+	})
+	return s.Ctx, s.TargetCollection, s.CompatCollection
 }
 
 // setupListener starts in-process FerretDB server that runs until ctx is done,
 // and returns listening port number.
-func setupListener(t *testing.T, ctx context.Context, logger *zap.Logger) int {
-	t.Helper()
+func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
+	tb.Helper()
 
 	h, err := registry.NewHandler(*handlerF, &registry.NewHandlerOpts{
 		Ctx:           ctx,
 		Logger:        logger,
-		PostgreSQLURL: testutil.PoolConnString(t, nil),
-		TigrisURL:     testutil.TigrisURL(t),
+		PostgreSQLURL: testutil.PoolConnString(tb, nil),
+		TigrisURL:     testutil.TigrisURL(tb),
 	})
-	require.NoError(t, err)
+	require.NoError(tb, err)
 
 	proxyAddr := *proxyAddrF
 	mode := clientconn.NormalMode
@@ -183,7 +190,7 @@ func setupListener(t *testing.T, ctx context.Context, logger *zap.Logger) int {
 	}()
 
 	// ensure that all listener's logs are written before test ends
-	t.Cleanup(func() {
+	tb.Cleanup(func() {
 		<-done
 		h.Close()
 	})
@@ -191,27 +198,94 @@ func setupListener(t *testing.T, ctx context.Context, logger *zap.Logger) int {
 	return l.Addr().(*net.TCPAddr).Port
 }
 
-func setupClient(t *testing.T, ctx context.Context, port int) *mongo.Client {
-	uri := fmt.Sprintf("mongodb://127.0.0.1:%d", port)
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
-	require.NoError(t, err)
+// setupCollection setups a single collection.
+func setupCollection(tb testing.TB, ctx context.Context, port int, db string, providers []shareddata.Provider) *mongo.Collection {
+	tb.Helper()
+
+	require.Greater(tb, port, 0)
+	require.Less(tb, port, 65536)
+
+	var ownDatabase bool
+	if db == "" {
+		db = testutil.DatabaseName(tb)
+		ownDatabase = true
+	}
+
+	client := setupClient(tb, ctx, uint16(port))
+	database := client.Database(db)
+	collectionName := testutil.CollectionName(tb)
+	collection := database.Collection(collectionName)
+
+	// drop remnants of the previous failed run
+	_ = collection.Drop(ctx)
+	if ownDatabase {
+		_ = database.Drop(ctx)
+	}
+
+	for _, provider := range providers {
+		docs := shareddata.Docs(provider)
+		require.NotEmpty(tb, docs)
+
+		res, err := collection.InsertMany(ctx, docs)
+		require.NoError(tb, err)
+		require.Len(tb, res.InsertedIDs, len(docs))
+	}
+
+	// delete collection and (possibly) database unless test failed
+	tb.Cleanup(func() {
+		if tb.Failed() {
+			tb.Logf("Keeping database %q and collection %q for debugging.", db, collectionName)
+			return
+		}
+
+		err := collection.Drop(ctx)
+		require.NoError(tb, err)
+
+		if ownDatabase {
+			err = database.Drop(ctx)
+			require.NoError(tb, err)
+		}
+	})
+
+	return collection
+}
+
+// setupClient returns MongoDB client for database on 127.0.0.1:port.
+func setupClient(tb testing.TB, ctx context.Context, port uint16) *mongo.Client {
+	tb.Helper()
+
+	// those options should not affect anything except tests speed
+	v := url.Values{
+		"connectTimeoutMS":         []string{"5000"},
+		"serverSelectionTimeoutMS": []string{"5000"},
+		"socketTimeoutMS":          []string{"5000"},
+		"heartbeatFrequencyMS":     []string{"30000"},
+
+		"minPoolSize":   []string{"1"},
+		"maxPoolSize":   []string{"1"},
+		"maxConnecting": []string{"1"},
+		"maxIdleTimeMS": []string{"0"},
+
+		"directConnection": []string{"true"},
+		"appName":          []string{tb.Name()},
+	}
+
+	u := url.URL{
+		Scheme:   "mongodb",
+		Host:     fmt.Sprintf("127.0.0.1:%d", port),
+		Path:     "/",
+		RawQuery: v.Encode(),
+	}
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(u.String()))
+	require.NoError(tb, err)
+
 	err = client.Ping(ctx, nil)
-	require.NoError(t, err)
-	t.Cleanup(func() {
+	require.NoError(tb, err)
+
+	tb.Cleanup(func() {
 		err = client.Disconnect(ctx)
-		require.NoError(t, err)
+		require.NoError(tb, err)
 	})
 
 	return client
-}
-
-// startup initializes things that should be initialized only once.
-func startup(t *testing.T) {
-	t.Helper()
-
-	logging.Setup(zap.DebugLevel)
-
-	ctx := testutil.Ctx(t)
-
-	go debug.RunHandler(ctx, "127.0.0.1:0", zap.L().Named("debug"))
 }
