@@ -29,7 +29,7 @@ func TestSmoke(t *testing.T) {
 	ctx, collection := integration.Setup(t, shareddata.FixedScalars)
 
 	var doc bson.D
-	err := collection.FindOne(ctx, bson.D{{"_id", "double"}}).Decode(&doc)
+	err := collection.FindOne(ctx, bson.D{{"_id", "fixed_double"}}).Decode(&doc)
 	require.NoError(t, err)
-	integration.AssertEqualDocuments(t, bson.D{{"_id", "double"}, {"double_value", 42.13}}, doc)
+	integration.AssertEqualDocuments(t, bson.D{{"_id", "fixed_double"}, {"double_value", 42.13}}, doc)
 }

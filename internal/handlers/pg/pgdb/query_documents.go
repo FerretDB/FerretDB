@@ -62,10 +62,12 @@ type SQLParam struct {
 // Context cancellation is not considered an error.
 //
 // If the collection doesn't exist, fetch returns a closed channel and no error.
-func (pgPool *Pool) QueryDocuments(
-	ctx context.Context, querier pgxtype.Querier, db, collection, comment string,
+func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier, sp SQLParam,
 ) (<-chan FetchedDocs, error) {
 	fetchedChan := make(chan FetchedDocs, FetchedChannelBufSize)
+	db := sp.DB
+	collection := sp.Collection
+	comment := sp.Comment
 
 	// Special case: check if collection exists at all
 	collectionExists, err := CollectionExists(ctx, querier, db, collection)
