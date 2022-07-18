@@ -24,8 +24,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/x/mongo/driver"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestMostCommandsAreCaseSensitive(t *testing.T) {
@@ -203,6 +205,7 @@ func TestDatabaseName(t *testing.T) {
 		ctx, collection := Setup(t)
 
 		dbName300 := strings.Repeat("a", 300)
+
 		cases := map[string]struct {
 			db  string
 			err *mongo.CommandError
@@ -214,7 +217,7 @@ func TestDatabaseName(t *testing.T) {
 					Name: "InvalidNamespace",
 					Code: 73,
 					Message: fmt.Sprintf(
-						"Fully qualified namespace is too long. Namespace: testcollectionname-err.%s Max: 255",
+						"Invalid namespace specified '%s.test'",
 						dbName300,
 					),
 				},
@@ -225,39 +228,28 @@ func TestDatabaseName(t *testing.T) {
 				err: &mongo.CommandError{
 					Name:    "InvalidNamespace",
 					Code:    73,
-					Message: `Invalid collection name: collection_name_with_a-$`,
+					Message: `Invalid namespace: collection_name_with_a-$`,
 				},
 				alt: `Invalid collection name: 'testcollectionname-err.collection_name_with_a-$'`,
-			},
-			"Empty": {
-				db: "",
-				err: &mongo.CommandError{
-					Name:    "InvalidNamespace",
-					Code:    73,
-					Message: "Invalid namespace specified 'testcollectionname-err.'",
-				},
-				alt: "Invalid collection name: 'testcollectionname-err.'",
 			},
 		}
 
 		for name, tc := range cases {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {
-				err := collection.Database().Client().Database(tc.db).CreateCollection(ctx, "test")
+				// there is no explicit command to create database, so create collection instead
+				err := collection.Database().Client().Database(tc.db).CreateCollection(ctx, testutil.CollectionName(t))
 				AssertEqualAltError(t, *tc.err, tc.alt, err)
 			})
 		}
 	})
 
-	t.Run("Ok", func(t *testing.T) {
+	t.Run("Empty", func(t *testing.T) {
 		ctx, collection := Setup(t)
-		okName := "test"
-		client := collection.Database().Client()
-		err := client.Database(okName).CreateCollection(ctx, collection.Name()+okName)
-		require.NoError(t, err)
 
-		names, err := client.ListDatabaseNames(ctx, nil)
-		require.NoError(t, err)
-		assert.Contains(t, names, okName)
+		// there is no explicit command to create database, so create collection instead
+		err := collection.Database().Client().Database("").CreateCollection(ctx, testutil.CollectionName(t))
+		expectedErr := driver.InvalidOperationError(driver.InvalidOperationError{MissingField: "Database"})
+		assert.Equal(t, expectedErr, err)
 	})
 }

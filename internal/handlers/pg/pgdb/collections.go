@@ -96,7 +96,7 @@ func CreateCollection(ctx context.Context, querier pgxtype.Querier, db, collecti
 		return ErrInvalidTableName
 	}
 
-	if strings.HasPrefix(collection, reservedCollectionPrefix) {
+	if strings.HasPrefix(collection, reservedPrefix) {
 		return ErrInvalidTableName
 	}
 

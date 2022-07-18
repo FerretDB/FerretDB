@@ -65,7 +65,7 @@ func CreateDatabase(ctx context.Context, querier pgxtype.Querier, db string) err
 		return ErrInvalidDatabaseName
 	}
 
-	if strings.HasPrefix(db, reservedCollectionPrefix) {
+	if strings.HasPrefix(db, reservedPrefix) {
 		return ErrInvalidTableName
 	}
 

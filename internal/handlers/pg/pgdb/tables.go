@@ -34,7 +34,7 @@ func Tables(ctx context.Context, querier pgxtype.Querier, schema string) ([]stri
 
 	filtered := make([]string, 0, len(tables))
 	for _, table := range tables {
-		if strings.HasPrefix(table, reservedCollectionPrefix) {
+		if strings.HasPrefix(table, reservedPrefix) {
 			continue
 		}
 
