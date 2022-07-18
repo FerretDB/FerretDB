@@ -24,13 +24,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 )
 
-// sqlParam represents options/parameters used for sql query.
-type sqlParam struct {
-	db         string
-	collection string
-	comment    string
-}
-
 // Handler implements handlers.Interface on top of PostgreSQL.
 type Handler struct {
 	// TODO replace those fields with embedded *NewOpts to sync with Tigris handler

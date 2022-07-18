@@ -22,6 +22,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -40,8 +41,8 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 	common.Ignored(document, h.l, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
 
-	var sp sqlParam
-	if sp.db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	var sp pgdb.SQLParam
+	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 	collectionParam, err := document.Get(document.Command())
@@ -49,7 +50,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 	var ok bool
-	if sp.collection, ok = collectionParam.(string); !ok {
+	if sp.Collection, ok = collectionParam.(string); !ok {
 		return nil, common.NewErrorMsg(
 			common.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
@@ -61,12 +62,12 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	created, err := h.pgPool.CreateTableIfNotExist(ctx, sp.db, sp.collection)
+	created, err := h.pgPool.CreateTableIfNotExist(ctx, sp.DB, sp.Collection)
 	if err != nil {
 		return nil, err
 	}
 	if created {
-		h.l.Info("Created table.", zap.String("schema", sp.db), zap.String("table", sp.collection))
+		h.l.Info("Created table.", zap.String("schema", sp.DB), zap.String("table", sp.Collection))
 	}
 
 	var matched, modified int32
@@ -108,7 +109,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		resDocs := make([]*types.Document, 0, 16)
 		err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp.db, sp.collection, sp.comment)
+			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp)
 			if err != nil {
 				return err
 			}
@@ -213,10 +214,10 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // update updates documents by _id.
-func (h *Handler) update(ctx context.Context, sp sqlParam, doc *types.Document) (int64, error) {
+func (h *Handler) update(ctx context.Context, sp pgdb.SQLParam, doc *types.Document) (int64, error) {
 	id := must.NotFail(doc.Get("_id"))
 
-	rowsUpdated, err := h.pgPool.SetDocumentByID(ctx, sp.db, sp.collection, id, doc)
+	rowsUpdated, err := h.pgPool.SetDocumentByID(ctx, sp.DB, sp.Collection, id, doc)
 	if err != nil {
 		return 0, err
 	}

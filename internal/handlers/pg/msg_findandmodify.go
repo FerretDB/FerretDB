@@ -21,6 +21,7 @@ import (
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -62,9 +63,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	// We might consider rewriting it later.
 	resDocs := make([]*types.Document, 0, 16)
 	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		fetchedChan, err := h.pgPool.QueryDocuments(
-			ctx, tx, params.sqlParam.db, params.sqlParam.collection, params.sqlParam.comment,
-		)
+		fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, params.sqlParam)
 		if err != nil {
 			return err
 		}
@@ -231,7 +230,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 type upsertParams struct {
 	hasUpdateOperators bool
 	query, update      *types.Document
-	sqlParam           sqlParam
+	sqlParam           pgdb.SQLParam
 }
 
 // upsert inserts new document if no documents in query result or updates given document.
@@ -289,7 +288,7 @@ func (h *Handler) upsert(ctx context.Context, docs []*types.Document, params *up
 // findAndModifyParams represent all findAndModify requests' fields.
 // It's filled by calling prepareFindAndModifyParams.
 type findAndModifyParams struct {
-	sqlParam                              sqlParam
+	sqlParam                              pgdb.SQLParam
 	query, sort, update                   *types.Document
 	remove, upsert                        bool
 	returnNewDocument, hasUpdateOperators bool
@@ -376,9 +375,9 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 	}
 
 	return &findAndModifyParams{
-		sqlParam: sqlParam{
-			db:         db,
-			collection: collection,
+		sqlParam: pgdb.SQLParam{
+			DB:         db,
+			Collection: collection,
 		},
 		query:              query,
 		update:             update,

@@ -100,7 +100,8 @@ func TestQueryDocuments(t *testing.T) {
 				require.NoError(t, pgdb.InsertDocument(ctx, tx, dbName, tc.collection, doc))
 			}
 
-			fetchedChan, err := pool.QueryDocuments(ctx, tx, dbName, tc.collection, "")
+			sp := pgdb.SQLParam{DB: dbName, Collection: tc.collection}
+			fetchedChan, err := pool.QueryDocuments(ctx, tx, sp)
 			require.NoError(t, err)
 
 			iter := 0
@@ -131,8 +132,9 @@ func TestQueryDocuments(t *testing.T) {
 			))
 		}
 
+		sp := pgdb.SQLParam{DB: dbName, Collection: collectionName + "_cancel"}
 		ctx, cancel := context.WithCancel(context.Background())
-		fetchedChan, err := pool.QueryDocuments(ctx, pool, dbName, collectionName+"_cancel", "")
+		fetchedChan, err := pool.QueryDocuments(ctx, pool, sp)
 		cancel()
 		require.NoError(t, err)
 
@@ -156,7 +158,8 @@ func TestQueryDocuments(t *testing.T) {
 		tx, err := pool.Begin(ctx)
 		require.NoError(t, err)
 
-		fetchedChan, err := pool.QueryDocuments(context.Background(), tx, dbName, collectionName+"_non-existing", "")
+		sp := pgdb.SQLParam{DB: dbName, Collection: collectionName + "_non-existing"}
+		fetchedChan, err := pool.QueryDocuments(context.Background(), tx, sp)
 		require.NoError(t, err)
 		res, ok := <-fetchedChan
 		require.False(t, ok)
