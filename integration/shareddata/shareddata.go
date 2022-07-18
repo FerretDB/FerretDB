@@ -15,6 +15,8 @@
 package shareddata
 
 import (
+	"fmt"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/exp/constraints"
 	"golang.org/x/exp/maps"
@@ -28,24 +30,41 @@ type Provider interface {
 	Docs() []bson.D
 }
 
-// DocsAny returns a shallow copy of the documents slice.
-func DocsAny(docs []bson.D) []any {
-	res := make([]any, len(docs))
-	for i, doc := range docs {
-		res[i] = doc
+// Docs returns all documents from given providers.
+func Docs(providers ...Provider) []any {
+	var res []any
+	for _, p := range providers {
+		for _, doc := range p.Docs() {
+			res = append(res, doc)
+		}
 	}
 	return res
 }
 
-// Docs stores shared data documents as maps.
+// IDs returns all document's _id values (that must be present in each document) from given providers.
+func IDs(providers ...Provider) []any {
+	var res []any
+	for _, p := range providers {
+		for _, doc := range p.Docs() {
+			id, ok := doc.Map()["_id"]
+			if !ok {
+				panic(fmt.Sprintf("no _id in %+v", doc))
+			}
+			res = append(res, id)
+		}
+	}
+	return res
+}
+
+// Maps stores shared data documents as maps.
 //
 // TODO replace constraints.Ordered with comparable.
-type Docs[idType constraints.Ordered] struct {
+type Maps[idType constraints.Ordered] struct {
 	data map[idType]map[string]any
 }
 
 // Docs implement Provider interface.
-func (docs *Docs[idType]) Docs() []bson.D {
+func (docs *Maps[idType]) Docs() []bson.D {
 	ids := maps.Keys(docs.data)
 	slices.Sort(ids) // TODO remove
 
@@ -87,6 +106,6 @@ func (values *Values[idType]) Docs() []bson.D {
 
 // check interfaces
 var (
-	_ Provider = (*Docs[string])(nil)
+	_ Provider = (*Maps[string])(nil)
 	_ Provider = (*Values[string])(nil)
 )

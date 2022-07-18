@@ -87,7 +87,7 @@ tasks:
     desc: "Fill `test.values` with data for experiments"
     dir: integration
     cmds:
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData . -port=37017
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData . -target-port=37017
       - go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData . -handler=pg
       - go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData -tags=ferretdb_tigris ./tigris -handler=tigris
 
@@ -141,7 +141,7 @@ tasks:
     desc: "Run integration tests for MongoDB"
     dir: integration
     cmds:
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=integration-mongodb.txt -coverpkg=../... -port=37017
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=integration-mongodb.txt -coverpkg=../... -target-port=37017 -compat-port=0
 
   bench-short:
     desc: "Benchmark for about 20 seconds (with default BENCHTIME)"
@@ -292,7 +292,7 @@ tasks:
         sh: cat internal/util/version/gen/version.txt
       COMMIT:
         sh: cat internal/util/version/gen/commit.txt
-        
+
   nfpm_deb:
     deps: [build-testcover]
     dir: build/deb

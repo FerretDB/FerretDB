@@ -97,13 +97,13 @@ var Scalars = &Values[string]{
 // FixedScalars is an experiment and will be changed in the future.
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/786
-var FixedScalars = &Docs[string]{
+var FixedScalars = &Maps[string]{
 	data: map[string]map[string]any{
-		"double":          {"double_value": 42.13},
-		"double-whole":    {"double_value": 42.0},
-		"double-zero":     {"double_value": 0},
-		"double-max":      {"double_value": math.MaxFloat64},
-		"double-smallest": {"double_value": math.SmallestNonzeroFloat64},
-		"double-big":      {"double_value": doubleBig},
+		"fixed_double":          {"double_value": 42.13},
+		"fixed_double-whole":    {"double_value": 42.0},
+		"fixed_double-zero":     {"double_value": 0.0},
+		"fixed_double-max":      {"double_value": math.MaxFloat64},
+		"fixed_double-smallest": {"double_value": math.SmallestNonzeroFloat64},
+		"fixed_double-big":      {"double_value": doubleBig},
 	},
 }

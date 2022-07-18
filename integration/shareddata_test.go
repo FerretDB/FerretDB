@@ -26,18 +26,20 @@ func TestEnvData(t *testing.T) {
 	t.Parallel()
 
 	// see `env-data` Taskfile target
-	ctx, collection, _ := SetupWithOpts(t, &SetupOpts{
+	s := SetupWithOpts(t, &SetupOpts{
 		DatabaseName: "test",
 	})
-	collection = collection.Database().Collection("values")
+	collection := s.TargetCollection.Database().Collection("values")
 
-	err := collection.Drop(ctx)
+	err := collection.Drop(s.Ctx)
 	require.NoError(t, err)
 
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
 	for _, provider := range providers {
-		docs := provider.Docs()
-		res, err := collection.InsertMany(ctx, shareddata.DocsAny(docs))
+		docs := shareddata.Docs(provider)
+		require.NotEmpty(t, docs)
+
+		res, err := collection.InsertMany(s.Ctx, docs)
 		require.NoError(t, err)
 		require.Len(t, res.InsertedIDs, len(docs))
 	}
