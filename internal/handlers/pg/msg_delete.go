@@ -21,6 +21,7 @@ import (
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -69,8 +70,8 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			}
 		}
 
-		var sp sqlParam
-		if sp.db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		var sp pgdb.SQLParam
+		if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 			return nil, err
 		}
 		collectionParam, err := document.Get(document.Command())
@@ -78,7 +79,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 		var ok bool
-		if sp.collection, ok = collectionParam.(string); !ok {
+		if sp.Collection, ok = collectionParam.(string); !ok {
 			return nil, common.NewErrorMsg(
 				common.ErrBadValue,
 				fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
@@ -87,7 +88,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		resDocs := make([]*types.Document, 0, 16)
 		err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp.db, sp.collection, sp.comment)
+			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp)
 			if err != nil {
 				return err
 			}
@@ -155,14 +156,14 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // delete deletes documents by _id.
-func (h *Handler) delete(ctx context.Context, sp sqlParam, docs []*types.Document) (int64, error) {
+func (h *Handler) delete(ctx context.Context, sp pgdb.SQLParam, docs []*types.Document) (int64, error) {
 	ids := make([]any, len(docs))
 	for i, doc := range docs {
 		id := must.NotFail(doc.Get("_id"))
 		ids[i] = id
 	}
 
-	rowsDeleted, err := h.pgPool.DeleteDocumentsByID(ctx, sp.db, sp.collection, ids)
+	rowsDeleted, err := h.pgPool.DeleteDocumentsByID(ctx, sp.DB, sp.Collection, ids)
 	if err != nil {
 		// TODO check error code
 		return 0, common.NewError(common.ErrNamespaceNotFound, fmt.Errorf("delete: ns not found: %w", err))
