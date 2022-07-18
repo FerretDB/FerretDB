@@ -43,6 +43,14 @@ type FetchedDocs struct {
 	Err  error
 }
 
+// SQLParam represents options/parameters used for sql query.
+type SQLParam struct {
+	DB         string
+	Collection string
+	Comment    string
+	Explain    string
+}
+
 // QueryDocuments returns a channel with buffer FetchedChannelBufSize
 // to fetch list of documents for given FerretDB database and collection.
 //
