@@ -42,7 +42,7 @@ const (
 	localePOSIX = "POSIX"
 )
 
-// Pool represents PostgreSQL concurrency-safe connection getPool.
+// Pool represents PostgreSQL concurrency-safe connection pool.
 type Pool struct {
 	*pgxpool.Pool
 	logger *zap.Logger // TODO remove, use getPool.Config().ConnConfig.Logger instead
@@ -59,7 +59,7 @@ type DBStats struct {
 	CountIndexes int32
 }
 
-// NewPool returns a new concurrency-safe connection getPool.
+// NewPool returns a new concurrency-safe connection pool.
 //
 // Passed context is used only by the first checking connection.
 // Canceling it after that function returns does nothing.

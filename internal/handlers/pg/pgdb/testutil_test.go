@@ -25,7 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-// getPool creates a new connection's connection getPool for testing.
+// getPool creates a new connection's connection pool for testing.
 func getPool(ctx context.Context, tb testing.TB, opts *testutil.PoolOpts, l *zap.Logger) *pgdb.Pool {
 	tb.Helper()
 
