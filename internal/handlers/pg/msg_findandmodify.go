@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v4"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -56,28 +58,55 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	fetchedDocs, err := h.fetch(ctx, params.sqlParam)
-	if err != nil {
-		return nil, err
-	}
-
-	err = common.SortDocuments(fetchedDocs, params.sort)
-	if err != nil {
-		return nil, err
-	}
-
+	// This is not very optimal as we need to fetch everything from the database to have a proper sort.
+	// We might consider rewriting it later.
 	resDocs := make([]*types.Document, 0, 16)
-	for _, doc := range fetchedDocs {
-		matches, err := common.FilterDocument(doc, params.query)
+	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		fetchedChan, err := h.pgPool.QueryDocuments(
+			ctx, tx, params.sqlParam.db, params.sqlParam.collection, params.sqlParam.comment,
+		)
 		if err != nil {
-			return nil, err
+			return err
+		}
+		defer func() {
+			// Drain the channel to prevent leaking goroutines.
+			// TODO Offer a better design instead of channels: https://github.com/FerretDB/FerretDB/issues/898.
+			for range fetchedChan {
+			}
+		}()
+
+		var fetchedDocs []*types.Document
+		for fetchedItem := range fetchedChan {
+			if fetchedItem.Err != nil {
+				return fetchedItem.Err
+			}
+
+			fetchedDocs = append(fetchedDocs, fetchedItem.Docs...)
 		}
 
-		if !matches {
-			continue
+		err = common.SortDocuments(fetchedDocs, params.sort)
+		if err != nil {
+			return err
 		}
 
-		resDocs = append(resDocs, doc)
+		for _, doc := range fetchedDocs {
+			matches, err := common.FilterDocument(doc, params.query)
+			if err != nil {
+				return err
+			}
+
+			if !matches {
+				continue
+			}
+
+			resDocs = append(resDocs, doc)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
 	// findAndModify always works with a single document

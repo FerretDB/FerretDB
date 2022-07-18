@@ -14,15 +14,7 @@
 
 package testutil
 
-import (
-	"context"
-	"testing"
-
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
-)
+import "testing"
 
 // PoolOpts represents options for creating a connection pool.
 type PoolOpts struct {
@@ -48,21 +40,6 @@ func PoolConnString(tb testing.TB, opts *PoolOpts) string {
 	}
 
 	return "postgres://" + username + "@127.0.0.1:5432/ferretdb?pool_min_conns=1"
-}
-
-// Pool creates a new connection connection pool for testing.
-//
-// TODO move to pg/pgdb tests.
-//
-// Deprecated: do not use in new code.
-func Pool(ctx context.Context, tb testing.TB, opts *PoolOpts, l *zap.Logger) *pgdb.Pool {
-	tb.Helper()
-
-	pool, err := pgdb.NewPool(ctx, PoolConnString(tb, opts), l, false)
-	require.NoError(tb, err)
-	tb.Cleanup(pool.Close)
-
-	return pool
 }
 
 // SchemaName should not be used.

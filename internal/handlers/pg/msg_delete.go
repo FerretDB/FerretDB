@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v4"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -83,39 +85,59 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			)
 		}
 
-		fetchedDocs, err := h.fetch(ctx, sp)
-		if err != nil {
-			return nil, err
-		}
-
 		resDocs := make([]*types.Document, 0, 16)
-		for _, doc := range fetchedDocs {
-			matches, err := common.FilterDocument(doc, filter)
+		err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp.db, sp.collection, sp.comment)
 			if err != nil {
-				return nil, err
+				return err
+			}
+			defer func() {
+				// Drain the channel to prevent leaking goroutines.
+				// TODO Offer a better design instead of channels: https://github.com/FerretDB/FerretDB/issues/898.
+				for range fetchedChan {
+				}
+			}()
+
+			for fetchedItem := range fetchedChan {
+				if fetchedItem.Err != nil {
+					return fetchedItem.Err
+				}
+
+				for _, doc := range fetchedItem.Docs {
+					matches, err := common.FilterDocument(doc, filter)
+					if err != nil {
+						return err
+					}
+
+					if !matches {
+						continue
+					}
+
+					resDocs = append(resDocs, doc)
+				}
+
+				if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
+					return err
+				}
+
+				if len(resDocs) == 0 {
+					continue
+				}
+
+				rowsDeleted, err := h.delete(ctx, sp, resDocs)
+				if err != nil {
+					return err
+				}
+
+				deleted += int32(rowsDeleted)
 			}
 
-			if !matches {
-				continue
-			}
+			return nil
+		})
 
-			resDocs = append(resDocs, doc)
-		}
-
-		if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
-			return nil, err
-		}
-
-		if len(resDocs) == 0 {
-			continue
-		}
-
-		rowsDeleted, err := h.delete(ctx, sp, resDocs)
 		if err != nil {
 			return nil, err
 		}
-
-		deleted += int32(rowsDeleted)
 	}
 
 	var reply wire.OpMsg
