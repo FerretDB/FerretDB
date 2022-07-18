@@ -21,6 +21,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestCommandsDiagnosticGetLog(t *testing.T) {
@@ -103,4 +105,44 @@ func TestCommandsDiagnosticConnectionStatus(t *testing.T) {
 	ok := actual.Map()["ok"]
 
 	assert.Equal(t, float64(1), ok)
+}
+
+func TestCommandsDiagnosticExplain(t *testing.T) {
+	t.Parallel()
+	ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
+
+	for name, tc := range map[string]struct {
+		command  any
+		response int32
+	}{
+		"CountQueryPlanner": {
+			command: bson.D{
+				{
+					"explain", bson.D{
+						{"count", collection.Name()},
+						{"query", bson.D{{"value", bson.D{{"$type", "array"}}}}},
+					},
+				},
+				{"verbosity", "queryPlanner"},
+			},
+			response: 11,
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+			require.NoError(t, err)
+
+			m := actual.Map()
+
+			assert.Equal(t, float64(1), m["ok"])
+
+			keys := CollectKeys(t, actual)
+			assert.Contains(t, keys, "n")
+			assert.Equal(t, tc.response, m["n"])
+		})
+	}
 }

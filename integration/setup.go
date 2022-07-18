@@ -44,7 +44,7 @@ var (
 
 	// Disable noisy setup logs by default.
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
-	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
+	logLevelF   = zap.LevelFlag("log-level", zap.InfoLevel, "log level for tests")
 
 	startupOnce sync.Once
 )
