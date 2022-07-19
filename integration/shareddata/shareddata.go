@@ -23,6 +23,9 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+// unset represents a field that should not be set.
+var unset = struct{}{}
+
 // Provider is implemented by shared data sets that provide documents.
 type Provider interface {
 	// Docs returns shared data documents.
@@ -58,7 +61,7 @@ func IDs(providers ...Provider) []any {
 
 // Maps stores shared data documents as maps.
 //
-// TODO replace constraints.Ordered with comparable.
+// TODO replace constraints.Ordered with comparable: https://github.com/FerretDB/FerretDB/issues/914
 type Maps[idType constraints.Ordered] struct {
 	data map[idType]map[string]any
 }
@@ -66,7 +69,7 @@ type Maps[idType constraints.Ordered] struct {
 // Docs implement Provider interface.
 func (docs *Maps[idType]) Docs() []bson.D {
 	ids := maps.Keys(docs.data)
-	slices.Sort(ids) // TODO remove
+	slices.Sort(ids) // TODO remove: https://github.com/FerretDB/FerretDB/issues/914
 
 	res := make([]bson.D, 0, len(docs.data))
 	for _, id := range ids {
@@ -86,7 +89,7 @@ func (docs *Maps[idType]) Docs() []bson.D {
 
 // Values stores shared data documents as {"_id": key, "value": value} documents.
 //
-// TODO replace constraints.Ordered with comparable.
+// TODO replace constraints.Ordered with comparable: https://github.com/FerretDB/FerretDB/issues/914
 type Values[idType constraints.Ordered] struct {
 	data map[idType]any
 }
@@ -94,11 +97,16 @@ type Values[idType constraints.Ordered] struct {
 // Docs implement Provider interface.
 func (values *Values[idType]) Docs() []bson.D {
 	ids := maps.Keys(values.data)
-	slices.Sort(ids) // TODO remove
+	slices.Sort(ids) // TODO remove: https://github.com/FerretDB/FerretDB/issues/914
 
 	res := make([]bson.D, 0, len(values.data))
 	for _, id := range ids {
-		res = append(res, bson.D{{"_id", id}, {"value", values.data[id]}})
+		doc := bson.D{{"_id", id}}
+		v := values.data[id]
+		if v != unset {
+			doc = append(doc, bson.E{"value", v})
+		}
+		res = append(res, doc)
 	}
 
 	return res
