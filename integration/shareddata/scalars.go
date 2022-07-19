@@ -53,7 +53,7 @@ var Scalars = &Values[string]{
 		"objectid":       primitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11},
 		"objectid-empty": primitive.NilObjectID,
 
-		// no Undefined
+		// TODO "undefined": undefined,
 
 		"bool-false": false,
 		"bool-true":  true,

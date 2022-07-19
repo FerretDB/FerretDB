@@ -23,6 +23,8 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+var undefined = struct{}{}
+
 // Provider is implemented by shared data sets that provide documents.
 type Provider interface {
 	// Docs returns shared data documents.
@@ -98,7 +100,12 @@ func (values *Values[idType]) Docs() []bson.D {
 
 	res := make([]bson.D, 0, len(values.data))
 	for _, id := range ids {
-		res = append(res, bson.D{{"_id", id}, {"value", values.data[id]}})
+		doc := bson.D{{"_id", id}}
+		v := values.data[id]
+		if v != undefined {
+			doc = append(doc, bson.E{"value", v})
+		}
+		res = append(res, doc)
 	}
 
 	return res
