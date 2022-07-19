@@ -671,11 +671,34 @@ func TestUpdateFieldSet(t *testing.T) {
 				UpsertedCount: 0,
 			},
 		},
+		"DotNotationFieldExist": {
+			id:     "document-nested",
+			update: bson.D{{"$set", bson.D{{"foo.bar.baz", "123"}}}},
+			result: bson.D{{"_id", "document-nested"}, {"foo", bson.D{{"bar", bson.D{{"baz", "123"}}}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+		},
+		"DotNotationFieldNotExist": {
+			id:     "int32",
+			update: bson.D{{"$set", bson.D{{"foo.bar.baz", int32(1)}}}},
+			result: bson.D{{"_id", "int32"}, {"value", int32(42)}, {"foo", bson.D{{"bar", bson.D{{"baz", int32(1)}}}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
+
+			_, err := collection.InsertOne(ctx, bson.D{{"_id", "document-nested"}, {"foo", bson.D{{"bar", bson.D{{"baz", int32(1)}}}}}})
+			require.NoError(t, err)
 
 			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
 			if tc.err != nil {
