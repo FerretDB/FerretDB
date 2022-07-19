@@ -629,7 +629,7 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 	return true, nil
 }
 
-// filterFieldExprSize handles {field: {$all: [value, another_value, ...]}} filter.
+// filterFieldExprAll handles {field: {$all: [value, another_value, ...]}} filter.
 // The main purpose of $all is to filter arrays.
 // It is possible to filter non-arrays: {field: {$all: [value]}}, but such statement is equivalent to {field: value}.
 func filterFieldExprAll(fieldValue any, allValue any) (bool, error) {
@@ -653,15 +653,20 @@ func filterFieldExprAll(fieldValue any, allValue any) (bool, error) {
 		}
 		return contains, nil
 
+	case *types.Document:
+		panic("document is not implemented in $all")
+		// TODO is it right?!
+		return false, nil
+
 	default:
 		for i := 0; i < query.Len(); i++ {
-			if res := types.Compare(value, must.NotFail(query.Get(i))); slices.Contains(res, types.Equal) {
-				return false, nil
+			if res := types.Compare(value, must.NotFail(query.Get(i))); slices.Contains(res, types.Equal) && len(res) == 1 {
+				return true, nil
 			}
 		}
-	}
 
-	return true, nil
+		return false, nil
+	}
 }
 
 // filterFieldExprBitsAllClear handles {field: {$bitsAllClear: value}} filter.
