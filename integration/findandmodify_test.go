@@ -152,34 +152,6 @@ func TestFindAndModifySimple(t *testing.T) {
 	}
 }
 
-func TestFindAndModifyEmptyCollectionName(t *testing.T) {
-	t.Parallel()
-
-	for name, tc := range map[string]struct {
-		err        *mongo.CommandError
-		altMessage string
-	}{
-		"EmptyCollectionName": {
-			err: &mongo.CommandError{
-				Code:    73,
-				Message: "Invalid namespace specified 'testfindandmodifyemptycollectionname-emptycollectionname.'",
-				Name:    "InvalidNamespace",
-			},
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
-
-			var actual bson.D
-			err := collection.Database().RunCommand(ctx, bson.D{{"findAndModify", ""}}).Decode(&actual)
-
-			AssertEqualError(t, *tc.err, err)
-		})
-	}
-}
-
 func TestFindAndModifyErrors(t *testing.T) {
 	t.Parallel()
 
