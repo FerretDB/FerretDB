@@ -32,7 +32,7 @@ func TestQueryUnknownFilterOperator(t *testing.T) {
 	t.Parallel()
 	ctx, collection := Setup(t, shareddata.Scalars)
 
-	filter := bson.D{{"value", bson.D{{"$someUnknownOperator", 42}}}}
+	filter := bson.D{{"v", bson.D{{"$someUnknownOperator", 42}}}}
 	errExpected := mongo.CommandError{Code: 2, Name: "BadValue", Message: "unknown operator: $someUnknownOperator"}
 	_, err := collection.Find(ctx, filter)
 	AssertEqualError(t, errExpected, err)
@@ -49,7 +49,7 @@ func TestQuerySort(t *testing.T) {
 		expectedIDs []any
 	}{
 		"Asc": {
-			sort: bson.D{{"value", 1}, {"_id", 1}},
+			sort: bson.D{{"v", 1}, {"_id", 1}},
 			expectedIDs: []any{
 				"array-empty",
 				"array-embedded",
@@ -101,7 +101,7 @@ func TestQuerySort(t *testing.T) {
 			},
 		},
 		"Desc": {
-			sort: bson.D{{"value", -1}, {"_id", 1}},
+			sort: bson.D{{"v", -1}, {"_id", 1}},
 			expectedIDs: []any{
 				"regex",
 				"regex-empty",
@@ -178,7 +178,7 @@ func TestQuerySortValue(t *testing.T) {
 		err         *mongo.CommandError
 	}{
 		"AscValueScalar": {
-			sort: bson.D{{"value", 1}},
+			sort: bson.D{{"v", 1}},
 			expectedIDs: []any{
 				"null",
 				"double-nan",
@@ -221,7 +221,7 @@ func TestQuerySortValue(t *testing.T) {
 			},
 		},
 		"DescValueScalar": {
-			sort: bson.D{{"value", -1}},
+			sort: bson.D{{"v", -1}},
 			expectedIDs: []any{
 				"regex",
 				"regex-empty",
@@ -264,7 +264,7 @@ func TestQuerySortValue(t *testing.T) {
 			},
 		},
 		"BadSortValue": {
-			sort: bson.D{{"value", 11}},
+			sort: bson.D{{"v", 11}},
 			err: &mongo.CommandError{
 				Code:    15975,
 				Name:    "Location15975",
@@ -272,7 +272,7 @@ func TestQuerySortValue(t *testing.T) {
 			},
 		},
 		"BadSortZeroValue": {
-			sort: bson.D{{"value", 0}},
+			sort: bson.D{{"v", 0}},
 			err: &mongo.CommandError{
 				Code:    15975,
 				Name:    "Location15975",
@@ -280,11 +280,11 @@ func TestQuerySortValue(t *testing.T) {
 			},
 		},
 		"BadSortNullValue": {
-			sort: bson.D{{"value", nil}},
+			sort: bson.D{{"v", nil}},
 			err: &mongo.CommandError{
 				Code:    15974,
 				Name:    "Location15974",
-				Message: "Illegal key in $sort specification: value: null",
+				Message: "Illegal key in $sort specification: v: null",
 			},
 		},
 	} {
@@ -323,21 +323,21 @@ func TestQueryCount(t *testing.T) {
 		"CountExactlyOneDocument": {
 			command: bson.D{
 				{"count", collection.Name()},
-				{"query", bson.D{{"value", true}}},
+				{"query", bson.D{{"v", true}}},
 			},
 			response: 1,
 		},
 		"CountArrays": {
 			command: bson.D{
 				{"count", collection.Name()},
-				{"query", bson.D{{"value", bson.D{{"$type", "array"}}}}},
+				{"query", bson.D{{"v", bson.D{{"$type", "array"}}}}},
 			},
 			response: 11,
 		},
 		"CountNonExistingCollection": {
 			command: bson.D{
 				{"count", "doesnotexist"},
-				{"query", bson.D{{"value", true}}},
+				{"query", bson.D{{"v", true}}},
 			},
 			response: 0,
 		},
@@ -372,7 +372,7 @@ func TestQueryBadFindType(t *testing.T) {
 		"Document": {
 			command: bson.D{
 				{"find", bson.D{}},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -383,7 +383,7 @@ func TestQueryBadFindType(t *testing.T) {
 		"Array": {
 			command: bson.D{
 				{"find", primitive.A{}},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -394,7 +394,7 @@ func TestQueryBadFindType(t *testing.T) {
 		"Double": {
 			command: bson.D{
 				{"find", 3.14},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -405,7 +405,7 @@ func TestQueryBadFindType(t *testing.T) {
 		"DoubleWhole": {
 			command: bson.D{
 				{"find", 42.0},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -416,7 +416,7 @@ func TestQueryBadFindType(t *testing.T) {
 		"Binary": {
 			command: bson.D{
 				{"find", primitive.Binary{}},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -427,7 +427,7 @@ func TestQueryBadFindType(t *testing.T) {
 		"ObjectID": {
 			command: bson.D{
 				{"find", primitive.ObjectID{}},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -438,7 +438,7 @@ func TestQueryBadFindType(t *testing.T) {
 		"Bool": {
 			command: bson.D{
 				{"find", true},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -449,7 +449,7 @@ func TestQueryBadFindType(t *testing.T) {
 		"Date": {
 			command: bson.D{
 				{"find", time.Now()},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -460,7 +460,7 @@ func TestQueryBadFindType(t *testing.T) {
 		"Null": {
 			command: bson.D{
 				{"find", nil},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -471,7 +471,7 @@ func TestQueryBadFindType(t *testing.T) {
 		"Regex": {
 			command: bson.D{
 				{"find", primitive.Regex{Pattern: "/foo/"}},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -482,7 +482,7 @@ func TestQueryBadFindType(t *testing.T) {
 		"Int": {
 			command: bson.D{
 				{"find", int32(42)},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -493,7 +493,7 @@ func TestQueryBadFindType(t *testing.T) {
 		"Timestamp": {
 			command: bson.D{
 				{"find", primitive.Timestamp{}},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -504,7 +504,7 @@ func TestQueryBadFindType(t *testing.T) {
 		"Long": {
 			command: bson.D{
 				{"find", int64(42)},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -537,7 +537,7 @@ func TestQueryBadSortType(t *testing.T) {
 		"BadSortTypeDouble": {
 			command: bson.D{
 				{"find", collection.Name()},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 				{"sort", 42.13},
 			},
 			err: &mongo.CommandError{
@@ -550,7 +550,7 @@ func TestQueryBadSortType(t *testing.T) {
 		"BadSortType": {
 			command: bson.D{
 				{"find", collection.Name()},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 				{"sort", "123"},
 			},
 			err: &mongo.CommandError{
@@ -563,7 +563,7 @@ func TestQueryBadSortType(t *testing.T) {
 		"BadSortTypeValue": {
 			command: bson.D{
 				{"find", collection.Name()},
-				{"projection", bson.D{{"value", 42}}},
+				{"projection", bson.D{{"v", 42}}},
 				{"sort", bson.D{{"asc", "123"}}},
 			},
 			err: &mongo.CommandError{
@@ -599,7 +599,7 @@ func TestQueryExactMatches(t *testing.T) {
 		},
 		bson.D{
 			{"_id", "document-value-two-fields"},
-			{"value", bson.D{{"foo", "bar"}, {"baz", int32(42)}}},
+			{"v", bson.D{{"foo", "bar"}, {"baz", int32(42)}}},
 		},
 	})
 	require.NoError(t, err)
@@ -617,16 +617,16 @@ func TestQueryExactMatches(t *testing.T) {
 			expectedIDs: []any{"document-two-fields"},
 		},
 		"DocumentValueFields": {
-			filter:      bson.D{{"value", bson.D{{"foo", "bar"}, {"baz", int32(42)}}}},
+			filter:      bson.D{{"v", bson.D{{"foo", "bar"}, {"baz", int32(42)}}}},
 			expectedIDs: []any{"document-value-two-fields"},
 		},
 
 		"Array": {
-			filter:      bson.D{{"value", bson.A{int32(42), "foo", nil}}},
+			filter:      bson.D{{"v", bson.A{int32(42), "foo", nil}}},
 			expectedIDs: []any{"array-three"},
 		},
 		"ArrayChangedOrder": {
-			filter:      bson.D{{"value", bson.A{int32(42), nil, "foo"}}},
+			filter:      bson.D{{"v", bson.A{int32(42), nil, "foo"}}},
 			expectedIDs: []any{},
 		},
 	} {
