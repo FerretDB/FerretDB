@@ -221,16 +221,16 @@ func TestDatabaseName(t *testing.T) {
 						dbName300,
 					),
 				},
-				alt: fmt.Sprintf("Invalid collection name: 'testcollectionname-err.%s'", dbName300),
+				alt: fmt.Sprintf("Invalid namespace specified: '%s.test'", dbName300),
 			},
 			"WithADollarSign": {
-				db: "collection_name_with_a-$",
+				db: "name_with_a-$",
 				err: &mongo.CommandError{
 					Name:    "InvalidNamespace",
 					Code:    73,
-					Message: `Invalid namespace: collection_name_with_a-$`,
+					Message: `Invalid namespace: name_with_a-$.testdatabasename_err_withadollarsign`,
 				},
-				alt: `Invalid collection name: 'testcollectionname-err.collection_name_with_a-$'`,
+				alt: `Invalid namespace: 'name_with_a-$.testdatabasename_err_withadollarsign'`,
 			},
 		}
 

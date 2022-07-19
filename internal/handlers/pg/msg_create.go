@@ -73,8 +73,8 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		if err := pgdb.CreateDatabaseIfNotExists(ctx, tx, db); err != nil {
-			if err == pgdb.ErrInvalidDatabaseName {
-				msg := fmt.Sprintf("Invalid database name: '%s.%s'", db, collection)
+			if errors.Is(pgdb.ErrInvalidDatabaseName, err) {
+				msg := fmt.Sprintf("Invalid namespace: %s.%s", db, collection)
 				return common.NewErrorMsg(common.ErrInvalidNamespace, msg)
 			}
 			return lazyerrors.Error(err)
