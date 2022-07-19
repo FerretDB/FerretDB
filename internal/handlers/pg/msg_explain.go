@@ -22,6 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/jackc/pgx/v4"
 )
 
 // MsgExplain implements HandlerInterface.
@@ -41,6 +42,45 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	var explain *types.Document
 	if explain, err = common.GetRequiredParam[*types.Document](document, "explain"); err != nil {
+		return nil,
+	}
+
+	resDocs := make([]*types.Document, 0, 16)
+	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			// Drain the channel to prevent leaking goroutines.
+			// TODO Offer a better design instead of channels: https://github.com/FerretDB/FerretDB/issues/898.
+			for range fetchedChan {
+			}
+		}()
+
+		for fetchedItem := range fetchedChan {
+			if fetchedItem.Err != nil {
+				return fetchedItem.Err
+			}
+
+			for _, doc := range fetchedItem.Docs {
+				matches, err := common.FilterDocument(doc, filter)
+				if err != nil {
+					return err
+				}
+
+				if !matches {
+					continue
+				}
+
+				resDocs = append(resDocs, doc)
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
 
