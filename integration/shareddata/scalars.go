@@ -30,6 +30,7 @@ const (
 //
 // This shared data set is frozen. If you need more values, add them in the test itself.
 var Scalars = &Values[string]{
+	name: "Scalars",
 	data: map[string]any{
 		"double":                   42.13,
 		"double-whole":             42.0,
@@ -100,6 +101,7 @@ var Scalars = &Values[string]{
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/786
 var FixedScalars = &Maps[string]{
+	name: "FixedScalars",
 	data: map[string]map[string]any{
 		"fixed_double":          {"double_value": 42.13},
 		"fixed_double-whole":    {"double_value": 42.0},

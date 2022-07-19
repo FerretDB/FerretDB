@@ -33,6 +33,8 @@ const (
 	// For ProtocolError only.
 	errInternalError = ErrorCode(1) // InternalError
 
+	ErrIncompatible = ErrorCode(5000) // Incompatible
+
 	// ErrBadValue indicates wrong input.
 	ErrBadValue = ErrorCode(2) // BadValue
 

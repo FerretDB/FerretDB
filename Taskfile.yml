@@ -89,7 +89,7 @@ tasks:
     cmds:
       - go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData . -target-port=37017
       - go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData . -handler=pg
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData -tags=ferretdb_tigris ./tigris -handler=tigris
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData -tags=ferretdb_tigris . -handler=tigris
 
   gen:
     desc: "Generate (and format) code"
@@ -108,9 +108,9 @@ tasks:
     deps: [test-unit, test-integration]
 
   test-unit-short:
-    desc: "Run short unit tests"
+    desc: "Run short unit tests (with caching)"
     cmds:
-      - go test -short -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=cover.txt ./...
+      - go test -short {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
 
   test-unit:
     desc: "Run all unit tests"
@@ -129,19 +129,28 @@ tasks:
     desc: "Run integration tests for PostgreSQL handler"
     dir: integration
     cmds:
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=integration-pg.txt -coverpkg=../... -handler=pg
+      - >
+        go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on
+        -coverprofile=integration-pg.txt -coverpkg=../...
+        . -handler=pg
 
   test-integration-tigris:
     desc: "Run integration tests for Tigris handler"
-    dir: integration/tigris
+    dir: integration
     cmds:
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -tags=ferretdb_tigris -shuffle=on -coverprofile=integration-tigris.txt -coverpkg=../... -handler=tigris
+      - >
+        go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on
+        -coverprofile=integration-tigris.txt -coverpkg=../... -tags=ferretdb_tigris
+        . -handler=tigris
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
     dir: integration
     cmds:
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=integration-mongodb.txt -coverpkg=../... -target-port=37017 -compat-port=0
+      - >
+        go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on
+        -coverprofile=integration-mongodb.txt -coverpkg=../...
+        . -target-port=37017 -compat-port=0
 
   bench-short:
     desc: "Benchmark for about 20 seconds (with default BENCHTIME)"

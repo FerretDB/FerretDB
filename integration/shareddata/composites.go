@@ -24,6 +24,7 @@ import (
 //
 // This shared data set is not frozen yet, but please add to it only if it is really shared.
 var Composites = &Values[string]{
+	name: "Composites",
 	data: map[string]any{
 		"document":                   bson.D{{"foo", int32(42)}},
 		"document-composite":         bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}},
