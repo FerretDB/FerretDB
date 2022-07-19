@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	// Internal collections prefix.
+	// Reserved prefix.
 	reservedPrefix = "_ferretdb_"
 
 	// Settings table name.
