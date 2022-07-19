@@ -55,7 +55,6 @@ Update connectionStatus to include authInfo.
 * GSSAPI Kerberos (Needs more research on that one)
 
 
-
 # Tasks
 ## Add support for separate connection pools for each user 
 
@@ -63,6 +62,7 @@ We will add support for Tigris authentication once it would be clear enough.
 
 *We will try to not store the username and password*.
 We should use PostgreSQL's authentication mechanism.
+All authentication configurations would be performed within the PostgreSQL server.
 
 As the first step we will implement PLAIN authentication mechanism.
 
