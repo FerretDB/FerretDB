@@ -92,11 +92,8 @@ func CollectionExists(ctx context.Context, querier pgxtype.Querier, db, collecti
 //  * ErrTableNotExist - is the required FerretDB database does not exist.
 // Please use errors.Is to check the error.
 func CreateCollection(ctx context.Context, querier pgxtype.Querier, db, collection string) error {
-	if !validateCollectionNameRe.MatchString(collection) {
-		return ErrInvalidTableName
-	}
-
-	if strings.HasPrefix(collection, reservedPrefix) {
+	if !validateCollectionNameRe.MatchString(collection) ||
+		strings.HasPrefix(collection, reservedPrefix) {
 		return ErrInvalidTableName
 	}
 
