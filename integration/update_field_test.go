@@ -810,7 +810,7 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 		"DotNotationFieldExist": {
 			id:          "document-nested",
 			setOnInsert: bson.D{{"$setOnInsert", bson.D{{"foo.bar.baz", "123"}}}},
-			expected:    bson.D{{"_id", "document-nested"}, {"foo", bson.D{{"bar", bson.D{{"baz", 1}}}}}},
+			expected:    bson.D{{"_id", "document-nested"}, {"foo", bson.D{{"bar", bson.D{{"baz", int32(1)}}}}}},
 			expectedStat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 0,
