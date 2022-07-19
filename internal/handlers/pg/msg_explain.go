@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -40,10 +41,22 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, common.NewError(common.ErrNotImplemented, err)
 	}
 
-	var explain *types.Document
-	if explain, err = common.GetRequiredParam[*types.Document](document, "explain"); err != nil {
-		return nil,
+	var sp pgdb.SQLParam
+	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
 	}
+	collectionParam, err := document.Get(document.Command())
+	if err != nil {
+		return nil, err
+	}
+	var ok bool
+	if sp.Collection, ok = collectionParam.(string); !ok {
+		return nil, common.NewErrorMsg(
+			common.ErrBadValue,
+			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+		)
+	}
+	// sp.Explain = types.NewDocument()
 
 	resDocs := make([]*types.Document, 0, 16)
 	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
@@ -79,10 +92,6 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 		return nil
 	})
-
-	if err != nil {
-		return nil, err
-	}
 
 	return nil, nil
 }

@@ -48,7 +48,7 @@ type SQLParam struct {
 	DB         string
 	Collection string
 	Comment    string
-	Explain    string
+	Explain    *types.Document
 }
 
 // QueryDocuments returns a channel with buffer FetchedChannelBufSize
@@ -97,6 +97,13 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier,
 		sql += `/* ` + comment + ` */ `
 	}
 	sql += `FROM ` + pgx.Identifier{db, table}.Sanitize()
+
+	if sql.Explain != nil {
+		sql = "EXPLAIN " + sql + " FORMAT JSON"
+		rows, err := querier.Query(ctx, sql)
+		// TODO
+		return nil, nil
+	}
 
 	rows, err := querier.Query(ctx, sql)
 	if err != nil {
