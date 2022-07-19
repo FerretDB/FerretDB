@@ -222,7 +222,7 @@ func TestDatabaseName(t *testing.T) {
 						"testdatabasename_err_toolongforboth",
 					),
 				},
-				alt: fmt.Sprintf("Invalid namespace: %s.%s", dbName300, "testdatabasename_err_toolongforboth"),
+				alt: fmt.Sprintf("Invalid namespace: %s.%s", dbName300, "testdatabasename_err_toolongforbothdbs"),
 			},
 			"WithADollarSign": {
 				db: "name_with_a-$",
