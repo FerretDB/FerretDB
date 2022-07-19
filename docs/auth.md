@@ -18,6 +18,8 @@ Update connectionStatus to include authInfo.
 
 [SCRAM authentication](https://www.mongodb.com/docs/manual/core/security-scram/)
 
+[PostgreSQL authentication](https://www.postgresql.org/docs/current/auth-methods.html)
+
 ## Auth Commands
 
 | #   | command      | Description                        |
