@@ -16,6 +16,7 @@ package pg
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v4"
@@ -64,6 +65,11 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	created, err := h.pgPool.CreateTableIfNotExist(ctx, sp.DB, sp.Collection)
 	if err != nil {
+		if errors.Is(pgdb.ErrInvalidTableName, err) ||
+			errors.Is(pgdb.ErrInvalidDatabaseName, err) {
+			msg := fmt.Sprintf("Invalid namespace: %s.%s", sp.DB, sp.Collection)
+			return nil, common.NewErrorMsg(common.ErrInvalidNamespace, msg)
+		}
 		return nil, err
 	}
 	if created {

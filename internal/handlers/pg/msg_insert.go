@@ -100,7 +100,8 @@ func (h *Handler) insert(ctx context.Context, sp pgdb.SQLParam, doc any) error {
 
 	err := h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		if err := pgdb.InsertDocument(ctx, tx, sp.DB, sp.Collection, d); err != nil {
-			if errors.Is(pgdb.ErrInvalidDatabaseName, err) {
+			if errors.Is(pgdb.ErrInvalidTableName, err) ||
+				errors.Is(pgdb.ErrInvalidDatabaseName, err) {
 				msg := fmt.Sprintf("Invalid namespace: %s.%s", sp.DB, sp.Collection)
 				return common.NewErrorMsg(common.ErrInvalidNamespace, msg)
 			}
