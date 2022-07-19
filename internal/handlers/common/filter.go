@@ -654,8 +654,6 @@ func filterFieldExprAll(fieldValue any, allValue any) (bool, error) {
 		return contains, nil
 
 	case *types.Document:
-		panic("document is not implemented in $all")
-		// TODO is it right?!
 		return false, nil
 
 	default:

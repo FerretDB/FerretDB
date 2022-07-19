@@ -30,7 +30,6 @@ func TestQueryArrayCompatAll(t *testing.T) {
 				"$and",
 				bson.A{
 					bson.D{{"_id", bson.D{{"$not", bson.D{{"$regex", primitive.Regex{Pattern: "array"}}}}}}},
-					bson.D{{"_id", bson.D{{"$not", bson.D{{"$regex", primitive.Regex{Pattern: "document"}}}}}}},
 					bson.D{{"value", bson.D{{"$all", bson.A{42}}}}},
 				},
 			}},
