@@ -153,7 +153,7 @@ func TestCollectionName(t *testing.T) {
 						collectionName300,
 					),
 				},
-				alt: fmt.Sprintf("Invalid collection name: 'testcollectionname-err.%s'", collectionName300),
+				alt: fmt.Sprintf("Invalid namespace: testcollectionname-err.%s", collectionName300),
 			},
 			"WithADollarSign": {
 				collection: "collection_name_with_a-$",
@@ -162,7 +162,7 @@ func TestCollectionName(t *testing.T) {
 					Code:    73,
 					Message: `Invalid collection name: collection_name_with_a-$`,
 				},
-				alt: `Invalid collection name: 'testcollectionname-err.collection_name_with_a-$'`,
+				alt: `Invalid namespace: testcollectionname-err.collection_name_with_a-$`,
 			},
 			"Empty": {
 				collection: "",
@@ -171,7 +171,7 @@ func TestCollectionName(t *testing.T) {
 					Code:    73,
 					Message: "Invalid namespace specified 'testcollectionname-err.'",
 				},
-				alt: "Invalid collection name: 'testcollectionname-err.'",
+				alt: "Invalid namespace: testcollectionname-err.",
 			},
 		}
 

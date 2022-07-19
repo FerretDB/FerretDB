@@ -66,7 +66,7 @@ func CreateDatabase(ctx context.Context, querier pgxtype.Querier, db string) err
 	}
 
 	if strings.HasPrefix(db, reservedPrefix) {
-		return ErrInvalidTableName
+		return ErrInvalidDatabaseName
 	}
 
 	sql := `CREATE SCHEMA ` + pgx.Identifier{db}.Sanitize()
@@ -105,7 +105,7 @@ func CreateDatabaseIfNotExists(ctx context.Context, querier pgxtype.Querier, db 
 	}
 
 	if strings.HasPrefix(db, reservedPrefix) {
-		return ErrInvalidTableName
+		return ErrInvalidDatabaseName
 	}
 
 	sql := `CREATE SCHEMA IF NOT EXISTS ` + pgx.Identifier{db}.Sanitize()
