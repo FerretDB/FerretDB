@@ -377,13 +377,26 @@ func TestUpdateFieldInc(t *testing.T) {
 				update:   bson.D{{"$inc", bson.D{{"foo", int32(12)}, {"value", int32(1)}}}},
 				expected: bson.D{{"_id", "int32"}, {"value", int32(43)}, {"foo", int32(12)}},
 			},
+			"DotNotationFieldExist": {
+				filter:   bson.D{{"_id", "document-nested"}},
+				update:   bson.D{{"$inc", bson.D{{"foo.bar.baz", int32(1)}}}},
+				expected: bson.D{{"_id", "document-nested"}, {"foo", bson.D{{"bar", bson.D{{"baz", int32(2)}}}}}},
+			},
+			"DotNotationFieldNotExist": {
+				filter:   bson.D{{"_id", "int32"}},
+				update:   bson.D{{"$inc", bson.D{{"foo.bar.baz", int32(1)}}}},
+				expected: bson.D{{"_id", "int32"}, {"value", int32(42)}, {"foo", bson.D{{"bar", bson.D{{"baz", int32(1)}}}}}},
+			},
 		} {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
 				ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
 
-				_, err := collection.UpdateOne(ctx, tc.filter, tc.update)
+				_, err := collection.InsertOne(ctx, bson.D{{"_id", "document-nested"}, {"foo", bson.D{{"bar", bson.D{{"baz", int32(1)}}}}}})
+				require.NoError(t, err)
+
+				_, err = collection.UpdateOne(ctx, tc.filter, tc.update)
 				require.NoError(t, err)
 
 				var actual bson.D
