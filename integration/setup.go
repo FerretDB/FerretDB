@@ -53,7 +53,7 @@ var (
 
 // SetupOpts represents setup options.
 //
-// TODO add option to use read-only user
+// TODO add option to use read-only user: https://github.com/FerretDB/FerretDB/issues/914.
 type SetupOpts struct {
 	// If true, returns two client connections to different systems for compatibility test.
 	CompatTest bool
