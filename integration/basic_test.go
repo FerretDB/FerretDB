@@ -143,7 +143,7 @@ func TestCollectionName(t *testing.T) {
 			err        *mongo.CommandError
 			alt        string
 		}{
-			"TooLongForBoth": {
+			"TooLongForBothDBs": {
 				collection: collectionName300,
 				err: &mongo.CommandError{
 					Name: "InvalidNamespace",
@@ -211,7 +211,7 @@ func TestDatabaseName(t *testing.T) {
 			err *mongo.CommandError
 			alt string
 		}{
-			"TooLongForBoth": {
+			"TooLongForBothDBs": {
 				db: dbName300,
 				err: &mongo.CommandError{
 					Name: "InvalidNamespace",
