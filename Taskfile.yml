@@ -135,7 +135,7 @@ tasks:
     desc: "Run integration tests for Tigris handler"
     dir: integration/tigris
     cmds:
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -tags=ferretdb_tigris -shuffle=on -coverprofile=integration-tigris.txt -coverpkg=../... -handler=tigris
+      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -tags=ferretdb_tigris -shuffle=on -coverprofile=../integration-tigris.txt -coverpkg=../... -handler=tigris
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
