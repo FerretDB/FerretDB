@@ -219,7 +219,7 @@ func TestDatabaseName(t *testing.T) {
 					Message: fmt.Sprintf(
 						"Invalid namespace specified '%s.%s'",
 						dbName300,
-						"testdatabasename_err_toolongforboth",
+						"testdatabasename_err_toolongforbothdbs",
 					),
 				},
 				alt: fmt.Sprintf("Invalid namespace: %s.%s", dbName300, "testdatabasename_err_toolongforbothdbs"),
