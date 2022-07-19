@@ -66,6 +66,8 @@ func TestEmbedded(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []string{"admin"}, names)
 
+	require.NoError(t, client.Disconnect(ctx))
+
 	cancel()
 	<-done
 }

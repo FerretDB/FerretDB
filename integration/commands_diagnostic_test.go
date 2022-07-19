@@ -25,12 +25,12 @@ import (
 
 func TestCommandsDiagnosticGetLog(t *testing.T) {
 	t.Parallel()
-	ctx, collection, _ := SetupWithOpts(t, &SetupOpts{
+	s := SetupWithOpts(t, &SetupOpts{
 		DatabaseName: "admin",
 	})
 
 	var actual bson.D
-	err := collection.Database().RunCommand(ctx, bson.D{{"getLog", "startupWarnings"}}).Decode(&actual)
+	err := s.TargetCollection.Database().RunCommand(s.Ctx, bson.D{{"getLog", "startupWarnings"}}).Decode(&actual)
 	require.NoError(t, err)
 
 	m := actual.Map()
