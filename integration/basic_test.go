@@ -217,11 +217,12 @@ func TestDatabaseName(t *testing.T) {
 					Name: "InvalidNamespace",
 					Code: 73,
 					Message: fmt.Sprintf(
-						"Invalid namespace specified '%s.test'",
+						"Invalid namespace specified '%s.%s'",
 						dbName300,
+						"testdatabasename_err_toolongforboth",
 					),
 				},
-				alt: fmt.Sprintf("Invalid namespace specified: '%s.test'", dbName300),
+				alt: fmt.Sprintf("Invalid namespace: %s.%s", dbName300, "testdatabasename_err_toolongforboth"),
 			},
 			"WithADollarSign": {
 				db: "name_with_a-$",
@@ -230,7 +231,6 @@ func TestDatabaseName(t *testing.T) {
 					Code:    73,
 					Message: `Invalid namespace: name_with_a-$.testdatabasename_err_withadollarsign`,
 				},
-				alt: `Invalid namespace: 'name_with_a-$.testdatabasename_err_withadollarsign'`,
 			},
 		}
 
