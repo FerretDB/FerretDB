@@ -38,8 +38,8 @@ func TestQueryLogicalOr(t *testing.T) {
 	}{
 		"Or": {
 			filter: bson.A{
-				bson.D{{"value", bson.D{{"$lt", 0}}}},
-				bson.D{{"value", bson.D{{"$lt", 42}}}},
+				bson.D{{"v", bson.D{{"$lt", 0}}}},
+				bson.D{{"v", bson.D{{"$lt", 42}}}},
 			},
 			expectedIDs: []any{
 				"double-negative-infinity", "double-negative-zero",
@@ -80,7 +80,7 @@ func TestQueryLogicalOr(t *testing.T) {
 		},
 		"BadExpressionValue": {
 			filter: bson.A{
-				bson.D{{"value", bson.D{{"$gt", 0}}}},
+				bson.D{{"v", bson.D{{"$gt", 0}}}},
 				nil,
 			},
 			err: &mongo.CommandError{
@@ -122,8 +122,8 @@ func TestQueryLogicalNor(t *testing.T) {
 	}{
 		"Nor": {
 			filter: bson.A{
-				bson.D{{"value", bson.D{{"$gt", 0}}}},
-				bson.D{{"value", bson.D{{"$gt", 42}}}},
+				bson.D{{"v", bson.D{{"$gt", 0}}}},
+				bson.D{{"v", bson.D{{"$gt", 42}}}},
 			},
 			expectedIDs: []any{
 				"binary", "binary-empty", "bool-false", "bool-true",
@@ -145,7 +145,7 @@ func TestQueryLogicalNor(t *testing.T) {
 		},
 		"BadExpressionValue": {
 			filter: bson.A{
-				bson.D{{"value", bson.D{{"$gt", 0}}}},
+				bson.D{{"v", bson.D{{"$gt", 0}}}},
 				nil,
 			},
 			err: &mongo.CommandError{
@@ -187,7 +187,7 @@ func TestQueryLogicalNot(t *testing.T) {
 		err         *mongo.CommandError
 	}{
 		"Not": {
-			filter: bson.D{{"value", bson.D{{"$not", bson.D{{"$eq", 42}}}}}},
+			filter: bson.D{{"v", bson.D{{"$not", bson.D{{"$eq", 42}}}}}},
 			expectedIDs: []any{
 				"array-embedded", "array-empty", "array-empty-nested", "array-first-embedded", "array-last-embedded",
 				"array-middle-embedded", "array-null", "array-two",
@@ -216,7 +216,7 @@ func TestQueryLogicalNot(t *testing.T) {
 			},
 		},
 		"NotEqNull": {
-			filter: bson.D{{"value", bson.D{{"$not", bson.D{{"$eq", nil}}}}}},
+			filter: bson.D{{"v", bson.D{{"$not", bson.D{{"$eq", nil}}}}}},
 			expectedIDs: []any{
 				"array", "array-embedded", "array-empty", "array-empty-nested", "array-two",
 				"binary", "binary-empty",
@@ -234,7 +234,7 @@ func TestQueryLogicalNot(t *testing.T) {
 			},
 		},
 		"ValueRegex": {
-			filter: bson.D{{"value", bson.D{{"$not", primitive.Regex{Pattern: "^fo"}}}}},
+			filter: bson.D{{"v", bson.D{{"$not", primitive.Regex{Pattern: "^fo"}}}}},
 			expectedIDs: []any{
 				"array", "array-embedded", "array-empty", "array-empty-nested", "array-first-embedded",
 				"array-last-embedded", "array-middle-embedded", "array-null", "array-two",
@@ -275,7 +275,7 @@ func TestQueryLogicalNot(t *testing.T) {
 			},
 		},
 		"NestedNot": {
-			filter:      bson.D{{"value", bson.D{{"$not", bson.D{{"$not", bson.D{{"$eq", 42}}}}}}}},
+			filter:      bson.D{{"v", bson.D{{"$not", bson.D{{"$not", bson.D{{"$eq", 42}}}}}}}},
 			expectedIDs: []any{"array", "array-three", "array-three-reverse", "double-whole", "int32", "int64"},
 		},
 	} {

@@ -87,7 +87,7 @@ func (docs *Maps[idType]) Docs() []bson.D {
 	return res
 }
 
-// Values stores shared data documents as {"_id": key, "value": value} documents.
+// Values stores shared data documents as {"_id": key, "v": value} documents.
 //
 // TODO replace constraints.Ordered with comparable: https://github.com/FerretDB/FerretDB/issues/914
 type Values[idType constraints.Ordered] struct {
@@ -104,7 +104,7 @@ func (values *Values[idType]) Docs() []bson.D {
 		doc := bson.D{{"_id", id}}
 		v := values.data[id]
 		if v != unset {
-			doc = append(doc, bson.E{"value", v})
+			doc = append(doc, bson.E{"v", v})
 		}
 		res = append(res, doc)
 	}
