@@ -31,6 +31,7 @@ type updateCompatTestCase struct {
 	skip   string
 }
 
+// testUpdateCompat tests update compatibility test cases.
 func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 	t.Helper()
 
