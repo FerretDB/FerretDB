@@ -154,7 +154,6 @@ func (a *Array) Max() any {
 
 // Contains checks if the Array contains the given value.
 func (a *Array) Contains(filterValue any) (bool, error) {
-
 	// This comparison covers two cases:
 	// - `a` and `filterValue` are equal;
 	// - `filerValue` is a scalar, and `a` contains `filterValue`.
