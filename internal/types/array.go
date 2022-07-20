@@ -156,11 +156,16 @@ func (a *Array) Max() any {
 func (a *Array) Contains(filterValue any) (bool, error) {
 	switch filterValue := filterValue.(type) {
 	case *Document, *Array:
+		// filterValue is a composite type, so either a and filterValue must be equal
+		// or at least one element of a must be equal with filterValue.
+
+		// TODO: Compare might be inaccurate for some corner cases, it needs better testing
 		if res := Compare(a, filterValue); slices.Contains(res, Equal) && len(res) == 1 {
 			return true, nil
 		}
 
 		for _, elem := range a.s {
+			// TODO: Compare might be inaccurate for some corner cases, it needs better testing
 			if res := Compare(elem, filterValue); slices.Contains(res, Equal) && len(res) == 1 {
 				return true, nil
 			}
@@ -168,10 +173,11 @@ func (a *Array) Contains(filterValue any) (bool, error) {
 		return false, nil
 
 	default:
+		// filterValue is a scalar, so we compare it to each scalar element of a
 		for _, elem := range a.s {
 			switch elem := elem.(type) {
 			case *Document, *Array:
-				// do nothing
+				// we need elem and filterValue to be exactly equal, so we do nothing here
 			default:
 				if compareScalars(elem, filterValue) == Equal {
 					return true, nil
@@ -180,26 +186,6 @@ func (a *Array) Contains(filterValue any) (bool, error) {
 		}
 		return false, nil
 	}
-
-	// This comparison covers two cases:
-	// - `a` and `filterValue` are equal;
-	// - `filerValue` is a scalar, and `a` contains `filterValue`.
-	/*if res := Compare(a, filterValue); slices.Contains(res, Equal) && len(res) == 1 {
-		return true, nil
-	}
-
-	// This comparison covers embedded arrays.
-	// If `filterValue` is an array, and at leas one element of `a` is equal to `filterValue`,
-	// then we consider that `a` contains `filterValue`.
-	if _, ok := filterValue.(*Array); ok {
-		for _, elem := range a.s {
-			if res := Compare(elem, filterValue); slices.Contains(res, Equal) && len(res) == 1 {
-				return true, nil
-			}
-		}
-	}
-
-	return false, nil*/
 }
 
 // ContainsAll checks if the Array contains all the given values of the Array b.
