@@ -658,12 +658,12 @@ func filterFieldExprAll(fieldValue any, allValue any) (bool, error) {
 
 	default:
 		for i := 0; i < query.Len(); i++ {
-			if res := types.Compare(value, must.NotFail(query.Get(i))); slices.Contains(res, types.Equal) && len(res) == 1 {
-				return true, nil
+			res := types.Compare(value, must.NotFail(query.Get(i)))
+			if !slices.Contains(res, types.Equal) || len(res) != 1 {
+				return false, nil
 			}
 		}
-
-		return false, nil
+		return true, nil
 	}
 }
 

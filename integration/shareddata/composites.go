@@ -15,9 +15,8 @@
 package shareddata
 
 import (
-	"math"
-
 	"go.mongodb.org/mongo-driver/bson"
+	"math"
 )
 
 // Composites contain composite values for tests.
