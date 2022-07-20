@@ -176,13 +176,6 @@ func (pgPool *Pool) Collections(ctx context.Context, db string) ([]string, error
 	return Collections(ctx, pgPool, db)
 }
 
-// Tables method should not be used in new code.
-//
-// Deprecated: use Tables function instead.
-func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, error) {
-	return Tables(ctx, pgPool, schema)
-}
-
 // CreateDatabase method should not be used in new code.
 //
 // Deprecated: use CreateDatabase function instead.
