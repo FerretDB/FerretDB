@@ -159,13 +159,12 @@ func (a *Array) Contains(filterValue any) (bool, error) {
 		// filterValue is a composite type, so either a and filterValue must be equal
 		// or at least one element of a must be equal with filterValue.
 
-		// TODO: Compare might be inaccurate for some corner cases, it needs better testing
+		// TODO: Compare might be inaccurate for some corner cases, we might want to fix it later
 		if res := Compare(a, filterValue); slices.Contains(res, Equal) && len(res) == 1 {
 			return true, nil
 		}
 
 		for _, elem := range a.s {
-			// TODO: Compare might be inaccurate for some corner cases, it needs better testing
 			if res := Compare(elem, filterValue); slices.Contains(res, Equal) && len(res) == 1 {
 				return true, nil
 			}
@@ -190,8 +189,7 @@ func (a *Array) Contains(filterValue any) (bool, error) {
 
 // ContainsAll checks if the Array contains all the given values of the Array b.
 // Currently, this algorithm is O(n^2) without any performance tuning.
-//
-// Important! This place can be significantly improved if a more performant algorithm is chosen.
+// This place can be significantly improved if a more performant algorithm is chosen.
 func (a *Array) ContainsAll(b *Array) (bool, error) {
 	for _, v := range b.s {
 		contains, err := a.Contains(v)
