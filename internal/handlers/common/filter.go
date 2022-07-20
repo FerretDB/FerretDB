@@ -644,6 +644,7 @@ func filterFieldExprAll(fieldValue any, allValue any) (bool, error) {
 
 	switch value := fieldValue.(type) {
 	case *types.Array:
+		// For arrays we check that the array contains all the elements of the query.
 		contains, err := value.ContainsAll(query)
 		if err == types.ErrNaNIsNotImplemented {
 			return false, NewErrorMsg(ErrBadValue, "NaN is not implemented in $all")
@@ -654,9 +655,12 @@ func filterFieldExprAll(fieldValue any, allValue any) (bool, error) {
 		return contains, nil
 
 	case *types.Document:
+		// For documents we return false as $all doesn't work on documents.
 		return false, nil
 
 	default:
+		// For other types (scalars) we check that the value is equal to each scalar in the query.
+		// Example: value: 42, query: [42, 42] should give us `true`
 		for i := 0; i < query.Len(); i++ {
 			res := types.Compare(value, must.NotFail(query.Get(i)))
 			if !slices.Contains(res, types.Equal) || len(res) != 1 {
