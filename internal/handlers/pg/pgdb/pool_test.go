@@ -59,7 +59,7 @@ func TestCreateDrop(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
-	pool := testutil.Pool(ctx, t, nil, zaptest.NewLogger(t))
+	pool := getPool(ctx, t, nil, zaptest.NewLogger(t))
 
 	t.Run("SchemaDoesNotExistTableDoesNotExist", func(t *testing.T) {
 		t.Parallel()
@@ -180,7 +180,7 @@ func TestConcurrentCreate(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
-	createPool := testutil.Pool(ctx, t, nil, zaptest.NewLogger(t))
+	createPool := getPool(ctx, t, nil, zaptest.NewLogger(t))
 	dbName := testutil.SchemaName(t) // using schema name helper for database name is good enough
 	_, err := createPool.Exec(ctx, `CREATE DATABASE `+dbName)
 	require.NoError(t, err)
@@ -256,7 +256,7 @@ func TestTableExists(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
-	pool := testutil.Pool(ctx, t, nil, zaptest.NewLogger(t))
+	pool := getPool(ctx, t, nil, zaptest.NewLogger(t))
 
 	t.Run("SchemaDoesNotExistTableDoesNotExist", func(t *testing.T) {
 		t.Parallel()
@@ -313,7 +313,7 @@ func TestCreateTableIfNotExist(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
-	pool := testutil.Pool(ctx, t, nil, zaptest.NewLogger(t))
+	pool := getPool(ctx, t, nil, zaptest.NewLogger(t))
 
 	t.Run("SchemaDoesNotExistTableDoesNotExist", func(t *testing.T) {
 		t.Parallel()

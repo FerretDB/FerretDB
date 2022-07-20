@@ -37,8 +37,8 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	common.Ignored(document, h.l, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
 
-	var sp sqlParam
-	if sp.db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	var sp pgdb.SQLParam
+	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 	collectionParam, err := document.Get(document.Command())
@@ -46,7 +46,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 	var ok bool
-	if sp.collection, ok = collectionParam.(string); !ok {
+	if sp.Collection, ok = collectionParam.(string); !ok {
 		return nil, common.NewErrorMsg(
 			common.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
@@ -88,7 +88,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // insert prepares and executes actual INSERT request to Postgres.
-func (h *Handler) insert(ctx context.Context, sp sqlParam, doc any) error {
+func (h *Handler) insert(ctx context.Context, sp pgdb.SQLParam, doc any) error {
 	d, ok := doc.(*types.Document)
 	if !ok {
 		return common.NewErrorMsg(
@@ -98,7 +98,7 @@ func (h *Handler) insert(ctx context.Context, sp sqlParam, doc any) error {
 	}
 
 	err := h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		if err := pgdb.InsertDocument(ctx, tx, sp.db, sp.collection, d); err != nil {
+		if err := pgdb.InsertDocument(ctx, tx, sp.DB, sp.Collection, d); err != nil {
 			return lazyerrors.Error(err)
 		}
 		return nil

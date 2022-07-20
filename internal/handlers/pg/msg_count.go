@@ -18,7 +18,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v4"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -58,8 +61,8 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		}
 	}
 
-	var sp sqlParam
-	if sp.db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	var sp pgdb.SQLParam
+	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 	collectionParam, err := document.Get(document.Command())
@@ -67,30 +70,50 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, err
 	}
 	var ok bool
-	if sp.collection, ok = collectionParam.(string); !ok {
+	if sp.Collection, ok = collectionParam.(string); !ok {
 		return nil, common.NewErrorMsg(
 			common.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
 		)
 	}
 
-	fetchedDocs, err := h.fetch(ctx, sp)
+	resDocs := make([]*types.Document, 0, 16)
+	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			// Drain the channel to prevent leaking goroutines.
+			// TODO Offer a better design instead of channels: https://github.com/FerretDB/FerretDB/issues/898.
+			for range fetchedChan {
+			}
+		}()
+
+		for fetchedItem := range fetchedChan {
+			if fetchedItem.Err != nil {
+				return fetchedItem.Err
+			}
+
+			for _, doc := range fetchedItem.Docs {
+				matches, err := common.FilterDocument(doc, filter)
+				if err != nil {
+					return err
+				}
+
+				if !matches {
+					continue
+				}
+
+				resDocs = append(resDocs, doc)
+			}
+		}
+
+		return nil
+	})
+
 	if err != nil {
 		return nil, err
-	}
-
-	resDocs := make([]*types.Document, 0, 16)
-	for _, doc := range fetchedDocs {
-		matches, err := common.FilterDocument(doc, filter)
-		if err != nil {
-			return nil, err
-		}
-
-		if !matches {
-			continue
-		}
-
-		resDocs = append(resDocs, doc)
 	}
 
 	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
