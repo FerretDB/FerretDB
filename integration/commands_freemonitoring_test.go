@@ -17,6 +17,7 @@ package integration
 import (
 	"testing"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -26,7 +27,7 @@ import (
 
 func TestCommandsFreeMonitoringGetFreeMonitoringStatus(t *testing.T) {
 	t.Parallel()
-	s := SetupWithOpts(t, &SetupOpts{
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		DatabaseName: "admin",
 	})
 
@@ -57,7 +58,7 @@ func TestCommandsFreeMonitoringGetFreeMonitoringStatus(t *testing.T) {
 
 func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 	t.Parallel()
-	s := SetupWithOpts(t, &SetupOpts{
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		DatabaseName: "admin",
 	})
 

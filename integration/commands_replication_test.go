@@ -18,6 +18,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -26,7 +27,7 @@ import (
 
 func TestCommandsReplicationIsMaster(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t)
+	ctx, collection := setup.Setup(t)
 
 	for _, command := range []string{"ismaster", "isMaster"} {
 		command := command
@@ -71,7 +72,7 @@ func TestCommandsReplicationIsMaster(t *testing.T) {
 
 func TestCommandsReplicationHello(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t)
+	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
 	err := collection.Database().RunCommand(ctx, bson.D{{"hello", 1}}).Decode(&actual)

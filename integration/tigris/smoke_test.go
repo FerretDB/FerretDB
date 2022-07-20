@@ -21,12 +21,13 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/FerretDB/FerretDB/integration"
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestSmoke(t *testing.T) {
 	t.Parallel()
-	ctx, collection := integration.Setup(t, shareddata.FixedScalars)
+	ctx, collection := setup.Setup(t, shareddata.FixedScalars)
 
 	var doc bson.D
 	err := collection.FindOne(ctx, bson.D{{"_id", "fixed_double"}}).Decode(&doc)
