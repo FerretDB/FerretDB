@@ -21,6 +21,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestCommandsDiagnosticGetLog(t *testing.T) {
@@ -117,7 +119,7 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 			command: bson.D{
 				{
 					"explain", bson.D{
-						{"count", collection.Name()},
+						{"count", testutil.CollectionName(t)},
 						{"query", bson.D{{"value", bson.D{{"$type", "array"}}}}},
 					},
 				},
@@ -134,7 +136,7 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 			require.NoError(t, err)
 			t.Logf("%#v", actual)
-			t.FailNow()
+			// t.FailNow()
 		})
 	}
 }

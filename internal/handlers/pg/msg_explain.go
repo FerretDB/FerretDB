@@ -17,7 +17,6 @@ package pg
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
@@ -34,7 +33,6 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 	common.Ignored(document, h.l, "verbosity")
-
 	var sp pgdb.SQLParam
 	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
@@ -51,7 +49,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			fmt.Sprintf("has invalid type %s", common.AliasFromType(commandParam)),
 		)
 	}
-	collectionParam, err := document.Get(command.Command())
+	collectionParam, err := command.Get(command.Command())
 	if err != nil {
 		return nil, err
 	}
@@ -61,8 +59,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
 		)
 	}
-	os.Exit(1)
-
+	sp.Explain = true
 	resDocs := make([]*types.Document, 0, 16)
 	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp)

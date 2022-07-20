@@ -62,8 +62,7 @@ type SQLParam struct {
 // Context cancellation is not considered an error.
 //
 // If the collection doesn't exist, fetch returns a closed channel and no error.
-func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier, sp SQLParam,
-) (<-chan FetchedDocs, error) {
+func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier, sp SQLParam) (<-chan FetchedDocs, error) {
 	fetchedChan := make(chan FetchedDocs, FetchedChannelBufSize)
 	db := sp.DB
 	collection := sp.Collection
@@ -75,6 +74,7 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier,
 		close(fetchedChan)
 		return fetchedChan, lazyerrors.Error(err)
 	}
+	fmt.Println("1", db, collection)
 	if !collectionExists {
 		pgPool.logger.Info(
 			"Collection doesn't exist, handling a case to deal with a non-existing collection (return empty list)",
