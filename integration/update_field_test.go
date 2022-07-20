@@ -282,108 +282,108 @@ func TestUpdateFieldInc(t *testing.T) {
 		t.Parallel()
 
 		for name, tc := range map[string]struct {
-			filter   bson.D
+			id       string
 			update   bson.D
 			expected bson.D
 		}{
 			"DoubleIncrement": {
-				filter:   bson.D{{"_id", "double"}},
+				id:       "double",
 				update:   bson.D{{"$inc", bson.D{{"v", float64(42.13)}}}},
 				expected: bson.D{{"_id", "double"}, {"v", float64(84.26)}},
 			},
 			"DoubleIncrementNaN": {
-				filter:   bson.D{{"_id", "double"}},
+				id:       "double",
 				update:   bson.D{{"$inc", bson.D{{"v", math.NaN()}}}},
 				expected: bson.D{{"_id", "double"}, {"v", math.NaN()}},
 			},
 			"DoubleIncrementPlusInfinity": {
-				filter:   bson.D{{"_id", "double-nan"}},
+				id:       "double-nan",
 				update:   bson.D{{"$inc", bson.D{{"v", math.Inf(+1)}}}},
 				expected: bson.D{{"_id", "double-nan"}, {"v", math.NaN()}},
 			},
 			"DoubleNegativeIncrement": {
-				filter:   bson.D{{"_id", "double"}},
+				id:       "double",
 				update:   bson.D{{"$inc", bson.D{{"v", float64(-42.13)}}}},
 				expected: bson.D{{"_id", "double"}, {"v", float64(0)}},
 			},
 			"DoubleIncrementIntField": {
-				filter:   bson.D{{"_id", "int32"}},
+				id:       "int32",
 				update:   bson.D{{"$inc", bson.D{{"v", float64(1.13)}}}},
 				expected: bson.D{{"_id", "int32"}, {"v", float64(43.13)}},
 			},
 			"DoubleIncrementLongField": {
-				filter:   bson.D{{"_id", "int64"}},
+				id:       "int64",
 				update:   bson.D{{"$inc", bson.D{{"v", float64(1.13)}}}},
 				expected: bson.D{{"_id", "int64"}, {"v", float64(43.13)}},
 			},
 			"DoubleIntIncrement": {
-				filter:   bson.D{{"_id", "double"}},
+				id:       "double",
 				update:   bson.D{{"$inc", bson.D{{"v", int32(1)}}}},
 				expected: bson.D{{"_id", "double"}, {"v", float64(43.13)}},
 			},
 			"DoubleLongIncrement": {
-				filter:   bson.D{{"_id", "double"}},
+				id:       "double",
 				update:   bson.D{{"$inc", bson.D{{"v", int64(1)}}}},
 				expected: bson.D{{"_id", "double"}, {"v", float64(43.13)}},
 			},
 			"IntIncrement": {
-				filter:   bson.D{{"_id", "int32"}},
+				id:       "int32",
 				update:   bson.D{{"$inc", bson.D{{"v", int32(1)}}}},
 				expected: bson.D{{"_id", "int32"}, {"v", int32(43)}},
 			},
 			"IntNegativeIncrement": {
-				filter:   bson.D{{"_id", "int32"}},
+				id:       "int32",
 				update:   bson.D{{"$inc", bson.D{{"v", int32(-1)}}}},
 				expected: bson.D{{"_id", "int32"}, {"v", int32(41)}},
 			},
 			"IntIncrementDoubleField": {
-				filter:   bson.D{{"_id", "double"}},
+				id:       "double",
 				update:   bson.D{{"$inc", bson.D{{"v", int32(1)}}}},
 				expected: bson.D{{"_id", "double"}, {"v", float64(43.13)}},
 			},
 			"IntIncrementLongField": {
-				filter:   bson.D{{"_id", "int64"}},
+				id:       "int64",
 				update:   bson.D{{"$inc", bson.D{{"v", int32(1)}}}},
 				expected: bson.D{{"_id", "int64"}, {"v", int64(43)}},
 			},
 			"LongIncrement": {
-				filter:   bson.D{{"_id", "int64"}},
+				id:       "int64",
 				update:   bson.D{{"$inc", bson.D{{"v", int64(1)}}}},
 				expected: bson.D{{"_id", "int64"}, {"v", int64(43)}},
 			},
 			"LongNegativeIncrement": {
-				filter:   bson.D{{"_id", "int64"}},
+				id:       "int64",
 				update:   bson.D{{"$inc", bson.D{{"v", int64(-1)}}}},
 				expected: bson.D{{"_id", "int64"}, {"v", int64(41)}},
 			},
 			"LongIncrementDoubleField": {
-				filter:   bson.D{{"_id", "double"}},
+				id:       "double",
 				update:   bson.D{{"$inc", bson.D{{"v", int64(1)}}}},
 				expected: bson.D{{"_id", "double"}, {"v", float64(43.13)}},
 			},
 			"LongIncrementIntField": {
-				filter:   bson.D{{"_id", "int32"}},
+				id:       "int32",
 				update:   bson.D{{"$inc", bson.D{{"v", int64(1)}}}},
 				expected: bson.D{{"_id", "int32"}, {"v", int64(43)}},
 			},
 
 			"FieldNotExist": {
-				filter:   bson.D{{"_id", "int32"}},
+				id:       "int32",
 				update:   bson.D{{"$inc", bson.D{{"foo", int32(1)}}}},
 				expected: bson.D{{"_id", "int32"}, {"v", int32(42)}, {"foo", int32(1)}},
 			},
 			"IncTwoFields": {
-				filter:   bson.D{{"_id", "int32"}},
+				id:       "int32",
 				update:   bson.D{{"$inc", bson.D{{"foo", int32(12)}, {"v", int32(1)}}}},
 				expected: bson.D{{"_id", "int32"}, {"v", int32(43)}, {"foo", int32(12)}},
 			},
 			"DotNotationFieldExist": {
-				filter:   bson.D{{"_id", "document-nested"}},
+				id:       "document-nested",
 				update:   bson.D{{"$inc", bson.D{{"foo.bar.baz", int32(1)}}}},
 				expected: bson.D{{"_id", "document-nested"}, {"foo", bson.D{{"bar", bson.D{{"baz", int32(2)}}}}}},
 			},
 			"DotNotationFieldNotExist": {
-				filter:   bson.D{{"_id", "int32"}},
+				id:       "int32",
 				update:   bson.D{{"$inc", bson.D{{"foo.bar.baz", int32(1)}}}},
 				expected: bson.D{{"_id", "int32"}, {"value", int32(42)}, {"foo", bson.D{{"bar", bson.D{{"baz", int32(1)}}}}}},
 			},
@@ -396,11 +396,11 @@ func TestUpdateFieldInc(t *testing.T) {
 				_, err := collection.InsertOne(ctx, bson.D{{"_id", "document-nested"}, {"foo", bson.D{{"bar", bson.D{{"baz", int32(1)}}}}}})
 				require.NoError(t, err)
 
-				_, err = collection.UpdateOne(ctx, tc.filter, tc.update)
+				_, err = collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
 				require.NoError(t, err)
 
 				var actual bson.D
-				err = collection.FindOne(ctx, tc.filter).Decode(&actual)
+				err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
 				require.NoError(t, err)
 
 				AssertEqualDocuments(t, tc.expected, actual)
@@ -865,7 +865,7 @@ func TestUpdateFieldUnset(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		filter   bson.D
+		id       string
 		update   bson.D
 		expected bson.D
 		stat     *mongo.UpdateResult
@@ -873,7 +873,7 @@ func TestUpdateFieldUnset(t *testing.T) {
 		alt      string
 	}{
 		"String": {
-			filter:   bson.D{{"_id", "string"}},
+			id:       "string",
 			update:   bson.D{{"$unset", bson.D{{"v", int32(1)}}}},
 			expected: bson.D{{"_id", "string"}},
 			stat: &mongo.UpdateResult{
@@ -883,7 +883,7 @@ func TestUpdateFieldUnset(t *testing.T) {
 			},
 		},
 		"Empty": {
-			filter:   bson.D{{"_id", "string"}},
+			id:       "string",
 			update:   bson.D{{"$unset", bson.D{}}},
 			expected: bson.D{{"_id", "string"}, {"v", "foo"}},
 			stat: &mongo.UpdateResult{
@@ -893,7 +893,7 @@ func TestUpdateFieldUnset(t *testing.T) {
 			},
 		},
 		"Field": {
-			filter:   bson.D{{"_id", "document-composite-unset-field"}},
+			id:       "document-composite-unset-field",
 			update:   bson.D{{"$unset", bson.D{{"v", bson.D{{"array", int32(1)}}}}}},
 			expected: bson.D{{"_id", "document-composite-unset-field"}},
 			stat: &mongo.UpdateResult{
@@ -903,7 +903,7 @@ func TestUpdateFieldUnset(t *testing.T) {
 			},
 		},
 		"EmptyArray": {
-			filter: bson.D{{"_id", "document-composite"}},
+			id:     "document-composite",
 			update: bson.D{{"$unset", bson.A{}}},
 			err: &mongo.WriteError{
 				Code: 9,
@@ -913,7 +913,7 @@ func TestUpdateFieldUnset(t *testing.T) {
 			alt: "Modifiers operate on fields but we found another type instead",
 		},
 		"DotNotationFieldExist": {
-			filter:   bson.D{{"_id", "document-nested"}},
+			id:       "document-nested",
 			update:   bson.D{{"$unset", bson.D{{"foo.bar.baz", ""}}}},
 			expected: bson.D{{"_id", "document-nested"}, {"foo", bson.D{{"bar", bson.D{{}}}}}},
 			stat: &mongo.UpdateResult{
@@ -923,7 +923,7 @@ func TestUpdateFieldUnset(t *testing.T) {
 			},
 		},
 		"DotNotationFieldNotExist": {
-			filter:   bson.D{{"_id", "int32"}},
+			id:       "int32",
 			update:   bson.D{{"$unset", bson.D{{"foo.bar.baz", ""}}}},
 			expected: bson.D{{"_id", "int32"}, {"value", int32(42)}},
 			stat: &mongo.UpdateResult{
@@ -942,7 +942,7 @@ func TestUpdateFieldUnset(t *testing.T) {
 			require.NoError(t, err)
 
 			opts := options.Update().SetUpsert(true)
-			actualStat, err := collection.UpdateOne(ctx, tc.filter, tc.update, opts)
+			actualStat, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update, opts)
 
 			if tc.err != nil {
 				require.Nil(t, tc.expected)
@@ -955,7 +955,7 @@ func TestUpdateFieldUnset(t *testing.T) {
 			assert.Equal(t, tc.stat, actualStat)
 
 			var actual bson.D
-			err = collection.FindOne(ctx, tc.filter).Decode(&actual)
+			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
 			require.NoError(t, err)
 			AssertEqualDocuments(t, tc.expected, actual)
 		})

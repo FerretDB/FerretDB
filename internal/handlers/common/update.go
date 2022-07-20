@@ -17,7 +17,6 @@ package common
 import (
 	"fmt"
 	"sort"
-	"strings"
 	"time"
 
 	"golang.org/x/exp/slices"
@@ -271,19 +270,12 @@ func extractValueFromUpdateOperator(op string, update *types.Document) (*types.D
 		return nil, nil
 	}
 	updateExpression := must.NotFail(update.Get(op))
-	switch doc := updateExpression.(type) {
-	case *types.Document:
-		for _, v := range doc.Keys() {
-			if strings.Contains(v, ".") {
-				// TODO https://github.com/FerretDB/FerretDB/issues/803
-				return nil, NewError(ErrNotImplemented, fmt.Errorf("dot notation for operator %s is not supported yet", op))
-			}
-		}
-
-		return doc, nil
-	default:
+	doc, ok := updateExpression.(*types.Document)
+	if !ok {
 		return nil, NewWriteErrorMsg(ErrFailedToParse, "Modifiers operate on fields but we found another type instead")
 	}
+
+	return doc, nil
 }
 
 // validateCurrentDateExpression validates $currentDate input on correctness.
