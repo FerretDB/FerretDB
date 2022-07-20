@@ -26,9 +26,9 @@ func DatabaseName(tb testing.TB) string {
 	tb.Helper()
 
 	name := strings.ToLower(tb.Name())
-	name = strings.ReplaceAll(name, "/", "-")
-	name = strings.ReplaceAll(name, " ", "-")
-	name = strings.ReplaceAll(name, "$", "-")
+	name = strings.ReplaceAll(name, "/", "_")
+	name = strings.ReplaceAll(name, " ", "_")
+	name = strings.ReplaceAll(name, "$", "_")
 
 	require.Less(tb, len(name), 64)
 	return name
