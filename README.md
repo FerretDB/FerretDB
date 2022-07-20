@@ -42,7 +42,7 @@ and [contributing guidelines](CONTRIBUTING.md).
 * name must not include non-latin letters, spaces, dots, dollars or dashes.
 * collection name length must be less or equal than 120 symbols, database name length limit is 64 symbols.
 * name must not start with a number.
-* database name cannot start with capital letter.
+* database name cannot contain capital letters.
 
 If you encounter some other difference in behavior, please [join our community](#community) to report a problem.
 
