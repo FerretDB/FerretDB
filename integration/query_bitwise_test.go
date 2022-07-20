@@ -42,6 +42,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		value       any
 		expectedIDs []any
 		err         *mongo.CommandError
+		altMessage  string
 	}{
 		"Array": {
 			value: primitive.A{1, 5},
@@ -98,8 +99,9 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "value takes an Array, a number, or a BinData but received: $bitsAllClear: \"123\"",
+				Message: `v takes an Array, a number, or a BinData but received: $bitsAllClear: "123"`,
 			},
+			altMessage: `value takes an Array, a number, or a BinData but received: $bitsAllClear: "123"`,
 		},
 
 		"Binary": {
@@ -165,11 +167,11 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			filter := bson.D{{"value", bson.D{{"$bitsAllClear", tc.value}}}}
+			filter := bson.D{{"v", bson.D{{"$bitsAllClear", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, *tc.err, err)
+				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
 				return
 			}
 			require.NoError(t, err)
@@ -196,6 +198,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 		value       any
 		expectedIDs []any
 		err         *mongo.CommandError
+		altMessage  string
 	}{
 		"Array": {
 			value:       primitive.A{1, 5},
@@ -244,8 +247,9 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "value takes an Array, a number, or a BinData but received: $bitsAllSet: \"123\"",
+				Message: `v takes an Array, a number, or a BinData but received: $bitsAllSet: "123"`,
 			},
+			altMessage: `value takes an Array, a number, or a BinData but received: $bitsAllSet: "123"`,
 		},
 
 		"Binary": {
@@ -287,11 +291,11 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			filter := bson.D{{"value", bson.D{{"$bitsAllSet", tc.value}}}}
+			filter := bson.D{{"v", bson.D{{"$bitsAllSet", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, *tc.err, err)
+				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
 				return
 			}
 			require.NoError(t, err)
@@ -318,6 +322,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		value       any
 		expectedIDs []any
 		err         *mongo.CommandError
+		altMessage  string
 	}{
 		"Array": {
 			value: primitive.A{1, 5},
@@ -374,8 +379,9 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "value takes an Array, a number, or a BinData but received: $bitsAnyClear: \"123\"",
+				Message: `v takes an Array, a number, or a BinData but received: $bitsAnyClear: "123"`,
 			},
+			altMessage: `value takes an Array, a number, or a BinData but received: $bitsAnyClear: "123"`,
 		},
 
 		"Binary": {
@@ -433,11 +439,11 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			filter := bson.D{{"value", bson.D{{"$bitsAnyClear", tc.value}}}}
+			filter := bson.D{{"v", bson.D{{"$bitsAnyClear", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, *tc.err, err)
+				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
 				return
 			}
 			require.NoError(t, err)
@@ -464,6 +470,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 		value       any
 		expectedIDs []any
 		err         *mongo.CommandError
+		altMessage  string
 	}{
 		"Array": {
 			value: primitive.A{1, 5},
@@ -520,8 +527,9 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "value takes an Array, a number, or a BinData but received: $bitsAnySet: \"123\"",
+				Message: `v takes an Array, a number, or a BinData but received: $bitsAnySet: "123"`,
 			},
+			altMessage: `value takes an Array, a number, or a BinData but received: $bitsAnySet: "123"`,
 		},
 
 		"Binary": {
@@ -571,11 +579,11 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			filter := bson.D{{"value", bson.D{{"$bitsAnySet", tc.value}}}}
+			filter := bson.D{{"v", bson.D{{"$bitsAnySet", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, *tc.err, err)
+				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
 				return
 			}
 			require.NoError(t, err)

@@ -33,12 +33,12 @@ func TestQueryArraySize(t *testing.T) {
 	ctx, collection := Setup(t)
 
 	_, err := collection.InsertMany(ctx, []any{
-		bson.D{{"_id", "array-empty"}, {"value", bson.A{}}},
-		bson.D{{"_id", "array-one"}, {"value", bson.A{"1"}}},
-		bson.D{{"_id", "array-two"}, {"value", bson.A{"1", nil}}},
-		bson.D{{"_id", "array-three"}, {"value", bson.A{"1", "2", math.NaN()}}},
-		bson.D{{"_id", "string"}, {"value", "12"}},
-		bson.D{{"_id", "document"}, {"value", bson.D{{"value", bson.A{"1", "2"}}}}},
+		bson.D{{"_id", "array-empty"}, {"v", bson.A{}}},
+		bson.D{{"_id", "array-one"}, {"v", bson.A{"1"}}},
+		bson.D{{"_id", "array-two"}, {"v", bson.A{"1", nil}}},
+		bson.D{{"_id", "array-three"}, {"v", bson.A{"1", "2", math.NaN()}}},
+		bson.D{{"_id", "string"}, {"v", "12"}},
+		bson.D{{"_id", "document"}, {"v", bson.D{{"v", bson.A{"1", "2"}}}}},
 	})
 	require.NoError(t, err)
 
@@ -48,31 +48,31 @@ func TestQueryArraySize(t *testing.T) {
 		err         *mongo.CommandError
 	}{
 		"int32": {
-			filter:      bson.D{{"value", bson.D{{"$size", int32(2)}}}},
+			filter:      bson.D{{"v", bson.D{{"$size", int32(2)}}}},
 			expectedIDs: []any{"array-two"},
 		},
 		"int64": {
-			filter:      bson.D{{"value", bson.D{{"$size", int64(2)}}}},
+			filter:      bson.D{{"v", bson.D{{"$size", int64(2)}}}},
 			expectedIDs: []any{"array-two"},
 		},
 		"float64": {
-			filter:      bson.D{{"value", bson.D{{"$size", float64(2)}}}},
+			filter:      bson.D{{"v", bson.D{{"$size", float64(2)}}}},
 			expectedIDs: []any{"array-two"},
 		},
 		"Zero": {
-			filter:      bson.D{{"value", bson.D{{"$size", 0}}}},
+			filter:      bson.D{{"v", bson.D{{"$size", 0}}}},
 			expectedIDs: []any{"array-empty"},
 		},
 		"NegativeZero": {
-			filter:      bson.D{{"value", bson.D{{"$size", math.Copysign(0, -1)}}}},
+			filter:      bson.D{{"v", bson.D{{"$size", math.Copysign(0, -1)}}}},
 			expectedIDs: []any{"array-empty"},
 		},
 		"NotFound": {
-			filter:      bson.D{{"value", bson.D{{"$size", 4}}}},
+			filter:      bson.D{{"v", bson.D{{"$size", 4}}}},
 			expectedIDs: []any{},
 		},
 		"InvalidType": {
-			filter: bson.D{{"value", bson.D{{"$size", bson.D{{"$gt", 1}}}}}},
+			filter: bson.D{{"v", bson.D{{"$size", bson.D{{"$gt", 1}}}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -80,7 +80,7 @@ func TestQueryArraySize(t *testing.T) {
 			},
 		},
 		"NotWhole": {
-			filter: bson.D{{"value", bson.D{{"$size", 2.1}}}},
+			filter: bson.D{{"v", bson.D{{"$size", 2.1}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -88,7 +88,7 @@ func TestQueryArraySize(t *testing.T) {
 			},
 		},
 		"NaN": {
-			filter: bson.D{{"value", bson.D{{"$size", math.NaN()}}}},
+			filter: bson.D{{"v", bson.D{{"$size", math.NaN()}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -96,7 +96,7 @@ func TestQueryArraySize(t *testing.T) {
 			},
 		},
 		"Infinity": {
-			filter: bson.D{{"value", bson.D{{"$size", math.Inf(+1)}}}},
+			filter: bson.D{{"v", bson.D{{"$size", math.Inf(+1)}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -104,7 +104,7 @@ func TestQueryArraySize(t *testing.T) {
 			},
 		},
 		"Negative": {
-			filter: bson.D{{"value", bson.D{{"$size", -1}}}},
+			filter: bson.D{{"v", bson.D{{"$size", -1}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -151,62 +151,62 @@ func TestQueryArrayDotNotation(t *testing.T) {
 		err         *mongo.CommandError
 	}{
 		"PositionIndexGreaterThanArrayLength": {
-			filter:      bson.D{{"value.5", bson.D{{"$type", "double"}}}},
+			filter:      bson.D{{"v.5", bson.D{{"$type", "double"}}}},
 			expectedIDs: []any{},
 		},
 		"PositionIndexAtTheEndOfArray": {
-			filter:      bson.D{{"value.1", bson.D{{"$type", "double"}}}},
+			filter:      bson.D{{"v.1", bson.D{{"$type", "double"}}}},
 			expectedIDs: []any{"array-two"},
 		},
 
 		"PositionTypeNull": {
-			filter:      bson.D{{"value.0", bson.D{{"$type", "null"}}}},
+			filter:      bson.D{{"v.0", bson.D{{"$type", "null"}}}},
 			expectedIDs: []any{"array-last-embedded", "array-middle-embedded", "array-null", "array-three-reverse"},
 		},
 		"PositionRegex": {
-			filter:      bson.D{{"value.1", primitive.Regex{Pattern: "foo"}}},
+			filter:      bson.D{{"v.1", primitive.Regex{Pattern: "foo"}}},
 			expectedIDs: []any{"array-three", "array-three-reverse"},
 		},
 		"PositionArray": {
-			filter:      bson.D{{"value.0", bson.A{"42", "foo"}}},
+			filter:      bson.D{{"v.0", bson.A{"42", "foo"}}},
 			expectedIDs: []any{"array-embedded"},
 		},
 		"PositionArrayEmpty": {
-			filter:      bson.D{{"value.0", bson.A{}}},
+			filter:      bson.D{{"v.0", bson.A{}}},
 			expectedIDs: []any{"array-empty-nested"},
 		},
 
 		"NoSuchFieldPosition": {
-			filter:      bson.D{{"value.some.0", bson.A{42}}},
+			filter:      bson.D{{"v.some.0", bson.A{42}}},
 			expectedIDs: []any{},
 		},
 		"Field": {
-			filter:      bson.D{{"value.array", int32(42)}},
+			filter:      bson.D{{"v.array", int32(42)}},
 			expectedIDs: []any{"document-composite", "document-composite-reverse"},
 		},
 		"FieldPosition": {
-			filter:      bson.D{{"value.array.0", int32(42)}},
+			filter:      bson.D{{"v.array.0", int32(42)}},
 			expectedIDs: []any{"document-composite", "document-composite-reverse"},
 		},
 		"FieldPositionQuery": {
-			filter:      bson.D{{"value.array.0", bson.D{{"$gte", int32(42)}}}},
+			filter:      bson.D{{"v.array.0", bson.D{{"$gte", int32(42)}}}},
 			expectedIDs: []any{"document-composite", "document-composite-reverse"},
 		},
 		"FieldPositionQueryNonArray": {
-			filter:      bson.D{{"value.document.0", bson.D{{"$lt", int32(42)}}}},
+			filter:      bson.D{{"v.document.0", bson.D{{"$lt", int32(42)}}}},
 			expectedIDs: []any{},
 		},
 		"FieldPositionField": {
-			filter:      bson.D{{"value.array.2.foo", "bar"}},
+			filter:      bson.D{{"v.array.2.foo", "bar"}},
 			expectedIDs: []any{},
 		},
 
 		"FieldPositionQueryRegex": {
-			filter: bson.D{{"value.array.0", bson.D{{"$lt", primitive.Regex{Pattern: "^$"}}}}},
+			filter: bson.D{{"v.array.0", bson.D{{"$lt", primitive.Regex{Pattern: "^$"}}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "Can't have RegEx as arg to predicate over field 'value.array.0'.",
+				Message: "Can't have RegEx as arg to predicate over field 'v.array.0'.",
 			},
 		},
 	} {
@@ -242,17 +242,17 @@ func TestQueryElemMatchOperator(t *testing.T) {
 		"DoubleTarget": {
 			filter: bson.D{
 				{"_id", "double"},
-				{"value", bson.D{{"$elemMatch", bson.D{{"$gt", int32(0)}}}}},
+				{"v", bson.D{{"$elemMatch", bson.D{{"$gt", int32(0)}}}}},
 			},
 			expectedIDs: []any{},
 		},
 		"GtZero": {
-			filter:      bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"$gt", int32(0)}}}}}},
+			filter:      bson.D{{"v", bson.D{{"$elemMatch", bson.D{{"$gt", int32(0)}}}}}},
 			expectedIDs: []any{"array", "array-three", "array-three-reverse", "array-two"},
 		},
 		"GtZeroWithTypeArray": {
 			filter: bson.D{
-				{"value", bson.D{
+				{"v", bson.D{
 					{"$elemMatch", bson.D{
 						{"$gt", int32(0)},
 					}},
@@ -263,7 +263,7 @@ func TestQueryElemMatchOperator(t *testing.T) {
 		},
 		"GtZeroWithTypeString": {
 			filter: bson.D{
-				{"value", bson.D{
+				{"v", bson.D{
 					{"$elemMatch", bson.D{
 						{"$gt", int32(0)},
 					}},
@@ -274,7 +274,7 @@ func TestQueryElemMatchOperator(t *testing.T) {
 		},
 		"GtLt": {
 			filter: bson.D{
-				{"value", bson.D{
+				{"v", bson.D{
 					{"$elemMatch", bson.D{
 						{"$gt", int32(0)},
 						{"$lt", int32(43)},
@@ -285,7 +285,7 @@ func TestQueryElemMatchOperator(t *testing.T) {
 		},
 
 		"UnexpectedFilterString": {
-			filter: bson.D{{"value", bson.D{{"$elemMatch", "foo"}}}},
+			filter: bson.D{{"v", bson.D{{"$elemMatch", "foo"}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -293,7 +293,7 @@ func TestQueryElemMatchOperator(t *testing.T) {
 			},
 		},
 		"WhereInsideElemMatch": {
-			filter: bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"$where", "123"}}}}}},
+			filter: bson.D{{"v", bson.D{{"$elemMatch", bson.D{{"$where", "123"}}}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -301,7 +301,7 @@ func TestQueryElemMatchOperator(t *testing.T) {
 			},
 		},
 		"TextInsideElemMatch": {
-			filter: bson.D{{"value", bson.D{{"$elemMatch", bson.D{{"$text", "123"}}}}}},
+			filter: bson.D{{"v", bson.D{{"$elemMatch", bson.D{{"$text", "123"}}}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -309,7 +309,7 @@ func TestQueryElemMatchOperator(t *testing.T) {
 			},
 		},
 		"GtField": {
-			filter: bson.D{{"value", bson.D{
+			filter: bson.D{{"v", bson.D{
 				{
 					"$elemMatch",
 					bson.D{
@@ -402,7 +402,7 @@ func TestArrayEquality(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			filter := bson.D{{"value", tc.array}}
+			filter := bson.D{{"v", tc.array}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			require.NoError(t, err)
 
