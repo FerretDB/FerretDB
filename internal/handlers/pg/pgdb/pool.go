@@ -169,13 +169,6 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 	return nil
 }
 
-// Schemas method should not be used in new code.
-//
-// Deprecated: use Databases function instead.
-func (pgPool *Pool) Schemas(ctx context.Context) ([]string, error) {
-	return Databases(ctx, pgPool)
-}
-
 // Collections method should not be used in new code.
 //
 // Deprecated: use Collections function instead.
