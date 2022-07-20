@@ -32,4 +32,7 @@ var (
 
 	// ErrInvalidTableName indicates that a schema or table didn't passed name checks.
 	ErrInvalidTableName = fmt.Errorf("invalid table name")
+
+	// ErrInvalidDatabaseName indicates that a database name didn't passed checks.
+	ErrInvalidDatabaseName = fmt.Errorf("invalid database name")
 )
