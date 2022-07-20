@@ -29,24 +29,11 @@ import (
 
 // MsgExplain implements HandlerInterface.
 func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	// todo extract for each pg command a part which is before Query Document
-	// make map [command] func of it
-	// run it before query document regarding a command
-	// in query document "simple explain analyse"
-	// it's not beautiful.
-	// what if only for selects?
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-	verbosity := "allPlansExecution"
-	if verbosity, err = common.GetOptionalParam(document, "verbosity", verbosity); err != nil {
-		return nil, err
-	}
-	if verbosity == "executionStats" || verbosity == "serverParameters" {
-		err = fmt.Errorf("verbosity: support for value %q is not implemented yet", verbosity)
-		return nil, common.NewError(common.ErrNotImplemented, err)
-	}
+	common.Ignored(document, h.l, "verbosity")
 
 	var sp pgdb.SQLParam
 	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
@@ -56,15 +43,24 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Printf("%#v", commandParam)
-	if _, ok := commandParam.(*types.Document); !ok {
+	var command *types.Document
+	var ok bool
+	if command, ok = commandParam.(*types.Document); !ok {
 		return nil, common.NewErrorMsg(
 			common.ErrBadValue,
 			fmt.Sprintf("has invalid type %s", common.AliasFromType(commandParam)),
 		)
 	}
-
+	collectionParam, err := document.Get(command.Command())
+	if err != nil {
+		return nil, err
+	}
+	if sp.Collection, ok = collectionParam.(string); !ok {
+		return nil, common.NewErrorMsg(
+			common.ErrBadValue,
+			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+		)
+	}
 	os.Exit(1)
 
 	resDocs := make([]*types.Document, 0, 16)
