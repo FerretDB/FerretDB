@@ -162,19 +162,23 @@ func (a *Array) Contains(filterValue any) (bool, error) {
 		return false, ErrNaNIsNotImplemented
 	}
 
-	// special case: if `a` and `filterValue` are equal,
-	// we consider that `a` contains `filterValue`.
+	// This comparison covers two cases:
+	// - `a` and `filterValue` are equal;
+	// - `filerValue` is a scalar, and `a` contains `filterValue`.
 	if res := Compare(a, filterValue); slices.Contains(res, Equal) && len(res) == 1 {
 		return true, nil
 	}
 
-	// otherwise, we check if at least one element of `a`
-	// is equal to `filterValue`.
-	//	for _, elem := range a.s {
-	//		if res := Compare(elem, filterValue); slices.Contains(res, Equal) && len(res) == 1 {
-	//			return true, nil
-	//		}
-	//	}
+	// This comparison covers embedded arrays.
+	// If `filterValue` is an array, and at leas one element of `a` is equal to `filterValue`,
+	// then we consider that `a` contains `filterValue`.
+	if _, ok := filterValue.(*Array); ok {
+		for _, elem := range a.s {
+			if res := Compare(elem, filterValue); slices.Contains(res, Equal) && len(res) == 1 {
+				return true, nil
+			}
+		}
+	}
 
 	return false, nil
 }

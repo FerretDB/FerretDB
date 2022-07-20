@@ -15,10 +15,9 @@
 package shareddata
 
 import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"math"
 	"time"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 const (
@@ -91,7 +90,7 @@ var Scalars = &Values[string]{
 
 		// no Min key
 		// no Max key
-
+		
 		// TODO "unset": unset, https://github.com/FerretDB/FerretDB/issues/914
 	},
 }
