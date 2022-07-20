@@ -24,8 +24,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/x/mongo/driver"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestMostCommandsAreCaseSensitive(t *testing.T) {
@@ -141,17 +143,17 @@ func TestCollectionName(t *testing.T) {
 			err        *mongo.CommandError
 			alt        string
 		}{
-			"TooLongForBoth": {
+			"TooLongForBothDBs": {
 				collection: collectionName300,
 				err: &mongo.CommandError{
 					Name: "InvalidNamespace",
 					Code: 73,
 					Message: fmt.Sprintf(
-						"Fully qualified namespace is too long. Namespace: testcollectionname-err.%s Max: 255",
+						"Fully qualified namespace is too long. Namespace: testcollectionname_err.%s Max: 255",
 						collectionName300,
 					),
 				},
-				alt: fmt.Sprintf("Invalid collection name: 'testcollectionname-err.%s'", collectionName300),
+				alt: fmt.Sprintf("Invalid collection name: 'testcollectionname_err.%s'", collectionName300),
 			},
 			"WithADollarSign": {
 				collection: "collection_name_with_a-$",
@@ -160,16 +162,16 @@ func TestCollectionName(t *testing.T) {
 					Code:    73,
 					Message: `Invalid collection name: collection_name_with_a-$`,
 				},
-				alt: `Invalid collection name: 'testcollectionname-err.collection_name_with_a-$'`,
+				alt: `Invalid collection name: 'testcollectionname_err.collection_name_with_a-$'`,
 			},
 			"Empty": {
 				collection: "",
 				err: &mongo.CommandError{
 					Name:    "InvalidNamespace",
 					Code:    73,
-					Message: "Invalid namespace specified 'testcollectionname-err.'",
+					Message: "Invalid namespace specified 'testcollectionname_err.'",
 				},
-				alt: "Invalid collection name: 'testcollectionname-err.'",
+				alt: "Invalid collection name: 'testcollectionname_err.'",
 			},
 		}
 
@@ -193,5 +195,61 @@ func TestCollectionName(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Contains(t, names, longCollectionName)
+	})
+}
+
+func TestDatabaseName(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Err", func(t *testing.T) {
+		ctx, collection := Setup(t)
+
+		dbName300 := strings.Repeat("a", 300)
+
+		cases := map[string]struct {
+			db  string
+			err *mongo.CommandError
+			alt string
+		}{
+			"TooLongForBothDBs": {
+				db: dbName300,
+				err: &mongo.CommandError{
+					Name: "InvalidNamespace",
+					Code: 73,
+					Message: fmt.Sprintf(
+						"Invalid namespace specified '%s.%s'",
+						dbName300,
+						"testdatabasename_err_toolongforbothdbs",
+					),
+				},
+				alt: fmt.Sprintf("Invalid namespace: %s.%s", dbName300, "testdatabasename_err_toolongforbothdbs"),
+			},
+			"WithADollarSign": {
+				db: "name_with_a-$",
+				err: &mongo.CommandError{
+					Name:    "InvalidNamespace",
+					Code:    73,
+					Message: `Invalid namespace: name_with_a-$.testdatabasename_err_withadollarsign`,
+				},
+			},
+		}
+
+		for name, tc := range cases {
+			name, tc := name, tc
+			t.Run(name, func(t *testing.T) {
+				// there is no explicit command to create database, so create collection instead
+				err := collection.Database().Client().Database(tc.db).CreateCollection(ctx, testutil.CollectionName(t))
+				AssertEqualAltError(t, *tc.err, tc.alt, err)
+			})
+		}
+	})
+
+	t.Run("Empty", func(t *testing.T) {
+		ctx, collection := Setup(t)
+
+		// there is no explicit command to create database, so create collection instead
+		err := collection.Database().Client().Database("").CreateCollection(ctx, testutil.CollectionName(t))
+		expectedErr := driver.InvalidOperationError(driver.InvalidOperationError{MissingField: "Database"})
+		assert.Equal(t, expectedErr, err)
 	})
 }
