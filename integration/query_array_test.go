@@ -511,7 +511,7 @@ func TestQueryArrayAll(t *testing.T) {
 			expectedErr: nil,
 		},
 
-		"NaNIsNotImplemented": {
+		"NaN": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{math.NaN()}}}}},
 			expectedIDs: []any{"array-two", "double-nan"},
 			expectedErr: nil,
