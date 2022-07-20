@@ -745,8 +745,8 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 		},
 		"Nil": {
 			id:           "nil",
-			setOnInsert:  bson.D{{"value", nil}},
-			expected:     bson.D{{"_id", "nil"}, {"value", nil}},
+			setOnInsert:  bson.D{{"v", nil}},
+			expected:     bson.D{{"_id", "nil"}, {"v", nil}},
 			expectedStat: stat,
 			upserted:     true,
 		},
@@ -925,7 +925,7 @@ func TestUpdateFieldUnset(t *testing.T) {
 		//"DotNotationFieldNotExist": {
 		//	id:       "int32",
 		//	update:   bson.D{{"$unset", bson.D{{"foo.bar.baz", ""}}}},
-		//	expected: bson.D{{"_id", "int32"}, {"value", int32(42)}},
+		//	expected: bson.D{{"_id", "int32"}, {"v", int32(42)}},
 		//	stat: &mongo.UpdateResult{
 		//		MatchedCount:  1,
 		//		ModifiedCount: 0,
