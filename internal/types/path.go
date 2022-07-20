@@ -50,7 +50,7 @@ func NewPathFromString(s string) Path {
 	return NewPath(path)
 }
 
-// DeriveNewPath return new Path constructed from given path and path element.
+// DeriveNewPath returns new Path constructed from given path and path element.
 func DeriveNewPath(path Path, elem string) Path {
 	elems := path.Slice()
 
