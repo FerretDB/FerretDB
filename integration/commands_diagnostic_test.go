@@ -21,8 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestCommandsDiagnosticGetLog(t *testing.T) {
@@ -109,7 +107,7 @@ func TestCommandsDiagnosticConnectionStatus(t *testing.T) {
 
 func TestCommandsDiagnosticExplain(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := Setup(t)
 
 	for name, tc := range map[string]struct {
 		command  any
@@ -135,14 +133,8 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 			require.NoError(t, err)
-
-			m := actual.Map()
-
-			assert.Equal(t, float64(1), m["ok"])
-
-			keys := CollectKeys(t, actual)
-			assert.Contains(t, keys, "n")
-			assert.Equal(t, tc.response, m["n"])
+			t.Logf("%#v", actual)
+			t.FailNow()
 		})
 	}
 }

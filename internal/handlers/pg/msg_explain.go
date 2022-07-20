@@ -17,6 +17,7 @@ package pg
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
@@ -28,6 +29,12 @@ import (
 
 // MsgExplain implements HandlerInterface.
 func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	// todo extract for each pg command a part which is before Query Document
+	// make map [command] func of it
+	// run it before query document regarding a command
+	// in query document "simple explain analyse"
+	// it's not beautiful.
+	// what if only for selects?
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -45,18 +52,20 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
-	collectionParam, err := document.Get(document.Command())
+	commandParam, err := document.Get(document.Command())
 	if err != nil {
 		return nil, err
 	}
-	var ok bool
-	if sp.Collection, ok = collectionParam.(string); !ok {
+
+	fmt.Printf("%#v", commandParam)
+	if _, ok := commandParam.(*types.Document); !ok {
 		return nil, common.NewErrorMsg(
 			common.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+			fmt.Sprintf("has invalid type %s", common.AliasFromType(commandParam)),
 		)
 	}
-	// sp.Explain = types.NewDocument()
+
+	os.Exit(1)
 
 	resDocs := make([]*types.Document, 0, 16)
 	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
