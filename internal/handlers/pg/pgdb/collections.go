@@ -31,8 +31,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// Regex validateCollectionNameRe validates collection names.
-var validateCollectionNameRe = regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]{0,119}$")
+var (
+	// Regex validateCollectionNameRe validates collection names.
+	validateCollectionNameRe = regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]{0,119}$")
+
+	// Regex validateDatabaseNameRe validates database names.
+	validateDatabaseNameRe = regexp.MustCompile("^[a-z_][a-z0-9_]{0,62}$")
+)
 
 // Collections returns a sorted list of FerretDB collection names.
 //
@@ -87,11 +92,8 @@ func CollectionExists(ctx context.Context, querier pgxtype.Querier, db, collecti
 //  * ErrTableNotExist - is the required FerretDB database does not exist.
 // Please use errors.Is to check the error.
 func CreateCollection(ctx context.Context, querier pgxtype.Querier, db, collection string) error {
-	if !validateCollectionNameRe.MatchString(collection) {
-		return ErrInvalidTableName
-	}
-
-	if strings.HasPrefix(collection, reservedCollectionPrefix) {
+	if !validateCollectionNameRe.MatchString(collection) ||
+		strings.HasPrefix(collection, reservedPrefix) {
 		return ErrInvalidTableName
 	}
 

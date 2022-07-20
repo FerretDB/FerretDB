@@ -1,4 +1,12 @@
 ---
+# https://docs.codecov.com/docs/codecovyml-reference
+codecov:
+  require_ci_to_pass: true
+  notify:
+    after_n_builds: 4 # 1 for unit tests + 3 for integration tests with different handlers
+    wait_for_ci: true
+
+# https://docs.codecov.com/docs/coverage-configuration
 coverage:
   range: "50...65"
 

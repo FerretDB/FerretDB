@@ -63,14 +63,6 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	// created, err := h.pgPool.CreateTableIfNotExist(ctx, fp.db, fp.collection)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// if created {
-	// 	h.L.Info("Created table.", zap.String("schema", fp.db), zap.String("table", fp.collection))
-	// }
-
 	var matched, modified int32
 	var upserted types.Array
 	for i := 0; i < updates.Len(); i++ {
