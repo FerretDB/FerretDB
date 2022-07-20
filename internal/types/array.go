@@ -153,23 +153,23 @@ func (a *Array) Max() any {
 }
 
 // Contains checks if the Array contains the given value.
-func (a *Array) Contains(filterValue any) (bool, error) {
+func (a *Array) Contains(filterValue any) bool {
 	switch filterValue := filterValue.(type) {
 	case *Document, *Array:
 		// filterValue is a composite type, so either a and filterValue must be equal
 		// or at least one element of a must be equal with filterValue.
+		// TODO: Compare might be inaccurate for some corner cases, we might want to fix it later.
 
-		// TODO: Compare might be inaccurate for some corner cases, we might want to fix it later
 		if res := Compare(a, filterValue); slices.Contains(res, Equal) && len(res) == 1 {
-			return true, nil
+			return true
 		}
 
 		for _, elem := range a.s {
 			if res := Compare(elem, filterValue); slices.Contains(res, Equal) && len(res) == 1 {
-				return true, nil
+				return true
 			}
 		}
-		return false, nil
+		return false
 
 	default:
 		// filterValue is a scalar, so we compare it to each scalar element of a
@@ -179,11 +179,11 @@ func (a *Array) Contains(filterValue any) (bool, error) {
 				// we need elem and filterValue to be exactly equal, so we do nothing here
 			default:
 				if compareScalars(elem, filterValue) == Equal {
-					return true, nil
+					return true
 				}
 			}
 		}
-		return false, nil
+		return false
 	}
 }
 
@@ -192,15 +192,9 @@ func (a *Array) Contains(filterValue any) (bool, error) {
 // This place can be significantly improved if a more performant algorithm is chosen.
 func (a *Array) ContainsAll(b *Array) (bool, error) {
 	for _, v := range b.s {
-		contains, err := a.Contains(v)
-		if err != nil {
-			return false, err
-		}
-
-		if !contains {
+		if !a.Contains(v) {
 			return false, nil
 		}
 	}
-
 	return true, nil
 }
