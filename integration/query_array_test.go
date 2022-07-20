@@ -420,8 +420,9 @@ func TestQueryArrayAll(t *testing.T) {
 
 	ctx, collection := Setup(t, shareddata.Composites, shareddata.Scalars)
 
-	// Additional data to check more complicated cases:
-	// a longer array of ints plus a field is called differently and needs to be found with nils.
+	// Insert additional data to check more complicated cases:
+	// - a longer array of ints;
+	// - a field is called differently and needs to be found with the {$all: [null]} case.
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{{"_id", "many-integers"}, {"customField", bson.A{42, 43, 45}}},
 	})
@@ -488,6 +489,14 @@ func TestQueryArrayAll(t *testing.T) {
 		},
 		"Nil": {
 			filter: bson.D{{"v", bson.D{{"$all", bson.A{nil}}}}},
+			expectedIDs: []any{
+				"array-first-embedded", "array-last-embedded", "array-middle-embedded",
+				"array-null", "array-three", "array-three-reverse", "many-integers", "null",
+			},
+			expectedErr: nil,
+		},
+		"NilRepeated": {
+			filter: bson.D{{"v", bson.D{{"$all", bson.A{nil, nil, nil}}}}},
 			expectedIDs: []any{
 				"array-first-embedded", "array-last-embedded", "array-middle-embedded",
 				"array-null", "array-three", "array-three-reverse", "many-integers", "null",
