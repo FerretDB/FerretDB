@@ -695,9 +695,6 @@ func TestUpdateFieldSet(t *testing.T) {
 			t.Parallel()
 			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
-			_, err := collection.InsertOne(ctx, bson.D{{"_id", "document-nested"}, {"foo", bson.D{{"bar", bson.D{{"baz", int32(1)}}}}}})
-			require.NoError(t, err)
-
 			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
 			if tc.err != nil {
 				require.Nil(t, tc.expected)
@@ -812,9 +809,6 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 
 			ctx, collection := setup.Setup(t, shareddata.Composites)
 
-			_, err := collection.InsertOne(ctx, bson.D{{"_id", "document-nested"}, {"foo", bson.D{{"bar", bson.D{{"baz", int32(1)}}}}}})
-			require.NoError(t, err)
-
 			opts := options.Update().SetUpsert(true)
 			actualUpdateStat, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, bson.D{{"$setOnInsert", tc.setOnInsert}}, opts)
 			if tc.err != nil {
@@ -894,9 +888,6 @@ func TestUpdateFieldUnset(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
-
-			_, err := collection.InsertOne(ctx, bson.D{{"_id", "document-nested"}, {"foo", bson.D{{"bar", bson.D{{"baz", int32(1)}}}}}})
-			require.NoError(t, err)
 
 			opts := options.Update().SetUpsert(true)
 			actualStat, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update, opts)
