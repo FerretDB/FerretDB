@@ -154,10 +154,37 @@ func (a *Array) Max() any {
 
 // Contains checks if the Array contains the given value.
 func (a *Array) Contains(filterValue any) (bool, error) {
+	switch filterValue := filterValue.(type) {
+	case *Document, *Array:
+		if res := Compare(a, filterValue); slices.Contains(res, Equal) && len(res) == 1 {
+			return true, nil
+		}
+
+		for _, elem := range a.s {
+			if res := Compare(elem, filterValue); slices.Contains(res, Equal) && len(res) == 1 {
+				return true, nil
+			}
+		}
+		return false, nil
+
+	default:
+		for _, elem := range a.s {
+			switch elem := elem.(type) {
+			case *Document, *Array:
+				// do nothing
+			default:
+				if compareScalars(elem, filterValue) == Equal {
+					return true, nil
+				}
+			}
+		}
+		return false, nil
+	}
+
 	// This comparison covers two cases:
 	// - `a` and `filterValue` are equal;
 	// - `filerValue` is a scalar, and `a` contains `filterValue`.
-	if res := Compare(a, filterValue); slices.Contains(res, Equal) && len(res) == 1 {
+	/*if res := Compare(a, filterValue); slices.Contains(res, Equal) && len(res) == 1 {
 		return true, nil
 	}
 
@@ -172,7 +199,7 @@ func (a *Array) Contains(filterValue any) (bool, error) {
 		}
 	}
 
-	return false, nil
+	return false, nil*/
 }
 
 // ContainsAll checks if the Array contains all the given values of the Array b.

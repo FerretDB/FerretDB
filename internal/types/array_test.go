@@ -234,11 +234,11 @@ func TestArrayContains(t *testing.T) {
 			filter:   "hello",
 			expected: false,
 		},
-		/*"Int32": {
+		"Int32": {
 			array:    must.NotFail(NewArray(int32(42), int32(43), int32(45))),
 			filter:   int32(43),
 			expected: true,
-		},*/
+		},
 		"Int32Negative": {
 			array:    must.NotFail(NewArray(int32(42), int32(43), int32(45))),
 			filter:   int32(44),
@@ -279,21 +279,21 @@ func TestArrayContainsAll(t *testing.T) {
 		filter   *Array
 		expected bool
 	}{
-		/*	"String": {
+		"String": {
 			array:    must.NotFail(NewArray("foo", "bar")),
 			filter:   must.NotFail(NewArray("foo", "bar")),
 			expected: true,
-		},*/
+		},
 		"StringNegative": {
 			array:    must.NotFail(NewArray("foo", "bar")),
 			filter:   must.NotFail(NewArray("foo", "hello")),
 			expected: false,
 		},
-		/*"Int32": {
+		"Int32": {
 			array:    must.NotFail(NewArray(int32(42), int32(43), int32(45))),
 			filter:   must.NotFail(NewArray(int32(42), int32(43))),
 			expected: true,
-		},*/
+		},
 		"Int32Negative": {
 			array:    must.NotFail(NewArray(int32(42), int32(43), int32(45))),
 			filter:   must.NotFail(NewArray(int32(44))),
@@ -303,6 +303,11 @@ func TestArrayContainsAll(t *testing.T) {
 			array:    must.NotFail(NewArray(int32(42), int32(43), int32(45))),
 			filter:   must.NotFail(NewArray(int32(42), int32(44))),
 			expected: false,
+		},
+		"EqualEmpty": {
+			array:    must.NotFail(NewArray()),
+			filter:   must.NotFail(NewArray()),
+			expected: true,
 		},
 	} {
 		name, tc := name, tc
