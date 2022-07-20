@@ -204,7 +204,7 @@ func TestDatabaseName(t *testing.T) {
 	t.Run("Err", func(t *testing.T) {
 		ctx, collection := Setup(t)
 
-		dbName300 := strings.Repeat("a", 300)
+		dbName64 := strings.Repeat("a", 64)
 
 		cases := map[string]struct {
 			db  string
@@ -212,17 +212,17 @@ func TestDatabaseName(t *testing.T) {
 			alt string
 		}{
 			"TooLongForBothDBs": {
-				db: dbName300,
+				db: dbName64,
 				err: &mongo.CommandError{
 					Name: "InvalidNamespace",
 					Code: 73,
 					Message: fmt.Sprintf(
 						"Invalid namespace specified '%s.%s'",
-						dbName300,
+						dbName64,
 						"testdatabasename_err_toolongforbothdbs",
 					),
 				},
-				alt: fmt.Sprintf("Invalid namespace: %s.%s", dbName300, "testdatabasename_err_toolongforbothdbs"),
+				alt: fmt.Sprintf("Invalid namespace: %s.%s", dbName64, "testdatabasename_err_toolongforbothdbs"),
 			},
 			"WithADollarSign": {
 				db: "name_with_a-$",
@@ -247,9 +247,17 @@ func TestDatabaseName(t *testing.T) {
 	t.Run("Empty", func(t *testing.T) {
 		ctx, collection := Setup(t)
 
-		// there is no explicit command to create database, so create collection instead
 		err := collection.Database().Client().Database("").CreateCollection(ctx, testutil.CollectionName(t))
 		expectedErr := driver.InvalidOperationError(driver.InvalidOperationError{MissingField: "Database"})
 		assert.Equal(t, expectedErr, err)
+	})
+
+	t.Run("63ok", func(t *testing.T) {
+		ctx, collection := Setup(t)
+
+		dbName63 := strings.Repeat("a", 63)
+		err := collection.Database().Client().Database(dbName63).CreateCollection(ctx, testutil.CollectionName(t))
+		require.NoError(t, err)
+		collection.Database().Client().Database(dbName63).Drop(ctx)
 	})
 }
