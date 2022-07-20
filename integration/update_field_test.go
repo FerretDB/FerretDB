@@ -26,6 +26,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -47,7 +48,7 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 		path := types.NewPathFromString("v")
 		result := bson.D{{"_id", id}, {"v", nowTimestamp}}
 
-		ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
+		ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 		// store the current timestamp with $currentDate operator;
 		update := bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", "timestamp"}}}}}}
@@ -247,7 +248,7 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
-				ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
+				ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 				res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
 				if tc.err != nil {
@@ -391,7 +392,7 @@ func TestUpdateFieldInc(t *testing.T) {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
-				ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
+				ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 				_, err := collection.InsertOne(ctx, bson.D{{"_id", "document-nested"}, {"foo", bson.D{{"bar", bson.D{{"baz", int32(1)}}}}}})
 				require.NoError(t, err)
@@ -484,7 +485,7 @@ func TestUpdateFieldInc(t *testing.T) {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
-				ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
+				ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 				_, err := collection.UpdateOne(ctx, tc.filter, tc.update)
 				require.NotNil(t, tc.err)
@@ -695,7 +696,7 @@ func TestUpdateFieldSet(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 			_, err := collection.InsertOne(ctx, bson.D{{"_id", "document-nested"}, {"foo", bson.D{{"bar", bson.D{{"baz", int32(1)}}}}}})
 			require.NoError(t, err)
@@ -833,7 +834,7 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx, collection := Setup(t, shareddata.Composites)
+			ctx, collection := setup.Setup(t, shareddata.Composites)
 
 			_, err := collection.InsertOne(ctx, bson.D{{"_id", "document-nested"}, {"foo", bson.D{{"bar", bson.D{{"baz", int32(1)}}}}}})
 			require.NoError(t, err)
@@ -936,7 +937,7 @@ func TestUpdateFieldUnset(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 			_, err := collection.InsertOne(ctx, bson.D{{"_id", "document-nested"}, {"foo", bson.D{{"bar", bson.D{{"baz", int32(1)}}}}}})
 			require.NoError(t, err)
@@ -1003,7 +1004,7 @@ func TestUpdateFieldMixed(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 			opts := options.Update().SetUpsert(true)
 			actualStat, err := collection.UpdateOne(ctx, tc.filter, tc.update, opts)
