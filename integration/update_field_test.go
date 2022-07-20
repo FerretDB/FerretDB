@@ -689,26 +689,6 @@ func TestUpdateFieldSet(t *testing.T) {
 				UpsertedCount: 0,
 			},
 		},
-		//"DotNotationFieldExist": {
-		//	id:       "document-nested",
-		//	update:   bson.D{{"$set", bson.D{{"foo.bar.baz", "123"}}}},
-		//	expected: bson.D{{"_id", "document-nested"}, {"foo", bson.D{{"bar", bson.D{{"baz", "123"}}}}}},
-		//	stat: &mongo.UpdateResult{
-		//		MatchedCount:  1,
-		//		ModifiedCount: 1,
-		//		UpsertedCount: 0,
-		//	},
-		//},
-		//"DotNotationFieldNotExist": {
-		//	id:       "int32",
-		//	update:   bson.D{{"$set", bson.D{{"foo.bar.baz", int32(1)}}}},
-		//	expected: bson.D{{"_id", "int32"}, {"v", int32(42)}, {"foo", bson.D{{"bar", bson.D{{"baz", int32(1)}}}}}},
-		//	stat: &mongo.UpdateResult{
-		//		MatchedCount:  1,
-		//		ModifiedCount: 1,
-		//		UpsertedCount: 0,
-		//	},
-		//},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -825,27 +805,6 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 			},
 			alt: "Modifiers operate on fields but we found another type instead",
 		},
-		//"DotNotationFieldExist": {
-		//	id:          "document-nested",
-		//	setOnInsert: bson.D{{"$setOnInsert", bson.D{{"foo.bar.baz", "123"}}}},
-		//	expected:    bson.D{{"_id", "document-nested"}, {"foo", bson.D{{"bar", bson.D{{"baz", int32(1)}}}}}},
-		//	expectedStat: &mongo.UpdateResult{
-		//		MatchedCount:  1,
-		//		ModifiedCount: 0,
-		//		UpsertedCount: 0,
-		//	},
-		//},
-		//"DotNotationFieldNotExist": {
-		//	id:          "int32",
-		//	setOnInsert: bson.D{{"$setOnInsert", bson.D{{"foo.bar.baz", int32(1)}}}},
-		//	expected:    bson.D{{"_id", "int32"}, {"$setOnInsert", bson.D{{"foo.bar.baz", int32(1)}}}},
-		//	expectedStat: &mongo.UpdateResult{
-		//		MatchedCount:  0,
-		//		ModifiedCount: 0,
-		//		UpsertedCount: 1,
-		//	},
-		//	upserted: true,
-		//},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -930,26 +889,6 @@ func TestUpdateFieldUnset(t *testing.T) {
 			},
 			alt: "Modifiers operate on fields but we found another type instead",
 		},
-		//"DotNotationFieldExist": {
-		//	id:       "document-nested",
-		//	update:   bson.D{{"$unset", bson.D{{"foo.bar.baz", ""}}}},
-		//	expected: bson.D{{"_id", "document-nested"}, {"foo", bson.D{{"bar", bson.D{{}}}}}},
-		//	stat: &mongo.UpdateResult{
-		//		MatchedCount:  1,
-		//		ModifiedCount: 1,
-		//		UpsertedCount: 0,
-		//	},
-		//},
-		//"DotNotationFieldNotExist": {
-		//	id:       "int32",
-		//	update:   bson.D{{"$unset", bson.D{{"foo.bar.baz", ""}}}},
-		//	expected: bson.D{{"_id", "int32"}, {"v", int32(42)}},
-		//	stat: &mongo.UpdateResult{
-		//		MatchedCount:  1,
-		//		ModifiedCount: 0,
-		//		UpsertedCount: 0,
-		//	},
-		//},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
