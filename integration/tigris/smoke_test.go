@@ -25,6 +25,8 @@ import (
 )
 
 func TestSmoke(t *testing.T) {
+	t.Skip("not now")
+
 	t.Parallel()
 	ctx, collection := integration.Setup(t, shareddata.FixedScalars)
 

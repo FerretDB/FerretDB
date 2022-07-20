@@ -29,6 +29,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
@@ -223,6 +224,11 @@ func setupCollection(tb testing.TB, ctx context.Context, port int, db string, pr
 	}
 
 	for _, provider := range providers {
+		if !slices.Contains(provider.Handlers(), *handlerF) {
+			tb.Logf("Provider %q is not compatible with handler %q, skipping it", provider.Name(), *handlerF)
+			continue
+		}
+
 		docs := shareddata.Docs(provider)
 		require.NotEmpty(tb, docs)
 
