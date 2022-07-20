@@ -306,10 +306,12 @@ func (d *Document) RemoveByPath(path Path) {
 	removeByPath(d, path)
 }
 
+// SetByPath sets value by given path.
 func (d *Document) SetByPath(path Path, value any) error {
 	return setByPath(d, path, value)
 }
 
+// InsertByPath creates Document by given path if it's not exist and sets given value to that Document.
 func (d *Document) InsertByPath(path Path, value any) error {
 	return insertByPath(d, path, value)
 }
