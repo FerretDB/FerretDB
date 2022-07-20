@@ -250,6 +250,25 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			if _, ok := exprValue.(types.NullType); ok {
 				return true, nil
 			}
+
+			// comparing not existent field with {$all: [null, null, ..., null]} should return true
+			// (at least one null needs to be presented in the $all array)
+			if exprKey == "$all" {
+				all, ok := exprValue.(*types.Array)
+				if ok && all.Len() > 0 {
+					isNull := true
+					for i := 0; i < all.Len(); i++ {
+						if _, ok := must.NotFail(all.Get(i)).(types.NullType); !ok {
+							isNull = false
+							break
+						}
+					}
+					if isNull {
+						return true, nil
+					}
+				}
+			}
+
 			// exit when not $exists or $not filters and no such field
 			return false, nil
 		}
