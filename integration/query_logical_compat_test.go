@@ -27,8 +27,8 @@ func TestQueryLogicalCompatAnd(t *testing.T) {
 		"And": {
 			filter: bson.D{{
 				"$and", bson.A{
-					bson.D{{"value", bson.D{{"$gt", int32(0)}}}},
-					bson.D{{"value", bson.D{{"$lt", int64(42)}}}},
+					bson.D{{"v", bson.D{{"$gt", int32(0)}}}},
+					bson.D{{"v", bson.D{{"$lt", int64(42)}}}},
 				},
 			}},
 		},
@@ -38,7 +38,7 @@ func TestQueryLogicalCompatAnd(t *testing.T) {
 		"BadExpressionValue": {
 			filter: bson.D{{
 				"$and", bson.A{
-					bson.D{{"value", bson.D{{"$gt", int32(0)}}}},
+					bson.D{{"v", bson.D{{"$gt", int32(0)}}}},
 					nil,
 				},
 			}},
@@ -46,10 +46,10 @@ func TestQueryLogicalCompatAnd(t *testing.T) {
 		"AndOr": {
 			filter: bson.D{{
 				"$and", bson.A{
-					bson.D{{"value", bson.D{{"$gt", int32(0)}}}},
+					bson.D{{"v", bson.D{{"$gt", int32(0)}}}},
 					bson.D{{"$or", bson.A{
-						bson.D{{"value", bson.D{{"$lt", int64(42)}}}},
-						bson.D{{"value", bson.D{{"$lte", 42.13}}}},
+						bson.D{{"v", bson.D{{"$lt", int64(42)}}}},
+						bson.D{{"v", bson.D{{"$lte", 42.13}}}},
 					}}},
 				},
 			}},
@@ -58,10 +58,10 @@ func TestQueryLogicalCompatAnd(t *testing.T) {
 			filter: bson.D{{
 				"$and", bson.A{
 					bson.D{{"$and", bson.A{
-						bson.D{{"value", bson.D{{"$gt", int32(0)}}}},
-						bson.D{{"value", bson.D{{"$lte", 42.13}}}},
+						bson.D{{"v", bson.D{{"$gt", int32(0)}}}},
+						bson.D{{"v", bson.D{{"$lte", 42.13}}}},
 					}}},
-					bson.D{{"value", bson.D{{"$type", "int"}}}},
+					bson.D{{"v", bson.D{{"$type", "int"}}}},
 				},
 			}},
 		},
