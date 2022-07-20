@@ -24,13 +24,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestQueryProjection(t *testing.T) {
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Composites}
-	ctx, collection := Setup(t, providers...)
+	ctx, collection := setup.Setup(t, providers...)
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{
@@ -91,7 +92,7 @@ func TestQueryProjection(t *testing.T) {
 func TestQueryProjectionElemMatch(t *testing.T) {
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Composites}
-	ctx, collection := Setup(t, providers...)
+	ctx, collection := setup.Setup(t, providers...)
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{
@@ -140,7 +141,7 @@ func TestQueryProjectionElemMatch(t *testing.T) {
 
 func TestQueryProjectionSlice(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t)
+	ctx, collection := setup.Setup(t)
 	_, err := collection.InsertOne(ctx,
 		bson.D{{"_id", "array"}, {"v", bson.A{1, 2, 3, 4}}},
 	)

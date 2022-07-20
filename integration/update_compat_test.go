@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
@@ -51,7 +52,7 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 			}
 
 			// Use per-test setup because ypdate queries modify data.
-			ctx, collection, compatCollection := SetupCompat(t, providers...)
+			ctx, collection, compatCollection := setup.SetupCompat(t, providers...)
 
 			update := tc.update
 			require.NotNil(t, update)

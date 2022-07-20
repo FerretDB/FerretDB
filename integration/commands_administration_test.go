@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"fmt"
 	"math"
 	"net"
 	"strconv"
@@ -26,7 +27,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -35,7 +38,7 @@ import (
 
 func TestCommandsAdministrationCreateDropList(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t) // no providers there
+	ctx, collection := setup.Setup(t) // no providers there
 	db := collection.Database()
 	name := collection.Name()
 
@@ -91,7 +94,7 @@ func TestCommandsAdministrationCreateDropList(t *testing.T) {
 
 func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t) // no providers there
+	ctx, collection := setup.Setup(t) // no providers there
 	db := collection.Database()
 	name := db.Name()
 
@@ -134,7 +137,7 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 
 func TestCommandsAdministrationGetParameter(t *testing.T) {
 	t.Parallel()
-	s := SetupWithOpts(t, &SetupOpts{
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		DatabaseName: "admin",
 	})
 
@@ -556,7 +559,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 
 func TestCommandsAdministrationBuildInfo(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t)
+	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
 	command := bson.D{{"buildInfo", int32(1)}}
@@ -589,7 +592,7 @@ func TestCommandsAdministrationBuildInfo(t *testing.T) {
 
 func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t)
+	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
 	command := bson.D{{"collStats", collection.Name()}}
@@ -610,7 +613,7 @@ func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
 
 func TestCommandsAdministrationCollStats(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	var actual bson.D
 	command := bson.D{{"collStats", collection.Name()}}
@@ -630,7 +633,7 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 
 func TestCommandsAdministrationDataSize(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	var actual bson.D
 	command := bson.D{{"dataSize", collection.Database().Name() + "." + collection.Name()}}
@@ -646,7 +649,7 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 
 func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t)
+	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
 	command := bson.D{{"dataSize", "some-database.some-collection"}}
@@ -663,7 +666,7 @@ func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
 
 func TestCommandsAdministrationDBStats(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	var actual bson.D
 	command := bson.D{{"dbStats", int32(1)}}
@@ -686,7 +689,7 @@ func TestCommandsAdministrationDBStats(t *testing.T) {
 
 func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t)
+	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
 	command := bson.D{{"dbStats", int32(1)}}
@@ -709,7 +712,7 @@ func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
 
 func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	var actual bson.D
 	command := bson.D{{"dbStats", int32(1)}, {"scale", float64(1_000)}}
@@ -732,7 +735,7 @@ func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
 
 func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t)
+	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
 	command := bson.D{{"dbStats", int32(1)}, {"scale", float64(1_000)}}
@@ -755,7 +758,7 @@ func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 
 //nolint:paralleltest // we test a global server status
 func TestCommandsAdministrationServerStatus(t *testing.T) {
-	ctx, collection := Setup(t)
+	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
 	command := bson.D{{"serverStatus", int32(1)}}
@@ -798,11 +801,17 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
 	t.Parallel()
 
-	s := SetupWithOpts(t, nil)
+	s := setup.SetupWithOpts(t, nil)
 	collection1 := s.TargetCollection
 	databaseName := s.TargetCollection.Database().Name()
 	collectionName := s.TargetCollection.Name()
-	collection2 := setupClient(t, s.Ctx, s.TargetPort).Database(databaseName).Collection(collectionName)
+
+	// setup second client connection to check that `whatsmyuri` returns different ports
+	uri := fmt.Sprintf("mongodb://127.0.0.1:%d/", s.TargetPort)
+	client2, err := mongo.Connect(s.Ctx, options.Client().ApplyURI(uri))
+	require.NoError(t, err)
+	defer client2.Disconnect(s.Ctx)
+	collection2 := client2.Database(databaseName).Collection(collectionName)
 
 	var ports []string
 	for _, collection := range []*mongo.Collection{collection1, collection2} {
@@ -817,6 +826,7 @@ func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
 		// record ports to compare that they are not equal for two different clients.
 		_, port, err := net.SplitHostPort(must.NotFail(doc.Get("you")).(string))
 		require.NoError(t, err)
+		assert.NotEmpty(t, port)
 		ports = append(ports, port)
 	}
 

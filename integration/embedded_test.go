@@ -44,7 +44,8 @@ func TestEmbedded(t *testing.T) {
 	// check that Run exits on context cancel
 	done := make(chan struct{})
 	go func() {
-		_ = f.Run(ctx) // result is undefined for now
+		err := f.Run(ctx)
+		t.Logf("Run exited with %v.", err) // result is undefined for now
 		cancel()
 		close(done)
 	}()

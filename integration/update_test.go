@@ -23,6 +23,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
@@ -30,7 +31,7 @@ import (
 
 func TestUpdateUpsert(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.Composites)
 
 	// this upsert inserts document
 	filter := bson.D{{"foo", "bar"}}

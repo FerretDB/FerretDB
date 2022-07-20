@@ -22,6 +22,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
@@ -43,7 +44,7 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 
 	// Use shared setup because find queries can't modify data.
 	// TODO use read-only user https://github.com/FerretDB/FerretDB/issues/914
-	ctx, collection, compatCollection := SetupCompat(t, providers...)
+	ctx, collection, compatCollection := setup.SetupCompat(t, providers...)
 
 	for name, tc := range testCases {
 		name, tc := name, tc

@@ -25,12 +25,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestQueryArraySize(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t)
+	ctx, collection := setup.Setup(t)
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{{"_id", "array-empty"}, {"v", bson.A{}}},
@@ -143,7 +144,7 @@ func TestQueryArraySize(t *testing.T) {
 
 func TestQueryArrayDotNotation(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
 		filter      bson.D
@@ -232,7 +233,7 @@ func TestQueryArrayDotNotation(t *testing.T) {
 
 func TestQueryElemMatchOperator(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
 		filter      bson.D
@@ -347,7 +348,7 @@ func TestQueryElemMatchOperator(t *testing.T) {
 
 func TestArrayEquality(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
 		array       bson.A

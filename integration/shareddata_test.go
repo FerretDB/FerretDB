@@ -19,6 +19,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
@@ -26,7 +27,7 @@ func TestEnvData(t *testing.T) {
 	t.Parallel()
 
 	// see `env-data` Taskfile target
-	s := SetupWithOpts(t, &SetupOpts{
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		DatabaseName: "test",
 	})
 	collection := s.TargetCollection.Database().Collection("values")
