@@ -16,15 +16,11 @@ package types
 
 import (
 	"fmt"
-	"math"
 
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
-
-// ErrNaNIsNotImplemented should be used in operations where NaN support is not implemented.
-var ErrNaNIsNotImplemented = fmt.Errorf("NaN is not implemented")
 
 // Array represents BSON array.
 //
@@ -158,9 +154,6 @@ func (a *Array) Max() any {
 
 // Contains checks if the Array contains the given value.
 func (a *Array) Contains(filterValue any) (bool, error) {
-	if filterValue, ok := filterValue.(float64); ok && math.IsNaN(filterValue) {
-		return false, ErrNaNIsNotImplemented
-	}
 
 	// This comparison covers two cases:
 	// - `a` and `filterValue` are equal;

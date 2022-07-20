@@ -646,9 +646,6 @@ func filterFieldExprAll(fieldValue any, allValue any) (bool, error) {
 	case *types.Array:
 		// For arrays we check that the array contains all the elements of the query.
 		contains, err := value.ContainsAll(query)
-		if err == types.ErrNaNIsNotImplemented {
-			return false, NewErrorMsg(ErrBadValue, "NaN is not implemented in $all")
-		}
 		if err != nil {
 			return false, err
 		}

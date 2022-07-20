@@ -509,15 +509,11 @@ func TestQueryArrayAll(t *testing.T) {
 			expectedErr: nil,
 		},
 
-		/*	"NaNIsNotImplemented": {
+		"NaNIsNotImplemented": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{math.NaN()}}}}},
-			expectedIDs: nil,
-			expectedErr: &mongo.CommandError{
-				Code:    2,
-				Message: "NaN is not implemented in $all",
-				Name:    "BadValue",
-			},
-		},*/
+			expectedIDs: []any{"array-two", "double-nan"},
+			expectedErr: nil,
+		},
 
 		"$allNeedsAnArrayInt": {
 			filter:      bson.D{{"value", bson.D{{"$all", 1}}}},

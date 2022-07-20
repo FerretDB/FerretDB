@@ -250,10 +250,14 @@ func TestArrayContains(t *testing.T) {
 			expected: true,
 		},
 		"NaN": {
-			array:       must.NotFail(NewArray(int32(42), "foo", Null)),
-			filter:      math.NaN(),
-			expected:    false,
-			expectedErr: ErrNaNIsNotImplemented,
+			array:    must.NotFail(NewArray(int32(42), "foo", Null, math.NaN())),
+			filter:   math.NaN(),
+			expected: true,
+		},
+		"NotNaN": {
+			array:    must.NotFail(NewArray(int32(42), "foo", Null)),
+			filter:   math.NaN(),
+			expected: false,
 		},
 	} {
 		name, tc := name, tc
