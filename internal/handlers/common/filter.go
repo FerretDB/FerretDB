@@ -664,11 +664,7 @@ func filterFieldExprAll(fieldValue any, allValue any) (bool, error) {
 	switch value := fieldValue.(type) {
 	case *types.Array:
 		// For arrays we check that the array contains all the elements of the query.
-		contains, err := value.ContainsAll(query)
-		if err != nil {
-			return false, err
-		}
-		return contains, nil
+		return value.ContainsAll(query), nil
 
 	case *types.Document:
 		// For documents we return false as $all doesn't work on documents.
