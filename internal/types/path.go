@@ -220,15 +220,15 @@ func insertByPath[T CompositeTypeInterface](comp T, path Path, value any) error 
 		if err != nil {
 			index, err := strconv.Atoi(insertedPath.Suffix())
 			if err != nil {
-				e := next.(*Document)
-				must.NoError(e.Set(insertedPath.Suffix(), must.NotFail(NewDocument())))
+				doc := next.(*Document)
+				must.NoError(doc.Set(insertedPath.Suffix(), must.NotFail(NewDocument())))
 
 				next = must.NotFail(comp.GetByPath(insertedPath))
 				continue
 			}
 
-			e := next.(*Array)
-			must.NoError(e.Set(index, must.NotFail(NewArray())))
+			array := next.(*Array)
+			must.NoError(array.Set(index, must.NotFail(NewArray())))
 
 			next = must.NotFail(comp.GetByPath(insertedPath))
 		}
