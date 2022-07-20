@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"testing"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -24,18 +25,56 @@ func TestQueryArrayCompatAll(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
-		// "All": {
-		// 	filter: bson.D{{
-		// 		"$and",
-		// 		bson.A{
-		// 			bson.D{{"_id", bson.D{{"$not", bson.D{{"$regex", primitive.Regex{Pattern: "array"}}}}}}},
-		// 			bson.D{{"value", bson.D{{"$all", bson.A{42}}}}},
-		// 		},
-		// 	}},
-		// },
-
-		"All": {
-			filter: bson.D{{"value", bson.D{{"$all", bson.A{42}}}}},
+		"String": {
+			filter: bson.D{{"value", bson.D{{"$all", bson.A{"foo"}}}}},
+		},
+		"StringRepeated": {
+			filter: bson.D{{"value", bson.D{{"$all", bson.A{"foo", "foo", "foo"}}}}},
+		},
+		"StringEmpty": {
+			filter: bson.D{{"value", bson.D{{"$all", bson.A{""}}}}},
+		},
+		"Whole": {
+			filter: bson.D{{"value", bson.D{{"$all", bson.A{int32(42)}}}}},
+		},
+		"Zero": {
+			filter: bson.D{{"value", bson.D{{"$all", bson.A{math.Copysign(0, +1)}}}}},
+		},
+		"Double": {
+			filter: bson.D{{"value", bson.D{{"$all", bson.A{42.13}}}}},
+		},
+		"DoubleMax": {
+			filter: bson.D{{"value", bson.D{{"$all", bson.A{math.MaxFloat64}}}}},
+		},
+		"DoubleMin": {
+			filter: bson.D{{"value", bson.D{{"$all", bson.A{math.SmallestNonzeroFloat64}}}}},
+		},
+		"Nil": {
+			filter: bson.D{{"value", bson.D{{"$all", bson.A{nil}}}}},
+		},
+		"MultiAll": {
+			filter: bson.D{{"value", bson.D{{"$all", bson.A{"foo", 42}}}}},
+		},
+		"MultiAllWithNil": {
+			filter: bson.D{{"value", bson.D{{"$all", bson.A{"foo", nil}}}}},
+		},
+		"ArrayEmbeddedEqual": {
+			filter: bson.D{{"value", bson.D{{"$all", bson.A{bson.A{int32(42), "foo"}}}}}},
+		},
+		"ArrayEmbeddedReverseOrder": {
+			filter: bson.D{{"value", bson.D{{"$all", bson.A{bson.A{"foo", int32(42)}}}}}},
+		},
+		"Empty": {
+			filter: bson.D{{"value", bson.D{{"$all", bson.A{}}}}},
+		},
+		"EmptyNested": {
+			filter: bson.D{{"value", bson.D{{"$all", bson.A{bson.A{}}}}}},
+		},
+		"NotFound": {
+			filter: bson.D{{"value", bson.D{{"$all", bson.A{"hello"}}}}},
+		},
+		"NaN": {
+			filter: bson.D{{"value", bson.D{{"$all", bson.A{math.NaN()}}}}},
 		},
 	}
 

@@ -417,7 +417,15 @@ func TestArrayEquality(t *testing.T) {
 // TestQueryArrayAll covers the case where the $all operator is used on an array or scalar.
 func TestQueryArrayAll(t *testing.T) {
 	t.Parallel()
+
 	ctx, collection := Setup(t, shareddata.Composites, shareddata.Scalars)
+
+	// Additional data to check more complicated cases:
+	// a longer array of ints plus a field is called differently and needs to be found with nils.
+	_, err := collection.InsertMany(ctx, []any{
+		bson.D{{"_id", "many-integers"}, {"customField", bson.A{42, 43, 45}}},
+	})
+	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
 		filter      bson.D
@@ -440,9 +448,23 @@ func TestQueryArrayAll(t *testing.T) {
 			expectedErr: nil,
 		},
 		"Whole": {
-			filter:      bson.D{{"value", bson.D{{"$all", bson.A{int32(42)}}}}},
-			expectedIDs: []any{"array", "array-three", "array-three-reverse", "double-whole", "int32", "int64"},
+			filter: bson.D{{"value", bson.D{{"$all", bson.A{int32(42)}}}}},
+			expectedIDs: []any{
+				"array", "array-three", "array-three-reverse", "double-whole", "int32", "int64",
+			},
 			expectedErr: nil,
+		},
+		"WholeInTheMiddle": {
+			filter:      bson.D{{"customField", bson.D{{"$all", bson.A{int32(43)}}}}},
+			expectedIDs: []any{"many-integers"},
+		},
+		"WholeTwoRepeated": {
+			filter:      bson.D{{"customField", bson.D{{"$all", bson.A{int32(42), int32(43), int32(43), int32(42)}}}}},
+			expectedIDs: []any{"many-integers"},
+		},
+		"WholeNotFound": {
+			filter:      bson.D{{"value", bson.D{{"$all", bson.A{int32(44)}}}}},
+			expectedIDs: []any{},
 		},
 		"Zero": {
 			filter:      bson.D{{"value", bson.D{{"$all", bson.A{math.Copysign(0, +1)}}}}},
@@ -468,7 +490,7 @@ func TestQueryArrayAll(t *testing.T) {
 			filter: bson.D{{"value", bson.D{{"$all", bson.A{nil}}}}},
 			expectedIDs: []any{
 				"array-first-embedded", "array-last-embedded", "array-middle-embedded",
-				"array-null", "array-three", "array-three-reverse", "null",
+				"array-null", "array-three", "array-three-reverse", "many-integers", "null",
 			},
 			expectedErr: nil,
 		},

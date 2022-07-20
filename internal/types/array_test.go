@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -208,114 +207,6 @@ func TestArrayMinMax(t *testing.T) {
 			}
 
 			assert.Equal(t, res, tc.expectedValue)
-		})
-	}
-}
-
-func TestArrayContains(t *testing.T) {
-	for name, tc := range map[string]struct {
-		array       *Array
-		filter      any
-		expected    bool
-		expectedErr error
-	}{
-		"String": {
-			array:    must.NotFail(NewArray("foo", "bar")),
-			filter:   "foo",
-			expected: true,
-		},
-		"StringNested": {
-			array:    must.NotFail(NewArray(must.NotFail(NewArray("foo", "bar")))),
-			filter:   "foo",
-			expected: false,
-		},
-		"StringNegative": {
-			array:    must.NotFail(NewArray("foo", "bar")),
-			filter:   "hello",
-			expected: false,
-		},
-		"Int32": {
-			array:    must.NotFail(NewArray(int32(42), int32(43), int32(45))),
-			filter:   int32(43),
-			expected: true,
-		},
-		"Int32Negative": {
-			array:    must.NotFail(NewArray(int32(42), int32(43), int32(45))),
-			filter:   int32(44),
-			expected: false,
-		},
-		"Multi": {
-			array:    must.NotFail(NewArray(int32(42), "foo", Null)),
-			filter:   Null,
-			expected: true,
-		},
-		"NaN": {
-			array:    must.NotFail(NewArray(int32(42), "foo", Null, math.NaN())),
-			filter:   math.NaN(),
-			expected: true,
-		},
-		"NotNaN": {
-			array:    must.NotFail(NewArray(int32(42), "foo", Null)),
-			filter:   math.NaN(),
-			expected: false,
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			contains, err := tc.array.Contains(tc.filter)
-
-			if tc.expectedErr == nil {
-				require.NoError(t, err)
-				assert.Equal(t, tc.expected, contains)
-			}
-		})
-	}
-}
-
-func TestArrayContainsAll(t *testing.T) {
-	for name, tc := range map[string]struct {
-		array    *Array
-		filter   *Array
-		expected bool
-	}{
-		"String": {
-			array:    must.NotFail(NewArray("foo", "bar")),
-			filter:   must.NotFail(NewArray("foo", "bar")),
-			expected: true,
-		},
-		"StringNegative": {
-			array:    must.NotFail(NewArray("foo", "bar")),
-			filter:   must.NotFail(NewArray("foo", "hello")),
-			expected: false,
-		},
-		"Int32": {
-			array:    must.NotFail(NewArray(int32(42), int32(43), int32(45))),
-			filter:   must.NotFail(NewArray(int32(42), int32(43))),
-			expected: true,
-		},
-		"Int32Negative": {
-			array:    must.NotFail(NewArray(int32(42), int32(43), int32(45))),
-			filter:   must.NotFail(NewArray(int32(44))),
-			expected: false,
-		},
-		"Int32NegativeMany": {
-			array:    must.NotFail(NewArray(int32(42), int32(43), int32(45))),
-			filter:   must.NotFail(NewArray(int32(42), int32(44))),
-			expected: false,
-		},
-		"EqualEmpty": {
-			array:    must.NotFail(NewArray()),
-			filter:   must.NotFail(NewArray()),
-			expected: true,
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			contains, err := tc.array.ContainsAll(tc.filter)
-			require.NoError(t, err)
-			assert.Equal(t, tc.expected, contains)
 		})
 	}
 }
