@@ -70,28 +70,17 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			for range fetchedChan {
 			}
 		}()
-
 		for fetchedItem := range fetchedChan {
 			if fetchedItem.Err != nil {
 				return fetchedItem.Err
 			}
-
-			for _, doc := range fetchedItem.Docs {
-				matches, err := common.FilterDocument(doc, filter)
-				if err != nil {
-					return err
-				}
-
-				if !matches {
-					continue
-				}
-
-				resDocs = append(resDocs, doc)
-			}
+			resDocs = append(resDocs, fetchedItem.Docs...)
 		}
-
 		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	return nil, nil
 }
