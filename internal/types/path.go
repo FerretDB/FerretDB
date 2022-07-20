@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // Path represents the field path type. It should be used wherever we work with paths or dot notation.
@@ -48,6 +50,14 @@ func NewPathFromString(s string) Path {
 	return NewPath(path)
 }
 
+func DeriveNewPath(path Path, elem string) Path {
+	elems := path.Slice()
+
+	elems = append(elems, elem)
+
+	return NewPath(elems)
+}
+
 // String returns dot-separated path value.
 func (p Path) String() string {
 	return strings.Join(p.s, ".")
@@ -67,7 +77,7 @@ func (p Path) Slice() []string {
 
 // Suffix returns the last path element.
 func (p Path) Suffix() string {
-	if len(p.s) <= 1 {
+	if len(p.s) < 1 {
 		panic("path should have more than 1 element")
 	}
 	return p.s[p.Len()-1]
@@ -171,4 +181,59 @@ func removeByPath(v any, path Path) {
 	default:
 		// no such path: scalar value
 	}
+}
+
+func setByPath[T CompositeTypeInterface](comp T, path Path, value any) error {
+	innerComp, err := comp.GetByPath(path.TrimSuffix())
+	if err != nil {
+		return err
+	}
+
+	switch inner := innerComp.(type) {
+	case *Document:
+		err := inner.Set(path.Suffix(), value)
+		if err != nil {
+			return err
+		}
+	case *Array:
+		index, err := strconv.Atoi(path.Suffix())
+		if err != nil {
+			return err
+		}
+		err = inner.Set(index, value)
+		if err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("can't set value for %T type", inner)
+	}
+
+	return nil
+}
+
+func insertByPath[T CompositeTypeInterface](comp T, path Path, value any) error {
+	var next any = comp
+	var insertedPath Path
+	for _, pathElem := range path.TrimSuffix().Slice() {
+		insertedPath = DeriveNewPath(insertedPath, pathElem)
+		_, err := comp.GetByPath(insertedPath)
+		if err != nil {
+			index, err := strconv.Atoi(insertedPath.Suffix())
+			if err != nil {
+				e := next.(*Document)
+				err = e.Set(insertedPath.Suffix(), must.NotFail(NewDocument()))
+				fmt.Println(err)
+
+				next = must.NotFail(comp.GetByPath(insertedPath))
+				continue
+			}
+
+			e := next.(*Array)
+			err = e.Set(index, must.NotFail(NewArray()))
+			fmt.Println(err)
+			next = must.NotFail(comp.GetByPath(insertedPath))
+		}
+	}
+
+	return setByPath(comp, path, value)
 }

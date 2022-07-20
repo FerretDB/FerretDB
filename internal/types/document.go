@@ -306,6 +306,14 @@ func (d *Document) RemoveByPath(path Path) {
 	removeByPath(d, path)
 }
 
+func (d *Document) SetByPath(path Path, value any) error {
+	return setByPath(d, path, value)
+}
+
+func (d *Document) InsertByPath(path Path, value any) error {
+	return insertByPath(d, path, value)
+}
+
 // check interfaces
 var (
 	_ document = (*Document)(nil)

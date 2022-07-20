@@ -149,3 +149,7 @@ func (a *Array) Max() any {
 
 	return max
 }
+
+func (a *Array) SetByPath(path Path, value any) error {
+	return nil
+}
