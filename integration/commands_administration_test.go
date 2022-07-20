@@ -134,7 +134,7 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 
 func TestCommandsAdministrationGetParameter(t *testing.T) {
 	t.Parallel()
-	ctx, collection, _ := SetupWithOpts(t, &SetupOpts{
+	s := SetupWithOpts(t, &SetupOpts{
 		DatabaseName: "admin",
 	})
 
@@ -525,7 +525,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 			t.Parallel()
 
 			var actual bson.D
-			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+			err := s.TargetCollection.Database().RunCommand(s.Ctx, tc.command).Decode(&actual)
 
 			if tc.err != nil {
 				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
@@ -797,15 +797,18 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 // It connects two clients to the same server and checks that `whatsmyuri` returns different ports for these clients.
 func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
 	t.Parallel()
-	ctx, collection1, port := SetupWithOpts(t, new(SetupOpts))
-	client2 := setupClient(t, ctx, port)
-	collection2 := client2.Database(collection1.Database().Name()).Collection(collection1.Name())
+
+	s := SetupWithOpts(t, nil)
+	collection1 := s.TargetCollection
+	databaseName := s.TargetCollection.Database().Name()
+	collectionName := s.TargetCollection.Name()
+	collection2 := setupClient(t, s.Ctx, s.TargetPort).Database(databaseName).Collection(collectionName)
 
 	var ports []string
 	for _, collection := range []*mongo.Collection{collection1, collection2} {
 		var actual bson.D
 		command := bson.D{{"whatsmyuri", int32(1)}}
-		err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+		err := collection.Database().RunCommand(s.Ctx, command).Decode(&actual)
 		require.NoError(t, err)
 
 		doc := ConvertDocument(t, actual)
