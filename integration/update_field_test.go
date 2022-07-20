@@ -394,9 +394,13 @@ func TestUpdateFieldInc(t *testing.T) {
 				expected: bson.D{{"_id", "array-nested"}, {"foo", bson.D{{"bar", bson.A{bson.D{{"baz", int32(2)}}}}}}},
 			},
 			"DotNotationArrayFieldNotExist": {
-				id:       "int32",
-				update:   bson.D{{"$inc", bson.D{{"foo.bar.0.baz", int32(1)}}}},
-				expected: bson.D{{"_id", "int32"}, {"v", int32(42)}, {"foo", bson.D{{"bar", bson.D{{"0", bson.D{{"baz", int32(1)}}}}}}}},
+				id:     "int32",
+				update: bson.D{{"$inc", bson.D{{"foo.bar.0.baz", int32(1)}}}},
+				expected: bson.D{
+					{"_id", "int32"},
+					{"v", int32(42)},
+					{"foo", bson.D{{"bar", bson.D{{"0", bson.D{{"baz", int32(1)}}}}}}},
+				},
 			},
 		} {
 			name, tc := name, tc

@@ -183,6 +183,7 @@ func removeByPath(v any, path Path) {
 	}
 }
 
+// setByPath sets value by given path for both Document and Array types.
 func setByPath[T CompositeTypeInterface](comp T, path Path, value any) error {
 	innerComp, err := comp.GetByPath(path.TrimSuffix())
 	if err != nil {
@@ -211,6 +212,7 @@ func setByPath[T CompositeTypeInterface](comp T, path Path, value any) error {
 	return nil
 }
 
+// insertByPath creates Document by given path if it's not exist and sets given value to that Document.
 func insertByPath[T CompositeTypeInterface](comp T, path Path, value any) error {
 	var next any = comp
 	var insertedPath Path
