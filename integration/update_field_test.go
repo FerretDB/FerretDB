@@ -378,15 +378,25 @@ func TestUpdateFieldInc(t *testing.T) {
 				update:   bson.D{{"$inc", bson.D{{"foo", int32(12)}, {"v", int32(1)}}}},
 				expected: bson.D{{"_id", "int32"}, {"v", int32(43)}, {"foo", int32(12)}},
 			},
-			"DotNotationFieldExist": {
+			"DotNotationDocumentFieldExist": {
 				id:       "document-nested",
 				update:   bson.D{{"$inc", bson.D{{"foo.bar.baz", int32(1)}}}},
 				expected: bson.D{{"_id", "document-nested"}, {"foo", bson.D{{"bar", bson.D{{"baz", int32(2)}}}}}},
 			},
-			"DotNotationFieldNotExist": {
+			"DotNotationDocumentFieldNotExist": {
 				id:       "int32",
 				update:   bson.D{{"$inc", bson.D{{"foo.bar.baz", int32(1)}}}},
 				expected: bson.D{{"_id", "int32"}, {"v", int32(42)}, {"foo", bson.D{{"bar", bson.D{{"baz", int32(1)}}}}}},
+			},
+			"DotNotationArrayFieldExist": {
+				id:       "array-nested",
+				update:   bson.D{{"$inc", bson.D{{"foo.bar.0.baz", int32(1)}}}},
+				expected: bson.D{{"_id", "array-nested"}, {"foo", bson.D{{"bar", bson.A{bson.D{{"baz", int32(2)}}}}}}},
+			},
+			"DotNotationArrayFieldNotExist": {
+				id:       "int32",
+				update:   bson.D{{"$inc", bson.D{{"foo.bar.0.baz", int32(1)}}}},
+				expected: bson.D{{"_id", "int32"}, {"v", int32(42)}, {"foo", bson.D{{"bar", bson.D{{"0", bson.D{{"baz", int32(1)}}}}}}}},
 			},
 		} {
 			name, tc := name, tc
@@ -394,7 +404,10 @@ func TestUpdateFieldInc(t *testing.T) {
 				t.Parallel()
 				ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
-				_, err := collection.InsertOne(ctx, bson.D{{"_id", "document-nested"}, {"foo", bson.D{{"bar", bson.D{{"baz", int32(1)}}}}}})
+				_, err := collection.InsertMany(ctx, []any{
+					bson.D{{"_id", "document-nested"}, {"foo", bson.D{{"bar", bson.D{{"baz", int32(1)}}}}}},
+					bson.D{{"_id", "array-nested"}, {"foo", bson.D{{"bar", bson.A{bson.D{{"baz", int32(1)}}}}}}},
+				})
 				require.NoError(t, err)
 
 				_, err = collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)

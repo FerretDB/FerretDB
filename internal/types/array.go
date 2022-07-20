@@ -151,5 +151,5 @@ func (a *Array) Max() any {
 }
 
 func (a *Array) SetByPath(path Path, value any) error {
-	return nil
+	return setByPath(a, path, value)
 }
