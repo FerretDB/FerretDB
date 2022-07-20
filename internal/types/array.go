@@ -165,18 +165,16 @@ func (a *Array) Contains(filterValue any) (bool, error) {
 	// special case: if `a` and `filterValue` are equal,
 	// we consider that `a` contains `filterValue`.
 	if res := Compare(a, filterValue); slices.Contains(res, Equal) && len(res) == 1 {
-		// if reflect.DeepEqual(a, filterValue)
 		return true, nil
 	}
 
 	// otherwise, we check if at least one element of `a`
 	// is equal to `filterValue`.
-	for _, elem := range a.s {
-		if res := Compare(elem, filterValue); slices.Contains(res, Equal) && len(res) == 1 {
-			// if reflect.DeepEqual(elem, filterValue) {
-			return true, nil
-		}
-	}
+	//	for _, elem := range a.s {
+	//		if res := Compare(elem, filterValue); slices.Contains(res, Equal) && len(res) == 1 {
+	//			return true, nil
+	//		}
+	//	}
 
 	return false, nil
 }

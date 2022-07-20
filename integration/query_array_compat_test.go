@@ -18,25 +18,26 @@ import (
 	"testing"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestQueryArrayCompatAll(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
+		// "All": {
+		// 	filter: bson.D{{
+		// 		"$and",
+		// 		bson.A{
+		// 			bson.D{{"_id", bson.D{{"$not", bson.D{{"$regex", primitive.Regex{Pattern: "array"}}}}}}},
+		// 			bson.D{{"value", bson.D{{"$all", bson.A{42}}}}},
+		// 		},
+		// 	}},
+		// },
+
 		"All": {
-			filter: bson.D{{
-				"$and",
-				bson.A{
-					bson.D{{"_id", bson.D{{"$not", bson.D{{"$regex", primitive.Regex{Pattern: "array"}}}}}}},
-					bson.D{{"value", bson.D{{"$all", bson.A{42}}}}},
-				},
-			}},
+			filter: bson.D{{"value", bson.D{{"$all", bson.A{42}}}}},
 		},
 	}
-
-	// e := bson.D{{"_id", bson.D{{"$not", bson.D{{"$regex", primitive.Regex{Pattern: "array"}}}}}}}
 
 	testQueryCompat(t, testCases)
 }
