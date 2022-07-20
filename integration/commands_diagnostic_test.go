@@ -27,10 +27,7 @@ import (
 
 func TestCommandsDiagnosticGetLog(t *testing.T) {
 	t.Parallel()
-
-	ctx, collection, _ := SetupWithOpts(t, &SetupOpts{
-		DatabaseName: "admin",
-	})
+	ctx, collection := Setup(t)
 
 	for name, tc := range map[string]struct {
 		command  bson.D
