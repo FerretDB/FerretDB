@@ -187,7 +187,7 @@ func (a *Array) Contains(filterValue any) bool {
 	}
 }
 
-// ContainsAll checks if the Array contains all the given values of the Array b.
+// ContainsAll checks if Array a contains all the given values of Array b.
 // Currently, this algorithm is O(n^2) without any performance tuning.
 // This place can be significantly improved if a more performant algorithm is chosen.
 func (a *Array) ContainsAll(b *Array) (bool, error) {
