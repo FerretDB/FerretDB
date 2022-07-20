@@ -12,24 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tigris
+package integration
 
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-
-	"github.com/FerretDB/FerretDB/integration"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestSmoke(t *testing.T) {
+func TestUpdateFieldCompatInc(t *testing.T) {
 	t.Parallel()
-	ctx, collection := integration.Setup(t, shareddata.FixedScalars)
 
-	var doc bson.D
-	err := collection.FindOne(ctx, bson.D{{"_id", "fixed_double"}}).Decode(&doc)
-	require.NoError(t, err)
-	integration.AssertEqualDocuments(t, bson.D{{"_id", "fixed_double"}, {"double_value", 42.13}}, doc)
+	testCases := map[string]updateCompatTestCase{
+		"Double": {
+			update: bson.D{{"$inc", bson.D{{"v", 42.13}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/904",
+		},
+		"DoubleNegative": {
+			update: bson.D{{"$inc", bson.D{{"v", -42.13}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/904",
+		},
+	}
+
+	testUpdateCompat(t, testCases)
 }

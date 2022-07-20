@@ -35,8 +35,8 @@ func TestQueryElementExists(t *testing.T) {
 		bson.D{{"_id", "empty-array"}, {"empty-array", []any{}}},
 		bson.D{{"_id", "nan"}, {"nan", math.NaN()}},
 		bson.D{{"_id", "null"}, {"null", nil}},
-		bson.D{{"_id", "string"}, {"value", "12"}},
-		bson.D{{"_id", "two-fields"}, {"value", "12"}, {"field", 42}},
+		bson.D{{"_id", "string"}, {"v", "12"}},
+		bson.D{{"_id", "two-fields"}, {"v", "12"}, {"field", 42}},
 	})
 	require.NoError(t, err)
 
@@ -267,7 +267,7 @@ func TestQueryElementType(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			filter := bson.D{{"value", bson.D{{"$type", tc.v}}}}
+			filter := bson.D{{"v", bson.D{{"$type", tc.v}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)

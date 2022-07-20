@@ -12,24 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tigris
+package pgdb_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
+	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/integration"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func TestSmoke(t *testing.T) {
-	t.Parallel()
-	ctx, collection := integration.Setup(t, shareddata.FixedScalars)
+// getPool creates a new connection's connection pool for testing.
+func getPool(ctx context.Context, tb testing.TB, opts *testutil.PoolOpts, l *zap.Logger) *pgdb.Pool {
+	tb.Helper()
 
-	var doc bson.D
-	err := collection.FindOne(ctx, bson.D{{"_id", "fixed_double"}}).Decode(&doc)
-	require.NoError(t, err)
-	integration.AssertEqualDocuments(t, bson.D{{"_id", "fixed_double"}, {"double_value", 42.13}}, doc)
+	pool, err := pgdb.NewPool(ctx, testutil.PoolConnString(tb, opts), l, false)
+	require.NoError(tb, err)
+	tb.Cleanup(pool.Close)
+
+	return pool
 }
