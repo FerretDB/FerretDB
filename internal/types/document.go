@@ -338,11 +338,11 @@ func (d *Document) SetByPath(path Path, value any) error {
 	return nil
 }
 
-// InsertByPath sets given value by given path.
+// InsertByPath sets value by given path.
 // If some parts of the path are missing, they will be created.
 // The Document type will be used to create these parts.
 func (d *Document) InsertByPath(path Path, value any) error {
-	var next = d
+	next := d
 	var insertedPath Path
 	for _, pathElem := range path.TrimSuffix().Slice() {
 		insertedPath = DeriveNewPath(insertedPath, pathElem)
