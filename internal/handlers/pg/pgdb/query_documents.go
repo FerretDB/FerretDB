@@ -76,7 +76,6 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier,
 		close(fetchedChan)
 		return fetchedChan, lazyerrors.Error(err)
 	}
-	fmt.Println("1", db, collection)
 	if !collectionExists {
 		pgPool.logger.Info(
 			"Collection doesn't exist, handling a case to deal with a non-existing collection (return empty list)",

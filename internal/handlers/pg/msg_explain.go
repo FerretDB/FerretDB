@@ -51,6 +51,16 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			fmt.Sprintf("has invalid type %s", common.AliasFromType(commandParam)),
 		)
 	}
+
+	switch command.Command() {
+	case "count", "findAndModify", "find":
+		// ok
+	default:
+		return nil, common.NewErrorMsg(
+			common.ErrNotImplemented,
+			fmt.Sprintf("explain for %s s not supported", command.Command()),
+		)
+	}
 	collectionParam, err := command.Get(command.Command())
 	if err != nil {
 		return nil, err
