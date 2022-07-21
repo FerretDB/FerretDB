@@ -200,6 +200,10 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 }
 
 // setupCollection setups a single collection.
+// If there are no providers, we don't create a database and collection.
+// That is intentional:
+//   * for those tests where no collection and database are needed.
+//   * for Tigris: we can't create a collection without a schema, and we don't know schema without documents.
 func setupCollection(tb testing.TB, ctx context.Context, port int, db string, providers []shareddata.Provider) *mongo.Collection {
 	tb.Helper()
 
@@ -257,18 +261,21 @@ func setupClient(tb testing.TB, ctx context.Context, port uint16) *mongo.Client 
 
 	// those options should not affect anything except tests speed
 	v := url.Values{
-		"connectTimeoutMS":         []string{"5000"},
-		"serverSelectionTimeoutMS": []string{"5000"},
-		"socketTimeoutMS":          []string{"5000"},
-		"heartbeatFrequencyMS":     []string{"30000"},
+		// TODO: Test fails occured on some platforms due to i/o timeout.
+		// Needs more investigation.
+		//
+		//"connectTimeoutMS":         []string{"5000"},
+		//"serverSelectionTimeoutMS": []string{"5000"},
+		//"socketTimeoutMS":          []string{"5000"},
+		//"heartbeatFrequencyMS":     []string{"30000"},
 
-		"minPoolSize":   []string{"1"},
-		"maxPoolSize":   []string{"1"},
-		"maxConnecting": []string{"1"},
-		"maxIdleTimeMS": []string{"0"},
+		//"minPoolSize":   []string{"1"},
+		//"maxPoolSize":   []string{"1"},
+		//"maxConnecting": []string{"1"},
+		//"maxIdleTimeMS": []string{"0"},
 
-		"directConnection": []string{"true"},
-		"appName":          []string{tb.Name()},
+		//"directConnection": []string{"true"},
+		//"appName":          []string{tb.Name()},
 	}
 
 	u := url.URL{
