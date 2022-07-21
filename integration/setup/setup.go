@@ -233,7 +233,7 @@ func setupCollection(tb testing.TB, ctx context.Context, port int, db string, pr
 		require.NoError(tb, err)
 		require.Len(tb, res.InsertedIDs, len(docs))
 	}
-	// if there is no providers used in test, let's create collectio and database.
+	// if there is no providers used in test, let's create collection and database.
 	if len(providers) == 0 {
 		err := client.Database(db).CreateCollection(ctx, collectionName)
 		require.NoError(tb, err)
