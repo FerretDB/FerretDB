@@ -48,7 +48,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 	var command *types.Document
 	var ok bool
-	if command, ok = commandParam.(*typets.Document); !ok {
+	if command, ok = commandParam.(*types.Document); !ok {
 		return nil, common.NewErrorMsg(
 			common.ErrBadValue,
 			fmt.Sprintf("has invalid type %s", common.AliasFromType(commandParam)),
@@ -110,9 +110,10 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 	// TODO get port from peerAddr
 	serverInfo := must.NotFail(types.NewDocument(
-		"version", version.MongoDBVersion,
 		"host", hostname,
 		"port", peerAddr,
+		"version", version.MongoDBVersion,
+		"gitVersion", version.Get().Commit,
 		"ferretdbVersion", version.Get().Version,
 	))
 
