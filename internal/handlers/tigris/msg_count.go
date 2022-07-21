@@ -24,5 +24,6 @@ import (
 // MsgCount implements HandlerInterface.
 func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/771
+	// todo
 	return nil, notImplemented(must.NotFail(msg.Document()).Command())
 }
