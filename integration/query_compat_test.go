@@ -98,7 +98,7 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 			case errorResult:
 				fallthrough
 			default:
-				t.Fatalf("unknown case type %v", tc.resultType)
+				t.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}
