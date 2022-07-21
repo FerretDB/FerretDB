@@ -254,7 +254,7 @@ func TestDatabaseName(t *testing.T) {
 	})
 
 	t.Run("63ok", func(t *testing.T) {
-		ctx, collection := Setup(t)
+		ctx, collection := setup.Setup(t)
 
 		dbName63 := strings.Repeat("a", 63)
 		err := collection.Database().Client().Database(dbName63).CreateCollection(ctx, testutil.CollectionName(t))
