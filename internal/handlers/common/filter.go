@@ -250,6 +250,25 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			if _, ok := exprValue.(types.NullType); ok {
 				return true, nil
 			}
+
+			// comparing not existent field with {$all: [null, null, ..., null]} should return true
+			// (at least one null needs to be presented in the $all array)
+			if exprKey == "$all" {
+				all, ok := exprValue.(*types.Array)
+				if ok && all.Len() > 0 {
+					isNull := true
+					for i := 0; i < all.Len(); i++ {
+						if _, ok := must.NotFail(all.Get(i)).(types.NullType); !ok {
+							isNull = false
+							break
+						}
+					}
+					if isNull {
+						return true, nil
+					}
+				}
+			}
+
 			// exit when not $exists or $not filters and no such field
 			return false, nil
 		}
@@ -468,6 +487,13 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				return false, err
 			}
 
+		case "$all":
+			// {field: {$all: [value, another_value, ...]}}
+			res, err := filterFieldExprAll(fieldValue, exprValue)
+			if !res || err != nil {
+				return false, err
+			}
+
 		case "$bitsAllClear":
 			// {field: {$bitsAllClear: value}}
 			res, err := filterFieldExprBitsAllClear(fieldValue, exprValue)
@@ -620,6 +646,41 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// filterFieldExprAll handles {field: {$all: [value, another_value, ...]}} filter.
+// The main purpose of $all is to filter arrays.
+// It is possible to filter non-arrays: {field: {$all: [value]}}, but such statement is equivalent to {field: value}.
+func filterFieldExprAll(fieldValue any, allValue any) (bool, error) {
+	query, ok := allValue.(*types.Array)
+	if !ok {
+		return false, NewErrorMsg(ErrBadValue, "$all needs an array")
+	}
+
+	if query.Len() == 0 {
+		return false, nil
+	}
+
+	switch value := fieldValue.(type) {
+	case *types.Array:
+		// For arrays we check that the array contains all the elements of the query.
+		return value.ContainsAll(query), nil
+
+	case *types.Document:
+		// For documents we return false as $all doesn't work on documents.
+		return false, nil
+
+	default:
+		// For other types (scalars) we check that the value is equal to each scalar in the query.
+		// Example: value: 42, query: [42, 42] should give us `true`
+		for i := 0; i < query.Len(); i++ {
+			res := types.Compare(value, must.NotFail(query.Get(i)))
+			if !slices.Contains(res, types.Equal) || len(res) != 1 {
+				return false, nil
+			}
+		}
+		return true, nil
+	}
 }
 
 // filterFieldExprBitsAllClear handles {field: {$bitsAllClear: value}} filter.
