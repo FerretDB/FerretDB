@@ -26,13 +26,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/x/mongo/driver"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestMostCommandsAreCaseSensitive(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t)
+	ctx, collection := setup.Setup(t)
 	db := collection.Database()
 
 	res := db.RunCommand(ctx, bson.D{{"listcollections", 1}})
@@ -56,7 +57,7 @@ func TestMostCommandsAreCaseSensitive(t *testing.T) {
 
 func TestFindNothing(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t)
+	ctx, collection := setup.Setup(t)
 
 	cursor, err := collection.Find(ctx, bson.D{})
 	require.NoError(t, err)
@@ -75,7 +76,7 @@ func TestFindNothing(t *testing.T) {
 func TestInsertFind(t *testing.T) {
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
-	ctx, collection := Setup(t, providers...)
+	ctx, collection := setup.Setup(t, providers...)
 
 	var docs []bson.D
 	for _, provider := range providers {
@@ -104,7 +105,7 @@ func TestInsertFind(t *testing.T) {
 
 //nolint:paralleltest // we test a global list of databases
 func TestFindCommentMethod(t *testing.T) {
-	ctx, collection := Setup(t, shareddata.Scalars)
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
 	name := collection.Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
 	require.NoError(t, err)
@@ -119,7 +120,7 @@ func TestFindCommentMethod(t *testing.T) {
 
 //nolint:paralleltest // we test a global list of databases
 func TestFindCommentQuery(t *testing.T) {
-	ctx, collection := Setup(t, shareddata.Scalars)
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
 	name := collection.Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
 	require.NoError(t, err)
@@ -135,7 +136,7 @@ func TestCollectionName(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Err", func(t *testing.T) {
-		ctx, collection := Setup(t)
+		ctx, collection := setup.Setup(t)
 
 		collectionName300 := strings.Repeat("a", 300)
 		cases := map[string]struct {
@@ -185,7 +186,7 @@ func TestCollectionName(t *testing.T) {
 	})
 
 	t.Run("Ok", func(t *testing.T) {
-		ctx, collection := Setup(t)
+		ctx, collection := setup.Setup(t)
 
 		longCollectionName := strings.Repeat("a", 100)
 		err := collection.Database().CreateCollection(ctx, longCollectionName)
@@ -202,7 +203,7 @@ func TestDatabaseName(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Err", func(t *testing.T) {
-		ctx, collection := Setup(t)
+		ctx, collection := setup.Setup(t)
 
 		dbName64 := strings.Repeat("a", 64)
 
@@ -245,7 +246,7 @@ func TestDatabaseName(t *testing.T) {
 	})
 
 	t.Run("Empty", func(t *testing.T) {
-		ctx, collection := Setup(t)
+		ctx, collection := setup.Setup(t)
 
 		err := collection.Database().Client().Database("").CreateCollection(ctx, testutil.CollectionName(t))
 		expectedErr := driver.InvalidOperationError(driver.InvalidOperationError{MissingField: "Database"})
