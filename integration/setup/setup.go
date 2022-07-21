@@ -140,13 +140,13 @@ func Setup(tb testing.TB, providers ...shareddata.Provider) (context.Context, *m
 	return s.Ctx, s.TargetCollection
 }
 
-// SetupCompat setups compatibility test with specified data providers.
-func SetupCompat(tb testing.TB, providers ...shareddata.Provider) (context.Context, *mongo.Collection, *mongo.Collection) {
+// SetupCompat setups compatibility test with all data providers.
+func SetupCompat(tb testing.TB) (context.Context, *mongo.Collection, *mongo.Collection) {
 	tb.Helper()
 
 	s := SetupWithOpts(tb, &SetupOpts{
 		CompatTest: true,
-		Providers:  providers,
+		Providers:  shareddata.AllProviders(),
 	})
 	return s.Ctx, s.TargetCollection, s.CompatCollection
 }
@@ -185,7 +185,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 
 		err := l.Run(ctx)
 		if err == nil || err == context.Canceled {
-			logger.Info("Listener stopped")
+			logger.Info("Listener stopped without error")
 		} else {
 			logger.Error("Listener stopped", zap.Error(err))
 		}
@@ -197,7 +197,10 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 		h.Close()
 	})
 
-	return l.Addr().(*net.TCPAddr).Port
+	port := l.Addr().(*net.TCPAddr).Port
+	logger.Info("Listener started", zap.String("handler", *handlerF), zap.Int("port", port))
+
+	return port
 }
 
 // setupCollection setups a single collection.
@@ -225,7 +228,7 @@ func setupCollection(tb testing.TB, ctx context.Context, port int, db string, pr
 	}
 
 	for _, provider := range providers {
-		if !slices.Contains(provider.Handlers(), *handlerF) {
+		if *targetPortF == 0 && !slices.Contains(provider.Handlers(), *handlerF) {
 			tb.Logf("Provider %q is not compatible with handler %q, skipping it", provider.Name(), *handlerF)
 			continue
 		}
@@ -234,7 +237,7 @@ func setupCollection(tb testing.TB, ctx context.Context, port int, db string, pr
 		require.NotEmpty(tb, docs)
 
 		res, err := collection.InsertMany(ctx, docs)
-		require.NoError(tb, err)
+		require.NoError(tb, err, "provider %q, handler %q", provider.Name(), *handlerF)
 		require.Len(tb, res.InsertedIDs, len(docs))
 	}
 

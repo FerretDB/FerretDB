@@ -14,6 +14,7 @@
 
 package integration
 
+/*
 import (
 	"testing"
 
@@ -22,22 +23,30 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-// queryCompatTestCase describes query compatibility test case.
-type queryCompatTestCase struct {
+// insertCompatTestCase describes insert compatibility test case.
+type insertCompatTestCase struct {
 	filter bson.D // required
 	sort   bson.D // defaults to `bson.D{{"_id", 1}}`
 }
 
-// testQueryCompat tests query compatibility test cases.
-func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
+// testInsertCompat tests insert compatibility test cases.
+func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 	t.Helper()
+
+	providers := []shareddata.Provider{
+		shareddata.FixedScalars,
+		shareddata.Scalars,
+		shareddata.Composites,
+	}
 
 	// Use shared setup because find queries can't modify data.
 	// TODO use read-only user https://github.com/FerretDB/FerretDB/issues/914
-	ctx, collection, compatCollection := setup.SetupCompat(t)
+	ctx, collection, compatCollection := SetupCompat(t, providers...)
+
+	collection.InsertMany()
 
 	for name, tc := range testCases {
 		name, tc := name, tc
@@ -78,3 +87,4 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 		})
 	}
 }
+*/
