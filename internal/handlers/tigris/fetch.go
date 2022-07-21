@@ -45,6 +45,7 @@ func (h *Handler) fetch(ctx context.Context, param fetchParam) ([]*types.Documen
 		if !errors.As(err, &tigErr) {
 			return nil, lazyerrors.Error(err)
 		}
+		//nolint:nosnakecase // Tigris' named their const that way
 		if tigErr.Code == tigris.Code_NOT_FOUND {
 			h.L.Debug(
 				"Collection doesn't exist, handling a case to deal with a non-existing collection (return empty list)",
