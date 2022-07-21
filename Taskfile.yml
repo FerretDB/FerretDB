@@ -48,9 +48,10 @@ tasks:
       - go mod verify
 
   init-clean:
-    desc: "Clean all caches, including docker buildx and docker system volumes, and re-install development tools"
+    desc: "Clean ALL Go and Docker data (caches, images, volumes), and re-init"
     cmds:
-      - docker buildx prune --all
+      - cmd: docker buildx prune --all
+        ignore_error: true # build container may not exist
       - docker system prune --all --volumes
       - bin/golangci-lint cache clean
       - go clean -cache -testcache -modcache -fuzzcache
