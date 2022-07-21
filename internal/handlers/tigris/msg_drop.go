@@ -51,7 +51,7 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		if !errors.As(err, &tigErr) {
 			return nil, lazyerrors.Error(err)
 		}
-		//nolint:nosnakecase // Tigris' named their const that way
+		//nolint:nosnakecase // Tigris named their const that way
 		if tigErr.Code == tigris.Code_NOT_FOUND {
 			return nil, common.NewErrorMsg(common.ErrNamespaceNotFound, "ns not found")
 		}
