@@ -24,12 +24,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestQueryLogicalOr(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t, shareddata.Scalars)
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
 	for name, tc := range map[string]struct {
 		filter      any
@@ -113,7 +114,7 @@ func TestQueryLogicalOr(t *testing.T) {
 
 func TestQueryLogicalNor(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t, shareddata.Scalars)
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
 	for name, tc := range map[string]struct {
 		filter      any
@@ -179,7 +180,7 @@ func TestQueryLogicalNor(t *testing.T) {
 func TestQueryLogicalNot(t *testing.T) {
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
-	ctx, collection := Setup(t, providers...)
+	ctx, collection := setup.Setup(t, providers...)
 
 	for name, tc := range map[string]struct {
 		filter      bson.D
