@@ -233,7 +233,7 @@ func setupCollection(tb testing.TB, ctx context.Context, port int, db string, pr
 
 	for _, provider := range providers {
 		if *targetPortF == 0 && !slices.Contains(provider.Handlers(), *handlerF) {
-			tb.Logf("Provider %q is not compatible with handler %q, skipping it", provider.Name(), *handlerF)
+			tb.Logf("Provider %q is not compatible with handler %q, skipping it.", provider.Name(), *handlerF)
 			continue
 		}
 
@@ -248,7 +248,7 @@ func setupCollection(tb testing.TB, ctx context.Context, port int, db string, pr
 	// delete collection and (possibly) database unless test failed
 	tb.Cleanup(func() {
 		if tb.Failed() {
-			tb.Logf("Keeping database %q and collection %q for debugging.", db, collectionName)
+			tb.Logf("Keeping %s.%s for debugging.", db, collectionName)
 			return
 		}
 
