@@ -419,7 +419,7 @@ func TestArrayEquality(t *testing.T) {
 func TestQueryArrayAll(t *testing.T) {
 	t.Parallel()
 
-	ctx, collection := Setup(t, shareddata.Composites, shareddata.Scalars)
+	ctx, collection := setup.Setup(t, shareddata.Composites, shareddata.Scalars)
 
 	// Insert additional data to check more complicated cases:
 	// - a longer array of ints;
