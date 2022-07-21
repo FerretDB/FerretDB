@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/jackc/pgtype/pgxtype"
 	"github.com/jackc/pgx/v4"
 	"go.uber.org/zap"
@@ -28,7 +29,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 const (
@@ -131,6 +131,9 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier,
 	return fetchedChan, nil
 }
 
+func lala(m map[string]any) *types.Document {
+}
+
 // iterateFetch iterates over the rows returned by the query and sends FetchedDocs to fetched channel.
 // It returns ctx.Err() if context cancellation was received.
 func iterateFetch(ctx context.Context, fetched chan FetchedDocs, rows pgx.Rows, explain bool) error {
@@ -149,13 +152,55 @@ func iterateFetch(ctx context.Context, fetched chan FetchedDocs, rows pgx.Rows, 
 			}
 
 			if explain {
-				var plans []plan
+				var plans []map[string]any
+
 				if err := json.Unmarshal(b, &plans); err != nil {
 					return writeFetched(ctx, fetched, FetchedDocs{Err: lazyerrors.Error(err)})
 				}
+
+				/*
+				   -[ RECORD 1 ]-----------------------------------------
+				   QUERY PLAN | [                                        +
+				              |   {                                      +
+				              |     "Plan": {                            +
+				              |       "Node Type": "Seq Scan",           +
+				              |       "Parallel Aware": false,           +
+				              |       "Async Capable": false,            +
+				              |       "Relation Name": "values_34474c3b",+
+				              |       "Schema": "test",                  +
+				              |       "Alias": "values_34474c3b",        +
+				              |       "Startup Cost": 0.00,              +
+				              |       "Total Cost": 23.60,               +
+				              |       "Plan Rows": 1360,                 +
+				              |       "Plan Width": 32,                  +
+				              |       "Output": ["_jsonb"]               +
+				              |     }                                    +
+				              |   }                                      +
+				              | ]
+
+
+
+				   		   ------------------------------------------------------------------
+				    [                                                               +
+				      {                                                             +
+				        "Plan": {                                                   +
+				          "Node Type": "Seq Scan",                                  +
+				          "Parallel Aware": false,                                  +
+				          "Async Capable": false,                                   +
+				          "Relation Name": "testcommandsdiagnosticexplain_1dd9d237",+
+				          "Alias": "testcommandsdiagnosticexplain_1dd9d237",        +
+				          "Startup Cost": 0.00,                                     +
+				          "Total Cost": 23.60,                                      +
+				          "Plan Rows": 1360,                                        +
+				          "Plan Width": 32                                          +
+				        }                                                           +
+				      }                                                             +
+				    ]
+				*/
+
 				for _, v := range plans {
-					res = append(res, v.toDoc())
 				}
+
 			} else {
 				doc, err := fjson.Unmarshal(b)
 				if err != nil {
@@ -194,38 +239,4 @@ func writeFetched(ctx context.Context, fetched chan FetchedDocs, doc FetchedDocs
 	case fetched <- doc:
 		return nil
 	}
-}
-
-// queryPlan is a explain command result top level structure.
-type plan struct {
-	Plan queryPlan `json:"Plan"`
-}
-
-// queryPlan is a explain command result structure.
-type queryPlan struct {
-	NodeType      string  `json:"Node Type"`
-	ParallelAware bool    `json:"Parallel Aware"`
-	AsyncCapable  bool    `json:"Async Capable"`
-	RelationName  string  `json:"Relation Name"`
-	Alias         string  `json:"Alias"`
-	StartupCost   float64 `json:"Startup Cost"`
-	TotalCost     float64 `json:"Total Cost"`
-	PlanRows      int64   `json:"Plan Rows"`
-	PlanWidth     int64   `json:"Plan Width"`
-}
-
-// toDoc function returns a types.Document from plan structure.
-func (p *plan) toDoc() *types.Document {
-	return must.NotFail(
-		types.NewDocument(
-			"node_type", p.Plan.NodeType,
-			"parallel_aware", p.Plan.ParallelAware,
-			"async_capable", p.Plan.AsyncCapable,
-			"relation_name", p.Plan.RelationName,
-			"alias", p.Plan.Alias,
-			"startup_cost", p.Plan.StartupCost,
-			"total_cost", p.Plan.TotalCost,
-			"plan_rows", p.Plan.PlanRows,
-			"plan_with", p.Plan.PlanWidth,
-		))
 }
