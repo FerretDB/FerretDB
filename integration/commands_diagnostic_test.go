@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestCommandsDiagnosticGetLog(t *testing.T) {
@@ -110,7 +110,7 @@ func TestCommandsDiagnosticConnectionStatus(t *testing.T) {
 
 func TestCommandsDiagnosticExplain(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t)
+	ctx, collection := setup.Setup(t)
 
 	for name, tc := range map[string]struct {
 		command  any
