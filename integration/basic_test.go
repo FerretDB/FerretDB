@@ -259,6 +259,5 @@ func TestDatabaseName(t *testing.T) {
 		dbName63 := strings.Repeat("a", 63)
 		err := collection.Database().Client().Database(dbName63).CreateCollection(ctx, testutil.CollectionName(t))
 		require.NoError(t, err)
-		collection.Database().Client().Database(dbName63).Drop(ctx)
 	})
 }
