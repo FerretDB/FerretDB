@@ -149,7 +149,7 @@ func iterateFetch(ctx context.Context, fetched chan FetchedDocs, rows pgx.Rows, 
 			}
 
 			if explain {
-				var plans []*plan
+				var plans []plan
 				if err := json.Unmarshal(b, &plans); err != nil {
 					return writeFetched(ctx, fetched, FetchedDocs{Err: lazyerrors.Error(err)})
 				}
@@ -163,7 +163,6 @@ func iterateFetch(ctx context.Context, fetched chan FetchedDocs, rows pgx.Rows, 
 				}
 				res = append(res, doc.(*types.Document))
 			}
-
 		}
 
 		if len(res) > 0 {
