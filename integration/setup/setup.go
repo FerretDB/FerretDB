@@ -78,7 +78,6 @@ type SetupResult struct {
 // SetupWithOpts setups the test according to given options.
 func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	tb.Helper()
-	tb.Log("setup with opts")
 
 	startupOnce.Do(func() {
 		logging.Setup(zap.DebugLevel)
@@ -143,7 +142,6 @@ func Setup(tb testing.TB, providers ...shareddata.Provider) (context.Context, *m
 // SetupCompat setups compatibility test with specified data providers.
 func SetupCompat(tb testing.TB, providers ...shareddata.Provider) (context.Context, *mongo.Collection, *mongo.Collection) {
 	tb.Helper()
-	tb.Log("setup compat")
 
 	s := SetupWithOpts(tb, &SetupOpts{
 		CompatTest: true,
@@ -156,8 +154,6 @@ func SetupCompat(tb testing.TB, providers ...shareddata.Provider) (context.Conte
 // and returns listening port number.
 func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 	tb.Helper()
-
-	tb.Log("setup listener")
 
 	h, err := registry.NewHandler(*handlerF, &registry.NewHandlerOpts{
 		Ctx:           ctx,
@@ -198,7 +194,6 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 	tb.Cleanup(func() {
 		<-done
 		h.Close()
-		tb.Log("setup listener cleanup")
 	})
 
 	return l.Addr().(*net.TCPAddr).Port
@@ -207,7 +202,6 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 // setupCollection setups a single collection.
 func setupCollection(tb testing.TB, ctx context.Context, port int, db string, providers []shareddata.Provider) *mongo.Collection {
 	tb.Helper()
-	tb.Log("setup collection started")
 
 	require.Greater(tb, port, 0)
 	require.Less(tb, port, 65536)
@@ -224,17 +218,11 @@ func setupCollection(tb testing.TB, ctx context.Context, port int, db string, pr
 	collection := database.Collection(collectionName)
 
 	// drop remnants of the previous failed run
-	tb.Log("setup collection: drop remnants previous failed run: collection")
 	_ = collection.Drop(ctx)
 	if ownDatabase {
-		tb.Log("setup collection: drop remnants previous failed run: database")
 		_ = database.Drop(ctx)
 	}
 
-	if len(providers) == 0 {
-		client.Database(db).CreateCollection(ctx, collectionName)
-	}
-	tb.Logf("setup collection %d", len(providers))
 	for _, provider := range providers {
 		docs := shareddata.Docs(provider)
 		require.NotEmpty(tb, docs)
@@ -246,7 +234,6 @@ func setupCollection(tb testing.TB, ctx context.Context, port int, db string, pr
 
 	// delete collection and (possibly) database unless test failed
 	tb.Cleanup(func() {
-		tb.Log("cleanup started")
 		if tb.Failed() {
 			tb.Logf("Keeping database %q and collection %q for debugging.", db, collectionName)
 			return
@@ -256,7 +243,6 @@ func setupCollection(tb testing.TB, ctx context.Context, port int, db string, pr
 		require.NoError(tb, err)
 
 		if ownDatabase {
-			tb.Log("cleanup setup drop own database")
 			err = database.Drop(ctx)
 			require.NoError(tb, err)
 		}
@@ -268,8 +254,6 @@ func setupCollection(tb testing.TB, ctx context.Context, port int, db string, pr
 // setupClient returns MongoDB client for database on 127.0.0.1:port.
 func setupClient(tb testing.TB, ctx context.Context, port uint16) *mongo.Client {
 	tb.Helper()
-
-	tb.Log("setup client started")
 
 	// those options should not affect anything except tests speed
 	v := url.Values{
@@ -300,7 +284,6 @@ func setupClient(tb testing.TB, ctx context.Context, port uint16) *mongo.Client 
 	require.NoError(tb, err)
 
 	tb.Cleanup(func() {
-		tb.Log("setup: client disconnect")
 		err = client.Disconnect(ctx)
 		require.NoError(tb, err)
 	})
