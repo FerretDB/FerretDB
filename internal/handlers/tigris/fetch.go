@@ -16,11 +16,11 @@ package tigris
 
 import (
 	"context"
+	"errors"
 
+	tigris "github.com/tigrisdata/tigris-client-go/api/server/v1"
 	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"github.com/FerretDB/FerretDB/internal/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -41,14 +41,17 @@ func (h *Handler) fetch(ctx context.Context, param fetchParam) ([]*types.Documen
 
 	collection, err := db.DescribeCollection(ctx, param.collection)
 	if err != nil {
-		if status.Code(err) == codes.NotFound {
+		var tigErr *tigris.TigrisError
+		if !errors.As(err, &tigErr) {
+			return nil, lazyerrors.Error(err)
+		}
+		if tigErr.Code == tigris.Code_NOT_FOUND {
 			h.L.Debug(
 				"Collection doesn't exist, handling a case to deal with a non-existing collection (return empty list)",
 				zap.String("db", param.db), zap.String("collection", param.collection),
 			)
 			return []*types.Document{}, nil
 		}
-
 		return nil, lazyerrors.Error(err)
 	}
 
