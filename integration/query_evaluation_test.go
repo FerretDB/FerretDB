@@ -26,6 +26,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
@@ -35,7 +36,7 @@ func TestQueryEvaluationMod(t *testing.T) {
 	}
 
 	t.Parallel()
-	ctx, collection := Setup(t)
+	ctx, collection := setup.Setup(t)
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{{"_id", "Zero"}, {"v", 0}},
@@ -411,7 +412,7 @@ func TestQueryEvaluationMod(t *testing.T) {
 
 func TestQueryEvaluationRegex(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t, shareddata.Scalars)
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{{"_id", "multiline-string"}, {"v", "bar\nfoo"}},
@@ -480,7 +481,7 @@ func TestQueryEvaluationRegex(t *testing.T) {
 
 func TestQueryEvaluationRegexErrors(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t, shareddata.Scalars)
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{{"_id", "multiline-string"}, {"v", "bar\nfoo"}},
