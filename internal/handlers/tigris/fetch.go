@@ -40,7 +40,6 @@ func (h *Handler) fetch(ctx context.Context, param fetchParam) ([]*types.Documen
 	db := h.driver.UseDatabase(param.db)
 
 	collection, err := db.DescribeCollection(ctx, param.collection)
-
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
 			h.L.Debug(
