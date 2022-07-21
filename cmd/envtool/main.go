@@ -201,7 +201,7 @@ func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
 
 	logger.Info("Creating databases...")
 	for _, db := range []string{"admin", "test"} {
-		if err = pgPool.CreateDatabase(ctx, db); err != nil {
+		if err = pgdb.CreateDatabase(ctx, pgPool, db); err != nil {
 			return err
 		}
 	}

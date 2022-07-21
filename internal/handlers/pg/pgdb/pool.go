@@ -169,34 +169,6 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 	return nil
 }
 
-// Schemas method should not be used in new code.
-//
-// Deprecated: use Databases function instead.
-func (pgPool *Pool) Schemas(ctx context.Context) ([]string, error) {
-	return Databases(ctx, pgPool)
-}
-
-// Collections method should not be used in new code.
-//
-// Deprecated: use Collections function instead.
-func (pgPool *Pool) Collections(ctx context.Context, db string) ([]string, error) {
-	return Collections(ctx, pgPool, db)
-}
-
-// Tables method should not be used in new code.
-//
-// Deprecated: use Tables function instead.
-func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, error) {
-	return Tables(ctx, pgPool, schema)
-}
-
-// CreateDatabase method should not be used in new code.
-//
-// Deprecated: use CreateDatabase function instead.
-func (pgPool *Pool) CreateDatabase(ctx context.Context, db string) error {
-	return CreateDatabase(ctx, pgPool, db)
-}
-
 // DropDatabase drops FerretDB database.
 //
 // It returns ErrTableNotExist if schema does not exist.
@@ -222,20 +194,13 @@ func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
 	}
 }
 
-// DropCollection method should not be used in new code.
-//
-// Deprecated: use DropCollection function instead.
-func (pgPool *Pool) DropCollection(ctx context.Context, schema, collection string) error {
-	return DropCollection(ctx, pgPool, schema, collection)
-}
-
 // CreateTableIfNotExist ensures that given FerretDB database / PostgreSQL schema
 // and FerretDB collection / PostgreSQL table exist.
 // If needed, it creates both schema and table.
 //
 // True is returned if table was created.
 func (pgPool *Pool) CreateTableIfNotExist(ctx context.Context, db, collection string) (bool, error) {
-	exists, err := pgPool.CollectionExists(ctx, db, collection)
+	exists, err := CollectionExists(ctx, pgPool, db, collection)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
@@ -246,7 +211,7 @@ func (pgPool *Pool) CreateTableIfNotExist(ctx context.Context, db, collection st
 	// Table (or even schema) does not exist. Try to create it,
 	// but keep in mind that it can be created in concurrent connection.
 
-	if err := pgPool.CreateDatabase(ctx, db); err != nil && !errors.Is(err, ErrAlreadyExist) {
+	if err := CreateDatabase(ctx, pgPool, db); err != nil && !errors.Is(err, ErrAlreadyExist) {
 		return false, lazyerrors.Error(err)
 	}
 
@@ -259,13 +224,6 @@ func (pgPool *Pool) CreateTableIfNotExist(ctx context.Context, db, collection st
 	}
 
 	return true, nil
-}
-
-// CollectionExists method should not be used in new code.
-//
-// Deprecated: use CollectionExists function instead.
-func (pgPool *Pool) CollectionExists(ctx context.Context, db, collection string) (bool, error) {
-	return CollectionExists(ctx, pgPool, db, collection)
 }
 
 // SchemaStats returns a set of statistics for FerretDB database / PostgreSQL schema and table.
