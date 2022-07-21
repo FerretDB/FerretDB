@@ -345,7 +345,7 @@ func (d *Document) InsertByPath(path Path, value any) error {
 	next := d
 	var insertedPath Path
 	for _, pathElem := range path.TrimSuffix().Slice() {
-		insertedPath = DeriveNewPath(insertedPath, pathElem)
+		insertedPath = insertedPath.Append(pathElem)
 		_, err := d.GetByPath(insertedPath)
 		if err != nil {
 			must.NoError(next.Set(insertedPath.Suffix(), must.NotFail(NewDocument())))

@@ -48,15 +48,6 @@ func NewPathFromString(s string) Path {
 	return NewPath(path)
 }
 
-// DeriveNewPath returns new Path constructed from given path and path element.
-func DeriveNewPath(path Path, elem string) Path {
-	elems := path.Slice()
-
-	elems = append(elems, elem)
-
-	return NewPath(elems)
-}
-
 // String returns dot-separated path value.
 func (p Path) String() string {
 	return strings.Join(p.s, ".")
@@ -104,6 +95,15 @@ func (p Path) TrimPrefix() Path {
 		panic("path should have more than 1 element")
 	}
 	return NewPath(p.s[1:])
+}
+
+// Append returns new Path constructed from the current path and given element.
+func (p Path) Append(elem string) Path {
+	elems := p.Slice()
+
+	elems = append(elems, elem)
+
+	return NewPath(elems)
 }
 
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
