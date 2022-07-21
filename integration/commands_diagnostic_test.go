@@ -138,8 +138,6 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 			require.NoError(t, err)
-			t.Logf("%#v", actual)
-			// t.FailNow()
 		})
 	}
 }
