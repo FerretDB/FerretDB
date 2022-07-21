@@ -18,12 +18,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v4"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
-	"github.com/jackc/pgx/v4"
 )
 
 // MsgExplain implements HandlerInterface.
@@ -84,5 +86,27 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, err
 	}
 
-	return nil, nil
+	firstBatch := types.MakeArray(len(resDocs))
+	for _, doc := range resDocs {
+		if err = firstBatch.Append(doc); err != nil {
+			return nil, err
+		}
+	}
+
+	var reply wire.OpMsg
+	err = reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"cursor", must.NotFail(types.NewDocument(
+				"firstBatch", firstBatch,
+				"id", int64(0), // TODO
+				"ns", sp.DB+"."+sp.Collection,
+			)),
+			"ok", float64(1),
+		))},
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &reply, nil
 }

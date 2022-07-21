@@ -156,7 +156,6 @@ func iterateFetch(ctx context.Context, fetched chan FetchedDocs, rows pgx.Rows, 
 				for _, v := range plans {
 					res = append(res, convert.Convert(v))
 				}
-
 			} else {
 				doc, err := fjson.Unmarshal(b)
 				if err != nil {
@@ -178,11 +177,9 @@ func iterateFetch(ctx context.Context, fetched chan FetchedDocs, rows pgx.Rows, 
 					return ferr
 				}
 			}
-
 			return nil
 		}
 	}
-
 	return ctx.Err()
 }
 
