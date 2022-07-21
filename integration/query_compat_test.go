@@ -81,6 +81,9 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 			var res, compatRes []bson.D
 			require.NoError(t, cursor.All(ctx, &res))
 			require.NoError(t, compatCursor.All(ctx, &compatRes))
+
+			t.Logf("Expected IDs: %v", CollectIDs(t, compatRes))
+			t.Logf("Actual IDs: %v", CollectIDs(t, res))
 			AssertEqualDocumentsSlice(t, compatRes, res)
 		})
 	}
