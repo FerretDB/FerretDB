@@ -48,7 +48,7 @@ To run development commands, you should first install the [`task`](https://taskf
 You can do this by changing the directory to `tools` (`cd tools`) and running `go generate -x`.
 That will install `task` into the `bin` directory (`bin/task` on Linux and macOS, `bin\task.exe` on Windows).
 You can then add `./bin` to `$PATH` either manually (`export PATH=./bin:$PATH` in `bash`)
-or using something like (`direnv` (`.envrc` files)[https://direnv.net],
+or using something like [`direnv` (`.envrc` files)](https://direnv.net),
 or replace every invocation of `task` with explicit `bin/task`.
 You can also [install `task` globally](https://taskfile.dev/#/installation),
 but that might lead to the version skew.
