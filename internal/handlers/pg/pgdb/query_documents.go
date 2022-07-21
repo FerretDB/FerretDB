@@ -100,7 +100,7 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier,
 	sql += `FROM ` + pgx.Identifier{db, table}.Sanitize()
 
 	if sp.Explain {
-		sql = "EXPLAIN (FORMAT JSON) " + sql
+		sql = "EXPLAIN (VERBOSE true, FORMAT JSON) " + sql
 	}
 
 	rows, err := querier.Query(ctx, sql)

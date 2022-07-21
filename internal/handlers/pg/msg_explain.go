@@ -17,14 +17,17 @@ package pg
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/jackc/pgx/v4"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/version"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -45,7 +48,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 	var command *types.Document
 	var ok bool
-	if command, ok = commandParam.(*types.Document); !ok {
+	if command, ok = commandParam.(*typets.Document); !ok {
 		return nil, common.NewErrorMsg(
 			common.ErrBadValue,
 			fmt.Sprintf("has invalid type %s", common.AliasFromType(commandParam)),
@@ -96,8 +99,30 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, err
 	}
 
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	connInfo := conninfo.GetConnInfo(ctx)
+	var peerAddr string
+	if connInfo.PeerAddr != nil {
+		peerAddr = connInfo.PeerAddr.String()
+	}
+	// TODO get port from peerAddr
+	serverInfo := must.NotFail(types.NewDocument("version", version.MongoDBVersion,
+		"gitVersion", version.Get().Commit,
+		"debug", version.Get().Debug,
+		"host", hostname,
+		"port", peerAddr,
+		"ferretdbVersion", version.Get().Version,
+		"ok", float64(1),
+	))
+
 	firstBatch := types.MakeArray(len(resDocs))
 	for _, doc := range resDocs {
+		must.NoError(doc.Set("explainVersion", 1))
+		must.NoError(doc.Set("command", document))
+		must.NoError(doc.Set("serverInfo", serverInfo))
 		if err = firstBatch.Append(doc); err != nil {
 			return nil, err
 		}
