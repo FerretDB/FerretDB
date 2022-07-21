@@ -111,6 +111,8 @@ func TestCommandsDiagnosticConnectionStatus(t *testing.T) {
 func TestCommandsDiagnosticExplain(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
+	err := collection.Database().CreateCollection(ctx, testutil.CollectionName(t))
+	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
 		command  any

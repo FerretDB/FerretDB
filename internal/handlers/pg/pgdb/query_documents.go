@@ -16,6 +16,7 @@ package pgdb
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -27,6 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 const (
@@ -112,7 +114,7 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier,
 		defer close(fetchedChan)
 		defer rows.Close()
 
-		err := iterateFetch(ctx, fetchedChan, rows)
+		err := iterateFetch(ctx, fetchedChan, rows, sp.Explain)
 		switch {
 		case err == nil:
 			// nothing
@@ -131,7 +133,7 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier,
 
 // iterateFetch iterates over the rows returned by the query and sends FetchedDocs to fetched channel.
 // It returns ctx.Err() if context cancellation was received.
-func iterateFetch(ctx context.Context, fetched chan FetchedDocs, rows pgx.Rows) error {
+func iterateFetch(ctx context.Context, fetched chan FetchedDocs, rows pgx.Rows, explain bool) error {
 	for ctx.Err() == nil {
 		var allFetched bool
 		res := make([]*types.Document, 0, FetchedSliceCapacity)
@@ -146,12 +148,22 @@ func iterateFetch(ctx context.Context, fetched chan FetchedDocs, rows pgx.Rows) 
 				return writeFetched(ctx, fetched, FetchedDocs{Err: lazyerrors.Error(err)})
 			}
 
-			doc, err := fjson.Unmarshal(b)
-			if err != nil {
-				return writeFetched(ctx, fetched, FetchedDocs{Err: lazyerrors.Error(err)})
+			if explain {
+				var plans []*plan
+				if err := json.Unmarshal(b, &plans); err != nil {
+					return writeFetched(ctx, fetched, FetchedDocs{Err: lazyerrors.Error(err)})
+				}
+				for _, v := range plans {
+					res = append(res, v.toDoc())
+				}
+			} else {
+				doc, err := fjson.Unmarshal(b)
+				if err != nil {
+					return writeFetched(ctx, fetched, FetchedDocs{Err: lazyerrors.Error(err)})
+				}
+				res = append(res, doc.(*types.Document))
 			}
 
-			res = append(res, doc.(*types.Document))
 		}
 
 		if len(res) > 0 {
@@ -183,4 +195,38 @@ func writeFetched(ctx context.Context, fetched chan FetchedDocs, doc FetchedDocs
 	case fetched <- doc:
 		return nil
 	}
+}
+
+// queryPlan is a explain command result top level structure.
+type plan struct {
+	Plan queryPlan `json:"Plan"`
+}
+
+// queryPlan is a explain command result structure.
+type queryPlan struct {
+	NodeType      string  `json:"Node Type"`
+	ParallelAware bool    `json:"Parallel Aware"`
+	AsyncCapable  bool    `json:"Async Capable"`
+	RelationName  string  `json:"Relation Name"`
+	Alias         string  `json:"Alias"`
+	StartupCost   float64 `json:"Startup Cost"`
+	TotalCost     float64 `json:"Total Cost"`
+	PlanRows      int64   `json:"Plan Rows"`
+	PlanWidth     int64   `json:"Plan Width"`
+}
+
+// toDoc function returns a types.Document from plan structure.
+func (p *plan) toDoc() *types.Document {
+	return must.NotFail(
+		types.NewDocument(
+			"node_type", p.Plan.NodeType,
+			"parallel_aware", p.Plan.ParallelAware,
+			"async_capable", p.Plan.AsyncCapable,
+			"relation_name", p.Plan.RelationName,
+			"alias", p.Plan.Alias,
+			"startup_cost", p.Plan.StartupCost,
+			"total_cost", p.Plan.TotalCost,
+			"plan_rows", p.Plan.PlanRows,
+			"plan_with", p.Plan.PlanWidth,
+		))
 }
