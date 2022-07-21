@@ -16,9 +16,12 @@ package types
 
 import (
 	"fmt"
+	"strconv"
 	"unicode/utf8"
 
 	"golang.org/x/exp/slices"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // Common interface with bson.Document.
@@ -308,12 +311,50 @@ func (d *Document) RemoveByPath(path Path) {
 
 // SetByPath sets value by given path.
 func (d *Document) SetByPath(path Path, value any) error {
-	return setByPath(d, path, value)
+	innerComp, err := d.GetByPath(path.TrimSuffix())
+	if err != nil {
+		return err
+	}
+
+	switch inner := innerComp.(type) {
+	case *Document:
+		err := inner.Set(path.Suffix(), value)
+		if err != nil {
+			return err
+		}
+	case *Array:
+		index, err := strconv.Atoi(path.Suffix())
+		if err != nil {
+			return err
+		}
+		err = inner.Set(index, value)
+		if err != nil {
+			return err
+		}
+	default:
+		panic(fmt.Errorf("can't set value for %T type", inner))
+	}
+
+	return nil
 }
 
-// InsertByPath creates Document by given path if it's not exist and sets given value to that Document.
+// InsertByPath sets given value by given path.
+// If some parts of the path are missing, they will be created.
+// The Document type will be used to create these parts.
 func (d *Document) InsertByPath(path Path, value any) error {
-	return insertByPath(d, path, value)
+	var next = d
+	var insertedPath Path
+	for _, pathElem := range path.TrimSuffix().Slice() {
+		insertedPath = DeriveNewPath(insertedPath, pathElem)
+		_, err := d.GetByPath(insertedPath)
+		if err != nil {
+			must.NoError(next.Set(insertedPath.Suffix(), must.NotFail(NewDocument())))
+
+			next = must.NotFail(d.GetByPath(insertedPath)).(*Document)
+		}
+	}
+
+	return d.SetByPath(path, value)
 }
 
 // check interfaces

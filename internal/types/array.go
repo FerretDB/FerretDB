@@ -149,8 +149,3 @@ func (a *Array) Max() any {
 
 	return max
 }
-
-// SetByPath sets value by given path.
-func (a *Array) SetByPath(path Path, value any) error {
-	return setByPath(a, path, value)
-}

@@ -18,8 +18,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // Path represents the field path type. It should be used wherever we work with paths or dot notation.
@@ -182,51 +180,4 @@ func removeByPath(v any, path Path) {
 	default:
 		// no such path: scalar value
 	}
-}
-
-// setByPath sets value by given path for both Document and Array types.
-func setByPath[T CompositeTypeInterface](comp T, path Path, value any) error {
-	innerComp, err := comp.GetByPath(path.TrimSuffix())
-	if err != nil {
-		return err
-	}
-
-	switch inner := innerComp.(type) {
-	case *Document:
-		err := inner.Set(path.Suffix(), value)
-		if err != nil {
-			return err
-		}
-	case *Array:
-		index, err := strconv.Atoi(path.Suffix())
-		if err != nil {
-			return err
-		}
-		err = inner.Set(index, value)
-		if err != nil {
-			return err
-		}
-	default:
-		panic(fmt.Errorf("can't set value for %T type", inner))
-	}
-
-	return nil
-}
-
-// insertByPath creates Document by given path if it's not exist and sets given value to that Document.
-func insertByPath[T CompositeTypeInterface](comp T, path Path, value any) error {
-	var next any = comp
-	var insertedPath Path
-	for _, pathElem := range path.TrimSuffix().Slice() {
-		insertedPath = DeriveNewPath(insertedPath, pathElem)
-		_, err := comp.GetByPath(insertedPath)
-		if err != nil {
-			doc := next.(*Document)
-			must.NoError(doc.Set(insertedPath.Suffix(), must.NotFail(NewDocument())))
-
-			next = must.NotFail(comp.GetByPath(insertedPath))
-		}
-	}
-
-	return setByPath(comp, path, value)
 }
