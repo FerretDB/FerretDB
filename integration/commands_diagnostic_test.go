@@ -23,11 +23,12 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestCommandsDiagnosticGetLog(t *testing.T) {
 	t.Parallel()
-	s := SetupWithOpts(t, &SetupOpts{
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		DatabaseName: "admin",
 	})
 
@@ -46,7 +47,7 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 
 func TestCommandsDiagnosticHostInfo(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t)
+	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
 	err := collection.Database().RunCommand(ctx, bson.D{{"hostInfo", 42}}).Decode(&actual)
@@ -77,7 +78,7 @@ func TestCommandsDiagnosticHostInfo(t *testing.T) {
 
 func TestCommandsDiagnosticListCommands(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t)
+	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
 	err := collection.Database().RunCommand(ctx, bson.D{{"listCommands", 42}}).Decode(&actual)
@@ -96,7 +97,7 @@ func TestCommandsDiagnosticListCommands(t *testing.T) {
 
 func TestCommandsDiagnosticConnectionStatus(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t)
+	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
 	err := collection.Database().RunCommand(ctx, bson.D{{"connectionStatus", "*"}}).Decode(&actual)
