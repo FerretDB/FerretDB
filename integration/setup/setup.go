@@ -201,7 +201,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 
 // setupCollection setups a single collection.
 // It there is no providers, database and collection are not created.
-// That is intentionally for:
+// That is intentionally:
 //  * for those tests where no collection and database needed.
 //  * for Tigris (where we can’t create collection without a schema and we don’t know schema without documents).
 func setupCollection(tb testing.TB, ctx context.Context, port int, db string, providers []shareddata.Provider) *mongo.Collection {
