@@ -21,13 +21,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/golang/protobuf/ptypes/any"
 	"github.com/jackc/pgtype/pgxtype"
 	"github.com/jackc/pgx/v4"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/convert"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -131,9 +131,6 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier,
 	return fetchedChan, nil
 }
 
-func lala(m map[string]any) *types.Document {
-}
-
 // iterateFetch iterates over the rows returned by the query and sends FetchedDocs to fetched channel.
 // It returns ctx.Err() if context cancellation was received.
 func iterateFetch(ctx context.Context, fetched chan FetchedDocs, rows pgx.Rows, explain bool) error {
@@ -153,52 +150,11 @@ func iterateFetch(ctx context.Context, fetched chan FetchedDocs, rows pgx.Rows, 
 
 			if explain {
 				var plans []map[string]any
-
 				if err := json.Unmarshal(b, &plans); err != nil {
 					return writeFetched(ctx, fetched, FetchedDocs{Err: lazyerrors.Error(err)})
 				}
-
-				/*
-				   -[ RECORD 1 ]-----------------------------------------
-				   QUERY PLAN | [                                        +
-				              |   {                                      +
-				              |     "Plan": {                            +
-				              |       "Node Type": "Seq Scan",           +
-				              |       "Parallel Aware": false,           +
-				              |       "Async Capable": false,            +
-				              |       "Relation Name": "values_34474c3b",+
-				              |       "Schema": "test",                  +
-				              |       "Alias": "values_34474c3b",        +
-				              |       "Startup Cost": 0.00,              +
-				              |       "Total Cost": 23.60,               +
-				              |       "Plan Rows": 1360,                 +
-				              |       "Plan Width": 32,                  +
-				              |       "Output": ["_jsonb"]               +
-				              |     }                                    +
-				              |   }                                      +
-				              | ]
-
-
-
-				   		   ------------------------------------------------------------------
-				    [                                                               +
-				      {                                                             +
-				        "Plan": {                                                   +
-				          "Node Type": "Seq Scan",                                  +
-				          "Parallel Aware": false,                                  +
-				          "Async Capable": false,                                   +
-				          "Relation Name": "testcommandsdiagnosticexplain_1dd9d237",+
-				          "Alias": "testcommandsdiagnosticexplain_1dd9d237",        +
-				          "Startup Cost": 0.00,                                     +
-				          "Total Cost": 23.60,                                      +
-				          "Plan Rows": 1360,                                        +
-				          "Plan Width": 32                                          +
-				        }                                                           +
-				      }                                                             +
-				    ]
-				*/
-
 				for _, v := range plans {
+					res = append(res, convert.Convert(v))
 				}
 
 			} else {
