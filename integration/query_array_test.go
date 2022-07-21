@@ -25,12 +25,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestQueryArraySize(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t)
+	ctx, collection := setup.Setup(t)
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{{"_id", "array-empty"}, {"v", bson.A{}}},
@@ -143,7 +144,7 @@ func TestQueryArraySize(t *testing.T) {
 
 func TestQueryArrayDotNotation(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
 		filter      bson.D
@@ -232,7 +233,7 @@ func TestQueryArrayDotNotation(t *testing.T) {
 
 func TestQueryElemMatchOperator(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
 		filter      bson.D
@@ -347,7 +348,7 @@ func TestQueryElemMatchOperator(t *testing.T) {
 
 func TestArrayEquality(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
 		array       bson.A
@@ -404,6 +405,188 @@ func TestArrayEquality(t *testing.T) {
 
 			filter := bson.D{{"v", tc.array}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			require.NoError(t, err)
+
+			var actual []bson.D
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
+		})
+	}
+}
+
+// TestQueryArrayAll covers the case where the $all operator is used on an array or scalar.
+func TestQueryArrayAll(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t, shareddata.Composites, shareddata.Scalars)
+
+	// Insert additional data to check more complicated cases:
+	// - a longer array of ints;
+	// - a field is called differently and needs to be found with the {$all: [null]} case.
+	_, err := collection.InsertMany(ctx, []any{
+		bson.D{{"_id", "many-integers"}, {"customField", bson.A{42, 43, 45}}},
+	})
+	require.NoError(t, err)
+
+	for name, tc := range map[string]struct {
+		filter      bson.D
+		expectedIDs []any
+		expectedErr *mongo.CommandError
+	}{
+		"String": {
+			filter:      bson.D{{"v", bson.D{{"$all", bson.A{"foo"}}}}},
+			expectedIDs: []any{"array-three", "array-three-reverse", "string"},
+			expectedErr: nil,
+		},
+		"StringRepeated": {
+			filter:      bson.D{{"v", bson.D{{"$all", bson.A{"foo", "foo", "foo"}}}}},
+			expectedIDs: []any{"array-three", "array-three-reverse", "string"},
+			expectedErr: nil,
+		},
+		"StringEmpty": {
+			filter:      bson.D{{"v", bson.D{{"$all", bson.A{""}}}}},
+			expectedIDs: []any{"string-empty"},
+			expectedErr: nil,
+		},
+		"Whole": {
+			filter: bson.D{{"v", bson.D{{"$all", bson.A{int32(42)}}}}},
+			expectedIDs: []any{
+				"array", "array-three", "array-three-reverse", "double-whole", "int32", "int64",
+			},
+			expectedErr: nil,
+		},
+		"WholeInTheMiddle": {
+			filter:      bson.D{{"customField", bson.D{{"$all", bson.A{int32(43)}}}}},
+			expectedIDs: []any{"many-integers"},
+		},
+		"WholeTwoRepeated": {
+			filter:      bson.D{{"customField", bson.D{{"$all", bson.A{int32(42), int32(43), int32(43), int32(42)}}}}},
+			expectedIDs: []any{"many-integers"},
+		},
+		"WholeNotFound": {
+			filter:      bson.D{{"v", bson.D{{"$all", bson.A{int32(44)}}}}},
+			expectedIDs: []any{},
+		},
+		"Zero": {
+			filter:      bson.D{{"v", bson.D{{"$all", bson.A{math.Copysign(0, +1)}}}}},
+			expectedIDs: []any{"double-negative-zero", "double-zero", "int32-zero", "int64-zero"},
+			expectedErr: nil,
+		},
+		"Double": {
+			filter:      bson.D{{"v", bson.D{{"$all", bson.A{42.13}}}}},
+			expectedIDs: []any{"array-two", "double"},
+			expectedErr: nil,
+		},
+		"DoubleMax": {
+			filter:      bson.D{{"v", bson.D{{"$all", bson.A{math.MaxFloat64}}}}},
+			expectedIDs: []any{"double-max"},
+			expectedErr: nil,
+		},
+		"DoubleMin": {
+			filter:      bson.D{{"v", bson.D{{"$all", bson.A{math.SmallestNonzeroFloat64}}}}},
+			expectedIDs: []any{"double-smallest"},
+			expectedErr: nil,
+		},
+		"Nil": {
+			filter: bson.D{{"v", bson.D{{"$all", bson.A{nil}}}}},
+			expectedIDs: []any{
+				"array-first-embedded", "array-last-embedded", "array-middle-embedded",
+				"array-null", "array-three", "array-three-reverse", "many-integers", "null",
+			},
+			expectedErr: nil,
+		},
+		"NilRepeated": {
+			filter: bson.D{{"v", bson.D{{"$all", bson.A{nil, nil, nil}}}}},
+			expectedIDs: []any{
+				"array-first-embedded", "array-last-embedded", "array-middle-embedded",
+				"array-null", "array-three", "array-three-reverse", "many-integers", "null",
+			},
+			expectedErr: nil,
+		},
+
+		"MultiAll": {
+			filter:      bson.D{{"v", bson.D{{"$all", bson.A{"foo", 42}}}}},
+			expectedIDs: []any{"array-three", "array-three-reverse"},
+			expectedErr: nil,
+		},
+		"MultiAllWithNil": {
+			filter:      bson.D{{"v", bson.D{{"$all", bson.A{"foo", nil}}}}},
+			expectedIDs: []any{"array-three", "array-three-reverse"},
+			expectedErr: nil,
+		},
+		"ArrayEmbeddedEqual": {
+			filter:      bson.D{{"v", bson.D{{"$all", bson.A{bson.A{int32(42), "foo"}}}}}},
+			expectedIDs: []any{"array-first-embedded", "array-last-embedded", "array-middle-embedded"},
+			expectedErr: nil,
+		},
+		"ArrayEmbeddedReverseOrder": {
+			filter:      bson.D{{"v", bson.D{{"$all", bson.A{bson.A{"foo", int32(42)}}}}}},
+			expectedIDs: []any{},
+			expectedErr: nil,
+		},
+
+		"Empty": {
+			filter:      bson.D{{"v", bson.D{{"$all", bson.A{}}}}},
+			expectedIDs: []any{},
+			expectedErr: nil,
+		},
+		"EmptyNested": {
+			filter:      bson.D{{"v", bson.D{{"$all", bson.A{bson.A{}}}}}},
+			expectedIDs: []any{"array-empty", "array-empty-nested"},
+			expectedErr: nil,
+		},
+
+		"NotFound": {
+			filter:      bson.D{{"v", bson.D{{"$all", bson.A{"hello"}}}}},
+			expectedIDs: []any{},
+			expectedErr: nil,
+		},
+
+		"NaN": {
+			filter:      bson.D{{"v", bson.D{{"$all", bson.A{math.NaN()}}}}},
+			expectedIDs: []any{"array-two", "double-nan"},
+			expectedErr: nil,
+		},
+
+		"$allNeedsAnArrayInt": {
+			filter:      bson.D{{"v", bson.D{{"$all", 1}}}},
+			expectedIDs: nil,
+			expectedErr: &mongo.CommandError{
+				Code:    2,
+				Message: "$all needs an array",
+				Name:    "BadValue",
+			},
+		},
+		"$allNeedsAnArrayNan": {
+			filter:      bson.D{{"v", bson.D{{"$all", math.NaN()}}}},
+			expectedIDs: nil,
+			expectedErr: &mongo.CommandError{
+				Code:    2,
+				Message: "$all needs an array",
+				Name:    "BadValue",
+			},
+		},
+		"$allNeedsAnArrayNil": {
+			filter:      bson.D{{"v", bson.D{{"$all", nil}}}},
+			expectedIDs: nil,
+			expectedErr: &mongo.CommandError{
+				Code:    2,
+				Message: "$all needs an array",
+				Name:    "BadValue",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			if tc.expectedErr != nil {
+				require.Nil(t, tc.expectedIDs)
+				AssertEqualError(t, *tc.expectedErr, err)
+				return
+			}
 			require.NoError(t, err)
 
 			var actual []bson.D

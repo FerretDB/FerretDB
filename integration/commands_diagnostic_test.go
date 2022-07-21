@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
+	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestCommandsDiagnosticGetLog(t *testing.T) {
@@ -112,7 +112,7 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 
 func TestCommandsDiagnosticHostInfo(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t)
+	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
 	err := collection.Database().RunCommand(ctx, bson.D{{"hostInfo", 42}}).Decode(&actual)
@@ -143,7 +143,7 @@ func TestCommandsDiagnosticHostInfo(t *testing.T) {
 
 func TestCommandsDiagnosticListCommands(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t)
+	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
 	err := collection.Database().RunCommand(ctx, bson.D{{"listCommands", 42}}).Decode(&actual)
@@ -162,7 +162,7 @@ func TestCommandsDiagnosticListCommands(t *testing.T) {
 
 func TestCommandsDiagnosticConnectionStatus(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t)
+	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
 	err := collection.Database().RunCommand(ctx, bson.D{{"connectionStatus", "*"}}).Decode(&actual)
