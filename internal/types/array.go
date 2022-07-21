@@ -17,6 +17,8 @@ package types
 import (
 	"fmt"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -148,4 +150,51 @@ func (a *Array) Max() any {
 	}
 
 	return max
+}
+
+// Contains checks if the Array contains the given value.
+func (a *Array) Contains(filterValue any) bool {
+	switch filterValue := filterValue.(type) {
+	case *Document, *Array:
+		// filterValue is a composite type, so either a and filterValue must be equal
+		// or at least one element of a must be equal with filterValue.
+		// TODO: Compare might be inaccurate for some corner cases, we might want to fix it later.
+
+		if res := Compare(a, filterValue); slices.Contains(res, Equal) && len(res) == 1 {
+			return true
+		}
+
+		for _, elem := range a.s {
+			if res := Compare(elem, filterValue); slices.Contains(res, Equal) && len(res) == 1 {
+				return true
+			}
+		}
+		return false
+
+	default:
+		// filterValue is a scalar, so we compare it to each scalar element of a
+		for _, elem := range a.s {
+			switch elem := elem.(type) {
+			case *Document, *Array:
+				// we need elem and filterValue to be exactly equal, so we do nothing here
+			default:
+				if compareScalars(elem, filterValue) == Equal {
+					return true
+				}
+			}
+		}
+		return false
+	}
+}
+
+// ContainsAll checks if Array a contains all the given values of Array b.
+// Currently, this algorithm is O(n^2) without any performance tuning.
+// This place can be significantly improved if a more performant algorithm is chosen.
+func (a *Array) ContainsAll(b *Array) bool {
+	for _, v := range b.s {
+		if !a.Contains(v) {
+			return false
+		}
+	}
+	return true
 }
