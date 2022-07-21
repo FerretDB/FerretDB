@@ -10,14 +10,14 @@ require (
 	github.com/jackc/pgx/v4 v4.16.1
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/prometheus/client_golang v1.12.2
-	github.com/prometheus/common v0.36.0
+	github.com/prometheus/common v0.37.0
 	github.com/stretchr/testify v1.8.0
-	github.com/tigrisdata/tigris-client-go v1.0.0-alpha.19
+	github.com/tigrisdata/tigris-client-go v1.0.0-alpha.20
 	go.uber.org/zap v1.21.0
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect; always use @latest
-	golang.org/x/exp v0.0.0-20220706164943-b4a6d9510983
-	golang.org/x/net v0.0.0-20220526153639-5463443f8c37
-	golang.org/x/sys v0.0.0-20220712014510-0a85c31ab51e
+	golang.org/x/exp v0.0.0-20220713135740-79cabaa25d75
+	golang.org/x/net v0.0.0-20220708220712-1185a9018129
+	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8
 	google.golang.org/grpc v1.48.0
 )
 
