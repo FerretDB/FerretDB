@@ -16,9 +16,9 @@ package tigris
 
 import (
 	"context"
-	"errors"
 
-	tigris "github.com/tigrisdata/tigris-client-go/api/server/v1"
+	api "github.com/tigrisdata/tigris-client-go/api/server/v1"
+	"github.com/tigrisdata/tigris-client-go/driver"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -46,15 +46,17 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	if err = h.driver.UseDatabase(db).DropCollection(ctx, collection); err != nil {
-		var tigErr *tigris.TigrisError
-		if !errors.As(err, &tigErr) {
-			return nil, lazyerrors.Error(err)
-		}
+	err = h.driver.UseDatabase(db).DropCollection(ctx, collection)
+	switch err := err.(type) {
+	case nil:
+		// do nothing
+	case *driver.Error:
 		//nolint:nosnakecase // Tigris named their const that way
-		if tigErr.Code == tigris.Code_NOT_FOUND {
+		if err.Code == api.Code_NOT_FOUND {
 			return nil, common.NewErrorMsg(common.ErrNamespaceNotFound, "ns not found")
 		}
+		return nil, lazyerrors.Error(err)
+	default:
 		return nil, lazyerrors.Error(err)
 	}
 
