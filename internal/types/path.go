@@ -207,7 +207,7 @@ func setByPath[T CompositeTypeInterface](comp T, path Path, value any) error {
 			return err
 		}
 	default:
-		return fmt.Errorf("can't set value for %T type", inner)
+		panic(fmt.Errorf("can't set value for %T type", inner))
 	}
 
 	return nil

@@ -379,27 +379,27 @@ func TestUpdateFieldInc(t *testing.T) {
 				expected: bson.D{{"_id", "int32"}, {"v", int32(43)}, {"foo", int32(12)}},
 			},
 			"DotNotationDocumentFieldExist": {
-				id:       "document-nested",
-				update:   bson.D{{"$inc", bson.D{{"foo.bar.baz", int32(1)}}}},
-				expected: bson.D{{"_id", "document-nested"}, {"foo", bson.D{{"bar", bson.D{{"baz", int32(2)}}}}}},
+				id:       "document-composite",
+				update:   bson.D{{"$inc", bson.D{{"v.foo", int32(1)}}}},
+				expected: bson.D{{"_id", "document-composite"}, {"v", bson.D{{"foo", int32(43)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}},
 			},
 			"DotNotationDocumentFieldNotExist": {
 				id:       "int32",
-				update:   bson.D{{"$inc", bson.D{{"foo.bar.baz", int32(1)}}}},
-				expected: bson.D{{"_id", "int32"}, {"v", int32(42)}, {"foo", bson.D{{"bar", bson.D{{"baz", int32(1)}}}}}},
+				update:   bson.D{{"$inc", bson.D{{"foo.bar", int32(1)}}}},
+				expected: bson.D{{"_id", "int32"}, {"v", int32(42)}, {"foo", bson.D{{"bar", int32(1)}}}},
 			},
 			"DotNotationArrayFieldExist": {
-				id:       "array-nested",
-				update:   bson.D{{"$inc", bson.D{{"foo.bar.0.baz", int32(1)}}}},
-				expected: bson.D{{"_id", "array-nested"}, {"foo", bson.D{{"bar", bson.A{bson.D{{"baz", int32(2)}}}}}}},
+				id:       "document-composite",
+				update:   bson.D{{"$inc", bson.D{{"v.array.0", int32(1)}}}},
+				expected: bson.D{{"_id", "document-composite"}, {"v", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(43), "foo", nil}}}}},
 			},
 			"DotNotationArrayFieldNotExist": {
 				id:     "int32",
-				update: bson.D{{"$inc", bson.D{{"foo.bar.0.baz", int32(1)}}}},
+				update: bson.D{{"$inc", bson.D{{"foo.0.baz", int32(1)}}}},
 				expected: bson.D{
 					{"_id", "int32"},
 					{"v", int32(42)},
-					{"foo", bson.D{{"bar", bson.D{{"0", bson.D{{"baz", int32(1)}}}}}}},
+					{"foo", bson.D{{"0", bson.D{{"baz", int32(1)}}}}},
 				},
 			},
 		} {
@@ -408,13 +408,7 @@ func TestUpdateFieldInc(t *testing.T) {
 				t.Parallel()
 				ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
-				_, err := collection.InsertMany(ctx, []any{
-					bson.D{{"_id", "document-nested"}, {"foo", bson.D{{"bar", bson.D{{"baz", int32(1)}}}}}},
-					bson.D{{"_id", "array-nested"}, {"foo", bson.D{{"bar", bson.A{bson.D{{"baz", int32(1)}}}}}}},
-				})
-				require.NoError(t, err)
-
-				_, err = collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
+				_, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
 				require.NoError(t, err)
 
 				var actual bson.D
