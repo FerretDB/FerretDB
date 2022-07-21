@@ -200,6 +200,10 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 }
 
 // setupCollection setups a single collection.
+// It there is no providers, database and collection are not created.
+// That is intentionally for:
+//  * for those tests where no collection and database needed.
+//  * for Tigris (where we can’t create collection without a schema and we don’t know schema without documents).
 func setupCollection(tb testing.TB, ctx context.Context, port int, db string, providers []shareddata.Provider) *mongo.Collection {
 	tb.Helper()
 
@@ -223,8 +227,6 @@ func setupCollection(tb testing.TB, ctx context.Context, port int, db string, pr
 		_ = database.Drop(ctx)
 	}
 
-	// this code creates database and collection
-	// and also inserts data
 	for _, provider := range providers {
 		docs := shareddata.Docs(provider)
 		require.NotEmpty(tb, docs)
@@ -232,11 +234,6 @@ func setupCollection(tb testing.TB, ctx context.Context, port int, db string, pr
 		res, err := collection.InsertMany(ctx, docs)
 		require.NoError(tb, err)
 		require.Len(tb, res.InsertedIDs, len(docs))
-	}
-	// if there is no providers used in test, let's create collection and database.
-	if len(providers) == 0 {
-		err := client.Database(db).CreateCollection(ctx, collectionName)
-		require.NoError(tb, err)
 	}
 
 	// delete collection and (possibly) database unless test failed
