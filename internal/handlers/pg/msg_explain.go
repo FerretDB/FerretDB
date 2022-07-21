@@ -109,13 +109,11 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		peerAddr = connInfo.PeerAddr.String()
 	}
 	// TODO get port from peerAddr
-	serverInfo := must.NotFail(types.NewDocument("version", version.MongoDBVersion,
-		"gitVersion", version.Get().Commit,
-		"debug", version.Get().Debug,
+	serverInfo := must.NotFail(types.NewDocument(
+		"version", version.MongoDBVersion,
 		"host", hostname,
 		"port", peerAddr,
 		"ferretdbVersion", version.Get().Version,
-		"ok", float64(1),
 	))
 
 	firstBatch := types.MakeArray(len(resDocs))
