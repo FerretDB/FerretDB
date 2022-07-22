@@ -16,6 +16,7 @@ package common
 
 import (
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 	"time"
@@ -84,6 +85,11 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				}
 
 				docValue := must.NotFail(doc.Get(incKey))
+				if v, ok := docValue.(float64); ok {
+					if math.IsInf(v, 0) {
+						continue
+					}
+				}
 
 				incremented, err := addNumbers(incValue, docValue)
 				if err == nil {
