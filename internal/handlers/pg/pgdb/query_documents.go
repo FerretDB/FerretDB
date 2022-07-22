@@ -149,13 +149,11 @@ func iterateFetch(ctx context.Context, fetched chan FetchedDocs, rows pgx.Rows, 
 			}
 
 			if explain {
-				var plans []map[string]any
-				if err := json.Unmarshal(b, &plans); err != nil {
+				docs, err := unmarshalExplainResult(b)
+				if err != nil {
 					return writeFetched(ctx, fetched, FetchedDocs{Err: lazyerrors.Error(err)})
 				}
-				for _, v := range plans {
-					res = append(res, tralala(v))
-				}
+				res = append(res, docs...)
 			} else {
 				doc, err := fjson.Unmarshal(b)
 				if err != nil {
@@ -194,28 +192,38 @@ func writeFetched(ctx context.Context, fetched chan FetchedDocs, doc FetchedDocs
 	}
 }
 
-// tralala gets bson document and returns *types.Document.
-func tralala(m map[string]any) *types.Document {
-	doc := new(types.Document)
-	for k, mapval := range m {
-		must.NoError(doc.Set(k, tralala1(mapval)))
+// unmarshalExplainResult unmarshals []byte explain plan into []*types.Document.
+func unmarshalExplainResult(b []byte) ([]*types.Document, error) {
+	var plans []map[string]any
+	if err := json.Unmarshal(b, &plans); err != nil {
+		return nil, err
 	}
-	return doc
+	doc := new(types.Document)
+
+	var res []*types.Document
+	for _, m := range plans {
+		for k, mapval := range m {
+			must.NoError(doc.Set(k, toInternalType(mapval)))
+		}
+		res = append(res, doc)
+	}
+	return res, nil
 }
 
-func tralala1(v any) any {
+// toInternalType transforms map[string]any, []any and scalars into internal type representation.
+func toInternalType(v any) any {
 	switch v := v.(type) {
 	case map[string]any:
 		m := new(types.Document)
 		for k, mapval := range v {
-			must.NoError(m.Set(k, tralala1(mapval)))
+			must.NoError(m.Set(k, toInternalType(mapval)))
 		}
 		return m
 
 	case []any:
 		a := new(types.Array)
 		for _, arrval := range v {
-			must.NoError(a.Append(tralala1(arrval)))
+			must.NoError(a.Append(toInternalType(arrval)))
 		}
 		return a
 
