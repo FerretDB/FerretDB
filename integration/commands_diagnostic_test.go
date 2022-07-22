@@ -147,45 +147,40 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 				{"verbosity", "queryPlanner"},
 			},
 		},
-		"FindUnknownField": {
+		"Find": {
 			command: bson.D{
 				{
 					"explain", bson.D{
 						{"find", collectionName},
-						{"query", bson.D{{"value", bson.D{{"$type", "array"}}}}},
+						{"filter", bson.D{{"value", bson.D{{"$type", "array"}}}}},
 					},
 				},
 				{"verbosity", "queryPlanner"},
 			},
-			err: &mongo.CommandError{
-				Code:    40415, // (Location40415) 9 FailedToParse
-				Message: "BSON field 'FindCommandRequest.query' is an unknown field.",
-				Name:    "Location40415",
-			},
 		},
-		"FindAndModifyError": {
-			command: bson.D{
-				{
-					"explain", bson.D{
-						{"query", bson.D{{
-							"$and",
-							bson.A{
-								bson.D{{"value", bson.D{{"$gt", 0}}}},
-								bson.D{{"value", bson.D{{"$lt", 0}}}},
-							},
-						}}},
-						{"update", bson.D{{"$set", bson.D{{"v", 43.13}}}}},
-						{"upsert", true},
-					},
-				},
-				{"verbosity", "queryPlanner"},
-			},
-			err: &mongo.CommandError{
-				Code:    59, // (Location40415) 9 FailedToParse
-				Message: "Explain failed due to unknown command: query",
-				Name:    "CommandNotFound",
-			},
-		},
+		// "FindAndModifyError": {
+		// 	command: bson.D{
+		// 		{
+		// 			"explain", bson.D{
+		// 				{"query", bson.D{{
+		// 					"$and",
+		// 					bson.A{
+		// 						bson.D{{"value", bson.D{{"$gt", 0}}}},
+		// 						bson.D{{"value", bson.D{{"$lt", 0}}}},
+		// 					},
+		// 				}}},
+		// 				{"update", bson.D{{"$set", bson.D{{"v", 43.13}}}}},
+		// 				{"upsert", true},
+		// 			},
+		// 		},
+		// 		{"verbosity", "queryPlanner"},
+		// 	},
+		// 	err: &mongo.CommandError{
+		// 		Code:    59, // (Location40415) 9 FailedToParse
+		// 		Message: "Explain failed due to unknown command: query",
+		// 		Name:    "CommandNotFound",
+		// 	},
+		// },
 		"FindAndModify": {
 			command: bson.D{
 				{

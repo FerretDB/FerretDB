@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgtype/pgxtype"
 	"github.com/jackc/pgx/v4"
@@ -27,8 +28,8 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/convert"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 const (
@@ -153,7 +154,7 @@ func iterateFetch(ctx context.Context, fetched chan FetchedDocs, rows pgx.Rows, 
 					return writeFetched(ctx, fetched, FetchedDocs{Err: lazyerrors.Error(err)})
 				}
 				for _, v := range plans {
-					res = append(res, convert.Convert(v))
+					res = append(res, tralala(v))
 				}
 			} else {
 				doc, err := fjson.Unmarshal(b)
@@ -191,4 +192,41 @@ func writeFetched(ctx context.Context, fetched chan FetchedDocs, doc FetchedDocs
 	case fetched <- doc:
 		return nil
 	}
+}
+
+// tralala gets bson document and returns *types.Document.
+func tralala(m map[string]any) *types.Document {
+	doc := new(types.Document)
+	for k, mapval := range m {
+		must.NoError(doc.Set(k, tralala1(mapval)))
+	}
+	return doc
+}
+
+func tralala1(v any) any {
+	switch v := v.(type) {
+	case map[string]any:
+		m := new(types.Document)
+		for k, mapval := range v {
+			must.NoError(m.Set(k, tralala1(mapval)))
+		}
+		return m
+
+	case []any:
+		a := new(types.Array)
+		for _, arrval := range v {
+			must.NoError(a.Append(tralala1(arrval)))
+		}
+		return a
+
+	case float64,
+		string,
+		bool,
+		time.Time,
+		nil,
+		int32,
+		int64:
+		return v
+	}
+	panic(fmt.Sprintf("unsupported type: %T", v))
 }

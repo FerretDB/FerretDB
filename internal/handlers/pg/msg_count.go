@@ -53,6 +53,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	if filter, err = common.GetOptionalParam(document, "query", filter); err != nil {
 		return nil, err
 	}
+
 	var limit int64
 	if l, _ := document.Get("limit"); l != nil {
 		if limit, err = common.GetWholeNumberParam(l); err != nil {

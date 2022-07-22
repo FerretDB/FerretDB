@@ -88,15 +88,6 @@ func CompareAndSetByPathNum[T types.CompositeTypeInterface](tb testing.TB, expec
 	SetByPath(tb, expected, actualV, path)
 }
 
-// CompareAndSetByPathString asserts that two values with the same path in two objects (documents or arrays) are the same strings.
-func CompareAndSetByPathString[T types.CompositeTypeInterface](tb testing.TB, expected, actual T, path types.Path) {
-	tb.Helper()
-
-	expectedV := GetByPath(tb, expected, path)
-	actualV := GetByPath(tb, actual, path)
-	assert.Equal(tb, expectedV, actualV)
-}
-
 // CompareAndSetByPathTime asserts that two values with the same path in two objects (documents or arrays)
 // are within a given time delta, then updates the expected object with the actual value.
 //
