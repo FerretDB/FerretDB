@@ -101,7 +101,7 @@ func (h *Handler) parseExplainParams(ctx context.Context, document *types.Docume
 	case "findAndModify":
 		must.NoError(command.Set("$db", must.NotFail(document.Get("$db"))))
 		if _, err := prepareFindAndModifyParams(command); err != nil {
-			return sp, err
+			return sp, lazyerrors.Error(err)
 		}
 
 	default:
