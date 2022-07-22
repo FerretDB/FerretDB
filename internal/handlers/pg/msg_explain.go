@@ -101,7 +101,12 @@ func (h *Handler) parseExplainUserInput(ctx context.Context, document *types.Doc
 			)
 		}
 	case "findAndModify":
-		// ok
+		if !command.Has("update") && !command.Has("remove") {
+			return sp, common.NewErrorMsg(
+				common.ErrFailedToParse,
+				"Either an update or remove=true must be specified",
+			)
+		}
 	default:
 		return sp, common.NewErrorMsg(
 			common.ErrNotImplemented,

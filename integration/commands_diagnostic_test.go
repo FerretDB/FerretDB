@@ -177,9 +177,32 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 				{"verbosity", "queryPlanner"},
 			},
 			err: &mongo.CommandError{
-				Code:    40415, // (Location40415) 9 FailedToParse
+				Code:    40415,
 				Message: "BSON field 'FindCommandRequest.query' is an unknown field.",
 				Name:    "Location40415",
+			},
+		},
+		"FindAndModifyFieldAbsent": {
+			command: bson.D{
+				{
+					"explain", bson.D{
+						{"findAndModify", collectionName},
+						{"query", bson.D{{
+							"$and",
+							bson.A{
+								bson.D{{"value", bson.D{{"$gt", int32(0)}}}},
+								bson.D{{"value", bson.D{{"$lt", int32(0)}}}},
+							},
+						}}},
+						{"upsert", true},
+					},
+				},
+				{"verbosity", "queryPlanner"},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Message: "Either an update or remove=true must be specified",
+				Name:    "FailedToParse",
 			},
 		},
 	} {
