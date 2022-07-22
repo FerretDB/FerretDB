@@ -119,7 +119,6 @@ func (h *Handler) buildExplainResult(ctx context.Context, document *types.Docume
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-
 	var port int
 	connInfo := conninfo.GetConnInfo(ctx)
 	if connInfo.PeerAddr != nil {
@@ -134,10 +133,15 @@ func (h *Handler) buildExplainResult(ctx context.Context, document *types.Docume
 		"ferretdbVersion", version.Get().Version,
 	))
 
+	queryPlanner := types.MakeArray(len(resDocs))
+	for _, item := range resDocs {
+		must.NoError(queryPlanner.Append(item))
+	}
+
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"queryPlanner", types.MakeArray(len(resDocs)),
+			"queryPlanner", queryPlanner,
 			"explainVersion", int32(1),
 			"command", document,
 			"serverInfo", serverInfo,
@@ -147,6 +151,5 @@ func (h *Handler) buildExplainResult(ctx context.Context, document *types.Docume
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-
 	return &reply, nil
 }

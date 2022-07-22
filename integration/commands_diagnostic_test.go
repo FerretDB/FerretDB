@@ -24,6 +24,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -114,16 +115,13 @@ func TestCommandsDiagnosticConnectionStatus(t *testing.T) {
 
 func TestCommandsDiagnosticExplain(t *testing.T) {
 	t.Parallel()
-	s := setup.SetupWithOpts(t, nil)
-	ctx := s.Ctx
-	collection := s.TargetCollection
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
 	hostname, err := os.Hostname()
 	require.NoError(t, err)
 	expected := bson.D{
 		{"serverInfo", bson.D{
-			{"host", hostname},
-			{"port", int32(s.TargetPort)},
+			{"host", hostname}, // w/o port for simplicity
 			{"version", version.MongoDBVersion},
 			{"gitVersion", version.Get().Commit},
 			{"ferretdbVersion", version.Get().Version},
@@ -152,7 +150,7 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 			t.Parallel()
 
 			var actual bson.D
-			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+			err = collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 			require.NoError(t, err)
 			actualD := ConvertDocument(t, actual)
 			expectedD := ConvertDocument(t, expected)
