@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v4"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
@@ -35,6 +36,95 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
+	fp, err := h.parseFindParams(ctx, document)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	resDocs := make([]*types.Document, 0, 16)
+	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, fp.sp)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			// Drain the channel to prevent leaking goroutines.
+			// TODO Offer a better design instead of channels: https://github.com/FerretDB/FerretDB/issues/898.
+			for range fetchedChan {
+			}
+		}()
+
+		for fetchedItem := range fetchedChan {
+			if fetchedItem.Err != nil {
+				return fetchedItem.Err
+			}
+
+			for _, doc := range fetchedItem.Docs {
+				matches, err := common.FilterDocument(doc, fp.filter)
+				if err != nil {
+					return err
+				}
+
+				if !matches {
+					continue
+				}
+
+				resDocs = append(resDocs, doc)
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err = common.SortDocuments(resDocs, fp.sort); err != nil {
+		return nil, err
+	}
+	if resDocs, err = common.LimitDocuments(resDocs, fp.limit); err != nil {
+		return nil, err
+	}
+	if err = common.ProjectDocuments(resDocs, fp.projection); err != nil {
+		return nil, err
+	}
+
+	firstBatch := types.MakeArray(len(resDocs))
+	for _, doc := range resDocs {
+		if err = firstBatch.Append(doc); err != nil {
+			return nil, err
+		}
+	}
+
+	var reply wire.OpMsg
+	err = reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"cursor", must.NotFail(types.NewDocument(
+				"firstBatch", firstBatch,
+				"id", int64(0), // TODO
+				"ns", fp.sp.DB+"."+fp.sp.Collection,
+			)),
+			"ok", float64(1),
+		))},
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &reply, nil
+}
+
+type findParams struct {
+	filter     *types.Document
+	sort       *types.Document
+	projection *types.Document
+	limit      int64
+	sp         pgdb.SQLParam
+}
+
+// parseFindParams validates document and returns findParams.
+func (h *Handler) parseFindParams(ctx context.Context, document *types.Document) (*findParams, error) {
 	unimplementedFields := []string{
 		"skip",
 		"returnKey",
@@ -62,20 +152,30 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 	common.Ignored(document, h.l, ignoredFields...)
 
-	var filter, sort, projection *types.Document
-	if filter, err = common.GetOptionalParam(document, "filter", filter); err != nil {
+	knownFields := append(ignoredFields, unimplementedFields...)
+	knownFields = append(knownFields, "$db", "find", "comment", "$comment", "filter", "sort", "limit", "projection")
+	for _, v := range document.Keys() {
+		if !slices.Contains(knownFields, v) {
+			return nil, common.NewErrorMsg(
+				common.ErrFailedToParseInput,
+				fmt.Sprintf("BSON field 'FindCommandRequest.%s' is an unknown field.", v),
+			)
+		}
+	}
+	var fp findParams
+	var err error
+	if fp.filter, err = common.GetOptionalParam(document, "filter", fp.filter); err != nil {
 		return nil, err
 	}
-	if sort, err = common.GetOptionalParam(document, "sort", sort); err != nil {
+	if fp.sort, err = common.GetOptionalParam(document, "sort", fp.sort); err != nil {
 		return nil, common.NewErrorMsg(common.ErrTypeMismatch, "Expected field sort to be of type object")
 	}
-	if projection, err = common.GetOptionalParam(document, "projection", projection); err != nil {
+	if fp.projection, err = common.GetOptionalParam(document, "projection", fp.projection); err != nil {
 		return nil, err
 	}
 
-	var limit int64
 	if l, _ := document.Get("limit"); l != nil {
-		if limit, err = common.GetWholeNumberParam(l); err != nil {
+		if fp.limit, err = common.GetWholeNumberParam(l); err != nil {
 			return nil, err
 		}
 	}
@@ -101,82 +201,11 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 	// get comment from query, e.g. db.collection.find({$comment: "test"})
-	if filter != nil {
-		if sp.Comment, err = common.GetOptionalParam(filter, "$comment", sp.Comment); err != nil {
+	if fp.filter != nil {
+		if sp.Comment, err = common.GetOptionalParam(fp.filter, "$comment", sp.Comment); err != nil {
 			return nil, err
 		}
 	}
-
-	resDocs := make([]*types.Document, 0, 16)
-	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp)
-		if err != nil {
-			return err
-		}
-		defer func() {
-			// Drain the channel to prevent leaking goroutines.
-			// TODO Offer a better design instead of channels: https://github.com/FerretDB/FerretDB/issues/898.
-			for range fetchedChan {
-			}
-		}()
-
-		for fetchedItem := range fetchedChan {
-			if fetchedItem.Err != nil {
-				return fetchedItem.Err
-			}
-
-			for _, doc := range fetchedItem.Docs {
-				matches, err := common.FilterDocument(doc, filter)
-				if err != nil {
-					return err
-				}
-
-				if !matches {
-					continue
-				}
-
-				resDocs = append(resDocs, doc)
-			}
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	if err = common.SortDocuments(resDocs, sort); err != nil {
-		return nil, err
-	}
-	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
-		return nil, err
-	}
-	if err = common.ProjectDocuments(resDocs, projection); err != nil {
-		return nil, err
-	}
-
-	firstBatch := types.MakeArray(len(resDocs))
-	for _, doc := range resDocs {
-		if err = firstBatch.Append(doc); err != nil {
-			return nil, err
-		}
-	}
-
-	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"cursor", must.NotFail(types.NewDocument(
-				"firstBatch", firstBatch,
-				"id", int64(0), // TODO
-				"ns", sp.DB+"."+sp.Collection,
-			)),
-			"ok", float64(1),
-		))},
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return &reply, nil
+	fp.sp = sp
+	return &fp, nil
 }

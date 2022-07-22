@@ -38,7 +38,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-	sp, err := h.parseExplainUserInput(ctx, document)
+	sp, err := h.parseExplainParams(ctx, document)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -70,8 +70,8 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	return h.buildExplainResult(ctx, document, resDocs)
 }
 
-// parseExplainUserInput validates user input and returns pgdb.SQLParam.
-func (h *Handler) parseExplainUserInput(ctx context.Context, document *types.Document) (pgdb.SQLParam, error) {
+// parseExplainParams validates document and returns pgdb.SQLParam.
+func (h *Handler) parseExplainParams(ctx context.Context, document *types.Document) (pgdb.SQLParam, error) {
 	common.Ignored(document, h.l, "verbosity")
 	var err error
 	var sp pgdb.SQLParam
@@ -94,11 +94,9 @@ func (h *Handler) parseExplainUserInput(ctx context.Context, document *types.Doc
 	case "count":
 		// ok
 	case "find":
-		if command.Has("query") {
-			return sp, common.NewErrorMsg(
-				common.ErrFailedToParseInput,
-				"BSON field 'FindCommandRequest.query' is an unknown field.",
-			)
+		must.NoError(command.Set("$db", must.NotFail(document.Get("$db"))))
+		if _, err := h.parseFindParams(ctx, command); err != nil {
+			return sp, lazyerrors.Error(err)
 		}
 	case "findAndModify":
 		must.NoError(command.Set("$db", must.NotFail(document.Get("$db"))))
