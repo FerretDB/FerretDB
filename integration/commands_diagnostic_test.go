@@ -211,7 +211,7 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 			t.Parallel()
 
 			var actual bson.D
-			err = collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 
 			if tc.err != nil {
 				AssertEqualError(t, *tc.err, err)
