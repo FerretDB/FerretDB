@@ -115,10 +115,11 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	return &reply, nil
 }
 
+// findParams are validated find query parameters.
 type findParams struct {
+	projection *types.Document
 	filter     *types.Document
 	sort       *types.Document
-	projection *types.Document
 	limit      int64
 	sp         pgdb.SQLParam
 }
