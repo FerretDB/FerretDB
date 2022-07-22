@@ -116,6 +116,7 @@ func TestCommandsDiagnosticConnectionStatus(t *testing.T) {
 func TestCommandsDiagnosticExplain(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
+	dbName := testutil.DatabaseName(t)
 
 	hostname, err := os.Hostname()
 	require.NoError(t, err)
@@ -130,10 +131,10 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 	}
 
 	for name, tc := range map[string]struct {
-		command any
+		command bson.D
 		err     error
 	}{
-		"CountQueryPlanner": {
+		"count": {
 			command: bson.D{
 				{
 					"explain", bson.D{
@@ -144,6 +145,35 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 				{"verbosity", "queryPlanner"},
 			},
 		},
+		// "find": {
+		// 	command: bson.D{
+		// 		{
+		// 			"explain", bson.D{
+		// 				{"find", testutil.CollectionName(t)},
+		// 				{"query", bson.D{{"value", bson.D{{"$type", "array"}}}}},
+		// 			},
+		// 		},
+		// 		{"verbosity", "queryPlanner"},
+		// 	},
+		// },
+		// "findAndModify": {
+		// 	command: bson.D{
+		// 		{
+		// 			"explain", bson.D{
+		// 				{"query", bson.D{{
+		// 					"$and",
+		// 					bson.A{
+		// 						bson.D{{"value", bson.D{{"$gt", 0}}}},
+		// 						bson.D{{"value", bson.D{{"$lt", 0}}}},
+		// 					},
+		// 				}}},
+		// 				{"update", bson.D{{"$set", bson.D{{"v", 43.13}}}}},
+		// 				{"upsert", true},
+		// 			},
+		// 		},
+		// 		{"verbosity", "queryPlanner"},
+		// 	},
+		// },
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -154,10 +184,17 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 			require.NoError(t, err)
 			actualD := ConvertDocument(t, actual)
 			expectedD := ConvertDocument(t, expected)
+			commandD := ConvertDocument(t, tc.command)
+
+			explainDoc := must.NotFail(commandD.Get("explain")).(*types.Document)
+			must.NoError(explainDoc.Set("$db", dbName))
+			must.NoError(expectedD.Set("command", explainDoc))
 
 			require.NotEmpty(t, must.NotFail(actualD.Get("queryPlanner")))
 			require.NotEmpty(t, must.NotFail(actualD.Get("serverInfo")))
-			testutil.CompareAndSetByPathString(t, expectedD, actualD, types.NewPath([]string{"serverInfo", "version"}))
+
+			t.Logf("expected %#v", must.NotFail(expectedD.Get("command")))
+			t.Logf("actual %#v", must.NotFail(actualD.Get("command")))
 			// t.FailNow()
 		})
 	}

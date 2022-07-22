@@ -114,7 +114,8 @@ func (h *Handler) parseExplainUserInput(ctx context.Context, document *types.Doc
 }
 
 // buildExplainResult build explain response.
-func (h *Handler) buildExplainResult(ctx context.Context, document *types.Document, resDocs []*types.Document) (*wire.OpMsg, error) {
+func (h *Handler) buildExplainResult(ctx context.Context, document *types.Document, resDocs []*types.Document,
+) (*wire.OpMsg, error) {
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
