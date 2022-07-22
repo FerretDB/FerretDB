@@ -173,7 +173,7 @@ func TestUpdateCommentQuery(t *testing.T) {
 		ModifiedCount: 1,
 	}
 
-	assert.Contains(t, databaseNames, collName)
+	assert.Contains(t, databaseNames, name)
 	assert.Equal(t, expected, res)
 }
 
