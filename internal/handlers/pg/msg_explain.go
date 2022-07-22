@@ -113,7 +113,7 @@ func (h *Handler) parseExplainUserInput(ctx context.Context, document *types.Doc
 	return sp, nil
 }
 
-// buildExplainResult build explain response.
+// buildExplainResult builds explain response.
 func (h *Handler) buildExplainResult(ctx context.Context, document *types.Document, resDocs []*types.Document,
 ) (*wire.OpMsg, error) {
 	hostname, err := os.Hostname()
