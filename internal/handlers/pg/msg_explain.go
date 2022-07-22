@@ -94,19 +94,18 @@ func (h *Handler) parseExplainUserInput(ctx context.Context, document *types.Doc
 	case "count":
 		// ok
 	case "find":
-		if !command.Has("filter") {
+		if command.Has("query") {
 			return sp, common.NewErrorMsg(
 				common.ErrFailedToParseInput,
 				"BSON field 'FindCommandRequest.query' is an unknown field.",
 			)
 		}
 	case "findAndModify":
-		if !command.Has("update") && !command.Has("remove") {
-			return sp, common.NewErrorMsg(
-				common.ErrFailedToParse,
-				"Either an update or remove=true must be specified",
-			)
+		must.NoError(command.Set("$db", must.NotFail(document.Get("$db"))))
+		if _, err := prepareFindAndModifyParams(command); err != nil {
+			return sp, err
 		}
+
 	default:
 		return sp, common.NewErrorMsg(
 			common.ErrNotImplemented,
@@ -156,11 +155,11 @@ func (h *Handler) buildExplainResult(ctx context.Context, document *types.Docume
 	commandDoc := must.NotFail(document.Get(document.Command())).(*types.Document)
 	switch commandDoc.Command() {
 	case "count", "find":
-		commandDoc.Set("$db", must.NotFail(document.Get("$db")))
+		must.NoError(commandDoc.Set("$db", must.NotFail(document.Get("$db"))))
 
 	case "FindAndModify":
-		commandDoc.Set("upsert", must.NotFail(document.Get("upsert")))
-		commandDoc.Set("update", must.NotFail(document.Get("update")))
+		must.NoError(commandDoc.Set("upsert", must.NotFail(document.Get("upsert"))))
+		must.NoError(commandDoc.Set("update", must.NotFail(document.Get("update"))))
 	}
 
 	var reply wire.OpMsg
