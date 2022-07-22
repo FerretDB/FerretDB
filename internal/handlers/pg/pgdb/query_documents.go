@@ -175,9 +175,11 @@ func iterateFetch(ctx context.Context, fetched chan FetchedDocs, rows pgx.Rows, 
 					return ferr
 				}
 			}
+
 			return nil
 		}
 	}
+
 	return ctx.Err()
 }
 
