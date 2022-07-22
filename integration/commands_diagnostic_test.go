@@ -162,24 +162,29 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 				Name:    "Location40415",
 			},
 		},
-		// "findAndModify": {
-		// 	command: bson.D{
-		// 		{
-		// 			"explain", bson.D{
-		// 				{"query", bson.D{{
-		// 					"$and",
-		// 					bson.A{
-		// 						bson.D{{"value", bson.D{{"$gt", 0}}}},
-		// 						bson.D{{"value", bson.D{{"$lt", 0}}}},
-		// 					},
-		// 				}}},
-		// 				{"update", bson.D{{"$set", bson.D{{"v", 43.13}}}}},
-		// 				{"upsert", true},
-		// 			},
-		// 		},
-		// 		{"verbosity", "queryPlanner"},
-		// 	},
-		// },
+		"findAndModify": {
+			command: bson.D{
+				{
+					"explain", bson.D{
+						{"query", bson.D{{
+							"$and",
+							bson.A{
+								bson.D{{"value", bson.D{{"$gt", 0}}}},
+								bson.D{{"value", bson.D{{"$lt", 0}}}},
+							},
+						}}},
+						{"update", bson.D{{"$set", bson.D{{"v", 43.13}}}}},
+						{"upsert", true},
+					},
+				},
+				{"verbosity", "queryPlanner"},
+			},
+			err: &mongo.CommandError{
+				Code:    59, // (Location40415) 9 FailedToParse
+				Message: "Explain failed due to unknown command: query",
+				Name:    "CommandNotFound",
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
