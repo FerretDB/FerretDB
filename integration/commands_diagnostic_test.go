@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -132,7 +133,7 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 
 	for name, tc := range map[string]struct {
 		command bson.D
-		err     error
+		err     *mongo.CommandError
 	}{
 		"count": {
 			command: bson.D{
@@ -145,17 +146,22 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 				{"verbosity", "queryPlanner"},
 			},
 		},
-		// "find": {
-		// 	command: bson.D{
-		// 		{
-		// 			"explain", bson.D{
-		// 				{"find", testutil.CollectionName(t)},
-		// 				{"query", bson.D{{"value", bson.D{{"$type", "array"}}}}},
-		// 			},
-		// 		},
-		// 		{"verbosity", "queryPlanner"},
-		// 	},
-		// },
+		"find": {
+			command: bson.D{
+				{
+					"explain", bson.D{
+						{"find", testutil.CollectionName(t)},
+						{"query", bson.D{{"value", bson.D{{"$type", "array"}}}}},
+					},
+				},
+				{"verbosity", "queryPlanner"},
+			},
+			err: &mongo.CommandError{
+				Code:    40415, // (Location40415) 9 FailedToParse
+				Message: "BSON field 'FindCommandRequest.query' is an unknown field.",
+				Name:    "Location40415",
+			},
+		},
 		// "findAndModify": {
 		// 	command: bson.D{
 		// 		{
@@ -181,6 +187,12 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 
 			var actual bson.D
 			err = collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+
+			if tc.err != nil {
+				AssertEqualError(t, *tc.err, err)
+				return
+			}
+
 			require.NoError(t, err)
 			actualD := ConvertDocument(t, actual)
 			expectedD := ConvertDocument(t, expected)
