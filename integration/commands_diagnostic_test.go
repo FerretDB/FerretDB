@@ -166,6 +166,22 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 			},
 			expectedCommandKeys: []string{"findAndModify", "query", "update", "upsert"},
 		},
+		"FindFieldAbsent": {
+			command: bson.D{
+				{
+					"explain", bson.D{
+						{"find", collectionName},
+						{"query", bson.D{{"value", bson.D{{"$type", "array"}}}}},
+					},
+				},
+				{"verbosity", "queryPlanner"},
+			},
+			err: &mongo.CommandError{
+				Code:    40415, // (Location40415) 9 FailedToParse
+				Message: "BSON field 'FindCommandRequest.query' is an unknown field.",
+				Name:    "Location40415",
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {

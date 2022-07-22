@@ -91,7 +91,16 @@ func (h *Handler) parseExplainUserInput(ctx context.Context, document *types.Doc
 		)
 	}
 	switch command.Command() {
-	case "count", "findAndModify", "find":
+	case "count":
+		// ok
+	case "find":
+		if !command.Has("filter") {
+			return sp, common.NewErrorMsg(
+				common.ErrFailedToParseInput,
+				"BSON field 'FindCommandRequest.query' is an unknown field.",
+			)
+		}
+	case "findAndModify":
 		// ok
 	default:
 		return sp, common.NewErrorMsg(

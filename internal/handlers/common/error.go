@@ -60,6 +60,9 @@ const (
 	// ErrNotImplemented indicates that a flag or command is not implemented.
 	ErrNotImplemented = ErrorCode(238) // NotImplemented
 
+	// ErrFailedToParseInput indicates invalid input (absent or malformed fields).
+	ErrFailedToParseInput = ErrorCode(40415) // Location40415
+
 	// ErrSortBadValue indicates bad value in sort input.
 	ErrSortBadValue = ErrorCode(15974) // Location15974
 
