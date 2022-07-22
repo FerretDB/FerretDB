@@ -74,7 +74,7 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 			if targetErr != nil {
 				targetErr = UnsetRaw(t, targetErr)
 				compatErr = UnsetRaw(t, compatErr)
-				assert.Equal(t, errorResult, tc.resultType)
+				assert.Equal(t, tc.resultType, errorResult, "expected result type %v, but got %v", tc.resultType, errorResult)
 				assert.Equal(t, compatErr, targetErr)
 				return
 			}
@@ -96,7 +96,7 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 				assert.Empty(t, compatRes)
 				assert.Empty(t, targetRes)
 			case errorResult:
-				fallthrough
+				t.Fatalf("expected result type %v, but got no error", tc.resultType)
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)
 			}
