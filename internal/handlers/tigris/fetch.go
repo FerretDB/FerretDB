@@ -17,7 +17,6 @@ package tigris
 import (
 	"context"
 
-	api "github.com/tigrisdata/tigris-client-go/api/server/v1"
 	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
 
@@ -43,8 +42,7 @@ func (h *Handler) fetch(ctx context.Context, param fetchParam) ([]*types.Documen
 	case nil:
 		// do nothing
 	case *driver.Error:
-		//nolint:nosnakecase // Tigris named their const that way
-		if err.Code == api.Code_NOT_FOUND {
+		if isNotFound(err) {
 			h.L.Debug(
 				"Collection doesn't exist, handling a case to deal with a non-existing collection (return empty list)",
 				zap.String("db", param.db), zap.String("collection", param.collection),
