@@ -139,12 +139,22 @@ func (h *Handler) buildExplainResult(ctx context.Context, document *types.Docume
 		must.NoError(queryPlanner.Append(item))
 	}
 
+	commandDoc := must.NotFail(document.Get(document.Command())).(*types.Document)
+	switch commandDoc.Command() {
+	case "count", "find":
+		commandDoc.Set("$db", must.NotFail(document.Get("$db")))
+
+	case "FindAndModify":
+		commandDoc.Set("upsert", must.NotFail(document.Get("upsert")))
+		commandDoc.Set("update", must.NotFail(document.Get("update")))
+	}
+
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"queryPlanner", queryPlanner,
 			"explainVersion", int32(1),
-			"command", document,
+			"command", commandDoc,
 			"serverInfo", serverInfo,
 			"ok", float64(1),
 		))},

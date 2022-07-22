@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"os"
 	"runtime"
 	"testing"
 
@@ -29,7 +28,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
-	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
 func TestCommandsDiagnosticGetLog(t *testing.T) {
@@ -117,24 +115,12 @@ func TestCommandsDiagnosticConnectionStatus(t *testing.T) {
 func TestCommandsDiagnosticExplain(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
-	dbName := testutil.DatabaseName(t)
 	collectionName := testutil.CollectionName(t)
 
-	hostname, err := os.Hostname()
-	require.NoError(t, err)
-	expected := bson.D{
-		{"serverInfo", bson.D{
-			{"host", hostname}, // w/o port for simplicity
-			{"version", version.MongoDBVersion},
-			{"gitVersion", version.Get().Commit},
-			{"ferretdbVersion", version.Get().Version},
-		}},
-		{"ok", int32(1)},
-	}
-
 	for name, tc := range map[string]struct {
-		command bson.D
-		err     *mongo.CommandError
+		command             bson.D
+		expectedCommandKeys []string
+		err                 *mongo.CommandError
 	}{
 		"Count": {
 			command: bson.D{
@@ -146,6 +132,7 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 				},
 				{"verbosity", "queryPlanner"},
 			},
+			expectedCommandKeys: []string{"count", "query", "$db"},
 		},
 		"Find": {
 			command: bson.D{
@@ -157,30 +144,8 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 				},
 				{"verbosity", "queryPlanner"},
 			},
+			expectedCommandKeys: []string{"find", "filter", "$db"},
 		},
-		// "FindAndModifyError": {
-		// 	command: bson.D{
-		// 		{
-		// 			"explain", bson.D{
-		// 				{"query", bson.D{{
-		// 					"$and",
-		// 					bson.A{
-		// 						bson.D{{"value", bson.D{{"$gt", 0}}}},
-		// 						bson.D{{"value", bson.D{{"$lt", 0}}}},
-		// 					},
-		// 				}}},
-		// 				{"update", bson.D{{"$set", bson.D{{"v", 43.13}}}}},
-		// 				{"upsert", true},
-		// 			},
-		// 		},
-		// 		{"verbosity", "queryPlanner"},
-		// 	},
-		// 	err: &mongo.CommandError{
-		// 		Code:    59, // (Location40415) 9 FailedToParse
-		// 		Message: "Explain failed due to unknown command: query",
-		// 		Name:    "CommandNotFound",
-		// 	},
-		// },
 		"FindAndModify": {
 			command: bson.D{
 				{
@@ -199,6 +164,7 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 				},
 				{"verbosity", "queryPlanner"},
 			},
+			expectedCommandKeys: []string{"findAndModify", "query", "update", "upsert"},
 		},
 	} {
 		name, tc := name, tc
@@ -215,19 +181,15 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 
 			require.NoError(t, err)
 			actualD := ConvertDocument(t, actual)
-			expectedD := ConvertDocument(t, expected)
-			commandD := ConvertDocument(t, tc.command)
-
-			explainDoc := must.NotFail(commandD.Get("explain")).(*types.Document)
-			must.NoError(explainDoc.Set("$db", dbName))
-			must.NoError(expectedD.Set("command", explainDoc))
 
 			require.NotEmpty(t, must.NotFail(actualD.Get("queryPlanner")))
 			require.NotEmpty(t, must.NotFail(actualD.Get("serverInfo")))
 
-			t.Logf("expected %#v", must.NotFail(expectedD.Get("command")))
 			t.Logf("actual %#v", must.NotFail(actualD.Get("command")))
-			// t.FailNow()
+			commandD := must.NotFail(actualD.Get("command")).(*types.Document)
+			for _, key := range tc.expectedCommandKeys {
+				assert.NotEmpty(t, commandD.Remove(key), key)
+			}
 		})
 	}
 }
