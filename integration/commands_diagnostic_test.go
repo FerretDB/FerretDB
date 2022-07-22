@@ -118,6 +118,7 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 	dbName := testutil.DatabaseName(t)
+	collectionName := testutil.CollectionName(t)
 
 	hostname, err := os.Hostname()
 	require.NoError(t, err)
@@ -135,22 +136,22 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 		command bson.D
 		err     *mongo.CommandError
 	}{
-		"count": {
+		"Count": {
 			command: bson.D{
 				{
 					"explain", bson.D{
-						{"count", testutil.CollectionName(t)},
+						{"count", collectionName},
 						{"query", bson.D{{"value", bson.D{{"$type", "array"}}}}},
 					},
 				},
 				{"verbosity", "queryPlanner"},
 			},
 		},
-		"find": {
+		"FindUnknownField": {
 			command: bson.D{
 				{
 					"explain", bson.D{
-						{"find", testutil.CollectionName(t)},
+						{"find", collectionName},
 						{"query", bson.D{{"value", bson.D{{"$type", "array"}}}}},
 					},
 				},
@@ -162,7 +163,7 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 				Name:    "Location40415",
 			},
 		},
-		"findAndModify": {
+		"FindAndModifyError": {
 			command: bson.D{
 				{
 					"explain", bson.D{
@@ -183,6 +184,25 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 				Code:    59, // (Location40415) 9 FailedToParse
 				Message: "Explain failed due to unknown command: query",
 				Name:    "CommandNotFound",
+			},
+		},
+		"FindAndModify": {
+			command: bson.D{
+				{
+					"explain", bson.D{
+						{"findAndModify", collectionName},
+						{"query", bson.D{{
+							"$and",
+							bson.A{
+								bson.D{{"value", bson.D{{"$gt", int32(0)}}}},
+								bson.D{{"value", bson.D{{"$lt", int32(0)}}}},
+							},
+						}}},
+						{"update", bson.D{{"$set", bson.D{{"v", 43.13}}}}},
+						{"upsert", true},
+					},
+				},
+				{"verbosity", "queryPlanner"},
 			},
 		},
 	} {
