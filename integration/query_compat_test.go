@@ -28,8 +28,9 @@ import (
 
 // queryCompatTestCase describes query compatibility test case.
 type queryCompatTestCase struct {
-	filter bson.D // required
-	sort   bson.D // defaults to `bson.D{{"_id", 1}}`
+	filter     bson.D                   // required
+	sort       bson.D                   // defaults to `bson.D{{"_id", 1}}`
+	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
 // testQueryCompat tests query compatibility test cases.
@@ -44,7 +45,7 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 
 	// Use shared setup because find queries can't modify data.
 	// TODO use read-only user https://github.com/FerretDB/FerretDB/issues/914
-	ctx, collection, compatCollection := setup.SetupCompat(t, providers...)
+	ctx, targetCollection, compatCollection := setup.SetupCompat(t, providers...)
 
 	for name, tc := range testCases {
 		name, tc := name, tc
@@ -60,31 +61,45 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 			}
 			opts := options.Find().SetSort(sort)
 
-			cursor, err := collection.Find(ctx, filter, opts)
+			targetCursor, targetErr := targetCollection.Find(ctx, filter, opts)
 			compatCursor, compatErr := compatCollection.Find(ctx, filter, opts)
 
-			if cursor != nil {
-				defer cursor.Close(ctx)
+			if targetCursor != nil {
+				defer targetCursor.Close(ctx)
 			}
 			if compatCursor != nil {
 				defer compatCursor.Close(ctx)
 			}
 
-			if err != nil {
-				err = UnsetRaw(t, err)
+			if targetErr != nil {
+				targetErr = UnsetRaw(t, targetErr)
 				compatErr = UnsetRaw(t, compatErr)
-				assert.Equal(t, compatErr, err)
+				assert.Equal(t, errorResult, tc.resultType)
+				assert.Equal(t, compatErr, targetErr)
 				return
 			}
 			require.NoError(t, compatErr)
 
-			var res, compatRes []bson.D
-			require.NoError(t, cursor.All(ctx, &res))
+			var targetRes, compatRes []bson.D
+			require.NoError(t, targetCursor.All(ctx, &targetRes))
 			require.NoError(t, compatCursor.All(ctx, &compatRes))
 
-			t.Logf("Expected IDs: %v", CollectIDs(t, compatRes))
-			t.Logf("Actual IDs: %v", CollectIDs(t, res))
-			AssertEqualDocumentsSlice(t, compatRes, res)
+			t.Logf("Compat (expected) IDs: %v", CollectIDs(t, compatRes))
+			t.Logf("Target (actual)   IDs: %v", CollectIDs(t, targetRes))
+
+			switch tc.resultType {
+			case nonEmptyResult:
+				assert.NotEmpty(t, compatRes)
+				assert.NotEmpty(t, targetRes)
+				AssertEqualDocumentsSlice(t, compatRes, targetRes)
+			case emptyResult:
+				assert.Empty(t, compatRes)
+				assert.Empty(t, targetRes)
+			case errorResult:
+				fallthrough
+			default:
+				t.Fatalf("unknown result type %v", tc.resultType)
+			}
 		})
 	}
 }
