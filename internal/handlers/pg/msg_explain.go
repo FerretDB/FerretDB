@@ -76,11 +76,11 @@ func (h *Handler) parseExplainUserInput(ctx context.Context, document *types.Doc
 	var err error
 	var sp pgdb.SQLParam
 	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return sp, err
+		return sp, lazyerrors.Error(err)
 	}
 	commandParam, err := document.Get(document.Command())
 	if err != nil {
-		return sp, err
+		return sp, lazyerrors.Error(err)
 	}
 	var command *types.Document
 	var ok bool
@@ -101,7 +101,7 @@ func (h *Handler) parseExplainUserInput(ctx context.Context, document *types.Doc
 	}
 	collectionParam, err := command.Get(command.Command())
 	if err != nil {
-		return sp, err
+		return sp, lazyerrors.Error(err)
 	}
 	if sp.Collection, ok = collectionParam.(string); !ok {
 		return sp, common.NewErrorMsg(
@@ -128,7 +128,7 @@ func (h *Handler) buildExplainResult(ctx context.Context, document *types.Docume
 
 	serverInfo := must.NotFail(types.NewDocument(
 		"host", hostname,
-		"port", port,
+		"port", int32(port),
 		"version", version.MongoDBVersion,
 		"gitVersion", version.Get().Commit,
 		"ferretdbVersion", version.Get().Version,
@@ -138,7 +138,7 @@ func (h *Handler) buildExplainResult(ctx context.Context, document *types.Docume
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"queryPlanner", types.MakeArray(len(resDocs)),
-			"explainVersion", 1,
+			"explainVersion", int32(1),
 			"command", document,
 			"serverInfo", serverInfo,
 			"ok", float64(1),

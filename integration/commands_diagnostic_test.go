@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"os"
 	"runtime"
 	"testing"
 
@@ -23,7 +24,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
 func TestCommandsDiagnosticGetLog(t *testing.T) {
@@ -110,13 +114,26 @@ func TestCommandsDiagnosticConnectionStatus(t *testing.T) {
 
 func TestCommandsDiagnosticExplain(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup.Setup(t)
-	err := collection.Database().CreateCollection(ctx, testutil.CollectionName(t))
+	s := setup.SetupWithOpts(t, nil)
+	ctx := s.Ctx
+	collection := s.TargetCollection
+
+	hostname, err := os.Hostname()
 	require.NoError(t, err)
+	expected := bson.D{
+		{"serverInfo", bson.D{
+			{"host", hostname},
+			{"port", int32(s.TargetPort)},
+			{"version", version.MongoDBVersion},
+			{"gitVersion", version.Get().Commit},
+			{"ferretdbVersion", version.Get().Version},
+		}},
+		{"ok", int32(1)},
+	}
 
 	for name, tc := range map[string]struct {
-		command  any
-		response int32
+		command any
+		err     error
 	}{
 		"CountQueryPlanner": {
 			command: bson.D{
@@ -128,7 +145,6 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 				},
 				{"verbosity", "queryPlanner"},
 			},
-			response: 11,
 		},
 	} {
 		name, tc := name, tc
@@ -138,6 +154,13 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 			require.NoError(t, err)
+			actualD := ConvertDocument(t, actual)
+			expectedD := ConvertDocument(t, expected)
+
+			require.NotEmpty(t, must.NotFail(actualD.Get("queryPlanner")))
+			require.NotEmpty(t, must.NotFail(actualD.Get("serverInfo")))
+			testutil.CompareAndSetByPathString(t, expectedD, actualD, types.NewPath([]string{"serverInfo", "version"}))
+			// t.FailNow()
 		})
 	}
 }
