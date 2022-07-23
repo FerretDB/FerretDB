@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
@@ -51,7 +52,7 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 			}
 
 			// Use per-test setup because ypdate queries modify data.
-			ctx, collection, compatCollection := SetupCompat(t, providers...)
+			ctx, targetCollection, compatCollection := setup.SetupCompat(t, providers...)
 
 			update := tc.update
 			require.NotNil(t, update)
@@ -62,23 +63,23 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 				t.Run(fmt.Sprint(id), func(t *testing.T) {
 					t.Helper()
 
-					updateRes, err := collection.UpdateByID(ctx, id, update)
+					targetUpdateRes, targetErr := targetCollection.UpdateByID(ctx, id, update)
 					compatUpdateRes, compatErr := compatCollection.UpdateByID(ctx, id, update)
 
-					if err != nil {
-						err = UnsetRaw(t, err)
+					if targetErr != nil {
+						targetErr = UnsetRaw(t, targetErr)
 						compatErr = UnsetRaw(t, compatErr)
-						assert.Equal(t, compatErr, err)
+						assert.Equal(t, compatErr, targetErr)
 					} else {
 						require.NoError(t, compatErr)
 					}
 
-					assert.Equal(t, compatUpdateRes, updateRes)
+					assert.Equal(t, compatUpdateRes, targetUpdateRes)
 
-					var findRes, compatFindRes bson.D
-					require.NoError(t, collection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&findRes))
+					var targetFindRes, compatFindRes bson.D
+					require.NoError(t, targetCollection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&targetFindRes))
 					require.NoError(t, compatCollection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&compatFindRes))
-					AssertEqualDocuments(t, compatFindRes, findRes)
+					AssertEqualDocuments(t, compatFindRes, targetFindRes)
 				})
 			}
 		})

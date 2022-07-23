@@ -12,25 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tigris
+package integration
 
-import (
-	"testing"
+// compatTestCaseResultType represents compatibility test case result type.
+//
+// It is used to avoid errors with invalid queries making tests pass.
+type compatTestCaseResultType int
 
-	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
+const (
+	// Test case should return non-empty result.
+	nonEmptyResult compatTestCaseResultType = iota
 
-	"github.com/FerretDB/FerretDB/integration"
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
+	// Test case should return empty result.
+	emptyResult
+
+	// Test case should fail.
+	errorResult
 )
-
-func TestSmoke(t *testing.T) {
-	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.FixedScalars)
-
-	var doc bson.D
-	err := collection.FindOne(ctx, bson.D{{"_id", "fixed_double"}}).Decode(&doc)
-	require.NoError(t, err)
-	integration.AssertEqualDocuments(t, bson.D{{"_id", "fixed_double"}, {"double_value", 42.13}}, doc)
-}
