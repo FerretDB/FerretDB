@@ -31,7 +31,7 @@ services:
   mongodb:
     build:
       context: ./build/deps
-      dockerfile: mongo5.Dockerfile
+      dockerfile: mongo.Dockerfile
     container_name: ferretdb_mongodb
     command: --enableFreeMonitoring off
     ports:

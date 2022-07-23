@@ -98,33 +98,30 @@ var Scalars = &Values[string]{
 	},
 }
 
-// FixedScalars is an experiment and will be changed in the future.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/786
-var FixedScalars = &Maps[string]{
-	name:     "FixedScalars",
+var Doubles = &Values[string]{
+	name:     "Doubles",
 	handlers: []string{"pg", "tigris"},
-	data: map[string]map[string]any{
-		"fixed_double":                   {"value_double": 42.13},
-		"fixed_double-whole":             {"value_double": 42.0},
-		"fixed_double-zero":              {"value_double": math.Copysign(0, +1)},
-		"fixed_double-negative-zero":     {"value_double": math.Copysign(0, -1)},
-		"fixed_double-max":               {"value_double": math.MaxFloat64},
-		"fixed_double-smallest":          {"value_double": math.SmallestNonzeroFloat64},
-		"fixed_double-positive-infinity": {"value_double": math.Inf(+1)},
-		"fixed_double-negative-infinity": {"value_double": math.Inf(-1)},
-		"fixed_double-nan":               {"value_double": math.NaN()},
-		"fixed_double-big":               {"value_double": doubleBig},
+	data: map[string]any{
+		"double":                   42.13,
+		"double-whole":             42.0,
+		"double-zero":              math.Copysign(0, +1), // the same as just 0.0 in Go
+		"double-negative-zero":     math.Copysign(0, -1),
+		"double-max":               math.MaxFloat64,
+		"double-smallest":          math.SmallestNonzeroFloat64,
+		"double-positive-infinity": math.Inf(+1),
+		"double-negative-infinity": math.Inf(-1),
+		"double-nan":               math.NaN(),
+		"double-big":               doubleBig,
+	},
+}
 
-		"fixed_int32":      {"value_int32": int32(42)},
-		"fixed_int32-zero": {"value_int32": int32(0)},
-		"fixed_int32-max":  {"value_int32": int32(math.MaxInt32)},
-		"fixed_int32-min":  {"value_int32": int32(math.MinInt32)},
-
-		"fixed_int64":      {"value_int64": int64(42)},
-		"fixed_int64-zero": {"value_int64": int64(0)},
-		"fixed_int64-max":  {"value_int64": int64(math.MaxInt64)},
-		"fixed_int64-min":  {"value_int64": int64(math.MinInt64)},
-		"fixed_int64-big":  {"value_int64": int64Big},
+var Strings = &Values[string]{
+	name:     "Strings",
+	handlers: []string{"pg", "tigris"},
+	data: map[string]any{
+		"string":        "foo",
+		"string-double": "42.13",
+		"string-whole":  "42",
+		"string-empty":  "",
 	},
 }

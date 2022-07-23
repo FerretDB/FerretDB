@@ -66,7 +66,7 @@ func IDs(providers ...Provider) []any {
 func AllProviders() []Provider {
 	return []Provider{
 		Scalars,
-		FixedScalars,
+		Doubles,
 		Composites,
 	}
 }
