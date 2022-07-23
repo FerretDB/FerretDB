@@ -33,7 +33,8 @@ func TestQueryLogicalCompatAnd(t *testing.T) {
 			}},
 		},
 		"BadInput": {
-			filter: bson.D{{"$and", nil}},
+			filter:     bson.D{{"$and", nil}},
+			resultType: errorResult,
 		},
 		"BadExpressionValue": {
 			filter: bson.D{{
@@ -42,6 +43,7 @@ func TestQueryLogicalCompatAnd(t *testing.T) {
 					nil,
 				},
 			}},
+			resultType: errorResult,
 		},
 		"AndOr": {
 			filter: bson.D{{
