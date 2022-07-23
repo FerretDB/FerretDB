@@ -63,14 +63,6 @@ func IDs(providers ...Provider) []any {
 	return res
 }
 
-func AllProviders() []Provider {
-	return []Provider{
-		Scalars,
-		Doubles,
-		Composites,
-	}
-}
-
 // Maps stores shared data documents as maps.
 //
 // TODO replace constraints.Ordered with comparable: https://github.com/FerretDB/FerretDB/issues/914
