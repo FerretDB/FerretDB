@@ -171,6 +171,10 @@ var Commands = map[string]command{
 		Help:    "Returns peer information.",
 		Handler: (handlers.Interface).MsgWhatsMyURI,
 	},
+	"aggregate": {
+		Help:    "Performs an aggregation on the collection.",
+		Handler: (handlers.Interface).MsgAggregate,
+	},
 }
 
 // MsgListCommands is a common implementation of the listCommands command.
