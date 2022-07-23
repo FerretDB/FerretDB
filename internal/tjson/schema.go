@@ -26,8 +26,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-var ErrUnsupported = fmt.Errorf("unsupported")
-
 // SchemaType represents JSON value type in JSON Schema.
 type SchemaType string
 
@@ -194,7 +192,7 @@ func valueSchema(v any) (*Schema, error) {
 	case *types.Document:
 		return DocumentSchema(v)
 	case *types.Array:
-		return nil, lazyerrors.Errorf("%T: %w", v, ErrUnsupported)
+		lazyerrors.Errorf("%T is not supported yet", v)
 	case float64:
 		return doubleSchema, nil
 	case string:
@@ -207,17 +205,17 @@ func valueSchema(v any) (*Schema, error) {
 		return boolSchema, nil
 	case time.Time:
 		// return dateTimeSchema, nil
-		return nil, lazyerrors.Errorf("%T: %w", v, ErrUnsupported)
+		lazyerrors.Errorf("%T is not supported yet", v)
 	case types.NullType:
-		return nil, lazyerrors.Errorf("%T: %w", v, ErrUnsupported)
+		lazyerrors.Errorf("%T is not supported yet", v)
 	case types.Regex:
 		// return regexSchema, nil
-		return nil, lazyerrors.Errorf("%T: %w", v, ErrUnsupported)
+		lazyerrors.Errorf("%T is not supported yet", v)
 	case int32:
 		return int32Schema, nil
 	case types.Timestamp:
 		// return timestampSchema, nil
-		return nil, lazyerrors.Errorf("%T: %w", v, ErrUnsupported)
+		lazyerrors.Errorf("%T is not supported yet", v)
 	case int64:
 		return int64Schema, nil
 	default:

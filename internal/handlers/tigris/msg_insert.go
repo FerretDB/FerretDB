@@ -16,7 +16,6 @@ package tigris
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
@@ -93,9 +92,6 @@ func (h *Handler) insert(ctx context.Context, fp fetchParam, doc *types.Document
 	}
 
 	schema, err := tjson.DocumentSchema(doc)
-	if errors.Is(err, tjson.ErrUnsupported) {
-		err = common.NewError(common.ErrIncompatible, err)
-	}
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
