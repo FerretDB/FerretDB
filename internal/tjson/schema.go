@@ -192,7 +192,7 @@ func valueSchema(v any) (*Schema, error) {
 	case *types.Document:
 		return DocumentSchema(v)
 	case *types.Array:
-		lazyerrors.Errorf("%T is not supported yet", v)
+		return nil, lazyerrors.Errorf("%T is not supported yet", v)
 	case float64:
 		return doubleSchema, nil
 	case string:
@@ -205,17 +205,17 @@ func valueSchema(v any) (*Schema, error) {
 		return boolSchema, nil
 	case time.Time:
 		// return dateTimeSchema, nil
-		lazyerrors.Errorf("%T is not supported yet", v)
+		return nil, lazyerrors.Errorf("%T is not supported yet", v)
 	case types.NullType:
-		lazyerrors.Errorf("%T is not supported yet", v)
+		return nil, lazyerrors.Errorf("%T is not supported yet", v)
 	case types.Regex:
 		// return regexSchema, nil
-		lazyerrors.Errorf("%T is not supported yet", v)
+		return nil, lazyerrors.Errorf("%T is not supported yet", v)
 	case int32:
 		return int32Schema, nil
 	case types.Timestamp:
 		// return timestampSchema, nil
-		lazyerrors.Errorf("%T is not supported yet", v)
+		return nil, lazyerrors.Errorf("%T is not supported yet", v)
 	case int64:
 		return int64Schema, nil
 	default:
