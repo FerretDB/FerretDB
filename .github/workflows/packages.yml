@@ -47,3 +47,11 @@ jobs:
 
       - name: Build packages
         run: bin/task packages
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v3
+        with:
+          path: |
+            build/deb/ferretdb.deb
+            build/rpm/ferretdb.rpm
+          if-no-files-found: error
