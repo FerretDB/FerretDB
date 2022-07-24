@@ -20,8 +20,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/types"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 // RecentEntries implements zap logging entries interception

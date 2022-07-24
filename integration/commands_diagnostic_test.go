@@ -22,12 +22,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestCommandsDiagnosticGetLog(t *testing.T) {
 	t.Parallel()
-	ctx, collection := Setup(t)
+	ctx, collection := setup.Setup(t)
 
 	for name, tc := range map[string]struct {
 		command  bson.D
