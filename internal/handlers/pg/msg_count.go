@@ -96,7 +96,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	return &reply, nil
 }
 
-// findParams are validated find query parameters.
+// countParams are validated count query parameters.
 type countParams struct {
 	filter *types.Document
 	limit  int64
