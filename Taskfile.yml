@@ -24,6 +24,7 @@ tasks:
       - task: docs
 
   gen-version:
+    run: once
     cmds:
       - go generate -x ./internal/util/version
 
@@ -186,6 +187,7 @@ tasks:
 
   build-testcover:
     desc: "Build bin/ferretdb-testcover"
+    run: once
     deps: [gen-version]
     cmds:
       - go test -c -o=bin/ferretdb-testcover{{exeExt}} -trimpath -tags=ferretdb_testcover,ferretdb_tigris {{if ne OS "windows"}}-race{{end}} -coverpkg=./... ./cmd/ferretdb
@@ -293,25 +295,35 @@ tasks:
       COMMIT:
         sh: cat internal/util/version/gen/commit.txt
 
-  nfpm_deb:
-    deps: [build-testcover]
-    dir: build/deb
+  packages:
     cmds:
-      - ../../bin/nfpm pkg --config ../../.nfpm.yml --packager deb --target ferretdb_${VERSION}.deb
+      - task: packages-deb
+      - task: packages-rpm
+
+  packages-deb:
+    deps: [build-testcover]
+    dir: build
+    cmds:
+      - ../bin/nfpm{{exeExt}} package --packager=deb --target=deb/ferretdb.deb
+      - >
+        docker-compose run --rm debian /bin/sh -c
+        'dpkg -i /deb/ferretdb.deb && ferretdb -version'
     env:
       VERSION:
-        sh: cat ../../internal/util/version/gen/version.txt
+        sh: cat ../internal/util/version/gen/version.txt
+      GOARCH:
+        sh: go env GOARCH
 
-  nfpm_rpm:
+  packages-rpm:
     deps: [build-testcover]
-    dir: build/rpm
+    dir: build
     cmds:
-      - ../../bin/nfpm pkg --config ../../.nfpm.yml --packager rpm --target ferretdb_${VERSION}.rpm
+      - ../bin/nfpm{{exeExt}} package --packager=rpm --target=rpm/ferretdb.rpm
+      - >
+        docker-compose run --rm centos /bin/sh -c
+        'rpm -i /rpm/ferretdb.rpm && ferretdb -version'
     env:
       VERSION:
-        sh: cat ../../internal/util/version/gen/version.txt
-
-  packager:
-    cmds:
-      - task: nfpm_deb
-      - task: nfpm_rpm
+        sh: cat ../internal/util/version/gen/version.txt
+      GOARCH:
+        sh: go env GOARCH

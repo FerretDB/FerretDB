@@ -20,9 +20,12 @@ import (
 	"fmt"
 	"time"
 
+	"go.uber.org/zap/zapcore"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/version"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -35,48 +38,81 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	if l := document.Map()["getLog"]; l != "startupWarnings" {
-		errMsg := fmt.Sprintf("MsgGetLog: unhandled getLog value %q", l)
-		return nil, common.NewErrorMsg(common.ErrNotImplemented, errMsg)
-	}
+	command := document.Command()
 
-	info, err := h.driver.Info(ctx)
+	getLog, err := document.Get(command)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	var log types.Array
-	for _, line := range []string{
-		"Powered by FerretDB " + version.Get().Version + " and Tigris " + info.ServerVersion + ".",
-		"Please star us on GitHub: https://github.com/FerretDB/FerretDB and https://github.com/tigrisdata/tigris",
-	} {
-		b, err := json.Marshal(map[string]any{
-			"msg":  line,
-			"tags": []string{"startupWarnings"},
-			"s":    "I",
-			"c":    "STORAGE",
-			"id":   42000,
-			"ctx":  "initandlisten",
-			"t": map[string]string{
-				"$date": time.Now().UTC().Format("2006-01-02T15:04:05.999Z07:00"),
-			},
-		})
+	if _, ok := getLog.(string); !ok {
+		return nil, common.NewErrorMsg(common.ErrTypeMismatch, "Argument to getLog must be of type String")
+	}
+
+	var resDoc *types.Document
+	switch getLog {
+	case "*":
+		resDoc = must.NotFail(types.NewDocument(
+			"names", must.NotFail(types.NewArray("global", "startupWarnings")),
+			"ok", float64(1),
+		))
+
+	case "global":
+		log, err := logging.RecentEntries.GetArray(zapcore.DebugLevel)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
-		if err = log.Append(string(b)); err != nil {
+		resDoc = must.NotFail(types.NewDocument(
+			"log", log,
+			"totalLinesWritten", int64(log.Len()),
+			"ok", float64(1),
+		))
+
+	case "startupWarnings":
+		info, err := h.driver.Info(ctx)
+		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+
+		var log types.Array
+		for _, line := range []string{
+			"Powered by FerretDB " + version.Get().Version + " and Tigris " + info.ServerVersion + ".",
+			"Please star us on GitHub: https://github.com/FerretDB/FerretDB and https://github.com/tigrisdata/tigris",
+		} {
+			b, err := json.Marshal(map[string]any{
+				"msg":  line,
+				"tags": []string{"startupWarnings"},
+				"s":    "I",
+				"c":    "STORAGE",
+				"id":   42000,
+				"ctx":  "initandlisten",
+				"t": map[string]string{
+					"$date": time.Now().UTC().Format("2006-01-02T15:04:05.999Z07:00"),
+				},
+			})
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+			if err = log.Append(string(b)); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+		}
+		resDoc = must.NotFail(types.NewDocument(
+			"log", &log,
+			"totalLinesWritten", int64(log.Len()),
+			"ok", float64(1),
+		))
+
+	default:
+		errMsg := fmt.Sprintf("no RecentEntries named: %s", getLog)
+		return nil, common.NewErrorMsg(0, errMsg)
 	}
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"totalLinesWritten", int32(log.Len()),
-			"log", &log,
-			"ok", float64(1),
-		))},
-	}))
+	err = reply.SetSections(wire.OpMsgSection{Documents: []*types.Document{resDoc}})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	return &reply, nil
 }
