@@ -69,39 +69,14 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier,
 	fetchedChan := make(chan FetchedDocs, FetchedChannelBufSize)
 	db := sp.DB
 	collection := sp.Collection
-	comment := sp.Comment
 
-	// Special case: check if collection exists at all
-	collectionExists, err := CollectionExists(ctx, querier, db, collection)
+	sql, err := pgPool.buildQuery(ctx, querier, sp)
 	if err != nil {
 		close(fetchedChan)
+		if err == ErrTableNotExist {
+			return fetchedChan, nil
+		}
 		return fetchedChan, lazyerrors.Error(err)
-	}
-	if !collectionExists {
-		pgPool.logger.Info(
-			"Collection doesn't exist, handling a case to deal with a non-existing collection (return empty list)",
-			zap.String("db", db), zap.String("collection", collection),
-		)
-		close(fetchedChan)
-		return fetchedChan, nil
-	}
-
-	table, err := getTableName(ctx, querier, db, collection)
-	if err != nil {
-		return fetchedChan, lazyerrors.Error(err)
-	}
-
-	sql := `SELECT _jsonb `
-	if comment != "" {
-		comment = strings.ReplaceAll(comment, "/*", "/ *")
-		comment = strings.ReplaceAll(comment, "*/", "* /")
-
-		sql += `/* ` + comment + ` */ `
-	}
-	sql += `FROM ` + pgx.Identifier{db, table}.Sanitize()
-
-	if sp.Explain {
-		sql = "EXPLAIN (VERBOSE true, FORMAT JSON) " + sql
 	}
 
 	rows, err := querier.Query(ctx, sql)
@@ -114,7 +89,7 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier,
 		defer close(fetchedChan)
 		defer rows.Close()
 
-		err := iterateFetch(ctx, fetchedChan, rows, sp.Explain)
+		err := iterateFetch(ctx, fetchedChan, rows)
 		switch {
 		case err == nil:
 			// nothing
@@ -131,9 +106,85 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier,
 	return fetchedChan, nil
 }
 
+// Explain returns document list with explain analyze results.
+// We don't expect much documents in results here.
+func (pgPool *Pool) Explain(ctx context.Context, querier pgxtype.Querier, sp SQLParam) ([]*types.Document, error) {
+	sql, err := pgPool.buildQuery(ctx, querier, sp)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	rows, err := querier.Query(ctx, sql)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	var res []*types.Document
+	for ctx.Err() == nil {
+		if !rows.Next() {
+			break
+		}
+		var b []byte
+		if err := rows.Scan(&b); err != nil {
+			return nil, err
+		}
+
+		var plans []map[string]any
+		if err := json.Unmarshal(b, &plans); err != nil {
+			return nil, err
+		}
+
+		for _, m := range plans {
+			doc := new(types.Document)
+			for k, mapval := range m {
+				must.NoError(doc.Set(k, toInternalType(mapval)))
+			}
+			res = append(res, doc)
+		}
+	}
+	return res, nil
+}
+
+// buildQuery builds query.
+func (pgPool *Pool) buildQuery(ctx context.Context, querier pgxtype.Querier, sp SQLParam) (string, error) {
+	db := sp.DB
+	collection := sp.Collection
+	comment := sp.Comment
+
+	// Special case: check if collection exists at all
+	collectionExists, err := CollectionExists(ctx, querier, db, collection)
+	if err != nil {
+		return "", lazyerrors.Error(err)
+	}
+	if !collectionExists {
+		pgPool.logger.Info(
+			"Collection doesn't exist, handling a case to deal with a non-existing collection (return empty list)",
+			zap.String("db", db), zap.String("collection", collection),
+		)
+		return "", ErrTableNotExist
+	}
+
+	table, err := getTableName(ctx, querier, db, collection)
+	if err != nil {
+		return "", lazyerrors.Error(err)
+	}
+
+	sql := `SELECT _jsonb `
+	if comment != "" {
+		comment = strings.ReplaceAll(comment, "/*", "/ *")
+		comment = strings.ReplaceAll(comment, "*/", "* /")
+
+		sql += `/* ` + comment + ` */ `
+	}
+	sql += `FROM ` + pgx.Identifier{db, table}.Sanitize()
+
+	if sp.Explain {
+		sql = "EXPLAIN (VERBOSE true, FORMAT JSON) " + sql
+	}
+	return sql, nil
+}
+
 // iterateFetch iterates over the rows returned by the query and sends FetchedDocs to fetched channel.
 // It returns ctx.Err() if context cancellation was received.
-func iterateFetch(ctx context.Context, fetched chan FetchedDocs, rows pgx.Rows, explain bool) error {
+func iterateFetch(ctx context.Context, fetched chan FetchedDocs, rows pgx.Rows) error {
 	for ctx.Err() == nil {
 		var allFetched bool
 		res := make([]*types.Document, 0, FetchedSliceCapacity)
@@ -148,19 +199,11 @@ func iterateFetch(ctx context.Context, fetched chan FetchedDocs, rows pgx.Rows, 
 				return writeFetched(ctx, fetched, FetchedDocs{Err: lazyerrors.Error(err)})
 			}
 
-			if explain {
-				docs, err := unmarshalExplainResult(b)
-				if err != nil {
-					return writeFetched(ctx, fetched, FetchedDocs{Err: lazyerrors.Error(err)})
-				}
-				res = append(res, docs...)
-			} else {
-				doc, err := fjson.Unmarshal(b)
-				if err != nil {
-					return writeFetched(ctx, fetched, FetchedDocs{Err: lazyerrors.Error(err)})
-				}
-				res = append(res, doc.(*types.Document))
+			doc, err := fjson.Unmarshal(b)
+			if err != nil {
+				return writeFetched(ctx, fetched, FetchedDocs{Err: lazyerrors.Error(err)})
 			}
+			res = append(res, doc.(*types.Document))
 		}
 
 		if len(res) > 0 {
@@ -194,24 +237,6 @@ func writeFetched(ctx context.Context, fetched chan FetchedDocs, doc FetchedDocs
 	}
 }
 
-// unmarshalExplainResult unmarshals []byte explain plan into []*types.Document.
-func unmarshalExplainResult(b []byte) ([]*types.Document, error) {
-	var plans []map[string]any
-	if err := json.Unmarshal(b, &plans); err != nil {
-		return nil, err
-	}
-	doc := new(types.Document)
-
-	var res []*types.Document
-	for _, m := range plans {
-		for k, mapval := range m {
-			must.NoError(doc.Set(k, toInternalType(mapval)))
-		}
-		res = append(res, doc)
-	}
-	return res, nil
-}
-
 // toInternalType transforms map[string]any, []any and scalars into internal type representation.
 func toInternalType(v any) any {
 	switch v := v.(type) {
@@ -229,11 +254,13 @@ func toInternalType(v any) any {
 		}
 		return a
 
+	case nil:
+		return types.Null
+
 	case float64,
 		string,
 		bool,
 		time.Time,
-		nil,
 		int32,
 		int64:
 		return v

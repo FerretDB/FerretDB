@@ -43,23 +43,11 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	resDocs := make([]*types.Document, 0, 16)
+	var resDocs []*types.Document
 	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp)
+		resDocs, err = h.pgPool.Explain(ctx, tx, sp)
 		if err != nil {
 			return err
-		}
-		defer func() {
-			// Drain the channel to prevent leaking goroutines.
-			// TODO Offer a better design instead of channels: https://github.com/FerretDB/FerretDB/issues/898.
-			for range fetchedChan {
-			}
-		}()
-		for fetchedItem := range fetchedChan {
-			if fetchedItem.Err != nil {
-				return fetchedItem.Err
-			}
-			resDocs = append(resDocs, fetchedItem.Docs...)
 		}
 		return nil
 	})
@@ -145,7 +133,7 @@ func (h *Handler) buildExplainResult(ctx context.Context, document *types.Docume
 		"ferretdbVersion", version.Get().Version,
 	))
 
-	queryPlanner := types.MakeArray(len(resDocs))
+	queryPlanner := new(types.Array)
 	for _, item := range resDocs {
 		must.NoError(queryPlanner.Append(item))
 	}
