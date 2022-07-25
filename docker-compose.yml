@@ -31,7 +31,7 @@ services:
   mongodb:
     build:
       context: ./build/deps
-      dockerfile: mongo.Dockerfile
+      dockerfile: ${MONGO_DOCKERFILE:-mongo5}.Dockerfile
     container_name: ferretdb_mongodb
     command: --enableFreeMonitoring off
     ports:
@@ -49,3 +49,19 @@ services:
     container_name: ferretdb_markdownlint
     volumes:
       - .:/workdir
+
+  debian:
+    build:
+      context: ./build/deps
+      dockerfile: debian11.Dockerfile
+    container_name: ferretdb_debian
+    volumes:
+      - ./build/deb:/deb
+
+  centos:
+    build:
+      context: ./build/deps
+      dockerfile: centos7.Dockerfile
+    container_name: ferretdb_centos
+    volumes:
+      - ./build/rpm:/rpm
