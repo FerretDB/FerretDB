@@ -237,7 +237,7 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() tjsontype) {
 
 		// j may not be a canonical form.
 		// We can't compare it with MarshalJSON() result directly.
-		// Instead, we compare second results.
+		// Instead, we compare with round-trip result.
 
 		val, err := Unmarshal([]byte(j), schema)
 		if err != nil {
@@ -252,12 +252,11 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() tjsontype) {
 			j = string(b)
 		}
 
-		// test UnmarshalJSON
+		// test Unmarshal
 		{
-			actualV := newFunc()
-			err := unmarshalJSON(actualV, j)
+			actualV, err := Unmarshal([]byte(j), schema)
 			require.NoError(t, err)
-			assertEqual(t, v, actualV)
+			assertEqual(t, v, toTJSON(actualV))
 		}
 	})
 }
