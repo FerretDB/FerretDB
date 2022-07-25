@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"testing"
 
@@ -302,12 +303,14 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() tjsontype) {
 func unmarshalJSON(v tjsontype, j string) error {
 	var err error
 	switch v := v.(type) {
-	//case documentType:
-	//	err := v.UnmarshalJSON([]byte(tc.j))
 	case *doubleType:
 		err = v.UnmarshalJSON([]byte(j))
+	case *stringType:
+		err = v.UnmarshalJSON([]byte(j))
+	case *boolType:
+		err = v.UnmarshalJSON([]byte(j))
 	default:
-		panic("test is not implemented for this type")
+		panic(fmt.Sprintf("testing is not implemented for the type %T", v))
 	}
 	return err
 }

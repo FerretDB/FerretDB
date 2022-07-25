@@ -21,13 +21,6 @@ import (
 	"github.com/AlekSi/pointer"
 )
 
-var doubleTestSchema = &Schema{
-	Type: Object,
-	Properties: map[string]*Schema{
-		"doubleValue": doubleSchema,
-	},
-}
-
 var doubleTestCases = []testCase{{
 	name:   "42.13",
 	v:      pointer.To(doubleType(42.13)),
@@ -53,11 +46,12 @@ var doubleTestCases = []testCase{{
 	v:      pointer.To(doubleType(math.SmallestNonzeroFloat64)),
 	schema: doubleSchema,
 	j:      `5e-324`,
-}, /*{
-	name: "EOF",
-	j:    `{`,
-	jErr: `unexpected EOF`,
-}*/}
+}, {
+	name:   "EOF",
+	schema: doubleSchema,
+	j:      `{`,
+	jErr:   `unexpected EOF`,
+}}
 
 func TestDouble(t *testing.T) {
 	t.Parallel()
