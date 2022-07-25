@@ -45,11 +45,9 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	var resDocs []*types.Document
 	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		var err error
 		resDocs, err = h.pgPool.Explain(ctx, tx, sp)
-		if err != nil {
-			return err
-		}
-		return nil
+		return err
 	})
 	if err != nil {
 		return nil, err
