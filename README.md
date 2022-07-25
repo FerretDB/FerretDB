@@ -33,9 +33,7 @@ and [contributing guidelines](CONTRIBUTING.md).
 ### Known differences
 
 1. FerretDB uses the same protocol error names and codes, but the exact error messages may be different in some cases.
-
 2. FerretDB does not support NUL (`\0`) characters in strings.
-
 3. Database and collection names restrictions:
 
 * name cannot start with the reserved prefix `_ferretdb_`.
@@ -102,6 +100,9 @@ docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo:5 mongodb://fe
 ```
 
 <!-- markdownlint-enable MD029 -->
+
+You can also install with FerretDB with the `.deb` and `.rpm` packages
+provided for each [release](https://github.com/FerretDB/FerretDB/releases).
 
 ## Community
 
