@@ -34,28 +34,15 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 
 	unimplementedFields := []string{
 		"skip",
-		"returnKey",
-		"showRecordId",
-		"tailable",
-		"oplogReplay",
-		"noCursorTimeout",
-		"awaitData",
-		"allowPartialResults",
 		"collation",
-		"allowDiskUse",
-		"let",
 	}
 	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
 		return nil, err
 	}
 	ignoredFields := []string{
 		"hint",
-		"batchSize",
-		"singleBatch",
-		"maxTimeMS",
 		"readConcern",
-		"max",
-		"min",
+		"comment",
 	}
 	common.Ignored(document, h.L, ignoredFields...)
 
