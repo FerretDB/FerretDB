@@ -28,6 +28,10 @@ var unset = struct{}{}
 
 // Provider is implemented by shared data sets that provide documents.
 type Provider interface {
+	Name() string
+
+	Handlers() []string
+
 	// Docs returns shared data documents.
 	// All calls should return the same set of documents, but may do so in different order.
 	Docs() []bson.D
@@ -63,7 +67,19 @@ func IDs(providers ...Provider) []any {
 //
 // TODO replace constraints.Ordered with comparable: https://github.com/FerretDB/FerretDB/issues/914
 type Maps[idType constraints.Ordered] struct {
-	data map[idType]map[string]any
+	name     string
+	handlers []string
+	data     map[idType]map[string]any
+}
+
+// Name implement Provider interface.
+func (docs *Maps[idType]) Name() string {
+	return docs.name
+}
+
+// Handlers implement Provider interface.
+func (docs *Maps[idType]) Handlers() []string {
+	return docs.handlers
 }
 
 // Docs implement Provider interface.
@@ -91,7 +107,19 @@ func (docs *Maps[idType]) Docs() []bson.D {
 //
 // TODO replace constraints.Ordered with comparable: https://github.com/FerretDB/FerretDB/issues/914
 type Values[idType constraints.Ordered] struct {
-	data map[idType]any
+	name     string
+	handlers []string
+	data     map[idType]any
+}
+
+// Name implement Provider interface.
+func (values *Values[idType]) Name() string {
+	return values.name
+}
+
+// Handlers implement Provider interface.
+func (values *Values[idType]) Handlers() []string {
+	return values.handlers
 }
 
 // Docs implement Provider interface.

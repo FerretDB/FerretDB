@@ -24,6 +24,8 @@ import (
 )
 
 func TestEnvData(t *testing.T) {
+	t.Skip("not now")
+
 	t.Parallel()
 
 	// see `env-data` Taskfile target
@@ -35,7 +37,7 @@ func TestEnvData(t *testing.T) {
 	err := collection.Drop(s.Ctx)
 	require.NoError(t, err)
 
-	providers := []shareddata.Provider{shareddata.FixedScalars}
+	providers := []shareddata.Provider{shareddata.Doubles}
 	for _, provider := range providers {
 		docs := shareddata.Docs(provider)
 		require.NotEmpty(t, docs)

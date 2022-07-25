@@ -30,6 +30,8 @@ import (
 )
 
 func TestEmbedded(t *testing.T) {
+	t.Skip("not now")
+
 	t.Parallel()
 
 	f, err := ferretdb.New(&ferretdb.Config{

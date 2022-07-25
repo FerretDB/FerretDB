@@ -30,6 +30,8 @@ const (
 //
 // This shared data set is frozen. If you need more values, add them in the test itself.
 var Scalars = &Values[string]{
+	name:     "Scalars",
+	handlers: []string{"pg"},
 	data: map[string]any{
 		"double":                   42.13,
 		"double-whole":             42.0,
@@ -96,16 +98,30 @@ var Scalars = &Values[string]{
 	},
 }
 
-// FixedScalars is an experiment and will be changed in the future.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/786
-var FixedScalars = &Maps[string]{
-	data: map[string]map[string]any{
-		"fixed_double":          {"double_value": 42.13},
-		"fixed_double-whole":    {"double_value": 42.0},
-		"fixed_double-zero":     {"double_value": 0.0},
-		"fixed_double-max":      {"double_value": math.MaxFloat64},
-		"fixed_double-smallest": {"double_value": math.SmallestNonzeroFloat64},
-		"fixed_double-big":      {"double_value": doubleBig},
+var Doubles = &Values[string]{
+	name:     "Doubles",
+	handlers: []string{"pg", "tigris"},
+	data: map[string]any{
+		"double":                   42.13,
+		"double-whole":             42.0,
+		"double-zero":              math.Copysign(0, +1), // the same as just 0.0 in Go
+		"double-negative-zero":     math.Copysign(0, -1),
+		"double-max":               math.MaxFloat64,
+		"double-smallest":          math.SmallestNonzeroFloat64,
+		"double-positive-infinity": math.Inf(+1),
+		"double-negative-infinity": math.Inf(-1),
+		"double-nan":               math.NaN(),
+		"double-big":               doubleBig,
+	},
+}
+
+var Strings = &Values[string]{
+	name:     "Strings",
+	handlers: []string{"pg", "tigris"},
+	data: map[string]any{
+		"string":        "foo",
+		"string-double": "42.13",
+		"string-whole":  "42",
+		"string-empty":  "",
 	},
 }

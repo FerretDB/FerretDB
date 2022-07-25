@@ -36,12 +36,6 @@ type updateCompatTestCase struct {
 func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 	t.Helper()
 
-	providers := []shareddata.Provider{
-		shareddata.FixedScalars,
-		shareddata.Scalars,
-		shareddata.Composites,
-	}
-
 	for name, tc := range testCases {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -52,12 +46,12 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 			}
 
 			// Use per-test setup because ypdate queries modify data.
-			ctx, targetCollection, compatCollection := setup.SetupCompat(t, providers...)
+			ctx, targetCollection, compatCollection := setup.SetupCompat(t)
 
 			update := tc.update
 			require.NotNil(t, update)
 
-			ids := shareddata.IDs(providers...)
+			ids := shareddata.IDs(shareddata.AllProviders()...)
 			for _, id := range ids {
 				id := id
 				t.Run(fmt.Sprint(id), func(t *testing.T) {
