@@ -325,10 +325,6 @@ func compareArrays(filterArr, docArr *Array) []CompareResult {
 				entireCompareResult, gtAndLt = handleInconsistencyInResults(entireCompareResult, iterationResult, subArray)
 			}
 
-		// TODO: case Document
-		case *Document:
-			continue
-
 		default:
 			if gtAndLt {
 				continue // looking for subArrayEquality
