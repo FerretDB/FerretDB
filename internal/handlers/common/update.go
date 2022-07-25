@@ -16,7 +16,6 @@ package common
 
 import (
 	"fmt"
-	"math"
 	"sort"
 	"strings"
 	"time"
@@ -85,15 +84,21 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				}
 
 				docValue := must.NotFail(doc.Get(incKey))
-				if v, ok := docValue.(float64); ok {
-					if math.IsInf(v, 0) || v == math.MaxFloat64 || v >= types.DoubleBig {
-						continue
-					}
-				}
 
 				incremented, err := addNumbers(incValue, docValue)
 				if err == nil {
 					must.NoError(doc.Set(incKey, incremented))
+
+					result := types.Compare(docValue, incremented)
+
+					if len(result) != 1 {
+						panic("there should be only one result")
+					}
+
+					if result[0] == types.Equal {
+						continue
+					}
+
 					changed = true
 					continue
 				}

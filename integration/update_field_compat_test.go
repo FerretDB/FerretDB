@@ -26,9 +26,11 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 	testCases := map[string]updateCompatTestCase{
 		"Double": {
 			update: bson.D{{"$inc", bson.D{{"v", 42.13}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/904",
 		},
 		"DoubleNegative": {
 			update: bson.D{{"$inc", bson.D{{"v", -42.13}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/904",
 		},
 	}
 
