@@ -16,9 +16,11 @@ package pgdb
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgtype/pgxtype"
 	"github.com/jackc/pgx/v4"
@@ -27,6 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 const (
@@ -48,6 +51,7 @@ type SQLParam struct {
 	DB         string
 	Collection string
 	Comment    string
+	Explain    bool
 }
 
 // QueryDocuments returns a channel with buffer FetchedChannelBufSize
@@ -61,41 +65,19 @@ type SQLParam struct {
 // Context cancellation is not considered an error.
 //
 // If the collection doesn't exist, fetch returns a closed channel and no error.
-func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier, sp SQLParam,
-) (<-chan FetchedDocs, error) {
+func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier, sp SQLParam) (<-chan FetchedDocs, error) {
 	fetchedChan := make(chan FetchedDocs, FetchedChannelBufSize)
 	db := sp.DB
 	collection := sp.Collection
-	comment := sp.Comment
 
-	// Special case: check if collection exists at all
-	collectionExists, err := CollectionExists(ctx, querier, db, collection)
+	sql, err := pgPool.buildQuery(ctx, querier, sp)
 	if err != nil {
 		close(fetchedChan)
+		if err == ErrTableNotExist {
+			return fetchedChan, nil
+		}
 		return fetchedChan, lazyerrors.Error(err)
 	}
-	if !collectionExists {
-		pgPool.logger.Info(
-			"Collection doesn't exist, handling a case to deal with a non-existing collection (return empty list)",
-			zap.String("db", db), zap.String("collection", collection),
-		)
-		close(fetchedChan)
-		return fetchedChan, nil
-	}
-
-	table, err := getTableName(ctx, querier, db, collection)
-	if err != nil {
-		return fetchedChan, lazyerrors.Error(err)
-	}
-
-	sql := `SELECT _jsonb `
-	if comment != "" {
-		comment = strings.ReplaceAll(comment, "/*", "/ *")
-		comment = strings.ReplaceAll(comment, "*/", "* /")
-
-		sql += `/* ` + comment + ` */ `
-	}
-	sql += `FROM ` + pgx.Identifier{db, table}.Sanitize()
 
 	rows, err := querier.Query(ctx, sql)
 	if err != nil {
@@ -122,6 +104,79 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier,
 	}()
 
 	return fetchedChan, nil
+}
+
+// Explain returns document list with explain analyze results.
+// We don't expect much documents in results here.
+func (pgPool *Pool) Explain(ctx context.Context, querier pgxtype.Querier, sp SQLParam) ([]*types.Document, error) {
+	sql, err := pgPool.buildQuery(ctx, querier, sp)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	rows, err := querier.Query(ctx, sql)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	var res []*types.Document
+	for ctx.Err() == nil && rows.Next() {
+		var b []byte
+		if err := rows.Scan(&b); err != nil {
+			return nil, err
+		}
+
+		var plans []map[string]any
+		if err := json.Unmarshal(b, &plans); err != nil {
+			return nil, err
+		}
+
+		for _, m := range plans {
+			doc := new(types.Document)
+			for k, mapval := range m {
+				must.NoError(doc.Set(k, toInternalType(mapval)))
+			}
+			res = append(res, doc)
+		}
+	}
+	return res, nil
+}
+
+// buildQuery builds query.
+func (pgPool *Pool) buildQuery(ctx context.Context, querier pgxtype.Querier, sp SQLParam) (string, error) {
+	db := sp.DB
+	collection := sp.Collection
+	comment := sp.Comment
+
+	// Special case: check if collection exists at all
+	collectionExists, err := CollectionExists(ctx, querier, db, collection)
+	if err != nil {
+		return "", lazyerrors.Error(err)
+	}
+	if !collectionExists {
+		pgPool.logger.Info(
+			"Collection doesn't exist, handling a case to deal with a non-existing collection (return empty list)",
+			zap.String("db", db), zap.String("collection", collection),
+		)
+		return "", ErrTableNotExist
+	}
+
+	table, err := getTableName(ctx, querier, db, collection)
+	if err != nil {
+		return "", lazyerrors.Error(err)
+	}
+
+	sql := `SELECT _jsonb `
+	if comment != "" {
+		comment = strings.ReplaceAll(comment, "/*", "/ *")
+		comment = strings.ReplaceAll(comment, "*/", "* /")
+
+		sql += `/* ` + comment + ` */ `
+	}
+	sql += `FROM ` + pgx.Identifier{db, table}.Sanitize()
+
+	if sp.Explain {
+		sql = "EXPLAIN (VERBOSE true, FORMAT JSON) " + sql
+	}
+	return sql, nil
 }
 
 // iterateFetch iterates over the rows returned by the query and sends FetchedDocs to fetched channel.
@@ -178,4 +233,35 @@ func writeFetched(ctx context.Context, fetched chan FetchedDocs, doc FetchedDocs
 	case fetched <- doc:
 		return nil
 	}
+}
+
+// toInternalType transforms map[string]any, []any and scalars into internal type representation.
+func toInternalType(v any) any {
+	switch v := v.(type) {
+	case map[string]any:
+		m := new(types.Document)
+		for k, mapval := range v {
+			must.NoError(m.Set(k, toInternalType(mapval)))
+		}
+		return m
+
+	case []any:
+		a := new(types.Array)
+		for _, arrval := range v {
+			must.NoError(a.Append(toInternalType(arrval)))
+		}
+		return a
+
+	case nil:
+		return types.Null
+
+	case float64,
+		string,
+		bool,
+		time.Time,
+		int32,
+		int64:
+		return v
+	}
+	panic(fmt.Sprintf("unsupported type: %T", v))
 }
