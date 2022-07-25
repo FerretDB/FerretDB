@@ -86,7 +86,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 				docValue := must.NotFail(doc.Get(incKey))
 				if v, ok := docValue.(float64); ok {
-					if math.IsInf(v, 0) {
+					if math.IsInf(v, 0) || v == math.MaxFloat64 || v >= types.DoubleBig {
 						continue
 					}
 				}
