@@ -15,15 +15,59 @@
 package tjson
 
 import (
+	"math"
 	"testing"
+
+	"github.com/AlekSi/pointer"
 )
+
+var doubleTestSchema = &Schema{
+	Type: Object,
+	Properties: map[string]*Schema{
+		"doubleValue": doubleSchema,
+	},
+}
+
+var doubleTestCases = []testCase{{
+	name:   "42.13",
+	v:      pointer.To(doubleType(42.13)),
+	schema: doubleSchema,
+	j:      `42.13`,
+}, {
+	name:   "zero",
+	v:      pointer.To(doubleType(math.Copysign(0, +1))),
+	schema: doubleSchema,
+	j:      `0`,
+}, {
+	name:   "negative zero",
+	v:      pointer.To(doubleType(math.Copysign(0, -1))),
+	schema: doubleSchema,
+	j:      `-0`,
+}, {
+	name:   "max float64",
+	v:      pointer.To(doubleType(math.MaxFloat64)),
+	schema: doubleSchema,
+	j:      `1.7976931348623157e+308`,
+}, {
+	name:   "smallest positive float64",
+	v:      pointer.To(doubleType(math.SmallestNonzeroFloat64)),
+	schema: doubleSchema,
+	j:      `5e-324`,
+}, /*{
+	name: "EOF",
+	j:    `{`,
+	jErr: `unexpected EOF`,
+}*/}
 
 func TestDouble(t *testing.T) {
 	t.Parallel()
+	testJSON(t, doubleTestCases, func() tjsontype { return new(doubleType) })
 }
 
 func FuzzDouble(f *testing.F) {
+	fuzzJSON(f, doubleTestCases, func() tjsontype { return new(doubleType) })
 }
 
 func BenchmarkDouble(b *testing.B) {
+	benchmark(b, doubleTestCases, func() tjsontype { return new(doubleType) })
 }
