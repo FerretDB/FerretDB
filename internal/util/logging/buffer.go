@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // RecentEntries implements zap logging entries interception
@@ -56,9 +57,8 @@ func (l *circularBuffer) append(entry *zapcore.Entry) {
 	l.index = (l.index + 1) % int64(len(l.log))
 }
 
-// Get returns entries from circularBuffer
-// with less than given logging level.
-func (l *circularBuffer) Get(level zapcore.Level) []*zapcore.Entry {
+// get returns entries from circularBuffer with level at minLevel or above.
+func (l *circularBuffer) get(minLevel zapcore.Level) []*zapcore.Entry {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 
@@ -67,7 +67,7 @@ func (l *circularBuffer) Get(level zapcore.Level) []*zapcore.Entry {
 	for i := int64(0); i < int64(len(l.log)); i++ {
 		k := (i + l.index) % int64(len(l.log))
 
-		if l.log[k] != nil && l.log[k].Level >= level {
+		if l.log[k] != nil && l.log[k].Level >= minLevel {
 			entries = append(entries, l.log[k])
 		}
 	}
@@ -75,10 +75,11 @@ func (l *circularBuffer) Get(level zapcore.Level) []*zapcore.Entry {
 	return entries
 }
 
-// RequirRecordsLog returns an array of records from logging buffer with given level.
-func RequireRecordsLog(level zapcore.Level) (*types.Array, error) {
-	entries := RecentEntries.Get(level)
-	log := new(types.Array)
+// GetArray is a version of Get that returns an array as expected by mongosh.
+func (l *circularBuffer) GetArray(minLevel zapcore.Level) (*types.Array, error) {
+	entries := l.get(minLevel)
+	res := types.MakeArray(len(entries))
+
 	for _, e := range entries {
 		b, err := json.Marshal(map[string]any{
 			"t": map[string]time.Time{
@@ -91,12 +92,12 @@ func RequireRecordsLog(level zapcore.Level) (*types.Array, error) {
 			"s":   e.Stack,
 		})
 		if err != nil {
-			return nil, err
+			return nil, lazyerrors.Error(err)
 		}
-		if err = log.Append(string(b)); err != nil {
-			return nil, err
+		if err = res.Append(string(b)); err != nil {
+			return nil, lazyerrors.Error(err)
 		}
 	}
 
-	return log, nil
+	return res, nil
 }

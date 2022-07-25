@@ -59,7 +59,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	case "global":
-		log, err := logging.RequireRecordsLog(zapcore.DebugLevel)
+		log, err := logging.RecentEntries.GetArray(zapcore.DebugLevel)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
