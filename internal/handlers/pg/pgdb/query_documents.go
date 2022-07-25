@@ -118,10 +118,7 @@ func (pgPool *Pool) Explain(ctx context.Context, querier pgxtype.Querier, sp SQL
 		return nil, lazyerrors.Error(err)
 	}
 	var res []*types.Document
-	for ctx.Err() == nil {
-		if !rows.Next() {
-			break
-		}
+	for ctx.Err() == nil && rows.Next() {
 		var b []byte
 		if err := rows.Scan(&b); err != nil {
 			return nil, err
