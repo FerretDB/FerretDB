@@ -282,3 +282,73 @@ func TestGetByPath(t *testing.T) {
 		})
 	}
 }
+
+func TestPathTrimSuffixPrefix(t *testing.T) {
+	t.Parallel()
+
+	pathOneElement := NewPath([]string{"1"})
+	pathZeroElement := Path{s: []string{}}
+
+	type testCase struct {
+		name string
+		f    func() Path
+	}
+
+	for _, tc := range []testCase{{
+		name: "prefixOne",
+		f:    pathOneElement.TrimPrefix,
+	}, {
+		name: "suffixOne",
+		f:    pathOneElement.TrimSuffix,
+	}, {
+		name: "prefixZero",
+		f:    pathZeroElement.TrimPrefix,
+	}, {
+		name: "suffixZero",
+		f:    pathZeroElement.TrimSuffix,
+	}} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			require.Panics(t, func() {
+				tc.f()
+			})
+		})
+	}
+}
+
+func TestPathSuffixPrefix(t *testing.T) {
+	t.Parallel()
+
+	pathOneElement := NewPath([]string{"1"})
+	pathZeroElement := Path{s: []string{}}
+
+	type testCase struct {
+		name string
+		f    func() string
+	}
+
+	for _, tc := range []testCase{{
+		name: "prefixOne",
+		f:    pathOneElement.Prefix,
+	}, {
+		name: "suffixOne",
+		f:    pathOneElement.Suffix,
+	}, {
+		name: "prefixZero",
+		f:    pathZeroElement.Prefix,
+	}, {
+		name: "suffixZero",
+		f:    pathZeroElement.Suffix,
+	}} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			require.Panics(t, func() {
+				tc.f()
+			})
+		})
+	}
+}
