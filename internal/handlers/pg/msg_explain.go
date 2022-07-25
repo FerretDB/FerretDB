@@ -162,7 +162,7 @@ func (h *Handler) buildExplainResult(ctx context.Context, document *types.Docume
 			}
 		}
 
-	case "FindAndModify":
+	case "findAndModify":
 		for _, key := range []string{"remove", "new", "upsert", "query", "sort", "update"} {
 			if document.Has(key) {
 				must.NoError(commandDoc.Set(key, must.NotFail(document.Get(key))))
