@@ -38,7 +38,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-	sp, err := h.parseExplainParams(ctx, document)
+	sp, err := h.validateExplainParams(ctx, document)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -56,9 +56,10 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	return h.buildExplainResult(ctx, document, resDocs)
 }
 
-// parseExplainParams validates document and returns pgdb.SQLParam.
-func (h *Handler) parseExplainParams(ctx context.Context, document *types.Document) (pgdb.SQLParam, error) {
+// validateExplainParams validates document and returns pgdb.SQLParam.
+func (h *Handler) validateExplainParams(ctx context.Context, document *types.Document) (pgdb.SQLParam, error) {
 	common.Ignored(document, h.l, "verbosity")
+
 	var err error
 	var sp pgdb.SQLParam
 	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
@@ -68,6 +69,7 @@ func (h *Handler) parseExplainParams(ctx context.Context, document *types.Docume
 	if err != nil {
 		return sp, lazyerrors.Error(err)
 	}
+
 	var command *types.Document
 	var ok bool
 	if command, ok = commandParam.(*types.Document); !ok {
@@ -76,14 +78,17 @@ func (h *Handler) parseExplainParams(ctx context.Context, document *types.Docume
 			fmt.Sprintf("has invalid type %s", common.AliasFromType(commandParam)),
 		)
 	}
+
 	switch command.Command() {
 	case "count":
 		// ok
+
 	case "find":
 		must.NoError(command.Set("$db", must.NotFail(document.Get("$db"))))
-		if _, err := h.parseFindParams(ctx, command); err != nil {
+		if _, err := h.validateFindParams(ctx, command); err != nil {
 			return sp, lazyerrors.Error(err)
 		}
+
 	case "findAndModify":
 		must.NoError(command.Set("$db", must.NotFail(document.Get("$db"))))
 		if _, err := prepareFindAndModifyParams(command); err != nil {
@@ -96,10 +101,12 @@ func (h *Handler) parseExplainParams(ctx context.Context, document *types.Docume
 			fmt.Sprintf("explain for %s s not supported", command.Command()),
 		)
 	}
+
 	collectionParam, err := command.Get(command.Command())
 	if err != nil {
 		return sp, lazyerrors.Error(err)
 	}
+
 	if sp.Collection, ok = collectionParam.(string); !ok {
 		return sp, common.NewErrorMsg(
 			common.ErrBadValue,

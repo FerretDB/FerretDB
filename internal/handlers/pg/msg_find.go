@@ -36,7 +36,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
-	fp, err := h.parseFindParams(ctx, document)
+	fp, err := h.validateFindParams(ctx, document)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -124,8 +124,8 @@ type findParams struct {
 	sp         pgdb.SQLParam
 }
 
-// parseFindParams validates document and returns findParams.
-func (h *Handler) parseFindParams(ctx context.Context, document *types.Document) (*findParams, error) {
+// validateFindParams validates document and returns findParams.
+func (h *Handler) validateFindParams(ctx context.Context, document *types.Document) (*findParams, error) {
 	unimplementedFields := []string{
 		"skip",
 		"returnKey",
