@@ -370,8 +370,8 @@ func TestUpdateFieldInc(t *testing.T) {
 			},
 			"DoubleDoubleBigIncrement": {
 				filter:   bson.D{{"_id", "double"}},
-				update:   bson.D{{"$inc", bson.D{{"v", types.DoubleBig}}}},
-				expected: bson.D{{"_id", "double"}, {"v", types.DoubleBig}},
+				update:   bson.D{{"$inc", bson.D{{"v", float64(2 << 60)}}}},
+				expected: bson.D{{"_id", "double"}, {"v", float64(2 << 60)}},
 				stat: &mongo.UpdateResult{
 					MatchedCount:  1,
 					ModifiedCount: 1,
@@ -381,7 +381,7 @@ func TestUpdateFieldInc(t *testing.T) {
 			"DoubleBigDoubleIncrement": {
 				filter:   bson.D{{"_id", "double-big"}},
 				update:   bson.D{{"$inc", bson.D{{"v", 42.13}}}},
-				expected: bson.D{{"_id", "double-big"}, {"v", types.DoubleBig}},
+				expected: bson.D{{"_id", "double-big"}, {"v", float64(2 << 60)}},
 				stat: &mongo.UpdateResult{
 					MatchedCount:  1,
 					ModifiedCount: 0,

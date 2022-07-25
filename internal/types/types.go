@@ -51,11 +51,6 @@ import (
 // MaxDocumentLen is the maximum BSON object size.
 const MaxDocumentLen = 16777216
 
-// DoubleBig is the big 64-bit floating point number.
-const (
-	DoubleBig = float64(2 << 60)
-)
-
 // ScalarType represents scalar type.
 type ScalarType interface {
 	float64 | string | Binary | ObjectID | bool | time.Time | NullType | Regex | int32 | Timestamp | int64
