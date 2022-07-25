@@ -30,7 +30,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-// testCase represents a typical test case for TJSON to be used with the testJSON function.
+// testCase represents a typical test case for TJSON to be used with the testing functions.
 type testCase struct {
 	name   string    // test case name
 	v      tjsontype // tjson value
@@ -272,9 +272,9 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() tjsontype) {
 	for _, tc := range testCases {
 		tc := tc
 		b.Run(tc.name, func(b *testing.B) {
-			b.Run("UnmarshalJSON", func(b *testing.B) {
+			b.Run("Unmarshal", func(b *testing.B) {
 				data := []byte(tc.j)
-				var v tjsontype
+				var v any
 				var err error
 
 				b.ReportAllocs()
@@ -282,14 +282,14 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() tjsontype) {
 				b.ResetTimer()
 
 				for i := 0; i < b.N; i++ {
-					err = unmarshalJSON(newFunc(), tc.j)
+					v, err = Unmarshal([]byte(tc.j), tc.schema)
 				}
 
 				b.StopTimer()
 
 				if tc.jErr == "" {
 					require.NoError(b, err)
-					assertEqual(b, tc.v, v)
+					assertEqual(b, tc.v, toTJSON(v))
 					return
 				}
 
@@ -300,6 +300,8 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() tjsontype) {
 	}
 }
 
+// unmarshalJSON encapsulates type switch and calls UnmarshalJSON on the given value.
+// It is called this way as tjsontype itself doesn't implement json.Unmarshaler interface.
 func unmarshalJSON(v tjsontype, j string) error {
 	var err error
 	switch v := v.(type) {
