@@ -203,6 +203,7 @@ func iterateFetch(ctx context.Context, fetched chan FetchedDocs, rows pgx.Rows) 
 			if err != nil {
 				return writeFetched(ctx, fetched, FetchedDocs{Err: lazyerrors.Error(err)})
 			}
+
 			res = append(res, doc.(*types.Document))
 		}
 

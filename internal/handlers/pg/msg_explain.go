@@ -138,12 +138,26 @@ func (h *Handler) buildExplainResult(ctx context.Context, document *types.Docume
 
 	commandDoc := must.NotFail(document.Get(document.Command())).(*types.Document)
 	switch commandDoc.Command() {
-	case "count", "find":
-		must.NoError(commandDoc.Set("$db", must.NotFail(document.Get("$db"))))
+	case "count":
+		for _, key := range []string{"$db", "query", "limit"} {
+			if document.Has(key) {
+				must.NoError(commandDoc.Set(key, must.NotFail(document.Get(key))))
+			}
+		}
+
+	case "find":
+		for _, key := range []string{"$db", "find", "comment", "$comment", "filter", "sort", "limit", "projection"} {
+			if document.Has(key) {
+				must.NoError(commandDoc.Set(key, must.NotFail(document.Get(key))))
+			}
+		}
 
 	case "FindAndModify":
-		must.NoError(commandDoc.Set("upsert", must.NotFail(document.Get("upsert"))))
-		must.NoError(commandDoc.Set("update", must.NotFail(document.Get("update"))))
+		for _, key := range []string{"remove", "new", "upsert", "query", "sort", "update"} {
+			if document.Has(key) {
+				must.NoError(commandDoc.Set(key, must.NotFail(document.Get(key))))
+			}
+		}
 	}
 
 	var reply wire.OpMsg
