@@ -43,7 +43,7 @@ import (
 var (
 	targetPortF = flag.Int("target-port", 0, "target system's port for tests; if 0, in-process FerretDB is used")
 	proxyAddrF  = flag.String("proxy-addr", "", "proxy to use for in-process FerretDB")
-	handlerF    = flag.String("handler", "pg", "handler to use for in-process FerretDB")
+	handlerF    = flag.String("handler", "pg", "handler to use for in-process FerretDB") // TODO
 	compatPortF = flag.Int("compat-port", 37017, "second system's port for compatibility tests; if 0, they are skipped")
 
 	// Disable noisy setup logs by default.
@@ -69,11 +69,11 @@ type SetupOpts struct {
 
 // SetupResult represents setup results.
 type SetupResult struct {
-	Ctx              context.Context
-	TargetCollection *mongo.Collection
-	TargetPort       uint16
-	CompatCollection *mongo.Collection
-	CompatPort       uint16
+	Ctx               context.Context
+	TargetCollections []*mongo.Collection
+	TargetPort        uint16
+	CompatCollections []*mongo.Collection
+	CompatPort        uint16
 }
 
 // SetupWithOpts setups the test according to given options.
@@ -106,7 +106,9 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	collection := setupCollection(tb, ctx, port, opts.DatabaseName, opts.Providers)
+	client := setupClient(tb, ctx, port)
+
+	collection := setupCollection(tb, ctx, client, opts.DatabaseName, opts.Providers)
 
 	var compatPort int
 	var compatCollection *mongo.Collection
@@ -116,17 +118,18 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 			tb.Skip("compatibility tests require second system")
 		}
 
-		compatCollection = setupCollection(tb, ctx, compatPort, opts.DatabaseName, opts.Providers)
+		client = setupClient(tb, ctx, compatPort)
+		compatCollection = setupCollection(tb, ctx, client, opts.DatabaseName, opts.Providers)
 	}
 
 	level.SetLevel(*logLevelF)
 
 	return &SetupResult{
-		Ctx:              ctx,
-		TargetCollection: collection,
-		TargetPort:       uint16(port),
-		CompatCollection: compatCollection,
-		CompatPort:       uint16(compatPort),
+		Ctx:               ctx,
+		TargetCollections: []*mongo.Collection{collection},
+		TargetPort:        uint16(port),
+		CompatCollections: []*mongo.Collection{compatCollection},
+		CompatPort:        uint16(compatPort),
 	}
 }
 
@@ -204,15 +207,13 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 }
 
 // setupCollection setups a single collection.
+//
 // If there are no providers, we don't create a database and collection.
 // That is intentional:
 //   * for those tests where no collection and database are needed.
 //   * for Tigris: we can't create a collection without a schema, and we don't know schema without documents.
-func setupCollection(tb testing.TB, ctx context.Context, port int, db string, providers []shareddata.Provider) *mongo.Collection {
+func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, db string, providers []shareddata.Provider) *mongo.Collection {
 	tb.Helper()
-
-	require.Greater(tb, port, 0)
-	require.Less(tb, port, 65536)
 
 	var ownDatabase bool
 	if db == "" {
@@ -220,7 +221,6 @@ func setupCollection(tb testing.TB, ctx context.Context, port int, db string, pr
 		ownDatabase = true
 	}
 
-	client := setupClient(tb, ctx, uint16(port))
 	database := client.Database(db)
 	collectionName := testutil.CollectionName(tb)
 	collection := database.Collection(collectionName)
@@ -232,16 +232,11 @@ func setupCollection(tb testing.TB, ctx context.Context, port int, db string, pr
 	}
 
 	for _, provider := range providers {
-		if *targetPortF == 0 && !slices.Contains(provider.Handlers(), *handlerF) {
-			tb.Logf("Provider %q is not compatible with handler %q, skipping it.", provider.Name(), *handlerF)
-			continue
-		}
-
 		docs := shareddata.Docs(provider)
 		require.NotEmpty(tb, docs)
 
 		res, err := collection.InsertMany(ctx, docs)
-		require.NoError(tb, err, "provider %q, handler %q", provider.Name(), *handlerF)
+		require.NoError(tb, err, "provider %q", provider.Name())
 		require.Len(tb, res.InsertedIDs, len(docs))
 	}
 
@@ -264,9 +259,79 @@ func setupCollection(tb testing.TB, ctx context.Context, port int, db string, pr
 	return collection
 }
 
-// setupClient returns MongoDB client for database on 127.0.0.1:port.
-func setupClient(tb testing.TB, ctx context.Context, port uint16) *mongo.Client {
+// setupCollections setups a single database with one collection per provider.
+func setupCollections(tb testing.TB, ctx context.Context, client *mongo.Client, db string, providers []shareddata.Provider) []*mongo.Collection {
 	tb.Helper()
+
+	require.NotEmpty(tb, providers)
+
+	var ownDatabase bool
+	if db == "" {
+		db = testutil.DatabaseName(tb)
+		ownDatabase = true
+	}
+
+	database := client.Database(db)
+
+	if ownDatabase {
+		// drop remnants of the previous failed run
+		_ = database.Drop(ctx)
+
+		// delete database unless test failed
+		tb.Cleanup(func() {
+			if tb.Failed() {
+				return
+			}
+
+			err := database.Drop(ctx)
+			require.NoError(tb, err)
+		})
+	}
+
+	collections := make([]*mongo.Collection, 0, len(providers))
+	for _, provider := range providers {
+		if *targetPortF == 0 && !slices.Contains(provider.Handlers(), *handlerF) {
+			tb.Logf("Provider %q is not compatible with handler %q, skipping it.", provider.Name(), *handlerF)
+			continue
+		}
+
+		name := testutil.CollectionName(tb) + "_" + provider.Name()
+		collection := database.Collection(name)
+
+		// drop remnants of the previous failed run
+		_ = collection.Drop(ctx)
+
+		docs := shareddata.Docs(provider)
+		require.NotEmpty(tb, docs)
+
+		res, err := collection.InsertMany(ctx, docs)
+		require.NoError(tb, err, "provider %q, handler %q, colleciton %s.%s", provider.Name(), *handlerF, db, name)
+		require.Len(tb, res.InsertedIDs, len(docs))
+
+		// delete collection unless test failed
+		tb.Cleanup(func() {
+			if tb.Failed() {
+				tb.Logf("Keeping %s.%s for debugging.", db, name)
+				return
+			}
+
+			err := collection.Drop(ctx)
+			require.NoError(tb, err)
+		})
+
+		collections = append(collections, collection)
+	}
+
+	require.NotEmpty(tb, collections)
+	return collections
+}
+
+// setupClient returns MongoDB client for database on 127.0.0.1:port.
+func setupClient(tb testing.TB, ctx context.Context, port int) *mongo.Client {
+	tb.Helper()
+
+	require.Greater(tb, port, 0)
+	require.Less(tb, port, 65536)
 
 	// those options should not affect anything except tests speed
 	v := url.Values{
