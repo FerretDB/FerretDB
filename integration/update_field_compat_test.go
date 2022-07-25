@@ -29,7 +29,6 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 		},
 		"DoubleNegative": {
 			update: bson.D{{"$inc", bson.D{{"v", -42.13}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/904",
 		},
 	}
 
