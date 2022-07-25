@@ -34,52 +34,14 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-
-	unimplementedFields := []string{
-		"skip",
-		"collation",
-	}
-	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
-		return nil, err
-	}
-	ignoredFields := []string{
-		"hint",
-		"readConcern",
-		"comment",
-	}
-	common.Ignored(document, h.l, ignoredFields...)
-
-	var filter *types.Document
-	if filter, err = common.GetOptionalParam(document, "query", filter); err != nil {
-		return nil, err
-	}
-
-	var limit int64
-	if l, _ := document.Get("limit"); l != nil {
-		if limit, err = common.GetWholeNumberParam(l); err != nil {
-			return nil, err
-		}
-	}
-
-	var sp pgdb.SQLParam
-	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-	collectionParam, err := document.Get(document.Command())
+	cp, err := h.validateCountParams(ctx, document)
 	if err != nil {
-		return nil, err
-	}
-	var ok bool
-	if sp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewErrorMsg(
-			common.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
-		)
+		return nil, lazyerrors.Error(err)
 	}
 
 	resDocs := make([]*types.Document, 0, 16)
 	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp)
+		fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, cp.sp)
 		if err != nil {
 			return err
 		}
@@ -96,7 +58,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 			}
 
 			for _, doc := range fetchedItem.Docs {
-				matches, err := common.FilterDocument(doc, filter)
+				matches, err := common.FilterDocument(doc, cp.filter)
 				if err != nil {
 					return err
 				}
@@ -116,7 +78,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, err
 	}
 
-	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
+	if resDocs, err = common.LimitDocuments(resDocs, cp.limit); err != nil {
 		return nil, err
 	}
 
@@ -132,4 +94,56 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	}
 
 	return &reply, nil
+}
+
+// findParams are validated find query parameters.
+type countParams struct {
+	filter *types.Document
+	limit  int64
+	sp     pgdb.SQLParam
+}
+
+// validateCountParams validates document and returns countParams.
+func (h *Handler) validateCountParams(ctx context.Context, document *types.Document) (*countParams, error) {
+	var cp countParams
+	unimplementedFields := []string{
+		"skip",
+		"collation",
+	}
+	var err error
+	if err = common.Unimplemented(document, unimplementedFields...); err != nil {
+		return nil, err
+	}
+	ignoredFields := []string{
+		"hint",
+		"readConcern",
+		"comment",
+	}
+	common.Ignored(document, h.l, ignoredFields...)
+
+	if cp.filter, err = common.GetOptionalParam(document, "query", cp.filter); err != nil {
+		return nil, err
+	}
+
+	if l, _ := document.Get("limit"); l != nil {
+		if cp.limit, err = common.GetWholeNumberParam(l); err != nil {
+			return nil, err
+		}
+	}
+
+	if cp.sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
+	}
+	collectionParam, err := document.Get(document.Command())
+	if err != nil {
+		return nil, err
+	}
+	var ok bool
+	if cp.sp.Collection, ok = collectionParam.(string); !ok {
+		return nil, common.NewErrorMsg(
+			common.ErrBadValue,
+			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+		)
+	}
+	return &cp, nil
 }

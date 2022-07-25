@@ -81,7 +81,10 @@ func (h *Handler) validateExplainParams(ctx context.Context, document *types.Doc
 
 	switch command.Command() {
 	case "count":
-		// ok
+		must.NoError(command.Set("$db", must.NotFail(document.Get("$db"))))
+		if _, err := h.validateCountParams(ctx, command); err != nil {
+			return sp, lazyerrors.Error(err)
+		}
 
 	case "find":
 		must.NoError(command.Set("$db", must.NotFail(document.Get("$db"))))
