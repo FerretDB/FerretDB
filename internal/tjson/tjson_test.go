@@ -216,16 +216,16 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() tjsontype) {
 }
 
 func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() tjsontype) {
-	var schema *Schema
 	for _, tc := range testCases {
 		f.Add(tc.j)
 		if tc.canonJ != "" {
 			f.Add(tc.canonJ)
 		}
 
-		// we fix schema, only fuzz json data
-		schema = tc.schema
 	}
+
+	// for simplicity, we use the schema from the first test case
+	schema := testCases[0].schema
 
 	f.Fuzz(func(t *testing.T, j string) {
 		t.Parallel()
@@ -239,17 +239,11 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() tjsontype) {
 		// We can't compare it with MarshalJSON() result directly.
 		// Instead, we compare second results.
 
-		v := newFunc()
 		val, err := Unmarshal([]byte(j), schema)
 		if err != nil {
 			t.Skip()
 		}
-		switch val := val.(type) {
-		case tjsontype:
-			v = val
-		default:
-			panic("unmarshal returned non-tjsontype")
-		}
+		v := toTJSON(val)
 
 		// test MarshalJSON
 		{
