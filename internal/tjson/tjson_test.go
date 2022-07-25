@@ -221,7 +221,6 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() tjsontype) {
 		if tc.canonJ != "" {
 			f.Add(tc.canonJ)
 		}
-
 	}
 
 	// for simplicity, we use the schema from the first test case
