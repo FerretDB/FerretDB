@@ -168,4 +168,52 @@ func TestDocument(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("SetByPath", func(t *testing.T) {
+		for _, tc := range []struct {
+			name     string
+			document *Document
+			expected *Document
+			path     Path
+			value    any
+			err      error
+		}{
+			{
+				name:     "path exists",
+				document: must.NotFail(NewDocument("foo", must.NotFail(NewDocument("bar", int32(42))))),
+				path:     NewPathFromString("foo.bar"),
+				value:    "baz",
+				expected: must.NotFail(NewDocument("foo", must.NotFail(NewDocument("bar", "baz")))),
+			},
+			{
+				name:     "key not exists",
+				document: must.NotFail(NewDocument("foo", must.NotFail(NewDocument("bar", int32(42))))),
+				path:     NewPathFromString("foo.baz"),
+				value:    "bar",
+				expected: must.NotFail(NewDocument("foo", must.NotFail(NewDocument("bar", int32(42), "baz", "bar")))),
+			},
+			{
+				name:     "path not exist",
+				document: must.NotFail(NewDocument("foo", must.NotFail(NewDocument("bar", int32(42))))),
+				path:     NewPathFromString("foo.baz.bar"),
+				value:    "bar",
+				err:      fmt.Errorf(`types.getByPath: types.Document.Get: key not found: "baz"`),
+			},
+		} {
+			tc := tc
+			t.Run(tc.name, func(t *testing.T) {
+				t.Parallel()
+
+				err := tc.document.SetByPath(tc.path, tc.value)
+				if tc.err != nil {
+					assert.EqualError(t, err, tc.err.Error())
+
+					return
+				}
+				assert.NoError(t, err)
+
+				assert.Equal(t, tc.expected, tc.document)
+			})
+		}
+	})
 }
