@@ -16,7 +16,6 @@ package pg
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"os"
 
@@ -39,69 +38,28 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.l, "verbosity")
-
 	var sp pgdb.SQLParam
 	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	commandParam, err := document.Get(document.Command())
+	common.Ignored(document, h.l, "verbosity")
+
+	command, err := common.GetRequiredParam[*types.Document](document, document.Command())
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	command, ok := commandParam.(*types.Document)
-	if !ok {
-		return nil, common.NewErrorMsg(
-			common.ErrBadValue,
-			fmt.Sprintf("has invalid type %s", common.AliasFromType(commandParam)),
-		)
+	if sp.Collection, err = common.GetRequiredParam[string](command, command.Command()); err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
-	switch command.Command() {
-	case "count":
-		must.NoError(command.Set("$db", must.NotFail(document.Get("$db"))))
-		if _, err := h.validateCountParams(ctx, command); err != nil {
-			return sp, lazyerrors.Error(err)
-		}
-
-	case "find":
-		must.NoError(command.Set("$db", must.NotFail(document.Get("$db"))))
-		if _, err := h.validateFindParams(ctx, command); err != nil {
-			return sp, lazyerrors.Error(err)
-		}
-
-	case "findAndModify":
-		must.NoError(command.Set("$db", must.NotFail(document.Get("$db"))))
-		if _, err := prepareFindAndModifyParams(command); err != nil {
-			return sp, lazyerrors.Error(err)
-		}
-
-	default:
-		return sp, common.NewErrorMsg(
-			common.ErrNotImplemented,
-			fmt.Sprintf("explain for %s s not supported", command.Command()),
-		)
-	}
-
-	collectionParam, err := command.Get(command.Command())
-	if err != nil {
-		return sp, lazyerrors.Error(err)
-	}
-
-	if sp.Collection, ok = collectionParam.(string); !ok {
-		return sp, common.NewErrorMsg(
-			common.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
-		)
-	}
 	sp.Explain = true
 
-	var resDocs []*types.Document
+	var queryPlanner *types.Array
 	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var err error
-		resDocs, err = h.pgPool.Explain(ctx, tx, sp)
+		queryPlanner, err = h.pgPool.Explain(ctx, tx, sp)
 		return err
 	})
 	if err != nil {
@@ -112,10 +70,11 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-	var port int
+
+	var port int32
 	connInfo := conninfo.GetConnInfo(ctx)
 	if connInfo.PeerAddr != nil {
-		port = connInfo.PeerAddr.(*net.TCPAddr).Port
+		port = int32(connInfo.PeerAddr.(*net.TCPAddr).Port)
 	}
 
 	serverInfo := must.NotFail(types.NewDocument(
@@ -126,31 +85,25 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		"ferretdbVersion", version.Get().Version,
 	))
 
-	queryPlanner := new(types.Array)
-	for _, item := range resDocs {
-		must.NoError(queryPlanner.Append(item))
-	}
-
-	commandDoc := must.NotFail(document.Get(document.Command())).(*types.Document)
-	switch commandDoc.Command() {
+	switch command.Command() {
 	case "count":
 		for _, key := range []string{"$db", "query", "limit"} {
 			if document.Has(key) {
-				must.NoError(commandDoc.Set(key, must.NotFail(document.Get(key))))
+				must.NoError(command.Set(key, must.NotFail(document.Get(key))))
 			}
 		}
 
 	case "find":
 		for _, key := range []string{"$db", "find", "comment", "$comment", "filter", "sort", "limit", "projection"} {
 			if document.Has(key) {
-				must.NoError(commandDoc.Set(key, must.NotFail(document.Get(key))))
+				must.NoError(command.Set(key, must.NotFail(document.Get(key))))
 			}
 		}
 
 	case "findAndModify":
 		for _, key := range []string{"remove", "new", "upsert", "query", "sort", "update"} {
 			if document.Has(key) {
-				must.NoError(commandDoc.Set(key, must.NotFail(document.Get(key))))
+				must.NoError(command.Set(key, must.NotFail(document.Get(key))))
 			}
 		}
 	}
@@ -160,7 +113,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"queryPlanner", queryPlanner,
 			"explainVersion", int32(1),
-			"command", commandDoc,
+			"command", command,
 			"serverInfo", serverInfo,
 			"ok", float64(1),
 		))},

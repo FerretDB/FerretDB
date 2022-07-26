@@ -108,7 +108,7 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier,
 }
 
 // Explain returns SQL EXPLAIN results for given query parameters.
-func (pgPool *Pool) Explain(ctx context.Context, querier pgxtype.Querier, sp SQLParam) ([]*types.Document, error) {
+func (pgPool *Pool) Explain(ctx context.Context, querier pgxtype.Querier, sp SQLParam) (*types.Array, error) {
 	q, err := pgPool.buildQuery(ctx, querier, &sp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -120,7 +120,7 @@ func (pgPool *Pool) Explain(ctx context.Context, querier pgxtype.Querier, sp SQL
 	}
 	defer rows.Close()
 
-	var res []*types.Document
+	var res types.Array
 	for rows.Next() {
 		var b []byte
 		if err = rows.Scan(&b); err != nil {
@@ -134,7 +134,9 @@ func (pgPool *Pool) Explain(ctx context.Context, querier pgxtype.Querier, sp SQL
 
 		for _, p := range plans {
 			doc := convertJSON(p).(*types.Document)
-			res = append(res, doc)
+			if err = res.Append(doc); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
 		}
 	}
 
@@ -142,7 +144,7 @@ func (pgPool *Pool) Explain(ctx context.Context, querier pgxtype.Querier, sp SQL
 		return nil, lazyerrors.Error(err)
 	}
 
-	return res, nil
+	return &res, nil
 }
 
 // buildQuery builds SELECT or EXPLAIN SELECT query.
