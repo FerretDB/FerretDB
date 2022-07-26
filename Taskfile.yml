@@ -130,19 +130,25 @@ tasks:
     desc: "Run integration tests for PostgreSQL handler"
     dir: integration
     cmds:
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=integration-pg.txt -coverpkg=../... -handler=pg
+      - >
+        go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverpkg=../...
+        -coverprofile=integration-pg.txt . -handler=pg
 
   test-integration-tigris:
     desc: "Run integration tests for Tigris handler"
-    dir: integration/tigris
+    dir: integration
     cmds:
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -tags=ferretdb_tigris -shuffle=on -coverprofile=../integration-tigris.txt -coverpkg=../... -handler=tigris
+      - >
+        go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverpkg=../...
+        -coverprofile=integration-tigris.txt -tags=ferretdb_tigris ./tigris/... -handler=tigris
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
     dir: integration
     cmds:
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=integration-mongodb.txt -coverpkg=../... -target-port=37017 -compat-port=0
+      - >
+        go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverpkg=../...
+        -coverprofile=integration-mongodb.txt . -target-port=37017 -compat-port=0
 
   bench-short:
     desc: "Benchmark for about 20 seconds (with default BENCHTIME)"
