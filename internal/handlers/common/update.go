@@ -117,6 +117,9 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 					return false, err
 				}
 			}
+		case "$comment":
+			//TODO should it return true?
+			return true, nil
 
 		default:
 			return false, NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
