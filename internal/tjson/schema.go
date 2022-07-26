@@ -122,7 +122,7 @@ var (
 )
 
 // Equal returns true if the schemas are equal.
-// For composite types schemas are equal if their subschemas are equal.
+// For composite types schemas are equal if their types and subschemas are equal.
 // For scalar types schemas are equal if their types and formats are equal.
 func (s *Schema) Equal(other *Schema) bool {
 	if s == other {
@@ -133,7 +133,7 @@ func (s *Schema) Equal(other *Schema) bool {
 		return false
 	}
 
-	// If both `s` and `other` are objects, compare their properties.
+	// If `s` and `other` are objects, compare their properties.
 	if s.Type == Object {
 		if len(s.Properties) != len(other.Properties) {
 			return false
@@ -150,7 +150,7 @@ func (s *Schema) Equal(other *Schema) bool {
 		return true
 	}
 
-	// If both `s` and `other` are arrays, compare their items.
+	// If `s` and `other` are arrays, compare their items.
 	if s.Type == Array {
 		if s.Items == nil || other.Items == nil {
 			panic("schema.Equal: array with nil items")

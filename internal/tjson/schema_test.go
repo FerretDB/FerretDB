@@ -67,3 +67,121 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 
 	assert.Equal(t, expected, actual)
 }
+
+func TestSchemaEqual(t *testing.T) {
+	t.Parallel()
+
+	cInt64Schema := Schema{
+		Type:   Integer,
+		Format: Int64,
+	}
+	cIntEmptySchema := Schema{
+		Type:   Integer,
+		Format: EmptyFormat,
+	}
+	cDoubleSchema := Schema{
+		Type:   Number,
+		Format: Double,
+	}
+	cDoubleEmptySchema := Schema{
+		Type:   Number,
+		Format: EmptyFormat,
+	}
+	cObjectSchema := Schema{
+		Type: Object,
+		Properties: map[string]*Schema{
+			"a":  stringSchema,
+			"42": &cIntEmptySchema,
+		},
+	}
+	cObjectSchemaEqual := cObjectSchema // a "real" copy of the above schema
+	cArrayDoubleSchema := Schema{
+		Type:  Array,
+		Items: &cDoubleSchema,
+	}
+	cArrayDoubleEmptySchema := Schema{
+		Type:  Array,
+		Items: &cDoubleEmptySchema,
+	}
+	cArrayObjectsSchema := Schema{
+		Type:  Array,
+		Items: &cObjectSchema,
+	}
+	cArrayObjectsEuqalSchema := Schema{
+		Type:  Array,
+		Items: &cObjectSchemaEqual,
+	}
+
+	for _, tc := range []struct {
+		name     string
+		s        *Schema
+		other    *Schema
+		expected bool
+	}{{
+		name:     "StringString",
+		s:        stringSchema,
+		other:    stringSchema,
+		expected: true,
+	}, {
+		name:     "StringNumber",
+		s:        stringSchema,
+		other:    doubleSchema,
+		expected: false,
+	}, {
+		name:     "NumberString",
+		s:        doubleSchema,
+		other:    stringSchema,
+		expected: false,
+	}, {
+		name:     "EmptyInt64",
+		s:        &cIntEmptySchema,
+		other:    &cInt64Schema,
+		expected: true,
+	}, {
+		name:     "Int64Empty",
+		s:        &cInt64Schema,
+		other:    &cIntEmptySchema,
+		expected: true,
+	}, {
+		name:     "Int64Int32",
+		s:        &cInt64Schema,
+		other:    int32Schema,
+		expected: false,
+	}, {
+		name:     "EmptyInt32",
+		s:        &cIntEmptySchema,
+		other:    int32Schema,
+		expected: false,
+	}, {
+		name:     "DoubleEmpty",
+		s:        &cDoubleSchema,
+		other:    &cDoubleEmptySchema,
+		expected: true,
+	}, {
+		name:     "ObjectsEqual",
+		s:        &cObjectSchema,
+		other:    &cObjectSchemaEqual,
+		expected: true,
+	}, {
+		name:     "ArrayDouble",
+		s:        &cArrayDoubleSchema,
+		other:    &cArrayDoubleEmptySchema,
+		expected: true,
+	}, {
+		name:     "ArrayObjects",
+		s:        &cArrayObjectsSchema,
+		other:    &cArrayObjectsEuqalSchema,
+		expected: true,
+	}, {
+		name:     "ArrayObjectsDouble",
+		s:        &cArrayObjectsSchema,
+		other:    &cArrayDoubleSchema,
+		expected: false,
+	}} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tc.expected, tc.s.Equal(tc.other))
+		})
+	}
+}
