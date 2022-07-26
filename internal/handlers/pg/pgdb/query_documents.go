@@ -20,11 +20,11 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/jackc/pgtype/pgxtype"
 	"github.com/jackc/pgx/v4"
 	"go.uber.org/zap"
+	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -46,7 +46,7 @@ type FetchedDocs struct {
 	Err  error
 }
 
-// SQLParam represents options/parameters used for sql query.
+// SQLParam represents options/parameters used for SQL query.
 type SQLParam struct {
 	DB         string
 	Collection string
@@ -67,19 +67,17 @@ type SQLParam struct {
 // If the collection doesn't exist, fetch returns a closed channel and no error.
 func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier, sp SQLParam) (<-chan FetchedDocs, error) {
 	fetchedChan := make(chan FetchedDocs, FetchedChannelBufSize)
-	db := sp.DB
-	collection := sp.Collection
 
-	sql, err := pgPool.buildQuery(ctx, querier, sp)
+	q, err := pgPool.buildQuery(ctx, querier, &sp)
 	if err != nil {
 		close(fetchedChan)
-		if err == ErrTableNotExist {
+		if errors.Is(err, ErrTableNotExist) {
 			return fetchedChan, nil
 		}
 		return fetchedChan, lazyerrors.Error(err)
 	}
 
-	rows, err := querier.Query(ctx, sql)
+	rows, err := querier.Query(ctx, q)
 	if err != nil {
 		close(fetchedChan)
 		return fetchedChan, lazyerrors.Error(err)
@@ -95,88 +93,91 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier,
 			// nothing
 		case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
 			pgPool.logger.Warn(
-				fmt.Sprintf("caught %v, stop fetching", err),
-				zap.String("db", db), zap.String("collection", collection),
+				"context canceled, stopping fetching",
+				zap.String("db", sp.DB), zap.String("collection", sp.Collection), zap.Error(err),
 			)
 		default:
-			pgPool.logger.Error("exiting fetching with an error", zap.Error(err))
+			pgPool.logger.Error(
+				"got error, stopping fetching",
+				zap.String("db", sp.DB), zap.String("collection", sp.Collection), zap.Error(err),
+			)
 		}
 	}()
 
 	return fetchedChan, nil
 }
 
-// Explain returns document list with explain analyze results.
-// We don't expect much documents in results here.
+// Explain returns SQL EXPLAIN results for given query parameters.
 func (pgPool *Pool) Explain(ctx context.Context, querier pgxtype.Querier, sp SQLParam) ([]*types.Document, error) {
-	sql, err := pgPool.buildQuery(ctx, querier, sp)
+	q, err := pgPool.buildQuery(ctx, querier, &sp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-	rows, err := querier.Query(ctx, sql)
+
+	rows, err := querier.Query(ctx, q)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+	defer rows.Close()
+
 	var res []*types.Document
-	for ctx.Err() == nil && rows.Next() {
+	for rows.Next() {
 		var b []byte
-		if err := rows.Scan(&b); err != nil {
-			return nil, err
+		if err = rows.Scan(&b); err != nil {
+			return nil, lazyerrors.Error(err)
 		}
 
 		var plans []map[string]any
-		if err := json.Unmarshal(b, &plans); err != nil {
-			return nil, err
+		if err = json.Unmarshal(b, &plans); err != nil {
+			return nil, lazyerrors.Error(err)
 		}
 
-		for _, m := range plans {
-			doc := new(types.Document)
-			for k, mapval := range m {
-				must.NoError(doc.Set(k, toInternalType(mapval)))
-			}
+		for _, p := range plans {
+			doc := convertJSON(p).(*types.Document)
 			res = append(res, doc)
 		}
 	}
+
+	if err = rows.Err(); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	return res, nil
 }
 
-// buildQuery builds query.
-func (pgPool *Pool) buildQuery(ctx context.Context, querier pgxtype.Querier, sp SQLParam) (string, error) {
-	db := sp.DB
-	collection := sp.Collection
-	comment := sp.Comment
-
-	// Special case: check if collection exists at all
-	collectionExists, err := CollectionExists(ctx, querier, db, collection)
+// buildQuery builds SELECT or EXPLAIN SELECT query.
+//
+// It returns (possibly wrapped) ErrSchemaNotExist or ErrTableNotExist
+// if schema/database or table/collection does not exist.
+func (pgPool *Pool) buildQuery(ctx context.Context, querier pgxtype.Querier, sp *SQLParam) (string, error) {
+	exists, err := CollectionExists(ctx, querier, sp.DB, sp.Collection)
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
-	if !collectionExists {
-		pgPool.logger.Info(
-			"Collection doesn't exist, handling a case to deal with a non-existing collection (return empty list)",
-			zap.String("db", db), zap.String("collection", collection),
-		)
-		return "", ErrTableNotExist
+	if !exists {
+		return "", lazyerrors.Error(ErrTableNotExist)
 	}
 
-	table, err := getTableName(ctx, querier, db, collection)
+	table, err := getTableName(ctx, querier, sp.DB, sp.Collection)
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
 
-	sql := `SELECT _jsonb `
-	if comment != "" {
+	q := `SELECT _jsonb `
+	if comment := sp.Comment; comment != "" {
+		// prevent SQL injections
 		comment = strings.ReplaceAll(comment, "/*", "/ *")
 		comment = strings.ReplaceAll(comment, "*/", "* /")
 
-		sql += `/* ` + comment + ` */ `
+		q += `/* ` + comment + ` */ `
 	}
-	sql += `FROM ` + pgx.Identifier{db, table}.Sanitize()
+	q += `FROM ` + pgx.Identifier{sp.DB, table}.Sanitize()
 
 	if sp.Explain {
-		sql = "EXPLAIN (VERBOSE true, FORMAT JSON) " + sql
+		q = "EXPLAIN (VERBOSE true, FORMAT JSON) " + q
 	}
-	return sql, nil
+
+	return q, nil
 }
 
 // iterateFetch iterates over the rows returned by the query and sends FetchedDocs to fetched channel.
@@ -235,33 +236,32 @@ func writeFetched(ctx context.Context, fetched chan FetchedDocs, doc FetchedDocs
 	}
 }
 
-// toInternalType transforms map[string]any, []any and scalars into internal type representation.
-func toInternalType(v any) any {
-	switch v := v.(type) {
+// convertJSON transforms decoded JSON map[string]any value into *types.Document.
+func convertJSON(value any) any {
+	switch value := value.(type) {
 	case map[string]any:
-		m := new(types.Document)
-		for k, mapval := range v {
-			must.NoError(m.Set(k, toInternalType(mapval)))
+		d := types.MakeDocument(len(value))
+		keys := maps.Keys(value)
+		for _, k := range keys {
+			v := value[k]
+			must.NoError(d.Set(k, convertJSON(v)))
 		}
-		return m
+		return d
 
 	case []any:
-		a := new(types.Array)
-		for _, arrval := range v {
-			must.NoError(a.Append(toInternalType(arrval)))
+		a := types.MakeArray(len(value))
+		for _, v := range value {
+			must.NoError(a.Append(convertJSON(v)))
 		}
 		return a
 
 	case nil:
 		return types.Null
 
-	case float64,
-		string,
-		bool,
-		time.Time,
-		int32,
-		int64:
-		return v
+	case float64, string, bool:
+		return value
+
+	default:
+		panic(fmt.Sprintf("unsupported type: %[1]T (%[1]v)", value))
 	}
-	panic(fmt.Sprintf("unsupported type: %T", v))
 }
