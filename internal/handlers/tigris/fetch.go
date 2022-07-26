@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
+	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -37,7 +38,19 @@ func (h *Handler) fetch(ctx context.Context, param fetchParam) ([]*types.Documen
 	db := h.driver.UseDatabase(param.db)
 
 	collection, err := db.DescribeCollection(ctx, param.collection)
-	if err != nil {
+	switch err := err.(type) {
+	case nil:
+		// do nothing
+	case *driver.Error:
+		if isNotFound(err) {
+			h.L.Debug(
+				"Collection doesn't exist, handling a case to deal with a non-existing collection (return empty list)",
+				zap.String("db", param.db), zap.String("collection", param.collection),
+			)
+			return []*types.Document{}, nil
+		}
+		return nil, lazyerrors.Error(err)
+	default:
 		return nil, lazyerrors.Error(err)
 	}
 
