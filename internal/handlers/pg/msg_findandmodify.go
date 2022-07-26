@@ -371,6 +371,7 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 	for k := range update.Map() {
 		if _, ok := common.UpdateOperators[k]; ok {
 			hasUpdateOperators = true
+			break
 		}
 	}
 
