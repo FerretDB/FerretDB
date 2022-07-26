@@ -13,6 +13,7 @@ linters-settings:
       - github.com/FerretDB/FerretDB/internal/fjson
       - github.com/FerretDB/FerretDB/internal/tjson
       - github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb
+      - github.com/tigrisdata/tigris-client-go/api/client/v1/api
   exhaustive:
     default-signifies-exhaustive: false
   gci:
@@ -60,6 +61,12 @@ linters-settings:
   gosimple:
     checks: ["all"]
   # govet
+  importas:
+    no-unaliased: false
+    no-extra-aliases: true
+    alias:
+      - pkg: github.com/tigrisdata/tigris-client-go/api/server/v1
+        alias: api
   # ineffassign
   lll:
     line-length: 130
@@ -101,6 +108,7 @@ linters:
     - gomodguard
     - gosimple
     - govet
+    - importas
     - ineffassign
     - lll
     - misspell
