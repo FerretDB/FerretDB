@@ -94,7 +94,21 @@ func TestSchemaEqual(t *testing.T) {
 			"42": &cIntEmptySchema,
 		},
 	}
-	cObjectSchemaEqual := cObjectSchema // a "real" copy of the above schema
+	cObjectSchemaEqual := Schema{
+		Type: Object,
+		Properties: map[string]*Schema{
+			"42": &cIntEmptySchema,
+			"a":  stringSchema,
+		},
+	}
+	cObjectSchemaNotEqual := Schema{
+		Type: Object,
+		Properties: map[string]*Schema{
+			"42": &cIntEmptySchema,
+			"a":  stringSchema,
+			"b":  boolSchema,
+		},
+	}
 	cArrayDoubleSchema := Schema{
 		Type:  Array,
 		Items: &cDoubleSchema,
@@ -107,9 +121,13 @@ func TestSchemaEqual(t *testing.T) {
 		Type:  Array,
 		Items: &cObjectSchema,
 	}
-	cArrayObjectsEuqalSchema := Schema{
+	cArrayObjectsEqualSchema := Schema{
 		Type:  Array,
 		Items: &cObjectSchemaEqual,
+	}
+	cArrayObjectsNotEqualSchema := Schema{
+		Type:  Array,
+		Items: &cObjectSchemaNotEqual,
 	}
 
 	for _, tc := range []struct {
@@ -163,6 +181,11 @@ func TestSchemaEqual(t *testing.T) {
 		other:    &cObjectSchemaEqual,
 		expected: true,
 	}, {
+		name:     "ObjectsNotEqual",
+		s:        &cObjectSchemaEqual,
+		other:    &cObjectSchemaNotEqual,
+		expected: false,
+	}, {
 		name:     "ArrayDouble",
 		s:        &cArrayDoubleSchema,
 		other:    &cArrayDoubleEmptySchema,
@@ -170,8 +193,13 @@ func TestSchemaEqual(t *testing.T) {
 	}, {
 		name:     "ArrayObjects",
 		s:        &cArrayObjectsSchema,
-		other:    &cArrayObjectsEuqalSchema,
+		other:    &cArrayObjectsEqualSchema,
 		expected: true,
+	}, {
+		name:     "ArrayObjectsNotEqual",
+		s:        &cArrayObjectsNotEqualSchema,
+		other:    &cArrayObjectsEqualSchema,
+		expected: false,
 	}, {
 		name:     "ArrayObjectsDouble",
 		s:        &cArrayObjectsSchema,
