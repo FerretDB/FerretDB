@@ -1,0 +1,65 @@
+---
+name: Packages
+on:
+  pull_request:
+    types:
+      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
+      - opened
+      - reopened
+      - synchronize
+  push:
+    branches:
+      - main
+    tags:
+      - "*"
+  schedule:
+    - cron: "12 2 * * *"
+
+env:
+  GOPATH: /home/runner/go
+  GOCACHE: /home/runner/go/cache
+  GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
+  GOMODCACHE: /home/runner/go/mod
+  GOPROXY: https://proxy.golang.org
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-20.04
+
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: FerretDB/github-actions/setup-go@main
+        with:
+          cache-key: packages
+
+      - name: Install Task
+        run: go generate -x
+        working-directory: tools
+
+      - name: Run init
+        run: bin/task init
+
+      - name: Build packages
+        run: bin/task packages
+
+      - name: Upload ferretdb.deb
+        uses: actions/upload-artifact@v3
+        with:
+          name: ferretdb.deb
+          path: build/deb/ferretdb.deb
+          if-no-files-found: error
+
+      - name: Upload ferretdb.rpm
+        uses: actions/upload-artifact@v3
+        with:
+          name: ferretdb.rpm
+          path: build/rpm/ferretdb.rpm
+          if-no-files-found: error

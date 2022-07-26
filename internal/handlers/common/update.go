@@ -16,6 +16,7 @@ package common
 
 import (
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 	"time"
@@ -88,6 +89,20 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				incremented, err := addNumbers(incValue, docValue)
 				if err == nil {
 					must.NoError(doc.Set(incKey, incremented))
+
+					result := types.Compare(docValue, incremented)
+
+					if len(result) != 1 {
+						panic("there should be only one result")
+					}
+
+					docFloat, ok := docValue.(float64)
+					if result[0] == types.Equal &&
+						// if the document value is NaN we should consider it as changed.
+						(ok && !math.IsNaN(docFloat)) {
+						continue
+					}
+
 					changed = true
 					continue
 				}
