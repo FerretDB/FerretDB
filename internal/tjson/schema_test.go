@@ -108,6 +108,13 @@ func TestSchemaEqual(t *testing.T) {
 			"a":  boolSchema,
 		},
 	}
+	cObjectSchemaKeyMissing := Schema{
+		Type: Object,
+		Properties: map[string]*Schema{
+			"42": &cIntEmptySchema,
+			"b":  stringSchema,
+		},
+	}
 	cObjectSchemaEmpty := Schema{
 		Type:       Object,
 		Properties: map[string]*Schema{},
@@ -187,6 +194,11 @@ func TestSchemaEqual(t *testing.T) {
 		name:     "ObjectsNotEqual",
 		s:        &cObjectSchemaEqual,
 		other:    &cObjectSchemaNotEqual,
+		expected: false,
+	}, {
+		name:     "ObjectsKeyMissing",
+		s:        &cObjectSchema,
+		other:    &cObjectSchemaKeyMissing,
 		expected: false,
 	}, {
 		name:     "ObjectsEmpty",
