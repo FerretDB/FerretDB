@@ -223,7 +223,7 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() tjsontype) {
 		}
 	}
 
-	// for simplicity, we use the schema from the first test case
+	// TODO Add fuzzing for schema https://github.com/FerretDB/FerretDB/issues/943
 	schema := testCases[0].schema
 
 	f.Fuzz(func(t *testing.T, j string) {
