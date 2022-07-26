@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/jackc/pgconn"
@@ -262,7 +263,7 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 }
 
 // SetDocumentByID sets a document by its ID.
-func (pgPool *Pool) SetDocumentByID(ctx context.Context, db, collection string, id any, doc *types.Document) (int64, error) {
+func (pgPool *Pool) SetDocumentByID(ctx context.Context, db, collection, comment string, id any, doc *types.Document) (int64, error) {
 	var tag pgconn.CommandTag
 	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		table, err := getTableName(ctx, tx, db, collection)
@@ -270,8 +271,17 @@ func (pgPool *Pool) SetDocumentByID(ctx context.Context, db, collection string, 
 			return err
 		}
 
-		sql := "UPDATE " + pgx.Identifier{db, table}.Sanitize() +
+		sql := "UPDATE "
+		if comment != "" {
+			comment = strings.ReplaceAll(comment, "/*", "/ *")
+			comment = strings.ReplaceAll(comment, "*/", "* /")
+
+			sql += `/* ` + comment + ` */ `
+			log.Fatal(sql)
+		}
+		sql += pgx.Identifier{db, table}.Sanitize() +
 			" SET _jsonb = $1 WHERE _jsonb->'_id' = $2"
+		//log.Fatal(sql)
 
 		tag, err = tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)), must.NotFail(fjson.Marshal(id)))
 		return err
