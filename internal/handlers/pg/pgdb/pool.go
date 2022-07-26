@@ -262,7 +262,9 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 }
 
 // SetDocumentByID sets a document by its ID.
-func (pgPool *Pool) SetDocumentByID(ctx context.Context, db, collection, comment string, id any, doc *types.Document) (int64, error) {
+func (pgPool *Pool) SetDocumentByID(
+	ctx context.Context, db, collection, comment string, id any, doc *types.Document,
+) (int64, error) {
 	var tag pgconn.CommandTag
 	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		table, err := getTableName(ctx, tx, db, collection)
