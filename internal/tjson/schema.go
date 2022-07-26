@@ -128,9 +128,6 @@ func (s *Schema) Equal(other *Schema) bool {
 		return true
 	}
 
-	// TODO compare significant fields only (ignore title, description, etc.)
-	// TODO compare format according to type (for example, for Number, EmptyFormat == Double)
-	// https://github.com/FerretDB/FerretDB/issues/683
 	return reflect.DeepEqual(s, other)
 }
 
