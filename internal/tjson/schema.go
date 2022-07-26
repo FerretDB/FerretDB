@@ -133,8 +133,9 @@ func (s *Schema) Equal(other *Schema) bool {
 		return false
 	}
 
-	// If `s` and `other` are objects, compare their properties.
-	if s.Type == Object {
+	switch s.Type {
+	case Object:
+		// If `s` and `other` are objects, compare their properties.
 		if len(s.Properties) != len(other.Properties) {
 			return false
 		}
@@ -148,40 +149,44 @@ func (s *Schema) Equal(other *Schema) bool {
 			}
 		}
 		return true
-	}
-
-	// If `s` and `other` are arrays, compare their items.
-	if s.Type == Array {
+	case Array:
+		// If `s` and `other` are arrays, compare their items.
 		if s.Items == nil || other.Items == nil {
 			panic("schema.Equal: array with nil items")
 		}
 		return s.Items.Equal(other.Items)
-	}
-
-	if s.Format != other.Format {
-		// Normalizing schemas: empty format is equal to double for numbers and int64 for integers,
-		// see https://docs.tigrisdata.com/overview/schema#data-types.
-		switch s.Type {
-		case Number:
-			if s.Format == EmptyFormat {
-				s.Format = Double
-			}
-			if other.Format == EmptyFormat {
-				other.Format = Double
-			}
-		case Integer:
-			if s.Format == EmptyFormat {
-				s.Format = Int64
-			}
-			if other.Format == EmptyFormat {
-				other.Format = Int64
-			}
-		case Array, Boolean, Object, String:
-			// do nothing: these types don't have "default" format
+	case String, Integer, Number, Boolean:
+		// For scalar types, it's enough to compare their formats.
+		if s.Format == other.Format {
+			return true
 		}
+	default:
+		panic(fmt.Sprintf("schema.Equal: unknown type `%s`", s.Type))
 	}
 
-	return s.Format == other.Format
+	// If formats don't match, normalize schemas: empty format is equal to double for numbers and int64 for integers,
+	// see https://docs.tigrisdata.com/overview/schema#data-types.
+	formatS, formatOther := s.Format, other.Format
+	switch s.Type {
+	case Number:
+		if s.Format == EmptyFormat {
+			formatS = Double
+		}
+		if other.Format == EmptyFormat {
+			formatOther = Double
+		}
+	case Integer:
+		if s.Format == EmptyFormat {
+			formatS = Int64
+		}
+		if other.Format == EmptyFormat {
+			formatOther = Int64
+		}
+	case Array, Boolean, Object, String:
+		// do nothing: these types don't have "default" format
+	}
+
+	return formatS == formatOther
 }
 
 // Marshal returns the JSON encoding of the schema.

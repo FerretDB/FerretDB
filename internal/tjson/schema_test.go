@@ -228,6 +228,7 @@ func TestSchemaEqual(t *testing.T) {
 	}} {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			assert.Equal(t, tc.expected, tc.s.Equal(tc.other))
 		})
 	}
