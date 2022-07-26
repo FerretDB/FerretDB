@@ -77,6 +77,26 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			for _, incKey := range incDoc.Keys() {
 				incValue := must.NotFail(incDoc.Get(incKey))
 
+				if strings.Contains(incKey, ".") {
+					path := types.NewPathFromString(incKey)
+					innerValue, err := doc.GetByPath(path)
+					if err != nil {
+						err = doc.InsertByPath(path, incValue)
+						if err != nil {
+							return false, err
+						}
+						changed = true
+						continue
+					}
+
+					incremented, err := addNumbers(incValue, innerValue)
+					if err == nil {
+						must.NoError(doc.SetByPath(path, incremented))
+						changed = true
+						continue
+					}
+				}
+
 				if !doc.Has(incKey) {
 					must.NoError(doc.Set(incKey, incValue))
 					changed = true
@@ -271,19 +291,12 @@ func extractValueFromUpdateOperator(op string, update *types.Document) (*types.D
 		return nil, nil
 	}
 	updateExpression := must.NotFail(update.Get(op))
-	switch doc := updateExpression.(type) {
-	case *types.Document:
-		for _, v := range doc.Keys() {
-			if strings.Contains(v, ".") {
-				// TODO https://github.com/FerretDB/FerretDB/issues/803
-				return nil, NewError(ErrNotImplemented, fmt.Errorf("dot notation for operator %s is not supported yet", op))
-			}
-		}
-
-		return doc, nil
-	default:
+	doc, ok := updateExpression.(*types.Document)
+	if !ok {
 		return nil, NewWriteErrorMsg(ErrFailedToParse, "Modifiers operate on fields but we found another type instead")
 	}
+
+	return doc, nil
 }
 
 // validateCurrentDateExpression validates $currentDate input on correctness.
