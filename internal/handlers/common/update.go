@@ -16,6 +16,7 @@ package common
 
 import (
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 	"time"
@@ -95,7 +96,8 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 						panic("there should be only one result")
 					}
 
-					if result[0] == types.Equal {
+					docFloat, ok := docValue.(float64)
+					if result[0] == types.Equal && (ok && !math.IsNaN(docFloat)) {
 						continue
 					}
 
