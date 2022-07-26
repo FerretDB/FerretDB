@@ -85,29 +85,6 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		"ferretdbVersion", version.Get().Version,
 	))
 
-	switch command.Command() {
-	case "count":
-		for _, key := range []string{"$db", "query", "limit"} {
-			if document.Has(key) {
-				must.NoError(command.Set(key, must.NotFail(document.Get(key))))
-			}
-		}
-
-	case "find":
-		for _, key := range []string{"$db", "find", "comment", "$comment", "filter", "sort", "limit", "projection"} {
-			if document.Has(key) {
-				must.NoError(command.Set(key, must.NotFail(document.Get(key))))
-			}
-		}
-
-	case "findAndModify":
-		for _, key := range []string{"remove", "new", "upsert", "query", "sort", "update"} {
-			if document.Has(key) {
-				must.NoError(command.Set(key, must.NotFail(document.Get(key))))
-			}
-		}
-	}
-
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
