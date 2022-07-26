@@ -95,6 +95,10 @@ var Commands = map[string]command{
 		Help:    "Drops production database.",
 		Handler: (handlers.Interface).MsgDropDatabase,
 	},
+	"explain": {
+		Help:    "Returns the execution plan.",
+		Handler: (handlers.Interface).MsgExplain,
+	},
 	"find": {
 		Help:    "Returns documents matched by the query.",
 		Handler: (handlers.Interface).MsgFind,
