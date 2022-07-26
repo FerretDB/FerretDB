@@ -15,8 +15,10 @@
 package tigris
 
 import (
+	"math"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 
@@ -33,4 +35,55 @@ func TestSmoke(t *testing.T) {
 	err := collection.FindOne(ctx, bson.D{{"_id", "fixed_double"}}).Decode(&doc)
 	require.NoError(t, err)
 	integration.AssertEqualDocuments(t, bson.D{{"_id", "fixed_double"}, {"double_value", 42.13}}, doc)
+}
+
+// TestSmokeMsgCount implements simple smoke tests for MsgCount.
+// TODO Implement proper testing: https://github.com/FerretDB/FerretDB/issues/931.
+func TestSmokeMsgCount(t *testing.T) {
+	t.Parallel()
+
+	// As Tigris require different fields for different types,
+	// for this smoke test we only use the fixed scalars.
+	ctx, collection := setup.Setup(t, shareddata.FixedScalars)
+
+	for name, tc := range map[string]struct {
+		command  any
+		response int32
+	}{
+		"CountAllFixedScalars": {
+			command:  bson.D{{"count", collection.Name()}},
+			response: 6,
+		},
+		"CountExactlyOneDocument": {
+			command: bson.D{
+				{"count", collection.Name()},
+				{"query", bson.D{{"double_value", math.MaxFloat64}}},
+			},
+			response: 1,
+		},
+		"CountNonExistingCollection": {
+			command: bson.D{
+				{"count", "doesnotexist"},
+				{"query", bson.D{{"v", true}}},
+			},
+			response: 0,
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+			require.NoError(t, err)
+
+			m := actual.Map()
+
+			assert.Equal(t, float64(1), m["ok"])
+
+			keys := integration.CollectKeys(t, actual)
+			assert.Contains(t, keys, "n")
+			assert.Equal(t, tc.response, m["n"])
+		})
+	}
 }

@@ -17,7 +17,6 @@ package tigris
 import (
 	"context"
 
-	api "github.com/tigrisdata/tigris-client-go/api/server/v1"
 	"github.com/tigrisdata/tigris-client-go/driver"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -47,7 +46,7 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	case nil:
 		res.Set("dropped", db)
 	case *driver.Error:
-		if err.Code != api.Code_NOT_FOUND {
+		if !isNotFound(err) {
 			return nil, lazyerrors.Error(err)
 		}
 		// nothing otherwise
