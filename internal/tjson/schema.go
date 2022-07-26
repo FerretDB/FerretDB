@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -123,12 +122,64 @@ var (
 )
 
 // Equal returns true if the schemas are equal.
+// For composite types schemas are equal if their subschemas are equal.
+// For scalar types schemas are equal if their types and formats are equal.
 func (s *Schema) Equal(other *Schema) bool {
 	if s == other {
 		return true
 	}
 
-	return reflect.DeepEqual(s, other)
+	if s.Type != other.Type {
+		return false
+	}
+
+	// If both `s` and `other` are objects, compare their properties.
+	if s.Type == Object {
+		if len(s.Properties) != len(other.Properties) {
+			return false
+		}
+		for k, v := range s.Properties {
+			vother, ok := other.Properties[k]
+			if !ok {
+				return false
+			}
+			if eq := v.Equal(vother); !eq {
+				return false
+			}
+		}
+		return true
+	}
+
+	// If both `s` and `other` are arrays, compare their items.
+	if s.Type == Array {
+		if s.Items == nil || other.Items == nil {
+			panic("schema.Equal: array with nil items")
+		}
+		return s.Items.Equal(other.Items)
+	}
+
+	if s.Format != other.Format {
+		// Normalizing schemas: empty format is equal to double for numbers and int64 for integers,
+		// see https://docs.tigrisdata.com/overview/schema#data-types.
+		switch s.Type {
+		case Number:
+			if s.Format == EmptyFormat {
+				s.Format = Double
+			}
+			if other.Format == EmptyFormat {
+				other.Format = Double
+			}
+		case Integer:
+			if s.Format == EmptyFormat {
+				s.Format = Int64
+			}
+			if other.Format == EmptyFormat {
+				other.Format = Int64
+			}
+		}
+	}
+
+	return s.Format == other.Format
 }
 
 // Marshal returns the JSON encoding of the schema.
