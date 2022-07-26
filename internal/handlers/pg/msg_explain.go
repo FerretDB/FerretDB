@@ -38,42 +38,22 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-	sp, err := h.validateExplainParams(ctx, document)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
 
-	var resDocs []*types.Document
-	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		var err error
-		resDocs, err = h.pgPool.Explain(ctx, tx, sp)
-		return err
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return h.buildExplainResult(ctx, document, resDocs)
-}
-
-// validateExplainParams validates document and returns pgdb.SQLParam.
-func (h *Handler) validateExplainParams(ctx context.Context, document *types.Document) (pgdb.SQLParam, error) {
 	common.Ignored(document, h.l, "verbosity")
 
-	var err error
 	var sp pgdb.SQLParam
 	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return sp, lazyerrors.Error(err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	commandParam, err := document.Get(document.Command())
 	if err != nil {
-		return sp, lazyerrors.Error(err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	command, ok := commandParam.(*types.Document)
 	if !ok {
-		return sp, common.NewErrorMsg(
+		return nil, common.NewErrorMsg(
 			common.ErrBadValue,
 			fmt.Sprintf("has invalid type %s", common.AliasFromType(commandParam)),
 		)
@@ -117,11 +97,17 @@ func (h *Handler) validateExplainParams(ctx context.Context, document *types.Doc
 		)
 	}
 	sp.Explain = true
-	return sp, nil
-}
 
-// buildExplainResult builds explain response.
-func (h *Handler) buildExplainResult(ctx context.Context, document *types.Document, resDocs []*types.Document) (*wire.OpMsg, error) {
+	var resDocs []*types.Document
+	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		var err error
+		resDocs, err = h.pgPool.Explain(ctx, tx, sp)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
