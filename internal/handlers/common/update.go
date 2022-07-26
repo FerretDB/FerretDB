@@ -35,6 +35,10 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 	for _, updateOp := range update.Keys() {
 		updateV := must.NotFail(update.Get(updateOp))
 
+		if _, ok := UpdateOperators[updateOp]; !ok {
+			return false, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp)
+		}
+
 		switch updateOp {
 		case "$currentDate":
 			changed, err = processCurrentDateFieldExpression(doc, updateV)
@@ -44,8 +48,8 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 		case "$set":
 			fallthrough
-		case "$setOnInsert":
 
+		case "$setOnInsert":
 			// expecting here a document since all checks were made in ValidateUpdateOperators func
 			setDoc := updateV.(*types.Document)
 
@@ -134,7 +138,8 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 
 		default:
-			return false, NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
+			// handled by UpdateOperators above
+			panic(fmt.Errorf("unhandled operation %q", updateOp))
 		}
 	}
 
@@ -362,4 +367,19 @@ func validateCurrentDateExpression(update *types.Document) error {
 	}
 
 	return nil
+}
+
+// TODO decide if we need it.
+var UpdateOperators = map[string]struct{}{}
+
+func init() {
+	for _, o := range []string{
+		"$currentDate",
+		"$set",
+		"$setOnInsert",
+		"$unset",
+		"$inc",
+	} {
+		UpdateOperators[o] = struct{}{}
+	}
 }
