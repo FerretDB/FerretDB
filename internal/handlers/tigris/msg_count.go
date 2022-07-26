@@ -16,13 +16,97 @@ package tigris
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgCount implements HandlerInterface.
 func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/771
-	return nil, notImplemented(must.NotFail(msg.Document()).Command())
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	unimplementedFields := []string{
+		"skip",
+		"collation",
+	}
+	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
+		return nil, err
+	}
+	ignoredFields := []string{
+		"hint",
+		"readConcern",
+		"comment",
+	}
+	common.Ignored(document, h.L, ignoredFields...)
+
+	var filter *types.Document
+	if filter, err = common.GetOptionalParam(document, "query", filter); err != nil {
+		return nil, err
+	}
+
+	var limit int64
+	if l, _ := document.Get("limit"); l != nil {
+		if limit, err = common.GetWholeNumberParam(l); err != nil {
+			return nil, err
+		}
+	}
+
+	var fp fetchParam
+	if fp.db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
+	}
+	collectionParam, err := document.Get(document.Command())
+	if err != nil {
+		return nil, err
+	}
+	var ok bool
+	if fp.collection, ok = collectionParam.(string); !ok {
+		return nil, common.NewErrorMsg(
+			common.ErrBadValue,
+			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+		)
+	}
+
+	fetchedDocs, err := h.fetch(ctx, fp)
+	if err != nil {
+		return nil, err
+	}
+
+	resDocs := make([]*types.Document, 0, 16)
+	for _, doc := range fetchedDocs {
+		matches, err := common.FilterDocument(doc, filter)
+		if err != nil {
+			return nil, err
+		}
+
+		if !matches {
+			continue
+		}
+
+		resDocs = append(resDocs, doc)
+	}
+
+	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
+		return nil, err
+	}
+
+	var reply wire.OpMsg
+	err = reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"n", int32(len(resDocs)),
+			"ok", float64(1),
+		))},
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &reply, nil
 }
