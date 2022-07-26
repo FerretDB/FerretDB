@@ -369,8 +369,9 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 
 	var hasUpdateOperators bool
 	for k := range update.Map() {
-		if _, ok := updateOperators[k]; ok {
+		if _, ok := common.UpdateOperators[k]; ok {
 			hasUpdateOperators = true
+			break
 		}
 	}
 
@@ -387,12 +388,4 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 		returnNewDocument:  returnNewDocument,
 		hasUpdateOperators: hasUpdateOperators,
 	}, nil
-}
-
-var updateOperators = map[string]struct{}{}
-
-func init() {
-	for _, o := range []string{"$currentDate", "$inc", "$min", "$max", "$mul", "$rename", "$set", "$setOnInsert", "$unset"} {
-		updateOperators[o] = struct{}{}
-	}
 }
