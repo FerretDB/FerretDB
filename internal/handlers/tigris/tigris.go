@@ -19,6 +19,7 @@ import (
 	"context"
 	"time"
 
+	api "github.com/tigrisdata/tigris-client-go/api/server/v1"
 	"github.com/tigrisdata/tigris-client-go/config"
 	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
@@ -67,6 +68,20 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 // Close implements handlers.Interface.
 func (h *Handler) Close() {
 	h.driver.Close()
+}
+
+// isNotFound returns true if the error is a "not found" error.
+// This function is implemented to keep nolint in a single place.
+func isNotFound(err *driver.Error) bool {
+	if err == nil {
+		return false
+	}
+
+	//nolint:nosnakecase // Tigris named their const that way
+	if err.Code == api.Code_NOT_FOUND {
+		return true
+	}
+	return false
 }
 
 // check interfaces

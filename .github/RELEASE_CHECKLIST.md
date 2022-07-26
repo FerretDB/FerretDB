@@ -12,16 +12,17 @@
 6. Make a signed tag `vX.Y.Z` with the relevant section of the changelog using `--cleanup=verbatim`.
 7. Push it!
 8. Make [release](https://github.com/FerretDB/FerretDB/releases).
-9. Refresh
-   * `env GOPROXY=https://proxy.golang.org go install -v github.com/FerretDB/FerretDB/cmd/ferretdb@<tag>`
-   * `env GOPROXY=https://proxy.golang.org go install -v github.com/FerretDB/FerretDB/ferretdb@<tag>`
-     (expected error message is `package github.com/FerretDB/FerretDB/ferretdb is not a main package`)
-   * <https://pkg.go.dev/github.com/FerretDB/FerretDB>
-10. `task docker-local`
-11. `task docker-push` with four tags (`X.Y.Z` without leading `v` and `latest` for both ghcr.io and Docker Hub):
+9. Upload .deb and .rpm packages from the CI build for the tag.
+10. Refresh
+    * `env GOPROXY=https://proxy.golang.org go install -v github.com/FerretDB/FerretDB/cmd/ferretdb@<tag>`
+    * `env GOPROXY=https://proxy.golang.org go install -v github.com/FerretDB/FerretDB/ferretdb@<tag>`
+      (expected error message is `package github.com/FerretDB/FerretDB/ferretdb is not a main package`)
+    * <https://pkg.go.dev/github.com/FerretDB/FerretDB>
+11. `task docker-local`
+12. `task docker-push` with four tags (`X.Y.Z` without leading `v` and `latest` for both ghcr.io and Docker Hub):
     * `task docker-push DOCKER_IMAGE=ferretdb/ferretdb:latest`
     * `task docker-push DOCKER_IMAGE=ferretdb/ferretdb:<tag>`
     * `task docker-push DOCKER_IMAGE=ghcr.io/ferretdb/ferretdb:latest`
     * `task docker-push DOCKER_IMAGE=ghcr.io/ferretdb/ferretdb:<tag>`
-12. Close milestone in issues.
-13. Announce it!
+13. Close milestone in issues.
+14. Announce it!
