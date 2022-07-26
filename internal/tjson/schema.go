@@ -185,7 +185,6 @@ func (s *Schema) Equal(other *Schema) bool {
 	case Array, Boolean, Object, String:
 		// do nothing: these types don't have "default" format
 	}
-
 	return formatS == formatOther
 }
 
