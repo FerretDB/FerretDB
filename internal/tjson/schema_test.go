@@ -140,94 +140,77 @@ func TestSchemaEqual(t *testing.T) {
 		Items: &cObjectSchemaNotEqual,
 	}
 
-	for _, tc := range []struct {
-		name     string
+	for name, tc := range map[string]struct {
 		s        *Schema
 		other    *Schema
 		expected bool
-	}{{
-		name:     "StringString",
+	}{"StringString": {
 		s:        stringSchema,
 		other:    stringSchema,
 		expected: true,
-	}, {
-		name:     "StringNumber",
+	}, "StringNumber": {
 		s:        stringSchema,
 		other:    doubleSchema,
 		expected: false,
-	}, {
-		name:     "NumberString",
+	}, "NumberString": {
 		s:        doubleSchema,
 		other:    stringSchema,
 		expected: false,
-	}, {
-		name:     "EmptyInt64",
+	}, "EmptyInt64": {
 		s:        &cIntEmptySchema,
 		other:    &cInt64Schema,
 		expected: true,
-	}, {
-		name:     "Int64Empty",
+	}, "Int64Empty": {
 		s:        &cInt64Schema,
 		other:    &cIntEmptySchema,
 		expected: true,
-	}, {
-		name:     "Int64Int32",
+	}, "Int64Int32": {
 		s:        &cInt64Schema,
 		other:    int32Schema,
 		expected: false,
-	}, {
-		name:     "EmptyInt32",
+	}, "EmptyInt32": {
 		s:        &cIntEmptySchema,
 		other:    int32Schema,
 		expected: false,
-	}, {
-		name:     "DoubleEmpty",
+	}, "DoubleEmpty": {
 		s:        &cDoubleSchema,
 		other:    &cDoubleEmptySchema,
 		expected: true,
-	}, {
-		name:     "ObjectsEqual",
+	}, "ObjectsEqual": {
 		s:        &cObjectSchema,
 		other:    &cObjectSchemaEqual,
 		expected: true,
-	}, {
-		name:     "ObjectsNotEqual",
+	}, "ObjectsNotEqual": {
 		s:        &cObjectSchemaEqual,
 		other:    &cObjectSchemaNotEqual,
 		expected: false,
-	}, {
-		name:     "ObjectsKeyMissing",
+	}, "ObjectsKeyMissing": {
 		s:        &cObjectSchema,
 		other:    &cObjectSchemaKeyMissing,
 		expected: false,
-	}, {
-		name:     "ObjectsEmpty",
+	}, "ObjectsEmpty": {
 		s:        &cObjectSchema,
 		other:    &cObjectSchemaEmpty,
 		expected: false,
-	}, {
-		name:     "ArrayDouble",
+	}, "ArrayDouble": {
 		s:        &cArrayDoubleSchema,
 		other:    &cArrayDoubleEmptySchema,
 		expected: true,
-	}, {
-		name:     "ArrayObjects",
+	}, "ArrayObjects": {
 		s:        &cArrayObjectsSchema,
 		other:    &cArrayObjectsSchemaEqual,
 		expected: true,
-	}, {
-		name:     "ArrayObjectsNotEqual",
+	}, "ArrayObjectsNotEqual": {
 		s:        &cArrayObjectsSchemaNotEqual,
 		other:    &cArrayObjectsSchemaEqual,
 		expected: false,
-	}, {
-		name:     "ArrayObjectsDouble",
+	}, "ArrayObjectsDouble": {
 		s:        &cArrayObjectsSchema,
 		other:    &cArrayDoubleSchema,
 		expected: false,
 	}} {
 		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			assert.Equal(t, tc.expected, tc.s.Equal(tc.other))
 		})
