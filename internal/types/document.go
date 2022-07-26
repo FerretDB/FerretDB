@@ -348,7 +348,11 @@ func (d *Document) InsertByPath(path Path, value any) error {
 		insertedPath = insertedPath.Append(pathElem)
 		_, err := d.GetByPath(insertedPath)
 		if err != nil {
-			must.NoError(next.Set(insertedPath.Suffix(), must.NotFail(NewDocument())))
+			suffix := len(insertedPath.Slice()) - 1
+			if suffix < 0 {
+				panic("invalid path")
+			}
+			must.NoError(next.Set(insertedPath.Slice()[suffix], must.NotFail(NewDocument())))
 
 			next = must.NotFail(d.GetByPath(insertedPath)).(*Document)
 		}
