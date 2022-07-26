@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/jackc/pgconn"
@@ -277,11 +276,9 @@ func (pgPool *Pool) SetDocumentByID(ctx context.Context, db, collection, comment
 			comment = strings.ReplaceAll(comment, "*/", "* /")
 
 			sql += `/* ` + comment + ` */ `
-			log.Fatal(sql)
 		}
 		sql += pgx.Identifier{db, table}.Sanitize() +
 			" SET _jsonb = $1 WHERE _jsonb->'_id' = $2"
-		//log.Fatal(sql)
 
 		tag, err = tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)), must.NotFail(fjson.Marshal(id)))
 		return err

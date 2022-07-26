@@ -103,10 +103,17 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		if u, err = common.GetOptionalParam(update, "u", u); err != nil {
 			return nil, err
 		}
+
+		// get comment from options.Update().SetComment() method
 		if sp.Comment, err = common.GetOptionalParam(document, "comment", sp.Comment); err != nil {
 			return nil, err
-
 		}
+
+		// get comment from query, e.g. db.collection.UpdateOne({"_id":"string", "$comment: "test"},{$set:{"v":"foo""}})
+		if sp.Comment, err = common.GetOptionalParam(q, "$comment", sp.Comment); err != nil {
+			return nil, err
+		}
+
 		if u != nil {
 			if err = common.ValidateUpdateOperators(u); err != nil {
 				return nil, err
