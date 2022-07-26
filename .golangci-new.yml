@@ -24,6 +24,7 @@ linters:
     - gomodguard
     - gosimple
     - govet
+    - importas
     - ineffassign
     - lll
     - misspell
@@ -66,7 +67,6 @@ linters:
     - gosec
     - grouper
     - ifshort
-    - importas
     - ireturn
     - maintidx
     - makezero
