@@ -65,14 +65,14 @@ func (h *Handler) validateExplainParams(ctx context.Context, document *types.Doc
 	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return sp, lazyerrors.Error(err)
 	}
+
 	commandParam, err := document.Get(document.Command())
 	if err != nil {
 		return sp, lazyerrors.Error(err)
 	}
 
-	var command *types.Document
-	var ok bool
-	if command, ok = commandParam.(*types.Document); !ok {
+	command, ok := commandParam.(*types.Document)
+	if !ok {
 		return sp, common.NewErrorMsg(
 			common.ErrBadValue,
 			fmt.Sprintf("has invalid type %s", common.AliasFromType(commandParam)),

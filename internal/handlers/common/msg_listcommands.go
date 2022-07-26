@@ -96,7 +96,7 @@ var Commands = map[string]command{
 		Handler: (handlers.Interface).MsgDropDatabase,
 	},
 	"explain": {
-		Help:    "Display the execution plan.",
+		Help:    "Returns the execution plan.",
 		Handler: (handlers.Interface).MsgExplain,
 	},
 	"find": {

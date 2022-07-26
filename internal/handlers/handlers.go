@@ -78,7 +78,7 @@ type Interface interface {
 	// MsgDropDatabase drops production database.
 	MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
-	// MsgExplain displays the execution plan.
+	// MsgExplain returns the execution plan.
 	MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
 	// MsgFind returns documents matched by the query.
