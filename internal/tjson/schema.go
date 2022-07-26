@@ -176,6 +176,8 @@ func (s *Schema) Equal(other *Schema) bool {
 			if other.Format == EmptyFormat {
 				other.Format = Int64
 			}
+		case Array, Boolean, Object, String:
+			// do nothing: these types don't have "default" format
 		}
 	}
 
