@@ -164,12 +164,12 @@ func (pgPool *Pool) buildQuery(ctx context.Context, querier pgxtype.Querier, sp 
 	}
 
 	q := `SELECT _jsonb `
-	if comment := sp.Comment; comment != "" {
+	if c := sp.Comment; c != "" {
 		// prevent SQL injections
-		comment = strings.ReplaceAll(comment, "/*", "/ *")
-		comment = strings.ReplaceAll(comment, "*/", "* /")
+		c = strings.ReplaceAll(c, "/*", "/ *")
+		c = strings.ReplaceAll(c, "*/", "* /")
 
-		q += `/* ` + comment + ` */ `
+		q += `/* ` + c + ` */ `
 	}
 	q += `FROM ` + pgx.Identifier{sp.DB, table}.Sanitize()
 

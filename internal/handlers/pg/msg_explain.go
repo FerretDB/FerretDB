@@ -121,8 +121,7 @@ func (h *Handler) validateExplainParams(ctx context.Context, document *types.Doc
 }
 
 // buildExplainResult builds explain response.
-func (h *Handler) buildExplainResult(ctx context.Context, document *types.Document, resDocs []*types.Document,
-) (*wire.OpMsg, error) {
+func (h *Handler) buildExplainResult(ctx context.Context, document *types.Document, resDocs []*types.Document) (*wire.OpMsg, error) {
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
