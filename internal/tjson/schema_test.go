@@ -108,6 +108,10 @@ func TestSchemaEqual(t *testing.T) {
 			"a":  boolSchema,
 		},
 	}
+	cObjectSchemaEmpty := Schema{
+		Type:       Object,
+		Properties: map[string]*Schema{},
+	}
 	cArrayDoubleSchema := Schema{
 		Type:  Array,
 		Items: &cDoubleSchema,
@@ -183,6 +187,11 @@ func TestSchemaEqual(t *testing.T) {
 		name:     "ObjectsNotEqual",
 		s:        &cObjectSchemaEqual,
 		other:    &cObjectSchemaNotEqual,
+		expected: false,
+	}, {
+		name:     "ObjectsEmpty",
+		s:        &cObjectSchema,
+		other:    &cObjectSchemaEmpty,
 		expected: false,
 	}, {
 		name:     "ArrayDouble",
