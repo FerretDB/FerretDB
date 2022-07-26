@@ -97,7 +97,9 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 					}
 
 					docFloat, ok := docValue.(float64)
-					if result[0] == types.Equal && (ok && !math.IsNaN(docFloat)) {
+					if result[0] == types.Equal &&
+						// if the document value is NaN we should consider it as changed.
+						(ok && !math.IsNaN(docFloat)) {
 						continue
 					}
 
