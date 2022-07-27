@@ -66,8 +66,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 			var sizeOnDisk int64
 			for _, name := range tables {
 				var tableSize int64
-				fullName := databaseName + "." + name
-				err = tx.QueryRow(ctx, "SELECT pg_total_relation_size($1)", fullName).Scan(&tableSize)
+				err = tx.QueryRow(ctx, "SELECT pg_total_relation_size($1)", pgx.Identifier{databaseName, name}.Sanitize()).Scan(&tableSize)
 				if err != nil {
 					return lazyerrors.Error(err)
 				}
