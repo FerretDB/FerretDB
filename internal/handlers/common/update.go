@@ -59,11 +59,23 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			sort.Strings(setDoc.Keys())
 			for _, setKey := range setDoc.Keys() {
 				setValue := must.NotFail(setDoc.Get(setKey))
+				if doc.Has(setKey) {
+					result := types.Compare(setValue, must.NotFail(doc.Get(setKey)))
+					if len(result) != 1 {
+						panic("$set: there should be only one result")
+					}
+
+					if result[0] == types.Equal {
+						continue
+					}
+				}
+
 				if err := doc.Set(setKey, setValue); err != nil {
 					return false, err
 				}
+
+				changed = true
 			}
-			changed = true
 
 		case "$unset":
 			unsetDoc := updateV.(*types.Document)
@@ -117,7 +129,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 					result := types.Compare(docValue, incremented)
 
 					if len(result) != 1 {
-						panic("there should be only one result")
+						panic("$inc: there should be only one result")
 					}
 
 					docFloat, ok := docValue.(float64)
