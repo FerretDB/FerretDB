@@ -148,7 +148,8 @@ func TestSchemaEqual(t *testing.T) {
 		s:        stringSchema,
 		other:    stringSchema,
 		expected: true,
-	}, "StringNumber": {
+	},
+	"StringNumber": {
 		s:        stringSchema,
 		other:    doubleSchema,
 		expected: false,
