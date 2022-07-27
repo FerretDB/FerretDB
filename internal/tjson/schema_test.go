@@ -67,3 +67,169 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 
 	assert.Equal(t, expected, actual)
 }
+
+func TestSchemaEqual(t *testing.T) {
+	t.Parallel()
+
+	caseInt64Schema := Schema{
+		Type:   Integer,
+		Format: Int64,
+	}
+	caseIntEmptySchema := Schema{
+		Type:   Integer,
+		Format: EmptyFormat,
+	}
+	caseDoubleSchema := Schema{
+		Type:   Number,
+		Format: Double,
+	}
+	caseDoubleEmptySchema := Schema{
+		Type:   Number,
+		Format: EmptyFormat,
+	}
+	caseObjectSchema := Schema{
+		Type: Object,
+		Properties: map[string]*Schema{
+			"a":  stringSchema,
+			"42": &caseIntEmptySchema,
+		},
+	}
+	caseObjectSchemaEqual := Schema{
+		Type: Object,
+		Properties: map[string]*Schema{
+			"42": &caseIntEmptySchema,
+			"a":  stringSchema,
+		},
+	}
+	caseObjectSchemaNotEqual := Schema{
+		Type: Object,
+		Properties: map[string]*Schema{
+			"42": &caseIntEmptySchema,
+			"a":  boolSchema,
+		},
+	}
+	caseObjectSchemaKeyMissing := Schema{
+		Type: Object,
+		Properties: map[string]*Schema{
+			"42": &caseIntEmptySchema,
+			"b":  stringSchema,
+		},
+	}
+	caseObjectSchemaEmpty := Schema{
+		Type:       Object,
+		Properties: map[string]*Schema{},
+	}
+	caseArrayDoubleSchema := Schema{
+		Type:  Array,
+		Items: &caseDoubleSchema,
+	}
+	caseArrayDoubleEmptySchema := Schema{
+		Type:  Array,
+		Items: &caseDoubleEmptySchema,
+	}
+	caseArrayObjectsSchema := Schema{
+		Type:  Array,
+		Items: &caseObjectSchema,
+	}
+	caseArrayObjectsSchemaEqual := Schema{
+		Type:  Array,
+		Items: &caseObjectSchemaEqual,
+	}
+	caseArrayObjectsSchemaNotEqual := Schema{
+		Type:  Array,
+		Items: &caseObjectSchemaNotEqual,
+	}
+
+	for name, tc := range map[string]struct {
+		s        *Schema
+		other    *Schema
+		expected bool
+	}{
+		"StringString": {
+			s:        stringSchema,
+			other:    stringSchema,
+			expected: true,
+		},
+		"StringNumber": {
+			s:        stringSchema,
+			other:    doubleSchema,
+			expected: false,
+		},
+		"NumberString": {
+			s:        doubleSchema,
+			other:    stringSchema,
+			expected: false,
+		},
+		"EmptyInt64": {
+			s:        &caseIntEmptySchema,
+			other:    &caseInt64Schema,
+			expected: true,
+		},
+		"Int64Empty": {
+			s:        &caseInt64Schema,
+			other:    &caseIntEmptySchema,
+			expected: true,
+		},
+		"Int64Int32": {
+			s:        &caseInt64Schema,
+			other:    int32Schema,
+			expected: false,
+		},
+		"EmptyInt32": {
+			s:        &caseIntEmptySchema,
+			other:    int32Schema,
+			expected: false,
+		},
+		"DoubleEmpty": {
+			s:        &caseDoubleSchema,
+			other:    &caseDoubleEmptySchema,
+			expected: true,
+		},
+		"ObjectsEqual": {
+			s:        &caseObjectSchema,
+			other:    &caseObjectSchemaEqual,
+			expected: true,
+		},
+		"ObjectsNotEqual": {
+			s:        &caseObjectSchemaEqual,
+			other:    &caseObjectSchemaNotEqual,
+			expected: false,
+		},
+		"ObjectsKeyMissing": {
+			s:        &caseObjectSchema,
+			other:    &caseObjectSchemaKeyMissing,
+			expected: false,
+		},
+		"ObjectsEmpty": {
+			s:        &caseObjectSchema,
+			other:    &caseObjectSchemaEmpty,
+			expected: false,
+		},
+		"ArrayDouble": {
+			s:        &caseArrayDoubleSchema,
+			other:    &caseArrayDoubleEmptySchema,
+			expected: true,
+		},
+		"ArrayObjects": {
+			s:        &caseArrayObjectsSchema,
+			other:    &caseArrayObjectsSchemaEqual,
+			expected: true,
+		},
+		"ArrayObjectsNotEqual": {
+			s:        &caseArrayObjectsSchemaNotEqual,
+			other:    &caseArrayObjectsSchemaEqual,
+			expected: false,
+		},
+		"ArrayObjectsDouble": {
+			s:        &caseArrayObjectsSchema,
+			other:    &caseArrayDoubleSchema,
+			expected: false,
+		},
+	} {
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tc.expected, tc.s.Equal(tc.other))
+		})
+	}
+}

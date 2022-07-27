@@ -828,6 +828,26 @@ func TestUpdateFieldSet(t *testing.T) {
 				UpsertedCount: 0,
 			},
 		},
+		"SetSameValueInt": {
+			id:     "int32",
+			update: bson.D{{"$set", bson.D{{"v", int32(42)}}}},
+			result: bson.D{{"_id", "int32"}, {"v", int32(42)}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 0,
+				UpsertedCount: 0,
+			},
+		},
+		"SetSameValueNan": {
+			id:     "double-nan",
+			update: bson.D{{"$set", bson.D{{"v", math.NaN()}}}},
+			result: bson.D{{"_id", "double-nan"}, {"v", math.NaN()}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 0,
+				UpsertedCount: 0,
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
