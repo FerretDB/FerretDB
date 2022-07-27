@@ -30,6 +30,24 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
+//go:generate ../bin/stringer  -type compatTestCaseResultType
+
+// compatTestCaseResultType represents compatibility test case result type.
+//
+// It is used to avoid errors with invalid queries making tests pass.
+type compatTestCaseResultType int
+
+const (
+	// Test case should return non-empty result.
+	nonEmptyResult compatTestCaseResultType = iota
+
+	// Test case should return empty result.
+	emptyResult
+
+	// Test case should fail.
+	errorResult
+)
+
 // Convert converts given driver value (bson.D, bson.A, etc) to FerretDB types package value.
 //
 // It then can be used with all types helpers such as testutil.AssertEqual.
