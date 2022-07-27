@@ -92,19 +92,6 @@ linters-settings:
   whitespace:
     multi-if: false
     multi-func: false
-  wsl:
-    # https://github.com/bombsimon/wsl/blob/master/doc/configuration.md
-    strict-append: false
-    allow-assign-and-call: true
-    allow-assign-and-anything: true
-    allow-multiline-assign: true
-    allow-separated-leading-comment: true
-    force-case-trailing-whitespace: 0
-    allow-cuddle-declarations: true
-    allow-case-trailing-whitespace: true
-    allow-trailing-comment: true
-    enforce-err-cuddling: false
-    force-short-decl-cuddling: false
 
 linters:
   disable-all: true
@@ -130,9 +117,11 @@ linters:
     - staticcheck
     - unused
     - whitespace
-    - wsl
 
 issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
   exclude-use-default: false
   exclude-rules:
     # only `wire` package can import `bson` package
