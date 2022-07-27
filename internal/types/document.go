@@ -341,6 +341,7 @@ func (d *Document) setByPath(path Path, value any) error {
 	innerComp, err := d.GetByPath(path.TrimSuffix())
 	if err != nil {
 		next := d
+
 		var insertedPath Path
 		for _, pathElem := range path.TrimSuffix().Slice() {
 			insertedPath = insertedPath.Append(pathElem)
