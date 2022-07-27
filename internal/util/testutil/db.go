@@ -25,7 +25,9 @@ import (
 func DatabaseName(tb testing.TB) string {
 	tb.Helper()
 
+	// database names are always lowercase
 	name := strings.ToLower(tb.Name())
+
 	name = strings.ReplaceAll(name, "/", "_")
 	name = strings.ReplaceAll(name, " ", "_")
 	name = strings.ReplaceAll(name, "$", "_")
@@ -38,7 +40,9 @@ func DatabaseName(tb testing.TB) string {
 func CollectionName(tb testing.TB) string {
 	tb.Helper()
 
-	name := strings.ToLower(tb.Name())
+	// do not use strings.ToLower because collection names can contain uppercase letters
+	name := tb.Name()
+
 	name = strings.ReplaceAll(name, "/", "_")
 	name = strings.ReplaceAll(name, " ", "_")
 	name = strings.ReplaceAll(name, "$", "_")
