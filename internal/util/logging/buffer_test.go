@@ -102,7 +102,7 @@ func TestCircularBuffer(t *testing.T) {
 		tc := tc
 		t.Run(name, func(t *testing.T) {
 			logram.append(&tc.inLog)
-			actual := logram.Get()
+			actual := logram.get(zapcore.DebugLevel)
 			for i, exp := range tc.expected {
 				assert.Equal(t, exp, *actual[i])
 			}
@@ -131,7 +131,7 @@ func TestCircularBuffer(t *testing.T) {
 		tc := tc
 		t.Run(name, func(t *testing.T) {
 			logger.Info(tc.addMsg)
-			actual := RecentEntries.Get()
+			actual := RecentEntries.get(zapcore.DebugLevel)
 			for i, exp := range tc.expected {
 				assert.Equal(t, exp, actual[i].Message)
 			}

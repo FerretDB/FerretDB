@@ -58,6 +58,18 @@ func ConvertDocument(d document) (*Document, error) {
 	return doc, nil
 }
 
+// MakeDocument creates an empty document with set capacity.
+func MakeDocument(capacity int) *Document {
+	if capacity == 0 {
+		return new(Document)
+	}
+
+	return &Document{
+		m:    make(map[string]any, capacity),
+		keys: make([]string, 0, capacity),
+	}
+}
+
 // NewDocument creates a document with the given key/value pairs.
 func NewDocument(pairs ...any) (*Document, error) {
 	l := len(pairs)
@@ -65,14 +77,12 @@ func NewDocument(pairs ...any) (*Document, error) {
 		return nil, fmt.Errorf("types.NewDocument: invalid number of arguments: %d", l)
 	}
 
+	doc := MakeDocument(l / 2)
+
 	if l == 0 {
-		return new(Document), nil
+		return doc, nil
 	}
 
-	doc := &Document{
-		m:    make(map[string]any, l/2),
-		keys: make([]string, 0, l/2),
-	}
 	for i := 0; i < l; i += 2 {
 		key, ok := pairs[i].(string)
 		if !ok {

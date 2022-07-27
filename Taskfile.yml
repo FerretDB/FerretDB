@@ -24,6 +24,7 @@ tasks:
       - task: docs
 
   gen-version:
+    run: once
     cmds:
       - go generate -x ./internal/util/version
 
@@ -136,19 +137,25 @@ tasks:
     desc: "Run integration tests for PostgreSQL handler"
     dir: integration
     cmds:
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=integration-pg.txt -coverpkg=../... -handler=pg
+      - >
+        go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverpkg=../...
+        -coverprofile=integration-pg.txt . -handler=pg
 
   test-integration-tigris:
     desc: "Run integration tests for Tigris handler"
-    dir: integration/tigris
+    dir: integration
     cmds:
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -tags=ferretdb_tigris -shuffle=on -coverprofile=../integration-tigris.txt -coverpkg=../... -handler=tigris
+      - >
+        go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverpkg=../...
+        -coverprofile=integration-tigris.txt -tags=ferretdb_tigris ./tigris/... -handler=tigris
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
     dir: integration
     cmds:
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=integration-mongodb.txt -coverpkg=../... -target-port=37017 -compat-port=0
+      - >
+        go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverpkg=../...
+        -coverprofile=integration-mongodb.txt . -target-port=37017 -compat-port=0
 
   bench-short:
     desc: "Benchmark for about 20 seconds (with default BENCHTIME)"
@@ -193,6 +200,7 @@ tasks:
 
   build-testcover:
     desc: "Build bin/ferretdb-testcover"
+    run: once
     deps: [gen-version]
     cmds:
       - go test -c -o=bin/ferretdb-testcover{{exeExt}} -trimpath -tags=ferretdb_testcover,ferretdb_tigris {{if ne OS "windows"}}-race{{end}} -coverpkg=./... ./cmd/ferretdb
@@ -301,25 +309,35 @@ tasks:
       COMMIT:
         sh: cat internal/util/version/gen/commit.txt
 
-  nfpm_deb:
-    deps: [build-testcover]
-    dir: build/deb
+  packages:
     cmds:
-      - ../../bin/nfpm pkg --config ../../.nfpm.yml --packager deb --target ferretdb_${VERSION}.deb
+      - task: packages-deb
+      - task: packages-rpm
+
+  packages-deb:
+    deps: [build-testcover]
+    dir: build
+    cmds:
+      - ../bin/nfpm{{exeExt}} package --packager=deb --target=deb/ferretdb.deb
+      - >
+        docker-compose run --rm debian /bin/sh -c
+        'dpkg -i /deb/ferretdb.deb && ferretdb -version'
     env:
       VERSION:
-        sh: cat ../../internal/util/version/gen/version.txt
+        sh: cat ../internal/util/version/gen/version.txt
+      GOARCH:
+        sh: go env GOARCH
 
-  nfpm_rpm:
+  packages-rpm:
     deps: [build-testcover]
-    dir: build/rpm
+    dir: build
     cmds:
-      - ../../bin/nfpm pkg --config ../../.nfpm.yml --packager rpm --target ferretdb_${VERSION}.rpm
+      - ../bin/nfpm{{exeExt}} package --packager=rpm --target=rpm/ferretdb.rpm
+      - >
+        docker-compose run --rm centos /bin/sh -c
+        'rpm -i /rpm/ferretdb.rpm && ferretdb -version'
     env:
       VERSION:
-        sh: cat ../../internal/util/version/gen/version.txt
-
-  packager:
-    cmds:
-      - task: nfpm_deb
-      - task: nfpm_rpm
+        sh: cat ../internal/util/version/gen/version.txt
+      GOARCH:
+        sh: go env GOARCH
