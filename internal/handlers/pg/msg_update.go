@@ -234,7 +234,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 func (h *Handler) update(ctx context.Context, sp pgdb.SQLParam, doc *types.Document) (int64, error) {
 	id := must.NotFail(doc.Get("_id"))
 
-	rowsUpdated, err := h.pgPool.SetDocumentByID(ctx, sp.DB, sp.Collection, sp.Comment, id, doc)
+	rowsUpdated, err := h.pgPool.SetDocumentByID(ctx, sp, id, doc)
 	if err != nil {
 		return 0, err
 	}
