@@ -132,6 +132,51 @@ func TestFindCommentQuery(t *testing.T) {
 	assert.Contains(t, databaseNames, name)
 }
 
+func TestUpdateCommentMethod(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
+	name := collection.Name()
+	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
+	require.NoError(t, err)
+
+	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
+	filter := bson.D{{"_id", "string"}}
+	update := bson.D{{"$set", bson.D{{"v", "bar"}}}}
+
+	opts := options.Update().SetComment(comment)
+	res, err := collection.UpdateOne(ctx, filter, update, opts)
+	require.NoError(t, err)
+
+	expected := &mongo.UpdateResult{
+		MatchedCount:  1,
+		ModifiedCount: 1,
+	}
+
+	assert.Contains(t, databaseNames, name)
+	assert.Equal(t, expected, res)
+}
+
+func TestUpdateCommentQuery(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
+	name := collection.Name()
+	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
+	require.NoError(t, err)
+
+	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
+
+	res, err := collection.UpdateOne(ctx, bson.M{"_id": "string", "$comment": comment}, bson.M{"$set": bson.M{"v": "bar"}})
+	require.NoError(t, err)
+
+	expected := &mongo.UpdateResult{
+		MatchedCount:  1,
+		ModifiedCount: 1,
+	}
+
+	assert.Contains(t, databaseNames, name)
+	assert.Equal(t, expected, res)
+}
+
 func TestCollectionName(t *testing.T) {
 	t.Parallel()
 
