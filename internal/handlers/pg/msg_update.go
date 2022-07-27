@@ -202,7 +202,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				continue
 			}
 
-			rowsChanged, err := h.update(ctx, sp, doc)
+			rowsChanged, err := h.update(ctx, &sp, doc)
 			if err != nil {
 				return nil, err
 			}
@@ -231,7 +231,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // update updates documents by _id.
-func (h *Handler) update(ctx context.Context, sp pgdb.SQLParam, doc *types.Document) (int64, error) {
+func (h *Handler) update(ctx context.Context, sp *pgdb.SQLParam, doc *types.Document) (int64, error) {
 	id := must.NotFail(doc.Get("_id"))
 
 	rowsUpdated, err := h.pgPool.SetDocumentByID(ctx, sp, id, doc)
