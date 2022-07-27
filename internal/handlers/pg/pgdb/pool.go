@@ -291,7 +291,7 @@ func (pgPool *Pool) SetDocumentByID(ctx context.Context, sp *SQLParam, id any, d
 }
 
 // DeleteDocumentsByID deletes documents by given IDs.
-func (pgPool *Pool) DeleteDocumentsByID(ctx context.Context, db, collection string, ids []any) (int64, error) {
+func (pgPool *Pool) DeleteDocumentsByID(ctx context.Context, sp SQLParam, ids []any) (int64, error) {
 	var tag pgconn.CommandTag
 	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		table, err := getTableName(ctx, tx, db, collection)
@@ -307,7 +307,16 @@ func (pgPool *Pool) DeleteDocumentsByID(ctx context.Context, db, collection stri
 			idsMarshalled[i] = must.NotFail(fjson.Marshal(id))
 		}
 
-		sql := `DELETE FROM ` + pgx.Identifier{db, table}.Sanitize() +
+		sql := `DELETE `
+		if sp.Comment != "" {
+			sp.Comment = strings.ReplaceAll(sp.Comment, "/*", "/ *")
+			sp.Comment = strings.ReplaceAll(sp.Comment, "*/", "* /")
+
+			sql += `/* ` + sp.Comment + `*/ `
+		}
+
+		sql += `FROM ` +
+			pgx.Identifier{sp.DB, table}.Sanitize() +
 			` WHERE _jsonb->'_id' IN (` +
 			strings.Join(placeholders, ", ") +
 			`)`
