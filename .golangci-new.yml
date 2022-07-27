@@ -7,6 +7,19 @@ run:
 linters-settings:
   staticcheck:
     checks: ["all"]
+  wsl:
+    # https://github.com/bombsimon/wsl/blob/master/doc/configuration.md
+    strict-append: false
+    allow-assign-and-call: true
+    allow-assign-and-anything: true
+    allow-multiline-assign: true
+    allow-separated-leading-comment: true
+    force-case-trailing-whitespace: 0
+    allow-cuddle-declarations: true
+    allow-case-trailing-whitespace: true
+    allow-trailing-comment: true
+    enforce-err-cuddling: false
+    force-short-decl-cuddling: false
 
 linters:
   enable-all: true
@@ -107,8 +120,9 @@ linters:
     - nlreturn    # too annoying
     - scopelint   # deprecated
     - testpackage # we test internals
-    - wsl         # too annoying
 
 issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
   exclude-use-default: false
   new-from-rev: origin/main
