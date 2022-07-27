@@ -140,11 +140,11 @@ func (s *Schema) Equal(other *Schema) bool {
 			return false
 		}
 		for k, v := range s.Properties {
-			vother, ok := other.Properties[k]
+			vOther, ok := other.Properties[k]
 			if !ok {
 				return false
 			}
-			if eq := v.Equal(vother); !eq {
+			if eq := v.Equal(vOther); !eq {
 				return false
 			}
 		}
