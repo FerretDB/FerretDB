@@ -17,6 +17,7 @@ package types
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"unicode/utf8"
 
 	"golang.org/x/exp/slices"
@@ -238,6 +239,11 @@ func (d *Document) add(key string, value any) error {
 
 // Has returns true if the given key is present in the document.
 func (d *Document) Has(key string) bool {
+	if strings.Contains(key, ".") {
+		_, err := d.GetByPath(NewPathFromString(key))
+		return err == nil
+	}
+
 	_, ok := d.m[key]
 	return ok
 }
@@ -246,6 +252,11 @@ func (d *Document) Has(key string) bool {
 func (d *Document) Get(key string) (any, error) {
 	if value, ok := d.m[key]; ok {
 		return value, nil
+	}
+
+	// we may have the key lay down inside the document
+	if strings.Contains(key, ".") {
+		return d.GetByPath(NewPathFromString(key))
 	}
 
 	return nil, fmt.Errorf("types.Document.Get: key not found: %q", key)
@@ -260,6 +271,10 @@ func (d *Document) GetByPath(path Path) (any, error) {
 //
 // As a special case, _id always becomes the first key.
 func (d *Document) Set(key string, value any) error {
+	if strings.Contains(key, ".") {
+		return d.setByPath(NewPathFromString(key), value)
+	}
+
 	if !isValidKey(key) {
 		return fmt.Errorf("types.Document.Set: invalid key: %q", key)
 	}
@@ -319,11 +334,31 @@ func (d *Document) RemoveByPath(path Path) {
 	removeByPath(d, path)
 }
 
-// SetByPath sets value by given path.
-func (d *Document) SetByPath(path Path, value any) error {
+// setByPath sets value by given path.
+// If some parts of the path are missing, they will be created.
+// The Document type will be used to create these parts.
+func (d *Document) setByPath(path Path, value any) error {
 	innerComp, err := d.GetByPath(path.TrimSuffix())
 	if err != nil {
-		return err
+		next := d
+		var insertedPath Path
+		for _, pathElem := range path.TrimSuffix().Slice() {
+			insertedPath = insertedPath.Append(pathElem)
+			v, err := d.GetByPath(insertedPath)
+			if err != nil {
+				suffix := len(insertedPath.Slice()) - 1
+				if suffix < 0 {
+					panic("invalid path")
+				}
+				must.NoError(next.Set(insertedPath.Slice()[suffix], must.NotFail(NewDocument())))
+
+				next = must.NotFail(d.GetByPath(insertedPath)).(*Document)
+			}
+			if doc, ok := v.(*Document); ok {
+				next = doc
+			}
+		}
+		innerComp = must.NotFail(d.GetByPath(path.TrimSuffix()))
 	}
 
 	switch inner := innerComp.(type) {
@@ -346,29 +381,6 @@ func (d *Document) SetByPath(path Path, value any) error {
 	}
 
 	return nil
-}
-
-// InsertByPath sets value by given path.
-// If some parts of the path are missing, they will be created.
-// The Document type will be used to create these parts.
-func (d *Document) InsertByPath(path Path, value any) error {
-	next := d
-	var insertedPath Path
-	for _, pathElem := range path.TrimSuffix().Slice() {
-		insertedPath = insertedPath.Append(pathElem)
-		_, err := d.GetByPath(insertedPath)
-		if err != nil {
-			suffix := len(insertedPath.Slice()) - 1
-			if suffix < 0 {
-				panic("invalid path")
-			}
-			must.NoError(next.Set(insertedPath.Slice()[suffix], must.NotFail(NewDocument())))
-
-			next = must.NotFail(d.GetByPath(insertedPath)).(*Document)
-		}
-	}
-
-	return d.SetByPath(path, value)
 }
 
 // check interfaces

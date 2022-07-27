@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"math"
 	"sort"
-	"strings"
 	"time"
 
 	"golang.org/x/exp/slices"
@@ -81,26 +80,6 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 			for _, incKey := range incDoc.Keys() {
 				incValue := must.NotFail(incDoc.Get(incKey))
-
-				if strings.Contains(incKey, ".") {
-					path := types.NewPathFromString(incKey)
-					innerValue, err := doc.GetByPath(path)
-					if err != nil {
-						err = doc.InsertByPath(path, incValue)
-						if err != nil {
-							return false, err
-						}
-						changed = true
-						continue
-					}
-
-					incremented, err := addNumbers(incValue, innerValue)
-					if err == nil {
-						must.NoError(doc.SetByPath(path, incremented))
-						changed = true
-						continue
-					}
-				}
 
 				if !doc.Has(incKey) {
 					must.NoError(doc.Set(incKey, incValue))
