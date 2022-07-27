@@ -16,6 +16,7 @@ package common
 
 import (
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 	"time"
@@ -34,6 +35,10 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 	for _, updateOp := range update.Keys() {
 		updateV := must.NotFail(update.Get(updateOp))
 
+		if _, ok := UpdateOperators[updateOp]; !ok {
+			return false, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp)
+		}
+
 		switch updateOp {
 		case "$currentDate":
 			changed, err = processCurrentDateFieldExpression(doc, updateV)
@@ -43,8 +48,8 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 		case "$set":
 			fallthrough
-		case "$setOnInsert":
 
+		case "$setOnInsert":
 			// expecting here a document since all checks were made in ValidateUpdateOperators func
 			setDoc := updateV.(*types.Document)
 
@@ -54,11 +59,23 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			sort.Strings(setDoc.Keys())
 			for _, setKey := range setDoc.Keys() {
 				setValue := must.NotFail(setDoc.Get(setKey))
+				if doc.Has(setKey) {
+					result := types.Compare(setValue, must.NotFail(doc.Get(setKey)))
+					if len(result) != 1 {
+						panic("$set: there should be only one result")
+					}
+
+					if result[0] == types.Equal {
+						continue
+					}
+				}
+
 				if err := doc.Set(setKey, setValue); err != nil {
 					return false, err
 				}
+
+				changed = true
 			}
-			changed = true
 
 		case "$unset":
 			unsetDoc := updateV.(*types.Document)
@@ -88,6 +105,20 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				incremented, err := addNumbers(incValue, docValue)
 				if err == nil {
 					must.NoError(doc.Set(incKey, incremented))
+
+					result := types.Compare(docValue, incremented)
+
+					if len(result) != 1 {
+						panic("$inc: there should be only one result")
+					}
+
+					docFloat, ok := docValue.(float64)
+					if result[0] == types.Equal &&
+						// if the document value is NaN we should consider it as changed.
+						(ok && !math.IsNaN(docFloat)) {
+						continue
+					}
+
 					changed = true
 					continue
 				}
@@ -119,7 +150,8 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 
 		default:
-			return false, NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
+			// handled by UpdateOperators above
+			panic(fmt.Errorf("unhandled operation %q", updateOp))
 		}
 	}
 
@@ -347,4 +379,19 @@ func validateCurrentDateExpression(update *types.Document) error {
 	}
 
 	return nil
+}
+
+// TODO decide if we need it.
+var UpdateOperators = map[string]struct{}{}
+
+func init() {
+	for _, o := range []string{
+		"$currentDate",
+		"$set",
+		"$setOnInsert",
+		"$unset",
+		"$inc",
+	} {
+		UpdateOperators[o] = struct{}{}
+	}
 }
