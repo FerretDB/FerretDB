@@ -224,7 +224,8 @@ func TestSchemaEqual(t *testing.T) {
 			s:        &caseArrayObjectsSchema,
 			other:    &caseArrayDoubleSchema,
 			expected: false,
-		}} {
+		},
+	} {
 		tc := tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
