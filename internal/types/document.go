@@ -344,16 +344,19 @@ func (d *Document) setByPath(path Path, value any) error {
 		var insertedPath Path
 		for _, pathElem := range path.TrimSuffix().Slice() {
 			insertedPath = insertedPath.Append(pathElem)
+
 			v, err := d.GetByPath(insertedPath)
 			if err != nil {
 				suffix := len(insertedPath.Slice()) - 1
 				if suffix < 0 {
 					panic("invalid path")
 				}
+
 				must.NoError(next.Set(insertedPath.Slice()[suffix], must.NotFail(NewDocument())))
 
 				next = must.NotFail(d.GetByPath(insertedPath)).(*Document)
 			}
+
 			if doc, ok := v.(*Document); ok {
 				next = doc
 			}
@@ -372,6 +375,7 @@ func (d *Document) setByPath(path Path, value any) error {
 		if err != nil {
 			return err
 		}
+
 		err = inner.Set(index, value)
 		if err != nil {
 			return err

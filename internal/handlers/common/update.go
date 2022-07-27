@@ -302,6 +302,7 @@ func extractValueFromUpdateOperator(op string, update *types.Document) (*types.D
 		return nil, nil
 	}
 	updateExpression := must.NotFail(update.Get(op))
+
 	doc, ok := updateExpression.(*types.Document)
 	if !ok {
 		return nil, NewWriteErrorMsg(ErrFailedToParse, "Modifiers operate on fields but we found another type instead")
