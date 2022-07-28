@@ -22,7 +22,7 @@ import (
 	"github.com/tigrisdata/tigris-client-go/filter"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/tjson"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -142,7 +142,7 @@ func (h *Handler) delete(ctx context.Context, fp fetchParam, docs []*types.Docum
 	for i, doc := range docs {
 		// `{"_id": {"$eq", `+doc.Get("_id")+`}}`
 		id := must.NotFail(doc.Get("_id")).(types.ObjectID)
-		ids[i] = filter.Eq("_id", tjson.ObjectID(id))
+		ids[i] = tigrisdb.FilterEq("_id", id)
 	}
 
 	var f driver.Filter
