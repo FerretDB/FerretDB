@@ -215,7 +215,7 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() tjsontype) {
 	}
 }
 
-func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() tjsontype) {
+func fuzzJSON(f *testing.F, testCases []testCase) {
 	for _, tc := range testCases {
 		f.Add(tc.j)
 		if tc.canonJ != "" {
@@ -260,7 +260,7 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() tjsontype) {
 	})
 }
 
-func benchmark(b *testing.B, testCases []testCase, newFunc func() tjsontype) {
+func benchmark(b *testing.B, testCases []testCase) {
 	for _, tc := range testCases {
 		tc := tc
 		b.Run(tc.name, func(b *testing.B) {
@@ -282,6 +282,7 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() tjsontype) {
 				if tc.jErr == "" {
 					require.NoError(b, err)
 					assertEqual(b, tc.v, toTJSON(v))
+
 					return
 				}
 
@@ -306,6 +307,10 @@ func unmarshalJSON(v tjsontype, j string) error {
 	case *stringType:
 		err = v.UnmarshalJSON([]byte(j))
 	case *boolType:
+		err = v.UnmarshalJSON([]byte(j))
+	case *binaryType:
+		err = v.UnmarshalJSON([]byte(j))
+	case *objectIDType:
 		err = v.UnmarshalJSON([]byte(j))
 	default:
 		panic(fmt.Sprintf("testing is not implemented for the type %T", v))
