@@ -70,7 +70,7 @@ jobs:
         with:
           files: ./integration/integration-${{ matrix.handler }}.txt
           flags: integration,${{ matrix.handler }}
-          # TODO fail_ci_if_error: true
+          fail_ci_if_error: true
 
       # we don't want them on CI
       - name: Clean test and fuzz caches

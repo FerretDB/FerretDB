@@ -57,7 +57,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
 
-	level := zap.NewAtomicLevelAt(zap.WarnLevel)
+	level := zap.NewAtomicLevelAt(zap.ErrorLevel)
 	if *debugSetupF {
 		level = zap.NewAtomicLevelAt(zap.DebugLevel)
 	}
@@ -124,7 +124,7 @@ func setupCollection(tb testing.TB, ctx context.Context, opts *setupCollectionOp
 		require.NotEmpty(tb, docs)
 
 		res, err := collection.InsertMany(ctx, docs)
-		require.NoError(tb, err)
+		require.NoError(tb, err, "provider %q", provider.Name())
 		require.Len(tb, res.InsertedIDs, len(docs))
 	}
 
