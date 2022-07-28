@@ -6,3 +6,9 @@ tasks:
   gen:
     cmds:
       - go generate -x ./...
+
+  lint-go-consistent:
+    cmds:
+      - ../bin/go-consistent{{exeExt}} -v -pedantic ./...
+    sources:
+      - "**/*.go"

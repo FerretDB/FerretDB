@@ -10,12 +10,11 @@ func _() {
 	var x [1]struct{}
 	_ = x[nonEmptyResult-0]
 	_ = x[emptyResult-1]
-	_ = x[errorResult-2]
 }
 
-const _compatTestCaseResultType_name = "nonEmptyResultemptyResulterrorResult"
+const _compatTestCaseResultType_name = "nonEmptyResultemptyResult"
 
-var _compatTestCaseResultType_index = [...]uint8{0, 14, 25, 36}
+var _compatTestCaseResultType_index = [...]uint8{0, 14, 25}
 
 func (i compatTestCaseResultType) String() string {
 	if i < 0 || i >= compatTestCaseResultType(len(_compatTestCaseResultType_index)-1) {
