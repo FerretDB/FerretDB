@@ -106,7 +106,7 @@ func TestInsertFind(t *testing.T) {
 //nolint:paralleltest // we test a global list of databases
 func TestFindCommentMethod(t *testing.T) {
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
-	name := collection.Name()
+	name := collection.Database().Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
 	require.NoError(t, err)
 	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
@@ -121,7 +121,7 @@ func TestFindCommentMethod(t *testing.T) {
 //nolint:paralleltest // we test a global list of databases
 func TestFindCommentQuery(t *testing.T) {
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
-	name := collection.Name()
+	name := collection.Database().Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
 	require.NoError(t, err)
 	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
@@ -135,7 +135,7 @@ func TestFindCommentQuery(t *testing.T) {
 func TestUpdateCommentMethod(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
-	name := collection.Name()
+	name := collection.Database().Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
 	require.NoError(t, err)
 
@@ -159,7 +159,7 @@ func TestUpdateCommentMethod(t *testing.T) {
 func TestUpdateCommentQuery(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
-	name := collection.Name()
+	name := collection.Database().Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
 	require.NoError(t, err)
 
@@ -225,7 +225,7 @@ func TestCollectionName(t *testing.T) {
 	t.Run("Err", func(t *testing.T) {
 		ctx, collection := setup.Setup(t)
 
-		collectionName300 := strings.Repeat("a", 300)
+		collectionName300 := strings.Repeat("aB", 150)
 		cases := map[string]struct {
 			collection string
 			err        *mongo.CommandError
@@ -307,17 +307,17 @@ func TestDatabaseName(t *testing.T) {
 					Message: fmt.Sprintf(
 						"Invalid namespace specified '%s.%s'",
 						dbName64,
-						"testdatabasename_err_toolongforbothdbs",
+						"TestDatabaseName_Err_TooLongForBothDBs",
 					),
 				},
-				alt: fmt.Sprintf("Invalid namespace: %s.%s", dbName64, "testdatabasename_err_toolongforbothdbs"),
+				alt: fmt.Sprintf("Invalid namespace: %s.%s", dbName64, "TestDatabaseName_Err_TooLongForBothDBs"),
 			},
 			"WithADollarSign": {
 				db: "name_with_a-$",
 				err: &mongo.CommandError{
 					Name:    "InvalidNamespace",
 					Code:    73,
-					Message: `Invalid namespace: name_with_a-$.testdatabasename_err_withadollarsign`,
+					Message: `Invalid namespace: name_with_a-$.TestDatabaseName_Err_WithADollarSign`,
 				},
 			},
 		}
