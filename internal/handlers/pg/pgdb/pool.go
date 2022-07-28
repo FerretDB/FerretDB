@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/jackc/pgconn"
@@ -321,7 +320,6 @@ func (pgPool *Pool) DeleteDocumentsByID(ctx context.Context, sp *SQLParam, ids [
 			` WHERE _jsonb->'_id' IN (` +
 			strings.Join(placeholders, ", ") +
 			`)`
-		log.Fatal(sql)
 
 		tag, err = tx.Exec(ctx, sql, idsMarshalled...)
 		return err

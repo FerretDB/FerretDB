@@ -90,7 +90,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		// get comment from query, e.g. db.collection.UpdateOne({"_id":"string", "$comment: "test"},{$set:{"v":"foo""}})
+		// get comment from query, e.g. db.collection.DeleteOne({"_id":"string", "$comment: "test"})
 		if sp.Comment, err = common.GetOptionalParam(filter, "$comment", sp.Comment); err != nil {
 			return nil, err
 		}

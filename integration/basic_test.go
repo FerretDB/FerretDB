@@ -177,6 +177,48 @@ func TestUpdateCommentQuery(t *testing.T) {
 	assert.Equal(t, expected, res)
 }
 
+func TestDeleteCommentMethod(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
+	name := collection.Name()
+	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
+	require.NoError(t, err)
+
+	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
+	filter := bson.D{{"_id", "string"}}
+
+	opts := options.Delete().SetComment(comment)
+	res, err := collection.DeleteOne(ctx, filter, opts)
+	require.NoError(t, err)
+
+	expected := &mongo.DeleteResult{
+		DeletedCount: 1,
+	}
+
+	assert.Contains(t, databaseNames, name)
+	assert.Equal(t, expected, res)
+}
+
+func TestDeleteCommentQuery(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
+	name := collection.Name()
+	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
+	require.NoError(t, err)
+
+	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
+
+	res, err := collection.DeleteOne(ctx, bson.M{"_id": "string", "$comment": comment})
+	require.NoError(t, err)
+
+	expected := &mongo.DeleteResult{
+		DeletedCount: 1,
+	}
+
+	assert.Contains(t, databaseNames, name)
+	assert.Equal(t, expected, res)
+}
+
 func TestCollectionName(t *testing.T) {
 	t.Parallel()
 
