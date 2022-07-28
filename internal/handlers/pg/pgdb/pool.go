@@ -313,7 +313,7 @@ func (pgPool *Pool) DeleteDocumentsByID(ctx context.Context, sp *SQLParam, ids [
 			sp.Comment = strings.ReplaceAll(sp.Comment, "/*", "/ *")
 			sp.Comment = strings.ReplaceAll(sp.Comment, "*/", "* /")
 
-			sql += `/* ` + sp.Comment + `*/ `
+			sql += `/* ` + sp.Comment + ` */ `
 		}
 
 		sql += `FROM ` +
