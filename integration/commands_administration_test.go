@@ -528,7 +528,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 			t.Parallel()
 
 			var actual bson.D
-			err := s.TargetCollection.Database().RunCommand(s.Ctx, tc.command).Decode(&actual)
+			err := s.Collection.Database().RunCommand(s.Ctx, tc.command).Decode(&actual)
 
 			if tc.err != nil {
 				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
@@ -802,12 +802,12 @@ func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
-	collection1 := s.TargetCollection
-	databaseName := s.TargetCollection.Database().Name()
-	collectionName := s.TargetCollection.Name()
+	collection1 := s.Collection
+	databaseName := s.Collection.Database().Name()
+	collectionName := s.Collection.Name()
 
 	// setup second client connection to check that `whatsmyuri` returns different ports
-	uri := fmt.Sprintf("mongodb://127.0.0.1:%d/", s.TargetPort)
+	uri := fmt.Sprintf("mongodb://127.0.0.1:%d/", s.Port)
 	client2, err := mongo.Connect(s.Ctx, options.Client().ApplyURI(uri))
 	require.NoError(t, err)
 	defer client2.Disconnect(s.Ctx)
