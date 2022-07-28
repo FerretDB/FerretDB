@@ -126,13 +126,17 @@ tasks:
     cmds:
       - >
         go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-pg.txt . -handler=pg
+        -coverprofile=integration-pg.txt
+        . -handler=pg
 
   test-integration-tigris:
     desc: "Run integration tests for Tigris handler"
     dir: integration
-    # TODO
-    cmds: []
+    cmds:
+      - >
+        go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverpkg=../...
+        -coverprofile=integration-tigris.txt -tags=ferretdb_tigris
+        . -handler=tigris
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
@@ -140,7 +144,8 @@ tasks:
     cmds:
       - >
         go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-mongodb.txt . -target-port=37017
+        -coverprofile=integration-mongodb.txt
+        . -target-port=37017 -compat-port=0
 
   bench-short:
     desc: "Benchmark for about 20 seconds (with default BENCHTIME)"
