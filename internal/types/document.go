@@ -17,7 +17,6 @@ package types
 import (
 	"fmt"
 	"strconv"
-	"strings"
 	"unicode/utf8"
 
 	"golang.org/x/exp/slices"
@@ -239,11 +238,6 @@ func (d *Document) add(key string, value any) error {
 
 // Has returns true if the given key is present in the document.
 func (d *Document) Has(key string) bool {
-	if strings.Contains(key, ".") {
-		_, err := d.GetByPath(NewPathFromString(key))
-		return err == nil
-	}
-
 	_, ok := d.m[key]
 	return ok
 }
@@ -254,27 +248,13 @@ func (d *Document) Get(key string) (any, error) {
 		return value, nil
 	}
 
-	// we may have the key lay down inside the document
-	if strings.Contains(key, ".") {
-		return d.GetByPath(NewPathFromString(key))
-	}
-
 	return nil, fmt.Errorf("types.Document.Get: key not found: %q", key)
-}
-
-// GetByPath returns a value by path - a sequence of indexes and keys.
-func (d *Document) GetByPath(path Path) (any, error) {
-	return getByPath(d, path)
 }
 
 // Set sets the value for the given key, replacing any existing value.
 //
 // As a special case, _id always becomes the first key.
 func (d *Document) Set(key string, value any) error {
-	if strings.Contains(key, ".") {
-		return d.setByPath(NewPathFromString(key), value)
-	}
-
 	if !isValidKey(key) {
 		return fmt.Errorf("types.Document.Set: invalid key: %q", key)
 	}
@@ -329,15 +309,26 @@ func (d *Document) Remove(key string) any {
 	panic(fmt.Sprintf("types.Document.Remove: key not found: %q", key))
 }
 
+// HasByPath returns true if the given path is present in the document.
+func (d *Document) HasByPath(path Path) bool {
+	_, err := d.GetByPath(path)
+	return err == nil
+}
+
+// GetByPath returns a value by path - a sequence of indexes and keys.
+func (d *Document) GetByPath(path Path) (any, error) {
+	return getByPath(d, path)
+}
+
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
 func (d *Document) RemoveByPath(path Path) {
 	removeByPath(d, path)
 }
 
-// setByPath sets value by given path.
+// SetByPath sets value by given path.
 // If some parts of the path are missing, they will be created.
 // The Document type will be used to create these parts.
-func (d *Document) setByPath(path Path, value any) error {
+func (d *Document) SetByPath(path Path, value any) {
 	innerComp, err := d.GetByPath(path.TrimSuffix())
 	if err != nil {
 		next := d
@@ -367,25 +358,17 @@ func (d *Document) setByPath(path Path, value any) error {
 
 	switch inner := innerComp.(type) {
 	case *Document:
-		err := inner.Set(path.Suffix(), value)
-		if err != nil {
-			return err
-		}
+		must.NoError(inner.Set(path.Suffix(), value))
 	case *Array:
 		index, err := strconv.Atoi(path.Suffix())
 		if err != nil {
-			panic("setByPath: should be an index")
+			panic("SetByPath: should be an index")
 		}
 
-		err = inner.Set(index, value)
-		if err != nil {
-			return err
-		}
+		must.NoError(inner.Set(index, value))
 	default:
 		panic(fmt.Errorf("can't set value for %T type", inner))
 	}
-
-	return nil
 }
 
 // check interfaces

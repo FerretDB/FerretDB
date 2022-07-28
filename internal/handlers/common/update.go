@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strings"
 	"time"
 
 	"golang.org/x/exp/slices"
@@ -87,65 +88,9 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			changed = true
 
 		case "$inc":
-			// expecting here a document since all checks were made in ValidateUpdateOperators func
-			incDoc := updateV.(*types.Document)
-
-			for _, incKey := range incDoc.Keys() {
-				incValue := must.NotFail(incDoc.Get(incKey))
-
-				if !doc.Has(incKey) {
-					must.NoError(doc.Set(incKey, incValue))
-					changed = true
-					continue
-				}
-
-				docValue := must.NotFail(doc.Get(incKey))
-
-				incremented, err := addNumbers(incValue, docValue)
-				if err == nil {
-					must.NoError(doc.Set(incKey, incremented))
-
-					result := types.Compare(docValue, incremented)
-
-					if len(result) != 1 {
-						panic("$inc: there should be only one result")
-					}
-
-					docFloat, ok := docValue.(float64)
-					if result[0] == types.Equal &&
-						// if the document value is NaN we should consider it as changed.
-						(ok && !math.IsNaN(docFloat)) {
-						continue
-					}
-
-					changed = true
-					continue
-				}
-
-				switch err {
-				case errUnexpectedLeftOpType:
-					return false, NewWriteErrorMsg(
-						ErrTypeMismatch,
-						fmt.Sprintf(
-							`Cannot increment with non-numeric argument: {%s: %#v}`,
-							incKey,
-							incValue,
-						),
-					)
-				case errUnexpectedRightOpType:
-					return false, NewWriteErrorMsg(
-						ErrTypeMismatch,
-						fmt.Sprintf(
-							`Cannot apply $inc to a value of non-numeric type. `+
-								`{_id: "%s"} has the field '%s' of non-numeric type %s`,
-							must.NotFail(doc.Get("_id")),
-							incKey,
-							AliasFromType(docValue),
-						),
-					)
-				default:
-					return false, err
-				}
+			changed, err = processIncFieldExpression(doc, updateV)
+			if err != nil {
+				return false, err
 			}
 
 		default:
@@ -155,6 +100,121 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 	}
 
 	return changed, nil
+}
+
+func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
+	// expecting here a document since all checks were made in ValidateUpdateOperators func
+	incDoc := updateV.(*types.Document)
+
+	var changed bool
+	var err error
+	for _, incKey := range incDoc.Keys() {
+		incValue := must.NotFail(incDoc.Get(incKey))
+
+		var docValue any
+		if strings.Contains(incKey, ".") {
+			docValue, changed, err = incrementByPath(doc, incKey, incValue)
+		} else {
+			docValue, changed, err = increment(doc, incKey, incValue)
+		}
+
+		switch err {
+		case errUnexpectedLeftOpType:
+			return false, NewWriteErrorMsg(
+				ErrTypeMismatch,
+				fmt.Sprintf(
+					`Cannot increment with non-numeric argument: {%s: %#v}`,
+					incKey,
+					incValue,
+				),
+			)
+		case errUnexpectedRightOpType:
+			return false, NewWriteErrorMsg(
+				ErrTypeMismatch,
+				fmt.Sprintf(
+					`Cannot apply $inc to a value of non-numeric type. `+
+						`{_id: "%s"} has the field '%s' of non-numeric type %s`,
+					must.NotFail(doc.Get("_id")),
+					incKey,
+					AliasFromType(docValue),
+				),
+			)
+		default:
+			return false, err
+		}
+	}
+
+	return changed, nil
+}
+
+func increment(doc *types.Document, incKey string, incValue any) (any, bool, error) {
+	if !doc.Has(incKey) {
+
+		must.NoError(doc.Set(incKey, incValue))
+
+		return nil, true, nil
+	}
+
+	docValue := must.NotFail(doc.Get(incKey))
+
+	incremented, err := addNumbers(incValue, docValue)
+	if err == nil {
+		must.NoError(doc.Set(incKey, incremented))
+
+		result := types.Compare(docValue, incremented)
+
+		if len(result) != 1 {
+			panic("$inc: there should be only one result")
+		}
+
+		docFloat, ok := docValue.(float64)
+		if result[0] == types.Equal &&
+			// if the document value is NaN we should consider it as changed.
+			(ok && !math.IsNaN(docFloat)) {
+			return docValue, false, nil
+		}
+
+		return docValue, true, nil
+	}
+
+	return nil, false, err
+}
+
+func incrementByPath(doc *types.Document, incKey string, incValue any) (any, bool, error) {
+	path := types.NewPathFromString(incKey)
+
+	if !doc.HasByPath(path) {
+		doc.SetByPath(path, incValue)
+
+		return nil, true, nil
+	}
+
+	docValue, err := doc.GetByPath(types.NewPathFromString(incKey))
+	if err != nil {
+		return nil, false, err
+	}
+
+	incremented, err := addNumbers(incValue, docValue)
+	if err == nil {
+		doc.SetByPath(path, incremented)
+
+		result := types.Compare(docValue, incremented)
+
+		if len(result) != 1 {
+			panic("$inc: there should be only one result")
+		}
+
+		docFloat, ok := docValue.(float64)
+		if result[0] == types.Equal &&
+			// if the document value is NaN we should consider it as changed.
+			(ok && !math.IsNaN(docFloat)) {
+			return docValue, false, nil
+		}
+
+		return docValue, true, nil
+	}
+
+	return nil, false, err
 }
 
 // processCurrentDateFieldExpression changes document according to $currentDate operator.
