@@ -37,6 +37,8 @@ import (
 )
 
 func TestCommandsAdministrationCreateDropList(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t) // no providers there
 	db := collection.Database()
@@ -93,6 +95,8 @@ func TestCommandsAdministrationCreateDropList(t *testing.T) {
 }
 
 func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t) // no providers there
 	db := collection.Database()
@@ -136,6 +140,8 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 }
 
 func TestCommandsAdministrationGetParameter(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		DatabaseName: "admin",
@@ -558,6 +564,8 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 }
 
 func TestCommandsAdministrationBuildInfo(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
@@ -591,6 +599,8 @@ func TestCommandsAdministrationBuildInfo(t *testing.T) {
 }
 
 func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
@@ -612,6 +622,8 @@ func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
 }
 
 func TestCommandsAdministrationCollStats(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
@@ -632,6 +644,8 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 }
 
 func TestCommandsAdministrationDataSize(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
@@ -648,6 +662,8 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 }
 
 func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
@@ -665,6 +681,8 @@ func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
 }
 
 func TestCommandsAdministrationDBStats(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
@@ -688,6 +706,8 @@ func TestCommandsAdministrationDBStats(t *testing.T) {
 }
 
 func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
@@ -711,6 +731,8 @@ func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
 }
 
 func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
@@ -734,6 +756,8 @@ func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
 }
 
 func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
@@ -758,6 +782,8 @@ func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 
 //nolint:paralleltest // we test a global server status
 func TestCommandsAdministrationServerStatus(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
@@ -799,6 +825,8 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 // TestCommandsAdministrationWhatsMyURI tests the `whatsmyuri` command.
 // It connects two clients to the same server and checks that `whatsmyuri` returns different ports for these clients.
 func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
