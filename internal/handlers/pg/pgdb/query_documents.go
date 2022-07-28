@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/jackc/pgtype/pgxtype"
@@ -175,7 +174,6 @@ func (pgPool *Pool) buildQuery(ctx context.Context, querier pgxtype.Querier, sp 
 		q += `/* ` + c + ` */ `
 	}
 	q += `FROM ` + pgx.Identifier{sp.DB, table}.Sanitize()
-	log.Fatal(q)
 
 	if sp.Explain {
 		q = "EXPLAIN (VERBOSE true, FORMAT JSON) " + q
