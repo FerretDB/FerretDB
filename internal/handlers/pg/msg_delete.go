@@ -17,12 +17,9 @@ package pg
 import (
 	"context"
 	"fmt"
-	"strings"
 
-	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 
-	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -38,10 +35,12 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
+	common.Ignored(document, h.l, "comment") // TODO https://github.com/FerretDB/FerretDB/issues/849
 	if err := common.Unimplemented(document, "let"); err != nil {
 		return nil, err
 	}
-	common.Ignored(document, h.l, "ordered", "writeConcern")
+	common.Ignored(document, h.l, "ordered") // TODO https://github.com/FerretDB/FerretDB/issues/848
+	common.Ignored(document, h.l, "writeConcern")
 
 	var deletes *types.Array
 	if deletes, err = common.GetOptionalParam(document, "deletes", deletes); err != nil {
@@ -55,7 +54,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		if err := common.Unimplemented(d, "collation", "hint", "comment"); err != nil {
+		if err := common.Unimplemented(d, "collation", "hint"); err != nil {
 			return nil, err
 		}
 
@@ -71,8 +70,8 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			}
 		}
 
-		var sp sqlParam
-		if sp.db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		var sp pgdb.SQLParam
+		if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 			return nil, err
 		}
 		collectionParam, err := document.Get(document.Command())
@@ -80,46 +79,66 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 		var ok bool
-		if sp.collection, ok = collectionParam.(string); !ok {
+		if sp.Collection, ok = collectionParam.(string); !ok {
 			return nil, common.NewErrorMsg(
 				common.ErrBadValue,
 				fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
 			)
 		}
 
-		fetchedDocs, err := h.fetch(ctx, sp)
-		if err != nil {
-			return nil, err
-		}
-
 		resDocs := make([]*types.Document, 0, 16)
-		for _, doc := range fetchedDocs {
-			matches, err := common.FilterDocument(doc, filter)
+		err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp)
 			if err != nil {
-				return nil, err
+				return err
+			}
+			defer func() {
+				// Drain the channel to prevent leaking goroutines.
+				// TODO Offer a better design instead of channels: https://github.com/FerretDB/FerretDB/issues/898.
+				for range fetchedChan {
+				}
+			}()
+
+			for fetchedItem := range fetchedChan {
+				if fetchedItem.Err != nil {
+					return fetchedItem.Err
+				}
+
+				for _, doc := range fetchedItem.Docs {
+					matches, err := common.FilterDocument(doc, filter)
+					if err != nil {
+						return err
+					}
+
+					if !matches {
+						continue
+					}
+
+					resDocs = append(resDocs, doc)
+				}
+
+				if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
+					return err
+				}
+
+				if len(resDocs) == 0 {
+					continue
+				}
+
+				rowsDeleted, err := h.delete(ctx, sp, resDocs)
+				if err != nil {
+					return err
+				}
+
+				deleted += int32(rowsDeleted)
 			}
 
-			if !matches {
-				continue
-			}
+			return nil
+		})
 
-			resDocs = append(resDocs, doc)
-		}
-
-		if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
-			return nil, err
-		}
-
-		if len(resDocs) == 0 {
-			continue
-		}
-
-		tag, err := h.delete(ctx, sp, resDocs)
 		if err != nil {
 			return nil, err
 		}
-
-		deleted += int32(tag.RowsAffected())
 	}
 
 	var reply wire.OpMsg
@@ -137,24 +156,17 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // delete deletes documents by _id.
-func (h *Handler) delete(ctx context.Context, sp sqlParam, docs []*types.Document) (pgconn.CommandTag, error) {
-	var p pgdb.Placeholder
-	placeholders := make([]string, len(docs))
+func (h *Handler) delete(ctx context.Context, sp pgdb.SQLParam, docs []*types.Document) (int64, error) {
 	ids := make([]any, len(docs))
 	for i, doc := range docs {
-		placeholders[i] = p.Next()
 		id := must.NotFail(doc.Get("_id"))
-		ids[i] = must.NotFail(fjson.Marshal(id))
+		ids[i] = id
 	}
 
-	sql := fmt.Sprintf(
-		"DELETE FROM %s WHERE _jsonb->'_id' IN (%s)",
-		pgx.Identifier{sp.db, sp.collection}.Sanitize(), strings.Join(placeholders, ", "),
-	)
-	tag, err := h.pgPool.Exec(ctx, sql, ids...)
+	rowsDeleted, err := h.pgPool.DeleteDocumentsByID(ctx, sp.DB, sp.Collection, ids)
 	if err != nil {
 		// TODO check error code
-		return nil, common.NewError(common.ErrNamespaceNotFound, fmt.Errorf("delete: ns not found: %w", err))
+		return 0, common.NewError(common.ErrNamespaceNotFound, fmt.Errorf("delete: ns not found: %w", err))
 	}
-	return tag, nil
+	return rowsDeleted, nil
 }

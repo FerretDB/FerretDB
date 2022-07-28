@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build tigris
-// +build tigris
+//go:build ferretdb_tigris
 
 package registry
 
@@ -22,7 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris"
 )
 
-// init registers `tigris` handler for Tigris when `tigris` build tag is provided.
+// init registers "tigris" handler for Tigris when "ferretdb_tigris" build tag is provided.
 func init() {
 	registry["tigris"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
 		handlerOpts := &tigris.NewOpts{

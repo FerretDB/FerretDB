@@ -24,6 +24,6 @@ import (
 func Ctx(tb testing.TB) context.Context {
 	tb.Helper()
 
-	// TODO
+	// TODO handle signals to stop tests gracefully
 	return context.Background()
 }

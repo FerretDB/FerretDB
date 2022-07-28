@@ -58,6 +58,18 @@ func ConvertDocument(d document) (*Document, error) {
 	return doc, nil
 }
 
+// MakeDocument creates an empty document with set capacity.
+func MakeDocument(capacity int) *Document {
+	if capacity == 0 {
+		return new(Document)
+	}
+
+	return &Document{
+		m:    make(map[string]any, capacity),
+		keys: make([]string, 0, capacity),
+	}
+}
+
 // NewDocument creates a document with the given key/value pairs.
 func NewDocument(pairs ...any) (*Document, error) {
 	l := len(pairs)
@@ -65,14 +77,12 @@ func NewDocument(pairs ...any) (*Document, error) {
 		return nil, fmt.Errorf("types.NewDocument: invalid number of arguments: %d", l)
 	}
 
+	doc := MakeDocument(l / 2)
+
 	if l == 0 {
-		return new(Document), nil
+		return doc, nil
 	}
 
-	doc := &Document{
-		m:    make(map[string]any, l/2),
-		keys: make([]string, 0, l/2),
-	}
 	for i := 0; i < l; i += 2 {
 		key, ok := pairs[i].(string)
 		if !ok {
@@ -281,18 +291,19 @@ func (d *Document) Set(key string, value any) error {
 	return nil
 }
 
-// Remove the given key, doing nothing if the key does not exist.
-func (d *Document) Remove(key string) {
+// Remove the given key and return its value, or nil if the key does not exist.
+func (d *Document) Remove(key string) any {
 	if _, ok := d.m[key]; !ok {
-		return
+		return nil
 	}
 
+	v := d.m[key]
 	delete(d.m, key)
 
 	for i, k := range d.keys {
 		if k == key {
 			d.keys = append(d.keys[:i], d.keys[i+1:]...)
-			return
+			return v
 		}
 	}
 

@@ -82,7 +82,7 @@ func init() {
 	}
 
 	registry["pg"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
-		pgPool, err := pgdb.NewPool(opts.Ctx, opts.PostgreSQLURL, opts.Logger, false)
+		pgPool, err := pgdb.NewPool(opts.Ctx, opts.PostgreSQLURL, opts.Logger, true)
 		if err != nil {
 			return nil, err
 		}

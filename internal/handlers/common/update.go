@@ -16,6 +16,7 @@ package common
 
 import (
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 	"time"
@@ -34,6 +35,10 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 	for _, updateOp := range update.Keys() {
 		updateV := must.NotFail(update.Get(updateOp))
 
+		if _, ok := UpdateOperators[updateOp]; !ok {
+			return false, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp)
+		}
+
 		switch updateOp {
 		case "$currentDate":
 			changed, err = processCurrentDateFieldExpression(doc, updateV)
@@ -43,8 +48,8 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 		case "$set":
 			fallthrough
-		case "$setOnInsert":
 
+		case "$setOnInsert":
 			// expecting here a document since all checks were made in ValidateUpdateOperators func
 			setDoc := updateV.(*types.Document)
 
@@ -88,6 +93,20 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				incremented, err := addNumbers(incValue, docValue)
 				if err == nil {
 					must.NoError(doc.Set(incKey, incremented))
+
+					result := types.Compare(docValue, incremented)
+
+					if len(result) != 1 {
+						panic("there should be only one result")
+					}
+
+					docFloat, ok := docValue.(float64)
+					if result[0] == types.Equal &&
+						// if the document value is NaN we should consider it as changed.
+						(ok && !math.IsNaN(docFloat)) {
+						continue
+					}
+
 					changed = true
 					continue
 				}
@@ -119,7 +138,8 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 
 		default:
-			return false, NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
+			// handled by UpdateOperators above
+			panic(fmt.Errorf("unhandled operation %q", updateOp))
 		}
 	}
 
@@ -261,11 +281,11 @@ func checkConflictingChanges(a, b *types.Document) error {
 //  bson.D{
 // 	{"$set", bson.D{{"foo", int32(12)}}},
 // 	{"$inc", bson.D{{"foo", int32(1)}}},
-// 	{"$setOnInsert", bson.D{{"value", math.NaN()}}},
+// 	{"$setOnInsert", bson.D{{"v", math.NaN()}}},
 //  }
 //
 // The result returned for "$setOnInsert" operator is
-//  bson.D{{"value", math.NaN()}}.
+//  bson.D{{"v", math.NaN()}}.
 func extractValueFromUpdateOperator(op string, update *types.Document) (*types.Document, error) {
 	if !update.Has(op) {
 		return nil, nil
@@ -275,6 +295,7 @@ func extractValueFromUpdateOperator(op string, update *types.Document) (*types.D
 	case *types.Document:
 		for _, v := range doc.Keys() {
 			if strings.Contains(v, ".") {
+				// TODO https://github.com/FerretDB/FerretDB/issues/803
 				return nil, NewError(ErrNotImplemented, fmt.Errorf("dot notation for operator %s is not supported yet", op))
 			}
 		}
@@ -346,4 +367,19 @@ func validateCurrentDateExpression(update *types.Document) error {
 	}
 
 	return nil
+}
+
+// TODO decide if we need it.
+var UpdateOperators = map[string]struct{}{}
+
+func init() {
+	for _, o := range []string{
+		"$currentDate",
+		"$set",
+		"$setOnInsert",
+		"$unset",
+		"$inc",
+	} {
+		UpdateOperators[o] = struct{}{}
+	}
 }

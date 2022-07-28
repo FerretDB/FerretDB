@@ -16,13 +16,13 @@ package pg
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v4"
-	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -38,8 +38,8 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	common.Ignored(document, h.l, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
 
-	var sp sqlParam
-	if sp.db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	var sp pgdb.SQLParam
+	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 	collectionParam, err := document.Get(document.Command())
@@ -47,7 +47,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 	var ok bool
-	if sp.collection, ok = collectionParam.(string); !ok {
+	if sp.Collection, ok = collectionParam.(string); !ok {
 		return nil, common.NewErrorMsg(
 			common.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
@@ -89,25 +89,25 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // insert prepares and executes actual INSERT request to Postgres.
-func (h *Handler) insert(ctx context.Context, sp sqlParam, doc any) error {
-	created, err := h.pgPool.CreateTableIfNotExist(ctx, sp.db, sp.collection)
-	if err != nil {
-		return err
-	}
-	if created {
-		h.l.Info("Created table.", zap.String("schema", sp.db), zap.String("table", sp.collection))
-	}
-
-	d := doc.(*types.Document)
-	sql := fmt.Sprintf("INSERT INTO %s (_jsonb) VALUES ($1)", pgx.Identifier{sp.db, sp.collection}.Sanitize())
-	b, err := fjson.Marshal(d)
-	if err != nil {
-		return lazyerrors.Error(err)
+func (h *Handler) insert(ctx context.Context, sp pgdb.SQLParam, doc any) error {
+	d, ok := doc.(*types.Document)
+	if !ok {
+		return common.NewErrorMsg(
+			common.ErrBadValue,
+			fmt.Sprintf("document has invalid type %s", common.AliasFromType(doc)),
+		)
 	}
 
-	if _, err = h.pgPool.Exec(ctx, sql, b); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	return nil
+	err := h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		if err := pgdb.InsertDocument(ctx, tx, sp.DB, sp.Collection, d); err != nil {
+			if errors.Is(pgdb.ErrInvalidTableName, err) ||
+				errors.Is(pgdb.ErrInvalidDatabaseName, err) {
+				msg := fmt.Sprintf("Invalid namespace: %s.%s", sp.DB, sp.Collection)
+				return common.NewErrorMsg(common.ErrInvalidNamespace, msg)
+			}
+			return lazyerrors.Error(err)
+		}
+		return nil
+	})
+	return err
 }

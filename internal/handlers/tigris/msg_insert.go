@@ -85,9 +85,10 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 func (h *Handler) insert(ctx context.Context, fp fetchParam, doc *types.Document) error {
+	// TODO https://github.com/FerretDB/FerretDB/issues/787
 	err := h.driver.CreateDatabase(ctx, fp.db)
 	if err != nil {
-		h.L.Warn(err.Error())
+		h.L.Sugar().Warnf("Failed to CreateDatabase: %+v", err)
 	}
 
 	schema, err := tjson.DocumentSchema(doc)
@@ -101,7 +102,7 @@ func (h *Handler) insert(ctx context.Context, fp fetchParam, doc *types.Document
 
 	err = h.driver.UseDatabase(fp.db).CreateOrUpdateCollection(ctx, fp.collection, b)
 	if err != nil {
-		h.L.Warn(err.Error())
+		h.L.Sugar().Warnf("Failed to CreateOrUpdateCollection: %+v", err)
 	}
 
 	b, err = tjson.Marshal(doc)

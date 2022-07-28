@@ -16,6 +16,7 @@ package pg
 
 import (
 	"context"
+	"errors"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
@@ -40,11 +41,11 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	}
 
 	res := must.NotFail(types.NewDocument())
-	err = h.pgPool.DropSchema(ctx, db)
-	switch err {
-	case nil:
+	err = h.pgPool.DropDatabase(ctx, db)
+	switch {
+	case err == nil:
 		res.Set("dropped", db)
-	case pgdb.ErrNotExist:
+	case errors.Is(err, pgdb.ErrSchemaNotExist):
 		// nothing
 	default:
 		return nil, lazyerrors.Error(err)

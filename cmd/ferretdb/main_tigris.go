@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build tigris
-// +build tigris
+//go:build ferretdb_tigris
 
 package main
 
@@ -21,7 +20,7 @@ import (
 	"flag"
 )
 
-// init adds `tigris` handler flags when `tigris` build tag is provided.
+// init adds "tigris" handler flags when "ferretdb_tigris" build tag is provided.
 func init() {
 	flag.StringVar(&tigrisURL, "tigris-url", "127.0.0.1:8081", "Tigris URL")
 }

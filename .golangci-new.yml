@@ -1,10 +1,12 @@
 ---
-# New or experimental linters that should pass (or be reconfigured) for new code.
+# New or experimental linters that should pass (or be reconfigured) for new code (compared to `origin/main`).
 
 run:
-  timeout: 2m
+  timeout: 3m
 
 linters-settings:
+  staticcheck:
+    checks: ["all"]
 
 linters:
   enable-all: true
@@ -19,14 +21,15 @@ linters:
     - godox
     - goheader
     - goimports
+    - gomodguard
     - gosimple
     - govet
+    - importas
     - ineffassign
     - lll
     - misspell
     - nolintlint
     - revive
-    - staticcheck
     - unused
     - whitespace
 
@@ -60,12 +63,10 @@ linters:
     - gofumpt
     - gomnd
     - gomoddirectives
-    - gomodguard
     - goprintffuncname
     - gosec
     - grouper
     - ifshort
-    - importas
     - ireturn
     - maintidx
     - makezero
@@ -110,3 +111,4 @@ linters:
 
 issues:
   exclude-use-default: false
+  new-from-rev: origin/main

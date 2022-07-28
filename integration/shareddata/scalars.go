@@ -21,6 +21,11 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+const (
+	doubleBig = float64(2 << 60)
+	int64Big  = int64(2 << 61)
+)
+
 // Scalars contain scalar values for tests.
 //
 // This shared data set is frozen. If you need more values, add them in the test itself.
@@ -35,7 +40,7 @@ var Scalars = &Values[string]{
 		"double-positive-infinity": math.Inf(+1),
 		"double-negative-infinity": math.Inf(-1),
 		"double-nan":               math.NaN(),
-		"double-big":               float64(2 << 60),
+		"double-big":               doubleBig,
 
 		"string":        "foo",
 		"string-double": "42.13",
@@ -80,11 +85,27 @@ var Scalars = &Values[string]{
 		"int64-zero": int64(0),
 		"int64-max":  int64(math.MaxInt64),
 		"int64-min":  int64(math.MinInt64),
-		"int64-big":  int64(2 << 61),
+		"int64-big":  int64Big,
 
 		// no 128-bit decimal floating point (yet)
 
 		// no Min key
 		// no Max key
+
+		// TODO "unset": unset, https://github.com/FerretDB/FerretDB/issues/914
+	},
+}
+
+// FixedScalars is an experiment and will be changed in the future.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/786
+var FixedScalars = &Maps[string]{
+	data: map[string]map[string]any{
+		"fixed_double":          {"double_value": 42.13},
+		"fixed_double-whole":    {"double_value": 42.0},
+		"fixed_double-zero":     {"double_value": 0.0},
+		"fixed_double-max":      {"double_value": math.MaxFloat64},
+		"fixed_double-smallest": {"double_value": math.SmallestNonzeroFloat64},
+		"fixed_double-big":      {"double_value": doubleBig},
 	},
 }

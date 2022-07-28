@@ -26,6 +26,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
@@ -35,38 +36,38 @@ func TestQueryEvaluationMod(t *testing.T) {
 	}
 
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := setup.Setup(t)
 
 	_, err := collection.InsertMany(ctx, []any{
-		bson.D{{"_id", "Zero"}, {"value", 0}},
-		bson.D{{"_id", "NegativeZero"}, {"value", math.Copysign(0, -1)}},
-		bson.D{{"_id", "Int32_1"}, {"value", int32(4080)}},
-		bson.D{{"_id", "Int32_2"}, {"value", int32(1048560)}},
-		bson.D{{"_id", "Int32_3"}, {"value", int32(268435440)}},
-		bson.D{{"_id", "Int64_1"}, {"value", int64(1099511628000)}},
-		bson.D{{"_id", "Int64_2"}, {"value", int64(281474976700000)}},
-		bson.D{{"_id", "Int64_3"}, {"value", int64(72057594040000000)}},
-		bson.D{{"_id", "Nil"}, {"value", nil}},
-		bson.D{{"_id", "String"}, {"value", "12"}},
-		bson.D{{"_id", "NaN"}, {"value", math.NaN()}},
-		bson.D{{"_id", "Infinity"}, {"value", math.Inf(0)}},
-		bson.D{{"_id", "InfinityNegative"}, {"value", math.Inf(-1)}},
-		bson.D{{"_id", "InfinityPositive"}, {"value", math.Inf(+1)}},
-		bson.D{{"_id", "SmallestNonzeroFloat64"}, {"value", math.SmallestNonzeroFloat64}},
-		bson.D{{"_id", "PositiveNumber"}, {"value", 123456789}},
-		bson.D{{"_id", "NegativeNumber"}, {"value", -123456789}},
-		bson.D{{"_id", "MaxInt64"}, {"value", math.MaxInt64}},
-		bson.D{{"_id", "MaxInt64_float"}, {"value", float64(math.MaxInt64)}},
-		bson.D{{"_id", "MaxInt64_plus"}, {"value", float64(math.MaxInt64 + 1)}},
-		bson.D{{"_id", "MaxInt64_overflowVerge"}, {"value", 9.223372036854776832e+18}},
-		bson.D{{"_id", "MaxInt64_overflow"}, {"value", 9.223372036854776833e+18}},
-		bson.D{{"_id", "MaxFloat64_minus"}, {"value", 1.79769e+307}},
-		bson.D{{"_id", "MaxFloat64"}, {"value", math.MaxFloat64}},
-		bson.D{{"_id", "MinInt64"}, {"value", math.MinInt64}},
-		bson.D{{"_id", "MinInt64_float"}, {"value", float64(math.MinInt64)}},
-		bson.D{{"_id", "MinInt64_minus"}, {"value", float64(math.MinInt64 - 1)}},
-		bson.D{{"_id", "MinInt64_overflowVerge"}, {"value", -9.223372036854776832e+18}},
-		bson.D{{"_id", "MinInt64_overflow"}, {"value", -9.223372036854776833e+18}},
+		bson.D{{"_id", "Zero"}, {"v", 0}},
+		bson.D{{"_id", "NegativeZero"}, {"v", math.Copysign(0, -1)}},
+		bson.D{{"_id", "Int32_1"}, {"v", int32(4080)}},
+		bson.D{{"_id", "Int32_2"}, {"v", int32(1048560)}},
+		bson.D{{"_id", "Int32_3"}, {"v", int32(268435440)}},
+		bson.D{{"_id", "Int64_1"}, {"v", int64(1099511628000)}},
+		bson.D{{"_id", "Int64_2"}, {"v", int64(281474976700000)}},
+		bson.D{{"_id", "Int64_3"}, {"v", int64(72057594040000000)}},
+		bson.D{{"_id", "Nil"}, {"v", nil}},
+		bson.D{{"_id", "String"}, {"v", "12"}},
+		bson.D{{"_id", "NaN"}, {"v", math.NaN()}},
+		bson.D{{"_id", "Infinity"}, {"v", math.Inf(0)}},
+		bson.D{{"_id", "InfinityNegative"}, {"v", math.Inf(-1)}},
+		bson.D{{"_id", "InfinityPositive"}, {"v", math.Inf(+1)}},
+		bson.D{{"_id", "SmallestNonzeroFloat64"}, {"v", math.SmallestNonzeroFloat64}},
+		bson.D{{"_id", "PositiveNumber"}, {"v", 123456789}},
+		bson.D{{"_id", "NegativeNumber"}, {"v", -123456789}},
+		bson.D{{"_id", "MaxInt64"}, {"v", math.MaxInt64}},
+		bson.D{{"_id", "MaxInt64_float"}, {"v", float64(math.MaxInt64)}},
+		bson.D{{"_id", "MaxInt64_plus"}, {"v", float64(math.MaxInt64 + 1)}},
+		bson.D{{"_id", "MaxInt64_overflowVerge"}, {"v", 9.223372036854776832e+18}},
+		bson.D{{"_id", "MaxInt64_overflow"}, {"v", 9.223372036854776833e+18}},
+		bson.D{{"_id", "MaxFloat64_minus"}, {"v", 1.79769e+307}},
+		bson.D{{"_id", "MaxFloat64"}, {"v", math.MaxFloat64}},
+		bson.D{{"_id", "MinInt64"}, {"v", math.MinInt64}},
+		bson.D{{"_id", "MinInt64_float"}, {"v", float64(math.MinInt64)}},
+		bson.D{{"_id", "MinInt64_minus"}, {"v", float64(math.MinInt64 - 1)}},
+		bson.D{{"_id", "MinInt64_overflowVerge"}, {"v", -9.223372036854776832e+18}},
+		bson.D{{"_id", "MinInt64_overflow"}, {"v", -9.223372036854776833e+18}},
 	})
 	require.NoError(t, err)
 
@@ -76,79 +77,79 @@ func TestQueryEvaluationMod(t *testing.T) {
 		err         *mongo.CommandError
 	}{
 		"Int32": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{4000, 80}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{4000, 80}}}}},
 			expectedIDs: []any{"Int32_1"},
 		},
 		"Int32_floatDivisor": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{float64(1048500.444), 60}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{float64(1048500.444), 60}}}}},
 			expectedIDs: []any{"Int32_2"},
 		},
 		"Int32_floatRemainder": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{268435000, float64(440.555)}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{268435000, float64(440.555)}}}}},
 			expectedIDs: []any{"Int32_3"},
 		},
 		"Int32_emptyAnswer": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{268435000, float64(400)}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{268435000, float64(400)}}}}},
 			expectedIDs: []any{},
 		},
 		"Int64": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{1099511620000, 8000}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{1099511620000, 8000}}}}},
 			expectedIDs: []any{"Int64_1"},
 		},
 		"Int64_floatDivisor": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{float64(281474976000000.444), 700000}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{float64(281474976000000.444), 700000}}}}},
 			expectedIDs: []any{"Int64_2"},
 		},
 		"Int64_floatRemainder": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{72057594000000000, float64(40000000.555)}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{72057594000000000, float64(40000000.555)}}}}},
 			expectedIDs: []any{"Int64_3"},
 		},
 		"Int64_emptyAnswer": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{1234567890, float64(111)}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{1234567890, float64(111)}}}}},
 			expectedIDs: []any{},
 		},
 		"MaxInt64_Divisor": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{math.MaxInt64, 0}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{math.MaxInt64, 0}}}}},
 			expectedIDs: []any{"MaxInt64", "NegativeZero", "SmallestNonzeroFloat64", "Zero"},
 		},
 		"MaxInt64_Remainder": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{1, math.MaxInt64}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{1, math.MaxInt64}}}}},
 			expectedIDs: []any{},
 		},
 		"MaxInt64_floatDivisor": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{float64(math.MaxInt64), 0}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{float64(math.MaxInt64), 0}}}}},
 			expectedIDs: []any{"MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge", "NegativeZero", "SmallestNonzeroFloat64", "Zero"},
 		},
 		"MaxInt64_floatRemainder": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{1, float64(math.MaxInt64)}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{1, float64(math.MaxInt64)}}}}},
 			expectedIDs: []any{},
 		},
 		"MaxInt64_plus": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854775808e+18, 0}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{9.223372036854775808e+18, 0}}}}},
 			expectedIDs: []any{"MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge", "NegativeZero", "SmallestNonzeroFloat64", "Zero"},
 		},
 		"MaxInt64_1": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{922337203685477580, 7}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{922337203685477580, 7}}}}},
 			expectedIDs: []any{"MaxInt64"},
 		},
 		"MaxInt64_2": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854775807e+17, 7}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{9.223372036854775807e+17, 7}}}}},
 			expectedIDs: []any{},
 		},
 		"MaxInt64_3": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854775800e+17, 7}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{9.223372036854775800e+17, 7}}}}},
 			expectedIDs: []any{},
 		},
 		"MaxInt64_4": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{922337203, 6854775807}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{922337203, 6854775807}}}}},
 			expectedIDs: []any{},
 		},
 		"MaxInt64_overflowVerge": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854776832e+18, 0}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{9.223372036854776832e+18, 0}}}}},
 			expectedIDs: []any{"MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge", "NegativeZero", "SmallestNonzeroFloat64", "Zero"},
 		},
 		"MaxInt64_overflowDivisor": {
-			filter: bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854776833e+18, 0}}}}},
+			filter: bson.D{{"v", bson.D{{"$mod", bson.A{9.223372036854776833e+18, 0}}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -156,7 +157,7 @@ func TestQueryEvaluationMod(t *testing.T) {
 			},
 		},
 		"MaxInt64_overflowBoth": {
-			filter: bson.D{{"value", bson.D{{"$mod", bson.A{9.223372036854776833e+18, 9.223372036854776833e+18}}}}},
+			filter: bson.D{{"v", bson.D{{"$mod", bson.A{9.223372036854776833e+18, 9.223372036854776833e+18}}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -164,47 +165,47 @@ func TestQueryEvaluationMod(t *testing.T) {
 			},
 		},
 		"MinInt64_Divisor": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{math.MinInt64, 0}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{math.MinInt64, 0}}}}},
 			expectedIDs: []any{"MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge", "NegativeZero", "SmallestNonzeroFloat64", "Zero"},
 		},
 		"MinInt64_Remainder": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{1, math.MinInt64}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{1, math.MinInt64}}}}},
 			expectedIDs: []any{},
 		},
 		"MinInt64_floatDivisor": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{float64(math.MinInt64), 0}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{float64(math.MinInt64), 0}}}}},
 			expectedIDs: []any{"MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge", "NegativeZero", "SmallestNonzeroFloat64", "Zero"},
 		},
 		"MinInt64_floatRemainder": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{1, float64(math.MinInt64)}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{1, float64(math.MinInt64)}}}}},
 			expectedIDs: []any{},
 		},
 		"MinInt64_minus": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{-9.223372036854775809e+18, 0}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{-9.223372036854775809e+18, 0}}}}},
 			expectedIDs: []any{"MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge", "NegativeZero", "SmallestNonzeroFloat64", "Zero"},
 		},
 		"MinInt64_1": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{-922337203685477580, -8}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{-922337203685477580, -8}}}}},
 			expectedIDs: []any{"MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge"},
 		},
 		"MinInt64_2": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{-9.223372036854775808e+17, -8}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{-9.223372036854775808e+17, -8}}}}},
 			expectedIDs: []any{},
 		},
 		"MinInt64_3": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{-9.223372036854775800e+17, -8}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{-9.223372036854775800e+17, -8}}}}},
 			expectedIDs: []any{},
 		},
 		"MinInt64_4": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{-922337203, -6854775808}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{-922337203, -6854775808}}}}},
 			expectedIDs: []any{},
 		},
 		"MinInt64_overflowVerge": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{-9.223372036854776832e+18, 0}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{-9.223372036854776832e+18, 0}}}}},
 			expectedIDs: []any{"MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge", "NegativeZero", "SmallestNonzeroFloat64", "Zero"},
 		},
 		"MinInt64_overflowDivisor": {
-			filter: bson.D{{"value", bson.D{{"$mod", bson.A{-9.223372036854776833e+18, 0}}}}},
+			filter: bson.D{{"v", bson.D{{"$mod", bson.A{-9.223372036854776833e+18, 0}}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -212,7 +213,7 @@ func TestQueryEvaluationMod(t *testing.T) {
 			},
 		},
 		"MinInt64_overflowBoth": {
-			filter: bson.D{{"value", bson.D{{"$mod", bson.A{-9.223372036854776833e+18, -9.223372036854776833e+18}}}}},
+			filter: bson.D{{"v", bson.D{{"$mod", bson.A{-9.223372036854776833e+18, -9.223372036854776833e+18}}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -220,7 +221,7 @@ func TestQueryEvaluationMod(t *testing.T) {
 			},
 		},
 		"Float64_1": {
-			filter: bson.D{{"value", bson.D{{"$mod", bson.A{1.79769e+307, 0}}}}},
+			filter: bson.D{{"v", bson.D{{"$mod", bson.A{1.79769e+307, 0}}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -228,7 +229,7 @@ func TestQueryEvaluationMod(t *testing.T) {
 			},
 		},
 		"Float64_2": {
-			filter: bson.D{{"value", bson.D{{"$mod", bson.A{math.MaxFloat64, 0}}}}},
+			filter: bson.D{{"v", bson.D{{"$mod", bson.A{math.MaxFloat64, 0}}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -236,7 +237,7 @@ func TestQueryEvaluationMod(t *testing.T) {
 			},
 		},
 		"Float64_3": {
-			filter: bson.D{{"value", bson.D{{"$mod", bson.A{math.MaxFloat64, math.MaxFloat64}}}}},
+			filter: bson.D{{"v", bson.D{{"$mod", bson.A{math.MaxFloat64, math.MaxFloat64}}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -244,31 +245,31 @@ func TestQueryEvaluationMod(t *testing.T) {
 			},
 		},
 		"NegativeDivisor": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{-100, 89}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{-100, 89}}}}},
 			expectedIDs: []any{"PositiveNumber"},
 		},
 		"NegativeRemainder": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{100, -89}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{100, -89}}}}},
 			expectedIDs: []any{"NegativeNumber"},
 		},
 		"NegativeBoth": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{-100, -89}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{-100, -89}}}}},
 			expectedIDs: []any{"NegativeNumber"},
 		},
 		"NegativeDivisorFloat": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{-100.5, 89.5}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{-100.5, 89.5}}}}},
 			expectedIDs: []any{"PositiveNumber"},
 		},
 		"NegativeRemainderFloat": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{100.5, -89.5}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{100.5, -89.5}}}}},
 			expectedIDs: []any{"NegativeNumber"},
 		},
 		"NegativeBothFloat": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{-100.5, -89.5}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{-100.5, -89.5}}}}},
 			expectedIDs: []any{"NegativeNumber"},
 		},
 		"DivisorZero": {
-			filter: bson.D{{"value", bson.D{{"$mod", bson.A{0, 1}}}}},
+			filter: bson.D{{"v", bson.D{{"$mod", bson.A{0, 1}}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -276,7 +277,7 @@ func TestQueryEvaluationMod(t *testing.T) {
 			},
 		},
 		"ZeroNegativeDevisor": {
-			filter: bson.D{{"value", bson.D{{"$mod", bson.A{math.Copysign(0, -1), 1}}}}},
+			filter: bson.D{{"v", bson.D{{"$mod", bson.A{math.Copysign(0, -1), 1}}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -284,7 +285,7 @@ func TestQueryEvaluationMod(t *testing.T) {
 			},
 		},
 		"DivisorSmallestNonzeroFloat64": {
-			filter: bson.D{{"value", bson.D{{"$mod", bson.A{math.SmallestNonzeroFloat64, 1}}}}},
+			filter: bson.D{{"v", bson.D{{"$mod", bson.A{math.SmallestNonzeroFloat64, 1}}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -292,11 +293,11 @@ func TestQueryEvaluationMod(t *testing.T) {
 			},
 		},
 		"RemainderSmallestNonzeroFloat64": {
-			filter:      bson.D{{"value", bson.D{{"$mod", bson.A{23456789, math.SmallestNonzeroFloat64}}}}},
+			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{23456789, math.SmallestNonzeroFloat64}}}}},
 			expectedIDs: []any{"NegativeZero", "SmallestNonzeroFloat64", "Zero"},
 		},
 		"EmptyArray": {
-			filter: bson.D{{"value", bson.D{{"$mod", bson.A{}}}}},
+			filter: bson.D{{"v", bson.D{{"$mod", bson.A{}}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -304,7 +305,7 @@ func TestQueryEvaluationMod(t *testing.T) {
 			},
 		},
 		"NotEnoughElements": {
-			filter: bson.D{{"value", bson.D{{"$mod", bson.A{1}}}}},
+			filter: bson.D{{"v", bson.D{{"$mod", bson.A{1}}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -312,7 +313,7 @@ func TestQueryEvaluationMod(t *testing.T) {
 			},
 		},
 		"TooManyElements": {
-			filter: bson.D{{"value", bson.D{{"$mod", bson.A{1, 2, 3}}}}},
+			filter: bson.D{{"v", bson.D{{"$mod", bson.A{1, 2, 3}}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -320,7 +321,7 @@ func TestQueryEvaluationMod(t *testing.T) {
 			},
 		},
 		"DivisorNotNumber": {
-			filter: bson.D{{"value", bson.D{{"$mod", bson.A{"1", 2}}}}},
+			filter: bson.D{{"v", bson.D{{"$mod", bson.A{"1", 2}}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -328,7 +329,7 @@ func TestQueryEvaluationMod(t *testing.T) {
 			},
 		},
 		"RemainderNotNumber": {
-			filter: bson.D{{"value", bson.D{{"$mod", bson.A{1, "2"}}}}},
+			filter: bson.D{{"v", bson.D{{"$mod", bson.A{1, "2"}}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -336,7 +337,7 @@ func TestQueryEvaluationMod(t *testing.T) {
 			},
 		},
 		"Nil": {
-			filter: bson.D{{"value", bson.D{{"$mod", bson.A{nil, 3}}}}},
+			filter: bson.D{{"v", bson.D{{"$mod", bson.A{nil, 3}}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -344,7 +345,7 @@ func TestQueryEvaluationMod(t *testing.T) {
 			},
 		},
 		"DivisorNaN": {
-			filter: bson.D{{"value", bson.D{{"$mod", bson.A{math.NaN(), 1}}}}},
+			filter: bson.D{{"v", bson.D{{"$mod", bson.A{math.NaN(), 1}}}}},
 			err: &mongo.CommandError{
 				Code: 2,
 				Name: "BadValue",
@@ -353,7 +354,7 @@ func TestQueryEvaluationMod(t *testing.T) {
 			},
 		},
 		"RemainderNaN": {
-			filter: bson.D{{"value", bson.D{{"$mod", bson.A{1, math.NaN()}}}}},
+			filter: bson.D{{"v", bson.D{{"$mod", bson.A{1, math.NaN()}}}}},
 			err: &mongo.CommandError{
 				Code: 2,
 				Name: "BadValue",
@@ -362,7 +363,7 @@ func TestQueryEvaluationMod(t *testing.T) {
 			},
 		},
 		"InfinityNegative": {
-			filter: bson.D{{"value", bson.D{{"$mod", bson.A{1, math.Inf(-1)}}}}},
+			filter: bson.D{{"v", bson.D{{"$mod", bson.A{1, math.Inf(-1)}}}}},
 			err: &mongo.CommandError{
 				Code: 2,
 				Name: "BadValue",
@@ -371,7 +372,7 @@ func TestQueryEvaluationMod(t *testing.T) {
 			},
 		},
 		"Infinity": {
-			filter: bson.D{{"value", bson.D{{"$mod", bson.A{1, math.Inf(0)}}}}},
+			filter: bson.D{{"v", bson.D{{"$mod", bson.A{1, math.Inf(0)}}}}},
 			err: &mongo.CommandError{
 				Code: 2,
 				Name: "BadValue",
@@ -380,7 +381,7 @@ func TestQueryEvaluationMod(t *testing.T) {
 			},
 		},
 		"InfinityPositive": {
-			filter: bson.D{{"value", bson.D{{"$mod", bson.A{math.Inf(+1), 0}}}}},
+			filter: bson.D{{"v", bson.D{{"$mod", bson.A{math.Inf(+1), 0}}}}},
 			err: &mongo.CommandError{
 				Code: 2,
 				Name: "BadValue",
@@ -411,13 +412,13 @@ func TestQueryEvaluationMod(t *testing.T) {
 
 func TestQueryEvaluationRegex(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars)
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
 	_, err := collection.InsertMany(ctx, []any{
-		bson.D{{"_id", "multiline-string"}, {"value", "bar\nfoo"}},
+		bson.D{{"_id", "multiline-string"}, {"v", "bar\nfoo"}},
 		bson.D{
 			{"_id", "document-nested-strings"},
-			{"value", bson.D{{"foo", bson.D{{"bar", "quz"}}}}},
+			{"v", bson.D{{"foo", bson.D{{"bar", "quz"}}}}},
 		},
 	})
 	require.NoError(t, err)
@@ -427,27 +428,27 @@ func TestQueryEvaluationRegex(t *testing.T) {
 		expectedIDs []any
 	}{
 		"Regex": {
-			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "foo"}}}}},
+			filter:      bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "foo"}}}}},
 			expectedIDs: []any{"multiline-string", "string"},
 		},
 		"RegexNested": {
-			filter:      bson.D{{"value.foo.bar", bson.D{{"$regex", primitive.Regex{Pattern: "quz"}}}}},
+			filter:      bson.D{{"v.foo.bar", bson.D{{"$regex", primitive.Regex{Pattern: "quz"}}}}},
 			expectedIDs: []any{"document-nested-strings"},
 		},
 		"RegexWithOption": {
-			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "42", Options: "i"}}}}},
+			filter:      bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "42", Options: "i"}}}}},
 			expectedIDs: []any{"string-double", "string-whole"},
 		},
 		"RegexStringOptionMatchCaseInsensitive": {
-			filter:      bson.D{{"value", bson.D{{"$regex", "foo"}, {"$options", "i"}}}},
+			filter:      bson.D{{"v", bson.D{{"$regex", "foo"}, {"$options", "i"}}}},
 			expectedIDs: []any{"multiline-string", "regex", "string"},
 		},
 		"RegexStringOptionMatchLineEnd": {
-			filter:      bson.D{{"value", bson.D{{"$regex", "b.*foo"}, {"$options", "s"}}}},
+			filter:      bson.D{{"v", bson.D{{"$regex", "b.*foo"}, {"$options", "s"}}}},
 			expectedIDs: []any{"multiline-string"},
 		},
 		"RegexStringOptionMatchMultiline": {
-			filter:      bson.D{{"value", bson.D{{"$regex", "^foo"}, {"$options", "m"}}}},
+			filter:      bson.D{{"v", bson.D{{"$regex", "^foo"}, {"$options", "m"}}}},
 			expectedIDs: []any{"multiline-string", "string"},
 		},
 		"RegexNoSuchField": {
@@ -459,7 +460,7 @@ func TestQueryEvaluationRegex(t *testing.T) {
 			expectedIDs: []any{},
 		},
 		"RegexBadOption": {
-			filter:      bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "foo", Options: "123"}}}}},
+			filter:      bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "foo", Options: "123"}}}}},
 			expectedIDs: []any{"multiline-string", "string"},
 		},
 	} {
@@ -480,10 +481,10 @@ func TestQueryEvaluationRegex(t *testing.T) {
 
 func TestQueryEvaluationRegexErrors(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars)
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
 	_, err := collection.InsertMany(ctx, []any{
-		bson.D{{"_id", "multiline-string"}, {"value", "bar\nfoo"}},
+		bson.D{{"_id", "multiline-string"}, {"v", "bar\nfoo"}},
 	})
 	require.NoError(t, err)
 
@@ -492,7 +493,7 @@ func TestQueryEvaluationRegexErrors(t *testing.T) {
 		err    *mongo.CommandError
 	}{
 		"MissingClosingParen": {
-			filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "g(-z]+ng  wrong regex"}}}}},
+			filter: bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "g(-z]+ng  wrong regex"}}}}},
 			err: &mongo.CommandError{
 				Code:    51091,
 				Name:    "Location51091",
@@ -500,7 +501,7 @@ func TestQueryEvaluationRegexErrors(t *testing.T) {
 			},
 		},
 		"MissingClosingBracket": {
-			filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "g[-z+ng  wrong regex"}}}}},
+			filter: bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "g[-z+ng  wrong regex"}}}}},
 			err: &mongo.CommandError{
 				Code:    51091,
 				Name:    "Location51091",
@@ -508,7 +509,7 @@ func TestQueryEvaluationRegexErrors(t *testing.T) {
 			},
 		},
 		"InvalidEscape": {
-			filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "\\uZ"}}}}},
+			filter: bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "\\uZ"}}}}},
 			err: &mongo.CommandError{
 				Code:    51091,
 				Name:    "Location51091",
@@ -516,7 +517,7 @@ func TestQueryEvaluationRegexErrors(t *testing.T) {
 			},
 		},
 		"NamedCapture": {
-			filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: "(?P<name)"}}}}},
+			filter: bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "(?P<name)"}}}}},
 			err: &mongo.CommandError{
 				Code:    51091,
 				Name:    "Location51091",
@@ -524,7 +525,7 @@ func TestQueryEvaluationRegexErrors(t *testing.T) {
 			},
 		},
 		"UnexpectedParen": {
-			filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: ")"}}}}},
+			filter: bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: ")"}}}}},
 			err: &mongo.CommandError{
 				Code:    51091,
 				Name:    "Location51091",
@@ -532,7 +533,7 @@ func TestQueryEvaluationRegexErrors(t *testing.T) {
 			},
 		},
 		"TrailingBackslash": {
-			filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: `abc\`}}}}},
+			filter: bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: `abc\`}}}}},
 			err: &mongo.CommandError{
 				Code:    51091,
 				Name:    "Location51091",
@@ -540,7 +541,7 @@ func TestQueryEvaluationRegexErrors(t *testing.T) {
 			},
 		},
 		"InvalidRepetition": {
-			filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: `a**`}}}}},
+			filter: bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: `a**`}}}}},
 			err: &mongo.CommandError{
 				Code:    51091,
 				Name:    "Location51091",
@@ -548,7 +549,7 @@ func TestQueryEvaluationRegexErrors(t *testing.T) {
 			},
 		},
 		"MissingRepetitionArgumentStar": {
-			filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: `*`}}}}},
+			filter: bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: `*`}}}}},
 			err: &mongo.CommandError{
 				Code:    51091,
 				Name:    "Location51091",
@@ -556,7 +557,7 @@ func TestQueryEvaluationRegexErrors(t *testing.T) {
 			},
 		},
 		"MissingRepetitionArgumentPlus": {
-			filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: `+`}}}}},
+			filter: bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: `+`}}}}},
 			err: &mongo.CommandError{
 				Code:    51091,
 				Name:    "Location51091",
@@ -564,7 +565,7 @@ func TestQueryEvaluationRegexErrors(t *testing.T) {
 			},
 		},
 		"MissingRepetitionArgumentQuestion": {
-			filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: `?`}}}}},
+			filter: bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: `?`}}}}},
 			err: &mongo.CommandError{
 				Code:    51091,
 				Name:    "Location51091",
@@ -572,7 +573,7 @@ func TestQueryEvaluationRegexErrors(t *testing.T) {
 			},
 		},
 		"InvalidClassRange": {
-			filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: `[z-a]`}}}}},
+			filter: bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: `[z-a]`}}}}},
 			err: &mongo.CommandError{
 				Code:    51091,
 				Name:    "Location51091",
@@ -580,7 +581,7 @@ func TestQueryEvaluationRegexErrors(t *testing.T) {
 			},
 		},
 		"InvalidNestedRepetitionOperatorStar": {
-			filter: bson.D{{"value", bson.D{{"$regex", primitive.Regex{Pattern: `a**`}}}}},
+			filter: bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: `a**`}}}}},
 			err: &mongo.CommandError{
 				Code:    51091,
 				Name:    "Location51091",
@@ -588,7 +589,7 @@ func TestQueryEvaluationRegexErrors(t *testing.T) {
 			},
 		},
 		"InvalidPerlOp": {
-			filter: bson.D{{"value", bson.D{{"$regex", `(?z)`}}}},
+			filter: bson.D{{"v", bson.D{{"$regex", `(?z)`}}}},
 			err: &mongo.CommandError{
 				Code:    51091,
 				Name:    "Location51091",
@@ -596,7 +597,7 @@ func TestQueryEvaluationRegexErrors(t *testing.T) {
 			},
 		},
 		"InvalidRepeatSize": {
-			filter: bson.D{{"value", bson.D{{"$regex", `(aa){3,10001}`}}}},
+			filter: bson.D{{"v", bson.D{{"$regex", `(aa){3,10001}`}}}},
 			err: &mongo.CommandError{
 				Code:    51091,
 				Name:    "Location51091",

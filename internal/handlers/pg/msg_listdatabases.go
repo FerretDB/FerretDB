@@ -17,7 +17,10 @@ package pg
 import (
 	"context"
 
+	"github.com/jackc/pgx/v4"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -38,54 +41,65 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	common.Ignored(document, h.l, "comment", "authorizedDatabases")
 
-	databaseNames, err := h.pgPool.Schemas(ctx)
+	nameOnly, err := common.GetBoolOptionalParam(document, "nameOnly")
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/591
-	nameOnly, _ := common.GetOptionalParam(document, "nameOnly", false)
-
-	databases := types.MakeArray(len(databaseNames))
-	for _, databaseName := range databaseNames {
-		tables, err := h.pgPool.Tables(ctx, databaseName)
+	var databases *types.Array
+	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		var databaseNames []string
+		var err error
+		databaseNames, err = pgdb.Databases(ctx, tx)
 		if err != nil {
-			return nil, lazyerrors.Error(err)
+			return lazyerrors.Error(err)
 		}
 
-		// iterate over result to collect sizes
-		var sizeOnDisk int64
-		for _, name := range tables {
-			var tableSize int64
-			fullName := databaseName + "." + name
-			err = h.pgPool.QueryRow(ctx, "SELECT pg_total_relation_size($1)", fullName).Scan(&tableSize)
+		databases = types.MakeArray(len(databaseNames))
+		for _, databaseName := range databaseNames {
+			tables, err := pgdb.Tables(ctx, tx, databaseName)
 			if err != nil {
-				return nil, lazyerrors.Error(err)
+				return lazyerrors.Error(err)
 			}
-			sizeOnDisk += tableSize
-		}
 
-		d := must.NotFail(types.NewDocument(
-			"name", databaseName,
-			"sizeOnDisk", sizeOnDisk,
-			"empty", sizeOnDisk == 0,
-		))
-
-		matches, err := common.FilterDocument(d, filter)
-		if err != nil {
-			return nil, err
-		}
-
-		if matches {
-			if nameOnly {
-				d = must.NotFail(types.NewDocument(
-					"name", databaseName,
-				))
+			// iterate over result to collect sizes
+			var sizeOnDisk int64
+			for _, name := range tables {
+				var tableSize int64
+				fullName := databaseName + "." + name
+				err = tx.QueryRow(ctx, "SELECT pg_total_relation_size($1)", fullName).Scan(&tableSize)
+				if err != nil {
+					return lazyerrors.Error(err)
+				}
+				sizeOnDisk += tableSize
 			}
-			if err = databases.Append(d); err != nil {
-				return nil, lazyerrors.Error(err)
+
+			d := must.NotFail(types.NewDocument(
+				"name", databaseName,
+				"sizeOnDisk", sizeOnDisk,
+				"empty", sizeOnDisk == 0,
+			))
+
+			matches, err := common.FilterDocument(d, filter)
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			if matches {
+				if nameOnly {
+					d = must.NotFail(types.NewDocument(
+						"name", databaseName,
+					))
+				}
+				if err = databases.Append(d); err != nil {
+					return lazyerrors.Error(err)
+				}
 			}
 		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	if nameOnly {

@@ -24,6 +24,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
@@ -45,7 +46,7 @@ func TestFindAndModifySimple(t *testing.T) {
 					"value",
 					bson.D{
 						{"_id", "binary"},
-						{"value", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}},
+						{"v", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}},
 					},
 				},
 				{"ok", float64(1)},
@@ -54,84 +55,84 @@ func TestFindAndModifySimple(t *testing.T) {
 		"NewDoubleNonZero": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "double-smallest"}}},
-				{"update", bson.D{{"_id", "double-smallest"}, {"value", int32(43)}}},
+				{"update", bson.D{{"_id", "double-smallest"}, {"v", int32(43)}}},
 				{"new", float64(42)},
 			},
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
-				{"value", bson.D{{"_id", "double-smallest"}, {"value", int32(43)}}},
+				{"value", bson.D{{"_id", "double-smallest"}, {"v", int32(43)}}},
 				{"ok", float64(1)},
 			},
 		},
 		"NewDoubleZero": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "double-zero"}}},
-				{"update", bson.D{{"_id", "double-zero"}, {"value", 43.0}}},
+				{"update", bson.D{{"_id", "double-zero"}, {"v", 43.0}}},
 				{"new", float64(0)},
 			},
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
-				{"value", bson.D{{"_id", "double-zero"}, {"value", 0.0}}},
+				{"value", bson.D{{"_id", "double-zero"}, {"v", 0.0}}},
 				{"ok", float64(1)},
 			},
 		},
 		"NewDoubleNaN": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "double-zero"}}},
-				{"update", bson.D{{"_id", "double-zero"}, {"value", 43.0}}},
+				{"update", bson.D{{"_id", "double-zero"}, {"v", 43.0}}},
 				{"new", math.NaN()},
 			},
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
-				{"value", bson.D{{"_id", "double-zero"}, {"value", float64(43)}}},
+				{"value", bson.D{{"_id", "double-zero"}, {"v", float64(43)}}},
 				{"ok", float64(1)},
 			},
 		},
 		"NewIntNonZero": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "int32"}}},
-				{"update", bson.D{{"_id", "int32"}, {"value", int32(43)}}},
+				{"update", bson.D{{"_id", "int32"}, {"v", int32(43)}}},
 				{"new", int32(11)},
 			},
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
-				{"value", bson.D{{"_id", "int32"}, {"value", int32(43)}}},
+				{"value", bson.D{{"_id", "int32"}, {"v", int32(43)}}},
 				{"ok", float64(1)},
 			},
 		},
 		"NewIntZero": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "int32-zero"}}},
-				{"update", bson.D{{"_id", "int32-zero"}, {"value", int32(43)}}},
+				{"update", bson.D{{"_id", "int32-zero"}, {"v", int32(43)}}},
 				{"new", int32(0)},
 			},
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
-				{"value", bson.D{{"_id", "int32-zero"}, {"value", int32(0)}}},
+				{"value", bson.D{{"_id", "int32-zero"}, {"v", int32(0)}}},
 				{"ok", float64(1)},
 			},
 		},
 		"NewLongNonZero": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "int64"}}},
-				{"update", bson.D{{"_id", "int64"}, {"value", int64(43)}}},
+				{"update", bson.D{{"_id", "int64"}, {"v", int64(43)}}},
 				{"new", int64(11)},
 			},
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
-				{"value", bson.D{{"_id", "int64"}, {"value", int64(43)}}},
+				{"value", bson.D{{"_id", "int64"}, {"v", int64(43)}}},
 				{"ok", float64(1)},
 			},
 		},
 		"NewLongZero": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "int64-zero"}}},
-				{"update", bson.D{{"_id", "int64-zero"}, {"value", int64(43)}}},
+				{"update", bson.D{{"_id", "int64-zero"}, {"v", int64(43)}}},
 				{"new", int64(0)},
 			},
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
-				{"value", bson.D{{"_id", "int64-zero"}, {"value", int64(0)}}},
+				{"value", bson.D{{"_id", "int64-zero"}, {"v", int64(0)}}},
 				{"ok", float64(1)},
 			},
 		},
@@ -139,7 +140,7 @@ func TestFindAndModifySimple(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 			command := append(bson.D{{"findAndModify", collection.Name()}}, tc.command...)
 
@@ -162,7 +163,7 @@ func TestFindAndModifyEmptyCollectionName(t *testing.T) {
 		"EmptyCollectionName": {
 			err: &mongo.CommandError{
 				Code:    73,
-				Message: "Invalid namespace specified 'testfindandmodifyemptycollectionname-emptycollectionname.'",
+				Message: "Invalid namespace specified 'testfindandmodifyemptycollectionname_emptycollectionname.'",
 				Name:    "InvalidNamespace",
 			},
 		},
@@ -170,7 +171,7 @@ func TestFindAndModifyEmptyCollectionName(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, bson.D{{"findAndModify", ""}}).Decode(&actual)
@@ -292,7 +293,7 @@ func TestFindAndModifyErrors(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 			command := append(bson.D{{"findAndModify", collection.Name()}}, tc.command...)
 
@@ -319,44 +320,44 @@ func TestFindAndModifyUpdate(t *testing.T) {
 		"Replace": {
 			query: bson.D{{"_id", "int64"}},
 			command: bson.D{
-				{"update", bson.D{{"_id", "int64"}, {"value", int64(43)}}},
+				{"update", bson.D{{"_id", "int64"}, {"v", int64(43)}}},
 			},
-			update: bson.D{{"_id", "int64"}, {"value", int64(43)}},
+			update: bson.D{{"_id", "int64"}, {"v", int64(43)}},
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
-				{"value", bson.D{{"_id", "int64"}, {"value", int64(42)}}},
+				{"value", bson.D{{"_id", "int64"}, {"v", int64(42)}}},
 				{"ok", float64(1)},
 			},
 		},
 		"ReplaceWithoutID": {
 			query: bson.D{{"_id", "int64"}},
 			command: bson.D{
-				{"update", bson.D{{"value", int64(43)}}},
+				{"update", bson.D{{"v", int64(43)}}},
 			},
-			update: bson.D{{"_id", "int64"}, {"value", int64(43)}},
+			update: bson.D{{"_id", "int64"}, {"v", int64(43)}},
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
-				{"value", bson.D{{"_id", "int64"}, {"value", int64(42)}}},
+				{"value", bson.D{{"_id", "int64"}, {"v", int64(42)}}},
 				{"ok", float64(1)},
 			},
 		},
 		"ReplaceReturnNew": {
 			query: bson.D{{"_id", "int32"}},
 			command: bson.D{
-				{"update", bson.D{{"_id", "int32"}, {"value", int32(43)}}},
+				{"update", bson.D{{"_id", "int32"}, {"v", int32(43)}}},
 				{"new", true},
 			},
-			update: bson.D{{"_id", "int32"}, {"value", int32(43)}},
+			update: bson.D{{"_id", "int32"}, {"v", int32(43)}},
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
-				{"value", bson.D{{"_id", "int32"}, {"value", int32(43)}}},
+				{"value", bson.D{{"_id", "int32"}, {"v", int32(43)}}},
 				{"ok", float64(1)},
 			},
 		},
 		"UpdateNotExistedIdInQuery": {
 			query: bson.D{{"_id", "no-such-id"}},
 			command: bson.D{
-				{"update", bson.D{{"value", int32(43)}}},
+				{"update", bson.D{{"v", int32(43)}}},
 			},
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(0)}, {"updatedExisting", false}}},
@@ -365,11 +366,11 @@ func TestFindAndModifyUpdate(t *testing.T) {
 		},
 		"UpdateNotExistedIdNotInQuery": {
 			query: bson.D{{"$and", bson.A{
-				bson.D{{"value", bson.D{{"$gt", 0}}}},
-				bson.D{{"value", bson.D{{"$lt", 0}}}},
+				bson.D{{"v", bson.D{{"$gt", 0}}}},
+				bson.D{{"v", bson.D{{"$lt", 0}}}},
 			}}},
 			command: bson.D{
-				{"update", bson.D{{"value", int32(43)}}},
+				{"update", bson.D{{"v", int32(43)}}},
 			},
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(0)}, {"updatedExisting", false}}},
@@ -379,25 +380,25 @@ func TestFindAndModifyUpdate(t *testing.T) {
 		"UpdateOperatorSet": {
 			query: bson.D{{"_id", "int64"}},
 			command: bson.D{
-				{"update", bson.D{{"$set", bson.D{{"value", int64(43)}}}}},
+				{"update", bson.D{{"$set", bson.D{{"v", int64(43)}}}}},
 			},
-			update: bson.D{{"_id", "int64"}, {"value", int64(43)}},
+			update: bson.D{{"_id", "int64"}, {"v", int64(43)}},
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
-				{"value", bson.D{{"_id", "int64"}, {"value", int64(42)}}},
+				{"value", bson.D{{"_id", "int64"}, {"v", int64(42)}}},
 				{"ok", float64(1)},
 			},
 		},
 		"UpdateOperatorSetReturnNew": {
 			query: bson.D{{"_id", "int64"}},
 			command: bson.D{
-				{"update", bson.D{{"$set", bson.D{{"value", int64(43)}}}}},
+				{"update", bson.D{{"$set", bson.D{{"v", int64(43)}}}}},
 				{"new", true},
 			},
-			update: bson.D{{"_id", "int64"}, {"value", int64(43)}},
+			update: bson.D{{"_id", "int64"}, {"v", int64(43)}},
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}, {"updatedExisting", true}}},
-				{"value", bson.D{{"_id", "int64"}, {"value", int64(43)}}},
+				{"value", bson.D{{"_id", "int64"}, {"v", int64(43)}}},
 				{"ok", float64(1)},
 			},
 		},
@@ -405,7 +406,7 @@ func TestFindAndModifyUpdate(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 			command := bson.D{{"findAndModify", collection.Name()}, {"query", tc.query}}
 			command = append(command, tc.command...)
@@ -447,7 +448,7 @@ func TestFindAndModifyUpsert(t *testing.T) {
 		"Upsert": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "double"}}},
-				{"update", bson.D{{"$set", bson.D{{"value", 43.13}}}}},
+				{"update", bson.D{{"$set", bson.D{{"v", 43.13}}}}},
 				{"upsert", true},
 			},
 			response: bson.D{
@@ -455,14 +456,14 @@ func TestFindAndModifyUpsert(t *testing.T) {
 					{"n", int32(1)},
 					{"updatedExisting", true},
 				}},
-				{"value", bson.D{{"_id", "double"}, {"value", 42.13}}},
+				{"value", bson.D{{"_id", "double"}, {"v", 42.13}}},
 				{"ok", float64(1)},
 			},
 		},
 		"UpsertNew": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "double"}}},
-				{"update", bson.D{{"$set", bson.D{{"value", 43.13}}}}},
+				{"update", bson.D{{"$set", bson.D{{"v", 43.13}}}}},
 				{"upsert", true},
 				{"new", true},
 			},
@@ -471,14 +472,14 @@ func TestFindAndModifyUpsert(t *testing.T) {
 					{"n", int32(1)},
 					{"updatedExisting", true},
 				}},
-				{"value", bson.D{{"_id", "double"}, {"value", 43.13}}},
+				{"value", bson.D{{"_id", "double"}, {"v", 43.13}}},
 				{"ok", float64(1)},
 			},
 		},
 		"UpsertNoSuchDocument": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "no-such-doc"}}},
-				{"update", bson.D{{"$set", bson.D{{"value", 43.13}}}}},
+				{"update", bson.D{{"$set", bson.D{{"v", 43.13}}}}},
 				{"upsert", true},
 				{"new", true},
 			},
@@ -488,14 +489,14 @@ func TestFindAndModifyUpsert(t *testing.T) {
 					{"updatedExisting", false},
 					{"upserted", "no-such-doc"},
 				}},
-				{"value", bson.D{{"_id", "no-such-doc"}, {"value", 43.13}}},
+				{"value", bson.D{{"_id", "no-such-doc"}, {"v", 43.13}}},
 				{"ok", float64(1)},
 			},
 		},
 		"UpsertNoSuchReplaceDocument": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "no-such-doc"}}},
-				{"update", bson.D{{"value", 43.13}}},
+				{"update", bson.D{{"v", 43.13}}},
 				{"upsert", true},
 				{"new", true},
 			},
@@ -505,14 +506,14 @@ func TestFindAndModifyUpsert(t *testing.T) {
 					{"updatedExisting", false},
 					{"upserted", "no-such-doc"},
 				}},
-				{"value", bson.D{{"_id", "no-such-doc"}, {"value", 43.13}}},
+				{"value", bson.D{{"_id", "no-such-doc"}, {"v", 43.13}}},
 				{"ok", float64(1)},
 			},
 		},
 		"UpsertReplace": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "double"}}},
-				{"update", bson.D{{"value", 43.13}}},
+				{"update", bson.D{{"v", 43.13}}},
 				{"upsert", true},
 			},
 			response: bson.D{
@@ -520,14 +521,14 @@ func TestFindAndModifyUpsert(t *testing.T) {
 					{"n", int32(1)},
 					{"updatedExisting", true},
 				}},
-				{"value", bson.D{{"_id", "double"}, {"value", 42.13}}},
+				{"value", bson.D{{"_id", "double"}, {"v", 42.13}}},
 				{"ok", float64(1)},
 			},
 		},
 		"UpsertReplaceReturnNew": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "double"}}},
-				{"update", bson.D{{"value", 43.13}}},
+				{"update", bson.D{{"v", 43.13}}},
 				{"upsert", true},
 				{"new", true},
 			},
@@ -536,7 +537,7 @@ func TestFindAndModifyUpsert(t *testing.T) {
 					{"n", int32(1)},
 					{"updatedExisting", true},
 				}},
-				{"value", bson.D{{"_id", "double"}, {"value", 43.13}}},
+				{"value", bson.D{{"_id", "double"}, {"v", 43.13}}},
 				{"ok", float64(1)},
 			},
 		},
@@ -544,7 +545,7 @@ func TestFindAndModifyUpsert(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 			command := append(bson.D{{"findAndModify", collection.Name()}}, tc.command...)
 
@@ -566,18 +567,17 @@ func TestFindAndModifyUpsertComplex(t *testing.T) {
 	for name, tc := range map[string]struct {
 		command         bson.D
 		lastErrorObject bson.D
-		value           bson.D
 	}{
 		"UpsertNoSuchDocumentNoIdInQuery": {
 			command: bson.D{
 				{"query", bson.D{{
 					"$and",
 					bson.A{
-						bson.D{{"value", bson.D{{"$gt", 0}}}},
-						bson.D{{"value", bson.D{{"$lt", 0}}}},
+						bson.D{{"v", bson.D{{"$gt", 0}}}},
+						bson.D{{"v", bson.D{{"$lt", 0}}}},
 					},
 				}}},
-				{"update", bson.D{{"$set", bson.D{{"value", 43.13}}}}},
+				{"update", bson.D{{"$set", bson.D{{"v", 43.13}}}}},
 				{"upsert", true},
 			},
 			lastErrorObject: bson.D{
@@ -589,7 +589,7 @@ func TestFindAndModifyUpsertComplex(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 			command := append(bson.D{{"findAndModify", collection.Name()}}, tc.command...)
 
@@ -631,7 +631,7 @@ func TestFindAndModifyRemove(t *testing.T) {
 				{"lastErrorObject", bson.D{
 					{"n", int32(1)},
 				}},
-				{"value", bson.D{{"_id", "double"}, {"value", 42.13}}},
+				{"value", bson.D{{"_id", "double"}, {"v", 42.13}}},
 				{"ok", float64(1)},
 			},
 		},
@@ -642,8 +642,8 @@ func TestFindAndModifyRemove(t *testing.T) {
 					bson.D{{
 						"$and",
 						bson.A{
-							bson.D{{"value", bson.D{{"$gt", 0}}}},
-							bson.D{{"value", bson.D{{"$lt", 0}}}},
+							bson.D{{"v", bson.D{{"$gt", 0}}}},
+							bson.D{{"v", bson.D{{"$lt", 0}}}},
 						},
 					}},
 				},
@@ -658,7 +658,7 @@ func TestFindAndModifyRemove(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup(t, shareddata.Scalars)
+			ctx, collection := setup.Setup(t, shareddata.Scalars)
 
 			command := append(bson.D{{"findAndModify", collection.Name()}}, tc.command...)
 

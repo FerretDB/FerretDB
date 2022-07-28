@@ -173,7 +173,7 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() fjsontype) {
 
 		// j may not be a canonical form.
 		// We can't compare it with MarshalJSON() result directly.
-		// Instead, we compare second results.
+		// Instead, we compare with round-trip result.
 
 		v := newFunc()
 		if err := v.UnmarshalJSON([]byte(j)); err != nil {

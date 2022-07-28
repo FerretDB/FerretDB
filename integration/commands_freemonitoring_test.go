@@ -22,12 +22,14 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestCommandsFreeMonitoringGetFreeMonitoringStatus(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setupWithOpts(t, &setupOpts{
-		databaseName: "admin",
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		DatabaseName: "admin",
 	})
 
 	expected := map[string]any{
@@ -36,7 +38,7 @@ func TestCommandsFreeMonitoringGetFreeMonitoringStatus(t *testing.T) {
 	}
 
 	var actual bson.D
-	err := collection.Database().RunCommand(ctx, bson.D{{"getFreeMonitoringStatus", 1}}).Decode(&actual)
+	err := s.TargetCollection.Database().RunCommand(s.Ctx, bson.D{{"getFreeMonitoringStatus", 1}}).Decode(&actual)
 	require.NoError(t, err)
 
 	m := actual.Map()
@@ -57,8 +59,8 @@ func TestCommandsFreeMonitoringGetFreeMonitoringStatus(t *testing.T) {
 
 func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setupWithOpts(t, &setupOpts{
-		databaseName: "admin",
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		DatabaseName: "admin",
 	})
 
 	for name, tc := range map[string]struct {
@@ -104,7 +106,7 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 			t.Parallel()
 
 			var actual bson.D
-			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+			err := s.TargetCollection.Database().RunCommand(s.Ctx, tc.command).Decode(&actual)
 
 			if tc.err != nil {
 				AssertEqualError(t, *tc.err, err)

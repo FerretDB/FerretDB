@@ -15,7 +15,9 @@
 package integration
 
 import (
+	"fmt"
 	"math"
+	"net"
 	"strconv"
 	"testing"
 	"time"
@@ -25,7 +27,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -34,36 +38,29 @@ import (
 
 func TestCommandsAdministrationCreateDropList(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := setup.Setup(t) // no providers there
 	db := collection.Database()
 	name := collection.Name()
 
 	names, err := db.ListCollectionNames(ctx, bson.D{})
 	require.NoError(t, err)
-	assert.Contains(t, names, name)
+	require.Empty(t, names, "setup should not create collection if no providers are given")
 
-	err = collection.Drop(ctx)
-	require.NoError(t, err)
-
-	// error is consumed by the driver
+	// drop non-existing collection in non-existing database; error is consumed by the driver
 	err = collection.Drop(ctx)
 	require.NoError(t, err)
 	err = db.Collection(name).Drop(ctx)
 	require.NoError(t, err)
 
 	// drop manually to check error
-	var actual bson.D
-	err = db.RunCommand(ctx, bson.D{{"drop", name}}).Decode(&actual)
+	var res bson.D
+	err = db.RunCommand(ctx, bson.D{{"drop", name}}).Decode(&res)
 	expectedErr := mongo.CommandError{
 		Code:    26,
 		Name:    "NamespaceNotFound",
 		Message: `ns not found`,
 	}
 	AssertEqualError(t, expectedErr, err)
-
-	names, err = db.ListCollectionNames(ctx, bson.D{})
-	require.NoError(t, err)
-	assert.NotContains(t, names, name)
 
 	err = db.CreateCollection(ctx, name)
 	require.NoError(t, err)
@@ -80,105 +77,68 @@ func TestCommandsAdministrationCreateDropList(t *testing.T) {
 	names, err = db.ListCollectionNames(ctx, bson.D{})
 	require.NoError(t, err)
 	assert.Contains(t, names, name)
-}
 
-// assertDatabases checks that expected and actual listDatabases results are similar.
-func assertDatabases(t *testing.T, expected, actual mongo.ListDatabasesResult) {
-	t.Helper()
+	// drop existing collection
+	err = collection.Drop(ctx)
+	require.NoError(t, err)
 
-	var sizeSum int64
-	assert.NotZero(t, actual.TotalSize)
-
-	require.Len(t, actual.Databases, len(expected.Databases), "%+v", actual)
-	for i, a := range actual.Databases {
-		e := expected.Databases[i]
-		require.Equal(t, e.Name, a.Name)
-
-		assert.Zero(t, e.SizeOnDisk)
-
-		if a.Empty {
-			assert.Zero(t, a.SizeOnDisk, "%+v", a)
-			continue
-		}
-
-		// to make comparison easier
-		assert.NotZero(t, a.SizeOnDisk, "%+v", a)
-		sizeSum += a.SizeOnDisk
-		actual.Databases[i].SizeOnDisk = 0
+	// drop manually to check error
+	err = db.RunCommand(ctx, bson.D{{"drop", name}}).Decode(&res)
+	expectedErr = mongo.CommandError{
+		Code:    26,
+		Name:    "NamespaceNotFound",
+		Message: `ns not found`,
 	}
-
-	// That's not true for PostgreSQL, where a sum of `pg_total_relation_size` result for all schemas
-	// is not equal to `pg_database_size` for the whole database.
-	// assert.Equal(t, sizeSum, actual.TotalSize)
-	actual.TotalSize = sizeSum
-
-	expected.TotalSize = sizeSum
-	assert.Equal(t, expected, actual)
+	AssertEqualError(t, expectedErr, err)
 }
 
-//nolint:paralleltest // we test a global list of databases
 func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
-	ctx, collection := setupWithOpts(t, &setupOpts{
-		databaseName: "admin",
-	})
-	client := collection.Database().Client()
-	name := collection.Name()
-
-	// drop remnants of the previous failed run
-	_ = client.Database(name).Drop(ctx)
+	t.Parallel()
+	ctx, collection := setup.Setup(t) // no providers there
+	db := collection.Database()
+	name := db.Name()
 
 	filter := bson.D{{
 		"name", bson.D{{
-			"$in", bson.A{name, "admin"},
+			"$in", bson.A{name}, // skip admin, other tests databases, etc
 		}},
 	}}
-	names, err := client.ListDatabaseNames(ctx, filter)
+	names, err := db.Client().ListDatabaseNames(ctx, filter)
 	require.NoError(t, err)
-	assert.Equal(t, []string{"admin"}, names)
+	require.Empty(t, names, "setup should not create database if no providers are given")
 
-	actual, err := client.ListDatabases(ctx, filter)
-	require.NoError(t, err)
-
-	expectedBefore := mongo.ListDatabasesResult{
-		Databases: []mongo.DatabaseSpecification{{
-			Name: "admin",
-		}},
-	}
-	assertDatabases(t, expectedBefore, actual)
-
-	// there is no explicit command to create database, so create collection instead
-	err = client.Database(name).CreateCollection(ctx, name)
-	require.NoError(t, err)
-
-	actual, err = client.ListDatabases(ctx, filter)
-	require.NoError(t, err)
-
-	expectedAfter := mongo.ListDatabasesResult{
-		Databases: []mongo.DatabaseSpecification{{
-			Name: "admin",
-		}, {
-			Name: name,
-		}},
-	}
-	assertDatabases(t, expectedAfter, actual)
-
-	err = client.Database(name).Drop(ctx)
+	// drop non-existing database; error is consumed by the driver
+	err = db.Drop(ctx)
 	require.NoError(t, err)
 
 	// drop manually to check error
 	var res bson.D
-	err = client.Database(name).RunCommand(ctx, bson.D{{"dropDatabase", 1}}).Decode(&res)
+	err = db.RunCommand(ctx, bson.D{{"dropDatabase", 1}}).Decode(&res)
+	require.NoError(t, err)
+	assert.Equal(t, bson.D{{"ok", 1.0}}, res)
+
+	// there is no explicit command to create database, so create collection instead
+	err = db.Client().Database(name).CreateCollection(ctx, testutil.CollectionName(t))
 	require.NoError(t, err)
 
-	actual, err = client.ListDatabases(ctx, filter)
+	names, err = db.Client().ListDatabaseNames(ctx, filter)
 	require.NoError(t, err)
-	assertDatabases(t, expectedBefore, actual)
+	assert.Equal(t, []string{name}, names)
+
+	// drop existing database
+	err = db.Drop(ctx)
+	require.NoError(t, err)
+
+	// drop manually to check error
+	err = db.RunCommand(ctx, bson.D{{"dropDatabase", 1}}).Decode(&res)
+	require.NoError(t, err)
+	assert.Equal(t, bson.D{{"ok", 1.0}}, res)
 }
 
 func TestCommandsAdministrationGetParameter(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setupWithOpts(t, &setupOpts{
-		databaseName: "admin",
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		DatabaseName: "admin",
 	})
 
 	for name, tc := range map[string]struct {
@@ -568,7 +528,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 			t.Parallel()
 
 			var actual bson.D
-			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+			err := s.TargetCollection.Database().RunCommand(s.Ctx, tc.command).Decode(&actual)
 
 			if tc.err != nil {
 				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
@@ -599,7 +559,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 
 func TestCommandsAdministrationBuildInfo(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
 	command := bson.D{{"buildInfo", int32(1)}}
@@ -632,7 +592,7 @@ func TestCommandsAdministrationBuildInfo(t *testing.T) {
 
 func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
 	command := bson.D{{"collStats", collection.Name()}}
@@ -653,7 +613,7 @@ func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
 
 func TestCommandsAdministrationCollStats(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	var actual bson.D
 	command := bson.D{{"collStats", collection.Name()}}
@@ -673,7 +633,7 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 
 func TestCommandsAdministrationDataSize(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	var actual bson.D
 	command := bson.D{{"dataSize", collection.Database().Name() + "." + collection.Name()}}
@@ -689,7 +649,7 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 
 func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
 	command := bson.D{{"dataSize", "some-database.some-collection"}}
@@ -704,9 +664,9 @@ func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
 	assert.InDelta(t, float64(100), must.NotFail(doc.Get("millis")), 100)
 }
 
-func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
+func TestCommandsAdministrationDBStats(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	var actual bson.D
 	command := bson.D{{"dbStats", int32(1)}}
@@ -715,24 +675,44 @@ func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
 
 	doc := ConvertDocument(t, actual)
 
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-	assert.Equal(t, collection.Database().Name(), must.NotFail(doc.Get("db")))
-	assert.Equal(t, int32(1), must.NotFail(doc.Get("collections")))
-	assert.Equal(t, int32(0), must.NotFail(doc.Get("views")))
-	assert.Equal(t, int32(0), must.NotFail(doc.Get("objects")))
-	assert.Equal(t, float64(0), must.NotFail(doc.Get("avgObjSize")))
-	assert.Equal(t, float64(0), must.NotFail(doc.Get("dataSize")))
+	assert.Equal(t, float64(1), doc.Remove("ok"))
+	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
+	assert.Equal(t, float64(1), doc.Remove("scaleFactor"))
 
-	assert.InDelta(t, float64(1), must.NotFail(doc.Get("indexes")), 1)
-	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("indexSize")), 4_096)
+	assert.InDelta(t, int32(1), doc.Remove("collections"), 1)
+	assert.InDelta(t, float64(8192), doc.Remove("dataSize"), 8192)
+	assert.InDelta(t, float64(16384), doc.Remove("totalSize"), 16384)
 
-	assert.InDelta(t, float64(1), must.NotFail(doc.Get("totalSize")), 8192)
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("scaleFactor")))
+	// TODO assert.Empty(t, doc.Keys())
+	// https://github.com/FerretDB/FerretDB/issues/727
+}
+
+func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
+
+	var actual bson.D
+	command := bson.D{{"dbStats", int32(1)}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+
+	assert.Equal(t, float64(1), doc.Remove("ok"))
+	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
+	assert.EqualValues(t, float64(1), doc.Remove("scaleFactor")) // TODO use assert.Equal https://github.com/FerretDB/FerretDB/issues/727
+
+	assert.InDelta(t, int32(1), doc.Remove("collections"), 1)
+	assert.InDelta(t, float64(8192), doc.Remove("dataSize"), 8192)
+	assert.InDelta(t, float64(16384), doc.Remove("totalSize"), 16384)
+
+	// TODO assert.Empty(t, doc.Keys())
+	// https://github.com/FerretDB/FerretDB/issues/727
 }
 
 func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	var actual bson.D
 	command := bson.D{{"dbStats", int32(1)}, {"scale", float64(1_000)}}
@@ -741,20 +721,44 @@ func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
 
 	doc := ConvertDocument(t, actual)
 
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-	assert.Equal(t, collection.Database().Name(), must.NotFail(doc.Get("db")))
-	assert.Equal(t, int32(1), must.NotFail(doc.Get("collections")))
-	assert.Equal(t, int32(0), must.NotFail(doc.Get("views")))
-	assert.Equal(t, float64(1000), must.NotFail(doc.Get("scaleFactor")))
+	assert.Equal(t, float64(1), doc.Remove("ok"))
+	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
+	assert.Equal(t, float64(1000), doc.Remove("scaleFactor"))
 
-	assert.InDelta(t, float64(2.161), must.NotFail(doc.Get("dataSize")), 10)
-	assert.InDelta(t, float64(1), must.NotFail(doc.Get("indexes")), 1)
-	assert.InDelta(t, float64(0), must.NotFail(doc.Get("indexSize")), 4060)
+	assert.InDelta(t, int32(1), doc.Remove("collections"), 1)
+	assert.InDelta(t, float64(8192), doc.Remove("dataSize"), 8192)
+	assert.InDelta(t, float64(16384), doc.Remove("totalSize"), 16384)
+
+	// TODO assert.Empty(t, doc.Keys())
+	// https://github.com/FerretDB/FerretDB/issues/727
 }
 
-func TestCommandsAdministrationServerStatus(t *testing.T) {
+func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := setup.Setup(t)
+
+	var actual bson.D
+	command := bson.D{{"dbStats", int32(1)}, {"scale", float64(1_000)}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+
+	assert.Equal(t, float64(1), doc.Remove("ok"))
+	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
+	assert.EqualValues(t, float64(1000), doc.Remove("scaleFactor")) // TODO use assert.Equal https://github.com/FerretDB/FerretDB/issues/727
+
+	assert.InDelta(t, int32(1), doc.Remove("collections"), 1)
+	assert.InDelta(t, float64(8192), doc.Remove("dataSize"), 8192)
+	assert.InDelta(t, float64(16384), doc.Remove("totalSize"), 16384)
+
+	// TODO assert.Empty(t, doc.Keys())
+	// https://github.com/FerretDB/FerretDB/issues/727
+}
+
+//nolint:paralleltest // we test a global server status
+func TestCommandsAdministrationServerStatus(t *testing.T) {
+	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
 	command := bson.D{{"serverStatus", int32(1)}}
@@ -778,13 +782,12 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	assert.GreaterOrEqual(t, must.NotFail(doc.Get("uptimeMillis")), int64(0))
 	assert.GreaterOrEqual(t, must.NotFail(doc.Get("uptimeEstimate")), int64(0))
 
-	expectedLocalTime := ConvertDocument(t, bson.D{{"localTime", primitive.NewDateTimeFromTime(time.Now())}})
-	testutil.CompareAndSetByPathTime(t, expectedLocalTime, doc, time.Duration(2*time.Second), types.NewPathFromString("localTime"))
+	assert.WithinDuration(t, time.Now(), must.NotFail(doc.Get("localTime")).(time.Time), 2*time.Second)
 
 	catalogStats, ok := must.NotFail(doc.Get("catalogStats")).(*types.Document)
 	assert.True(t, ok)
 
-	assert.InDelta(t, float64(51), must.NotFail(catalogStats.Get("collections")), 50)
+	assert.InDelta(t, float64(1), must.NotFail(catalogStats.Get("collections")), 1)
 	assert.InDelta(t, float64(3), must.NotFail(catalogStats.Get("internalCollections")), 3)
 
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("capped")))
@@ -793,16 +796,40 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("internalViews")))
 }
 
+// TestCommandsAdministrationWhatsMyURI tests the `whatsmyuri` command.
+// It connects two clients to the same server and checks that `whatsmyuri` returns different ports for these clients.
 func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
 
-	var actual bson.D
-	command := bson.D{{"whatsmyuri", int32(1)}}
-	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	s := setup.SetupWithOpts(t, nil)
+	collection1 := s.TargetCollection
+	databaseName := s.TargetCollection.Database().Name()
+	collectionName := s.TargetCollection.Name()
+
+	// setup second client connection to check that `whatsmyuri` returns different ports
+	uri := fmt.Sprintf("mongodb://127.0.0.1:%d/", s.TargetPort)
+	client2, err := mongo.Connect(s.Ctx, options.Client().ApplyURI(uri))
 	require.NoError(t, err)
+	defer client2.Disconnect(s.Ctx)
+	collection2 := client2.Database(databaseName).Collection(collectionName)
 
-	doc := ConvertDocument(t, actual)
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-	assert.Regexp(t, `^(\d+)\.(\d+)\.(\d+)\.(\d+)(\:\d+)?`, must.NotFail(doc.Get("you")))
+	var ports []string
+	for _, collection := range []*mongo.Collection{collection1, collection2} {
+		var actual bson.D
+		command := bson.D{{"whatsmyuri", int32(1)}}
+		err := collection.Database().RunCommand(s.Ctx, command).Decode(&actual)
+		require.NoError(t, err)
+
+		doc := ConvertDocument(t, actual)
+		assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+
+		// record ports to compare that they are not equal for two different clients.
+		_, port, err := net.SplitHostPort(must.NotFail(doc.Get("you")).(string))
+		require.NoError(t, err)
+		assert.NotEmpty(t, port)
+		ports = append(ports, port)
+	}
+
+	require.Equal(t, 2, len(ports))
+	assert.NotEqual(t, ports[0], ports[1])
 }
