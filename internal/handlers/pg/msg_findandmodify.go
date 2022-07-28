@@ -148,7 +148,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					return nil, err
 				}
 
-				_, err = h.update(ctx, params.sqlParam, upsert)
+				_, err = h.update(ctx, &params.sqlParam, upsert)
 				if err != nil {
 					return nil, err
 				}
@@ -159,7 +159,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					must.NoError(upsert.Set("_id", must.NotFail(resDocs[0].Get("_id"))))
 				}
 
-				_, err = h.update(ctx, params.sqlParam, upsert)
+				_, err = h.update(ctx, &params.sqlParam, upsert)
 				if err != nil {
 					return nil, err
 				}
@@ -277,7 +277,7 @@ func (h *Handler) upsert(ctx context.Context, docs []*types.Document, params *up
 		}
 	}
 
-	_, err := h.update(ctx, params.sqlParam, upsert)
+	_, err := h.update(ctx, &params.sqlParam, upsert)
 	if err != nil {
 		return nil, false, err
 	}
