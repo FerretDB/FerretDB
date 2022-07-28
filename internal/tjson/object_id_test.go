@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/AlekSi/pointer"
+	"github.com/stretchr/testify/require"
 )
 
 var objectIDTestCases = []testCase{{
@@ -45,4 +46,13 @@ func FuzzObjectID(f *testing.F) {
 
 func BenchmarkObjectID(b *testing.B) {
 	benchmark(b, objectIDTestCases)
+}
+
+func TestSmoke(t *testing.T) {
+	objID := new(objectIDType)
+	input := []byte(`010101010101010101010101`)
+	data := make([]byte, base64.StdEncoding.EncodedLen(len(input)))
+	base64.StdEncoding.Encode(data, input)
+	err := objID.UnmarshalJSON(data)
+	require.NoError(t, err)
 }
