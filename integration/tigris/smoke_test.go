@@ -35,6 +35,16 @@ func TestSmoke(t *testing.T) {
 	err := collection.FindOne(ctx, bson.D{{"_id", "fixed_double"}}).Decode(&doc)
 	require.NoError(t, err)
 	integration.AssertEqualDocuments(t, bson.D{{"_id", "fixed_double"}, {"double_value", 42.13}}, doc)
+
+	del, err := collection.DeleteOne(ctx, bson.D{{"_id", "fixed_double"}})
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), del.DeletedCount)
+
+	ins, err := collection.InsertOne(ctx, bson.D{{"string_value", "foo"}})
+	require.NoError(t, err)
+	del, err = collection.DeleteOne(ctx, bson.D{{"_id", ins.InsertedID}})
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), del.DeletedCount)
 }
 
 // TestSmokeMsgCount implements simple smoke tests for MsgCount.
