@@ -44,6 +44,8 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 				t.Skip(tc.skip)
 			}
 
+			t.Parallel()
+
 			// Use per-test setup because update queries modify data.
 			ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 

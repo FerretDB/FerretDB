@@ -50,6 +50,8 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 				t.Skip(tc.skip)
 			}
 
+			t.Parallel()
+
 			filter := tc.filter
 			require.NotNil(t, filter)
 
