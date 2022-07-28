@@ -40,7 +40,7 @@ func TestSmoke(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), del.DeletedCount)
 
-	ins, err := collection.InsertOne(ctx, bson.D{{"string_value", "foo"}})
+	ins, err := collection.InsertOne(ctx, bson.D{{"double_value", 123}})
 	require.NoError(t, err)
 	del, err = collection.DeleteOne(ctx, bson.D{{"_id", ins.InsertedID}})
 	require.NoError(t, err)

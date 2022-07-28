@@ -141,7 +141,7 @@ func (h *Handler) delete(ctx context.Context, fp fetchParam, docs []*types.Docum
 	ids := make([]filter.Expr, len(docs))
 	for i, doc := range docs {
 		// `{"_id": {"$eq", `+doc.Get("_id")+`}}`
-		id := must.NotFail(doc.Get("_id")).(types.ObjectID)
+		id := must.NotFail(doc.Get("_id"))
 		ids[i] = tigrisdb.FilterEq("_id", id)
 	}
 
