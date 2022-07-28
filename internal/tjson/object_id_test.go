@@ -50,9 +50,7 @@ func BenchmarkObjectID(b *testing.B) {
 
 func TestSmoke(t *testing.T) {
 	objID := new(objectIDType)
-	input := []byte(`010101010101010101010101`)
-	data := make([]byte, base64.StdEncoding.EncodedLen(len(input)))
-	base64.StdEncoding.Encode(data, input)
-	err := objID.UnmarshalJSON(data)
+	data := `"AQIDBAUGBwgJCgsM"`
+	err := objID.UnmarshalJSON([]byte(data))
 	require.NoError(t, err)
 }
