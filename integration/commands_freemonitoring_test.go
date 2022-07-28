@@ -38,7 +38,7 @@ func TestCommandsFreeMonitoringGetFreeMonitoringStatus(t *testing.T) {
 	}
 
 	var actual bson.D
-	err := s.TargetCollection.Database().RunCommand(s.Ctx, bson.D{{"getFreeMonitoringStatus", 1}}).Decode(&actual)
+	err := s.Collection.Database().RunCommand(s.Ctx, bson.D{{"getFreeMonitoringStatus", 1}}).Decode(&actual)
 	require.NoError(t, err)
 
 	m := actual.Map()
@@ -106,7 +106,7 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 			t.Parallel()
 
 			var actual bson.D
-			err := s.TargetCollection.Database().RunCommand(s.Ctx, tc.command).Decode(&actual)
+			err := s.Collection.Database().RunCommand(s.Ctx, tc.command).Decode(&actual)
 
 			if tc.err != nil {
 				AssertEqualError(t, *tc.err, err)

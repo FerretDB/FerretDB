@@ -23,7 +23,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 // queryCompatTestCase describes query compatibility test case.
@@ -31,26 +30,25 @@ type queryCompatTestCase struct {
 	filter     bson.D                   // required
 	sort       bson.D                   // defaults to `bson.D{{"_id", 1}}`
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	skip       string                   // skips test in non-empty
 }
 
 // testQueryCompat tests query compatibility test cases.
 func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 	t.Helper()
 
-	providers := []shareddata.Provider{
-		shareddata.FixedScalars,
-		shareddata.Scalars,
-		shareddata.Composites,
-	}
-
 	// Use shared setup because find queries can't modify data.
 	// TODO use read-only user https://github.com/FerretDB/FerretDB/issues/914
-	ctx, targetCollection, compatCollection := setup.SetupCompat(t, providers...)
+	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
 	for name, tc := range testCases {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
+
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
 
 			filter := tc.filter
 			require.NotNil(t, filter)
@@ -61,42 +59,50 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 			}
 			opts := options.Find().SetSort(sort)
 
-			targetCursor, targetErr := targetCollection.Find(ctx, filter, opts)
-			compatCursor, compatErr := compatCollection.Find(ctx, filter, opts)
+			var nonEmptyResults bool
+			for i := range targetCollections {
+				targetCollection := targetCollections[i]
+				compatCollection := compatCollections[i]
+				t.Run(targetCollection.Name(), func(t *testing.T) {
+					t.Helper()
 
-			if targetCursor != nil {
-				defer targetCursor.Close(ctx)
+					targetCursor, targetErr := targetCollection.Find(ctx, filter, opts)
+					compatCursor, compatErr := compatCollection.Find(ctx, filter, opts)
+
+					if targetCursor != nil {
+						defer targetCursor.Close(ctx)
+					}
+					if compatCursor != nil {
+						defer compatCursor.Close(ctx)
+					}
+
+					if targetErr != nil {
+						targetErr = UnsetRaw(t, targetErr)
+						compatErr = UnsetRaw(t, compatErr)
+						assert.Equal(t, compatErr, targetErr)
+						return
+					}
+					require.NoError(t, compatErr)
+
+					var targetRes, compatRes []bson.D
+					require.NoError(t, targetCursor.All(ctx, &targetRes))
+					require.NoError(t, compatCursor.All(ctx, &compatRes))
+
+					t.Logf("Compat (expected) IDs: %v", CollectIDs(t, compatRes))
+					t.Logf("Target (actual)   IDs: %v", CollectIDs(t, targetRes))
+					AssertEqualDocumentsSlice(t, compatRes, targetRes)
+
+					if len(targetRes) > 0 || len(compatRes) > 0 {
+						nonEmptyResults = true
+					}
+				})
 			}
-			if compatCursor != nil {
-				defer compatCursor.Close(ctx)
-			}
-
-			if targetErr != nil {
-				targetErr = UnsetRaw(t, targetErr)
-				compatErr = UnsetRaw(t, compatErr)
-				assert.Equal(t, tc.resultType, errorResult, "expected result type %v, but got %v", tc.resultType, errorResult)
-				assert.Equal(t, compatErr, targetErr)
-				return
-			}
-			require.NoError(t, compatErr)
-
-			var targetRes, compatRes []bson.D
-			require.NoError(t, targetCursor.All(ctx, &targetRes))
-			require.NoError(t, compatCursor.All(ctx, &compatRes))
-
-			t.Logf("Compat (expected) IDs: %v", CollectIDs(t, compatRes))
-			t.Logf("Target (actual)   IDs: %v", CollectIDs(t, targetRes))
 
 			switch tc.resultType {
 			case nonEmptyResult:
-				assert.NotEmpty(t, compatRes)
-				assert.NotEmpty(t, targetRes)
-				AssertEqualDocumentsSlice(t, compatRes, targetRes)
+				assert.True(t, nonEmptyResults)
 			case emptyResult:
-				assert.Empty(t, compatRes)
-				assert.Empty(t, targetRes)
-			case errorResult:
-				t.Fatalf("expected result type %v, but got no error", tc.resultType)
+				assert.False(t, nonEmptyResults)
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)
 			}

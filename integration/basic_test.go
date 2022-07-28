@@ -32,6 +32,8 @@ import (
 )
 
 func TestMostCommandsAreCaseSensitive(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 	db := collection.Database()
@@ -74,6 +76,8 @@ func TestFindNothing(t *testing.T) {
 }
 
 func TestInsertFind(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
 	ctx, collection := setup.Setup(t, providers...)
@@ -105,6 +109,8 @@ func TestInsertFind(t *testing.T) {
 
 //nolint:paralleltest // we test a global list of databases
 func TestFindCommentMethod(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 	name := collection.Database().Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
@@ -120,6 +126,8 @@ func TestFindCommentMethod(t *testing.T) {
 
 //nolint:paralleltest // we test a global list of databases
 func TestFindCommentQuery(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 	name := collection.Database().Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
@@ -133,6 +141,8 @@ func TestFindCommentQuery(t *testing.T) {
 }
 
 func TestUpdateCommentMethod(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 	name := collection.Database().Name()
@@ -157,6 +167,8 @@ func TestUpdateCommentMethod(t *testing.T) {
 }
 
 func TestUpdateCommentQuery(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 	name := collection.Database().Name()
@@ -178,6 +190,8 @@ func TestUpdateCommentQuery(t *testing.T) {
 }
 
 func TestCollectionName(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 
 	t.Run("Err", func(t *testing.T) {
@@ -245,6 +259,8 @@ func TestCollectionName(t *testing.T) {
 }
 
 func TestDatabaseName(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 
 	t.Run("Err", func(t *testing.T) {
