@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/jackc/pgconn"
@@ -291,10 +292,10 @@ func (pgPool *Pool) SetDocumentByID(ctx context.Context, sp *SQLParam, id any, d
 }
 
 // DeleteDocumentsByID deletes documents by given IDs.
-func (pgPool *Pool) DeleteDocumentsByID(ctx context.Context, sp SQLParam, ids []any) (int64, error) {
+func (pgPool *Pool) DeleteDocumentsByID(ctx context.Context, sp *SQLParam, ids []any) (int64, error) {
 	var tag pgconn.CommandTag
 	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		table, err := getTableName(ctx, tx, db, collection)
+		table, err := getTableName(ctx, tx, sp.DB, sp.Collection)
 		if err != nil {
 			return err
 		}
@@ -320,6 +321,7 @@ func (pgPool *Pool) DeleteDocumentsByID(ctx context.Context, sp SQLParam, ids []
 			` WHERE _jsonb->'_id' IN (` +
 			strings.Join(placeholders, ", ") +
 			`)`
+		log.Fatal(sql)
 
 		tag, err = tx.Exec(ctx, sql, idsMarshalled...)
 		return err
