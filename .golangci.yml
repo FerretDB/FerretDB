@@ -119,6 +119,9 @@ linters:
     - whitespace
 
 issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
   exclude-use-default: false
   exclude-rules:
     # only `wire` package can import `bson` package

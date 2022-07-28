@@ -262,15 +262,22 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 }
 
 // SetDocumentByID sets a document by its ID.
-func (pgPool *Pool) SetDocumentByID(ctx context.Context, db, collection string, id any, doc *types.Document) (int64, error) {
+func (pgPool *Pool) SetDocumentByID(ctx context.Context, sp *SQLParam, id any, doc *types.Document) (int64, error) {
 	var tag pgconn.CommandTag
 	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		table, err := getTableName(ctx, tx, db, collection)
+		table, err := getTableName(ctx, tx, sp.DB, sp.Collection)
 		if err != nil {
 			return err
 		}
 
-		sql := "UPDATE " + pgx.Identifier{db, table}.Sanitize() +
+		sql := "UPDATE "
+		if sp.Comment != "" {
+			sp.Comment = strings.ReplaceAll(sp.Comment, "/*", "/ *")
+			sp.Comment = strings.ReplaceAll(sp.Comment, "*/", "* /")
+
+			sql += `/* ` + sp.Comment + ` */ `
+		}
+		sql += pgx.Identifier{sp.DB, table}.Sanitize() +
 			" SET _jsonb = $1 WHERE _jsonb->'_id' = $2"
 
 		tag, err = tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)), must.NotFail(fjson.Marshal(id)))
