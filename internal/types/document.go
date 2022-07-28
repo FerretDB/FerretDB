@@ -373,7 +373,7 @@ func (d *Document) setByPath(path Path, value any) error {
 	case *Array:
 		index, err := strconv.Atoi(path.Suffix())
 		if err != nil {
-			return err
+			panic("setByPath: should be an index")
 		}
 
 		err = inner.Set(index, value)
