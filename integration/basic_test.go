@@ -180,7 +180,7 @@ func TestUpdateCommentQuery(t *testing.T) {
 func TestDeleteCommentMethod(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
-	name := collection.Name()
+	name := collection.Database().Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
 	require.NoError(t, err)
 
@@ -202,7 +202,7 @@ func TestDeleteCommentMethod(t *testing.T) {
 func TestDeleteCommentQuery(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
-	name := collection.Name()
+	name := collection.Database().Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
 	require.NoError(t, err)
 
