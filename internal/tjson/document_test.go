@@ -60,7 +60,7 @@ var (
 			`"name":"nodejs","version":"4.0.0-beta.6"},"os":{"$k":["type","name","architecture","version"],` +
 			`"type":"Darwin","name":"darwin","architecture":"x64","version":"20.6.0"},` +
 			`"platform":"Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",` +
-			`"application":{"$k":["name"],"name":"mongosh 1.0.1"}},"compression":["none"],"loadBalanced":false}`,
+			`"application":{"$k":["name"],"name":"mongosh 1.0.1"}},"loadBalanced":false}`,
 	}
 
 	handshake2 = testCase{

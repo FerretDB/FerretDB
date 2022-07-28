@@ -214,9 +214,9 @@ func (s *Schema) Unmarshal(b []byte) error {
 	return nil
 }
 
-// DocumentSchema returns a JSON Schema for the given document.
+// DocumentSchema returns a JSON Schema for the given top-level document.
+// Top-level documents are documents that must have _id which will be used as primary key.
 func DocumentSchema(doc *types.Document) (*Schema, error) {
-	// TODO: Why??? What if it's a nested document????
 	if !doc.Has("_id") {
 		return nil, lazyerrors.New("document must have an _id")
 	}
@@ -241,11 +241,33 @@ func DocumentSchema(doc *types.Document) (*Schema, error) {
 	return &schema, nil
 }
 
+// subdocumentSchema returns a JSON Schema for the given subdocument.
+// Subdocument is a "nested" document that can be used as a property of another document or subdocument.
+func subdocumentSchema(doc *types.Document) (*Schema, error) {
+	schema := Schema{
+		Type:       Object,
+		Properties: make(map[string]*Schema, doc.Len()+1),
+	}
+
+	schema.Properties["$k"] = &Schema{Type: Array, Items: stringSchema}
+
+	for _, k := range doc.Keys() {
+		v := must.NotFail(doc.Get(k))
+		s, err := valueSchema(v)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		schema.Properties[k] = s
+	}
+
+	return &schema, nil
+}
+
 // valueSchema returns a schema for the given value.
 func valueSchema(v any) (*Schema, error) {
 	switch v := v.(type) {
 	case *types.Document:
-		return DocumentSchema(v)
+		return subdocumentSchema(v)
 	case *types.Array:
 		return nil, lazyerrors.Errorf("%T is not supported yet", v)
 	case float64:
