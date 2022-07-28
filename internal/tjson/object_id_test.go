@@ -20,14 +20,13 @@ import (
 	"testing"
 
 	"github.com/AlekSi/pointer"
-	"github.com/stretchr/testify/require"
 )
 
 var objectIDTestCases = []testCase{{
 	name:   "normal",
 	v:      pointer.To(objectIDType{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01}),
 	schema: objectIDSchema,
-	j:      fmt.Sprintf(`"%s"`, base64.StdEncoding.EncodeToString([]byte("010101010101010101010101"))),
+	j:      fmt.Sprintf(`"%s"`, base64.StdEncoding.EncodeToString([]byte{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01})),
 }, {
 	name:   "EOF",
 	schema: objectIDSchema,
@@ -46,11 +45,4 @@ func FuzzObjectID(f *testing.F) {
 
 func BenchmarkObjectID(b *testing.B) {
 	benchmark(b, objectIDTestCases)
-}
-
-func TestSmoke(t *testing.T) {
-	objID := new(objectIDType)
-	data := `"AQIDBAUGBwgJCgsM"`
-	err := objID.UnmarshalJSON([]byte(data))
-	require.NoError(t, err)
 }
