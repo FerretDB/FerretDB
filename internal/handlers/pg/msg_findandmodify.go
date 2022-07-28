@@ -50,7 +50,6 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		"maxTimeMS",
 		"collation",
 		"hint",
-		"comment",
 	}
 	common.Ignored(document, h.l, ignoredFields...)
 
