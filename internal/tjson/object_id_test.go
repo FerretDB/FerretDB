@@ -15,6 +15,8 @@
 package tjson
 
 import (
+	"encoding/base64"
+	"fmt"
 	"testing"
 
 	"github.com/AlekSi/pointer"
@@ -24,7 +26,7 @@ var objectIDTestCases = []testCase{{
 	name:   "normal",
 	v:      pointer.To(objectIDType{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01}),
 	schema: objectIDSchema,
-	j:      "010101010101010101010101",
+	j:      fmt.Sprintf(`"%s"`, base64.StdEncoding.EncodeToString([]byte("010101010101010101010101"))),
 }, {
 	name:   "EOF",
 	schema: objectIDSchema,
