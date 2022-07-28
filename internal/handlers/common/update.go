@@ -118,6 +118,10 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			docValue, changed, err = increment(doc, incKey, incValue)
 		}
 
+		if err == nil {
+			return changed, nil
+		}
+
 		switch err {
 		case errUnexpectedLeftOpType:
 			return false, NewWriteErrorMsg(
