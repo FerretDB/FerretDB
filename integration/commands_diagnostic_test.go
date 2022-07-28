@@ -33,7 +33,7 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 		DatabaseName: "admin",
 	})
 
-	ctx, collection := res.Ctx, res.TargetCollection
+	ctx, collection := res.Ctx, res.Collection
 
 	for name, tc := range map[string]struct {
 		command  bson.D

@@ -29,6 +29,8 @@ import (
 )
 
 func TestQueryElementExists(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
@@ -98,6 +100,8 @@ func TestQueryElementExists(t *testing.T) {
 }
 
 func TestQueryElementType(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	// TODO: add cases for "decimal" when it would be added.
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)

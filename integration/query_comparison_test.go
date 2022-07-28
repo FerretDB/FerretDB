@@ -32,6 +32,8 @@ import (
 )
 
 func TestQueryComparisonImplicit(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
 	ctx, collection := setup.Setup(t, providers...)
@@ -224,6 +226,8 @@ func TestQueryComparisonImplicit(t *testing.T) {
 }
 
 func TestQueryComparisonEq(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
 	ctx, collection := setup.Setup(t, providers...)
@@ -509,6 +513,8 @@ func TestQueryComparisonEq(t *testing.T) {
 }
 
 func TestQueryComparisonGt(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
 	ctx, collection := setup.Setup(t, providers...)
@@ -732,6 +738,8 @@ func TestQueryComparisonGt(t *testing.T) {
 }
 
 func TestQueryComparisonGte(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
 	ctx, collection := setup.Setup(t, providers...)
@@ -948,6 +956,8 @@ func TestQueryComparisonGte(t *testing.T) {
 }
 
 func TestQueryComparisonLt(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
 	ctx, collection := setup.Setup(t, providers...)
@@ -1173,6 +1183,8 @@ func TestQueryComparisonLt(t *testing.T) {
 }
 
 func TestQueryComparisonLte(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
 	ctx, collection := setup.Setup(t, providers...)
@@ -1398,6 +1410,8 @@ func TestQueryComparisonLte(t *testing.T) {
 }
 
 func TestQueryComparisonNin(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
 	ctx, collection := setup.Setup(t, providers...)
@@ -1510,6 +1524,8 @@ func TestQueryComparisonNin(t *testing.T) {
 }
 
 func TestQueryComparisonIn(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
 	ctx, collection := setup.Setup(t, providers...)
@@ -1609,6 +1625,8 @@ func TestQueryComparisonIn(t *testing.T) {
 }
 
 func TestQueryComparisonNe(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
 	ctx, collection := setup.Setup(t, providers...)
@@ -1807,6 +1825,8 @@ func TestQueryComparisonNe(t *testing.T) {
 }
 
 func TestQueryComparisonMultipleOperators(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 

@@ -30,6 +30,8 @@ import (
 )
 
 func TestQueryUnknownFilterOperator(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
@@ -171,6 +173,8 @@ func TestQuerySort(t *testing.T) {
 
 // TODO: https://github.com/FerretDB/FerretDB/issues/636
 func TestQuerySortValue(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
 	for name, tc := range map[string]struct {
@@ -310,6 +314,8 @@ func TestQuerySortValue(t *testing.T) {
 }
 
 func TestQueryCount(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
@@ -363,6 +369,8 @@ func TestQueryCount(t *testing.T) {
 }
 
 func TestQueryBadFindType(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
@@ -527,6 +535,8 @@ func TestQueryBadFindType(t *testing.T) {
 }
 
 func TestQueryBadSortType(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
@@ -588,6 +598,8 @@ func TestQueryBadSortType(t *testing.T) {
 }
 
 func TestQueryExactMatches(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
 	ctx, collection := setup.Setup(t, providers...)
@@ -647,6 +659,8 @@ func TestQueryExactMatches(t *testing.T) {
 }
 
 func TestDotNotation(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
