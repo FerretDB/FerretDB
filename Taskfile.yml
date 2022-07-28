@@ -49,9 +49,10 @@ tasks:
       - go mod verify
 
   init-clean:
-    desc: "Clean all caches, including docker buildx and docker system volumes, and re-install development tools"
+    desc: "Clean ALL Go and Docker data (caches, images, volumes), and re-init"
     cmds:
-      - docker buildx prune --all
+      - cmd: docker buildx prune --all
+        ignore_error: true # build container may not exist
       - docker system prune --all --volumes
       - bin/golangci-lint{{exeExt}} cache clean
       - go clean -cache -testcache -modcache -fuzzcache
@@ -102,9 +103,9 @@ tasks:
     deps: [test-unit, test-integration]
 
   test-unit-short:
-    desc: "Run short unit tests"
+    desc: "Run short unit tests (with caching)"
     cmds:
-      - go test -short -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=cover.txt ./...
+      - go test -short {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
 
   test-unit:
     desc: "Run all unit tests"
@@ -195,6 +196,11 @@ tasks:
     cmds:
       - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -mode=diff-normal -listen-addr=:27017
 
+  run-tigris:
+    deps: [build-testcover]
+    cmds:
+      - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -mode=diff-normal -listen-addr=:27017 -handler=tigris
+
   run-proxy:
     desc: "Run FerretDB in diff-proxy mode"
     deps: [build-testcover]
@@ -207,7 +213,6 @@ tasks:
       - lint-golangci-lint
       - lint-go-sumtype
       - lint-go-consistent
-      - lint-go-consistent-integration
     cmds:
       - bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
 
@@ -222,11 +227,7 @@ tasks:
   lint-go-consistent:
     cmds:
       - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./ferretdb/...
-
-  lint-go-consistent-integration:
-    dir: integration
-    cmds:
-      - ../bin/go-consistent{{exeExt}} -pedantic ./...
+      - bin/task{{exeExt}} -d integration lint-go-consistent
 
   docs:
     desc: "Format and lint documentation"

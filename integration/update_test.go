@@ -30,6 +30,8 @@ import (
 // This file is for all remaining update tests.
 
 func TestUpdateUpsert(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Composites)
 
