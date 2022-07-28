@@ -211,6 +211,12 @@ tasks:
     cmds:
       - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -mode=diff-proxy -listen-addr=:27017
 
+  run-tigris:
+    desc: "Run FerretDB with Tigris handler"
+    deps: [build-testcover]
+    cmds:
+      - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -mode=diff-normal -listen-addr=:27017 -handler=tigris
+
   lint:
     desc: "Run linters"
     deps:
