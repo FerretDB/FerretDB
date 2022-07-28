@@ -216,6 +216,7 @@ func (s *Schema) Unmarshal(b []byte) error {
 
 // DocumentSchema returns a JSON Schema for the given document.
 func DocumentSchema(doc *types.Document) (*Schema, error) {
+	// TODO: Why??? What if it's a nested document????
 	if !doc.Has("_id") {
 		return nil, lazyerrors.New("document must have an _id")
 	}

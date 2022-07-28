@@ -28,29 +28,33 @@ func convertDocument(d *types.Document) *documentType {
 }
 
 var (
-	handshake1 = testCase{
-		name: "handshake1",
-		v: convertDocument(must.NotFail(types.NewDocument(
-			"ismaster", true,
-			"client", must.NotFail(types.NewDocument(
-				"driver", must.NotFail(types.NewDocument(
-					"name", "nodejs",
-					"version", "4.0.0-beta.6",
-				)),
-				"os", must.NotFail(types.NewDocument(
-					"type", "Darwin",
-					"name", "darwin",
-					"architecture", "x64",
-					"version", "20.6.0",
-				)),
-				"platform", "Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",
-				"application", must.NotFail(types.NewDocument(
-					"name", "mongosh 1.0.1",
-				)),
+	handshake1doc = must.NotFail(types.NewDocument(
+		"_id", "handshake1",
+		"ismaster", true,
+		"client", must.NotFail(types.NewDocument(
+			"driver", must.NotFail(types.NewDocument(
+				"name", "nodejs",
+				"version", "4.0.0-beta.6",
 			)),
-			"compression", must.NotFail(types.NewArray("none")),
-			"loadBalanced", false,
-		))),
+			"os", must.NotFail(types.NewDocument(
+				"type", "Darwin",
+				"name", "darwin",
+				"architecture", "x64",
+				"version", "20.6.0",
+			)),
+			"platform", "Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",
+			"application", must.NotFail(types.NewDocument(
+				"name", "mongosh 1.0.1",
+			)),
+		)),
+		// TODO Support arrays: https://github.com/FerretDB/FerretDB/issues/908
+		// "compression", must.NotFail(types.NewArray("none")),
+		"loadBalanced", false,
+	))
+	handshake1 = testCase{
+		name:   "handshake1",
+		v:      convertDocument(handshake1doc),
+		schema: must.NotFail(DocumentSchema(handshake1doc)),
 		j: `{"$k":["ismaster","client","compression","loadBalanced"],"ismaster":true,` +
 			`"client":{"$k":["driver","os","platform","application"],"driver":{"$k":["name","version"],` +
 			`"name":"nodejs","version":"4.0.0-beta.6"},"os":{"$k":["type","name","architecture","version"],` +
@@ -79,9 +83,11 @@ var (
 					"name", "mongosh 1.0.1",
 				)),
 			)),
-			"compression", must.NotFail(types.NewArray("none")),
+			// TODO Support arrays: https://github.com/FerretDB/FerretDB/issues/908
+			// "compression", must.NotFail(types.NewArray("none")),
 			"loadBalanced", false,
 		))),
+		schema: nil,
 		j: `{"$k":["ismaster","client","compression","loadBalanced"],"ismaster":true,` +
 			`"client":{"$k":["driver","os","platform","application"],"driver":{"$k":["name","version"],` +
 			`"name":"nodejs","version":"4.0.0-beta.6"},"os":{"$k":["type","name","architecture","version"],` +
@@ -105,6 +111,7 @@ var (
 			)),
 			"$db", "admin",
 		))),
+		schema: nil,
 		j: `{"$k":["buildInfo","lsid","$db"],"buildInfo":1,` +
 			`"lsid":{"$k":["id"],"id":{"$b":"oxnytKF1QMe456OjLsJWvg==","s":4}},"$db":"admin"}`,
 	}
@@ -114,11 +121,13 @@ var (
 		v: convertDocument(must.NotFail(types.NewDocument(
 			"version", "5.0.0",
 			"gitVersion", "1184f004a99660de6f5e745573419bda8a28c0e9",
-			"modules", must.NotFail(types.NewArray()),
+			// TODO Support arrays: https://github.com/FerretDB/FerretDB/issues/908
+			// "modules", must.NotFail(types.NewArray()),
 			"allocator", "tcmalloc",
 			"javascriptEngine", "mozjs",
 			"sysInfo", "deprecated",
-			"versionArray", must.NotFail(types.NewArray(int32(5), int32(0), int32(0), int32(0))),
+			// TODO Support arrays: https://github.com/FerretDB/FerretDB/issues/908
+			// "versionArray", must.NotFail(types.NewArray(int32(5), int32(0), int32(0), int32(0))),
 			"openssl", must.NotFail(types.NewDocument(
 				"running", "OpenSSL 1.1.1f  31 Mar 2020",
 				"compiled", "OpenSSL 1.1.1f  31 Mar 2020",
@@ -149,9 +158,11 @@ var (
 			"bits", int32(64),
 			"debug", false,
 			"maxBsonObjectSize", int32(16777216),
-			"storageEngines", must.NotFail(types.NewArray("devnull", "ephemeralForTest", "wiredTiger")),
+			// TODO Support arrays:  https://github.com/FerretDB/FerretDB/issues/908
+			// "storageEngines", must.NotFail(types.NewArray("devnull", "ephemeralForTest", "wiredTiger")),
 			"ok", float64(1),
 		))),
+		schema: nil,
 		j: `{"$k":["version","gitVersion","modules","allocator","javascriptEngine","sysInfo","versionArray",` +
 			`"openssl","buildEnvironment","bits","debug","maxBsonObjectSize","storageEngines","ok"],` +
 			`"version":"5.0.0","gitVersion":"1184f004a99660de6f5e745573419bda8a28c0e9","modules":[],` +
@@ -184,10 +195,11 @@ var (
 	all = testCase{
 		name: "all",
 		v: convertDocument(must.NotFail(types.NewDocument(
-			"binary", must.NotFail(types.NewArray(
+			// TODO Support arrays: https://github.com/FerretDB/FerretDB/issues/908
+			/* "binary", must.NotFail(types.NewArray(
 				types.Binary{Subtype: types.BinaryUser, B: []byte{0x42}},
 				types.Binary{Subtype: types.BinaryGeneric, B: []byte{}},
-			)),
+			)), */
 			"bool", must.NotFail(types.NewArray(true, false)),
 			"datetime", must.NotFail(types.NewArray(
 				time.Date(2021, 7, 27, 9, 35, 42, 123000000, time.UTC).Local(),
@@ -200,6 +212,7 @@ var (
 			"string", must.NotFail(types.NewArray("foo", "")),
 			"timestamp", must.NotFail(types.NewArray(types.Timestamp(42), types.Timestamp(0))),
 		))),
+		schema: nil,
 		j: `{"$k":["binary","bool","datetime","double","int32","int64","objectID","string","timestamp"],` +
 			`"binary":[{"$b":"Qg==","s":128},{"$b":"","s":0}],"bool":[true,false],` +
 			`"datetime":[{"$d":1627378542123},{"$d":-62135596800000}],"double":[{"$f":42.13},{"$f":0}],` +
@@ -209,12 +222,13 @@ var (
 	}
 
 	eof = testCase{
-		name: "EOF",
-		j:    `[`,
-		jErr: `unexpected EOF`,
+		name:   "EOF",
+		schema: nil,
+		j:      `[`,
+		jErr:   `unexpected EOF`,
 	}
 
-	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4, all, eof}
+	documentTestCases = []testCase{handshake1 /*, handshake2, handshake3, handshake4, all, eof*/}
 )
 
 func TestDocument(t *testing.T) {
