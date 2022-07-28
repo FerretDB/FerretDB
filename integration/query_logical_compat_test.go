@@ -72,3 +72,45 @@ func TestQueryLogicalCompatAnd(t *testing.T) {
 
 	testQueryCompat(t, testCases)
 }
+
+func TestQueryLogicalCompatOr(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]queryCompatTestCase{
+		"Or": {
+			filter: bson.D{{
+				"$or", bson.A{
+					bson.D{{"v", bson.D{{"$lt", int32(0)}}}},
+					bson.D{{"v", bson.D{{"$gt", int64(42)}}}},
+				},
+			}},
+		},
+		"OrAnd": {
+			filter: bson.D{{
+				"$or", bson.A{
+					bson.D{{"v", bson.D{{"$lt", int32(0)}}}},
+					bson.D{{"$and", bson.A{
+						bson.D{{"v", bson.D{{"$gt", int64(42)}}}},
+						bson.D{{"v", bson.D{{"$lte", 42.13}}}},
+					}}},
+				},
+			}},
+		},
+		"BadInput": {
+			filter:     bson.D{{"$or", nil}},
+			resultType: emptyResult,
+		},
+		"BadValue": {
+			filter: bson.D{{
+				"$or", bson.A{
+					bson.D{{"v", bson.D{{"$gt", int32(0)}}}},
+					nil,
+				},
+			}},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/962",
+		},
+	}
+
+	testQueryCompat(t, testCases)
+}
