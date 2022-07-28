@@ -627,22 +627,6 @@ func TestUpdateFieldInc(t *testing.T) {
 	})
 }
 
-func TestUpdateFieldMin(t *testing.T) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/623
-}
-
-func TestUpdateFieldMax(t *testing.T) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/624
-}
-
-func TestUpdateFieldMul(t *testing.T) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/625
-}
-
-func TestUpdateFieldRename(t *testing.T) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/626
-}
-
 func TestUpdateFieldSet(t *testing.T) {
 	t.Parallel()
 

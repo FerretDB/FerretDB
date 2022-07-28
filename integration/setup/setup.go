@@ -43,7 +43,6 @@ var (
 	targetPortF = flag.Int("target-port", 0, "target system's port for tests; if 0, in-process FerretDB is used")
 	proxyAddrF  = flag.String("proxy-addr", "", "proxy to use for in-process FerretDB")
 	handlerF    = flag.String("handler", "pg", "handler to use for in-process FerretDB")
-	compatPortF = flag.Int("compat-port", 37017, "second system's port for compatibility tests; if 0, they are skipped")
 
 	// Disable noisy setup logs by default.
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
@@ -56,9 +55,6 @@ var (
 //
 // TODO add option to use read-only user: https://github.com/FerretDB/FerretDB/issues/914.
 type SetupOpts struct {
-	// If true, returns two client connections to different systems for compatibility test.
-	CompatTest bool
-
 	// Database to use. If empty, temporary test-specific database is created.
 	DatabaseName string
 
@@ -68,11 +64,9 @@ type SetupOpts struct {
 
 // SetupResult represents setup results.
 type SetupResult struct {
-	Ctx              context.Context
-	TargetCollection *mongo.Collection
-	TargetPort       uint16
-	CompatCollection *mongo.Collection
-	CompatPort       uint16
+	Ctx        context.Context
+	Collection *mongo.Collection
+	Port       uint16
 }
 
 // SetupWithOpts setups the test according to given options.
@@ -107,25 +101,12 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 
 	collection := setupCollection(tb, ctx, port, opts.DatabaseName, opts.Providers)
 
-	var compatPort int
-	var compatCollection *mongo.Collection
-	if opts.CompatTest {
-		compatPort = *compatPortF
-		if compatPort == 0 {
-			tb.Skip("compatibility tests require second system")
-		}
-
-		compatCollection = setupCollection(tb, ctx, compatPort, opts.DatabaseName, opts.Providers)
-	}
-
 	level.SetLevel(*logLevelF)
 
 	return &SetupResult{
-		Ctx:              ctx,
-		TargetCollection: collection,
-		TargetPort:       uint16(port),
-		CompatCollection: compatCollection,
-		CompatPort:       uint16(compatPort),
+		Ctx:        ctx,
+		Collection: collection,
+		Port:       uint16(port),
 	}
 }
 
@@ -136,18 +117,7 @@ func Setup(tb testing.TB, providers ...shareddata.Provider) (context.Context, *m
 	s := SetupWithOpts(tb, &SetupOpts{
 		Providers: providers,
 	})
-	return s.Ctx, s.TargetCollection
-}
-
-// SetupCompat setups compatibility test with specified data providers.
-func SetupCompat(tb testing.TB, providers ...shareddata.Provider) (context.Context, *mongo.Collection, *mongo.Collection) {
-	tb.Helper()
-
-	s := SetupWithOpts(tb, &SetupOpts{
-		CompatTest: true,
-		Providers:  providers,
-	})
-	return s.Ctx, s.TargetCollection, s.CompatCollection
+	return s.Ctx, s.Collection
 }
 
 // setupListener starts in-process FerretDB server that runs until ctx is done,

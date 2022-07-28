@@ -84,14 +84,6 @@ tasks:
     cmds:
       - docker-compose down --remove-orphans --timeout=0 --volumes
 
-  env-data:
-    desc: "Fill `test.values` with data for experiments"
-    dir: integration
-    cmds:
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData . -target-port=37017
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData . -handler=pg
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData -tags=ferretdb_tigris ./tigris -handler=tigris
-
   gen:
     desc: "Generate (and format) code"
     cmds:
@@ -138,10 +130,8 @@ tasks:
   test-integration-tigris:
     desc: "Run integration tests for Tigris handler"
     dir: integration
-    cmds:
-      - >
-        go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-tigris.txt -tags=ferretdb_tigris ./tigris/... -handler=tigris
+    # TODO
+    cmds: []
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
@@ -149,7 +139,7 @@ tasks:
     cmds:
       - >
         go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-mongodb.txt . -target-port=37017 -compat-port=0
+        -coverprofile=integration-mongodb.txt . -target-port=37017
 
   bench-short:
     desc: "Benchmark for about 20 seconds (with default BENCHTIME)"
