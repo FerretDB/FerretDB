@@ -155,6 +155,11 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() tjsontype) {
 				v := newFunc()
 				err := unmarshalJSON(v, tc.j)
 
+				// UnmarshalJSON is not supported for some types, nothing to assert.
+				if err == nil && v == nil {
+					return
+				}
+
 				if tc.jErr == "" {
 					require.NoError(t, err)
 					assertEqual(t, tc.v, v)
@@ -165,7 +170,7 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() tjsontype) {
 				require.Equal(t, tc.jErr, lastErr(err).Error())
 			})
 
-			t.Run("Unmarshal", func(t *testing.T) {
+			t.Run("UnmarshalWithSchema", func(t *testing.T) {
 				t.Parallel()
 
 				v, err := Unmarshal([]byte(tc.j), tc.schema)
@@ -312,6 +317,9 @@ func unmarshalJSON(v tjsontype, j string) error {
 		err = v.UnmarshalJSON([]byte(j))
 	case *int64Type:
 		err = v.UnmarshalJSON([]byte(j))
+	case *documentType:
+		// UnmarshalJSON is not supported for documents.
+		err = nil
 	default:
 		panic(fmt.Sprintf("testing is not implemented for the type %T", v))
 	}
