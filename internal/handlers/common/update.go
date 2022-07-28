@@ -110,6 +110,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 	var changed bool
 	var err error
+
 	for _, incKey := range incDoc.Keys() {
 		incValue := must.NotFail(incDoc.Get(incKey))
 
