@@ -114,6 +114,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 		incValue := must.NotFail(incDoc.Get(incKey))
 
 		var docValue any
+
 		if strings.Contains(incKey, ".") {
 			path := types.NewPathFromString(incKey)
 
