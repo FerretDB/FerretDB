@@ -177,25 +177,6 @@ func TestUpdateCommentQuery(t *testing.T) {
 	assert.Equal(t, expected, res)
 }
 
-func TestFindAndModifyQuery(t *testing.T) {
-	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Scalars)
-	name := collection.Database().Name()
-	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
-	require.NoError(t, err)
-
-	res := collection.FindOneAndUpdate(ctx, bson.M{"_id": "string"}, bson.M{"$set": bson.M{"v": "test"}})
-	require.NoError(t, res.Err())
-
-	expected := &mongo.UpdateResult{
-		MatchedCount:  1,
-		ModifiedCount: 1,
-	}
-
-	assert.Contains(t, databaseNames, name)
-	assert.Equal(t, expected, res)
-}
-
 func TestCollectionName(t *testing.T) {
 	t.Parallel()
 
