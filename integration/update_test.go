@@ -81,22 +81,25 @@ func TestMultiFlag(t *testing.T) {
 
 	t.Run("ok", func(t *testing.T) {
 		for name, tc := range map[string]struct {
-			filter bson.D
-			update bson.D
-			multi  bool
-			stat   bson.D
+			filter         bson.D
+			update         bson.D
+			multi          bool
+			stat           bson.D
+			expectedToFind int
 		}{
 			"False": {
-				filter: bson.D{{"v", int32(42)}},
-				update: bson.D{{"$set", bson.D{{"v", int32(43)}}}},
-				multi:  false,
-				stat:   bson.D{{"n", int32(1)}, {"nModified", int32(1)}, {"ok", float64(1)}},
+				filter:         bson.D{{"v", int32(42)}},
+				update:         bson.D{{"$set", bson.D{{"v", int32(43)}}}},
+				multi:          false,
+				stat:           bson.D{{"n", int32(1)}, {"nModified", int32(1)}, {"ok", float64(1)}},
+				expectedToFind: 5,
 			},
 			"True": {
-				filter: bson.D{{"v", int32(42)}},
-				update: bson.D{{"$set", bson.D{{"v", int32(43)}}}},
-				multi:  true,
-				stat:   bson.D{{"n", int32(6)}, {"nModified", int32(6)}, {"ok", float64(1)}},
+				filter:         bson.D{{"v", int32(42)}},
+				update:         bson.D{{"$set", bson.D{{"v", int32(43)}}}},
+				multi:          true,
+				stat:           bson.D{{"n", int32(6)}, {"nModified", int32(6)}, {"ok", float64(1)}},
+				expectedToFind: 0,
 			},
 		} {
 			name, tc := name, tc
@@ -116,6 +119,15 @@ func TestMultiFlag(t *testing.T) {
 				require.NoError(t, err)
 
 				AssertEqualDocuments(t, tc.stat, result)
+
+				var after []bson.D
+				cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+				require.NoError(t, err)
+
+				err = cursor.All(ctx, &after)
+				require.NoError(t, err)
+
+				assert.Equal(t, tc.expectedToFind, len(after))
 			})
 		}
 	})
