@@ -82,56 +82,39 @@ func TestMultiFlag(t *testing.T) {
 	for name, tc := range map[string]struct {
 		filter bson.D
 		update bson.D
-		multi  string
+		multi  bool
 		stat   bson.D
 	}{
 		"MultiFalse": {
-			filter: bson.D{{"foo", "x"}},
-			update: bson.D{{"$set", bson.D{{"foo", "y"}}}},
-			multi:  "false",
+			filter: bson.D{{"v", int32(42)}},
+			update: bson.D{{"$set", bson.D{{"v", int32(43)}}}},
+			multi:  false,
 			stat:   bson.D{{"n", int32(1)}, {"nModified", int32(1)}, {"ok", float64(1)}},
 		},
 		"MultiTrue": {
-			filter: bson.D{{"foo", "x"}},
-			update: bson.D{{"$set", bson.D{{"foo", "y"}}}},
-			multi:  "true",
-			stat:   bson.D{{"n", int32(2)}, {"nModified", int32(2)}, {"ok", float64(1)}},
+			filter: bson.D{{"v", int32(42)}},
+			update: bson.D{{"$set", bson.D{{"v", int32(43)}}}},
+			multi:  true,
+			stat:   bson.D{{"n", int32(6)}, {"nModified", int32(6)}, {"ok", float64(1)}},
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup.Setup(t)
+			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
-			_, err := collection.InsertMany(ctx, []any{
-				bson.D{{"_id", "first"}, {"foo", "x"}},
-				bson.D{{"_id", "second"}, {"foo", "x"}},
-			})
-			require.NoError(t, err)
-
-			var actual bson.D
-
-			if tc.multi == "true" {
-				collection.UpdateMany(ctx, tc.filter, tc.update)
-			} else {
-				collection.UpdateOne(ctx, tc.filter, tc.update)
+			command := bson.D{
+				{"update", collection.Name()},
+				{"updates", bson.A{
+					bson.D{{"q", tc.filter}, {"u", tc.update}, {"multi", tc.multi}},
+				}},
 			}
 
-			err = collection.FindOne(ctx, bson.D{{"_id", "first"}}).Decode(&actual)
+			var result bson.D
+			err := collection.Database().RunCommand(ctx, command).Decode(&result)
 			require.NoError(t, err)
 
-			require.Equal(t, bson.D{{"_id", "first"}, {"foo", "y"}}, actual)
-
-			err = collection.FindOne(ctx, bson.D{{"_id", "second"}}).Decode(&actual)
-			require.NoError(t, err)
-
-			var expected bson.D
-			if tc.multi == "true" {
-				expected = bson.D{{"_id", "second"}, {"foo", "y"}}
-			} else {
-				expected = bson.D{{"_id", "second"}, {"foo", "x"}}
-			}
-			require.Equal(t, expected, actual)
+			AssertEqualDocuments(t, tc.stat, result)
 		})
 	}
 }

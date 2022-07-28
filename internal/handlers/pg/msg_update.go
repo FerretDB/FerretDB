@@ -195,7 +195,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		if len(resDocs) > 1 && !multi {
-			resDocs = resDocs[0:1]
+			resDocs = resDocs[:1]
 		}
 
 		matched += int32(len(resDocs))
