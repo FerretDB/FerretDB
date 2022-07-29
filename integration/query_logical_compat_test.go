@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestQueryLogicalCompatAnd(t *testing.T) {
@@ -139,6 +140,46 @@ func TestQueryLogicalCompatNor(t *testing.T) {
 				},
 			}},
 			resultType: emptyResult,
+		},
+	}
+
+	testQueryCompat(t, testCases)
+}
+
+func TestQueryLogicalCompatNot(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]queryCompatTestCase{
+		"Not": {
+			filter: bson.D{{
+				"v", bson.D{{"$not", bson.D{{"$eq", int64(42)}}}},
+			}},
+		},
+		"IDNull": {
+			filter: bson.D{{
+				"_id", bson.D{{"$not", nil}},
+			}},
+			resultType: emptyResult,
+		},
+		"NotEqNull": {
+			filter: bson.D{{
+				"v", bson.D{{"$not", bson.D{{"$eq", nil}}}},
+			}},
+		},
+		"ValueRegex": {
+			filter: bson.D{{
+				"v", bson.D{{"$not", primitive.Regex{Pattern: "^fo"}}},
+			}},
+		},
+		"NoSuchFieldRegex": {
+			filter: bson.D{{
+				"no-such-field", bson.D{{"$not", primitive.Regex{Pattern: "/someregex/"}}},
+			}},
+		},
+		"NestedNot": {
+			filter: bson.D{{
+				"v", bson.D{{"$not", bson.D{{"$not", bson.D{{"$eq", int64(42)}}}}}},
+			}},
 		},
 	}
 
