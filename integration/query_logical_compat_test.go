@@ -114,3 +114,33 @@ func TestQueryLogicalCompatOr(t *testing.T) {
 
 	testQueryCompat(t, testCases)
 }
+
+func TestQueryLogicalCompatNor(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]queryCompatTestCase{
+		"Nor": {
+			filter: bson.D{{
+				"$nor", bson.A{
+					bson.D{{"v", bson.D{{"$lt", int32(0)}}}},
+					bson.D{{"v", bson.D{{"$gt", int64(42)}}}},
+				},
+			}},
+		},
+		"BadInput": {
+			filter:     bson.D{{"$nor", nil}},
+			resultType: emptyResult,
+		},
+		"BadValue": {
+			filter: bson.D{{
+				"$nor", bson.A{
+					bson.D{{"v", bson.D{{"$gt", int32(0)}}}},
+					nil,
+				},
+			}},
+			resultType: emptyResult,
+		},
+	}
+
+	testQueryCompat(t, testCases)
+}
