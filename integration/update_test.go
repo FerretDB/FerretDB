@@ -79,6 +79,8 @@ func TestUpdateUpsert(t *testing.T) {
 }
 
 func TestMultiFlag(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 
 	t.Run("ok", func(t *testing.T) {
