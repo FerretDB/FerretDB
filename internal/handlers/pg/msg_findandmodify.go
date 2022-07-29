@@ -17,15 +17,13 @@ package pg
 import (
 	"context"
 	"fmt"
-
-	"github.com/jackc/pgx/v4"
-
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/jackc/pgx/v4"
 )
 
 // MsgFindAndModify implements HandlerInterface.
@@ -47,7 +45,6 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	ignoredFields := []string{
 		"bypassDocumentValidation",
 		"writeConcern",
-		"maxTimeMS",
 		"collation",
 		"hint",
 		"comment",
@@ -292,6 +289,7 @@ type findAndModifyParams struct {
 	query, sort, update                   *types.Document
 	remove, upsert                        bool
 	returnNewDocument, hasUpdateOperators bool
+	maxTimeMS                             int32
 }
 
 // prepareFindAndModifyParams prepares findAndModify request fields.
@@ -335,6 +333,11 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 
 	var sort *types.Document
 	if sort, err = common.GetOptionalParam(document, "sort", sort); err != nil {
+		return nil, err
+	}
+
+	maxTimeMS, err := common.GetOptionalPositiveNumber(document, "maxTimeMS")
+	if err != nil {
 		return nil, err
 	}
 
@@ -387,5 +390,6 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 		upsert:             upsert,
 		returnNewDocument:  returnNewDocument,
 		hasUpdateOperators: hasUpdateOperators,
+		maxTimeMS:          maxTimeMS,
 	}, nil
 }

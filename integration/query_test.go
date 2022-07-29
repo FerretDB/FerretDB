@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"testing"
 	"time"
 
@@ -593,6 +594,198 @@ func TestQueryBadSortType(t *testing.T) {
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 			require.Error(t, err)
 			AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+		})
+	}
+}
+
+func TestQueryBadMaxTimeMSType(t *testing.T) {
+	setup.SkipForTigris(t)
+
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
+
+	for name, tc := range map[string]struct {
+		command    bson.D
+		err        *mongo.CommandError
+		altMessage string
+	}{
+		"BadMaxTimeMSTypeDouble": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", 43.15},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "maxTimeMS has non-integral value",
+			},
+		},
+		"BadMaxTimeMSNegativeDouble": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", -14245345234123245.55},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "-14245345234123246 value for maxTimeMS is out of range",
+			},
+		},
+		"BadMaxTimeMSTypeString": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", "string"},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "maxTimeMS must be a number",
+			},
+		},
+		"BadMaxTimeMSMaxInt64": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", math.MaxInt64},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "9223372036854775807 value for maxTimeMS is out of range",
+			},
+		},
+		"BadMaxTimeMSMinInt64": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", math.MinInt64},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "-9223372036854775808 value for maxTimeMS is out of range",
+			},
+		},
+		"BadMaxTimeMSNull": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", nil},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "maxTimeMS must be a number",
+			},
+		},
+		"BadMaxTimeMSArray": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", bson.A{int32(42), "foo", nil}},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "maxTimeMS must be a number",
+			},
+		},
+		"BadMaxTimeMSDocument": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "maxTimeMS must be a number",
+			},
+		},
+		"BadMaxTimeMSTypeNegativeInt32": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", -1123123},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "-1123123 value for maxTimeMS is out of range",
+			},
+		},
+
+		"BadMaxTimeMSTypeStringFindAndModify": {
+			command: bson.D{
+				{"findAndModify", collection.Name()},
+				{"maxTimeMS", "string"},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "maxTimeMS must be a number",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+			require.Error(t, err)
+			AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+		})
+	}
+}
+
+func TestQueryMaxTimeMSAvailableValues(t *testing.T) {
+	setup.SkipForTigris(t)
+
+	t.Parallel()
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+
+	for name, tc := range map[string]struct {
+		command any
+	}{
+		"Double": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", float64(10000)},
+			},
+		},
+		"DoubleZero": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", float64(0)},
+			},
+		},
+		"Int32": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", int32(10000)},
+			},
+		},
+		"Int32Zero": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", int32(0)},
+			},
+		},
+		"Int64": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", int64(10000)},
+			},
+		},
+		"Int64Zero": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", int64(0)},
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+			require.NoError(t, err)
 		})
 	}
 }
