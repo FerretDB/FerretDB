@@ -102,8 +102,6 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 	return changed, nil
 }
 
-// processCurrentDateFieldExpression changes document according to $currentDate operator.
-// If the document was changed it returns true.
 func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	// expecting here a document since all checks were made in ValidateUpdateOperators func
 	incDoc := updateV.(*types.Document)
@@ -117,62 +115,9 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 		var docValue any
 
 		if strings.Contains(incKey, ".") {
-			path := types.NewPathFromString(incKey)
-
-			if !doc.HasByPath(path) {
-				doc.SetByPath(path, incValue)
-
-				return true, nil
-			}
-
-			docValue, err := doc.GetByPath(types.NewPathFromString(incKey))
-			if err != nil {
-				return false, err
-			}
-
-			incremented, err := addNumbers(incValue, docValue)
-			if err == nil {
-				doc.SetByPath(path, incremented)
-
-				result := types.Compare(docValue, incremented)
-
-				if len(result) != 1 {
-					panic("$inc: there should be only one result")
-				}
-
-				docFloat, ok := docValue.(float64)
-				if result[0] == types.Equal &&
-					// if the document value is NaN we should consider it as changed.
-					(ok && !math.IsNaN(docFloat)) {
-					return false, nil
-				}
-			}
+			docValue, changed, err = incrementByPath(doc, incKey, incValue)
 		} else {
-			if !doc.Has(incKey) {
-				must.NoError(doc.Set(incKey, incValue))
-
-				return true, nil
-			}
-
-			docValue := must.NotFail(doc.Get(incKey))
-
-			incremented, err := addNumbers(incValue, docValue)
-			if err == nil {
-				must.NoError(doc.Set(incKey, incremented))
-
-				result := types.Compare(docValue, incremented)
-
-				if len(result) != 1 {
-					panic("$inc: there should be only one result")
-				}
-
-				docFloat, ok := docValue.(float64)
-				if result[0] == types.Equal &&
-					// if the document value is NaN we should consider it as changed.
-					(ok && !math.IsNaN(docFloat)) {
-					return false, nil
-				}
-			}
+			docValue, changed, err = increment(doc, incKey, incValue)
 		}
 
 		if err == nil {
@@ -208,10 +153,9 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	return changed, nil
 }
 
-// increment gets the value of document and increments it by the given value.
-// If the document don't have the given key it sets the value.
 func increment(doc *types.Document, incKey string, incValue any) (any, bool, error) {
 	if !doc.Has(incKey) {
+
 		must.NoError(doc.Set(incKey, incValue))
 
 		return nil, true, nil
@@ -242,10 +186,8 @@ func increment(doc *types.Document, incKey string, incValue any) (any, bool, err
 	return nil, false, err
 }
 
-// increment gets the value of document by path and increments it by the given value.
-// If the document don't have the given key it sets the value.
-func incrementByPath(doc *types.Document, incPath string, incValue any) (any, bool, error) {
-	path := types.NewPathFromString(incPath)
+func incrementByPath(doc *types.Document, incKey string, incValue any) (any, bool, error) {
+	path := types.NewPathFromString(incKey)
 
 	if !doc.HasByPath(path) {
 		doc.SetByPath(path, incValue)
@@ -253,7 +195,7 @@ func incrementByPath(doc *types.Document, incPath string, incValue any) (any, bo
 		return nil, true, nil
 	}
 
-	docValue, err := doc.GetByPath(types.NewPathFromString(incPath))
+	docValue, err := doc.GetByPath(types.NewPathFromString(incKey))
 	if err != nil {
 		return nil, false, err
 	}
