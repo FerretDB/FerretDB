@@ -208,6 +208,79 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	return changed, nil
 }
 
+// increment gets the value of document and increments it by the given value.
+// If the document don't have the given key it sets the value.
+func increment(doc *types.Document, incKey string, incValue any) (any, bool, error) {
+	if !doc.Has(incKey) {
+		must.NoError(doc.Set(incKey, incValue))
+
+		return nil, true, nil
+	}
+
+	docValue := must.NotFail(doc.Get(incKey))
+
+	incremented, err := addNumbers(incValue, docValue)
+	if err == nil {
+		must.NoError(doc.Set(incKey, incremented))
+
+		result := types.Compare(docValue, incremented)
+
+		if len(result) != 1 {
+			panic("$inc: there should be only one result")
+		}
+
+		docFloat, ok := docValue.(float64)
+		if result[0] == types.Equal &&
+			// if the document value is NaN we should consider it as changed.
+			(ok && !math.IsNaN(docFloat)) {
+			return docValue, false, nil
+		}
+
+		return docValue, true, nil
+	}
+
+	return nil, false, err
+}
+
+// increment gets the value of document by path and increments it by the given value.
+// If the document don't have the given key it sets the value.
+func incrementByPath(doc *types.Document, incPath string, incValue any) (any, bool, error) {
+	path := types.NewPathFromString(incPath)
+
+	if !doc.HasByPath(path) {
+		doc.SetByPath(path, incValue)
+
+		return nil, true, nil
+	}
+
+	docValue, err := doc.GetByPath(types.NewPathFromString(incPath))
+	if err != nil {
+		return nil, false, err
+	}
+
+	incremented, err := addNumbers(incValue, docValue)
+	if err == nil {
+		doc.SetByPath(path, incremented)
+
+		result := types.Compare(docValue, incremented)
+
+		if len(result) != 1 {
+			panic("$inc: there should be only one result")
+		}
+
+		docFloat, ok := docValue.(float64)
+		if result[0] == types.Equal &&
+			// if the document value is NaN we should consider it as changed.
+			(ok && !math.IsNaN(docFloat)) {
+			return docValue, false, nil
+		}
+
+		return docValue, true, nil
+	}
+
+	return nil, false, err
+}
+
 // processCurrentDateFieldExpression changes document according to $currentDate operator.
 // If the document was changed it returns true.
 func processCurrentDateFieldExpression(doc *types.Document, currentDateVal any) (bool, error) {
