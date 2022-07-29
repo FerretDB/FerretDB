@@ -29,6 +29,8 @@ import (
 )
 
 func TestQueryLogicalOr(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
@@ -113,6 +115,8 @@ func TestQueryLogicalOr(t *testing.T) {
 }
 
 func TestQueryLogicalNor(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
@@ -178,6 +182,8 @@ func TestQueryLogicalNor(t *testing.T) {
 }
 
 func TestQueryLogicalNot(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
 	ctx, collection := setup.Setup(t, providers...)

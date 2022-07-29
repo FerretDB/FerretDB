@@ -33,6 +33,8 @@ import (
 )
 
 func TestUpdateFieldCurrentDate(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 
 	t.Run("readBack", func(t *testing.T) {
@@ -277,6 +279,8 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 }
 
 func TestUpdateFieldInc(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 
 	t.Run("Ok", func(t *testing.T) {
@@ -627,23 +631,9 @@ func TestUpdateFieldInc(t *testing.T) {
 	})
 }
 
-func TestUpdateFieldMin(t *testing.T) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/623
-}
-
-func TestUpdateFieldMax(t *testing.T) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/624
-}
-
-func TestUpdateFieldMul(t *testing.T) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/625
-}
-
-func TestUpdateFieldRename(t *testing.T) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/626
-}
-
 func TestUpdateFieldSet(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
@@ -849,6 +839,8 @@ func TestUpdateFieldSet(t *testing.T) {
 }
 
 func TestUpdateFieldSetOnInsert(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
@@ -960,6 +952,8 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 }
 
 func TestUpdateFieldUnset(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
@@ -1039,6 +1033,8 @@ func TestUpdateFieldUnset(t *testing.T) {
 }
 
 func TestUpdateFieldMixed(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
