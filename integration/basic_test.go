@@ -186,7 +186,7 @@ func TestFindAndModifyCommentMethod(t *testing.T) {
 
 	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
 	filter := bson.D{{"_id", "string"}}
-	update := bson.D{{"v", "bar"}}
+	update := bson.D{{"$set", bson.D{{"v", "bar"}}}}
 
 	opts := options.FindOneAndUpdate().SetComment(comment)
 	res := collection.FindOneAndUpdate(ctx, filter, update, opts)
