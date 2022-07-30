@@ -210,20 +210,28 @@ func TestFindAndModifyCommentQuery(t *testing.T) {
 
 	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
 	request := bson.D{
-		{"findAndModify", name}, // should it use collection.Database.Name() or collection.Name()?
+		{"findAndModify", collection.Name()},
 		{"query", bson.D{{"_id", "string"}}},
 		{"update", bson.D{{"$set", bson.D{{"v", "bar"}}}}},
 		{"$comment", comment},
 	}
 
-	expected := bson.D{}
+	expectedLastErrObj := bson.D{
+		{"n", int32(1)},
+		{"updatedExisting", true},
+	}
 
 	var actual bson.D
 	err = collection.Database().RunCommand(ctx, request).Decode(&actual)
 	require.NoError(t, err)
 
+	lastErrObj, ok := actual.Map()["lastErrorObject"].(bson.D)
+	if !ok {
+		t.Fatal(actual)
+	}
+
 	assert.Contains(t, databaseNames, name)
-	AssertEqualDocuments(t, expected, actual)
+	AssertEqualDocuments(t, expectedLastErrObj, lastErrObj)
 }
 
 func TestCollectionName(t *testing.T) {
