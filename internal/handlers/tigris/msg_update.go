@@ -188,8 +188,10 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 // update updates documents by _id.
 func (h *Handler) update(ctx context.Context, sp fetchParam, doc *types.Document) (int, error) {
-	id := must.NotFail(doc.Get("_id"))
-	f := must.NotFail(filter.Eq("_id", id).Build())
+	//	id := must.NotFail(doc.Get("_id"))
+	//	f := must.NotFail(filter.Eq("_id", id).Build())
+	id := must.NotFail(doc.Get("_id")).(types.ObjectID)
+	f := must.NotFail(filter.Eq("_id", tjson.ObjectID(id)).Build())
 	h.L.Sugar().Debugf("Filter: %s", f)
 
 	update := fields.UpdateBuilder()
