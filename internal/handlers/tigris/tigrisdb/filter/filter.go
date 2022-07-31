@@ -26,9 +26,9 @@ var (
 )
 
 // Expr represents a filter expression for Tigris.
-type Expr map[string]interface{}
+type Expr map[string]any
 
-// Build "ecodes" expression to be used with Tigris driver.
+// Build "encodes" expression to be used with Tigris driver.
 func (e Expr) Build() (driver.Filter, error) {
 	if e == nil {
 		return nil, nil

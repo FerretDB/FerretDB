@@ -191,11 +191,9 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 func (h *Handler) update(ctx context.Context, sp fetchParam, doc *types.Document) (int, error) {
 	id := must.NotFail(doc.Get("_id"))
 	var f driver.Filter
-	if objID, ok := id.(types.ObjectID); ok {
-		f = must.NotFail(filter.Eq("_id", tjson.ObjectID(objID)).Build())
-	} else {
-		f = must.NotFail(filter.Eq("_id", id).Build())
-	}
+	f = must.NotFail(filter.Eq("_id", id).Build())
+
+	//	fmt.Printf("update: %s %s\n", json.RawMessage(f1), json.RawMessage(f2))
 
 	h.L.Sugar().Debugf("Filter: %s", f)
 

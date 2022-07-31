@@ -25,12 +25,12 @@ import (
 )
 
 // TODO This is a temporary test to check how ObjectID works.
-func TestSmokeObjectID(t *testing.T) {
+func TestSmokeObjectIDSemantic(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
 	// Insert, update, delete a document with a "semantic" (not 12-bytes) ObjectID.
-	/*ins, err := collection.InsertOne(ctx, bson.D{{"_id", "semantic"}, {"string_value", "foo"}})
+	ins, err := collection.InsertOne(ctx, bson.D{{"_id", "semantic"}, {"string_value", "foo"}})
 	require.NoError(t, err)
 
 	up, err := collection.UpdateOne(ctx, bson.D{{"_id", "semantic"}}, bson.D{{"$set", bson.D{{"string_value", "bar"}}}})
@@ -40,7 +40,17 @@ func TestSmokeObjectID(t *testing.T) {
 
 	del, err := collection.DeleteOne(ctx, bson.D{{"_id", ins.InsertedID}})
 	require.NoError(t, err)
-	assert.Equal(t, int64(1), del.DeletedCount)*/
+	assert.Equal(t, int64(1), del.DeletedCount)
+}
+
+// TODO This is a temporary test to check how ObjectID works.
+func TestSmokeObjectIDBinary(t *testing.T) {
+	// Fun fact: as Tigris has a schema, all the _id values in the collection can be either string or binary.
+	// It's not possible to insert a string value for the _id field into a collection and then expect the binary
+	// to work well with the same field.
+
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
 
 	// Insert, update, delete a document with a "proper" ObjectID.
 	ins, err := collection.InsertOne(ctx, bson.D{{"string_value", "foo_2"}})

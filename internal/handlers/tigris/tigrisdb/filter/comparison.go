@@ -14,6 +14,14 @@
 
 package filter
 
+import (
+	"encoding/json"
+	"fmt"
+
+	"github.com/FerretDB/FerretDB/internal/tjson"
+	"github.com/FerretDB/FerretDB/internal/types"
+)
+
 // comparison represents comparison operators for Tigris, like comparison in tigrisdata/tigris-client-go/filter.
 type comparison struct {
 	Gt  any `json:"$gt,omitempty"`
@@ -25,7 +33,20 @@ type comparison struct {
 }
 
 // Eq composes 'equal' operation for Tigris, like in tigrisdata/tigris-client-go/filter but without generics.
+// It marshals the value to JSON, so it'll be used as RawJSON later.
+// The value must be a tjson value. If it's not a tjson value, there will be a panic.
 // Result is equivalent to: field == filterValue.
 func Eq(field string, value any) Expr {
-	return Expr{field: comparison{Eq: value}}
+	var res any
+	if objID, ok := value.(types.ObjectID); ok {
+		r, err := tjson.Marshal(objID)
+		if err != nil {
+			panic(fmt.Sprintf("problem marshalling value as tjson: %v", err))
+		}
+		res = json.RawMessage(r)
+	} else {
+		res = value
+	}
+
+	return Expr{field: comparison{Eq: res}}
 }
