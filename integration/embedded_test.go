@@ -26,10 +26,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/ferretdb"
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestEmbedded(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 
 	f, err := ferretdb.New(&ferretdb.Config{

@@ -49,9 +49,10 @@ tasks:
       - go mod verify
 
   init-clean:
-    desc: "Clean all caches, including docker buildx and docker system volumes, and re-install development tools"
+    desc: "Clean ALL Go and Docker data (caches, images, volumes), and re-init"
     cmds:
-      - docker buildx prune --all
+      - cmd: docker buildx prune --all
+        ignore_error: true # build container may not exist
       - docker system prune --all --volumes
       - bin/golangci-lint{{exeExt}} cache clean
       - go clean -cache -testcache -modcache -fuzzcache
@@ -84,14 +85,6 @@ tasks:
     cmds:
       - docker-compose down --remove-orphans --timeout=0 --volumes
 
-  env-data:
-    desc: "Fill `test.values` with data for experiments"
-    dir: integration
-    cmds:
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData . -target-port=37017
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData . -handler=pg
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData -tags=ferretdb_tigris ./tigris -handler=tigris
-
   gen:
     desc: "Generate (and format) code"
     cmds:
@@ -115,10 +108,9 @@ tasks:
       - go test -short {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=cover.txt ./checkswitch
 
   test-unit-short:
-    desc: "Run short unit tests"
-    deps: [test-unit-short-tools]
+    desc: "Run short unit tests (with caching)"
     cmds:
-      - go test -short {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=cover.txt ./...
+      - go test -short {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
 
   test-unit:
     desc: "Run all unit tests"
@@ -140,7 +132,8 @@ tasks:
     cmds:
       - >
         go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-pg.txt . -handler=pg
+        -coverprofile=integration-pg.txt
+        . -handler=pg
 
   test-integration-tigris:
     desc: "Run integration tests for Tigris handler"
@@ -148,7 +141,8 @@ tasks:
     cmds:
       - >
         go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-tigris.txt -tags=ferretdb_tigris ./tigris/... -handler=tigris
+        -coverprofile=integration-tigris.txt -tags=ferretdb_tigris
+        . -handler=tigris
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
@@ -156,7 +150,8 @@ tasks:
     cmds:
       - >
         go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-mongodb.txt . -target-port=37017 -compat-port=0
+        -coverprofile=integration-mongodb.txt
+        . -target-port=37017 -compat-port=0
 
   bench-short:
     desc: "Benchmark for about 20 seconds (with default BENCHTIME)"
@@ -212,6 +207,11 @@ tasks:
     cmds:
       - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -mode=diff-normal -listen-addr=:27017
 
+  run-tigris:
+    deps: [build-testcover]
+    cmds:
+      - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -mode=diff-normal -listen-addr=:27017 -handler=tigris
+
   run-proxy:
     desc: "Run FerretDB in diff-proxy mode"
     deps: [build-testcover]
@@ -224,7 +224,6 @@ tasks:
       - lint-golangci-lint
       - lint-go-sumtype
       - lint-go-consistent
-      - lint-go-consistent-integration
     cmds:
       - bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
       - go vet -vettool=./bin/checkswitch ./...
@@ -240,11 +239,7 @@ tasks:
   lint-go-consistent:
     cmds:
       - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./ferretdb/...
-
-  lint-go-consistent-integration:
-    dir: integration
-    cmds:
-      - ../bin/go-consistent{{exeExt}} -pedantic ./...
+      - bin/task{{exeExt}} -d integration lint-go-consistent
 
   docs:
     desc: "Format and lint documentation"

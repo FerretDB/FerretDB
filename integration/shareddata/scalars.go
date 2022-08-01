@@ -30,6 +30,8 @@ const (
 //
 // This shared data set is frozen. If you need more values, add them in the test itself.
 var Scalars = &Values[string]{
+	name:     "Scalars",
+	handlers: []string{"pg"},
 	data: map[string]any{
 		"double":                   42.13,
 		"double-whole":             42.0,
@@ -96,16 +98,40 @@ var Scalars = &Values[string]{
 	},
 }
 
-// FixedScalars is an experiment and will be changed in the future.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/786
-var FixedScalars = &Maps[string]{
-	data: map[string]map[string]any{
-		"fixed_double":          {"double_value": 42.13},
-		"fixed_double-whole":    {"double_value": 42.0},
-		"fixed_double-zero":     {"double_value": 0.0},
-		"fixed_double-max":      {"double_value": math.MaxFloat64},
-		"fixed_double-smallest": {"double_value": math.SmallestNonzeroFloat64},
-		"fixed_double-big":      {"double_value": doubleBig},
+// Doubles contains double values for tests.
+var Doubles = &Values[string]{
+	name:     "Doubles",
+	handlers: []string{"pg", "tigris"},
+	data: map[string]any{
+		"double":          42.13,
+		"double-whole":    42.0,
+		"double-zero":     0.0,
+		"double-max":      math.MaxFloat64,
+		"double-smallest": math.SmallestNonzeroFloat64,
+		"double-big":      doubleBig,
+	},
+}
+
+// Strings contains string values for tests.
+var Strings = &Values[string]{
+	name:     "Strings",
+	handlers: []string{"pg", "tigris"},
+	data: map[string]any{
+		"string":        "foo",
+		"string-double": "42.13",
+		"string-whole":  "42",
+		"string-empty":  "",
+	},
+}
+
+// Int32s contains int32 values for tests.
+var Int32s = &Values[string]{
+	name:     "Int32s",
+	handlers: []string{"pg", "tigris"},
+	data: map[string]any{
+		"int32":      int32(42),
+		"int32-zero": int32(0),
+		"int32-max":  int32(math.MaxInt32),
+		"int32-min":  int32(math.MinInt32),
 	},
 }

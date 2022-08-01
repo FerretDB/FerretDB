@@ -29,6 +29,8 @@ import (
 )
 
 func TestQueryProjection(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Composites}
 	ctx, collection := setup.Setup(t, providers...)
@@ -90,6 +92,8 @@ func TestQueryProjection(t *testing.T) {
 }
 
 func TestQueryProjectionElemMatch(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Composites}
 	ctx, collection := setup.Setup(t, providers...)
@@ -140,6 +144,8 @@ func TestQueryProjectionElemMatch(t *testing.T) {
 }
 
 func TestQueryProjectionSlice(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 	_, err := collection.InsertOne(ctx,
