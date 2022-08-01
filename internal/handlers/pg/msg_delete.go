@@ -35,7 +35,6 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.l, "comment") // TODO https://github.com/FerretDB/FerretDB/issues/849
 	if err := common.Unimplemented(document, "let"); err != nil {
 		return nil, err
 	}
@@ -86,6 +85,16 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			)
 		}
 
+		// get comment from options.Delete().SetComment() method
+		if sp.Comment, err = common.GetOptionalParam(document, "comment", sp.Comment); err != nil {
+			return nil, err
+		}
+
+		// get comment from query, e.g. db.collection.DeleteOne({"_id":"string", "$comment: "test"})
+		if sp.Comment, err = common.GetOptionalParam(filter, "$comment", sp.Comment); err != nil {
+			return nil, err
+		}
+
 		resDocs := make([]*types.Document, 0, 16)
 		err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp)
@@ -125,7 +134,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 					continue
 				}
 
-				rowsDeleted, err := h.delete(ctx, sp, resDocs)
+				rowsDeleted, err := h.delete(ctx, &sp, resDocs)
 				if err != nil {
 					return err
 				}
@@ -156,14 +165,14 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // delete deletes documents by _id.
-func (h *Handler) delete(ctx context.Context, sp pgdb.SQLParam, docs []*types.Document) (int64, error) {
+func (h *Handler) delete(ctx context.Context, sp *pgdb.SQLParam, docs []*types.Document) (int64, error) {
 	ids := make([]any, len(docs))
 	for i, doc := range docs {
 		id := must.NotFail(doc.Get("_id"))
 		ids[i] = id
 	}
 
-	rowsDeleted, err := h.pgPool.DeleteDocumentsByID(ctx, sp.DB, sp.Collection, ids)
+	rowsDeleted, err := h.pgPool.DeleteDocumentsByID(ctx, sp, ids)
 	if err != nil {
 		// TODO check error code
 		return 0, common.NewError(common.ErrNamespaceNotFound, fmt.Errorf("delete: ns not found: %w", err))
