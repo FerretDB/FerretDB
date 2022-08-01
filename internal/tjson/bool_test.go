@@ -38,9 +38,9 @@ func TestBool(t *testing.T) {
 }
 
 func FuzzBool(f *testing.F) {
-	fuzzJSON(f, boolTestCases, func() tjsontype { return new(boolType) })
+	fuzzJSON(f, boolTestCases)
 }
 
 func BenchmarkBool(b *testing.B) {
-	benchmark(b, boolTestCases, func() tjsontype { return new(boolType) })
+	benchmark(b, boolTestCases)
 }
