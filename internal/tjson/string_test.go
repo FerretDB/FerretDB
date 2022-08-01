@@ -43,9 +43,9 @@ func TestString(t *testing.T) {
 }
 
 func FuzzString(f *testing.F) {
-	fuzzJSON(f, stringTestCases, func() tjsontype { return new(stringType) })
+	fuzzJSON(f, stringTestCases)
 }
 
 func BenchmarkString(b *testing.B) {
-	benchmark(b, stringTestCases, func() tjsontype { return new(stringType) })
+	benchmark(b, stringTestCases)
 }

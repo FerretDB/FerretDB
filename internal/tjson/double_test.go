@@ -59,9 +59,9 @@ func TestDouble(t *testing.T) {
 }
 
 func FuzzDouble(f *testing.F) {
-	fuzzJSON(f, doubleTestCases, func() tjsontype { return new(doubleType) })
+	fuzzJSON(f, doubleTestCases)
 }
 
 func BenchmarkDouble(b *testing.B) {
-	benchmark(b, doubleTestCases, func() tjsontype { return new(doubleType) })
+	benchmark(b, doubleTestCases)
 }
