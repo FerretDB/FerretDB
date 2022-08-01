@@ -312,6 +312,7 @@ func (d *Document) Remove(key string) any {
 // HasByPath returns true if the given path is present in the document.
 func (d *Document) HasByPath(path Path) bool {
 	_, err := d.GetByPath(path)
+
 	return err == nil
 }
 
@@ -321,6 +322,7 @@ func (d *Document) GetByPath(path Path) (any, error) {
 	if path.Len() == 1 {
 		return d.Get(path.Slice()[0])
 	}
+
 	return getByPath(d, path)
 }
 
@@ -330,6 +332,7 @@ func (d *Document) GetByPath(path Path) (any, error) {
 func (d *Document) SetByPath(path Path, value any) {
 	if path.Len() == 1 {
 		must.NoError(d.Set(path.Slice()[0], value))
+
 		return
 	}
 
@@ -380,6 +383,7 @@ func (d *Document) SetByPath(path Path, value any) {
 func (d *Document) RemoveByPath(path Path) {
 	if path.Len() == 1 {
 		d.Remove(path.Slice()[0])
+
 		return
 	}
 	removeByPath(d, path)
