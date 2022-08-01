@@ -248,11 +248,6 @@ func (d *Document) Get(key string) (any, error) {
 	return nil, fmt.Errorf("types.Document.Get: key not found: %q", key)
 }
 
-// GetByPath returns a value by path - a sequence of indexes and keys.
-func (d *Document) GetByPath(path Path) (any, error) {
-	return getByPath(d, path)
-}
-
 // Set sets the value for the given key, replacing any existing value.
 //
 // As a special case, _id always becomes the first key.
@@ -309,6 +304,11 @@ func (d *Document) Remove(key string) any {
 
 	// should not be reached
 	panic(fmt.Sprintf("types.Document.Remove: key not found: %q", key))
+}
+
+// GetByPath returns a value by path - a sequence of indexes and keys.
+func (d *Document) GetByPath(path Path) (any, error) {
+	return getByPath(d, path)
 }
 
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
