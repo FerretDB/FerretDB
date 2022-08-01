@@ -206,7 +206,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			return &reply, nil
 		}
 
-		_, err = h.delete(ctx, params.sqlParam, resDocs)
+		_, err = h.delete(ctx, &params.sqlParam, resDocs)
 		if err != nil {
 			return nil, err
 		}
