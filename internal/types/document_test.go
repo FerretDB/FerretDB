@@ -168,4 +168,57 @@ func TestDocument(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("SetWithDotNotation", func(t *testing.T) {
+		for _, tc := range []struct {
+			name     string
+			document *Document
+			expected *Document
+			key      string
+			value    any
+			err      error
+		}{
+			{
+				name:     "path exists",
+				document: must.NotFail(NewDocument("foo", must.NotFail(NewDocument("bar", int32(42))))),
+				key:      "foo.bar",
+				value:    "baz",
+				expected: must.NotFail(NewDocument("foo", must.NotFail(NewDocument("bar", "baz")))),
+			},
+			{
+				name:     "key not exists",
+				document: must.NotFail(NewDocument("foo", must.NotFail(NewDocument("bar", int32(42))))),
+				key:      "foo.baz",
+				value:    "bar",
+				expected: must.NotFail(NewDocument("foo", must.NotFail(NewDocument("bar", int32(42), "baz", "bar")))),
+			},
+			{
+				name:     "path not exist",
+				document: must.NotFail(NewDocument("foo", must.NotFail(NewDocument("bar", int32(42))))),
+				key:      "foo.baz.bar",
+				value:    "bar",
+				expected: must.NotFail(NewDocument(
+					"foo", must.NotFail(NewDocument(
+						"bar", int32(42),
+						"baz", must.NotFail(NewDocument("bar", "bar")),
+					)),
+				)),
+			},
+		} {
+			tc := tc
+			t.Run(tc.name, func(t *testing.T) {
+				t.Parallel()
+
+				err := tc.document.Set(tc.key, tc.value)
+				if tc.err != nil {
+					assert.EqualError(t, err, tc.err.Error())
+
+					return
+				}
+				assert.NoError(t, err)
+
+				assert.Equal(t, tc.expected, tc.document)
+			})
+		}
+	})
 }
