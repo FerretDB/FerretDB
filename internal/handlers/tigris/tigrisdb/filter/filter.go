@@ -21,7 +21,7 @@ import (
 )
 
 var (
-	//All represents filter which includes all the documents of the collection
+	// All represents filter which includes all the documents of the collection.
 	All = driver.Filter(`{}`)
 )
 
@@ -33,6 +33,6 @@ func (e Expr) Build() (driver.Filter, error) {
 	if e == nil {
 		return nil, nil
 	}
-	b, err := json.Marshal(e)
-	return b, err
+
+	return json.Marshal(e)
 }

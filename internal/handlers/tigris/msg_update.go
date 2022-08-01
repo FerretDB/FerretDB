@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/tigrisdata/tigris-client-go/driver"
 	"github.com/tigrisdata/tigris-client-go/fields"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -190,8 +189,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 // update updates documents by _id.
 func (h *Handler) update(ctx context.Context, sp fetchParam, doc *types.Document) (int, error) {
 	id := must.NotFail(doc.Get("_id"))
-	var f driver.Filter
-	f = must.NotFail(filter.Eq("_id", id).Build())
+	f := must.NotFail(filter.Eq("_id", id).Build())
 
 	//	fmt.Printf("update: %s %s\n", json.RawMessage(f1), json.RawMessage(f2))
 

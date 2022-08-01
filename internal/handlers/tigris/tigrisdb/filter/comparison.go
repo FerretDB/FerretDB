@@ -38,13 +38,15 @@ type comparison struct {
 // Result is equivalent to: field == filterValue.
 func Eq(field string, value any) Expr {
 	var res any
-	if objID, ok := value.(types.ObjectID); ok {
-		r, err := tjson.Marshal(objID)
+
+	switch v := value.(type) {
+	case types.ObjectID:
+		r, err := tjson.Marshal(v)
 		if err != nil {
 			panic(fmt.Sprintf("problem marshalling value as tjson: %v", err))
 		}
 		res = json.RawMessage(r)
-	} else {
+	default:
 		res = value
 	}
 
