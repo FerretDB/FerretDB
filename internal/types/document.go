@@ -316,6 +316,7 @@ func (d *Document) HasByPath(path Path) bool {
 }
 
 // GetByPath returns a value by path - a sequence of indexes and keys.
+// If the Path has only one element, it sets the value for the given key.
 func (d *Document) GetByPath(path Path) (any, error) {
 	if path.Len() == 1 {
 		return d.Get(path.Slice()[0])
@@ -323,7 +324,7 @@ func (d *Document) GetByPath(path Path) (any, error) {
 	return getByPath(d, path)
 }
 
-// SetByPath sets value by given path.
+// SetByPath sets value by given path. If the Path has only one element, it sets the value for the given key.
 // If some parts of the path are missing, they will be created.
 // The Document type will be used to create these parts.
 func (d *Document) SetByPath(path Path, value any) {
@@ -375,6 +376,7 @@ func (d *Document) SetByPath(path Path, value any) {
 }
 
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
+// If the Path has only one element, it sets the value for the given key.
 func (d *Document) RemoveByPath(path Path) {
 	if path.Len() == 1 {
 		d.Remove(path.Slice()[0])
