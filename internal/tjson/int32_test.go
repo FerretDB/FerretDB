@@ -49,9 +49,9 @@ func TestInt32(t *testing.T) {
 }
 
 func FuzzInt32(f *testing.F) {
-	fuzzJSON(f, int32TestCases, func() tjsontype { return new(int32Type) })
+	fuzzJSON(f, int32TestCases)
 }
 
 func BenchmarkInt32(b *testing.B) {
-	benchmark(b, int32TestCases, func() tjsontype { return new(int32Type) })
+	benchmark(b, int32TestCases)
 }
