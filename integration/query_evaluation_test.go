@@ -31,6 +31,8 @@ import (
 )
 
 func TestQueryEvaluationMod(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	if runtime.GOARCH == "arm64" {
 		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
 	}
@@ -411,6 +413,8 @@ func TestQueryEvaluationMod(t *testing.T) {
 }
 
 func TestQueryEvaluationRegex(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
@@ -480,6 +484,8 @@ func TestQueryEvaluationRegex(t *testing.T) {
 }
 
 func TestQueryEvaluationRegexErrors(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 

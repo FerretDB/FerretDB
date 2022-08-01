@@ -32,19 +32,6 @@ func TestQueryLogicalCompatAnd(t *testing.T) {
 				},
 			}},
 		},
-		"BadInput": {
-			filter:     bson.D{{"$and", nil}},
-			resultType: errorResult,
-		},
-		"BadExpressionValue": {
-			filter: bson.D{{
-				"$and", bson.A{
-					bson.D{{"v", bson.D{{"$gt", int32(0)}}}},
-					nil,
-				},
-			}},
-			resultType: errorResult,
-		},
 		"AndOr": {
 			filter: bson.D{{
 				"$and", bson.A{
@@ -66,6 +53,20 @@ func TestQueryLogicalCompatAnd(t *testing.T) {
 					bson.D{{"v", bson.D{{"$type", "int"}}}},
 				},
 			}},
+		},
+		"BadInput": {
+			filter:     bson.D{{"$and", nil}},
+			resultType: emptyResult,
+		},
+		"BadValue": {
+			filter: bson.D{{
+				"$and", bson.A{
+					bson.D{{"v", bson.D{{"$gt", int32(0)}}}},
+					nil,
+				},
+			}},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/962",
 		},
 	}
 
