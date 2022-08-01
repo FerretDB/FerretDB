@@ -88,8 +88,8 @@ func TestMarshalUnmarshal(t *testing.T) {
 
 	assert.Equal(
 		t,
-		[]byte{0x00, 0x01, 0x02, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c},
-		ObjectID(must.NotFail(expected.Get("_id")).(types.ObjectID)),
+		types.ObjectID{0x00, 0x01, 0x02, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c},
+		must.NotFail(expected.Get("_id")).(types.ObjectID),
 	)
 }
 
@@ -215,7 +215,7 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() tjsontype) {
 	}
 }
 
-func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() tjsontype) {
+func fuzzJSON(f *testing.F, testCases []testCase) {
 	for _, tc := range testCases {
 		f.Add(tc.j)
 		if tc.canonJ != "" {
@@ -260,7 +260,7 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() tjsontype) {
 	})
 }
 
-func benchmark(b *testing.B, testCases []testCase, newFunc func() tjsontype) {
+func benchmark(b *testing.B, testCases []testCase) {
 	for _, tc := range testCases {
 		tc := tc
 		b.Run(tc.name, func(b *testing.B) {
@@ -282,6 +282,7 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() tjsontype) {
 				if tc.jErr == "" {
 					require.NoError(b, err)
 					assertEqual(b, tc.v, toTJSON(v))
+
 					return
 				}
 
@@ -300,6 +301,8 @@ func unmarshalJSON(v tjsontype, j string) error {
 	case *doubleType:
 		err = v.UnmarshalJSON([]byte(j))
 	case *stringType:
+		err = v.UnmarshalJSON([]byte(j))
+	case *binaryType:
 		err = v.UnmarshalJSON([]byte(j))
 	case *boolType:
 		err = v.UnmarshalJSON([]byte(j))
