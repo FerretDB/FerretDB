@@ -318,6 +318,11 @@ func (d *Document) GetByPath(path Path) (any, error) {
 // If some parts of the path are missing, they will be created.
 // The Document type will be used to create these parts.
 func (d *Document) SetByPath(path Path, value any) {
+	if path.Len() == 1 {
+		must.NoError(d.Set(path.Slice()[0], value))
+		return
+	}
+
 	innerComp, err := d.GetByPath(path.TrimSuffix())
 	if err != nil {
 		next := d
