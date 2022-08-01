@@ -32,6 +32,10 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 			update: bson.D{{"$inc", bson.D{{"v", -42.13}}}},
 			skip:   "https://github.com/FerretDB/FerretDB/issues/972",
 		},
+		"EmptyUpdatePath": {
+			update: bson.D{{"$inc", bson.D{{}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/673",
+		},
 	}
 
 	testUpdateCompat(t, testCases)
