@@ -223,9 +223,8 @@ func TestFindAndModifyCommentQuery(t *testing.T) {
 	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
 	request := bson.D{
 		{"findAndModify", collection.Name()},
-		{"query", bson.D{{"_id", "string"}}},
+		{"query", bson.D{{"_id", "string"}, {"$comment", comment}}},
 		{"update", bson.D{{"$set", bson.D{{"v", "bar"}}}}},
-		{"$comment", comment},
 	}
 
 	expectedLastErrObj := bson.D{
