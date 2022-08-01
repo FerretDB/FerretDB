@@ -189,6 +189,52 @@ func TestUpdateCommentQuery(t *testing.T) {
 	assert.Equal(t, expected, res)
 }
 
+func TestDeleteCommentMethod(t *testing.T) {
+	setup.SkipForTigris(t)
+
+	t.Parallel()
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
+	name := collection.Database().Name()
+	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
+	require.NoError(t, err)
+
+	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
+	filter := bson.D{{"_id", "string"}}
+
+	opts := options.Delete().SetComment(comment)
+	res, err := collection.DeleteOne(ctx, filter, opts)
+	require.NoError(t, err)
+
+	expected := &mongo.DeleteResult{
+		DeletedCount: 1,
+	}
+
+	assert.Contains(t, databaseNames, name)
+	assert.Equal(t, expected, res)
+}
+
+func TestDeleteCommentQuery(t *testing.T) {
+	setup.SkipForTigris(t)
+
+	t.Parallel()
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
+	name := collection.Database().Name()
+	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
+	require.NoError(t, err)
+
+	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
+
+	res, err := collection.DeleteOne(ctx, bson.M{"_id": "string", "$comment": comment})
+	require.NoError(t, err)
+
+	expected := &mongo.DeleteResult{
+		DeletedCount: 1,
+	}
+
+	assert.Contains(t, databaseNames, name)
+	assert.Equal(t, expected, res)
+}
+
 func TestFindAndModifyCommentMethod(t *testing.T) {
 	setup.SkipForTigris(t)
 
@@ -199,32 +245,18 @@ func TestFindAndModifyCommentMethod(t *testing.T) {
 	require.NoError(t, err)
 
 	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
-	request := bson.D{
-		{"findAndModify", collection.Name()},
-		{"query", bson.D{{"_id", "string"}}},
-		{"update", bson.D{{"$set", bson.D{{"v", "bar"}}}}},
-		{"comment", comment},
-	}
+	filter := bson.D{{"_id", "string"}}
 
-	res := collection.Database().RunCommand(ctx, request)
-	require.NoError(t, res.Err())
-
-	expectedLastErrObj := bson.D{
-		{"n", int32(1)},
-		{"updatedExisting", true},
-	}
-
-	var actual bson.D
-	err = collection.Database().RunCommand(ctx, request).Decode(&actual)
+	opts := options.Delete().SetComment(comment)
+	res, err := collection.DeleteOne(ctx, filter, opts)
 	require.NoError(t, err)
 
-	lastErrObj, ok := actual.Map()["lastErrorObject"].(bson.D)
-	if !ok {
-		t.Fatal(actual)
+	expected := &mongo.DeleteResult{
+		DeletedCount: 1,
 	}
 
 	assert.Contains(t, databaseNames, name)
-	AssertEqualDocuments(t, expectedLastErrObj, lastErrObj)
+	assert.Equal(t, expected, res)
 }
 
 func TestFindAndModifyCommentQuery(t *testing.T) {
