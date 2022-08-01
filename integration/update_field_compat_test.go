@@ -12,40 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tjson
+package integration
 
 import (
 	"testing"
 
-	"github.com/AlekSi/pointer"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
-var stringTestCases = []testCase{{
-	name:   "foo",
-	v:      pointer.To(stringType("foo")),
-	schema: stringSchema,
-	j:      `"foo"`,
-}, {
-	name:   "empty",
-	v:      pointer.To(stringType("")),
-	schema: stringSchema,
-	j:      `""`,
-}, {
-	name:   "zero",
-	v:      pointer.To(stringType("\x00")),
-	schema: stringSchema,
-	j:      `"\u0000"`,
-}}
-
-func TestString(t *testing.T) {
+func TestUpdateFieldCompatInc(t *testing.T) {
 	t.Parallel()
-	testJSON(t, stringTestCases, func() tjsontype { return new(stringType) })
-}
 
-func FuzzString(f *testing.F) {
-	fuzzJSON(f, stringTestCases)
-}
+	testCases := map[string]updateCompatTestCase{
+		"Double": {
+			update: bson.D{{"$inc", bson.D{{"v", 42.13}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/972",
+		},
+		"DoubleNegative": {
+			update: bson.D{{"$inc", bson.D{{"v", -42.13}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/972",
+		},
+	}
 
-func BenchmarkString(b *testing.B) {
-	benchmark(b, stringTestCases)
+	testUpdateCompat(t, testCases)
 }
