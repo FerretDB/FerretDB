@@ -375,12 +375,12 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 	}
 
 	var comment string
-	// get comment from options.Update().SetComment() method
+	// get comment from a "comment" field
 	if comment, err = common.GetOptionalParam(document, "comment", comment); err != nil {
 		return nil, err
 	}
 
-	// get comment from query, e.g. db.collection.UpdateOne({"_id":"string", "$comment: "test"},{$set:{"v":"foo""}})
+	// get comment from query, e.g. db.collection.FindAndModify({"_id":"string", "$comment: "test"},{$set:{"v":"foo""}})
 	if comment, err = common.GetOptionalParam(query, "$comment", comment); err != nil {
 		return nil, err
 	}
