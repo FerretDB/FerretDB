@@ -102,9 +102,9 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 
 			switch tc.resultType {
 			case nonEmptyResult:
-				assert.True(t, nonEmptyResults)
+				assert.True(t, nonEmptyResults, "expected non-empty results")
 			case emptyResult:
-				assert.False(t, nonEmptyResults)
+				assert.False(t, nonEmptyResults, "expected empty results")
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)
 			}
