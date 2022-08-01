@@ -30,6 +30,8 @@ import (
 )
 
 func TestQueryArraySize(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
@@ -143,6 +145,8 @@ func TestQueryArraySize(t *testing.T) {
 }
 
 func TestQueryArrayDotNotation(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
@@ -232,6 +236,8 @@ func TestQueryArrayDotNotation(t *testing.T) {
 }
 
 func TestQueryElemMatchOperator(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
@@ -347,6 +353,8 @@ func TestQueryElemMatchOperator(t *testing.T) {
 }
 
 func TestArrayEquality(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Composites)
 
@@ -417,6 +425,8 @@ func TestArrayEquality(t *testing.T) {
 
 // TestQueryArrayAll covers the case where the $all operator is used on an array or scalar.
 func TestQueryArrayAll(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 
 	ctx, collection := setup.Setup(t, shareddata.Composites, shareddata.Scalars)

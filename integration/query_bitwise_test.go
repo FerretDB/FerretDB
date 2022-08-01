@@ -30,6 +30,8 @@ import (
 )
 
 func TestQueryBitwiseAllClear(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
@@ -186,6 +188,8 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 }
 
 func TestQueryBitwiseAllSet(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
@@ -310,6 +314,8 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 }
 
 func TestQueryBitwiseAnyClear(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
@@ -458,6 +464,8 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 }
 
 func TestQueryBitwiseAnySet(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
