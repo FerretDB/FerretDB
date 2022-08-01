@@ -49,7 +49,6 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		"writeConcern",
 		"collation",
 		"hint",
-		"comment",
 	}
 	common.Ignored(document, h.l, ignoredFields...)
 
@@ -206,7 +205,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			return &reply, nil
 		}
 
-		_, err = h.delete(ctx, params.sqlParam, resDocs)
+		_, err = h.delete(ctx, &params.sqlParam, resDocs)
 		if err != nil {
 			return nil, err
 		}
@@ -380,10 +379,22 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 		}
 	}
 
+	var comment string
+	// get comment from a "comment" field
+	if comment, err = common.GetOptionalParam(document, "comment", comment); err != nil {
+		return nil, err
+	}
+
+	// get comment from query, e.g. db.collection.FindAndModify({"_id":"string", "$comment: "test"},{$set:{"v":"foo""}})
+	if comment, err = common.GetOptionalParam(query, "$comment", comment); err != nil {
+		return nil, err
+	}
+
 	return &findAndModifyParams{
 		sqlParam: pgdb.SQLParam{
 			DB:         db,
 			Collection: collection,
+			Comment:    comment,
 		},
 		query:              query,
 		update:             update,
