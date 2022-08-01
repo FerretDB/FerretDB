@@ -155,7 +155,7 @@ func (h *Handler) delete(ctx context.Context, fp fetchParam, docs []*types.Docum
 	default:
 		f = must.NotFail(filter.Or(ids...).Build())
 	}
-	h.L.Sugar().Debugf("Filter: %s", f)
+	h.L.Sugar().Debugf("Delete filter: %s", f)
 
 	f = must.NotFail(filter.Eq("_id", iddd).Build())
 

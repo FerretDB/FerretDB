@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
@@ -34,15 +35,21 @@ func TestSmokeObjectIDBinary(t *testing.T) {
 	ctx, collection := setup.Setup(t)
 
 	// Insert, update, delete a document with a "proper" ObjectID.
-	ins, err := collection.InsertOne(ctx, bson.D{{"string_value", "foo_2"}})
+
+	// id, err := primitive.ObjectIDFromHex("ffffffffffffffffffffffff")
+	// id, err := primitive.ObjectIDFromHex("000000000000000000000000")
+	id, err := primitive.ObjectIDFromHex("62e7d8a3d23915343c4a5f3a")
 	require.NoError(t, err)
 
-	//id := ins.InsertedID
+	ins, err := collection.InsertOne(ctx, bson.D{{"_id", id}, {"string_value", "foo_2"}})
+	require.NoError(t, err)
 
-	/*up, err := collection.UpdateOne(ctx, bson.D{{"_id", id}}, bson.D{{"$set", bson.D{{"string_value", "bar_2"}}}})
+	t.Logf("Inserted ID: %v", ins.InsertedID)
+
+	up, err := collection.UpdateOne(ctx, bson.D{{"_id", id}}, bson.D{{"$set", bson.D{{"string_value", "bar_2"}}}})
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), up.MatchedCount)
-	assert.Equal(t, int64(1), up.ModifiedCount)*/
+	assert.Equal(t, int64(1), up.ModifiedCount)
 
 	del, err := collection.DeleteOne(ctx, bson.D{{"_id", ins.InsertedID}})
 	require.NoError(t, err)
