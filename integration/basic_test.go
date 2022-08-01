@@ -195,13 +195,22 @@ func TestFindAndModifyCommentMethod(t *testing.T) {
 	res := collection.Database().RunCommand(ctx, request)
 	require.NoError(t, res.Err())
 
-	expected := &mongo.UpdateResult{
-		MatchedCount:  1,
-		ModifiedCount: 1,
+	expectedLastErrObj := bson.D{
+		{"n", int32(1)},
+		{"updatedExisting", true},
+	}
+
+	var actual bson.D
+	err = collection.Database().RunCommand(ctx, request).Decode(&actual)
+	require.NoError(t, err)
+
+	lastErrObj, ok := actual.Map()["lastErrorObject"].(bson.D)
+	if !ok {
+		t.Fatal(actual)
 	}
 
 	assert.Contains(t, databaseNames, name)
-	assert.Equal(t, expected, res)
+	AssertEqualDocuments(t, expectedLastErrObj, lastErrObj)
 }
 
 func TestFindAndModifyCommentQuery(t *testing.T) {
