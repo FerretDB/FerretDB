@@ -190,6 +190,8 @@ func TestUpdateCommentQuery(t *testing.T) {
 }
 
 func TestFindAndModifyCommentMethod(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 	name := collection.Database().Name()
@@ -226,6 +228,8 @@ func TestFindAndModifyCommentMethod(t *testing.T) {
 }
 
 func TestFindAndModifyCommentQuery(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 	name := collection.Database().Name()
