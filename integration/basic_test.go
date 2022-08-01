@@ -185,11 +185,14 @@ func TestFindAndModifyCommentMethod(t *testing.T) {
 	require.NoError(t, err)
 
 	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
-	filter := bson.D{{"_id", "string"}}
-	update := bson.D{{"$set", bson.D{{"v", "bar"}}}}
+	request := bson.D{
+		{"findAndModify", collection.Name()},
+		{"query", bson.D{{"_id", "string"}}},
+		{"update", bson.D{{"$set", bson.D{{"v", "bar"}}}}},
+		{"comment", comment},
+	}
 
-	opts := options.FindOneAndUpdate().SetComment(comment)
-	res := collection.FindOneAndUpdate(ctx, filter, update, opts)
+	res := collection.Database().RunCommand(ctx, request)
 	require.NoError(t, res.Err())
 
 	expected := &mongo.UpdateResult{
