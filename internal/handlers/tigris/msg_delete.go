@@ -16,13 +16,13 @@ package tigris
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
 	"github.com/tigrisdata/tigris-client-go/filter"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -139,11 +139,13 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 // delete deletes documents by _id.
 func (h *Handler) delete(ctx context.Context, fp fetchParam, docs []*types.Document) (int, error) {
 	ids := make([]filter.Expr, len(docs))
-	var iddd []byte
 	for i, doc := range docs {
 		id := must.NotFail(doc.Get("_id")).(types.ObjectID)
-		ids[i] = filter.Eq("_id", tjson.ObjectID(id))
-		iddd = tjson.ObjectID(id)
+		mid, err := json.Marshal(id)
+		if err != nil {
+			panic("Can't marshal ObjectID")
+		}
+		ids[i] = filter.Eq("_id", mid)
 	}
 
 	var f driver.Filter
@@ -156,8 +158,6 @@ func (h *Handler) delete(ctx context.Context, fp fetchParam, docs []*types.Docum
 		f = must.NotFail(filter.Or(ids...).Build())
 	}
 	h.L.Sugar().Debugf("Delete filter: %s", f)
-
-	f = must.NotFail(filter.Eq("_id", iddd).Build())
 
 	_, err := h.driver.UseDatabase(fp.db).Delete(ctx, fp.collection, f)
 	if err != nil {
