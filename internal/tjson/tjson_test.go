@@ -300,17 +300,17 @@ func unmarshalJSON(v tjsontype, j string) error {
 	switch v := v.(type) {
 	case *doubleType:
 		err = v.UnmarshalJSON([]byte(j))
-	case *int32Type:
-		err = v.UnmarshalJSON([]byte(j))
-	case *int64Type:
-		err = v.UnmarshalJSON([]byte(j))
 	case *stringType:
-		err = v.UnmarshalJSON([]byte(j))
-	case *boolType:
 		err = v.UnmarshalJSON([]byte(j))
 	case *binaryType:
 		err = v.UnmarshalJSON([]byte(j))
 	case *objectIDType:
+		err = v.UnmarshalJSON([]byte(j))
+	case *boolType:
+		err = v.UnmarshalJSON([]byte(j))
+	case *int32Type:
+		err = v.UnmarshalJSON([]byte(j))
+	case *int64Type:
 		err = v.UnmarshalJSON([]byte(j))
 	default:
 		panic(fmt.Sprintf("testing is not implemented for the type %T", v))
