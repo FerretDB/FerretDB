@@ -169,7 +169,7 @@ func TestDocument(t *testing.T) {
 		}
 	})
 
-	t.Run("SetWithDotNotation", func(t *testing.T) {
+	t.Run("SetByPath", func(t *testing.T) {
 		for _, tc := range []struct {
 			name     string
 			document *Document
@@ -209,13 +209,7 @@ func TestDocument(t *testing.T) {
 			t.Run(tc.name, func(t *testing.T) {
 				t.Parallel()
 
-				err := tc.document.Set(tc.key, tc.value)
-				if tc.err != nil {
-					assert.EqualError(t, err, tc.err.Error())
-
-					return
-				}
-				assert.NoError(t, err)
+				tc.document.SetByPath(NewPathFromString(tc.key), tc.value)
 
 				assert.Equal(t, tc.expected, tc.document)
 			})
