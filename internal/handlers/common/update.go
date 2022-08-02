@@ -139,7 +139,6 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			if result[0] == types.Equal &&
 				// if the document value is NaN we should consider it as changed.
 				(ok && !math.IsNaN(docFloat)) {
-
 				continue
 			}
 
