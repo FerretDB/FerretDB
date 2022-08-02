@@ -329,16 +329,15 @@ func (d *Document) GetByPath(path Path) (any, error) {
 // SetByPath sets value by given path. If the Path has only one element, it sets the value for the given key.
 // If some parts of the path are missing, they will be created.
 // The Document type will be used to create these parts.
-func (d *Document) SetByPath(path Path, value any) {
+func (d *Document) SetByPath(path Path, value any) error {
 	if path.Len() == 1 {
 		must.NoError(d.Set(path.Slice()[0], value))
-
-		return
+		return nil
 	}
 
 	innerComp, err := d.GetByPath(path.TrimSuffix())
 	if err != nil {
-		next := d
+		var next any = d
 
 		var insertedPath Path
 		for _, pathElem := range path.TrimSuffix().Slice() {
@@ -351,14 +350,17 @@ func (d *Document) SetByPath(path Path, value any) {
 					panic("invalid path")
 				}
 
-				must.NoError(next.Set(insertedPath.Slice()[suffix], must.NotFail(NewDocument())))
+				switch v := next.(type) {
+				case *Document:
+					must.NoError(v.Set(insertedPath.Slice()[suffix], must.NotFail(NewDocument())))
+				case *Array:
+					return fmt.Errorf("Cannot create field '%s' in element {%s: %s}", pathElem, insertedPath.Slice()[suffix-1], v)
+				}
 
 				next = must.NotFail(d.GetByPath(insertedPath)).(*Document)
 			}
 
-			if doc, ok := v.(*Document); ok {
-				next = doc
-			}
+			next = v
 		}
 		innerComp = must.NotFail(d.GetByPath(path.TrimSuffix()))
 	}
@@ -376,6 +378,8 @@ func (d *Document) SetByPath(path Path, value any) {
 	default:
 		panic(fmt.Errorf("can't set value for %T type", inner))
 	}
+
+	return nil
 }
 
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
@@ -387,6 +391,19 @@ func (d *Document) RemoveByPath(path Path) {
 		return
 	}
 	removeByPath(d, path)
+}
+
+func (d *Document) String() string {
+	var result = "{"
+	for i, key := range d.keys {
+		if i > 0 {
+			result += ", "
+		}
+
+		result += fmt.Sprintf("%q: %s", key, d.m[key])
+	}
+
+	return result + "}"
 }
 
 // check interfaces

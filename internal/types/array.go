@@ -198,3 +198,12 @@ func (a *Array) ContainsAll(b *Array) bool {
 	}
 	return true
 }
+
+func (a *Array) String() string {
+	var result = "[ "
+	for _, elem := range a.s {
+		result += fmt.Sprintf("%s, ", elem)
+	}
+
+	return result + " ]"
+}

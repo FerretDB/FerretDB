@@ -641,6 +641,14 @@ func TestUpdateFieldInc(t *testing.T) {
 						`{_id: "string"} has the field 'v' of non-numeric type string`,
 				},
 			},
+			"ArrayDotNotationFieldNotExist": {
+				id:     "document-composite",
+				update: bson.D{{"$inc", bson.D{{"v.array.foo", int32(1)}}}},
+				err: &mongo.WriteError{
+					Code:    28,
+					Message: "Cannot create field 'array' in element {v: [ 42 ]}",
+				},
+			},
 		} {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {

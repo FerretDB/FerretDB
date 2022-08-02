@@ -115,7 +115,13 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 		path := types.NewPathFromString(incKey)
 
 		if !doc.HasByPath(path) {
-			doc.SetByPath(path, incValue)
+			err := doc.SetByPath(path, incValue)
+			if err != nil {
+				return false, NewWriteErrorMsg(
+					ErrUnsuitableValueType,
+					err.Error(),
+				)
+			}
 
 			changed = true
 
@@ -129,7 +135,13 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 		incremented, err := addNumbers(incValue, docValue)
 		if err == nil {
-			doc.SetByPath(path, incremented)
+			err := doc.SetByPath(path, incremented)
+			if err != nil {
+				return false, NewWriteErrorMsg(
+					ErrUnsuitableValueType,
+					fmt.Sprintf(`Cannot create field in element {%s: %v}`, path.Prefix(), docValue),
+				)
+			}
 
 			result := types.Compare(docValue, incremented)
 

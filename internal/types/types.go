@@ -70,6 +70,7 @@ type Type interface {
 // TODO remove once we have go-sumtype equivalent?
 type CompositeTypeInterface interface {
 	CompositeType
+	fmt.Stringer
 	GetByPath(path Path) (any, error)
 	RemoveByPath(path Path)
 
