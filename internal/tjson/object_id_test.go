@@ -15,48 +15,36 @@
 package tjson
 
 import (
-	"math"
+	"encoding/base64"
+	"fmt"
 	"testing"
 
 	"github.com/AlekSi/pointer"
 )
 
-var int64TestCases = []testCase{{
-	name:   "42",
-	v:      pointer.To(int64Type(42)),
-	schema: int64Schema,
-	j:      `42`,
-}, {
-	name:   "zero",
-	v:      pointer.To(int64Type(0)),
-	schema: int64Schema,
-	j:      `0`,
-}, {
-	name:   "max int64",
-	v:      pointer.To(int64Type(math.MaxInt64)),
-	schema: int64Schema,
-	j:      `9223372036854775807`,
-}, {
-	name:   "min int64",
-	v:      pointer.To(int64Type(math.MinInt64)),
-	schema: int64Schema,
-	j:      `-9223372036854775808`,
+var objectIDTestCases = []testCase{{
+	name:   "normal",
+	v:      pointer.To(objectIDType{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01}),
+	schema: objectIDSchema,
+	j: fmt.Sprintf(`"%s"`, base64.StdEncoding.EncodeToString(
+		[]byte{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01},
+	)),
 }, {
 	name:   "EOF",
-	schema: int64Schema,
+	schema: objectIDSchema,
 	j:      `{`,
 	jErr:   `unexpected EOF`,
 }}
 
-func TestInt64(t *testing.T) {
+func TestObjectID(t *testing.T) {
 	t.Parallel()
-	testJSON(t, int64TestCases, func() tjsontype { return new(int64Type) })
+	testJSON(t, objectIDTestCases, func() tjsontype { return new(objectIDType) })
 }
 
-func FuzzInt64(f *testing.F) {
-	fuzzJSON(f, int64TestCases)
+func FuzzObjectID(f *testing.F) {
+	fuzzJSON(f, objectIDTestCases)
 }
 
-func BenchmarkInt64(b *testing.B) {
-	benchmark(b, int64TestCases)
+func BenchmarkObjectID(b *testing.B) {
+	benchmark(b, objectIDTestCases)
 }
