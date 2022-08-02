@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration"
@@ -65,18 +66,19 @@ func TestSmokeObjectIDBinary(t *testing.T) {
 	// Insert, update, delete a document with a "proper" ObjectID.
 	ins, err := collection.InsertOne(ctx, bson.D{{"string_value", "foo_2"}})
 	require.NoError(t, err)
+	id := ins.InsertedID.(primitive.ObjectID)
 
-	up, err := collection.UpdateOne(ctx, bson.D{{"_id", ins.InsertedID}}, bson.D{{"$set", bson.D{{"string_value", "bar_2"}}}})
+	up, err := collection.UpdateOne(ctx, bson.D{{"_id", id}}, bson.D{{"$set", bson.D{{"string_value", "bar_2"}}}})
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), up.MatchedCount)
 	assert.Equal(t, int64(1), up.ModifiedCount)
 
 	var doc bson.D
-	err = collection.FindOne(ctx, bson.D{{"_id", ins.InsertedID}}).Decode(&doc)
+	err = collection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&doc)
 	require.NoError(t, err)
-	integration.AssertEqualDocuments(t, bson.D{{"_id", ins.InsertedID}, {"string_value", "bar_2"}}, doc)
+	integration.AssertEqualDocuments(t, bson.D{{"_id", id}, {"string_value", "bar_2"}}, doc)
 
-	del, err := collection.DeleteOne(ctx, bson.D{{"_id", ins.InsertedID}})
+	del, err := collection.DeleteOne(ctx, bson.D{{"_id", id}})
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), del.DeletedCount)
 

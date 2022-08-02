@@ -20,10 +20,8 @@ import (
 	"github.com/tigrisdata/tigris-client-go/driver"
 )
 
-var (
-	// All represents filter which includes all the documents of the collection.
-	All = driver.Filter(`{}`)
-)
+// All represents filter which includes all the documents of the collection.
+var All = driver.Filter(`{}`)
 
 // Expr represents a filter expression for Tigris.
 type Expr map[string]any
