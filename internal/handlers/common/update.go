@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"math"
 	"sort"
-	"strings"
 	"time"
 
 	"golang.org/x/exp/slices"
@@ -107,21 +106,43 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	incDoc := updateV.(*types.Document)
 
 	var changed bool
-	var err error
 
 	for _, incKey := range incDoc.Keys() {
 		incValue := must.NotFail(incDoc.Get(incKey))
 
-		var docValue any
+		path := types.NewPathFromString(incKey)
 
-		if strings.Contains(incKey, ".") {
-			docValue, changed, err = incrementByPath(doc, incKey, incValue)
-		} else {
-			docValue, changed, err = increment(doc, incKey, incValue)
+		if !doc.HasByPath(path) {
+			doc.SetByPath(path, incValue)
+
+			changed = true
+			continue
 		}
 
+		docValue, err := doc.GetByPath(types.NewPathFromString(incKey))
+		if err != nil {
+			return false, err
+		}
+
+		incremented, err := addNumbers(incValue, docValue)
 		if err == nil {
-			return changed, nil
+			doc.SetByPath(path, incremented)
+
+			result := types.Compare(docValue, incremented)
+
+			if len(result) != 1 {
+				panic("$inc: there should be only one result")
+			}
+
+			docFloat, ok := docValue.(float64)
+			if result[0] == types.Equal &&
+				// if the document value is NaN we should consider it as changed.
+				(ok && !math.IsNaN(docFloat)) {
+				continue
+			}
+
+			changed = true
+			continue
 		}
 
 		switch err {
@@ -151,76 +172,6 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	}
 
 	return changed, nil
-}
-
-func increment(doc *types.Document, incKey string, incValue any) (any, bool, error) {
-	if !doc.Has(incKey) {
-
-		must.NoError(doc.Set(incKey, incValue))
-
-		return nil, true, nil
-	}
-
-	docValue := must.NotFail(doc.Get(incKey))
-
-	incremented, err := addNumbers(incValue, docValue)
-	if err == nil {
-		must.NoError(doc.Set(incKey, incremented))
-
-		result := types.Compare(docValue, incremented)
-
-		if len(result) != 1 {
-			panic("$inc: there should be only one result")
-		}
-
-		docFloat, ok := docValue.(float64)
-		if result[0] == types.Equal &&
-			// if the document value is NaN we should consider it as changed.
-			(ok && !math.IsNaN(docFloat)) {
-			return docValue, false, nil
-		}
-
-		return docValue, true, nil
-	}
-
-	return nil, false, err
-}
-
-func incrementByPath(doc *types.Document, incKey string, incValue any) (any, bool, error) {
-	path := types.NewPathFromString(incKey)
-
-	if !doc.HasByPath(path) {
-		doc.SetByPath(path, incValue)
-
-		return nil, true, nil
-	}
-
-	docValue, err := doc.GetByPath(types.NewPathFromString(incKey))
-	if err != nil {
-		return nil, false, err
-	}
-
-	incremented, err := addNumbers(incValue, docValue)
-	if err == nil {
-		doc.SetByPath(path, incremented)
-
-		result := types.Compare(docValue, incremented)
-
-		if len(result) != 1 {
-			panic("$inc: there should be only one result")
-		}
-
-		docFloat, ok := docValue.(float64)
-		if result[0] == types.Equal &&
-			// if the document value is NaN we should consider it as changed.
-			(ok && !math.IsNaN(docFloat)) {
-			return docValue, false, nil
-		}
-
-		return docValue, true, nil
-	}
-
-	return nil, false, err
 }
 
 // processCurrentDateFieldExpression changes document according to $currentDate operator.
