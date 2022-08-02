@@ -101,6 +101,8 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 	return changed, nil
 }
 
+// processIncFieldExpression changes document according to $inc operator.
+// If the document was changed it returns true.
 func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	// expecting here a document since all checks were made in ValidateUpdateOperators func
 	incDoc := updateV.(*types.Document)
