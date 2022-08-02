@@ -61,37 +61,68 @@ func TestDeleteOrdered(t *testing.T) {
 	setup.SkipForTigris(t)
 	t.Parallel()
 
-	ctx, collection := setup.Setup(t, shareddata.Scalars)
-
-	var res bson.D
-	_ = collection.Database().RunCommand(
-		ctx,
-		bson.D{
-			{"delete", collection.Name()},
-			{"deletes", bson.A{
+	for name, tc := range map[string]struct {
+		deletes            bson.A
+		ordered            bool
+		expectedRemovedIDs []string
+	}{
+		"test 1": {
+			deletes: bson.A{
 				bson.D{
 					{"q", bson.D{{"_id", "string"}}},
 				},
 				bson.D{
 					{"q", "a"},
 				},
-			}},
-			//	{"ordered", bson.D{{}}},
+			},
+			ordered:            true,
+			expectedRemovedIDs: []string{"string"},
 		},
-	).Decode(&res)
-	t.Log(res)
+	} {
+		t.Run(name, func(t *testing.T) {
+			ctx, collection := setup.Setup(t, shareddata.Scalars)
+
+			cursor, err := collection.Find(ctx, bson.D{})
+			require.NoError(t, err)
+
+			var resBefore []bson.D
+			err = cursor.All(ctx, &resBefore)
+			require.NoError(t, err)
+
+			collection.Database().RunCommand(
+				ctx,
+				bson.D{
+					{"delete", collection.Name()},
+					{"deletes", tc.deletes},
+					{"ordered", tc.ordered},
+				},
+			)
+			//require.NoError(t, res.Err())
+
+			cursor, err = collection.Find(ctx, bson.D{})
+			require.NoError(t, err)
+
+			var resAfter []bson.D
+			err = cursor.All(ctx, &resAfter)
+			require.NoError(t, err)
+
+			//t.Fatal("\nbefore:\n", resBefore, "\n\n\nafter:\n", resAfter)
+
+			assert.Equal(t, resBefore, resAfter)
+		})
+	}
 	//	if err != nil {
 	//		t.Error(err)
 	//	}
 
 	//cur, err := collection.Find(ctx, bson.D{{"_id", "string"}})
-	cur, err := collection.Find(ctx, bson.D{})
+	//cur, err := collection.Find(ctx, bson.D{})
 
-	if err != nil {
-		t.Error(err)
-	}
-	var res2 bson.D
-	err = cur.Decode(&res2)
-	require.Nil(t, err)
-	t.Log(res2)
+	//if err != nil {
+	//	t.Error(err)
+	//}
+	//var res2 bson.D
+	//err = cur.Decode(&res2)
+	//require.Nil(t, err)
+	//t.Log(res2)
 }
