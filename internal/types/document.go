@@ -16,9 +16,12 @@ package types
 
 import (
 	"fmt"
+	"strconv"
 	"unicode/utf8"
 
 	"golang.org/x/exp/slices"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // Common interface with bson.Document.
@@ -248,11 +251,6 @@ func (d *Document) Get(key string) (any, error) {
 	return nil, fmt.Errorf("types.Document.Get: key not found: %q", key)
 }
 
-// GetByPath returns a value by path - a sequence of indexes and keys.
-func (d *Document) GetByPath(path Path) (any, error) {
-	return getByPath(d, path)
-}
-
 // Set sets the value for the given key, replacing any existing value.
 //
 // As a special case, _id always becomes the first key.
@@ -311,8 +309,83 @@ func (d *Document) Remove(key string) any {
 	panic(fmt.Sprintf("types.Document.Remove: key not found: %q", key))
 }
 
+// HasByPath returns true if the given path is present in the document.
+func (d *Document) HasByPath(path Path) bool {
+	_, err := d.GetByPath(path)
+
+	return err == nil
+}
+
+// GetByPath returns a value by path - a sequence of indexes and keys.
+// If the Path has only one element, it returns the value for the given key.
+func (d *Document) GetByPath(path Path) (any, error) {
+	if path.Len() == 1 {
+		return d.Get(path.Slice()[0])
+	}
+
+	return getByPath(d, path)
+}
+
+// SetByPath sets value by given path. If the Path has only one element, it sets the value for the given key.
+// If some parts of the path are missing, they will be created.
+// The Document type will be used to create these parts.
+func (d *Document) SetByPath(path Path, value any) {
+	if path.Len() == 1 {
+		must.NoError(d.Set(path.Slice()[0], value))
+
+		return
+	}
+
+	innerComp, err := d.GetByPath(path.TrimSuffix())
+	if err != nil {
+		next := d
+
+		var insertedPath Path
+		for _, pathElem := range path.TrimSuffix().Slice() {
+			insertedPath = insertedPath.Append(pathElem)
+
+			v, err := d.GetByPath(insertedPath)
+			if err != nil {
+				suffix := len(insertedPath.Slice()) - 1
+				if suffix < 0 {
+					panic("invalid path")
+				}
+
+				must.NoError(next.Set(insertedPath.Slice()[suffix], must.NotFail(NewDocument())))
+
+				next = must.NotFail(d.GetByPath(insertedPath)).(*Document)
+			}
+
+			if doc, ok := v.(*Document); ok {
+				next = doc
+			}
+		}
+		innerComp = must.NotFail(d.GetByPath(path.TrimSuffix()))
+	}
+
+	switch inner := innerComp.(type) {
+	case *Document:
+		must.NoError(inner.Set(path.Suffix(), value))
+	case *Array:
+		index, err := strconv.Atoi(path.Suffix())
+		if err != nil {
+			panic("SetByPath: should be an index")
+		}
+
+		must.NoError(inner.Set(index, value))
+	default:
+		panic(fmt.Errorf("can't set value for %T type", inner))
+	}
+}
+
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
+// If the Path has only one element, it removes the value for the given key.
 func (d *Document) RemoveByPath(path Path) {
+	if path.Len() == 1 {
+		d.Remove(path.Slice()[0])
+
+		return
+	}
 	removeByPath(d, path)
 }
 
