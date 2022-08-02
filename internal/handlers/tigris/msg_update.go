@@ -191,9 +191,7 @@ func (h *Handler) update(ctx context.Context, sp fetchParam, doc *types.Document
 	id := must.NotFail(doc.Get("_id"))
 	f := must.NotFail(filter.Eq("_id", id).Build())
 
-	//	fmt.Printf("update: %s %s\n", json.RawMessage(f1), json.RawMessage(f2))
-
-	h.L.Sugar().Debugf("Filter: %s", f)
+	h.L.Sugar().Debugf("Udate filter: %s", f)
 
 	update := fields.UpdateBuilder()
 	for _, k := range doc.Keys() {
