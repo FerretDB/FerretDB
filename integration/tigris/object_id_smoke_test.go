@@ -20,27 +20,37 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 
+	"github.com/FerretDB/FerretDB/integration"
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
-// TODO This is a temporary test to check how ObjectID works.
-func TestSmokeObjectIDSemantic(t *testing.T) {
+// TODO This is a temporary test to check how string identifiers would work.
+func TestSmokeStringAsID(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
-	// Insert, update, delete a document with a "semantic" (not 12-bytes) ObjectID.
-	ins, err := collection.InsertOne(ctx, bson.D{{"_id", "semantic"}, {"string_value", "foo"}})
+	// Insert, update, delete a document with a string (not 12-bytes array) id.
+	ins, err := collection.InsertOne(ctx, bson.D{{"_id", "string_id"}, {"string_value", "foo"}})
 	require.NoError(t, err)
 
-	up, err := collection.UpdateOne(ctx, bson.D{{"_id", "semantic"}}, bson.D{{"$set", bson.D{{"string_value", "bar"}}}})
+	up, err := collection.UpdateOne(ctx, bson.D{{"_id", "string_id"}}, bson.D{{"$set", bson.D{{"string_value", "bar"}}}})
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), up.MatchedCount)
 	assert.Equal(t, int64(1), up.ModifiedCount)
 
+	var doc bson.D
+	err = collection.FindOne(ctx, bson.D{{"_id", "string_id"}}).Decode(&doc)
+	require.NoError(t, err)
+	integration.AssertEqualDocuments(t, bson.D{{"_id", "string_id"}, {"string_value", "bar"}}, doc)
+
 	del, err := collection.DeleteOne(ctx, bson.D{{"_id", ins.InsertedID}})
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), del.DeletedCount)
+
+	err = collection.FindOne(ctx, bson.D{{"_id", "string_id"}}).Decode(&doc)
+	assert.ErrorIs(t, mongo.ErrNoDocuments, err)
 }
 
 // TODO This is a temporary test to check how ObjectID works.
@@ -61,7 +71,15 @@ func TestSmokeObjectIDBinary(t *testing.T) {
 	assert.Equal(t, int64(1), up.MatchedCount)
 	assert.Equal(t, int64(1), up.ModifiedCount)
 
+	var doc bson.D
+	err = collection.FindOne(ctx, bson.D{{"_id", ins.InsertedID}}).Decode(&doc)
+	require.NoError(t, err)
+	integration.AssertEqualDocuments(t, bson.D{{"_id", ins.InsertedID}, {"string_value", "bar_2"}}, doc)
+
 	del, err := collection.DeleteOne(ctx, bson.D{{"_id", ins.InsertedID}})
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), del.DeletedCount)
+
+	err = collection.FindOne(ctx, bson.D{{"_id", ins.InsertedID}}).Decode(&doc)
+	assert.ErrorIs(t, mongo.ErrNoDocuments, err)
 }
