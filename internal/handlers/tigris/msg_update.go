@@ -198,7 +198,6 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 func (h *Handler) update(ctx context.Context, sp fetchParam, doc *types.Document) (int, error) {
 	id := must.NotFail(doc.Get("_id"))
 	f := must.NotFail(filter.Eq("_id", id).Build())
-
 	h.L.Sugar().Debugf("Udate filter: %s", f)
 
 	update := fields.UpdateBuilder()
