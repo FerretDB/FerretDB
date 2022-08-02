@@ -172,12 +172,6 @@ func processCurrentDateFieldExpression(doc *types.Document, currentDateVal any) 
 		currentDateField := must.NotFail(currentDateExpression.Get(field))
 
 		switch currentDateField := currentDateField.(type) {
-		case bool:
-			if err = doc.Set(field, now); err != nil {
-				return false, err
-			}
-			changed = true
-
 		case *types.Document:
 			currentDateType, err := currentDateField.Get("$type")
 			if err != nil { // default is date
@@ -202,6 +196,12 @@ func processCurrentDateFieldExpression(doc *types.Document, currentDateVal any) 
 				}
 				changed = true
 			}
+
+		case bool:
+			if err = doc.Set(field, now); err != nil {
+				return false, err
+			}
+			changed = true
 		}
 	}
 	return changed, nil
@@ -337,9 +337,6 @@ func validateCurrentDateExpression(update *types.Document) error {
 		setValue := must.NotFail(currentDateExpression.Get(field))
 
 		switch setValue := setValue.(type) {
-		case bool:
-			continue
-
 		case *types.Document:
 			for _, k := range setValue.Keys() {
 				if k != "$type" {
@@ -367,6 +364,9 @@ func validateCurrentDateExpression(update *types.Document) error {
 					"The '$type' string field is required to be 'date' or 'timestamp'",
 				)
 			}
+
+		case bool:
+			continue
 
 		default:
 			return NewWriteErrorMsg(
