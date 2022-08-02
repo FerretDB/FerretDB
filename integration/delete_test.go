@@ -55,3 +55,43 @@ func TestDeleteSimple(t *testing.T) {
 		})
 	}
 }
+
+// TestDeleteOrdered checks if oredered parameter works properly.
+func TestDeleteOrdered(t *testing.T) {
+	setup.SkipForTigris(t)
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
+
+	var res bson.D
+	_ = collection.Database().RunCommand(
+		ctx,
+		bson.D{
+			{"delete", collection.Name()},
+			{"deletes", bson.A{
+				bson.D{
+					{"q", bson.D{{"_id", "string"}}},
+				},
+				bson.D{
+					{"q", "a"},
+				},
+			}},
+			//	{"ordered", bson.D{{}}},
+		},
+	).Decode(&res)
+	t.Log(res)
+	//	if err != nil {
+	//		t.Error(err)
+	//	}
+
+	//cur, err := collection.Find(ctx, bson.D{{"_id", "string"}})
+	cur, err := collection.Find(ctx, bson.D{})
+
+	if err != nil {
+		t.Error(err)
+	}
+	var res2 bson.D
+	err = cur.Decode(&res2)
+	require.Nil(t, err)
+	t.Log(res2)
+}
