@@ -12,20 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package integration
+package tjson
 
-// compatTestCaseResultType represents compatibility test case result type.
-//
-// It is used to avoid errors with invalid queries making tests pass.
-type compatTestCaseResultType int
+import (
+	"testing"
 
-const (
-	// Test case should return non-empty result.
-	nonEmptyResult compatTestCaseResultType = iota
-
-	// Test case should return empty result.
-	emptyResult
-
-	// Test case should fail.
-	errorResult
+	"github.com/AlekSi/pointer"
 )
+
+var boolTestCases = []testCase{{
+	name:   "false",
+	v:      pointer.To(boolType(false)),
+	schema: boolSchema,
+	j:      `false`,
+}, {
+	name:   "true",
+	v:      pointer.To(boolType(true)),
+	schema: boolSchema,
+	j:      `true`,
+}}
+
+func TestBool(t *testing.T) {
+	t.Parallel()
+	testJSON(t, boolTestCases, func() tjsontype { return new(boolType) })
+}
+
+func FuzzBool(f *testing.F) {
+	fuzzJSON(f, boolTestCases)
+}
+
+func BenchmarkBool(b *testing.B) {
+	benchmark(b, boolTestCases)
+}

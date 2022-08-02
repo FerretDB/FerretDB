@@ -50,7 +50,6 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		"maxTimeMS",
 		"collation",
 		"hint",
-		"comment",
 	}
 	common.Ignored(document, h.l, ignoredFields...)
 
@@ -148,7 +147,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					return nil, err
 				}
 
-				_, err = h.update(ctx, params.sqlParam, upsert)
+				_, err = h.update(ctx, &params.sqlParam, upsert)
 				if err != nil {
 					return nil, err
 				}
@@ -159,7 +158,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					must.NoError(upsert.Set("_id", must.NotFail(resDocs[0].Get("_id"))))
 				}
 
-				_, err = h.update(ctx, params.sqlParam, upsert)
+				_, err = h.update(ctx, &params.sqlParam, upsert)
 				if err != nil {
 					return nil, err
 				}
@@ -207,7 +206,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			return &reply, nil
 		}
 
-		_, err = h.delete(ctx, params.sqlParam, resDocs)
+		_, err = h.delete(ctx, &params.sqlParam, resDocs)
 		if err != nil {
 			return nil, err
 		}
@@ -277,7 +276,7 @@ func (h *Handler) upsert(ctx context.Context, docs []*types.Document, params *up
 		}
 	}
 
-	_, err := h.update(ctx, params.sqlParam, upsert)
+	_, err := h.update(ctx, &params.sqlParam, upsert)
 	if err != nil {
 		return nil, false, err
 	}
@@ -369,15 +368,28 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 
 	var hasUpdateOperators bool
 	for k := range update.Map() {
-		if _, ok := updateOperators[k]; ok {
+		if _, ok := common.UpdateOperators[k]; ok {
 			hasUpdateOperators = true
+			break
 		}
+	}
+
+	var comment string
+	// get comment from a "comment" field
+	if comment, err = common.GetOptionalParam(document, "comment", comment); err != nil {
+		return nil, err
+	}
+
+	// get comment from query, e.g. db.collection.FindAndModify({"_id":"string", "$comment: "test"},{$set:{"v":"foo""}})
+	if comment, err = common.GetOptionalParam(query, "$comment", comment); err != nil {
+		return nil, err
 	}
 
 	return &findAndModifyParams{
 		sqlParam: pgdb.SQLParam{
 			DB:         db,
 			Collection: collection,
+			Comment:    comment,
 		},
 		query:              query,
 		update:             update,
@@ -387,12 +399,4 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 		returnNewDocument:  returnNewDocument,
 		hasUpdateOperators: hasUpdateOperators,
 	}, nil
-}
-
-var updateOperators = map[string]struct{}{}
-
-func init() {
-	for _, o := range []string{"$currentDate", "$inc", "$min", "$max", "$mul", "$rename", "$set", "$setOnInsert", "$unset"} {
-		updateOperators[o] = struct{}{}
-	}
 }

@@ -12,10 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package integration
+package dummy
 
-import "testing"
+import (
+	"context"
 
-func TestUpdateBitwiseBit(t *testing.T) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/821
+	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/wire"
+)
+
+// MsgExplain implements HandlerInterface.
+func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	return nil, notImplemented(must.NotFail(msg.Document()).Command())
 }

@@ -97,6 +97,15 @@ func (p Path) TrimPrefix() Path {
 	return NewPath(p.s[1:])
 }
 
+// Append returns new Path constructed from the current path and given element.
+func (p Path) Append(elem string) Path {
+	elems := p.Slice()
+
+	elems = append(elems, elem)
+
+	return NewPath(elems)
+}
+
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
 func RemoveByPath[T CompositeTypeInterface](comp T, path Path) {
 	removeByPath(comp, path)

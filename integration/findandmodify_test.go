@@ -29,6 +29,8 @@ import (
 )
 
 func TestFindAndModifySimple(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
@@ -154,6 +156,8 @@ func TestFindAndModifySimple(t *testing.T) {
 }
 
 func TestFindAndModifyEmptyCollectionName(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
@@ -182,6 +186,8 @@ func TestFindAndModifyEmptyCollectionName(t *testing.T) {
 }
 
 func TestFindAndModifyErrors(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
@@ -306,6 +312,8 @@ func TestFindAndModifyErrors(t *testing.T) {
 }
 
 func TestFindAndModifyUpdate(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
@@ -439,6 +447,8 @@ func TestFindAndModifyUpdate(t *testing.T) {
 }
 
 func TestFindAndModifyUpsert(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
@@ -562,6 +572,8 @@ func TestFindAndModifyUpsert(t *testing.T) {
 }
 
 func TestFindAndModifyUpsertComplex(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
@@ -616,6 +628,8 @@ func TestFindAndModifyUpsertComplex(t *testing.T) {
 }
 
 func TestFindAndModifyRemove(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 
 	for name, tc := range map[string]struct {

@@ -46,6 +46,7 @@ func generatedCorpus() (string, error) {
 		if os.IsNotExist(err) {
 			err = os.MkdirAll(path, 0o777)
 		}
+
 		if err != nil {
 			return "", lazyerrors.Error(err)
 		}
@@ -99,17 +100,21 @@ func cutTestdata(s string) string {
 // diff returns the set of files in src that are not in dst, with and without applying `cutTestdata`.
 func diff(src, dst map[string]struct{}) []string {
 	res := make([]string, 0, 50)
+
 	for p := range src {
 		if _, ok := dst[p]; ok {
 			continue
 		}
+
 		if _, ok := dst[cutTestdata(p)]; ok {
 			continue
 		}
+
 		res = append(res, p)
 	}
 
 	sort.Strings(res)
+
 	return res
 }
 
@@ -122,10 +127,12 @@ func copyFile(src, dst string) error {
 	defer srcF.Close()
 
 	dir := filepath.Dir(dst)
+
 	_, err = os.Stat(dir)
 	if os.IsNotExist(err) {
 		err = os.MkdirAll(dir, 0o777)
 	}
+
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -156,20 +163,24 @@ func copyCorpus(srcRoot, dstRoot string) {
 	if err != nil {
 		logger.Fatal(err)
 	}
+
 	logger.Infof("Found %d files in src.", len(srcFiles))
 
 	dstFiles, err := collectFiles(dstRoot, logger)
 	if err != nil {
 		logger.Fatal(err)
 	}
+
 	logger.Infof("Found %d existing files in dst.", len(dstFiles))
 
 	files := diff(srcFiles, dstFiles)
 	logger.Infof("Copying new %d files to dst.", len(files))
+
 	for _, p := range files {
 		src := filepath.Join(srcRoot, p)
 		dst := cutTestdata(filepath.Join(dstRoot, p))
 		logger.Debugf("%s -> %s", src, dst)
+
 		if err := copyFile(src, dst); err != nil {
 			logger.Fatal(err)
 		}
@@ -189,9 +200,11 @@ func main() {
 	}
 
 	logging.Setup(zap.InfoLevel)
+
 	if *debugF {
 		logging.Setup(zap.DebugLevel)
 	}
+
 	logger := zap.S()
 
 	seedCorpus, err := os.Getwd()
@@ -204,7 +217,8 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	var src string
+	var src, dst string
+
 	switch *srcF {
 	case "seed":
 		src = seedCorpus
@@ -219,7 +233,6 @@ func main() {
 		}
 	}
 
-	var dst string
 	switch *dstF {
 	case "seed":
 		dst = seedCorpus

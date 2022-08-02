@@ -30,6 +30,21 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
+//go:generate ../bin/stringer  -type compatTestCaseResultType
+
+// compatTestCaseResultType represents compatibility test case result type.
+//
+// It is used to avoid errors with invalid queries making tests pass.
+type compatTestCaseResultType int
+
+const (
+	// Test case should return non-empty result at least for one collection/provider.
+	nonEmptyResult compatTestCaseResultType = iota
+
+	// Test case should return empty result for all collections/providers.
+	emptyResult
+)
+
 // Convert converts given driver value (bson.D, bson.A, etc) to FerretDB types package value.
 //
 // It then can be used with all types helpers such as testutil.AssertEqual.
@@ -228,11 +243,9 @@ func AssertEqualAltWriteError(t *testing.T, expected mongo.WriteError, altMessag
 	return assert.Equal(t, expected, a)
 }
 
-// UnsetRaw returns error with all Raw fields unset.
+// UnsetRaw returns error with all Raw fields unset. It returns nil if err is nil.
 func UnsetRaw(t testing.TB, err error) error {
 	t.Helper()
-
-	require.Error(t, err)
 
 	switch err := err.(type) {
 	case mongo.CommandError:

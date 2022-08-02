@@ -1,0 +1,14 @@
+# All commands should be invoked from the parent directory; see Taskfile.yml there.
+---
+version: 3
+
+tasks:
+  gen:
+    cmds:
+      - go generate -x ./...
+
+  lint-go-consistent:
+    cmds:
+      - ../bin/go-consistent{{exeExt}} -v -pedantic ./...
+    sources:
+      - "**/*.go"

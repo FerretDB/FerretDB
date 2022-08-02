@@ -23,7 +23,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 // updateCompatTestCase describes update compatibility test case.
@@ -36,12 +35,6 @@ type updateCompatTestCase struct {
 func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 	t.Helper()
 
-	providers := []shareddata.Provider{
-		shareddata.FixedScalars,
-		shareddata.Scalars,
-		shareddata.Composites,
-	}
-
 	for name, tc := range testCases {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -51,35 +44,53 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 				t.Skip(tc.skip)
 			}
 
-			// Use per-test setup because ypdate queries modify data.
-			ctx, targetCollection, compatCollection := setup.SetupCompat(t, providers...)
+			t.Parallel()
+
+			// Use per-test setup because update queries modify data.
+			ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
 			update := tc.update
 			require.NotNil(t, update)
 
-			ids := shareddata.IDs(providers...)
-			for _, id := range ids {
-				id := id
-				t.Run(fmt.Sprint(id), func(t *testing.T) {
+			for i := range targetCollections {
+				targetCollection := targetCollections[i]
+				compatCollection := compatCollections[i]
+				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
-					targetUpdateRes, targetErr := targetCollection.UpdateByID(ctx, id, update)
-					compatUpdateRes, compatErr := compatCollection.UpdateByID(ctx, id, update)
+					cursor, err := targetCollection.Find(ctx, bson.D{})
+					require.NoError(t, err)
+					var allDocs []bson.D
+					err = cursor.All(ctx, &allDocs)
+					require.NoError(t, cursor.Close(ctx))
+					require.NoError(t, err)
 
-					if targetErr != nil {
-						targetErr = UnsetRaw(t, targetErr)
-						compatErr = UnsetRaw(t, compatErr)
-						assert.Equal(t, compatErr, targetErr)
-					} else {
-						require.NoError(t, compatErr)
+					for _, doc := range allDocs {
+						id, ok := doc.Map()["_id"]
+						require.True(t, ok)
+
+						t.Run(fmt.Sprint(id), func(t *testing.T) {
+							t.Helper()
+
+							targetUpdateRes, targetErr := targetCollection.UpdateByID(ctx, id, update)
+							compatUpdateRes, compatErr := compatCollection.UpdateByID(ctx, id, update)
+
+							if targetErr != nil {
+								targetErr = UnsetRaw(t, targetErr)
+								compatErr = UnsetRaw(t, compatErr)
+								assert.Equal(t, compatErr, targetErr)
+							} else {
+								require.NoError(t, compatErr)
+							}
+
+							assert.Equal(t, compatUpdateRes, targetUpdateRes)
+
+							var targetFindRes, compatFindRes bson.D
+							require.NoError(t, targetCollection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&targetFindRes))
+							require.NoError(t, compatCollection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&compatFindRes))
+							AssertEqualDocuments(t, compatFindRes, targetFindRes)
+						})
 					}
-
-					assert.Equal(t, compatUpdateRes, targetUpdateRes)
-
-					var targetFindRes, compatFindRes bson.D
-					require.NoError(t, targetCollection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&targetFindRes))
-					require.NoError(t, compatCollection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&compatFindRes))
-					AssertEqualDocuments(t, compatFindRes, targetFindRes)
 				})
 			}
 		})

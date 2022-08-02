@@ -16,6 +16,7 @@ package pgdb
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -23,10 +24,12 @@ import (
 	"github.com/jackc/pgtype/pgxtype"
 	"github.com/jackc/pgx/v4"
 	"go.uber.org/zap"
+	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 const (
@@ -43,11 +46,12 @@ type FetchedDocs struct {
 	Err  error
 }
 
-// SQLParam represents options/parameters used for sql query.
+// SQLParam represents options/parameters used for SQL query.
 type SQLParam struct {
 	DB         string
 	Collection string
 	Comment    string
+	Explain    bool
 }
 
 // QueryDocuments returns a channel with buffer FetchedChannelBufSize
@@ -61,43 +65,19 @@ type SQLParam struct {
 // Context cancellation is not considered an error.
 //
 // If the collection doesn't exist, fetch returns a closed channel and no error.
-func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier, sp SQLParam,
-) (<-chan FetchedDocs, error) {
+func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier, sp SQLParam) (<-chan FetchedDocs, error) {
 	fetchedChan := make(chan FetchedDocs, FetchedChannelBufSize)
-	db := sp.DB
-	collection := sp.Collection
-	comment := sp.Comment
 
-	// Special case: check if collection exists at all
-	collectionExists, err := CollectionExists(ctx, querier, db, collection)
+	q, err := pgPool.buildQuery(ctx, querier, &sp)
 	if err != nil {
 		close(fetchedChan)
-		return fetchedChan, lazyerrors.Error(err)
-	}
-	if !collectionExists {
-		pgPool.logger.Info(
-			"Collection doesn't exist, handling a case to deal with a non-existing collection (return empty list)",
-			zap.String("db", db), zap.String("collection", collection),
-		)
-		close(fetchedChan)
-		return fetchedChan, nil
-	}
-
-	table, err := getTableName(ctx, querier, db, collection)
-	if err != nil {
+		if errors.Is(err, ErrTableNotExist) {
+			return fetchedChan, nil
+		}
 		return fetchedChan, lazyerrors.Error(err)
 	}
 
-	sql := `SELECT _jsonb `
-	if comment != "" {
-		comment = strings.ReplaceAll(comment, "/*", "/ *")
-		comment = strings.ReplaceAll(comment, "*/", "* /")
-
-		sql += `/* ` + comment + ` */ `
-	}
-	sql += `FROM ` + pgx.Identifier{db, table}.Sanitize()
-
-	rows, err := querier.Query(ctx, sql)
+	rows, err := querier.Query(ctx, q)
 	if err != nil {
 		close(fetchedChan)
 		return fetchedChan, lazyerrors.Error(err)
@@ -113,15 +93,93 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier,
 			// nothing
 		case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
 			pgPool.logger.Warn(
-				fmt.Sprintf("caught %v, stop fetching", err),
-				zap.String("db", db), zap.String("collection", collection),
+				"context canceled, stopping fetching",
+				zap.String("db", sp.DB), zap.String("collection", sp.Collection), zap.Error(err),
 			)
 		default:
-			pgPool.logger.Error("exiting fetching with an error", zap.Error(err))
+			pgPool.logger.Error(
+				"got error, stopping fetching",
+				zap.String("db", sp.DB), zap.String("collection", sp.Collection), zap.Error(err),
+			)
 		}
 	}()
 
 	return fetchedChan, nil
+}
+
+// Explain returns SQL EXPLAIN results for given query parameters.
+func (pgPool *Pool) Explain(ctx context.Context, querier pgxtype.Querier, sp SQLParam) (*types.Array, error) {
+	q, err := pgPool.buildQuery(ctx, querier, &sp)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	rows, err := querier.Query(ctx, q)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	defer rows.Close()
+
+	var res types.Array
+	for rows.Next() {
+		var b []byte
+		if err = rows.Scan(&b); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		var plans []map[string]any
+		if err = json.Unmarshal(b, &plans); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		for _, p := range plans {
+			doc := convertJSON(p).(*types.Document)
+			if err = res.Append(doc); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+		}
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &res, nil
+}
+
+// buildQuery builds SELECT or EXPLAIN SELECT query.
+//
+// It returns (possibly wrapped) ErrSchemaNotExist or ErrTableNotExist
+// if schema/database or table/collection does not exist.
+func (pgPool *Pool) buildQuery(ctx context.Context, querier pgxtype.Querier, sp *SQLParam) (string, error) {
+	exists, err := CollectionExists(ctx, querier, sp.DB, sp.Collection)
+	if err != nil {
+		return "", lazyerrors.Error(err)
+	}
+	if !exists {
+		return "", lazyerrors.Error(ErrTableNotExist)
+	}
+
+	table, err := getTableName(ctx, querier, sp.DB, sp.Collection)
+	if err != nil {
+		return "", lazyerrors.Error(err)
+	}
+
+	q := `SELECT _jsonb `
+	if c := sp.Comment; c != "" {
+		// prevent SQL injections
+		c = strings.ReplaceAll(c, "/*", "/ *")
+		c = strings.ReplaceAll(c, "*/", "* /")
+
+		q += `/* ` + c + ` */ `
+	}
+	q += `FROM ` + pgx.Identifier{sp.DB, table}.Sanitize()
+
+	if sp.Explain {
+		q = "EXPLAIN (VERBOSE true, FORMAT JSON) " + q
+	}
+
+	return q, nil
 }
 
 // iterateFetch iterates over the rows returned by the query and sends FetchedDocs to fetched channel.
@@ -177,5 +235,35 @@ func writeFetched(ctx context.Context, fetched chan FetchedDocs, doc FetchedDocs
 		return ctx.Err()
 	case fetched <- doc:
 		return nil
+	}
+}
+
+// convertJSON transforms decoded JSON map[string]any value into *types.Document.
+func convertJSON(value any) any {
+	switch value := value.(type) {
+	case map[string]any:
+		d := types.MakeDocument(len(value))
+		keys := maps.Keys(value)
+		for _, k := range keys {
+			v := value[k]
+			must.NoError(d.Set(k, convertJSON(v)))
+		}
+		return d
+
+	case []any:
+		a := types.MakeArray(len(value))
+		for _, v := range value {
+			must.NoError(a.Append(convertJSON(v)))
+		}
+		return a
+
+	case nil:
+		return types.Null
+
+	case float64, string, bool:
+		return value
+
+	default:
+		panic(fmt.Sprintf("unsupported type: %[1]T (%[1]v)", value))
 	}
 }

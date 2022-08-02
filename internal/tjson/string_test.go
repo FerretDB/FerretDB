@@ -12,25 +12,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tigris
+package tjson
 
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
-
-	"github.com/FerretDB/FerretDB/integration"
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/AlekSi/pointer"
 )
 
-func TestSmoke(t *testing.T) {
-	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.FixedScalars)
+var stringTestCases = []testCase{{
+	name:   "foo",
+	v:      pointer.To(stringType("foo")),
+	schema: stringSchema,
+	j:      `"foo"`,
+}, {
+	name:   "empty",
+	v:      pointer.To(stringType("")),
+	schema: stringSchema,
+	j:      `""`,
+}, {
+	name:   "zero",
+	v:      pointer.To(stringType("\x00")),
+	schema: stringSchema,
+	j:      `"\u0000"`,
+}}
 
-	var doc bson.D
-	err := collection.FindOne(ctx, bson.D{{"_id", "fixed_double"}}).Decode(&doc)
-	require.NoError(t, err)
-	integration.AssertEqualDocuments(t, bson.D{{"_id", "fixed_double"}, {"double_value", 42.13}}, doc)
+func TestString(t *testing.T) {
+	t.Parallel()
+	testJSON(t, stringTestCases, func() tjsontype { return new(stringType) })
+}
+
+func FuzzString(f *testing.F) {
+	fuzzJSON(f, stringTestCases)
+}
+
+func BenchmarkString(b *testing.B) {
+	benchmark(b, stringTestCases)
 }
