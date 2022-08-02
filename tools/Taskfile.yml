@@ -8,3 +8,7 @@ tasks:
       - ../bin/go-consistent{{exeExt}} -v -pedantic ./checkswitch/...
     sources:
       - "**/*.go"
+
+  test-unit-short:
+    cmds:
+      - go test -short {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./checkswitch/...

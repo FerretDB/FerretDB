@@ -22,7 +22,7 @@ import (
 	"golang.org/x/tools/go/analysis/singlechecker"
 )
 
-// orderTypes is preferred order of the types in the switch.
+// orderTypes is the preferred order of types in the switch.
 var orderTypes = map[string]int{
 	"Document":     1,
 	"documentType": 1,
@@ -66,20 +66,20 @@ var orderTypes = map[string]int{
 	"CString": 14,
 }
 
-var Analyzer = &analysis.Analyzer{
+var analyzer = &analysis.Analyzer{
 	Name: "checkswitch",
-	Doc:  "checking the preferred order of types in the switch",
+	Doc:  "check the preferred order of types in the switch",
 	Run:  run,
 }
 
 func main() {
-	singlechecker.Main(Analyzer)
+	singlechecker.Main(analyzer)
 }
 
-// run is function to be called by driver to execute analysis on a single package.
+// run is the function to be called by the driver to execute analysis on a single package.
 //
-// function analyzes presence of types in 'case' in ascending order of indexes 'orderTypes'.
-func run(pass *analysis.Pass) (interface{}, error) {
+// It analyzes the presence of types in 'case' in ascending order of indexes 'orderTypes'.
+func run(pass *analysis.Pass) (any, error) {
 	for _, file := range pass.Files {
 		ast.Inspect(file, func(n ast.Node) bool {
 			var idx int
@@ -91,6 +91,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 					if len(el.(*ast.CaseClause).List) < 1 {
 						continue
 					}
+
 					firstTypeCase := el.(*ast.CaseClause).List[0]
 					switch firstTypeCase := firstTypeCase.(type) {
 					case *ast.StarExpr:
@@ -110,7 +111,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 
 					idxSl, ok := orderTypes[name]
 					if ok && (idxSl < idx) {
-						msg := fmt.Sprintf("non-observance of the preferred order of types: %s <-> %s", lastName, name)
+						msg := fmt.Sprintf("%s should go before %s in the switch", name, lastName)
 						pass.Reportf(n.Pos(), msg)
 					}
 					idx, lastName = idxSl, name
@@ -139,7 +140,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 
 							subidxSl, ok := orderTypes[name]
 							if ok && (subidxSl < subidx) {
-								msg := fmt.Sprintf("non-observance of the preferred order of types: %s <-> %s", sublastName, name)
+								msg := fmt.Sprintf("%s should go before %s in the switch", name, sublastName)
 								pass.Reportf(n.Pos(), msg)
 							}
 							subidx, sublastName = subidxSl, name

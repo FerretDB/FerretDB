@@ -102,22 +102,18 @@ tasks:
     desc: "Run all unit and integration tests in parallel"
     deps: [test-unit, test-integration]
 
-  test-unit-short-tools:
-    dir: tools
-    cmds:
-      - go test -short {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=cover.txt ./checkswitch
-
   test-unit-short:
     desc: "Run short unit tests (with caching)"
     cmds:
       - go test -short {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
+      - bin/task{{exeExt}} -d tools test-unit-short
 
   test-unit:
     desc: "Run all unit tests"
-    deps: [test-unit-short-tools]
     cmds:
       - go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
       - go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -bench=. -benchtime=1x ./...
+      - bin/task{{exeExt}} -d tools test-unit-short
 
   test-integration:
     desc: "Run all integration tests in parallel"
