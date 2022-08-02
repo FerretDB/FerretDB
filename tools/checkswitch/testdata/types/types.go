@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package types provides stubs for testing.
 package types
 
 type Document struct{}

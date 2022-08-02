@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package testdata provides vet tool test data.
 package testdata
 
 import (
@@ -19,47 +20,11 @@ import (
 	"time"
 )
 
-func switchOK(v any) {
+func test(v any) {
 	switch v.(type) {
 	case *types.Document:
 	case *types.Array:
-	case float64:
-	case string:
-	case types.Binary:
-	case types.ObjectID:
-	case bool:
-	case time.Time:
-	case types.NullType:
-	case types.Regex:
-	case int32:
-	case types.Timestamp:
-	case int64:
-	default:
-	}
-}
-
-func caseOK(v any) {
-	switch v.(type) {
-	case *types.Document:
-	case *types.Array:
-	case float64, int32, int64:
-	case string:
-	case types.Binary:
-	case types.ObjectID:
-	case bool:
-	case time.Time:
-	case types.NullType:
-	case types.Regex:
-	case types.Timestamp:
-	default:
-	}
-}
-
-func unknownTypeOK(v any) {
-	switch v.(type) {
-	case *types.Document:
-	case *types.Array:
-	case float64:
+	case float64, int32, int64: // multiple types
 	case int8: // unknown
 	case string:
 	case types.Binary:
@@ -68,14 +33,10 @@ func unknownTypeOK(v any) {
 	case time.Time:
 	case types.NullType:
 	case types.Regex:
-	case int32:
 	case types.Timestamp:
-	case int64:
 	default:
 	}
-}
 
-func switchWrong(v any) {
 	switch v.(type) { // want "Document should go before Array in the switch"
 	case *types.Array:
 	case *types.Document:
@@ -92,9 +53,7 @@ func switchWrong(v any) {
 	case int64:
 	default:
 	}
-}
 
-func caseWrong(v any) {
 	switch v.(type) { // want "int32 should go before int64 in the switch"
 	case *types.Document:
 	case *types.Array:
