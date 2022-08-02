@@ -19,36 +19,20 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/tjson"
-	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 // comparison represents comparison operators for Tigris, like comparison in tigrisdata/tigris-client-go/filter.
 type comparison struct {
-	Gt  any `json:"$gt,omitempty"`
-	Gte any `json:"$gte,omitempty"`
-	Lt  any `json:"$lt,omitempty"`
-	Lte any `json:"$lte,omitempty"`
-	Ne  any `json:"$ne,omitempty"`
-	Eq  any `json:"$eq,omitempty"`
+	Eq any `json:"$eq,omitempty"`
 }
 
 // Eq composes 'equal' operation for Tigris, like in tigrisdata/tigris-client-go/filter but without generics.
-// It marshals the value to JSON, so it'll be used as RawJSON later.
-// The value must be a tjson value. If it's not a tjson value, there will be a panic.
-// Result is equivalent to: field == filterValue.
+// It marshals the value (which is always of one of the tjson types) to JSON, and it'll be used as RawMessage later.
 func Eq(field string, value any) Expr {
-	var res any
-
-	switch v := value.(type) {
-	case types.ObjectID:
-		r, err := tjson.Marshal(v)
-		if err != nil {
-			panic(fmt.Sprintf("problem marshalling value as tjson: %v", err))
-		}
-		res = json.RawMessage(r)
-	default:
-		res = value
+	res, err := tjson.Marshal(value)
+	if err != nil {
+		panic(fmt.Sprintf("problem marshalling value as tjson: %v", err))
 	}
 
-	return Expr{field: comparison{Eq: res}}
+	return Expr{field: comparison{Eq: json.RawMessage(res)}}
 }
