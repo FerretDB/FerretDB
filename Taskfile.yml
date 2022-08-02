@@ -240,6 +240,7 @@ tasks:
     cmds:
       - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./ferretdb/...
       - bin/task{{exeExt}} -d integration lint-go-consistent
+      - bin/task{{exeExt}} -d tools lint-go-consistent
 
   docs:
     desc: "Format and lint documentation"

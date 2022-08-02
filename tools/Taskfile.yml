@@ -1,0 +1,10 @@
+# All commands should be invoked from the parent directory; see Taskfile.yml there.
+---
+version: 3
+
+tasks:
+  lint-go-consistent:
+    cmds:
+      - ../bin/go-consistent{{exeExt}} -v -pedantic ./checkswitch/...
+    sources:
+      - "**/*.go"
