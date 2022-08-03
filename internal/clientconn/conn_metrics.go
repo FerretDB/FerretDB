@@ -20,7 +20,7 @@ import "github.com/prometheus/client_golang/prometheus"
 type ConnMetrics struct {
 	requests          *prometheus.CounterVec
 	responses         *prometheus.CounterVec
-	aggregateRequests *prometheus.CounterVec
+	aggregationStages *prometheus.CounterVec
 }
 
 // newConnMetrics creates new conn metrics.
@@ -44,14 +44,14 @@ func newConnMetrics() *ConnMetrics {
 			},
 			[]string{"opcode", "command", "result"},
 		),
-		aggregateRequests: prometheus.NewCounterVec(
+		aggregationStages: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: namespace,
 				Subsystem: subsystem,
-				Name:      "aggregate_requests_total",
-				Help:      "Total number of `aggregate` requests.",
+				Name:      "aggregation_stages_total",
+				Help:      "Total number of aggregation pipeline stages.",
 			},
-			[]string{"stage"},
+			[]string{"opcode", "command", "stage"},
 		),
 	}
 }

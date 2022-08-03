@@ -347,6 +347,7 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 		case *types.Document:
 			update = updateParam
 		case *types.Array:
+			// TODO aggregation pipeline stages metrics
 			return nil, common.NewErrorMsg(common.ErrNotImplemented, "Aggregation pipelines are not supported yet")
 		default:
 			return nil, common.NewErrorMsg(common.ErrFailedToParse, "Update argument must be either an object or an array")
