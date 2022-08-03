@@ -30,6 +30,7 @@ var connInfoKey = contextKey{}
 // ConnInfo represents connection info.
 type ConnInfo struct {
 	PeerAddr net.Addr
+	// TODO
 }
 
 // WithConnInfo returns a new context with the given ConnInfo.
