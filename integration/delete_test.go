@@ -57,7 +57,7 @@ func TestDeleteSimple(t *testing.T) {
 	}
 }
 
-// TestDeleteOrdered checks if oredered parameter works properly.
+// TestDeleteOrdered checks if ordered parameter works properly.
 func TestDeleteOrdered(t *testing.T) {
 	setup.SkipForTigris(t)
 	t.Parallel()
