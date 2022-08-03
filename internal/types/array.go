@@ -212,7 +212,7 @@ func (a *Array) String() string {
 		case string:
 			result += fmt.Sprintf(`"%s", `, elem)
 		case NullType:
-			result += fmt.Sprintf("null, ")
+			result += "null, "
 		case int32, int64:
 			result += fmt.Sprintf("%d, ", elem)
 		default:
