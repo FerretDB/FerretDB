@@ -335,35 +335,14 @@ func (d *Document) SetByPath(path Path, value any) error {
 		return nil
 	}
 
-	innerComp, err := d.GetByPath(path.TrimSuffix())
-	if err != nil {
-		var next any = d
-
-		var insertedPath Path
-		for _, pathElem := range path.TrimSuffix().Slice() {
-			insertedPath = insertedPath.Append(pathElem)
-
-			v, err := d.GetByPath(insertedPath)
-			if err != nil {
-				suffix := len(insertedPath.Slice()) - 1
-				if suffix < 0 {
-					panic("invalid path")
-				}
-
-				switch v := next.(type) {
-				case *Document:
-					must.NoError(v.Set(insertedPath.Slice()[suffix], must.NotFail(NewDocument())))
-				case *Array:
-					return fmt.Errorf("Cannot create field '%s' in element {%s: %s}", pathElem, insertedPath.Slice()[suffix-1], v)
-				}
-
-				next = must.NotFail(d.GetByPath(insertedPath)).(*Document)
-			}
-
-			next = v
+	if !d.HasByPath(path.TrimSuffix()) {
+		// we should insert the missing part of the path
+		if err := insertPath(d, path); err != nil {
+			return err
 		}
-		innerComp = must.NotFail(d.GetByPath(path.TrimSuffix()))
 	}
+
+	innerComp := must.NotFail(d.GetByPath(path.TrimSuffix()))
 
 	switch inner := innerComp.(type) {
 	case *Document:

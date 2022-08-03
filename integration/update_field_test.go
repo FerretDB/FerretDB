@@ -547,6 +547,14 @@ func TestUpdateFieldInc(t *testing.T) {
 					{"foo", bson.D{{"0", bson.D{{"baz", int32(1)}}}}},
 				},
 			},
+			"DocumentDotNotationArrayFieldNotExist": {
+				id:     "document",
+				update: bson.D{{"$inc", bson.D{{"v.0.foo", int32(1)}}}},
+				expected: bson.D{
+					{"_id", "document"},
+					{"v", bson.D{{"foo", int32(42)}, {"0", bson.D{{"foo", int32(1)}}}}},
+				},
+			},
 		} {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {

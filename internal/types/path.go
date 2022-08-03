@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // Path represents the field path type. It should be used wherever we work with paths or dot notation.
@@ -180,4 +182,43 @@ func removeByPath(v any, path Path) {
 	default:
 		// no such path: scalar value
 	}
+}
+
+// insertPath inserts missing parts of the path into document.
+func insertPath(doc *Document, path Path) error {
+	var next any = doc
+
+	var insertedPath Path
+	for _, pathElem := range path.TrimSuffix().Slice() {
+		insertedPath = insertedPath.Append(pathElem)
+
+		v, err := doc.GetByPath(insertedPath)
+		if err != nil {
+			suffix := len(insertedPath.Slice()) - 1
+			if suffix < 0 {
+				panic("invalid path")
+			}
+
+			switch v := next.(type) {
+			case *Document:
+				must.NoError(v.Set(insertedPath.Slice()[suffix], must.NotFail(NewDocument())))
+			case *Array:
+				_, err := strconv.Atoi(insertedPath.Slice()[suffix])
+				if err != nil {
+					return fmt.Errorf(
+						"Cannot create field '%s' in element {%s: %s}",
+						pathElem,
+						insertedPath.Slice()[suffix-1],
+						v,
+					)
+				}
+			}
+
+			next = must.NotFail(doc.GetByPath(insertedPath)).(*Document)
+		}
+
+		next = v
+	}
+
+	return nil
 }
