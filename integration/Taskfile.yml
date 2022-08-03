@@ -3,9 +3,20 @@
 version: 3
 
 tasks:
+  env-data:
+    cmds:
+      - >
+        go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData -v
+        -tags=ferretdb_tigris . -handler=tigris
+      - >
+        go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData -v
+        . -handler=pg
+
   gen:
     cmds:
       - go generate -x ./...
+    sources:
+      - "**/*.go"
 
   lint-go-consistent:
     cmds:

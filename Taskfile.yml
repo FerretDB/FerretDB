@@ -85,6 +85,11 @@ tasks:
     cmds:
       - docker-compose down --remove-orphans --timeout=0 --volumes
 
+  env-data:
+    desc: "Fill `test.values` with data for experiments"
+    cmds:
+      - bin/task{{exeExt}} -d integration env-data
+
   gen:
     desc: "Generate (and format) code"
     cmds:

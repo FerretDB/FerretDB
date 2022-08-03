@@ -16,6 +16,7 @@ package setup
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -28,10 +29,12 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-// setupCompatOpts represents setup options for compatibility test.
-type setupCompatOpts struct {
+// SetupCompatOpts represents setup options for compatibility test.
+type SetupCompatOpts struct {
 	// Database to use. If empty, temporary test-specific database is created.
 	DatabaseName string
+
+	KeepData bool
 
 	// Data providers.
 	Providers []shareddata.Provider
@@ -46,14 +49,14 @@ type SetupCompatResult struct {
 	CompatPort        uint16
 }
 
-// setupCompatWithOpts setups the compatibility test according to given options.
-func setupCompatWithOpts(tb testing.TB, opts *setupCompatOpts) *SetupCompatResult {
+// SetupCompatWithOpts setups the compatibility test according to given options.
+func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResult {
 	tb.Helper()
 
 	startup()
 
 	if opts == nil {
-		opts = new(setupCompatOpts)
+		opts = new(SetupCompatOpts)
 	}
 
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
@@ -77,14 +80,16 @@ func setupCompatWithOpts(tb testing.TB, opts *setupCompatOpts) *SetupCompatResul
 		tb.Skip("compatibility tests require second system")
 	}
 
-	targetCollections := setupCompatCollections(tb, ctx, &setupCollectionOpts{
+	targetCollections := setupCompatCollections(tb, ctx, &setupCompatCollectionsOpts{
 		client:    setupClient(tb, ctx, targetPort),
 		db:        opts.DatabaseName,
+		keepData:  opts.KeepData,
 		providers: opts.Providers,
 	})
-	compatCollections := setupCompatCollections(tb, ctx, &setupCollectionOpts{
+	compatCollections := setupCompatCollections(tb, ctx, &setupCompatCollectionsOpts{
 		client:    setupClient(tb, ctx, compatPort),
 		db:        opts.DatabaseName,
+		keepData:  opts.KeepData,
 		providers: opts.Providers,
 	})
 
@@ -103,19 +108,22 @@ func setupCompatWithOpts(tb testing.TB, opts *setupCompatOpts) *SetupCompatResul
 func SetupCompat(tb testing.TB) (context.Context, []*mongo.Collection, []*mongo.Collection) {
 	tb.Helper()
 
-	s := setupCompatWithOpts(tb, &setupCompatOpts{
+	s := SetupCompatWithOpts(tb, &SetupCompatOpts{
 		Providers: shareddata.AllProviders(),
 	})
 	return s.Ctx, s.TargetCollections, s.CompatCollections
 }
 
-// setupCompatCollections setups a single database with one collection per provider for compatibility tests.
-func setupCompatCollections(tb testing.TB, ctx context.Context, opts *setupCollectionOpts) []*mongo.Collection {
-	tb.Helper()
+type setupCompatCollectionsOpts struct {
+	client    *mongo.Client
+	db        string
+	keepData  bool
+	providers []shareddata.Provider
+}
 
-	require.NotNil(tb, opts)
-	require.NotNil(tb, opts.client)
-	require.NotEmpty(tb, opts.providers)
+// setupCompatCollections setups a single database with one collection per provider for compatibility tests.
+func setupCompatCollections(tb testing.TB, ctx context.Context, opts *setupCompatCollectionsOpts) []*mongo.Collection {
+	tb.Helper()
 
 	var ownDatabase bool
 	db := opts.db
@@ -143,13 +151,20 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, opts *setupColle
 
 	collections := make([]*mongo.Collection, 0, len(opts.providers))
 	for _, provider := range opts.providers {
+		collectionName := testutil.CollectionName(tb) + "_" + provider.Name()
+		if opts.keepData {
+			collectionName = strings.ToLower(provider.Name())
+		}
+		fullName := db + "." + collectionName
+
 		if *targetPortF == 0 && !slices.Contains(provider.Handlers(), *handlerF) {
-			tb.Logf("Provider %q is not compatible with handler %q, skipping it.", provider.Name(), *handlerF)
+			tb.Logf(
+				"Provider %q is not compatible with handler %q, skipping creating %q.",
+				provider.Name(), *handlerF, fullName,
+			)
 			continue
 		}
 
-		collectionName := testutil.CollectionName(tb) + "_" + provider.Name()
-		fullName := db + "." + collectionName
 		collection := database.Collection(collectionName)
 
 		// drop remnants of the previous failed run
@@ -162,16 +177,18 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, opts *setupColle
 		require.NoError(tb, err, "%s: handler %q, collection %s", provider.Name(), *handlerF, fullName)
 		require.Len(tb, res.InsertedIDs, len(docs))
 
-		// delete collection unless test failed
-		tb.Cleanup(func() {
-			if tb.Failed() {
-				tb.Logf("Keeping %s for debugging.", fullName)
-				return
-			}
+		if !opts.keepData {
+			// delete collection unless test failed
+			tb.Cleanup(func() {
+				if tb.Failed() {
+					tb.Logf("Keeping %s for debugging.", fullName)
+					return
+				}
 
-			err := collection.Drop(ctx)
-			require.NoError(tb, err)
-		})
+				err := collection.Drop(ctx)
+				require.NoError(tb, err)
+			})
+		}
 
 		collections = append(collections, collection)
 	}

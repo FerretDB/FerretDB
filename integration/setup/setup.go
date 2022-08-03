@@ -71,10 +71,8 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	client := setupClient(tb, ctx, port)
-
 	collection := setupCollection(tb, ctx, &setupCollectionOpts{
-		client:    client,
+		client:    setupClient(tb, ctx, port),
 		db:        opts.DatabaseName,
 		providers: opts.Providers,
 	})
@@ -88,7 +86,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	}
 }
 
-// Setup setups test with specified data providers.
+// Setup setups a single collection for all providers, if the are present.
 func Setup(tb testing.TB, providers ...shareddata.Provider) (context.Context, *mongo.Collection) {
 	tb.Helper()
 
@@ -96,6 +94,12 @@ func Setup(tb testing.TB, providers ...shareddata.Provider) (context.Context, *m
 		Providers: providers,
 	})
 	return s.Ctx, s.Collection
+}
+
+type setupCollectionOpts struct {
+	client    *mongo.Client
+	db        string
+	providers []shareddata.Provider
 }
 
 // setupCollection setups a single collection for all providers, if the are present.
