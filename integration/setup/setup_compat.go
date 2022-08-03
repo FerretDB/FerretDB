@@ -80,18 +80,8 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 		tb.Skip("compatibility tests require second system")
 	}
 
-	targetCollections := setupCompatCollections(tb, ctx, &setupCompatCollectionsOpts{
-		client:    setupClient(tb, ctx, targetPort),
-		db:        opts.DatabaseName,
-		keepData:  opts.KeepData,
-		providers: opts.Providers,
-	})
-	compatCollections := setupCompatCollections(tb, ctx, &setupCompatCollectionsOpts{
-		client:    setupClient(tb, ctx, compatPort),
-		db:        opts.DatabaseName,
-		keepData:  opts.KeepData,
-		providers: opts.Providers,
-	})
+	targetCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, targetPort), opts)
+	compatCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, compatPort), opts)
 
 	level.SetLevel(*logLevelF)
 
@@ -114,25 +104,18 @@ func SetupCompat(tb testing.TB) (context.Context, []*mongo.Collection, []*mongo.
 	return s.Ctx, s.TargetCollections, s.CompatCollections
 }
 
-type setupCompatCollectionsOpts struct {
-	client    *mongo.Client
-	db        string
-	keepData  bool
-	providers []shareddata.Provider
-}
-
 // setupCompatCollections setups a single database with one collection per provider for compatibility tests.
-func setupCompatCollections(tb testing.TB, ctx context.Context, opts *setupCompatCollectionsOpts) []*mongo.Collection {
+func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Client, opts *SetupCompatOpts) []*mongo.Collection {
 	tb.Helper()
 
 	var ownDatabase bool
-	db := opts.db
-	if db == "" {
-		db = testutil.DatabaseName(tb)
+	databaseName := opts.DatabaseName
+	if databaseName == "" {
+		databaseName = testutil.DatabaseName(tb)
 		ownDatabase = true
 	}
 
-	database := opts.client.Database(db)
+	database := client.Database(databaseName)
 
 	if ownDatabase {
 		// drop remnants of the previous failed run
@@ -149,13 +132,13 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, opts *setupCompa
 		})
 	}
 
-	collections := make([]*mongo.Collection, 0, len(opts.providers))
-	for _, provider := range opts.providers {
+	collections := make([]*mongo.Collection, 0, len(opts.Providers))
+	for _, provider := range opts.Providers {
 		collectionName := testutil.CollectionName(tb) + "_" + provider.Name()
-		if opts.keepData {
+		if opts.KeepData {
 			collectionName = strings.ToLower(provider.Name())
 		}
-		fullName := db + "." + collectionName
+		fullName := databaseName + "." + collectionName
 
 		if *targetPortF == 0 && !slices.Contains(provider.Handlers(), *handlerF) {
 			tb.Logf(
@@ -177,7 +160,7 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, opts *setupCompa
 		require.NoError(tb, err, "%s: handler %q, collection %s", provider.Name(), *handlerF, fullName)
 		require.Len(tb, res.InsertedIDs, len(docs))
 
-		if !opts.keepData {
+		if !opts.KeepData {
 			// delete collection unless test failed
 			tb.Cleanup(func() {
 				if tb.Failed() {
