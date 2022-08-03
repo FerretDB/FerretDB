@@ -126,20 +126,13 @@ func TestDeleteOrdered(t *testing.T) {
 				afterIDs[id] = struct{}{}
 			}
 
-			expected := make(map[string]struct{})
-			for _, id := range tc.expectedRemovedIDs {
-				if _, ok := expected[id]; ok {
-					panic("duplicates in expectedRemovedIDs")
-				}
-				expected[id] = struct{}{}
-			}
-
 			var removed []string
 			for id := range beforeIDs {
 				if _, ok := afterIDs[id]; !ok {
 					removed = append(removed, id)
 				}
 			}
+
 			sort.Strings(tc.expectedRemovedIDs)
 			sort.Strings(removed)
 
