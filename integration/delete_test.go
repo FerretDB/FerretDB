@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -72,7 +73,7 @@ func TestDeleteOrdered(t *testing.T) {
 					{"q", bson.D{{"_id", "string"}}},
 				},
 				bson.D{
-					{"q", "a"},
+					{"q", "fail"},
 				},
 			},
 			ordered:            true,
@@ -97,7 +98,6 @@ func TestDeleteOrdered(t *testing.T) {
 					{"ordered", tc.ordered},
 				},
 			)
-			//require.NoError(t, res.Err())
 
 			cursor, err = collection.Find(ctx, bson.D{})
 			require.NoError(t, err)
@@ -108,7 +108,6 @@ func TestDeleteOrdered(t *testing.T) {
 
 			beforeIDs := make(map[string]struct{})
 			for _, r := range resBefore {
-
 				id, ok := r.Map()["_id"].(string)
 				require.True(t, ok)
 
@@ -116,7 +115,6 @@ func TestDeleteOrdered(t *testing.T) {
 			}
 
 			var created []string
-
 			afterIDs := make(map[string]struct{})
 			for _, r := range resAfter {
 				id, ok := r.Map()["_id"].(string)
@@ -128,16 +126,25 @@ func TestDeleteOrdered(t *testing.T) {
 				afterIDs[id] = struct{}{}
 			}
 
+			expected := make(map[string]struct{})
+			for _, id := range tc.expectedRemovedIDs {
+				if _, ok := expected[id]; ok {
+					panic("duplicates in expectedRemovedIDs")
+				}
+				expected[id] = struct{}{}
+			}
+
 			var removed []string
 			for id := range beforeIDs {
 				if _, ok := afterIDs[id]; !ok {
 					removed = append(removed, id)
 				}
 			}
+			sort.Strings(tc.expectedRemovedIDs)
+			sort.Strings(removed)
 
-			t.Fatal(created, removed)
-
-			assert.Equal(t, beforeIDs, afterIDs)
+			assert.Empty(t, created)
+			assert.Equal(t, tc.expectedRemovedIDs, removed)
 		})
 	}
 }
