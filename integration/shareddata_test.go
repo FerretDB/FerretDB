@@ -25,17 +25,27 @@ func TestEnvData(t *testing.T) {
 	t.Parallel()
 
 	// see `env-data` Taskfile target
-	setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-		DatabaseName: "test",
-		KeepData:     true,
-		Providers:    shareddata.AllProviders(),
+
+	t.Run("All", func(t *testing.T) {
+		t.Parallel()
+
+		setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+			DatabaseName: "test",
+			KeepData:     true,
+			Providers:    shareddata.AllProviders(),
+		})
 	})
 
-	setup.SkipForTigris(t)
+	// setup old `values` collection with mixed types for PostgreSQL and MongoDB
+	t.Run("Values", func(t *testing.T) {
+		setup.SkipForTigris(t)
 
-	setup.SetupWithOpts(t, &setup.SetupOpts{
-		DatabaseName:   "test",
-		CollectionName: "values",
-		Providers:      []shareddata.Provider{shareddata.Scalars, shareddata.Composites},
+		t.Parallel()
+
+		setup.SetupWithOpts(t, &setup.SetupOpts{
+			DatabaseName:   "test",
+			CollectionName: "values",
+			Providers:      []shareddata.Provider{shareddata.Scalars, shareddata.Composites},
+		})
 	})
 }

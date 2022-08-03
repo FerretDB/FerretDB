@@ -7,10 +7,13 @@ tasks:
     cmds:
       - >
         go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData -v
+        . -handler=pg
+      - >
+        go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData -v
         -tags=ferretdb_tigris . -handler=tigris
       - >
         go test -count=1 {{if ne OS "windows"}}-race{{end}} -run=TestEnvData -v
-        . -handler=pg
+        . -target-port=37017 -compat-port=0
 
   gen:
     cmds:
