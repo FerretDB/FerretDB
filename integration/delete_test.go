@@ -106,36 +106,38 @@ func TestDeleteOrdered(t *testing.T) {
 			err = cursor.All(ctx, &resAfter)
 			require.NoError(t, err)
 
-			var beforeIDs []string
+			beforeIDs := make(map[string]struct{})
 			for _, r := range resBefore {
 
 				id, ok := r.Map()["_id"].(string)
 				require.True(t, ok)
-				beforeIDs = append(beforeIDs, id)
+
+				beforeIDs[id] = struct{}{}
 			}
 
-			var afterIDs []string
+			var created []string
+
+			afterIDs := make(map[string]struct{})
 			for _, r := range resAfter {
 				id, ok := r.Map()["_id"].(string)
 				require.True(t, ok)
-				afterIDs = append(afterIDs, id)
+
+				if _, ok := beforeIDs[id]; !ok {
+					created = append(created, id)
+				}
+				afterIDs[id] = struct{}{}
 			}
+
+			var removed []string
+			for id := range beforeIDs {
+				if _, ok := afterIDs[id]; !ok {
+					removed = append(removed, id)
+				}
+			}
+
+			t.Fatal(created, removed)
 
 			assert.Equal(t, beforeIDs, afterIDs)
 		})
 	}
-	//	if err != nil {
-	//		t.Error(err)
-	//	}
-
-	//cur, err := collection.Find(ctx, bson.D{{"_id", "string"}})
-	//cur, err := collection.Find(ctx, bson.D{})
-
-	//if err != nil {
-	//	t.Error(err)
-	//}
-	//var res2 bson.D
-	//err = cur.Decode(&res2)
-	//require.Nil(t, err)
-	//t.Log(res2)
 }
