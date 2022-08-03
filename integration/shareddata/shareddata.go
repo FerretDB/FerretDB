@@ -114,9 +114,7 @@ func (docs *Maps[idType]) Docs() []bson.D {
 	slices.Sort(ids) // TODO remove: https://github.com/FerretDB/FerretDB/issues/914
 
 	res := make([]bson.D, 0, len(docs.data))
-	for _, id := range ids {
-		doc := docs.data[id]
-
+	for id, doc := range docs.data {
 		d := make(bson.D, 0, len(doc)+1)
 		d = append(d, bson.E{"_id", id})
 		for k, v := range doc {
