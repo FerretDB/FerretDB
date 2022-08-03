@@ -1,0 +1,15 @@
+{
+    "configurations": [
+    {
+        "name": "Launch test function",
+        "type": "go",
+        "request": "launch",
+        "mode": "test",
+        "program": "${workspaceFolder}/integration",
+        "args": [
+            "-test.run",
+            "TestDeleteOrdered"
+        ]
+    }
+    ]
+}
