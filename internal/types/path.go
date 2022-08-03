@@ -209,7 +209,7 @@ func insertByPath(doc *Document, path Path) error {
 						"Cannot create field '%s' in element {%s: %s}",
 						pathElem,
 						insertedPath.Slice()[suffix-1],
-						v,
+						formatDocumentValue(v),
 					)
 				}
 			}
@@ -223,4 +223,72 @@ func insertByPath(doc *Document, path Path) error {
 	}
 
 	return nil
+}
+
+// formatDocumentValue formats document value for error message output.
+func formatDocumentValue(v any) string {
+	switch v := v.(type) {
+	case *Document:
+		return formatDocument(v)
+	case *Array:
+		return formatArray(v)
+	default:
+		return fmt.Sprintf("%v", v)
+	}
+}
+
+// formatDocument formats Document for error output.
+func formatDocument(doc *Document) string {
+	result := "{"
+
+	for i, key := range doc.keys {
+		if i > 0 {
+			result += ", "
+		}
+
+		switch value := doc.m[key].(type) {
+		case *Document:
+			result += fmt.Sprintf("%q: %s", key, value)
+		case *Array:
+			result += fmt.Sprintf("%q: %s", key, value)
+		case string:
+			result += fmt.Sprintf(`%q: "%q"`, key, value)
+		case NullType:
+			result += fmt.Sprintf("%q: null", key)
+		case nil:
+			result += fmt.Sprintf("%q: null", key)
+		case int32, int64:
+			result += fmt.Sprintf("%q: %d", key, value)
+		default:
+			result += fmt.Sprintf("%q: %s", key, doc.m[key])
+		}
+	}
+
+	return result + "}"
+}
+
+// formatArray formats Array for error output.
+func formatArray(array *Array) string {
+	result := "[ "
+
+	for _, elem := range array.s {
+		switch elem := elem.(type) {
+		case *Document:
+			result += fmt.Sprintf("%s, ", elem)
+		case *Array:
+			result += fmt.Sprintf("%s, ", elem)
+		case string:
+			result += fmt.Sprintf(`"%s", `, elem)
+		case NullType:
+			result += "null, "
+		case int32, int64:
+			result += fmt.Sprintf("%d, ", elem)
+		default:
+			result += fmt.Sprintf("%s, ", elem)
+		}
+	}
+
+	result = strings.TrimSuffix(result, ", ")
+
+	return result + " ]"
 }

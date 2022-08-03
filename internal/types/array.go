@@ -16,7 +16,6 @@ package types
 
 import (
 	"fmt"
-	"strings"
 
 	"golang.org/x/exp/slices"
 
@@ -198,30 +197,4 @@ func (a *Array) ContainsAll(b *Array) bool {
 		}
 	}
 	return true
-}
-
-// String implements the fmt.Stringer interface.
-func (a *Array) String() string {
-	result := "[ "
-
-	for _, elem := range a.s {
-		switch elem := elem.(type) {
-		case *Document:
-			result += fmt.Sprintf("%s, ", elem)
-		case *Array:
-			result += fmt.Sprintf("%s, ", elem)
-		case string:
-			result += fmt.Sprintf(`"%s", `, elem)
-		case NullType:
-			result += "null, "
-		case int32, int64:
-			result += fmt.Sprintf("%d, ", elem)
-		default:
-			result += fmt.Sprintf("%s, ", elem)
-		}
-	}
-
-	result = strings.TrimSuffix(result, ", ")
-
-	return result + " ]"
 }

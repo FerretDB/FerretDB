@@ -374,36 +374,6 @@ func (d *Document) RemoveByPath(path Path) {
 	removeByPath(d, path)
 }
 
-// String implements the fmt.Stringer interface.
-func (d *Document) String() string {
-	result := "{"
-
-	for i, key := range d.keys {
-		if i > 0 {
-			result += ", "
-		}
-
-		switch value := d.m[key].(type) {
-		case *Document:
-			result += fmt.Sprintf("%q: %s", key, value)
-		case *Array:
-			result += fmt.Sprintf("%q: %s", key, value)
-		case string:
-			result += fmt.Sprintf(`%q: "%q"`, key, value)
-		case NullType:
-			result += fmt.Sprintf("%q: null", key)
-		case nil:
-			result += fmt.Sprintf("%q: null", key)
-		case int32, int64:
-			result += fmt.Sprintf("%q: %d", key, value)
-		default:
-			result += fmt.Sprintf("%q: %s", key, d.m[key])
-		}
-	}
-
-	return result + "}"
-}
-
 // check interfaces
 var (
 	_ document = (*Document)(nil)
