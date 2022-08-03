@@ -152,6 +152,7 @@ func (h *Handler) delete(ctx context.Context, fp fetchParam, docs []*types.Docum
 	default:
 		f = must.NotFail(filter.Or(ids...).Build())
 	}
+
 	h.L.Sugar().Debugf("Delete filter: %s", f)
 
 	_, err := h.driver.UseDatabase(fp.db).Delete(ctx, fp.collection, f)
