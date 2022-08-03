@@ -34,6 +34,8 @@ type SetupOpts struct {
 	// Database to use. If empty, temporary test-specific database is created.
 	DatabaseName string
 
+	CollectionName string
+
 	// Data providers.
 	Providers []shareddata.Provider
 }
@@ -71,13 +73,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	client := setupClient(tb, ctx, port)
-
-	collection := setupCollection(tb, ctx, &setupCollectionOpts{
-		client:    client,
-		db:        opts.DatabaseName,
-		providers: opts.Providers,
-	})
+	collection := setupCollection(tb, ctx, setupClient(tb, ctx, port), opts)
 
 	level.SetLevel(*logLevelF)
 
@@ -88,7 +84,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	}
 }
 
-// Setup setups test with specified data providers.
+// Setup setups a single collection for all providers, if the are present.
 func Setup(tb testing.TB, providers ...shareddata.Provider) (context.Context, *mongo.Collection) {
 	tb.Helper()
 
@@ -99,18 +95,24 @@ func Setup(tb testing.TB, providers ...shareddata.Provider) (context.Context, *m
 }
 
 // setupCollection setups a single collection for all providers, if the are present.
-func setupCollection(tb testing.TB, ctx context.Context, opts *setupCollectionOpts) *mongo.Collection {
+func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, opts *SetupOpts) *mongo.Collection {
 	tb.Helper()
 
 	var ownDatabase bool
-	db := opts.db
-	if db == "" {
-		db = testutil.DatabaseName(tb)
+	databaseName := opts.DatabaseName
+	if databaseName == "" {
+		databaseName = testutil.DatabaseName(tb)
 		ownDatabase = true
 	}
 
-	database := opts.client.Database(db)
-	collectionName := testutil.CollectionName(tb)
+	var ownCollection bool
+	collectionName := opts.CollectionName
+	if collectionName == "" {
+		collectionName = testutil.CollectionName(tb)
+		ownCollection = true
+	}
+
+	database := client.Database(databaseName)
 	collection := database.Collection(collectionName)
 
 	// drop remnants of the previous failed run
@@ -119,7 +121,7 @@ func setupCollection(tb testing.TB, ctx context.Context, opts *setupCollectionOp
 		_ = database.Drop(ctx)
 	}
 
-	for _, provider := range opts.providers {
+	for _, provider := range opts.Providers {
 		docs := shareddata.Docs(provider)
 		require.NotEmpty(tb, docs)
 
@@ -128,21 +130,23 @@ func setupCollection(tb testing.TB, ctx context.Context, opts *setupCollectionOp
 		require.Len(tb, res.InsertedIDs, len(docs))
 	}
 
-	// delete collection and (possibly) database unless test failed
-	tb.Cleanup(func() {
-		if tb.Failed() {
-			tb.Logf("Keeping %s.%s for debugging.", db, collectionName)
-			return
-		}
+	if ownCollection {
+		// delete collection and (possibly) database unless test failed
+		tb.Cleanup(func() {
+			if tb.Failed() {
+				tb.Logf("Keeping %s.%s for debugging.", databaseName, collectionName)
+				return
+			}
 
-		err := collection.Drop(ctx)
-		require.NoError(tb, err)
-
-		if ownDatabase {
-			err = database.Drop(ctx)
+			err := collection.Drop(ctx)
 			require.NoError(tb, err)
-		}
-	})
+
+			if ownDatabase {
+				err = database.Drop(ctx)
+				require.NoError(tb, err)
+			}
+		})
+	}
 
 	return collection
 }
