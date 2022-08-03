@@ -19,6 +19,8 @@ package conninfo
 import (
 	"context"
 	"net"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // contextKey is a special type to represent context.WithValue keys a bit more safely.
@@ -29,8 +31,8 @@ var connInfoKey = contextKey{}
 
 // ConnInfo represents connection info.
 type ConnInfo struct {
-	PeerAddr net.Addr
-	// TODO
+	PeerAddr          net.Addr
+	AggregateRequests *prometheus.CounterVec
 }
 
 // WithConnInfo returns a new context with the given ConnInfo.

@@ -269,7 +269,8 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	}()
 
 	connInfo := &conninfo.ConnInfo{
-		PeerAddr: c.netConn.RemoteAddr(),
+		PeerAddr:          c.netConn.RemoteAddr(),
+		AggregateRequests: c.m.aggregateRequests,
 	}
 	ctx, cancel := context.WithCancel(conninfo.WithConnInfo(ctx, connInfo))
 	defer cancel()

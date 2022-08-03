@@ -18,8 +18,9 @@ import "github.com/prometheus/client_golang/prometheus"
 
 // ConnMetrics represents conn metrics.
 type ConnMetrics struct {
-	requests  *prometheus.CounterVec
-	responses *prometheus.CounterVec
+	requests          *prometheus.CounterVec
+	responses         *prometheus.CounterVec
+	aggregateRequests *prometheus.CounterVec
 }
 
 // newConnMetrics creates new conn metrics.
@@ -43,6 +44,15 @@ func newConnMetrics() *ConnMetrics {
 			},
 			[]string{"opcode", "command", "result"},
 		),
+		aggregateRequests: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace: namespace,
+				Subsystem: subsystem,
+				Name:      "aggregate_requests_total",
+				Help:      "Total number of `aggregate` requests.",
+			},
+			[]string{"stage"},
+		),
 	}
 }
 
@@ -50,12 +60,14 @@ func newConnMetrics() *ConnMetrics {
 func (cm *ConnMetrics) Describe(ch chan<- *prometheus.Desc) {
 	cm.requests.Describe(ch)
 	cm.responses.Describe(ch)
+	cm.aggregateRequests.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
 func (cm *ConnMetrics) Collect(ch chan<- prometheus.Metric) {
 	cm.requests.Collect(ch)
 	cm.responses.Collect(ch)
+	cm.aggregateRequests.Collect(ch)
 }
 
 // check interfaces
