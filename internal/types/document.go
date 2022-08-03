@@ -331,8 +331,7 @@ func (d *Document) GetByPath(path Path) (any, error) {
 // The Document type will be used to create these parts.
 func (d *Document) SetByPath(path Path, value any) error {
 	if path.Len() == 1 {
-		must.NoError(d.Set(path.Slice()[0], value))
-		return nil
+		return d.Set(path.Slice()[0], value)
 	}
 
 	if !d.HasByPath(path.TrimSuffix()) {
@@ -346,7 +345,7 @@ func (d *Document) SetByPath(path Path, value any) error {
 
 	switch inner := innerComp.(type) {
 	case *Document:
-		must.NoError(inner.Set(path.Suffix(), value))
+		return inner.Set(path.Suffix(), value)
 	case *Array:
 		index, err := strconv.Atoi(path.Suffix())
 		if err != nil {
@@ -358,7 +357,7 @@ func (d *Document) SetByPath(path Path, value any) error {
 			)
 		}
 
-		must.NoError(inner.Set(index, value))
+		return inner.Set(index, value)
 	default:
 		panic(fmt.Errorf("can't set value for %T type", inner))
 	}
