@@ -305,7 +305,10 @@ func TestFindAndModifyErrors(t *testing.T) {
 			t.Parallel()
 			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
-			command := bson.D{{"findAndModify", collection.Name()}}
+			command := bson.D{
+				{"findAndModify", collection.Name()},
+				{"sort", bson.D{{"_id", 1}}},
+			}
 			command = append(command, tc.command...)
 
 			var actual bson.D
