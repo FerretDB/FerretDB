@@ -203,6 +203,7 @@ func (a *Array) ContainsAll(b *Array) bool {
 // String implements the fmt.Stringer interface.
 func (a *Array) String() string {
 	var result = "[ "
+
 	for _, elem := range a.s {
 		switch elem := elem.(type) {
 		case *Document:
