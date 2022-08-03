@@ -60,14 +60,14 @@ func newConnMetrics() *ConnMetrics {
 func (cm *ConnMetrics) Describe(ch chan<- *prometheus.Desc) {
 	cm.requests.Describe(ch)
 	cm.responses.Describe(ch)
-	cm.aggregateRequests.Describe(ch)
+	cm.aggregationStages.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
 func (cm *ConnMetrics) Collect(ch chan<- prometheus.Metric) {
 	cm.requests.Collect(ch)
 	cm.responses.Collect(ch)
-	cm.aggregateRequests.Collect(ch)
+	cm.aggregationStages.Collect(ch)
 }
 
 // check interfaces

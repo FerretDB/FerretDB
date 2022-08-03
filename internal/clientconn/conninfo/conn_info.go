@@ -32,7 +32,7 @@ var connInfoKey = contextKey{}
 // ConnInfo represents connection info.
 type ConnInfo struct {
 	PeerAddr          net.Addr
-	AggregateRequests *prometheus.CounterVec
+	AggregationStages *prometheus.CounterVec
 }
 
 // WithConnInfo returns a new context with the given ConnInfo.
