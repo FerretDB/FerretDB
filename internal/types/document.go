@@ -337,7 +337,7 @@ func (d *Document) SetByPath(path Path, value any) error {
 
 	if !d.HasByPath(path.TrimSuffix()) {
 		// we should insert the missing part of the path
-		if err := insertPath(d, path); err != nil {
+		if err := insertByPath(d, path); err != nil {
 			return err
 		}
 	}
@@ -350,7 +350,12 @@ func (d *Document) SetByPath(path Path, value any) error {
 	case *Array:
 		index, err := strconv.Atoi(path.Suffix())
 		if err != nil {
-			panic("SetByPath: should be an index")
+			return fmt.Errorf(
+				"Cannot create field '%s' in element {%s: %s}",
+				path.Suffix(),
+				path.Slice()[len(path.Slice())-2],
+				innerComp,
+			)
 		}
 
 		must.NoError(inner.Set(index, value))
@@ -372,6 +377,7 @@ func (d *Document) RemoveByPath(path Path) {
 	removeByPath(d, path)
 }
 
+// String implements the fmt.Stringer interface.
 func (d *Document) String() string {
 	var result = "{"
 	for i, key := range d.keys {
@@ -379,7 +385,22 @@ func (d *Document) String() string {
 			result += ", "
 		}
 
-		result += fmt.Sprintf("%q: %s", key, d.m[key])
+		switch value := d.m[key].(type) {
+		case *Document:
+			result += fmt.Sprintf("%q: %s", key, value)
+		case *Array:
+			result += fmt.Sprintf("%q: %s", key, value)
+		case string:
+			result += fmt.Sprintf(`%q: "%q"`, key, value)
+		case NullType:
+			result += fmt.Sprintf("%q: null", key)
+		case nil:
+			result += fmt.Sprintf("%q: null", key)
+		case int32, int64:
+			result += fmt.Sprintf("%q: %d", key, value)
+		default:
+			result += fmt.Sprintf("%q: %s", key, d.m[key])
+		}
 	}
 
 	return result + "}"

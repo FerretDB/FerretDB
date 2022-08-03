@@ -184,8 +184,8 @@ func removeByPath(v any, path Path) {
 	}
 }
 
-// insertPath inserts missing parts of the path into document.
-func insertPath(doc *Document, path Path) error {
+// insertByPath inserts missing parts of the path into document.
+func insertByPath(doc *Document, path Path) error {
 	var next any = doc
 
 	var insertedPath Path

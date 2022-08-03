@@ -654,7 +654,7 @@ func TestUpdateFieldInc(t *testing.T) {
 				update: bson.D{{"$inc", bson.D{{"v.array.foo", int32(1)}}}},
 				err: &mongo.WriteError{
 					Code:    28,
-					Message: "Cannot create field 'array' in element {v: [ 42 ]}",
+					Message: `Cannot create field 'foo' in element {array: [ 42, "foo", null ]}`,
 				},
 			},
 		} {
