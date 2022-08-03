@@ -63,10 +63,12 @@ func TestSmokeObjectIDBinary(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
-	// Insert, update, delete a document with a "proper" ObjectID.
-	ins, err := collection.InsertOne(ctx, bson.D{{"string_value", "foo_2"}})
+	id, err := primitive.ObjectIDFromHex("62e7d8a3d23915343c4a5f3a")
 	require.NoError(t, err)
-	id := ins.InsertedID.(primitive.ObjectID)
+
+	// Insert, update, delete a document with a "proper" ObjectID.
+	ins, err := collection.InsertOne(ctx, bson.D{{"_id", id}, {"string_value", "foo_2"}})
+	require.NoError(t, err)
 
 	up, err := collection.UpdateOne(ctx, bson.D{{"_id", id}}, bson.D{{"$set", bson.D{{"string_value", "bar_2"}}}})
 	require.NoError(t, err)
