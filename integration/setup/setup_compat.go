@@ -34,6 +34,8 @@ type SetupCompatOpts struct {
 	// Database to use. If empty, temporary test-specific database is created.
 	DatabaseName string
 
+	// If true, database is nor dropped after test.
+	// Most tests should keep this false.
 	KeepData bool
 
 	// Data providers.

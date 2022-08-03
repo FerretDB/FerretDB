@@ -183,7 +183,7 @@ func TestQuerySortValue(t *testing.T) {
 		err         *mongo.CommandError
 	}{
 		"AscValueScalar": {
-			sort: bson.D{{"v", 1}},
+			sort: bson.D{{"v", 1}, {"_id", 1}},
 			expectedIDs: []any{
 				"null",
 				"double-nan",
@@ -226,7 +226,7 @@ func TestQuerySortValue(t *testing.T) {
 			},
 		},
 		"DescValueScalar": {
-			sort: bson.D{{"v", -1}},
+			sort: bson.D{{"v", -1}, {"_id", 1}},
 			expectedIDs: []any{
 				"regex",
 				"regex-empty",
