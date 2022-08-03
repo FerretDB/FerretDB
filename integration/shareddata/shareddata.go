@@ -44,6 +44,7 @@ func AllProviders() []Provider {
 		Doubles,
 		Strings,
 		Int32s,
+		Int64s,
 		Composites,
 	}
 

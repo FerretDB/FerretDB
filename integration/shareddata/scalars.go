@@ -135,3 +135,16 @@ var Int32s = &Values[string]{
 		"int32-min":  int32(math.MinInt32),
 	},
 }
+
+// Int64s contains int64 values for tests.
+var Int64s = &Values[string]{
+	name:     "Int64s",
+	handlers: []string{"pg", "tigris"},
+	data: map[string]any{
+		"int64":      int64(42),
+		"int64-zero": int64(0),
+		"int64-max":  int64(math.MaxInt64),
+		"int64-min":  int64(math.MinInt64),
+		"int64-big":  int64Big,
+	},
+}
