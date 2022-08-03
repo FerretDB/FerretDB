@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -44,13 +43,7 @@ func TestFindAndModifySimple(t *testing.T) {
 			},
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}}},
-				{
-					"value",
-					bson.D{
-						{"_id", "binary"},
-						{"v", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}},
-					},
-				},
+				{"value", bson.D{{"_id", "array"}, {"v", bson.A{int32(42)}}}},
 				{"ok", float64(1)},
 			},
 		},
@@ -144,7 +137,11 @@ func TestFindAndModifySimple(t *testing.T) {
 			t.Parallel()
 			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
-			command := append(bson.D{{"findAndModify", collection.Name()}}, tc.command...)
+			command := bson.D{{"findAndModify", collection.Name()}}
+			command = append(command, tc.command...)
+			if command.Map()["sort"] == nil {
+				command = append(command, bson.D{{"sort", bson.D{{"_id", 1}}}}...)
+			}
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
@@ -301,7 +298,11 @@ func TestFindAndModifyErrors(t *testing.T) {
 			t.Parallel()
 			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
-			command := append(bson.D{{"findAndModify", collection.Name()}}, tc.command...)
+			command := bson.D{{"findAndModify", collection.Name()}}
+			command = append(command, tc.command...)
+			if command.Map()["sort"] == nil {
+				command = append(command, bson.D{{"sort", bson.D{{"_id", 1}}}}...)
+			}
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
