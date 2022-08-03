@@ -379,7 +379,7 @@ func (d *Document) RemoveByPath(path Path) {
 
 // String implements the fmt.Stringer interface.
 func (d *Document) String() string {
-	var result = "{"
+	result := "{"
 
 	for i, key := range d.keys {
 		if i > 0 {
