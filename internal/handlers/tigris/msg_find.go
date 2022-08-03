@@ -17,6 +17,7 @@ package tigris
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -68,6 +69,18 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 	if projection, err = common.GetOptionalParam(document, "projection", projection); err != nil {
 		return nil, err
+	}
+
+	maxTimeMS, err := common.GetOptionalPositiveNumber(document, "maxTimeMS")
+	if err != nil {
+		return nil, err
+	}
+
+	if maxTimeMS != 0 {
+		ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Duration(maxTimeMS)*time.Millisecond)
+		defer cancel()
+
+		ctx = ctxWithTimeout
 	}
 
 	var limit int64

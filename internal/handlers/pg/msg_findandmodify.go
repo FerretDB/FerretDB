@@ -17,6 +17,7 @@ package pg
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v4"
 
@@ -55,6 +56,13 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	params, err := prepareFindAndModifyParams(document)
 	if err != nil {
 		return nil, err
+	}
+
+	if params.maxTimeMS != 0 {
+		ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Duration(params.maxTimeMS)*time.Millisecond)
+		defer cancel()
+
+		ctx = ctxWithTimeout
 	}
 
 	// This is not very optimal as we need to fetch everything from the database to have a proper sort.
