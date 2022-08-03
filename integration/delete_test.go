@@ -106,9 +106,22 @@ func TestDeleteOrdered(t *testing.T) {
 			err = cursor.All(ctx, &resAfter)
 			require.NoError(t, err)
 
-			//t.Fatal("\nbefore:\n", resBefore, "\n\n\nafter:\n", resAfter)
+			var beforeIDs []string
+			for _, r := range resBefore {
 
-			assert.Equal(t, resBefore, resAfter)
+				id, ok := r.Map()["_id"].(string)
+				require.True(t, ok)
+				beforeIDs = append(beforeIDs, id)
+			}
+
+			var afterIDs []string
+			for _, r := range resAfter {
+				id, ok := r.Map()["_id"].(string)
+				require.True(t, ok)
+				afterIDs = append(afterIDs, id)
+			}
+
+			assert.Equal(t, beforeIDs, afterIDs)
 		})
 	}
 	//	if err != nil {
