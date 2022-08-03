@@ -73,12 +73,17 @@ func TestDeleteOrdered(t *testing.T) {
 					{"q", bson.D{{"_id", "string"}}},
 					{"limit", 0},
 				},
-				//bson.D{
-				//	{"q", "fail"},
-				//},
+				bson.D{
+					{"q", "fail"},
+					{"limit", 0},
+				},
+				bson.D{
+					{"q", bson.D{{"_id", "double"}}},
+					{"limit", 0},
+				},
 			},
-			ordered:            true,
-			expectedRemovedIDs: []string{"string"},
+			ordered:            false,
+			expectedRemovedIDs: []string{"string", "double"},
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -91,7 +96,7 @@ func TestDeleteOrdered(t *testing.T) {
 			err = cursor.All(ctx, &resBefore)
 			require.NoError(t, err)
 
-			res := collection.Database().RunCommand(
+			_ = collection.Database().RunCommand(
 				ctx,
 				bson.D{
 					{"delete", collection.Name()},
@@ -99,9 +104,9 @@ func TestDeleteOrdered(t *testing.T) {
 					{"ordered", tc.ordered},
 				},
 			)
-			if res.Err() != nil {
-				t.Fatal(res.Err())
-			}
+			//if res.Err() != nil {
+			//	t.Fatal(res.Err())
+			//}
 
 			cursor, err = collection.Find(ctx, bson.D{})
 			require.NoError(t, err)
