@@ -16,10 +16,10 @@ package types
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/require"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )

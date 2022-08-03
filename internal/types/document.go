@@ -361,8 +361,6 @@ func (d *Document) SetByPath(path Path, value any) error {
 	default:
 		panic(fmt.Errorf("can't set value for %T type", inner))
 	}
-
-	return nil
 }
 
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
