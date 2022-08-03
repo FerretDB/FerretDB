@@ -34,6 +34,8 @@ type SetupOpts struct {
 	// Database to use. If empty, temporary test-specific database is created.
 	DatabaseName string
 
+	// Collection to use. If empty, temporary test-specific collection is created.
+	// Most tests should keep this empty.
 	CollectionName string
 
 	// Data providers.
