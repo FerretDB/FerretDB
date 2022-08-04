@@ -41,10 +41,19 @@ type Provider interface {
 func AllProviders() []Provider {
 	providers := []Provider{
 		Scalars,
+
 		Doubles,
 		Strings,
+		Binaries,
+		ObjectIDs,
+		Bools,
+		DateTimes,
+		Nulls,
+		Regexes,
 		Int32s,
+		Timestamps,
 		Int64s,
+
 		Composites,
 	}
 
