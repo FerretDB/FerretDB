@@ -92,7 +92,6 @@ func TestSmokeObjectIDBinary(t *testing.T) {
 
 // TODO This is a temporary test to check if multiple deletes work correctly.
 func TestMultipleDelete(t *testing.T) {
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
