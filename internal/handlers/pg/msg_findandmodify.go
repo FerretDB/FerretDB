@@ -17,6 +17,7 @@ package pg
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v4"
 
@@ -47,7 +48,6 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	ignoredFields := []string{
 		"bypassDocumentValidation",
 		"writeConcern",
-		"maxTimeMS",
 		"collation",
 		"hint",
 	}
@@ -56,6 +56,13 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	params, err := prepareFindAndModifyParams(document)
 	if err != nil {
 		return nil, err
+	}
+
+	if params.maxTimeMS != 0 {
+		ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Duration(params.maxTimeMS)*time.Millisecond)
+		defer cancel()
+
+		ctx = ctxWithTimeout
 	}
 
 	// This is not very optimal as we need to fetch everything from the database to have a proper sort.
@@ -291,6 +298,7 @@ type findAndModifyParams struct {
 	query, sort, update                   *types.Document
 	remove, upsert                        bool
 	returnNewDocument, hasUpdateOperators bool
+	maxTimeMS                             int32
 }
 
 // prepareFindAndModifyParams prepares findAndModify request fields.
@@ -334,6 +342,11 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 
 	var sort *types.Document
 	if sort, err = common.GetOptionalParam(document, "sort", sort); err != nil {
+		return nil, err
+	}
+
+	maxTimeMS, err := common.GetOptionalPositiveNumber(document, "maxTimeMS")
+	if err != nil {
 		return nil, err
 	}
 
@@ -398,5 +411,6 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 		upsert:             upsert,
 		returnNewDocument:  returnNewDocument,
 		hasUpdateOperators: hasUpdateOperators,
+		maxTimeMS:          maxTimeMS,
 	}, nil
 }
