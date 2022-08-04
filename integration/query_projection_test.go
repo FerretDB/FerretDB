@@ -24,18 +24,21 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestQueryProjection(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Composites}
-	ctx, collection := setup(t, providers...)
+	ctx, collection := setup.Setup(t, providers...)
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{
 			{"_id", "document-composite-2"},
-			{"value", bson.A{
+			{"v", bson.A{
 				bson.D{{"field", int32(42)}},
 				bson.D{{"field", int32(44)}},
 			}},
@@ -58,7 +61,7 @@ func TestQueryProjection(t *testing.T) {
 			filter: bson.D{{"_id", "document-composite"}},
 			// TODO: https://github.com/FerretDB/FerretDB/issues/537
 			projection: bson.D{{"foo", int32(0)}, {"array", false}},
-			expected:   bson.D{{"_id", "document-composite"}, {"value", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}},
+			expected:   bson.D{{"_id", "document-composite"}, {"v", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}},
 		},
 		"FindProjectionIDExclusion": {
 			filter: bson.D{{"_id", "document-composite"}},
@@ -69,7 +72,7 @@ func TestQueryProjection(t *testing.T) {
 		"ProjectionSliceNonArrayField": {
 			filter:     bson.D{{"_id", "document"}},
 			projection: bson.D{{"_id", bson.D{{"$slice", 1}}}},
-			expected:   bson.D{{"_id", "document"}, {"value", bson.D{{"foo", int32(42)}}}},
+			expected:   bson.D{{"_id", "document"}, {"v", bson.D{{"foo", int32(42)}}}},
 		},
 	} {
 		name, tc := name, tc
@@ -89,14 +92,16 @@ func TestQueryProjection(t *testing.T) {
 }
 
 func TestQueryProjectionElemMatch(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Composites}
-	ctx, collection := setup(t, providers...)
+	ctx, collection := setup.Setup(t, providers...)
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{
 			{"_id", "document-composite-2"},
-			{"value", bson.A{
+			{"v", bson.A{
 				bson.D{{"field", int32(42)}},
 				bson.D{{"field", int32(44)}},
 			}},
@@ -110,7 +115,7 @@ func TestQueryProjectionElemMatch(t *testing.T) {
 	}{
 		"ElemMatch": {
 			projection: bson.D{{
-				"value",
+				"v",
 				bson.D{{"$elemMatch", bson.D{{"field", bson.D{{"$eq", 42}}}}}},
 			}},
 			expectedIDs: []any{
@@ -139,10 +144,12 @@ func TestQueryProjectionElemMatch(t *testing.T) {
 }
 
 func TestQueryProjectionSlice(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := setup.Setup(t)
 	_, err := collection.InsertOne(ctx,
-		bson.D{{"_id", "array"}, {"value", bson.A{1, 2, 3, 4}}},
+		bson.D{{"_id", "array"}, {"v", bson.A{1, 2, 3, 4}}},
 	)
 	require.NoError(t, err)
 
@@ -153,7 +160,7 @@ func TestQueryProjectionSlice(t *testing.T) {
 		altMessage    string
 	}{
 		"SingleArgDocument": {
-			projection: bson.D{{"value", bson.D{
+			projection: bson.D{{"v", bson.D{
 				{"$slice", bson.D{{"a", bson.D{{"b", 3}}}, {"b", "string"}}},
 			}}},
 			err: &mongo.CommandError{
@@ -174,7 +181,7 @@ func TestQueryProjectionSlice(t *testing.T) {
 				"but 1 were passed in.",
 		},
 		"SingleArgString": {
-			projection: bson.D{{"value", bson.D{{"$slice", "string"}}}},
+			projection: bson.D{{"v", bson.D{{"$slice", "string"}}}},
 			err: &mongo.CommandError{
 				Code: 28667,
 				Name: "Location28667",
@@ -193,7 +200,7 @@ func TestQueryProjectionSlice(t *testing.T) {
 				"but 1 were passed in.",
 		},
 		"SkipIsString": {
-			projection: bson.D{{"value", bson.D{{"$slice", bson.A{"string", 5}}}}},
+			projection: bson.D{{"v", bson.D{{"$slice", bson.A{"string", 5}}}}},
 			err: &mongo.CommandError{
 				Code:    28724,
 				Name:    "Location28724",
@@ -201,7 +208,7 @@ func TestQueryProjectionSlice(t *testing.T) {
 			},
 		},
 		"LimitIsString": {
-			projection: bson.D{{"value", bson.D{{"$slice", bson.A{int32(2), "string"}}}}},
+			projection: bson.D{{"v", bson.D{{"$slice", bson.A{int32(2), "string"}}}}},
 			err: &mongo.CommandError{
 				Code:    28724,
 				Name:    "Location28724",
@@ -209,7 +216,7 @@ func TestQueryProjectionSlice(t *testing.T) {
 			},
 		},
 		"ArgEmptyArr": {
-			projection: bson.D{{"value", bson.D{{"$slice", bson.A{}}}}},
+			projection: bson.D{{"v", bson.D{{"$slice", bson.A{}}}}},
 			err: &mongo.CommandError{
 				Code: 28667,
 				Name: "Location28667",
@@ -228,7 +235,7 @@ func TestQueryProjectionSlice(t *testing.T) {
 				"Expression $slice takes at least 2 arguments, and at most 3, but 0 were passed in.",
 		},
 		"ThreeArgs": {
-			projection: bson.D{{"value", bson.D{{"$slice", bson.A{"string", 2, 3}}}}},
+			projection: bson.D{{"v", bson.D{{"$slice", bson.A{"string", 2, 3}}}}},
 			err: &mongo.CommandError{
 				Code:    28724,
 				Name:    "Location28724",
@@ -236,7 +243,7 @@ func TestQueryProjectionSlice(t *testing.T) {
 			},
 		},
 		"TooManyArgs": {
-			projection: bson.D{{"value", bson.D{{"$slice", bson.A{1, 2, 3, 4}}}}},
+			projection: bson.D{{"v", bson.D{{"$slice", bson.A{1, 2, 3, 4}}}}},
 			err: &mongo.CommandError{
 				Code: 28667,
 				Name: "Location28667",
@@ -255,39 +262,39 @@ func TestQueryProjectionSlice(t *testing.T) {
 				"Expression $slice takes at least 2 arguments, and at most 3, but 4 were passed in.",
 		},
 		"Int64SingleArg": {
-			projection:    bson.D{{"value", bson.D{{"$slice", int64(2)}}}},
+			projection:    bson.D{{"v", bson.D{{"$slice", int64(2)}}}},
 			expectedArray: bson.A{int32(1), int32(2)},
 		},
 		"PositiveSingleArg": {
-			projection:    bson.D{{"value", bson.D{{"$slice", 2}}}},
+			projection:    bson.D{{"v", bson.D{{"$slice", 2}}}},
 			expectedArray: bson.A{int32(1), int32(2)},
 		},
 		"NegativeSingleArg": {
-			projection:    bson.D{{"value", bson.D{{"$slice", -2}}}},
+			projection:    bson.D{{"v", bson.D{{"$slice", -2}}}},
 			expectedArray: bson.A{int32(3), int32(4)},
 		},
 		"SingleArgFloat": {
-			projection:    bson.D{{"value", bson.D{{"$slice", 1.4}}}},
+			projection:    bson.D{{"v", bson.D{{"$slice", 1.4}}}},
 			expectedArray: bson.A{int32(1)},
 		},
 		"SkipFloat": {
-			projection:    bson.D{{"value", bson.D{{"$slice", bson.A{-2.5, 2}}}}},
+			projection:    bson.D{{"v", bson.D{{"$slice", bson.A{-2.5, 2}}}}},
 			expectedArray: bson.A{int32(3), int32(4)},
 		},
 		"LimitFloat": {
-			projection:    bson.D{{"value", bson.D{{"$slice", bson.A{1, 2.8}}}}},
+			projection:    bson.D{{"v", bson.D{{"$slice", bson.A{1, 2.8}}}}},
 			expectedArray: bson.A{int32(2), int32(3)},
 		},
 		"PositiveSkip": {
-			projection:    bson.D{{"value", bson.D{{"$slice", bson.A{1, 2}}}}},
+			projection:    bson.D{{"v", bson.D{{"$slice", bson.A{1, 2}}}}},
 			expectedArray: bson.A{int32(2), int32(3)},
 		},
 		"NegativeSkip": {
-			projection:    bson.D{{"value", bson.D{{"$slice", bson.A{-3, 2}}}}},
+			projection:    bson.D{{"v", bson.D{{"$slice", bson.A{-3, 2}}}}},
 			expectedArray: bson.A{int32(2), int32(3)},
 		},
 		"NegativeLimitSkipInt64": {
-			projection: bson.D{{"value", bson.D{{"$slice", bson.A{int64(3), -2}}}}},
+			projection: bson.D{{"v", bson.D{{"$slice", bson.A{int64(3), -2}}}}},
 			err: &mongo.CommandError{
 				Code:    28724,
 				Name:    "Location28724",
@@ -295,7 +302,7 @@ func TestQueryProjectionSlice(t *testing.T) {
 			},
 		},
 		"NegativeLimitSkipInt": {
-			projection: bson.D{{"value", bson.D{{"$slice", bson.A{3, -2}}}}},
+			projection: bson.D{{"v", bson.D{{"$slice", bson.A{3, -2}}}}},
 			err: &mongo.CommandError{
 				Code:    28724,
 				Name:    "Location28724",
@@ -303,7 +310,7 @@ func TestQueryProjectionSlice(t *testing.T) {
 			},
 		},
 		"NegativeLimitSkipFloat": {
-			projection: bson.D{{"value", bson.D{{"$slice", bson.A{0.3, -2}}}}},
+			projection: bson.D{{"v", bson.D{{"$slice", bson.A{0.3, -2}}}}},
 			err: &mongo.CommandError{
 				Code:    28724,
 				Name:    "Location28724",
@@ -311,15 +318,15 @@ func TestQueryProjectionSlice(t *testing.T) {
 			},
 		},
 		"ArgNaN": {
-			projection:    bson.D{{"value", bson.D{{"$slice", math.NaN()}}}},
+			projection:    bson.D{{"v", bson.D{{"$slice", math.NaN()}}}},
 			expectedArray: bson.A{},
 		},
 		"ArgInf": {
-			projection:    bson.D{{"value", bson.D{{"$slice", math.Inf(+1)}}}},
+			projection:    bson.D{{"v", bson.D{{"$slice", math.Inf(+1)}}}},
 			expectedArray: bson.A{int32(1), int32(2), int32(3), int32(4)},
 		},
 		"SingleArgNull": {
-			projection: bson.D{{"value", bson.D{{"$slice", nil}}}},
+			projection: bson.D{{"v", bson.D{{"$slice", nil}}}},
 			err: &mongo.CommandError{
 				Code: 28667,
 				Name: "Location28667",
@@ -336,7 +343,7 @@ func TestQueryProjectionSlice(t *testing.T) {
 				"Expression $slice takes at least 2 arguments, and at most 3, but 1 were passed in.",
 		},
 		"NullInArr": {
-			projection: bson.D{{"value", bson.D{{"$slice", bson.A{nil}}}}},
+			projection: bson.D{{"v", bson.D{{"$slice", bson.A{nil}}}}},
 			err: &mongo.CommandError{
 				Code: 28667,
 				Name: "Location28667",
@@ -355,7 +362,7 @@ func TestQueryProjectionSlice(t *testing.T) {
 				"and at most 3, but 1 were passed in.",
 		},
 		"NullInPair": {
-			projection: bson.D{{"value", bson.D{{"$slice", bson.A{2, nil}}}}},
+			projection: bson.D{{"v", bson.D{{"$slice", bson.A{2, nil}}}}},
 		},
 	} {
 		name, tc := name, tc
@@ -374,10 +381,10 @@ func TestQueryProjectionSlice(t *testing.T) {
 			require.NoError(t, err)
 
 			if tc.expectedArray == nil {
-				assert.Nil(t, actual.Map()["value"])
+				assert.Nil(t, actual.Map()["v"])
 				return
 			}
-			assert.Equal(t, tc.expectedArray, actual.Map()["value"])
+			assert.Equal(t, tc.expectedArray, actual.Map()["v"])
 		})
 	}
 }

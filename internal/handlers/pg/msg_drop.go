@@ -16,6 +16,7 @@ package pg
 
 import (
 	"context"
+	"errors"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
@@ -44,10 +45,13 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	if err = h.pgPool.DropTable(ctx, db, collection); err != nil {
-		if err == pgdb.ErrNotExist {
-			return nil, common.NewErrorMsg(common.ErrNamespaceNotFound, "ns not found")
-		}
+	err = pgdb.DropCollection(ctx, h.pgPool, db, collection)
+	switch {
+	case err == nil:
+		// nothing
+	case errors.Is(err, pgdb.ErrSchemaNotExist), errors.Is(err, pgdb.ErrTableNotExist):
+		return nil, common.NewErrorMsg(common.ErrNamespaceNotFound, "ns not found")
+	default:
 		return nil, lazyerrors.Error(err)
 	}
 

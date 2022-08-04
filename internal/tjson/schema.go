@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -123,14 +122,70 @@ var (
 )
 
 // Equal returns true if the schemas are equal.
+// For composite types schemas are equal if their types and subschemas are equal.
+// For scalar types schemas are equal if their types and formats are equal.
 func (s *Schema) Equal(other *Schema) bool {
 	if s == other {
 		return true
 	}
 
-	// TODO compare significant fields only (ignore title, description, etc.)
-	// TODO compare format according to type (for example, for Number, EmptyFormat == Double)
-	return reflect.DeepEqual(s, other)
+	if s.Type != other.Type {
+		return false
+	}
+
+	switch s.Type {
+	case Object:
+		// If `s` and `other` are objects, compare their properties.
+		if len(s.Properties) != len(other.Properties) {
+			return false
+		}
+		for k, v := range s.Properties {
+			vOther, ok := other.Properties[k]
+			if !ok {
+				return false
+			}
+			if eq := v.Equal(vOther); !eq {
+				return false
+			}
+		}
+		return true
+	case Array:
+		// If `s` and `other` are arrays, compare their items.
+		if s.Items == nil || other.Items == nil {
+			panic("schema.Equal: array with nil items")
+		}
+		return s.Items.Equal(other.Items)
+	case String, Integer, Number, Boolean:
+		// For scalar types, it's enough to compare their formats.
+		if s.Format == other.Format {
+			return true
+		}
+	default:
+		panic(fmt.Sprintf("schema.Equal: unknown type `%s`", s.Type))
+	}
+
+	// If formats don't match, normalize schemas: empty format is equal to double for numbers and int64 for integers,
+	// see https://docs.tigrisdata.com/overview/schema#data-types.
+	formatS, formatOther := s.Format, other.Format
+	switch s.Type {
+	case Number:
+		if s.Format == EmptyFormat {
+			formatS = Double
+		}
+		if other.Format == EmptyFormat {
+			formatOther = Double
+		}
+	case Integer:
+		if s.Format == EmptyFormat {
+			formatS = Int64
+		}
+		if other.Format == EmptyFormat {
+			formatOther = Int64
+		}
+	case Array, Boolean, Object, String:
+		// do nothing: these types don't have "default" format
+	}
+	return formatS == formatOther
 }
 
 // Marshal returns the JSON encoding of the schema.

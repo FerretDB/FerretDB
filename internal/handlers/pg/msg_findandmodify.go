@@ -17,8 +17,12 @@ package pg
 import (
 	"context"
 	"fmt"
+	"time"
+
+	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -44,10 +48,8 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	ignoredFields := []string{
 		"bypassDocumentValidation",
 		"writeConcern",
-		"maxTimeMS",
 		"collation",
 		"hint",
-		"comment",
 	}
 	common.Ignored(document, h.l, ignoredFields...)
 
@@ -56,28 +58,60 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	fetchedDocs, err := h.fetch(ctx, params.sqlParam)
-	if err != nil {
-		return nil, err
+	if params.maxTimeMS != 0 {
+		ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Duration(params.maxTimeMS)*time.Millisecond)
+		defer cancel()
+
+		ctx = ctxWithTimeout
 	}
 
-	err = common.SortDocuments(fetchedDocs, params.sort)
-	if err != nil {
-		return nil, err
-	}
-
+	// This is not very optimal as we need to fetch everything from the database to have a proper sort.
+	// We might consider rewriting it later.
 	resDocs := make([]*types.Document, 0, 16)
-	for _, doc := range fetchedDocs {
-		matches, err := common.FilterDocument(doc, params.query)
+	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, params.sqlParam)
 		if err != nil {
-			return nil, err
+			return err
+		}
+		defer func() {
+			// Drain the channel to prevent leaking goroutines.
+			// TODO Offer a better design instead of channels: https://github.com/FerretDB/FerretDB/issues/898.
+			for range fetchedChan {
+			}
+		}()
+
+		var fetchedDocs []*types.Document
+		for fetchedItem := range fetchedChan {
+			if fetchedItem.Err != nil {
+				return fetchedItem.Err
+			}
+
+			fetchedDocs = append(fetchedDocs, fetchedItem.Docs...)
 		}
 
-		if !matches {
-			continue
+		err = common.SortDocuments(fetchedDocs, params.sort)
+		if err != nil {
+			return err
 		}
 
-		resDocs = append(resDocs, doc)
+		for _, doc := range fetchedDocs {
+			matches, err := common.FilterDocument(doc, params.query)
+			if err != nil {
+				return err
+			}
+
+			if !matches {
+				continue
+			}
+
+			resDocs = append(resDocs, doc)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
 	// findAndModify always works with a single document
@@ -120,7 +154,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					return nil, err
 				}
 
-				_, err = h.update(ctx, params.sqlParam, upsert)
+				_, err = h.update(ctx, &params.sqlParam, upsert)
 				if err != nil {
 					return nil, err
 				}
@@ -131,7 +165,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					must.NoError(upsert.Set("_id", must.NotFail(resDocs[0].Get("_id"))))
 				}
 
-				_, err = h.update(ctx, params.sqlParam, upsert)
+				_, err = h.update(ctx, &params.sqlParam, upsert)
 				if err != nil {
 					return nil, err
 				}
@@ -179,7 +213,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			return &reply, nil
 		}
 
-		_, err = h.delete(ctx, params.sqlParam, resDocs)
+		_, err = h.delete(ctx, &params.sqlParam, resDocs)
 		if err != nil {
 			return nil, err
 		}
@@ -202,7 +236,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 type upsertParams struct {
 	hasUpdateOperators bool
 	query, update      *types.Document
-	sqlParam           sqlParam
+	sqlParam           pgdb.SQLParam
 }
 
 // upsert inserts new document if no documents in query result or updates given document.
@@ -249,7 +283,7 @@ func (h *Handler) upsert(ctx context.Context, docs []*types.Document, params *up
 		}
 	}
 
-	_, err := h.update(ctx, params.sqlParam, upsert)
+	_, err := h.update(ctx, &params.sqlParam, upsert)
 	if err != nil {
 		return nil, false, err
 	}
@@ -260,10 +294,11 @@ func (h *Handler) upsert(ctx context.Context, docs []*types.Document, params *up
 // findAndModifyParams represent all findAndModify requests' fields.
 // It's filled by calling prepareFindAndModifyParams.
 type findAndModifyParams struct {
-	sqlParam                              sqlParam
+	sqlParam                              pgdb.SQLParam
 	query, sort, update                   *types.Document
 	remove, upsert                        bool
 	returnNewDocument, hasUpdateOperators bool
+	maxTimeMS                             int32
 }
 
 // prepareFindAndModifyParams prepares findAndModify request fields.
@@ -310,6 +345,11 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 		return nil, err
 	}
 
+	maxTimeMS, err := common.GetOptionalPositiveNumber(document, "maxTimeMS")
+	if err != nil {
+		return nil, err
+	}
+
 	var update *types.Document
 	updateParam, err := document.Get("update")
 	if err != nil && !remove {
@@ -341,15 +381,28 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 
 	var hasUpdateOperators bool
 	for k := range update.Map() {
-		if _, ok := updateOperators[k]; ok {
+		if _, ok := common.UpdateOperators[k]; ok {
 			hasUpdateOperators = true
+			break
 		}
 	}
 
+	var comment string
+	// get comment from a "comment" field
+	if comment, err = common.GetOptionalParam(document, "comment", comment); err != nil {
+		return nil, err
+	}
+
+	// get comment from query, e.g. db.collection.FindAndModify({"_id":"string", "$comment: "test"},{$set:{"v":"foo""}})
+	if comment, err = common.GetOptionalParam(query, "$comment", comment); err != nil {
+		return nil, err
+	}
+
 	return &findAndModifyParams{
-		sqlParam: sqlParam{
-			db:         db,
-			collection: collection,
+		sqlParam: pgdb.SQLParam{
+			DB:         db,
+			Collection: collection,
+			Comment:    comment,
 		},
 		query:              query,
 		update:             update,
@@ -358,13 +411,6 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 		upsert:             upsert,
 		returnNewDocument:  returnNewDocument,
 		hasUpdateOperators: hasUpdateOperators,
+		maxTimeMS:          maxTimeMS,
 	}, nil
-}
-
-var updateOperators = map[string]struct{}{}
-
-func init() {
-	for _, o := range []string{"$currentDate", "$inc", "$min", "$max", "$mul", "$rename", "$set", "$setOnInsert", "$unset"} {
-		updateOperators[o] = struct{}{}
-	}
 }

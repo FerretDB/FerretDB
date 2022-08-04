@@ -63,14 +63,6 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	// created, err := h.pgPool.CreateTableIfNotExist(ctx, fp.db, fp.collection)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// if created {
-	// 	h.L.Info("Created table.", zap.String("schema", fp.db), zap.String("table", fp.collection))
-	// }
-
 	var matched, modified int32
 	var upserted types.Array
 	for i := 0; i < updates.Len(); i++ {
@@ -81,7 +73,6 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		unimplementedFields := []string{
 			"c",
-			"multi",
 			"collation",
 			"arrayFilters",
 			"hint",
@@ -92,6 +83,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		var q, u *types.Document
 		var upsert bool
+		var multi bool
 		if q, err = common.GetOptionalParam(update, "q", q); err != nil {
 			return nil, err
 		}
@@ -105,6 +97,10 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		if upsert, err = common.GetOptionalParam(update, "upsert", upsert); err != nil {
+			return nil, err
+		}
+
+		if multi, err = common.GetOptionalParam(update, "multi", multi); err != nil {
 			return nil, err
 		}
 
@@ -152,6 +148,10 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 			matched++
 			continue
+		}
+
+		if len(resDocs) > 1 && !multi {
+			resDocs = resDocs[:1]
 		}
 
 		matched += int32(len(resDocs))

@@ -13,98 +13,63 @@
 // limitations under the License.
 
 //go:build ignore
-// +build ignore
 
 package main
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 
-	"go.uber.org/zap"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-const gitBin = "git"
-
-func runGit(args []string, stdin io.Reader, stdout io.Writer, logger *zap.SugaredLogger) {
-	if err := tryGit(args, stdin, stdout, logger); err != nil {
-		logger.Fatal(err)
-	}
-}
-
-func tryGit(args []string, stdin io.Reader, stdout io.Writer, logger *zap.SugaredLogger) error {
-	cmd := exec.Command(gitBin, args...)
-	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
-
-	cmd.Stdin = stdin
-	cmd.Stdout = stdout
+// runGit runs `git` with given arguments and returns stdout.
+func runGit(args ...string) []byte {
+	cmd := exec.Command("git", args...)
 	cmd.Stderr = os.Stderr
 
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%s failed: %s", strings.Join(args, " "), err)
+	b, err := cmd.Output()
+	if err != nil {
+		err = fmt.Errorf("Failed to run %q: %s", strings.Join(cmd.Args, " "), err)
+		panic(err)
 	}
 
-	return nil
+	return b
 }
 
 func main() {
 	var wg sync.WaitGroup
-	logger := zap.S().Named("git")
 
-	// git describe --tags --dirty > version.txt
-	{
-		file := "version.txt"
-		args := `describe --tags --dirty`
+	// git describe --tags --dirty > gen/version.txt
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			out, err := os.Create(file)
-			if err != nil {
-				logger.Fatal("failed to create file:", file)
-			}
-			defer out.Close()
-			runGit(strings.Split(args, " "), nil, out, logger)
-		}()
-	}
+		b := runGit("describe", "--tags", "--dirty")
+		must.NoError(os.WriteFile(filepath.Join("gen", "version.txt"), b, 0o644))
+	}()
 
-	// git rev-parse HEAD > commit.txt
-	{
-		file := "commit.txt"
-		args := `rev-parse HEAD`
+	// git rev-parse HEAD > gen/commit.txt
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			out, err := os.Create(file)
-			if err != nil {
-				logger.Fatal("failed to create file:", file)
-			}
-			defer out.Close()
-			runGit(strings.Split(args, " "), nil, out, logger)
-		}()
-	}
+		b := runGit("rev-parse", "HEAD")
+		must.NoError(os.WriteFile(filepath.Join("gen", "commit.txt"), b, 0o644))
+	}()
 
-	// git branch --show-current > branch.txt
-	{
-		file := "branch.txt"
-		args := `branch --show-current`
+	// git branch --show-current > gen/branch.txt
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			out, err := os.Create(file)
-			if err != nil {
-				logger.Fatal("failed to create file:", file)
-			}
-			defer out.Close()
-			runGit(strings.Split(args, " "), nil, out, logger)
-		}()
-	}
+		b := runGit("branch", "--show-current")
+		must.NoError(os.WriteFile(filepath.Join("gen", "branch.txt"), b, 0o644))
+	}()
 
 	wg.Wait()
 }

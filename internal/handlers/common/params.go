@@ -71,12 +71,12 @@ func GetBoolOptionalParam(doc *types.Document, key string) (bool, error) {
 	}
 
 	switch v := v.(type) {
-	case types.NullType:
-		return false, nil
 	case float64:
 		return v != 0, nil
 	case bool:
 		return v, nil
+	case types.NullType:
+		return false, nil
 	case int32:
 		return v != 0, nil
 	case int64:
@@ -122,7 +122,7 @@ var (
 func GetWholeNumberParam(value any) (int64, error) {
 	switch value := value.(type) {
 	case float64:
-		// TODO check float negative zero (math.Copysig(0, -1))
+		// TODO check float negative zero (math.Copysign(0, -1))
 		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) {
 			return 0, errNotWholeNumber
 		}
@@ -261,4 +261,48 @@ func addNumbers(v1, v2 any) (any, error) {
 	default:
 		return nil, errUnexpectedLeftOpType
 	}
+}
+
+// GetOptionalPositiveNumber returns doc's value for key or protocol error for invalid parameter.
+func GetOptionalPositiveNumber(document *types.Document, key string) (int32, error) {
+	v, err := document.Get(key)
+	if err != nil {
+		return 0, nil
+	}
+
+	wholeNumberParam, err := GetWholeNumberParam(v)
+	if err != nil {
+		switch err {
+		case errUnexpectedType:
+			return 0, NewErrorMsg(ErrBadValue, fmt.Sprintf("%s must be a number", key))
+		case errNotWholeNumber:
+			if _, ok := v.(float64); ok {
+				return 0, NewErrorMsg(
+					ErrBadValue,
+					fmt.Sprintf("%v has non-integral value", key),
+				)
+			}
+
+			return 0, NewErrorMsg(ErrBadValue, fmt.Sprintf("%s must be a whole number", key))
+		default:
+			return 0, err
+		}
+	}
+
+	if wholeNumberParam > math.MaxInt32 || wholeNumberParam < math.MinInt32 {
+		return 0, NewErrorMsg(
+			ErrBadValue,
+			fmt.Sprintf("%v value for %s is out of range", int64(wholeNumberParam), key),
+		)
+	}
+
+	value := int32(wholeNumberParam)
+	if value < 0 {
+		return 0, NewErrorMsg(
+			ErrBadValue,
+			fmt.Sprintf("%v value for %s is out of range", value, key),
+		)
+	}
+
+	return value, nil
 }

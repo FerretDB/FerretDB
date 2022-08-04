@@ -15,31 +15,107 @@
 package shareddata
 
 import (
+	"fmt"
+
 	"go.mongodb.org/mongo-driver/bson"
-	"golang.org/x/exp/constraints"
 	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 )
+
+// unset represents a field that should not be set.
+var unset = struct{}{}
 
 // Provider is implemented by shared data sets that provide documents.
 type Provider interface {
-	// Docs returns shared data documents. All calls should return the same data.
+	// Name returns provider name.
+	Name() string
+
+	// Handlers returns handlers compatible with this provider.
+	Handlers() []string
+
+	// Docs returns shared data documents.
+	// All calls should return the same set of documents, but may do so in different order.
 	Docs() []bson.D
 }
 
-// Values stores shared data documents as {"_id": key, "value": value} documents.
-type Values[idType constraints.Ordered] struct {
-	data map[idType]any
+// AllProviders returns all providers in random order.
+func AllProviders() []Provider {
+	providers := []Provider{
+		Scalars,
+		Doubles,
+		Strings,
+		Int32s,
+		Composites,
+	}
+
+	// check that names are unique and randomize order
+	res := make(map[string]Provider, len(providers))
+	for _, p := range providers {
+		n := p.Name()
+		if _, ok := res[n]; ok {
+			panic("duplicate provider name: " + n)
+		}
+
+		res[n] = p
+	}
+
+	return maps.Values(res)
+}
+
+// Docs returns all documents from given providers.
+func Docs(providers ...Provider) []any {
+	var res []any
+	for _, p := range providers {
+		for _, doc := range p.Docs() {
+			res = append(res, doc)
+		}
+	}
+	return res
+}
+
+// IDs returns all document's _id values (that must be present in each document) from given providers.
+func IDs(providers ...Provider) []any {
+	var res []any
+	for _, p := range providers {
+		for _, doc := range p.Docs() {
+			id, ok := doc.Map()["_id"]
+			if !ok {
+				panic(fmt.Sprintf("no _id in %+v", doc))
+			}
+			res = append(res, id)
+		}
+	}
+	return res
+}
+
+// Values stores shared data documents as {"_id": key, "v": value} documents.
+type Values[idType comparable] struct {
+	name     string
+	handlers []string
+	data     map[idType]any
+}
+
+// Name implement Provider interface.
+func (values *Values[idType]) Name() string {
+	return values.name
+}
+
+// Handlers implement Provider interface.
+func (values *Values[idType]) Handlers() []string {
+	return values.handlers
 }
 
 // Docs implement Provider interface.
 func (values *Values[idType]) Docs() []bson.D {
 	ids := maps.Keys(values.data)
-	slices.Sort(ids)
 
 	res := make([]bson.D, 0, len(values.data))
 	for _, id := range ids {
-		res = append(res, bson.D{{"_id", id}, {"value", values.data[id]}})
+		doc := bson.D{{"_id", id}}
+		v := values.data[id]
+		if v != unset {
+			doc = append(doc, bson.E{"v", v})
+		}
+		res = append(res, doc)
 	}
 
 	return res

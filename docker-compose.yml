@@ -8,6 +8,7 @@ services:
       context: ./build/deps
       dockerfile: postgres.Dockerfile
     container_name: ferretdb_postgres
+    command: postgres -c 'max_connections=200'
     ports:
       - 5432:5432
     extra_hosts:
@@ -18,54 +19,19 @@ services:
       - POSTGRES_HOST_AUTH_METHOD=trust
       - POSTGRES_DB=ferretdb
 
-  # Tigris configuration is based on https://github.com/tigrisdata/tigris/blob/main/test/docker/docker-compose.yml
-
-  tigris_fdb:
-    build:
-      context: ./build/deps
-      dockerfile: tigris_fdb.Dockerfile
-    container_name: ferretdb_tigris_fdb
-    ports:
-      - 4500:4500
-    volumes:
-      - tigrisdata:/var/fdb
-      # That will be needed for the next version of Tigris.
-      # - tigrisdata:/var/lib/foundationdb
-
-  # That will be needed for the next version of Tigris.
-  #
-  # tigris_typesense:
-  #   build:
-  #     context: ./build/deps
-  #     dockerfile: tigris_typesense.Dockerfile
-  #   container_name: ferretdb_tigris_typesense
-  #   environment:
-  #     - TYPESENSE_API_KEY=ts_test_key
-  #     - TYPESENSE_DATA_DIR=/tmp
-  #   ports:
-  #     - 8108:8108
-
   tigris:
     build:
       context: ./build/deps
-      dockerfile: tigris.Dockerfile
+      dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
     container_name: ferretdb_tigris
-    depends_on: [tigris_fdb]
-    restart: on-failure
-    command: bash -c 'fdbcli --exec "configure new single memory" && /server/service'
-    environment:
-      - TIGRIS_SERVER_SEARCH_AUTH_KEY=ts_test_key
-      - TIGRIS_SERVER_SEARCH_HOST=tigris_typesense
     ports:
       - 8081:8081
-    volumes:
-      - tigrisdata:/etc/foundationdb
 
   # for proxy mode and mongosh
   mongodb:
     build:
       context: ./build/deps
-      dockerfile: mongo.Dockerfile
+      dockerfile: ${MONGO_DOCKERFILE:-mongo5}.Dockerfile
     container_name: ferretdb_mongodb
     command: --enableFreeMonitoring off
     ports:
@@ -84,5 +50,18 @@ services:
     volumes:
       - .:/workdir
 
-volumes:
-  tigrisdata:
+  debian:
+    build:
+      context: ./build/deps
+      dockerfile: debian11.Dockerfile
+    container_name: ferretdb_debian
+    volumes:
+      - ./build/deb:/deb
+
+  centos:
+    build:
+      context: ./build/deps
+      dockerfile: centos7.Dockerfile
+    container_name: ferretdb_centos
+    volumes:
+      - ./build/rpm:/rpm

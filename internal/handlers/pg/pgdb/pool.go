@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package pgdb provides PostgreSQL connection utilities.
 package pgdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -26,9 +26,11 @@ import (
 	"github.com/jackc/pgx/v4/log/zapadapter"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"go.uber.org/zap"
-	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/internal/fjson"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 const (
@@ -40,17 +42,10 @@ const (
 	localePOSIX = "POSIX"
 )
 
-var (
-	// ErrNotExist indicates that there is no such schema or table.
-	ErrNotExist = fmt.Errorf("schema or table does not exist")
-
-	// ErrAlreadyExist indicates that a schema or table already exists.
-	ErrAlreadyExist = fmt.Errorf("schema or table already exist")
-)
-
 // Pool represents PostgreSQL concurrency-safe connection pool.
 type Pool struct {
 	*pgxpool.Pool
+	logger *zap.Logger // TODO remove, use getPool.Config().ConnConfig.Logger instead
 }
 
 // DBStats describes statistics for a database.
@@ -71,7 +66,7 @@ type DBStats struct {
 func NewPool(ctx context.Context, connString string, logger *zap.Logger, lazy bool) (*Pool, error) {
 	config, err := pgxpool.ParseConfig(connString)
 	if err != nil {
-		return nil, fmt.Errorf("pg.NewPool: %w", err)
+		return nil, fmt.Errorf("pgdb.NewPool: %w", err)
 	}
 
 	config.LazyConnect = lazy
@@ -87,18 +82,18 @@ func NewPool(ctx context.Context, connString string, logger *zap.Logger, lazy bo
 	config.ConnConfig.RuntimeParams["application_name"] = "FerretDB"
 	config.ConnConfig.RuntimeParams["search_path"] = ""
 
-	if logger.Core().Enabled(zap.DebugLevel) {
-		config.ConnConfig.LogLevel = pgx.LogLevelTrace
-		config.ConnConfig.Logger = zapadapter.NewLogger(logger.Named("pg.Pool"))
-	}
+	// try to log everything; logger's configuration will skip extra levels if needed
+	config.ConnConfig.LogLevel = pgx.LogLevelTrace
+	config.ConnConfig.Logger = zapadapter.NewLogger(logger.Named("pgdb"))
 
 	p, err := pgxpool.ConnectConfig(ctx, config)
 	if err != nil {
-		return nil, fmt.Errorf("pg.NewPool: %w", err)
+		return nil, fmt.Errorf("pgdb.NewPool: %w", err)
 	}
 
 	res := &Pool{
-		Pool: p,
+		Pool:   p,
+		logger: logger.Named("pgdb"),
 	}
 
 	if !lazy {
@@ -128,32 +123,32 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 
 	rows, err := pgPool.Query(ctx, "SHOW ALL")
 	if err != nil {
-		return fmt.Errorf("pg.Pool.checkConnection: %w", err)
+		return fmt.Errorf("pgdb.checkConnection: %w", err)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		var name, setting, description string
 		if err := rows.Scan(&name, &setting, &description); err != nil {
-			return fmt.Errorf("pg.Pool.checkConnection: %w", err)
+			return fmt.Errorf("pgdb.checkConnection: %w", err)
 		}
 
 		switch name {
 		case "server_encoding":
 			if setting != encUTF8 {
-				return fmt.Errorf("pg.Pool.checkConnection: %q is %q, want %q", name, setting, encUTF8)
+				return fmt.Errorf("pgdb.checkConnection: %q is %q, want %q", name, setting, encUTF8)
 			}
 		case "client_encoding":
 			if setting != encUTF8 {
-				return fmt.Errorf("pg.Pool.checkConnection: %q is %q, want %q", name, setting, encUTF8)
+				return fmt.Errorf("pgdb.checkConnection: %q is %q, want %q", name, setting, encUTF8)
 			}
 		case "lc_collate":
 			if setting != localeC && setting != localePOSIX && !IsValidUTF8Locale(setting) {
-				return fmt.Errorf("pg.Pool.checkConnection: %q is %q", name, setting)
+				return fmt.Errorf("pgdb.checkConnection: %q is %q", name, setting)
 			}
 		case "lc_ctype":
 			if setting != localeC && setting != localePOSIX && !IsValidUTF8Locale(setting) {
-				return fmt.Errorf("pg.Pool.checkConnection: %q is %q", name, setting)
+				return fmt.Errorf("pgdb.checkConnection: %q is %q", name, setting)
 			}
 		default:
 			continue
@@ -168,78 +163,19 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 	}
 
 	if err := rows.Err(); err != nil {
-		return fmt.Errorf("pg.Pool.checkConnection: %w", err)
+		return fmt.Errorf("pgdb.checkConnection: %w", err)
 	}
 
 	return nil
 }
 
-// Schemas returns a sorted list of FerretDB database / PostgreSQL schema names.
-func (pgPool *Pool) Schemas(ctx context.Context) ([]string, error) {
-	sql := "SELECT schema_name FROM information_schema.schemata ORDER BY schema_name"
-	rows, err := pgPool.Query(ctx, sql)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-	defer rows.Close()
-
-	res := make([]string, 0, 2)
-	for rows.Next() {
-		var name string
-		if err = rows.Scan(&name); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		if strings.HasPrefix(name, "pg_") || name == "information_schema" {
-			continue
-		}
-
-		res = append(res, name)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return res, nil
-}
-
-// Tables returns a sorted list of FerretDB collection / PostgreSQL table names.
-// Returns empty slice if schema does not exist.
-func (pgPool *Pool) Tables(ctx context.Context, schema string) ([]string, error) {
-	// TODO query settings table instead: https://github.com/FerretDB/FerretDB/issues/125
-
-	sql := `SELECT table_name ` +
-		`FROM information_schema.columns ` +
-		`WHERE table_schema = $1 ` +
-		`GROUP BY table_name ` +
-		`ORDER BY table_name`
-	rows, err := pgPool.Query(ctx, sql, schema)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-	defer rows.Close()
-
-	tables := make([]string, 0, 2)
-	var name string
-	for rows.Next() {
-		if err = rows.Scan(&name); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		tables = append(tables, name)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return tables, nil
-}
-
-// CreateSchema creates a new FerretDB database / PostgreSQL schema.
+// DropDatabase drops FerretDB database.
 //
-// It returns ErrAlreadyExist if schema already exist.
-func (pgPool *Pool) CreateSchema(ctx context.Context, schema string) error {
-	sql := `CREATE SCHEMA ` + pgx.Identifier{schema}.Sanitize()
+// It returns ErrTableNotExist if schema does not exist.
+//
+// TODO Move to function, deprecate or remove method.
+func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
+	sql := `DROP SCHEMA ` + pgx.Identifier{db}.Sanitize() + ` CASCADE`
 	_, err := pgPool.Exec(ctx, sql)
 	if err == nil {
 		return nil
@@ -247,94 +183,14 @@ func (pgPool *Pool) CreateSchema(ctx context.Context, schema string) error {
 
 	pgErr, ok := err.(*pgconn.PgError)
 	if !ok {
-		return lazyerrors.Errorf("pg.CreateSchema: %w", err)
-	}
-
-	switch pgErr.Code {
-	case pgerrcode.DuplicateSchema:
-		return ErrAlreadyExist
-	case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject:
-		// https://www.postgresql.org/message-id/CA+TgmoZAdYVtwBfp1FL2sMZbiHCWT4UPrzRLNnX1Nb30Ku3-gg@mail.gmail.com
-		// The same thing for schemas. Reproducible by integration tests.
-		return ErrAlreadyExist
-	default:
-		return lazyerrors.Errorf("pg.CreateSchema: %w", err)
-	}
-}
-
-// DropSchema drops FerretDB database / PostgreSQL schema.
-//
-// It returns ErrNotExist if schema does not exist.
-func (pgPool *Pool) DropSchema(ctx context.Context, schema string) error {
-	sql := `DROP SCHEMA ` + pgx.Identifier{schema}.Sanitize() + ` CASCADE`
-	_, err := pgPool.Exec(ctx, sql)
-	if err == nil {
-		return nil
-	}
-
-	pgErr, ok := err.(*pgconn.PgError)
-	if !ok {
-		return lazyerrors.Errorf("pg.DropSchema: %w", err)
+		return lazyerrors.Error(err)
 	}
 
 	switch pgErr.Code {
 	case pgerrcode.InvalidSchemaName:
-		return ErrNotExist
+		return ErrSchemaNotExist
 	default:
-		return lazyerrors.Errorf("pg.DropSchema: %w", err)
-	}
-}
-
-// CreateTable creates a new FerretDB collection / PostgreSQL table in existing schema.
-//
-// It returns ErrAlreadyExist if table already exist, ErrNotExist is schema does not exist.
-func (pgPool *Pool) CreateTable(ctx context.Context, schema, table string) error {
-	sql := `CREATE TABLE ` + pgx.Identifier{schema, table}.Sanitize() + ` (_jsonb jsonb)`
-	_, err := pgPool.Exec(ctx, sql)
-	if err == nil {
-		return nil
-	}
-
-	pgErr, ok := err.(*pgconn.PgError)
-	if !ok {
-		return lazyerrors.Errorf("pg.CreateTable: %w", err)
-	}
-
-	switch pgErr.Code {
-	case pgerrcode.InvalidSchemaName:
-		return ErrNotExist
-	case pgerrcode.DuplicateTable:
-		return ErrAlreadyExist
-	case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject:
-		// https://www.postgresql.org/message-id/CA+TgmoZAdYVtwBfp1FL2sMZbiHCWT4UPrzRLNnX1Nb30Ku3-gg@mail.gmail.com
-		// Reproducible by integration tests.
-		return ErrAlreadyExist
-	default:
-		return lazyerrors.Errorf("pg.CreateTable: %w", err)
-	}
-}
-
-// DropTable drops FerretDB collection / PostgreSQL table.
-//
-// It returns ErrNotExist if schema or table does not exist.
-func (pgPool *Pool) DropTable(ctx context.Context, schema, table string) error {
-	// TODO probably not CASCADE
-	sql := `DROP TABLE ` + pgx.Identifier{schema, table}.Sanitize() + `CASCADE`
-	_, err := pgPool.Exec(ctx, sql)
-	if err == nil {
-		return nil
-	}
-
-	pgErr, ok := err.(*pgconn.PgError)
-	if !ok {
-		return lazyerrors.Errorf("pg.DropTable: %w", err)
-	}
-
-	switch pgErr.Code {
-	case pgerrcode.InvalidSchemaName, pgerrcode.UndefinedTable:
-		return ErrNotExist
-	default:
-		return lazyerrors.Errorf("pg.DropTable: %w", err)
+		return lazyerrors.Error(err)
 	}
 }
 
@@ -344,7 +200,7 @@ func (pgPool *Pool) DropTable(ctx context.Context, schema, table string) error {
 //
 // True is returned if table was created.
 func (pgPool *Pool) CreateTableIfNotExist(ctx context.Context, db, collection string) (bool, error) {
-	exists, err := pgPool.TableExists(ctx, db, collection)
+	exists, err := CollectionExists(ctx, pgPool, db, collection)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
@@ -355,28 +211,19 @@ func (pgPool *Pool) CreateTableIfNotExist(ctx context.Context, db, collection st
 	// Table (or even schema) does not exist. Try to create it,
 	// but keep in mind that it can be created in concurrent connection.
 
-	if err := pgPool.CreateSchema(ctx, db); err != nil && err != ErrAlreadyExist {
+	if err := CreateDatabase(ctx, pgPool, db); err != nil && !errors.Is(err, ErrAlreadyExist) {
 		return false, lazyerrors.Error(err)
 	}
 
-	if err := pgPool.CreateTable(ctx, db, collection); err != nil {
-		if err == ErrAlreadyExist {
+	// TODO use a transaction instead of pgPool: https://github.com/FerretDB/FerretDB/issues/866
+	if err := CreateCollection(ctx, pgPool, db, collection); err != nil {
+		if errors.Is(err, ErrAlreadyExist) {
 			return false, nil
 		}
 		return false, lazyerrors.Error(err)
 	}
 
 	return true, nil
-}
-
-// TableExists returns true if both FerretDB database / PostgreSQL schema and PostgreSQL table exist.
-func (pgPool *Pool) TableExists(ctx context.Context, db, collection string) (bool, error) {
-	tables, err := pgPool.Tables(ctx, db)
-	if err != nil {
-		return false, lazyerrors.Error(err)
-	}
-
-	return slices.Contains(tables, collection), nil
 }
 
 // SchemaStats returns a set of statistics for FerretDB database / PostgreSQL schema and table.
@@ -412,4 +259,108 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 		return nil, lazyerrors.Error(err)
 	}
 	return &res, nil
+}
+
+// SetDocumentByID sets a document by its ID.
+func (pgPool *Pool) SetDocumentByID(ctx context.Context, sp *SQLParam, id any, doc *types.Document) (int64, error) {
+	var tag pgconn.CommandTag
+	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		table, err := getTableName(ctx, tx, sp.DB, sp.Collection)
+		if err != nil {
+			return err
+		}
+
+		sql := "UPDATE "
+		if sp.Comment != "" {
+			sp.Comment = strings.ReplaceAll(sp.Comment, "/*", "/ *")
+			sp.Comment = strings.ReplaceAll(sp.Comment, "*/", "* /")
+
+			sql += `/* ` + sp.Comment + ` */ `
+		}
+		sql += pgx.Identifier{sp.DB, table}.Sanitize() +
+			" SET _jsonb = $1 WHERE _jsonb->'_id' = $2"
+
+		tag, err = tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)), must.NotFail(fjson.Marshal(id)))
+		return err
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	return tag.RowsAffected(), nil
+}
+
+// DeleteDocumentsByID deletes documents by given IDs.
+func (pgPool *Pool) DeleteDocumentsByID(ctx context.Context, sp *SQLParam, ids []any) (int64, error) {
+	var tag pgconn.CommandTag
+	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		table, err := getTableName(ctx, tx, sp.DB, sp.Collection)
+		if err != nil {
+			return err
+		}
+
+		var p Placeholder
+		idsMarshalled := make([]any, len(ids))
+		placeholders := make([]string, len(ids))
+		for i, id := range ids {
+			placeholders[i] = p.Next()
+			idsMarshalled[i] = must.NotFail(fjson.Marshal(id))
+		}
+
+		sql := `DELETE `
+		if sp.Comment != "" {
+			sp.Comment = strings.ReplaceAll(sp.Comment, "/*", "/ *")
+			sp.Comment = strings.ReplaceAll(sp.Comment, "*/", "* /")
+
+			sql += `/* ` + sp.Comment + ` */ `
+		}
+
+		sql += `FROM ` +
+			pgx.Identifier{sp.DB, table}.Sanitize() +
+			` WHERE _jsonb->'_id' IN (` +
+			strings.Join(placeholders, ", ") +
+			`)`
+
+		tag, err = tx.Exec(ctx, sql, idsMarshalled...)
+		return err
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	return tag.RowsAffected(), nil
+}
+
+// InTransaction wraps the given function f in a transaction.
+// If f returns an error, the transaction is rolled back.
+// Errors are wrapped with lazyerrors.Error,
+// so the caller needs to use errors.Is to check the error,
+// for example, errors.Is(err, ErrSchemaNotExist).
+func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (err error) {
+	var tx pgx.Tx
+	if tx, err = pgPool.Begin(ctx); err != nil {
+		err = lazyerrors.Error(err)
+		return
+	}
+
+	defer func() {
+		if err == nil {
+			return
+		}
+		if rerr := tx.Rollback(ctx); rerr != nil {
+			pgPool.logger.Error("failed to perform rollback", zap.Error(rerr))
+		}
+	}()
+
+	if err = f(tx); err != nil {
+		err = lazyerrors.Error(err)
+		return
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		err = lazyerrors.Error(err)
+		return
+	}
+
+	return
 }

@@ -15,8 +15,9 @@
 package version
 
 import (
-	_ "embed"
+	"embed"
 	"fmt"
+	"regexp"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -27,24 +28,14 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// Each pattern in a //go:embed line must match at least one file or non-empty directory,
+// but most files in gen/ are generated and are not present when FerretDB is used as library package.
+// As a workaround, gen/mongodb.txt is always present.
+
 //go:generate go run ./generate.go
 
-var (
-	//go:embed version.txt
-	version string
-
-	//go:embed commit.txt
-	commit string
-
-	//go:embed branch.txt
-	branch string
-)
-
-// MongoDBVersion is a fake MongoDB version for clients that check major.minor to adjust their behavior.
-const MongoDBVersion = "5.0.42"
-
-// MongoDBVersionArray is MongoDBVersion, but as an array.
-var MongoDBVersionArray = must.NotFail(types.NewArray(int32(5), int32(0), int32(42), int32(0)))
+//go:embed gen
+var gen embed.FS
 
 // Info provides details about the current build.
 type Info struct {
@@ -52,11 +43,22 @@ type Info struct {
 	Commit           string
 	Branch           string
 	Dirty            bool
-	Debug            bool // testcover or -race
+	Debug            bool // -tags=ferretdb_testcover or -race
 	BuildEnvironment *types.Document
 }
 
-var info *Info
+var (
+	// MongoDBVersion is a fake MongoDB version for clients that check major.minor to adjust their behavior.
+	MongoDBVersion string
+
+	// MongoDBVersionArray is MongoDBVersion, but as an array.
+	MongoDBVersionArray *types.Array
+
+	info *Info
+)
+
+// unknown is a placeholder for unknown version, commit, and branch values.
+const unknown = "unknown"
 
 // Get returns current build's info.
 func Get() *Info {
@@ -64,15 +66,44 @@ func Get() *Info {
 }
 
 func init() {
+	b := must.NotFail(gen.ReadFile("gen/mongodb.txt"))
+	parts := regexp.MustCompile(`^([0-9]+)\.([0-9]+)\.([0-9]+)$`).FindStringSubmatch(strings.TrimSpace(string(b)))
+	if len(parts) != 4 {
+		panic("invalid gen/mongodb.txt")
+	}
+	major := must.NotFail(strconv.Atoi(parts[1]))
+	minor := must.NotFail(strconv.Atoi(parts[2]))
+	patch := must.NotFail(strconv.Atoi(parts[3]))
+	MongoDBVersion = fmt.Sprintf("%d.%d.%d", major, minor, patch)
+	MongoDBVersionArray = must.NotFail(types.NewArray(int32(major), int32(minor), int32(patch), int32(0)))
+
+	// those files are not present when FerretDB is used as library package
+	version := unknown
+	if b, _ := gen.ReadFile("gen/version.txt"); len(b) > 0 {
+		version = strings.TrimSpace(string(b))
+	}
+	commit := unknown
+	if b, _ := gen.ReadFile("gen/commit.txt"); len(b) > 0 {
+		commit = strings.TrimSpace(string(b))
+	}
+	branch := unknown
+	if b, _ := gen.ReadFile("gen/branch.txt"); len(b) > 0 {
+		branch = strings.TrimSpace(string(b))
+	}
+
 	info = &Info{
-		Version:          strings.TrimSpace(version),
-		Commit:           strings.TrimSpace(commit),
-		Branch:           strings.TrimSpace(branch),
+		Version:          version,
+		Commit:           commit,
+		Branch:           branch,
 		BuildEnvironment: must.NotFail(types.NewDocument()),
 	}
 
+	// do not expose extra information when FerretDB is used as library package
 	buildInfo, ok := debug.ReadBuildInfo()
 	if !ok {
+		return
+	}
+	if buildInfo.Main.Path != "github.com/FerretDB/FerretDB" {
 		return
 	}
 
@@ -93,7 +124,7 @@ func init() {
 				info.Debug = true
 			}
 		case "-tags":
-			if slices.Contains(strings.Split(s.Value, ","), "testcover") {
+			if slices.Contains(strings.Split(s.Value, ","), "ferretdb_testcover") {
 				info.Debug = true
 			}
 		}

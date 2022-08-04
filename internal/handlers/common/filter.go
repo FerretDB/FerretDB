@@ -82,7 +82,8 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 			}
 
 			if _, ok := value.(*types.Array); ok {
-				return types.Compare(value, filterValue) == types.Equal, nil
+				result := types.Compare(value, filterValue)
+				return types.ContainsCompareResult(result, types.Equal), nil
 			}
 
 			doc = must.NotFail(types.NewDocument(filterKey, value))
@@ -105,7 +106,8 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 		if err != nil {
 			return false, nil // no error - the field is just not present
 		}
-		return types.Compare(docValue, filterValue) == types.Equal, nil
+		result := types.Compare(docValue, filterValue)
+		return types.ContainsCompareResult(result, types.Equal), nil
 
 	case types.Regex:
 		// {field: /regex/}
@@ -126,7 +128,8 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 			return false, nil // no error - the field is just not present
 		}
 
-		return types.Compare(docValue, filterValue) == types.Equal, nil
+		result := types.Compare(docValue, filterValue)
+		return types.ContainsCompareResult(result, types.Equal), nil
 	}
 }
 
@@ -247,6 +250,25 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			if _, ok := exprValue.(types.NullType); ok {
 				return true, nil
 			}
+
+			// comparing not existent field with {$all: [null, null, ..., null]} should return true
+			// (at least one null needs to be presented in the $all array)
+			if exprKey == "$all" {
+				all, ok := exprValue.(*types.Array)
+				if ok && all.Len() > 0 {
+					isNull := true
+					for i := 0; i < all.Len(); i++ {
+						if _, ok := must.NotFail(all.Get(i)).(types.NullType); !ok {
+							isNull = false
+							break
+						}
+					}
+					if isNull {
+						return true, nil
+					}
+				}
+			}
+
 			// exit when not $exists or $not filters and no such field
 			return false, nil
 		}
@@ -268,7 +290,8 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				}
 				return false, nil
 			default:
-				if types.Compare(fieldValue, exprValue) != types.Equal {
+				result := types.Compare(fieldValue, exprValue)
+				if !types.ContainsCompareResult(result, types.Equal) {
 					return false, nil
 				}
 			}
@@ -284,7 +307,8 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			case types.Regex:
 				return false, NewErrorMsg(ErrBadValue, "Can't have regex as arg to $ne.")
 			default:
-				if types.Compare(fieldValue, exprValue) == types.Equal {
+				result := types.Compare(fieldValue, exprValue)
+				if types.ContainsCompareResult(result, types.Equal) {
 					return false, nil
 				}
 			}
@@ -295,7 +319,8 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewErrorMsg(ErrBadValue, msg)
 			}
-			if types.Compare(fieldValue, exprValue) != types.Greater {
+			result := types.Compare(fieldValue, exprValue)
+			if !types.ContainsCompareResult(result, types.Greater) {
 				return false, nil
 			}
 
@@ -305,7 +330,9 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewErrorMsg(ErrBadValue, msg)
 			}
-			if c := types.Compare(fieldValue, exprValue); c != types.Greater && c != types.Equal {
+			result := types.Compare(fieldValue, exprValue)
+			if !types.ContainsCompareResult(result, types.Equal) &&
+				!types.ContainsCompareResult(result, types.Greater) {
 				return false, nil
 			}
 
@@ -315,7 +342,8 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewErrorMsg(ErrBadValue, msg)
 			}
-			if c := types.Compare(fieldValue, exprValue); c != types.Less {
+			result := types.Compare(fieldValue, exprValue)
+			if !types.ContainsCompareResult(result, types.Less) {
 				return false, nil
 			}
 
@@ -325,7 +353,9 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewErrorMsg(ErrBadValue, msg)
 			}
-			if c := types.Compare(fieldValue, exprValue); c != types.Less && c != types.Equal {
+			result := types.Compare(fieldValue, exprValue)
+			if !types.ContainsCompareResult(result, types.Equal) &&
+				!types.ContainsCompareResult(result, types.Less) {
 				return false, nil
 			}
 
@@ -362,7 +392,8 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 						found = true
 					}
 				default:
-					if types.Compare(fieldValue, arrValue) == types.Equal {
+					result := types.Compare(fieldValue, arrValue)
+					if types.ContainsCompareResult(result, types.Equal) {
 						found = true
 					}
 				}
@@ -405,7 +436,8 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 						found = true
 					}
 				default:
-					if types.Compare(fieldValue, arrValue) == types.Equal {
+					result := types.Compare(fieldValue, arrValue)
+					if types.ContainsCompareResult(result, types.Equal) {
 						found = true
 					}
 				}
@@ -451,6 +483,13 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 		case "$size":
 			// {field: {$size: value}}
 			res, err := filterFieldExprSize(fieldValue, exprValue)
+			if !res || err != nil {
+				return false, err
+			}
+
+		case "$all":
+			// {field: {$all: [value, another_value, ...]}}
+			res, err := filterFieldExprAll(fieldValue, exprValue)
 			if !res || err != nil {
 				return false, err
 			}
@@ -524,9 +563,6 @@ func filterFieldRegex(fieldValue any, regex types.Regex) (bool, error) {
 	}
 
 	switch fieldValue := fieldValue.(type) {
-	case string:
-		return re.MatchString(fieldValue), nil
-
 	case *types.Array:
 		for i := 0; i < fieldValue.Len(); i++ {
 			arrValue := must.NotFail(fieldValue.Get(i))
@@ -539,8 +575,12 @@ func filterFieldRegex(fieldValue any, regex types.Regex) (bool, error) {
 			}
 		}
 
+	case string:
+		return re.MatchString(fieldValue), nil
+
 	case types.Regex:
-		return types.Compare(fieldValue, regex) == types.Equal, nil
+		result := types.Compare(fieldValue, regex)
+		return types.ContainsCompareResult(result, types.Equal), nil
 	}
 
 	return false, nil
@@ -606,6 +646,41 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// filterFieldExprAll handles {field: {$all: [value, another_value, ...]}} filter.
+// The main purpose of $all is to filter arrays.
+// It is possible to filter non-arrays: {field: {$all: [value]}}, but such statement is equivalent to {field: value}.
+func filterFieldExprAll(fieldValue any, allValue any) (bool, error) {
+	query, ok := allValue.(*types.Array)
+	if !ok {
+		return false, NewErrorMsg(ErrBadValue, "$all needs an array")
+	}
+
+	if query.Len() == 0 {
+		return false, nil
+	}
+
+	switch value := fieldValue.(type) {
+	case *types.Document:
+		// For documents we return false as $all doesn't work on documents.
+		return false, nil
+
+	case *types.Array:
+		// For arrays we check that the array contains all the elements of the query.
+		return value.ContainsAll(query), nil
+
+	default:
+		// For other types (scalars) we check that the value is equal to each scalar in the query.
+		// Example: value: 42, query: [42, 42] should give us `true`
+		for i := 0; i < query.Len(); i++ {
+			res := types.Compare(value, must.NotFail(query.Get(i)))
+			if !slices.Contains(res, types.Equal) || len(res) != 1 {
+				return false, nil
+			}
+		}
+		return true, nil
+	}
 }
 
 // filterFieldExprBitsAllClear handles {field: {$bitsAllClear: value}} filter.
@@ -787,10 +862,6 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 	var field, divisor, remainder int64
 
 	switch f := fieldValue.(type) {
-	case int32:
-		field = int64(f)
-	case int64:
-		field = f
 	case float64:
 		if math.IsNaN(f) || math.IsInf(f, 0) {
 			return false, nil
@@ -800,6 +871,13 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 		if f != float64(field) {
 			return false, nil
 		}
+
+	case int32:
+		field = int64(f)
+
+	case int64:
+		field = f
+
 	default:
 		return false, nil
 	}
@@ -813,10 +891,6 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 	}
 
 	switch d := must.NotFail(arr.Get(0)).(type) {
-	case int32:
-		divisor = int64(d)
-	case int64:
-		divisor = d
 	case float64:
 		if math.IsNaN(d) || math.IsInf(d, 0) {
 			return false, NewErrorMsg(ErrBadValue, `malformed mod, divisor value is invalid :: caused by :: `+
@@ -833,15 +907,18 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 		if d != float64(divisor) && field != 0 && d < 9.223372036854775296e+18 {
 			return false, nil
 		}
+
+	case int32:
+		divisor = int64(d)
+
+	case int64:
+		divisor = d
+
 	default:
 		return false, NewErrorMsg(ErrBadValue, `malformed mod, divisor not a number`)
 	}
 
 	switch r := must.NotFail(arr.Get(1)).(type) {
-	case int32:
-		remainder = int64(r)
-	case int64:
-		remainder = r
 	case float64:
 		if math.IsNaN(r) || math.IsInf(r, 0) {
 			return false, NewErrorMsg(ErrBadValue, `malformed mod, remainder value is invalid :: caused by :: `+
@@ -856,6 +933,13 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 		if r != float64(remainder) {
 			return false, nil
 		}
+
+	case int32:
+		remainder = int64(r)
+
+	case int64:
+		remainder = r
+
 	default:
 		return false, NewErrorMsg(ErrBadValue, `malformed mod, remainder not a number`)
 	}
@@ -1025,12 +1109,12 @@ func filterFieldValueByTypeCode(fieldValue any, code typeCode) (bool, error) {
 	}
 
 	switch code {
-	case typeCodeObject:
-		if _, ok := fieldValue.(*types.Document); !ok {
-			return false, nil
-		}
 	case typeCodeArray:
 		if _, ok := fieldValue.(*types.Array); !ok {
+			return false, nil
+		}
+	case typeCodeObject:
+		if _, ok := fieldValue.(*types.Document); !ok {
 			return false, nil
 		}
 	case typeCodeDouble:
@@ -1080,7 +1164,7 @@ func filterFieldValueByTypeCode(fieldValue any, code typeCode) (bool, error) {
 	case typeCodeNumber:
 		// typeCodeNumber should match int32, int64 and float64 types
 		switch fieldValue.(type) {
-		case int32, int64, float64:
+		case float64, int32, int64:
 			return true, nil
 		default:
 			return false, nil

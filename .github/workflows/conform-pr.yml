@@ -11,7 +11,7 @@ on:
       # - assigned
       # - unassigned
       # - labeled
-      # - unlabeled
+      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
       - opened
       - edited
       # - closed
@@ -27,9 +27,9 @@ on:
       # - auto_merge_disabled
 
 # Stop pending and in-progress jobs of this workflow.
-# https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#example-only-cancel-in-progress-jobs-or-runs-for-the-current-workflow
+# https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#example-using-a-fallback-value
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 env:
@@ -38,12 +38,14 @@ env:
   GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
   GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org
-  CONFORM_TOKEN: ${{ secrets.CONFORM_TOKEN }}  # GITHUB_TOKEN is not enough to query projects, so we use a special one
+  CONFORM_TOKEN: ${{ secrets.CONFORM_TOKEN }} # GITHUB_TOKEN is not enough to query projects, so we use a special one
 
 jobs:
   conform-pr:
     name: Conform PR
     runs-on: ubuntu-20.04
+
+    if: github.event_name != 'pull_request_target' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
     steps:
       # Warning! Be careful about changing the steps here as it might cause some security problems

@@ -18,3 +18,8 @@ This PR closes #{issue_number}.
 
 * [ ] I added tests for new functionality or bugfixes.
 * [ ] I ran `task all`, and it passed.
+* [ ] I added/updated comments for both exported and unexported top-level declarations (functions, types, etc).
+* [ ] I checked comments rendering with `task godocs`.
+* [ ] (for maintainers only) I set Reviewers ([`@FerretDB/core`](https://github.com/orgs/FerretDB/teams/core)),
+      Assignee, Labels, Project and project's Sprint fields.
+* [ ] I marked all done items in this checklist.

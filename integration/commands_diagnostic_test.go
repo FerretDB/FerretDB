@@ -15,36 +15,110 @@
 package integration
 
 import (
+	"math"
 	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestCommandsDiagnosticGetLog(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setupWithOpts(t, &setupOpts{
-		databaseName: "admin",
+	res := setup.SetupWithOpts(t, &setup.SetupOpts{
+		DatabaseName: "admin",
 	})
 
-	var actual bson.D
-	err := collection.Database().RunCommand(ctx, bson.D{{"getLog", "startupWarnings"}}).Decode(&actual)
-	require.NoError(t, err)
+	ctx, collection := res.Ctx, res.Collection
 
-	m := actual.Map()
-	t.Log(m)
+	for name, tc := range map[string]struct {
+		command  bson.D
+		expected map[string]any
+		err      *mongo.CommandError
+		alt      string
+	}{
+		"Asterisk": {
+			command: bson.D{{"getLog", "*"}},
+			expected: map[string]any{
+				"names": bson.A(bson.A{"global", "startupWarnings"}),
+				"ok":    float64(1),
+			},
+		},
+		"Global": {
+			command: bson.D{{"getLog", "global"}},
+			expected: map[string]any{
+				"totalLinesWritten": int64(1024),
+				"log":               bson.A{},
+				"ok":                float64(1),
+			},
+		},
+		"StartupWarnings": {
+			command: bson.D{{"getLog", "startupWarnings"}},
+			expected: map[string]any{
+				"totalLinesWritten": int64(1024),
+				"log":               bson.A{},
+				"ok":                float64(1),
+			},
+		},
+		"NonExistentName": {
+			command: bson.D{{"getLog", "nonExistentName"}},
+			err: &mongo.CommandError{
+				Code:    0,
+				Message: `no RamLog named: nonExistentName`,
+			},
+			alt: `no RecentEntries named: nonExistentName`,
+		},
+		"Nil": {
+			command: bson.D{{"getLog", nil}},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: `Argument to getLog must be of type String; found null of type null`,
+			},
+			alt: "Argument to getLog must be of type String",
+		},
+		"NaN": {
+			command: bson.D{{"getLog", math.NaN()}},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: `Argument to getLog must be of type String; found nan.0 of type double`,
+			},
+			alt: "Argument to getLog must be of type String",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-	assert.Equal(t, float64(1), m["ok"])
-	assert.Equal(t, []string{"totalLinesWritten", "log", "ok"}, CollectKeys(t, actual))
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+			if err != nil {
+				AssertEqualAltError(t, *tc.err, tc.alt, err)
+				return
+			}
+			require.NoError(t, err)
 
-	assert.IsType(t, int32(0), m["totalLinesWritten"])
+			m := actual.Map()
+			k := CollectKeys(t, actual)
+
+			for key, item := range tc.expected {
+				assert.Contains(t, k, key)
+				if key != "log" && key != "totalLinesWritten" {
+					assert.Equal(t, m[key], item)
+				}
+			}
+		})
+	}
 }
 
 func TestCommandsDiagnosticHostInfo(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
 	err := collection.Database().RunCommand(ctx, bson.D{{"hostInfo", 42}}).Decode(&actual)
@@ -75,7 +149,7 @@ func TestCommandsDiagnosticHostInfo(t *testing.T) {
 
 func TestCommandsDiagnosticListCommands(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
 	err := collection.Database().RunCommand(ctx, bson.D{{"listCommands", 42}}).Decode(&actual)
@@ -94,7 +168,7 @@ func TestCommandsDiagnosticListCommands(t *testing.T) {
 
 func TestCommandsDiagnosticConnectionStatus(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
 	err := collection.Database().RunCommand(ctx, bson.D{{"connectionStatus", "*"}}).Decode(&actual)

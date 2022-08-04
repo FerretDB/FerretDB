@@ -34,6 +34,7 @@ on:
   pull_request_target:
     types:
       - labeled
+      - unlabeled
       - opened
       - reopened
       - synchronize
@@ -55,7 +56,12 @@ jobs:
     name: Build
     runs-on: ubuntu-20.04
 
-    if: github.event_name != 'pull_request_target' || contains(github.event.pull_request.labels.*.name, 'trust')
+    if: >
+      github.event_name != 'pull_request_target' ||
+      (
+        !contains(github.event.pull_request.labels.*.name, 'no ci') &&
+        contains(github.event.pull_request.labels.*.name, 'trust')
+      )
 
     permissions:
       packages: write
@@ -85,6 +91,9 @@ jobs:
 
       - name: Run init
         run: bin/task init
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v2
 
       - name: Initialize Docker Buildx builder
         run: bin/task docker-init

@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"testing"
 	"time"
 
@@ -25,14 +26,17 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestQueryUnknownFilterOperator(t *testing.T) {
-	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars)
+	setup.SkipForTigris(t)
 
-	filter := bson.D{{"value", bson.D{{"$someUnknownOperator", 42}}}}
+	t.Parallel()
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
+
+	filter := bson.D{{"v", bson.D{{"$someUnknownOperator", 42}}}}
 	errExpected := mongo.CommandError{Code: 2, Name: "BadValue", Message: "unknown operator: $someUnknownOperator"}
 	_, err := collection.Find(ctx, filter)
 	AssertEqualError(t, errExpected, err)
@@ -42,14 +46,14 @@ func TestQuerySort(t *testing.T) {
 	t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/457")
 
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
 		sort        bson.D
 		expectedIDs []any
 	}{
 		"Asc": {
-			sort: bson.D{{"value", 1}, {"_id", 1}},
+			sort: bson.D{{"v", 1}, {"_id", 1}},
 			expectedIDs: []any{
 				"array-empty",
 				"array-embedded",
@@ -101,7 +105,7 @@ func TestQuerySort(t *testing.T) {
 			},
 		},
 		"Desc": {
-			sort: bson.D{{"value", -1}, {"_id", 1}},
+			sort: bson.D{{"v", -1}, {"_id", 1}},
 			expectedIDs: []any{
 				"regex",
 				"regex-empty",
@@ -170,7 +174,9 @@ func TestQuerySort(t *testing.T) {
 
 // TODO: https://github.com/FerretDB/FerretDB/issues/636
 func TestQuerySortValue(t *testing.T) {
-	ctx, collection := setup(t, shareddata.Scalars)
+	setup.SkipForTigris(t)
+
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
 	for name, tc := range map[string]struct {
 		sort        bson.D
@@ -178,7 +184,7 @@ func TestQuerySortValue(t *testing.T) {
 		err         *mongo.CommandError
 	}{
 		"AscValueScalar": {
-			sort: bson.D{{"value", 1}},
+			sort: bson.D{{"v", 1}, {"_id", 1}},
 			expectedIDs: []any{
 				"null",
 				"double-nan",
@@ -221,7 +227,7 @@ func TestQuerySortValue(t *testing.T) {
 			},
 		},
 		"DescValueScalar": {
-			sort: bson.D{{"value", -1}},
+			sort: bson.D{{"v", -1}, {"_id", 1}},
 			expectedIDs: []any{
 				"regex",
 				"regex-empty",
@@ -264,7 +270,7 @@ func TestQuerySortValue(t *testing.T) {
 			},
 		},
 		"BadSortValue": {
-			sort: bson.D{{"value", 11}},
+			sort: bson.D{{"v", 11}},
 			err: &mongo.CommandError{
 				Code:    15975,
 				Name:    "Location15975",
@@ -272,7 +278,7 @@ func TestQuerySortValue(t *testing.T) {
 			},
 		},
 		"BadSortZeroValue": {
-			sort: bson.D{{"value", 0}},
+			sort: bson.D{{"v", 0}},
 			err: &mongo.CommandError{
 				Code:    15975,
 				Name:    "Location15975",
@@ -280,11 +286,11 @@ func TestQuerySortValue(t *testing.T) {
 			},
 		},
 		"BadSortNullValue": {
-			sort: bson.D{{"value", nil}},
+			sort: bson.D{{"v", nil}},
 			err: &mongo.CommandError{
 				Code:    15974,
 				Name:    "Location15974",
-				Message: "Illegal key in $sort specification: value: null",
+				Message: "Illegal key in $sort specification: v: null",
 			},
 		},
 	} {
@@ -309,8 +315,10 @@ func TestQuerySortValue(t *testing.T) {
 }
 
 func TestQueryCount(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
 		command  any
@@ -323,21 +331,21 @@ func TestQueryCount(t *testing.T) {
 		"CountExactlyOneDocument": {
 			command: bson.D{
 				{"count", collection.Name()},
-				{"query", bson.D{{"value", true}}},
+				{"query", bson.D{{"v", true}}},
 			},
 			response: 1,
 		},
 		"CountArrays": {
 			command: bson.D{
 				{"count", collection.Name()},
-				{"query", bson.D{{"value", bson.D{{"$type", "array"}}}}},
+				{"query", bson.D{{"v", bson.D{{"$type", "array"}}}}},
 			},
 			response: 11,
 		},
 		"CountNonExistingCollection": {
 			command: bson.D{
 				{"count", "doesnotexist"},
-				{"query", bson.D{{"value", true}}},
+				{"query", bson.D{{"v", true}}},
 			},
 			response: 0,
 		},
@@ -362,8 +370,10 @@ func TestQueryCount(t *testing.T) {
 }
 
 func TestQueryBadFindType(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
 		command bson.D
@@ -372,7 +382,7 @@ func TestQueryBadFindType(t *testing.T) {
 		"Document": {
 			command: bson.D{
 				{"find", bson.D{}},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -383,7 +393,7 @@ func TestQueryBadFindType(t *testing.T) {
 		"Array": {
 			command: bson.D{
 				{"find", primitive.A{}},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -394,7 +404,7 @@ func TestQueryBadFindType(t *testing.T) {
 		"Double": {
 			command: bson.D{
 				{"find", 3.14},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -405,7 +415,7 @@ func TestQueryBadFindType(t *testing.T) {
 		"DoubleWhole": {
 			command: bson.D{
 				{"find", 42.0},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -416,7 +426,7 @@ func TestQueryBadFindType(t *testing.T) {
 		"Binary": {
 			command: bson.D{
 				{"find", primitive.Binary{}},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -427,7 +437,7 @@ func TestQueryBadFindType(t *testing.T) {
 		"ObjectID": {
 			command: bson.D{
 				{"find", primitive.ObjectID{}},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -438,7 +448,7 @@ func TestQueryBadFindType(t *testing.T) {
 		"Bool": {
 			command: bson.D{
 				{"find", true},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -449,7 +459,7 @@ func TestQueryBadFindType(t *testing.T) {
 		"Date": {
 			command: bson.D{
 				{"find", time.Now()},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -460,7 +470,7 @@ func TestQueryBadFindType(t *testing.T) {
 		"Null": {
 			command: bson.D{
 				{"find", nil},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -471,7 +481,7 @@ func TestQueryBadFindType(t *testing.T) {
 		"Regex": {
 			command: bson.D{
 				{"find", primitive.Regex{Pattern: "/foo/"}},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -482,7 +492,7 @@ func TestQueryBadFindType(t *testing.T) {
 		"Int": {
 			command: bson.D{
 				{"find", int32(42)},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -493,7 +503,7 @@ func TestQueryBadFindType(t *testing.T) {
 		"Timestamp": {
 			command: bson.D{
 				{"find", primitive.Timestamp{}},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -504,7 +514,7 @@ func TestQueryBadFindType(t *testing.T) {
 		"Long": {
 			command: bson.D{
 				{"find", int64(42)},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -526,8 +536,10 @@ func TestQueryBadFindType(t *testing.T) {
 }
 
 func TestQueryBadSortType(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
-	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
 		command    bson.D
@@ -537,7 +549,7 @@ func TestQueryBadSortType(t *testing.T) {
 		"BadSortTypeDouble": {
 			command: bson.D{
 				{"find", collection.Name()},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 				{"sort", 42.13},
 			},
 			err: &mongo.CommandError{
@@ -550,7 +562,7 @@ func TestQueryBadSortType(t *testing.T) {
 		"BadSortType": {
 			command: bson.D{
 				{"find", collection.Name()},
-				{"projection", bson.D{{"value", "some"}}},
+				{"projection", bson.D{{"v", "some"}}},
 				{"sort", "123"},
 			},
 			err: &mongo.CommandError{
@@ -563,7 +575,7 @@ func TestQueryBadSortType(t *testing.T) {
 		"BadSortTypeValue": {
 			command: bson.D{
 				{"find", collection.Name()},
-				{"projection", bson.D{{"value", 42}}},
+				{"projection", bson.D{{"v", 42}}},
 				{"sort", bson.D{{"asc", "123"}}},
 			},
 			err: &mongo.CommandError{
@@ -586,10 +598,204 @@ func TestQueryBadSortType(t *testing.T) {
 	}
 }
 
+func TestQueryBadMaxTimeMSType(t *testing.T) {
+	setup.SkipForTigris(t)
+
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
+
+	for name, tc := range map[string]struct {
+		command    bson.D
+		err        *mongo.CommandError
+		altMessage string
+	}{
+		"BadMaxTimeMSTypeDouble": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", 43.15},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "maxTimeMS has non-integral value",
+			},
+		},
+		"BadMaxTimeMSNegativeDouble": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", -14245345234123245.55},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "-14245345234123246 value for maxTimeMS is out of range",
+			},
+		},
+		"BadMaxTimeMSTypeString": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", "string"},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "maxTimeMS must be a number",
+			},
+		},
+		"BadMaxTimeMSMaxInt64": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", math.MaxInt64},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "9223372036854775807 value for maxTimeMS is out of range",
+			},
+		},
+		"BadMaxTimeMSMinInt64": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", math.MinInt64},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "-9223372036854775808 value for maxTimeMS is out of range",
+			},
+		},
+		"BadMaxTimeMSNull": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", nil},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "maxTimeMS must be a number",
+			},
+		},
+		"BadMaxTimeMSArray": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", bson.A{int32(42), "foo", nil}},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "maxTimeMS must be a number",
+			},
+		},
+		"BadMaxTimeMSDocument": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "maxTimeMS must be a number",
+			},
+		},
+		"BadMaxTimeMSTypeNegativeInt32": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", -1123123},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "-1123123 value for maxTimeMS is out of range",
+			},
+		},
+
+		"BadMaxTimeMSTypeStringFindAndModify": {
+			command: bson.D{
+				{"findAndModify", collection.Name()},
+				{"maxTimeMS", "string"},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "maxTimeMS must be a number",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+			require.Error(t, err)
+			AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+		})
+	}
+}
+
+func TestQueryMaxTimeMSAvailableValues(t *testing.T) {
+	setup.SkipForTigris(t)
+
+	t.Parallel()
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+
+	for name, tc := range map[string]struct {
+		command any
+	}{
+		"Double": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", float64(10000)},
+			},
+		},
+		"DoubleZero": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", float64(0)},
+			},
+		},
+		"Int32": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", int32(10000)},
+			},
+		},
+		"Int32Zero": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", int32(0)},
+			},
+		},
+		"Int64": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", int64(10000)},
+			},
+		},
+		"Int64Zero": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", int64(0)},
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+			require.NoError(t, err)
+		})
+	}
+}
+
 func TestQueryExactMatches(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
-	ctx, collection := setup(t, providers...)
+	ctx, collection := setup.Setup(t, providers...)
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{
@@ -599,7 +805,7 @@ func TestQueryExactMatches(t *testing.T) {
 		},
 		bson.D{
 			{"_id", "document-value-two-fields"},
-			{"value", bson.D{{"foo", "bar"}, {"baz", int32(42)}}},
+			{"v", bson.D{{"foo", "bar"}, {"baz", int32(42)}}},
 		},
 	})
 	require.NoError(t, err)
@@ -617,16 +823,16 @@ func TestQueryExactMatches(t *testing.T) {
 			expectedIDs: []any{"document-two-fields"},
 		},
 		"DocumentValueFields": {
-			filter:      bson.D{{"value", bson.D{{"foo", "bar"}, {"baz", int32(42)}}}},
+			filter:      bson.D{{"v", bson.D{{"foo", "bar"}, {"baz", int32(42)}}}},
 			expectedIDs: []any{"document-value-two-fields"},
 		},
 
 		"Array": {
-			filter:      bson.D{{"value", bson.A{int32(42), "foo", nil}}},
+			filter:      bson.D{{"v", bson.A{int32(42), "foo", nil}}},
 			expectedIDs: []any{"array-three"},
 		},
 		"ArrayChangedOrder": {
-			filter:      bson.D{{"value", bson.A{int32(42), nil, "foo"}}},
+			filter:      bson.D{{"v", bson.A{int32(42), nil, "foo"}}},
 			expectedIDs: []any{},
 		},
 	} {
@@ -646,8 +852,10 @@ func TestQueryExactMatches(t *testing.T) {
 }
 
 func TestDotNotation(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := setup.Setup(t)
 
 	_, err := collection.InsertMany(
 		ctx,
@@ -719,7 +927,7 @@ func TestDotNotation(t *testing.T) {
 func TestQueryNonExistingCollection(t *testing.T) {
 	t.Parallel()
 
-	ctx, collection := setup(t)
+	ctx, collection := setup.Setup(t)
 
 	cursor, err := collection.Database().Collection("doesnotexist").Find(ctx, bson.D{})
 	require.NoError(t, err)

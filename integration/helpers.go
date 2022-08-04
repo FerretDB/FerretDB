@@ -30,6 +30,21 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
+//go:generate ../bin/stringer  -type compatTestCaseResultType
+
+// compatTestCaseResultType represents compatibility test case result type.
+//
+// It is used to avoid errors with invalid queries making tests pass.
+type compatTestCaseResultType int
+
+const (
+	// Test case should return non-empty result at least for one collection/provider.
+	nonEmptyResult compatTestCaseResultType = iota
+
+	// Test case should return empty result for all collections/providers.
+	emptyResult
+)
+
 // Convert converts given driver value (bson.D, bson.A, etc) to FerretDB types package value.
 //
 // It then can be used with all types helpers such as testutil.AssertEqual.
@@ -94,7 +109,17 @@ func ConvertDocument(t testing.TB, doc bson.D) *types.Document {
 
 	var res *types.Document
 	require.IsType(t, res, v)
-	res = v.(*types.Document)
+	return v.(*types.Document)
+}
+
+// ConvertDocuments converts given driver's documents slice to FerretDB's []*types.Document.
+func ConvertDocuments(t testing.TB, docs []bson.D) []*types.Document {
+	t.Helper()
+
+	res := make([]*types.Document, len(docs))
+	for i, doc := range docs {
+		res[i] = ConvertDocument(t, doc)
+	}
 	return res
 }
 
@@ -108,6 +133,18 @@ func AssertEqualDocuments(t testing.TB, expected, actual bson.D) bool {
 	expectedDoc := ConvertDocument(t, expected)
 	actualDoc := ConvertDocument(t, actual)
 	return testutil.AssertEqual(t, expectedDoc, actualDoc)
+}
+
+// AssertEqualDocumentsSlice asserts that two document slices are equal in a way that is useful for tests
+// (NaNs are equal, etc).
+//
+// See testutil.AssertEqual for details.
+func AssertEqualDocumentsSlice(t testing.TB, expected, actual []bson.D) bool {
+	t.Helper()
+
+	expectedDocs := ConvertDocuments(t, expected)
+	actualDocs := ConvertDocuments(t, actual)
+	return testutil.AssertEqualSlices(t, expectedDocs, actualDocs)
 }
 
 // AssertEqualError asserts that the expected error is the same as the actual (ignoring the Raw part).
@@ -204,6 +241,31 @@ func AssertEqualAltWriteError(t *testing.T, expected mongo.WriteError, altMessag
 
 	expected.Message = altMessage
 	return assert.Equal(t, expected, a)
+}
+
+// UnsetRaw returns error with all Raw fields unset. It returns nil if err is nil.
+func UnsetRaw(t testing.TB, err error) error {
+	t.Helper()
+
+	switch err := err.(type) {
+	case mongo.CommandError:
+		err.Raw = nil
+		return err
+
+	case mongo.WriteException:
+		if err.WriteConcernError != nil {
+			err.WriteConcernError.Raw = nil
+		}
+		for i, we := range err.WriteErrors {
+			we.Raw = nil
+			err.WriteErrors[i] = we
+		}
+		err.Raw = nil
+		return err
+
+	default:
+		return err
+	}
 }
 
 // CollectIDs returns all _id values from given documents.

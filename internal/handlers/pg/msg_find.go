@@ -17,8 +17,12 @@ package pg
 import (
 	"context"
 	"fmt"
+	"time"
+
+	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -52,7 +56,6 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		"hint",
 		"batchSize",
 		"singleBatch",
-		"maxTimeMS",
 		"readConcern",
 		"max",
 		"min",
@@ -70,6 +73,18 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
+	maxTimeMS, err := common.GetOptionalPositiveNumber(document, "maxTimeMS")
+	if err != nil {
+		return nil, err
+	}
+
+	if maxTimeMS != 0 {
+		ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Duration(maxTimeMS)*time.Millisecond)
+		defer cancel()
+
+		ctx = ctxWithTimeout
+	}
+
 	var limit int64
 	if l, _ := document.Get("limit"); l != nil {
 		if limit, err = common.GetWholeNumberParam(l); err != nil {
@@ -77,8 +92,8 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		}
 	}
 
-	var sp sqlParam
-	if sp.db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	var sp pgdb.SQLParam
+	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 	collectionParam, err := document.Get(document.Command())
@@ -86,7 +101,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 	var ok bool
-	if sp.collection, ok = collectionParam.(string); !ok {
+	if sp.Collection, ok = collectionParam.(string); !ok {
 		return nil, common.NewErrorMsg(
 			common.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
@@ -94,33 +109,53 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	// get comment from options.FindOne().SetComment() method
-	if sp.comment, err = common.GetOptionalParam(document, "comment", sp.comment); err != nil {
+	if sp.Comment, err = common.GetOptionalParam(document, "comment", sp.Comment); err != nil {
 		return nil, err
 	}
 	// get comment from query, e.g. db.collection.find({$comment: "test"})
 	if filter != nil {
-		if sp.comment, err = common.GetOptionalParam(filter, "$comment", sp.comment); err != nil {
+		if sp.Comment, err = common.GetOptionalParam(filter, "$comment", sp.Comment); err != nil {
 			return nil, err
 		}
-	}
-
-	fetchedDocs, err := h.fetch(ctx, sp)
-	if err != nil {
-		return nil, err
 	}
 
 	resDocs := make([]*types.Document, 0, 16)
-	for _, doc := range fetchedDocs {
-		matches, err := common.FilterDocument(doc, filter)
+	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp)
 		if err != nil {
-			return nil, err
+			return err
+		}
+		defer func() {
+			// Drain the channel to prevent leaking goroutines.
+			// TODO Offer a better design instead of channels: https://github.com/FerretDB/FerretDB/issues/898.
+			for range fetchedChan {
+			}
+		}()
+
+		for fetchedItem := range fetchedChan {
+			if fetchedItem.Err != nil {
+				return fetchedItem.Err
+			}
+
+			for _, doc := range fetchedItem.Docs {
+				matches, err := common.FilterDocument(doc, filter)
+				if err != nil {
+					return err
+				}
+
+				if !matches {
+					continue
+				}
+
+				resDocs = append(resDocs, doc)
+			}
 		}
 
-		if !matches {
-			continue
-		}
+		return nil
+	})
 
-		resDocs = append(resDocs, doc)
+	if err != nil {
+		return nil, err
 	}
 
 	if err = common.SortDocuments(resDocs, sort); err != nil {
@@ -146,7 +181,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			"cursor", must.NotFail(types.NewDocument(
 				"firstBatch", firstBatch,
 				"id", int64(0), // TODO
-				"ns", sp.db+"."+sp.collection,
+				"ns", sp.DB+"."+sp.Collection,
 			)),
 			"ok", float64(1),
 		))},

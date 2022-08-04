@@ -24,19 +24,22 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestQueryElementExists(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
-	ctx, collection := setup(t)
+	ctx, collection := setup.Setup(t)
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{{"_id", "empty-array"}, {"empty-array", []any{}}},
 		bson.D{{"_id", "nan"}, {"nan", math.NaN()}},
 		bson.D{{"_id", "null"}, {"null", nil}},
-		bson.D{{"_id", "string"}, {"value", "12"}},
-		bson.D{{"_id", "two-fields"}, {"value", "12"}, {"field", 42}},
+		bson.D{{"_id", "string"}, {"v", "12"}},
+		bson.D{{"_id", "two-fields"}, {"v", "12"}, {"field", 42}},
 	})
 	require.NoError(t, err)
 
@@ -97,9 +100,11 @@ func TestQueryElementExists(t *testing.T) {
 }
 
 func TestQueryElementType(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 	// TODO: add cases for "decimal" when it would be added.
-	ctx, collection := setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
 		v           any
@@ -267,7 +272,7 @@ func TestQueryElementType(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			filter := bson.D{{"value", bson.D{{"$type", tc.v}}}}
+			filter := bson.D{{"v", bson.D{{"$type", tc.v}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)

@@ -16,7 +16,10 @@ package pg
 
 import (
 	"context"
+	"errors"
 	"fmt"
+
+	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
@@ -68,16 +71,30 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	if err := h.pgPool.CreateSchema(ctx, db); err != nil && err != pgdb.ErrAlreadyExist {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if err = h.pgPool.CreateTable(ctx, db, collection); err != nil {
-		if err == pgdb.ErrAlreadyExist {
-			msg := fmt.Sprintf("Collection already exists. NS: %s.%s", db, collection)
-			return nil, common.NewErrorMsg(common.ErrNamespaceExists, msg)
+	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		if err := pgdb.CreateDatabaseIfNotExists(ctx, tx, db); err != nil {
+			if errors.Is(pgdb.ErrInvalidDatabaseName, err) {
+				msg := fmt.Sprintf("Invalid namespace: %s.%s", db, collection)
+				return common.NewErrorMsg(common.ErrInvalidNamespace, msg)
+			}
+			return lazyerrors.Error(err)
 		}
-		return nil, lazyerrors.Error(err)
+
+		if err := pgdb.CreateCollection(ctx, tx, db, collection); err != nil {
+			if errors.Is(err, pgdb.ErrAlreadyExist) {
+				msg := fmt.Sprintf("Collection already exists. NS: %s.%s", db, collection)
+				return common.NewErrorMsg(common.ErrNamespaceExists, msg)
+			}
+			if errors.Is(err, pgdb.ErrInvalidTableName) {
+				msg := fmt.Sprintf("Invalid collection name: '%s.%s'", db, collection)
+				return common.NewErrorMsg(common.ErrInvalidNamespace, msg)
+			}
+			return lazyerrors.Error(err)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	var reply wire.OpMsg

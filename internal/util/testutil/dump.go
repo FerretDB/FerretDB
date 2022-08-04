@@ -36,6 +36,29 @@ func Dump[T types.Type](tb testing.TB, o T) string {
 	return string(IndentJSON(tb, b))
 }
 
+// DumpSlice returns string representation for debugging.
+func DumpSlice[T types.Type](tb testing.TB, s []T) string {
+	tb.Helper()
+
+	// We might switch to go-spew or something else later.
+
+	res := []byte("[")
+
+	for i, o := range s {
+		b, err := fjson.Marshal(o)
+		require.NoError(tb, err)
+
+		res = append(res, b...)
+		if i < len(s)-1 {
+			res = append(res, ',')
+		}
+	}
+
+	res = append(res, ']')
+
+	return string(IndentJSON(tb, res))
+}
+
 // IndentJSON returns an indented form of the JSON input.
 func IndentJSON(tb testing.TB, b []byte) []byte {
 	tb.Helper()

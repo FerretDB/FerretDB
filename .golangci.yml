@@ -2,7 +2,7 @@
 # Linters that should pass for all code.
 
 run:
-  timeout: 2m
+  timeout: 3m
 
 linters-settings:
   # asciicheck
@@ -13,6 +13,7 @@ linters-settings:
       - github.com/FerretDB/FerretDB/internal/fjson
       - github.com/FerretDB/FerretDB/internal/tjson
       - github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb
+      - github.com/tigrisdata/tigris-client-go/api/client/v1/api
   exhaustive:
     default-signifies-exhaustive: false
   gci:
@@ -52,10 +53,20 @@ linters-settings:
       limitations under the License.
   goimports:
     local-prefixes: github.com/FerretDB/FerretDB
+  gomodguard:
+    blocked:
+      modules:
+        - go.mongodb.org/mongo-driver:
+            reason: "FerretDB should not depend on MongoDB Go driver."
   gosimple:
-    go: "1.18"
     checks: ["all"]
   # govet
+  importas:
+    no-unaliased: false
+    no-extra-aliases: true
+    alias:
+      - pkg: github.com/tigrisdata/tigris-client-go/api/server/v1
+        alias: api
   # ineffassign
   lll:
     line-length: 130
@@ -74,10 +85,10 @@ linters-settings:
     severity: warning
     enableAllRules: true
   staticcheck:
-    go: "1.18"
-    checks: ["all"]
-  unused:
-    go: "1.18"
+    checks:
+      - all
+      - -SA1019 # ignore deprecation errors in existing code; new code is checked by the other configuration
+  # unused
   whitespace:
     multi-if: false
     multi-func: false
@@ -94,8 +105,10 @@ linters:
     - godox
     - goheader
     - goimports
+    - gomodguard
     - gosimple
     - govet
+    - importas
     - ineffassign
     - lll
     - misspell
@@ -106,6 +119,9 @@ linters:
     - whitespace
 
 issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
   exclude-use-default: false
   exclude-rules:
     # only `wire` package can import `bson` package

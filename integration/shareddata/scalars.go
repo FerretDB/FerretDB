@@ -21,10 +21,17 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+const (
+	doubleBig = float64(2 << 60)
+	int64Big  = int64(2 << 61)
+)
+
 // Scalars contain scalar values for tests.
 //
 // This shared data set is frozen. If you need more values, add them in the test itself.
 var Scalars = &Values[string]{
+	name:     "Scalars",
+	handlers: []string{"pg"},
 	data: map[string]any{
 		"double":                   42.13,
 		"double-whole":             42.0,
@@ -35,7 +42,7 @@ var Scalars = &Values[string]{
 		"double-positive-infinity": math.Inf(+1),
 		"double-negative-infinity": math.Inf(-1),
 		"double-nan":               math.NaN(),
-		"double-big":               float64(2 << 60),
+		"double-big":               doubleBig,
 
 		"string":        "foo",
 		"string-double": "42.13",
@@ -80,11 +87,51 @@ var Scalars = &Values[string]{
 		"int64-zero": int64(0),
 		"int64-max":  int64(math.MaxInt64),
 		"int64-min":  int64(math.MinInt64),
-		"int64-big":  int64(2 << 61),
+		"int64-big":  int64Big,
 
 		// no 128-bit decimal floating point (yet)
 
 		// no Min key
 		// no Max key
+
+		// TODO "unset": unset, https://github.com/FerretDB/FerretDB/issues/914
+	},
+}
+
+// Doubles contains double values for tests.
+var Doubles = &Values[string]{
+	name:     "Doubles",
+	handlers: []string{"pg", "tigris"},
+	data: map[string]any{
+		"double":          42.13,
+		"double-whole":    42.0,
+		"double-zero":     0.0,
+		"double-max":      math.MaxFloat64,
+		"double-smallest": math.SmallestNonzeroFloat64,
+		"double-big":      doubleBig,
+	},
+}
+
+// Strings contains string values for tests.
+var Strings = &Values[string]{
+	name:     "Strings",
+	handlers: []string{"pg", "tigris"},
+	data: map[string]any{
+		"string":        "foo",
+		"string-double": "42.13",
+		"string-whole":  "42",
+		"string-empty":  "",
+	},
+}
+
+// Int32s contains int32 values for tests.
+var Int32s = &Values[string]{
+	name:     "Int32s",
+	handlers: []string{"pg", "tigris"},
+	data: map[string]any{
+		"int32":      int32(42),
+		"int32-zero": int32(0),
+		"int32-max":  int32(math.MaxInt32),
+		"int32-min":  int32(math.MinInt32),
 	},
 }
