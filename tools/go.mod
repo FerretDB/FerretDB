@@ -7,7 +7,7 @@ replace github.com/golangci/golangci-lint => github.com/FerretDB/golangci-lint v
 
 require (
 	github.com/BurntSushi/go-sumtype v0.0.0-20190304192233-fcb4a6205bdc
-	github.com/go-task/task/v3 v3.14.0
+	github.com/go-task/task/v3 v3.14.1
 	github.com/golangci/golangci-lint v1.47.2 // sync with GitHub Actions workflow
 	github.com/goreleaser/nfpm/v2 v2.16.0
 	github.com/quasilyte/go-consistent v0.0.0-20220429160651-4e46040fbc82
@@ -235,7 +235,7 @@ require (
 	golang.org/x/net v0.0.0-20220520000938-2e3eb7b945c2 // indirect
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
 	golang.org/x/sync v0.0.0-20220513210516-0976fa681c29 // indirect
-	golang.org/x/sys v0.0.0-20220702020025-31831981b65f // indirect
+	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
