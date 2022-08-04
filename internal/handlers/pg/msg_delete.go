@@ -52,7 +52,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	var deleted int32
-	deleteDocument := func(i int) error {
+	deleteDocument := func(i int) error { // TODO: check how mongodb handles every error in this function
 		d, err := common.AssertType[*types.Document](must.NotFail(deletes.Get(i)))
 		if err != nil {
 			return err
@@ -67,8 +67,8 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return err
 		}
 
-		var limit int64
-		if l, _ := d.Get("limit"); l != nil { // TODO https://github.com/FerretDB/FerretDB/issues/982
+		var limit int64 // TODO https://github.com/FerretDB/FerretDB/issues/982
+		if l, _ := d.Get("limit"); l != nil {
 			if limit, err = common.GetWholeNumberParam(l); err != nil {
 				return err
 			}
@@ -154,13 +154,14 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	var errMsgs []string
+
 	for i := 0; i < deletes.Len(); i++ {
 		err := deleteDocument(i)
-		if err != nil && ordered {
-			// TODO: (BadValue) issue
-			return nil, err
-		}
 		if err != nil {
+			if ordered {
+				// TODO: (BadValue) issue
+				return nil, err
+			}
 			errMsgs = append(errMsgs, err.Error())
 		}
 	}

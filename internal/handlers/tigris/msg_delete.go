@@ -64,8 +64,9 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
+		// TODO https://github.com/FerretDB/FerretDB/issues/982
 		var limit int64
-		if l, _ := d.Get("limit"); l != nil { // TODO https://github.com/FerretDB/FerretDB/issues/982
+		if l, _ := d.Get("limit"); l != nil {
 			if limit, err = common.GetWholeNumberParam(l); err != nil {
 				return nil, err
 			}
