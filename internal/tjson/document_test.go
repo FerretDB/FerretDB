@@ -55,7 +55,8 @@ var (
 		name:   "handshake1",
 		v:      convertDocument(handshake1doc),
 		schema: must.NotFail(DocumentSchema(handshake1doc)),
-		j: `{"$k":["ismaster","client","compression","loadBalanced"],"ismaster":true,` +
+		j: `{"$k":["_id","ismaster","client","loadBalanced"],` +
+			`"_id":"handshake1","ismaster":true,` +
 			`"client":{"$k":["driver","os","platform","application"],"driver":{"$k":["name","version"],` +
 			`"name":"nodejs","version":"4.0.0-beta.6"},"os":{"$k":["type","name","architecture","version"],` +
 			`"type":"Darwin","name":"darwin","architecture":"x64","version":"20.6.0"},` +
@@ -237,9 +238,9 @@ func TestDocument(t *testing.T) {
 }
 
 func FuzzDocument(f *testing.F) {
-	fuzzJSON(f, documentTestCases, func() tjsontype { return new(documentType) })
+	fuzzJSON(f, documentTestCases)
 }
 
 func BenchmarkDocument(b *testing.B) {
-	benchmark(b, documentTestCases, func() tjsontype { return new(documentType) })
+	benchmark(b, documentTestCases)
 }
