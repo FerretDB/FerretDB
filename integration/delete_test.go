@@ -106,7 +106,7 @@ func TestDeleteOrdered(t *testing.T) {
 			expectedRemovedIDs: []string{"string", "double"},
 			expectedErr:        "write exception: write errors: [unknown top level operator: $all. If you have a field name that starts with a '$' symbol, consider using $getField or $setField.]",
 		},
-		"WhichError": {
+		"TwoErrors": {
 			deletes: bson.A{
 				bson.D{
 					{"q", bson.D{{"_id", "string"}}},
@@ -127,7 +127,8 @@ func TestDeleteOrdered(t *testing.T) {
 			},
 			ordered:            false,
 			expectedRemovedIDs: []string{"string", "double"},
-			expectedErr:        "write exception: write errors: [unknown top level operator: $all. If you have a field name that starts with a '$' symbol, consider using $getField or $setField.]",
+			expectedErr: "write exception: write errors: [unknown top level operator: $all. If you have a field name that starts with a '$' symbol, consider using $getField or $setField., " +
+				"unknown top level operator: $eq. If you have a field name that starts with a '$' symbol, consider using $getField or $setField.]",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -161,6 +162,7 @@ func TestDeleteOrdered(t *testing.T) {
 			require.NoError(t, err)
 
 			beforeIDs := make(map[string]struct{})
+
 			for _, r := range resBefore {
 				id, ok := r.Map()["_id"].(string)
 				require.True(t, ok)
@@ -170,6 +172,7 @@ func TestDeleteOrdered(t *testing.T) {
 
 			var created []string
 			afterIDs := make(map[string]struct{})
+
 			for _, r := range resAfter {
 				id, ok := r.Map()["_id"].(string)
 				require.True(t, ok)
