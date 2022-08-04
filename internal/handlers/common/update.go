@@ -150,15 +150,11 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 
 		default:
-			// handled by UpdateOperators above
-			panic(fmt.Errorf("unhandled operation %q", updateOp))
 			if strings.HasPrefix(updateOp, "$") {
 				return false, NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
 			}
 
-			// Treats the update as a Replacement object
-			// https://www.mongodb.com/docs/manual/reference/method/db.collection.update/#std-label-update-parameter
-
+			// Treats the update as a Replacement object.
 			setDoc := update
 
 			if setDoc.Len() == 0 {
