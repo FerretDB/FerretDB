@@ -209,7 +209,7 @@ func insertByPath(doc *Document, path Path) error {
 						"Cannot create field '%s' in element {%s: %s}",
 						pathElem,
 						insertedPath.Slice()[suffix-1],
-						formatDocumentValue(v),
+						formatAnyValue(v),
 					)
 				}
 			}
@@ -225,8 +225,8 @@ func insertByPath(doc *Document, path Path) error {
 	return nil
 }
 
-// formatDocumentValue formats document value for error message output.
-func formatDocumentValue(v any) string {
+// formatAnyValue formats value for error message output.
+func formatAnyValue(v any) string {
 	switch v := v.(type) {
 	case *Document:
 		return formatDocument(v)
@@ -248,9 +248,9 @@ func formatDocument(doc *Document) string {
 
 		switch value := doc.m[key].(type) {
 		case *Document:
-			result += fmt.Sprintf("%q: %s", key, value)
+			result += fmt.Sprintf("%q: %s", key, formatDocument(value))
 		case *Array:
-			result += fmt.Sprintf("%q: %s", key, value)
+			result += fmt.Sprintf("%q: %s", key, formatArray(value))
 		case string:
 			result += fmt.Sprintf(`%q: "%q"`, key, value)
 		case NullType:
@@ -274,9 +274,9 @@ func formatArray(array *Array) string {
 	for _, elem := range array.s {
 		switch elem := elem.(type) {
 		case *Document:
-			result += fmt.Sprintf("%s, ", elem)
+			result += fmt.Sprintf("%s, ", formatDocument(elem))
 		case *Array:
-			result += fmt.Sprintf("%s, ", elem)
+			result += fmt.Sprintf("%s, ", formatArray(elem))
 		case string:
 			result += fmt.Sprintf(`"%s", `, elem)
 		case NullType:
