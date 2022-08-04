@@ -66,8 +66,9 @@ func TestDeleteOrdered(t *testing.T) {
 		deletes            bson.A
 		ordered            bool
 		expectedRemovedIDs []string
+		//TODO: add expected response/error
 	}{
-		"test 1": {
+		"True": {
 			deletes: bson.A{
 				bson.D{
 					{"q", bson.D{{"_id", "string"}}},
@@ -83,6 +84,24 @@ func TestDeleteOrdered(t *testing.T) {
 				},
 			},
 			ordered:            true,
+			expectedRemovedIDs: []string{"string"},
+		},
+		"False": {
+			deletes: bson.A{
+				bson.D{
+					{"q", bson.D{{"_id", "string"}}},
+					{"limit", 0},
+				},
+				bson.D{
+					{"q", bson.D{{"$all", 9}}},
+					{"limit", 0},
+				},
+				bson.D{
+					{"q", bson.D{{"_id", "double"}}},
+					{"limit", 0},
+				},
+			},
+			ordered:            false,
 			expectedRemovedIDs: []string{"string", "double"},
 		},
 	} {
