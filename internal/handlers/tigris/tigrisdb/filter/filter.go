@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package filter provides helpers to simplify generation of filters for Tigris driver.
+//
+// It's similar to tigrisdata/tigris-client-go/filter but without generics as they don't fit us - we need to call
+// tjson.Marshal to encode tjson data types correctly.
 package filter
 
 import (
