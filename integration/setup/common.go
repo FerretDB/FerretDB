@@ -30,7 +30,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
@@ -60,13 +59,6 @@ func SkipForTigris(tb testing.TB) {
 	if *handlerF == "tigris" {
 		tb.Skip("Skipping for Tigris")
 	}
-}
-
-// setupCollectionOpts represents common options for setting up collections.
-type setupCollectionOpts struct {
-	client    *mongo.Client
-	db        string
-	providers []shareddata.Provider
 }
 
 // setupListener starts in-process FerretDB server that runs until ctx is done,
