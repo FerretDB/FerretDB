@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tigris
+package integration
 
 import (
 	"testing"
@@ -23,12 +23,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"github.com/FerretDB/FerretDB/integration"
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
-// TODO This is a temporary test to check how string identifiers would work.
-func TestSmokeStringAsID(t *testing.T) {
+func TestStringAsID(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
@@ -44,7 +42,7 @@ func TestSmokeStringAsID(t *testing.T) {
 	var doc bson.D
 	err = collection.FindOne(ctx, bson.D{{"_id", "string_id"}}).Decode(&doc)
 	require.NoError(t, err)
-	integration.AssertEqualDocuments(t, bson.D{{"_id", "string_id"}, {"string_value", "bar"}}, doc)
+	AssertEqualDocuments(t, bson.D{{"_id", "string_id"}, {"string_value", "bar"}}, doc)
 
 	del, err := collection.DeleteOne(ctx, bson.D{{"_id", ins.InsertedID}})
 	require.NoError(t, err)
@@ -54,11 +52,10 @@ func TestSmokeStringAsID(t *testing.T) {
 	assert.ErrorIs(t, mongo.ErrNoDocuments, err)
 }
 
-// TODO This is a temporary test to check how ObjectID works.
 func TestSmokeObjectIDBinary(t *testing.T) {
 	// Fun fact: as Tigris has a schema, all the _id values in the collection can be either string or binary.
 	// It's not possible to insert a string value for the _id field into a collection and then expect the binary
-	// to work well with the same field.
+	// to work well with the same field. So that, we have separate tests for string and binary _id.
 
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
@@ -80,7 +77,7 @@ func TestSmokeObjectIDBinary(t *testing.T) {
 	var doc bson.D
 	err = collection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&doc)
 	require.NoError(t, err)
-	integration.AssertEqualDocuments(t, bson.D{{"_id", id}, {"string_value", "bar_2"}}, doc)
+	AssertEqualDocuments(t, bson.D{{"_id", id}, {"string_value", "bar_2"}}, doc)
 
 	del, err := collection.DeleteOne(ctx, bson.D{{"_id", id}})
 	require.NoError(t, err)
@@ -90,8 +87,9 @@ func TestSmokeObjectIDBinary(t *testing.T) {
 	assert.ErrorIs(t, mongo.ErrNoDocuments, err)
 }
 
-// TODO This is a temporary test to check if multiple deletes work correctly.
-func TestMultipleDelete(t *testing.T) {
+func TestDeleteMany(t *testing.T) {
+	// In this test we insert and delete many (two) documents by filter.
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
