@@ -66,7 +66,7 @@ func TestDeleteOrdered(t *testing.T) {
 		deletes            bson.A
 		ordered            bool
 		expectedRemovedIDs []string
-		//TODO: add expected response/error
+		expectedErr        string
 	}{
 		"True": {
 			deletes: bson.A{
@@ -85,6 +85,7 @@ func TestDeleteOrdered(t *testing.T) {
 			},
 			ordered:            true,
 			expectedRemovedIDs: []string{"string"},
+			expectedErr:        "write exception: write errors: [unknown top level operator: $all. If you have a field name that starts with a '$' symbol, consider using $getField or $setField.]",
 		},
 		"False": {
 			deletes: bson.A{
@@ -103,6 +104,30 @@ func TestDeleteOrdered(t *testing.T) {
 			},
 			ordered:            false,
 			expectedRemovedIDs: []string{"string", "double"},
+			expectedErr:        "write exception: write errors: [unknown top level operator: $all. If you have a field name that starts with a '$' symbol, consider using $getField or $setField.]",
+		},
+		"WhichError": {
+			deletes: bson.A{
+				bson.D{
+					{"q", bson.D{{"_id", "string"}}},
+					{"limit", 0},
+				},
+				bson.D{
+					{"q", bson.D{{"$all", 9}}},
+					{"limit", 0},
+				},
+				bson.D{
+					{"q", bson.D{{"_id", "double"}}},
+					{"limit", 0},
+				},
+				bson.D{
+					{"q", bson.D{{"$eq", 9}}},
+					{"limit", 0},
+				},
+			},
+			ordered:            false,
+			expectedRemovedIDs: []string{"string", "double"},
+			expectedErr:        "write exception: write errors: [unknown top level operator: $all. If you have a field name that starts with a '$' symbol, consider using $getField or $setField.]",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -123,8 +148,9 @@ func TestDeleteOrdered(t *testing.T) {
 					{"ordered", tc.ordered},
 				},
 			)
-			if res.Err() != nil {
-				t.Logf("Expected error: %s", res.Err())
+
+			if tc.expectedErr != "" || res.Err() != nil {
+				assert.EqualError(t, res.Err(), tc.expectedErr)
 			}
 
 			cursor, err = collection.Find(ctx, bson.D{})
