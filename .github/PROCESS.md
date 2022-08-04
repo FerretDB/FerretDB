@@ -30,15 +30,15 @@ This guide tries to be short and does not mention things that are completely aut
 ## Team Performance Metrics
 
 1. We want to deliver fast and make our deliverables predictable.
-2. To achieve that, we measure flow of work and estimate tasks.
+2. To achieve that, we measure the flow of work and estimate tasks.
 3. The flow of work is measured automatically based on GitHub's pull request workflow.
 4. The estimated tasks are measured manually by engineers during Sprint planning.
-5. Task estimation depends on the scope, the complexity of the task, and the possible risks and clarity.  
+5. Task estimation depends on the scope, the complexity of the task, and the possible risks and clarity.
 6. We use the following T-Shirt Sizes to estimate tasks:
    - *S*: Small scope, trivial complexity, no risks and total clarity.
-   - *M*: Only one parameter can be changed comparing to *S* (e.g. a small but a bit unclear task).
-   - *L*: Two parameters can be changed comparing to *M* (e.g. medium scope with risks).
-7. If the team thinks that the task is bigger than *L*, it should be decomposed into smaller tasks or 
+   - *M*: Only one parameter can be changed compared to *S* (e.g. a small but a bit unclear task).
+   - *L*: Two parameters can be changed compared to *M* (e.g. medium scope with risks).
+7. If the team thinks that the task is bigger than *L*, it should be decomposed into smaller tasks or
    an additional research task needs to be created to clarify all the details.
-8. After every Sprint we measure how many tasks of each size we were able to complete and discuss what went well and what 
-   could be improved. We also look at the flows' metrics to gather more information about team's dynamic.
+8. After every Sprint, we measure how many tasks of each size we were able to complete and discuss what went well and what
+   could be improved. We also look at the flows' metrics to gather more information about the team's dynamic.
