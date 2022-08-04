@@ -67,7 +67,7 @@ func TestSmokeObjectIDBinary(t *testing.T) {
 	require.NoError(t, err)
 
 	// Insert, update, delete a document with a "proper" ObjectID.
-	ins, err := collection.InsertOne(ctx, bson.D{{"_id", id}, {"string_value", "foo_2"}})
+	_, err = collection.InsertOne(ctx, bson.D{{"_id", id}, {"string_value", "foo_2"}})
 	require.NoError(t, err)
 
 	up, err := collection.UpdateOne(ctx, bson.D{{"_id", id}}, bson.D{{"$set", bson.D{{"string_value", "bar_2"}}}})
@@ -84,6 +84,6 @@ func TestSmokeObjectIDBinary(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), del.DeletedCount)
 
-	err = collection.FindOne(ctx, bson.D{{"_id", ins.InsertedID}}).Decode(&doc)
+	err = collection.FindOne(ctx, bson.D{}).Decode(&doc)
 	assert.ErrorIs(t, mongo.ErrNoDocuments, err)
 }

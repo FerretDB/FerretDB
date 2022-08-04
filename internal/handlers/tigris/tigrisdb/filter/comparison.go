@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/tjson"
-	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 // comparison represents comparison operators for Tigris, like comparison in tigrisdata/tigris-client-go/filter.
@@ -29,27 +28,11 @@ type comparison struct {
 
 // Eq composes 'equal' operation for Tigris, like in tigrisdata/tigris-client-go/filter but without generics.
 // It marshals the value (which is always of one of the tjson types) to JSON, and it'll be used as RawMessage later.
-/*func Eq(field string, value any) Expr {
+func Eq(field string, value any) Expr {
 	res, err := tjson.Marshal(value)
 	if err != nil {
 		panic(fmt.Sprintf("problem marshalling value as tjson: %v", err))
 	}
 
 	return Expr{field: comparison{Eq: json.RawMessage(res)}}
-}*/
-func Eq(field string, value any) Expr {
-	var res any
-
-	switch v := value.(type) {
-	case types.ObjectID:
-		r, err := tjson.Marshal(v)
-		if err != nil {
-			panic(fmt.Sprintf("problem marshalling value as tjson: %v", err))
-		}
-		res = json.RawMessage(r)
-	default:
-		res = value
-	}
-
-	return Expr{field: comparison{Eq: res}}
 }
