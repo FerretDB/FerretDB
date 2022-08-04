@@ -35,9 +35,9 @@ This guide tries to be short and does not mention things that are completely aut
 4. Tasks are measured manually by engineers during Sprint planning.
 5. Task estimation depends on the scope, the complexity of the task, and the possible risks and clarity.
 6. We use the following T-Shirt Sizes to estimate tasks:
-   - *S*: Small scope, trivial complexity, no risks and total clarity.
-   - *M*: Only one parameter can be changed compared to *S* (e.g. a small but a bit unclear task).
-   - *L*: Two parameters can be changed compared to *M* (e.g. medium scope with risks).
+   * *S*: Small scope, trivial complexity, no risks and total clarity.
+   * *M*: Only one parameter can be changed compared to *S* (e.g. a small but a bit unclear task).
+   * *L*: Two parameters can be changed compared to *M* (e.g. medium scope with risks).
 7. If the team thinks that the task is bigger than *L*, it should be decomposed into smaller tasks or
    an additional research task needs to be created to clarify all the details.
 8. After every Sprint, we measure how many tasks of each size we were able to complete and discuss what went well and what
