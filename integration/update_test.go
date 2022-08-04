@@ -190,6 +190,8 @@ func TestMultiFlag(t *testing.T) {
 }
 
 func TestUpdateReplaceDocuments(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
