@@ -74,7 +74,7 @@ func TestDeleteOrdered(t *testing.T) {
 					{"limit", 0},
 				},
 				bson.D{
-					{"q", "fail"},
+					{"q", bson.D{{"$all", 9}}},
 					{"limit", 0},
 				},
 				bson.D{
@@ -82,7 +82,7 @@ func TestDeleteOrdered(t *testing.T) {
 					{"limit", 0},
 				},
 			},
-			ordered:            false,
+			ordered:            true,
 			expectedRemovedIDs: []string{"string", "double"},
 		},
 	} {
