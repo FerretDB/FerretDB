@@ -144,7 +144,7 @@ var Int64s = &Values[string]{
 		"int64":      int64(42),
 		"int64-zero": int64(0),
 		"int64-max":  int64(math.MaxInt64),
-		// FIXME "int64-min":  int64(math.MinInt64),
-		"int64-big": int64Big,
+		"int64-min":  int64(math.MinInt64),
+		"int64-big":  int64Big,
 	},
 }
