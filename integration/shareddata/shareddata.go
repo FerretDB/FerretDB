@@ -18,9 +18,7 @@ import (
 	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"golang.org/x/exp/constraints"
 	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 )
 
 // unset represents a field that should not be set.
@@ -89,50 +87,8 @@ func IDs(providers ...Provider) []any {
 	return res
 }
 
-// Maps stores shared data documents as maps.
-//
-// TODO replace constraints.Ordered with comparable: https://github.com/FerretDB/FerretDB/issues/914
-type Maps[idType constraints.Ordered] struct {
-	name     string
-	handlers []string
-	data     map[idType]map[string]any
-}
-
-// Name implement Provider interface.
-func (docs *Maps[idType]) Name() string {
-	return docs.name
-}
-
-// Handlers implement Provider interface.
-func (docs *Maps[idType]) Handlers() []string {
-	return docs.handlers
-}
-
-// Docs implement Provider interface.
-func (docs *Maps[idType]) Docs() []bson.D {
-	ids := maps.Keys(docs.data)
-	slices.Sort(ids) // TODO remove: https://github.com/FerretDB/FerretDB/issues/914
-
-	res := make([]bson.D, 0, len(docs.data))
-	for _, id := range ids {
-		doc := docs.data[id]
-
-		d := make(bson.D, 0, len(doc)+1)
-		d = append(d, bson.E{"_id", id})
-		for k, v := range doc {
-			d = append(d, bson.E{k, v})
-		}
-
-		res = append(res, d)
-	}
-
-	return res
-}
-
 // Values stores shared data documents as {"_id": key, "v": value} documents.
-//
-// TODO replace constraints.Ordered with comparable: https://github.com/FerretDB/FerretDB/issues/914
-type Values[idType constraints.Ordered] struct {
+type Values[idType comparable] struct {
 	name     string
 	handlers []string
 	data     map[idType]any
@@ -151,7 +107,6 @@ func (values *Values[idType]) Handlers() []string {
 // Docs implement Provider interface.
 func (values *Values[idType]) Docs() []bson.D {
 	ids := maps.Keys(values.data)
-	slices.Sort(ids) // TODO remove: https://github.com/FerretDB/FerretDB/issues/914
 
 	res := make([]bson.D, 0, len(values.data))
 	for _, id := range ids {
@@ -168,6 +123,5 @@ func (values *Values[idType]) Docs() []bson.D {
 
 // check interfaces
 var (
-	_ Provider = (*Maps[string])(nil)
 	_ Provider = (*Values[string])(nil)
 )
