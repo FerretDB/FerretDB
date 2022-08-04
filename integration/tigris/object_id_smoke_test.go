@@ -87,3 +87,20 @@ func TestSmokeObjectIDBinary(t *testing.T) {
 	err = collection.FindOne(ctx, bson.D{}).Decode(&doc)
 	assert.ErrorIs(t, mongo.ErrNoDocuments, err)
 }
+
+// TODO This is a temporary test to check if multiple deletes work correctly.
+func TestMultipleDelete(t *testing.T) {
+
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
+
+	_, err := collection.InsertOne(ctx, bson.D{{"string_value", "foo"}})
+	require.NoError(t, err)
+
+	_, err = collection.InsertOne(ctx, bson.D{{"string_value", "foo"}})
+	require.NoError(t, err)
+
+	del, err := collection.DeleteMany(ctx, bson.D{{"string_value", "foo"}})
+	require.NoError(t, err)
+	assert.Equal(t, int64(2), del.DeletedCount)
+}
