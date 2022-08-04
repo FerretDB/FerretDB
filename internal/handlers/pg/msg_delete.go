@@ -17,6 +17,7 @@ package pg
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v4"
 
@@ -152,12 +153,21 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		return err
 	}
-	// TODO: check how mongodb behaves for every error
+
+	var errMsgs []string
 	for i := 0; i < deletes.Len(); i++ {
 		err := deleteDocument(i)
 		if err != nil && ordered {
+			// TODO: (BadValue) issue
 			return nil, err
 		}
+		if err != nil {
+			errMsgs = append(errMsgs, err.Error())
+		}
+	}
+
+	if len(errMsgs) > 0 {
+		return nil, fmt.Errorf("write exception: write errors: [%s]", strings.Join(errMsgs, ","))
 	}
 
 	var reply wire.OpMsg
