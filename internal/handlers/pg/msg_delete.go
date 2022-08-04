@@ -38,7 +38,6 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	if err := common.Unimplemented(document, "let"); err != nil {
 		return nil, err
 	}
-	common.Ignored(document, h.l, "ordered") // TODO https://github.com/FerretDB/FerretDB/issues/848
 	common.Ignored(document, h.l, "writeConcern")
 
 	var deletes *types.Array
@@ -46,40 +45,45 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
+	var ordered bool
+	if ordered, err = common.GetOptionalParam(document, "ordered", ordered); err != nil {
+		return nil, err
+	}
+
 	var deleted int32
-	for i := 0; i < deletes.Len(); i++ {
+	deleteDocument := func(i int) error {
 		d, err := common.AssertType[*types.Document](must.NotFail(deletes.Get(i)))
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		if err := common.Unimplemented(d, "collation", "hint"); err != nil {
-			return nil, err
+			return err
 		}
 
 		var filter *types.Document
 		if filter, err = common.GetOptionalParam(d, "q", filter); err != nil {
-			return nil, err
+			return err
 		}
 
 		var limit int64
 		if l, _ := d.Get("limit"); l != nil { // TODO https://github.com/FerretDB/FerretDB/issues/982
 			if limit, err = common.GetWholeNumberParam(l); err != nil {
-				return nil, err
+				return err
 			}
 		}
 
 		var sp pgdb.SQLParam
 		if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-			return nil, err
+			return err
 		}
 		collectionParam, err := document.Get(document.Command())
 		if err != nil {
-			return nil, err
+			return err
 		}
 		var ok bool
 		if sp.Collection, ok = collectionParam.(string); !ok {
-			return nil, common.NewErrorMsg(
+			return common.NewErrorMsg(
 				common.ErrBadValue,
 				fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
 			)
@@ -87,12 +91,12 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		// get comment from options.Delete().SetComment() method
 		if sp.Comment, err = common.GetOptionalParam(document, "comment", sp.Comment); err != nil {
-			return nil, err
+			return err
 		}
 
 		// get comment from query, e.g. db.collection.DeleteOne({"_id":"string", "$comment: "test"})
 		if sp.Comment, err = common.GetOptionalParam(filter, "$comment", sp.Comment); err != nil {
-			return nil, err
+			return err
 		}
 
 		resDocs := make([]*types.Document, 0, 16)
@@ -146,7 +150,12 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil
 		})
 
-		if err != nil {
+		return err
+	}
+	// TODO: check how mongodb behaves for every error
+	for i := 0; i < deletes.Len(); i++ {
+		err := deleteDocument(i)
+		if err != nil && ordered {
 			return nil, err
 		}
 	}
