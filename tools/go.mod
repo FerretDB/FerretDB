@@ -7,12 +7,12 @@ replace github.com/golangci/golangci-lint => github.com/FerretDB/golangci-lint v
 
 require (
 	github.com/BurntSushi/go-sumtype v0.0.0-20190304192233-fcb4a6205bdc
-	github.com/go-task/task/v3 v3.14.0
+	github.com/go-task/task/v3 v3.14.1
 	github.com/golangci/golangci-lint v1.47.2 // sync with GitHub Actions workflow
-	github.com/goreleaser/nfpm/v2 v2.16.0
+	github.com/goreleaser/nfpm/v2 v2.17.0
 	github.com/quasilyte/go-consistent v0.0.0-20220429160651-4e46040fbc82
 	github.com/reviewdog/reviewdog v0.14.1
-	golang.org/x/perf v0.0.0-20220411212318-84e58bfe0a7e
+	golang.org/x/perf v0.0.0-20220722155240-3d85ee92886d
 	golang.org/x/tools v0.1.12-0.20220628192153-7743d1d949f1
 	mvdan.cc/gofumpt v0.3.1
 )
@@ -120,7 +120,7 @@ require (
 	github.com/iancoleman/orderedmap v0.2.0 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
-	github.com/invopop/jsonschema v0.4.0 // indirect
+	github.com/invopop/jsonschema v0.5.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jgautheron/goconst v1.5.1 // indirect
 	github.com/jingyugao/rowserrcheck v1.1.1 // indirect
@@ -157,7 +157,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moricho/tparallel v0.2.1 // indirect
 	github.com/muesli/mango v0.1.0 // indirect
-	github.com/muesli/mango-cobra v1.1.0 // indirect
+	github.com/muesli/mango-cobra v1.2.0 // indirect
 	github.com/muesli/mango-pflag v0.1.0 // indirect
 	github.com/muesli/roff v0.1.0 // indirect
 	github.com/nakabonne/nestif v0.3.1 // indirect
@@ -235,7 +235,7 @@ require (
 	golang.org/x/net v0.0.0-20220520000938-2e3eb7b945c2 // indirect
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
 	golang.org/x/sync v0.0.0-20220513210516-0976fa681c29 // indirect
-	golang.org/x/sys v0.0.0-20220702020025-31831981b65f // indirect
+	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
