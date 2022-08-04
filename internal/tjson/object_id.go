@@ -55,7 +55,7 @@ func (obj *objectIDType) UnmarshalJSON(data []byte) error {
 
 // MarshalJSON implements tjsontype interface.
 func (obj *objectIDType) MarshalJSON() ([]byte, error) {
-	res, err := json.Marshal([]byte(obj[:]))
+	res, err := json.Marshal(obj[:])
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
