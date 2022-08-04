@@ -160,6 +160,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			if setDoc.Len() == 0 {
 				continue
 			}
+
 			sort.Strings(setDoc.Keys())
 
 			for _, setKey := range doc.Keys() {
