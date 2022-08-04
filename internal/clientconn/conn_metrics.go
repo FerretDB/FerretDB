@@ -51,7 +51,7 @@ func newConnMetrics() *ConnMetrics {
 				Name:      "aggregation_stages_total",
 				Help:      "Total number of aggregation pipeline stages.",
 			},
-			[]string{"opcode", "command", "stage"},
+			[]string{"command", "stage"},
 		),
 	}
 }
