@@ -382,13 +382,16 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 
 	var hasUpdateOperators bool
 	for k := range update.Map() {
-		if slices.Contains([]string{
-			"$currentDate",
-			"$set",
-			"$setOnInsert",
-			"$unset",
-			"$inc",
-		}, k) {
+		if slices.Contains(
+			[]string{
+				"$currentDate",
+				"$set",
+				"$setOnInsert",
+				"$unset",
+				"$inc",
+			},
+			k,
+		) {
 			hasUpdateOperators = true
 			break
 		}
