@@ -211,11 +211,11 @@ func TestUpdateReplaceDocuments(t *testing.T) {
 		},
 		"ReplaceDotNotation": {
 			update: bson.D{
-				{"q", bson.D{{"_id", "document"}}},
+				{"q", bson.D{{"v.array.0", bson.D{{"$eq", int32(42)}}}}},
 				{"u", bson.D{{"replacement-value", int32(1)}}},
 			},
-			expectedFilter: bson.D{{"_id", "document"}},
-			expected:       bson.D{{"_id", "document"}, {"replacement-value", int32(1)}},
+			expectedFilter: bson.D{{"_id", "document-composite"}},
+			expected:       bson.D{{"_id", "document-composite"}, {"replacement-value", int32(1)}},
 		},
 	} {
 		name, tc := name, tc
