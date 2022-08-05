@@ -41,6 +41,9 @@ type Interface interface {
 
 	// OP_MSG commands, sorted alphabetically
 
+	// MsgAggregate returns aggregated data.
+	MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
 	// MsgBuildInfo returns a summary of the build information.
 	MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
