@@ -52,7 +52,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	var deleted int32
-	deleteDocument := func(i int) error { // TODO: check how mongodb handles every error in this function
+	processQuery := func(i int) error { // TODO: check how mongodb handles every error in this function
 		d, err := common.AssertType[*types.Document](must.NotFail(deletes.Get(i)))
 		if err != nil {
 			return err
@@ -153,21 +153,20 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return err
 	}
 
-	var errMsgs []string
+	var unorderedErrMsgs []string
 
 	for i := 0; i < deletes.Len(); i++ {
-		err := deleteDocument(i)
+		err := processQuery(i)
 		if err != nil {
 			if ordered {
-				// TODO: (BadValue) issue
 				return nil, err
 			}
-			errMsgs = append(errMsgs, err.Error())
+			unorderedErrMsgs = append(unorderedErrMsgs, err.Error())
 		}
 	}
 
-	if len(errMsgs) > 0 {
-		return nil, fmt.Errorf("write exception: write errors: [%s]", strings.Join(errMsgs, ","))
+	if len(unorderedErrMsgs) > 0 {
+		return nil, fmt.Errorf("write exception: write errors: [%s]", strings.Join(unorderedErrMsgs, ","))
 	}
 
 	var reply wire.OpMsg
