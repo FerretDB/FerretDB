@@ -17,7 +17,6 @@ package pg
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/jackc/pgx/v4"
 
@@ -52,7 +51,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	var deleted int32
-	processQuery := func(i int) error { // TODO: check how mongodb handles every error in this function
+	processQuery := func(i int) error {
 		d, err := common.AssertType[*types.Document](must.NotFail(deletes.Get(i)))
 		if err != nil {
 			return err
@@ -153,7 +152,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return err
 	}
 
-	var unorderedErrMsgs []string
+	var lastErr error
 
 	for i := 0; i < deletes.Len(); i++ {
 		err := processQuery(i)
@@ -161,12 +160,13 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			if ordered {
 				return nil, err
 			}
-			unorderedErrMsgs = append(unorderedErrMsgs, err.Error())
+			lastErr = err
 		}
 	}
 
-	if len(unorderedErrMsgs) > 0 {
-		return nil, fmt.Errorf("write exception: write errors: [%s]", strings.Join(unorderedErrMsgs, ","))
+	// TODO: handle all errors and return them in slice
+	if lastErr != nil {
+		return nil, lastErr
 	}
 
 	var reply wire.OpMsg
