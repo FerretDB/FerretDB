@@ -285,7 +285,6 @@ func checkAllModifiersSupported(update *types.Document) error {
 			}
 
 			// In case the operator doesn't start with $, treats the update as a Replacement object
-			// https://www.mongodb.com/docs/manual/reference/method/db.collection.update/#std-label-update-parameter
 		}
 	}
 	return nil
