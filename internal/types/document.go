@@ -329,50 +329,35 @@ func (d *Document) GetByPath(path Path) (any, error) {
 // SetByPath sets value by given path. If the Path has only one element, it sets the value for the given key.
 // If some parts of the path are missing, they will be created.
 // The Document type will be used to create these parts.
-func (d *Document) SetByPath(path Path, value any) {
+func (d *Document) SetByPath(path Path, value any) error {
 	if path.Len() == 1 {
-		must.NoError(d.Set(path.Slice()[0], value))
-
-		return
+		return d.Set(path.Slice()[0], value)
 	}
 
-	innerComp, err := d.GetByPath(path.TrimSuffix())
-	if err != nil {
-		next := d
-
-		var insertedPath Path
-		for _, pathElem := range path.TrimSuffix().Slice() {
-			insertedPath = insertedPath.Append(pathElem)
-
-			v, err := d.GetByPath(insertedPath)
-			if err != nil {
-				suffix := len(insertedPath.Slice()) - 1
-				if suffix < 0 {
-					panic("invalid path")
-				}
-
-				must.NoError(next.Set(insertedPath.Slice()[suffix], must.NotFail(NewDocument())))
-
-				next = must.NotFail(d.GetByPath(insertedPath)).(*Document)
-			}
-
-			if doc, ok := v.(*Document); ok {
-				next = doc
-			}
+	if !d.HasByPath(path.TrimSuffix()) {
+		// we should insert the missing part of the path
+		if err := insertByPath(d, path); err != nil {
+			return err
 		}
-		innerComp = must.NotFail(d.GetByPath(path.TrimSuffix()))
 	}
+
+	innerComp := must.NotFail(d.GetByPath(path.TrimSuffix()))
 
 	switch inner := innerComp.(type) {
 	case *Document:
-		must.NoError(inner.Set(path.Suffix(), value))
+		return inner.Set(path.Suffix(), value)
 	case *Array:
 		index, err := strconv.Atoi(path.Suffix())
 		if err != nil {
-			panic("SetByPath: should be an index")
+			return fmt.Errorf(
+				"Cannot create field '%s' in element {%s: %s}",
+				path.Suffix(),
+				path.Slice()[len(path.Slice())-2],
+				formatAnyValue(innerComp),
+			)
 		}
 
-		must.NoError(inner.Set(index, value))
+		return inner.Set(index, value)
 	default:
 		panic(fmt.Errorf("can't set value for %T type", inner))
 	}
