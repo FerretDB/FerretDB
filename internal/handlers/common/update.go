@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strings"
 	"time"
 
 	"golang.org/x/exp/slices"
@@ -89,8 +90,33 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 
 		default:
-			// handled by UpdateOperators above
-			panic(fmt.Errorf("unhandled operation %q", updateOp))
+			if strings.HasPrefix(updateOp, "$") {
+				return false, NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
+			}
+
+			// Treats the update as a Replacement object.
+			setDoc := update
+
+			if setDoc.Len() == 0 {
+				continue
+			}
+
+			sort.Strings(setDoc.Keys())
+
+			for _, setKey := range doc.Keys() {
+				if !setDoc.Has(setKey) && !(setKey == "_id") {
+					doc.Remove(setKey)
+				}
+			}
+
+			for _, setKey := range setDoc.Keys() {
+				setValue := must.NotFail(setDoc.Get(setKey))
+				if err := doc.Set(setKey, setValue); err != nil {
+					return false, err
+				}
+			}
+
+			changed = true
 		}
 	}
 
@@ -180,37 +206,6 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			)
 		default:
 			return false, err
-		}
-	}
-
-		default:
-			if strings.HasPrefix(updateOp, "$") {
-				return false, NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
-			}
-
-			// Treats the update as a Replacement object.
-			setDoc := update
-
-			if setDoc.Len() == 0 {
-				continue
-			}
-
-			sort.Strings(setDoc.Keys())
-
-			for _, setKey := range doc.Keys() {
-				if !setDoc.Has(setKey) && !(setKey == "_id") {
-					doc.Remove(setKey)
-				}
-			}
-
-			for _, setKey := range setDoc.Keys() {
-				setValue := must.NotFail(setDoc.Get(setKey))
-				if err := doc.Set(setKey, setValue); err != nil {
-					return false, err
-				}
-			}
-
-			changed = true
 		}
 	}
 
