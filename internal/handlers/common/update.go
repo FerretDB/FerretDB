@@ -264,7 +264,7 @@ func processCurrentDateFieldExpression(doc *types.Document, currentDateVal any) 
 // ValidateUpdateOperators validates update statement.
 func ValidateUpdateOperators(update *types.Document) error {
 	var err error
-	if err = checkAllModifiersSupported(update); err != nil {
+	if _, err = HasSupportedUpdateModifiers(update); err != nil {
 		return err
 	}
 	inc, err := extractValueFromUpdateOperator("$inc", update)
@@ -292,8 +292,9 @@ func ValidateUpdateOperators(update *types.Document) error {
 	return nil
 }
 
-// checkAllModifiersSupported checks that update document contains only modifiers that are supported.
-func checkAllModifiersSupported(update *types.Document) error {
+// HasSupportedUpdateModifiers checks that update document contains only modifiers that are supported.
+func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
+	updateModifier := false
 	for _, updateOp := range update.Keys() {
 		switch updateOp {
 		case "$currentDate":
@@ -305,10 +306,10 @@ func checkAllModifiersSupported(update *types.Document) error {
 		case "$setOnInsert":
 			fallthrough
 		case "$unset":
-			// supported
+			updateModifier = true
 		default:
 			if strings.HasPrefix(updateOp, "$") {
-				return NewWriteErrorMsg(
+				return false, NewWriteErrorMsg(
 					ErrFailedToParse,
 					fmt.Sprintf(
 						"Unknown modifier: %s. Expected a valid update modifier or pipeline-style "+
@@ -320,7 +321,7 @@ func checkAllModifiersSupported(update *types.Document) error {
 			// In case the operator doesn't start with $, treats the update as a Replacement object
 		}
 	}
-	return nil
+	return updateModifier, nil
 }
 
 // checkConflictingChanges checks if there are the same keys in these documents and returns an error, if any.

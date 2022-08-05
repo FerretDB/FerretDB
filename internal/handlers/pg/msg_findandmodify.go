@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v4"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
@@ -380,21 +379,9 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 		)
 	}
 
-	var hasUpdateOperators bool
-	for k := range update.Map() {
-		if slices.Contains(
-			[]string{
-				"$currentDate",
-				"$set",
-				"$setOnInsert",
-				"$unset",
-				"$inc",
-			},
-			k,
-		) {
-			hasUpdateOperators = true
-			break
-		}
+	hasUpdateOperators, err := common.HasSupportedUpdateModifiers(update)
+	if err != nil {
+		return nil, err
 	}
 
 	var comment string
