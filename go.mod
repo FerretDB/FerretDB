@@ -14,10 +14,10 @@ require (
 	github.com/stretchr/testify v1.8.0
 	github.com/tigrisdata/tigris-client-go v1.0.0-alpha.20
 	go.uber.org/zap v1.21.0
-	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect; always use @latest
-	golang.org/x/exp v0.0.0-20220713135740-79cabaa25d75
-	golang.org/x/net v0.0.0-20220708220712-1185a9018129
-	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8
+	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect; always use @latest
+	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e
+	golang.org/x/net v0.0.0-20220802222814-0bcc04d9c69b
+	golang.org/x/sys v0.0.0-20220803195053-6e608f9ce704
 )
 
 require (
@@ -58,7 +58,7 @@ require (
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220526192754-51939a95c655 // indirect
-	google.golang.org/grpc v1.48.0 // indirect
+	google.golang.org/grpc v1.46.2 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
