@@ -17,10 +17,10 @@ package pg
 import (
 	"context"
 	"fmt"
-	"golang.org/x/exp/slices"
 	"time"
 
 	"github.com/jackc/pgx/v4"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"

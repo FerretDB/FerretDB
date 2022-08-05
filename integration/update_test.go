@@ -194,32 +194,50 @@ func TestUpdateReplaceDocuments(t *testing.T) {
 
 	t.Parallel()
 
-	t.Run("Replacement object", func(t *testing.T) {
-		t.Parallel()
-		ctx, collection := setup.Setup(t, shareddata.Composites, shareddata.Scalars)
+	stat := bson.D{{"n", int32(1)}, {"nModified", int32(1)}, {"ok", float64(1)}}
 
-		res := collection.Database().RunCommand(
-			ctx,
-			bson.D{
-				{"update", collection.Name()},
-				{"updates",
-					bson.A{bson.D{
-						{"q", bson.D{{"v.foo", bson.D{{"$eq", int32(42)}}}}},
-						{"u", bson.D{{"replacement-value", int32(1)}}},
-					}},
-				},
+	for name, tc := range map[string]struct {
+		update         bson.D
+		expectedFilter bson.D
+		expected       bson.D
+	}{
+		"Replace": {
+			update: bson.D{
+				{"q", bson.D{{"v", bson.D{{"$eq", true}}}}},
+				{"u", bson.D{{"replacement-value", int32(1)}}},
 			},
-		)
-		require.NoError(t, res.Err())
+			expectedFilter: bson.D{{"_id", "bool-true"}},
+			expected:       bson.D{{"_id", "bool-true"}, {"replacement-value", int32(1)}},
+		},
+		"ReplaceDotNotation": {
+			update: bson.D{
+				{"q", bson.D{{"_id", "document"}}},
+				{"u", bson.D{{"replacement-value", int32(1)}}},
+			},
+			expectedFilter: bson.D{{"_id", "document"}},
+			expected:       bson.D{{"_id", "document"}, {"replacement-value", int32(1)}},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup.Setup(t, shareddata.Composites, shareddata.Scalars)
 
-		var actual bson.D
-		err := res.Decode(&actual)
-		require.NoError(t, err)
+			res := collection.Database().RunCommand(
+				ctx,
+				bson.D{{"update", collection.Name()}, {"updates", bson.A{tc.update}}},
+			)
+			require.NoError(t, res.Err())
 
-		AssertEqualDocuments(t, bson.D{{"n", int32(1)}, {"nModified", int32(1)}, {"ok", float64(1)}}, actual)
+			var actual bson.D
+			err := res.Decode(&actual)
+			require.NoError(t, err)
 
-		err = collection.FindOne(ctx, bson.D{{"_id", "document"}}).Decode(&actual)
-		require.NoError(t, err)
-		AssertEqualDocuments(t, bson.D{{"_id", "document"}, {"replacement-value", int32(1)}}, actual)
-	})
+			AssertEqualDocuments(t, stat, actual)
+
+			err = collection.FindOne(ctx, tc.expectedFilter).Decode(&actual)
+			require.NoError(t, err)
+			AssertEqualDocuments(t, tc.expected, actual)
+		})
+	}
 }
