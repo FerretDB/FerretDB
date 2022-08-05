@@ -50,6 +50,14 @@ services:
     volumes:
       - .:/workdir
 
+  textlint:
+    build:
+      context: ./build/deps
+      dockerfile: textlint.Dockerfile
+    container_name: ferretdb_textlint
+    volumes:
+      - .:/workdir
+
   debian:
     build:
       context: ./build/deps
