@@ -1,6 +1,9 @@
 # https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 # Order is important; the last matching pattern takes the most precedence.
 
-*                @AlekSi
-/integration/    @FerretDB/leads
-/internal/       @FerretDB/leads
+*              @AlekSi
+/integration/  @FerretDB/leads
+/internal/     @FerretDB/leads
+
+go.mod         @AlekSi
+go.sum         @AlekSi
