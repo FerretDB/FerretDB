@@ -24,17 +24,25 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]updateCompatTestCase{
-		"Double": {
-			update: bson.D{{"$inc", bson.D{{"v", 42.13}}}},
+		"Int32": {
+			update: bson.D{{"$inc", bson.D{{"v", int32(42)}}}},
 			skip:   "https://github.com/FerretDB/FerretDB/issues/972",
 		},
-		"DoubleNegative": {
-			update: bson.D{{"$inc", bson.D{{"v", -42.13}}}},
+		"Int32Negative": {
+			update: bson.D{{"$inc", bson.D{{"v", int32(-42)}}}},
 			skip:   "https://github.com/FerretDB/FerretDB/issues/972",
 		},
 		"EmptyUpdatePath": {
 			update: bson.D{{"$inc", bson.D{{}}}},
 			skip:   "https://github.com/FerretDB/FerretDB/issues/673",
+		},
+		"DotNotationFieldExist": {
+			update: bson.D{{"$inc", bson.D{{"v.foo", int32(1)}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/972",
+		},
+		"DotNotationFieldNotExist": {
+			update: bson.D{{"$inc", bson.D{{"foo.bar", int32(1)}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/972",
 		},
 	}
 

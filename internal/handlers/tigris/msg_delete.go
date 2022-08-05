@@ -19,10 +19,9 @@ import (
 	"fmt"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
-	"github.com/tigrisdata/tigris-client-go/filter"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/tjson"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb/filter"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -141,8 +140,8 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 func (h *Handler) delete(ctx context.Context, fp fetchParam, docs []*types.Document) (int, error) {
 	ids := make([]filter.Expr, len(docs))
 	for i, doc := range docs {
-		id := must.NotFail(doc.Get("_id")).(types.ObjectID)
-		ids[i] = filter.Eq("_id", tjson.ObjectID(id))
+		id := must.NotFail(doc.Get("_id"))
+		ids[i] = filter.Eq("_id", id)
 	}
 
 	var f driver.Filter
@@ -154,7 +153,8 @@ func (h *Handler) delete(ctx context.Context, fp fetchParam, docs []*types.Docum
 	default:
 		f = must.NotFail(filter.Or(ids...).Build())
 	}
-	h.L.Sugar().Debugf("Filter: %s", f)
+
+	h.L.Sugar().Debugf("Delete filter: %s", f)
 
 	_, err := h.driver.UseDatabase(fp.db).Delete(ctx, fp.collection, f)
 	if err != nil {
