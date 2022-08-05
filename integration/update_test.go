@@ -194,55 +194,32 @@ func TestUpdateReplaceDocuments(t *testing.T) {
 
 	t.Parallel()
 
-	for name, tc := range map[string]struct {
-		filter       bson.D
-		update       bson.D
-		updateResult bson.D
-		query        bson.D
-		res          bson.D
-	}{
-		"Replace": {
-			filter:       bson.D{{"value.foo.bar", bson.D{{"$eq", int32(1)}}}},
-			update:       bson.D{{"new-value", int32(1)}},
-			updateResult: bson.D{{"n", int32(1)}, {"nModified", int32(1)}, {"ok", float64(1)}},
-			query:        bson.D{{"_id", "document"}},
-			res:          bson.D{{"_id", "document"}, {"new-value", int32(1)}},
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			ctx, collection := setup.Setup(t)
+	t.Run("Replacement object", func(t *testing.T) {
+		t.Parallel()
+		ctx, collection := setup.Setup(t, shareddata.Composites, shareddata.Scalars)
 
-			_, err := collection.InsertMany(
-				ctx,
-				[]any{
-					bson.D{
-						{"_id", "document"},
-						{"value", bson.D{{"foo", bson.D{{"bar", int32(1)}}}}},
-					},
+		res := collection.Database().RunCommand(
+			ctx,
+			bson.D{
+				{"update", collection.Name()},
+				{"updates",
+					bson.A{bson.D{
+						{"q", bson.D{{"v.foo", bson.D{{"$eq", int32(42)}}}}},
+						{"u", bson.D{{"replacement-value", int32(1)}}},
+					}},
 				},
-			)
-			require.NoError(t, err)
+			},
+		)
+		require.NoError(t, res.Err())
 
-			res := collection.Database().RunCommand(
-				ctx,
-				bson.D{
-					{"update", collection.Name()},
-					{"updates", bson.A{bson.D{{"q", tc.filter}, {"u", tc.update}}}},
-				},
-			)
-			require.NoError(t, res.Err())
+		var actual bson.D
+		err := res.Decode(&actual)
+		require.NoError(t, err)
 
-			var actual bson.D
-			err = res.Decode(&actual)
-			require.NoError(t, err)
+		AssertEqualDocuments(t, bson.D{{"n", int32(1)}, {"nModified", int32(1)}, {"ok", float64(1)}}, actual)
 
-			AssertEqualDocuments(t, tc.updateResult, actual)
-
-			err = collection.FindOne(ctx, tc.query).Decode(&actual)
-			require.NoError(t, err)
-			AssertEqualDocuments(t, tc.res, actual)
-		})
-	}
+		err = collection.FindOne(ctx, bson.D{{"_id", "document"}}).Decode(&actual)
+		require.NoError(t, err)
+		AssertEqualDocuments(t, bson.D{{"_id", "document"}, {"replacement-value", int32(1)}}, actual)
+	})
 }

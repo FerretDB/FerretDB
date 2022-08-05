@@ -17,6 +17,7 @@ package pg
 import (
 	"context"
 	"fmt"
+	"golang.org/x/exp/slices"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -381,7 +382,13 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 
 	var hasUpdateOperators bool
 	for k := range update.Map() {
-		if _, ok := common.UpdateOperators[k]; ok {
+		if slices.Contains([]string{
+			"$currentDate",
+			"$set",
+			"$setOnInsert",
+			"$unset",
+			"$inc",
+		}, k) {
 			hasUpdateOperators = true
 			break
 		}
