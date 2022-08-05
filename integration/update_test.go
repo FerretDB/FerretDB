@@ -217,6 +217,14 @@ func TestUpdateReplaceDocuments(t *testing.T) {
 			expectedFilter: bson.D{{"_id", "document-composite"}},
 			expected:       bson.D{{"_id", "document-composite"}, {"replacement-value", int32(1)}},
 		},
+		"ReplaceDotNotationWithEmptyDoc": {
+			update: bson.D{
+				{"q", bson.D{{"v.array.0", bson.D{{"$eq", int32(42)}}}}},
+				{"u", bson.D{{}}},
+			},
+			expectedFilter: bson.D{{"_id", "document-composite"}},
+			expected:       bson.D{{"_id", "document-composite"}},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
