@@ -15,11 +15,9 @@
 package tjson
 
 import (
-	"testing"
-	"time"
-
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"testing"
 )
 
 func convertDocument(d *types.Document) *documentType {
@@ -27,8 +25,8 @@ func convertDocument(d *types.Document) *documentType {
 	return &res
 }
 
-var (
-	handshake1doc = must.NotFail(types.NewDocument(
+func prepareTestCases() []testCase {
+	handshake1doc := must.NotFail(types.NewDocument(
 		"_id", "handshake1",
 		"ismaster", true,
 		"client", must.NotFail(types.NewDocument(
@@ -51,7 +49,7 @@ var (
 		// "compression", must.NotFail(types.NewArray("none")),
 		"loadBalanced", false,
 	))
-	handshake1 = testCase{
+	handshake1 := testCase{
 		name:   "handshake1",
 		v:      convertDocument(handshake1doc),
 		schema: must.NotFail(DocumentSchema(handshake1doc)),
@@ -64,7 +62,7 @@ var (
 			`"application":{"$k":["name"],"name":"mongosh 1.0.1"}},"loadBalanced":false}`,
 	}
 
-	handshake2doc = must.NotFail(types.NewDocument(
+	handshake2doc := must.NotFail(types.NewDocument(
 		"_id", "handshake2",
 		"ismaster", true,
 		"client", must.NotFail(types.NewDocument(
@@ -87,7 +85,7 @@ var (
 		// "compression", must.NotFail(types.NewArray("none")),
 		"loadBalanced", false,
 	))
-	handshake2 = testCase{
+	handshake2 := testCase{
 		name:   "handshake2",
 		v:      convertDocument(handshake2doc),
 		schema: must.NotFail(DocumentSchema(handshake2doc)),
@@ -100,7 +98,7 @@ var (
 			`"application":{"$k":["name"],"name":"mongosh 1.0.1"}},"loadBalanced":false}`,
 	}
 
-	handshake3doc = must.NotFail(types.NewDocument(
+	handshake3doc := must.NotFail(types.NewDocument(
 		"_id", "handshake3",
 		"buildInfo", int32(1),
 		"lsid", must.NotFail(types.NewDocument(
@@ -114,7 +112,7 @@ var (
 		)),
 		"$db", "admin",
 	))
-	handshake3 = testCase{
+	handshake3 := testCase{
 		name:   "handshake3",
 		v:      convertDocument(handshake3doc),
 		schema: must.NotFail(DocumentSchema((handshake3doc))),
@@ -122,7 +120,7 @@ var (
 			`"lsid":{"$k":["id"],"id":{"$b":"oxnytKF1QMe456OjLsJWvg==","s":4}},"$db":"admin"}`,
 	}
 
-	handshake4doc = must.NotFail(types.NewDocument(
+	handshake4doc := must.NotFail(types.NewDocument(
 		"_id", "handshake4",
 		"version", "5.0.0",
 		"gitVersion", "1184f004a99660de6f5e745573419bda8a28c0e9",
@@ -167,7 +165,7 @@ var (
 		// "storageEngines", must.NotFail(types.NewArray("devnull", "ephemeralForTest", "wiredTiger")),
 		"ok", float64(1),
 	))
-	handshake4 = testCase{
+	handshake4 := testCase{
 		name:   "handshake4",
 		v:      convertDocument(handshake4doc),
 		schema: must.NotFail(DocumentSchema((handshake4doc))),
@@ -198,57 +196,47 @@ var (
 			`BOOST_SYSTEM_NO_DEPRECATED BOOST_MATH_NO_LONG_DOUBLE_MATH_FUNCTIONS BOOST_ENABLE_ASSERT_DEBUG_HANDLER ` +
 			`BOOST_LOG_NO_SHORTHAND_NAMES BOOST_LOG_USE_NATIVE_SYSLOG BOOST_LOG_WITHOUT_THREAD_ATTR ` +
 			`ABSL_FORCE_ALIGNED_ACCESS"},"bits":64,"debug":false,"maxBsonObjectSize":16777216,` +
-			`"ok":{"$f":1}}`,
+			`"ok":1}`,
 	}
 
-	all = testCase{
-		name: "all",
-		v: convertDocument(must.NotFail(types.NewDocument(
-			// TODO Support arrays: https://github.com/FerretDB/FerretDB/issues/908
-			/* "binary", must.NotFail(types.NewArray(
-				types.Binary{Subtype: types.BinaryUser, B: []byte{0x42}},
-				types.Binary{Subtype: types.BinaryGeneric, B: []byte{}},
-			)), */
-			"bool", must.NotFail(types.NewArray(true, false)),
-			"datetime", must.NotFail(types.NewArray(
-				time.Date(2021, 7, 27, 9, 35, 42, 123000000, time.UTC).Local(),
-				time.Time{}.Local(),
-			)),
-			"double", must.NotFail(types.NewArray(42.13, 0.0)),
-			"int32", must.NotFail(types.NewArray(int32(42), int32(0))),
-			"int64", must.NotFail(types.NewArray(int64(42), int64(0))),
-			"objectID", must.NotFail(types.NewArray(types.ObjectID{0x42}, types.ObjectID{})),
-			"string", must.NotFail(types.NewArray("foo", "")),
-			"timestamp", must.NotFail(types.NewArray(types.Timestamp(42), types.Timestamp(0))),
-		))),
-		schema: nil,
-		j: `{"$k":["binary","bool","datetime","double","int32","int64","objectID","string","timestamp"],` +
-			`"binary":[{"$b":"Qg==","s":128},{"$b":"","s":0}],"bool":[true,false],` +
-			`"datetime":[{"$d":1627378542123},{"$d":-62135596800000}],"double":[{"$f":42.13},{"$f":0}],` +
-			`"int32":[42,0],"int64":[{"$l":"42"},{"$l":"0"}],` +
-			`"objectID":[{"$o":"420000000000000000000000"},{"$o":"000000000000000000000000"}],` +
-			`"string":["foo",""],"timestamp":[{"$t":"42"},{"$t":"0"}]}`,
+	allDoc := must.NotFail(types.NewDocument(
+		"_id", types.NewObjectID(),
+		"binary", types.Binary{Subtype: types.BinaryUser, B: []byte{0x42}},
+		"bool", true,
+		"double", 2.13,
+		"int32", int32(42),
+		"int64", int64(42),
+		"string", "foo",
+		"object", must.NotFail(types.NewDocument("foo", "bar")),
+	))
+	all := testCase{
+		name:   "all",
+		v:      convertDocument(allDoc),
+		schema: must.NotFail(DocumentSchema((allDoc))),
+		j: `{"$k":["_id","binary","bool","double","int32","int64","string"],` +
+			`"_id":"YupqlD1EsQ4ba4eX","binary":"","bool":true,"double":42.13,"int32":42.0,` +
+			`"int64":42,"string":"foo","object":{"foo":"bar"}}`,
 	}
 
-	eof = testCase{
+	eof := testCase{
 		name:   "EOF",
-		schema: nil,
+		schema: stringSchema,
 		j:      `[`,
 		jErr:   `unexpected EOF`,
 	}
 
-	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4 /*, all, eof*/}
-)
+	return []testCase{handshake1, handshake2, handshake3, handshake4, all, eof}
+}
 
 func TestDocument(t *testing.T) {
 	t.Parallel()
-	testJSON(t, documentTestCases, func() tjsontype { return new(documentType) })
+	testJSON(t, prepareTestCases(), func() tjsontype { return new(documentType) })
 }
 
 func FuzzDocument(f *testing.F) {
-	fuzzJSON(f, documentTestCases)
+	fuzzJSON(f, prepareTestCases())
 }
 
 func BenchmarkDocument(b *testing.B) {
-	benchmark(b, documentTestCases)
+	benchmark(b, prepareTestCases())
 }
