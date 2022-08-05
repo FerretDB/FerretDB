@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"math"
 	"sort"
-	"strings"
 	"time"
 
 	"golang.org/x/exp/slices"
@@ -84,66 +83,105 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			changed = true
 
 		case "$inc":
-			// expecting here a document since all checks were made in ValidateUpdateOperators func
-			incDoc := updateV.(*types.Document)
-
-			for _, incKey := range incDoc.Keys() {
-				incValue := must.NotFail(incDoc.Get(incKey))
-
-				if !doc.Has(incKey) {
-					must.NoError(doc.Set(incKey, incValue))
-					changed = true
-					continue
-				}
-
-				docValue := must.NotFail(doc.Get(incKey))
-
-				incremented, err := addNumbers(incValue, docValue)
-				if err == nil {
-					must.NoError(doc.Set(incKey, incremented))
-
-					result := types.Compare(docValue, incremented)
-
-					if len(result) != 1 {
-						panic("$inc: there should be only one result")
-					}
-
-					docFloat, ok := docValue.(float64)
-					if result[0] == types.Equal &&
-						// if the document value is NaN we should consider it as changed.
-						(ok && !math.IsNaN(docFloat)) {
-						continue
-					}
-
-					changed = true
-					continue
-				}
-
-				switch err {
-				case errUnexpectedLeftOpType:
-					return false, NewWriteErrorMsg(
-						ErrTypeMismatch,
-						fmt.Sprintf(
-							`Cannot increment with non-numeric argument: {%s: %#v}`,
-							incKey,
-							incValue,
-						),
-					)
-				case errUnexpectedRightOpType:
-					return false, NewWriteErrorMsg(
-						ErrTypeMismatch,
-						fmt.Sprintf(
-							`Cannot apply $inc to a value of non-numeric type. `+
-								`{_id: "%s"} has the field '%s' of non-numeric type %s`,
-							must.NotFail(doc.Get("_id")),
-							incKey,
-							AliasFromType(docValue),
-						),
-					)
-				default:
-					return false, err
-				}
+			changed, err = processIncFieldExpression(doc, updateV)
+			if err != nil {
+				return false, err
 			}
+
+		default:
+			// handled by UpdateOperators above
+			panic(fmt.Errorf("unhandled operation %q", updateOp))
+		}
+	}
+
+	return changed, nil
+}
+
+// processIncFieldExpression changes document according to $inc operator.
+// If the document was changed it returns true.
+func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
+	// expecting here a document since all checks were made in ValidateUpdateOperators func
+	incDoc := updateV.(*types.Document)
+
+	var changed bool
+
+	for _, incKey := range incDoc.Keys() {
+		incValue := must.NotFail(incDoc.Get(incKey))
+
+		path := types.NewPathFromString(incKey)
+
+		if !doc.HasByPath(path) {
+			err := doc.SetByPath(path, incValue)
+			if err != nil {
+				return false, NewWriteErrorMsg(
+					ErrUnsuitableValueType,
+					err.Error(),
+				)
+			}
+
+			changed = true
+
+			continue
+		}
+
+		docValue, err := doc.GetByPath(types.NewPathFromString(incKey))
+		if err != nil {
+			return false, err
+		}
+
+		incremented, err := addNumbers(incValue, docValue)
+		if err == nil {
+			err := doc.SetByPath(path, incremented)
+			if err != nil {
+				return false, NewWriteErrorMsg(
+					ErrUnsuitableValueType,
+					fmt.Sprintf(`Cannot create field in element {%s: %v}`, path.Prefix(), docValue),
+				)
+			}
+
+			result := types.Compare(docValue, incremented)
+
+			if len(result) != 1 {
+				panic("$inc: there should be only one result")
+			}
+
+			docFloat, ok := docValue.(float64)
+			if result[0] == types.Equal &&
+				// if the document value is NaN we should consider it as changed.
+				(ok && !math.IsNaN(docFloat)) {
+				continue
+			}
+
+			changed = true
+
+			continue
+		}
+
+		switch err {
+		case errUnexpectedLeftOpType:
+			return false, NewWriteErrorMsg(
+				ErrTypeMismatch,
+				fmt.Sprintf(
+					`Cannot increment with non-numeric argument: {%s: %#v}`,
+					incKey,
+					incValue,
+				),
+			)
+		case errUnexpectedRightOpType:
+			return false, NewWriteErrorMsg(
+				ErrTypeMismatch,
+				fmt.Sprintf(
+					`Cannot apply $inc to a value of non-numeric type. `+
+						`{_id: "%s"} has the field '%s' of non-numeric type %s`,
+					must.NotFail(doc.Get("_id")),
+					incKey,
+					AliasFromType(docValue),
+				),
+			)
+		default:
+			return false, err
+		}
+	}
 
 		default:
 			if strings.HasPrefix(updateOp, "$") {
@@ -328,19 +366,13 @@ func extractValueFromUpdateOperator(op string, update *types.Document) (*types.D
 		return nil, nil
 	}
 	updateExpression := must.NotFail(update.Get(op))
-	switch doc := updateExpression.(type) {
-	case *types.Document:
-		for _, v := range doc.Keys() {
-			if strings.Contains(v, ".") {
-				// TODO https://github.com/FerretDB/FerretDB/issues/803
-				return nil, NewError(ErrNotImplemented, fmt.Errorf("dot notation for operator %s is not supported yet", op))
-			}
-		}
 
-		return doc, nil
-	default:
+	doc, ok := updateExpression.(*types.Document)
+	if !ok {
 		return nil, NewWriteErrorMsg(ErrFailedToParse, "Modifiers operate on fields but we found another type instead")
 	}
+
+	return doc, nil
 }
 
 // validateCurrentDateExpression validates $currentDate input on correctness.
