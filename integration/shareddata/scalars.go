@@ -124,6 +124,67 @@ var Strings = &Values[string]{
 	},
 }
 
+// Binaries contains binary values for tests.
+var Binaries = &Values[string]{
+	name:     "Binaries",
+	handlers: []string{"pg", "tigris"},
+	data: map[string]any{
+		"binary":       primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}},
+		"binary-empty": primitive.Binary{Data: []byte{}},
+	},
+}
+
+// ObjectIDs contains ObjectID values for tests.
+var ObjectIDs = &Values[string]{
+	name:     "ObjectIDs",
+	handlers: []string{"pg", "tigris"},
+	data: map[string]any{
+		"objectid":       primitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11},
+		"objectid-empty": primitive.NilObjectID,
+	},
+}
+
+// Bools contains bool values for tests.
+var Bools = &Values[string]{
+	name:     "Bools",
+	handlers: []string{"pg", "tigris"},
+	data: map[string]any{
+		"bool-false": false,
+		"bool-true":  true,
+	},
+}
+
+// DateTimes contains datetime values for tests.
+var DateTimes = &Values[string]{
+	name:     "DateTimes",
+	handlers: []string{"pg", "tigris"},
+	data: map[string]any{
+		"datetime":          primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC)),
+		"datetime-epoch":    primitive.NewDateTimeFromTime(time.Unix(0, 0)),
+		"datetime-year-min": primitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)),
+		"datetime-year-max": primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC)),
+	},
+}
+
+// Nulls contains null value for tests.
+var Nulls = &Values[string]{
+	name:     "Nulls",
+	handlers: []string{"pg", "tigris"},
+	data: map[string]any{
+		"null": nil,
+	},
+}
+
+// Regexes contains regex values for tests.
+var Regexes = &Values[string]{
+	name:     "Regexes",
+	handlers: []string{"pg", "tigris"},
+	data: map[string]any{
+		"regex":       primitive.Regex{Pattern: "foo", Options: "i"},
+		"regex-empty": primitive.Regex{},
+	},
+}
+
 // Int32s contains int32 values for tests.
 var Int32s = &Values[string]{
 	name:     "Int32s",
@@ -133,5 +194,28 @@ var Int32s = &Values[string]{
 		"int32-zero": int32(0),
 		"int32-max":  int32(math.MaxInt32),
 		"int32-min":  int32(math.MinInt32),
+	},
+}
+
+// Timestamps contains timestamp values for tests.
+var Timestamps = &Values[string]{
+	name:     "Timestamps",
+	handlers: []string{"pg", "tigris"},
+	data: map[string]any{
+		"timestamp":   primitive.Timestamp{T: 42, I: 13},
+		"timestamp-i": primitive.Timestamp{I: 1},
+	},
+}
+
+// Int64s contains int64 values for tests.
+var Int64s = &Values[string]{
+	name:     "Int64s",
+	handlers: []string{"pg", "tigris"},
+	data: map[string]any{
+		"int64":      int64(42),
+		"int64-zero": int64(0),
+		"int64-max":  int64(math.MaxInt64),
+		"int64-min":  int64(math.MinInt64),
+		"int64-big":  int64Big,
 	},
 }
