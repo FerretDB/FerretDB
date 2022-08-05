@@ -45,6 +45,9 @@ const (
 	// ErrNamespaceNotFound indicates that a collection is not found.
 	ErrNamespaceNotFound = ErrorCode(26) // NamespaceNotFound
 
+	// ErrUnsuitableValueType indicates that field could not be created for given value.
+	ErrUnsuitableValueType = ErrorCode(28) // UnsuitableValueType
+
 	// ErrConflictingUpdateOperators indicates that $set, $inc or $setOnInsert were used together.
 	ErrConflictingUpdateOperators = ErrorCode(40) // ConflictingUpdateOperators
 
