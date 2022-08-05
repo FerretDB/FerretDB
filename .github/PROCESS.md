@@ -33,7 +33,11 @@ This guide tries to be short and does not mention things that are completely aut
 2. To achieve that, we measure the flow of work and estimate tasks.
 3. The flow of work is measured automatically based on GitHub's pull request workflow.
 4. Tasks are measured manually by engineers during Sprint planning.
-5. Task estimation depends on the scope, the complexity of the task, and the possible risks and clarity.
+5. Task estimation depends on the following parameters:
+   * Scope
+   * Complexity of the task
+   * Possible risks
+   * Clarity
 6. We use the following T-Shirt Sizes to estimate tasks:
    * *S*: Small scope, trivial complexity, no risks and total clarity.
    * *M*: Only one parameter can be changed compared to *S* (e.g. a small but a bit unclear task).
