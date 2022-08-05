@@ -24,12 +24,12 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]updateCompatTestCase{
-		"Double": {
-			update: bson.D{{"$inc", bson.D{{"v", 42.13}}}},
+		"Int32": {
+			update: bson.D{{"$inc", bson.D{{"v", int32(42)}}}},
 			skip:   "https://github.com/FerretDB/FerretDB/issues/972",
 		},
-		"DoubleNegative": {
-			update: bson.D{{"$inc", bson.D{{"v", -42.13}}}},
+		"Int32Negative": {
+			update: bson.D{{"$inc", bson.D{{"v", int32(-42)}}}},
 			skip:   "https://github.com/FerretDB/FerretDB/issues/972",
 		},
 		"EmptyUpdatePath": {
