@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -209,7 +210,13 @@ func TestDocument(t *testing.T) {
 			t.Run(tc.name, func(t *testing.T) {
 				t.Parallel()
 
-				tc.document.SetByPath(NewPathFromString(tc.key), tc.value)
+				err := tc.document.SetByPath(NewPathFromString(tc.key), tc.value)
+
+				if tc.err != nil {
+					assert.Equal(t, tc.err, err)
+					return
+				}
+				require.NoError(t, err)
 
 				assert.Equal(t, tc.expected, tc.document)
 			})

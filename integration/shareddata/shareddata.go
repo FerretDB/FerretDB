@@ -41,9 +41,19 @@ type Provider interface {
 func AllProviders() []Provider {
 	providers := []Provider{
 		Scalars,
+
 		Doubles,
 		Strings,
+		Binaries,
+		ObjectIDs,
+		Bools,
+		// DateTimes, TODO https://github.com/FerretDB/FerretDB/issues/905
+		// Nulls, TODO https://github.com/FerretDB/FerretDB/issues/906
+		// Regexes, TODO https://github.com/FerretDB/FerretDB/issues/911
 		Int32s,
+		// Timestamps, TODO https://github.com/FerretDB/FerretDB/issues/905
+		Int64s,
+
 		Composites,
 	}
 

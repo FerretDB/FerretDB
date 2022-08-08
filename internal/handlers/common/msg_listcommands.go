@@ -42,6 +42,10 @@ type command struct {
 // Please keep help text in sync with handlers.Interface methods documentation.
 var Commands = map[string]command{
 	// sorted alphabetically
+	"aggregate": {
+		Help:    "Returns aggregated data.",
+		Handler: (handlers.Interface).MsgAggregate,
+	},
 	"buildinfo": {
 		Help:    "Returns a summary of the build information.",
 		Handler: (handlers.Interface).MsgBuildInfo,
