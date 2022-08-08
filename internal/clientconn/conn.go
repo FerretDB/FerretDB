@@ -251,9 +251,9 @@ func (c *conn) run(ctx context.Context) (err error) {
 // route sends request to a handler's command based on the op code provided in the request header.
 //
 // The possible resBody returns:
-//  * normal response  - to be returned to the client, closeConn is false;
-//  * protocol error (*common.Error, possibly wrapped) - to be returned to the client, closeConn is false;
-//  * any other error - to be returned to the client as InternalError before terminating connection, closeConn is true.
+//   - normal response  - to be returned to the client, closeConn is false;
+//   - protocol error (*common.Error, possibly wrapped) - to be returned to the client, closeConn is false;
+//   - any other error - to be returned to the client as InternalError before terminating connection, closeConn is true.
 //
 // Handlers to which it routes, should not panic on bad input, but may do so in "impossible" cases.
 // They also should not use recover(). That allows us to use fuzzing.
