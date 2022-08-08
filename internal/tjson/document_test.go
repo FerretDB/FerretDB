@@ -218,6 +218,9 @@ func prepareTestCases() []testCase {
 			`"int64":42,"string":"foo","object":{"foo":"bar"}}`,
 	}
 
+	// TODO Add a test case that contains arrays of various types (like in the fjson package):
+	// https://github.com/FerretDB/FerretDB/issues/908
+
 	eof := testCase{
 		name:   "EOF",
 		schema: stringSchema,
