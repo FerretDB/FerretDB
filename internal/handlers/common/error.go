@@ -243,11 +243,34 @@ func (we *WriteErrors) Document() *types.Document {
 	return d
 }
 
+func parseErr[T any](err error) (T, bool) {
+	var obj T
+	ok := errors.As(err, &obj)
+	return obj, ok
+}
+
+func (we *WriteErrors) Append(err error) {
+	if e, ok := parseErr[*writeError](err); ok {
+		*we = append(*we, *e)
+		return
+	}
+	if e, ok := parseErr[*CommandError](err); ok {
+		*we = append(*we, writeError{err: e.Unwrap().Error(), code: e.code})
+		return
+	}
+
+	*we = append(*we, writeError{err: err.Error(), code: errInternalError})
+}
+
 // writeError represents protocol write error.
 // It required to build the correct write error result.
 type writeError struct {
 	code ErrorCode
 	err  string
+}
+
+func (we *writeError) Error() string {
+	return we.err
 }
 
 // formatBitwiseOperatorErr formats protocol error for given internal error and bitwise operator.

@@ -150,20 +150,20 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return err
 	}
 
-	var unorderedErrMsgs []string
+	var unorderedErrMsgs *common.WriteErrors
 
 	for i := 0; i < deletes.Len(); i++ {
 		err := processQuery(i)
 		if err != nil {
+			unorderedErrMsgs.Append(err)
 			if ordered {
-				return nil, err
+				return nil, unorderedErrMsgs
 			}
-			unorderedErrMsgs = append(unorderedErrMsgs, err.Error())
 		}
 	}
 
-	if len(unorderedErrMsgs) > 0 {
-		return nil, fmt.Errorf("write exception: write errors: [%s]", strings.Join(unorderedErrMsgs, ","))
+	if unorderedErrMsgs != nil {
+		return nil, unorderedErrMsgs
 	}
 
 	var reply wire.OpMsg
