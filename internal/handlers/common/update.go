@@ -317,6 +317,7 @@ func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
 			// In case the operator doesn't start with $, treats the update as a Replacement object
 		}
 	}
+
 	return updateModifier, nil
 }
 
