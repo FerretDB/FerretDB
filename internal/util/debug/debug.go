@@ -71,4 +71,5 @@ func RunHandler(ctx context.Context, addr string, l *zap.Logger) {
 	s.Shutdown(stopCtx) //nolint:contextcheck // use new context for cancellation
 
 	s.Close()
+	l.Sugar().Info("Debug server stopped.")
 }
