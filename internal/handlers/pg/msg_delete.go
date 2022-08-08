@@ -17,13 +17,15 @@ package pg
 import (
 	"context"
 	"fmt"
+
+	"github.com/jackc/pgx/v4"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
-	"github.com/jackc/pgx/v4"
 )
 
 // MsgDelete implements HandlerInterface.
@@ -150,7 +152,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return err
 	}
 
-	var unorderedErrMsgs *common.WriteErrors
+	unorderedErrMsgs := new(common.WriteErrors)
 
 	for i := 0; i < deletes.Len(); i++ {
 		err := processQuery(i)
