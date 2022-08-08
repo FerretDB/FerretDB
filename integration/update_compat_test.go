@@ -46,7 +46,7 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 
 			t.Parallel()
 
-			// Use per-test setup because update queries modify data.
+			// Use per-test setup because updates modify data set.
 			ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
 			update := tc.update

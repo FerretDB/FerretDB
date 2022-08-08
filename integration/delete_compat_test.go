@@ -58,7 +58,7 @@ func testDeleteCompat(t *testing.T, testCases map[string]deleteCompatTestCase) {
 
 			t.Parallel()
 
-			// Use per-test setup because delete queries modify data.
+			// Use per-test setup because deletes modify data set.
 			ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
 			filter := tc.filter
