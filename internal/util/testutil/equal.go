@@ -141,9 +141,9 @@ func diffSlices[T types.Type](tb testing.TB, expected, actual []T) (expectedS st
 }
 
 // equal compares any BSON values in a way that is useful for tests:
-//  * float64 NaNs are equal to each other;
-//  * float64 zero values are compared with sign (math.Copysign(0, -1) != math.Copysign(0, +1));
-//  * time.Time values are compared using Equal method.
+//   - float64 NaNs are equal to each other;
+//   - float64 zero values are compared with sign (math.Copysign(0, -1) != math.Copysign(0, +1));
+//   - time.Time values are compared using Equal method.
 //
 // This function is for tests; it should not try to convert values to different types before comparing them.
 //

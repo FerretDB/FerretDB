@@ -29,12 +29,12 @@ func notImplemented(command string) error {
 
 // Handler implements handlers.Interface by stubbing all methods except the following handler-independent commands:
 //
-//  * buildInfo;
-//  * connectionStatus;
-//  * debugError;
-//  * getCmdLineOpts;
-//  * hostInfo;
-//  * listCommands.
+//   - buildInfo;
+//   - connectionStatus;
+//   - debugError;
+//   - getCmdLineOpts;
+//   - hostInfo;
+//   - listCommands.
 type Handler struct{}
 
 // New returns a new handler.

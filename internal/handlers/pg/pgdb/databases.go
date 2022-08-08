@@ -60,8 +60,9 @@ func Databases(ctx context.Context, querier pgxtype.Querier) ([]string, error) {
 //
 // It returns (possibly wrapped):
 //
-//   * ErrAlreadyExist if schema already exist.
-//   * ErrInvalidDatabaseName if db name doesn't comply with the rules.
+//   - ErrAlreadyExist if schema already exist.
+//   - ErrInvalidDatabaseName if db name doesn't comply with the rules.
+//
 // Use errors.Is to check the error.
 func CreateDatabase(ctx context.Context, querier pgxtype.Querier, db string) error {
 	if !validateDatabaseNameRe.MatchString(db) ||

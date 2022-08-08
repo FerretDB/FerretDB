@@ -94,10 +94,11 @@ func GetBoolOptionalParam(doc *types.Document, key string) (bool, error) {
 // AssertType asserts value's type, returning protocol error for unexpected types.
 //
 // If a custom error is needed, use a normal Go type assertion instead:
-//   d, ok := value.(*types.Document)
-//   if !ok {
-//     return NewErrorMsg(ErrBadValue, "expected document")
-//   }
+//
+//	d, ok := value.(*types.Document)
+//	if !ok {
+//	  return NewErrorMsg(ErrBadValue, "expected document")
+//	}
 func AssertType[T types.Type](value any) (T, error) {
 	res, ok := value.(T)
 	if !ok {

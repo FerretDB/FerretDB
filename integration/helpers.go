@@ -169,9 +169,9 @@ func AssertEqualError(t testing.TB, expected mongo.CommandError, actual error) b
 //
 // In general, error messages should be the same. Exceptions include:
 //
-//  * MongoDB typos (e.g. "sortto" instead of "sort to");
-//  * MongoDB values formatting (e.g. we don't want to write additional code to format
-//    `{ $slice: { a: { b: 3 }, b: "string" } }` exactly the same way).
+//   - MongoDB typos (e.g. "sortto" instead of "sort to");
+//   - MongoDB values formatting (e.g. we don't want to write additional code to format
+//     `{ $slice: { a: { b: 3 }, b: "string" } }` exactly the same way).
 //
 // In any case, the alternative error message returned by FerretDB should not mislead users.
 func AssertEqualAltError(t testing.TB, expected mongo.CommandError, altMessage string, actual error) bool {

@@ -39,9 +39,9 @@ type bsontype interface {
 
 //go-sumtype:decl bsontype
 
-//nolint:deadcode,unused // remove later if it is not needed
-//
 // TODO https://github.com/FerretDB/FerretDB/issues/260
+//
+//nolint:deadcode,unused // remove later if it is not needed
 func fromBSON(v bsontype) any {
 	switch v := v.(type) {
 	case *Document:
@@ -77,9 +77,9 @@ func fromBSON(v bsontype) any {
 	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
 }
 
-//nolint:deadcode,unused // remove later if it is not needed
-//
 // TODO https://github.com/FerretDB/FerretDB/issues/260
+//
+//nolint:deadcode,unused // remove later if it is not needed
 func toBSON(v any) bsontype {
 	switch v := v.(type) {
 	case *types.Document:
