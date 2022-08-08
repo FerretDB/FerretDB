@@ -253,6 +253,7 @@ func subdocumentSchema(doc *types.Document) (*Schema, error) {
 
 	for _, k := range doc.Keys() {
 		v := must.NotFail(doc.Get(k))
+
 		s, err := valueSchema(v)
 
 		if err != nil {
