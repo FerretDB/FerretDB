@@ -15,9 +15,10 @@
 package tjson
 
 import (
+	"testing"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"testing"
 )
 
 func convertDocument(d *types.Document) *documentType {

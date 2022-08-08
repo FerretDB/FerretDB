@@ -304,6 +304,9 @@ func benchmark(b *testing.B, testCases []testCase) {
 func unmarshalJSON(v tjsontype, j string) (bool, error) {
 	var err error
 	switch v := v.(type) {
+	case *documentType:
+		// UnmarshalJSON is not supported for documents.
+		return false, nil
 	case *doubleType:
 		err = v.UnmarshalJSON([]byte(j))
 	case *stringType:
@@ -318,11 +321,9 @@ func unmarshalJSON(v tjsontype, j string) (bool, error) {
 		err = v.UnmarshalJSON([]byte(j))
 	case *int64Type:
 		err = v.UnmarshalJSON([]byte(j))
-	case *documentType:
-		// UnmarshalJSON is not supported for documents.
-		return false, nil
 	default:
 		panic(fmt.Sprintf("testing is not implemented for the type %T", v))
 	}
+
 	return true, err
 }
