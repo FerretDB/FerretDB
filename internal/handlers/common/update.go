@@ -97,14 +97,10 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			// Treats the update as a Replacement object.
 			setDoc := update
 
-			if setDoc.Len() == 0 {
-				continue
-			}
-
 			sort.Strings(setDoc.Keys())
 
 			for _, setKey := range doc.Keys() {
-				if !setDoc.Has(setKey) && !(setKey == "_id") {
+				if !setDoc.Has(setKey) && setKey != "_id" {
 					doc.Remove(setKey)
 				}
 			}
