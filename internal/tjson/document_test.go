@@ -15,9 +15,10 @@
 package tjson
 
 import (
+	"testing"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"testing"
 )
 
 func convertDocument(d *types.Document) *documentType {
@@ -221,9 +222,10 @@ func prepareTestCases() []testCase {
 	// TODO Add a test case that contains arrays of various types (like in the fjson package):
 	// https://github.com/FerretDB/FerretDB/issues/908
 
+	eofDoc := must.NotFail(types.NewDocument("_id", "foo"))
 	eof := testCase{
 		name:   "EOF",
-		schema: stringSchema,
+		schema: must.NotFail(DocumentSchema(eofDoc)),
 		j:      `[`,
 		jErr:   `unexpected EOF`,
 	}
