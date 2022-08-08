@@ -1044,8 +1044,8 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 				MatchedCount:  0,
 				ModifiedCount: 0,
 				UpsertedCount: 1,
-				UpsertedID:    "int32",
 			},
+			upserted: true,
 		},
 		"DotNotationArrayFieldExist": {
 			id:       "document-composite",
@@ -1057,7 +1057,7 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 				UpsertedCount: 0,
 			},
 		},
-		"DotNotationArrayFieldNotExist": {
+		"DotNotationArrFieldNotExist": {
 			id:     "int32",
 			update: bson.D{{"$setOnInsert", bson.D{{"foo.0.baz", int32(1)}}}},
 			expected: bson.D{
@@ -1068,20 +1068,20 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 				MatchedCount:  0,
 				ModifiedCount: 0,
 				UpsertedCount: 1,
-				UpsertedID:    "int32",
 			},
+			upserted: true,
 		},
-		"DocumentDotNotationArrayFieldNotExist": {
+		"DocumentDotNotationArrFieldNotExist": {
 			id:     "document",
 			update: bson.D{{"$setOnInsert", bson.D{{"v.0.foo", int32(1)}}}},
 			expected: bson.D{
 				{"_id", "document"},
-				{"v", bson.D{{"foo", int32(42)}, {"0", bson.D{{"foo", int32(1)}}}}},
+				{"v", bson.D{{"foo", int32(42)}}},
 			},
 			expectedStat: &mongo.UpdateResult{
-				MatchedCount:  0,
+				MatchedCount:  1,
 				ModifiedCount: 0,
-				UpsertedCount: 1,
+				UpsertedCount: 0,
 			},
 		},
 	} {
