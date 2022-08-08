@@ -15,10 +15,9 @@
 package tjson
 
 import (
-	"testing"
-
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"testing"
 )
 
 func convertDocument(d *types.Document) *documentType {
@@ -201,10 +200,10 @@ func prepareTestCases() []testCase {
 	}
 
 	allDoc := must.NotFail(types.NewDocument(
-		"_id", types.NewObjectID(),
+		"_id", types.ObjectID(objectIDType{0x62, 0xea, 0x6a, 0x94, 0x3d, 0x44, 0xb1, 0x0e, 0x1b, 0x6b, 0x87, 0x97}),
 		"binary", types.Binary{Subtype: types.BinaryUser, B: []byte{0x42}},
 		"bool", true,
-		"double", 2.13,
+		"double", 42.13,
 		"int32", int32(42),
 		"int64", int64(42),
 		"string", "foo",
@@ -214,9 +213,9 @@ func prepareTestCases() []testCase {
 		name:   "all",
 		v:      convertDocument(allDoc),
 		schema: must.NotFail(DocumentSchema((allDoc))),
-		j: `{"$k":["_id","binary","bool","double","int32","int64","string"],` +
-			`"_id":"YupqlD1EsQ4ba4eX","binary":"","bool":true,"double":42.13,"int32":42.0,` +
-			`"int64":42,"string":"foo","object":{"foo":"bar"}}`,
+		j: `{"$k":["_id","binary","bool","double","int32","int64","string","object"],` +
+			`"_id":"YupqlD1EsQ4ba4eX","binary":{"$b":"Qg==","s":128},"bool":true,"double":42.13,"int32":42,` +
+			`"int64":42,"string":"foo","object":{"$k":["foo"],"foo":"bar"}}`,
 	}
 
 	// TODO Add a test case that contains arrays of various types (like in the fjson package):
