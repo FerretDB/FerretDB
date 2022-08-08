@@ -345,14 +345,15 @@ func checkConflictingChanges(a, b *types.Document) error {
 // extractValueFromUpdateOperator gets operator "op" value and returns WriteError error if it is not a document.
 // For example, for update document
 //
-//  bson.D{
-// 	{"$set", bson.D{{"foo", int32(12)}}},
-// 	{"$inc", bson.D{{"foo", int32(1)}}},
-// 	{"$setOnInsert", bson.D{{"v", math.NaN()}}},
-//  }
+//	 bson.D{
+//		{"$set", bson.D{{"foo", int32(12)}}},
+//		{"$inc", bson.D{{"foo", int32(1)}}},
+//		{"$setOnInsert", bson.D{{"v", math.NaN()}}},
+//	 }
 //
 // The result returned for "$setOnInsert" operator is
-//  bson.D{{"v", math.NaN()}}.
+//
+//	bson.D{{"v", math.NaN()}}.
 func extractValueFromUpdateOperator(op string, update *types.Document) (*types.Document, error) {
 	if !update.Has(op) {
 		return nil, nil
