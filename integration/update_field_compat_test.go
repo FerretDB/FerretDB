@@ -48,3 +48,16 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 
 	testUpdateCompat(t, testCases)
 }
+
+// TestUpdateFieldCompatNull checks that update works correctly for the null values.
+func TestUpdateFieldCompatNull(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]updateCompatTestCase{
+		"SetNull": {
+			update: bson.D{{"$set", bson.D{{"v", nil}}}},
+		},
+	}
+
+	testUpdateCompat(t, testCases)
+}
