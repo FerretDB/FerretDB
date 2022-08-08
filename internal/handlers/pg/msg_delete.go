@@ -17,16 +17,13 @@ package pg
 import (
 	"context"
 	"fmt"
-	"strings"
-
-	"github.com/jackc/pgx/v4"
-
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/jackc/pgx/v4"
 )
 
 // MsgDelete implements HandlerInterface.

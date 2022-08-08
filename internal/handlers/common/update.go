@@ -291,8 +291,8 @@ func checkConflictingChanges(a, b *types.Document) error {
 // For example, for update document
 //
 //  bson.D{
-// 	{"$set", bson.D{{"foo", int32(12)}}},
-// 	{"$inc", bson.D{{"foo", int32(1)}}},
+// 	{"$set", bson.D{{"parseErr", int32(12)}}},
+// 	{"$inc", bson.D{{"parseErr", int32(1)}}},
 // 	{"$setOnInsert", bson.D{{"v", math.NaN()}}},
 //  }
 //
