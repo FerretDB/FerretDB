@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // Path represents the field path type. It should be used wherever we work with paths or dot notation.
@@ -180,4 +182,113 @@ func removeByPath(v any, path Path) {
 	default:
 		// no such path: scalar value
 	}
+}
+
+// insertByPath inserts missing parts of the path into Document.
+func insertByPath(doc *Document, path Path) error {
+	var next any = doc
+
+	var insertedPath Path
+	for _, pathElem := range path.TrimSuffix().Slice() {
+		insertedPath = insertedPath.Append(pathElem)
+
+		v, err := doc.GetByPath(insertedPath)
+		if err != nil {
+			suffix := len(insertedPath.Slice()) - 1
+			if suffix < 0 {
+				panic("invalid path")
+			}
+
+			switch v := next.(type) {
+			case *Document:
+				must.NoError(v.Set(insertedPath.Slice()[suffix], must.NotFail(NewDocument())))
+			case *Array:
+				_, err := strconv.Atoi(insertedPath.Slice()[suffix])
+				if err != nil {
+					return fmt.Errorf(
+						"Cannot create field '%s' in element {%s: %s}",
+						pathElem,
+						insertedPath.Slice()[suffix-1],
+						formatAnyValue(v),
+					)
+				}
+			}
+
+			next = must.NotFail(doc.GetByPath(insertedPath)).(*Document)
+
+			continue
+		}
+
+		next = v
+	}
+
+	return nil
+}
+
+// formatAnyValue formats value for error message output.
+func formatAnyValue(v any) string {
+	switch v := v.(type) {
+	case *Document:
+		return formatDocument(v)
+	case *Array:
+		return formatArray(v)
+	default:
+		return fmt.Sprintf("%v", v)
+	}
+}
+
+// formatDocument formats Document for error output.
+func formatDocument(doc *Document) string {
+	result := "{"
+
+	for i, key := range doc.keys {
+		if i > 0 {
+			result += ", "
+		}
+
+		switch value := doc.m[key].(type) {
+		case *Document:
+			result += fmt.Sprintf("%q: %s", key, formatDocument(value))
+		case *Array:
+			result += fmt.Sprintf("%q: %s", key, formatArray(value))
+		case string:
+			result += fmt.Sprintf(`%q: "%q"`, key, value)
+		case NullType:
+			result += fmt.Sprintf("%q: null", key)
+		case nil:
+			result += fmt.Sprintf("%q: null", key)
+		case int32, int64:
+			result += fmt.Sprintf("%q: %d", key, value)
+		default:
+			result += fmt.Sprintf("%q: %s", key, doc.m[key])
+		}
+	}
+
+	return result + "}"
+}
+
+// formatArray formats Array for error output.
+func formatArray(array *Array) string {
+	result := "[ "
+
+	for _, elem := range array.s {
+		switch elem := elem.(type) {
+		case *Document:
+			result += fmt.Sprintf("%s, ", formatDocument(elem))
+		case *Array:
+			result += fmt.Sprintf("%s, ", formatArray(elem))
+		case string:
+			result += fmt.Sprintf(`"%s", `, elem)
+		case NullType:
+			result += "null, "
+		case int32, int64:
+			result += fmt.Sprintf("%d, ", elem)
+		default:
+			result += fmt.Sprintf("%s, ", elem)
+		}
+	}
+
+	result = strings.TrimSuffix(result, ", ")
+
+	return result + " ]"
 }

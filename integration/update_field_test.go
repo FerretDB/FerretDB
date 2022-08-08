@@ -287,53 +287,53 @@ func TestUpdateFieldInc(t *testing.T) {
 		t.Parallel()
 
 		for name, tc := range map[string]struct {
-			filter   bson.D
+			id       string
 			update   bson.D
 			expected bson.D
 			stat     *mongo.UpdateResult
 		}{
 			"DoubleIncrement": {
-				filter:   bson.D{{"_id", "double"}},
+				id:       "double",
 				update:   bson.D{{"$inc", bson.D{{"v", float64(42.13)}}}},
 				expected: bson.D{{"_id", "double"}, {"v", float64(84.26)}},
 			},
 			"DoubleIncrementNaN": {
-				filter:   bson.D{{"_id", "double"}},
+				id:       "double",
 				update:   bson.D{{"$inc", bson.D{{"v", math.NaN()}}}},
 				expected: bson.D{{"_id", "double"}, {"v", math.NaN()}},
 			},
 			"DoubleIncrementPlusInfinity": {
-				filter:   bson.D{{"_id", "double-nan"}},
+				id:       "double-nan",
 				update:   bson.D{{"$inc", bson.D{{"v", math.Inf(+1)}}}},
 				expected: bson.D{{"_id", "double-nan"}, {"v", math.NaN()}},
 			},
 			"DoubleNegativeIncrement": {
-				filter:   bson.D{{"_id", "double"}},
+				id:       "double",
 				update:   bson.D{{"$inc", bson.D{{"v", float64(-42.13)}}}},
 				expected: bson.D{{"_id", "double"}, {"v", float64(0)}},
 			},
 			"DoubleIncrementIntField": {
-				filter:   bson.D{{"_id", "int32"}},
+				id:       "int32",
 				update:   bson.D{{"$inc", bson.D{{"v", float64(1.13)}}}},
 				expected: bson.D{{"_id", "int32"}, {"v", float64(43.13)}},
 			},
 			"DoubleIncrementLongField": {
-				filter:   bson.D{{"_id", "int64"}},
+				id:       "int64",
 				update:   bson.D{{"$inc", bson.D{{"v", float64(1.13)}}}},
 				expected: bson.D{{"_id", "int64"}, {"v", float64(43.13)}},
 			},
 			"DoubleIntIncrement": {
-				filter:   bson.D{{"_id", "double"}},
+				id:       "double",
 				update:   bson.D{{"$inc", bson.D{{"v", int32(1)}}}},
 				expected: bson.D{{"_id", "double"}, {"v", float64(43.13)}},
 			},
 			"DoubleLongIncrement": {
-				filter:   bson.D{{"_id", "double"}},
+				id:       "double",
 				update:   bson.D{{"$inc", bson.D{{"v", int64(1)}}}},
 				expected: bson.D{{"_id", "double"}, {"v", float64(43.13)}},
 			},
 			"DoubleDoubleMaxIncrement": {
-				filter:   bson.D{{"_id", "double"}},
+				id:       "double",
 				update:   bson.D{{"$inc", bson.D{{"v", math.MaxFloat64}}}},
 				expected: bson.D{{"_id", "double"}, {"v", math.MaxFloat64}},
 				stat: &mongo.UpdateResult{
@@ -343,7 +343,7 @@ func TestUpdateFieldInc(t *testing.T) {
 				},
 			},
 			"DoubleDoubleNaNIncrement": {
-				filter:   bson.D{{"_id", "double"}},
+				id:       "double",
 				update:   bson.D{{"$inc", bson.D{{"v", math.NaN()}}}},
 				expected: bson.D{{"_id", "double"}, {"v", math.NaN()}},
 				stat: &mongo.UpdateResult{
@@ -353,7 +353,7 @@ func TestUpdateFieldInc(t *testing.T) {
 				},
 			},
 			"DoubleDoublePositiveInfinityIncrement": {
-				filter:   bson.D{{"_id", "double"}},
+				id:       "double",
 				update:   bson.D{{"$inc", bson.D{{"v", math.Inf(+1)}}}},
 				expected: bson.D{{"_id", "double"}, {"v", math.Inf(+1)}},
 				stat: &mongo.UpdateResult{
@@ -363,7 +363,7 @@ func TestUpdateFieldInc(t *testing.T) {
 				},
 			},
 			"DoubleDoubleNegativeInfinityIncrement": {
-				filter:   bson.D{{"_id", "double"}},
+				id:       "double",
 				update:   bson.D{{"$inc", bson.D{{"v", math.Inf(-1)}}}},
 				expected: bson.D{{"_id", "double"}, {"v", math.Inf(-1)}},
 				stat: &mongo.UpdateResult{
@@ -373,7 +373,7 @@ func TestUpdateFieldInc(t *testing.T) {
 				},
 			},
 			"DoubleDoubleBigIncrement": {
-				filter:   bson.D{{"_id", "double"}},
+				id:       "double",
 				update:   bson.D{{"$inc", bson.D{{"v", float64(2 << 60)}}}},
 				expected: bson.D{{"_id", "double"}, {"v", float64(2 << 60)}},
 				stat: &mongo.UpdateResult{
@@ -383,7 +383,7 @@ func TestUpdateFieldInc(t *testing.T) {
 				},
 			},
 			"DoubleBigDoubleIncrement": {
-				filter:   bson.D{{"_id", "double-big"}},
+				id:       "double-big",
 				update:   bson.D{{"$inc", bson.D{{"v", 42.13}}}},
 				expected: bson.D{{"_id", "double-big"}, {"v", float64(2 << 60)}},
 				stat: &mongo.UpdateResult{
@@ -393,7 +393,7 @@ func TestUpdateFieldInc(t *testing.T) {
 				},
 			},
 			"DoubleMaxDoublePositiveIncrement": {
-				filter:   bson.D{{"_id", "double-max"}},
+				id:       "double-max",
 				update:   bson.D{{"$inc", bson.D{{"v", 42.13}}}},
 				expected: bson.D{{"_id", "double-max"}, {"v", math.MaxFloat64}},
 				stat: &mongo.UpdateResult{
@@ -403,7 +403,7 @@ func TestUpdateFieldInc(t *testing.T) {
 				},
 			},
 			"DoubleMaxDoubleNegativeIncrement": {
-				filter:   bson.D{{"_id", "double-max"}},
+				id:       "double-max",
 				update:   bson.D{{"$inc", bson.D{{"v", -42.13}}}},
 				expected: bson.D{{"_id", "double-max"}, {"v", math.MaxFloat64}},
 				stat: &mongo.UpdateResult{
@@ -413,7 +413,7 @@ func TestUpdateFieldInc(t *testing.T) {
 				},
 			},
 			"DoubleNaNDoublePositiveIncrement": {
-				filter:   bson.D{{"_id", "double-nan"}},
+				id:       "double-nan",
 				update:   bson.D{{"$inc", bson.D{{"v", 42.13}}}},
 				expected: bson.D{{"_id", "double-nan"}, {"v", math.NaN()}},
 				stat: &mongo.UpdateResult{
@@ -423,7 +423,7 @@ func TestUpdateFieldInc(t *testing.T) {
 				},
 			},
 			"DoubleNaNDoubleNegativeIncrement": {
-				filter:   bson.D{{"_id", "double-nan"}},
+				id:       "double-nan",
 				update:   bson.D{{"$inc", bson.D{{"v", -42.13}}}},
 				expected: bson.D{{"_id", "double-nan"}, {"v", math.NaN()}},
 				stat: &mongo.UpdateResult{
@@ -433,7 +433,7 @@ func TestUpdateFieldInc(t *testing.T) {
 				},
 			},
 			"DoublePositiveInfinityPositiveIncrement": {
-				filter:   bson.D{{"_id", "double-positive-infinity"}},
+				id:       "double-positive-infinity",
 				update:   bson.D{{"$inc", bson.D{{"v", 42.13}}}},
 				expected: bson.D{{"_id", "double-positive-infinity"}, {"v", math.Inf(+1)}},
 				stat: &mongo.UpdateResult{
@@ -443,7 +443,7 @@ func TestUpdateFieldInc(t *testing.T) {
 				},
 			},
 			"DoublePositiveInfinityNegativeIncrement": {
-				filter:   bson.D{{"_id", "double-positive-infinity"}},
+				id:       "double-positive-infinity",
 				update:   bson.D{{"$inc", bson.D{{"v", -42.13}}}},
 				expected: bson.D{{"_id", "double-positive-infinity"}, {"v", math.Inf(+1)}},
 				stat: &mongo.UpdateResult{
@@ -453,7 +453,7 @@ func TestUpdateFieldInc(t *testing.T) {
 				},
 			},
 			"DoubleNegativeInfinityPositiveIncrement": {
-				filter:   bson.D{{"_id", "double-negative-infinity"}},
+				id:       "double-negative-infinity",
 				update:   bson.D{{"$inc", bson.D{{"v", 42.13}}}},
 				expected: bson.D{{"_id", "double-negative-infinity"}, {"v", math.Inf(-1)}},
 				stat: &mongo.UpdateResult{
@@ -463,7 +463,7 @@ func TestUpdateFieldInc(t *testing.T) {
 				},
 			},
 			"DoubleNegativeInfinityNegativeIncrement": {
-				filter:   bson.D{{"_id", "double-negative-infinity"}},
+				id:       "double-negative-infinity",
 				update:   bson.D{{"$inc", bson.D{{"v", -42.13}}}},
 				expected: bson.D{{"_id", "double-negative-infinity"}, {"v", math.Inf(-1)}},
 				stat: &mongo.UpdateResult{
@@ -473,55 +473,87 @@ func TestUpdateFieldInc(t *testing.T) {
 				},
 			},
 			"IntIncrement": {
-				filter:   bson.D{{"_id", "int32"}},
+				id:       "int32",
 				update:   bson.D{{"$inc", bson.D{{"v", int32(1)}}}},
 				expected: bson.D{{"_id", "int32"}, {"v", int32(43)}},
 			},
 			"IntNegativeIncrement": {
-				filter:   bson.D{{"_id", "int32"}},
+				id:       "int32",
 				update:   bson.D{{"$inc", bson.D{{"v", int32(-1)}}}},
 				expected: bson.D{{"_id", "int32"}, {"v", int32(41)}},
 			},
 			"IntIncrementDoubleField": {
-				filter:   bson.D{{"_id", "double"}},
+				id:       "double",
 				update:   bson.D{{"$inc", bson.D{{"v", int32(1)}}}},
 				expected: bson.D{{"_id", "double"}, {"v", float64(43.13)}},
 			},
 			"IntIncrementLongField": {
-				filter:   bson.D{{"_id", "int64"}},
+				id:       "int64",
 				update:   bson.D{{"$inc", bson.D{{"v", int32(1)}}}},
 				expected: bson.D{{"_id", "int64"}, {"v", int64(43)}},
 			},
 			"LongIncrement": {
-				filter:   bson.D{{"_id", "int64"}},
+				id:       "int64",
 				update:   bson.D{{"$inc", bson.D{{"v", int64(1)}}}},
 				expected: bson.D{{"_id", "int64"}, {"v", int64(43)}},
 			},
 			"LongNegativeIncrement": {
-				filter:   bson.D{{"_id", "int64"}},
+				id:       "int64",
 				update:   bson.D{{"$inc", bson.D{{"v", int64(-1)}}}},
 				expected: bson.D{{"_id", "int64"}, {"v", int64(41)}},
 			},
 			"LongIncrementDoubleField": {
-				filter:   bson.D{{"_id", "double"}},
+				id:       "double",
 				update:   bson.D{{"$inc", bson.D{{"v", int64(1)}}}},
 				expected: bson.D{{"_id", "double"}, {"v", float64(43.13)}},
 			},
 			"LongIncrementIntField": {
-				filter:   bson.D{{"_id", "int32"}},
+				id:       "int32",
 				update:   bson.D{{"$inc", bson.D{{"v", int64(1)}}}},
 				expected: bson.D{{"_id", "int32"}, {"v", int64(43)}},
 			},
 
 			"FieldNotExist": {
-				filter:   bson.D{{"_id", "int32"}},
+				id:       "int32",
 				update:   bson.D{{"$inc", bson.D{{"foo", int32(1)}}}},
 				expected: bson.D{{"_id", "int32"}, {"v", int32(42)}, {"foo", int32(1)}},
 			},
 			"IncTwoFields": {
-				filter:   bson.D{{"_id", "int32"}},
+				id:       "int32",
 				update:   bson.D{{"$inc", bson.D{{"foo", int32(12)}, {"v", int32(1)}}}},
 				expected: bson.D{{"_id", "int32"}, {"v", int32(43)}, {"foo", int32(12)}},
+			},
+			"DotNotationDocumentFieldExist": {
+				id:       "document-composite",
+				update:   bson.D{{"$inc", bson.D{{"v.foo", int32(1)}}}},
+				expected: bson.D{{"_id", "document-composite"}, {"v", bson.D{{"foo", int32(43)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}},
+			},
+			"DotNotationDocumentFieldNotExist": {
+				id:       "int32",
+				update:   bson.D{{"$inc", bson.D{{"foo.bar", int32(1)}}}},
+				expected: bson.D{{"_id", "int32"}, {"v", int32(42)}, {"foo", bson.D{{"bar", int32(1)}}}},
+			},
+			"DotNotationArrayFieldExist": {
+				id:       "document-composite",
+				update:   bson.D{{"$inc", bson.D{{"v.array.0", int32(1)}}}},
+				expected: bson.D{{"_id", "document-composite"}, {"v", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(43), "foo", nil}}}}},
+			},
+			"DotNotationArrayFieldNotExist": {
+				id:     "int32",
+				update: bson.D{{"$inc", bson.D{{"foo.0.baz", int32(1)}}}},
+				expected: bson.D{
+					{"_id", "int32"},
+					{"v", int32(42)},
+					{"foo", bson.D{{"0", bson.D{{"baz", int32(1)}}}}},
+				},
+			},
+			"DocumentDotNotationArrayFieldNotExist": {
+				id:     "document",
+				update: bson.D{{"$inc", bson.D{{"v.0.foo", int32(1)}}}},
+				expected: bson.D{
+					{"_id", "document"},
+					{"v", bson.D{{"foo", int32(42)}, {"0", bson.D{{"foo", int32(1)}}}}},
+				},
 			},
 		} {
 			name, tc := name, tc
@@ -529,7 +561,7 @@ func TestUpdateFieldInc(t *testing.T) {
 				t.Parallel()
 				ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
-				result, err := collection.UpdateOne(ctx, tc.filter, tc.update)
+				result, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
 				require.NoError(t, err)
 
 				if tc.stat != nil {
@@ -537,7 +569,7 @@ func TestUpdateFieldInc(t *testing.T) {
 				}
 
 				var actual bson.D
-				err = collection.FindOne(ctx, tc.filter).Decode(&actual)
+				err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
 				require.NoError(t, err)
 
 				AssertEqualDocuments(t, tc.expected, actual)
@@ -549,13 +581,13 @@ func TestUpdateFieldInc(t *testing.T) {
 		t.Parallel()
 
 		for name, tc := range map[string]struct {
-			filter bson.D
+			id     string
 			update bson.D
 			err    *mongo.WriteError
 			alt    string
 		}{
 			"IncOnDocument": {
-				filter: bson.D{{"_id", "document"}},
+				id:     "document",
 				update: bson.D{{"$inc", bson.D{{"v", int32(1)}}}},
 				err: &mongo.WriteError{
 					Code: 14,
@@ -564,7 +596,7 @@ func TestUpdateFieldInc(t *testing.T) {
 				},
 			},
 			"IncOnArray": {
-				filter: bson.D{{"_id", "array"}},
+				id:     "array",
 				update: bson.D{{"$inc", bson.D{{"v", int32(1)}}}},
 				err: &mongo.WriteError{
 					Code: 14,
@@ -573,7 +605,7 @@ func TestUpdateFieldInc(t *testing.T) {
 				},
 			},
 			"IncOnString": {
-				filter: bson.D{{"_id", "string"}},
+				id:     "string",
 				update: bson.D{{"$inc", "string"}},
 				err: &mongo.WriteError{
 					Code: 9,
@@ -583,7 +615,7 @@ func TestUpdateFieldInc(t *testing.T) {
 				alt: "Modifiers operate on fields but we found another type instead",
 			},
 			"IncWithStringValue": {
-				filter: bson.D{{"_id", "string"}},
+				id:     "string",
 				update: bson.D{{"$inc", bson.D{{"v", "bad value"}}}},
 				err: &mongo.WriteError{
 					Code:    14,
@@ -591,7 +623,7 @@ func TestUpdateFieldInc(t *testing.T) {
 				},
 			},
 			"DoubleIncOnNullValue": {
-				filter: bson.D{{"_id", "string"}},
+				id:     "string",
 				update: bson.D{{"$inc", bson.D{{"v", float64(1)}}}},
 				err: &mongo.WriteError{
 					Code: 14,
@@ -600,7 +632,7 @@ func TestUpdateFieldInc(t *testing.T) {
 				},
 			},
 			"IntIncOnNullValue": {
-				filter: bson.D{{"_id", "string"}},
+				id:     "string",
 				update: bson.D{{"$inc", bson.D{{"v", int32(1)}}}},
 				err: &mongo.WriteError{
 					Code: 14,
@@ -609,12 +641,20 @@ func TestUpdateFieldInc(t *testing.T) {
 				},
 			},
 			"LongIncOnNullValue": {
-				filter: bson.D{{"_id", "string"}},
+				id:     "string",
 				update: bson.D{{"$inc", bson.D{{"v", int64(1)}}}},
 				err: &mongo.WriteError{
 					Code: 14,
 					Message: `Cannot apply $inc to a value of non-numeric type. ` +
 						`{_id: "string"} has the field 'v' of non-numeric type string`,
+				},
+			},
+			"ArrayDotNotationFieldNotExist": {
+				id:     "document-composite",
+				update: bson.D{{"$inc", bson.D{{"v.array.foo", int32(1)}}}},
+				err: &mongo.WriteError{
+					Code:    28,
+					Message: `Cannot create field 'foo' in element {array: [ 42, "foo", null ]}`,
 				},
 			},
 		} {
@@ -623,7 +663,7 @@ func TestUpdateFieldInc(t *testing.T) {
 				t.Parallel()
 				ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
-				_, err := collection.UpdateOne(ctx, tc.filter, tc.update)
+				_, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
 				require.NotNil(t, tc.err)
 				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
 			})
@@ -637,17 +677,17 @@ func TestUpdateFieldSet(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		id     string
-		update bson.D
-		result bson.D
-		err    *mongo.WriteError
-		stat   *mongo.UpdateResult
-		alt    string
+		id       string
+		update   bson.D
+		expected bson.D
+		err      *mongo.WriteError
+		stat     *mongo.UpdateResult
+		alt      string
 	}{
 		"Many": {
-			id:     "string",
-			update: bson.D{{"$set", bson.D{{"foo", int32(1)}, {"bar", bson.A{}}}}},
-			result: bson.D{{"_id", "string"}, {"v", "foo"}, {"bar", bson.A{}}, {"foo", int32(1)}},
+			id:       "string",
+			update:   bson.D{{"$set", bson.D{{"foo", int32(1)}, {"bar", bson.A{}}}}},
+			expected: bson.D{{"_id", "string"}, {"v", "foo"}, {"bar", bson.A{}}, {"foo", int32(1)}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 1,
@@ -685,9 +725,9 @@ func TestUpdateFieldSet(t *testing.T) {
 			alt: "Modifiers operate on fields but we found another type instead",
 		},
 		"EmptyDoc": {
-			id:     "string",
-			update: bson.D{{"$set", bson.D{}}},
-			result: bson.D{{"_id", "string"}, {"v", "foo"}},
+			id:       "string",
+			update:   bson.D{{"$set", bson.D{}}},
+			expected: bson.D{{"_id", "string"}, {"v", "foo"}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 0,
@@ -695,9 +735,9 @@ func TestUpdateFieldSet(t *testing.T) {
 			},
 		},
 		"OkSetString": {
-			id:     "string",
-			update: bson.D{{"$set", bson.D{{"v", "ok value"}}}},
-			result: bson.D{{"_id", "string"}, {"v", "ok value"}},
+			id:       "string",
+			update:   bson.D{{"$set", bson.D{{"v", "ok value"}}}},
+			expected: bson.D{{"_id", "string"}, {"v", "ok value"}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 1,
@@ -705,9 +745,9 @@ func TestUpdateFieldSet(t *testing.T) {
 			},
 		},
 		"ArrayNil": {
-			id:     "string",
-			update: bson.D{{"$set", bson.D{{"v", bson.A{nil}}}}},
-			result: bson.D{{"_id", "string"}, {"v", bson.A{nil}}},
+			id:       "string",
+			update:   bson.D{{"$set", bson.D{{"v", bson.A{nil}}}}},
+			expected: bson.D{{"_id", "string"}, {"v", bson.A{nil}}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 1,
@@ -715,9 +755,9 @@ func TestUpdateFieldSet(t *testing.T) {
 			},
 		},
 		"FieldNotExist": {
-			id:     "string",
-			update: bson.D{{"$set", bson.D{{"foo", int32(1)}}}},
-			result: bson.D{{"_id", "string"}, {"v", "foo"}, {"foo", int32(1)}},
+			id:       "string",
+			update:   bson.D{{"$set", bson.D{{"foo", int32(1)}}}},
+			expected: bson.D{{"_id", "string"}, {"v", "foo"}, {"foo", int32(1)}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 1,
@@ -725,9 +765,9 @@ func TestUpdateFieldSet(t *testing.T) {
 			},
 		},
 		"Double": {
-			id:     "double",
-			update: bson.D{{"$set", bson.D{{"v", float64(1)}}}},
-			result: bson.D{{"_id", "double"}, {"v", float64(1)}},
+			id:       "double",
+			update:   bson.D{{"$set", bson.D{{"v", float64(1)}}}},
+			expected: bson.D{{"_id", "double"}, {"v", float64(1)}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 1,
@@ -735,9 +775,9 @@ func TestUpdateFieldSet(t *testing.T) {
 			},
 		},
 		"NaN": {
-			id:     "double",
-			update: bson.D{{"$set", bson.D{{"v", math.NaN()}}}},
-			result: bson.D{{"_id", "double"}, {"v", math.NaN()}},
+			id:       "double",
+			update:   bson.D{{"$set", bson.D{{"v", math.NaN()}}}},
+			expected: bson.D{{"_id", "double"}, {"v", math.NaN()}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 1,
@@ -745,9 +785,9 @@ func TestUpdateFieldSet(t *testing.T) {
 			},
 		},
 		"EmptyArray": {
-			id:     "double",
-			update: bson.D{{"$set", bson.D{{"v", bson.A{}}}}},
-			result: bson.D{{"_id", "double"}, {"v", bson.A{}}},
+			id:       "double",
+			update:   bson.D{{"$set", bson.D{{"v", bson.A{}}}}},
+			expected: bson.D{{"_id", "double"}, {"v", bson.A{}}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 1,
@@ -755,9 +795,9 @@ func TestUpdateFieldSet(t *testing.T) {
 			},
 		},
 		"Null": {
-			id:     "double",
-			update: bson.D{{"$set", bson.D{{"v", nil}}}},
-			result: bson.D{{"_id", "double"}, {"v", nil}},
+			id:       "double",
+			update:   bson.D{{"$set", bson.D{{"v", nil}}}},
+			expected: bson.D{{"_id", "double"}, {"v", nil}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 1,
@@ -765,9 +805,9 @@ func TestUpdateFieldSet(t *testing.T) {
 			},
 		},
 		"Int32": {
-			id:     "double",
-			update: bson.D{{"$set", bson.D{{"v", int32(1)}}}},
-			result: bson.D{{"_id", "double"}, {"v", int32(1)}},
+			id:       "double",
+			update:   bson.D{{"$set", bson.D{{"v", int32(1)}}}},
+			expected: bson.D{{"_id", "double"}, {"v", int32(1)}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 1,
@@ -775,9 +815,9 @@ func TestUpdateFieldSet(t *testing.T) {
 			},
 		},
 		"Inf": {
-			id:     "double",
-			update: bson.D{{"$set", bson.D{{"v", math.Inf(+1)}}}},
-			result: bson.D{{"_id", "double"}, {"v", math.Inf(+1)}},
+			id:       "double",
+			update:   bson.D{{"$set", bson.D{{"v", math.Inf(+1)}}}},
+			expected: bson.D{{"_id", "double"}, {"v", math.Inf(+1)}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 1,
@@ -785,9 +825,9 @@ func TestUpdateFieldSet(t *testing.T) {
 			},
 		},
 		"SetTwoFields": {
-			id:     "int32-zero",
-			update: bson.D{{"$set", bson.D{{"foo", int32(12)}, {"v", math.NaN()}}}},
-			result: bson.D{{"_id", "int32-zero"}, {"v", math.NaN()}, {"foo", int32(12)}},
+			id:       "int32-zero",
+			update:   bson.D{{"$set", bson.D{{"foo", int32(12)}, {"v", math.NaN()}}}},
+			expected: bson.D{{"_id", "int32-zero"}, {"v", math.NaN()}, {"foo", int32(12)}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 1,
@@ -795,9 +835,9 @@ func TestUpdateFieldSet(t *testing.T) {
 			},
 		},
 		"SetSameValueInt": {
-			id:     "int32",
-			update: bson.D{{"$set", bson.D{{"v", int32(42)}}}},
-			result: bson.D{{"_id", "int32"}, {"v", int32(42)}},
+			id:       "int32",
+			update:   bson.D{{"$set", bson.D{{"v", int32(42)}}}},
+			expected: bson.D{{"_id", "int32"}, {"v", int32(42)}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 0,
@@ -805,9 +845,9 @@ func TestUpdateFieldSet(t *testing.T) {
 			},
 		},
 		"SetSameValueNan": {
-			id:     "double-nan",
-			update: bson.D{{"$set", bson.D{{"v", math.NaN()}}}},
-			result: bson.D{{"_id", "double-nan"}, {"v", math.NaN()}},
+			id:       "double-nan",
+			update:   bson.D{{"$set", bson.D{{"v", math.NaN()}}}},
+			expected: bson.D{{"_id", "double-nan"}, {"v", math.NaN()}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 0,
@@ -822,7 +862,7 @@ func TestUpdateFieldSet(t *testing.T) {
 
 			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
 			if tc.err != nil {
-				require.Nil(t, tc.result)
+				require.Nil(t, tc.expected)
 				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
 				return
 			}
@@ -833,7 +873,7 @@ func TestUpdateFieldSet(t *testing.T) {
 			var actual bson.D
 			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
 			require.NoError(t, err)
-			AssertEqualDocuments(t, tc.result, actual)
+			AssertEqualDocuments(t, tc.expected, actual)
 		})
 	}
 }
@@ -843,30 +883,44 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 
 	t.Parallel()
 
+	stat := &mongo.UpdateResult{
+		MatchedCount:  0,
+		ModifiedCount: 0,
+		UpsertedCount: 1,
+	}
+
 	for name, tc := range map[string]struct {
-		filter      bson.D
-		setOnInsert any
-		expected    bson.D
-		err         *mongo.WriteError
-		alt         string
+		id           string
+		setOnInsert  any
+		expected     bson.D
+		err          *mongo.WriteError
+		alt          string
+		expectedStat *mongo.UpdateResult
+		upserted     bool
 	}{
 		"Array": {
-			filter:      bson.D{{"_id", "array-set-on-insert"}},
-			setOnInsert: bson.D{{"v", bson.A{}}},
-			expected:    bson.D{{"_id", "array-set-on-insert"}, {"v", bson.A{}}},
+			id:           "array-set-on-insert",
+			setOnInsert:  bson.D{{"v", bson.A{}}},
+			expected:     bson.D{{"_id", "array-set-on-insert"}, {"v", bson.A{}}},
+			expectedStat: stat,
+			upserted:     true,
 		},
 		"Nil": {
-			filter:      bson.D{{"_id", "nil"}},
-			setOnInsert: bson.D{{"v", nil}},
-			expected:    bson.D{{"_id", "nil"}, {"v", nil}},
+			id:           "nil",
+			setOnInsert:  bson.D{{"v", nil}},
+			expected:     bson.D{{"_id", "nil"}, {"v", nil}},
+			expectedStat: stat,
+			upserted:     true,
 		},
 		"EmptyDoc": {
-			filter:      bson.D{{"_id", "doc"}},
-			setOnInsert: bson.D{},
-			expected:    bson.D{{"_id", "doc"}},
+			id:           "doc",
+			setOnInsert:  bson.D{},
+			expected:     bson.D{{"_id", "doc"}},
+			expectedStat: stat,
+			upserted:     true,
 		},
 		"EmptyArray": {
-			filter:      bson.D{{"_id", "array"}},
+			id:          "array",
 			setOnInsert: bson.A{},
 			err: &mongo.WriteError{
 				Code: 9,
@@ -876,7 +930,7 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 			alt: "Modifiers operate on fields but we found another type instead",
 		},
 		"DoubleDouble": {
-			filter:      bson.D{{"_id", "double"}},
+			id:          "double",
 			setOnInsert: 43.13,
 			err: &mongo.WriteError{
 				Code: 9,
@@ -886,7 +940,7 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 			alt: "Modifiers operate on fields but we found another type instead",
 		},
 		"ErrNaN": {
-			filter:      bson.D{{"_id", "double-nan"}},
+			id:          "double-nan",
 			setOnInsert: math.NaN(),
 			err: &mongo.WriteError{
 				Code: 9,
@@ -896,7 +950,7 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 			alt: "Modifiers operate on fields but we found another type instead",
 		},
 		"ErrString": {
-			filter:      bson.D{{"_id", "string"}},
+			id:          "string",
 			setOnInsert: "any string",
 			err: &mongo.WriteError{
 				Code: 9,
@@ -906,7 +960,7 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 			alt: "Modifiers operate on fields but we found another type instead",
 		},
 		"ErrNil": {
-			filter:      bson.D{{"_id", "nil"}},
+			id:          "nil",
 			setOnInsert: nil,
 			err: &mongo.WriteError{
 				Code: 9,
@@ -923,8 +977,7 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 			ctx, collection := setup.Setup(t, shareddata.Composites)
 
 			opts := options.Update().SetUpsert(true)
-			var actualUpdateStat *mongo.UpdateResult
-			actualUpdateStat, err := collection.UpdateOne(ctx, tc.filter, bson.D{{"$setOnInsert", tc.setOnInsert}}, opts)
+			actualUpdateStat, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, bson.D{{"$setOnInsert", tc.setOnInsert}}, opts)
 			if tc.err != nil {
 				require.Nil(t, tc.expected)
 				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
@@ -932,19 +985,14 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			id := actualUpdateStat.UpsertedID
-			assert.NotEmpty(t, id)
-			actualUpdateStat.UpsertedID = nil
-
-			expectedStat := &mongo.UpdateResult{
-				MatchedCount:  0,
-				ModifiedCount: 0,
-				UpsertedCount: 1,
+			if tc.upserted {
+				tc.expectedStat.UpsertedID = tc.id
 			}
-			assert.Equal(t, expectedStat, actualUpdateStat)
+
+			assert.Equal(t, tc.expectedStat, actualUpdateStat)
 
 			var actual bson.D
-			err = collection.FindOne(ctx, tc.filter).Decode(&actual)
+			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
 			require.NoError(t, err)
 			AssertEqualDocuments(t, tc.expected, actual)
 		})
@@ -957,7 +1005,7 @@ func TestUpdateFieldUnset(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		filter   bson.D
+		id       string
 		update   bson.D
 		expected bson.D
 		stat     *mongo.UpdateResult
@@ -965,7 +1013,7 @@ func TestUpdateFieldUnset(t *testing.T) {
 		alt      string
 	}{
 		"String": {
-			filter:   bson.D{{"_id", "string"}},
+			id:       "string",
 			update:   bson.D{{"$unset", bson.D{{"v", int32(1)}}}},
 			expected: bson.D{{"_id", "string"}},
 			stat: &mongo.UpdateResult{
@@ -975,7 +1023,7 @@ func TestUpdateFieldUnset(t *testing.T) {
 			},
 		},
 		"Empty": {
-			filter:   bson.D{{"_id", "string"}},
+			id:       "string",
 			update:   bson.D{{"$unset", bson.D{}}},
 			expected: bson.D{{"_id", "string"}, {"v", "foo"}},
 			stat: &mongo.UpdateResult{
@@ -985,7 +1033,7 @@ func TestUpdateFieldUnset(t *testing.T) {
 			},
 		},
 		"Field": {
-			filter:   bson.D{{"_id", "document-composite-unset-field"}},
+			id:       "document-composite-unset-field",
 			update:   bson.D{{"$unset", bson.D{{"v", bson.D{{"array", int32(1)}}}}}},
 			expected: bson.D{{"_id", "document-composite-unset-field"}},
 			stat: &mongo.UpdateResult{
@@ -995,7 +1043,7 @@ func TestUpdateFieldUnset(t *testing.T) {
 			},
 		},
 		"EmptyArray": {
-			filter: bson.D{{"_id", "document-composite"}},
+			id:     "document-composite",
 			update: bson.D{{"$unset", bson.A{}}},
 			err: &mongo.WriteError{
 				Code: 9,
@@ -1011,8 +1059,7 @@ func TestUpdateFieldUnset(t *testing.T) {
 			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 			opts := options.Update().SetUpsert(true)
-			var actualStat *mongo.UpdateResult
-			actualStat, err := collection.UpdateOne(ctx, tc.filter, tc.update, opts)
+			actualStat, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update, opts)
 
 			if tc.err != nil {
 				require.Nil(t, tc.expected)
@@ -1025,7 +1072,7 @@ func TestUpdateFieldUnset(t *testing.T) {
 			assert.Equal(t, tc.stat, actualStat)
 
 			var actual bson.D
-			err = collection.FindOne(ctx, tc.filter).Decode(&actual)
+			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
 			require.NoError(t, err)
 			AssertEqualDocuments(t, tc.expected, actual)
 		})
@@ -1078,7 +1125,6 @@ func TestUpdateFieldMixed(t *testing.T) {
 			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 			opts := options.Update().SetUpsert(true)
-			var actualStat *mongo.UpdateResult
 			actualStat, err := collection.UpdateOne(ctx, tc.filter, tc.update, opts)
 
 			if tc.err != nil {
