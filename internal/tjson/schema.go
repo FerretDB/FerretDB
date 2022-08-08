@@ -255,7 +255,6 @@ func subdocumentSchema(doc *types.Document) (*Schema, error) {
 		v := must.NotFail(doc.Get(k))
 
 		s, err := valueSchema(v)
-
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
