@@ -243,6 +243,7 @@ func DocumentSchema(doc *types.Document) (*Schema, error) {
 
 // subdocumentSchema returns a JSON Schema for the given subdocument.
 // Subdocument is a "nested" document that can be used as a property of another document or subdocument.
+// The difference between subdocument and document is that subdocument doesn't have to contain the _id key.
 func subdocumentSchema(doc *types.Document) (*Schema, error) {
 	schema := Schema{
 		Type:       Object,
