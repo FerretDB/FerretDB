@@ -221,33 +221,17 @@ func DocumentSchema(doc *types.Document) (*Schema, error) {
 		return nil, lazyerrors.New("document must have an _id")
 	}
 
-	schema := Schema{
-		Type:       Object,
-		Properties: make(map[string]*Schema, doc.Len()+1),
-		PrimaryKey: []string{"_id"},
-	}
-
-	schema.Properties["$k"] = &Schema{Type: Array, Items: stringSchema}
-
-	for _, k := range doc.Keys() {
-		v := must.NotFail(doc.Get(k))
-		s, err := valueSchema(v)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-		schema.Properties[k] = s
-	}
-
-	return &schema, nil
+	return subdocumentSchema(doc, "_id")
 }
 
 // subdocumentSchema returns a JSON Schema for the given subdocument.
 // Subdocument is a "nested" document that can be used as a property of another document or subdocument.
 // The difference between subdocument and document is that subdocument doesn't have to contain the _id key.
-func subdocumentSchema(doc *types.Document) (*Schema, error) {
+func subdocumentSchema(doc *types.Document, pkey ...string) (*Schema, error) {
 	schema := Schema{
 		Type:       Object,
 		Properties: make(map[string]*Schema, doc.Len()+1),
+		PrimaryKey: pkey,
 	}
 
 	schema.Properties["$k"] = &Schema{Type: Array, Items: stringSchema}
