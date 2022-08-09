@@ -82,7 +82,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 	return changed, nil
 }
 
-// processIncFieldExpression changes document according to $set and $setOnInsert operators.
+// processSetFieldExpression changes document according to $set and $setOnInsert operators.
 // If the document was changed it returns true.
 func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (bool, error) {
 	var changed bool
