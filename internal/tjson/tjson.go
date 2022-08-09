@@ -70,10 +70,10 @@ func fromTJSON(v tjsontype) any {
 		return types.ObjectID(*v)
 	case *boolType:
 		return bool(*v)
-	// case *dateTimeType:
-	// 	return time.Time(*v)
-	// case *nullType:
-	// 	return types.Null
+		// case *dateTimeType:
+		// 	return time.Time(*v)
+	case *nullType:
+		return types.Null
 	// case *regexType:
 	// 	return types.Regex(*v)
 	case *int32Type:
@@ -104,10 +104,10 @@ func toTJSON(v any) tjsontype {
 		return pointer.To(objectIDType(v))
 	case bool:
 		return pointer.To(boolType(v))
-	// case time.Time:
-	// 	return pointer.To(dateTimeType(v))
-	// case types.NullType:
-	// 	return pointer.To(nullType(v))
+		// case time.Time:
+		// 	return pointer.To(dateTimeType(v))
+	case types.NullType:
+		return pointer.To(nullType(v))
 	// case types.Regex:
 	// 	return pointer.To(regexType(v))
 	case int32:
