@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strings"
 	"time"
 
 	"golang.org/x/exp/slices"
@@ -33,10 +34,6 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 	var err error
 	for _, updateOp := range update.Keys() {
 		updateV := must.NotFail(update.Get(updateOp))
-
-		if _, ok := UpdateOperators[updateOp]; !ok {
-			return false, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp)
-		}
 
 		switch updateOp {
 		case "$currentDate":
@@ -74,8 +71,29 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 
 		default:
-			// handled by UpdateOperators above
-			panic(fmt.Errorf("unhandled operation %q", updateOp))
+			if strings.HasPrefix(updateOp, "$") {
+				return false, NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
+			}
+
+			// Treats the update as a Replacement object.
+			setDoc := update
+
+			sort.Strings(setDoc.Keys())
+
+			for _, setKey := range doc.Keys() {
+				if !setDoc.Has(setKey) && setKey != "_id" {
+					doc.Remove(setKey)
+				}
+			}
+
+			for _, setKey := range setDoc.Keys() {
+				setValue := must.NotFail(setDoc.Get(setKey))
+				if err := doc.Set(setKey, setValue); err != nil {
+					return false, err
+				}
+			}
+
+			changed = true
 		}
 	}
 
@@ -262,7 +280,7 @@ func processCurrentDateFieldExpression(doc *types.Document, currentDateVal any) 
 // ValidateUpdateOperators validates update statement.
 func ValidateUpdateOperators(update *types.Document) error {
 	var err error
-	if err = checkAllModifiersSupported(update); err != nil {
+	if _, err = HasSupportedUpdateModifiers(update); err != nil {
 		return err
 	}
 	inc, err := extractValueFromUpdateOperator("$inc", update)
@@ -290,8 +308,9 @@ func ValidateUpdateOperators(update *types.Document) error {
 	return nil
 }
 
-// checkAllModifiersSupported checks that update document contains only modifiers that are supported.
-func checkAllModifiersSupported(update *types.Document) error {
+// HasSupportedUpdateModifiers checks that update document contains only modifiers that are supported.
+func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
+	updateModifier := false
 	for _, updateOp := range update.Keys() {
 		switch updateOp {
 		case "$currentDate":
@@ -303,18 +322,23 @@ func checkAllModifiersSupported(update *types.Document) error {
 		case "$setOnInsert":
 			fallthrough
 		case "$unset":
-			// supported
+			updateModifier = true
 		default:
-			return NewWriteErrorMsg(
-				ErrFailedToParse,
-				fmt.Sprintf(
-					"Unknown modifier: %s. Expected a valid update modifier or pipeline-style "+
-						"update specified as an array", updateOp,
-				),
-			)
+			if strings.HasPrefix(updateOp, "$") {
+				return false, NewWriteErrorMsg(
+					ErrFailedToParse,
+					fmt.Sprintf(
+						"Unknown modifier: %s. Expected a valid update modifier or pipeline-style "+
+							"update specified as an array", updateOp,
+					),
+				)
+			}
+
+			// In case the operator doesn't start with $, treats the update as a Replacement object
 		}
 	}
-	return nil
+
+	return updateModifier, nil
 }
 
 // checkConflictingChanges checks if there are the same keys in these documents and returns an error, if any.
@@ -426,19 +450,4 @@ func validateCurrentDateExpression(update *types.Document) error {
 	}
 
 	return nil
-}
-
-// TODO decide if we need it.
-var UpdateOperators = map[string]struct{}{}
-
-func init() {
-	for _, o := range []string{
-		"$currentDate",
-		"$set",
-		"$setOnInsert",
-		"$unset",
-		"$inc",
-	} {
-		UpdateOperators[o] = struct{}{}
-	}
 }
