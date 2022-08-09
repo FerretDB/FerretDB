@@ -105,7 +105,8 @@ func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (b
 			}
 		}
 
-		if setOnInsert {
+		// we should insert the value if it's a regular key
+		if setOnInsert && path.Len() > 1 {
 			continue
 		}
 
