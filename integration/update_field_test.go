@@ -1039,13 +1039,12 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 		"DotNotationDocumentFieldNotExist": {
 			id:       "int32",
 			update:   bson.D{{"$setOnInsert", bson.D{{"foo.bar", int32(1)}}}},
-			expected: bson.D{{"_id", "int32"}, {"foo", bson.D{{"bar", int32(1)}}}},
+			expected: bson.D{{"_id", "int32"}, {"v", int32(42)}},
 			expectedStat: &mongo.UpdateResult{
-				MatchedCount:  0,
+				MatchedCount:  1,
 				ModifiedCount: 0,
-				UpsertedCount: 1,
+				UpsertedCount: 0,
 			},
-			upserted: true,
 		},
 		"DotNotationArrayFieldExist": {
 			id:       "document-composite",
@@ -1062,14 +1061,13 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 			update: bson.D{{"$setOnInsert", bson.D{{"foo.0.baz", int32(1)}}}},
 			expected: bson.D{
 				{"_id", "int32"},
-				{"foo", bson.D{{"0", bson.D{{"baz", int32(1)}}}}},
+				{"v", int32(42)},
 			},
 			expectedStat: &mongo.UpdateResult{
-				MatchedCount:  0,
+				MatchedCount:  1,
 				ModifiedCount: 0,
-				UpsertedCount: 1,
+				UpsertedCount: 0,
 			},
-			upserted: true,
 		},
 		"DocumentDotNotationArrFieldNotExist": {
 			id:     "document",
@@ -1089,7 +1087,7 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx, collection := setup.Setup(t, shareddata.Composites)
+			ctx, collection := setup.Setup(t, shareddata.Composites, shareddata.Scalars)
 
 			opts := options.Update().SetUpsert(true)
 			actualUpdateStat, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update, opts)

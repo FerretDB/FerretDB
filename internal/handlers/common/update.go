@@ -46,10 +46,13 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 
 		case "$set":
-			fallthrough
+			changed, err = processSetFieldExpression(doc, updateV.(*types.Document), false)
+			if err != nil {
+				return false, err
+			}
 
 		case "$setOnInsert":
-			changed, err = processSetFieldExpression(doc, updateV.(*types.Document))
+			changed, err = processSetFieldExpression(doc, updateV.(*types.Document), true)
 			if err != nil {
 				return false, err
 			}
@@ -81,7 +84,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 // processIncFieldExpression changes document according to $set and $setOnInsert operators.
 // If the document was changed it returns true.
-func processSetFieldExpression(doc, setDoc *types.Document) (bool, error) {
+func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (bool, error) {
 	var changed bool
 
 	sort.Strings(setDoc.Keys())
@@ -102,7 +105,12 @@ func processSetFieldExpression(doc, setDoc *types.Document) (bool, error) {
 			}
 		}
 
-		if err := doc.SetByPath(path, setValue); err != nil {
+		if setOnInsert {
+			continue
+		}
+
+		err := doc.SetByPath(path, setValue)
+		if err != nil {
 			return false, err
 		}
 
