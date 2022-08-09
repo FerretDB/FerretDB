@@ -51,7 +51,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	var deleted int32
-	processQuery := func(i int) error { // TODO: check how mongodb handles every error in this function
+	processQuery := func(i int) error {
 		d, err := common.AssertType[*types.Document](must.NotFail(deletes.Get(i)))
 		if err != nil {
 			return err
@@ -158,13 +158,14 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		err := processQuery(i)
 		if err != nil {
 			unorderedErrMsgs.Append(err)
+
 			if ordered {
 				return nil, unorderedErrMsgs
 			}
 		}
 	}
 
-	if unorderedErrMsgs != nil {
+	if len(*unorderedErrMsgs) > 0 {
 		return nil, unorderedErrMsgs
 	}
 

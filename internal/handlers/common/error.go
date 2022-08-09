@@ -246,17 +246,23 @@ func (we *WriteErrors) Document() *types.Document {
 	return d
 }
 
+// parseArr converts err to a T type.
+// If it fails, the returned bool value is false.
 func parseErr[T any](err error) (T, bool) {
 	var obj T
 	ok := errors.As(err, &obj)
+
 	return obj, ok
 }
 
+// Append convert the err to the writeError type and
+// appends it to WriteErrors.
 func (we *WriteErrors) Append(err error) {
 	if e, ok := parseErr[*writeError](err); ok {
 		*we = append(*we, *e)
 		return
 	}
+
 	if e, ok := parseErr[*CommandError](err); ok {
 		*we = append(*we, writeError{err: e.Unwrap().Error(), code: e.code})
 		return
