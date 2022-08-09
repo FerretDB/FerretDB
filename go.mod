@@ -13,7 +13,7 @@ require (
 	github.com/prometheus/common v0.37.0
 	github.com/stretchr/testify v1.8.0
 	github.com/tigrisdata/tigris-client-go v1.0.0-alpha.21
-	go.uber.org/zap v1.21.0
+	go.uber.org/zap v1.22.0
 	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e
 	golang.org/x/net v0.0.0-20220805013720-a33c5aa5df48
 	golang.org/x/sys v0.0.0-20220804214406-8e32c043e418
