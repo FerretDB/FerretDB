@@ -16,6 +16,7 @@
 package integration
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -294,6 +295,19 @@ func CollectKeys(t testing.TB, doc bson.D) []string {
 	for i, e := range doc {
 		res[i] = e.Key
 	}
+
+	return res
+}
+
+// FindAll returns all documents from the given collection.
+func FindAll(t testing.TB, ctx context.Context, col *mongo.Collection) []bson.D {
+	cursor, err := col.Find(ctx, bson.D{})
+	require.NoError(t, err)
+
+	var res []bson.D
+	err = cursor.All(ctx, &res)
+	require.NoError(t, cursor.Close(ctx))
+	require.NoError(t, err)
 
 	return res
 }

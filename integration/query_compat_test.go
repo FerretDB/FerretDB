@@ -30,7 +30,7 @@ type queryCompatTestCase struct {
 	filter     bson.D                   // required
 	sort       bson.D                   // defaults to `bson.D{{"_id", 1}}`
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
-	skip       string                   // skips test in non-empty
+	skip       string                   // skips test if non-empty
 }
 
 // testQueryCompat tests query compatibility test cases.
