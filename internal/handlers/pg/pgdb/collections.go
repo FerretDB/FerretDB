@@ -87,9 +87,10 @@ func CollectionExists(ctx context.Context, querier pgxtype.Querier, db, collecti
 // CreateCollection creates a new FerretDB collection in existing schema.
 //
 // It returns a possibly wrapped error:
-//  * ErrInvalidTableName - if a FerretDB collection name doesn't conform to restrictions.
-//  * ErrAlreadyExist - if a FerretDB collection with the given names already exists.
-//  * ErrTableNotExist - is the required FerretDB database does not exist.
+//   - ErrInvalidTableName - if a FerretDB collection name doesn't conform to restrictions.
+//   - ErrAlreadyExist - if a FerretDB collection with the given names already exists.
+//   - ErrTableNotExist - is the required FerretDB database does not exist.
+//
 // Please use errors.Is to check the error.
 func CreateCollection(ctx context.Context, querier pgxtype.Querier, db, collection string) error {
 	if !validateCollectionNameRe.MatchString(collection) ||

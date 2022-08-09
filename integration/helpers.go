@@ -16,6 +16,7 @@
 package integration
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -168,9 +169,9 @@ func AssertEqualError(t testing.TB, expected mongo.CommandError, actual error) b
 //
 // In general, error messages should be the same. Exceptions include:
 //
-//  * MongoDB typos (e.g. "sortto" instead of "sort to");
-//  * MongoDB values formatting (e.g. we don't want to write additional code to format
-//    `{ $slice: { a: { b: 3 }, b: "string" } }` exactly the same way).
+//   - MongoDB typos (e.g. "sortto" instead of "sort to");
+//   - MongoDB values formatting (e.g. we don't want to write additional code to format
+//     `{ $slice: { a: { b: 3 }, b: "string" } }` exactly the same way).
 //
 // In any case, the alternative error message returned by FerretDB should not mislead users.
 func AssertEqualAltError(t testing.TB, expected mongo.CommandError, altMessage string, actual error) bool {
@@ -294,6 +295,19 @@ func CollectKeys(t testing.TB, doc bson.D) []string {
 	for i, e := range doc {
 		res[i] = e.Key
 	}
+
+	return res
+}
+
+// FindAll returns all documents from the given collection.
+func FindAll(t testing.TB, ctx context.Context, col *mongo.Collection) []bson.D {
+	cursor, err := col.Find(ctx, bson.D{})
+	require.NoError(t, err)
+
+	var res []bson.D
+	err = cursor.All(ctx, &res)
+	require.NoError(t, cursor.Close(ctx))
+	require.NoError(t, err)
 
 	return res
 }
