@@ -1,5 +1,55 @@
 # Changelog
 
+## [v0.5.2](https://github.com/FerretDB/FerretDB/releases/tag/v0.5.2) (2022-08-09)
+
+### New Features 🎉
+* Support `comment` and `$comment` `update`'s arguments by @noisersup in https://github.com/FerretDB/FerretDB/pull/937
+* Support `multi` `update`'s argument by @fcoury in https://github.com/FerretDB/FerretDB/pull/790
+* Support `comment` and `$comment` `findAndModify`'s argument by @noisersup in https://github.com/FerretDB/FerretDB/pull/958
+* Support `comment` and `$comment` `delete`'s arguments by @noisersup in https://github.com/FerretDB/FerretDB/pull/954
+* Support `maxTimeMS` argument for `find` and `findAndModify` methods by @DoodgeMatvey in https://github.com/FerretDB/FerretDB/pull/608
+* Add support for `update`'s `$inc` operator dot notation by @w84thesun in https://github.com/FerretDB/FerretDB/pull/915
+
+### Fixed Bugs 🐛
+* Fix `nModified` count for `update`'s `$set` operator with the same value by @w84thesun in https://github.com/FerretDB/FerretDB/pull/949
+
+### Other Changes 🤖
+* `tjson`: Fix schema comparison by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/944
+* Make compat error messages better by @AlekSi in https://github.com/FerretDB/FerretDB/pull/950
+* Enable `wsl` linter for new and changed code by @AlekSi in https://github.com/FerretDB/FerretDB/pull/856
+* Fix some collection names breaking `listDatabases` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/953
+* Remove some tests to make next PRs smaller by @AlekSi in https://github.com/FerretDB/FerretDB/pull/959
+* Add `SkipForTigris` helper, use it by @AlekSi in https://github.com/FerretDB/FerretDB/pull/960
+* Add setup for compatibility tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/961
+* Add compatibility tests for `$and` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/963
+* Bump igorshubovych/markdownlint-cli from v0.32.0 to v0.32.1 in /build/deps by @dependabot in https://github.com/FerretDB/FerretDB/pull/955
+* `tjson`: Check how we support `binary` by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/967
+* Move logic operators tests to compatibility tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/965
+* Add compatibility tests for `$inc` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/964
+* Add test case for an empty update path by @AlekSi in https://github.com/FerretDB/FerretDB/pull/976
+* Bump golang from 1.18.4 to 1.18.5 by @dependabot in https://github.com/FerretDB/FerretDB/pull/977
+* Improve Document's Path API by @w84thesun in https://github.com/FerretDB/FerretDB/pull/973
+* `tjson`: Add unit tests for `ObjectID` by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/971
+* Make linter to enforce our preferred types order in type switch by @fenogentov in https://github.com/FerretDB/FerretDB/pull/654
+* Add back `task env-data` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/983
+* Insert test data in random order by @AlekSi in https://github.com/FerretDB/FerretDB/pull/862
+* `tjson`: Improve ObjectID test by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/992
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/995
+* Bump Tigris Docker image to alpha.26 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/997
+* Tigris: simplify `ObjectID` and filter usage by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/968
+* Add more scalar values to tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/984
+* Implement `aggregate` command stub by @AlekSi in https://github.com/FerretDB/FerretDB/pull/981
+* Reformat with Go 1.19 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1003
+* `tjson`: Cover `document` (`object`) type with tests by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/957
+* Add compatibility `delete` test for Tigris by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1002
+
+## New Contributors
+* @fcoury made their first contribution in https://github.com/FerretDB/FerretDB/pull/790
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/20?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v0.5.1...v0.5.2).
+
+
 ## [v0.5.1](https://github.com/FerretDB/FerretDB/releases/tag/v0.5.1) (2022-07-26)
 
 ### New Features 🎉
