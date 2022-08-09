@@ -380,12 +380,9 @@ func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams,
 		)
 	}
 
-	var hasUpdateOperators bool
-	for k := range update.Map() {
-		if _, ok := common.UpdateOperators[k]; ok {
-			hasUpdateOperators = true
-			break
-		}
+	hasUpdateOperators, err := common.HasSupportedUpdateModifiers(update)
+	if err != nil {
+		return nil, err
 	}
 
 	var comment string
