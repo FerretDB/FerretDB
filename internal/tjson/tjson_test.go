@@ -153,7 +153,12 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() tjsontype) {
 				t.Parallel()
 
 				v := newFunc()
-				err := unmarshalJSON(v, tc.j)
+				ok, err := unmarshalJSON(v, tc.j)
+
+				// UnmarshalJSON is not supported for some types, nothing to assert.
+				if !ok {
+					return
+				}
 
 				if tc.jErr == "" {
 					require.NoError(t, err)
@@ -165,7 +170,7 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() tjsontype) {
 				require.Equal(t, tc.jErr, lastErr(err).Error())
 			})
 
-			t.Run("Unmarshal", func(t *testing.T) {
+			t.Run("UnmarshalWithSchema", func(t *testing.T) {
 				t.Parallel()
 
 				v, err := Unmarshal([]byte(tc.j), tc.schema)
@@ -295,9 +300,13 @@ func benchmark(b *testing.B, testCases []testCase) {
 
 // unmarshalJSON encapsulates type switch and calls UnmarshalJSON on the given value.
 // It is called this way as tjsontype itself doesn't implement json.Unmarshaler interface.
-func unmarshalJSON(v tjsontype, j string) error {
+// This function returns true if UnmarshalJSON is implemented and called and false if not.
+func unmarshalJSON(v tjsontype, j string) (bool, error) {
 	var err error
 	switch v := v.(type) {
+	case *documentType:
+		// UnmarshalJSON is not supported for documents.
+		return false, nil
 	case *doubleType:
 		err = v.UnmarshalJSON([]byte(j))
 	case *stringType:
@@ -315,5 +324,6 @@ func unmarshalJSON(v tjsontype, j string) error {
 	default:
 		panic(fmt.Sprintf("testing is not implemented for the type %T", v))
 	}
-	return err
+
+	return true, err
 }

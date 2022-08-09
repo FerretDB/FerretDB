@@ -27,8 +27,8 @@ import (
 
 // updateCompatTestCase describes update compatibility test case.
 type updateCompatTestCase struct {
-	update bson.D
-	skip   string
+	update bson.D // required
+	skip   string // skips test if non-empty
 }
 
 // testUpdateCompat tests update compatibility test cases.
@@ -46,7 +46,7 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 
 			t.Parallel()
 
-			// Use per-test setup because update queries modify data.
+			// Use per-test setup because updates modify data set.
 			ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
 			update := tc.update
@@ -58,12 +58,7 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
-					cursor, err := targetCollection.Find(ctx, bson.D{})
-					require.NoError(t, err)
-					var allDocs []bson.D
-					err = cursor.All(ctx, &allDocs)
-					require.NoError(t, cursor.Close(ctx))
-					require.NoError(t, err)
+					allDocs := FindAll(t, ctx, targetCollection)
 
 					for _, doc := range allDocs {
 						id, ok := doc.Map()["_id"]
