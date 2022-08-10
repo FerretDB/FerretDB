@@ -161,10 +161,3 @@ func testDeleteCompat(t *testing.T, testCases map[string]deleteCompatTestCase) {
 		})
 	}
 }
-
-//func sort(docs []bson.D) {
-//	for _, d := range docs {
-//		id := d.Map()["_id"]
-//		// ...
-//	}
-//}

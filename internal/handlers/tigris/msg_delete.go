@@ -17,7 +17,6 @@ package tigris
 import (
 	"context"
 	"fmt"
-
 	"github.com/tigrisdata/tigris-client-go/driver"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -48,40 +47,40 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	var deleted int32
-	for i := 0; i < deletes.Len(); i++ {
+	processQuery := func(i int) error {
 		d, err := common.AssertType[*types.Document](must.NotFail(deletes.Get(i)))
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		if err := common.Unimplemented(d, "collation", "hint"); err != nil {
-			return nil, err
+			return err
 		}
 
 		var filter *types.Document
 		if filter, err = common.GetOptionalParam(d, "q", filter); err != nil {
-			return nil, err
+			return err
 		}
 
 		// TODO https://github.com/FerretDB/FerretDB/issues/982
 		var limit int64
 		if l, _ := d.Get("limit"); l != nil {
 			if limit, err = common.GetWholeNumberParam(l); err != nil {
-				return nil, err
+				return err
 			}
 		}
 
 		var fp fetchParam
 		if fp.db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-			return nil, err
+			return err
 		}
 		collectionParam, err := document.Get(document.Command())
 		if err != nil {
-			return nil, err
+			return err
 		}
 		var ok bool
 		if fp.collection, ok = collectionParam.(string); !ok {
-			return nil, common.NewErrorMsg(
+			return common.NewErrorMsg(
 				common.ErrBadValue,
 				fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
 			)
@@ -89,14 +88,14 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		fetchedDocs, err := h.fetch(ctx, fp)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		resDocs := make([]*types.Document, 0, 16)
 		for _, doc := range fetchedDocs {
 			matches, err := common.FilterDocument(doc, filter)
 			if err != nil {
-				return nil, err
+				return err
 			}
 
 			if !matches {
@@ -107,19 +106,27 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
-			return nil, err
+			return err
 		}
 
 		if len(resDocs) == 0 {
-			continue
+			return nil
 		}
 
 		res, err := h.delete(ctx, fp, resDocs)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		deleted += int32(res)
+		return nil
+	}
+
+	for i := 0; i < deletes.Len(); i++ {
+		err = processQuery(i)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var reply wire.OpMsg
