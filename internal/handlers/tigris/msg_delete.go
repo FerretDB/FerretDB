@@ -119,7 +119,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return err
 		}
 
-		// if no field is matched in the row go to next one
+		// if no field is matched in a row, go to the next one
 		if len(resDocs) == 0 {
 			return nil
 		}
@@ -142,8 +142,8 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		if err != nil {
 			delErrors.Append(err)
 
-			// If ordered then return the error,
-			// if not we should process next filters
+			// If ordered option is set then return the error,
+			// if it's not - we should process next filters
 			// and return all encountered errors.
 			if ordered {
 				return nil, delErrors
