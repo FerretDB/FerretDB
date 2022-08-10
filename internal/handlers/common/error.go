@@ -278,6 +278,8 @@ type writeError struct {
 	err  string
 }
 
+// Error returns the string that contains
+// an error message.
 func (we *writeError) Error() string {
 	return we.err
 }
