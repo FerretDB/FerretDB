@@ -1150,3 +1150,7 @@ func TestUpdateFieldMixed(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdateFieldPopArrayOperator(t *testing.T) {
+	// TODO
+}
