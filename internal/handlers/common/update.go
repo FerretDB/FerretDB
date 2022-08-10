@@ -145,6 +145,8 @@ func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (b
 	return changed, nil
 }
 
+// processPopFieldExpression changes document according to $pop operator.
+// If the document was changed it returns true.
 func processPopFieldExpression(doc *types.Document, update *types.Document) (bool, error) {
 	return false, nil
 }
@@ -293,29 +295,36 @@ func ValidateUpdateOperators(update *types.Document) error {
 	if _, err = HasSupportedUpdateModifiers(update); err != nil {
 		return err
 	}
+
 	inc, err := extractValueFromUpdateOperator("$inc", update)
 	if err != nil {
 		return err
 	}
+
 	set, err := extractValueFromUpdateOperator("$set", update)
 	if err != nil {
 		return err
 	}
+
 	_, err = extractValueFromUpdateOperator("$unset", update)
 	if err != nil {
 		return err
 	}
+
 	_, err = extractValueFromUpdateOperator("$setOnInsert", update)
 	if err != nil {
 		return err
 	}
+
 	_, err = extractValueFromUpdateOperator("$pop", update)
 	if err != nil {
 		return err
 	}
+
 	if err = checkConflictingChanges(set, inc); err != nil {
 		return err
 	}
+
 	if err = validateCurrentDateExpression(update); err != nil {
 		return err
 	}
