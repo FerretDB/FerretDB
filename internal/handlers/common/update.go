@@ -164,33 +164,35 @@ func processPopFieldExpression(doc *types.Document, update *types.Document) (boo
 
 		path := types.NewPathFromString(key)
 
-		if doc.HasByPath(path) {
-			val, err := doc.GetByPath(path)
-			if err != nil {
-				return false, err
-			}
-
-			array, ok := val.(*types.Array)
-			if !ok {
-				return false, NewWriteErrorMsg(
-					ErrTypeMismatch,
-					fmt.Sprintf("Path '%s' contains an element of non-array type '%s'", key, AliasFromType(val)),
-				)
-			}
-
-			if array.Len() == 0 {
-				continue
-			}
-
-			array.Remove(int(popValue))
-
-			err = doc.SetByPath(path, array)
-			if err != nil {
-				return false, err
-			}
-
-			changed = true
+		if !doc.HasByPath(path) {
+			continue
 		}
+
+		val, err := doc.GetByPath(path)
+		if err != nil {
+			return false, err
+		}
+
+		array, ok := val.(*types.Array)
+		if !ok {
+			return false, NewWriteErrorMsg(
+				ErrTypeMismatch,
+				fmt.Sprintf("Path '%s' contains an element of non-array type '%s'", key, AliasFromType(val)),
+			)
+		}
+
+		if array.Len() == 0 {
+			continue
+		}
+
+		array.Remove(int(popValue))
+
+		err = doc.SetByPath(path, array)
+		if err != nil {
+			return false, err
+		}
+
+		changed = true
 	}
 
 	return changed, nil
