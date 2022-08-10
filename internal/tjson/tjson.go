@@ -123,6 +123,10 @@ func toTJSON(v any) tjsontype {
 
 // Unmarshal decodes the given tjson-encoded data.
 func Unmarshal(data []byte, schema *Schema) (any, error) {
+	if bytes.Equal(data, []byte("null")) {
+		return fromTJSON(new(nullType)), nil
+	}
+
 	var res tjsontype
 	var err error
 	switch t := schema.Type; t {
