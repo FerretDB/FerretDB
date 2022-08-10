@@ -18,9 +18,8 @@ import (
 	"context"
 	"fmt"
 
-	"golang.org/x/exp/slices"
-
 	"github.com/tigrisdata/tigris-client-go/driver"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/tjson"
