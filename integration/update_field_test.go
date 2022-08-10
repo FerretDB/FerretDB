@@ -854,6 +854,63 @@ func TestUpdateFieldSet(t *testing.T) {
 				UpsertedCount: 0,
 			},
 		},
+		"DotNotationDocumentFieldExist": {
+			id:       "document-composite",
+			update:   bson.D{{"$set", bson.D{{"v.foo", int32(1)}}}},
+			expected: bson.D{{"_id", "document-composite"}, {"v", bson.D{{"foo", int32(1)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+		},
+		"DotNotationDocumentFieldNotExist": {
+			id:       "int32",
+			update:   bson.D{{"$set", bson.D{{"foo.bar", int32(1)}}}},
+			expected: bson.D{{"_id", "int32"}, {"v", int32(42)}, {"foo", bson.D{{"bar", int32(1)}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+		},
+		"DotNotationArrayFieldExist": {
+			id:       "document-composite",
+			update:   bson.D{{"$set", bson.D{{"v.array.0", int32(1)}}}},
+			expected: bson.D{{"_id", "document-composite"}, {"v", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(1), "foo", nil}}}}},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+		},
+		"DotNotationArrayFieldNotExist": {
+			id:     "int32",
+			update: bson.D{{"$set", bson.D{{"foo.0.baz", int32(1)}}}},
+			expected: bson.D{
+				{"_id", "int32"},
+				{"v", int32(42)},
+				{"foo", bson.D{{"0", bson.D{{"baz", int32(1)}}}}},
+			},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+		},
+		"DocumentDotNotationArrayFieldNotExist": {
+			id:     "document",
+			update: bson.D{{"$set", bson.D{{"v.0.foo", int32(1)}}}},
+			expected: bson.D{
+				{"_id", "document"},
+				{"v", bson.D{{"foo", int32(42)}, {"0", bson.D{{"foo", int32(1)}}}}},
+			},
+			stat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -891,7 +948,7 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 
 	for name, tc := range map[string]struct {
 		id           string
-		setOnInsert  any
+		update       bson.D
 		expected     bson.D
 		err          *mongo.WriteError
 		alt          string
@@ -900,28 +957,28 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 	}{
 		"Array": {
 			id:           "array-set-on-insert",
-			setOnInsert:  bson.D{{"v", bson.A{}}},
+			update:       bson.D{{"$setOnInsert", bson.D{{"v", bson.A{}}}}},
 			expected:     bson.D{{"_id", "array-set-on-insert"}, {"v", bson.A{}}},
 			expectedStat: stat,
 			upserted:     true,
 		},
 		"Nil": {
 			id:           "nil",
-			setOnInsert:  bson.D{{"v", nil}},
+			update:       bson.D{{"$setOnInsert", bson.D{{"v", nil}}}},
 			expected:     bson.D{{"_id", "nil"}, {"v", nil}},
 			expectedStat: stat,
 			upserted:     true,
 		},
 		"EmptyDoc": {
 			id:           "doc",
-			setOnInsert:  bson.D{},
+			update:       bson.D{{"$setOnInsert", bson.D{}}},
 			expected:     bson.D{{"_id", "doc"}},
 			expectedStat: stat,
 			upserted:     true,
 		},
 		"EmptyArray": {
-			id:          "array",
-			setOnInsert: bson.A{},
+			id:     "array",
+			update: bson.D{{"$setOnInsert", bson.A{}}},
 			err: &mongo.WriteError{
 				Code: 9,
 				Message: "Modifiers operate on fields but we found type array instead. " +
@@ -930,8 +987,8 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 			alt: "Modifiers operate on fields but we found another type instead",
 		},
 		"DoubleDouble": {
-			id:          "double",
-			setOnInsert: 43.13,
+			id:     "double",
+			update: bson.D{{"$setOnInsert", 43.13}},
 			err: &mongo.WriteError{
 				Code: 9,
 				Message: "Modifiers operate on fields but we found type double instead. " +
@@ -940,8 +997,8 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 			alt: "Modifiers operate on fields but we found another type instead",
 		},
 		"ErrNaN": {
-			id:          "double-nan",
-			setOnInsert: math.NaN(),
+			id:     "double-nan",
+			update: bson.D{{"$setOnInsert", math.NaN()}},
 			err: &mongo.WriteError{
 				Code: 9,
 				Message: "Modifiers operate on fields but we found type double instead. " +
@@ -950,8 +1007,8 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 			alt: "Modifiers operate on fields but we found another type instead",
 		},
 		"ErrString": {
-			id:          "string",
-			setOnInsert: "any string",
+			id:     "string",
+			update: bson.D{{"$setOnInsert", "any string"}},
 			err: &mongo.WriteError{
 				Code: 9,
 				Message: "Modifiers operate on fields but we found type string instead. " +
@@ -960,8 +1017,8 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 			alt: "Modifiers operate on fields but we found another type instead",
 		},
 		"ErrNil": {
-			id:          "nil",
-			setOnInsert: nil,
+			id:     "nil",
+			update: bson.D{{"$setOnInsert", nil}},
 			err: &mongo.WriteError{
 				Code: 9,
 				Message: "Modifiers operate on fields but we found type null instead. " +
@@ -969,15 +1026,71 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 			},
 			alt: "Modifiers operate on fields but we found another type instead",
 		},
+		"DotNotationDocumentFieldExist": {
+			id:       "document-composite",
+			update:   bson.D{{"$set", bson.D{{"v.foo", int32(1)}}}},
+			expected: bson.D{{"_id", "document-composite"}, {"v", bson.D{{"foo", int32(1)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}},
+			expectedStat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+		},
+		"DotNotationDocumentFieldNotExist": {
+			id:       "int32",
+			update:   bson.D{{"$setOnInsert", bson.D{{"foo.bar", int32(1)}}}},
+			expected: bson.D{{"_id", "int32"}, {"v", int32(42)}},
+			expectedStat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 0,
+				UpsertedCount: 0,
+			},
+		},
+		"DotNotationArrayFieldExist": {
+			id:       "document-composite",
+			update:   bson.D{{"$setOnInsert", bson.D{{"v.array.0", int32(1)}}}},
+			expected: bson.D{{"_id", "document-composite"}, {"v", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}},
+			expectedStat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 0,
+				UpsertedCount: 0,
+			},
+		},
+		"DotNotationArrFieldNotExist": {
+			id:     "int32",
+			update: bson.D{{"$setOnInsert", bson.D{{"foo.0.baz", int32(1)}}}},
+			expected: bson.D{
+				{"_id", "int32"},
+				{"v", int32(42)},
+			},
+			expectedStat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 0,
+				UpsertedCount: 0,
+			},
+		},
+		"DocumentDotNotationArrFieldNotExist": {
+			id:     "document",
+			update: bson.D{{"$setOnInsert", bson.D{{"v.0.foo", int32(1)}}}},
+			expected: bson.D{
+				{"_id", "document"},
+				{"v", bson.D{{"foo", int32(42)}}},
+			},
+			expectedStat: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 0,
+				UpsertedCount: 0,
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx, collection := setup.Setup(t, shareddata.Composites)
+			ctx, collection := setup.Setup(t, shareddata.Composites, shareddata.Scalars)
 
 			opts := options.Update().SetUpsert(true)
-			actualUpdateStat, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, bson.D{{"$setOnInsert", tc.setOnInsert}}, opts)
+			actualUpdateStat, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update, opts)
 			if tc.err != nil {
 				require.Nil(t, tc.expected)
 				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
