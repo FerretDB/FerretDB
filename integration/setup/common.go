@@ -63,20 +63,14 @@ func SkipForTigris(tb testing.TB) {
 
 // setupListener starts in-process FerretDB server that runs until ctx is done,
 // and returns listening port number.
-func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, readOnly bool) int {
+func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 	tb.Helper()
 
-	if *handlerF == "tigris" && readOnly {
-		tb.Logf("Read-only user is not implemented for %q handler yet.", *handlerF)
-	}
-
 	h, err := registry.NewHandler(*handlerF, &registry.NewHandlerOpts{
-		Ctx:    ctx,
-		Logger: logger,
-		PostgreSQLURL: testutil.PoolConnString(tb, &testutil.PoolOpts{
-			ReadOnly: readOnly,
-		}),
-		TigrisURL: testutil.TigrisURL(tb),
+		Ctx:           ctx,
+		Logger:        logger,
+		PostgreSQLURL: testutil.PoolConnString(tb, nil),
+		TigrisURL:     testutil.TigrisURL(tb),
 	})
 	require.NoError(tb, err)
 
