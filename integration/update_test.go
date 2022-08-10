@@ -188,3 +188,65 @@ func TestMultiFlag(t *testing.T) {
 		}
 	})
 }
+
+func TestUpdateReplaceDocuments(t *testing.T) {
+	setup.SkipForTigris(t)
+
+	t.Parallel()
+
+	stat := bson.D{{"n", int32(1)}, {"nModified", int32(1)}, {"ok", float64(1)}}
+
+	for name, tc := range map[string]struct {
+		update         bson.D
+		expectedFilter bson.D
+		expected       bson.D
+	}{
+		"Replace": {
+			update: bson.D{
+				{"q", bson.D{{"v", bson.D{{"$eq", true}}}}},
+				{"u", bson.D{{"replacement-value", int32(1)}}},
+			},
+			expectedFilter: bson.D{{"_id", "bool-true"}},
+			expected:       bson.D{{"_id", "bool-true"}, {"replacement-value", int32(1)}},
+		},
+		"ReplaceDotNotation": {
+			update: bson.D{
+				{"q", bson.D{{"v.array.0", bson.D{{"$eq", int32(42)}}}, {"_id", "document-composite"}}},
+				{"u", bson.D{{"replacement-value", int32(1)}}},
+			},
+			expectedFilter: bson.D{{"_id", "document-composite"}},
+			expected:       bson.D{{"_id", "document-composite"}, {"replacement-value", int32(1)}},
+		},
+		// TODO: https://github.com/FerretDB/FerretDB/issues/1000
+		//"ReplaceDotNotationWithEmptyDoc": {
+		//	update: bson.D{
+		//		{"q", bson.D{{"v.array.0", bson.D{{"$eq", int32(42)}}}}},
+		//		{"u", bson.D{{}}},
+		//	},
+		//	expectedFilter: bson.D{{"_id", "document-composite"}},
+		//	expected:       bson.D{{"_id", "document-composite"}},
+		//},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup.Setup(t, shareddata.Composites, shareddata.Scalars)
+
+			res := collection.Database().RunCommand(
+				ctx,
+				bson.D{{"update", collection.Name()}, {"updates", bson.A{tc.update}}},
+			)
+			require.NoError(t, res.Err())
+
+			var actual bson.D
+			err := res.Decode(&actual)
+			require.NoError(t, err)
+
+			AssertEqualDocuments(t, stat, actual)
+
+			err = collection.FindOne(ctx, tc.expectedFilter).Decode(&actual)
+			require.NoError(t, err)
+			AssertEqualDocuments(t, tc.expected, actual)
+		})
+	}
+}
