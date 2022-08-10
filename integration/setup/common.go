@@ -165,5 +165,17 @@ func startup() {
 		logging.Setup(zap.DebugLevel)
 
 		go debug.RunHandler(context.Background(), "127.0.0.1:0", zap.L().Named("debug"))
+
+		if p := *targetPortF; p == 0 {
+			zap.S().Infof("Target system: in-process FerretDB with %q handler.", *handlerF)
+		} else {
+			zap.S().Infof("Target system: port %d.", p)
+		}
+
+		if p := *compatPortF; p == 0 {
+			zap.S().Warn("Compat system: none, compatibility tests will be skipped.")
+		} else {
+			zap.S().Infof("Compat system: port %d.", p)
+		}
 	})
 }
