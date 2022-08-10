@@ -176,7 +176,7 @@ func TestQueryComparisonImplicit(t *testing.T) {
 			filter: bson.D{{"v", nil}},
 			expectedIDs: []any{
 				"array-first-embedded", "array-last-embedded", "array-middle-embedded", "array-null",
-				"array-three", "array-three-reverse", "null", "unset",
+				"array-three", "array-three-reverse", "null",
 			},
 		},
 		"NoSuchFieldNull": {
@@ -197,7 +197,6 @@ func TestQueryComparisonImplicit(t *testing.T) {
 				"regex", "regex-empty",
 				"string", "string-double", "string-empty", "string-whole",
 				"timestamp", "timestamp-i",
-				"unset",
 			},
 		},
 
@@ -405,7 +404,7 @@ func TestQueryComparisonEq(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$eq", nil}}}},
 			expectedIDs: []any{
 				"array-first-embedded", "array-last-embedded", "array-middle-embedded", "array-null", "array-three",
-				"array-three-reverse", "null", "unset",
+				"array-three-reverse", "null",
 			},
 		},
 
@@ -495,7 +494,6 @@ func TestQueryComparisonEq(t *testing.T) {
 				"regex", "regex-empty",
 				"string", "string-double", "string-empty",
 				"string-whole", "timestamp", "timestamp-i",
-				"unset",
 			},
 		},
 	} {
@@ -882,7 +880,7 @@ func TestQueryComparisonGte(t *testing.T) {
 			value: nil,
 			expectedIDs: []any{
 				"array-first-embedded", "array-last-embedded", "array-middle-embedded", "array-null", "array-three",
-				"array-three-reverse", "null", "unset",
+				"array-three-reverse", "null",
 			},
 		},
 
@@ -1336,7 +1334,7 @@ func TestQueryComparisonLte(t *testing.T) {
 			value: nil,
 			expectedIDs: []any{
 				"array-first-embedded", "array-last-embedded", "array-middle-embedded", "array-null",
-				"array-three", "array-three-reverse", "null", "unset",
+				"array-three", "array-three-reverse", "null",
 			},
 		},
 
@@ -1455,7 +1453,6 @@ func TestQueryComparisonNin(t *testing.T) {
 				"regex", "regex-empty",
 				"string", "string-double", "string-empty", "string-whole",
 				"timestamp", "timestamp-i",
-				"unset",
 			},
 		},
 
@@ -1485,7 +1482,6 @@ func TestQueryComparisonNin(t *testing.T) {
 				"regex-empty",
 				"string-double", "string-empty", "string-whole",
 				"timestamp", "timestamp-i",
-				"unset",
 			},
 		},
 
@@ -1566,7 +1562,6 @@ func TestQueryComparisonIn(t *testing.T) {
 				"regex", "regex-empty",
 				"string", "string-double", "string-empty", "string-whole",
 				"timestamp", "timestamp-i",
-				"unset",
 			},
 		},
 		"ForCompositeDataTypes": {

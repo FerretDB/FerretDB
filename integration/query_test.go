@@ -187,7 +187,6 @@ func TestQuerySortValue(t *testing.T) {
 			sort: bson.D{{"v", 1}, {"_id", 1}},
 			expectedIDs: []any{
 				"null",
-				"unset",
 				"double-nan",
 				"double-negative-infinity",
 				"int64-min",
@@ -268,7 +267,6 @@ func TestQuerySortValue(t *testing.T) {
 				"double-negative-infinity",
 				"double-nan",
 				"null",
-				"unset",
 			},
 		},
 		"BadSortValue": {

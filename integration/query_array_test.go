@@ -502,7 +502,7 @@ func TestQueryArrayAll(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$all", bson.A{nil}}}}},
 			expectedIDs: []any{
 				"array-first-embedded", "array-last-embedded", "array-middle-embedded",
-				"array-null", "array-three", "array-three-reverse", "many-integers", "null", "unset",
+				"array-null", "array-three", "array-three-reverse", "many-integers", "null",
 			},
 			expectedErr: nil,
 		},
@@ -510,7 +510,7 @@ func TestQueryArrayAll(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$all", bson.A{nil, nil, nil}}}}},
 			expectedIDs: []any{
 				"array-first-embedded", "array-last-embedded", "array-middle-embedded",
-				"array-null", "array-three", "array-three-reverse", "many-integers", "null", "unset",
+				"array-null", "array-three", "array-three-reverse", "many-integers", "null",
 			},
 			expectedErr: nil,
 		},
