@@ -33,10 +33,15 @@ type deleteCompatTestCase struct {
 
 func TestDeleteCompat(t *testing.T) {
 	testCases := map[string]deleteCompatTestCase{
-		//"Empty": {
-		//	deletes: bson.A{},
-		//},
-		"True": {
+		"Empty": {
+			deletes: bson.A{
+				bson.D{
+					{"q", bson.D{}},
+					{"limit", 0},
+				},
+			},
+		},
+		"OrderedTrue": {
 			deletes: bson.A{
 				bson.D{
 					{"q", bson.D{{"_id", "string"}}},
@@ -53,7 +58,7 @@ func TestDeleteCompat(t *testing.T) {
 			},
 			ordered: true,
 		},
-		"False": {
+		"OrderedFalse": {
 			deletes: bson.A{
 				bson.D{
 					{"q", bson.D{{"_id", "string"}}},
@@ -70,7 +75,7 @@ func TestDeleteCompat(t *testing.T) {
 			},
 			ordered: false,
 		},
-		"TwoErrors": {
+		"OrderedFalseTwoErrors": {
 			deletes: bson.A{
 				bson.D{
 					{"q", bson.D{{"_id", "string"}}},
@@ -89,6 +94,7 @@ func TestDeleteCompat(t *testing.T) {
 					{"limit", 0},
 				},
 			},
+			ordered: false,
 		},
 	}
 
