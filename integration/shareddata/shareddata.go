@@ -53,7 +53,7 @@ func AllProviders() []Provider {
 		Int32s,
 		// Timestamps, TODO https://github.com/FerretDB/FerretDB/issues/905
 		Int64s,
-		// TODO Unsets,
+		// Unsets, TODO https://github.com/FerretDB/FerretDB/issues/1023
 
 		Composites,
 	}

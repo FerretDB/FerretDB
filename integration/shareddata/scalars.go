@@ -94,7 +94,7 @@ var Scalars = &Values[string]{
 		// no Min key
 		// no Max key
 
-		// "unset": unset, TODO https://github.com/FerretDB/FerretDB/issues/1023
+		// TODO "unset": unset, https://github.com/FerretDB/FerretDB/issues/1023
 	},
 }
 
