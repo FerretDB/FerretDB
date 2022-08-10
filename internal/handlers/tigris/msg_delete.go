@@ -125,10 +125,12 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		deleted += int32(res)
+
 		return nil
 	}
 
 	delErrors := new(common.WriteErrors)
+
 	for i := 0; i < deletes.Len(); i++ {
 		err = processQuery(i)
 		if err != nil {
