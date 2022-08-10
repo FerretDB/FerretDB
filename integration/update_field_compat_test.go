@@ -44,18 +44,9 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 			update: bson.D{{"$inc", bson.D{{"foo.bar", int32(1)}}}},
 			skip:   "https://github.com/FerretDB/FerretDB/issues/972",
 		},
-	}
-
-	testUpdateCompat(t, testCases)
-}
-
-// TestUpdateFieldCompatNull checks that update works correctly for the null values.
-func TestUpdateFieldCompatNull(t *testing.T) {
-	t.Parallel()
-
-	testCases := map[string]updateCompatTestCase{
 		"SetNull": {
 			update: bson.D{{"$set", bson.D{{"v", nil}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1019",
 		},
 	}
 
