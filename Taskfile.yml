@@ -227,7 +227,7 @@ tasks:
       - lint-go-consistent
     cmds:
       - bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
-      - go vet -vettool=./bin/checkswitch ./...
+      - go vet -vettool=./bin/checkswitch{{exeExt}} ./...
 
   lint-golangci-lint:
     cmds:
