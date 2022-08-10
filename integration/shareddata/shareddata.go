@@ -56,6 +56,9 @@ func AllProviders() []Provider {
 		// Unsets, TODO https://github.com/FerretDB/FerretDB/issues/1023
 
 		Composites,
+
+		DocumentsDoubles,
+		DocumentsStrings,
 	}
 
 	// check that names are unique and randomize order
