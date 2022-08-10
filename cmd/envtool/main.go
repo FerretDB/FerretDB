@@ -199,21 +199,25 @@ func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
 	}
 	defer pgPool.Close()
 
-	logger.Info("Creating databases...")
-	for _, db := range []string{"admin", "test"} {
-		if err = pgdb.CreateDatabase(ctx, pgPool, db); err != nil {
+	logger.Info("Tweaking settings...")
+
+	for _, q := range []string{
+		`CREATE ROLE readonly NOINHERIT LOGIN`,
+
+		// TODO Grant permissions to readonly role.
+		// https://github.com/FerretDB/FerretDB/issues/1025
+
+		`ANALYZE`, // to make tests more stable
+	} {
+		if _, err = pgPool.Exec(ctx, q); err != nil {
 			return err
 		}
 	}
 
-	logger.Info("Tweaking settings...")
-	for _, q := range []string{
-		`CREATE ROLE readonly NOINHERIT LOGIN`,
-		`GRANT SELECT ON ALL TABLES IN SCHEMA test TO readonly`,
-		`GRANT USAGE ON SCHEMA test TO readonly`,
-		`ANALYZE`, // to make tests more stable
-	} {
-		if _, err = pgPool.Exec(ctx, q); err != nil {
+	logger.Info("Creating databases...")
+
+	for _, db := range []string{"admin", "test"} {
+		if err = pgdb.CreateDatabase(ctx, pgPool, db); err != nil {
 			return err
 		}
 	}
