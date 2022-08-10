@@ -54,6 +54,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var deleted int32
 	processQuery := func(i int) error {
+		// get document with filter
 		d, err := common.AssertType[*types.Document](must.NotFail(deletes.Get(i)))
 		if err != nil {
 			return err
@@ -63,6 +64,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return err
 		}
 
+		// get filter from document
 		var filter *types.Document
 		if filter, err = common.GetOptionalParam(d, "q", filter); err != nil {
 			return err
@@ -92,12 +94,14 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			)
 		}
 
+		// fetch current items from collection
 		fetchedDocs, err := h.fetch(ctx, fp)
 		if err != nil {
 			return err
 		}
 
 		resDocs := make([]*types.Document, 0, 16)
+		// iterate through every row and delete matching ones
 		for _, doc := range fetchedDocs {
 			matches, err := common.FilterDocument(doc, filter)
 			if err != nil {
@@ -115,6 +119,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return err
 		}
 
+		// if no field is matched in the row go to next one
 		if len(resDocs) == 0 {
 			return nil
 		}
@@ -131,11 +136,15 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	delErrors := new(common.WriteErrors)
 
+	// process every delete filter
 	for i := 0; i < deletes.Len(); i++ {
 		err = processQuery(i)
 		if err != nil {
 			delErrors.Append(err)
 
+			// If ordered then return the error,
+			// if not we should process next filters
+			// and return all encountered errors.
 			if ordered {
 				return nil, delErrors
 			}

@@ -52,6 +52,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var deleted int32
 	processQuery := func(i int) error {
+		// get document with filter
 		d, err := common.AssertType[*types.Document](must.NotFail(deletes.Get(i)))
 		if err != nil {
 			return err
@@ -61,6 +62,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return err
 		}
 
+		// get filter from document
 		var filter *types.Document
 		if filter, err = common.GetOptionalParam(d, "q", filter); err != nil {
 			return err
@@ -101,6 +103,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		resDocs := make([]*types.Document, 0, 16)
 		err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+			// fetch current items from collection
 			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp)
 			if err != nil {
 				return err
@@ -112,6 +115,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				}
 			}()
 
+			// iterate through every row and delete matching ones
 			for fetchedItem := range fetchedChan {
 				if fetchedItem.Err != nil {
 					return fetchedItem.Err
@@ -134,6 +138,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 					return err
 				}
 
+				// if no field is matched in the row go to next one
 				if len(resDocs) == 0 {
 					continue
 				}
@@ -154,11 +159,15 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	unorderedErrMsgs := new(common.WriteErrors)
 
+	// process every delete filter
 	for i := 0; i < deletes.Len(); i++ {
 		err := processQuery(i)
 		if err != nil {
 			unorderedErrMsgs.Append(err)
 
+			// If ordered then return the error,
+			// if not we should process next filters
+			// and return all encountered errors.
 			if ordered {
 				return nil, unorderedErrMsgs
 			}
