@@ -38,6 +38,9 @@ type SetupCompatOpts struct {
 	// Most tests should keep this false.
 	KeepData bool
 
+	// If true, read-only user is used.
+	ReadOnly bool
+
 	// Data providers.
 	Providers []shareddata.Provider
 }
@@ -71,7 +74,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 
 	targetPort := *targetPortF
 	if targetPort == 0 {
-		targetPort = setupListener(tb, ctx, logger)
+		targetPort = setupListener(tb, ctx, logger, opts.ReadOnly)
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs

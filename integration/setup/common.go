@@ -52,7 +52,7 @@ var (
 
 // SkipForTigris skips the current test for Tigris handler.
 //
-// This function should be removed soon. It should not be used in new tests.
+// This function should not be used lightly in new tests and should eventually be removed.
 func SkipForTigris(tb testing.TB) {
 	tb.Helper()
 
@@ -63,14 +63,20 @@ func SkipForTigris(tb testing.TB) {
 
 // setupListener starts in-process FerretDB server that runs until ctx is done,
 // and returns listening port number.
-func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
+func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, readOnly bool) int {
 	tb.Helper()
 
+	if *handlerF == "tigris" && readOnly {
+		tb.Logf("Read-only user is not implemented for %q handler yet.", *handlerF)
+	}
+
 	h, err := registry.NewHandler(*handlerF, &registry.NewHandlerOpts{
-		Ctx:           ctx,
-		Logger:        logger,
-		PostgreSQLURL: testutil.PoolConnString(tb, nil),
-		TigrisURL:     testutil.TigrisURL(tb),
+		Ctx:    ctx,
+		Logger: logger,
+		PostgreSQLURL: testutil.PoolConnString(tb, &testutil.PoolOpts{
+			ReadOnly: readOnly,
+		}),
+		TigrisURL: testutil.TigrisURL(tb),
 	})
 	require.NoError(tb, err)
 

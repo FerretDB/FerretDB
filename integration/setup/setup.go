@@ -38,6 +38,9 @@ type SetupOpts struct {
 	// Most tests should keep this empty.
 	CollectionName string
 
+	// If true, read-only user is used.
+	ReadOnly bool
+
 	// Data providers.
 	Providers []shareddata.Provider
 }
@@ -69,7 +72,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 
 	port := *targetPortF
 	if port == 0 {
-		port = setupListener(tb, ctx, logger)
+		port = setupListener(tb, ctx, logger, opts.ReadOnly)
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
