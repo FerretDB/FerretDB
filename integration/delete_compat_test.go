@@ -17,26 +17,77 @@ package integration
 import (
 	"testing"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-
-	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 // deleteCompatTestCase describes delete compatibility test case.
 type deleteCompatTestCase struct {
-	filter  bson.D // required
+	deletes bson.A // required
 	ordered bool   // defaults to false
 	skip    string // skips test if non-empty
 }
 
 func TestDeleteCompat(t *testing.T) {
 	testCases := map[string]deleteCompatTestCase{
-		"Empty": {
-			filter: bson.D{},
+		//"Empty": {
+		//	deletes: bson.A{},
+		//},
+		"True": {
+			deletes: bson.A{
+				bson.D{
+					{"q", bson.D{{"_id", "string"}}},
+					{"limit", 0},
+				},
+				bson.D{
+					{"q", bson.D{{"$all", 9}}},
+					{"limit", 0},
+				},
+				bson.D{
+					{"q", bson.D{{"_id", "double"}}},
+					{"limit", 0},
+				},
+			},
+			ordered: true,
+		},
+		"False": {
+			deletes: bson.A{
+				bson.D{
+					{"q", bson.D{{"_id", "string"}}},
+					{"limit", 0},
+				},
+				bson.D{
+					{"q", bson.D{{"$all", 9}}},
+					{"limit", 0},
+				},
+				bson.D{
+					{"q", bson.D{{"_id", "double"}}},
+					{"limit", 0},
+				},
+			},
+			ordered: false,
+		},
+		"TwoErrors": {
+			deletes: bson.A{
+				bson.D{
+					{"q", bson.D{{"_id", "string"}}},
+					{"limit", 0},
+				},
+				bson.D{
+					{"q", bson.D{{"$all", 9}}},
+					{"limit", 0},
+				},
+				bson.D{
+					{"q", bson.D{{"_id", "double"}}},
+					{"limit", 0},
+				},
+				bson.D{
+					{"q", bson.D{{"$eq", 9}}},
+					{"limit", 0},
+				},
+			},
 		},
 	}
 
@@ -61,10 +112,7 @@ func testDeleteCompat(t *testing.T, testCases map[string]deleteCompatTestCase) {
 			// Use per-test setup because deletes modify data set.
 			ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
-			filter := tc.filter
-			require.NotNil(t, filter)
-
-			opts := options.BulkWrite().SetOrdered(tc.ordered)
+			require.NotNil(t, tc.deletes)
 
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
@@ -72,15 +120,30 @@ func testDeleteCompat(t *testing.T, testCases map[string]deleteCompatTestCase) {
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
-					dmm := mongo.NewDeleteManyModel().SetFilter(filter)
+					var targetRes bson.D
+					targetErr := targetCollection.Database().RunCommand(
+						ctx,
+						bson.D{
+							{"delete", targetCollection.Name()},
+							{"deletes", tc.deletes},
+							{"ordered", tc.ordered},
+						},
+					).Decode(&targetRes)
 
-					targetRes, targetErr := targetCollection.BulkWrite(ctx, []mongo.WriteModel{dmm}, opts)
-					compatRes, compatErr := compatCollection.BulkWrite(ctx, []mongo.WriteModel{dmm}, opts)
+					var compatRes bson.D
+					compatErr := compatCollection.Database().RunCommand(
+						ctx,
+						bson.D{
+							{"delete", compatCollection.Name()},
+							{"deletes", tc.deletes},
+							{"ordered", tc.ordered},
+						},
+					).Decode(&compatRes)
 
 					if targetErr != nil {
 						targetErr = UnsetRaw(t, targetErr)
 						compatErr = UnsetRaw(t, compatErr)
-						assert.Equal(t, compatErr, targetErr)
+						assert.EqualError(t, compatErr, targetErr.Error())
 					} else {
 						require.NoError(t, compatErr)
 					}
@@ -98,3 +161,10 @@ func testDeleteCompat(t *testing.T, testCases map[string]deleteCompatTestCase) {
 		})
 	}
 }
+
+//func sort(docs []bson.D) {
+//	for _, d := range docs {
+//		id := d.Map()["_id"]
+//		// ...
+//	}
+//}
