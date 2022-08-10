@@ -55,8 +55,7 @@ var Scalars = &Values[string]{
 		"objectid":       primitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11},
 		"objectid-empty": primitive.NilObjectID,
 
-		// no Undefined, but unset is similar
-		"unset": unset,
+		// no Undefined
 
 		"bool-false": false,
 		"bool-true":  true,
@@ -94,6 +93,8 @@ var Scalars = &Values[string]{
 
 		// no Min key
 		// no Max key
+
+		"unset": unset,
 	},
 }
 
@@ -216,5 +217,14 @@ var Int64s = &Values[string]{
 		"int64-max":  int64(math.MaxInt64),
 		"int64-min":  int64(math.MinInt64),
 		"int64-big":  int64Big,
+	},
+}
+
+// Unsets contains unset value for tests.
+var Unsets = &Values[string]{
+	name:     "Unsets",
+	handlers: []string{"pg", "tigris"},
+	data: map[string]any{
+		"unset": unset,
 	},
 }
