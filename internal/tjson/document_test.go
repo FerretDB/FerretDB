@@ -209,15 +209,15 @@ func prepareTestCases() []testCase {
 		"int64", int64(42),
 		"string", "foo",
 		"object", must.NotFail(types.NewDocument("foo", "bar")),
-		"null", types.Null,
+		"null", "foo",
 	))
 	allSchema := must.NotFail(DocumentSchema(allDoc))
-	allSchema.Properties["null"] = stringSchema
+	allDoc.Set("null", types.Null) // Check that `null` set in a valid document can be handled correctly
 	all := testCase{
 		name:   "all",
 		v:      convertDocument(allDoc),
-		schema: must.NotFail(DocumentSchema((allDoc))),
-		j: `{"$k":["_id","binary","bool","double","int32","int64","string","object"],` +
+		schema: allSchema,
+		j: `{"$k":["_id","binary","bool","double","int32","int64","string","object","null"],` +
 			`"_id":"YupqlD1EsQ4ba4eX","binary":{"$b":"Qg==","s":128},"bool":true,"double":42.13,"int32":42,` +
 			`"int64":42,"string":"foo","object":{"$k":["foo"],"foo":"bar"},"null":null}`,
 	}
