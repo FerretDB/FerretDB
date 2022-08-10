@@ -43,34 +43,15 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 
 		case "$set":
-			fallthrough
+			changed, err = processSetFieldExpression(doc, updateV.(*types.Document), false)
+			if err != nil {
+				return false, err
+			}
 
 		case "$setOnInsert":
-			// expecting here a document since all checks were made in ValidateUpdateOperators func
-			setDoc := updateV.(*types.Document)
-
-			if setDoc.Len() == 0 {
-				continue
-			}
-			sort.Strings(setDoc.Keys())
-			for _, setKey := range setDoc.Keys() {
-				setValue := must.NotFail(setDoc.Get(setKey))
-				if doc.Has(setKey) {
-					result := types.Compare(setValue, must.NotFail(doc.Get(setKey)))
-					if len(result) != 1 {
-						panic("$set: there should be only one result")
-					}
-
-					if result[0] == types.Equal {
-						continue
-					}
-				}
-
-				if err := doc.Set(setKey, setValue); err != nil {
-					return false, err
-				}
-
-				changed = true
+			changed, err = processSetFieldExpression(doc, updateV.(*types.Document), true)
+			if err != nil {
+				return false, err
 			}
 
 		case "$unset":
@@ -120,6 +101,45 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 			changed = true
 		}
+	}
+
+	return changed, nil
+}
+
+// processSetFieldExpression changes document according to $set and $setOnInsert operators.
+// If the document was changed it returns true.
+func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (bool, error) {
+	var changed bool
+
+	sort.Strings(setDoc.Keys())
+
+	for _, setKey := range setDoc.Keys() {
+		setValue := must.NotFail(setDoc.Get(setKey))
+
+		path := types.NewPathFromString(setKey)
+
+		if doc.HasByPath(path) {
+			result := types.Compare(setValue, must.NotFail(doc.GetByPath(path)))
+			if len(result) != 1 {
+				panic("$set: there should be only one result")
+			}
+
+			if result[0] == types.Equal {
+				continue
+			}
+		}
+
+		// we should insert the value if it's a regular key
+		if setOnInsert && path.Len() > 1 {
+			continue
+		}
+
+		err := doc.SetByPath(path, setValue)
+		if err != nil {
+			return false, err
+		}
+
+		changed = true
 	}
 
 	return changed, nil
