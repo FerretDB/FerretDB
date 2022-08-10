@@ -185,7 +185,11 @@ func processPopFieldExpression(doc *types.Document, update *types.Document) (boo
 			continue
 		}
 
-		array.Remove(int(popValue))
+		if popValue == -1 {
+			array.Remove(0)
+		} else {
+			array.Remove(array.Len() - 1)
+		}
 
 		err = doc.SetByPath(path, array)
 		if err != nil {
