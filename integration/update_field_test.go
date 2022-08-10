@@ -1263,3 +1263,56 @@ func TestUpdateFieldMixed(t *testing.T) {
 		})
 	}
 }
+
+// TestUpdateTigrisNull tests how the update operation works with null values in Tigris.
+func TestUpdateTigrisNull(t *testing.T) {
+	setup.SkipForPostgres(t)
+
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		filter   bson.D
+		update   bson.D
+		expected bson.D
+		err      *mongo.WriteError
+	}{
+		"SetSetOnInsert": {
+			filter: bson.D{{"_id", "test"}},
+			update: bson.D{
+				{"$set", bson.D{{"foo", int32(12)}}},
+				{"$setOnInsert", bson.D{{"v", math.NaN()}}},
+			},
+			expected: bson.D{{"_id", "test"}, {"foo", int32(12)}, {"v", math.NaN()}},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+
+			opts := options.Update().SetUpsert(true)
+			actualStat, err := collection.UpdateOne(ctx, tc.filter, tc.update, opts)
+
+			if tc.err != nil {
+				require.Nil(t, tc.expected)
+				AssertEqualWriteError(t, *tc.err, err)
+				return
+			}
+
+			require.NoError(t, err)
+			actualStat.UpsertedID = nil
+
+			expectedStat := &mongo.UpdateResult{
+				MatchedCount:  0,
+				ModifiedCount: 0,
+				UpsertedCount: 1,
+			}
+			assert.Equal(t, expectedStat, actualStat)
+
+			var actual bson.D
+			err = collection.FindOne(ctx, tc.filter).Decode(&actual)
+			require.NoError(t, err)
+			AssertEqualDocuments(t, tc.expected, actual)
+		})
+	}
+}
