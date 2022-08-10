@@ -30,6 +30,8 @@ import (
 )
 
 // SetupCompatOpts represents setup options for compatibility test.
+//
+// TODO Add option to use read-only user. https://github.com/FerretDB/FerretDB/issues/1025
 type SetupCompatOpts struct {
 	// Database to use. If empty, temporary test-specific database is created.
 	DatabaseName string
@@ -71,7 +73,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 
 	targetPort := *targetPortF
 	if targetPort == 0 {
-		targetPort = setupListener(tb, ctx, logger, false)
+		targetPort = setupListener(tb, ctx, logger)
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
