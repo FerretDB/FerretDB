@@ -143,7 +143,7 @@ func testDeleteCompat(t *testing.T, testCases map[string]deleteCompatTestCase) {
 					if targetErr != nil {
 						targetErr = UnsetRaw(t, targetErr)
 						compatErr = UnsetRaw(t, compatErr)
-						assert.EqualError(t, compatErr, targetErr.Error())
+						assert.EqualError(t, targetErr, compatErr.Error())
 					} else {
 						require.NoError(t, compatErr)
 					}
