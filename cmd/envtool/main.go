@@ -200,6 +200,7 @@ func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
 	defer pgPool.Close()
 
 	logger.Info("Tweaking settings...")
+
 	for _, q := range []string{
 		`CREATE ROLE readonly NOINHERIT LOGIN`,
 
@@ -214,6 +215,7 @@ func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
 	}
 
 	logger.Info("Creating databases...")
+
 	for _, db := range []string{"admin", "test"} {
 		if err = pgdb.CreateDatabase(ctx, pgPool, db); err != nil {
 			return err
