@@ -1318,6 +1318,11 @@ func TestUpdateFieldPopArrayOperator(t *testing.T) {
 					UpsertedCount: 0,
 				},
 			},
+			"PopNoSuchKey": {
+				id:       "array",
+				update:   bson.D{{"$pop", bson.D{{"foo", 1}}}},
+				expected: bson.D{{"_id", "array"}, {"v", bson.A{int32(42)}}},
+			},
 			// TODO: https://github.com/FerretDB/FerretDB/issues/1000
 			//"PopEmptyValue": {
 			//	id:       "array",
@@ -1360,12 +1365,20 @@ func TestUpdateFieldPopArrayOperator(t *testing.T) {
 			err    *mongo.WriteError
 			alt    string
 		}{
-			"PopNotValidValue": {
+			"PopNotValidValueString": {
 				id:     "array",
 				update: bson.D{{"$pop", bson.D{{"v", "foo"}}}},
 				err: &mongo.WriteError{
 					Code:    9,
 					Message: "Expected a number in: v: \"foo\"",
+				},
+			},
+			"PopNotValidValueInt": {
+				id:     "array",
+				update: bson.D{{"$pop", bson.D{{"v", int32(42)}}}},
+				err: &mongo.WriteError{
+					Code:    9,
+					Message: "$pop expects 1 or -1, found: 42",
 				},
 			},
 			"PopOnNonArray": {

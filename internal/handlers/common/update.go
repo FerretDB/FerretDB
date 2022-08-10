@@ -148,7 +148,52 @@ func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (b
 // processPopFieldExpression changes document according to $pop operator.
 // If the document was changed it returns true.
 func processPopFieldExpression(doc *types.Document, update *types.Document) (bool, error) {
-	return false, nil
+	var changed bool
+
+	for _, key := range update.Keys() {
+		popValueRaw := must.NotFail(update.Get(key))
+
+		popValue, err := GetWholeNumberParam(popValueRaw)
+		if err != nil {
+			return false, err
+		}
+
+		if popValue != 1 && popValue != -1 {
+			return false, NewWriteErrorMsg(ErrBadValue, fmt.Sprintf("$pop expects 1 or -1, found: %d", popValue))
+		}
+
+		path := types.NewPathFromString(key)
+
+		if doc.HasByPath(path) {
+			val, err := doc.GetByPath(path)
+			if err != nil {
+				return false, err
+			}
+
+			array, ok := val.(*types.Array)
+			if !ok {
+				return false, NewWriteErrorMsg(
+					ErrTypeMismatch,
+					fmt.Sprintf("Path '%s' contains an element of non-array type '%s'", key, AliasFromType(val)),
+				)
+			}
+
+			if array.Len() == 0 {
+				continue
+			}
+
+			array.Remove(int(popValue))
+
+			err = doc.SetByPath(path, array)
+			if err != nil {
+				return false, err
+			}
+
+			changed = true
+		}
+	}
+
+	return changed, nil
 }
 
 // processIncFieldExpression changes document according to $inc operator.
