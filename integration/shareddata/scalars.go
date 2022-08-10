@@ -55,7 +55,8 @@ var Scalars = &Values[string]{
 		"objectid":       primitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11},
 		"objectid-empty": primitive.NilObjectID,
 
-		// no Undefined
+		// no Undefined, but unset is similar
+		"unset": unset,
 
 		"bool-false": false,
 		"bool-true":  true,
@@ -93,8 +94,6 @@ var Scalars = &Values[string]{
 
 		// no Min key
 		// no Max key
-
-		// TODO "unset": unset, https://github.com/FerretDB/FerretDB/issues/914
 	},
 }
 
