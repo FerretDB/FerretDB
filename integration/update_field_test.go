@@ -1152,5 +1152,58 @@ func TestUpdateFieldMixed(t *testing.T) {
 }
 
 func TestUpdateFieldPopArrayOperator(t *testing.T) {
-	// TODO
+	setup.SkipForTigris(t)
+
+	t.Parallel()
+
+	t.Run("Ok", func(t *testing.T) {
+		t.Parallel()
+
+		for name, tc := range map[string]struct {
+			id       string
+			update   bson.D
+			expected bson.D
+			stat     *mongo.UpdateResult
+		}{} {
+			name, tc := name, tc
+			t.Run(name, func(t *testing.T) {
+				t.Parallel()
+				ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+
+				result, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
+				require.NoError(t, err)
+
+				if tc.stat != nil {
+					require.Equal(t, tc.stat, result)
+				}
+
+				var actual bson.D
+				err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
+				require.NoError(t, err)
+
+				AssertEqualDocuments(t, tc.expected, actual)
+			})
+		}
+	})
+
+	t.Run("Err", func(t *testing.T) {
+		t.Parallel()
+
+		for name, tc := range map[string]struct {
+			id     string
+			update bson.D
+			err    *mongo.WriteError
+			alt    string
+		}{} {
+			name, tc := name, tc
+			t.Run(name, func(t *testing.T) {
+				t.Parallel()
+				ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+
+				_, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
+				require.NotNil(t, tc.err)
+				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
+			})
+		}
+	})
 }

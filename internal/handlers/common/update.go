@@ -89,6 +89,12 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				return false, err
 			}
 
+		case "$pop":
+			changed, err = processPopFieldExpression(doc, updateV.(*types.Document))
+			if err != nil {
+				return false, err
+			}
+
 		default:
 			if strings.HasPrefix(updateOp, "$") {
 				return false, NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
@@ -117,6 +123,10 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 	}
 
 	return changed, nil
+}
+
+func processPopFieldExpression(doc *types.Document, update *types.Document) (bool, error) {
+	return false, nil
 }
 
 // processIncFieldExpression changes document according to $inc operator.
@@ -279,6 +289,10 @@ func ValidateUpdateOperators(update *types.Document) error {
 	if err != nil {
 		return err
 	}
+	_, err = extractValueFromUpdateOperator("$pop", update)
+	if err != nil {
+		return err
+	}
 	if err = checkConflictingChanges(set, inc); err != nil {
 		return err
 	}
@@ -302,6 +316,8 @@ func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
 		case "$setOnInsert":
 			fallthrough
 		case "$unset":
+			fallthrough
+		case "$pop":
 			updateModifier = true
 		default:
 			if strings.HasPrefix(updateOp, "$") {
