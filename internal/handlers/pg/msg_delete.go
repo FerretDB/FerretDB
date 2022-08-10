@@ -45,7 +45,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	var ordered bool
+	ordered := true
 	if ordered, err = common.GetOptionalParam(document, "ordered", ordered); err != nil {
 		return nil, err
 	}

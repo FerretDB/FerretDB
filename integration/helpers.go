@@ -17,9 +17,10 @@ package integration
 
 import (
 	"context"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"testing"
 	"time"
+
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

@@ -17,6 +17,7 @@ package tigris
 import (
 	"context"
 	"fmt"
+
 	"github.com/tigrisdata/tigris-client-go/driver"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -43,6 +44,11 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var deletes *types.Array
 	if deletes, err = common.GetOptionalParam(document, "deletes", deletes); err != nil {
+		return nil, err
+	}
+
+	ordered := true
+	if ordered, err = common.GetOptionalParam(document, "ordered", ordered); err != nil {
 		return nil, err
 	}
 
@@ -122,11 +128,20 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil
 	}
 
+	delErrors := new(common.WriteErrors)
 	for i := 0; i < deletes.Len(); i++ {
 		err = processQuery(i)
 		if err != nil {
-			return nil, err
+			delErrors.Append(err)
+
+			if ordered {
+				return nil, delErrors
+			}
 		}
+	}
+
+	if len(*delErrors) > 0 {
+		return nil, delErrors
 	}
 
 	var reply wire.OpMsg
