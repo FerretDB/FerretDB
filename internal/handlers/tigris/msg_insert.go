@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/tigrisdata/tigris-client-go/driver"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -91,21 +93,29 @@ func (h *Handler) insert(ctx context.Context, fp fetchParam, doc *types.Document
 		h.L.Sugar().Warnf("Failed to CreateDatabase: %+v", err)
 	}
 
-	schema, err := tjson.DocumentSchema(doc)
+	// TODO temporary check to be able to insert nullable fields, will be refactored in #787
+	// Schema is needed only if we create a new collection.
+	collections, err := h.driver.UseDatabase(fp.db).ListCollections(ctx)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
-	schema.Title = fp.collection
+	if !slices.Contains(collections, fp.collection) {
+		schema, err := tjson.DocumentSchema(doc)
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+		schema.Title = fp.collection
 
-	b := must.NotFail(schema.Marshal())
-	h.L.Sugar().Debugf("Schema:\n%s", b)
+		b := must.NotFail(schema.Marshal())
+		h.L.Sugar().Debugf("Schema:\n%s", b)
 
-	err = h.driver.UseDatabase(fp.db).CreateOrUpdateCollection(ctx, fp.collection, b)
-	if err != nil {
-		h.L.Sugar().Warnf("Failed to CreateOrUpdateCollection: %+v", err)
+		err = h.driver.UseDatabase(fp.db).CreateOrUpdateCollection(ctx, fp.collection, b)
+		if err != nil {
+			h.L.Sugar().Warnf("Failed to CreateOrUpdateCollection: %+v", err)
+		}
 	}
 
-	b, err = tjson.Marshal(doc)
+	b, err := tjson.Marshal(doc)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
