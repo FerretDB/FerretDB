@@ -165,9 +165,12 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		if err != nil {
 			unorderedErrMsgs.Append(err)
 
-			// If ordered option is set then return the error,
-			// if it's not - we should process next filters
-			// and return all encountered errors.
+			// Delete statements in the `deletes` field are not transactional.
+			// It means that we run each delete statement separately.
+			// If `ordered` is set as `true`, we don't execute the remaining statements
+			// after the first failure.
+			// If `ordered` is set as `false`,  we execute all the statements and return
+			// the list of errors corresponding to the failed statements.
 			if ordered {
 				return nil, unorderedErrMsgs
 			}
