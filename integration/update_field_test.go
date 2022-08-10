@@ -1164,7 +1164,59 @@ func TestUpdateFieldPopArrayOperator(t *testing.T) {
 			update   bson.D
 			expected bson.D
 			stat     *mongo.UpdateResult
-		}{} {
+		}{
+			"Pop": {
+				id:       "array-three",
+				update:   bson.D{{"$pop", bson.D{{"v", 1}}}},
+				expected: bson.D{{"_id", "array-three"}, {"v", bson.A{int32(42), "foo"}}},
+				stat: &mongo.UpdateResult{
+					MatchedCount:  1,
+					ModifiedCount: 1,
+					UpsertedCount: 0,
+				},
+			},
+			"PopFirst": {
+				id:       "array-three",
+				update:   bson.D{{"$pop", bson.D{{"v", -1}}}},
+				expected: bson.D{{"_id", "array-three"}, {"v", bson.A{"foo", nil}}},
+				stat: &mongo.UpdateResult{
+					MatchedCount:  1,
+					ModifiedCount: 1,
+					UpsertedCount: 0,
+				},
+			},
+			"PopDotNotation": {
+				id:       "document-composite",
+				update:   bson.D{{"$pop", bson.D{{"v.array", 1}}}},
+				expected: bson.D{{"_id", "document-composite"}, {"v", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo"}}}}},
+				stat: &mongo.UpdateResult{
+					MatchedCount:  1,
+					ModifiedCount: 1,
+					UpsertedCount: 0,
+				},
+			},
+			"PopEmptyArray": {
+				id:       "array-empty",
+				update:   bson.D{{"$pop", bson.D{{"v", 1}}}},
+				expected: bson.D{{"_id", "array-empty"}, {"v", bson.A{}}},
+				stat: &mongo.UpdateResult{
+					MatchedCount:  1,
+					ModifiedCount: 0,
+					UpsertedCount: 0,
+				},
+			},
+			// TODO: https://github.com/FerretDB/FerretDB/issues/1000
+			//"PopEmptyValue": {
+			//	id:       "array",
+			//	update:   bson.D{{"$pop", bson.D{}}},
+			//	expected: bson.D{{"_id", "array"}, {"v", bson.A{int32(42)}}},
+			//	stat: &mongo.UpdateResult{
+			//		MatchedCount:  1,
+			//		ModifiedCount: 0,
+			//		UpsertedCount: 0,
+			//	},
+			//},
+		} {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
@@ -1194,7 +1246,40 @@ func TestUpdateFieldPopArrayOperator(t *testing.T) {
 			update bson.D
 			err    *mongo.WriteError
 			alt    string
-		}{} {
+		}{
+			"PopNotValidValue": {
+				id:     "array",
+				update: bson.D{{"$pop", bson.D{{"v", "foo"}}}},
+				err: &mongo.WriteError{
+					Code:    9,
+					Message: "Expected a number in: v: \"foo\"",
+				},
+			},
+			"PopOnNonArray": {
+				id:     "int32",
+				update: bson.D{{"$pop", bson.D{{"v", 1}}}},
+				err: &mongo.WriteError{
+					Code:    14,
+					Message: "Path 'v' contains an element of non-array type 'int'",
+				},
+			},
+			"PopLastAndFirst": {
+				id:     "array-three",
+				update: bson.D{{"$pop", bson.D{{"v", 1}, {"v", -1}}}},
+				err: &mongo.WriteError{
+					Code:    40,
+					Message: "Updating the path 'v' would create a conflict at 'v'",
+				},
+			},
+			"PopDotNotationNonArray": {
+				id:     "document-composite",
+				update: bson.D{{"$pop", bson.D{{"v.foo", 1}}}},
+				err: &mongo.WriteError{
+					Code:    14,
+					Message: "Path 'v.foo' contains an element of non-array type 'int'",
+				},
+			},
+		} {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
