@@ -17,6 +17,7 @@ package integration
 
 import (
 	"context"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"testing"
 	"time"
 
@@ -301,7 +302,8 @@ func CollectKeys(t testing.TB, doc bson.D) []string {
 
 // FindAll returns all documents from the given collection.
 func FindAll(t testing.TB, ctx context.Context, col *mongo.Collection) []bson.D {
-	cursor, err := col.Find(ctx, bson.D{})
+	opts := options.Find().SetSort(bson.D{{"_id", 1}})
+	cursor, err := col.Find(ctx, bson.D{}, opts)
 	require.NoError(t, err)
 
 	var res []bson.D
