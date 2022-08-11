@@ -198,3 +198,12 @@ func (a *Array) ContainsAll(b *Array) bool {
 	}
 	return true
 }
+
+// Remove removes the value at the given index.
+func (a *Array) Remove(index int) {
+	if l := a.Len(); index < 0 || index >= l {
+		panic("types.Array.Remove: index is out of bounds")
+	}
+
+	a.s = append(a.s[:index], a.s[index+1:]...)
+}

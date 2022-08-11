@@ -53,7 +53,6 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		"hint",
 		"batchSize",
 		"singleBatch",
-		"maxTimeMS",
 		"readConcern",
 		"max",
 		"min",

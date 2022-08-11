@@ -688,3 +688,38 @@ func TestFindAndModifyRemove(t *testing.T) {
 		})
 	}
 }
+
+func TestFindAndModifyBadMaxTimeMSType(t *testing.T) {
+	setup.SkipForTigris(t) // FindAndModify is not implemented for Tigris yet
+
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
+
+	for name, tc := range map[string]struct {
+		command    bson.D
+		err        *mongo.CommandError
+		altMessage string
+	}{
+		"BadMaxTimeMSTypeStringFindAndModify": {
+			command: bson.D{
+				{"findAndModify", collection.Name()},
+				{"maxTimeMS", "string"},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "maxTimeMS must be a number",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+			require.Error(t, err)
+			AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+		})
+	}
+}
