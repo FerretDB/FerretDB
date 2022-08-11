@@ -98,6 +98,7 @@ func (h *Handler) insert(ctx context.Context, fp fetchParam, doc *types.Document
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
+
 	if !slices.Contains(collections, fp.collection) {
 		schema, err := tjson.DocumentSchema(doc)
 		if err != nil {
