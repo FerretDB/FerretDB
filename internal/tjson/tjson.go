@@ -169,7 +169,11 @@ func Unmarshal(data []byte, schema *Schema) (any, error) {
 			var o objectIDType
 			err = o.UnmarshalJSON(data)
 			res = &o
-		case UUID, DateTime:
+		case DateTime:
+			var o dateTimeType
+			err = o.UnmarshalJSON(data)
+			res = &o
+		case UUID:
 			fallthrough
 		case Double, Float, Int64, Int32:
 			fallthrough
