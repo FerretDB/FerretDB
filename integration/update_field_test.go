@@ -1098,11 +1098,12 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			if tc.upserted {
-				tc.expectedStat.UpsertedID = tc.id
-			}
 
-			assert.Equal(t, tc.expectedStat, actualUpdateStat)
+			expectedStat := tc.expectedStat
+			if tc.upserted {
+				expectedStat.UpsertedID = tc.id
+			}
+			assert.Equal(t, expectedStat, actualUpdateStat)
 
 			var actual bson.D
 			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
