@@ -17,6 +17,7 @@ package integration
 import (
 	"testing"
 
+	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -28,15 +29,30 @@ import (
 
 // deleteCompatTestCase describes delete compatibility test case.
 type deleteCompatTestCase struct {
-	filter  bson.D // required
-	ordered bool   // defaults to false
-	skip    string // skips test if non-empty
+	filters    []bson.D                 // required
+	ordered    bool                     // defaults to false
+	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	skip       string                   // skips test if non-empty
 }
 
 func TestDeleteCompat(t *testing.T) {
 	testCases := map[string]deleteCompatTestCase{
 		"Empty": {
-			filter: bson.D{},
+			filters:    []bson.D{},
+			resultType: emptyResult,
+		},
+		"One": {
+			filters: []bson.D{
+				{{"v", int32(42)}},
+			},
+			// skip: "https://github.com/FerretDB/FerretDB/issues/1029",
+		},
+		"Two": {
+			filters: []bson.D{
+				{{"v", int32(42)}},
+				{{"v", int32(0)}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/1029",
 		},
 	}
 
@@ -61,28 +77,37 @@ func testDeleteCompat(t *testing.T, testCases map[string]deleteCompatTestCase) {
 			// Use per-test setup because deletes modify data set.
 			ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
-			filter := tc.filter
-			require.NotNil(t, filter)
+			filters := tc.filters
+			require.NotNil(t, filters)
 
 			opts := options.BulkWrite().SetOrdered(tc.ordered)
 
+			var nonEmptyResults bool
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
-					dmm := mongo.NewDeleteManyModel().SetFilter(filter)
+					models := make([]mongo.WriteModel, len(filters))
+					for i, q := range filters {
+						models[i] = mongo.NewDeleteManyModel().SetFilter(q)
+					}
 
-					targetRes, targetErr := targetCollection.BulkWrite(ctx, []mongo.WriteModel{dmm}, opts)
-					compatRes, compatErr := compatCollection.BulkWrite(ctx, []mongo.WriteModel{dmm}, opts)
+					targetRes, targetErr := targetCollection.BulkWrite(ctx, models, opts)
+					compatRes, compatErr := compatCollection.BulkWrite(ctx, models, opts)
 
 					if targetErr != nil {
+						t.Log(targetErr)
 						targetErr = UnsetRaw(t, targetErr)
 						compatErr = UnsetRaw(t, compatErr)
 						assert.Equal(t, compatErr, targetErr)
 					} else {
 						require.NoError(t, compatErr)
+					}
+
+					if pointer.Get(targetRes).DeletedCount > 0 || pointer.Get(compatRes).DeletedCount > 0 {
+						nonEmptyResults = true
 					}
 
 					assert.Equal(t, compatRes, targetRes)
@@ -94,6 +119,15 @@ func testDeleteCompat(t *testing.T, testCases map[string]deleteCompatTestCase) {
 					t.Logf("Target (actual)   IDs: %v", CollectIDs(t, targetDocs))
 					AssertEqualDocumentsSlice(t, compatDocs, targetDocs)
 				})
+			}
+
+			switch tc.resultType {
+			case nonEmptyResult:
+				assert.True(t, nonEmptyResults, "expected non-empty results (some documents should be deleted)")
+			case emptyResult:
+				assert.False(t, nonEmptyResults, "expected empty results (no documents should be deleted)")
+			default:
+				t.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}
