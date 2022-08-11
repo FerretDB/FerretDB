@@ -94,7 +94,7 @@ var Scalars = &Values[string]{
 		// no Min key
 		// no Max key
 
-		// TODO "unset": unset, https://github.com/FerretDB/FerretDB/issues/914
+		// TODO "unset": unset, https://github.com/FerretDB/FerretDB/issues/1023
 	},
 }
 
@@ -217,5 +217,14 @@ var Int64s = &Values[string]{
 		"int64-max":  int64(math.MaxInt64),
 		"int64-min":  int64(math.MinInt64),
 		"int64-big":  int64Big,
+	},
+}
+
+// Unsets contains unset value for tests.
+var Unsets = &Values[string]{
+	name:     "Unsets",
+	handlers: []string{"pg", "tigris"},
+	data: map[string]any{
+		"unset": unset,
 	},
 }

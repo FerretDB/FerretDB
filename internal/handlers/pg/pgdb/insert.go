@@ -47,12 +47,15 @@ func InsertDocument(ctx context.Context, querier pgxtype.Querier, db, collection
 
 	table, err := getTableName(ctx, querier, db, collection)
 	if err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
 
 	sql := `INSERT INTO ` + pgx.Identifier{db, table}.Sanitize() +
 		` (_jsonb) VALUES ($1)`
 
-	_, err = querier.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)))
-	return err
+	if _, err = querier.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc))); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	return nil
 }
