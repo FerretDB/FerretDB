@@ -321,6 +321,8 @@ func unmarshalJSON(v tjsontype, j string) (bool, error) {
 		err = v.UnmarshalJSON([]byte(j))
 	case *int64Type:
 		err = v.UnmarshalJSON([]byte(j))
+	case *dateTimeType:
+		err = v.UnmarshalJSON([]byte(j))
 	default:
 		panic(fmt.Sprintf("testing is not implemented for the type %T", v))
 	}

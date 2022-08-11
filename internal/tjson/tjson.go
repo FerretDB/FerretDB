@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/AlekSi/pointer"
 
@@ -70,8 +71,8 @@ func fromTJSON(v tjsontype) any {
 		return types.ObjectID(*v)
 	case *boolType:
 		return bool(*v)
-	// case *dateTimeType:
-	// 	return time.Time(*v)
+	case *dateTimeType:
+		return time.Time(*v)
 	// case *nullType:
 	// 	return types.Null
 	// case *regexType:
@@ -104,8 +105,8 @@ func toTJSON(v any) tjsontype {
 		return pointer.To(objectIDType(v))
 	case bool:
 		return pointer.To(boolType(v))
-	// case time.Time:
-	// 	return pointer.To(dateTimeType(v))
+	case time.Time:
+		return pointer.To(dateTimeType(v))
 	// case types.NullType:
 	// 	return pointer.To(nullType(v))
 	// case types.Regex:
