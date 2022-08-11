@@ -14,17 +14,7 @@
 
 package integration
 
-import (
-	"fmt"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
-
-	"github.com/FerretDB/FerretDB/integration/setup"
-)
-
+/*
 // insertCompatTestCase describes insert compatibility test case.
 type insertCompatTestCase struct {
 	insert bson.D // required
@@ -35,7 +25,7 @@ type insertCompatTestCase struct {
 func TestInsertCompat(t *testing.T) {
 	t.Parallel()
 
-	testCases := map[string]insertCompatTestCase{
+		testCases := map[string]insertCompatTestCase{
 		"InsertNull": {
 			insert: bson.D{{"_id", "insert_new_null"}, {"v", nil}},
 		},
@@ -98,3 +88,5 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 		})
 	}
 }
+
+*/

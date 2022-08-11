@@ -194,7 +194,7 @@ var Int32s = &Values[string]{
 		"int32-zero": int32(0),
 		"int32-max":  int32(math.MaxInt32),
 		"int32-min":  int32(math.MinInt32),
-		"int32-null": nil,
+		//"int32-null": nil,
 	},
 }
 
