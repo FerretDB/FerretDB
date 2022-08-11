@@ -50,7 +50,7 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 }
 
 // TestUpdateFieldCompatNull checks that update works correctly for the null values.
-func TestUpdateFieldCompatNull(t *testing.T) {
+func TestUpdateFieldCompatSet(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]updateCompatTestCase{
