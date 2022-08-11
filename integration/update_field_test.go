@@ -1389,6 +1389,7 @@ func TestUpdateFieldPopArrayOperator(t *testing.T) {
 					Message: "Path 'v' contains an element of non-array type 'int'",
 				},
 			},
+			// TODO: https://github.com/FerretDB/FerretDB/issues/364
 			//"PopLastAndFirst": {
 			//	id:     "array-three",
 			//	update: bson.D{{"$pop", bson.D{{"v", 1}, {"v", -1}}}},
