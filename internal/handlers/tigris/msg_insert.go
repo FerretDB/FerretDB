@@ -110,7 +110,7 @@ func (h *Handler) insert(ctx context.Context, fp fetchParam, doc *types.Document
 
 		err = h.driver.UseDatabase(fp.db).CreateOrUpdateCollection(ctx, fp.collection, b)
 		if err != nil {
-			h.L.Sugar().Warnf("Failed to CreateOrUpdateCollection: %+v", err)
+			return lazyerrors.Error(err)
 		}
 	}
 

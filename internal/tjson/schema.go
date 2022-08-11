@@ -246,7 +246,11 @@ func subdocumentSchema(doc *types.Document, pkey ...string) (*Schema, error) {
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
-		schema.Properties[k] = s
+
+		// If s == nil it's a field with null, according to Tigris' logic, we don't set schema for this field.
+		if s != nil {
+			schema.Properties[k] = s
+		}
 	}
 
 	return &schema, nil
@@ -273,7 +277,8 @@ func valueSchema(v any) (*Schema, error) {
 		// return dateTimeSchema, nil
 		return nil, lazyerrors.Errorf("%T is not supported yet", v)
 	case types.NullType:
-		return nil, ErrNullField
+		// According to the current Tigris' logic the field that is set as null is valid but not present in the schema
+		return nil, nil
 	case types.Regex:
 		// return regexSchema, nil
 		return nil, lazyerrors.Errorf("%T is not supported yet", v)

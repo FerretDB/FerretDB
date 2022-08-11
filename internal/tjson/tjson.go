@@ -123,7 +123,7 @@ func toTJSON(v any) tjsontype {
 
 // Unmarshal decodes the given tjson-encoded data.
 func Unmarshal(data []byte, schema *Schema) (any, error) {
-	if bytes.Equal(data, []byte("null")) {
+	if bytesIsNull(data) {
 		return fromTJSON(new(nullType)), nil
 	}
 
@@ -231,4 +231,9 @@ func Marshal(v any) ([]byte, error) {
 	}
 
 	return b, nil
+}
+
+// bytesIsNull returns true if given bytes represents null value.
+func bytesIsNull(b []byte) bool {
+	return bytes.Equal(b, []byte("null"))
 }
