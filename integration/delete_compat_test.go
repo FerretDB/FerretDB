@@ -45,7 +45,7 @@ func TestDeleteCompat(t *testing.T) {
 			filters: []bson.D{
 				{{"v", int32(42)}},
 			},
-			// skip: "https://github.com/FerretDB/FerretDB/issues/1029",
+			skip: "https://github.com/FerretDB/FerretDB/issues/1029",
 		},
 		"Two": {
 			filters: []bson.D{
