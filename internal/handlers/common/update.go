@@ -155,11 +155,11 @@ func processPopFieldExpression(doc *types.Document, update *types.Document) (boo
 
 		popValue, err := GetWholeNumberParam(popValueRaw)
 		if err != nil {
-			return false, err
+			return false, NewWriteErrorMsg(ErrFailedToParse, fmt.Sprintf(`Expected a number in: %s: "%v"`, key, popValueRaw))
 		}
 
 		if popValue != 1 && popValue != -1 {
-			return false, NewWriteErrorMsg(ErrBadValue, fmt.Sprintf("$pop expects 1 or -1, found: %d", popValue))
+			return false, NewWriteErrorMsg(ErrFailedToParse, fmt.Sprintf("$pop expects 1 or -1, found: %d", popValue))
 		}
 
 		path := types.NewPathFromString(key)

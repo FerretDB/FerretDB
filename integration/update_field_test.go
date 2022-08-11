@@ -1389,14 +1389,14 @@ func TestUpdateFieldPopArrayOperator(t *testing.T) {
 					Message: "Path 'v' contains an element of non-array type 'int'",
 				},
 			},
-			"PopLastAndFirst": {
-				id:     "array-three",
-				update: bson.D{{"$pop", bson.D{{"v", 1}, {"v", -1}}}},
-				err: &mongo.WriteError{
-					Code:    40,
-					Message: "Updating the path 'v' would create a conflict at 'v'",
-				},
-			},
+			//"PopLastAndFirst": {
+			//	id:     "array-three",
+			//	update: bson.D{{"$pop", bson.D{{"v", 1}, {"v", -1}}}},
+			//	err: &mongo.WriteError{
+			//		Code:    40,
+			//		Message: "Updating the path 'v' would create a conflict at 'v'",
+			//	},
+			//},
 			"PopDotNotationNonArray": {
 				id:     "document-composite",
 				update: bson.D{{"$pop", bson.D{{"v.foo", 1}}}},
