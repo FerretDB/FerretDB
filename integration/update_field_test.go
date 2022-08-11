@@ -1270,33 +1270,49 @@ func TestUpdateTigrisNull(t *testing.T) {
 	setup.SkipForPostgres(t)
 
 	t.Parallel()
+	ctx, collection := setup.Setup(t, shareddata.Doubles)
 
 	for name, tc := range map[string]struct {
 		filter   bson.D
 		update   bson.D
 		expected bson.D
-		err      *mongo.WriteError
+		err      *mongo.CommandError
 	}{
-		"SetSetOnInsert": {
-			filter: bson.D{{"_id", "test"}},
+		"ExistingFieldAsNull": {
+			filter: bson.D{{"_id", "double"}},
 			update: bson.D{
-				{"$set", bson.D{{"foo", int32(12)}}},
-				{"$setOnInsert", bson.D{{"v", math.NaN()}}},
+				{"$set", bson.D{{"v", nil}}},
 			},
-			expected: bson.D{{"_id", "test"}, {"foo", int32(12)}, {"v", math.NaN()}},
+			// expected: bson.D{{"_id", "double"}, {"v", nil}},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "json schema validation failed for field 'v' reason 'expected number, but got null'",
+			},
+		},
+		"NewFieldAsNull": {
+			filter: bson.D{{"_id", "double-whole"}},
+			update: bson.D{
+				{"$set", bson.D{{"foo", nil}}},
+			},
+			// expected: bson.D{{"_id", "double-whole"}, {"v", 42.0}, {"foo", nil}},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "json schema validation failed for field '' reason 'additionalProperties 'foo' not allowed'",
+			},
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 			opts := options.Update().SetUpsert(true)
 			actualStat, err := collection.UpdateOne(ctx, tc.filter, tc.update, opts)
 
 			if tc.err != nil {
 				require.Nil(t, tc.expected)
-				AssertEqualWriteError(t, *tc.err, err)
+				AssertEqualError(t, *tc.err, err)
 				return
 			}
 
