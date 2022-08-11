@@ -1119,12 +1119,12 @@ func TestUpdateFieldUnset(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		id       string
-		update   bson.D
+		id           string
+		update       bson.D
 		expected     bson.D
 		expectedStat *mongo.UpdateResult
 		err          *mongo.WriteError
-		alt      string
+		alt          string
 	}{
 		"String": {
 			id:       "string",
@@ -1169,7 +1169,7 @@ func TestUpdateFieldUnset(t *testing.T) {
 		"DotNotationDocumentFieldExist": {
 			id:       "document-composite",
 			update:   bson.D{{"$unset", bson.D{{"v.foo", int32(1)}}}},
-			expected: bson.D{{"_id", "document-composite"}, {"v", bson.D{{"foo", int32(1)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}},
+			expected: bson.D{{"_id", "document-composite"}, {"v", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}},
 			expectedStat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 1,
@@ -1189,10 +1189,10 @@ func TestUpdateFieldUnset(t *testing.T) {
 		"DotNotationArrayFieldExist": {
 			id:       "document-composite",
 			update:   bson.D{{"$unset", bson.D{{"v.array.0", int32(1)}}}},
-			expected: bson.D{{"_id", "document-composite"}, {"v", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}},
+			expected: bson.D{{"_id", "document-composite"}, {"v", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{"foo", nil}}}}},
 			expectedStat: &mongo.UpdateResult{
 				MatchedCount:  1,
-				ModifiedCount: 0,
+				ModifiedCount: 1,
 				UpsertedCount: 0,
 			},
 		},

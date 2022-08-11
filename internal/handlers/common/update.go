@@ -56,13 +56,14 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 		case "$unset":
 			unsetDoc := updateV.(*types.Document)
-			if unsetDoc.Len() == 0 {
-				continue
-			}
+
 			for _, key := range unsetDoc.Keys() {
-				doc.Remove(key)
+				path := types.NewPathFromString(key)
+				if doc.HasByPath(path) {
+					doc.RemoveByPath(path)
+					changed = true
+				}
 			}
-			changed = true
 
 		case "$inc":
 			changed, err = processIncFieldExpression(doc, updateV)
