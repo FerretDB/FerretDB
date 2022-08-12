@@ -53,12 +53,31 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]updateCompatTestCase{
-		"UnsetSimple": {
+		"Simple": {
 			update:        bson.D{{"$unset", bson.D{{"v", ""}}}},
 			skipForTigris: true,
 		},
-		"UnsetNotExistedField": {
+		"NotExistedField": {
 			update: bson.D{{"$unset", bson.D{{"foo", ""}}}},
+		},
+		"NestedField": {
+			update: bson.D{{"$unset", bson.D{{"v", bson.D{{"array", ""}}}}}},
+			skipForTigris: true,
+		},
+		"DotNotationDocumentFieldExist": {
+			update: bson.D{{"$unset", bson.D{{"v.foo", ""}}}},
+		},
+		"DotNotationDocumentFieldNotExist": {
+			update: bson.D{{"$unset", bson.D{{"foo.bar", ""}}}},
+		},
+		"DotNotationArrayFieldExist": {
+			update: bson.D{{"$unset", bson.D{{"v.array.0", int32(1)}}}},
+		},
+		"DotNotationArrayFieldNotExist": {
+			update: bson.D{{"$unset", bson.D{{"foo.0.baz", int32(1)}}}},
+		},
+		"DocumentDotNotationArrFieldNotExist": {
+			update: bson.D{{"$unset", bson.D{{"v.0.foo", int32(1)}}}},
 		},
 	}
 

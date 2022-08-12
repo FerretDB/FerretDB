@@ -1126,16 +1126,6 @@ func TestUpdateFieldUnset(t *testing.T) {
 		err          *mongo.WriteError
 		alt          string
 	}{
-		"String": {
-			id:       "string",
-			update:   bson.D{{"$unset", bson.D{{"v", int32(1)}}}},
-			expected: bson.D{{"_id", "string"}},
-			expectedStat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-		},
 		"Empty": {
 			id:       "string",
 			update:   bson.D{{"$unset", bson.D{}}},
@@ -1144,16 +1134,6 @@ func TestUpdateFieldUnset(t *testing.T) {
 				MatchedCount:  1,
 				ModifiedCount: 0,
 				UpsertedCount: 0,
-			},
-		},
-		"Field": {
-			id:       "document-composite-unset-field",
-			update:   bson.D{{"$unset", bson.D{{"v", bson.D{{"array", int32(1)}}}}}},
-			expected: bson.D{{"_id", "document-composite-unset-field"}},
-			expectedStat: &mongo.UpdateResult{
-				MatchedCount:  0,
-				ModifiedCount: 0,
-				UpsertedCount: 1,
 			},
 		},
 		"EmptyArray": {
@@ -1165,62 +1145,6 @@ func TestUpdateFieldUnset(t *testing.T) {
 					"For example: {$mod: {<field>: ...}} not {$unset: []}",
 			},
 			alt: "Modifiers operate on fields but we found another type instead",
-		},
-		"DotNotationDocumentFieldExist": {
-			id:       "document-composite",
-			update:   bson.D{{"$unset", bson.D{{"v.foo", int32(1)}}}},
-			expected: bson.D{{"_id", "document-composite"}, {"v", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}},
-			expectedStat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-		},
-		"DotNotationDocumentFieldNotExist": {
-			id:       "int32",
-			update:   bson.D{{"$unset", bson.D{{"foo.bar", int32(1)}}}},
-			expected: bson.D{{"_id", "int32"}, {"v", int32(42)}},
-			expectedStat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 0,
-				UpsertedCount: 0,
-			},
-		},
-		"DotNotationArrayFieldExist": {
-			id:       "document-composite",
-			update:   bson.D{{"$unset", bson.D{{"v.array.0", int32(1)}}}},
-			expected: bson.D{{"_id", "document-composite"}, {"v", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{"foo", nil}}}}},
-			expectedStat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-		},
-		"DotNotationArrFieldNotExist": {
-			id:     "int32",
-			update: bson.D{{"$unset", bson.D{{"foo.0.baz", int32(1)}}}},
-			expected: bson.D{
-				{"_id", "int32"},
-				{"v", int32(42)},
-			},
-			expectedStat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 0,
-				UpsertedCount: 0,
-			},
-		},
-		"DocumentDotNotationArrFieldNotExist": {
-			id:     "document",
-			update: bson.D{{"$unset", bson.D{{"v.0.foo", int32(1)}}}},
-			expected: bson.D{
-				{"_id", "document"},
-				{"v", bson.D{{"foo", int32(42)}}},
-			},
-			expectedStat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 0,
-				UpsertedCount: 0,
-			},
 		},
 	} {
 		name, tc := name, tc
