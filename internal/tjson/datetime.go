@@ -22,11 +22,16 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// dateTimeType represents BSON datetime type.
+// dateTimeType represents BSON UTC datetime type.
 type dateTimeType time.Time
 
 // tjsontype implements tjsontype interface.
 func (dt *dateTimeType) tjsontype() {}
+
+// String returns formatted time for debugging.
+func (dt *dateTimeType) String() string {
+	return time.Time(*dt).Format(time.RFC3339Nano)
+}
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
 func (dt *dateTimeType) UnmarshalJSON(data []byte) error {
@@ -46,14 +51,14 @@ func (dt *dateTimeType) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	*dt = dateTimeType(o)
+	*dt = dateTimeType(time.UnixMilli(o.UnixMilli()))
 
 	return nil
 }
 
 // MarshalJSON implements tjsontype interface.
 func (dt *dateTimeType) MarshalJSON() ([]byte, error) {
-	res, err := json.Marshal(time.Time(*dt))
+	res, err := json.Marshal(time.UnixMilli(time.Time(*dt).UnixMilli()))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
