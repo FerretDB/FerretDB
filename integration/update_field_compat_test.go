@@ -56,7 +56,6 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 	testCases := map[string]updateCompatTestCase{
 		"SetNullInExisingField": {
 			update: bson.D{{"$set", bson.D{{"v", nil}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/1019",
 		},
 	}
 
