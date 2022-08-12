@@ -267,8 +267,7 @@ func valueSchema(v any) (*Schema, error) {
 	case bool:
 		return boolSchema, nil
 	case time.Time:
-		// return dateTimeSchema, nil
-		return nil, lazyerrors.Errorf("%T is not supported yet", v)
+		return dateTimeSchema, nil
 	case types.NullType:
 		return nil, lazyerrors.Errorf("%T is not supported yet", v)
 	case types.Regex:
