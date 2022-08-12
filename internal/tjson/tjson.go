@@ -31,7 +31,7 @@
 //	types.Binary     {"$b": "<base 64 string>", "s": <subtype number>}
 //	types.ObjectID	 string (byte format, length is 12 bytes)
 //	bool             JSON true|false values
-//	TODO time.Time        string in RFC3339 format
+//	TODO time.Time        string (date-time RFC3339 format)
 //	TODO types.NullType   JSON null
 //	TODO types.Regex      {"$r": "<string without terminating 0x0>", "o": "<string without terminating 0x0>"}
 //	int32            JSON number (int32 format)
