@@ -48,3 +48,18 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 
 	testUpdateCompat(t, testCases)
 }
+
+func TestUpdateFieldCompatUnset(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]updateCompatTestCase{
+		"UnsetSimple": {
+			update: bson.D{{"$unset", bson.D{{"v", ""}}}},
+		},
+		"UnsetNotExistedField": {
+			update: bson.D{{"$unset", bson.D{{"foo", ""}}}},
+		},
+	}
+
+	testUpdateCompat(t, testCases)
+}
