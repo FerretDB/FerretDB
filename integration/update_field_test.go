@@ -1439,24 +1439,7 @@ func TestUpdateTigrisNull(t *testing.T) {
 			update: bson.D{
 				{"$set", bson.D{{"v", nil}}},
 			},
-			// expected: bson.D{{"_id", "double"}, {"v", nil}},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "json schema validation failed for field 'v' reason 'expected number, but got null'",
-			},
-		},
-		"NewFieldAsNull": {
-			filter: bson.D{{"_id", "double-whole"}},
-			update: bson.D{
-				{"$set", bson.D{{"foo", nil}}},
-			},
-			// expected: bson.D{{"_id", "double-whole"}, {"v", 42.0}, {"foo", nil}},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "json schema validation failed for field '' reason 'additionalProperties 'foo' not allowed'",
-			},
+			expected: bson.D{{"_id", "double"}, {"v", nil}},
 		},
 	} {
 		name, tc := name, tc
@@ -1476,9 +1459,9 @@ func TestUpdateTigrisNull(t *testing.T) {
 			actualStat.UpsertedID = nil
 
 			expectedStat := &mongo.UpdateResult{
-				MatchedCount:  0,
-				ModifiedCount: 0,
-				UpsertedCount: 1,
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
 			}
 			assert.Equal(t, expectedStat, actualStat)
 
