@@ -79,6 +79,7 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 					}
 
 					if targetErr != nil {
+						t.Log(targetErr)
 						targetErr = UnsetRaw(t, targetErr)
 						compatErr = UnsetRaw(t, compatErr)
 						assert.Equal(t, compatErr, targetErr)

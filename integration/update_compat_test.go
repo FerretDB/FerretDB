@@ -71,6 +71,7 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 							compatUpdateRes, compatErr := compatCollection.UpdateByID(ctx, id, update)
 
 							if targetErr != nil {
+								t.Log(targetErr)
 								targetErr = UnsetRaw(t, targetErr)
 								compatErr = UnsetRaw(t, compatErr)
 								assert.Equal(t, compatErr, targetErr)
