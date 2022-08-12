@@ -29,7 +29,7 @@
 //	float64               JSON number (double format)
 //	string                JSON string
 //	types.Binary          {"$b": "<base 64 string>", "s": <subtype number>}
-//	types.ObjectID	      string (byte format, length is 12 bytes)
+//	types.ObjectID	      JSON string (byte format, length is 12 bytes)
 //	bool                  JSON true|false values
 //	TODO time.Time        JSON string (date-time RFC3339 format)
 //	TODO types.NullType   JSON null
