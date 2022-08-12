@@ -15,6 +15,10 @@
 // Package tjson provides converters from/to JSON with JSON Schema for built-in and `types` types.
 //
 // See contributing guidelines and documentation for package `types` for details.
+//
+// # Mapping
+//
+// Composite types
 package tjson
 
 import (
