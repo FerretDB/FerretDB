@@ -54,7 +54,8 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 
 	testCases := map[string]updateCompatTestCase{
 		"UnsetSimple": {
-			update: bson.D{{"$unset", bson.D{{"v", ""}}}},
+			update:        bson.D{{"$unset", bson.D{{"v", ""}}}},
+			skipForTigris: true,
 		},
 		"UnsetNotExistedField": {
 			update: bson.D{{"$unset", bson.D{{"foo", ""}}}},
