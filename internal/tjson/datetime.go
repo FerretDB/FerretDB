@@ -51,14 +51,14 @@ func (dt *dateTimeType) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	*dt = dateTimeType(time.UnixMilli(o.UnixMilli()))
+	*dt = dateTimeType(time.UnixMilli(o.UnixMilli()).UTC())
 
 	return nil
 }
 
 // MarshalJSON implements tjsontype interface.
 func (dt *dateTimeType) MarshalJSON() ([]byte, error) {
-	res, err := json.Marshal(time.UnixMilli(time.Time(*dt).UnixMilli()))
+	res, err := json.Marshal(time.UnixMilli(time.Time(*dt).UnixMilli()).UTC())
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
