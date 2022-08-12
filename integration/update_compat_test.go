@@ -29,7 +29,7 @@ import (
 type updateCompatTestCase struct {
 	update        bson.D // required
 	skip          string // skips test if non-empty
-	skipForTigris bool   // skips test if true
+	skipForTigris bool   // skips test for Tigris if true
 }
 
 // testUpdateCompat tests update compatibility test cases.
