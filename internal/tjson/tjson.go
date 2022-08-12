@@ -21,23 +21,23 @@
 //
 // Composite types
 //
-//	*types.Document  {"$k": ["<key 1>", "<key 2>", ...], "<key 1>": <value 1>, "<key 2>": <value 2>, ...}
+//	*types.Document       {"$k": ["<key 1>", "<key 2>", ...], "<key 1>": <value 1>, "<key 2>": <value 2>, ...}
 //	TODO *types.Array     JSON array
 //
 // Scalar types
 //
-//	float64          JSON number (double format)
-//	string           JSON string
-//	types.Binary     {"$b": "<base 64 string>", "s": <subtype number>}
-//	types.ObjectID	 string (byte format, length is 12 bytes)
-//	bool             JSON true|false values
+//	float64               JSON number (double format)
+//	string                JSON string
+//	types.Binary          {"$b": "<base 64 string>", "s": <subtype number>}
+//	types.ObjectID	      string (byte format, length is 12 bytes)
+//	bool                  JSON true|false values
 //	TODO time.Time        string (date-time RFC3339 format)
 //	TODO types.NullType   JSON null
 //	TODO types.Regex      {"$r": "<string without terminating 0x0>", "o": "<string without terminating 0x0>"}
-//	int32            JSON number (int32 format)
+//	int32                 JSON number (int32 format)
 //	TODO types.Timestamp  number as string
-//	int64            JSON number (int64 format)
-//	TODO Decimal128  number as string
+//	int64                 JSON number (int64 format)
+//	TODO Decimal128       number as string
 package tjson
 
 import (
