@@ -3,8 +3,9 @@ package tjson
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"time"
+
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 type dateTimeType time.Time

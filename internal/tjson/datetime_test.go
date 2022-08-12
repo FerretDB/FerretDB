@@ -28,9 +28,9 @@ var dateTimeTestCases = []testCase{{
 	j:      `"2021-11-01T10:18:42.123Z"`,
 }, {
 	name:   "unix_zero",
-	v:      pointer.To(dateTimeType(time.Unix(0, 0))),
+	v:      pointer.To(dateTimeType(time.Unix(0, 0).UTC())),
 	schema: dateTimeSchema,
-	j:      `"1970-01-01T01:00:00+01:00"`,
+	j:      `"1970-01-01T00:00:00Z"`,
 }, {
 	name:   "0",
 	v:      pointer.To(dateTimeType(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC))),
