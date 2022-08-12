@@ -61,7 +61,7 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 			update: bson.D{{"$unset", bson.D{{"foo", ""}}}},
 		},
 		"NestedField": {
-			update: bson.D{{"$unset", bson.D{{"v", bson.D{{"array", ""}}}}}},
+			update:        bson.D{{"$unset", bson.D{{"v", bson.D{{"array", ""}}}}}},
 			skipForTigris: true,
 		},
 		"DotNotationDocumentFieldExist": {
