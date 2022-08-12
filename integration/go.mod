@@ -5,6 +5,7 @@ go 1.18
 replace github.com/FerretDB/FerretDB => ../
 
 require (
+	github.com/AlekSi/pointer v1.2.0
 	github.com/FerretDB/FerretDB v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.8.0
 	go.mongodb.org/mongo-driver v1.10.1
@@ -14,7 +15,6 @@ require (
 
 require (
 	cloud.google.com/go/compute v1.6.1 // indirect
-	github.com/AlekSi/pointer v1.2.0 // indirect
 	github.com/benbjohnson/clock v1.1.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
