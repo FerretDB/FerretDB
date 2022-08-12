@@ -31,13 +31,13 @@
 //	types.Binary          {"$b": "<base 64 string>", "s": <subtype number>}
 //	types.ObjectID	      string (byte format, length is 12 bytes)
 //	bool                  JSON true|false values
-//	TODO time.Time        string (date-time RFC3339 format)
+//	TODO time.Time        JSON string (date-time RFC3339 format)
 //	TODO types.NullType   JSON null
 //	TODO types.Regex      {"$r": "<string without terminating 0x0>", "o": "<string without terminating 0x0>"}
 //	int32                 JSON number (int32 format)
-//	TODO types.Timestamp  number as string
+//	TODO types.Timestamp  {"$t": "<number as string>"}
 //	int64                 JSON number (int64 format)
-//	TODO Decimal128       number as string
+//	TODO Decimal128       {"$n": "<number as string>"}
 package tjson
 
 import (
