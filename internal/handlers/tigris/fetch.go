@@ -17,11 +17,10 @@ package tigris
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
-
 	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
