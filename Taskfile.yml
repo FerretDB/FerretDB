@@ -8,9 +8,6 @@ vars:
   BENCHTIME: 5s
   FUZZTIME: 15s
   FUZZCORPUS: ../fuzz-corpus
-  ALL_GO_MOD_DIRS: $(find . -type f -name 'go.mod' -exec dirname {} \; | egrep -v '^./tools' | sort)
-  CURDIR:
-    sh: echo "$(PWD)"
 
 
 tasks:
@@ -230,15 +227,9 @@ tasks:
       - lint-go-sumtype
       - lint-go-consistent
     cmds:
-      - |
-        dirs={{.ALL_GO_MOD_DIRS}}
-        for mod in $dirs
-        do
-          echo "run linters in $mod"
-          cd $mod
-          {{.CURDIR}}/bin/golangci-lint{{exeExt}} run --config={{.CURDIR}}/.golangci-new.yml ./...
-          go vet -vettool={{.CURDIR}}/bin/checkswitch{{exeExt}} ./...
-        done
+      - bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
+      - go vet -vettool=./bin/checkswitch{{exeExt}} ./...
+      - bin/task{{exeExt}} -d integration lint
 
   lint-golangci-lint:
     cmds:
