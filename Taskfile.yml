@@ -9,7 +9,6 @@ vars:
   FUZZTIME: 15s
   FUZZCORPUS: ../fuzz-corpus
 
-
 tasks:
   # invoked when `task` is run without arguments
   default:
