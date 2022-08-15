@@ -49,7 +49,7 @@ func AllProviders() []Provider {
 		Bools,
 		DateTimes,
 		// Nulls, TODO https://github.com/FerretDB/FerretDB/issues/906
-		// Regexes, TODO https://github.com/FerretDB/FerretDB/issues/911
+		Regexes,
 		Int32s,
 		// Timestamps, TODO https://github.com/FerretDB/FerretDB/issues/1007
 		Int64s,
