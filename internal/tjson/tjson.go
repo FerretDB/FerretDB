@@ -31,7 +31,6 @@
 //	types.Binary          {"$b": "<base 64 string>", "s": <subtype number>}
 //	types.ObjectID	      JSON string (byte format, length is 12 bytes)
 //	bool                  JSON true|false values
-//	TODO time.Time        JSON string (date-time RFC3339 format)
 //	TODO types.NullType   JSON null
 //	TODO types.Regex      {"$r": "<string without terminating 0x0>", "o": "<string without terminating 0x0>"}
 //	int32                 JSON number (int32 format)
@@ -98,8 +97,8 @@ func fromTJSON(v tjsontype) any {
 		return time.Time(*v)
 	// case *nullType:
 	// 	return types.Null
-	// case *regexType:
-	// 	return types.Regex(*v)
+	case *regexType:
+		return types.Regex(*v)
 	case *int32Type:
 		return int32(*v)
 	// case *timestampType:
@@ -132,8 +131,8 @@ func toTJSON(v any) tjsontype {
 		return pointer.To(dateTimeType(v))
 	// case types.NullType:
 	// 	return pointer.To(nullType(v))
-	// case types.Regex:
-	// 	return pointer.To(regexType(v))
+	case types.Regex:
+		return pointer.To(regexType(v))
 	case int32:
 		return pointer.To(int32Type(v))
 	// case types.Timestamp:

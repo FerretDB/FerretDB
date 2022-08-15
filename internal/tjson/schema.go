@@ -57,6 +57,7 @@ const (
 	Byte     SchemaFormat = "byte"
 	UUID     SchemaFormat = "uuid"
 	DateTime SchemaFormat = "date-time"
+	// Regex SchemaFormat = "" // TODO: ???
 )
 
 // Schema represents a supported subset of JSON Schema.
@@ -271,8 +272,7 @@ func valueSchema(v any) (*Schema, error) {
 	case types.NullType:
 		return nil, lazyerrors.Errorf("%T is not supported yet", v)
 	case types.Regex:
-		// return regexSchema, nil
-		return nil, lazyerrors.Errorf("%T is not supported yet", v)
+		return regexSchema, nil
 	case int32:
 		return int32Schema, nil
 	case types.Timestamp:
