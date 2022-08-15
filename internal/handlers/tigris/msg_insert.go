@@ -68,8 +68,16 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		err = h.insert(ctx, fp, doc.(*types.Document))
-		if err != nil {
-			return nil, lazyerrors.Error(err)
+		switch err := err.(type) {
+		case nil:
+			return true, nil
+		case *driver.Error:
+			if IsAlreadyExists(err) {
+				return false, nil
+			}
+			return false, lazyerrors.Error(err)
+		default:
+			return false, lazyerrors.Error(err)
 		}
 
 		inserted++
