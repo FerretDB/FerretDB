@@ -49,7 +49,7 @@ func main() {
 	go func() {
 		defer wg.Done()
 
-		b := runGit("describe", "--tags", "--dirty")
+		b := runGit("describe", "--tags", "--dirty", "--always")
 		must.NoError(os.WriteFile(filepath.Join("gen", "version.txt"), b, 0o644))
 	}()
 
