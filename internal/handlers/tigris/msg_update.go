@@ -209,7 +209,7 @@ func (h *Handler) update(ctx context.Context, sp fetchParam, doc *types.Document
 	u := must.NotFail(update.Build()).Built()
 	h.L.Sugar().Debugf("Update: %s", u)
 
-	res, err := h.driver.UseDatabase(sp.db).Update(ctx, sp.collection, f, u)
+	res, err := h.db.Driver.UseDatabase(sp.db).Update(ctx, sp.collection, f, u)
 	if err != nil {
 		return 0, lazyerrors.Error(err)
 	}

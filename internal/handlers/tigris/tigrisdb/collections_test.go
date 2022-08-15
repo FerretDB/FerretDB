@@ -44,7 +44,7 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 		collName := testutil.CollectionName(t)
 
 		t.Cleanup(func() {
-			require.NoError(t, tdb.driver.DropDatabase(ctx, dbName))
+			require.NoError(t, tdb.Driver.DropDatabase(ctx, dbName))
 		})
 
 		created, err := tdb.CreateDatabaseIfNotExists(ctx, dbName)
@@ -68,14 +68,14 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 		dbName := testutil.DatabaseName(t)
 		collName := testutil.CollectionName(t)
 
-		require.NoError(t, tdb.driver.CreateDatabase(ctx, dbName))
+		require.NoError(t, tdb.Driver.CreateDatabase(ctx, dbName))
 		schema := driver.Schema(strings.TrimSpace(fmt.Sprintf(
 			`{"title": "%s","properties": {"_id": {"type": "string","format": "byte"}},"primary_key": ["_id"]}`,
 			collName)))
-		require.NoError(t, tdb.driver.UseDatabase(dbName).CreateOrUpdateCollection(ctx, collName, schema))
+		require.NoError(t, tdb.Driver.UseDatabase(dbName).CreateOrUpdateCollection(ctx, collName, schema))
 
 		t.Cleanup(func() {
-			require.NoError(t, tdb.driver.DropDatabase(ctx, dbName))
+			require.NoError(t, tdb.Driver.DropDatabase(ctx, dbName))
 		})
 
 		created, err := tdb.CreateDatabaseIfNotExists(ctx, dbName)

@@ -28,7 +28,7 @@ import (
 
 // TigrisDB represents a Tigris database connection.
 type TigrisDB struct {
-	driver driver.Driver
+	Driver driver.Driver
 	logger *zap.Logger
 }
 
@@ -39,7 +39,7 @@ func New(cfg *config.Driver) (*TigrisDB, error) {
 		return nil, lazyerrors.Error(err)
 	}
 	return &TigrisDB{
-		driver: d,
+		Driver: d,
 	}, nil
 }
 
@@ -47,10 +47,10 @@ func New(cfg *config.Driver) (*TigrisDB, error) {
 // If f returns an error, the transaction is rolled back.
 // Errors are wrapped with lazyerrors.Error,
 // so the caller needs to use errors.Is to check the error,
-// for example, errors.Is(err, *driver.Error).
+// for example, errors.Is(err, *Driver.Error).
 func (tdb *TigrisDB) InTransaction(ctx context.Context, db string, f func(tx driver.Tx) error) (err error) {
 	var tx driver.Tx
-	if tx, err = tdb.driver.BeginTx(ctx, db); err != nil {
+	if tx, err = tdb.Driver.BeginTx(ctx, db); err != nil {
 		err = lazyerrors.Error(err)
 		return
 	}

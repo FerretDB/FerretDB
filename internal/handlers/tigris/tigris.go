@@ -21,7 +21,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 
 	"github.com/tigrisdata/tigris-client-go/config"
-	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers"
@@ -44,7 +43,6 @@ type NewOpts struct {
 type Handler struct {
 	*NewOpts
 	db        *tigrisdb.TigrisDB
-	driver    driver.Driver
 	startTime time.Time
 }
 
@@ -68,7 +66,7 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 
 // Close implements handlers.Interface.
 func (h *Handler) Close() {
-	h.driver.Close()
+	h.db.Driver.Close()
 }
 
 // check interfaces

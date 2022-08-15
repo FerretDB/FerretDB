@@ -46,7 +46,7 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	err = h.driver.UseDatabase(db).DropCollection(ctx, collection)
+	err = h.db.Driver.UseDatabase(db).DropCollection(ctx, collection)
 	switch err := err.(type) {
 	case nil:
 		// do nothing

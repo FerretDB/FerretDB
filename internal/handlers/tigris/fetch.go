@@ -36,7 +36,7 @@ type fetchParam struct {
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/372
 func (h *Handler) fetch(ctx context.Context, param fetchParam) ([]*types.Document, error) {
-	db := h.driver.UseDatabase(param.db)
+	db := h.db.Driver.UseDatabase(param.db)
 
 	collection, err := db.DescribeCollection(ctx, param.collection)
 	switch err := err.(type) {

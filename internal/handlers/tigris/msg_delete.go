@@ -155,7 +155,7 @@ func (h *Handler) delete(ctx context.Context, fp fetchParam, docs []*types.Docum
 
 	h.L.Sugar().Debugf("Delete filter: %s", f)
 
-	_, err := h.driver.UseDatabase(fp.db).Delete(ctx, fp.collection, f)
+	_, err := h.db.Driver.UseDatabase(fp.db).Delete(ctx, fp.collection, f)
 	if err != nil {
 		return 0, lazyerrors.Error(err)
 	}

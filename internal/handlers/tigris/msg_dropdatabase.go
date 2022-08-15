@@ -42,7 +42,7 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	}
 
 	res := must.NotFail(types.NewDocument())
-	err = h.driver.DropDatabase(ctx, db)
+	err = h.db.Driver.DropDatabase(ctx, db)
 	switch err := err.(type) {
 	case nil:
 		res.Set("dropped", db)

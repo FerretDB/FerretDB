@@ -36,7 +36,7 @@ func (tdb *TigrisDB) CreateDatabaseIfNotExists(ctx context.Context, db string) (
 
 	// Database does not exist. Try to create it,
 	// but keep in mind that it can be created in concurrent connection.
-	err = tdb.driver.CreateDatabase(ctx, db)
+	err = tdb.Driver.CreateDatabase(ctx, db)
 	switch err := err.(type) {
 	case nil:
 		return true, nil
@@ -52,7 +52,7 @@ func (tdb *TigrisDB) CreateDatabaseIfNotExists(ctx context.Context, db string) (
 
 // databaseExists returns true if database exists.
 func (tdb *TigrisDB) databaseExists(ctx context.Context, db string) (bool, error) {
-	_, err := tdb.driver.DescribeDatabase(ctx, db)
+	_, err := tdb.Driver.DescribeDatabase(ctx, db)
 	switch err := err.(type) {
 	case nil:
 		return true, nil
