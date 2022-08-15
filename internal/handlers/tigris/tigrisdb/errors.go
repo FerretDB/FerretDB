@@ -19,7 +19,7 @@ import (
 	"github.com/tigrisdata/tigris-client-go/driver"
 )
 
-// IsNotFound returns true if the error is a "not found" error.
+// IsNotFound returns true if the error is "not found" error.
 // This function is implemented to keep nolint in a single place.
 func IsNotFound(err *driver.Error) bool {
 	if err == nil {
@@ -33,6 +33,8 @@ func IsNotFound(err *driver.Error) bool {
 	return false
 }
 
+// IsAlreadyExists returns true if the error is "already exists" error.
+// This function is implemented to keep nolint in a single place.
 func IsAlreadyExists(err *driver.Error) bool {
 	if err == nil {
 		return false

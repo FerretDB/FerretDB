@@ -16,8 +16,9 @@
 package tigris
 
 import (
-	"context"
 	"time"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 
 	"github.com/tigrisdata/tigris-client-go/config"
 	"github.com/tigrisdata/tigris-client-go/driver"
@@ -42,6 +43,7 @@ type NewOpts struct {
 // Handler implements handlers.Interface on top of Tigris.
 type Handler struct {
 	*NewOpts
+	db        *tigrisdb.TigrisDB
 	driver    driver.Driver
 	startTime time.Time
 }
@@ -51,14 +53,14 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 	cfg := &config.Driver{
 		URL: opts.TigrisURL,
 	}
-	driver, err := driver.NewDriver(context.TODO(), cfg)
+	db, err := tigrisdb.New(cfg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	h := &Handler{
 		NewOpts:   opts,
-		driver:    driver,
+		db:        db,
 		startTime: time.Now(),
 	}
 	return h, nil
