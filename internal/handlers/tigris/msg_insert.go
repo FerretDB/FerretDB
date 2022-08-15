@@ -103,7 +103,7 @@ func (h *Handler) insert(ctx context.Context, fp fetchParam, doc *types.Document
 		b := must.NotFail(schema.Marshal())
 		h.L.Sugar().Debugf("Schema:\n%s", b)
 
-		_, err = tigrisdb.CreateCollectionIfNotExists(ctx, tx, fp.collection, b)
+		_, err = tigrisdb.CreateCollectionIfNotExist(ctx, tx, fp.collection, b)
 		if err != nil {
 			return lazyerrors.Error(err)
 		}

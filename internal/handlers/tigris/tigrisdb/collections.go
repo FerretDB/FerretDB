@@ -22,10 +22,10 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// CreateCollectionIfNotExists ensures that given database and collection exist.
+// CreateCollectionIfNotExist ensures that given collection exist.
 // If needed, it creates collection.
 // It returns true if the collection was created.
-func CreateCollectionIfNotExists(ctx context.Context, db driver.Database, collection string, schema driver.Schema) (bool, error) {
+func CreateCollectionIfNotExist(ctx context.Context, db driver.Database, collection string, schema driver.Schema) (bool, error) {
 	exists, err := collectionExists(ctx, db, collection)
 	if err != nil {
 		return false, lazyerrors.Error(err)
