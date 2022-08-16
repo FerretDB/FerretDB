@@ -19,13 +19,11 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/tigrisdata/tigris-client-go/driver"
 	"github.com/tigrisdata/tigris-client-go/fields"
 
-	"github.com/FerretDB/FerretDB/internal/tjson"
-
-	"github.com/tigrisdata/tigris-client-go/driver"
-
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
