@@ -134,6 +134,7 @@ func testDeleteCompat(t *testing.T, testCases map[string]deleteCompatTestCase) {
 						t.Log(targetErr)
 						targetErr = UnsetRaw(t, targetErr)
 						compatErr = UnsetRaw(t, compatErr)
+						t.Log(targetErr)
 						assert.EqualError(t, targetErr, compatErr.Error())
 					} else {
 						require.NoError(t, compatErr)
@@ -143,6 +144,7 @@ func testDeleteCompat(t *testing.T, testCases map[string]deleteCompatTestCase) {
 						nonEmptyResults = true
 					}
 
+					t.Log(targetRes)
 					assert.Equal(t, compatRes, targetRes)
 
 					targetDocs := FindAll(t, ctx, targetCollection)
