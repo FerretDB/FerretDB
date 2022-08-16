@@ -35,6 +35,7 @@ func New(cfg *config.Driver) (*TigrisDB, error) {
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
 	return &TigrisDB{
 		Driver: d,
 	}, nil

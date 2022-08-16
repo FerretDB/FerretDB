@@ -30,6 +30,7 @@ func (tdb *TigrisDB) createDatabaseIfNotExists(ctx context.Context, db string) (
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
+
 	if exists {
 		return false, nil
 	}
@@ -44,6 +45,7 @@ func (tdb *TigrisDB) createDatabaseIfNotExists(ctx context.Context, db string) (
 		if IsAlreadyExists(err) {
 			return false, nil
 		}
+
 		return false, lazyerrors.Error(err)
 	default:
 		return false, lazyerrors.Error(err)
@@ -60,6 +62,7 @@ func (tdb *TigrisDB) databaseExists(ctx context.Context, db string) (bool, error
 		if IsNotFound(err) {
 			return false, nil
 		}
+
 		return false, lazyerrors.Error(err)
 	default:
 		return false, lazyerrors.Error(err)

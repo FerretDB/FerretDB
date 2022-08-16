@@ -35,6 +35,7 @@ func (tdb *TigrisDB) CreateCollectionIfNotExist(ctx context.Context, db, collect
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
+
 	if exists {
 		return false, nil
 	}
@@ -47,6 +48,7 @@ func (tdb *TigrisDB) CreateCollectionIfNotExist(ctx context.Context, db, collect
 		if IsAlreadyExists(err) {
 			return false, nil
 		}
+
 		return false, lazyerrors.Error(err)
 	default:
 		return false, lazyerrors.Error(err)
@@ -63,6 +65,7 @@ func (tdb *TigrisDB) collectionExists(ctx context.Context, db, collection string
 		if IsNotFound(err) {
 			return false, nil
 		}
+
 		return false, lazyerrors.Error(err)
 	default:
 		return false, lazyerrors.Error(err)
