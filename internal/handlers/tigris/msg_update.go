@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
-	"github.com/tigrisdata/tigris-client-go/fields"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/tjson"
@@ -205,12 +204,6 @@ func (h *Handler) update(ctx context.Context, sp fetchParam, doc *types.Document
 	id := must.NotFail(tjson.Marshal(must.NotFail(doc.Get("_id"))))
 	f := must.NotFail(json.Marshal(map[string]any{"_id": map[string]json.RawMessage{"$eq": id}}))
 	h.L.Sugar().Debugf("Update filter: %s", f)
-
-	update := fields.UpdateBuilder()
-	for _, k := range doc.Keys() {
-		v := must.NotFail(doc.Get(k))
-		update.Set(k, json.RawMessage(must.NotFail(tjson.Marshal(v))))
-	}
 	h.L.Sugar().Debugf("Update: %s", u)
 
 	_, err = h.db.Driver.UseDatabase(sp.db).Replace(ctx, sp.collection, []driver.Document{u})
