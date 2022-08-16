@@ -22,7 +22,6 @@ import (
 	"github.com/tigrisdata/tigris-client-go/fields"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -197,8 +196,8 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 // update updates documents by _id.
 func (h *Handler) update(ctx context.Context, sp fetchParam, doc *types.Document) (int, error) {
-	id := must.NotFail(doc.Get("_id"))
-	f := must.NotFail(json.Marshal(tigrisdb.Eq("_id", id)))
+	id := must.NotFail(tjson.Marshal(must.NotFail(doc.Get("_id"))))
+	f := must.NotFail(json.Marshal(map[string]any{"_id": map[string]json.RawMessage{"$eq": id}}))
 	h.L.Sugar().Debugf("Update filter: %s", f)
 
 	update := fields.UpdateBuilder()
