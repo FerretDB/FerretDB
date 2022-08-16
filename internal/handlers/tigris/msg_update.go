@@ -16,7 +16,6 @@ package tigris
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
@@ -200,10 +199,6 @@ func (h *Handler) update(ctx context.Context, sp fetchParam, doc *types.Document
 	if err != nil {
 		return 0, lazyerrors.Error(err)
 	}
-
-	id := must.NotFail(tjson.Marshal(must.NotFail(doc.Get("_id"))))
-	f := must.NotFail(json.Marshal(map[string]any{"_id": map[string]json.RawMessage{"$eq": id}}))
-	h.L.Sugar().Debugf("Update filter: %s", f)
 	h.L.Sugar().Debugf("Update: %s", u)
 
 	_, err = h.db.Driver.UseDatabase(sp.db).Replace(ctx, sp.collection, []driver.Document{u})
