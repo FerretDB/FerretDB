@@ -16,12 +16,13 @@ package tigris
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb/filter"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -137,20 +138,20 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 // delete deletes documents by _id.
 func (h *Handler) delete(ctx context.Context, fp fetchParam, docs []*types.Document) (int, error) {
-	ids := make([]filter.Expr, len(docs))
+	ids := make([]map[string]any, len(docs))
 	for i, doc := range docs {
 		id := must.NotFail(doc.Get("_id"))
-		ids[i] = filter.Eq("_id", id)
+		ids[i] = tigrisdb.Eq("_id", id)
 	}
 
 	var f driver.Filter
 	switch len(ids) {
 	case 0:
-		f = filter.All
+		f = tigrisdb.All
 	case 1:
-		f = must.NotFail(ids[0].Build())
+		f = must.NotFail(json.Marshal(ids[0]))
 	default:
-		f = must.NotFail(filter.Or(ids...).Build())
+		f = must.NotFail(json.Marshal(tigrisdb.Or(ids...)))
 	}
 
 	h.L.Sugar().Debugf("Delete filter: %s", f)

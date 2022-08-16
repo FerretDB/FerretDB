@@ -12,27 +12,43 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filter
+// Package filter provides helpers to simplify generation of filters for Tigris driver.
+//
+// It's similar to tigrisdata/tigris-client-go/filter but without generics as they don't fit us - we need to call
+// tjson.Marshal to encode tjson data types correctly.
+package tigrisdb
 
 import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/tigrisdata/tigris-client-go/driver"
+
 	"github.com/FerretDB/FerretDB/internal/tjson"
 )
 
-// comparison represents comparison operators for Tigris, like comparison in tigrisdata/tigris-client-go/filter.
-type comparison struct {
-	Eq any `json:"$eq,omitempty"`
-}
+// All represents filter which includes all the documents of the collection.
+var All = driver.Filter(`{}`)
 
 // Eq composes 'equal' operation for Tigris, like in tigrisdata/tigris-client-go/filter but without generics.
 // It marshals the value (which is always of one of the tjson types) to JSON, and it'll be used as RawMessage later.
-func Eq(field string, value any) Expr {
+func Eq(field string, value any) map[string]any {
 	res, err := tjson.Marshal(value)
 	if err != nil {
 		panic(fmt.Sprintf("problem marshalling value as tjson: %v", err))
 	}
 
-	return Expr{field: comparison{Eq: json.RawMessage(res)}}
+	return map[string]any{field: map[string]json.RawMessage{"$eq": res}}
+}
+
+// And composes 'and' operation.
+// Result is equivalent to: (ops[0] && ... && ops[len(ops-1]).
+func And(ops ...map[string]any) map[string]any {
+	return map[string]any{"$and": ops}
+}
+
+// Or composes 'or' operation.
+// Result is equivalent to: (ops[0] || ... || ops[len(ops-1]).
+func Or(ops ...map[string]any) map[string]any {
+	return map[string]any{"$or": ops}
 }
