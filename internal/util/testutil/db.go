@@ -15,11 +15,27 @@
 package testutil
 
 import (
+	"bytes"
+	"runtime/debug"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
+
+var (
+	databaseNamesM sync.Mutex
+	databaseNames  = make(map[string][]byte)
+
+	collectionNamesM sync.Mutex
+	collectionNames  = make(map[string][]byte)
+)
+
+func stack() []byte {
+	s := bytes.Split(debug.Stack(), []byte("\n"))
+	return bytes.Join(s[7:], []byte("\n"))
+}
 
 // DatabaseName returns a stable database name for that test.
 func DatabaseName(tb testing.TB) string {
@@ -33,6 +49,17 @@ func DatabaseName(tb testing.TB) string {
 	name = strings.ReplaceAll(name, "$", "_")
 
 	require.Less(tb, len(name), 64)
+
+	databaseNamesM.Lock()
+	defer databaseNamesM.Unlock()
+
+	current := stack()
+	if another, ok := databaseNames[name]; ok {
+		tb.Logf("Database name %q already used by another test:\n%s", name, another)
+		panic("duplicate database name")
+	}
+	databaseNames[name] = current
+
 	return name
 }
 
@@ -48,5 +75,16 @@ func CollectionName(tb testing.TB) string {
 	name = strings.ReplaceAll(name, "$", "_")
 
 	require.Less(tb, len(name), 255)
+
+	collectionNamesM.Lock()
+	defer collectionNamesM.Unlock()
+
+	current := stack()
+	if another, ok := collectionNames[name]; ok {
+		tb.Logf("Collection name %q already used by another test:\n%s", name, another)
+		panic("duplicate collection name")
+	}
+	collectionNames[name] = current
+
 	return name
 }

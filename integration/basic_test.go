@@ -28,7 +28,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestMostCommandsAreCaseSensitive(t *testing.T) {
@@ -404,7 +403,7 @@ func TestDatabaseName(t *testing.T) {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {
 				// there is no explicit command to create database, so create collection instead
-				err := collection.Database().Client().Database(tc.db).CreateCollection(ctx, testutil.CollectionName(t))
+				err := collection.Database().Client().Database(tc.db).CreateCollection(ctx, collection.Name())
 				AssertEqualAltError(t, *tc.err, tc.alt, err)
 			})
 		}
@@ -413,7 +412,7 @@ func TestDatabaseName(t *testing.T) {
 	t.Run("Empty", func(t *testing.T) {
 		ctx, collection := setup.Setup(t)
 
-		err := collection.Database().Client().Database("").CreateCollection(ctx, testutil.CollectionName(t))
+		err := collection.Database().Client().Database("").CreateCollection(ctx, collection.Name())
 		expectedErr := driver.InvalidOperationError(driver.InvalidOperationError{MissingField: "Database"})
 		assert.Equal(t, expectedErr, err)
 	})
@@ -422,7 +421,7 @@ func TestDatabaseName(t *testing.T) {
 		ctx, collection := setup.Setup(t)
 
 		dbName63 := strings.Repeat("a", 63)
-		err := collection.Database().Client().Database(dbName63).CreateCollection(ctx, testutil.CollectionName(t))
+		err := collection.Database().Client().Database(dbName63).CreateCollection(ctx, collection.Name())
 		require.NoError(t, err)
 		collection.Database().Client().Database(dbName63).Drop(ctx)
 	})
