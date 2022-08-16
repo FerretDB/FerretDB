@@ -193,7 +193,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
-// update replaces given document by _id.
+// update replaces given document.
 func (h *Handler) update(ctx context.Context, sp fetchParam, doc *types.Document) (int, error) {
 	u, err := tjson.Marshal(doc)
 	if err != nil {
