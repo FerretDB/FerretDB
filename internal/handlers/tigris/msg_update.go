@@ -218,6 +218,7 @@ func (h *Handler) update(ctx context.Context, sp fetchParam, doc *types.Document
 		if isInvalidArgument(err) {
 			return 0, common.NewErrorMsg(common.ErrDocumentValidationFailure, err.Error())
 		}
+
 		return 0, lazyerrors.Error(err)
 	default:
 		return 0, lazyerrors.Error(err)

@@ -78,10 +78,7 @@ func isNotFound(err *driver.Error) bool {
 	}
 
 	//nolint:nosnakecase // Tigris named their const that way
-	if err.Code == api.Code_NOT_FOUND {
-		return true
-	}
-	return false
+	return err.Code == api.Code_NOT_FOUND
 }
 
 // isInvalidArgument returns true if the error is a "invalid argument" error.
@@ -92,10 +89,7 @@ func isInvalidArgument(err *driver.Error) bool {
 	}
 
 	//nolint:nosnakecase // Tigris named their const that way
-	if err.Code == api.Code_INVALID_ARGUMENT {
-		return true
-	}
-	return false
+	return err.Code == api.Code_INVALID_ARGUMENT
 }
 
 // check interfaces
