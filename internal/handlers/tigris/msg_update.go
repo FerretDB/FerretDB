@@ -21,8 +21,11 @@ import (
 
 	"github.com/tigrisdata/tigris-client-go/fields"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/tjson"
+
+	"github.com/tigrisdata/tigris-client-go/driver"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -194,8 +197,13 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
-// update updates documents by _id.
+// update replaces given document by _id.
 func (h *Handler) update(ctx context.Context, sp fetchParam, doc *types.Document) (int, error) {
+	u, err := tjson.Marshal(doc)
+	if err != nil {
+		return 0, lazyerrors.Error(err)
+	}
+
 	id := must.NotFail(tjson.Marshal(must.NotFail(doc.Get("_id"))))
 	f := must.NotFail(json.Marshal(map[string]any{"_id": map[string]json.RawMessage{"$eq": id}}))
 	h.L.Sugar().Debugf("Update filter: %s", f)
@@ -205,13 +213,12 @@ func (h *Handler) update(ctx context.Context, sp fetchParam, doc *types.Document
 		v := must.NotFail(doc.Get(k))
 		update.Set(k, json.RawMessage(must.NotFail(tjson.Marshal(v))))
 	}
-	u := must.NotFail(update.Build()).Built()
 	h.L.Sugar().Debugf("Update: %s", u)
 
-	res, err := h.db.Driver.UseDatabase(sp.db).Update(ctx, sp.collection, f, u)
+	_, err = h.db.Driver.UseDatabase(sp.db).Replace(ctx, sp.collection, []driver.Document{u})
 	if err != nil {
 		return 0, lazyerrors.Error(err)
 	}
 
-	return int(res.ModifiedCount), nil
+	return 1, nil
 }
