@@ -29,6 +29,7 @@ import (
 )
 
 // MsgDelete implements HandlerInterface.
+// It can return both response and error if partial delete was made.
 func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
@@ -157,13 +158,13 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return err
 	}
 
-	unorderedErrMsgs := new(common.WriteErrors)
+	delErrors := new(common.WriteErrors)
 
 	// process every delete filter
 	for i := 0; i < deletes.Len(); i++ {
 		err := processQuery(i)
 		if err != nil {
-			unorderedErrMsgs.Append(err)
+			delErrors.Append(err)
 
 			// Delete statements in the `deletes` field are not transactional.
 			// It means that we run each delete statement separately.
@@ -172,27 +173,28 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			// If `ordered` is set as `false`,  we execute all the statements and return
 			// the list of errors corresponding to the failed statements.
 			if ordered {
-				return nil, unorderedErrMsgs
+				return nil, delErrors
 			}
 		}
 	}
 
-	if len(*unorderedErrMsgs) > 0 {
-		return nil, unorderedErrMsgs
-	}
+	//if len(*delErrors) > 0 {
+	//	return nil,delErrors
+	//}
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"n", deleted,
 			"ok", float64(1),
+			// "writeErrors", delErrors,
 		))},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &reply, nil
+	return &reply, delErrors
 }
 
 // delete deletes documents by _id.

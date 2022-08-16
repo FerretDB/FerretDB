@@ -327,7 +327,13 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			must.NoError(res.SetSections(wire.OpMsgSection{
 				Documents: []*types.Document{protoErr.Document()},
 			}))
-			resBody = &res
+			if resBody != nil {
+				// TODO: find a way to somehow append it to response
+				// use it if possible!
+				// resBody.(wire.OpMsg).Document()
+			} else {
+				resBody = &res
+			}
 			result = pointer.ToString(protoErr.Code().String())
 
 		case wire.OpCodeQuery:

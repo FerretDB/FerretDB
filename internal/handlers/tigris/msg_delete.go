@@ -154,9 +154,9 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 	}
 
-	if len(*delErrors) > 0 {
-		return nil, delErrors
-	}
+	//if len(*delErrors) > 0 {
+	//	return nil, delErrors
+	//}
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
@@ -169,7 +169,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &reply, nil
+	return &reply, delErrors
 }
 
 // delete deletes documents by _id.
