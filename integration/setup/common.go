@@ -53,6 +53,8 @@ var (
 // SkipForTigris skips the current test for Tigris handler.
 //
 // This function should not be used lightly in new tests and should eventually be removed.
+//
+// Deprecated: use SkipForTigrisWithReason instead if you must.
 func SkipForTigris(tb testing.TB) {
 	SkipForTigrisWithReason(tb, "")
 }

@@ -29,11 +29,10 @@ import (
 
 // updateCompatTestCase describes update compatibility test case.
 type updateCompatTestCase struct {
-	update        bson.D                   // required if replace is nil
-	replace       bson.D                   // required if update is nil
-	resultType    compatTestCaseResultType // defaults to nonEmptyResult
-	skip          string                   // skips test if non-empty
-	skipForTigris string                   // skips test for Tigris if non-empty
+	update     bson.D                   // required if replace is nil
+	replace    bson.D                   // required if update is nil
+	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	skip       string                   // skips test if non-empty
 }
 
 // testUpdateCompat tests update compatibility test cases.
@@ -47,10 +46,6 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 
 			if tc.skip != "" {
 				t.Skip(tc.skip)
-			}
-
-			if tc.skipForTigris != "" {
-				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
 			}
 
 			t.Parallel()
