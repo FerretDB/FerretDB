@@ -15,6 +15,29 @@
 // Package tjson provides converters from/to JSON with JSON Schema for built-in and `types` types.
 //
 // See contributing guidelines and documentation for package `types` for details.
+// See https://docs.tigrisdata.com/overview/schema#data-types for more details about JSON types.
+//
+// # Mapping
+//
+// Composite types
+//
+//	*types.Document       {"$k": ["<key 1>", "<key 2>", ...], "<key 1>": <value 1>, "<key 2>": <value 2>, ...}
+//	TODO *types.Array     JSON array
+//
+// Scalar types
+//
+//	float64               JSON number (double format)
+//	string                JSON string
+//	types.Binary          {"$b": "<base 64 string>", "s": <subtype number>}
+//	types.ObjectID	      JSON string (byte format, length is 12 bytes)
+//	bool                  JSON true|false values
+//	TODO time.Time        JSON string (date-time RFC3339 format)
+//	TODO types.NullType   JSON null
+//	TODO types.Regex      {"$r": "<string without terminating 0x0>", "o": "<string without terminating 0x0>"}
+//	int32                 JSON number (int32 format)
+//	TODO types.Timestamp  {"$t": "<number as string>"}
+//	int64                 JSON number (int64 format)
+//	TODO Decimal128       {"$n": "<number as string>"}
 package tjson
 
 import (
@@ -22,6 +45,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/AlekSi/pointer"
 
@@ -70,8 +94,8 @@ func fromTJSON(v tjsontype) any {
 		return types.ObjectID(*v)
 	case *boolType:
 		return bool(*v)
-	// case *dateTimeType:
-	// 	return time.Time(*v)
+	case *dateTimeType:
+		return time.Time(*v)
 	// case *nullType:
 	// 	return types.Null
 	// case *regexType:
@@ -104,8 +128,8 @@ func toTJSON(v any) tjsontype {
 		return pointer.To(objectIDType(v))
 	case bool:
 		return pointer.To(boolType(v))
-	// case time.Time:
-	// 	return pointer.To(dateTimeType(v))
+	case time.Time:
+		return pointer.To(dateTimeType(v))
 	// case types.NullType:
 	// 	return pointer.To(nullType(v))
 	// case types.Regex:
@@ -168,7 +192,11 @@ func Unmarshal(data []byte, schema *Schema) (any, error) {
 			var o objectIDType
 			err = o.UnmarshalJSON(data)
 			res = &o
-		case UUID, DateTime:
+		case DateTime:
+			var o dateTimeType
+			err = o.UnmarshalJSON(data)
+			res = &o
+		case UUID:
 			fallthrough
 		case Double, Float, Int64, Int32:
 			fallthrough
