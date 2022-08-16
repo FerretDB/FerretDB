@@ -212,7 +212,6 @@ func (h *Handler) update(ctx context.Context, sp fetchParam, doc *types.Document
 
 		return 0, lazyerrors.Error(err)
 	default:
-
 		return 0, lazyerrors.Error(err)
 	}
 }
