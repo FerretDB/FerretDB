@@ -30,6 +30,7 @@ func IsNotFound(err *driver.Error) bool {
 	if err.Code == api.Code_NOT_FOUND {
 		return true
 	}
+
 	return false
 }
 
@@ -44,5 +45,6 @@ func IsAlreadyExists(err *driver.Error) bool {
 	if err.Code == api.Code_ALREADY_EXISTS {
 		return true
 	}
+
 	return false
 }
