@@ -85,7 +85,6 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // insert checks if database and collection exist, create them if needed and attempts to insert the given doc.
-// Collection creation and insert are performed in a single transaction.
 func (h *Handler) insert(ctx context.Context, fp fetchParam, doc *types.Document) error {
 	schema, err := tjson.DocumentSchema(doc)
 	if err != nil {
