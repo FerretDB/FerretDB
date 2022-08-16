@@ -42,37 +42,3 @@ func New(cfg *config.Driver) (*TigrisDB, error) {
 		Driver: d,
 	}, nil
 }
-
-// InTransaction wraps the given function f in a transaction.
-// If f returns an error, the transaction is rolled back.
-// Errors are wrapped with lazyerrors.Error,
-// so the caller needs to use errors.Is to check the error,
-// for example, errors.Is(err, *Driver.Error).
-func (tdb *TigrisDB) InTransaction(ctx context.Context, db string, f func(tx driver.Tx) error) (err error) {
-	var tx driver.Tx
-	if tx, err = tdb.Driver.BeginTx(ctx, db); err != nil {
-		err = lazyerrors.Error(err)
-		return
-	}
-
-	defer func() {
-		if err == nil {
-			return
-		}
-		if rerr := tx.Rollback(ctx); rerr != nil {
-			tdb.logger.Error("failed to perform rollback", zap.Error(rerr))
-		}
-	}()
-
-	if err = f(tx); err != nil {
-		err = lazyerrors.Error(err)
-		return
-	}
-
-	if err = tx.Commit(ctx); err != nil {
-		err = lazyerrors.Error(err)
-		return
-	}
-
-	return
-}

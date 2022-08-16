@@ -23,10 +23,15 @@ import (
 )
 
 // CreateCollectionIfNotExist ensures that given collection exist.
-// If needed, it creates collection.
+// If needed, it creates both database and collection.
 // It returns true if the collection was created.
-func CreateCollectionIfNotExist(ctx context.Context, db driver.Database, collection string, schema driver.Schema) (bool, error) {
-	exists, err := collectionExists(ctx, db, collection)
+func (tdb *TigrisDB) CreateCollectionIfNotExist(ctx context.Context, db, collection string, schema driver.Schema) (bool, error) {
+	_, err := tdb.createDatabaseIfNotExists(ctx, db)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	exists, err := tdb.collectionExists(ctx, db, collection)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
@@ -34,7 +39,7 @@ func CreateCollectionIfNotExist(ctx context.Context, db driver.Database, collect
 		return false, nil
 	}
 
-	err = db.CreateOrUpdateCollection(ctx, collection, schema)
+	err = tdb.Driver.UseDatabase(db).CreateOrUpdateCollection(ctx, collection, schema)
 	switch err := err.(type) {
 	case nil:
 		return true, nil
@@ -49,8 +54,8 @@ func CreateCollectionIfNotExist(ctx context.Context, db driver.Database, collect
 }
 
 // collectionExists returns true if collection exists.
-func collectionExists(ctx context.Context, db driver.Database, collection string) (bool, error) {
-	_, err := db.DescribeCollection(ctx, collection)
+func (tdb *TigrisDB) collectionExists(ctx context.Context, db, collection string) (bool, error) {
+	_, err := tdb.Driver.UseDatabase(db).DescribeCollection(ctx, collection)
 	switch err := err.(type) {
 	case nil:
 		return true, nil

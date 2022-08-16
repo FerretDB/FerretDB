@@ -47,19 +47,38 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 			require.NoError(t, tdb.Driver.DropDatabase(ctx, dbName))
 		})
 
-		created, err := tdb.CreateDatabaseIfNotExists(ctx, dbName)
+		schema := driver.Schema(strings.TrimSpace(fmt.Sprintf(
+			`{"title": "%s","properties": {"_id": {"type": "string","format": "byte"}},"primary_key": ["_id"]}`,
+			collName)))
+		created, err := tdb.CreateCollectionIfNotExist(ctx, dbName, collName, schema)
 		require.NoError(t, err)
 		assert.True(t, created)
-		err = tdb.InTransaction(ctx, dbName, func(tx driver.Tx) error {
-			schema := driver.Schema(strings.TrimSpace(fmt.Sprintf(
-				`{"title": "%s","properties": {"_id": {"type": "string","format": "byte"}},"primary_key": ["_id"]}`,
-				collName)))
-			created, err := CreateCollectionIfNotExist(ctx, tx, collName, schema)
-			require.NoError(t, err)
-			assert.True(t, created)
-			return nil
-		})
+
 		require.NoError(t, err)
+	})
+
+	t.Run("OnlyDBExists", func(t *testing.T) {
+		t.Parallel()
+
+		dbName := testutil.DatabaseName(t)
+		collName := testutil.CollectionName(t)
+
+		require.NoError(t, tdb.Driver.CreateDatabase(ctx, dbName))
+
+		t.Cleanup(func() {
+			require.NoError(t, tdb.Driver.DropDatabase(ctx, dbName))
+		})
+
+		created, err := tdb.createDatabaseIfNotExists(ctx, dbName)
+		require.NoError(t, err)
+		assert.False(t, created)
+
+		schema := driver.Schema(strings.TrimSpace(fmt.Sprintf(
+			`{"title": "%s","properties": {"_id": {"type": "string","format": "byte"}},"primary_key": ["_id"]}`,
+			collName)))
+		created, err = tdb.CreateCollectionIfNotExist(ctx, dbName, collName, schema)
+		require.NoError(t, err)
+		assert.True(t, created)
 	})
 
 	t.Run("DBCollectionExist", func(t *testing.T) {
@@ -78,16 +97,12 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 			require.NoError(t, tdb.Driver.DropDatabase(ctx, dbName))
 		})
 
-		created, err := tdb.CreateDatabaseIfNotExists(ctx, dbName)
+		created, err := tdb.createDatabaseIfNotExists(ctx, dbName)
 		require.NoError(t, err)
 		assert.False(t, created)
 
-		err = tdb.InTransaction(ctx, dbName, func(tx driver.Tx) error {
-			created, err := CreateCollectionIfNotExist(ctx, tx, collName, schema)
-			require.NoError(t, err)
-			assert.False(t, created)
-			return nil
-		})
+		created, err = tdb.CreateCollectionIfNotExist(ctx, dbName, collName, schema)
 		require.NoError(t, err)
+		assert.False(t, created)
 	})
 }

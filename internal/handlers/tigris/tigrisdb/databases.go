@@ -22,10 +22,10 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// CreateDatabaseIfNotExists ensures that given database exists.
+// createDatabaseIfNotExists ensures that given database exists.
 // If the database doesn't exist, it creates it.
 // It returns true if the database was created.
-func (tdb *TigrisDB) CreateDatabaseIfNotExists(ctx context.Context, db string) (bool, error) {
+func (tdb *TigrisDB) createDatabaseIfNotExists(ctx context.Context, db string) (bool, error) {
 	exists, err := tdb.databaseExists(ctx, db)
 	if err != nil {
 		return false, lazyerrors.Error(err)

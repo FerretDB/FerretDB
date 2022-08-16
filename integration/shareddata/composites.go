@@ -58,7 +58,7 @@ var DocumentsDoubles = &Values[string]{
 		"document-double-max":      bson.D{{"v", math.MaxFloat64}},
 		"document-double-smallest": bson.D{{"v", math.SmallestNonzeroFloat64}},
 		"document-double-big":      bson.D{{"v", doubleBig}},
-		"document-empty":           bson.D{},
+		//"document-empty":           bson.D{},
 	},
 }
 
@@ -71,6 +71,6 @@ var DocumentsStrings = &Values[string]{
 		"document-string-double": bson.D{{"v", "42.13"}},
 		"document-string-whole":  bson.D{{"v", "42"}},
 		"document-string-empty":  bson.D{{"v", ""}},
-		"document-empty":         bson.D{},
+		//"document-empty":         bson.D{},
 	},
 }
