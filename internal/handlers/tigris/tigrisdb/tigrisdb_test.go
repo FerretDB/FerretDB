@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//	http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -49,7 +49,8 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 
 		schema := driver.Schema(strings.TrimSpace(fmt.Sprintf(
 			`{"title": "%s","properties": {"_id": {"type": "string","format": "byte"}},"primary_key": ["_id"]}`,
-			collName)))
+			collName,
+		)))
 		created, err := tdb.CreateCollectionIfNotExist(ctx, dbName, collName, schema)
 		require.NoError(t, err)
 		assert.True(t, created)
@@ -75,7 +76,8 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 
 		schema := driver.Schema(strings.TrimSpace(fmt.Sprintf(
 			`{"title": "%s","properties": {"_id": {"type": "string","format": "byte"}},"primary_key": ["_id"]}`,
-			collName)))
+			collName,
+		)))
 		created, err = tdb.CreateCollectionIfNotExist(ctx, dbName, collName, schema)
 		require.NoError(t, err)
 		assert.True(t, created)
@@ -90,7 +92,8 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 		require.NoError(t, tdb.Driver.CreateDatabase(ctx, dbName))
 		schema := driver.Schema(strings.TrimSpace(fmt.Sprintf(
 			`{"title": "%s","properties": {"_id": {"type": "string","format": "byte"}},"primary_key": ["_id"]}`,
-			collName)))
+			collName,
+		)))
 		require.NoError(t, tdb.Driver.UseDatabase(dbName).CreateOrUpdateCollection(ctx, collName, schema))
 
 		t.Cleanup(func() {

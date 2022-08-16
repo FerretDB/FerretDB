@@ -75,7 +75,7 @@ func (doc *documentType) UnmarshalJSONWithSchema(data []byte, schema *Schema) er
 		}
 		s := schema.Properties[key]
 		if s == nil {
-			return lazyerrors.Errorf("tjson.documentType.UnmarshalJSONWithSchema: no schema for key %q, schema: %v, data %s, ", key, schema, data)
+			return lazyerrors.Errorf("tjson.documentType.UnmarshalJSONWithSchema: no schema for key %q", key)
 		}
 		v, err := Unmarshal(b, s)
 		if err != nil {

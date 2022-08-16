@@ -18,18 +18,15 @@ package tigrisdb
 import (
 	"context"
 
-	"go.uber.org/zap"
-
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-
 	"github.com/tigrisdata/tigris-client-go/config"
 	"github.com/tigrisdata/tigris-client-go/driver"
+
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // TigrisDB represents a Tigris database connection.
 type TigrisDB struct {
 	Driver driver.Driver
-	logger *zap.Logger
 }
 
 // New returns a new TigrisDB.

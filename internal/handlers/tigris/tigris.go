@@ -18,13 +18,12 @@ package tigris
 import (
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
-
 	"github.com/tigrisdata/tigris-client-go/config"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
