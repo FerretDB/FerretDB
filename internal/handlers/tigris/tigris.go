@@ -84,6 +84,20 @@ func isNotFound(err *driver.Error) bool {
 	return false
 }
 
+// isInvalidArgument returns true if the error is a "invalid argument" error.
+// This function is implemented to keep nolint in a single place.
+func isInvalidArgument(err *driver.Error) bool {
+	if err == nil {
+		return false
+	}
+
+	//nolint:nosnakecase // Tigris named their const that way
+	if err.Code == api.Code_INVALID_ARGUMENT {
+		return true
+	}
+	return false
+}
+
 // check interfaces
 var (
 	_ handlers.Interface = (*Handler)(nil)

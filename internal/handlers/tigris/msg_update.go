@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/tigrisdata/tigris-client-go/driver"
 	"github.com/tigrisdata/tigris-client-go/fields"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -210,7 +211,15 @@ func (h *Handler) update(ctx context.Context, sp fetchParam, doc *types.Document
 	h.L.Sugar().Debugf("Update: %s", u)
 
 	res, err := h.driver.UseDatabase(sp.db).Update(ctx, sp.collection, f, u)
-	if err != nil {
+	switch err := err.(type) {
+	case nil:
+		// do nothing
+	case *driver.Error:
+		if isInvalidArgument(err) {
+			return 0, common.NewErrorMsg(common.ErrDocumentValidationFailure, err.Error())
+		}
+		return 0, lazyerrors.Error(err)
+	default:
 		return 0, lazyerrors.Error(err)
 	}
 

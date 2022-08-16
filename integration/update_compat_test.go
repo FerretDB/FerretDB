@@ -18,18 +18,22 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 // updateCompatTestCase describes update compatibility test case.
 type updateCompatTestCase struct {
-	update        bson.D // required
-	skip          string // skips test if non-empty
-	skipForTigris bool   // skips test for Tigris if true
+	update        bson.D                   // required if replace is nil
+	replace       bson.D                   // required if update is nil
+	resultType    compatTestCaseResultType // defaults to nonEmptyResult
+	skip          string                   // skips test if non-empty
+	skipForTigris string                   // skips test for Tigris if non-empty
 }
 
 // testUpdateCompat tests update compatibility test cases.
@@ -45,8 +49,8 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 				t.Skip(tc.skip)
 			}
 
-			if tc.skipForTigris {
-				setup.SkipForTigris(t)
+			if tc.skipForTigris != "" {
+				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
 			}
 
 			t.Parallel()
@@ -54,9 +58,14 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 			// Use per-test setup because updates modify data set.
 			ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
-			update := tc.update
-			require.NotNil(t, update)
+			update, replace := tc.update, tc.replace
+			if update != nil {
+				require.Nil(t, replace, "`replace` must be nil if `update` is set")
+			} else {
+				require.NotNil(t, replace, "`replace` must be set if `update` is nil")
+			}
 
+			var nonEmptyResults bool
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
@@ -72,16 +81,37 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 						t.Run(fmt.Sprint(id), func(t *testing.T) {
 							t.Helper()
 
-							targetUpdateRes, targetErr := targetCollection.UpdateByID(ctx, id, update)
-							compatUpdateRes, compatErr := compatCollection.UpdateByID(ctx, id, update)
+							filter := bson.D{{"_id", id}}
+							var targetUpdateRes, compatUpdateRes *mongo.UpdateResult
+							var targetErr, compatErr error
+
+							if update != nil {
+								targetUpdateRes, targetErr = targetCollection.UpdateOne(ctx, filter, update)
+								compatUpdateRes, compatErr = compatCollection.UpdateOne(ctx, filter, update)
+							} else {
+								targetUpdateRes, targetErr = targetCollection.ReplaceOne(ctx, filter, replace)
+								compatUpdateRes, compatErr = compatCollection.ReplaceOne(ctx, filter, replace)
+							}
 
 							if targetErr != nil {
-								t.Log(targetErr)
+								t.Logf("Target error: %v", targetErr)
 								targetErr = UnsetRaw(t, targetErr)
 								compatErr = UnsetRaw(t, compatErr)
+
+								// Skip updates that could not be performed due to Tigris schema validation.
+								if e, ok := targetErr.(mongo.CommandError); ok && e.Name == "DocumentValidationFailure" {
+									if e.HasErrorCodeWithMessage(121, "json schema validation failed for field") {
+										setup.SkipForTigrisWithReason(t, targetErr.Error())
+									}
+								}
+
 								assert.Equal(t, compatErr, targetErr)
 							} else {
 								require.NoError(t, compatErr)
+							}
+
+							if pointer.Get(targetUpdateRes).ModifiedCount > 0 || pointer.Get(compatUpdateRes).ModifiedCount > 0 {
+								nonEmptyResults = true
 							}
 
 							assert.Equal(t, compatUpdateRes, targetUpdateRes)
@@ -93,6 +123,15 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 						})
 					}
 				})
+			}
+
+			switch tc.resultType {
+			case nonEmptyResult:
+				assert.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
+			case emptyResult:
+				assert.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
+			default:
+				t.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}
