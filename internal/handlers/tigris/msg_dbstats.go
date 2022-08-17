@@ -19,9 +19,8 @@ import (
 
 	"github.com/tigrisdata/tigris-client-go/driver"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
-
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -36,12 +35,14 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	var db string
+
 	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 
 	m := document.Map()
 	scale, ok := m["scale"].(float64)
+
 	if !ok {
 		scale = 1
 	}
@@ -67,8 +68,10 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	// TODO We need a better way to get the number of documents in all collections.
 	var objects int32
+
 	for _, collection := range stats.Collections {
 		f := fetchParam{db: db, collection: collection.Collection}
+
 		docs, err := h.fetch(ctx, f)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
@@ -99,6 +102,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			"ok", float64(1),
 		))},
 	})
+
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
