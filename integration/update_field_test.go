@@ -1119,41 +1119,21 @@ func TestUpdateFieldUnset(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		id       string
-		update   bson.D
-		expected bson.D
-		stat     *mongo.UpdateResult
-		err      *mongo.WriteError
-		alt      string
+		id           string
+		update       bson.D
+		expected     bson.D
+		expectedStat *mongo.UpdateResult
+		err          *mongo.WriteError
+		alt          string
 	}{
-		"String": {
-			id:       "string",
-			update:   bson.D{{"$unset", bson.D{{"v", int32(1)}}}},
-			expected: bson.D{{"_id", "string"}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-		},
 		"Empty": {
 			id:       "string",
 			update:   bson.D{{"$unset", bson.D{}}},
 			expected: bson.D{{"_id", "string"}, {"v", "foo"}},
-			stat: &mongo.UpdateResult{
+			expectedStat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 0,
 				UpsertedCount: 0,
-			},
-		},
-		"Field": {
-			id:       "document-composite-unset-field",
-			update:   bson.D{{"$unset", bson.D{{"v", bson.D{{"array", int32(1)}}}}}},
-			expected: bson.D{{"_id", "document-composite-unset-field"}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  0,
-				ModifiedCount: 0,
-				UpsertedCount: 1,
 			},
 		},
 		"EmptyArray": {
@@ -1183,7 +1163,7 @@ func TestUpdateFieldUnset(t *testing.T) {
 
 			require.NoError(t, err)
 			actualStat.UpsertedID = nil
-			assert.Equal(t, tc.stat, actualStat)
+			assert.Equal(t, tc.expectedStat, actualStat)
 
 			var actual bson.D
 			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)

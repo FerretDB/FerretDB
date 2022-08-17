@@ -27,8 +27,9 @@ import (
 
 // updateCompatTestCase describes update compatibility test case.
 type updateCompatTestCase struct {
-	update bson.D // required
-	skip   string // skips test if non-empty
+	update        bson.D // required
+	skip          string // skips test if non-empty
+	skipForTigris bool   // skips test for Tigris if true
 }
 
 // testUpdateCompat tests update compatibility test cases.
@@ -42,6 +43,10 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 
 			if tc.skip != "" {
 				t.Skip(tc.skip)
+			}
+
+			if tc.skipForTigris {
+				setup.SkipForTigris(t)
 			}
 
 			t.Parallel()
@@ -76,7 +81,7 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 								compatErr = UnsetRaw(t, compatErr)
 								assert.Equal(t, compatErr, targetErr)
 							} else {
-								require.NoError(t, compatErr)
+								require.NoError(t, compatErr, "compat error")
 							}
 
 							assert.Equal(t, compatUpdateRes, targetUpdateRes)
