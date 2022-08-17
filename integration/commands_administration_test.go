@@ -94,8 +94,6 @@ func TestCommandsAdministrationCreateDropList(t *testing.T) {
 }
 
 func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t) // no providers there
 	db := collection.Database()
