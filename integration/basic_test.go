@@ -384,17 +384,17 @@ func TestDatabaseName(t *testing.T) {
 					Message: fmt.Sprintf(
 						"Invalid namespace specified '%s.%s'",
 						dbName64,
-						"TestDatabaseName_Err_TooLongForBothDBs",
+						"TestDatabaseName_Err",
 					),
 				},
-				alt: fmt.Sprintf("Invalid namespace: %s.%s", dbName64, "TestDatabaseName_Err_TooLongForBothDBs"),
+				alt: fmt.Sprintf("Invalid namespace: %s.%s", dbName64, "TestDatabaseName_Err"),
 			},
 			"WithADollarSign": {
 				db: "name_with_a-$",
 				err: &mongo.CommandError{
 					Name:    "InvalidNamespace",
 					Code:    73,
-					Message: `Invalid namespace: name_with_a-$.TestDatabaseName_Err_WithADollarSign`,
+					Message: `Invalid namespace: name_with_a-$.TestDatabaseName_Err`,
 				},
 			},
 		}
