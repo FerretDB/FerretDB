@@ -880,5 +880,7 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 	require.NotNil(t, dbSpec)
 
 	assert.False(t, false, dbSpec.Empty)
+
+	setup.SkipForTigris(t)
 	assert.Greater(t, dbSpec.SizeOnDisk, int64(0))
 }
