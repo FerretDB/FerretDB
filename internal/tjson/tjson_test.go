@@ -309,8 +309,6 @@ func unmarshalJSON(v tjsontype, j string) (bool, error) {
 		return false, nil
 	case *doubleType:
 		err = v.UnmarshalJSON([]byte(j))
-	case *regexType:
-		err = v.UnmarshalJSON([]byte(j))
 	case *stringType:
 		err = v.UnmarshalJSON([]byte(j))
 	case *binaryType:
@@ -320,6 +318,8 @@ func unmarshalJSON(v tjsontype, j string) (bool, error) {
 	case *boolType:
 		err = v.UnmarshalJSON([]byte(j))
 	case *dateTimeType:
+		err = v.UnmarshalJSON([]byte(j))
+	case *regexType:
 		err = v.UnmarshalJSON([]byte(j))
 	case *int32Type:
 		err = v.UnmarshalJSON([]byte(j))

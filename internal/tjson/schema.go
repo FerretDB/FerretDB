@@ -57,7 +57,7 @@ const (
 	Byte     SchemaFormat = "byte"
 	UUID     SchemaFormat = "uuid"
 	DateTime SchemaFormat = "date-time"
-	// Regex SchemaFormat = "" // TODO: ???
+	Regex    SchemaFormat = "regex"
 )
 
 // Schema represents a supported subset of JSON Schema.

@@ -31,7 +31,9 @@
 //	types.Binary          {"$b": "<base 64 string>", "s": <subtype number>}
 //	types.ObjectID	      JSON string (byte format, length is 12 bytes)
 //	bool                  JSON true|false values
+//	time.Time        	  JSON string (date-time RFC3339 format)
 //	TODO types.NullType   JSON null
+//	types.Regex           {"$r": "<string without terminating 0x0>", "o": "<string without terminating 0x0>"}
 //	int32                 JSON number (int32 format)
 //	TODO types.Timestamp  {"$t": "<number as string>"}
 //	int64                 JSON number (int64 format)
@@ -160,7 +162,7 @@ func Unmarshal(data []byte, schema *Schema) (any, error) {
 			res = &o
 		case Double, Float:
 			fallthrough
-		case Byte, UUID, DateTime:
+		case Byte, UUID, DateTime, Regex:
 			fallthrough
 		default:
 			err = lazyerrors.Errorf("tjson.Unmarshal: unhandled format %q for type %q", f, t)
@@ -175,7 +177,7 @@ func Unmarshal(data []byte, schema *Schema) (any, error) {
 			fallthrough
 		case Int64, Int32:
 			fallthrough
-		case Byte, UUID, DateTime:
+		case Byte, UUID, DateTime, Regex:
 			fallthrough
 		default:
 			err = lazyerrors.Errorf("tjson.Unmarshal: unhandled format %q for type %q", f, t)
@@ -196,7 +198,7 @@ func Unmarshal(data []byte, schema *Schema) (any, error) {
 			res = &o
 		case UUID:
 			fallthrough
-		case Double, Float, Int64, Int32:
+		case Double, Float, Int64, Int32, Regex:
 			fallthrough
 		default:
 			err = lazyerrors.Errorf("tjson.Unmarshal: unhandled format %q for type %q", f, t)
