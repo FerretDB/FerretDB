@@ -41,21 +41,3 @@ func PoolConnString(tb testing.TB, opts *PoolOpts) string {
 
 	return "postgres://" + username + "@127.0.0.1:5432/ferretdb?pool_min_conns=1"
 }
-
-// SchemaName should not be used.
-//
-// Deprecated: use DatabaseName instead.
-func SchemaName(tb testing.TB) string {
-	tb.Helper()
-
-	return DatabaseName(tb)
-}
-
-// TableName should not be used.
-//
-// Deprecated: use CollectionName instead.
-func TableName(tb testing.TB) string {
-	tb.Helper()
-
-	return CollectionName(tb)
-}
