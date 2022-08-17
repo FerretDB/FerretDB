@@ -180,23 +180,24 @@ func TestConcurrentCreate(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
+	databaseName := testutil.DatabaseName(t)
+	collectionName := testutil.CollectionName(t)
+
+	// Create PostgreSQL database with the same name as FerretDB database / PostgreSQL schema
+	// because it is good enough.
 	createPool := getPool(ctx, t, nil, zaptest.NewLogger(t))
-	dbName := testutil.DatabaseName(t) // using schema name helper for database name is good enough
-	_, err := createPool.Exec(ctx, `CREATE DATABASE `+dbName)
+	_, err := createPool.Exec(ctx, `CREATE DATABASE `+databaseName)
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		_, err := createPool.Exec(ctx, `DROP DATABASE `+dbName)
+		_, err := createPool.Exec(ctx, `DROP DATABASE `+databaseName)
 		require.NoError(t, err)
 	})
 
 	n := 10
-	dsn := fmt.Sprintf("postgres://postgres@127.0.0.1:5432/%[1]s?pool_min_conns=%[2]d&pool_max_conns=%[2]d", dbName, n)
+	dsn := fmt.Sprintf("postgres://postgres@127.0.0.1:5432/%[1]s?pool_min_conns=%[2]d&pool_max_conns=%[2]d", databaseName, n)
 	pool, err := pgdb.NewPool(ctx, dsn, zaptest.NewLogger(t), false)
 	require.NoError(t, err)
 	t.Cleanup(pool.Close)
-
-	databaseName := testutil.DatabaseName(t)
-	collectionName := testutil.CollectionName(t)
 
 	for _, tc := range []struct {
 		name        string

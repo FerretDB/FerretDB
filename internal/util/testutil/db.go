@@ -26,18 +26,21 @@ import (
 
 var (
 	databaseNamesM sync.Mutex
-	databaseNames  = make(map[string][]byte)
+	databaseNames  = map[string][]byte{}
 
 	collectionNamesM sync.Mutex
-	collectionNames  = make(map[string][]byte)
+	collectionNames  = map[string][]byte{}
 )
 
+// stack returns the stack trace starting from the caller of caller.
 func stack() []byte {
 	s := bytes.Split(debug.Stack(), []byte("\n"))
 	return bytes.Join(s[7:], []byte("\n"))
 }
 
-// DatabaseName returns a stable database name for that test.
+// DatabaseName returns a stable FerretDB database name for that test.
+//
+// It should be called only once per test.
 func DatabaseName(tb testing.TB) string {
 	tb.Helper()
 
@@ -53,17 +56,18 @@ func DatabaseName(tb testing.TB) string {
 	databaseNamesM.Lock()
 	defer databaseNamesM.Unlock()
 
-	current := stack()
 	if another, ok := databaseNames[name]; ok {
 		tb.Logf("Database name %q already used by another test:\n%s", name, another)
 		panic("duplicate database name")
 	}
-	databaseNames[name] = current
+	databaseNames[name] = stack()
 
 	return name
 }
 
-// CollectionName returns a stable collection name for that test.
+// CollectionName returns a stable FerretDB collection name for that test.
+//
+// It should be called only once per test.
 func CollectionName(tb testing.TB) string {
 	tb.Helper()
 
@@ -79,12 +83,11 @@ func CollectionName(tb testing.TB) string {
 	collectionNamesM.Lock()
 	defer collectionNamesM.Unlock()
 
-	current := stack()
 	if another, ok := collectionNames[name]; ok {
 		tb.Logf("Collection name %q already used by another test:\n%s", name, another)
 		panic("duplicate collection name")
 	}
-	collectionNames[name] = current
+	collectionNames[name] = stack()
 
 	return name
 }
