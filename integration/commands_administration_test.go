@@ -862,3 +862,24 @@ func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
 	require.Equal(t, 2, len(ports))
 	assert.NotEqual(t, ports[0], ports[1])
 }
+
+func TestCommandsAdministrationListDatabases(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t, shareddata.Strings)
+	db := collection.Database()
+	name := db.Name()
+
+	listDatabasesResult, err := db.Client().ListDatabases(ctx, bson.D{})
+	require.NoError(t, err)
+
+	var dbSpec *mongo.DatabaseSpecification
+	for _, db := range listDatabasesResult.Databases {
+		if db.Name == name {
+			dbSpec = &db
+		}
+	}
+	require.NotNil(t, dbSpec)
+
+	assert.Greater(t, dbSpec.SizeOnDisk, int64(0))
+	assert.False(t, false, dbSpec.Empty)
+}
