@@ -682,7 +682,7 @@ func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
 
 func TestCommandsAdministrationDBStats(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Strings)
+	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	var actual bson.D
 	command := bson.D{{"dbStats", int32(1)}}
@@ -704,8 +704,6 @@ func TestCommandsAdministrationDBStats(t *testing.T) {
 }
 
 func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 

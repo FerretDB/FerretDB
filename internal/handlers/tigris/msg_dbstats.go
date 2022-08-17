@@ -17,6 +17,10 @@ package tigris
 import (
 	"context"
 
+	"github.com/tigrisdata/tigris-client-go/driver"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -43,7 +47,21 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	stats, err := h.db.Driver.DescribeDatabase(ctx, db)
-	if err != nil {
+	switch err := err.(type) {
+	case nil:
+		// do nothing
+	case *driver.Error:
+		if !tigrisdb.IsNotFound(err) {
+			return nil, lazyerrors.Error(err)
+		}
+
+		// If DB doesn't exist just return empty stats.
+		stats = &driver.DescribeDatabaseResponse{
+			Db:   db,
+			Size: 0,
+		}
+
+	default:
 		return nil, lazyerrors.Error(err)
 	}
 
