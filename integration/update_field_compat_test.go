@@ -70,15 +70,14 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 			update:     bson.D{{"$unset", bson.D{{"foo.bar", ""}}}},
 			resultType: emptyResult,
 		},
-		// "DotNotationArrayFieldExist": {
-		// 	update: bson.D{{"$unset", bson.D{{"v.array.0", int32(1)}}}},
-		// },
-		// "DotNotationArrayFieldNotExist": {
-		// 	update: bson.D{{"$unset", bson.D{{"foo.0.baz", int32(1)}}}},
-		// },
-		// "DocumentDotNotationArrFieldNotExist": {
-		// 	update: bson.D{{"$unset", bson.D{{"v.0.foo", int32(1)}}}},
-		// },
+		"DotNotationArrayField": {
+			update:        bson.D{{"$unset", bson.D{{"v.array.0", ""}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
+		},
+		"DotNotationArrayNonExisting": {
+			update:     bson.D{{"$unset", bson.D{{"foo.0.baz", int32(1)}}}},
+			resultType: emptyResult,
+		},
 	}
 
 	testUpdateCompat(t, testCases)
