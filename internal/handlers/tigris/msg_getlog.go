@@ -69,7 +69,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	case "startupWarnings":
-		info, err := h.driver.Info(ctx)
+		info, err := h.db.Driver.Info(ctx)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
