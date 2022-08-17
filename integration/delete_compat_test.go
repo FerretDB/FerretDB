@@ -103,7 +103,7 @@ func testDeleteCompat(t *testing.T, testCases map[string]deleteCompatTestCase) {
 						compatErr = UnsetRaw(t, compatErr)
 						assert.Equal(t, compatErr, targetErr)
 					} else {
-						require.NoError(t, compatErr)
+						require.NoError(t, compatErr, "compat error")
 					}
 
 					if pointer.Get(targetRes).DeletedCount > 0 || pointer.Get(compatRes).DeletedCount > 0 {

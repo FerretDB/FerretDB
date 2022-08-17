@@ -201,7 +201,7 @@ func (h *Handler) update(ctx context.Context, sp fetchParam, doc *types.Document
 	}
 	h.L.Sugar().Debugf("Update: %s", u)
 
-	_, err = h.driver.UseDatabase(sp.db).Replace(ctx, sp.collection, []driver.Document{u})
+	_, err = h.db.Driver.UseDatabase(sp.db).Replace(ctx, sp.collection, []driver.Document{u})
 	if err != nil {
 		return 0, lazyerrors.Error(err)
 	}
