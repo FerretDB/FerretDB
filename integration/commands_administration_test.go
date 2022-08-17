@@ -869,6 +869,24 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 	db := collection.Database()
 	name := db.Name()
 
+	var docs []interface{}
+	for i := 0; i < 100; i++ {
+		docs = append(docs, bson.D{{"_id", fmt.Sprintf("%d", i)}, {"v", fmt.Sprintf("%d", i)}})
+	}
+
+	_, err := collection.InsertMany(ctx, docs)
+	require.NoError(t, err)
+
+	res, err := collection.Find(ctx, bson.D{})
+	require.NoError(t, err)
+
+	var results []interface{}
+
+	err = res.All(ctx, &results)
+	require.NoError(t, err)
+
+	require.Greater(t, len(results), 100)
+
 	listDatabasesResult, err := db.Client().ListDatabases(ctx, bson.D{})
 	require.NoError(t, err)
 
