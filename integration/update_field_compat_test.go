@@ -56,27 +56,27 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 		"Simple": {
 			update: bson.D{{"$unset", bson.D{{"v", ""}}}},
 		},
-		"NotExistedField": {
-			update: bson.D{{"$unset", bson.D{{"foo", ""}}}},
-		},
-		"NestedField": {
-			update: bson.D{{"$unset", bson.D{{"v", bson.D{{"array", ""}}}}}},
-		},
-		"DotNotationDocumentFieldExist": {
-			update: bson.D{{"$unset", bson.D{{"v.foo", ""}}}},
-		},
-		"DotNotationDocumentFieldNotExist": {
-			update: bson.D{{"$unset", bson.D{{"foo.bar", ""}}}},
-		},
-		"DotNotationArrayFieldExist": {
-			update: bson.D{{"$unset", bson.D{{"v.array.0", int32(1)}}}},
-		},
-		"DotNotationArrayFieldNotExist": {
-			update: bson.D{{"$unset", bson.D{{"foo.0.baz", int32(1)}}}},
-		},
-		"DocumentDotNotationArrFieldNotExist": {
-			update: bson.D{{"$unset", bson.D{{"v.0.foo", int32(1)}}}},
-		},
+		// "NotExistedField": {
+		// 	update: bson.D{{"$unset", bson.D{{"foo", ""}}}},
+		// },
+		// "NestedField": {
+		// 	update: bson.D{{"$unset", bson.D{{"v", bson.D{{"array", ""}}}}}},
+		// },
+		// "DotNotationDocumentFieldExist": {
+		// 	update: bson.D{{"$unset", bson.D{{"v.foo", ""}}}},
+		// },
+		// "DotNotationDocumentFieldNotExist": {
+		// 	update: bson.D{{"$unset", bson.D{{"foo.bar", ""}}}},
+		// },
+		// "DotNotationArrayFieldExist": {
+		// 	update: bson.D{{"$unset", bson.D{{"v.array.0", int32(1)}}}},
+		// },
+		// "DotNotationArrayFieldNotExist": {
+		// 	update: bson.D{{"$unset", bson.D{{"foo.0.baz", int32(1)}}}},
+		// },
+		// "DocumentDotNotationArrFieldNotExist": {
+		// 	update: bson.D{{"$unset", bson.D{{"v.0.foo", int32(1)}}}},
+		// },
 	}
 
 	testUpdateCompat(t, testCases)
