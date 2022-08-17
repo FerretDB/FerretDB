@@ -21,17 +21,20 @@ import (
 )
 
 var regexTestCases = []testCase{{
-	name: "normal",
-	v:    pointer.To(regexType{Pattern: "hoffman", Options: "i"}),
-	j:    `{"$r":"hoffman","o":"i"}`,
+	name:   "normal",
+	v:      pointer.To(regexType{Pattern: "hoffman", Options: "i"}),
+	j:      `{"$r":"hoffman","o":"i"}`,
+	schema: regexSchema,
 }, {
-	name: "empty",
-	v:    pointer.To(regexType{Pattern: "", Options: ""}),
-	j:    `{"$r":"","o":""}`,
+	name:   "empty",
+	v:      pointer.To(regexType{Pattern: "", Options: ""}),
+	j:      `{"$r":"","o":""}`,
+	schema: regexSchema,
 }, {
-	name: "EOF",
-	j:    `{`,
-	jErr: `unexpected EOF`,
+	name:   "EOF",
+	j:      `{`,
+	jErr:   `unexpected EOF`,
+	schema: regexSchema,
 }}
 
 func TestRegex(t *testing.T) {

@@ -32,7 +32,6 @@
 //	types.ObjectID	      JSON string (byte format, length is 12 bytes)
 //	bool                  JSON true|false values
 //	TODO types.NullType   JSON null
-//	TODO types.Regex      {"$r": "<string without terminating 0x0>", "o": "<string without terminating 0x0>"}
 //	int32                 JSON number (int32 format)
 //	TODO types.Timestamp  {"$t": "<number as string>"}
 //	int64                 JSON number (int64 format)
@@ -226,6 +225,10 @@ func Unmarshal(data []byte, schema *Schema) (any, error) {
 			res = &o
 		case v["$b"] != nil:
 			var o binaryType
+			err = o.UnmarshalJSON(data)
+			res = &o
+		case v["$r"] != nil:
+			var o regexType
 			err = o.UnmarshalJSON(data)
 			res = &o
 		default:
