@@ -33,7 +33,6 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestCommandsAdministrationCreateDropList(t *testing.T) {
@@ -122,7 +121,7 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 	assert.Equal(t, bson.D{{"ok", 1.0}}, res)
 
 	// there is no explicit command to create database, so create collection instead
-	err = db.Client().Database(name).CreateCollection(ctx, testutil.CollectionName(t))
+	err = db.Client().Database(name).CreateCollection(ctx, collection.Name())
 	require.NoError(t, err)
 
 	names, err = db.Client().ListDatabaseNames(ctx, filter)
