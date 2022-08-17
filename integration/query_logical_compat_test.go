@@ -76,7 +76,7 @@ func TestQueryLogicalCompatAnd(t *testing.T) {
 			filter: bson.D{{
 				"$and", bson.A{
 					bson.D{{"v", bson.D{{"$gt", int32(0)}}}},
-					nil,
+					true,
 				},
 			}},
 			resultType: emptyResult,
@@ -130,8 +130,8 @@ func TestQueryLogicalCompatOr(t *testing.T) {
 		"BadValue": {
 			filter: bson.D{{
 				"$or", bson.A{
-					bson.D{{"v", bson.D{{"$gt", int32(0)}}}},
-					nil,
+					bson.D{{"v", bson.D{{"$lt", int32(0)}}}},
+					true,
 				},
 			}},
 			resultType: emptyResult,
@@ -174,8 +174,8 @@ func TestQueryLogicalCompatNor(t *testing.T) {
 		"BadValue": {
 			filter: bson.D{{
 				"$nor", bson.A{
-					bson.D{{"v", bson.D{{"$gt", int32(0)}}}},
-					nil,
+					bson.D{{"v", bson.D{{"$lt", int32(0)}}}},
+					true,
 				},
 			}},
 			resultType: emptyResult,
