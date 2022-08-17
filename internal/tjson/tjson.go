@@ -162,7 +162,7 @@ func Unmarshal(data []byte, schema *Schema) (any, error) {
 			res = &o
 		case Double, Float:
 			fallthrough
-		case Byte, UUID, DateTime, Regex:
+		case Byte, UUID, DateTime:
 			fallthrough
 		default:
 			err = lazyerrors.Errorf("tjson.Unmarshal: unhandled format %q for type %q", f, t)
@@ -177,7 +177,7 @@ func Unmarshal(data []byte, schema *Schema) (any, error) {
 			fallthrough
 		case Int64, Int32:
 			fallthrough
-		case Byte, UUID, DateTime, Regex:
+		case Byte, UUID, DateTime:
 			fallthrough
 		default:
 			err = lazyerrors.Errorf("tjson.Unmarshal: unhandled format %q for type %q", f, t)
@@ -198,7 +198,7 @@ func Unmarshal(data []byte, schema *Schema) (any, error) {
 			res = &o
 		case UUID:
 			fallthrough
-		case Double, Float, Int64, Int32, Regex:
+		case Double, Float, Int64, Int32:
 			fallthrough
 		default:
 			err = lazyerrors.Errorf("tjson.Unmarshal: unhandled format %q for type %q", f, t)
