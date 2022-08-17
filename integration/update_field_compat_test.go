@@ -56,18 +56,20 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 		"Simple": {
 			update: bson.D{{"$unset", bson.D{{"v", ""}}}},
 		},
-		// "NotExistedField": {
-		// 	update: bson.D{{"$unset", bson.D{{"foo", ""}}}},
-		// },
-		// "NestedField": {
-		// 	update: bson.D{{"$unset", bson.D{{"v", bson.D{{"array", ""}}}}}},
-		// },
-		// "DotNotationDocumentFieldExist": {
-		// 	update: bson.D{{"$unset", bson.D{{"v.foo", ""}}}},
-		// },
-		// "DotNotationDocumentFieldNotExist": {
-		// 	update: bson.D{{"$unset", bson.D{{"foo.bar", ""}}}},
-		// },
+		"NonExisting": {
+			update:     bson.D{{"$unset", bson.D{{"foo", ""}}}},
+			resultType: emptyResult,
+		},
+		"Nested": {
+			update: bson.D{{"$unset", bson.D{{"v", bson.D{{"array", ""}}}}}},
+		},
+		"DotNotationDocument": {
+			update: bson.D{{"$unset", bson.D{{"v.foo", ""}}}},
+		},
+		"DotNotationDocumentNonExisting": {
+			update:     bson.D{{"$unset", bson.D{{"foo.bar", ""}}}},
+			resultType: emptyResult,
+		},
 		// "DotNotationArrayFieldExist": {
 		// 	update: bson.D{{"$unset", bson.D{{"v.array.0", int32(1)}}}},
 		// },

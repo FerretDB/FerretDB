@@ -18,6 +18,7 @@ import (
 	"math"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // Composites contain composite values for tests.
@@ -74,5 +75,16 @@ var DocumentsStrings = &Values[string]{
 		"document-string-empty":  bson.D{{"v", ""}},
 		// TODO Dealing with empty doc needs a schema to be defined https://github.com/FerretDB/FerretDB/issues/772
 		// "document-empty":         bson.D{},
+	},
+}
+
+// DocumentsDocuments contains documents with documents with string values for tests.
+var DocumentsDocuments = &Values[primitive.ObjectID]{
+	name:     "DocumentsDocuments",
+	handlers: []string{"pg", "tigris"},
+	data: map[primitive.ObjectID]any{
+		{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01}: bson.D{{"foo", int32(42)}},
+		// TODO Dealing with empty doc needs a schema to be defined https://github.com/FerretDB/FerretDB/issues/772
+		// {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}: bson.D{{"v", bson.D{}}},
 	},
 }
