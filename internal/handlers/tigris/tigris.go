@@ -16,16 +16,14 @@
 package tigris
 
 import (
-	"context"
 	"time"
 
-	api "github.com/tigrisdata/tigris-client-go/api/server/v1"
 	"github.com/tigrisdata/tigris-client-go/config"
-	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -43,7 +41,7 @@ type NewOpts struct {
 // Handler implements handlers.Interface on top of Tigris.
 type Handler struct {
 	*NewOpts
-	driver    driver.Driver
+	db        *tigrisdb.TigrisDB
 	startTime time.Time
 }
 
@@ -52,14 +50,14 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 	cfg := &config.Driver{
 		URL: opts.TigrisURL,
 	}
-	driver, err := driver.NewDriver(context.TODO(), cfg)
+	db, err := tigrisdb.New(cfg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	h := &Handler{
 		NewOpts:   opts,
-		driver:    driver,
+		db:        db,
 		startTime: time.Now(),
 	}
 	return h, nil
@@ -67,29 +65,7 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 
 // Close implements handlers.Interface.
 func (h *Handler) Close() {
-	h.driver.Close()
-}
-
-// isNotFound returns true if the error is a "not found" error.
-// This function is implemented to keep nolint in a single place.
-func isNotFound(err *driver.Error) bool {
-	if err == nil {
-		return false
-	}
-
-	//nolint:nosnakecase // Tigris named their const that way
-	return err.Code == api.Code_NOT_FOUND
-}
-
-// isInvalidArgument returns true if the error is a "invalid argument" error.
-// This function is implemented to keep nolint in a single place.
-func isInvalidArgument(err *driver.Error) bool {
-	if err == nil {
-		return false
-	}
-
-	//nolint:nosnakecase // Tigris named their const that way
-	return err.Code == api.Code_INVALID_ARGUMENT
+	h.db.Driver.Close()
 }
 
 // check interfaces

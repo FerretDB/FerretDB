@@ -135,7 +135,7 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 
 								assert.Equal(t, compatErr, targetErr)
 							} else {
-								require.NoError(t, compatErr)
+								require.NoError(t, compatErr, "compat error")
 							}
 
 							if pointer.Get(targetUpdateRes).ModifiedCount > 0 || pointer.Get(compatUpdateRes).ModifiedCount > 0 {
