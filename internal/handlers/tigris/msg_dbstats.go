@@ -23,6 +23,5 @@ import (
 
 // MsgDBStats implements HandlerInterface.
 func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/774
 	return nil, notImplemented(must.NotFail(msg.Document()).Command())
 }
