@@ -727,10 +727,8 @@ func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
 }
 
 func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	var actual bson.D
 	command := bson.D{{"dbStats", int32(1)}, {"scale", float64(1_000)}}
@@ -752,8 +750,6 @@ func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
 }
 
 func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
