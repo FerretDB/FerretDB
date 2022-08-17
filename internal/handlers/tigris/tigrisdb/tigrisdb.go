@@ -12,22 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filter
+// Package tigrisdb provides Tigris connection utilities.
+package tigrisdb
 
-// List of supported operations.
-const (
-	and = "$and"
-	or  = "$or"
+import (
+	"context"
+
+	"github.com/tigrisdata/tigris-client-go/config"
+	"github.com/tigrisdata/tigris-client-go/driver"
+
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// And composes 'and' operation.
-// Result is equivalent to: (ops[0] && ... && ops[len(ops-1]).
-func And(ops ...Expr) Expr {
-	return Expr{and: ops}
+// TigrisDB represents a Tigris database connection.
+type TigrisDB struct {
+	Driver driver.Driver
 }
 
-// Or composes 'or' operation.
-// Result is equivalent to: (ops[0] || ... || ops[len(ops-1]).
-func Or(ops ...Expr) Expr {
-	return Expr{or: ops}
+// New returns a new TigrisDB.
+func New(cfg *config.Driver) (*TigrisDB, error) {
+	d, err := driver.NewDriver(context.TODO(), cfg)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &TigrisDB{
+		Driver: d,
+	}, nil
 }
