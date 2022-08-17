@@ -869,24 +869,6 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 	db := collection.Database()
 	name := db.Name()
 
-	var docs []interface{}
-	for i := 0; i < 1000; i++ {
-		docs = append(docs, bson.D{{"_id", fmt.Sprintf("%d", i)}, {"v", fmt.Sprintf("%d", i)}})
-	}
-
-	_, err := collection.InsertMany(ctx, docs)
-	require.NoError(t, err)
-
-	res, err := collection.Find(ctx, bson.D{})
-	require.NoError(t, err)
-
-	var results []interface{}
-
-	err = res.All(ctx, &results)
-	require.NoError(t, err)
-
-	require.Greater(t, len(results), 1000)
-
 	listDatabasesResult, err := db.Client().ListDatabases(ctx, bson.D{})
 	require.NoError(t, err)
 
@@ -898,6 +880,6 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 	}
 	require.NotNil(t, dbSpec)
 
-	assert.Greater(t, dbSpec.SizeOnDisk, int64(0))
 	assert.False(t, false, dbSpec.Empty)
+	assert.Greater(t, dbSpec.SizeOnDisk, int64(0))
 }
