@@ -81,7 +81,7 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 								compatErr = UnsetRaw(t, compatErr)
 								assert.Equal(t, compatErr, targetErr)
 							} else {
-								require.NoError(t, compatErr)
+								require.NoError(t, compatErr, "compat error")
 							}
 
 							assert.Equal(t, compatUpdateRes, targetUpdateRes)
