@@ -870,7 +870,7 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 	name := db.Name()
 
 	var docs []interface{}
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 1000; i++ {
 		docs = append(docs, bson.D{{"_id", fmt.Sprintf("%d", i)}, {"v", fmt.Sprintf("%d", i)}})
 	}
 
@@ -885,7 +885,7 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 	err = res.All(ctx, &results)
 	require.NoError(t, err)
 
-	require.Greater(t, len(results), 100)
+	require.Greater(t, len(results), 1000)
 
 	listDatabasesResult, err := db.Client().ListDatabases(ctx, bson.D{})
 	require.NoError(t, err)
