@@ -18,9 +18,10 @@ import (
 	"context"
 	"strings"
 
+	"github.com/jackc/pgx/v4"
+
 	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/jackc/pgx/v4"
 )
 
 // DeleteDocumentsByID deletes documents by given IDs.
