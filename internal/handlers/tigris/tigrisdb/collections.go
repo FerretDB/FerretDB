@@ -49,7 +49,7 @@ func (tdb *TigrisDB) CreateCollectionIfNotExist(ctx context.Context, db, collect
 			return false, nil
 		}
 
-		return false, lazyerrors.Error(err)
+		return false, err
 	default:
 		return false, lazyerrors.Error(err)
 	}

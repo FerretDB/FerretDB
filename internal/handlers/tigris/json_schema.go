@@ -15,24 +15,22 @@
 package tigris
 
 import (
+	"encoding/json"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-
-	"github.com/FerretDB/FerretDB/internal/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-// getJSONSchema returns a JSON schema received from validator -> $jsonSchema.
-func getJSONSchema(doc *types.Document) (*tjson.Schema, error) {
+// getJSONSchema returns a masrshaled JSON schema received from validator -> $jsonSchema.
+func getJSONSchema(doc *types.Document) ([]byte, error) {
 	v, err := doc.Get("validator")
 	if err != nil {
 		return nil, common.NewErrorMsg(common.ErrBadValue, "required parameter `validator` is missing")
 	}
 
-	schema := v.(map[string]any)["$jsonSchema"]
-	res, ok := schema.(*tjson.Schema)
-	if !ok {
-		return nil, common.NewErrorMsg(common.ErrBadValue, "required operator `$jsonSchema` is missing")
+	schema, err := v.(*types.Document).Get("$jsonSchema")
+	if err != nil {
+		return nil, common.NewErrorMsg(common.ErrBadValue, "required parameter `$jsonSchema` is missing")
 	}
 
-	return res, nil
+	return json.Marshal(schema.(*types.Document))
 }

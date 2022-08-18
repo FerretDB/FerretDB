@@ -18,6 +18,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
+
+	"github.com/tigrisdata/tigris-client-go/driver"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 
@@ -68,12 +72,27 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	// Validator is required for Tigris as we always need to set schema to create a collection.
-	schema, err := getJSONSchema(document)
+	b, err := getJSONSchema(document)
 	if err != nil {
 		return nil, err
 	}
-	b := must.NotFail(schema.Marshal())
 	created, err := h.db.CreateCollectionIfNotExist(ctx, db, collection, b)
+	if err != nil {
+		switch err := err.(type) {
+		case nil:
+			// do nothing
+		case *driver.Error:
+			fmt.Printf("\n\n\nfindme!!!! %v %v\n\n\n", err.Code, err.Message)
+
+			if tigrisdb.IsInvalidArgument(err) {
+				return nil, common.NewError(common.ErrBadValue, err)
+			}
+
+			return nil, lazyerrors.Error(err)
+		default:
+			return nil, lazyerrors.Error(err)
+		}
+	}
 	if !created {
 		msg := fmt.Sprintf("Collection already exists. NS: %s.%s", db, collection)
 		return nil, common.NewErrorMsg(common.ErrNamespaceExists, msg)

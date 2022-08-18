@@ -15,6 +15,7 @@
 package tigrisdb
 
 import (
+	"github.com/AlekSi/pointer"
 	api "github.com/tigrisdata/tigris-client-go/api/server/v1"
 	"github.com/tigrisdata/tigris-client-go/driver"
 )
@@ -47,4 +48,11 @@ func IsAlreadyExists(err *driver.Error) bool {
 	}
 
 	return false
+}
+
+// IsInvalidArgument returns true if the error is "invalid argument" error.
+// This function is implemented to keep nolint in a single place.
+func IsInvalidArgument(err *driver.Error) bool {
+	//nolint:nosnakecase // Tigris named their const that way
+	return pointer.Get(err).Code == api.Code_INVALID_ARGUMENT
 }
