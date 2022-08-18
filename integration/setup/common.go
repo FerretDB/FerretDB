@@ -173,7 +173,7 @@ func startup() {
 		}
 
 		if p := *compatPortF; p == 0 {
-			zap.S().Warn("Compat system: none, compatibility tests will be skipped.")
+			zap.S().Infof("Compat system: none, compatibility tests will be skipped.")
 		} else {
 			zap.S().Infof("Compat system: port %d.", p)
 		}
