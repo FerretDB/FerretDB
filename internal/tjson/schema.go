@@ -214,59 +214,6 @@ func (s *Schema) Unmarshal(b []byte) error {
 	return nil
 }
 
-// NewFromDocument creates a new schema based on the types.Document format.
-// The given doc should contain the keys typical for schema (e.g. title, type etc).
-func NewFromDocument(doc *types.Document) (*Schema, error) {
-	schema := Schema{}
-
-	if v, err := doc.Get("title"); err == nil {
-		schema.Title = v.(string)
-	}
-
-	if v, err := doc.Get("description"); err == nil {
-		schema.Description = v.(string)
-	}
-
-	if v, err := doc.Get("type"); err == nil {
-		schema.Type = SchemaType(v.(string))
-	}
-
-	if v, err := doc.Get("format"); err == nil {
-		schema.Format = SchemaFormat(v.(string))
-	}
-
-	if v, err := doc.Get("primary_key"); err == nil {
-		schema.PrimaryKey = v.([]string)
-	}
-
-	if v, err := doc.Get("properties"); err == nil {
-		schema.Properties = make(map[string]*Schema)
-
-		for _, key := range v.(*types.Document).Keys() {
-			prop, err := v.(*types.Document).Get(key)
-			if err != nil {
-				panic(err)
-			}
-
-			propSchema, err := NewFromDocument(prop.(*types.Document))
-			if err != nil {
-				return nil, err
-			}
-			schema.Properties[key] = propSchema
-		}
-	}
-
-	if v, err := doc.Get("items"); err == nil {
-		schema.Items = &Schema{}
-		schema, err := NewFromDocument(v.(*types.Document))
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	return &schema, nil
-}
-
 // DocumentSchema returns a JSON Schema for the given top-level document.
 // Top-level documents are documents that must have _id which will be used as primary key.
 func DocumentSchema(doc *types.Document) (*Schema, error) {

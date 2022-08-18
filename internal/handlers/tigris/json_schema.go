@@ -16,6 +16,10 @@ package tigris
 
 import (
 	"encoding/json"
+	"fmt"
+
+	"github.com/FerretDB/FerretDB/internal/tjson"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
@@ -33,4 +37,63 @@ func getJSONSchema(doc *types.Document) ([]byte, error) {
 	}
 
 	return json.Marshal(schema.(*types.Document))
+}
+
+// schema creates a new TJSON Schema based on the types.Document format.
+// The given doc should contain the keys typical for schema (e.g. title, type etc).
+func schemaFromDocument(doc *types.Document) (*tjson.Schema, error) {
+	schema := tjson.Schema{}
+
+	if v := doc.Remove("title"); v != nil {
+		schema.Title = v.(string)
+	}
+
+	if v := doc.Remove("description"); v != nil {
+		schema.Description = v.(string)
+	}
+
+	if v := doc.Remove("type"); v != nil {
+		schema.Type = tjson.SchemaType(v.(string))
+	}
+
+	if v := doc.Remove("format"); v != nil {
+		schema.Format = tjson.SchemaFormat(v.(string))
+	}
+
+	if v := doc.Remove("primary_key"); v != nil {
+		schema.PrimaryKey = v.([]string)
+	}
+
+	if v := doc.Remove("properties"); v != nil {
+		schema.Properties = make(map[string]*tjson.Schema)
+
+		for _, key := range v.(*types.Document).Keys() {
+			prop, err := v.(*types.Document).Get(key)
+			if err != nil {
+				panic(err)
+			}
+
+			propSchema, err := schemaFromDocument(prop.(*types.Document))
+			if err != nil {
+				return nil, err
+			}
+			schema.Properties[key] = propSchema
+		}
+	}
+
+	if v := doc.Remove("items"); v != nil {
+		sch, err := schemaFromDocument(v.(*types.Document))
+		if err != nil {
+			panic(err)
+		}
+		schema.Items = sch
+	}
+
+	// If any other fields are left, the doc doesn't represent a valid schema.
+	if len(doc.Keys()) > 0 {
+		msg := fmt.Sprintf("invalid schema, the follwing keys are not supported: %s", doc.Keys())
+		return nil, common.NewErrorMsg(common.ErrBadValue, msg)
+	}
+
+	return &schema, nil
 }
