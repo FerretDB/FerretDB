@@ -867,6 +867,7 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 	for _, db := range listDatabasesResult.Databases {
 		if db.Name == name {
 			dbSpec = &db
+			break
 		}
 	}
 	require.NotNil(t, dbSpec)
