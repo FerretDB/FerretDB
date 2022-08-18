@@ -85,7 +85,7 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 						assert.Equal(t, compatErr, targetErr)
 						return
 					}
-					require.NoError(t, compatErr)
+					require.NoError(t, compatErr, "compat error")
 
 					var targetRes, compatRes []bson.D
 					require.NoError(t, targetCursor.All(ctx, &targetRes))

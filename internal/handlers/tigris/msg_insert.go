@@ -84,25 +84,19 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
+// insert checks if database and collection exist, create them if needed and attempts to insert the given doc.
 func (h *Handler) insert(ctx context.Context, fp fetchParam, doc *types.Document) error {
-	// TODO https://github.com/FerretDB/FerretDB/issues/787
-	err := h.driver.CreateDatabase(ctx, fp.db)
-	if err != nil {
-		h.L.Sugar().Warnf("Failed to CreateDatabase: %+v", err)
-	}
-
 	schema, err := tjson.DocumentSchema(doc)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 	schema.Title = fp.collection
-
 	b := must.NotFail(schema.Marshal())
 	h.L.Sugar().Debugf("Schema:\n%s", b)
 
-	err = h.driver.UseDatabase(fp.db).CreateOrUpdateCollection(ctx, fp.collection, b)
+	_, err = h.db.CreateCollectionIfNotExist(ctx, fp.db, fp.collection, b)
 	if err != nil {
-		h.L.Sugar().Warnf("Failed to CreateOrUpdateCollection: %+v", err)
+		return lazyerrors.Error(err)
 	}
 
 	b, err = tjson.Marshal(doc)
@@ -111,10 +105,9 @@ func (h *Handler) insert(ctx context.Context, fp fetchParam, doc *types.Document
 	}
 	h.L.Sugar().Debugf("Document:\n%s", b)
 
-	_, err = h.driver.UseDatabase(fp.db).Insert(ctx, fp.collection, []driver.Document{b})
+	_, err = h.db.Driver.UseDatabase(fp.db).Insert(ctx, fp.collection, []driver.Document{b})
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
-
 	return nil
 }

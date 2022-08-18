@@ -33,7 +33,6 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestCommandsAdministrationCreateDropList(t *testing.T) {
@@ -122,7 +121,7 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 	assert.Equal(t, bson.D{{"ok", 1.0}}, res)
 
 	// there is no explicit command to create database, so create collection instead
-	err = db.Client().Database(name).CreateCollection(ctx, testutil.CollectionName(t))
+	err = db.Client().Database(name).CreateCollection(ctx, collection.Name())
 	require.NoError(t, err)
 
 	names, err = db.Client().ListDatabaseNames(ctx, filter)
@@ -681,10 +680,8 @@ func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
 }
 
 func TestCommandsAdministrationDBStats(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	var actual bson.D
 	command := bson.D{{"dbStats", int32(1)}}
@@ -706,8 +703,6 @@ func TestCommandsAdministrationDBStats(t *testing.T) {
 }
 
 func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
@@ -731,10 +726,8 @@ func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
 }
 
 func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	var actual bson.D
 	command := bson.D{{"dbStats", int32(1)}, {"scale", float64(1_000)}}
@@ -756,8 +749,6 @@ func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
 }
 
 func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
