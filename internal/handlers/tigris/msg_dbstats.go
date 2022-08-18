@@ -17,12 +17,95 @@ package tigris
 import (
 	"context"
 
+	"github.com/tigrisdata/tigris-client-go/driver"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgDBStats implements HandlerInterface.
 func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/774
-	return nil, notImplemented(must.NotFail(msg.Document()).Command())
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var db string
+
+	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
+	}
+
+	m := document.Map()
+	scale, ok := m["scale"].(float64)
+
+	if !ok {
+		scale = 1
+	}
+
+	stats, err := h.db.Driver.DescribeDatabase(ctx, db)
+	switch err := err.(type) {
+	case nil:
+		// do nothing
+	case *driver.Error:
+		if !tigrisdb.IsNotFound(err) {
+			return nil, lazyerrors.Error(err)
+		}
+
+		// If DB doesn't exist just return empty stats.
+		stats = &driver.DescribeDatabaseResponse{
+			Db:   db,
+			Size: 0,
+		}
+
+	default:
+		return nil, lazyerrors.Error(err)
+	}
+
+	// TODO We need a better way to get the number of documents in all collections.
+	var objects int32
+
+	for _, collection := range stats.Collections {
+		f := fetchParam{db: db, collection: collection.Collection}
+
+		docs, err := h.fetch(ctx, f)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		objects += int32(len(docs))
+	}
+
+	var avgObjSize float64
+	if objects > 0 {
+		avgObjSize = float64(stats.Size) / float64(objects)
+	}
+
+	var reply wire.OpMsg
+	err = reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"db", db,
+			"collections", int32(len(stats.Collections)),
+			// TODO https://github.com/FerretDB/FerretDB/issues/176
+			"views", int32(0),
+			"objects", int32(objects),
+			"avgObjSize", float64(avgObjSize),
+			"dataSize", float64(stats.Size),
+			// Tigris indexes all the fields https://docs.tigrisdata.com/apidocs/#operation/Tigris_Read
+			"indexes", int32(0),
+			"indexSize", int32(0),
+			"totalSize", int32(0),
+			"scaleFactor", scale,
+			"ok", float64(1),
+		))},
+	})
+
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &reply, nil
 }
