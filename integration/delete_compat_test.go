@@ -98,7 +98,7 @@ func testDeleteCompat(t *testing.T, testCases map[string]deleteCompatTestCase) {
 					compatRes, compatErr := compatCollection.BulkWrite(ctx, models, opts)
 
 					if targetErr != nil {
-						t.Log(targetErr)
+						t.Logf("Target error: %v", targetErr)
 						targetErr = UnsetRaw(t, targetErr)
 						compatErr = UnsetRaw(t, compatErr)
 						assert.Equal(t, compatErr, targetErr)
