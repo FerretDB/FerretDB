@@ -46,3 +46,33 @@ var Composites = &Values[string]{
 		"array-null":            bson.A{nil},
 	},
 }
+
+// DocumentsDoubles contains documents with double values for tests.
+var DocumentsDoubles = &Values[string]{
+	name:     "DocumentsDoubles",
+	handlers: []string{"pg", "tigris"},
+	data: map[string]any{
+		"document-double":          bson.D{{"v", 42.13}},
+		"document-double-whole":    bson.D{{"v", 42.0}},
+		"document-double-zero":     bson.D{{"v", 0.0}},
+		"document-double-max":      bson.D{{"v", math.MaxFloat64}},
+		"document-double-smallest": bson.D{{"v", math.SmallestNonzeroFloat64}},
+		"document-double-big":      bson.D{{"v", doubleBig}},
+		// TODO Dealing with empty doc needs a schema to be defined https://github.com/FerretDB/FerretDB/issues/772
+		// "document-empty":           bson.D{},
+	},
+}
+
+// DocumentsStrings contains documents with string values for tests.
+var DocumentsStrings = &Values[string]{
+	name:     "DocumentsStrings",
+	handlers: []string{"pg", "tigris"},
+	data: map[string]any{
+		"document-string":        bson.D{{"v", "foo"}},
+		"document-string-double": bson.D{{"v", "42.13"}},
+		"document-string-whole":  bson.D{{"v", "42"}},
+		"document-string-empty":  bson.D{{"v", ""}},
+		// TODO Dealing with empty doc needs a schema to be defined https://github.com/FerretDB/FerretDB/issues/772
+		// "document-empty":         bson.D{},
+	},
+}

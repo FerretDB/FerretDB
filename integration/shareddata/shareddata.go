@@ -47,14 +47,18 @@ func AllProviders() []Provider {
 		Binaries,
 		ObjectIDs,
 		Bools,
-		// DateTimes, TODO https://github.com/FerretDB/FerretDB/issues/905
+		DateTimes,
 		// Nulls, TODO https://github.com/FerretDB/FerretDB/issues/906
 		// Regexes, TODO https://github.com/FerretDB/FerretDB/issues/911
 		Int32s,
-		// Timestamps, TODO https://github.com/FerretDB/FerretDB/issues/905
+		// Timestamps, TODO https://github.com/FerretDB/FerretDB/issues/1007
 		Int64s,
+		// Unsets, TODO https://github.com/FerretDB/FerretDB/issues/1023
 
 		Composites,
+
+		DocumentsDoubles,
+		DocumentsStrings,
 	}
 
 	// check that names are unique and randomize order

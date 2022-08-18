@@ -1098,11 +1098,12 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			if tc.upserted {
-				tc.expectedStat.UpsertedID = tc.id
-			}
 
-			assert.Equal(t, tc.expectedStat, actualUpdateStat)
+			expectedStat := tc.expectedStat
+			if tc.upserted {
+				expectedStat.UpsertedID = tc.id
+			}
+			assert.Equal(t, expectedStat, actualUpdateStat)
 
 			var actual bson.D
 			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
@@ -1118,41 +1119,21 @@ func TestUpdateFieldUnset(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		id       string
-		update   bson.D
-		expected bson.D
-		stat     *mongo.UpdateResult
-		err      *mongo.WriteError
-		alt      string
+		id           string
+		update       bson.D
+		expected     bson.D
+		expectedStat *mongo.UpdateResult
+		err          *mongo.WriteError
+		alt          string
 	}{
-		"String": {
-			id:       "string",
-			update:   bson.D{{"$unset", bson.D{{"v", int32(1)}}}},
-			expected: bson.D{{"_id", "string"}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-		},
 		"Empty": {
 			id:       "string",
 			update:   bson.D{{"$unset", bson.D{}}},
 			expected: bson.D{{"_id", "string"}, {"v", "foo"}},
-			stat: &mongo.UpdateResult{
+			expectedStat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 0,
 				UpsertedCount: 0,
-			},
-		},
-		"Field": {
-			id:       "document-composite-unset-field",
-			update:   bson.D{{"$unset", bson.D{{"v", bson.D{{"array", int32(1)}}}}}},
-			expected: bson.D{{"_id", "document-composite-unset-field"}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  0,
-				ModifiedCount: 0,
-				UpsertedCount: 1,
 			},
 		},
 		"EmptyArray": {
@@ -1182,7 +1163,7 @@ func TestUpdateFieldUnset(t *testing.T) {
 
 			require.NoError(t, err)
 			actualStat.UpsertedID = nil
-			assert.Equal(t, tc.stat, actualStat)
+			assert.Equal(t, tc.expectedStat, actualStat)
 
 			var actual bson.D
 			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
@@ -1262,4 +1243,160 @@ func TestUpdateFieldMixed(t *testing.T) {
 			AssertEqualDocuments(t, tc.expected, actual)
 		})
 	}
+}
+
+func TestUpdateFieldPopArrayOperator(t *testing.T) {
+	setup.SkipForTigris(t)
+
+	t.Parallel()
+
+	t.Run("Ok", func(t *testing.T) {
+		t.Parallel()
+
+		for name, tc := range map[string]struct {
+			id       string
+			update   bson.D
+			expected bson.D
+			stat     *mongo.UpdateResult
+		}{
+			"Pop": {
+				id:       "array-three",
+				update:   bson.D{{"$pop", bson.D{{"v", 1}}}},
+				expected: bson.D{{"_id", "array-three"}, {"v", bson.A{int32(42), "foo"}}},
+				stat: &mongo.UpdateResult{
+					MatchedCount:  1,
+					ModifiedCount: 1,
+					UpsertedCount: 0,
+				},
+			},
+			"PopFirst": {
+				id:       "array-three",
+				update:   bson.D{{"$pop", bson.D{{"v", -1}}}},
+				expected: bson.D{{"_id", "array-three"}, {"v", bson.A{"foo", nil}}},
+				stat: &mongo.UpdateResult{
+					MatchedCount:  1,
+					ModifiedCount: 1,
+					UpsertedCount: 0,
+				},
+			},
+			"PopDotNotation": {
+				id:       "document-composite",
+				update:   bson.D{{"$pop", bson.D{{"v.array", 1}}}},
+				expected: bson.D{{"_id", "document-composite"}, {"v", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo"}}}}},
+				stat: &mongo.UpdateResult{
+					MatchedCount:  1,
+					ModifiedCount: 1,
+					UpsertedCount: 0,
+				},
+			},
+			"PopEmptyArray": {
+				id:       "array-empty",
+				update:   bson.D{{"$pop", bson.D{{"v", 1}}}},
+				expected: bson.D{{"_id", "array-empty"}, {"v", bson.A{}}},
+				stat: &mongo.UpdateResult{
+					MatchedCount:  1,
+					ModifiedCount: 0,
+					UpsertedCount: 0,
+				},
+			},
+			"PopNoSuchKey": {
+				id:       "array",
+				update:   bson.D{{"$pop", bson.D{{"foo", 1}}}},
+				expected: bson.D{{"_id", "array"}, {"v", bson.A{int32(42)}}},
+			},
+			// TODO: https://github.com/FerretDB/FerretDB/issues/1000
+			//"PopEmptyValue": {
+			//	id:       "array",
+			//	update:   bson.D{{"$pop", bson.D{}}},
+			//	expected: bson.D{{"_id", "array"}, {"v", bson.A{int32(42)}}},
+			//	stat: &mongo.UpdateResult{
+			//		MatchedCount:  1,
+			//		ModifiedCount: 0,
+			//		UpsertedCount: 0,
+			//	},
+			//},
+		} {
+			name, tc := name, tc
+			t.Run(name, func(t *testing.T) {
+				t.Parallel()
+				ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+
+				result, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
+				require.NoError(t, err)
+
+				if tc.stat != nil {
+					require.Equal(t, tc.stat, result)
+				}
+
+				var actual bson.D
+				err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
+				require.NoError(t, err)
+
+				AssertEqualDocuments(t, tc.expected, actual)
+			})
+		}
+	})
+
+	t.Run("Err", func(t *testing.T) {
+		t.Parallel()
+
+		for name, tc := range map[string]struct {
+			id     string
+			update bson.D
+			err    *mongo.WriteError
+			alt    string
+		}{
+			"PopNotValidValueString": {
+				id:     "array",
+				update: bson.D{{"$pop", bson.D{{"v", "foo"}}}},
+				err: &mongo.WriteError{
+					Code:    9,
+					Message: "Expected a number in: v: \"foo\"",
+				},
+			},
+			"PopNotValidValueInt": {
+				id:     "array",
+				update: bson.D{{"$pop", bson.D{{"v", int32(42)}}}},
+				err: &mongo.WriteError{
+					Code:    9,
+					Message: "$pop expects 1 or -1, found: 42",
+				},
+			},
+			"PopOnNonArray": {
+				id:     "int32",
+				update: bson.D{{"$pop", bson.D{{"v", 1}}}},
+				err: &mongo.WriteError{
+					Code:    14,
+					Message: "Path 'v' contains an element of non-array type 'int'",
+				},
+			},
+			// TODO: https://github.com/FerretDB/FerretDB/issues/364
+			//"PopLastAndFirst": {
+			//	id:     "array-three",
+			//	update: bson.D{{"$pop", bson.D{{"v", 1}, {"v", -1}}}},
+			//	err: &mongo.WriteError{
+			//		Code:    40,
+			//		Message: "Updating the path 'v' would create a conflict at 'v'",
+			//	},
+			//},
+			"PopDotNotationNonArray": {
+				id:     "document-composite",
+				update: bson.D{{"$pop", bson.D{{"v.foo", 1}}}},
+				err: &mongo.WriteError{
+					Code:    14,
+					Message: "Path 'v.foo' contains an element of non-array type 'int'",
+				},
+			},
+		} {
+			name, tc := name, tc
+			t.Run(name, func(t *testing.T) {
+				t.Parallel()
+				ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+
+				_, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
+				require.NotNil(t, tc.err)
+				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
+			})
+		}
+	})
 }

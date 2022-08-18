@@ -25,6 +25,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -299,9 +300,10 @@ func CollectKeys(t testing.TB, doc bson.D) []string {
 	return res
 }
 
-// FindAll returns all documents from the given collection.
+// FindAll returns all documents from the given collection sorted by _id.
 func FindAll(t testing.TB, ctx context.Context, col *mongo.Collection) []bson.D {
-	cursor, err := col.Find(ctx, bson.D{})
+	opts := options.Find().SetSort(bson.D{{"_id", 1}})
+	cursor, err := col.Find(ctx, bson.D{}, opts)
 	require.NoError(t, err)
 
 	var res []bson.D

@@ -56,16 +56,23 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 		case "$unset":
 			unsetDoc := updateV.(*types.Document)
-			if unsetDoc.Len() == 0 {
-				continue
-			}
+
 			for _, key := range unsetDoc.Keys() {
-				doc.Remove(key)
+				path := types.NewPathFromString(key)
+				if doc.HasByPath(path) {
+					doc.RemoveByPath(path)
+					changed = true
+				}
 			}
-			changed = true
 
 		case "$inc":
 			changed, err = processIncFieldExpression(doc, updateV)
+			if err != nil {
+				return false, err
+			}
+
+		case "$pop":
+			changed, err = processPopFieldExpression(doc, updateV.(*types.Document))
 			if err != nil {
 				return false, err
 			}
@@ -129,6 +136,63 @@ func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (b
 		}
 
 		err := doc.SetByPath(path, setValue)
+		if err != nil {
+			return false, err
+		}
+
+		changed = true
+	}
+
+	return changed, nil
+}
+
+// processPopFieldExpression changes document according to $pop operator.
+// If the document was changed it returns true.
+func processPopFieldExpression(doc *types.Document, update *types.Document) (bool, error) {
+	var changed bool
+
+	for _, key := range update.Keys() {
+		popValueRaw := must.NotFail(update.Get(key))
+
+		popValue, err := GetWholeNumberParam(popValueRaw)
+		if err != nil {
+			return false, NewWriteErrorMsg(ErrFailedToParse, fmt.Sprintf(`Expected a number in: %s: "%v"`, key, popValueRaw))
+		}
+
+		if popValue != 1 && popValue != -1 {
+			return false, NewWriteErrorMsg(ErrFailedToParse, fmt.Sprintf("$pop expects 1 or -1, found: %d", popValue))
+		}
+
+		path := types.NewPathFromString(key)
+
+		if !doc.HasByPath(path) {
+			continue
+		}
+
+		val, err := doc.GetByPath(path)
+		if err != nil {
+			return false, err
+		}
+
+		array, ok := val.(*types.Array)
+		if !ok {
+			return false, NewWriteErrorMsg(
+				ErrTypeMismatch,
+				fmt.Sprintf("Path '%s' contains an element of non-array type '%s'", key, AliasFromType(val)),
+			)
+		}
+
+		if array.Len() == 0 {
+			continue
+		}
+
+		if popValue == -1 {
+			array.Remove(0)
+		} else {
+			array.Remove(array.Len() - 1)
+		}
+
+		err = doc.SetByPath(path, array)
 		if err != nil {
 			return false, err
 		}
@@ -283,25 +347,36 @@ func ValidateUpdateOperators(update *types.Document) error {
 	if _, err = HasSupportedUpdateModifiers(update); err != nil {
 		return err
 	}
+
 	inc, err := extractValueFromUpdateOperator("$inc", update)
 	if err != nil {
 		return err
 	}
+
 	set, err := extractValueFromUpdateOperator("$set", update)
 	if err != nil {
 		return err
 	}
+
 	_, err = extractValueFromUpdateOperator("$unset", update)
 	if err != nil {
 		return err
 	}
+
 	_, err = extractValueFromUpdateOperator("$setOnInsert", update)
 	if err != nil {
 		return err
 	}
+
+	_, err = extractValueFromUpdateOperator("$pop", update)
+	if err != nil {
+		return err
+	}
+
 	if err = checkConflictingChanges(set, inc); err != nil {
 		return err
 	}
+
 	if err = validateCurrentDateExpression(update); err != nil {
 		return err
 	}
@@ -322,6 +397,8 @@ func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
 		case "$setOnInsert":
 			fallthrough
 		case "$unset":
+			fallthrough
+		case "$pop":
 			updateModifier = true
 		default:
 			if strings.HasPrefix(updateOp, "$") {

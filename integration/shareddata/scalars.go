@@ -219,3 +219,12 @@ var Int64s = &Values[string]{
 		"int64-big":  int64Big,
 	},
 }
+
+// Unsets contains unset value for tests.
+var Unsets = &Values[string]{
+	name:     "Unsets",
+	handlers: []string{"pg", "tigris"},
+	data: map[string]any{
+		"unset": unset,
+	},
+}

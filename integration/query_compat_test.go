@@ -38,7 +38,7 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 	t.Helper()
 
 	// Use shared setup because find queries can't modify data.
-	// TODO use read-only user https://github.com/FerretDB/FerretDB/issues/914
+	// TODO Use read-only user. https://github.com/FerretDB/FerretDB/issues/1025
 	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
 	for name, tc := range testCases {
@@ -79,12 +79,13 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 					}
 
 					if targetErr != nil {
+						t.Log(targetErr)
 						targetErr = UnsetRaw(t, targetErr)
 						compatErr = UnsetRaw(t, compatErr)
 						assert.Equal(t, compatErr, targetErr)
 						return
 					}
-					require.NoError(t, compatErr)
+					require.NoError(t, compatErr, "compat error")
 
 					var targetRes, compatRes []bson.D
 					require.NoError(t, targetCursor.All(ctx, &targetRes))

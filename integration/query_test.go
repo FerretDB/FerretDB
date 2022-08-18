@@ -601,8 +601,6 @@ func TestQueryBadSortType(t *testing.T) {
 }
 
 func TestQueryBadMaxTimeMSType(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
@@ -708,18 +706,6 @@ func TestQueryBadMaxTimeMSType(t *testing.T) {
 				Code:    2,
 				Name:    "BadValue",
 				Message: "-1123123 value for maxTimeMS is out of range",
-			},
-		},
-
-		"BadMaxTimeMSTypeStringFindAndModify": {
-			command: bson.D{
-				{"findAndModify", collection.Name()},
-				{"maxTimeMS", "string"},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "maxTimeMS must be a number",
 			},
 		},
 	} {

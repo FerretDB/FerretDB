@@ -29,7 +29,7 @@ import (
 
 // SetupOpts represents setup options.
 //
-// TODO add option to use read-only user: https://github.com/FerretDB/FerretDB/issues/914.
+// TODO Add option to use read-only user. https://github.com/FerretDB/FerretDB/issues/1025
 type SetupOpts struct {
 	// Database to use. If empty, temporary test-specific database is created.
 	DatabaseName string

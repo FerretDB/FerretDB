@@ -53,7 +53,7 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 		return nil, err
 	}
 
-	names, err := h.driver.UseDatabase(db).ListCollections(ctx)
+	names, err := h.db.Driver.UseDatabase(db).ListCollections(ctx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
