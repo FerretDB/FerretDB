@@ -138,6 +138,31 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 	assert.Equal(t, bson.D{{"ok", 1.0}}, res)
 }
 
+func TestCommandsAdministrationListDatabases(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t, shareddata.Strings)
+	db := collection.Database()
+	name := db.Name()
+
+	listDatabasesResult, err := db.Client().ListDatabases(ctx, bson.D{})
+	require.NoError(t, err)
+
+	var dbSpec *mongo.DatabaseSpecification
+	for _, db := range listDatabasesResult.Databases {
+		if db.Name == name {
+			dbSpec = &db
+			break
+		}
+	}
+	require.NotNil(t, dbSpec)
+
+	assert.False(t, false, dbSpec.Empty)
+	assert.Equal(t, name, dbSpec.Name)
+
+	setup.SkipForTigrisWithReason(t, "TODO: https://github.com/FerretDB/FerretDB/issues/1051")
+	assert.Greater(t, dbSpec.SizeOnDisk, int64(0))
+}
+
 func TestCommandsAdministrationGetParameter(t *testing.T) {
 	setup.SkipForTigris(t)
 
@@ -852,29 +877,4 @@ func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
 
 	require.Equal(t, 2, len(ports))
 	assert.NotEqual(t, ports[0], ports[1])
-}
-
-func TestCommandsAdministrationListDatabases(t *testing.T) {
-	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Strings)
-	db := collection.Database()
-	name := db.Name()
-
-	listDatabasesResult, err := db.Client().ListDatabases(ctx, bson.D{})
-	require.NoError(t, err)
-
-	var dbSpec *mongo.DatabaseSpecification
-	for _, db := range listDatabasesResult.Databases {
-		if db.Name == name {
-			dbSpec = &db
-			break
-		}
-	}
-	require.NotNil(t, dbSpec)
-
-	assert.False(t, false, dbSpec.Empty)
-	assert.Equal(t, name, dbSpec.Name)
-
-	setup.SkipForTigris(t)
-	assert.Greater(t, dbSpec.SizeOnDisk, int64(0))
 }
