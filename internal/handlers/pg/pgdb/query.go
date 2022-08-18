@@ -67,7 +67,7 @@ type SQLParam struct {
 func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier, sp SQLParam) (<-chan FetchedDocs, error) {
 	fetchedChan := make(chan FetchedDocs, FetchedChannelBufSize)
 
-	q, err := pgPool.buildQuery(ctx, querier, &sp)
+	q, err := buildQuery(ctx, querier, &sp)
 	if err != nil {
 		close(fetchedChan)
 		if errors.Is(err, ErrTableNotExist) {
@@ -107,8 +107,8 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier,
 }
 
 // Explain returns SQL EXPLAIN results for given query parameters.
-func (pgPool *Pool) Explain(ctx context.Context, querier pgxtype.Querier, sp SQLParam) (*types.Array, error) {
-	q, err := pgPool.buildQuery(ctx, querier, &sp)
+func Explain(ctx context.Context, querier pgxtype.Querier, sp SQLParam) (*types.Array, error) {
+	q, err := buildQuery(ctx, querier, &sp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -150,7 +150,7 @@ func (pgPool *Pool) Explain(ctx context.Context, querier pgxtype.Querier, sp SQL
 //
 // It returns (possibly wrapped) ErrSchemaNotExist or ErrTableNotExist
 // if schema/database or table/collection does not exist.
-func (pgPool *Pool) buildQuery(ctx context.Context, querier pgxtype.Querier, sp *SQLParam) (string, error) {
+func buildQuery(ctx context.Context, querier pgxtype.Querier, sp *SQLParam) (string, error) {
 	exists, err := CollectionExists(ctx, querier, sp.DB, sp.Collection)
 	if err != nil {
 		return "", lazyerrors.Error(err)
