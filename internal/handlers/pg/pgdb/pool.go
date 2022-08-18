@@ -346,7 +346,10 @@ func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (er
 			return
 		}
 		if rerr := tx.Rollback(ctx); rerr != nil {
-			pgPool.Config().ConnConfig.Logger.Log(ctx, pgx.LogLevelError, "failed to perform rollback", map[string]any{"error": rerr})
+			pgPool.Config().ConnConfig.Logger.Log(
+				ctx, pgx.LogLevelError, "failed to perform rollback",
+				map[string]any{"error": rerr},
+			)
 		}
 	}()
 

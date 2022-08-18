@@ -67,5 +67,6 @@ func PostgreSQLURL(tb testing.TB, opts *PostgreSQLURLOpts) string {
 		Path:     databaseName,
 		RawQuery: q.Encode(),
 	}
+
 	return u.String()
 }
