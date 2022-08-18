@@ -34,12 +34,14 @@ func DeleteDocumentsByID(ctx context.Context, tx pgx.Tx, sp *SQLParam, ids []any
 	var p Placeholder
 	idsMarshalled := make([]any, len(ids))
 	placeholders := make([]string, len(ids))
+
 	for i, id := range ids {
 		placeholders[i] = p.Next()
 		idsMarshalled[i] = must.NotFail(fjson.Marshal(id))
 	}
 
 	sql := `DELETE `
+
 	if sp.Comment != "" {
 		sp.Comment = strings.ReplaceAll(sp.Comment, "/*", "/ *")
 		sp.Comment = strings.ReplaceAll(sp.Comment, "*/", "* /")
@@ -47,11 +49,8 @@ func DeleteDocumentsByID(ctx context.Context, tx pgx.Tx, sp *SQLParam, ids []any
 		sql += `/* ` + sp.Comment + ` */ `
 	}
 
-	sql += `FROM ` +
-		pgx.Identifier{sp.DB, table}.Sanitize() +
-		` WHERE _jsonb->'_id' IN (` +
-		strings.Join(placeholders, ", ") +
-		`)`
+	sql += `FROM ` + pgx.Identifier{sp.DB, table}.Sanitize() +
+		` WHERE _jsonb->'_id' IN (` + strings.Join(placeholders, ", ") + `)`
 
 	tag, err := tx.Exec(ctx, sql, idsMarshalled...)
 	if err != nil {

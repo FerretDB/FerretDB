@@ -227,6 +227,7 @@ func (pgPool *Pool) SetDocumentByID(ctx context.Context, sp *SQLParam, id any, d
 		n, err = SetDocumentByID(ctx, tx, sp, id, doc)
 		return err
 	})
+
 	return n, err
 }
 
@@ -240,6 +241,7 @@ func (pgPool *Pool) DeleteDocumentsByID(ctx context.Context, sp *SQLParam, ids [
 		n, err = DeleteDocumentsByID(ctx, tx, sp, ids)
 		return err
 	})
+
 	return n, err
 }
 

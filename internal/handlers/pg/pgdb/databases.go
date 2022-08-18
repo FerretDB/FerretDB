@@ -70,9 +70,7 @@ func CreateDatabase(ctx context.Context, querier pgxtype.Querier, db string) err
 		return ErrInvalidDatabaseName
 	}
 
-	sql := `CREATE SCHEMA ` + pgx.Identifier{db}.Sanitize()
-	_, err := querier.Exec(ctx, sql)
-
+	_, err := querier.Exec(ctx, `CREATE SCHEMA `+pgx.Identifier{db}.Sanitize())
 	if err == nil {
 		err = createSettingsTable(ctx, querier, db)
 	}
@@ -106,9 +104,7 @@ func CreateDatabaseIfNotExists(ctx context.Context, querier pgxtype.Querier, db 
 		return ErrInvalidDatabaseName
 	}
 
-	sql := `CREATE SCHEMA IF NOT EXISTS ` + pgx.Identifier{db}.Sanitize()
-	_, err := querier.Exec(ctx, sql)
-
+	_, err := querier.Exec(ctx, `CREATE SCHEMA IF NOT EXISTS `+pgx.Identifier{db}.Sanitize())
 	if err == nil {
 		err = createSettingsTable(ctx, querier, db)
 	}
@@ -136,10 +132,9 @@ func CreateDatabaseIfNotExists(ctx context.Context, querier pgxtype.Querier, db 
 
 // DropDatabase drops FerretDB database.
 //
-// It returns ErrTableNotExist if schema does not exist.
+// It returns ErrSchemaNotExist if schema does not exist.
 func DropDatabase(ctx context.Context, querier pgxtype.Querier, db string) error {
-	sql := `DROP SCHEMA ` + pgx.Identifier{db}.Sanitize() + ` CASCADE`
-	_, err := querier.Exec(ctx, sql)
+	_, err := querier.Exec(ctx, `DROP SCHEMA `+pgx.Identifier{db}.Sanitize()+` CASCADE`)
 	if err == nil {
 		return nil
 	}

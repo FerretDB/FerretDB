@@ -170,6 +170,7 @@ func CreateCollectionIfNotExist(ctx context.Context, querier pgxtype.Querier, db
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
+
 	if exists {
 		return false, nil
 	}
@@ -186,6 +187,7 @@ func CreateCollectionIfNotExist(ctx context.Context, querier pgxtype.Querier, db
 		if errors.Is(err, ErrAlreadyExist) {
 			return false, nil
 		}
+
 		return false, lazyerrors.Error(err)
 	}
 
