@@ -59,7 +59,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	var queryPlanner *types.Array
 	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var err error
-		queryPlanner, err = h.pgPool.Explain(ctx, tx, sp)
+		queryPlanner, err = pgdb.Explain(ctx, tx, sp)
 		return err
 	})
 	if err != nil {

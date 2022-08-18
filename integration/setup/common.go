@@ -82,7 +82,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 	h, err := registry.NewHandler(*handlerF, &registry.NewHandlerOpts{
 		Ctx:           ctx,
 		Logger:        logger,
-		PostgreSQLURL: testutil.PoolConnString(tb, nil),
+		PostgreSQLURL: testutil.PostgreSQLURL(tb, nil),
 		TigrisURL:     testutil.TigrisURL(tb),
 	})
 	require.NoError(tb, err)
