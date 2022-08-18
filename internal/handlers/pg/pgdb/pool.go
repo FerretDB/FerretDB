@@ -101,7 +101,7 @@ func NewPool(ctx context.Context, connString string, logger *zap.Logger, lazy bo
 	return res, err
 }
 
-// IsValidUTF8Locale Currently supported locale variants, compromised between https://www.postgresql.org/docs/9.3/multibyte.html
+// isValidUTF8Locale Currently supported locale variants, compromised between https://www.postgresql.org/docs/9.3/multibyte.html
 // and https://www.gnu.org/software/libc/manual/html_node/Locale-Names.html.
 //
 // Valid examples:
@@ -109,7 +109,7 @@ func NewPool(ctx context.Context, connString string, logger *zap.Logger, lazy bo
 // * en_US.utf-8
 // * en_US.UTF8,
 // * en_US.UTF-8.
-func IsValidUTF8Locale(setting string) bool {
+func isValidUTF8Locale(setting string) bool {
 	lowered := strings.ToLower(setting)
 
 	return lowered == "en_us.utf8" || lowered == "en_us.utf-8"
@@ -141,11 +141,11 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 				return fmt.Errorf("pgdb.checkConnection: %q is %q, want %q", name, setting, encUTF8)
 			}
 		case "lc_collate":
-			if setting != localeC && setting != localePOSIX && !IsValidUTF8Locale(setting) {
+			if setting != localeC && setting != localePOSIX && !isValidUTF8Locale(setting) {
 				return fmt.Errorf("pgdb.checkConnection: %q is %q", name, setting)
 			}
 		case "lc_ctype":
-			if setting != localeC && setting != localePOSIX && !IsValidUTF8Locale(setting) {
+			if setting != localeC && setting != localePOSIX && !isValidUTF8Locale(setting) {
 				return fmt.Errorf("pgdb.checkConnection: %q is %q", name, setting)
 			}
 		default:
