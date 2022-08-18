@@ -133,3 +133,26 @@ func CreateDatabaseIfNotExists(ctx context.Context, querier pgxtype.Querier, db 
 		return lazyerrors.Error(err)
 	}
 }
+
+// DropDatabase drops FerretDB database.
+//
+// It returns ErrTableNotExist if schema does not exist.
+func DropDatabase(ctx context.Context, querier pgxtype.Querier, db string) error {
+	sql := `DROP SCHEMA ` + pgx.Identifier{db}.Sanitize() + ` CASCADE`
+	_, err := querier.Exec(ctx, sql)
+	if err == nil {
+		return nil
+	}
+
+	pgErr, ok := err.(*pgconn.PgError)
+	if !ok {
+		return lazyerrors.Error(err)
+	}
+
+	switch pgErr.Code {
+	case pgerrcode.InvalidSchemaName:
+		return ErrSchemaNotExist
+	default:
+		return lazyerrors.Error(err)
+	}
+}

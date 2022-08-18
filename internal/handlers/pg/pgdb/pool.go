@@ -16,21 +16,16 @@ package pgdb
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/jackc/pgconn"
-	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/log/zapadapter"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 const (
@@ -171,57 +166,20 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 //
 // It returns ErrTableNotExist if schema does not exist.
 //
-// TODO Move to function, deprecate or remove method.
+// Deprecated: use function instead.
 func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
-	sql := `DROP SCHEMA ` + pgx.Identifier{db}.Sanitize() + ` CASCADE`
-	_, err := pgPool.Exec(ctx, sql)
-	if err == nil {
-		return nil
-	}
-
-	pgErr, ok := err.(*pgconn.PgError)
-	if !ok {
-		return lazyerrors.Error(err)
-	}
-
-	switch pgErr.Code {
-	case pgerrcode.InvalidSchemaName:
-		return ErrSchemaNotExist
-	default:
-		return lazyerrors.Error(err)
-	}
+	return DropDatabase(ctx, pgPool, db)
 }
 
-// CreateTableIfNotExist ensures that given FerretDB database / PostgreSQL schema
+// CreateCollectionIfNotExist ensures that given FerretDB database / PostgreSQL schema
 // and FerretDB collection / PostgreSQL table exist.
 // If needed, it creates both schema and table.
 //
 // True is returned if table was created.
-func (pgPool *Pool) CreateTableIfNotExist(ctx context.Context, db, collection string) (bool, error) {
-	exists, err := CollectionExists(ctx, pgPool, db, collection)
-	if err != nil {
-		return false, lazyerrors.Error(err)
-	}
-	if exists {
-		return false, nil
-	}
-
-	// Table (or even schema) does not exist. Try to create it,
-	// but keep in mind that it can be created in concurrent connection.
-
-	if err := CreateDatabase(ctx, pgPool, db); err != nil && !errors.Is(err, ErrAlreadyExist) {
-		return false, lazyerrors.Error(err)
-	}
-
-	// TODO use a transaction instead of pgPool: https://github.com/FerretDB/FerretDB/issues/866
-	if err := CreateCollection(ctx, pgPool, db, collection); err != nil {
-		if errors.Is(err, ErrAlreadyExist) {
-			return false, nil
-		}
-		return false, lazyerrors.Error(err)
-	}
-
-	return true, nil
+//
+// Deprecated: use function instead.
+func (pgPool *Pool) CreateCollectionIfNotExist(ctx context.Context, db, collection string) (bool, error) {
+	return CreateCollectionIfNotExist(ctx, pgPool, db, collection)
 }
 
 // SchemaStats returns a set of statistics for FerretDB database / PostgreSQL schema and table.
@@ -260,73 +218,29 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 }
 
 // SetDocumentByID sets a document by its ID.
+//
+// Deprecated: use function instead.
 func (pgPool *Pool) SetDocumentByID(ctx context.Context, sp *SQLParam, id any, doc *types.Document) (int64, error) {
-	var tag pgconn.CommandTag
+	var n int64
 	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		table, err := getTableName(ctx, tx, sp.DB, sp.Collection)
-		if err != nil {
-			return err
-		}
-
-		sql := "UPDATE "
-		if sp.Comment != "" {
-			sp.Comment = strings.ReplaceAll(sp.Comment, "/*", "/ *")
-			sp.Comment = strings.ReplaceAll(sp.Comment, "*/", "* /")
-
-			sql += `/* ` + sp.Comment + ` */ `
-		}
-		sql += pgx.Identifier{sp.DB, table}.Sanitize() +
-			" SET _jsonb = $1 WHERE _jsonb->'_id' = $2"
-
-		tag, err = tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)), must.NotFail(fjson.Marshal(id)))
+		var err error
+		n, err = SetDocumentByID(ctx, tx, sp, id, doc)
 		return err
 	})
-	if err != nil {
-		return 0, err
-	}
-
-	return tag.RowsAffected(), nil
+	return n, err
 }
 
 // DeleteDocumentsByID deletes documents by given IDs.
+//
+// Deprecated: use function instead.
 func (pgPool *Pool) DeleteDocumentsByID(ctx context.Context, sp *SQLParam, ids []any) (int64, error) {
-	var tag pgconn.CommandTag
+	var n int64
 	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		table, err := getTableName(ctx, tx, sp.DB, sp.Collection)
-		if err != nil {
-			return err
-		}
-
-		var p Placeholder
-		idsMarshalled := make([]any, len(ids))
-		placeholders := make([]string, len(ids))
-		for i, id := range ids {
-			placeholders[i] = p.Next()
-			idsMarshalled[i] = must.NotFail(fjson.Marshal(id))
-		}
-
-		sql := `DELETE `
-		if sp.Comment != "" {
-			sp.Comment = strings.ReplaceAll(sp.Comment, "/*", "/ *")
-			sp.Comment = strings.ReplaceAll(sp.Comment, "*/", "* /")
-
-			sql += `/* ` + sp.Comment + ` */ `
-		}
-
-		sql += `FROM ` +
-			pgx.Identifier{sp.DB, table}.Sanitize() +
-			` WHERE _jsonb->'_id' IN (` +
-			strings.Join(placeholders, ", ") +
-			`)`
-
-		tag, err = tx.Exec(ctx, sql, idsMarshalled...)
+		var err error
+		n, err = DeleteDocumentsByID(ctx, tx, sp, ids)
 		return err
 	})
-	if err != nil {
-		return 0, err
-	}
-
-	return tag.RowsAffected(), nil
+	return n, err
 }
 
 // InTransaction wraps the given function f in a transaction.

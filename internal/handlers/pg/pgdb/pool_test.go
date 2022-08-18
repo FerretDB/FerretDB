@@ -343,7 +343,7 @@ func TestCreateTableIfNotExist(t *testing.T) {
 			pool.DropDatabase(ctx, databaseName)
 		})
 
-		ok, err := pool.CreateTableIfNotExist(ctx, databaseName, collectionName)
+		ok, err := pool.CreateCollectionIfNotExist(ctx, databaseName, collectionName)
 		require.NoError(t, err)
 		assert.True(t, ok)
 	})
@@ -360,7 +360,7 @@ func TestCreateTableIfNotExist(t *testing.T) {
 			pool.DropDatabase(ctx, databaseName)
 		})
 
-		created, err := pool.CreateTableIfNotExist(ctx, databaseName, collectionName)
+		created, err := pool.CreateCollectionIfNotExist(ctx, databaseName, collectionName)
 		require.NoError(t, err)
 		assert.True(t, created)
 	})
@@ -378,7 +378,7 @@ func TestCreateTableIfNotExist(t *testing.T) {
 			pool.DropDatabase(ctx, databaseName)
 		})
 
-		created, err := pool.CreateTableIfNotExist(ctx, databaseName, collectionName)
+		created, err := pool.CreateCollectionIfNotExist(ctx, databaseName, collectionName)
 		require.NoError(t, err)
 		assert.False(t, created)
 	})
