@@ -16,7 +16,8 @@ package testutil
 
 import (
 	"bytes"
-	"runtime/debug"
+	"fmt"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -34,8 +35,26 @@ var (
 
 // stack returns the stack trace starting from the caller of caller.
 func stack() []byte {
-	s := bytes.Split(debug.Stack(), []byte("\n"))
-	return bytes.Join(s[7:], []byte("\n"))
+	pc := make([]uintptr, 100)
+
+	callers := runtime.Callers(2, pc)
+	if callers == 0 {
+		panic("runtime.Callers failed")
+	}
+
+	frames := runtime.CallersFrames(pc[:callers])
+	var buf bytes.Buffer
+
+	for {
+		frame, more := frames.Next()
+		if frame.File != "" {
+			fmt.Fprintf(&buf, "%s\n\t%s:%d\n", frame.Function, frame.File, frame.Line)
+		}
+
+		if !more {
+			return buf.Bytes()
+		}
+	}
 }
 
 // DatabaseName returns a stable FerretDB database name for that test.
@@ -56,11 +75,13 @@ func DatabaseName(tb testing.TB) string {
 	databaseNamesM.Lock()
 	defer databaseNamesM.Unlock()
 
-	if another, ok := databaseNames[name]; ok {
+	// it maybe exactly the same if `go test -count=X` is used
+	current := stack()
+	if another, ok := databaseNames[name]; ok && !bytes.Equal(current, another) {
 		tb.Logf("Database name %q already used by another test:\n%s", name, another)
 		panic("duplicate database name")
 	}
-	databaseNames[name] = stack()
+	databaseNames[name] = current
 
 	return name
 }
@@ -83,11 +104,13 @@ func CollectionName(tb testing.TB) string {
 	collectionNamesM.Lock()
 	defer collectionNamesM.Unlock()
 
-	if another, ok := collectionNames[name]; ok {
+	// it maybe exactly the same if `go test -count=X` is used
+	current := stack()
+	if another, ok := collectionNames[name]; ok && !bytes.Equal(current, another) {
 		tb.Logf("Collection name %q already used by another test:\n%s", name, another)
 		panic("duplicate collection name")
 	}
-	collectionNames[name] = stack()
+	collectionNames[name] = current
 
 	return name
 }

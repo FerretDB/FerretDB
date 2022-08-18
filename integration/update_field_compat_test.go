@@ -56,26 +56,27 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 		"Simple": {
 			update: bson.D{{"$unset", bson.D{{"v", ""}}}},
 		},
-		"NotExistedField": {
-			update: bson.D{{"$unset", bson.D{{"foo", ""}}}},
+		"NonExisting": {
+			update:     bson.D{{"$unset", bson.D{{"foo", ""}}}},
+			resultType: emptyResult,
 		},
-		"NestedField": {
+		"Nested": {
 			update: bson.D{{"$unset", bson.D{{"v", bson.D{{"array", ""}}}}}},
 		},
-		"DotNotationDocumentFieldExist": {
+		"DotNotationDocument": {
 			update: bson.D{{"$unset", bson.D{{"v.foo", ""}}}},
 		},
-		"DotNotationDocumentFieldNotExist": {
-			update: bson.D{{"$unset", bson.D{{"foo.bar", ""}}}},
+		"DotNotationDocumentNonExisting": {
+			update:     bson.D{{"$unset", bson.D{{"foo.bar", ""}}}},
+			resultType: emptyResult,
 		},
-		"DotNotationArrayFieldExist": {
-			update: bson.D{{"$unset", bson.D{{"v.array.0", int32(1)}}}},
+		"DotNotationArrayField": {
+			update:        bson.D{{"$unset", bson.D{{"v.array.0", ""}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
 		},
-		"DotNotationArrayFieldNotExist": {
-			update: bson.D{{"$unset", bson.D{{"foo.0.baz", int32(1)}}}},
-		},
-		"DocumentDotNotationArrFieldNotExist": {
-			update: bson.D{{"$unset", bson.D{{"v.0.foo", int32(1)}}}},
+		"DotNotationArrayNonExisting": {
+			update:     bson.D{{"$unset", bson.D{{"foo.0.baz", int32(1)}}}},
+			resultType: emptyResult,
 		},
 	}
 
