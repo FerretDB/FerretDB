@@ -16,7 +16,7 @@
 package pgdb_test
 
 import (
-	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -59,7 +59,7 @@ func TestCreateDrop(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
-	pool := getPool(ctx, t, nil, zaptest.NewLogger(t))
+	pool := getPool(ctx, t, zaptest.NewLogger(t))
 
 	t.Run("SchemaDoesNotExistTableDoesNotExist", func(t *testing.T) {
 		t.Parallel()
@@ -185,7 +185,7 @@ func TestConcurrentCreate(t *testing.T) {
 
 	// Create PostgreSQL database with the same name as FerretDB database / PostgreSQL schema
 	// because it is good enough.
-	createPool := getPool(ctx, t, nil, zaptest.NewLogger(t))
+	createPool := getPool(ctx, t, zaptest.NewLogger(t))
 	_, err := createPool.Exec(ctx, `CREATE DATABASE `+databaseName)
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -194,7 +194,13 @@ func TestConcurrentCreate(t *testing.T) {
 	})
 
 	n := 10
-	dsn := fmt.Sprintf("postgres://postgres@127.0.0.1:5432/%[1]s?pool_min_conns=%[2]d&pool_max_conns=%[2]d", databaseName, n)
+	dsn := testutil.PostgreSQLURL(t, &testutil.PostgreSQLURLOpts{
+		DatabaseName: databaseName,
+		Params: map[string]string{
+			"pool_min_conns": strconv.Itoa(n),
+			"pool_max_conns": strconv.Itoa(n),
+		},
+	})
 	pool, err := pgdb.NewPool(ctx, dsn, zaptest.NewLogger(t), false)
 	require.NoError(t, err)
 	t.Cleanup(pool.Close)
@@ -257,7 +263,7 @@ func TestTableExists(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
-	pool := getPool(ctx, t, nil, zaptest.NewLogger(t))
+	pool := getPool(ctx, t, zaptest.NewLogger(t))
 
 	t.Run("SchemaDoesNotExistTableDoesNotExist", func(t *testing.T) {
 		t.Parallel()
@@ -314,7 +320,7 @@ func TestCreateTableIfNotExist(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
-	pool := getPool(ctx, t, nil, zaptest.NewLogger(t))
+	pool := getPool(ctx, t, zaptest.NewLogger(t))
 
 	t.Run("SchemaDoesNotExistTableDoesNotExist", func(t *testing.T) {
 		t.Parallel()

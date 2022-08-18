@@ -35,7 +35,7 @@ func TestQueryDocuments(t *testing.T) {
 
 	ctx := testutil.Ctx(t)
 
-	pool := getPool(ctx, t, nil, zaptest.NewLogger(t))
+	pool := getPool(ctx, t, zaptest.NewLogger(t))
 	dbName := testutil.DatabaseName(t)
 	collectionName := testutil.CollectionName(t)
 

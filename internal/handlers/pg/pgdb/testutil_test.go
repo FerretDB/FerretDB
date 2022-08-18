@@ -26,10 +26,10 @@ import (
 )
 
 // getPool creates a new connection's connection pool for testing.
-func getPool(ctx context.Context, tb testing.TB, opts *testutil.PoolOpts, l *zap.Logger) *pgdb.Pool {
+func getPool(ctx context.Context, tb testing.TB, l *zap.Logger) *pgdb.Pool {
 	tb.Helper()
 
-	pool, err := pgdb.NewPool(ctx, testutil.PoolConnString(tb, opts), l, false)
+	pool, err := pgdb.NewPool(ctx, testutil.PostgreSQLURL(tb, nil), l, false)
 	require.NoError(tb, err)
 	tb.Cleanup(pool.Close)
 
