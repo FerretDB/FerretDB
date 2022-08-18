@@ -23,7 +23,6 @@ import (
 
 	"github.com/jackc/pgtype/pgxtype"
 	"github.com/jackc/pgx/v4"
-	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
@@ -92,14 +91,14 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier,
 		case err == nil:
 			// nothing
 		case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
-			pgPool.logger.Warn(
-				"context canceled, stopping fetching",
-				zap.String("db", sp.DB), zap.String("collection", sp.Collection), zap.Error(err),
+			pgPool.Config().ConnConfig.Logger.Log(
+				ctx, pgx.LogLevelWarn, "context canceled, stopping fetching",
+				map[string]any{"db": sp.DB, "collection": sp.Collection, "error": err},
 			)
 		default:
-			pgPool.logger.Error(
-				"got error, stopping fetching",
-				zap.String("db", sp.DB), zap.String("collection", sp.Collection), zap.Error(err),
+			pgPool.Config().ConnConfig.Logger.Log(
+				ctx, pgx.LogLevelError, "got error, stopping fetching",
+				map[string]any{"db": sp.DB, "collection": sp.Collection, "error": err},
 			)
 		}
 	}()

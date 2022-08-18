@@ -45,7 +45,6 @@ const (
 // Pool represents PostgreSQL concurrency-safe connection pool.
 type Pool struct {
 	*pgxpool.Pool
-	logger *zap.Logger // TODO remove, use getPool.Config().ConnConfig.Logger instead
 }
 
 // DBStats describes statistics for a database.
@@ -92,8 +91,7 @@ func NewPool(ctx context.Context, connString string, logger *zap.Logger, lazy bo
 	}
 
 	res := &Pool{
-		Pool:   p,
-		logger: logger.Named("pgdb"),
+		Pool: p,
 	}
 
 	if !lazy {
@@ -348,7 +346,7 @@ func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (er
 			return
 		}
 		if rerr := tx.Rollback(ctx); rerr != nil {
-			pgPool.logger.Error("failed to perform rollback", zap.Error(rerr))
+			pgPool.Config().ConnConfig.Logger.Log(ctx, pgx.LogLevelError, "failed to perform rollback", map[string]any{"error": rerr})
 		}
 	}()
 
