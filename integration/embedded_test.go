@@ -37,7 +37,7 @@ func TestEmbedded(t *testing.T) {
 
 	f, err := ferretdb.New(&ferretdb.Config{
 		Handler:       "pg",
-		PostgreSQLURL: testutil.PoolConnString(t, nil),
+		PostgreSQLURL: testutil.PostgreSQLURL(t, nil),
 	})
 	require.NoError(t, err)
 
