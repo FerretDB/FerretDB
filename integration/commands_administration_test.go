@@ -719,7 +719,8 @@ func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
 	assert.EqualValues(t, float64(1), doc.Remove("scaleFactor")) // TODO use assert.Equal https://github.com/FerretDB/FerretDB/issues/727
 
 	assert.InDelta(t, int32(1), doc.Remove("collections"), 1)
-	assert.InDelta(t, float64(8192), doc.Remove("dataSize"), 8192)
+	// dataSize is set as 35500 because Tigris data size estimation can give it
+	assert.InDelta(t, float64(35500), doc.Remove("dataSize"), 35500)
 	assert.InDelta(t, float64(16384), doc.Remove("totalSize"), 16384)
 
 	// TODO assert.Empty(t, doc.Keys())
