@@ -1,6 +1,6 @@
-FROM node:lts-alpine
+FROM node:lts-alpine3.16
 
-RUN npm install --location=global textlint textlint-rule-one-sentence-per-line
+RUN npm install --location=global textlint@12.2.1 textlint-rule-one-sentence-per-line
 
 WORKDIR /workdir
 ENTRYPOINT ["textlint"]
