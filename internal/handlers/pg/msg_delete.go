@@ -183,13 +183,33 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	//}
 
 	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
+
+	if delErrors != nil {
+		protoErr, _ := common.ProtocolError(delErrors)
+		doc, err := types.NewDocument(
 			"n", deleted,
 			"ok", float64(1),
-			// "writeErrors", delErrors,
-		))},
-	})
+			"writeErrors", protoErr, /*protoErr.Document(),*/
+		)
+		if err != nil {
+			return nil, err
+		}
+		err = reply.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{doc},
+			//Documents: []*types.Document{must.NotFail(types.NewDocument(
+			//	"n", deleted,
+			//	"ok", float64(1),
+			//	"writeErrors", fmt.Errorf("ledu"), /*protoErr.Document(),*/
+			//))},
+		})
+	} else {
+		err = reply.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"n", deleted,
+				"ok", float64(1),
+			))},
+		})
+	}
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

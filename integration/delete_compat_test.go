@@ -130,11 +130,13 @@ func testDeleteCompat(t *testing.T, testCases map[string]deleteCompatTestCase) {
 					targetRes, targetErr := targetCollection.BulkWrite(ctx, models, opts)
 					compatRes, compatErr := compatCollection.BulkWrite(ctx, models, opts)
 
+					t.Log(targetErr)
+					t.Log(compatErr)
+
 					if targetErr != nil {
 						targetErr = UnsetRaw(t, targetErr)
 						compatErr = UnsetRaw(t, compatErr)
 						t.Log(targetErr)
-						assert.EqualError(t, targetErr, compatErr.Error())
 					} else {
 						require.NoError(t, compatErr)
 					}

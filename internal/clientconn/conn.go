@@ -328,6 +328,9 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 				Documents: []*types.Document{protoErr.Document()},
 			}))
 			resBody = &res
+			//if resBody == nil {
+			//	resBody = &res
+			//}
 			//if resBody != nil {
 			//	// TODO: find a way to somehow append it to response
 			//	// use it if possible!
