@@ -23,16 +23,8 @@ import (
 // IsNotFound returns true if the error is "not found" error.
 // This function is implemented to keep nolint in a single place.
 func IsNotFound(err *driver.Error) bool {
-	if err == nil {
-		return false
-	}
-
 	//nolint:nosnakecase // Tigris named their const that way
-	if err.Code == api.Code_NOT_FOUND {
-		return true
-	}
-
-	return false
+	return pointer.Get(err).Code == api.Code_NOT_FOUND
 }
 
 // IsAlreadyExists returns true if the error is "already exists" error.
@@ -43,11 +35,14 @@ func IsAlreadyExists(err *driver.Error) bool {
 	}
 
 	//nolint:nosnakecase // Tigris named their const that way
-	if err.Code == api.Code_ALREADY_EXISTS {
-		return true
-	}
+	return pointer.Get(err).Code == api.Code_ALREADY_EXISTS
+}
 
-	return false
+// IsInvalidArgument returns true if the error is "invalid argument" error.
+// This function is implemented to keep nolint in a single place.
+func IsInvalidArgument(err *driver.Error) bool {
+	//nolint:nosnakecase // Tigris named their const that way
+	return pointer.Get(err).Code == api.Code_INVALID_ARGUMENT
 }
 
 // IsInvalidArgument returns true if the error is "invalid argument" error.
