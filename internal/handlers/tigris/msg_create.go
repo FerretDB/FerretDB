@@ -16,16 +16,15 @@ package tigris
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-
-	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
@@ -64,26 +63,29 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	command := document.Command()
 
 	var db, collection string
+
 	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
+
 	if collection, err = common.GetRequiredParam[string](document, command); err != nil {
 		return nil, err
 	}
 
 	// Validator is required for Tigris as we always need to set schema to create a collection.
-	b, err := getJSONSchema(document)
+	schema, err := getJSONSchema(document)
 	if err != nil {
-		return nil, err
+		return nil, common.NewError(common.ErrBadValue, err)
 	}
+
+	b := must.NotFail(json.Marshal(schema))
+
 	created, err := h.db.CreateCollectionIfNotExist(ctx, db, collection, b)
 	if err != nil {
 		switch err := err.(type) {
 		case nil:
 			// do nothing
 		case *driver.Error:
-			fmt.Printf("\n\n\nfindme!!!! %v %v\n\n\n", err.Code, err.Message)
-
 			if tigrisdb.IsInvalidArgument(err) {
 				return nil, common.NewError(common.ErrBadValue, err)
 			}
@@ -93,6 +95,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, lazyerrors.Error(err)
 		}
 	}
+
 	if !created {
 		msg := fmt.Sprintf("Collection already exists. NS: %s.%s", db, collection)
 		return nil, common.NewErrorMsg(common.ErrNamespaceExists, msg)
@@ -104,6 +107,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			"ok", float64(1),
 		))},
 	})
+
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

@@ -15,28 +15,26 @@
 package tigris
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/tjson"
-
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 // getJSONSchema returns a masrshaled JSON schema received from validator -> $jsonSchema.
-func getJSONSchema(doc *types.Document) ([]byte, error) {
+func getJSONSchema(doc *types.Document) (*tjson.Schema, error) {
 	v, err := doc.Get("validator")
 	if err != nil {
-		return nil, common.NewErrorMsg(common.ErrBadValue, "required parameter `validator` is missing")
+		return nil, errors.New("required parameter `validator` is missing")
 	}
 
-	schema, err := v.(*types.Document).Get("$jsonSchema")
+	s, err := v.(*types.Document).Get("$jsonSchema")
 	if err != nil {
-		return nil, common.NewErrorMsg(common.ErrBadValue, "required parameter `$jsonSchema` is missing")
+		return nil, errors.New("required parameter `$jsonSchema` is missing")
 	}
 
-	return json.Marshal(schema.(*types.Document))
+	return schemaFromDocument(s.(*types.Document))
 }
 
 // schema creates a new TJSON Schema based on the types.Document format.
@@ -65,7 +63,7 @@ func schemaFromDocument(doc *types.Document) (*tjson.Schema, error) {
 	}
 
 	if v := doc.Remove("properties"); v != nil {
-		schema.Properties = make(map[string]*tjson.Schema)
+		schema.Properties = map[string]*tjson.Schema{}
 
 		for _, key := range v.(*types.Document).Keys() {
 			prop, err := v.(*types.Document).Get(key)
@@ -84,7 +82,7 @@ func schemaFromDocument(doc *types.Document) (*tjson.Schema, error) {
 	if v := doc.Remove("items"); v != nil {
 		sch, err := schemaFromDocument(v.(*types.Document))
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		schema.Items = sch
 	}
@@ -92,7 +90,7 @@ func schemaFromDocument(doc *types.Document) (*tjson.Schema, error) {
 	// If any other fields are left, the doc doesn't represent a valid schema.
 	if len(doc.Keys()) > 0 {
 		msg := fmt.Sprintf("invalid schema, the follwing keys are not supported: %s", doc.Keys())
-		return nil, common.NewErrorMsg(common.ErrBadValue, msg)
+		return nil, errors.New(msg)
 	}
 
 	return &schema, nil

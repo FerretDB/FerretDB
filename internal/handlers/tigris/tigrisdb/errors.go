@@ -44,10 +44,3 @@ func IsInvalidArgument(err *driver.Error) bool {
 	//nolint:nosnakecase // Tigris named their const that way
 	return pointer.Get(err).Code == api.Code_INVALID_ARGUMENT
 }
-
-// IsInvalidArgument returns true if the error is "invalid argument" error.
-// This function is implemented to keep nolint in a single place.
-func IsInvalidArgument(err *driver.Error) bool {
-	//nolint:nosnakecase // Tigris named their const that way
-	return pointer.Get(err).Code == api.Code_INVALID_ARGUMENT
-}
