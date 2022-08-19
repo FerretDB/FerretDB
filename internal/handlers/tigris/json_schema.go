@@ -18,6 +18,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/util/must"
+
 	"github.com/FerretDB/FerretDB/internal/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
@@ -59,7 +61,11 @@ func schemaFromDocument(doc *types.Document) (*tjson.Schema, error) {
 	}
 
 	if v := doc.Remove("primary_key"); v != nil {
-		schema.PrimaryKey = v.([]string)
+		arr := v.(*types.Array)
+		schema.PrimaryKey = make([]string, arr.Len())
+		for i := 0; i < arr.Len(); i++ {
+			schema.PrimaryKey = append(schema.PrimaryKey, must.NotFail(arr.Get(i)).(string))
+		}
 	}
 
 	if v := doc.Remove("properties"); v != nil {
