@@ -643,10 +643,8 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 }
 
 func TestCommandsAdministrationDataSize(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	var actual bson.D
 	command := bson.D{{"dataSize", collection.Database().Name() + "." + collection.Name()}}
@@ -661,8 +659,6 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 }
 
 func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
