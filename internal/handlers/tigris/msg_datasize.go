@@ -47,36 +47,23 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	if len(targets) != 2 {
 		return nil, lazyerrors.New("target collection must be like: 'database.collection'")
 	}
-	tdb, tcollection := targets[0], targets[1]
+	db, collection := targets[0], targets[1]
 
-	// Count the time needed to fetch datasize.
 	started := time.Now()
-
-	// Retrieve the size in bytes using a dedicated tigris function.
-	db := h.db.Driver.UseDatabase(tdb)
-	collection, err := db.DescribeCollection(ctx, tcollection)
+	f := fetchParam{db: db, collection: collection}
+	stats, err := h.fetchStats(ctx, f)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-	size := collection.Size
-
-	// TODO We need a better way to get the number of documents in a collection.
-	f := fetchParam{db: tdb, collection: tcollection}
-	docs, err := h.fetch(ctx, f)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-	objects := int32(len(docs))
-
 	elapses := time.Since(started)
 
 	var pairs []any
-	if objects > 0 {
+	if stats.numObjects > 0 {
 		pairs = append(pairs, "estimate", false)
 	}
 	pairs = append(pairs,
-		"size", size,
-		"numObjects", objects,
+		"size", int32(stats.size),
+		"numObjects", stats.numObjects,
 		"millis", int32(elapses.Milliseconds()),
 		"ok", float64(1),
 	)
