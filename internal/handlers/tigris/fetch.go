@@ -97,7 +97,6 @@ func (h *Handler) fetchStats(ctx context.Context, param fetchParam) (*collection
 
 	case *driver.Error:
 		if tigrisdb.IsNotFound(err) {
-
 			// If DB doesn't exist just return empty stats.
 			stats := &collectionStats{
 				numObjects: 0,
