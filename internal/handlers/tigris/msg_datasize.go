@@ -45,20 +45,22 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	if !ok {
 		return nil, lazyerrors.New("no target collection")
 	}
-	targets := strings.Split(target, ".")
 
+	targets := strings.Split(target, ".")
 	if len(targets) != 2 {
 		return nil, lazyerrors.New("target collection must be like: 'database.collection'")
 	}
-	db, collection := targets[0], targets[1]
 
 	started := time.Now()
-	f := fetchParam{db: db, collection: collection}
-	stats, err := h.fetchStats(ctx, f)
 
+	db, collection := targets[0], targets[1]
+	f := fetchParam{db: db, collection: collection}
+
+	stats, err := h.fetchStats(ctx, f)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
 	elapses := time.Since(started)
 
 	var pairs []any
