@@ -102,8 +102,10 @@ func (h *Handler) fetchStats(ctx context.Context, param fetchParam) (*collection
 				numObjects: 0,
 				size:       0,
 			}
+
 			return stats, nil
 		}
+
 		return nil, lazyerrors.Error(err)
 
 	default:
@@ -118,6 +120,7 @@ func (h *Handler) fetchStats(ctx context.Context, param fetchParam) (*collection
 
 	var count int32
 	var d driver.Document
+
 	for iter.Next(&d) {
 		count++
 	}

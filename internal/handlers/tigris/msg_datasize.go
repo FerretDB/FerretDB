@@ -36,14 +36,17 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	if err := common.Unimplemented(document, "keyPattern", "min", "max"); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
 	common.Ignored(document, h.L, "estimate")
 
 	m := document.Map()
 	target, ok := m["dataSize"].(string)
+
 	if !ok {
 		return nil, lazyerrors.New("no target collection")
 	}
 	targets := strings.Split(target, ".")
+
 	if len(targets) != 2 {
 		return nil, lazyerrors.New("target collection must be like: 'database.collection'")
 	}
@@ -52,6 +55,7 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	started := time.Now()
 	f := fetchParam{db: db, collection: collection}
 	stats, err := h.fetchStats(ctx, f)
+
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -72,6 +76,7 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(pairs...))},
 	})
+
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
