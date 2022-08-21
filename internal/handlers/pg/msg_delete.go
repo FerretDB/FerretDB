@@ -17,7 +17,6 @@ package pg
 import (
 	"context"
 	"fmt"
-
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -182,34 +181,21 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	//	return nil,delErrors
 	//}
 
-	var reply wire.OpMsg
+	protoErr, _ := common.ProtocolError(delErrors)
 
-	if delErrors != nil {
-		protoErr, _ := common.ProtocolError(delErrors)
-		doc, err := types.NewDocument(
+	we, err := common.AssertType[*types.Array](must.NotFail(protoErr.Document().Get("writeErrors")))
+	if err != nil {
+		panic(err)
+	}
+
+	var reply wire.OpMsg
+	err = reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"n", deleted,
 			"ok", float64(1),
-			"writeErrors", protoErr, /*protoErr.Document(),*/
-		)
-		if err != nil {
-			return nil, err
-		}
-		err = reply.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{doc},
-			//Documents: []*types.Document{must.NotFail(types.NewDocument(
-			//	"n", deleted,
-			//	"ok", float64(1),
-			//	"writeErrors", fmt.Errorf("ledu"), /*protoErr.Document(),*/
-			//))},
-		})
-	} else {
-		err = reply.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{must.NotFail(types.NewDocument(
-				"n", deleted,
-				"ok", float64(1),
-			))},
-		})
-	}
+			"writeErrors", we,
+		))},
+	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

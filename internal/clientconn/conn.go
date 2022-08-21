@@ -323,11 +323,25 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		case wire.OpCodeMsg:
 			protoErr, recoverable := common.ProtocolError(err)
 			closeConn = !recoverable
-			var res wire.OpMsg
-			must.NoError(res.SetSections(wire.OpMsgSection{
-				Documents: []*types.Document{protoErr.Document()},
-			}))
-			resBody = &res
+			//var res wire.OpMsg
+
+			//we, err := common.AssertType[*types.Array](must.NotFail(protoErr.Document().Get("writeErrors")))
+			//if err != nil {
+			//	panic(err)
+			//}
+
+			//log.Fatalf("$v", we)
+			//resDoc := protoErr.Document()
+
+			//for _,i := range resBody.{
+
+			//}
+
+			//must.NoError(res.SetSections(wire.OpMsgSection{
+			//	Documents: []*types.Document{protoErr.Document()},
+			//}))
+
+			//resBody = &res
 			//if resBody == nil {
 			//	resBody = &res
 			//}
