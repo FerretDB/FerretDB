@@ -172,6 +172,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			// If `ordered` is set as `false`,  we execute all the statements and return
 			// the list of errors corresponding to the failed statements.
 			if ordered {
+				// TODO: return response here
 				return nil, delErrors
 			}
 		}

@@ -37,18 +37,18 @@ type deleteCompatTestCase struct {
 
 func TestDeleteCompat(t *testing.T) {
 	testCases := map[string]deleteCompatTestCase{
-		//"Empty": {
-		//	filters:    []bson.D{},
-		//	resultType: emptyResult,
-		//},
-		//"OrderedTrue": {
-		//	filters: []bson.D{
-		//		{{"_id", "string"}},
-		//		{{"v", bson.D{{"$all", 9}}}},
-		//		{{"_id", "double"}},
-		//	},
-		//	ordered: true,
-		//},
+		"Empty": {
+			filters:    []bson.D{},
+			resultType: emptyResult,
+		},
+		"OrderedTrue": {
+			filters: []bson.D{
+				{{"_id", "string"}},
+				{{"v", bson.D{{"$all", 9}}}},
+				{{"_id", "double"}},
+			},
+			ordered: true,
+		},
 		"OrderedFalse": {
 			filters: []bson.D{
 				{{"_id", "string"}},
@@ -57,23 +57,23 @@ func TestDeleteCompat(t *testing.T) {
 			},
 			ordered: false,
 		},
-		//"OrderedFalseTwoErrors": {
-		//	filters: []bson.D{
-		//		bson.D{
-		//			{"v", bson.D{{"_id", "string"}}},
-		//		},
-		//		bson.D{
-		//			{"v", bson.D{{"$all", 9}}},
-		//		},
-		//		bson.D{
-		//			{"v", bson.D{{"_id", "double"}}},
-		//		},
-		//		bson.D{
-		//			{"v", bson.D{{"$eq", 9}}},
-		//		},
-		//	},
-		//	ordered: false,
-		//},
+		"OrderedFalseTwoErrors": {
+			filters: []bson.D{
+				bson.D{
+					{"v", bson.D{{"_id", "string"}}},
+				},
+				bson.D{
+					{"v", bson.D{{"$all", 9}}},
+				},
+				bson.D{
+					{"v", bson.D{{"_id", "double"}}},
+				},
+				bson.D{
+					{"v", bson.D{{"$eq", 9}}},
+				},
+			},
+			ordered: false,
+		},
 		"One": {
 			filters: []bson.D{
 				{{"v", int32(42)}},

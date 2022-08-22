@@ -324,7 +324,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			protoErr, recoverable := common.ProtocolError(err)
 			closeConn = !recoverable
 
-			if resBody == nil {
+			if resBody.(*wire.OpMsg) == nil {
 				var res wire.OpMsg
 				must.NoError(res.SetSections(wire.OpMsgSection{
 					Documents: []*types.Document{protoErr.Document()},
