@@ -33,7 +33,6 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestCommandsAdministrationCreateDropList(t *testing.T) {
@@ -122,7 +121,7 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 	assert.Equal(t, bson.D{{"ok", 1.0}}, res)
 
 	// there is no explicit command to create database, so create collection instead
-	err = db.Client().Database(name).CreateCollection(ctx, testutil.CollectionName(t))
+	err = db.Client().Database(name).CreateCollection(ctx, collection.Name())
 	require.NoError(t, err)
 
 	names, err = db.Client().ListDatabaseNames(ctx, filter)
@@ -137,6 +136,34 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 	err = db.RunCommand(ctx, bson.D{{"dropDatabase", 1}}).Decode(&res)
 	require.NoError(t, err)
 	assert.Equal(t, bson.D{{"ok", 1.0}}, res)
+}
+
+func TestCommandsAdministrationListDatabases(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
+	db := collection.Database()
+	name := db.Name()
+
+	actual, err := db.Client().ListDatabases(ctx, bson.D{{"name", name}})
+	require.NoError(t, err)
+	require.Len(t, actual.Databases, 1)
+
+	expected := mongo.ListDatabasesResult{
+		Databases: []mongo.DatabaseSpecification{{
+			Name:       name,
+			SizeOnDisk: actual.Databases[0].SizeOnDisk,
+			Empty:      actual.Databases[0].Empty,
+		}},
+		TotalSize: actual.TotalSize,
+	}
+
+	assert.Equal(t, expected, actual)
+
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1051")
+
+	assert.NotZero(t, actual.Databases[0].SizeOnDisk, "%s's SizeOnDisk should be non-zero", name)
+	assert.False(t, actual.Databases[0].Empty, "%s's Empty should be false", name)
+	assert.NotZero(t, actual.TotalSize, "TotalSize should be non-zero")
 }
 
 func TestCommandsAdministrationGetParameter(t *testing.T) {
@@ -644,10 +671,8 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 }
 
 func TestCommandsAdministrationDataSize(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	var actual bson.D
 	command := bson.D{{"dataSize", collection.Database().Name() + "." + collection.Name()}}
@@ -662,8 +687,6 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 }
 
 func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
@@ -681,10 +704,8 @@ func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
 }
 
 func TestCommandsAdministrationDBStats(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	var actual bson.D
 	command := bson.D{{"dbStats", int32(1)}}
@@ -706,8 +727,6 @@ func TestCommandsAdministrationDBStats(t *testing.T) {
 }
 
 func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
@@ -731,10 +750,8 @@ func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
 }
 
 func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	var actual bson.D
 	command := bson.D{{"dbStats", int32(1)}, {"scale", float64(1_000)}}
@@ -756,8 +773,6 @@ func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
 }
 
 func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
