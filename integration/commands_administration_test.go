@@ -140,27 +140,30 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 
 func TestCommandsAdministrationListDatabases(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Strings)
+	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 	db := collection.Database()
 	name := db.Name()
 
-	listDatabasesResult, err := db.Client().ListDatabases(ctx, bson.D{})
+	actual, err := db.Client().ListDatabases(ctx, bson.D{{"name", name}})
 	require.NoError(t, err)
+	require.Len(t, actual.Databases, 1)
 
-	var dbSpec *mongo.DatabaseSpecification
-	for _, db := range listDatabasesResult.Databases {
-		if db.Name == name {
-			dbSpec = &db
-			break
-		}
+	expected := mongo.ListDatabasesResult{
+		Databases: []mongo.DatabaseSpecification{{
+			Name:       name,
+			SizeOnDisk: actual.Databases[0].SizeOnDisk,
+			Empty:      actual.Databases[0].Empty,
+		}},
+		TotalSize: actual.TotalSize,
 	}
-	require.NotNil(t, dbSpec)
 
-	assert.False(t, false, dbSpec.Empty)
-	assert.Equal(t, name, dbSpec.Name)
+	assert.Equal(t, expected, actual)
 
-	setup.SkipForTigrisWithReason(t, "TODO: https://github.com/FerretDB/FerretDB/issues/1051")
-	assert.Greater(t, dbSpec.SizeOnDisk, int64(0))
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1051")
+
+	assert.NotZero(t, actual.Databases[0].SizeOnDisk, "%s's SizeOnDisk should be non-zero", name)
+	assert.False(t, actual.Databases[0].Empty, "%s's Empty should be false", name)
+	assert.NotZero(t, actual.TotalSize, "TotalSize should be non-zero")
 }
 
 func TestCommandsAdministrationGetParameter(t *testing.T) {

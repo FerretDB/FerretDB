@@ -22,25 +22,21 @@ import (
 
 // IsNotFound returns true if the error is "not found" error.
 // This function is implemented to keep nolint in a single place.
-func IsNotFound(err *driver.Error) bool {
-	//nolint:nosnakecase // Tigris named their const that way
-	return pointer.Get(err).Code == api.Code_NOT_FOUND
+func IsNotFound(err error) bool {
+	e, _ := err.(*driver.Error)
+	return pointer.Get(e).Code == api.Code_NOT_FOUND //nolint:nosnakecase // Tigris named their const that way
 }
 
 // IsAlreadyExists returns true if the error is "already exists" error.
 // This function is implemented to keep nolint in a single place.
-func IsAlreadyExists(err *driver.Error) bool {
-	if err == nil {
-		return false
-	}
-
-	//nolint:nosnakecase // Tigris named their const that way
-	return pointer.Get(err).Code == api.Code_ALREADY_EXISTS
+func IsAlreadyExists(err error) bool {
+	e, _ := err.(*driver.Error)
+	return pointer.Get(e).Code == api.Code_ALREADY_EXISTS //nolint:nosnakecase // Tigris named their const that way
 }
 
 // IsInvalidArgument returns true if the error is "invalid argument" error.
 // This function is implemented to keep nolint in a single place.
-func IsInvalidArgument(err *driver.Error) bool {
-	//nolint:nosnakecase // Tigris named their const that way
-	return pointer.Get(err).Code == api.Code_INVALID_ARGUMENT
+func IsInvalidArgument(err error) bool {
+	e, _ := err.(*driver.Error)
+	return pointer.Get(e).Code == api.Code_INVALID_ARGUMENT //nolint:nosnakecase // Tigris named their const that way
 }
