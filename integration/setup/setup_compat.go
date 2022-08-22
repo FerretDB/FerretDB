@@ -183,6 +183,6 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		collections = append(collections, collection)
 	}
 
-	require.NotEmpty(tb, collections)
+	require.NotEmpty(tb, collections, "all providers were not compatible")
 	return collections
 }
