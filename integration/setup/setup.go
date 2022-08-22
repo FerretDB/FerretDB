@@ -22,6 +22,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -38,7 +39,7 @@ type SetupOpts struct {
 	// Most tests should keep this empty.
 	CollectionName string
 
-	// Data providers.
+	// Data providers. If empty, collection is not created.
 	Providers []shareddata.Provider
 }
 
@@ -86,7 +87,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	}
 }
 
-// Setup setups a single collection for all providers, if the are present.
+// Setup setups a single collection for all compatible providers, if the are present.
 func Setup(tb testing.TB, providers ...shareddata.Provider) (context.Context, *mongo.Collection) {
 	tb.Helper()
 
@@ -96,7 +97,7 @@ func Setup(tb testing.TB, providers ...shareddata.Provider) (context.Context, *m
 	return s.Ctx, s.Collection
 }
 
-// setupCollection setups a single collection for all providers, if the are present.
+// setupCollection setups a single collection for all compatible providers, if the are present.
 func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, opts *SetupOpts) *mongo.Collection {
 	tb.Helper()
 
@@ -123,13 +124,29 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 		_ = database.Drop(ctx)
 	}
 
+	var inserted bool
 	for _, provider := range opts.Providers {
+		if *targetPortF == 0 && !slices.Contains(provider.Handlers(), *handlerF) {
+			tb.Logf(
+				"Provider %q is not compatible with handler %q, skipping it.",
+				provider.Name(), *handlerF,
+			)
+			continue
+		}
+
 		docs := shareddata.Docs(provider)
 		require.NotEmpty(tb, docs)
 
 		res, err := collection.InsertMany(ctx, docs)
 		require.NoError(tb, err, "provider %q", provider.Name())
 		require.Len(tb, res.InsertedIDs, len(docs))
+		inserted = true
+	}
+
+	if len(opts.Providers) == 0 {
+		tb.Logf("Collection %s.%s wasn't created because no providers were set.", databaseName, collectionName)
+	} else {
+		require.True(tb, inserted, "all providers were not compatible")
 	}
 
 	if ownCollection {
