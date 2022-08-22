@@ -41,6 +41,20 @@ func TestDeleteCompat(t *testing.T) {
 			filters:    []bson.D{},
 			resultType: emptyResult,
 		},
+		"OrderedTrueNoError": {
+			filters: []bson.D{
+				{{"_id", "string"}},
+				{{"_id", "double"}},
+			},
+			ordered: true,
+		},
+		"OrderedFalseNoError": {
+			filters: []bson.D{
+				{{"_id", "string"}},
+				{{"_id", "double"}},
+			},
+			ordered: false,
+		},
 		"OrderedTrue": {
 			filters: []bson.D{
 				{{"_id", "string"}},
