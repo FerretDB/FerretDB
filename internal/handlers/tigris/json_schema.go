@@ -18,10 +18,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/util/must"
-
 	"github.com/FerretDB/FerretDB/internal/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // getJSONSchema returns a masrshaled JSON schema received from validator -> $jsonSchema.
