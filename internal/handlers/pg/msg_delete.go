@@ -17,6 +17,7 @@ package pg
 import (
 	"context"
 	"fmt"
+
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -159,6 +160,8 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	delErrors := new(common.WriteErrors)
 
+	var reply wire.OpMsg
+
 	// process every delete filter
 	for i := 0; i < deletes.Len(); i++ {
 		err := processQuery(i)
@@ -172,8 +175,18 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			// If `ordered` is set as `false`,  we execute all the statements and return
 			// the list of errors corresponding to the failed statements.
 			if ordered {
-				// TODO: return response here
-				return nil, delErrors
+				break
+				//err = reply.SetSections(wire.OpMsgSection{
+				//	Documents: []*types.Document{must.NotFail(types.NewDocument(
+				//		"n", deleted,
+				//		"ok", float64(1),
+				//	))},
+				//})
+				//if err != nil {
+				//	return nil, lazyerrors.Error(err)
+				//}
+				//// TODO: return response here
+				//return &reply, delErrors
 			}
 		}
 	}
@@ -189,7 +202,6 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		panic(err)
 	}
 
-	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"n", deleted,

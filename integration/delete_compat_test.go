@@ -59,18 +59,10 @@ func TestDeleteCompat(t *testing.T) {
 		},
 		"OrderedFalseTwoErrors": {
 			filters: []bson.D{
-				bson.D{
-					{"v", bson.D{{"_id", "string"}}},
-				},
-				bson.D{
-					{"v", bson.D{{"$all", 9}}},
-				},
-				bson.D{
-					{"v", bson.D{{"_id", "double"}}},
-				},
-				bson.D{
-					{"v", bson.D{{"$eq", 9}}},
-				},
+				{{"_id", "string"}},
+				{{"v", bson.D{{"$all", 9}}}},
+				{{"_id", "double"}},
+				{{"v", bson.D{{"$eq", 9}}}},
 			},
 			ordered: false,
 		},
