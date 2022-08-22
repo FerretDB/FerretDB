@@ -70,6 +70,7 @@ func TestCreateTigris(t *testing.T) {
 					{"arr", bson.D{{"type", "array"}, {"items", bson.D{{"type", "string"}}}}},
 				}},
 			},
+			collection: collection.Name() + "_good",
 		},
 	} {
 		name, tc := name, tc
@@ -77,7 +78,7 @@ func TestCreateTigris(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			opts := new(options.CreateCollectionOptions).SetValidator(bson.D{{"$jsonSchema", tc.validator}})
 
-			err := db.Client().Database(dbName).CreateCollection(ctx, collection.Name(), opts)
+			err := db.Client().Database(dbName).CreateCollection(ctx, tc.collection, opts)
 			if tc.expectedErr != nil {
 				AssertEqualError(t, *tc.expectedErr, err)
 			} else {
