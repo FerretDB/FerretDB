@@ -180,19 +180,21 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 	}
 
-	protoErr, _ := common.ProtocolError(delErrors)
+	// minimal reply document
+	replyDoc := must.NotFail(types.NewDocument(
+		"n", deleted,
+		"ok", float64(1),
+	))
 
-	we, err := common.AssertType[*types.Array](must.NotFail(protoErr.Document().Get("writeErrors")))
-	if err != nil {
-		panic(err)
+	// if there are delete errors append writErrors field
+	if len(*delErrors) > 0 {
+		protoErr, _ := common.ProtocolError(delErrors)
+		we := must.NotFail(common.AssertType[*types.Array](must.NotFail(protoErr.Document().Get("writeErrors"))))
+		replyDoc.Set("writeErrors", we)
 	}
 
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"n", deleted,
-			"ok", float64(1),
-			"writeErrors", we,
-		))},
+		Documents: []*types.Document{replyDoc},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
