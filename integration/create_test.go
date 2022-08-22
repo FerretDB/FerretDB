@@ -60,7 +60,7 @@ func TestCreateTigris(t *testing.T) {
 		},
 		"GoodValidator": {
 			validator: bson.D{
-				{"title", collection.Name()},
+				{"title", collection.Name() + "_good"},
 				{"description", "Foo Bar"},
 				{"primary_key", bson.A{"_id"}},
 				{"properties", bson.D{
