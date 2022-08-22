@@ -324,17 +324,30 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			protoErr, recoverable := common.ProtocolError(err)
 			closeConn = !recoverable
 
-			doc, err := resBody.(*wire.OpMsg).Document()
-			if err != nil {
-				panic(err)
+			msg, ok := resBody.(*wire.OpMsg)
+			if !ok {
+				//TODO: message about type
+				panic(msg)
 			}
-
-			if _, err := doc.Get("writeErrors"); err != nil {
+			if msg == nil {
 				var res wire.OpMsg
 				must.NoError(res.SetSections(wire.OpMsgSection{
 					Documents: []*types.Document{protoErr.Document()},
 				}))
 				resBody = &res
+			} else {
+				doc, err := resBody.(*wire.OpMsg).Document()
+				if err != nil {
+					panic(err)
+				}
+
+				if _, err := doc.Get("writeErrors"); err != nil {
+					var res wire.OpMsg
+					must.NoError(res.SetSections(wire.OpMsgSection{
+						Documents: []*types.Document{protoErr.Document()},
+					}))
+					resBody = &res
+				}
 			}
 
 			result = pointer.ToString(protoErr.Code().String())
