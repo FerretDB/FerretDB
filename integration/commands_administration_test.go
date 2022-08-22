@@ -138,6 +138,34 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 	assert.Equal(t, bson.D{{"ok", 1.0}}, res)
 }
 
+func TestCommandsAdministrationListDatabases(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
+	db := collection.Database()
+	name := db.Name()
+
+	actual, err := db.Client().ListDatabases(ctx, bson.D{{"name", name}})
+	require.NoError(t, err)
+	require.Len(t, actual.Databases, 1)
+
+	expected := mongo.ListDatabasesResult{
+		Databases: []mongo.DatabaseSpecification{{
+			Name:       name,
+			SizeOnDisk: actual.Databases[0].SizeOnDisk,
+			Empty:      actual.Databases[0].Empty,
+		}},
+		TotalSize: actual.TotalSize,
+	}
+
+	assert.Equal(t, expected, actual)
+
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1051")
+
+	assert.NotZero(t, actual.Databases[0].SizeOnDisk, "%s's SizeOnDisk should be non-zero", name)
+	assert.False(t, actual.Databases[0].Empty, "%s's Empty should be false", name)
+	assert.NotZero(t, actual.TotalSize, "TotalSize should be non-zero")
+}
+
 func TestCommandsAdministrationGetParameter(t *testing.T) {
 	setup.SkipForTigris(t)
 
