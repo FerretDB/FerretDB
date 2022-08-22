@@ -201,7 +201,8 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
       JOIN pg_indexes                AS i ON i.schemaname = t.table_schema
                                          AND i.tablename = t.table_name`
 
-	// TODO should we exclude service tables?
+	// TODO should we exclude service schemas and tables?
+
 	args := []any{}
 	if schema != "" {
 		sql += " WHERE t.table_schema = $1"
