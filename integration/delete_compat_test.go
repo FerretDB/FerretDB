@@ -70,14 +70,12 @@ func TestDeleteCompat(t *testing.T) {
 			filters: []bson.D{
 				{{"v", int32(42)}},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/1029",
 		},
 		"Two": {
 			filters: []bson.D{
 				{{"v", int32(42)}},
 				{{"v", int32(0)}},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/1029",
 		},
 	}
 
@@ -122,13 +120,11 @@ func testDeleteCompat(t *testing.T, testCases map[string]deleteCompatTestCase) {
 					targetRes, targetErr := targetCollection.BulkWrite(ctx, models, opts)
 					compatRes, compatErr := compatCollection.BulkWrite(ctx, models, opts)
 
-					t.Log(targetErr)
-					t.Log(compatErr)
-
 					if targetErr != nil {
+						t.Log(targetErr)
 						targetErr = UnsetRaw(t, targetErr)
 						compatErr = UnsetRaw(t, compatErr)
-						t.Log(targetErr)
+						assert.EqualError(t, compatErr, targetErr.Error())
 					} else {
 						require.NoError(t, compatErr)
 					}
@@ -137,7 +133,6 @@ func testDeleteCompat(t *testing.T, testCases map[string]deleteCompatTestCase) {
 						nonEmptyResults = true
 					}
 
-					t.Log(targetRes)
 					assert.Equal(t, compatRes, targetRes)
 
 					targetDocs := FindAll(t, ctx, targetCollection)
