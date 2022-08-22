@@ -44,7 +44,7 @@ func TestCreateTigris(t *testing.T) {
 			expectedErr: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "collection name is not same as schema name 'TestCreateTigris' ''",
+				Message: "invalid schema, the follwing keys are not supported: [bsonType]",
 			},
 		},
 		"GoodValidator": {
