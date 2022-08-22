@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Use _test package to avoid import cycle with testutil.
-package pgdb_test
+package pgdb
 
 import (
 	"fmt"
@@ -24,7 +23,6 @@ import (
 	"go.uber.org/zap/zaptest"
 	"golang.org/x/net/context"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -35,7 +33,7 @@ func TestQueryDocuments(t *testing.T) {
 
 	ctx := testutil.Ctx(t)
 
-	pool := getPool(ctx, t, nil, zaptest.NewLogger(t))
+	pool := getPool(ctx, t, zaptest.NewLogger(t))
 	dbName := testutil.DatabaseName(t)
 	collectionName := testutil.CollectionName(t)
 
@@ -44,7 +42,7 @@ func TestQueryDocuments(t *testing.T) {
 	})
 
 	pool.DropDatabase(ctx, dbName)
-	require.NoError(t, pgdb.CreateDatabase(ctx, pool, dbName))
+	require.NoError(t, CreateDatabase(ctx, pool, dbName))
 
 	cases := []struct {
 		name       string
@@ -97,10 +95,10 @@ func TestQueryDocuments(t *testing.T) {
 			require.NoError(t, err)
 
 			for _, doc := range tc.documents {
-				require.NoError(t, pgdb.InsertDocument(ctx, tx, dbName, tc.collection, doc))
+				require.NoError(t, InsertDocument(ctx, tx, dbName, tc.collection, doc))
 			}
 
-			sp := pgdb.SQLParam{DB: dbName, Collection: tc.collection}
+			sp := SQLParam{DB: dbName, Collection: tc.collection}
 			fetchedChan, err := pool.QueryDocuments(ctx, tx, sp)
 			require.NoError(t, err)
 
@@ -126,13 +124,13 @@ func TestQueryDocuments(t *testing.T) {
 		tx, err := pool.Begin(ctx)
 		require.NoError(t, err)
 
-		for i := 1; i <= pgdb.FetchedChannelBufSize*pgdb.FetchedSliceCapacity+1; i++ {
-			require.NoError(t, pgdb.InsertDocument(ctx, tx, dbName, collectionName+"_cancel",
+		for i := 1; i <= FetchedChannelBufSize*FetchedSliceCapacity+1; i++ {
+			require.NoError(t, InsertDocument(ctx, tx, dbName, collectionName+"_cancel",
 				must.NotFail(types.NewDocument("id", fmt.Sprintf("%d", i))),
 			))
 		}
 
-		sp := pgdb.SQLParam{DB: dbName, Collection: collectionName + "_cancel"}
+		sp := SQLParam{DB: dbName, Collection: collectionName + "_cancel"}
 		ctx, cancel := context.WithCancel(context.Background())
 		fetchedChan, err := pool.QueryDocuments(ctx, pool, sp)
 		cancel()
@@ -148,7 +146,7 @@ func TestQueryDocuments(t *testing.T) {
 
 			countDocs += len(fetched.Docs)
 		}
-		require.Less(t, countDocs, pgdb.FetchedChannelBufSize*pgdb.FetchedSliceCapacity+1)
+		require.Less(t, countDocs, FetchedChannelBufSize*FetchedSliceCapacity+1)
 
 		require.ErrorIs(t, tx.Rollback(ctx), context.Canceled)
 	})
@@ -158,7 +156,7 @@ func TestQueryDocuments(t *testing.T) {
 		tx, err := pool.Begin(ctx)
 		require.NoError(t, err)
 
-		sp := pgdb.SQLParam{DB: dbName, Collection: collectionName + "_non-existing"}
+		sp := SQLParam{DB: dbName, Collection: collectionName + "_non-existing"}
 		fetchedChan, err := pool.QueryDocuments(context.Background(), tx, sp)
 		require.NoError(t, err)
 		res, ok := <-fetchedChan
