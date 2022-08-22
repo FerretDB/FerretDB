@@ -37,10 +37,21 @@ func TestCreateTigris(t *testing.T) {
 
 	for name, tc := range map[string]struct {
 		validator   bson.D
+		collection  string
 		expectedErr *mongo.CommandError
 	}{
+		"EmptyValidator": {
+			validator:  bson.D{},
+			collection: collection.Name() + "_empty",
+			expectedErr: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name is not same as schema name 'TestCreateTigris' ''", // Tigris returns this
+			},
+		},
 		"BadValidator": {
-			validator: bson.D{{"bsonType", "object"}},
+			validator:  bson.D{{"bsonType", "object"}},
+			collection: collection.Name() + "_bad",
 			expectedErr: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -50,38 +61,16 @@ func TestCreateTigris(t *testing.T) {
 		"GoodValidator": {
 			validator: bson.D{
 				{"title", collection.Name()},
+				{"description", "Foo Bar"},
 				{"primary_key", bson.A{"_id"}},
 				{"properties", bson.D{
 					{"balance", bson.D{{"type", "number"}}},
+					{"age", bson.D{{"type", "integer"}, {"format", "int32"}}},
 					{"_id", bson.D{{"type", "string"}, {"format", "byte"}}},
+					{"arr", bson.D{{"type", "array"}, {"items", bson.D{{"type", "string"}}}}},
 				}},
 			},
 		},
-		/*
-			{
-			         {
-			          "title": "users",
-			          "properties": {
-			            "balance": {
-			              "type": "number"
-			            },
-			            "_id": {
-			              "type": "string",
-			              "format": "byte",
-			              "autoGenerate": true
-			            },
-			            "name": {
-			              "type": "string"
-			            }
-			          },
-			          "primary_key": [
-			            "_id"
-			          ]
-			        }
-			      }
-
-		*/
-
 	} {
 		name, tc := name, tc
 
