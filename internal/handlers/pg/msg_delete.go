@@ -198,7 +198,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &reply, delErrors
+	return &reply, nil
 }
 
 // delete deletes documents by _id.

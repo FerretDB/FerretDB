@@ -328,7 +328,6 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 				Documents: []*types.Document{protoErr.Document()},
 			}))
 			resBody = &res
-
 			result = pointer.ToString(protoErr.Code().String())
 
 		case wire.OpCodeQuery:
