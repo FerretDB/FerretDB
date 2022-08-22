@@ -18,9 +18,10 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/util/must"
+
 	"github.com/FerretDB/FerretDB/internal/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // getJSONSchema returns a masrshaled JSON schema received from validator -> $jsonSchema.
@@ -64,7 +65,7 @@ func schemaFromDocument(doc *types.Document) (*tjson.Schema, error) {
 
 		schema.PrimaryKey = make([]string, arr.Len())
 		for i := 0; i < arr.Len(); i++ {
-			schema.PrimaryKey = append(schema.PrimaryKey, must.NotFail(arr.Get(i)).(string))
+			schema.PrimaryKey[i] = must.NotFail(arr.Get(i)).(string)
 		}
 	}
 

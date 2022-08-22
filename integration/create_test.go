@@ -47,14 +47,14 @@ func TestCreateTigris(t *testing.T) {
 				Message: "collection name is not same as schema name 'TestCreateTigris' ''",
 			},
 		},
-		"Validator": {
+		"GoodValidator": {
 			validator: bson.D{
-				{"title", "users"},
+				{"title", collection.Name()},
+				{"primary_key", bson.A{"_id"}},
 				{"properties", bson.D{
 					{"balance", bson.D{{"type", "number"}}},
 					{"_id", bson.D{{"type", "string"}, {"format", "byte"}}},
 				}},
-				{"primary_key", bson.A{"_id"}},
 			},
 		},
 		/*
