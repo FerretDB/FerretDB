@@ -204,6 +204,7 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 	// TODO should we exclude service schemas and tables?
 
 	args := []any{}
+
 	if schema != "" {
 		sql += " WHERE t.table_schema = $1"
 		args = append(args, schema)
