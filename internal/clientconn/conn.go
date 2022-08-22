@@ -323,34 +323,11 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		case wire.OpCodeMsg:
 			protoErr, recoverable := common.ProtocolError(err)
 			closeConn = !recoverable
-
-			msg, ok := resBody.(*wire.OpMsg)
-			if !ok {
-				panic("Type assertion of reponse message to *wire.OpMsg failed.")
-			}
-
-			// If there's an error but no any response message, return only writeErrors.
-			if msg == nil {
-				var res wire.OpMsg
-				must.NoError(res.SetSections(wire.OpMsgSection{
-					Documents: []*types.Document{protoErr.Document()},
-				}))
-				resBody = &res
-			} else {
-				doc, err := resBody.(*wire.OpMsg).Document()
-				if err != nil {
-					panic(err)
-				}
-
-				// If the response from handler already created writeErrors field, don't overwrite it.
-				if _, err := doc.Get("writeErrors"); err != nil {
-					var res wire.OpMsg
-					must.NoError(res.SetSections(wire.OpMsgSection{
-						Documents: []*types.Document{protoErr.Document()},
-					}))
-					resBody = &res
-				}
-			}
+			var res wire.OpMsg
+			must.NoError(res.SetSections(wire.OpMsgSection{
+				Documents: []*types.Document{protoErr.Document()},
+			}))
+			resBody = &res
 
 			result = pointer.ToString(protoErr.Code().String())
 
