@@ -53,11 +53,24 @@ var (
 // SkipForTigris skips the current test for Tigris handler.
 //
 // This function should not be used lightly in new tests and should eventually be removed.
+//
+// Deprecated: use SkipForTigrisWithReason instead if you must.
 func SkipForTigris(tb testing.TB) {
+	SkipForTigrisWithReason(tb, "")
+}
+
+// SkipForTigrisWithReason skips the current test for Tigris handler.
+//
+// This function should not be used lightly in new tests and should eventually be removed.
+func SkipForTigrisWithReason(tb testing.TB, reason string) {
 	tb.Helper()
 
 	if *handlerF == "tigris" {
-		tb.Skip("Skipping for Tigris")
+		if reason == "" {
+			tb.Skipf("Skipping for Tigris")
+		} else {
+			tb.Skipf("Skipping for Tigris: %s", reason)
+		}
 	}
 }
 
@@ -69,7 +82,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 	h, err := registry.NewHandler(*handlerF, &registry.NewHandlerOpts{
 		Ctx:           ctx,
 		Logger:        logger,
-		PostgreSQLURL: testutil.PoolConnString(tb, nil),
+		PostgreSQLURL: testutil.PostgreSQLURL(tb, nil),
 		TigrisURL:     testutil.TigrisURL(tb),
 	})
 	require.NoError(tb, err)

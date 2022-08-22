@@ -21,6 +21,7 @@ import (
 	"github.com/tigrisdata/tigris-client-go/driver"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -202,9 +203,16 @@ func (h *Handler) update(ctx context.Context, sp fetchParam, doc *types.Document
 	h.L.Sugar().Debugf("Update: %s", u)
 
 	_, err = h.db.Driver.UseDatabase(sp.db).Replace(ctx, sp.collection, []driver.Document{u})
-	if err != nil {
+	switch err := err.(type) {
+	case nil:
+		return 1, nil
+	case *driver.Error:
+		if tigrisdb.IsInvalidArgument(err) {
+			return 0, common.NewErrorMsg(common.ErrDocumentValidationFailure, err.Error())
+		}
+
+		return 0, lazyerrors.Error(err)
+	default:
 		return 0, lazyerrors.Error(err)
 	}
-
-	return 1, nil
 }
