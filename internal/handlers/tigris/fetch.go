@@ -79,3 +79,51 @@ func (h *Handler) fetch(ctx context.Context, param fetchParam) ([]*types.Documen
 
 	return res, iter.Err()
 }
+
+// collectionStats describes statistics for a Tigris collection.
+type collectionStats struct {
+	numObjects int32
+	size       int64
+}
+
+// fetchStats returns a set of statistics for the given database and collection.
+func (h *Handler) fetchStats(ctx context.Context, param fetchParam) (*collectionStats, error) {
+	db := h.db.Driver.UseDatabase(param.db)
+
+	collection, err := db.DescribeCollection(ctx, param.collection)
+	switch err := err.(type) {
+	case nil:
+		// do nothing
+
+	case *driver.Error:
+		if tigrisdb.IsNotFound(err) {
+			// If DB doesn't exist just return empty stats.
+			stats := &collectionStats{
+				numObjects: 0,
+				size:       0,
+			}
+
+			return stats, nil
+		}
+
+		return nil, lazyerrors.Error(err)
+
+	default:
+		return nil, lazyerrors.Error(err)
+	}
+
+	iter, err := db.Read(ctx, param.collection, driver.Filter(`{}`), nil)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	defer iter.Close()
+
+	var count int32
+	var d driver.Document
+
+	for iter.Next(&d) {
+		count++
+	}
+
+	return &collectionStats{numObjects: count, size: collection.Size}, iter.Err()
+}
