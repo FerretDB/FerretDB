@@ -79,13 +79,13 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 					}
 
 					if targetErr != nil {
-						t.Log(targetErr)
+						t.Logf("Target error: %v", targetErr)
 						targetErr = UnsetRaw(t, targetErr)
 						compatErr = UnsetRaw(t, compatErr)
 						assert.Equal(t, compatErr, targetErr)
 						return
 					}
-					require.NoError(t, compatErr)
+					require.NoError(t, compatErr, "compat error")
 
 					var targetRes, compatRes []bson.D
 					require.NoError(t, targetCursor.All(ctx, &targetRes))

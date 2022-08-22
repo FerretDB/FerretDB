@@ -42,6 +42,9 @@ type SetupCompatOpts struct {
 
 	// Data providers.
 	Providers []shareddata.Provider
+
+	ownDatabase        bool
+	baseCollectionName string
 }
 
 // SetupResult represents compatibility test setup results.
@@ -62,6 +65,13 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	if opts == nil {
 		opts = new(SetupCompatOpts)
 	}
+
+	if opts.DatabaseName == "" {
+		opts.DatabaseName = testutil.DatabaseName(tb)
+		opts.ownDatabase = true
+	}
+
+	opts.baseCollectionName = testutil.CollectionName(tb)
 
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
 
@@ -112,16 +122,9 @@ func SetupCompat(tb testing.TB) (context.Context, []*mongo.Collection, []*mongo.
 func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Client, opts *SetupCompatOpts) []*mongo.Collection {
 	tb.Helper()
 
-	var ownDatabase bool
-	databaseName := opts.DatabaseName
-	if databaseName == "" {
-		databaseName = testutil.DatabaseName(tb)
-		ownDatabase = true
-	}
+	database := client.Database(opts.DatabaseName)
 
-	database := client.Database(databaseName)
-
-	if ownDatabase {
+	if opts.ownDatabase {
 		// drop remnants of the previous failed run
 		_ = database.Drop(ctx)
 
@@ -138,11 +141,11 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 
 	collections := make([]*mongo.Collection, 0, len(opts.Providers))
 	for _, provider := range opts.Providers {
-		collectionName := testutil.CollectionName(tb) + "_" + provider.Name()
+		collectionName := opts.baseCollectionName + "_" + provider.Name()
 		if opts.KeepData {
 			collectionName = strings.ToLower(provider.Name())
 		}
-		fullName := databaseName + "." + collectionName
+		fullName := opts.DatabaseName + "." + collectionName
 
 		if *targetPortF == 0 && !slices.Contains(provider.Handlers(), *handlerF) {
 			tb.Logf(
@@ -180,6 +183,6 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		collections = append(collections, collection)
 	}
 
-	require.NotEmpty(tb, collections)
+	require.NotEmpty(tb, collections, "all providers were not compatible")
 	return collections
 }

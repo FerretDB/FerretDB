@@ -12,26 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pgdb_test
+// Package tigrisdb provides Tigris connection utilities.
+package tigrisdb
 
 import (
 	"context"
-	"testing"
 
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
+	"github.com/tigrisdata/tigris-client-go/config"
+	"github.com/tigrisdata/tigris-client-go/driver"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// getPool creates a new connection's connection pool for testing.
-func getPool(ctx context.Context, tb testing.TB, opts *testutil.PoolOpts, l *zap.Logger) *pgdb.Pool {
-	tb.Helper()
+// TigrisDB represents a Tigris database connection.
+type TigrisDB struct {
+	Driver driver.Driver
+}
 
-	pool, err := pgdb.NewPool(ctx, testutil.PoolConnString(tb, opts), l, false)
-	require.NoError(tb, err)
-	tb.Cleanup(pool.Close)
+// New returns a new TigrisDB.
+func New(cfg *config.Driver) (*TigrisDB, error) {
+	d, err := driver.NewDriver(context.TODO(), cfg)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
-	return pool
+	return &TigrisDB{
+		Driver: d,
+	}, nil
 }

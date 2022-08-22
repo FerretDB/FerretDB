@@ -20,6 +20,7 @@ import (
 	"github.com/tigrisdata/tigris-client-go/driver"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -45,12 +46,12 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	err = h.driver.UseDatabase(db).DropCollection(ctx, collection)
+	err = h.db.Driver.UseDatabase(db).DropCollection(ctx, collection)
 	switch err := err.(type) {
 	case nil:
 		// do nothing
 	case *driver.Error:
-		if isNotFound(err) {
+		if tigrisdb.IsNotFound(err) {
 			return nil, common.NewErrorMsg(common.ErrNamespaceNotFound, "ns not found")
 		}
 		return nil, lazyerrors.Error(err)

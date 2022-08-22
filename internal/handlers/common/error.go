@@ -60,6 +60,9 @@ const (
 	// ErrInvalidNamespace indicates that the collection name is invalid.
 	ErrInvalidNamespace = ErrorCode(73) // InvalidNamespace
 
+	// ErrDocumentValidationFailure indicates that document validation failed.
+	ErrDocumentValidationFailure = ErrorCode(121) // DocumentValidationFailure
+
 	// ErrNotImplemented indicates that a flag or command is not implemented.
 	ErrNotImplemented = ErrorCode(238) // NotImplemented
 

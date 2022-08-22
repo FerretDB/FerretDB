@@ -70,9 +70,7 @@ func CreateDatabase(ctx context.Context, querier pgxtype.Querier, db string) err
 		return ErrInvalidDatabaseName
 	}
 
-	sql := `CREATE SCHEMA ` + pgx.Identifier{db}.Sanitize()
-	_, err := querier.Exec(ctx, sql)
-
+	_, err := querier.Exec(ctx, `CREATE SCHEMA `+pgx.Identifier{db}.Sanitize())
 	if err == nil {
 		err = createSettingsTable(ctx, querier, db)
 	}
@@ -106,9 +104,7 @@ func CreateDatabaseIfNotExists(ctx context.Context, querier pgxtype.Querier, db 
 		return ErrInvalidDatabaseName
 	}
 
-	sql := `CREATE SCHEMA IF NOT EXISTS ` + pgx.Identifier{db}.Sanitize()
-	_, err := querier.Exec(ctx, sql)
-
+	_, err := querier.Exec(ctx, `CREATE SCHEMA IF NOT EXISTS `+pgx.Identifier{db}.Sanitize())
 	if err == nil {
 		err = createSettingsTable(ctx, querier, db)
 	}
@@ -129,6 +125,28 @@ func CreateDatabaseIfNotExists(ctx context.Context, querier pgxtype.Querier, db 
 		// https://www.postgresql.org/message-id/CA+TgmoZAdYVtwBfp1FL2sMZbiHCWT4UPrzRLNnX1Nb30Ku3-gg@mail.gmail.com
 		// The same thing for schemas. Reproducible by integration tests.
 		return ErrAlreadyExist
+	default:
+		return lazyerrors.Error(err)
+	}
+}
+
+// DropDatabase drops FerretDB database.
+//
+// It returns ErrSchemaNotExist if schema does not exist.
+func DropDatabase(ctx context.Context, querier pgxtype.Querier, db string) error {
+	_, err := querier.Exec(ctx, `DROP SCHEMA `+pgx.Identifier{db}.Sanitize()+` CASCADE`)
+	if err == nil {
+		return nil
+	}
+
+	pgErr, ok := err.(*pgconn.PgError)
+	if !ok {
+		return lazyerrors.Error(err)
+	}
+
+	switch pgErr.Code {
+	case pgerrcode.InvalidSchemaName:
+		return ErrSchemaNotExist
 	default:
 		return lazyerrors.Error(err)
 	}

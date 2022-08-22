@@ -25,7 +25,7 @@ import (
 
 // MsgHello implements HandlerInterface.
 func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	if _, err := h.driver.Info(ctx); err != nil {
+	if _, err := h.db.Driver.Info(ctx); err != nil {
 		return nil, err
 	}
 

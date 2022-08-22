@@ -23,7 +23,6 @@ import (
 
 	"github.com/jackc/pgtype/pgxtype"
 	"github.com/jackc/pgx/v4"
-	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
@@ -68,7 +67,7 @@ type SQLParam struct {
 func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier, sp SQLParam) (<-chan FetchedDocs, error) {
 	fetchedChan := make(chan FetchedDocs, FetchedChannelBufSize)
 
-	q, err := pgPool.buildQuery(ctx, querier, &sp)
+	q, err := buildQuery(ctx, querier, &sp)
 	if err != nil {
 		close(fetchedChan)
 		if errors.Is(err, ErrTableNotExist) {
@@ -92,14 +91,14 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier,
 		case err == nil:
 			// nothing
 		case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
-			pgPool.logger.Warn(
-				"context canceled, stopping fetching",
-				zap.String("db", sp.DB), zap.String("collection", sp.Collection), zap.Error(err),
+			pgPool.Config().ConnConfig.Logger.Log(
+				ctx, pgx.LogLevelWarn, "context canceled, stopping fetching",
+				map[string]any{"db": sp.DB, "collection": sp.Collection, "error": err},
 			)
 		default:
-			pgPool.logger.Error(
-				"got error, stopping fetching",
-				zap.String("db", sp.DB), zap.String("collection", sp.Collection), zap.Error(err),
+			pgPool.Config().ConnConfig.Logger.Log(
+				ctx, pgx.LogLevelError, "got error, stopping fetching",
+				map[string]any{"db": sp.DB, "collection": sp.Collection, "error": err},
 			)
 		}
 	}()
@@ -108,8 +107,8 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier,
 }
 
 // Explain returns SQL EXPLAIN results for given query parameters.
-func (pgPool *Pool) Explain(ctx context.Context, querier pgxtype.Querier, sp SQLParam) (*types.Array, error) {
-	q, err := pgPool.buildQuery(ctx, querier, &sp)
+func Explain(ctx context.Context, querier pgxtype.Querier, sp SQLParam) (*types.Array, error) {
+	q, err := buildQuery(ctx, querier, &sp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -151,7 +150,7 @@ func (pgPool *Pool) Explain(ctx context.Context, querier pgxtype.Querier, sp SQL
 //
 // It returns (possibly wrapped) ErrSchemaNotExist or ErrTableNotExist
 // if schema/database or table/collection does not exist.
-func (pgPool *Pool) buildQuery(ctx context.Context, querier pgxtype.Querier, sp *SQLParam) (string, error) {
+func buildQuery(ctx context.Context, querier pgxtype.Querier, sp *SQLParam) (string, error) {
 	exists, err := CollectionExists(ctx, querier, sp.DB, sp.Collection)
 	if err != nil {
 		return "", lazyerrors.Error(err)

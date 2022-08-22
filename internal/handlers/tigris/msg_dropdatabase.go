@@ -20,6 +20,7 @@ import (
 	"github.com/tigrisdata/tigris-client-go/driver"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -41,12 +42,12 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	}
 
 	res := must.NotFail(types.NewDocument())
-	err = h.driver.DropDatabase(ctx, db)
+	err = h.db.Driver.DropDatabase(ctx, db)
 	switch err := err.(type) {
 	case nil:
 		res.Set("dropped", db)
 	case *driver.Error:
-		if !isNotFound(err) {
+		if !tigrisdb.IsNotFound(err) {
 			return nil, lazyerrors.Error(err)
 		}
 		// nothing otherwise

@@ -14,16 +14,25 @@
 
 package testutil
 
-import "testing"
+import (
+	"net/url"
+	"testing"
+)
 
-// PoolOpts represents options for creating a connection pool.
-type PoolOpts struct {
+// PostgreSQLURLOpts represents PostgreSQLURL options.
+type PostgreSQLURLOpts struct {
+	// PostgreSQL database name, defaults to `ferretdb`.
+	DatabaseName string
+
 	// If set, the pool will use read-only user.
 	ReadOnly bool
+
+	// Extra query parameters.
+	Params map[string]string
 }
 
-// PoolConnString returns PostgreSQL connection string for testing.
-func PoolConnString(tb testing.TB, opts *PoolOpts) string {
+// PostgreSQLURL returns PostgreSQL URL for testing.
+func PostgreSQLURL(tb testing.TB, opts *PostgreSQLURLOpts) string {
 	tb.Helper()
 
 	if testing.Short() {
@@ -31,7 +40,12 @@ func PoolConnString(tb testing.TB, opts *PoolOpts) string {
 	}
 
 	if opts == nil {
-		opts = new(PoolOpts)
+		opts = new(PostgreSQLURLOpts)
+	}
+
+	databaseName := opts.DatabaseName
+	if databaseName == "" {
+		databaseName = "ferretdb"
 	}
 
 	username := "postgres"
@@ -39,23 +53,20 @@ func PoolConnString(tb testing.TB, opts *PoolOpts) string {
 		username = "readonly"
 	}
 
-	return "postgres://" + username + "@127.0.0.1:5432/ferretdb?pool_min_conns=1"
-}
+	q := url.Values{
+		"pool_min_conns": []string{"1"},
+	}
+	for k, v := range opts.Params {
+		q.Set(k, v)
+	}
 
-// SchemaName should not be used.
-//
-// Deprecated: use DatabaseName instead.
-func SchemaName(tb testing.TB) string {
-	tb.Helper()
+	u := &url.URL{
+		Scheme:   "postgres",
+		User:     url.UserPassword(username, ""),
+		Host:     "127.0.0.1:5432",
+		Path:     databaseName,
+		RawQuery: q.Encode(),
+	}
 
-	return DatabaseName(tb)
-}
-
-// TableName should not be used.
-//
-// Deprecated: use CollectionName instead.
-func TableName(tb testing.TB) string {
-	tb.Helper()
-
-	return CollectionName(tb)
+	return u.String()
 }

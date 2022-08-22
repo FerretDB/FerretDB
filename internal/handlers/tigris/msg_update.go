@@ -16,13 +16,12 @@ package tigris
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
-	"github.com/tigrisdata/tigris-client-go/fields"
+	"github.com/tigrisdata/tigris-client-go/driver"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb/filter"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -195,24 +194,25 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
-// update updates documents by _id.
+// update replaces given document.
 func (h *Handler) update(ctx context.Context, sp fetchParam, doc *types.Document) (int, error) {
-	id := must.NotFail(doc.Get("_id"))
-	f := must.NotFail(filter.Eq("_id", id).Build())
-	h.L.Sugar().Debugf("Update filter: %s", f)
-
-	update := fields.UpdateBuilder()
-	for _, k := range doc.Keys() {
-		v := must.NotFail(doc.Get(k))
-		update.Set(k, json.RawMessage(must.NotFail(tjson.Marshal(v))))
-	}
-	u := must.NotFail(update.Build()).Built()
-	h.L.Sugar().Debugf("Update: %s", u)
-
-	res, err := h.driver.UseDatabase(sp.db).Update(ctx, sp.collection, f, u)
+	u, err := tjson.Marshal(doc)
 	if err != nil {
 		return 0, lazyerrors.Error(err)
 	}
+	h.L.Sugar().Debugf("Update: %s", u)
 
-	return int(res.ModifiedCount), nil
+	_, err = h.db.Driver.UseDatabase(sp.db).Replace(ctx, sp.collection, []driver.Document{u})
+	switch err := err.(type) {
+	case nil:
+		return 1, nil
+	case *driver.Error:
+		if tigrisdb.IsInvalidArgument(err) {
+			return 0, common.NewErrorMsg(common.ErrDocumentValidationFailure, err.Error())
+		}
+
+		return 0, lazyerrors.Error(err)
+	default:
+		return 0, lazyerrors.Error(err)
+	}
 }

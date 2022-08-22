@@ -19,6 +19,7 @@ func _() {
 	_ = x[ErrNamespaceExists-48]
 	_ = x[ErrCommandNotFound-59]
 	_ = x[ErrInvalidNamespace-73]
+	_ = x[ErrDocumentValidationFailure-121]
 	_ = x[ErrNotImplemented-238]
 	_ = x[ErrFailedToParseInput-40415]
 	_ = x[ErrSortBadValue-15974]
@@ -32,7 +33,7 @@ func _() {
 	_ = x[ErrRegexMissingParen-51091]
 }
 
-const _ErrorCode_name = "UnsetInternalErrorBadValueFailedToParseTypeMismatchNamespaceNotFoundUnsuitableValueTypeConflictingUpdateOperatorsNamespaceExistsCommandNotFoundInvalidNamespaceNotImplementedLocation15974Location15975Location28667Location28724Location31253Location31254Location40415Location50840Location51075Location51091"
+const _ErrorCode_name = "UnsetInternalErrorBadValueFailedToParseTypeMismatchNamespaceNotFoundUnsuitableValueTypeConflictingUpdateOperatorsNamespaceExistsCommandNotFoundInvalidNamespaceDocumentValidationFailureNotImplementedLocation15974Location15975Location28667Location28724Location31253Location31254Location40415Location50840Location51075Location51091"
 
 var _ErrorCode_map = map[ErrorCode]string{
 	0:     _ErrorCode_name[0:5],
@@ -46,17 +47,18 @@ var _ErrorCode_map = map[ErrorCode]string{
 	48:    _ErrorCode_name[113:128],
 	59:    _ErrorCode_name[128:143],
 	73:    _ErrorCode_name[143:159],
-	238:   _ErrorCode_name[159:173],
-	15974: _ErrorCode_name[173:186],
-	15975: _ErrorCode_name[186:199],
-	28667: _ErrorCode_name[199:212],
-	28724: _ErrorCode_name[212:225],
-	31253: _ErrorCode_name[225:238],
-	31254: _ErrorCode_name[238:251],
-	40415: _ErrorCode_name[251:264],
-	50840: _ErrorCode_name[264:277],
-	51075: _ErrorCode_name[277:290],
-	51091: _ErrorCode_name[290:303],
+	121:   _ErrorCode_name[159:184],
+	238:   _ErrorCode_name[184:198],
+	15974: _ErrorCode_name[198:211],
+	15975: _ErrorCode_name[211:224],
+	28667: _ErrorCode_name[224:237],
+	28724: _ErrorCode_name[237:250],
+	31253: _ErrorCode_name[250:263],
+	31254: _ErrorCode_name[263:276],
+	40415: _ErrorCode_name[276:289],
+	50840: _ErrorCode_name[289:302],
+	51075: _ErrorCode_name[302:315],
+	51091: _ErrorCode_name[315:328],
 }
 
 func (i ErrorCode) String() string {
