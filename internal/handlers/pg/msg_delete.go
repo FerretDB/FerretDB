@@ -176,24 +176,9 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			// the list of errors corresponding to the failed statements.
 			if ordered {
 				break
-				//err = reply.SetSections(wire.OpMsgSection{
-				//	Documents: []*types.Document{must.NotFail(types.NewDocument(
-				//		"n", deleted,
-				//		"ok", float64(1),
-				//	))},
-				//})
-				//if err != nil {
-				//	return nil, lazyerrors.Error(err)
-				//}
-				//// TODO: return response here
-				//return &reply, delErrors
 			}
 		}
 	}
-
-	//if len(*delErrors) > 0 {
-	//	return nil,delErrors
-	//}
 
 	protoErr, _ := common.ProtocolError(delErrors)
 

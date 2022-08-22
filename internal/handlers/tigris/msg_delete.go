@@ -103,6 +103,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		resDocs := make([]*types.Document, 0, 16)
 		// iterate through every row and delete matching ones
 		for _, doc := range fetchedDocs {
+			// fetch current items from collection
 			matches, err := common.FilterDocument(doc, filter)
 			if err != nil {
 				return err
@@ -136,6 +137,8 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	delErrors := new(common.WriteErrors)
 
+	var reply wire.OpMsg
+
 	// process every delete filter
 	for i := 0; i < deletes.Len(); i++ {
 		err = processQuery(i)
@@ -149,20 +152,23 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			// If `ordered` is set as `false`,  we execute all the statements and return
 			// the list of errors corresponding to the failed statements.
 			if ordered {
-				return nil, delErrors
+				break
 			}
 		}
 	}
 
-	//if len(*delErrors) > 0 {
-	//	return nil, delErrors
-	//}
+	protoErr, _ := common.ProtocolError(delErrors)
 
-	var reply wire.OpMsg
+	we, err := common.AssertType[*types.Array](must.NotFail(protoErr.Document().Get("writeErrors")))
+	if err != nil {
+		panic(err)
+	}
+
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"n", deleted,
 			"ok", float64(1),
+			"writeErrors", we,
 		))},
 	})
 	if err != nil {
