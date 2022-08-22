@@ -51,6 +51,7 @@ func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	uptime := time.Since(h.startTime)
 
+	// TODO it needs to be calculated for all schemas
 	stats, err := h.pgPool.SchemaStats(ctx, db, "")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
