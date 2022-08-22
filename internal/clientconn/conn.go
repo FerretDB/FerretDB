@@ -326,9 +326,11 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 
 			msg, ok := resBody.(*wire.OpMsg)
 			if !ok {
-				//TODO: message about type
+				// TODO: message about type
 				panic(msg)
 			}
+
+			// If there's an error but no any response message, return only writeErrors.
 			if msg == nil {
 				var res wire.OpMsg
 				must.NoError(res.SetSections(wire.OpMsgSection{
@@ -341,6 +343,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 					panic(err)
 				}
 
+				// If the response from handler already created writeErrors field, don't overwrite it.
 				if _, err := doc.Get("writeErrors"); err != nil {
 					var res wire.OpMsg
 					must.NoError(res.SetSections(wire.OpMsgSection{
