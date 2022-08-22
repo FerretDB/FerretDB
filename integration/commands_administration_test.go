@@ -833,7 +833,7 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	assert.True(t, ok)
 
 	// catalogStats is calculated across all the databases, so there could be quite a lot of collections here.
-	assert.InDelta(t, float64(50), must.NotFail(catalogStats.Get("collections")), 50)
+	assert.InDelta(t, float64(250), must.NotFail(catalogStats.Get("collections")), 250)
 	assert.InDelta(t, float64(3), must.NotFail(catalogStats.Get("internalCollections")), 3)
 
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("capped")))

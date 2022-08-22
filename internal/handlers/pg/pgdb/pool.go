@@ -199,13 +199,18 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
                                          AND s.relname = t.table_name
       LEFT OUTER
       JOIN pg_indexes                AS i ON i.schemaname = t.table_schema
-                                         AND i.tablename = t.table_name
-     WHERE t.table_schema = $1`
+                                         AND i.tablename = t.table_name`
 
-	args := []any{schema}
-	if collection != "" {
-		sql = sql + " AND t.table_name = $2"
-		args = append(args, collection)
+	// TODO should we exclude service tables?
+	args := []any{}
+	if schema != "" {
+		sql += " WHERE t.table_schema = $1"
+		args = append(args, schema)
+
+		if collection != "" {
+			sql += " AND t.table_name = $2"
+			args = append(args, collection)
+		}
 	}
 
 	res.Name = schema
