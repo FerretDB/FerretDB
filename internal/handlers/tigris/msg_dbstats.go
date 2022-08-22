@@ -72,11 +72,11 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	for _, collection := range stats.Collections {
 		f := fetchParam{db: db, collection: collection.Collection}
 
-		docs, err := h.fetch(ctx, f)
+		stats, err := h.fetchStats(ctx, f)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
-		objects += int32(len(docs))
+		objects += stats.numObjects
 	}
 
 	var avgObjSize float64
