@@ -326,8 +326,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 
 			msg, ok := resBody.(*wire.OpMsg)
 			if !ok {
-				// TODO: message about type
-				panic(msg)
+				panic("Type assertion of reponse message to *wire.OpMsg failed.")
 			}
 
 			// If there's an error but no any response message, return only writeErrors.
