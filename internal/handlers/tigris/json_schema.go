@@ -72,10 +72,7 @@ func schemaFromDocument(doc *types.Document) (*tjson.Schema, error) {
 		schema.Properties = map[string]*tjson.Schema{}
 
 		for _, key := range v.(*types.Document).Keys() {
-			prop, err := v.(*types.Document).Get(key)
-			if err != nil {
-				panic(err)
-			}
+			prop := must.NotFail(v.(*types.Document).Get(key))
 
 			propSchema, err := schemaFromDocument(prop.(*types.Document))
 			if err != nil {
