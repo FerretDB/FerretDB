@@ -46,7 +46,7 @@ func TestCreateTigris(t *testing.T) {
 			expectedErr: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "collection name is not same as schema name 'TestCreateTigris' ''", // Tigris returns this
+				Message: "collection name is not same as schema name 'TestCreateTigris_empty' ''", // Tigris returns this
 			},
 		},
 		"BadValidator": {
