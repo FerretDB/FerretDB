@@ -261,7 +261,7 @@ func filterFieldArrayElemMatch(k1 string, doc, conditions *types.Document, docVa
 	return
 }
 
-// filterFieldArraySlice implements $slice projection query.
+// filterFieldArraySlice implements $slice projection Query.
 func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.Array, error) {
 	switch projectionValue := projectionValue.(type) {
 	case *types.Array:
