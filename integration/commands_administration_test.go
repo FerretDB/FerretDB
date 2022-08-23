@@ -140,30 +140,45 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 
 func TestCommandsAdministrationListDatabases(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
-	db := collection.Database()
-	name := db.Name()
+	for _, tc := range map[string]struct {
+		provider shareddata.Provider
+	}{
+		"Doubles": {
+			provider: shareddata.Doubles,
+		},
+		"DocumentsStrings": {
+			provider: shareddata.DocumentsStrings,
+		},
+		"DocumentsDocuments": {
+			provider: shareddata.DocumentsDocuments,
+		},
+	} {
+		tc := tc
+		ctx, collection := setup.Setup(t, tc.provider)
+		db := collection.Database()
+		name := db.Name()
 
-	actual, err := db.Client().ListDatabases(ctx, bson.D{{"name", name}})
-	require.NoError(t, err)
-	require.Len(t, actual.Databases, 1)
+		actual, err := db.Client().ListDatabases(ctx, bson.D{{"name", name}})
+		require.NoError(t, err)
+		require.Len(t, actual.Databases, 1)
 
-	expected := mongo.ListDatabasesResult{
-		Databases: []mongo.DatabaseSpecification{{
-			Name:       name,
-			SizeOnDisk: actual.Databases[0].SizeOnDisk,
-			Empty:      actual.Databases[0].Empty,
-		}},
-		TotalSize: actual.TotalSize,
+		expected := mongo.ListDatabasesResult{
+			Databases: []mongo.DatabaseSpecification{{
+				Name:       name,
+				SizeOnDisk: actual.Databases[0].SizeOnDisk,
+				Empty:      actual.Databases[0].Empty,
+			}},
+			TotalSize: actual.TotalSize,
+		}
+
+		assert.Equal(t, expected, actual)
+
+		setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1051")
+
+		assert.NotZero(t, actual.Databases[0].SizeOnDisk, "%s's SizeOnDisk should be non-zero", name)
+		assert.False(t, actual.Databases[0].Empty, "%s's Empty should be false", name)
+		assert.NotZero(t, actual.TotalSize, "TotalSize should be non-zero")
 	}
-
-	assert.Equal(t, expected, actual)
-
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1051")
-
-	assert.NotZero(t, actual.Databases[0].SizeOnDisk, "%s's SizeOnDisk should be non-zero", name)
-	assert.False(t, actual.Databases[0].Empty, "%s's Empty should be false", name)
-	assert.NotZero(t, actual.TotalSize, "TotalSize should be non-zero")
 }
 
 func TestCommandsAdministrationGetParameter(t *testing.T) {
@@ -685,18 +700,34 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 
 func TestCommandsAdministrationDataSize(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
-	var actual bson.D
-	command := bson.D{{"dataSize", collection.Database().Name() + "." + collection.Name()}}
-	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
-	require.NoError(t, err)
+	for _, tc := range map[string]struct {
+		provider shareddata.Provider
+	}{
+		"Doubles": {
+			provider: shareddata.Doubles,
+		},
+		"DocumentsStrings": {
+			provider: shareddata.DocumentsStrings,
+		},
+		"DocumentsDocuments": {
+			provider: shareddata.DocumentsDocuments,
+		},
+	} {
+		tc := tc
+		ctx, collection := setup.Setup(t, tc.provider)
 
-	doc := ConvertDocument(t, actual)
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+		var actual bson.D
+		command := bson.D{{"dataSize", collection.Database().Name() + "." + collection.Name()}}
+		err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+		require.NoError(t, err)
 
-	assert.InDelta(t, float64(8012), must.NotFail(doc.Get("size")), 16_024)
-	assert.InDelta(t, float64(100), must.NotFail(doc.Get("millis")), 100)
+		doc := ConvertDocument(t, actual)
+		assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+
+		assert.InDelta(t, float64(8012), must.NotFail(doc.Get("size")), 16_024)
+		assert.InDelta(t, float64(100), must.NotFail(doc.Get("millis")), 100)
+	}
 }
 
 func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
@@ -718,26 +749,42 @@ func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
 
 func TestCommandsAdministrationDBStats(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
-	var actual bson.D
-	command := bson.D{{"dbStats", int32(1)}}
-	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
-	require.NoError(t, err)
+	for _, tc := range map[string]struct {
+		provider shareddata.Provider
+	}{
+		"Doubles": {
+			provider: shareddata.Doubles,
+		},
+		"DocumentsStrings": {
+			provider: shareddata.DocumentsStrings,
+		},
+		"DocumentsDocuments": {
+			provider: shareddata.DocumentsDocuments,
+		},
+	} {
+		tc := tc
+		ctx, collection := setup.Setup(t, tc.provider)
 
-	doc := ConvertDocument(t, actual)
+		var actual bson.D
+		command := bson.D{{"dbStats", int32(1)}}
+		err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+		require.NoError(t, err)
 
-	assert.Equal(t, float64(1), doc.Remove("ok"))
-	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
-	assert.Equal(t, float64(1), doc.Remove("scaleFactor"))
+		doc := ConvertDocument(t, actual)
 
-	assert.InDelta(t, int32(1), doc.Remove("collections"), 1)
-	// dataSize is set as 35500 because Tigris data size estimation can give it
-	assert.InDelta(t, float64(35500), doc.Remove("dataSize"), 35500)
-	assert.InDelta(t, float64(16384), doc.Remove("totalSize"), 16384)
+		assert.Equal(t, float64(1), doc.Remove("ok"))
+		assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
+		assert.Equal(t, float64(1), doc.Remove("scaleFactor"))
 
-	// TODO assert.Empty(t, doc.Keys())
-	// https://github.com/FerretDB/FerretDB/issues/727
+		assert.InDelta(t, int32(1), doc.Remove("collections"), 1)
+		// dataSize is set as 35500 because Tigris data size estimation can give it
+		assert.InDelta(t, float64(35500), doc.Remove("dataSize"), 35500)
+		assert.InDelta(t, float64(16384), doc.Remove("totalSize"), 16384)
+
+		// TODO assert.Empty(t, doc.Keys())
+		// https://github.com/FerretDB/FerretDB/issues/727
+	}
 }
 
 func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
@@ -766,26 +813,42 @@ func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
 
 func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
-	var actual bson.D
-	command := bson.D{{"dbStats", int32(1)}, {"scale", float64(1_000)}}
-	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
-	require.NoError(t, err)
+	for _, tc := range map[string]struct {
+		provider shareddata.Provider
+	}{
+		"Doubles": {
+			provider: shareddata.Doubles,
+		},
+		"DocumentsStrings": {
+			provider: shareddata.DocumentsStrings,
+		},
+		"DocumentsDocuments": {
+			provider: shareddata.DocumentsDocuments,
+		},
+	} {
+		tc := tc
+		ctx, collection := setup.Setup(t, tc.provider)
 
-	doc := ConvertDocument(t, actual)
+		var actual bson.D
+		command := bson.D{{"dbStats", int32(1)}, {"scale", float64(1_000)}}
+		err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+		require.NoError(t, err)
 
-	assert.Equal(t, float64(1), doc.Remove("ok"))
-	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
-	assert.Equal(t, float64(1000), doc.Remove("scaleFactor"))
+		doc := ConvertDocument(t, actual)
 
-	assert.InDelta(t, int32(1), doc.Remove("collections"), 1)
-	// dataSize is set as 35500 because Tigris data size estimation can give it
-	assert.InDelta(t, float64(35500), doc.Remove("dataSize"), 35500)
-	assert.InDelta(t, float64(16384), doc.Remove("totalSize"), 16384)
+		assert.Equal(t, float64(1), doc.Remove("ok"))
+		assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
+		assert.Equal(t, float64(1000), doc.Remove("scaleFactor"))
 
-	// TODO assert.Empty(t, doc.Keys())
-	// https://github.com/FerretDB/FerretDB/issues/727
+		assert.InDelta(t, int32(1), doc.Remove("collections"), 1)
+		// dataSize is set as 35500 because Tigris data size estimation can give it
+		assert.InDelta(t, float64(35500), doc.Remove("dataSize"), 35500)
+		assert.InDelta(t, float64(16384), doc.Remove("totalSize"), 16384)
+
+		// TODO assert.Empty(t, doc.Keys())
+		// https://github.com/FerretDB/FerretDB/issues/727
+	}
 }
 
 func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
