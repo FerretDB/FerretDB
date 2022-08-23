@@ -648,7 +648,6 @@ func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
 
 func TestCommandsAdministrationCollStats(t *testing.T) {
 	t.Parallel()
-
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	var actual bson.D
