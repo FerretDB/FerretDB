@@ -39,7 +39,7 @@ func (tdb *TigrisDB) FetchStats(ctx context.Context, param FetchParam) (*Collect
 
 	case *driver.Error:
 		if IsNotFound(err) {
-			// If DB doesn't exist just return empty stats.
+			// If DB or collection doesn't exist just return empty stats.
 			stats := &CollectionStats{
 				NumObjects: 0,
 				Size:       0,
