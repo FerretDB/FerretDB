@@ -17,14 +17,13 @@ package common
 import (
 	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 // FindAndModifyParams represent all findAndModify requests' fields.
 // It's filled by calling prepareFindAndModifyParams.
 type FindAndModifyParams struct {
-	SQLParam                              pgdb.SQLParam
+	DB, Collection, Comment               string
 	Query, Sort, Update                   *types.Document
 	Remove, Upsert                        bool
 	ReturnNewDocument, HasUpdateOperators bool
@@ -127,11 +126,9 @@ func PrepareFindAndModifyParams(document *types.Document) (*FindAndModifyParams,
 	}
 
 	return &FindAndModifyParams{
-		SQLParam: pgdb.SQLParam{
-			DB:         db,
-			Collection: collection,
-			Comment:    comment,
-		},
+		DB:                 db,
+		Collection:         collection,
+		Comment:            comment,
 		Query:              query,
 		Update:             update,
 		Sort:               sort,
