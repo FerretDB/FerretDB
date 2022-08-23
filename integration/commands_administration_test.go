@@ -648,22 +648,39 @@ func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
 
 func TestCommandsAdministrationCollStats(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
-	var actual bson.D
-	command := bson.D{{"collStats", collection.Name()}}
-	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
-	require.NoError(t, err)
+	for _, tc := range map[string]struct {
+		provider shareddata.Provider
+	}{
+		"Doubles": {
+			provider: shareddata.Doubles,
+		},
+		"DocumentsStrings": {
+			provider: shareddata.DocumentsStrings,
+		},
+		"DocumentsDocuments": {
+			provider: shareddata.DocumentsDocuments,
+		},
+	} {
+		tc := tc
 
-	doc := ConvertDocument(t, actual)
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-	assert.Equal(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
-	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
+		ctx, collection := setup.Setup(t, tc.provider)
 
-	assert.InDelta(t, float64(8012), must.NotFail(doc.Get("size")), 16_024)
-	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("storageSize")), 8_012)
-	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalIndexSize")), 8_012)
-	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalSize")), 16_024)
+		var actual bson.D
+		command := bson.D{{"collStats", collection.Name()}}
+		err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+		require.NoError(t, err)
+
+		doc := ConvertDocument(t, actual)
+		assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+		assert.Equal(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
+		assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
+
+		assert.InDelta(t, float64(8012), must.NotFail(doc.Get("size")), 16_024)
+		assert.InDelta(t, float64(4096), must.NotFail(doc.Get("storageSize")), 8_012)
+		assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalIndexSize")), 8_012)
+		assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalSize")), 16_024)
+	}
 }
 
 func TestCommandsAdministrationDataSize(t *testing.T) {
