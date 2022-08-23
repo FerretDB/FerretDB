@@ -23,6 +23,6 @@ import (
 
 // MsgFindAndModify implements HandlerInterface.
 func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/775
+
 	return nil, notImplemented(must.NotFail(msg.Document()).Command())
 }
