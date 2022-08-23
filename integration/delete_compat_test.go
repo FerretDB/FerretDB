@@ -64,13 +64,6 @@ func TestDeleteCompat(t *testing.T) {
 			},
 			ordered: true,
 		},
-		"OrderedFalseNoError": {
-			filters: []bson.D{
-				{{"_id", "string"}},
-				{{"_id", "double"}},
-			},
-			ordered: false,
-		},
 		"OrderedTrueTwoErrors": {
 			filters: []bson.D{
 				{{"_id", "string"}},
@@ -165,7 +158,7 @@ func testDeleteCompat(t *testing.T, testCases map[string]deleteCompatTestCase) {
 						t.Logf("Target error: %v", targetErr)
 						targetErr = UnsetRaw(t, targetErr)
 						compatErr = UnsetRaw(t, compatErr)
-						assert.EqualError(t, compatErr, targetErr.Error())
+						assert.Equal(t, compatErr, targetErr)
 					} else {
 						require.NoError(t, compatErr, "compat error")
 					}
