@@ -29,6 +29,12 @@ type TigrisDB struct {
 	Driver driver.Driver
 }
 
+// FetchParam represents options/parameters used by the fetch.
+type FetchParam struct {
+	DB         string
+	Collection string
+}
+
 // New returns a new TigrisDB.
 func New(cfg *config.Driver) (*TigrisDB, error) {
 	d, err := driver.NewDriver(context.TODO(), cfg)

@@ -18,9 +18,9 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
@@ -35,14 +35,16 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	command := document.Command()
 
 	var db, collection string
+
 	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
+
 	if collection, err = common.GetRequiredParam[string](document, command); err != nil {
 		return nil, err
 	}
 
-	stats, err := h.fetchStats(ctx, fetchParam{db: db, collection: collection})
+	stats, err := h.db.FetchStats(ctx, tigrisdb.FetchParam{DB: db, Collection: collection})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -51,15 +53,16 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"ns", db+"."+collection,
-			"count", stats.numObjects,
-			"size", stats.size,
-			"storageSize", stats.size,
+			"count", stats.NumObjects,
+			"size", stats.Size,
+			"storageSize", stats.Size,
 			"totalIndexSize", int64(0),
-			"totalSize", stats.size,
+			"totalSize", stats.Size,
 			"scaleFactor", int32(1),
 			"ok", float64(1),
 		))},
 	})
+
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

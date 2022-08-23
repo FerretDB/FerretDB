@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -54,9 +55,9 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	started := time.Now()
 
 	db, collection := targets[0], targets[1]
-	f := fetchParam{db: db, collection: collection}
+	f := tigrisdb.FetchParam{DB: db, Collection: collection}
 
-	stats, err := h.fetchStats(ctx, f)
+	stats, err := h.db.FetchStats(ctx, f)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -64,12 +65,12 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	elapses := time.Since(started)
 
 	var pairs []any
-	if stats.numObjects > 0 {
+	if stats.NumObjects > 0 {
 		pairs = append(pairs, "estimate", false)
 	}
 	pairs = append(pairs,
-		"size", int32(stats.size),
-		"numObjects", stats.numObjects,
+		"size", int32(stats.Size),
+		"numObjects", stats.NumObjects,
 		"millis", int32(elapses.Milliseconds()),
 		"ok", float64(1),
 	)

@@ -41,16 +41,18 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 	common.Ignored(document, h.L, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
 
-	var fp fetchParam
-	if fp.db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	var fp tigrisdb.FetchParam
+
+	if fp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 	collectionParam, err := document.Get(document.Command())
 	if err != nil {
 		return nil, err
 	}
+
 	var ok bool
-	if fp.collection, ok = collectionParam.(string); !ok {
+	if fp.Collection, ok = collectionParam.(string); !ok {
 		return nil, common.NewErrorMsg(
 			common.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
@@ -195,14 +197,14 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // update replaces given document.
-func (h *Handler) update(ctx context.Context, sp fetchParam, doc *types.Document) (int, error) {
+func (h *Handler) update(ctx context.Context, fp tigrisdb.FetchParam, doc *types.Document) (int, error) {
 	u, err := tjson.Marshal(doc)
 	if err != nil {
 		return 0, lazyerrors.Error(err)
 	}
 	h.L.Sugar().Debugf("Update: %s", u)
 
-	_, err = h.db.Driver.UseDatabase(sp.db).Replace(ctx, sp.collection, []driver.Document{u})
+	_, err = h.db.Driver.UseDatabase(fp.DB).Replace(ctx, fp.Collection, []driver.Document{u})
 	switch err := err.(type) {
 	case nil:
 		return 1, nil
