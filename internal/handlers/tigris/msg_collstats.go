@@ -17,12 +17,52 @@ package tigris
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgCollStats implements HandlerInterface.
 func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/770
-	return nil, notImplemented(must.NotFail(msg.Document()).Command())
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	command := document.Command()
+
+	var db, collection string
+	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
+	}
+	if collection, err = common.GetRequiredParam[string](document, command); err != nil {
+		return nil, err
+	}
+
+	//stats, err := h.pgPool.SchemaStats(ctx, db, collection)
+	//if err != nil {
+	//	return nil, lazyerrors.Error(err)
+	//}
+
+	var reply wire.OpMsg
+	err = reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"ns", db+"."+collection,
+			//"count", stats.CountRows,
+			//"size", stats.SizeTotal,
+			//"storageSize", stats.SizeRelation,
+			//"totalIndexSize", stats.SizeIndexes,
+			//"totalSize", stats.SizeTotal,
+			"scaleFactor", int32(1),
+			"ok", float64(1),
+		))},
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &reply, nil
 }
