@@ -67,7 +67,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 			for _, name := range tables {
 				var tableSize int64
 				fullName := pgx.Identifier{databaseName, name}.Sanitize()
-				err = tx.QueryRow(ctx, "SELECT pg_total_relation_size($1)", fullName).Scan(&tableSize)
+				err = tx.QueryRow(ctx, "SELECT COALESCE(pg_total_relation_size($1), 0)", fullName).Scan(&tableSize)
 				if err != nil {
 					return lazyerrors.Error(err)
 				}

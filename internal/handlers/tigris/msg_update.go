@@ -106,7 +106,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		fetchedDocs, err := h.fetch(ctx, fp)
+		fetchedDocs, err := h.db.QueryDocuments(ctx, fp)
 		if err != nil {
 			return nil, err
 		}

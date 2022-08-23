@@ -77,7 +77,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		)
 	}
 
-	fetchedDocs, err := h.fetch(ctx, fp)
+	fetchedDocs, err := h.db.QueryDocuments(ctx, fp)
 	if err != nil {
 		return nil, err
 	}

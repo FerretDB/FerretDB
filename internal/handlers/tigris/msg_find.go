@@ -108,7 +108,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		)
 	}
 
-	fetchedDocs, err := h.fetch(ctx, fp)
+	fetchedDocs, err := h.db.QueryDocuments(ctx, fp)
 	if err != nil {
 		return nil, err
 	}
