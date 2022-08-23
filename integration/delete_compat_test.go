@@ -41,6 +41,7 @@ func TestDeleteCompat(t *testing.T) {
 			filters:    []bson.D{},
 			resultType: emptyResult,
 		},
+		//TODO: add nolimit test. It could require #1004 to be merged
 		"One": {
 			filters: []bson.D{
 				{{"v", int32(42)}},
