@@ -626,8 +626,6 @@ func TestCommandsAdministrationBuildInfo(t *testing.T) {
 }
 
 func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 

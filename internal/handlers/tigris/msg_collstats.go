@@ -42,20 +42,20 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	//stats, err := h.pgPool.SchemaStats(ctx, db, collection)
-	//if err != nil {
-	//	return nil, lazyerrors.Error(err)
-	//}
+	stats, err := h.fetchStats(ctx, fetchParam{db: db, collection: collection})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"ns", db+"."+collection,
-			//"count", stats.CountRows,
-			//"size", stats.SizeTotal,
-			//"storageSize", stats.SizeRelation,
-			//"totalIndexSize", stats.SizeIndexes,
-			//"totalSize", stats.SizeTotal,
+			"count", stats.numObjects,
+			"size", stats.size,
+			"storageSize", stats.size,
+			"totalIndexSize", int64(0),
+			"totalSize", stats.size,
 			"scaleFactor", int32(1),
 			"ok", float64(1),
 		))},
