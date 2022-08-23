@@ -55,9 +55,9 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	started := time.Now()
 
 	db, collection := targets[0], targets[1]
-	f := tigrisdb.FetchParam{DB: db, Collection: collection}
 
-	stats, err := h.db.FetchStats(ctx, f)
+	querier := h.db.Driver.UseDatabase(db)
+	stats, err := tigrisdb.FetchStats(ctx, querier, collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

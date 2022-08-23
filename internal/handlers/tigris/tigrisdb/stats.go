@@ -29,10 +29,8 @@ type CollectionStats struct {
 }
 
 // FetchStats returns a set of statistics for the given database and collection.
-func (tdb *TigrisDB) FetchStats(ctx context.Context, param FetchParam) (*CollectionStats, error) {
-	db := tdb.Driver.UseDatabase(param.DB)
-
-	collection, err := db.DescribeCollection(ctx, param.Collection)
+func FetchStats(ctx context.Context, db driver.Database, collection string) (*CollectionStats, error) {
+	info, err := db.DescribeCollection(ctx, collection)
 	switch err := err.(type) {
 	case nil:
 		// do nothing
@@ -54,7 +52,7 @@ func (tdb *TigrisDB) FetchStats(ctx context.Context, param FetchParam) (*Collect
 		return nil, lazyerrors.Error(err)
 	}
 
-	iter, err := db.Read(ctx, param.Collection, driver.Filter(`{}`), nil)
+	iter, err := db.Read(ctx, collection, driver.Filter(`{}`), nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -67,5 +65,5 @@ func (tdb *TigrisDB) FetchStats(ctx context.Context, param FetchParam) (*Collect
 		count++
 	}
 
-	return &CollectionStats{NumObjects: count, Size: collection.Size}, iter.Err()
+	return &CollectionStats{NumObjects: count, Size: info.Size}, iter.Err()
 }

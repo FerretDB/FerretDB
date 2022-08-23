@@ -44,7 +44,9 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	stats, err := h.db.FetchStats(ctx, tigrisdb.FetchParam{DB: db, Collection: collection})
+	querier := h.db.Driver.UseDatabase(db)
+
+	stats, err := tigrisdb.FetchStats(ctx, querier, collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
