@@ -647,8 +647,6 @@ func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
 }
 
 func TestCommandsAdministrationCollStats(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
