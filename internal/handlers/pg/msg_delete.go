@@ -29,7 +29,6 @@ import (
 )
 
 // MsgDelete implements HandlerInterface.
-// It can return both response and error if partial delete was made.
 func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {

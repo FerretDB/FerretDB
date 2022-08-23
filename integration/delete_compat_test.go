@@ -41,20 +41,6 @@ func TestDeleteCompat(t *testing.T) {
 			filters:    []bson.D{},
 			resultType: emptyResult,
 		},
-		"OrderedTrueNoError": {
-			filters: []bson.D{
-				{{"_id", "string"}},
-				{{"_id", "double"}},
-			},
-			ordered: true,
-		},
-		"OrderedFalseNoError": {
-			filters: []bson.D{
-				{{"_id", "string"}},
-				{{"_id", "double"}},
-			},
-			ordered: false,
-		},
 		"OrderedTrue": {
 			filters: []bson.D{
 				{{"_id", "string"}},
@@ -71,6 +57,29 @@ func TestDeleteCompat(t *testing.T) {
 			},
 			ordered: false,
 		},
+		"OrderedTrueNoError": {
+			filters: []bson.D{
+				{{"_id", "string"}},
+				{{"_id", "double"}},
+			},
+			ordered: true,
+		},
+		"OrderedFalseNoError": {
+			filters: []bson.D{
+				{{"_id", "string"}},
+				{{"_id", "double"}},
+			},
+			ordered: false,
+		},
+		"OrderedTrueTwoErrors": {
+			filters: []bson.D{
+				{{"_id", "string"}},
+				{{"v", bson.D{{"$all", 9}}}},
+				{{"_id", "double"}},
+				{{"v", bson.D{{"$eq", 9}}}},
+			},
+			ordered: true,
+		},
 		"OrderedFalseTwoErrors": {
 			filters: []bson.D{
 				{{"_id", "string"}},
@@ -79,6 +88,24 @@ func TestDeleteCompat(t *testing.T) {
 				{{"v", bson.D{{"$eq", 9}}}},
 			},
 			ordered: false,
+		},
+		"OrderedTrueAllErrors": {
+			filters: []bson.D{
+				{{"v", bson.D{{"$all", 9}}}},
+				{{"v", bson.D{{"$eq", 9}}}},
+				{{"v", bson.D{{"$all", 9}}}},
+			},
+			ordered:    true,
+			resultType: emptyResult,
+		},
+		"OrderedFalseAllErrors": {
+			filters: []bson.D{
+				{{"v", bson.D{{"$all", 9}}}},
+				{{"v", bson.D{{"$eq", 9}}}},
+				{{"v", bson.D{{"$all", 9}}}},
+			},
+			ordered:    false,
+			resultType: emptyResult,
 		},
 		"One": {
 			filters: []bson.D{
