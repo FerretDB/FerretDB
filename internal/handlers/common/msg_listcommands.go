@@ -54,6 +54,10 @@ var Commands = map[string]command{
 		Help:    "Returns a summary of the build information.",
 		Handler: (handlers.Interface).MsgBuildInfo,
 	},
+	"collMod": {
+		Help:    "Adds options to a collection or modify view definitions.",
+		Handler: (handlers.Interface).MsgCollMod,
+	},
 	"collStats": {
 		Help:    "Returns storage data for a collection.",
 		Handler: (handlers.Interface).MsgCollStats,
