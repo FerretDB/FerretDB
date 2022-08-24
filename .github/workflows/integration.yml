@@ -34,7 +34,8 @@ jobs:
           - {name: "PostgreSQL", handler: "pg"}
           - {name: "Tigris", handler: "tigris"}
           - {name: "Tigris main", handler: "tigris", tigris_dockerfile: "tigris_main"}
-          - {name: "MongoDB", handler: "mongodb"}
+          - {name: "MongoDB 5", handler: "mongodb"}
+          - {name: "MongoDB 6", handler: "mongodb", mongo_dockerfile: "mongo6"}
 
     steps:
       - name: Checkout code
@@ -54,6 +55,7 @@ jobs:
       - name: Start environment
         run: bin/task env-up-detach
         env:
+          MONGO_DOCKERFILE: ${{ matrix.mongo_dockerfile }}
           TIGRIS_DOCKERFILE: ${{ matrix.tigris_dockerfile }}
 
       - name: Run init
