@@ -49,7 +49,6 @@ func TestUpdateCompat(t *testing.T) {
 		},
 		"ReplaceEmptyDocument": {
 			replace: bson.D{},
-			skip:    "https://github.com/FerretDB/FerretDB/issues/1045",
 		},
 	}
 

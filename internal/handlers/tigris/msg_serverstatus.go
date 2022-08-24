@@ -29,16 +29,6 @@ import (
 
 // MsgServerStatus implements HandlerInterface.
 func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	// document, err := msg.Document()
-	// if err != nil {
-	// 	return nil, lazyerrors.Error(err)
-	// }
-	//
-	// var db string
-	// if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-	// 	return nil, err
-	// }
-
 	host, err := os.Hostname()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
