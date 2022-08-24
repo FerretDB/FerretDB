@@ -85,7 +85,7 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 	}
 }
 
-// SkipForMongoWithReason skips the current test for monogdb handler.
+// SkipForMongoWithReason skips the current test for mongodb handler.
 //
 // Ideally, this function should not be used. It is allowed to use it in Tigris-specific tests only.
 func SkipForMongoWithReason(tb testing.TB, reason string) {
