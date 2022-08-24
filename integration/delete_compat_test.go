@@ -43,41 +43,41 @@ func TestDeleteCompat(t *testing.T) {
 		},
 		"OrderedTrue": {
 			filters: []bson.D{
-				{{"_id", "string"}},
+				{{"v", "foo"}},
 				{{"v", bson.D{{"$all", 9}}}},
-				{{"_id", "double"}},
+				{{"v", float32(42.13)}},
 			},
 			ordered: true,
 		},
 		"OrderedFalse": {
 			filters: []bson.D{
-				{{"_id", "string"}},
+				{{"v", "foo"}},
 				{{"v", bson.D{{"$all", 9}}}},
-				{{"_id", "double"}},
+				{{"v", float32(42.13)}},
 			},
 			ordered: false,
 		},
 		"OrderedTrueNoError": {
 			filters: []bson.D{
-				{{"_id", "string"}},
-				{{"_id", "double"}},
+				{{"v", "foo"}},
+				{{"v", float32(42.13)}},
 			},
 			ordered: true,
 		},
 		"OrderedTrueTwoErrors": {
 			filters: []bson.D{
-				{{"_id", "string"}},
+				{{"v", "foo"}},
 				{{"v", bson.D{{"$all", 9}}}},
-				{{"_id", "double"}},
+				{{"v", float32(42.13)}},
 				{{"v", bson.D{{"$eq", 9}}}},
 			},
 			ordered: true,
 		},
 		"OrderedFalseTwoErrors": {
 			filters: []bson.D{
-				{{"_id", "string"}},
+				{{"v", "foo"}},
 				{{"v", bson.D{{"$all", 9}}}},
-				{{"_id", "double"}},
+				{{"v", float32(42.13)}},
 				{{"v", bson.D{{"$eq", 9}}}},
 			},
 			ordered: false,
