@@ -271,6 +271,7 @@ func (we *WriteErrors) Append(err error, index int32) {
 	if e, ok := parseErr[*writeError](err); ok {
 		e.index = &index
 		*we = append(*we, *e)
+
 		return
 	}
 
