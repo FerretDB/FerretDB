@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -25,17 +26,17 @@ import (
 
 // getJSONSchema returns a marshaled JSON schema received from validator -> $jsonSchema.
 func getJSONSchema(doc *types.Document) (*tjson.Schema, error) {
-	v, err := doc.Get("validator")
+	v, err := common.GetRequiredParam[*types.Document](doc, "validator")
 	if err != nil {
-		return nil, errors.New("required parameter `validator` is missing")
+		return nil, err
 	}
 
-	s, err := v.(*types.Document).Get("$jsonSchema")
+	schema, err := common.GetRequiredParam[*types.Document](v, "$jsonSchema")
 	if err != nil {
-		return nil, errors.New("required parameter `$jsonSchema` is missing")
+		return nil, err
 	}
 
-	return schemaFromDocument(s.(*types.Document))
+	return schemaFromDocument(schema)
 }
 
 // schema creates a new TJSON Schema based on the types.Document format.
@@ -44,23 +45,46 @@ func schemaFromDocument(doc *types.Document) (*tjson.Schema, error) {
 	schema := tjson.Schema{}
 
 	if v := doc.Remove("title"); v != nil {
-		schema.Title = v.(string)
+		title, ok := v.(string)
+		if !ok {
+			return nil, errors.New("invalid schema, the following key should be a string: title")
+		}
+
+		schema.Title = title
 	}
 
 	if v := doc.Remove("description"); v != nil {
-		schema.Description = v.(string)
+		description, ok := v.(string)
+		if !ok {
+			return nil, errors.New("invalid schema, the following key should be a string: description")
+		}
+
+		schema.Description = description
 	}
 
 	if v := doc.Remove("type"); v != nil {
-		schema.Type = tjson.SchemaType(v.(string))
+		schemaType, ok := v.(string)
+		if !ok {
+			return nil, errors.New("invalid schema, the following key should be a string: type")
+		}
+
+		schema.Type = tjson.SchemaType(schemaType)
 	}
 
 	if v := doc.Remove("format"); v != nil {
-		schema.Format = tjson.SchemaFormat(v.(string))
+		format, ok := v.(string)
+		if !ok {
+			return nil, errors.New("invalid schema, the following key should be a string: format")
+		}
+
+		schema.Format = tjson.SchemaFormat(format)
 	}
 
 	if v := doc.Remove("primary_key"); v != nil {
-		arr := v.(*types.Array)
+		arr, ok := v.(*types.Array)
+		if !ok {
+			return nil, errors.New("invalid schema, the following key should be an array: primary_key")
+		}
 
 		schema.PrimaryKey = make([]string, arr.Len())
 		for i := 0; i < arr.Len(); i++ {
@@ -71,28 +95,43 @@ func schemaFromDocument(doc *types.Document) (*tjson.Schema, error) {
 	if v := doc.Remove("properties"); v != nil {
 		schema.Properties = map[string]*tjson.Schema{}
 
-		for _, key := range v.(*types.Document).Keys() {
-			prop := must.NotFail(v.(*types.Document).Get(key))
+		props, ok := v.(*types.Document)
+		if !ok {
+			return nil, errors.New("invalid schema, the following key should be a document: properties")
+		}
 
-			propSchema, err := schemaFromDocument(prop.(*types.Document))
+		for _, key := range v.(*types.Document).Keys() {
+			prop, err := common.GetRequiredParam[*types.Document](props, key)
 			if err != nil {
 				return nil, err
 			}
+
+			propSchema, err := schemaFromDocument(prop)
+			if err != nil {
+				return nil, err
+			}
+
 			schema.Properties[key] = propSchema
 		}
 	}
 
 	if v := doc.Remove("items"); v != nil {
-		sch, err := schemaFromDocument(v.(*types.Document))
+		items, ok := v.(*types.Document)
+		if !ok {
+			return nil, errors.New("invalid schema, the following key should be a document: items")
+		}
+
+		sch, err := schemaFromDocument(items)
 		if err != nil {
 			return nil, err
 		}
+
 		schema.Items = sch
 	}
 
 	// If any other fields are left, the doc doesn't represent a valid schema.
 	if len(doc.Keys()) > 0 {
-		msg := fmt.Sprintf("invalid schema, the follwing keys are not supported: %s", doc.Keys())
+		msg := fmt.Sprintf("invalid schema, the following keys are not supported: %s", doc.Keys())
 		return nil, errors.New(msg)
 	}
 
