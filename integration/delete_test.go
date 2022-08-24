@@ -55,3 +55,18 @@ func TestDeleteSimple(t *testing.T) {
 		})
 	}
 }
+
+func TestDeleteLimitNotSet(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
+	cmd := bson.D{
+		{"delete", collection.Name()},
+		{"deletes", bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}}}},
+	}
+
+	expectedErr := "(Location40414) BSON field 'delete.deletes.limit' is missing but a required field"
+
+	res := collection.Database().RunCommand(ctx, cmd)
+	assert.EqualError(t, res.Err(), expectedErr)
+}
