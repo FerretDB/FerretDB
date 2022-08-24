@@ -235,6 +235,17 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			return false, err
 		}
 
+		if v, ok := docValue.(int64); ok && v >= math.MaxInt64 {
+			return false, NewWriteErrorMsg(
+				ErrBadValue,
+				fmt.Sprintf(
+					`Failed to apply $inc operations to current value ((NumberLong)%d) for document {_id: "%s"}`,
+					v,
+					must.NotFail(doc.Get("_id")),
+				),
+			)
+		}
+
 		incremented, err := addNumbers(incValue, docValue)
 		if err == nil {
 			err := doc.SetByPath(path, incremented)
@@ -279,7 +290,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 				fmt.Sprintf(
 					`Cannot apply $inc to a value of non-numeric type. `+
 						`{_id: "%s"} has the field '%s' of non-numeric type %s`,
-					must.NotFail(doc.Get("_id")),
+					types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
 					incKey,
 					AliasFromType(docValue),
 				),

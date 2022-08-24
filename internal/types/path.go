@@ -209,7 +209,7 @@ func insertByPath(doc *Document, path Path) error {
 						"Cannot create field '%s' in element {%s: %s}",
 						pathElem,
 						insertedPath.Slice()[suffix-1],
-						formatAnyValue(v),
+						FormatAnyValue(v),
 					)
 				}
 			}
@@ -225,13 +225,15 @@ func insertByPath(doc *Document, path Path) error {
 	return nil
 }
 
-// formatAnyValue formats value for error message output.
-func formatAnyValue(v any) string {
+// FormatAnyValue formats value for error message output.
+func FormatAnyValue(v any) string {
 	switch v := v.(type) {
 	case *Document:
 		return formatDocument(v)
 	case *Array:
 		return formatArray(v)
+	case ObjectID:
+		return fmt.Sprintf("ObjectID('%s')", v)
 	default:
 		return fmt.Sprintf("%v", v)
 	}

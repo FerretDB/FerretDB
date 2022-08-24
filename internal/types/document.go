@@ -353,7 +353,7 @@ func (d *Document) SetByPath(path Path, value any) error {
 				"Cannot create field '%s' in element {%s: %s}",
 				path.Suffix(),
 				path.Slice()[len(path.Slice())-2],
-				formatAnyValue(innerComp),
+				FormatAnyValue(innerComp),
 			)
 		}
 
