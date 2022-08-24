@@ -32,6 +32,20 @@ import (
 func UpdateDocument(doc, update *types.Document) (bool, error) {
 	var changed bool
 	var err error
+
+	if update.Len() == 0 {
+		// replace to empty doc
+		for _, key := range doc.Keys() {
+			if key != "_id" {
+				changed = true
+
+				doc.Remove(key)
+			}
+		}
+
+		return changed, nil
+	}
+
 	for _, updateOp := range update.Keys() {
 		updateV := must.NotFail(update.Get(updateOp))
 
