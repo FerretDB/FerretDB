@@ -832,8 +832,8 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	catalogStats, ok := must.NotFail(doc.Get("catalogStats")).(*types.Document)
 	assert.True(t, ok)
 
-	// TODO This check needs to be fixed as the number of collections might vary https://github.com/FerretDB/FerretDB/issues/1001
-	assert.InDelta(t, float64(1), must.NotFail(catalogStats.Get("collections")), 1)
+	// catalogStats is calculated across all the databases, so there could be quite a lot of collections here.
+	assert.InDelta(t, float64(250), must.NotFail(catalogStats.Get("collections")), 250)
 	assert.InDelta(t, float64(3), must.NotFail(catalogStats.Get("internalCollections")), 3)
 
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("capped")))
