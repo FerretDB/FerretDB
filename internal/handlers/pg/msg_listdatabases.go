@@ -16,7 +16,6 @@ package pg
 
 import (
 	"context"
-
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -67,6 +66,10 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 			for _, name := range tables {
 				var tableSize int64
 				fullName := pgx.Identifier{databaseName, name}.Sanitize()
+				// If the table was deleted after we got the list of tables, pg_total_relation_size will return null.
+				// We use COALESCE to scan this null value as 0 in this case.
+				// Even though we run the query in a transaction, the current isolation level doesn't guarantee
+				// that the table is not deleted (see https://www.postgresql.org/docs/14/transaction-iso.html).
 				err = tx.QueryRow(ctx, "SELECT COALESCE(pg_total_relation_size($1), 0)", fullName).Scan(&tableSize)
 				if err != nil {
 					return lazyerrors.Error(err)
