@@ -233,9 +233,9 @@ func FormatAnyValue(v any) string {
 	case *Array:
 		return formatArray(v)
 	case ObjectID:
-		return fmt.Sprintf("ObjectID('%s')", v)
+		return fmt.Sprintf("ObjectId('%X')", v)
 	default:
-		return fmt.Sprintf("%v", v)
+		return fmt.Sprintf(`"%v"`, v)
 	}
 }
 
