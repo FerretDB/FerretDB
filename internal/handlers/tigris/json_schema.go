@@ -23,7 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// getJSONSchema returns a masrshaled JSON schema received from validator -> $jsonSchema.
+// getJSONSchema returns a marshaled JSON schema received from validator -> $jsonSchema.
 func getJSONSchema(doc *types.Document) (*tjson.Schema, error) {
 	v, err := doc.Get("validator")
 	if err != nil {
