@@ -165,7 +165,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	for i := 0; i < deletes.Len(); i++ {
 		err := processQuery(i)
 		if err != nil {
-			delErrors.Append(err)
+			delErrors.Append(err, int32(i))
 
 			// Delete statements in the `deletes` field are not transactional.
 			// It means that we run each delete statement separately.
@@ -180,17 +180,21 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	// minimal reply document
-	replyDoc := must.NotFail(types.NewDocument(
-		"n", deleted,
-		"ok", float64(1),
-	))
+	var replyDoc *types.Document
 
 	// if there are delete errors append writErrors field
 	if len(*delErrors) > 0 {
-		protoErr, _ := common.ProtocolError(delErrors)
-		we := must.NotFail(common.AssertType[*types.Array](must.NotFail(protoErr.Document().Get("writeErrors"))))
-		replyDoc.Set("writeErrors", we)
+		//	protoErr, _ := common.ProtocolError(delErrors)
+		//	we := must.NotFail(common.AssertType[*types.Array](must.NotFail(protoErr.Document().Get("writeErrors"))))
+
+		//we := must.NotFail(types.NewArray(delErrors))
+		replyDoc = delErrors.Document()
+	} else {
+		replyDoc = must.NotFail(types.NewDocument(
+			"ok", float64(1),
+		))
 	}
+	replyDoc.Set("n", deleted)
 
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{replyDoc},

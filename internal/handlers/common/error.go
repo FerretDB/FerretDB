@@ -235,10 +235,16 @@ func (we *WriteErrors) Document() *types.Document {
 	for _, e := range *we {
 		// Fields "code" and "errmsg" must always be filled in so that clients can parse the error message.
 		// Otherwise, the mongo client would parse it as a CommandError.
-		must.NoError(errs.Append(must.NotFail(types.NewDocument(
-			"code", int32(e.code),
-			"errmsg", e.err,
-		))))
+		doc := must.NotFail(types.NewDocument())
+
+		if e.index != nil {
+			must.NoError(doc.Set("index", *e.index))
+		}
+
+		must.NoError(doc.Set("code", int32(e.code)))
+		must.NoError(doc.Set("errmsg", e.err))
+
+		must.NoError(errs.Append(doc))
 	}
 
 	// "writeErrors" field must be present in the result document so that clients can parse it as WriteErrors.
@@ -260,25 +266,27 @@ func parseErr[T any](err error) (T, bool) {
 
 // Append convert the err to the writeError type and
 // appends it to WriteErrors.
-func (we *WriteErrors) Append(err error) {
+func (we *WriteErrors) Append(err error, index int32) {
 	if e, ok := parseErr[*writeError](err); ok {
+		e.index = &index
 		*we = append(*we, *e)
 		return
 	}
 
 	if e, ok := parseErr[*CommandError](err); ok {
-		*we = append(*we, writeError{err: e.Unwrap().Error(), code: e.code})
+		*we = append(*we, writeError{err: e.Unwrap().Error(), code: e.code, index: &index})
 		return
 	}
 
-	*we = append(*we, writeError{err: err.Error(), code: errInternalError})
+	*we = append(*we, writeError{err: err.Error(), code: errInternalError, index: &index})
 }
 
 // writeError represents protocol write error.
 // It required to build the correct write error result.
 type writeError struct {
-	code ErrorCode
-	err  string
+	code  ErrorCode
+	err   string
+	index *int32
 }
 
 // Error returns the string that contains
