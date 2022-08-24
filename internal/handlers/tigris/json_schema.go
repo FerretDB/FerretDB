@@ -39,8 +39,10 @@ func getJSONSchema(doc *types.Document) (*tjson.Schema, error) {
 	return schemaFromDocument(schema)
 }
 
-// schema creates a new TJSON Schema based on the types.Document format.
+// schema creates a new TJSON Schema from types.Document format.
 // The given doc should contain the keys typical for schema (e.g. title, type etc).
+// In fact, this function coverts a document to tjson.JSONSchema, so the given doc should represent a valid JSON schema.
+// If you need a function that returns a possible schema for the given document, see tjson.DocumentSchema
 func schemaFromDocument(doc *types.Document) (*tjson.Schema, error) {
 	schema := tjson.Schema{}
 
