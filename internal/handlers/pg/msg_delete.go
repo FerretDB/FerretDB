@@ -63,6 +63,9 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		var limit int64
+		if limit, err = common.GetRequiredParam[int64](d, "limit"); err != nil {
+			return nil, err
+		}
 		l, err := d.Get("limit")
 
 		if err != nil {
