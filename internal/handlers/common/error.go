@@ -266,6 +266,7 @@ func parseErr[T any](err error) (T, bool) {
 
 // Append convert the err to the writeError type and
 // appends it to WriteErrors.
+// TODO: add comment for index.
 func (we *WriteErrors) Append(err error, index int32) {
 	if e, ok := parseErr[*writeError](err); ok {
 		e.index = &index

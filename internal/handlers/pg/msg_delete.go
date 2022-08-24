@@ -187,7 +187,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		//	protoErr, _ := common.ProtocolError(delErrors)
 		//	we := must.NotFail(common.AssertType[*types.Array](must.NotFail(protoErr.Document().Get("writeErrors"))))
 
-		//we := must.NotFail(types.NewArray(delErrors))
+		// we := must.NotFail(types.NewArray(delErrors))
 		replyDoc = delErrors.Document()
 	} else {
 		replyDoc = must.NotFail(types.NewDocument(

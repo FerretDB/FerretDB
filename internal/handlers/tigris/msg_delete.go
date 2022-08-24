@@ -144,7 +144,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	for i := 0; i < deletes.Len(); i++ {
 		err = processQuery(i)
 		if err != nil {
-			delErrors.Append(err, &i)
+			delErrors.Append(err, int32(i))
 
 			// Delete statements in the `deletes` field are not transactional.
 			// It means that we run each delete statement separately.
