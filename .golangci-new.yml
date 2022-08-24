@@ -3,6 +3,7 @@
 
 run:
   timeout: 3m
+  allow-parallel-runners: true
 
 linters-settings:
   staticcheck:
