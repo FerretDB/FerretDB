@@ -53,7 +53,8 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	}
 	common.Ignored(document, h.l, ignoredFields...)
 
-	params, err := prepareFindAndModifyParams(document)
+	u := document.DeepCopy()
+	params, err := prepareFindAndModifyParams(u)
 	if err != nil {
 		return nil, err
 	}
