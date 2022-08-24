@@ -76,6 +76,8 @@ func TestCreateTigris(t *testing.T) {
 		name, tc := name, tc
 
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			opts := new(options.CreateCollectionOptions).SetValidator(bson.D{{"$jsonSchema", tc.validator}})
 
 			err := db.Client().Database(dbName).CreateCollection(ctx, tc.collection, opts)
