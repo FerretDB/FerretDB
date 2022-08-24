@@ -78,19 +78,21 @@ unprofessional or unwelcome in the community.
 
 **Consequence**: A private, written warning from community leaders, providing
 clarity around the nature of the violation and an explanation of why the
-behavior was inappropriate. A public apology may be requested.
+behavior was inappropriate.
+A public apology may be requested.
 
 ### 2. Warning
 
 **Community Impact**: A violation through a single incident or series of
 actions.
 
-**Consequence**: A warning with consequences for continued behavior. No
+**Consequence**: A warning with consequences for continued behavior.
+No
 interaction with the people involved, including unsolicited interaction with
-those enforcing the Code of Conduct, for a specified period of time. This
-includes avoiding interactions in community spaces as well as external channels
-like social media. Violating these terms may lead to a temporary or permanent
-ban.
+those enforcing the Code of Conduct, for a specified period of time.
+This includes avoiding interactions in community spaces as well as external channels
+like social media.
+Violating these terms may lead to a temporary or permanent ban.
 
 ### 3. Temporary Ban
 
@@ -98,8 +100,8 @@ ban.
 sustained inappropriate behavior.
 
 **Consequence**: A temporary ban from any sort of interaction or public
-communication with the community for a specified period of time. No public or
-private interaction with the people involved, including unsolicited interaction
+communication with the community for a specified period of time.
+No public or private interaction with the people involved, including unsolicited interaction
 with those enforcing the Code of Conduct, is allowed during this period.
 Violating these terms may lead to a permanent ban.
 
@@ -122,7 +124,8 @@ Community Impact Guidelines were inspired by
 [Mozilla's code of conduct enforcement ladder][Mozilla CoC].
 
 For answers to common questions about this code of conduct, see the FAQ at
-[https://www.contributor-covenant.org/faq][FAQ]. Translations are available at
+[https://www.contributor-covenant.org/faq][FAQ].
+Translations are available at
 [https://www.contributor-covenant.org/translations][translations].
 
 [homepage]: https://www.contributor-covenant.org
