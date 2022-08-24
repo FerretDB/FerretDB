@@ -17,8 +17,11 @@ package tjson
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -209,6 +212,112 @@ func (s *Schema) Unmarshal(b []byte) error {
 	}
 	if err := checkConsumed(dec, r); err != nil {
 		return lazyerrors.Error(err)
+	}
+
+	return nil
+}
+
+// UnmarshalFromDocument creates a new TJSON Schema from types.Document format.
+// TODO The given doc should contain the keys typical for schema (e.g. title, type etc).
+// TODO In fact, this function coverts a document to tjson.JSONSchema, so the given doc should represent a valid JSON schema.
+// TODO If you need a function that returns a possible schema for the given document, see tjson.DocumentSchema.
+func (s *Schema) UnmarshalFromDocument(doc *types.Document) error {
+	if v := doc.Remove("title"); v != nil {
+		title, ok := v.(string)
+		if !ok {
+			return errors.New("invalid schema, the following key should be a string: title")
+		}
+
+		s.Title = title
+	}
+
+	if v := doc.Remove("description"); v != nil {
+		description, ok := v.(string)
+		if !ok {
+			return errors.New("invalid schema, the following key should be a string: description")
+		}
+
+		s.Description = description
+	}
+
+	if v := doc.Remove("type"); v != nil {
+		schemaType, ok := v.(string)
+		if !ok {
+			return errors.New("invalid schema, the following key should be a string: type")
+		}
+
+		s.Type = SchemaType(schemaType)
+	}
+
+	if v := doc.Remove("format"); v != nil {
+		format, ok := v.(string)
+		if !ok {
+			return errors.New("invalid schema, the following key should be a string: format")
+		}
+
+		s.Format = SchemaFormat(format)
+	}
+
+	if v := doc.Remove("primary_key"); v != nil {
+		arr, ok := v.(*types.Array)
+		if !ok {
+			return errors.New("invalid schema, the following key should be an array: primary_key")
+		}
+
+		s.PrimaryKey = make([]string, arr.Len())
+
+		for i := 0; i < arr.Len(); i++ {
+			str, ok := must.NotFail(arr.Get(i)).(string)
+			if !ok {
+				return errors.New("invalid schema, primary_key values should be strings")
+			}
+			s.PrimaryKey[i] = str
+		}
+	}
+
+	if v := doc.Remove("properties"); v != nil {
+		s.Properties = map[string]*Schema{}
+
+		props, ok := v.(*types.Document)
+		if !ok {
+			return errors.New("invalid schema, the following key should be a document: properties")
+		}
+
+		for _, key := range v.(*types.Document).Keys() {
+			prop, err := common.GetRequiredParam[*types.Document](props, key)
+			if err != nil {
+				return err
+			}
+
+			subsschema := new(Schema)
+			err = subsschema.UnmarshalFromDocument(prop)
+			if err != nil {
+				return err
+			}
+
+			s.Properties[key] = subsschema
+		}
+	}
+
+	if v := doc.Remove("items"); v != nil {
+		items, ok := v.(*types.Document)
+		if !ok {
+			return errors.New("invalid schema, the following key should be a document: items")
+		}
+
+		subschema := new(Schema)
+		err := subschema.UnmarshalFromDocument(items)
+		if err != nil {
+			return err
+		}
+
+		s.Items = subschema
+	}
+
+	// If any other fields are left, the doc doesn't represent a valid schema.
+	if len(doc.Keys()) > 0 {
+		msg := fmt.Sprintf("invalid schema, the following keys are not supported: %s", doc.Keys())
+		return errors.New(msg)
 	}
 
 	return nil
