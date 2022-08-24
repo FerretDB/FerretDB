@@ -233,14 +233,14 @@ func (we *WriteErrors) Unwrap() error {
 func (we *WriteErrors) Document() *types.Document {
 	errs := must.NotFail(types.NewArray())
 	for _, e := range *we {
-		// Fields "code" and "errmsg" must always be filled in so that clients can parse the error message.
-		// Otherwise, the mongo client would parse it as a CommandError.
 		doc := must.NotFail(types.NewDocument())
 
 		if e.index != nil {
 			must.NoError(doc.Set("index", *e.index))
 		}
 
+		// Fields "code" and "errmsg" must always be filled in so that clients can parse the error message.
+		// Otherwise, the mongo client would parse it as a CommandError.
 		must.NoError(doc.Set("code", int32(e.code)))
 		must.NoError(doc.Set("errmsg", e.err))
 
@@ -264,9 +264,9 @@ func parseErr[T any](err error) (T, bool) {
 	return obj, ok
 }
 
-// Append convert the err to the writeError type and
-// appends it to WriteErrors.
-// TODO: add comment for index.
+// Append converts the err to the writeError type and
+// appends it to WriteErrors. The index value is an
+// index of the query with error.
 func (we *WriteErrors) Append(err error, index int32) {
 	if e, ok := parseErr[*writeError](err); ok {
 		e.index = &index
@@ -284,6 +284,7 @@ func (we *WriteErrors) Append(err error, index int32) {
 
 // writeError represents protocol write error.
 // It required to build the correct write error result.
+// The index field is optional and won't be used if it's nil.
 type writeError struct {
 	code  ErrorCode
 	err   string
