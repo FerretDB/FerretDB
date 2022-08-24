@@ -87,6 +87,7 @@ func schemaFromDocument(doc *types.Document) (*tjson.Schema, error) {
 		}
 
 		schema.PrimaryKey = make([]string, arr.Len())
+
 		for i := 0; i < arr.Len(); i++ {
 			str, ok := must.NotFail(arr.Get(i)).(string)
 			if !ok {
