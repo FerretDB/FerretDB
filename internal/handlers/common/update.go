@@ -35,12 +35,14 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 	if update.Len() == 0 {
 		// replace to empty doc
-		for _, setKey := range doc.Keys() {
-			if setKey != "_id" {
+		for _, key := range doc.Keys() {
+			if key != "_id" {
 				changed = true
-				doc.Remove(setKey)
+
+				doc.Remove(key)
 			}
 		}
+
 		return changed, nil
 	}
 
