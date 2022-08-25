@@ -51,18 +51,14 @@ func (ts *timestampType) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	*ts = timestampType{S: int32(o.T >> 32), I: int32(o.T)}
+	*ts = timestampType(o.T)
 	return nil
 }
 
 // MarshalJSON implements fjsontype interface.
 func (ts *timestampType) MarshalJSON() ([]byte, error) {
-	result := int64(ts.S)
-	result <<= 32
-	result |= int64(ts.I)
-
 	res, err := json.Marshal(timestampJSON{
-		T: uint64(result),
+		T: uint64(*ts),
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)

@@ -185,7 +185,7 @@ func compareScalars(v1, v2 any) CompareResult {
 	case Timestamp:
 		v2, ok := v2.(Timestamp)
 		if ok {
-			return compareOrdered(v1.S, v2.S)
+			return compareOrdered(v1, v2)
 		}
 		return Incomparable
 

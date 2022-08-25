@@ -22,11 +22,11 @@ import (
 
 var timestampTestCases = []testCase{{
 	name: "one",
-	v:    pointer.To(timestampType{I: 1}),
+	v:    pointer.To(timestampType(1)),
 	j:    `{"$t":"1"}`,
 }, {
 	name: "zero",
-	v:    pointer.To(timestampType{}),
+	v:    pointer.To(timestampType(0)),
 	j:    `{"$t":"0"}`,
 }, {
 	name: "EOF",
