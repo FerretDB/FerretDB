@@ -34,8 +34,7 @@ jobs:
           - {name: "PostgreSQL", handler: "pg"}
           - {name: "Tigris", handler: "tigris"}
           - {name: "Tigris main", handler: "tigris", tigris_dockerfile: "tigris_main"}
-          - {name: "MongoDB 5", handler: "mongodb"}
-          - {name: "MongoDB 6", handler: "mongodb", mongo_dockerfile: "mongo6"}
+          - {name: "MongoDB", handler: "mongodb"}
 
     steps:
       - name: Checkout code
