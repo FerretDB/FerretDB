@@ -268,15 +268,17 @@ func parseErr[T any](err error) (T, bool) {
 // appends it to WriteErrors. The index value is an
 // index of the query with error.
 func (we *WriteErrors) Append(err error, index int32) {
-	if e, ok := parseErr[*writeError](err); ok {
-		e.index = &index
-		*we = append(*we, *e)
+	var writeErr *writeError
+	var cmdErr *CommandError
 
+	switch {
+	case errors.As(err, &writeErr):
+		writeErr.index = &index
+		*we = append(*we, *writeErr)
 		return
-	}
 
-	if e, ok := parseErr[*CommandError](err); ok {
-		*we = append(*we, writeError{err: e.Unwrap().Error(), code: e.code, index: &index})
+	case errors.As(err, &cmdErr):
+		*we = append(*we, writeError{err: cmdErr.Error(), code: errInternalError, index: &index})
 		return
 	}
 
