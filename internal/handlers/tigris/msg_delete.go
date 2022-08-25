@@ -65,10 +65,17 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		var limit int64
-		if l, _ := d.Get("limit"); l != nil {
-			if limit, err = common.GetWholeNumberParam(l); err != nil {
-				return nil, err
-			}
+
+		l, err := d.Get("limit")
+		if err != nil {
+			return nil, common.NewErrorMsg(
+				common.ErrMissingField,
+				"BSON field 'delete.deletes.limit' is missing but a required field",
+			)
+		}
+
+		if limit, err = common.GetWholeNumberParam(l); err != nil {
+			return nil, err
 		}
 
 		var fp fetchParam
