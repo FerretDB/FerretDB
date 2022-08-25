@@ -31,6 +31,7 @@ type FetchParam struct {
 	Collection string
 }
 
+// QueryDocuments fetches documents from the given collection.
 func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param FetchParam) ([]*types.Document, error) {
 	db := tdb.Driver.UseDatabase(param.DB)
 
