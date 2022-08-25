@@ -54,7 +54,6 @@ jobs:
       - name: Start environment
         run: bin/task env-up-detach
         env:
-          MONGO_DOCKERFILE: ${{ matrix.mongo_dockerfile }}
           TIGRIS_DOCKERFILE: ${{ matrix.tigris_dockerfile }}
 
       - name: Run init
