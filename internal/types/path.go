@@ -16,8 +16,10 @@ package types
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -232,10 +234,49 @@ func FormatAnyValue(v any) string {
 		return formatDocument(v)
 	case *Array:
 		return formatArray(v)
+	case float64:
+		switch {
+		case math.IsNaN(v):
+			return "nan.0"
+
+		case math.IsInf(v, -1):
+			return "-inf.0"
+		case math.IsInf(v, +1):
+			return "inf.0"
+		case v == 0 && math.Signbit(v):
+			return "-0.0"
+		case v == 0.0:
+			return "0.0"
+		case v > 1000 || v < -1000 || v == math.SmallestNonzeroFloat64:
+			return fmt.Sprintf("%.15e", v)
+		case math.Trunc(v) == v:
+			return fmt.Sprintf("%d.0", int64(v))
+		default:
+			return fmt.Sprintf("%.2f", v)
+		}
+
+	case string:
+		return fmt.Sprintf(`"%v"`, v)
+	case Binary:
+		return fmt.Sprintf("BinData(%d, %X)", v.Subtype, v.B)
 	case ObjectID:
 		return fmt.Sprintf("ObjectId('%X')", v)
+	case bool:
+		return fmt.Sprintf("%v", v)
+	case time.Time:
+		return fmt.Sprintf("new Date(%d)", v.UnixMilli())
+	case NullType:
+		return "null"
+	case Regex:
+		return fmt.Sprintf("/%s/%s", v.Pattern, v.Options)
+	case int32:
+		return fmt.Sprintf("%d", v)
+	case Timestamp:
+		return fmt.Sprintf("Timestamp(%v, %v)", time.Unix(int64(v)>>32, 0).Second(), v)
+	case int64:
+		return fmt.Sprintf("%d", v)
 	default:
-		return fmt.Sprintf(`"%v"`, v)
+		panic(fmt.Sprintf("unknown type %T", v))
 	}
 }
 
@@ -248,22 +289,7 @@ func formatDocument(doc *Document) string {
 			result += ", "
 		}
 
-		switch value := doc.m[key].(type) {
-		case *Document:
-			result += fmt.Sprintf("%q: %s", key, formatDocument(value))
-		case *Array:
-			result += fmt.Sprintf("%q: %s", key, formatArray(value))
-		case string:
-			result += fmt.Sprintf(`%q: "%q"`, key, value)
-		case NullType:
-			result += fmt.Sprintf("%q: null", key)
-		case nil:
-			result += fmt.Sprintf("%q: null", key)
-		case int32, int64:
-			result += fmt.Sprintf("%q: %d", key, value)
-		default:
-			result += fmt.Sprintf("%q: %s", key, doc.m[key])
-		}
+		result += fmt.Sprintf("%s: %s", key, FormatAnyValue(doc.m[key]))
 	}
 
 	return result + "}"
@@ -271,23 +297,14 @@ func formatDocument(doc *Document) string {
 
 // formatArray formats Array for error output.
 func formatArray(array *Array) string {
+	if len(array.s) == 0 {
+		return "[]"
+	}
+
 	result := "[ "
 
 	for _, elem := range array.s {
-		switch elem := elem.(type) {
-		case *Document:
-			result += fmt.Sprintf("%s, ", formatDocument(elem))
-		case *Array:
-			result += fmt.Sprintf("%s, ", formatArray(elem))
-		case string:
-			result += fmt.Sprintf(`"%s", `, elem)
-		case NullType:
-			result += "null, "
-		case int32, int64:
-			result += fmt.Sprintf("%d, ", elem)
-		default:
-			result += fmt.Sprintf("%s, ", elem)
-		}
+		result += fmt.Sprintf("%s, ", FormatAnyValue(elem))
 	}
 
 	result = strings.TrimSuffix(result, ", ")

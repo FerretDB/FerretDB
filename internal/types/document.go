@@ -359,7 +359,12 @@ func (d *Document) SetByPath(path Path, value any) error {
 
 		return inner.Set(index, value)
 	default:
-		panic(fmt.Errorf("can't set value for %T type", inner))
+		return fmt.Errorf(
+			"Cannot create field '%s' in element {%s: %s}",
+			path.Suffix(),
+			path.Prefix(),
+			FormatAnyValue(must.NotFail(d.Get(path.Prefix()))),
+		)
 	}
 }
 
