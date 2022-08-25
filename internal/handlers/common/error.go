@@ -278,7 +278,7 @@ func (we *WriteErrors) Append(err error, index int32) {
 		return
 
 	case errors.As(err, &cmdErr):
-		*we = append(*we, writeError{err: cmdErr.Error(), code: errInternalError, index: &index})
+		*we = append(*we, writeError{err: cmdErr.Unwrap().Error(), code: cmdErr.code, index: &index})
 		return
 	}
 
