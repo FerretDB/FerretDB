@@ -255,15 +255,6 @@ func (we *WriteErrors) Document() *types.Document {
 	return d
 }
 
-// parseArr converts err to a T type.
-// If it fails, the returned bool value is false.
-func parseErr[T any](err error) (T, bool) {
-	var obj T
-	ok := errors.As(err, &obj)
-
-	return obj, ok
-}
-
 // Append converts the err to the writeError type and
 // appends it to WriteErrors. The index value is an
 // index of the query with error.
@@ -275,10 +266,12 @@ func (we *WriteErrors) Append(err error, index int32) {
 	case errors.As(err, &writeErr):
 		writeErr.index = &index
 		*we = append(*we, *writeErr)
+
 		return
 
 	case errors.As(err, &cmdErr):
 		*we = append(*we, writeError{err: cmdErr.Unwrap().Error(), code: cmdErr.code, index: &index})
+
 		return
 	}
 
