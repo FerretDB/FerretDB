@@ -50,7 +50,7 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 	cfg := &config.Driver{
 		URL: opts.TigrisURL,
 	}
-	db, err := tigrisdb.New(cfg)
+	db, err := tigrisdb.New(cfg, opts.L)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
