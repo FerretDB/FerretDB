@@ -260,6 +260,10 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			)
 		}
 
+		if v, ok := docValue.(int32); ok && v >= math.MaxInt32 {
+			docValue = int64(v)
+		}
+
 		incremented, err := addNumbers(incValue, docValue)
 		if err == nil {
 			err := doc.SetByPath(path, incremented)
