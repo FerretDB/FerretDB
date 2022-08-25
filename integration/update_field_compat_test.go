@@ -36,11 +36,9 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 		},
 		"DotNotationFieldExist": {
 			update: bson.D{{"$inc", bson.D{{"v.foo", int32(1)}}}},
-			// skip:   "https://github.com/FerretDB/FerretDB/issues/972",
 		},
 		"DotNotationFieldNotExist": {
 			update: bson.D{{"$inc", bson.D{{"foo.bar", int32(1)}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/972",
 		},
 	}
 
