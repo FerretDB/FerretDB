@@ -300,16 +300,20 @@ func CollectKeys(t testing.TB, doc bson.D) []string {
 	return res
 }
 
-// FindAll returns all documents from the given collection sorted by _id.
-func FindAll(t testing.TB, ctx context.Context, col *mongo.Collection) []bson.D {
-	opts := options.Find().SetSort(bson.D{{"_id", 1}})
-	cursor, err := col.Find(ctx, bson.D{}, opts)
-	require.NoError(t, err)
-
+// FetchAll fetches all documents from the cursor, closing it.
+func FetchAll(t testing.TB, ctx context.Context, cursor *mongo.Cursor) []bson.D {
 	var res []bson.D
-	err = cursor.All(ctx, &res)
+	err := cursor.All(ctx, &res)
 	require.NoError(t, cursor.Close(ctx))
 	require.NoError(t, err)
-
 	return res
+}
+
+// FindAll returns all documents from the given collection sorted by _id.
+func FindAll(t testing.TB, ctx context.Context, collection *mongo.Collection) []bson.D {
+	opts := options.Find().SetSort(bson.D{{"_id", 1}})
+	cursor, err := collection.Find(ctx, bson.D{}, opts)
+	require.NoError(t, err)
+
+	return FetchAll(t, ctx, cursor)
 }
