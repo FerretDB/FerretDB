@@ -116,6 +116,7 @@ var (
 	errNotBinaryMask         = fmt.Errorf("not a binary mask")
 	errUnexpectedLeftOpType  = fmt.Errorf("unexpected left operand type")
 	errUnexpectedRightOpType = fmt.Errorf("unexpected right operand type")
+	errLongExceeded          = fmt.Errorf("long exceeded")
 )
 
 // GetWholeNumberParam checks if the given value is int32, int64, or float64 containing a whole number,
@@ -242,8 +243,23 @@ func addNumbers(v1, v2 any) (any, error) {
 		case float64:
 			return v2 + float64(v1), nil
 		case int32:
+			if v2 == math.MaxInt32 && v1 > 0 {
+				return int64(v1) + int64(v2), nil
+			}
+			if v2 == math.MinInt32 && v1 < 0 {
+				return int64(v1) + int64(v2), nil
+			}
+
 			return v1 + v2, nil
 		case int64:
+			if v1 > 0 && v2 == math.MaxInt64 {
+				return nil, errLongExceeded
+			}
+
+			if v1 < 0 && v2 == math.MinInt64 {
+				return nil, errLongExceeded
+			}
+
 			return v2 + int64(v1), nil
 		default:
 			return nil, errUnexpectedRightOpType

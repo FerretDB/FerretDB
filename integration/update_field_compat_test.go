@@ -30,7 +30,7 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 		},
 		"Int32Negative": {
 			update: bson.D{{"$inc", bson.D{{"v", int32(-42)}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/972",
+			// skip:   "https://github.com/FerretDB/FerretDB/issues/972",
 		},
 		"EmptyUpdatePath": {
 			update: bson.D{{"$inc", bson.D{{}}}},
