@@ -22,6 +22,7 @@ import (
 	"github.com/tigrisdata/tigris-client-go/driver"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -78,23 +79,25 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		var fp fetchParam
-		if fp.db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		var fp tigrisdb.FetchParam
+
+		if fp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 			return nil, err
 		}
 		collectionParam, err := document.Get(document.Command())
 		if err != nil {
 			return nil, err
 		}
+
 		var ok bool
-		if fp.collection, ok = collectionParam.(string); !ok {
+		if fp.Collection, ok = collectionParam.(string); !ok {
 			return nil, common.NewErrorMsg(
 				common.ErrBadValue,
 				fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
 			)
 		}
 
-		fetchedDocs, err := h.fetch(ctx, fp)
+		fetchedDocs, err := h.db.QueryDocuments(ctx, fp)
 		if err != nil {
 			return nil, err
 		}
@@ -144,7 +147,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // delete deletes documents by _id.
-func (h *Handler) delete(ctx context.Context, fp fetchParam, docs []*types.Document) (int, error) {
+func (h *Handler) delete(ctx context.Context, fp tigrisdb.FetchParam, docs []*types.Document) (int, error) {
 	ids := make([]map[string]any, len(docs))
 	for i, doc := range docs {
 		id := must.NotFail(tjson.Marshal(must.NotFail(doc.Get("_id"))))
@@ -163,7 +166,7 @@ func (h *Handler) delete(ctx context.Context, fp fetchParam, docs []*types.Docum
 
 	h.L.Sugar().Debugf("Delete filter: %s", f)
 
-	_, err := h.db.Driver.UseDatabase(fp.db).Delete(ctx, fp.collection, f)
+	_, err := h.db.Driver.UseDatabase(fp.DB).Delete(ctx, fp.Collection, f)
 	if err != nil {
 		return 0, lazyerrors.Error(err)
 	}
