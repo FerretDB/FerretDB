@@ -246,6 +246,7 @@ func addNumbers(v1, v2 any) (any, error) {
 			if v2 == math.MaxInt32 && v1 > 0 {
 				return int64(v1) + int64(v2), nil
 			}
+
 			if v2 == math.MinInt32 && v1 < 0 {
 				return int64(v1) + int64(v2), nil
 			}
