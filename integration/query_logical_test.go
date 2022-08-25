@@ -114,117 +114,137 @@ func TestQueryLogical(t *testing.T) {
 			skip: "https://github.com/FerretDB/FerretDB/issues/962",
 		},
 
-		// // $or
-		// "OrZero": {
-		// 	filter: bson.D{{
-		// 		"$or", bson.A{},
-		// 	}},
-		// 	skip: "https://github.com/FerretDB/FerretDB/issues/962",
-		// },
-		// "OrOne": {
-		// 	filter: bson.D{{
-		// 		"$or", bson.A{
-		// 			bson.D{{"v", bson.D{{"$lt", int32(0)}}}},
-		// 		},
-		// 	}},
-		// },
-		// "OrTwo": {
-		// 	filter: bson.D{{
-		// 		"$or", bson.A{
-		// 			bson.D{{"v", bson.D{{"$lt", int32(0)}}}},
-		// 			bson.D{{"v", bson.D{{"$gt", int64(42)}}}},
-		// 		},
-		// 	}},
-		// },
-		// "OrAnd": {
-		// 	filter: bson.D{{
-		// 		"$or", bson.A{
-		// 			bson.D{{"v", bson.D{{"$lt", int32(0)}}}},
-		// 			bson.D{{"$and", bson.A{
-		// 				bson.D{{"v", bson.D{{"$gt", int64(42)}}}},
-		// 				bson.D{{"v", bson.D{{"$lte", 42.13}}}},
-		// 			}}},
-		// 		},
-		// 	}},
-		// },
-		// "OrBadInput": {
-		// 	filter: bson.D{{"$or", nil}},
-		// },
-		// "OrBadValue": {
-		// 	filter: bson.D{{
-		// 		"$or", bson.A{
-		// 			bson.D{{"v", bson.D{{"$lt", int32(0)}}}},
-		// 			true,
-		// 		},
-		// 	}},
-		// 	skip: "https://github.com/FerretDB/FerretDB/issues/962",
-		// },
+		// $or
+		"OrZero": {
+			filter: bson.D{{
+				"$or", bson.A{},
+			}},
+			skip: "https://github.com/FerretDB/FerretDB/issues/962",
+		},
+		"OrOne": {
+			filter: bson.D{{
+				"$or", bson.A{
+					bson.D{{"v", bson.D{{"$lt", int32(0)}}}},
+				},
+			}},
+			expectedIDs: []any{},
+		},
+		"OrTwo": {
+			filter: bson.D{{
+				"$or", bson.A{
+					bson.D{{"v", bson.D{{"$lt", int32(0)}}}},
+					bson.D{{"v", bson.D{{"$gt", int64(42)}}}},
+				},
+			}},
+			expectedIDs: []any{
+				"double", "double-big", "double-max",
+			},
+		},
+		"OrAnd": {
+			filter: bson.D{{
+				"$or", bson.A{
+					bson.D{{"v", bson.D{{"$lt", int32(0)}}}},
+					bson.D{{"$and", bson.A{
+						bson.D{{"v", bson.D{{"$gt", int64(42)}}}},
+						bson.D{{"v", bson.D{{"$lte", 42.13}}}},
+					}}},
+				},
+			}},
+			expectedIDs: []any{
+				"double",
+			},
+		},
+		"OrBadInput": {
+			filter: bson.D{{"$or", nil}},
+			expectedErr: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "$or must be an array",
+			},
+		},
+		"OrBadValue": {
+			filter: bson.D{{
+				"$or", bson.A{
+					bson.D{{"v", bson.D{{"$lt", int32(0)}}}},
+					true,
+				},
+			}},
+			skip: "https://github.com/FerretDB/FerretDB/issues/962",
+		},
 
-		// // $nor
-		// "NorZero": {
-		// 	filter: bson.D{{
-		// 		"$nor", bson.A{},
-		// 	}},
-		// 	skip: "https://github.com/FerretDB/FerretDB/issues/962",
-		// },
-		// "NorOne": {
-		// 	filter: bson.D{{
-		// 		"$nor", bson.A{
-		// 			bson.D{{"v", bson.D{{"$lt", int32(0)}}}},
-		// 		},
-		// 	}},
-		// },
-		// "NorTwo": {
-		// 	filter: bson.D{{
-		// 		"$nor", bson.A{
-		// 			bson.D{{"v", bson.D{{"$lt", int32(0)}}}},
-		// 			bson.D{{"v", bson.D{{"$gt", int64(42)}}}},
-		// 		},
-		// 	}},
-		// },
-		// "NorBadInput": {
-		// 	filter: bson.D{{"$nor", nil}},
-		// },
-		// "NorBadValue": {
-		// 	filter: bson.D{{
-		// 		"$nor", bson.A{
-		// 			bson.D{{"v", bson.D{{"$lt", int32(0)}}}},
-		// 			true,
-		// 		},
-		// 	}},
-		// },
+		// $nor
+		"NorZero": {
+			filter: bson.D{{
+				"$nor", bson.A{},
+			}},
+			skip: "https://github.com/FerretDB/FerretDB/issues/962",
+		},
+		"NorOne": {
+			filter: bson.D{{
+				"$nor", bson.A{
+					bson.D{{"v", bson.D{{"$lt", int32(0)}}}},
+				},
+			}},
+			expectedIDs: []any{
+				"double-zero", "double-smallest", "double-whole", "double", "double-big", "double-max",
+			},
+		},
+		"NorTwo": {
+			filter: bson.D{{
+				"$nor", bson.A{
+					bson.D{{"v", bson.D{{"$lt", int32(0)}}}},
+					bson.D{{"v", bson.D{{"$gt", int64(42)}}}},
+				},
+			}},
+			expectedIDs: []any{
+				"double-zero", "double-smallest", "double-whole",
+			},
+		},
+		"NorBadInput": {
+			filter: bson.D{{"$nor", nil}},
+			expectedErr: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "$nor must be an array",
+			},
+		},
+		"NorBadValue": {
+			filter: bson.D{{
+				"$nor", bson.A{
+					bson.D{{"v", bson.D{{"$lt", int32(0)}}}},
+					true,
+				},
+			}},
+			skip: "https://github.com/FerretDB/FerretDB/issues/962",
+		},
 
-		// // $not
-		// "Not": {
-		// 	filter: bson.D{{
-		// 		"v", bson.D{{"$not", bson.D{{"$eq", int64(42)}}}},
-		// 	}},
-		// },
-		// "NotIDNull": {
-		// 	filter: bson.D{{
-		// 		"_id", bson.D{{"$not", nil}},
-		// 	}},
-		// },
-		// "NotEqNull": {
-		// 	filter: bson.D{{
-		// 		"v", bson.D{{"$not", bson.D{{"$eq", nil}}}},
-		// 	}},
-		// },
-		// "NotValueRegex": {
-		// 	filter: bson.D{{
-		// 		"v", bson.D{{"$not", primitive.Regex{Pattern: "^fo"}}},
-		// 	}},
-		// },
-		// "NotNoSuchFieldRegex": {
-		// 	filter: bson.D{{
-		// 		"no-such-field", bson.D{{"$not", primitive.Regex{Pattern: "/someregex/"}}},
-		// 	}},
-		// },
-		// "NotNested": {
-		// 	filter: bson.D{{
-		// 		"v", bson.D{{"$not", bson.D{{"$not", bson.D{{"$eq", int64(42)}}}}}},
-		// 	}},
-		// },
+		// $not
+		"Not": {
+			filter: bson.D{{
+				"v", bson.D{{"$not", bson.D{{"$eq", int64(42)}}}},
+			}},
+			expectedIDs: []any{
+				"double-zero", "double-smallest", "double", "double-big", "double-max",
+			},
+		},
+		"NotNull": {
+			filter: bson.D{{
+				"v", bson.D{{"$not", nil}},
+			}},
+			expectedErr: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "$not needs a regex or a document",
+			},
+		},
+		"NotEqNull": {
+			filter: bson.D{{
+				"v", bson.D{{"$not", bson.D{{"$eq", nil}}}},
+			}},
+			expectedIDs: []any{
+				"double-zero", "double-smallest", "double-whole", "double", "double-big", "double-max",
+			},
+		},
 	}
 
 	for name, tc := range testCases {
