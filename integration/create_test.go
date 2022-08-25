@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -36,12 +37,14 @@ func TestCreateTigris(t *testing.T) {
 	dbName := db.Name()
 
 	for name, tc := range map[string]struct {
-		validator   bson.D
+		validator   string
+		schema      string
 		collection  string
 		expectedErr *mongo.CommandError
 	}{
 		"EmptyValidator": {
-			validator:  bson.D{},
+			validator:  "$tigrisSchemaString",
+			schema:     "",
 			collection: collection.Name() + "_empty",
 			expectedErr: &mongo.CommandError{
 				Code:    2,
@@ -50,7 +53,8 @@ func TestCreateTigris(t *testing.T) {
 			},
 		},
 		"BadValidator": {
-			validator:  bson.D{{"bsonType", "object"}},
+			validator:  "$tigrisSchemaString",
+			schema:     "bad",
 			collection: collection.Name() + "_bad",
 			expectedErr: &mongo.CommandError{
 				Code:    2,
@@ -59,17 +63,18 @@ func TestCreateTigris(t *testing.T) {
 			},
 		},
 		"GoodValidator": {
-			validator: bson.D{
-				{"title", collection.Name() + "_good"},
-				{"description", "Foo Bar"},
-				{"primary_key", bson.A{"_id"}},
-				{"properties", bson.D{
-					{"balance", bson.D{{"type", "number"}}},
-					{"age", bson.D{{"type", "integer"}, {"format", "int32"}}},
-					{"_id", bson.D{{"type", "string"}, {"format", "byte"}}},
-					{"arr", bson.D{{"type", "array"}, {"items", bson.D{{"type", "string"}}}}},
-				}},
-			},
+			validator: "$tigrisSchemaString",
+			schema: fmt.Sprintf(`{
+				"title": "%s_good",
+				"description": "Foo Bar",
+				"primary_key": ["_id"],
+				"properties": {
+					"balance": {"type": "number"},
+					"age": {"type": "integer", "format": "int32"},
+					"_id": {"type": "string", "format": "byte"},
+					"arr": {"type": "array", "items": {"type": "string"}},
+				},
+			}`, collection.Name()),
 			collection: collection.Name() + "_good",
 		},
 	} {
@@ -78,7 +83,7 @@ func TestCreateTigris(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			opts := new(options.CreateCollectionOptions).SetValidator(bson.D{{"$jsonSchema", tc.validator}})
+			opts := new(options.CreateCollectionOptions).SetValidator(bson.D{{tc.validator, tc.schema}})
 
 			err := db.Client().Database(dbName).CreateCollection(ctx, tc.collection, opts)
 			if tc.expectedErr != nil {
