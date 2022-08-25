@@ -158,18 +158,18 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 	}
 
-	// minimal reply document
-	replyDoc := must.NotFail(types.NewDocument(
-		"n", deleted,
-		"ok", float64(1),
-	))
+	var replyDoc *types.Document
 
-	// if there are delete errors append writErrors field
+	// if there are delete errors append writeErrors field
 	if len(*delErrors) > 0 {
-		protoErr, _ := common.ProtocolError(delErrors)
-		we := must.NotFail(common.AssertType[*types.Array](must.NotFail(protoErr.Document().Get("writeErrors"))))
-		replyDoc.Set("writeErrors", we)
+		replyDoc = delErrors.Document()
+	} else {
+		replyDoc = must.NotFail(types.NewDocument(
+			"ok", float64(1),
+		))
 	}
+
+	must.NoError(replyDoc.Set("n", deleted))
 
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{replyDoc},
