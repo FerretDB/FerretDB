@@ -59,7 +59,7 @@ func TestDeleteSimple(t *testing.T) {
 func TestDeleteLimitNotSet(t *testing.T) {
 	t.Parallel()
 
-	ctx, collection := setup.Setup(t, shareddata.Scalars)
+	ctx, collection := setup.Setup(t)
 	cmd := bson.D{
 		{"delete", collection.Name()},
 		{"deletes", bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}}}},
