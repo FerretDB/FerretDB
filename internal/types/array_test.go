@@ -102,7 +102,7 @@ func TestArrayMinMax(t *testing.T) {
 			time.Time{},
 			NullType{},
 			Regex{},
-			Timestamp(42),
+			Timestamp{I: 42},
 		))
 	)
 

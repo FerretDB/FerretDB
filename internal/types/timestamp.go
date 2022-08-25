@@ -19,10 +19,11 @@ import (
 	"time"
 )
 
-type (
-	// Timestamp represents BSON type Timestamp.
-	Timestamp int64
-)
+// Timestamp represents BSON type Timestamp.
+type Timestamp struct {
+	S int32
+	I int32
+}
 
 // timestampCounter is an ordinal number for timestamps in the system.
 var timestampCounter uint32
@@ -30,9 +31,7 @@ var timestampCounter uint32
 // NewTimestamp returns a timestamp from time and an increment.
 func NewTimestamp(t time.Time, c uint32) Timestamp {
 	sec := t.Unix()
-	sec <<= 32
-	sec |= int64(c)
-	return Timestamp(sec)
+	return Timestamp{S: int32(sec), I: int32(c)}
 }
 
 // NextTimestamp returns a timestamp from time and an internal ops counter.
@@ -43,6 +42,5 @@ func NextTimestamp(t time.Time) Timestamp {
 
 // Time returns time.Time ignoring increment.
 func (t Timestamp) Time() time.Time {
-	t >>= 32
-	return time.Unix(int64(t), 0)
+	return time.Unix(int64(t.S), 0)
 }

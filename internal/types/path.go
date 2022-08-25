@@ -272,7 +272,7 @@ func FormatAnyValue(v any) string {
 	case int32:
 		return fmt.Sprintf("%d", v)
 	case Timestamp:
-		return fmt.Sprintf("Timestamp(%v, %v)", time.Unix(int64(v)>>32, 0).Second(), v)
+		return fmt.Sprintf("Timestamp(%v, %v)", v.I, v.S)
 	case int64:
 		return fmt.Sprintf("%d", v)
 	default:
