@@ -249,7 +249,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			return false, err
 		}
 
-		if v, ok := docValue.(int64); ok && v >= math.MaxInt64 {
+		if v, ok := docValue.(int64); ok && v == math.MaxInt64 {
 			return false, NewWriteErrorMsg(
 				ErrBadValue,
 				fmt.Sprintf(
@@ -260,7 +260,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			)
 		}
 
-		if v, ok := docValue.(int32); ok && v >= math.MaxInt32 {
+		if v, ok := docValue.(int32); ok && v == math.MaxInt32 {
 			docValue = int64(v)
 		}
 
