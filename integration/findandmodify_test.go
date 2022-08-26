@@ -187,11 +187,11 @@ func TestFindAndModifyNonExistingCollection(t *testing.T) {
 
 	ctx, collection := setup.Setup(t)
 
-	cursor, err := collection.Database().Collection("doesnotexist").Find(ctx, bson.D{})
-	require.NoError(t, err)
+	res := collection.Database().Collection("doesnotexist").FindOneAndUpdate(ctx, bson.D{}, bson.D{})
+	require.NoError(t, res.Err())
 
 	var actual []bson.D
-	err = cursor.All(ctx, &actual)
+	err := res.Decode(&actual)
 	require.NoError(t, err)
 	require.Len(t, actual, 0)
 }
