@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -65,8 +66,12 @@ func TestDeleteLimitNotSet(t *testing.T) {
 		{"deletes", bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}}}},
 	}
 
-	expectedErr := "(Location40414) BSON field 'delete.deletes.limit' is missing but a required field"
+	expectedErr := mongo.CommandError{
+		Code:    40414,
+		Name:    "Location40414",
+		Message: "BSON field 'delete.deletes.limit' is missing but a required field",
+	}
 
 	res := collection.Database().RunCommand(ctx, cmd)
-	assert.EqualError(t, res.Err(), expectedErr)
+	AssertEqualError(t, expectedErr, res.Err())
 }
