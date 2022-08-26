@@ -15,6 +15,8 @@
 package tigris
 
 import (
+	"fmt"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -30,6 +32,10 @@ func getJSONSchema(doc *types.Document) (*tjson.Schema, error) {
 	schema, err := common.GetRequiredParam[string](v, "$tigrisSchemaString")
 	if err != nil {
 		return nil, err
+	}
+
+	if schema == "" {
+		return nil, fmt.Errorf("empty schema is not allowed")
 	}
 
 	sch := new(tjson.Schema)
