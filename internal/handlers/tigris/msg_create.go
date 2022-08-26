@@ -75,7 +75,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	// Validator is required for Tigris as we always need to set schema to create a collection.
 	schema, err := getJSONSchema(document)
 	if err != nil {
-		return nil, common.NewError(common.ErrBadValue, err)
+		return nil, err
 	}
 
 	b := must.NotFail(json.Marshal(schema))
