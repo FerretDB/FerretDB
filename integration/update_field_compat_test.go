@@ -36,11 +36,11 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 		},
 		"DotNotationFieldExist": {
 			update:        bson.D{{"$inc", bson.D{{"v.foo", int32(1)}}}},
-			skipForTigris: "some schema validation errors",
+			skipForTigris: "schema validation would fail",
 		},
 		"DotNotationFieldNotExist": {
 			update:        bson.D{{"$inc", bson.D{{"foo.bar", int32(1)}}}},
-			skipForTigris: "some schema validation errors",
+			skipForTigris: "schema validation would fail",
 		},
 	}
 
