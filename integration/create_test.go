@@ -79,7 +79,7 @@ func TestCreateTigris(t *testing.T) {
 			expectedErr: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "invalid schema, the following keys are not supported: [bsonType]",
+				Message: "[schema.go:208 tjson.(*Schema).Unmarshal] invalid character 'b' looking for beginning of value",
 			},
 		},
 		"Valid": {
@@ -94,13 +94,14 @@ func TestCreateTigris(t *testing.T) {
 					"_id": {"type": "string", "format": "byte"},
 					"arr": {"type": "array", "items": {"type": "string"}}
 				}
-			}`, collection.Name()),
+			}`, collection.Name(),
+			),
 			collection: collection.Name() + "_good",
 		},
 		"WrongPKey": {
 			validator: "$tigrisSchemaString",
 			schema: fmt.Sprintf(`{
-				"title": "%s_good",
+				"title": "%s_pkey",
 				"description": "Foo Bar",
 				"primary_key": [1, 2, 3],
 				"properties": {
@@ -109,18 +110,30 @@ func TestCreateTigris(t *testing.T) {
 					"_id": {"type": "string", "format": "byte"},
 					"arr": {"type": "array", "items": {"type": "string"}}
 				}
-			}`, collection.Name()),
-			collection: collection.Name() + "_good",
+			}`, collection.Name(),
+			),
+			collection: collection.Name() + "_pkey",
+			expectedErr: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "[schema.go:208 tjson.(*Schema).Unmarshal] json: cannot unmarshal number into Go struct field Schema.primary_key of type string",
+			},
 		},
 		"WrongProperties": {
 			validator: "$tigrisSchemaString",
 			schema: fmt.Sprintf(`{
-				"title": "%s_good",
+				"title": "%s_wp",
 				"description": "Foo Bar",
-				"primary_key": [1, 2, 3],
+				"primary_key": ["_id"],
 				"properties": "hello"
-			}`, collection.Name()),
-			collection: collection.Name() + "_good",
+			}`, collection.Name(),
+			),
+			collection: collection.Name() + "_wp",
+			expectedErr: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "[schema.go:208 tjson.(*Schema).Unmarshal] json: cannot unmarshal string into Go struct field Schema.properties of type map[string]*tjson.Schema",
+			},
 		},
 	} {
 		name, tc := name, tc
