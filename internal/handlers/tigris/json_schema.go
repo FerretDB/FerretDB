@@ -45,5 +45,5 @@ func getJSONSchema(doc *types.Document) (*tjson.Schema, error) {
 		return nil, common.NewError(common.ErrBadValue, err)
 	}
 
-	return sch, common.NewError(common.ErrBadValue, err)
+	return sch, nil
 }
