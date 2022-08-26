@@ -23,6 +23,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/tigrisdata/tigris-client-go/config"
 	"github.com/tigrisdata/tigris-client-go/driver"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
@@ -34,7 +36,9 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 	cfg := &config.Driver{
 		URL: testutil.TigrisURL(t),
 	}
-	tdb, err := New(cfg)
+
+	logger := zaptest.NewLogger(t, zaptest.WrapOptions(zap.AddCaller()))
+	tdb, err := New(cfg, logger)
 	require.NoError(t, err)
 
 	t.Run("DBCollectionDoNotExist", func(t *testing.T) {

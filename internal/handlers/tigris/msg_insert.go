@@ -21,6 +21,7 @@ import (
 	"github.com/tigrisdata/tigris-client-go/driver"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -37,16 +38,18 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	common.Ignored(document, h.L, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
 
-	var fp fetchParam
-	if fp.db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	var fp tigrisdb.FetchParam
+
+	if fp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 	collectionParam, err := document.Get(document.Command())
 	if err != nil {
 		return nil, err
 	}
+
 	var ok bool
-	if fp.collection, ok = collectionParam.(string); !ok {
+	if fp.Collection, ok = collectionParam.(string); !ok {
 		return nil, common.NewErrorMsg(
 			common.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
@@ -85,16 +88,16 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // insert checks if database and collection exist, create them if needed and attempts to insert the given doc.
-func (h *Handler) insert(ctx context.Context, fp fetchParam, doc *types.Document) error {
+func (h *Handler) insert(ctx context.Context, fp tigrisdb.FetchParam, doc *types.Document) error {
 	schema, err := tjson.DocumentSchema(doc)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
-	schema.Title = fp.collection
+	schema.Title = fp.Collection
 	b := must.NotFail(schema.Marshal())
 	h.L.Sugar().Debugf("Schema:\n%s", b)
 
-	_, err = h.db.CreateCollectionIfNotExist(ctx, fp.db, fp.collection, b)
+	_, err = h.db.CreateCollectionIfNotExist(ctx, fp.DB, fp.Collection, b)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -105,7 +108,7 @@ func (h *Handler) insert(ctx context.Context, fp fetchParam, doc *types.Document
 	}
 	h.L.Sugar().Debugf("Document:\n%s", b)
 
-	_, err = h.db.Driver.UseDatabase(fp.db).Insert(ctx, fp.collection, []driver.Document{b})
+	_, err = h.db.Driver.UseDatabase(fp.DB).Insert(ctx, fp.Collection, []driver.Document{b})
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
