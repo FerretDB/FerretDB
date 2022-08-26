@@ -41,18 +41,75 @@ func TestDeleteCompat(t *testing.T) {
 			filters:    []bson.D{},
 			resultType: emptyResult,
 		},
+		"OrderedTrue": {
+			filters: []bson.D{
+				{{"v", "foo"}},
+				{{"v", bson.D{{"$all", 9}}}},
+				{{"v", float32(42.13)}},
+			},
+			ordered: true,
+		},
+		"OrderedFalse": {
+			filters: []bson.D{
+				{{"v", "foo"}},
+				{{"v", bson.D{{"$all", 9}}}},
+				{{"v", float32(42.13)}},
+			},
+			ordered: false,
+		},
+		"OrderedTrueNoError": {
+			filters: []bson.D{
+				{{"v", "foo"}},
+				{{"v", float32(42.13)}},
+			},
+			ordered: true,
+		},
+		"OrderedTrueTwoErrors": {
+			filters: []bson.D{
+				{{"v", "foo"}},
+				{{"v", bson.D{{"$all", 9}}}},
+				{{"v", float32(42.13)}},
+				{{"v", bson.D{{"$eq", 9}}}},
+			},
+			ordered: true,
+		},
+		"OrderedFalseTwoErrors": {
+			filters: []bson.D{
+				{{"v", "foo"}},
+				{{"v", bson.D{{"$all", 9}}}},
+				{{"v", float32(42.13)}},
+				{{"v", bson.D{{"$eq", 9}}}},
+			},
+			ordered: false,
+		},
+		"OrderedTrueAllErrors": {
+			filters: []bson.D{
+				{{"v", bson.D{{"$all", 9}}}},
+				{{"v", bson.D{{"$eq", 9}}}},
+				{{"v", bson.D{{"$all", 9}}}},
+			},
+			ordered:    true,
+			resultType: emptyResult,
+		},
+		"OrderedFalseAllErrors": {
+			filters: []bson.D{
+				{{"v", bson.D{{"$all", 9}}}},
+				{{"v", bson.D{{"$eq", 9}}}},
+				{{"v", bson.D{{"$all", 9}}}},
+			},
+			ordered:    false,
+			resultType: emptyResult,
+		},
 		"One": {
 			filters: []bson.D{
 				{{"v", int32(42)}},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/1029",
 		},
 		"Two": {
 			filters: []bson.D{
 				{{"v", int32(42)}},
 				{{"v", int32(0)}},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/1029",
 		},
 	}
 
