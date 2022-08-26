@@ -42,7 +42,27 @@ func TestCreateTigris(t *testing.T) {
 		collection  string
 		expectedErr *mongo.CommandError
 	}{
+		"BadValidator": {
+			validator:  "$bad",
+			schema:     "{}",
+			collection: collection.Name() + "wrong",
+			expectedErr: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `required parameter "$tigrisSchemaString" is missing`,
+			},
+		},
 		"EmptyValidator": {
+			validator:  "",
+			schema:     "{}",
+			collection: collection.Name() + "_empty",
+			expectedErr: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name is not same as schema name 'TestCreateTigris_empty' ''", // Tigris returns this
+			},
+		},
+		"EmptySchema": {
 			validator:  "$tigrisSchemaString",
 			schema:     "",
 			collection: collection.Name() + "_empty",
@@ -52,7 +72,7 @@ func TestCreateTigris(t *testing.T) {
 				Message: "collection name is not same as schema name 'TestCreateTigris_empty' ''", // Tigris returns this
 			},
 		},
-		"BadValidator": {
+		"BadSchema": {
 			validator:  "$tigrisSchemaString",
 			schema:     "bad",
 			collection: collection.Name() + "_bad",
@@ -62,7 +82,7 @@ func TestCreateTigris(t *testing.T) {
 				Message: "invalid schema, the following keys are not supported: [bsonType]",
 			},
 		},
-		"GoodValidator": {
+		"Valid": {
 			validator: "$tigrisSchemaString",
 			schema: fmt.Sprintf(`{
 				"title": "%s_good",
@@ -72,8 +92,33 @@ func TestCreateTigris(t *testing.T) {
 					"balance": {"type": "number"},
 					"age": {"type": "integer", "format": "int32"},
 					"_id": {"type": "string", "format": "byte"},
-					"arr": {"type": "array", "items": {"type": "string"}},
-				},
+					"arr": {"type": "array", "items": {"type": "string"}}
+				}
+			}`, collection.Name()),
+			collection: collection.Name() + "_good",
+		},
+		"WrongPKey": {
+			validator: "$tigrisSchemaString",
+			schema: fmt.Sprintf(`{
+				"title": "%s_good",
+				"description": "Foo Bar",
+				"primary_key": [1, 2, 3],
+				"properties": {
+					"balance": {"type": "number"},
+					"age": {"type": "integer", "format": "int32"},
+					"_id": {"type": "string", "format": "byte"},
+					"arr": {"type": "array", "items": {"type": "string"}}
+				}
+			}`, collection.Name()),
+			collection: collection.Name() + "_good",
+		},
+		"WrongProperties": {
+			validator: "$tigrisSchemaString",
+			schema: fmt.Sprintf(`{
+				"title": "%s_good",
+				"description": "Foo Bar",
+				"primary_key": [1, 2, 3],
+				"properties": "hello"
 			}`, collection.Name()),
 			collection: collection.Name() + "_good",
 		},
