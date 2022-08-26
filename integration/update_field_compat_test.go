@@ -36,11 +36,11 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 		},
 		"DotNotationFieldExist": {
 			update:        bson.D{{"$inc", bson.D{{"v.foo", int32(1)}}}},
-			skipForTigris: "schema validation would fail",
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1088",
 		},
 		"DotNotationFieldNotExist": {
 			update:        bson.D{{"$inc", bson.D{{"foo.bar", int32(1)}}}},
-			skipForTigris: "schema validation would fail",
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1088",
 		},
 	}
 
