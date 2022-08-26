@@ -182,6 +182,20 @@ func TestFindAndModifyEmptyCollectionName(t *testing.T) {
 	}
 }
 
+func TestFindAndModifyNonExistingCollection(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+
+	cursor, err := collection.Database().Collection("doesnotexist").Find(ctx, bson.D{})
+	require.NoError(t, err)
+
+	var actual []bson.D
+	err = cursor.All(ctx, &actual)
+	require.NoError(t, err)
+	require.Len(t, actual, 0)
+}
+
 func TestFindAndModifyErrors(t *testing.T) {
 	setup.SkipForTigris(t)
 
