@@ -52,16 +52,6 @@ func TestCreateTigris(t *testing.T) {
 				Message: `required parameter "$tigrisSchemaString" is missing`,
 			},
 		},
-		"EmptyValidator": {
-			validator:  "",
-			schema:     "{}",
-			collection: collection.Name() + "_empty",
-			expectedErr: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name is not same as schema name 'TestCreateTigris_empty' ''", // Tigris returns this
-			},
-		},
 		"EmptySchema": {
 			validator:  "$tigrisSchemaString",
 			schema:     "",
