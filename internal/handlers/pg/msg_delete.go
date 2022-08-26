@@ -73,7 +73,10 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		if limit, err = common.GetWholeNumberParam(l); err != nil {
-			return nil, err
+			return nil, common.NewErrorMsg(
+				common.ErrFailedToParse,
+				fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", l),
+			)
 		}
 
 		var sp pgdb.SQLParam
