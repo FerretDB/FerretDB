@@ -340,3 +340,20 @@ tasks:
         sh: cat ../internal/util/version/gen/version.txt
       GOARCH:
         sh: go env GOARCH
+
+  security-scan-fs:
+    cmds:
+      - docker run --rm -v $(pwd):/app -w /app aquasec/trivy:latest fs . -q --exit-code=1
+
+  security-scan-docker:
+    cmds:
+      - docker build -q -t ferretdb/ferretdb:trivy-scan .
+      - docker save ferretdb/ferretdb:trivy-scan > docker-image.tar
+      - docker run --rm -v $(pwd):/app -w /app aquasec/trivy:latest image --input docker-image.tar -q --exit-code=1
+      - rm docker-image.tar
+      - docker rmi ferretdb/ferretdb:trivy-scan
+
+  security-scan:
+    cmds:
+      - task: security-scan-fs
+      - task: security-scan-docker
