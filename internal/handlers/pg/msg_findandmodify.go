@@ -69,42 +69,23 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	// We might consider rewriting it later.
 	resDocs := make([]*types.Document, 0, 16)
 	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, params.sqlParam)
-		if err != nil {
-			return err
-		}
-		defer func() {
-			// Drain the channel to prevent leaking goroutines.
-			// TODO Offer a better design instead of channels: https://github.com/FerretDB/FerretDB/issues/898.
-			for range fetchedChan {
-			}
-		}()
-
-		var fetchedDocs []*types.Document
-		for fetchedItem := range fetchedChan {
-			if fetchedItem.Err != nil {
-				return fetchedItem.Err
-			}
-
-			fetchedDocs = append(fetchedDocs, fetchedItem.Docs...)
-		}
-
-		err = common.SortDocuments(fetchedDocs, params.sort)
+		it, err := h.pgPool.QueryDocuments(ctx, tx, params.sqlParam)
 		if err != nil {
 			return err
 		}
 
-		for _, doc := range fetchedDocs {
-			matches, err := common.FilterDocument(doc, params.query)
+		defer it.Close()
+		for it.Next() {
+			docs, err := it.DocumentsFiltered(params.query)
 			if err != nil {
 				return err
 			}
 
-			if !matches {
-				continue
-			}
+			resDocs = append(resDocs, docs...)
+		}
 
-			resDocs = append(resDocs, doc)
+		if err := common.SortDocuments(resDocs, params.sort); err != nil {
+			return err
 		}
 
 		return nil

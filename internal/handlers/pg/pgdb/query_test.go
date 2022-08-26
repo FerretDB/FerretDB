@@ -15,13 +15,13 @@
 package pgdb
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
-	"golang.org/x/net/context"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -99,20 +99,18 @@ func TestQueryDocuments(t *testing.T) {
 			}
 
 			sp := SQLParam{DB: dbName, Collection: tc.collection}
-			fetchedChan, err := pool.QueryDocuments(ctx, tx, sp)
+			it, err := pool.QueryDocuments(ctx, tx, sp)
 			require.NoError(t, err)
+			defer it.Close()
 
 			iter := 0
-			for {
-				fetched, ok := <-fetchedChan
-				if !ok {
-					break
-				}
-
-				assert.NoError(t, fetched.Err)
-				assert.Equal(t, tc.docsPerIteration[iter], len(fetched.Docs))
+			for it.Next() {
+				fetched, err := it.DocumentsFiltered(nil)
+				assert.NoError(t, err)
+				assert.Equal(t, tc.docsPerIteration[iter], len(fetched))
 				iter++
 			}
+
 			assert.Equal(t, len(tc.docsPerIteration), iter)
 
 			require.NoError(t, tx.Commit(ctx))
@@ -120,11 +118,11 @@ func TestQueryDocuments(t *testing.T) {
 	}
 
 	// Special case: cancel context before reading from channel.
-	t.Run("cancel_context", func(t *testing.T) {
+	t.Run("cancel_context_before", func(t *testing.T) {
 		tx, err := pool.Begin(ctx)
 		require.NoError(t, err)
 
-		for i := 1; i <= FetchedChannelBufSize*FetchedSliceCapacity+1; i++ {
+		for i := 1; i <= QueryIteratorBufSize*QueryIteratorSliceCapacity+1; i++ {
 			require.NoError(t, InsertDocument(ctx, tx, dbName, collectionName+"_cancel",
 				must.NotFail(types.NewDocument("id", fmt.Sprintf("%d", i))),
 			))
@@ -132,21 +130,18 @@ func TestQueryDocuments(t *testing.T) {
 
 		sp := SQLParam{DB: dbName, Collection: collectionName + "_cancel"}
 		ctx, cancel := context.WithCancel(context.Background())
-		fetchedChan, err := pool.QueryDocuments(ctx, pool, sp)
-		cancel()
+		iterator, err := pool.QueryDocuments(ctx, pool, sp)
 		require.NoError(t, err)
+		defer iterator.Close()
+		cancel()
 
 		<-ctx.Done()
 		countDocs := 0
-		for {
-			fetched, ok := <-fetchedChan
-			if !ok {
-				break
-			}
-
-			countDocs += len(fetched.Docs)
+		for iterator.Next() {
+			_, _ = iterator.DocumentsFiltered(nil)
+			countDocs++
 		}
-		require.Less(t, countDocs, FetchedChannelBufSize*FetchedSliceCapacity+1)
+		require.Less(t, countDocs, QueryIteratorBufSize*QueryIteratorSliceCapacity+1)
 
 		require.ErrorIs(t, tx.Rollback(ctx), context.Canceled)
 	})
@@ -157,12 +152,13 @@ func TestQueryDocuments(t *testing.T) {
 		require.NoError(t, err)
 
 		sp := SQLParam{DB: dbName, Collection: collectionName + "_non-existing"}
-		fetchedChan, err := pool.QueryDocuments(context.Background(), tx, sp)
+		it, err := pool.QueryDocuments(context.Background(), tx, sp)
 		require.NoError(t, err)
-		res, ok := <-fetchedChan
-		require.False(t, ok)
-		require.Nil(t, res.Docs)
-		require.Nil(t, res.Err)
+		defer it.Close()
+		require.False(t, it.Next())
+		doc, err := it.DocumentsFiltered(nil)
+		require.Empty(t, doc)
+		require.NoError(t, err)
 
 		require.NoError(t, tx.Commit(ctx))
 	})

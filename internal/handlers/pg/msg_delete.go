@@ -101,56 +101,38 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return err
 		}
 
-		resDocs := make([]*types.Document, 0, 16)
 		err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-			// fetch current items from collection
-			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp)
+			it, err := h.pgPool.QueryDocuments(ctx, tx, sp)
 			if err != nil {
 				return err
 			}
-			defer func() {
-				// Drain the channel to prevent leaking goroutines.
-				// TODO Offer a better design instead of channels: https://github.com/FerretDB/FerretDB/issues/898.
-				for range fetchedChan {
-				}
-			}()
 
-			// iterate through every row and delete matching ones
-			for fetchedItem := range fetchedChan {
-				if fetchedItem.Err != nil {
-					return fetchedItem.Err
-				}
+			defer it.Close()
 
-				for _, doc := range fetchedItem.Docs {
-					matches, err := common.FilterDocument(doc, filter)
-					if err != nil {
-						return err
-					}
-
-					if !matches {
-						continue
-					}
-
-					resDocs = append(resDocs, doc)
-				}
-
-				if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
-					return err
-				}
-
-				// if no field is matched in a row, go to the next one
-				if len(resDocs) == 0 {
-					continue
-				}
-
-				rowsDeleted, err := h.delete(ctx, &sp, resDocs)
+			res := []*types.Document{}
+			for it.Next() {
+				docs, err := it.DocumentsFiltered(filter)
 				if err != nil {
 					return err
 				}
 
-				deleted += int32(rowsDeleted)
+				res = append(res, docs...)
 			}
 
+			if res, err = common.LimitDocuments(res, limit); err != nil {
+				return err
+			}
+
+			if len(res) == 0 {
+				return nil
+			}
+
+			rowsDeleted, err := h.delete(ctx, &sp, res)
+			if err != nil {
+				return err
+			}
+
+			deleted += int32(rowsDeleted)
 			return nil
 		})
 

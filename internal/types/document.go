@@ -24,6 +24,18 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// DocumentIterator represent a document filter iterator.
+type DocumentIterator interface {
+	// Close iterator
+	Close()
+
+	// Next should be return true when have more items.
+	Next() bool
+
+	// DocumentsFiltered returns a list of documents that satisfy the filter.
+	DocumentsFiltered(filter *Document) ([]*Document, error)
+}
+
 // Common interface with bson.Document.
 //
 // TODO Remove this type.
