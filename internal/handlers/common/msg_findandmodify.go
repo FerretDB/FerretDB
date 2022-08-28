@@ -30,7 +30,7 @@ type FindAndModifyParams struct {
 	MaxTimeMS                             int32
 }
 
-// prepareFindAndModifyParams prepares findAndModify request fields.
+// PrepareFindAndModifyParams prepares findAndModify request fields.
 func PrepareFindAndModifyParams(document *types.Document) (*FindAndModifyParams, error) {
 	var err error
 
@@ -72,7 +72,7 @@ func PrepareFindAndModifyParams(document *types.Document) (*FindAndModifyParams,
 	}
 
 	var query *types.Document
-	if query, err = GetOptionalParam(document, "Query", query); err != nil {
+	if query, err = GetOptionalParam(document, "query", query); err != nil {
 		return nil, err
 	}
 
