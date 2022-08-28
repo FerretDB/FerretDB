@@ -68,7 +68,7 @@ var Commands = map[string]command{
 		Handler: (handlers.Interface).MsgConnectionStatus,
 	},
 	"count": {
-		Help:    "Returns the count of documents that's matched by the Query.",
+		Help:    "Returns the count of documents that's matched by the query.",
 		Handler: (handlers.Interface).MsgCount,
 	},
 	"create": {
@@ -92,7 +92,7 @@ var Commands = map[string]command{
 		Handler: (handlers.Interface).MsgDebugError,
 	},
 	"delete": {
-		Help:    "Deletes documents matched by the Query.",
+		Help:    "Deletes documents matched by the query.",
 		Handler: (handlers.Interface).MsgDelete,
 	},
 	"drop": {
@@ -108,11 +108,11 @@ var Commands = map[string]command{
 		Handler: (handlers.Interface).MsgExplain,
 	},
 	"find": {
-		Help:    "Returns documents matched by the Query.",
+		Help:    "Returns documents matched by the query.",
 		Handler: (handlers.Interface).MsgFind,
 	},
 	"findAndModify": {
-		Help:    "Inserts, updates, or deletes, and returns a document matched by the Query.",
+		Help:    "Inserts, updates, or deletes, and returns a document matched by the query.",
 		Handler: (handlers.Interface).MsgFindAndModify,
 	},
 	"getCmdLineOpts": {
@@ -176,7 +176,7 @@ var Commands = map[string]command{
 		Handler: (handlers.Interface).MsgSetFreeMonitoring,
 	},
 	"update": {
-		Help:    "Updates documents that are matched by the Query.",
+		Help:    "Updates documents that are matched by the query.",
 		Handler: (handlers.Interface).MsgUpdate,
 	},
 	"whatsmyuri": {
