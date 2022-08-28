@@ -28,7 +28,7 @@ import (
 
 // TestInsertTigrisNull tests how the insert operation works with null values in Tigris.
 func TestInsertTigrisNull(t *testing.T) {
-	setup.SkipForPostgres(t)
+	setup.SkipForPostgresWithReason(t, "TODO! Fix me!")
 
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Doubles)

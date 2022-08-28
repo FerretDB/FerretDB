@@ -96,17 +96,6 @@ func SkipForMongoWithReason(tb testing.TB, reason string) {
 	}
 }
 
-// SkipForPostgres skips the current test for Postgres (pg) handler.
-//
-// Ideally, this function should not be used. It is allowed to use it in Tigris-specific tests only.
-func SkipForPostgres(tb testing.TB) {
-	tb.Helper()
-
-	if *handlerF == "pg" {
-		tb.Skip("Skipping for Postgres")
-	}
-}
-
 // setupListener starts in-process FerretDB server that runs until ctx is done,
 // and returns listening port number.
 func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
