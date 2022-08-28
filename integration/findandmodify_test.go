@@ -31,22 +31,24 @@ func TestFindAndModifySimple(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		providers []shareddata.Provider
-		command   bson.D
-		response  bson.D
+		skipForTigrisReason string
+		providers           []shareddata.Provider
+		command             bson.D
+		response            bson.D
 	}{
-		/*"EmptyQueryRemove": {
-			providers: []shareddata.Provider{shareddata.Int32s},
+		"EmptyQueryRemove": {
+			skipForTigrisReason: "Arrays are not supported yet - https://github.com/FerretDB/FerretDB/issues/908",
+			providers:           []shareddata.Provider{shareddata.ArrayInt32s},
 			command: bson.D{
 				{"query", bson.D{}},
 				{"remove", true},
 			},
 			response: bson.D{
 				{"lastErrorObject", bson.D{{"n", int32(1)}}},
-				{"value", bson.D{{"_id", "array"}, {"v", bson.A{int32(42)}}}},
+				{"value", bson.D{{"_id", "array-int32s"}, {"v", bson.A{int32(42)}}}},
 				{"ok", float64(1)},
 			},
-		},*/
+		},
 		"NewDoubleNonZero": {
 			providers: []shareddata.Provider{shareddata.Doubles},
 			command: bson.D{
@@ -141,6 +143,10 @@ func TestFindAndModifySimple(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skipForTigrisReason != "" {
+				setup.SkipForTigrisWithReason(t, tc.skipForTigrisReason)
+			}
+
 			t.Parallel()
 			ctx, collection := setup.Setup(t, tc.providers...)
 
