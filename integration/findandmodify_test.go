@@ -632,8 +632,6 @@ func TestFindAndModifyUpsertComplex(t *testing.T) {
 }
 
 func TestFindAndModifyRemove(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
@@ -676,7 +674,7 @@ func TestFindAndModifyRemove(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup.Setup(t, shareddata.Scalars)
+			ctx, collection := setup.Setup(t, shareddata.Doubles)
 
 			command := append(bson.D{{"findAndModify", collection.Name()}}, tc.command...)
 
@@ -693,8 +691,6 @@ func TestFindAndModifyRemove(t *testing.T) {
 }
 
 func TestFindAndModifyBadMaxTimeMSType(t *testing.T) {
-	setup.SkipForTigris(t) // FindAndModify is not implemented for Tigris yet
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
