@@ -457,8 +457,6 @@ func TestFindAndModifyUpdate(t *testing.T) {
 }
 
 func TestFindAndModifyUpsert(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
@@ -565,7 +563,7 @@ func TestFindAndModifyUpsert(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := setup.Setup(t, shareddata.Doubles)
 
 			command := append(bson.D{{"findAndModify", collection.Name()}}, tc.command...)
 
@@ -582,8 +580,6 @@ func TestFindAndModifyUpsert(t *testing.T) {
 }
 
 func TestFindAndModifyUpsertComplex(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
@@ -611,7 +607,7 @@ func TestFindAndModifyUpsertComplex(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := setup.Setup(t, shareddata.Doubles)
 
 			command := append(bson.D{{"findAndModify", collection.Name()}}, tc.command...)
 
