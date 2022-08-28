@@ -28,15 +28,15 @@ import (
 )
 
 func TestFindAndModifySimple(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		command  bson.D
-		response bson.D
+		providers []shareddata.Provider
+		command   bson.D
+		response  bson.D
 	}{
-		"EmptyQueryRemove": {
+		/*"EmptyQueryRemove": {
+			providers: []shareddata.Provider{shareddata.Int32s},
 			command: bson.D{
 				{"query", bson.D{}},
 				{"remove", true},
@@ -46,8 +46,9 @@ func TestFindAndModifySimple(t *testing.T) {
 				{"value", bson.D{{"_id", "array"}, {"v", bson.A{int32(42)}}}},
 				{"ok", float64(1)},
 			},
-		},
+		},*/
 		"NewDoubleNonZero": {
+			providers: []shareddata.Provider{shareddata.Doubles},
 			command: bson.D{
 				{"query", bson.D{{"_id", "double-smallest"}}},
 				{"update", bson.D{{"_id", "double-smallest"}, {"v", int32(43)}}},
@@ -60,6 +61,7 @@ func TestFindAndModifySimple(t *testing.T) {
 			},
 		},
 		"NewDoubleZero": {
+			providers: []shareddata.Provider{shareddata.Doubles},
 			command: bson.D{
 				{"query", bson.D{{"_id", "double-zero"}}},
 				{"update", bson.D{{"_id", "double-zero"}, {"v", 43.0}}},
@@ -72,6 +74,7 @@ func TestFindAndModifySimple(t *testing.T) {
 			},
 		},
 		"NewDoubleNaN": {
+			providers: []shareddata.Provider{shareddata.Doubles},
 			command: bson.D{
 				{"query", bson.D{{"_id", "double-zero"}}},
 				{"update", bson.D{{"_id", "double-zero"}, {"v", 43.0}}},
@@ -84,6 +87,7 @@ func TestFindAndModifySimple(t *testing.T) {
 			},
 		},
 		"NewIntNonZero": {
+			providers: []shareddata.Provider{shareddata.Int32s},
 			command: bson.D{
 				{"query", bson.D{{"_id", "int32"}}},
 				{"update", bson.D{{"_id", "int32"}, {"v", int32(43)}}},
@@ -96,6 +100,7 @@ func TestFindAndModifySimple(t *testing.T) {
 			},
 		},
 		"NewIntZero": {
+			providers: []shareddata.Provider{shareddata.Int32s},
 			command: bson.D{
 				{"query", bson.D{{"_id", "int32-zero"}}},
 				{"update", bson.D{{"_id", "int32-zero"}, {"v", int32(43)}}},
@@ -108,6 +113,7 @@ func TestFindAndModifySimple(t *testing.T) {
 			},
 		},
 		"NewLongNonZero": {
+			providers: []shareddata.Provider{shareddata.Int64s},
 			command: bson.D{
 				{"query", bson.D{{"_id", "int64"}}},
 				{"update", bson.D{{"_id", "int64"}, {"v", int64(43)}}},
@@ -120,6 +126,7 @@ func TestFindAndModifySimple(t *testing.T) {
 			},
 		},
 		"NewLongZero": {
+			providers: []shareddata.Provider{shareddata.Int64s},
 			command: bson.D{
 				{"query", bson.D{{"_id", "int64-zero"}}},
 				{"update", bson.D{{"_id", "int64-zero"}, {"v", int64(43)}}},
@@ -135,7 +142,7 @@ func TestFindAndModifySimple(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := setup.Setup(t, tc.providers...)
 
 			command := bson.D{{"findAndModify", collection.Name()}}
 			command = append(command, tc.command...)
@@ -153,8 +160,6 @@ func TestFindAndModifySimple(t *testing.T) {
 }
 
 func TestFindAndModifyEmptyCollectionName(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
@@ -172,7 +177,7 @@ func TestFindAndModifyEmptyCollectionName(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := setup.Setup(t, shareddata.Doubles)
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, bson.D{{"findAndModify", ""}}).Decode(&actual)
@@ -183,8 +188,6 @@ func TestFindAndModifyEmptyCollectionName(t *testing.T) {
 }
 
 func TestFindAndModifyErrors(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
@@ -296,7 +299,7 @@ func TestFindAndModifyErrors(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 			command := bson.D{{"findAndModify", collection.Name()}}
 			command = append(command, tc.command...)
