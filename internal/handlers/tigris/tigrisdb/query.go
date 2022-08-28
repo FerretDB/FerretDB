@@ -16,6 +16,7 @@ package tigrisdb
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
@@ -23,12 +24,18 @@ import (
 	"github.com/FerretDB/FerretDB/internal/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
+
+const pushdownEnabled = true
 
 // FetchParam represents options/parameters used by the fetch/query.
 type FetchParam struct {
 	DB         string
 	Collection string
+
+	// Query filter for possible pushdown; may be ignored in part or entirely.
+	Filter *types.Document
 }
 
 // QueryDocuments fetches documents from the given collection.
@@ -59,7 +66,28 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param FetchParam) ([]*t
 		return nil, lazyerrors.Error(err)
 	}
 
-	iter, err := db.Read(ctx, param.Collection, driver.Filter(`{}`), nil)
+	filter := driver.Filter(`{}`)
+
+	if pushdownEnabled && param.Filter.Len() != 0 {
+		for k, v := range param.Filter.Map() {
+			if k != "_id" {
+				continue
+			}
+
+			switch v := v.(type) {
+			case string, types.ObjectID:
+				id := must.NotFail(tjson.Marshal(v))
+				filter = must.NotFail(json.Marshal(map[string]any{"_id": json.RawMessage(id)}))
+
+			default:
+				continue
+			}
+		}
+	}
+
+	tdb.L.Sugar().Debugf("Read filter: %s", filter)
+
+	iter, err := db.Read(ctx, param.Collection, filter, nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
