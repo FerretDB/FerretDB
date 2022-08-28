@@ -182,7 +182,10 @@ func (pgPool *Pool) CreateCollectionIfNotExist(ctx context.Context, db, collecti
 	return CreateCollectionIfNotExist(ctx, pgPool, db, collection)
 }
 
-// SchemaStats returns a set of statistics for FerretDB database / PostgreSQL schema and table.
+// SchemaStats returns a set of statistics for FerretDB server, database, collection - or, in terms of PostgreSQL,
+// database, schema, table.
+// If schema is empty, it calculates statistics across the whole PostgreSQL database.
+// If collection is empty it calculates statistics across the whole PostgreSQL schema.
 func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) (*DBStats, error) {
 	var res DBStats
 
@@ -199,13 +202,20 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
                                          AND s.relname = t.table_name
       LEFT OUTER
       JOIN pg_indexes                AS i ON i.schemaname = t.table_schema
-                                         AND i.tablename = t.table_name
-     WHERE t.table_schema = $1`
+                                         AND i.tablename = t.table_name`
 
-	args := []any{schema}
-	if collection != "" {
-		sql = sql + " AND t.table_name = $2"
-		args = append(args, collection)
+	// TODO Exclude service schemas from the query above https://github.com/FerretDB/FerretDB/issues/1068
+
+	args := []any{}
+
+	if schema != "" {
+		sql += " WHERE t.table_schema = $1"
+		args = append(args, schema)
+
+		if collection != "" {
+			sql += " AND t.table_name = $2"
+			args = append(args, collection)
+		}
 	}
 
 	res.Name = schema
