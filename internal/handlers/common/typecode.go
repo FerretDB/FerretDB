@@ -27,7 +27,7 @@ import (
 
 // typeCode represents BSON type codes.
 // BSON type codes represent corresponding codes in BSON specification.
-// They could be used to Query fields with particular type values using $type operator.
+// They could be used to query fields with particular type values using $type operator.
 // Type code `number` is added to support MongoDB surrogate alias `number` which matches double, int and long type values.
 type typeCode int32
 

@@ -131,7 +131,7 @@ func PrepareFindAndModifyParams(document *types.Document) (*FindAndModifyParams,
 		return nil, err
 	}
 
-	// get comment from Query, e.g. db.collection.FindAndModify({"_id":"string", "$comment: "test"},{$set:{"v":"foo""}})
+	// get comment from query, e.g. db.collection.FindAndModify({"_id":"string", "$comment: "test"},{$set:{"v":"foo""}})
 	if comment, err = GetOptionalParam(query, "$comment", comment); err != nil {
 		return nil, err
 	}

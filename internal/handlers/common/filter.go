@@ -672,7 +672,7 @@ func filterFieldExprAll(fieldValue any, allValue any) (bool, error) {
 
 	default:
 		// For other types (scalars) we check that the value is equal to each scalar in the query.
-		// Example: value: 42, Query: [42, 42] should give us `true`
+		// Example: value: 42, query: [42, 42] should give us `true`
 		for i := 0; i < query.Len(); i++ {
 			res := types.Compare(value, must.NotFail(query.Get(i)))
 			if !slices.Contains(res, types.Equal) || len(res) != 1 {
