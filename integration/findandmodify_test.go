@@ -316,11 +316,10 @@ func TestFindAndModifyErrors(t *testing.T) {
 }
 
 func TestFindAndModifyUpdate(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
+		providers         []shareddata.Provider
 		command           bson.D
 		query             any
 		update            bson.D
@@ -330,7 +329,8 @@ func TestFindAndModifyUpdate(t *testing.T) {
 		returnNewDocument bool
 	}{
 		"Replace": {
-			query: bson.D{{"_id", "int64"}},
+			providers: []shareddata.Provider{shareddata.Int64s},
+			query:     bson.D{{"_id", "int64"}},
 			command: bson.D{
 				{"update", bson.D{{"_id", "int64"}, {"v", int64(43)}}},
 			},
@@ -342,7 +342,8 @@ func TestFindAndModifyUpdate(t *testing.T) {
 			},
 		},
 		"ReplaceWithoutID": {
-			query: bson.D{{"_id", "int64"}},
+			providers: []shareddata.Provider{shareddata.Int64s},
+			query:     bson.D{{"_id", "int64"}},
 			command: bson.D{
 				{"update", bson.D{{"v", int64(43)}}},
 			},
@@ -354,7 +355,8 @@ func TestFindAndModifyUpdate(t *testing.T) {
 			},
 		},
 		"ReplaceReturnNew": {
-			query: bson.D{{"_id", "int32"}},
+			providers: []shareddata.Provider{shareddata.Int32s},
+			query:     bson.D{{"_id", "int32"}},
 			command: bson.D{
 				{"update", bson.D{{"_id", "int32"}, {"v", int32(43)}}},
 				{"new", true},
@@ -367,7 +369,8 @@ func TestFindAndModifyUpdate(t *testing.T) {
 			},
 		},
 		"UpdateNotExistedIdInQuery": {
-			query: bson.D{{"_id", "no-such-id"}},
+			providers: []shareddata.Provider{shareddata.Int32s},
+			query:     bson.D{{"_id", "no-such-id"}},
 			command: bson.D{
 				{"update", bson.D{{"v", int32(43)}}},
 			},
@@ -377,6 +380,7 @@ func TestFindAndModifyUpdate(t *testing.T) {
 			},
 		},
 		"UpdateNotExistedIdNotInQuery": {
+			providers: []shareddata.Provider{shareddata.Int32s},
 			query: bson.D{{"$and", bson.A{
 				bson.D{{"v", bson.D{{"$gt", 0}}}},
 				bson.D{{"v", bson.D{{"$lt", 0}}}},
@@ -390,7 +394,8 @@ func TestFindAndModifyUpdate(t *testing.T) {
 			},
 		},
 		"UpdateOperatorSet": {
-			query: bson.D{{"_id", "int64"}},
+			providers: []shareddata.Provider{shareddata.Int64s},
+			query:     bson.D{{"_id", "int64"}},
 			command: bson.D{
 				{"update", bson.D{{"$set", bson.D{{"v", int64(43)}}}}},
 			},
@@ -402,7 +407,8 @@ func TestFindAndModifyUpdate(t *testing.T) {
 			},
 		},
 		"UpdateOperatorSetReturnNew": {
-			query: bson.D{{"_id", "int64"}},
+			providers: []shareddata.Provider{shareddata.Int64s},
+			query:     bson.D{{"_id", "int64"}},
 			command: bson.D{
 				{"update", bson.D{{"$set", bson.D{{"v", int64(43)}}}}},
 				{"new", true},
@@ -418,7 +424,7 @@ func TestFindAndModifyUpdate(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := setup.Setup(t, tc.providers...)
 
 			command := bson.D{{"findAndModify", collection.Name()}, {"query", tc.query}}
 			command = append(command, tc.command...)
