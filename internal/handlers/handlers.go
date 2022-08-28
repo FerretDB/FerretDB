@@ -47,6 +47,9 @@ type Interface interface {
 	// MsgBuildInfo returns a summary of the build information.
 	MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
+	// MsgCollMod adds options to a collection or modify view definitions.
+	MsgCollMod(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
 	// MsgCollStats returns storage data for a collection.
 	MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
