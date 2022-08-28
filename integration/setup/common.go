@@ -53,11 +53,46 @@ var (
 // SkipForTigris skips the current test for Tigris handler.
 //
 // This function should not be used lightly in new tests and should eventually be removed.
+//
+// Deprecated: use SkipForTigrisWithReason instead if you must.
 func SkipForTigris(tb testing.TB) {
+	SkipForTigrisWithReason(tb, "")
+}
+
+// SkipForTigrisWithReason skips the current test for Tigris handler.
+//
+// This function should not be used lightly in new tests and should eventually be removed.
+func SkipForTigrisWithReason(tb testing.TB, reason string) {
 	tb.Helper()
 
 	if *handlerF == "tigris" {
-		tb.Skip("Skipping for Tigris")
+		if reason == "" {
+			tb.Skipf("Skipping for Tigris")
+		} else {
+			tb.Skipf("Skipping for Tigris: %s", reason)
+		}
+	}
+}
+
+// SkipForPostgresWithReason skips the current test for Postgres (pg) handler.
+//
+// Ideally, this function should not be used. It is allowed to use it in Tigris-specific tests only.
+func SkipForPostgresWithReason(tb testing.TB, reason string) {
+	tb.Helper()
+
+	if *handlerF == "pg" {
+		tb.Skipf("Skipping for Postgres", reason)
+	}
+}
+
+// SkipForMongoWithReason skips the current test for mongodb handler.
+//
+// Ideally, this function should not be used. It is allowed to use it in Tigris-specific tests only.
+func SkipForMongoWithReason(tb testing.TB, reason string) {
+	tb.Helper()
+
+	if *handlerF == "mongodb" {
+		tb.Skipf("Skipping for Mongo", reason)
 	}
 }
 
@@ -80,7 +115,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 	h, err := registry.NewHandler(*handlerF, &registry.NewHandlerOpts{
 		Ctx:           ctx,
 		Logger:        logger,
-		PostgreSQLURL: testutil.PoolConnString(tb, nil),
+		PostgreSQLURL: testutil.PostgreSQLURL(tb, nil),
 		TigrisURL:     testutil.TigrisURL(tb),
 	})
 	require.NoError(tb, err)
@@ -184,7 +219,7 @@ func startup() {
 		}
 
 		if p := *compatPortF; p == 0 {
-			zap.S().Warn("Compat system: none, compatibility tests will be skipped.")
+			zap.S().Infof("Compat system: none, compatibility tests will be skipped.")
 		} else {
 			zap.S().Infof("Compat system: port %d.", p)
 		}

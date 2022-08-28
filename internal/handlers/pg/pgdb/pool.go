@@ -16,21 +16,16 @@ package pgdb
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/jackc/pgconn"
-	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/log/zapadapter"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 const (
@@ -45,7 +40,6 @@ const (
 // Pool represents PostgreSQL concurrency-safe connection pool.
 type Pool struct {
 	*pgxpool.Pool
-	logger *zap.Logger // TODO remove, use getPool.Config().ConnConfig.Logger instead
 }
 
 // DBStats describes statistics for a database.
@@ -92,8 +86,7 @@ func NewPool(ctx context.Context, connString string, logger *zap.Logger, lazy bo
 	}
 
 	res := &Pool{
-		Pool:   p,
-		logger: logger.Named("pgdb"),
+		Pool: p,
 	}
 
 	if !lazy {
@@ -103,7 +96,7 @@ func NewPool(ctx context.Context, connString string, logger *zap.Logger, lazy bo
 	return res, err
 }
 
-// IsValidUTF8Locale Currently supported locale variants, compromised between https://www.postgresql.org/docs/9.3/multibyte.html
+// isValidUTF8Locale Currently supported locale variants, compromised between https://www.postgresql.org/docs/9.3/multibyte.html
 // and https://www.gnu.org/software/libc/manual/html_node/Locale-Names.html.
 //
 // Valid examples:
@@ -111,7 +104,7 @@ func NewPool(ctx context.Context, connString string, logger *zap.Logger, lazy bo
 // * en_US.utf-8
 // * en_US.UTF8,
 // * en_US.UTF-8.
-func IsValidUTF8Locale(setting string) bool {
+func isValidUTF8Locale(setting string) bool {
 	lowered := strings.ToLower(setting)
 
 	return lowered == "en_us.utf8" || lowered == "en_us.utf-8"
@@ -143,11 +136,11 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 				return fmt.Errorf("pgdb.checkConnection: %q is %q, want %q", name, setting, encUTF8)
 			}
 		case "lc_collate":
-			if setting != localeC && setting != localePOSIX && !IsValidUTF8Locale(setting) {
+			if setting != localeC && setting != localePOSIX && !isValidUTF8Locale(setting) {
 				return fmt.Errorf("pgdb.checkConnection: %q is %q", name, setting)
 			}
 		case "lc_ctype":
-			if setting != localeC && setting != localePOSIX && !IsValidUTF8Locale(setting) {
+			if setting != localeC && setting != localePOSIX && !isValidUTF8Locale(setting) {
 				return fmt.Errorf("pgdb.checkConnection: %q is %q", name, setting)
 			}
 		default:
@@ -173,60 +166,26 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 //
 // It returns ErrTableNotExist if schema does not exist.
 //
-// TODO Move to function, deprecate or remove method.
+// Deprecated: use function instead.
 func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
-	sql := `DROP SCHEMA ` + pgx.Identifier{db}.Sanitize() + ` CASCADE`
-	_, err := pgPool.Exec(ctx, sql)
-	if err == nil {
-		return nil
-	}
-
-	pgErr, ok := err.(*pgconn.PgError)
-	if !ok {
-		return lazyerrors.Error(err)
-	}
-
-	switch pgErr.Code {
-	case pgerrcode.InvalidSchemaName:
-		return ErrSchemaNotExist
-	default:
-		return lazyerrors.Error(err)
-	}
+	return DropDatabase(ctx, pgPool, db)
 }
 
-// CreateTableIfNotExist ensures that given FerretDB database / PostgreSQL schema
+// CreateCollectionIfNotExist ensures that given FerretDB database / PostgreSQL schema
 // and FerretDB collection / PostgreSQL table exist.
 // If needed, it creates both schema and table.
 //
 // True is returned if table was created.
-func (pgPool *Pool) CreateTableIfNotExist(ctx context.Context, db, collection string) (bool, error) {
-	exists, err := CollectionExists(ctx, pgPool, db, collection)
-	if err != nil {
-		return false, lazyerrors.Error(err)
-	}
-	if exists {
-		return false, nil
-	}
-
-	// Table (or even schema) does not exist. Try to create it,
-	// but keep in mind that it can be created in concurrent connection.
-
-	if err := CreateDatabase(ctx, pgPool, db); err != nil && !errors.Is(err, ErrAlreadyExist) {
-		return false, lazyerrors.Error(err)
-	}
-
-	// TODO use a transaction instead of pgPool: https://github.com/FerretDB/FerretDB/issues/866
-	if err := CreateCollection(ctx, pgPool, db, collection); err != nil {
-		if errors.Is(err, ErrAlreadyExist) {
-			return false, nil
-		}
-		return false, lazyerrors.Error(err)
-	}
-
-	return true, nil
+//
+// Deprecated: use function instead.
+func (pgPool *Pool) CreateCollectionIfNotExist(ctx context.Context, db, collection string) (bool, error) {
+	return CreateCollectionIfNotExist(ctx, pgPool, db, collection)
 }
 
-// SchemaStats returns a set of statistics for FerretDB database / PostgreSQL schema and table.
+// SchemaStats returns a set of statistics for FerretDB server, database, collection - or, in terms of PostgreSQL,
+// database, schema, table.
+// If schema is empty, it calculates statistics across the whole PostgreSQL database.
+// If collection is empty it calculates statistics across the whole PostgreSQL schema.
 func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) (*DBStats, error) {
 	var res DBStats
 
@@ -243,13 +202,20 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
                                          AND s.relname = t.table_name
       LEFT OUTER
       JOIN pg_indexes                AS i ON i.schemaname = t.table_schema
-                                         AND i.tablename = t.table_name
-     WHERE t.table_schema = $1`
+                                         AND i.tablename = t.table_name`
 
-	args := []any{schema}
-	if collection != "" {
-		sql = sql + " AND t.table_name = $2"
-		args = append(args, collection)
+	// TODO Exclude service schemas from the query above https://github.com/FerretDB/FerretDB/issues/1068
+
+	args := []any{}
+
+	if schema != "" {
+		sql += " WHERE t.table_schema = $1"
+		args = append(args, schema)
+
+		if collection != "" {
+			sql += " AND t.table_name = $2"
+			args = append(args, collection)
+		}
 	}
 
 	res.Name = schema
@@ -262,73 +228,31 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 }
 
 // SetDocumentByID sets a document by its ID.
+//
+// Deprecated: use function instead.
 func (pgPool *Pool) SetDocumentByID(ctx context.Context, sp *SQLParam, id any, doc *types.Document) (int64, error) {
-	var tag pgconn.CommandTag
+	var n int64
 	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		table, err := getTableName(ctx, tx, sp.DB, sp.Collection)
-		if err != nil {
-			return err
-		}
-
-		sql := "UPDATE "
-		if sp.Comment != "" {
-			sp.Comment = strings.ReplaceAll(sp.Comment, "/*", "/ *")
-			sp.Comment = strings.ReplaceAll(sp.Comment, "*/", "* /")
-
-			sql += `/* ` + sp.Comment + ` */ `
-		}
-		sql += pgx.Identifier{sp.DB, table}.Sanitize() +
-			" SET _jsonb = $1 WHERE _jsonb->'_id' = $2"
-
-		tag, err = tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc)), must.NotFail(fjson.Marshal(id)))
+		var err error
+		n, err = SetDocumentByID(ctx, tx, sp, id, doc)
 		return err
 	})
-	if err != nil {
-		return 0, err
-	}
 
-	return tag.RowsAffected(), nil
+	return n, err
 }
 
 // DeleteDocumentsByID deletes documents by given IDs.
+//
+// Deprecated: use function instead.
 func (pgPool *Pool) DeleteDocumentsByID(ctx context.Context, sp *SQLParam, ids []any) (int64, error) {
-	var tag pgconn.CommandTag
+	var n int64
 	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		table, err := getTableName(ctx, tx, sp.DB, sp.Collection)
-		if err != nil {
-			return err
-		}
-
-		var p Placeholder
-		idsMarshalled := make([]any, len(ids))
-		placeholders := make([]string, len(ids))
-		for i, id := range ids {
-			placeholders[i] = p.Next()
-			idsMarshalled[i] = must.NotFail(fjson.Marshal(id))
-		}
-
-		sql := `DELETE `
-		if sp.Comment != "" {
-			sp.Comment = strings.ReplaceAll(sp.Comment, "/*", "/ *")
-			sp.Comment = strings.ReplaceAll(sp.Comment, "*/", "* /")
-
-			sql += `/* ` + sp.Comment + ` */ `
-		}
-
-		sql += `FROM ` +
-			pgx.Identifier{sp.DB, table}.Sanitize() +
-			` WHERE _jsonb->'_id' IN (` +
-			strings.Join(placeholders, ", ") +
-			`)`
-
-		tag, err = tx.Exec(ctx, sql, idsMarshalled...)
+		var err error
+		n, err = DeleteDocumentsByID(ctx, tx, sp, ids)
 		return err
 	})
-	if err != nil {
-		return 0, err
-	}
 
-	return tag.RowsAffected(), nil
+	return n, err
 }
 
 // InTransaction wraps the given function f in a transaction.
@@ -348,7 +272,10 @@ func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (er
 			return
 		}
 		if rerr := tx.Rollback(ctx); rerr != nil {
-			pgPool.logger.Error("failed to perform rollback", zap.Error(rerr))
+			pgPool.Config().ConnConfig.Logger.Log(
+				ctx, pgx.LogLevelError, "failed to perform rollback",
+				map[string]any{"error": rerr},
+			)
 		}
 	}()
 

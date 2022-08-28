@@ -24,7 +24,20 @@ func TestQueryLogicalCompatAnd(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
-		"And": {
+		"Zero": {
+			filter: bson.D{{
+				"$and", bson.A{},
+			}},
+			skip: "https://github.com/FerretDB/FerretDB/issues/962",
+		},
+		"One": {
+			filter: bson.D{{
+				"$and", bson.A{
+					bson.D{{"v", bson.D{{"$gt", int32(0)}}}},
+				},
+			}},
+		},
+		"Two": {
 			filter: bson.D{{
 				"$and", bson.A{
 					bson.D{{"v", bson.D{{"$gt", int32(0)}}}},
@@ -62,7 +75,7 @@ func TestQueryLogicalCompatAnd(t *testing.T) {
 			filter: bson.D{{
 				"$and", bson.A{
 					bson.D{{"v", bson.D{{"$gt", int32(0)}}}},
-					nil,
+					true,
 				},
 			}},
 			resultType: emptyResult,
@@ -77,7 +90,20 @@ func TestQueryLogicalCompatOr(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
-		"Or": {
+		"Zero": {
+			filter: bson.D{{
+				"$or", bson.A{},
+			}},
+			skip: "https://github.com/FerretDB/FerretDB/issues/962",
+		},
+		"One": {
+			filter: bson.D{{
+				"$or", bson.A{
+					bson.D{{"v", bson.D{{"$lt", int32(0)}}}},
+				},
+			}},
+		},
+		"Two": {
 			filter: bson.D{{
 				"$or", bson.A{
 					bson.D{{"v", bson.D{{"$lt", int32(0)}}}},
@@ -103,8 +129,8 @@ func TestQueryLogicalCompatOr(t *testing.T) {
 		"BadValue": {
 			filter: bson.D{{
 				"$or", bson.A{
-					bson.D{{"v", bson.D{{"$gt", int32(0)}}}},
-					nil,
+					bson.D{{"v", bson.D{{"$lt", int32(0)}}}},
+					true,
 				},
 			}},
 			resultType: emptyResult,
@@ -119,7 +145,20 @@ func TestQueryLogicalCompatNor(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
-		"Nor": {
+		"Zero": {
+			filter: bson.D{{
+				"$nor", bson.A{},
+			}},
+			skip: "https://github.com/FerretDB/FerretDB/issues/962",
+		},
+		"One": {
+			filter: bson.D{{
+				"$nor", bson.A{
+					bson.D{{"v", bson.D{{"$lt", int32(0)}}}},
+				},
+			}},
+		},
+		"Two": {
 			filter: bson.D{{
 				"$nor", bson.A{
 					bson.D{{"v", bson.D{{"$lt", int32(0)}}}},
@@ -134,8 +173,8 @@ func TestQueryLogicalCompatNor(t *testing.T) {
 		"BadValue": {
 			filter: bson.D{{
 				"$nor", bson.A{
-					bson.D{{"v", bson.D{{"$gt", int32(0)}}}},
-					nil,
+					bson.D{{"v", bson.D{{"$lt", int32(0)}}}},
+					true,
 				},
 			}},
 			resultType: emptyResult,

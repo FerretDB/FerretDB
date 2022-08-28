@@ -274,14 +274,12 @@ func valueSchema(v any) (*Schema, error) {
 	case bool:
 		return boolSchema, nil
 	case time.Time:
-		// return dateTimeSchema, nil
-		return nil, lazyerrors.Errorf("%T is not supported yet", v)
+		return dateTimeSchema, nil
 	case types.NullType:
 		// According to the current Tigris' logic the field that is set as null is valid but not present in the schema
 		return nil, nil
 	case types.Regex:
-		// return regexSchema, nil
-		return nil, lazyerrors.Errorf("%T is not supported yet", v)
+		return regexSchema, nil
 	case int32:
 		return int32Schema, nil
 	case types.Timestamp:

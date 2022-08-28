@@ -12,22 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filter
+package dummy
 
-// List of supported operations.
-const (
-	and = "$and"
-	or  = "$or"
+import (
+	"context"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// And composes 'and' operation.
-// Result is equivalent to: (ops[0] && ... && ops[len(ops-1]).
-func And(ops ...Expr) Expr {
-	return Expr{and: ops}
-}
-
-// Or composes 'or' operation.
-// Result is equivalent to: (ops[0] || ... || ops[len(ops-1]).
-func Or(ops ...Expr) Expr {
-	return Expr{or: ops}
+// MsgCollMod implements HandlerInterface.
+func (h *Handler) MsgCollMod(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	return nil, notImplemented(must.NotFail(msg.Document()).Command())
 }

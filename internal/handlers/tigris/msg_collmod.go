@@ -12,26 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pgdb_test
+package tigris
 
 import (
 	"context"
-	"testing"
 
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// getPool creates a new connection's connection pool for testing.
-func getPool(ctx context.Context, tb testing.TB, opts *testutil.PoolOpts, l *zap.Logger) *pgdb.Pool {
-	tb.Helper()
-
-	pool, err := pgdb.NewPool(ctx, testutil.PoolConnString(tb, opts), l, false)
-	require.NoError(tb, err)
-	tb.Cleanup(pool.Close)
-
-	return pool
+// MsgCollMod implements HandlerInterface.
+func (h *Handler) MsgCollMod(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	return nil, notImplemented(must.NotFail(msg.Document()).Command())
 }

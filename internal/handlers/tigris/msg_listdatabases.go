@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -38,7 +39,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	common.Ignored(document, h.L, "comment", "authorizedDatabases")
 
-	databaseNames, err := h.driver.ListDatabases(ctx)
+	databaseNames, err := h.db.Driver.ListDatabases(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -48,23 +49,24 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
+	var totalSize int64
 	databases := types.MakeArray(len(databaseNames))
 	for _, databaseName := range databaseNames {
-		res, err := h.driver.DescribeDatabase(ctx, databaseName)
+		res, err := h.db.Driver.DescribeDatabase(ctx, databaseName)
 		if err != nil {
+			// check if database was removed between ListDatabases and DescribeDatabase calls
+			if tigrisdb.IsNotFound(err) {
+				continue
+			}
 			return nil, lazyerrors.Error(err)
 		}
 
-		// iterate over result to collect sizes
-		var sizeOnDisk int64
-		for _, c := range res.Collections {
-			_ = c // TODO https://github.com/FerretDB/FerretDB/issues/776
-		}
+		totalSize += res.Size
 
 		d := must.NotFail(types.NewDocument(
 			"name", databaseName,
-			"sizeOnDisk", sizeOnDisk,
-			"empty", sizeOnDisk == 0,
+			"sizeOnDisk", res.Size,
+			"empty", res.Size == 0,
 		))
 
 		matches, err := common.FilterDocument(d, filter)
@@ -95,8 +97,6 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 		return &reply, nil
 	}
-
-	var totalSize int64 // TODO
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{

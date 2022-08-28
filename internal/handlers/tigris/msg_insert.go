@@ -19,9 +19,9 @@ import (
 	"fmt"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -38,16 +38,18 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	common.Ignored(document, h.L, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
 
-	var fp fetchParam
-	if fp.db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	var fp tigrisdb.FetchParam
+
+	if fp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 	collectionParam, err := document.Get(document.Command())
 	if err != nil {
 		return nil, err
 	}
+
 	var ok bool
-	if fp.collection, ok = collectionParam.(string); !ok {
+	if fp.Collection, ok = collectionParam.(string); !ok {
 		return nil, common.NewErrorMsg(
 			common.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
@@ -85,46 +87,30 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
-func (h *Handler) insert(ctx context.Context, fp fetchParam, doc *types.Document) error {
-	// TODO https://github.com/FerretDB/FerretDB/issues/787
-	err := h.driver.CreateDatabase(ctx, fp.db)
+// insert checks if database and collection exist, create them if needed and attempts to insert the given doc.
+func (h *Handler) insert(ctx context.Context, fp tigrisdb.FetchParam, doc *types.Document) error {
+	schema, err := tjson.DocumentSchema(doc)
 	if err != nil {
-		h.L.Sugar().Warnf("Failed to CreateDatabase: %+v", err)
+		return lazyerrors.Error(err)
 	}
+	schema.Title = fp.Collection
+	b := must.NotFail(schema.Marshal())
+	h.L.Sugar().Debugf("Schema:\n%s", b)
 
-	// TODO temporary check to be able to insert nullable fields, will be refactored in #787
-	// Schema is needed only if we create a new collection.
-	collections, err := h.driver.UseDatabase(fp.db).ListCollections(ctx)
+	_, err = h.db.CreateCollectionIfNotExist(ctx, fp.DB, fp.Collection, b)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	if !slices.Contains(collections, fp.collection) {
-		schema, err := tjson.DocumentSchema(doc)
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-		schema.Title = fp.collection
-
-		b := must.NotFail(schema.Marshal())
-		h.L.Sugar().Debugf("Schema:\n%s", b)
-
-		err = h.driver.UseDatabase(fp.db).CreateOrUpdateCollection(ctx, fp.collection, b)
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-	}
-
-	b, err := tjson.Marshal(doc)
+	b, err = tjson.Marshal(doc)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 	h.L.Sugar().Debugf("Document:\n%s", b)
 
-	_, err = h.driver.UseDatabase(fp.db).Insert(ctx, fp.collection, []driver.Document{b})
+	_, err = h.db.Driver.UseDatabase(fp.DB).Insert(ctx, fp.Collection, []driver.Document{b})
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
-
 	return nil
 }

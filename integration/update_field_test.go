@@ -86,7 +86,7 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 
 	t.Run("currentDate", func(t *testing.T) {
 		// maxDifference is a maximum amount of seconds can differ the value in placeholder from actual value
-		maxDifference := time.Duration(2 * time.Minute)
+		maxDifference := time.Duration(3 * time.Minute)
 
 		now := primitive.NewDateTimeFromTime(time.Now().UTC())
 		nowTimestamp := primitive.Timestamp{T: uint32(time.Now().UTC().Unix()), I: uint32(0)}
@@ -940,12 +940,6 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 
 	t.Parallel()
 
-	stat := &mongo.UpdateResult{
-		MatchedCount:  0,
-		ModifiedCount: 0,
-		UpsertedCount: 1,
-	}
-
 	for name, tc := range map[string]struct {
 		id           string
 		update       bson.D
@@ -956,25 +950,37 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 		upserted     bool
 	}{
 		"Array": {
-			id:           "array-set-on-insert",
-			update:       bson.D{{"$setOnInsert", bson.D{{"v", bson.A{}}}}},
-			expected:     bson.D{{"_id", "array-set-on-insert"}, {"v", bson.A{}}},
-			expectedStat: stat,
-			upserted:     true,
+			id:       "array-set-on-insert",
+			update:   bson.D{{"$setOnInsert", bson.D{{"v", bson.A{}}}}},
+			expected: bson.D{{"_id", "array-set-on-insert"}, {"v", bson.A{}}},
+			expectedStat: &mongo.UpdateResult{
+				MatchedCount:  0,
+				ModifiedCount: 0,
+				UpsertedCount: 1,
+			},
+			upserted: true,
 		},
 		"Nil": {
-			id:           "nil",
-			update:       bson.D{{"$setOnInsert", bson.D{{"v", nil}}}},
-			expected:     bson.D{{"_id", "nil"}, {"v", nil}},
-			expectedStat: stat,
-			upserted:     true,
+			id:       "nil",
+			update:   bson.D{{"$setOnInsert", bson.D{{"v", nil}}}},
+			expected: bson.D{{"_id", "nil"}, {"v", nil}},
+			expectedStat: &mongo.UpdateResult{
+				MatchedCount:  0,
+				ModifiedCount: 0,
+				UpsertedCount: 1,
+			},
+			upserted: true,
 		},
 		"EmptyDoc": {
-			id:           "doc",
-			update:       bson.D{{"$setOnInsert", bson.D{}}},
-			expected:     bson.D{{"_id", "doc"}},
-			expectedStat: stat,
-			upserted:     true,
+			id:       "doc",
+			update:   bson.D{{"$setOnInsert", bson.D{}}},
+			expected: bson.D{{"_id", "doc"}},
+			expectedStat: &mongo.UpdateResult{
+				MatchedCount:  0,
+				ModifiedCount: 0,
+				UpsertedCount: 1,
+			},
+			upserted: true,
 		},
 		"EmptyArray": {
 			id:     "array",
@@ -1119,41 +1125,21 @@ func TestUpdateFieldUnset(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		id       string
-		update   bson.D
-		expected bson.D
-		stat     *mongo.UpdateResult
-		err      *mongo.WriteError
-		alt      string
+		id           string
+		update       bson.D
+		expected     bson.D
+		expectedStat *mongo.UpdateResult
+		err          *mongo.WriteError
+		alt          string
 	}{
-		"String": {
-			id:       "string",
-			update:   bson.D{{"$unset", bson.D{{"v", int32(1)}}}},
-			expected: bson.D{{"_id", "string"}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-		},
 		"Empty": {
 			id:       "string",
 			update:   bson.D{{"$unset", bson.D{}}},
 			expected: bson.D{{"_id", "string"}, {"v", "foo"}},
-			stat: &mongo.UpdateResult{
+			expectedStat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 0,
 				UpsertedCount: 0,
-			},
-		},
-		"Field": {
-			id:       "document-composite-unset-field",
-			update:   bson.D{{"$unset", bson.D{{"v", bson.D{{"array", int32(1)}}}}}},
-			expected: bson.D{{"_id", "document-composite-unset-field"}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  0,
-				ModifiedCount: 0,
-				UpsertedCount: 1,
 			},
 		},
 		"EmptyArray": {
@@ -1183,7 +1169,7 @@ func TestUpdateFieldUnset(t *testing.T) {
 
 			require.NoError(t, err)
 			actualStat.UpsertedID = nil
-			assert.Equal(t, tc.stat, actualStat)
+			assert.Equal(t, tc.expectedStat, actualStat)
 
 			var actual bson.D
 			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)

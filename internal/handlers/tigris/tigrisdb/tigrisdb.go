@@ -12,29 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package filter provides helpers to simplify generation of filters for Tigris driver.
-//
-// It's similar to tigrisdata/tigris-client-go/filter but without generics as they don't fit us - we need to call
-// tjson.Marshal to encode tjson data types correctly.
-package filter
+// Package tigrisdb provides Tigris connection utilities.
+package tigrisdb
 
 import (
-	"encoding/json"
+	"context"
 
+	"github.com/tigrisdata/tigris-client-go/config"
 	"github.com/tigrisdata/tigris-client-go/driver"
+	"go.uber.org/zap"
+
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// All represents filter which includes all the documents of the collection.
-var All = driver.Filter(`{}`)
+// TigrisDB represents a Tigris database connection.
+type TigrisDB struct {
+	Driver driver.Driver
+	L      *zap.Logger
+}
 
-// Expr represents a filter expression for Tigris.
-type Expr map[string]any
-
-// Build "encodes" expression to be used with Tigris driver.
-func (e Expr) Build() (driver.Filter, error) {
-	if e == nil {
-		return nil, nil
+// New returns a new TigrisDB.
+func New(cfg *config.Driver, logger *zap.Logger) (*TigrisDB, error) {
+	d, err := driver.NewDriver(context.TODO(), cfg)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
-	return json.Marshal(e)
+	return &TigrisDB{
+		Driver: d,
+		L:      logger,
+	}, nil
 }

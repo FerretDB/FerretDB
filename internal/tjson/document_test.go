@@ -209,10 +209,11 @@ func prepareTestCases() []testCase {
 		"int64", int64(42),
 		"string", "foo",
 		"object", must.NotFail(types.NewDocument("foo", "bar")),
+		"regex", types.Regex{Pattern: "^foobar$", Options: "i"},
 		"null", "foo",
 	))
 	allSchema := must.NotFail(DocumentSchema(allDoc))
-	allDoc.Set("null", types.Null) // Check that `null` set in a valid document can be handled correctly
+	allDoc.Set("null", types.Null) // Check that `null` set in a valid document and can be handled correctly
 	all := testCase{
 		name:   "all",
 		v:      convertDocument(allDoc),

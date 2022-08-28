@@ -16,16 +16,12 @@ package tigris
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
-	api "github.com/tigrisdata/tigris-client-go/api/server/v1"
-
 	"github.com/tigrisdata/tigris-client-go/driver"
-	"github.com/tigrisdata/tigris-client-go/fields"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb/filter"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -45,16 +41,18 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 	common.Ignored(document, h.L, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
 
-	var fp fetchParam
-	if fp.db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	var fp tigrisdb.FetchParam
+
+	if fp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 	collectionParam, err := document.Get(document.Command())
 	if err != nil {
 		return nil, err
 	}
+
 	var ok bool
-	if fp.collection, ok = collectionParam.(string); !ok {
+	if fp.Collection, ok = collectionParam.(string); !ok {
 		return nil, common.NewErrorMsg(
 			common.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
@@ -108,7 +106,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		fetchedDocs, err := h.fetch(ctx, fp)
+		fetchedDocs, err := h.db.QueryDocuments(ctx, fp)
 		if err != nil {
 			return nil, err
 		}
@@ -198,34 +196,25 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
-// update updates documents by _id.
-func (h *Handler) update(ctx context.Context, sp fetchParam, doc *types.Document) (int, error) {
-	id := must.NotFail(doc.Get("_id"))
-	f := must.NotFail(filter.Eq("_id", id).Build())
-	h.L.Sugar().Debugf("Update filter: %s", f)
-
-	update := fields.UpdateBuilder()
-	for _, k := range doc.Keys() {
-		v := must.NotFail(doc.Get(k))
-		update.Set(k, json.RawMessage(must.NotFail(tjson.Marshal(v))))
+// update replaces given document.
+func (h *Handler) update(ctx context.Context, fp tigrisdb.FetchParam, doc *types.Document) (int, error) {
+	u, err := tjson.Marshal(doc)
+	if err != nil {
+		return 0, lazyerrors.Error(err)
 	}
-	u := must.NotFail(update.Build()).Built()
 	h.L.Sugar().Debugf("Update: %s", u)
 
-	res, err := h.driver.UseDatabase(sp.db).Update(ctx, sp.collection, f, u)
+	_, err = h.db.Driver.UseDatabase(fp.DB).Replace(ctx, fp.Collection, []driver.Document{u})
 	switch err := err.(type) {
 	case nil:
-		// do nothing
+		return 1, nil
 	case *driver.Error:
-		if err.Code == api.Code_INVALID_ARGUMENT {
-			return 0, common.NewErrorMsg(
-				common.ErrBadValue,
-				err.Message,
-			)
+		if tigrisdb.IsInvalidArgument(err) {
+			return 0, common.NewErrorMsg(common.ErrDocumentValidationFailure, err.Error())
 		}
+
+		return 0, lazyerrors.Error(err)
 	default:
 		return 0, lazyerrors.Error(err)
 	}
-
-	return int(res.ModifiedCount), nil
 }

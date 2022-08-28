@@ -16,13 +16,73 @@ package tigris
 
 import (
 	"context"
+	"strings"
+	"time"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgDataSize implements HandlerInterface.
 func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/773
-	return nil, notImplemented(must.NotFail(msg.Document()).Command())
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if err := common.Unimplemented(document, "keyPattern", "min", "max"); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	common.Ignored(document, h.L, "estimate")
+
+	m := document.Map()
+	target, ok := m["dataSize"].(string)
+
+	if !ok {
+		return nil, lazyerrors.New("no target collection")
+	}
+
+	targets := strings.Split(target, ".")
+	if len(targets) != 2 {
+		return nil, lazyerrors.New("target collection must be like: 'database.collection'")
+	}
+
+	started := time.Now()
+
+	db, collection := targets[0], targets[1]
+
+	querier := h.db.Driver.UseDatabase(db)
+	stats, err := tigrisdb.FetchStats(ctx, querier, collection)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	elapses := time.Since(started)
+
+	var pairs []any
+	if stats.NumObjects > 0 {
+		pairs = append(pairs, "estimate", false)
+	}
+	pairs = append(pairs,
+		"size", int32(stats.Size),
+		"numObjects", stats.NumObjects,
+		"millis", int32(elapses.Milliseconds()),
+		"ok", float64(1),
+	)
+
+	var reply wire.OpMsg
+	err = reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(pairs...))},
+	})
+
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &reply, nil
 }

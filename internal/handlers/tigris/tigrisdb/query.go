@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tigris
+package tigrisdb
 
 import (
 	"context"
@@ -25,30 +25,30 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// fetchParam represents options/parameters used by the fetch.
-type fetchParam struct {
-	db         string
-	collection string
+// FetchParam represents options/parameters used by the fetch/query.
+type FetchParam struct {
+	DB         string
+	Collection string
 }
 
-// fetch fetches all documents from the given database and collection.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/372
-func (h *Handler) fetch(ctx context.Context, param fetchParam) ([]*types.Document, error) {
-	db := h.driver.UseDatabase(param.db)
+// QueryDocuments fetches documents from the given collection.
+func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param FetchParam) ([]*types.Document, error) {
+	db := tdb.Driver.UseDatabase(param.DB)
 
-	collection, err := db.DescribeCollection(ctx, param.collection)
+	collection, err := db.DescribeCollection(ctx, param.Collection)
 	switch err := err.(type) {
 	case nil:
 		// do nothing
 	case *driver.Error:
-		if isNotFound(err) {
-			h.L.Debug(
+		if IsNotFound(err) {
+			tdb.L.Debug(
 				"Collection doesn't exist, handling a case to deal with a non-existing collection (return empty list)",
-				zap.String("db", param.db), zap.String("collection", param.collection),
+				zap.String("db", param.DB), zap.String("collection", param.Collection),
 			)
+
 			return []*types.Document{}, nil
 		}
+
 		return nil, lazyerrors.Error(err)
 	default:
 		return nil, lazyerrors.Error(err)
@@ -59,13 +59,14 @@ func (h *Handler) fetch(ctx context.Context, param fetchParam) ([]*types.Documen
 		return nil, lazyerrors.Error(err)
 	}
 
-	iter, err := db.Read(ctx, param.collection, driver.Filter(`{}`), nil)
+	iter, err := db.Read(ctx, param.Collection, driver.Filter(`{}`), nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 	defer iter.Close()
 
 	var res []*types.Document
+
 	var d driver.Document
 	for iter.Next(&d) {
 		doc, err := tjson.Unmarshal(d, &schema)
