@@ -42,7 +42,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 	common.Ignored(document, h.l, "ordered", "writeConcern", "bypassDocumentValidation")
 
-	var sp pgdb.SQLParam
+	sp := new(pgdb.SQLParam)
 	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
@@ -211,7 +211,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				continue
 			}
 
-			rowsChanged, err := h.update(ctx, &sp, doc)
+			rowsChanged, err := h.update(ctx, sp, doc)
 			if err != nil {
 				return nil, err
 			}

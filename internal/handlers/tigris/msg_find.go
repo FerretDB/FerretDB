@@ -90,8 +90,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		}
 	}
 
-	var fp tigrisdb.FetchParam
-
+	fp := new(tigrisdb.FetchParam)
 	if fp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
@@ -99,7 +98,6 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	if err != nil {
 		return nil, err
 	}
-
 	var ok bool
 	if fp.Collection, ok = collectionParam.(string); !ok {
 		return nil, common.NewErrorMsg(

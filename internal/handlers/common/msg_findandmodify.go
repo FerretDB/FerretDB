@@ -37,9 +37,11 @@ func PrepareFindAndModifyParams(document *types.Document) (*FindAndModifyParams,
 	command := document.Command()
 
 	var db, collection string
+
 	if db, err = GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
+
 	if collection, err = GetRequiredParam[string](document, command); err != nil {
 		return nil, err
 	}
@@ -52,14 +54,19 @@ func PrepareFindAndModifyParams(document *types.Document) (*FindAndModifyParams,
 	}
 
 	var remove bool
+
 	if remove, err = GetBoolOptionalParam(document, "remove"); err != nil {
 		return nil, err
 	}
+
 	var returnNewDocument bool
+
 	if returnNewDocument, err = GetBoolOptionalParam(document, "new"); err != nil {
 		return nil, err
 	}
+
 	var upsert bool
+
 	if upsert, err = GetBoolOptionalParam(document, "upsert"); err != nil {
 		return nil, err
 	}
@@ -80,10 +87,12 @@ func PrepareFindAndModifyParams(document *types.Document) (*FindAndModifyParams,
 	}
 
 	var update *types.Document
+
 	updateParam, err := document.Get("update")
 	if err != nil && !remove {
 		return nil, NewErrorMsg(ErrFailedToParse, "Either an update or remove=true must be specified")
 	}
+
 	if err == nil {
 		switch updateParam := updateParam.(type) {
 		case *types.Document:
@@ -99,9 +108,11 @@ func PrepareFindAndModifyParams(document *types.Document) (*FindAndModifyParams,
 	if update != nil && remove {
 		return nil, NewErrorMsg(ErrFailedToParse, "Cannot specify both an update and remove=true")
 	}
+
 	if upsert && remove {
 		return nil, NewErrorMsg(ErrFailedToParse, "Cannot specify both upsert=true and remove=true")
 	}
+
 	if returnNewDocument && remove {
 		return nil, NewErrorMsg(
 			ErrFailedToParse,

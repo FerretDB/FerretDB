@@ -75,7 +75,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			}
 		}
 
-		var sp pgdb.SQLParam
+		sp := new(pgdb.SQLParam)
 		if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 			return err
 		}
@@ -143,7 +143,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 					continue
 				}
 
-				rowsDeleted, err := h.delete(ctx, &sp, resDocs)
+				rowsDeleted, err := h.delete(ctx, sp, resDocs)
 				if err != nil {
 					return err
 				}

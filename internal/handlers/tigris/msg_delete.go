@@ -80,7 +80,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			}
 		}
 
-		var fp tigrisdb.FetchParam
+		fp := new(tigrisdb.FetchParam)
 
 		if fp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 			return err
@@ -185,7 +185,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // delete deletes documents by _id.
-func (h *Handler) delete(ctx context.Context, fp tigrisdb.FetchParam, docs []*types.Document) (int, error) {
+func (h *Handler) delete(ctx context.Context, fp *tigrisdb.FetchParam, docs []*types.Document) (int, error) {
 	ids := make([]map[string]any, len(docs))
 	for i, doc := range docs {
 		id := must.NotFail(tjson.Marshal(must.NotFail(doc.Get("_id"))))
