@@ -125,7 +125,9 @@ func TestFindCommentMethod(t *testing.T) {
 
 //nolint:paralleltest // we test a global list of databases
 func TestFindCommentQuery(t *testing.T) {
-	ctx, collection := setup.Setup(t, shareddata.Strings)
+	setup.SkipForTigris(t)
+
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
 	name := collection.Database().Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
 	require.NoError(t, err)
@@ -138,8 +140,10 @@ func TestFindCommentQuery(t *testing.T) {
 }
 
 func TestUpdateCommentMethod(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Strings)
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
 	name := collection.Database().Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
 	require.NoError(t, err)
@@ -162,8 +166,10 @@ func TestUpdateCommentMethod(t *testing.T) {
 }
 
 func TestUpdateCommentQuery(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Strings)
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
 	name := collection.Database().Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
 	require.NoError(t, err)
@@ -183,8 +189,10 @@ func TestUpdateCommentQuery(t *testing.T) {
 }
 
 func TestDeleteCommentMethod(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Strings)
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
 	name := collection.Database().Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
 	require.NoError(t, err)
@@ -205,8 +213,10 @@ func TestDeleteCommentMethod(t *testing.T) {
 }
 
 func TestDeleteCommentQuery(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Strings)
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
 	name := collection.Database().Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
 	require.NoError(t, err)
@@ -225,8 +235,10 @@ func TestDeleteCommentQuery(t *testing.T) {
 }
 
 func TestFindAndModifyCommentMethod(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Strings)
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
 	name := collection.Database().Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
 	require.NoError(t, err)
@@ -247,8 +259,10 @@ func TestFindAndModifyCommentMethod(t *testing.T) {
 }
 
 func TestFindAndModifyCommentQuery(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Strings)
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
 	name := collection.Database().Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
 	require.NoError(t, err)
