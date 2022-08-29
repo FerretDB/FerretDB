@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"testing"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -29,6 +30,14 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 		},
 		"Int32Negative": {
 			update: bson.D{{"$inc", bson.D{{"v", int32(-42)}}}},
+		},
+		"Int64Max": {
+			update: bson.D{{"$inc", bson.D{{"v", math.MaxInt64 - int64(41)}}}},
+			skip:   "for now",
+		},
+		"Int64Min": {
+			update: bson.D{{"$inc", bson.D{{"v", math.MinInt64 + int64(41)}}}},
+			skip:   "for now",
 		},
 		"EmptyUpdatePath": {
 			update: bson.D{{"$inc", bson.D{{}}}},

@@ -274,6 +274,16 @@ func addNumbers(v1, v2 any) (any, error) {
 		case int32:
 			return v1 + int64(v2), nil
 		case int64:
+			if v2 > 0 {
+				if int64(v1) > math.MaxInt64-v2 {
+					return nil, errLongExceeded
+				}
+			} else {
+				if int64(v1) < math.MinInt64-v2 {
+					return nil, errLongExceeded
+				}
+			}
+
 			return v1 + v2, nil
 		default:
 			return nil, errUnexpectedRightOpType
