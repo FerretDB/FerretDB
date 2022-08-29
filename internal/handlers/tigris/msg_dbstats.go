@@ -70,13 +70,12 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	var objects int32
 
 	for _, collection := range stats.Collections {
-		f := fetchParam{db: db, collection: collection.Collection}
-
-		stats, err := h.fetchStats(ctx, f)
+		querier := h.db.Driver.UseDatabase(db)
+		stats, err := tigrisdb.FetchStats(ctx, querier, collection.Collection)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
-		objects += stats.numObjects
+		objects += stats.NumObjects
 	}
 
 	var avgObjSize float64

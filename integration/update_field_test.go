@@ -940,12 +940,6 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 
 	t.Parallel()
 
-	stat := &mongo.UpdateResult{
-		MatchedCount:  0,
-		ModifiedCount: 0,
-		UpsertedCount: 1,
-	}
-
 	for name, tc := range map[string]struct {
 		id           string
 		update       bson.D
@@ -956,25 +950,37 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 		upserted     bool
 	}{
 		"Array": {
-			id:           "array-set-on-insert",
-			update:       bson.D{{"$setOnInsert", bson.D{{"v", bson.A{}}}}},
-			expected:     bson.D{{"_id", "array-set-on-insert"}, {"v", bson.A{}}},
-			expectedStat: stat,
-			upserted:     true,
+			id:       "array-set-on-insert",
+			update:   bson.D{{"$setOnInsert", bson.D{{"v", bson.A{}}}}},
+			expected: bson.D{{"_id", "array-set-on-insert"}, {"v", bson.A{}}},
+			expectedStat: &mongo.UpdateResult{
+				MatchedCount:  0,
+				ModifiedCount: 0,
+				UpsertedCount: 1,
+			},
+			upserted: true,
 		},
 		"Nil": {
-			id:           "nil",
-			update:       bson.D{{"$setOnInsert", bson.D{{"v", nil}}}},
-			expected:     bson.D{{"_id", "nil"}, {"v", nil}},
-			expectedStat: stat,
-			upserted:     true,
+			id:       "nil",
+			update:   bson.D{{"$setOnInsert", bson.D{{"v", nil}}}},
+			expected: bson.D{{"_id", "nil"}, {"v", nil}},
+			expectedStat: &mongo.UpdateResult{
+				MatchedCount:  0,
+				ModifiedCount: 0,
+				UpsertedCount: 1,
+			},
+			upserted: true,
 		},
 		"EmptyDoc": {
-			id:           "doc",
-			update:       bson.D{{"$setOnInsert", bson.D{}}},
-			expected:     bson.D{{"_id", "doc"}},
-			expectedStat: stat,
-			upserted:     true,
+			id:       "doc",
+			update:   bson.D{{"$setOnInsert", bson.D{}}},
+			expected: bson.D{{"_id", "doc"}},
+			expectedStat: &mongo.UpdateResult{
+				MatchedCount:  0,
+				ModifiedCount: 0,
+				UpsertedCount: 1,
+			},
+			upserted: true,
 		},
 		"EmptyArray": {
 			id:     "array",
