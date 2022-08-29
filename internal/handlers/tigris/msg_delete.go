@@ -114,42 +114,43 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		resDocs := make([]*types.Document, 0, 16)
-		// iterate through every row and delete matching ones
-		for _, doc := range fetchedDocs {
-			// fetch current items from collection
-			matches, err := common.FilterDocument(doc, filter)
+		return respondAsBulkWriteException(func() error {
+			// iterate through every row and delete matching ones
+			for _, doc := range fetchedDocs {
+				// fetch current items from collection
+				matches, err := common.FilterDocument(doc, filter)
+				if err != nil {
+					return err
+				}
+
+				if !matches {
+					continue
+				}
+
+				resDocs = append(resDocs, doc)
+			}
+
+			if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
+				return err
+			}
+
+			// if no field is matched in a row, go to the next one
+			if len(resDocs) == 0 {
+				return nil
+			}
+
+			res, err := h.delete(ctx, fp, resDocs)
 			if err != nil {
 				return err
 			}
 
-			if !matches {
-				continue
-			}
+			deleted += int32(res)
 
-			resDocs = append(resDocs, doc)
-		}
-
-		if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
-			return err
-		}
-
-		// if no field is matched in a row, go to the next one
-		if len(resDocs) == 0 {
 			return nil
-		}
-
-		res, err := h.delete(ctx, fp, resDocs)
-		if err != nil {
-			return err
-		}
-
-		deleted += int32(res)
-
-		return nil
+		})
 	}
 
 	delErrors := new(common.WriteErrors)
-
 	var reply wire.OpMsg
 
 	// process every delete filter
@@ -230,4 +231,13 @@ func (h *Handler) delete(ctx context.Context, fp tigrisdb.FetchParam, docs []*ty
 	}
 
 	return len(ids), nil
+}
+
+// respondAsBulkWriteException calls the fun. If fun returns
+// not-nil error then it is wrapped with lazyerrors.Error.
+func respondAsBulkWriteException(fun func() error) error {
+	if err := fun(); err != nil {
+		return lazyerrors.Error(err)
+	}
+	return nil
 }
