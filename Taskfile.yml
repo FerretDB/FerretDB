@@ -223,16 +223,12 @@ tasks:
     desc: "Run linters"
     deps:
       - lint-golangci-lint
-      - lint-golangci-lint-integration
       - lint-go-sumtype
       - lint-go-consistent
     cmds:
       - bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
       - go vet -vettool=./bin/checkswitch{{exeExt}} ./...
       - bin/task{{exeExt}} -d integration lint
-
-  lint-golangci-lint-integration:
-    cmds:
       - bin/task{{exeExt}} -d integration lint-golangci-lint
 
   lint-golangci-lint:
