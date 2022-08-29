@@ -38,7 +38,6 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	if err := common.Unimplemented(document, "let"); err != nil {
 		return nil, err
 	}
-	common.Ignored(document, h.l, "ordered") // TODO https://github.com/FerretDB/FerretDB/issues/848
 	common.Ignored(document, h.l, "writeConcern")
 
 	var deletes *types.Array
@@ -46,34 +45,41 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
+	ordered := true
+	if ordered, err = common.GetOptionalParam(document, "ordered", ordered); err != nil {
+		return nil, err
+	}
+
 	var deleted int32
-	for i := 0; i < deletes.Len(); i++ {
+	processQuery := func(i int) error {
+		// get document with filter
 		d, err := common.AssertType[*types.Document](must.NotFail(deletes.Get(i)))
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		if err := common.Unimplemented(d, "collation", "hint"); err != nil {
-			return nil, err
+			return err
 		}
 
+		// get filter from document
 		var filter *types.Document
 		if filter, err = common.GetOptionalParam(d, "q", filter); err != nil {
-			return nil, err
+			return err
 		}
 
 		var limit int64
 
 		l, err := d.Get("limit")
 		if err != nil {
-			return nil, common.NewErrorMsg(
+			return common.NewErrorMsg(
 				common.ErrMissingField,
 				"BSON field 'delete.deletes.limit' is missing but a required field",
 			)
 		}
 
 		if limit, err = common.GetWholeNumberParam(l); err != nil {
-			return nil, common.NewErrorMsg(
+			return common.NewErrorMsg(
 				common.ErrFailedToParse,
 				fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", l),
 			)
@@ -81,15 +87,15 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		var sp pgdb.SQLParam
 		if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-			return nil, err
+			return err
 		}
 		collectionParam, err := document.Get(document.Command())
 		if err != nil {
-			return nil, err
+			return err
 		}
 		var ok bool
 		if sp.Collection, ok = collectionParam.(string); !ok {
-			return nil, common.NewErrorMsg(
+			return common.NewErrorMsg(
 				common.ErrBadValue,
 				fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
 			)
@@ -97,16 +103,17 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		// get comment from options.Delete().SetComment() method
 		if sp.Comment, err = common.GetOptionalParam(document, "comment", sp.Comment); err != nil {
-			return nil, err
+			return err
 		}
 
 		// get comment from query, e.g. db.collection.DeleteOne({"_id":"string", "$comment: "test"})
 		if sp.Comment, err = common.GetOptionalParam(filter, "$comment", sp.Comment); err != nil {
-			return nil, err
+			return err
 		}
 
 		resDocs := make([]*types.Document, 0, 16)
 		err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+			// fetch current items from collection
 			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp)
 			if err != nil {
 				return err
@@ -118,6 +125,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				}
 			}()
 
+			// iterate through every row and delete matching ones
 			for fetchedItem := range fetchedChan {
 				if fetchedItem.Err != nil {
 					return fetchedItem.Err
@@ -140,6 +148,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 					return err
 				}
 
+				// if no field is matched in a row, go to the next one
 				if len(resDocs) == 0 {
 					continue
 				}
@@ -155,17 +164,46 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil
 		})
 
+		return err
+	}
+
+	delErrors := new(common.WriteErrors)
+
+	var reply wire.OpMsg
+
+	// process every delete filter
+	for i := 0; i < deletes.Len(); i++ {
+		err := processQuery(i)
 		if err != nil {
-			return nil, err
+			delErrors.Append(err, int32(i))
+
+			// Delete statements in the `deletes` field are not transactional.
+			// It means that we run each delete statement separately.
+			// If `ordered` is set as `true`, we don't execute the remaining statements
+			// after the first failure.
+			// If `ordered` is set as `false`,  we execute all the statements and return
+			// the list of errors corresponding to the failed statements.
+			if ordered {
+				break
+			}
 		}
 	}
 
-	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"n", deleted,
+	var replyDoc *types.Document
+
+	// if there are delete errors append writeErrors field
+	if len(*delErrors) > 0 {
+		replyDoc = delErrors.Document()
+	} else {
+		replyDoc = must.NotFail(types.NewDocument(
 			"ok", float64(1),
-		))},
+		))
+	}
+
+	must.NoError(replyDoc.Set("n", deleted))
+
+	err = reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{replyDoc},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
