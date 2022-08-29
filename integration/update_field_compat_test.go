@@ -33,11 +33,9 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 		},
 		"Int64Max": {
 			update: bson.D{{"$inc", bson.D{{"v", math.MaxInt64 - int64(41)}}}},
-			skip:   "for now",
 		},
 		"Int64Min": {
 			update: bson.D{{"$inc", bson.D{{"v", math.MinInt64 + int64(41)}}}},
-			skip:   "for now",
 		},
 		"EmptyUpdatePath": {
 			update: bson.D{{"$inc", bson.D{{}}}},
