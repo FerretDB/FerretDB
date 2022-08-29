@@ -311,6 +311,15 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					must.NotFail(doc.Get("_id")),
 				),
 			)
+		case errIntExceeded:
+			return false, NewWriteErrorMsg(
+				ErrBadValue,
+				fmt.Sprintf(
+					`Failed to apply $inc operations to current value ((NumberInt)%d) for document {_id: "%s"}`,
+					docValue,
+					must.NotFail(doc.Get("_id")),
+				),
+			)
 		default:
 			return false, err
 		}
