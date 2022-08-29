@@ -657,13 +657,48 @@ func TestUpdateFieldInc(t *testing.T) {
 					Message: `Cannot create field 'foo' in element {array: [ 42, "foo", null ]}`,
 				},
 			},
+			"LongIntIncExceededLongMax": {
+				id:     "int64",
+				update: bson.D{{"$inc", bson.D{{"v", math.MaxInt64 - int64(41)}}}},
+				err: &mongo.WriteError{
+					Code:    2,
+					Message: `Failed to apply $inc operations to current value ((NumberLong)42) for document {_id: "int64"}`,
+				},
+			},
+			"LongMaxIncExceededLongMax": {
+				id:     "int64-max",
+				update: bson.D{{"$inc", bson.D{{"v", 1}}}},
+				err: &mongo.WriteError{
+					Code:    2,
+					Message: `Failed to apply $inc operations to current value ((NumberLong)9223372036854775807) for document {_id: "int64-max"}`,
+				},
+			},
+			"LongIncExceededLongMin": {
+				id:     "-int64",
+				update: bson.D{{"$inc", bson.D{{"v", math.MinInt64 + int64(41)}}}},
+				err: &mongo.WriteError{
+					Code:    2,
+					Message: `Failed to apply $inc operations to current value ((NumberLong)-42) for document {_id: "-int64"}`,
+				},
+			},
+			"LongMinIncExceededLongMin": {
+				id:     "int64-min",
+				update: bson.D{{"$inc", bson.D{{"v", -1}}}},
+				err: &mongo.WriteError{
+					Code:    2,
+					Message: `Failed to apply $inc operations to current value ((NumberLong)-9223372036854775808) for document {_id: "int64-min"}`,
+				},
+			},
 		} {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
 				ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
-				_, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
+				_, err := collection.InsertOne(ctx, bson.D{{"_id", "-int64"}, {"v", int64(-42)}})
+				require.NoError(t, err)
+
+				_, err = collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
 				require.NotNil(t, tc.err)
 				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
 			})
