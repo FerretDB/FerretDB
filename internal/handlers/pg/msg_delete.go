@@ -175,17 +175,28 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	for i := 0; i < deletes.Len(); i++ {
 		err := processQuery(i)
 		if err != nil {
-			delErrors.Append(err, int32(i))
+			switch err.(type) {
+			// command errors should be return immediately
+			case *common.CommandError:
+				return nil, err
 
-			// Delete statements in the `deletes` field are not transactional.
-			// It means that we run each delete statement separately.
-			// If `ordered` is set as `true`, we don't execute the remaining statements
-			// after the first failure.
-			// If `ordered` is set as `false`,  we execute all the statements and return
-			// the list of errors corresponding to the failed statements.
-			if ordered {
-				break
+			// write errors require to be handled in array
+			default:
+				delErrors.Append(err, int32(i))
+
+				// Delete statements in the `deletes` field are not transactional.
+				// It means that we run each delete statement separately.
+				// If `ordered` is set as `true`, we don't execute the remaining statements
+				// after the first failure.
+				// If `ordered` is set as `false`,  we execute all the statements and return
+				// the list of errors corresponding to the failed statements.
+				if !ordered {
+					continue
+				}
 			}
+
+			// send response if ordered is true
+			break
 		}
 	}
 
