@@ -114,6 +114,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		resDocs := make([]*types.Document, 0, 16)
+
 		return respondAsBulkWriteException(func() error {
 			// iterate through every row and delete matching ones
 			for _, doc := range fetchedDocs {
@@ -239,5 +240,6 @@ func respondAsBulkWriteException(fun func() error) error {
 	if err := fun(); err != nil {
 		return lazyerrors.Error(err)
 	}
+
 	return nil
 }
