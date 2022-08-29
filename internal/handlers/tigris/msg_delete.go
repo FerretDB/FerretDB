@@ -49,57 +49,68 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
+	ordered := true
+	if ordered, err = common.GetOptionalParam(document, "ordered", ordered); err != nil {
+		return nil, err
+	}
+
 	var deleted int32
-	for i := 0; i < deletes.Len(); i++ {
+	processQuery := func(i int) error {
+		// get document with filter
 		d, err := common.AssertType[*types.Document](must.NotFail(deletes.Get(i)))
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		if err := common.Unimplemented(d, "collation", "hint"); err != nil {
-			return nil, err
+			return err
 		}
 
+		// get filter from document
 		var filter *types.Document
 		if filter, err = common.GetOptionalParam(d, "q", filter); err != nil {
-			return nil, err
+			return err
 		}
 
+		// TODO https://github.com/FerretDB/FerretDB/issues/982
 		var limit int64
 		if l, _ := d.Get("limit"); l != nil {
 			if limit, err = common.GetWholeNumberParam(l); err != nil {
-				return nil, err
+				return err
 			}
 		}
 
 		var fp tigrisdb.FetchParam
 
 		if fp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-			return nil, err
+			return err
 		}
 		collectionParam, err := document.Get(document.Command())
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		var ok bool
 		if fp.Collection, ok = collectionParam.(string); !ok {
-			return nil, common.NewErrorMsg(
+			return common.NewErrorMsg(
 				common.ErrBadValue,
 				fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
 			)
 		}
 
+		// fetch current items from collection
 		fetchedDocs, err := h.db.QueryDocuments(ctx, fp)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		resDocs := make([]*types.Document, 0, 16)
+		// iterate through every row and delete matching ones
 		for _, doc := range fetchedDocs {
+			// fetch current items from collection
 			matches, err := common.FilterDocument(doc, filter)
 			if err != nil {
-				return nil, err
+				return err
 			}
 
 			if !matches {
@@ -110,27 +121,61 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
-			return nil, err
+			return err
 		}
 
+		// if no field is matched in a row, go to the next one
 		if len(resDocs) == 0 {
-			continue
+			return nil
 		}
 
 		res, err := h.delete(ctx, fp, resDocs)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		deleted += int32(res)
+
+		return nil
 	}
 
+	delErrors := new(common.WriteErrors)
+
 	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"n", deleted,
+
+	// process every delete filter
+	for i := 0; i < deletes.Len(); i++ {
+		err = processQuery(i)
+		if err != nil {
+			delErrors.Append(err, int32(i))
+
+			// Delete statements in the `deletes` field are not transactional.
+			// It means that we run each delete statement separately.
+			// If `ordered` is set as `true`, we don't execute the remaining statements
+			// after the first failure.
+			// If `ordered` is set as `false`,  we execute all the statements and return
+			// the list of errors corresponding to the failed statements.
+			if ordered {
+				break
+			}
+		}
+	}
+
+	var replyDoc *types.Document
+
+	// if there are delete errors append writeErrors field
+	if len(*delErrors) > 0 {
+		replyDoc = delErrors.Document()
+	} else {
+		replyDoc = must.NotFail(types.NewDocument(
 			"ok", float64(1),
-		))},
+		))
+	}
+
+	must.NoError(replyDoc.Set("n", deleted))
+
+	err = reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{replyDoc},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
