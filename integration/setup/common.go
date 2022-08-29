@@ -81,7 +81,7 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 	tb.Helper()
 
 	if *handlerF == "pg" {
-		tb.Skipf("Skipping for Postgres", reason)
+		tb.Skipf("Skipping for Postgres: %s", reason)
 	}
 }
 
@@ -92,7 +92,7 @@ func SkipForMongoWithReason(tb testing.TB, reason string) {
 	tb.Helper()
 
 	if *handlerF == "mongodb" {
-		tb.Skipf("Skipping for Mongo", reason)
+		tb.Skipf("Skipping for Mongo: %s", reason)
 	}
 }
 
