@@ -89,6 +89,14 @@ func TestDeleteLimitErrors(t *testing.T) {
 				Message: "The limit field in delete objects must be 0 or 1. Got 42.13",
 			},
 		},
+		"InvalidInt": {
+			deletes: bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}, {"limit", 100}}},
+			expectedErr: &mongo.CommandError{
+				Code:    int32(common.ErrFailedToParse),
+				Name:    common.ErrFailedToParse.String(),
+				Message: "The limit field in delete objects must be 0 or 1. Got 100",
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
