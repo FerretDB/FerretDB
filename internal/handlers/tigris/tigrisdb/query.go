@@ -27,8 +27,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-const pushdownEnabled = true
-
 // FetchParam represents options/parameters used by the fetch/query.
 type FetchParam struct {
 	DB         string
@@ -74,7 +72,7 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param FetchParam) ([]*t
 				continue
 			}
 
-			switch v := v.(type) {
+			switch v.(type) {
 			case string, types.ObjectID:
 				id := must.NotFail(tjson.Marshal(v))
 				filter = must.NotFail(json.Marshal(map[string]any{"_id": json.RawMessage(id)}))
