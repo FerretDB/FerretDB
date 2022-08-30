@@ -117,7 +117,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		resDocs := make([]*types.Document, 0, 16)
 
-		return respondAsBulkWriteException(func() error {
+		return respondWithStack(func() error {
 			// iterate through every row and delete matching ones
 			for _, doc := range fetchedDocs {
 				// fetch current items from collection
@@ -236,9 +236,9 @@ func (h *Handler) delete(ctx context.Context, fp tigrisdb.FetchParam, docs []*ty
 	return len(ids), nil
 }
 
-// respondAsBulkWriteException calls the fun. If fun returns
+// respondWithStack calls the fun. If fun returns
 // not-nil error then it is wrapped with lazyerrors.Error.
-func respondAsBulkWriteException(fun func() error) error {
+func respondWithStack(fun func() error) error {
 	if err := fun(); err != nil {
 		return lazyerrors.Error(err)
 	}
