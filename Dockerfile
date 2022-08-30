@@ -16,8 +16,6 @@ FROM golang:1.18.5
 
 COPY --from=build /src/bin/ferretdb /ferretdb
 
-RUN apt update && apt upgrade -y
-
 EXPOSE 27017
 
 ENTRYPOINT [ "/ferretdb" ]
