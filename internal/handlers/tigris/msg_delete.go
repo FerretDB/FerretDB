@@ -82,9 +82,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			)
 		}
 
-		if limit, err = common.GetWholeNumberParam(l); err != nil ||
-			limit < 0 ||
-			limit > 1 {
+		if limit, err = common.GetWholeNumberParam(l); err != nil || limit < 0 || limit > 1 {
 			return common.NewErrorMsg(
 				common.ErrFailedToParse,
 				fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", l),
@@ -165,7 +163,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			case *common.CommandError:
 				return nil, err
 
-			// write errors require to be handled in array
+			// write errors and others require to be handled in array
 			default:
 				delErrors.Append(err, int32(i))
 
