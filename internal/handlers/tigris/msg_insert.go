@@ -108,6 +108,8 @@ func (h *Handler) insert(ctx context.Context, fp tigrisdb.FetchParam, doc *types
 		if err != nil {
 			return err
 		}
+
+		schema.Title = fp.Collection
 	}
 
 	b := must.NotFail(schema.Marshal())
