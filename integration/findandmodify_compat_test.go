@@ -17,6 +17,10 @@ package integration
 import (
 	"testing"
 
+	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/stretchr/testify/assert"
+
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 
@@ -30,6 +34,13 @@ func TestFindAndModifyCompatSimple(t *testing.T) {
 			command: bson.D{
 				{"query", bson.D{}},
 				{"remove", true},
+			},
+		},
+		"NewDoubleNonZero": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "double-smallest"}}},
+				{"update", bson.D{{"_id", "double-smallest"}, {"v", int32(43)}}},
+				{"new", float64(42)},
 			},
 		},
 	}
@@ -84,17 +95,42 @@ func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCom
 						compatCommand = append(compatCommand, bson.D{{"sort", bson.D{{"_id", 1}}}}...)
 					}
 
-					var targetRes, compatRes bson.D
+					var targetMod, compatMod bson.D
 					var targetErr, compatErr error
-					targetErr = targetCollection.Database().RunCommand(ctx, targetCommand).Decode(&targetRes)
-					compatErr = compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatRes)
+					targetErr = targetCollection.Database().RunCommand(ctx, targetCommand).Decode(&targetMod)
+					compatErr = compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatMod)
 					require.Equal(t, targetErr, compatErr)
-					AssertEqualDocuments(t, targetRes, compatRes)
+					AssertEqualDocuments(t, targetMod, compatMod)
 
-					/*var targetFindRes, compatFindRes bson.D
-					require.NoError(t, targetCollection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&targetFindRes))
-					require.NoError(t, compatCollection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&compatFindRes))
-					AssertEqualDocuments(t, compatFindRes, targetFindRes)*/
+					// To make sure that the results of modification are equal,
+					// find all the documents in target and compat collections and compare that they are the same
+					opts := options.Find().SetSort(bson.D{{"_id", 1}})
+					targetCursor, targetErr := targetCollection.Find(ctx, bson.D{}, opts)
+					compatCursor, compatErr := compatCollection.Find(ctx, bson.D{}, opts)
+
+					if targetCursor != nil {
+						defer targetCursor.Close(ctx)
+					}
+					if compatCursor != nil {
+						defer compatCursor.Close(ctx)
+					}
+
+					if targetErr != nil {
+						t.Logf("Target error: %v", targetErr)
+						targetErr = UnsetRaw(t, targetErr)
+						compatErr = UnsetRaw(t, compatErr)
+						assert.Equal(t, compatErr, targetErr)
+						return
+					}
+					require.NoError(t, compatErr, "compat error")
+
+					var targetRes, compatRes []bson.D
+					require.NoError(t, targetCursor.All(ctx, &targetRes))
+					require.NoError(t, compatCursor.All(ctx, &compatRes))
+
+					t.Logf("Compat (expected) IDs: %v", CollectIDs(t, compatRes))
+					t.Logf("Target (actual)   IDs: %v", CollectIDs(t, targetRes))
+					AssertEqualDocumentsSlice(t, compatRes, targetRes)
 				})
 			}
 		})
