@@ -182,17 +182,16 @@ func TestFindAndModifyEmptyCollectionName(t *testing.T) {
 	}
 }
 
+// TODO: Move it to compat tests.
 func TestFindAndModifyNonExistingCollection(t *testing.T) {
 	t.Parallel()
 
 	ctx, collection := setup.Setup(t)
 
-	res := collection.Database().Collection("doesnotexist").FindOneAndUpdate(ctx, bson.D{}, bson.D{})
-	require.NoError(t, res.Err())
-
+	res := collection.Database().Collection("doesnotexist").FindOneAndUpdate(ctx, bson.D{}, bson.D{{"$set", bson.E{"foo", "bar"}}})
 	var actual []bson.D
 	err := res.Decode(&actual)
-	require.NoError(t, err)
+	assert.EqualError(t, err, "mongo: no documents in result")
 	require.Len(t, actual, 0)
 }
 
