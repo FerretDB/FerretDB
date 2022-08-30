@@ -64,25 +64,7 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param FetchParam) ([]*t
 		return nil, lazyerrors.Error(err)
 	}
 
-	filter := driver.Filter(`{}`)
-
-	if pushdownEnabled && param.Filter.Len() != 0 {
-		for k, v := range param.Filter.Map() {
-			if k != "_id" {
-				continue
-			}
-
-			switch v.(type) {
-			case string, types.ObjectID:
-				id := must.NotFail(tjson.Marshal(v))
-				filter = must.NotFail(json.Marshal(map[string]any{"_id": json.RawMessage(id)}))
-
-			default:
-				continue
-			}
-		}
-	}
-
+	filter := tdb.queryDocumentsFilter(param.Filter)
 	tdb.L.Sugar().Debugf("Read filter: %s", filter)
 
 	iter, err := db.Read(ctx, param.Collection, filter, nil)
@@ -104,4 +86,39 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param FetchParam) ([]*t
 	}
 
 	return res, iter.Err()
+}
+
+// queryDocumentsFilter returns Tigris filter expression that may cover a part of the given filter.
+//
+// FerretDB always filters data itself, so that should be a purely performance optimization.
+func (tdb *TigrisDB) queryDocumentsFilter(filter *types.Document) driver.Filter {
+	if !pushdownEnabled || filter.Len() == 0 {
+		return driver.Filter(`{}`)
+	}
+
+	for k, v := range filter.Map() {
+		// filter only by _id for now
+		if k != "_id" {
+			continue
+		}
+
+		switch v.(type) {
+		case string:
+			// filtering by string values is complicated if the storage supports encodings, collations, etc,
+			// but Tigris doesn't support any of these
+		case types.ObjectID:
+			// filtering by ObjectID is always safe
+		default:
+			// skip other types for now
+			continue
+		}
+
+		// filter by the exact _id value
+		id := must.NotFail(tjson.Marshal(v))
+		f := map[string]any{"_id": json.RawMessage(id)}
+
+		return must.NotFail(json.Marshal(f))
+	}
+
+	return driver.Filter(`{}`)
 }
