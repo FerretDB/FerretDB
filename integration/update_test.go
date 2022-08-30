@@ -197,8 +197,6 @@ func TestUpdateNonExistingCollection(t *testing.T) {
 	res, err := collection.Database().Collection("doesnotexist").UpdateOne(ctx, bson.D{}, bson.D{})
 	require.NoError(t, err)
 
-	require.NoError(t, err)
-
 	assert.Equal(t, 0, res.MatchedCount)
 }
 
