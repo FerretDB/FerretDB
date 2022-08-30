@@ -184,6 +184,7 @@ func TestFindAndModifyEmptyCollectionName(t *testing.T) {
 
 // TODO: Move it to compat tests.
 func TestFindAndModifyNonExistingCollection(t *testing.T) {
+	setup.SkipForTigris(t)
 	t.Parallel()
 
 	ctx, collection := setup.Setup(t)
