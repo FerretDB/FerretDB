@@ -198,10 +198,26 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 // update replaces given document.
 func (h *Handler) update(ctx context.Context, fp tigrisdb.FetchParam, doc *types.Document) (int, error) {
+	collection, err := h.db.Driver.UseDatabase(fp.DB).DescribeCollection(ctx, fp.Collection)
+	if err != nil {
+		return 0, err
+	}
+
+	var schema *tjson.Schema
+	if err = schema.Unmarshal(collection.Schema); err != nil {
+		return 0, lazyerrors.Error(err)
+	}
+
+	err = tjson.Validate(doc, schema)
+	if err != nil {
+		return 0, err
+	}
+
 	u, err := tjson.Marshal(doc)
 	if err != nil {
 		return 0, lazyerrors.Error(err)
 	}
+
 	h.L.Sugar().Debugf("Update: %s", u)
 
 	_, err = h.db.Driver.UseDatabase(fp.DB).Replace(ctx, fp.Collection, []driver.Document{u})

@@ -260,3 +260,27 @@ func Marshal(v any) ([]byte, error) {
 
 	return b, nil
 }
+
+// Validate checks whether the given document is valid according to the given schema.
+func Validate(doc *types.Document, schema *Schema) error {
+	for k, v := range doc.Map() {
+		switch v := v.(type) {
+		case *types.Document:
+			if err := Validate(v, schema.Properties[k]); err != nil {
+				return err
+			}
+		case *types.Array:
+			if err := validateArray(v, schema.Properties[k]); err != nil {
+				return err
+			}
+		default:
+			return lazyerrors.Errorf("tjson.Validate: unhandled type %T", v)
+		}
+	}
+
+	return nil
+}
+
+func validateArray(arr *types.Array, schema *Schema) error {
+	return nil
+}

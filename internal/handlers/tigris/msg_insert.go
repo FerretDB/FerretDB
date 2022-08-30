@@ -89,11 +89,21 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 // insert checks if database and collection exist, create them if needed and attempts to insert the given doc.
 func (h *Handler) insert(ctx context.Context, fp tigrisdb.FetchParam, doc *types.Document) error {
-	schema, err := tjson.DocumentSchema(doc)
+	collection, err := h.db.Driver.UseDatabase(fp.DB).DescribeCollection(ctx, fp.Collection)
 	if err != nil {
+		return err
+	}
+
+	var schema *tjson.Schema
+	if err = schema.Unmarshal(collection.Schema); err != nil {
 		return lazyerrors.Error(err)
 	}
-	schema.Title = fp.Collection
+
+	err = tjson.Validate(doc, schema)
+	if err != nil {
+		return err
+	}
+
 	b := must.NotFail(schema.Marshal())
 	h.L.Sugar().Debugf("Schema:\n%s", b)
 
