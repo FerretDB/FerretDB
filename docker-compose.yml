@@ -73,3 +73,12 @@ services:
     container_name: ferretdb_centos
     volumes:
       - ./build/rpm:/rpm
+
+  trivy:
+    build:
+      context: ./build/deps
+      dockerfile: trivy.Dockerfile
+    container_name: ferretdb_trivy
+    working_dir: /app
+    volumes:
+      - .:/app
