@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"testing"
 
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -41,6 +42,48 @@ func TestFindAndModifyCompatSimple(t *testing.T) {
 				{"query", bson.D{{"_id", "double-smallest"}}},
 				{"update", bson.D{{"_id", "double-smallest"}, {"v", int32(43)}}},
 				{"new", float64(42)},
+			},
+		},
+		"NewDoubleZero": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "double-zero"}}},
+				{"update", bson.D{{"_id", "double-zero"}, {"v", 43.0}}},
+				{"new", float64(0)},
+			},
+		},
+		"NewDoubleNaN": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "double-zero"}}},
+				{"update", bson.D{{"_id", "double-zero"}, {"v", 43.0}}},
+				{"new", math.NaN()},
+			},
+		},
+		"NewIntNonZero": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int32"}}},
+				{"update", bson.D{{"_id", "int32"}, {"v", int32(43)}}},
+				{"new", int32(11)},
+			},
+		},
+		"NewIntZero": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int32-zero"}}},
+				{"update", bson.D{{"_id", "int32-zero"}, {"v", int32(43)}}},
+				{"new", int32(0)},
+			},
+		},
+		"NewLongNonZero": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int64"}}},
+				{"update", bson.D{{"_id", "int64"}, {"v", int64(43)}}},
+				{"new", int64(11)},
+			},
+		},
+		"NewLongZero": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int64-zero"}}},
+				{"update", bson.D{{"_id", "int64-zero"}, {"v", int64(43)}}},
+				{"new", int64(0)},
 			},
 		},
 	}
