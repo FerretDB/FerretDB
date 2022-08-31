@@ -62,24 +62,6 @@ func TestFindAndModifyErrors(t *testing.T) {
 		err        *mongo.CommandError
 		altMessage string
 	}{
-		"NotEnoughParameters": {
-			err: &mongo.CommandError{
-				Code:    9,
-				Message: "Either an update or remove=true must be specified",
-				Name:    "FailedToParse",
-			},
-		},
-		"UpdateAndRemove": {
-			command: bson.D{
-				{"update", bson.D{}},
-				{"remove", true},
-			},
-			err: &mongo.CommandError{
-				Code:    9,
-				Name:    "FailedToParse",
-				Message: "Cannot specify both an update and remove=true",
-			},
-		},
 		"UpsertAndRemove": {
 			command: bson.D{
 				{"upsert", true},
@@ -91,17 +73,6 @@ func TestFindAndModifyErrors(t *testing.T) {
 				Message: "Cannot specify both upsert=true and remove=true ",
 			},
 			altMessage: "Cannot specify both upsert=true and remove=true",
-		},
-		"NewAndRemove": {
-			command: bson.D{
-				{"new", true},
-				{"remove", true},
-			},
-			err: &mongo.CommandError{
-				Code:    9,
-				Name:    "FailedToParse",
-				Message: "Cannot specify both new=true and remove=true; 'remove' always returns the deleted document",
-			},
 		},
 		"BadSortType": {
 			command: bson.D{
@@ -126,17 +97,6 @@ func TestFindAndModifyErrors(t *testing.T) {
 				Message: "BSON field 'findAndModify.remove' is the wrong type 'string', expected types '[bool, long, int, decimal, double']",
 			},
 			altMessage: "BSON field 'remove' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'",
-		},
-		"BadUpdateType": {
-			command: bson.D{
-				{"query", bson.D{}},
-				{"update", "123"},
-			},
-			err: &mongo.CommandError{
-				Code:    9,
-				Name:    "FailedToParse",
-				Message: "Update argument must be either an object or an array",
-			},
 		},
 		"BadNewType": {
 			command: bson.D{

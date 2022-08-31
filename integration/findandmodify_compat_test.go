@@ -40,7 +40,7 @@ func TestFindAndModifyCompatSimple(t *testing.T) {
 		"NewDoubleNonZero": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "double-smallest"}}},
-				{"update", bson.D{{"_id", "double-smallest"}, {"v", int32(43)}}},
+				{"update", bson.D{{"_id", "double-smallest"}, {"v", float64(43)}}},
 				{"new", float64(42)},
 			},
 		},
@@ -91,6 +91,34 @@ func TestFindAndModifyCompatSimple(t *testing.T) {
 	testFindAndModifyCompat(t, testCases)
 }
 
+func TestFindAndModifyCompatErrors(t *testing.T) {
+	testCases := map[string]findAndModifyCompatTestCase{
+		"NotEnoughParameters": {
+			command: bson.D{},
+		},
+		"UpdateAndRemove": {
+			command: bson.D{
+				{"update", bson.D{}},
+				{"remove", true},
+			},
+		},
+		"NewAndRemove": {
+			command: bson.D{
+				{"new", true},
+				{"remove", true},
+			},
+		},
+		"BadUpdateType": {
+			command: bson.D{
+				{"query", bson.D{}},
+				{"update", "123"},
+			},
+		},
+	}
+
+	testFindAndModifyCompat(t, testCases)
+}
+
 // findAndModifyCompatTestCase describes findAndModify compatibility test case.
 type findAndModifyCompatTestCase struct {
 	command       bson.D
@@ -98,7 +126,7 @@ type findAndModifyCompatTestCase struct {
 	skipForTigris string // skips test for Tigris if non-empty
 }
 
-// testUpdateCompat tests update compatibility test cases.
+// testFindAndModifyCompat tests findAndModify compatibility test cases.
 func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCompatTestCase) {
 	t.Helper()
 
