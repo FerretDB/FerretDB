@@ -173,6 +173,66 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 	testFindAndModifyCompat(t, testCases)
 }
 
+/*
+func TestFindAndModifyCompatUpsert(t *testing.T) {
+	setup.SkipForTigrisWithReason(
+		t,
+		"Tigris' schema doesn't fit for most of providers, upsert for Tigris is tested in TestFindAndModifyUpsert.",
+	)
+
+	testCases := map[string]findAndModifyCompatTestCase{
+		"Upsert": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "double"}}},
+				{"update", bson.D{{"$set", bson.D{{"v", 43.13}}}}},
+				{"upsert", true},
+			},
+		},
+		"UpsertNew": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "double"}}},
+				{"update", bson.D{{"$set", bson.D{{"v", 43.13}}}}},
+				{"upsert", true},
+				{"new", true},
+			},
+		},
+		"UpsertNoSuchDocument": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "no-such-doc"}}},
+				{"update", bson.D{{"$set", bson.D{{"v", 43.13}}}}},
+				{"upsert", true},
+				{"new", true},
+			},
+		},
+		"UpsertNoSuchReplaceDocument": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "no-such-doc"}}},
+				{"update", bson.D{{"v", 43.13}}},
+				{"upsert", true},
+				{"new", true},
+			},
+		},
+		"UpsertReplace": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "double"}}},
+				{"update", bson.D{{"v", 43.13}}},
+				{"upsert", true},
+			},
+		},
+		"UpsertReplaceReturnNew": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "double"}}},
+				{"update", bson.D{{"v", 43.13}}},
+				{"upsert", true},
+				{"new", true},
+			},
+		},
+	}
+
+	testFindAndModifyCompat(t, testCases)
+}
+*/
+
 // findAndModifyCompatTestCase describes findAndModify compatibility test case.
 type findAndModifyCompatTestCase struct {
 	command       bson.D

@@ -309,6 +309,7 @@ func TestFindAndModifyUpsertComplex(t *testing.T) {
 				t.Fatal(actual)
 			}
 
+			// TODO: add document comparison here. Skip _id check as it always would different.
 			for _, v := range leb {
 				if v.Key == "upserted" {
 					continue
