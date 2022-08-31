@@ -119,6 +119,60 @@ func TestFindAndModifyCompatErrors(t *testing.T) {
 	testFindAndModifyCompat(t, testCases)
 }
 
+func TestFindAndModifyCompatUpdate(t *testing.T) {
+	testCases := map[string]findAndModifyCompatTestCase{
+		"Replace": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int64"}}},
+				{"update", bson.D{{"_id", "int64"}, {"v", int64(43)}}},
+			},
+		},
+		"ReplaceWithoutID": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int64"}}},
+				{"update", bson.D{{"v", int64(43)}}},
+			},
+		},
+		"ReplaceReturnNew": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int32"}}},
+				{"update", bson.D{{"_id", "int32"}, {"v", int32(43)}}},
+				{"new", true},
+			},
+		},
+		"UpdateNotExistedIdInQuery": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "no-such-id"}}},
+				{"update", bson.D{{"v", int32(43)}}},
+			},
+		},
+		"UpdateNotExistedIdNotInQuery": {
+			command: bson.D{
+				{"query", bson.D{{"$and", bson.A{
+					bson.D{{"v", bson.D{{"$gt", 0}}}},
+					bson.D{{"v", bson.D{{"$lt", 0}}}},
+				}}}},
+				{"update", bson.D{{"v", int32(43)}}},
+			},
+		},
+		"UpdateOperatorSet": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int64"}}},
+				{"update", bson.D{{"$set", bson.D{{"v", int64(43)}}}}},
+			},
+		},
+		"UpdateOperatorSetReturnNew": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int64"}}},
+				{"update", bson.D{{"$set", bson.D{{"v", int64(43)}}}}},
+				{"new", true},
+			},
+		},
+	}
+
+	testFindAndModifyCompat(t, testCases)
+}
+
 // findAndModifyCompatTestCase describes findAndModify compatibility test case.
 type findAndModifyCompatTestCase struct {
 	command       bson.D
