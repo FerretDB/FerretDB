@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"testing"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -26,23 +27,27 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 	testCases := map[string]updateCompatTestCase{
 		"Int32": {
 			update: bson.D{{"$inc", bson.D{{"v", int32(42)}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/972",
 		},
 		"Int32Negative": {
 			update: bson.D{{"$inc", bson.D{{"v", int32(-42)}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/972",
+		},
+		"Int64Max": {
+			update: bson.D{{"$inc", bson.D{{"v", math.MaxInt64}}}},
+		},
+		"Int64Min": {
+			update: bson.D{{"$inc", bson.D{{"v", math.MinInt64}}}},
 		},
 		"EmptyUpdatePath": {
 			update: bson.D{{"$inc", bson.D{{}}}},
 			skip:   "https://github.com/FerretDB/FerretDB/issues/673",
 		},
 		"DotNotationFieldExist": {
-			update: bson.D{{"$inc", bson.D{{"v.foo", int32(1)}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/972",
+			update:        bson.D{{"$inc", bson.D{{"v.foo", int32(1)}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1088",
 		},
 		"DotNotationFieldNotExist": {
-			update: bson.D{{"$inc", bson.D{{"foo.bar", int32(1)}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/972",
+			update:        bson.D{{"$inc", bson.D{{"foo.bar", int32(1)}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1088",
 		},
 	}
 
