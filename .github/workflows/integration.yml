@@ -33,30 +33,30 @@ jobs:
         include:
           - name: "MongoDB"
             task: "mongodb"
-            buildtags: "ferretdb_testcover,ferretdb_tigris"
+            buildtags: "ferretdb_tigris"
 
           # with pushdown
           - name: "PostgreSQL"
             task: "pg"
-            buildtags: "ferretdb_testcover,ferretdb_tigris"
+            buildtags: "ferretdb_tigris"
           - name: "Tigris"
             task: "tigris"
-            buildtags: "ferretdb_testcover,ferretdb_tigris"
+            buildtags: "ferretdb_tigris"
           - name: "Tigris main"
             task: "tigris"
-            buildtags: "ferretdb_testcover,ferretdb_tigris"
+            buildtags: "ferretdb_tigris"
             tigris_dockerfile: "tigris_main"
 
           # without pushdown
           - name: "PostgreSQL (no pushdown)"
             task: "pg"
-            buildtags: "ferretdb_testcover,ferretdb_tigris,ferretdb_nopushdown"
+            buildtags: "ferretdb_tigris,ferretdb_nopushdown"
           - name: "Tigris (no pushdown)"
             task: "tigris"
-            buildtags: "ferretdb_testcover,ferretdb_tigris,ferretdb_nopushdown"
+            buildtags: "ferretdb_tigris,ferretdb_nopushdown"
           - name: "Tigris main (no pushdown)"
             task: "tigris"
-            buildtags: "ferretdb_testcover,ferretdb_tigris,ferretdb_nopushdown"
+            buildtags: "ferretdb_tigris,ferretdb_nopushdown"
             tigris_dockerfile: "tigris_main"
 
     steps:

@@ -9,7 +9,7 @@ vars:
   FUZZTIME: 15s
   FUZZCORPUS: ../fuzz-corpus
   RACEFLAG: -race={{ne OS "windows"}}
-  BUILDTAGS: ferretdb_testcover,ferretdb_tigris
+  BUILDTAGS: ferretdb_tigris
 
 tasks:
   # invoked when `task` is run without arguments
@@ -199,7 +199,7 @@ tasks:
     run: once
     deps: [gen-version]
     cmds:
-      - go test -c -o=bin/ferretdb-testcover{{exeExt}} -trimpath {{.RACEFLAG}} -tags={{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
+      - go test -c -o=bin/ferretdb-testcover{{exeExt}} -trimpath {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
 
   run:
     desc: "Run FerretDB"
