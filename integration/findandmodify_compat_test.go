@@ -114,6 +114,11 @@ func TestFindAndModifyCompatErrors(t *testing.T) {
 				{"update", "123"},
 			},
 		},
+		"BadMaxTimeMSTypeString": {
+			command: bson.D{
+				{"maxTimeMS", "string"},
+			},
+		},
 	}
 
 	testFindAndModifyCompat(t, testCases)
@@ -232,6 +237,34 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 	testFindAndModifyCompat(t, testCases)
 }
 */
+
+func TestFindAndModifyCompatRemove(t *testing.T) {
+	testCases := map[string]findAndModifyCompatTestCase{
+		"Remove": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "double"}}},
+				{"remove", true},
+			},
+		},
+		"RemoveEmptyQueryResult": {
+			command: bson.D{
+				{
+					"query",
+					bson.D{{
+						"$and",
+						bson.A{
+							bson.D{{"v", bson.D{{"$gt", 0}}}},
+							bson.D{{"v", bson.D{{"$lt", 0}}}},
+						},
+					}},
+				},
+				{"remove", true},
+			},
+		},
+	}
+
+	testFindAndModifyCompat(t, testCases)
+}
 
 // findAndModifyCompatTestCase describes findAndModify compatibility test case.
 type findAndModifyCompatTestCase struct {
