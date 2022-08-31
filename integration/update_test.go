@@ -189,6 +189,17 @@ func TestMultiFlag(t *testing.T) {
 	})
 }
 
+func TestUpdateNonExistingCollection(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+
+	res, err := collection.Database().Collection("doesnotexist").UpdateOne(ctx, bson.D{}, bson.D{{"$set", bson.E{"foo", "bar"}}})
+	require.NoError(t, err)
+
+	assert.Equal(t, int64(0), res.MatchedCount)
+}
+
 func TestUpdateReplaceDocuments(t *testing.T) {
 	setup.SkipForTigris(t)
 
