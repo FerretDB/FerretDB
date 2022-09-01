@@ -92,7 +92,7 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param FetchParam) ([]*t
 //
 // FerretDB always filters data itself, so that should be a purely performance optimization.
 func (tdb *TigrisDB) queryDocumentsFilter(filter *types.Document) driver.Filter {
-	if !pushdownEnabled || filter.Len() == 0 {
+	if filter.Len() == 0 {
 		return driver.Filter(`{}`)
 	}
 
