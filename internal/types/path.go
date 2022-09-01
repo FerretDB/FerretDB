@@ -254,11 +254,7 @@ func FormatAnyValue(v any) string {
 		default:
 			res := fmt.Sprintf("%.2f", v)
 
-			if strings.HasSuffix(res, "0") {
-				return res[:len(res)-1]
-			}
-
-			return res
+			return strings.TrimSuffix(res, "0")
 		}
 
 	case string:
