@@ -20,9 +20,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 )
 
 // TestDeleteSimple checks simple cases of doc deletion.
@@ -52,6 +54,70 @@ func TestDeleteSimple(t *testing.T) {
 			cursor, err := collection.Database().Collection(tc.collection).DeleteOne(ctx, bson.D{})
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedCount, cursor.DeletedCount)
+		})
+	}
+}
+
+func TestDeleteLimitErrors(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		deletes     bson.A
+		expectedErr *mongo.CommandError
+		skip        string
+	}{
+		"NotSet": {
+			deletes: bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}}},
+			expectedErr: &mongo.CommandError{
+				Code:    int32(common.ErrMissingField),
+				Name:    common.ErrMissingField.String(),
+				Message: "BSON field 'delete.deletes.limit' is missing but a required field",
+			},
+		},
+		"ValidFloat": {
+			deletes: bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}, {"limit", 1.00}}},
+		},
+		"ValidString": {
+			deletes: bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}, {"limit", "1"}}},
+			skip:    "https://github.com/FerretDB/FerretDB/issues/1089",
+		},
+		"InvalidFloat": {
+			deletes: bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}, {"limit", 42.13}}},
+			expectedErr: &mongo.CommandError{
+				Code:    int32(common.ErrFailedToParse),
+				Name:    common.ErrFailedToParse.String(),
+				Message: "The limit field in delete objects must be 0 or 1. Got 42.13",
+			},
+		},
+		"InvalidInt": {
+			deletes: bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}, {"limit", 100}}},
+			expectedErr: &mongo.CommandError{
+				Code:    int32(common.ErrFailedToParse),
+				Name:    common.ErrFailedToParse.String(),
+				Message: "The limit field in delete objects must be 0 or 1. Got 100",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			ctx, collection := setup.Setup(t)
+
+			res := collection.Database().RunCommand(ctx, bson.D{
+				{"delete", collection.Name()},
+				{"deletes", tc.deletes},
+			})
+
+			if tc.expectedErr != nil {
+				AssertEqualError(t, *tc.expectedErr, res.Err())
+				return
+			}
+			assert.Equal(t, nil, res.Err())
 		})
 	}
 }

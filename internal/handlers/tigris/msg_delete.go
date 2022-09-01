@@ -37,11 +37,9 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.L, "comment") // TODO https://github.com/FerretDB/FerretDB/issues/849
 	if err := common.Unimplemented(document, "let"); err != nil {
 		return nil, err
 	}
-	common.Ignored(document, h.L, "ordered") // TODO https://github.com/FerretDB/FerretDB/issues/848
 	common.Ignored(document, h.L, "writeConcern")
 
 	var deletes *types.Array
@@ -72,16 +70,24 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return err
 		}
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/982
 		var limit int64
-		if l, _ := d.Get("limit"); l != nil {
-			if limit, err = common.GetWholeNumberParam(l); err != nil {
-				return err
-			}
+
+		l, err := d.Get("limit")
+		if err != nil {
+			return common.NewErrorMsg(
+				common.ErrMissingField,
+				"BSON field 'delete.deletes.limit' is missing but a required field",
+			)
+		}
+
+		if limit, err = common.GetWholeNumberParam(l); err != nil || limit < 0 || limit > 1 {
+			return common.NewErrorMsg(
+				common.ErrFailedToParse,
+				fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", l),
+			)
 		}
 
 		var fp tigrisdb.FetchParam
-
 		if fp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 			return err
 		}
@@ -89,7 +95,6 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		if err != nil {
 			return err
 		}
-
 		var ok bool
 		if fp.Collection, ok = collectionParam.(string); !ok {
 			return common.NewErrorMsg(
@@ -98,82 +103,97 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			)
 		}
 
-		// fetch current items from collection
-		fetchedDocs, err := h.db.QueryDocuments(ctx, fp)
-		if err != nil {
-			return err
-		}
+		common.Ignored(document, h.L, "comment")
+
+		common.Ignored(filter, h.L, "$comment")
 
 		resDocs := make([]*types.Document, 0, 16)
-		// iterate through every row and delete matching ones
-		for _, doc := range fetchedDocs {
+
+		return respondWithStack(func() error {
 			// fetch current items from collection
-			matches, err := common.FilterDocument(doc, filter)
+			fetchedDocs, err := h.db.QueryDocuments(ctx, fp)
 			if err != nil {
 				return err
 			}
 
-			if !matches {
-				continue
+			// iterate through every row and delete matching ones
+			for _, doc := range fetchedDocs {
+				// fetch current items from collection
+				matches, err := common.FilterDocument(doc, filter)
+				if err != nil {
+					return err
+				}
+
+				if !matches {
+					continue
+				}
+
+				resDocs = append(resDocs, doc)
 			}
 
-			resDocs = append(resDocs, doc)
-		}
+			if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
+				return err
+			}
 
-		if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
-			return err
-		}
+			// if no field is matched in a row, go to the next one
+			if len(resDocs) == 0 {
+				return nil
+			}
 
-		// if no field is matched in a row, go to the next one
-		if len(resDocs) == 0 {
+			res, err := h.delete(ctx, &fp, resDocs)
+			if err != nil {
+				return err
+			}
+
+			deleted += int32(res)
+
 			return nil
-		}
-
-		res, err := h.delete(ctx, fp, resDocs)
-		if err != nil {
-			return err
-		}
-
-		deleted += int32(res)
-
-		return nil
+		})
 	}
 
-	delErrors := new(common.WriteErrors)
-
-	var reply wire.OpMsg
+	var delErrors common.WriteErrors
 
 	// process every delete filter
 	for i := 0; i < deletes.Len(); i++ {
-		err = processQuery(i)
-		if err != nil {
+		err := processQuery(i)
+		switch err.(type) {
+		case nil:
+			continue
+
+		case *common.CommandError:
+			// command errors should be return immediately
+			return nil, err
+
+		default:
+			// write errors and others require to be handled in array
 			delErrors.Append(err, int32(i))
 
 			// Delete statements in the `deletes` field are not transactional.
 			// It means that we run each delete statement separately.
 			// If `ordered` is set as `true`, we don't execute the remaining statements
 			// after the first failure.
-			// If `ordered` is set as `false`,  we execute all the statements and return
+			// If `ordered` is set as `false`, we execute all the statements and return
 			// the list of errors corresponding to the failed statements.
-			if ordered {
-				break
+			if !ordered {
+				continue
 			}
 		}
+
+		// send response if ordered is true
+		break
 	}
 
-	var replyDoc *types.Document
+	replyDoc := must.NotFail(types.NewDocument(
+		"ok", float64(1),
+	))
 
-	// if there are delete errors append writeErrors field
-	if len(*delErrors) > 0 {
+	if len(delErrors) > 0 {
 		replyDoc = delErrors.Document()
-	} else {
-		replyDoc = must.NotFail(types.NewDocument(
-			"ok", float64(1),
-		))
 	}
 
 	must.NoError(replyDoc.Set("n", deleted))
 
+	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{replyDoc},
 	})
@@ -185,11 +205,11 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // delete deletes documents by _id.
-func (h *Handler) delete(ctx context.Context, fp tigrisdb.FetchParam, docs []*types.Document) (int, error) {
+func (h *Handler) delete(ctx context.Context, fp *tigrisdb.FetchParam, docs []*types.Document) (int, error) {
 	ids := make([]map[string]any, len(docs))
 	for i, doc := range docs {
 		id := must.NotFail(tjson.Marshal(must.NotFail(doc.Get("_id"))))
-		ids[i] = map[string]any{"_id": map[string]json.RawMessage{"$eq": id}}
+		ids[i] = map[string]any{"_id": json.RawMessage(id)}
 	}
 
 	var f driver.Filter
@@ -210,4 +230,14 @@ func (h *Handler) delete(ctx context.Context, fp tigrisdb.FetchParam, docs []*ty
 	}
 
 	return len(ids), nil
+}
+
+// respondWithStack calls the fun. If fun returns
+// not-nil error then it is wrapped with lazyerrors.Error.
+func respondWithStack(fun func() error) error {
+	if err := fun(); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	return nil
 }
