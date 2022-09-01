@@ -106,6 +106,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		resDocs := make([]*types.Document, 0, 16)
+
 		return respondWithStack(func() error {
 			// fetch current items from collection
 			fetchedDocs, err := h.db.QueryDocuments(ctx, fp)

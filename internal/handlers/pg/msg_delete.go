@@ -112,6 +112,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		resDocs := make([]*types.Document, 0, 16)
+
 		return h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 			// fetch current items from collection
 			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp)

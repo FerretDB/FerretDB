@@ -150,6 +150,7 @@ func NewError(code ErrorCode, err error) error {
 	if err == nil {
 		panic("err is nil")
 	}
+
 	return &CommandError{
 		code: code,
 		err:  err,
