@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
@@ -168,7 +169,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				continue
 			}
 
-			res, err := h.update(ctx, fp, doc)
+			res, err := h.update(ctx, fp, doc, u)
 			if err != nil {
 				return nil, err
 			}
@@ -197,7 +198,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // update replaces given document.
-func (h *Handler) update(ctx context.Context, fp tigrisdb.FetchParam, doc *types.Document) (int, error) {
+func (h *Handler) update(ctx context.Context, fp tigrisdb.FetchParam, doc, update *types.Document) (int, error) {
 	collection, err := h.db.Driver.UseDatabase(fp.DB).DescribeCollection(ctx, fp.Collection)
 	if err != nil {
 		return 0, lazyerrors.Error(err)
@@ -208,9 +209,17 @@ func (h *Handler) update(ctx context.Context, fp tigrisdb.FetchParam, doc *types
 		return 0, lazyerrors.Error(err)
 	}
 
-	err = tjson.Validate(doc, schema)
-	if err != nil {
-		return 0, lazyerrors.Error(err)
+	var validationRequired bool
+	for _, k := range update.Keys() {
+		if slices.Contains([]string{"$currentDate", "$inc", "$set", "$setOnInsert"}, k) {
+			validationRequired = true
+		}
+	}
+
+	if validationRequired {
+		if err = tjson.Validate(doc, schema); err != nil {
+			return 0, lazyerrors.Error(err)
+		}
 	}
 
 	u, err := tjson.Marshal(doc)
