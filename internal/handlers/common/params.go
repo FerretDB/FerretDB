@@ -132,12 +132,15 @@ func GetWholeNumberParam(value any) (int64, error) {
 		if math.IsNaN(value) {
 			return 0, errNaN
 		}
+
 		if math.IsInf(value, 1) {
 			return 0, errInfinity
 		}
+
 		if value != math.Trunc(value) {
 			return 0, errNotWholeNumber
 		}
+
 		return int64(value), nil
 	case int32:
 		return int64(value), nil

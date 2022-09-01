@@ -952,12 +952,16 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 			return false, NewErrorMsg(ErrBadValue, `malformed mod, remainder value is invalid :: caused by :: `+
 				`Unable to coerce NaN/Inf to integral type`)
 		}
+
 		r = math.Trunc(r)
+
 		if r >= float64(math.MaxInt64) || r < float64(-9.223372036854776832e+18) {
 			return false, NewErrorMsg(ErrBadValue, `malformed mod, remainder value is invalid :: caused by :: `+
 				`Out of bounds coercing to integral value`)
 		}
+
 		remainder = int64(r)
+
 		if r != float64(remainder) {
 			return false, nil
 		}
