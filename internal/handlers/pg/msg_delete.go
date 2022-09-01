@@ -112,7 +112,8 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		resDocs := make([]*types.Document, 0, 16)
-		err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+
+		return h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 			// fetch current items from collection
 			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp)
 			if err != nil {
@@ -163,56 +164,51 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 			return nil
 		})
-
-		return err
 	}
 
-	delErrors := new(common.WriteErrors)
-
-	var reply wire.OpMsg
+	var delErrors common.WriteErrors
 
 	// process every delete filter
 	for i := 0; i < deletes.Len(); i++ {
 		err := processQuery(i)
-		if err != nil {
-			switch err.(type) {
+		switch err.(type) {
+		case nil:
+			continue
+
+		case *common.CommandError:
 			// command errors should be return immediately
-			case *common.CommandError:
-				return nil, err
+			return nil, err
 
+		default:
 			// write errors and others require to be handled in array
-			default:
-				delErrors.Append(err, int32(i))
+			delErrors.Append(err, int32(i))
 
-				// Delete statements in the `deletes` field are not transactional.
-				// It means that we run each delete statement separately.
-				// If `ordered` is set as `true`, we don't execute the remaining statements
-				// after the first failure.
-				// If `ordered` is set as `false`,  we execute all the statements and return
-				// the list of errors corresponding to the failed statements.
-				if !ordered {
-					continue
-				}
+			// Delete statements in the `deletes` field are not transactional.
+			// It means that we run each delete statement separately.
+			// If `ordered` is set as `true`, we don't execute the remaining statements
+			// after the first failure.
+			// If `ordered` is set as `false`, we execute all the statements and return
+			// the list of errors corresponding to the failed statements.
+			if !ordered {
+				continue
 			}
-
-			// send response if ordered is true
-			break
 		}
+
+		// send response if ordered is true
+		break
 	}
 
-	var replyDoc *types.Document
+	replyDoc := must.NotFail(types.NewDocument(
+		"ok", float64(1),
+	))
 
-	// if there are delete errors append writeErrors field
-	if len(*delErrors) > 0 {
+	if len(delErrors) > 0 {
 		replyDoc = delErrors.Document()
-	} else {
-		replyDoc = must.NotFail(types.NewDocument(
-			"ok", float64(1),
-		))
 	}
 
 	must.NoError(replyDoc.Set("n", deleted))
 
+	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{replyDoc},
 	})

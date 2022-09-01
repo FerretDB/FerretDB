@@ -121,7 +121,7 @@ func ProtocolError(err error) (ProtoErr, bool) {
 		panic("err is nil")
 	}
 
-	var e *Error
+	var e *CommandError
 	if errors.As(err, &e) {
 		return e, true
 	}
@@ -131,14 +131,11 @@ func ProtocolError(err error) (ProtoErr, bool) {
 		return writeErr, true
 	}
 
-	return NewError(errInternalError, err).(*Error), false
+	return NewError(errInternalError, err).(*CommandError), false
 }
 
 // CommandError represents wire protocol command error.
-type CommandError = Error
-
-// Error is a deprecated name for CommandError; instead, use the later version in the new code.
-type Error struct {
+type CommandError struct {
 	err  error
 	code ErrorCode
 }
@@ -153,7 +150,8 @@ func NewError(code ErrorCode, err error) error {
 	if err == nil {
 		panic("err is nil")
 	}
-	return &Error{
+
+	return &CommandError{
 		code: code,
 		err:  err,
 	}
@@ -167,22 +165,22 @@ func NewErrorMsg(code ErrorCode, msg string) error {
 }
 
 // Error implements error interface.
-func (e *Error) Error() string {
+func (e *CommandError) Error() string {
 	return fmt.Sprintf("%[1]s (%[1]d): %[2]v", e.code, e.err)
 }
 
 // Code implements ProtoErr interface.
-func (e *Error) Code() ErrorCode {
+func (e *CommandError) Code() ErrorCode {
 	return e.code
 }
 
 // Unwrap implements standard error unwrapping interface.
-func (e *Error) Unwrap() error {
+func (e *CommandError) Unwrap() error {
 	return e.err
 }
 
 // Document returns wire protocol error document.
-func (e *Error) Document() *types.Document {
+func (e *CommandError) Document() *types.Document {
 	d := must.NotFail(types.NewDocument(
 		"ok", float64(0),
 		"errmsg", e.err.Error(),
@@ -331,6 +329,6 @@ func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
 
 // check interfaces
 var (
-	_ ProtoErr = (*Error)(nil)
+	_ ProtoErr = (*CommandError)(nil)
 	_ ProtoErr = (*WriteErrors)(nil)
 )
