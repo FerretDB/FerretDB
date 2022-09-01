@@ -36,12 +36,12 @@ func PrepareFindAndModifyParams(document *types.Document) (*FindAndModifyParams,
 
 	command := document.Command()
 
-	var db, collection string
-
+	var db string
 	if db, err = GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 
+	var collection string
 	if collection, err = GetRequiredParam[string](document, command); err != nil {
 		return nil, err
 	}
@@ -54,19 +54,16 @@ func PrepareFindAndModifyParams(document *types.Document) (*FindAndModifyParams,
 	}
 
 	var remove bool
-
 	if remove, err = GetBoolOptionalParam(document, "remove"); err != nil {
 		return nil, err
 	}
 
 	var returnNewDocument bool
-
 	if returnNewDocument, err = GetBoolOptionalParam(document, "new"); err != nil {
 		return nil, err
 	}
 
 	var upsert bool
-
 	if upsert, err = GetBoolOptionalParam(document, "upsert"); err != nil {
 		return nil, err
 	}
