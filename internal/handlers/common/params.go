@@ -116,12 +116,15 @@ var (
 	errNotBinaryMask         = fmt.Errorf("not a binary mask")
 	errUnexpectedLeftOpType  = fmt.Errorf("unexpected left operand type")
 	errUnexpectedRightOpType = fmt.Errorf("unexpected right operand type")
+	errLongExceeded          = fmt.Errorf("long exceeded")
+	errIntExceeded           = fmt.Errorf("int exceeded")
 )
 
 // GetWholeNumberParam checks if the given value is int32, int64, or float64 containing a whole number,
 // such as used in the limit, $size, etc.
 func GetWholeNumberParam(value any) (int64, error) {
 	switch value := value.(type) {
+	// TODO: add string support https://github.com/FerretDB/FerretDB/issues/1089
 	case float64:
 		// TODO check float negative zero (math.Copysign(0, -1))
 		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) {
@@ -242,8 +245,26 @@ func addNumbers(v1, v2 any) (any, error) {
 		case float64:
 			return v2 + float64(v1), nil
 		case int32:
+			if v2 == math.MaxInt32 && v1 > 0 {
+				return int64(v1) + int64(v2), nil
+			}
+
+			if v2 == math.MinInt32 && v1 < 0 {
+				return int64(v1) + int64(v2), nil
+			}
+
 			return v1 + v2, nil
 		case int64:
+			if v2 > 0 {
+				if int64(v1) > math.MaxInt64-v2 {
+					return nil, errLongExceeded
+				}
+			} else {
+				if int64(v1) < math.MinInt64-v2 {
+					return nil, errLongExceeded
+				}
+			}
+
 			return v2 + int64(v1), nil
 		default:
 			return nil, errUnexpectedRightOpType
@@ -253,8 +274,28 @@ func addNumbers(v1, v2 any) (any, error) {
 		case float64:
 			return v2 + float64(v1), nil
 		case int32:
+			if v2 > 0 {
+				if v1 > math.MaxInt64-int64(v2) {
+					return nil, errIntExceeded
+				}
+			} else {
+				if v1 < math.MinInt64-int64(v2) {
+					return nil, errIntExceeded
+				}
+			}
+
 			return v1 + int64(v2), nil
 		case int64:
+			if v2 > 0 {
+				if v1 > math.MaxInt64-v2 {
+					return nil, errLongExceeded
+				}
+			} else {
+				if v1 < math.MinInt64-v2 {
+					return nil, errLongExceeded
+				}
+			}
+
 			return v1 + v2, nil
 		default:
 			return nil, errUnexpectedRightOpType

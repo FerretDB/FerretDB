@@ -89,6 +89,9 @@ const (
 	// while projection document already marked as inclusion.
 	ErrProjectionExIn = ErrorCode(31254) // Location31254
 
+	// ErrMissingField indicates that the required field in document is missing.
+	ErrMissingField = ErrorCode(40414) // Location40414
+
 	// ErrFreeMonitoringDisabled indicates that free monitoring is disabled
 	// by command-line or config file.
 	ErrFreeMonitoringDisabled = ErrorCode(50840) // Location50840
@@ -233,12 +236,18 @@ func (we *WriteErrors) Unwrap() error {
 func (we *WriteErrors) Document() *types.Document {
 	errs := must.NotFail(types.NewArray())
 	for _, e := range *we {
+		doc := must.NotFail(types.NewDocument())
+
+		if e.index != nil {
+			must.NoError(doc.Set("index", *e.index))
+		}
+
 		// Fields "code" and "errmsg" must always be filled in so that clients can parse the error message.
 		// Otherwise, the mongo client would parse it as a CommandError.
-		must.NoError(errs.Append(must.NotFail(types.NewDocument(
-			"code", int32(e.code),
-			"errmsg", e.err,
-		))))
+		must.NoError(doc.Set("code", int32(e.code)))
+		must.NoError(doc.Set("errmsg", e.err))
+
+		must.NoError(errs.Append(doc))
 	}
 
 	// "writeErrors" field must be present in the result document so that clients can parse it as WriteErrors.
@@ -249,11 +258,42 @@ func (we *WriteErrors) Document() *types.Document {
 	return d
 }
 
+// Append converts the err to the writeError type and
+// appends it to WriteErrors. The index value is an
+// index of the query with error.
+func (we *WriteErrors) Append(err error, index int32) {
+	var writeErr *writeError
+	var cmdErr *CommandError
+
+	switch {
+	case errors.As(err, &writeErr):
+		writeErr.index = &index
+		*we = append(*we, *writeErr)
+
+		return
+
+	case errors.As(err, &cmdErr):
+		*we = append(*we, writeError{err: cmdErr.Unwrap().Error(), code: cmdErr.code, index: &index})
+
+		return
+	}
+
+	*we = append(*we, writeError{err: err.Error(), code: errInternalError, index: &index})
+}
+
 // writeError represents protocol write error.
 // It required to build the correct write error result.
+// The index field is optional and won't be used if it's nil.
 type writeError struct {
-	code ErrorCode
-	err  string
+	code  ErrorCode
+	err   string
+	index *int32
+}
+
+// Error returns the string that contains
+// an error message.
+func (we *writeError) Error() string {
+	return we.err
 }
 
 // formatBitwiseOperatorErr formats protocol error for given internal error and bitwise operator.
