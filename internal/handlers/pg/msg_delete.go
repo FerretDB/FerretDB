@@ -112,7 +112,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		resDocs := make([]*types.Document, 0, 16)
-		err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		return h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 			// fetch current items from collection
 			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp)
 			if err != nil {
@@ -163,8 +163,6 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 			return nil
 		})
-
-		return err
 	}
 
 	delErrors := new(common.WriteErrors)
