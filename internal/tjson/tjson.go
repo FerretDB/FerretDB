@@ -268,8 +268,10 @@ func Validate(doc *types.Document, schema *Schema) error {
 		return err
 	}
 
+	docSchema.Title = schema.Title
+
 	if !schema.Equal(docSchema) {
-		return lazyerrors.Errorf("tjson.Validate: schema %v does not match document %v", schema, doc)
+		return lazyerrors.Errorf("tjson.Validate: schema %v does not match document %v", schema, docSchema)
 	}
 
 	return nil
