@@ -218,7 +218,7 @@ func (h *Handler) update(ctx context.Context, fp tigrisdb.FetchParam, doc, updat
 
 	if validationRequired {
 		if err = tjson.Validate(doc, schema); err != nil {
-			return 0, lazyerrors.Error(err)
+			return 0, common.NewErrorMsg(common.ErrDocumentValidationFailure, err.Error())
 		}
 	}
 

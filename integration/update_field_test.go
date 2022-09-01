@@ -1406,3 +1406,42 @@ func TestUpdateFieldPopArrayOperator(t *testing.T) {
 		}
 	})
 }
+
+func TestTigrisUpdatedFieldsValidation(t *testing.T) {
+	setup.SkipForMongoWithReason(t, "Mongo doesn't have schema validation")
+	setup.SkipForPostgresWithReason(t, "Mongo doesn't have schema validation")
+
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		filter bson.D
+		update bson.D
+		err    *mongo.CommandError
+	}{
+		"Set": {
+			filter: bson.D{{"_id", "int32"}},
+			update: bson.D{
+				{"$set", bson.D{{"foo", int32(12)}}},
+			},
+			err: &mongo.CommandError{
+				Code:    121,
+				Name:    "DocumentValidationFailure",
+				Message: "tjson.Validate: schema does not match document schema",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup.Setup(t, shareddata.Int32s)
+
+			opts := options.Update().SetUpsert(true)
+			_, err := collection.UpdateOne(ctx, tc.filter, tc.update, opts)
+
+			if tc.err != nil {
+				AssertEqualError(t, *tc.err, err)
+				return
+			}
+		})
+	}
+}

@@ -43,6 +43,7 @@ package tjson
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -271,7 +272,7 @@ func Validate(doc *types.Document, schema *Schema) error {
 	docSchema.Title = schema.Title
 
 	if !schema.Equal(docSchema) {
-		return lazyerrors.Errorf("tjson.Validate: schema %v does not match document schema %v", schema, docSchema)
+		return errors.New("tjson.Validate: schema does not match document schema")
 	}
 
 	return nil
