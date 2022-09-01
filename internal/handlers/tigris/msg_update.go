@@ -210,6 +210,7 @@ func (h *Handler) update(ctx context.Context, fp tigrisdb.FetchParam, doc, updat
 	}
 
 	var validationRequired bool
+
 	for _, k := range update.Keys() {
 		if slices.Contains([]string{"$currentDate", "$inc", "$set", "$setOnInsert"}, k) {
 			validationRequired = true
