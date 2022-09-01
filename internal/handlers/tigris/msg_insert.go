@@ -92,13 +92,18 @@ func (h *Handler) insert(ctx context.Context, fp tigrisdb.FetchParam, doc *types
 	var schema *tjson.Schema
 
 	collection, err := h.db.Driver.UseDatabase(fp.DB).DescribeCollection(ctx, fp.Collection)
-	if err == nil {
-		if err = schema.Unmarshal(collection.Schema); err != nil {
+	if collection != nil {
+		if err != nil {
+			return err
+		}
+
+		schema = new(tjson.Schema)
+
+		if err := schema.Unmarshal(collection.Schema); err != nil {
 			return lazyerrors.Error(err)
 		}
 
-		err = tjson.Validate(doc, schema)
-		if err != nil {
+		if err := tjson.Validate(doc, schema); err != nil {
 			return err
 		}
 	}
