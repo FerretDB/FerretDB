@@ -37,11 +37,9 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.L, "comment") // TODO https://github.com/FerretDB/FerretDB/issues/849
 	if err := common.Unimplemented(document, "let"); err != nil {
 		return nil, err
 	}
-	common.Ignored(document, h.L, "ordered") // TODO https://github.com/FerretDB/FerretDB/issues/848
 	common.Ignored(document, h.L, "writeConcern")
 
 	var deletes *types.Array
@@ -104,6 +102,10 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
 			)
 		}
+
+		common.Ignored(document, h.L, "comment")
+
+		common.Ignored(filter, h.L, "$comment")
 
 		resDocs := make([]*types.Document, 0, 16)
 
