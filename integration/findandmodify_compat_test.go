@@ -124,6 +124,21 @@ func TestFindAndModifyCompatErrors(t *testing.T) {
 	testFindAndModifyCompat(t, testCases)
 }
 
+func TestFindAndModifyCompatNonExistingCollection(t *testing.T) {
+	t.Parallel()
+
+	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+
+	targetRes := targetCollections[0].Database().Collection("doesnotexist").FindOneAndUpdate(
+		ctx, bson.D{}, bson.D{{"$set", bson.E{"foo", "bar"}}},
+	)
+	compatRes := compatCollections[0].Database().Collection("doesnotexist").FindOneAndUpdate(
+		ctx, bson.D{}, bson.D{{"$set", bson.E{"foo", "bar"}}},
+	)
+
+	require.Equal(t, targetRes, compatRes)
+}
+
 func TestFindAndModifyCompatUpdate(t *testing.T) {
 	testCases := map[string]findAndModifyCompatTestCase{
 		"Replace": {
@@ -269,6 +284,7 @@ func TestFindAndModifyCompatRemove(t *testing.T) {
 // findAndModifyCompatTestCase describes findAndModify compatibility test case.
 type findAndModifyCompatTestCase struct {
 	command       bson.D
+	collection    string // collection name, if empty, collection will be used based on the test name
 	skip          string // skips test if non-empty
 	skipForTigris string // skips test for Tigris if non-empty
 }
