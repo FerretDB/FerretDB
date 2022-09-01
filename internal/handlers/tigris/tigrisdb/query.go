@@ -16,6 +16,7 @@ package tigrisdb
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
@@ -23,12 +24,16 @@ import (
 	"github.com/FerretDB/FerretDB/internal/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // FetchParam represents options/parameters used by the fetch/query.
 type FetchParam struct {
 	DB         string
 	Collection string
+
+	// Query filter for possible pushdown; may be ignored in part or entirely.
+	Filter *types.Document
 }
 
 // QueryDocuments fetches documents from the given collection.
@@ -59,7 +64,10 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param FetchParam) ([]*t
 		return nil, lazyerrors.Error(err)
 	}
 
-	iter, err := db.Read(ctx, param.Collection, driver.Filter(`{}`), nil)
+	filter := tdb.queryDocumentsFilter(param.Filter)
+	tdb.L.Sugar().Debugf("Read filter: %s", filter)
+
+	iter, err := db.Read(ctx, param.Collection, filter, nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -78,4 +86,35 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param FetchParam) ([]*t
 	}
 
 	return res, iter.Err()
+}
+
+// queryDocumentsFilter returns Tigris filter expression that may cover a part of the given filter.
+//
+// FerretDB always filters data itself, so that should be a purely performance optimization.
+func (tdb *TigrisDB) queryDocumentsFilter(filter *types.Document) driver.Filter {
+	res := map[string]any{}
+
+	for k, v := range filter.Map() {
+		// filter only by _id for now
+		if k != "_id" {
+			continue
+		}
+
+		switch v.(type) {
+		case string:
+			// filtering by string values is complicated if the storage supports encodings, collations, etc,
+			// but Tigris doesn't support any of these
+		case types.ObjectID:
+			// filtering by ObjectID is always safe
+		default:
+			// skip other types for now
+			continue
+		}
+
+		// filter by the exact _id value
+		id := must.NotFail(tjson.Marshal(v))
+		res["_id"] = json.RawMessage(id)
+	}
+
+	return must.NotFail(json.Marshal(res))
 }

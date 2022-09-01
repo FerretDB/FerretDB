@@ -36,6 +36,8 @@ type deleteCompatTestCase struct {
 }
 
 func TestDeleteCompat(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]deleteCompatTestCase{
 		"Empty": {
 			filters:    []bson.D{},

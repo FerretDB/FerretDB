@@ -2,6 +2,9 @@
 ---
 version: 3
 
+vars:
+  RACEFLAG: -race={{ne OS "windows"}}
+
 tasks:
   lint-go-consistent:
     cmds:
@@ -11,4 +14,4 @@ tasks:
 
   test-unit-short:
     cmds:
-      - go test -short {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./checkswitch/...
+      - go test -short {{.RACEFLAG}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./checkswitch/...

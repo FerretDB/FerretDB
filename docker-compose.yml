@@ -26,6 +26,8 @@ services:
     container_name: ferretdb_tigris
     ports:
       - 8081:8081
+    environment:
+      - TIGRIS_SERVER_LOG_LEVEL=info
 
   # for proxy mode and mongosh
   mongodb:
