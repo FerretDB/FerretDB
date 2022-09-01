@@ -212,7 +212,7 @@ func (h *Handler) delete(ctx context.Context, fp tigrisdb.FetchParam, docs []*ty
 	ids := make([]map[string]any, len(docs))
 	for i, doc := range docs {
 		id := must.NotFail(tjson.Marshal(must.NotFail(doc.Get("_id"))))
-		ids[i] = map[string]any{"_id": map[string]json.RawMessage{"$eq": id}}
+		ids[i] = map[string]any{"_id": json.RawMessage(id)}
 	}
 
 	var f driver.Filter
