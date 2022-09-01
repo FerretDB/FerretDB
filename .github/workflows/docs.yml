@@ -1,5 +1,5 @@
 ---
-name: Packages
+name: Docs
 on:
   pull_request:
     types:
@@ -10,10 +10,8 @@ on:
   push:
     branches:
       - main
-    tags:
-      - "*"
   schedule:
-    - cron: "12 2 * * *"
+    - cron: "42 3 * * *" # after Integration workflow
 
 env:
   GOPATH: /home/runner/go
@@ -23,8 +21,8 @@ env:
   GOPROXY: https://proxy.golang.org
 
 jobs:
-  build:
-    name: Build packages
+  docs:
+    name: Build docs
     runs-on: ubuntu-20.04
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
@@ -38,28 +36,19 @@ jobs:
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
         with:
-          cache-key: packages
+          cache-key: build
 
       - name: Install Task
         run: go generate -x
         working-directory: tools
 
-      - name: Run init
-        run: bin/task init
+      - name: Build tools
+        run: bin/task env-pull
 
-      - name: Build packages
-        run: bin/task packages
+      - name: Build docs
+        run: bin/task docs
 
-      - name: Upload ferretdb.deb
-        uses: actions/upload-artifact@v3
-        with:
-          name: ferretdb.deb
-          path: build/deb/ferretdb.deb
-          if-no-files-found: error
-
-      - name: Upload ferretdb.rpm
-        uses: actions/upload-artifact@v3
-        with:
-          name: ferretdb.rpm
-          path: build/rpm/ferretdb.rpm
-          if-no-files-found: error
+      - name: Check dirty
+        run: |
+          git status
+          git diff --exit-code
