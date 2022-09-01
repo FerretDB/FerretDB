@@ -310,12 +310,12 @@ func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
 		if _, ok := maskValue.(float64); ok {
 			return NewErrorMsg(
 				ErrFailedToParse,
-				fmt.Sprintf(`Expected a positive number in: %s: %.1f`, operator, maskValue),
+				fmt.Sprintf(`Expected a non-negative number in: %s: %.1f`, operator, maskValue),
 			)
 		}
 		return NewErrorMsg(
 			ErrFailedToParse,
-			fmt.Sprintf(`Expected a positive number in: %s: %v`, operator, maskValue),
+			fmt.Sprintf(`Expected a non-negative number in: %s: %v`, operator, maskValue),
 		)
 
 	case errNotBinaryMask:
