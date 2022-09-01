@@ -178,7 +178,6 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 	testFindAndModifyCompat(t, testCases)
 }
 
-/*
 func TestFindAndModifyCompatUpsert(t *testing.T) {
 	setup.SkipForTigrisWithReason(
 		t,
@@ -192,6 +191,7 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 				{"update", bson.D{{"$set", bson.D{{"v", 43.13}}}}},
 				{"upsert", true},
 			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/1098",
 		},
 		"UpsertNew": {
 			command: bson.D{
@@ -223,6 +223,7 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 				{"update", bson.D{{"v", 43.13}}},
 				{"upsert", true},
 			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/1098",
 		},
 		"UpsertReplaceReturnNew": {
 			command: bson.D{
@@ -236,7 +237,6 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 
 	testFindAndModifyCompat(t, testCases)
 }
-*/
 
 func TestFindAndModifyCompatRemove(t *testing.T) {
 	testCases := map[string]findAndModifyCompatTestCase{
