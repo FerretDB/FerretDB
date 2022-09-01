@@ -160,11 +160,17 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 			val := must.NotFail(mask.Get(i))
 			b, ok := val.(int32)
 			if !ok {
-				return 0, NewError(ErrBadValue, fmt.Errorf(`Failed to parse bit position. Expected a number in: %d: %#v`, i, val))
+				return 0, NewError(
+					ErrBadValue,
+					fmt.Errorf(`Failed to parse bit position. Expected a number in: %d: %#v`, i, val),
+				)
 			}
 
 			if b < 0 {
-				return 0, NewError(ErrBadValue, fmt.Errorf("Failed to parse bit position. Expected a non-negative number in: %d: %d", i, b))
+				return 0, NewError(
+					ErrBadValue,
+					fmt.Errorf("Failed to parse bit position. Expected a non-negative number in: %d: %d", i, b),
+				)
 			}
 
 			bitmask |= 1 << uint64(math.Min(float64(b), 63))
