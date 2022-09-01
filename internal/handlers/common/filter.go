@@ -917,7 +917,7 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 		}
 
 		d = math.Trunc(d)
-		if d > float64(9.223372036854776832e+18) || d < float64(-9.223372036854776832e+18) {
+		if d >= float64(math.MaxInt64) || d < float64(math.MinInt64) {
 			return false, NewErrorMsg(ErrBadValue, `malformed mod, divisor value is invalid :: caused by :: `+
 				`Out of bounds coercing to integral value`)
 		}
@@ -944,7 +944,7 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 				`Unable to coerce NaN/Inf to integral type`)
 		}
 		r = math.Trunc(r)
-		if r > float64(9.223372036854776832e+18) || r < float64(-9.223372036854776832e+18) {
+		if r >= float64(math.MaxInt64) || r < float64(-9.223372036854776832e+18) {
 			return false, NewErrorMsg(ErrBadValue, `malformed mod, remainder value is invalid :: caused by :: `+
 				`Out of bounds coercing to integral value`)
 		}
