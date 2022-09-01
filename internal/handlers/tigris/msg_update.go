@@ -200,17 +200,17 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 func (h *Handler) update(ctx context.Context, fp tigrisdb.FetchParam, doc *types.Document) (int, error) {
 	collection, err := h.db.Driver.UseDatabase(fp.DB).DescribeCollection(ctx, fp.Collection)
 	if err != nil {
-		return 0, err
+		return 0, lazyerrors.Error(err)
 	}
 
-	var schema *tjson.Schema
+	schema := new(tjson.Schema)
 	if err = schema.Unmarshal(collection.Schema); err != nil {
 		return 0, lazyerrors.Error(err)
 	}
 
 	err = tjson.Validate(doc, schema)
 	if err != nil {
-		return 0, err
+		return 0, lazyerrors.Error(err)
 	}
 
 	u, err := tjson.Marshal(doc)
