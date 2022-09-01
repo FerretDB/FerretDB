@@ -8,6 +8,8 @@ vars:
   BENCHTIME: 5s
   FUZZTIME: 15s
   FUZZCORPUS: ../fuzz-corpus
+  RACEFLAG: -race={{ne OS "windows"}}
+  BUILDTAGS: ferretdb_tigris
 
 tasks:
   # invoked when `task` is run without arguments
@@ -61,7 +63,7 @@ tasks:
   env-setup:
     deps: [gen-version]
     cmds:
-      - go run {{if ne OS "windows"}}-race{{end}} ./cmd/envtool/main.go
+      - go run {{.RACEFLAG}} ./cmd/envtool/main.go
 
   env-up-detach:
     cmds:
@@ -110,14 +112,14 @@ tasks:
   test-unit-short:
     desc: "Run short unit tests (with caching)"
     cmds:
-      - go test -short {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
+      - go test -short {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
       - bin/task{{exeExt}} -d tools test-unit-short
 
   test-unit:
     desc: "Run all unit tests"
     cmds:
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
-      - go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -bench=. -benchtime=1x ./...
+      - go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
+      - go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -bench=. -benchtime=1x ./...
       - bin/task{{exeExt}} -d tools test-unit-short
 
   test-integration:
@@ -132,27 +134,24 @@ tasks:
     dir: integration
     cmds:
       - >
-        go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-pg.txt
-        . -handler=pg
+        go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        -coverprofile=integration-pg.txt . -handler=pg
 
   test-integration-tigris:
     desc: "Run integration tests for Tigris handler"
     dir: integration
     cmds:
       - >
-        go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-tigris.txt -tags=ferretdb_tigris
-        . -handler=tigris
+        go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        -coverprofile=integration-tigris.txt . -handler=tigris
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
     dir: integration
     cmds:
       - >
-        go test -count=1 {{if ne OS "windows"}}-race{{end}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-mongodb.txt
-        . -target-port=37017 -compat-port=0
+        go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        -coverprofile=integration-mongodb.txt . -target-port=37017 -compat-port=0
 
   bench-short:
     desc: "Benchmark for about 20 seconds (with default BENCHTIME)"
@@ -191,16 +190,16 @@ tasks:
   fuzz-corpus:
     desc: "Sync seed and generated fuzz corpora with FUZZCORPUS"
     cmds:
-      - go run {{if ne OS "windows"}}-race{{end}} ./cmd/fuzztool/fuzztool.go -dst={{.FUZZCORPUS}} -src=generated
-      - go run {{if ne OS "windows"}}-race{{end}} ./cmd/fuzztool/fuzztool.go -dst={{.FUZZCORPUS}} -src=seed
-      - go run {{if ne OS "windows"}}-race{{end}} ./cmd/fuzztool/fuzztool.go -src={{.FUZZCORPUS}} -dst=generated
+      - go run {{.RACEFLAG}} ./cmd/fuzztool/fuzztool.go -dst={{.FUZZCORPUS}} -src=generated
+      - go run {{.RACEFLAG}} ./cmd/fuzztool/fuzztool.go -dst={{.FUZZCORPUS}} -src=seed
+      - go run {{.RACEFLAG}} ./cmd/fuzztool/fuzztool.go -src={{.FUZZCORPUS}} -dst=generated
 
   build-testcover:
     desc: "Build bin/ferretdb-testcover"
     run: once
     deps: [gen-version]
     cmds:
-      - go test -c -o=bin/ferretdb-testcover{{exeExt}} -trimpath -tags=ferretdb_testcover,ferretdb_tigris {{if ne OS "windows"}}-race{{end}} -coverpkg=./... ./cmd/ferretdb
+      - go test -c -o=bin/ferretdb-testcover{{exeExt}} -trimpath {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
 
   run:
     desc: "Run FerretDB"

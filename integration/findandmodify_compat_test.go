@@ -353,13 +353,4 @@ func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCom
 			}
 		})
 	}
-	/*
-		switch tc.resultType {
-		case nonEmptyResult:
-			assert.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
-		case emptyResult:
-			assert.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
-		default:
-			t.Fatalf("unknown result type %v", tc.resultType)
-		}*/
 }

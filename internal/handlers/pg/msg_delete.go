@@ -68,11 +68,21 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return err
 		}
 
-		var limit int64 // TODO https://github.com/FerretDB/FerretDB/issues/982
-		if l, _ := d.Get("limit"); l != nil {
-			if limit, err = common.GetWholeNumberParam(l); err != nil {
-				return err
-			}
+		var limit int64
+
+		l, err := d.Get("limit")
+		if err != nil {
+			return common.NewErrorMsg(
+				common.ErrMissingField,
+				"BSON field 'delete.deletes.limit' is missing but a required field",
+			)
+		}
+
+		if limit, err = common.GetWholeNumberParam(l); err != nil || limit < 0 || limit > 1 {
+			return common.NewErrorMsg(
+				common.ErrFailedToParse,
+				fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", l),
+			)
 		}
 
 		sp := new(pgdb.SQLParam)
@@ -165,17 +175,28 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	for i := 0; i < deletes.Len(); i++ {
 		err := processQuery(i)
 		if err != nil {
-			delErrors.Append(err, int32(i))
+			switch err.(type) {
+			// command errors should be return immediately
+			case *common.CommandError:
+				return nil, err
 
-			// Delete statements in the `deletes` field are not transactional.
-			// It means that we run each delete statement separately.
-			// If `ordered` is set as `true`, we don't execute the remaining statements
-			// after the first failure.
-			// If `ordered` is set as `false`,  we execute all the statements and return
-			// the list of errors corresponding to the failed statements.
-			if ordered {
-				break
+			// write errors and others require to be handled in array
+			default:
+				delErrors.Append(err, int32(i))
+
+				// Delete statements in the `deletes` field are not transactional.
+				// It means that we run each delete statement separately.
+				// If `ordered` is set as `true`, we don't execute the remaining statements
+				// after the first failure.
+				// If `ordered` is set as `false`,  we execute all the statements and return
+				// the list of errors corresponding to the failed statements.
+				if !ordered {
+					continue
+				}
 			}
+
+			// send response if ordered is true
+			break
 		}
 	}
 

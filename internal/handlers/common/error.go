@@ -89,6 +89,9 @@ const (
 	// while projection document already marked as inclusion.
 	ErrProjectionExIn = ErrorCode(31254) // Location31254
 
+	// ErrMissingField indicates that the required field in document is missing.
+	ErrMissingField = ErrorCode(40414) // Location40414
+
 	// ErrFreeMonitoringDisabled indicates that free monitoring is disabled
 	// by command-line or config file.
 	ErrFreeMonitoringDisabled = ErrorCode(50840) // Location50840
