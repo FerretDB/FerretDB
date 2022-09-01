@@ -252,7 +252,13 @@ func FormatAnyValue(v any) string {
 		case math.Trunc(v) == v:
 			return fmt.Sprintf("%d.0", int64(v))
 		default:
-			return fmt.Sprintf("%.1f", v)
+			res := fmt.Sprintf("%.2f", v)
+
+			if strings.HasSuffix(res, "0") {
+				return res[:len(res)-1]
+			}
+
+			return res
 		}
 
 	case string:
