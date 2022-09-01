@@ -80,7 +80,6 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 				Name:    "Location40414",
 				Message: `BSON field 'getLog.getLog' is missing but a required field`,
 			},
-			alt: "Argument to getLog must be of type String",
 		},
 		"NaN": {
 			command: bson.D{{"getLog", math.NaN()}},
@@ -89,7 +88,14 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: `BSON field 'getLog.getLog' is the wrong type 'double', expected type 'string'`,
 			},
-			alt: "Argument to getLog must be of type String",
+		},
+		"Array": {
+			command: bson.D{{"getLog", bson.A{}}},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: `BSON field 'getLog.getLog' is the wrong type 'array', expected type 'string'`,
+			},
 		},
 	} {
 		name, tc := name, tc
