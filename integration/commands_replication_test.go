@@ -50,11 +50,11 @@ func TestCommandsReplicationIsMaster(t *testing.T) {
 			delete(m, "localTime")
 
 			maxWireVersion := m["maxWireVersion"].(int32)
-			assert.True(t, maxWireVersion == 0 || maxWireVersion == 13)
+			assert.True(t, maxWireVersion == 0 || maxWireVersion == 17)
 			delete(m, "maxWireVersion")
 
 			minWireVersion := m["minWireVersion"].(int32)
-			assert.True(t, minWireVersion == 0 || minWireVersion == 13)
+			assert.True(t, minWireVersion == 0 || minWireVersion == 17)
 			delete(m, "minWireVersion")
 
 			expected := bson.M{
@@ -90,11 +90,11 @@ func TestCommandsReplicationHello(t *testing.T) {
 	delete(m, "localTime")
 
 	maxWireVersion := m["maxWireVersion"].(int32)
-	assert.True(t, maxWireVersion == 0 || maxWireVersion == 13)
+	assert.True(t, maxWireVersion == 0 || maxWireVersion == 17)
 	delete(m, "maxWireVersion")
 
 	minWireVersion := m["minWireVersion"].(int32)
-	assert.True(t, minWireVersion == 0 || minWireVersion == 13)
+	assert.True(t, minWireVersion == 0 || minWireVersion == 17)
 	delete(m, "minWireVersion")
 
 	expected := bson.M{

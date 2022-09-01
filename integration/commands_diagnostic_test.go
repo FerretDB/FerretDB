@@ -67,17 +67,18 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 		"NonExistentName": {
 			command: bson.D{{"getLog", "nonExistentName"}},
 			err: &mongo.CommandError{
-				Code:    0,
-				Message: `no RamLog named: nonExistentName`,
+				Code:    96,
+				Name:    "OperationFailed",
+				Message: `No log named 'nonExistentName'`,
 			},
 			alt: `no RecentEntries named: nonExistentName`,
 		},
 		"Nil": {
 			command: bson.D{{"getLog", nil}},
 			err: &mongo.CommandError{
-				Code:    14,
-				Name:    "TypeMismatch",
-				Message: `Argument to getLog must be of type String; found null of type null`,
+				Code:    40414,
+				Name:    "Location40414",
+				Message: `BSON field 'getLog.getLog' is missing but a required field`,
 			},
 			alt: "Argument to getLog must be of type String",
 		},
@@ -86,7 +87,7 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
-				Message: `Argument to getLog must be of type String; found nan.0 of type double`,
+				Message: `BSON field 'getLog.getLog' is the wrong type 'double', expected type 'string'`,
 			},
 			alt: "Argument to getLog must be of type String",
 		},

@@ -119,16 +119,28 @@ func TestQueryEvaluationMod(t *testing.T) {
 			expectedIDs: []any{},
 		},
 		"MaxInt64_floatDivisor": {
-			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{float64(math.MaxInt64), 0}}}}},
-			expectedIDs: []any{"MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge", "NegativeZero", "SmallestNonzeroFloat64", "Zero"},
+			filter: bson.D{{"v", bson.D{{"$mod", bson.A{float64(math.MaxInt64), 0}}}}},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `malformed mod, divisor value is invalid :: caused by :: Out of bounds coercing to integral value`,
+			},
 		},
 		"MaxInt64_floatRemainder": {
-			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{1, float64(math.MaxInt64)}}}}},
-			expectedIDs: []any{},
+			filter: bson.D{{"v", bson.D{{"$mod", bson.A{1, float64(math.MaxInt64)}}}}},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `malformed mod, remainder value is invalid :: caused by :: Out of bounds coercing to integral value`,
+			},
 		},
 		"MaxInt64_plus": {
-			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{9.223372036854775808e+18, 0}}}}},
-			expectedIDs: []any{"MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge", "NegativeZero", "SmallestNonzeroFloat64", "Zero"},
+			filter: bson.D{{"v", bson.D{{"$mod", bson.A{9.223372036854775808e+18, 0}}}}},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `malformed mod, divisor value is invalid :: caused by :: Out of bounds coercing to integral value`,
+			},
 		},
 		"MaxInt64_1": {
 			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{922337203685477580, 7}}}}},
@@ -147,8 +159,12 @@ func TestQueryEvaluationMod(t *testing.T) {
 			expectedIDs: []any{},
 		},
 		"MaxInt64_overflowVerge": {
-			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{9.223372036854776832e+18, 0}}}}},
-			expectedIDs: []any{"MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge", "NegativeZero", "SmallestNonzeroFloat64", "Zero"},
+			filter: bson.D{{"v", bson.D{{"$mod", bson.A{9.223372036854776832e+18, 0}}}}},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "malformed mod, divisor value is invalid :: caused by :: Out of bounds coercing to integral value",
+			},
 		},
 		"MaxInt64_overflowDivisor": {
 			filter: bson.D{{"v", bson.D{{"$mod", bson.A{9.223372036854776833e+18, 0}}}}},
@@ -278,7 +294,7 @@ func TestQueryEvaluationMod(t *testing.T) {
 				Message: `divisor cannot be 0`,
 			},
 		},
-		"ZeroNegativeDevisor": {
+		"ZeroNegativeDivisor": {
 			filter: bson.D{{"v", bson.D{{"$mod", bson.A{math.Copysign(0, -1), 1}}}}},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -430,6 +446,7 @@ func TestQueryEvaluationRegex(t *testing.T) {
 	for name, tc := range map[string]struct {
 		filter      any
 		expectedIDs []any
+		err         *mongo.CommandError
 	}{
 		"Regex": {
 			filter:      bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "foo"}}}}},
@@ -464,8 +481,12 @@ func TestQueryEvaluationRegex(t *testing.T) {
 			expectedIDs: []any{},
 		},
 		"RegexBadOption": {
-			filter:      bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "foo", Options: "123"}}}}},
-			expectedIDs: []any{"multiline-string", "string"},
+			filter: bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "foo", Options: "123"}}}}},
+			err: &mongo.CommandError{
+				Code:    51108,
+				Name:    "Location51108",
+				Message: ` invalid flag in regex options: 1`,
+			},
 		},
 	} {
 		name, tc := name, tc
@@ -473,6 +494,11 @@ func TestQueryEvaluationRegex(t *testing.T) {
 			t.Parallel()
 
 			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			if tc.err != nil {
+				require.Nil(t, tc.expectedIDs)
+				AssertEqualError(t, *tc.err, err)
+				return
+			}
 			require.NoError(t, err)
 
 			var actual []bson.D
