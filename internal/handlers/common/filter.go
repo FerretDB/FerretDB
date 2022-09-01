@@ -641,12 +641,18 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 		case errNaN:
 			return false, NewError(
 				ErrBadValue,
-				fmt.Errorf(`Failed to parse $size. Expected an integer, but found NaN in: $size: %s`, types.FormatAnyValue(sizeValue)),
+				fmt.Errorf(
+					`Failed to parse $size. Expected an integer, but found NaN in: $size: %s`,
+					types.FormatAnyValue(sizeValue),
+				),
 			)
 		case errInfinity:
 			return false, NewError(
 				ErrBadValue,
-				fmt.Errorf(`Failed to parse $size. Cannot represent as a 64-bit integer: $size: %s`, types.FormatAnyValue(sizeValue)),
+				fmt.Errorf(
+					`Failed to parse $size. Cannot represent as a 64-bit integer: $size: %s`,
+					types.FormatAnyValue(sizeValue),
+				),
 			)
 		default:
 			return false, err
@@ -656,7 +662,10 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 	if size < 0 {
 		return false, NewError(
 			ErrBadValue,
-			fmt.Errorf(`Failed to parse $size. Expected a non-negative number in: $size: %s`, types.FormatAnyValue(sizeValue)),
+			fmt.Errorf(
+				`Failed to parse $size. Expected a non-negative number in: $size: %s`,
+				types.FormatAnyValue(sizeValue),
+			),
 		)
 	}
 
