@@ -37,7 +37,8 @@ func TestUpdateCompat(t *testing.T) {
 		},
 
 		"ReplaceSimple": {
-			replace: bson.D{{"v", "foo"}},
+			replace:       bson.D{{"v", "foo"}},
+			skipForTigris: "schema validation would fail",
 		},
 		"ReplaceEmpty": {
 			replace:       bson.D{{"v", ""}},

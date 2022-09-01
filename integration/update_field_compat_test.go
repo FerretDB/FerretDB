@@ -26,16 +26,20 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 
 	testCases := map[string]updateCompatTestCase{
 		"Int32": {
-			update: bson.D{{"$inc", bson.D{{"v", int32(42)}}}},
+			update:        bson.D{{"$inc", bson.D{{"v", int32(42)}}}},
+			skipForTigris: "schema validation would fail",
 		},
 		"Int32Negative": {
-			update: bson.D{{"$inc", bson.D{{"v", int32(-42)}}}},
+			update:        bson.D{{"$inc", bson.D{{"v", int32(-42)}}}},
+			skipForTigris: "schema validation would fail",
 		},
 		"Int64Max": {
-			update: bson.D{{"$inc", bson.D{{"v", math.MaxInt64}}}},
+			update:        bson.D{{"$inc", bson.D{{"v", math.MaxInt64}}}},
+			skipForTigris: "schema validation would fail",
 		},
 		"Int64Min": {
-			update: bson.D{{"$inc", bson.D{{"v", math.MinInt64}}}},
+			update:        bson.D{{"$inc", bson.D{{"v", math.MinInt64}}}},
+			skipForTigris: "schema validation would fail",
 		},
 		"EmptyUpdatePath": {
 			update: bson.D{{"$inc", bson.D{{}}}},
