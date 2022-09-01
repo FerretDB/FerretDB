@@ -124,6 +124,7 @@ var (
 // such as used in the limit, $size, etc.
 func GetWholeNumberParam(value any) (int64, error) {
 	switch value := value.(type) {
+	// TODO: add string support https://github.com/FerretDB/FerretDB/issues/1089
 	case float64:
 		// TODO check float negative zero (math.Copysign(0, -1))
 		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) {
