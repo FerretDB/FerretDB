@@ -92,9 +92,7 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param FetchParam) ([]*t
 //
 // FerretDB always filters data itself, so that should be a purely performance optimization.
 func (tdb *TigrisDB) queryDocumentsFilter(filter *types.Document) driver.Filter {
-	if filter.Len() == 0 {
-		return driver.Filter(`{}`)
-	}
+	res := map[string]any{}
 
 	for k, v := range filter.Map() {
 		// filter only by _id for now
@@ -115,10 +113,8 @@ func (tdb *TigrisDB) queryDocumentsFilter(filter *types.Document) driver.Filter 
 
 		// filter by the exact _id value
 		id := must.NotFail(tjson.Marshal(v))
-		f := map[string]any{"_id": json.RawMessage(id)}
-
-		return must.NotFail(json.Marshal(f))
+		res["_id"] = json.RawMessage(id)
 	}
 
-	return driver.Filter(`{}`)
+	return must.NotFail(json.Marshal(res))
 }
