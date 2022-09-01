@@ -129,13 +129,17 @@ func TestFindAndModifyCompatNonExistingCollection(t *testing.T) {
 
 	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
-	targetRes := targetCollections[0].Database().Collection("doesnotexist").FindOneAndUpdate(
-		ctx, bson.D{}, bson.D{{"$set", bson.E{"foo", "bar"}}},
-	)
-	compatRes := compatCollections[0].Database().Collection("doesnotexist").FindOneAndUpdate(
-		ctx, bson.D{}, bson.D{{"$set", bson.E{"foo", "bar"}}},
-	)
+	var targetRes, compatRes bson.D
+	var targetErr, compatErr error
 
+	targetErr = targetCollections[0].Database().Collection("doesnotexist").FindOneAndUpdate(
+		ctx, bson.D{}, bson.D{{"$set", bson.E{"foo", "bar"}}},
+	).Decode(&targetRes)
+	compatErr = compatCollections[0].Database().Collection("doesnotexist").FindOneAndUpdate(
+		ctx, bson.D{}, bson.D{{"$set", bson.E{"foo", "bar"}}},
+	).Decode(&compatRes)
+
+	require.Equal(t, targetErr, compatErr)
 	require.Equal(t, targetRes, compatRes)
 }
 
