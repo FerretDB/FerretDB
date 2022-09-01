@@ -118,6 +118,8 @@ var (
 	errUnexpectedRightOpType = fmt.Errorf("unexpected right operand type")
 	errLongExceeded          = fmt.Errorf("long exceeded")
 	errIntExceeded           = fmt.Errorf("int exceeded")
+	errNaN                   = fmt.Errorf("not a number")
+	errInfinity              = fmt.Errorf("infinity")
 )
 
 // GetWholeNumberParam checks if the given value is int32, int64, or float64 containing a whole number,
@@ -127,7 +129,13 @@ func GetWholeNumberParam(value any) (int64, error) {
 	// TODO: add string support https://github.com/FerretDB/FerretDB/issues/1089
 	case float64:
 		// TODO check float negative zero (math.Copysign(0, -1))
-		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) {
+		if math.IsNaN(value) {
+			return 0, errNaN
+		}
+		if math.IsInf(value, 1) {
+			return 0, errInfinity
+		}
+		if value != math.Trunc(value) {
 			return 0, errNotWholeNumber
 		}
 		return int64(value), nil

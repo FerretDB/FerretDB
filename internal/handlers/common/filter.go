@@ -629,16 +629,35 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 	if err != nil {
 		switch err {
 		case errUnexpectedType:
-			return false, NewErrorMsg(ErrBadValue, "$size needs a number")
+			return false, NewError(
+				ErrBadValue,
+				fmt.Errorf(`Failed to parse $size. Expected a number in: $size: %s`, types.FormatAnyValue(sizeValue)),
+			)
 		case errNotWholeNumber:
-			return false, NewErrorMsg(ErrBadValue, "$size must be a whole number")
+			return false, NewError(
+				ErrBadValue,
+				fmt.Errorf(`Failed to parse $size. Expected an integer: $size: %s`, types.FormatAnyValue(sizeValue)),
+			)
+		case errNaN:
+			return false, NewError(
+				ErrBadValue,
+				fmt.Errorf(`Failed to parse $size. Expected an integer, but found NaN in: $size: %s`, types.FormatAnyValue(sizeValue)),
+			)
+		case errInfinity:
+			return false, NewError(
+				ErrBadValue,
+				fmt.Errorf(`Failed to parse $size. Cannot represent as a 64-bit integer: $size: %s`, types.FormatAnyValue(sizeValue)),
+			)
 		default:
 			return false, err
 		}
 	}
 
 	if size < 0 {
-		return false, NewErrorMsg(ErrBadValue, "$size may not be negative")
+		return false, NewError(
+			ErrBadValue,
+			fmt.Errorf(`Failed to parse $size. Expected a non-negative number in: $size: %s`, types.FormatAnyValue(sizeValue)),
+		)
 	}
 
 	if arr.Len() != int(size) {
