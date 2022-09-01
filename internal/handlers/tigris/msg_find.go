@@ -90,7 +90,9 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		}
 	}
 
-	var fp tigrisdb.FetchParam
+	fp := tigrisdb.FetchParam{
+		Filter: filter,
+	}
 
 	if fp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
