@@ -90,7 +90,6 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		var fp tigrisdb.FetchParam
-
 		if fp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 			return err
 		}
@@ -98,7 +97,6 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		if err != nil {
 			return err
 		}
-
 		var ok bool
 		if fp.Collection, ok = collectionParam.(string); !ok {
 			return common.NewErrorMsg(
@@ -107,15 +105,14 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			)
 		}
 
-		// fetch current items from collection
-		fetchedDocs, err := h.db.QueryDocuments(ctx, fp)
-		if err != nil {
-			return err
-		}
-
 		resDocs := make([]*types.Document, 0, 16)
-
 		return respondWithStack(func() error {
+			// fetch current items from collection
+			fetchedDocs, err := h.db.QueryDocuments(ctx, fp)
+			if err != nil {
+				return err
+			}
+
 			// iterate through every row and delete matching ones
 			for _, doc := range fetchedDocs {
 				// fetch current items from collection
@@ -140,7 +137,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				return nil
 			}
 
-			res, err := h.delete(ctx, fp, resDocs)
+			res, err := h.delete(ctx, &fp, resDocs)
 			if err != nil {
 				return err
 			}
@@ -151,8 +148,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		})
 	}
 
-	delErrors := new(common.WriteErrors)
-	var reply wire.OpMsg
+	var delErrors common.WriteErrors
 
 	// process every delete filter
 	for i := 0; i < deletes.Len(); i++ {
@@ -184,19 +180,17 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		break
 	}
 
-	var replyDoc *types.Document
+	replyDoc := must.NotFail(types.NewDocument(
+		"ok", float64(1),
+	))
 
-	// if there are delete errors append writeErrors field
-	if len(*delErrors) > 0 {
+	if len(delErrors) > 0 {
 		replyDoc = delErrors.Document()
-	} else {
-		replyDoc = must.NotFail(types.NewDocument(
-			"ok", float64(1),
-		))
 	}
 
 	must.NoError(replyDoc.Set("n", deleted))
 
+	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{replyDoc},
 	})
@@ -208,7 +202,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // delete deletes documents by _id.
-func (h *Handler) delete(ctx context.Context, fp tigrisdb.FetchParam, docs []*types.Document) (int, error) {
+func (h *Handler) delete(ctx context.Context, fp *tigrisdb.FetchParam, docs []*types.Document) (int, error) {
 	ids := make([]map[string]any, len(docs))
 	for i, doc := range docs {
 		id := must.NotFail(tjson.Marshal(must.NotFail(doc.Get("_id"))))

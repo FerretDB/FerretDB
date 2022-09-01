@@ -165,9 +165,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		})
 	}
 
-	delErrors := new(common.WriteErrors)
-
-	var reply wire.OpMsg
+	var delErrors common.WriteErrors
 
 	// process every delete filter
 	for i := 0; i < deletes.Len(); i++ {
@@ -199,19 +197,17 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		break
 	}
 
-	var replyDoc *types.Document
+	replyDoc := must.NotFail(types.NewDocument(
+		"ok", float64(1),
+	))
 
-	// if there are delete errors append writeErrors field
-	if len(*delErrors) > 0 {
+	if len(delErrors) > 0 {
 		replyDoc = delErrors.Document()
-	} else {
-		replyDoc = must.NotFail(types.NewDocument(
-			"ok", float64(1),
-		))
 	}
 
 	must.NoError(replyDoc.Set("n", deleted))
 
+	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{replyDoc},
 	})
