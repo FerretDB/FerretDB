@@ -152,7 +152,7 @@ func main() {
 
 	prometheus.DefaultRegisterer.MustRegister(l)
 
-	err = l.Run(ctx)
+	err = l.Run(ctx, *testRecordF)
 	if err == nil || err == context.Canceled {
 		logger.Info("Listener stopped")
 	} else {

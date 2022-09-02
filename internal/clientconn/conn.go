@@ -110,7 +110,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 // or fatal error or panic is encountered.
 //
 // The caller is responsible for closing the underlying net.Conn.
-func (c *conn) run(ctx context.Context) (err error) {
+func (c *conn) run(ctx context.Context, logFile string) (err error) {
 	done := make(chan struct{})
 
 	// handle ctx cancellation
@@ -141,15 +141,19 @@ func (c *conn) run(ctx context.Context) (err error) {
 		close(done)
 	}()
 
-	f, err := os.OpenFile("file.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	//fileWriter := bufio.NewWriter(f)
-	r := io.TeeReader(c.netConn, f)
-	bufr := bufio.NewReader(r)
+	var bufr *bufio.Reader
+	if logFile != "" {
+		f, err := os.OpenFile("file.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return err
+		}
 
-	//bufr := bufio.NewReader(c.netConn)
+		r := io.TeeReader(c.netConn, f)
+		bufr = bufio.NewReader(r)
+	} else {
+		bufr = bufio.NewReader(c.netConn)
+	}
+
 	bufw := bufio.NewWriter(c.netConn)
 
 	defer func() {
