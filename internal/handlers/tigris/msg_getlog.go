@@ -45,8 +45,21 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
+	if _, ok := getLog.(types.NullType); ok {
+		return nil, common.NewErrorMsg(
+			common.ErrMissingField,
+			`BSON field 'getLog.getLog' is missing but a required field`,
+		)
+	}
+
 	if _, ok := getLog.(string); !ok {
-		return nil, common.NewErrorMsg(common.ErrTypeMismatch, "Argument to getLog must be of type String")
+		return nil, common.NewError(
+			common.ErrTypeMismatch,
+			fmt.Errorf(
+				"BSON field 'getLog.getLog' is the wrong type '%s', expected type 'string'",
+				common.AliasFromType(getLog),
+			),
+		)
 	}
 
 	var resDoc *types.Document
@@ -104,8 +117,10 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	default:
-		errMsg := fmt.Sprintf("no RecentEntries named: %s", getLog)
-		return nil, common.NewErrorMsg(0, errMsg)
+		return nil, common.NewError(
+			common.ErrOperationFailed,
+			fmt.Errorf("no RecentEntries named: %s", getLog),
+		)
 	}
 
 	var reply wire.OpMsg

@@ -252,7 +252,9 @@ func FormatAnyValue(v any) string {
 		case math.Trunc(v) == v:
 			return fmt.Sprintf("%d.0", int64(v))
 		default:
-			return fmt.Sprintf("%.2f", v)
+			res := fmt.Sprintf("%.2f", v)
+
+			return strings.TrimSuffix(res, "0")
 		}
 
 	case string:
@@ -282,7 +284,7 @@ func FormatAnyValue(v any) string {
 
 // formatDocument formats Document for error output.
 func formatDocument(doc *Document) string {
-	result := "{"
+	result := "{ "
 
 	for i, key := range doc.keys {
 		if i > 0 {
@@ -292,7 +294,7 @@ func formatDocument(doc *Document) string {
 		result += fmt.Sprintf("%s: %s", key, FormatAnyValue(doc.m[key]))
 	}
 
-	return result + "}"
+	return result + " }"
 }
 
 // formatArray formats Array for error output.
