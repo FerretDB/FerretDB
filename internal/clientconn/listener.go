@@ -63,9 +63,11 @@ func NewListener(opts *NewListenerOpts) *Listener {
 }
 
 // Run runs the listener until ctx is done or some unrecoverable error occurs.
+// testRecordPath argument should be the path of input query record file,
+// when the path is empty, no records are created.
 //
 // When this method returns, listener and all connections are closed.
-func (l *Listener) Run(ctx context.Context, logFilePath string) error {
+func (l *Listener) Run(ctx context.Context, testRecordPath string) error {
 	logger := l.opts.Logger.Named("listener")
 
 	var err error
@@ -146,7 +148,7 @@ func (l *Listener) Run(ctx context.Context, logFilePath string) error {
 
 			logger.Info("Connection started", zap.String("conn", connID))
 
-			e = conn.run(runCtx, logFilePath)
+			e = conn.run(runCtx, testRecordPath)
 			if e == io.EOF {
 				logger.Info("Connection stopped", zap.String("conn", connID))
 			} else {

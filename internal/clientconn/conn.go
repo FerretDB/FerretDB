@@ -108,9 +108,11 @@ func newConn(opts *newConnOpts) (*conn, error) {
 
 // run runs the client connection until ctx is done, client disconnects,
 // or fatal error or panic is encountered.
+// testRecordPath argument should be the path of input query record file,
+// when the path is empty, no records are created.
 //
 // The caller is responsible for closing the underlying net.Conn.
-func (c *conn) run(ctx context.Context, logFile string) (err error) {
+func (c *conn) run(ctx context.Context, testRecordPath string) (err error) {
 	done := make(chan struct{})
 
 	// handle ctx cancellation
@@ -142,8 +144,8 @@ func (c *conn) run(ctx context.Context, logFile string) (err error) {
 	}()
 
 	var bufr *bufio.Reader
-	if logFile != "" {
-		f, err := os.OpenFile("file.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if testRecordPath != "" {
+		f, err := os.OpenFile(testRecordPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			return err
 		}
