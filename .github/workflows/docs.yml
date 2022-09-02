@@ -31,7 +31,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          lfs: true
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main

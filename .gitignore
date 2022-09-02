@@ -1,11 +1,12 @@
 # Please use global .gitignore file for .vscode/, .idea/, etc.
 # See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files#configuring-ignored-files-for-all-repositories-on-your-computer
 
-# out tools
+# our tools
 bin/
 
-# temporary `go mod vendor` directory
+# dependencies
 vendor/
+node_modules/
 
 # task cache
 .task/

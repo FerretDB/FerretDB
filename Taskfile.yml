@@ -242,12 +242,6 @@ tasks:
       - bin/task{{exeExt}} -d integration lint-go-consistent
       - bin/task{{exeExt}} -d tools lint-go-consistent
 
-  docs:
-    desc: "Format and lint documentation"
-    cmds:
-      - docker-compose run --rm markdownlint --fix --dot --ignore CHANGELOG.md '**/*.md'
-      - docker-compose run --rm textlint --fix --rule one-sentence-per-line '**/*.md'
-
   godocs:
     desc: "Serve godoc documentation at http://127.0.0.1:6060/pkg/github.com/FerretDB/FerretDB/?m=all"
     cmds:
@@ -339,3 +333,20 @@ tasks:
         sh: cat ../internal/util/version/gen/version.txt
       GOARCH:
         sh: go env GOARCH
+
+  docs:
+    desc: "Format, lint and build documentation"
+    deps: [docs-fmt]
+    cmds:
+      - docker-compose run --rm docusaurus build
+
+  docs-fmt:
+    desc: "Format and lint documentation"
+    cmds:
+      - docker-compose run --rm markdownlint --fix --dot --ignore CHANGELOG.md '**/*.md'
+      - docker-compose run --rm textlint --fix --rule one-sentence-per-line '**/*.md'
+
+  docs-dev:
+    desc: "Start documentation development server"
+    cmds:
+      - docker-compose run --rm --service-ports docusaurus start --host=0.0.0.0

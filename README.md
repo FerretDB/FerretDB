@@ -44,8 +44,6 @@ and [contributing guidelines](CONTRIBUTING.md).
 
 If you encounter some other difference in behavior, please [join our community](#community) to report a problem.
 
-See also [docs/diff.md](docs/diff.md) for additional examples.
-
 ## Quickstart
 
 These steps describe a quick local setup.
