@@ -42,7 +42,7 @@ var (
 	proxyAddrF  = flag.String("proxy-addr", "127.0.0.1:37017", "proxy address")
 	debugAddrF  = flag.String("debug-addr", "127.0.0.1:8088", "debug address")
 	modeF       = flag.String("mode", string(clientconn.AllModes[0]), fmt.Sprintf("operation mode: %v", clientconn.AllModes))
-	testRecordF = flag.String("test-record", "", "location of log file with data coming from connected clients")
+	testRecordF = flag.String("test-record", "", "location of record file with binary data coming from connected clients")
 
 	handlerF = flag.String("handler", "<set in initFlags()>", "<set in initFlags()>")
 
