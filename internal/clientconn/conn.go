@@ -108,7 +108,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 
 // run runs the client connection until ctx is done, client disconnects,
 // or fatal error or panic is encountered.
-// testRecordPath argument should be the path of input query record file,
+// The testRecordPath argument should be the path of input query record file,
 // when the path is empty, no records are created.
 //
 // The caller is responsible for closing the underlying net.Conn.

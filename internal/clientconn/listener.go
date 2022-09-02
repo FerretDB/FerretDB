@@ -63,7 +63,7 @@ func NewListener(opts *NewListenerOpts) *Listener {
 }
 
 // Run runs the listener until ctx is done or some unrecoverable error occurs.
-// testRecordPath argument should be the path of input query record file,
+// The testRecordPath argument should be the path of input query record file,
 // when the path is empty, no records are created.
 //
 // When this method returns, listener and all connections are closed.
