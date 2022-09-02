@@ -141,7 +141,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				return nil
 			}
 
-			res, err := h.delete(ctx, &fp, resDocs)
+			res, err := h.delete(ctx, fp, resDocs)
 			if err != nil {
 				return err
 			}
