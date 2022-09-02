@@ -60,6 +60,9 @@ const (
 	// ErrInvalidNamespace indicates that the collection name is invalid.
 	ErrInvalidNamespace = ErrorCode(73) // InvalidNamespace
 
+	// ErrOperationFailed indicates that the operation failed.
+	ErrOperationFailed = ErrorCode(96) // OperationFailed
+
 	// ErrDocumentValidationFailure indicates that document validation failed.
 	ErrDocumentValidationFailure = ErrorCode(121) // DocumentValidationFailure
 
@@ -101,6 +104,9 @@ const (
 
 	// ErrRegexMissingParen indicates missing parentheses in regex expression.
 	ErrRegexMissingParen = ErrorCode(51091) // Location51091
+
+	// ErrBadRegexOption indicates bad regex option value passed.
+	ErrBadRegexOption = ErrorCode(51108) // Location51108
 )
 
 // ProtoErr represents protocol error type.
@@ -308,12 +314,12 @@ func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
 		if _, ok := maskValue.(float64); ok {
 			return NewErrorMsg(
 				ErrFailedToParse,
-				fmt.Sprintf(`Expected a positive number in: %s: %.1f`, operator, maskValue),
+				fmt.Sprintf(`Expected a non-negative number in: %s: %.1f`, operator, maskValue),
 			)
 		}
 		return NewErrorMsg(
 			ErrFailedToParse,
-			fmt.Sprintf(`Expected a positive number in: %s: %v`, operator, maskValue),
+			fmt.Sprintf(`Expected a non-negative number in: %s: %v`, operator, maskValue),
 		)
 
 	case errNotBinaryMask:
