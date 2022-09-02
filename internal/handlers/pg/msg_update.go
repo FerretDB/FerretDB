@@ -42,7 +42,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 	common.Ignored(document, h.l, "ordered", "writeConcern", "bypassDocumentValidation")
 
-	sp := new(pgdb.SQLParam)
+	var sp pgdb.SQLParam
 	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
@@ -131,7 +131,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		resDocs := make([]*types.Document, 0, 16)
 		err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp)
+			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, &sp)
 			if err != nil {
 				return err
 			}
@@ -187,7 +187,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				"_id", must.NotFail(doc.Get("_id")),
 			))))
 
-			if err = h.insert(ctx, sp, doc); err != nil {
+			if err = h.insert(ctx, &sp, doc); err != nil {
 				return nil, err
 			}
 
@@ -211,7 +211,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				continue
 			}
 
-			rowsChanged, err := h.update(ctx, sp, doc)
+			rowsChanged, err := h.update(ctx, &sp, doc)
 			if err != nil {
 				return nil, err
 			}

@@ -64,7 +64,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		ctx = ctxWithTimeout
 	}
 
-	sqlParam := &pgdb.SQLParam{
+	sqlParam := pgdb.SQLParam{
 		DB:         params.DB,
 		Collection: params.Collection,
 		Comment:    params.Comment,
@@ -74,7 +74,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	// We might consider rewriting it later.
 	resDocs := make([]*types.Document, 0, 16)
 	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sqlParam)
+		fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, &sqlParam)
 		if err != nil {
 			return err
 		}
@@ -133,7 +133,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				hasUpdateOperators: params.HasUpdateOperators,
 				query:              params.Query,
 				update:             params.Update,
-				sqlParam:           sqlParam,
+				sqlParam:           &sqlParam,
 			}
 			upsert, upserted, err = h.upsert(ctx, resDocs, p)
 			if err != nil {
@@ -160,7 +160,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					return nil, err
 				}
 
-				_, err = h.update(ctx, sqlParam, upsert)
+				_, err = h.update(ctx, &sqlParam, upsert)
 				if err != nil {
 					return nil, err
 				}
@@ -171,7 +171,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					must.NoError(upsert.Set("_id", must.NotFail(resDocs[0].Get("_id"))))
 				}
 
-				_, err = h.update(ctx, sqlParam, upsert)
+				_, err = h.update(ctx, &sqlParam, upsert)
 				if err != nil {
 					return nil, err
 				}
@@ -219,7 +219,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			return &reply, nil
 		}
 
-		_, err = h.delete(ctx, sqlParam, resDocs)
+		_, err = h.delete(ctx, &sqlParam, resDocs)
 		if err != nil {
 			return nil, err
 		}

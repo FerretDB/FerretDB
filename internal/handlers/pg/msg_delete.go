@@ -85,7 +85,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			)
 		}
 
-		sp := new(pgdb.SQLParam)
+		var sp pgdb.SQLParam
 		if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 			return err
 		}
@@ -115,7 +115,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		return h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 			// fetch current items from collection
-			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp)
+			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, &sp)
 			if err != nil {
 				return err
 			}
@@ -154,7 +154,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 					continue
 				}
 
-				rowsDeleted, err := h.delete(ctx, sp, resDocs)
+				rowsDeleted, err := h.delete(ctx, &sp, resDocs)
 				if err != nil {
 					return err
 				}
