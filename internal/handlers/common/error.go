@@ -104,6 +104,9 @@ const (
 
 	// ErrRegexMissingParen indicates missing parentheses in regex expression.
 	ErrRegexMissingParen = ErrorCode(51091) // Location51091
+
+	// ErrBadRegexOption indicates bad regex option value passed.
+	ErrBadRegexOption = ErrorCode(51108) // Location51108
 )
 
 // ProtoErr represents protocol error type.

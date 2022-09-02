@@ -554,6 +554,12 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 // filterFieldRegex handles {field: /regex/} filter. Provides regular expression capabilities
 // for pattern matching strings in queries, even if the strings are in an array.
 func filterFieldRegex(fieldValue any, regex types.Regex) (bool, error) {
+	for _, option := range regex.Options {
+		if !slices.Contains([]rune{'i', 'm', 's', 'x'}, option) {
+			return false, NewError(ErrBadRegexOption, fmt.Errorf(" invalid flag in regex options: %c", option))
+		}
+	}
+
 	re, err := regex.Compile()
 	if err != nil && err == types.ErrOptionNotImplemented {
 		return false, NewErrorMsg(ErrNotImplemented, `option 'x' not implemented`)
