@@ -28,6 +28,6 @@ func TestGet(t *testing.T) {
 	v := Get()
 	assert.NotEqual(t, "", v.Version)
 	assert.NotEqual(t, unknown, v.Version)
-	assert.Equal(t, "5.0.42", MongoDBVersion)
-	testutil.AssertEqual(t, must.NotFail(types.NewArray(int32(5), int32(0), int32(42), int32(0))), MongoDBVersionArray)
+	assert.Equal(t, "6.0.42", MongoDBVersion)
+	testutil.AssertEqual(t, must.NotFail(types.NewArray(int32(6), int32(0), int32(42), int32(0))), MongoDBVersionArray)
 }
