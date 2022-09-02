@@ -556,7 +556,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 func filterFieldRegex(fieldValue any, regex types.Regex) (bool, error) {
 	for _, option := range regex.Options {
 		if !slices.Contains([]rune{'i', 'm', 's', 'x'}, option) {
-			return false, NewError(ErrBadRegexOption, fmt.Errorf(" invalid flag in regex options: %c", option))
+			return false, NewError(ErrBadRegexOption, fmt.Errorf("invalid flag in regex options: %c", option))
 		}
 	}
 

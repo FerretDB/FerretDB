@@ -447,6 +447,7 @@ func TestQueryEvaluationRegex(t *testing.T) {
 		filter      any
 		expectedIDs []any
 		err         *mongo.CommandError
+		altMessage  string
 	}{
 		"Regex": {
 			filter:      bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "foo"}}}}},
@@ -487,6 +488,7 @@ func TestQueryEvaluationRegex(t *testing.T) {
 				Name:    "Location51108",
 				Message: ` invalid flag in regex options: 1`,
 			},
+			altMessage: `invalid flag in regex options: 1`,
 		},
 	} {
 		name, tc := name, tc
@@ -496,7 +498,7 @@ func TestQueryEvaluationRegex(t *testing.T) {
 			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, *tc.err, err)
+				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
 				return
 			}
 			require.NoError(t, err)
