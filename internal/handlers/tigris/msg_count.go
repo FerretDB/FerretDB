@@ -59,7 +59,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		}
 	}
 
-	fp := new(tigrisdb.FetchParam)
+	var fp tigrisdb.FetchParam
 
 	if fp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
@@ -77,7 +77,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		)
 	}
 
-	fetchedDocs, err := h.db.QueryDocuments(ctx, fp)
+	fetchedDocs, err := h.db.QueryDocuments(ctx, &fp)
 	if err != nil {
 		return nil, err
 	}

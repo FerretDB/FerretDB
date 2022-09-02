@@ -87,7 +87,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			)
 		}
 
-		fp := new(tigrisdb.FetchParam)
+		var fp tigrisdb.FetchParam
 
 		if fp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 			return err
@@ -112,7 +112,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		return respondWithStack(func() error {
 			// fetch current items from collection
-			fetchedDocs, err := h.db.QueryDocuments(ctx, fp)
+			fetchedDocs, err := h.db.QueryDocuments(ctx, &fp)
 			if err != nil {
 				return err
 			}
@@ -141,7 +141,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				return nil
 			}
 
-			res, err := h.delete(ctx, fp, resDocs)
+			res, err := h.delete(ctx, &fp, resDocs)
 			if err != nil {
 				return err
 			}

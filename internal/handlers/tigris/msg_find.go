@@ -90,7 +90,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		}
 	}
 
-	fp := &tigrisdb.FetchParam{
+	fp := tigrisdb.FetchParam{
 		Filter: filter,
 	}
 
@@ -110,7 +110,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		)
 	}
 
-	fetchedDocs, err := h.db.QueryDocuments(ctx, fp)
+	fetchedDocs, err := h.db.QueryDocuments(ctx, &fp)
 	if err != nil {
 		return nil, err
 	}

@@ -38,7 +38,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	common.Ignored(document, h.L, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
 
-	fp := new(tigrisdb.FetchParam)
+	var fp tigrisdb.FetchParam
 
 	if fp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, lazyerrors.Error(err)
 		}
 
-		err = h.insert(ctx, fp, doc.(*types.Document))
+		err = h.insert(ctx, &fp, doc.(*types.Document))
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
