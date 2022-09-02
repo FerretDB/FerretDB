@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"sync/atomic"
 	"time"
 
@@ -140,9 +141,17 @@ func (c *conn) run(ctx context.Context) (err error) {
 		close(done)
 	}()
 
-	mw := io.MultiWriter()
-	bufr := bufio.NewReader(c.netConn)
+	f, err := os.OpenFile("file.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	//fileWriter := bufio.NewWriter(f)
+	r := io.TeeReader(c.netConn, f)
+	bufr := bufio.NewReader(r)
+
+	//bufr := bufio.NewReader(c.netConn)
 	bufw := bufio.NewWriter(c.netConn)
+
 	defer func() {
 		if e := bufw.Flush(); err == nil {
 			err = e
