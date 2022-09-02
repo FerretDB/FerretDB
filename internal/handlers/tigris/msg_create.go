@@ -95,7 +95,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	if !created {
-		msg := fmt.Sprintf("Collection already exists. NS: %s.%s", db, collection)
+		msg := fmt.Sprintf("Collection %s.%s already exists.", db, collection)
 		return nil, common.NewErrorMsg(common.ErrNamespaceExists, msg)
 	}
 
