@@ -48,15 +48,6 @@ var Composites = &Values[string]{
 	},
 }
 
-// ArrayInt32s contains int32 arrays for tests.
-var ArrayInt32s = &Values[string]{
-	name:     "ArrayInt32s",
-	handlers: []string{"pg", "tigris"},
-	data: map[string]any{
-		"array-int32s": bson.A{int32(42)},
-	},
-}
-
 // DocumentsDoubles contains documents with double values for tests.
 var DocumentsDoubles = &Values[string]{
 	name:     "DocumentsDoubles",
