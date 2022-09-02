@@ -235,6 +235,8 @@ func (h *Handler) delete(ctx context.Context, fp *tigrisdb.FetchParam, docs []*t
 
 // respondWithStack calls the fun. If fun returns
 // not-nil error then it is wrapped with lazyerrors.Error.
+//
+// TODO This function should be removed, but that's not easy: https://github.com/FerretDB/FerretDB/issues/1106
 func respondWithStack(fun func() error) error {
 	if err := fun(); err != nil {
 		return lazyerrors.Error(err)
