@@ -144,6 +144,7 @@ func (c *conn) run(ctx context.Context, testRecordPath string) (err error) {
 	}()
 
 	var bufr *bufio.Reader
+	// if test record path is set, split netConn reader to write to file and bufr
 	if testRecordPath != "" {
 		f, err := os.OpenFile(testRecordPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
