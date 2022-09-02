@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"sync/atomic"
 	"time"
@@ -139,6 +140,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 		close(done)
 	}()
 
+	mw := io.MultiWriter()
 	bufr := bufio.NewReader(c.netConn)
 	bufw := bufio.NewWriter(c.netConn)
 	defer func() {
