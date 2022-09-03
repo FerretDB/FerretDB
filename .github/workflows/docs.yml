@@ -53,7 +53,8 @@ jobs:
           tar --directory website/build \
             --file docs.tar \
             --create \
-            --verbose
+            --verbose \
+            .
 
       - name: Upload archive artifact
         uses: actions/upload-artifact@v3
