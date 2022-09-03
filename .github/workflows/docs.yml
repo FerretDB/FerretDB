@@ -21,7 +21,7 @@ env:
   GOPROXY: https://proxy.golang.org
 
 jobs:
-  docs:
+  build:
     name: Build docs
     runs-on: ubuntu-20.04
 
@@ -67,3 +67,26 @@ jobs:
         run: |
           git status
           git diff --exit-code
+
+  pages:
+    name: Deploy to Pages
+    runs-on: ubuntu-20.04
+
+    needs: build
+    if: github.event_name == 'push'
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: docs
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v1
+        with:
+          artifact_name: docs
+          timeout: 300000 # 5*60*1000 milliseconds
