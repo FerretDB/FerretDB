@@ -9,10 +9,8 @@ const config = {
   title: 'FerretDB Documentation',
   tagline: 'A truly Open Source MongoDB alternative',
 
-  url: 'https://ferretdb.github.io',
-  baseUrl: '/FerretDB/',
-  // url: 'https://docs.ferretdb.io',
-  // baseUrl: '/',
+  url: 'https://docs.ferretdb.io',
+  baseUrl: '/',
 
   favicon: 'img/favicon.ico',
   trailingSlash: true,
