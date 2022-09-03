@@ -343,7 +343,7 @@ tasks:
   docs-fmt:
     desc: "Format and lint documentation"
     cmds:
-      - docker-compose run --rm markdownlint --fix --dot --ignore CHANGELOG.md '**/*.md'
+      - docker-compose run --rm markdownlint --fix --dot --ignore-path=.textlintignore '**/*.md'
       - docker-compose run --rm textlint --fix --rule one-sentence-per-line '**/*.md'
 
   docs-dev:
