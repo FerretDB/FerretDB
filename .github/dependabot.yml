@@ -69,9 +69,10 @@ updates:
       time: "01:42"
   - package-ecosystem: "npm"
     directory: "/website"
-    dependency-name: "@docusaurus/*"
     labels: [deps]
     schedule:
       interval: "weekly"
       day: "thursday"
       time: "01:42"
+    allow:
+      - dependency-name: "@docusaurus/*"
