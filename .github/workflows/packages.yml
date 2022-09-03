@@ -55,6 +55,7 @@ jobs:
         with:
           name: ferretdb.deb
           path: build/deb/ferretdb.deb
+          retention-days: 14
           if-no-files-found: error
 
       - name: Upload ferretdb.rpm
@@ -62,4 +63,5 @@ jobs:
         with:
           name: ferretdb.rpm
           path: build/rpm/ferretdb.rpm
+          retention-days: 14
           if-no-files-found: error

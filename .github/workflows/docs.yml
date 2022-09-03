@@ -31,7 +31,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          lfs: true
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
@@ -47,6 +47,21 @@ jobs:
 
       - name: Build docs
         run: bin/task docs
+
+      - name: Archive docs
+        run: |
+          tar --directory website/build \
+            --file docs.tar \
+            --create \
+            --verbose \
+            .
+
+      - name: Upload archive artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: docs
+          path: docs.tar
+          if-no-files-found: error
 
       - name: Check dirty
         run: |
