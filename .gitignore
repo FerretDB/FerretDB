@@ -11,15 +11,13 @@ node_modules/
 # task cache
 .task/
 
-# packages
+# packages, build artifacts
 *.deb
 *.rpm
+*.tar
 
 # test coverage results, generated files like commit.txt, etc.
 *.txt
-
-# test coverage results
-*.html
 
 # for now
 testdata/fuzz/
