@@ -60,7 +60,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "bit positions must be >= 0 but got: 0: -1",
+				Message: "Failed to parse bit position. Expected a non-negative number in: 0: -1",
 			},
 		},
 		"ArrayBadValue": {
@@ -68,7 +68,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: `bit positions must be an integer but got: 0: "123"`,
+				Message: `Failed to parse bit position. Expected a number in: 0: "123"`,
 			},
 		},
 
@@ -93,7 +93,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
-				Message: "Expected a positive number in: $bitsAllClear: -1.0",
+				Message: "Expected a non-negative number in: $bitsAllClear: -1.0",
 			},
 		},
 
@@ -145,7 +145,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
-				Message: "Expected a positive number in: $bitsAllClear: -1",
+				Message: "Expected a non-negative number in: $bitsAllClear: -1",
 			},
 		},
 
@@ -162,7 +162,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
-				Message: "Expected a positive number in: $bitsAllClear: -1",
+				Message: "Expected a non-negative number in: $bitsAllClear: -1",
 			},
 		},
 	} {
@@ -214,7 +214,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "bit positions must be >= 0 but got: 0: -1",
+				Message: "Failed to parse bit position. Expected a non-negative number in: 0: -1",
 			},
 		},
 		"ArrayBadValue": {
@@ -222,7 +222,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: `bit positions must be an integer but got: 0: "123"`,
+				Message: `Failed to parse bit position. Expected a number in: 0: "123"`,
 			},
 		},
 
@@ -243,7 +243,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
-				Message: "Expected a positive number in: $bitsAllSet: -1.0",
+				Message: "Expected a non-negative number in: $bitsAllSet: -1.0",
 			},
 		},
 
@@ -275,7 +275,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
-				Message: "Expected a positive number in: $bitsAllSet: -1",
+				Message: "Expected a non-negative number in: $bitsAllSet: -1",
 			},
 		},
 
@@ -288,7 +288,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
-				Message: "Expected a positive number in: $bitsAllSet: -1",
+				Message: "Expected a non-negative number in: $bitsAllSet: -1",
 			},
 		},
 	} {
@@ -344,7 +344,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "bit positions must be >= 0 but got: 0: -1",
+				Message: "Failed to parse bit position. Expected a non-negative number in: 0: -1",
 			},
 		},
 		"ArrayBadValue": {
@@ -352,7 +352,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: `bit positions must be an integer but got: 0: "123"`,
+				Message: `Failed to parse bit position. Expected a number in: 0: "123"`,
 			},
 		},
 
@@ -377,7 +377,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
-				Message: "Expected a positive number in: $bitsAnyClear: -1.0",
+				Message: "Expected a non-negative number in: $bitsAnyClear: -1.0",
 			},
 		},
 
@@ -421,7 +421,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
-				Message: "Expected a positive number in: $bitsAnyClear: -1",
+				Message: "Expected a non-negative number in: $bitsAnyClear: -1",
 			},
 		},
 
@@ -438,7 +438,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
-				Message: "Expected a positive number in: $bitsAnyClear: -1",
+				Message: "Expected a non-negative number in: $bitsAnyClear: -1",
 			},
 		},
 	} {
@@ -494,7 +494,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "bit positions must be >= 0 but got: 0: -1",
+				Message: "Failed to parse bit position. Expected a non-negative number in: 0: -1",
 			},
 		},
 		"ArrayBadValue": {
@@ -502,7 +502,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: `bit positions must be an integer but got: 0: "123"`,
+				Message: `Failed to parse bit position. Expected a number in: 0: "123"`,
 			},
 		},
 
@@ -527,7 +527,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
-				Message: "Expected a positive number in: $bitsAnySet: -1.0",
+				Message: "Expected a non-negative number in: $bitsAnySet: -1.0",
 			},
 		},
 
@@ -563,7 +563,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
-				Message: "Expected a positive number in: $bitsAnySet: -1",
+				Message: "Expected a non-negative number in: $bitsAnySet: -1",
 			},
 		},
 
@@ -580,7 +580,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
-				Message: "Expected a positive number in: $bitsAnySet: -1",
+				Message: "Expected a non-negative number in: $bitsAnySet: -1",
 			},
 		},
 	} {

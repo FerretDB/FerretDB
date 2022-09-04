@@ -33,7 +33,7 @@ services:
   mongodb:
     build:
       context: ./build/deps
-      dockerfile: ${MONGO_DOCKERFILE:-mongo5}.Dockerfile
+      dockerfile: ${MONGO_DOCKERFILE:-mongo6}.Dockerfile
     container_name: ferretdb_mongodb
     command: --enableFreeMonitoring off
     ports:
@@ -44,21 +44,7 @@ services:
       # Always UTC+05:45. Set to catch timezone problems.
       - TZ=Asia/Kathmandu
 
-  markdownlint:
-    build:
-      context: ./build/deps
-      dockerfile: markdownlint.Dockerfile
-    container_name: ferretdb_markdownlint
-    volumes:
-      - .:/workdir
-
-  textlint:
-    build:
-      context: ./build/deps/textlint
-    container_name: ferretdb_textlint
-    volumes:
-      - .:/workdir
-
+  # for building .deb and .rpm packages
   debian:
     build:
       context: ./build/deps
@@ -66,7 +52,6 @@ services:
     container_name: ferretdb_debian
     volumes:
       - ./build/deb:/deb
-
   centos:
     build:
       context: ./build/deps
@@ -74,3 +59,28 @@ services:
     container_name: ferretdb_centos
     volumes:
       - ./build/rpm:/rpm
+
+  # for documentation
+  markdownlint:
+    build:
+      context: ./build/deps
+      dockerfile: markdownlint.Dockerfile
+    container_name: ferretdb_markdownlint
+    volumes:
+      - .:/workdir
+  textlint:
+    build:
+      context: ./build/deps/textlint
+    container_name: ferretdb_textlint
+    volumes:
+      - .:/workdir
+      - /workdir/build/deps/textlint/node_modules
+  docusaurus:
+    build:
+      context: ./website
+    container_name: ferretdb_docusaurus
+    ports:
+      - 3000:3000
+    volumes:
+      - .:/workdir
+      - /workdir/website/node_modules

@@ -7,7 +7,7 @@
 [![codecov](https://codecov.io/gh/FerretDB/FerretDB/branch/main/graph/badge.svg?token=JZ56XFT3DM)](https://codecov.io/gh/FerretDB/FerretDB)
 
 FerretDB (previously MangoDB) was founded to become the de-facto open-source substitute to MongoDB.
-FerretDB is an open-source proxy, converting the MongoDB 5.0+ wire protocol queries to SQL -
+FerretDB is an open-source proxy, converting the MongoDB 6.0+ wire protocol queries to SQL -
 using PostgreSQL as a database engine.
 
 ## Why do we need FerretDB?
@@ -24,7 +24,7 @@ Recognizing this, FerretDB is here to fill that gap.
 
 ## Scope and current state
 
-FerretDB will be compatible with MongoDB drivers and will strive to serve as a drop-in replacement for MongoDB 5.0+.
+FerretDB will be compatible with MongoDB drivers and will strive to serve as a drop-in replacement for MongoDB 6.0+.
 
 Currently, the project is in its early stages and welcomes all contributors.
 See our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1)
@@ -43,8 +43,6 @@ and [contributing guidelines](CONTRIBUTING.md).
 * database name cannot contain capital letters.
 
 If you encounter some other difference in behavior, please [join our community](#community) to report a problem.
-
-See also [docs/diff.md](docs/diff.md) for additional examples.
 
 ## Quickstart
 

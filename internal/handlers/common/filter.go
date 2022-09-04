@@ -554,6 +554,12 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 // filterFieldRegex handles {field: /regex/} filter. Provides regular expression capabilities
 // for pattern matching strings in queries, even if the strings are in an array.
 func filterFieldRegex(fieldValue any, regex types.Regex) (bool, error) {
+	for _, option := range regex.Options {
+		if !slices.Contains([]rune{'i', 'm', 's', 'x'}, option) {
+			return false, NewError(ErrBadRegexOption, fmt.Errorf("invalid flag in regex options: %c", option))
+		}
+	}
+
 	re, err := regex.Compile()
 	if err != nil && err == types.ErrOptionNotImplemented {
 		return false, NewErrorMsg(ErrNotImplemented, `option 'x' not implemented`)
@@ -629,16 +635,44 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 	if err != nil {
 		switch err {
 		case errUnexpectedType:
-			return false, NewErrorMsg(ErrBadValue, "$size needs a number")
+			return false, NewError(
+				ErrBadValue,
+				fmt.Errorf(`Failed to parse $size. Expected a number in: $size: %s`, types.FormatAnyValue(sizeValue)),
+			)
 		case errNotWholeNumber:
-			return false, NewErrorMsg(ErrBadValue, "$size must be a whole number")
+			return false, NewError(
+				ErrBadValue,
+				fmt.Errorf(`Failed to parse $size. Expected an integer: $size: %s`, types.FormatAnyValue(sizeValue)),
+			)
+		case errNaN:
+			return false, NewError(
+				ErrBadValue,
+				fmt.Errorf(
+					`Failed to parse $size. Expected an integer, but found NaN in: $size: %s`,
+					types.FormatAnyValue(sizeValue),
+				),
+			)
+		case errInfinity:
+			return false, NewError(
+				ErrBadValue,
+				fmt.Errorf(
+					`Failed to parse $size. Cannot represent as a 64-bit integer: $size: %s`,
+					types.FormatAnyValue(sizeValue),
+				),
+			)
 		default:
 			return false, err
 		}
 	}
 
 	if size < 0 {
-		return false, NewErrorMsg(ErrBadValue, "$size may not be negative")
+		return false, NewError(
+			ErrBadValue,
+			fmt.Errorf(
+				`Failed to parse $size. Expected a non-negative number in: $size: %s`,
+				types.FormatAnyValue(sizeValue),
+			),
+		)
 	}
 
 	if arr.Len() != int(size) {
@@ -898,7 +932,7 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 		}
 
 		d = math.Trunc(d)
-		if d > float64(9.223372036854776832e+18) || d < float64(-9.223372036854776832e+18) {
+		if d >= float64(math.MaxInt64) || d < float64(math.MinInt64) {
 			return false, NewErrorMsg(ErrBadValue, `malformed mod, divisor value is invalid :: caused by :: `+
 				`Out of bounds coercing to integral value`)
 		}
@@ -924,12 +958,16 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 			return false, NewErrorMsg(ErrBadValue, `malformed mod, remainder value is invalid :: caused by :: `+
 				`Unable to coerce NaN/Inf to integral type`)
 		}
+
 		r = math.Trunc(r)
-		if r > float64(9.223372036854776832e+18) || r < float64(-9.223372036854776832e+18) {
+
+		if r >= float64(math.MaxInt64) || r < float64(-9.223372036854776832e+18) {
 			return false, NewErrorMsg(ErrBadValue, `malformed mod, remainder value is invalid :: caused by :: `+
 				`Out of bounds coercing to integral value`)
 		}
+
 		remainder = int64(r)
+
 		if r != float64(remainder) {
 			return false, nil
 		}

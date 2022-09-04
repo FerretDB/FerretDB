@@ -8,6 +8,7 @@ updates:
       interval: "weekly"
       day: "thursday"
       time: "01:42"
+
   - package-ecosystem: "docker"
     directory: "/"
     labels: [deps]
@@ -22,6 +23,21 @@ updates:
       interval: "weekly"
       day: "thursday"
       time: "01:42"
+  - package-ecosystem: "docker"
+    directory: "/build/deps/textlint"
+    labels: [deps]
+    schedule:
+      interval: "weekly"
+      day: "thursday"
+      time: "01:42"
+  - package-ecosystem: "docker"
+    directory: "/website"
+    labels: [deps]
+    schedule:
+      interval: "weekly"
+      day: "thursday"
+      time: "01:42"
+
   - package-ecosystem: "gomod"
     directory: "/"
     labels: [deps]
@@ -43,3 +59,20 @@ updates:
       interval: "weekly"
       day: "thursday"
       time: "01:42"
+
+  - package-ecosystem: "npm"
+    directory: "/build/deps/textlint"
+    labels: [deps]
+    schedule:
+      interval: "weekly"
+      day: "thursday"
+      time: "01:42"
+  - package-ecosystem: "npm"
+    directory: "/website"
+    labels: [deps]
+    schedule:
+      interval: "weekly"
+      day: "thursday"
+      time: "01:42"
+    allow:
+      - dependency-name: "@docusaurus/*"
