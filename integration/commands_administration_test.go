@@ -662,7 +662,7 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 	assert.InDelta(t, float64(8012), must.NotFail(doc.Get("size")), 16_024)
 	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("storageSize")), 8_012)
 	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalIndexSize")), 8_012)
-	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalSize")), 16_024)
+	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalSize")), 32_904)
 }
 
 func TestCommandsAdministrationDataSize(t *testing.T) {

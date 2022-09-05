@@ -16,13 +16,263 @@ package tigris
 
 import (
 	"context"
+	"time"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgFindAndModify implements HandlerInterface.
 func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/775
-	return nil, notImplemented(must.NotFail(msg.Document()).Command())
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	unimplementedFields := []string{
+		"arrayFilters",
+		"let",
+		"fields",
+	}
+	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
+		return nil, err
+	}
+
+	ignoredFields := []string{
+		"bypassDocumentValidation",
+		"writeConcern",
+		"collation",
+		"hint",
+	}
+	common.Ignored(document, h.L, ignoredFields...)
+
+	params, err := common.PrepareFindAndModifyParams(document)
+	if err != nil {
+		return nil, err
+	}
+
+	if params.MaxTimeMS != 0 {
+		ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
+		defer cancel()
+
+		ctx = ctxWithTimeout
+	}
+
+	fp := &tigrisdb.FetchParam{
+		DB:         params.DB,
+		Collection: params.Collection,
+	}
+
+	// This is not very optimal as we need to fetch everything from the database to have a proper sort.
+	// We might consider rewriting it later.
+	fetchedDocs, err := h.db.QueryDocuments(ctx, fp)
+	if err != nil {
+		return nil, err
+	}
+
+	err = common.SortDocuments(fetchedDocs, params.Sort)
+	if err != nil {
+		return nil, err
+	}
+
+	resDocs := make([]*types.Document, 0, 16)
+
+	for _, doc := range fetchedDocs {
+		matches, err := common.FilterDocument(doc, params.Query)
+		if err != nil {
+			return nil, err
+		}
+
+		if !matches {
+			continue
+		}
+
+		resDocs = append(resDocs, doc)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	// findAndModify always works with a single document
+	if resDocs, err = common.LimitDocuments(resDocs, 1); err != nil {
+		return nil, err
+	}
+
+	if params.Update != nil { // we have update part
+		var upsert *types.Document
+		var upserted bool
+
+		if params.Upsert { //  we have upsert flag
+			p := &upsertParams{
+				hasUpdateOperators: params.HasUpdateOperators,
+				query:              params.Query,
+				update:             params.Update,
+				fetchParam:         fp,
+			}
+
+			upsert, upserted, err = h.upsert(ctx, resDocs, p)
+			if err != nil {
+				return nil, err
+			}
+		} else { // process update as usual
+			if len(resDocs) == 0 {
+				var reply wire.OpMsg
+				must.NoError(reply.SetSections(wire.OpMsgSection{
+					Documents: []*types.Document{must.NotFail(types.NewDocument(
+						"lastErrorObject", must.NotFail(types.NewDocument("n", int32(0), "updatedExisting", false)),
+						"ok", float64(1),
+					))},
+				}))
+
+				return &reply, nil
+			}
+
+			if params.HasUpdateOperators {
+				upsert = resDocs[0].DeepCopy()
+				_, err = common.UpdateDocument(upsert, params.Update)
+				if err != nil {
+					return nil, err
+				}
+
+				_, err = h.update(ctx, fp, upsert)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				upsert = params.Update
+
+				if !upsert.Has("_id") {
+					must.NoError(upsert.Set("_id", must.NotFail(resDocs[0].Get("_id"))))
+				}
+
+				_, err = h.update(ctx, fp, upsert)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+
+		var resultDoc *types.Document
+		if params.ReturnNewDocument || len(resDocs) == 0 {
+			resultDoc = upsert
+		} else {
+			resultDoc = resDocs[0]
+		}
+
+		lastErrorObject := must.NotFail(types.NewDocument(
+			"n", int32(1),
+			"updatedExisting", len(resDocs) > 0,
+		))
+
+		if upserted {
+			must.NoError(lastErrorObject.Set("upserted", must.NotFail(resultDoc.Get("_id"))))
+		}
+
+		var reply wire.OpMsg
+		must.NoError(reply.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"lastErrorObject", lastErrorObject,
+				"value", resultDoc,
+				"ok", float64(1),
+			))},
+		}))
+
+		return &reply, nil
+	}
+
+	if params.Remove {
+		if len(resDocs) == 0 {
+			var reply wire.OpMsg
+			must.NoError(reply.SetSections(wire.OpMsgSection{
+				Documents: []*types.Document{must.NotFail(types.NewDocument(
+					"lastErrorObject", must.NotFail(types.NewDocument("n", int32(0))),
+					"ok", float64(1),
+				))},
+			}))
+
+			return &reply, nil
+		}
+
+		_, err = h.delete(ctx, fp, resDocs)
+		if err != nil {
+			return nil, err
+		}
+
+		var reply wire.OpMsg
+		must.NoError(reply.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"lastErrorObject", must.NotFail(types.NewDocument("n", int32(1))),
+				"value", resDocs[0],
+				"ok", float64(1),
+			))},
+		}))
+
+		return &reply, nil
+	}
+
+	return nil, lazyerrors.New("bad flags combination")
+}
+
+// upsertParams represent parameters for Handler.upsert method.
+type upsertParams struct {
+	hasUpdateOperators bool
+	query, update      *types.Document
+	fetchParam         *tigrisdb.FetchParam
+}
+
+// upsert inserts new document if no documents in query result or updates given document.
+// When inserting new document we must check that `_id` is present, so we must extract `_id` from query or generate a new one.
+func (h *Handler) upsert(ctx context.Context, docs []*types.Document, params *upsertParams) (*types.Document, bool, error) {
+	if len(docs) == 0 {
+		upsert := must.NotFail(types.NewDocument())
+
+		if params.hasUpdateOperators {
+			_, err := common.UpdateDocument(upsert, params.update)
+			if err != nil {
+				return nil, false, err
+			}
+		} else {
+			upsert = params.update
+		}
+
+		if !upsert.Has("_id") {
+			if params.query.Has("_id") {
+				must.NoError(upsert.Set("_id", must.NotFail(params.query.Get("_id"))))
+			} else {
+				must.NoError(upsert.Set("_id", types.NewObjectID()))
+			}
+		}
+
+		err := h.insert(ctx, params.fetchParam, upsert)
+		if err != nil {
+			return nil, false, err
+		}
+
+		return upsert, true, nil
+	}
+
+	upsert := docs[0].DeepCopy()
+
+	if params.hasUpdateOperators {
+		_, err := common.UpdateDocument(upsert, params.update)
+		if err != nil {
+			return nil, false, err
+		}
+	} else {
+		for _, k := range params.update.Keys() {
+			must.NoError(upsert.Set(k, must.NotFail(params.update.Get(k))))
+		}
+	}
+
+	_, err := h.update(ctx, params.fetchParam, upsert)
+	if err != nil {
+		return nil, false, err
+	}
+
+	return upsert, false, nil
 }
