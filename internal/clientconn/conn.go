@@ -153,7 +153,9 @@ func (c *conn) run(ctx context.Context) (err error) {
 			return err
 		}
 
-		path := filepath.Join(c.testRecordPath, "record.log")
+		filename := fmt.Sprintf("%s_%s.log", c.netConn.RemoteAddr().String(), time.Now().Format("2006-02-01_15:04:05"))
+
+		path := filepath.Join(c.testRecordPath, filename)
 
 		//nolint:nosnakecase// os package require to use underscore
 		f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o744)
