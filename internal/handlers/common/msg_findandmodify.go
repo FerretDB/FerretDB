@@ -37,7 +37,7 @@ func PrepareFindAndModifyParams(document *types.Document) (*FindAndModifyParams,
 	command := document.Command()
 
 	db, err := GetRequiredParam[string](document, "$db")
-	iff err != nil {
+	if err != nil {
 		return nil, err
 	}
 
