@@ -50,6 +50,7 @@ type NewListenerOpts struct {
 	Logger             *zap.Logger
 	TestConnTimeout    time.Duration
 	TestRunCancelDelay time.Duration
+	TestRecordPath     string // if empty, no records are created
 }
 
 // NewListener returns a new listener, configured by the NewListenerOpts argument.
@@ -63,11 +64,9 @@ func NewListener(opts *NewListenerOpts) *Listener {
 }
 
 // Run runs the listener until ctx is done or some unrecoverable error occurs.
-// The testRecordPath argument should be the path of input query record file,
-// when the path is empty, no records are created.
 //
 // When this method returns, listener and all connections are closed.
-func (l *Listener) Run(ctx context.Context, testRecordPath string) error {
+func (l *Listener) Run(ctx context.Context) error {
 	logger := l.opts.Logger.Named("listener")
 
 	var err error
@@ -133,12 +132,13 @@ func (l *Listener) Run(ctx context.Context, testRecordPath string) error {
 			}()
 
 			opts := &newConnOpts{
-				netConn:     netConn,
-				mode:        l.opts.Mode,
-				l:           l.opts.Logger.Named("// " + connID + " "), // derive from the original unnamed logger
-				proxyAddr:   l.opts.ProxyAddr,
-				handler:     l.opts.Handler,
-				connMetrics: l.metrics.connMetrics,
+				netConn:        netConn,
+				mode:           l.opts.Mode,
+				l:              l.opts.Logger.Named("// " + connID + " "), // derive from the original unnamed logger
+				proxyAddr:      l.opts.ProxyAddr,
+				handler:        l.opts.Handler,
+				connMetrics:    l.metrics.connMetrics,
+				testRecordPath: l.opts.TestRecordPath,
 			}
 			conn, e := newConn(opts)
 			if e != nil {
@@ -148,7 +148,7 @@ func (l *Listener) Run(ctx context.Context, testRecordPath string) error {
 
 			logger.Info("Connection started", zap.String("conn", connID))
 
-			e = conn.run(runCtx, testRecordPath)
+			e = conn.run(runCtx)
 			if e == io.EOF {
 				logger.Info("Connection stopped", zap.String("conn", connID))
 			} else {

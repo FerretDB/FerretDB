@@ -148,11 +148,12 @@ func main() {
 		Handler:         h,
 		Logger:          logger,
 		TestConnTimeout: *testConnTimeoutF,
+		TestRecordPath:  *testRecordF,
 	})
 
 	prometheus.DefaultRegisterer.MustRegister(l)
 
-	err = l.Run(ctx, *testRecordF)
+	err = l.Run(ctx)
 	if err == nil || err == context.Canceled {
 		logger.Info("Listener stopped")
 	} else {

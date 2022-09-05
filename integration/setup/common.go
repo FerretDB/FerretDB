@@ -128,7 +128,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 	go func() {
 		defer close(done)
 
-		err := l.Run(ctx, "")
+		err := l.Run(ctx)
 		if err == nil || err == context.Canceled {
 			logger.Info("Listener stopped without error")
 		} else {
