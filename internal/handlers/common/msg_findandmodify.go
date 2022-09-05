@@ -36,13 +36,13 @@ func PrepareFindAndModifyParams(document *types.Document) (*FindAndModifyParams,
 
 	command := document.Command()
 
-	var db string
-	if db, err = GetRequiredParam[string](document, "$db"); err != nil {
+	db, err := GetRequiredParam[string](document, "$db")
+	iff err != nil {
 		return nil, err
 	}
 
-	var collection string
-	if collection, err = GetRequiredParam[string](document, command); err != nil {
+	collection, err := GetRequiredParam[string](document, command)
+	if err != nil {
 		return nil, err
 	}
 
@@ -53,33 +53,33 @@ func PrepareFindAndModifyParams(document *types.Document) (*FindAndModifyParams,
 		)
 	}
 
-	var remove bool
-	if remove, err = GetBoolOptionalParam(document, "remove"); err != nil {
+	remove, err := GetBoolOptionalParam(document, "remove")
+	if err != nil {
 		return nil, err
 	}
 
-	var returnNewDocument bool
-	if returnNewDocument, err = GetBoolOptionalParam(document, "new"); err != nil {
+	returnNewDocument, err := GetBoolOptionalParam(document, "new")
+	if err != nil {
 		return nil, err
 	}
 
-	var upsert bool
-	if upsert, err = GetBoolOptionalParam(document, "upsert"); err != nil {
+	upsert, err := GetBoolOptionalParam(document, "upsert")
+	if err != nil {
 		return nil, err
 	}
 
-	var query *types.Document
-	if query, err = GetOptionalParam(document, "query", query); err != nil {
+	query, err := GetOptionalParam(document, "query", query)
+	if err != nil {
 		return nil, err
 	}
 
-	var sort *types.Document
-	if sort, err = GetOptionalParam(document, "sort", sort); err != nil {
+	sort, err := GetOptionalParam(document, "sort", sort)
+	if err != nil {
 		return nil, err
 	}
 
-	var maxTimeMS int32
-	if maxTimeMS, err = GetOptionalPositiveNumber(document, "maxTimeMS"); err != nil {
+	maxTimeMS, err := GetOptionalPositiveNumber(document, "maxTimeMS")
+	if err != nil {
 		return nil, err
 	}
 
