@@ -106,7 +106,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		fetchedDocs, err := h.db.QueryDocuments(ctx, fp)
+		fetchedDocs, err := h.db.QueryDocuments(ctx, &fp)
 		if err != nil {
 			return nil, err
 		}
@@ -144,7 +144,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				"_id", must.NotFail(doc.Get("_id")),
 			))))
 
-			if err = h.insert(ctx, fp, doc); err != nil {
+			if err = h.insert(ctx, &fp, doc); err != nil {
 				return nil, err
 			}
 
@@ -168,7 +168,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				continue
 			}
 
-			res, err := h.update(ctx, fp, doc)
+			res, err := h.update(ctx, &fp, doc)
 			if err != nil {
 				return nil, err
 			}
@@ -197,7 +197,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // update replaces given document.
-func (h *Handler) update(ctx context.Context, fp tigrisdb.FetchParam, doc *types.Document) (int, error) {
+func (h *Handler) update(ctx context.Context, fp *tigrisdb.FetchParam, doc *types.Document) (int, error) {
 	u, err := tjson.Marshal(doc)
 	if err != nil {
 		return 0, lazyerrors.Error(err)
