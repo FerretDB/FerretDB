@@ -149,19 +149,21 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 	// if test record path is set, split netConn reader to write to file and bufr
 	if c.testRecordPath != "" {
-		if err := os.MkdirAll(c.testRecordPath, 0o644); err != nil {
+		if err := os.MkdirAll(c.testRecordPath, 0o755); err != nil {
 			return err
 		}
 
-		filename := fmt.Sprintf("%s_%s.log", c.netConn.RemoteAddr().String(), time.Now().Format("2006-02-01_15:04:05"))
+		filename := fmt.Sprintf("%s_%s.bin", time.Now().Format("2006-02-01_15:04:05"), c.netConn.RemoteAddr().String())
 
 		path := filepath.Join(c.testRecordPath, filename)
 
-		//nolint:nosnakecase// os package require to use underscore
-		f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o744)
+		//nolint:nosnakecase // os package require to use underscore
+		f, err := os.Create(path)
 		if err != nil {
 			return err
 		}
+
+		defer f.Close()
 
 		r := io.TeeReader(c.netConn, f)
 		bufr = bufio.NewReader(r)
