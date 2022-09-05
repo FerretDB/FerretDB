@@ -68,12 +68,12 @@ func PrepareFindAndModifyParams(document *types.Document) (*FindAndModifyParams,
 		return nil, err
 	}
 
-	query, err := GetOptionalParam(document, "query", query)
+	query, err := GetOptionalParam(document, "query", new(types.Document))
 	if err != nil {
 		return nil, err
 	}
 
-	sort, err := GetOptionalParam(document, "sort", sort)
+	sort, err := GetOptionalParam(document, "sort", new(types.Document))
 	if err != nil {
 		return nil, err
 	}
