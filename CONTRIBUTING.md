@@ -14,24 +14,27 @@ or someone is already working on it.
 
 You can find a list of good issues for first-time contributors [there](https://github.com/FerretDB/FerretDB/contribute).
 
-## Contributing code
+## Setting up the environment
 
-The supported way of developing FerretDB is to modify and run it on the host (Linux, macOS, or Windows)
+### Requirements
+
+The supported way of contributing to FerretDB is to modify and run it on the host (Linux, macOS, or Windows)
 with PostgreSQL and other dependencies running inside Docker containers via Docker Compose.
 On Linux, `docker` and `docker-compose` should be installed on the host.
 On macOS and Windows, [Docker Desktop](https://www.docker.com/products/docker-desktop/) should be used.
 On Windows, it should be [configured to use WSL 2](https://docs.docker.com/desktop/windows/wsl/) without any distro;
 all commands should be run on the host.
 
-You will need Go 1.18 or later as FerretDB extensively uses ([fuzzing](https://go.dev/doc/tutorial/fuzz))
-and [generics](https://go.dev/doc/tutorial/generics)).
+You will need Go 1.18 or later on the host.
 If your package manager doesn't provide it yet,
 please install it from [go.dev](https://go.dev/dl/).
 
 You will also need `git` installed; the version provided by your package manager should do.
 On Windows, the simplest way to install it might be <https://gitforwindows.org>.
 
-### Cloning the Repository
+Finally, you will also need [git-lfs](https://git-lfs.github.com) installed and configured (`git lfs install`).
+
+### Making a working copy
 
 Fork the [FerretDB repository on GitHub](https://github.com/FerretDB/FerretDB/fork).
 Copy all branches to avoid `git describe` error by removing checkmark for `copy the main branch only` before forking.
@@ -44,8 +47,6 @@ cd FerretDB
 git remote add upstream https://github.com/FerretDB/FerretDB.git
 ```
 
-### Setting up the development environment
-
 To run development commands, you should first install the [`task`](https://taskfile.dev/) tool.
 You can do this by changing the directory to `tools` (`cd tools`) and running `go generate -x`.
 That will install `task` into the `bin` directory (`bin/task` on Linux and macOS, `bin\task.exe` on Windows).
@@ -55,23 +56,29 @@ or replace every invocation of `task` with explicit `bin/task`.
 You can also [install `task` globally](https://taskfile.dev/#/installation),
 but that might lead to the version skew.
 
-With `task` installed, you may do the following:
-
-1. Install development tools with `task init`.
-2. Download required Docker images with `task env-pull`.
-3. Start the development environment with `task env-up`.
-4. Run all tests in another terminal window with `task test`.
-5. Start FerretDB with `task run`.
-   This will start it in a development mode where all requests are handled by FerretDB, but also routed to MongoDB.
-   The differences in response are then logged and the FerretDB response is sent back to the client.
-6. Fill `values` collection in `test` database with data for experiments with `task env-data`.
-7. Run `mongosh` with `task mongosh`.
-   This allows you to run commands against FerretDB.
-   For example, you can see what data was inserted by the previous command with `db.values.find()`.
+With `task` installed,
+you should install development tools with `task init`
+and download required Docker images with `task env-pull`.
 
 You can see all available `task` tasks with `task -l`.
 
-### Code Overview
+## Contributing code
+
+### Commands for contributing code
+
+With `task` installed (see above), you may do the following:
+
+1. Start the development environment with `task env-up`.
+2. Run all tests in another terminal window with `task test`.
+3. Start FerretDB with `task run`.
+   This will start it in a development mode where all requests are handled by FerretDB, but also routed to MongoDB.
+   The differences in response are then logged and the FerretDB response is sent back to the client.
+4. Fill `values` collection in `test` database with data for experiments with `task env-data`.
+5. Run `mongosh` with `task mongosh`.
+   This allows you to run commands against FerretDB.
+   For example, you can see what data was inserted by the previous command with `db.values.find()`.
+
+### Code overview
 
 The directory `cmd` provides commands implementation.
 Its subdirectory `ferretdb` is the main FerretDB binary; others are tools for development.
@@ -163,4 +170,16 @@ Before submitting a pull request, please make sure that:
 
 ## Contributing documentation
 
-Please format and lint documentation with `task docs`.
+### Commands for contributing documentation
+
+With `task` installed (see above), you may do the following:
+
+1. Format and lint documentation with `task docs-fmt`.
+2. Start Docusaurus development server with `task docs-dev`.
+3. Build Docusaurus website with `task docs`.
+
+### Submitting documentation changes
+
+Before submitting a pull request, please make sure that:
+
+1. Documentation is formatted, linted, and built with `task docs`.
