@@ -149,7 +149,6 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 	// if test record path is set, split netConn reader to write to file and bufr
 	if c.testRecordPath != "" {
-
 		if err := os.MkdirAll(c.testRecordPath, 0o644); err != nil {
 			return err
 		}
