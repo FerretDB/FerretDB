@@ -53,7 +53,7 @@ func InsertDocument(ctx context.Context, querier pgxtype.Querier, db, collection
 
 	sql := `INSERT INTO ` + pgx.Identifier{db, table}.Sanitize() +
 		` (_jsonb) VALUES `
-	args := make([]interface{}, len(docs))
+	args := make([]any, len(docs))
 	for i, doc := range docs {
 		if i > 0 {
 			sql += ","
