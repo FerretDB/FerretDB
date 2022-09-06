@@ -102,8 +102,8 @@ func fromTJSON(v tjsontype) any {
 		return types.Regex(*v)
 	case *int32Type:
 		return int32(*v)
-	// case *timestampType:
-	// 	return types.Timestamp(*v)
+	case *timestampType:
+		return types.Timestamp(*v)
 	case *int64Type:
 		return int64(*v)
 	}
@@ -136,8 +136,8 @@ func toTJSON(v any) tjsontype {
 		return pointer.To(regexType(v))
 	case int32:
 		return pointer.To(int32Type(v))
-	// case types.Timestamp:
-	// 	return pointer.To(timestampType(v))
+	case types.Timestamp:
+		return pointer.To(timestampType(v))
 	case int64:
 		return pointer.To(int64Type(v))
 	}
@@ -222,6 +222,10 @@ func Unmarshal(data []byte, schema *Schema) (any, error) {
 
 		switch {
 		case v["$k"] != nil:
+			var o documentType
+			err = o.UnmarshalJSONWithSchema(data, schema)
+			res = &o
+		case v["$t"] != nil:
 			var o documentType
 			err = o.UnmarshalJSONWithSchema(data, schema)
 			res = &o

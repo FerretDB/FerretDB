@@ -275,7 +275,7 @@ func valueSchema(v any) (*Schema, error) {
 	case int32:
 		return int32Schema, nil
 	case types.Timestamp:
-		// return timestampSchema, nil
+		return timestampSchema, nil
 		return nil, lazyerrors.Errorf("%T is not supported yet", v)
 	case int64:
 		return int64Schema, nil

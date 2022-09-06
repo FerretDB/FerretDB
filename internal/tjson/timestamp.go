@@ -17,7 +17,6 @@ package tjson
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -26,13 +25,13 @@ import (
 // timestampType represents BSON Timestamp type.
 type timestampType types.Timestamp
 
+// timestampJSON is a JSON object representation of the timestampType.
+type timestampJSON struct {
+	T int64 `json:"$t"`
+}
+
 // tjsontype implements tjsontype interface.
 func (t *timestampType) tjsontype() {}
-
-// String returns formatted time for debugging.
-func (t *timestampType) String() string {
-	return fmt.Sprint(*t)
-}
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
 func (t *timestampType) UnmarshalJSON(data []byte) error {
@@ -42,8 +41,9 @@ func (t *timestampType) UnmarshalJSON(data []byte) error {
 
 	r := bytes.NewReader(data)
 	dec := json.NewDecoder(r)
+	dec.DisallowUnknownFields()
 
-	var o types.Timestamp
+	var o timestampJSON
 	if err := dec.Decode(&o); err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -52,14 +52,16 @@ func (t *timestampType) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	*t = timestampType(o)
+	*t = timestampType(o.T)
 
 	return nil
 }
 
 // MarshalJSON implements tjsontype interface.
 func (t *timestampType) MarshalJSON() ([]byte, error) {
-	res, err := json.Marshal(*t)
+	res, err := json.Marshal(timestampJSON{
+		T: int64(*t),
+	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
