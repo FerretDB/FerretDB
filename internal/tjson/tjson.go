@@ -35,7 +35,7 @@
 //	TODO types.NullType   JSON null
 //	types.Regex           {"$r": "<string without terminating 0x0>", "o": "<string without terminating 0x0>"}
 //	int32                 JSON number (int32 format)
-//	TODO types.Timestamp  {"$t": "<number as string>"}
+//	types.Timestamp  	  {"$t": "<number as string>"}
 //	int64                 JSON number (int64 format)
 //	TODO Decimal128       {"$n": "<number as string>"}
 package tjson
