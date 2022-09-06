@@ -216,9 +216,9 @@ func prepareTestCases() []testCase {
 		name:   "all",
 		v:      convertDocument(allDoc),
 		schema: must.NotFail(DocumentSchema((allDoc))),
-		j: `{"$k":["_id","binary","bool","double","int32","int64","string","object","regex"],` +
+		j: `{"$k":["_id","binary","bool","double","int32","int64","timestamp","string","object","regex"],` +
 			`"_id":"YupqlD1EsQ4ba4eX","binary":{"$b":"Qg==","s":128},"bool":true,"double":42.13,"int32":42,` +
-			`"int64":42,"timestamp":{"$t":"1562470521"},string":"foo","object":{"$k":["foo"],"foo":"bar"},"regex":{"$r":"^foobar$","o":"i"}}`,
+			`"int64":42,"timestamp":{"$t":"1562470521"},"string":"foo","object":{"$k":["foo"],"foo":"bar"},"regex":{"$r":"^foobar$","o":"i"}}`,
 	}
 
 	// TODO Add a test case that contains arrays of various types (like in the fjson package):
