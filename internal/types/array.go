@@ -50,6 +50,11 @@ func NewArray(values ...any) (*Array, error) {
 
 func (a *Array) compositeType() {}
 
+// Slice returns array as slice
+func (a *Array) Slice() []any {
+	return a.s[:]
+}
+
 // DeepCopy returns a deep copy of this Array.
 func (a *Array) DeepCopy() *Array {
 	if a == nil {

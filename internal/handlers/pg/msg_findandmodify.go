@@ -268,7 +268,7 @@ func (h *Handler) upsert(ctx context.Context, docs []*types.Document, params *up
 			}
 		}
 
-		err := h.insert(ctx, params.sqlParam, upsert)
+		err := h.insert(ctx, params.sqlParam, []any{upsert})
 		if err != nil {
 			return nil, false, err
 		}
