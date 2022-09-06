@@ -226,8 +226,8 @@ func Unmarshal(data []byte, schema *Schema) (any, error) {
 			err = o.UnmarshalJSONWithSchema(data, schema)
 			res = &o
 		case v["$t"] != nil:
-			var o documentType
-			err = o.UnmarshalJSONWithSchema(data, schema)
+			var o timestampType
+			err = o.UnmarshalJSON(data)
 			res = &o
 		case v["$b"] != nil:
 			var o binaryType

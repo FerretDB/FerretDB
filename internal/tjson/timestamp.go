@@ -17,6 +17,8 @@ package tjson
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"strconv"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -27,7 +29,7 @@ type timestampType types.Timestamp
 
 // timestampJSON is a JSON object representation of the timestampType.
 type timestampJSON struct {
-	T int64 `json:"$t"`
+	T string `json:"$t"`
 }
 
 // tjsontype implements tjsontype interface.
@@ -52,7 +54,12 @@ func (t *timestampType) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	*t = timestampType(o.T)
+	timestamp, err := strconv.Atoi(o.T)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	*t = timestampType(timestamp)
 
 	return nil
 }
@@ -60,7 +67,7 @@ func (t *timestampType) UnmarshalJSON(data []byte) error {
 // MarshalJSON implements tjsontype interface.
 func (t *timestampType) MarshalJSON() ([]byte, error) {
 	res, err := json.Marshal(timestampJSON{
-		T: int64(*t),
+		T: fmt.Sprint(*t),
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)

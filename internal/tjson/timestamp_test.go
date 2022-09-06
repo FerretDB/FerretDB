@@ -21,17 +21,20 @@ import (
 )
 
 var timestampTestCases = []testCase{{
-	name: "one",
-	v:    pointer.To(timestampType(1)),
-	j:    `{"$t":"1"}`,
+	name:   "one",
+	v:      pointer.To(timestampType(1)),
+	j:      `{"$t":"1"}`,
+	schema: timestampSchema,
 }, {
-	name: "zero",
-	v:    pointer.To(timestampType(0)),
-	j:    `{"$t":"0"}`,
+	name:   "zero",
+	v:      pointer.To(timestampType(0)),
+	j:      `{"$t":"0"}`,
+	schema: timestampSchema,
 }, {
-	name: "EOF",
-	j:    `{`,
-	jErr: `unexpected EOF`,
+	name:   "EOF",
+	j:      `{`,
+	jErr:   `unexpected EOF`,
+	schema: timestampSchema,
 }}
 
 func TestTimestamp(t *testing.T) {
