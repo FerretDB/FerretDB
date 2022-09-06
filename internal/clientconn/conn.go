@@ -157,7 +157,6 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 		path := filepath.Join(c.testRecordPath, filename)
 
-		//nolint:nosnakecase // os package require to use underscore
 		f, err := os.Create(path)
 		if err != nil {
 			return err
