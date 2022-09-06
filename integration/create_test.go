@@ -69,7 +69,7 @@ func TestCreateTigris(t *testing.T) {
 			expectedErr: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "[schema.go:208 tjson.(*Schema).Unmarshal] invalid character 'b' looking for beginning of value",
+				Message: "[schema.go:206 tjson.(*Schema).Unmarshal] invalid character 'b' looking for beginning of value",
 			},
 		},
 		"Valid": {
@@ -106,7 +106,7 @@ func TestCreateTigris(t *testing.T) {
 			expectedErr: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "[schema.go:208 tjson.(*Schema).Unmarshal] json: cannot unmarshal number into Go struct field Schema.primary_key of type string",
+				Message: "[schema.go:206 tjson.(*Schema).Unmarshal] json: cannot unmarshal number into Go struct field Schema.primary_key of type string",
 			},
 		},
 		"WrongProperties": {
@@ -122,7 +122,7 @@ func TestCreateTigris(t *testing.T) {
 			expectedErr: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "[schema.go:208 tjson.(*Schema).Unmarshal] json: cannot unmarshal string into Go struct field Schema.properties of type map[string]*tjson.Schema",
+				Message: "[schema.go:206 tjson.(*Schema).Unmarshal] json: cannot unmarshal string into Go struct field Schema.properties of type map[string]*tjson.Schema",
 			},
 		},
 	} {
