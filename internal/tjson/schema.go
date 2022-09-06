@@ -71,8 +71,6 @@ type Schema struct {
 }
 
 // Schemas for scalar types.
-//
-//nolint:unused // remove when they are used
 var (
 	doubleSchema = &Schema{
 		Type: Number,
