@@ -36,7 +36,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.l, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
+	common.Ignored(document, h.l, "writeConcern", "bypassDocumentValidation", "comment")
 
 	var sp pgdb.SQLParam
 	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
