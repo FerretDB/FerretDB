@@ -52,120 +52,48 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	var deleted int32
-	processQuery := func(i int) error {
-		// get document with filter
-		d, err := common.AssertType[*types.Document](must.NotFail(deletes.Get(i)))
-		if err != nil {
-			return err
-		}
+	common.Ignored(document, h.L, "comment")
 
-		if err := common.Unimplemented(d, "collation", "hint"); err != nil {
-			return err
-		}
-
-		// get filter from document
-		var filter *types.Document
-		if filter, err = common.GetOptionalParam(d, "q", filter); err != nil {
-			return err
-		}
-
-		var limit int64
-
-		l, err := d.Get("limit")
-		if err != nil {
-			return common.NewErrorMsg(
-				common.ErrMissingField,
-				"BSON field 'delete.deletes.limit' is missing but a required field",
-			)
-		}
-
-		if limit, err = common.GetWholeNumberParam(l); err != nil || limit < 0 || limit > 1 {
-			return common.NewErrorMsg(
-				common.ErrFailedToParse,
-				fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", l),
-			)
-		}
-
-		var fp tigrisdb.FetchParam
-
-		if fp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-			return err
-		}
-		collectionParam, err := document.Get(document.Command())
-		if err != nil {
-			return err
-		}
-		var ok bool
-		if fp.Collection, ok = collectionParam.(string); !ok {
-			return common.NewErrorMsg(
-				common.ErrBadValue,
-				fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
-			)
-		}
-
-		common.Ignored(document, h.L, "comment")
-
-		common.Ignored(filter, h.L, "$comment")
-
-		resDocs := make([]*types.Document, 0, 16)
-
-		return respondWithStack(func() error {
-			// fetch current items from collection
-			fetchedDocs, err := h.db.QueryDocuments(ctx, &fp)
-			if err != nil {
-				return err
-			}
-
-			// iterate through every row and delete matching ones
-			for _, doc := range fetchedDocs {
-				// fetch current items from collection
-				matches, err := common.FilterDocument(doc, filter)
-				if err != nil {
-					return err
-				}
-
-				if !matches {
-					continue
-				}
-
-				resDocs = append(resDocs, doc)
-			}
-
-			if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
-				return err
-			}
-
-			// if no field is matched in a row, go to the next one
-			if len(resDocs) == 0 {
-				return nil
-			}
-
-			res, err := h.delete(ctx, &fp, resDocs)
-			if err != nil {
-				return err
-			}
-
-			deleted += int32(res)
-
-			return nil
-		})
+	fp := new(tigrisdb.FetchParam)
+	if fp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
 	}
 
+	collectionParam, err := document.Get(document.Command())
+	if err != nil {
+		return nil, err
+	}
+
+	var ok bool
+	if fp.Collection, ok = collectionParam.(string); !ok {
+		return nil, common.NewErrorMsg(
+			common.ErrBadValue,
+			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+		)
+	}
+
+	var deleted int32
 	var delErrors common.WriteErrors
 
 	// process every delete filter
 	for i := 0; i < deletes.Len(); i++ {
-		err := processQuery(i)
+		// get document with filter
+		deleteDoc, err := common.AssertType[*types.Document](must.NotFail(deletes.Get(i)))
+		if err != nil {
+			return nil, err
+		}
+
+		del, err := h.funcName(ctx, deleteDoc, fp)
 		switch err.(type) {
 		case nil:
+			deleted += del
 			continue
 
 		case *common.CommandError:
 			// command errors should be return immediately
 			return nil, err
 
-		default:
+		case *common.WriteErrors:
 			// write errors and others require to be handled in array
 			delErrors.Append(err, int32(i))
 
@@ -178,6 +106,8 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			if !ordered {
 				continue
 			}
+		default:
+			return nil, lazyerrors.Error(err)
 		}
 
 		// send response if ordered is true
@@ -203,6 +133,82 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	return &reply, nil
+}
+
+func (h *Handler) funcName(ctx context.Context, d *types.Document, fp *tigrisdb.FetchParam) (int32, error) {
+	var err error
+
+	if err := common.Unimplemented(d, "collation", "hint"); err != nil {
+		return 0, err
+	}
+
+	// get filter from document
+	var filter *types.Document
+	if filter, err = common.GetOptionalParam(d, "q", filter); err != nil {
+		return 0, err
+	}
+
+	var limit int64
+
+	l, err := d.Get("limit")
+	if err != nil {
+		return 0, common.NewErrorMsg(
+			common.ErrMissingField,
+			"BSON field 'delete.deletes.limit' is missing but a required field",
+		)
+	}
+
+	if limit, err = common.GetWholeNumberParam(l); err != nil || limit < 0 || limit > 1 {
+		return 0, common.NewErrorMsg(
+			common.ErrFailedToParse,
+			fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", l),
+		)
+	}
+
+	common.Ignored(filter, h.L, "$comment")
+
+	resDocs := make([]*types.Document, 0, 16)
+
+	var deleted int32
+
+	// fetch current items from collection
+	fetchedDocs, err := h.db.QueryDocuments(ctx, fp)
+	if err != nil {
+		return 0, err
+	}
+
+	// iterate through every row and delete matching ones
+	for _, doc := range fetchedDocs {
+		// fetch current items from collection
+		matches, err := common.FilterDocument(doc, filter)
+		if err != nil {
+			return 0, err
+		}
+
+		if !matches {
+			continue
+		}
+
+		resDocs = append(resDocs, doc)
+	}
+
+	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
+		return 0, err
+	}
+
+	// if no field is matched in a row, go to the next one
+	if len(resDocs) == 0 {
+		return 0, nil
+	}
+
+	res, err := h.delete(ctx, fp, resDocs)
+	if err != nil {
+		return 0, err
+	}
+
+	deleted += int32(res)
+
+	return deleted, nil
 }
 
 // delete deletes documents by _id.
@@ -231,16 +237,4 @@ func (h *Handler) delete(ctx context.Context, fp *tigrisdb.FetchParam, docs []*t
 	}
 
 	return len(ids), nil
-}
-
-// respondWithStack calls the fun. If fun returns
-// not-nil error then it is wrapped with lazyerrors.Error.
-//
-// TODO This function should be removed, but that's not easy: https://github.com/FerretDB/FerretDB/issues/1106
-func respondWithStack(fun func() error) error {
-	if err := fun(); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	return nil
 }
