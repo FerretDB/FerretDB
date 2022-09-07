@@ -225,6 +225,7 @@ func (h *Handler) processDeleteQuery(ctx context.Context, deleteDoc *types.Docum
 
 		return nil
 	})
+
 	if err != nil {
 		return 0, err
 	}
