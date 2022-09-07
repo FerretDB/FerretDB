@@ -85,6 +85,9 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				return false, err
 			}
 
+		case "$max":
+			changed, err := processMaxFieldExpression(doc, updateV)
+
 		case "$pop":
 			changed, err = processPopFieldExpression(doc, updateV.(*types.Document))
 			if err != nil {
