@@ -50,7 +50,7 @@ func NewArray(values ...any) (*Array, error) {
 
 func (a *Array) compositeType() {}
 
-// Slice returns array as slice
+// Slice returns array as slice.
 func (a *Array) Slice() []any {
 	return a.s[:]
 }
