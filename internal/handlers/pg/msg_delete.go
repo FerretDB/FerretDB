@@ -115,7 +115,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		return h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 			// fetch current items from collection
-			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp)
+			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, &sp)
 			if err != nil {
 				return err
 			}

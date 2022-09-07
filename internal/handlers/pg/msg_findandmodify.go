@@ -16,7 +16,6 @@ package pg
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -53,23 +52,29 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	}
 	common.Ignored(document, h.l, ignoredFields...)
 
-	params, err := prepareFindAndModifyParams(document)
+	params, err := common.PrepareFindAndModifyParams(document)
 	if err != nil {
 		return nil, err
 	}
 
-	if params.maxTimeMS != 0 {
-		ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Duration(params.maxTimeMS)*time.Millisecond)
+	if params.MaxTimeMS != 0 {
+		ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
 		defer cancel()
 
 		ctx = ctxWithTimeout
+	}
+
+	sqlParam := pgdb.SQLParam{
+		DB:         params.DB,
+		Collection: params.Collection,
+		Comment:    params.Comment,
 	}
 
 	// This is not very optimal as we need to fetch everything from the database to have a proper sort.
 	// We might consider rewriting it later.
 	resDocs := make([]*types.Document, 0, 16)
 	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, params.sqlParam)
+		fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, &sqlParam)
 		if err != nil {
 			return err
 		}
@@ -89,13 +94,13 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			fetchedDocs = append(fetchedDocs, fetchedItem.Docs...)
 		}
 
-		err = common.SortDocuments(fetchedDocs, params.sort)
+		err = common.SortDocuments(fetchedDocs, params.Sort)
 		if err != nil {
 			return err
 		}
 
 		for _, doc := range fetchedDocs {
-			matches, err := common.FilterDocument(doc, params.query)
+			matches, err := common.FilterDocument(doc, params.Query)
 			if err != nil {
 				return err
 			}
@@ -119,16 +124,16 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	if params.update != nil { // we have update part
+	if params.Update != nil { // we have update part
 		var upsert *types.Document
 		var upserted bool
 
-		if params.upsert { //  we have upsert flag
+		if params.Upsert { //  we have upsert flag
 			p := &upsertParams{
-				hasUpdateOperators: params.hasUpdateOperators,
-				query:              params.query,
-				update:             params.update,
-				sqlParam:           params.sqlParam,
+				hasUpdateOperators: params.HasUpdateOperators,
+				query:              params.Query,
+				update:             params.Update,
+				sqlParam:           &sqlParam,
 			}
 			upsert, upserted, err = h.upsert(ctx, resDocs, p)
 			if err != nil {
@@ -148,25 +153,25 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				return &reply, nil
 			}
 
-			if params.hasUpdateOperators {
+			if params.HasUpdateOperators {
 				upsert = resDocs[0].DeepCopy()
-				_, err = common.UpdateDocument(upsert, params.update)
+				_, err = common.UpdateDocument(upsert, params.Update)
 				if err != nil {
 					return nil, err
 				}
 
-				_, err = h.update(ctx, &params.sqlParam, upsert)
+				_, err = h.update(ctx, &sqlParam, upsert)
 				if err != nil {
 					return nil, err
 				}
 			} else {
-				upsert = params.update
+				upsert = params.Update
 
 				if !upsert.Has("_id") {
 					must.NoError(upsert.Set("_id", must.NotFail(resDocs[0].Get("_id"))))
 				}
 
-				_, err = h.update(ctx, &params.sqlParam, upsert)
+				_, err = h.update(ctx, &sqlParam, upsert)
 				if err != nil {
 					return nil, err
 				}
@@ -174,7 +179,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		}
 
 		var resultDoc *types.Document
-		if params.returnNewDocument || len(resDocs) == 0 {
+		if params.ReturnNewDocument || len(resDocs) == 0 {
 			resultDoc = upsert
 		} else {
 			resultDoc = resDocs[0]
@@ -201,7 +206,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return &reply, nil
 	}
 
-	if params.remove {
+	if params.Remove {
 		if len(resDocs) == 0 {
 			var reply wire.OpMsg
 			must.NoError(reply.SetSections(wire.OpMsgSection{
@@ -214,7 +219,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			return &reply, nil
 		}
 
-		_, err = h.delete(ctx, &params.sqlParam, resDocs)
+		_, err = h.delete(ctx, &sqlParam, resDocs)
 		if err != nil {
 			return nil, err
 		}
@@ -237,7 +242,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 type upsertParams struct {
 	hasUpdateOperators bool
 	query, update      *types.Document
-	sqlParam           pgdb.SQLParam
+	sqlParam           *pgdb.SQLParam
 }
 
 // upsert inserts new document if no documents in query result or updates given document.
@@ -284,132 +289,10 @@ func (h *Handler) upsert(ctx context.Context, docs []*types.Document, params *up
 		}
 	}
 
-	_, err := h.update(ctx, &params.sqlParam, upsert)
+	_, err := h.update(ctx, params.sqlParam, upsert)
 	if err != nil {
 		return nil, false, err
 	}
 
 	return upsert, false, nil
-}
-
-// findAndModifyParams represent all findAndModify requests' fields.
-// It's filled by calling prepareFindAndModifyParams.
-type findAndModifyParams struct {
-	sqlParam                              pgdb.SQLParam
-	query, sort, update                   *types.Document
-	remove, upsert                        bool
-	returnNewDocument, hasUpdateOperators bool
-	maxTimeMS                             int32
-}
-
-// prepareFindAndModifyParams prepares findAndModify request fields.
-func prepareFindAndModifyParams(document *types.Document) (*findAndModifyParams, error) {
-	var err error
-
-	command := document.Command()
-
-	var db, collection string
-	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-	if collection, err = common.GetRequiredParam[string](document, command); err != nil {
-		return nil, err
-	}
-
-	if collection == "" {
-		return nil, common.NewErrorMsg(
-			common.ErrInvalidNamespace,
-			fmt.Sprintf("Invalid namespace specified '%s.'", db),
-		)
-	}
-
-	var remove bool
-	if remove, err = common.GetBoolOptionalParam(document, "remove"); err != nil {
-		return nil, err
-	}
-	var returnNewDocument bool
-	if returnNewDocument, err = common.GetBoolOptionalParam(document, "new"); err != nil {
-		return nil, err
-	}
-	var upsert bool
-	if upsert, err = common.GetBoolOptionalParam(document, "upsert"); err != nil {
-		return nil, err
-	}
-
-	var query *types.Document
-	if query, err = common.GetOptionalParam(document, "query", query); err != nil {
-		return nil, err
-	}
-
-	var sort *types.Document
-	if sort, err = common.GetOptionalParam(document, "sort", sort); err != nil {
-		return nil, err
-	}
-
-	maxTimeMS, err := common.GetOptionalPositiveNumber(document, "maxTimeMS")
-	if err != nil {
-		return nil, err
-	}
-
-	var update *types.Document
-	updateParam, err := document.Get("update")
-	if err != nil && !remove {
-		return nil, common.NewErrorMsg(common.ErrFailedToParse, "Either an update or remove=true must be specified")
-	}
-	if err == nil {
-		switch updateParam := updateParam.(type) {
-		case *types.Document:
-			update = updateParam
-		case *types.Array:
-			// TODO aggregation pipeline stages metrics
-			return nil, common.NewErrorMsg(common.ErrNotImplemented, "Aggregation pipelines are not supported yet")
-		default:
-			return nil, common.NewErrorMsg(common.ErrFailedToParse, "Update argument must be either an object or an array")
-		}
-	}
-
-	if update != nil && remove {
-		return nil, common.NewErrorMsg(common.ErrFailedToParse, "Cannot specify both an update and remove=true")
-	}
-	if upsert && remove {
-		return nil, common.NewErrorMsg(common.ErrFailedToParse, "Cannot specify both upsert=true and remove=true")
-	}
-	if returnNewDocument && remove {
-		return nil, common.NewErrorMsg(
-			common.ErrFailedToParse,
-			"Cannot specify both new=true and remove=true; 'remove' always returns the deleted document",
-		)
-	}
-
-	hasUpdateOperators, err := common.HasSupportedUpdateModifiers(update)
-	if err != nil {
-		return nil, err
-	}
-
-	var comment string
-	// get comment from a "comment" field
-	if comment, err = common.GetOptionalParam(document, "comment", comment); err != nil {
-		return nil, err
-	}
-
-	// get comment from query, e.g. db.collection.FindAndModify({"_id":"string", "$comment: "test"},{$set:{"v":"foo""}})
-	if comment, err = common.GetOptionalParam(query, "$comment", comment); err != nil {
-		return nil, err
-	}
-
-	return &findAndModifyParams{
-		sqlParam: pgdb.SQLParam{
-			DB:         db,
-			Collection: collection,
-			Comment:    comment,
-		},
-		query:              query,
-		update:             update,
-		sort:               sort,
-		remove:             remove,
-		upsert:             upsert,
-		returnNewDocument:  returnNewDocument,
-		hasUpdateOperators: hasUpdateOperators,
-		maxTimeMS:          maxTimeMS,
-	}, nil
 }
