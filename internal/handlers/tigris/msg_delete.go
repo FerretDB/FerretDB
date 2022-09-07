@@ -85,16 +85,17 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		del, err := h.funcName(ctx, deleteDoc, fp)
-		switch err.(type) {
-		case nil:
+		if err == nil {
 			deleted += del
 			continue
+		}
 
-		case *common.CommandError:
-			// command errors should be return immediately
-			delErrors.Append(err, 0)
-			return nil, &delErrors
+		if _, ok := err.(*common.CommandError); ok {
+			delErrors.Append(err, int32(i))
+			break
+		}
 
+		switch err.(type) {
 		case *common.WriteErrors:
 			// write errors and others require to be handled in array
 			delErrors.Append(err, int32(i))
