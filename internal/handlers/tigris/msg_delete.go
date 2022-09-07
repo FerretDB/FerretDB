@@ -91,7 +91,8 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		case *common.CommandError:
 			// command errors should be return immediately
-			return nil, err
+			delErrors.Append(err, 0)
+			return nil, &delErrors
 
 		case *common.WriteErrors:
 			// write errors and others require to be handled in array
