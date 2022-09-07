@@ -21,7 +21,8 @@
     "prism-react-renderer": "^1.3.5",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
-    "trim": "^1.0.1"
+    "trim": "^1.0.1",
+    "got": "^11.8.5"
   },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "^2.1.0"
