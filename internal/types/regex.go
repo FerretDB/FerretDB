@@ -87,6 +87,7 @@ func (r Regex) Compile() (*regexp.Regexp, error) {
 	}
 
 	if err, ok := err.(*syntax.Error); ok {
+		//nolint:exhaustive // There is no such ErrNestingDepth error.
 		switch err.Code {
 		case syntax.ErrInvalidCharRange:
 			return nil, ErrInvalidClassRange
