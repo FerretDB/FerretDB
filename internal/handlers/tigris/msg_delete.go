@@ -55,6 +55,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	common.Ignored(document, h.L, "comment")
 
 	fp := new(tigrisdb.FetchParam)
+
 	if fp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
