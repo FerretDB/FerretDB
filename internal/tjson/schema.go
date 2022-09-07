@@ -203,10 +203,10 @@ func (s *Schema) Unmarshal(b []byte) error {
 	dec.DisallowUnknownFields()
 
 	if err := dec.Decode(s); err != nil {
-		return lazyerrors.Error(err)
+		return err
 	}
 	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Error(err)
+		return err
 	}
 
 	return nil
