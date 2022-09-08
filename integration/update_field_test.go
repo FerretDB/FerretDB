@@ -681,10 +681,18 @@ func TestUpdateFieldMax(t *testing.T) {
 		expectedVal interface{}
 		expectedErr *mongo.WriteError
 	}{
+
+		//TODO: what if:
+		// db.scores.updateOne( { _id: 1 }, { $max: { highScore: 950, highScore2: 250} } )
 		"HigherInt": {
 			id:          "int32",
 			update:      bson.D{{"$max", bson.D{{"v", 60}}}},
 			expectedVal: int32(60),
+		},
+		"LowerInt": {
+			id:          "int32",
+			update:      bson.D{{"$max", bson.D{{"v", 20}}}},
+			expectedVal: int32(42),
 		},
 	} {
 		name, tc := name, tc
@@ -692,8 +700,8 @@ func TestUpdateFieldMax(t *testing.T) {
 			t.Parallel()
 			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
-			var err error
-			//_, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
+			_, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
+			require.NoError(t, err)
 
 			if tc.expectedErr != nil {
 				assert.NotNil(t, err)

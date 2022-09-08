@@ -340,14 +340,12 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	maxExpression := updateV.(*types.Document)
 
 	for _, field := range maxExpression.Keys() {
-		//TODO: what if:
-		// db.scores.updateOne( { _id: 1 }, { $max: { highScore: 950, highScore2: 250} } )
 		v, err := doc.Get(field)
 		if err != nil {
 			return false, err
 		}
 
-		actualVal, ok := v.(int)
+		actualVal, ok := v.(int32)
 		if !ok {
 			return false, fmt.Errorf("wrong doc type")
 		}
@@ -357,7 +355,7 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			return false, err
 		}
 
-		maxVal, ok := maxV.(int)
+		maxVal, ok := maxV.(int32)
 		if !ok {
 			return false, fmt.Errorf("wrong max type")
 		}
@@ -470,6 +468,8 @@ func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
 		case "$currentDate":
 			fallthrough
 		case "$inc":
+			fallthrough
+		case "$max":
 			fallthrough
 		case "$set":
 			fallthrough
