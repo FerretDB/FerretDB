@@ -694,6 +694,26 @@ func TestUpdateFieldMax(t *testing.T) {
 			update:      bson.D{{"$max", bson.D{{"v", 20}}}},
 			expectedVal: int32(42),
 		},
+		"Double": {
+			id:          "double",
+			update:      bson.D{{"$max", bson.D{{"v", 54.32}}}},
+			expectedVal: 54.32,
+		},
+		"String": {
+			id:          "string-whole",
+			update:      bson.D{{"$max", bson.D{{"v", "60"}}}},
+			expectedVal: "60",
+		},
+		"StringDouble": {
+			id:          "string-double",
+			update:      bson.D{{"$max", bson.D{{"v", "54.32"}}}},
+			expectedVal: "54.32",
+		},
+		"StringMixed": {
+			id:          "int32",
+			update:      bson.D{{"$max", bson.D{{"v", "60"}}}},
+			expectedVal: "60",
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
