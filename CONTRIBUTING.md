@@ -36,8 +36,10 @@ Finally, you will also need [git-lfs](https://git-lfs.github.com) installed and 
 
 ### Making a working copy
 
-After [forking FerretDB on GitHub](https://github.com/FerretDB/FerretDB/fork),
-you can clone the repository:
+Fork the [FerretDB repository on GitHub](https://github.com/FerretDB/FerretDB/fork).
+To have all the tags in the repository and what they point to, copy all branches by removing checkmark for `copy the main branch only` before forking.
+
+After forking FerretDB on GitHub, you can clone the repository:
 
 ```sh
 git clone git@github.com:<YOUR_GITHUB_USERNAME>/FerretDB.git
