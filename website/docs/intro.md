@@ -2,47 +2,54 @@
 sidebar_position: 1
 ---
 
-# Tutorial Intro
+# Introduction
 
-Let's discover **Docusaurus in less than 5 minutes**.
+FerretDB (previously MangoDB) was founded to become the de-facto open-source substitute to MongoDB.
+FerretDB is an open-source proxy, converting the MongoDB 6.0+ wire protocol queries to SQL -
+using PostgreSQL as a database engine.
 
-## Getting Started
+## Why do we need FerretDB?
 
-Get started by **creating a new site**.
+MongoDB was originally an eye-opening technology for many of us developers,
+empowering us to build applications faster than using relational databases.
+In its early days, its ease-to-use and well-documented drivers made MongoDB one of the simplest database solutions available.
+However, as time passed, MongoDB abandoned its open-source roots;
+changing the license to SSPL - making it unusable for many open source and early-stage commercial projects.
 
-Or **try Docusaurus immediately** with **[docusaurus.new](https://docusaurus.new)**.
+Most MongoDB users do not require any advanced features offered by MongoDB;
+however, they need an easy-to-use open-source database solution.
+Recognizing this, FerretDB is here to fill that gap.
 
-### What you'll need
+## Scope and current state
 
-* [Node.js](https://nodejs.org/en/download/) version 16.14 or above:
-  * When installing Node.js, you are recommended to check all checkboxes related to dependencies.
+FerretDB will be compatible with MongoDB drivers and will strive to serve as a drop-in replacement for MongoDB 6.0+.
 
-## Generate a new site
+Currently, the project is in its early stages and welcomes all contributors.
+See our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1)
+and [contributing guidelines](https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md/).
 
-Generate a new Docusaurus site using the **classic template**.
+### Known differences
 
-The classic template will automatically be added to your project after you run the command:
+1. FerretDB uses the same protocol error names and codes, but the exact error messages may be different in some cases.
+2. FerretDB does not support NUL (`\0`) characters in strings.
+3. Database and collection names restrictions:
 
-```bash
-npm init docusaurus@latest my-website classic
-```
+* name cannot start with the reserved prefix `_ferretdb_`.
+* name must not include non-latin letters, spaces, dots, dollars or dashes.
+* collection name length must be less or equal than 120 symbols, database name length limit is 63 symbols.
+* name must not start with a number.
+* database name cannot contain capital letters.
 
-You can type this command into Command Prompt, Powershell, Terminal, or any other integrated terminal of your code editor.
+If you encounter some other difference in behavior, please [join our community](#community) to report a problem.
 
-The command also installs all necessary dependencies you need to run Docusaurus.
+## Community
 
-## Start your site
+* Website and blog: [https://ferretdb.io](https://ferretdb.io/).
+* Twitter: [@ferret_db](https://twitter.com/ferret_db).
+* [Slack chat](https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A) for quick questions.
+* [GitHub Discussions](https://github.com/FerretDB/FerretDB/discussions) for longer topics.
+* [GitHub Issues](https://github.com/FerretDB/FerretDB/issues) for bugs and missing features.
+* [Open Office House meeting](https://calendar.google.com/event?action=TEMPLATE&tmeid=NjNkdTkyN3VoNW5zdHRiaHZybXFtb2l1OWtfMjAyMTEyMTNUMTgwMDAwWiBjX24zN3RxdW9yZWlsOWIwMm0wNzQwMDA3MjQ0QGc&tmsrc=c_n37tquoreil9b02m0740007244%40group.calendar.google.com&scp=ALL)
+  every Monday at 18:00 UTC at [Google Meet](https://meet.google.com/mcb-arhw-qbq).
 
-Run the development server:
-
-```bash
-cd my-website
-npm run start
-```
-
-The `cd` command changes the directory you're working with.
-In order to work with your newly created Docusaurus site, you'll need to navigate the terminal there.
-
-The `npm run start` command builds your website locally and serves it through a development server, ready for you to view at <http://localhost:3000/>.
-
-Open `docs/intro.md` (this page) and edit some lines: the site **reloads automatically** and displays your changes.
+If you want to contact FerretDB Inc., please use [this form](https://www.ferretdb.io/contact/).

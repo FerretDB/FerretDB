@@ -8,28 +8,25 @@ const FeatureList = [
     Svg: require('@site/static/img/undraw_docusaurus_mountain.svg').default,
     description: (
       <>
-        Docusaurus was designed from the ground up to be easily installed and
-        used to get your website up and running quickly.
+        Easy to use document databases that protects you from vendor lock-in and fauxpen licenses.
       </>
     ),
   },
   {
-    title: 'Focus on What Matters',
+    title: 'Open-Source',
     Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
     description: (
       <>
-        Docusaurus lets you focus on your docs, and we&apos;ll do the chores. Go
-        ahead and move your docs into the <code>docs</code> directory.
+        Perfect open-source software for those looking for MongoDB development experience.
       </>
     ),
   },
   {
-    title: 'Powered by React',
+    title: 'MongoDB Alternative',
     Svg: require('@site/static/img/undraw_docusaurus_react.svg').default,
     description: (
       <>
-        Extend or customize your website layout by reusing React. Docusaurus can
-        be extended while reusing the same header and footer.
+        Compatible with MongoDB drivers and should work as a drop-in replacement to MongoDB in many cases.
       </>
     ),
   },
