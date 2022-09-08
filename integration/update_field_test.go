@@ -671,6 +671,49 @@ func TestUpdateFieldInc(t *testing.T) {
 	})
 }
 
+func TestUpdateFieldMax(t *testing.T) {
+	setup.SkipForTigris(t)
+
+	t.Parallel()
+	for name, tc := range map[string]struct {
+		id          string
+		update      bson.D
+		expectedVal interface{}
+		expectedErr *mongo.WriteError
+	}{
+		"HigherInt": {
+			id:          "int32",
+			update:      bson.D{{"$max", bson.D{{"v", 60}}}},
+			expectedVal: int32(60),
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+
+			var err error
+			//_, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
+
+			if tc.expectedErr != nil {
+				assert.NotNil(t, err)
+				AssertEqualWriteError(t, *tc.expectedErr, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			var actual bson.D
+			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
+			require.NoError(t, err)
+
+			actualVal, ok := actual.Map()["v"]
+			require.True(t, ok)
+
+			assert.Equal(t, tc.expectedVal, actualVal)
+		})
+	}
+}
+
 func TestUpdateFieldSet(t *testing.T) {
 	setup.SkipForTigris(t)
 

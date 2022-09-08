@@ -86,7 +86,10 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 
 		case "$max":
-			changed, err := processMaxFieldExpression(doc, updateV)
+			changed, err = processMaxFieldExpression(doc, updateV)
+			if err != nil {
+				return false, err
+			}
 
 		case "$pop":
 			changed, err = processPopFieldExpression(doc, updateV.(*types.Document))
@@ -329,6 +332,43 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	}
 
 	return changed, nil
+}
+
+// processMaxFieldExpression changes document according to $max operator.
+// If the document was changed it returns true.
+func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
+	maxExpression := updateV.(*types.Document)
+
+	for _, field := range maxExpression.Keys() {
+		//TODO: what if:
+		// db.scores.updateOne( { _id: 1 }, { $max: { highScore: 950, highScore2: 250} } )
+		v, err := doc.Get(field)
+		if err != nil {
+			return false, err
+		}
+
+		actualVal, ok := v.(int)
+		if !ok {
+			return false, fmt.Errorf("wrong doc type")
+		}
+
+		maxV, err := maxExpression.Get(field)
+		if err != nil {
+			return false, err
+		}
+
+		maxVal, ok := maxV.(int)
+		if !ok {
+			return false, fmt.Errorf("wrong max type")
+		}
+
+		if maxVal > actualVal {
+			if err := doc.Set(field, maxVal); err != nil {
+				return false, err
+			}
+		}
+	}
+	return true, nil
 }
 
 // processCurrentDateFieldExpression changes document according to $currentDate operator.
