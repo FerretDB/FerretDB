@@ -340,31 +340,56 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	maxExpression := updateV.(*types.Document)
 
 	for _, field := range maxExpression.Keys() {
-		v, err := doc.Get(field)
-		if err != nil {
-			return false, err
-		}
+		v := must.NotFail(doc.Get(field))
 
-		actualVal, ok := v.(int32)
-		if !ok {
-			return false, fmt.Errorf("wrong doc type")
-		}
+		//switch v := v.(type) {
+		//}
 
 		maxV, err := maxExpression.Get(field)
 		if err != nil {
 			return false, err
 		}
 
-		maxVal, ok := maxV.(int32)
-		if !ok {
-			return false, fmt.Errorf("wrong max type")
+		result := types.Compare(v, maxV)
+		if len(result) != 1 {
+			panic("result len is not equal 1")
 		}
 
-		if maxVal > actualVal {
-			if err := doc.Set(field, maxVal); err != nil {
+		switch result[0] {
+		case types.Less:
+			if err := doc.Set(field, maxV); err != nil {
 				return false, err
 			}
+		case types.Incomparable:
+			// TODO:
+			// switch v.(type) {
+			// case string:
+			// case bool:
+			// case types.Document:
+			// }
+			panic("incomparable")
 		}
+
+		//actualVal, ok := v.(int32)
+		//if !ok {
+		//	return false, fmt.Errorf("wrong doc type")
+		//}
+
+		//maxV, err := maxExpression.Get(field)
+		//if err != nil {
+		//	return false, err
+		//}
+
+		//maxVal, ok := maxV.(int32)
+		//if !ok {
+		//	return false, fmt.Errorf("wrong max type")
+		//}
+
+		//if maxVal > actualVal {
+		//	if err := doc.Set(field, maxVal); err != nil {
+		//		return false, err
+		//	}
+		//}
 	}
 	return true, nil
 }

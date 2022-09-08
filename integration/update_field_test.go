@@ -699,7 +699,7 @@ func TestUpdateFieldMax(t *testing.T) {
 			update:      bson.D{{"$max", bson.D{{"v", 54.32}}}},
 			expectedVal: 54.32,
 		},
-		"String": {
+		"StringInteger": {
 			id:          "string-whole",
 			update:      bson.D{{"$max", bson.D{{"v", "60"}}}},
 			expectedVal: "60",
@@ -713,6 +713,61 @@ func TestUpdateFieldMax(t *testing.T) {
 			id:          "int32",
 			update:      bson.D{{"$max", bson.D{{"v", "60"}}}},
 			expectedVal: "60",
+		},
+		"StringNotNumeric": {
+			id:          "string-whole",
+			update:      bson.D{{"$max", bson.D{{"v", "foo"}}}},
+			expectedVal: "foo",
+		},
+		"StringDoc": {
+			id:          "string",
+			update:      bson.D{{"$max", bson.D{{"v", bson.D{{"a", "b"}}}}}},
+			expectedVal: bson.D{{"a", "b"}},
+		},
+		"IntDoc": {
+			id:          "int32",
+			update:      bson.D{{"$max", bson.D{{"v", bson.D{{"a", "b"}}}}}},
+			expectedVal: bson.D{{"a", "b"}},
+		},
+		"EmptyDoc": {
+			id:          "int32",
+			update:      bson.D{{"$max", bson.D{{"v", bson.D{{}}}}}},
+			expectedVal: bson.D{{}},
+		},
+		"IntDouble": {
+			id:          "int32",
+			update:      bson.D{{"$max", bson.D{{"v", 54.32}}}},
+			expectedVal: 54.32,
+		},
+		"StringBool": {
+			id:          "string",
+			update:      bson.D{{"$max", bson.D{{"v", true}}}},
+			expectedVal: true,
+		},
+		"IntBool": {
+			id:          "int32",
+			update:      bson.D{{"$max", bson.D{{"v", true}}}},
+			expectedVal: true,
+		},
+		"ZeroTrue": { // Check if true is not taken as 1 when comparing with int32(0)
+			id:          "int32-zero",
+			update:      bson.D{{"$max", bson.D{{"v", true}}}},
+			expectedVal: true,
+		},
+		"EmptyOperand": {
+			id:          "string",
+			update:      bson.D{{"$max", bson.D{}}},
+			expectedVal: "foo",
+		},
+		"StringLexicographicHigher": {
+			id:          "string",
+			update:      bson.D{{"$max", bson.D{{"v", "goo"}}}},
+			expectedVal: "goo",
+		},
+		"StringLexicographicLower": {
+			id:          "string",
+			update:      bson.D{{"$max", bson.D{{"v", "eoo"}}}},
+			expectedVal: "foo",
 		},
 	} {
 		name, tc := name, tc
