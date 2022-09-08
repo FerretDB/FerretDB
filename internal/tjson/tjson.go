@@ -35,7 +35,7 @@
 //	TODO types.NullType   JSON null
 //	types.Regex           {"$r": "<string without terminating 0x0>", "o": "<string without terminating 0x0>"}
 //	int32                 JSON number (int32 format)
-//	TODO types.Timestamp  {"$t": "<number as string>"}
+//	types.Timestamp  	  {"$t": "<number as string>"}
 //	int64                 JSON number (int64 format)
 //	TODO Decimal128       {"$n": "<number as string>"}
 package tjson
@@ -102,8 +102,8 @@ func fromTJSON(v tjsontype) any {
 		return types.Regex(*v)
 	case *int32Type:
 		return int32(*v)
-	// case *timestampType:
-	// 	return types.Timestamp(*v)
+	case *timestampType:
+		return types.Timestamp(*v)
 	case *int64Type:
 		return int64(*v)
 	}
@@ -136,8 +136,8 @@ func toTJSON(v any) tjsontype {
 		return pointer.To(regexType(v))
 	case int32:
 		return pointer.To(int32Type(v))
-	// case types.Timestamp:
-	// 	return pointer.To(timestampType(v))
+	case types.Timestamp:
+		return pointer.To(timestampType(v))
 	case int64:
 		return pointer.To(int64Type(v))
 	}
@@ -224,6 +224,10 @@ func Unmarshal(data []byte, schema *Schema) (any, error) {
 		case v["$k"] != nil:
 			var o documentType
 			err = o.UnmarshalJSONWithSchema(data, schema)
+			res = &o
+		case v["$t"] != nil:
+			var o timestampType
+			err = o.UnmarshalJSON(data)
 			res = &o
 		case v["$b"] != nil:
 			var o binaryType
