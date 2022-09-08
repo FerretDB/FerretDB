@@ -45,11 +45,7 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	res := must.NotFail(types.NewDocument())
 
 	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		if err := pgdb.DropDatabase(ctx, tx, db); err != nil {
-			return err
-		}
-
-		return nil
+		return pgdb.DropDatabase(ctx, tx, db)
 	})
 
 	switch {
