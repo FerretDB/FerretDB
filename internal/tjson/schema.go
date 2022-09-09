@@ -61,13 +61,14 @@ const (
 
 // Schema represents a supported subset of JSON Schema.
 type Schema struct {
-	Title       string             `json:"title,omitempty"`
-	Description string             `json:"description,omitempty"`
-	Type        SchemaType         `json:"type,omitempty"`
-	Format      SchemaFormat       `json:"format,omitempty"`
-	Properties  map[string]*Schema `json:"properties,omitempty"`
-	Items       *Schema            `json:"items,omitempty"`
-	PrimaryKey  []string           `json:"primary_key,omitempty"`
+	Title          string             `json:"title,omitempty"`
+	Description    string             `json:"description,omitempty"`
+	Type           SchemaType         `json:"type,omitempty"`
+	CollectionType string             `json:"collectionType,omitempty"`
+	Format         SchemaFormat       `json:"format,omitempty"`
+	Properties     map[string]*Schema `json:"properties,omitempty"`
+	Items          *Schema            `json:"items,omitempty"`
+	PrimaryKey     []string           `json:"primary_key,omitempty"`
 }
 
 // Schemas for scalar types.
