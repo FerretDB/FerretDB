@@ -1,0 +1,6 @@
+{
+  "name": "tools",
+  "dependencies": {
+    "vercel": "28.2.3"
+  }
+}

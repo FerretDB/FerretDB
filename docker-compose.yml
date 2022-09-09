@@ -75,6 +75,13 @@ services:
     volumes:
       - .:/workdir
       - /workdir/build/deps/textlint/node_modules
+  vercel:
+    build:
+      context: ./build/deps/vercel
+    container_name: ferretdb_vercel
+    volumes:
+      - .:/workdir
+      - /workdir/build/deps/vercel/node_modules
   docusaurus:
     build:
       context: ./website
