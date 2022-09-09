@@ -5,7 +5,7 @@ import styles from './styles.module.css';
 const FeatureList = [
   {
     title: 'Easy to Use',
-    Svg: require('@site/static/img/undraw_docusaurus_mountain.svg').default,
+    Svg: require('@site/static/img/undraw_ferretdb_usability.svg').default,
     description: (
       <>
         Easy to use document databases that protects you from vendor lock-in and fauxpen licenses.
@@ -14,7 +14,7 @@ const FeatureList = [
   },
   {
     title: 'Open-Source',
-    Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
+    Svg: require('@site/static/img/undraw_ferretdb_open_source.svg').default,
     description: (
       <>
         Perfect open-source software for those looking for MongoDB development experience.
@@ -23,7 +23,7 @@ const FeatureList = [
   },
   {
     title: 'MongoDB Alternative',
-    Svg: require('@site/static/img/undraw_docusaurus_react.svg').default,
+    Svg: require('@site/static/img/undraw_ferretdb_server.svg').default,
     description: (
       <>
         Compatible with MongoDB drivers and should work as a drop-in replacement to MongoDB in many cases.
