@@ -71,8 +71,6 @@ type Schema struct {
 }
 
 // Schemas for scalar types.
-//
-//nolint:unused // remove when they are used
 var (
 	doubleSchema = &Schema{
 		Type: Number,
@@ -205,10 +203,10 @@ func (s *Schema) Unmarshal(b []byte) error {
 	dec.DisallowUnknownFields()
 
 	if err := dec.Decode(s); err != nil {
-		return lazyerrors.Error(err)
+		return err
 	}
 	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Error(err)
+		return err
 	}
 
 	return nil
@@ -275,8 +273,7 @@ func valueSchema(v any) (*Schema, error) {
 	case int32:
 		return int32Schema, nil
 	case types.Timestamp:
-		// return timestampSchema, nil
-		return nil, lazyerrors.Errorf("%T is not supported yet", v)
+		return timestampSchema, nil
 	case int64:
 		return int64Schema, nil
 	default:

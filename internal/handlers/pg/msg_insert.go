@@ -66,7 +66,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, lazyerrors.Error(err)
 		}
 
-		err = h.insert(ctx, sp, doc)
+		err = h.insert(ctx, &sp, doc)
 		if err != nil {
 			return nil, err
 		}
@@ -89,7 +89,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // insert prepares and executes actual INSERT request to Postgres.
-func (h *Handler) insert(ctx context.Context, sp pgdb.SQLParam, doc any) error {
+func (h *Handler) insert(ctx context.Context, sp *pgdb.SQLParam, doc any) error {
 	d, ok := doc.(*types.Document)
 	if !ok {
 		return common.NewErrorMsg(

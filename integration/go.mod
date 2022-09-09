@@ -1,6 +1,6 @@
 module github.com/FerretDB/FerretDB/integration
 
-go 1.18
+go 1.19
 
 replace github.com/FerretDB/FerretDB => ../
 
@@ -8,9 +8,9 @@ require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/FerretDB/FerretDB v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.8.0
-	go.mongodb.org/mongo-driver v1.10.1
+	go.mongodb.org/mongo-driver v1.10.2
 	go.uber.org/zap v1.23.0
-	golang.org/x/exp v0.0.0-20220827204233-334a2380cb91
+	golang.org/x/exp v0.0.0-20220907003533-145caa8ea1d0
 )
 
 require (
@@ -38,7 +38,7 @@ require (
 	github.com/jackc/pgproto3/v2 v2.3.1 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20200714003250-2b9c44734f2b // indirect
 	github.com/jackc/pgtype v1.12.0 // indirect
-	github.com/jackc/pgx/v4 v4.17.1 // indirect
+	github.com/jackc/pgx/v4 v4.17.2 // indirect
 	github.com/jackc/puddle v1.3.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -62,10 +62,10 @@ require (
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/crypto v0.0.0-20220829220503-c86fa9a7ed90 // indirect
-	golang.org/x/net v0.0.0-20220826154423-83b083e8dc8b // indirect
+	golang.org/x/net v0.0.0-20220906165146-f3363e06e74c // indirect
 	golang.org/x/oauth2 v0.0.0-20220524215830-622c5d57e401 // indirect
 	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f // indirect
-	golang.org/x/sys v0.0.0-20220829200755-d48e67d00261 // indirect
+	golang.org/x/sys v0.0.0-20220907062415-87db552b00fd // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220526192754-51939a95c655 // indirect
