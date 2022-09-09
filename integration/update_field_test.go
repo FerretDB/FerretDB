@@ -715,6 +715,11 @@ func TestUpdateFieldMax(t *testing.T) {
 			update:      bson.D{{"$max", bson.D{{"v", "60"}}}},
 			expectedVal: "60",
 		},
+		"StringMixedLower": {
+			id:          "int32",
+			update:      bson.D{{"$max", bson.D{{"v", "30"}}}},
+			expectedVal: "42",
+		},
 		"StringNotNumeric": {
 			id:          "string-whole",
 			update:      bson.D{{"$max", bson.D{{"v", "foo"}}}},
@@ -760,6 +765,16 @@ func TestUpdateFieldMax(t *testing.T) {
 			update:      bson.D{{"$max", bson.D{}}},
 			expectedVal: "foo",
 		},
+		"ComparisonOrderInt": {
+			id:          "int32",
+			update:      bson.D{{"$max", bson.D{{"v", nil}}}},
+			expectedVal: int32(42),
+		},
+		"ComparisonOrderBool": {
+			id:          "bool-false",
+			update:      bson.D{{"$max", bson.D{{"v", "foo"}}}},
+			expectedVal: false,
+		},
 		"StringLexicographicHigher": {
 			id:          "string",
 			update:      bson.D{{"$max", bson.D{{"v", "goo"}}}},
@@ -768,6 +783,11 @@ func TestUpdateFieldMax(t *testing.T) {
 		"StringLexicographicLower": {
 			id:          "string",
 			update:      bson.D{{"$max", bson.D{{"v", "eoo"}}}},
+			expectedVal: "foo",
+		},
+		"StringLexicographicUpperCase": {
+			id:          "string",
+			update:      bson.D{{"$max", bson.D{{"v", "Foo"}}}},
 			expectedVal: "foo",
 		},
 	} {

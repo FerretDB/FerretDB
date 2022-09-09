@@ -361,12 +361,13 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 				return false, err
 			}
 		case types.Incomparable:
-			// TODO:
-			// switch v.(type) {
-			// case string:
-			// case bool:
-			// case types.Document:
-			// }
+			//switch v := v.(type) {
+			//case string:
+			//if ff
+			// if v is string and does not contains only numbers in it compare
+			// in other cases
+			// TODO: date, timestamp
+			//}
 			panic("incomparable")
 		}
 
