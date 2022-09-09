@@ -72,6 +72,7 @@ jobs:
     name: Deploy to Pages
     runs-on: ubuntu-20.04
 
+    # deploy only on push to main; exclude pull_request and schedule
     needs: build
     if: github.event_name == 'push'
 
@@ -80,7 +81,7 @@ jobs:
       id-token: write
 
     environment:
-      name: docs
+      name: pages
       url: ${{ steps.deploy.outputs.page_url }}
 
     steps:
@@ -90,3 +91,24 @@ jobs:
         with:
           artifact_name: docs
           timeout: 300000 # 5*60*1000 milliseconds
+
+  vercel:
+    name: Deploy to Vercel
+    runs-on: ubuntu-20.04
+
+    needs: build
+    if: github.event_name == 'pull_request'
+
+    # permissions:
+    #   id-token: write
+
+    environment:
+      name: vercel
+      # url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: docs
+
+      - run: ls -l
