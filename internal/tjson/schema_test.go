@@ -42,7 +42,6 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 
 	expectedB := testutil.IndentJSON(t, []byte(`{
 		"title": "users",
-		"description": "FerretDB users collection",
 		"properties": {
 			"$k": {"type": "array", "items": {"type": "string"}},
 			"_id": {"type": "string", "format": "byte"},
