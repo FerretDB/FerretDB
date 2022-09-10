@@ -25,8 +25,7 @@ import (
 
 func TestSchemaMarshalUnmarshal(t *testing.T) {
 	expected := Schema{
-		Title:       "users",
-		Description: "FerretDB users collection",
+		Title: "users",
 		Properties: map[string]*Schema{
 			"$k":      {Type: Array, Items: stringSchema},
 			"_id":     objectIDSchema,
