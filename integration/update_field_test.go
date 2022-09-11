@@ -684,7 +684,8 @@ func TestUpdateFieldMax(t *testing.T) {
 
 		//TODO: what if:
 		// db.scores.updateOne( { _id: 1 }, { $max: { highScore: 950, highScore2: 250} } )
-		// TODO: check if field doesnt exist
+		// TODO: check what if field doesnt exist
+		// TODO: check date types
 		"HigherInt": {
 			id:          "int32",
 			update:      bson.D{{"$max", bson.D{{"v", 60}}}},
