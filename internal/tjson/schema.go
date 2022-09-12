@@ -212,7 +212,7 @@ func (s *Schema) Unmarshal(b []byte) error {
 		return err
 	}
 
-	// Add $k properties that are necessary for objects.
+	// Add $k properties that are necessary for documents.
 	s.addDocumentProperties()
 
 	return nil
@@ -232,9 +232,16 @@ func (s *Schema) addDocumentProperties() {
 		subschema.addDocumentProperties()
 	}
 
-	if _, ok := s.Properties["$k"]; !ok {
-		s.Properties["$k"] = &Schema{Type: Array, Items: stringSchema}
+	// If the current object is not a special object (binary, regex, timestamp, decimal),
+	// and $k property is not set, then $k property is missing and needs to be added.
+	specials := []string{"$k", "$b", "$r", "$t", "$n"}
+	for _, special := range specials {
+		if _, ok := s.Properties[special]; ok {
+			return
+		}
 	}
+
+	s.Properties["$k"] = &Schema{Type: Array, Items: stringSchema}
 }
 
 // DocumentSchema returns a JSON Schema for the given top-level document.
