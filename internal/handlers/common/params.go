@@ -367,7 +367,8 @@ func GetOptionalPositiveNumber(document *types.Document, key string) (int32, err
 	return value, nil
 }
 
-//TODO: comment
+// ParseValue tries to parse provided value to any number type.
+// It can return number or string if the parsing is not possible.
 func ParseValue(value any) any {
 	if v, ok := value.(string); ok {
 		if v, err := strconv.Atoi(v); err == nil {

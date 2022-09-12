@@ -342,32 +342,14 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	for _, field := range maxExpression.Keys() {
 		v := must.NotFail(doc.Get(field))
 
-		//switch v := v.(type) {
-		//}
-
 		maxV, err := maxExpression.Get(field)
 		if err != nil {
 			return false, err
 		}
 
-		// check if the maxV is a string, then if it's a string apply "ParseValue" and see if we can get number from it.
-		// if we got number then we can use it to compare with document value.
-
-		//comparable := true
-
+		// parse strings to number if possible
 		v1 := ParseValue(v)
 		v2 := ParseValue(maxV)
-
-		////var result types.CompareResult
-		//if comparable {
-		//	result := types.Compare(v, maxV)
-		//	switch result[0] {
-		//	case types.Less:
-		//		if err := doc.Set(field, maxV); err != nil {
-		//			return false, err
-		//		}
-		//	}
-		//}
 
 		if res := types.CompareOrder(v1, v2, types.Ascending); res == types.Less {
 			if err := doc.Set(field, maxV); err != nil {
@@ -376,60 +358,6 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			return true, nil
 		}
 
-		//switch result[0] {
-		//case types.Less:
-		//	if err := doc.Set(field, maxV); err != nil {
-		//		return false, err
-		//	}
-		//case types.Incomparable:
-		//	var compareItems *types.Array
-		//	switch v := v.(type) {
-		//	case string:
-		//		// TODO: find a way to easly check if it's a number
-		//		if _, err := strconv.Atoi(v); err != nil {
-		//			// TODO: compare
-		//			panic("not implemented")
-		//			return true, nil
-		//		}
-
-		//		if compareItems, err = types.NewArray(v, maxV); err != nil {
-		//			panic(err)
-		//		}
-		//		// if v is string and does not contains only numbers in it compare
-		//		// in other cases
-		//		// TODO: date, timestamp
-		//	}
-		//	// compare types
-		//	max := compareItems.Max()
-		//	if max == v {
-		//		return false, nil
-		//	}
-
-		//	if err := doc.Set(field, maxV); err != nil {
-		//		return false, err
-		//	}
-		//}
-
-		//actualVal, ok := v.(int32)
-		//if !ok {
-		//	return false, fmt.Errorf("wrong doc type")
-		//}
-
-		//maxV, err := maxExpression.Get(field)
-		//if err != nil {
-		//	return false, err
-		//}
-
-		//maxVal, ok := maxV.(int32)
-		//if !ok {
-		//	return false, fmt.Errorf("wrong max type")
-		//}
-
-		//if maxVal > actualVal {
-		//	if err := doc.Set(field, maxVal); err != nil {
-		//		return false, err
-		//	}
-		//}
 	}
 	return true, nil
 }
