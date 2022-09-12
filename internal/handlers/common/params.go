@@ -17,6 +17,7 @@ package common
 import (
 	"fmt"
 	"math"
+	"strconv"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -364,4 +365,18 @@ func GetOptionalPositiveNumber(document *types.Document, key string) (int32, err
 	}
 
 	return value, nil
+}
+
+//TODO: comment
+func ParseValue(value any) any {
+	if v, ok := value.(string); ok {
+		if v, err := strconv.Atoi(v); err == nil {
+			return int64(v)
+		}
+		if v, err := strconv.ParseFloat(v, 64); err == nil {
+			return v
+		}
+	}
+
+	return value
 }
