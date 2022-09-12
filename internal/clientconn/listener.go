@@ -50,6 +50,7 @@ type NewListenerOpts struct {
 	Logger             *zap.Logger
 	TestConnTimeout    time.Duration
 	TestRunCancelDelay time.Duration
+	TestRecordPath     string // if empty, no records are created
 }
 
 // NewListener returns a new listener, configured by the NewListenerOpts argument.
@@ -131,12 +132,13 @@ func (l *Listener) Run(ctx context.Context) error {
 			}()
 
 			opts := &newConnOpts{
-				netConn:     netConn,
-				mode:        l.opts.Mode,
-				l:           l.opts.Logger.Named("// " + connID + " "), // derive from the original unnamed logger
-				proxyAddr:   l.opts.ProxyAddr,
-				handler:     l.opts.Handler,
-				connMetrics: l.metrics.connMetrics,
+				netConn:        netConn,
+				mode:           l.opts.Mode,
+				l:              l.opts.Logger.Named("// " + connID + " "), // derive from the original unnamed logger
+				proxyAddr:      l.opts.ProxyAddr,
+				handler:        l.opts.Handler,
+				connMetrics:    l.metrics.connMetrics,
+				testRecordPath: l.opts.TestRecordPath,
 			}
 			conn, e := newConn(opts)
 			if e != nil {

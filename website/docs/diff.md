@@ -1,3 +1,7 @@
+---
+sidebar_position: 2
+---
+
 # Known differences
 
 _TODO:_ These differences need to be documented properly.
