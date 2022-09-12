@@ -218,7 +218,7 @@ func (s *Schema) Unmarshal(b []byte) error {
 	return nil
 }
 
-// addDocumentProperties adds missing $k properties to all the schema's objects (top-level and nested).
+// addDocumentProperties adds missing $k properties to all the schema's documents (top-level and nested).
 func (s *Schema) addDocumentProperties() {
 	if s.Type != Object && s.Type != "" {
 		return
