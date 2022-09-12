@@ -340,24 +340,18 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	maxExpression := updateV.(*types.Document)
 
 	for _, field := range maxExpression.Keys() {
-		v := must.NotFail(doc.Get(field))
+		val := must.NotFail(doc.Get(field))
 
-		maxV, err := maxExpression.Get(field)
+		maxVal, err := maxExpression.Get(field)
 		if err != nil {
 			return false, err
 		}
 
-		// parse strings to number if possible
-		v1 := ParseValue(v)
-		v2 := ParseValue(maxV)
-
-		if res := types.CompareOrder(v1, v2, types.Ascending); res == types.Less {
-			if err := doc.Set(field, maxV); err != nil {
+		if res := types.CompareOrder(val, maxVal, types.Ascending); res == types.Less {
+			if err := doc.Set(field, maxVal); err != nil {
 				return false, err
 			}
-			return true, nil
 		}
-
 	}
 	return true, nil
 }

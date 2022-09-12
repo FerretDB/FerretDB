@@ -698,6 +698,7 @@ func TestUpdateFieldMax(t *testing.T) {
 			update:      bson.D{{"$max", bson.D{{"v", 54.32}}}},
 			expectedVal: 54.32,
 		},
+		// Strings are not converted to numbers
 		"StringInteger": {
 			id:          "string-whole",
 			update:      bson.D{{"$max", bson.D{{"v", "60"}}}},
@@ -727,7 +728,6 @@ func TestUpdateFieldMax(t *testing.T) {
 			id:          "int32",
 			update:      bson.D{{"$max", bson.D{{"v", "30"}}}},
 			expectedVal: "30",
-			//skip:        "investigate weird behavior",
 		},
 		"StringNotNumeric": {
 			id:          "string-whole",
@@ -738,13 +738,13 @@ func TestUpdateFieldMax(t *testing.T) {
 			id:          "string",
 			update:      bson.D{{"$max", bson.D{{"v", bson.D{{"a", "b"}}}}}},
 			expectedVal: bson.D{{"a", "b"}},
-			skip:        "Support documents",
+			skip:        "https://github.com/FerretDB/FerretDB/issues/1000",
 		},
 		"IntDoc": {
 			id:          "int32",
 			update:      bson.D{{"$max", bson.D{{"v", bson.D{{"a", "b"}}}}}},
 			expectedVal: bson.D{{"a", "b"}},
-			skip:        "Support documents",
+			skip:        "https://github.com/FerretDB/FerretDB/issues/1000",
 		},
 		"EmptyDoc": {
 			id:          "int32",
