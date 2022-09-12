@@ -58,6 +58,7 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 	}
 
 	var names []string
+
 	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var err error
 
