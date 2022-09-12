@@ -41,6 +41,7 @@ func TestCreateTigris(t *testing.T) {
 		schema      string
 		collection  string
 		expectedErr *mongo.CommandError
+		doc         bson.D
 	}{
 		"BadValidator": {
 			validator:  "$bad",
@@ -82,11 +83,17 @@ func TestCreateTigris(t *testing.T) {
 					"balance": {"type": "number"},
 					"age": {"type": "integer", "format": "int32"},
 					"_id": {"type": "string", "format": "byte"},
-					"arr": {"type": "array", "items": {"type": "string"}}
+					"obj": {"type": "object", "properties": {"foo": {"type": "string"}}}
 				}
 			}`, collection.Name(),
 			),
 			collection: collection.Name() + "_good",
+			doc: bson.D{
+				{"_id", "foo"},
+				{"balance", 1.0},
+				{"age", 1},
+				{"obj", bson.D{{"foo", "bar"}}},
+			},
 		},
 		"WrongPKey": {
 			validator: "$tigrisSchemaString",
@@ -137,6 +144,12 @@ func TestCreateTigris(t *testing.T) {
 			if tc.expectedErr != nil {
 				AssertEqualError(t, *tc.expectedErr, err)
 			} else {
+				require.NoError(t, err)
+			}
+
+			// to make sure that schema is correct, we try to insert a document
+			if tc.doc != nil {
+				_, err = db.Collection(tc.collection).InsertOne(ctx, tc.doc)
 				require.NoError(t, err)
 			}
 		})
