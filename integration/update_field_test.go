@@ -683,10 +683,6 @@ func TestUpdateFieldMax(t *testing.T) {
 		skip        string
 	}{
 
-		//TODO: what if:
-		// db.scores.updateOne( { _id: 1 }, { $max: { highScore: 950, highScore2: 250} } )
-		// TODO: check what if field doesnt exist
-		// TODO: check date types
 		"HigherInt": {
 			id:          "int32",
 			update:      bson.D{{"$max", bson.D{{"v", 60}}}},
@@ -730,8 +726,8 @@ func TestUpdateFieldMax(t *testing.T) {
 		"StringMixedLower": {
 			id:          "int32",
 			update:      bson.D{{"$max", bson.D{{"v", "30"}}}},
-			expectedVal: int32(42),
-			skip:        "investigate weird behavior",
+			expectedVal: "30",
+			//skip:        "investigate weird behavior",
 		},
 		"StringNotNumeric": {
 			id:          "string-whole",
@@ -805,6 +801,16 @@ func TestUpdateFieldMax(t *testing.T) {
 			id:          "string",
 			update:      bson.D{{"$max", bson.D{{"v", "Foo"}}}},
 			expectedVal: "foo",
+		},
+		"DateTime": {
+			id:          "datetime",
+			update:      bson.D{{"$max", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 12, 18, 42, 123000000, time.UTC))}}}},
+			expectedVal: primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 12, 18, 42, 123000000, time.UTC)),
+		},
+		"DateTimeLower": {
+			id:          "datetime",
+			update:      bson.D{{"$max", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 3, 18, 42, 123000000, time.UTC))}}}},
+			expectedVal: primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC)),
 		},
 	} {
 		name, tc := name, tc
