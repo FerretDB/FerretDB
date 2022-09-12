@@ -19,6 +19,9 @@ import (
 	"strings"
 	"testing"
 
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
+
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/zap"
@@ -159,6 +162,16 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 
 		// drop remnants of the previous failed run
 		_ = collection.Drop(ctx)
+
+		// if validators are set, create collection with them (otherwise collection will be created on first insert)
+		if validators := provider.Validators(*handlerF); validators != nil {
+			opts := new(options.CreateCollectionOptions)
+			for key, value := range validators {
+				opts = opts.SetValidator(bson.D{{key, value}})
+			}
+
+			database.CreateCollection(ctx, collectionName, opts)
+		}
 
 		docs := shareddata.Docs(provider)
 		require.NotEmpty(tb, docs)
