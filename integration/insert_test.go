@@ -31,7 +31,7 @@ func TestInsertTigrisNull(t *testing.T) {
 	setup.SkipForPostgresWithReason(t, "TODO! Fix me!")
 
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Doubles)
+	ctx, collection := setup.Setup(t, shareddata.Int32s)
 
 	for name, tc := range map[string]struct {
 		collection *mongo.Collection

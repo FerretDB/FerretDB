@@ -189,12 +189,25 @@ var Regexes = &Values[string]{
 var Int32s = &Values[string]{
 	name:     "Int32s",
 	handlers: []string{"pg", "tigris"},
+	validators: map[string]map[string]any{
+		"tigris": {
+			"$tigrisSchemaString": `{
+				"title": "%%collection%%",
+				"description": "Int32s collection",
+				"primary_key": ["_id"],
+				"properties": {
+					"v": {"type": "integer", "format": "int32"},
+					"_id": {"type": "string"}
+				}
+			}`,
+		},
+	},
 	data: map[string]any{
 		"int32":      int32(42),
 		"int32-zero": int32(0),
 		"int32-max":  int32(math.MaxInt32),
 		"int32-min":  int32(math.MinInt32),
-		//"int32-null": nil,
+		"int32-null": nil,
 	},
 }
 

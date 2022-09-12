@@ -167,10 +167,13 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		if validators := provider.Validators(*handlerF); validators != nil {
 			opts := new(options.CreateCollectionOptions)
 			for key, value := range validators {
+				if *handlerF == "tigris" {
+					value = strings.Replace(value.(string), "%%collection%%", collectionName, -1)
+				}
 				opts = opts.SetValidator(bson.D{{key, value}})
 			}
 
-			database.CreateCollection(ctx, collectionName, opts)
+			require.NoError(tb, database.CreateCollection(ctx, collectionName, opts))
 		}
 
 		docs := shareddata.Docs(provider)

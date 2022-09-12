@@ -35,6 +35,7 @@ type Provider interface {
 	// Validators returns validators for the given handler.
 	// For example, for Tigris it should return a map with they key $tigrisSchemaString
 	// and the value containing Tigris' JSON schema string.
+	// As Tigris schema requires collection name, please use %%collection%% as placeholder.
 	Validators(handler string) map[string]any
 
 	// Docs returns shared data documents.
