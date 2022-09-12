@@ -82,7 +82,7 @@ func TestCreateTigris(t *testing.T) {
 				"properties": {
 					"balance": {"type": "number"},
 					"age": {"type": "integer", "format": "int32"},
-					"_id": {"type": "string", "format": "byte"},
+					"_id": {"type": "string"},
 					"obj": {"type": "object", "properties": {"foo": {"type": "string"}}}
 				}
 			}`, collection.Name(),

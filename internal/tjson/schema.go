@@ -212,6 +212,25 @@ func (s *Schema) Unmarshal(b []byte) error {
 	return nil
 }
 
+// AddDocumentProperties adds missing $k properties to all the schema's objects (top-level and nested).
+func (s *Schema) AddDocumentProperties() {
+	if s.Type != Object && s.Type != "" {
+		return
+	}
+
+	for _, subschema := range s.Properties {
+		if subschema.Type != Object {
+			continue
+		}
+
+		subschema.AddDocumentProperties()
+	}
+
+	if _, ok := s.Properties["$k"]; !ok {
+		s.Properties["$k"] = &Schema{Type: Array, Items: stringSchema}
+	}
+}
+
 // DocumentSchema returns a JSON Schema for the given top-level document.
 // Top-level documents are documents that must have _id which will be used as primary key.
 func DocumentSchema(doc *types.Document) (*Schema, error) {
