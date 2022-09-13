@@ -26,12 +26,14 @@ services:
     container_name: ferretdb_tigris
     ports:
       - 8081:8081
+    environment:
+      - TIGRIS_SERVER_LOG_LEVEL=info
 
   # for proxy mode and mongosh
   mongodb:
     build:
       context: ./build/deps
-      dockerfile: ${MONGO_DOCKERFILE:-mongo5}.Dockerfile
+      dockerfile: ${MONGO_DOCKERFILE:-mongo6}.Dockerfile
     container_name: ferretdb_mongodb
     command: --enableFreeMonitoring off
     ports:
@@ -42,21 +44,15 @@ services:
       # Always UTC+05:45. Set to catch timezone problems.
       - TZ=Asia/Kathmandu
 
-  markdownlint:
+  trivy:
     build:
       context: ./build/deps
-      dockerfile: markdownlint.Dockerfile
-    container_name: ferretdb_markdownlint
+      dockerfile: trivy.Dockerfile
+    container_name: ferretdb_trivy
     volumes:
       - .:/workdir
 
-  textlint:
-    build:
-      context: ./build/deps/textlint
-    container_name: ferretdb_textlint
-    volumes:
-      - .:/workdir
-
+  # for building .deb and .rpm packages
   debian:
     build:
       context: ./build/deps
@@ -64,7 +60,6 @@ services:
     container_name: ferretdb_debian
     volumes:
       - ./build/deb:/deb
-
   centos:
     build:
       context: ./build/deps
@@ -73,10 +68,27 @@ services:
     volumes:
       - ./build/rpm:/rpm
 
-  trivy:
+  # for documentation
+  markdownlint:
     build:
       context: ./build/deps
-      dockerfile: trivy.Dockerfile
-    container_name: ferretdb_trivy
+      dockerfile: markdownlint.Dockerfile
+    container_name: ferretdb_markdownlint
     volumes:
       - .:/workdir
+  textlint:
+    build:
+      context: ./build/deps/textlint
+    container_name: ferretdb_textlint
+    volumes:
+      - .:/workdir
+      - /workdir/build/deps/textlint/node_modules
+  docusaurus:
+    build:
+      context: ./website
+    container_name: ferretdb_docusaurus
+    ports:
+      - 3000:3000
+    volumes:
+      - .:/workdir
+      - /workdir/website/node_modules

@@ -118,17 +118,29 @@ var (
 	errUnexpectedRightOpType = fmt.Errorf("unexpected right operand type")
 	errLongExceeded          = fmt.Errorf("long exceeded")
 	errIntExceeded           = fmt.Errorf("int exceeded")
+	errNaN                   = fmt.Errorf("not a number")
+	errInfinity              = fmt.Errorf("infinity")
 )
 
 // GetWholeNumberParam checks if the given value is int32, int64, or float64 containing a whole number,
 // such as used in the limit, $size, etc.
 func GetWholeNumberParam(value any) (int64, error) {
 	switch value := value.(type) {
+	// TODO: add string support https://github.com/FerretDB/FerretDB/issues/1089
 	case float64:
 		// TODO check float negative zero (math.Copysign(0, -1))
-		if value != math.Trunc(value) || math.IsNaN(value) || math.IsInf(value, 0) {
+		if math.IsNaN(value) {
+			return 0, errNaN
+		}
+
+		if math.IsInf(value, 1) {
+			return 0, errInfinity
+		}
+
+		if value != math.Trunc(value) {
 			return 0, errNotWholeNumber
 		}
+
 		return int64(value), nil
 	case int32:
 		return int64(value), nil
@@ -151,11 +163,17 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 			val := must.NotFail(mask.Get(i))
 			b, ok := val.(int32)
 			if !ok {
-				return 0, NewError(ErrBadValue, fmt.Errorf(`bit positions must be an integer but got: %d: %#v`, i, val))
+				return 0, NewError(
+					ErrBadValue,
+					fmt.Errorf(`Failed to parse bit position. Expected a number in: %d: %#v`, i, val),
+				)
 			}
 
 			if b < 0 {
-				return 0, NewError(ErrBadValue, fmt.Errorf("bit positions must be >= 0 but got: %d: %d", i, b))
+				return 0, NewError(
+					ErrBadValue,
+					fmt.Errorf("Failed to parse bit position. Expected a non-negative number in: %d: %d", i, b),
+				)
 			}
 
 			bitmask |= 1 << uint64(math.Min(float64(b), 63))

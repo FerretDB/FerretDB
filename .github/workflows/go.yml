@@ -232,6 +232,8 @@ jobs:
         with:
           name: linux-logs
           path: /tmp/logs
+          retention-days: 14
+          if-no-files-found: error
 
       # we don't want them on CI
       - name: Clean test and fuzz caches

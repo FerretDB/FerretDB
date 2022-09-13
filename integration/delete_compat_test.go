@@ -36,12 +36,46 @@ type deleteCompatTestCase struct {
 }
 
 func TestDeleteCompat(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]deleteCompatTestCase{
 		"Empty": {
 			filters:    []bson.D{},
 			resultType: emptyResult,
 		},
-		"OrderedTrue": {
+
+		"One": {
+			filters: []bson.D{
+				{{"v", int32(42)}},
+			},
+		},
+		"All": {
+			filters: []bson.D{
+				{},
+			},
+		},
+
+		"Two": {
+			filters: []bson.D{
+				{{"v", int32(42)}},
+				{{"v", int32(0)}},
+			},
+		},
+		"TwoAll": {
+			filters: []bson.D{
+				{{"v", int32(42)}},
+				{},
+			},
+		},
+		"TwoAllOrdered": {
+			filters: []bson.D{
+				{{"v", "foo"}},
+				{},
+			},
+			ordered: true,
+		},
+
+		"OrderedError": {
 			filters: []bson.D{
 				{{"v", "foo"}},
 				{{"v", bson.D{{"$all", 9}}}},
@@ -49,22 +83,15 @@ func TestDeleteCompat(t *testing.T) {
 			},
 			ordered: true,
 		},
-		"OrderedFalse": {
+		"UnorderedError": {
 			filters: []bson.D{
 				{{"v", "foo"}},
 				{{"v", bson.D{{"$all", 9}}}},
 				{{"v", float32(42.13)}},
 			},
-			ordered: false,
 		},
-		"OrderedTrueNoError": {
-			filters: []bson.D{
-				{{"v", "foo"}},
-				{{"v", float32(42.13)}},
-			},
-			ordered: true,
-		},
-		"OrderedTrueTwoErrors": {
+
+		"OrderedTwoErrors": {
 			filters: []bson.D{
 				{{"v", "foo"}},
 				{{"v", bson.D{{"$all", 9}}}},
@@ -73,16 +100,16 @@ func TestDeleteCompat(t *testing.T) {
 			},
 			ordered: true,
 		},
-		"OrderedFalseTwoErrors": {
+		"UnorderedTwoErrors": {
 			filters: []bson.D{
 				{{"v", "foo"}},
 				{{"v", bson.D{{"$all", 9}}}},
 				{{"v", float32(42.13)}},
 				{{"v", bson.D{{"$eq", 9}}}},
 			},
-			ordered: false,
 		},
-		"OrderedTrueAllErrors": {
+
+		"OrderedAllErrors": {
 			filters: []bson.D{
 				{{"v", bson.D{{"$all", 9}}}},
 				{{"v", bson.D{{"$eq", 9}}}},
@@ -91,25 +118,13 @@ func TestDeleteCompat(t *testing.T) {
 			ordered:    true,
 			resultType: emptyResult,
 		},
-		"OrderedFalseAllErrors": {
+		"UnorderedAllErrors": {
 			filters: []bson.D{
 				{{"v", bson.D{{"$all", 9}}}},
 				{{"v", bson.D{{"$eq", 9}}}},
 				{{"v", bson.D{{"$all", 9}}}},
 			},
-			ordered:    false,
 			resultType: emptyResult,
-		},
-		"One": {
-			filters: []bson.D{
-				{{"v", int32(42)}},
-			},
-		},
-		"Two": {
-			filters: []bson.D{
-				{{"v", int32(42)}},
-				{{"v", int32(0)}},
-			},
 		},
 	}
 

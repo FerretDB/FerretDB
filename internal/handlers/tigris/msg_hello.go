@@ -40,8 +40,8 @@ func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 			"localTime", time.Now(),
 			// logicalSessionTimeoutMinutes
 			// connectionId
-			"minWireVersion", int32(13),
-			"maxWireVersion", int32(13),
+			"minWireVersion", int32(17),
+			"maxWireVersion", int32(17),
 			"readOnly", false,
 			"ok", float64(1),
 		))},

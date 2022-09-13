@@ -1,11 +1,9 @@
 FROM node:16.17.0-alpine3.16
 
-WORKDIR /tool
+WORKDIR /workdir/build/deps/textlint
 COPY . .
-
 RUN npm ci
-RUN ln -vs /tool/node_modules/.bin/* /usr/local/bin
 
 WORKDIR /workdir
-ENTRYPOINT ["textlint"]
+ENTRYPOINT ["/workdir/build/deps/textlint/node_modules/.bin/textlint"]
 CMD ["-h"]

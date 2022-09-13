@@ -20,7 +20,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
+	"os"
+	"path/filepath"
 	"sync/atomic"
 	"time"
 
@@ -61,23 +64,25 @@ var AllModes = []Mode{NormalMode, ProxyMode, DiffNormalMode, DiffProxyMode}
 
 // conn represents client connection.
 type conn struct {
-	netConn       net.Conn
-	mode          Mode
-	l             *zap.SugaredLogger
-	h             handlers.Interface
-	m             *ConnMetrics
-	proxy         *proxy.Router
-	lastRequestID int32
+	netConn        net.Conn
+	mode           Mode
+	l              *zap.SugaredLogger
+	h              handlers.Interface
+	m              *ConnMetrics
+	proxy          *proxy.Router
+	lastRequestID  int32
+	testRecordPath string // if empty, no records are created
 }
 
 // newConnOpts represents newConn options.
 type newConnOpts struct {
-	netConn     net.Conn
-	mode        Mode
-	l           *zap.Logger
-	handler     handlers.Interface
-	connMetrics *ConnMetrics
-	proxyAddr   string
+	netConn        net.Conn
+	mode           Mode
+	l              *zap.Logger
+	handler        handlers.Interface
+	connMetrics    *ConnMetrics
+	proxyAddr      string
+	testRecordPath string // if empty, no records are created
 }
 
 // newConn creates a new client connection for given net.Conn.
@@ -95,12 +100,13 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	}
 
 	return &conn{
-		netConn: opts.netConn,
-		mode:    opts.mode,
-		l:       opts.l.Sugar(),
-		h:       opts.handler,
-		m:       opts.connMetrics,
-		proxy:   p,
+		netConn:        opts.netConn,
+		mode:           opts.mode,
+		l:              opts.l.Sugar(),
+		h:              opts.handler,
+		m:              opts.connMetrics,
+		proxy:          p,
+		testRecordPath: opts.testRecordPath,
 	}, nil
 }
 
@@ -140,7 +146,30 @@ func (c *conn) run(ctx context.Context) (err error) {
 	}()
 
 	bufr := bufio.NewReader(c.netConn)
+
+	// if test record path is set, split netConn reader to write to file and bufr
+	if c.testRecordPath != "" {
+		if err := os.MkdirAll(c.testRecordPath, 0o755); err != nil {
+			return err
+		}
+
+		filename := fmt.Sprintf("%s_%s.bin", time.Now().Format("2006-02-01_15:04:05"), c.netConn.RemoteAddr().String())
+
+		path := filepath.Join(c.testRecordPath, filename)
+
+		f, err := os.Create(path)
+		if err != nil {
+			return err
+		}
+
+		defer f.Close()
+
+		r := io.TeeReader(c.netConn, f)
+		bufr = bufio.NewReader(r)
+	}
+
 	bufw := bufio.NewWriter(c.netConn)
+
 	defer func() {
 		if e := bufw.Flush(); err == nil {
 			err = e
