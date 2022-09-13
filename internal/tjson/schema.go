@@ -61,13 +61,16 @@ const (
 
 // Schema represents a supported subset of JSON Schema.
 type Schema struct {
-	Title       string             `json:"title,omitempty"`
-	Description string             `json:"description,omitempty"`
-	Type        SchemaType         `json:"type,omitempty"`
-	Format      SchemaFormat       `json:"format,omitempty"`
-	Properties  map[string]*Schema `json:"properties,omitempty"`
-	Items       *Schema            `json:"items,omitempty"`
-	PrimaryKey  []string           `json:"primary_key,omitempty"`
+	Title      string             `json:"title,omitempty"`
+	Type       SchemaType         `json:"type,omitempty"`
+	Format     SchemaFormat       `json:"format,omitempty"`
+	Properties map[string]*Schema `json:"properties,omitempty"`
+	Items      *Schema            `json:"items,omitempty"`
+	PrimaryKey []string           `json:"primary_key,omitempty"`
+
+	// those fields are not used, but required to be there for DisallowUnknownFields
+	Description    string `json:"description,omitempty"`
+	CollectionType string `json:"collection_type,omitempty"`
 }
 
 // Schemas for scalar types.
