@@ -223,7 +223,6 @@ tasks:
   lint:
     desc: "Run linters"
     deps:
-      - lint-security
       - lint-golangci-lint
       - lint-go-sumtype
       - lint-go-consistent
