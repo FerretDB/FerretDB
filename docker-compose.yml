@@ -78,6 +78,5 @@ services:
       context: ./build/deps
       dockerfile: trivy.Dockerfile
     container_name: ferretdb_trivy
-    working_dir: /app
     volumes:
-      - .:/app
+      - .:/workdir

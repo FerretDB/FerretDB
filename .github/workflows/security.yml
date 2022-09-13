@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-20.04
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3

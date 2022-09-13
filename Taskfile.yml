@@ -222,12 +222,17 @@ tasks:
   lint:
     desc: "Run linters"
     deps:
+      - lint-security
       - lint-golangci-lint
       - lint-go-sumtype
       - lint-go-consistent
     cmds:
       - bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
       - go vet -vettool=./bin/checkswitch{{exeExt}} ./...
+
+  lint-security:
+    cmds:
+      - docker-compose run --rm trivy filesystem . --exit-code=1
 
   lint-golangci-lint:
     cmds:
@@ -340,11 +345,3 @@ tasks:
         sh: cat ../internal/util/version/gen/version.txt
       GOARCH:
         sh: go env GOARCH
-
-  security-scan-fs:
-    cmds:
-      - docker-compose run --rm trivy fs . -q --exit-code=1
-
-  security-scan:
-    cmds:
-      - task: security-scan-fs
