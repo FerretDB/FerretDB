@@ -738,7 +738,7 @@ func TestUpdateFieldMax(t *testing.T) {
 			id:          "string",
 			update:      bson.D{{"$max", bson.D{{"v", bson.D{{"a", "b"}}}}}},
 			expectedVal: bson.D{{"a", "b"}},
-			skip:        "https://github.com/FerretDB/FerretDB/issues/1000",
+			skip:        "Support documents",
 		},
 		"IntDoc": {
 			id:          "int32",

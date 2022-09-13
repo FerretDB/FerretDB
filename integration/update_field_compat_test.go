@@ -15,10 +15,9 @@
 package integration
 
 import (
+	"go.mongodb.org/mongo-driver/bson"
 	"math"
 	"testing"
-
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 func TestUpdateFieldCompatInc(t *testing.T) {
@@ -49,6 +48,45 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 			update:        bson.D{{"$inc", bson.D{{"foo.bar", int32(1)}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1088",
 		},
+	}
+
+	testUpdateCompat(t, testCases)
+}
+
+func TestUpdateFieldCompatMax(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]updateCompatTestCase{
+		//"Int32Lower": {
+		//	update: bson.D{{"$max", bson.D{{"v", int32(30)}}}},
+		//},
+		"Int32Higher": {
+			update: bson.D{{"$max", bson.D{{"v", int32(60)}}}},
+		},
+		//"Int32Negative": {
+		//	update: bson.D{{"$max", bson.D{{"v", int32(-22)}}}},
+		//},
+		//"StringIntHigher": {
+		//	update: bson.D{{"$max", bson.D{{"v", "60"}}}},
+		//},
+		//"StringIntLower": {
+		//	update: bson.D{{"$max", bson.D{{"v", "30"}}}},
+		//},
+		//"Double": {
+		//	update: bson.D{{"$max", bson.D{{"v", 62.34}}}},
+		//},
+		//"Times": {
+		//	update: bson.D{{"$max", bson.D{{"v", bson.D{{"foo", "bar"}}}}}},
+		//},
+		//"Document": {
+		//	update: bson.D{{"$max", bson.D{{"v", bson.D{{"foo", "bar"}}}}}},
+		//},
+		//"DateTime": {
+		//	update: bson.D{{"$max", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 12, 18, 42, 123000000, time.UTC))}}}},
+		//},
+		//"DateTimeLower": {
+		//	update: bson.D{{"$max", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 3, 18, 42, 123000000, time.UTC))}}}},
+		//},
 	}
 
 	testUpdateCompat(t, testCases)

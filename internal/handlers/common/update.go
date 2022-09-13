@@ -344,15 +344,19 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 		maxVal, err := maxExpression.Get(field)
 		if err != nil {
-			return false, err
+			// if field does not exist, don't change anything
+			return false, nil
 		}
 
-		if res := types.CompareOrder(val, maxVal, types.Ascending); res == types.Less {
-			if err := doc.Set(field, maxVal); err != nil {
-				return false, err
-			}
+		if res := types.CompareOrder(val, maxVal, types.Ascending); res != types.Less {
+			return false, nil
+		}
+
+		if err := doc.Set(field, maxVal); err != nil {
+			return false, err
 		}
 	}
+
 	return true, nil
 }
 
