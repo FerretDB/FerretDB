@@ -59,6 +59,7 @@ tasks:
       - docker system prune --all --volumes
       - bin/golangci-lint{{exeExt}} cache clean
       - go clean -cache -testcache -modcache -fuzzcache
+      - rm -fr .cache .task tools/.task integration/.task
       - task: init
 
   env-setup:
@@ -250,7 +251,7 @@ tasks:
 
   security-trivy:
     cmds:
-      - docker-compose run --rm trivy filesystem . --exit-code=1
+      - docker-compose run --rm trivy filesystem . --ignorefile=./build/.trivyignore --cache-dir=./.cache/trivy --exit-code=1
 
   godocs:
     desc: "Serve godoc documentation at http://127.0.0.1:6060/pkg/github.com/FerretDB/FerretDB/?m=all"
