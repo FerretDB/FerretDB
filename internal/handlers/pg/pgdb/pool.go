@@ -162,15 +162,6 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 	return nil
 }
 
-// DropDatabase drops FerretDB database.
-//
-// It returns ErrTableNotExist if schema does not exist.
-//
-// Deprecated: use function instead.
-func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
-	return DropDatabase(ctx, pgPool, db)
-}
-
 // SchemaStats returns a set of statistics for FerretDB server, database, collection - or, in terms of PostgreSQL,
 // database, schema, table.
 // If schema is empty, it calculates statistics across the whole PostgreSQL database.

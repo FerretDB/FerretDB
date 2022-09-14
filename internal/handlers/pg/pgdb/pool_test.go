@@ -79,7 +79,7 @@ func TestCreateDrop(t *testing.T) {
 		collectionName := testutil.CollectionName(t)
 
 		t.Cleanup(func() {
-			pool.DropDatabase(ctx, databaseName)
+			DropDatabase(ctx, pool, databaseName)
 		})
 
 		// Schema does not exist ->
@@ -91,7 +91,7 @@ func TestCreateDrop(t *testing.T) {
 		err := DropCollection(ctx, pool, databaseName, collectionName)
 		require.Equal(t, ErrSchemaNotExist, err)
 
-		err = pool.DropDatabase(ctx, databaseName)
+		err = DropDatabase(ctx, pool, databaseName)
 		require.Equal(t, ErrSchemaNotExist, err)
 
 		err = CreateCollection(ctx, pool, databaseName, collectionName)
@@ -112,7 +112,7 @@ func TestCreateDrop(t *testing.T) {
 		collectionName := testutil.CollectionName(t)
 
 		t.Cleanup(func() {
-			pool.DropDatabase(ctx, databaseName)
+			DropDatabase(ctx, pool, databaseName)
 		})
 
 		err := CreateDatabase(ctx, pool, databaseName)
@@ -137,10 +137,10 @@ func TestCreateDrop(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, []string{collectionName}, tables)
 
-		err = pool.DropDatabase(ctx, databaseName)
+		err = DropDatabase(ctx, pool, databaseName)
 		require.NoError(t, err)
 
-		err = pool.DropDatabase(ctx, databaseName)
+		err = DropDatabase(ctx, pool, databaseName)
 		require.Equal(t, ErrSchemaNotExist, err)
 	})
 
@@ -151,7 +151,7 @@ func TestCreateDrop(t *testing.T) {
 		collectionName := testutil.CollectionName(t)
 
 		t.Cleanup(func() {
-			pool.DropDatabase(ctx, databaseName)
+			DropDatabase(ctx, pool, databaseName)
 		})
 
 		err := CreateDatabase(ctx, pool, databaseName)
@@ -182,7 +182,7 @@ func TestCreateDrop(t *testing.T) {
 		err = DropCollection(ctx, pool, databaseName, collectionName)
 		require.ErrorIs(t, err, ErrTableNotExist)
 
-		err = pool.DropDatabase(ctx, databaseName)
+		err = DropDatabase(ctx, pool, databaseName)
 		require.NoError(t, err)
 	})
 }
@@ -283,7 +283,7 @@ func TestTableExists(t *testing.T) {
 		collectionName := testutil.CollectionName(t)
 
 		t.Cleanup(func() {
-			pool.DropDatabase(ctx, databaseName)
+			DropDatabase(ctx, pool, databaseName)
 		})
 
 		ok, err := CollectionExists(ctx, pool, databaseName, collectionName)
@@ -300,7 +300,7 @@ func TestTableExists(t *testing.T) {
 		CreateDatabase(ctx, pool, databaseName)
 
 		t.Cleanup(func() {
-			pool.DropDatabase(ctx, databaseName)
+			DropDatabase(ctx, pool, databaseName)
 		})
 
 		ok, err := CollectionExists(ctx, pool, databaseName, collectionName)
@@ -318,7 +318,7 @@ func TestTableExists(t *testing.T) {
 		CreateCollection(ctx, pool, databaseName, collectionName)
 
 		t.Cleanup(func() {
-			pool.DropDatabase(ctx, databaseName)
+			DropDatabase(ctx, pool, databaseName)
 		})
 
 		ok, err := CollectionExists(ctx, pool, databaseName, collectionName)
@@ -340,7 +340,7 @@ func TestCreateTableIfNotExist(t *testing.T) {
 		collectionName := testutil.CollectionName(t)
 
 		t.Cleanup(func() {
-			pool.DropDatabase(ctx, databaseName)
+			DropDatabase(ctx, pool, databaseName)
 		})
 
 		ok, err := CreateCollectionIfNotExist(ctx, pool, databaseName, collectionName)
@@ -357,7 +357,7 @@ func TestCreateTableIfNotExist(t *testing.T) {
 		CreateDatabase(ctx, pool, databaseName)
 
 		t.Cleanup(func() {
-			pool.DropDatabase(ctx, databaseName)
+			DropDatabase(ctx, pool, databaseName)
 		})
 
 		created, err := CreateCollectionIfNotExist(ctx, pool, databaseName, collectionName)
@@ -375,7 +375,7 @@ func TestCreateTableIfNotExist(t *testing.T) {
 		CreateCollection(ctx, pool, databaseName, collectionName)
 
 		t.Cleanup(func() {
-			pool.DropDatabase(ctx, databaseName)
+			DropDatabase(ctx, pool, databaseName)
 		})
 
 		created, err := CreateCollectionIfNotExist(ctx, pool, databaseName, collectionName)
