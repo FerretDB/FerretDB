@@ -64,6 +64,8 @@ func detectDataType(value any) compareTypeOrderResult {
 		return booleanDataType
 	case time.Time:
 		return dateDataType
+	case *Document:
+		return documentDataType
 	case NullType:
 		return nullDataType
 	case Regex:
@@ -72,8 +74,6 @@ func detectDataType(value any) compareTypeOrderResult {
 		return numbersDataType
 	case Timestamp:
 		return timestampDataType
-	case *Document:
-		return documentDataType
 	case int64:
 		return numbersDataType
 	default:

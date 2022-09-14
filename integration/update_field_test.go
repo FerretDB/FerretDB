@@ -682,7 +682,6 @@ func TestUpdateFieldMax(t *testing.T) {
 		expectedErr *mongo.WriteError
 		skip        string
 	}{
-
 		"HigherInt": {
 			id:          "int32",
 			update:      bson.D{{"$max", bson.D{{"v", 60}}}},
