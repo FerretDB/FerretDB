@@ -171,17 +171,6 @@ func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
 	return DropDatabase(ctx, pgPool, db)
 }
 
-// CreateCollectionIfNotExist ensures that given FerretDB database / PostgreSQL schema
-// and FerretDB collection / PostgreSQL table exist.
-// If needed, it creates both schema and table.
-//
-// True is returned if table was created.
-//
-// Deprecated: use function instead.
-func (pgPool *Pool) CreateCollectionIfNotExist(ctx context.Context, db, collection string) (bool, error) {
-	return CreateCollectionIfNotExist(ctx, pgPool, db, collection)
-}
-
 // SchemaStats returns a set of statistics for FerretDB server, database, collection - or, in terms of PostgreSQL,
 // database, schema, table.
 // If schema is empty, it calculates statistics across the whole PostgreSQL database.
