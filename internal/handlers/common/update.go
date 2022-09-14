@@ -348,7 +348,7 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			return false, nil
 		}
 
-		if res := types.CompareOrder(val, maxVal, types.Ascending); res != types.Less {
+		if res := types.CompareOrder(val, maxVal, types.Ascending); res != types.Less && res != types.Incomparable {
 			return false, nil
 		}
 

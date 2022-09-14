@@ -72,6 +72,8 @@ func detectDataType(value any) compareTypeOrderResult {
 		return numbersDataType
 	case Timestamp:
 		return timestampDataType
+	case *Document:
+		return documentDataType
 	case int64:
 		return numbersDataType
 	default:

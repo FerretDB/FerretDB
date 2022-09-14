@@ -15,9 +15,12 @@
 package integration
 
 import (
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"math"
 	"testing"
+	"time"
 )
 
 func TestUpdateFieldCompatInc(t *testing.T) {
@@ -55,38 +58,40 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 
 func TestUpdateFieldCompatMax(t *testing.T) {
 	t.Parallel()
+	setup.SkipForTigrisWithReason(t, "tigris does not support dynamic types")
+	setup.SkipForPostgresWithReason(t, "document comparing required https://github.com/FerretDB/FerretDB/issues/457")
 
 	testCases := map[string]updateCompatTestCase{
-		//"Int32Lower": {
-		//	update: bson.D{{"$max", bson.D{{"v", int32(30)}}}},
-		//},
+		"Int32Lower": {
+			update: bson.D{{"$max", bson.D{{"v", int32(30)}}}},
+		},
 		"Int32Higher": {
 			update: bson.D{{"$max", bson.D{{"v", int32(60)}}}},
 		},
-		//"Int32Negative": {
-		//	update: bson.D{{"$max", bson.D{{"v", int32(-22)}}}},
-		//},
-		//"StringIntHigher": {
-		//	update: bson.D{{"$max", bson.D{{"v", "60"}}}},
-		//},
-		//"StringIntLower": {
-		//	update: bson.D{{"$max", bson.D{{"v", "30"}}}},
-		//},
-		//"Double": {
-		//	update: bson.D{{"$max", bson.D{{"v", 62.34}}}},
-		//},
-		//"Times": {
-		//	update: bson.D{{"$max", bson.D{{"v", bson.D{{"foo", "bar"}}}}}},
-		//},
-		//"Document": {
-		//	update: bson.D{{"$max", bson.D{{"v", bson.D{{"foo", "bar"}}}}}},
-		//},
-		//"DateTime": {
-		//	update: bson.D{{"$max", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 12, 18, 42, 123000000, time.UTC))}}}},
-		//},
-		//"DateTimeLower": {
-		//	update: bson.D{{"$max", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 3, 18, 42, 123000000, time.UTC))}}}},
-		//},
+		"Int32Negative": {
+			update: bson.D{{"$max", bson.D{{"v", int32(-22)}}}},
+		},
+		"StringIntHigher": {
+			update: bson.D{{"$max", bson.D{{"v", "60"}}}},
+		},
+		"StringIntLower": {
+			update: bson.D{{"$max", bson.D{{"v", "30"}}}},
+		},
+		"Double": {
+			update: bson.D{{"$max", bson.D{{"v", 62.34}}}},
+		},
+		"Times": {
+			update: bson.D{{"$max", bson.D{{"v", bson.D{{"foo", "bar"}}}}}},
+		},
+		"Document": {
+			update: bson.D{{"$max", bson.D{{"v", bson.D{{"foo", "bar"}}}}}},
+		},
+		"DateTime": {
+			update: bson.D{{"$max", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 12, 18, 42, 123000000, time.UTC))}}}},
+		},
+		"DateTimeLower": {
+			update: bson.D{{"$max", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 3, 18, 42, 123000000, time.UTC))}}}},
+		},
 	}
 
 	testUpdateCompat(t, testCases)
