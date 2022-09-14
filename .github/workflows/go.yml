@@ -58,7 +58,6 @@ jobs:
         run: |
           git status
           git diff --exit-code
-        working-directory: source
 
   test:
     name: Test
