@@ -28,9 +28,9 @@ import (
 )
 
 // Databases returns a sorted list of FerretDB database names / PostgreSQL schema names.
-func Databases(ctx context.Context, querier pgxtype.Querier) ([]string, error) {
+func Databases(ctx context.Context, tx pgx.Tx) ([]string, error) {
 	sql := "SELECT schema_name FROM information_schema.schemata ORDER BY schema_name"
-	rows, err := querier.Query(ctx, sql)
+	rows, err := tx.Query(ctx, sql)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
