@@ -24,7 +24,6 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -205,20 +204,6 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 		return nil, lazyerrors.Error(err)
 	}
 	return &res, nil
-}
-
-// SetDocumentByID sets a document by its ID.
-//
-// Deprecated: use function instead.
-func (pgPool *Pool) SetDocumentByID(ctx context.Context, sp *SQLParam, id any, doc *types.Document) (int64, error) {
-	var n int64
-	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		var err error
-		n, err = SetDocumentByID(ctx, tx, sp, id, doc)
-		return err
-	})
-
-	return n, err
 }
 
 // InTransaction wraps the given function f in a transaction.
