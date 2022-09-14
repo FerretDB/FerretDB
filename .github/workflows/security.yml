@@ -42,5 +42,5 @@ jobs:
         run: go generate -x
         working-directory: tools
 
-      - name: Run Scan
-        run: bin/task --exit-code security-scan
+      - name: Scan
+        run: bin/task --exit-code security
