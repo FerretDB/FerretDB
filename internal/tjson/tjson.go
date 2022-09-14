@@ -151,6 +151,11 @@ func Unmarshal(data []byte, schema *Schema) (any, error) {
 		return fromTJSON(new(nullType)), nil
 	}
 
+	// For high-level schema Type might be unset. In this case we consider it Object to validate documents properly.
+	if schema.Type == "" {
+		schema.Type = Object
+	}
+
 	var res tjsontype
 	var err error
 	switch t := schema.Type; t {

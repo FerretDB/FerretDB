@@ -16,10 +16,11 @@ package setup
 
 import (
 	"context"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"strings"
 	"testing"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/mongo"

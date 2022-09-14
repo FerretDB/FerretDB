@@ -215,6 +215,11 @@ func (s *Schema) Unmarshal(b []byte) error {
 		return err
 	}
 
+	// If Type is not set, it's a high-level schema, so we set Type as Object to make it explicit.
+	if s.Type == "" {
+		s.Type = Object
+	}
+
 	// Add $k properties that are necessary for documents.
 	s.addDocumentProperties()
 
@@ -223,6 +228,11 @@ func (s *Schema) Unmarshal(b []byte) error {
 
 // addDocumentProperties adds missing $k properties to all the schema's documents (top-level and nested).
 func (s *Schema) addDocumentProperties() {
+	if s.Type == Array && s.Items.Type == Object {
+		s.Items.addDocumentProperties()
+		return
+	}
+
 	if s.Type != Object && s.Type != "" {
 		return
 	}
