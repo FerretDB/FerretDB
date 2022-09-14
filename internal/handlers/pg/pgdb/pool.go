@@ -221,20 +221,6 @@ func (pgPool *Pool) SetDocumentByID(ctx context.Context, sp *SQLParam, id any, d
 	return n, err
 }
 
-// DeleteDocumentsByID deletes documents by given IDs.
-//
-// Deprecated: use function instead.
-func (pgPool *Pool) DeleteDocumentsByID(ctx context.Context, sp *SQLParam, ids []any) (int64, error) {
-	var n int64
-	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		var err error
-		n, err = DeleteDocumentsByID(ctx, tx, sp, ids)
-		return err
-	})
-
-	return n, err
-}
-
 // InTransaction wraps the given function f in a transaction.
 // If f returns an error, the transaction is rolled back.
 // Errors are wrapped with lazyerrors.Error,
