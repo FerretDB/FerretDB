@@ -348,8 +348,14 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			return false, nil
 		}
 
-		if res := types.CompareOrder(val, maxVal, types.Ascending); res != types.Less && res != types.Incomparable {
+		res := types.CompareOrder(val, maxVal, types.Ascending)
+		switch res {
+		case types.Equal:
+			fallthrough
+		case types.Greater:
 			return false, nil
+		case types.Incomparable:
+			return false, NewErrorMsg(ErrNotImplemented, "document comparison is not implemented")
 		}
 
 		if err := doc.Set(field, maxVal); err != nil {
