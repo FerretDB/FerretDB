@@ -85,6 +85,12 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				return false, err
 			}
 
+		case "$min":
+			changed, err = processMinFieldExpression(doc, updateV)
+			if err != nil {
+				return false, err
+			}
+
 		case "$pop":
 			changed, err = processPopFieldExpression(doc, updateV.(*types.Document))
 			if err != nil {
@@ -326,6 +332,33 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	}
 
 	return changed, nil
+}
+
+func processMinFieldExpression(doc *types.Document, updateV any) (bool, error) {
+	minExpression := updateV.(*types.Document)
+
+	for _, field := range minExpression.Keys() {
+		val := must.NotFail(doc.Get(field))
+
+		minVal, err := minExpression.Get(field)
+		if err != nil {
+			// if field does not exist, don't change anything
+			return false, nil
+		}
+
+		res := types.CompareOrder(val, minVal, types.Ascending)
+		switch res {
+		case types.Less:
+			return false, nil
+		case types.Incomparable:
+			return false, NewErrorMsg(ErrNotImplemented, "document comparison is not implemented")
+		}
+
+		if err := doc.Set(field, minVal); err != nil {
+			return false, err
+		}
+	}
+	return true, nil
 }
 
 // processCurrentDateFieldExpression changes document according to $currentDate operator.
