@@ -98,15 +98,15 @@ func CreateDatabase(ctx context.Context, querier pgxtype.Querier, db string) err
 
 // CreateDatabaseIfNotExists creates a new FerretDB database (PostgreSQL schema).
 // If the schema already exists, no error is returned.
-func CreateDatabaseIfNotExists(ctx context.Context, querier pgxtype.Querier, db string) error {
+func CreateDatabaseIfNotExists(ctx context.Context, tx pgx.Tx, db string) error {
 	if !validateDatabaseNameRe.MatchString(db) ||
 		strings.HasPrefix(db, reservedPrefix) {
 		return ErrInvalidDatabaseName
 	}
 
-	_, err := querier.Exec(ctx, `CREATE SCHEMA IF NOT EXISTS `+pgx.Identifier{db}.Sanitize())
+	_, err := tx.Exec(ctx, `CREATE SCHEMA IF NOT EXISTS `+pgx.Identifier{db}.Sanitize())
 	if err == nil {
-		err = createSettingsTable(ctx, querier, db)
+		err = createSettingsTable(ctx, tx, db)
 	}
 
 	if err == nil || errors.Is(err, ErrAlreadyExist) {
