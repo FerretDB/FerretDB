@@ -109,6 +109,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	must.NoError(replyDoc.Set("n", deleted))
 
 	var reply wire.OpMsg
+
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{replyDoc},
 	})
