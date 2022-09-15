@@ -61,7 +61,7 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 func TestUpdateFieldCompatMax(t *testing.T) {
 	t.Parallel()
 	setup.SkipForTigrisWithReason(t, "tigris does not support dynamic types")
-	setup.SkipForPostgresWithReason(t, "document comparing required https://github.com/FerretDB/FerretDB/issues/457")
+	//setup.SkipForPostgresWithReason(t, "document comparing required https://github.com/FerretDB/FerretDB/issues/457")
 
 	testCases := map[string]updateCompatTestCase{
 		"Int32Lower": {
@@ -73,82 +73,33 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 		"Int32Negative": {
 			update: bson.D{{"$max", bson.D{{"v", int32(-22)}}}},
 		},
-		"StringIntHigher": {
-			update: bson.D{{"$max", bson.D{{"v", "60"}}}},
-		},
-		"StringIntLower": {
-			update: bson.D{{"$max", bson.D{{"v", "30"}}}},
-		},
-		"Times": {
-			update: bson.D{{"$max", bson.D{{"v", bson.D{{"foo", "bar"}}}}}},
-		},
 		"Document": {
 			update: bson.D{{"$max", bson.D{{"v", bson.D{{"foo", "bar"}}}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/457",
 		},
-
-		"HigherInt": {
-			update: bson.D{{"$max", bson.D{{"v", 60}}}},
-		},
-		"LowerInt": {
-			update: bson.D{{"$max", bson.D{{"v", 20}}}},
+		"EmptyDocument": {
+			update: bson.D{{"$max", bson.D{{"v", bson.D{{}}}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1000",
 		},
 		"Double": {
 			update: bson.D{{"$max", bson.D{{"v", 54.32}}}},
 		},
+		"DoubleNegative": {
+			update: bson.D{{"$max", bson.D{{"v", -54.32}}}},
+		},
+
 		// Strings are not converted to numbers
-		"StringInteger": {
+		"StringIntegerHigher": {
 			update: bson.D{{"$max", bson.D{{"v", "60"}}}},
+		},
+		"StringIntegerLower": {
+			update: bson.D{{"$max", bson.D{{"v", "30"}}}},
 		},
 		"StringDouble": {
 			update: bson.D{{"$max", bson.D{{"v", "54.32"}}}},
 		},
 		"StringDoubleNegative": {
 			update: bson.D{{"$max", bson.D{{"v", "-54.32"}}}},
-		},
-		"StringMixed": {
-			update: bson.D{{"$max", bson.D{{"v", "60"}}}},
-		},
-		"StringInt32": {
-			update: bson.D{{"$max", bson.D{{"v", "42"}}}},
-		},
-		"StringMixedLower": {
-			update: bson.D{{"$max", bson.D{{"v", "30"}}}},
-		},
-		"StringNotNumeric": {
-			update: bson.D{{"$max", bson.D{{"v", "foo"}}}},
-		},
-		"StringDoc": {
-			update: bson.D{{"$max", bson.D{{"v", bson.D{{"a", "b"}}}}}},
-			skip:   "Support documents",
-		},
-		"IntDoc": {
-			update: bson.D{{"$max", bson.D{{"v", bson.D{{"a", "b"}}}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/1000",
-		},
-		"EmptyDoc": {
-			update: bson.D{{"$max", bson.D{{"v", bson.D{{}}}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/1000",
-		},
-		"IntDouble": {
-			update: bson.D{{"$max", bson.D{{"v", 54.32}}}},
-		},
-		"StringBool": {
-			update: bson.D{{"$max", bson.D{{"v", true}}}},
-		},
-		"IntBool": {
-			update: bson.D{{"$max", bson.D{{"v", true}}}},
-		},
-		"ZeroTrue": { // Check if true is not taken as 1 when comparing with int32(0)
-			update: bson.D{{"$max", bson.D{{"v", true}}}},
-		},
-		"EmptyOperand": {
-			update: bson.D{{"$max", bson.D{}}},
-		},
-		"ComparisonOrderInt": {
-			update: bson.D{{"$max", bson.D{{"v", nil}}}},
-		},
-		"ComparisonOrderBool": {
-			update: bson.D{{"$max", bson.D{{"v", "foo"}}}},
 		},
 		"StringLexicographicHigher": {
 			update: bson.D{{"$max", bson.D{{"v", "goo"}}}},
@@ -158,6 +109,15 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 		},
 		"StringLexicographicUpperCase": {
 			update: bson.D{{"$max", bson.D{{"v", "Foo"}}}},
+		},
+		"BoolTrue": {
+			update: bson.D{{"$max", bson.D{{"v", true}}}},
+		},
+		"BoolFalse": {
+			update: bson.D{{"$max", bson.D{{"v", false}}}},
+		},
+		"EmptyOperand": {
+			update: bson.D{{"$max", bson.D{}}},
 		},
 		"DateTime": {
 			update: bson.D{{"$max", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 12, 18, 42, 123000000, time.UTC))}}}},
