@@ -350,7 +350,7 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			continue
 		}
 
-		// if the key is not found, set it
+		// if the key was not found, set it
 		if val != nil {
 			res := types.CompareOrder(val, maxVal, types.Ascending)
 			switch res {
