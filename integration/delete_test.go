@@ -63,14 +63,13 @@ func TestDeleteLimitErrors(t *testing.T) {
 
 	for name, tc := range map[string]struct {
 		deletes     bson.A
-		expectedErr *mongo.CommandError
+		expectedErr *mongo.WriteError
 		skip        string
 	}{
 		"NotSet": {
 			deletes: bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}}},
-			expectedErr: &mongo.CommandError{
-				Code:    int32(common.ErrMissingField),
-				Name:    common.ErrMissingField.String(),
+			expectedErr: &mongo.WriteError{
+				Code:    int(common.ErrMissingField),
 				Message: "BSON field 'delete.deletes.limit' is missing but a required field",
 			},
 		},
@@ -83,17 +82,15 @@ func TestDeleteLimitErrors(t *testing.T) {
 		},
 		"InvalidFloat": {
 			deletes: bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}, {"limit", 42.13}}},
-			expectedErr: &mongo.CommandError{
-				Code:    int32(common.ErrFailedToParse),
-				Name:    common.ErrFailedToParse.String(),
+			expectedErr: &mongo.WriteError{
+				Code:    int(common.ErrFailedToParse),
 				Message: "The limit field in delete objects must be 0 or 1. Got 42.13",
 			},
 		},
 		"InvalidInt": {
 			deletes: bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}, {"limit", 100}}},
-			expectedErr: &mongo.CommandError{
-				Code:    int32(common.ErrFailedToParse),
-				Name:    common.ErrFailedToParse.String(),
+			expectedErr: &mongo.WriteError{
+				Code:    int(common.ErrFailedToParse),
 				Message: "The limit field in delete objects must be 0 or 1. Got 100",
 			},
 		},
@@ -114,7 +111,7 @@ func TestDeleteLimitErrors(t *testing.T) {
 			})
 
 			if tc.expectedErr != nil {
-				AssertEqualError(t, *tc.expectedErr, res.Err())
+				AssertEqualWriteError(t, *tc.expectedErr, res.Err())
 				return
 			}
 			assert.Equal(t, nil, res.Err())
