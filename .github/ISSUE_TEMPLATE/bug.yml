@@ -1,4 +1,5 @@
 ---
+# https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-githubs-form-schema
 name: Bug
 description: Some feature works incorrectly
 assignees: ["ferretdb-bot"]
@@ -8,46 +9,31 @@ body:
     attributes:
       value: |
         Thanks for taking the time to fill out this bug report!
+        Please check if your bug is [already filed](https://github.com/FerretDB/FerretDB/issues).
   - type: textarea
-    id: what-happened
+    id: versions
     attributes:
-      label: What happened?
-      description: Also tell us, what did you expect to happen?
-      placeholder: Tell us what you see!
-      value: "A bug happened!"
+      label: Versions
+      description: What versions of FerretDB and other software do you use?
+      value: |
+        FerretDB:
     validations:
       required: true
-  - type: dropdown
-    id: version
+  - type: textarea
+    id: do
     attributes:
-      label: Version
-      description: What version of our software are you running?
-      options:
-        - 1.0.2 (Default)
-        - 1.0.3 (Edge)
+      label: What did you do?
     validations:
       required: true
-  - type: dropdown
-    id: browsers
-    attributes:
-      label: What browsers are you seeing the problem on?
-      multiple: true
-      options:
-        - Firefox
-        - Chrome
-        - Safari
-        - Microsoft Edge
   - type: textarea
-    id: logs
+    id: expected
     attributes:
-      label: Relevant log output
-      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
-      render: shell
-  - type: checkboxes
-    id: terms
+      label: What did you expect to see?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
     attributes:
-      label: Code of Conduct
-      description: By submitting this issue, you agree to follow our [Code of Conduct](https://example.com)
-      options:
-        - label: I agree to follow this project's Code of Conduct
-          required: true
+      label: What did you see instead?
+    validations:
+      required: true
