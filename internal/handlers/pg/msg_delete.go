@@ -241,10 +241,16 @@ func (h *Handler) delete(ctx context.Context, sp *pgdb.SQLParam, docs []*types.D
 		ids[i] = id
 	}
 
-	rowsDeleted, err := h.pgPool.DeleteDocumentsByID(ctx, sp, ids)
+	var rowsDeleted int64
+	err := h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		var err error
+		rowsDeleted, err = pgdb.DeleteDocumentsByID(ctx, tx, sp, ids)
+		return err
+	})
 	if err != nil {
 		// TODO check error code
 		return 0, common.NewError(common.ErrNamespaceNotFound, fmt.Errorf("delete: ns not found: %w", err))
 	}
+
 	return rowsDeleted, nil
 }

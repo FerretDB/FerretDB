@@ -25,8 +25,7 @@ import (
 
 func TestSchemaMarshalUnmarshal(t *testing.T) {
 	expected := Schema{
-		Title:       "users",
-		Description: "FerretDB users collection",
+		Title: "users",
 		Properties: map[string]*Schema{
 			"$k":      {Type: Array, Items: stringSchema},
 			"_id":     objectIDSchema,
@@ -43,7 +42,6 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 
 	expectedB := testutil.IndentJSON(t, []byte(`{
 		"title": "users",
-		"description": "FerretDB users collection",
 		"properties": {
 			"$k": {"type": "array", "items": {"type": "string"}},
 			"_id": {"type": "string", "format": "byte"},
