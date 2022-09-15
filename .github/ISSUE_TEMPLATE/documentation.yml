@@ -7,7 +7,7 @@ labels: ["documentation"]
 body:
   - type: markdown
     attributes:
-      value: |
+      value: >
         Thanks for taking the time to fill out this form!
         Please check if a similar issue is [already filed](https://github.com/FerretDB/FerretDB/issues).
   - type: textarea
