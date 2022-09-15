@@ -7,7 +7,7 @@ replace github.com/golangci/golangci-lint => github.com/FerretDB/golangci-lint v
 
 require (
 	github.com/BurntSushi/go-sumtype v0.0.0-20190304192233-fcb4a6205bdc
-	github.com/go-task/task/v3 v3.15.0
+	github.com/go-task/task/v3 v3.15.2
 	github.com/golangci/golangci-lint v1.47.2 // sync with GitHub Actions workflow
 	github.com/goreleaser/nfpm/v2 v2.18.1
 	github.com/quasilyte/go-consistent v0.0.0-20220429160651-4e46040fbc82
