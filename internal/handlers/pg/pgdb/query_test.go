@@ -38,10 +38,10 @@ func TestQueryDocuments(t *testing.T) {
 	collectionName := testutil.CollectionName(t)
 
 	t.Cleanup(func() {
-		pool.DropDatabase(ctx, dbName)
+		DropDatabase(ctx, pool, dbName)
 	})
 
-	pool.DropDatabase(ctx, dbName)
+	DropDatabase(ctx, pool, dbName)
 	require.NoError(t, CreateDatabase(ctx, pool, dbName))
 
 	cases := []struct {
