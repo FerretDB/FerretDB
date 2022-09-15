@@ -84,7 +84,12 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		del, err := h.funcName(ctx, deleteDoc, fp)
+		filter, limit, err := h.prepareDeleteParams(deleteDoc)
+		if err != nil {
+			return nil, err
+		}
+
+		del, err := h.funcName(ctx, filter, limit, fp)
 		if err == nil {
 			deleted += del
 			continue
@@ -119,37 +124,42 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
-func (h *Handler) funcName(ctx context.Context, d *types.Document, fp *tigrisdb.FetchParam) (int32, error) {
+func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Document, int64, error) {
 	var err error
 
-	if err := common.Unimplemented(d, "collation", "hint"); err != nil {
-		return 0, err
+	if err = common.Unimplemented(deleteDoc, "collation", "hint"); err != nil {
+		return nil, 0, err
 	}
 
 	// get filter from document
 	var filter *types.Document
-	if filter, err = common.GetOptionalParam(d, "q", filter); err != nil {
-		return 0, err
+	if filter, err = common.GetOptionalParam(deleteDoc, "q", filter); err != nil {
+		return nil, 0, err
 	}
 
-	var limit int64
+	common.Ignored(filter, h.L, "$comment")
 
-	l, err := d.Get("limit")
+	l, err := deleteDoc.Get("limit")
 	if err != nil {
-		return 0, common.NewErrorMsg(
+		return nil, 0, common.NewErrorMsg(
 			common.ErrMissingField,
 			"BSON field 'delete.deletes.limit' is missing but a required field",
 		)
 	}
 
+	var limit int64
 	if limit, err = common.GetWholeNumberParam(l); err != nil || limit < 0 || limit > 1 {
-		return 0, common.NewErrorMsg(
+		return nil, 0, common.NewErrorMsg(
 			common.ErrFailedToParse,
 			fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", l),
 		)
 	}
 
-	common.Ignored(filter, h.L, "$comment")
+	return filter, limit, nil
+}
+
+func (h *Handler) funcName(ctx context.Context, filter *types.Document, limit int64, fp *tigrisdb.FetchParam) (int32, error) {
+	var err error
 
 	resDocs := make([]*types.Document, 0, 16)
 

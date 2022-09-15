@@ -85,7 +85,17 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		del, err := h.processDeleteQuery(ctx, deleteDoc, sp)
+		filter, limit, err := h.prepareDeleteParams(deleteDoc)
+		if err != nil {
+			return nil, err
+		}
+
+		// get comment from query, e.g. db.collection.DeleteOne({"_id":"string", "$comment: "test"})
+		if sp.Comment, err = common.GetOptionalParam(filter, "$comment", sp.Comment); err != nil {
+			return nil, err
+		}
+
+		del, err := h.processDeleteQuery(ctx, filter, limit, sp)
 		if err == nil {
 			deleted += del
 			continue
@@ -120,29 +130,22 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
-// processDeleteQuery accepts a document with a `delete` filter and sql parameters to execute delete query.
-// It returns the number of deleted documents or an error.
-func (h *Handler) processDeleteQuery(ctx context.Context, deleteDoc *types.Document, sp *pgdb.SQLParam) (int32, error) {
+func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Document, int64, error) {
 	var err error
 
-	if err := common.Unimplemented(deleteDoc, "collation", "hint"); err != nil {
-		return 0, err
+	if err = common.Unimplemented(deleteDoc, "collation", "hint"); err != nil {
+		return nil, 0, err
 	}
 
 	// get filter from document
 	var filter *types.Document
 	if filter, err = common.GetOptionalParam(deleteDoc, "q", filter); err != nil {
-		return 0, err
-	}
-
-	// get comment from query, e.g. db.collection.DeleteOne({"_id":"string", "$comment: "test"})
-	if sp.Comment, err = common.GetOptionalParam(filter, "$comment", sp.Comment); err != nil {
-		return 0, err
+		return nil, 0, err
 	}
 
 	l, err := deleteDoc.Get("limit")
 	if err != nil {
-		return 0, common.NewErrorMsg(
+		return nil, 0, common.NewErrorMsg(
 			common.ErrMissingField,
 			"BSON field 'delete.deletes.limit' is missing but a required field",
 		)
@@ -150,11 +153,19 @@ func (h *Handler) processDeleteQuery(ctx context.Context, deleteDoc *types.Docum
 
 	var limit int64
 	if limit, err = common.GetWholeNumberParam(l); err != nil || limit < 0 || limit > 1 {
-		return 0, common.NewErrorMsg(
+		return nil, 0, common.NewErrorMsg(
 			common.ErrFailedToParse,
 			fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", l),
 		)
 	}
+
+	return filter, limit, nil
+}
+
+// processDeleteQuery accepts a document with a `delete` filter and sql parameters to execute delete query.
+// It returns the number of deleted documents or an error.
+func (h *Handler) processDeleteQuery(ctx context.Context, filter *types.Document, limit int64, sp *pgdb.SQLParam) (int32, error) {
+	var err error
 
 	resDocs := make([]*types.Document, 0, 16)
 
