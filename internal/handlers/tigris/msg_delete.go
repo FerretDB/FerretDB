@@ -90,14 +90,10 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			continue
 		}
 
-		if _, ok := err.(*common.CommandError); ok {
-			delErrors.Append(err, int32(i))
+		delErrors.Append(err, int32(i))
 
-			if ordered {
-				break
-			}
-
-			continue
+		if ordered {
+			break
 		}
 	}
 
@@ -112,6 +108,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	must.NoError(replyDoc.Set("n", deleted))
 
 	var reply wire.OpMsg
+
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{replyDoc},
 	})
