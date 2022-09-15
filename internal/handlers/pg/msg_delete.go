@@ -130,6 +130,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
+// prepareDeleteParams extracts query filter and limit from delete document.
 func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Document, int64, error) {
 	var err error
 
@@ -162,7 +163,7 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 	return filter, limit, nil
 }
 
-// processDeleteQuery accepts a document with a `delete` filter and sql parameters to execute delete query.
+// processDeleteQuery accepts a query filter, limit and sql parameters to execute delete query.
 // It returns the number of deleted documents or an error.
 func (h *Handler) processDeleteQuery(ctx context.Context, filter *types.Document, limit int64, sp *pgdb.SQLParam) (int32, error) {
 	var err error

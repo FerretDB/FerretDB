@@ -89,7 +89,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		del, err := h.funcName(ctx, filter, limit, fp)
+		del, err := h.processDeleteQuery(ctx, filter, limit, fp)
 		if err == nil {
 			deleted += del
 			continue
@@ -124,6 +124,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
+// prepareDeleteParams extracts query filter and limit from delete document.
 func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Document, int64, error) {
 	var err error
 
@@ -158,7 +159,9 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 	return filter, limit, nil
 }
 
-func (h *Handler) funcName(ctx context.Context, filter *types.Document, limit int64, fp *tigrisdb.FetchParam) (int32, error) {
+// processDeleteQuery accepts a query filter, limit and fetch parameters to execute delete query.
+// It returns the number of deleted documents or an error.
+func (h *Handler) processDeleteQuery(ctx context.Context, filter *types.Document, limit int64, fp *tigrisdb.FetchParam) (int32, error) {
 	var err error
 
 	resDocs := make([]*types.Document, 0, 16)
