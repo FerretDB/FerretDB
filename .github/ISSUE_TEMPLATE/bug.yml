@@ -9,14 +9,12 @@ body:
     attributes:
       value: |
         Thanks for taking the time to fill out this bug report!
-        Please check if your bug is [already filed](https://github.com/FerretDB/FerretDB/issues).
+        Please check if a similar issue is [already filed](https://github.com/FerretDB/FerretDB/issues).
   - type: textarea
     id: versions
     attributes:
       label: Versions
       description: What versions of FerretDB and other software do you use?
-      value: |
-        FerretDB:
     validations:
       required: true
   - type: textarea
