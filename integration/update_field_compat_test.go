@@ -79,14 +79,85 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 		"StringIntLower": {
 			update: bson.D{{"$max", bson.D{{"v", "30"}}}},
 		},
-		"Double": {
-			update: bson.D{{"$max", bson.D{{"v", 62.34}}}},
-		},
 		"Times": {
 			update: bson.D{{"$max", bson.D{{"v", bson.D{{"foo", "bar"}}}}}},
 		},
 		"Document": {
 			update: bson.D{{"$max", bson.D{{"v", bson.D{{"foo", "bar"}}}}}},
+		},
+
+		"HigherInt": {
+			update: bson.D{{"$max", bson.D{{"v", 60}}}},
+		},
+		"LowerInt": {
+			update: bson.D{{"$max", bson.D{{"v", 20}}}},
+		},
+		"Double": {
+			update: bson.D{{"$max", bson.D{{"v", 54.32}}}},
+		},
+		// Strings are not converted to numbers
+		"StringInteger": {
+			update: bson.D{{"$max", bson.D{{"v", "60"}}}},
+		},
+		"StringDouble": {
+			update: bson.D{{"$max", bson.D{{"v", "54.32"}}}},
+		},
+		"StringDoubleNegative": {
+			update: bson.D{{"$max", bson.D{{"v", "-54.32"}}}},
+		},
+		"StringMixed": {
+			update: bson.D{{"$max", bson.D{{"v", "60"}}}},
+		},
+		"StringInt32": {
+			update: bson.D{{"$max", bson.D{{"v", "42"}}}},
+		},
+		"StringMixedLower": {
+			update: bson.D{{"$max", bson.D{{"v", "30"}}}},
+		},
+		"StringNotNumeric": {
+			update: bson.D{{"$max", bson.D{{"v", "foo"}}}},
+		},
+		"StringDoc": {
+			update: bson.D{{"$max", bson.D{{"v", bson.D{{"a", "b"}}}}}},
+			skip:   "Support documents",
+		},
+		"IntDoc": {
+			update: bson.D{{"$max", bson.D{{"v", bson.D{{"a", "b"}}}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1000",
+		},
+		"EmptyDoc": {
+			update: bson.D{{"$max", bson.D{{"v", bson.D{{}}}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1000",
+		},
+		"IntDouble": {
+			update: bson.D{{"$max", bson.D{{"v", 54.32}}}},
+		},
+		"StringBool": {
+			update: bson.D{{"$max", bson.D{{"v", true}}}},
+		},
+		"IntBool": {
+			update: bson.D{{"$max", bson.D{{"v", true}}}},
+		},
+		"ZeroTrue": { // Check if true is not taken as 1 when comparing with int32(0)
+			update: bson.D{{"$max", bson.D{{"v", true}}}},
+		},
+		"EmptyOperand": {
+			update: bson.D{{"$max", bson.D{}}},
+		},
+		"ComparisonOrderInt": {
+			update: bson.D{{"$max", bson.D{{"v", nil}}}},
+		},
+		"ComparisonOrderBool": {
+			update: bson.D{{"$max", bson.D{{"v", "foo"}}}},
+		},
+		"StringLexicographicHigher": {
+			update: bson.D{{"$max", bson.D{{"v", "goo"}}}},
+		},
+		"StringLexicographicLower": {
+			update: bson.D{{"$max", bson.D{{"v", "eoo"}}}},
+		},
+		"StringLexicographicUpperCase": {
+			update: bson.D{{"$max", bson.D{{"v", "Foo"}}}},
 		},
 		"DateTime": {
 			update: bson.D{{"$max", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 12, 18, 42, 123000000, time.UTC))}}}},
