@@ -92,29 +92,13 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		if _, ok := err.(*common.CommandError); ok {
 			delErrors.Append(err, int32(i))
-			break
-		}
 
-		switch err.(type) {
-		case *common.WriteErrors:
-			// write errors and others require to be handled in array
-			delErrors.Append(err, int32(i))
-
-			// Delete statements in the `deletes` field are not transactional.
-			// It means that we run each delete statement separately.
-			// If `ordered` is set as `true`, we don't execute the remaining statements
-			// after the first failure.
-			// If `ordered` is set as `false`, we execute all the statements and return
-			// the list of errors corresponding to the failed statements.
-			if !ordered {
-				continue
+			if ordered {
+				break
 			}
-		default:
-			return nil, lazyerrors.Error(err)
-		}
 
-		// send response if ordered is true
-		break
+			continue
+		}
 	}
 
 	replyDoc := must.NotFail(types.NewDocument(
