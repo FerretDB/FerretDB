@@ -23,6 +23,8 @@ body:
     id: do
     attributes:
       label: What did you do?
+      placeholder: |
+        I run the following MongoDB query: `collection.find()`.
     validations:
       required: true
   - type: textarea
