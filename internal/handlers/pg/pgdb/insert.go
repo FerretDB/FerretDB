@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/jackc/pgtype/pgxtype"
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
@@ -29,23 +28,23 @@ import (
 
 // InsertDocument inserts a document into FerretDB database and collection.
 // If database or collection does not exist, it will be created.
-func InsertDocument(ctx context.Context, querier pgxtype.Querier, db, collection string, doc *types.Document) error {
-	exists, err := CollectionExists(ctx, querier, db, collection)
+func InsertDocument(ctx context.Context, tx pgx.Tx, db, collection string, doc *types.Document) error {
+	exists, err := CollectionExists(ctx, tx, db, collection)
 	if err != nil {
 		return err
 	}
 
 	if !exists {
-		if err := CreateDatabaseIfNotExists(ctx, querier, db); err != nil {
+		if err := CreateDatabaseIfNotExists(ctx, tx, db); err != nil {
 			return lazyerrors.Error(err)
 		}
 
-		if err := CreateCollection(ctx, querier, db, collection); err != nil && !errors.Is(err, ErrAlreadyExist) {
+		if err := CreateCollection(ctx, tx, db, collection); err != nil && !errors.Is(err, ErrAlreadyExist) {
 			return lazyerrors.Error(err)
 		}
 	}
 
-	table, err := getTableName(ctx, querier, db, collection)
+	table, err := getTableName(ctx, tx, db, collection)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -53,7 +52,7 @@ func InsertDocument(ctx context.Context, querier pgxtype.Querier, db, collection
 	sql := `INSERT INTO ` + pgx.Identifier{db, table}.Sanitize() +
 		` (_jsonb) VALUES ($1)`
 
-	if _, err = querier.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc))); err != nil {
+	if _, err = tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc))); err != nil {
 		return lazyerrors.Error(err)
 	}
 
