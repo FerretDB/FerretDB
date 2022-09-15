@@ -339,31 +339,38 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	maxExpression := updateV.(*types.Document)
 
+	var changed bool
+
 	for _, field := range maxExpression.Keys() {
-		val := must.NotFail(doc.Get(field))
+		val, _ := doc.Get(field)
 
 		maxVal, err := maxExpression.Get(field)
 		if err != nil {
-			// if field does not exist, don't change anything
-			return false, nil
+			// if max field does not exist, don't change anything
+			continue
 		}
 
-		res := types.CompareOrder(val, maxVal, types.Ascending)
-		switch res {
-		case types.Equal:
-			fallthrough
-		case types.Greater:
-			return false, nil
-		case types.Incomparable:
-			return false, NewErrorMsg(ErrNotImplemented, "document comparison is not implemented")
+		// if the key is not found, set it
+		if val != nil {
+			res := types.CompareOrder(val, maxVal, types.Ascending)
+			switch res {
+			case types.Equal:
+				fallthrough
+			case types.Greater:
+				continue
+			case types.Less:
+			case types.Incomparable:
+				return changed, NewErrorMsg(ErrNotImplemented, "document comparison is not implemented")
+			}
 		}
 
 		if err := doc.Set(field, maxVal); err != nil {
-			return false, err
+			return changed, err
 		}
+		changed = true
 	}
 
-	return true, nil
+	return changed, nil
 }
 
 // processCurrentDateFieldExpression changes document according to $currentDate operator.

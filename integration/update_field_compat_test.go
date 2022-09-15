@@ -61,7 +61,6 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 func TestUpdateFieldCompatMax(t *testing.T) {
 	t.Parallel()
 	setup.SkipForTigrisWithReason(t, "tigris does not support dynamic types")
-	//setup.SkipForPostgresWithReason(t, "document comparing required https://github.com/FerretDB/FerretDB/issues/457")
 
 	testCases := map[string]updateCompatTestCase{
 		"Int32Lower": {
@@ -86,6 +85,14 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 		},
 		"DoubleNegative": {
 			update: bson.D{{"$max", bson.D{{"v", -54.32}}}},
+		},
+
+		"MultipleQueries": {
+			update: bson.D{{"$max", bson.D{{"v", int32(39)}, {"a", int32(30)}}}},
+		},
+		"DuplicateQuery": {
+			update: bson.D{{"$max", bson.D{{"v", int32(39)}, {"v", int32(30)}}}},
+			skip:   "Handle duplicates correctly",
 		},
 
 		// Strings are not converted to numbers
@@ -117,7 +124,8 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 			update: bson.D{{"$max", bson.D{{"v", false}}}},
 		},
 		"EmptyOperand": {
-			update: bson.D{{"$max", bson.D{}}},
+			update:     bson.D{{"$max", bson.D{}}},
+			resultType: emptyResult,
 		},
 		"DateTime": {
 			update: bson.D{{"$max", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 12, 18, 42, 123000000, time.UTC))}}}},
