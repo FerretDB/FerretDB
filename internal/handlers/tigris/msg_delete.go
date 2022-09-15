@@ -159,7 +159,7 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 	return filter, limit, nil
 }
 
-// processDelete fetches documents, filtering them out and limiting with the given limit value.
+// processDelete fetches documents, filter them out and limiting with the given limit value.
 // It returns the number of deleted documents or an error.
 func (h *Handler) processDelete(ctx context.Context, fp *tigrisdb.FetchParam, filter *types.Document, limit int64) (int32, error) {
 	var err error
