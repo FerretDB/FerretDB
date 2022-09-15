@@ -32,8 +32,8 @@ This guide tries to be short and does not mention things that are completely aut
    Do not leave original commit messages in the squashed commit body.
 9. Pull requests are typically merged by an auto-merge that the author should enable.
    It can also be merged by the reviewer if branch protection rules and CI checks allow that.
-   Exceptions (like "it should be merged only after being reviewed by _everyone_")
-   should be clearly communicated in the description.
+   If the pull request is not ready to be merged for some reason (but ready to be reviewed as usual),
+   the description should explain why, and the `do not merge` label should be applied.
 10. Ultimately, the author is responsible for doing everything to ensure that the pull request is merged and done.
 
 One can see all pull requests that await review [there](https://github.com/pulls/review-requested?q=user%3AFerretDB+is%3Aopen).
