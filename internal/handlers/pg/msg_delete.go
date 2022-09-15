@@ -96,7 +96,6 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		if ordered {
 			break
 		}
-
 	}
 
 	replyDoc := must.NotFail(types.NewDocument(
