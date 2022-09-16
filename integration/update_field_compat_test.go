@@ -21,8 +21,6 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-
-	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestUpdateFieldCompatInc(t *testing.T) {
@@ -60,7 +58,6 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 
 func TestUpdateFieldCompatMax(t *testing.T) {
 	t.Parallel()
-	setup.SkipForTigrisWithReason(t, "tigris does not support dynamic types")
 
 	testCases := map[string]updateCompatTestCase{
 		"Int32Lower": {
