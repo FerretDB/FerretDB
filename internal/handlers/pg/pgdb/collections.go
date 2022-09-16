@@ -165,8 +165,8 @@ func CreateCollection(ctx context.Context, querier pgxtype.Querier, db, collecti
 // If needed, it creates both schema and table.
 //
 // True is returned if table was created.
-func CreateCollectionIfNotExist(ctx context.Context, querier pgxtype.Querier, db, collection string) (bool, error) {
-	exists, err := CollectionExists(ctx, querier, db, collection)
+func CreateCollectionIfNotExist(ctx context.Context, tx pgx.Tx, db, collection string) (bool, error) {
+	exists, err := CollectionExists(ctx, tx, db, collection)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
@@ -178,12 +178,12 @@ func CreateCollectionIfNotExist(ctx context.Context, querier pgxtype.Querier, db
 	// Table (or even schema) does not exist. Try to create it,
 	// but keep in mind that it can be created in concurrent connection.
 
-	if err := CreateDatabase(ctx, querier, db); err != nil && !errors.Is(err, ErrAlreadyExist) {
+	if err := CreateDatabase(ctx, tx, db); err != nil && !errors.Is(err, ErrAlreadyExist) {
 		return false, lazyerrors.Error(err)
 	}
 
 	// TODO use a transaction instead of pgPool: https://github.com/FerretDB/FerretDB/issues/866
-	if err := CreateCollection(ctx, querier, db, collection); err != nil {
+	if err := CreateCollection(ctx, tx, db, collection); err != nil {
 		if errors.Is(err, ErrAlreadyExist) {
 			return false, nil
 		}

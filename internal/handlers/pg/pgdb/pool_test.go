@@ -373,9 +373,14 @@ func TestCreateTableIfNotExist(t *testing.T) {
 			})
 		})
 
-		ok, err := CreateCollectionIfNotExist(ctx, pool, databaseName, collectionName)
+		var created bool
+		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			var err error
+			created, err = CreateCollectionIfNotExist(ctx, tx, databaseName, collectionName)
+			return err
+		})
 		require.NoError(t, err)
-		assert.True(t, ok)
+		assert.True(t, created)
 	})
 
 	t.Run("SchemaExistsTableDoesNotExist", func(t *testing.T) {
@@ -393,7 +398,12 @@ func TestCreateTableIfNotExist(t *testing.T) {
 			})
 		})
 
-		created, err := CreateCollectionIfNotExist(ctx, pool, databaseName, collectionName)
+		var created bool
+		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			var err error
+			created, err = CreateCollectionIfNotExist(ctx, tx, databaseName, collectionName)
+			return err
+		})
 		require.NoError(t, err)
 		assert.True(t, created)
 	})
@@ -414,7 +424,12 @@ func TestCreateTableIfNotExist(t *testing.T) {
 			})
 		})
 
-		created, err := CreateCollectionIfNotExist(ctx, pool, databaseName, collectionName)
+		var created bool
+		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			var err error
+			created, err = CreateCollectionIfNotExist(ctx, tx, databaseName, collectionName)
+			return err
+		})
 		require.NoError(t, err)
 		assert.False(t, created)
 	})
