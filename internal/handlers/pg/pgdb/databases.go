@@ -22,7 +22,6 @@ import (
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgtype/pgxtype"
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -58,48 +57,6 @@ func Databases(ctx context.Context, tx pgx.Tx) ([]string, error) {
 	}
 
 	return res, nil
-}
-
-// CreateDatabase creates a new FerretDB database (PostgreSQL schema).
-//
-// It returns (possibly wrapped):
-//
-//   - ErrAlreadyExist if schema already exist.
-//   - ErrInvalidDatabaseName if db name doesn't comply with the rules.
-//
-// Use errors.Is to check the error.
-//
-// Deprecated: use CreateDatabaseIfNotExists instead as it does not abort the transaction.
-func CreateDatabase(ctx context.Context, querier pgxtype.Querier, db string) error {
-	if !validateDatabaseNameRe.MatchString(db) ||
-		strings.HasPrefix(db, reservedPrefix) {
-		return ErrInvalidDatabaseName
-	}
-
-	_, err := querier.Exec(ctx, `CREATE SCHEMA `+pgx.Identifier{db}.Sanitize())
-	if err == nil {
-		err = createSettingsTable(ctx, querier, db)
-	}
-
-	if err == nil {
-		return nil
-	}
-
-	var pgErr *pgconn.PgError
-	if !errors.As(err, &pgErr) {
-		return lazyerrors.Error(err)
-	}
-
-	switch pgErr.Code {
-	case pgerrcode.DuplicateSchema:
-		return ErrAlreadyExist
-	case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject:
-		// https://www.postgresql.org/message-id/CA+TgmoZAdYVtwBfp1FL2sMZbiHCWT4UPrzRLNnX1Nb30Ku3-gg@mail.gmail.com
-		// The same thing for schemas. Reproducible by integration tests.
-		return ErrAlreadyExist
-	default:
-		return lazyerrors.Error(err)
-	}
 }
 
 // CreateDatabaseIfNotExists creates a new FerretDB database (PostgreSQL schema).

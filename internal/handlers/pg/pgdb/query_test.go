@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/context"
@@ -37,7 +38,10 @@ func TestQueryDocuments(t *testing.T) {
 	collectionName := testutil.CollectionName(t)
 	setupDatabase(ctx, t, pool, databaseName)
 
-	require.NoError(t, CreateDatabase(ctx, pool, databaseName))
+	err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
+		return CreateDatabaseIfNotExists(ctx, tx, databaseName)
+	})
+	require.NoError(t, err)
 
 	cases := []struct {
 		name       string

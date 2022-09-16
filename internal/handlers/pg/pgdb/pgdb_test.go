@@ -16,7 +16,6 @@ package pgdb
 
 import (
 	"context"
-	"strconv"
 	"testing"
 
 	"github.com/jackc/pgx/v4"
@@ -102,7 +101,9 @@ func TestCreateDrop(t *testing.T) {
 		err = CreateCollection(ctx, pool, databaseName, collectionName)
 		require.ErrorIs(t, err, ErrSchemaNotExist)
 
-		err = CreateDatabase(ctx, pool, databaseName)
+		err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			return CreateDatabaseIfNotExists(ctx, tx, databaseName)
+		})
 		require.NoError(t, err)
 
 		exists, err := CollectionExists(ctx, pool, databaseName, collectionName)
@@ -121,11 +122,15 @@ func TestCreateDrop(t *testing.T) {
 		collectionName := testutil.CollectionName(t)
 		setupDatabase(ctx, t, pool, databaseName)
 
-		err := CreateDatabase(ctx, pool, databaseName)
+		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			return CreateDatabaseIfNotExists(ctx, tx, databaseName)
+		})
 		require.NoError(t, err)
 
-		err = CreateDatabase(ctx, pool, databaseName)
-		require.ErrorIs(t, err, ErrAlreadyExist)
+		err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			return CreateDatabaseIfNotExists(ctx, tx, databaseName)
+		})
+		require.NoError(t, err)
 
 		exists, err := CollectionExists(ctx, pool, databaseName, collectionName)
 		require.NoError(t, err)
@@ -163,7 +168,9 @@ func TestCreateDrop(t *testing.T) {
 		collectionName := testutil.CollectionName(t)
 		setupDatabase(ctx, t, pool, databaseName)
 
-		err := CreateDatabase(ctx, pool, databaseName)
+		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			return CreateDatabaseIfNotExists(ctx, tx, databaseName)
+		})
 		require.NoError(t, err)
 
 		err = CreateCollection(ctx, pool, databaseName, collectionName)
@@ -174,9 +181,6 @@ func TestCreateDrop(t *testing.T) {
 		assert.Equal(t, []string{collectionName}, collections)
 
 		err = CreateCollection(ctx, pool, databaseName, collectionName)
-		require.ErrorIs(t, err, ErrAlreadyExist)
-
-		err = CreateDatabase(ctx, pool, databaseName)
 		require.ErrorIs(t, err, ErrAlreadyExist)
 
 		err = DropCollection(ctx, pool, databaseName, collectionName)
@@ -217,7 +221,9 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 		collectionName := testutil.CollectionName(t)
 		setupDatabase(ctx, t, pool, databaseName)
 
-		err := CreateDatabase(ctx, pool, databaseName)
+		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			return CreateDatabaseIfNotExists(ctx, tx, databaseName)
+		})
 		require.NoError(t, err)
 
 		var created bool
@@ -236,7 +242,9 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 		collectionName := testutil.CollectionName(t)
 		setupDatabase(ctx, t, pool, databaseName)
 
-		err := CreateDatabase(ctx, pool, databaseName)
+		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			return CreateDatabaseIfNotExists(ctx, tx, databaseName)
+		})
 		require.NoError(t, err)
 
 		err = CreateCollection(ctx, pool, databaseName, collectionName)
@@ -250,87 +258,4 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 		require.NoError(t, err)
 		assert.False(t, created)
 	})
-}
-
-func TestConcurrentCreate(t *testing.T) {
-	t.Parallel()
-
-	ctx := testutil.Ctx(t)
-	databaseName := testutil.DatabaseName(t)
-	collectionName := testutil.CollectionName(t)
-
-	// Create PostgreSQL database with the same name as FerretDB database / PostgreSQL schema
-	// because it is good enough.
-	createPool := getPool(ctx, t)
-	_, err := createPool.Exec(ctx, `CREATE DATABASE `+databaseName)
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		_, err := createPool.Exec(ctx, `DROP DATABASE `+databaseName)
-		require.NoError(t, err)
-	})
-
-	n := 10
-	dsn := testutil.PostgreSQLURL(t, &testutil.PostgreSQLURLOpts{
-		DatabaseName: databaseName,
-		Params: map[string]string{
-			"pool_min_conns": strconv.Itoa(n),
-			"pool_max_conns": strconv.Itoa(n),
-		},
-	})
-	pool, err := NewPool(ctx, dsn, zaptest.NewLogger(t), false)
-	require.NoError(t, err)
-	t.Cleanup(pool.Close)
-
-	for _, tc := range []struct {
-		name        string
-		f           func() error
-		compareFunc func(*testing.T, int) bool
-	}{
-		{
-			name: "CreateDatabase",
-			f: func() error {
-				return CreateDatabase(ctx, pool, databaseName)
-			},
-			compareFunc: func(t *testing.T, errors int) bool {
-				return assert.Equal(t, n-1, errors)
-			},
-		}, {
-			name: "CreateCollection",
-			f: func() error {
-				return CreateCollection(ctx, pool, databaseName, collectionName)
-			},
-			compareFunc: func(t *testing.T, errors int) bool {
-				return assert.LessOrEqual(t, errors, n-1)
-			},
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			start := make(chan struct{})
-			res := make(chan error, n)
-			for i := 0; i < n; i++ {
-				go func() {
-					<-start
-					res <- tc.f()
-				}()
-			}
-
-			close(start)
-
-			var errors int
-			for i := 0; i < n; i++ {
-				err := <-res
-				if err == nil {
-					continue
-				}
-
-				errors++
-				assert.ErrorIs(t, err, ErrAlreadyExist)
-			}
-
-			tc.compareFunc(t, errors)
-
-			// one more time to check "normal" error (DuplicateSchema, DuplicateTable)
-			assert.ErrorIs(t, tc.f(), ErrAlreadyExist)
-		})
-	}
 }
