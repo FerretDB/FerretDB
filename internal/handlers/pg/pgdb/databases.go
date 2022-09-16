@@ -27,10 +27,10 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// validateDatabaseNameRe validates database names.
+// validateDatabaseNameRe validates FerretDB database / PostgreSQL schema names.
 var validateDatabaseNameRe = regexp.MustCompile("^[a-z_][a-z0-9_]{0,62}$")
 
-// Databases returns a sorted list of FerretDB database names / PostgreSQL schema names.
+// Databases returns a sorted list of FerretDB database / PostgreSQL schema.
 func Databases(ctx context.Context, tx pgx.Tx) ([]string, error) {
 	sql := "SELECT schema_name FROM information_schema.schemata ORDER BY schema_name"
 	rows, err := tx.Query(ctx, sql)
