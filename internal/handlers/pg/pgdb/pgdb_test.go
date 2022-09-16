@@ -39,7 +39,7 @@ func getPool(ctx context.Context, tb testing.TB) *Pool {
 	return pool
 }
 
-func setup(ctx context.Context, tb testing.TB, pool *Pool, db string) {
+func setupDatabase(ctx context.Context, tb testing.TB, pool *Pool, db string) {
 	dropDatabase := func() {
 		pool.InTransaction(ctx, func(tx pgx.Tx) error {
 			return DropDatabase(ctx, tx, db)
@@ -89,7 +89,7 @@ func TestCreateDrop(t *testing.T) {
 
 		databaseName := testutil.DatabaseName(t)
 		collectionName := testutil.CollectionName(t)
-		setup(ctx, t, pool, databaseName)
+		setupDatabase(ctx, t, pool, databaseName)
 
 		err := DropCollection(ctx, pool, databaseName, collectionName)
 		require.Equal(t, ErrSchemaNotExist, err)
@@ -119,7 +119,7 @@ func TestCreateDrop(t *testing.T) {
 
 		databaseName := testutil.DatabaseName(t)
 		collectionName := testutil.CollectionName(t)
-		setup(ctx, t, pool, databaseName)
+		setupDatabase(ctx, t, pool, databaseName)
 
 		err := CreateDatabase(ctx, pool, databaseName)
 		require.NoError(t, err)
@@ -161,7 +161,7 @@ func TestCreateDrop(t *testing.T) {
 
 		databaseName := testutil.DatabaseName(t)
 		collectionName := testutil.CollectionName(t)
-		setup(ctx, t, pool, databaseName)
+		setupDatabase(ctx, t, pool, databaseName)
 
 		err := CreateDatabase(ctx, pool, databaseName)
 		require.NoError(t, err)
@@ -198,7 +198,7 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 
 		databaseName := testutil.DatabaseName(t)
 		collectionName := testutil.CollectionName(t)
-		setup(ctx, t, pool, databaseName)
+		setupDatabase(ctx, t, pool, databaseName)
 
 		var created bool
 		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
@@ -215,7 +215,7 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 
 		databaseName := testutil.DatabaseName(t)
 		collectionName := testutil.CollectionName(t)
-		setup(ctx, t, pool, databaseName)
+		setupDatabase(ctx, t, pool, databaseName)
 
 		err := CreateDatabase(ctx, pool, databaseName)
 		require.NoError(t, err)
@@ -234,7 +234,7 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 
 		databaseName := testutil.DatabaseName(t)
 		collectionName := testutil.CollectionName(t)
-		setup(ctx, t, pool, databaseName)
+		setupDatabase(ctx, t, pool, databaseName)
 
 		err := CreateDatabase(ctx, pool, databaseName)
 		require.NoError(t, err)

@@ -35,7 +35,7 @@ func TestQueryDocuments(t *testing.T) {
 	pool := getPool(ctx, t)
 	databaseName := testutil.DatabaseName(t)
 	collectionName := testutil.CollectionName(t)
-	setup(ctx, t, pool, databaseName)
+	setupDatabase(ctx, t, pool, databaseName)
 
 	require.NoError(t, CreateDatabase(ctx, pool, databaseName))
 
