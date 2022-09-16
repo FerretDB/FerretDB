@@ -22,16 +22,16 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 // getPool creates a new connection's connection pool for testing.
-func getPool(ctx context.Context, tb testing.TB, l *zap.Logger) *Pool {
+func getPool(ctx context.Context, tb testing.TB) *Pool {
 	tb.Helper()
 
+	l := zaptest.NewLogger(tb)
 	pool, err := NewPool(ctx, testutil.PostgreSQLURL(tb, nil), l, false)
 	require.NoError(tb, err)
 	tb.Cleanup(pool.Close)
@@ -71,7 +71,7 @@ func TestCreateDrop(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
-	pool := getPool(ctx, t, zaptest.NewLogger(t))
+	pool := getPool(ctx, t)
 
 	t.Run("SchemaDoesNotExistTableDoesNotExist", func(t *testing.T) {
 		t.Parallel()
@@ -214,7 +214,7 @@ func TestConcurrentCreate(t *testing.T) {
 
 	// Create PostgreSQL database with the same name as FerretDB database / PostgreSQL schema
 	// because it is good enough.
-	createPool := getPool(ctx, t, zaptest.NewLogger(t))
+	createPool := getPool(ctx, t)
 	_, err := createPool.Exec(ctx, `CREATE DATABASE `+databaseName)
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -292,7 +292,7 @@ func TestTableExists(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
-	pool := getPool(ctx, t, zaptest.NewLogger(t))
+	pool := getPool(ctx, t)
 
 	t.Run("SchemaDoesNotExistTableDoesNotExist", func(t *testing.T) {
 		t.Parallel()
@@ -358,7 +358,7 @@ func TestCreateTableIfNotExist(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
-	pool := getPool(ctx, t, zaptest.NewLogger(t))
+	pool := getPool(ctx, t)
 
 	t.Run("SchemaDoesNotExistTableDoesNotExist", func(t *testing.T) {
 		t.Parallel()

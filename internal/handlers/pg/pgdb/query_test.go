@@ -21,7 +21,6 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
 	"golang.org/x/net/context"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -34,7 +33,7 @@ func TestQueryDocuments(t *testing.T) {
 
 	ctx := testutil.Ctx(t)
 
-	pool := getPool(ctx, t, zaptest.NewLogger(t))
+	pool := getPool(ctx, t)
 	dbName := testutil.DatabaseName(t)
 	collectionName := testutil.CollectionName(t)
 
@@ -59,39 +58,34 @@ func TestQueryDocuments(t *testing.T) {
 		// docsPerIteration represents how many documents should be fetched per each iteration,
 		// use len(docsPerIteration) as the amount of fetch iterations.
 		docsPerIteration []int
-	}{
-		{
-			name:             "empty",
-			collection:       collectionName,
-			documents:        []*types.Document{},
-			docsPerIteration: []int{},
+	}{{
+		name:             "empty",
+		collection:       collectionName,
+		documents:        []*types.Document{},
+		docsPerIteration: []int{},
+	}, {
+		name:             "one",
+		collection:       collectionName + "_one",
+		documents:        []*types.Document{must.NotFail(types.NewDocument("id", "1"))},
+		docsPerIteration: []int{1},
+	}, {
+		name:       "two",
+		collection: collectionName + "_two",
+		documents: []*types.Document{
+			must.NotFail(types.NewDocument("id", "1")),
+			must.NotFail(types.NewDocument("id", "2")),
 		},
-		{
-			name:             "one",
-			collection:       collectionName + "_one",
-			documents:        []*types.Document{must.NotFail(types.NewDocument("id", "1"))},
-			docsPerIteration: []int{1},
+		docsPerIteration: []int{2},
+	}, {
+		name:       "three",
+		collection: collectionName + "_three",
+		documents: []*types.Document{
+			must.NotFail(types.NewDocument("id", "1")),
+			must.NotFail(types.NewDocument("id", "2")),
+			must.NotFail(types.NewDocument("id", "3")),
 		},
-		{
-			name:       "two",
-			collection: collectionName + "_two",
-			documents: []*types.Document{
-				must.NotFail(types.NewDocument("id", "1")),
-				must.NotFail(types.NewDocument("id", "2")),
-			},
-			docsPerIteration: []int{2},
-		},
-		{
-			name:       "three",
-			collection: collectionName + "_three",
-			documents: []*types.Document{
-				must.NotFail(types.NewDocument("id", "1")),
-				must.NotFail(types.NewDocument("id", "2")),
-				must.NotFail(types.NewDocument("id", "3")),
-			},
-			docsPerIteration: []int{2, 1},
-		},
-	}
+		docsPerIteration: []int{2, 1},
+	}}
 
 	for _, tc := range cases {
 		tc := tc
