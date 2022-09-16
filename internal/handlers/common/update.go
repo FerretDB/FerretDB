@@ -337,28 +337,40 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 func processMinFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	minExpression := updateV.(*types.Document)
 
+	var changed bool
+
 	for _, field := range minExpression.Keys() {
-		val := must.NotFail(doc.Get(field))
+		val, _ := doc.Get(field)
 
 		minVal, err := minExpression.Get(field)
 		if err != nil {
-			// if field does not exist, don't change anything
-			return false, nil
+			// if min field does not exist, don't change anything
+			continue
 		}
 
-		res := types.CompareOrder(val, minVal, types.Ascending)
-		switch res {
-		case types.Less:
-			return false, nil
-		case types.Incomparable:
-			return false, NewErrorMsg(ErrNotImplemented, "document comparison is not implemented")
+		// if the key was not found, set it
+		if val != nil {
+			res := types.CompareOrder(val, minVal, types.Ascending)
+			switch res {
+			case types.Equal:
+				fallthrough
+			case types.Less:
+				continue
+			case types.Greater:
+			case types.Incomparable:
+				return false, NewErrorMsg(ErrNotImplemented, "document comparison is not implemented")
+			}
+
 		}
 
 		if err := doc.Set(field, minVal); err != nil {
-			return false, err
+			return changed, err
 		}
+
+		changed = true
 	}
-	return true, nil
+
+	return changed, nil
 }
 
 // processCurrentDateFieldExpression changes document according to $currentDate operator.
@@ -460,6 +472,8 @@ func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
 		case "$currentDate":
 			fallthrough
 		case "$inc":
+			fallthrough
+		case "$min":
 			fallthrough
 		case "$set":
 			fallthrough

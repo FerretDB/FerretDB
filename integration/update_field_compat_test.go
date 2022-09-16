@@ -17,8 +17,11 @@ package integration
 import (
 	"math"
 	"testing"
+	"time"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestUpdateFieldCompatInc(t *testing.T) {
@@ -82,6 +85,86 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 		"DotNotationArrayNonExisting": {
 			update:     bson.D{{"$unset", bson.D{{"foo.0.baz", int32(1)}}}},
 			resultType: emptyResult,
+		},
+	}
+
+	testUpdateCompat(t, testCases)
+}
+
+func TestUpdateFieldCompatMin(t *testing.T) {
+	t.Parallel()
+	setup.SkipForTigrisWithReason(t, "tigris does not support dynamic types")
+
+	testCases := map[string]updateCompatTestCase{
+		"Int32Lower": {
+			update: bson.D{{"$min", bson.D{{"v", int32(30)}}}},
+		},
+		"Int32Higher": {
+			update: bson.D{{"$min", bson.D{{"v", int32(60)}}}},
+		},
+		"Int32Negative": {
+			update: bson.D{{"$min", bson.D{{"v", int32(-22)}}}},
+		},
+		"Document": {
+			update: bson.D{{"$min", bson.D{{"v", bson.D{{"foo", "bar"}}}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/457",
+		},
+		"EmptyDocument": {
+			update: bson.D{{"$min", bson.D{{"v", bson.D{{}}}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1000",
+		},
+		"Double": {
+			update: bson.D{{"$min", bson.D{{"v", 54.32}}}},
+		},
+		"DoubleNegative": {
+			update: bson.D{{"$min", bson.D{{"v", -54.32}}}},
+		},
+
+		"MultipleQueries": {
+			update: bson.D{{"$min", bson.D{{"v", int32(39)}, {"a", int32(30)}}}},
+		},
+		"DuplicateQuery": {
+			update: bson.D{{"$min", bson.D{{"v", int32(39)}, {"v", int32(30)}}}},
+			skip:   "Handle duplicates correctly",
+		},
+
+		// Strings are not converted to numbers
+		"StringIntegerHigher": {
+			update: bson.D{{"$min", bson.D{{"v", "60"}}}},
+		},
+		"StringIntegerLower": {
+			update: bson.D{{"$min", bson.D{{"v", "30"}}}},
+		},
+		"StringDouble": {
+			update: bson.D{{"$min", bson.D{{"v", "54.32"}}}},
+		},
+		"StringDoubleNegative": {
+			update: bson.D{{"$min", bson.D{{"v", "-54.32"}}}},
+		},
+		"StringLexicographicHigher": {
+			update: bson.D{{"$min", bson.D{{"v", "goo"}}}},
+		},
+		"StringLexicographicLower": {
+			update: bson.D{{"$min", bson.D{{"v", "eoo"}}}},
+		},
+		"StringLexicographicUpperCase": {
+			update: bson.D{{"$min", bson.D{{"v", "Foo"}}}},
+		},
+		"BoolTrue": {
+			update: bson.D{{"$min", bson.D{{"v", true}}}},
+		},
+		"BoolFalse": {
+			update: bson.D{{"$min", bson.D{{"v", false}}}},
+		},
+		"EmptyOperand": {
+			update:     bson.D{{"$min", bson.D{}}},
+			resultType: emptyResult,
+		},
+		"DateTime": {
+			update: bson.D{{"$min", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 12, 18, 42, 123000000, time.UTC))}}}},
+		},
+		"DateTimeLower": {
+			update: bson.D{{"$min", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 3, 18, 42, 123000000, time.UTC))}}}},
 		},
 	}
 
