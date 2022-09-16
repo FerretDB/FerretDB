@@ -176,6 +176,7 @@ func CreateCollectionIfNotExist(ctx context.Context, tx pgx.Tx, db, collection s
 	if errors.Is(err, ErrAlreadyExist) {
 		err = nil
 	}
+
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
@@ -184,6 +185,7 @@ func CreateCollectionIfNotExist(ctx context.Context, tx pgx.Tx, db, collection s
 	if errors.Is(err, ErrAlreadyExist) {
 		return false, nil
 	}
+
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
