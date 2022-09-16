@@ -350,7 +350,7 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			continue
 		}
 
-		// if the key was not found, set it
+		// if the document value was found, compare it with max value
 		if val != nil {
 			res := types.CompareOrder(val, maxVal, types.Ascending)
 			switch res {
@@ -359,6 +359,7 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			case types.Greater:
 				continue
 			case types.Less:
+				// if document value is less than max value, update the value
 			case types.Incomparable:
 				return changed, NewErrorMsg(ErrNotImplemented, "document comparison is not implemented")
 			}
