@@ -39,6 +39,17 @@ func getPool(ctx context.Context, tb testing.TB) *Pool {
 	return pool
 }
 
+func setup(ctx context.Context, tb testing.TB, pool *Pool, db string) {
+	dropDatabase := func() {
+		pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			return DropDatabase(ctx, tx, db)
+		})
+	}
+
+	dropDatabase()
+	tb.Cleanup(dropDatabase)
+}
+
 func TestValidUTF8Locale(t *testing.T) {
 	t.Parallel()
 
@@ -73,24 +84,12 @@ func TestCreateDrop(t *testing.T) {
 	ctx := testutil.Ctx(t)
 	pool := getPool(ctx, t)
 
-	t.Run("SchemaDoesNotExistTableDoesNotExist", func(t *testing.T) {
+	t.Run("NoDatabase", func(t *testing.T) {
 		t.Parallel()
 
 		databaseName := testutil.DatabaseName(t)
 		collectionName := testutil.CollectionName(t)
-
-		t.Cleanup(func() {
-			pool.InTransaction(ctx, func(tx pgx.Tx) error {
-				DropDatabase(ctx, tx, databaseName)
-				return nil
-			})
-		})
-
-		// Schema does not exist ->
-		// - table drop is not possible
-		// - schema drop is not possible
-		// - table creation is not possible
-		// - schema creation is possible
+		setup(ctx, t, pool, databaseName)
 
 		err := DropCollection(ctx, pool, databaseName, collectionName)
 		require.Equal(t, ErrSchemaNotExist, err)
@@ -106,35 +105,31 @@ func TestCreateDrop(t *testing.T) {
 		err = CreateDatabase(ctx, pool, databaseName)
 		require.NoError(t, err)
 
-		tables, err := Collections(ctx, pool, databaseName)
+		exists, err := CollectionExists(ctx, pool, databaseName, collectionName)
 		require.NoError(t, err)
-		assert.Empty(t, tables)
+		assert.False(t, exists)
+
+		collections, err := Collections(ctx, pool, databaseName)
+		require.NoError(t, err)
+		assert.Empty(t, collections)
 	})
 
-	t.Run("SchemaExistsTableDoesNotExist", func(t *testing.T) {
+	t.Run("NoCollection", func(t *testing.T) {
 		t.Parallel()
 
 		databaseName := testutil.DatabaseName(t)
 		collectionName := testutil.CollectionName(t)
-
-		t.Cleanup(func() {
-			pool.InTransaction(ctx, func(tx pgx.Tx) error {
-				DropDatabase(ctx, tx, databaseName)
-				return nil
-			})
-		})
+		setup(ctx, t, pool, databaseName)
 
 		err := CreateDatabase(ctx, pool, databaseName)
 		require.NoError(t, err)
 
-		// Schema exists ->
-		// - schema creation is not possible
-		// - table drop is not possible
-		// - table creation is possible
-		// - schema drop is possible (only once)
-
 		err = CreateDatabase(ctx, pool, databaseName)
 		require.ErrorIs(t, err, ErrAlreadyExist)
+
+		exists, err := CollectionExists(ctx, pool, databaseName, collectionName)
+		require.NoError(t, err)
+		assert.False(t, exists)
 
 		err = DropCollection(ctx, pool, databaseName, collectionName)
 		require.ErrorIs(t, err, ErrTableNotExist)
@@ -142,9 +137,13 @@ func TestCreateDrop(t *testing.T) {
 		err = CreateCollection(ctx, pool, databaseName, collectionName)
 		require.NoError(t, err)
 
-		tables, err := Collections(ctx, pool, databaseName)
+		exists, err = CollectionExists(ctx, pool, databaseName, collectionName)
 		require.NoError(t, err)
-		assert.Equal(t, []string{collectionName}, tables)
+		assert.True(t, exists)
+
+		collections, err := Collections(ctx, pool, databaseName)
+		require.NoError(t, err)
+		assert.Equal(t, []string{collectionName}, collections)
 
 		err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
 			return DropDatabase(ctx, tx, databaseName)
@@ -157,18 +156,12 @@ func TestCreateDrop(t *testing.T) {
 		require.ErrorIs(t, err, ErrSchemaNotExist)
 	})
 
-	t.Run("SchemaExistsTableExists", func(t *testing.T) {
+	t.Run("Collection", func(t *testing.T) {
 		t.Parallel()
 
 		databaseName := testutil.DatabaseName(t)
 		collectionName := testutil.CollectionName(t)
-
-		t.Cleanup(func() {
-			pool.InTransaction(ctx, func(tx pgx.Tx) error {
-				DropDatabase(ctx, tx, databaseName)
-				return nil
-			})
-		})
+		setup(ctx, t, pool, databaseName)
 
 		err := CreateDatabase(ctx, pool, databaseName)
 		require.NoError(t, err)
@@ -176,15 +169,9 @@ func TestCreateDrop(t *testing.T) {
 		err = CreateCollection(ctx, pool, databaseName, collectionName)
 		require.NoError(t, err)
 
-		tables, err := Collections(ctx, pool, databaseName)
+		collections, err := Collections(ctx, pool, databaseName)
 		require.NoError(t, err)
-		assert.Equal(t, []string{collectionName}, tables)
-
-		// Table exists ->
-		// - table creation is not possible
-		// - schema creation is not possible
-		// - table drop is possible (only once)
-		// - schema drop is possible
+		assert.Equal(t, []string{collectionName}, collections)
 
 		err = CreateCollection(ctx, pool, databaseName, collectionName)
 		require.ErrorIs(t, err, ErrAlreadyExist)
@@ -197,11 +184,71 @@ func TestCreateDrop(t *testing.T) {
 
 		err = DropCollection(ctx, pool, databaseName, collectionName)
 		require.ErrorIs(t, err, ErrTableNotExist)
+	})
+}
 
-		err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
-			return DropDatabase(ctx, tx, databaseName)
+func TestCreateCollectionIfNotExist(t *testing.T) {
+	t.Parallel()
+
+	ctx := testutil.Ctx(t)
+	pool := getPool(ctx, t)
+
+	t.Run("NoDatabase", func(t *testing.T) {
+		t.Parallel()
+
+		databaseName := testutil.DatabaseName(t)
+		collectionName := testutil.CollectionName(t)
+		setup(ctx, t, pool, databaseName)
+
+		var created bool
+		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			var err error
+			created, err = CreateCollectionIfNotExist(ctx, tx, databaseName, collectionName)
+			return err
 		})
 		require.NoError(t, err)
+		assert.True(t, created)
+	})
+
+	t.Run("Database", func(t *testing.T) {
+		t.Parallel()
+
+		databaseName := testutil.DatabaseName(t)
+		collectionName := testutil.CollectionName(t)
+		setup(ctx, t, pool, databaseName)
+
+		err := CreateDatabase(ctx, pool, databaseName)
+		require.NoError(t, err)
+
+		var created bool
+		err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			created, err = CreateCollectionIfNotExist(ctx, tx, databaseName, collectionName)
+			return err
+		})
+		require.NoError(t, err)
+		assert.True(t, created)
+	})
+
+	t.Run("Collection", func(t *testing.T) {
+		t.Parallel()
+
+		databaseName := testutil.DatabaseName(t)
+		collectionName := testutil.CollectionName(t)
+		setup(ctx, t, pool, databaseName)
+
+		err := CreateDatabase(ctx, pool, databaseName)
+		require.NoError(t, err)
+
+		err = CreateCollection(ctx, pool, databaseName, collectionName)
+		require.NoError(t, err)
+
+		var created bool
+		err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			created, err = CreateCollectionIfNotExist(ctx, tx, databaseName, collectionName)
+			return err
+		})
+		require.NoError(t, err)
+		assert.False(t, created)
 	})
 }
 
@@ -286,151 +333,4 @@ func TestConcurrentCreate(t *testing.T) {
 			assert.ErrorIs(t, tc.f(), ErrAlreadyExist)
 		})
 	}
-}
-
-func TestTableExists(t *testing.T) {
-	t.Parallel()
-
-	ctx := testutil.Ctx(t)
-	pool := getPool(ctx, t)
-
-	t.Run("SchemaDoesNotExistTableDoesNotExist", func(t *testing.T) {
-		t.Parallel()
-
-		databaseName := testutil.DatabaseName(t)
-		collectionName := testutil.CollectionName(t)
-
-		t.Cleanup(func() {
-			pool.InTransaction(ctx, func(tx pgx.Tx) error {
-				DropDatabase(ctx, tx, databaseName)
-				return nil
-			})
-		})
-
-		ok, err := CollectionExists(ctx, pool, databaseName, collectionName)
-		require.NoError(t, err)
-		assert.False(t, ok)
-	})
-
-	t.Run("SchemaExistsTableDoesNotExist", func(t *testing.T) {
-		t.Parallel()
-
-		databaseName := testutil.DatabaseName(t)
-		collectionName := testutil.CollectionName(t)
-
-		CreateDatabase(ctx, pool, databaseName)
-
-		t.Cleanup(func() {
-			pool.InTransaction(ctx, func(tx pgx.Tx) error {
-				DropDatabase(ctx, tx, databaseName)
-				return nil
-			})
-		})
-
-		ok, err := CollectionExists(ctx, pool, databaseName, collectionName)
-		require.NoError(t, err)
-		assert.False(t, ok)
-	})
-
-	t.Run("SchemaExistsTableExists", func(t *testing.T) {
-		t.Parallel()
-
-		databaseName := testutil.DatabaseName(t)
-		collectionName := testutil.CollectionName(t)
-
-		CreateDatabase(ctx, pool, databaseName)
-		CreateCollection(ctx, pool, databaseName, collectionName)
-
-		t.Cleanup(func() {
-			pool.InTransaction(ctx, func(tx pgx.Tx) error {
-				DropDatabase(ctx, tx, databaseName)
-				return nil
-			})
-		})
-
-		ok, err := CollectionExists(ctx, pool, databaseName, collectionName)
-		require.NoError(t, err)
-		assert.True(t, ok)
-	})
-}
-
-func TestCreateTableIfNotExist(t *testing.T) {
-	t.Parallel()
-
-	ctx := testutil.Ctx(t)
-	pool := getPool(ctx, t)
-
-	t.Run("SchemaDoesNotExistTableDoesNotExist", func(t *testing.T) {
-		t.Parallel()
-
-		databaseName := testutil.DatabaseName(t)
-		collectionName := testutil.CollectionName(t)
-
-		t.Cleanup(func() {
-			pool.InTransaction(ctx, func(tx pgx.Tx) error {
-				DropDatabase(ctx, tx, databaseName)
-				return nil
-			})
-		})
-
-		var created bool
-		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
-			var err error
-			created, err = CreateCollectionIfNotExist(ctx, tx, databaseName, collectionName)
-			return err
-		})
-		require.NoError(t, err)
-		assert.True(t, created)
-	})
-
-	t.Run("SchemaExistsTableDoesNotExist", func(t *testing.T) {
-		t.Parallel()
-
-		databaseName := testutil.DatabaseName(t)
-		collectionName := testutil.CollectionName(t)
-
-		CreateDatabase(ctx, pool, databaseName)
-
-		t.Cleanup(func() {
-			pool.InTransaction(ctx, func(tx pgx.Tx) error {
-				DropDatabase(ctx, tx, databaseName)
-				return nil
-			})
-		})
-
-		var created bool
-		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
-			var err error
-			created, err = CreateCollectionIfNotExist(ctx, tx, databaseName, collectionName)
-			return err
-		})
-		require.NoError(t, err)
-		assert.True(t, created)
-	})
-
-	t.Run("SchemaExistsTableExists", func(t *testing.T) {
-		t.Parallel()
-
-		databaseName := testutil.DatabaseName(t)
-		collectionName := testutil.CollectionName(t)
-
-		CreateDatabase(ctx, pool, databaseName)
-		CreateCollection(ctx, pool, databaseName, collectionName)
-
-		t.Cleanup(func() {
-			pool.InTransaction(ctx, func(tx pgx.Tx) error {
-				DropDatabase(ctx, tx, databaseName)
-				return nil
-			})
-		})
-
-		var created bool
-		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
-			var err error
-			created, err = CreateCollectionIfNotExist(ctx, tx, databaseName, collectionName)
-			return err
-		})
-		require.NoError(t, err)
-		assert.False(t, created)
-	})
 }

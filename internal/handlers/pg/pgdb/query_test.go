@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/context"
@@ -34,19 +33,11 @@ func TestQueryDocuments(t *testing.T) {
 	ctx := testutil.Ctx(t)
 
 	pool := getPool(ctx, t)
-	dbName := testutil.DatabaseName(t)
+	databaseName := testutil.DatabaseName(t)
 	collectionName := testutil.CollectionName(t)
+	setup(ctx, t, pool, databaseName)
 
-	t.Cleanup(func() {
-		pool.InTransaction(ctx, func(tx pgx.Tx) error {
-			return DropDatabase(ctx, tx, dbName)
-		})
-	})
-
-	pool.InTransaction(ctx, func(tx pgx.Tx) error {
-		return DropDatabase(ctx, tx, dbName)
-	})
-	require.NoError(t, CreateDatabase(ctx, pool, dbName))
+	require.NoError(t, CreateDatabase(ctx, pool, databaseName))
 
 	cases := []struct {
 		name       string
@@ -94,10 +85,10 @@ func TestQueryDocuments(t *testing.T) {
 			require.NoError(t, err)
 
 			for _, doc := range tc.documents {
-				require.NoError(t, InsertDocument(ctx, tx, dbName, tc.collection, doc))
+				require.NoError(t, InsertDocument(ctx, tx, databaseName, tc.collection, doc))
 			}
 
-			sp := &SQLParam{DB: dbName, Collection: tc.collection}
+			sp := &SQLParam{DB: databaseName, Collection: tc.collection}
 			fetchedChan, err := pool.QueryDocuments(ctx, tx, sp)
 			require.NoError(t, err)
 
@@ -124,12 +115,12 @@ func TestQueryDocuments(t *testing.T) {
 		require.NoError(t, err)
 
 		for i := 1; i <= FetchedChannelBufSize*FetchedSliceCapacity+1; i++ {
-			require.NoError(t, InsertDocument(ctx, tx, dbName, collectionName+"_cancel",
+			require.NoError(t, InsertDocument(ctx, tx, databaseName, collectionName+"_cancel",
 				must.NotFail(types.NewDocument("id", fmt.Sprintf("%d", i))),
 			))
 		}
 
-		sp := &SQLParam{DB: dbName, Collection: collectionName + "_cancel"}
+		sp := &SQLParam{DB: databaseName, Collection: collectionName + "_cancel"}
 		ctx, cancel := context.WithCancel(context.Background())
 		fetchedChan, err := pool.QueryDocuments(ctx, tx, sp)
 		cancel()
@@ -155,7 +146,7 @@ func TestQueryDocuments(t *testing.T) {
 		tx, err := pool.Begin(ctx)
 		require.NoError(t, err)
 
-		sp := &SQLParam{DB: dbName, Collection: collectionName + "_non-existing"}
+		sp := &SQLParam{DB: databaseName, Collection: collectionName + "_non-existing"}
 		fetchedChan, err := pool.QueryDocuments(context.Background(), tx, sp)
 		require.NoError(t, err)
 		res, ok := <-fetchedChan

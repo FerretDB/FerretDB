@@ -165,23 +165,26 @@ func CreateCollectionIfNotExist(ctx context.Context, tx pgx.Tx, db, collection s
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
-
 	if exists {
 		return false, nil
 	}
 
-	// Collection (or even database) does not exist. Try to create it,
+	// Collection (or even database) does not exist. Try to create them,
 	// but keep in mind that it can be created in concurrent connection.
 
-	if err := CreateDatabase(ctx, tx, db); err != nil && !errors.Is(err, ErrAlreadyExist) {
+	err = CreateDatabase(ctx, tx, db)
+	if errors.Is(err, ErrAlreadyExist) {
+		err = nil
+	}
+	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
-	if err := CreateCollection(ctx, tx, db, collection); err != nil {
-		if errors.Is(err, ErrAlreadyExist) {
-			return false, nil
-		}
-
+	err = CreateCollection(ctx, tx, db, collection)
+	if errors.Is(err, ErrAlreadyExist) {
+		return false, nil
+	}
+	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
