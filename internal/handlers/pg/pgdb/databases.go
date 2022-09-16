@@ -68,6 +68,8 @@ func Databases(ctx context.Context, tx pgx.Tx) ([]string, error) {
 //   - ErrInvalidDatabaseName if db name doesn't comply with the rules.
 //
 // Use errors.Is to check the error.
+//
+// Deprecated: use CreateDatabaseIfNotExists instead as it does not abort the transaction.
 func CreateDatabase(ctx context.Context, querier pgxtype.Querier, db string) error {
 	if !validateDatabaseNameRe.MatchString(db) ||
 		strings.HasPrefix(db, reservedPrefix) {
@@ -101,7 +103,7 @@ func CreateDatabase(ctx context.Context, querier pgxtype.Querier, db string) err
 }
 
 // CreateDatabaseIfNotExists creates a new FerretDB database (PostgreSQL schema).
-// If the schema already exists, no error is returned.
+// If the schema already exists, no error is returned, and transaction is not aborted.
 func CreateDatabaseIfNotExists(ctx context.Context, tx pgx.Tx, db string) error {
 	if !validateDatabaseNameRe.MatchString(db) ||
 		strings.HasPrefix(db, reservedPrefix) {
