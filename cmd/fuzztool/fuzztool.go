@@ -193,6 +193,8 @@ func main() {
 	dstF := flag.String("dst", "", "destination, one of: 'seed', 'generated', or collected corpus' directory")
 	flag.Parse()
 
+	ctx := kong.Parse()
+
 	if flag.NArg() != 0 {
 		flag.Usage()
 		fmt.Fprintln(flag.CommandLine.Output(), "zero arguments expected")
