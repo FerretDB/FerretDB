@@ -54,7 +54,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	common.Ignored(document, h.L, "comment")
 
-	fp := new(tigrisdb.FetchParam)
+	var fp tigrisdb.FetchParam
 
 	if fp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
@@ -89,7 +89,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		del, err := h.execDelete(ctx, fp, filter, limit)
+		del, err := h.execDelete(ctx, &fp, filter, limit)
 		if err == nil {
 			deleted += del
 			continue
