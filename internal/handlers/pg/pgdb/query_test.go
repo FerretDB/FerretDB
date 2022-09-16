@@ -139,7 +139,7 @@ func TestQueryDocuments(t *testing.T) {
 
 		sp := &SQLParam{DB: dbName, Collection: collectionName + "_cancel"}
 		ctx, cancel := context.WithCancel(context.Background())
-		fetchedChan, err := pool.QueryDocuments(ctx, pool, sp)
+		fetchedChan, err := pool.QueryDocuments(ctx, tx, sp)
 		cancel()
 		require.NoError(t, err)
 

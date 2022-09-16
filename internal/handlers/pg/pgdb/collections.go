@@ -182,7 +182,6 @@ func CreateCollectionIfNotExist(ctx context.Context, tx pgx.Tx, db, collection s
 		return false, lazyerrors.Error(err)
 	}
 
-	// TODO use a transaction instead of pgPool: https://github.com/FerretDB/FerretDB/issues/866
 	if err := CreateCollection(ctx, tx, db, collection); err != nil {
 		if errors.Is(err, ErrAlreadyExist) {
 			return false, nil
