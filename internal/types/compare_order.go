@@ -47,6 +47,8 @@ const (
 // detectDataType returns a sequence for build-in type.
 func detectDataType(value any) compareTypeOrderResult {
 	switch value := value.(type) {
+	case *Document:
+		return documentDataType
 	case *Array:
 		return arrayDataType
 	case float64:
@@ -64,8 +66,6 @@ func detectDataType(value any) compareTypeOrderResult {
 		return booleanDataType
 	case time.Time:
 		return dateDataType
-	case *Document:
-		return documentDataType
 	case NullType:
 		return nullDataType
 	case Regex:
