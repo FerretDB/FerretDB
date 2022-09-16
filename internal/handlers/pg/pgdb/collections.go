@@ -31,13 +31,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-var (
-	// Regex validateCollectionNameRe validates collection names.
-	validateCollectionNameRe = regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]{0,119}$")
-
-	// Regex validateDatabaseNameRe validates database names.
-	validateDatabaseNameRe = regexp.MustCompile("^[a-z_][a-z0-9_]{0,62}$")
-)
+// validateCollectionNameRe validates collection names.
+var validateCollectionNameRe = regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]{0,119}$")
 
 // Collections returns a sorted list of FerretDB collection names.
 //

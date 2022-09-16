@@ -17,6 +17,7 @@ package pgdb
 import (
 	"context"
 	"errors"
+	"regexp"
 	"strings"
 
 	"github.com/jackc/pgconn"
@@ -26,6 +27,9 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
+
+// validateDatabaseNameRe validates database names.
+var validateDatabaseNameRe = regexp.MustCompile("^[a-z_][a-z0-9_]{0,62}$")
 
 // Databases returns a sorted list of FerretDB database names / PostgreSQL schema names.
 func Databases(ctx context.Context, tx pgx.Tx) ([]string, error) {
