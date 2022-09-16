@@ -30,6 +30,7 @@ import (
 	_ "golang.org/x/tools/cmd/godoc"
 	_ "golang.org/x/tools/cmd/goimports"
 	_ "golang.org/x/tools/cmd/stringer"
+	_ "golang.org/x/vuln/cmd/govulncheck"
 	_ "mvdan.cc/gofumpt"
 )
 
@@ -52,4 +53,5 @@ import (
 //go:generate go build -v -o ../bin/ golang.org/x/tools/cmd/godoc
 //go:generate go build -v -o ../bin/ golang.org/x/tools/cmd/goimports
 //go:generate go build -v -o ../bin/ golang.org/x/tools/cmd/stringer
+//go:generate go build -v -o ../bin/ golang.org/x/vuln/cmd/govulncheck
 //go:generate go build -v -o ../bin/ mvdan.cc/gofumpt
