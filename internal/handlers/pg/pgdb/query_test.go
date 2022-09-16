@@ -39,14 +39,12 @@ func TestQueryDocuments(t *testing.T) {
 
 	t.Cleanup(func() {
 		pool.InTransaction(ctx, func(tx pgx.Tx) error {
-			DropDatabase(ctx, tx, dbName)
-			return nil
+			return DropDatabase(ctx, tx, dbName)
 		})
 	})
 
 	pool.InTransaction(ctx, func(tx pgx.Tx) error {
-		DropDatabase(ctx, tx, dbName)
-		return nil
+		return DropDatabase(ctx, tx, dbName)
 	})
 	require.NoError(t, CreateDatabase(ctx, pool, dbName))
 
