@@ -190,9 +190,9 @@ tasks:
   fuzz-corpus:
     desc: "Sync seed and generated fuzz corpora with FUZZCORPUS"
     cmds:
-      - go run {{.RACEFLAG}} ./cmd/fuzztool/fuzztool.go -dst={{.FUZZCORPUS}} -src=generated
-      - go run {{.RACEFLAG}} ./cmd/fuzztool/fuzztool.go -dst={{.FUZZCORPUS}} -src=seed
-      - go run {{.RACEFLAG}} ./cmd/fuzztool/fuzztool.go -src={{.FUZZCORPUS}} -dst=generated
+      - go run {{.RACEFLAG}} ./cmd/fuzztool/fuzztool.go generated {{.FUZZCORPUS}}
+      - go run {{.RACEFLAG}} ./cmd/fuzztool/fuzztool.go seed {{.FUZZCORPUS}}
+      - go run {{.RACEFLAG}} ./cmd/fuzztool/fuzztool.go {{.FUZZCORPUS}} generated 
 
   build-testcover:
     desc: "Build bin/ferretdb-testcover"
