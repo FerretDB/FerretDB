@@ -188,16 +188,14 @@ func copyCorpus(srcRoot, dstRoot string) {
 
 var CLI struct {
 	Corpus struct {
-		Src string `arg name:"src" help:"source, one of: 'seed', 'generated', or collected corpus' directory"`
-		Dst string `arg name:"dst" help:"destination, one of: 'seed', 'generated', or collected corpus' directory"`
-	} `cmd:""`
-	Debug bool `help:"enable debug mode"`
+		Src string `kong:"arg,help='source, one of: \\'seed\\', \\'generated\\', or collected corpus\\' directory'"`
+		Dst string `kong:"arg,name='dest',help='destination, one of: \\'seed\\', \\'generated\\', or collected corpus\\' directory'"`
+	} `kong:"cmd"`
+	Debug bool `kong:"help='enable debug mode'"`
 }
 
 func main() {
 	ctx := kong.Parse(&CLI)
-
-	var src, dst string
 
 	logging.Setup(zap.InfoLevel)
 
@@ -217,6 +215,7 @@ func main() {
 		logger.Fatal(err)
 	}
 
+	var src, dst string
 	switch ctx.Command() {
 	case "corpus <src> <dst>":
 		switch CLI.Corpus.Src {
