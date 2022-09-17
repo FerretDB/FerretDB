@@ -22,6 +22,7 @@ require (
 
 require (
 	cloud.google.com/go/compute v1.6.1 // indirect
+	github.com/alecthomas/kong v0.6.1 // indirect
 	github.com/benbjohnson/clock v1.1.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect

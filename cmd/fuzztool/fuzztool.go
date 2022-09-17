@@ -16,8 +16,6 @@ package main
 
 import (
 	"bytes"
-	"flag"
-	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -30,6 +28,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
+	"github.com/alecthomas/kong"
 )
 
 // generatedCorpus returns $GOCACHE/fuzz/github.com/FerretDB/FerretDB,
@@ -187,23 +186,22 @@ func copyCorpus(srcRoot, dstRoot string) {
 	}
 }
 
+var CLI struct {
+	Corpus struct {
+		Src string `arg name:"src" help:"source, one of: 'seed', 'generated', or collected corpus' directory"`
+		Dst string `arg name:"dst" help:"destination, one of: 'seed', 'generated', or collected corpus' directory"`
+	} `cmd:""`
+	Debug bool `help:"enable debug mode"`
+}
+
 func main() {
-	debugF := flag.Bool("debug", false, "enable debug mode")
-	srcF := flag.String("src", "", "source, one of: 'seed', 'generated', or collected corpus' directory")
-	dstF := flag.String("dst", "", "destination, one of: 'seed', 'generated', or collected corpus' directory")
-	flag.Parse()
+	ctx := kong.Parse(&CLI)
 
-	ctx := kong.Parse()
-
-	if flag.NArg() != 0 {
-		flag.Usage()
-		fmt.Fprintln(flag.CommandLine.Output(), "zero arguments expected")
-		os.Exit(2)
-	}
+	var src, dst string
 
 	logging.Setup(zap.InfoLevel)
 
-	if *debugF {
+	if CLI.Debug {
 		logging.Setup(zap.DebugLevel)
 	}
 
@@ -219,34 +217,34 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	var src, dst string
-
-	switch *srcF {
-	case "seed":
-		src = seedCorpus
-	case "generated":
-		src = generatedCorpus
-	case "":
-		logger.Fatal("-src flag must be specified.")
-	default:
-		src, err = filepath.Abs(*srcF)
-		if err != nil {
-			logger.Fatal(err)
+	switch ctx.Command() {
+	case "corpus <src> <dst>":
+		switch CLI.Corpus.Src {
+		case "seed":
+			src = seedCorpus
+		case "generated":
+			src = generatedCorpus
+		default:
+			src, err = filepath.Abs(src)
+			if err != nil {
+				logger.Fatal(err)
+			}
 		}
-	}
 
-	switch *dstF {
-	case "seed":
-		dst = seedCorpus
-	case "generated":
-		dst = generatedCorpus
-	case "":
-		logger.Fatal("-dst flag must be specified.")
-	default:
-		dst, err = filepath.Abs(*dstF)
-		if err != nil {
-			logger.Fatal(err)
+		switch CLI.Corpus.Dst {
+		case "seed":
+			dst = seedCorpus
+		case "generated":
+			dst = generatedCorpus
+		default:
+			dst, err = filepath.Abs(dst)
+			if err != nil {
+				logger.Fatal(err)
+			}
 		}
+
+	default:
+		panic(ctx.Command())
 	}
 
 	logger.Infof("Copying from %s to %s.", src, dst)
