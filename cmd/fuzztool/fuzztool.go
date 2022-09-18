@@ -24,11 +24,11 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/alecthomas/kong"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
-	"github.com/alecthomas/kong"
 )
 
 // generatedCorpus returns $GOCACHE/fuzz/github.com/FerretDB/FerretDB,
@@ -186,6 +186,7 @@ func copyCorpus(srcRoot, dstRoot string) {
 	}
 }
 
+//nolint:lll // no multiline field tag support
 var CLI struct {
 	Corpus struct {
 		Src string `kong:"arg,help='source, one of: \\'seed\\', \\'generated\\', or collected corpus\\' directory'"`
@@ -216,6 +217,7 @@ func main() {
 	}
 
 	var src, dst string
+
 	switch ctx.Command() {
 	case "corpus <src> <dst>":
 		switch CLI.Corpus.Src {
