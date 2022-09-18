@@ -243,9 +243,15 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 func (h *Handler) update(ctx context.Context, sp *pgdb.SQLParam, doc *types.Document) (int64, error) {
 	id := must.NotFail(doc.Get("_id"))
 
-	rowsUpdated, err := h.pgPool.SetDocumentByID(ctx, sp, id, doc)
+	var rowsUpdated int64
+	err := h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		var err error
+		rowsUpdated, err = pgdb.SetDocumentByID(ctx, tx, sp, id, doc)
+		return err
+	})
 	if err != nil {
 		return 0, err
 	}
+
 	return rowsUpdated, nil
 }

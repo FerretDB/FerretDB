@@ -1,1 +1,1 @@
-FROM tigrisdata/tigris-local:1.0.0-alpha.39
+FROM tigrisdata/tigris-local:1.0.0-alpha.49

@@ -52,136 +52,54 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	var deleted int32
-	processQuery := func(i int) error {
-		// get document with filter
-		d, err := common.AssertType[*types.Document](must.NotFail(deletes.Get(i)))
-		if err != nil {
-			return err
-		}
+	common.Ignored(document, h.L, "comment")
 
-		if err := common.Unimplemented(d, "collation", "hint"); err != nil {
-			return err
-		}
+	var fp tigrisdb.FetchParam
 
-		// get filter from document
-		var filter *types.Document
-		if filter, err = common.GetOptionalParam(d, "q", filter); err != nil {
-			return err
-		}
-
-		var limit int64
-
-		l, err := d.Get("limit")
-		if err != nil {
-			return common.NewErrorMsg(
-				common.ErrMissingField,
-				"BSON field 'delete.deletes.limit' is missing but a required field",
-			)
-		}
-
-		if limit, err = common.GetWholeNumberParam(l); err != nil || limit < 0 || limit > 1 {
-			return common.NewErrorMsg(
-				common.ErrFailedToParse,
-				fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", l),
-			)
-		}
-
-		var fp tigrisdb.FetchParam
-
-		if fp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-			return err
-		}
-		collectionParam, err := document.Get(document.Command())
-		if err != nil {
-			return err
-		}
-		var ok bool
-		if fp.Collection, ok = collectionParam.(string); !ok {
-			return common.NewErrorMsg(
-				common.ErrBadValue,
-				fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
-			)
-		}
-
-		common.Ignored(document, h.L, "comment")
-
-		common.Ignored(filter, h.L, "$comment")
-
-		resDocs := make([]*types.Document, 0, 16)
-
-		return respondWithStack(func() error {
-			// fetch current items from collection
-			fetchedDocs, err := h.db.QueryDocuments(ctx, &fp)
-			if err != nil {
-				return err
-			}
-
-			// iterate through every row and delete matching ones
-			for _, doc := range fetchedDocs {
-				// fetch current items from collection
-				matches, err := common.FilterDocument(doc, filter)
-				if err != nil {
-					return err
-				}
-
-				if !matches {
-					continue
-				}
-
-				resDocs = append(resDocs, doc)
-			}
-
-			if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
-				return err
-			}
-
-			// if no field is matched in a row, go to the next one
-			if len(resDocs) == 0 {
-				return nil
-			}
-
-			res, err := h.delete(ctx, &fp, resDocs)
-			if err != nil {
-				return err
-			}
-
-			deleted += int32(res)
-
-			return nil
-		})
+	if fp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
 	}
 
+	collectionParam, err := document.Get(document.Command())
+	if err != nil {
+		return nil, err
+	}
+
+	var ok bool
+	if fp.Collection, ok = collectionParam.(string); !ok {
+		return nil, common.NewErrorMsg(
+			common.ErrBadValue,
+			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+		)
+	}
+
+	var deleted int32
 	var delErrors common.WriteErrors
 
 	// process every delete filter
 	for i := 0; i < deletes.Len(); i++ {
-		err := processQuery(i)
-		switch err.(type) {
-		case nil:
-			continue
-
-		case *common.CommandError:
-			// command errors should be return immediately
+		// get document with filter
+		deleteDoc, err := common.AssertType[*types.Document](must.NotFail(deletes.Get(i)))
+		if err != nil {
 			return nil, err
-
-		default:
-			// write errors and others require to be handled in array
-			delErrors.Append(err, int32(i))
-
-			// Delete statements in the `deletes` field are not transactional.
-			// It means that we run each delete statement separately.
-			// If `ordered` is set as `true`, we don't execute the remaining statements
-			// after the first failure.
-			// If `ordered` is set as `false`, we execute all the statements and return
-			// the list of errors corresponding to the failed statements.
-			if !ordered {
-				continue
-			}
 		}
 
-		// send response if ordered is true
-		break
+		filter, limit, err := h.prepareDeleteParams(deleteDoc)
+		if err != nil {
+			return nil, err
+		}
+
+		del, err := h.execDelete(ctx, &fp, filter, limit)
+		if err == nil {
+			deleted += del
+			continue
+		}
+
+		delErrors.Append(err, int32(i))
+
+		if ordered {
+			break
+		}
 	}
 
 	replyDoc := must.NotFail(types.NewDocument(
@@ -195,6 +113,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	must.NoError(replyDoc.Set("n", deleted))
 
 	var reply wire.OpMsg
+
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{replyDoc},
 	})
@@ -203,6 +122,90 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	return &reply, nil
+}
+
+// prepareDeleteParams extracts query filter and limit from delete document.
+func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Document, int64, error) {
+	var err error
+
+	if err = common.Unimplemented(deleteDoc, "collation", "hint"); err != nil {
+		return nil, 0, err
+	}
+
+	// get filter from document
+	var filter *types.Document
+	if filter, err = common.GetOptionalParam(deleteDoc, "q", filter); err != nil {
+		return nil, 0, err
+	}
+
+	common.Ignored(filter, h.L, "$comment")
+
+	l, err := deleteDoc.Get("limit")
+	if err != nil {
+		return nil, 0, common.NewErrorMsg(
+			common.ErrMissingField,
+			"BSON field 'delete.deletes.limit' is missing but a required field",
+		)
+	}
+
+	var limit int64
+	if limit, err = common.GetWholeNumberParam(l); err != nil || limit < 0 || limit > 1 {
+		return nil, 0, common.NewErrorMsg(
+			common.ErrFailedToParse,
+			fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", l),
+		)
+	}
+
+	return filter, limit, nil
+}
+
+// execDelete fetches documents, filter them out and limiting with the given limit value.
+// It returns the number of deleted documents or an error.
+func (h *Handler) execDelete(ctx context.Context, fp *tigrisdb.FetchParam, filter *types.Document, limit int64) (int32, error) {
+	var err error
+
+	resDocs := make([]*types.Document, 0, 16)
+
+	var deleted int32
+
+	// fetch current items from collection
+	fetchedDocs, err := h.db.QueryDocuments(ctx, fp)
+	if err != nil {
+		return 0, err
+	}
+
+	// iterate through every row and delete matching ones
+	for _, doc := range fetchedDocs {
+		// fetch current items from collection
+		matches, err := common.FilterDocument(doc, filter)
+		if err != nil {
+			return 0, err
+		}
+
+		if !matches {
+			continue
+		}
+
+		resDocs = append(resDocs, doc)
+	}
+
+	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
+		return 0, err
+	}
+
+	// if no field is matched in a row, go to the next one
+	if len(resDocs) == 0 {
+		return 0, nil
+	}
+
+	res, err := h.delete(ctx, fp, resDocs)
+	if err != nil {
+		return 0, err
+	}
+
+	deleted += int32(res)
+
+	return deleted, nil
 }
 
 // delete deletes documents by _id.
@@ -231,16 +234,4 @@ func (h *Handler) delete(ctx context.Context, fp *tigrisdb.FetchParam, docs []*t
 	}
 
 	return len(ids), nil
-}
-
-// respondWithStack calls the fun. If fun returns
-// not-nil error then it is wrapped with lazyerrors.Error.
-//
-// TODO This function should be removed, but that's not easy: https://github.com/FerretDB/FerretDB/issues/1106
-func respondWithStack(fun func() error) error {
-	if err := fun(); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	return nil
 }
