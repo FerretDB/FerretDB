@@ -1,0 +1,23 @@
+---
+# https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-githubs-form-schema
+name: Chore
+description: Code maintenance improvements
+assignees: ["ferretdb-bot"]
+labels: ["code/chore"]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        Thanks for taking the time to fill out this form!
+        Please check if a similar issue is [already filed](https://github.com/FerretDB/FerretDB/issues).
+  - type: textarea
+    id: what
+    attributes:
+      label: What should be done?
+    validations:
+      required: true
+  - type: textarea
+    id: where
+    attributes:
+      label: Where?
+      description: Include a permalink if possible.
