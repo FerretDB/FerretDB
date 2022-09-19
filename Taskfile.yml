@@ -198,7 +198,7 @@ tasks:
     cmds:
       - go run {{.RACEFLAG}} ./cmd/fuzztool/fuzztool.go corpus generated {{.FUZZCORPUS}}
       - go run {{.RACEFLAG}} ./cmd/fuzztool/fuzztool.go corpus seed {{.FUZZCORPUS}}
-      - go run {{.RACEFLAG}} ./cmd/fuzztool/fuzztool.go corpus {{.FUZZCORPUS}} generated 
+      - go run {{.RACEFLAG}} ./cmd/fuzztool/fuzztool.go corpus {{.FUZZCORPUS}} generated
 
   build-testcover:
     desc: "Build bin/ferretdb-testcover"
