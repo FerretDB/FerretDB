@@ -28,9 +28,9 @@ import (
 )
 
 // Databases returns a sorted list of FerretDB database names / PostgreSQL schema names.
-func Databases(ctx context.Context, querier pgxtype.Querier) ([]string, error) {
+func Databases(ctx context.Context, tx pgx.Tx) ([]string, error) {
 	sql := "SELECT schema_name FROM information_schema.schemata ORDER BY schema_name"
-	rows, err := querier.Query(ctx, sql)
+	rows, err := tx.Query(ctx, sql)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -98,15 +98,15 @@ func CreateDatabase(ctx context.Context, querier pgxtype.Querier, db string) err
 
 // CreateDatabaseIfNotExists creates a new FerretDB database (PostgreSQL schema).
 // If the schema already exists, no error is returned.
-func CreateDatabaseIfNotExists(ctx context.Context, querier pgxtype.Querier, db string) error {
+func CreateDatabaseIfNotExists(ctx context.Context, tx pgx.Tx, db string) error {
 	if !validateDatabaseNameRe.MatchString(db) ||
 		strings.HasPrefix(db, reservedPrefix) {
 		return ErrInvalidDatabaseName
 	}
 
-	_, err := querier.Exec(ctx, `CREATE SCHEMA IF NOT EXISTS `+pgx.Identifier{db}.Sanitize())
+	_, err := tx.Exec(ctx, `CREATE SCHEMA IF NOT EXISTS `+pgx.Identifier{db}.Sanitize())
 	if err == nil {
-		err = createSettingsTable(ctx, querier, db)
+		err = createSettingsTable(ctx, tx, db)
 	}
 
 	if err == nil || errors.Is(err, ErrAlreadyExist) {
@@ -133,8 +133,8 @@ func CreateDatabaseIfNotExists(ctx context.Context, querier pgxtype.Querier, db 
 // DropDatabase drops FerretDB database.
 //
 // It returns ErrSchemaNotExist if schema does not exist.
-func DropDatabase(ctx context.Context, querier pgxtype.Querier, db string) error {
-	_, err := querier.Exec(ctx, `DROP SCHEMA `+pgx.Identifier{db}.Sanitize()+` CASCADE`)
+func DropDatabase(ctx context.Context, tx pgx.Tx, db string) error {
+	_, err := tx.Exec(ctx, `DROP SCHEMA `+pgx.Identifier{db}.Sanitize()+` CASCADE`)
 	if err == nil {
 		return nil
 	}
