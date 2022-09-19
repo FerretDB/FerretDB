@@ -173,7 +173,9 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 				opts = opts.SetValidator(bson.D{{key, value}})
 			}
 
-			require.NoError(tb, database.CreateCollection(ctx, collectionName, opts))
+			// In this case, collection can't be created in MongoDB because MongoDB has a different validator format.
+			// So, we ignore errors.
+			database.CreateCollection(ctx, collectionName, opts)
 		}
 
 		docs := shareddata.Docs(provider)
