@@ -1,0 +1,18 @@
+---
+# https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-githubs-form-schema
+name: Documentation
+description: Something user-visible is badly or not documented
+assignees: ["ferretdb-bot"]
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        Thanks for taking the time to fill out this form!
+        Please check if a similar issue is [already filed](https://github.com/FerretDB/FerretDB/issues).
+  - type: textarea
+    id: what
+    attributes:
+      label: What should be done?
+    validations:
+      required: true
