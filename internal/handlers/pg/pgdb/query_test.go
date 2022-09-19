@@ -102,7 +102,7 @@ func TestQueryDocuments(t *testing.T) {
 			require.NoError(t, err)
 
 			for _, doc := range tc.documents {
-				require.NoError(t, InsertDocument(ctx, tx, dbName, tc.collection, []*types.Document{doc}))
+				require.NoError(t, InsertDocument(ctx, tx, dbName, tc.collection, doc))
 			}
 
 			sp := &SQLParam{DB: dbName, Collection: tc.collection}
@@ -133,7 +133,7 @@ func TestQueryDocuments(t *testing.T) {
 
 		for i := 1; i <= FetchedChannelBufSize*FetchedSliceCapacity+1; i++ {
 			require.NoError(t, InsertDocument(ctx, tx, dbName, collectionName+"_cancel",
-				[]*types.Document{must.NotFail(types.NewDocument("id", fmt.Sprintf("%d", i)))},
+				must.NotFail(types.NewDocument("id", fmt.Sprintf("%d", i))),
 			))
 		}
 

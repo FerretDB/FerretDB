@@ -60,22 +60,28 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	var ordered bool
-	if ordered, err = common.GetOptionalParam(document, "ordered", false); err != nil {
+	// `ordered` flag is optional, and defaults to `true`.
+	if ordered, err = common.GetOptionalParam(document, "ordered", true); err != nil {
 		return nil, err
 	}
 
 	var inserted int32
-	// According to MongoDB documentation, when `ordered` flag is true, we must insert
-	// the documents in batch mode
+	// If ordered is `true`, perform an ordered insert of the documents in
+	// the array, and if an error occurs with one of documents, MongoDB will
+	// return without processing the remaining documents in the array.
+	//
 	// https://www.mongodb.com/docs/manual/reference/method/db.collection.insert/
 	if ordered {
-		err = h.insert(ctx, &sp, docs.Slice())
-		if err != nil {
-			return nil, err
+		for _, doc := range docs.Slice() {
+			err = h.insert(ctx, &sp, doc)
+			if err != nil {
+				break
+			}
+			inserted++
 		}
-
-		inserted += int32(docs.Len())
 	} else {
+		// If `false`, perform an unordered insert, and if an error occurs with
+		// one of documents, continue processing the remaining documents in the array.
 		for i := 0; i < docs.Len(); i++ {
 			doc, err := docs.Get(i)
 			if err != nil {
@@ -84,7 +90,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 			err = h.insert(ctx, &sp, []any{doc})
 			if err != nil {
-				return nil, err
+				continue
 			}
 
 			inserted++
@@ -106,21 +112,17 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // insert prepares and executes actual INSERT request to Postgres.
-func (h *Handler) insert(ctx context.Context, sp *pgdb.SQLParam, docs []any) error {
-	data := make([]*types.Document, len(docs))
-	for i, doc := range docs {
-		d, ok := doc.(*types.Document)
-		if !ok {
-			return common.NewErrorMsg(
-				common.ErrBadValue,
-				fmt.Sprintf("document has invalid type %s", common.AliasFromType(doc)),
-			)
-		}
-		data[i] = d
+func (h *Handler) insert(ctx context.Context, sp *pgdb.SQLParam, doc any) error {
+	d, ok := doc.(*types.Document)
+	if !ok {
+		return common.NewErrorMsg(
+			common.ErrBadValue,
+			fmt.Sprintf("document has invalid type %s", common.AliasFromType(doc)),
+		)
 	}
 
 	err := h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		if err := pgdb.InsertDocument(ctx, tx, sp.DB, sp.Collection, data); err != nil {
+		if err := pgdb.InsertDocument(ctx, tx, sp.DB, sp.Collection, d); err != nil {
 			if errors.Is(pgdb.ErrInvalidTableName, err) ||
 				errors.Is(pgdb.ErrInvalidDatabaseName, err) {
 				msg := fmt.Sprintf("Invalid namespace: %s.%s", sp.DB, sp.Collection)
