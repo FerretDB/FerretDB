@@ -186,7 +186,6 @@ func copyCorpus(srcRoot, dstRoot string) {
 	}
 }
 
-//nolint:lll // no multiline field tag support
 var CLI struct {
 	Corpus struct {
 		Src string `arg:"" help:"source, one of: 'seed', 'generated', or collected corpus' directory"`
