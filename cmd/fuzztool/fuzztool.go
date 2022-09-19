@@ -190,7 +190,7 @@ func copyCorpus(srcRoot, dstRoot string) {
 var CLI struct {
 	Corpus struct {
 		Src string `kong:"arg,help='source, one of: \\'seed\\', \\'generated\\', or collected corpus\\' directory'"`
-		Dst string `kong:"arg,name='dest',help='destination, one of: \\'seed\\', \\'generated\\', or collected corpus\\' directory'"`
+		Dst string `kong:"arg,name='dst',help='destination, one of: \\'seed\\', \\'generated\\', or collected corpus\\' directory'"`
 	} `kong:"cmd"`
 	Debug bool `kong:"help='enable debug mode'"`
 }
