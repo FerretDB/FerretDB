@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	github.com/AlekSi/pointer v1.2.0
+	github.com/alecthomas/kong v0.6.1
 	github.com/jackc/pgconn v1.13.0
 	github.com/jackc/pgerrcode v0.0.0-20220416144525-469b46aa5efa
 	github.com/jackc/pgtype v1.12.0
@@ -19,8 +20,6 @@ require (
 	golang.org/x/net v0.0.0-20220909164309-bea034e7d591
 	golang.org/x/sys v0.0.0-20220915200043-7b5979e65e41
 )
-
-require github.com/alecthomas/kong v0.6.1
 
 require (
 	cloud.google.com/go/compute v1.6.1 // indirect
