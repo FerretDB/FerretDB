@@ -83,6 +83,9 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 		"DoubleNegative": {
 			update: bson.D{{"$max", bson.D{{"v", -54.32}}}},
 		},
+		"NotExisting": {
+			update: bson.D{{"$max", bson.D{{"v", int32(60)}}}},
+		},
 
 		"MultipleQueries": {
 			update: bson.D{{"$max", bson.D{{"v", int32(39)}, {"a", int32(30)}}}},
