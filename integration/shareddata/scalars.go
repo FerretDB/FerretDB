@@ -305,14 +305,7 @@ var Unsets = &Values[string]{
 var ObjectIDKeys = &Values[primitive.ObjectID]{
 	name:     "ObjectIDKeys",
 	handlers: []string{"pg", "tigris"},
-	// TODO uncomment validators in the NULL PR to process objectid-empty correctly
-	/*	validators: map[string]map[string]any{
-		"tigris": {
-			"$tigrisSchemaString": strings.Replace(
-				commonTigrisJSONSchema, "%%type%%", `"type": "string", "format": "byte"`, -1,
-			),
-		},
-	},*/
+	// TODO this is unclear what would be Tigris schema here where they keys are ObjectIDs
 	data: map[primitive.ObjectID]any{
 		{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11}: "objectid",
 		primitive.NilObjectID: "objectid-empty",
@@ -322,7 +315,6 @@ var ObjectIDKeys = &Values[primitive.ObjectID]{
 // commonTigrisJSONSchema defines a common schema for scalar types.
 var commonTigrisJSONSchema = `{
 				"title": "%%collection%%",
-				"description": "Int32s collection",
 				"primary_key": ["_id"],
 				"properties": {
 					"v": {%%type%%},
