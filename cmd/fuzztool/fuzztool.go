@@ -190,10 +190,10 @@ func copyCorpus(srcRoot, dstRoot string) {
 // It's used for parsing the user input.
 var cli struct {
 	Corpus struct {
-		Src string `arg:"" help:"Source, one of: 'seed', 'generated', or collected corpus' directory"`
-		Dst string `arg:"" help:"Destination, one of: 'seed', 'generated', or collected corpus' directory"`
+		Src string `arg:"" help:"Source, one of: 'seed', 'generated', or collected corpus' directory."`
+		Dst string `arg:"" help:"Destination, one of: 'seed', 'generated', or collected corpus' directory."`
 	} `cmd:""`
-	Debug bool `help:"Enable debug mode"`
+	Debug bool `help:"Enable debug mode."`
 }
 
 func main() {
