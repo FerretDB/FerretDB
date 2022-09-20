@@ -82,6 +82,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	} else {
 		// If `false`, perform an unordered insert, and if an error occurs with
 		// one of documents, continue processing the remaining documents in the array.
+		// TODO: this can be better, if we have primary key, we can do `INSERT DO NOTHING`
 		for i := 0; i < docs.Len(); i++ {
 			doc, err := docs.Get(i)
 			if err != nil {
