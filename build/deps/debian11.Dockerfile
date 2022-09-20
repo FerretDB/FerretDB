@@ -1,1 +1,1 @@
-FROM debian:11.4
+FROM debian:11.5

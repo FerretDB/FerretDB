@@ -51,15 +51,21 @@ tasks:
       - go mod tidy
       - go mod verify
 
+  # deprecated alias
   init-clean:
-    desc: "Clean ALL Go and Docker data (caches, images, volumes), and re-init"
+    deps: [env-reset]
+
+  env-reset:
+    desc: "Clean ALL Go and Docker data (caches, images, volumes), and reset environment"
     cmds:
+      - task: env-down
       - cmd: docker buildx prune --all
         ignore_error: true # build container may not exist
       - docker system prune --all --volumes
       - bin/golangci-lint{{exeExt}} cache clean
       - go clean -cache -testcache -modcache -fuzzcache
       - rm -fr .cache .task tools/.task integration/.task
+      - task: env-pull
       - task: init
 
   env-setup:
