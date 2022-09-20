@@ -118,7 +118,7 @@ you can run those with `task test-unit` after starting the environment as descri
 
 We also have a set of "integration" tests in the `integration` directory.
 They use the Go MongoDB driver like a regular user application.
-They could test target any MongoDB-compatible database (such as FerreDB or MongoDB itself) via a regular TCP port.
+They could test target any MongoDB-compatible database (such as FerretDB or MongoDB itself) via a regular TCP port.
 They also could test target in-process FerretDB instances
 (meaning that integration tests start and stop them themselves) with a given handler.
 Some tests (so-called compatibility or "compat" tests) connect to two systems ("target" and "compat") at the same time,
