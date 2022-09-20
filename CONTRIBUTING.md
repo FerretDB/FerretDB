@@ -60,6 +60,9 @@ With `task` installed,
 you should install development tools with `task init`
 and download required Docker images with `task env-pull`.
 
+If something does not work correctly,
+you can reset the environment with `task env-reset`.
+
 You can see all available `task` tasks with `task -l`.
 
 ## Contributing code
@@ -127,10 +130,16 @@ You can run them with:
 * `task test-integration-mongodb` for MongoDB running on port 37017 only;
 * or `task test-integration` to run all in parallel.
 
-Finally, you may run all tests in parallel with `task test`.
+You may run all tests in parallel with `task test`.
 If tests fail and the output is too confusing, try running them sequentially by using the commands above.
 
 You can also run `task -C 1` to limit the number of concurrent tasks, which is useful for debugging.
+
+Finally, since all tests just run `go test` with various arguments and flags under the hood,
+you may also use all standard `go` tool facilities,
+including [`GOFLAGS` environment variable](https://pkg.go.dev/cmd/go#hdr-Environment_variables).
+For example, to run a single test case for `pg` handler with all subtests running sequentially,
+you may use `env GOFLAGS='-run=TestName/TestCaseName -parallel=1' task test-integration-pg`.
 
 In general, we prefer integration tests over unit tests,
 tests using real databases over short tests
