@@ -186,7 +186,9 @@ func copyCorpus(srcRoot, dstRoot string) {
 	}
 }
 
-var CLI struct {
+// The cli struct represents all command-line commands, fields and flags.
+// It's used for parsing the user input.
+var cli struct {
 	Corpus struct {
 		Src string `arg:"" help:"source, one of: 'seed', 'generated', or collected corpus' directory"`
 		Dst string `arg:"" name:"dst" help:"destination, one of: 'seed', 'generated', or collected corpus' directory"`
@@ -195,11 +197,11 @@ var CLI struct {
 }
 
 func main() {
-	ctx := kong.Parse(&CLI)
+	ctx := kong.Parse(&cli)
 
 	logging.Setup(zap.InfoLevel)
 
-	if CLI.Debug {
+	if cli.Debug {
 		logging.Setup(zap.DebugLevel)
 	}
 
@@ -219,7 +221,7 @@ func main() {
 
 	switch ctx.Command() {
 	case "corpus <src> <dst>":
-		switch CLI.Corpus.Src {
+		switch cli.Corpus.Src {
 		case "seed":
 			src = seedCorpus
 		case "generated":
@@ -231,7 +233,7 @@ func main() {
 			}
 		}
 
-		switch CLI.Corpus.Dst {
+		switch cli.Corpus.Dst {
 		case "seed":
 			dst = seedCorpus
 		case "generated":
