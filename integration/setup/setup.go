@@ -16,7 +16,11 @@ package setup
 
 import (
 	"context"
+	"strings"
 	"testing"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -132,6 +136,19 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 				provider.Name(), *handlerF,
 			)
 			continue
+		}
+
+		// if validators are set, create collection with them (otherwise collection will be created on first insert)
+		if validators := provider.Validators(*handlerF); validators != nil {
+			opts := new(options.CreateCollectionOptions)
+			for key, value := range validators {
+				if *handlerF == "tigris" {
+					value = strings.Replace(value.(string), "%%collection%%", collectionName, -1)
+				}
+				opts = opts.SetValidator(bson.D{{key, value}})
+			}
+
+			require.NoError(tb, database.CreateCollection(ctx, collectionName, opts))
 		}
 
 		docs := shareddata.Docs(provider)

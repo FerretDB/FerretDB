@@ -32,6 +32,12 @@ type Provider interface {
 	// Handlers returns handlers compatible with this provider.
 	Handlers() []string
 
+	// Validators returns validators for the given handler.
+	// For example, for Tigris it should return a map with they key $tigrisSchemaString
+	// and the value containing Tigris' JSON schema string.
+	// As Tigris schema requires collection name, please use %%collection%% as placeholder.
+	Validators(handler string) map[string]any
+
 	// Docs returns shared data documents.
 	// All calls should return the same set of documents, but may do so in different order.
 	Docs() []bson.D
@@ -105,9 +111,10 @@ func IDs(providers ...Provider) []any {
 
 // Values stores shared data documents as {"_id": key, "v": value} documents.
 type Values[idType comparable] struct {
-	name     string
-	handlers []string
-	data     map[idType]any
+	name       string
+	handlers   []string
+	validators map[string]map[string]any // handler -> validator name -> validator
+	data       map[idType]any
 }
 
 // Name implement Provider interface.
@@ -118,6 +125,11 @@ func (values *Values[idType]) Name() string {
 // Handlers implement Provider interface.
 func (values *Values[idType]) Handlers() []string {
 	return values.handlers
+}
+
+// Validators implement Provider interface.
+func (values *Values[idType]) Validators(handler string) map[string]any {
+	return values.validators[handler]
 }
 
 // Docs implement Provider interface.
