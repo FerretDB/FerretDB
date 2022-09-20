@@ -66,7 +66,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	var inserted int32
-	// If ordered is `true`, perform an ordered insert of the documents in
+	// if ordered is `true`, perform an ordered insert of the documents in
 	// the array, and if an error occurs with one of documents, MongoDB will
 	// return without processing the remaining documents in the array.
 	//
@@ -80,7 +80,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			inserted++
 		}
 	} else {
-		// If `false`, perform an unordered insert, and if an error occurs with
+		// if `false`, perform an unordered insert, and if an error occurs with
 		// one of documents, continue processing the remaining documents in the array.
 		// TODO: this can be better, if we have primary key, we can do `INSERT DO NOTHING`
 		for i := 0; i < docs.Len(); i++ {
