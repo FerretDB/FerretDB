@@ -62,15 +62,15 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 	testCases := map[string]updateCompatTestCase{
 		"Int32Lower": {
 			update:        bson.D{{"$max", bson.D{{"v", int32(30)}}}},
-			skipForTigris: "fixing tigris validation needed",
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
 		},
 		"Int32Higher": {
 			update:        bson.D{{"$max", bson.D{{"v", int32(60)}}}},
-			skipForTigris: "fixing tigris validation needed",
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
 		},
 		"Int32Negative": {
 			update:        bson.D{{"$max", bson.D{{"v", int32(-22)}}}},
-			skipForTigris: "fixing tigris validation needed",
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
 		},
 		"Document": {
 			update: bson.D{{"$max", bson.D{{"v", bson.D{{"foo", "bar"}}}}}},
@@ -85,16 +85,16 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 		},
 		"DoubleNegative": {
 			update:        bson.D{{"$max", bson.D{{"v", -54.32}}}},
-			skipForTigris: "fixing tigris validation needed",
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
 		},
 		"NotExisting": {
 			update:        bson.D{{"$max", bson.D{{"v", int32(60)}}}},
-			skipForTigris: "fixing tigris validation needed",
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
 		},
 
 		"MultipleQueries": {
 			update:        bson.D{{"$max", bson.D{{"v", int32(39)}, {"a", int32(30)}}}},
-			skipForTigris: "fixing tigris validation needed",
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
 		},
 		"DuplicateQuery": {
 			update: bson.D{{"$max", bson.D{{"v", int32(39)}, {"v", int32(30)}}}},
@@ -128,7 +128,7 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 		},
 		"BoolFalse": {
 			update:        bson.D{{"$max", bson.D{{"v", false}}}},
-			skipForTigris: "fixing tigris validation needed",
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
 		},
 		"EmptyOperand": {
 			update:     bson.D{{"$max", bson.D{}}},
@@ -136,11 +136,11 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 		},
 		"DateTime": {
 			update:        bson.D{{"$max", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 12, 18, 42, 123000000, time.UTC))}}}},
-			skipForTigris: "fixing tigris validation needed",
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
 		},
 		"DateTimeLower": {
 			update:        bson.D{{"$max", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 3, 18, 42, 123000000, time.UTC))}}}},
-			skipForTigris: "fixing tigris validation needed",
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
 		},
 	}
 
