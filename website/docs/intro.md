@@ -8,7 +8,7 @@ FerretDB (formerly MangoDB) is an open-source proxy that translates MongoDB wire
 queries to SQL, with PostgreSQL as the database engine.
 
 Initially built as open-source software, MongoDB was a game-changer for many developers,
-enabling them to build fast and robust applications using a NoSQL non-relational database.
+enabling them to build fast and robust applications.
 Its ease of use and extensive documentation made it a top choice for many developers looking
 for an open-source database.
 However, all this changed when they switched to an SSPL license,
