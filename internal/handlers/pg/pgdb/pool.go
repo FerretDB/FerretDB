@@ -24,7 +24,6 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -162,26 +161,6 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 	return nil
 }
 
-// DropDatabase drops FerretDB database.
-//
-// It returns ErrTableNotExist if schema does not exist.
-//
-// Deprecated: use function instead.
-func (pgPool *Pool) DropDatabase(ctx context.Context, db string) error {
-	return DropDatabase(ctx, pgPool, db)
-}
-
-// CreateCollectionIfNotExist ensures that given FerretDB database / PostgreSQL schema
-// and FerretDB collection / PostgreSQL table exist.
-// If needed, it creates both schema and table.
-//
-// True is returned if table was created.
-//
-// Deprecated: use function instead.
-func (pgPool *Pool) CreateCollectionIfNotExist(ctx context.Context, db, collection string) (bool, error) {
-	return CreateCollectionIfNotExist(ctx, pgPool, db, collection)
-}
-
 // SchemaStats returns a set of statistics for FerretDB server, database, collection - or, in terms of PostgreSQL,
 // database, schema, table.
 // If schema is empty, it calculates statistics across the whole PostgreSQL database.
@@ -225,34 +204,6 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 		return nil, lazyerrors.Error(err)
 	}
 	return &res, nil
-}
-
-// SetDocumentByID sets a document by its ID.
-//
-// Deprecated: use function instead.
-func (pgPool *Pool) SetDocumentByID(ctx context.Context, sp *SQLParam, id any, doc *types.Document) (int64, error) {
-	var n int64
-	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		var err error
-		n, err = SetDocumentByID(ctx, tx, sp, id, doc)
-		return err
-	})
-
-	return n, err
-}
-
-// DeleteDocumentsByID deletes documents by given IDs.
-//
-// Deprecated: use function instead.
-func (pgPool *Pool) DeleteDocumentsByID(ctx context.Context, sp *SQLParam, ids []any) (int64, error) {
-	var n int64
-	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		var err error
-		n, err = DeleteDocumentsByID(ctx, tx, sp, ids)
-		return err
-	})
-
-	return n, err
 }
 
 // InTransaction wraps the given function f in a transaction.

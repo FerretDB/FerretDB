@@ -21,6 +21,7 @@ node_modules/
 
 # for now
 testdata/fuzz/
+records/
 
 # for local Docker Compse changes; see https://docs.docker.com/compose/extends/#multiple-compose-files
 docker-compose.override.yml

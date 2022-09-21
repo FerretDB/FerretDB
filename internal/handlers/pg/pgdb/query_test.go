@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
@@ -38,10 +39,16 @@ func TestQueryDocuments(t *testing.T) {
 	collectionName := testutil.CollectionName(t)
 
 	t.Cleanup(func() {
-		pool.DropDatabase(ctx, dbName)
+		pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			DropDatabase(ctx, tx, dbName)
+			return nil
+		})
 	})
 
-	pool.DropDatabase(ctx, dbName)
+	pool.InTransaction(ctx, func(tx pgx.Tx) error {
+		DropDatabase(ctx, tx, dbName)
+		return nil
+	})
 	require.NoError(t, CreateDatabase(ctx, pool, dbName))
 
 	cases := []struct {
