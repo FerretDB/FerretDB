@@ -101,11 +101,12 @@ func TestQueryDocuments(t *testing.T) {
 			tx, err := pool.Begin(ctx)
 			require.NoError(t, err)
 
+			sp := &SQLParam{DB: dbName, Collection: tc.collection}
+
 			for _, doc := range tc.documents {
-				require.NoError(t, InsertDocument(ctx, tx, dbName, tc.collection, doc))
+				require.NoError(t, InsertDocument(ctx, tx, sp, doc))
 			}
 
-			sp := &SQLParam{DB: dbName, Collection: tc.collection}
 			fetchedChan, err := pool.QueryDocuments(ctx, tx, sp)
 			require.NoError(t, err)
 
@@ -131,13 +132,14 @@ func TestQueryDocuments(t *testing.T) {
 		tx, err := pool.Begin(ctx)
 		require.NoError(t, err)
 
+		sp := &SQLParam{DB: dbName, Collection: collectionName + "_cancel"}
+
 		for i := 1; i <= FetchedChannelBufSize*FetchedSliceCapacity+1; i++ {
-			require.NoError(t, InsertDocument(ctx, tx, dbName, collectionName+"_cancel",
+			require.NoError(t, InsertDocument(ctx, tx, sp,
 				must.NotFail(types.NewDocument("id", fmt.Sprintf("%d", i))),
 			))
 		}
 
-		sp := &SQLParam{DB: dbName, Collection: collectionName + "_cancel"}
 		ctx, cancel := context.WithCancel(context.Background())
 		fetchedChan, err := pool.QueryDocuments(ctx, pool, sp)
 		cancel()

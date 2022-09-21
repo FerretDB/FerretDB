@@ -28,31 +28,33 @@ import (
 
 // InsertDocument inserts a document into FerretDB database and collection.
 // If database or collection does not exist, it will be created.
-func InsertDocument(ctx context.Context, tx pgx.Tx, db, collection string, doc *types.Document) error {
-	exists, err := CollectionExists(ctx, tx, db, collection)
+func InsertDocument(ctx context.Context, tx pgx.Tx, sp *SQLParam, doc *types.Document) error {
+	exists, err := CollectionExists(ctx, tx, sp.DB, sp.Collection)
 	if err != nil {
 		return err
 	}
 
 	if !exists {
-		if err := CreateDatabaseIfNotExists(ctx, tx, db); err != nil {
+		if err := CreateDatabaseIfNotExists(ctx, tx, sp.DB); err != nil {
 			return lazyerrors.Error(err)
 		}
 
-		if err := CreateCollection(ctx, tx, db, collection); err != nil && !errors.Is(err, ErrAlreadyExist) {
+		if err := CreateCollection(ctx, tx, sp.DB, sp.Collection); err != nil && !errors.Is(err, ErrAlreadyExist) {
 			return lazyerrors.Error(err)
 		}
 	}
 
-	table, err := getTableName(ctx, tx, db, collection)
+	table, err := getTableName(ctx, tx, sp.DB, sp.Collection)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	sql := `INSERT INTO ` + pgx.Identifier{db, table}.Sanitize() +
+	table = pgx.Identifier{sp.DB, table}.Sanitize()
+
+	sql := `INSERT INTO ` + table +
 		` (_jsonb) VALUES ($1)`
 
-	if _, err = tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc))); err != nil {
+	if _, err := tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc))); err != nil {
 		return lazyerrors.Error(err)
 	}
 

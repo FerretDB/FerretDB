@@ -36,7 +36,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.l, "writeConcern", "bypassDocumentValidation", "comment")
+	common.Ignored(document, h.l, "writeConcern", "bypassDocumentValidation")
 
 	var sp pgdb.SQLParam
 	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
@@ -54,14 +54,19 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		)
 	}
 
+	// get comment from options.InsertMany().SetComment() method
+	if sp.Comment, err = common.GetOptionalParam(document, "comment", sp.Comment); err != nil {
+		return nil, err
+	}
+
 	var docs *types.Array
 	if docs, err = common.GetOptionalParam(document, "documents", docs); err != nil {
 		return nil, err
 	}
 
-	var ordered bool
+	var ordered = true
 	// `ordered` flag is optional, and defaults to `true`.
-	if ordered, err = common.GetOptionalParam(document, "ordered", true); err != nil {
+	if ordered, err = common.GetOptionalParam(document, "ordered", ordered); err != nil {
 		return nil, err
 	}
 
@@ -89,7 +94,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				return nil, lazyerrors.Error(err)
 			}
 
-			err = h.insert(ctx, &sp, []any{doc})
+			err = h.insert(ctx, &sp, doc)
 			if err != nil {
 				continue
 			}
@@ -123,7 +128,7 @@ func (h *Handler) insert(ctx context.Context, sp *pgdb.SQLParam, doc any) error 
 	}
 
 	err := h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		if err := pgdb.InsertDocument(ctx, tx, sp.DB, sp.Collection, d); err != nil {
+		if err := pgdb.InsertDocument(ctx, tx, sp, d); err != nil {
 			if errors.Is(pgdb.ErrInvalidTableName, err) ||
 				errors.Is(pgdb.ErrInvalidDatabaseName, err) {
 				msg := fmt.Sprintf("Invalid namespace: %s.%s", sp.DB, sp.Collection)
