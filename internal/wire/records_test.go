@@ -43,11 +43,15 @@ func fetchTestCases() ([]testCase, error) {
 			if err != nil {
 				return resMsgs, err
 			}
+			headBytes := []byte(header.String())
+			bodyBytes := []byte(body.String())
 			resMsgs = append(
 				resMsgs,
 				testCase{
-					msgHeader: header,
-					msgBody:   body,
+					//msgHeader: header,
+					//msgBody:   body,
+					headerB: headBytes,
+					bodyB:   bodyBytes,
 				},
 			)
 		}
