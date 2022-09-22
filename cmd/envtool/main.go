@@ -27,6 +27,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v4"
 	"github.com/tigrisdata/tigris-client-go/config"
 	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
@@ -216,13 +217,17 @@ func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
 
 	logger.Info("Creating databases...")
 
-	for _, db := range []string{"admin", "test"} {
-		if err = pgdb.CreateDatabase(ctx, pgPool, db); err != nil {
-			return err
+	err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		for _, db := range []string{"admin", "test"} {
+			if err = pgdb.CreateDatabaseIfNotExists(ctx, tx, db); err != nil {
+				return err
+			}
 		}
-	}
 
-	return nil
+		return nil
+	})
+
+	return err
 }
 
 // setupTigris configures Tigris.
