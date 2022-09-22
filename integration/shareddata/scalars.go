@@ -160,14 +160,6 @@ var Binaries = &Values[string]{
 var ObjectIDs = &Values[string]{
 	name:     "ObjectIDs",
 	handlers: []string{"pg", "tigris"},
-	// TODO uncomment this in the NULL PR  to process objectid-empty correctly
-	/*validators: map[string]map[string]any{
-		"tigris": {
-			"$tigrisSchemaString": strings.Replace(
-				commonTigrisJSONSchema, "%%type%%", `"type": "string", "format": "byte"`, -1,
-			),
-		},
-	},*/
 	data: map[string]any{
 		"objectid":       primitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11},
 		"objectid-empty": primitive.NilObjectID,
@@ -305,7 +297,6 @@ var Unsets = &Values[string]{
 var ObjectIDKeys = &Values[primitive.ObjectID]{
 	name:     "ObjectIDKeys",
 	handlers: []string{"pg", "tigris"},
-	// TODO this is unclear what would be Tigris schema here where they keys are ObjectIDs
 	data: map[primitive.ObjectID]any{
 		{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11}: "objectid",
 		primitive.NilObjectID: "objectid-empty",
