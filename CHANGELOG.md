@@ -1,5 +1,37 @@
 # Changelog
 
+## [v0.5.4](https://github.com/FerretDB/FerretDB/releases/tag/v0.5.4) (2022-09-22)
+
+### Fixed Bugs 🐛
+* Add missing `$k` to the schema when creating collection in Tigris by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1136
+
+### Documentation 📄
+* Remove docusaurus references and update documentation by @Fashander in https://github.com/FerretDB/FerretDB/pull/1130
+* Deploy documentation PRs to Vercel by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1131
+
+### Other Changes 🤖
+* Add transaction to `msg_drop` by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1129
+* Add transaction to `pg`'s `msg_listcollections` by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1135
+* Fix tests for Tigris by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1134
+* Use fixed `-test-record` directory in Task targets by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1139
+* Fix a typo in Readme by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1141
+* Use transaction in more `pgdb` functions by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1143
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1158
+* Use transaction in more `pgdb` functions by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1144
+* Refactor `msg_delete` handlers by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1152
+* Improve contributing guidelines by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1146
+* Update process documentation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1153
+* Update issues and PR templates by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1155
+* Fix typo by @si3nloong in https://github.com/FerretDB/FerretDB/pull/1165
+* Migrate fuzztool to Kong by @noisersup in https://github.com/FerretDB/FerretDB/pull/1159
+
+## New Contributors
+* @si3nloong made their first contribution in https://github.com/FerretDB/FerretDB/pull/1165
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/23?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v0.5.3...v0.5.4).
+
+
 ## [v0.5.3](https://github.com/FerretDB/FerretDB/releases/tag/v0.5.3) (2022-09-08)
 
 ### New Features 🎉
