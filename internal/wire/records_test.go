@@ -2,34 +2,57 @@ package wire
 
 import (
 	"bufio"
+	"io"
+	"io/fs"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
-type placeholderMsgs struct {
-	Header *MsgHeader
-	Body   MsgBody
-}
-
-func fetchTestCases() ([]*placeholderMsgs, error) {
+func fetchTestCases() ([]testCase, error) {
 	// TODO: iterate over every file in directory
+	recordsPath := "../../records"
 
-	// TODO: use OpenFile and fetch data on fly
-	//b, err := os.ReadFile("./records/2022-22-09_00:50:53_172.20.0.3:52888.bin")
-	//f, err := os.OpenFile("records/2022-22-09_00:50:53_172.20.0.3:52888.bin", os.O_RDONLY, 0o666)
-	f, err := os.OpenFile("records/2022-22-09_00:50:53_172.20.0.3:52888.bin", os.O_RDONLY, 0o666)
+	var recordFilesPaths []string
+	err := filepath.WalkDir(recordsPath, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if filepath.Ext(entry.Name()) == ".bin" {
+			recordFilesPaths = append(recordFilesPaths, path)
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
-	var resMsgs []*placeholderMsgs
-	r := bufio.NewReader(f)
-	for {
-		header, body, err := ReadMessage(r)
+
+	var resMsgs []testCase
+	for _, path := range recordFilesPaths {
+		f, err := os.OpenFile(path, os.O_RDONLY, 0o666)
 		if err != nil {
-			return resMsgs, err
+			return nil, err
 		}
-		resMsgs = append(resMsgs, &placeholderMsgs{header, body})
+
+		r := bufio.NewReader(f)
+		for {
+			header, body, err := ReadMessage(r)
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				return resMsgs, err
+			}
+			resMsgs = append(
+				resMsgs,
+				testCase{
+					msgHeader: header,
+					msgBody:   body,
+				},
+			)
+		}
 	}
+	return resMsgs, nil
 }
 
 func FuzzRecords(f *testing.F) {
@@ -38,5 +61,5 @@ func FuzzRecords(f *testing.F) {
 		f.Error(err)
 	}
 	f.Log(msgs)
-	//fuzzMessages(f)
+	fuzzMessages(f, msgs)
 }
