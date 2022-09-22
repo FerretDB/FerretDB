@@ -64,10 +64,10 @@ type SQLParam struct {
 // Context cancellation is not considered an error.
 //
 // If the collection doesn't exist, fetch returns a closed channel and no error.
-func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier, sp *SQLParam) (<-chan FetchedDocs, error) {
+func (pgPool *Pool) QueryDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (<-chan FetchedDocs, error) {
 	fetchedChan := make(chan FetchedDocs, FetchedChannelBufSize)
 
-	q, err := buildQuery(ctx, querier, sp)
+	q, err := buildQuery(ctx, tx, sp)
 	if err != nil {
 		close(fetchedChan)
 		if errors.Is(err, ErrTableNotExist) {
@@ -76,7 +76,7 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, querier pgxtype.Querier,
 		return fetchedChan, lazyerrors.Error(err)
 	}
 
-	rows, err := querier.Query(ctx, q)
+	rows, err := tx.Query(ctx, q)
 	if err != nil {
 		close(fetchedChan)
 		return fetchedChan, lazyerrors.Error(err)

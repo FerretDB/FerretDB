@@ -85,6 +85,12 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				return false, err
 			}
 
+		case "$max":
+			changed, err = processMaxFieldExpression(doc, updateV)
+			if err != nil {
+				return false, err
+			}
+
 		case "$pop":
 			changed, err = processPopFieldExpression(doc, updateV.(*types.Document))
 			if err != nil {
@@ -328,6 +334,46 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	return changed, nil
 }
 
+// processMaxFieldExpression changes document according to $max operator.
+// If the document was changed it returns true.
+func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
+	maxExpression := updateV.(*types.Document)
+
+	var changed bool
+
+	for _, field := range maxExpression.Keys() {
+		val, _ := doc.Get(field)
+
+		maxVal, err := maxExpression.Get(field)
+		if err != nil {
+			// if max field does not exist, don't change anything
+			continue
+		}
+
+		// if the document value was found, compare it with max value
+		if val != nil {
+			res := types.CompareOrder(val, maxVal, types.Ascending)
+			switch res {
+			case types.Equal:
+				fallthrough
+			case types.Greater:
+				continue
+			case types.Less:
+				// if document value is less than max value, update the value
+			case types.Incomparable:
+				return changed, NewErrorMsg(ErrNotImplemented, "document comparison is not implemented")
+			}
+		}
+
+		if err := doc.Set(field, maxVal); err != nil {
+			return changed, err
+		}
+		changed = true
+	}
+
+	return changed, nil
+}
+
 // processCurrentDateFieldExpression changes document according to $currentDate operator.
 // If the document was changed it returns true.
 func processCurrentDateFieldExpression(doc *types.Document, currentDateVal any) (bool, error) {
@@ -427,6 +473,8 @@ func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
 		case "$currentDate":
 			fallthrough
 		case "$inc":
+			fallthrough
+		case "$max":
 			fallthrough
 		case "$set":
 			fallthrough
