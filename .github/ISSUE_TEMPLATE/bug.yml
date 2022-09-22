@@ -1,0 +1,40 @@
+---
+# https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-githubs-form-schema
+name: Bug
+description: Some feature works incorrectly
+assignees: ["ferretdb-bot"]
+labels: ["code/bug"]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        Thanks for taking the time to fill out this bug report!
+        Please check if a similar issue is [already filed](https://github.com/FerretDB/FerretDB/issues).
+  - type: textarea
+    id: versions
+    attributes:
+      label: Versions
+      description: What versions of FerretDB and other software do you use?
+    validations:
+      required: true
+  - type: textarea
+    id: do
+    attributes:
+      label: What did you do?
+      description: Include MongoDB queries if you can.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to see?
+      description: Include expected MongoDB results if you can.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What did you see instead?
+      description: Include FerretDB logs if possible.
+    validations:
+      required: true

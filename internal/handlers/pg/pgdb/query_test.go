@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
@@ -38,10 +39,16 @@ func TestQueryDocuments(t *testing.T) {
 	collectionName := testutil.CollectionName(t)
 
 	t.Cleanup(func() {
-		pool.DropDatabase(ctx, dbName)
+		pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			DropDatabase(ctx, tx, dbName)
+			return nil
+		})
 	})
 
-	pool.DropDatabase(ctx, dbName)
+	pool.InTransaction(ctx, func(tx pgx.Tx) error {
+		DropDatabase(ctx, tx, dbName)
+		return nil
+	})
 	require.NoError(t, CreateDatabase(ctx, pool, dbName))
 
 	cases := []struct {
@@ -98,7 +105,7 @@ func TestQueryDocuments(t *testing.T) {
 				require.NoError(t, InsertDocument(ctx, tx, dbName, tc.collection, doc))
 			}
 
-			sp := SQLParam{DB: dbName, Collection: tc.collection}
+			sp := &SQLParam{DB: dbName, Collection: tc.collection}
 			fetchedChan, err := pool.QueryDocuments(ctx, tx, sp)
 			require.NoError(t, err)
 
@@ -130,7 +137,7 @@ func TestQueryDocuments(t *testing.T) {
 			))
 		}
 
-		sp := SQLParam{DB: dbName, Collection: collectionName + "_cancel"}
+		sp := &SQLParam{DB: dbName, Collection: collectionName + "_cancel"}
 		ctx, cancel := context.WithCancel(context.Background())
 		fetchedChan, err := pool.QueryDocuments(ctx, pool, sp)
 		cancel()
@@ -156,7 +163,7 @@ func TestQueryDocuments(t *testing.T) {
 		tx, err := pool.Begin(ctx)
 		require.NoError(t, err)
 
-		sp := SQLParam{DB: dbName, Collection: collectionName + "_non-existing"}
+		sp := &SQLParam{DB: dbName, Collection: collectionName + "_non-existing"}
 		fetchedChan, err := pool.QueryDocuments(context.Background(), tx, sp)
 		require.NoError(t, err)
 		res, ok := <-fetchedChan

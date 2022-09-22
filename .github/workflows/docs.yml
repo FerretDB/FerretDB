@@ -1,0 +1,93 @@
+---
+name: Docs
+on:
+  pull_request:
+    types:
+      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
+      - opened
+      - reopened
+      - synchronize
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "42 3 * * *" # after Integration workflow
+
+env:
+  GOPATH: /home/runner/go
+  GOCACHE: /home/runner/go/cache
+  GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
+  GOMODCACHE: /home/runner/go/mod
+  GOPROXY: https://proxy.golang.org
+
+jobs:
+  build:
+    name: Build docs
+    runs-on: ubuntu-20.04
+
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          lfs: true
+
+      - name: Setup Go
+        uses: FerretDB/github-actions/setup-go@main
+        with:
+          cache-key: build
+
+      - name: Install Task
+        run: go generate -x
+        working-directory: tools
+
+      - name: Build tools
+        run: bin/task env-pull
+
+      - name: Build docs
+        run: bin/task docs
+
+      - name: Archive docs
+        run: |
+          tar --directory website/build \
+            --file docs.tar \
+            --create \
+            --verbose \
+            .
+
+      - name: Upload archive artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: docs
+          path: docs.tar
+          if-no-files-found: error
+
+      - name: Check dirty
+        run: |
+          git status
+          git diff --exit-code
+
+  pages:
+    name: Deploy to Pages
+    runs-on: ubuntu-20.04
+
+    # deploy only on push to main; exclude pull_request and schedule
+    needs: build
+    if: github.event_name == 'push'
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v1
+        with:
+          artifact_name: docs
+          timeout: 300000 # 5*60*1000 milliseconds

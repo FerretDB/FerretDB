@@ -79,7 +79,7 @@ func TestQueryArraySize(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: `$size needs a number`,
+				Message: `Failed to parse $size. Expected a number in: $size: { $gt: 1 }`,
 			},
 		},
 		"NotWhole": {
@@ -87,7 +87,7 @@ func TestQueryArraySize(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: `$size must be a whole number`,
+				Message: "Failed to parse $size. Expected an integer: $size: 2.1",
 			},
 		},
 		"NaN": {
@@ -95,7 +95,7 @@ func TestQueryArraySize(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: `$size must be a whole number`,
+				Message: `Failed to parse $size. Expected an integer, but found NaN in: $size: nan.0`,
 			},
 		},
 		"Infinity": {
@@ -103,7 +103,7 @@ func TestQueryArraySize(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: `$size must be a whole number`,
+				Message: `Failed to parse $size. Cannot represent as a 64-bit integer: $size: inf.0`,
 			},
 		},
 		"Negative": {
@@ -111,7 +111,7 @@ func TestQueryArraySize(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: `$size may not be negative`,
+				Message: `Failed to parse $size. Expected a non-negative number in: $size: -1`,
 			},
 		},
 		"InvalidUse": {

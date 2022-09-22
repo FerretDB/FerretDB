@@ -5,6 +5,12 @@ run:
   timeout: 3m
 
 linters-settings:
+  errorlint:
+    # see caveats at https://github.com/polyfloyd/go-errorlint#fmterrorf-wrapping-verb
+    errorf: false
+    asserts: true
+    comparison: true
+
   staticcheck:
     checks: ["all"]
   wsl:
@@ -58,7 +64,6 @@ linters:
     - errcheck
     - errchkjson
     - errname
-    - errorlint
     - execinquery
     - exhaustivestruct
     - exhaustruct

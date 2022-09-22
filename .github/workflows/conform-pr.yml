@@ -10,7 +10,7 @@ on:
     types:
       # - assigned
       # - unassigned
-      # - labeled
+      - labeled
       - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
       - opened
       - edited

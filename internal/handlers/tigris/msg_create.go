@@ -81,23 +81,21 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	b := must.NotFail(json.Marshal(schema))
 
 	created, err := h.db.CreateCollectionIfNotExist(ctx, db, collection, b)
-	if err != nil {
-		switch err := err.(type) {
-		case nil:
-			// do nothing
-		case *driver.Error:
-			if tigrisdb.IsInvalidArgument(err) {
-				return nil, common.NewError(common.ErrBadValue, err)
-			}
-
-			return nil, lazyerrors.Error(err)
-		default:
-			return nil, lazyerrors.Error(err)
+	switch err := err.(type) {
+	case nil:
+		// do nothing
+	case *driver.Error:
+		if tigrisdb.IsInvalidArgument(err) {
+			return nil, common.NewError(common.ErrBadValue, err)
 		}
+
+		return nil, lazyerrors.Error(err)
+	default:
+		return nil, lazyerrors.Error(err)
 	}
 
 	if !created {
-		msg := fmt.Sprintf("Collection already exists. NS: %s.%s", db, collection)
+		msg := fmt.Sprintf("Collection %s.%s already exists.", db, collection)
 		return nil, common.NewErrorMsg(common.ErrNamespaceExists, msg)
 	}
 

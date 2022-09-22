@@ -68,7 +68,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, lazyerrors.Error(err)
 		}
 
-		err = h.insert(ctx, fp, doc.(*types.Document))
+		err = h.insert(ctx, &fp, doc.(*types.Document))
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -88,7 +88,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // insert checks if database and collection exist, create them if needed and attempts to insert the given doc.
-func (h *Handler) insert(ctx context.Context, fp tigrisdb.FetchParam, doc *types.Document) error {
+func (h *Handler) insert(ctx context.Context, fp *tigrisdb.FetchParam, doc *types.Document) error {
 	schema, err := tjson.DocumentSchema(doc)
 	if err != nil {
 		return lazyerrors.Error(err)
