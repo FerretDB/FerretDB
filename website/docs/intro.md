@@ -21,9 +21,9 @@ With FerretDB, users can run the same MongoDB protocol queries without needing t
 ## Scope and current state
 
 FerretDB is compatible with MongoDB drivers and can be used as a direct replacement for MongoDB 6.0+.
-Currently, the project is still in its early stages of development and not yet suitable for use in production-ready environments. 
+Currently, the project is still in its early stages of development and not yet suitable for use in production-ready environments.
 See our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1)
-and [contributing guidelines](CONTRIBUTING.md).
+and [contributing guidelines](https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md).
 
 ## Known differences
 
