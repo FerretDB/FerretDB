@@ -1,16 +1,31 @@
+// Copyright 2021 FerretDB Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package wire
 
 import (
 	"bufio"
+	"errors"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 )
 
-// loadRecords gets recursively all .bin file from recordsPath directory,
-// parses their content to wire Msgs and return them as []testCase array
-// with headerB and bodyB fields set.
+// loadRecords gets recursively all .bin files from the recordsPath directory,
+// parses their content to wire Msgs and returns them as an array of testCase
+// structs with headerB and bodyB fields set.
 func loadRecords(recordsPath string) ([]testCase, error) {
 	// Load recursively every file path with ".bin" extension from recordsPath directory
 	var recordFiles []string
@@ -25,13 +40,15 @@ func loadRecords(recordsPath string) ([]testCase, error) {
 
 		return nil
 	})
+
 	if err != nil {
 		return nil, err
 	}
 
+	var resMsgs []testCase
+
 	// Read every record file, parse their content to wire messages
 	// and store them in the testCase struct
-	var resMsgs []testCase
 	for _, path := range recordFiles {
 		f, err := os.Open(path)
 		if err != nil {
@@ -42,9 +59,11 @@ func loadRecords(recordsPath string) ([]testCase, error) {
 
 		for {
 			header, body, err := ReadMessage(r)
-			if err == io.EOF {
+
+			if errors.Is(err, io.EOF) {
 				break
 			}
+
 			if err != nil {
 				return nil, err
 			}
@@ -68,5 +87,6 @@ func loadRecords(recordsPath string) ([]testCase, error) {
 			)
 		}
 	}
+
 	return resMsgs, nil
 }

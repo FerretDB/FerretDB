@@ -125,7 +125,6 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 	switch {
 	case os.IsNotExist(err):
 		f.Logf("No records file will be added to the corpus: %s", err.Error())
-		break
 	case err != nil:
 		f.Error(err)
 	}
