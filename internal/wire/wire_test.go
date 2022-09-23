@@ -118,7 +118,7 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 		f.Add(tc.expectedB)
 	}
 
-	records, err := fetchRecords("./records")
+	records, err := loadRecords("./records")
 	if err != nil {
 		f.Error(err)
 	}
