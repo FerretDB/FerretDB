@@ -29,6 +29,7 @@ import (
 func loadRecords(recordsPath string) ([]testCase, error) {
 	// Load recursively every file path with ".bin" extension from recordsPath directory
 	var recordFiles []string
+
 	err := filepath.WalkDir(recordsPath, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -40,7 +41,6 @@ func loadRecords(recordsPath string) ([]testCase, error) {
 
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
