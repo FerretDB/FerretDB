@@ -23,6 +23,7 @@ changelog:
     - title: Other Changes 🤖
       labels:
         - code/chore
+        - project
         - deps
 
     - title: This section should be empty

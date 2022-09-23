@@ -17,8 +17,10 @@ package integration
 import (
 	"math"
 	"testing"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestUpdateFieldCompatInc(t *testing.T) {
@@ -48,6 +50,97 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 		"DotNotationFieldNotExist": {
 			update:        bson.D{{"$inc", bson.D{{"foo.bar", int32(1)}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1088",
+		},
+	}
+
+	testUpdateCompat(t, testCases)
+}
+
+func TestUpdateFieldCompatMax(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]updateCompatTestCase{
+		"Int32Lower": {
+			update:        bson.D{{"$max", bson.D{{"v", int32(30)}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"Int32Higher": {
+			update:        bson.D{{"$max", bson.D{{"v", int32(60)}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"Int32Negative": {
+			update:        bson.D{{"$max", bson.D{{"v", int32(-22)}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"Document": {
+			update: bson.D{{"$max", bson.D{{"v", bson.D{{"foo", "bar"}}}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/457",
+		},
+		"EmptyDocument": {
+			update: bson.D{{"$max", bson.D{{"v", bson.D{{}}}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1000",
+		},
+		"Double": {
+			update: bson.D{{"$max", bson.D{{"v", 54.32}}}},
+		},
+		"DoubleNegative": {
+			update:        bson.D{{"$max", bson.D{{"v", -54.32}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"NotExisting": {
+			update:        bson.D{{"$max", bson.D{{"v", int32(60)}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+
+		"MultipleQueries": {
+			update:        bson.D{{"$max", bson.D{{"v", int32(39)}, {"a", int32(30)}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"DuplicateQuery": {
+			update: bson.D{{"$max", bson.D{{"v", int32(39)}, {"v", int32(30)}}}},
+			skip:   "Handle duplicates correctly",
+		},
+
+		// Strings are not converted to numbers
+		"StringIntegerHigher": {
+			update: bson.D{{"$max", bson.D{{"v", "60"}}}},
+		},
+		"StringIntegerLower": {
+			update: bson.D{{"$max", bson.D{{"v", "30"}}}},
+		},
+		"StringDouble": {
+			update: bson.D{{"$max", bson.D{{"v", "54.32"}}}},
+		},
+		"StringDoubleNegative": {
+			update: bson.D{{"$max", bson.D{{"v", "-54.32"}}}},
+		},
+		"StringLexicographicHigher": {
+			update: bson.D{{"$max", bson.D{{"v", "goo"}}}},
+		},
+		"StringLexicographicLower": {
+			update: bson.D{{"$max", bson.D{{"v", "eoo"}}}},
+		},
+		"StringLexicographicUpperCase": {
+			update: bson.D{{"$max", bson.D{{"v", "Foo"}}}},
+		},
+		"BoolTrue": {
+			update: bson.D{{"$max", bson.D{{"v", true}}}},
+		},
+		"BoolFalse": {
+			update:        bson.D{{"$max", bson.D{{"v", false}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"EmptyOperand": {
+			update:     bson.D{{"$max", bson.D{}}},
+			resultType: emptyResult,
+		},
+		"DateTime": {
+			update:        bson.D{{"$max", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 12, 18, 42, 123000000, time.UTC))}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"DateTimeLower": {
+			update:        bson.D{{"$max", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 3, 18, 42, 123000000, time.UTC))}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
 		},
 	}
 

@@ -58,7 +58,7 @@ func Compare(docValue, filterValue any) []CompareResult {
 
 	switch docValue := docValue.(type) {
 	case *Document:
-		// TODO: implement document comparing
+		// TODO: implement document comparing https://github.com/FerretDB/FerretDB/issues/457
 		return []CompareResult{Incomparable}
 
 	case *Array:
