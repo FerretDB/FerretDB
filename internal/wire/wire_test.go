@@ -119,15 +119,9 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 		f.Add(tc.expectedB)
 	}
 
-	//regErrNotFound := regexp.MustCompile("^lstat \\w*: no such file or directory$")
-	records, err := loadRecords("./records")
-	// if err is not nil and not "no such file or directory" return it
+	records, err := loadRecords("../../records")
 
-	//ern := syscall.Errno()
-	//if err == syscall.ENOENT {
-	//
-	//}
-	//_, ok := err.(syscall.Errno)
+	// if err is not nil and not "no such file or directory" return it
 	switch {
 	case os.IsNotExist(err):
 		f.Logf("No records file will be added to the corpus: %s", err.Error())
@@ -135,15 +129,6 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 	case err != nil:
 		f.Error(err)
 	}
-	//switch {
-	//case syscall.Errno.Is(err):
-
-	//case regErrNotFound.MatchString(err.Error()):
-	//	f.Logf("No records file will be added to the corpus: %s", err.Error())
-	//	break
-	//case err != nil:
-	//	f.Error(err)
-	//}
 
 	for _, rec := range records {
 		f.Add(rec.bodyB)
