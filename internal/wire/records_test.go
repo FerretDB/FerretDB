@@ -6,7 +6,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"testing"
 )
 
 func fetchRecords(recordsPath string) ([]testCase, error) {
@@ -67,13 +66,4 @@ func fetchRecords(recordsPath string) ([]testCase, error) {
 		}
 	}
 	return resMsgs, nil
-}
-
-func FuzzRecords(f *testing.F) {
-	msgs, err := fetchRecords("./records")
-	if err != nil {
-		f.Error(err)
-	}
-	f.Log(msgs)
-	fuzzMessages(f, msgs)
 }

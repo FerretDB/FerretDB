@@ -118,6 +118,15 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 		f.Add(tc.expectedB)
 	}
 
+	records, err := fetchRecords("./records")
+	if err != nil {
+		f.Error(err)
+	}
+
+	for _, rec := range records {
+		f.Add(rec.bodyB)
+	}
+
 	f.Fuzz(func(t *testing.T, b []byte) {
 		t.Parallel()
 
