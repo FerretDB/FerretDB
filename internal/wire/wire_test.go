@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"regexp"
 	"testing"
 	"time"
 
@@ -118,8 +119,10 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 		f.Add(tc.expectedB)
 	}
 
-	records, err := loadRecords("./records")
-	if err != nil {
+	regErrNotFound := regexp.MustCompile("^lstat \\w*: no such file or directory$")
+	records, err := loadRecords("")
+	// if err is not nil and not "no such file or directory" return it
+	if err != nil && !regErrNotFound.MatchString(err.Error()) {
 		f.Error(err)
 	}
 
