@@ -10,8 +10,7 @@ import (
 )
 
 func fetchRecords(recordsPath string) ([]testCase, error) {
-
-	// Fetch resursively every file path with ".bin" extension from recordsPath directory
+	// Load resursively every file path with ".bin" extension from recordsPath directory
 	var recordFiles []string
 	err := filepath.WalkDir(recordsPath, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
@@ -45,11 +44,19 @@ func fetchRecords(recordsPath string) ([]testCase, error) {
 				break
 			}
 			if err != nil {
-				return resMsgs, err
+				return nil, err
 			}
 
-			headBytes := []byte(header.String())
-			bodyBytes := []byte(body.String())
+			headBytes, err := header.MarshalBinary()
+			if err != nil {
+				return nil, err
+			}
+
+			bodyBytes, err := body.MarshalBinary()
+			if err != nil {
+				return nil, err
+			}
+
 			resMsgs = append(
 				resMsgs,
 				testCase{
@@ -63,7 +70,7 @@ func fetchRecords(recordsPath string) ([]testCase, error) {
 }
 
 func FuzzRecords(f *testing.F) {
-	msgs, err := fetchRecords("./records/")
+	msgs, err := fetchRecords("./records")
 	if err != nil {
 		f.Error(err)
 	}
