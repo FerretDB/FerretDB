@@ -17,17 +17,20 @@ package pgdb
 import (
 	"context"
 	"errors"
+	"regexp"
 	"strings"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgtype/pgxtype"
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// Databases returns a sorted list of FerretDB database names / PostgreSQL schema names.
+// validateDatabaseNameRe validates FerretDB database / PostgreSQL schema names.
+var validateDatabaseNameRe = regexp.MustCompile("^[a-z_][a-z0-9_]{0,62}$")
+
+// Databases returns a sorted list of FerretDB database / PostgreSQL schema.
 func Databases(ctx context.Context, tx pgx.Tx) ([]string, error) {
 	sql := "SELECT schema_name FROM information_schema.schemata ORDER BY schema_name"
 	rows, err := tx.Query(ctx, sql)
@@ -56,48 +59,8 @@ func Databases(ctx context.Context, tx pgx.Tx) ([]string, error) {
 	return res, nil
 }
 
-// CreateDatabase creates a new FerretDB database (PostgreSQL schema).
-//
-// It returns (possibly wrapped):
-//
-//   - ErrAlreadyExist if schema already exist.
-//   - ErrInvalidDatabaseName if db name doesn't comply with the rules.
-//
-// Use errors.Is to check the error.
-func CreateDatabase(ctx context.Context, querier pgxtype.Querier, db string) error {
-	if !validateDatabaseNameRe.MatchString(db) ||
-		strings.HasPrefix(db, reservedPrefix) {
-		return ErrInvalidDatabaseName
-	}
-
-	_, err := querier.Exec(ctx, `CREATE SCHEMA `+pgx.Identifier{db}.Sanitize())
-	if err == nil {
-		err = createSettingsTable(ctx, querier, db)
-	}
-
-	if err == nil {
-		return nil
-	}
-
-	var pgErr *pgconn.PgError
-	if !errors.As(err, &pgErr) {
-		return lazyerrors.Error(err)
-	}
-
-	switch pgErr.Code {
-	case pgerrcode.DuplicateSchema:
-		return ErrAlreadyExist
-	case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject:
-		// https://www.postgresql.org/message-id/CA+TgmoZAdYVtwBfp1FL2sMZbiHCWT4UPrzRLNnX1Nb30Ku3-gg@mail.gmail.com
-		// The same thing for schemas. Reproducible by integration tests.
-		return ErrAlreadyExist
-	default:
-		return lazyerrors.Error(err)
-	}
-}
-
 // CreateDatabaseIfNotExists creates a new FerretDB database (PostgreSQL schema).
-// If the schema already exists, no error is returned.
+// If the schema already exists, no error is returned, and transaction is not aborted.
 func CreateDatabaseIfNotExists(ctx context.Context, tx pgx.Tx, db string) error {
 	if !validateDatabaseNameRe.MatchString(db) ||
 		strings.HasPrefix(db, reservedPrefix) {

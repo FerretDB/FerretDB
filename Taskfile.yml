@@ -76,12 +76,24 @@ tasks:
   env-up-detach:
     cmds:
       - >
-        docker-compose up --always-recreate-deps --build --force-recreate --remove-orphans --renew-anon-volumes --timeout=0 --detach
+        docker-compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --timeout=0 --detach
+        --build
+        postgres tigris mongodb
+
+  env-up-detach-offline:
+    cmds:
+      - >
+        docker-compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --timeout=0 --detach
         postgres tigris mongodb
 
   env-up:
     desc: "Start development environment"
     deps: [env-up-detach, env-setup]
+    cmds:
+      - docker-compose logs --follow
+
+  env-up-offline:
+    deps: [env-up-detach-offline, env-setup]
     cmds:
       - docker-compose logs --follow
 

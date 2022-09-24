@@ -4,35 +4,35 @@ sidebar_position: 1
 
 # Introduction
 
-FerretDB (previously MangoDB) was founded to become the de-facto open-source substitute to MongoDB.
-FerretDB is an open-source proxy, converting the MongoDB 6.0+ wire protocol queries to SQL -
-using PostgreSQL as a database engine.
+FerretDB (formerly MangoDB) is an open-source proxy that translates MongoDB wire protocol
+queries to SQL, with PostgreSQL as the database engine.
 
-## Why do we need FerretDB?
+Initially built as open-source software, MongoDB was a game-changer for many developers,
+enabling them to build fast and robust applications.
+Its ease of use and extensive documentation made it a top choice for many developers looking
+for an open-source database.
+However, all this changed when they switched to an SSPL license,
+moving away from their open-source roots.
 
-MongoDB was originally an eye-opening technology for many of us developers,
-empowering us to build applications faster than using relational databases.
-In its early days, its ease-to-use and well-documented drivers made MongoDB one of the simplest database solutions available.
-However, as time passed, MongoDB abandoned its open-source roots;
-changing the license to SSPL - making it unusable for many open source and early-stage commercial projects.
-
-Most MongoDB users do not require any advanced features offered by MongoDB;
-however, they need an easy-to-use open-source database solution.
-Recognizing this, FerretDB is here to fill that gap.
+In light of this, FerretDB was founded to become the true open-source alternative to MongoDB,
+making it the go-to choice for most MongoDB users looking for an open-source alternative to MongoDB.
+With FerretDB, users can run the same MongoDB protocol queries without needing to learn a new language or command.
 
 ## Scope and current state
 
-FerretDB will be compatible with MongoDB drivers and will strive to serve as a drop-in replacement for MongoDB 6.0+.
-
-Currently, the project is in its early stages and welcomes all contributors.
+FerretDB is compatible with MongoDB drivers and can be used as a direct replacement for MongoDB 6.0+.
+Currently, the project is still in its early stages of development and not yet suitable for use in production-ready environments.
 See our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1)
-and [contributing guidelines](https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md/).
+and [contributing guidelines](https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md).
 
-### Known differences
+## Known differences
 
 1. FerretDB uses the same protocol error names and codes, but the exact error messages may be different in some cases.
-2. FerretDB does not support NUL (`\0`) characters in strings.
-3. Database and collection names restrictions:
+2. FerretDB does not support NULL (\0) characters in strings.
+3. For Tigris, FerretDB requires Tigris schema validation for `msg_create`: validator must be set as `$tigrisSchemaString`.
+The value must be a JSON string representing JSON schema in [Tigris format](https://docs.tigrisdata.com/overview/schema).
+
+4. Database and collection names restrictions:
 
 * name cannot start with the reserved prefix `_ferretdb_`.
 * name must not include non-latin letters, spaces, dots, dollars or dashes.
@@ -40,7 +40,7 @@ and [contributing guidelines](https://github.com/FerretDB/FerretDB/blob/main/CON
 * name must not start with a number.
 * database name cannot contain capital letters.
 
-If you encounter some other difference in behavior, please [join our community](#community) to report a problem.
+If you encounter some other difference in behavior, please [join our community](https://github.com/FerretDB/FerretDB#community) to report the problem.
 
 ## Community
 
