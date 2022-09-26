@@ -88,8 +88,7 @@ func loadRecords(recordsPath string) ([]testCase, error) {
 			resMsgs = append(resMsgs, testCase{
 				headerB: headBytes,
 				bodyB:   bodyBytes,
-			},
-			)
+			})
 		}
 	}
 
