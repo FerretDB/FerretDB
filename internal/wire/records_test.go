@@ -26,7 +26,7 @@ import (
 // loadRecords gets recursively all .bin files from the recordsPath directory,
 // parses their content to wire Msgs and returns them as an array of testCase
 // structs with headerB and bodyB fields set.
-// If no records are found, it returns an empty slice and no error.
+// If no records are found, it returns nil and no error.
 func loadRecords(recordsPath string) ([]testCase, error) {
 	// Load recursively every file path with ".bin" extension from recordsPath directory
 	var recordFiles []string
@@ -45,7 +45,7 @@ func loadRecords(recordsPath string) ([]testCase, error) {
 
 	switch {
 	case os.IsNotExist(err):
-		return []testCase{}, nil
+		return nil, nil
 	case err != nil:
 		return nil, err
 	}
