@@ -22,5 +22,8 @@ import (
 
 // init adds "tigris" handler flags when "ferretdb_tigris" build tag is provided.
 func init() {
-	flag.StringVar(&tigrisURL, "tigris-url", "127.0.0.1:8081", "Tigris URL")
+	flag.StringVar(&tigrisClientID, "tigris-client-id", "", "Tigris Client ID")
+	flag.StringVar(&tigrisClientSecret, "tigris-client-secret", "", "Tigris Client secret")
+	flag.StringVar(&tigrisToken, "tigris-token", "", "Tigris token")
+	flag.StringVar(&tigrisURL, "tigris-url", "http://127.0.0.1:8081/", "Tigris URL")
 }
