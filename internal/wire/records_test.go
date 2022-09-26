@@ -41,7 +41,11 @@ func loadRecords(recordsPath string) ([]testCase, error) {
 
 		return nil
 	})
-	if err != nil {
+
+	switch {
+	case os.IsNotExist(err):
+		return []testCase{}, nil
+	case err != nil:
 		return nil, err
 	}
 
@@ -54,6 +58,8 @@ func loadRecords(recordsPath string) ([]testCase, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		defer f.Close()
 
 		r := bufio.NewReader(f)
 
@@ -78,12 +84,10 @@ func loadRecords(recordsPath string) ([]testCase, error) {
 				return nil, err
 			}
 
-			resMsgs = append(
-				resMsgs,
-				testCase{
-					headerB: headBytes,
-					bodyB:   bodyBytes,
-				},
+			resMsgs = append(resMsgs, testCase{
+				headerB: headBytes,
+				bodyB:   bodyBytes,
+			},
 			)
 		}
 	}

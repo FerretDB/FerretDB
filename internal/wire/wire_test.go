@@ -18,7 +18,6 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -121,13 +120,12 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 	}
 
 	records, err := loadRecords(filepath.Join("..", "..", "records"))
+	if err != nil {
+		f.Fatal(err)
+	}
 
-	// if err is not nil and not "no such file or directory" return it
-	switch {
-	case os.IsNotExist(err):
-		f.Logf("No records file will be added to the corpus: %s", err.Error())
-	case err != nil:
-		f.Error(err)
+	if len(records) == 0 {
+		f.Log("No records found so none of them will be added to the corpus")
 	}
 
 	for _, rec := range records {
