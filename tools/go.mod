@@ -12,9 +12,9 @@ require (
 	github.com/goreleaser/nfpm/v2 v2.18.1
 	github.com/quasilyte/go-consistent v0.0.0-20220429160651-4e46040fbc82
 	github.com/reviewdog/reviewdog v0.14.1
-	golang.org/x/perf v0.0.0-20220915210522-6646f2032b55
+	golang.org/x/perf v0.0.0-20220920022801-e8d778a60d07
 	golang.org/x/tools v0.1.13-0.20220803210227-8b9a1fbdf5c3
-	golang.org/x/vuln v0.0.0-20220914160157-cac67f5c7c81
+	golang.org/x/vuln v0.0.0-20220922161642-6a082700cdd7
 	mvdan.cc/gofumpt v0.3.1
 )
 
