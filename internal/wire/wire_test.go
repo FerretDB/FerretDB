@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"errors"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -119,7 +120,7 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 		f.Add(tc.expectedB)
 	}
 
-	records, err := loadRecords("../../records")
+	records, err := loadRecords(filepath.Join("..", "..", "records"))
 
 	// if err is not nil and not "no such file or directory" return it
 	switch {
