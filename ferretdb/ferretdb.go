@@ -35,9 +35,11 @@ type Config struct {
 	Handler string
 
 	// PostgreSQL connection string for `pg` handler.
-	PostgreSQLURL string
+	PostgreSQLURL string // For example: `postgres://username:password@hostname:5432/ferretdb`.
 
 	// Tigris parameters for `tigris` handler.
+	// See https://docs.tigrisdata.com/overview/authentication
+	// and https://docs.tigrisdata.com/golang/getting-started.
 	TigrisClientID     string
 	TigrisClientSecret string
 	TigrisToken        string
