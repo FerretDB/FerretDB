@@ -124,9 +124,7 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 		f.Fatal(err)
 	}
 
-	if len(records) == 0 {
-		f.Log("No records found so none of them will be added to the corpus")
-	}
+	f.Logf("%d recorded messages were added to the seed corpus", len(records))
 
 	for _, rec := range records {
 		f.Add(rec.bodyB)
