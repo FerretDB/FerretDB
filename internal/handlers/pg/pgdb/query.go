@@ -107,13 +107,13 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam)
 }
 
 // Explain returns SQL EXPLAIN results for given query parameters.
-func Explain(ctx context.Context, querier pgxtype.Querier, sp SQLParam) (*types.Array, error) {
-	q, err := buildQuery(ctx, querier, &sp)
+func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Array, error) {
+	q, err := buildQuery(ctx, tx, &sp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	rows, err := querier.Query(ctx, q)
+	rows, err := tx.Query(ctx, q)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
