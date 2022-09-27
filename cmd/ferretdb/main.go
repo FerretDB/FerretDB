@@ -16,7 +16,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -40,13 +39,13 @@ import (
 // The cli struct represents all command-line commands, fields and flags.
 // It's used for parsing the user input.
 var cli struct {
-	Version bool `default:"false" help:"print version to stdout (full version, commit, branch, dirty flag) and exit."`
+	Version bool `default:"false" help:"Print version to stdout (full version, commit, branch, dirty flag) and exit."`
 
-	ListenAddr string `name:"listen-addr" default:"127.0.0.1:27017" help:"listen address."`
-	ProxyAddr  string `name:"proxy-addr" default:"127.0.0.1:37017" help:"proxy address."`
-	DebugAddr  string `name:"debug-addr" default:"127.0.0.1:8088" help:"debug address."`
+	ListenAddr string `name:"listen-addr" default:"127.0.0.1:27017" help:"Listen address."`
+	ProxyAddr  string `name:"proxy-addr" default:"127.0.0.1:37017" help:"Proxy address."`
+	DebugAddr  string `name:"debug-addr" default:"127.0.0.1:8088" help:"Debug address."`
 	Mode       string `default:"${default_mode}" help:"${help_mode}."`
-	TestRecord string `name:"test-record" default:"" help:"directory of record files with binary data coming from connected clients."`
+	TestRecord string `name:"test-record" default:"" help:"Directory of record files with binary data coming from connected clients."`
 
 	Handler string `default:"pg" help:"${help_handler}."`
 
@@ -54,26 +53,8 @@ var cli struct {
 
 	LogLevel string `name:"log-level" default:"${default_logLevel}" help:"${help_logLevel}."`
 
-	TestConnTimeout time.Duration `name:"test-conn-timeout" default:"0" help:"test: set connection timeout."`
+	TestConnTimeout time.Duration `name:"test-conn-timeout" default:"0" help:"Test: set connection timeout."`
 }
-
-var (
-//versionF = flag.Bool("version", false, "print version to stdout (full version, commit, branch, dirty flag) and exit")
-
-//listenAddrF = flag.String("listen-addr", "127.0.0.1:27017", "listen address")
-//proxyAddrF  = flag.String("proxy-addr", "127.0.0.1:37017", "proxy address")
-//debugAddrF  = flag.String("debug-addr", "127.0.0.1:8088", "debug address")
-//modeF = flag.String("mode", string(clientconn.AllModes[0]), fmt.Sprintf("operation mode: %v", clientconn.AllModes))
-//testRecordF = flag.String("test-record", "", "directory of record files with binary data coming from connected clients")
-
-//handlerF = flag.String("handler", "<set in initFlags()>", "<set in initFlags()>")
-
-//postgreSQLURLF = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/ferretdb", "PostgreSQL URL")
-
-//logLevelF = flag.String("log-level", "<set in initFlags()>", "<set in initFlags()>")
-
-//testConnTimeoutF = flag.Duration("test-conn-timeout", 0, "test: set connection timeout")
-)
 
 // Tigris parameters that are set at main_tigris.go.
 var (
@@ -83,27 +64,6 @@ var (
 	tigrisURL          string
 )
 
-// initFlags improves flags settings after all global flags are initialized
-// and all handler constructors are registered.
-func initFlags() {
-	f := flag.Lookup("handler")
-	f.Usage = "backend handler: " + strings.Join(registry.Handlers(), ", ")
-	f.DefValue = "pg"
-	must.NoError(f.Value.Set(f.DefValue))
-
-	levels := []string{
-		zapcore.DebugLevel.String(),
-		zapcore.InfoLevel.String(),
-		zapcore.WarnLevel.String(),
-		zapcore.ErrorLevel.String(),
-	}
-
-	f = flag.Lookup("log-level")
-	f.Usage = "log level: " + strings.Join(levels, ", ")
-	f.DefValue = zapcore.DebugLevel.String()
-	must.NoError(f.Value.Set(f.DefValue))
-}
-
 func main() {
 	levels := []string{
 		zapcore.DebugLevel.String(),
@@ -112,20 +72,14 @@ func main() {
 		zapcore.ErrorLevel.String(),
 	}
 
-	kongCtx := kong.Parse(&cli,
+	kong.Parse(&cli,
 		kong.Vars{
 			"default_mode":     string(clientconn.AllModes[0]),
-			"help_mode":        fmt.Sprintf("operation mode: %v", clientconn.AllModes),
-			"help_handler":     "backend handler: " + strings.Join(registry.Handlers(), ", "),
+			"help_mode":        fmt.Sprintf("Operation mode: %v", clientconn.AllModes),
+			"help_handler":     "Backend handler: " + strings.Join(registry.Handlers(), ", "),
 			"default_logLevel": zapcore.DebugLevel.String(),
-			"help_logLevel":    "log level: " + strings.Join(levels, ", "),
+			"help_logLevel":    "Log level: " + strings.Join(levels, ", "),
 		})
-	kongCtx.Flags()[0].Help = "LEDU"
-
-	log.Print(kongCtx.Command())
-
-	//initFlags()
-	//flag.Parse()
 
 	level, err := zapcore.ParseLevel(cli.LogLevel)
 	if err != nil {
