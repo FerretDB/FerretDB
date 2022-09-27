@@ -23,7 +23,14 @@ const config = {
     locales: ['en'],
   },
 
-  plugins: [require.resolve("@cmfcmf/docusaurus-search-local")],
+  plugins: [
+    [
+      require.resolve("@cmfcmf/docusaurus-search-local"),
+      {
+        indexBlog: false,
+      },
+    ],
+  ],
 
   presets: [
     [
@@ -31,19 +38,11 @@ const config = {
       /** @type {import('@docusaurus/preset-classic').Options} */
       ({
         docs: {
+          routeBasePath: '/',
           sidebarPath: require.resolve('./sidebars.js'),
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
-          editUrl:
-            'https://github.com/FerretDB/FerretDB/',
+          editUrl: 'https://github.com/FerretDB/FerretDB/tree/main/website',
         },
-        // blog: {
-        //   showReadingTime: true,
-        //   // Please change this to your repo.
-        //   // Remove this to remove the "edit this page" links.
-        //   editUrl:
-        //     'https://github.com/FerretDB/FerretDB/',
-        // },
+        blog: false,
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
         },
@@ -83,7 +82,7 @@ const config = {
             items: [
               {
                 label: 'Documentation',
-                to: '/docs/intro',
+                to: '/intro/',
               },
             ],
           },
