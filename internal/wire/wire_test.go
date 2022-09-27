@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -116,6 +117,15 @@ func testMessages(t *testing.T, testCases []testCase) {
 func fuzzMessages(f *testing.F, testCases []testCase) {
 	for _, tc := range testCases {
 		f.Add(tc.expectedB)
+	}
+
+	records, err := loadRecords(filepath.Join("..", "..", "records"))
+	require.NoError(f, err)
+
+	f.Logf("%d recorded messages were added to the seed corpus", len(records))
+
+	for _, rec := range records {
+		f.Add(rec.bodyB)
 	}
 
 	f.Fuzz(func(t *testing.T, b []byte) {

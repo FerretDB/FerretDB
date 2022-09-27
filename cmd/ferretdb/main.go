@@ -53,8 +53,13 @@ var (
 	testConnTimeoutF = flag.Duration("test-conn-timeout", 0, "test: set connection timeout")
 )
 
-// tigrisURL is a Tigris URL. It is set in the main_tigris.go.
-var tigrisURL string
+// Tigris parameters that are set at main_tigris.go.
+var (
+	tigrisClientID     string
+	tigrisClientSecret string
+	tigrisToken        string
+	tigrisURL          string
+)
 
 // initFlags improves flags settings after all global flags are initialized
 // and all handler constructors are registered.
@@ -131,10 +136,15 @@ func main() {
 	go debug.RunHandler(ctx, *debugAddrF, logger.Named("debug"))
 
 	h, err := registry.NewHandler(*handlerF, &registry.NewHandlerOpts{
-		Ctx:           ctx,
-		Logger:        logger,
+		Ctx:    ctx,
+		Logger: logger,
+
 		PostgreSQLURL: *postgreSQLURLF,
-		TigrisURL:     tigrisURL,
+
+		TigrisClientID:     tigrisClientID,
+		TigrisClientSecret: tigrisClientSecret,
+		TigrisToken:        tigrisToken,
+		TigrisURL:          tigrisURL,
 	})
 	if err != nil {
 		logger.Fatal(err.Error())
