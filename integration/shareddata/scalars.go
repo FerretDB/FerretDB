@@ -105,8 +105,8 @@ var Doubles = &Values[string]{
 	handlers: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
 		"tigris": {
-			"$tigrisSchemaString": strings.Replace(
-				commonTigrisJSONSchema, "%%type%%", `"type": "number"`, -1,
+			"$tigrisSchemaString": strings.ReplaceAll(
+				commonTigrisJSONSchema, "%%type%%", `"type": "number"`,
 			),
 		},
 	},
@@ -189,9 +189,7 @@ var DateTimes = &Values[string]{
 	handlers: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
 		"tigris": {
-			"$tigrisSchemaString": strings.Replace(
-				commonTigrisJSONSchema, "%%type%%", `"type": "string", "format": "date-time"`, -1,
-			),
+			"$tigrisSchemaString": tigrisSchema(`"type": "string", "format": "date-time"`),
 		},
 	},
 	data: map[string]any{
@@ -217,9 +215,7 @@ var Regexes = &Values[string]{
 	handlers: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
 		"tigris": {
-			"$tigrisSchemaString": strings.Replace(
-				commonTigrisJSONSchema, "%%type%%", `"type": "object", "properties": {"$r": {"type: "string"}, "o": {"type: "string"}}`, -1,
-			),
+			"$tigrisSchemaString": tigrisSchema(`"type": "object", "properties": {"$r": {"type: "string"}, "o": {"type: "string"}}`),
 		},
 	},
 	data: map[string]any{
@@ -234,9 +230,7 @@ var Int32s = &Values[string]{
 	handlers: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
 		"tigris": {
-			"$tigrisSchemaString": strings.Replace(
-				commonTigrisJSONSchema, "%%type%%", `"type": "integer", "format": "int32"`, -1,
-			),
+			"$tigrisSchemaString": tigrisSchema(`"type": "integer", "format": "int32"`),
 		},
 	},
 	data: map[string]any{
@@ -253,9 +247,7 @@ var Timestamps = &Values[string]{
 	handlers: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
 		"tigris": {
-			"$tigrisSchemaString": strings.Replace(
-				commonTigrisJSONSchema, "%%type%%", `"type": "object", "properties": {"$t": {"type": "string"}}`, -1,
-			),
+			"$tigrisSchemaString": tigrisSchema(`"type": "object", "properties": {"$t": {"type": "string"}}`),
 		},
 	},
 	data: map[string]any{
@@ -270,9 +262,7 @@ var Int64s = &Values[string]{
 	handlers: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
 		"tigris": {
-			"$tigrisSchemaString": strings.Replace(
-				commonTigrisJSONSchema, "%%type%%", `"type": "integer", "format": "int64"`, -1,
-			),
+			"$tigrisSchemaString": tigrisSchema(`"type": "integer", "format": "int64"`),
 		},
 	},
 	data: map[string]any{
@@ -303,8 +293,8 @@ var ObjectIDKeys = &Values[primitive.ObjectID]{
 	},
 }
 
-// commonTigrisJSONSchema defines a common schema for scalar types.
-var commonTigrisJSONSchema = `{
+func tigrisSchema(typeString string) string {
+	common := `{
 				"title": "%%collection%%",
 				"primary_key": ["_id"],
 				"properties": {
@@ -312,3 +302,5 @@ var commonTigrisJSONSchema = `{
 					"_id": {"type": "string"}
 				}
 			}`
+	return strings.ReplaceAll(common, "%%type%%", typeString)
+}

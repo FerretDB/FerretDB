@@ -145,11 +145,10 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 				if *handlerF == "tigris" {
 					value = strings.Replace(value.(string), "%%collection%%", collectionName, -1)
 				}
-				opts1 := opts.SetValidator(bson.D{{key, value}})
-				opts = *opts1
+				opts.SetValidator(bson.D{{key, value}})
 			}
 
-			require.NoError(tb, database.CreateCollection(ctx, collectionName, opts))
+			require.NoError(tb, database.CreateCollection(ctx, collectionName, &opts))
 		}
 
 		docs := shareddata.Docs(provider)
