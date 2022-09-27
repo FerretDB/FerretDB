@@ -35,7 +35,7 @@ const config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/FerretDB/FerretDB/',
+            'https://github.com/FerretDB/FerretDB/tree/main/website',
         },
         // blog: {
         //   showReadingTime: true,
