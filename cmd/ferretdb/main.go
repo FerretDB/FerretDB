@@ -35,6 +35,10 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
+type cli struct {
+	// TODO
+}
+
 var (
 	versionF = flag.Bool("version", false, "print version to stdout (full version, commit, branch, dirty flag) and exit")
 
