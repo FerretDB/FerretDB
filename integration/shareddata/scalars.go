@@ -105,9 +105,7 @@ var Doubles = &Values[string]{
 	handlers: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
 		"tigris": {
-			"$tigrisSchemaString": strings.ReplaceAll(
-				commonTigrisJSONSchema, "%%type%%", `"type": "number"`,
-			),
+			"$tigrisSchemaString": tigrisSchema(`"type": "number"`),
 		},
 	},
 	data: map[string]any{
@@ -126,9 +124,7 @@ var Strings = &Values[string]{
 	handlers: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
 		"tigris": {
-			"$tigrisSchemaString": strings.Replace(
-				commonTigrisJSONSchema, "%%type%%", `"type": "string"`, -1,
-			),
+			"$tigrisSchemaString": tigrisSchema(`"type": "string"`),
 		},
 	},
 	data: map[string]any{
@@ -145,9 +141,7 @@ var Binaries = &Values[string]{
 	handlers: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
 		"tigris": {
-			"$tigrisSchemaString": strings.Replace(
-				commonTigrisJSONSchema, "%%type%%", `"type": "object", "properties": {"$b": {"type": "string", "format": "byte"}, "s": {"type": "integer", "format": "int32"}}`, -1,
-			),
+			"$tigrisSchemaString": tigrisSchema(`"type": "object", "properties": {"$b": {"type": "string", "format": "byte"}, "s": {"type": "integer", "format": "int32"}}`),
 		},
 	},
 	data: map[string]any{
@@ -172,9 +166,7 @@ var Bools = &Values[string]{
 	handlers: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
 		"tigris": {
-			"$tigrisSchemaString": strings.Replace(
-				commonTigrisJSONSchema, "%%type%%", `"type": "boolean"`, -1,
-			),
+			"$tigrisSchemaString": tigrisSchema(`"type": "boolean"`),
 		},
 	},
 	data: map[string]any{
