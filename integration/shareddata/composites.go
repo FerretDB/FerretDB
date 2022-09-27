@@ -68,6 +68,7 @@ var DocumentsDoubles = &Values[string]{
 var DocumentsStrings = &Values[string]{
 	name:     "DocumentsStrings",
 	handlers: []string{"pg", "tigris"},
+	// TODO: validators
 	data: map[string]any{
 		"document-string":        bson.D{{"v", "foo"}},
 		"document-string-double": bson.D{{"v", "42.13"}},

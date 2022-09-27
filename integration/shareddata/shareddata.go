@@ -129,15 +129,17 @@ func (values *Values[idType]) Handlers() []string {
 
 // Validators implement Provider interface.
 func (values *Values[idType]) Validators(handler, collection string) map[string]any {
-	validators := values.validators[handler]
-
-	if handler == "tigris" {
-		for key := range validators {
-			validators[key] = strings.ReplaceAll(validators[key].(string), "%%collection%%", collection)
+	switch handler {
+	case "tigris":
+		validators := make(map[string]any, len(values.validators[handler]))
+		for key, value := range values.validators[handler] {
+			validators[key] = strings.ReplaceAll(value.(string), "%%collection%%", collection)
 		}
-	}
+		return validators
 
-	return validators
+	default:
+		return values.validators[handler]
+	}
 }
 
 // Docs implement Provider interface.
