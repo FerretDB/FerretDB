@@ -40,21 +40,21 @@ import (
 // The cli struct represents all command-line commands, fields and flags.
 // It's used for parsing the user input.
 var cli struct {
-	Version bool `default:"false" help:"print version to stdout (full version, commit, branch, dirty flag) and exit"`
+	Version bool `default:"false" help:"print version to stdout (full version, commit, branch, dirty flag) and exit."`
 
-	ListenAddr string `name:"listen-addr" default:"127.0.0.1:27017" help:"listen address"`
-	ProxyAddr  string `name:"proxy-addr" default:"127.0.0.1:37017" help:"proxy address"`
-	DebugAddr  string `name:"debug-addr" default:"127.0.0.1:8088" help:"Enable debug mode."`
-	Mode       string `default:"${default_mode}" help:"${help_mode}"`
-	TestRecord string `name:"test-record" default:"" help:"directory of record files with binary data coming from connected clients"`
+	ListenAddr string `name:"listen-addr" default:"127.0.0.1:27017" help:"listen address."`
+	ProxyAddr  string `name:"proxy-addr" default:"127.0.0.1:37017" help:"proxy address."`
+	DebugAddr  string `name:"debug-addr" default:"127.0.0.1:8088" help:"debug address."`
+	Mode       string `default:"${default_mode}" help:"${help_mode}."`
+	TestRecord string `name:"test-record" default:"" help:"directory of record files with binary data coming from connected clients."`
 
-	Handler string `default:"pg" help:"${help_handler}"`
+	Handler string `default:"pg" help:"${help_handler}."`
 
-	PostgresURL string `name:"postgresql-url" default:"postgres://postgres@127.0.0.1:5432/ferretdb" help:"PostgreSQL URL"`
+	PostgresURL string `name:"postgresql-url" default:"postgres://postgres@127.0.0.1:5432/ferretdb" help:"PostgreSQL URL."`
 
-	LogLevel string `name:"log-level" default:"debug" help:"<set in initFlags()>"`
+	LogLevel string `name:"log-level" default:"${default_logLevel}" help:"${help_logLevel}."`
 
-	testConnTimeout time.Duration `name:"test-conn-timeout" default:"0" help:"test: set connection timeout"`
+	TestConnTimeout time.Duration `name:"test-conn-timeout" default:"0" help:"test: set connection timeout."`
 }
 
 var (
@@ -105,11 +105,20 @@ func initFlags() {
 }
 
 func main() {
+	levels := []string{
+		zapcore.DebugLevel.String(),
+		zapcore.InfoLevel.String(),
+		zapcore.WarnLevel.String(),
+		zapcore.ErrorLevel.String(),
+	}
+
 	kongCtx := kong.Parse(&cli,
 		kong.Vars{
-			"default_mode": string(clientconn.AllModes[0]),
-			"help_mode":    fmt.Sprintf("operation mode: %v", clientconn.AllModes),
-			"help_handler": "backend handler: " + strings.Join(registry.Handlers(), ", "),
+			"default_mode":     string(clientconn.AllModes[0]),
+			"help_mode":        fmt.Sprintf("operation mode: %v", clientconn.AllModes),
+			"help_handler":     "backend handler: " + strings.Join(registry.Handlers(), ", "),
+			"default_logLevel": zapcore.DebugLevel.String(),
+			"help_logLevel":    "log level: " + strings.Join(levels, ", "),
 		})
 	kongCtx.Flags()[0].Help = "LEDU"
 
@@ -189,7 +198,7 @@ func main() {
 		Mode:            clientconn.Mode(cli.Mode),
 		Handler:         h,
 		Logger:          logger,
-		TestConnTimeout: cli.testConnTimeout,
+		TestConnTimeout: cli.TestConnTimeout,
 		TestRecordPath:  cli.TestRecord,
 	})
 
