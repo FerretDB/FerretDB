@@ -21,7 +21,9 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
+	"github.com/alecthomas/kong"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
 	"go.uber.org/zap"
@@ -35,26 +37,42 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
-type cli struct {
-	// TODO
+// The cli struct represents all command-line commands, fields and flags.
+// It's used for parsing the user input.
+var cli struct {
+	Version bool `default:"false" help:"print version to stdout (full version, commit, branch, dirty flag) and exit"`
+
+	ListenAddr string `name:"listen-addr" default:"127.0.0.1:27017" help:"listen address"`
+	ProxyAddr  string `name:"proxy-addr" default:"127.0.0.1:37017" help:"proxy address"`
+	DebugAddr  string `name:"debug-addr" default:"127.0.0.1:8088" help:"Enable debug mode."`
+	Mode       string `default:"${default_mode}" help:"${help_mode}"`
+	TestRecord string `name:"test-record" default:"" help:"directory of record files with binary data coming from connected clients"`
+
+	Handler string `default:"pg" help:"${help_handler}"`
+
+	PostgresURL string `name:"postgresql-url" default:"postgres://postgres@127.0.0.1:5432/ferretdb" help:"PostgreSQL URL"`
+
+	LogLevel string `name:"log-level" default:"debug" help:"<set in initFlags()>"`
+
+	testConnTimeout time.Duration `name:"test-conn-timeout" default:"0" help:"test: set connection timeout"`
 }
 
 var (
-	versionF = flag.Bool("version", false, "print version to stdout (full version, commit, branch, dirty flag) and exit")
+//versionF = flag.Bool("version", false, "print version to stdout (full version, commit, branch, dirty flag) and exit")
 
-	listenAddrF = flag.String("listen-addr", "127.0.0.1:27017", "listen address")
-	proxyAddrF  = flag.String("proxy-addr", "127.0.0.1:37017", "proxy address")
-	debugAddrF  = flag.String("debug-addr", "127.0.0.1:8088", "debug address")
-	modeF       = flag.String("mode", string(clientconn.AllModes[0]), fmt.Sprintf("operation mode: %v", clientconn.AllModes))
-	testRecordF = flag.String("test-record", "", "directory of record files with binary data coming from connected clients")
+//listenAddrF = flag.String("listen-addr", "127.0.0.1:27017", "listen address")
+//proxyAddrF  = flag.String("proxy-addr", "127.0.0.1:37017", "proxy address")
+//debugAddrF  = flag.String("debug-addr", "127.0.0.1:8088", "debug address")
+//modeF = flag.String("mode", string(clientconn.AllModes[0]), fmt.Sprintf("operation mode: %v", clientconn.AllModes))
+//testRecordF = flag.String("test-record", "", "directory of record files with binary data coming from connected clients")
 
-	handlerF = flag.String("handler", "<set in initFlags()>", "<set in initFlags()>")
+//handlerF = flag.String("handler", "<set in initFlags()>", "<set in initFlags()>")
 
-	postgreSQLURLF = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/ferretdb", "PostgreSQL URL")
+//postgreSQLURLF = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/ferretdb", "PostgreSQL URL")
 
-	logLevelF = flag.String("log-level", "<set in initFlags()>", "<set in initFlags()>")
+//logLevelF = flag.String("log-level", "<set in initFlags()>", "<set in initFlags()>")
 
-	testConnTimeoutF = flag.Duration("test-conn-timeout", 0, "test: set connection timeout")
+//testConnTimeoutF = flag.Duration("test-conn-timeout", 0, "test: set connection timeout")
 )
 
 // Tigris parameters that are set at main_tigris.go.
@@ -87,10 +105,20 @@ func initFlags() {
 }
 
 func main() {
-	initFlags()
-	flag.Parse()
+	kongCtx := kong.Parse(&cli,
+		kong.Vars{
+			"default_mode": string(clientconn.AllModes[0]),
+			"help_mode":    fmt.Sprintf("operation mode: %v", clientconn.AllModes),
+			"help_handler": "backend handler: " + strings.Join(registry.Handlers(), ", "),
+		})
+	kongCtx.Flags()[0].Help = "LEDU"
 
-	level, err := zapcore.ParseLevel(*logLevelF)
+	log.Print(kongCtx.Command())
+
+	//initFlags()
+	//flag.Parse()
+
+	level, err := zapcore.ParseLevel(cli.LogLevel)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -99,7 +127,7 @@ func main() {
 
 	info := version.Get()
 
-	if *versionF {
+	if cli.Version {
 		fmt.Fprintln(os.Stdout, "version:", info.Version)
 		fmt.Fprintln(os.Stdout, "commit:", info.Commit)
 		fmt.Fprintln(os.Stdout, "branch:", info.Branch)
@@ -121,13 +149,13 @@ func main() {
 
 	var found bool
 	for _, m := range clientconn.AllModes {
-		if *modeF == string(m) {
+		if cli.Mode == string(m) {
 			found = true
 			break
 		}
 	}
 	if !found {
-		logger.Sugar().Fatalf("Unknown mode %q.", *modeF)
+		logger.Sugar().Fatalf("Unknown mode %q.", cli.Mode)
 	}
 
 	ctx, stop := notifyAppTermination(context.Background())
@@ -137,13 +165,13 @@ func main() {
 		stop()
 	}()
 
-	go debug.RunHandler(ctx, *debugAddrF, logger.Named("debug"))
+	go debug.RunHandler(ctx, cli.DebugAddr, logger.Named("debug"))
 
-	h, err := registry.NewHandler(*handlerF, &registry.NewHandlerOpts{
+	h, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
 		Ctx:    ctx,
 		Logger: logger,
 
-		PostgreSQLURL: *postgreSQLURLF,
+		PostgreSQLURL: cli.PostgresURL,
 
 		TigrisClientID:     tigrisClientID,
 		TigrisClientSecret: tigrisClientSecret,
@@ -156,13 +184,13 @@ func main() {
 	defer h.Close()
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		ListenAddr:      *listenAddrF,
-		ProxyAddr:       *proxyAddrF,
-		Mode:            clientconn.Mode(*modeF),
+		ListenAddr:      cli.ListenAddr,
+		ProxyAddr:       cli.ProxyAddr,
+		Mode:            clientconn.Mode(cli.Mode),
 		Handler:         h,
 		Logger:          logger,
-		TestConnTimeout: *testConnTimeoutF,
-		TestRecordPath:  *testRecordF,
+		TestConnTimeout: cli.testConnTimeout,
+		TestRecordPath:  cli.TestRecord,
 	})
 
 	prometheus.DefaultRegisterer.MustRegister(l)
