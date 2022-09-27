@@ -62,7 +62,7 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var err error
 
-		names, err = pgdb.Collections(ctx, h.pgPool, db)
+		names, err = pgdb.Collections(ctx, tx, db)
 		if err != nil && !errors.Is(err, pgdb.ErrSchemaNotExist) {
 			return lazyerrors.Error(err)
 		}

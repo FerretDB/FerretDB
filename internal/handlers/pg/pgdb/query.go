@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jackc/pgtype/pgxtype"
 	"github.com/jackc/pgx/v4"
 	"golang.org/x/exp/maps"
 
@@ -150,8 +149,8 @@ func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Array, error) 
 //
 // It returns (possibly wrapped) ErrSchemaNotExist or ErrTableNotExist
 // if schema/database or table/collection does not exist.
-func buildQuery(ctx context.Context, querier pgxtype.Querier, sp *SQLParam) (string, error) {
-	exists, err := CollectionExists(ctx, querier, sp.DB, sp.Collection)
+func buildQuery(ctx context.Context, tx pgx.Tx, sp *SQLParam) (string, error) {
+	exists, err := CollectionExists(ctx, tx, sp.DB, sp.Collection)
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
@@ -159,7 +158,7 @@ func buildQuery(ctx context.Context, querier pgxtype.Querier, sp *SQLParam) (str
 		return "", lazyerrors.Error(ErrTableNotExist)
 	}
 
-	table, err := getTableName(ctx, querier, sp.DB, sp.Collection)
+	table, err := getTableName(ctx, tx, sp.DB, sp.Collection)
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}

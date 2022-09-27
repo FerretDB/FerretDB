@@ -37,8 +37,8 @@ var validateCollectionNameRe = regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]{0,119}
 // Collections returns a sorted list of FerretDB collection names.
 //
 // It returns (possibly wrapped) ErrSchemaNotExist if FerretDB database / PostgreSQL schema does not exist.
-func Collections(ctx context.Context, querier pgxtype.Querier, db string) ([]string, error) {
-	schemaExists, err := schemaExists(ctx, querier, db)
+func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
+	schemaExists, err := schemaExists(ctx, tx, db)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -47,7 +47,7 @@ func Collections(ctx context.Context, querier pgxtype.Querier, db string) ([]str
 		return nil, ErrSchemaNotExist
 	}
 
-	settings, err := getSettingsTable(ctx, querier, db)
+	settings, err := getSettingsTable(ctx, tx, db)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -67,8 +67,8 @@ func Collections(ctx context.Context, querier pgxtype.Querier, db string) ([]str
 }
 
 // CollectionExists returns true if FerretDB collection exists.
-func CollectionExists(ctx context.Context, querier pgxtype.Querier, db, collection string) (bool, error) {
-	collections, err := Collections(ctx, querier, db)
+func CollectionExists(ctx context.Context, tx pgx.Tx, db, collection string) (bool, error) {
+	collections, err := Collections(ctx, tx, db)
 	if err != nil {
 		if errors.Is(err, ErrSchemaNotExist) {
 			return false, nil
