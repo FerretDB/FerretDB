@@ -195,8 +195,14 @@ func (c *conn) run(ctx context.Context) (err error) {
 		// Example: in commands we might have arrays of arrays, it's allowed.
 		// In data we decided to disallow arrays of arrays.
 		// What's the right place to validate data?
-		// Other example: NaN is not allowed neither in commands nor in data.
-		// Other example: infinity is allowed in commands, but not in data.
+
+		// TODO https://github.com/FerretDB/FerretDB/issues/1151
+		// - NaN is not allowed neither in commands nor in data.
+		// - Infinity is allowed in commands, but not in data.
+
+		// Other example: duplicates shouldn't be allowed - ReadFrom.
+
+		// Validation: add separate validation for each handler
 
 		c.l.Debugf("Request header: %s", reqHeader)
 		c.l.Debugf("Request message:\n%s\n\n\n", reqBody)
@@ -316,6 +322,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	var err error
 	switch reqHeader.OpCode {
 	case wire.OpCodeMsg:
+		// TODO add validation here
 		var document *types.Document
 		msg := reqBody.(*wire.OpMsg)
 		document, err = msg.Document()
