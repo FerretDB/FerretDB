@@ -28,7 +28,7 @@ FerretDB will be compatible with MongoDB drivers and will strive to serve as a d
 
 Currently, the project is in its early stages and welcomes all contributors.
 See our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1),
-a list of [known differences with MongoDB](https://docs.ferretdb.io/docs/diff/),
+a list of [known differences with MongoDB](https://docs.ferretdb.io/diff/),
 and [contributing guidelines](CONTRIBUTING.md).
 
 ## Quickstart

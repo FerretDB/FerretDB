@@ -104,6 +104,7 @@ jobs:
           files: ./cover.txt
           flags: unit
           fail_ci_if_error: true
+          verbose: true
 
       # we don't want them on CI
       - name: Clean test and fuzz caches
