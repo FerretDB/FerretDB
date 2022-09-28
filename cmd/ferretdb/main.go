@@ -80,8 +80,7 @@ func main() {
 			"help_handler":     "Backend handler: " + strings.Join(registry.Handlers(), ", "),
 			"help_logLevel":    "Log level: " + strings.Join(levels, ", "),
 			"help_mode":        fmt.Sprintf("Operation mode: %v", clientconn.AllModes),
-		},
-	)
+		})
 
 	level, err := zapcore.ParseLevel(cli.LogLevel)
 	if err != nil {

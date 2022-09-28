@@ -17,10 +17,15 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"strings"
 	"testing"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn"
+	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/alecthomas/kong"
+	"go.uber.org/zap/zapcore"
 )
 
 // TestCover allows us to run FerretDB with coverage enabled.
@@ -30,6 +35,21 @@ func TestCover(t *testing.T) {
 
 // TestMain ensures that command-line flags are initialized correctly when FerretDB is run with coverage enabled.
 func TestMain(m *testing.M) {
-	kong.Parse(&cli)
+	levels := []string{
+		zapcore.DebugLevel.String(),
+		zapcore.InfoLevel.String(),
+		zapcore.WarnLevel.String(),
+		zapcore.ErrorLevel.String(),
+	}
+
+	kong.Parse(&cli,
+		kong.Vars{
+			"default_logLevel": zapcore.DebugLevel.String(),
+			"default_mode":     string(clientconn.AllModes[0]),
+			"help_handler":     "Backend handler: " + strings.Join(registry.Handlers(), ", "),
+			"help_logLevel":    "Log level: " + strings.Join(levels, ", "),
+			"help_mode":        fmt.Sprintf("Operation mode: %v", clientconn.AllModes),
+		})
+
 	os.Exit(m.Run())
 }
