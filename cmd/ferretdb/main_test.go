@@ -12,13 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build ferretdb_testcover
+////go:build ferretdb_testcover
 
 package main
 
 import (
 	"os"
 	"testing"
+
+	"github.com/alecthomas/kong"
 )
 
 // TestCover allows us to run FerretDB with coverage enabled.
@@ -28,6 +30,6 @@ func TestCover(t *testing.T) {
 
 // TestMain ensures that command-line flags are initialized correctly when FerretDB is run with coverage enabled.
 func TestMain(m *testing.M) {
-	initFlags()
+	kong.Parse(&cli)
 	os.Exit(m.Run())
 }
