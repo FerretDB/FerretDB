@@ -17,7 +17,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"net"
@@ -27,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alecthomas/kong"
 	"github.com/jackc/pgx/v4"
 	"github.com/tigrisdata/tigris-client-go/config"
 	"github.com/tigrisdata/tigris-client-go/driver"
@@ -277,18 +277,17 @@ func run(ctx context.Context, logger *zap.SugaredLogger) error {
 	return nil
 }
 
-func main() {
-	debugF := flag.Bool("debug", false, "enable debug mode")
-	flag.Parse()
+// cli struct represents all command-line commands, fields and flags.
+// It's used for parsing the user input.
+var cli struct {
+	Debug bool `help:"Enable debug mode."`
+}
 
-	if flag.NArg() != 0 {
-		flag.Usage()
-		fmt.Fprintln(flag.CommandLine.Output(), "no arguments expected")
-		os.Exit(2)
-	}
+func main() {
+	kong.Parse(&cli)
 
 	level := zap.InfoLevel
-	if *debugF {
+	if cli.Debug {
 		level = zap.DebugLevel
 	}
 	logging.Setup(level)
