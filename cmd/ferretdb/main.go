@@ -75,11 +75,11 @@ func main() {
 
 	kong.Parse(&cli,
 		kong.Vars{
-			"default_mode":     string(clientconn.AllModes[0]),
-			"help_mode":        fmt.Sprintf("Operation mode: %v", clientconn.AllModes),
-			"help_handler":     "Backend handler: " + strings.Join(registry.Handlers(), ", "),
 			"default_logLevel": zapcore.DebugLevel.String(),
+			"default_mode":     string(clientconn.AllModes[0]),
+			"help_handler":     "Backend handler: " + strings.Join(registry.Handlers(), ", "),
 			"help_logLevel":    "Log level: " + strings.Join(levels, ", "),
+			"help_mode":        fmt.Sprintf("Operation mode: %v", clientconn.AllModes),
 		},
 	)
 
