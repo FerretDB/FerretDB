@@ -36,8 +36,6 @@ type MsgBody interface {
 //go-sumtype:decl MsgBody
 
 // ReadMessage reads from reader and returns wire header and body.
-// TODO: Can we do some commond validation right here? So, we know that MsgHeader and MsgBody are valid.
-// TODO: do we need a better BSON validation here?
 func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 	var header MsgHeader
 	if err := header.readFrom(r); err != nil {
