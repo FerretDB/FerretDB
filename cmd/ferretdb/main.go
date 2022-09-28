@@ -41,19 +41,19 @@ import (
 var cli struct {
 	Version bool `default:"false" help:"Print version to stdout (full version, commit, branch, dirty flag) and exit."`
 
-	ListenAddr string `name:"listen-addr" default:"127.0.0.1:27017" help:"Listen address."`
-	ProxyAddr  string `name:"proxy-addr" default:"127.0.0.1:37017" help:"Proxy address."`
-	DebugAddr  string `name:"debug-addr" default:"127.0.0.1:8088" help:"Debug address."`
+	ListenAddr string `default:"127.0.0.1:27017" help:"Listen address."`
+	ProxyAddr  string `default:"127.0.0.1:37017" help:"Proxy address."`
+	DebugAddr  string `default:"127.0.0.1:8088" help:"Debug address."`
 	Mode       string `default:"${default_mode}" help:"${help_mode}."`
-	TestRecord string `name:"test-record" default:"" help:"Directory of record files with binary data coming from connected clients."`
+	TestRecord string `default:"" help:"Directory of record files with binary data coming from connected clients."`
 
 	Handler string `default:"pg" help:"${help_handler}."`
 
 	PostgresURL string `name:"postgresql-url" default:"postgres://postgres@127.0.0.1:5432/ferretdb" help:"PostgreSQL URL."`
 
-	LogLevel string `name:"log-level" default:"${default_logLevel}" help:"${help_logLevel}."`
+	LogLevel string `default:"${default_logLevel}" help:"${help_logLevel}."`
 
-	TestConnTimeout time.Duration `name:"test-conn-timeout" default:"0" help:"Test: set connection timeout."`
+	TestConnTimeout time.Duration `default:"0" help:"Test: set connection timeout."`
 }
 
 // Tigris parameters that are set at main_tigris.go.
