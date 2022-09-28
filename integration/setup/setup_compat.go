@@ -50,7 +50,7 @@ type SetupCompatOpts struct {
 	baseCollectionName string
 }
 
-// SetupResult represents compatibility test setup results.
+// SetupCompatResult represents compatibility test setup results.
 type SetupCompatResult struct {
 	Ctx               context.Context
 	TargetCollections []*mongo.Collection
