@@ -35,10 +35,15 @@ type Config struct {
 	Handler string
 
 	// PostgreSQL connection string for `pg` handler.
-	PostgreSQLURL string
+	PostgreSQLURL string // For example: `postgres://username:password@hostname:5432/ferretdb`.
 
-	// Tigris connection string for `tigris` handler.
-	TigrisURL string
+	// Tigris parameters for `tigris` handler.
+	// See https://docs.tigrisdata.com/overview/authentication
+	// and https://docs.tigrisdata.com/golang/getting-started.
+	TigrisClientID     string
+	TigrisClientSecret string
+	TigrisToken        string
+	TigrisURL          string
 }
 
 // FerretDB represents an instance of embeddable FerretDB implementation.
@@ -62,10 +67,15 @@ func New(config *Config) (*FerretDB, error) {
 // When this method returns, listener and all connections are closed.
 func (f *FerretDB) Run(ctx context.Context) error {
 	newOpts := registry.NewHandlerOpts{
-		Ctx:           context.Background(),
-		Logger:        logger,
+		Ctx:    context.Background(),
+		Logger: logger,
+
 		PostgreSQLURL: f.config.PostgreSQLURL,
-		TigrisURL:     f.config.TigrisURL,
+
+		TigrisClientID:     f.config.TigrisClientID,
+		TigrisClientSecret: f.config.TigrisClientSecret,
+		TigrisToken:        f.config.TigrisToken,
+		TigrisURL:          f.config.TigrisURL,
 	}
 	h, err := registry.NewHandler(f.config.Handler, &newOpts)
 	if err != nil {
