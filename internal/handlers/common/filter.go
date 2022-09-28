@@ -166,8 +166,10 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 			return false, NewErrorMsg(ErrBadValue, "$or must be an array")
 		}
 		for i := 0; i < exprs.Len(); i++ {
-			value := must.NotFail(exprs.Get(i))
-
+			value, err := exprs.Get(i)
+			if err != nil {
+				return false, err
+			}
 			expr, ok := value.(*types.Document)
 			if !ok {
 				return false, NewErrorMsg(ErrBadValue, "$or/$and/$nor entries need to be full objects")
@@ -189,8 +191,10 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 			return false, NewErrorMsg(ErrBadValue, "$nor must be an array")
 		}
 		for i := 0; i < exprs.Len(); i++ {
-			value := must.NotFail(exprs.Get(i))
-
+			value, err := exprs.Get(i)
+			if err != nil {
+				return false, err
+			}
 			expr, ok := value.(*types.Document)
 			if !ok {
 				return false, NewErrorMsg(ErrBadValue, "$or/$and/$nor entries need to be full objects")
