@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -64,6 +65,27 @@ var (
 	tigrisToken        string
 	tigrisURL          string
 )
+
+// initFlags improves flags settings after all global flags are initialized
+// and all handler constructors are registered.
+func initFlags() {
+	f := flag.Lookup("handler")
+	f.Usage = "backend handler: " + strings.Join(registry.Handlers(), ", ")
+	f.DefValue = "pg"
+	must.NoError(f.Value.Set(f.DefValue))
+
+	levels := []string{
+		zapcore.DebugLevel.String(),
+		zapcore.InfoLevel.String(),
+		zapcore.WarnLevel.String(),
+		zapcore.ErrorLevel.String(),
+	}
+
+	f = flag.Lookup("log-level")
+	f.Usage = "log level: " + strings.Join(levels, ", ")
+	f.DefValue = zapcore.DebugLevel.String()
+	must.NoError(f.Value.Set(f.DefValue))
+}
 
 func main() {
 	levels := []string{

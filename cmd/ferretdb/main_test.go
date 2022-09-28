@@ -28,6 +28,5 @@ func TestCover(t *testing.T) {
 
 // TestMain ensures that command-line flags are initialized correctly when FerretDB is run with coverage enabled.
 func TestMain(m *testing.M) {
-	initFlags()
 	os.Exit(m.Run())
 }
