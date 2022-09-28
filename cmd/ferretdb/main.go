@@ -54,6 +54,7 @@ var cli struct {
 	LogLevel string `default:"${default_logLevel}" help:"${help_logLevel}."`
 
 	TestConnTimeout time.Duration `default:"0" help:"Test: set connection timeout."`
+	kong.Plugins
 }
 
 // Tigris parameters that are set at main_tigris.go.
@@ -79,7 +80,8 @@ func main() {
 			"help_handler":     "Backend handler: " + strings.Join(registry.Handlers(), ", "),
 			"default_logLevel": zapcore.DebugLevel.String(),
 			"help_logLevel":    "Log level: " + strings.Join(levels, ", "),
-		})
+		},
+	)
 
 	level, err := zapcore.ParseLevel(cli.LogLevel)
 	if err != nil {
