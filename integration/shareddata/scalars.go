@@ -16,6 +16,7 @@ package shareddata
 
 import (
 	"math"
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -102,6 +103,11 @@ var Scalars = &Values[string]{
 var Doubles = &Values[string]{
 	name:     "Doubles",
 	handlers: []string{"pg", "tigris"},
+	validators: map[string]map[string]any{
+		"tigris": {
+			"$tigrisSchemaString": tigrisSchema(`"type": "number"`),
+		},
+	},
 	data: map[string]any{
 		"double":          42.13,
 		"double-whole":    42.0,
@@ -116,6 +122,11 @@ var Doubles = &Values[string]{
 var Strings = &Values[string]{
 	name:     "Strings",
 	handlers: []string{"pg", "tigris"},
+	validators: map[string]map[string]any{
+		"tigris": {
+			"$tigrisSchemaString": tigrisSchema(`"type": "string"`),
+		},
+	},
 	data: map[string]any{
 		"string":        "foo",
 		"string-double": "42.13",
@@ -128,6 +139,11 @@ var Strings = &Values[string]{
 var Binaries = &Values[string]{
 	name:     "Binaries",
 	handlers: []string{"pg", "tigris"},
+	validators: map[string]map[string]any{
+		"tigris": {
+			"$tigrisSchemaString": tigrisSchema(`"type": "object", "properties": {"$b": {"type": "string", "format": "byte"}, "s": {"type": "integer", "format": "int32"}}`),
+		},
+	},
 	data: map[string]any{
 		"binary":       primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}},
 		"binary-empty": primitive.Binary{Data: []byte{}},
@@ -148,6 +164,11 @@ var ObjectIDs = &Values[string]{
 var Bools = &Values[string]{
 	name:     "Bools",
 	handlers: []string{"pg", "tigris"},
+	validators: map[string]map[string]any{
+		"tigris": {
+			"$tigrisSchemaString": tigrisSchema(`"type": "boolean"`),
+		},
+	},
 	data: map[string]any{
 		"bool-false": false,
 		"bool-true":  true,
@@ -158,6 +179,11 @@ var Bools = &Values[string]{
 var DateTimes = &Values[string]{
 	name:     "DateTimes",
 	handlers: []string{"pg", "tigris"},
+	validators: map[string]map[string]any{
+		"tigris": {
+			"$tigrisSchemaString": tigrisSchema(`"type": "string", "format": "date-time"`),
+		},
+	},
 	data: map[string]any{
 		"datetime":          primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC)),
 		"datetime-epoch":    primitive.NewDateTimeFromTime(time.Unix(0, 0)),
@@ -179,6 +205,11 @@ var Nulls = &Values[string]{
 var Regexes = &Values[string]{
 	name:     "Regexes",
 	handlers: []string{"pg", "tigris"},
+	validators: map[string]map[string]any{
+		"tigris": {
+			"$tigrisSchemaString": tigrisSchema(`"type": "object", "properties": {"$r": {"type: "string"}, "o": {"type: "string"}}`),
+		},
+	},
 	data: map[string]any{
 		"regex":       primitive.Regex{Pattern: "foo", Options: "i"},
 		"regex-empty": primitive.Regex{},
@@ -191,15 +222,7 @@ var Int32s = &Values[string]{
 	handlers: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
 		"tigris": {
-			"$tigrisSchemaString": `{
-				"title": "%%collection%%",
-				"description": "Int32s collection",
-				"primary_key": ["_id"],
-				"properties": {
-					"v": {"type": "integer", "format": "int32"},
-					"_id": {"type": "string"}
-				}
-			}`,
+			"$tigrisSchemaString": tigrisSchema(`"type": "integer", "format": "int32"`),
 		},
 	},
 	data: map[string]any{
@@ -215,6 +238,11 @@ var Int32s = &Values[string]{
 var Timestamps = &Values[string]{
 	name:     "Timestamps",
 	handlers: []string{"pg", "tigris"},
+	validators: map[string]map[string]any{
+		"tigris": {
+			"$tigrisSchemaString": tigrisSchema(`"type": "object", "properties": {"$t": {"type": "string"}}`),
+		},
+	},
 	data: map[string]any{
 		"timestamp":   primitive.Timestamp{T: 42, I: 13},
 		"timestamp-i": primitive.Timestamp{I: 1},
@@ -225,6 +253,11 @@ var Timestamps = &Values[string]{
 var Int64s = &Values[string]{
 	name:     "Int64s",
 	handlers: []string{"pg", "tigris"},
+	validators: map[string]map[string]any{
+		"tigris": {
+			"$tigrisSchemaString": tigrisSchema(`"type": "integer", "format": "int64"`),
+		},
+	},
 	data: map[string]any{
 		"int64":      int64(42),
 		"int64-zero": int64(0),
@@ -251,4 +284,16 @@ var ObjectIDKeys = &Values[primitive.ObjectID]{
 		{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11}: "objectid",
 		primitive.NilObjectID: "objectid-empty",
 	},
+}
+
+func tigrisSchema(typeString string) string {
+	common := `{
+				"title": "%%collection%%",
+				"primary_key": ["_id"],
+				"properties": {
+					"v": {%%type%%},
+					"_id": {"type": "string"}
+				}
+			}`
+	return strings.ReplaceAll(common, "%%type%%", typeString)
 }

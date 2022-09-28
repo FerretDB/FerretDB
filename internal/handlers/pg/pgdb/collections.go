@@ -31,13 +31,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-var (
-	// Regex validateCollectionNameRe validates collection names.
-	validateCollectionNameRe = regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]{0,119}$")
-
-	// Regex validateDatabaseNameRe validates database names.
-	validateDatabaseNameRe = regexp.MustCompile("^[a-z_][a-z0-9_]{0,62}$")
-)
+// validateCollectionNameRe validates collection names.
+var validateCollectionNameRe = regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]{0,119}$")
 
 // Collections returns a sorted list of FerretDB collection names.
 //
@@ -84,7 +79,7 @@ func CollectionExists(ctx context.Context, querier pgxtype.Querier, db, collecti
 	return slices.Contains(collections, collection), nil
 }
 
-// CreateCollection creates a new FerretDB collection in existing schema.
+// CreateCollection creates a new FerretDB collection in existing database.
 //
 // It returns a possibly wrapped error:
 //   - ErrInvalidTableName - if a FerretDB collection name doesn't conform to restrictions.
@@ -162,32 +157,31 @@ func CreateCollection(ctx context.Context, querier pgxtype.Querier, db, collecti
 
 // CreateCollectionIfNotExist ensures that given FerretDB database / PostgreSQL schema
 // and FerretDB collection / PostgreSQL table exist.
-// If needed, it creates both schema and table.
+// If needed, it creates both database and collection.
 //
-// True is returned if table was created.
-func CreateCollectionIfNotExist(ctx context.Context, querier pgxtype.Querier, db, collection string) (bool, error) {
-	exists, err := CollectionExists(ctx, querier, db, collection)
+// True is returned if collection was created.
+func CreateCollectionIfNotExist(ctx context.Context, tx pgx.Tx, db, collection string) (bool, error) {
+	exists, err := CollectionExists(ctx, tx, db, collection)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
-
 	if exists {
 		return false, nil
 	}
 
-	// Table (or even schema) does not exist. Try to create it,
+	// Collection (or even database) does not exist. Try to create them,
 	// but keep in mind that it can be created in concurrent connection.
 
-	if err := CreateDatabase(ctx, querier, db); err != nil && !errors.Is(err, ErrAlreadyExist) {
+	if err = CreateDatabaseIfNotExists(ctx, tx, db); err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
-	// TODO use a transaction instead of pgPool: https://github.com/FerretDB/FerretDB/issues/866
-	if err := CreateCollection(ctx, querier, db, collection); err != nil {
-		if errors.Is(err, ErrAlreadyExist) {
-			return false, nil
-		}
+	err = CreateCollection(ctx, tx, db, collection)
+	if errors.Is(err, ErrAlreadyExist) {
+		return false, nil
+	}
 
+	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
@@ -196,10 +190,10 @@ func CreateCollectionIfNotExist(ctx context.Context, querier pgxtype.Querier, db
 
 // DropCollection drops FerretDB collection.
 //
-// It returns (possibly wrapped) ErrTableNotExist if schema or table does not exist.
+// It returns (possibly wrapped) ErrTableNotExist if database or collection does not exist.
 // Please use errors.Is to check the error.
-func DropCollection(ctx context.Context, querier pgxtype.Querier, schema, collection string) error {
-	schemaExists, err := schemaExists(ctx, querier, schema)
+func DropCollection(ctx context.Context, querier pgxtype.Querier, db, collection string) error {
+	schemaExists, err := schemaExists(ctx, querier, db)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -209,7 +203,7 @@ func DropCollection(ctx context.Context, querier pgxtype.Querier, schema, collec
 	}
 
 	table := formatCollectionName(collection)
-	tables, err := tables(ctx, querier, schema)
+	tables, err := tables(ctx, querier, db)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -217,7 +211,7 @@ func DropCollection(ctx context.Context, querier pgxtype.Querier, schema, collec
 		return ErrTableNotExist
 	}
 
-	err = removeTableFromSettings(ctx, querier, schema, collection)
+	err = removeTableFromSettings(ctx, querier, db, collection)
 	if err != nil && !errors.Is(err, ErrTableNotExist) {
 		return lazyerrors.Error(err)
 	}
@@ -226,7 +220,7 @@ func DropCollection(ctx context.Context, querier pgxtype.Querier, schema, collec
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/811
-	sql := `DROP TABLE IF EXISTS ` + pgx.Identifier{schema, table}.Sanitize() + ` CASCADE`
+	sql := `DROP TABLE IF EXISTS ` + pgx.Identifier{db, table}.Sanitize() + ` CASCADE`
 	_, err = querier.Exec(ctx, sql)
 	if err != nil {
 		return lazyerrors.Error(err)

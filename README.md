@@ -27,22 +27,9 @@ Recognizing this, FerretDB is here to fill that gap.
 FerretDB will be compatible with MongoDB drivers and will strive to serve as a drop-in replacement for MongoDB 6.0+.
 
 Currently, the project is in its early stages and welcomes all contributors.
-See our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1)
+See our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1),
+a list of [known differences with MongoDB](https://docs.ferretdb.io/diff/),
 and [contributing guidelines](CONTRIBUTING.md).
-
-### Known differences
-
-1. FerretDB uses the same protocol error names and codes, but the exact error messages may be different in some cases.
-2. FerretDB does not support NUL (`\0`) characters in strings.
-3. Database and collection names restrictions:
-
-* name cannot start with the reserved prefix `_ferretdb_`.
-* name must not include non-latin letters, spaces, dots, dollars or dashes.
-* collection name length must be less or equal than 120 symbols, database name length limit is 63 symbols.
-* name must not start with a number.
-* database name cannot contain capital letters.
-
-If you encounter some other difference in behavior, please [join our community](#community) to report a problem.
 
 ## Quickstart
 

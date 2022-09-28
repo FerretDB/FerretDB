@@ -50,7 +50,7 @@ type SetupCompatOpts struct {
 	baseCollectionName string
 }
 
-// SetupResult represents compatibility test setup results.
+// SetupCompatResult represents compatibility test setup results.
 type SetupCompatResult struct {
 	Ctx               context.Context
 	TargetCollections []*mongo.Collection
@@ -164,18 +164,15 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		_ = collection.Drop(ctx)
 
 		// if validators are set, create collection with them (otherwise collection will be created on first insert)
-		if validators := provider.Validators(*handlerF); validators != nil {
-			opts := new(options.CreateCollectionOptions)
+		if validators := provider.Validators(*handlerF, collectionName); validators != nil {
+			var opts options.CreateCollectionOptions
 			for key, value := range validators {
-				if *handlerF == "tigris" {
-					value = strings.Replace(value.(string), "%%collection%%", collectionName, -1)
-				}
-				opts = opts.SetValidator(bson.D{{key, value}})
+				opts.SetValidator(bson.D{{key, value}})
 			}
 
 			// In this case, collection can't be created in MongoDB because MongoDB has a different validator format.
 			// So, we ignore errors.
-			database.CreateCollection(ctx, collectionName, opts)
+			database.CreateCollection(ctx, collectionName, &opts)
 		}
 
 		docs := shareddata.Docs(provider)
