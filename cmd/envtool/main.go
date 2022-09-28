@@ -277,7 +277,7 @@ func run(ctx context.Context, logger *zap.SugaredLogger) error {
 	return nil
 }
 
-// The cli struct represents all command-line commands, fields and flags.
+// cli struct represents all command-line commands, fields and flags.
 // It's used for parsing the user input.
 var cli struct {
 	Debug bool `help:"Enable debug mode."`
