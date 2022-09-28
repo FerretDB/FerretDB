@@ -19,6 +19,9 @@ import (
 	"strings"
 	"testing"
 
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
+
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/zap"
@@ -47,7 +50,7 @@ type SetupCompatOpts struct {
 	baseCollectionName string
 }
 
-// SetupResult represents compatibility test setup results.
+// SetupCompatResult represents compatibility test setup results.
 type SetupCompatResult struct {
 	Ctx               context.Context
 	TargetCollections []*mongo.Collection
@@ -159,6 +162,18 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 
 		// drop remnants of the previous failed run
 		_ = collection.Drop(ctx)
+
+		// if validators are set, create collection with them (otherwise collection will be created on first insert)
+		if validators := provider.Validators(*handlerF, collectionName); validators != nil {
+			var opts options.CreateCollectionOptions
+			for key, value := range validators {
+				opts.SetValidator(bson.D{{key, value}})
+			}
+
+			// In this case, collection can't be created in MongoDB because MongoDB has a different validator format.
+			// So, we ignore errors.
+			database.CreateCollection(ctx, collectionName, &opts)
+		}
 
 		docs := shareddata.Docs(provider)
 		require.NotEmpty(tb, docs)
