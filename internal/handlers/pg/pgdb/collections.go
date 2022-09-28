@@ -87,13 +87,13 @@ func CollectionExists(ctx context.Context, tx pgx.Tx, db, collection string) (bo
 //   - ErrTableNotExist - is the required FerretDB database does not exist.
 //
 // Please use errors.Is to check the error.
-func CreateCollection(ctx context.Context, querier pgxtype.Querier, db, collection string) error {
+func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) error {
 	if !validateCollectionNameRe.MatchString(collection) ||
 		strings.HasPrefix(collection, reservedPrefix) {
 		return ErrInvalidTableName
 	}
 
-	schemaExists, err := schemaExists(ctx, querier, db)
+	schemaExists, err := schemaExists(ctx, tx, db)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -103,7 +103,7 @@ func CreateCollection(ctx context.Context, querier pgxtype.Querier, db, collecti
 	}
 
 	table := formatCollectionName(collection)
-	tables, err := tables(ctx, querier, db)
+	tables, err := tables(ctx, tx, db)
 	if err != nil {
 		return err
 	}
@@ -111,7 +111,7 @@ func CreateCollection(ctx context.Context, querier pgxtype.Querier, db, collecti
 		return ErrAlreadyExist
 	}
 
-	settings, err := getSettingsTable(ctx, querier, db)
+	settings, err := getSettingsTable(ctx, tx, db)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -130,13 +130,13 @@ func CreateCollection(ctx context.Context, querier pgxtype.Querier, db, collecti
 	must.NoError(collections.Set(collection, table))
 	must.NoError(settings.Set("collections", collections))
 
-	err = updateSettingsTable(ctx, querier, db, settings)
+	err = updateSettingsTable(ctx, tx, db, settings)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
 	sql := `CREATE TABLE IF NOT EXISTS ` + pgx.Identifier{db, table}.Sanitize() + ` (_jsonb jsonb)`
-	if _, err = querier.Exec(ctx, sql); err == nil {
+	if _, err = tx.Exec(ctx, sql); err == nil {
 		return nil
 	}
 

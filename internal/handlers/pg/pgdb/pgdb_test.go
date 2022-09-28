@@ -98,7 +98,9 @@ func TestCreateDrop(t *testing.T) {
 		})
 		require.ErrorIs(t, err, ErrSchemaNotExist)
 
-		err = CreateCollection(ctx, pool, databaseName, collectionName)
+		err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			return CreateCollection(ctx, tx, databaseName, collectionName)
+		})
 		require.ErrorIs(t, err, ErrSchemaNotExist)
 
 		err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
@@ -151,7 +153,9 @@ func TestCreateDrop(t *testing.T) {
 		err = DropCollection(ctx, pool, databaseName, collectionName)
 		require.ErrorIs(t, err, ErrTableNotExist)
 
-		err = CreateCollection(ctx, pool, databaseName, collectionName)
+		err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			return CreateCollection(ctx, tx, databaseName, collectionName)
+		})
 		require.NoError(t, err)
 
 		err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
@@ -191,7 +195,9 @@ func TestCreateDrop(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		err = CreateCollection(ctx, pool, databaseName, collectionName)
+		err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			return CreateCollection(ctx, tx, databaseName, collectionName)
+		})
 		require.NoError(t, err)
 
 		var collections []string
@@ -202,7 +208,9 @@ func TestCreateDrop(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, []string{collectionName}, collections)
 
-		err = CreateCollection(ctx, pool, databaseName, collectionName)
+		err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			return CreateCollection(ctx, tx, databaseName, collectionName)
+		})
 		require.ErrorIs(t, err, ErrAlreadyExist)
 
 		err = DropCollection(ctx, pool, databaseName, collectionName)
@@ -269,7 +277,9 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		err = CreateCollection(ctx, pool, databaseName, collectionName)
+		err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			return CreateCollection(ctx, tx, databaseName, collectionName)
+		})
 		require.NoError(t, err)
 
 		var created bool
