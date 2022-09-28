@@ -22,7 +22,6 @@ import (
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgtype/pgxtype"
 	"github.com/jackc/pgx/v4"
 	"golang.org/x/exp/slices"
 
@@ -192,8 +191,8 @@ func CreateCollectionIfNotExist(ctx context.Context, tx pgx.Tx, db, collection s
 //
 // It returns (possibly wrapped) ErrTableNotExist if database or collection does not exist.
 // Please use errors.Is to check the error.
-func DropCollection(ctx context.Context, querier pgxtype.Querier, db, collection string) error {
-	schemaExists, err := schemaExists(ctx, querier, db)
+func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error {
+	schemaExists, err := schemaExists(ctx, tx, db)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -203,7 +202,7 @@ func DropCollection(ctx context.Context, querier pgxtype.Querier, db, collection
 	}
 
 	table := formatCollectionName(collection)
-	tables, err := tables(ctx, querier, db)
+	tables, err := tables(ctx, tx, db)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -211,7 +210,7 @@ func DropCollection(ctx context.Context, querier pgxtype.Querier, db, collection
 		return ErrTableNotExist
 	}
 
-	err = removeTableFromSettings(ctx, querier, db, collection)
+	err = removeTableFromSettings(ctx, tx, db, collection)
 	if err != nil && !errors.Is(err, ErrTableNotExist) {
 		return lazyerrors.Error(err)
 	}
@@ -221,7 +220,7 @@ func DropCollection(ctx context.Context, querier pgxtype.Querier, db, collection
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/811
 	sql := `DROP TABLE IF EXISTS ` + pgx.Identifier{db, table}.Sanitize() + ` CASCADE`
-	_, err = querier.Exec(ctx, sql)
+	_, err = tx.Exec(ctx, sql)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
