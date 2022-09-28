@@ -667,35 +667,40 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 
 func TestCommandsAdministrationDataSize(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
-	var actual bson.D
-	command := bson.D{{"dataSize", collection.Database().Name() + "." + collection.Name()}}
-	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
-	require.NoError(t, err)
+	t.Run("Existing", func(t *testing.T) {
+		t.Parallel()
 
-	doc := ConvertDocument(t, actual)
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+		ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
-	assert.InDelta(t, float64(8012), must.NotFail(doc.Get("size")), 16_024)
-	assert.InDelta(t, float64(100), must.NotFail(doc.Get("millis")), 100)
-}
+		var actual bson.D
+		command := bson.D{{"dataSize", collection.Database().Name() + "." + collection.Name()}}
+		err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+		require.NoError(t, err)
 
-func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
-	t.Parallel()
-	ctx, collection := setup.Setup(t)
+		doc := ConvertDocument(t, actual)
+		assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+		assert.InDelta(t, float64(16_384), must.NotFail(doc.Get("size")), 16_384)
+		assert.InDelta(t, float64(4), must.NotFail(doc.Get("numObjects")), 4) // TODO https://github.com/FerretDB/FerretDB/issues/727
+		assert.InDelta(t, float64(100), must.NotFail(doc.Get("millis")), 100)
+	})
 
-	var actual bson.D
-	command := bson.D{{"dataSize", "some-database.some-collection"}}
-	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
-	require.NoError(t, err)
+	t.Run("NonExisting", func(t *testing.T) {
+		t.Parallel()
 
-	doc := ConvertDocument(t, actual)
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-	assert.Equal(t, int32(0), must.NotFail(doc.Get("size")))
-	assert.Equal(t, int32(0), must.NotFail(doc.Get("numObjects")))
+		ctx, collection := setup.Setup(t)
 
-	assert.InDelta(t, float64(100), must.NotFail(doc.Get("millis")), 100)
+		var actual bson.D
+		command := bson.D{{"dataSize", collection.Database().Name() + "." + collection.Name()}}
+		err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+		require.NoError(t, err)
+
+		doc := ConvertDocument(t, actual)
+		assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+		assert.Equal(t, int32(0), must.NotFail(doc.Get("size")))
+		assert.Equal(t, int32(0), must.NotFail(doc.Get("numObjects")))
+		assert.InDelta(t, float64(100), must.NotFail(doc.Get("millis")), 100)
+	})
 }
 
 func TestCommandsAdministrationDBStats(t *testing.T) {

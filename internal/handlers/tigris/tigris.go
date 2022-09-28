@@ -34,8 +34,11 @@ func notImplemented(command string) error {
 
 // NewOpts represents handler configuration.
 type NewOpts struct {
-	TigrisURL string
-	L         *zap.Logger
+	ClientID     string
+	ClientSecret string
+	Token        string
+	URL          string
+	L            *zap.Logger
 }
 
 // Handler implements handlers.Interface on top of Tigris.
@@ -48,7 +51,10 @@ type Handler struct {
 // New returns a new handler.
 func New(opts *NewOpts) (handlers.Interface, error) {
 	cfg := &config.Driver{
-		URL: opts.TigrisURL,
+		ClientID:     opts.ClientID,
+		ClientSecret: opts.ClientSecret,
+		Token:        opts.Token,
+		URL:          opts.URL,
 	}
 	db, err := tigrisdb.New(cfg, opts.L)
 	if err != nil {
