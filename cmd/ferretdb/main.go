@@ -54,8 +54,29 @@ var cli struct {
 	LogLevel string `default:"${default_logLevel}" help:"${help_logLevel}."`
 
 	TestConnTimeout time.Duration `default:"0" help:"Test: set connection timeout."`
+
 	kong.Plugins
 }
+
+// Additional variables for the kong parsers.
+var (
+	logLevels = []string{
+		zapcore.DebugLevel.String(),
+		zapcore.InfoLevel.String(),
+		zapcore.WarnLevel.String(),
+		zapcore.ErrorLevel.String(),
+	}
+
+	kongOptions = []kong.Option{
+		kong.Vars{
+			"default_logLevel": zapcore.DebugLevel.String(),
+			"default_mode":     string(clientconn.AllModes[0]),
+			"help_handler":     "Backend handler: " + strings.Join(registry.Handlers(), ", "),
+			"help_logLevel":    "Log level: " + strings.Join(logLevels, ", "),
+			"help_mode":        fmt.Sprintf("Operation mode: %v", clientconn.AllModes),
+		},
+	}
+)
 
 // Tigris parameters that are set at main_tigris.go.
 var (
@@ -65,26 +86,9 @@ var (
 	tigrisURL          string
 )
 
-func initCLI() {
-	levels := []string{
-		zapcore.DebugLevel.String(),
-		zapcore.InfoLevel.String(),
-		zapcore.WarnLevel.String(),
-		zapcore.ErrorLevel.String(),
-	}
-
-	kong.Parse(&cli,
-		kong.Vars{
-			"default_logLevel": zapcore.DebugLevel.String(),
-			"default_mode":     string(clientconn.AllModes[0]),
-			"help_handler":     "Backend handler: " + strings.Join(registry.Handlers(), ", "),
-			"help_logLevel":    "Log level: " + strings.Join(levels, ", "),
-			"help_mode":        fmt.Sprintf("Operation mode: %v", clientconn.AllModes),
-		})
-}
-
 func main() {
-	initCLI()
+	kong.Parse(&cli, kongOptions...)
+
 	run()
 }
 
