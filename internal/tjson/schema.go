@@ -223,11 +223,6 @@ func (s *Schema) Unmarshal(b []byte) error {
 	// Add $k properties that are necessary for documents.
 	s.addDocumentProperties()
 
-	// If Type is not set, it's a high-level schema, so we set Type as Object to make it explicit.
-	if s.Type == "" {
-		s.Type = Object
-	}
-
 	return nil
 }
 
