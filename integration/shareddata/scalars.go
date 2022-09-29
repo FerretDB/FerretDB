@@ -115,6 +115,7 @@ var Doubles = &Values[string]{
 		"double-max":      math.MaxFloat64,
 		"double-smallest": math.SmallestNonzeroFloat64,
 		"double-big":      doubleBig,
+		//	"double-null":     nil,
 	},
 }
 
@@ -132,6 +133,7 @@ var Strings = &Values[string]{
 		"string-double": "42.13",
 		"string-whole":  "42",
 		"string-empty":  "",
+		//	"string-null":   nil,
 	},
 }
 
@@ -147,6 +149,7 @@ var Binaries = &Values[string]{
 	data: map[string]any{
 		"binary":       primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}},
 		"binary-empty": primitive.Binary{Data: []byte{}},
+		//	"binary-null":  nil,
 	},
 }
 
@@ -157,6 +160,7 @@ var ObjectIDs = &Values[string]{
 	data: map[string]any{
 		"objectid":       primitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11},
 		"objectid-empty": primitive.NilObjectID,
+		//	"objectid-null":  nil,
 	},
 }
 
@@ -172,6 +176,7 @@ var Bools = &Values[string]{
 	data: map[string]any{
 		"bool-false": false,
 		"bool-true":  true,
+		//	"bool-null":  nil,
 	},
 }
 
@@ -189,6 +194,7 @@ var DateTimes = &Values[string]{
 		"datetime-epoch":    primitive.NewDateTimeFromTime(time.Unix(0, 0)),
 		"datetime-year-min": primitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)),
 		"datetime-year-max": primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC)),
+		//	"datetime-null":     nil,
 	},
 }
 
@@ -196,6 +202,17 @@ var DateTimes = &Values[string]{
 var Nulls = &Values[string]{
 	name:     "Nulls",
 	handlers: []string{"pg", "tigris"},
+	validators: map[string]map[string]any{
+		"tigris": {
+			"$tigrisSchemaString": `{
+				"title": "%%collection%%",
+				"primary_key": ["_id"],
+				"properties": {
+					"_id": {"type": "string"}
+				}
+			}`,
+		},
+	},
 	data: map[string]any{
 		"null": nil,
 	},
@@ -213,6 +230,7 @@ var Regexes = &Values[string]{
 	data: map[string]any{
 		"regex":       primitive.Regex{Pattern: "foo", Options: "i"},
 		"regex-empty": primitive.Regex{},
+		"regex-null":  nil,
 	},
 }
 
@@ -244,8 +262,9 @@ var Timestamps = &Values[string]{
 		},
 	},
 	data: map[string]any{
-		"timestamp":   primitive.Timestamp{T: 42, I: 13},
-		"timestamp-i": primitive.Timestamp{I: 1},
+		"timestamp":      primitive.Timestamp{T: 42, I: 13},
+		"timestamp-i":    primitive.Timestamp{I: 1},
+		"timestamp-null": nil,
 	},
 }
 
@@ -264,6 +283,7 @@ var Int64s = &Values[string]{
 		"int64-max":  int64(math.MaxInt64),
 		"int64-min":  int64(math.MinInt64),
 		"int64-big":  int64Big,
+		"int64-null": nil,
 	},
 }
 
