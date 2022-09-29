@@ -18,7 +18,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/jackc/pgtype/pgxtype"
+	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -26,8 +26,8 @@ import (
 // Tables returns a sorted list of PostgreSQL table names.
 // Returns empty slice if schema does not exist.
 // Tables with prefix "_ferretdb_" are filtered out.
-func Tables(ctx context.Context, querier pgxtype.Querier, schema string) ([]string, error) {
-	tables, err := tables(ctx, querier, schema)
+func Tables(ctx context.Context, tx pgx.Tx, schema string) ([]string, error) {
+	tables, err := tables(ctx, tx, schema)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -45,13 +45,13 @@ func Tables(ctx context.Context, querier pgxtype.Querier, schema string) ([]stri
 }
 
 // tables returns a list of PostgreSQL table names.
-func tables(ctx context.Context, querier pgxtype.Querier, schema string) ([]string, error) {
+func tables(ctx context.Context, tx pgx.Tx, schema string) ([]string, error) {
 	sql := `SELECT table_name ` +
 		`FROM information_schema.columns ` +
 		`WHERE table_schema = $1 ` +
 		`GROUP BY table_name ` +
 		`ORDER BY table_name`
-	rows, err := querier.Query(ctx, sql, schema)
+	rows, err := tx.Query(ctx, sql, schema)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
