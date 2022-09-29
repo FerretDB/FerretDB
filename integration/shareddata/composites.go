@@ -88,13 +88,24 @@ var DocumentsStrings = &Values[string]{
 	},
 }
 
-// DocumentsDocuments contains documents with documents with string values for tests.
+// DocumentsDocuments contains documents with documents for tests.
 var DocumentsDocuments = &Values[primitive.ObjectID]{
 	name:     "DocumentsDocuments",
 	handlers: []string{"pg", "tigris"},
+	validators: map[string]map[string]any{
+		"tigris": {
+			"$tigrisSchemaString": `{
+				"title": "%%collection%%",
+				"primary_key": ["_id"],
+				"properties": {
+					"v": {"type": "object", "properties": {"foo": {"type": "integer"}, "v": {"type": "object"}}},
+					"_id": {"type": "string", "format": "byte"}
+				}
+			}`,
+		},
+	},
 	data: map[primitive.ObjectID]any{
 		{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01}: bson.D{{"foo", int32(42)}},
-		// TODO!!!! Dealing with empty doc needs a schema to be defined https://github.com/FerretDB/FerretDB/issues/772
-		// {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}: bson.D{{"v", bson.D{}}},
+		{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}: bson.D{{"v", bson.D{}}},
 	},
 }
