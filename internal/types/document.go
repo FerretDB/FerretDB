@@ -118,7 +118,7 @@ func (d *Document) DeepCopy() *Document {
 // isValidKey returns false if key is not a valid document field key.
 func isValidKey(key string) bool {
 	if key == "" {
-		return false
+		return true
 	}
 
 	// forbid keys like $k (used by fjson representation), but allow $db (used by many commands)
