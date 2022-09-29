@@ -102,7 +102,7 @@ var DocumentsDocuments = &Values[primitive.ObjectID]{
 						"type": "object", 
 						"properties": {
 							"foo": {"type": "integer", "format": "int32"}, 
-							"v": {"type": "object", "properties":{}}
+							"bar": {"type": "object", "properties":{}}
 						}
 					},
 					"_id": {"type": "string", "format": "byte"}
@@ -112,6 +112,6 @@ var DocumentsDocuments = &Values[primitive.ObjectID]{
 	},
 	data: map[primitive.ObjectID]any{
 		{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01}: bson.D{{"foo", int32(42)}},
-		//	{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}: bson.D{{"v", bson.D{}}},
+		{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}: bson.D{{"bar", bson.D{}}},
 	},
 }

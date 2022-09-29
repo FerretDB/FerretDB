@@ -42,7 +42,7 @@ func TestInsertTigrisNull(t *testing.T) {
 	}{
 		"ExistingCollectionNewField": {
 			collection: collection,
-			insert:     bson.D{{"_id", primitive.ObjectID{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}}, {"bar", nil}},
+			insert:     bson.D{{"_id", primitive.ObjectID{0xff, 0xff, 0xff, 0xff, 0xff, 0xef, 0xef, 0xff, 0xff, 0xff, 0xff, 0xff}}, {"bar", nil}},
 			err:        nil, // valid even for Tigris, the data is inserted, but the field "foo" will not be present in the schema
 		},
 		/*"ExistingCollectionFieldNotSet": {
