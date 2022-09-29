@@ -1409,8 +1409,6 @@ func TestUpdateFieldPopArrayOperator(t *testing.T) {
 
 // TestUpdateTigrisNull tests how the update operation works with null values in Tigris.
 func TestUpdateTigrisNull(t *testing.T) {
-	setup.SkipForPostgresWithReason(t, "TODO: Fix me!")
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Doubles)
 
