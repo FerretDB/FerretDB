@@ -98,7 +98,13 @@ var DocumentsDocuments = &Values[primitive.ObjectID]{
 				"title": "%%collection%%",
 				"primary_key": ["_id"],
 				"properties": {
-					"v": {"type": "object", "properties": {"foo": {"type": "integer"}, "v": {"type": "object"}}},
+					"v": {
+						"type": "object", 
+						"properties": {
+							"foo": {"type": "integer", "format": "int32"}, 
+							"v": {"type": "object", "properties":{}}
+						}
+					},
 					"_id": {"type": "string", "format": "byte"}
 				}
 			}`,
@@ -106,6 +112,6 @@ var DocumentsDocuments = &Values[primitive.ObjectID]{
 	},
 	data: map[primitive.ObjectID]any{
 		{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01}: bson.D{{"foo", int32(42)}},
-		{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}: bson.D{{"v", bson.D{}}},
+		//	{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}: bson.D{{"v", bson.D{}}},
 	},
 }

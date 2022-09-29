@@ -17,6 +17,8 @@ package integration
 import (
 	"testing"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -31,7 +33,7 @@ func TestInsertTigrisNull(t *testing.T) {
 	setup.SkipForPostgresWithReason(t, "TODO! Fix me!")
 
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Int32s)
+	ctx, collection := setup.Setup(t, shareddata.DocumentsDocuments)
 
 	for name, tc := range map[string]struct {
 		collection *mongo.Collection
@@ -40,14 +42,14 @@ func TestInsertTigrisNull(t *testing.T) {
 	}{
 		"ExistingCollectionNewField": {
 			collection: collection,
-			insert:     bson.D{{"_id", "foo-is-nil"}, {"v", int32(48)}, {"foo", nil}},
+			insert:     bson.D{{"_id", primitive.ObjectID{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}}, {"bar", nil}},
 			err:        nil, // valid even for Tigris, the data is inserted, but the field "foo" will not be present in the schema
 		},
-		"ExistingCollectionFieldNotSet": {
+		/*"ExistingCollectionFieldNotSet": {
 			collection: collection,
-			insert:     bson.D{{"_id", "v-is-not-set"}},
+			insert:     bson.D{},
 			err:        nil,
-		},
+		},*/
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
