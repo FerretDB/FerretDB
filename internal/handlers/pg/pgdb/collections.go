@@ -22,7 +22,6 @@ import (
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgtype/pgxtype"
 	"github.com/jackc/pgx/v4"
 	"golang.org/x/exp/slices"
 
@@ -37,8 +36,8 @@ var validateCollectionNameRe = regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]{0,119}
 // Collections returns a sorted list of FerretDB collection names.
 //
 // It returns (possibly wrapped) ErrSchemaNotExist if FerretDB database / PostgreSQL schema does not exist.
-func Collections(ctx context.Context, querier pgxtype.Querier, db string) ([]string, error) {
-	schemaExists, err := schemaExists(ctx, querier, db)
+func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
+	schemaExists, err := schemaExists(ctx, tx, db)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -47,7 +46,7 @@ func Collections(ctx context.Context, querier pgxtype.Querier, db string) ([]str
 		return nil, ErrSchemaNotExist
 	}
 
-	settings, err := getSettingsTable(ctx, querier, db)
+	settings, err := getSettingsTable(ctx, tx, db)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -67,8 +66,8 @@ func Collections(ctx context.Context, querier pgxtype.Querier, db string) ([]str
 }
 
 // CollectionExists returns true if FerretDB collection exists.
-func CollectionExists(ctx context.Context, querier pgxtype.Querier, db, collection string) (bool, error) {
-	collections, err := Collections(ctx, querier, db)
+func CollectionExists(ctx context.Context, tx pgx.Tx, db, collection string) (bool, error) {
+	collections, err := Collections(ctx, tx, db)
 	if err != nil {
 		if errors.Is(err, ErrSchemaNotExist) {
 			return false, nil
@@ -87,13 +86,13 @@ func CollectionExists(ctx context.Context, querier pgxtype.Querier, db, collecti
 //   - ErrTableNotExist - is the required FerretDB database does not exist.
 //
 // Please use errors.Is to check the error.
-func CreateCollection(ctx context.Context, querier pgxtype.Querier, db, collection string) error {
+func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) error {
 	if !validateCollectionNameRe.MatchString(collection) ||
 		strings.HasPrefix(collection, reservedPrefix) {
 		return ErrInvalidTableName
 	}
 
-	schemaExists, err := schemaExists(ctx, querier, db)
+	schemaExists, err := schemaExists(ctx, tx, db)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -103,7 +102,7 @@ func CreateCollection(ctx context.Context, querier pgxtype.Querier, db, collecti
 	}
 
 	table := formatCollectionName(collection)
-	tables, err := tables(ctx, querier, db)
+	tables, err := tables(ctx, tx, db)
 	if err != nil {
 		return err
 	}
@@ -111,7 +110,7 @@ func CreateCollection(ctx context.Context, querier pgxtype.Querier, db, collecti
 		return ErrAlreadyExist
 	}
 
-	settings, err := getSettingsTable(ctx, querier, db)
+	settings, err := getSettingsTable(ctx, tx, db)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -130,13 +129,13 @@ func CreateCollection(ctx context.Context, querier pgxtype.Querier, db, collecti
 	must.NoError(collections.Set(collection, table))
 	must.NoError(settings.Set("collections", collections))
 
-	err = updateSettingsTable(ctx, querier, db, settings)
+	err = updateSettingsTable(ctx, tx, db, settings)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
 	sql := `CREATE TABLE IF NOT EXISTS ` + pgx.Identifier{db, table}.Sanitize() + ` (_jsonb jsonb)`
-	if _, err = querier.Exec(ctx, sql); err == nil {
+	if _, err = tx.Exec(ctx, sql); err == nil {
 		return nil
 	}
 
@@ -192,8 +191,8 @@ func CreateCollectionIfNotExist(ctx context.Context, tx pgx.Tx, db, collection s
 //
 // It returns (possibly wrapped) ErrTableNotExist if database or collection does not exist.
 // Please use errors.Is to check the error.
-func DropCollection(ctx context.Context, querier pgxtype.Querier, db, collection string) error {
-	schemaExists, err := schemaExists(ctx, querier, db)
+func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error {
+	schemaExists, err := schemaExists(ctx, tx, db)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -203,7 +202,7 @@ func DropCollection(ctx context.Context, querier pgxtype.Querier, db, collection
 	}
 
 	table := formatCollectionName(collection)
-	tables, err := tables(ctx, querier, db)
+	tables, err := tables(ctx, tx, db)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -211,7 +210,7 @@ func DropCollection(ctx context.Context, querier pgxtype.Querier, db, collection
 		return ErrTableNotExist
 	}
 
-	err = removeTableFromSettings(ctx, querier, db, collection)
+	err = removeTableFromSettings(ctx, tx, db, collection)
 	if err != nil && !errors.Is(err, ErrTableNotExist) {
 		return lazyerrors.Error(err)
 	}
@@ -221,7 +220,7 @@ func DropCollection(ctx context.Context, querier pgxtype.Querier, db, collection
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/811
 	sql := `DROP TABLE IF EXISTS ` + pgx.Identifier{db, table}.Sanitize() + ` CASCADE`
-	_, err = querier.Exec(ctx, sql)
+	_, err = tx.Exec(ctx, sql)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}

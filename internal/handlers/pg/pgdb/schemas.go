@@ -17,16 +17,16 @@ package pgdb
 import (
 	"context"
 
-	"github.com/jackc/pgtype/pgxtype"
+	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // schemaExists returns true if given schema exists.
-func schemaExists(ctx context.Context, querier pgxtype.Querier, db string) (bool, error) {
+func schemaExists(ctx context.Context, tx pgx.Tx, db string) (bool, error) {
 	sql := `SELECT nspname FROM pg_catalog.pg_namespace WHERE nspname = $1`
-	rows, err := querier.Query(ctx, sql, db)
+	rows, err := tx.Query(ctx, sql, db)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
