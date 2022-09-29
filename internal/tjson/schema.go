@@ -122,9 +122,6 @@ var (
 	}
 )
 
-// ErrNullField error is returned when a field with null value is trying to define schema.
-var ErrNullField = fmt.Errorf("schema cannot have null field")
-
 // Equal returns true if the schemas are equal.
 // For composite types schemas are equal if their types and subschemas are equal.
 // For scalar types schemas are equal if their types and formats are equal.
