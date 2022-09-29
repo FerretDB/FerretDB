@@ -17,7 +17,6 @@
 package main
 
 import (
-	"flag"
 	"os"
 	"testing"
 )
@@ -29,7 +28,6 @@ func TestCover(t *testing.T) {
 
 // TestMain ensures that command-line flags are initialized correctly when FerretDB is run with coverage enabled.
 func TestMain(m *testing.M) {
-	flag.CommandLine.Parse([]string{})
-
+	//initCLI()
 	os.Exit(m.Run())
 }

@@ -65,7 +65,7 @@ var (
 	tigrisURL          string
 )
 
-func main() {
+func initCLI() {
 	levels := []string{
 		zapcore.DebugLevel.String(),
 		zapcore.InfoLevel.String(),
@@ -81,7 +81,14 @@ func main() {
 			"help_logLevel":    "Log level: " + strings.Join(levels, ", "),
 			"help_mode":        fmt.Sprintf("Operation mode: %v", clientconn.AllModes),
 		})
+}
 
+func main() {
+	initCLI()
+	run()
+}
+
+func run() {
 	level, err := zapcore.ParseLevel(cli.LogLevel)
 	if err != nil {
 		log.Fatal(err)
