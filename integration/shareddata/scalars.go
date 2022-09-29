@@ -225,14 +225,14 @@ var Regexes = &Values[string]{
 	handlers: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
 		"tigris": {
-			"$tigrisSchemaString": tigrisSchema(`"type": "object", "properties": {"$r": {"type: "string"}, "o": {"type: "string"}}`),
+			"$tigrisSchemaString": tigrisSchema(`"type": "object", "properties": {"$r": {"type": "string"}, "o": {"type": "string"}}`),
 		},
 	},
 	data: map[string]any{
 		"regex":       primitive.Regex{Pattern: "foo", Options: "i"},
 		"regex-empty": primitive.Regex{},
 		// TODO: tests fail here:
-		//"regex-null":  nil,
+		//"regex-null": nil,
 	},
 }
 

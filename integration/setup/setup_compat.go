@@ -170,9 +170,23 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 				opts.SetValidator(bson.D{{key, value}})
 			}
 
-			// In this case, collection can't be created in MongoDB because MongoDB has a different validator format.
-			// So, we ignore errors.
-			database.CreateCollection(ctx, collectionName, &opts)
+			err := database.CreateCollection(ctx, collectionName, &opts)
+			switch err := err.(type) {
+			case nil:
+				// do nothing
+
+			case mongo.CommandError:
+				// If collection can't be created in MongoDB because MongoDB has a different validator format, it's ok.
+				// Otherwise, it's a problem:
+				if err.Message != `required parameter "validator" is missing` {
+					tb.Errorf("Failed to create collection %q: %v", collectionName, err)
+					tb.FailNow()
+				}
+
+			default:
+				tb.Errorf("Failed to create collection %q: %v", collectionName, err)
+				tb.FailNow()
+			}
 		}
 
 		docs := shareddata.Docs(provider)
