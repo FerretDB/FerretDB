@@ -52,6 +52,11 @@ var Composites = &Values[string]{
 var DocumentsDoubles = &Values[string]{
 	name:     "DocumentsDoubles",
 	handlers: []string{"pg", "tigris"},
+	validators: map[string]map[string]any{
+		"tigris": {
+			"$tigrisSchemaString": tigrisSchema(`"type": "object", "properties": {"v": {"type": "number"}}`),
+		},
+	},
 	data: map[string]any{
 		"document-double":          bson.D{{"v", 42.13}},
 		"document-double-whole":    bson.D{{"v", 42.0}},
@@ -59,8 +64,7 @@ var DocumentsDoubles = &Values[string]{
 		"document-double-max":      bson.D{{"v", math.MaxFloat64}},
 		"document-double-smallest": bson.D{{"v", math.SmallestNonzeroFloat64}},
 		"document-double-big":      bson.D{{"v", doubleBig}},
-		// TODO!!!!! Dealing with empty doc needs a schema to be defined https://github.com/FerretDB/FerretDB/issues/772
-		// "document-empty":           bson.D{},
+		"document-empty":           bson.D{},
 	},
 }
 
@@ -68,6 +72,11 @@ var DocumentsDoubles = &Values[string]{
 var DocumentsStrings = &Values[string]{
 	name:     "DocumentsStrings",
 	handlers: []string{"pg", "tigris"},
+	validators: map[string]map[string]any{
+		"tigris": {
+			"$tigrisSchemaString": tigrisSchema(`"type": "object", "properties": {"v": {"type": "string"}}`),
+		},
+	},
 	data: map[string]any{
 		"document-string":        bson.D{{"v", "foo"}},
 		"document-string-double": bson.D{{"v", "42.13"}},
