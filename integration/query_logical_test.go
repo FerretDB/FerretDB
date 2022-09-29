@@ -186,7 +186,7 @@ func TestQueryLogical(t *testing.T) {
 				},
 			}},
 			expectedIDs: []any{
-				"double-zero", "double-smallest", "double-whole", "double", "double-big", "double-max",
+				"double-null", "double-zero", "double-smallest", "double-whole", "double", "double-big", "double-max",
 			},
 		},
 		"NorTwo": {
@@ -197,7 +197,7 @@ func TestQueryLogical(t *testing.T) {
 				},
 			}},
 			expectedIDs: []any{
-				"double-zero", "double-smallest", "double-whole",
+				"double-null", "double-zero", "double-smallest", "double-whole",
 			},
 		},
 		"NorBadInput": {
@@ -224,7 +224,7 @@ func TestQueryLogical(t *testing.T) {
 				"v", bson.D{{"$not", bson.D{{"$eq", int64(42)}}}},
 			}},
 			expectedIDs: []any{
-				"double-zero", "double-smallest", "double", "double-big", "double-max",
+				"double-null", "double-zero", "double-smallest", "double", "double-big", "double-max",
 			},
 		},
 		"NotNull": {
