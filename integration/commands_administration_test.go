@@ -699,7 +699,7 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 		assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 		assert.Equal(t, int32(0), must.NotFail(doc.Get("size")))
 		assert.Equal(t, int32(0), must.NotFail(doc.Get("numObjects")))
-		assert.InDelta(t, float64(100), must.NotFail(doc.Get("millis")), 100)
+		assert.InDelta(t, float64(150), must.NotFail(doc.Get("millis")), 150)
 	})
 }
 
