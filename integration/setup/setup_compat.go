@@ -164,7 +164,7 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		_ = collection.Drop(ctx)
 
 		// if validators are set, create collection with them (otherwise collection will be created on first insert)
-		if validators := provider.Validators(*handlerF, collectionName); validators != nil {
+		if validators := provider.Validators(*handlerF, collectionName); len(validators) > 0 {
 			var opts options.CreateCollectionOptions
 			for key, value := range validators {
 				opts.SetValidator(bson.D{{key, value}})
@@ -178,7 +178,7 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 			case mongo.CommandError:
 				// If collection can't be created in MongoDB because MongoDB has a different validator format, it's ok.
 				// Otherwise, it's a problem:
-				if err.Message != `required parameter "validator" is missing` {
+				if !strings.Contains(err.Message, `unknown top level operator: $tigrisSchemaString`) {
 					tb.Errorf("Failed to create collection %q: %v", collectionName, err)
 					tb.FailNow()
 				}
