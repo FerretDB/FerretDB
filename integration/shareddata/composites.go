@@ -64,7 +64,8 @@ var DocumentsDoubles = &Values[string]{
 		"document-double-max":      bson.D{{"v", math.MaxFloat64}},
 		"document-double-smallest": bson.D{{"v", math.SmallestNonzeroFloat64}},
 		"document-double-big":      bson.D{{"v", doubleBig}},
-		"document-empty":           bson.D{},
+		"document-double-empty":    bson.D{},
+		"document-double-nil":      nil,
 	},
 }
 
@@ -78,12 +79,12 @@ var DocumentsStrings = &Values[string]{
 		},
 	},
 	data: map[string]any{
-		"document-string":        bson.D{{"v", "foo"}},
-		"document-string-double": bson.D{{"v", "42.13"}},
-		"document-string-whole":  bson.D{{"v", "42"}},
-		"document-string-empty":  bson.D{{"v", ""}},
-		// TODO!!!!!!!	 Dealing with empty doc needs a schema to be defined https://github.com/FerretDB/FerretDB/issues/772
-		// "document-empty":         bson.D{},
+		"document-string":           bson.D{{"v", "foo"}},
+		"document-string-double":    bson.D{{"v", "42.13"}},
+		"document-string-whole":     bson.D{{"v", "42"}},
+		"document-string-empty-str": bson.D{{"v", ""}},
+		"document-string-empty":     bson.D{},
+		"document-string-nil":       nil,
 	},
 }
 
