@@ -157,11 +157,15 @@ var Binaries = &Values[string]{
 var ObjectIDs = &Values[string]{
 	name:     "ObjectIDs",
 	handlers: []string{"pg", "tigris"},
+	validators: map[string]map[string]any{
+		"tigris": {
+			"$tigrisSchemaString": tigrisSchema(`"type": "string", "format": "byte"`),
+		},
+	},
 	data: map[string]any{
 		"objectid":       primitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11},
 		"objectid-empty": primitive.NilObjectID,
-		// TODO this case fails:
-		//"objectid-null":  nil,
+		"objectid-null":  nil,
 	},
 }
 
@@ -231,8 +235,7 @@ var Regexes = &Values[string]{
 	data: map[string]any{
 		"regex":       primitive.Regex{Pattern: "foo", Options: "i"},
 		"regex-empty": primitive.Regex{},
-		// TODO: tests fail here:
-		//"regex-null": nil,
+		"regex-null":  nil,
 	},
 }
 
