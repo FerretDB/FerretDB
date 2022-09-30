@@ -178,8 +178,7 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 				// If collection can't be created in MongoDB because MongoDB has a different validator format, it's ok.
 				// Otherwise, it's a problem:
 				if !strings.Contains(err.Message, `unknown top level operator: $tigrisSchemaString`) {
-					tb.Errorf("Failed to create collection %q: %v", collectionName, err)
-					tb.FailNow()
+					fallthrough
 				}
 
 			default:
