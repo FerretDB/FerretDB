@@ -27,6 +27,7 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
@@ -92,6 +93,7 @@ func main() {
 	run()
 }
 
+// run sets up environment based on provided flags and runs FerretDB.
 func run() {
 	level, err := zapcore.ParseLevel(cli.LogLevel)
 	if err != nil {
@@ -122,14 +124,7 @@ func run() {
 	}
 	logger.Info("Starting FerretDB "+info.Version+"...", startFields...)
 
-	var found bool
-	for _, m := range clientconn.AllModes {
-		if cli.Mode == string(m) {
-			found = true
-			break
-		}
-	}
-	if !found {
+	if !slices.Contains(clientconn.AllModes, clientconn.Mode(cli.Mode)) {
 		logger.Sugar().Fatalf("Unknown mode %q.", cli.Mode)
 	}
 

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build ferretdb_testcover
+///go:build ferretdb_testcover
 
 package main
 
@@ -21,6 +21,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/alecthomas/kong"
 	"golang.org/x/exp/slices"
 )
@@ -44,11 +45,9 @@ func TestMain(m *testing.M) {
 		forTest = os.Args[1:i]
 	}
 
-	parser, err := kong.New(&cli, kongOptions...)
-	if err != nil {
-		panic(err)
-	}
-	_, err = parser.Parse(forKong)
+	parser := must.NotFail(kong.New(&cli, kongOptions...))
+
+	_, err := parser.Parse(forKong)
 	parser.FatalIfErrorf(err)
 
 	flag.CommandLine.Parse(forTest)
