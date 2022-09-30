@@ -118,6 +118,7 @@ func (d *Document) DeepCopy() *Document {
 // isValidKey returns false if key is not a valid document field key.
 func isValidKey(key string) bool {
 	if key == "" {
+		// TODO that should be valid only for command documents, not for data documents
 		return true
 	}
 
