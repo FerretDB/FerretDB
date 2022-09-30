@@ -55,7 +55,7 @@ func createSettingsTable(ctx context.Context, tx pgx.Tx, db string) error {
 	}
 
 	// TODO use common code for tables/collections: use _jsonb, do not use explicit `CREATE TABLE` SQL there, etc.
-	sql := `CREATE TABLE ` + pgx.Identifier{db, settingsTableName}.Sanitize() + ` (settings jsonb)`
+	sql := fmt.Sprintf(`CREATE TABLE %s (settings jsonb)`, pgx.Identifier{db, settingsTableName}.Sanitize())
 	_, err = tx.Exec(ctx, sql)
 	if err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
@@ -141,7 +141,7 @@ func getTableName(ctx context.Context, tx pgx.Tx, db, collection string) (string
 
 // getSettingsTable returns FerretDB settings table.
 func getSettingsTable(ctx context.Context, tx pgx.Tx, db string) (*types.Document, error) {
-	sql := `SELECT settings FROM ` + pgx.Identifier{db, settingsTableName}.Sanitize()
+	sql := fmt.Sprintf(`SELECT settings FROM %s`, pgx.Identifier{db, settingsTableName}.Sanitize())
 	rows, err := tx.Query(ctx, sql)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -172,7 +172,7 @@ func getSettingsTable(ctx context.Context, tx pgx.Tx, db string) (*types.Documen
 
 // updateSettingsTable updates FerretDB settings table.
 func updateSettingsTable(ctx context.Context, tx pgx.Tx, db string, settings *types.Document) error {
-	sql := `UPDATE ` + pgx.Identifier{db, settingsTableName}.Sanitize() + `SET settings = $1`
+	sql := fmt.Sprintf(`UPDATE %s SET settings = $1`, pgx.Identifier{db, settingsTableName}.Sanitize())
 	_, err := tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(settings)))
 	return err
 }
