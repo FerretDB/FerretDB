@@ -36,7 +36,7 @@ func TestEmbedded(t *testing.T) {
 	t.Parallel()
 
 	f, err := ferretdb.New(&ferretdb.Config{
-		ListenAddr:    "127.0.0.1:0",
+		ListenAddr:    "127.0.0.1:65432",
 		Handler:       "pg",
 		PostgreSQLURL: testutil.PostgreSQLURL(t, nil),
 	})
