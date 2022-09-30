@@ -223,18 +223,18 @@ tasks:
     desc: "Run FerretDB"
     deps: [build-testcover]
     cmds:
-      - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -test-record=records -mode=diff-normal -listen-addr=:27017
+      - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-record=records --mode=diff-normal --listen-addr=:27017
 
   run-tigris:
     deps: [build-testcover]
     cmds:
-      - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -test-record=records -mode=diff-normal -listen-addr=:27017 -handler=tigris
+      - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-record=records --mode=diff-normal --listen-addr=:27017 --handler=tigris
 
   run-proxy:
     desc: "Run FerretDB in diff-proxy mode"
     deps: [build-testcover]
     cmds:
-      - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -test-record=records -mode=diff-proxy -listen-addr=:27017
+      - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-record=records --mode=diff-proxy --listen-addr=:27017
 
   lint:
     desc: "Run linters"
@@ -331,7 +331,7 @@ tasks:
       - ../bin/nfpm{{exeExt}} package --packager=deb --target=deb/ferretdb.deb
       - >
         docker-compose run --rm debian /bin/sh -c
-        'dpkg -i /deb/ferretdb.deb && ferretdb -version'
+        'dpkg -i /deb/ferretdb.deb && ferretdb --version'
     env:
       VERSION:
         sh: cat ../internal/util/version/gen/version.txt
@@ -345,7 +345,7 @@ tasks:
       - ../bin/nfpm{{exeExt}} package --packager=rpm --target=rpm/ferretdb.rpm
       - >
         docker-compose run --rm centos /bin/sh -c
-        'rpm -i /rpm/ferretdb.rpm && ferretdb -version'
+        'rpm -i /rpm/ferretdb.rpm && ferretdb --version'
     env:
       VERSION:
         sh: cat ../internal/util/version/gen/version.txt

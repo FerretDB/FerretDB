@@ -17,17 +17,41 @@
 package main
 
 import (
+	"flag"
 	"os"
 	"testing"
+
+	"github.com/alecthomas/kong"
+	"golang.org/x/exp/slices"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // TestCover allows us to run FerretDB with coverage enabled.
 func TestCover(t *testing.T) {
-	main()
+	run()
 }
 
 // TestMain ensures that command-line flags are initialized correctly when FerretDB is run with coverage enabled.
 func TestMain(m *testing.M) {
-	initFlags()
+	// Split flags for kong and for `go test` by "--". For example:
+	// bin/ferretdb-testcover -test.coverprofile=cover.txt -- --test-record=records --mode=diff-normal --listen-addr=:27017
+	// forKong: --test-record=records --mode=diff-normal --listen-addr=:27017
+	// forTest: -test.coverprofile=cover.txt
+	forKong := os.Args[1:]
+	forTest := []string{}
+	i := slices.Index(os.Args, "--")
+	if i != -1 {
+		forKong = os.Args[i+1:]
+		forTest = os.Args[1:i]
+	}
+
+	parser := must.NotFail(kong.New(&cli, kongOptions...))
+
+	_, err := parser.Parse(forKong)
+	parser.FatalIfErrorf(err)
+
+	flag.CommandLine.Parse(forTest)
+
 	os.Exit(m.Run())
 }
