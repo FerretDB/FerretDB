@@ -31,6 +31,9 @@ import (
 
 // Config represents FerretDB configuration.
 type Config struct {
+	// Listen address; defaults to "127.0.0.1:27017".
+	ListenAddr string
+
 	// Handler to use; one of `pg` or `tigris` (if enabled at compile-time).
 	Handler string
 
@@ -54,12 +57,15 @@ type FerretDB struct {
 
 // New creates a new instance of embeddable FerretDB implementation.
 func New(config *Config) (*FerretDB, error) {
-	f := &FerretDB{
-		config:     config,
-		listenAddr: "127.0.0.1:27017",
+	listenAddr := config.ListenAddr
+	if listenAddr == "" {
+		listenAddr = "127.0.0.1:27017"
 	}
 
-	return f, nil
+	return &FerretDB{
+		config:     config,
+		listenAddr: listenAddr,
+	}, nil
 }
 
 // Run runs FerretDB until ctx is done.
