@@ -65,7 +65,7 @@ var DocumentsDoubles = &Values[string]{
 		"document-double-smallest": bson.D{{"v", math.SmallestNonzeroFloat64}},
 		"document-double-big":      bson.D{{"v", doubleBig}},
 		"document-double-empty":    bson.D{},
-		"document-double-nil":      nil,
+		"document-double-null":      nil,
 	},
 }
 
