@@ -19,7 +19,7 @@ COPY --from=build /src/bin/ferretdb /ferretdb
 EXPOSE 27017
 
 ENTRYPOINT [ "/ferretdb" ]
-CMD [ "-listen-addr=:27017", "-postgresql-url=postgres://username:password@hostname:5432/ferretdb" ]
+CMD [ "--listen-addr=:27017", "--postgresql-url=postgres://username:password@hostname:5432/ferretdb" ]
 
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md
 LABEL org.opencontainers.image.description="A truly Open Source MongoDB alternative"
