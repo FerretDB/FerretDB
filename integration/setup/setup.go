@@ -133,6 +133,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 				"Provider %q is not compatible with handler %q, skipping it.",
 				provider.Name(), *handlerF,
 			)
+
 			continue
 		}
 
