@@ -166,3 +166,43 @@ issues:
     # that's a valid usage of bson.D
     - linters: [govet]
       text: "`go.mongodb.org/mongo-driver/bson/primitive.E` composite literal uses unkeyed fields"
+
+    # integration tests exclusions
+    - path: _test\.go
+      text: "composites: go.mongodb.org/mongo-driver/bson/primitive.E struct literal uses unkeyed fields"
+      linters: [govet]
+    - path: _test\.go
+      linters: [lll]
+    - path: _test\.go
+      text: "import of package `go.mongodb.org/mongo-driver/*"
+      linters: [gomodguard]
+    - path: setup/common.go
+      text: "import of package `go.mongodb.org/mongo-driver/*"
+      linters: [gomodguard]
+    - path: setup/setup.go
+      text: "import of package `go.mongodb.org/mongo-driver/*"
+      linters: [gomodguard]
+    - path: setup/setup_compat.go
+      text: "import of package `go.mongodb.org/mongo-driver/*"
+      linters: [gomodguard]
+    - path: shareddata/composites.go
+      text: "import of package `go.mongodb.org/mongo-driver/*"
+      linters: [gomodguard]
+    - path: shareddata/composites.go
+      text: "composites: go.mongodb.org/mongo-driver/bson/primitive.E struct literal uses unkeyed fields"
+      linters: [govet]
+    - path: shareddata/shareddata.go
+      text: "import of package `go.mongodb.org/mongo-driver/*"
+      linters: [gomodguard]
+    - path: shareddata/shareddata.go
+      text: "composites: go.mongodb.org/mongo-driver/bson/primitive.E struct literal uses unkeyed fields"
+      linters: [govet]
+    - path: shareddata/scalars.go
+      text: "import of package `go.mongodb.org/mongo-driver/*"
+      linters: [gomodguard]
+    - path: helpers.go
+      text: "import of package `go.mongodb.org/mongo-driver/*"
+      linters: [gomodguard]
+    - path: helpers.go
+      text: "composites: go.mongodb.org/mongo-driver/bson/primitive.E struct literal uses unkeyed fields"
+      linters: [ govet ]
