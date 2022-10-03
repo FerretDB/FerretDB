@@ -19,7 +19,7 @@ Please take a look at this post on [how to contribute to open source software](h
 ## Get Started
 
 You don’t have to be a developer to contribute to FerretDB projects, you can even get started by helping us improve this documentation.
-If you have any questions or suggestions on how we can improve, kindly join our [Slack chat](https://github.com/FerretDB/FerretDB/discussions) or [GitHub discussions](https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A).
+If you have any questions or suggestions on how we can improve, kindly join our [Slack chat](/intro/#community) or [GitHub discussions](https://github.com/FerretDB/FerretDB/discussions).
 We appreciate your feedback.
 
 ## Contributing to this documentation
@@ -34,7 +34,7 @@ More information on contributing to the documentation can be found [here](https:
 If not, please let us know by [creating an issue](https://github.com/FerretDB/FerretDB/issues/new/choose).
 You can create issues for bugs, documentation, features, or enhancements.
 * You can identify issues you would like to work on by looking at the [open issues](https://github.com/FerretDB/FerretDB/issues) for this repository.
-* For first-time contributors looking for issues to work on, kindly check the issues that are labeled [good-first-issues](https://github.com/FerretDB/FerretDB/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+* For first-time contributors looking for issues to work on, kindly check the issues that are labeled [good-first-issues](https://github.com/FerretDB/FerretDB/contribute)
 
 ## Contributing to dance
 
