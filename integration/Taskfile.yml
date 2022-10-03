@@ -25,20 +25,27 @@ tasks:
       - "**/*.go"
 
   lint:
+    deps:
+      - lint-golangci-lint
+      - lint-go-sumtype
+      - lint-go-consistent
     cmds:
-      - go vet -vettool=../bin/checkswitch{{exeExt}} ./...
-      - ../bin/golangci-lint{{exeExt}} run --config=../.golangci-new.yml
+      - task: lint-golangci-lint-new
     sources:
       - "**/*.go"
 
   lint-golangci-lint:
     cmds:
       - ../bin/golangci-lint{{exeExt}} run --config=.golangci.yml
-    sources:
-      - "**/*.go"
+
+  lint-golangci-lint-new:
+    cmds:
+      - ../bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
+
+  lint-go-sumtype:
+    cmds:
+      - ../bin/go-sumtype{{exeExt}} ./...
 
   lint-go-consistent:
     cmds:
-      - ../bin/go-consistent{{exeExt}} -v -pedantic ./...
-    sources:
-      - "**/*.go"
+      - ../bin/go-consistent{{exeExt}} -pedantic ./...

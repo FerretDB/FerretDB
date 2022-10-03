@@ -1,0 +1,133 @@
+---
+# New or experimental linters that should pass (or be reconfigured) for new code (compared to `origin/main`).
+
+run:
+  timeout: 3m
+
+linters-settings:
+  errorlint:
+    # see caveats at https://github.com/polyfloyd/go-errorlint#fmterrorf-wrapping-verb
+    errorf: false
+    asserts: true
+    comparison: true
+
+  staticcheck:
+    checks: ["all"]
+  wsl:
+    # https://github.com/bombsimon/wsl/blob/master/doc/configuration.md
+    strict-append: false
+    allow-assign-and-call: true
+    allow-assign-and-anything: true
+    allow-multiline-assign: true
+    allow-separated-leading-comment: true
+    force-case-trailing-whitespace: 0
+    allow-cuddle-declarations: true
+    allow-case-trailing-whitespace: true
+    allow-trailing-comment: true
+    enforce-err-cuddling: false
+    force-short-decl-cuddling: false
+
+linters:
+  enable-all: true
+  disable:
+    # checked by the other configuration
+    - asciicheck
+    - depguard
+    - exhaustive
+    - gci
+    - goconst
+    - godot
+    - godox
+    - goheader
+    - goimports
+    - gomodguard
+    - gosimple
+    - govet
+    - importas
+    - ineffassign
+    - lll
+    - misspell
+    - nolintlint
+    - revive
+    - unused
+    - whitespace
+
+    # TODO configure and enable one by one
+    - bidichk
+    - containedctx
+    - cyclop
+    - deadcode
+    - decorder
+    - dogsled
+    - dupl
+    - durationcheck
+    - errcheck
+    - errchkjson
+    - errname
+    - execinquery
+    - exhaustivestruct
+    - exhaustruct
+    - exportloopref
+    - forbidigo
+    - forcetypeassert
+    - funlen
+    - gochecknoglobals
+    - gochecknoinits
+    - gocognit
+    - gocritic
+    - gocyclo
+    - goerr113
+    - gofmt
+    - gofumpt
+    - gomnd
+    - gomoddirectives
+    - goprintffuncname
+    - gosec
+    - grouper
+    - ifshort
+    - ireturn
+    - maintidx
+    - makezero
+    - nakedret
+    - nestif
+    - nilnil
+    - nonamedreturns
+    - nosprintfhostport
+    - paralleltest
+    - prealloc
+    - predeclared
+    - promlinter
+    - stylecheck
+    - tagliatelle
+    - tenv
+    - thelper
+    - typecheck
+    - unconvert
+    - varcheck
+    - varnamelen
+    - wrapcheck
+
+    # TODO https://github.com/golangci/golangci-lint/issues/2649
+    - bodyclose
+    - contextcheck
+    - nilerr
+    - noctx
+    - rowserrcheck
+    - sqlclosecheck
+    - structcheck
+    - tparallel
+    - unparam
+    - wastedassign
+
+    - golint      # deprecated
+    - interfacer  # deprecated
+    - maligned    # deprecated
+    - nlreturn    # too annoying
+    - scopelint   # deprecated
+    - testpackage # we test internals
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  exclude-use-default: false
+  new-from-rev: origin/main

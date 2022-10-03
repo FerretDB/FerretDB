@@ -243,14 +243,17 @@ tasks:
       - lint-go-sumtype
       - lint-go-consistent
     cmds:
-      - bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
+      - task: lint-golangci-lint-new
       - go vet -vettool=./bin/checkswitch{{exeExt}} ./...
       - bin/task{{exeExt}} -d integration lint
-      - bin/task{{exeExt}} -d integration lint-golangci-lint
 
   lint-golangci-lint:
     cmds:
       - bin/golangci-lint{{exeExt}} run --config=.golangci.yml
+
+  lint-golangci-lint-new:
+    cmds:
+      - bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
 
   lint-go-sumtype:
     cmds:
@@ -259,7 +262,6 @@ tasks:
   lint-go-consistent:
     cmds:
       - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./ferretdb/...
-      - bin/task{{exeExt}} -d integration lint-go-consistent
       - bin/task{{exeExt}} -d tools lint-go-consistent
 
   godocs:
