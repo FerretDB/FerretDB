@@ -45,7 +45,8 @@ jobs:
       - name: Scan
         run: bin/task --exit-code security
 
-      # workaround for `hashFiles` issue
+      # Workaround for `hashFiles` issue.
+      # See https://github.com/actions/runner/issues/449#issuecomment-1265837735.
       - name: Clean
         run: |
-          git clean -xdf
+          sudo rm -fr .cache
