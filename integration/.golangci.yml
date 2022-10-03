@@ -54,6 +54,7 @@ linters-settings:
       limitations under the License.
   goimports:
     local-prefixes: github.com/FerretDB/FerretDB
+  # gomodguard
   gosimple:
     checks: ["all"]
   # govet
@@ -64,9 +65,6 @@ linters-settings:
       - pkg: github.com/tigrisdata/tigris-client-go/api/server/v1
         alias: api
   # ineffassign
-  lll:
-    line-length: 130
-    tab-width: 4
   misspell:
     ignore-words:
       - guiness # present in the test dataset
@@ -119,45 +117,6 @@ issues:
 
   exclude-use-default: false
   exclude-rules:
-    # only `wire` package can import `bson` package
-    - linters: [depguard]
-      path: internal/wire
-      text: bson
-
-    # only `pg` handler can import `pgdb` package, not other handler can do that
-    - linters: [depguard]
-      path: internal/handlers/pg
-      text: pgdb
-    - linters: [depguard]
-      path: cmd/envtool
-      text: pgdb
-    - linters: [depguard]
-      path: cmd/ferretdb
-      text: pgdb
-    - linters: [depguard]
-      path: internal/util/testutil
-      text: pgdb
-    - linters: [depguard]
-      path: internal/handlers/registry
-      text: pgdb
-
-    # only `pg` handler can import `fjson` package, not other handler can do that
-    - linters: [depguard]
-      path: internal/handlers/pg
-      text: fjson
-    - linters: [depguard]
-      path: internal/wire
-      text: fjson
-    - linters: [depguard]
-      path: internal/util/testutil
-      text: fjson
-
-    # only `tigris` handler can import `tjson` package, not other handler can do that
-    - linters: [depguard]
-      path: internal/handlers/tigris
-      text: tjson
-
     # that's a valid usage of bson.D
     - linters: [govet]
       text: "composites: go.mongodb.org/mongo-driver/bson/primitive.E struct literal uses unkeyed fields"
-
