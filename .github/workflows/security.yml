@@ -44,3 +44,8 @@ jobs:
 
       - name: Scan
         run: bin/task --exit-code security
+
+      # workaround for `hashFiles` issue
+      - name: Clean
+        run: |
+          git clean -xdf
