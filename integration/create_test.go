@@ -138,9 +138,11 @@ func TestCreateTigris(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			opts := new(options.CreateCollectionOptions).SetValidator(bson.D{{tc.validator, tc.schema}})
+			opts := options.CreateCollectionOptions{
+				Validator: bson.D{{tc.validator, tc.schema}},
+			}
 
-			err := db.Client().Database(dbName).CreateCollection(ctx, tc.collection, opts)
+			err := db.Client().Database(dbName).CreateCollection(ctx, tc.collection, &opts)
 			if tc.expectedErr != nil {
 				AssertEqualError(t, *tc.expectedErr, err)
 			} else {

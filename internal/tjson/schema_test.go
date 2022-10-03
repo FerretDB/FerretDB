@@ -33,6 +33,7 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 			"balance": doubleSchema,
 			"data":    binarySchema,
 		},
+		Type:       Object,
 		PrimaryKey: []string{"_id"},
 	}
 
@@ -42,6 +43,7 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 
 	expectedB := testutil.IndentJSON(t, []byte(`{
 		"title": "users",
+		"type": "object",
 		"properties": {
 			"$k": {"type": "array", "items": {"type": "string"}},
 			"_id": {"type": "string", "format": "byte"},

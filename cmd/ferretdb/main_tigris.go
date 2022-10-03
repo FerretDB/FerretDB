@@ -17,10 +17,19 @@
 package main
 
 import (
-	"flag"
+	"github.com/alecthomas/kong"
 )
+
+// The tigrisFlags struct represents flags that
+// are used specifically for a "tigris" handler.
+var tigrisFlags struct {
+	TigrisClientID     string `default:"" help:"Tigris Client ID."`
+	TigrisClientSecret string `default:"" help:"Tigris Client secret."`
+	TigrisToken        string `default:"" help:"Tigris token."`
+	TigrisURL          string `default:"http://127.0.0.1:8081/" help:"Tigris URL."`
+}
 
 // init adds "tigris" handler flags when "ferretdb_tigris" build tag is provided.
 func init() {
-	flag.StringVar(&tigrisURL, "tigris-url", "127.0.0.1:8081", "Tigris URL")
+	cli.Plugins = kong.Plugins{&tigrisFlags}
 }

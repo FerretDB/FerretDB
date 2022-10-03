@@ -22,6 +22,7 @@ import (
 
 func Example() {
 	f, err := New(&Config{
+		ListenAddr:    "127.0.0.1:17027",
 		Handler:       "pg",
 		PostgreSQLURL: "postgres://postgres@127.0.0.1:5432/ferretdb",
 	})
@@ -42,5 +43,5 @@ func Example() {
 	//
 	// mongo.Connect(ctx, options.Client().ApplyURI(uri)
 
-	// Output: mongodb://127.0.0.1:27017/
+	// Output: mongodb://127.0.0.1:17027/
 }
