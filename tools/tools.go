@@ -14,8 +14,8 @@
 
 // Keep both old and new styles of build tags.
 
-//go:build go1.18
-// +build go1.18
+//go:build go1.19
+// +build go1.19
 
 package tools
 
@@ -30,11 +30,12 @@ import (
 	_ "golang.org/x/tools/cmd/godoc"
 	_ "golang.org/x/tools/cmd/goimports"
 	_ "golang.org/x/tools/cmd/stringer"
+	_ "golang.org/x/vuln/cmd/govulncheck"
 	_ "mvdan.cc/gofumpt"
 )
 
 // Check that `go` in $PATH have the right version.
-// Catches problems like `/some/path/go generate` invocations where `/some/path/go` is 1.18+
+// Catches problems like `/some/path/go generate` invocations where `/some/path/go` is 1.19+
 // (that's checked by the build tags above), but just `go` in $PATH (typically something like `/usr/bin/go`)
 // is an earlier version.
 
@@ -52,4 +53,5 @@ import (
 //go:generate go build -v -o ../bin/ golang.org/x/tools/cmd/godoc
 //go:generate go build -v -o ../bin/ golang.org/x/tools/cmd/goimports
 //go:generate go build -v -o ../bin/ golang.org/x/tools/cmd/stringer
+//go:generate go build -v -o ../bin/ golang.org/x/vuln/cmd/govulncheck
 //go:generate go build -v -o ../bin/ mvdan.cc/gofumpt

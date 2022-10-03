@@ -63,7 +63,11 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	created, err := pgdb.CreateCollectionIfNotExist(ctx, h.pgPool, sp.DB, sp.Collection)
+	var created bool
+	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		created, err = pgdb.CreateCollectionIfNotExist(ctx, tx, sp.DB, sp.Collection)
+		return err
+	})
 	if err != nil {
 		if errors.Is(pgdb.ErrInvalidTableName, err) ||
 			errors.Is(pgdb.ErrInvalidDatabaseName, err) {
@@ -131,7 +135,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		resDocs := make([]*types.Document, 0, 16)
 		err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp)
+			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, &sp)
 			if err != nil {
 				return err
 			}
@@ -187,7 +191,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				"_id", must.NotFail(doc.Get("_id")),
 			))))
 
-			if err = h.insert(ctx, sp, doc); err != nil {
+			if err = h.insert(ctx, &sp, doc); err != nil {
 				return nil, err
 			}
 
@@ -243,9 +247,15 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 func (h *Handler) update(ctx context.Context, sp *pgdb.SQLParam, doc *types.Document) (int64, error) {
 	id := must.NotFail(doc.Get("_id"))
 
-	rowsUpdated, err := h.pgPool.SetDocumentByID(ctx, sp, id, doc)
+	var rowsUpdated int64
+	err := h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		var err error
+		rowsUpdated, err = pgdb.SetDocumentByID(ctx, tx, sp, id, doc)
+		return err
+	})
 	if err != nil {
 		return 0, err
 	}
+
 	return rowsUpdated, nil
 }

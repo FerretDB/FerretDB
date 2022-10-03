@@ -18,6 +18,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/jackc/pgx/v4"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -55,9 +57,20 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 		return nil, err
 	}
 
-	names, err := pgdb.Collections(ctx, h.pgPool, db)
-	if err != nil && !errors.Is(err, pgdb.ErrSchemaNotExist) {
-		return nil, lazyerrors.Error(err)
+	var names []string
+
+	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		var err error
+
+		names, err = pgdb.Collections(ctx, tx, db)
+		if err != nil && !errors.Is(err, pgdb.ErrSchemaNotExist) {
+			return lazyerrors.Error(err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	collections := types.MakeArray(len(names))

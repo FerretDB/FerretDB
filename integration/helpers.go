@@ -246,6 +246,8 @@ func AssertEqualAltWriteError(t *testing.T, expected mongo.WriteError, altMessag
 }
 
 // UnsetRaw returns error with all Raw fields unset. It returns nil if err is nil.
+//
+// Error is checked using a regular type assertion; wrapped errors (errors.As) are not checked.
 func UnsetRaw(t testing.TB, err error) error {
 	t.Helper()
 

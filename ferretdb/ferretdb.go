@@ -31,14 +31,22 @@ import (
 
 // Config represents FerretDB configuration.
 type Config struct {
+	// Listen address; defaults to "127.0.0.1:27017".
+	ListenAddr string
+
 	// Handler to use; one of `pg` or `tigris` (if enabled at compile-time).
 	Handler string
 
 	// PostgreSQL connection string for `pg` handler.
-	PostgreSQLURL string
+	PostgreSQLURL string // For example: `postgres://username:password@hostname:5432/ferretdb`.
 
-	// Tigris connection string for `tigris` handler.
-	TigrisURL string
+	// Tigris parameters for `tigris` handler.
+	// See https://docs.tigrisdata.com/overview/authentication
+	// and https://docs.tigrisdata.com/golang/getting-started.
+	TigrisClientID     string
+	TigrisClientSecret string
+	TigrisToken        string
+	TigrisURL          string
 }
 
 // FerretDB represents an instance of embeddable FerretDB implementation.
@@ -49,12 +57,15 @@ type FerretDB struct {
 
 // New creates a new instance of embeddable FerretDB implementation.
 func New(config *Config) (*FerretDB, error) {
-	f := &FerretDB{
-		config:     config,
-		listenAddr: "127.0.0.1:27017",
+	listenAddr := config.ListenAddr
+	if listenAddr == "" {
+		listenAddr = "127.0.0.1:27017"
 	}
 
-	return f, nil
+	return &FerretDB{
+		config:     config,
+		listenAddr: listenAddr,
+	}, nil
 }
 
 // Run runs FerretDB until ctx is done.
@@ -62,10 +73,15 @@ func New(config *Config) (*FerretDB, error) {
 // When this method returns, listener and all connections are closed.
 func (f *FerretDB) Run(ctx context.Context) error {
 	newOpts := registry.NewHandlerOpts{
-		Ctx:           context.Background(),
-		Logger:        logger,
+		Ctx:    context.Background(),
+		Logger: logger,
+
 		PostgreSQLURL: f.config.PostgreSQLURL,
-		TigrisURL:     f.config.TigrisURL,
+
+		TigrisClientID:     f.config.TigrisClientID,
+		TigrisClientSecret: f.config.TigrisClientSecret,
+		TigrisToken:        f.config.TigrisToken,
+		TigrisURL:          f.config.TigrisURL,
 	}
 	h, err := registry.NewHandler(f.config.Handler, &newOpts)
 	if err != nil {

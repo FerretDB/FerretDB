@@ -82,7 +82,7 @@ jobs:
         run: bin/task init
 
       - name: Regenerate and reformat
-        run: bin/task -p gen docs
+        run: bin/task gen
 
       - name: Wait for and setup environment
         run: bin/task env-setup
@@ -99,6 +99,7 @@ jobs:
           files: ./cover.txt
           flags: unit
           fail_ci_if_error: true
+          verbose: true
 
       # we don't want them on CI
       - name: Clean test and fuzz caches
@@ -196,7 +197,7 @@ jobs:
         if: always()
         run: |
           bin/task fuzz-corpus
-          go run ./cmd/fuzztool/fuzztool.go -src=seed -dst=../fuzz-corpus
+          go run ./cmd/fuzztool/fuzztool.go corpus seed ../fuzz-corpus
         working-directory: source
 
       # `secrets` are not supported in `if`, so we have to do this trick with environment variable:
@@ -232,6 +233,8 @@ jobs:
         with:
           name: linux-logs
           path: /tmp/logs
+          retention-days: 14
+          if-no-files-found: error
 
       # we don't want them on CI
       - name: Clean test and fuzz caches

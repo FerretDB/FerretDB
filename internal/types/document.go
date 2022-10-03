@@ -116,9 +116,12 @@ func (d *Document) DeepCopy() *Document {
 }
 
 // isValidKey returns false if key is not a valid document field key.
+//
+// TODO That function should be removed once we have separate validation for command and data documents.
 func isValidKey(key string) bool {
 	if key == "" {
-		return false
+		// TODO that should be valid only for command documents, not for data documents
+		return true
 	}
 
 	// forbid keys like $k (used by fjson representation), but allow $db (used by many commands)
@@ -353,13 +356,18 @@ func (d *Document) SetByPath(path Path, value any) error {
 				"Cannot create field '%s' in element {%s: %s}",
 				path.Suffix(),
 				path.Slice()[len(path.Slice())-2],
-				formatAnyValue(innerComp),
+				FormatAnyValue(innerComp),
 			)
 		}
 
 		return inner.Set(index, value)
 	default:
-		panic(fmt.Errorf("can't set value for %T type", inner))
+		return fmt.Errorf(
+			"Cannot create field '%s' in element {%s: %s}",
+			path.Suffix(),
+			path.Prefix(),
+			FormatAnyValue(must.NotFail(d.Get(path.Prefix()))),
+		)
 	}
 }
 

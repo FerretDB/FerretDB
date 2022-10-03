@@ -41,6 +41,7 @@ func TestCreateTigris(t *testing.T) {
 		schema      string
 		collection  string
 		expectedErr *mongo.CommandError
+		doc         bson.D
 	}{
 		"BadValidator": {
 			validator:  "$bad",
@@ -69,7 +70,7 @@ func TestCreateTigris(t *testing.T) {
 			expectedErr: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "[schema.go:208 tjson.(*Schema).Unmarshal] invalid character 'b' looking for beginning of value",
+				Message: "invalid character 'b' looking for beginning of value",
 			},
 		},
 		"Valid": {
@@ -81,12 +82,18 @@ func TestCreateTigris(t *testing.T) {
 				"properties": {
 					"balance": {"type": "number"},
 					"age": {"type": "integer", "format": "int32"},
-					"_id": {"type": "string", "format": "byte"},
-					"arr": {"type": "array", "items": {"type": "string"}}
+					"_id": {"type": "string"},
+					"obj": {"type": "object", "properties": {"foo": {"type": "string"}}}
 				}
 			}`, collection.Name(),
 			),
 			collection: collection.Name() + "_good",
+			doc: bson.D{
+				{"_id", "foo"},
+				{"balance", 1.0},
+				{"age", 1},
+				{"obj", bson.D{{"foo", "bar"}}},
+			},
 		},
 		"WrongPKey": {
 			validator: "$tigrisSchemaString",
@@ -106,7 +113,7 @@ func TestCreateTigris(t *testing.T) {
 			expectedErr: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "[schema.go:208 tjson.(*Schema).Unmarshal] json: cannot unmarshal number into Go struct field Schema.primary_key of type string",
+				Message: "json: cannot unmarshal number into Go struct field Schema.primary_key of type string",
 			},
 		},
 		"WrongProperties": {
@@ -122,7 +129,7 @@ func TestCreateTigris(t *testing.T) {
 			expectedErr: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "[schema.go:208 tjson.(*Schema).Unmarshal] json: cannot unmarshal string into Go struct field Schema.properties of type map[string]*tjson.Schema",
+				Message: "json: cannot unmarshal string into Go struct field Schema.properties of type map[string]*tjson.Schema",
 			},
 		},
 	} {
@@ -131,12 +138,20 @@ func TestCreateTigris(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			opts := new(options.CreateCollectionOptions).SetValidator(bson.D{{tc.validator, tc.schema}})
+			opts := options.CreateCollectionOptions{
+				Validator: bson.D{{tc.validator, tc.schema}},
+			}
 
-			err := db.Client().Database(dbName).CreateCollection(ctx, tc.collection, opts)
+			err := db.Client().Database(dbName).CreateCollection(ctx, tc.collection, &opts)
 			if tc.expectedErr != nil {
 				AssertEqualError(t, *tc.expectedErr, err)
 			} else {
+				require.NoError(t, err)
+			}
+
+			// to make sure that schema is correct, we try to insert a document
+			if tc.doc != nil {
+				_, err = db.Collection(tc.collection).InsertOne(ctx, tc.doc)
 				require.NoError(t, err)
 			}
 		})

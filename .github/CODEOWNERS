@@ -4,6 +4,4 @@
 *              @AlekSi
 /integration/  @FerretDB/leads
 /internal/     @FerretDB/leads
-
-go.mod         @AlekSi
-go.sum         @AlekSi
+/website/      @FerretDB/doc

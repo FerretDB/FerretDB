@@ -1,0 +1,7 @@
+{
+  "name": "tools",
+  "dependencies": {
+    "textlint": "12.2.2",
+    "textlint-rule-one-sentence-per-line": "2.0.0"
+  }
+}

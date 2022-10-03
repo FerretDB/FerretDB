@@ -18,6 +18,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/jackc/pgx/v4"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -45,7 +47,10 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	err = pgdb.DropCollection(ctx, h.pgPool, db, collection)
+	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		return pgdb.DropCollection(ctx, tx, db, collection)
+	})
+
 	switch {
 	case err == nil:
 		// nothing

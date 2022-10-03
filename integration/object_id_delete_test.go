@@ -49,7 +49,7 @@ func TestStringAsID(t *testing.T) {
 	assert.Equal(t, int64(1), del.DeletedCount)
 
 	err = collection.FindOne(ctx, bson.D{{"_id", "string_id"}}).Decode(&doc)
-	assert.ErrorIs(t, mongo.ErrNoDocuments, err)
+	assert.ErrorIs(t, err, mongo.ErrNoDocuments)
 }
 
 func TestSmokeObjectIDBinary(t *testing.T) {
@@ -84,7 +84,7 @@ func TestSmokeObjectIDBinary(t *testing.T) {
 	assert.Equal(t, int64(1), del.DeletedCount)
 
 	err = collection.FindOne(ctx, bson.D{}).Decode(&doc)
-	assert.ErrorIs(t, mongo.ErrNoDocuments, err)
+	assert.ErrorIs(t, err, mongo.ErrNoDocuments)
 }
 
 func TestDeleteMany(t *testing.T) {

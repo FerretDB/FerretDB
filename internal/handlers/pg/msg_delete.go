@@ -50,147 +50,75 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
+	var sp pgdb.SQLParam
+
+	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
+	}
+
+	collectionParam, err := document.Get(document.Command())
+	if err != nil {
+		return nil, err
+	}
+
+	var ok bool
+	if sp.Collection, ok = collectionParam.(string); !ok {
+		return nil, common.NewErrorMsg(
+			common.ErrBadValue,
+			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+		)
+	}
+
+	// get comment from options.Delete().SetComment() method
+	if sp.Comment, err = common.GetOptionalParam(document, "comment", sp.Comment); err != nil {
+		return nil, err
+	}
+
 	var deleted int32
-	processQuery := func(i int) error {
+	var delErrors common.WriteErrors
+
+	// process every delete filter
+	for i := 0; i < deletes.Len(); i++ {
 		// get document with filter
-		d, err := common.AssertType[*types.Document](must.NotFail(deletes.Get(i)))
+		deleteDoc, err := common.AssertType[*types.Document](must.NotFail(deletes.Get(i)))
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		if err := common.Unimplemented(d, "collation", "hint"); err != nil {
-			return err
-		}
-
-		// get filter from document
-		var filter *types.Document
-		if filter, err = common.GetOptionalParam(d, "q", filter); err != nil {
-			return err
-		}
-
-		var limit int64 // TODO https://github.com/FerretDB/FerretDB/issues/982
-		if l, _ := d.Get("limit"); l != nil {
-			if limit, err = common.GetWholeNumberParam(l); err != nil {
-				return err
-			}
-		}
-
-		var sp pgdb.SQLParam
-		if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-			return err
-		}
-		collectionParam, err := document.Get(document.Command())
+		filter, limit, err := h.prepareDeleteParams(deleteDoc)
 		if err != nil {
-			return err
-		}
-		var ok bool
-		if sp.Collection, ok = collectionParam.(string); !ok {
-			return common.NewErrorMsg(
-				common.ErrBadValue,
-				fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
-			)
-		}
-
-		// get comment from options.Delete().SetComment() method
-		if sp.Comment, err = common.GetOptionalParam(document, "comment", sp.Comment); err != nil {
-			return err
+			return nil, err
 		}
 
 		// get comment from query, e.g. db.collection.DeleteOne({"_id":"string", "$comment: "test"})
 		if sp.Comment, err = common.GetOptionalParam(filter, "$comment", sp.Comment); err != nil {
-			return err
+			return nil, err
 		}
 
-		resDocs := make([]*types.Document, 0, 16)
-		err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-			// fetch current items from collection
-			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp)
-			if err != nil {
-				return err
-			}
-			defer func() {
-				// Drain the channel to prevent leaking goroutines.
-				// TODO Offer a better design instead of channels: https://github.com/FerretDB/FerretDB/issues/898.
-				for range fetchedChan {
-				}
-			}()
+		del, err := h.execDelete(ctx, &sp, filter, limit)
+		if err == nil {
+			deleted += del
+			continue
+		}
 
-			// iterate through every row and delete matching ones
-			for fetchedItem := range fetchedChan {
-				if fetchedItem.Err != nil {
-					return fetchedItem.Err
-				}
+		delErrors.Append(err, int32(i))
 
-				for _, doc := range fetchedItem.Docs {
-					matches, err := common.FilterDocument(doc, filter)
-					if err != nil {
-						return err
-					}
-
-					if !matches {
-						continue
-					}
-
-					resDocs = append(resDocs, doc)
-				}
-
-				if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
-					return err
-				}
-
-				// if no field is matched in a row, go to the next one
-				if len(resDocs) == 0 {
-					continue
-				}
-
-				rowsDeleted, err := h.delete(ctx, &sp, resDocs)
-				if err != nil {
-					return err
-				}
-
-				deleted += int32(rowsDeleted)
-			}
-
-			return nil
-		})
-
-		return err
-	}
-
-	delErrors := new(common.WriteErrors)
-
-	var reply wire.OpMsg
-
-	// process every delete filter
-	for i := 0; i < deletes.Len(); i++ {
-		err := processQuery(i)
-		if err != nil {
-			delErrors.Append(err, int32(i))
-
-			// Delete statements in the `deletes` field are not transactional.
-			// It means that we run each delete statement separately.
-			// If `ordered` is set as `true`, we don't execute the remaining statements
-			// after the first failure.
-			// If `ordered` is set as `false`,  we execute all the statements and return
-			// the list of errors corresponding to the failed statements.
-			if ordered {
-				break
-			}
+		if ordered {
+			break
 		}
 	}
 
-	var replyDoc *types.Document
+	replyDoc := must.NotFail(types.NewDocument(
+		"ok", float64(1),
+	))
 
-	// if there are delete errors append writeErrors field
-	if len(*delErrors) > 0 {
+	if len(delErrors) > 0 {
 		replyDoc = delErrors.Document()
-	} else {
-		replyDoc = must.NotFail(types.NewDocument(
-			"ok", float64(1),
-		))
 	}
 
 	must.NoError(replyDoc.Set("n", deleted))
+
+	var reply wire.OpMsg
 
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{replyDoc},
@@ -202,6 +130,106 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
+// prepareDeleteParams extracts query filter and limit from delete document.
+func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Document, int64, error) {
+	var err error
+
+	if err = common.Unimplemented(deleteDoc, "collation", "hint"); err != nil {
+		return nil, 0, err
+	}
+
+	// get filter from document
+	var filter *types.Document
+	if filter, err = common.GetOptionalParam(deleteDoc, "q", filter); err != nil {
+		return nil, 0, err
+	}
+
+	l, err := deleteDoc.Get("limit")
+	if err != nil {
+		return nil, 0, common.NewErrorMsg(
+			common.ErrMissingField,
+			"BSON field 'delete.deletes.limit' is missing but a required field",
+		)
+	}
+
+	var limit int64
+	if limit, err = common.GetWholeNumberParam(l); err != nil || limit < 0 || limit > 1 {
+		return nil, 0, common.NewErrorMsg(
+			common.ErrFailedToParse,
+			fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", l),
+		)
+	}
+
+	return filter, limit, nil
+}
+
+// execDelete fetches documents, filter them out and limiting with the given limit value.
+// It returns the number of deleted documents or an error.
+func (h *Handler) execDelete(ctx context.Context, sp *pgdb.SQLParam, filter *types.Document, limit int64) (int32, error) {
+	var err error
+
+	resDocs := make([]*types.Document, 0, 16)
+
+	var deleted int32
+	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		// fetch current items from collection
+		fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			// Drain the channel to prevent leaking goroutines.
+			// TODO Offer a better design instead of channels: https://github.com/FerretDB/FerretDB/issues/898.
+			for range fetchedChan {
+			}
+		}()
+
+		// iterate through every row and delete matching ones
+		for fetchedItem := range fetchedChan {
+			if fetchedItem.Err != nil {
+				return fetchedItem.Err
+			}
+
+			for _, doc := range fetchedItem.Docs {
+				matches, err := common.FilterDocument(doc, filter)
+				if err != nil {
+					return err
+				}
+
+				if !matches {
+					continue
+				}
+
+				resDocs = append(resDocs, doc)
+			}
+
+			if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
+				return err
+			}
+
+			// if no field is matched in a row, go to the next one
+			if len(resDocs) == 0 {
+				continue
+			}
+
+			rowsDeleted, err := h.delete(ctx, sp, resDocs)
+			if err != nil {
+				return err
+			}
+
+			deleted += int32(rowsDeleted)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return 0, err
+	}
+
+	return deleted, nil
+}
+
 // delete deletes documents by _id.
 func (h *Handler) delete(ctx context.Context, sp *pgdb.SQLParam, docs []*types.Document) (int64, error) {
 	ids := make([]any, len(docs))
@@ -210,10 +238,16 @@ func (h *Handler) delete(ctx context.Context, sp *pgdb.SQLParam, docs []*types.D
 		ids[i] = id
 	}
 
-	rowsDeleted, err := h.pgPool.DeleteDocumentsByID(ctx, sp, ids)
+	var rowsDeleted int64
+	err := h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		var err error
+		rowsDeleted, err = pgdb.DeleteDocumentsByID(ctx, tx, sp, ids)
+		return err
+	})
 	if err != nil {
 		// TODO check error code
 		return 0, common.NewError(common.ErrNamespaceNotFound, fmt.Errorf("delete: ns not found: %w", err))
 	}
+
 	return rowsDeleted, nil
 }

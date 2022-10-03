@@ -82,7 +82,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		if err := pgdb.CreateCollection(ctx, tx, db, collection); err != nil {
 			if errors.Is(err, pgdb.ErrAlreadyExist) {
-				msg := fmt.Sprintf("Collection already exists. NS: %s.%s", db, collection)
+				msg := fmt.Sprintf("Collection %s.%s already exists.", db, collection)
 				return common.NewErrorMsg(common.ErrNamespaceExists, msg)
 			}
 			if errors.Is(err, pgdb.ErrInvalidTableName) {

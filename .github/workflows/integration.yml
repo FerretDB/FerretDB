@@ -74,6 +74,7 @@ jobs:
           files: ./integration/integration-${{ matrix.task }}.txt
           flags: integration,${{ matrix.task }}
           fail_ci_if_error: true
+          verbose: true
 
       # we don't want them on CI
       - name: Clean test and fuzz caches

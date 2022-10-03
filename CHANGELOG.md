@@ -1,5 +1,116 @@
 # Changelog
 
+## [v0.5.4](https://github.com/FerretDB/FerretDB/releases/tag/v0.5.4) (2022-09-22)
+
+### Fixed Bugs 🐛
+* Add missing `$k` to the schema when creating collection in Tigris by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1136
+
+### Documentation 📄
+* Remove docusaurus references and update documentation by @Fashander in https://github.com/FerretDB/FerretDB/pull/1130
+* Deploy documentation PRs to Vercel by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1131
+
+### Other Changes 🤖
+* Add transaction to `msg_drop` by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1129
+* Add transaction to `pg`'s `msg_listcollections` by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1135
+* Fix tests for Tigris by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1134
+* Use fixed `-test-record` directory in Task targets by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1139
+* Fix a typo in Readme by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1141
+* Use transaction in more `pgdb` functions by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1143
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1158
+* Use transaction in more `pgdb` functions by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1144
+* Refactor `msg_delete` handlers by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1152
+* Improve contributing guidelines by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1146
+* Update process documentation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1153
+* Update issues and PR templates by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1155
+* Fix typo by @si3nloong in https://github.com/FerretDB/FerretDB/pull/1165
+* Migrate fuzztool to Kong by @noisersup in https://github.com/FerretDB/FerretDB/pull/1159
+
+## New Contributors
+* @si3nloong made their first contribution in https://github.com/FerretDB/FerretDB/pull/1165
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/23?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v0.5.3...v0.5.4).
+
+
+## [v0.5.3](https://github.com/FerretDB/FerretDB/releases/tag/v0.5.3) (2022-09-08)
+
+### New Features 🎉
+* Add support for updates with replacement objects by @fcoury in https://github.com/FerretDB/FerretDB/pull/791
+* Add support for `$update`'s `$set` and `$setOnInsert` operators dot notation by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1008
+* Support `$pop` array update operator by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1020
+* Add support for `$update`'s `$unset` operators dot notation by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1028
+* `tjson`: Implement `regex` by @noisersup in https://github.com/FerretDB/FerretDB/pull/1050
+* Implement `MsgDataSize` for Tigris by @polldo in https://github.com/FerretDB/FerretDB/pull/1060
+* Support `ordered` argument for `delete` command by @noisersup in https://github.com/FerretDB/FerretDB/pull/1004
+* Implement simple query pushdown for Tigris by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1091
+* Implement `MsgFindAndModify` for Tigris by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1065
+* implement `timestamp` type for tigris by @noisersup in https://github.com/FerretDB/FerretDB/pull/1117
+
+### Fixed Bugs 🐛
+* Improve `TestCommandsAdministrationServerStatus` by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1062
+* Fix `ModifiedCount` for updates with an empty replacement document by @nicolascb in https://github.com/FerretDB/FerretDB/pull/1067
+* Fix `$inc` `update` operator int64-max issue by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1071
+* Handle `findAndModify` and `update` correctly when collection doesn't exist by @noisersup in https://github.com/FerretDB/FerretDB/pull/1087
+* Require `limit` parameter in `delete` command by @noisersup in https://github.com/FerretDB/FerretDB/pull/1066
+
+### Enhancements 🛠
+* Fix `update` operation for Tigris handler by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1041
+* Collect sizes in `MsgListDatabases` for Tigris by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1043
+
+### Documentation 📄
+* Add GitHub Pages with documentation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1100
+* Improve contribution guidelines and documentation website by @Fashander in https://github.com/FerretDB/FerretDB/pull/1114
+* Fix macOS spelling by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1127
+
+### Other Changes 🤖
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1014
+* Fix `Run linters` job in Taskfile.yml by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1022
+* Improve and document integration tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1021
+* Add missing `MaxTimeMS` support for Tigris by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1026
+* Expose `delete` problem by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1030
+* Bump Tigris version to 1.0.0-alpha.27 by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1032
+* Bump postgres from 14.4 to 14.5 in /build/deps by @dependabot in https://github.com/FerretDB/FerretDB/pull/1033
+* `tjson`: Implement `datetime` by @noisersup in https://github.com/FerretDB/FerretDB/pull/1027
+* `tjson`: Add package documentation for types mapping by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1031
+* Rework database and collection creation for Tigris by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1038
+* Add a few more tests for logical query operators by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1049
+* Ensure that database and collection names are unique by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1046
+* Implement `MsgDBStats` for Tigris by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1047
+* Bump Tigris version to 1.0.0-alpha.29 by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1054
+* Add tests for update with replacement by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1044
+* Small `pgdb` cleanup by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1055
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1059
+* Less strict delta for `dataSize` in tests by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1053
+* Add `collMod` command stub by @ravilushqa in https://github.com/FerretDB/FerretDB/pull/1037
+* Add a linter for Semantic Line Breaks in Markdown files by @GrandShow in https://github.com/FerretDB/FerretDB/pull/998
+* Fix data race in test by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1072
+* Use `CODECOV_TOKEN` if available by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1073
+* Bump dependencies by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1084
+* Add integration tests for logical operators by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1085
+* Implement `MsgCollStats` for Tigris by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1063
+* Implement `MsgCreate` for Tigris by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1048
+* Use npm lock files for tools by @folex in https://github.com/FerretDB/FerretDB/pull/1093
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1099
+* Simplify/sync `delete` a bit by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1104
+* Enable `errorlint` for new code by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1105
+* Add missing TODO by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1108
+* Migrate to MongoDB 6 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1074
+* Switch to Go 1.19, bump dependencies by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1123
+* Record incoming data for fuzzing by @noisersup in https://github.com/FerretDB/FerretDB/pull/1107
+* Add transaction to `msg_drop_database` by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1126
+
+## New Contributors
+* @polldo made their first contribution in https://github.com/FerretDB/FerretDB/pull/1060
+* @ravilushqa made their first contribution in https://github.com/FerretDB/FerretDB/pull/1037
+* @GrandShow made their first contribution in https://github.com/FerretDB/FerretDB/pull/998
+* @nicolascb made their first contribution in https://github.com/FerretDB/FerretDB/pull/1067
+* @folex made their first contribution in https://github.com/FerretDB/FerretDB/pull/1093
+* @Fashander made their first contribution in https://github.com/FerretDB/FerretDB/pull/1114
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/21?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v0.5.2...v0.5.3).
+
+
 ## [v0.5.2](https://github.com/FerretDB/FerretDB/releases/tag/v0.5.2) (2022-08-09)
 
 ### New Features 🎉

@@ -68,10 +68,9 @@ func TestCommandsAdministrationCreateDropList(t *testing.T) {
 
 	err = db.CreateCollection(ctx, name)
 	expectedErr = mongo.CommandError{
-		Code: 48,
-		Name: "NamespaceExists",
-		Message: `Collection already exists. ` +
-			`NS: testcommandsadministrationcreatedroplist.TestCommandsAdministrationCreateDropList`,
+		Code:    48,
+		Name:    "NamespaceExists",
+		Message: `Collection testcommandsadministrationcreatedroplist.TestCommandsAdministrationCreateDropList already exists.`,
 	}
 	AssertEqualError(t, expectedErr, err)
 
@@ -604,7 +603,7 @@ func TestCommandsAdministrationBuildInfo(t *testing.T) {
 	doc := ConvertDocument(t, actual)
 
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-	assert.Regexp(t, `^5\.0\.`, must.NotFail(doc.Get("version")))
+	assert.Regexp(t, `^6\.0\.`, must.NotFail(doc.Get("version")))
 	assert.NotEmpty(t, must.NotFail(doc.Get("gitVersion")))
 
 	_, ok := must.NotFail(doc.Get("modules")).(*types.Array)
@@ -614,7 +613,7 @@ func TestCommandsAdministrationBuildInfo(t *testing.T) {
 
 	versionArray, ok := must.NotFail(doc.Get("versionArray")).(*types.Array)
 	assert.True(t, ok)
-	assert.Equal(t, int32(5), must.NotFail(versionArray.Get(0)))
+	assert.Equal(t, int32(6), must.NotFail(versionArray.Get(0)))
 	assert.Equal(t, int32(0), must.NotFail(versionArray.Get(1)))
 
 	assert.Equal(t, int32(strconv.IntSize), must.NotFail(doc.Get("bits")))
@@ -663,40 +662,45 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 	assert.InDelta(t, float64(8012), must.NotFail(doc.Get("size")), 16_024)
 	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("storageSize")), 8_012)
 	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalIndexSize")), 8_012)
-	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalSize")), 16_024)
+	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalSize")), 32_904)
 }
 
 func TestCommandsAdministrationDataSize(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
-	var actual bson.D
-	command := bson.D{{"dataSize", collection.Database().Name() + "." + collection.Name()}}
-	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
-	require.NoError(t, err)
+	t.Run("Existing", func(t *testing.T) {
+		t.Parallel()
 
-	doc := ConvertDocument(t, actual)
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+		ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
-	assert.InDelta(t, float64(8012), must.NotFail(doc.Get("size")), 16_024)
-	assert.InDelta(t, float64(100), must.NotFail(doc.Get("millis")), 100)
-}
+		var actual bson.D
+		command := bson.D{{"dataSize", collection.Database().Name() + "." + collection.Name()}}
+		err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+		require.NoError(t, err)
 
-func TestCommandsAdministrationDataSizeCollectionNotExist(t *testing.T) {
-	t.Parallel()
-	ctx, collection := setup.Setup(t)
+		doc := ConvertDocument(t, actual)
+		assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+		assert.InDelta(t, float64(16_384), must.NotFail(doc.Get("size")), 16_384)
+		assert.InDelta(t, float64(4), must.NotFail(doc.Get("numObjects")), 4) // TODO https://github.com/FerretDB/FerretDB/issues/727
+		assert.InDelta(t, float64(100), must.NotFail(doc.Get("millis")), 100)
+	})
 
-	var actual bson.D
-	command := bson.D{{"dataSize", "some-database.some-collection"}}
-	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
-	require.NoError(t, err)
+	t.Run("NonExisting", func(t *testing.T) {
+		t.Parallel()
 
-	doc := ConvertDocument(t, actual)
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-	assert.Equal(t, int32(0), must.NotFail(doc.Get("size")))
-	assert.Equal(t, int32(0), must.NotFail(doc.Get("numObjects")))
+		ctx, collection := setup.Setup(t)
 
-	assert.InDelta(t, float64(100), must.NotFail(doc.Get("millis")), 100)
+		var actual bson.D
+		command := bson.D{{"dataSize", collection.Database().Name() + "." + collection.Name()}}
+		err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+		require.NoError(t, err)
+
+		doc := ConvertDocument(t, actual)
+		assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+		assert.Equal(t, int32(0), must.NotFail(doc.Get("size")))
+		assert.Equal(t, int32(0), must.NotFail(doc.Get("numObjects")))
+		assert.InDelta(t, float64(100), must.NotFail(doc.Get("millis")), 100)
+	})
 }
 
 func TestCommandsAdministrationDBStats(t *testing.T) {
@@ -811,7 +815,7 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	assert.NotEmpty(t, must.NotFail(freeMonitoring.Get("state")))
 
 	assert.NotEmpty(t, must.NotFail(doc.Get("host")))
-	assert.Regexp(t, `^5\.0\.`, must.NotFail(doc.Get("version")))
+	assert.Regexp(t, `^6\.0\.`, must.NotFail(doc.Get("version")))
 	assert.NotEmpty(t, must.NotFail(doc.Get("process")))
 
 	assert.GreaterOrEqual(t, must.NotFail(doc.Get("pid")), int64(1))

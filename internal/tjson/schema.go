@@ -61,18 +61,19 @@ const (
 
 // Schema represents a supported subset of JSON Schema.
 type Schema struct {
-	Title       string             `json:"title,omitempty"`
-	Description string             `json:"description,omitempty"`
-	Type        SchemaType         `json:"type,omitempty"`
-	Format      SchemaFormat       `json:"format,omitempty"`
-	Properties  map[string]*Schema `json:"properties,omitempty"`
-	Items       *Schema            `json:"items,omitempty"`
-	PrimaryKey  []string           `json:"primary_key,omitempty"`
+	Title      string             `json:"title,omitempty"`
+	Type       SchemaType         `json:"type,omitempty"`
+	Format     SchemaFormat       `json:"format,omitempty"`
+	Properties map[string]*Schema `json:"properties,omitempty"`
+	Items      *Schema            `json:"items,omitempty"`
+	PrimaryKey []string           `json:"primary_key,omitempty"`
+
+	// those fields are not used, but required to be there for DisallowUnknownFields
+	Description    string `json:"description,omitempty"`
+	CollectionType string `json:"collection_type,omitempty"`
 }
 
 // Schemas for scalar types.
-//
-//nolint:unused // remove when they are used
 var (
 	doubleSchema = &Schema{
 		Type: Number,
@@ -205,13 +206,47 @@ func (s *Schema) Unmarshal(b []byte) error {
 	dec.DisallowUnknownFields()
 
 	if err := dec.Decode(s); err != nil {
-		return lazyerrors.Error(err)
+		return err
 	}
 	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Error(err)
+		return err
+	}
+
+	// Add $k properties that are necessary for documents.
+	s.addDocumentProperties()
+
+	// If Type is not set, it's a high-level schema, so we set Type as Object to make it explicit.
+	if s.Type == "" {
+		s.Type = Object
 	}
 
 	return nil
+}
+
+// addDocumentProperties adds missing $k properties to all the schema's documents (top-level and nested).
+func (s *Schema) addDocumentProperties() {
+	if s.Type != Object && s.Type != "" {
+		return
+	}
+
+	for _, subschema := range s.Properties {
+		if subschema.Type != Object {
+			continue
+		}
+
+		subschema.addDocumentProperties()
+	}
+
+	// If the current object is not a special object (binary, regex, timestamp, decimal),
+	// and $k property is not set, then $k property is missing and needs to be added.
+	specials := []string{"$k", "$b", "$r", "$t", "$n"}
+	for _, special := range specials {
+		if _, ok := s.Properties[special]; ok {
+			return
+		}
+	}
+
+	s.Properties["$k"] = &Schema{Type: Array, Items: stringSchema}
 }
 
 // DocumentSchema returns a JSON Schema for the given top-level document.
@@ -275,8 +310,7 @@ func valueSchema(v any) (*Schema, error) {
 	case int32:
 		return int32Schema, nil
 	case types.Timestamp:
-		// return timestampSchema, nil
-		return nil, lazyerrors.Errorf("%T is not supported yet", v)
+		return timestampSchema, nil
 	case int64:
 		return int64Schema, nil
 	default:

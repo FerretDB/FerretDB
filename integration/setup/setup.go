@@ -19,7 +19,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"golang.org/x/exp/slices"
@@ -133,6 +135,16 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 			)
 
 			continue
+		}
+
+		// if validators are set, create collection with them (otherwise collection will be created on first insert)
+		if validators := provider.Validators(*handlerF, collectionName); len(validators) > 0 {
+			var copts options.CreateCollectionOptions
+			for key, value := range validators {
+				copts.SetValidator(bson.D{{key, value}})
+			}
+
+			require.NoError(tb, database.CreateCollection(ctx, collectionName, &copts))
 		}
 
 		docs := shareddata.Docs(provider)

@@ -18,9 +18,9 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
 	"golang.org/x/net/context"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -33,16 +33,15 @@ func TestQueryDocuments(t *testing.T) {
 
 	ctx := testutil.Ctx(t)
 
-	pool := getPool(ctx, t, zaptest.NewLogger(t))
-	dbName := testutil.DatabaseName(t)
+	pool := getPool(ctx, t)
+	databaseName := testutil.DatabaseName(t)
 	collectionName := testutil.CollectionName(t)
+	setupDatabase(ctx, t, pool, databaseName)
 
-	t.Cleanup(func() {
-		pool.DropDatabase(ctx, dbName)
+	err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
+		return CreateDatabaseIfNotExists(ctx, tx, databaseName)
 	})
-
-	pool.DropDatabase(ctx, dbName)
-	require.NoError(t, CreateDatabase(ctx, pool, dbName))
+	require.NoError(t, err)
 
 	cases := []struct {
 		name       string
@@ -52,39 +51,34 @@ func TestQueryDocuments(t *testing.T) {
 		// docsPerIteration represents how many documents should be fetched per each iteration,
 		// use len(docsPerIteration) as the amount of fetch iterations.
 		docsPerIteration []int
-	}{
-		{
-			name:             "empty",
-			collection:       collectionName,
-			documents:        []*types.Document{},
-			docsPerIteration: []int{},
+	}{{
+		name:             "empty",
+		collection:       collectionName,
+		documents:        []*types.Document{},
+		docsPerIteration: []int{},
+	}, {
+		name:             "one",
+		collection:       collectionName + "_one",
+		documents:        []*types.Document{must.NotFail(types.NewDocument("id", "1"))},
+		docsPerIteration: []int{1},
+	}, {
+		name:       "two",
+		collection: collectionName + "_two",
+		documents: []*types.Document{
+			must.NotFail(types.NewDocument("id", "1")),
+			must.NotFail(types.NewDocument("id", "2")),
 		},
-		{
-			name:             "one",
-			collection:       collectionName + "_one",
-			documents:        []*types.Document{must.NotFail(types.NewDocument("id", "1"))},
-			docsPerIteration: []int{1},
+		docsPerIteration: []int{2},
+	}, {
+		name:       "three",
+		collection: collectionName + "_three",
+		documents: []*types.Document{
+			must.NotFail(types.NewDocument("id", "1")),
+			must.NotFail(types.NewDocument("id", "2")),
+			must.NotFail(types.NewDocument("id", "3")),
 		},
-		{
-			name:       "two",
-			collection: collectionName + "_two",
-			documents: []*types.Document{
-				must.NotFail(types.NewDocument("id", "1")),
-				must.NotFail(types.NewDocument("id", "2")),
-			},
-			docsPerIteration: []int{2},
-		},
-		{
-			name:       "three",
-			collection: collectionName + "_three",
-			documents: []*types.Document{
-				must.NotFail(types.NewDocument("id", "1")),
-				must.NotFail(types.NewDocument("id", "2")),
-				must.NotFail(types.NewDocument("id", "3")),
-			},
-			docsPerIteration: []int{2, 1},
-		},
-	}
+		docsPerIteration: []int{2, 1},
+	}}
 
 	for _, tc := range cases {
 		tc := tc
@@ -95,10 +89,10 @@ func TestQueryDocuments(t *testing.T) {
 			require.NoError(t, err)
 
 			for _, doc := range tc.documents {
-				require.NoError(t, InsertDocument(ctx, tx, dbName, tc.collection, doc))
+				require.NoError(t, InsertDocument(ctx, tx, databaseName, tc.collection, doc))
 			}
 
-			sp := SQLParam{DB: dbName, Collection: tc.collection}
+			sp := &SQLParam{DB: databaseName, Collection: tc.collection}
 			fetchedChan, err := pool.QueryDocuments(ctx, tx, sp)
 			require.NoError(t, err)
 
@@ -125,14 +119,14 @@ func TestQueryDocuments(t *testing.T) {
 		require.NoError(t, err)
 
 		for i := 1; i <= FetchedChannelBufSize*FetchedSliceCapacity+1; i++ {
-			require.NoError(t, InsertDocument(ctx, tx, dbName, collectionName+"_cancel",
+			require.NoError(t, InsertDocument(ctx, tx, databaseName, collectionName+"_cancel",
 				must.NotFail(types.NewDocument("id", fmt.Sprintf("%d", i))),
 			))
 		}
 
-		sp := SQLParam{DB: dbName, Collection: collectionName + "_cancel"}
+		sp := &SQLParam{DB: databaseName, Collection: collectionName + "_cancel"}
 		ctx, cancel := context.WithCancel(context.Background())
-		fetchedChan, err := pool.QueryDocuments(ctx, pool, sp)
+		fetchedChan, err := pool.QueryDocuments(ctx, tx, sp)
 		cancel()
 		require.NoError(t, err)
 
@@ -156,7 +150,7 @@ func TestQueryDocuments(t *testing.T) {
 		tx, err := pool.Begin(ctx)
 		require.NoError(t, err)
 
-		sp := SQLParam{DB: dbName, Collection: collectionName + "_non-existing"}
+		sp := &SQLParam{DB: databaseName, Collection: collectionName + "_non-existing"}
 		fetchedChan, err := pool.QueryDocuments(context.Background(), tx, sp)
 		require.NoError(t, err)
 		res, ok := <-fetchedChan
