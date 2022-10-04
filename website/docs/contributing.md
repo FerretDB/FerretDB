@@ -43,3 +43,5 @@ You can create issues for bugs, documentation, features, or enhancements.
 Check out the [open issues](https://github.com/FerretDB/dance/issues) for this repository.
 
 ## Contributing to github-actions
+
+* To contribute to our [github-actions repository](https://github.com/FerretDB/github-actions/), please go through the instructions in the [CONTRIBUTING.md](https://github.com/FerretDB/github-actions/blob/main/CONTRIBUTING.md) file.
