@@ -119,9 +119,15 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		}
 	}
 
+	var sqlFilter *types.Document
+	if filter.Has("_id") {
+		sqlFilter = must.NotFail(types.NewDocument("_id", must.NotFail(filter.Get("_id"))))
+	}
+	sp.SqlFilters = sqlFilter
+
 	resDocs := make([]*types.Document, 0, 16)
 	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, &sp, filter)
+		fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, &sp)
 		if err != nil {
 			return err
 		}

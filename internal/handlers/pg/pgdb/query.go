@@ -51,6 +51,7 @@ type SQLParam struct {
 	Collection string
 	Comment    string
 	Explain    bool
+	SqlFilters *types.Document
 }
 
 // QueryDocuments returns a channel with buffer FetchedChannelBufSize
@@ -64,15 +65,10 @@ type SQLParam struct {
 // Context cancellation is not considered an error.
 //
 // If the collection doesn't exist, fetch returns a closed channel and no error.
-func (pgPool *Pool) QueryDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam, filter *types.Document) (<-chan FetchedDocs, error) {
+func (pgPool *Pool) QueryDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (<-chan FetchedDocs, error) {
 	fetchedChan := make(chan FetchedDocs, FetchedChannelBufSize)
 
-	var sqlFilter *types.Document
-	if filter.Has("_id") {
-		sqlFilter = must.NotFail(types.NewDocument("_id", must.NotFail(filter.Get("_id"))))
-	}
-
-	q, err := buildQuery(ctx, tx, sp, sqlFilter)
+	q, err := buildQuery(ctx, tx, sp)
 	if err != nil {
 		close(fetchedChan)
 		if errors.Is(err, ErrTableNotExist) {
@@ -113,7 +109,7 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam,
 
 // Explain returns SQL EXPLAIN results for given query parameters.
 func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Array, error) {
-	q, err := buildQuery(ctx, tx, &sp, nil)
+	q, err := buildQuery(ctx, tx, &sp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -155,7 +151,7 @@ func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Array, error) 
 //
 // It returns (possibly wrapped) ErrSchemaNotExist or ErrTableNotExist
 // if schema/database or table/collection does not exist.
-func buildQuery(ctx context.Context, tx pgx.Tx, sp *SQLParam, sqlFilters *types.Document) (string, error) {
+func buildQuery(ctx context.Context, tx pgx.Tx, sp *SQLParam) (string, error) {
 	exists, err := CollectionExists(ctx, tx, sp.DB, sp.Collection)
 	if err != nil {
 		return "", lazyerrors.Error(err)
@@ -179,8 +175,8 @@ func buildQuery(ctx context.Context, tx pgx.Tx, sp *SQLParam, sqlFilters *types.
 	}
 	q += `FROM ` + pgx.Identifier{sp.DB, table}.Sanitize()
 
-	if sqlFilters != nil {
-		q = appendSqlFilters(q, sqlFilters)
+	if sp.SqlFilters != nil {
+		q = appendSqlFilters(q, sp.SqlFilters)
 	}
 
 	if sp.Explain {

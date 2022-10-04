@@ -133,9 +133,15 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
+		var sqlFilter *types.Document
+		if q.Has("_id") {
+			sqlFilter = must.NotFail(types.NewDocument("_id", must.NotFail(q.Get("_id"))))
+		}
+		sp.SqlFilters = sqlFilter
+
 		resDocs := make([]*types.Document, 0, 16)
 		err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, &sp, q)
+			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, &sp)
 			if err != nil {
 				return err
 			}

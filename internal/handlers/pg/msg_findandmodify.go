@@ -70,11 +70,17 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		Comment:    params.Comment,
 	}
 
+	var sqlFilter *types.Document
+	if params.Query.Has("_id") {
+		sqlFilter = must.NotFail(types.NewDocument("_id", must.NotFail(params.Query.Get("_id"))))
+	}
+	sqlParam.SqlFilters = sqlFilter
+
 	// This is not very optimal as we need to fetch everything from the database to have a proper sort.
 	// We might consider rewriting it later.
 	resDocs := make([]*types.Document, 0, 16)
 	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, &sqlParam, params.Query)
+		fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, &sqlParam)
 		if err != nil {
 			return err
 		}

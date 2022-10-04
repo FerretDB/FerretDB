@@ -95,6 +95,12 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
+		var sqlFilter *types.Document
+		if filter.Has("_id") {
+			sqlFilter = must.NotFail(types.NewDocument("_id", must.NotFail(filter.Get("_id"))))
+		}
+		sp.SqlFilters = sqlFilter
+
 		del, err := h.execDelete(ctx, &sp, filter, limit)
 		if err == nil {
 			deleted += del
@@ -173,7 +179,7 @@ func (h *Handler) execDelete(ctx context.Context, sp *pgdb.SQLParam, filter *typ
 	var deleted int32
 	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		// fetch current items from collection
-		fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp, filter)
+		fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, sp)
 		if err != nil {
 			return err
 		}
