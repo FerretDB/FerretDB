@@ -11,6 +11,9 @@ node_modules/
 # task cache
 .task/
 
+# trivy cache
+.cache/
+
 # packages, build artifacts
 *.deb
 *.rpm
