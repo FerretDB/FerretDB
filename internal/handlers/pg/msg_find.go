@@ -121,7 +121,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	resDocs := make([]*types.Document, 0, 16)
 	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, &sp)
+		fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, &sp, filter)
 		if err != nil {
 			return err
 		}

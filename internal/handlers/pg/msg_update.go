@@ -135,7 +135,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		resDocs := make([]*types.Document, 0, 16)
 		err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, &sp)
+			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, &sp, q)
 			if err != nil {
 				return err
 			}

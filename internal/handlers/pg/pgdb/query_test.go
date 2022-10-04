@@ -93,7 +93,7 @@ func TestQueryDocuments(t *testing.T) {
 			}
 
 			sp := &SQLParam{DB: databaseName, Collection: tc.collection}
-			fetchedChan, err := pool.QueryDocuments(ctx, tx, sp)
+			fetchedChan, err := pool.QueryDocuments(ctx, tx, sp, must.NotFail(types.NewDocument()))
 			require.NoError(t, err)
 
 			iter := 0
@@ -126,7 +126,7 @@ func TestQueryDocuments(t *testing.T) {
 
 		sp := &SQLParam{DB: databaseName, Collection: collectionName + "_cancel"}
 		ctx, cancel := context.WithCancel(context.Background())
-		fetchedChan, err := pool.QueryDocuments(ctx, tx, sp)
+		fetchedChan, err := pool.QueryDocuments(ctx, tx, sp, must.NotFail(types.NewDocument()))
 		cancel()
 		require.NoError(t, err)
 
@@ -151,7 +151,7 @@ func TestQueryDocuments(t *testing.T) {
 		require.NoError(t, err)
 
 		sp := &SQLParam{DB: databaseName, Collection: collectionName + "_non-existing"}
-		fetchedChan, err := pool.QueryDocuments(context.Background(), tx, sp)
+		fetchedChan, err := pool.QueryDocuments(context.Background(), tx, sp, must.NotFail(types.NewDocument()))
 		require.NoError(t, err)
 		res, ok := <-fetchedChan
 		require.False(t, ok)

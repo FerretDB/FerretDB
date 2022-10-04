@@ -74,7 +74,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	// We might consider rewriting it later.
 	resDocs := make([]*types.Document, 0, 16)
 	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, &sqlParam)
+		fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, &sqlParam, params.Query)
 		if err != nil {
 			return err
 		}
