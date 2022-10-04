@@ -73,8 +73,11 @@ func (doc *documentType) UnmarshalJSONWithSchema(data []byte, schema *Schema) er
 		if !ok {
 			return lazyerrors.Errorf("tjson.documentType.UnmarshalJSONWithSchema: missing key %q", key)
 		}
+
+		// If the field is set as null and is not present in the schema, it's a valid case.
+		// If the field is set as something but null and is not present in the schema, we should return an error.
 		s := schema.Properties[key]
-		if s == nil {
+		if s == nil && !bytes.Equal(b, []byte("null")) {
 			return lazyerrors.Errorf("tjson.documentType.UnmarshalJSONWithSchema: no schema for key %q", key)
 		}
 		v, err := Unmarshal(b, s)
