@@ -25,7 +25,6 @@ import (
 	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/fjson"
-	"github.com/FerretDB/FerretDB/internal/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -194,7 +193,7 @@ func appendSqlFilters(q string, sqlFilter *types.Document) string {
 		case "_id":
 			switch v := v.(type) {
 			case *types.ObjectID:
-				filters = append(filters, fmt.Sprintf(`(_jsonb->'_id')::jsonb->>'$o' = '%s'`, must.NotFail(tjson.Marshal(v))))
+				filters = append(filters, fmt.Sprintf(`(_jsonb->'_id')::jsonb->>'$o' = '%s'`, must.NotFail(json.Marshal(v))))
 			}
 		default:
 			continue
