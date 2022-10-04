@@ -58,6 +58,11 @@ jobs:
         run: |
           go clean -testcache -fuzzcache
 
+      - name: Check dirty
+        run: |
+          git status
+          git diff --exit-code
+
   test:
     name: Test
     runs-on: ubuntu-20.04
