@@ -81,7 +81,7 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 	tb.Helper()
 
 	if *handlerF == "pg" {
-		tb.Skipf("Skipping for Postgres", reason)
+		tb.Skipf("Skipping for Postgres: %s", reason)
 	}
 }
 
@@ -92,7 +92,7 @@ func SkipForMongoWithReason(tb testing.TB, reason string) {
 	tb.Helper()
 
 	if *handlerF == "mongodb" {
-		tb.Skipf("Skipping for Mongo", reason)
+		tb.Skipf("Skipping for Mongo: %s", reason)
 	}
 }
 
@@ -157,7 +157,7 @@ func setupClient(tb testing.TB, ctx context.Context, port int) *mongo.Client {
 
 	// those options should not affect anything except tests speed
 	v := url.Values{
-		// TODO: Test fails occured on some platforms due to i/o timeout.
+		// TODO: Test fails occurred on some platforms due to i/o timeout.
 		// Needs more investigation.
 		//
 		//"connectTimeoutMS":         []string{"5000"},
