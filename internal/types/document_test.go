@@ -159,6 +159,12 @@ func TestDocument(t *testing.T) {
 				keys: []string{"$db"},
 				m:    map[string]any{"$db": "foo"},
 			},
+		}, {
+			name: "empty key",
+			doc: Document{
+				keys: []string{""},
+				m:    map[string]any{"": ""},
+			},
 		}} {
 			tc := tc
 			t.Run(tc.name, func(t *testing.T) {
