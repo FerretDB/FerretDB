@@ -193,7 +193,7 @@ func appendSqlFilters(q string, sqlFilter *types.Document) string {
 		case "_id":
 			switch v := v.(type) {
 			case *types.ObjectID:
-				filters = append(filters, fmt.Sprintf(`(_jsonb->'_id')::jsonb->>'$o' = '%s'`, must.NotFail(json.Marshal(v))))
+				filters = append(filters, fmt.Sprintf(`(_jsonb->'_id')::jsonb->>'$o' = '%s'`, must.NotFail(fjson.Marshal(v))))
 			}
 		default:
 			continue
