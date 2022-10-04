@@ -24,6 +24,19 @@ tasks:
     sources:
       - "**/*.go"
 
+  lint:
+    cmds:
+      - go vet -vettool=../bin/checkswitch{{exeExt}} ./...
+      - ../bin/golangci-lint{{exeExt}} run --config=../.golangci-new.yml
+    sources:
+      - "**/*.go"
+
+  lint-golangci-lint:
+    cmds:
+      - ../bin/golangci-lint{{exeExt}} run --config=.golangci.yml
+    sources:
+      - "**/*.go"
+
   lint-go-consistent:
     cmds:
       - ../bin/go-consistent{{exeExt}} -v -pedantic ./...

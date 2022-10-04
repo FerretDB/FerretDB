@@ -1,0 +1,163 @@
+---
+# Linters that should pass for all code.
+
+run:
+  timeout: 3m
+
+linters-settings:
+  # asciicheck
+  depguard:
+    list-type: blacklist
+    packages:
+      - github.com/FerretDB/FerretDB/internal/bson
+      - github.com/FerretDB/FerretDB/internal/fjson
+      - github.com/FerretDB/FerretDB/internal/tjson
+      - github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb
+      - github.com/tigrisdata/tigris-client-go/api/client/v1/api
+      - github.com/tigrisdata/tigris-client-go/filter # We use our own filter without generics (see tigris/tigrisdb/filter)
+  exhaustive:
+    default-signifies-exhaustive: false
+  gci:
+    sections:
+      - standard
+      - default
+      - prefix(github.com/FerretDB/FerretDB)
+  goconst:
+    min-occurrences: 5
+    ignore-tests: true
+  godot:
+    scope: toplevel
+    exclude:
+      - go-sumtype:decl
+      - check interfaces
+    capital: true
+  godox:
+    keywords:
+      - BUG
+      - FIXME
+      - HACK
+  goheader:
+    # Please do not update it, including bumping a year.
+    template: |-
+      Copyright 2021 FerretDB Inc.
+
+      Licensed under the Apache License, Version 2.0 (the "License");
+      you may not use this file except in compliance with the License.
+      You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+      Unless required by applicable law or agreed to in writing, software
+      distributed under the License is distributed on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+      See the License for the specific language governing permissions and
+      limitations under the License.
+  goimports:
+    local-prefixes: github.com/FerretDB/FerretDB
+  gosimple:
+    checks: ["all"]
+  # govet
+  importas:
+    no-unaliased: false
+    no-extra-aliases: true
+    alias:
+      - pkg: github.com/tigrisdata/tigris-client-go/api/server/v1
+        alias: api
+  # ineffassign
+  lll:
+    line-length: 130
+    tab-width: 4
+  misspell:
+    ignore-words:
+      - guiness # present in the test dataset
+  nolintlint:
+    allow-unused: false
+    allow-leading-space: false
+    allow-no-explanation: []
+    require-explanation: true
+    require-specific: true
+  revive:
+    ignore-generated-header: true
+    severity: warning
+    enableAllRules: true
+  staticcheck:
+    checks:
+      - all
+      - -SA1019 # ignore deprecation errors in existing code; new code is checked by the other configuration
+  # unused
+  whitespace:
+    multi-if: false
+    multi-func: false
+
+linters:
+  disable-all: true
+  enable:
+    - asciicheck
+    - depguard
+    - exhaustive
+    - gci
+    - goconst
+    - godot
+    - godox
+    - goheader
+    - goimports
+    - gomodguard
+    - gosimple
+    - govet
+    - importas
+    - ineffassign
+    - misspell
+    - nolintlint
+    - revive
+    - staticcheck
+    - unused
+    - whitespace
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+  exclude-use-default: false
+  exclude-rules:
+    # only `wire` package can import `bson` package
+    - linters: [depguard]
+      path: internal/wire
+      text: bson
+
+    # only `pg` handler can import `pgdb` package, not other handler can do that
+    - linters: [depguard]
+      path: internal/handlers/pg
+      text: pgdb
+    - linters: [depguard]
+      path: cmd/envtool
+      text: pgdb
+    - linters: [depguard]
+      path: cmd/ferretdb
+      text: pgdb
+    - linters: [depguard]
+      path: internal/util/testutil
+      text: pgdb
+    - linters: [depguard]
+      path: internal/handlers/registry
+      text: pgdb
+
+    # only `pg` handler can import `fjson` package, not other handler can do that
+    - linters: [depguard]
+      path: internal/handlers/pg
+      text: fjson
+    - linters: [depguard]
+      path: internal/wire
+      text: fjson
+    - linters: [depguard]
+      path: internal/util/testutil
+      text: fjson
+
+    # only `tigris` handler can import `tjson` package, not other handler can do that
+    - linters: [depguard]
+      path: internal/handlers/tigris
+      text: tjson
+
+    # that's a valid usage of bson.D
+    - linters: [govet]
+      text: "composites: go.mongodb.org/mongo-driver/bson/primitive.E struct literal uses unkeyed fields"
+

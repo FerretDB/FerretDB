@@ -44,6 +44,14 @@ services:
       # Always UTC+05:45. Set to catch timezone problems.
       - TZ=Asia/Kathmandu
 
+  trivy:
+    build:
+      context: ./build/deps
+      dockerfile: trivy.Dockerfile
+    container_name: ferretdb_trivy
+    volumes:
+      - .:/workdir
+
   # for building .deb and .rpm packages
   debian:
     build:

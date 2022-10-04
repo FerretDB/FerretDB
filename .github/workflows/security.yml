@@ -1,0 +1,52 @@
+---
+name: Security
+on:
+  pull_request:
+    types:
+      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
+      - opened
+      - reopened
+      - synchronize
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "12 2 * * *"
+
+env:
+  GOPATH: /home/runner/go
+  GOCACHE: /home/runner/go/cache
+  GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
+  GOMODCACHE: /home/runner/go/mod
+  GOPROXY: https://proxy.golang.org
+
+jobs:
+  security-scan:
+    name: Security scan
+    runs-on: ubuntu-20.04
+
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: FerretDB/github-actions/setup-go@main
+        with:
+          cache-key: security
+
+      - name: Install Task
+        run: go generate -x
+        working-directory: tools
+
+      - name: Scan
+        run: bin/task --exit-code security
+
+      # Workaround for `hashFiles` issue.
+      # See https://github.com/actions/runner/issues/449#issuecomment-1265837735.
+      - name: Clean
+        run: |
+          sudo rm -fr .cache
