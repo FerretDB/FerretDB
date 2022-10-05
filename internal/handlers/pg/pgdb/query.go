@@ -175,11 +175,11 @@ func buildQuery(ctx context.Context, tx pgx.Tx, sp *SQLParam) (string, []any, er
 	q += `FROM ` + pgx.Identifier{sp.DB, table}.Sanitize()
 
 	var args []any
+
 	if sp.SqlFilters != nil {
 		var where string
 
 		where, args = prepareWhereClause(sp.SqlFilters)
-
 		q += where
 	}
 
