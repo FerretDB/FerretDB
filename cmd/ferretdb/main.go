@@ -43,6 +43,7 @@ var cli struct {
 	Version bool `default:"false" help:"Print version to stdout (full version, commit, branch, dirty flag) and exit."`
 
 	ListenAddr string `default:"127.0.0.1:27017" help:"Listen address."`
+	ListenSock string `default:"" help:"Listen unix socket address."`
 	ProxyAddr  string `default:"127.0.0.1:37017" help:"Proxy address."`
 	DebugAddr  string `default:"127.0.0.1:8088" help:"Debug address."`
 	Mode       string `default:"${default_mode}" help:"${help_mode}."`
@@ -155,6 +156,7 @@ func run() {
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		ListenAddr:      cli.ListenAddr,
+		ListenSock:      cli.ListenSock,
 		ProxyAddr:       cli.ProxyAddr,
 		Mode:            clientconn.Mode(cli.Mode),
 		Handler:         h,
