@@ -190,8 +190,8 @@ func buildQuery(ctx context.Context, tx pgx.Tx, sp *SQLParam) (string, []any, er
 func appendSqlFilters(q string, sqlFilter *types.Document) (string, []any) {
 	var filters []string
 	var args []any
-
 	var index int
+
 	for k, v := range sqlFilter.Map() {
 		switch k {
 		case "_id":
