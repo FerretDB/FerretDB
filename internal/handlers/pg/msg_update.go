@@ -82,59 +82,60 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var matched, modified int32
 	var upserted types.Array
-	for i := 0; i < updates.Len(); i++ {
-		update, err := common.AssertType[*types.Document](must.NotFail(updates.Get(i)))
-		if err != nil {
-			return nil, err
-		}
 
-		unimplementedFields := []string{
-			"c",
-			"collation",
-			"arrayFilters",
-			"hint",
-		}
-		if err := common.Unimplemented(update, unimplementedFields...); err != nil {
-			return nil, err
-		}
-
-		var q, u *types.Document
-		var upsert bool
-		var multi bool
-		if q, err = common.GetOptionalParam(update, "q", q); err != nil {
-			return nil, err
-		}
-		if u, err = common.GetOptionalParam(update, "u", u); err != nil {
-			// TODO check if u is an array of aggregation pipeline stages
-			return nil, err
-		}
-
-		// get comment from options.Update().SetComment() method
-		if sp.Comment, err = common.GetOptionalParam(document, "comment", sp.Comment); err != nil {
-			return nil, err
-		}
-
-		// get comment from query, e.g. db.collection.UpdateOne({"_id":"string", "$comment: "test"},{$set:{"v":"foo""}})
-		if sp.Comment, err = common.GetOptionalParam(q, "$comment", sp.Comment); err != nil {
-			return nil, err
-		}
-
-		if u != nil {
-			if err = common.ValidateUpdateOperators(u); err != nil {
-				return nil, err
+	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		for i := 0; i < updates.Len(); i++ {
+			update, err := common.AssertType[*types.Document](must.NotFail(updates.Get(i)))
+			if err != nil {
+				return err
 			}
-		}
 
-		if upsert, err = common.GetOptionalParam(update, "upsert", upsert); err != nil {
-			return nil, err
-		}
+			unimplementedFields := []string{
+				"c",
+				"collation",
+				"arrayFilters",
+				"hint",
+			}
+			if err := common.Unimplemented(update, unimplementedFields...); err != nil {
+				return err
+			}
 
-		if multi, err = common.GetOptionalParam(update, "multi", multi); err != nil {
-			return nil, err
-		}
+			var q, u *types.Document
+			var upsert bool
+			var multi bool
+			if q, err = common.GetOptionalParam(update, "q", q); err != nil {
+				return err
+			}
+			if u, err = common.GetOptionalParam(update, "u", u); err != nil {
+				// TODO check if u is an array of aggregation pipeline stages
+				return err
+			}
 
-		resDocs := make([]*types.Document, 0, 16)
-		err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+			// get comment from options.Update().SetComment() method
+			if sp.Comment, err = common.GetOptionalParam(document, "comment", sp.Comment); err != nil {
+				return err
+			}
+
+			// get comment from query, e.g. db.collection.UpdateOne({"_id":"string", "$comment: "test"},{$set:{"v":"foo""}})
+			if sp.Comment, err = common.GetOptionalParam(q, "$comment", sp.Comment); err != nil {
+				return err
+			}
+
+			if u != nil {
+				if err = common.ValidateUpdateOperators(u); err != nil {
+					return err
+				}
+			}
+
+			if upsert, err = common.GetOptionalParam(update, "upsert", upsert); err != nil {
+				return err
+			}
+
+			if multi, err = common.GetOptionalParam(update, "multi", multi); err != nil {
+				return err
+			}
+
+			resDocs := make([]*types.Document, 0, 16)
 			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, &sp)
 			if err != nil {
 				return err
@@ -165,62 +166,62 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				}
 			}
 
-			return nil
-		})
+			if len(resDocs) == 0 {
+				if !upsert {
+					// nothing to do, continue to the next update operation
+					continue
+				}
 
-		if err != nil {
-			return nil, err
-		}
+				doc := q.DeepCopy()
+				if _, err = common.UpdateDocument(doc, u); err != nil {
+					return err
+				}
+				if !doc.Has("_id") {
+					must.NoError(doc.Set("_id", types.NewObjectID()))
+				}
 
-		if len(resDocs) == 0 {
-			if !upsert {
-				// nothing to do, continue to the next update operation
+				must.NoError(upserted.Append(must.NotFail(types.NewDocument(
+					"index", int32(0), // TODO
+					"_id", must.NotFail(doc.Get("_id")),
+				))))
+
+				if err = h.insert(ctx, &sp, doc); err != nil {
+					return err
+				}
+
+				matched++
 				continue
 			}
 
-			doc := q.DeepCopy()
-			if _, err = common.UpdateDocument(doc, u); err != nil {
-				return nil, err
-			}
-			if !doc.Has("_id") {
-				must.NoError(doc.Set("_id", types.NewObjectID()))
+			if len(resDocs) > 1 && !multi {
+				resDocs = resDocs[:1]
 			}
 
-			must.NoError(upserted.Append(must.NotFail(types.NewDocument(
-				"index", int32(0), // TODO
-				"_id", must.NotFail(doc.Get("_id")),
-			))))
+			matched += int32(len(resDocs))
 
-			if err = h.insert(ctx, &sp, doc); err != nil {
-				return nil, err
+			for _, doc := range resDocs {
+				changed, err := common.UpdateDocument(doc, u)
+				if err != nil {
+					return err
+				}
+
+				if !changed {
+					continue
+				}
+
+				rowsChanged, err := h.update(ctx, tx, &sp, doc)
+				if err != nil {
+					return err
+				}
+				modified += int32(rowsChanged)
 			}
-
-			matched++
-			continue
 		}
 
-		if len(resDocs) > 1 && !multi {
-			resDocs = resDocs[:1]
-		}
+		return nil
+	})
 
-		matched += int32(len(resDocs))
-
-		for _, doc := range resDocs {
-			changed, err := common.UpdateDocument(doc, u)
-			if err != nil {
-				return nil, err
-			}
-
-			if !changed {
-				continue
-			}
-
-			rowsChanged, err := h.update(ctx, &sp, doc)
-			if err != nil {
-				return nil, err
-			}
-			modified += int32(rowsChanged)
-		}
+	if err != nil {
+		return nil, err
 	}
 
 	res := must.NotFail(types.NewDocument(
