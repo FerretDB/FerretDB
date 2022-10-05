@@ -155,6 +155,7 @@ func buildQuery(ctx context.Context, tx pgx.Tx, sp *SQLParam) (string, []any, er
 	if err != nil {
 		return "", nil, lazyerrors.Error(err)
 	}
+
 	if !exists {
 		return "", nil, lazyerrors.Error(ErrTableNotExist)
 	}
@@ -164,15 +165,23 @@ func buildQuery(ctx context.Context, tx pgx.Tx, sp *SQLParam) (string, []any, er
 		return "", nil, lazyerrors.Error(err)
 	}
 
-	q := `SELECT _jsonb `
+	var query string
+
+	if sp.Explain {
+		query += `EXPLAIN (VERBOSE true, FORMAT JSON) `
+	}
+
+	query += ` SELECT _jsonb `
+
 	if c := sp.Comment; c != "" {
 		// prevent SQL injections
 		c = strings.ReplaceAll(c, "/*", "/ *")
 		c = strings.ReplaceAll(c, "*/", "* /")
 
-		q += `/* ` + c + ` */ `
+		query += `/* ` + c + ` */ `
 	}
-	q += `FROM ` + pgx.Identifier{sp.DB, table}.Sanitize()
+
+	query += ` FROM ` + pgx.Identifier{sp.DB, table}.Sanitize()
 
 	var args []any
 
@@ -180,14 +189,10 @@ func buildQuery(ctx context.Context, tx pgx.Tx, sp *SQLParam) (string, []any, er
 		var where string
 
 		where, args = prepareWhereClause(sp.SqlFilters)
-		q += where
+		query += where
 	}
 
-	if sp.Explain {
-		q = "EXPLAIN (VERBOSE true, FORMAT JSON) " + q
-	}
-
-	return q, args, nil
+	return query, args, nil
 }
 
 // prepareWhereClause adds WHERE clause with given filters to the query and returns the query and arguments.
