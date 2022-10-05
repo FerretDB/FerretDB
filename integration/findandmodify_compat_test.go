@@ -143,13 +143,13 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 				{"new", true},
 			},
 		},
-		"UpdateNotExistedIdInQuery": {
+		"NotExistedIdInQuery": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "no-such-id"}}},
 				{"update", bson.D{{"v", int32(43)}}},
 			},
 		},
-		"UpdateNotExistedIdNotInQuery": {
+		"NotExistedIdNotInQuery": {
 			command: bson.D{
 				{"query", bson.D{{"$and", bson.A{
 					bson.D{{"v", bson.D{{"$gt", 0}}}},
