@@ -136,15 +136,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			}
 
 			if q.Has("_id") {
-				id, err := q.Get("_id")
-				if err != nil {
-					panic("can't get _id for some reason")
-				}
-
-				sp.SqlFilters, err = types.NewDocument("_id", id)
-				if err != nil {
-					panic("can't create document for some reason")
-				}
+				sp.SqlFilters = must.NotFail(types.NewDocument("_id", must.NotFail(q.Get("_id"))))
 			}
 
 			resDocs := make([]*types.Document, 0, 16)
