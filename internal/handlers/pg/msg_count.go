@@ -77,11 +77,10 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		)
 	}
 
-	var sqlFilter *types.Document
+	sp.SqlFilters = nil
 	if filter.Has("_id") {
-		sqlFilter = must.NotFail(types.NewDocument("_id", must.NotFail(filter.Get("_id"))))
+		sp.SqlFilters = must.NotFail(types.NewDocument("_id", must.NotFail(filter.Get("_id"))))
 	}
-	sp.SqlFilters = sqlFilter
 
 	resDocs := make([]*types.Document, 0, 16)
 	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {

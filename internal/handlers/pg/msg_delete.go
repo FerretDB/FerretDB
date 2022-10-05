@@ -95,11 +95,10 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		var sqlFilter *types.Document
+		sp.SqlFilters = nil
 		if filter.Has("_id") {
-			sqlFilter = must.NotFail(types.NewDocument("_id", must.NotFail(filter.Get("_id"))))
+			sp.SqlFilters = must.NotFail(types.NewDocument("_id", must.NotFail(filter.Get("_id"))))
 		}
-		sp.SqlFilters = sqlFilter
 
 		del, err := h.execDelete(ctx, &sp, filter, limit)
 		if err == nil {
