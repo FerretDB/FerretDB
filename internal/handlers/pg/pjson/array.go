@@ -41,11 +41,13 @@ func (a *arrayType) UnmarshalJSON(data []byte) error {
 	if err := dec.Decode(&rawMessages); err != nil {
 		return lazyerrors.Error(err)
 	}
+
 	if err := checkConsumed(dec, r); err != nil {
 		return lazyerrors.Error(err)
 	}
 
 	ta := types.MakeArray(len(rawMessages))
+
 	for _, el := range rawMessages {
 		v, err := Unmarshal(el)
 		if err != nil {
@@ -58,6 +60,7 @@ func (a *arrayType) UnmarshalJSON(data []byte) error {
 	}
 
 	*a = arrayType(*ta)
+
 	return nil
 }
 
@@ -68,6 +71,7 @@ func (a *arrayType) MarshalJSON() ([]byte, error) {
 
 	ta := types.Array(*a)
 	l := ta.Len()
+
 	for i := 0; i < l; i++ {
 		if i != 0 {
 			buf.WriteByte(',')
@@ -77,6 +81,7 @@ func (a *arrayType) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+
 		b, err := Marshal(el)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
