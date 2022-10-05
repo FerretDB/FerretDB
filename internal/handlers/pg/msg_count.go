@@ -77,7 +77,6 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		)
 	}
 
-	sp.SqlFilters = nil
 	if filter.Has("_id") {
 		sp.SqlFilters = must.NotFail(types.NewDocument("_id", must.NotFail(filter.Get("_id"))))
 	}

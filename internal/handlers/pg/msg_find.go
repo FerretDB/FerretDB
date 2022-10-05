@@ -119,7 +119,6 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		}
 	}
 
-	sp.SqlFilters = nil
 	if filter.Has("_id") {
 		sp.SqlFilters = must.NotFail(types.NewDocument("_id", must.NotFail(filter.Get("_id"))))
 	}
