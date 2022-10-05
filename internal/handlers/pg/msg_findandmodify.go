@@ -70,7 +70,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		Comment:    params.Comment,
 	}
 
-	if params.Query.Has("_id") {
+	if params.Query != nil && params.Query.Has("_id") {
 		sqlParam.SqlFilters = must.NotFail(types.NewDocument("_id", must.NotFail(params.Query.Get("_id"))))
 	}
 

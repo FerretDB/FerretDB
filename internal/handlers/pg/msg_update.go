@@ -135,7 +135,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				return err
 			}
 
-			if q.Has("_id") {
+			if q != nil && q.Has("_id") {
 				sp.SqlFilters = must.NotFail(types.NewDocument("_id", must.NotFail(q.Get("_id"))))
 			}
 
