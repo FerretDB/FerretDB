@@ -55,9 +55,6 @@ type NewListenerOpts struct {
 	TestRecordPath     string // if empty, no records are created
 }
 
-// Default IP we are listening on
-const defaultListeningIP = "127.0.0.1:27017"
-
 // NewListener returns a new listener, configured by the NewListenerOpts argument.
 func NewListener(opts *NewListenerOpts) *Listener {
 	return &Listener{
@@ -75,13 +72,17 @@ func (l *Listener) Run(ctx context.Context) error {
 	logger := l.opts.Logger.Named("listener")
 
 	useSock := l.opts.ListenSock != ""
-	useTcp := !useSock || l.opts.ListenAddr != defaultListeningIP
+	useTcp := !useSock || l.opts.ListenAddr != ""
 
 	if useTcp {
 		var err error
 		if l.tcpListener, err = net.Listen("tcp", l.opts.ListenAddr); err != nil {
 			return lazyerrors.Error(err)
 		}
+
+		close(l.listening)
+
+		logger.Sugar().Infof("Listening on %s ...", l.Addr())
 	}
 
 	if useSock {
@@ -89,15 +90,12 @@ func (l *Listener) Run(ctx context.Context) error {
 		if l.sockListener, err = net.Listen("unix", l.opts.ListenSock); err != nil {
 			return lazyerrors.Error(err)
 		}
-	}
 
-	close(l.listening)
+		// a check to not double close
+		if !useTcp {
+			close(l.listening)
+		}
 
-	if useTcp {
-		logger.Sugar().Infof("Listening on %s ...", l.Addr())
-	}
-
-	if useSock {
 		logger.Sugar().Infof("Listening on %s ...", l.Sock())
 	}
 
