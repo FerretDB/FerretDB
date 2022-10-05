@@ -202,9 +202,11 @@ func TestFindAndModifyNonExistingCollection(t *testing.T) {
 
 	ctx, collection := setup.Setup(t)
 
+	var actual bson.D
 	err := collection.FindOneAndUpdate(
 		ctx, bson.D{}, bson.D{{"$set", bson.E{"foo", "bar"}}},
-	).Err()
+	).Decode(&actual)
 
-	require.Equal(t, mongo.ErrNoDocuments, err)
+	assert.Equal(t, mongo.ErrNoDocuments, err)
+	assert.Nil(t, actual)
 }
