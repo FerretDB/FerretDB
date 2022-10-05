@@ -130,7 +130,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					update:             params.Update,
 					sqlParam:           &sqlParam,
 				}
-				upsert, upserted, err = h.upsert(ctx, resDocs, p)
+				upsert, upserted, err = h.upsert(ctx, tx, resDocs, p)
 				if err != nil {
 					return err
 				}
@@ -248,7 +248,7 @@ type upsertParams struct {
 
 // upsert inserts new document if no documents in query result or updates given document.
 // When inserting new document we must check that `_id` is present, so we must extract `_id` from query or generate a new one.
-func (h *Handler) upsert(ctx context.Context, docs []*types.Document, params *upsertParams) (*types.Document, bool, error) {
+func (h *Handler) upsert(ctx context.Context, tx pgx.Tx, docs []*types.Document, params *upsertParams) (*types.Document, bool, error) {
 	if len(docs) == 0 {
 		upsert := must.NotFail(types.NewDocument())
 
@@ -269,10 +269,7 @@ func (h *Handler) upsert(ctx context.Context, docs []*types.Document, params *up
 			}
 		}
 
-		err := h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-			err := h.insert(ctx, tx, params.sqlParam, upsert)
-			return err
-		})
+		err := h.insert(ctx, tx, params.sqlParam, upsert)
 		if err != nil {
 			return nil, false, err
 		}
@@ -293,10 +290,7 @@ func (h *Handler) upsert(ctx context.Context, docs []*types.Document, params *up
 		}
 	}
 
-	err := h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		_, err := h.update(ctx, tx, params.sqlParam, upsert)
-		return err
-	})
+	_, err := h.update(ctx, tx, params.sqlParam, upsert)
 	if err != nil {
 		return nil, false, err
 	}
