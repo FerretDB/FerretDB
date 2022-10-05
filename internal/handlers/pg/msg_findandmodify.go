@@ -172,7 +172,6 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 						return err
 					}
 				}
-
 			}
 
 			var resultDoc *types.Document
@@ -248,7 +247,9 @@ type upsertParams struct {
 
 // upsert inserts new document if no documents in query result or updates given document.
 // When inserting new document we must check that `_id` is present, so we must extract `_id` from query or generate a new one.
-func (h *Handler) upsert(ctx context.Context, tx pgx.Tx, docs []*types.Document, params *upsertParams) (*types.Document, bool, error) {
+func (h *Handler) upsert(ctx context.Context, tx pgx.Tx, docs []*types.Document, params *upsertParams) (
+	*types.Document, bool, error,
+) {
 	if len(docs) == 0 {
 		upsert := must.NotFail(types.NewDocument())
 
