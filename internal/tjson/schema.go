@@ -225,6 +225,11 @@ func (s *Schema) Unmarshal(b []byte) error {
 
 // addDocumentProperties adds missing $k properties to all the schema's documents (top-level and nested).
 func (s *Schema) addDocumentProperties() {
+	if s.Type == Array && s.Items.Type == Object {
+		s.Items.addDocumentProperties()
+		return
+	}
+
 	if s.Type != Object && s.Type != "" {
 		return
 	}
@@ -278,7 +283,11 @@ func subdocumentSchema(doc *types.Document, pkey ...string) (*Schema, error) {
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
-		schema.Properties[k] = s
+
+		// If s == nil it's a field with null, according to Tigris' logic, we don't set schema for this field.
+		if s != nil {
+			schema.Properties[k] = s
+		}
 	}
 
 	return &schema, nil
@@ -304,7 +313,8 @@ func valueSchema(v any) (*Schema, error) {
 	case time.Time:
 		return dateTimeSchema, nil
 	case types.NullType:
-		return nil, lazyerrors.Errorf("%T is not supported yet", v)
+		// According to the current Tigris' logic the field that is set as null is valid but not present in the schema
+		return nil, nil
 	case types.Regex:
 		return regexSchema, nil
 	case int32:
