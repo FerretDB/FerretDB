@@ -189,7 +189,7 @@ func buildQuery(ctx context.Context, tx pgx.Tx, sp *SQLParam) (string, []any, er
 // appendSqlFilters adds WHERE clause with given filters to the query.
 func appendSqlFilters(q string, sqlFilter *types.Document) (string, []any) {
 	var filters []string
-	args := make([]any, 0)
+	var args []any
 
 	var index int
 	for k, v := range sqlFilter.Map() {
