@@ -262,7 +262,7 @@ func FormatAnyValue(v any) string {
 	case Binary:
 		return fmt.Sprintf("BinData(%d, %X)", v.Subtype, v.B)
 	case ObjectID:
-		return fmt.Sprintf("ObjectId('%X')", v)
+		return fmt.Sprintf("ObjectId('%x')", v)
 	case bool:
 		return fmt.Sprintf("%v", v)
 	case time.Time:
