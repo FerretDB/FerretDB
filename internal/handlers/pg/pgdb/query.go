@@ -176,7 +176,11 @@ func buildQuery(ctx context.Context, tx pgx.Tx, sp *SQLParam) (string, []any, er
 
 	var args []any
 	if sp.SqlFilters != nil {
-		q, args = appendSqlFilters(q, sp.SqlFilters)
+		var where string
+
+		where, args = prepareWhereClause(sp.SqlFilters)
+
+		q += where
 	}
 
 	if sp.Explain {
@@ -186,8 +190,8 @@ func buildQuery(ctx context.Context, tx pgx.Tx, sp *SQLParam) (string, []any, er
 	return q, args, nil
 }
 
-// appendSqlFilters adds WHERE clause with given filters to the query.
-func appendSqlFilters(q string, sqlFilter *types.Document) (string, []any) {
+// prepareWhereClause adds WHERE clause with given filters to the query and returns the query and arguments.
+func prepareWhereClause(sqlFilter *types.Document) (string, []any) {
 	var filters []string
 	var args []any
 	var p Placeholder
@@ -206,12 +210,14 @@ func appendSqlFilters(q string, sqlFilter *types.Document) (string, []any) {
 		}
 	}
 
+	var query string
+
 	if len(filters) > 0 {
-		q += ` WHERE ` + strings.Join(filters, " AND ")
-		q = q[:len(q)-5]
+		query = ` WHERE ` + strings.Join(filters, " AND ")
+		query = query[:len(query)-5]
 	}
 
-	return q, args
+	return query, args
 }
 
 // iterateFetch iterates over the rows returned by the query and sends FetchedDocs to fetched channel.
