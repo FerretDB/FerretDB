@@ -160,7 +160,10 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					return nil, err
 				}
 
-				_, err = h.update(ctx, &sqlParam, upsert)
+				err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+					_, err = h.update(ctx, tx, &sqlParam, upsert)
+					return err
+				})
 				if err != nil {
 					return nil, err
 				}
@@ -171,7 +174,10 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					must.NoError(upsert.Set("_id", must.NotFail(resDocs[0].Get("_id"))))
 				}
 
-				_, err = h.update(ctx, &sqlParam, upsert)
+				err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+					_, err = h.update(ctx, tx, &sqlParam, upsert)
+					return err
+				})
 				if err != nil {
 					return nil, err
 				}
@@ -268,7 +274,10 @@ func (h *Handler) upsert(ctx context.Context, docs []*types.Document, params *up
 			}
 		}
 
-		err := h.insert(ctx, params.sqlParam, upsert)
+		err := h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+			err := h.insert(ctx, tx, params.sqlParam, upsert)
+			return err
+		})
 		if err != nil {
 			return nil, false, err
 		}
@@ -289,7 +298,10 @@ func (h *Handler) upsert(ctx context.Context, docs []*types.Document, params *up
 		}
 	}
 
-	_, err := h.update(ctx, params.sqlParam, upsert)
+	err := h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		_, err := h.update(ctx, tx, params.sqlParam, upsert)
+		return err
+	})
 	if err != nil {
 		return nil, false, err
 	}
