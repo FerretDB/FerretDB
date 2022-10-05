@@ -190,13 +190,14 @@ func buildQuery(ctx context.Context, tx pgx.Tx, sp *SQLParam) (string, []any, er
 func appendSqlFilters(q string, sqlFilter *types.Document) (string, []any) {
 	var filters []string
 	var args []any
+	var p Placeholder
 
-	for i, k := range sqlFilter.Keys() {
+	for k, v := range sqlFilter.Map() {
 		switch k {
 		case "_id":
-			switch v := must.NotFail(sqlFilter.Get(k)).(type) {
+			switch v := v.(type) {
 			case *types.ObjectID:
-				filters = append(filters, fmt.Sprintf(`(_jsonb->'_id')::jsonb->>'$o' = $%d`, i))
+				filters = append(filters, fmt.Sprintf(`(_jsonb->'_id')::jsonb->>'$o' = %s`, p.Next()))
 
 				args = append(args, pgx.Identifier{string(must.NotFail(fjson.Marshal(v)))}.Sanitize())
 			}
