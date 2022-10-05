@@ -67,7 +67,7 @@ type SQLParam struct {
 func (pgPool *Pool) QueryDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (<-chan FetchedDocs, error) {
 	fetchedChan := make(chan FetchedDocs, FetchedChannelBufSize)
 
-	q, err := buildQuery(ctx, tx, sp)
+	q, args, err := buildQuery(ctx, tx, sp)
 	if err != nil {
 		close(fetchedChan)
 		if errors.Is(err, ErrTableNotExist) {
@@ -76,7 +76,7 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam)
 		return fetchedChan, lazyerrors.Error(err)
 	}
 
-	rows, err := tx.Query(ctx, q)
+	rows, err := tx.Query(ctx, q, args...)
 	if err != nil {
 		close(fetchedChan)
 		return fetchedChan, lazyerrors.Error(err)
@@ -108,7 +108,7 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam)
 
 // Explain returns SQL EXPLAIN results for given query parameters.
 func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Array, error) {
-	q, err := buildQuery(ctx, tx, &sp)
+	q, _, err := buildQuery(ctx, tx, &sp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -150,18 +150,18 @@ func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Array, error) 
 //
 // It returns (possibly wrapped) ErrSchemaNotExist or ErrTableNotExist
 // if schema/database or table/collection does not exist.
-func buildQuery(ctx context.Context, tx pgx.Tx, sp *SQLParam) (string, error) {
+func buildQuery(ctx context.Context, tx pgx.Tx, sp *SQLParam) (string, []any, error) {
 	exists, err := CollectionExists(ctx, tx, sp.DB, sp.Collection)
 	if err != nil {
-		return "", lazyerrors.Error(err)
+		return "", nil, lazyerrors.Error(err)
 	}
 	if !exists {
-		return "", lazyerrors.Error(ErrTableNotExist)
+		return "", nil, lazyerrors.Error(ErrTableNotExist)
 	}
 
 	table, err := getTableName(ctx, tx, sp.DB, sp.Collection)
 	if err != nil {
-		return "", lazyerrors.Error(err)
+		return "", nil, lazyerrors.Error(err)
 	}
 
 	q := `SELECT _jsonb `
@@ -174,31 +174,37 @@ func buildQuery(ctx context.Context, tx pgx.Tx, sp *SQLParam) (string, error) {
 	}
 	q += `FROM ` + pgx.Identifier{sp.DB, table}.Sanitize()
 
+	var args []any
 	if sp.SqlFilters != nil {
-		q = appendSqlFilters(q, sp.SqlFilters)
+		q, args = appendSqlFilters(q, sp.SqlFilters)
 	}
 
 	if sp.Explain {
 		q = "EXPLAIN (VERBOSE true, FORMAT JSON) " + q
 	}
 
-	return q, nil
+	return q, args, nil
 }
 
 // appendSqlFilters adds WHERE clause with given filters to the query.
-func appendSqlFilters(q string, sqlFilter *types.Document) string {
+func appendSqlFilters(q string, sqlFilter *types.Document) (string, []any) {
 	var filters []string
+	args := make([]any, 0)
 
+	var index int
 	for k, v := range sqlFilter.Map() {
 		switch k {
 		case "_id":
 			switch v := v.(type) {
 			case *types.ObjectID:
-				filters = append(filters, fmt.Sprintf(`(_jsonb->'_id')::jsonb->>'$o' = '%s'`, must.NotFail(fjson.Marshal(v))))
+				filters = append(filters, fmt.Sprintf(`(_jsonb->'_id')::jsonb->>'$o' = $%d`, index))
+
+				args = append(args, pgx.Identifier{string(must.NotFail(fjson.Marshal(v)))}.Sanitize())
 			}
 		default:
 			continue
 		}
+		index++
 	}
 
 	if len(filters) > 0 {
@@ -206,7 +212,7 @@ func appendSqlFilters(q string, sqlFilter *types.Document) string {
 		q = q[:len(q)-5]
 	}
 
-	return q
+	return q, args
 }
 
 // iterateFetch iterates over the rows returned by the query and sends FetchedDocs to fetched channel.
