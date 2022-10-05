@@ -131,11 +131,11 @@ func (c *conn) run(ctx context.Context) (err error) {
 	}()
 
 	defer func() {
-		/*if p := recover(); p != nil {
+		if p := recover(); p != nil {
 			// Log human-readable stack trace there (included in the error level automatically).
 			c.l.DPanicf("%v\n(err = %v)", p, err)
 			err = errors.New("panic")
-		}*/
+		}
 
 		if err == nil {
 			err = ctx.Err()
