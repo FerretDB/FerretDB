@@ -71,7 +71,15 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	}
 
 	if params.Query.Has("_id") {
-		sqlParam.SqlFilters = must.NotFail(types.NewDocument("_id", must.NotFail(params.Query.Get("_id"))))
+		id, err := params.Query.Get("_id")
+		if err != nil {
+			panic("can't get _id for some reason")
+		}
+
+		sqlParam.SqlFilters, err = types.NewDocument("_id", id)
+		if err != nil {
+			panic("can't create document for some reason")
+		}
 	}
 
 	// This is not very optimal as we need to fetch everything from the database to have a proper sort.
