@@ -11,7 +11,7 @@ Here are some of the current FerretDB projects that you can fork and contribute 
 
 * [FerretDB](https://github.com/FerretDB/FerretDB): This repository contains the FerretDB project – an open source alternative project to MongoDB.
 * [github-actions](https://github.com/FerretDB/github-actions): This repository houses our shared GitHub Actions for FerretDB, dance, and other repositories.
-* [dance (stub)](https://github.com/FerretDB/dance): This repository is a FerretDB integration testing tool.
+* [dance](https://github.com/FerretDB/dance): This repository is a FerretDB integration testing tool.
 
 For those taking their first steps in contributing to an open source project.
 Please take a look at this post on [how to contribute to open source software](https://www.ferretdb.io/how-to-contribute-to-open-source-2022/).
@@ -34,7 +34,7 @@ More information on contributing to the documentation can be found [here](https:
 If not, please let us know by [creating an issue](https://github.com/FerretDB/FerretDB/issues/new/choose).
 You can create issues for bugs, documentation, features, or enhancements.
 * You can identify issues you would like to work on by looking at the [open issues](https://github.com/FerretDB/FerretDB/issues) for this repository.
-* For first-time contributors looking for issues to work on, kindly check the issues that are labeled [good-first-issues](https://github.com/FerretDB/FerretDB/contribute)
+* The most straightforward way to start contributing to this repository is to select issues that are labeled [good-first-issues](https://github.com/FerretDB/FerretDB/contribute)
 
 ## Contributing to dance
 
