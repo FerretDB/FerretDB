@@ -37,10 +37,6 @@ type Config struct {
 	// Listen unix domain socket path; defaults to "".
 	ListenSock string
 
-	// A flat to use a socket.
-	// If set to true while ListenSock is empty an 'abstract' socket might be used.
-	BindToSock bool
-
 	// Handler to use; one of `pg` or `tigris` (if enabled at compile-time).
 	Handler string
 
@@ -99,7 +95,6 @@ func (f *FerretDB) Run(ctx context.Context) error {
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		ListenAddr: f.listenAddr,
 		ListenSock: f.config.ListenSock,
-		BindToSock: f.config.BindToSock,
 		Mode:       clientconn.NormalMode,
 		Handler:    h,
 		Logger:     logger,

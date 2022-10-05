@@ -46,7 +46,6 @@ type Listener struct {
 type NewListenerOpts struct {
 	ListenAddr         string
 	ListenSock         string
-	BindToSock         bool
 	ProxyAddr          string
 	Mode               Mode
 	Handler            handlers.Interface
@@ -75,7 +74,7 @@ func NewListener(opts *NewListenerOpts) *Listener {
 func (l *Listener) Run(ctx context.Context) error {
 	logger := l.opts.Logger.Named("listener")
 
-	useSock := l.opts.ListenSock != "" || l.opts.BindToSock
+	useSock := l.opts.ListenSock != ""
 	useTcp := !useSock || l.opts.ListenAddr != defaultListeningIP
 
 	if useTcp {
