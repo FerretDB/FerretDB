@@ -96,8 +96,8 @@ func fromTJSON(v tjsontype) any {
 		return bool(*v)
 	case *dateTimeType:
 		return time.Time(*v)
-	// case *nullType:
-	// 	return types.Null
+	case *nullType:
+		return types.Null
 	case *regexType:
 		return types.Regex(*v)
 	case *int32Type:
@@ -130,8 +130,8 @@ func toTJSON(v any) tjsontype {
 		return pointer.To(boolType(v))
 	case time.Time:
 		return pointer.To(dateTimeType(v))
-	// case types.NullType:
-	// 	return pointer.To(nullType(v))
+	case types.NullType:
+		return pointer.To(nullType(v))
 	case types.Regex:
 		return pointer.To(regexType(v))
 	case int32:
@@ -147,6 +147,10 @@ func toTJSON(v any) tjsontype {
 
 // Unmarshal decodes the given tjson-encoded data.
 func Unmarshal(data []byte, schema *Schema) (any, error) {
+	if bytes.Equal(data, []byte("null")) {
+		return fromTJSON(new(nullType)), nil
+	}
+
 	var res tjsontype
 	var err error
 	switch t := schema.Type; t {

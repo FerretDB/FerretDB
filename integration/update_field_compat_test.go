@@ -161,20 +161,33 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 		"Nested": {
 			update: bson.D{{"$unset", bson.D{{"v", bson.D{{"array", ""}}}}}},
 		},
-		"DotNotationDocument": {
+		"DotDocument": {
 			update: bson.D{{"$unset", bson.D{{"v.foo", ""}}}},
 		},
-		"DotNotationDocumentNonExisting": {
+		"DotDocumentNonExisting": {
 			update:     bson.D{{"$unset", bson.D{{"foo.bar", ""}}}},
 			resultType: emptyResult,
 		},
-		"DotNotationArrayField": {
+		"DotArrayField": {
 			update:        bson.D{{"$unset", bson.D{{"v.array.0", ""}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
 		},
-		"DotNotationArrayNonExisting": {
+		"DotArrayNonExisting": {
 			update:     bson.D{{"$unset", bson.D{{"foo.0.baz", int32(1)}}}},
 			resultType: emptyResult,
+		},
+	}
+
+	testUpdateCompat(t, testCases)
+}
+
+// TestUpdateFieldCompatNull checks that update works correctly for the null values.
+func TestUpdateFieldCompatSet(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]updateCompatTestCase{
+		"SetNullInExisingField": {
+			update: bson.D{{"$set", bson.D{{"v", nil}}}},
 		},
 	}
 

@@ -60,18 +60,25 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	var inserted int32
-	for i := 0; i < docs.Len(); i++ {
-		doc, err := docs.Get(i)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		for i := 0; i < docs.Len(); i++ {
+			doc, err := docs.Get(i)
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
 
-		err = h.insert(ctx, &sp, doc)
-		if err != nil {
-			return nil, err
-		}
+			err = h.insert(ctx, tx, &sp, doc)
+			if err != nil {
+				return err
+			}
 
-		inserted++
+			inserted++
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
 	var reply wire.OpMsg
@@ -89,7 +96,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // insert prepares and executes actual INSERT request to Postgres.
-func (h *Handler) insert(ctx context.Context, sp *pgdb.SQLParam, doc any) error {
+func (h *Handler) insert(ctx context.Context, tx pgx.Tx, sp *pgdb.SQLParam, doc any) error {
 	d, ok := doc.(*types.Document)
 	if !ok {
 		return common.NewErrorMsg(
@@ -98,16 +105,15 @@ func (h *Handler) insert(ctx context.Context, sp *pgdb.SQLParam, doc any) error 
 		)
 	}
 
-	err := h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		if err := pgdb.InsertDocument(ctx, tx, sp.DB, sp.Collection, d); err != nil {
-			if errors.Is(pgdb.ErrInvalidTableName, err) ||
-				errors.Is(pgdb.ErrInvalidDatabaseName, err) {
-				msg := fmt.Sprintf("Invalid namespace: %s.%s", sp.DB, sp.Collection)
-				return common.NewErrorMsg(common.ErrInvalidNamespace, msg)
-			}
-			return lazyerrors.Error(err)
-		}
+	err := pgdb.InsertDocument(ctx, tx, sp.DB, sp.Collection, d)
+	if err == nil {
 		return nil
-	})
-	return err
+	}
+
+	if errors.Is(pgdb.ErrInvalidTableName, err) || errors.Is(pgdb.ErrInvalidDatabaseName, err) {
+		msg := fmt.Sprintf("Invalid namespace: %s.%s", sp.DB, sp.Collection)
+		return common.NewErrorMsg(common.ErrInvalidNamespace, msg)
+	}
+
+	return lazyerrors.Error(err)
 }

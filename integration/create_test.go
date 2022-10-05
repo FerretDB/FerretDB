@@ -27,7 +27,6 @@ import (
 )
 
 func TestCreateTigris(t *testing.T) {
-	setup.SkipForMongoWithReason(t, "Tigris-specific schema is used")
 	setup.SkipForPostgresWithReason(t, "Tigris-specific schema is used")
 
 	t.Parallel()
