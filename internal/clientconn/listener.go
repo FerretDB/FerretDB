@@ -116,16 +116,22 @@ func (l *Listener) Run(ctx context.Context) error {
 
 	var wg sync.WaitGroup
 
+	spawnListener := func(ctx context.Context, wg *sync.WaitGroup, l *Listener, listener net.Listener, logger *zap.Logger) {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			listenLoop(ctx, wg, l, listener, logger)
+		}()
+	}
+
 	// handle TCP stream
 	if useTcp {
-		wg.Add(1)
-		go listenLoop(ctx, &wg, l, l.tcpListener, logger)
+		spawnListener(ctx, &wg, l, l.tcpListener, logger)
 	}
 
 	// handle UNIX stream
 	if useSock {
-		wg.Add(1)
-		go listenLoop(ctx, &wg, l, l.sockListener, logger)
+		spawnListener(ctx, &wg, l, l.sockListener, logger)
 	}
 
 	logger.Info("Waiting for all connections to stop...")
@@ -135,8 +141,6 @@ func (l *Listener) Run(ctx context.Context) error {
 }
 
 func listenLoop(ctx context.Context, wg *sync.WaitGroup, l *Listener, listener net.Listener, logger *zap.Logger) {
-	defer wg.Done()
-
 	for {
 		netConn, err := listener.Accept()
 		if err != nil {
