@@ -16,6 +16,7 @@ package setup
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
@@ -163,15 +164,20 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		_ = collection.Drop(ctx)
 
 		// if validators are set, create collection with them (otherwise collection will be created on first insert)
-		if validators := provider.Validators(*handlerF, collectionName); validators != nil {
+		if validators := provider.Validators(*handlerF, collectionName); len(validators) > 0 {
 			var opts options.CreateCollectionOptions
 			for key, value := range validators {
 				opts.SetValidator(bson.D{{key, value}})
 			}
 
-			// In this case, collection can't be created in MongoDB because MongoDB has a different validator format.
-			// So, we ignore errors.
-			database.CreateCollection(ctx, collectionName, &opts)
+			err := database.CreateCollection(ctx, collectionName, &opts)
+			if err != nil {
+				var cmdErr *mongo.CommandError
+				if errors.As(err, &cmdErr) {
+					// If collection can't be created in MongoDB because MongoDB has a different validator format, it's ok:
+					require.Contains(tb, cmdErr.Message, `unknown top level operator: $tigrisSchemaString`)
+				}
+			}
 		}
 
 		docs := shareddata.Docs(provider)

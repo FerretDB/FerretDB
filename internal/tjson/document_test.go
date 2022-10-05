@@ -211,15 +211,18 @@ func prepareTestCases() []testCase {
 		"string", "foo",
 		"object", must.NotFail(types.NewDocument("foo", "bar")),
 		"regex", types.Regex{Pattern: "^foobar$", Options: "i"},
+		"null", "foo",
 	))
+	allSchema := must.NotFail(DocumentSchema(allDoc))
+	allDoc.Set("null", types.Null) // Check that `null` set in a valid document and can be handled correctly
 	all := testCase{
 		name:   "all",
 		v:      convertDocument(allDoc),
-		schema: must.NotFail(DocumentSchema((allDoc))),
-		j: `{"$k":["_id","binary","bool","double","int32","int64","timestamp","string","object","regex"],` +
+		schema: allSchema,
+		j: `{"$k":["_id","binary","bool","double","int32","int64","timestamp","string","object","regex","null"],` +
 			`"_id":"YupqlD1EsQ4ba4eX","binary":{"$b":"Qg==","s":128},"bool":true,"double":42.13,"int32":42,` +
 			`"int64":42,"timestamp":{"$t":"1562470521"},"string":"foo","object":{"$k":["foo"],"foo":"bar"},` +
-			`"regex":{"$r":"^foobar$","o":"i"}}`,
+			`"regex":{"$r":"^foobar$","o":"i"},"null":null}`,
 	}
 
 	// TODO Add a test case that contains arrays of various types (like in the fjson package):
