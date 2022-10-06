@@ -37,6 +37,11 @@ const (
 	FetchedSliceCapacity = 2
 )
 
+const (
+	// andClause is a part of the query that is used to build WHERE clause.
+	andClause = " AND "
+)
+
 // FetchedDocs is a struct that contains a list of documents and an error.
 // It is used in the fetched channel returned by QueryDocuments.
 type FetchedDocs struct {
@@ -219,8 +224,8 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 	var query string
 
 	if len(filters) > 0 {
-		query = ` WHERE ` + strings.Join(filters, " AND ")
-		query = query[:len(query)-5]
+		query = ` WHERE ` + strings.Join(filters, andClause)
+		query = query[:len(query)-len(andClause)]
 	}
 
 	return query, args
