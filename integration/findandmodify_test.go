@@ -196,3 +196,17 @@ func TestFindAndModifyUpsertComplex(t *testing.T) {
 		})
 	}
 }
+
+func TestFindAndModifyNonExistingCollection(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+
+	var actual bson.D
+	err := collection.FindOneAndUpdate(
+		ctx, bson.D{}, bson.D{{"$set", bson.E{"foo", "bar"}}},
+	).Decode(&actual)
+
+	assert.Equal(t, mongo.ErrNoDocuments, err)
+	assert.Nil(t, actual)
+}
