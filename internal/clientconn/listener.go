@@ -116,6 +116,7 @@ func (l *Listener) Run(ctx context.Context) error {
 
 	spawnListener := func(ctx context.Context, wg *sync.WaitGroup, l *Listener, listener net.Listener, logger *zap.Logger) {
 		wg.Add(1)
+
 		go func() {
 			defer wg.Done()
 			listenLoop(ctx, wg, l, listener, logger)
@@ -171,6 +172,7 @@ func runConn(ctx context.Context, netConn net.Conn, l *Listener, wg *sync.WaitGr
 	if runCancelDelay == 0 {
 		runCancelDelay = 3 * time.Second
 	}
+
 	runCtx, runCancel := ctxutil.WithDelay(ctx.Done(), runCancelDelay)
 	defer runCancel()
 
@@ -199,6 +201,7 @@ func runConn(ctx context.Context, netConn net.Conn, l *Listener, wg *sync.WaitGr
 		testRecordPath: l.opts.TestRecordPath,
 	}
 	conn, e := newConn(opts)
+
 	if e != nil {
 		logger.Warn("Failed to create connection", zap.String("conn", connID), zap.Error(e))
 		return
@@ -207,7 +210,7 @@ func runConn(ctx context.Context, netConn net.Conn, l *Listener, wg *sync.WaitGr
 	logger.Info("Connection started", zap.String("conn", connID))
 
 	e = conn.run(runCtx)
-	if e == io.EOF {
+	if errors.Is(e, io.EOF) {
 		logger.Info("Connection stopped", zap.String("conn", connID))
 	} else {
 		logger.Warn("Connection stopped", zap.String("conn", connID), zap.Error(e))
