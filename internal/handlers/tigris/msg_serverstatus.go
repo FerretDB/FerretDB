@@ -43,6 +43,7 @@ func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			//TODO: metrics
 			"host", host,
 			"version", version.MongoDBVersion,
 			"process", filepath.Base(exec),
