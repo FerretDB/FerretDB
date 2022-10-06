@@ -45,3 +45,39 @@ func Example() {
 
 	// Output: mongodb://127.0.0.1:17027/
 }
+
+// An example of spawning server on a unix domain socket.
+//
+// The name for the example is chosen because of lints....
+func ExampleNew() {
+	f, err := New(&Config{
+		// explicitly turning off the TPC listener
+		ListenAddr:    "",
+		ListenSock:    "/tmp/mongodb-27017.sock",
+		Handler:       "pg",
+		PostgreSQLURL: "postgres://postgres@127.0.0.1:5432/ferretdb",
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	go f.Run(context.Background())
+
+	uri := f.MongoDBURI()
+	fmt.Println(uri)
+
+	// Use MongoDB URI as usual. For example:
+	//
+	// import "go.mongodb.org/mongo-driver/mongo"
+	//
+	// [...]
+	//
+	// client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(uri))
+	// if err != nil {
+	// 	panic(err)
+	// }
+	//
+	// client.Ping(context.TODO(), nil)
+
+	// Output: mongodb://:@%2Ftmp%2Fmongodb-27017.sock
+}
