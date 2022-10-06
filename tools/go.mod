@@ -7,15 +7,15 @@ replace github.com/golangci/golangci-lint => github.com/FerretDB/golangci-lint v
 
 require (
 	github.com/BurntSushi/go-sumtype v0.0.0-20190304192233-fcb4a6205bdc
-	github.com/go-task/task/v3 v3.15.2
+	github.com/go-task/task/v3 v3.16.0
 	github.com/golangci/golangci-lint v1.47.2 // sync with GitHub Actions workflow
-	github.com/goreleaser/nfpm/v2 v2.18.1
+	github.com/goreleaser/nfpm/v2 v2.19.2
 	github.com/quasilyte/go-consistent v0.0.0-20220429160651-4e46040fbc82
 	github.com/reviewdog/reviewdog v0.14.1
 	golang.org/x/perf v0.0.0-20220920022801-e8d778a60d07
-	golang.org/x/tools v0.1.13-0.20220803210227-8b9a1fbdf5c3
-	golang.org/x/vuln v0.0.0-20220922161642-6a082700cdd7
-	mvdan.cc/gofumpt v0.3.1
+	golang.org/x/tools v0.1.13-0.20220928184430-f80e98464e27
+	golang.org/x/vuln v0.0.0-20221006005703-27389ae96df4
+	mvdan.cc/gofumpt v0.4.0
 )
 
 require (
@@ -95,11 +95,10 @@ require (
 	github.com/golangci/misspell v0.3.5 // indirect
 	github.com/golangci/revgrep v0.0.0-20210930125155-c22e5001d4f2 // indirect
 	github.com/golangci/unconvert v0.0.0-20180507085042-28b1c447d1f4 // indirect
-	github.com/google/go-cmp v0.5.8 // indirect
+	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/go-github/v39 v39.2.0 // indirect
 	github.com/google/go-github/v41 v41.0.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
-	github.com/google/rpmpack v0.0.0-20220314092521-38642b5e571e // indirect
 	github.com/google/safehtml v0.0.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.4.0 // indirect
@@ -132,7 +131,7 @@ require (
 	github.com/kevinburke/ssh_config v1.1.0 // indirect
 	github.com/kisielk/errcheck v1.6.1 // indirect
 	github.com/kisielk/gotool v1.0.0 // indirect
-	github.com/klauspost/compress v1.13.6 // indirect
+	github.com/klauspost/compress v1.15.11 // indirect
 	github.com/klauspost/pgzip v1.2.5 // indirect
 	github.com/kulti/thelper v0.6.3 // indirect
 	github.com/kunwardeep/paralleltest v1.0.6 // indirect
@@ -236,10 +235,10 @@ require (
 	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e // indirect
 	golang.org/x/exp/typeparams v0.0.0-20220613132600-b0d781184e0d // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
-	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
+	golang.org/x/net v0.0.0-20220920203100-d0c6ba3f52d9 // indirect
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
-	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
-	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f // indirect
+	golang.org/x/sync v0.0.0-20220819030929-7fc1605a5dde // indirect
+	golang.org/x/sys v0.0.0-20220829200755-d48e67d00261 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect

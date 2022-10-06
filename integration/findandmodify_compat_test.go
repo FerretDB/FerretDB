@@ -122,25 +122,6 @@ func TestFindAndModifyCompatErrors(t *testing.T) {
 	testFindAndModifyCompat(t, testCases)
 }
 
-func TestFindAndModifyCompatNonExistingCollection(t *testing.T) {
-	t.Parallel()
-
-	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
-
-	var targetRes, compatRes bson.D
-	var targetErr, compatErr error
-
-	targetErr = targetCollections[0].Database().Collection("doesnotexist").FindOneAndUpdate(
-		ctx, bson.D{}, bson.D{{"$set", bson.E{"foo", "bar"}}},
-	).Decode(&targetRes)
-	compatErr = compatCollections[0].Database().Collection("doesnotexist").FindOneAndUpdate(
-		ctx, bson.D{}, bson.D{{"$set", bson.E{"foo", "bar"}}},
-	).Decode(&compatRes)
-
-	require.Equal(t, targetErr, compatErr)
-	require.Equal(t, targetRes, compatRes)
-}
-
 func TestFindAndModifyCompatUpdate(t *testing.T) {
 	testCases := map[string]findAndModifyCompatTestCase{
 		"Replace": {
@@ -162,13 +143,13 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 				{"new", true},
 			},
 		},
-		"UpdateNotExistedIdInQuery": {
+		"NotExistedIdInQuery": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "no-such-id"}}},
 				{"update", bson.D{{"v", int32(43)}}},
 			},
 		},
-		"UpdateNotExistedIdNotInQuery": {
+		"NotExistedIdNotInQuery": {
 			command: bson.D{
 				{"query", bson.D{{"$and", bson.A{
 					bson.D{{"v", bson.D{{"$gt", 0}}}},
@@ -286,7 +267,6 @@ func TestFindAndModifyCompatRemove(t *testing.T) {
 // findAndModifyCompatTestCase describes findAndModify compatibility test case.
 type findAndModifyCompatTestCase struct {
 	command       bson.D
-	collection    string // collection name, if empty, collection will be used based on the test name
 	skip          string // skips test if non-empty
 	skipForTigris string // skips test for Tigris if non-empty
 }

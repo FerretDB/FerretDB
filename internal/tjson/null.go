@@ -12,36 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ferretdb
+package tjson
 
 import (
-	"context"
 	"fmt"
-	"log"
+
+	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-func Example() {
-	f, err := New(&Config{
-		ListenAddr:    "127.0.0.1:17027",
-		Handler:       "pg",
-		PostgreSQLURL: "postgres://postgres@127.0.0.1:5432/ferretdb",
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
+// nullType represents BSON Null type.
+type nullType types.NullType
 
-	go f.Run(context.Background())
+// tjsontype implements tjsontype interface.
+func (*nullType) tjsontype() {}
 
-	uri := f.MongoDBURI()
-	fmt.Println(uri)
-
-	// Use MongoDB URI as usual. For example:
-	//
-	// import "go.mongodb.org/mongo-driver/mongo"
-	//
-	// [...]
-	//
-	// mongo.Connect(ctx, options.Client().ApplyURI(uri)
-
-	// Output: mongodb://127.0.0.1:17027/
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (*nullType) UnmarshalJSON(data []byte) error {
+	panic(fmt.Sprintf("must not be called, was called with %s", string(data)))
 }
+
+// MarshalJSON implements tjsontype interface.
+func (*nullType) MarshalJSON() ([]byte, error) {
+	return []byte("null"), nil
+}
+
+// check interfaces
+var (
+	_ tjsontype = (*nullType)(nil)
+)

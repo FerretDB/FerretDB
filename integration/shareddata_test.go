@@ -31,7 +31,6 @@ func TestEnvData(t *testing.T) {
 
 		setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
 			DatabaseName: "test",
-			KeepData:     true,
 			Providers:    shareddata.AllProviders(),
 		})
 	})

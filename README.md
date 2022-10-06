@@ -66,7 +66,7 @@ services:
     restart: on-failure
     ports:
       - 27017:27017
-    command: ["-listen-addr=:27017", "-postgresql-url=postgres://user@postgres:5432/ferretdb"]
+    command: ["--listen-addr=:27017", "--postgresql-url=postgres://user@postgres:5432/ferretdb"]
 
 networks:
   default:

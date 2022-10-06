@@ -18,11 +18,10 @@ import (
 	"context"
 	"testing"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
-
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"golang.org/x/exp/slices"
@@ -35,10 +34,10 @@ import (
 //
 // TODO Add option to use read-only user. https://github.com/FerretDB/FerretDB/issues/1025
 type SetupOpts struct {
-	// Database to use. If empty, temporary test-specific database is created.
+	// Database to use. If empty, temporary test-specific database is created and dropped after test.
 	DatabaseName string
 
-	// Collection to use. If empty, temporary test-specific collection is created.
+	// Collection to use. If empty, temporary test-specific collection is created and dropped after test.
 	// Most tests should keep this empty.
 	CollectionName string
 
@@ -134,6 +133,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 				"Provider %q is not compatible with handler %q, skipping it.",
 				provider.Name(), *handlerF,
 			)
+
 			continue
 		}
 

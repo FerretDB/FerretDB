@@ -16,14 +16,14 @@ package setup
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
-
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"golang.org/x/exp/slices"
@@ -36,17 +36,15 @@ import (
 //
 // TODO Add option to use read-only user. https://github.com/FerretDB/FerretDB/issues/1025
 type SetupCompatOpts struct {
-	// Database to use. If empty, temporary test-specific database is created.
+	// Database to use. If empty, temporary test-specific database is created and dropped after test.
+	// Most tests should keep this empty.
 	DatabaseName string
-
-	// If true, database is nor dropped after test.
-	// Most tests should keep this false.
-	KeepData bool
 
 	// Data providers.
 	Providers []shareddata.Provider
 
 	ownDatabase        bool
+	databaseName       string
 	baseCollectionName string
 }
 
@@ -65,12 +63,22 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 
 	startup()
 
+	// skip tests for MongoDB as soon as possible
+	compatPort := *compatPortF
+	if compatPort == 0 {
+		tb.Skip("compatibility tests require second system")
+	}
+
 	if opts == nil {
 		opts = new(SetupCompatOpts)
 	}
 
+	opts.databaseName = opts.DatabaseName
 	if opts.DatabaseName == "" {
-		opts.DatabaseName = testutil.DatabaseName(tb)
+		// When we use `task all` to run `pg` and `tigris` compat tests in parallel,
+		// they both use the same MongoDB instance.
+		// Add the handler's name to prevent the usage of the same database.
+		opts.databaseName = testutil.DatabaseName(tb) + "_" + *handlerF
 		opts.ownDatabase = true
 	}
 
@@ -91,11 +99,6 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
-
-	compatPort := *compatPortF
-	if compatPort == 0 {
-		tb.Skip("compatibility tests require second system")
-	}
 
 	targetCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, targetPort), opts)
 	compatCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, compatPort), opts)
@@ -125,7 +128,7 @@ func SetupCompat(tb testing.TB) (context.Context, []*mongo.Collection, []*mongo.
 func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Client, opts *SetupCompatOpts) []*mongo.Collection {
 	tb.Helper()
 
-	database := client.Database(opts.DatabaseName)
+	database := client.Database(opts.databaseName)
 
 	if opts.ownDatabase {
 		// drop remnants of the previous failed run
@@ -145,10 +148,10 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 	collections := make([]*mongo.Collection, 0, len(opts.Providers))
 	for _, provider := range opts.Providers {
 		collectionName := opts.baseCollectionName + "_" + provider.Name()
-		if opts.KeepData {
+		if !opts.ownDatabase {
 			collectionName = strings.ToLower(provider.Name())
 		}
-		fullName := opts.DatabaseName + "." + collectionName
+		fullName := opts.databaseName + "." + collectionName
 
 		if *targetPortF == 0 && !slices.Contains(provider.Handlers(), *handlerF) {
 			tb.Logf(
@@ -164,15 +167,20 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		_ = collection.Drop(ctx)
 
 		// if validators are set, create collection with them (otherwise collection will be created on first insert)
-		if validators := provider.Validators(*handlerF, collectionName); validators != nil {
+		if validators := provider.Validators(*handlerF, collectionName); len(validators) > 0 {
 			var opts options.CreateCollectionOptions
 			for key, value := range validators {
 				opts.SetValidator(bson.D{{key, value}})
 			}
 
-			// In this case, collection can't be created in MongoDB because MongoDB has a different validator format.
-			// So, we ignore errors.
-			database.CreateCollection(ctx, collectionName, &opts)
+			err := database.CreateCollection(ctx, collectionName, &opts)
+			if err != nil {
+				var cmdErr *mongo.CommandError
+				if errors.As(err, &cmdErr) {
+					// If collection can't be created in MongoDB because MongoDB has a different validator format, it's ok:
+					require.Contains(tb, cmdErr.Message, `unknown top level operator: $tigrisSchemaString`)
+				}
+			}
 		}
 
 		docs := shareddata.Docs(provider)
@@ -182,7 +190,7 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		require.NoError(tb, err, "%s: handler %q, collection %s", provider.Name(), *handlerF, fullName)
 		require.Len(tb, res.InsertedIDs, len(docs))
 
-		if !opts.KeepData {
+		if opts.ownDatabase {
 			// delete collection unless test failed
 			tb.Cleanup(func() {
 				if tb.Failed() {

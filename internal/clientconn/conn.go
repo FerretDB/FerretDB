@@ -453,9 +453,8 @@ func (c *conn) logResponse(who string, resHeader *wire.MsgHeader, resBody wire.M
 	if resHeader.OpCode == wire.OpCodeMsg {
 		doc := must.NotFail(resBody.(*wire.OpMsg).Document())
 
-		ok := must.NotFail(doc.Get("ok"))
-
-		if ok.(float64) != 1 {
+		ok, _ := doc.Get("ok")
+		if f, _ := ok.(float64); f != 1 {
 			if closeConn {
 				level = zap.ErrorLevel
 			} else {
