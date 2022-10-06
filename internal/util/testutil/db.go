@@ -104,7 +104,7 @@ func CollectionName(tb testing.TB) string {
 	collectionNamesM.Lock()
 	defer collectionNamesM.Unlock()
 
-	// it maybe exactly the same if `go test -count=X` is used
+	// it may be exactly the same if `go test -count=X` is used
 	current := stack()
 	if another, ok := collectionNames[name]; ok && !bytes.Equal(current, another) {
 		tb.Logf("Collection name %q already used by another test:\n%s", name, another)
