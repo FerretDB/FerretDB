@@ -34,12 +34,12 @@ import (
 
 // Listener accepts incoming client connections.
 type Listener struct {
-	opts         *NewListenerOpts
-	metrics      *ListenerMetrics
-	handler      handlers.Interface
-	tcpListener  net.Listener
-	sockListener net.Listener
-	listening    chan struct{}
+	opts             *NewListenerOpts
+	metrics          *ListenerMetrics
+	handler          handlers.Interface
+	tcpListener      net.Listener
+	sockListener     net.Listener
+	tcpListenerReady chan struct{}
 }
 
 // NewListenerOpts represents listener configuration.
@@ -58,10 +58,10 @@ type NewListenerOpts struct {
 // NewListener returns a new listener, configured by the NewListenerOpts argument.
 func NewListener(opts *NewListenerOpts) *Listener {
 	return &Listener{
-		opts:      opts,
-		metrics:   newListenerMetrics(),
-		handler:   opts.Handler,
-		listening: make(chan struct{}),
+		opts:             opts,
+		metrics:          newListenerMetrics(),
+		handler:          opts.Handler,
+		tcpListenerReady: make(chan struct{}),
 	}
 }
 
@@ -80,7 +80,7 @@ func (l *Listener) Run(ctx context.Context) error {
 			return lazyerrors.Error(err)
 		}
 
-		close(l.listening)
+		close(l.tcpListenerReady)
 
 		logger.Sugar().Infof("Listening on %s ...", l.Addr())
 	}
@@ -89,11 +89,6 @@ func (l *Listener) Run(ctx context.Context) error {
 		var err error
 		if l.sockListener, err = net.Listen("unix", l.opts.ListenSock); err != nil {
 			return lazyerrors.Error(err)
-		}
-
-		// a check to not double close
-		if !useTcp {
-			close(l.listening)
 		}
 
 		logger.Sugar().Infof("Listening on %s ...", l.Sock())
@@ -219,16 +214,18 @@ func runConn(ctx context.Context, netConn net.Conn, l *Listener, wg *sync.WaitGr
 
 // Addr returns listener's address.
 // It can be used to determine an actually used port, if it was zero.
+//
+// It is a blocking call unless Run was not called.
 func (l *Listener) Addr() net.Addr {
-	<-l.listening
+	<-l.tcpListenerReady
 	return l.tcpListener.Addr()
 }
 
 // Sock returns listener's unix domain socket address.
-//
-// It is a blocking call if Run was not called.
 func (l *Listener) Sock() net.Addr {
-	<-l.listening
+	// we don't do blocking because we restricted the socket to not has "" path
+	// so we always know the address.
+
 	return l.sockListener.Addr()
 }
 
