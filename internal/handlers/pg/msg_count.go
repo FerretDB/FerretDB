@@ -65,10 +65,12 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
+
 	collectionParam, err := document.Get(document.Command())
 	if err != nil {
 		return nil, err
 	}
+
 	var ok bool
 	if sp.Collection, ok = collectionParam.(string); !ok {
 		return nil, common.NewErrorMsg(
@@ -77,9 +79,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		)
 	}
 
-	if filter != nil && filter.Has("_id") {
-		sp.SqlFilters = must.NotFail(types.NewDocument("_id", must.NotFail(filter.Get("_id"))))
-	}
+	sp.Filters = filter
 
 	resDocs := make([]*types.Document, 0, 16)
 	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {

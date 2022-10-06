@@ -50,7 +50,7 @@ type SQLParam struct {
 	Collection string
 	Comment    string
 	Explain    bool
-	SqlFilters *types.Document
+	Filters    *types.Document
 }
 
 // QueryDocuments returns a channel with buffer FetchedChannelBufSize
@@ -185,10 +185,10 @@ func buildQuery(ctx context.Context, tx pgx.Tx, sp *SQLParam) (string, []any, er
 
 	var args []any
 
-	if sp.SqlFilters != nil {
+	if sp.Filters != nil {
 		var where string
 
-		where, args = prepareWhereClause(sp.SqlFilters)
+		where, args = prepareWhereClause(sp.Filters)
 		query += where
 	}
 
@@ -196,12 +196,12 @@ func buildQuery(ctx context.Context, tx pgx.Tx, sp *SQLParam) (string, []any, er
 }
 
 // prepareWhereClause adds WHERE clause with given filters to the query and returns the query and arguments.
-func prepareWhereClause(sqlFilter *types.Document) (string, []any) {
+func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 	var filters []string
 	var args []any
 	var p Placeholder
 
-	for k, v := range sqlFilter.Map() {
+	for k, v := range sqlFilters.Map() {
 		switch k {
 		case "_id":
 			switch v := v.(type) {

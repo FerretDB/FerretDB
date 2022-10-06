@@ -95,9 +95,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		if filter != nil && filter.Has("_id") {
-			sp.SqlFilters = must.NotFail(types.NewDocument("_id", must.NotFail(filter.Get("_id"))))
-		}
+		sp.Filters = filter
 
 		del, err := h.execDelete(ctx, &sp, filter, limit)
 		if err == nil {

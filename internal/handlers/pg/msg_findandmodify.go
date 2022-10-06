@@ -68,10 +68,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		DB:         params.DB,
 		Collection: params.Collection,
 		Comment:    params.Comment,
-	}
-
-	if params.Query != nil && params.Query.Has("_id") {
-		sqlParam.SqlFilters = must.NotFail(types.NewDocument("_id", must.NotFail(params.Query.Get("_id"))))
+		Filters:    params.Query,
 	}
 
 	// This is not very optimal as we need to fetch everything from the database to have a proper sort.

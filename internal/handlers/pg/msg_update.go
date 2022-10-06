@@ -135,9 +135,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				return err
 			}
 
-			if q != nil && q.Has("_id") {
-				sp.SqlFilters = must.NotFail(types.NewDocument("_id", must.NotFail(q.Get("_id"))))
-			}
+			sp.Filters = q
 
 			resDocs := make([]*types.Document, 0, 16)
 			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, &sp)
