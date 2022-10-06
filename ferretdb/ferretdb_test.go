@@ -79,5 +79,5 @@ func ExampleNew() {
 	//
 	// client.Ping(context.TODO(), nil)
 
-	// Output: mongodb://%2Ftmp%2Fmongodb-27017.sock
+	// Output: mongodb://%252Ftmp%252Fmongodb-27017.sock
 }
