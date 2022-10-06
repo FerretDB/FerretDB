@@ -148,8 +148,9 @@ func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Array, error) 
 
 // buildQuery builds SELECT or EXPLAIN SELECT query.
 //
-// It returns (possibly wrapped) ErrSchemaNotExist or ErrTableNotExist
-// if schema/database or table/collection does not exist.
+// It returns the query string and the arguments.
+// If schema/database or table/collection does not exist,
+// it returns (possibly wrapped) ErrSchemaNotExist or ErrTableNotExist.
 func buildQuery(ctx context.Context, tx pgx.Tx, sp *SQLParam) (string, []any, error) {
 	exists, err := CollectionExists(ctx, tx, sp.DB, sp.Collection)
 	if err != nil {
