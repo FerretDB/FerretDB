@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"os"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -137,6 +139,62 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 	return port
 }
 
+// setupSockListener starts in-process FerretDB server that runs until ctx is done,
+// and returns listening port number.
+func setupSockListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (string, error) {
+	// create a sock file first to then delete it
+	sockFile, err := os.CreateTemp("ferretdb-test", ".sock.")
+	if err != nil {
+		return "", err
+	}
+
+	tb.Helper()
+
+	h, err := registry.NewHandler(*handlerF, &registry.NewHandlerOpts{
+		Ctx:           ctx,
+		Logger:        logger,
+		PostgreSQLURL: testutil.PostgreSQLURL(tb, nil),
+		TigrisURL:     testutil.TigrisURL(tb),
+	})
+	require.NoError(tb, err)
+
+	proxyAddr := *proxyAddrF
+	mode := clientconn.NormalMode
+	if proxyAddr != "" {
+		mode = clientconn.DiffNormalMode
+	}
+
+	l := clientconn.NewListener(&clientconn.NewListenerOpts{
+		ListenAddr:         "",
+		ListenSock:         sockFile.Name(),
+		ProxyAddr:          proxyAddr,
+		Mode:               mode,
+		Handler:            h,
+		Logger:             logger,
+		TestRunCancelDelay: time.Hour, // make it easier to notice missing client's disconnects
+	})
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+
+		err := l.Run(ctx)
+		if err == nil || err == context.Canceled {
+			logger.Info("Listener stopped without error")
+		} else {
+			logger.Error("Listener stopped", zap.Error(err))
+		}
+	}()
+
+	// ensure that all listener's logs are written before test ends
+	tb.Cleanup(func() {
+		<-done
+		h.Close()
+	})
+
+	return sockFile.Name(), nil
+}
+
 // setupClient returns MongoDB client for database on 127.0.0.1:port.
 func setupClient(tb testing.TB, ctx context.Context, port int) *mongo.Client {
 	tb.Helper()
@@ -170,6 +228,26 @@ func setupClient(tb testing.TB, ctx context.Context, port int) *mongo.Client {
 		RawQuery: v.Encode(),
 	}
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(u.String()))
+	require.NoError(tb, err)
+
+	err = client.Ping(ctx, nil)
+	require.NoError(tb, err)
+
+	tb.Cleanup(func() {
+		err = client.Disconnect(ctx)
+		require.NoError(tb, err)
+	})
+
+	return client
+}
+
+func setupSockClient(tb testing.TB, ctx context.Context, path string) *mongo.Client {
+	tb.Helper()
+
+	path = strings.ReplaceAll(path, "/", "%2F")
+	url := fmt.Sprintf("mongodb://%s", path)
+
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(url))
 	require.NoError(tb, err)
 
 	err = client.Ping(ctx, nil)

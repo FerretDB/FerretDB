@@ -16,6 +16,7 @@ package setup
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -43,6 +44,8 @@ type SetupOpts struct {
 
 	// Data providers. If empty, collection is not created.
 	Providers []shareddata.Provider
+
+	BindToSocket bool
 }
 
 // SetupResult represents setup results.
@@ -50,6 +53,7 @@ type SetupResult struct {
 	Ctx        context.Context
 	Collection *mongo.Collection
 	Port       uint16
+	Sock       string
 }
 
 // SetupWithOpts setups the test according to given options.
@@ -71,14 +75,33 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	logger := zaptest.NewLogger(tb, zaptest.Level(level), zaptest.WrapOptions(zap.AddCaller()))
 
 	port := *targetPortF
+	sockPath := ""
 	if port == 0 {
-		port = setupListener(tb, ctx, logger)
+		if opts.BindToSocket {
+			path, err := setupSockListener(tb, ctx, logger)
+			if err != nil {
+				tb.Logf("failed to bind to socket %v; switching to TCP", err)
+				port = setupListener(tb, ctx, logger)
+			} else {
+				sockPath = path
+				defer os.Remove(sockPath)
+			}
+		} else {
+			port = setupListener(tb, ctx, logger)
+		}
+	}
+
+	var client *mongo.Client
+	if port == 0 && sockPath != "" {
+		client = setupSockClient(tb, ctx, sockPath)
+	} else {
+		client = setupClient(tb, ctx, port)
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	collection := setupCollection(tb, ctx, setupClient(tb, ctx, port), opts)
+	collection := setupCollection(tb, ctx, client, opts)
 
 	level.SetLevel(*logLevelF)
 
@@ -86,6 +109,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 		Ctx:        ctx,
 		Collection: collection,
 		Port:       uint16(port),
+		Sock:       sockPath,
 	}
 }
 

@@ -117,7 +117,7 @@ func (f *FerretDB) MongoDBURI() string {
 		//
 		// not sure what are the requirements on windows
 		path := strings.ReplaceAll(f.config.ListenSock, "/", "%2F")
-		return fmt.Sprintf("mongodb://:@%s", path)
+		return fmt.Sprintf("mongodb://%s", path)
 	}
 
 	u := url.URL{
