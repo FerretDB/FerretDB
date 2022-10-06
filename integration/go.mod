@@ -8,7 +8,7 @@ require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/FerretDB/FerretDB v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.8.0
-	go.mongodb.org/mongo-driver v1.10.2
+	go.mongodb.org/mongo-driver v1.10.3
 	go.uber.org/zap v1.23.0
 	golang.org/x/exp v0.0.0-20220929112958-4a82f8963a65
 )
