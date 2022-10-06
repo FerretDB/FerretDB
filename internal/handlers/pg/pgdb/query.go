@@ -168,7 +168,7 @@ func buildQuery(ctx context.Context, tx pgx.Tx, sp *SQLParam) (string, []any, er
 	var query string
 
 	if sp.Explain {
-		query += `EXPLAIN (VERBOSE true, FORMAT JSON) `
+		query = `EXPLAIN (VERBOSE true, FORMAT JSON) `
 	}
 
 	query += ` SELECT _jsonb `
