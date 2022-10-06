@@ -22,7 +22,6 @@ import (
 	"net"
 	"net/url"
 	"os"
-	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -244,8 +243,11 @@ func setupClient(tb testing.TB, ctx context.Context, port int) *mongo.Client {
 func setupSockClient(tb testing.TB, ctx context.Context, path string) *mongo.Client {
 	tb.Helper()
 
-	path = strings.ReplaceAll(path, "/", "%2F")
-	url := fmt.Sprintf("mongodb://%s", path)
+	u := url.URL{
+		Scheme: "mongodb",
+		Host:   url.PathEscape(path),
+	}
+	url := u.String()
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(url))
 	require.NoError(tb, err)

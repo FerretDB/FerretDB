@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"strings"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -112,19 +111,20 @@ func (f *FerretDB) Run(ctx context.Context) error {
 // MongoDBURI returns MongoDB URI for this FerretDB instance.
 // If it was spawned on domain socket then it will be returned, in case of listening both on TCP and a socket TCP connection string will be returned.
 func (f *FerretDB) MongoDBURI() string {
+	var u url.URL
 	if f.isListeningOnlyOnSock() {
-		// it's required to escape '/' character
-		//
-		// not sure what are the requirements on windows
-		path := strings.ReplaceAll(f.config.ListenSock, "/", "%2F")
-		return fmt.Sprintf("mongodb://%s", path)
+		u = url.URL{
+			Scheme: "mongodb",
+			Host:   url.PathEscape(f.config.ListenSock),
+		}
+	} else {
+		u = url.URL{
+			Scheme: "mongodb",
+			Host:   f.listenAddr,
+			Path:   "/",
+		}
 	}
 
-	u := url.URL{
-		Scheme: "mongodb",
-		Host:   f.listenAddr,
-		Path:   "/",
-	}
 	return u.String()
 }
 
