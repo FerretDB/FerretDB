@@ -62,7 +62,6 @@ func (ts *timestampType) MarshalJSON() ([]byte, error) {
 	res, err := json.Marshal(timestampJSON{
 		T: uint64(*ts),
 	})
-
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

@@ -67,7 +67,6 @@ func (regex *regexType) MarshalJSON() ([]byte, error) {
 		R: regex.Pattern,
 		O: regex.Options,
 	})
-
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

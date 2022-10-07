@@ -72,7 +72,6 @@ func (obj *objectIDType) MarshalJSON() ([]byte, error) {
 	res, err := json.Marshal(objectIDJSON{
 		O: hex.EncodeToString(obj[:]),
 	})
-
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

@@ -53,7 +53,6 @@ func (i *int32Type) UnmarshalJSON(data []byte) error {
 // MarshalJSON implements pjsontype interface.
 func (i *int32Type) MarshalJSON() ([]byte, error) {
 	res, err := json.Marshal(int32(*i))
-
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

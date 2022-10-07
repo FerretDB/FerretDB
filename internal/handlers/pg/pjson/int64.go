@@ -61,7 +61,6 @@ func (i *int64Type) MarshalJSON() ([]byte, error) {
 	res, err := json.Marshal(int64JSON{
 		L: int64(*i),
 	})
-
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

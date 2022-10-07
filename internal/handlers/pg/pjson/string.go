@@ -53,7 +53,6 @@ func (str *stringType) UnmarshalJSON(data []byte) error {
 // MarshalJSON implements pjsontype interface.
 func (str *stringType) MarshalJSON() ([]byte, error) {
 	res, err := json.Marshal(string(*str))
-
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
