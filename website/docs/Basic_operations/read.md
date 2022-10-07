@@ -8,26 +8,25 @@ The read operation retrieves documents in a collection. You can either retrieve 
 
 ## Retrieve all documents in a collection
 
-The `find()` command is used for retrieveing all the documents in a collection. 
+The `find()` command is used for retrieveing all the documents in a collection.
 
-```
+```sh
 db.collection.find()
 ```
 
-First, populate the database with a new collection containing a list of documents. 
+First, populate the database with a new collection containing a list of documents.
 
-```bash
+```sh
 db.scientists.insertMany([{name:{firstname: "Alan", lastname: "Turing"}, born: 1912, invention: "Turing Machine"},{name:{firstname: "Graham", lastname: "Bell"}, born: 1847, invention: "telephone"},{name:{firstname: "Ada", lastname: "Lovelace"}, born: 1815, invention: "computer programming"}])
 ```
 
 Run `db.scientists.find()` to see the complete list of documents in the collection.
 
-
 ### Retrieve documents based on a specific query
 
 Using the `find()` command, you can also filter a collection for only the documents that match the provided query. For example, find the document with the field `born` set as 1857.
 
-```
+```sh
 db.scientists.find({born: 1857})
 ```
 
@@ -59,7 +58,3 @@ The `findOne()` command retrieves a single document from a collection.
 ```sh
 db.scientists.findOne({invention: "Turing Machine"})
 ```
-
-
-
-

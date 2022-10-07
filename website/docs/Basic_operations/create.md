@@ -4,12 +4,13 @@ sidebar_position: 2
 
 # Insert operation
 
-The insert operation adds a new document to a collection. 
+The insert operation adds a new document to a collection.
 
 ## Insert a single document
+
 The `insertOne()` command is used to add a single document into a collection, using this syntax format `db.collection.insertOne({field1: value1, field2: value2,.... fieldN: valueN})`.
 
-The example below depicts how a single document can be added to a collection. 
+The example below depicts how a single document can be added to a collection.
 
 ```bash
 db.scientists.insertOne({name:{firstname: "Thomas", lastname: "Edison"}, born: 1847, invention: "lightbulb"})
@@ -22,7 +23,8 @@ If a collection does not exist, the insert command automatically creates one.
 :::
 
 ## Insert many documents at once
-A collection can contain multiple documents. Using the `insertMany()` command, you can add multiple documents to a collection at once. 
+
+A collection can contain multiple documents. Using the `insertMany()` command, you can add multiple documents to a collection at once.
 
 ```bash
 db.collection_name.insertMany([{document1}, {document2},... {documentN}])
