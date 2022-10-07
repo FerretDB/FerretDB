@@ -38,7 +38,7 @@ The operator syntax allows users to query and retrieve a document.
 There are several operator methods that you can use, such as `$gt` or `$lt`.
 For example, to find the list of scientists born after the 1900s, we'll need the `$gt` operator:
 
-```shell
+```sh
 db.scientists.find({born:{$gt:1900}})
 ```
 
