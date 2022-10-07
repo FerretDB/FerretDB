@@ -162,6 +162,7 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() pjsontype) {
 func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() pjsontype) {
 	for _, tc := range testCases {
 		f.Add(tc.j)
+
 		if tc.canonJ != "" {
 			f.Add(tc.canonJ)
 		}

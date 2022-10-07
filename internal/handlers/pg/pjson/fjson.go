@@ -161,6 +161,7 @@ func Unmarshal(data []byte) (any, error) {
 	}
 
 	var res pjsontype
+
 	switch v := v.(type) {
 	case map[string]any:
 		switch {
