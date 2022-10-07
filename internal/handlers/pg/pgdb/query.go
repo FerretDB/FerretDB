@@ -108,12 +108,12 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam)
 
 // Explain returns SQL EXPLAIN results for given query parameters.
 func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Array, error) {
-	q, _, err := buildQuery(ctx, tx, &sp)
+	q, args, err := buildQuery(ctx, tx, &sp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	rows, err := tx.Query(ctx, q)
+	rows, err := tx.Query(ctx, q, args...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -209,7 +209,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 			case types.ObjectID:
 				filters = append(filters, fmt.Sprintf(`((_jsonb->'_id')::jsonb->>'$o' = %s)`, p.Next()))
 
-				args = append(args, pgx.Identifier{string(must.NotFail(fjson.Marshal(v)))}.Sanitize())
+				args = append(args, string(must.NotFail(fjson.Marshal(v))))
 			}
 		default:
 			continue
