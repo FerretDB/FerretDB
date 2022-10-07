@@ -207,7 +207,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 		case "_id":
 			switch v := v.(type) {
 			case *types.ObjectID:
-				filters = append(filters, fmt.Sprintf(`(_jsonb->'_id')::jsonb->>'$o' = %s`, p.Next()))
+				filters = append(filters, fmt.Sprintf(`((_jsonb->'_id')::jsonb->>'$o' = %s)`, p.Next()))
 
 				args = append(args, pgx.Identifier{string(must.NotFail(fjson.Marshal(v)))}.Sanitize())
 			}
