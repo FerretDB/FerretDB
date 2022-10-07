@@ -68,7 +68,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		DB:         params.DB,
 		Collection: params.Collection,
 		Comment:    params.Comment,
-		Filters:    params.Query,
+		Filter:     params.Query,
 	}
 
 	// This is not very optimal as we need to fetch everything from the database to have a proper sort.
