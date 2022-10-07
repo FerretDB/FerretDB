@@ -52,14 +52,13 @@ and then configure notification only for your name.
 4. Tasks are measured manually by engineers during Sprint planning.
 5. Task estimation depends on the following parameters:
    * Scope. Are the changes required in one or multiple files, packages, components?
-   * Complexity. How hard is the task? Does it require to cover a lot of test cases? How many "unknowns" do we have?
-   * Clarity. Are the description and definition of done clear? Does the task require extra research?
+   * Difficulty. How hard is the task? Does it require to cover a lot of test cases? edge cases?
+   * Clarity. Are the description and definition of done clear? Or that's more of a research task?
 6. We use the following T-Shirt Sizes to estimate tasks:
    * **S**: Small simple clear task.
    * **M**: Only one parameter can be changed compared to **S** (e.g. a small but not completely clear task).
-   * **L**: Two parameters can be changed compared to **M** (e.g. clear medium-sized somewhat complex task).
-7. If the team thinks that the task is bigger than **L**, it should be decomposed into smaller tasks or
-   an additional research task needs to be created to clarify all the details.
+   * **L**: Two parameters can be changed compared to **S** (e.g. clear but big and somewhat complex task).
+7. If the team thinks that the task is bigger than **L**, it should be decomposed into smaller tasks.
 8. After every Sprint, we measure how many tasks of each size we were able to complete and discuss
    what went well and what could be improved.
    We also look at the flows' metrics to gather more information about the team's dynamic.
