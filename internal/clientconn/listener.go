@@ -35,7 +35,7 @@ import (
 // Listener accepts incoming client connections.
 type Listener struct {
 	opts      *NewListenerOpts
-	metrics   *ListenerMetrics
+	Metrics   *ListenerMetrics
 	handler   handlers.Interface
 	listener  net.Listener
 	listening chan struct{}
@@ -57,7 +57,7 @@ type NewListenerOpts struct {
 func NewListener(opts *NewListenerOpts) *Listener {
 	return &Listener{
 		opts:      opts,
-		metrics:   newListenerMetrics(),
+		Metrics:   newListenerMetrics(),
 		handler:   opts.Handler,
 		listening: make(chan struct{}),
 	}
@@ -87,7 +87,7 @@ func (l *Listener) Run(ctx context.Context) error {
 	for {
 		netConn, err := l.listener.Accept()
 		if err != nil {
-			l.metrics.accepts.WithLabelValues("1").Inc()
+			l.Metrics.accepts.WithLabelValues("1").Inc()
 
 			if ctx.Err() != nil {
 				break
@@ -101,8 +101,8 @@ func (l *Listener) Run(ctx context.Context) error {
 		}
 
 		wg.Add(1)
-		l.metrics.accepts.WithLabelValues("0").Inc()
-		l.metrics.connectedClients.Inc()
+		l.Metrics.accepts.WithLabelValues("0").Inc()
+		l.Metrics.connectedClients.Inc()
 
 		// run connection
 		go func() {
@@ -127,7 +127,7 @@ func (l *Listener) Run(ctx context.Context) error {
 
 			defer func() {
 				netConn.Close()
-				l.metrics.connectedClients.Dec()
+				l.Metrics.connectedClients.Dec()
 				wg.Done()
 			}()
 
@@ -137,7 +137,7 @@ func (l *Listener) Run(ctx context.Context) error {
 				l:              l.opts.Logger.Named("// " + connID + " "), // derive from the original unnamed logger
 				proxyAddr:      l.opts.ProxyAddr,
 				handler:        l.opts.Handler,
-				connMetrics:    l.metrics.connMetrics,
+				connMetrics:    l.Metrics.ConnMetrics,
 				testRecordPath: l.opts.TestRecordPath,
 			}
 			conn, e := newConn(opts)
@@ -172,10 +172,10 @@ func (l *Listener) Addr() net.Addr {
 
 // Describe implements prometheus.Collector.
 func (l *Listener) Describe(ch chan<- *prometheus.Desc) {
-	l.metrics.Describe(ch)
+	l.Metrics.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
 func (l *Listener) Collect(ch chan<- prometheus.Metric) {
-	l.metrics.Collect(ch)
+	l.Metrics.Collect(ch)
 }

@@ -96,6 +96,8 @@ func (f *FerretDB) Run(ctx context.Context) error {
 		Logger:     logger,
 	})
 
+	newOpts.Metrics = l.Metrics.ConnMetrics
+
 	if err = l.Run(ctx); err != nil {
 		// Do not expose internal error details.
 		// If you need stable error values and/or types for some cases, please create an issue.

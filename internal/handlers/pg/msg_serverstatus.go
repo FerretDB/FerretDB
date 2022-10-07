@@ -67,6 +67,7 @@ func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.O
 			"freeMonitoring", must.NotFail(types.NewDocument(
 				"state", "disabled",
 			)),
+			"metrics", h.metrics,
 			"ok", float64(1),
 		))},
 	})
