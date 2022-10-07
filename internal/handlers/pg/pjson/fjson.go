@@ -150,10 +150,12 @@ func Unmarshal(data []byte) (any, error) {
 	var v any
 	r := bytes.NewReader(data)
 	dec := json.NewDecoder(r)
+
 	err := dec.Decode(&v)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
 	if err := checkConsumed(dec, r); err != nil {
 		return nil, lazyerrors.Error(err)
 	}

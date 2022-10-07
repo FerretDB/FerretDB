@@ -78,7 +78,9 @@ func (d *doubleType) UnmarshalJSON(data []byte) error {
 // MarshalJSON implements pjsontype interface.
 func (d *doubleType) MarshalJSON() ([]byte, error) {
 	f := float64(*d)
+
 	var o doubleJSON
+
 	switch {
 	case f == 0 && math.Signbit(f):
 		o.F = "-0"

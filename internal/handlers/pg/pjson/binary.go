@@ -45,6 +45,7 @@ func (bin *binaryType) UnmarshalJSON(data []byte) error {
 	dec.DisallowUnknownFields()
 
 	var o binaryJSON
+
 	err := dec.Decode(&o)
 	if err != nil {
 		return lazyerrors.Error(err)

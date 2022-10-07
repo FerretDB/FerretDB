@@ -46,9 +46,11 @@ func assertEqual(tb testing.TB, expected, actual any, msgAndArgs ...any) bool {
 		require.IsType(tb, expected, actual, msgAndArgs...)
 		e := float64(*expected)
 		a := float64(*actual.(*doubleType))
+
 		if math.IsNaN(e) || math.IsNaN(a) {
 			return assert.Equal(tb, math.IsNaN(e), math.IsNaN(a), msgAndArgs...)
 		}
+
 		if e == 0 && a == 0 {
 			return assert.Equal(tb, math.Signbit(e), math.Signbit(a), msgAndArgs...)
 		}
@@ -145,10 +147,12 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() pjsontype) {
 
 				actualJ, err := Marshal(frompjson(tc.v))
 				require.NoError(t, err)
+
 				expectedJ := tc.j
 				if tc.canonJ != "" {
 					expectedJ = tc.canonJ
 				}
+
 				assert.Equal(t, expectedJ, string(actualJ))
 			})
 		})
