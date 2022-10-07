@@ -42,6 +42,7 @@ func (doc *documentType) UnmarshalJSON(data []byte) error {
 	if err := dec.Decode(&rawMessages); err != nil {
 		return lazyerrors.Error(err)
 	}
+
 	if err := checkConsumed(dec, r); err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -55,26 +56,32 @@ func (doc *documentType) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(b, &keys); err != nil {
 		return lazyerrors.Error(err)
 	}
+
 	if len(keys)+1 != len(rawMessages) {
 		return lazyerrors.Errorf("pjson.documentType.UnmarshalJSON: %d elements in $k, %d in total", len(keys), len(rawMessages))
 	}
 
 	td := must.NotFail(types.NewDocument())
+
 	for _, key := range keys {
 		b, ok = rawMessages[key]
+
 		if !ok {
 			return lazyerrors.Errorf("pjson.documentType.UnmarshalJSON: missing key %q", key)
 		}
+
 		v, err := Unmarshal(b)
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
+
 		if err = td.Set(key, v); err != nil {
 			return lazyerrors.Error(err)
 		}
 	}
 
 	*doc = documentType(*td)
+
 	return nil
 }
 
@@ -85,14 +92,17 @@ func (doc *documentType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 
 	buf.WriteString(`{"$k":`)
+
 	keys := td.Keys()
 	if keys == nil {
 		keys = []string{}
 	}
+
 	b, err := json.Marshal(keys)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
 	buf.Write(b)
 
 	for _, key := range keys {
@@ -101,6 +111,7 @@ func (doc *documentType) MarshalJSON() ([]byte, error) {
 		if b, err = json.Marshal(key); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+
 		buf.Write(b)
 		buf.WriteByte(':')
 
@@ -108,6 +119,7 @@ func (doc *documentType) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+
 		b, err := Marshal(value)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
@@ -117,6 +129,7 @@ func (doc *documentType) MarshalJSON() ([]byte, error) {
 	}
 
 	buf.WriteByte('}')
+
 	return buf.Bytes(), nil
 }
 

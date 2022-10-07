@@ -49,12 +49,14 @@ func (bin *binaryType) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
+
 	if err = checkConsumed(dec, r); err != nil {
 		return lazyerrors.Error(err)
 	}
 
 	bin.B = o.B
 	bin.Subtype = types.BinarySubtype(o.S)
+
 	return nil
 }
 
@@ -67,6 +69,7 @@ func (bin *binaryType) MarshalJSON() ([]byte, error) {
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
 	return res, nil
 }
 

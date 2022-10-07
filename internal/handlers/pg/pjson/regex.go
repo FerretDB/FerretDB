@@ -48,6 +48,7 @@ func (regex *regexType) UnmarshalJSON(data []byte) error {
 	if err := dec.Decode(&o); err != nil {
 		return lazyerrors.Error(err)
 	}
+
 	if err := checkConsumed(dec, r); err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -56,6 +57,7 @@ func (regex *regexType) UnmarshalJSON(data []byte) error {
 		Pattern: o.R,
 		Options: o.O,
 	}
+
 	return nil
 }
 
@@ -65,9 +67,11 @@ func (regex *regexType) MarshalJSON() ([]byte, error) {
 		R: regex.Pattern,
 		O: regex.Options,
 	})
+
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
 	return res, nil
 }
 

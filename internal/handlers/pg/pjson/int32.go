@@ -40,20 +40,24 @@ func (i *int32Type) UnmarshalJSON(data []byte) error {
 	if err := dec.Decode(&o); err != nil {
 		return lazyerrors.Error(err)
 	}
+
 	if err := checkConsumed(dec, r); err != nil {
 		return lazyerrors.Error(err)
 	}
 
 	*i = int32Type(o)
+
 	return nil
 }
 
 // MarshalJSON implements pjsontype interface.
 func (i *int32Type) MarshalJSON() ([]byte, error) {
 	res, err := json.Marshal(int32(*i))
+
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
 	return res, nil
 }
 

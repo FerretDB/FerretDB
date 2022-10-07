@@ -46,11 +46,13 @@ func (i *int64Type) UnmarshalJSON(data []byte) error {
 	if err := dec.Decode(&o); err != nil {
 		return lazyerrors.Error(err)
 	}
+
 	if err := checkConsumed(dec, r); err != nil {
 		return lazyerrors.Error(err)
 	}
 
 	*i = int64Type(o.L)
+
 	return nil
 }
 
@@ -59,9 +61,11 @@ func (i *int64Type) MarshalJSON() ([]byte, error) {
 	res, err := json.Marshal(int64JSON{
 		L: int64(*i),
 	})
+
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
 	return res, nil
 }
 

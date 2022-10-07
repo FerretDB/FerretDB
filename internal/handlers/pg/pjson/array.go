@@ -91,6 +91,7 @@ func (a *arrayType) MarshalJSON() ([]byte, error) {
 	}
 
 	buf.WriteByte(']')
+
 	return buf.Bytes(), nil
 }
 

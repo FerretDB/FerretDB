@@ -52,12 +52,14 @@ func (dt *dateTimeType) UnmarshalJSON(data []byte) error {
 	if err := dec.Decode(&o); err != nil {
 		return lazyerrors.Error(err)
 	}
+
 	if err := checkConsumed(dec, r); err != nil {
 		return lazyerrors.Error(err)
 	}
 
 	// TODO Use .UTC(): https://github.com/FerretDB/FerretDB/issues/43
 	*dt = dateTimeType(time.UnixMilli(o.D))
+
 	return nil
 }
 
@@ -69,6 +71,7 @@ func (dt *dateTimeType) MarshalJSON() ([]byte, error) {
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
 	return res, nil
 }
 

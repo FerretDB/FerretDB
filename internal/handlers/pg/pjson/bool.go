@@ -40,11 +40,13 @@ func (b *boolType) UnmarshalJSON(data []byte) error {
 	if err := dec.Decode(&o); err != nil {
 		return lazyerrors.Error(err)
 	}
+
 	if err := checkConsumed(dec, r); err != nil {
 		return lazyerrors.Error(err)
 	}
 
 	*b = boolType(o)
+
 	return nil
 }
 
@@ -54,6 +56,7 @@ func (b *boolType) MarshalJSON() ([]byte, error) {
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
 	return res, nil
 }
 
