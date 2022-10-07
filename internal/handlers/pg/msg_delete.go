@@ -95,7 +95,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		sp.Filters = filter
+		sp.Filter = filter
 
 		del, err := h.execDelete(ctx, &sp, filter, limit)
 		if err == nil {
