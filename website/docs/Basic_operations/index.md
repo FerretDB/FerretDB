@@ -10,41 +10,35 @@ CRUD (Create, Read, Update, and Delete) operations in FerretDB uses the same pro
 
 ## Create operations in FerretDB
 
-The create operation adds a new document to a collection. If the collection does not exist, this operation will create it. The following methods are available for adding documents to a collection.
+The create operation adds a new document to a collection.
+If the collection does not exist, this operation will create it.
+The following methods are available for adding documents to a collection:
 
-```sh
-db.collection.insertOne()
-db.collection.insertMany()
-```
+[`db.collection.insertOne()`](./create.md#insert-a-single-document), [`db.collection.insertMany()`](./create.md#insert-many-documents-at-once)
 
 ## Read operations in FerretDB
 
-The read operation retrieves document records in a collection. You can also filter the documents by targeting specific criteria for retrieval. The following commands are used to retrieve documents from a collection:
+The read operation retrieves document records in a collection.
+You can also filter the documents by targeting specific criteria for retrieval.
+The following commands are used to retrieve documents from a collection:
 
-```sh
-db.collection.find()
-db.collection.findOne()
-```
+[`db.collection.find()`](./read.md#retrieve-all-documents-in-a-collection), [`db.collection.findOne()`](./read.md#retrieve-a-single-document)
 
 The read operation can also retrieve subdocuments that are nested within a document.
 
 ## Update operations in FerretDB
 
-The update operation modifies document records in a collection. It changes existing documents in a collection according to the query criteria. The following update operations are supported:
+The update operation modifies document records in a collection.
+It changes existing documents in a collection according to the query criteria.
+The following update operations are supported:
 
-```sh
-db.collection.updateOne()
-db.collection.updateMany()
-db.collection.replaceOne()
-```
+[`db.collection.updateOne()`](./update.md#modify-a-single-document), [`db.collection.updateMany()`](./update.md#modify-many-documents), [`db.collection.replaceOne()`](./update.md#replace-a-document)
 
 ## Delete operations in FerretDB
 
-The delete operation removes document records from a collection. The following delete operations are supported:
+The delete operation removes document records from a collection.
+The following delete operations are supported:
 
-```sh
-db.collection.deleteOne()
-db.collection.deleteMany()
-```
+[`db.collection.deleteOne()`](./delete.md#delete-a-single-document), [`db.collection.deleteMany()`](./delete.md#deletes-multiple-documents)
 
 Similar to the update operation, this operation retrieves documents matching specific criteria in a collection and deletes them.
