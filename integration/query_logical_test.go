@@ -43,9 +43,13 @@ func TestQueryLogical(t *testing.T) {
 		// $and
 		"AndZero": {
 			filter: bson.D{{
-				"$and", bson.A{},
+				"$and", bson.A{"v"},
 			}},
-			skip: "https://github.com/FerretDB/FerretDB/issues/962",
+			expectedErr: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "$or/$and/$nor entries need to be full objects",
+			},
 		},
 		"AndOne": {
 			filter: bson.D{{
@@ -111,15 +115,23 @@ func TestQueryLogical(t *testing.T) {
 					true,
 				},
 			}},
-			skip: "https://github.com/FerretDB/FerretDB/issues/962",
+			expectedErr: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "$or/$and/$nor entries need to be full objects",
+			},
 		},
 
 		// $or
 		"OrZero": {
 			filter: bson.D{{
-				"$or", bson.A{},
+				"$or", bson.A{"v"},
 			}},
-			skip: "https://github.com/FerretDB/FerretDB/issues/962",
+			expectedErr: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "$or/$and/$nor entries need to be full objects",
+			},
 		},
 		"OrOne": {
 			filter: bson.D{{
@@ -169,15 +181,23 @@ func TestQueryLogical(t *testing.T) {
 					true,
 				},
 			}},
-			skip: "https://github.com/FerretDB/FerretDB/issues/962",
+			expectedErr: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "$or/$and/$nor entries need to be full objects",
+			},
 		},
 
 		// $nor
 		"NorZero": {
 			filter: bson.D{{
-				"$nor", bson.A{},
+				"$nor", bson.A{"v"},
 			}},
-			skip: "https://github.com/FerretDB/FerretDB/issues/962",
+			expectedErr: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "$or/$and/$nor entries need to be full objects",
+			},
 		},
 		"NorOne": {
 			filter: bson.D{{
@@ -215,7 +235,11 @@ func TestQueryLogical(t *testing.T) {
 					true,
 				},
 			}},
-			skip: "https://github.com/FerretDB/FerretDB/issues/962",
+			expectedErr: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "$or/$and/$nor entries need to be full objects",
+			},
 		},
 
 		// $not
