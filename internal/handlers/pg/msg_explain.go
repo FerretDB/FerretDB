@@ -62,7 +62,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	if explain.Has("filter") {
-		sp.Filters, err = common.GetRequiredParam[*types.Document](explain, "filter")
+		sp.Filter, err = common.GetRequiredParam[*types.Document](explain, "filter")
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
