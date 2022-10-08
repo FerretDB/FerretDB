@@ -29,7 +29,7 @@ type ListenerMetrics struct {
 }
 
 // newListenerMetrics creates new listener metrics.
-func newListenerMetrics() *ListenerMetrics {
+func NewListenerMetrics() *ListenerMetrics {
 	return &ListenerMetrics{
 		connectedClients: prometheus.NewGauge(
 			prometheus.GaugeOpts{

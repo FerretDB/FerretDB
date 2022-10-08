@@ -137,9 +137,12 @@ func run() {
 
 	go debug.RunHandler(ctx, cli.DebugAddr, logger.Named("debug"))
 
+	metrics := clientconn.NewListenerMetrics()
+
 	h, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
-		Ctx:    ctx,
-		Logger: logger,
+		Ctx:     ctx,
+		Logger:  logger,
+		Metrics: metrics.ConnMetrics,
 
 		PostgreSQLURL: cli.PostgresURL,
 
@@ -158,6 +161,7 @@ func run() {
 		ProxyAddr:       cli.ProxyAddr,
 		Mode:            clientconn.Mode(cli.Mode),
 		Handler:         h,
+		Metrics:         metrics,
 		Logger:          logger,
 		TestConnTimeout: cli.TestConnTimeout,
 		TestRecordPath:  cli.TestRecord,
