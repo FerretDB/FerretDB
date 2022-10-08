@@ -72,9 +72,12 @@ func New(config *Config) (*FerretDB, error) {
 //
 // When this method returns, listener and all connections are closed.
 func (f *FerretDB) Run(ctx context.Context) error {
+	metrics := clientconn.NewListenerMetrics()
+
 	newOpts := registry.NewHandlerOpts{
-		Ctx:    context.Background(),
-		Logger: logger,
+		Ctx:     context.Background(),
+		Logger:  logger,
+		Metrics: metrics.ConnMetrics,
 
 		PostgreSQLURL: f.config.PostgreSQLURL,
 
@@ -94,9 +97,8 @@ func (f *FerretDB) Run(ctx context.Context) error {
 		Mode:       clientconn.NormalMode,
 		Handler:    h,
 		Logger:     logger,
+		Metrics:    metrics,
 	})
-
-	newOpts.Metrics = l.Metrics.ConnMetrics
 
 	if err = l.Run(ctx); err != nil {
 		// Do not expose internal error details.
