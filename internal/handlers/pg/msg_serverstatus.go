@@ -16,6 +16,7 @@ package pg
 
 import (
 	"context"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -25,6 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/version"
 	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // MsgServerStatus implements HandlerInterface.
@@ -43,6 +45,15 @@ func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	stats, err := h.pgPool.SchemaStats(ctx, "", "")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	metricsChan := make(chan prometheus.Metric)
+	go h.metrics.Collect(metricsChan)
+
+	i := 0
+	for m := range metricsChan {
+		log.Println(i, m)
+		i++
 	}
 
 	var reply wire.OpMsg
