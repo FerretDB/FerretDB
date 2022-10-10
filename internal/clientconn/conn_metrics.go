@@ -14,13 +14,23 @@
 
 package clientconn
 
-import "github.com/prometheus/client_golang/prometheus"
+import (
+	"github.com/prometheus/client_golang/prometheus"
+	dto "github.com/prometheus/client_model/go"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
+)
 
 // ConnMetrics represents conn metrics.
 type ConnMetrics struct {
 	requests          *prometheus.CounterVec
 	responses         *prometheus.CounterVec
 	aggregationStages *prometheus.CounterVec
+}
+
+type CommandMetrics struct {
+	Failed int64
+	Total  int64
 }
 
 // newConnMetrics creates new conn metrics.
@@ -68,6 +78,23 @@ func (cm *ConnMetrics) Collect(ch chan<- prometheus.Metric) {
 	cm.requests.Collect(ch)
 	cm.responses.Collect(ch)
 	cm.aggregationStages.Collect(ch)
+}
+
+func (cm *ConnMetrics) Responses() map[string]CommandMetrics {
+	ch := make(chan prometheus.Metric)
+	go func() {
+		cm.responses.Collect(ch)
+		close(ch)
+	}()
+
+	for m := range ch {
+		var renameMe dto.Metric
+		must.NoError(m.Write(&renameMe))
+		// TODO check renameMe.Label
+		// TODO use renameMe.Counter
+	}
+
+	return nil
 }
 
 // check interfaces
