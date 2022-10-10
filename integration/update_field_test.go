@@ -1409,54 +1409,72 @@ func TestUpdateFieldPopArrayOperator(t *testing.T) {
 
 // This test is to ensure that the order of fields in the document is preserved.
 func TestUpdateDocumentFieldsOrder(t *testing.T) {
-	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.DocumentsDoubles)
 
 	_, err := collection.UpdateOne(
 		ctx,
-		bson.D{{"_id", "document-composite"}},
+		bson.D{{"_id", "document-double"}},
 		bson.D{{"$set", bson.D{{"foo", int32(42)}, {"bar", "baz"}}}},
 	)
 	require.NoError(t, err)
 
 	var updated bson.D
 
-	err = collection.FindOne(ctx, bson.D{{"_id", "document-composite"}}).Decode(&updated)
+	err = collection.FindOne(ctx, bson.D{{"_id", "document-double"}}).Decode(&updated)
 	require.NoError(t, err)
 
 	expected := bson.D{
-		{"_id", "document-composite"},
-		{"v", bson.D{{"foo", int32(42)}}},
-		{"foo", int32(42)},
-		{"bar", "baz"},
-	}
-
-	AssertEqualDocuments(t, expected, updated)
-
-	_, err = collection.UpdateOne(ctx, bson.D{{"_id", "document-composite"}}, bson.D{{"$unset", bson.D{{"foo", ""}}}})
-	require.NoError(t, err)
-
-	err = collection.FindOne(ctx, bson.D{{"_id", "document-composite"}}).Decode(&updated)
-	require.NoError(t, err)
-
-	expected = bson.D{
-		{"_id", "document-composite"},
-		{"v", bson.D{{"foo", int32(42)}}},
-		{"bar", "baz"},
-	}
-	AssertEqualDocuments(t, expected, updated)
-
-	_, err = collection.UpdateOne(ctx, bson.D{{"_id", "document-composite"}}, bson.D{{"$set", bson.D{{"foo", int32(42)}}}})
-	require.NoError(t, err)
-
-	err = collection.FindOne(ctx, bson.D{{"_id", "document-composite"}}).Decode(&updated)
-	require.NoError(t, err)
-
-	expected = bson.D{
-		{"_id", "document-composite"},
-		{"v", bson.D{{"foo", int32(42)}}},
+		{"_id", "document-double"},
+		{"v", 42.13},
 		{"bar", "baz"},
 		{"foo", int32(42)},
 	}
 
-	AssertEqualDocuments(t, expected, updated)
+	res := AssertEqualDocuments(t, expected, updated)
+	if !res {
+		t.FailNow()
+	}
+
+	_, err = collection.UpdateOne(
+		ctx,
+		bson.D{{"_id", "document-double"}},
+		bson.D{{"$unset", bson.D{{"foo", ""}}}},
+	)
+	require.NoError(t, err)
+
+	err = collection.FindOne(ctx, bson.D{{"_id", "document-double"}}).Decode(&updated)
+	require.NoError(t, err)
+
+	expected = bson.D{
+		{"_id", "document-double"},
+		{"v", 42.13},
+		{"bar", "baz"},
+	}
+
+	res = AssertEqualDocuments(t, expected, updated)
+	if !res {
+		t.FailNow()
+	}
+
+	_, err = collection.UpdateOne(
+		ctx,
+		bson.D{{"_id", "document-double"}},
+		bson.D{{"$set", bson.D{{"abc", int32(42)}}}},
+	)
+	require.NoError(t, err)
+
+	err = collection.FindOne(ctx, bson.D{{"_id", "document-double"}}).Decode(&updated)
+	require.NoError(t, err)
+
+	expected = bson.D{
+		{"_id", "document-double"},
+		{"v", 42.13},
+		{"bar", "baz"},
+		{"abc", int32(42)},
+	}
+
+	res = AssertEqualDocuments(t, expected, updated)
+	if !res {
+		t.FailNow()
+	}
 }
