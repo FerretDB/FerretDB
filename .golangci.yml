@@ -10,9 +10,10 @@ linters-settings:
     list-type: blacklist
     packages:
       - github.com/FerretDB/FerretDB/internal/bson
-      - github.com/FerretDB/FerretDB/internal/fjson
-      - github.com/FerretDB/FerretDB/internal/tjson
       - github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb
+      - github.com/FerretDB/FerretDB/internal/handlers/pg/pjson
+      - github.com/FerretDB/FerretDB/internal/tjson
+      - github.com/FerretDB/FerretDB/internal/types/fjson
       - github.com/tigrisdata/tigris-client-go/api/client/v1/api
       - github.com/tigrisdata/tigris-client-go/filter # We use our own filter without generics (see tigris/tigrisdb/filter)
   exhaustive:
@@ -130,6 +131,14 @@ issues:
       path: internal/wire
       text: bson
 
+    # only `testutil` and `wire` packages can import `fjson` package
+    - linters: [depguard]
+      path: internal/util/testutil
+      text: fjson
+    - linters: [depguard]
+      path: internal/wire
+      text: fjson
+
     # only `pg` handler can import `pgdb` package, not other handler can do that
     - linters: [depguard]
       path: internal/handlers/pg
@@ -147,16 +156,16 @@ issues:
       path: internal/handlers/registry
       text: pgdb
 
-    # only `pg` handler can import `fjson` package, not other handler can do that
+    # only `pg` handler can import `pjson` package, not other handler can do that
     - linters: [depguard]
       path: internal/handlers/pg
-      text: fjson
+      text: pjson
     - linters: [depguard]
       path: internal/wire
-      text: fjson
+      text: pjson
     - linters: [depguard]
       path: internal/util/testutil
-      text: fjson
+      text: pjson
 
     # only `tigris` handler can import `tjson` package, not other handler can do that
     - linters: [depguard]

@@ -20,7 +20,7 @@ import (
 
 	"github.com/jackc/pgx/v4"
 
-	"github.com/FerretDB/FerretDB/internal/fjson"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -52,7 +52,7 @@ func InsertDocument(ctx context.Context, tx pgx.Tx, db, collection string, doc *
 	sql := `INSERT INTO ` + pgx.Identifier{db, table}.Sanitize() +
 		` (_jsonb) VALUES ($1)`
 
-	if _, err = tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(doc))); err != nil {
+	if _, err = tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(doc))); err != nil {
 		return lazyerrors.Error(err)
 	}
 
