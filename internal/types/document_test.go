@@ -73,7 +73,7 @@ func TestDocument(t *testing.T) {
 
 		doc, err = NewDocument("foo", 42)
 		assert.Nil(t, doc)
-		assert.EqualError(t, err, `types.NewDocument: types.Document.validate: types.validateValue: unsupported type: int (42)`)
+		assert.EqualError(t, err, `types.NewDocument: types.Document.add: types.validateValue: unsupported type: int (42)`)
 	})
 
 	t.Run("DeepCopy", func(t *testing.T) {
