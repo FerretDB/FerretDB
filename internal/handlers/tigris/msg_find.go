@@ -97,6 +97,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	if fp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
+
 	collectionParam, err := document.Get(document.Command())
 	if err != nil {
 		return nil, err
