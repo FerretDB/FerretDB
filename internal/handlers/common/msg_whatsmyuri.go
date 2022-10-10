@@ -19,30 +19,25 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgWhatsMyURI is a common implementation of the whatsMyURI command.
 func MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	var reply wire.OpMsg
-
 	connInfo := conninfo.GetConnInfo(ctx)
 	var peerAddr string
 	if connInfo.PeerAddr != nil {
 		peerAddr = connInfo.PeerAddr.String()
 	}
 
-	err := reply.SetSections(wire.OpMsgSection{
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"you", peerAddr,
 			"ok", float64(1),
 		))},
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	}))
 
 	return &reply, nil
 }
