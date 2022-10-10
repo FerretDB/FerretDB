@@ -1406,3 +1406,57 @@ func TestUpdateFieldPopArrayOperator(t *testing.T) {
 		}
 	})
 }
+
+// This test is to ensure that the order of fields in the document is preserved.
+func TestUpdateDocumentFieldsOrder(t *testing.T) {
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+
+	_, err := collection.UpdateOne(
+		ctx,
+		bson.D{{"_id", "document-composite"}},
+		bson.D{{"$set", bson.D{{"foo", int32(42)}, {"bar", "baz"}}}},
+	)
+	require.NoError(t, err)
+
+	var updated bson.D
+
+	err = collection.FindOne(ctx, bson.D{{"_id", "document-composite"}}).Decode(&updated)
+	require.NoError(t, err)
+
+	expected := bson.D{
+		{"_id", "document-composite"},
+		{"v", bson.D{{"foo", int32(42)}}},
+		{"foo", int32(42)},
+		{"bar", "baz"},
+	}
+
+	AssertEqualDocuments(t, expected, updated)
+
+	_, err = collection.UpdateOne(ctx, bson.D{{"_id", "document-composite"}}, bson.D{{"$unset", bson.D{{"foo", ""}}}})
+	require.NoError(t, err)
+
+	err = collection.FindOne(ctx, bson.D{{"_id", "document-composite"}}).Decode(&updated)
+	require.NoError(t, err)
+
+	expected = bson.D{
+		{"_id", "document-composite"},
+		{"v", bson.D{{"foo", int32(42)}}},
+		{"bar", "baz"},
+	}
+	AssertEqualDocuments(t, expected, updated)
+
+	_, err = collection.UpdateOne(ctx, bson.D{{"_id", "document-composite"}}, bson.D{{"$set", bson.D{{"foo", int32(42)}}}})
+	require.NoError(t, err)
+
+	err = collection.FindOne(ctx, bson.D{{"_id", "document-composite"}}).Decode(&updated)
+	require.NoError(t, err)
+
+	expected = bson.D{
+		{"_id", "document-composite"},
+		{"v", bson.D{{"foo", int32(42)}}},
+		{"bar", "baz"},
+		{"foo", int32(42)},
+	}
+
+	AssertEqualDocuments(t, expected, updated)
+}

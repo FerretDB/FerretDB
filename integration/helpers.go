@@ -58,13 +58,13 @@ func Convert(t testing.TB, v any) any {
 	case primitive.D:
 		doc := must.NotFail(types.NewDocument())
 		for _, e := range v {
-			must.NoError(doc.Set(e.Key, Convert(t, e.Value)))
+			doc.Set(e.Key, Convert(t, e.Value))
 		}
 		return doc
 	case primitive.A:
 		arr := types.MakeArray(len(v))
 		for _, e := range v {
-			must.NoError(arr.Append(Convert(t, e)))
+			arr.Append(Convert(t, e))
 		}
 		return arr
 
