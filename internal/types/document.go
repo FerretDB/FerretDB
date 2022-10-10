@@ -154,11 +154,6 @@ func (d *Document) add(key string, value any) error {
 		return fmt.Errorf("types.Document.add: key already present: %q", key)
 	}
 
-	// TODO Should we still validate value if we don't validate key anymore?
-	if err := validateValue(value); err != nil {
-		return fmt.Errorf("types.Document.add: %w", err)
-	}
-
 	// update keys slice
 	if key == "_id" {
 		// TODO check that value is not regex or array: https://github.com/FerretDB/FerretDB/issues/1235
@@ -193,11 +188,6 @@ func (d *Document) Get(key string) (any, error) {
 //
 // As a special case, _id always becomes the first key.
 func (d *Document) Set(key string, value any) error {
-	// TODO Should we still validate value if we don't validate key anymore?
-	if err := validateValue(value); err != nil {
-		return fmt.Errorf("types.Document.validate: %w", err)
-	}
-
 	// update keys slice
 	if key == "_id" {
 		// TODO check that value is not regex or array: https://github.com/FerretDB/FerretDB/issues/1235

@@ -93,47 +93,6 @@ type (
 // Null represents BSON value Null.
 var Null = NullType{}
 
-// validateValue validates value.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/260
-func validateValue(value any) error {
-	switch value := value.(type) {
-	case *Document:
-		// TODO Call new validation here: https://github.com/FerretDB/FerretDB/issues/693
-		// Attention! This place require us to know whether the doc is a data doc or command doc!
-		// return value.validate()
-		return nil
-	case *Array:
-		// It is impossible to construct invalid Array using exported function, methods, or type conversions,
-		// so no need to revalidate it.
-		return nil
-	case float64:
-		return nil
-	case string:
-		return nil
-	case Binary:
-		return nil
-	case ObjectID:
-		return nil
-	case bool:
-		return nil
-	case time.Time:
-		return nil
-	case NullType:
-		return nil
-	case Regex:
-		return nil
-	case int32:
-		return nil
-	case Timestamp:
-		return nil
-	case int64:
-		return nil
-	default:
-		return fmt.Errorf("types.validateValue: unsupported type: %[1]T (%[1]v)", value)
-	}
-}
-
 // deepCopy returns a deep copy of the given value.
 func deepCopy(value any) any {
 	if value == nil {
