@@ -35,8 +35,15 @@ type document interface {
 //
 // Duplicate field names are not supported.
 type Document struct {
-	m    map[string]any
-	keys []string
+	m         map[string]any
+	keys      []string
+	validator Validator
+}
+
+type Validator interface {
+	Validate(document *Document) error
+	ValidateKey(key string) error
+	ValidateValue(value any) error
 }
 
 // ConvertDocument converts bson.Document to *types.Document and validates it.
@@ -214,7 +221,7 @@ func (d *Document) Set(key string, value any) error {
 
 	// update keys slice
 	if key == "_id" {
-		// TODO check that value is not regex or array
+		// TODO check that value is not regex or array: https://github.com/FerretDB/FerretDB/issues/1235
 
 		// ensure that _id is the first field
 		if i := slices.Index(d.keys, key); i >= 0 {
