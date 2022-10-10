@@ -55,11 +55,13 @@ func TestDocument(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, Null, value)
 
-		err = doc.Set("bar", 42)
-		assert.EqualError(t, err, `types.Document.validate: types.validateValue: unsupported type: int (42)`)
+		// TODO add new validation solution: https://github.com/FerretDB/FerretDB/issues/693
+		// err = doc.Set("bar", 42)
+		// assert.EqualError(t, err, `types.Document.validate: types.validateValue: unsupported type: int (42)`)
 
-		err = doc.Set("bar", nil)
-		assert.EqualError(t, err, `types.Document.validate: types.validateValue: unsupported type: <nil> (<nil>)`)
+		// TODO add new validation solution: https://github.com/FerretDB/FerretDB/issues/693
+		// err = doc.Set("bar", nil)
+		// assert.EqualError(t, err, `types.Document.validate: types.validateValue: unsupported type: <nil> (<nil>)`)
 
 		assert.Equal(t, "foo", doc.Command())
 	})
@@ -71,9 +73,10 @@ func TestDocument(t *testing.T) {
 		assert.Nil(t, doc)
 		assert.EqualError(t, err, `types.NewDocument: invalid key type: int`)
 
-		doc, err = NewDocument("foo", 42)
-		assert.Nil(t, doc)
-		assert.EqualError(t, err, `types.NewDocument: types.Document.add: types.validateValue: unsupported type: int (42)`)
+		// TODO add new validation solution: https://github.com/FerretDB/FerretDB/issues/693
+		// doc, err = NewDocument("foo", 42)
+		// assert.Nil(t, doc)
+		// assert.EqualError(t, err, `types.NewDocument: types.Document.add: types.validateValue: unsupported type: int (42)`)
 	})
 
 	t.Run("DeepCopy", func(t *testing.T) {
