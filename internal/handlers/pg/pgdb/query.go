@@ -24,7 +24,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"golang.org/x/exp/maps"
 
-	"github.com/FerretDB/FerretDB/internal/fjson"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -209,7 +209,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 			case types.ObjectID:
 				filters = append(filters, fmt.Sprintf(`((_jsonb->'_id')::jsonb = %s)`, p.Next()))
 
-				args = append(args, string(must.NotFail(fjson.Marshal(v))))
+				args = append(args, string(must.NotFail(pjson.Marshal(v))))
 			}
 		default:
 			continue
@@ -242,7 +242,7 @@ func iterateFetch(ctx context.Context, fetched chan FetchedDocs, rows pgx.Rows) 
 				return writeFetched(ctx, fetched, FetchedDocs{Err: lazyerrors.Error(err)})
 			}
 
-			doc, err := fjson.Unmarshal(b)
+			doc, err := pjson.Unmarshal(b)
 			if err != nil {
 				return writeFetched(ctx, fetched, FetchedDocs{Err: lazyerrors.Error(err)})
 			}
