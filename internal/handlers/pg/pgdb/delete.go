@@ -20,7 +20,7 @@ import (
 
 	"github.com/jackc/pgx/v4"
 
-	"github.com/FerretDB/FerretDB/internal/fjson"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -37,7 +37,7 @@ func DeleteDocumentsByID(ctx context.Context, tx pgx.Tx, sp *SQLParam, ids []any
 
 	for i, id := range ids {
 		placeholders[i] = p.Next()
-		idsMarshalled[i] = must.NotFail(fjson.Marshal(id))
+		idsMarshalled[i] = must.NotFail(pjson.Marshal(id))
 	}
 
 	sql := `DELETE `
