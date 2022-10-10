@@ -90,6 +90,8 @@ func (cm *ConnMetrics) Responses() map[string]CommandMetrics {
 	}()
 	var failed int64
 
+	results := []string{}
+
 	cmdResps := make(map[string]CommandMetrics)
 	for m := range ch {
 		var content dto.Metric
@@ -105,14 +107,24 @@ func (cm *ConnMetrics) Responses() map[string]CommandMetrics {
 			case "opcode":
 			case "result":
 				result = label.GetValue()
-				if result != "ok" {
-					failed++
-				}
+				results = append(results, result)
 			default:
 			}
 		}
 
 		log.Println(cmd, result, *content.Counter.Value)
+
+		if result != "ok" {
+			failed++
+		}
+
+		if len(results) > 10 {
+			panic(results)
+		}
+
+		//if v, ok := cmdResps[cmd]; ok {
+		//	failed = v.Failed + failed
+		//}
 
 		cmdResps[cmd] = CommandMetrics{
 			Total:  int64(*content.Counter.Value),
