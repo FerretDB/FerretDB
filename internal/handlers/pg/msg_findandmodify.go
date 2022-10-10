@@ -72,8 +72,10 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	// This is not very optimal as we need to fetch everything from the database to have a proper sort.
 	// We might consider rewriting it later.
-	resDocs := make([]*types.Document, 0, 16)
+	var reply wire.OpMsg
 	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		resDocs := make([]*types.Document, 0, 16)
+
 		fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, &sqlParam)
 		if err != nil {
 			return err
@@ -112,136 +114,128 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			resDocs = append(resDocs, doc)
 		}
 
-		return nil
+		// findAndModify always works with a single document
+		if resDocs, err = common.LimitDocuments(resDocs, 1); err != nil {
+			return err
+		}
+
+		if params.Update != nil { // we have update part
+			var upsert *types.Document
+			var upserted bool
+
+			if params.Upsert { //  we have upsert flag
+				p := &upsertParams{
+					hasUpdateOperators: params.HasUpdateOperators,
+					query:              params.Query,
+					update:             params.Update,
+					sqlParam:           &sqlParam,
+				}
+				upsert, upserted, err = h.upsert(ctx, tx, resDocs, p)
+				if err != nil {
+					return err
+				}
+			} else { // process update as usual
+				if len(resDocs) == 0 {
+					must.NoError(reply.SetSections(wire.OpMsgSection{
+						Documents: []*types.Document{must.NotFail(types.NewDocument(
+							"lastErrorObject", must.NotFail(types.NewDocument("n", int32(0), "updatedExisting", false)),
+							"value", types.Null,
+							"ok", float64(1),
+						))},
+					}))
+
+					return nil
+				}
+
+				if params.HasUpdateOperators {
+					upsert = resDocs[0].DeepCopy()
+					_, err = common.UpdateDocument(upsert, params.Update)
+					if err != nil {
+						return err
+					}
+
+					_, err = h.update(ctx, tx, &sqlParam, upsert)
+
+					if err != nil {
+						return err
+					}
+				} else {
+					upsert = params.Update
+
+					if !upsert.Has("_id") {
+						must.NoError(upsert.Set("_id", must.NotFail(resDocs[0].Get("_id"))))
+					}
+
+					_, err = h.update(ctx, tx, &sqlParam, upsert)
+
+					if err != nil {
+						return err
+					}
+				}
+			}
+
+			var resultDoc *types.Document
+			if params.ReturnNewDocument || len(resDocs) == 0 {
+				resultDoc = upsert
+			} else {
+				resultDoc = resDocs[0]
+			}
+
+			lastErrorObject := must.NotFail(types.NewDocument(
+				"n", int32(1),
+				"updatedExisting", len(resDocs) > 0,
+			))
+
+			if upserted {
+				must.NoError(lastErrorObject.Set("upserted", must.NotFail(resultDoc.Get("_id"))))
+			}
+
+			must.NoError(reply.SetSections(wire.OpMsgSection{
+				Documents: []*types.Document{must.NotFail(types.NewDocument(
+					"lastErrorObject", lastErrorObject,
+					"value", resultDoc,
+					"ok", float64(1),
+				))},
+			}))
+
+			return nil
+		}
+
+		if params.Remove {
+			if len(resDocs) == 0 {
+				must.NoError(reply.SetSections(wire.OpMsgSection{
+					Documents: []*types.Document{must.NotFail(types.NewDocument(
+						"lastErrorObject", must.NotFail(types.NewDocument("n", int32(0))),
+						"ok", float64(1),
+					))},
+				}))
+
+				return nil
+			}
+
+			_, err = h.delete(ctx, &sqlParam, resDocs)
+			if err != nil {
+				return err
+			}
+
+			must.NoError(reply.SetSections(wire.OpMsgSection{
+				Documents: []*types.Document{must.NotFail(types.NewDocument(
+					"lastErrorObject", must.NotFail(types.NewDocument("n", int32(1))),
+					"value", resDocs[0],
+					"ok", float64(1),
+				))},
+			}))
+			return nil
+		}
+
+		return lazyerrors.New("bad flags combination")
 	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	// findAndModify always works with a single document
-	if resDocs, err = common.LimitDocuments(resDocs, 1); err != nil {
-		return nil, err
-	}
-
-	if params.Update != nil { // we have update part
-		var upsert *types.Document
-		var upserted bool
-
-		if params.Upsert { //  we have upsert flag
-			p := &upsertParams{
-				hasUpdateOperators: params.HasUpdateOperators,
-				query:              params.Query,
-				update:             params.Update,
-				sqlParam:           &sqlParam,
-			}
-			upsert, upserted, err = h.upsert(ctx, resDocs, p)
-			if err != nil {
-				return nil, err
-			}
-		} else { // process update as usual
-			if len(resDocs) == 0 {
-				var reply wire.OpMsg
-				must.NoError(reply.SetSections(wire.OpMsgSection{
-					Documents: []*types.Document{must.NotFail(types.NewDocument(
-						"lastErrorObject", must.NotFail(types.NewDocument("n", int32(0), "updatedExisting", false)),
-						"value", types.Null,
-						"ok", float64(1),
-					))},
-				}))
-
-				return &reply, nil
-			}
-
-			if params.HasUpdateOperators {
-				upsert = resDocs[0].DeepCopy()
-				_, err = common.UpdateDocument(upsert, params.Update)
-				if err != nil {
-					return nil, err
-				}
-
-				err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-					_, err = h.update(ctx, tx, &sqlParam, upsert)
-					return err
-				})
-				if err != nil {
-					return nil, err
-				}
-			} else {
-				upsert = params.Update
-
-				if !upsert.Has("_id") {
-					must.NoError(upsert.Set("_id", must.NotFail(resDocs[0].Get("_id"))))
-				}
-
-				err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-					_, err = h.update(ctx, tx, &sqlParam, upsert)
-					return err
-				})
-				if err != nil {
-					return nil, err
-				}
-			}
-		}
-
-		var resultDoc *types.Document
-		if params.ReturnNewDocument || len(resDocs) == 0 {
-			resultDoc = upsert
-		} else {
-			resultDoc = resDocs[0]
-		}
-
-		lastErrorObject := must.NotFail(types.NewDocument(
-			"n", int32(1),
-			"updatedExisting", len(resDocs) > 0,
-		))
-
-		if upserted {
-			must.NoError(lastErrorObject.Set("upserted", must.NotFail(resultDoc.Get("_id"))))
-		}
-
-		var reply wire.OpMsg
-		must.NoError(reply.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{must.NotFail(types.NewDocument(
-				"lastErrorObject", lastErrorObject,
-				"value", resultDoc,
-				"ok", float64(1),
-			))},
-		}))
-
-		return &reply, nil
-	}
-
-	if params.Remove {
-		if len(resDocs) == 0 {
-			var reply wire.OpMsg
-			must.NoError(reply.SetSections(wire.OpMsgSection{
-				Documents: []*types.Document{must.NotFail(types.NewDocument(
-					"lastErrorObject", must.NotFail(types.NewDocument("n", int32(0))),
-					"ok", float64(1),
-				))},
-			}))
-
-			return &reply, nil
-		}
-
-		_, err = h.delete(ctx, &sqlParam, resDocs)
-		if err != nil {
-			return nil, err
-		}
-
-		var reply wire.OpMsg
-		must.NoError(reply.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{must.NotFail(types.NewDocument(
-				"lastErrorObject", must.NotFail(types.NewDocument("n", int32(1))),
-				"value", resDocs[0],
-				"ok", float64(1),
-			))},
-		}))
-		return &reply, nil
-	}
-
-	return nil, lazyerrors.New("bad flags combination")
+	return &reply, nil
 }
 
 // upsertParams represent parameters for Handler.upsert method.
@@ -253,7 +247,9 @@ type upsertParams struct {
 
 // upsert inserts new document if no documents in query result or updates given document.
 // When inserting new document we must check that `_id` is present, so we must extract `_id` from query or generate a new one.
-func (h *Handler) upsert(ctx context.Context, docs []*types.Document, params *upsertParams) (*types.Document, bool, error) {
+func (h *Handler) upsert(ctx context.Context, tx pgx.Tx, docs []*types.Document, params *upsertParams) (
+	*types.Document, bool, error,
+) {
 	if len(docs) == 0 {
 		upsert := must.NotFail(types.NewDocument())
 
@@ -274,10 +270,7 @@ func (h *Handler) upsert(ctx context.Context, docs []*types.Document, params *up
 			}
 		}
 
-		err := h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-			err := h.insert(ctx, tx, params.sqlParam, upsert)
-			return err
-		})
+		err := h.insert(ctx, tx, params.sqlParam, upsert)
 		if err != nil {
 			return nil, false, err
 		}
@@ -298,10 +291,7 @@ func (h *Handler) upsert(ctx context.Context, docs []*types.Document, params *up
 		}
 	}
 
-	err := h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		_, err := h.update(ctx, tx, params.sqlParam, upsert)
-		return err
-	})
+	_, err := h.update(ctx, tx, params.sqlParam, upsert)
 	if err != nil {
 		return nil, false, err
 	}
