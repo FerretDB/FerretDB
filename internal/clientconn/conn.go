@@ -308,7 +308,6 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	var err error
 	switch reqHeader.OpCode {
 	case wire.OpCodeMsg:
-		// TODO add validation here
 		var document *types.Document
 		msg := reqBody.(*wire.OpMsg)
 		document, err = msg.Document()
