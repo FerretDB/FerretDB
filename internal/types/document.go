@@ -124,7 +124,7 @@ func isValidKey(key string) bool {
 		return true
 	}
 
-	// forbid keys like $k (used by fjson representation), but allow $db (used by many commands)
+	// forbid keys like $k (used by pjson representation), but allow $db (used by many commands)
 	if key[0] == '$' && len(key) <= 2 {
 		return false
 	}
