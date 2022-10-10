@@ -39,10 +39,10 @@ type Document struct {
 	keys []string
 }
 
-// ConvertDocument converts bson.Document to *types.Document and validates it.
+// ConvertDocument converts bson.Document to *types.Document.
 // It references the same data without copying it.
 //
-// TODO Remove this function.
+// TODO Remove this function: https://github.com/FerretDB/FerretDB/issues/260
 func ConvertDocument(d document) (*Document, error) {
 	if d == nil {
 		panic("types.ConvertDocument: d is nil")
