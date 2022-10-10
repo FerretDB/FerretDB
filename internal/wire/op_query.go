@@ -131,8 +131,6 @@ func (query *OpQuery) MarshalBinary() ([]byte, error) {
 }
 
 // String returns a string representation for logging.
-//
-// Currently, it uses FJSON, but that may change in the future.
 func (query *OpQuery) String() string {
 	if query == nil {
 		return "<nil>"

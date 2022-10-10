@@ -294,8 +294,6 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 }
 
 // String returns a string representation for logging.
-//
-// Currently, it uses FJSON, but that may change in the future.
 func (msg *OpMsg) String() string {
 	if msg == nil {
 		return "<nil>"
