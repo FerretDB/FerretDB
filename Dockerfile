@@ -14,6 +14,8 @@ RUN go test  -c -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigr
 
 FROM golang:1.19.2
 
+WORKDIR /
+
 COPY --from=build /src/bin/ferretdb /ferretdb
 
 EXPOSE 27017

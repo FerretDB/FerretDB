@@ -12,6 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// This file contains the implementation of `task env-data` command
+// that creates collections in the `test` database for manual experiments.
+// It is not a real test file but wrapped into one
+// because all needed functionality is already available in setup helpers.
+// This file is skipped by default; we pass the build tag only in the `task env-data` command.
+
+// go:build ferretdb_testenvdata
+
 package integration
 
 import (
@@ -24,8 +32,7 @@ import (
 func TestEnvData(t *testing.T) {
 	t.Parallel()
 
-	// see `env-data` Taskfile target
-
+	// Setups one collection for each data set for all handlers and MongoDB.
 	t.Run("All", func(t *testing.T) {
 		t.Parallel()
 
@@ -35,7 +42,7 @@ func TestEnvData(t *testing.T) {
 		})
 	})
 
-	// setup old `values` collection with mixed types for PostgreSQL and MongoDB
+	// Setups old `values` collection with mixed types for `pg` handler and MongoDB.
 	t.Run("Values", func(t *testing.T) {
 		setup.SkipForTigris(t)
 
