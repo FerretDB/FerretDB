@@ -15,6 +15,8 @@
 package clientconn
 
 import (
+	"log"
+
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 
@@ -87,14 +89,36 @@ func (cm *ConnMetrics) Responses() map[string]CommandMetrics {
 		close(ch)
 	}()
 
+	cmdResps := make(map[string]CommandMetrics)
 	for m := range ch {
-		var renameMe dto.Metric
-		must.NoError(m.Write(&renameMe))
+		var content dto.Metric
+		must.NoError(m.Write(&content))
+
+		labels := content.GetLabel()
+
+		var cmd, result string
+		for _, label := range labels {
+			switch label.GetName() {
+			case "command":
+				cmd = label.GetValue()
+			case "opcode":
+			case "result":
+				result = label.GetValue()
+			default:
+			}
+		}
+
+		log.Println(cmd, result, *content.Counter.Value)
+
+		cmdResps[cmd] = CommandMetrics{
+			Total: int64(*content.Counter.Value),
+		}
+
 		// TODO check renameMe.Label
 		// TODO use renameMe.Counter
 	}
 
-	return nil
+	return cmdResps
 }
 
 // check interfaces

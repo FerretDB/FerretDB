@@ -16,7 +16,6 @@ package pg
 
 import (
 	"context"
-	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -26,7 +25,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/version"
 	"github.com/FerretDB/FerretDB/internal/wire"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 // MsgServerStatus implements HandlerInterface.
@@ -47,17 +45,13 @@ func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		return nil, lazyerrors.Error(err)
 	}
 
-	metricsChan := make(chan prometheus.Metric)
+	metrics := h.metrics.Responses()
 
-	go h.metrics.Collect(metricsChan)
+	metricsDoc := types.MakeDocument(0)
 
-	i := 0
-	for m := range metricsChan {
-		log.Println(i, m)
-		var metr prometheus.Metric
-		d := m.Desc()
-		log.Println(d.String())
-		i++
+	for cmd, cmdMetrics := range metrics {
+		cmdDoc := must.NotFail(types.NewDocument("total", cmdMetrics.Total))
+		must.NoError(metricsDoc.Set(cmd, cmdDoc))
 	}
 
 	var reply wire.OpMsg
@@ -82,7 +76,9 @@ func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.O
 			"freeMonitoring", must.NotFail(types.NewDocument(
 				"state", "disabled",
 			)),
-			"metrics", h.metrics,
+			"metrics", must.NotFail(types.NewDocument(
+				"commands", metricsDoc,
+			)),
 			"ok", float64(1),
 		))},
 	})
