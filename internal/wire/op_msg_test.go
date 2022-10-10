@@ -49,8 +49,7 @@ var msgTestCases = []testCase{
 				))},
 			}},
 		},
-	},
-	{
+	}, {
 		name:    "handshake6",
 		headerB: testutil.MustParseDumpFile("testdata", "handshake6_header.hex"),
 		bodyB:   testutil.MustParseDumpFile("testdata", "handshake6_body.hex"),
@@ -106,8 +105,7 @@ var msgTestCases = []testCase{
 				))},
 			}},
 		},
-	},
-	{
+	}, {
 		name:      "import",
 		expectedB: testutil.MustParseDumpFile("testdata", "import.hex"),
 		msgHeader: &MsgHeader{
@@ -146,7 +144,7 @@ var msgTestCases = []testCase{
 				},
 			}},
 		},
-	}, s{
+	}, {
 		name:      "msg_fuzz1",
 		expectedB: testutil.MustParseDumpFile("testdata", "msg_fuzz1.hex"),
 		err:       `wire.OpMsg.readFrom: invalid kind 1 section length -13619152`,
