@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -28,10 +29,11 @@ import (
 
 // queryCompatTestCase describes query compatibility test case.
 type queryCompatTestCase struct {
-	filter     bson.D                   // required
-	sort       bson.D                   // defaults to `bson.D{{"_id", 1}}`
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
-	skip       string                   // skips test if non-empty
+	filter      bson.D                   // required
+	sort        bson.D                   // defaults to `bson.D{{"_id", 1}}`
+	resultType  compatTestCaseResultType // defaults to nonEmptyResult
+	expectedErr mongo.CommandError       // expected compat error
+	skip        string                   // skips test if non-empty
 }
 
 func TestQueryCompat(t *testing.T) {
@@ -102,6 +104,11 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 						targetErr = UnsetRaw(t, targetErr)
 						compatErr = UnsetRaw(t, compatErr)
 						assert.Equal(t, compatErr, targetErr)
+						return
+					}
+					if compatErr != nil {
+						require.Error(t, compatErr)
+						AssertEqualError(t, tc.expectedErr, compatErr)
 						return
 					}
 					require.NoError(t, compatErr, "compat error")

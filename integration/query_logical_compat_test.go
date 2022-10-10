@@ -19,6 +19,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func TestQueryLogicalCompatAnd(t *testing.T) {
@@ -27,9 +28,14 @@ func TestQueryLogicalCompatAnd(t *testing.T) {
 	testCases := map[string]queryCompatTestCase{
 		"Zero": {
 			filter: bson.D{{
-				"$and", bson.A{},
+				"$and", bson.A{"v"},
 			}},
-			skip: "https://github.com/FerretDB/FerretDB/issues/962",
+			resultType: emptyResult,
+			expectedErr: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "$or/$and/$nor entries need to be full objects",
+			},
 		},
 		"One": {
 			filter: bson.D{{
@@ -80,7 +86,11 @@ func TestQueryLogicalCompatAnd(t *testing.T) {
 				},
 			}},
 			resultType: emptyResult,
-			skip:       "https://github.com/FerretDB/FerretDB/issues/962",
+			expectedErr: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "$or/$and/$nor entries need to be full objects",
+			},
 		},
 	}
 
@@ -93,9 +103,14 @@ func TestQueryLogicalCompatOr(t *testing.T) {
 	testCases := map[string]queryCompatTestCase{
 		"Zero": {
 			filter: bson.D{{
-				"$or", bson.A{},
+				"$or", bson.A{"v"},
 			}},
-			skip: "https://github.com/FerretDB/FerretDB/issues/962",
+			resultType: emptyResult,
+			expectedErr: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "$or/$and/$nor entries need to be full objects",
+			},
 		},
 		"One": {
 			filter: bson.D{{
@@ -135,7 +150,11 @@ func TestQueryLogicalCompatOr(t *testing.T) {
 				},
 			}},
 			resultType: emptyResult,
-			skip:       "https://github.com/FerretDB/FerretDB/issues/962",
+			expectedErr: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "$or/$and/$nor entries need to be full objects",
+			},
 		},
 	}
 
@@ -148,9 +167,14 @@ func TestQueryLogicalCompatNor(t *testing.T) {
 	testCases := map[string]queryCompatTestCase{
 		"Zero": {
 			filter: bson.D{{
-				"$nor", bson.A{},
+				"$nor", bson.A{"v"},
 			}},
-			skip: "https://github.com/FerretDB/FerretDB/issues/962",
+			resultType: emptyResult,
+			expectedErr: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "$or/$and/$nor entries need to be full objects",
+			},
 		},
 		"One": {
 			filter: bson.D{{
