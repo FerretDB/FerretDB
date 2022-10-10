@@ -42,7 +42,7 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 		if err == io.EOF {
 			return nil, nil, err
 		}
-		// TODO: Lazy errors should be validation errors or something??
+
 		return nil, nil, lazyerrors.Error(err)
 	}
 
