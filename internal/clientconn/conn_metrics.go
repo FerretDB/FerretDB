@@ -88,6 +88,7 @@ func (cm *ConnMetrics) Responses() map[string]CommandMetrics {
 		cm.responses.Collect(ch)
 		close(ch)
 	}()
+	var failed int64
 
 	cmdResps := make(map[string]CommandMetrics)
 	for m := range ch {
@@ -104,6 +105,9 @@ func (cm *ConnMetrics) Responses() map[string]CommandMetrics {
 			case "opcode":
 			case "result":
 				result = label.GetValue()
+				if result != "ok" {
+					failed++
+				}
 			default:
 			}
 		}
@@ -111,7 +115,8 @@ func (cm *ConnMetrics) Responses() map[string]CommandMetrics {
 		log.Println(cmd, result, *content.Counter.Value)
 
 		cmdResps[cmd] = CommandMetrics{
-			Total: int64(*content.Counter.Value),
+			Total:  int64(*content.Counter.Value),
+			Failed: failed,
 		}
 
 		// TODO check renameMe.Label
