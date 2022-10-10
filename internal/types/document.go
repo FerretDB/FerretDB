@@ -35,15 +35,8 @@ type document interface {
 //
 // Duplicate field names are not supported.
 type Document struct {
-	m         map[string]any
-	keys      []string
-	validator Validator
-}
-
-type Validator interface {
-	Validate(document *Document) error
-	ValidateKey(key string) error
-	ValidateValue(value any) error
+	m    map[string]any
+	keys []string
 }
 
 // ConvertDocument converts bson.Document to *types.Document and validates it.
