@@ -48,11 +48,15 @@ func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	}
 
 	metricsChan := make(chan prometheus.Metric)
+
 	go h.metrics.Collect(metricsChan)
 
 	i := 0
 	for m := range metricsChan {
 		log.Println(i, m)
+		var metr prometheus.Metric
+		d := m.Desc()
+		log.Println(d.String())
 		i++
 	}
 
