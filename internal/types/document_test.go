@@ -15,7 +15,6 @@
 package types
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -109,73 +108,73 @@ func TestDocument(t *testing.T) {
 		assert.Equal(t, []string{"_id", "foo"}, doc.keys)
 	})
 
-	t.Run("Validate", func(t *testing.T) {
-		t.Parallel()
-
-		for _, tc := range []struct {
-			name string
-			doc  Document
-			err  error
-		}{{
-			name: "normal",
-			doc: Document{
-				keys: []string{"0"},
-				m:    map[string]any{"0": "foo"},
-			},
-		}, {
-			name: "empty",
-			doc:  Document{},
-		}, {
-			name: "different keys",
-			doc: Document{
-				keys: []string{"0"},
-				m:    map[string]any{"1": "foo"},
-			},
-			err: fmt.Errorf(`types.Document.validate: key not found: "0"`),
-		}, {
-			name: "duplicate keys",
-			doc: Document{
-				keys: []string{"0", "0"},
-				m:    map[string]any{"0": "foo"},
-			},
-			err: fmt.Errorf("types.Document.validate: keys and values count mismatch: 1 != 2"),
-		}, {
-			name: "duplicate and different keys",
-			doc: Document{
-				keys: []string{"0", "0"},
-				m:    map[string]any{"0": "foo", "1": "bar"},
-			},
-			err: fmt.Errorf(`types.Document.validate: duplicate key: "0"`),
-		}, {
-			name: "fjson keys",
-			doc: Document{
-				keys: []string{"$k"},
-				m:    map[string]any{"$k": "foo"},
-			},
-			err: fmt.Errorf(`types.Document.validate: invalid key: "$k"`),
-		}, {
-			name: "dollar keys",
-			doc: Document{
-				keys: []string{"$db"},
-				m:    map[string]any{"$db": "foo"},
-			},
-		}, {
-			name: "empty key",
-			doc: Document{
-				keys: []string{""},
-				m:    map[string]any{"": ""},
-			},
-		}} {
-			tc := tc
-			t.Run(tc.name, func(t *testing.T) {
-				t.Parallel()
-
-				// TODO Call new validation here https://github.com/FerretDB/FerretDB/issues/693
-				// err := tc.doc.validate()
-				// assert.Equal(t, tc.err, err)
-			})
-		}
-	})
+	// TODO Call new validation: https://github.com/FerretDB/FerretDB/issues/693
+	//t.Run("Validate", func(t *testing.T) {
+	//	t.Parallel()
+	//
+	//	for _, tc := range []struct {
+	//		name string
+	//		doc  Document
+	//		err  error
+	//	}{{
+	//		name: "normal",
+	//		doc: Document{
+	//			keys: []string{"0"},
+	//			m:    map[string]any{"0": "foo"},
+	//		},
+	//	}, {
+	//		name: "empty",
+	//		doc:  Document{},
+	//	}, {
+	//		name: "different keys",
+	//		doc: Document{
+	//			keys: []string{"0"},
+	//			m:    map[string]any{"1": "foo"},
+	//		},
+	//		err: fmt.Errorf(`types.Document.validate: key not found: "0"`),
+	//	}, {
+	//		name: "duplicate keys",
+	//		doc: Document{
+	//			keys: []string{"0", "0"},
+	//			m:    map[string]any{"0": "foo"},
+	//		},
+	//		err: fmt.Errorf("types.Document.validate: keys and values count mismatch: 1 != 2"),
+	//	}, {
+	//		name: "duplicate and different keys",
+	//		doc: Document{
+	//			keys: []string{"0", "0"},
+	//			m:    map[string]any{"0": "foo", "1": "bar"},
+	//		},
+	//		err: fmt.Errorf(`types.Document.validate: duplicate key: "0"`),
+	//	}, {
+	//		name: "fjson keys",
+	//		doc: Document{
+	//			keys: []string{"$k"},
+	//			m:    map[string]any{"$k": "foo"},
+	//		},
+	//		err: fmt.Errorf(`types.Document.validate: invalid key: "$k"`),
+	//	}, {
+	//		name: "dollar keys",
+	//		doc: Document{
+	//			keys: []string{"$db"},
+	//			m:    map[string]any{"$db": "foo"},
+	//		},
+	//	}, {
+	//		name: "empty key",
+	//		doc: Document{
+	//			keys: []string{""},
+	//			m:    map[string]any{"": ""},
+	//		},
+	//	}} {
+	//		tc := tc
+	//		t.Run(tc.name, func(t *testing.T) {
+	//			t.Parallel()
+	//
+	//			err := tc.doc.validate()
+	//			assert.Equal(t, tc.err, err)
+	//		})
+	//	}
+	//})
 
 	t.Run("SetByPath", func(t *testing.T) {
 		for _, tc := range []struct {
