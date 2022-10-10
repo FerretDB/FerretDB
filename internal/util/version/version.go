@@ -108,8 +108,6 @@ func init() {
 	}
 
 	for _, s := range buildInfo.Settings {
-		must.NoError(info.BuildEnvironment.Set(s.Key, s.Value))
-
 		switch s.Key {
 		case "vcs.revision":
 			if s.Value != info.Commit {
@@ -117,16 +115,32 @@ func init() {
 					"Please run `bin/task gen-version`", info.Commit, s.Value,
 				))
 			}
+
 		case "vcs.modified":
 			info.Dirty = must.NotFail(strconv.ParseBool(s.Value))
+
+		case "-compiler":
+			must.NoError(info.BuildEnvironment.Set("compiler", s.Value))
+
 		case "-race":
+			must.NoError(info.BuildEnvironment.Set("race", s.Value))
+
 			if must.NotFail(strconv.ParseBool(s.Value)) {
 				info.Debug = true
 			}
+
 		case "-tags":
+			must.NoError(info.BuildEnvironment.Set("buildtags", s.Value))
+
 			if slices.Contains(strings.Split(s.Value, ","), "ferretdb_testcover") {
 				info.Debug = true
 			}
+
+		case "-trimpath":
+			must.NoError(info.BuildEnvironment.Set("trimpath", s.Value))
+
+		default:
+			must.NoError(info.BuildEnvironment.Set(s.Key, s.Value))
 		}
 	}
 }
