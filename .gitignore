@@ -22,6 +22,9 @@ node_modules/
 # test coverage results, generated files like commit.txt, etc.
 *.txt
 
+# runtime state
+state.json
+
 # for now
 testdata/fuzz/
 records/

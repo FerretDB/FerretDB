@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -32,6 +33,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
@@ -42,9 +44,9 @@ var cli struct {
 	ProxyAddr  string `default:"127.0.0.1:37017"      help:"Proxy address."`
 	DebugAddr  string `default:"127.0.0.1:8088"       help:"Debug address."`
 	LogLevel   string `default:"${default_log_level}" help:"${help_log_level}"`
-	Mode       string `default:"${default_mode}"      help:"${help_mode}"      enum:"${enum_mode}"`
-
-	Handler string `default:"pg" help:"${help_handler}"`
+	StateDir   string `default:"."                    help:"Process state directory."`
+	Mode       string `default:"${default_mode}"      help:"${help_mode}"             enum:"${enum_mode}"`
+	Handler    string `default:"pg"                   help:"${help_handler}"`
 
 	PostgresURL string `default:"postgres://postgres@127.0.0.1:5432/ferretdb" help:"PostgreSQL URL for 'pg' handler."`
 
@@ -54,8 +56,8 @@ var cli struct {
 	Version bool `default:"false" help:"Print version to stdout and exit."`
 
 	Test struct {
-		ConnTimeout time.Duration `default:"0" help:"For testing: client connection timeout."`
-		RecordsDir  string        `default:""  help:"For testing: directory for record files."`
+		ConnTimeout time.Duration `default:"0" help:"Testing flag: client connection timeout."`
+		RecordsDir  string        `default:""  help:"Testing flag: directory for record files."`
 	} `embed:"" prefix:"test-"`
 }
 
@@ -116,6 +118,22 @@ func run() {
 		return
 	}
 
+	stateFile, err := filepath.Abs(filepath.Join(cli.StateDir, "state.json"))
+	if err != nil {
+		logger.Fatal("Failed to get path for state file", zap.Error(err))
+	}
+	logger.Debug("State file", zap.String("filename", stateFile))
+
+	p, err := state.NewProvider(stateFile)
+	if err != nil {
+		logger.Fatal("Failed to create state provider", zap.Error(err))
+	}
+
+	s, err := p.Get()
+	if err != nil {
+		logger.Fatal("Failed to get state", zap.Error(err))
+	}
+
 	startFields := []zap.Field{
 		zap.String("version", info.Version),
 		zap.String("commit", info.Commit),
@@ -123,6 +141,7 @@ func run() {
 		zap.Bool("dirty", info.Dirty),
 		zap.Bool("debug", info.Debug),
 		zap.Reflect("buildEnvironment", info.BuildEnvironment.Map()),
+		zap.String("uuid", s.UUID),
 	}
 	logger.Info("Starting FerretDB "+info.Version+"...", startFields...)
 
