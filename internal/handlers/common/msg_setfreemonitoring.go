@@ -41,6 +41,7 @@ func MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			ErrFreeMonitoringDisabled,
 			"Free Monitoring has been disabled via the command-line and/or config file",
 		)
+
 	default:
 		return nil, NewErrorMsg(
 			ErrBadValue,
