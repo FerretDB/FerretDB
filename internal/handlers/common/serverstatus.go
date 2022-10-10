@@ -12,43 +12,47 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pg
+package common
 
 import (
-	"context"
+	"os"
+	"path/filepath"
+	"time"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
-// MsgServerStatus implements HandlerInterface.
-func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	res, err := common.ServerStatus(h.startTime)
+// ServerStatus returns a common part of serverStatus command response.
+func ServerStatus(startTime time.Time) (*types.Document, error) {
+	host, err := os.Hostname()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	stats, err := h.pgPool.SchemaStats(ctx, "", "")
+	exec, err := os.Executable()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	res.Set("catalogStats", must.NotFail(types.NewDocument(
-		"collections", stats.CountTables,
-		"capped", int32(0),
-		"timeseries", int32(0),
-		"views", int32(0),
-		"internalCollections", int32(0),
-		"internalViews", int32(0),
-	)))
+	uptime := time.Since(startTime)
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{res},
-	}))
+	res := must.NotFail(types.NewDocument(
+		"host", host,
+		"version", version.MongoDBVersion,
+		"process", filepath.Base(exec),
+		"pid", int64(os.Getpid()),
+		"uptime", uptime.Seconds(),
+		"uptimeMillis", uptime.Milliseconds(),
+		"uptimeEstimate", int64(uptime.Seconds()),
+		"localTime", time.Now(),
+		"freeMonitoring", must.NotFail(types.NewDocument(
+			"state", "disabled",
+		)),
+		"ok", float64(1),
+	))
 
-	return &reply, nil
+	return res, nil
 }
