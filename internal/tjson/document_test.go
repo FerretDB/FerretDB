@@ -225,7 +225,7 @@ func prepareTestCases() []testCase {
 			`"regex":{"$r":"^foobar$","o":"i"},"null":null}`,
 	}
 
-	// TODO Add a test case that contains arrays of various types (like in the fjson package):
+	// TODO Add a test case that contains arrays of various types (like in the pjson package):
 	// https://github.com/FerretDB/FerretDB/issues/908
 
 	eofDoc := must.NotFail(types.NewDocument("_id", "foo"))
