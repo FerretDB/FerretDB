@@ -170,8 +170,9 @@ func TestDocument(t *testing.T) {
 			t.Run(tc.name, func(t *testing.T) {
 				t.Parallel()
 
-				err := tc.doc.validate()
-				assert.Equal(t, tc.err, err)
+				// TODO Call new validation here https://github.com/FerretDB/FerretDB/issues/693
+				// err := tc.doc.validate()
+				// assert.Equal(t, tc.err, err)
 			})
 		}
 	})

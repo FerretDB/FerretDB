@@ -60,10 +60,6 @@ func ConvertDocument(d document) (*Document, error) {
 		keys: d.Keys(),
 	}
 
-	if err := doc.validate(); err != nil {
-		return doc, fmt.Errorf("types.ConvertDocument: %w", err)
-	}
-
 	return doc, nil
 }
 
@@ -102,10 +98,6 @@ func NewDocument(pairs ...any) (*Document, error) {
 		if err := doc.add(key, value); err != nil {
 			return nil, fmt.Errorf("types.NewDocument: %w", err)
 		}
-	}
-
-	if err := doc.validate(); err != nil {
-		return nil, fmt.Errorf("types.NewDocument: %w", err)
 	}
 
 	return doc, nil
@@ -169,10 +161,7 @@ func (d *Document) add(key string, value any) error {
 		return fmt.Errorf("types.Document.add: key already present: %q", key)
 	}
 
-	/*if !isValidKey(key) {
-		return fmt.Errorf("types.Document.add: invalid key: %q", key)
-	}*/
-
+	// TODO Should we still validate value if we don't validate key anymore?
 	if err := validateValue(value); err != nil {
 		return fmt.Errorf("types.Document.validate: %w", err)
 	}
@@ -211,10 +200,7 @@ func (d *Document) Get(key string) (any, error) {
 //
 // As a special case, _id always becomes the first key.
 func (d *Document) Set(key string, value any) error {
-	/*if !isValidKey(key) {
-		return fmt.Errorf("types.Document.Set: invalid key: %q", key)
-	}*/
-
+	// TODO Should we still validate value if we don't validate key anymore?
 	if err := validateValue(value); err != nil {
 		return fmt.Errorf("types.Document.validate: %w", err)
 	}

@@ -97,7 +97,10 @@ var Null = NullType{}
 func validateValue(value any) error {
 	switch value := value.(type) {
 	case *Document:
-		return value.validate()
+		// TODO Call new validation here: https://github.com/FerretDB/FerretDB/issues/693
+		// Attention! This place require us to know whether the doc is a data doc or command doc!
+		// return value.validate()
+		return nil
 	case *Array:
 		// It is impossible to construct invalid Array using exported function, methods, or type conversions,
 		// so no need to revalidate it.

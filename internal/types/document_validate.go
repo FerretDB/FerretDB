@@ -43,14 +43,14 @@ func (d *Document) ValidateData() error {
 		}
 
 		if strings.Contains(key, "$") {
-			return fmt.Errorf("invalid key: %q (the key mustn't contain a string)", key)
+			return fmt.Errorf("invalid key: %q (key mustn't contain a string)", key)
 		}
 	}
 
 	return nil
 }
 
-// checkMismatch checks if the document is "reasonable".
+// checkMismatch checks if the document is logically correct.
 // It returns error if there is a potential bug in code: the doc is a nil pointer
 // or the number of keys and values don't match.
 func (d *Document) checkMismatch() error {
@@ -63,58 +63,4 @@ func (d *Document) checkMismatch() error {
 	}
 
 	return nil
-}
-
-// validate checks if the document is valid.
-// todo: decide what to do with this function.
-func (d *Document) validate() error {
-	if d == nil {
-		panic("types.Document.validate: d is nil")
-	}
-
-	if len(d.m) != len(d.keys) {
-		return fmt.Errorf("types.Document.validate: keys and values count mismatch: %d != %d", len(d.m), len(d.keys))
-	}
-
-	// TODO check that _id is not regex or array: https://github.com/FerretDB/FerretDB/issues/1235
-
-	prevKeys := make(map[string]struct{}, len(d.keys))
-	for _, key := range d.keys {
-		if !isValidKey(key) {
-			return fmt.Errorf("types.Document.validate: invalid key: %q", key)
-		}
-
-		value, ok := d.m[key]
-		if !ok {
-			return fmt.Errorf("types.Document.validate: key not found: %q", key)
-		}
-
-		if _, ok := prevKeys[key]; ok {
-			return fmt.Errorf("types.Document.validate: duplicate key: %q", key)
-		}
-		prevKeys[key] = struct{}{}
-
-		if err := validateValue(value); err != nil {
-			return fmt.Errorf("types.Document.validate: %w", err)
-		}
-	}
-
-	return nil
-}
-
-// isValidKey returns false if key is not a valid document field key.
-//
-// TODO That function should be removed once we have separate validation for command and data documents.
-func isValidKey(key string) bool {
-	if key == "" {
-		// TODO that should be valid only for command documents, not for data documents
-		return true
-	}
-
-	// forbid keys like $k (used by fjson representation), but allow $db (used by many commands)
-	if key[0] == '$' && len(key) <= 2 {
-		return false
-	}
-
-	return utf8.ValidString(key)
 }
