@@ -162,9 +162,9 @@ func (d *Document) add(key string, value any) error {
 		return fmt.Errorf("types.Document.add: key already present: %q", key)
 	}
 
-	if !isValidKey(key) {
+	/*if !isValidKey(key) {
 		return fmt.Errorf("types.Document.add: invalid key: %q", key)
-	}
+	}*/
 
 	if err := validateValue(value); err != nil {
 		return fmt.Errorf("types.Document.validate: %w", err)
@@ -204,9 +204,9 @@ func (d *Document) Get(key string) (any, error) {
 //
 // As a special case, _id always becomes the first key.
 func (d *Document) Set(key string, value any) error {
-	if !isValidKey(key) {
+	/*if !isValidKey(key) {
 		return fmt.Errorf("types.Document.Set: invalid key: %q", key)
-	}
+	}*/
 
 	if err := validateValue(value); err != nil {
 		return fmt.Errorf("types.Document.validate: %w", err)
@@ -214,7 +214,7 @@ func (d *Document) Set(key string, value any) error {
 
 	// update keys slice
 	if key == "_id" {
-		// TODO check that value is not regex or array: https://github.com/FerretDB/FerretDB/issues/1235
+		// TODO check that value is not regex or array
 
 		// ensure that _id is the first field
 		if i := slices.Index(d.keys, key); i >= 0 {

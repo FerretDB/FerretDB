@@ -38,8 +38,12 @@ func (d *Document) ValidateData() error {
 	// The following block checks that keys are valid.
 	// All further key related validation rules should be added here.
 	for _, key := range d.keys {
+		if !utf8.ValidString(key) {
+			return fmt.Errorf("invalid key: %q (not a valid UTF-8 string)", key)
+		}
+
 		if strings.Contains(key, "$") {
-			return fmt.Errorf("key %q contains $", key)
+			return fmt.Errorf("invalid key: %q (the key mustn't contain a string)", key)
 		}
 	}
 
