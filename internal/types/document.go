@@ -156,7 +156,7 @@ func (d *Document) add(key string, value any) error {
 
 	// TODO Should we still validate value if we don't validate key anymore?
 	if err := validateValue(value); err != nil {
-		return fmt.Errorf("types.Document.validate: %w", err)
+		return fmt.Errorf("types.Document.add: %w", err)
 	}
 
 	// update keys slice
