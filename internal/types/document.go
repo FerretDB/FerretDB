@@ -106,42 +106,6 @@ func (d *Document) DeepCopy() *Document {
 	return deepCopy(d).(*Document)
 }
 
-// validate checks if the document is valid.
-func (d *Document) validate() error {
-	if d == nil {
-		panic("types.Document.validate: d is nil")
-	}
-
-	if len(d.m) != len(d.keys) {
-		return fmt.Errorf("types.Document.validate: keys and values count mismatch: %d != %d", len(d.m), len(d.keys))
-	}
-
-	// TODO check that _id is not regex or array
-
-	prevKeys := make(map[string]struct{}, len(d.keys))
-	for _, key := range d.keys {
-		if !isValidKey(key) {
-			return fmt.Errorf("types.Document.validate: invalid key: %q", key)
-		}
-
-		value, ok := d.m[key]
-		if !ok {
-			return fmt.Errorf("types.Document.validate: key not found: %q", key)
-		}
-
-		if _, ok := prevKeys[key]; ok {
-			return fmt.Errorf("types.Document.validate: duplicate key: %q", key)
-		}
-		prevKeys[key] = struct{}{}
-
-		if err := validateValue(value); err != nil {
-			return fmt.Errorf("types.Document.validate: %w", err)
-		}
-	}
-
-	return nil
-}
-
 // Len returns the number of elements in the document.
 //
 // It returns 0 for nil Document.
