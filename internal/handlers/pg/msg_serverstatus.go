@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -50,7 +51,15 @@ func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	metricsDoc := types.MakeDocument(0)
 
 	for cmd, cmdMetrics := range metrics {
-		cmdDoc := must.NotFail(types.NewDocument("total", cmdMetrics.Total, "failed", cmdMetrics.Failed))
+		//cmdDoc := must.NotFail(types.NewDocument("total", cmdMetrics.Total, "failed", cmdMetrics.Failed))
+		var cmdDoc *types.Document
+		switch cmdMetrics := cmdMetrics.(type) {
+		case clientconn.UpdateCommandMetrics:
+			cmdDoc = must.NotFail(types.NewDocument("arrayFilters", cmdMetrics.ArrayFilters, "failed", cmdMetrics.Failed, "pipeline", cmdMetrics.Pipeline, "total", cmdMetrics.Total))
+		case clientconn.BasicCommandMetrics:
+			cmdDoc = must.NotFail(types.NewDocument("total", cmdMetrics.Total, "failed", cmdMetrics.Failed))
+		}
+
 		must.NoError(metricsDoc.Set(cmd, cmdDoc))
 	}
 

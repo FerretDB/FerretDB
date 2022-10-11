@@ -31,9 +31,19 @@ type ConnMetrics struct {
 	aggregationStages *prometheus.CounterVec
 }
 
-type CommandMetrics struct {
+type CommandMetrics interface {
+}
+
+type BasicCommandMetrics struct {
 	Failed int64
 	Total  int64
+}
+
+type UpdateCommandMetrics struct {
+	ArrayFilters int64
+	Failed       int64
+	Pipeline     int64
+	Total        int64
 }
 
 // newConnMetrics creates new conn metrics.
@@ -86,14 +96,12 @@ func (cm *ConnMetrics) Collect(ch chan<- prometheus.Metric) {
 func (cm *ConnMetrics) Responses() map[string]CommandMetrics {
 	res := make(map[string]CommandMetrics)
 	for k := range common.Commands {
-		res[k] = CommandMetrics{}
-		//TODO: update, clusterUpdate, findAndModify fields
-		findAndModify: {
-			arrayFilters: Long("0"),
-			failed: Long("0"),
-			pipeline: Long("0"),
-			total: Long("0")
-		  },
+		switch k {
+		case "update", "clusterUpdate", "findAndModify":
+			res[k] = UpdateCommandMetrics{}
+		default:
+			res[k] = BasicCommandMetrics{}
+		}
 	}
 
 	ch := make(chan prometheus.Metric)
@@ -127,11 +135,23 @@ func (cm *ConnMetrics) Responses() map[string]CommandMetrics {
 		value := int64(content.GetCounter().GetValue())
 
 		cm := res[command]
-		cm.Total += value
-		if result != "ok" && result != "Unset" {
-			cm.Failed += value
+		switch cm := cm.(type) {
+		case UpdateCommandMetrics:
+			cm.Total += value
+			if result != "ok" && result != "Unset" {
+				cm.Failed += value
+			}
+			res[command] = cm
+		case BasicCommandMetrics:
+			cm.Total += value
+			if result != "ok" && result != "Unset" {
+				cm.Failed += value
+			}
+			res[command] = cm
+		default:
+			panic("bruh")
 		}
-		res[command] = cm
+
 	}
 
 	return res
