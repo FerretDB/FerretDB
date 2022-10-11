@@ -170,6 +170,7 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 		},
 		"DotArrayField": {
 			update:        bson.D{{"$unset", bson.D{{"v.array.0", ""}}}},
+			skip:          "https://github.com/FerretDB/FerretDB/issues/1242",
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
 		},
 		"DotArrayNonExisting": {
