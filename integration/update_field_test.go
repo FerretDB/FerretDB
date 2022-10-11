@@ -1409,6 +1409,8 @@ func TestUpdateFieldPopArrayOperator(t *testing.T) {
 
 // This test is to ensure that the order of fields in the document is preserved.
 func TestUpdateDocumentFieldsOrder(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "Tigris schema would fail this test")
+
 	ctx, collection := setup.Setup(t, shareddata.Composites)
 
 	_, err := collection.UpdateOne(
