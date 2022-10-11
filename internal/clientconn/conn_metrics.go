@@ -131,7 +131,7 @@ func (cm *ConnMetrics) Responses() map[string]CommandMetrics {
 
 		cm := res[command]
 		cm.Total += value
-		if result != "ok" {
+		if result != "ok" && result != "Unset" {
 			cm.Failed += value
 		}
 		res[command] = cm
