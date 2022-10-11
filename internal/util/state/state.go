@@ -69,7 +69,9 @@ func (p *Provider) Get() (*State, error) {
 
 	b, _ := os.ReadFile(p.filename)
 	_ = json.Unmarshal(b, &s)
-	if _, err := uuid.Parse(s.UUID); err == nil {
+	_, err := uuid.Parse(s.UUID)
+
+	if err == nil {
 		// store a copy
 		p.rw.Lock()
 		p.s = s
