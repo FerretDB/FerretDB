@@ -85,7 +85,7 @@ func Convert(t testing.TB, v any) any {
 	case primitive.DateTime:
 		return v.Time()
 	case nil:
-		return v
+		return types.Null
 	case primitive.Regex:
 		return types.Regex{
 			Pattern: v.Pattern,
