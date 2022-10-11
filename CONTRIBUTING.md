@@ -93,13 +93,10 @@ The `internal` subpackages contain most of the FerretDB code:
 
 * `types` package provides Go types matching BSON types that don't have built-in Go equivalents:
   we use `int32` for BSON's int32, but `types.ObjectID` for BSON's ObjectId.
-* `fjson` provides converters from/to FJSON for built-in and `types` types.
+* `types/fjson` provides converters from/to FJSON for built-in and `types` types.
   FJSON adds some extensions to JSON for keeping object keys in order,
   preserving BSON type information in the values themselves, etc.
-  It is used by `pg` handler.
-* `tjson` provides converters from/to JSON with JSON Schema for built-in and `types` types.
-  BSON type information is preserved either in the schema (where possible) or in the values themselves.
-  It is used by `tigris` handler.
+  It is used for logging.
 * `bson` package provides converters from/to BSON for built-in and `types` types.
 * `wire` package provides wire protocol implementation.
 * `clientconn` package provides client connection implementation.
@@ -108,6 +105,13 @@ The `internal` subpackages contain most of the FerretDB code:
 * `handlers` handle protocol commands.
   They use `fjson` package for storing data in PostgreSQL in jsonb columns, but they don't use `bson` package –
   all data is represented as built-in and `types` types.
+* `handlers/pg/pjson` provides converters from/to PJSON for built-in and `types` types.
+  PJSON adds some extensions to JSON for keeping object keys in order,
+  preserving BSON type information in the values themselves, etc.
+  It is used by `pg` handler.
+* `tjson` provides converters from/to JSON with JSON Schema for built-in and `types` types.
+  BSON type information is preserved either in the schema (where possible) or in the values themselves.
+  It is used by `tigris` handler.
 
 Those packages are tested by "unit" tests that are placed inside those packages.
 Some of them are truly hermetic and test only the package that contains them;

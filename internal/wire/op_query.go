@@ -22,8 +22,8 @@ import (
 	"io"
 
 	"github.com/FerretDB/FerretDB/internal/bson"
-	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/types/fjson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -131,8 +131,6 @@ func (query *OpQuery) MarshalBinary() ([]byte, error) {
 }
 
 // String returns a string representation for logging.
-//
-// Currently, it uses FJSON, but that may change in the future.
 func (query *OpQuery) String() string {
 	if query == nil {
 		return "<nil>"

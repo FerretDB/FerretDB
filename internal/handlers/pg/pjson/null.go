@@ -12,26 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package pjson
 
 import (
-	"context"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgGetCmdLineOpts is a common implementation of the getCmdLineOpts command.
-func MsgGetCmdLineOpts(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"argv", must.NotFail(types.NewArray("ferretdb")),
-			"parsed", must.NotFail(types.NewDocument()),
-			"ok", float64(1),
-		))},
-	}))
+// nullType represents BSON Null type.
+type nullType types.NullType
 
-	return &reply, nil
+// pjsontype implements pjsontype interface.
+func (*nullType) pjsontype() {}
+
+// UnmarshalJSON implements pjsontype interface.
+func (*nullType) UnmarshalJSON(data []byte) error {
+	panic(fmt.Sprintf("must not be called, was called with %s", string(data)))
 }
+
+// MarshalJSON implements pjsontype interface.
+func (*nullType) MarshalJSON() ([]byte, error) {
+	return []byte("null"), nil
+}
+
+// check interfaces
+var (
+	_ pjsontype = (*nullType)(nil)
+)

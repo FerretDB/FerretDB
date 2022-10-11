@@ -22,7 +22,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
@@ -187,8 +186,6 @@ var Commands = map[string]command{
 
 // MsgListCommands is a common implementation of the listCommands command.
 func MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	var reply wire.OpMsg
-
 	cmdList := must.NotFail(types.NewDocument())
 	names := maps.Keys(Commands)
 	sort.Strings(names)
@@ -198,15 +195,13 @@ func MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) 
 		)))
 	}
 
-	err := reply.SetSections(wire.OpMsgSection{
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"commands", cmdList,
 			"ok", float64(1),
 		))},
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	}))
 
 	return &reply, nil
 }
