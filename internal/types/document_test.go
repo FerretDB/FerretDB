@@ -147,7 +147,7 @@ func TestDocument(t *testing.T) {
 			},
 			err: fmt.Errorf(`types.Document.validate: duplicate key: "0"`),
 		}, {
-			name: "fjson keys",
+			name: "pjson keys",
 			doc: Document{
 				keys: []string{"$k"},
 				m:    map[string]any{"$k": "foo"},

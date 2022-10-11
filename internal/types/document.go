@@ -124,7 +124,7 @@ func isValidKey(key string) bool {
 		return true
 	}
 
-	// forbid keys like $k (used by fjson representation), but allow $db (used by many commands)
+	// forbid keys like $k (used by pjson representation), but allow $db (used by many commands)
 	if key[0] == '$' && len(key) <= 2 {
 		return false
 	}
@@ -322,10 +322,6 @@ func (d *Document) HasByPath(path Path) bool {
 // GetByPath returns a value by path - a sequence of indexes and keys.
 // If the Path has only one element, it returns the value for the given key.
 func (d *Document) GetByPath(path Path) (any, error) {
-	if path.Len() == 1 {
-		return d.Get(path.Slice()[0])
-	}
-
 	return getByPath(d, path)
 }
 

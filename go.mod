@@ -5,6 +5,7 @@ go 1.19
 require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/alecthomas/kong v0.6.1
+	github.com/google/uuid v1.3.0
 	github.com/jackc/pgconn v1.13.0
 	github.com/jackc/pgerrcode v0.0.0-20220416144525-469b46aa5efa
 	github.com/jackc/pgx/v4 v4.17.2
@@ -33,7 +34,6 @@ require (
 	github.com/go-openapi/swag v0.21.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/gnostic v0.6.9 // indirect
-	github.com/google/uuid v1.3.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.10.2 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect

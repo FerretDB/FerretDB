@@ -335,6 +335,13 @@ func TestQueryCount(t *testing.T) {
 			},
 			response: 1,
 		},
+		"CountExactlyOneDocumentWithIdFilter": {
+			command: bson.D{
+				{"count", collection.Name()},
+				{"query", bson.D{{"_id", "bool-true"}}},
+			},
+			response: 1,
+		},
 		"CountArrays": {
 			command: bson.D{
 				{"count", collection.Name()},
