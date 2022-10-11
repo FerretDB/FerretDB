@@ -16,6 +16,7 @@ package clientconn
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
@@ -107,12 +108,15 @@ func (cm *ConnMetrics) Responses() map[string]CommandMetrics {
 	ch := make(chan prometheus.Metric)
 	go func() {
 		cm.responses.Collect(ch)
+		cm.aggregationStages.Collect(ch)
 		close(ch)
 	}()
 
 	for m := range ch {
 		var content dto.Metric
 		must.NoError(m.Write(&content))
+
+		var stage int
 
 		var command, opcode, result string
 		for _, label := range content.GetLabel() {
@@ -123,8 +127,10 @@ func (cm *ConnMetrics) Responses() map[string]CommandMetrics {
 				opcode = label.GetValue()
 			case "result":
 				result = label.GetValue()
+			case "stage":
+				stage = must.NotFail(strconv.Atoi(label.GetValue()))
 			default:
-				panic(fmt.Sprintf("%s is not a valid label. Allowed: [command, opcode, result]", label.GetName()))
+				panic(fmt.Sprintf("%s is not a valid label. Allowed: [command, opcode, result, stage]", label.GetName()))
 			}
 		}
 
@@ -141,6 +147,7 @@ func (cm *ConnMetrics) Responses() map[string]CommandMetrics {
 			if result != "ok" && result != "Unset" {
 				cm.Failed += value
 			}
+			cm.Pipeline += int64(stage)
 			res[command] = cm
 		case BasicCommandMetrics:
 			cm.Total += value

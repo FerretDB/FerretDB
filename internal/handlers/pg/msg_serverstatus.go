@@ -51,7 +51,6 @@ func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	metricsDoc := types.MakeDocument(0)
 
 	for cmd, cmdMetrics := range metrics {
-		//cmdDoc := must.NotFail(types.NewDocument("total", cmdMetrics.Total, "failed", cmdMetrics.Failed))
 		var cmdDoc *types.Document
 		switch cmdMetrics := cmdMetrics.(type) {
 		case clientconn.UpdateCommandMetrics:
