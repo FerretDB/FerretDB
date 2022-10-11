@@ -243,6 +243,7 @@ func TestFindAndModifyCompatRemove(t *testing.T) {
 				{"query", bson.D{{"_id", "double"}}},
 				{"remove", true},
 			},
+			skip: "TODO",
 		},
 		"RemoveEmptyQueryResult": {
 			command: bson.D{
@@ -258,6 +259,7 @@ func TestFindAndModifyCompatRemove(t *testing.T) {
 				},
 				{"remove", true},
 			},
+			skip: "TODO",
 		},
 	}
 
