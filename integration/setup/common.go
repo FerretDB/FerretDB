@@ -17,6 +17,7 @@ package setup
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"net"
@@ -159,6 +160,7 @@ func setupSockListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (
 
 	proxyAddr := *proxyAddrF
 	mode := clientconn.NormalMode
+
 	if proxyAddr != "" {
 		mode = clientconn.DiffNormalMode
 	}
@@ -174,11 +176,12 @@ func setupSockListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (
 	})
 
 	done := make(chan struct{})
+
 	go func() {
 		defer close(done)
 
 		err := l.Run(ctx)
-		if err == nil || err == context.Canceled {
+		if err == nil || errors.Is(err, context.Canceled) {
 			logger.Info("Listener stopped without error")
 		} else {
 			logger.Error("Listener stopped", zap.Error(err))
