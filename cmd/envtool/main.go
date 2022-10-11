@@ -290,7 +290,8 @@ func main() {
 	if cli.Debug {
 		level = zap.DebugLevel
 	}
-	logging.Setup(level)
+
+	logging.Setup(level, "")
 	logger := zap.S()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)

@@ -50,7 +50,7 @@ func main() {
 		defer wg.Done()
 
 		b := runGit("describe", "--tags", "--dirty")
-		must.NoError(os.WriteFile(filepath.Join("gen", "version.txt"), b, 0o644))
+		must.NoError(os.WriteFile(filepath.Join("gen", "version.txt"), b, 0o666))
 	}()
 
 	// git rev-parse HEAD > gen/commit.txt
@@ -59,7 +59,7 @@ func main() {
 		defer wg.Done()
 
 		b := runGit("rev-parse", "HEAD")
-		must.NoError(os.WriteFile(filepath.Join("gen", "commit.txt"), b, 0o644))
+		must.NoError(os.WriteFile(filepath.Join("gen", "commit.txt"), b, 0o666))
 	}()
 
 	// git branch --show-current > gen/branch.txt
@@ -68,7 +68,7 @@ func main() {
 		defer wg.Done()
 
 		b := runGit("branch", "--show-current")
-		must.NoError(os.WriteFile(filepath.Join("gen", "branch.txt"), b, 0o644))
+		must.NoError(os.WriteFile(filepath.Join("gen", "branch.txt"), b, 0o666))
 	}()
 
 	wg.Wait()
