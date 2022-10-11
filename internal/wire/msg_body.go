@@ -42,7 +42,6 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 		if err == io.EOF {
 			return nil, nil, err
 		}
-
 		return nil, nil, lazyerrors.Error(err)
 	}
 
