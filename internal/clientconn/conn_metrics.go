@@ -15,7 +15,7 @@
 package clientconn
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
@@ -119,7 +119,7 @@ func (cm *ConnMetrics) Responses() map[string]CommandMetrics {
 			case "result":
 				result = label.GetValue()
 			default:
-				panic("oops")
+				panic(fmt.Sprintf("%s is not a valid label. Allowed: [command, opcode, result]", label.GetName()))
 			}
 		}
 
@@ -135,31 +135,9 @@ func (cm *ConnMetrics) Responses() map[string]CommandMetrics {
 			cm.Failed += value
 		}
 		res[command] = cm
-
-		log.Println(command, result, *content.Counter.Value)
-
-		if result != "ok" {
-			failed++
-		}
-
-		if len(results) > 10 {
-			panic(results)
-		}
-
-		//if v, ok := cmdResps[cmd]; ok {
-		//	failed = v.Failed + failed
-		//}
-
-		cmdResps[command] = CommandMetrics{
-			Total:  int64(*content.Counter.Value),
-			Failed: failed,
-		}
-
-		// TODO check renameMe.Label
-		// TODO use renameMe.Counter
 	}
 
-	return cmdResps
+	return res
 }
 
 // check interfaces
