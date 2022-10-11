@@ -61,7 +61,7 @@ func MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	}
 
 	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{
+	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"system", must.NotFail(types.NewDocument(
 				"currentTime", now,
@@ -78,10 +78,7 @@ func MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 			"extra", must.NotFail(types.NewDocument()),
 			"ok", float64(1),
 		))},
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	}))
 
 	return &reply, nil
 }

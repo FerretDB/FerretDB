@@ -33,7 +33,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
@@ -118,10 +117,8 @@ func run() {
 		zap.String("commit", info.Commit),
 		zap.String("branch", info.Branch),
 		zap.Bool("dirty", info.Dirty),
-	}
-	for _, k := range info.BuildEnvironment.Keys() {
-		v := must.NotFail(info.BuildEnvironment.Get(k))
-		startFields = append(startFields, zap.Any(k, v))
+		zap.Bool("debug", info.Debug),
+		zap.Reflect("buildEnvironment", info.BuildEnvironment.Map()),
 	}
 	logger.Info("Starting FerretDB "+info.Version+"...", startFields...)
 
