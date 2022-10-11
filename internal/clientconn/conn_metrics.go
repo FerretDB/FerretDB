@@ -20,6 +20,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -84,6 +85,16 @@ func (cm *ConnMetrics) Collect(ch chan<- prometheus.Metric) {
 
 func (cm *ConnMetrics) Responses() map[string]CommandMetrics {
 	res := make(map[string]CommandMetrics)
+	for k := range common.Commands {
+		res[k] = CommandMetrics{}
+		//TODO: update, clusterUpdate, findAndModify fields
+		findAndModify: {
+			arrayFilters: Long("0"),
+			failed: Long("0"),
+			pipeline: Long("0"),
+			total: Long("0")
+		  },
+	}
 
 	ch := make(chan prometheus.Metric)
 	go func() {
@@ -94,20 +105,6 @@ func (cm *ConnMetrics) Responses() map[string]CommandMetrics {
 	for m := range ch {
 		var content dto.Metric
 		must.NoError(m.Write(&content))
-
-		// # HELP ferretdb_client_responses_total Total number of responses.
-		// # TYPE ferretdb_client_responses_total counter
-		// ferretdb_client_responses_total{command="",opcode="OP_REPLY",result="ok"} 5
-		// ferretdb_client_responses_total{command="atlasVersion",opcode="OP_MSG",result="CommandNotFound"} 1
-		// ferretdb_client_responses_total{command="buildInfo",opcode="OP_MSG",result="ok"} 1
-		// ferretdb_client_responses_total{command="getCmdLineOpts",opcode="OP_MSG",result="ok"} 1
-		// ferretdb_client_responses_total{command="getFreeMonitoringStatus",opcode="OP_MSG",result="ok"} 1
-		// ferretdb_client_responses_total{command="getLog",opcode="OP_MSG",result="ok"} 1
-		// ferretdb_client_responses_total{command="getParameter",opcode="OP_MSG",result="Unset"} 1
-		// ferretdb_client_responses_total{command="hello",opcode="OP_MSG",result="ok"} 1
-		// ferretdb_client_responses_total{command="hello",opcode="OP_MSG",result="SomethingBad"} 1
-		// ferretdb_client_responses_total{command="notImplementedCommand",opcode="OP_MSG",result="CommandNotFound"} 1
-		// ferretdb_client_responses_total{command="ping",opcode="OP_MSG",result="ok"} 1
 
 		var command, opcode, result string
 		for _, label := range content.GetLabel() {
