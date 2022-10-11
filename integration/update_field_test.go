@@ -1432,10 +1432,7 @@ func TestUpdateDocumentFieldsOrder(t *testing.T) {
 		{"foo", int32(42)},
 	}
 
-	res := AssertEqualDocuments(t, expected, updated)
-	if !res {
-		t.FailNow()
-	}
+	AssertEqualDocuments(t, expected, updated)
 
 	_, err = collection.UpdateOne(
 		ctx,
@@ -1453,10 +1450,7 @@ func TestUpdateDocumentFieldsOrder(t *testing.T) {
 		{"bar", "baz"},
 	}
 
-	res = AssertEqualDocuments(t, expected, updated)
-	if !res {
-		t.FailNow()
-	}
+	AssertEqualDocuments(t, expected, updated)
 
 	_, err = collection.UpdateOne(
 		ctx,
@@ -1475,8 +1469,49 @@ func TestUpdateDocumentFieldsOrder(t *testing.T) {
 		{"abc", int32(42)},
 	}
 
-	res = AssertEqualDocuments(t, expected, updated)
-	if !res {
-		t.FailNow()
+	AssertEqualDocuments(t, expected, updated)
+}
+
+// This test is to ensure that the order of fields in the document is preserved.
+func TestUpdateDocumentFieldsOrderSimplified(t *testing.T) {
+	ctx, collection := setup.Setup(t)
+
+	_, err := collection.InsertOne(ctx, bson.D{{"_id", "document"}, {"foo", int32(42)}, {"bar", "baz"}})
+	require.NoError(t, err)
+
+	_, err = collection.UpdateOne(
+		ctx,
+		bson.D{{"_id", "document"}},
+		bson.D{{"$unset", bson.D{{"foo", ""}, {"bar", ""}}}},
+	)
+	require.NoError(t, err)
+
+	var updated bson.D
+
+	err = collection.FindOne(ctx, bson.D{{"_id", "document"}}).Decode(&updated)
+	require.NoError(t, err)
+
+	expected := bson.D{
+		{"_id", "document"},
 	}
+
+	_, err = collection.UpdateOne(
+		ctx,
+		bson.D{{"_id", "document"}},
+		bson.D{{"$set", bson.D{{"foo", int32(42)}, {"bar", "baz"}}}},
+	)
+	require.NoError(t, err)
+
+	AssertEqualDocuments(t, expected, updated)
+
+	err = collection.FindOne(ctx, bson.D{{"_id", "document"}}).Decode(&updated)
+	require.NoError(t, err)
+
+	expected = bson.D{
+		{"_id", "document"},
+		{"bar", "baz"},
+		{"foo", int32(42)},
+	}
+
+	AssertEqualDocuments(t, expected, updated)
 }
