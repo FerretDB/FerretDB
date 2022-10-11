@@ -6,15 +6,7 @@ run:
 
 linters-settings:
   # asciicheck
-  depguard:
-    list-type: blacklist
-    packages:
-      - github.com/FerretDB/FerretDB/internal/bson
-      - github.com/FerretDB/FerretDB/internal/fjson
-      - github.com/FerretDB/FerretDB/internal/tjson
-      - github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb
-      - github.com/tigrisdata/tigris-client-go/api/client/v1/api
-      - github.com/tigrisdata/tigris-client-go/filter # We use our own filter without generics (see tigris/tigrisdb/filter)
+  # depguard:
   exhaustive:
     default-signifies-exhaustive: false
   gci:

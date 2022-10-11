@@ -24,7 +24,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"golang.org/x/exp/slices"
 
-	"github.com/FerretDB/FerretDB/internal/fjson"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -79,7 +79,7 @@ func createSettingsTable(ctx context.Context, tx pgx.Tx, db string) error {
 
 	settings := must.NotFail(types.NewDocument("collections", must.NotFail(types.NewDocument())))
 	sql = fmt.Sprintf(`INSERT INTO %s (settings) VALUES ($1)`, pgx.Identifier{db, settingsTableName}.Sanitize())
-	_, err = tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(settings)))
+	_, err = tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(settings)))
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -157,7 +157,7 @@ func getSettingsTable(ctx context.Context, tx pgx.Tx, db string) (*types.Documen
 		return nil, lazyerrors.Error(err)
 	}
 
-	doc, err := fjson.Unmarshal(b)
+	doc, err := pjson.Unmarshal(b)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -173,7 +173,7 @@ func getSettingsTable(ctx context.Context, tx pgx.Tx, db string) (*types.Documen
 // updateSettingsTable updates FerretDB settings table.
 func updateSettingsTable(ctx context.Context, tx pgx.Tx, db string, settings *types.Document) error {
 	sql := fmt.Sprintf(`UPDATE %s SET settings = $1`, pgx.Identifier{db, settingsTableName}.Sanitize())
-	_, err := tx.Exec(ctx, sql, must.NotFail(fjson.Marshal(settings)))
+	_, err := tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(settings)))
 	return err
 }
 

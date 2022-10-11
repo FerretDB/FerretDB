@@ -43,6 +43,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	if fp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
+
 	collectionParam, err := document.Get(document.Command())
 	if err != nil {
 		return nil, err

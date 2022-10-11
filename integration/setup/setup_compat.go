@@ -78,6 +78,8 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 		// When we use `task all` to run `pg` and `tigris` compat tests in parallel,
 		// they both use the same MongoDB instance.
 		// Add the handler's name to prevent the usage of the same database.
+		// The only test that uses DatabaseName is `TestEnvData`,
+		// but it is protected by a build tag; see comment there.
 		opts.databaseName = testutil.DatabaseName(tb) + "_" + *handlerF
 		opts.ownDatabase = true
 	}

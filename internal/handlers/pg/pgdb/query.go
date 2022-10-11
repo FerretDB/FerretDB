@@ -24,7 +24,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"golang.org/x/exp/maps"
 
-	"github.com/FerretDB/FerretDB/internal/fjson"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -50,6 +50,7 @@ type SQLParam struct {
 	Collection string
 	Comment    string
 	Explain    bool
+	Filter     *types.Document
 }
 
 // QueryDocuments returns a channel with buffer FetchedChannelBufSize
@@ -66,7 +67,7 @@ type SQLParam struct {
 func (pgPool *Pool) QueryDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (<-chan FetchedDocs, error) {
 	fetchedChan := make(chan FetchedDocs, FetchedChannelBufSize)
 
-	q, err := buildQuery(ctx, tx, sp)
+	q, args, err := buildQuery(ctx, tx, sp)
 	if err != nil {
 		close(fetchedChan)
 		if errors.Is(err, ErrTableNotExist) {
@@ -75,7 +76,7 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam)
 		return fetchedChan, lazyerrors.Error(err)
 	}
 
-	rows, err := tx.Query(ctx, q)
+	rows, err := tx.Query(ctx, q, args...)
 	if err != nil {
 		close(fetchedChan)
 		return fetchedChan, lazyerrors.Error(err)
@@ -107,12 +108,12 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam)
 
 // Explain returns SQL EXPLAIN results for given query parameters.
 func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Array, error) {
-	q, err := buildQuery(ctx, tx, &sp)
+	q, args, err := buildQuery(ctx, tx, &sp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	rows, err := tx.Query(ctx, q)
+	rows, err := tx.Query(ctx, q, args...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -147,37 +148,81 @@ func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Array, error) 
 
 // buildQuery builds SELECT or EXPLAIN SELECT query.
 //
-// It returns (possibly wrapped) ErrSchemaNotExist or ErrTableNotExist
-// if schema/database or table/collection does not exist.
-func buildQuery(ctx context.Context, tx pgx.Tx, sp *SQLParam) (string, error) {
+// It returns the query string and the arguments.
+// If schema/database or table/collection does not exist,
+// it returns (possibly wrapped) ErrSchemaNotExist or ErrTableNotExist.
+func buildQuery(ctx context.Context, tx pgx.Tx, sp *SQLParam) (string, []any, error) {
 	exists, err := CollectionExists(ctx, tx, sp.DB, sp.Collection)
 	if err != nil {
-		return "", lazyerrors.Error(err)
+		return "", nil, lazyerrors.Error(err)
 	}
+
 	if !exists {
-		return "", lazyerrors.Error(ErrTableNotExist)
+		return "", nil, lazyerrors.Error(ErrTableNotExist)
 	}
 
 	table, err := getTableName(ctx, tx, sp.DB, sp.Collection)
 	if err != nil {
-		return "", lazyerrors.Error(err)
+		return "", nil, lazyerrors.Error(err)
 	}
 
-	q := `SELECT _jsonb `
+	var query string
+
+	if sp.Explain {
+		query = `EXPLAIN (VERBOSE true, FORMAT JSON) `
+	}
+
+	query += ` SELECT _jsonb `
+
 	if c := sp.Comment; c != "" {
 		// prevent SQL injections
 		c = strings.ReplaceAll(c, "/*", "/ *")
 		c = strings.ReplaceAll(c, "*/", "* /")
 
-		q += `/* ` + c + ` */ `
-	}
-	q += `FROM ` + pgx.Identifier{sp.DB, table}.Sanitize()
-
-	if sp.Explain {
-		q = "EXPLAIN (VERBOSE true, FORMAT JSON) " + q
+		query += `/* ` + c + ` */ `
 	}
 
-	return q, nil
+	query += ` FROM ` + pgx.Identifier{sp.DB, table}.Sanitize()
+
+	var args []any
+
+	if sp.Filter != nil {
+		var where string
+
+		where, args = prepareWhereClause(sp.Filter)
+		query += where
+	}
+
+	return query, args, nil
+}
+
+// prepareWhereClause adds WHERE clause with given filters to the query and returns the query and arguments.
+func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
+	var filters []string
+	var args []any
+	var p Placeholder
+
+	for k, v := range sqlFilters.Map() {
+		switch k {
+		case "_id":
+			switch v := v.(type) {
+			case types.ObjectID:
+				filters = append(filters, fmt.Sprintf(`((_jsonb->'_id')::jsonb = %s)`, p.Next()))
+
+				args = append(args, string(must.NotFail(pjson.Marshal(v))))
+			}
+		default:
+			continue
+		}
+	}
+
+	var query string
+
+	if len(filters) > 0 {
+		query = ` WHERE ` + strings.Join(filters, " AND ")
+	}
+
+	return query, args
 }
 
 // iterateFetch iterates over the rows returned by the query and sends FetchedDocs to fetched channel.
@@ -197,7 +242,7 @@ func iterateFetch(ctx context.Context, fetched chan FetchedDocs, rows pgx.Rows) 
 				return writeFetched(ctx, fetched, FetchedDocs{Err: lazyerrors.Error(err)})
 			}
 
-			doc, err := fjson.Unmarshal(b)
+			doc, err := pjson.Unmarshal(b)
 			if err != nil {
 				return writeFetched(ctx, fetched, FetchedDocs{Err: lazyerrors.Error(err)})
 			}

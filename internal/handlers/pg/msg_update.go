@@ -43,13 +43,16 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	common.Ignored(document, h.l, "ordered", "writeConcern", "bypassDocumentValidation")
 
 	var sp pgdb.SQLParam
+
 	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
+
 	collectionParam, err := document.Get(document.Command())
 	if err != nil {
 		return nil, err
 	}
+
 	var ok bool
 	if sp.Collection, ok = collectionParam.(string); !ok {
 		return nil, common.NewErrorMsg(
@@ -134,6 +137,8 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			if multi, err = common.GetOptionalParam(update, "multi", multi); err != nil {
 				return err
 			}
+
+			sp.Filter = q
 
 			resDocs := make([]*types.Document, 0, 16)
 			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, &sp)
