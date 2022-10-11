@@ -83,36 +83,60 @@ func (cm *ConnMetrics) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (cm *ConnMetrics) Responses() map[string]CommandMetrics {
+	res := make(map[string]CommandMetrics)
+
 	ch := make(chan prometheus.Metric)
 	go func() {
 		cm.responses.Collect(ch)
 		close(ch)
 	}()
-	var failed int64
 
-	results := []string{}
-
-	cmdResps := make(map[string]CommandMetrics)
 	for m := range ch {
 		var content dto.Metric
 		must.NoError(m.Write(&content))
 
-		labels := content.GetLabel()
+		// # HELP ferretdb_client_responses_total Total number of responses.
+		// # TYPE ferretdb_client_responses_total counter
+		// ferretdb_client_responses_total{command="",opcode="OP_REPLY",result="ok"} 5
+		// ferretdb_client_responses_total{command="atlasVersion",opcode="OP_MSG",result="CommandNotFound"} 1
+		// ferretdb_client_responses_total{command="buildInfo",opcode="OP_MSG",result="ok"} 1
+		// ferretdb_client_responses_total{command="getCmdLineOpts",opcode="OP_MSG",result="ok"} 1
+		// ferretdb_client_responses_total{command="getFreeMonitoringStatus",opcode="OP_MSG",result="ok"} 1
+		// ferretdb_client_responses_total{command="getLog",opcode="OP_MSG",result="ok"} 1
+		// ferretdb_client_responses_total{command="getParameter",opcode="OP_MSG",result="Unset"} 1
+		// ferretdb_client_responses_total{command="hello",opcode="OP_MSG",result="ok"} 1
+		// ferretdb_client_responses_total{command="hello",opcode="OP_MSG",result="SomethingBad"} 1
+		// ferretdb_client_responses_total{command="notImplementedCommand",opcode="OP_MSG",result="CommandNotFound"} 1
+		// ferretdb_client_responses_total{command="ping",opcode="OP_MSG",result="ok"} 1
 
-		var cmd, result string
-		for _, label := range labels {
+		var command, opcode, result string
+		for _, label := range content.GetLabel() {
 			switch label.GetName() {
 			case "command":
-				cmd = label.GetValue()
+				command = label.GetValue()
 			case "opcode":
+				opcode = label.GetValue()
 			case "result":
 				result = label.GetValue()
-				results = append(results, result)
 			default:
+				panic("oops")
 			}
 		}
 
-		log.Println(cmd, result, *content.Counter.Value)
+		if opcode != "OP_MSG" {
+			continue
+		}
+
+		value := int64(content.GetCounter().GetValue())
+
+		cm := res[command]
+		cm.Total += value
+		if result != "ok" {
+			cm.Failed += value
+		}
+		res[command] = cm
+
+		log.Println(command, result, *content.Counter.Value)
 
 		if result != "ok" {
 			failed++
@@ -126,7 +150,7 @@ func (cm *ConnMetrics) Responses() map[string]CommandMetrics {
 		//	failed = v.Failed + failed
 		//}
 
-		cmdResps[cmd] = CommandMetrics{
+		cmdResps[command] = CommandMetrics{
 			Total:  int64(*content.Counter.Value),
 			Failed: failed,
 		}
