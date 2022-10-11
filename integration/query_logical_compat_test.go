@@ -19,7 +19,6 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func TestQueryLogicalCompatAnd(t *testing.T) {
@@ -31,11 +30,6 @@ func TestQueryLogicalCompatAnd(t *testing.T) {
 				"$and", bson.A{"v"},
 			}},
 			resultType: emptyResult,
-			expectedErr: mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "$or/$and/$nor entries need to be full objects",
-			},
 		},
 		"One": {
 			filter: bson.D{{
@@ -86,11 +80,7 @@ func TestQueryLogicalCompatAnd(t *testing.T) {
 				},
 			}},
 			resultType: emptyResult,
-			expectedErr: mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "$or/$and/$nor entries need to be full objects",
-			},
+			skip:       "https://github.com/FerretDB/FerretDB/issues/962",
 		},
 	}
 
@@ -106,11 +96,6 @@ func TestQueryLogicalCompatOr(t *testing.T) {
 				"$or", bson.A{"v"},
 			}},
 			resultType: emptyResult,
-			expectedErr: mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "$or/$and/$nor entries need to be full objects",
-			},
 		},
 		"One": {
 			filter: bson.D{{
@@ -150,11 +135,6 @@ func TestQueryLogicalCompatOr(t *testing.T) {
 				},
 			}},
 			resultType: emptyResult,
-			expectedErr: mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "$or/$and/$nor entries need to be full objects",
-			},
 		},
 	}
 
@@ -170,11 +150,6 @@ func TestQueryLogicalCompatNor(t *testing.T) {
 				"$nor", bson.A{"v"},
 			}},
 			resultType: emptyResult,
-			expectedErr: mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "$or/$and/$nor entries need to be full objects",
-			},
 		},
 		"One": {
 			filter: bson.D{{
