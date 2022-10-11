@@ -67,12 +67,9 @@ func (p *Provider) Get() (*State, error) {
 		return &s, nil
 	}
 
-	// happy path: try to read UUID, ignore all errors
-
 	b, _ := os.ReadFile(p.filename)
 	_ = json.Unmarshal(b, &s)
-
-	if s.UUID != "" {
+	if _, err := uuid.Parse(s.UUID); err == nil {
 		// store a copy
 		p.rw.Lock()
 		p.s = s
@@ -81,7 +78,8 @@ func (p *Provider) Get() (*State, error) {
 		return &s, nil
 	}
 
-	// regenerate and save UUID if any error occurred
+	// all errors (missing file, invalid file permission, invalid JSON, etc)
+	// are handled in the same way - by regenerating state
 
 	s.UUID = must.NotFail(uuid.NewRandom()).String()
 	b = must.NotFail(json.Marshal(s))
