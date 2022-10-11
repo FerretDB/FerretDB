@@ -838,6 +838,72 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("internalViews")))
 }
 
+func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
+	setup.SkipForTigris(t)
+
+	for name, tc := range map[string]struct {
+		cmds        []bson.D
+		metricsPath types.Path
+		expected    *types.Document
+	}{
+		"ping": {
+			cmds: []bson.D{
+				bson.D{{"ping", int32(1)}},
+			},
+			metricsPath: types.NewPath([]string{"metrics", "commands", "ping"}),
+			expected:    must.NotFail(types.NewDocument("total", int64(2), "failed", int64(0))),
+		},
+		"multiplePing": {
+			cmds: []bson.D{
+				bson.D{{"ping", int32(1)}},
+				bson.D{{"ping", int32(1)}},
+				bson.D{{"ping", int32(1)}},
+				bson.D{{"ping", int32(1)}},
+			},
+			metricsPath: types.NewPath([]string{"metrics", "commands", "ping"}),
+			expected:    must.NotFail(types.NewDocument("total", int64(5), "failed", int64(0))),
+		},
+		"updatePass": {
+			cmds: []bson.D{
+				bson.D{{"update", "values"}, {"updates", bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}}}}},
+				bson.D{{"update", "values"}, {"updates", bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}}}}},
+			},
+			metricsPath: types.NewPath([]string{"metrics", "commands", "update"}),
+			expected:    must.NotFail(types.NewDocument("arrayFilters", int64(0), "failed", int64(0), "pipeline", int64(0), "total", int64(2))),
+		},
+		"updateFail": {
+			cmds: []bson.D{
+				bson.D{{"update", int32(1)}},
+				bson.D{{"update", int32(1)}},
+			},
+			metricsPath: types.NewPath([]string{"metrics", "commands", "update"}),
+			expected:    must.NotFail(types.NewDocument("arrayFilters", int64(0), "failed", int64(2), "pipeline", int64(0), "total", int64(2))),
+		},
+		// TODO: https://github.com/FerretDB/FerretDB/issues/9
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			ctx, collection := setup.Setup(t)
+
+			for _, cmd := range tc.cmds {
+				collection.Database().RunCommand(ctx, cmd)
+			}
+
+			command := bson.D{{"serverStatus", int32(1)}}
+
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+			require.NoError(t, err)
+
+			actualMetric, err := ConvertDocument(t, actual).GetByPath(tc.metricsPath)
+			assert.NoError(t, err)
+
+			assert.Equal(t, tc.expected, actualMetric)
+		})
+	}
+
+}
+
 // TestCommandsAdministrationWhatsMyURI tests the `whatsmyuri` command.
 // It connects two clients to the same server and checks that `whatsmyuri` returns different ports for these clients.
 func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
