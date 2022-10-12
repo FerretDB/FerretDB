@@ -19,7 +19,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn"
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -27,7 +27,7 @@ import (
 )
 
 // ServerStatus returns a common part of serverStatus command response.
-func ServerStatus(startTime time.Time, cm *clientconn.ConnMetrics) (*types.Document, error) {
+func ServerStatus(startTime time.Time, cm *connmetrics.ConnMetrics) (*types.Document, error) {
 	host, err := os.Hostname()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -46,9 +46,9 @@ func ServerStatus(startTime time.Time, cm *clientconn.ConnMetrics) (*types.Docum
 	for cmd, cmdMetrics := range metrics {
 		var cmdDoc *types.Document
 		switch cmdMetrics := cmdMetrics.(type) {
-		case clientconn.UpdateCommandMetrics:
+		case connmetrics.UpdateCommandMetrics:
 			cmdDoc = must.NotFail(types.NewDocument("arrayFilters", cmdMetrics.ArrayFilters, "failed", cmdMetrics.Failed, "pipeline", cmdMetrics.Pipeline, "total", cmdMetrics.Total))
-		case clientconn.BasicCommandMetrics:
+		case connmetrics.BasicCommandMetrics:
 			cmdDoc = must.NotFail(types.NewDocument("total", cmdMetrics.Total, "failed", cmdMetrics.Failed))
 		}
 
