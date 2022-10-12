@@ -14,7 +14,7 @@ require (
 	github.com/reviewdog/reviewdog v0.14.1
 	golang.org/x/perf v0.0.0-20220920022801-e8d778a60d07
 	golang.org/x/tools v0.1.13-0.20220928184430-f80e98464e27
-	golang.org/x/vuln v0.0.0-20221006005703-27389ae96df4
+	golang.org/x/vuln v0.0.0-20221010225617-fdec20da070d
 	mvdan.cc/gofumpt v0.4.0
 )
 
@@ -240,7 +240,7 @@ require (
 	golang.org/x/sync v0.0.0-20220819030929-7fc1605a5dde // indirect
 	golang.org/x/sys v0.0.0-20220829200755-d48e67d00261 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/text v0.3.8 // indirect
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
 	golang.org/x/xerrors v0.0.0-20220517211312-f3a8303e98df // indirect
 	google.golang.org/api v0.81.0 // indirect
