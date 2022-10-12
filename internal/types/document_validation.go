@@ -35,11 +35,6 @@ func (e *ValidationError) Error() string {
 	return fmt.Sprintf("Invalid document, reason: %s.", e.reason)
 }
 
-// Unwrap implements an interfaces needed for errors.Unwrap.
-func (e *ValidationError) Unwrap() error {
-	return e.reason
-}
-
 // ValidateData checks if the document represents a valid "data document".
 // If the document is not valid it returns *ValidationError.
 func (d *Document) ValidateData() error {
