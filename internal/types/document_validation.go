@@ -22,22 +22,22 @@ import (
 
 // ValidationError describes an error that could occur when validating a document.
 type ValidationError struct {
-	Reason error
+	reason error
 }
 
 // newValidationError creates a new ValidationError.
 func newValidationError(reason error) error {
-	return &ValidationError{Reason: reason}
+	return &ValidationError{reason: reason}
 }
 
 // Error implements the error interface.
 func (e *ValidationError) Error() string {
-	return fmt.Sprintf("Invalid document, reason: %s.", e.Reason)
+	return fmt.Sprintf("Invalid document, reason: %s.", e.reason)
 }
 
 // Unwrap implements an interfaces needed for errors.Unwrap.
 func (e *ValidationError) Unwrap() error {
-	return e.Reason
+	return e.reason
 }
 
 // ValidateData checks if the document represents a valid "data document".
