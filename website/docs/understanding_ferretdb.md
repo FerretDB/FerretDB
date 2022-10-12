@@ -9,7 +9,7 @@ Unlike relational databases, which use tables, rows, and columns to define the s
 
 Document databases can collect, store, and retrieve any data type.
 In FerretDB, data is stored as [BSON](https://bsonspec.org/spec.html) - a binary representation of JSON - so you can store more types of data than in regular JSON.
-However, we do not currently support "128-bit decimal floating points".
+However, we do not currently support 128-bit decimal floating point values.
 
 Before inserting data into a document, you do not need to declare a schema.
 That makes it ideal for applications and workloads requiring flexible schemas, such as blogs, chat apps, and video games.
