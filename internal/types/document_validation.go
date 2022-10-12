@@ -25,8 +25,8 @@ type ValidationError struct {
 	Reason error
 }
 
-// NewValidationError creates a new ValidationError.
-func NewValidationError(reason error) error {
+// newValidationError creates a new ValidationError.
+func newValidationError(reason error) error {
 	return &ValidationError{Reason: reason}
 }
 
@@ -48,16 +48,17 @@ var (
 )
 
 // ValidateData checks if the document represents a valid "data document".
+// If the document is not valid it returns *ValidationError.
 func (d *Document) ValidateData() error {
 	// The following bloc should be used to checks that keys are valid.
 	// All further key related validation rules should be added here.
 	for _, key := range d.keys {
 		if !utf8.ValidString(key) {
-			return fmt.Errorf("%w: %q (not a valid UTF-8 string)", ErrInvalidKey, key)
+			return newValidationError(fmt.Errorf("%w: %q (not a valid UTF-8 string)", ErrInvalidKey, key))
 		}
 
 		if strings.Contains(key, "$") {
-			return fmt.Errorf("%w: %q (key mustn't contain $)", ErrInvalidKey, key)
+			return newValidationError(fmt.Errorf("%w: %q (key mustn't contain $)", ErrInvalidKey, key))
 		}
 	}
 
