@@ -199,10 +199,10 @@ var cli struct {
 func main() {
 	ctx := kong.Parse(&cli)
 
-	logging.Setup(zap.InfoLevel)
+	logging.Setup(zap.InfoLevel, "")
 
 	if cli.Debug {
-		logging.Setup(zap.DebugLevel)
+		logging.Setup(zap.DebugLevel, "")
 	}
 
 	logger := zap.S()
