@@ -20,17 +20,24 @@ import (
 	"unicode/utf8"
 )
 
+// Errors might be wrapped, so the caller needs to use errors.Is to check the error,
+// for example, errors.Is(err, ErrInvalidKey).
+var (
+	// ErrInvalidKey indicates that a key didn't passed checks.
+	ErrInvalidKey = fmt.Errorf("invalid key")
+)
+
 // ValidateData checks if the document represents a valid "data document".
 func (d *Document) ValidateData() error {
 	// The following bloc should be used to checks that keys are valid.
 	// All further key related validation rules should be added here.
 	for _, key := range d.keys {
 		if !utf8.ValidString(key) {
-			return fmt.Errorf("invalid key: %q (not a valid UTF-8 string)", key)
+			return fmt.Errorf("%w: %q (not a valid UTF-8 string)", ErrInvalidKey, key)
 		}
 
 		if strings.Contains(key, "$") {
-			return fmt.Errorf("invalid key: %q (the key mustn't contain $)", key)
+			return fmt.Errorf("%w: %q (the key mustn't contain $)", ErrInvalidKey, key)
 		}
 	}
 
