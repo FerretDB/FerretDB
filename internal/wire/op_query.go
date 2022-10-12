@@ -40,6 +40,7 @@ type OpQuery struct {
 
 func (query *OpQuery) msgbody() {}
 
+// readFrom composes an OpQuery from a buffered reader.
 func (query *OpQuery) readFrom(bufr *bufio.Reader) error {
 	if err := binary.Read(bufr, binary.LittleEndian, &query.Flags); err != nil {
 		return lazyerrors.Errorf("wire.OpQuery.ReadFrom (binary.Read): %w", err)
