@@ -224,14 +224,13 @@ func fuzzJSON(f *testing.F, testCases []testCase) {
 	for _, tc := range testCases {
 		f.Add(tc.j)
 		if tc.canonJ != "" {
-			f.Add(tc.canonJ)
+			f.Add(tc.canonJ, testCases[0].schema)
 		}
 	}
 
 	// TODO Add fuzzing for schema https://github.com/FerretDB/FerretDB/issues/943
-	schema := testCases[0].schema
 
-	f.Fuzz(func(t *testing.T, j string) {
+	f.Fuzz(func(t *testing.T, j string, schema *Schema) {
 		t.Parallel()
 
 		// raw "null" should never reach UnmarshalJSON due to the way encoding/json works
