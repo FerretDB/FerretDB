@@ -32,8 +32,7 @@ type ConnMetrics struct {
 	aggregationStages *prometheus.CounterVec
 }
 
-type CommandMetrics interface {
-}
+type CommandMetrics interface{}
 
 type BasicCommandMetrics struct {
 	Failed int64
@@ -99,7 +98,6 @@ func (cm *ConnMetrics) Responses() map[string]CommandMetrics {
 
 	// initialize commands in the map to show zero values in the metrics output
 	for k := range common.Commands {
-
 		// update related operators have more fields in the output
 		switch k {
 		case "update", "clusterUpdate", "findAndModify":
