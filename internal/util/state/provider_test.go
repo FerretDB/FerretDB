@@ -23,7 +23,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestState(t *testing.T) {
+func TestProvider(t *testing.T) {
+	t.Parallel()
+
 	filename := filepath.Join(t.TempDir(), "state.json")
 	p1, err := NewProvider(filename)
 	require.NoError(t, err)

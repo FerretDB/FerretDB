@@ -42,14 +42,16 @@ import (
 var cli struct {
 	ListenAddr string `default:"127.0.0.1:27017"      help:"Listen address."`
 	ProxyAddr  string `default:"127.0.0.1:37017"      help:"Proxy address."`
-	DebugAddr  string `default:"127.0.0.1:8088"       help:"Debug address."`
+	DebugAddr  string `default:"127.0.0.1:8088"       help:"${help_debug_addr}"`
 	StateDir   string `default:"."                    help:"Process state directory."`
 	Mode       string `default:"${default_mode}"      help:"${help_mode}"             enum:"${enum_mode}"`
 
 	Log struct {
 		Level string `default:"${default_log_level}" help:"${help_log_level}"`
-		UUID  bool   `default:"false"                help:"Add instance UUID to log messages."`
+		UUID  bool   `default:"false"                help:"Add instance UUID to all log messages."`
 	} `embed:"" prefix:"log-"`
+
+	MetricsUUID bool `default:"false" help:"Add instance UUID to all metrics messages."`
 
 	Handler string `default:"pg" help:"${help_handler}"`
 
@@ -80,6 +82,7 @@ var (
 			"default_log_level": zap.DebugLevel.String(),
 			"default_mode":      clientconn.AllModes[0],
 
+			"help_debug_addr": "Debug address for /debug/metrics, /debug/pprof, and similar HTTP handlers.",
 			"help_log_level": fmt.Sprintf(
 				"Log level: '%s'. Debug level also enables development mode.",
 				strings.Join(logLevels, "', '"),
@@ -107,24 +110,14 @@ func main() {
 	run()
 }
 
-// run sets up environment based on provided flags and runs FerretDB.
-func run() {
-	info := version.Get()
-
-	if cli.Version {
-		fmt.Fprintln(os.Stdout, "version:", info.Version)
-		fmt.Fprintln(os.Stdout, "commit:", info.Commit)
-		fmt.Fprintln(os.Stdout, "branch:", info.Branch)
-		fmt.Fprintln(os.Stdout, "dirty:", info.Dirty)
-		return
-	}
-
-	stateFile, err := filepath.Abs(filepath.Join(cli.StateDir, "state.json"))
+// setupState setups state provider.
+func setupState() (*state.Provider, string) {
+	f, err := filepath.Abs(filepath.Join(cli.StateDir, "state.json"))
 	if err != nil {
 		log.Fatalf("Failed to get path for state file: %s.", err)
 	}
 
-	p, err := state.NewProvider(stateFile)
+	p, err := state.NewProvider(f)
 	if err != nil {
 		log.Fatalf("Failed to create state provider: %s.", err)
 	}
@@ -134,12 +127,34 @@ func run() {
 		log.Fatalf("Failed to get state: %s.", err)
 	}
 
-	level, err := zapcore.ParseLevel(cli.Log.Level)
-	if err != nil {
-		log.Fatal(err)
+	return p, s.UUID
+}
+
+// setupMetrics setups Prometheus metrics registerer with some metrics.
+func setupMetrics(stateProvider *state.Provider, uuid string) prometheus.Registerer {
+	r := prometheus.WrapRegistererWith(
+		prometheus.Labels{"uuid": uuid},
+		prometheus.DefaultRegisterer,
+	)
+	m := stateProvider.MetricsCollector(false)
+
+	// Unless requested, don't add UUID to all metrics, but add it to one.
+	// See https://prometheus.io/docs/instrumenting/writing_exporters/#target-labels-not-static-scraped-labels
+	if !cli.MetricsUUID {
+		r = prometheus.DefaultRegisterer
+		m = stateProvider.MetricsCollector(true)
 	}
 
-	logUUID := s.UUID
+	r.MustRegister(m)
+
+	return r
+}
+
+// setupLogger setups zap logger.
+func setupLogger(uuid string) *zap.Logger {
+	info := version.Get()
+
+	logUUID := uuid
 	startupFields := []zap.Field{
 		zap.String("version", info.Version),
 		zap.String("commit", info.Commit),
@@ -149,16 +164,43 @@ func run() {
 		zap.Reflect("buildEnvironment", info.BuildEnvironment.Map()),
 	}
 
-	// don't add UUID to all messages, but log it once at startup
+	// Similarly to Prometheus, unless requested, don't add UUID to all messages, but log it once at startup.
 	if !cli.Log.UUID {
 		logUUID = ""
-		startupFields = append(startupFields, zap.String("uuid", s.UUID))
+		startupFields = append(startupFields, zap.String("uuid", uuid))
+	}
+
+	level, err := zapcore.ParseLevel(cli.Log.Level)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	logging.Setup(level, logUUID)
-	logger := zap.L()
+	l := zap.L()
 
-	logger.Info("Starting FerretDB "+info.Version+"...", startupFields...)
+	l.Info("Starting FerretDB "+info.Version+"...", startupFields...)
+
+	return l
+}
+
+// run sets up environment based on provided flags and runs FerretDB.
+func run() {
+	if cli.Version {
+		info := version.Get()
+
+		fmt.Fprintln(os.Stdout, "version:", info.Version)
+		fmt.Fprintln(os.Stdout, "commit:", info.Commit)
+		fmt.Fprintln(os.Stdout, "branch:", info.Branch)
+		fmt.Fprintln(os.Stdout, "dirty:", info.Dirty)
+
+		return
+	}
+
+	stateProvider, uuid := setupState()
+
+	metricsRegisterer := setupMetrics(stateProvider, uuid)
+
+	logger := setupLogger(uuid)
 
 	ctx, stop := notifyAppTermination(context.Background())
 	go func() {
@@ -167,7 +209,7 @@ func run() {
 		stop()
 	}()
 
-	go debug.RunHandler(ctx, cli.DebugAddr, logger.Named("debug"))
+	go debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, logger.Named("debug"))
 
 	h, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
 		Ctx:    ctx,
@@ -195,7 +237,7 @@ func run() {
 		TestRecordsDir:  cli.Test.RecordsDir,
 	})
 
-	prometheus.DefaultRegisterer.MustRegister(l)
+	metricsRegisterer.MustRegister(l)
 
 	err = l.Run(ctx)
 	if err == nil || err == context.Canceled {
