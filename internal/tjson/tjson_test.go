@@ -227,10 +227,12 @@ func fuzzJSON(f *testing.F, testCases []testCase) {
 			f.Fatalf("failed to marshal schema: %v", err)
 		}
 
-		f.Add(tc.j)
+		f.Log("schema", string(schema))
+
+		f.Add(tc.j, string(schema))
 
 		if tc.canonJ != "" {
-			f.Add(tc.canonJ, schema)
+			f.Add(tc.canonJ, string(schema))
 		}
 	}
 
@@ -244,11 +246,11 @@ func fuzzJSON(f *testing.F, testCases []testCase) {
 			t.Skip()
 		}
 
-		var s *Schema
+		s := new(Schema)
 
 		err := s.Unmarshal([]byte(schema))
 		if err != nil {
-			panic(err)
+			t.Fatal(err, schema)
 		}
 
 		// j may not be a canonical form.
