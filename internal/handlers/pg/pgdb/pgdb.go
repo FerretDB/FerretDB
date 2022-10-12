@@ -17,7 +17,7 @@ package pgdb
 
 import "fmt"
 
-// Errors are wrapped with lazyerrors.Error,
+// Errors might be wrapped with lazyerrors.Error,
 // so the caller needs to use errors.Is to check the error,
 // for example, errors.Is(err, ErrSchemaNotExist).
 var (
@@ -35,4 +35,7 @@ var (
 
 	// ErrInvalidDatabaseName indicates that a database name didn't passed checks.
 	ErrInvalidDatabaseName = fmt.Errorf("invalid database/schema name")
+
+	// ErrInvalidDocument indicates that a document didn't passed checks.
+	ErrInvalidDocument = fmt.Errorf("invalid document")
 )

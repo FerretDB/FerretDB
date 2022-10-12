@@ -16,6 +16,7 @@ package pgdb
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/jackc/pgx/v4"
@@ -28,7 +29,7 @@ import (
 // SetDocumentByID sets a document by its ID.
 func SetDocumentByID(ctx context.Context, tx pgx.Tx, sp *SQLParam, id any, doc *types.Document) (int64, error) {
 	if err := doc.ValidateData(); err != nil {
-		// TODO
+		return 0, fmt.Errorf("%w: %s", ErrInvalidDocument, err)
 	}
 
 	table, err := getTableName(ctx, tx, sp.DB, sp.Collection)
