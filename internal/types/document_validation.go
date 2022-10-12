@@ -20,18 +20,22 @@ import (
 	"unicode/utf8"
 )
 
+// ValidationError describes an error that could occur when validating a document.
 type ValidationError struct {
 	Reason error
 }
 
+// NewValidationError creates a new ValidationError.
 func NewValidationError(reason error) error {
 	return &ValidationError{Reason: reason}
 }
 
+// Error implements the error interface.
 func (e *ValidationError) Error() string {
 	return fmt.Sprintf("Invalid document, reason: %s.", e.Reason)
 }
 
+// Unwrap implements an interfaces needed for errors.Unwrap.
 func (e *ValidationError) Unwrap() error {
 	return e.Reason
 }
