@@ -43,7 +43,7 @@ This operation updates all the documents where the field `nobel` was previously 
 
 ## Replace a document
 
-Besides updating a documenting, you can also replace it completely using the `replaceOne()` method.
+Besides updating a document, you can replace it completely using the `replaceOne()` method.
 
 ```sh
 db.league.replaceOne({lastname: "Bell"}, {firstname: "Albert", lastname: "Einstein", born: 1879, invention: "Quantum Theory", nobel:true})
