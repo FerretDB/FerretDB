@@ -30,7 +30,7 @@ func (d *Document) ValidateData() error {
 		}
 
 		if strings.Contains(key, "$") {
-			return fmt.Errorf("invalid key: %q (the key mustn't contain a string)", key)
+			return fmt.Errorf("invalid key: %q (the key mustn't contain $)", key)
 		}
 	}
 
