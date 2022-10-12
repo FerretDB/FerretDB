@@ -34,6 +34,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/proxy"
@@ -73,7 +74,7 @@ type conn struct {
 	mode           Mode
 	l              *zap.SugaredLogger
 	h              handlers.Interface
-	m              *ConnMetrics
+	m              *connmetrics.ConnMetrics
 	proxy          *proxy.Router
 	lastRequestID  int32
 	testRecordsDir string // if empty, no records are created
@@ -85,7 +86,7 @@ type newConnOpts struct {
 	mode           Mode
 	l              *zap.Logger
 	handler        handlers.Interface
-	connMetrics    *ConnMetrics
+	connMetrics    *connmetrics.ConnMetrics
 	proxyAddr      string
 	testRecordsDir string // if empty, no records are created
 }

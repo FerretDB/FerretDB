@@ -31,6 +31,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
@@ -90,7 +92,12 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 	tb.Helper()
 
-	metrics := clientconn.NewListenerMetrics()
+	cmds := make([]string, len(common.Commands))
+	for k := range common.Commands {
+		cmds = append(cmds, k)
+	}
+
+	metrics := connmetrics.NewListenerMetrics(cmds)
 
 	h, err := registry.NewHandler(*handlerF, &registry.NewHandlerOpts{
 		Ctx:           ctx,

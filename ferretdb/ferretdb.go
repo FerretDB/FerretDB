@@ -24,6 +24,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 )
@@ -71,7 +73,12 @@ func New(config *Config) (*FerretDB, error) {
 //
 // When this method returns, listener and all connections are closed.
 func (f *FerretDB) Run(ctx context.Context) error {
-	metrics := clientconn.NewListenerMetrics()
+	cmds := make([]string, len(common.Commands))
+	for k := range common.Commands {
+		cmds = append(cmds, k)
+	}
+
+	metrics := connmetrics.NewListenerMetrics(cmds)
 
 	newOpts := registry.NewHandlerOpts{
 		Ctx:     context.Background(),

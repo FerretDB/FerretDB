@@ -23,7 +23,7 @@ import (
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn"
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/dummy"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg"
@@ -44,7 +44,7 @@ type NewHandlerOpts struct {
 	// for all handlers
 	Ctx     context.Context
 	Logger  *zap.Logger
-	Metrics *clientconn.ConnMetrics
+	Metrics *connmetrics.ConnMetrics
 
 	// for `pg` handler
 	PostgreSQLURL string
