@@ -35,7 +35,4 @@ var (
 
 	// ErrInvalidDatabaseName indicates that a database name didn't passed checks.
 	ErrInvalidDatabaseName = fmt.Errorf("invalid database/schema name")
-
-	// ErrInvalidDocument indicates that a document didn't passed checks.
-	ErrInvalidDocument = fmt.Errorf("invalid document")
 )

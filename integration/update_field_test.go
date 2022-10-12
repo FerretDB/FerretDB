@@ -1529,7 +1529,7 @@ func TestUpdateFieldInvalid(t *testing.T) {
 		"KeyIsNotUTF8": {
 			update: bson.D{
 				//  the key is out of range for UTF-8
-				{"$set", bson.D{{string("\xF4\x90\x80\x80"), int32(12)}}},
+				{"$set", bson.D{{"\xF4\x90\x80\x80", int32(12)}}},
 			},
 			expectedErr: &mongo.CommandError{
 				Code:    2,

@@ -113,7 +113,8 @@ func (h *Handler) insert(ctx context.Context, tx pgx.Tx, sp *pgdb.SQLParam, doc 
 		return nil
 	}
 
-	if errors.Is(pgdb.ErrInvalidDocument, err) {
+	var valErr *types.ValidationError
+	if errors.As(err, &valErr) {
 		return common.NewErrorMsg(common.ErrBadValue, err.Error())
 	}
 
