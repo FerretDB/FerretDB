@@ -20,6 +20,22 @@ import (
 	"unicode/utf8"
 )
 
+type ValidationError struct {
+	Reason error
+}
+
+func NewValidationError(reason error) error {
+	return &ValidationError{Reason: reason}
+}
+
+func (e *ValidationError) Error() string {
+	return fmt.Sprintf("Invalid document, reason: %s", e.Reason)
+}
+
+func (e *ValidationError) Unwrap() error {
+	return e.Reason
+}
+
 // Errors might be wrapped, so the caller needs to use errors.Is to check the error,
 // for example, errors.Is(err, ErrInvalidKey).
 var (

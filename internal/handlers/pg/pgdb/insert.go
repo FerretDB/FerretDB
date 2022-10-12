@@ -17,7 +17,6 @@ package pgdb
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/jackc/pgx/v4"
 
@@ -31,7 +30,7 @@ import (
 // If database or collection does not exist, it will be created.
 func InsertDocument(ctx context.Context, tx pgx.Tx, db, collection string, doc *types.Document) error {
 	if err := doc.ValidateData(); err != nil {
-		return fmt.Errorf("%w: %s", ErrInvalidDocument, err)
+		return types.NewValidationError(err)
 	}
 
 	exists, err := CollectionExists(ctx, tx, db, collection)

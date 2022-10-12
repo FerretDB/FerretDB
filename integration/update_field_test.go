@@ -1515,3 +1515,46 @@ func TestUpdateDocumentFieldsOrderSimplified(t *testing.T) {
 
 	AssertEqualDocuments(t, expected, updated)
 }
+
+// TestUpdateFieldInvalid tries to update a document and set invalid data.
+func TestUpdateFieldInvalid(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1248")
+
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		update      bson.D
+		expectedErr *mongo.WriteError
+	}{
+		"KeyIsNotUTF8": {
+			update: bson.D{
+				//  the key is out of range for UTF-8
+				{"$set", bson.D{{string("\xF4\x90\x80\x80"), int32(12)}}},
+			},
+			expectedErr: &mongo.WriteError{
+				Code:    9,
+				Message: "Unknown modifier: $foo. Expected a valid update modifier or pipeline-style update specified as an array",
+			},
+		},
+		"KeyContains$": {
+			update: bson.D{
+				{"$set", bson.D{{"v$", int32(12)}}},
+			},
+			expectedErr: &mongo.WriteError{
+				Code:    9,
+				Message: "Unknown modifier: $foo. Expected a valid update modifier or pipeline-style update specified as an array",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup.Setup(t, shareddata.Int32s)
+
+			res, err := collection.UpdateOne(ctx, bson.D{}, tc.update)
+			require.Nil(t, res)
+			require.NotNil(t, err)
+			AssertEqualWriteError(t, *tc.expectedErr, err)
+		})
+	}
+}
