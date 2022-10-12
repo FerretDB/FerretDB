@@ -17,7 +17,7 @@ package pgdb
 
 import "fmt"
 
-// Errors might be wrapped with lazyerrors.Error,
+// Errors are wrapped with lazyerrors.Error,
 // so the caller needs to use errors.Is to check the error,
 // for example, errors.Is(err, ErrSchemaNotExist).
 var (
