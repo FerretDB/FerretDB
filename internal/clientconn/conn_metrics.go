@@ -96,7 +96,11 @@ func (cm *ConnMetrics) Collect(ch chan<- prometheus.Metric) {
 
 func (cm *ConnMetrics) Responses() map[string]CommandMetrics {
 	res := make(map[string]CommandMetrics)
+
+	// initialize commands in the map to show zero values in the metrics output
 	for k := range common.Commands {
+
+		// update related operators have more fields in the output
 		switch k {
 		case "update", "clusterUpdate", "findAndModify":
 			res[k] = UpdateCommandMetrics{}
@@ -152,6 +156,7 @@ func (cm *ConnMetrics) Responses() map[string]CommandMetrics {
 				cm.Failed += value
 			}
 			cm.Pipeline += int64(stage)
+			// TODO: add metrics for arrayFilters
 			res[command] = cm
 		case BasicCommandMetrics:
 			cm.Total += value
