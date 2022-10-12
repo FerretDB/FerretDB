@@ -29,6 +29,10 @@ import (
 // InsertDocument inserts a document into FerretDB database and collection.
 // If database or collection does not exist, it will be created.
 func InsertDocument(ctx context.Context, tx pgx.Tx, db, collection string, doc *types.Document) error {
+	if err := doc.ValidateData(); err != nil {
+		// TODO
+	}
+
 	exists, err := CollectionExists(ctx, tx, db, collection)
 	if err != nil {
 		return err
