@@ -21,6 +21,7 @@ import (
 	"github.com/tigrisdata/tigris-client-go/config"
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
@@ -46,6 +47,7 @@ type Handler struct {
 	*NewOpts
 	db        *tigrisdb.TigrisDB
 	startTime time.Time
+	metrics   *connmetrics.ConnMetrics
 }
 
 // New returns a new handler.

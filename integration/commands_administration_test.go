@@ -841,6 +841,8 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 	setup.SkipForTigris(t)
 
+	t.Parallel()
+
 	for name, tc := range map[string]struct {
 		cmds        []bson.D
 		metricsPath types.Path
@@ -883,6 +885,8 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			ctx, collection := setup.Setup(t)
 
 			for _, cmd := range tc.cmds {

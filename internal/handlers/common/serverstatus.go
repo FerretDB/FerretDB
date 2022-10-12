@@ -42,7 +42,7 @@ func ServerStatus(startTime time.Time, cm *connmetrics.ConnMetrics) (*types.Docu
 
 	metricsDoc := types.MakeDocument(0)
 
-	metrics := cm.Responses()
+	metrics := cm.GetResponses()
 	for cmd, cmdMetrics := range metrics {
 		var cmdDoc *types.Document
 		switch cmdMetrics := cmdMetrics.(type) {

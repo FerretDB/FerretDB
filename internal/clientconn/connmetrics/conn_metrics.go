@@ -26,9 +26,9 @@ import (
 
 // ConnMetrics represents conn metrics.
 type ConnMetrics struct {
-	requests          *prometheus.CounterVec
-	responses         *prometheus.CounterVec
-	aggregationStages *prometheus.CounterVec
+	Requests          *prometheus.CounterVec
+	Responses         *prometheus.CounterVec
+	AggregationStages *prometheus.CounterVec
 
 	cmds []string
 }
@@ -53,7 +53,7 @@ type UpdateCommandMetrics struct {
 // After providing them, they will be set with the zero values.
 func newConnMetrics(cmds []string) *ConnMetrics {
 	return &ConnMetrics{
-		requests: prometheus.NewCounterVec(
+		Requests: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: namespace,
 				Subsystem: subsystem,
@@ -62,7 +62,7 @@ func newConnMetrics(cmds []string) *ConnMetrics {
 			},
 			[]string{"opcode", "command"},
 		),
-		responses: prometheus.NewCounterVec(
+		Responses: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: namespace,
 				Subsystem: subsystem,
@@ -71,7 +71,7 @@ func newConnMetrics(cmds []string) *ConnMetrics {
 			},
 			[]string{"opcode", "command", "result"},
 		),
-		aggregationStages: prometheus.NewCounterVec(
+		AggregationStages: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: namespace,
 				Subsystem: subsystem,
@@ -86,19 +86,19 @@ func newConnMetrics(cmds []string) *ConnMetrics {
 
 // Describe implements prometheus.Collector.
 func (cm *ConnMetrics) Describe(ch chan<- *prometheus.Desc) {
-	cm.requests.Describe(ch)
-	cm.responses.Describe(ch)
-	cm.aggregationStages.Describe(ch)
+	cm.Requests.Describe(ch)
+	cm.Responses.Describe(ch)
+	cm.AggregationStages.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
 func (cm *ConnMetrics) Collect(ch chan<- prometheus.Metric) {
-	cm.requests.Collect(ch)
-	cm.responses.Collect(ch)
-	cm.aggregationStages.Collect(ch)
+	cm.Requests.Collect(ch)
+	cm.Responses.Collect(ch)
+	cm.AggregationStages.Collect(ch)
 }
 
-func (cm *ConnMetrics) Responses() map[string]CommandMetrics {
+func (cm *ConnMetrics) GetResponses() map[string]CommandMetrics {
 	res := make(map[string]CommandMetrics)
 
 	// initialize commands in the map to show zero values in the metrics output
@@ -114,8 +114,8 @@ func (cm *ConnMetrics) Responses() map[string]CommandMetrics {
 
 	ch := make(chan prometheus.Metric)
 	go func() {
-		cm.responses.Collect(ch)
-		cm.aggregationStages.Collect(ch)
+		cm.Responses.Collect(ch)
+		cm.AggregationStages.Collect(ch)
 		close(ch)
 	}()
 

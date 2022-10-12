@@ -296,19 +296,19 @@ func (c *conn) run(ctx context.Context) (err error) {
 // Handlers to which it routes, should not panic on bad input, but may do so in "impossible" cases.
 // They also should not use recover(). That allows us to use fuzzing.
 func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
-	requests := c.m.requests.MustCurryWith(prometheus.Labels{"opcode": reqHeader.OpCode.String()})
+	requests := c.m.Requests.MustCurryWith(prometheus.Labels{"opcode": reqHeader.OpCode.String()})
 	var command string
 	var result *string
 	defer func() {
 		if result == nil {
 			result = pointer.ToString("panic")
 		}
-		c.m.responses.WithLabelValues(resHeader.OpCode.String(), command, *result).Inc()
+		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, *result).Inc()
 	}()
 
 	connInfo := &conninfo.ConnInfo{
 		PeerAddr:          c.netConn.RemoteAddr(),
-		AggregationStages: c.m.aggregationStages,
+		AggregationStages: c.m.AggregationStages,
 	}
 	ctx, cancel := context.WithCancel(conninfo.WithConnInfo(ctx, connInfo))
 	defer cancel()
