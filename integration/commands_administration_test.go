@@ -897,11 +897,7 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 			ctx, collection := setup.Setup(t)
 
 			for _, cmd := range tc.cmds {
-				var res bson.D
-				err := collection.Database().RunCommand(ctx, cmd).Decode(&res)
-				if err != nil {
-					panic(err)
-				}
+				collection.Database().RunCommand(ctx, cmd)
 			}
 
 			command := bson.D{{"serverStatus", int32(1)}}

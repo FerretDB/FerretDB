@@ -141,6 +141,10 @@ func (cm *ConnMetrics) Responses() map[string]CommandMetrics {
 		value := int64(content.GetCounter().GetValue())
 
 		cm := res[command]
+		if cm == nil {
+			cm = BasicCommandMetrics{}
+		}
+
 		switch cm := cm.(type) {
 		case UpdateCommandMetrics:
 			cm.Total += value
@@ -156,7 +160,7 @@ func (cm *ConnMetrics) Responses() map[string]CommandMetrics {
 			}
 			res[command] = cm
 		default:
-			panic("Invalid command metric type")
+			panic(fmt.Sprintf("Invalid command metric type: %T", cm))
 		}
 	}
 
