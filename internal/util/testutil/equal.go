@@ -42,7 +42,7 @@ func AssertEqual[T types.Type](tb testing.TB, expected, actual T) bool {
 	return assert.Fail(tb, msg)
 }
 
-// AssertEqual asserts that two BSON slices are equal.
+// AssertEqualSlices asserts that two BSON slices are equal.
 func AssertEqualSlices[T types.Type](tb testing.TB, expected, actual []T) bool {
 	tb.Helper()
 

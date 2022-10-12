@@ -15,7 +15,6 @@
 package types
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -55,13 +54,6 @@ func TestDocument(t *testing.T) {
 		value, err := doc.Get("foo")
 		assert.NoError(t, err)
 		assert.Equal(t, Null, value)
-
-		err = doc.Set("bar", 42)
-		assert.EqualError(t, err, `types.Document.validate: types.validateValue: unsupported type: int (42)`)
-
-		err = doc.Set("bar", nil)
-		assert.EqualError(t, err, `types.Document.validate: types.validateValue: unsupported type: <nil> (<nil>)`)
-
 		assert.Equal(t, "foo", doc.Command())
 	})
 
@@ -71,10 +63,6 @@ func TestDocument(t *testing.T) {
 		doc, err := NewDocument(42, 42)
 		assert.Nil(t, doc)
 		assert.EqualError(t, err, `types.NewDocument: invalid key type: int`)
-
-		doc, err = NewDocument("foo", 42)
-		assert.Nil(t, doc)
-		assert.EqualError(t, err, `types.NewDocument: types.Document.validate: types.validateValue: unsupported type: int (42)`)
 	})
 
 	t.Run("DeepCopy", func(t *testing.T) {
@@ -107,73 +95,6 @@ func TestDocument(t *testing.T) {
 
 		doc.Set("_id", "bar")
 		assert.Equal(t, []string{"_id", "foo"}, doc.keys)
-	})
-
-	t.Run("Validate", func(t *testing.T) {
-		t.Parallel()
-
-		for _, tc := range []struct {
-			name string
-			doc  Document
-			err  error
-		}{{
-			name: "normal",
-			doc: Document{
-				keys: []string{"0"},
-				m:    map[string]any{"0": "foo"},
-			},
-		}, {
-			name: "empty",
-			doc:  Document{},
-		}, {
-			name: "different keys",
-			doc: Document{
-				keys: []string{"0"},
-				m:    map[string]any{"1": "foo"},
-			},
-			err: fmt.Errorf(`types.Document.validate: key not found: "0"`),
-		}, {
-			name: "duplicate keys",
-			doc: Document{
-				keys: []string{"0", "0"},
-				m:    map[string]any{"0": "foo"},
-			},
-			err: fmt.Errorf("types.Document.validate: keys and values count mismatch: 1 != 2"),
-		}, {
-			name: "duplicate and different keys",
-			doc: Document{
-				keys: []string{"0", "0"},
-				m:    map[string]any{"0": "foo", "1": "bar"},
-			},
-			err: fmt.Errorf(`types.Document.validate: duplicate key: "0"`),
-		}, {
-			name: "pjson keys",
-			doc: Document{
-				keys: []string{"$k"},
-				m:    map[string]any{"$k": "foo"},
-			},
-			err: fmt.Errorf(`types.Document.validate: invalid key: "$k"`),
-		}, {
-			name: "dollar keys",
-			doc: Document{
-				keys: []string{"$db"},
-				m:    map[string]any{"$db": "foo"},
-			},
-		}, {
-			name: "empty key",
-			doc: Document{
-				keys: []string{""},
-				m:    map[string]any{"": ""},
-			},
-		}} {
-			tc := tc
-			t.Run(tc.name, func(t *testing.T) {
-				t.Parallel()
-
-				err := tc.doc.validate()
-				assert.Equal(t, tc.err, err)
-			})
-		}
 	})
 
 	t.Run("SetByPath", func(t *testing.T) {
