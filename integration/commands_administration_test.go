@@ -879,6 +879,17 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 			metricsPath: types.NewPath([]string{"metrics", "commands", "update"}),
 			expected:    must.NotFail(types.NewDocument("arrayFilters", int64(0), "failed", int64(2), "pipeline", int64(0), "total", int64(2))),
 		},
+		"arrayFilters": {
+			cmds: []bson.D{
+				bson.D{
+					{"update", "x"},
+					{"updates", bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}}}},
+					{"arrayFilters", bson.A{bson.D{{"x.a", bson.D{{"$gt", "6"}}}}}},
+				},
+			},
+			metricsPath: types.NewPath([]string{"metrics", "commands", "update"}),
+			expected:    must.NotFail(types.NewDocument("arrayFilters", int64(1), "failed", int64(0), "pipeline", int64(0), "total", int64(1))),
+		},
 		// TODO: https://github.com/FerretDB/FerretDB/issues/9
 	} {
 		name, tc := name, tc
@@ -886,7 +897,11 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 			ctx, collection := setup.Setup(t)
 
 			for _, cmd := range tc.cmds {
-				collection.Database().RunCommand(ctx, cmd)
+				var res bson.D
+				err := collection.Database().RunCommand(ctx, cmd).Decode(&res)
+				if err != nil {
+					panic(err)
+				}
 			}
 
 			command := bson.D{{"serverStatus", int32(1)}}

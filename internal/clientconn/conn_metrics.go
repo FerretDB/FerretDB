@@ -156,9 +156,8 @@ func (cm *ConnMetrics) Responses() map[string]CommandMetrics {
 			}
 			res[command] = cm
 		default:
-			panic("bruh")
+			panic("Invalid command metric type")
 		}
-
 	}
 
 	return res
