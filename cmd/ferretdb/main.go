@@ -51,7 +51,7 @@ var cli struct {
 		UUID  bool   `default:"false"                help:"Add instance UUID to all log messages."`
 	} `embed:"" prefix:"log-"`
 
-	MetricsUUID bool `default:"false" help:"Add instance UUID to all metrics messages."`
+	MetricsUUID bool `default:"false" help:"Add instance UUID to all metrics."`
 
 	Handler string `default:"pg" help:"${help_handler}"`
 
