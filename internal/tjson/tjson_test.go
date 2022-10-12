@@ -222,15 +222,21 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() tjsontype) {
 
 func fuzzJSON(f *testing.F, testCases []testCase) {
 	for _, tc := range testCases {
+		schema, err := tc.schema.Marshal()
+		if err != nil {
+			f.Fatalf("failed to marshal schema: %v", err)
+		}
+
 		f.Add(tc.j)
+
 		if tc.canonJ != "" {
-			f.Add(tc.canonJ, testCases[0].schema)
+			f.Add(tc.canonJ, schema)
 		}
 	}
 
 	// TODO Add fuzzing for schema https://github.com/FerretDB/FerretDB/issues/943
 
-	f.Fuzz(func(t *testing.T, j string, schema *Schema) {
+	f.Fuzz(func(t *testing.T, j, schema string) {
 		t.Parallel()
 
 		// raw "null" should never reach UnmarshalJSON due to the way encoding/json works
@@ -238,11 +244,18 @@ func fuzzJSON(f *testing.F, testCases []testCase) {
 			t.Skip()
 		}
 
+		var s *Schema
+
+		err := s.Unmarshal([]byte(schema))
+		if err != nil {
+			panic(err)
+		}
+
 		// j may not be a canonical form.
 		// We can't compare it with MarshalJSON() result directly.
 		// Instead, we compare with round-trip result.
 
-		val, err := Unmarshal([]byte(j), schema)
+		val, err := Unmarshal([]byte(j), s)
 		if err != nil {
 			t.Skip()
 		}
@@ -257,7 +270,7 @@ func fuzzJSON(f *testing.F, testCases []testCase) {
 
 		// test Unmarshal
 		{
-			actualV, err := Unmarshal([]byte(j), schema)
+			actualV, err := Unmarshal([]byte(j), s)
 			require.NoError(t, err)
 			assertEqual(t, v, toTJSON(actualV))
 		}
