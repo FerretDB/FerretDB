@@ -258,7 +258,8 @@ func (h *Handler) update(ctx context.Context, tx pgx.Tx, sp *pgdb.SQLParam, doc 
 		return res, nil
 	}
 
-	if errors.Is(pgdb.ErrInvalidDocument, err) {
+	var valErr *types.ValidationError
+	if errors.As(err, &valErr) {
 		return 0, common.NewErrorMsg(common.ErrBadValue, err.Error())
 	}
 

@@ -29,7 +29,7 @@ func NewValidationError(reason error) error {
 }
 
 func (e *ValidationError) Error() string {
-	return fmt.Sprintf("Invalid document, reason: %s", e.Reason)
+	return fmt.Sprintf("Invalid document, reason: %s.", e.Reason)
 }
 
 func (e *ValidationError) Unwrap() error {
@@ -53,7 +53,7 @@ func (d *Document) ValidateData() error {
 		}
 
 		if strings.Contains(key, "$") {
-			return fmt.Errorf("%w: %q (the key mustn't contain $)", ErrInvalidKey, key)
+			return fmt.Errorf("%w: %q (key mustn't contain $)", ErrInvalidKey, key)
 		}
 	}
 

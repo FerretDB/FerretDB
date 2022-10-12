@@ -1524,25 +1524,27 @@ func TestUpdateFieldInvalid(t *testing.T) {
 
 	for name, tc := range map[string]struct {
 		update      bson.D
-		expectedErr *mongo.WriteError
+		expectedErr *mongo.CommandError
 	}{
 		"KeyIsNotUTF8": {
 			update: bson.D{
 				//  the key is out of range for UTF-8
 				{"$set", bson.D{{string("\xF4\x90\x80\x80"), int32(12)}}},
 			},
-			expectedErr: &mongo.WriteError{
-				Code:    9,
-				Message: "Unknown modifier: $foo. Expected a valid update modifier or pipeline-style update specified as an array",
+			expectedErr: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `Invalid document, reason: invalid key: "\xf4\x90\x80\x80" (not a valid UTF-8 string).`,
 			},
 		},
 		"KeyContains$": {
 			update: bson.D{
 				{"$set", bson.D{{"v$", int32(12)}}},
 			},
-			expectedErr: &mongo.WriteError{
-				Code:    9,
-				Message: "Unknown modifier: $foo. Expected a valid update modifier or pipeline-style update specified as an array",
+			expectedErr: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `Invalid document, reason: invalid key: "v$" (key mustn't contain $).`,
 			},
 		},
 	} {
@@ -1554,7 +1556,7 @@ func TestUpdateFieldInvalid(t *testing.T) {
 			res, err := collection.UpdateOne(ctx, bson.D{}, tc.update)
 			require.Nil(t, res)
 			require.NotNil(t, err)
-			AssertEqualWriteError(t, *tc.expectedErr, err)
+			AssertEqualError(t, *tc.expectedErr, err)
 		})
 	}
 }
