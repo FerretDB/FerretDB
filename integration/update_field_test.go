@@ -1406,3 +1406,112 @@ func TestUpdateFieldPopArrayOperator(t *testing.T) {
 		}
 	})
 }
+
+// This test is to ensure that the order of fields in the document is preserved.
+func TestUpdateDocumentFieldsOrder(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "Tigris schema would fail this test")
+
+	ctx, collection := setup.Setup(t, shareddata.Composites)
+
+	_, err := collection.UpdateOne(
+		ctx,
+		bson.D{{"_id", "document"}},
+		bson.D{{"$set", bson.D{{"foo", int32(42)}, {"bar", "baz"}}}},
+	)
+	require.NoError(t, err)
+
+	var updated bson.D
+
+	err = collection.FindOne(ctx, bson.D{{"_id", "document"}}).Decode(&updated)
+	require.NoError(t, err)
+
+	expected := bson.D{
+		{"_id", "document"},
+		{"v", bson.D{{"foo", int32(42)}}},
+		{"bar", "baz"},
+		{"foo", int32(42)},
+	}
+
+	AssertEqualDocuments(t, expected, updated)
+
+	_, err = collection.UpdateOne(
+		ctx,
+		bson.D{{"_id", "document"}},
+		bson.D{{"$unset", bson.D{{"foo", ""}}}},
+	)
+	require.NoError(t, err)
+
+	err = collection.FindOne(ctx, bson.D{{"_id", "document"}}).Decode(&updated)
+	require.NoError(t, err)
+
+	expected = bson.D{
+		{"_id", "document"},
+		{"v", bson.D{{"foo", int32(42)}}},
+		{"bar", "baz"},
+	}
+
+	AssertEqualDocuments(t, expected, updated)
+
+	_, err = collection.UpdateOne(
+		ctx,
+		bson.D{{"_id", "document"}},
+		bson.D{{"$set", bson.D{{"abc", int32(42)}}}},
+	)
+	require.NoError(t, err)
+
+	err = collection.FindOne(ctx, bson.D{{"_id", "document"}}).Decode(&updated)
+	require.NoError(t, err)
+
+	expected = bson.D{
+		{"_id", "document"},
+		{"v", bson.D{{"foo", int32(42)}}},
+		{"bar", "baz"},
+		{"abc", int32(42)},
+	}
+
+	AssertEqualDocuments(t, expected, updated)
+}
+
+// This test is to ensure that the order of fields in the document is preserved.
+func TestUpdateDocumentFieldsOrderSimplified(t *testing.T) {
+	ctx, collection := setup.Setup(t)
+
+	_, err := collection.InsertOne(ctx, bson.D{{"_id", "document"}, {"foo", int32(42)}, {"bar", "baz"}})
+	require.NoError(t, err)
+
+	_, err = collection.UpdateOne(
+		ctx,
+		bson.D{{"_id", "document"}},
+		bson.D{{"$unset", bson.D{{"foo", ""}, {"bar", ""}}}},
+	)
+	require.NoError(t, err)
+
+	var updated bson.D
+
+	err = collection.FindOne(ctx, bson.D{{"_id", "document"}}).Decode(&updated)
+	require.NoError(t, err)
+
+	expected := bson.D{
+		{"_id", "document"},
+	}
+
+	_, err = collection.UpdateOne(
+		ctx,
+		bson.D{{"_id", "document"}},
+		bson.D{{"$set", bson.D{{"foo", int32(42)}, {"bar", "baz"}}}},
+	)
+	require.NoError(t, err)
+
+	AssertEqualDocuments(t, expected, updated)
+
+	err = collection.FindOne(ctx, bson.D{{"_id", "document"}}).Decode(&updated)
+	require.NoError(t, err)
+
+	expected = bson.D{
+		{"_id", "document"},
+		{"bar", "baz"},
+		{"foo", int32(42)},
+	}
+
+	AssertEqualDocuments(t, expected, updated)
+}

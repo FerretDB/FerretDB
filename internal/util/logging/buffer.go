@@ -28,7 +28,7 @@ import (
 
 // RecentEntries implements zap logging entries interception
 // and stores the last 1024 entries in circular buffer in memory.
-var RecentEntries *circularBuffer
+var RecentEntries = NewCircularBuffer(1024)
 
 // circularBuffer is a storage of log records in memory.
 type circularBuffer struct {

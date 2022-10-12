@@ -680,7 +680,7 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 
 		doc := ConvertDocument(t, actual)
 		assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-		assert.InDelta(t, float64(16_384), must.NotFail(doc.Get("size")), 16_384)
+		assert.InDelta(t, float64(24_576), must.NotFail(doc.Get("size")), 24_576)
 		assert.InDelta(t, float64(4), must.NotFail(doc.Get("numObjects")), 4) // TODO https://github.com/FerretDB/FerretDB/issues/727
 		assert.InDelta(t, float64(150), must.NotFail(doc.Get("millis")), 150)
 	})

@@ -14,11 +14,13 @@
 
 // Package types provides Go types matching BSON types that don't have built-in Go equivalents.
 //
-// All BSON types have three representations in FerretDB:
+// All BSON types have five representations in FerretDB:
 //
 //  1. As they are used in "business logic" / handlers - `types` package.
-//  2. As they are used in the wire protocol implementation - `bson` package.
-//  3. As they are used to store data in PostgreSQL - `fjson` package.
+//  2. As they are used for logging - `fjson` package.
+//  3. As they are used in the wire protocol implementation - `bson` package.
+//  4. As they are used to store data in PostgreSQL - `pjson` package.
+//  5. As they are used to store data in PostgreSQL - `tjson` package.
 //
 // The reason for that is a separation of concerns: to avoid method names clashes, to simplify type asserts,
 // to make refactorings and optimizations easier, etc.
@@ -27,22 +29,22 @@
 //
 // Composite types (passed by pointers)
 //
-//	*types.Document  *bson.Document       *fjson.documentType   Document
-//	*types.Array     *bson.arrayType      *fjson.arrayType      Array
+//	*types.Document  *bson.Document       *pjson.documentType   Document
+//	*types.Array     *bson.arrayType      *pjson.arrayType      Array
 //
 // Scalar types (passed by values)
 //
-//	float64          *bson.doubleType     *fjson.doubleType     64-bit binary floating point
-//	string           *bson.stringType     *fjson.stringType     UTF-8 string
-//	types.Binary     *bson.binaryType     *fjson.binaryType     Binary data
-//	types.ObjectID   *bson.objectIDType   *fjson.objectIDType   ObjectId
-//	bool             *bson.boolType       *fjson.boolType       Boolean
-//	time.Time        *bson.dateTimeType   *fjson.dateTimeType   UTC datetime
-//	types.NullType   *bson.nullType       *fjson.nullType       Null
-//	types.Regex      *bson.regexType      *fjson.regexType      Regular expression
-//	int32            *bson.int32Type      *fjson.int32Type      32-bit integer
-//	types.Timestamp  *bson.timestampType  *fjson.timestampType  Timestamp
-//	int64            *bson.int64Type      *fjson.int64Type      64-bit integer
+//	float64          *bson.doubleType     *pjson.doubleType     64-bit binary floating point
+//	string           *bson.stringType     *pjson.stringType     UTF-8 string
+//	types.Binary     *bson.binaryType     *pjson.binaryType     Binary data
+//	types.ObjectID   *bson.objectIDType   *pjson.objectIDType   ObjectId
+//	bool             *bson.boolType       *pjson.boolType       Boolean
+//	time.Time        *bson.dateTimeType   *pjson.dateTimeType   UTC datetime
+//	types.NullType   *bson.nullType       *pjson.nullType       Null
+//	types.Regex      *bson.regexType      *pjson.regexType      Regular expression
+//	int32            *bson.int32Type      *pjson.int32Type      32-bit integer
+//	types.Timestamp  *bson.timestampType  *pjson.timestampType  Timestamp
+//	int64            *bson.int64Type      *pjson.int64Type      64-bit integer
 package types
 
 import (
@@ -90,44 +92,6 @@ type (
 
 // Null represents BSON value Null.
 var Null = NullType{}
-
-// validateValue validates value.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/260
-func validateValue(value any) error {
-	switch value := value.(type) {
-	case *Document:
-		return value.validate()
-	case *Array:
-		// It is impossible to construct invalid Array using exported function, methods, or type conversions,
-		// so no need to revalidate it.
-		return nil
-	case float64:
-		return nil
-	case string:
-		return nil
-	case Binary:
-		return nil
-	case ObjectID:
-		return nil
-	case bool:
-		return nil
-	case time.Time:
-		return nil
-	case NullType:
-		return nil
-	case Regex:
-		return nil
-	case int32:
-		return nil
-	case Timestamp:
-		return nil
-	case int64:
-		return nil
-	default:
-		return fmt.Errorf("types.validateValue: unsupported type: %[1]T (%[1]v)", value)
-	}
-}
 
 // deepCopy returns a deep copy of the given value.
 func deepCopy(value any) any {

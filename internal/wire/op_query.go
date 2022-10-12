@@ -22,8 +22,8 @@ import (
 	"io"
 
 	"github.com/FerretDB/FerretDB/internal/bson"
-	"github.com/FerretDB/FerretDB/internal/fjson"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/types/fjson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -40,6 +40,7 @@ type OpQuery struct {
 
 func (query *OpQuery) msgbody() {}
 
+// readFrom composes an OpQuery from a buffered reader.
 func (query *OpQuery) readFrom(bufr *bufio.Reader) error {
 	if err := binary.Read(bufr, binary.LittleEndian, &query.Flags); err != nil {
 		return lazyerrors.Errorf("wire.OpQuery.ReadFrom (binary.Read): %w", err)
@@ -131,8 +132,6 @@ func (query *OpQuery) MarshalBinary() ([]byte, error) {
 }
 
 // String returns a string representation for logging.
-//
-// Currently, it uses FJSON, but that may change in the future.
 func (query *OpQuery) String() string {
 	if query == nil {
 		return "<nil>"

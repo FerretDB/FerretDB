@@ -22,7 +22,6 @@ import (
 	"net/url"
 
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
@@ -126,6 +125,6 @@ var logger *zap.Logger
 // Initialize the global logger there to avoid creating too many issues for zap users that initialize it in their
 // `main()` functions. It is still not a full solution; eventually, we should remove the usage of the global logger.
 func init() {
-	logging.Setup(zapcore.FatalLevel)
+	logging.Setup(zap.FatalLevel, "")
 	logger = zap.L()
 }
