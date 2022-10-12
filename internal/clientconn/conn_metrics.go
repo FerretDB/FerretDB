@@ -21,7 +21,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -30,6 +29,8 @@ type ConnMetrics struct {
 	requests          *prometheus.CounterVec
 	responses         *prometheus.CounterVec
 	aggregationStages *prometheus.CounterVec
+
+	cmds []string
 }
 
 type CommandMetrics interface{}
@@ -47,7 +48,10 @@ type UpdateCommandMetrics struct {
 }
 
 // newConnMetrics creates new conn metrics.
-func newConnMetrics() *ConnMetrics {
+//
+// The cmds is the list of all expected commands that could be measured.
+// After providing them, they will be set with the zero values.
+func newConnMetrics(cmds []string) *ConnMetrics {
 	return &ConnMetrics{
 		requests: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
@@ -76,6 +80,7 @@ func newConnMetrics() *ConnMetrics {
 			},
 			[]string{"command", "stage"},
 		),
+		cmds: cmds,
 	}
 }
 
@@ -97,13 +102,13 @@ func (cm *ConnMetrics) Responses() map[string]CommandMetrics {
 	res := make(map[string]CommandMetrics)
 
 	// initialize commands in the map to show zero values in the metrics output
-	for k := range common.Commands {
+	for _, cmd := range cm.cmds {
 		// update related operators have more fields in the output
-		switch k {
+		switch cmd {
 		case "update", "clusterUpdate", "findAndModify":
-			res[k] = UpdateCommandMetrics{}
+			res[cmd] = UpdateCommandMetrics{}
 		default:
-			res[k] = BasicCommandMetrics{}
+			res[cmd] = BasicCommandMetrics{}
 		}
 	}
 

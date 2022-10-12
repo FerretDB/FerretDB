@@ -26,10 +26,15 @@ type ListenerMetrics struct {
 	connectedClients prometheus.Gauge
 	accepts          *prometheus.CounterVec
 	ConnMetrics      *ConnMetrics
+
+	cmds []string
 }
 
 // newListenerMetrics creates new listener metrics.
-func NewListenerMetrics() *ListenerMetrics {
+//
+// The cmds is the list of all expected commands that could be measured.
+// After providing them, they will be set with the zero values.
+func NewListenerMetrics(cmds []string) *ListenerMetrics {
 	return &ListenerMetrics{
 		connectedClients: prometheus.NewGauge(
 			prometheus.GaugeOpts{
@@ -48,7 +53,7 @@ func NewListenerMetrics() *ListenerMetrics {
 			},
 			[]string{"error"},
 		),
-		ConnMetrics: newConnMetrics(),
+		ConnMetrics: newConnMetrics(cmds),
 	}
 }
 
