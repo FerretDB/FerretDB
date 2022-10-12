@@ -40,25 +40,20 @@ func (e *ValidationError) Unwrap() error {
 	return e.Reason
 }
 
-// Errors might be wrapped, so the caller needs to use errors.Is to check the error,
-// for example, errors.Is(err, ErrInvalidKey).
-var (
-	// ErrInvalidKey indicates that a key didn't passed checks.
-	ErrInvalidKey = fmt.Errorf("invalid key")
-)
-
 // ValidateData checks if the document represents a valid "data document".
 // If the document is not valid it returns *ValidationError.
 func (d *Document) ValidateData() error {
 	// The following bloc should be used to checks that keys are valid.
 	// All further key related validation rules should be added here.
 	for _, key := range d.keys {
+		// Tests for this case are in `dance`.
 		if !utf8.ValidString(key) {
-			return newValidationError(fmt.Errorf("%w: %q (not a valid UTF-8 string)", ErrInvalidKey, key))
+			return newValidationError(fmt.Errorf("invalid key: %q (not a valid UTF-8 string)", key))
 		}
 
+		// Tests for this case are in `dance`.
 		if strings.Contains(key, "$") {
-			return newValidationError(fmt.Errorf("%w: %q (key mustn't contain $)", ErrInvalidKey, key))
+			return newValidationError(fmt.Errorf("invalid key: %q (key mustn't contain $)", key))
 		}
 	}
 
