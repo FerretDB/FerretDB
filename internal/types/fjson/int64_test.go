@@ -51,7 +51,3 @@ func TestInt64(t *testing.T) {
 func FuzzInt64(f *testing.F) {
 	fuzzJSON(f, int64TestCases, func() fjsontype { return new(int64Type) })
 }
-
-func BenchmarkInt64(b *testing.B) {
-	benchmark(b, int64TestCases, func() fjsontype { return new(int64Type) })
-}

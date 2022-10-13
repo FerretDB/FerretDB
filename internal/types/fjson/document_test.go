@@ -225,7 +225,3 @@ func TestDocument(t *testing.T) {
 func FuzzDocument(f *testing.F) {
 	fuzzJSON(f, documentTestCases, func() fjsontype { return new(documentType) })
 }
-
-func BenchmarkDocument(b *testing.B) {
-	benchmark(b, documentTestCases, func() fjsontype { return new(documentType) })
-}

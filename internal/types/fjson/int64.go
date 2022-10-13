@@ -15,7 +15,6 @@
 package fjson
 
 import (
-	"bytes"
 	"encoding/json"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -30,28 +29,6 @@ func (i *int64Type) fjsontype() {}
 // int64JSON is a JSON object representation of the int64Type.
 type int64JSON struct {
 	L int64 `json:"$l,string"`
-}
-
-// UnmarshalJSON implements fjsontype interface.
-func (i *int64Type) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
-	}
-
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
-
-	var o int64JSON
-	if err := dec.Decode(&o); err != nil {
-		return lazyerrors.Error(err)
-	}
-	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	*i = int64Type(o.L)
-	return nil
 }
 
 // MarshalJSON implements fjsontype interface.

@@ -16,8 +16,6 @@ package fjson
 
 import (
 	"bytes"
-	"encoding/json"
-
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -27,39 +25,6 @@ type arrayType types.Array
 
 // fjsontype implements fjsontype interface.
 func (a *arrayType) fjsontype() {}
-
-// UnmarshalJSON implements fjsontype interface.
-func (a *arrayType) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
-	}
-
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-
-	var rawMessages []json.RawMessage
-	if err := dec.Decode(&rawMessages); err != nil {
-		return lazyerrors.Error(err)
-	}
-	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	ta := types.MakeArray(len(rawMessages))
-	for _, el := range rawMessages {
-		v, err := Unmarshal(el)
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		if err = ta.Append(v); err != nil {
-			return lazyerrors.Error(err)
-		}
-	}
-
-	*a = arrayType(*ta)
-	return nil
-}
 
 // MarshalJSON implements fjsontype interface.
 func (a *arrayType) MarshalJSON() ([]byte, error) {

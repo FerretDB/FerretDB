@@ -42,7 +42,3 @@ func TestTimestamp(t *testing.T) {
 func FuzzTimestamp(f *testing.F) {
 	fuzzJSON(f, timestampTestCases, func() fjsontype { return new(timestampType) })
 }
-
-func BenchmarkTimestamp(b *testing.B) {
-	benchmark(b, timestampTestCases, func() fjsontype { return new(timestampType) })
-}
