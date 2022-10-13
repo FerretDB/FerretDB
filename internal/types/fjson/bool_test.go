@@ -34,7 +34,3 @@ func TestBool(t *testing.T) {
 	t.Parallel()
 	testJSON(t, boolTestCases, func() fjsontype { return new(boolType) })
 }
-
-func FuzzBool(f *testing.F) {
-	fuzzJSON(f, boolTestCases, func() fjsontype { return new(boolType) })
-}

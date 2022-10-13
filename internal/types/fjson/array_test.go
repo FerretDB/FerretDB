@@ -52,7 +52,3 @@ func TestArray(t *testing.T) {
 	t.Parallel()
 	testJSON(t, arrayTestCases, func() fjsontype { return new(arrayType) })
 }
-
-func FuzzArray(f *testing.F) {
-	fuzzJSON(f, arrayTestCases, func() fjsontype { return new(arrayType) })
-}

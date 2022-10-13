@@ -47,7 +47,3 @@ func TestInt64(t *testing.T) {
 	t.Parallel()
 	testJSON(t, int64TestCases, func() fjsontype { return new(int64Type) })
 }
-
-func FuzzInt64(f *testing.F) {
-	fuzzJSON(f, int64TestCases, func() fjsontype { return new(int64Type) })
-}

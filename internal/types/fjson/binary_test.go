@@ -61,7 +61,3 @@ func TestBinary(t *testing.T) {
 	t.Parallel()
 	testJSON(t, binaryTestCases, func() fjsontype { return new(binaryType) })
 }
-
-func FuzzBinary(f *testing.F) {
-	fuzzJSON(f, binaryTestCases, func() fjsontype { return new(binaryType) })
-}

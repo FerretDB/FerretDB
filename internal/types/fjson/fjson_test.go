@@ -123,37 +123,3 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
 		})
 	}
 }
-
-func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() fjsontype) {
-	for _, tc := range testCases {
-		f.Add(tc.j, tc.canonJ, tc.jErr)
-	}
-
-	f.Fuzz(func(t *testing.T, j, canonJ, jErr string) {
-		t.Parallel()
-
-		// raw "null" should never reach UnmarshalJSON due to the way encoding/json works
-		if j == "null" {
-			t.Skip()
-		}
-
-		if jErr != "" {
-			t.Skip("erroneous json")
-		}
-
-		v := newFunc()
-
-		// test MarshalJSON
-		{
-			b, err := v.MarshalJSON()
-			require.NoError(t, err)
-			actualJ := string(b)
-			expectedJ := j
-			if canonJ != "" {
-				expectedJ = canonJ
-			}
-			// TODO: Fix this test
-			assertEqual(t, expectedJ, actualJ)
-		}
-	})
-}

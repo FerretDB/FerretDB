@@ -38,7 +38,3 @@ func TestString(t *testing.T) {
 	t.Parallel()
 	testJSON(t, stringTestCases, func() fjsontype { return new(stringType) })
 }
-
-func FuzzString(f *testing.F) {
-	fuzzJSON(f, stringTestCases, func() fjsontype { return new(stringType) })
-}

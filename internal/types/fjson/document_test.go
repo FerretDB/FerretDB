@@ -221,7 +221,3 @@ func TestDocument(t *testing.T) {
 	t.Parallel()
 	testJSON(t, documentTestCases, func() fjsontype { return new(documentType) })
 }
-
-func FuzzDocument(f *testing.F) {
-	fuzzJSON(f, documentTestCases, func() fjsontype { return new(documentType) })
-}

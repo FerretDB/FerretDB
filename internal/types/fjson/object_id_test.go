@@ -34,7 +34,3 @@ func TestObjectID(t *testing.T) {
 	t.Parallel()
 	testJSON(t, objectIDTestCases, func() fjsontype { return new(objectIDType) })
 }
-
-func FuzzObjectID(f *testing.F) {
-	fuzzJSON(f, objectIDTestCases, func() fjsontype { return new(objectIDType) })
-}

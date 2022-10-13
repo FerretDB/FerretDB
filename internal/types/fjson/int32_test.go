@@ -43,7 +43,3 @@ func TestInt32(t *testing.T) {
 	t.Parallel()
 	testJSON(t, int32TestCases, func() fjsontype { return new(int32Type) })
 }
-
-func FuzzInt32(f *testing.F) {
-	fuzzJSON(f, int32TestCases, func() fjsontype { return new(int32Type) })
-}
