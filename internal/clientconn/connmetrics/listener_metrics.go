@@ -26,8 +26,6 @@ type ListenerMetrics struct {
 	ConnectedClients prometheus.Gauge
 	Accepts          *prometheus.CounterVec
 	ConnMetrics      *ConnMetrics
-
-	cmds []string
 }
 
 // newListenerMetrics creates new listener metrics.
