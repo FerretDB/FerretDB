@@ -554,9 +554,6 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 			},
 			altMessage: `BSON field 'allParameters' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'`,
 		},
-		"GetParameterUnset": {
-			command: bson.D{{"getParameter", bson.D{{"featureCompatibilityVersion", "1"}, {"$db", "1"}}}},
-		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
