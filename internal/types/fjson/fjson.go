@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package fjson provides converters from/to FJSON (JSON with some extensions) for built-in and `types` types.
+// Package fjson provides converters to FJSON (JSON with some extensions) for built-in and `types` types.
 //
 // See contributing guidelines and documentation for package `types` for details.
 //
@@ -40,10 +40,8 @@
 package fjson
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"time"
 
 	"github.com/AlekSi/pointer"
@@ -60,21 +58,6 @@ type fjsontype interface {
 }
 
 //go-sumtype:decl fjsontype
-
-// checkConsumed returns error if decoder or reader have buffered or unread data.
-func checkConsumed(dec *json.Decoder, r *bytes.Reader) error {
-	if dr := dec.Buffered().(*bytes.Reader); dr.Len() != 0 {
-		b, _ := io.ReadAll(dr)
-		return lazyerrors.Errorf("%d bytes remains in the decoded: %s", dr.Len(), b)
-	}
-
-	if l := r.Len(); l != 0 {
-		b, _ := io.ReadAll(r)
-		return lazyerrors.Errorf("%d bytes remains in the reader: %s", l, b)
-	}
-
-	return nil
-}
 
 // fromFJSON converts fjsontype value to matching built-in or types' package value.
 func fromFJSON(v fjsontype) any {
