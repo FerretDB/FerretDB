@@ -227,16 +227,12 @@ func fuzzJSON(f *testing.F, testCases []testCase) {
 			f.Fatalf("failed to marshal schema: %v", err)
 		}
 
-		f.Log("schema", string(schema))
-
 		f.Add(tc.j, string(schema))
 
 		if tc.canonJ != "" {
 			f.Add(tc.canonJ, string(schema))
 		}
 	}
-
-	// TODO Add fuzzing for schema https://github.com/FerretDB/FerretDB/issues/943
 
 	f.Fuzz(func(t *testing.T, j, schema string) {
 		t.Parallel()
@@ -250,7 +246,7 @@ func fuzzJSON(f *testing.F, testCases []testCase) {
 
 		err := s.Unmarshal([]byte(schema))
 		if err != nil {
-			t.Fatal(err, schema)
+			t.Skip()
 		}
 
 		// j may not be a canonical form.
