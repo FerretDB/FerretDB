@@ -23,6 +23,7 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -51,6 +52,11 @@ func NewProvider(filename string) (*Provider, error) {
 	}
 
 	return p, nil
+}
+
+// If addUUIDToMetric is true, then the UUID is added to the Prometheus metric.
+func (p *Provider) MetricsCollector(addUUIDToMetric bool) prometheus.Collector {
+	return newMetricsCollector(p, addUUIDToMetric)
 }
 
 // Get returns the current process state.

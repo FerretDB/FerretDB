@@ -179,3 +179,8 @@ func (l *Listener) Describe(ch chan<- *prometheus.Desc) {
 func (l *Listener) Collect(ch chan<- prometheus.Metric) {
 	l.metrics.Collect(ch)
 }
+
+// check interfaces
+var (
+	_ prometheus.Collector = (*Listener)(nil)
+)
