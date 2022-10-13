@@ -96,7 +96,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 	tb.Helper()
 
 	cmdsList := maps.Keys(common.Commands)
-	sort.Sort(sort.StringSlice(cmdsList))
+	sort.Strings(cmdsList)
 
 	metrics := connmetrics.NewListenerMetrics(cmdsList)
 

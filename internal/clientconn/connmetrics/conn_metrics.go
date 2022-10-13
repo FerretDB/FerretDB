@@ -163,7 +163,7 @@ func (cm *ConnMetrics) GetResponses() map[string]CommandMetrics {
 				cmdMetrics.Failed += value
 			}
 			cmdMetrics.Pipeline += int64(stage)
-			// TODO: add metrics for arrayFilters
+			// TODO: https://github.com/FerretDB/FerretDB/issues/1259
 			res[command] = cmdMetrics
 		case BasicCommandMetrics:
 			cmdMetrics.Total += value

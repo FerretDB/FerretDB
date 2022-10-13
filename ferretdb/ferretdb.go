@@ -76,7 +76,7 @@ func New(config *Config) (*FerretDB, error) {
 // When this method returns, listener and all connections are closed.
 func (f *FerretDB) Run(ctx context.Context) error {
 	cmdsList := maps.Keys(common.Commands)
-	sort.Sort(sort.StringSlice(cmdsList))
+	sort.Strings(cmdsList)
 
 	metrics := connmetrics.NewListenerMetrics(cmdsList)
 

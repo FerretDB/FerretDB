@@ -219,7 +219,7 @@ func run() {
 	go debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, logger.Named("debug"))
 
 	cmdsList := maps.Keys(common.Commands)
-	sort.Sort(sort.StringSlice(cmdsList))
+	sort.Strings(cmdsList)
 
 	metrics := connmetrics.NewListenerMetrics(cmdsList)
 
