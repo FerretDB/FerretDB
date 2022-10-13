@@ -55,9 +55,9 @@ var cli struct {
 
 	Handler string `default:"pg" help:"${help_handler}"`
 
-	PostgresURL string `default:"postgres://postgres@127.0.0.1:5432/ferretdb" help:"PostgreSQL URL for 'pg' handler."`
+	PostgreSQLURL string `name:"postgresql-url" default:"${default_postgresql_url}" help:"PostgreSQL URL for 'pg' handler."`
 
-	// Put flags for other handlers there, between --postgres-url and --version in the help output.
+	// Put flags for other handlers there, between --postgresql-url and --version in the help output.
 	kong.Plugins
 
 	Version bool `default:"false" help:"Print version to stdout and exit."`
@@ -89,8 +89,9 @@ var (
 
 	kongOptions = []kong.Option{
 		kong.Vars{
-			"default_log_level": zap.DebugLevel.String(),
-			"default_mode":      clientconn.AllModes[0],
+			"default_log_level":      zap.DebugLevel.String(),
+			"default_mode":           clientconn.AllModes[0],
+			"default_postgresql_url": "postgres://postgres@127.0.0.1:5432/ferretdb",
 
 			"help_debug_addr": "Debug address for /debug/metrics, /debug/pprof, and similar HTTP handlers.",
 			"help_log_level": fmt.Sprintf(
@@ -217,7 +218,7 @@ func run() {
 		Ctx:    ctx,
 		Logger: logger,
 
-		PostgreSQLURL: cli.PostgresURL,
+		PostgreSQLURL: cli.PostgreSQLURL,
 
 		TigrisClientID:     tigrisFlags.TigrisClientID,
 		TigrisClientSecret: tigrisFlags.TigrisClientSecret,
