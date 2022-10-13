@@ -18,7 +18,32 @@ db.collection.find()
 First, populate the database with a new collection containing a list of documents.
 
 ```sh
-db.scientists.insertMany([{name:{firstname: "Alan", lastname: "Turing"}, born: 1912, invention: "Turing Machine"},{name:{firstname: "Graham", lastname: "Bell"}, born: 1847, invention: "telephone"},{name:{firstname: "Ada", lastname: "Lovelace"}, born: 1815, invention: "computer programming"}])
+db.scientists.insertMany([
+  {
+    name: {
+      firstname: "Alan",
+      lastname: "Turing"
+    },
+    born: 1912,
+    invention: "Turing Machine"
+  },
+  {
+    name: {
+      firstname: "Graham",
+      lastname: "Bell"
+    },
+    born: 1847,
+    invention: "telephone"
+  },
+  {
+    name: {
+      firstname: "Ada",
+      lastname: "Lovelace"
+    },
+    born: 1815,
+    invention: "computer programming"
+  }
+])
 ```
 
 Run `db.scientists.find()` to see the complete list of documents in the collection.
