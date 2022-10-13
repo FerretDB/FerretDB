@@ -73,12 +73,12 @@ func New(config *Config) (*FerretDB, error) {
 //
 // When this method returns, listener and all connections are closed.
 func (f *FerretDB) Run(ctx context.Context) error {
-	cmds := make([]string, len(common.Commands))
+	cmdsList := make([]string, len(common.Commands))
 	for k := range common.Commands {
-		cmds = append(cmds, k)
+		cmdsList = append(cmdsList, k)
 	}
 
-	metrics := connmetrics.NewListenerMetrics(cmds)
+	metrics := connmetrics.NewListenerMetrics(cmdsList)
 
 	newOpts := registry.NewHandlerOpts{
 		Ctx:     context.Background(),
