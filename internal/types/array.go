@@ -39,12 +39,6 @@ func MakeArray(capacity int) *Array {
 
 // NewArray creates an array with the given values.
 func NewArray(values ...any) (*Array, error) {
-	for i, value := range values {
-		if err := validateValue(value); err != nil {
-			return nil, fmt.Errorf("types.NewArray: index %d: %w", i, err)
-		}
-	}
-
 	return &Array{s: values}, nil
 }
 
@@ -88,22 +82,12 @@ func (a *Array) Set(index int, value any) error {
 		return fmt.Errorf("types.Array.Set: index %d is out of bounds [0-%d)", index, l)
 	}
 
-	if err := validateValue(value); err != nil {
-		return fmt.Errorf("types.Array.Set: %w", err)
-	}
-
 	a.s[index] = value
 	return nil
 }
 
 // Append appends given values to the array.
 func (a *Array) Append(values ...any) error {
-	for _, value := range values {
-		if err := validateValue(value); err != nil {
-			return fmt.Errorf("types.Array.Append: %w", err)
-		}
-	}
-
 	if a.s == nil {
 		a.s = values
 		return nil

@@ -50,7 +50,7 @@ type NewListenerOpts struct {
 	Logger             *zap.Logger
 	TestConnTimeout    time.Duration
 	TestRunCancelDelay time.Duration
-	TestRecordPath     string // if empty, no records are created
+	TestRecordsDir     string // if empty, no records are created
 }
 
 // NewListener returns a new listener, configured by the NewListenerOpts argument.
@@ -138,7 +138,7 @@ func (l *Listener) Run(ctx context.Context) error {
 				proxyAddr:      l.opts.ProxyAddr,
 				handler:        l.opts.Handler,
 				connMetrics:    l.metrics.connMetrics,
-				testRecordPath: l.opts.TestRecordPath,
+				testRecordsDir: l.opts.TestRecordsDir,
 			}
 			conn, e := newConn(opts)
 			if e != nil {
@@ -179,3 +179,8 @@ func (l *Listener) Describe(ch chan<- *prometheus.Desc) {
 func (l *Listener) Collect(ch chan<- prometheus.Metric) {
 	l.metrics.Collect(ch)
 }
+
+// check interfaces
+var (
+	_ prometheus.Collector = (*Listener)(nil)
+)

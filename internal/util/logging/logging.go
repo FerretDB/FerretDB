@@ -23,42 +23,45 @@ import (
 )
 
 // Setup initializes logging with a given level.
-func Setup(level zapcore.Level) {
-	var config zap.Config
-	if level <= zapcore.DebugLevel {
-		config = zap.Config{
-			Level:             zap.NewAtomicLevelAt(level),
-			Development:       true,
-			DisableCaller:     false,
-			DisableStacktrace: false,
-			Sampling:          nil,
-			Encoding:          "console",
-			EncoderConfig:     zap.NewDevelopmentEncoderConfig(),
-			OutputPaths:       []string{"stderr"},
-			ErrorOutputPaths:  []string{"stderr"},
-			InitialFields:     nil,
-		}
-	} else {
-		config = zap.Config{
-			Level:             zap.NewAtomicLevelAt(level),
-			Development:       false,
-			DisableCaller:     false,
-			DisableStacktrace: false,
-			Sampling:          nil,
-			Encoding:          "console",
-			EncoderConfig:     zap.NewDevelopmentEncoderConfig(),
-			OutputPaths:       []string{"stderr"},
-			ErrorOutputPaths:  []string{"stderr"},
-			InitialFields:     nil,
-		}
+func Setup(level zapcore.Level, uuid string) {
+	config := zap.Config{
+		Level:             zap.NewAtomicLevelAt(level),
+		Development:       false,
+		DisableCaller:     false,
+		DisableStacktrace: false,
+		Sampling:          nil,
+		Encoding:          "console",
+		EncoderConfig: zapcore.EncoderConfig{
+			TimeKey:        "T",
+			LevelKey:       "L",
+			NameKey:        "N",
+			CallerKey:      "C",
+			FunctionKey:    zapcore.OmitKey,
+			MessageKey:     "M",
+			StacktraceKey:  "S",
+			LineEnding:     zapcore.DefaultLineEnding,
+			EncodeLevel:    zapcore.CapitalLevelEncoder,
+			EncodeTime:     zapcore.ISO8601TimeEncoder,
+			EncodeDuration: zapcore.StringDurationEncoder,
+			EncodeCaller:   zapcore.ShortCallerEncoder,
+		},
+		OutputPaths:      []string{"stderr"},
+		ErrorOutputPaths: []string{"stderr"},
+		InitialFields:    nil,
+	}
+
+	if level == zap.DebugLevel {
+		config.Development = true
+	}
+
+	if uuid != "" {
+		config.InitialFields = map[string]any{"uuid": uuid}
 	}
 
 	logger, err := config.Build()
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	RecentEntries = NewCircularBuffer(1024)
 
 	logger = logger.WithOptions(zap.Hooks(func(entry zapcore.Entry) error {
 		RecentEntries.append(&entry)
