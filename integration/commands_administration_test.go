@@ -844,42 +844,42 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		cmds        []bson.D
-		metricsPath types.Path
-		expected    *types.Document
+		cmds           []bson.D
+		metricsPath    types.Path
+		expectedFields []string
+		expectedNoZero []string
 	}{
-		"ping": {
+		"BasicCmd": {
 			cmds: []bson.D{
 				{{"ping", int32(1)}},
 			},
-			metricsPath: types.NewPath([]string{"metrics", "commands", "ping"}),
-			expected:    must.NotFail(types.NewDocument("total", int64(2), "failed", int64(0))),
+			metricsPath:    types.NewPath([]string{"metrics", "commands", "ping"}),
+			expectedFields: []string{"total", "failed"},
+			expectedNoZero: []string{"total"},
 		},
-		"multiplePing": {
+		"BasicCmdFailed": {
 			cmds: []bson.D{
 				{{"ping", int32(1)}},
-				{{"ping", int32(1)}},
-				{{"ping", int32(1)}},
-				{{"ping", int32(1)}},
 			},
-			metricsPath: types.NewPath([]string{"metrics", "commands", "ping"}),
-			expected:    must.NotFail(types.NewDocument("total", int64(5), "failed", int64(0))),
+			metricsPath:    types.NewPath([]string{"metrics", "commands", "ping"}),
+			expectedFields: []string{"total", "failed"},
+			expectedNoZero: []string{"total", "failed"},
 		},
-		"updatePass": {
+		"UpdateCmd": {
 			cmds: []bson.D{
 				{{"update", "values"}, {"updates", bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}}}}},
-				{{"update", "values"}, {"updates", bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}}}}},
 			},
-			metricsPath: types.NewPath([]string{"metrics", "commands", "update"}),
-			expected:    must.NotFail(types.NewDocument("arrayFilters", int64(0), "failed", int64(0), "pipeline", int64(0), "total", int64(2))),
+			metricsPath:    types.NewPath([]string{"metrics", "commands", "update"}),
+			expectedFields: []string{"arrayFilters", "failed", "pipeline", "total"},
+			expectedNoZero: []string{"total"},
 		},
-		"updateFail": {
+		"UpdateCmdFailed": {
 			cmds: []bson.D{
 				{{"update", int32(1)}},
-				{{"update", int32(1)}},
 			},
-			metricsPath: types.NewPath([]string{"metrics", "commands", "update"}),
-			expected:    must.NotFail(types.NewDocument("arrayFilters", int64(0), "failed", int64(2), "pipeline", int64(0), "total", int64(2))),
+			metricsPath:    types.NewPath([]string{"metrics", "commands", "update"}),
+			expectedFields: []string{"arrayFilters", "failed", "pipeline", "total"},
+			expectedNoZero: []string{"failed", "total"},
 		},
 		// TODO: https://github.com/FerretDB/FerretDB/issues/9
 	} {
@@ -902,7 +902,20 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 			actualMetric, err := ConvertDocument(t, actual).GetByPath(tc.metricsPath)
 			assert.NoError(t, err)
 
-			assert.Equal(t, tc.expected, actualMetric)
+			actualDoc, ok := actualMetric.(*types.Document)
+			require.True(t, ok)
+
+			for _, expectedField := range tc.expectedFields {
+				field, err := actualDoc.Get(expectedField)
+				assert.NoError(t, err)
+				assert.IsType(t, int64(0), field)
+
+				for _, name := range tc.expectedNoZero {
+					if field == name {
+						assert.NotZero(t, field)
+					}
+				}
+			}
 		})
 	}
 }
