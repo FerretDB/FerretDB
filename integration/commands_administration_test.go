@@ -839,8 +839,6 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 }
 
 func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
-	//setup.SkipForTigrisWithReason(t)
-
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
