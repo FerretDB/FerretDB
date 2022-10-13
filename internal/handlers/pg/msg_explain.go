@@ -61,11 +61,9 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	if explain.Has("filter") {
-		sp.Filter, err = common.GetRequiredParam[*types.Document](explain, "filter")
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+	sp.Filter, err = common.GetOptionalParam[*types.Document](explain, "filter", nil)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	var queryPlanner *types.Array
