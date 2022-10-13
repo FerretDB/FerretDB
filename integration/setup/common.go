@@ -25,6 +25,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -186,9 +187,9 @@ func setupClient(tb testing.TB, ctx context.Context, port int) *mongo.Client {
 // startup initializes things that should be initialized only once.
 func startup() {
 	startupOnce.Do(func() {
-		logging.Setup(zap.DebugLevel)
+		logging.Setup(zap.DebugLevel, "")
 
-		go debug.RunHandler(context.Background(), "127.0.0.1:0", zap.L().Named("debug"))
+		go debug.RunHandler(context.Background(), "127.0.0.1:0", prometheus.DefaultRegisterer, zap.L().Named("debug"))
 
 		if p := *targetPortF; p == 0 {
 			zap.S().Infof("Target system: in-process FerretDB with %q handler.", *handlerF)
