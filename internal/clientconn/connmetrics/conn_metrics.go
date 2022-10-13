@@ -47,10 +47,10 @@ type UpdateCommandMetrics struct {
 	Total        int64
 }
 
-// newConnMetrics creates new conn metrics.
+// newConnMetrics creates connection metrics.
 //
 // The cmds is the list of all expected commands that could be measured.
-// After providing them, they will be set with the zero values.
+// Commands provided in the list will be set with zero values.
 func newConnMetrics(cmds []string) *ConnMetrics {
 	return &ConnMetrics{
 		Requests: prometheus.NewCounterVec(
@@ -125,7 +125,6 @@ func (cm *ConnMetrics) GetResponses() map[string]CommandMetrics {
 		must.NoError(m.Write(&content))
 
 		var stage int
-
 		var command, opcode, result string
 
 		for _, label := range content.GetLabel() {
