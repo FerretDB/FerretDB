@@ -68,6 +68,16 @@ var cli struct {
 	} `embed:"" prefix:"test-"`
 }
 
+// The tigrisFlags struct represents flags that are used specifically for a "tigris" handler.
+//
+// See main_tigris.go.
+var tigrisFlags struct {
+	TigrisURL          string `default:"127.0.0.1:8081" help:"Tigris URL for 'tigris' handler."`
+	TigrisClientID     string `default:""               help:"Tigris Client ID."`
+	TigrisClientSecret string `default:""               help:"Tigris Client secret."`
+	TigrisToken        string `default:""               help:"Tigris token."`
+}
+
 // Additional variables for the kong parsers.
 var (
 	logLevels = []string{
@@ -95,14 +105,6 @@ var (
 		},
 		kong.DefaultEnvars("FERRETDB"),
 	}
-)
-
-// Tigris parameters that are set at main_tigris.go.
-var (
-	tigrisClientID     string
-	tigrisClientSecret string
-	tigrisToken        string
-	tigrisURL          string
 )
 
 func main() {
@@ -218,10 +220,10 @@ func run() {
 
 		PostgreSQLURL: cli.PostgreSQLURL,
 
-		TigrisClientID:     tigrisClientID,
-		TigrisClientSecret: tigrisClientSecret,
-		TigrisToken:        tigrisToken,
-		TigrisURL:          tigrisURL,
+		TigrisClientID:     tigrisFlags.TigrisClientID,
+		TigrisClientSecret: tigrisFlags.TigrisClientSecret,
+		TigrisToken:        tigrisFlags.TigrisToken,
+		TigrisURL:          tigrisFlags.TigrisURL,
 	})
 	if err != nil {
 		logger.Fatal(err.Error())
