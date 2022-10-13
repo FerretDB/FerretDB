@@ -98,6 +98,9 @@ func (cm *ConnMetrics) Collect(ch chan<- prometheus.Metric) {
 	cm.AggregationStages.Collect(ch)
 }
 
+// GetResponses returns a map with all metrics related to all commands.
+// The key in the map is the command name and the value is a struct with
+// all related metrics to this command.
 func (cm *ConnMetrics) GetResponses() map[string]CommandMetrics {
 	res := map[string]CommandMetrics{}
 
@@ -112,15 +115,15 @@ func (cm *ConnMetrics) GetResponses() map[string]CommandMetrics {
 		}
 	}
 
-	ch := make(chan prometheus.Metric)
+	metrics := make(chan prometheus.Metric)
 
 	go func() {
-		cm.Responses.Collect(ch)
-		cm.AggregationStages.Collect(ch)
-		close(ch)
+		cm.Responses.Collect(metrics)
+		cm.AggregationStages.Collect(metrics)
+		close(metrics)
 	}()
 
-	for m := range ch {
+	for m := range metrics {
 		var content dto.Metric
 		must.NoError(m.Write(&content))
 
@@ -148,28 +151,28 @@ func (cm *ConnMetrics) GetResponses() map[string]CommandMetrics {
 
 		value := int64(content.GetCounter().GetValue())
 
-		cm := res[command]
-		if cm == nil {
-			cm = BasicCommandMetrics{}
+		cmdMetrics := res[command]
+		if cmdMetrics == nil {
+			cmdMetrics = BasicCommandMetrics{}
 		}
 
-		switch cm := cm.(type) {
+		switch cmdMetrics := cmdMetrics.(type) {
 		case UpdateCommandMetrics:
-			cm.Total += value
+			cmdMetrics.Total += value
 			if result != "ok" && result != "Unset" {
-				cm.Failed += value
+				cmdMetrics.Failed += value
 			}
-			cm.Pipeline += int64(stage)
+			cmdMetrics.Pipeline += int64(stage)
 			// TODO: add metrics for arrayFilters
-			res[command] = cm
+			res[command] = cmdMetrics
 		case BasicCommandMetrics:
-			cm.Total += value
+			cmdMetrics.Total += value
 			if result != "ok" && result != "Unset" {
-				cm.Failed += value
+				cmdMetrics.Failed += value
 			}
-			res[command] = cm
+			res[command] = cmdMetrics
 		default:
-			panic(fmt.Sprintf("Invalid command metric type: %T", cm))
+			panic(fmt.Sprintf("Invalid command metric type: %T", cmdMetrics))
 		}
 	}
 
