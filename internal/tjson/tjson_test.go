@@ -242,7 +242,7 @@ func fuzzJSON(f *testing.F, testCases []testCase) {
 			t.Skip()
 		}
 
-		s := new(Schema)
+		s := newSchema()
 
 		err := s.Unmarshal([]byte(schema))
 		if err != nil {
