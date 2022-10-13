@@ -17,8 +17,6 @@ package fjson
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
-	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,42 +29,6 @@ type testCase struct {
 	j      string
 	canonJ string // canonical form without extra object fields, zero values, etc.
 	jErr   string // unwrapped
-}
-
-// assertEqual is assert.Equal that also can compare NaNs and ±0.
-func assertEqual(tb testing.TB, expected, actual any, msgAndArgs ...any) bool {
-	tb.Helper()
-
-	switch expected := expected.(type) {
-	// should not be possible, check just in case
-	case doubleType, float64:
-		tb.Fatalf("unexpected type %[1]T: %[1]v", expected)
-
-	case *doubleType:
-		require.IsType(tb, expected, actual, msgAndArgs...)
-		e := float64(*expected)
-		a := float64(*actual.(*doubleType))
-		if math.IsNaN(e) || math.IsNaN(a) {
-			return assert.Equal(tb, math.IsNaN(e), math.IsNaN(a), msgAndArgs...)
-		}
-		if e == 0 && a == 0 {
-			return assert.Equal(tb, math.Signbit(e), math.Signbit(a), msgAndArgs...)
-		}
-		// fallthrough to regular assert.Equal below
-	}
-
-	return assert.Equal(tb, expected, actual, msgAndArgs...)
-}
-
-// lastErr returns the last error in error chain.
-func lastErr(err error) error {
-	for {
-		e := errors.Unwrap(err)
-		if e == nil {
-			return err
-		}
-		err = e
-	}
 }
 
 func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {

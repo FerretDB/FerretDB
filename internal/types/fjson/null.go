@@ -14,9 +14,7 @@
 
 package fjson
 
-import (
-	"github.com/FerretDB/FerretDB/internal/types"
-)
+import "github.com/FerretDB/FerretDB/internal/types"
 
 // nullType represents BSON Null type.
 type nullType types.NullType
