@@ -839,7 +839,7 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 }
 
 func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
-	setup.SkipForTigris(t)
+	//setup.SkipForTigrisWithReason(t)
 
 	t.Parallel()
 

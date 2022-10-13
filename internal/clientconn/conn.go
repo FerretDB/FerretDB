@@ -303,6 +303,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		if result == nil {
 			result = pointer.ToString("panic")
 		}
+
 		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, *result).Inc()
 	}()
 

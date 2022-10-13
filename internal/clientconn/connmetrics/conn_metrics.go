@@ -99,7 +99,7 @@ func (cm *ConnMetrics) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (cm *ConnMetrics) GetResponses() map[string]CommandMetrics {
-	res := make(map[string]CommandMetrics)
+	res := map[string]CommandMetrics{}
 
 	// initialize commands in the map to show zero values in the metrics output
 	for _, cmd := range cm.cmds {
@@ -113,6 +113,7 @@ func (cm *ConnMetrics) GetResponses() map[string]CommandMetrics {
 	}
 
 	ch := make(chan prometheus.Metric)
+
 	go func() {
 		cm.Responses.Collect(ch)
 		cm.AggregationStages.Collect(ch)
@@ -126,6 +127,7 @@ func (cm *ConnMetrics) GetResponses() map[string]CommandMetrics {
 		var stage int
 
 		var command, opcode, result string
+
 		for _, label := range content.GetLabel() {
 			switch label.GetName() {
 			case "command":
