@@ -28,17 +28,17 @@ import (
 )
 
 // RunHandler runs debug handler.
-func RunHandler(ctx context.Context, addr string, l *zap.Logger) {
+func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *zap.Logger) {
 	stdL, err := zap.NewStdLogAt(l, zap.WarnLevel)
 	if err != nil {
 		panic(err)
 	}
 
 	http.Handle("/debug/metrics", promhttp.InstrumentMetricHandler(
-		prometheus.DefaultRegisterer, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
+		r, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
 			ErrorLog:          stdL,
 			ErrorHandling:     promhttp.ContinueOnError,
-			Registry:          prometheus.DefaultRegisterer,
+			Registry:          r,
 			EnableOpenMetrics: true,
 		}),
 	))
