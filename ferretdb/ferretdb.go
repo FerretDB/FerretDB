@@ -20,8 +20,10 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"sort"
 
 	"go.uber.org/zap"
+	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
@@ -73,10 +75,8 @@ func New(config *Config) (*FerretDB, error) {
 //
 // When this method returns, listener and all connections are closed.
 func (f *FerretDB) Run(ctx context.Context) error {
-	cmdsList := make([]string, len(common.Commands))
-	for k := range common.Commands {
-		cmdsList = append(cmdsList, k)
-	}
+	cmdsList := maps.Keys(common.Commands)
+	sort.Sort(sort.StringSlice(cmdsList))
 
 	metrics := connmetrics.NewListenerMetrics(cmdsList)
 

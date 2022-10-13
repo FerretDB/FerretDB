@@ -20,6 +20,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -28,6 +29,7 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
@@ -216,10 +218,8 @@ func run() {
 
 	go debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, logger.Named("debug"))
 
-	cmdsList := make([]string, len(common.Commands))
-	for k := range common.Commands {
-		cmdsList = append(cmdsList, k)
-	}
+	cmdsList := maps.Keys(common.Commands)
+	sort.Sort(sort.StringSlice(cmdsList))
 
 	metrics := connmetrics.NewListenerMetrics(cmdsList)
 

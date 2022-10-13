@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"sort"
 	"sync"
 	"testing"
 	"time"
@@ -30,6 +31,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
+	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
@@ -93,10 +95,8 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 	tb.Helper()
 
-	cmdsList := make([]string, len(common.Commands))
-	for k := range common.Commands {
-		cmdsList = append(cmdsList, k)
-	}
+	cmdsList := maps.Keys(common.Commands)
+	sort.Sort(sort.StringSlice(cmdsList))
 
 	metrics := connmetrics.NewListenerMetrics(cmdsList)
 
