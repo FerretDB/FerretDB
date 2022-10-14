@@ -63,7 +63,7 @@ Collections are a repository for documents.
 To some extent, they are similar to tables in a relational database.
 If a collection does not exist, FerretDB creates a new one when you insert documents for the first time.
 A collection may contain one or more documents.
-For example, the following collection contains threee documents.
+For example, the following collection contains three documents.
 
 ```json
 {
