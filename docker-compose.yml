@@ -37,6 +37,9 @@ services:
     command: start-single-node --insecure
     ports:
       - 26257:26257
+    environment:
+      - COCKROACH_USER=cockroach
+      - COCKROACH_DB=ferretdb
 
   # for proxy mode and mongosh
   mongodb:
