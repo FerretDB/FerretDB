@@ -903,16 +903,19 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 			actualDoc, ok := actualMetric.(*types.Document)
 			require.True(t, ok)
 
-			for _, expectedField := range tc.expectedFields {
-				field, err := actualDoc.Get(expectedField)
-				assert.NoError(t, err)
-				assert.IsType(t, int64(0), field)
+			assert.Equal(t, tc.expectedFields, actualDoc.Keys())
 
-				for _, name := range tc.expectedNoZero {
-					if field == name {
-						assert.NotZero(t, field)
-					}
+			var actualNotZeros []string
+			for key, value := range actualDoc.Map() {
+				assert.IsType(t, int64(0), value)
+
+				if value != 0 {
+					actualNotZeros = append(actualNotZeros, key)
 				}
+			}
+
+			for _, expectedName := range tc.expectedNoZero {
+				assert.Contains(t, actualNotZeros, expectedName)
 			}
 		})
 	}
