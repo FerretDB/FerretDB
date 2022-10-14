@@ -35,10 +35,11 @@ services:
       dockerfile: cockroach.Dockerfile
     container_name: ferretdb_cockroach
     command: start-single-node --insecure
+
     ports:
       - 26257:26257
     environment:
-      - COCKROACH_USER=cockroach
+      - COCKROACH_USER=postgres
       - COCKROACH_DATABASE=ferretdb
 
   # for proxy mode and mongosh
