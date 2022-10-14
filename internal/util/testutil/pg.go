@@ -25,7 +25,7 @@ type PostgreSQLURLOpts struct {
 	DatabaseName string
 
 	// PostgreSQL username, defaults to `postgres`.
-	// It's omited if ReadOnly is set to true.
+	// It's omitted if ReadOnly is set to true.
 	Username string
 
 	// PostgreSQL host, defaults to `127.0.0.1:5432`.
