@@ -29,6 +29,15 @@ services:
     environment:
       - TIGRIS_SERVER_LOG_LEVEL=info
 
+  cockroach:
+    build:
+      context: ./build/deps
+      dockerfile: cockroach.Dockerfile
+    container_name: ferretdb_cockroach
+    command: start-single-node --insecure
+    ports:
+      - 47017:26257
+
   # for proxy mode and mongosh
   mongodb:
     build:
