@@ -15,7 +15,10 @@
 package types
 
 import (
+	"errors"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/stretchr/testify/assert"
 
@@ -29,20 +32,20 @@ func TestDocumentValidateData(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		doc     *Document
-		isValid bool
+		doc    *Document
+		reason error
 	}{
 		"Valid": {
-			doc:     must.NotFail(NewDocument("foo", "bar")),
-			isValid: true,
+			doc:    must.NotFail(NewDocument("foo", "bar")),
+			reason: nil,
 		},
 		"KeyIsNotUTF8": {
-			doc:     must.NotFail(NewDocument("\xF4\x90\x80\x80", "bar")), //  the key is out of range for UTF-8
-			isValid: false,
+			doc:    must.NotFail(NewDocument("\xf4\x90\x80\x80", "bar")), //  the key is out of range for UTF-8
+			reason: errors.New(`invalid key: "\xf4\x90\x80\x80" (not a valid UTF-8 string)`),
 		},
 		"KeyContains$": {
-			doc:     must.NotFail(NewDocument("$v", "bar")),
-			isValid: false,
+			doc:    must.NotFail(NewDocument("$v", "bar")),
+			reason: errors.New(`invalid key: "$v" (key must not contain $)`),
 		},
 	} {
 		name, tc := name, tc
@@ -50,10 +53,11 @@ func TestDocumentValidateData(t *testing.T) {
 			t.Parallel()
 
 			err := tc.doc.ValidateData()
-			if tc.isValid {
+			if tc.reason == nil {
 				assert.NoError(t, err)
 			} else {
-				assert.Error(t, err)
+				require.IsType(t, &ValidationError{}, err)
+				assert.Equal(t, tc.reason, err.(*ValidationError).reason)
 			}
 		})
 	}
