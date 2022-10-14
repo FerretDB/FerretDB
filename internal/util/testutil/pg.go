@@ -24,6 +24,13 @@ type PostgreSQLURLOpts struct {
 	// PostgreSQL database name, defaults to `ferretdb`.
 	DatabaseName string
 
+	// PostgreSQL username, defaults to `postgres`.
+	// It's omited if ReadOnly is set to true.
+	Username string
+
+	// PostgreSQL host, defaults to `127.0.0.1:5432`.
+	Host string
+
 	// If set, the pool will use read-only user.
 	ReadOnly bool
 
