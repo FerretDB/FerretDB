@@ -15,7 +15,6 @@
 package fjson
 
 import (
-	"bytes"
 	"encoding/json"
 	"time"
 
@@ -36,29 +35,6 @@ func (dt *dateTimeType) String() string {
 // dateTimeJSON is a JSON object representation of the dateTimeType.
 type dateTimeJSON struct {
 	D int64 `json:"$d"`
-}
-
-// UnmarshalJSON implements fjsontype interface.
-func (dt *dateTimeType) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
-	}
-
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
-
-	var o dateTimeJSON
-	if err := dec.Decode(&o); err != nil {
-		return lazyerrors.Error(err)
-	}
-	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	// TODO Use .UTC(): https://github.com/FerretDB/FerretDB/issues/43
-	*dt = dateTimeType(time.UnixMilli(o.D))
-	return nil
 }
 
 // MarshalJSON implements fjsontype interface.

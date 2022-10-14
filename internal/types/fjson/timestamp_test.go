@@ -38,11 +38,3 @@ func TestTimestamp(t *testing.T) {
 	t.Parallel()
 	testJSON(t, timestampTestCases, func() fjsontype { return new(timestampType) })
 }
-
-func FuzzTimestamp(f *testing.F) {
-	fuzzJSON(f, timestampTestCases, func() fjsontype { return new(timestampType) })
-}
-
-func BenchmarkTimestamp(b *testing.B) {
-	benchmark(b, timestampTestCases, func() fjsontype { return new(timestampType) })
-}
