@@ -147,6 +147,7 @@ tasks:
     deps:
       - test-integration-pg
       - test-integration-tigris
+      - test-integration-cockroach
       - test-integration-mongodb
 
   test-integration-pg:
