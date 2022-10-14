@@ -44,6 +44,10 @@ var (
 	handlerF    = flag.String("handler", "pg", "handler to use for in-process FerretDB")
 	compatPortF = flag.Int("compat-port", 37017, "second system's port for compatibility tests; if 0, they are skipped")
 
+	pgHostF     = flag.String("pg-host", "127.0.0.1:5432", "PostgreSQL database hostname")
+	pgUserF     = flag.String("pg-user", "postgres", "PostgreSQL database username")
+	pgDatabaseF = flag.String("pg-db", "ferretdb", "PostgreSQL database name")
+
 	// Disable noisy setup logs by default.
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
 	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
@@ -92,10 +96,14 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 	tb.Helper()
 
 	h, err := registry.NewHandler(*handlerF, &registry.NewHandlerOpts{
-		Ctx:           ctx,
-		Logger:        logger,
-		PostgreSQLURL: testutil.PostgreSQLURL(tb, nil),
-		TigrisURL:     testutil.TigrisURL(tb),
+		Ctx:    ctx,
+		Logger: logger,
+		PostgreSQLURL: testutil.PostgreSQLURL(tb, &testutil.PostgreSQLURLOpts{
+			Host:         *pgHostF,
+			Username:     *pgUserF,
+			DatabaseName: *pgDatabaseF,
+		}),
+		TigrisURL: testutil.TigrisURL(tb),
 	})
 	require.NoError(tb, err)
 

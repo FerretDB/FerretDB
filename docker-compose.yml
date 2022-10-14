@@ -39,7 +39,7 @@ services:
     ports:
       - 26257:26257
     environment:
-      - COCKROACH_USER=postgres
+      - COCKROACH_USER=cockroach
       - COCKROACH_DATABASE=ferretdb
 
   # for proxy mode and mongosh
