@@ -37,10 +37,6 @@ var int64TestCases = []testCase{{
 	name: "min int64",
 	v:    pointer.To(int64Type(math.MinInt64)),
 	j:    `{"$l":"-9223372036854775808"}`,
-}, {
-	name: "EOF",
-	j:    `{`,
-	jErr: `unexpected EOF`,
 }}
 
 func TestInt64(t *testing.T) {
