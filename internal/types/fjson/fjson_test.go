@@ -32,15 +32,12 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			require.NotEmpty(t, tc.name, "name should not be empty")
+			require.NotNil(t, tc.v, "v should not be nil")
 			require.NotEmpty(t, tc.j, "j should not be empty")
 
 			t.Parallel()
 
 			t.Run("MarshalJSON", func(t *testing.T) {
-				if tc.v == nil {
-					t.Skip("v is nil")
-				}
-
 				t.Parallel()
 
 				actualJ, err := tc.v.MarshalJSON()
@@ -49,10 +46,6 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() fjsontype) {
 			})
 
 			t.Run("Marshal", func(t *testing.T) {
-				if tc.v == nil {
-					t.Skip("v is nil")
-				}
-
 				t.Parallel()
 
 				actualJ, err := Marshal(fromFJSON(tc.v))
