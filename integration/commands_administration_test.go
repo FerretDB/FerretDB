@@ -856,14 +856,6 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 			expectedFields: []string{"total", "failed"},
 			expectedNoZero: []string{"total"},
 		},
-		"BasicCmdFailed": {
-			cmds: []bson.D{
-				{{"ping", int32(1)}},
-			},
-			metricsPath:    types.NewPath([]string{"metrics", "commands", "ping"}),
-			expectedFields: []string{"total", "failed"},
-			expectedNoZero: []string{"total", "failed"},
-		},
 		"UpdateCmd": {
 			cmds: []bson.D{
 				{{"update", "values"}, {"updates", bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}}}}},
