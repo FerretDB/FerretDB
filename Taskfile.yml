@@ -239,6 +239,11 @@ tasks:
     cmds:
       - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records --mode=diff-normal --listen-addr=:27017 --handler=tigris
 
+  run-cockroach:
+    deps: [build-testcover]
+    cmds:
+      - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records --mode=diff-normal --listen-addr=:27017 --postgresql-url=postgres://postgres@127.0.0.1:26257/ferretdb
+
   run-proxy:
     desc: "Run FerretDB in diff-proxy mode"
     deps: [build-testcover]
