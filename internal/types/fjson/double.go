@@ -15,7 +15,6 @@
 package fjson
 
 import (
-	"bytes"
 	"encoding/json"
 	"math"
 
@@ -31,47 +30,6 @@ func (d *doubleType) fjsontype() {}
 // doubleJSON is a JSON object representation of the doubleType.
 type doubleJSON struct {
 	F any `json:"$f"`
-}
-
-// UnmarshalJSON implements fjsontype interface.
-func (d *doubleType) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
-	}
-
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
-
-	var o doubleJSON
-	if err := dec.Decode(&o); err != nil {
-		return lazyerrors.Error(err)
-	}
-	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	switch f := o.F.(type) {
-	case float64:
-		*d = doubleType(f)
-	case string:
-		switch f {
-		case "-0":
-			*d = doubleType(math.Copysign(0, -1))
-		case "Infinity":
-			*d = doubleType(math.Inf(+1))
-		case "-Infinity":
-			*d = doubleType(math.Inf(-1))
-		case "NaN":
-			*d = doubleType(math.NaN())
-		default:
-			return lazyerrors.Errorf("fjson.Double.UnmarshalJSON: unexpected string %q", f)
-		}
-	default:
-		return lazyerrors.Errorf("fjson.Double.UnmarshalJSON: unexpected type %[1]T: %[1]v", f)
-	}
-
-	return nil
 }
 
 // MarshalJSON implements fjsontype interface.
