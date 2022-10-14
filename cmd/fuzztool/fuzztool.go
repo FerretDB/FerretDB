@@ -227,7 +227,7 @@ func main() {
 		case "generated":
 			src = generatedCorpus
 		default:
-			src, err = filepath.Abs(src)
+			src, err = filepath.Abs(cli.Corpus.Src)
 			if err != nil {
 				logger.Fatal(err)
 			}
@@ -239,7 +239,7 @@ func main() {
 		case "generated":
 			dst = generatedCorpus
 		default:
-			dst, err = filepath.Abs(dst)
+			dst, err = filepath.Abs(cli.Corpus.Dst)
 			if err != nil {
 				logger.Fatal(err)
 			}
