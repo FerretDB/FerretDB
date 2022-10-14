@@ -18,9 +18,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -56,8 +55,9 @@ func TestDocumentValidateData(t *testing.T) {
 			if tc.reason == nil {
 				assert.NoError(t, err)
 			} else {
-				require.IsType(t, &ValidationError{}, err)
-				assert.Equal(t, tc.reason, err.(*ValidationError).reason)
+				var ve *ValidationError
+				require.True(t, errors.As(err, &ve))
+				assert.Equal(t, tc.reason, ve.reason)
 			}
 		})
 	}
