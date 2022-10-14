@@ -39,7 +39,7 @@ services:
       - 26257:26257
     environment:
       - COCKROACH_USER=cockroach
-      - COCKROACH_DB=ferretdb
+      - COCKROACH_DATABASE=ferretdb
 
   # for proxy mode and mongosh
   mongodb:
