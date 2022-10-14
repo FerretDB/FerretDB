@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"math"
 	"net"
+	"sort"
 	"strconv"
 	"testing"
 	"time"
@@ -903,7 +904,12 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 			actualDoc, ok := actualMetric.(*types.Document)
 			require.True(t, ok)
 
-			assert.Equal(t, tc.expectedFields, actualDoc.Keys())
+			actualFields := actualDoc.Keys()
+
+			sort.Strings(tc.expectedFields)
+			sort.Strings(actualFields)
+
+			assert.Equal(t, tc.expectedFields, actualFields)
 
 			var actualNotZeros []string
 			for key, value := range actualDoc.Map() {
