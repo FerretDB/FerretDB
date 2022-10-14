@@ -20,7 +20,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // documentType represents BSON Document type.
@@ -28,55 +27,6 @@ type documentType types.Document
 
 // fjsontype implements fjsontype interface.
 func (doc *documentType) fjsontype() {}
-
-// UnmarshalJSON implements fjsontype interface.
-func (doc *documentType) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
-	}
-
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-
-	var rawMessages map[string]json.RawMessage
-	if err := dec.Decode(&rawMessages); err != nil {
-		return lazyerrors.Error(err)
-	}
-	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	b, ok := rawMessages["$k"]
-	if !ok {
-		return lazyerrors.Errorf("fjson.documentType.UnmarshalJSON: missing $k")
-	}
-
-	var keys []string
-	if err := json.Unmarshal(b, &keys); err != nil {
-		return lazyerrors.Error(err)
-	}
-	if len(keys)+1 != len(rawMessages) {
-		return lazyerrors.Errorf("fjson.documentType.UnmarshalJSON: %d elements in $k, %d in total", len(keys), len(rawMessages))
-	}
-
-	td := must.NotFail(types.NewDocument())
-	for _, key := range keys {
-		b, ok = rawMessages[key]
-		if !ok {
-			return lazyerrors.Errorf("fjson.documentType.UnmarshalJSON: missing key %q", key)
-		}
-		v, err := Unmarshal(b)
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-		if err = td.Set(key, v); err != nil {
-			return lazyerrors.Error(err)
-		}
-	}
-
-	*doc = documentType(*td)
-	return nil
-}
 
 // MarshalJSON implements fjsontype interface.
 func (doc *documentType) MarshalJSON() ([]byte, error) {
