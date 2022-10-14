@@ -25,6 +25,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/internal/types/fjson"
 )
 
 type testCase struct {
@@ -181,6 +183,19 @@ func fuzzBinary(f *testing.F, testCases []testCase, newFunc func() bsontype) {
 			err = bufw.Flush()
 			require.NoError(t, err)
 			assert.Equal(t, expectedB, bw.Bytes(), "WriteTo results differ")
+		}
+
+		// Test that generated value can be marshaled for logging.
+		// Currently, that seems to be the best place to check it since generating values from BSON bytes is very easy.
+		{
+			// not a "real" type
+			if _, ok := v.(*CString); ok {
+				t.Skip()
+			}
+
+			mB, err := fjson.Marshal(fromBSON(v))
+			require.NoError(t, err)
+			assert.NotEmpty(t, mB)
 		}
 	})
 }

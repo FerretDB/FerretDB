@@ -71,7 +71,7 @@ func fromBSON(v bsontype) any {
 	case *int64Type:
 		return int64(*v)
 	case *CString:
-		panic("not reached")
+		panic("CString should not be there")
 	}
 
 	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
