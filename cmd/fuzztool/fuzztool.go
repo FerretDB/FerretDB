@@ -235,7 +235,8 @@ func main() {
 
 		switch cli.Corpus.Dst {
 		case "seed":
-			dst = seedCorpus
+			// Because we would need to add `/testdata/fuzz` back, and that's not very easy.
+			logger.Fatal("Copying to seed corpus is not supported.")
 		case "generated":
 			dst = generatedCorpus
 		default:
