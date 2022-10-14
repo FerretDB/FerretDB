@@ -98,7 +98,7 @@ Kindly check [our roadmap](https://github.com/orgs/FerretDB/projects/2) or the [
 For PostgreSQL, FerretDB converts MongoDB drivers and protocols to SQL, where we convert MongoDB bson to jsonb and store it as a value in a row.
 Read more on [jsonb in PostgreSQL](https://www.postgresql.org/docs/current/datatype-json.html).
 
-In Tigris case, we convert MongoDB bson to Tigris data based on the [Tigris model](https://docs.tigrisdata.com/documents/datamodel).
+In Tigris case, we convert MongoDB BSON to Tigris data based on the [Tigris model](https://docs.tigrisdata.com/documents/datamodel).
 There are a few differences in how data is stored in PostgreSQL and Tigris.
 Please [check here](https://docs.ferretdb.io/diff/) for more details on the differences.
 
