@@ -165,6 +165,14 @@ tasks:
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-tigris.txt . -handler=tigris
 
+  test-integration-cockroach:
+    desc: "Run integration tests for CockroachDB with postgres handler"
+    dir: integration
+    cmds:
+      - >
+        go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        -coverprofile=integration-pg.txt . -handler=pg -target-port=26257
+
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
     dir: integration
