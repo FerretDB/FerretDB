@@ -34,7 +34,7 @@ func TestMetrics(t *testing.T) {
 	p, err := NewProvider(filename)
 	require.NoError(t, err)
 
-	v := version.Get().Version
+	v := version.Get()
 
 	t.Run("WithUUID", func(t *testing.T) {
 		t.Parallel()
@@ -52,9 +52,9 @@ func TestMetrics(t *testing.T) {
 			`
 				# HELP ferretdb_up FerretDB instance state.
 				# TYPE ferretdb_up gauge
-				ferretdb_up{uuid=%q,version=%q} 1
+				ferretdb_up{branch=%q,commit=%q,debug="%t",dirty="%t",uuid=%q,version=%q} 1
 			`,
-			uuid, v,
+			v.Branch, v.Commit, v.Debug, v.Dirty, uuid, v.Version,
 		)
 		assert.NoError(t, testutil.CollectAndCompare(mc, strings.NewReader(expected)))
 	})
@@ -71,9 +71,9 @@ func TestMetrics(t *testing.T) {
 			`
 				# HELP ferretdb_up FerretDB instance state.
 				# TYPE ferretdb_up gauge
-				ferretdb_up{version=%q} 1
+				ferretdb_up{branch=%q,commit=%q,debug="%t",dirty="%t",version=%q} 1
 			`,
-			v,
+			v.Branch, v.Commit, v.Debug, v.Dirty, v.Version,
 		)
 		assert.NoError(t, testutil.CollectAndCompare(mc, strings.NewReader(expected)))
 	})

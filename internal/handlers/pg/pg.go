@@ -16,31 +16,29 @@
 package pg
 
 import (
-	"time"
-
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 // Handler implements handlers.Interface on top of PostgreSQL.
 type Handler struct {
 	*NewOpts
-	startTime time.Time
 }
 
 // NewOpts represents handler configuration.
 type NewOpts struct {
-	PgPool *pgdb.Pool
-	L      *zap.Logger
+	PgPool        *pgdb.Pool
+	L             *zap.Logger
+	StateProvider *state.Provider
 }
 
 // New returns a new handler.
 func New(opts *NewOpts) (handlers.Interface, error) {
 	h := &Handler{
-		NewOpts:   opts,
-		startTime: time.Now(),
+		NewOpts: opts,
 	}
 	return h, nil
 }

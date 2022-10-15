@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package state stores FerretDB process state.
 package state
 
 import (
@@ -22,26 +21,20 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
-
-// State represents FerretDB process state.
-type State struct {
-	UUID string `json:"uuid"`
-}
 
 // Provider provides access to FerretDB process state.
 type Provider struct {
 	filename string
 
-	rw sync.RWMutex
-	s  State
+	m sync.Mutex
+	s *State
 }
 
 // NewProvider creates a new Provider that stores state in the given file.
+//
+// If filename is empty, then the state is not persisted.
 func NewProvider(filename string) (*Provider, error) {
 	p := &Provider{
 		filename: filename,
@@ -59,51 +52,44 @@ func (p *Provider) MetricsCollector(addUUIDToMetric bool) prometheus.Collector {
 	return newMetricsCollector(p, addUUIDToMetric)
 }
 
-// Get returns the current process state.
+// Get returns a copy of the current process state.
 //
 // It is okay to call this function often.
 // The caller should not cache result; Provider does everything needed itself.
 func (p *Provider) Get() (*State, error) {
-	// return different copies to each caller
-	p.rw.RLock()
-	s := p.s
-	p.rw.RUnlock()
+	p.m.Lock()
+	defer p.m.Unlock()
 
-	if s.UUID != "" {
-		return &s, nil
+	if p.s != nil {
+		return p.s.deepCopy(), nil
 	}
+
+	p.s = new(State)
+
+	// use defaults if state is not persisted
+	if p.filename == "" {
+		p.s.fill()
+		return p.s.deepCopy(), nil
+	}
+
+	// Simply read and overwrite state to handle all errors and edge cases
+	// like missing directory, corrupted file, invalid UUID, etc.
 
 	b, _ := os.ReadFile(p.filename)
-	_ = json.Unmarshal(b, &s)
-	_, err := uuid.Parse(s.UUID)
+	_ = json.Unmarshal(b, p.s)
+
+	p.s.fill()
+
+	b, err := json.Marshal(p.s)
 
 	if err == nil {
-		// store a copy
-		p.rw.Lock()
-		p.s = s
-		p.rw.Unlock()
-
-		return &s, nil
+		_ = os.MkdirAll(filepath.Dir(p.filename), 0o777)
+		err = os.WriteFile(p.filename, b, 0o666)
 	}
 
-	// all errors (missing file, invalid file permission, invalid JSON, etc)
-	// are handled in the same way - by regenerating state
-
-	s.UUID = must.NotFail(uuid.NewRandom()).String()
-	b = must.NotFail(json.Marshal(s))
-
-	if err := os.MkdirAll(filepath.Dir(p.filename), 0o777); err != nil && !os.IsExist(err) {
-		return nil, fmt.Errorf("failed to create state directory: %w", err)
+	if err != nil {
+		return nil, fmt.Errorf("failed to persist state: %w", err)
 	}
 
-	if err := os.WriteFile(p.filename, b, 0o666); err != nil {
-		return nil, fmt.Errorf("failed to write state file: %w", err)
-	}
-
-	// store a copy
-	p.rw.Lock()
-	p.s = s
-	p.rw.Unlock()
-
-	return &s, nil
+	return p.s.deepCopy(), nil
 }

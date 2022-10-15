@@ -215,8 +215,9 @@ func run() {
 	go debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, logger.Named("debug"))
 
 	h, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
-		Ctx:    ctx,
-		Logger: logger,
+		Ctx:           ctx,
+		Logger:        logger,
+		StateProvider: stateProvider,
 
 		PostgreSQLURL: cli.PostgreSQLURL,
 

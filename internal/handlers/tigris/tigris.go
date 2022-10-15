@@ -16,8 +16,6 @@
 package tigris
 
 import (
-	"time"
-
 	"github.com/tigrisdata/tigris-client-go/config"
 	"go.uber.org/zap"
 
@@ -25,6 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 // notImplemented returns error for stub command handlers.
@@ -34,18 +33,18 @@ func notImplemented(command string) error {
 
 // NewOpts represents handler configuration.
 type NewOpts struct {
-	ClientID     string
-	ClientSecret string
-	Token        string
-	URL          string
-	L            *zap.Logger
+	ClientID      string
+	ClientSecret  string
+	Token         string
+	URL           string
+	L             *zap.Logger
+	StateProvider *state.Provider
 }
 
 // Handler implements handlers.Interface on top of Tigris.
 type Handler struct {
 	*NewOpts
-	db        *tigrisdb.TigrisDB
-	startTime time.Time
+	db *tigrisdb.TigrisDB
 }
 
 // New returns a new handler.
@@ -62,9 +61,8 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 	}
 
 	h := &Handler{
-		NewOpts:   opts,
-		db:        db,
-		startTime: time.Now(),
+		NewOpts: opts,
+		db:      db,
 	}
 	return h, nil
 }

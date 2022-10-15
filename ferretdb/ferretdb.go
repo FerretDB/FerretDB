@@ -26,6 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 // Config represents FerretDB configuration.
@@ -71,9 +72,15 @@ func New(config *Config) (*FerretDB, error) {
 //
 // When this method returns, listener and all connections are closed.
 func (f *FerretDB) Run(ctx context.Context) error {
+	p, err := state.NewProvider("")
+	if err != nil {
+		return fmt.Errorf("failed to construct handler: %s", err)
+	}
+
 	newOpts := registry.NewHandlerOpts{
-		Ctx:    context.Background(),
-		Logger: logger,
+		Ctx:           context.Background(),
+		Logger:        logger,
+		StateProvider: p,
 
 		PostgreSQLURL: f.config.PostgreSQLURL,
 

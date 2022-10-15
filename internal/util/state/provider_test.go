@@ -32,32 +32,34 @@ func TestProvider(t *testing.T) {
 
 	s1, err := p1.Get()
 	require.NoError(t, err)
-	assert.NotEmpty(t, s1.UUID)
+	assert.NotZero(t, s1.UUID)
+	assert.NotZero(t, s1.Start)
 
+	// cached state
 	s2, err := p1.Get()
 	require.NoError(t, err)
 	assert.Equal(t, s1, s2)
 	assert.NotSame(t, s1, s2)
 
-	s3, err := p1.Get()
-	require.NoError(t, err)
-	assert.Equal(t, s1, s3)
-	assert.NotSame(t, s1, s3)
-
 	p2, err := NewProvider(filename)
 	require.NoError(t, err)
 
-	s4, err := p2.Get()
+	// reread state file with a different provider should be the same except start time
+	s3, err := p2.Get()
 	require.NoError(t, err)
-	assert.Equal(t, s1, s4)
-	assert.NotSame(t, s1, s4)
+	assert.NotEqual(t, s1.Start, s3.Start)
+	s3.Start = s1.Start
+	assert.Equal(t, s1, s3)
+	assert.NotSame(t, s1, s3)
 
 	require.NoError(t, os.Remove(filename))
 
 	p3, err := NewProvider(filename)
 	require.NoError(t, err)
 
-	s5, err := p3.Get()
+	// after removing state file UUID should be different
+	s4, err := p3.Get()
 	require.NoError(t, err)
-	assert.NotEqual(t, s1, s5)
+	assert.NotZero(t, s4.UUID)
+	assert.NotEqual(t, s1.UUID, s4.UUID)
 }
