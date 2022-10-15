@@ -28,25 +28,41 @@ import (
 type Provider struct {
 	filename string
 
-	m sync.Mutex
-	s *State
+	rw   sync.RWMutex
+	s    *State
+	subs map[chan struct{}]struct{}
 }
 
 // NewProvider creates a new Provider that stores state in the given file.
 //
 // If filename is empty, then the state is not persisted.
+//
+// All provider's methods are thread-safe.
 func NewProvider(filename string) (*Provider, error) {
 	p := &Provider{
 		filename: filename,
+		s:        new(State),
+		subs:     make(map[chan struct{}]struct{}, 1),
 	}
 
-	if _, err := p.Get(); err != nil {
-		return nil, err
+	if p.filename != "" {
+		b, _ := os.ReadFile(p.filename)
+		_ = json.Unmarshal(b, p.s)
+	}
+
+	p.s.fill()
+
+	// Simply overwrite state to handle all errors and edge cases
+	// like missing directory, corrupted file, invalid UUID, etc.
+	if err := persistState(p.s, p.filename); err != nil {
+		return p, fmt.Errorf("failed to persist state: %w", err)
 	}
 
 	return p, nil
 }
 
+// MetricsCollector return Prometheus metrics collector for that provider.
+//
 // If addUUIDToMetric is true, then the UUID is added to the Prometheus metric.
 func (p *Provider) MetricsCollector(addUUIDToMetric bool) prometheus.Collector {
 	return newMetricsCollector(p, addUUIDToMetric)
@@ -56,40 +72,72 @@ func (p *Provider) MetricsCollector(addUUIDToMetric bool) prometheus.Collector {
 //
 // It is okay to call this function often.
 // The caller should not cache result; Provider does everything needed itself.
-func (p *Provider) Get() (*State, error) {
-	p.m.Lock()
-	defer p.m.Unlock()
+func (p *Provider) Get() *State {
+	p.rw.RLock()
+	defer p.rw.RUnlock()
 
-	if p.s != nil {
-		return p.s.deepCopy(), nil
-	}
+	return p.s.deepCopy()
+}
 
-	p.s = new(State)
+// Subscribe returns a channel that would receive notifications on state changes.
+// One notification would be scheduled immediately.
+func (p *Provider) Subscribe() chan struct{} {
+	p.rw.Lock()
+	defer p.rw.Unlock()
 
-	// use defaults if state is not persisted
-	if p.filename == "" {
-		p.s.fill()
-		return p.s.deepCopy(), nil
-	}
+	ch := make(chan struct{}, 1)
+	ch <- struct{}{}
+	p.subs[ch] = struct{}{}
+	return ch
+}
 
-	// Simply read and overwrite state to handle all errors and edge cases
-	// like missing directory, corrupted file, invalid UUID, etc.
+// Unsubscribe removes the channel from subscriptions and closes it.
+func (p *Provider) Unsubscribe(ch chan struct{}) {
+	p.rw.Lock()
+	defer p.rw.Unlock()
 
-	b, _ := os.ReadFile(p.filename)
-	_ = json.Unmarshal(b, p.s)
+	delete(p.subs, ch)
+	close(ch)
+}
 
+// Update updates the state.
+func (p *Provider) Update(s *State) error {
+	p.rw.Lock()
+	defer p.rw.Unlock()
+
+	p.s = s.deepCopy()
 	p.s.fill()
 
-	b, err := json.Marshal(p.s)
+	err := persistState(p.s, p.filename)
+	if err != nil {
+		err = fmt.Errorf("failed to persist state: %w", err)
+	}
+
+	// skip subscribers that already have notification waiting for them
+	for ch := range p.subs {
+		select {
+		case ch <- struct{}{}:
+		default:
+		}
+	}
+
+	return err
+}
+
+// persistState saves state to the given file without modifying (filling) it.
+//
+// It exist immediately if filename is empty.
+func persistState(s *State, filename string) error {
+	if filename == "" {
+		return nil
+	}
+
+	b, err := json.Marshal(s)
 
 	if err == nil {
-		_ = os.MkdirAll(filepath.Dir(p.filename), 0o777)
-		err = os.WriteFile(p.filename, b, 0o666)
+		_ = os.MkdirAll(filepath.Dir(filename), 0o777)
+		err = os.WriteFile(filename, b, 0o666)
 	}
 
-	if err != nil {
-		return nil, fmt.Errorf("failed to persist state: %w", err)
-	}
-
-	return p.s.deepCopy(), nil
+	return err
 }

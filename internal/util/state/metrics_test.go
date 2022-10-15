@@ -39,9 +39,7 @@ func TestMetrics(t *testing.T) {
 	t.Run("WithUUID", func(t *testing.T) {
 		t.Parallel()
 
-		s, err := p.Get()
-		require.NoError(t, err)
-		uuid := s.UUID
+		uuid := p.Get().UUID
 
 		mc := p.MetricsCollector(true)
 		problems, err := testutil.CollectAndLint(mc)

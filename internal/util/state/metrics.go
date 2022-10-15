@@ -60,8 +60,7 @@ func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	if mc.addUUIDToMetric {
-		s, _ := mc.p.Get()
-		constLabels["uuid"] = s.UUID
+		constLabels["uuid"] = mc.p.Get().UUID
 	}
 
 	ch <- prometheus.MustNewConstMetric(

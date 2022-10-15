@@ -26,40 +26,67 @@ import (
 func TestProvider(t *testing.T) {
 	t.Parallel()
 
-	filename := filepath.Join(t.TempDir(), "state.json")
-	p1, err := NewProvider(filename)
-	require.NoError(t, err)
+	t.Run("Get", func(t *testing.T) {
+		t.Parallel()
 
-	s1, err := p1.Get()
-	require.NoError(t, err)
-	assert.NotZero(t, s1.UUID)
-	assert.NotZero(t, s1.Start)
+		filename := filepath.Join(t.TempDir(), "state.json")
+		p1, err := NewProvider(filename)
+		require.NoError(t, err)
 
-	// cached state
-	s2, err := p1.Get()
-	require.NoError(t, err)
-	assert.Equal(t, s1, s2)
-	assert.NotSame(t, s1, s2)
+		s1 := p1.Get()
+		assert.NotZero(t, s1.UUID)
+		assert.NotZero(t, s1.Start)
 
-	p2, err := NewProvider(filename)
-	require.NoError(t, err)
+		// cached state
+		s2 := p1.Get()
+		assert.Equal(t, s1, s2)
+		assert.NotSame(t, s1, s2)
 
-	// reread state file with a different provider should be the same except start time
-	s3, err := p2.Get()
-	require.NoError(t, err)
-	assert.NotEqual(t, s1.Start, s3.Start)
-	s3.Start = s1.Start
-	assert.Equal(t, s1, s3)
-	assert.NotSame(t, s1, s3)
+		p2, err := NewProvider(filename)
+		require.NoError(t, err)
 
-	require.NoError(t, os.Remove(filename))
+		// reread state file with a different provider should be the same except start time
+		s3 := p2.Get()
+		assert.NotEqual(t, s1.Start, s3.Start)
+		s3.Start = s1.Start
+		assert.Equal(t, s1, s3)
+		assert.NotSame(t, s1, s3)
 
-	p3, err := NewProvider(filename)
-	require.NoError(t, err)
+		require.NoError(t, os.Remove(filename))
 
-	// after removing state file UUID should be different
-	s4, err := p3.Get()
-	require.NoError(t, err)
-	assert.NotZero(t, s4.UUID)
-	assert.NotEqual(t, s1.UUID, s4.UUID)
+		p3, err := NewProvider(filename)
+		require.NoError(t, err)
+
+		// after removing state file UUID should be different
+		s4 := p3.Get()
+		assert.NotZero(t, s4.UUID)
+		assert.NotEqual(t, s1.UUID, s4.UUID)
+	})
+
+	t.Run("Subscribe", func(t *testing.T) {
+		// our concurrent code should work even without parallelism
+
+		p, err := NewProvider(filepath.Join(t.TempDir(), "state.json"))
+		require.NoError(t, err)
+
+		ch := p.Subscribe()
+		defer p.Unsubscribe(ch)
+
+		require.NoError(t, p.Update(new(State)))
+
+		var s State
+		s.fill()
+		require.NoError(t, p.Update(&s))
+
+		assert.Equal(t, &s, p.Get())
+
+		<-ch
+		assert.Equal(t, &s, p.Get())
+
+		select {
+		case <-ch:
+			t.Fatal("unexpected receive")
+		default:
+		}
+	})
 }
