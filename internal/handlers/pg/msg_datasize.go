@@ -40,7 +40,8 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	if err := common.Unimplemented(document, "keyPattern", "min", "max"); err != nil {
 		return nil, err
 	}
-	common.Ignored(document, h.l, "estimate")
+
+	common.Ignored(document, h.L, "estimate")
 
 	m := document.Map()
 	target, ok := m["dataSize"].(string)
@@ -54,7 +55,7 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	db, collection := targets[0], targets[1]
 
 	started := time.Now()
-	stats, err := h.pgPool.SchemaStats(ctx, db, collection)
+	stats, err := h.PgPool.SchemaStats(ctx, db, collection)
 	elapses := time.Since(started)
 
 	addEstimate := true
