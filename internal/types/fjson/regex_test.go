@@ -38,11 +38,3 @@ func TestRegex(t *testing.T) {
 	t.Parallel()
 	testJSON(t, regexTestCases, func() fjsontype { return new(regexType) })
 }
-
-func FuzzRegex(f *testing.F) {
-	fuzzJSON(f, regexTestCases, func() fjsontype { return new(regexType) })
-}
-
-func BenchmarkRegex(b *testing.B) {
-	benchmark(b, regexTestCases, func() fjsontype { return new(regexType) })
-}
