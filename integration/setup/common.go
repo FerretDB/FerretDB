@@ -44,6 +44,7 @@ var (
 	handlerF    = flag.String("handler", "pg", "handler to use for in-process FerretDB")
 	compatPortF = flag.Int("compat-port", 37017, "second system's port for compatibility tests; if 0, they are skipped")
 
+	//PostgreSQLURLF string `name:"postgresql-url" default:"" help:"PostgreSQL URL for 'pg' handler."`
 	pgHostF     = flag.String("pg-host", "127.0.0.1:5432", "PostgreSQL database hostname")
 	pgUserF     = flag.String("pg-user", "postgres", "PostgreSQL database username")
 	pgDatabaseF = flag.String("pg-db", "ferretdb", "PostgreSQL database name")
