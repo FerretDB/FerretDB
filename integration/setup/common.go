@@ -44,10 +44,7 @@ var (
 	handlerF    = flag.String("handler", "pg", "handler to use for in-process FerretDB")
 	compatPortF = flag.Int("compat-port", 37017, "second system's port for compatibility tests; if 0, they are skipped")
 
-	//PostgreSQLURLF string `name:"postgresql-url" default:"" help:"PostgreSQL URL for 'pg' handler."`
-	pgHostF     = flag.String("pg-host", "127.0.0.1:5432", "PostgreSQL database hostname")
-	pgUserF     = flag.String("pg-user", "postgres", "PostgreSQL database username")
-	pgDatabaseF = flag.String("pg-db", "ferretdb", "PostgreSQL database name")
+	PostgreSQLURLF = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/ferretdb", "PostgreSQL URL for 'pg' handler.")
 
 	// Disable noisy setup logs by default.
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
@@ -96,15 +93,16 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 	tb.Helper()
 
+	u, err := url.Parse(*PostgreSQLURLF)
+	require.NoError(tb, err)
+
+	testutil.AddTestParams(u)
+
 	h, err := registry.NewHandler(*handlerF, &registry.NewHandlerOpts{
-		Ctx:    ctx,
-		Logger: logger,
-		PostgreSQLURL: testutil.PostgreSQLURL(tb, &testutil.PostgreSQLURLOpts{
-			Host:         *pgHostF,
-			Username:     *pgUserF,
-			DatabaseName: *pgDatabaseF,
-		}),
-		TigrisURL: testutil.TigrisURL(tb),
+		Ctx:           ctx,
+		Logger:        logger,
+		PostgreSQLURL: u.String(),
+		TigrisURL:     testutil.TigrisURL(tb),
 	})
 	require.NoError(tb, err)
 

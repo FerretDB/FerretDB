@@ -60,20 +60,22 @@ func PostgreSQLURL(tb testing.TB, opts *PostgreSQLURLOpts) string {
 		username = "readonly"
 	}
 
-	q := url.Values{
-		"pool_min_conns": []string{"1"},
-	}
-	for k, v := range opts.Params {
-		q.Set(k, v)
+	u := &url.URL{
+		Scheme: "postgres",
+		User:   url.UserPassword(username, ""),
+		Host:   "127.0.0.1:5432",
+		Path:   databaseName,
 	}
 
-	u := &url.URL{
-		Scheme:   "postgres",
-		User:     url.UserPassword(username, ""),
-		Host:     "127.0.0.1:5432",
-		Path:     databaseName,
-		RawQuery: q.Encode(),
+	AddTestParams(u)
+
+	for k, v := range opts.Params {
+		u.Query().Set(k, v)
 	}
 
 	return u.String()
+}
+
+func AddTestParams(uri *url.URL) {
+	uri.Query().Set("pool_min_conns", "1")
 }

@@ -172,7 +172,7 @@ tasks:
     cmds:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-cockroach.txt . -handler=pg -pg-user=cockroach -pg-host=127.0.0.1:26257
+        -coverprofile=integration-cockroach.txt . -handler=pg -postgresql-url=postgres://cockroach@127.0.0.1:26257/ferretdb
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"

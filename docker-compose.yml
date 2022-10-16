@@ -35,7 +35,6 @@ services:
       dockerfile: cockroach.Dockerfile
     container_name: ferretdb_cockroach
     command: start-single-node --insecure
-
     ports:
       - 26257:26257
     environment:
