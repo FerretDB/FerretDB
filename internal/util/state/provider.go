@@ -87,7 +87,9 @@ func (p *Provider) Subscribe() chan struct{} {
 
 	ch := make(chan struct{}, 1)
 	ch <- struct{}{}
+
 	p.subs[ch] = struct{}{}
+
 	return ch
 }
 
@@ -97,15 +99,17 @@ func (p *Provider) Unsubscribe(ch chan struct{}) {
 	defer p.rw.Unlock()
 
 	delete(p.subs, ch)
+
 	close(ch)
 }
 
-// Update updates the state.
-func (p *Provider) Update(s *State) error {
+// Update gets the current state, calls the given function, updates state, and notifies all subscribers.
+func (p *Provider) Update(update func(s *State)) error {
 	p.rw.Lock()
 	defer p.rw.Unlock()
 
-	p.s = s.deepCopy()
+	update(p.s)
+	p.s = p.s.deepCopy()
 	p.s.fill()
 
 	err := persistState(p.s, p.filename)

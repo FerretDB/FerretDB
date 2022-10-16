@@ -72,16 +72,16 @@ func TestProvider(t *testing.T) {
 		ch := p.Subscribe()
 		defer p.Unsubscribe(ch)
 
-		require.NoError(t, p.Update(new(State)))
+		p.Update(func(s *State) { *s = *new(State) })
 
-		var s State
-		s.fill()
-		require.NoError(t, p.Update(&s))
+		var expected State
+		expected.fill()
+		p.Update(func(s *State) { *s = expected })
 
-		assert.Equal(t, &s, p.Get())
+		assert.Equal(t, &expected, p.Get())
 
 		<-ch
-		assert.Equal(t, &s, p.Get())
+		assert.Equal(t, &expected, p.Get())
 
 		select {
 		case <-ch:
