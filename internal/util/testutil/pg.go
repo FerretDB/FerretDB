@@ -77,5 +77,7 @@ func PostgreSQLURL(tb testing.TB, opts *PostgreSQLURLOpts) string {
 }
 
 func AddTestParams(uri *url.URL) {
-	uri.Query().Set("pool_min_conns", "1")
+	q := uri.Query()
+	q.Set("pool_min_conns", "1")
+	uri.RawQuery = q.Encode()
 }
