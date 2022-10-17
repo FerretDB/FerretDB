@@ -42,10 +42,6 @@ var arrayTestCases = []testCase{{
 		types.Null,
 	))),
 	j: `[[],{"$b":"Qg==","s":128},true,{"$d":1627378542123},{"$k":[]},{"$f":42.13},42,{"$l":"42"},"foo",null]`,
-}, {
-	name: "EOF",
-	j:    `[`,
-	jErr: `unexpected EOF`,
 }}
 
 func TestArray(t *testing.T) {

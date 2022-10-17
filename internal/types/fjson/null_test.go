@@ -15,31 +15,18 @@
 package fjson
 
 import (
-	"math"
 	"testing"
 
 	"github.com/AlekSi/pointer"
 )
 
-var int64TestCases = []testCase{{
-	name: "42",
-	v:    pointer.To(int64Type(42)),
-	j:    `{"$l":"42"}`,
-}, {
-	name: "zero",
-	v:    pointer.To(int64Type(0)),
-	j:    `{"$l":"0"}`,
-}, {
-	name: "max int64",
-	v:    pointer.To(int64Type(math.MaxInt64)),
-	j:    `{"$l":"9223372036854775807"}`,
-}, {
-	name: "min int64",
-	v:    pointer.To(int64Type(math.MinInt64)),
-	j:    `{"$l":"-9223372036854775808"}`,
+var nullTestCases = []testCase{{
+	name: "null",
+	v:    pointer.To(nullType{}),
+	j:    `null`,
 }}
 
-func TestInt64(t *testing.T) {
+func TestNull(t *testing.T) {
 	t.Parallel()
-	testJSON(t, int64TestCases, func() fjsontype { return new(int64Type) })
+	testJSON(t, nullTestCases, func() fjsontype { return new(nullType) })
 }

@@ -174,17 +174,14 @@ tasks:
         -coverprofile=integration-mongodb.txt . -target-port=37017 -compat-port=0
 
   bench-short:
-    desc: "Benchmark for about 40 seconds (with default BENCHTIME)"
+    desc: "Benchmark for about 25 seconds (with default BENCHTIME)"
     cmds:
       - go test -list='Benchmark.*' ./...
-      - echo 'Running eight functions for {{.BENCHTIME}} each...'
-      - go test -bench=BenchmarkArray    -benchtime={{.BENCHTIME}} ./internal/types/fjson/       | tee -a new.txt
-      - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/types/fjson/       | tee -a new.txt
+      - echo 'Running five functions for {{.BENCHTIME}} each...'
       - go test -bench=BenchmarkArray    -benchtime={{.BENCHTIME}} ./internal/bson/              | tee -a new.txt
       - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/bson/              | tee -a new.txt
       - go test -bench=BenchmarkArray    -benchtime={{.BENCHTIME}} ./internal/handlers/pg/pjson/ | tee -a new.txt
       - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/handlers/pg/pjson/ | tee -a new.txt
-      - go test -bench=BenchmarkArray    -benchtime={{.BENCHTIME}} ./internal/tjson/             | tee -a new.txt
       - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/tjson/             | tee -a new.txt
       - bin/benchstat{{exeExt}} old.txt new.txt
 
@@ -198,17 +195,14 @@ tasks:
   # Those commands should still run tests (i.e., should not have -run=XXX flags)
   # to fill seed corpus for fuzz tests that use WriteSeedCorpusFile (e.g., FuzzHandler).
   fuzz:
-    desc: "Fuzz for about 3 minutes (with default FUZZTIME)"
+    desc: "Fuzz for about 2 minutes (with default FUZZTIME)"
     cmds:
       - go test -list='Fuzz.*' ./...
-      - echo 'Running eleven functions for {{.FUZZTIME}} each...'
-      - go test -fuzz=FuzzArray    -fuzztime={{.FUZZTIME}} ./internal/types/fjson/
-      - go test -fuzz=FuzzDocument -fuzztime={{.FUZZTIME}} ./internal/types/fjson/
+      - echo 'Running eight functions for {{.FUZZTIME}} each...'
       - go test -fuzz=FuzzArray    -fuzztime={{.FUZZTIME}} ./internal/bson/
       - go test -fuzz=FuzzDocument -fuzztime={{.FUZZTIME}} ./internal/bson/
       - go test -fuzz=FuzzArray    -fuzztime={{.FUZZTIME}} ./internal/handlers/pg/pjson/
       - go test -fuzz=FuzzDocument -fuzztime={{.FUZZTIME}} ./internal/handlers/pg/pjson/
-      - go test -fuzz=FuzzArray    -fuzztime={{.FUZZTIME}} ./internal/tjson/
       - go test -fuzz=FuzzDocument -fuzztime={{.FUZZTIME}} ./internal/tjson/
       - go test -fuzz=FuzzMsg      -fuzztime={{.FUZZTIME}} ./internal/wire/
       - go test -fuzz=FuzzQuery    -fuzztime={{.FUZZTIME}} ./internal/wire/
