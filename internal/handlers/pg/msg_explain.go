@@ -43,7 +43,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.l, "verbosity")
+	common.Ignored(document, h.L, "verbosity")
 
 	command, err := common.GetRequiredParam[*types.Document](document, document.Command())
 	if err != nil {
@@ -67,7 +67,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	var queryPlanner *types.Array
-	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var err error
 		queryPlanner, err = pgdb.Explain(ctx, tx, sp)
 		return err

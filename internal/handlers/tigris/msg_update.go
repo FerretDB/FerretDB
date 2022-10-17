@@ -39,6 +39,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	if err := common.Unimplemented(document, "let"); err != nil {
 		return nil, err
 	}
+
 	common.Ignored(document, h.L, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
 
 	var fp tigrisdb.FetchParam
