@@ -46,6 +46,12 @@ var dateTimeTestCases = []testCase{{
 	schema: stringSchema,
 	j:      `{`,
 	jErr:   `unexpected EOF`,
+}, {
+	name:   "schema mismatch",
+	schema: boolSchema,
+	v:      pointer.To(dateTimeType(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))),
+	j:      `"2021-11-01T10:18:42.123Z"`,
+	sErr:   "json: cannot unmarshal string into Go value of type bool",
 }}
 
 func TestDateTime(t *testing.T) {

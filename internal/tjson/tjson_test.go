@@ -38,6 +38,7 @@ type testCase struct {
 	j      string    // json data to unmarshal
 	canonJ string    // canonical form without extra object fields, zero values, etc.
 	jErr   string    // unwrapped
+	sErr   string
 }
 
 func TestMarshalUnmarshal(t *testing.T) {
@@ -175,14 +176,20 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() tjsontype) {
 
 				v, err := Unmarshal([]byte(tc.j), tc.schema)
 
-				if tc.jErr == "" {
-					require.NoError(t, err)
-					assertEqual(t, tc.v, toTJSON(v))
+				if tc.sErr != "" {
+					require.Error(t, err)
+					require.Equal(t, tc.sErr, lastErr(err).Error())
 					return
 				}
 
-				require.Error(t, err)
-				require.Equal(t, tc.jErr, lastErr(err).Error())
+				if tc.jErr != "" {
+					require.Error(t, err)
+					require.Equal(t, tc.jErr, lastErr(err).Error())
+					return
+				}
+
+				require.NoError(t, err)
+				assertEqual(t, tc.v, toTJSON(v))
 			})
 
 			t.Run("MarshalJSON", func(t *testing.T) {

@@ -30,6 +30,12 @@ var boolTestCases = []testCase{{
 	v:      pointer.To(boolType(true)),
 	schema: boolSchema,
 	j:      `true`,
+}, {
+	name:   "schema mismatch",
+	schema: binarySchema,
+	v:      pointer.To(boolType(true)),
+	j:      `true`,
+	sErr:   "json: cannot unmarshal bool into Go value of type map[string]json.RawMessage",
 }}
 
 func TestBool(t *testing.T) {
