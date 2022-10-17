@@ -21,6 +21,8 @@ import (
 )
 
 // CString represents BSON zero-terminated UTF-8 string type.
+//
+// It is not a "real" BSON data type but used by some of them and also by the wire protocol.
 type CString string
 
 func (cstr *CString) bsontype() {}

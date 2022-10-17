@@ -33,8 +33,7 @@ var binaryTestCases = []testCase{{
 		Subtype: types.BinaryGeneric,
 		B:       []byte{},
 	},
-	j:      `{"$b":""}`,
-	canonJ: `{"$b":"","s":0}`,
+	j: `{"$b":"","s":0}`,
 }, {
 	name: "invalid subtype",
 	v: &binaryType{
@@ -42,30 +41,9 @@ var binaryTestCases = []testCase{{
 		B:       []byte{},
 	},
 	j: `{"$b":"","s":255}`,
-}, {
-	name: "extra JSON fields",
-	v: &binaryType{
-		Subtype: types.BinaryUser,
-		B:       []byte("foo"),
-	},
-	j:      `{"$b":"Zm9v","s":128,"foo":"bar"}`,
-	canonJ: `{"$b":"Zm9v","s":128}`,
-	jErr:   `json: unknown field "foo"`,
-}, {
-	name: "EOF",
-	j:    `{`,
-	jErr: `unexpected EOF`,
 }}
 
 func TestBinary(t *testing.T) {
 	t.Parallel()
 	testJSON(t, binaryTestCases, func() fjsontype { return new(binaryType) })
-}
-
-func FuzzBinary(f *testing.F) {
-	fuzzJSON(f, binaryTestCases, func() fjsontype { return new(binaryType) })
-}
-
-func BenchmarkBinary(b *testing.B) {
-	benchmark(b, binaryTestCases, func() fjsontype { return new(binaryType) })
 }

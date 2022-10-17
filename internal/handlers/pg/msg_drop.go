@@ -35,7 +35,7 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.l, "writeConcern", "comment")
+	common.Ignored(document, h.L, "writeConcern", "comment")
 
 	command := document.Command()
 
@@ -47,7 +47,7 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		return pgdb.DropCollection(ctx, tx, db, collection)
 	})
 

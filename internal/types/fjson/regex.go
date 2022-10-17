@@ -15,7 +15,6 @@
 package fjson
 
 import (
-	"bytes"
 	"encoding/json"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -32,31 +31,6 @@ func (regex *regexType) fjsontype() {}
 type regexJSON struct {
 	R string `json:"$r"`
 	O string `json:"o"`
-}
-
-// UnmarshalJSON implements fjsontype interface.
-func (regex *regexType) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
-	}
-
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
-
-	var o regexJSON
-	if err := dec.Decode(&o); err != nil {
-		return lazyerrors.Error(err)
-	}
-	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	*regex = regexType{
-		Pattern: o.R,
-		Options: o.O,
-	}
-	return nil
 }
 
 // MarshalJSON implements fjsontype interface.

@@ -37,21 +37,9 @@ var dateTimeTestCases = []testCase{{
 	name: "9999",
 	v:    pointer.To(dateTimeType(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC).Local())),
 	j:    `{"$d":253402300799999}`,
-}, {
-	name: "EOF",
-	j:    `{`,
-	jErr: `unexpected EOF`,
 }}
 
 func TestDateTime(t *testing.T) {
 	t.Parallel()
 	testJSON(t, dateTimeTestCases, func() fjsontype { return new(dateTimeType) })
-}
-
-func FuzzDateTime(f *testing.F) {
-	fuzzJSON(f, dateTimeTestCases, func() fjsontype { return new(dateTimeType) })
-}
-
-func BenchmarkDateTime(b *testing.B) {
-	benchmark(b, dateTimeTestCases, func() fjsontype { return new(dateTimeType) })
 }

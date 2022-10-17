@@ -53,21 +53,9 @@ var doubleTestCases = []testCase{{
 	name: "NaN",
 	v:    pointer.To(doubleType(math.NaN())),
 	j:    `{"$f":"NaN"}`,
-}, {
-	name: "EOF",
-	j:    `{`,
-	jErr: `unexpected EOF`,
 }}
 
 func TestDouble(t *testing.T) {
 	t.Parallel()
 	testJSON(t, doubleTestCases, func() fjsontype { return new(doubleType) })
-}
-
-func FuzzDouble(f *testing.F) {
-	fuzzJSON(f, doubleTestCases, func() fjsontype { return new(doubleType) })
-}
-
-func BenchmarkDouble(b *testing.B) {
-	benchmark(b, doubleTestCases, func() fjsontype { return new(doubleType) })
 }
