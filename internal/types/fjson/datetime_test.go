@@ -47,11 +47,3 @@ func TestDateTime(t *testing.T) {
 	t.Parallel()
 	testJSON(t, dateTimeTestCases, func() fjsontype { return new(dateTimeType) })
 }
-
-func FuzzDateTime(f *testing.F) {
-	fuzzJSON(f, dateTimeTestCases, func() fjsontype { return new(dateTimeType) })
-}
-
-func BenchmarkDateTime(b *testing.B) {
-	benchmark(b, dateTimeTestCases, func() fjsontype { return new(dateTimeType) })
-}

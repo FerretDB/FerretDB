@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package fjson provides converters from/to FJSON (JSON with some extensions) for built-in and `types` types.
+// Package fjson provides converters to FJSON (JSON with some extensions) for built-in and `types` types.
 //
 // See contributing guidelines and documentation for package `types` for details.
 //
@@ -40,10 +40,8 @@
 package fjson
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"time"
 
 	"github.com/AlekSi/pointer"
@@ -52,30 +50,14 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// fjsontype is a type that can be marshaled from/to FJSON.
+// fjsontype is a type that can be marshaled to FJSON.
 type fjsontype interface {
 	fjsontype() // seal for go-sumtype
 
-	json.Unmarshaler
 	json.Marshaler
 }
 
 //go-sumtype:decl fjsontype
-
-// checkConsumed returns error if decoder or reader have buffered or unread data.
-func checkConsumed(dec *json.Decoder, r *bytes.Reader) error {
-	if dr := dec.Buffered().(*bytes.Reader); dr.Len() != 0 {
-		b, _ := io.ReadAll(dr)
-		return lazyerrors.Errorf("%d bytes remains in the decoded: %s", dr.Len(), b)
-	}
-
-	if l := r.Len(); l != 0 {
-		b, _ := io.ReadAll(r)
-		return lazyerrors.Errorf("%d bytes remains in the reader: %s", l, b)
-	}
-
-	return nil
-}
 
 // fromFJSON converts fjsontype value to matching built-in or types' package value.
 func fromFJSON(v fjsontype) any {
@@ -143,81 +125,6 @@ func toFJSON(v any) fjsontype {
 	}
 
 	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
-}
-
-// Unmarshal decodes the given fjson-encoded data.
-func Unmarshal(data []byte) (any, error) {
-	var v any
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-	err := dec.Decode(&v)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-	if err := checkConsumed(dec, r); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	var res fjsontype
-	switch v := v.(type) {
-	case map[string]any:
-		switch {
-		case v["$k"] != nil:
-			var o documentType
-			err = o.UnmarshalJSON(data)
-			res = &o
-		case v["$f"] != nil:
-			var o doubleType
-			err = o.UnmarshalJSON(data)
-			res = &o
-		case v["$b"] != nil:
-			var o binaryType
-			err = o.UnmarshalJSON(data)
-			res = &o
-		case v["$o"] != nil:
-			var o objectIDType
-			err = o.UnmarshalJSON(data)
-			res = &o
-		case v["$d"] != nil:
-			var o dateTimeType
-			err = o.UnmarshalJSON(data)
-			res = &o
-		case v["$r"] != nil:
-			var o regexType
-			err = o.UnmarshalJSON(data)
-			res = &o
-		case v["$t"] != nil:
-			var o timestampType
-			err = o.UnmarshalJSON(data)
-			res = &o
-		case v["$l"] != nil:
-			var o int64Type
-			err = o.UnmarshalJSON(data)
-			res = &o
-		default:
-			err = lazyerrors.Errorf("fjson.Unmarshal: unhandled map %v", v)
-		}
-	case []any:
-		var o arrayType
-		err = o.UnmarshalJSON(data)
-		res = &o
-	case string:
-		res = pointer.To(stringType(v))
-	case bool:
-		res = pointer.To(boolType(v))
-	case nil:
-		res = new(nullType)
-	case float64:
-		res = pointer.To(int32Type(v))
-	default:
-		err = lazyerrors.Errorf("fjson.Unmarshal: unhandled element %[1]T (%[1]v)", v)
-	}
-
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return fromFJSON(res), nil
 }
 
 // Marshal encodes given built-in or types' package value into fjson.
