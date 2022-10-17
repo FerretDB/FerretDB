@@ -28,30 +28,38 @@ func convertArray(a *types.Array) *arrayType {
 	return &res
 }
 
-var arrayTestCases = []testCase{{
-	name: "array_all",
-	v: convertArray(must.NotFail(types.NewArray(
-		must.NotFail(types.NewArray()),
-		types.Binary{Subtype: types.BinaryUser, B: []byte{0x42}},
-		true,
-		time.Date(2021, 7, 27, 9, 35, 42, 123000000, time.UTC).Local(),
-		must.NotFail(types.NewDocument()),
-		42.13,
-		int32(42),
-		int64(42),
-		"foo",
-		types.Null,
-	))),
-	b: testutil.MustParseDumpFile("testdata", "array_all.hex"),
-}, {
-	name: "EOF",
-	b:    []byte{0x00},
-	bErr: `unexpected EOF`,
-}, {
-	name: "array_fuzz1",
-	b:    testutil.MustParseDumpFile("testdata", "array_fuzz1.hex"),
-	bErr: `key 0 is "8"`,
-}}
+var (
+	arrayAll = testCase{
+		name: "array_all",
+		v: convertArray(must.NotFail(types.NewArray(
+			must.NotFail(types.NewArray()),
+			types.Binary{Subtype: types.BinaryUser, B: []byte{0x42}},
+			true,
+			time.Date(2021, 7, 27, 9, 35, 42, 123000000, time.UTC).Local(),
+			must.NotFail(types.NewDocument()),
+			42.13,
+			int32(42),
+			int64(42),
+			"foo",
+			types.Null,
+		))),
+		b: testutil.MustParseDumpFile("testdata", "array_all.hex"),
+	}
+
+	arrayEOF = testCase{
+		name: "EOF",
+		b:    []byte{0x00},
+		bErr: `unexpected EOF`,
+	}
+
+	arrayFuzz1 = testCase{
+		name: "array_fuzz1",
+		b:    testutil.MustParseDumpFile("testdata", "array_fuzz1.hex"),
+		bErr: `key 0 is "8"`,
+	}
+
+	arrayTestCases = []testCase{arrayAll, arrayEOF, arrayFuzz1}
+)
 
 func TestArray(t *testing.T) {
 	t.Parallel()

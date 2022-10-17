@@ -26,7 +26,7 @@ node_modules/
 state.json
 
 # for now
-testdata/fuzz/
+**/testdata/fuzz/
 records/
 
 # for local Docker Compse changes; see https://docs.docker.com/compose/extends/#multiple-compose-files

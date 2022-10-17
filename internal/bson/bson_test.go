@@ -25,6 +25,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/internal/types/fjson"
 )
 
 type testCase struct {
@@ -108,14 +110,14 @@ func testBinary(t *testing.T, testCases []testCase, newFunc func() bsontype) {
 				actualB, err := tc.v.MarshalBinary()
 				require.NoError(t, err)
 				if !assertEqual(t, tc.b, actualB, "actual:\n%s", hex.Dump(actualB)) {
-					// unmarshal again to compare BSON values
+					// unmarshal again to compare values
 					v := newFunc()
 					br := bytes.NewReader(actualB)
 					bufr := bufio.NewReader(br)
 					err := v.ReadFrom(bufr)
 					assert.NoError(t, err)
 					if assertEqual(t, tc.v, v, "expected: %s\nactual  : %s", tc.v, v) {
-						t.Log("BSON values are equal after unmarshalling")
+						t.Log("values are equal after unmarshalling")
 					}
 					assert.Zero(t, br.Len(), "not all br bytes were consumed")
 					assert.Zero(t, bufr.Buffered(), "not all bufr bytes were consumed")
@@ -169,7 +171,19 @@ func fuzzBinary(f *testing.F, testCases []testCase, newFunc func() bsontype) {
 		{
 			actualB, err := v.MarshalBinary()
 			require.NoError(t, err)
-			assert.Equal(t, expectedB, actualB, "MarshalBinary results differ")
+			if !assert.Equal(t, expectedB, actualB, "MarshalBinary results differ") {
+				// unmarshal again to compare values
+				v2 := newFunc()
+				br2 := bytes.NewReader(actualB)
+				bufr2 := bufio.NewReader(br2)
+				err = v2.ReadFrom(bufr2)
+				assert.NoError(t, err)
+				if assertEqual(t, v, v2, "expected: %s\nactual  : %s", v, v2) {
+					t.Log("values are equal after unmarshalling")
+				}
+				assert.Zero(t, br2.Len(), "not all br bytes were consumed")
+				assert.Zero(t, bufr2.Buffered(), "not all bufr bytes were consumed")
+			}
 		}
 
 		// test WriteTo
@@ -181,6 +195,19 @@ func fuzzBinary(f *testing.F, testCases []testCase, newFunc func() bsontype) {
 			err = bufw.Flush()
 			require.NoError(t, err)
 			assert.Equal(t, expectedB, bw.Bytes(), "WriteTo results differ")
+		}
+
+		// Test that generated value can be marshaled for logging.
+		// Currently, that seems to be the best place to check it since generating values from BSON bytes is very easy.
+		{
+			// not a "real" type
+			if _, ok := v.(*CString); ok {
+				t.Skip()
+			}
+
+			mB, err := fjson.Marshal(fromBSON(v))
+			require.NoError(t, err)
+			assert.NotEmpty(t, mB)
 		}
 	})
 }
