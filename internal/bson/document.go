@@ -39,6 +39,9 @@ type document interface {
 }
 
 // Document represents BSON Document type.
+//
+// Duplicate fields are not supported yet.
+// TODO https://github.com/FerretDB/FerretDB/issues/1263
 type Document struct {
 	m    map[string]any
 	keys []string
@@ -125,10 +128,16 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 			return lazyerrors.Errorf("bson.Document.ReadFrom (ename.ReadFrom): %w", err)
 		}
 
-		doc.keys = append(doc.keys, string(ename))
+		key := string(ename)
+		doc.keys = append(doc.keys, key)
 
 		if doc.m == nil {
 			doc.m = map[string]any{}
+		}
+
+		if _, ok := doc.m[key]; ok {
+			// TODO https://github.com/FerretDB/FerretDB/issues/1263
+			return lazyerrors.Errorf("duplicate key %q", key)
 		}
 
 		switch tag(t) {
@@ -139,7 +148,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (embedded document): %w", err)
 			}
-			doc.m[string(ename)], err = types.ConvertDocument(&v)
+			doc.m[key], err = types.ConvertDocument(&v)
 			if err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (embedded document): %w", err)
 			}
@@ -152,28 +161,28 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Array): %w", err)
 			}
 			a := types.Array(v)
-			doc.m[string(ename)] = &a
+			doc.m[key] = &a
 
 		case tagDouble:
 			var v doubleType
 			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Double): %w", err)
 			}
-			doc.m[string(ename)] = float64(v)
+			doc.m[key] = float64(v)
 
 		case tagString:
 			var v stringType
 			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (String): %w", err)
 			}
-			doc.m[string(ename)] = string(v)
+			doc.m[key] = string(v)
 
 		case tagBinary:
 			var v binaryType
 			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Binary): %w", err)
 			}
-			doc.m[string(ename)] = types.Binary(v)
+			doc.m[key] = types.Binary(v)
 
 		case tagUndefined:
 			return lazyerrors.Errorf("bson.Document.ReadFrom: unhandled element type `Undefined (value) — Deprecated`")
@@ -183,53 +192,53 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (ObjectID): %w", err)
 			}
-			doc.m[string(ename)] = types.ObjectID(v)
+			doc.m[key] = types.ObjectID(v)
 
 		case tagBool:
 			var v boolType
 			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Bool): %w", err)
 			}
-			doc.m[string(ename)] = bool(v)
+			doc.m[key] = bool(v)
 
 		case tagDateTime:
 			var v dateTimeType
 			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (DateTime): %w", err)
 			}
-			doc.m[string(ename)] = time.Time(v)
+			doc.m[key] = time.Time(v)
 
 		case tagNull:
 			// skip calling ReadFrom that does nothing
-			doc.m[string(ename)] = types.Null
+			doc.m[key] = types.Null
 
 		case tagRegex:
 			var v regexType
 			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Regex): %w", err)
 			}
-			doc.m[string(ename)] = types.Regex(v)
+			doc.m[key] = types.Regex(v)
 
 		case tagInt32:
 			var v int32Type
 			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Int32): %w", err)
 			}
-			doc.m[string(ename)] = int32(v)
+			doc.m[key] = int32(v)
 
 		case tagTimestamp:
 			var v timestampType
 			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Timestamp): %w", err)
 			}
-			doc.m[string(ename)] = types.Timestamp(v)
+			doc.m[key] = types.Timestamp(v)
 
 		case tagInt64:
 			var v int64Type
 			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Int64): %w", err)
 			}
-			doc.m[string(ename)] = int64(v)
+			doc.m[key] = int64(v)
 
 		case tagDBPointer, tagDecimal, tagJavaScript, tagJavaScriptScope, tagMaxKey, tagMinKey, tagSymbol:
 			return lazyerrors.Errorf("bson.Document.ReadFrom: unhandled element type %#02x (%s)", t, tag(t))

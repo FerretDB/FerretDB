@@ -132,9 +132,12 @@ issues:
       path: internal/wire
       text: bson
 
-    # only `testutil` and `wire` packages can import `fjson` package
+    # only `testutil`, `bson` (for testing), and `wire` packages can import `fjson` package
     - linters: [depguard]
       path: internal/util/testutil
+      text: fjson
+    - linters: [depguard]
+      path: internal/bson
       text: fjson
     - linters: [depguard]
       path: internal/wire

@@ -53,10 +53,6 @@ var doubleTestCases = []testCase{{
 	name: "NaN",
 	v:    pointer.To(doubleType(math.NaN())),
 	j:    `{"$f":"NaN"}`,
-}, {
-	name: "EOF",
-	j:    `{`,
-	jErr: `unexpected EOF`,
 }}
 
 func TestDouble(t *testing.T) {
