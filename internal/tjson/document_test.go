@@ -245,7 +245,16 @@ func prepareTestCases() []testCase {
 		sErr:   "json: cannot unmarshal object into Go value of type bool",
 	}
 
-	return []testCase{handshake1, handshake2, handshake3, handshake4, all, eof, mismatchedSchema}
+	invalidDoc := must.NotFail(types.NewDocument("_id", "foo"))
+	invalidSchema := testCase{
+		name:   "mismatched schema",
+		v:      convertDocument(invalidDoc),
+		schema: &Schema{Type: "invalid"},
+		j:      `{"$k":["_id"],"_id":"foo"}`,
+		sErr:   `tjson.Unmarshal: unhandled type "invalid"`,
+	}
+
+	return []testCase{handshake1, handshake2, handshake3, handshake4, all, eof, mismatchedSchema, invalidSchema}
 }
 
 func TestDocument(t *testing.T) {

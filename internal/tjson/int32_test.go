@@ -47,6 +47,12 @@ var int32TestCases = []testCase{{
 	v:      pointer.To(int32Type(42)),
 	j:      `42`,
 	sErr:   "json: cannot unmarshal number into Go value of type bool",
+}, {
+	name:   "invalid schema",
+	schema: &Schema{Type: "invalid"},
+	v:      pointer.To(int32Type(42)),
+	j:      `42`,
+	sErr:   `tjson.Unmarshal: unhandled type "invalid"`,
 }}
 
 func TestInt32(t *testing.T) {
