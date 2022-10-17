@@ -26,7 +26,12 @@ import (
 )
 
 // SetDocumentByID sets a document by its ID.
+// If the document is not valid, it returns *types.ValidationError.
 func SetDocumentByID(ctx context.Context, tx pgx.Tx, sp *SQLParam, id any, doc *types.Document) (int64, error) {
+	if err := doc.ValidateData(); err != nil {
+		return 0, err
+	}
+
 	table, err := getTableName(ctx, tx, sp.DB, sp.Collection)
 	if err != nil {
 		return 0, err

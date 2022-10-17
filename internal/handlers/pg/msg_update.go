@@ -253,5 +253,16 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 // update updates documents by _id.
 func (h *Handler) update(ctx context.Context, tx pgx.Tx, sp *pgdb.SQLParam, doc *types.Document) (int64, error) {
 	id := must.NotFail(doc.Get("_id"))
-	return pgdb.SetDocumentByID(ctx, tx, sp, id, doc)
+
+	res, err := pgdb.SetDocumentByID(ctx, tx, sp, id, doc)
+	if err == nil {
+		return res, nil
+	}
+
+	var valErr *types.ValidationError
+	if errors.As(err, &valErr) {
+		return 0, common.NewErrorMsg(common.ErrBadValue, err.Error())
+	}
+
+	return 0, err
 }
