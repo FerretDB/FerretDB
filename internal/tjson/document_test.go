@@ -236,7 +236,16 @@ func prepareTestCases() []testCase {
 		jErr:   `unexpected EOF`,
 	}
 
-	return []testCase{handshake1, handshake2, handshake3, handshake4, all, eof}
+	mismatchedDoc := must.NotFail(types.NewDocument("_id", "foo"))
+	mismatchedSchema := testCase{
+		name:   "mismatched schema",
+		v:      convertDocument(mismatchedDoc),
+		schema: boolSchema,
+		j:      `{"$k":["_id"],"_id":"foo"}`,
+		sErr:   "json: cannot unmarshal object into Go value of type bool",
+	}
+
+	return []testCase{handshake1, handshake2, handshake3, handshake4, all, eof, mismatchedSchema}
 }
 
 func TestDocument(t *testing.T) {
