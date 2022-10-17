@@ -17,17 +17,17 @@ $ sudo dpkg -i <filename>.deb
 ```
 
 It’s important to note that `dpkg` doesn’t address dependencies.
-If you encounter any errors related to dependencies when installing, you can resolve them using the following command:
+If you encounter any errors related to dependencies when installing, you can resolve them by installing all package dependencies with the following command:
 
 ```sh
 sudo apt install -f
 ```
 
-Instead of using `dpkg`, you can use apt to manage, install, and resolve all package dependencies automatically.
-However, you must specify the full path to the .deb file.
+Instead of using `dpkg`, you can use `apt` to manage, install, and resolve all package dependencies automatically.
+However, you must specify the full path to the .deb package.
 This will stop `apt` from downloading and installing from Ubuntu’s repositories.
 
-In the root repository of the debian file, you should indicate the path by adding "`./`".
+For example, if the file is in your current working directory, indicate the path by prepending "`./`" to the filename.
 
 ```sh
 $ sudo apt update
