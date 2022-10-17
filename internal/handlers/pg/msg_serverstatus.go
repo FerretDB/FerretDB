@@ -31,7 +31,7 @@ func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		return nil, lazyerrors.Error(err)
 	}
 
-	stats, err := h.pgPool.SchemaStats(ctx, "", "")
+	stats, err := h.PgPool.SchemaStats(ctx, "", "")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

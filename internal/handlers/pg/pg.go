@@ -27,9 +27,7 @@ import (
 
 // Handler implements handlers.Interface on top of PostgreSQL.
 type Handler struct {
-	// TODO replace those fields with embedded *NewOpts to sync with Tigris handler
-	pgPool    *pgdb.Pool
-	l         *zap.Logger
+	*NewOpts
 	startTime time.Time
 	metrics   *connmetrics.ConnMetrics
 }
@@ -44,8 +42,7 @@ type NewOpts struct {
 // New returns a new handler.
 func New(opts *NewOpts) (handlers.Interface, error) {
 	h := &Handler{
-		pgPool:    opts.PgPool,
-		l:         opts.L,
+		NewOpts:   opts,
 		startTime: time.Now(),
 		metrics:   opts.Metrics,
 	}
@@ -54,7 +51,7 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 
 // Close implements HandlerInterface.
 func (h *Handler) Close() {
-	h.pgPool.Close()
+	h.PgPool.Close()
 }
 
 // check interfaces

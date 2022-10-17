@@ -40,6 +40,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
 		return nil, err
 	}
+
 	ignoredFields := []string{
 		"hint",
 		"readConcern",

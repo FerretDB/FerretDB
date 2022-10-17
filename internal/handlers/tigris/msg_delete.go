@@ -40,6 +40,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	if err := common.Unimplemented(document, "let"); err != nil {
 		return nil, err
 	}
+
 	common.Ignored(document, h.L, "writeConcern")
 
 	var deletes *types.Array
