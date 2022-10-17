@@ -27,6 +27,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -35,7 +36,7 @@ import (
 // Listener accepts incoming client connections.
 type Listener struct {
 	opts      *NewListenerOpts
-	metrics   *ListenerMetrics
+	metrics   *connmetrics.ListenerMetrics
 	handler   handlers.Interface
 	listener  net.Listener
 	listening chan struct{}
@@ -46,6 +47,7 @@ type NewListenerOpts struct {
 	ListenAddr         string
 	ProxyAddr          string
 	Mode               Mode
+	Metrics            *connmetrics.ListenerMetrics
 	Handler            handlers.Interface
 	Logger             *zap.Logger
 	TestConnTimeout    time.Duration
@@ -57,7 +59,7 @@ type NewListenerOpts struct {
 func NewListener(opts *NewListenerOpts) *Listener {
 	return &Listener{
 		opts:      opts,
-		metrics:   newListenerMetrics(),
+		metrics:   opts.Metrics,
 		handler:   opts.Handler,
 		listening: make(chan struct{}),
 	}
@@ -87,7 +89,7 @@ func (l *Listener) Run(ctx context.Context) error {
 	for {
 		netConn, err := l.listener.Accept()
 		if err != nil {
-			l.metrics.accepts.WithLabelValues("1").Inc()
+			l.metrics.Accepts.WithLabelValues("1").Inc()
 
 			if ctx.Err() != nil {
 				break
@@ -101,8 +103,8 @@ func (l *Listener) Run(ctx context.Context) error {
 		}
 
 		wg.Add(1)
-		l.metrics.accepts.WithLabelValues("0").Inc()
-		l.metrics.connectedClients.Inc()
+		l.metrics.Accepts.WithLabelValues("0").Inc()
+		l.metrics.ConnectedClients.Inc()
 
 		// run connection
 		go func() {
@@ -127,7 +129,7 @@ func (l *Listener) Run(ctx context.Context) error {
 
 			defer func() {
 				netConn.Close()
-				l.metrics.connectedClients.Dec()
+				l.metrics.ConnectedClients.Dec()
 				wg.Done()
 			}()
 
@@ -137,7 +139,7 @@ func (l *Listener) Run(ctx context.Context) error {
 				l:              l.opts.Logger.Named("// " + connID + " "), // derive from the original unnamed logger
 				proxyAddr:      l.opts.ProxyAddr,
 				handler:        l.opts.Handler,
-				connMetrics:    l.metrics.connMetrics,
+				connMetrics:    l.metrics.ConnMetrics,
 				testRecordsDir: l.opts.TestRecordsDir,
 			}
 			conn, e := newConn(opts)
