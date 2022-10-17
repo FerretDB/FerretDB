@@ -171,7 +171,7 @@ tasks:
     dir: integration
     cmds:
       - >
-        go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../... -v
         -coverprofile=integration-cockroach.txt . -handler=pg -postgresql-url=postgres://cockroach@127.0.0.1:26257/ferretdb
 
   test-integration-mongodb:
@@ -245,7 +245,7 @@ tasks:
   run-cockroach:
     deps: [build-testcover]
     cmds:
-      - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records --mode=diff-normal --listen-addr=:27017 --postgresql-url=postgres://postgres@127.0.0.1:26257/ferretdb
+      - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records --mode=diff-normal --listen-addr=:27017 --postgresql-url=postgres://cockroach@127.0.0.1:26257/ferretdb
 
   run-proxy:
     desc: "Run FerretDB in diff-proxy mode"

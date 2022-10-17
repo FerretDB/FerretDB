@@ -98,7 +98,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 
 	testutil.AddTestParams(u)
 
-	panic(u.String())
+	//panic(u.String())
 
 	h, err := registry.NewHandler(*handlerF, &registry.NewHandlerOpts{
 		Ctx:           ctx,
