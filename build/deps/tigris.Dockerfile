@@ -1,1 +1,1 @@
-FROM tigrisdata/tigris-local:main
+FROM tigrisdata/tigris-local:1.0.0-beta.9
