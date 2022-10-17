@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package clientconn
+package connmetrics
 
 import "github.com/prometheus/client_golang/prometheus"
 
@@ -23,15 +23,18 @@ const (
 
 // ListenerMetrics represents listener metrics.
 type ListenerMetrics struct {
-	connectedClients prometheus.Gauge
-	accepts          *prometheus.CounterVec
-	connMetrics      *ConnMetrics
+	ConnectedClients prometheus.Gauge
+	Accepts          *prometheus.CounterVec
+	ConnMetrics      *ConnMetrics
 }
 
 // newListenerMetrics creates new listener metrics.
-func newListenerMetrics() *ListenerMetrics {
+//
+// The cmds is the list of all expected commands that could be measured.
+// After providing them, they will be set with the zero values.
+func NewListenerMetrics(cmds []string) *ListenerMetrics {
 	return &ListenerMetrics{
-		connectedClients: prometheus.NewGauge(
+		ConnectedClients: prometheus.NewGauge(
 			prometheus.GaugeOpts{
 				Namespace: namespace,
 				Subsystem: subsystem,
@@ -39,7 +42,7 @@ func newListenerMetrics() *ListenerMetrics {
 				Help:      "The current number of connected clients.",
 			},
 		),
-		accepts: prometheus.NewCounterVec(
+		Accepts: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: namespace,
 				Subsystem: subsystem,
@@ -48,22 +51,22 @@ func newListenerMetrics() *ListenerMetrics {
 			},
 			[]string{"error"},
 		),
-		connMetrics: newConnMetrics(),
+		ConnMetrics: newConnMetrics(cmds),
 	}
 }
 
 // Describe implements prometheus.Collector.
 func (lm *ListenerMetrics) Describe(ch chan<- *prometheus.Desc) {
-	lm.connectedClients.Describe(ch)
-	lm.accepts.Describe(ch)
-	lm.connMetrics.Describe(ch)
+	lm.ConnectedClients.Describe(ch)
+	lm.Accepts.Describe(ch)
+	lm.ConnMetrics.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
 func (lm *ListenerMetrics) Collect(ch chan<- prometheus.Metric) {
-	lm.connectedClients.Collect(ch)
-	lm.accepts.Collect(ch)
-	lm.connMetrics.Collect(ch)
+	lm.ConnectedClients.Collect(ch)
+	lm.Accepts.Collect(ch)
+	lm.ConnMetrics.Collect(ch)
 }
 
 // check interfaces
