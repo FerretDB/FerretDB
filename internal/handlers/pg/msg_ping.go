@@ -25,7 +25,7 @@ import (
 
 // MsgPing implements HandlerInterface.
 func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	if err := h.pgPool.Ping(ctx); err != nil {
+	if err := h.PgPool.Ping(ctx); err != nil {
 		return nil, err
 	}
 
