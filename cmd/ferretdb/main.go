@@ -20,6 +20,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -28,8 +29,11 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
@@ -209,9 +213,15 @@ func run() {
 
 	go debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, logger.Named("debug"))
 
+	cmdsList := maps.Keys(common.Commands)
+	sort.Strings(cmdsList)
+
+	metrics := connmetrics.NewListenerMetrics(cmdsList)
+
 	h, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
 		Ctx:           ctx,
 		Logger:        logger,
+		Metrics:       metrics.ConnMetrics,
 		StateProvider: stateProvider,
 
 		PostgreSQLURL: cli.PostgreSQLURL,
@@ -231,6 +241,7 @@ func run() {
 		ProxyAddr:       cli.ProxyAddr,
 		Mode:            clientconn.Mode(cli.Mode),
 		Handler:         h,
+		Metrics:         metrics,
 		Logger:          logger,
 		TestConnTimeout: cli.Test.ConnTimeout,
 		TestRecordsDir:  cli.Test.RecordsDir,

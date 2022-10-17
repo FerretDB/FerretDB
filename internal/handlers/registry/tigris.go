@@ -30,6 +30,7 @@ func init() {
 			Token:         opts.TigrisToken,
 			URL:           opts.TigrisURL,
 			L:             opts.Logger,
+			Metrics:       opts.Metrics,
 			StateProvider: opts.StateProvider,
 		}
 		return tigris.New(handlerOpts)

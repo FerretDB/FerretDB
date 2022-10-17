@@ -18,6 +18,7 @@ package pg
 import (
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/util/state"
@@ -32,6 +33,7 @@ type Handler struct {
 type NewOpts struct {
 	PgPool        *pgdb.Pool
 	L             *zap.Logger
+	Metrics       *connmetrics.ConnMetrics
 	StateProvider *state.Provider
 }
 

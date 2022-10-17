@@ -16,9 +16,13 @@
 package tigris
 
 import (
+	"sort"
+
 	"github.com/tigrisdata/tigris-client-go/config"
 	"go.uber.org/zap"
+	"golang.org/x/exp/maps"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
@@ -38,6 +42,7 @@ type NewOpts struct {
 	Token         string
 	URL           string
 	L             *zap.Logger
+	Metrics       *connmetrics.ConnMetrics
 	StateProvider *state.Provider
 }
 
@@ -59,6 +64,9 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
+	cmdsList := maps.Keys(common.Commands)
+	sort.Strings(cmdsList)
 
 	h := &Handler{
 		NewOpts: opts,

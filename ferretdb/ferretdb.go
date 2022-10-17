@@ -20,10 +20,14 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"sort"
 
 	"go.uber.org/zap"
+	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/state"
@@ -77,9 +81,15 @@ func (f *FerretDB) Run(ctx context.Context) error {
 		return fmt.Errorf("failed to construct handler: %s", err)
 	}
 
+	cmdsList := maps.Keys(common.Commands)
+	sort.Strings(cmdsList)
+
+	metrics := connmetrics.NewListenerMetrics(cmdsList)
+
 	newOpts := registry.NewHandlerOpts{
 		Ctx:           context.Background(),
 		Logger:        logger,
+		Metrics:       metrics.ConnMetrics,
 		StateProvider: p,
 
 		PostgreSQLURL: f.config.PostgreSQLURL,
@@ -100,6 +110,7 @@ func (f *FerretDB) Run(ctx context.Context) error {
 		Mode:       clientconn.NormalMode,
 		Handler:    h,
 		Logger:     logger,
+		Metrics:    metrics,
 	})
 
 	if err = l.Run(ctx); err != nil {

@@ -23,6 +23,7 @@ import (
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/dummy"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg"
@@ -44,6 +45,7 @@ type NewHandlerOpts struct {
 	// for all handlers
 	Ctx           context.Context
 	Logger        *zap.Logger
+	Metrics       *connmetrics.ConnMetrics
 	StateProvider *state.Provider
 
 	// for `pg` handler
@@ -95,6 +97,7 @@ func init() {
 		handlerOpts := &pg.NewOpts{
 			PgPool:        pgPool,
 			L:             opts.Logger,
+			Metrics:       opts.Metrics,
 			StateProvider: opts.StateProvider,
 		}
 		return pg.New(handlerOpts)
