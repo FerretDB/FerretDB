@@ -113,6 +113,11 @@ func (h *Handler) insert(ctx context.Context, tx pgx.Tx, sp *pgdb.SQLParam, doc 
 		return nil
 	}
 
+	var valErr *types.ValidationError
+	if errors.As(err, &valErr) {
+		return common.NewErrorMsg(common.ErrBadValue, err.Error())
+	}
+
 	if errors.Is(pgdb.ErrInvalidTableName, err) || errors.Is(pgdb.ErrInvalidDatabaseName, err) {
 		msg := fmt.Sprintf("Invalid namespace: %s.%s", sp.DB, sp.Collection)
 		return common.NewErrorMsg(common.ErrInvalidNamespace, msg)
