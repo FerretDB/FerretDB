@@ -4,11 +4,11 @@ sidebar_position: 2
 
 # Debian package
 
-To install the .deb packages for FerretDB on your Debian, Ubuntu, Linux, and other Unix-like systems, you can use `apt` or `dpkg`. 
+To install the .deb packages for FerretDB on your Debian, Ubuntu, Linux, and other Unix-like systems, you can use `apt` or `dpkg`.
 
 Download the latest FerretDB .deb package from [our release pages](https://github.com/FerretDB/FerretDB/releases).
 
-To install FerretDB .deb package using `dpkg`, copy the run the following command in your terminal:
+To install FerretDB .deb package using `dpkg`, run the following command in your terminal:
 
 ```sh
 $ sudo apt update
@@ -16,7 +16,8 @@ $ sudo apt update
 $ sudo dpkg -i <filename>.deb
 ```
 
-It’s important to note that `dpkg` doesn’t address dependencies. If you encounter any errors related to dependencies when installing, you can resolve them using the following command:
+It’s important to note that `dpkg` doesn’t address dependencies.
+If you encounter any errors related to dependencies when installing, you can resolve them using the following command:
 
 ```sh
 sudo apt install -f
@@ -33,4 +34,5 @@ $ sudo apt update
 # Install via apt
 $ sudo apt install ./<filename>.deb
 ```
+
 Once FerretDB is installed, you can start the software.
