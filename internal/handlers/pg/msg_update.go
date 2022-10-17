@@ -40,7 +40,8 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	if err := common.Unimplemented(document, "let"); err != nil {
 		return nil, err
 	}
-	common.Ignored(document, h.l, "ordered", "writeConcern", "bypassDocumentValidation")
+
+	common.Ignored(document, h.L, "ordered", "writeConcern", "bypassDocumentValidation")
 
 	var sp pgdb.SQLParam
 
@@ -67,7 +68,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	var created bool
-	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		created, err = pgdb.CreateCollectionIfNotExist(ctx, tx, sp.DB, sp.Collection)
 		return err
 	})
@@ -80,13 +81,13 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 	if created {
-		h.l.Info("Created table.", zap.String("schema", sp.DB), zap.String("table", sp.Collection))
+		h.L.Info("Created table.", zap.String("schema", sp.DB), zap.String("table", sp.Collection))
 	}
 
 	var matched, modified int32
 	var upserted types.Array
 
-	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		for i := 0; i < updates.Len(); i++ {
 			update, err := common.AssertType[*types.Document](must.NotFail(updates.Get(i)))
 			if err != nil {
@@ -141,7 +142,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			sp.Filter = q
 
 			resDocs := make([]*types.Document, 0, 16)
-			fetchedChan, err := h.pgPool.QueryDocuments(ctx, tx, &sp)
+			fetchedChan, err := h.PgPool.QueryDocuments(ctx, tx, &sp)
 			if err != nil {
 				return err
 			}
@@ -252,5 +253,16 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 // update updates documents by _id.
 func (h *Handler) update(ctx context.Context, tx pgx.Tx, sp *pgdb.SQLParam, doc *types.Document) (int64, error) {
 	id := must.NotFail(doc.Get("_id"))
-	return pgdb.SetDocumentByID(ctx, tx, sp, id, doc)
+
+	res, err := pgdb.SetDocumentByID(ctx, tx, sp, id, doc)
+	if err == nil {
+		return res, nil
+	}
+
+	var valErr *types.ValidationError
+	if errors.As(err, &valErr) {
+		return 0, common.NewErrorMsg(common.ErrBadValue, err.Error())
+	}
+
+	return 0, err
 }
