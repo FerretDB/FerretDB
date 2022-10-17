@@ -36,7 +36,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.l, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
+	common.Ignored(document, h.L, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
 
 	var sp pgdb.SQLParam
 
@@ -63,7 +63,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	var inserted int32
-	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		for i := 0; i < docs.Len(); i++ {
 			doc, err := docs.Get(i)
 			if err != nil {
@@ -111,6 +111,11 @@ func (h *Handler) insert(ctx context.Context, tx pgx.Tx, sp *pgdb.SQLParam, doc 
 	err := pgdb.InsertDocument(ctx, tx, sp.DB, sp.Collection, d)
 	if err == nil {
 		return nil
+	}
+
+	var valErr *types.ValidationError
+	if errors.As(err, &valErr) {
+		return common.NewErrorMsg(common.ErrBadValue, err.Error())
 	}
 
 	if errors.Is(pgdb.ErrInvalidTableName, err) || errors.Is(pgdb.ErrInvalidDatabaseName, err) {

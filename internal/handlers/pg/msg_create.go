@@ -52,6 +52,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
 		return nil, err
 	}
+
 	ignoredFields := []string{
 		"autoIndexId",
 		"storageEngine",
@@ -59,7 +60,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		"writeConcern",
 		"comment",
 	}
-	common.Ignored(document, h.l, ignoredFields...)
+	common.Ignored(document, h.L, ignoredFields...)
 
 	command := document.Command()
 
@@ -71,7 +72,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		if err := pgdb.CreateDatabaseIfNotExists(ctx, tx, db); err != nil {
 			if errors.Is(pgdb.ErrInvalidDatabaseName, err) {
 				msg := fmt.Sprintf("Invalid namespace: %s.%s", db, collection)

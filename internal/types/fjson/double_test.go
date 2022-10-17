@@ -63,11 +63,3 @@ func TestDouble(t *testing.T) {
 	t.Parallel()
 	testJSON(t, doubleTestCases, func() fjsontype { return new(doubleType) })
 }
-
-func FuzzDouble(f *testing.F) {
-	fuzzJSON(f, doubleTestCases, func() fjsontype { return new(doubleType) })
-}
-
-func BenchmarkDouble(b *testing.B) {
-	benchmark(b, doubleTestCases, func() fjsontype { return new(doubleType) })
-}
