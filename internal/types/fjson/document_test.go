@@ -208,13 +208,7 @@ var (
 			`"string":["foo",""],"timestamp":[{"$t":"42"},{"$t":"0"}]}`,
 	}
 
-	eof = testCase{
-		name: "EOF",
-		j:    `[`,
-		jErr: `unexpected EOF`,
-	}
-
-	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4, all, eof}
+	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4, all}
 )
 
 func TestDocument(t *testing.T) {
