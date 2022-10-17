@@ -33,13 +33,16 @@ type ConnMetrics struct {
 	cmds []string
 }
 
+// CommandMetrics represents metrics for a single command.
 type CommandMetrics interface{}
 
+// BasicCommandMetrics contains all metrics fields used in most of commands.
 type BasicCommandMetrics struct {
 	Failed int64
 	Total  int64
 }
 
+// UpdateCommandMetrics contains all metrics fields used in update, clusterUpdate and findAndModify commands.
 type UpdateCommandMetrics struct {
 	ArrayFilters int64
 	Failed       int64
