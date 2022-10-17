@@ -33,7 +33,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	common.Ignored(document, h.l, "writeConcern", "commitQuorum", "comment")
+	common.Ignored(document, h.L, "writeConcern", "commitQuorum", "comment")
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{

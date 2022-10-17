@@ -50,7 +50,7 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 	// 	return nil, err
 	// }
 
-	common.Ignored(document, h.l, "comment", "authorizedCollections")
+	common.Ignored(document, h.L, "comment", "authorizedCollections")
 
 	var db string
 	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
@@ -59,7 +59,7 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 
 	var names []string
 
-	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var err error
 
 		names, err = pgdb.Collections(ctx, tx, db)
