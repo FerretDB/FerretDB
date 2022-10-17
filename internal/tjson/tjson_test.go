@@ -301,15 +301,22 @@ func benchmark(b *testing.B, testCases []testCase) {
 
 				b.StopTimer()
 
-				if tc.jErr == "" {
-					require.NoError(b, err)
-					assertEqual(b, tc.v, toTJSON(v))
+				if tc.jErr != "" {
+					require.Error(b, err)
+					require.Equal(b, tc.jErr, lastErr(err).Error())
 
 					return
 				}
 
-				require.Error(b, err)
-				require.Equal(b, tc.jErr, lastErr(err).Error())
+				if tc.sErr != "" {
+					require.Error(b, err)
+					require.Equal(b, tc.sErr, lastErr(err).Error())
+
+					return
+				}
+
+				require.NoError(b, err)
+				assertEqual(b, tc.v, toTJSON(v))
 			})
 		})
 	}
