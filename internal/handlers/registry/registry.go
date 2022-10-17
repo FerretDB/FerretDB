@@ -23,6 +23,7 @@ import (
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/dummy"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg"
@@ -41,8 +42,9 @@ var registry = map[string]newHandlerFunc{}
 // NewHandlerOpts represents configuration for constructing handlers.
 type NewHandlerOpts struct {
 	// for all handlers
-	Ctx    context.Context
-	Logger *zap.Logger
+	Ctx     context.Context
+	Logger  *zap.Logger
+	Metrics *connmetrics.ConnMetrics
 
 	// for `pg` handler
 	PostgreSQLURL string
@@ -91,8 +93,9 @@ func init() {
 		}
 
 		handlerOpts := &pg.NewOpts{
-			PgPool: pgPool,
-			L:      opts.Logger,
+			PgPool:  pgPool,
+			L:       opts.Logger,
+			Metrics: opts.Metrics,
 		}
 		return pg.New(handlerOpts)
 	}
