@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"sort"
 	"sync"
 	"testing"
 	"time"
@@ -30,8 +31,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
+	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
@@ -98,9 +102,15 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 
 	testutil.AddTestParams(u)
 
+	cmdsList := maps.Keys(common.Commands)
+	sort.Strings(cmdsList)
+
+	metrics := connmetrics.NewListenerMetrics(cmdsList)
+
 	h, err := registry.NewHandler(*handlerF, &registry.NewHandlerOpts{
 		Ctx:           ctx,
 		Logger:        logger,
+		Metrics:       metrics.ConnMetrics,
 		PostgreSQLURL: u.String(),
 		TigrisURL:     testutil.TigrisURL(tb),
 	})
@@ -116,6 +126,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 		ListenAddr:         "127.0.0.1:0",
 		ProxyAddr:          proxyAddr,
 		Mode:               mode,
+		Metrics:            metrics,
 		Handler:            h,
 		Logger:             logger,
 		TestRunCancelDelay: time.Hour, // make it easier to notice missing client's disconnects
