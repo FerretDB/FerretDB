@@ -96,13 +96,13 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 	tb.Helper()
 
+	p, err := state.NewProvider("")
+	require.NoError(tb, err)
+
 	cmdsList := maps.Keys(common.Commands)
 	sort.Strings(cmdsList)
 
 	metrics := connmetrics.NewListenerMetrics(cmdsList)
-
-	p, err := state.NewProvider("")
-	require.NoError(tb, err)
 
 	h, err := registry.NewHandler(*handlerF, &registry.NewHandlerOpts{
 		Ctx:           ctx,
