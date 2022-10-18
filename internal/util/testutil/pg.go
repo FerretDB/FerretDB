@@ -72,7 +72,7 @@ func PostgreSQLURL(tb testing.TB, opts *PostgreSQLURLOpts) string {
 	return u.String()
 }
 
-// AddTestParams adds testing parameters to the query
+// AddTestParams adds testing parameters to the query.
 func AddTestParams(uri *url.URL) {
 	q := uri.Query()
 	q.Set("pool_min_conns", "1")
