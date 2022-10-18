@@ -230,9 +230,7 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() tjsontype) {
 func fuzzJSON(f *testing.F, testCases []testCase) {
 	for _, tc := range testCases {
 		schema, err := tc.schema.Marshal()
-		if err != nil {
-			require.NoError(f, err)
-		}
+		require.NoError(f, err)
 
 		f.Add(tc.j, string(schema))
 
