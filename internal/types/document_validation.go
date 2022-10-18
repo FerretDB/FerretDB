@@ -38,6 +38,7 @@ func (e *ValidationError) Error() string {
 // ValidateData checks if the document represents a valid "data document".
 // If the document is not valid it returns *ValidationError.
 func (d *Document) ValidateData() error {
+	noId := true
 	// The following block should be used to checks that keys are valid.
 	// All further key related validation rules should be added here.
 	for _, key := range d.keys {
@@ -50,6 +51,14 @@ func (d *Document) ValidateData() error {
 		if strings.Contains(key, "$") {
 			return newValidationError(fmt.Errorf("invalid key: %q (key must not contain $)", key))
 		}
+
+		if key == "_id" {
+			noId = false
+		}
+	}
+
+	if noId {
+		return newValidationError(fmt.Errorf("invalid document: (document must contain '_id' field)"))
 	}
 
 	return nil

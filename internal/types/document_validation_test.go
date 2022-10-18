@@ -46,6 +46,10 @@ func TestDocumentValidateData(t *testing.T) {
 			doc:    must.NotFail(NewDocument("$v", "bar")),
 			reason: errors.New(`invalid key: "$v" (key must not contain $)`),
 		},
+		"NoID": {
+			doc:    must.NotFail(NewDocument("$v", "foo")),
+			reason: errors.New(`invalid key: "$v" (key must not contain $)`),
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
