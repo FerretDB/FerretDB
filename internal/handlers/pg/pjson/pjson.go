@@ -77,8 +77,8 @@ func checkConsumed(dec *json.Decoder, r *bytes.Reader) error {
 	return nil
 }
 
-// frompjson converts pjsontype value to matching built-in or types' package value.
-func frompjson(v pjsontype) any {
+// fromPJSON converts pjsontype value to matching built-in or types' package value.
+func fromPJSON(v pjsontype) any {
 	switch v := v.(type) {
 	case *documentType:
 		return pointer.To(types.Document(*v))
@@ -111,8 +111,8 @@ func frompjson(v pjsontype) any {
 	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
 }
 
-// topjson converts built-in or types' package value to pjsontype value.
-func topjson(v any) pjsontype {
+// toPJSON converts built-in or types' package value to pjsontype value.
+func toPJSON(v any) pjsontype {
 	switch v := v.(type) {
 	case *types.Document:
 		return pointer.To(documentType(*v))
@@ -220,7 +220,7 @@ func Unmarshal(data []byte) (any, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return frompjson(res), nil
+	return fromPJSON(res), nil
 }
 
 // Marshal encodes given built-in or types' package value into pjson.
@@ -229,7 +229,7 @@ func Marshal(v any) ([]byte, error) {
 		panic("v is nil")
 	}
 
-	b, err := topjson(v).MarshalJSON()
+	b, err := toPJSON(v).MarshalJSON()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
