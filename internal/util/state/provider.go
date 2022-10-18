@@ -61,7 +61,7 @@ func NewProvider(filename string) (*Provider, error) {
 	return p, nil
 }
 
-// MetricsCollector return Prometheus metrics collector for that provider.
+// MetricsCollector returns Prometheus metrics collector for that provider.
 //
 // If addUUIDToMetric is true, then the UUID is added to the Prometheus metric.
 func (p *Provider) MetricsCollector(addUUIDToMetric bool) prometheus.Collector {
