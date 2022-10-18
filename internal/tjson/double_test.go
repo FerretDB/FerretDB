@@ -51,6 +51,18 @@ var doubleTestCases = []testCase{{
 	schema: doubleSchema,
 	j:      `{`,
 	jErr:   `unexpected EOF`,
+}, {
+	name:   "schema mismatch",
+	schema: boolSchema,
+	v:      pointer.To(doubleType(42.13)),
+	j:      `42.13`,
+	sErr:   "json: cannot unmarshal number into Go value of type bool",
+}, {
+	name:   "invalid schema",
+	schema: &Schema{Type: "invalid"},
+	v:      pointer.To(doubleType(42.13)),
+	j:      `42.13`,
+	sErr:   `tjson.Unmarshal: unhandled type "invalid"`,
 }}
 
 func TestDouble(t *testing.T) {
