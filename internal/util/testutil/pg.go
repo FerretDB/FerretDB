@@ -57,18 +57,17 @@ func PostgreSQLURL(tb testing.TB, opts *PostgreSQLURLOpts) string {
 		"pool_min_conns": []string{"1"},
 	}
 
-	u := &url.URL{
-		Scheme: "postgres",
-		User:   url.UserPassword(username, ""),
-		Host:   "127.0.0.1:5432",
-		Path:   databaseName,
-	}
-
 	for k, v := range opts.Params {
 		q.Set(k, v)
 	}
 
-	u.RawQuery = q.Encode()
+	u := &url.URL{
+		Scheme:   "postgres",
+		User:     url.UserPassword(username, ""),
+		Host:     "127.0.0.1:5432",
+		Path:     databaseName,
+		RawQuery: q.Encode(),
+	}
 
 	return u.String()
 }
