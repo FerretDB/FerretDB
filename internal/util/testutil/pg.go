@@ -56,7 +56,6 @@ func PostgreSQLURL(tb testing.TB, opts *PostgreSQLURLOpts) string {
 	q := url.Values{
 		"pool_min_conns": []string{"1"},
 	}
-
 	for k, v := range opts.Params {
 		q.Set(k, v)
 	}
