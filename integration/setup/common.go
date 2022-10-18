@@ -100,8 +100,6 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 	u, err := url.Parse(*PostgreSQLURLF)
 	require.NoError(tb, err)
 
-	testutil.AddTestParams(u)
-
 	cmdsList := maps.Keys(common.Commands)
 	sort.Strings(cmdsList)
 
