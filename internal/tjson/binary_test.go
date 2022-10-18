@@ -60,6 +60,24 @@ var binaryTestCases = []testCase{{
 	schema: binarySchema,
 	j:      `{`,
 	jErr:   `unexpected EOF`,
+}, {
+	name:   "schema mismatch",
+	schema: boolSchema,
+	v: &binaryType{
+		Subtype: types.BinaryUser,
+		B:       []byte("foo"),
+	},
+	j:    `{"$b":"Zm9v","s":128}`,
+	sErr: "json: cannot unmarshal object into Go value of type bool",
+}, {
+	name:   "invalid schema",
+	schema: &Schema{Type: "invalid"},
+	v: &binaryType{
+		Subtype: types.BinaryUser,
+		B:       []byte("foo"),
+	},
+	j:    `{"$b":"Zm9v","s":128}`,
+	sErr: `tjson.Unmarshal: unhandled type "invalid"`,
 }}
 
 func TestBinary(t *testing.T) {
