@@ -62,9 +62,12 @@ func PostgreSQLURL(tb testing.TB, opts *PostgreSQLURLOpts) string {
 
 	AddTestParams(u)
 
+	q := u.Query()
 	for k, v := range opts.Params {
-		u.Query().Set(k, v)
+		q.Set(k, v)
 	}
+
+	u.RawQuery = q.Encode()
 
 	return u.String()
 }
