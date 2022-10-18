@@ -39,6 +39,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -100,10 +101,14 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 
 	metrics := connmetrics.NewListenerMetrics(cmdsList)
 
+	p, err := state.NewProvider("")
+	require.NoError(tb, err)
+
 	h, err := registry.NewHandler(*handlerF, &registry.NewHandlerOpts{
 		Ctx:           ctx,
 		Logger:        logger,
 		Metrics:       metrics.ConnMetrics,
+		StateProvider: p,
 		PostgreSQLURL: testutil.PostgreSQLURL(tb, nil),
 		TigrisURL:     testutil.TigrisURL(tb),
 	})
