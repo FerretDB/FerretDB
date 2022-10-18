@@ -35,6 +35,18 @@ var stringTestCases = []testCase{{
 	v:      pointer.To(stringType("\x00")),
 	schema: stringSchema,
 	j:      `"\u0000"`,
+}, {
+	name:   "schema mismatch",
+	schema: boolSchema,
+	v:      pointer.To(stringType("foo")),
+	j:      `"foo"`,
+	sErr:   "json: cannot unmarshal string into Go value of type bool",
+}, {
+	name:   "invalid schema",
+	schema: &Schema{Type: "invalid"},
+	v:      pointer.To(stringType("foo")),
+	j:      `"foo"`,
+	sErr:   `tjson.Unmarshal: unhandled type "invalid"`,
 }}
 
 func TestString(t *testing.T) {
