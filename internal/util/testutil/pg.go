@@ -53,6 +53,10 @@ func PostgreSQLURL(tb testing.TB, opts *PostgreSQLURLOpts) string {
 		username = "readonly"
 	}
 
+	q := url.Values{
+		"pool_min_conns": []string{"1"},
+	}
+
 	u := &url.URL{
 		Scheme: "postgres",
 		User:   url.UserPassword(username, ""),
@@ -60,9 +64,6 @@ func PostgreSQLURL(tb testing.TB, opts *PostgreSQLURLOpts) string {
 		Path:   databaseName,
 	}
 
-	AddTestParams(u)
-
-	q := u.Query()
 	for k, v := range opts.Params {
 		q.Set(k, v)
 	}
@@ -70,11 +71,4 @@ func PostgreSQLURL(tb testing.TB, opts *PostgreSQLURLOpts) string {
 	u.RawQuery = q.Encode()
 
 	return u.String()
-}
-
-// AddTestParams adds testing parameters to the query.
-func AddTestParams(uri *url.URL) {
-	q := uri.Query()
-	q.Set("pool_min_conns", "1")
-	uri.RawQuery = q.Encode()
 }
