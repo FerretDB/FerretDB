@@ -17,9 +17,9 @@ require (
 	github.com/tigrisdata/tigris-client-go v1.0.0-beta.2
 	go.uber.org/zap v1.23.0
 	golang.org/x/crypto v0.0.0-20221010152910-d6f0a8c073c2 // indirect; always use @latest
-	golang.org/x/exp v0.0.0-20221011201855-a3968a42eed6
-	golang.org/x/net v0.0.0-20221004154528-8021a29435af
-	golang.org/x/sys v0.0.0-20221010170243-090e33056c14
+	golang.org/x/exp v0.0.0-20221012211006-4de253d81b95
+	golang.org/x/net v0.0.0-20221017152216-f25eb7ecb193
+	golang.org/x/sys v0.1.0
 )
 
 require (
