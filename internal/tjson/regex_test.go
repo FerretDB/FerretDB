@@ -35,6 +35,18 @@ var regexTestCases = []testCase{{
 	j:      `{`,
 	jErr:   `unexpected EOF`,
 	schema: regexSchema,
+}, {
+	name:   "schema mismatch",
+	schema: boolSchema,
+	v:      pointer.To(regexType{Pattern: "hoffman", Options: "i"}),
+	j:      `{"$r":"hoffman","o":"i"}`,
+	sErr:   "json: cannot unmarshal object into Go value of type bool",
+}, {
+	name:   "invalid schema",
+	schema: &Schema{Type: "invalid"},
+	v:      pointer.To(regexType{Pattern: "hoffman", Options: "i"}),
+	j:      `{"$r":"hoffman","o":"i"}`,
+	sErr:   `tjson.Unmarshal: unhandled type "invalid"`,
 }}
 
 func TestRegex(t *testing.T) {
