@@ -96,7 +96,7 @@ The `internal` subpackages contain most of the FerretDB code:
 * `types/fjson` provides converters from/to FJSON for built-in and `types` types.
   FJSON adds some extensions to JSON for keeping object keys in order,
   preserving BSON type information in the values themselves, etc.
-  It is used for logging.
+  It is used for logging of BSON values and wire protocol messages.
 * `bson` package provides converters from/to BSON for built-in and `types` types.
 * `wire` package provides wire protocol implementation.
 * `clientconn` package provides client connection implementation.

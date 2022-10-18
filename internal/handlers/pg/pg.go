@@ -20,6 +20,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 )
@@ -28,12 +29,14 @@ import (
 type Handler struct {
 	*NewOpts
 	startTime time.Time
+	metrics   *connmetrics.ConnMetrics
 }
 
 // NewOpts represents handler configuration.
 type NewOpts struct {
-	PgPool *pgdb.Pool
-	L      *zap.Logger
+	PgPool  *pgdb.Pool
+	L       *zap.Logger
+	Metrics *connmetrics.ConnMetrics
 }
 
 // New returns a new handler.
@@ -41,6 +44,7 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 	h := &Handler{
 		NewOpts:   opts,
 		startTime: time.Now(),
+		metrics:   opts.Metrics,
 	}
 	return h, nil
 }

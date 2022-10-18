@@ -26,7 +26,7 @@ import (
 
 // MsgServerStatus implements HandlerInterface.
 func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	res, err := common.ServerStatus(h.startTime)
+	res, err := common.ServerStatus(h.startTime, h.metrics)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
