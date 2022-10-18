@@ -23,6 +23,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 type testCase struct {
@@ -114,7 +116,7 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() pjsontype) {
 
 				if tc.jErr == "" {
 					require.NoError(t, err)
-					assertEqual(t, tc.v, topjson(v))
+					assertEqual(t, tc.v, toPJSON(v))
 					return
 				}
 
@@ -145,7 +147,7 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() pjsontype) {
 
 				t.Parallel()
 
-				actualJ, err := Marshal(frompjson(tc.v))
+				actualJ, err := Marshal(fromPJSON(tc.v))
 				require.NoError(t, err)
 
 				expectedJ := tc.j
@@ -183,6 +185,18 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() pjsontype) {
 		v := newFunc()
 		if err := v.UnmarshalJSON([]byte(j)); err != nil {
 			t.Skip()
+		}
+
+		// Temporary hack, should be removed once we improve our validation.
+		// TODO https://github.com/FerretDB/FerretDB/issues/1273
+		{
+			d, ok := fromPJSON(v).(*types.Document)
+			if !ok {
+				t.Skip()
+			}
+			if err := d.ValidateData(); err != nil {
+				t.Skip()
+			}
 		}
 
 		// test MarshalJSON

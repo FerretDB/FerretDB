@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"math"
 	"net"
+	"sort"
 	"strconv"
 	"testing"
 	"time"
@@ -836,6 +837,86 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("timeseries")))
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("views")))
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("internalViews")))
+}
+
+func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		cmds           []bson.D
+		metricsPath    types.Path
+		expectedFields []string
+		expectedNoZero []string
+	}{
+		"BasicCmd": {
+			cmds: []bson.D{
+				{{"ping", int32(1)}},
+			},
+			metricsPath:    types.NewPath([]string{"metrics", "commands", "ping"}),
+			expectedFields: []string{"total", "failed"},
+			expectedNoZero: []string{"total"},
+		},
+		"UpdateCmd": {
+			cmds: []bson.D{
+				{{"update", "values"}, {"updates", bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}}}}},
+			},
+			metricsPath:    types.NewPath([]string{"metrics", "commands", "update"}),
+			expectedFields: []string{"arrayFilters", "failed", "pipeline", "total"},
+			expectedNoZero: []string{"total"},
+		},
+		"UpdateCmdFailed": {
+			cmds: []bson.D{
+				{{"update", int32(1)}},
+			},
+			metricsPath:    types.NewPath([]string{"metrics", "commands", "update"}),
+			expectedFields: []string{"arrayFilters", "failed", "pipeline", "total"},
+			expectedNoZero: []string{"failed", "total"},
+		},
+		// TODO: https://github.com/FerretDB/FerretDB/issues/9
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx, collection := setup.Setup(t)
+
+			for _, cmd := range tc.cmds {
+				collection.Database().RunCommand(ctx, cmd)
+			}
+
+			command := bson.D{{"serverStatus", int32(1)}}
+
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+			require.NoError(t, err)
+
+			actualMetric, err := ConvertDocument(t, actual).GetByPath(tc.metricsPath)
+			assert.NoError(t, err)
+
+			actualDoc, ok := actualMetric.(*types.Document)
+			require.True(t, ok)
+
+			actualFields := actualDoc.Keys()
+
+			sort.Strings(tc.expectedFields)
+			sort.Strings(actualFields)
+
+			assert.Equal(t, tc.expectedFields, actualFields)
+
+			var actualNotZeros []string
+			for key, value := range actualDoc.Map() {
+				assert.IsType(t, int64(0), value)
+
+				if value != 0 {
+					actualNotZeros = append(actualNotZeros, key)
+				}
+			}
+
+			for _, expectedName := range tc.expectedNoZero {
+				assert.Contains(t, actualNotZeros, expectedName)
+			}
+		})
+	}
 }
 
 // TestCommandsAdministrationWhatsMyURI tests the `whatsmyuri` command.
