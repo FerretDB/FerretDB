@@ -78,7 +78,6 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 		},
 		"EmptyDocument": {
 			update: bson.D{{"$max", bson.D{{"v", bson.D{{}}}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/1000",
 		},
 		"Double": {
 			update: bson.D{{"$max", bson.D{{"v", 54.32}}}},
