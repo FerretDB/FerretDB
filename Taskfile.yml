@@ -143,11 +143,10 @@ tasks:
       - bin/task{{exeExt}} -d tools test-unit-short
 
   test-integration:
-    desc: "Run all integration tests in parallel"
+    desc: "Run integration tests for PostgreSQL and Tigris in parallel"
     deps:
       - test-integration-pg
       - test-integration-tigris
-      - test-integration-cockroach
       - test-integration-mongodb
 
   test-integration-pg:
