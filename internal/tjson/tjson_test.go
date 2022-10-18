@@ -231,7 +231,7 @@ func fuzzJSON(f *testing.F, testCases []testCase) {
 	for _, tc := range testCases {
 		schema, err := tc.schema.Marshal()
 		if err != nil {
-			f.Fatalf("failed to marshal schema: %v", err)
+			require.NoError(f, err)
 		}
 
 		f.Add(tc.j, string(schema))
