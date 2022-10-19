@@ -15,23 +15,25 @@
 package pgdb
 
 import (
+	"context"
 	"fmt"
 	"testing"
-
-	"github.com/jackc/pgx/v4"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"golang.org/x/net/context"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/jackc/pgx/v4"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestQueryDocuments(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
+
+	//ctx, cancel := context.WithCancel(ctx)
+	//defer cancel()
 
 	pool := getPool(ctx, t)
 	databaseName := testutil.DatabaseName(t)
@@ -59,37 +61,40 @@ func TestQueryDocuments(t *testing.T) {
 	}, {
 		name:             "one",
 		collection:       collectionName + "_one",
-		documents:        []*types.Document{must.NotFail(types.NewDocument("id", "1"))},
+		documents:        []*types.Document{must.NotFail(types.NewDocument("_id", "foo", "id", "1"))},
 		docsPerIteration: []int{1},
 	}, {
 		name:       "two",
 		collection: collectionName + "_two",
 		documents: []*types.Document{
-			must.NotFail(types.NewDocument("id", "1")),
-			must.NotFail(types.NewDocument("id", "2")),
+			must.NotFail(types.NewDocument("_id", "foo", "id", "1")),
+			must.NotFail(types.NewDocument("_id", "foo", "id", "2")),
 		},
 		docsPerIteration: []int{2},
 	}, {
 		name:       "three",
 		collection: collectionName + "_three",
 		documents: []*types.Document{
-			must.NotFail(types.NewDocument("id", "1")),
-			must.NotFail(types.NewDocument("id", "2")),
-			must.NotFail(types.NewDocument("id", "3")),
+			must.NotFail(types.NewDocument("_id", "foo", "id", "1")),
+			must.NotFail(types.NewDocument("_id", "foo", "id", "2")),
+			must.NotFail(types.NewDocument("_id", "foo", "id", "3")),
 		},
 		docsPerIteration: []int{2, 1},
 	}}
 
 	for _, tc := range cases {
 		tc := tc
+		ctx := ctx
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
 			tx, err := pool.Begin(ctx)
 			require.NoError(t, err)
+			defer tx.Rollback(ctx)
 
 			for _, doc := range tc.documents {
-				require.NoError(t, InsertDocument(ctx, tx, databaseName, tc.collection, doc))
+				err = InsertDocument(ctx, tx, databaseName, tc.collection, doc)
+				require.NoError(t, err)
 			}
 
 			sp := &SQLParam{DB: databaseName, Collection: tc.collection}
@@ -117,10 +122,11 @@ func TestQueryDocuments(t *testing.T) {
 	t.Run("cancel_context", func(t *testing.T) {
 		tx, err := pool.Begin(ctx)
 		require.NoError(t, err)
+		defer tx.Rollback(ctx)
 
 		for i := 1; i <= FetchedChannelBufSize*FetchedSliceCapacity+1; i++ {
 			require.NoError(t, InsertDocument(ctx, tx, databaseName, collectionName+"_cancel",
-				must.NotFail(types.NewDocument("id", fmt.Sprintf("%d", i))),
+				must.NotFail(types.NewDocument("_id", "foo", "id", fmt.Sprintf("%d", i))),
 			))
 		}
 
@@ -149,6 +155,7 @@ func TestQueryDocuments(t *testing.T) {
 	t.Run("non-existing_collection", func(t *testing.T) {
 		tx, err := pool.Begin(ctx)
 		require.NoError(t, err)
+		defer tx.Rollback(ctx)
 
 		sp := &SQLParam{DB: databaseName, Collection: collectionName + "_non-existing"}
 		fetchedChan, err := pool.QueryDocuments(context.Background(), tx, sp)
