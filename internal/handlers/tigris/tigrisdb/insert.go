@@ -40,8 +40,7 @@ func (tdb *TigrisDB) InsertDocument(ctx context.Context, db, collection string, 
 	schema.Title = collection
 	b := must.NotFail(schema.Marshal())
 
-	_, err = tdb.CreateCollectionIfNotExist(ctx, db, collection, b)
-	if err != nil {
+	if _, err := tdb.CreateCollectionIfNotExist(ctx, db, collection, b); err != nil {
 		return lazyerrors.Error(err)
 	}
 
@@ -51,9 +50,6 @@ func (tdb *TigrisDB) InsertDocument(ctx context.Context, db, collection string, 
 	}
 
 	_, err = tdb.Driver.UseDatabase(db).Insert(ctx, collection, []driver.Document{b})
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
 
-	return nil
+	return err
 }
