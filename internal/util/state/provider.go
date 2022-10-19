@@ -93,16 +93,6 @@ func (p *Provider) Subscribe() chan struct{} {
 	return ch
 }
 
-// Unsubscribe removes the channel from subscriptions and closes it.
-func (p *Provider) Unsubscribe(ch chan struct{}) {
-	p.rw.Lock()
-	defer p.rw.Unlock()
-
-	delete(p.subs, ch)
-
-	close(ch)
-}
-
 // Update gets the current state, calls the given function, updates state, and notifies all subscribers.
 func (p *Provider) Update(update func(s *State)) error {
 	p.rw.Lock()

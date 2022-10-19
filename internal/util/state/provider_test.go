@@ -65,28 +65,41 @@ func TestProvider(t *testing.T) {
 	})
 
 	t.Run("Subscribe", func(t *testing.T) {
-		t.Run("Concurrency", func(t *testing.T) {
-			p, err := NewProvider(filepath.Join(t.TempDir(), "state.json"))
-			require.NoError(t, err)
+		t.Parallel()
 
-			ch := p.Subscribe()
-			defer p.Unsubscribe(ch)
+		p, err := NewProvider(filepath.Join(t.TempDir(), "state.json"))
+		require.NoError(t, err)
 
-			p.Update(func(s *State) { *s = State{UUID: "00000000-0000-0000-0000-000000000000"} })
+		ch := p.Subscribe()
 
-			expected := &State{
-				UUID:  "11111111-1111-1111-1111-111111111111",
-				Start: time.Now(),
-			}
-			p.Update(func(s *State) { *s = *expected })
+		require.Len(t, ch, cap(ch), "channel should be full")
 
-			assert.Equal(t, expected, p.Get())
+		p.Update(func(s *State) { *s = State{UUID: "00000000-0000-0000-0000-000000000000"} })
 
-			require.NotEmpty(t, ch)
+		expected := &State{
+			UUID:  "11111111-1111-1111-1111-111111111111",
+			Start: time.Now(),
+		}
+		p.Update(func(s *State) { *s = *expected })
+
+		assert.Equal(t, expected, p.Get())
+		require.Len(t, ch, cap(ch), "channel should be full")
+
+		<-ch
+		assert.Equal(t, expected, p.Get())
+		require.Empty(t, ch)
+
+		got := make(chan struct{})
+		go func() {
 			<-ch
-			assert.Equal(t, expected, p.Get())
 
+			assert.Equal(t, expected, p.Get())
 			require.Empty(t, ch)
-		})
+			close(got)
+		}()
+
+		p.Update(func(s *State) { *s = *expected })
+
+		<-got
 	})
 }
