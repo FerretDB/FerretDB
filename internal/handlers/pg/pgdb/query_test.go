@@ -19,21 +19,19 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestQueryDocuments(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
-
-	//ctx, cancel := context.WithCancel(ctx)
-	//defer cancel()
 
 	pool := getPool(ctx, t)
 	databaseName := testutil.DatabaseName(t)
