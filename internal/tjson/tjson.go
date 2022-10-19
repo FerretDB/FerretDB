@@ -74,7 +74,7 @@ func checkConsumed(dec *json.Decoder, r *bytes.Reader) error {
 
 	if l := r.Len(); l != 0 {
 		b, _ := io.ReadAll(r)
-		return lazyerrors.Errorf("%d byte remains in the reader: `%s` (%b)", l, b)
+		return lazyerrors.Errorf("%d byte remains in the reader: `%s` (%b)", l, b, b)
 	}
 
 	return nil
