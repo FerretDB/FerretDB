@@ -68,6 +68,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	var created bool
+
 	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		created, err = pgdb.CreateCollectionIfNotExist(ctx, tx, sp.DB, sp.Collection)
 		return err
@@ -80,6 +81,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 		return nil, err
 	}
+
 	if created {
 		h.L.Info("Created table.", zap.String("schema", sp.DB), zap.String("table", sp.Collection))
 	}
@@ -107,9 +109,11 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			var q, u *types.Document
 			var upsert bool
 			var multi bool
+
 			if q, err = common.GetOptionalParam(update, "q", q); err != nil {
 				return err
 			}
+
 			if u, err = common.GetOptionalParam(update, "u", u); err != nil {
 				// TODO check if u is an array of aggregation pipeline stages
 				return err
@@ -142,10 +146,12 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			sp.Filter = q
 
 			resDocs := make([]*types.Document, 0, 16)
+
 			fetchedChan, err := h.PgPool.QueryDocuments(ctx, tx, &sp)
 			if err != nil {
 				return err
 			}
+
 			defer func() {
 				// Drain the channel to prevent leaking goroutines.
 				// TODO Offer a better design instead of channels: https://github.com/FerretDB/FerretDB/issues/898.
@@ -179,9 +185,11 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				}
 
 				doc := q.DeepCopy()
+
 				if _, err = common.UpdateDocument(doc, u); err != nil {
 					return err
 				}
+
 				if !doc.Has("_id") {
 					must.NoError(doc.Set("_id", types.NewObjectID()))
 				}
@@ -219,6 +227,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				if err != nil {
 					return err
 				}
+
 				modified += int32(rowsChanged)
 			}
 		}

@@ -228,14 +228,6 @@ func TestUpdateReplaceDocuments(t *testing.T) {
 			expectedFilter: bson.D{{"_id", "document-composite"}},
 			expected:       bson.D{{"_id", "document-composite"}, {"replacement-value", int32(1)}},
 		},
-		"ReplaceDotNotationWithEmptyDoc": {
-			update: bson.D{
-				{"q", bson.D{{"v.array.0", bson.D{{"$eq", int32(42)}}}}},
-				{"u", bson.D{{}}},
-			},
-			expectedFilter: bson.D{{"_id", "document-composite"}},
-			expected:       bson.D{{"_id", "document-composite"}},
-		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -255,6 +247,52 @@ func TestUpdateReplaceDocuments(t *testing.T) {
 			AssertEqualDocuments(t, stat, actual)
 
 			err = collection.FindOne(ctx, tc.expectedFilter).Decode(&actual)
+			require.NoError(t, err)
+			AssertEqualDocuments(t, tc.expected, actual)
+		})
+	}
+}
+
+func TestUpdateReplaceEmptyDocuments(t *testing.T) {
+	t.Parallel()
+
+	stat := bson.D{{"n", int32(1)}, {"nModified", int32(1)}, {"ok", float64(1)}}
+
+	for name, tc := range map[string]struct {
+		update   bson.D
+		expected bson.D
+	}{
+		"ReplaceEmptyDoc": {
+			update: bson.D{
+				{"q", bson.D{{"v", bson.D{{"$eq", int32(42)}}}}},
+				{"u", bson.D{}},
+			},
+			expected: bson.D{
+				{"_id", "int32"},
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup.Setup(t)
+
+			_, err := collection.InsertOne(ctx, bson.D{{"_id", "int32"}, {"v", int32(42)}})
+			require.NoError(t, err)
+
+			res := collection.Database().RunCommand(
+				ctx,
+				bson.D{{"update", collection.Name()}, {"updates", bson.A{tc.update}}},
+			)
+			require.NoError(t, res.Err())
+
+			var actual bson.D
+			err = res.Decode(&actual)
+			require.NoError(t, err)
+
+			AssertEqualDocuments(t, stat, actual)
+
+			err = collection.FindOne(ctx, bson.D{}).Decode(&actual)
 			require.NoError(t, err)
 			AssertEqualDocuments(t, tc.expected, actual)
 		})
