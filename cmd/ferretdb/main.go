@@ -210,6 +210,7 @@ func run() {
 	logger := setupLogger(uuid)
 
 	ctx, stop := notifyAppTermination(context.Background())
+
 	go func() {
 		<-ctx.Done()
 		logger.Info("Stopping...")
