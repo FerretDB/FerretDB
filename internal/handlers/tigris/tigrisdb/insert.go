@@ -50,11 +50,13 @@ func (tdb *TigrisDB) InsertDocument(ctx context.Context, db, collection string, 
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
+
 	tdb.L.Sugar().Debugf("Document:\n%s", b)
 
 	_, err = tdb.Driver.UseDatabase(db).Insert(ctx, collection, []driver.Document{b})
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
+
 	return nil
 }
