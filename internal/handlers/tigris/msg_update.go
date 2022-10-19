@@ -16,6 +16,7 @@ package tigris
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
@@ -200,10 +201,16 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 // update replaces given document.
 func (h *Handler) update(ctx context.Context, fp *tigrisdb.FetchParam, doc *types.Document) (int, error) {
 	err := h.db.ReplaceDocument(ctx, fp.DB, fp.Collection, doc)
-	switch err := err.(type) {
-	case nil:
+
+	var valErr *types.ValidationError
+	var driverErr *driver.Error
+
+	switch {
+	case err == nil:
 		return 1, nil
-	case *driver.Error:
+	case errors.As(err, &valErr):
+		return 0, common.NewErrorMsg(common.ErrBadValue, err.Error())
+	case errors.As(err, &driverErr):
 		if tigrisdb.IsInvalidArgument(err) {
 			return 0, common.NewErrorMsg(common.ErrDocumentValidationFailure, err.Error())
 		}
