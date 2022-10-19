@@ -35,7 +35,7 @@ func TestDocumentValidateData(t *testing.T) {
 		reason error
 	}{
 		"Valid": {
-			doc:    must.NotFail(NewDocument("foo", "bar")),
+			doc:    must.NotFail(NewDocument("_id", "1", "foo", "bar")),
 			reason: nil,
 		},
 		"KeyIsNotUTF8": {
@@ -47,8 +47,8 @@ func TestDocumentValidateData(t *testing.T) {
 			reason: errors.New(`invalid key: "$v" (key must not contain $)`),
 		},
 		"NoID": {
-			doc:    must.NotFail(NewDocument("$v", "foo")),
-			reason: errors.New(`invalid key: "$v" (key must not contain $)`),
+			doc:    must.NotFail(NewDocument("foo", "bar")),
+			reason: errors.New(`invalid document: (document must contain '_id' field)`),
 		},
 	} {
 		name, tc := name, tc
