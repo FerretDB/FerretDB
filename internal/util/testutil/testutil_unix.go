@@ -12,17 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+//go:build !windows
+
+package testutil
 
 import (
 	"context"
-	"os"
 	"os/signal"
 
-	"golang.org/x/sys/windows"
+	"golang.org/x/sys/unix"
 )
 
-// notifyAppTermination installs a signal handler that cancels the context.
-func notifyAppTermination(parent context.Context) (context.Context, context.CancelFunc) {
-	return signal.NotifyContext(parent, windows.SIGTERM, windows.SIGINT, os.Interrupt)
+// notifyTestsTermination installs a signal handler that cancels the context.
+func notifyTestsTermination(parent context.Context) (context.Context, context.CancelFunc) {
+	return signal.NotifyContext(parent, unix.SIGTERM, unix.SIGINT)
 }
