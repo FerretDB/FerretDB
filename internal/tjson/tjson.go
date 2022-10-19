@@ -67,6 +67,7 @@ func checkConsumed(dec *json.Decoder, r *bytes.Reader) error {
 	if dr := dec.Buffered().(*bytes.Reader); dr.Len() != 0 {
 		b, _ := io.ReadAll(dr)
 
+		// Tigris might add \n at the end of a valid document, we consider such situation as valid.
 		b = bytes.TrimSpace(b)
 		if l := len(b); l != 0 {
 			return lazyerrors.Errorf("%d bytes remains in the decoder: `%s` (%b)", l, b, b)
