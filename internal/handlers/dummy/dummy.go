@@ -33,8 +33,11 @@ func notImplemented(command string) error {
 //   - connectionStatus;
 //   - debugError;
 //   - getCmdLineOpts;
+//   - getFreeMonitoringStatus;
 //   - hostInfo;
-//   - listCommands.
+//   - listCommands;
+//   - setFreeMonitoringStatus;
+//   - whatsmyuri.
 type Handler struct{}
 
 // New returns a new handler.
