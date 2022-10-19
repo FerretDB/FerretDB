@@ -37,8 +37,6 @@ func (tdb *TigrisDB) ReplaceDocument(ctx context.Context, db, collection string,
 		return lazyerrors.Error(err)
 	}
 
-	tdb.L.Sugar().Debugf("ReplaceDocument: %s", u)
-
 	_, err = tdb.Driver.UseDatabase(db).Replace(ctx, collection, []driver.Document{u})
 
 	return err
