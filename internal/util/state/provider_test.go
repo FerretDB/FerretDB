@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -64,29 +65,28 @@ func TestProvider(t *testing.T) {
 	})
 
 	t.Run("Subscribe", func(t *testing.T) {
-		// our concurrent code should work even without parallelism
+		t.Run("Concurrency", func(t *testing.T) {
+			p, err := NewProvider(filepath.Join(t.TempDir(), "state.json"))
+			require.NoError(t, err)
 
-		p, err := NewProvider(filepath.Join(t.TempDir(), "state.json"))
-		require.NoError(t, err)
+			ch := p.Subscribe()
+			defer p.Unsubscribe(ch)
 
-		ch := p.Subscribe()
-		defer p.Unsubscribe(ch)
+			p.Update(func(s *State) { *s = State{UUID: "00000000-0000-0000-0000-000000000000"} })
 
-		p.Update(func(s *State) { *s = *new(State) })
+			expected := &State{
+				UUID:  "11111111-1111-1111-1111-111111111111",
+				Start: time.Now(),
+			}
+			p.Update(func(s *State) { *s = *expected })
 
-		var expected State
-		expected.fill()
-		p.Update(func(s *State) { *s = expected })
+			assert.Equal(t, expected, p.Get())
 
-		assert.Equal(t, &expected, p.Get())
+			require.NotEmpty(t, ch)
+			<-ch
+			assert.Equal(t, expected, p.Get())
 
-		<-ch
-		assert.Equal(t, &expected, p.Get())
-
-		select {
-		case <-ch:
-			t.Fatal("unexpected receive")
-		default:
-		}
+			require.Empty(t, ch)
+		})
 	})
 }
