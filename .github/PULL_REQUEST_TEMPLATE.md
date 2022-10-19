@@ -1,6 +1,6 @@
 # Description
 
-This PR closes #{issue_number}.
+Closes #{issue_number}.
 
 <!--
     Write a short description to explain changes that are not mentioned in the initial issue.
