@@ -13,3 +13,31 @@
 // limitations under the License.
 
 package tigrisdb
+
+import (
+	"context"
+
+	"github.com/tigrisdata/tigris-client-go/driver"
+
+	"github.com/FerretDB/FerretDB/internal/tjson"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+)
+
+// ReplaceDocument replaces a document in FerretDB database and collection.
+// If database or collection does not exist, it will be created.
+// If the document is not valid, it returns *types.ValidationError.
+func (tdb *TigrisDB) ReplaceDocument(ctx context.Context, db, collection string, doc *types.Document) error {
+	if err := doc.ValidateData(); err != nil {
+		return err
+	}
+
+	u, err := tjson.Marshal(doc)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+	tdb.L.Sugar().Debugf("ReplaceDocument: %s", u)
+
+	_, err = tdb.Driver.UseDatabase(db).Replace(ctx, collection, []driver.Document{u})
+	return err
+}

@@ -13,3 +13,48 @@
 // limitations under the License.
 
 package tigrisdb
+
+import (
+	"context"
+
+	"github.com/tigrisdata/tigris-client-go/driver"
+
+	"github.com/FerretDB/FerretDB/internal/tjson"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
+)
+
+// InsertDocument inserts a document into FerretDB database and collection.
+// If database or collection does not exist, it will be created.
+// If the document is not valid, it returns *types.ValidationError.
+func (tdb *TigrisDB) InsertDocument(ctx context.Context, db, collection string, doc *types.Document) error {
+	if err := doc.ValidateData(); err != nil {
+		return err
+	}
+
+	schema, err := tjson.DocumentSchema(doc)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+	schema.Title = collection
+	b := must.NotFail(schema.Marshal())
+	tdb.L.Sugar().Debugf("Schema:\n%s", b)
+
+	_, err = tdb.CreateCollectionIfNotExist(ctx, db, collection, b)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	b, err = tjson.Marshal(doc)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+	tdb.L.Sugar().Debugf("Document:\n%s", b)
+
+	_, err = tdb.Driver.UseDatabase(db).Insert(ctx, collection, []driver.Document{b})
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+	return nil
+}

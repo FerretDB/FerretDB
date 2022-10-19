@@ -18,11 +18,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/tigrisdata/tigris-client-go/driver"
-
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
-	"github.com/FerretDB/FerretDB/internal/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -90,28 +87,5 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 // insert checks if database and collection exist, create them if needed and attempts to insert the given doc.
 func (h *Handler) insert(ctx context.Context, fp *tigrisdb.FetchParam, doc *types.Document) error {
-	schema, err := tjson.DocumentSchema(doc)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-	schema.Title = fp.Collection
-	b := must.NotFail(schema.Marshal())
-	h.L.Sugar().Debugf("Schema:\n%s", b)
-
-	_, err = h.db.CreateCollectionIfNotExist(ctx, fp.DB, fp.Collection, b)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	b, err = tjson.Marshal(doc)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-	h.L.Sugar().Debugf("Document:\n%s", b)
-
-	_, err = h.db.Driver.UseDatabase(fp.DB).Insert(ctx, fp.Collection, []driver.Document{b})
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-	return nil
+	return h.db.InsertDocument(ctx, fp.DB, fp.Collection, doc)
 }

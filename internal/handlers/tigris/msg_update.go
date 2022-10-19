@@ -22,7 +22,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
-	"github.com/FerretDB/FerretDB/internal/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -200,13 +199,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 // update replaces given document.
 func (h *Handler) update(ctx context.Context, fp *tigrisdb.FetchParam, doc *types.Document) (int, error) {
-	u, err := tjson.Marshal(doc)
-	if err != nil {
-		return 0, lazyerrors.Error(err)
-	}
-	h.L.Sugar().Debugf("Update: %s", u)
-
-	_, err = h.db.Driver.UseDatabase(fp.DB).Replace(ctx, fp.Collection, []driver.Document{u})
+	err := h.db.ReplaceDocument(ctx, fp.DB, fp.Collection, doc)
 	switch err := err.(type) {
 	case nil:
 		return 1, nil
