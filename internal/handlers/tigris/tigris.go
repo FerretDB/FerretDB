@@ -27,11 +27,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
-// notImplemented returns error for stub command handlers.
-func notImplemented(command string) error {
-	return common.NewErrorMsg(common.ErrNotImplemented, "I'm a stub, not a real handler for "+command)
-}
-
 // NewOpts represents handler configuration.
 type NewOpts struct {
 	ClientID      string
