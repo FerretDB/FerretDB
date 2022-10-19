@@ -64,10 +64,10 @@ type tjsontype interface {
 
 // checkConsumed returns error if decoder or reader have buffered or unread data.
 func checkConsumed(dec *json.Decoder, r *bytes.Reader) error {
-	dr := dec.Buffered().(*bytes.Reader)
-	if l := dr.Len(); l != 0 {
+	if dr := dec.Buffered().(*bytes.Reader); dr.Len() != 0 {
 		b, _ := io.ReadAll(dr)
-		if !bytes.Equal(b, []byte("\n")) {
+		b = bytes.TrimSpace(b)
+		if l := len(b); l != 0 {
 			return lazyerrors.Errorf("%d byte remains in the decoder: `%s` (%b)", l, b, b)
 		}
 	}
