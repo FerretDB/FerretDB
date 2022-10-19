@@ -1,0 +1,16 @@
+---
+# see https://docs.mergify.com/configuration/
+pull_request_rules:
+  - name: "Update out-of-date ready PRs"
+    conditions:
+      - "-closed"
+      - "-conflict"
+      - "-draft"
+      - "-locked"
+      - "-merged"
+      - "#commits-behind > 0"
+      - "author != dependabot[bot]"
+      - "base = main"
+      - "label != 'no ci'"
+    actions:
+      update:
