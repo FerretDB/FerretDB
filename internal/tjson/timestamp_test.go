@@ -35,6 +35,18 @@ var timestampTestCases = []testCase{{
 	j:      `{`,
 	jErr:   `unexpected EOF`,
 	schema: timestampSchema,
+}, {
+	name:   "schema mismatch",
+	schema: boolSchema,
+	v:      pointer.To(timestampType(1)),
+	j:      `{"$t":"1"}`,
+	sErr:   "json: cannot unmarshal object into Go value of type bool",
+}, {
+	name:   "invalid schema",
+	schema: &Schema{Type: "invalid"},
+	v:      pointer.To(timestampType(1)),
+	j:      `{"$t":"1"}`,
+	sErr:   `tjson.Unmarshal: unhandled type "invalid"`,
 }}
 
 func TestTimestamp(t *testing.T) {
