@@ -129,8 +129,6 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 								if e, ok := targetErr.(mongo.CommandError); ok && e.Name == "DocumentValidationFailure" {
 									if e.HasErrorCodeWithMessage(121, "json schema validation failed for field") {
 										setup.SkipForTigrisWithReason(t, targetErr.Error())
-									} else {
-										fmt.Printf("TODO!!!")
 									}
 								}
 

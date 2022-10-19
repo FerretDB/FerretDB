@@ -17,6 +17,7 @@ package tigrisdb
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
@@ -60,6 +61,8 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *FetchParam) ([]*
 	}
 
 	var schema tjson.Schema
+	sch := string(collection.Schema)
+	fmt.Println(sch)
 	if err = schema.Unmarshal(collection.Schema); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
