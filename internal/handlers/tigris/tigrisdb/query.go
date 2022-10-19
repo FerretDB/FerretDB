@@ -17,6 +17,7 @@ package tigrisdb
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
 

@@ -69,13 +69,13 @@ func checkConsumed(dec *json.Decoder, r *bytes.Reader) error {
 
 		b = bytes.TrimSpace(b)
 		if l := len(b); l != 0 {
-			return lazyerrors.Errorf("%d byte remains in the decoder: `%s` (%b)", l, b, b)
+			return lazyerrors.Errorf("%d bytes remains in the decoder: `%s` (%b)", l, b, b)
 		}
 	}
 
 	if l := r.Len(); l != 0 {
 		b, _ := io.ReadAll(r)
-		return lazyerrors.Errorf("%d byte remains in the reader: `%s` (%b)", l, b, b)
+		return lazyerrors.Errorf("%d bytes remains in the reader: `%s` (%b)", l, b, b)
 	}
 
 	return nil
