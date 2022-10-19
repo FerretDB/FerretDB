@@ -54,6 +54,7 @@ func TestQueryDocuments(t *testing.T) {
 	}{{
 		name:             "empty",
 		collection:       collectionName,
+		collection:       collectionName,
 		documents:        []*types.Document{},
 		docsPerIteration: []int{},
 	}, {
