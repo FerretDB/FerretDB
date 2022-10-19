@@ -10,7 +10,7 @@ pull_request_rules:
       - "-merged"
       - "#commits-behind > 0"
       - "author != dependabot[bot]"
-      - "base=main"
+      - "base = main"
       - "label != 'no ci'"
     actions:
       update:
