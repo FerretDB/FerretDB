@@ -104,10 +104,12 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 
 		// Strings are not converted to numbers
 		"StringIntegerHigher": {
-			update: bson.D{{"$max", bson.D{{"v", "60"}}}},
+			update:        bson.D{{"$max", bson.D{{"v", "60"}}}},
+			skipForTigris: "In Mongo `v` will be a string, in Tigris - a number.",
 		},
 		"StringIntegerLower": {
-			update: bson.D{{"$max", bson.D{{"v", "30"}}}},
+			update:        bson.D{{"$max", bson.D{{"v", "30"}}}},
+			skipForTigris: "In Mongo `v` will be a string, in Tigris - a number.",
 		},
 		"StringDouble": {
 			update: bson.D{{"$max", bson.D{{"v", "54.32"}}}},
