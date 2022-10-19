@@ -66,6 +66,7 @@ type tjsontype interface {
 func checkConsumed(dec *json.Decoder, r *bytes.Reader) error {
 	if dr := dec.Buffered().(*bytes.Reader); dr.Len() != 0 {
 		b, _ := io.ReadAll(dr)
+
 		b = bytes.TrimSpace(b)
 		if l := len(b); l != 0 {
 			return lazyerrors.Errorf("%d byte remains in the decoder: `%s` (%b)", l, b, b)
