@@ -23,6 +23,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+// notifyAppTermination installs a signal handler that cancels the context.
 func notifyAppTermination(parent context.Context) (context.Context, context.CancelFunc) {
 	return signal.NotifyContext(parent, unix.SIGTERM, unix.SIGINT)
 }

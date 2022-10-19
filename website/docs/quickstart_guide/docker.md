@@ -16,7 +16,7 @@ version: "3"
 
 services:
   postgres:
-    image: postgres:14
+    image: postgres:15
     container_name: postgres
     ports:
       - 5432:5432
@@ -26,7 +26,7 @@ services:
       - POSTGRES_HOST_AUTH_METHOD=trust
 
   postgres_setup:
-    image: postgres:14
+    image: postgres:15
     container_name: postgres_setup
     restart: on-failure
     entrypoint: ["sh", "-c", "psql -h postgres -U user -d ferretdb -c 'CREATE SCHEMA IF NOT EXISTS test'"]

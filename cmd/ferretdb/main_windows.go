@@ -22,6 +22,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+// notifyAppTermination installs a signal handler that cancels the context.
 func notifyAppTermination(parent context.Context) (context.Context, context.CancelFunc) {
 	return signal.NotifyContext(parent, windows.SIGTERM, windows.SIGINT, os.Interrupt)
 }
