@@ -13,7 +13,7 @@ sidebar_position: 6
    * collection name length must be less or equal than 120 symbols, database name length limit is 63 symbols;
    * name must not start with a number;
    * database name cannot contain capital letters.
-5. For Tigris, FerretDB requires Tigris schema validation for `msg_create`: validator must be set as `$tigrisSchemaString`.
+5. For Tigris, FerretDB requires Tigris schema validation for `create` command: validator must be set as `$tigrisSchemaString`.
    The value must be a JSON string representing JSON schema in [Tigris format](https://docs.tigrisdata.com/overview/schema).
 6. For Tigris, if a field is represented as a number, any attempt to assign a string containing a number will pass as a number
    (e.g. `"30"` for int32 field will be stored as `30`).
