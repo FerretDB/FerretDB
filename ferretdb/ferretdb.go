@@ -35,10 +35,12 @@ import (
 
 // Config represents FerretDB configuration.
 type Config struct {
-	// TCP Listen address.
+	// Listen address.
+	// If empty, TCP listener is disabled.
 	ListenAddr string
 
-	// Listen Unix domain socket path; defaults to "".
+	// Listen Unix domain socket path.
+	// If empty, Unix listener is disabled.
 	ListenUnix string
 
 	// Handler to use; one of `pg` or `tigris` (if enabled at compile-time).
@@ -58,30 +60,20 @@ type Config struct {
 
 // FerretDB represents an instance of embeddable FerretDB implementation.
 type FerretDB struct {
-	config     *Config
-	listenAddr string
+	config *Config
+
+	l *clientconn.Listener
 }
 
 // New creates a new instance of embeddable FerretDB implementation.
 func New(config *Config) (*FerretDB, error) {
-	listenAddr := config.ListenAddr
-	if listenAddr == "" {
-		listenAddr = "127.0.0.1:27017"
+	if config.ListenAddr == "" && config.ListenUnix == "" {
+		return nil, errors.New("both ListenAddr and ListenUnix are empty")
 	}
 
-	return &FerretDB{
-		config:     config,
-		listenAddr: listenAddr,
-	}, nil
-}
-
-// Run runs FerretDB until ctx is done.
-//
-// When this method returns, listener and all connections are closed.
-func (f *FerretDB) Run(ctx context.Context) error {
 	p, err := state.NewProvider("")
 	if err != nil {
-		return fmt.Errorf("failed to construct handler: %s", err)
+		return nil, fmt.Errorf("failed to construct handler: %s", err)
 	}
 
 	cmdsList := maps.Keys(common.Commands)
@@ -95,60 +87,70 @@ func (f *FerretDB) Run(ctx context.Context) error {
 		Metrics:       metrics.ConnMetrics,
 		StateProvider: p,
 
-		PostgreSQLURL: f.config.PostgreSQLURL,
+		PostgreSQLURL: config.PostgreSQLURL,
 
-		TigrisClientID:     f.config.TigrisClientID,
-		TigrisClientSecret: f.config.TigrisClientSecret,
-		TigrisToken:        f.config.TigrisToken,
-		TigrisURL:          f.config.TigrisURL,
+		TigrisClientID:     config.TigrisClientID,
+		TigrisClientSecret: config.TigrisClientSecret,
+		TigrisToken:        config.TigrisToken,
+		TigrisURL:          config.TigrisURL,
 	}
-	h, err := registry.NewHandler(f.config.Handler, &newOpts)
+	h, err := registry.NewHandler(config.Handler, &newOpts)
 	if err != nil {
-		return fmt.Errorf("failed to construct handler: %s", err)
+		return nil, fmt.Errorf("failed to construct handler: %s", err)
 	}
 	defer h.Close()
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		ListenAddr: f.listenAddr,
-		ListenUnix: f.config.ListenUnix,
+		ListenAddr: config.ListenAddr,
+		ListenUnix: config.ListenUnix,
 		Mode:       clientconn.NormalMode,
 		Metrics:    metrics,
 		Handler:    h,
 		Logger:     logger,
 	})
 
-	if err = l.Run(ctx); err != nil {
+	return &FerretDB{
+		config: config,
+		l:      l,
+	}, nil
+}
+
+// Run runs FerretDB until ctx is done.
+//
+// When this method returns, listener and all connections are closed.
+func (f *FerretDB) Run(ctx context.Context) error {
+	defer f.l.Handler.Close()
+
+	err := f.l.Run(ctx)
+	if err != nil {
 		// Do not expose internal error details.
 		// If you need stable error values and/or types for some cases, please create an issue.
 		err = errors.New(err.Error())
 	}
+
 	return err
 }
 
 // MongoDBURI returns MongoDB URI for this FerretDB instance.
-// If it was spawned on domain socket then it will be returned,
-// in case of listening both on TCP and a socket TCP connection string will be returned.
+//
+// TCP's connection string is returned if both TCP and Unix listeners are enabled.
 func (f *FerretDB) MongoDBURI() string {
-	var u url.URL
-	if f.isListeningOnlyOnSock() {
-		u = url.URL{
+	var u *url.URL
+
+	if f.config.ListenAddr != "" {
+		u = &url.URL{
 			Scheme: "mongodb",
-			Host:   url.PathEscape(f.config.ListenUnix),
+			Host:   f.l.Addr().String(),
+			Path:   "/",
 		}
 	} else {
-		u = url.URL{
+		u = &url.URL{
 			Scheme: "mongodb",
-			Host:   f.listenAddr,
-			Path:   "/",
+			Path:   f.l.Unix().String(),
 		}
 	}
 
 	return u.String()
-}
-
-// TODO
-func (f *FerretDB) isListeningOnlyOnSock() bool {
-	return f.config.ListenAddr == "" && f.config.ListenUnix != ""
 }
 
 // logger is a global logger used by FerretDB.

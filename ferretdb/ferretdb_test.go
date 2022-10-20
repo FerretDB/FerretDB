@@ -20,7 +20,7 @@ import (
 	"log"
 )
 
-func Example() {
+func ExampleTCP() {
 	f, err := New(&Config{
 		ListenAddr:    "127.0.0.1:17027",
 		Handler:       "pg",
@@ -30,7 +30,12 @@ func Example() {
 		log.Fatal(err)
 	}
 
-	go f.Run(context.Background())
+	go func() {
+		err := f.Run(context.Background())
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	uri := f.MongoDBURI()
 	fmt.Println(uri)
@@ -46,14 +51,9 @@ func Example() {
 	// Output: mongodb://127.0.0.1:17027/
 }
 
-// An example of spawning server on a unix domain socket.
-//
-// The name for the example is chosen because of lints....
-func ExampleNew() {
+func ExampleUnix() {
 	f, err := New(&Config{
-		// explicitly turning off the TPC listener
-		ListenAddr:    "",
-		ListenUnix:    "/tmp/mongodb-27017.sock",
+		ListenUnix:    "/tmp/ferretdb-27017.sock",
 		Handler:       "pg",
 		PostgreSQLURL: "postgres://postgres@127.0.0.1:5432/ferretdb",
 	})
@@ -61,23 +61,15 @@ func ExampleNew() {
 		log.Fatal(err)
 	}
 
-	go f.Run(context.Background())
+	go func() {
+		err := f.Run(context.Background())
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	uri := f.MongoDBURI()
 	fmt.Println(uri)
-
-	// Use MongoDB URI as usual. For example:
-	//
-	// import "go.mongodb.org/mongo-driver/mongo"
-	//
-	// [...]
-	//
-	// client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(uri))
-	// if err != nil {
-	// 	panic(err)
-	// }
-	//
-	// client.Ping(context.TODO(), nil)
 
 	// Output: mongodb://%252Ftmp%252Fmongodb-27017.sock
 }

@@ -36,9 +36,10 @@ import (
 // Listener accepts incoming client connections.
 type Listener struct {
 	*NewListenerOpts
-	tcpListener      net.Listener
-	unixListener     net.Listener
-	tcpListenerReady chan struct{}
+	tcpListener       net.Listener
+	unixListener      net.Listener
+	tcpListenerReady  chan struct{}
+	unixListenerReady chan struct{}
 }
 
 // NewListenerOpts represents listener configuration.
@@ -56,8 +57,9 @@ type NewListenerOpts struct {
 // NewListener returns a new listener, configured by the NewListenerOpts argument.
 func NewListener(opts *NewListenerOpts) *Listener {
 	return &Listener{
-		NewListenerOpts:  opts,
-		tcpListenerReady: make(chan struct{}),
+		NewListenerOpts:   opts,
+		tcpListenerReady:  make(chan struct{}),
+		unixListenerReady: make(chan struct{}),
 	}
 }
 
@@ -83,6 +85,8 @@ func (l *Listener) Run(ctx context.Context) error {
 		if l.unixListener, err = net.Listen("unix", l.ListenUnix); err != nil {
 			return lazyerrors.Error(err)
 		}
+
+		close(l.unixListenerReady)
 
 		logger.Sugar().Infof("Listening on %s ...", l.Unix())
 	}
@@ -198,12 +202,23 @@ func runConn(ctx context.Context, netConn net.Conn, l *Listener, wg *sync.WaitGr
 //
 // It is a blocking call unless Run was not called.
 func (l *Listener) Addr() net.Addr {
+	if l.ListenAddr == "" {
+		return nil
+	}
+
 	<-l.tcpListenerReady
 	return l.tcpListener.Addr()
 }
 
 // Unix returns Unix domain socket address.
+//
+// It is a blocking call unless Run was not called.
 func (l *Listener) Unix() net.Addr {
+	if l.ListenUnix == "" {
+		return nil
+	}
+
+	<-l.unixListenerReady
 	return l.unixListener.Addr()
 }
 
