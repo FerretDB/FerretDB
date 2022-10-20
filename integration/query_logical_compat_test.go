@@ -27,7 +27,7 @@ func TestQueryLogicalCompatAnd(t *testing.T) {
 	testCases := map[string]queryCompatTestCase{
 		"Zero": {
 			filter: bson.D{{
-				"$and", bson.A{"v"},
+				"$and", bson.A{},
 			}},
 			resultType: emptyResult,
 		},
