@@ -120,6 +120,7 @@ func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Document, erro
 	defer rows.Close()
 
 	var res *types.Document
+
 	if !rows.Next() {
 		return nil, lazyerrors.Error(rows.Err())
 	}
