@@ -142,16 +142,21 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 		if !ok {
 			return false, NewErrorMsg(ErrBadValue, "$and must be an array")
 		}
+
 		if exprs.Len() == 0 {
 			return false, NewErrorMsg(ErrBadValue, "$and/$or/$nor must be a nonempty array")
 		}
-		for i := 0; i < exprs.Len(); i++ {
-			value := must.NotFail(exprs.Get(i))
 
-			expr, ok := value.(*types.Document)
+		for i := 0; i < exprs.Len(); i++ {
+			_, ok := must.NotFail(exprs.Get(i)).(*types.Document)
 			if !ok {
 				return false, NewErrorMsg(ErrBadValue, "$or/$and/$nor entries need to be full objects")
 			}
+		}
+
+		for i := 0; i < exprs.Len(); i++ {
+			expr := must.NotFail(exprs.Get(i)).(*types.Document)
+
 			matches, err := FilterDocument(doc, expr)
 			if err != nil {
 				return false, err
@@ -160,6 +165,7 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 				return false, nil
 			}
 		}
+
 		return true, nil
 
 	case "$or":
@@ -168,16 +174,21 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 		if !ok {
 			return false, NewErrorMsg(ErrBadValue, "$or must be an array")
 		}
+
 		if exprs.Len() == 0 {
 			return false, NewErrorMsg(ErrBadValue, "$and/$or/$nor must be a nonempty array")
 		}
-		for i := 0; i < exprs.Len(); i++ {
-			value := must.NotFail(exprs.Get(i))
 
-			expr, ok := value.(*types.Document)
+		for i := 0; i < exprs.Len(); i++ {
+			_, ok := must.NotFail(exprs.Get(i)).(*types.Document)
 			if !ok {
 				return false, NewErrorMsg(ErrBadValue, "$or/$and/$nor entries need to be full objects")
 			}
+		}
+
+		for i := 0; i < exprs.Len(); i++ {
+			expr := must.NotFail(exprs.Get(i)).(*types.Document)
+
 			matches, err := FilterDocument(doc, expr)
 			if err != nil {
 				return false, err
@@ -186,6 +197,7 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 				return true, nil
 			}
 		}
+
 		return false, nil
 
 	case "$nor":
@@ -194,16 +206,21 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 		if !ok {
 			return false, NewErrorMsg(ErrBadValue, "$nor must be an array")
 		}
+
 		if exprs.Len() == 0 {
 			return false, NewErrorMsg(ErrBadValue, "$and/$or/$nor must be a nonempty array")
 		}
-		for i := 0; i < exprs.Len(); i++ {
-			value := must.NotFail(exprs.Get(i))
 
-			expr, ok := value.(*types.Document)
+		for i := 0; i < exprs.Len(); i++ {
+			_, ok := must.NotFail(exprs.Get(i)).(*types.Document)
 			if !ok {
 				return false, NewErrorMsg(ErrBadValue, "$or/$and/$nor entries need to be full objects")
 			}
+		}
+
+		for i := 0; i < exprs.Len(); i++ {
+			expr := must.NotFail(exprs.Get(i)).(*types.Document)
+
 			matches, err := FilterDocument(doc, expr)
 			if err != nil {
 				return false, err
@@ -212,6 +229,7 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 				return false, nil
 			}
 		}
+
 		return true, nil
 
 	case "$comment":
