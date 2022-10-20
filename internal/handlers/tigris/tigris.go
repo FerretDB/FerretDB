@@ -16,41 +16,31 @@
 package tigris
 
 import (
-	"sort"
-	"time"
-
 	"github.com/tigrisdata/tigris-client-go/config"
 	"go.uber.org/zap"
-	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 )
-
-// notImplemented returns error for stub command handlers.
-func notImplemented(command string) error {
-	return common.NewErrorMsg(common.ErrNotImplemented, "I'm a stub, not a real handler for "+command)
-}
 
 // NewOpts represents handler configuration.
 type NewOpts struct {
-	ClientID     string
-	ClientSecret string
-	Token        string
-	URL          string
-	L            *zap.Logger
-	Metrics      *connmetrics.ConnMetrics
+	ClientID      string
+	ClientSecret  string
+	Token         string
+	URL           string
+	L             *zap.Logger
+	Metrics       *connmetrics.ConnMetrics
+	StateProvider *state.Provider
 }
 
 // Handler implements handlers.Interface on top of Tigris.
 type Handler struct {
 	*NewOpts
-	db        *tigrisdb.TigrisDB
-	startTime time.Time
-	metrics   *connmetrics.ConnMetrics
+	db *tigrisdb.TigrisDB
 }
 
 // New returns a new handler.
@@ -66,14 +56,9 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	cmdsList := maps.Keys(common.Commands)
-	sort.Strings(cmdsList)
-
 	h := &Handler{
-		NewOpts:   opts,
-		db:        db,
-		startTime: time.Now(),
-		metrics:   connmetrics.NewListenerMetrics(cmdsList).ConnMetrics,
+		NewOpts: opts,
+		db:      db,
 	}
 	return h, nil
 }

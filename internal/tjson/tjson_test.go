@@ -38,6 +38,7 @@ type testCase struct {
 	j      string    // json data to unmarshal
 	canonJ string    // canonical form without extra object fields, zero values, etc.
 	jErr   string    // unwrapped
+	sErr   string
 }
 
 func TestMarshalUnmarshal(t *testing.T) {
@@ -175,14 +176,20 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() tjsontype) {
 
 				v, err := Unmarshal([]byte(tc.j), tc.schema)
 
-				if tc.jErr == "" {
-					require.NoError(t, err)
-					assertEqual(t, tc.v, toTJSON(v))
+				if tc.sErr != "" {
+					require.Error(t, err)
+					require.Equal(t, tc.sErr, lastErr(err).Error())
 					return
 				}
 
-				require.Error(t, err)
-				require.Equal(t, tc.jErr, lastErr(err).Error())
+				if tc.jErr != "" {
+					require.Error(t, err)
+					require.Equal(t, tc.jErr, lastErr(err).Error())
+					return
+				}
+
+				require.NoError(t, err)
+				assertEqual(t, tc.v, toTJSON(v))
 			})
 
 			t.Run("MarshalJSON", func(t *testing.T) {
@@ -222,15 +229,17 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() tjsontype) {
 
 func fuzzJSON(f *testing.F, testCases []testCase) {
 	for _, tc := range testCases {
-		f.Add(tc.j)
+		schema, err := tc.schema.Marshal()
+		require.NoError(f, err)
+
+		f.Add(tc.j, string(schema))
+
 		if tc.canonJ != "" {
-			f.Add(tc.canonJ, testCases[0].schema)
+			f.Add(tc.canonJ, string(schema))
 		}
 	}
 
-	// TODO Add fuzzing for schema https://github.com/FerretDB/FerretDB/issues/943
-
-	f.Fuzz(func(t *testing.T, j string, schema *Schema) {
+	f.Fuzz(func(t *testing.T, j, schema string) {
 		t.Parallel()
 
 		// raw "null" should never reach UnmarshalJSON due to the way encoding/json works
@@ -238,11 +247,18 @@ func fuzzJSON(f *testing.F, testCases []testCase) {
 			t.Skip()
 		}
 
+		s := newSchema()
+
+		err := s.Unmarshal([]byte(schema))
+		if err != nil {
+			t.Skip()
+		}
+
 		// j may not be a canonical form.
 		// We can't compare it with MarshalJSON() result directly.
 		// Instead, we compare with round-trip result.
 
-		val, err := Unmarshal([]byte(j), schema)
+		val, err := Unmarshal([]byte(j), s)
 		if err != nil {
 			t.Skip()
 		}
@@ -257,7 +273,7 @@ func fuzzJSON(f *testing.F, testCases []testCase) {
 
 		// test Unmarshal
 		{
-			actualV, err := Unmarshal([]byte(j), schema)
+			actualV, err := Unmarshal([]byte(j), s)
 			require.NoError(t, err)
 			assertEqual(t, v, toTJSON(actualV))
 		}
@@ -283,15 +299,22 @@ func benchmark(b *testing.B, testCases []testCase) {
 
 				b.StopTimer()
 
-				if tc.jErr == "" {
-					require.NoError(b, err)
-					assertEqual(b, tc.v, toTJSON(v))
+				if tc.jErr != "" {
+					require.Error(b, err)
+					require.Equal(b, tc.jErr, lastErr(err).Error())
 
 					return
 				}
 
-				require.Error(b, err)
-				require.Equal(b, tc.jErr, lastErr(err).Error())
+				if tc.sErr != "" {
+					require.Error(b, err)
+					require.Equal(b, tc.sErr, lastErr(err).Error())
+
+					return
+				}
+
+				require.NoError(b, err)
+				assertEqual(b, tc.v, toTJSON(v))
 			})
 		})
 	}

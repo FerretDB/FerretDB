@@ -15,9 +15,16 @@
 package state
 
 import (
+	"strconv"
+
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/FerretDB/FerretDB/internal/util/version"
+)
+
+const (
+	namespace = "ferretdb"
+	subsystem = ""
 )
 
 // metricsCollector exposes provider's state as Prometheus metrics.
@@ -43,17 +50,21 @@ func (mc *metricsCollector) Describe(ch chan<- *prometheus.Desc) {
 
 // Collect implements prometheus.Collector.
 func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
+	v := version.Get()
 	constLabels := prometheus.Labels{
-		"version": version.Get().Version,
+		"version": v.Version,
+		"commit":  v.Commit,
+		"branch":  v.Branch,
+		"dirty":   strconv.FormatBool(v.Dirty),
+		"debug":   strconv.FormatBool(v.Debug),
 	}
 
 	if mc.addUUIDToMetric {
-		s, _ := mc.p.Get()
-		constLabels["uuid"] = s.UUID
+		constLabels["uuid"] = mc.p.Get().UUID
 	}
 
 	ch <- prometheus.MustNewConstMetric(
-		prometheus.NewDesc("ferretdb_up", "FerretDB instance state.", nil, constLabels),
+		prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "up"), "FerretDB instance state.", nil, constLabels),
 		prometheus.GaugeValue,
 		1,
 	)
