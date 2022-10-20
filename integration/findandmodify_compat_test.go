@@ -171,6 +171,12 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 				{"new", true},
 			},
 		},
+		"EmptyUpdate": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int64"}}},
+				{"update", bson.D{}},
+			},
+		},
 	}
 
 	testFindAndModifyCompat(t, testCases)
