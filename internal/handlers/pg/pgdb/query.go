@@ -107,7 +107,7 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam)
 }
 
 // Explain returns SQL EXPLAIN results for given query parameters.
-func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Array, error) {
+func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Document, error) {
 	q, args, err := buildQuery(ctx, tx, &sp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -119,31 +119,30 @@ func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Array, error) 
 	}
 	defer rows.Close()
 
-	var res types.Array
-	for rows.Next() {
-		var b []byte
-		if err = rows.Scan(&b); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+	var res *types.Document
+	if !rows.Next() {
+		return nil, lazyerrors.Error(rows.Err())
+	}
 
-		var plans []map[string]any
-		if err = json.Unmarshal(b, &plans); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+	var b []byte
+	if err = rows.Scan(&b); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
-		for _, p := range plans {
-			doc := convertJSON(p).(*types.Document)
-			if err = res.Append(doc); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-		}
+	var plans []map[string]any
+	if err = json.Unmarshal(b, &plans); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	for _, p := range plans {
+		res = convertJSON(p).(*types.Document)
 	}
 
 	if err = rows.Err(); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &res, nil
+	return res, nil
 }
 
 // buildQuery builds SELECT or EXPLAIN SELECT query.

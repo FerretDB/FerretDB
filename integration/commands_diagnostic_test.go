@@ -25,6 +25,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestCommandsDiagnosticGetLog(t *testing.T) {
@@ -184,4 +186,46 @@ func TestCommandsDiagnosticConnectionStatus(t *testing.T) {
 	ok := actual.Map()["ok"]
 
 	assert.Equal(t, float64(1), ok)
+}
+
+func TestCommandsDiagnosticExplain(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1253")
+
+	t.Parallel()
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+
+	for name, tc := range map[string]struct {
+		query        bson.D
+		command      bson.D
+		queryPlanner map[string]any
+	}{
+		"count": {
+			query:   bson.D{{"count", collection.Name()}},
+			command: bson.D{{"count", collection.Name()}, {"$db", collection.Database().Name()}},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			var actual bson.D
+
+			err := collection.Database().RunCommand(ctx, bson.D{{"explain", tc.query}}).Decode(&actual)
+			require.NoError(t, err)
+
+			explainResult := actual.Map()
+
+			assert.Equal(t, float64(1), explainResult["ok"])
+			assert.Equal(t, "1", explainResult["explainVersion"])
+			assert.Equal(t, tc.command, explainResult["command"])
+
+			serverInfo := ConvertDocument(t, explainResult["serverInfo"].(bson.D))
+
+			assert.NotEmpty(t, must.NotFail(serverInfo.Get("host")))
+			assert.NotEmpty(t, must.NotFail(serverInfo.Get("port")))
+			assert.NotEmpty(t, must.NotFail(serverInfo.Get("gitVersion")))
+			assert.Regexp(t, `^6\.0\.`, must.NotFail(serverInfo.Get("version")))
+
+			assert.NotEmpty(t, explainResult["queryPlanner"])
+		})
+	}
 }
