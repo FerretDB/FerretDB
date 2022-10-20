@@ -176,6 +176,7 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 				{"query", bson.D{{"_id", "int64"}}},
 				{"update", bson.D{{"v", bson.D{}}}},
 			},
+			skipForTigris: "schema validation would fail",
 		},
 	}
 
