@@ -14,16 +14,14 @@
 
 //go:build unix
 
-package testutil
+package setup
 
 import (
-	"context"
-	"os/signal"
-
-	"golang.org/x/sys/unix"
+	"path/filepath"
+	"testing"
 )
 
-// notifyTestsTermination installs a signal handler that cancels the context.
-func notifyTestsTermination(parent context.Context) (context.Context, context.CancelFunc) {
-	return signal.NotifyContext(parent, unix.SIGTERM, unix.SIGINT)
+// listenUnix returns temporary Unix domain socket path for that test.
+func listenUnix(tb testing.TB) string {
+	return filepath.Join(tb.TempDir(), "ferretdb.sock")
 }

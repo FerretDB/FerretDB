@@ -72,6 +72,9 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 
 	port := *targetPortF
 	if port == 0 {
+		// TODO check targetUnixSocketF, setup Unix socket-only listener if true.
+		// TODO https://github.com/FerretDB/FerretDB/issues/1295
+		_ = *targetUnixSocketF
 		port = setupListener(tb, ctx, logger)
 	}
 
