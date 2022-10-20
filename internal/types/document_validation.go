@@ -59,7 +59,7 @@ func (d *Document) ValidateData() error {
 	}
 
 	if !idPresent {
-		return newValidationError(fmt.Errorf("invalid document: (document must contain '_id' field)"))
+		return newValidationError(fmt.Errorf("invalid document: document must contain '_id' field"))
 	}
 
 	return nil
