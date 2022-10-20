@@ -39,6 +39,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -97,6 +98,9 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 	tb.Helper()
 
+	p, err := state.NewProvider("")
+	require.NoError(tb, err)
+
 	u, err := url.Parse(*PostgreSQLURLF)
 	require.NoError(tb, err)
 
@@ -109,8 +113,11 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 		Ctx:           ctx,
 		Logger:        logger,
 		Metrics:       metrics.ConnMetrics,
+		StateProvider: p,
+
 		PostgreSQLURL: u.String(),
-		TigrisURL:     testutil.TigrisURL(tb),
+
+		TigrisURL: testutil.TigrisURL(tb),
 	})
 	require.NoError(tb, err)
 

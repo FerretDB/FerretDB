@@ -21,6 +21,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -30,7 +31,7 @@ import (
 func getPool(ctx context.Context, tb testing.TB) *Pool {
 	tb.Helper()
 
-	l := zaptest.NewLogger(tb)
+	l := zaptest.NewLogger(tb, zaptest.WrapOptions(zap.AddCaller(), zap.Development()))
 	pool, err := NewPool(ctx, testutil.PostgreSQLURL(tb, nil), l, false)
 	require.NoError(tb, err)
 	tb.Cleanup(pool.Close)

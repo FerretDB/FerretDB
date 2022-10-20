@@ -334,9 +334,10 @@ tasks:
     cmds:
       - test {{.DOCKER_IMAGE}}
       - >
-        docker buildx build --builder=ferretdb --platform=linux/arm64,linux/amd64
+        docker buildx build --builder=ferretdb
         --build-arg VERSION={{.VERSION}}
         --build-arg COMMIT={{.COMMIT}}
+        --platform=linux/arm64,linux/amd64
         --tag={{.DOCKER_IMAGE}}
         --push .
     vars:

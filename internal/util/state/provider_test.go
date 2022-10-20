@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,38 +27,79 @@ import (
 func TestProvider(t *testing.T) {
 	t.Parallel()
 
-	filename := filepath.Join(t.TempDir(), "state.json")
-	p1, err := NewProvider(filename)
-	require.NoError(t, err)
+	t.Run("Get", func(t *testing.T) {
+		t.Parallel()
 
-	s1, err := p1.Get()
-	require.NoError(t, err)
-	assert.NotEmpty(t, s1.UUID)
+		filename := filepath.Join(t.TempDir(), "state.json")
+		p1, err := NewProvider(filename)
+		require.NoError(t, err)
 
-	s2, err := p1.Get()
-	require.NoError(t, err)
-	assert.Equal(t, s1, s2)
-	assert.NotSame(t, s1, s2)
+		s1 := p1.Get()
+		assert.NotZero(t, s1.UUID)
+		assert.NotZero(t, s1.Start)
 
-	s3, err := p1.Get()
-	require.NoError(t, err)
-	assert.Equal(t, s1, s3)
-	assert.NotSame(t, s1, s3)
+		// cached state
+		s2 := p1.Get()
+		assert.Equal(t, s1, s2)
+		assert.NotSame(t, s1, s2)
 
-	p2, err := NewProvider(filename)
-	require.NoError(t, err)
+		p2, err := NewProvider(filename)
+		require.NoError(t, err)
 
-	s4, err := p2.Get()
-	require.NoError(t, err)
-	assert.Equal(t, s1, s4)
-	assert.NotSame(t, s1, s4)
+		// reread state file with a different provider should be the same except start time
+		s3 := p2.Get()
+		assert.NotEqual(t, s1.Start, s3.Start)
+		s3.Start = s1.Start
+		assert.Equal(t, s1, s3)
+		assert.NotSame(t, s1, s3)
 
-	require.NoError(t, os.Remove(filename))
+		require.NoError(t, os.Remove(filename))
 
-	p3, err := NewProvider(filename)
-	require.NoError(t, err)
+		p3, err := NewProvider(filename)
+		require.NoError(t, err)
 
-	s5, err := p3.Get()
-	require.NoError(t, err)
-	assert.NotEqual(t, s1, s5)
+		// after removing state file UUID should be different
+		s4 := p3.Get()
+		assert.NotZero(t, s4.UUID)
+		assert.NotEqual(t, s1.UUID, s4.UUID)
+	})
+
+	t.Run("Subscribe", func(t *testing.T) {
+		t.Parallel()
+
+		p, err := NewProvider(filepath.Join(t.TempDir(), "state.json"))
+		require.NoError(t, err)
+
+		ch := p.Subscribe()
+
+		require.Len(t, ch, cap(ch), "channel should be full")
+
+		p.Update(func(s *State) { *s = State{UUID: "00000000-0000-0000-0000-000000000000"} })
+
+		expected := &State{
+			UUID:  "11111111-1111-1111-1111-111111111111",
+			Start: time.Now(),
+		}
+		p.Update(func(s *State) { *s = *expected })
+
+		assert.Equal(t, expected, p.Get())
+		require.Len(t, ch, cap(ch), "channel should be full")
+
+		<-ch
+		assert.Equal(t, expected, p.Get())
+		require.Empty(t, ch)
+
+		got := make(chan struct{})
+		go func() {
+			<-ch
+
+			assert.Equal(t, expected, p.Get())
+			require.Empty(t, ch)
+			close(got)
+		}()
+
+		p.Update(func(s *State) { *s = *expected })
+
+		<-got
+	})
 }
