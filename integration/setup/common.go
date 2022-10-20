@@ -129,6 +129,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		ListenAddr: "127.0.0.1:0",
+		ListenUnix: listenUnix(tb),
 		ProxyAddr:  proxyAddr,
 		Mode:       mode,
 		Metrics:    metrics,
