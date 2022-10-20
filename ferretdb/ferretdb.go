@@ -81,7 +81,7 @@ func New(config *Config) (*FerretDB, error) {
 
 	metrics := connmetrics.NewListenerMetrics(cmdsList)
 
-	newOpts := registry.NewHandlerOpts{
+	h, err := registry.NewHandler(config.Handler, &registry.NewHandlerOpts{
 		Ctx:           context.Background(),
 		Logger:        logger,
 		Metrics:       metrics.ConnMetrics,
@@ -93,12 +93,10 @@ func New(config *Config) (*FerretDB, error) {
 		TigrisClientSecret: config.TigrisClientSecret,
 		TigrisToken:        config.TigrisToken,
 		TigrisURL:          config.TigrisURL,
-	}
-	h, err := registry.NewHandler(config.Handler, &newOpts)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct handler: %s", err)
 	}
-	defer h.Close()
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		ListenAddr: config.ListenAddr,
@@ -122,6 +120,9 @@ func (f *FerretDB) Run(ctx context.Context) error {
 	defer f.l.Handler.Close()
 
 	err := f.l.Run(ctx)
+	if errors.Is(err, context.Canceled) {
+		err = nil
+	}
 	if err != nil {
 		// Do not expose internal error details.
 		// If you need stable error values and/or types for some cases, please create an issue.
@@ -146,7 +147,7 @@ func (f *FerretDB) MongoDBURI() string {
 	} else {
 		u = &url.URL{
 			Scheme: "mongodb",
-			Path:   f.l.Unix().String(),
+			Host:   f.l.Unix().String(),
 		}
 	}
 
@@ -161,6 +162,6 @@ var logger *zap.Logger
 // Initialize the global logger there to avoid creating too many issues for zap users that initialize it in their
 // `main()` functions. It is still not a full solution; eventually, we should remove the usage of the global logger.
 func init() {
-	logging.Setup(zap.FatalLevel, "")
+	logging.Setup(zap.DebugLevel, "")
 	logger = zap.L()
 }

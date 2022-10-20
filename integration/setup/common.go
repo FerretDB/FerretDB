@@ -26,7 +26,6 @@ import (
 	"sort"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/require"
@@ -130,13 +129,12 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 	}
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		ListenAddr:         "127.0.0.1:0",
-		ProxyAddr:          proxyAddr,
-		Mode:               mode,
-		Metrics:            metrics,
-		Handler:            h,
-		Logger:             logger,
-		TestRunCancelDelay: time.Hour, // make it easier to notice missing client's disconnects
+		ListenAddr: "127.0.0.1:0",
+		ProxyAddr:  proxyAddr,
+		Mode:       mode,
+		Metrics:    metrics,
+		Handler:    h,
+		Logger:     logger,
 	})
 
 	done := make(chan struct{})
@@ -144,7 +142,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 		defer close(done)
 
 		err := l.Run(ctx)
-		if err == nil || err == context.Canceled {
+		if err == nil || errors.Is(err, context.Canceled) {
 			logger.Info("Listener stopped without error")
 		} else {
 			logger.Error("Listener stopped", zap.Error(err))
@@ -190,13 +188,12 @@ func setupSockListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (
 	}
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		ListenAddr:         "",
-		ListenSock:         sockFile.Name(),
-		ProxyAddr:          proxyAddr,
-		Mode:               mode,
-		Handler:            h,
-		Logger:             logger,
-		TestRunCancelDelay: time.Hour, // make it easier to notice missing client's disconnects
+		ListenAddr: "",
+		ListenUnix: sockFile.Name(),
+		ProxyAddr:  proxyAddr,
+		Mode:       mode,
+		Handler:    h,
+		Logger:     logger,
 	})
 
 	done := make(chan struct{})

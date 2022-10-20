@@ -30,11 +30,12 @@ func ExampleTCP() {
 		log.Fatal(err)
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
+	done := make(chan struct{})
 	go func() {
-		err := f.Run(context.Background())
-		if err != nil {
-			log.Fatal(err)
-		}
+		log.Print(f.Run(ctx))
+		close(done)
 	}()
 
 	uri := f.MongoDBURI()
@@ -47,6 +48,9 @@ func ExampleTCP() {
 	// [...]
 	//
 	// mongo.Connect(ctx, options.Client().ApplyURI(uri)
+
+	cancel()
+	<-done
 
 	// Output: mongodb://127.0.0.1:17027/
 }
@@ -61,15 +65,21 @@ func ExampleUnix() {
 		log.Fatal(err)
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
+	done := make(chan struct{})
 	go func() {
-		err := f.Run(context.Background())
-		if err != nil {
-			log.Fatal(err)
-		}
+		log.Print(f.Run(ctx))
+		close(done)
 	}()
 
 	uri := f.MongoDBURI()
 	fmt.Println(uri)
 
-	// Output: mongodb://%252Ftmp%252Fmongodb-27017.sock
+	// Use MongoDB URI as usual.
+
+	cancel()
+	<-done
+
+	// Output: mongodb://%2Ftmp%2Fferretdb-27017.sock
 }

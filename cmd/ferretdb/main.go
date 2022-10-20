@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -250,7 +251,7 @@ func run() {
 	metricsRegisterer.MustRegister(l)
 
 	err = l.Run(ctx)
-	if err == nil || err == context.Canceled {
+	if err == nil || errors.Is(err, context.Canceled) {
 		logger.Info("Listener stopped")
 	} else {
 		logger.Error("Listener stopped", zap.Error(err))

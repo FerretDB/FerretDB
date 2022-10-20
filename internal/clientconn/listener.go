@@ -91,15 +91,15 @@ func (l *Listener) Run(ctx context.Context) error {
 		logger.Sugar().Infof("Listening on %s ...", l.Unix())
 	}
 
-	// handle ctx cancellation
+	// close listeners on context cancellation to exit from listenLoop
 	go func() {
 		<-ctx.Done()
 
-		if l.ListenAddr != "" {
+		if l.tcpListener != nil {
 			l.tcpListener.Close()
 		}
 
-		if l.ListenUnix != "" {
+		if l.unixListener != nil {
 			l.unixListener.Close()
 		}
 	}()
@@ -110,7 +110,11 @@ func (l *Listener) Run(ctx context.Context) error {
 		wg.Add(1)
 
 		go func() {
-			defer wg.Done()
+			defer func() {
+				logger.Sugar().Infof("%s stopped.", l.Addr())
+				wg.Done()
+			}()
+
 			listenLoop(ctx, &wg, l, l.tcpListener, logger)
 		}()
 	}
@@ -119,7 +123,11 @@ func (l *Listener) Run(ctx context.Context) error {
 		wg.Add(1)
 
 		go func() {
-			defer wg.Done()
+			defer func() {
+				logger.Sugar().Infof("%s stopped.", l.Unix())
+				wg.Done()
+			}()
+
 			listenLoop(ctx, &wg, l, l.unixListener, logger)
 		}()
 	}
@@ -130,15 +138,17 @@ func (l *Listener) Run(ctx context.Context) error {
 	return ctx.Err()
 }
 
+// listenLoop runs l's connection accepting loop.
 func listenLoop(ctx context.Context, wg *sync.WaitGroup, l *Listener, listener net.Listener, logger *zap.Logger) {
 	for {
 		netConn, err := listener.Accept()
 		if err != nil {
-			l.Metrics.Accepts.WithLabelValues("1").Inc()
-
+			// Run closed listener on context cancellation
 			if ctx.Err() != nil {
 				break
 			}
+
+			l.Metrics.Accepts.WithLabelValues("1").Inc()
 
 			logger.Warn("Failed to accept connection", zap.Error(err))
 			if !errors.Is(err, net.ErrClosed) {
@@ -151,73 +161,59 @@ func listenLoop(ctx context.Context, wg *sync.WaitGroup, l *Listener, listener n
 		l.Metrics.Accepts.WithLabelValues("0").Inc()
 		l.Metrics.ConnectedClients.Inc()
 
-		go runConn(ctx, netConn, l, wg, logger)
-	}
-}
+		go func() {
+			defer func() {
+				l.Metrics.ConnectedClients.Dec()
+				netConn.Close()
+				wg.Done()
+			}()
 
-func runConn(ctx context.Context, netConn net.Conn, l *Listener, wg *sync.WaitGroup, logger *zap.Logger) {
-	connID := fmt.Sprintf("%s -> %s", netConn.RemoteAddr(), netConn.LocalAddr())
+			connID := fmt.Sprintf("%s -> %s", netConn.RemoteAddr(), netConn.LocalAddr())
 
-	// give clients a few seconds to disconnect after ctx is canceled
-	runCtx, runCancel := ctxutil.WithDelay(ctx.Done(), 3*time.Second)
-	defer runCancel()
+			// give clients a few seconds to disconnect after ctx is canceled
+			runCtx, runCancel := ctxutil.WithDelay(ctx.Done(), 3*time.Second)
+			defer runCancel()
 
-	defer pprof.SetGoroutineLabels(runCtx)
-	runCtx = pprof.WithLabels(runCtx, pprof.Labels("conn", connID))
-	pprof.SetGoroutineLabels(runCtx)
+			defer pprof.SetGoroutineLabels(runCtx)
+			runCtx = pprof.WithLabels(runCtx, pprof.Labels("conn", connID))
+			pprof.SetGoroutineLabels(runCtx)
 
-	defer func() {
-		netConn.Close()
-		l.Metrics.ConnectedClients.Dec()
-		wg.Done()
-	}()
+			opts := &newConnOpts{
+				netConn:        netConn,
+				mode:           l.Mode,
+				l:              l.Logger.Named("// " + connID + " "), // derive from the original unnamed logger
+				handler:        l.Handler,
+				connMetrics:    l.Metrics.ConnMetrics,
+				proxyAddr:      l.ProxyAddr,
+				testRecordsDir: l.TestRecordsDir,
+			}
+			conn, e := newConn(opts)
+			if e != nil {
+				logger.Warn("Failed to create connection", zap.String("conn", connID), zap.Error(e))
+				return
+			}
 
-	opts := &newConnOpts{
-		netConn:        netConn,
-		mode:           l.Mode,
-		l:              l.Logger.Named("// " + connID + " "), // derive from the original unnamed logger
-		proxyAddr:      l.ProxyAddr,
-		handler:        l.Handler,
-		connMetrics:    l.Metrics.ConnMetrics,
-		testRecordsDir: l.TestRecordsDir,
-	}
-	conn, e := newConn(opts)
-	if e != nil {
-		logger.Warn("Failed to create connection", zap.String("conn", connID), zap.Error(e))
-		return
-	}
+			logger.Info("Connection started", zap.String("conn", connID))
 
-	logger.Info("Connection started", zap.String("conn", connID))
-
-	e = conn.run(runCtx)
-	if errors.Is(e, io.EOF) {
-		logger.Info("Connection stopped", zap.String("conn", connID))
-	} else {
-		logger.Warn("Connection stopped", zap.String("conn", connID), zap.Error(e))
+			e = conn.run(runCtx)
+			if errors.Is(e, io.EOF) {
+				logger.Info("Connection stopped", zap.String("conn", connID))
+			} else {
+				logger.Warn("Connection stopped", zap.String("conn", connID), zap.Error(e))
+			}
+		}()
 	}
 }
 
 // Addr returns TCP listener's address.
 // It can be used to determine an actually used port, if it was zero.
-//
-// It is a blocking call unless Run was not called.
 func (l *Listener) Addr() net.Addr {
-	if l.ListenAddr == "" {
-		return nil
-	}
-
 	<-l.tcpListenerReady
 	return l.tcpListener.Addr()
 }
 
 // Unix returns Unix domain socket address.
-//
-// It is a blocking call unless Run was not called.
 func (l *Listener) Unix() net.Addr {
-	if l.ListenUnix == "" {
-		return nil
-	}
-
 	<-l.unixListenerReady
 	return l.unixListener.Addr()
 }
