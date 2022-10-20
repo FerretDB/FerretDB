@@ -38,9 +38,12 @@ func (e *ValidationError) Error() string {
 // ValidateData checks if the document represents a valid "data document".
 // If the document is not valid it returns *ValidationError.
 func (d *Document) ValidateData() error {
+	keys := d.Keys()
+	duplicateChecker := make(map[string]struct{}, len(keys))
+
 	// The following block should be used to check that keys are valid.
 	// All further key related validation rules should be added here.
-	for _, key := range d.keys {
+	for _, key := range keys {
 		// Tests for this case are in `dance`.
 		if !utf8.ValidString(key) {
 			return newValidationError(fmt.Errorf("invalid key: %q (not a valid UTF-8 string)", key))
@@ -51,9 +54,10 @@ func (d *Document) ValidateData() error {
 			return newValidationError(fmt.Errorf("invalid key: %q (key must not contain $)", key))
 		}
 
-		if _, ok := d.m[key]; ok && len(d.m[key]) > 1 {
+		if _, ok := duplicateChecker[key]; ok {
 			return newValidationError(fmt.Errorf("invalid key: %q (duplicate keys are not allowed)", key))
 		}
+		duplicateChecker[key] = struct{}{}
 	}
 
 	return nil

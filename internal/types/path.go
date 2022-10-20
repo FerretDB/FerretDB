@@ -157,16 +157,20 @@ func removeByPath(v any, path Path) {
 	} else {
 		key = path.Prefix()
 	}
+
 	switch v := v.(type) {
 	case *Document:
-		if _, ok := v.m[key]; !ok {
+		index := v.Index(key)
+		if index == -1 {
 			return
 		}
+
 		if path.Len() == 1 {
 			v.Remove(key)
 			return
 		}
-		removeByPath(v.m[key], path.TrimPrefix())
+
+		removeByPath(v.fields[index], path.TrimPrefix())
 
 	case *Array:
 		i, err := strconv.Atoi(key)
@@ -203,7 +207,7 @@ func insertByPath(doc *Document, path Path) error {
 
 			switch v := next.(type) {
 			case *Document:
-				must.NoError(v.Set(insertedPath.Slice()[suffix], must.NotFail(NewDocument())))
+				v.Set(insertedPath.Slice()[suffix], must.NotFail(NewDocument()))
 			case *Array:
 				_, err := strconv.Atoi(insertedPath.Slice()[suffix])
 				if err != nil {
@@ -286,12 +290,12 @@ func FormatAnyValue(v any) string {
 func formatDocument(doc *Document) string {
 	result := "{ "
 
-	for i, key := range doc.keys {
+	for i, f := range doc.fields {
 		if i > 0 {
 			result += ", "
 		}
 
-		result += fmt.Sprintf("%s: %s", key, FormatAnyValue(doc.m[key]))
+		result += fmt.Sprintf("%s: %s", f.key, FormatAnyValue(f.value))
 	}
 
 	return result + " }"
