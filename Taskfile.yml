@@ -78,7 +78,7 @@ tasks:
       - >
         docker-compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --timeout=0 --detach
         --build
-        postgres tigris mongodb
+        postgres tigris cockroach mongodb
 
   env-up-detach-offline:
     cmds:
@@ -143,7 +143,7 @@ tasks:
       - bin/task{{exeExt}} -d tools test-unit-short
 
   test-integration:
-    desc: "Run all integration tests in parallel"
+    desc: "Run integration tests for PostgreSQL and Tigris in parallel"
     deps:
       - test-integration-pg
       - test-integration-tigris
@@ -165,6 +165,14 @@ tasks:
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-tigris.txt . -handler=tigris
 
+  test-integration-cockroach:
+    desc: "Run integration tests for CockroachDB with postgres handler"
+    dir: integration
+    cmds:
+      - >
+        go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        -coverprofile=integration-cockroach.txt . -handler=pg -postgresql-url=postgres://cockroach@127.0.0.1:26257/ferretdb?pool_min_conns=1
+
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
     dir: integration
@@ -174,17 +182,14 @@ tasks:
         -coverprofile=integration-mongodb.txt . -target-port=37017 -compat-port=0
 
   bench-short:
-    desc: "Benchmark for about 40 seconds (with default BENCHTIME)"
+    desc: "Benchmark for about 25 seconds (with default BENCHTIME)"
     cmds:
       - go test -list='Benchmark.*' ./...
-      - echo 'Running eight functions for {{.BENCHTIME}} each...'
-      - go test -bench=BenchmarkArray    -benchtime={{.BENCHTIME}} ./internal/types/fjson/       | tee -a new.txt
-      - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/types/fjson/       | tee -a new.txt
+      - echo 'Running five functions for {{.BENCHTIME}} each...'
       - go test -bench=BenchmarkArray    -benchtime={{.BENCHTIME}} ./internal/bson/              | tee -a new.txt
       - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/bson/              | tee -a new.txt
       - go test -bench=BenchmarkArray    -benchtime={{.BENCHTIME}} ./internal/handlers/pg/pjson/ | tee -a new.txt
       - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/handlers/pg/pjson/ | tee -a new.txt
-      - go test -bench=BenchmarkArray    -benchtime={{.BENCHTIME}} ./internal/tjson/             | tee -a new.txt
       - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/tjson/             | tee -a new.txt
       - bin/benchstat{{exeExt}} old.txt new.txt
 
@@ -198,17 +203,14 @@ tasks:
   # Those commands should still run tests (i.e., should not have -run=XXX flags)
   # to fill seed corpus for fuzz tests that use WriteSeedCorpusFile (e.g., FuzzHandler).
   fuzz:
-    desc: "Fuzz for about 3 minutes (with default FUZZTIME)"
+    desc: "Fuzz for about 2 minutes (with default FUZZTIME)"
     cmds:
       - go test -list='Fuzz.*' ./...
-      - echo 'Running eleven functions for {{.FUZZTIME}} each...'
-      - go test -fuzz=FuzzArray    -fuzztime={{.FUZZTIME}} ./internal/types/fjson/
-      - go test -fuzz=FuzzDocument -fuzztime={{.FUZZTIME}} ./internal/types/fjson/
+      - echo 'Running eight functions for {{.FUZZTIME}} each...'
       - go test -fuzz=FuzzArray    -fuzztime={{.FUZZTIME}} ./internal/bson/
       - go test -fuzz=FuzzDocument -fuzztime={{.FUZZTIME}} ./internal/bson/
       - go test -fuzz=FuzzArray    -fuzztime={{.FUZZTIME}} ./internal/handlers/pg/pjson/
       - go test -fuzz=FuzzDocument -fuzztime={{.FUZZTIME}} ./internal/handlers/pg/pjson/
-      - go test -fuzz=FuzzArray    -fuzztime={{.FUZZTIME}} ./internal/tjson/
       - go test -fuzz=FuzzDocument -fuzztime={{.FUZZTIME}} ./internal/tjson/
       - go test -fuzz=FuzzMsg      -fuzztime={{.FUZZTIME}} ./internal/wire/
       - go test -fuzz=FuzzQuery    -fuzztime={{.FUZZTIME}} ./internal/wire/
@@ -232,18 +234,23 @@ tasks:
     desc: "Run FerretDB"
     deps: [build-testcover]
     cmds:
-      - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-record=records --mode=diff-normal --listen-addr=:27017
+      - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records --mode=diff-normal --listen-addr=:27017
 
   run-tigris:
     deps: [build-testcover]
     cmds:
-      - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-record=records --mode=diff-normal --listen-addr=:27017 --handler=tigris
+      - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records --mode=diff-normal --listen-addr=:27017 --handler=tigris
+
+  run-cockroach:
+    deps: [build-testcover]
+    cmds:
+      - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records --mode=diff-normal --listen-addr=:27017 --postgresql-url=postgres://cockroach@127.0.0.1:26257/ferretdb
 
   run-proxy:
     desc: "Run FerretDB in diff-proxy mode"
     deps: [build-testcover]
     cmds:
-      - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-record=records --mode=diff-proxy --listen-addr=:27017
+      - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records --mode=diff-proxy --listen-addr=:27017
 
   lint:
     desc: "Run linters"
@@ -327,9 +334,10 @@ tasks:
     cmds:
       - test {{.DOCKER_IMAGE}}
       - >
-        docker buildx build --builder=ferretdb --platform=linux/arm64,linux/amd64
+        docker buildx build --builder=ferretdb
         --build-arg VERSION={{.VERSION}}
         --build-arg COMMIT={{.COMMIT}}
+        --platform=linux/arm64,linux/amd64
         --tag={{.DOCKER_IMAGE}}
         --push .
     vars:
@@ -380,8 +388,8 @@ tasks:
   docs-fmt:
     desc: "Format and lint documentation"
     cmds:
-      - docker-compose run --rm markdownlint --fix --dot --ignore-path=.textlintignore '**/*.md'
-      - docker-compose run --rm textlint --fix --rule one-sentence-per-line '**/*.md'
+      - docker-compose run --rm markdownlint --fix --ignore-path=.textlintignore --dot '**/*.md'
+      - docker-compose run --rm textlint --fix --rule one-sentence-per-line '**/*.md' '.github/**/*.md'
 
   docs-dev:
     desc: "Start documentation development server"

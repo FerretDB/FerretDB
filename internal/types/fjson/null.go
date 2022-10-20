@@ -14,22 +14,13 @@
 
 package fjson
 
-import (
-	"fmt"
-
-	"github.com/FerretDB/FerretDB/internal/types"
-)
+import "github.com/FerretDB/FerretDB/internal/types"
 
 // nullType represents BSON Null type.
 type nullType types.NullType
 
 // fjsontype implements fjsontype interface.
 func (*nullType) fjsontype() {}
-
-// UnmarshalJSON implements fjsontype interface.
-func (*nullType) UnmarshalJSON(data []byte) error {
-	panic(fmt.Sprintf("must not be called, was called with %s", string(data)))
-}
 
 // MarshalJSON implements fjsontype interface.
 func (*nullType) MarshalJSON() ([]byte, error) {

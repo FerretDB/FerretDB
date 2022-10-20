@@ -55,6 +55,7 @@ linters:
     # TODO configure and enable one by one
     - bidichk
     - containedctx
+    - contextcheck
     - cyclop
     - deadcode
     - decorder
@@ -90,7 +91,9 @@ linters:
     - makezero
     - nakedret
     - nestif
+    - nilerr
     - nilnil
+    - noctx
     - nonamedreturns
     - nosprintfhostport
     - paralleltest
@@ -101,29 +104,29 @@ linters:
     - tagliatelle
     - tenv
     - thelper
+    - tparallel
     - typecheck
     - unconvert
+    - unparam
     - varcheck
     - varnamelen
     - wrapcheck
 
     # TODO https://github.com/golangci/golangci-lint/issues/2649
     - bodyclose
-    - contextcheck
-    - nilerr
-    - noctx
     - rowserrcheck
     - sqlclosecheck
-    - structcheck
-    - tparallel
-    - unparam
     - wastedassign
 
-    - golint      # deprecated
-    - interfacer  # deprecated
-    - maligned    # deprecated
+    # deprecated
+    - golint
+    - interfacer
+    - maligned
+    - nosnakecase
+    - scopelint
+    - structcheck
+
     - nlreturn    # too annoying
-    - scopelint   # deprecated
     - testpackage # we test internals
 
 issues:

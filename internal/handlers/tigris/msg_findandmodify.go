@@ -125,6 +125,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				must.NoError(reply.SetSections(wire.OpMsgSection{
 					Documents: []*types.Document{must.NotFail(types.NewDocument(
 						"lastErrorObject", must.NotFail(types.NewDocument("n", int32(0), "updatedExisting", false)),
+						"value", types.Null,
 						"ok", float64(1),
 					))},
 				}))

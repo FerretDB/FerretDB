@@ -53,7 +53,7 @@ func ExampleNew() {
 	f, err := New(&Config{
 		// explicitly turning off the TPC listener
 		ListenAddr:    "",
-		ListenSock:    "/tmp/mongodb-27017.sock",
+		ListenUnix:    "/tmp/mongodb-27017.sock",
 		Handler:       "pg",
 		PostgreSQLURL: "postgres://postgres@127.0.0.1:5432/ferretdb",
 	})

@@ -101,12 +101,14 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 			skip:   "Handle duplicates correctly",
 		},
 
-		// Strings are not converted to numbers
+		// Strings are not converted to numbers (except for Tigris with int64 fields)
 		"StringIntegerHigher": {
-			update: bson.D{{"$max", bson.D{{"v", "60"}}}},
+			update:        bson.D{{"$max", bson.D{{"v", "60"}}}},
+			skipForTigris: "In compat collection `v` will be a string, in Tigris - a number.",
 		},
 		"StringIntegerLower": {
-			update: bson.D{{"$max", bson.D{{"v", "30"}}}},
+			update:        bson.D{{"$max", bson.D{{"v", "30"}}}},
+			skipForTigris: "In compat collection `v` will be a string, in Tigris - a number.",
 		},
 		"StringDouble": {
 			update: bson.D{{"$max", bson.D{{"v", "54.32"}}}},
@@ -170,6 +172,7 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 		},
 		"DotArrayField": {
 			update:        bson.D{{"$unset", bson.D{{"v.array.0", ""}}}},
+			skip:          "https://github.com/FerretDB/FerretDB/issues/1242",
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
 		},
 		"DotArrayNonExisting": {

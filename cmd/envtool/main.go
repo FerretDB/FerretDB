@@ -28,6 +28,7 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/jackc/pgx/v4"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/tigrisdata/tigris-client-go/config"
 	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
@@ -259,7 +260,7 @@ func setupTigris(ctx context.Context, logger *zap.SugaredLogger) error {
 
 // run runs all setup commands.
 func run(ctx context.Context, logger *zap.SugaredLogger) error {
-	go debug.RunHandler(ctx, "127.0.0.1:8089", logger.Named("debug").Desugar())
+	go debug.RunHandler(ctx, "127.0.0.1:8089", prometheus.DefaultRegisterer, logger.Named("debug").Desugar())
 
 	if err := setupPostgres(ctx, logger); err != nil {
 		return err
@@ -290,7 +291,8 @@ func main() {
 	if cli.Debug {
 		level = zap.DebugLevel
 	}
-	logging.Setup(level)
+
+	logging.Setup(level, "")
 	logger := zap.S()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)

@@ -199,10 +199,10 @@ var cli struct {
 func main() {
 	ctx := kong.Parse(&cli)
 
-	logging.Setup(zap.InfoLevel)
+	logging.Setup(zap.InfoLevel, "")
 
 	if cli.Debug {
-		logging.Setup(zap.DebugLevel)
+		logging.Setup(zap.DebugLevel, "")
 	}
 
 	logger := zap.S()
@@ -227,7 +227,7 @@ func main() {
 		case "generated":
 			src = generatedCorpus
 		default:
-			src, err = filepath.Abs(src)
+			src, err = filepath.Abs(cli.Corpus.Src)
 			if err != nil {
 				logger.Fatal(err)
 			}
@@ -235,11 +235,12 @@ func main() {
 
 		switch cli.Corpus.Dst {
 		case "seed":
-			dst = seedCorpus
+			// Because we would need to add `/testdata/fuzz` back, and that's not very easy.
+			logger.Fatal("Copying to seed corpus is not supported.")
 		case "generated":
 			dst = generatedCorpus
 		default:
-			dst, err = filepath.Abs(dst)
+			dst, err = filepath.Abs(cli.Corpus.Dst)
 			if err != nil {
 				logger.Fatal(err)
 			}

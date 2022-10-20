@@ -20,13 +20,17 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"sort"
 
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
+	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 // Config represents FerretDB configuration.
@@ -34,8 +38,8 @@ type Config struct {
 	// Listen address; defaults to "127.0.0.1:27017".
 	ListenAddr string
 
-	// Listen unix domain socket path; defaults to "".
-	ListenSock string
+	// Listen Unix domain socket path; defaults to "".
+	ListenUnix string
 
 	// Handler to use; one of `pg` or `tigris` (if enabled at compile-time).
 	Handler string
@@ -75,9 +79,21 @@ func New(config *Config) (*FerretDB, error) {
 //
 // When this method returns, listener and all connections are closed.
 func (f *FerretDB) Run(ctx context.Context) error {
+	p, err := state.NewProvider("")
+	if err != nil {
+		return fmt.Errorf("failed to construct handler: %s", err)
+	}
+
+	cmdsList := maps.Keys(common.Commands)
+	sort.Strings(cmdsList)
+
+	metrics := connmetrics.NewListenerMetrics(cmdsList)
+
 	newOpts := registry.NewHandlerOpts{
-		Ctx:    context.Background(),
-		Logger: logger,
+		Ctx:           context.Background(),
+		Logger:        logger,
+		Metrics:       metrics.ConnMetrics,
+		StateProvider: p,
 
 		PostgreSQLURL: f.config.PostgreSQLURL,
 
@@ -94,8 +110,9 @@ func (f *FerretDB) Run(ctx context.Context) error {
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		ListenAddr: f.listenAddr,
-		ListenSock: f.config.ListenSock,
+		ListenUnix: f.config.ListenUnix,
 		Mode:       clientconn.NormalMode,
+		Metrics:    metrics,
 		Handler:    h,
 		Logger:     logger,
 	})
@@ -116,7 +133,7 @@ func (f *FerretDB) MongoDBURI() string {
 	if f.isListeningOnlyOnSock() {
 		u = url.URL{
 			Scheme: "mongodb",
-			Host:   url.PathEscape(f.config.ListenSock),
+			Host:   url.PathEscape(f.config.ListenUnix),
 		}
 	} else {
 		u = url.URL{
@@ -129,8 +146,9 @@ func (f *FerretDB) MongoDBURI() string {
 	return u.String()
 }
 
+// TODO
 func (f *FerretDB) isListeningOnlyOnSock() bool {
-	return f.config.ListenAddr == "" && f.config.ListenSock != ""
+	return f.config.ListenAddr == "" && f.config.ListenUnix != ""
 }
 
 // logger is a global logger used by FerretDB.
@@ -141,6 +159,6 @@ var logger *zap.Logger
 // Initialize the global logger there to avoid creating too many issues for zap users that initialize it in their
 // `main()` functions. It is still not a full solution; eventually, we should remove the usage of the global logger.
 func init() {
-	logging.Setup(zapcore.FatalLevel)
+	logging.Setup(zap.FatalLevel, "")
 	logger = zap.L()
 }

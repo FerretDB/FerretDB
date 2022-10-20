@@ -243,6 +243,7 @@ func TestFindAndModifyCompatRemove(t *testing.T) {
 				{"query", bson.D{{"_id", "double"}}},
 				{"remove", true},
 			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/1243",
 		},
 		"RemoveEmptyQueryResult": {
 			command: bson.D{
@@ -258,6 +259,7 @@ func TestFindAndModifyCompatRemove(t *testing.T) {
 				},
 				{"remove", true},
 			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/1243",
 		},
 	}
 
@@ -338,7 +340,7 @@ func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCom
 						assert.Equal(t, compatErr, targetErr)
 						return
 					}
-					require.NoError(t, compatErr, "compat error")
+					require.NoError(t, compatErr, "compat error; target returned no error")
 
 					var targetRes, compatRes []bson.D
 					require.NoError(t, targetCursor.All(ctx, &targetRes))

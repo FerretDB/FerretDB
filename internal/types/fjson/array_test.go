@@ -42,21 +42,9 @@ var arrayTestCases = []testCase{{
 		types.Null,
 	))),
 	j: `[[],{"$b":"Qg==","s":128},true,{"$d":1627378542123},{"$k":[]},{"$f":42.13},42,{"$l":"42"},"foo",null]`,
-}, {
-	name: "EOF",
-	j:    `[`,
-	jErr: `unexpected EOF`,
 }}
 
 func TestArray(t *testing.T) {
 	t.Parallel()
 	testJSON(t, arrayTestCases, func() fjsontype { return new(arrayType) })
-}
-
-func FuzzArray(f *testing.F) {
-	fuzzJSON(f, arrayTestCases, func() fjsontype { return new(arrayType) })
-}
-
-func BenchmarkArray(b *testing.B) {
-	benchmark(b, arrayTestCases, func() fjsontype { return new(arrayType) })
 }

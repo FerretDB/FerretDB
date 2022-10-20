@@ -144,10 +144,6 @@ var msgTestCases = []testCase{{
 		}},
 	},
 }, {
-	name:      "dollar_dot",
-	expectedB: testutil.MustParseDumpFile("testdata", "dollar_dot.hex"),
-	err:       `types.Document.validate: invalid key: "$."`,
-}, {
 	name:      "msg_fuzz1",
 	expectedB: testutil.MustParseDumpFile("testdata", "msg_fuzz1.hex"),
 	err:       `wire.OpMsg.readFrom: invalid kind 1 section length -13619152`,

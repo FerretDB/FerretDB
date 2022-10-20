@@ -35,7 +35,7 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.l, "writeConcern", "comment")
+	common.Ignored(document, h.L, "writeConcern", "comment")
 
 	var db string
 	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
@@ -44,7 +44,7 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	res := must.NotFail(types.NewDocument())
 
-	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		return pgdb.DropDatabase(ctx, tx, db)
 	})
 

@@ -22,8 +22,11 @@ node_modules/
 # test coverage results, generated files like commit.txt, etc.
 *.txt
 
+# runtime state
+state.json
+
 # for now
-testdata/fuzz/
+**/testdata/fuzz/
 records/
 
 # for local Docker Compse changes; see https://docs.docker.com/compose/extends/#multiple-compose-files

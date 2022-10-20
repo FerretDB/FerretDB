@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -72,7 +72,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	case "global":
-		log, err := logging.RecentEntries.GetArray(zapcore.DebugLevel)
+		log, err := logging.RecentEntries.GetArray(zap.DebugLevel)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -84,7 +84,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	case "startupWarnings":
 		var pv string
-		err = h.pgPool.QueryRow(ctx, "SHOW server_version").Scan(&pv)
+		err = h.PgPool.QueryRow(ctx, "SHOW server_version").Scan(&pv)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}

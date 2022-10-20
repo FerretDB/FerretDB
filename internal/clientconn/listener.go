@@ -27,6 +27,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -34,9 +35,7 @@ import (
 
 // Listener accepts incoming client connections.
 type Listener struct {
-	opts             *NewListenerOpts
-	metrics          *ListenerMetrics
-	handler          handlers.Interface
+	*NewListenerOpts
 	tcpListener      net.Listener
 	sockListener     net.Listener
 	tcpListenerReady chan struct{}
@@ -44,23 +43,20 @@ type Listener struct {
 
 // NewListenerOpts represents listener configuration.
 type NewListenerOpts struct {
-	ListenAddr         string
-	ListenSock         string
-	ProxyAddr          string
-	Mode               Mode
-	Handler            handlers.Interface
-	Logger             *zap.Logger
-	TestConnTimeout    time.Duration
-	TestRunCancelDelay time.Duration
-	TestRecordPath     string // if empty, no records are created
+	ListenAddr     string
+	ListenUnix     string
+	ProxyAddr      string
+	Mode           Mode
+	Metrics        *connmetrics.ListenerMetrics
+	Handler        handlers.Interface
+	Logger         *zap.Logger
+	TestRecordsDir string // if empty, no records are created
 }
 
 // NewListener returns a new listener, configured by the NewListenerOpts argument.
 func NewListener(opts *NewListenerOpts) *Listener {
 	return &Listener{
-		opts:             opts,
-		metrics:          newListenerMetrics(),
-		handler:          opts.Handler,
+		NewListenerOpts:  opts,
 		tcpListenerReady: make(chan struct{}),
 	}
 }
@@ -69,14 +65,14 @@ func NewListener(opts *NewListenerOpts) *Listener {
 //
 // When this method returns, listener and all connections are closed.
 func (l *Listener) Run(ctx context.Context) error {
-	logger := l.opts.Logger.Named("listener")
+	logger := l.Logger.Named("listener")
 
-	useSock := l.opts.ListenSock != ""
-	useTcp := !useSock || l.opts.ListenAddr != ""
+	useSock := l.ListenUnix != ""
+	useTcp := !useSock || l.ListenAddr != ""
 
 	if useTcp {
 		var err error
-		if l.tcpListener, err = net.Listen("tcp", l.opts.ListenAddr); err != nil {
+		if l.tcpListener, err = net.Listen("tcp", l.ListenAddr); err != nil {
 			return lazyerrors.Error(err)
 		}
 
@@ -87,7 +83,7 @@ func (l *Listener) Run(ctx context.Context) error {
 
 	if useSock {
 		var err error
-		if l.sockListener, err = net.Listen("unix", l.opts.ListenSock); err != nil {
+		if l.sockListener, err = net.Listen("unix", l.ListenUnix); err != nil {
 			return lazyerrors.Error(err)
 		}
 
@@ -138,7 +134,7 @@ func listenLoop(ctx context.Context, wg *sync.WaitGroup, l *Listener, listener n
 	for {
 		netConn, err := listener.Accept()
 		if err != nil {
-			l.metrics.accepts.WithLabelValues("1").Inc()
+			l.Metrics.Accepts.WithLabelValues("1").Inc()
 
 			if ctx.Err() != nil {
 				break
@@ -152,8 +148,8 @@ func listenLoop(ctx context.Context, wg *sync.WaitGroup, l *Listener, listener n
 		}
 
 		wg.Add(1)
-		l.metrics.accepts.WithLabelValues("0").Inc()
-		l.metrics.connectedClients.Inc()
+		l.Metrics.Accepts.WithLabelValues("0").Inc()
+		l.Metrics.ConnectedClients.Inc()
 
 		go runConn(ctx, netConn, l, wg, logger)
 	}
@@ -163,18 +159,8 @@ func runConn(ctx context.Context, netConn net.Conn, l *Listener, wg *sync.WaitGr
 	connID := fmt.Sprintf("%s -> %s", netConn.RemoteAddr(), netConn.LocalAddr())
 
 	// give clients a few seconds to disconnect after ctx is canceled
-	runCancelDelay := l.opts.TestRunCancelDelay
-	if runCancelDelay == 0 {
-		runCancelDelay = 3 * time.Second
-	}
-
-	runCtx, runCancel := ctxutil.WithDelay(ctx.Done(), runCancelDelay)
+	runCtx, runCancel := ctxutil.WithDelay(ctx.Done(), 3*time.Second)
 	defer runCancel()
-
-	if l.opts.TestConnTimeout != 0 {
-		runCtx, runCancel = context.WithTimeout(runCtx, l.opts.TestConnTimeout)
-		defer runCancel()
-	}
 
 	defer pprof.SetGoroutineLabels(runCtx)
 	runCtx = pprof.WithLabels(runCtx, pprof.Labels("conn", connID))
@@ -182,21 +168,20 @@ func runConn(ctx context.Context, netConn net.Conn, l *Listener, wg *sync.WaitGr
 
 	defer func() {
 		netConn.Close()
-		l.metrics.connectedClients.Dec()
+		l.Metrics.ConnectedClients.Dec()
 		wg.Done()
 	}()
 
 	opts := &newConnOpts{
 		netConn:        netConn,
-		mode:           l.opts.Mode,
-		l:              l.opts.Logger.Named("// " + connID + " "),
-		proxyAddr:      l.opts.ProxyAddr,
-		handler:        l.opts.Handler,
-		connMetrics:    l.metrics.connMetrics,
-		testRecordPath: l.opts.TestRecordPath,
+		mode:           l.Mode,
+		l:              l.Logger.Named("// " + connID + " "), // derive from the original unnamed logger
+		proxyAddr:      l.ProxyAddr,
+		handler:        l.Handler,
+		connMetrics:    l.Metrics.ConnMetrics,
+		testRecordsDir: l.TestRecordsDir,
 	}
 	conn, e := newConn(opts)
-
 	if e != nil {
 		logger.Warn("Failed to create connection", zap.String("conn", connID), zap.Error(e))
 		return
@@ -231,10 +216,15 @@ func (l *Listener) Sock() net.Addr {
 
 // Describe implements prometheus.Collector.
 func (l *Listener) Describe(ch chan<- *prometheus.Desc) {
-	l.metrics.Describe(ch)
+	l.Metrics.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
 func (l *Listener) Collect(ch chan<- prometheus.Metric) {
-	l.metrics.Collect(ch)
+	l.Metrics.Collect(ch)
 }
+
+// check interfaces
+var (
+	_ prometheus.Collector = (*Listener)(nil)
+)

@@ -23,19 +23,25 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"sort"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
+	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -44,6 +50,8 @@ var (
 	proxyAddrF  = flag.String("proxy-addr", "", "proxy to use for in-process FerretDB")
 	handlerF    = flag.String("handler", "pg", "handler to use for in-process FerretDB")
 	compatPortF = flag.Int("compat-port", 37017, "second system's port for compatibility tests; if 0, they are skipped")
+
+	PostgreSQLURLF = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/ferretdb?pool_min_conns=1", "PostgreSQL URL for 'pg' handler.")
 
 	// Disable noisy setup logs by default.
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
@@ -92,11 +100,26 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 	tb.Helper()
 
+	p, err := state.NewProvider("")
+	require.NoError(tb, err)
+
+	u, err := url.Parse(*PostgreSQLURLF)
+	require.NoError(tb, err)
+
+	cmdsList := maps.Keys(common.Commands)
+	sort.Strings(cmdsList)
+
+	metrics := connmetrics.NewListenerMetrics(cmdsList)
+
 	h, err := registry.NewHandler(*handlerF, &registry.NewHandlerOpts{
 		Ctx:           ctx,
 		Logger:        logger,
-		PostgreSQLURL: testutil.PostgreSQLURL(tb, nil),
-		TigrisURL:     testutil.TigrisURL(tb),
+		Metrics:       metrics.ConnMetrics,
+		StateProvider: p,
+
+		PostgreSQLURL: u.String(),
+
+		TigrisURL: testutil.TigrisURL(tb),
 	})
 	require.NoError(tb, err)
 
@@ -110,6 +133,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 		ListenAddr:         "127.0.0.1:0",
 		ProxyAddr:          proxyAddr,
 		Mode:               mode,
+		Metrics:            metrics,
 		Handler:            h,
 		Logger:             logger,
 		TestRunCancelDelay: time.Hour, // make it easier to notice missing client's disconnects
@@ -269,9 +293,9 @@ func setupSockClient(tb testing.TB, ctx context.Context, path string) *mongo.Cli
 // startup initializes things that should be initialized only once.
 func startup() {
 	startupOnce.Do(func() {
-		logging.Setup(zap.DebugLevel)
+		logging.Setup(zap.DebugLevel, "")
 
-		go debug.RunHandler(context.Background(), "127.0.0.1:0", zap.L().Named("debug"))
+		go debug.RunHandler(context.Background(), "127.0.0.1:0", prometheus.DefaultRegisterer, zap.L().Named("debug"))
 
 		if p := *targetPortF; p == 0 {
 			zap.S().Infof("Target system: in-process FerretDB with %q handler.", *handlerF)

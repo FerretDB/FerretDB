@@ -34,6 +34,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/proxy"
@@ -60,7 +61,12 @@ const (
 )
 
 // AllModes includes all operation modes, with the first one being the default.
-var AllModes = []Mode{NormalMode, ProxyMode, DiffNormalMode, DiffProxyMode}
+var AllModes = []string{
+	string(NormalMode),
+	string(ProxyMode),
+	string(DiffNormalMode),
+	string(DiffProxyMode),
+}
 
 // conn represents client connection.
 type conn struct {
@@ -68,10 +74,10 @@ type conn struct {
 	mode           Mode
 	l              *zap.SugaredLogger
 	h              handlers.Interface
-	m              *ConnMetrics
+	m              *connmetrics.ConnMetrics
 	proxy          *proxy.Router
 	lastRequestID  int32
-	testRecordPath string // if empty, no records are created
+	testRecordsDir string // if empty, no records are created
 }
 
 // newConnOpts represents newConn options.
@@ -80,13 +86,16 @@ type newConnOpts struct {
 	mode           Mode
 	l              *zap.Logger
 	handler        handlers.Interface
-	connMetrics    *ConnMetrics
+	connMetrics    *connmetrics.ConnMetrics
 	proxyAddr      string
-	testRecordPath string // if empty, no records are created
+	testRecordsDir string // if empty, no records are created
 }
 
 // newConn creates a new client connection for given net.Conn.
 func newConn(opts *newConnOpts) (*conn, error) {
+	if opts.mode == "" {
+		panic("mode required")
+	}
 	if opts.handler == nil {
 		panic("handler required")
 	}
@@ -106,7 +115,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 		h:              opts.handler,
 		m:              opts.connMetrics,
 		proxy:          p,
-		testRecordPath: opts.testRecordPath,
+		testRecordsDir: opts.testRecordsDir,
 	}, nil
 }
 
@@ -148,14 +157,14 @@ func (c *conn) run(ctx context.Context) (err error) {
 	bufr := bufio.NewReader(c.netConn)
 
 	// if test record path is set, split netConn reader to write to file and bufr
-	if c.testRecordPath != "" {
-		if err := os.MkdirAll(c.testRecordPath, 0o755); err != nil {
+	if c.testRecordsDir != "" {
+		if err := os.MkdirAll(c.testRecordsDir, 0o777); err != nil {
 			return err
 		}
 
 		filename := fmt.Sprintf("%s_%s.bin", time.Now().Format("2006-01-02_15:04:05"), c.netConn.RemoteAddr().String())
 
-		path := filepath.Join(c.testRecordPath, filename)
+		path := filepath.Join(c.testRecordsDir, filename)
 
 		f, err := os.Create(path)
 		if err != nil {
@@ -287,19 +296,20 @@ func (c *conn) run(ctx context.Context) (err error) {
 // Handlers to which it routes, should not panic on bad input, but may do so in "impossible" cases.
 // They also should not use recover(). That allows us to use fuzzing.
 func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
-	requests := c.m.requests.MustCurryWith(prometheus.Labels{"opcode": reqHeader.OpCode.String()})
+	requests := c.m.Requests.MustCurryWith(prometheus.Labels{"opcode": reqHeader.OpCode.String()})
 	var command string
 	var result *string
 	defer func() {
 		if result == nil {
 			result = pointer.ToString("panic")
 		}
-		c.m.responses.WithLabelValues(resHeader.OpCode.String(), command, *result).Inc()
+
+		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, *result).Inc()
 	}()
 
 	connInfo := &conninfo.ConnInfo{
 		PeerAddr:          c.netConn.RemoteAddr(),
-		AggregationStages: c.m.aggregationStages,
+		AggregationStages: c.m.AggregationStages,
 	}
 	ctx, cancel := context.WithCancel(conninfo.WithConnInfo(ctx, connInfo))
 	defer cancel()
@@ -426,16 +436,6 @@ func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, cmd string) (*w
 	return nil, common.NewErrorMsg(common.ErrCommandNotFound, errMsg)
 }
 
-// Describe implements prometheus.Collector.
-func (c *conn) Describe(ch chan<- *prometheus.Desc) {
-	c.m.Describe(ch)
-}
-
-// Collect implements prometheus.Collector.
-func (c *conn) Collect(ch chan<- prometheus.Metric) {
-	c.m.Collect(ch)
-}
-
 // logResponse logs response's header and body and returns the log level that was used.
 //
 // The param `who` will be used in logs and should represent the type of the response,
@@ -467,3 +467,18 @@ func (c *conn) logResponse(who string, resHeader *wire.MsgHeader, resBody wire.M
 
 	return level
 }
+
+// Describe implements prometheus.Collector.
+func (c *conn) Describe(ch chan<- *prometheus.Desc) {
+	c.m.Describe(ch)
+}
+
+// Collect implements prometheus.Collector.
+func (c *conn) Collect(ch chan<- prometheus.Metric) {
+	c.m.Collect(ch)
+}
+
+// check interfaces
+var (
+	_ prometheus.Collector = (*conn)(nil)
+)

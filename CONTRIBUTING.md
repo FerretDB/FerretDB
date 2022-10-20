@@ -96,19 +96,23 @@ The `internal` subpackages contain most of the FerretDB code:
 * `types/fjson` provides converters from/to FJSON for built-in and `types` types.
   FJSON adds some extensions to JSON for keeping object keys in order,
   preserving BSON type information in the values themselves, etc.
-  It is used for logging.
+  It is used for logging of BSON values and wire protocol messages.
 * `bson` package provides converters from/to BSON for built-in and `types` types.
 * `wire` package provides wire protocol implementation.
 * `clientconn` package provides client connection implementation.
   It accepts client connections, reads `wire`/`bson` protocol messages, and passes them to `handlers`.
   Responses are then converted to `wire`/`bson` messages and sent back to the client.
-* `handlers` handle protocol commands.
-  They use `fjson` package for storing data in PostgreSQL in jsonb columns, but they don't use `bson` package –
-  all data is represented as built-in and `types` types.
+* `handlers` contains a common interface for backend handlers that they should implement.
+  Handlers use `types` and `wire` packages, but `bson` package details are hidden.
+* `handlers/common` contains code shared by different handlers.
+* `handlers/dummy` contains a stub implementation of that interface that could be copied into a new package
+  as a starting point for the new handlers.
+* `handlers/pg` contains the implementation of the PostgreSQL handler.
 * `handlers/pg/pjson` provides converters from/to PJSON for built-in and `types` types.
   PJSON adds some extensions to JSON for keeping object keys in order,
   preserving BSON type information in the values themselves, etc.
   It is used by `pg` handler.
+* `handlers/tigris` contains the implementation of the Tigris handler.
 * `tjson` provides converters from/to JSON with JSON Schema for built-in and `types` types.
   BSON type information is preserved either in the schema (where possible) or in the values themselves.
   It is used by `tigris` handler.

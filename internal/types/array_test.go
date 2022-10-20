@@ -50,20 +50,6 @@ func TestArray(t *testing.T) {
 		value, err := a.Get(0)
 		assert.NoError(t, err)
 		assert.Equal(t, Null, value)
-
-		err = a.Append(42)
-		assert.EqualError(t, err, `types.Array.Append: types.validateValue: unsupported type: int (42)`)
-
-		err = a.Append(nil)
-		assert.EqualError(t, err, `types.Array.Append: types.validateValue: unsupported type: <nil> (<nil>)`)
-	})
-
-	t.Run("NewArray", func(t *testing.T) {
-		t.Parallel()
-
-		a, err := NewArray(int32(42), 42)
-		assert.Nil(t, a)
-		assert.EqualError(t, err, `types.NewArray: index 1: types.validateValue: unsupported type: int (42)`)
 	})
 
 	t.Run("DeepCopy", func(t *testing.T) {

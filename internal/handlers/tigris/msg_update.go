@@ -16,13 +16,13 @@ package tigris
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
-	"github.com/FerretDB/FerretDB/internal/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -39,6 +39,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	if err := common.Unimplemented(document, "let"); err != nil {
 		return nil, err
 	}
+
 	common.Ignored(document, h.L, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
 
 	var fp tigrisdb.FetchParam
@@ -199,17 +200,17 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 // update replaces given document.
 func (h *Handler) update(ctx context.Context, fp *tigrisdb.FetchParam, doc *types.Document) (int, error) {
-	u, err := tjson.Marshal(doc)
-	if err != nil {
-		return 0, lazyerrors.Error(err)
-	}
-	h.L.Sugar().Debugf("Update: %s", u)
+	err := h.db.ReplaceDocument(ctx, fp.DB, fp.Collection, doc)
 
-	_, err = h.db.Driver.UseDatabase(fp.DB).Replace(ctx, fp.Collection, []driver.Document{u})
-	switch err := err.(type) {
-	case nil:
+	var valErr *types.ValidationError
+	var driverErr *driver.Error
+
+	switch {
+	case err == nil:
 		return 1, nil
-	case *driver.Error:
+	case errors.As(err, &valErr):
+		return 0, common.NewErrorMsg(common.ErrBadValue, err.Error())
+	case errors.As(err, &driverErr):
 		if tigrisdb.IsInvalidArgument(err) {
 			return 0, common.NewErrorMsg(common.ErrDocumentValidationFailure, err.Error())
 		}

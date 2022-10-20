@@ -17,7 +17,6 @@ package types
 import (
 	"fmt"
 	"strconv"
-	"unicode/utf8"
 
 	"golang.org/x/exp/slices"
 
@@ -34,16 +33,16 @@ type document interface {
 
 // Document represents BSON document.
 //
-// Duplicate field names are not supported.
+// Duplicate field names are not supported yet.
 type Document struct {
 	m    map[string]any
 	keys []string
 }
 
-// ConvertDocument converts bson.Document to *types.Document and validates it.
+// ConvertDocument converts bson.Document to *types.Document.
 // It references the same data without copying it.
 //
-// TODO Remove this function.
+// TODO Remove this function: https://github.com/FerretDB/FerretDB/issues/260
 func ConvertDocument(d document) (*Document, error) {
 	if d == nil {
 		panic("types.ConvertDocument: d is nil")
@@ -52,10 +51,6 @@ func ConvertDocument(d document) (*Document, error) {
 	doc := &Document{
 		m:    d.Map(),
 		keys: d.Keys(),
-	}
-
-	if err := doc.validate(); err != nil {
-		return doc, fmt.Errorf("types.ConvertDocument: %w", err)
 	}
 
 	return doc, nil
@@ -98,10 +93,6 @@ func NewDocument(pairs ...any) (*Document, error) {
 		}
 	}
 
-	if err := doc.validate(); err != nil {
-		return nil, fmt.Errorf("types.NewDocument: %w", err)
-	}
-
 	return doc, nil
 }
 
@@ -113,59 +104,6 @@ func (d *Document) DeepCopy() *Document {
 		panic("types.Document.DeepCopy: nil document")
 	}
 	return deepCopy(d).(*Document)
-}
-
-// isValidKey returns false if key is not a valid document field key.
-//
-// TODO That function should be removed once we have separate validation for command and data documents.
-func isValidKey(key string) bool {
-	if key == "" {
-		// TODO that should be valid only for command documents, not for data documents
-		return true
-	}
-
-	// forbid keys like $k (used by pjson representation), but allow $db (used by many commands)
-	if key[0] == '$' && len(key) <= 2 {
-		return false
-	}
-
-	return utf8.ValidString(key)
-}
-
-// validate checks if the document is valid.
-func (d *Document) validate() error {
-	if d == nil {
-		panic("types.Document.validate: d is nil")
-	}
-
-	if len(d.m) != len(d.keys) {
-		return fmt.Errorf("types.Document.validate: keys and values count mismatch: %d != %d", len(d.m), len(d.keys))
-	}
-
-	// TODO check that _id is not regex or array
-
-	prevKeys := make(map[string]struct{}, len(d.keys))
-	for _, key := range d.keys {
-		if !isValidKey(key) {
-			return fmt.Errorf("types.Document.validate: invalid key: %q", key)
-		}
-
-		value, ok := d.m[key]
-		if !ok {
-			return fmt.Errorf("types.Document.validate: key not found: %q", key)
-		}
-
-		if _, ok := prevKeys[key]; ok {
-			return fmt.Errorf("types.Document.validate: duplicate key: %q", key)
-		}
-		prevKeys[key] = struct{}{}
-
-		if err := validateValue(value); err != nil {
-			return fmt.Errorf("types.Document.validate: %w", err)
-		}
-	}
-
-	return nil
 }
 
 // Len returns the number of elements in the document.
@@ -216,17 +154,9 @@ func (d *Document) add(key string, value any) error {
 		return fmt.Errorf("types.Document.add: key already present: %q", key)
 	}
 
-	if !isValidKey(key) {
-		return fmt.Errorf("types.Document.add: invalid key: %q", key)
-	}
-
-	if err := validateValue(value); err != nil {
-		return fmt.Errorf("types.Document.validate: %w", err)
-	}
-
 	// update keys slice
 	if key == "_id" {
-		// TODO check that value is not regex or array
+		// TODO check that value is not regex or array: https://github.com/FerretDB/FerretDB/issues/1235
 
 		// ensure that _id is the first field
 		d.keys = slices.Insert(d.keys, 0, key)
@@ -258,17 +188,9 @@ func (d *Document) Get(key string) (any, error) {
 //
 // As a special case, _id always becomes the first key.
 func (d *Document) Set(key string, value any) error {
-	if !isValidKey(key) {
-		return fmt.Errorf("types.Document.Set: invalid key: %q", key)
-	}
-
-	if err := validateValue(value); err != nil {
-		return fmt.Errorf("types.Document.validate: %w", err)
-	}
-
 	// update keys slice
 	if key == "_id" {
-		// TODO check that value is not regex or array
+		// TODO check that value is not regex or array: https://github.com/FerretDB/FerretDB/issues/1235
 
 		// ensure that _id is the first field
 		if i := slices.Index(d.keys, key); i >= 0 {

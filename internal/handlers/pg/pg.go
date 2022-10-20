@@ -16,41 +16,38 @@
 package pg
 
 import (
-	"time"
-
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 // Handler implements handlers.Interface on top of PostgreSQL.
 type Handler struct {
-	// TODO replace those fields with embedded *NewOpts to sync with Tigris handler
-	pgPool    *pgdb.Pool
-	l         *zap.Logger
-	startTime time.Time
+	*NewOpts
 }
 
 // NewOpts represents handler configuration.
 type NewOpts struct {
-	PgPool *pgdb.Pool
-	L      *zap.Logger
+	PgPool        *pgdb.Pool
+	L             *zap.Logger
+	Metrics       *connmetrics.ConnMetrics
+	StateProvider *state.Provider
 }
 
 // New returns a new handler.
 func New(opts *NewOpts) (handlers.Interface, error) {
 	h := &Handler{
-		pgPool:    opts.PgPool,
-		l:         opts.L,
-		startTime: time.Now(),
+		NewOpts: opts,
 	}
 	return h, nil
 }
 
 // Close implements HandlerInterface.
 func (h *Handler) Close() {
-	h.pgPool.Close()
+	h.PgPool.Close()
 }
 
 // check interfaces
