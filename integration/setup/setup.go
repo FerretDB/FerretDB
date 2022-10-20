@@ -75,12 +75,10 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 		port = setupListener(tb, ctx, logger)
 	}
 
-	client := setupClient(tb, ctx, port)
-
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	collection := setupCollection(tb, ctx, client, opts)
+	collection := setupCollection(tb, ctx, setupClient(tb, ctx, port), opts)
 
 	level.SetLevel(*logLevelF)
 
