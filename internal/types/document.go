@@ -151,7 +151,7 @@ func (d *Document) Map() map[string]any {
 	return m
 }
 
-// Keys returns document's keys. Do not modify it.
+// Keys returns a copy of document's keys.
 //
 // If there are duplicate keys in the document, the result will have duplicate keys too.
 //

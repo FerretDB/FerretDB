@@ -17,7 +17,6 @@ package common
 import (
 	"fmt"
 	"math"
-	"sort"
 	"strings"
 	"time"
 
@@ -105,7 +104,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			// Treats the update as a Replacement object.
 			setDoc := update
 
-			sort.Strings(setDoc.Keys())
+			setDoc.SortByKeys()
 
 			for _, setKey := range doc.Keys() {
 				if !setDoc.Has(setKey) && setKey != "_id" {
@@ -130,7 +129,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (bool, error) {
 	var changed bool
 
-	sort.Strings(setDoc.Keys())
+	setDoc.SortByKeys()
 
 	for _, setKey := range setDoc.Keys() {
 		setValue := must.NotFail(setDoc.Get(setKey))
@@ -377,7 +376,7 @@ func processCurrentDateFieldExpression(doc *types.Document, currentDateVal any) 
 	currentDateExpression := currentDateVal.(*types.Document)
 
 	now := time.Now().UTC()
-	sort.Strings(currentDateExpression.Keys())
+	currentDateExpression.SortByKeys()
 
 	for _, field := range currentDateExpression.Keys() {
 		currentDateField := must.NotFail(currentDateExpression.Get(field))
