@@ -37,7 +37,7 @@ import (
 type Listener struct {
 	*NewListenerOpts
 	tcpListener      net.Listener
-	sockListener     net.Listener
+	unixListener     net.Listener
 	tcpListenerReady chan struct{}
 }
 
@@ -67,10 +67,7 @@ func NewListener(opts *NewListenerOpts) *Listener {
 func (l *Listener) Run(ctx context.Context) error {
 	logger := l.Logger.Named("listener")
 
-	useSock := l.ListenUnix != ""
-	useTcp := !useSock || l.ListenAddr != ""
-
-	if useTcp {
+	if l.ListenAddr != "" {
 		var err error
 		if l.tcpListener, err = net.Listen("tcp", l.ListenAddr); err != nil {
 			return lazyerrors.Error(err)
@@ -81,47 +78,46 @@ func (l *Listener) Run(ctx context.Context) error {
 		logger.Sugar().Infof("Listening on %s ...", l.Addr())
 	}
 
-	if useSock {
+	if l.ListenUnix != "" {
 		var err error
-		if l.sockListener, err = net.Listen("unix", l.ListenUnix); err != nil {
+		if l.unixListener, err = net.Listen("unix", l.ListenUnix); err != nil {
 			return lazyerrors.Error(err)
 		}
 
-		logger.Sugar().Infof("Listening on %s ...", l.Sock())
+		logger.Sugar().Infof("Listening on %s ...", l.Unix())
 	}
 
 	// handle ctx cancellation
 	go func() {
 		<-ctx.Done()
 
-		if useTcp {
+		if l.ListenAddr != "" {
 			l.tcpListener.Close()
 		}
 
-		if useSock {
-			l.sockListener.Close()
+		if l.ListenUnix != "" {
+			l.unixListener.Close()
 		}
 	}()
 
 	var wg sync.WaitGroup
 
-	spawnListener := func(ctx context.Context, wg *sync.WaitGroup, l *Listener, listener net.Listener, logger *zap.Logger) {
+	if l.ListenAddr != "" {
 		wg.Add(1)
 
 		go func() {
 			defer wg.Done()
-			listenLoop(ctx, wg, l, listener, logger)
+			listenLoop(ctx, &wg, l, l.tcpListener, logger)
 		}()
 	}
 
-	// handle TCP stream
-	if useTcp {
-		spawnListener(ctx, &wg, l, l.tcpListener, logger)
-	}
+	if l.ListenUnix != "" {
+		wg.Add(1)
 
-	// handle UNIX stream
-	if useSock {
-		spawnListener(ctx, &wg, l, l.sockListener, logger)
+		go func() {
+			defer wg.Done()
+			listenLoop(ctx, &wg, l, l.unixListener, logger)
+		}()
 	}
 
 	logger.Info("Waiting for all connections to stop...")
@@ -197,7 +193,7 @@ func runConn(ctx context.Context, netConn net.Conn, l *Listener, wg *sync.WaitGr
 	}
 }
 
-// Addr returns listener's address.
+// Addr returns TCP listener's address.
 // It can be used to determine an actually used port, if it was zero.
 //
 // It is a blocking call unless Run was not called.
@@ -206,12 +202,9 @@ func (l *Listener) Addr() net.Addr {
 	return l.tcpListener.Addr()
 }
 
-// Sock returns listener's unix domain socket address.
-func (l *Listener) Sock() net.Addr {
-	// we don't do blocking because we restricted the socket to not has "" path
-	// so we always know the address.
-
-	return l.sockListener.Addr()
+// Unix returns Unix domain socket address.
+func (l *Listener) Unix() net.Addr {
+	return l.unixListener.Addr()
 }
 
 // Describe implements prometheus.Collector.

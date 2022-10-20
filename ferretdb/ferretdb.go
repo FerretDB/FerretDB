@@ -35,7 +35,7 @@ import (
 
 // Config represents FerretDB configuration.
 type Config struct {
-	// Listen address; defaults to "127.0.0.1:27017".
+	// TCP Listen address.
 	ListenAddr string
 
 	// Listen Unix domain socket path; defaults to "".
