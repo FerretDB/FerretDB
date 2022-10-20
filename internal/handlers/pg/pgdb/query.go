@@ -122,7 +122,7 @@ func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Document, erro
 	var res *types.Document
 
 	if !rows.Next() {
-		return nil, lazyerrors.Error(rows.Err())
+		return nil, lazyerrors.Error(errors.New("no rows returned from EXPLAIN"))
 	}
 
 	var b []byte

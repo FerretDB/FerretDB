@@ -218,6 +218,7 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
+
 			var actual bson.D
 
 			err := collection.Database().RunCommand(ctx, bson.D{{"explain", tc.query}}).Decode(&actual)
