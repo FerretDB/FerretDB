@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package state stores FerretDB process state.
 package state
 
 import (
@@ -22,88 +21,117 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
-
-// State represents FerretDB process state.
-type State struct {
-	UUID string `json:"uuid"`
-}
 
 // Provider provides access to FerretDB process state.
 type Provider struct {
 	filename string
 
-	rw sync.RWMutex
-	s  State
+	rw   sync.RWMutex
+	s    *State
+	subs map[chan struct{}]struct{}
 }
 
 // NewProvider creates a new Provider that stores state in the given file.
+//
+// If filename is empty, then the state is not persisted.
+//
+// All provider's methods are thread-safe.
 func NewProvider(filename string) (*Provider, error) {
 	p := &Provider{
 		filename: filename,
+		s:        new(State),
+		subs:     make(map[chan struct{}]struct{}, 1),
 	}
 
-	if _, err := p.Get(); err != nil {
-		return nil, err
+	if p.filename != "" {
+		b, _ := os.ReadFile(p.filename)
+		_ = json.Unmarshal(b, p.s)
+	}
+
+	p.s.fill()
+
+	// Simply overwrite state to handle all errors and edge cases
+	// like missing directory, corrupted file, invalid UUID, etc.
+	if err := persistState(p.s, p.filename); err != nil {
+		return p, fmt.Errorf("failed to persist state: %w", err)
 	}
 
 	return p, nil
 }
 
+// MetricsCollector returns Prometheus metrics collector for that provider.
+//
 // If addUUIDToMetric is true, then the UUID is added to the Prometheus metric.
 func (p *Provider) MetricsCollector(addUUIDToMetric bool) prometheus.Collector {
 	return newMetricsCollector(p, addUUIDToMetric)
 }
 
-// Get returns the current process state.
+// Get returns a copy of the current process state.
 //
 // It is okay to call this function often.
 // The caller should not cache result; Provider does everything needed itself.
-func (p *Provider) Get() (*State, error) {
-	// return different copies to each caller
+func (p *Provider) Get() *State {
 	p.rw.RLock()
-	s := p.s
-	p.rw.RUnlock()
+	defer p.rw.RUnlock()
 
-	if s.UUID != "" {
-		return &s, nil
+	return p.s.deepCopy()
+}
+
+// Subscribe returns a channel that would receive notifications on state changes.
+// One notification would be scheduled immediately.
+func (p *Provider) Subscribe() chan struct{} {
+	p.rw.Lock()
+	defer p.rw.Unlock()
+
+	ch := make(chan struct{}, 1)
+	ch <- struct{}{}
+
+	p.subs[ch] = struct{}{}
+
+	return ch
+}
+
+// Update gets the current state, calls the given function, updates state, and notifies all subscribers.
+func (p *Provider) Update(update func(s *State)) error {
+	p.rw.Lock()
+	defer p.rw.Unlock()
+
+	update(p.s)
+	p.s = p.s.deepCopy()
+	p.s.fill()
+
+	err := persistState(p.s, p.filename)
+	if err != nil {
+		err = fmt.Errorf("failed to persist state: %w", err)
 	}
 
-	b, _ := os.ReadFile(p.filename)
-	_ = json.Unmarshal(b, &s)
-	_, err := uuid.Parse(s.UUID)
+	// skip subscribers that already have notification waiting for them
+	for ch := range p.subs {
+		select {
+		case ch <- struct{}{}:
+		default:
+		}
+	}
+
+	return err
+}
+
+// persistState saves state to the given file without modifying (filling) it.
+//
+// It exist immediately if filename is empty.
+func persistState(s *State, filename string) error {
+	if filename == "" {
+		return nil
+	}
+
+	b, err := json.Marshal(s)
 
 	if err == nil {
-		// store a copy
-		p.rw.Lock()
-		p.s = s
-		p.rw.Unlock()
-
-		return &s, nil
+		_ = os.MkdirAll(filepath.Dir(filename), 0o777)
+		err = os.WriteFile(filename, b, 0o666)
 	}
 
-	// all errors (missing file, invalid file permission, invalid JSON, etc)
-	// are handled in the same way - by regenerating state
-
-	s.UUID = must.NotFail(uuid.NewRandom()).String()
-	b = must.NotFail(json.Marshal(s))
-
-	if err := os.MkdirAll(filepath.Dir(p.filename), 0o777); err != nil && !os.IsExist(err) {
-		return nil, fmt.Errorf("failed to create state directory: %w", err)
-	}
-
-	if err := os.WriteFile(p.filename, b, 0o666); err != nil {
-		return nil, fmt.Errorf("failed to write state file: %w", err)
-	}
-
-	// store a copy
-	p.rw.Lock()
-	p.s = s
-	p.rw.Unlock()
-
-	return &s, nil
+	return err
 }
