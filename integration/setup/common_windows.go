@@ -16,7 +16,11 @@ package setup
 
 import (
 	"testing"
+
+	"github.com/AlekSi/pointer"
 )
+
+var targetUnixSocketF = pointer.ToBool(false)
 
 // listenUnix returns empty string on Windows because Unix domain sockets are not available.
 func listenUnix(tb testing.TB) string {
