@@ -43,12 +43,12 @@ func TestQueryLogical(t *testing.T) {
 		// $and
 		"AndZero": {
 			filter: bson.D{{
-				"$and", bson.A{"v"},
+				"$and", bson.A{},
 			}},
 			expectedErr: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "$or/$and/$nor entries need to be full objects",
+				Message: "$and/$or/$nor must be a nonempty array",
 			},
 		},
 		"AndOne": {
@@ -125,12 +125,12 @@ func TestQueryLogical(t *testing.T) {
 		// $or
 		"OrZero": {
 			filter: bson.D{{
-				"$or", bson.A{"v"},
+				"$or", bson.A{},
 			}},
 			expectedErr: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "$or/$and/$nor entries need to be full objects",
+				Message: "$and/$or/$nor must be a nonempty array",
 			},
 		},
 		"OrOne": {
@@ -191,12 +191,12 @@ func TestQueryLogical(t *testing.T) {
 		// $nor
 		"NorZero": {
 			filter: bson.D{{
-				"$nor", bson.A{"v"},
+				"$nor", bson.A{},
 			}},
 			expectedErr: mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "$or/$and/$nor entries need to be full objects",
+				Message: "$and/$or/$nor must be a nonempty array",
 			},
 		},
 		"NorOne": {
