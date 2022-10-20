@@ -48,7 +48,7 @@ func TestDocumentValidateData(t *testing.T) {
 		},
 		"NoID": {
 			doc:    must.NotFail(NewDocument("foo", "bar")),
-			reason: errors.New(`invalid document: (document must contain '_id' field)`),
+			reason: errors.New(`invalid document: document must contain '_id' field`),
 		},
 	} {
 		name, tc := name, tc
