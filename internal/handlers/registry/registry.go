@@ -28,6 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/dummy"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 // newHandlerFunc represents a function that constructs a new handler.
@@ -42,9 +43,10 @@ var registry = map[string]newHandlerFunc{}
 // NewHandlerOpts represents configuration for constructing handlers.
 type NewHandlerOpts struct {
 	// for all handlers
-	Ctx     context.Context
-	Logger  *zap.Logger
-	Metrics *connmetrics.ConnMetrics
+	Ctx           context.Context
+	Logger        *zap.Logger
+	Metrics       *connmetrics.ConnMetrics
+	StateProvider *state.Provider
 
 	// for `pg` handler
 	PostgreSQLURL string
@@ -93,9 +95,10 @@ func init() {
 		}
 
 		handlerOpts := &pg.NewOpts{
-			PgPool:  pgPool,
-			L:       opts.Logger,
-			Metrics: opts.Metrics,
+			PgPool:        pgPool,
+			L:             opts.Logger,
+			Metrics:       opts.Metrics,
+			StateProvider: opts.StateProvider,
 		}
 		return pg.New(handlerOpts)
 	}
