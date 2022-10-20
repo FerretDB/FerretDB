@@ -80,7 +80,6 @@ func TestQueryLogicalCompatAnd(t *testing.T) {
 				},
 			}},
 			resultType: emptyResult,
-			skip:       "https://github.com/FerretDB/FerretDB/issues/962",
 		},
 	}
 
