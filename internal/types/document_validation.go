@@ -38,7 +38,9 @@ func (e *ValidationError) Error() string {
 // ValidateData checks if the document represents a valid "data document".
 // If the document is not valid it returns *ValidationError.
 func (d *Document) ValidateData() error {
-	// The following block should be used to checks that keys are valid.
+	duplicates := make(map[string]struct{}, len(d.keys))
+
+	// The following block should be used to check that keys are valid.
 	// All further key related validation rules should be added here.
 	for _, key := range d.keys {
 		// Tests for this case are in `dance`.
@@ -50,6 +52,11 @@ func (d *Document) ValidateData() error {
 		if strings.Contains(key, "$") {
 			return newValidationError(fmt.Errorf("invalid key: %q (key must not contain $)", key))
 		}
+
+		if _, ok := duplicates[key]; ok {
+			return newValidationError(fmt.Errorf("invalid key: %q (duplicate keys are not allowed)", key))
+		}
+		duplicates[key] = struct{}{}
 	}
 
 	return nil

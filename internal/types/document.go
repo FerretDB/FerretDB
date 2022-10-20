@@ -37,6 +37,9 @@ type document interface {
 type Document struct {
 	m    map[string]any
 	keys []string
+
+	newkeys map[string][]int32
+	values  []any
 }
 
 // ConvertDocument converts bson.Document to *types.Document.
