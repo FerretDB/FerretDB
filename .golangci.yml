@@ -9,6 +9,7 @@ linters-settings:
   depguard:
     list-type: blacklist
     packages:
+      - golang.org/x/net/context # use stdlib's context instead
       - github.com/FerretDB/FerretDB/internal/bson
       - github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb
       - github.com/FerretDB/FerretDB/internal/handlers/pg/pjson
