@@ -16,13 +16,13 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/alecthomas/kong"
 	"github.com/prometheus/client_golang/prometheus"
@@ -45,6 +45,7 @@ import (
 // It's used for parsing the user input.
 var cli struct {
 	ListenAddr string `default:"127.0.0.1:27017"      help:"Listen address."`
+	ListenUnix string `default:""                     help:"Listen Unix domain socket path."`
 	ProxyAddr  string `default:"127.0.0.1:37017"      help:"Proxy address."`
 	DebugAddr  string `default:"127.0.0.1:8088"       help:"${help_debug_addr}"`
 	StateDir   string `default:"."                    help:"Process state directory."`
@@ -67,8 +68,7 @@ var cli struct {
 	Version bool `default:"false" help:"Print version to stdout and exit."`
 
 	Test struct {
-		ConnTimeout time.Duration `default:"0" help:"Testing flag: client connection timeout."`
-		RecordsDir  string        `default:""  help:"Testing flag: directory for record files."`
+		RecordsDir string `default:""  help:"Testing flag: directory for record files."`
 	} `embed:"" prefix:"test-"`
 }
 
@@ -238,20 +238,20 @@ func run() {
 	defer h.Close()
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		ListenAddr:      cli.ListenAddr,
-		ProxyAddr:       cli.ProxyAddr,
-		Mode:            clientconn.Mode(cli.Mode),
-		Handler:         h,
-		Metrics:         metrics,
-		Logger:          logger,
-		TestConnTimeout: cli.Test.ConnTimeout,
-		TestRecordsDir:  cli.Test.RecordsDir,
+		ListenAddr:     cli.ListenAddr,
+		ListenUnix:     cli.ListenUnix,
+		ProxyAddr:      cli.ProxyAddr,
+		Mode:           clientconn.Mode(cli.Mode),
+		Metrics:        metrics,
+		Handler:        h,
+		Logger:         logger,
+		TestRecordsDir: cli.Test.RecordsDir,
 	})
 
 	metricsRegisterer.MustRegister(l)
 
 	err = l.Run(ctx)
-	if err == nil || err == context.Canceled {
+	if err == nil || errors.Is(err, context.Canceled) {
 		logger.Info("Listener stopped")
 	} else {
 		logger.Error("Listener stopped", zap.Error(err))
