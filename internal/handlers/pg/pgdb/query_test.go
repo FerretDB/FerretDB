@@ -82,7 +82,6 @@ func TestQueryDocuments(t *testing.T) {
 
 	for _, tc := range cases {
 		tc := tc
-		ctx := ctx
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
