@@ -17,12 +17,9 @@
 package setup
 
 import (
-	"flag"
 	"path/filepath"
 	"testing"
 )
-
-var targetUnixSocketF = flag.Bool("target-unix-socket", false, "use Unix socket for in-process FerretDB")
 
 // listenUnix returns temporary Unix domain socket path for that test.
 func listenUnix(tb testing.TB) string {

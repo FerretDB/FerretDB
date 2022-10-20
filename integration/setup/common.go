@@ -44,10 +44,11 @@ import (
 )
 
 var (
-	targetPortF = flag.Int("target-port", 0, "target system's port for tests; if 0, in-process FerretDB is used")
-	proxyAddrF  = flag.String("proxy-addr", "", "proxy to use for in-process FerretDB")
-	handlerF    = flag.String("handler", "pg", "handler to use for in-process FerretDB")
-	compatPortF = flag.Int("compat-port", 37017, "second system's port for compatibility tests; if 0, they are skipped")
+	targetPortF       = flag.Int("target-port", 0, "target system's port for tests; if 0, in-process FerretDB is used")
+	targetUnixSocketF = flag.Bool("target-unix-socket", false, "use Unix socket for in-process FerretDB if possible")
+	proxyAddrF        = flag.String("proxy-addr", "", "proxy to use for in-process FerretDB")
+	handlerF          = flag.String("handler", "pg", "handler to use for in-process FerretDB")
+	compatPortF       = flag.Int("compat-port", 37017, "second system's port for compatibility tests; if 0, they are skipped")
 
 	postgreSQLURLF = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/ferretdb?pool_min_conns=1", "PostgreSQL URL for 'pg' handler.")
 

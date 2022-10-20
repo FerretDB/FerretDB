@@ -155,7 +155,7 @@ tasks:
     cmds:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-pg.txt . -handler=pg
+        -coverprofile=integration-pg.txt . -handler=pg -target-unix-socket
 
   test-integration-tigris:
     desc: "Run integration tests for Tigris handler"
@@ -166,7 +166,7 @@ tasks:
         -coverprofile=integration-tigris.txt . -handler=tigris
 
   test-integration-cockroach:
-    desc: "Run integration tests for CockroachDB with postgres handler"
+    desc: "Run integration tests for CockroachDB with pg handler"
     dir: integration
     cmds:
       - >
