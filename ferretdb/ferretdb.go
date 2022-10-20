@@ -162,6 +162,6 @@ var logger *zap.Logger
 // Initialize the global logger there to avoid creating too many issues for zap users that initialize it in their
 // `main()` functions. It is still not a full solution; eventually, we should remove the usage of the global logger.
 func init() {
-	logging.Setup(zap.DebugLevel, "")
+	logging.Setup(zap.ErrorLevel, "")
 	logger = zap.L()
 }
