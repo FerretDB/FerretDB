@@ -35,11 +35,12 @@ type document interface {
 //
 // Duplicate field names are not supported yet.
 type Document struct {
-	m    map[string]any
-	keys []string
+	// m is a map of key -> value fields.
+	// If the value slice has more than one element, it means that there are duplicate keys for the document.
+	m map[string][]any
 
-	newkeys map[string][]int32
-	values  []any
+	// keys is a slice of unique keys in the order they were added (but if _id present, it's always first).
+	keys []string
 }
 
 // ConvertDocument converts bson.Document to *types.Document.
@@ -51,8 +52,23 @@ func ConvertDocument(d document) (*Document, error) {
 		panic("types.ConvertDocument: d is nil")
 	}
 
+	// If both keys and map are nil, we don't allocate memory for them
+	if d.Keys() == nil && d.Map() == nil {
+		doc := &Document{
+			m:    nil,
+			keys: nil,
+		}
+
+		return doc, nil
+	}
+
+	m := make(map[string][]any, len(d.Keys()))
+	for key, value := range d.Map() {
+		m[key] = []any{value}
+	}
+
 	doc := &Document{
-		m:    d.Map(),
+		m:    m,
 		keys: d.Keys(),
 	}
 
@@ -66,7 +82,7 @@ func MakeDocument(capacity int) *Document {
 	}
 
 	return &Document{
-		m:    make(map[string]any, capacity),
+		m:    make(map[string][]any, capacity),
 		keys: make([]string, 0, capacity),
 	}
 }
@@ -120,13 +136,22 @@ func (d *Document) Len() int {
 }
 
 // Map returns this document as a map. Do not modify it.
+// If there are duplicate keys in the document, the first value is returned.
 //
 // It returns nil for nil Document.
+//
+// Deprecated: as Document might have duplicate keys, map is not a good representation of it.
 func (d *Document) Map() map[string]any {
 	if d == nil {
 		return nil
 	}
-	return d.m
+
+	m := make(map[string]any, len(d.keys))
+	for key, values := range d.m {
+		m[key] = values[0]
+	}
+
+	return m
 }
 
 // Keys returns document's keys. Do not modify it.
@@ -153,11 +178,13 @@ func (d *Document) Command() string {
 //
 // As a special case, _id always becomes the first key.
 func (d *Document) add(key string, value any) error {
+	// if the key already exists, we only need to append the value
 	if _, ok := d.m[key]; ok {
-		return fmt.Errorf("types.Document.add: key already present: %q", key)
+		d.m[key] = append(d.m[key], value)
+		return nil
 	}
 
-	// update keys slice
+	// otherwise, we need to insert the key into the slice and initiate the value map
 	if key == "_id" {
 		// TODO check that value is not regex or array: https://github.com/FerretDB/FerretDB/issues/1235
 
@@ -167,7 +194,7 @@ func (d *Document) add(key string, value any) error {
 		d.keys = append(d.keys, key)
 	}
 
-	d.m[key] = value
+	d.m[key] = []any{value}
 
 	return nil
 }
@@ -179,18 +206,24 @@ func (d *Document) Has(key string) bool {
 }
 
 // Get returns a value at the given key.
+// TODO: What should Get return if there are duplicate keys?
 func (d *Document) Get(key string) (any, error) {
-	if value, ok := d.m[key]; ok {
-		return value, nil
+	if value, ok := d.m[key]; ok && len(value) > 0 {
+		return value[0], nil
 	}
 
 	return nil, fmt.Errorf("types.Document.Get: key not found: %q", key)
 }
 
 // Set sets the value for the given key, replacing any existing value.
+// If the key is duplicated, it returns an errors as it's not clear which value needs to be replaced.
 //
 // As a special case, _id always becomes the first key.
 func (d *Document) Set(key string, value any) error {
+	if _, ok := d.m[key]; ok && len(d.m[key]) > 1 {
+		return fmt.Errorf("types.Document.Set: key %q has multiple values, replace is not allowed", key)
+	}
+
 	// update keys slice
 	if key == "_id" {
 		// TODO check that value is not regex or array: https://github.com/FerretDB/FerretDB/issues/1235
@@ -207,23 +240,37 @@ func (d *Document) Set(key string, value any) error {
 	}
 
 	if d.m == nil {
-		d.m = map[string]any{
-			key: value,
+		d.m = map[string][]any{
+			key: {value},
 		}
 		return nil
 	}
 
-	d.m[key] = value
+	if d.m[key] == nil {
+		d.m[key] = []any{value}
+		return nil
+	}
+
+	d.m[key][0] = value
 	return nil
 }
 
 // Remove the given key and return its value, or nil if the key does not exist.
+// If there are duplicate keys, only the first value is deleted and returned.
+// TODO: How should it actually work for duplicated keys?
 func (d *Document) Remove(key string) any {
 	if _, ok := d.m[key]; !ok {
 		return nil
 	}
 
-	v := d.m[key]
+	var v any
+	if len(d.m[key]) > 1 {
+		v = d.m[key][0]
+		d.m[key] = d.m[key][1:]
+		return v
+	}
+
+	v = d.m[key][0]
 	delete(d.m, key)
 
 	for i, k := range d.keys {

@@ -104,9 +104,12 @@ func deepCopy(value any) any {
 		keys := make([]string, len(value.keys))
 		copy(keys, value.keys)
 
-		m := make(map[string]any, len(value.m))
+		m := make(map[string][]any, len(value.m))
 		for k, v := range value.m {
-			m[k] = deepCopy(v)
+			m[k] = make([]any, len(v))
+			for i := range v {
+				m[k][i] = deepCopy(v[i])
+			}
 		}
 
 		return &Document{

@@ -73,7 +73,7 @@ func TestDocument(t *testing.T) {
 		assert.Equal(t, a, b)
 		assert.NotSame(t, a, b)
 
-		a.m["foo"] = "bar"
+		a.m["foo"] = []any{"bar"}
 		assert.NotEqual(t, a, b)
 		assert.Equal(t, int32(42), b.m["foo"])
 	})
