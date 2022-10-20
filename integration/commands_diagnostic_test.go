@@ -203,6 +203,17 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 			query:   bson.D{{"count", collection.Name()}},
 			command: bson.D{{"count", collection.Name()}, {"$db", collection.Database().Name()}},
 		},
+		"find": {
+			query: bson.D{
+				{"find", collection.Name()},
+				{"filter", bson.D{{"v", bson.D{{"$gt", int32(0)}}}}},
+			},
+			command: bson.D{
+				{"find", collection.Name()},
+				{"filter", bson.D{{"v", bson.D{{"$gt", int32(0)}}}}},
+				{"$db", collection.Database().Name()},
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
