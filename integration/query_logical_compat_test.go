@@ -93,7 +93,7 @@ func TestQueryLogicalCompatOr(t *testing.T) {
 	testCases := map[string]queryCompatTestCase{
 		"Zero": {
 			filter: bson.D{{
-				"$or", bson.A{"v"},
+				"$or", bson.A{},
 			}},
 			resultType: emptyResult,
 		},
@@ -147,7 +147,7 @@ func TestQueryLogicalCompatNor(t *testing.T) {
 	testCases := map[string]queryCompatTestCase{
 		"Zero": {
 			filter: bson.D{{
-				"$nor", bson.A{"v"},
+				"$nor", bson.A{},
 			}},
 			resultType: emptyResult,
 		},

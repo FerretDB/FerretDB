@@ -168,6 +168,9 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 		if !ok {
 			return false, NewErrorMsg(ErrBadValue, "$or must be an array")
 		}
+		if exprs.Len() == 0 {
+			return false, NewErrorMsg(ErrBadValue, "$and/$or/$nor must be a nonempty array")
+		}
 		for i := 0; i < exprs.Len(); i++ {
 			value := must.NotFail(exprs.Get(i))
 
@@ -190,6 +193,9 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 		exprs, ok := filterValue.(*types.Array)
 		if !ok {
 			return false, NewErrorMsg(ErrBadValue, "$nor must be an array")
+		}
+		if exprs.Len() == 0 {
+			return false, NewErrorMsg(ErrBadValue, "$and/$or/$nor must be a nonempty array")
 		}
 		for i := 0; i < exprs.Len(); i++ {
 			value := must.NotFail(exprs.Get(i))
