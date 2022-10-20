@@ -207,19 +207,8 @@ func (d *Document) Has(key string) bool {
 	return false
 }
 
-// Index returns the index of the given key in the document if the key exists or -1 otherwise.
-func (d *Document) Index(key string) int {
-	for i, field := range d.fields {
-		if field.key == key {
-			return i
-		}
-	}
-
-	return -1
-}
-
 // Get returns a value at the given key.
-// It there are duplicated keys in the document, it returns the first value.
+// If there are duplicated keys in the document, it returns the first value.
 func (d *Document) Get(key string) (any, error) {
 	for _, field := range d.fields {
 		if field.key == key {
@@ -248,8 +237,8 @@ func (d *Document) Set(key string, value any) {
 		return
 	}
 
-	for i, field := range d.fields {
-		if field.key == key {
+	for i, f := range d.fields {
+		if f.key == key {
 			d.fields[i].value = value
 			return
 		}

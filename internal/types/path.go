@@ -21,6 +21,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -160,7 +162,7 @@ func removeByPath(v any, path Path) {
 
 	switch v := v.(type) {
 	case *Document:
-		index := v.Index(key)
+		index := slices.Index(v.Keys(), key)
 		if index == -1 {
 			return
 		}
@@ -170,7 +172,7 @@ func removeByPath(v any, path Path) {
 			return
 		}
 
-		removeByPath(v.fields[index], path.TrimPrefix())
+		removeByPath(v.fields[index].value, path.TrimPrefix())
 
 	case *Array:
 		i, err := strconv.Atoi(key)
