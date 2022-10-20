@@ -68,7 +68,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	if *debugSetupF {
 		level = zap.NewAtomicLevelAt(zap.DebugLevel)
 	}
-	logger := zaptest.NewLogger(tb, zaptest.Level(level), zaptest.WrapOptions(zap.AddCaller()))
+	logger := zaptest.NewLogger(tb, zaptest.Level(level), zaptest.WrapOptions(zap.AddCaller(), zap.Development()))
 
 	port := *targetPortF
 	if port == 0 {

@@ -24,6 +24,13 @@ import (
 func Ctx(tb testing.TB) context.Context {
 	tb.Helper()
 
-	// TODO handle signals to stop tests gracefully
-	return context.Background()
+	ctx, stop := notifyTestsTermination(context.Background())
+
+	go func() {
+		<-ctx.Done()
+		tb.Log("Stopping...")
+		stop()
+	}()
+
+	return ctx
 }

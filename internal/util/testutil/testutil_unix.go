@@ -12,16 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tigris
+//go:build !windows
+
+package testutil
 
 import (
 	"context"
+	"os/signal"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	"golang.org/x/sys/unix"
 )
 
-// MsgCollMod implements HandlerInterface.
-func (h *Handler) MsgCollMod(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, common.NewErrorMsg(common.ErrNotImplemented, "`collMod` command is not implemented yet")
+// notifyTestsTermination installs a signal handler that cancels the context.
+func notifyTestsTermination(parent context.Context) (context.Context, context.CancelFunc) {
+	return signal.NotifyContext(parent, unix.SIGTERM, unix.SIGINT)
 }

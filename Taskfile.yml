@@ -78,7 +78,7 @@ tasks:
       - >
         docker-compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --timeout=0 --detach
         --build
-        postgres tigris mongodb
+        postgres tigris cockroach mongodb
 
   env-up-detach-offline:
     cmds:
@@ -143,7 +143,7 @@ tasks:
       - bin/task{{exeExt}} -d tools test-unit-short
 
   test-integration:
-    desc: "Run all integration tests in parallel"
+    desc: "Run integration tests for PostgreSQL and Tigris in parallel"
     deps:
       - test-integration-pg
       - test-integration-tigris
@@ -164,6 +164,14 @@ tasks:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-tigris.txt . -handler=tigris
+
+  test-integration-cockroach:
+    desc: "Run integration tests for CockroachDB with postgres handler"
+    dir: integration
+    cmds:
+      - >
+        go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        -coverprofile=integration-cockroach.txt . -handler=pg -postgresql-url=postgres://cockroach@127.0.0.1:26257/ferretdb?pool_min_conns=1
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
@@ -232,6 +240,11 @@ tasks:
     deps: [build-testcover]
     cmds:
       - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records --mode=diff-normal --listen-addr=:27017 --handler=tigris
+
+  run-cockroach:
+    deps: [build-testcover]
+    cmds:
+      - bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records --mode=diff-normal --listen-addr=:27017 --postgresql-url=postgres://cockroach@127.0.0.1:26257/ferretdb
 
   run-proxy:
     desc: "Run FerretDB in diff-proxy mode"
@@ -321,9 +334,10 @@ tasks:
     cmds:
       - test {{.DOCKER_IMAGE}}
       - >
-        docker buildx build --builder=ferretdb --platform=linux/arm64,linux/amd64
+        docker buildx build --builder=ferretdb
         --build-arg VERSION={{.VERSION}}
         --build-arg COMMIT={{.COMMIT}}
+        --platform=linux/arm64,linux/amd64
         --tag={{.DOCKER_IMAGE}}
         --push .
     vars:

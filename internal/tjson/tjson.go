@@ -66,12 +66,17 @@ type tjsontype interface {
 func checkConsumed(dec *json.Decoder, r *bytes.Reader) error {
 	if dr := dec.Buffered().(*bytes.Reader); dr.Len() != 0 {
 		b, _ := io.ReadAll(dr)
-		return lazyerrors.Errorf("%d bytes remains in the decoded: %s", dr.Len(), b)
+
+		// Tigris might add \n at the end of a valid document, we consider such situation as valid.
+		b = bytes.TrimSpace(b)
+		if l := len(b); l != 0 {
+			return lazyerrors.Errorf("%[1]d bytes remains in the reader: `%[2]s` (%#02[2]x)", l, b)
+		}
 	}
 
 	if l := r.Len(); l != 0 {
 		b, _ := io.ReadAll(r)
-		return lazyerrors.Errorf("%d bytes remains in the reader: %s", l, b)
+		return lazyerrors.Errorf("%[1]d bytes remains in the reader: `%[2]s` (%#02[2]x)", l, b)
 	}
 
 	return nil
