@@ -110,7 +110,6 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			if q, err = common.GetOptionalParam(update, "q", q); err != nil {
 				return err
 			}
-
 			if u, err = common.GetOptionalParam(update, "u", u); err != nil {
 				// TODO check if u is an array of aggregation pipeline stages
 				return err
