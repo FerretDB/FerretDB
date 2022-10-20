@@ -20,7 +20,7 @@ import (
 	"log"
 )
 
-func ExampleTCP() {
+func Example_tcp() {
 	f, err := New(&Config{
 		ListenAddr:    "127.0.0.1:17027",
 		Handler:       "pg",
@@ -33,6 +33,7 @@ func ExampleTCP() {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	done := make(chan struct{})
+
 	go func() {
 		log.Print(f.Run(ctx))
 		close(done)
@@ -55,7 +56,7 @@ func ExampleTCP() {
 	// Output: mongodb://127.0.0.1:17027/
 }
 
-func ExampleUnix() {
+func Example_unix() {
 	f, err := New(&Config{
 		ListenUnix:    "/tmp/ferretdb-27017.sock",
 		Handler:       "pg",
@@ -68,6 +69,7 @@ func ExampleUnix() {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	done := make(chan struct{})
+
 	go func() {
 		log.Print(f.Run(ctx))
 		close(done)

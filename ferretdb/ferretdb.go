@@ -123,6 +123,7 @@ func (f *FerretDB) Run(ctx context.Context) error {
 	if errors.Is(err, context.Canceled) {
 		err = nil
 	}
+
 	if err != nil {
 		// Do not expose internal error details.
 		// If you need stable error values and/or types for some cases, please create an issue.
