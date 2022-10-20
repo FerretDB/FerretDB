@@ -115,7 +115,7 @@ func (l *Listener) Run(ctx context.Context) error {
 				wg.Done()
 			}()
 
-			listenLoop(ctx, &wg, l, l.tcpListener, logger)
+			acceptLoop(ctx, l.tcpListener, &wg, l, logger)
 		}()
 	}
 
@@ -128,7 +128,7 @@ func (l *Listener) Run(ctx context.Context) error {
 				wg.Done()
 			}()
 
-			listenLoop(ctx, &wg, l, l.unixListener, logger)
+			acceptLoop(ctx, l.unixListener, &wg, l, logger)
 		}()
 	}
 
@@ -138,8 +138,8 @@ func (l *Listener) Run(ctx context.Context) error {
 	return ctx.Err()
 }
 
-// listenLoop runs l's connection accepting loop.
-func listenLoop(ctx context.Context, wg *sync.WaitGroup, l *Listener, listener net.Listener, logger *zap.Logger) {
+// acceptLoop runs listener's connection accepting loop.
+func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, l *Listener, logger *zap.Logger) {
 	for {
 		netConn, err := listener.Accept()
 		if err != nil {
