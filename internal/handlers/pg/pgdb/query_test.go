@@ -91,8 +91,7 @@ func TestQueryDocuments(t *testing.T) {
 			defer tx.Rollback(ctx)
 
 			for _, doc := range tc.documents {
-				err = InsertDocument(ctx, tx, databaseName, tc.collection, doc)
-				require.NoError(t, err)
+				require.NoError(t, InsertDocument(ctx, tx, databaseName, tc.collection, doc))
 			}
 
 			sp := &SQLParam{DB: databaseName, Collection: tc.collection}
