@@ -52,9 +52,12 @@ func (d *Document) ValidateData() error {
 			return newValidationError(fmt.Errorf("invalid key: %q (key must not contain $)", key))
 		}
 
-		if vFloat, ok := v.(float64); ok {
-			if math.IsInf(vFloat, 0) {
-				return newValidationError(fmt.Errorf("invalid value: %f (infinity values are not allowed)", vFloat))
+		if v, ok := v.(float64); ok {
+			switch {
+			case math.IsInf(v, 0):
+				return newValidationError(fmt.Errorf("invalid value: %f (infinity values are not allowed)", v))
+			case math.IsNaN(v):
+				return newValidationError(fmt.Errorf("invalid value: %f (NaN values are not allowed)", v))
 			}
 		}
 	}
