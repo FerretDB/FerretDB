@@ -134,9 +134,11 @@ func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Document, erro
 		return nil, lazyerrors.Error(err)
 	}
 
-	for _, p := range plans {
-		res = convertJSON(p).(*types.Document)
+	if len(plans) == 0 {
+		return nil, lazyerrors.Error(errors.New("no execution plan returned"))
 	}
+
+	res = convertJSON(plans[0]).(*types.Document)
 
 	if err = rows.Err(); err != nil {
 		return nil, lazyerrors.Error(err)
