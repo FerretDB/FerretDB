@@ -45,7 +45,11 @@ func TestQueryLogical(t *testing.T) {
 			filter: bson.D{{
 				"$and", bson.A{},
 			}},
-			skip: "https://github.com/FerretDB/FerretDB/issues/962",
+			expectedErr: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "$and/$or/$nor must be a nonempty array",
+			},
 		},
 		"AndOne": {
 			filter: bson.D{{
@@ -111,7 +115,11 @@ func TestQueryLogical(t *testing.T) {
 					true,
 				},
 			}},
-			skip: "https://github.com/FerretDB/FerretDB/issues/962",
+			expectedErr: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "$or/$and/$nor entries need to be full objects",
+			},
 		},
 
 		// $or
@@ -119,7 +127,11 @@ func TestQueryLogical(t *testing.T) {
 			filter: bson.D{{
 				"$or", bson.A{},
 			}},
-			skip: "https://github.com/FerretDB/FerretDB/issues/962",
+			expectedErr: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "$and/$or/$nor must be a nonempty array",
+			},
 		},
 		"OrOne": {
 			filter: bson.D{{
@@ -169,7 +181,11 @@ func TestQueryLogical(t *testing.T) {
 					true,
 				},
 			}},
-			skip: "https://github.com/FerretDB/FerretDB/issues/962",
+			expectedErr: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "$or/$and/$nor entries need to be full objects",
+			},
 		},
 
 		// $nor
@@ -177,7 +193,11 @@ func TestQueryLogical(t *testing.T) {
 			filter: bson.D{{
 				"$nor", bson.A{},
 			}},
-			skip: "https://github.com/FerretDB/FerretDB/issues/962",
+			expectedErr: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "$and/$or/$nor must be a nonempty array",
+			},
 		},
 		"NorOne": {
 			filter: bson.D{{
@@ -215,7 +235,11 @@ func TestQueryLogical(t *testing.T) {
 					true,
 				},
 			}},
-			skip: "https://github.com/FerretDB/FerretDB/issues/962",
+			expectedErr: mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "$or/$and/$nor entries need to be full objects",
+			},
 		},
 
 		// $not
