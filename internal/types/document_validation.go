@@ -16,6 +16,7 @@ package types
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"unicode/utf8"
 )
@@ -38,9 +39,9 @@ func (e *ValidationError) Error() string {
 // ValidateData checks if the document represents a valid "data document".
 // If the document is not valid it returns *ValidationError.
 func (d *Document) ValidateData() error {
-	// The following block should be used to checks that keys are valid.
-	// All further key related validation rules should be added here.
-	for _, key := range d.keys {
+	// The following block should be used to checks that keys and values are valid.
+	// All further validation rules should be added here.
+	for key, v := range d.m {
 		// Tests for this case are in `dance`.
 		if !utf8.ValidString(key) {
 			return newValidationError(fmt.Errorf("invalid key: %q (not a valid UTF-8 string)", key))
@@ -49,6 +50,12 @@ func (d *Document) ValidateData() error {
 		// Tests for this case are in `dance`.
 		if strings.Contains(key, "$") {
 			return newValidationError(fmt.Errorf("invalid key: %q (key must not contain $)", key))
+		}
+
+		if vFloat, ok := v.(float64); ok {
+			if math.IsInf(vFloat, 0) {
+				return newValidationError(fmt.Errorf("invalid value: %f (infinity values are not allowed)", vFloat))
+			}
 		}
 	}
 
