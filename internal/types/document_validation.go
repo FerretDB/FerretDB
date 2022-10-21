@@ -40,6 +40,8 @@ func (e *ValidationError) Error() string {
 func (d *Document) ValidateData() error {
 	var idPresent bool
 
+	// TODO: make sure that `_id` is the first item in the map
+	//
 	// The following block should be used to checks that keys are valid.
 	// All further key related validation rules should be added here.
 	for _, key := range d.keys {
