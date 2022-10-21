@@ -55,10 +55,6 @@ func TestDocumentValidateData(t *testing.T) {
 			doc:    must.NotFail(NewDocument("v", math.Inf(-1))),
 			reason: errors.New(`invalid value: -Inf (infinity values are not allowed)`),
 		},
-		"NaN": {
-			doc:    must.NotFail(NewDocument("v", math.NaN())),
-			reason: errors.New(`invalid value: NaN (NaN values are not allowed)`),
-		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
