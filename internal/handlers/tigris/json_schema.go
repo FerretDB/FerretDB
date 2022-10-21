@@ -18,7 +18,7 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/tjson"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
