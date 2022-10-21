@@ -197,7 +197,6 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 	for name, tc := range map[string]struct {
 		query        bson.D
 		command      bson.D
-		queryPlanner map[string]any
 	}{
 		"count": {
 			query:   bson.D{{"count", collection.Name()}},
