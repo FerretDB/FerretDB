@@ -101,23 +101,19 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			if strings.HasPrefix(updateOp, "$") {
 				return false, NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
 			}
-
 			// Treats the update as a Replacement object.
 			setDoc := update
 
-			// According to the update operation logic, keys in the update document must be ordered.
-			// To provide that, we get a copy of keys, sort it and then iterate over it.
-			// The original document order is not changed.
-			keys := setDoc.Keys()
-			sort.Strings(keys)
-
-			for _, setKey := range keys {
+			for _, setKey := range doc.Keys() {
 				if !setDoc.Has(setKey) && setKey != "_id" {
 					doc.Remove(setKey)
 				}
 			}
 
-			for _, setKey := range keys {
+			setDocKeys := setDoc.Keys()
+			sort.Strings(setDocKeys)
+
+			for _, setKey := range setDocKeys {
 				setValue := must.NotFail(setDoc.Get(setKey))
 				doc.Set(setKey, setValue)
 			}
@@ -125,7 +121,6 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			changed = true
 		}
 	}
-
 	return changed, nil
 }
 
@@ -134,41 +129,32 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (bool, error) {
 	var changed bool
 
-	// According to the update operation logic, keys in the set document must be ordered.
-	// To provide that, we get a copy of keys, sort it and then iterate over it.
-	// The original document order is not changed.
-	keys := setDoc.Keys()
-	sort.Strings(keys)
+	setDocKeys := setDoc.Keys()
+	sort.Strings(setDocKeys)
 
-	for _, setKey := range keys {
+	for _, setKey := range setDocKeys {
 		setValue := must.NotFail(setDoc.Get(setKey))
 
 		path := types.NewPathFromString(setKey)
-
 		if doc.HasByPath(path) {
 			result := types.Compare(setValue, must.NotFail(doc.GetByPath(path)))
 			if len(result) != 1 {
 				panic("$set: there should be only one result")
 			}
-
 			if result[0] == types.Equal {
 				continue
 			}
 		}
-
 		// we should insert the value if it's a regular key
 		if setOnInsert && path.Len() > 1 {
 			continue
 		}
-
 		err := doc.SetByPath(path, setValue)
 		if err != nil {
 			return false, err
 		}
-
 		changed = true
 	}
-
 	return changed, nil
 }
 
