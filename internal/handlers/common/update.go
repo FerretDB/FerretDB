@@ -101,6 +101,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			if strings.HasPrefix(updateOp, "$") {
 				return false, NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
 			}
+
 			// Treats the update as a Replacement object.
 			setDoc := update
 
@@ -121,6 +122,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			changed = true
 		}
 	}
+
 	return changed, nil
 }
 
@@ -136,25 +138,31 @@ func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (b
 		setValue := must.NotFail(setDoc.Get(setKey))
 
 		path := types.NewPathFromString(setKey)
+
 		if doc.HasByPath(path) {
 			result := types.Compare(setValue, must.NotFail(doc.GetByPath(path)))
 			if len(result) != 1 {
 				panic("$set: there should be only one result")
 			}
+
 			if result[0] == types.Equal {
 				continue
 			}
 		}
+
 		// we should insert the value if it's a regular key
 		if setOnInsert && path.Len() > 1 {
 			continue
 		}
+
 		err := doc.SetByPath(path, setValue)
 		if err != nil {
 			return false, err
 		}
+
 		changed = true
 	}
+
 	return changed, nil
 }
 
