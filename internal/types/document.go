@@ -220,11 +220,15 @@ func (d *Document) Get(key string) (any, error) {
 }
 
 // Set sets the value for the given key, replacing any existing value.
-// If the key is duplicated, only first value will be replaced.
+// If the key is duplicated, it panics.
 // If the key doesn't exist, it will be set.
 //
 // As a special case, _id always becomes the first key.
 func (d *Document) Set(key string, value any) {
+	if d.isKeyDuplicate(key) {
+		panic(fmt.Sprintf("types.Document.Set: key is duplicated: %s", key))
+	}
+
 	if key == "_id" {
 		// TODO check that value is not regex or array: https://github.com/FerretDB/FerretDB/issues/1235
 
@@ -248,8 +252,12 @@ func (d *Document) Set(key string, value any) {
 }
 
 // Remove the given key and return its value, or nil if the key does not exist.
-// If there are duplicate keys, only the first value is deleted and returned.
+// If the key is duplicated, it panics.
 func (d *Document) Remove(key string) any {
+	if d.isKeyDuplicate(key) {
+		panic(fmt.Sprintf("types.Document.Remove: key is duplicated: %s", key))
+	}
+
 	for i, field := range d.fields {
 		if field.key == key {
 			d.fields = slices.Delete(d.fields, i, i+1)
@@ -276,7 +284,7 @@ func (d *Document) GetByPath(path Path) (any, error) {
 // SetByPath sets value by given path. If the Path has only one element, it sets the value for the given key.
 // If some parts of the path are missing, they will be created.
 // The Document type will be used to create these parts.
-// If multiple fields match the path, only the first one will be set.
+// If multiple fields match the path it panics.
 func (d *Document) SetByPath(path Path, value any) error {
 	if path.Len() == 1 {
 		d.Set(path.Slice()[0], value)
@@ -327,6 +335,24 @@ func (d *Document) RemoveByPath(path Path) {
 		return
 	}
 	removeByPath(d, path)
+}
+
+// isKeyDuplicate returns true if the target key is duplicated in the document and false otherwise.
+// If the key is not found, it returns false.
+func (d *Document) isKeyDuplicate(targetKey string) bool {
+	var found bool
+
+	for _, key := range d.Keys() {
+		if key == targetKey {
+			if found {
+				return true
+			}
+
+			found = true
+		}
+	}
+
+	return false
 }
 
 // check interfaces
