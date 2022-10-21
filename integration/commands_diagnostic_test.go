@@ -237,6 +237,7 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 			assert.Regexp(t, `^6\.0\.`, must.NotFail(serverInfo.Get("version")))
 
 			assert.NotEmpty(t, explainResult["queryPlanner"])
+			assert.IsType(t, bson.D{}, explainResult["queryPlanner"])
 		})
 	}
 }
