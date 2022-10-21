@@ -17,11 +17,15 @@
 package setup
 
 import (
-	"path/filepath"
 	"testing"
 )
 
 // listenUnix returns temporary Unix domain socket path for that test.
 func listenUnix(tb testing.TB) string {
-	return filepath.Join(tb.TempDir(), "ferretdb.sock")
+	// The commented out code does not generate valid Unix domain socket path on macOS (at least).
+	// Maybe the argument is too long?
+	// TODO https://github.com/FerretDB/FerretDB/issues/1295
+	// return filepath.Join(tb.TempDir(), "ferretdb.sock")
+
+	return ""
 }
