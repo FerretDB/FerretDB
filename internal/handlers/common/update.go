@@ -17,6 +17,7 @@ package common
 import (
 	"fmt"
 	"math"
+	"sort"
 	"strings"
 	"time"
 
@@ -104,15 +105,19 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			// Treats the update as a Replacement object.
 			setDoc := update
 
-			setDoc.SortByKeys()
+			// According to the update operation logic, keys in the update document must be ordered.
+			// To provide that, we get a copy of keys, sort it and then iterate over it.
+			// The original document order is not changed.
+			keys := setDoc.Keys()
+			sort.Strings(keys)
 
-			for _, setKey := range doc.Keys() {
+			for _, setKey := range keys {
 				if !setDoc.Has(setKey) && setKey != "_id" {
 					doc.Remove(setKey)
 				}
 			}
 
-			for _, setKey := range setDoc.Keys() {
+			for _, setKey := range keys {
 				setValue := must.NotFail(setDoc.Get(setKey))
 				doc.Set(setKey, setValue)
 			}
@@ -129,9 +134,13 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (bool, error) {
 	var changed bool
 
-	setDoc.SortByKeys()
+	// According to the update operation logic, keys in the set document must be ordered.
+	// To provide that, we get a copy of keys, sort it and then iterate over it.
+	// The original document order is not changed.
+	keys := setDoc.Keys()
+	sort.Strings(keys)
 
-	for _, setKey := range setDoc.Keys() {
+	for _, setKey := range keys {
 		setValue := must.NotFail(setDoc.Get(setKey))
 
 		path := types.NewPathFromString(setKey)
@@ -376,9 +385,10 @@ func processCurrentDateFieldExpression(doc *types.Document, currentDateVal any) 
 	currentDateExpression := currentDateVal.(*types.Document)
 
 	now := time.Now().UTC()
-	currentDateExpression.SortByKeys()
+	keys := currentDateExpression.Keys()
+	sort.Strings(keys)
 
-	for _, field := range currentDateExpression.Keys() {
+	for _, field := range keys {
 		currentDateField := must.NotFail(currentDateExpression.Get(field))
 
 		switch currentDateField := currentDateField.(type) {
