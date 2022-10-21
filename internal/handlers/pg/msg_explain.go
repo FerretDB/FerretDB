@@ -95,14 +95,15 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		"ferretdbVersion", version.Get().Version,
 	))
 
-	must.NoError(command.Set("$db", sp.DB))
+	cmd := command.DeepCopy()
+	must.NoError(cmd.Set("$db", sp.DB))
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"queryPlanner", queryPlanner,
 			"explainVersion", "1",
-			"command", command,
+			"command", cmd,
 			"serverInfo", serverInfo,
 			"ok", float64(1),
 		))},
