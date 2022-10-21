@@ -15,13 +15,13 @@
 package pgdb
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/net/context"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -59,23 +59,23 @@ func TestQueryDocuments(t *testing.T) {
 	}, {
 		name:             "one",
 		collection:       collectionName + "_one",
-		documents:        []*types.Document{must.NotFail(types.NewDocument("id", "1"))},
+		documents:        []*types.Document{must.NotFail(types.NewDocument("_id", "foo", "id", "1"))},
 		docsPerIteration: []int{1},
 	}, {
 		name:       "two",
 		collection: collectionName + "_two",
 		documents: []*types.Document{
-			must.NotFail(types.NewDocument("id", "1")),
-			must.NotFail(types.NewDocument("id", "2")),
+			must.NotFail(types.NewDocument("_id", "foo", "id", "1")),
+			must.NotFail(types.NewDocument("_id", "foo", "id", "2")),
 		},
 		docsPerIteration: []int{2},
 	}, {
 		name:       "three",
 		collection: collectionName + "_three",
 		documents: []*types.Document{
-			must.NotFail(types.NewDocument("id", "1")),
-			must.NotFail(types.NewDocument("id", "2")),
-			must.NotFail(types.NewDocument("id", "3")),
+			must.NotFail(types.NewDocument("_id", "foo", "id", "1")),
+			must.NotFail(types.NewDocument("_id", "foo", "id", "2")),
+			must.NotFail(types.NewDocument("_id", "foo", "id", "3")),
 		},
 		docsPerIteration: []int{2, 1},
 	}}
@@ -122,7 +122,7 @@ func TestQueryDocuments(t *testing.T) {
 
 		for i := 1; i <= FetchedChannelBufSize*FetchedSliceCapacity+1; i++ {
 			require.NoError(t, InsertDocument(ctx, tx, databaseName, collectionName+"_cancel",
-				must.NotFail(types.NewDocument("id", fmt.Sprintf("%d", i))),
+				must.NotFail(types.NewDocument("_id", "foo", "id", fmt.Sprintf("%d", i))),
 			))
 		}
 
