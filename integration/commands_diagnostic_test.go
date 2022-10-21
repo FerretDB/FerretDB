@@ -195,8 +195,8 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
-		query        bson.D
-		command      bson.D
+		query   bson.D
+		command bson.D
 	}{
 		"count": {
 			query:   bson.D{{"count", collection.Name()}},
