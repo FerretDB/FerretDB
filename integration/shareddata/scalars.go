@@ -34,16 +34,16 @@ var Scalars = &Values[string]{
 	name:     "Scalars",
 	handlers: []string{"pg"},
 	data: map[string]any{
-		"double":                   42.13,
-		"double-whole":             42.0,
-		"double-zero":              math.Copysign(0, +1), // the same as just 0.0 in Go
-		"double-negative-zero":     math.Copysign(0, -1),
-		"double-max":               math.MaxFloat64,
-		"double-smallest":          math.SmallestNonzeroFloat64,
-		"double-positive-infinity": math.Inf(+1),
-		"double-negative-infinity": math.Inf(-1),
-		"double-nan":               math.NaN(),
-		"double-big":               doubleBig,
+		"double":               42.13,
+		"double-whole":         42.0,
+		"double-zero":          math.Copysign(0, +1), // the same as just 0.0 in Go
+		"double-negative-zero": math.Copysign(0, -1),
+		"double-max":           math.MaxFloat64,
+		"double-smallest":      math.SmallestNonzeroFloat64,
+		//"double-positive-infinity": math.Inf(+1),
+		//"double-negative-infinity": math.Inf(-1),
+		"double-nan": math.NaN(),
+		"double-big": doubleBig,
 
 		"string":        "foo",
 		"string-double": "42.13",
