@@ -23,7 +23,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
-	"github.com/FerretDB/FerretDB/internal/tjson"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
