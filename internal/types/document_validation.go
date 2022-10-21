@@ -39,9 +39,11 @@ func (e *ValidationError) Error() string {
 // If the document is not valid it returns *ValidationError.
 func (d *Document) ValidateData() error {
 	keys := d.Keys()
-	duplicateChecker := make(map[string]struct{}, len(keys))
 
-	// The following block should be used to check that keys are valid.
+	duplicateChecker := make(map[string]struct{}, len(keys))
+	var idPresent bool
+
+	// The following block should be used to checks that keys are valid.
 	// All further key related validation rules should be added here.
 	for _, key := range keys {
 		// Tests for this case are in `dance`.
@@ -58,6 +60,15 @@ func (d *Document) ValidateData() error {
 			return newValidationError(fmt.Errorf("invalid key: %q (duplicate keys are not allowed)", key))
 		}
 		duplicateChecker[key] = struct{}{}
+
+		// TODO: check that `_id` is the first item in the document.
+		if key == "_id" {
+			idPresent = true
+		}
+	}
+
+	if !idPresent {
+		return newValidationError(fmt.Errorf("invalid document: document must contain '_id' field"))
 	}
 
 	return nil
