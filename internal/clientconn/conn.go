@@ -162,7 +162,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 			return err
 		}
 
-		filename := fmt.Sprintf("%s_%s.bin", time.Now().Format("2006-01-02_15:04:05"), c.netConn.RemoteAddr().String())
+		filename := fmt.Sprintf("%s-%s.bin", time.Now().Format("2006-01-02-15-04-05"), c.netConn.RemoteAddr().String())
 
 		path := filepath.Join(c.testRecordsDir, filename)
 
