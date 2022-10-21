@@ -225,7 +225,7 @@ func (d *Document) Get(key string) (any, error) {
 //
 // As a special case, _id always becomes the first key.
 func (d *Document) Set(key string, value any) {
-	if d.isKeyDuplicates(key) {
+	if d.isKeyDuplicate(key) {
 		panic(fmt.Sprintf("types.Document.Set: key is duplicated: %s", key))
 	}
 
@@ -254,7 +254,7 @@ func (d *Document) Set(key string, value any) {
 // Remove the given key and return its value, or nil if the key does not exist.
 // If the key is duplicated, it panics.
 func (d *Document) Remove(key string) any {
-	if d.isKeyDuplicates(key) {
+	if d.isKeyDuplicate(key) {
 		panic(fmt.Sprintf("types.Document.Remove: key is duplicated: %s", key))
 	}
 
@@ -337,9 +337,9 @@ func (d *Document) RemoveByPath(path Path) {
 	removeByPath(d, path)
 }
 
-// isKeyDuplicates returns true if the target key is duplicated in the document and false otherwise.
+// isKeyDuplicate returns true if the target key is duplicated in the document and false otherwise.
 // If the key is not found, it returns false.
-func (d *Document) isKeyDuplicates(targetKey string) bool {
+func (d *Document) isKeyDuplicate(targetKey string) bool {
 	var found bool
 
 	for _, key := range d.Keys() {
