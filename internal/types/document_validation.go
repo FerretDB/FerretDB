@@ -52,31 +52,10 @@ func (d *Document) ValidateData() error {
 			return newValidationError(fmt.Errorf("invalid key: %q (key must not contain $)", key))
 		}
 
-		if v, ok := v.(float64); ok {
-			switch {
-			case math.IsInf(v, 0):
-				return newValidationError(fmt.Errorf("invalid value: %f (infinity values are not allowed)", v))
-			case math.IsNaN(v):
-				return newValidationError(fmt.Errorf("invalid value: %f (NaN values are not allowed)", v))
-			}
+		if v, ok := v.(float64); ok && math.IsInf(v, 0) {
+			return newValidationError(fmt.Errorf("invalid value: %f (infinity values are not allowed)", v))
 		}
 	}
 
-	return nil
-}
-
-// ValidateCmd checks if the document represents a valid "command document".
-// If the document is not valid it returns *ValidationError.
-func (d *Document) ValidateCmd() error {
-	for _, v := range d.m {
-		if v, ok := v.(float64); ok {
-			switch {
-			case math.IsInf(v, 0):
-				return newValidationError(fmt.Errorf("invalid value: %f (infinity values are not allowed)", v))
-			case math.IsNaN(v):
-				return newValidationError(fmt.Errorf("invalid value: %f (NaN values are not allowed)", v))
-			}
-		}
-	}
 	return nil
 }

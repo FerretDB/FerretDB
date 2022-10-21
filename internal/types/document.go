@@ -93,10 +93,6 @@ func NewDocument(pairs ...any) (*Document, error) {
 		}
 	}
 
-	if err := doc.ValidateCmd(); err != nil {
-		return nil, fmt.Errorf("types.NewDocument: %w", err)
-	}
-
 	return doc, nil
 }
 
