@@ -1240,17 +1240,16 @@ func TestUpdateFieldPopArrayOperator(t *testing.T) {
 				update:   bson.D{{"$pop", bson.D{{"foo", 1}}}},
 				expected: bson.D{{"_id", "array"}, {"v", bson.A{int32(42)}}},
 			},
-			// TODO: https://github.com/FerretDB/FerretDB/issues/1000
-			//"PopEmptyValue": {
-			//	id:       "array",
-			//	update:   bson.D{{"$pop", bson.D{}}},
-			//	expected: bson.D{{"_id", "array"}, {"v", bson.A{int32(42)}}},
-			//	stat: &mongo.UpdateResult{
-			//		MatchedCount:  1,
-			//		ModifiedCount: 0,
-			//		UpsertedCount: 0,
-			//	},
-			//},
+			"PopEmptyValue": {
+				id:       "array",
+				update:   bson.D{{"$pop", bson.D{}}},
+				expected: bson.D{{"_id", "array"}, {"v", bson.A{int32(42)}}},
+				stat: &mongo.UpdateResult{
+					MatchedCount:  1,
+					ModifiedCount: 0,
+					UpsertedCount: 0,
+				},
+			},
 		} {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {

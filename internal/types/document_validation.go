@@ -39,7 +39,11 @@ func (e *ValidationError) Error() string {
 // ValidateData checks if the document represents a valid "data document".
 // If the document is not valid it returns *ValidationError.
 func (d *Document) ValidateData() error {
-	// The following block should be used to checks that keys and values are valid.
+  var idPresent bool
+
+	// TODO: make sure that `_id` is the first item in the map
+  //
+  // The following block should be used to checks that keys and values are valid.
 	// All further validation rules should be added here.
 	for key, v := range d.m {
 		// Tests for this case are in `dance`.
@@ -55,6 +59,14 @@ func (d *Document) ValidateData() error {
 		if v, ok := v.(float64); ok && math.IsInf(v, 0) {
 			return newValidationError(fmt.Errorf("invalid value: %f (infinity values are not allowed)", v))
 		}
+    
+		if key == "_id" {
+			idPresent = true
+		}
+	}
+
+	if !idPresent {
+		return newValidationError(fmt.Errorf("invalid document: document must contain '_id' field"))
 	}
 
 	return nil

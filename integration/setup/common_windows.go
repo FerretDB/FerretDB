@@ -12,18 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build unix
-
-package testutil
+package setup
 
 import (
-	"context"
-	"os/signal"
-
-	"golang.org/x/sys/unix"
+	"testing"
 )
 
-// notifyTestsTermination installs a signal handler that cancels the context.
-func notifyTestsTermination(parent context.Context) (context.Context, context.CancelFunc) {
-	return signal.NotifyContext(parent, unix.SIGTERM, unix.SIGINT)
+// listenUnix returns empty string on Windows because Unix domain sockets are not available.
+func listenUnix(tb testing.TB) string {
+	return ""
 }
