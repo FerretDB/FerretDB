@@ -116,14 +116,6 @@ func TestQueryComparisonImplicit(t *testing.T) {
 			filter:      bson.D{{"v", 42.13}},
 			expectedIDs: []any{"array-two", "double"},
 		},
-		"DoubleNegativeInfinity": {
-			filter:      bson.D{{"v", math.Inf(-1)}},
-			expectedIDs: []any{},
-		},
-		"DoublePositiveInfinity": {
-			filter:      bson.D{{"v", math.Inf(+1)}},
-			expectedIDs: []any{},
-		},
 		"DoubleMax": {
 			filter:      bson.D{{"v", math.MaxFloat64}},
 			expectedIDs: []any{"double-max"},
@@ -585,10 +577,6 @@ func TestQueryComparisonGt(t *testing.T) {
 				"int64", "int64-big", "int64-max",
 			},
 		},
-		"DoublePositiveInfinity": {
-			value:       math.Inf(+1),
-			expectedIDs: []any{},
-		},
 		"DoubleNaN": {
 			value:       math.NaN(),
 			expectedIDs: []any{},
@@ -810,10 +798,6 @@ func TestQueryComparisonGte(t *testing.T) {
 			value:       math.MaxFloat64,
 			expectedIDs: []any{"double-max"},
 		},
-		"DoublePositiveInfinity": {
-			value:       math.Inf(+1),
-			expectedIDs: []any{},
-		},
 		"DoubleNaN": {
 			value:       math.NaN(),
 			expectedIDs: []any{"array-two", "double-nan"},
@@ -1032,10 +1016,6 @@ func TestQueryComparisonLt(t *testing.T) {
 				"int32-min", "int32-zero",
 				"int64-min", "int64-zero",
 			},
-		},
-		"DoubleNegativeInfinity": {
-			value:       math.Inf(-1),
-			expectedIDs: []any{},
 		},
 		"DoubleNaN": {
 			value:       math.NaN(),
@@ -1263,10 +1243,6 @@ func TestQueryComparisonLte(t *testing.T) {
 				"int32-min", "int32-zero",
 				"int64-min", "int64-zero",
 			},
-		},
-		"DoubleNegativeInfinity": {
-			value:       math.Inf(-1),
-			expectedIDs: []any{},
 		},
 		"DoubleNaN": {
 			value:       math.NaN(),
