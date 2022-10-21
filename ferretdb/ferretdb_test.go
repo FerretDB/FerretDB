@@ -20,7 +20,7 @@ import (
 	"log"
 )
 
-func Example() {
+func Example_tcp() {
 	f, err := New(&Config{
 		ListenAddr:    "127.0.0.1:17027",
 		Handler:       "pg",
@@ -30,7 +30,14 @@ func Example() {
 		log.Fatal(err)
 	}
 
-	go f.Run(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+
+	done := make(chan struct{})
+
+	go func() {
+		log.Print(f.Run(ctx))
+		close(done)
+	}()
 
 	uri := f.MongoDBURI()
 	fmt.Println(uri)
@@ -43,5 +50,38 @@ func Example() {
 	//
 	// mongo.Connect(ctx, options.Client().ApplyURI(uri)
 
+	cancel()
+	<-done
+
 	// Output: mongodb://127.0.0.1:17027/
+}
+
+func Example_unix() {
+	f, err := New(&Config{
+		ListenUnix:    "/tmp/ferretdb-27017.sock",
+		Handler:       "pg",
+		PostgreSQLURL: "postgres://postgres@127.0.0.1:5432/ferretdb",
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	done := make(chan struct{})
+
+	go func() {
+		log.Print(f.Run(ctx))
+		close(done)
+	}()
+
+	uri := f.MongoDBURI()
+	fmt.Println(uri)
+
+	// Use MongoDB URI as usual.
+
+	cancel()
+	<-done
+
+	// Output: mongodb://%2Ftmp%2Fferretdb-27017.sock
 }

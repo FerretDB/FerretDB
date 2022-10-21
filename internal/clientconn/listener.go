@@ -35,33 +35,31 @@ import (
 
 // Listener accepts incoming client connections.
 type Listener struct {
-	opts      *NewListenerOpts
-	metrics   *connmetrics.ListenerMetrics
-	handler   handlers.Interface
-	listener  net.Listener
-	listening chan struct{}
+	*NewListenerOpts
+	tcpListener       net.Listener
+	unixListener      net.Listener
+	tcpListenerReady  chan struct{}
+	unixListenerReady chan struct{}
 }
 
 // NewListenerOpts represents listener configuration.
 type NewListenerOpts struct {
-	ListenAddr         string
-	ProxyAddr          string
-	Mode               Mode
-	Metrics            *connmetrics.ListenerMetrics
-	Handler            handlers.Interface
-	Logger             *zap.Logger
-	TestConnTimeout    time.Duration
-	TestRunCancelDelay time.Duration
-	TestRecordsDir     string // if empty, no records are created
+	ListenAddr     string
+	ListenUnix     string
+	ProxyAddr      string
+	Mode           Mode
+	Metrics        *connmetrics.ListenerMetrics
+	Handler        handlers.Interface
+	Logger         *zap.Logger
+	TestRecordsDir string // if empty, no records are created
 }
 
 // NewListener returns a new listener, configured by the NewListenerOpts argument.
 func NewListener(opts *NewListenerOpts) *Listener {
 	return &Listener{
-		opts:      opts,
-		metrics:   opts.Metrics,
-		handler:   opts.Handler,
-		listening: make(chan struct{}),
+		NewListenerOpts:   opts,
+		tcpListenerReady:  make(chan struct{}),
+		unixListenerReady: make(chan struct{}),
 	}
 }
 
@@ -69,31 +67,88 @@ func NewListener(opts *NewListenerOpts) *Listener {
 //
 // When this method returns, listener and all connections are closed.
 func (l *Listener) Run(ctx context.Context) error {
-	logger := l.opts.Logger.Named("listener")
+	logger := l.Logger.Named("listener")
 
-	var err error
-	if l.listener, err = net.Listen("tcp", l.opts.ListenAddr); err != nil {
-		return lazyerrors.Error(err)
+	if l.ListenAddr != "" {
+		var err error
+		if l.tcpListener, err = net.Listen("tcp", l.ListenAddr); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		close(l.tcpListenerReady)
+
+		logger.Sugar().Infof("Listening on %s ...", l.Addr())
 	}
 
-	close(l.listening)
-	logger.Sugar().Infof("Listening on %s ...", l.Addr())
+	if l.ListenUnix != "" {
+		var err error
+		if l.unixListener, err = net.Listen("unix", l.ListenUnix); err != nil {
+			return lazyerrors.Error(err)
+		}
 
-	// handle ctx cancellation
+		close(l.unixListenerReady)
+
+		logger.Sugar().Infof("Listening on %s ...", l.Unix())
+	}
+
+	// close listeners on context cancellation to exit from listenLoop
 	go func() {
 		<-ctx.Done()
-		l.listener.Close()
+
+		if l.tcpListener != nil {
+			l.tcpListener.Close()
+		}
+
+		if l.unixListener != nil {
+			l.unixListener.Close()
+		}
 	}()
 
 	var wg sync.WaitGroup
-	for {
-		netConn, err := l.listener.Accept()
-		if err != nil {
-			l.metrics.Accepts.WithLabelValues("1").Inc()
 
+	if l.ListenAddr != "" {
+		wg.Add(1)
+
+		go func() {
+			defer func() {
+				logger.Sugar().Infof("%s stopped.", l.Addr())
+				wg.Done()
+			}()
+
+			acceptLoop(ctx, l.tcpListener, &wg, l, logger)
+		}()
+	}
+
+	if l.ListenUnix != "" {
+		wg.Add(1)
+
+		go func() {
+			defer func() {
+				logger.Sugar().Infof("%s stopped.", l.Unix())
+				wg.Done()
+			}()
+
+			acceptLoop(ctx, l.unixListener, &wg, l, logger)
+		}()
+	}
+
+	logger.Info("Waiting for all connections to stop...")
+	wg.Wait()
+
+	return ctx.Err()
+}
+
+// acceptLoop runs listener's connection accepting loop.
+func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, l *Listener, logger *zap.Logger) {
+	for {
+		netConn, err := listener.Accept()
+		if err != nil {
+			// Run closed listener on context cancellation
 			if ctx.Err() != nil {
 				break
 			}
+
+			l.Metrics.Accepts.WithLabelValues("1").Inc()
 
 			logger.Warn("Failed to accept connection", zap.Error(err))
 			if !errors.Is(err, net.ErrClosed) {
@@ -103,44 +158,34 @@ func (l *Listener) Run(ctx context.Context) error {
 		}
 
 		wg.Add(1)
-		l.metrics.Accepts.WithLabelValues("0").Inc()
-		l.metrics.ConnectedClients.Inc()
+		l.Metrics.Accepts.WithLabelValues("0").Inc()
+		l.Metrics.ConnectedClients.Inc()
 
-		// run connection
 		go func() {
+			defer func() {
+				l.Metrics.ConnectedClients.Dec()
+				netConn.Close()
+				wg.Done()
+			}()
+
 			connID := fmt.Sprintf("%s -> %s", netConn.RemoteAddr(), netConn.LocalAddr())
 
 			// give clients a few seconds to disconnect after ctx is canceled
-			runCancelDelay := l.opts.TestRunCancelDelay
-			if runCancelDelay == 0 {
-				runCancelDelay = 3 * time.Second
-			}
-			runCtx, runCancel := ctxutil.WithDelay(ctx.Done(), runCancelDelay)
+			runCtx, runCancel := ctxutil.WithDelay(ctx.Done(), 3*time.Second)
 			defer runCancel()
-
-			if l.opts.TestConnTimeout != 0 {
-				runCtx, runCancel = context.WithTimeout(runCtx, l.opts.TestConnTimeout)
-				defer runCancel()
-			}
 
 			defer pprof.SetGoroutineLabels(runCtx)
 			runCtx = pprof.WithLabels(runCtx, pprof.Labels("conn", connID))
 			pprof.SetGoroutineLabels(runCtx)
 
-			defer func() {
-				netConn.Close()
-				l.metrics.ConnectedClients.Dec()
-				wg.Done()
-			}()
-
 			opts := &newConnOpts{
 				netConn:        netConn,
-				mode:           l.opts.Mode,
-				l:              l.opts.Logger.Named("// " + connID + " "), // derive from the original unnamed logger
-				proxyAddr:      l.opts.ProxyAddr,
-				handler:        l.opts.Handler,
-				connMetrics:    l.metrics.ConnMetrics,
-				testRecordsDir: l.opts.TestRecordsDir,
+				mode:           l.Mode,
+				l:              l.Logger.Named("// " + connID + " "), // derive from the original unnamed logger
+				handler:        l.Handler,
+				connMetrics:    l.Metrics.ConnMetrics,
+				proxyAddr:      l.ProxyAddr,
+				testRecordsDir: l.TestRecordsDir,
 			}
 			conn, e := newConn(opts)
 			if e != nil {
@@ -151,35 +196,36 @@ func (l *Listener) Run(ctx context.Context) error {
 			logger.Info("Connection started", zap.String("conn", connID))
 
 			e = conn.run(runCtx)
-			if e == io.EOF {
+			if errors.Is(e, io.EOF) {
 				logger.Info("Connection stopped", zap.String("conn", connID))
 			} else {
 				logger.Warn("Connection stopped", zap.String("conn", connID), zap.Error(e))
 			}
 		}()
 	}
-
-	logger.Info("Waiting for all connections to stop...")
-	wg.Wait()
-
-	return ctx.Err()
 }
 
-// Addr returns listener's address.
+// Addr returns TCP listener's address.
 // It can be used to determine an actually used port, if it was zero.
 func (l *Listener) Addr() net.Addr {
-	<-l.listening
-	return l.listener.Addr()
+	<-l.tcpListenerReady
+	return l.tcpListener.Addr()
+}
+
+// Unix returns Unix domain socket address.
+func (l *Listener) Unix() net.Addr {
+	<-l.unixListenerReady
+	return l.unixListener.Addr()
 }
 
 // Describe implements prometheus.Collector.
 func (l *Listener) Describe(ch chan<- *prometheus.Desc) {
-	l.metrics.Describe(ch)
+	l.Metrics.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
 func (l *Listener) Collect(ch chan<- prometheus.Metric) {
-	l.metrics.Collect(ch)
+	l.Metrics.Collect(ch)
 }
 
 // check interfaces
