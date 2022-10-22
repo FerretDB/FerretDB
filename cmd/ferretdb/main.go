@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/alecthomas/kong"
 	"github.com/prometheus/client_golang/prometheus"
@@ -38,6 +39,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/state"
+	"github.com/FerretDB/FerretDB/internal/util/telemetry"
 	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
@@ -69,6 +71,9 @@ var cli struct {
 
 	Test struct {
 		RecordsDir string `default:""  help:"Testing flag: directory for record files."`
+		Telemetry  struct {
+			URL string `default:"https://beacon.ferretdb.io/" help:"Testing flag: telemetry URL."`
+		} `embed:"" prefix:"telemetry-"`
 	} `embed:"" prefix:"test-"`
 }
 
@@ -130,6 +135,16 @@ func setupState() *state.Provider {
 	}
 
 	return p
+}
+
+func runTelemetryReporter(ctx context.Context, p *state.Provider, l *zap.Logger) {
+	r, err := telemetry.NewReporter(p, l)
+	if err != nil {
+		l.Error("Failed to create telemetry reporter.", zap.Error(err))
+		return
+	}
+
+	r.Run(ctx)
 }
 
 // setupMetrics setups Prometheus metrics registerer with some metrics.
@@ -212,7 +227,19 @@ func run() {
 		stop()
 	}()
 
-	go debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, logger.Named("debug"))
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, logger.Named("debug"))
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		runTelemetryReporter(ctx, stateProvider, logger.Named("telemetry"))
+	}()
 
 	cmdsList := maps.Keys(common.Commands)
 	sort.Strings(cmdsList)
@@ -256,6 +283,8 @@ func run() {
 	} else {
 		logger.Error("Listener stopped", zap.Error(err))
 	}
+
+	wg.Wait()
 
 	mfs, err := prometheus.DefaultGatherer.Gather()
 	if err != nil {
