@@ -128,6 +128,7 @@ func (r *Reporter) report(ctx context.Context) {
 		r.l.Error("Failed to create telemetry request.", zap.Error(err))
 		return
 	}
+
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 
 	res, err := r.c.Do(req)
