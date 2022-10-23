@@ -30,17 +30,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
-const (
-	// Delay first report if telemetry state is undecided.
-	undecidedDelay = time.Hour
-
-	// Interval between reports.
-	reportInterval = 24 * time.Hour
-
-	// Maximum time to send a single report.
-	reportTimeout = 5 * time.Second
-)
-
 // request represents telemetry request.
 type request struct {
 	Version string `json:"version"`
@@ -62,41 +51,47 @@ type response struct {
 
 // Reporter sends telemetry reports if telemetry is enabled.
 type Reporter struct {
-	url string
-	p   *state.Provider
-	l   *zap.Logger
-	c   *http.Client
+	*NewReporterOpts
+	c *http.Client
+}
+
+// NewReporterOpts represents reporter options.
+type NewReporterOpts struct {
+	URL            string
+	P              *state.Provider
+	L              *zap.Logger
+	UndecidedDelay time.Duration
+	ReportInterval time.Duration
+	ReportTimeout  time.Duration
 }
 
 // NewReporter create a new reporter.
-func NewReporter(url string, p *state.Provider, l *zap.Logger) (*Reporter, error) {
+func NewReporter(opts *NewReporterOpts) (*Reporter, error) {
 	return &Reporter{
-		url: url,
-		p:   p,
-		l:   l,
-		c:   http.DefaultClient,
+		NewReporterOpts: opts,
+		c:               http.DefaultClient,
 	}, nil
 }
 
 // Run runs reporter until context is canceled.
 func (r *Reporter) Run(ctx context.Context) {
-	r.l.Debug("Reporter started.")
-	defer r.l.Debug("Reporter stopped.")
+	r.L.Debug("Reporter started.")
+	defer r.L.Debug("Reporter stopped.")
 
-	ch := r.p.Subscribe()
+	ch := r.P.Subscribe()
 
 	r.firstReportDelay(ctx, ch)
 
 	for ctx.Err() == nil {
 		r.report(ctx)
 
-		delayCtx, delayCancel := context.WithTimeout(ctx, reportInterval)
+		delayCtx, delayCancel := context.WithTimeout(ctx, r.ReportInterval)
 		<-delayCtx.Done()
 		delayCancel()
 	}
 
 	// do one last report before exiting if telemetry is explicitly enabled
-	if pointer.GetBool(r.p.Get().Telemetry) {
+	if pointer.GetBool(r.P.Get().Telemetry) {
 		r.report(context.Background())
 	}
 }
@@ -104,18 +99,18 @@ func (r *Reporter) Run(ctx context.Context) {
 // firstReportDelay waits until telemetry reporting state is decided,
 // main context is cancelled, or timeout is reached.
 func (r *Reporter) firstReportDelay(ctx context.Context, ch <-chan struct{}) {
-	if r.p.Get().Telemetry != nil {
+	if r.P.Get().Telemetry != nil {
 		return
 	}
 
 	msg := fmt.Sprintf(
 		"Telemetry state undecided, waiting %s before the first report. "+
 			"Read more about FerretDB telemetry at https://beacon.ferretdb.io",
-		undecidedDelay,
+		r.UndecidedDelay,
 	)
-	r.l.Info(msg)
+	r.L.Info(msg)
 
-	delayCtx, delayCancel := context.WithTimeout(ctx, undecidedDelay)
+	delayCtx, delayCancel := context.WithTimeout(ctx, r.UndecidedDelay)
 	defer delayCancel()
 
 	for {
@@ -123,7 +118,7 @@ func (r *Reporter) firstReportDelay(ctx context.Context, ch <-chan struct{}) {
 		case <-delayCtx.Done():
 			return
 		case <-ch:
-			if r.p.Get().Telemetry != nil {
+			if r.P.Get().Telemetry != nil {
 				return
 			}
 		}
@@ -150,27 +145,27 @@ func makeRequest(s *state.State) *request {
 
 // report sends telemetry report unless telemetry is disabled.
 func (r *Reporter) report(ctx context.Context) {
-	s := r.p.Get()
+	s := r.P.Get()
 	if s.Telemetry != nil && !*s.Telemetry {
-		r.l.Debug("Telemetry is disabled, skipping reporting.")
+		r.L.Debug("Telemetry is disabled, skipping reporting.")
 		return
 	}
 
 	request := makeRequest(s)
-	r.l.Info("Reporting telemetry.", zap.Reflect("data", request))
+	r.L.Info("Reporting telemetry.", zap.Reflect("data", request))
 
 	b, err := json.Marshal(request)
 	if err != nil {
-		r.l.Error("Failed to marshal telemetry request.", zap.Error(err))
+		r.L.Error("Failed to marshal telemetry request.", zap.Error(err))
 		return
 	}
 
-	reqCtx, reqCancel := context.WithTimeout(ctx, reportTimeout)
+	reqCtx, reqCancel := context.WithTimeout(ctx, r.ReportTimeout)
 	defer reqCancel()
 
-	req, err := http.NewRequestWithContext(reqCtx, http.MethodPost, r.url, bytes.NewReader(b))
+	req, err := http.NewRequestWithContext(reqCtx, http.MethodPost, r.URL, bytes.NewReader(b))
 	if err != nil {
-		r.l.Error("Failed to create telemetry request.", zap.Error(err))
+		r.L.Error("Failed to create telemetry request.", zap.Error(err))
 		return
 	}
 
@@ -178,40 +173,40 @@ func (r *Reporter) report(ctx context.Context) {
 
 	res, err := r.c.Do(req)
 	if err != nil {
-		r.l.Debug("Failed to send telemetry request.", zap.Error(err))
+		r.L.Debug("Failed to send telemetry request.", zap.Error(err))
 		return
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		r.l.Debug("Failed to send telemetry request.", zap.Int("status", res.StatusCode))
+		r.L.Debug("Failed to send telemetry request.", zap.Int("status", res.StatusCode))
 		return
 	}
 
 	var response response
 	if err = json.NewDecoder(res.Body).Decode(&response); err != nil {
-		r.l.Debug("Failed to read telemetry response.", zap.Error(err))
+		r.L.Debug("Failed to read telemetry response.", zap.Error(err))
 		return
 	}
 
 	if response.LatestVersion == "" {
-		r.l.Debug("No latest version in telemetry response.")
+		r.L.Debug("No latest version in telemetry response.")
 		return
 	}
 
 	if response.LatestVersion == s.LatestVersion {
-		r.l.Debug("Latest version is up to date.")
+		r.L.Debug("Latest version is up to date.")
 		return
 	}
 
-	r.l.Info(
+	r.L.Info(
 		"New version available.",
 		zap.String("current_version", request.Version), zap.String("latest_version", response.LatestVersion),
 	)
 
-	err = r.p.Update(func(s *state.State) { s.LatestVersion = response.LatestVersion })
+	err = r.P.Update(func(s *state.State) { s.LatestVersion = response.LatestVersion })
 	if err != nil {
-		r.l.Error("Failed to update state with latest version.", zap.Error(err))
+		r.L.Error("Failed to update state with latest version.", zap.Error(err))
 		return
 	}
 }

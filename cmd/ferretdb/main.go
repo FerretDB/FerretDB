@@ -24,6 +24,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/AlekSi/pointer"
 	"github.com/alecthomas/kong"
@@ -76,7 +77,10 @@ var cli struct {
 	Test struct {
 		RecordsDir string `default:""  help:"Testing flag: directory for record files."`
 		Telemetry  struct {
-			URL string `default:"https://beacon.ferretdb.io/" help:"Testing flag: telemetry URL."`
+			URL            string        `default:"https://beacon.ferretdb.io/" help:"Testing flag: telemetry URL."`
+			UndecidedDelay time.Duration `default:"1h"                          help:"Testing flag: delay for undecided state."`
+			ReportInterval time.Duration `default:"24h"                         help:"Testing flag: report interval."`
+			ReportTimeout  time.Duration `default:"5s"                          help:"Testing flag: report timeout."`
 		} `embed:"" prefix:"telemetry-"`
 	} `embed:"" prefix:"test-"`
 }
@@ -195,13 +199,13 @@ func setupLogger(stateProvider *state.Provider) *zap.Logger {
 }
 
 // runTelemetryReporter runs telemetry reporter until ctx is canceled.
-func runTelemetryReporter(ctx context.Context, enabled bool, url string, p *state.Provider, l *zap.Logger) {
+func runTelemetryReporter(ctx context.Context, enabled bool, opts *telemetry.NewReporterOpts) {
 	// TODO probably move out of this function
-	p.Update(func(s *state.State) { s.Telemetry = pointer.ToBool(enabled) })
+	opts.P.Update(func(s *state.State) { s.Telemetry = pointer.ToBool(enabled) })
 
-	r, err := telemetry.NewReporter(url, p, l)
+	r, err := telemetry.NewReporter(opts)
 	if err != nil {
-		l.Fatal("Failed to create telemetry reporter.", zap.Error(err))
+		opts.L.Fatal("Failed to create telemetry reporter.", zap.Error(err))
 	}
 
 	r.Run(ctx)
@@ -247,7 +251,18 @@ func run() {
 
 	go func() {
 		defer wg.Done()
-		runTelemetryReporter(ctx, cli.Telemetry, cli.Test.Telemetry.URL, stateProvider, logger.Named("telemetry"))
+		runTelemetryReporter(
+			ctx,
+			cli.Telemetry,
+			&telemetry.NewReporterOpts{
+				URL:            cli.Test.Telemetry.URL,
+				P:              stateProvider,
+				L:              logger.Named("telemetry"),
+				UndecidedDelay: cli.Test.Telemetry.UndecidedDelay,
+				ReportInterval: cli.Test.Telemetry.ReportInterval,
+				ReportTimeout:  cli.Test.Telemetry.ReportTimeout,
+			},
+		)
 	}()
 
 	cmdsList := maps.Keys(common.Commands)

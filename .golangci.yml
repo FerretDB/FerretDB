@@ -89,7 +89,10 @@ linters-settings:
   revive:
     ignore-generated-header: true
     severity: warning
-    enableAllRules: true
+    # TODO enable-all-rules: true
+    rules:
+      - name: exported
+        # TODO arguments: [checkPrivateReceivers]
   staticcheck:
     checks:
       - all
