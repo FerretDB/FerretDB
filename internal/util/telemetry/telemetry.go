@@ -34,8 +34,11 @@ const (
 	// Delay first report if telemetry state is undecided.
 	undecidedDelay = time.Hour
 
-	// Delay between reports.
-	reportDelay = 24 * time.Hour
+	// Interval between reports.
+	reportInterval = 24 * time.Hour
+
+	// Maximum time to send a single report.
+	reportTimeout = 5 * time.Second
 )
 
 // request represents telemetry request.
@@ -77,6 +80,9 @@ func NewReporter(url string, p *state.Provider, l *zap.Logger) (*Reporter, error
 
 // Run runs reporter until context is canceled.
 func (r *Reporter) Run(ctx context.Context) {
+	r.l.Debug("Reporter started.")
+	defer r.l.Debug("Reporter stopped.")
+
 	ch := r.p.Subscribe()
 
 	r.firstReportDelay(ctx, ch)
@@ -84,14 +90,14 @@ func (r *Reporter) Run(ctx context.Context) {
 	for ctx.Err() == nil {
 		r.report(ctx)
 
-		delayCtx, delayCancel := context.WithTimeout(ctx, reportDelay)
+		delayCtx, delayCancel := context.WithTimeout(ctx, reportInterval)
 		<-delayCtx.Done()
 		delayCancel()
 	}
 
 	// do one last report before exiting if telemetry is explicitly enabled
 	if pointer.GetBool(r.p.Get().Telemetry) {
-		r.report(ctx)
+		r.report(context.Background())
 	}
 }
 
@@ -159,7 +165,7 @@ func (r *Reporter) report(ctx context.Context) {
 		return
 	}
 
-	reqCtx, reqCancel := context.WithTimeout(ctx, 5*time.Second)
+	reqCtx, reqCancel := context.WithTimeout(ctx, reportTimeout)
 	defer reqCancel()
 
 	req, err := http.NewRequestWithContext(reqCtx, http.MethodPost, r.url, bytes.NewReader(b))

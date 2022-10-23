@@ -202,7 +202,6 @@ func runTelemetryReporter(ctx context.Context, enabled bool, url string, p *stat
 	r, err := telemetry.NewReporter(url, p, l)
 	if err != nil {
 		l.Fatal("Failed to create telemetry reporter.", zap.Error(err))
-		return
 	}
 
 	r.Run(ctx)
