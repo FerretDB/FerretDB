@@ -12,38 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tigris
+package tigrisdb
 
 import (
-	"fmt"
+	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/tigrisdata/tigris-client-go/driver"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// getJSONSchema returns a marshaled JSON schema received from validator -> $jsonSchema.
-func getJSONSchema(doc *types.Document) (*tjson.Schema, error) {
-	v, err := common.GetRequiredParam[*types.Document](doc, "validator")
+// ReplaceDocument replaces a document in FerretDB database and collection.
+// If the document is not valid, it returns *types.ValidationError.
+func (tdb *TigrisDB) ReplaceDocument(ctx context.Context, db, collection string, doc *types.Document) error {
+	if err := doc.ValidateData(); err != nil {
+		return err
+	}
+
+	u, err := tjson.Marshal(doc)
 	if err != nil {
-		return nil, err
+		return lazyerrors.Error(err)
 	}
 
-	schema, err := common.GetRequiredParam[string](v, "$tigrisSchemaString")
-	if err != nil {
-		return nil, err
-	}
+	_, err = tdb.Driver.UseDatabase(db).Replace(ctx, collection, []driver.Document{u})
 
-	if schema == "" {
-		return nil, common.NewError(common.ErrBadValue, fmt.Errorf("empty schema is not allowed"))
-	}
-
-	sch := new(tjson.Schema)
-	err = sch.Unmarshal([]byte(schema))
-
-	if err != nil {
-		return nil, common.NewError(common.ErrBadValue, err)
-	}
-
-	return sch, nil
+	return err
 }

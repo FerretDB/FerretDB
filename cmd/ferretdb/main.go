@@ -16,13 +16,13 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/alecthomas/kong"
 	"github.com/prometheus/client_golang/prometheus"
@@ -45,6 +45,7 @@ import (
 // It's used for parsing the user input.
 var cli struct {
 	ListenAddr string `default:"127.0.0.1:27017"      help:"Listen address."`
+	ListenUnix string `default:""                     help:"Listen Unix domain socket path."`
 	ProxyAddr  string `default:"127.0.0.1:37017"      help:"Proxy address."`
 	DebugAddr  string `default:"127.0.0.1:8088"       help:"${help_debug_addr}"`
 	StateDir   string `default:"."                    help:"Process state directory."`
@@ -67,8 +68,7 @@ var cli struct {
 	Version bool `default:"false" help:"Print version to stdout and exit."`
 
 	Test struct {
-		ConnTimeout time.Duration `default:"0" help:"Testing flag: client connection timeout."`
-		RecordsDir  string        `default:""  help:"Testing flag: directory for record files."`
+		RecordsDir string `default:""  help:"Testing flag: directory for record files."`
 	} `embed:"" prefix:"test-"`
 }
 
@@ -118,7 +118,7 @@ func main() {
 }
 
 // setupState setups state provider.
-func setupState() (*state.Provider, string) {
+func setupState() *state.Provider {
 	f, err := filepath.Abs(filepath.Join(cli.StateDir, "state.json"))
 	if err != nil {
 		log.Fatalf("Failed to get path for state file: %s.", err)
@@ -129,18 +129,13 @@ func setupState() (*state.Provider, string) {
 		log.Fatalf("Failed to create state provider: %s.", err)
 	}
 
-	s, err := p.Get()
-	if err != nil {
-		log.Fatalf("Failed to get state: %s.", err)
-	}
-
-	return p, s.UUID
+	return p
 }
 
 // setupMetrics setups Prometheus metrics registerer with some metrics.
-func setupMetrics(stateProvider *state.Provider, uuid string) prometheus.Registerer {
+func setupMetrics(stateProvider *state.Provider) prometheus.Registerer {
 	r := prometheus.WrapRegistererWith(
-		prometheus.Labels{"uuid": uuid},
+		prometheus.Labels{"uuid": stateProvider.Get().UUID},
 		prometheus.DefaultRegisterer,
 	)
 	m := stateProvider.MetricsCollector(false)
@@ -158,10 +153,9 @@ func setupMetrics(stateProvider *state.Provider, uuid string) prometheus.Registe
 }
 
 // setupLogger setups zap logger.
-func setupLogger(uuid string) *zap.Logger {
+func setupLogger(stateProvider *state.Provider) *zap.Logger {
 	info := version.Get()
 
-	logUUID := uuid
 	startupFields := []zap.Field{
 		zap.String("version", info.Version),
 		zap.String("commit", info.Commit),
@@ -170,11 +164,12 @@ func setupLogger(uuid string) *zap.Logger {
 		zap.Bool("debug", info.Debug),
 		zap.Reflect("buildEnvironment", info.BuildEnvironment.Map()),
 	}
+	logUUID := stateProvider.Get().UUID
 
 	// Similarly to Prometheus, unless requested, don't add UUID to all messages, but log it once at startup.
 	if !cli.Log.UUID {
+		startupFields = append(startupFields, zap.String("uuid", logUUID))
 		logUUID = ""
-		startupFields = append(startupFields, zap.String("uuid", uuid))
 	}
 
 	level, err := zapcore.ParseLevel(cli.Log.Level)
@@ -203,11 +198,11 @@ func run() {
 		return
 	}
 
-	stateProvider, uuid := setupState()
+	stateProvider := setupState()
 
-	metricsRegisterer := setupMetrics(stateProvider, uuid)
+	metricsRegisterer := setupMetrics(stateProvider)
 
-	logger := setupLogger(uuid)
+	logger := setupLogger(stateProvider)
 
 	ctx, stop := notifyAppTermination(context.Background())
 
@@ -225,9 +220,10 @@ func run() {
 	metrics := connmetrics.NewListenerMetrics(cmdsList)
 
 	h, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
-		Ctx:     ctx,
-		Logger:  logger,
-		Metrics: metrics.ConnMetrics,
+		Ctx:           ctx,
+		Logger:        logger,
+		Metrics:       metrics.ConnMetrics,
+		StateProvider: stateProvider,
 
 		PostgreSQLURL: cli.PostgreSQLURL,
 
@@ -242,20 +238,20 @@ func run() {
 	defer h.Close()
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		ListenAddr:      cli.ListenAddr,
-		ProxyAddr:       cli.ProxyAddr,
-		Mode:            clientconn.Mode(cli.Mode),
-		Handler:         h,
-		Metrics:         metrics,
-		Logger:          logger,
-		TestConnTimeout: cli.Test.ConnTimeout,
-		TestRecordsDir:  cli.Test.RecordsDir,
+		ListenAddr:     cli.ListenAddr,
+		ListenUnix:     cli.ListenUnix,
+		ProxyAddr:      cli.ProxyAddr,
+		Mode:           clientconn.Mode(cli.Mode),
+		Metrics:        metrics,
+		Handler:        h,
+		Logger:         logger,
+		TestRecordsDir: cli.Test.RecordsDir,
 	})
 
 	metricsRegisterer.MustRegister(l)
 
 	err = l.Run(ctx)
-	if err == nil || err == context.Canceled {
+	if err == nil || errors.Is(err, context.Canceled) {
 		logger.Info("Listener stopped")
 	} else {
 		logger.Error("Listener stopped", zap.Error(err))

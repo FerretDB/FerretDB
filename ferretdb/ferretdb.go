@@ -30,12 +30,18 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 // Config represents FerretDB configuration.
 type Config struct {
-	// Listen address; defaults to "127.0.0.1:27017".
+	// Listen address.
+	// If empty, TCP listener is disabled.
 	ListenAddr string
+
+	// Listen Unix domain socket path.
+	// If empty, Unix listener is disabled.
+	ListenUnix string
 
 	// Handler to use; one of `pg` or `tigris` (if enabled at compile-time).
 	Handler string
@@ -54,20 +60,56 @@ type Config struct {
 
 // FerretDB represents an instance of embeddable FerretDB implementation.
 type FerretDB struct {
-	config     *Config
-	listenAddr string
+	config *Config
+
+	l *clientconn.Listener
 }
 
 // New creates a new instance of embeddable FerretDB implementation.
 func New(config *Config) (*FerretDB, error) {
-	listenAddr := config.ListenAddr
-	if listenAddr == "" {
-		listenAddr = "127.0.0.1:27017"
+	if config.ListenAddr == "" && config.ListenUnix == "" {
+		return nil, errors.New("both ListenAddr and ListenUnix are empty")
 	}
 
+	p, err := state.NewProvider("")
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct handler: %s", err)
+	}
+
+	cmdsList := maps.Keys(common.Commands)
+	sort.Strings(cmdsList)
+
+	metrics := connmetrics.NewListenerMetrics(cmdsList)
+
+	h, err := registry.NewHandler(config.Handler, &registry.NewHandlerOpts{
+		Ctx:           context.Background(),
+		Logger:        logger,
+		Metrics:       metrics.ConnMetrics,
+		StateProvider: p,
+
+		PostgreSQLURL: config.PostgreSQLURL,
+
+		TigrisClientID:     config.TigrisClientID,
+		TigrisClientSecret: config.TigrisClientSecret,
+		TigrisToken:        config.TigrisToken,
+		TigrisURL:          config.TigrisURL,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct handler: %s", err)
+	}
+
+	l := clientconn.NewListener(&clientconn.NewListenerOpts{
+		ListenAddr: config.ListenAddr,
+		ListenUnix: config.ListenUnix,
+		Mode:       clientconn.NormalMode,
+		Metrics:    metrics,
+		Handler:    h,
+		Logger:     logger,
+	})
+
 	return &FerretDB{
-		config:     config,
-		listenAddr: listenAddr,
+		config: config,
+		l:      l,
 	}, nil
 }
 
@@ -75,52 +117,41 @@ func New(config *Config) (*FerretDB, error) {
 //
 // When this method returns, listener and all connections are closed.
 func (f *FerretDB) Run(ctx context.Context) error {
-	cmdsList := maps.Keys(common.Commands)
-	sort.Strings(cmdsList)
+	defer f.l.Handler.Close()
 
-	metrics := connmetrics.NewListenerMetrics(cmdsList)
-
-	newOpts := registry.NewHandlerOpts{
-		Ctx:     context.Background(),
-		Logger:  logger,
-		Metrics: metrics.ConnMetrics,
-
-		PostgreSQLURL: f.config.PostgreSQLURL,
-
-		TigrisClientID:     f.config.TigrisClientID,
-		TigrisClientSecret: f.config.TigrisClientSecret,
-		TigrisToken:        f.config.TigrisToken,
-		TigrisURL:          f.config.TigrisURL,
+	err := f.l.Run(ctx)
+	if errors.Is(err, context.Canceled) {
+		err = nil
 	}
-	h, err := registry.NewHandler(f.config.Handler, &newOpts)
+
 	if err != nil {
-		return fmt.Errorf("failed to construct handler: %s", err)
-	}
-	defer h.Close()
-
-	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		ListenAddr: f.listenAddr,
-		Mode:       clientconn.NormalMode,
-		Handler:    h,
-		Logger:     logger,
-		Metrics:    metrics,
-	})
-
-	if err = l.Run(ctx); err != nil {
 		// Do not expose internal error details.
 		// If you need stable error values and/or types for some cases, please create an issue.
 		err = errors.New(err.Error())
 	}
+
 	return err
 }
 
 // MongoDBURI returns MongoDB URI for this FerretDB instance.
+//
+// TCP's connection string is returned if both TCP and Unix listeners are enabled.
 func (f *FerretDB) MongoDBURI() string {
-	u := url.URL{
-		Scheme: "mongodb",
-		Host:   f.listenAddr,
-		Path:   "/",
+	var u *url.URL
+
+	if f.config.ListenAddr != "" {
+		u = &url.URL{
+			Scheme: "mongodb",
+			Host:   f.l.Addr().String(),
+			Path:   "/",
+		}
+	} else {
+		u = &url.URL{
+			Scheme: "mongodb",
+			Host:   f.l.Unix().String(),
+		}
 	}
+
 	return u.String()
 }
 
@@ -132,6 +163,6 @@ var logger *zap.Logger
 // Initialize the global logger there to avoid creating too many issues for zap users that initialize it in their
 // `main()` functions. It is still not a full solution; eventually, we should remove the usage of the global logger.
 func init() {
-	logging.Setup(zap.FatalLevel, "")
+	logging.Setup(zap.ErrorLevel, "")
 	logger = zap.L()
 }

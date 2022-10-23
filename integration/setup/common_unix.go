@@ -14,16 +14,18 @@
 
 //go:build unix
 
-package testutil
+package setup
 
 import (
-	"context"
-	"os/signal"
-
-	"golang.org/x/sys/unix"
+	"testing"
 )
 
-// notifyTestsTermination installs a signal handler that cancels the context.
-func notifyTestsTermination(parent context.Context) (context.Context, context.CancelFunc) {
-	return signal.NotifyContext(parent, unix.SIGTERM, unix.SIGINT)
+// listenUnix returns temporary Unix domain socket path for that test.
+func listenUnix(tb testing.TB) string {
+	// The commented out code does not generate valid Unix domain socket path on macOS (at least).
+	// Maybe the argument is too long?
+	// TODO https://github.com/FerretDB/FerretDB/issues/1295
+	// return filepath.Join(tb.TempDir(), "ferretdb.sock")
+
+	return ""
 }

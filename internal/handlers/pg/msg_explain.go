@@ -66,7 +66,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	var queryPlanner *types.Array
+	var queryPlanner *types.Document
 	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var err error
 		queryPlanner, err = pgdb.Explain(ctx, tx, sp)
@@ -89,18 +89,21 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	serverInfo := must.NotFail(types.NewDocument(
 		"host", hostname,
-		"port", int32(port),
+		"port", port,
 		"version", version.MongoDBVersion,
 		"gitVersion", version.Get().Commit,
 		"ferretdbVersion", version.Get().Version,
 	))
 
+	cmd := command.DeepCopy()
+	must.NoError(cmd.Set("$db", sp.DB))
+
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"queryPlanner", queryPlanner,
-			"explainVersion", int32(1),
-			"command", command,
+			"explainVersion", "1",
+			"command", cmd,
 			"serverInfo", serverInfo,
 			"ok", float64(1),
 		))},

@@ -68,10 +68,13 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	if *debugSetupF {
 		level = zap.NewAtomicLevelAt(zap.DebugLevel)
 	}
-	logger := zaptest.NewLogger(tb, zaptest.Level(level), zaptest.WrapOptions(zap.AddCaller()))
+	logger := zaptest.NewLogger(tb, zaptest.Level(level), zaptest.WrapOptions(zap.AddCaller(), zap.Development()))
 
 	port := *targetPortF
 	if port == 0 {
+		// TODO check targetUnixSocketF, setup Unix socket-only listener if true.
+		// TODO https://github.com/FerretDB/FerretDB/issues/1295
+		_ = *targetUnixSocketF
 		port = setupListener(tb, ctx, logger)
 	}
 

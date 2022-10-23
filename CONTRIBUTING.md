@@ -113,7 +113,7 @@ The `internal` subpackages contain most of the FerretDB code:
   preserving BSON type information in the values themselves, etc.
   It is used by `pg` handler.
 * `handlers/tigris` contains the implementation of the Tigris handler.
-* `tjson` provides converters from/to JSON with JSON Schema for built-in and `types` types.
+* `handlers/tigris/tjson` provides converters from/to TJSON with JSON Schema for built-in and `types` types.
   BSON type information is preserved either in the schema (where possible) or in the values themselves.
   It is used by `tigris` handler.
 

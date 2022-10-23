@@ -37,7 +37,7 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 		URL: testutil.TigrisURL(t),
 	}
 
-	logger := zaptest.NewLogger(t, zaptest.WrapOptions(zap.AddCaller()))
+	logger := zaptest.NewLogger(t, zaptest.WrapOptions(zap.AddCaller(), zap.Development()))
 	tdb, err := New(cfg, logger)
 	require.NoError(t, err)
 
