@@ -23,9 +23,9 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/AlekSi/pointer"
 	"go.uber.org/zap"
 
-	"github.com/AlekSi/pointer"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/version"
 )
@@ -111,14 +111,8 @@ func (r *Reporter) report(ctx context.Context) {
 		return
 	}
 
-	// be more noisy if telemetry state is undecided
-	f := r.l.Info
-	if s.Telemetry == nil {
-		f = r.l.Warn
-	}
-
 	request := makeRequest(s)
-	f("Reporting telemetry.", zap.Reflect("data", request))
+	r.l.Info("Reporting telemetry.", zap.Reflect("data", request))
 
 	b, err := json.Marshal(request)
 	if err != nil {

@@ -25,6 +25,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/AlekSi/pointer"
 	"github.com/alecthomas/kong"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
@@ -59,6 +60,9 @@ var cli struct {
 	} `embed:"" prefix:"log-"`
 
 	MetricsUUID bool `default:"false" help:"Add instance UUID to all metrics."`
+
+	// TODO switch to string for 3 states
+	Telemetry bool `default:"false" help:"Enable basic telemetry. See https://beacon.ferretdb.io."`
 
 	Handler string `default:"pg" help:"${help_handler}"`
 
@@ -137,16 +141,6 @@ func setupState() *state.Provider {
 	return p
 }
 
-func runTelemetryReporter(ctx context.Context, p *state.Provider, l *zap.Logger) {
-	r, err := telemetry.NewReporter(p, l)
-	if err != nil {
-		l.Error("Failed to create telemetry reporter.", zap.Error(err))
-		return
-	}
-
-	r.Run(ctx)
-}
-
 // setupMetrics setups Prometheus metrics registerer with some metrics.
 func setupMetrics(stateProvider *state.Provider) prometheus.Registerer {
 	r := prometheus.WrapRegistererWith(
@@ -200,6 +194,18 @@ func setupLogger(stateProvider *state.Provider) *zap.Logger {
 	return l
 }
 
+func runTelemetryReporter(ctx context.Context, enabled bool, url string, p *state.Provider, l *zap.Logger) {
+	p.Update(func(s *state.State) { s.Telemetry = pointer.ToBool(enabled) })
+
+	r, err := telemetry.NewReporter(url, p, l)
+	if err != nil {
+		l.Fatal("Failed to create telemetry reporter.", zap.Error(err))
+		return
+	}
+
+	r.Run(ctx)
+}
+
 // run sets up environment based on provided flags and runs FerretDB.
 func run() {
 	if cli.Version {
@@ -238,7 +244,7 @@ func run() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		runTelemetryReporter(ctx, stateProvider, logger.Named("telemetry"))
+		runTelemetryReporter(ctx, cli.Telemetry, cli.Test.Telemetry.URL, stateProvider, logger.Named("telemetry"))
 	}()
 
 	cmdsList := maps.Keys(common.Commands)
