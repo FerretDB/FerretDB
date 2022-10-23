@@ -31,10 +31,14 @@ import (
 )
 
 const (
+	// Delay first report if telemetry state is undecided.
 	undecidedDelay = time.Hour
-	reportDelay    = 24 * time.Hour
+
+	// Delay between reports.
+	reportDelay = 24 * time.Hour
 )
 
+// request represents telemetry request.
 type request struct {
 	Version string `json:"version"`
 	Commit  string `json:"commit"`
@@ -48,10 +52,12 @@ type request struct {
 	Uptime time.Duration `json:"uptime"`
 }
 
+// response represents telemetry response.
 type response struct {
 	LatestVersion string `json:"latest_version"`
 }
 
+// Reporter sends telemetry reports if telemetry is enabled.
 type Reporter struct {
 	url string
 	p   *state.Provider
@@ -59,6 +65,7 @@ type Reporter struct {
 	c   *http.Client
 }
 
+// NewReporter create a new reporter.
 func NewReporter(url string, p *state.Provider, l *zap.Logger) (*Reporter, error) {
 	return &Reporter{
 		url: url,
@@ -68,6 +75,7 @@ func NewReporter(url string, p *state.Provider, l *zap.Logger) (*Reporter, error
 	}, nil
 }
 
+// Run runs reporter until context is canceled.
 func (r *Reporter) Run(ctx context.Context) {
 	ch := r.p.Subscribe()
 
@@ -87,6 +95,36 @@ func (r *Reporter) Run(ctx context.Context) {
 	}
 }
 
+// firstReportDelay waits until telemetry reporting state is decided,
+// main context is cancelled, or timeout is reached.
+func (r *Reporter) firstReportDelay(ctx context.Context, ch <-chan struct{}) {
+	if r.p.Get().Telemetry != nil {
+		return
+	}
+
+	msg := fmt.Sprintf(
+		"Telemetry state undecided, waiting %s before the first report. "+
+			"Read more about FerretDB telemetry at https://beacon.ferretdb.io",
+		undecidedDelay,
+	)
+	r.l.Info(msg)
+
+	delayCtx, delayCancel := context.WithTimeout(ctx, undecidedDelay)
+	defer delayCancel()
+
+	for {
+		select {
+		case <-delayCtx.Done():
+			return
+		case <-ch:
+			if r.p.Get().Telemetry != nil {
+				return
+			}
+		}
+	}
+}
+
+// makeRequest creates a new telemetry request.
 func makeRequest(s *state.State) *request {
 	v := version.Get()
 
@@ -104,6 +142,7 @@ func makeRequest(s *state.State) *request {
 	}
 }
 
+// report sends telemetry report unless telemetry is disabled.
 func (r *Reporter) report(ctx context.Context) {
 	s := r.p.Get()
 	if s.Telemetry != nil && !*s.Telemetry {
@@ -168,34 +207,5 @@ func (r *Reporter) report(ctx context.Context) {
 	if err != nil {
 		r.l.Error("Failed to update state with latest version.", zap.Error(err))
 		return
-	}
-}
-
-// firstReportDelay waits until telemetry reporting state is decided,
-// main context is cancelled, or timeout is reached.
-func (r *Reporter) firstReportDelay(ctx context.Context, ch <-chan struct{}) {
-	if r.p.Get().Telemetry != nil {
-		return
-	}
-
-	msg := fmt.Sprintf(
-		"Telemetry state undecided, waiting %s before the first report. "+
-			"Read more about FerretDB telemetry at https://beacon.ferretdb.io",
-		undecidedDelay,
-	)
-	r.l.Warn(msg)
-
-	delayCtx, delayCancel := context.WithTimeout(ctx, undecidedDelay)
-	defer delayCancel()
-
-	for {
-		select {
-		case <-delayCtx.Done():
-			return
-		case <-ch:
-			if r.p.Get().Telemetry != nil {
-				return
-			}
-		}
 	}
 }

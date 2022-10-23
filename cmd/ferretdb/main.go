@@ -194,7 +194,9 @@ func setupLogger(stateProvider *state.Provider) *zap.Logger {
 	return l
 }
 
+// runTelemetryReporter runs telemetry reporter until ctx is canceled.
 func runTelemetryReporter(ctx context.Context, enabled bool, url string, p *state.Provider, l *zap.Logger) {
+	// TODO probably move out of this function
 	p.Update(func(s *state.State) { s.Telemetry = pointer.ToBool(enabled) })
 
 	r, err := telemetry.NewReporter(url, p, l)
