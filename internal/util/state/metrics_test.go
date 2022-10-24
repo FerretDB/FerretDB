@@ -50,7 +50,7 @@ func TestMetrics(t *testing.T) {
 			`
 				# HELP ferretdb_up FerretDB instance state.
 				# TYPE ferretdb_up gauge
-				ferretdb_up{branch=%q,commit=%q,debug="%t",dirty="%t",uuid=%q,version=%q} 1
+				ferretdb_up{branch=%q,commit=%q,debug="%t",dirty="%t",telemetry="undecided",uuid=%q,version=%q} 1
 			`,
 			v.Branch, v.Commit, v.Debug, v.Dirty, uuid, v.Version,
 		)
@@ -69,7 +69,7 @@ func TestMetrics(t *testing.T) {
 			`
 				# HELP ferretdb_up FerretDB instance state.
 				# TYPE ferretdb_up gauge
-				ferretdb_up{branch=%q,commit=%q,debug="%t",dirty="%t",version=%q} 1
+				ferretdb_up{branch=%q,commit=%q,debug="%t",dirty="%t",telemetry="undecided",version=%q} 1
 			`,
 			v.Branch, v.Commit, v.Debug, v.Dirty, v.Version,
 		)
