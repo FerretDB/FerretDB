@@ -351,7 +351,11 @@ func TestCollectionName(t *testing.T) {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {
 				err := collection.Database().CreateCollection(ctx, tc.collection)
-				AssertEqualAltError(t, *tc.err, tc.alt, err)
+				if tc.err != nil {
+					AssertEqualAltError(t, *tc.err, tc.alt, err)
+					return
+				}
+				assert.NoError(t, err)
 			})
 		}
 	})
