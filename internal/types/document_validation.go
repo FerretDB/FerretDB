@@ -57,7 +57,7 @@ func (d *Document) ValidateData() error {
 		}
 
 		if v, ok := v.(float64); ok && math.IsInf(v, 0) {
-			return newValidationError(fmt.Errorf("invalid value: %f (infinity values are not allowed)", v))
+			return newValidationError(fmt.Errorf("invalid value: { %q: %f } (infinity values are not allowed)", key, v))
 		}
 
 		if key == "_id" {

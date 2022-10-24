@@ -49,11 +49,11 @@ func TestDocumentValidateData(t *testing.T) {
 		},
 		"Inf+": {
 			doc:    must.NotFail(NewDocument("v", math.Inf(1))),
-			reason: errors.New(`invalid value: +Inf (infinity values are not allowed)`),
+			reason: errors.New(`invalid value: { "v": +Inf } (infinity values are not allowed)`),
 		},
 		"Inf-": {
 			doc:    must.NotFail(NewDocument("v", math.Inf(-1))),
-			reason: errors.New(`invalid value: -Inf (infinity values are not allowed)`),
+			reason: errors.New(`invalid value: { "v": -Inf } (infinity values are not allowed)`),
 		},
 		"NoID": {
 			doc:    must.NotFail(NewDocument("foo", "bar")),
