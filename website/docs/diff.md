@@ -9,14 +9,15 @@ sidebar_position: 6
 1. FerretDB uses the same protocol error names and codes, but the exact error messages may be different in some cases.
 2. FerretDB does not support NUL (`\0`) characters in strings.
 3. Document keys must not contain `$` sign.
-4. Database and collection names restrictions:
+4. Replacement documents must not contain `.` sign.
+5. Database and collection names restrictions:
    * name cannot start with the reserved prefix `_ferretdb_`;
    * name must not include non-latin letters, spaces, dots, dollars or dashes;
    * name must not start with a number;
    * database name cannot contain capital letters;
    * database name length cannot be more than 63 characters;
    * collection name length cannot be more than 120 characters.
-5. For Tigris, FerretDB requires Tigris schema validation for `create` command: validator must be set as `$tigrisSchemaString`.
+6. For Tigris, FerretDB requires Tigris schema validation for `create` command: validator must be set as `$tigrisSchemaString`.
    The value must be a JSON string representing JSON schema in [Tigris format](https://docs.tigrisdata.com/overview/schema).
 
 If you encounter some other difference in behavior,
