@@ -26,7 +26,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/AlekSi/pointer"
 	"github.com/alecthomas/kong"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
@@ -62,8 +61,7 @@ var cli struct {
 
 	MetricsUUID bool `default:"false" help:"Add instance UUID to all metrics."`
 
-	// TODO switch to string for 3 states
-	Telemetry bool `default:"false" help:"Enable basic telemetry. See https://beacon.ferretdb.io."`
+	Telemetry telemetry.Flag `default:"" help:"Enable or disable basic telemetry. See https://beacon.ferretdb.io."`
 
 	Handler string `default:"pg" help:"${help_handler}"`
 
@@ -199,10 +197,7 @@ func setupLogger(stateProvider *state.Provider) *zap.Logger {
 }
 
 // runTelemetryReporter runs telemetry reporter until ctx is canceled.
-func runTelemetryReporter(ctx context.Context, enabled bool, opts *telemetry.NewReporterOpts) {
-	// TODO probably move out of this function
-	opts.P.Update(func(s *state.State) { s.Telemetry = pointer.ToBool(enabled) })
-
+func runTelemetryReporter(ctx context.Context, opts *telemetry.NewReporterOpts) {
 	r, err := telemetry.NewReporter(opts)
 	if err != nil {
 		opts.L.Fatal("Failed to create telemetry reporter.", zap.Error(err))
@@ -253,7 +248,6 @@ func run() {
 		defer wg.Done()
 		runTelemetryReporter(
 			ctx,
-			cli.Telemetry,
 			&telemetry.NewReporterOpts{
 				URL:            cli.Test.Telemetry.URL,
 				P:              stateProvider,

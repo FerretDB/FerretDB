@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package hex provides helpers for working with hex dumps.
 package hex
 
 import (
