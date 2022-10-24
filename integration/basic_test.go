@@ -327,6 +327,15 @@ func TestCollectionName(t *testing.T) {
 				},
 				alt: `Invalid collection name: 'testcollectionname_err.collection_name_with_a-$'`,
 			},
+			"WithADash": {
+				collection: "collection_name_with_a-",
+				//err: &mongo.CommandError{
+				//	Name:    "InvalidNamespace",
+				//	Code:    73,
+				//	Message: `Invalid collection name: collection_name_with_a-$`,
+				//},
+				//alt: `Invalid collection name: 'testcollectionname_err.collection_name_with_a-$'`,
+			},
 			"Empty": {
 				collection: "",
 				err: &mongo.CommandError{
