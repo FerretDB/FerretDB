@@ -579,7 +579,7 @@ func TestQueryComparisonGt(t *testing.T) {
 		},
 		"DoubleMax": {
 			value:       math.MaxFloat64,
-			expectedIDs: []any{"double-positive-infinity"},
+			expectedIDs: []any{},
 		},
 		"DoubleNaN": {
 			value:       math.NaN(),
