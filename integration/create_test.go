@@ -44,6 +44,7 @@ func TestCreateStressPostgres(t *testing.T) {
 		go func(i int) {
 			collName := fmt.Sprintf("stress_%d", i)
 			err := db.CreateCollection(ctx, collName)
+
 			wg.Done()
 			require.NoError(t, err)
 		}(i)
