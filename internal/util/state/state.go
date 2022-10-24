@@ -18,6 +18,7 @@ package state
 import (
 	"time"
 
+	"github.com/AlekSi/pointer"
 	"github.com/google/uuid"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -25,10 +26,12 @@ import (
 
 // State represents FerretDB process state.
 type State struct {
-	UUID string `json:"uuid"`
+	UUID      string `json:"uuid"`
+	Telemetry *bool  `json:"telemetry,omitempty"` // nil for undecided
 
 	// never persisted
-	Start time.Time `json:"-"`
+	Start         time.Time `json:"-"`
+	LatestVersion string    `json:"-"`
 }
 
 // fill replaces all unset or invalid values with default.
@@ -44,8 +47,15 @@ func (s *State) fill() {
 
 // deepCopy returns a deep copy of the state.
 func (s *State) deepCopy() *State {
+	var telemetry *bool
+	if s.Telemetry != nil {
+		telemetry = pointer.ToBool(*s.Telemetry)
+	}
+
 	return &State{
-		UUID:  s.UUID,
-		Start: s.Start,
+		UUID:          s.UUID,
+		Telemetry:     telemetry,
+		Start:         s.Start,
+		LatestVersion: s.LatestVersion,
 	}
 }
