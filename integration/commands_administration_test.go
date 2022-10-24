@@ -20,6 +20,7 @@ import (
 	"net"
 	"sort"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
@@ -917,6 +918,43 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCommandsAdministrationServerStatusStressPostgres(t *testing.T) {
+	setup.SkipForPostgresWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1317")
+	setup.SkipForTigrisWithReason(t, "Tigris needs a schema for collection creation")
+
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
+	client := collection.Database().Client()
+
+	collNum := 10
+
+	var wg sync.WaitGroup
+	for i := 0; i < collNum; i++ {
+		wg.Add(1)
+
+		go func(i int) {
+			dbName := fmt.Sprintf("%s_stress_%d", collection.Database().Name(), i)
+			db := client.Database(dbName)
+			_ = db.Drop(ctx)
+
+			collName := fmt.Sprintf("stress_%d", i)
+			_ = db.CreateCollection(ctx, collName)
+			_ = db.Drop(ctx)
+
+			command := bson.D{{"serverStatus", int32(1)}}
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+
+			wg.Done()
+
+			require.NoError(t, err)
+		}(i)
+	}
+
+	wg.Wait()
 }
 
 // TestCommandsAdministrationWhatsMyURI tests the `whatsmyuri` command.

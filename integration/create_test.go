@@ -28,7 +28,7 @@ import (
 )
 
 func TestCreateStressPostgres(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Tigris needs a schema")
+	setup.SkipForTigrisWithReason(t, "Tigris needs a schema for collection creation")
 
 	t.Parallel()
 
