@@ -577,6 +577,10 @@ func TestQueryComparisonGt(t *testing.T) {
 				"int64", "int64-big", "int64-max",
 			},
 		},
+		"DoubleMax": {
+			value:       math.MaxFloat64,
+			expectedIDs: []any{"double-positive-infinity"},
+		},
 		"DoubleNaN": {
 			value:       math.NaN(),
 			expectedIDs: []any{},
@@ -798,6 +802,7 @@ func TestQueryComparisonGte(t *testing.T) {
 			value:       math.MaxFloat64,
 			expectedIDs: []any{"double-max"},
 		},
+
 		"DoubleNaN": {
 			value:       math.NaN(),
 			expectedIDs: []any{"array-two", "double-nan"},
