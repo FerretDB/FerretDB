@@ -876,6 +876,8 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			ctx, collection := setup.Setup(t)
 
 			for _, cmd := range tc.cmds {
