@@ -28,7 +28,7 @@ type ListenerMetrics struct {
 	ConnMetrics      *ConnMetrics
 }
 
-// newListenerMetrics creates new listener metrics.
+// NewListenerMetrics creates new listener metrics.
 //
 // The cmds is the list of all expected commands that could be measured.
 // After providing them, they will be set with the zero values.
