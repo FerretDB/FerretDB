@@ -68,6 +68,25 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
+func TestSchemaUnmarshal(t *testing.T) {
+	var actual Schema
+	err := actual.Unmarshal([]byte(`{"properties": {"foo": {"type": "object"}}}`))
+	assert.NoError(t, err)
+	expected := &Schema{
+		Type: Object,
+		Properties: map[string]*Schema{
+			"$k": {Type: Array, Items: stringSchema},
+			"foo": {
+				Type: Object,
+				Properties: map[string]*Schema{
+					"$k": {Type: Array, Items: stringSchema},
+				},
+			},
+		},
+	}
+	assert.Equal(t, expected, &actual)
+}
+
 func TestSchemaEqual(t *testing.T) {
 	t.Parallel()
 

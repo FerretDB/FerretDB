@@ -73,12 +73,6 @@ type Schema struct {
 	CollectionType string `json:"collection_type,omitempty"`
 }
 
-func newSchema() *Schema {
-	return &Schema{
-		Properties: map[string]*Schema{},
-	}
-}
-
 // Schemas for scalar types.
 var (
 	doubleSchema = &Schema{
@@ -255,6 +249,10 @@ func (s *Schema) addDocumentProperties() {
 		if _, ok := s.Properties[special]; ok {
 			return
 		}
+	}
+
+	if s.Properties == nil {
+		s.Properties = map[string]*Schema{}
 	}
 
 	s.Properties["$k"] = &Schema{Type: Array, Items: stringSchema}

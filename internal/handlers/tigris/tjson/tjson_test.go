@@ -247,7 +247,7 @@ func fuzzJSON(f *testing.F, testCases []testCase) {
 			t.Skip()
 		}
 
-		s := newSchema()
+		var s Schema
 
 		err := s.Unmarshal([]byte(schema))
 		if err != nil {
@@ -258,7 +258,7 @@ func fuzzJSON(f *testing.F, testCases []testCase) {
 		// We can't compare it with MarshalJSON() result directly.
 		// Instead, we compare with round-trip result.
 
-		val, err := Unmarshal([]byte(j), s)
+		val, err := Unmarshal([]byte(j), &s)
 		if err != nil {
 			t.Skip()
 		}
@@ -273,7 +273,7 @@ func fuzzJSON(f *testing.F, testCases []testCase) {
 
 		// test Unmarshal
 		{
-			actualV, err := Unmarshal([]byte(j), s)
+			actualV, err := Unmarshal([]byte(j), &s)
 			require.NoError(t, err)
 			assertEqual(t, v, toTJSON(actualV))
 		}
