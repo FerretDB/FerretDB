@@ -141,9 +141,10 @@ func getTableName(ctx context.Context, tx pgx.Tx, db, collection string) (string
 
 // getSettingsTable returns FerretDB settings table.
 func getSettingsTable(ctx context.Context, tx pgx.Tx, db string) (*types.Document, error) {
-	// `FOR UPDATE` may or may not be needed
-	// TODO https://github.com/FerretDB/FerretDB/issues/1282
-	sql := fmt.Sprintf(`SELECT settings FROM %s FOR UPDATE`, pgx.Identifier{db, settingsTableName}.Sanitize())
+	// TODO https://github.com/FerretDB/FerretDB/issues/1206
+	// `SELECT settings FROM %s FOR UPDATE` could solve the problem with parallel access of the settings table,
+	// but it locks everything and causes timeouts, so we need a faster solution instead.
+	sql := fmt.Sprintf(`SELECT settings FROM %s`, pgx.Identifier{db, settingsTableName}.Sanitize())
 	rows, err := tx.Query(ctx, sql)
 	if err != nil {
 		return nil, lazyerrors.Error(err)

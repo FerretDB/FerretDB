@@ -16,6 +16,7 @@ package integration
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -25,6 +26,42 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
+
+func TestCreateStress(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "Tigris needs a schema")
+
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
+	db := collection.Database()
+
+	collNum := 3
+
+	var wg sync.WaitGroup
+	for i := 0; i < collNum; i++ {
+		wg.Add(1)
+
+		go func(i int) {
+			collName := fmt.Sprintf("stress_%d", i)
+			err := db.CreateCollection(ctx, collName)
+			wg.Done()
+			require.NoError(t, err)
+		}(i)
+	}
+
+	wg.Wait()
+
+	// check that all collections were created, and we can query them
+	for i := 0; i < collNum; i++ {
+		t.Run(fmt.Sprintf("check_stress_%d", i), func(t *testing.T) {
+			t.Parallel()
+
+			collName := fmt.Sprintf("stress_%d", i)
+			res := db.Collection(collName).FindOne(ctx, bson.D{})
+			require.Equal(t, mongo.ErrNoDocuments, res.Err())
+		})
+	}
+}
 
 func TestCreateTigris(t *testing.T) {
 	setup.SkipForPostgresWithReason(t, "Tigris-specific schema is used")
