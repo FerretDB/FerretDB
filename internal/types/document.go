@@ -32,8 +32,6 @@ type document interface {
 }
 
 // Document represents BSON document.
-//
-// Duplicate field names are not supported yet.
 type Document struct {
 	fields []field
 }
