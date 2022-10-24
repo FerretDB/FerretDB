@@ -24,7 +24,6 @@ import (
 
 // MsgDebugError is a common implementation of the debugError command.
 func MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/640
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -35,6 +34,7 @@ func MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 		return nil, err
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/640
 	switch expected {
 	case "panic":
 		panic("oops!")
