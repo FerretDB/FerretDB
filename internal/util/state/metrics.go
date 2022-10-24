@@ -59,8 +59,19 @@ func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 		"debug":   strconv.FormatBool(v.Debug),
 	}
 
+	s := mc.p.Get()
+
+	switch {
+	case s.Telemetry == nil:
+		constLabels["telemetry"] = "undecided"
+	case *s.Telemetry:
+		constLabels["telemetry"] = "enabled"
+	default:
+		constLabels["telemetry"] = "disabled"
+	}
+
 	if mc.addUUIDToMetric {
-		constLabels["uuid"] = mc.p.Get().UUID
+		constLabels["uuid"] = s.UUID
 	}
 
 	ch <- prometheus.MustNewConstMetric(

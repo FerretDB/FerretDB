@@ -23,7 +23,10 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
+	"time"
 
+	"github.com/AlekSi/pointer"
 	"github.com/alecthomas/kong"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
@@ -38,6 +41,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/state"
+	"github.com/FerretDB/FerretDB/internal/util/telemetry"
 	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
@@ -58,6 +62,9 @@ var cli struct {
 
 	MetricsUUID bool `default:"false" help:"Add instance UUID to all metrics."`
 
+	// TODO switch to string for 3 states
+	Telemetry bool `default:"false" help:"Enable basic telemetry. See https://beacon.ferretdb.io."`
+
 	Handler string `default:"pg" help:"${help_handler}"`
 
 	PostgreSQLURL string `name:"postgresql-url" default:"${default_postgresql_url}" help:"PostgreSQL URL for 'pg' handler."`
@@ -69,6 +76,12 @@ var cli struct {
 
 	Test struct {
 		RecordsDir string `default:""  help:"Testing flag: directory for record files."`
+		Telemetry  struct {
+			URL            string        `default:"https://beacon.ferretdb.io/" help:"Testing flag: telemetry URL."`
+			UndecidedDelay time.Duration `default:"1h"                          help:"Testing flag: delay for undecided state."`
+			ReportInterval time.Duration `default:"24h"                         help:"Testing flag: report interval."`
+			ReportTimeout  time.Duration `default:"5s"                          help:"Testing flag: report timeout."`
+		} `embed:"" prefix:"telemetry-"`
 	} `embed:"" prefix:"test-"`
 }
 
@@ -185,6 +198,19 @@ func setupLogger(stateProvider *state.Provider) *zap.Logger {
 	return l
 }
 
+// runTelemetryReporter runs telemetry reporter until ctx is canceled.
+func runTelemetryReporter(ctx context.Context, enabled bool, opts *telemetry.NewReporterOpts) {
+	// TODO probably move out of this function
+	opts.P.Update(func(s *state.State) { s.Telemetry = pointer.ToBool(enabled) })
+
+	r, err := telemetry.NewReporter(opts)
+	if err != nil {
+		opts.L.Fatal("Failed to create telemetry reporter.", zap.Error(err))
+	}
+
+	r.Run(ctx)
+}
+
 // run sets up environment based on provided flags and runs FerretDB.
 func run() {
 	if cli.Version {
@@ -212,7 +238,32 @@ func run() {
 		stop()
 	}()
 
-	go debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, logger.Named("debug"))
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+		debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, logger.Named("debug"))
+	}()
+
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+		runTelemetryReporter(
+			ctx,
+			cli.Telemetry,
+			&telemetry.NewReporterOpts{
+				URL:            cli.Test.Telemetry.URL,
+				P:              stateProvider,
+				L:              logger.Named("telemetry"),
+				UndecidedDelay: cli.Test.Telemetry.UndecidedDelay,
+				ReportInterval: cli.Test.Telemetry.ReportInterval,
+				ReportTimeout:  cli.Test.Telemetry.ReportTimeout,
+			},
+		)
+	}()
 
 	cmdsList := maps.Keys(common.Commands)
 	sort.Strings(cmdsList)
@@ -256,6 +307,8 @@ func run() {
 	} else {
 		logger.Error("Listener stopped", zap.Error(err))
 	}
+
+	wg.Wait()
 
 	mfs, err := prometheus.DefaultGatherer.Gather()
 	if err != nil {
