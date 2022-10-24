@@ -27,7 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
-func TestCreateStress(t *testing.T) {
+func TestCreateStressPostgres(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Tigris needs a schema")
 
 	t.Parallel()
@@ -35,7 +35,7 @@ func TestCreateStress(t *testing.T) {
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
 	db := collection.Database()
 
-	collNum := 3
+	collNum := 10
 
 	var wg sync.WaitGroup
 	for i := 0; i < collNum; i++ {
