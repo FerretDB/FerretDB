@@ -52,7 +52,12 @@ func (d *Document) ValidateData() error {
 
 		// Tests for this case are in `dance`.
 		if strings.Contains(key, "$") {
-			return newValidationError(fmt.Errorf("invalid key: %q (key must not contain $)", key))
+			return newValidationError(fmt.Errorf("invalid key: %q (key must not contain '$' sign)", key))
+		}
+
+		// Tests for this case are in `dance`.
+		if strings.Contains(key, ".") {
+			return newValidationError(fmt.Errorf("invalid key: %q (key must not contain '.' sign)", key))
 		}
 
 		if key == "_id" {

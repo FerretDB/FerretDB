@@ -44,7 +44,11 @@ func TestDocumentValidateData(t *testing.T) {
 		},
 		"KeyContains$": {
 			doc:    must.NotFail(NewDocument("$v", "bar")),
-			reason: errors.New(`invalid key: "$v" (key must not contain $)`),
+			reason: errors.New(`invalid key: "$v" (key must not contain '$' sign)`),
+		},
+		"KeyContains.": {
+			doc:    must.NotFail(NewDocument("v.foo", "bar")),
+			reason: errors.New(`invalid key: "v.foo" (key must not contain '.' sign)`),
 		},
 		"NoID": {
 			doc:    must.NotFail(NewDocument("foo", "bar")),
