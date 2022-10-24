@@ -297,7 +297,7 @@ func TestCollectionName(t *testing.T) {
 
 	t.Parallel()
 
-	t.Run("Err", func(t *testing.T) {
+	t.Run("All", func(t *testing.T) {
 		ctx, collection := setup.Setup(t)
 
 		collectionName300 := strings.Repeat("aB", 150)
@@ -357,7 +357,7 @@ func TestCollectionName(t *testing.T) {
 		}
 	})
 
-	t.Run("Ok", func(t *testing.T) {
+	t.Run("LongName", func(t *testing.T) {
 		ctx, collection := setup.Setup(t)
 
 		longCollectionName := strings.Repeat("a", 100)
