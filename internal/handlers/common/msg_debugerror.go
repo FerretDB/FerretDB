@@ -18,11 +18,27 @@ import (
 	"context"
 	"errors"
 
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgDebugError is a common implementation of the debugError command.
 func MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	expected, err := GetRequiredParam[string](document, document.Command())
+	if err != nil {
+		return nil, err
+	}
+
 	// TODO https://github.com/FerretDB/FerretDB/issues/640
-	return nil, errors.New("debugError")
+	switch expected {
+	case "panic":
+		panic("oops!")
+	default:
+		return nil, errors.New(expected)
+	}
 }
