@@ -65,7 +65,7 @@ type NewReporterOpts struct {
 	ReportTimeout  time.Duration
 }
 
-// NewReporter create a new reporter.
+// NewReporter creates a new reporter.
 func NewReporter(opts *NewReporterOpts) (*Reporter, error) {
 	return &Reporter{
 		NewReporterOpts: opts,
