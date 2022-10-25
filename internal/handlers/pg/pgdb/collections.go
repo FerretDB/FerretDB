@@ -126,8 +126,8 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 	}
 
 	// TODO keep "collections" sorted after each update
-	must.NoError(collections.Set(collection, table))
-	must.NoError(settings.Set("collections", collections))
+	collections.Set(collection, table)
+	settings.Set("collections", collections)
 
 	err = updateSettingsTable(ctx, tx, db, settings)
 	if err != nil {

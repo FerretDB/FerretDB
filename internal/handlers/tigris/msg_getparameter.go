@@ -77,27 +77,21 @@ func selectParam(document, resDB *types.Document) (doc *types.Document, err erro
 		if k == "getParameter" || k == "comment" || k == "$db" {
 			continue
 		}
+
 		item, err := resDB.Get(k)
 		if err != nil {
 			continue
 		}
-		err = doc.Set(k, item)
-		if err != nil {
-			return nil, err
-		}
+
+		doc.Set(k, item)
 	}
 
 	if doc.Len() < 1 {
-		err := doc.Set("ok", float64(0))
-		if err != nil {
-			return nil, err
-		}
+		doc.Set("ok", float64(0))
 		return doc, nil
 	}
 
-	err = doc.Set("ok", float64(1))
-	if err != nil {
-		return nil, err
-	}
+	doc.Set("ok", float64(1))
+
 	return doc, nil
 }
