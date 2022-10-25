@@ -306,7 +306,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		}
 
 		if errInfo == nil {
-			errInfo = &common.ErrInfo{}
+			errInfo = new(common.ErrInfo)
 		}
 
 		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, *result, errInfo.Unimplemented).Inc()
