@@ -43,7 +43,7 @@ func NewCommandError(code ErrorCode, err error) error {
 	return &CommandError{
 		code: code,
 		err:  err,
-		info: &ErrInfo{},
+		info: new(ErrInfo),
 	}
 }
 

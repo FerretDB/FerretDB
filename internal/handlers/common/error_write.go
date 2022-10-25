@@ -35,7 +35,7 @@ func NewWriteErrorMsg(code ErrorCode, msg string) error {
 			code: code,
 			err:  msg,
 		}},
-		info: &ErrInfo{},
+		info: new(ErrInfo),
 	}
 }
 
