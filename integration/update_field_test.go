@@ -1408,6 +1408,17 @@ func TestUpdateDocumentFieldsOrderSimplified(t *testing.T) {
 	_, err := collection.InsertOne(ctx, bson.D{{"_id", "document"}, {"foo", int32(42)}, {"bar", "baz"}})
 	require.NoError(t, err)
 
+	var inserted bson.D
+	err = collection.FindOne(ctx, bson.D{{"_id", "document"}}).Decode(&inserted)
+	require.NoError(t, err)
+
+	expected := bson.D{
+		{"_id", "document"},
+		{"foo", int32(42)},
+		{"bar", "baz"},
+	}
+	AssertEqualDocuments(t, expected, inserted)
+
 	_, err = collection.UpdateOne(
 		ctx,
 		bson.D{{"_id", "document"}},
@@ -1416,13 +1427,13 @@ func TestUpdateDocumentFieldsOrderSimplified(t *testing.T) {
 	require.NoError(t, err)
 
 	var updated bson.D
-
 	err = collection.FindOne(ctx, bson.D{{"_id", "document"}}).Decode(&updated)
 	require.NoError(t, err)
 
-	expected := bson.D{
+	expected = bson.D{
 		{"_id", "document"},
 	}
+	AssertEqualDocuments(t, expected, updated)
 
 	_, err = collection.UpdateOne(
 		ctx,
@@ -1430,8 +1441,6 @@ func TestUpdateDocumentFieldsOrderSimplified(t *testing.T) {
 		bson.D{{"$set", bson.D{{"foo", int32(42)}, {"bar", "baz"}}}},
 	)
 	require.NoError(t, err)
-
-	AssertEqualDocuments(t, expected, updated)
 
 	err = collection.FindOne(ctx, bson.D{{"_id", "document"}}).Decode(&updated)
 	require.NoError(t, err)
@@ -1441,6 +1450,5 @@ func TestUpdateDocumentFieldsOrderSimplified(t *testing.T) {
 		{"bar", "baz"},
 		{"foo", int32(42)},
 	}
-
 	AssertEqualDocuments(t, expected, updated)
 }
