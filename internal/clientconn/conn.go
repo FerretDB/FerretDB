@@ -309,7 +309,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			errInfo = new(common.ErrInfo)
 		}
 
-		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, *result, errInfo.Unimplemented).Inc()
+		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, *result, errInfo.NotImplemented).Inc()
 	}()
 
 	connInfo := &conninfo.ConnInfo{

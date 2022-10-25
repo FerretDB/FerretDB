@@ -125,7 +125,7 @@ func NewErrOption(name string, value any) *ErrOption {
 
 // ErrInfo represents additional error information.
 type ErrInfo struct {
-	Unimplemented string
+	NotImplemented string
 }
 
 // ProtoErr represents protocol error type.
@@ -180,8 +180,8 @@ func NewError(code ErrorCode, err error, opts ...*ErrOption) error {
 
 	for _, opt := range opts {
 		switch opt.name {
-		case "unimplemented":
-			eInfo.Unimplemented = opt.value.(string)
+		case "NotImplemented":
+			eInfo.NotImplemented = opt.value.(string)
 		}
 	}
 
@@ -248,8 +248,8 @@ func NewWriteErrorMsg(code ErrorCode, msg string, opts ...*ErrOption) error {
 
 	for _, opt := range opts {
 		switch opt.name {
-		case "Unimplemented":
-			eInfo.Unimplemented = opt.value.(string)
+		case "NotImplemented":
+			eInfo.NotImplemented = opt.value.(string)
 		}
 	}
 
