@@ -62,7 +62,6 @@ func TestQuerySort(t *testing.T) {
 				"array-three-reverse",
 				"null",
 				"double-nan",
-				"double-negative-infinity",
 				"int64-min",
 				"int32-min",
 				"double-negative-zero",
@@ -78,7 +77,6 @@ func TestQuerySort(t *testing.T) {
 				"int32-max",
 				"int64-max",
 				"double-max",
-				"double-positive-infinity",
 				"string-empty",
 				"string-whole",
 				"string-double",
@@ -133,7 +131,6 @@ func TestQuerySort(t *testing.T) {
 				"string-double",
 				"string-whole",
 				"string-empty",
-				"double-positive-infinity",
 				"double-max",
 				"int64-max",
 				"int32-max",
@@ -149,7 +146,6 @@ func TestQuerySort(t *testing.T) {
 				"int64-zero",
 				"int32-min",
 				"int64-min",
-				"double-negative-infinity",
 				"double-nan",
 				"array-null",
 				"null",
@@ -188,7 +184,6 @@ func TestQuerySortValue(t *testing.T) {
 			expectedIDs: []any{
 				"null",
 				"double-nan",
-				"double-negative-infinity",
 				"int64-min",
 				"int32-min",
 				"double-negative-zero",
@@ -205,7 +200,6 @@ func TestQuerySortValue(t *testing.T) {
 				"int64-big",
 				"int64-max",
 				"double-max",
-				"double-positive-infinity",
 				"string-empty",
 				"string-whole",
 				"string-double",
@@ -247,7 +241,6 @@ func TestQuerySortValue(t *testing.T) {
 				"string-double",
 				"string-whole",
 				"string-empty",
-				"double-positive-infinity",
 				"double-max",
 				"int64-max",
 				"int64-big",
@@ -264,7 +257,6 @@ func TestQuerySortValue(t *testing.T) {
 				"int64-zero",
 				"int32-min",
 				"int64-min",
-				"double-negative-infinity",
 				"double-nan",
 				"null",
 			},
@@ -326,7 +318,7 @@ func TestQueryCount(t *testing.T) {
 	}{
 		"CountAllDocuments": {
 			command:  bson.D{{"count", collection.Name()}},
-			response: 54,
+			response: 52,
 		},
 		"CountExactlyOneDocument": {
 			command: bson.D{
