@@ -17,10 +17,7 @@ package pg
 import (
 	"context"
 
-	"github.com/jackc/pgx/v4"
-
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -45,12 +42,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		scale = 1
 	}
 
-	var stats *pgdb.DBStats
-	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		var err error
-		stats, err = pgdb.SchemaStats(ctx, tx, db, "")
-		return err
-	})
+	stats, err := h.PgPool.SchemaStats(ctx, db, "")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
