@@ -63,10 +63,6 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return err
 	})
 
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
 	elapses := time.Since(started)
 
 	addEstimate := true
