@@ -72,12 +72,12 @@ func initialState(f *Flag, dnt string, execName string, prev *bool, l *zap.Logge
 	}
 
 	if pointer.GetBool(v) {
-		l.Info(fmt.Sprintf("Telemetry is disabled by DO_NOT_TRACK=%s environment variable.", dnt))
+		l.Sugar().Infof("Telemetry is disabled by DO_NOT_TRACK=%s environment variable.", dnt)
 		disable = true
 	}
 
 	if strings.Contains(strings.ToLower(execName), "donottrack") {
-		l.Info(fmt.Sprintf("Telemetry is disabled by %q executable name.", execName))
+		l.Sugar().Infof("Telemetry is disabled by %q executable name.", execName)
 		disable = true
 	}
 
