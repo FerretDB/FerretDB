@@ -88,8 +88,8 @@ func (e *CommandError) Document() *types.Document {
 		"errmsg", e.err.Error(),
 	))
 	if e.code != errUnset {
-		must.NoError(d.Set("code", int32(e.code)))
-		must.NoError(d.Set("codeName", e.code.String()))
+		d.Set("code", int32(e.code))
+		d.Set("codeName", e.code.String())
 	}
 
 	return d

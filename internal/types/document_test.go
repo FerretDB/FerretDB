@@ -40,17 +40,14 @@ func TestDocument(t *testing.T) {
 		t.Parallel()
 
 		// to avoid {} != nil in tests
-		assert.Nil(t, must.NotFail(NewDocument()).m)
-		assert.Nil(t, must.NotFail(NewDocument()).keys)
+		assert.Nil(t, must.NotFail(NewDocument()).fields)
 
 		var doc Document
 		assert.Equal(t, 0, doc.Len())
-		assert.Nil(t, doc.m)
-		assert.Nil(t, doc.keys)
+		assert.Nil(t, doc.fields)
 		assert.Equal(t, "", doc.Command())
 
-		err := doc.Set("foo", Null)
-		assert.NoError(t, err)
+		doc.Set("foo", Null)
 		value, err := doc.Get("foo")
 		assert.NoError(t, err)
 		assert.Equal(t, Null, value)
@@ -73,9 +70,9 @@ func TestDocument(t *testing.T) {
 		assert.Equal(t, a, b)
 		assert.NotSame(t, a, b)
 
-		a.m["foo"] = "bar"
+		a.Set("foo", []any{"bar"})
 		assert.NotEqual(t, a, b)
-		assert.Equal(t, int32(42), b.m["foo"])
+		assert.Equal(t, int32(42), must.NotFail(b.Get("foo")))
 	})
 
 	t.Run("SetID", func(t *testing.T) {
@@ -85,16 +82,16 @@ func TestDocument(t *testing.T) {
 			"_id", int32(42),
 			"foo", "bar",
 		))
-		assert.Equal(t, []string{"_id", "foo"}, doc.keys)
+		assert.Equal(t, []string{"_id", "foo"}, doc.Keys())
 
 		doc = must.NotFail(NewDocument(
 			"foo", "bar",
 			"_id", int32(42),
 		))
-		assert.Equal(t, []string{"_id", "foo"}, doc.keys)
+		assert.Equal(t, []string{"_id", "foo"}, doc.Keys())
 
 		doc.Set("_id", "bar")
-		assert.Equal(t, []string{"_id", "foo"}, doc.keys)
+		assert.Equal(t, []string{"_id", "foo"}, doc.Keys())
 	})
 
 	t.Run("SetByPath", func(t *testing.T) {
