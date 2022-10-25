@@ -841,6 +841,8 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 }
 
 func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
+	setup.SkipForPostgresWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1317")
+
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
