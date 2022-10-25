@@ -428,9 +428,11 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	if result == nil {
 		result = pointer.ToString("ok")
 	}
+
 	if errInfo == nil {
 		errInfo = new(common.ErrInfo)
 	}
+
 	return
 }
 
