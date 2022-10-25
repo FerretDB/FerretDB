@@ -327,6 +327,11 @@ func (we *WriteErrors) Append(err error, index int32) {
 	we.errs = append(we.errs, writeError{err: err.Error(), code: errInternalError, index: &index})
 }
 
+// Len returns the number of errors in WriteErrors.
+func (we *WriteErrors) Len() int {
+	return len(we.errs)
+}
+
 // Info implements ProtoErr interface.
 func (we *WriteErrors) Info() *ErrInfo {
 	return we.info
