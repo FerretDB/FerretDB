@@ -101,18 +101,15 @@ func deepCopy(value any) any {
 
 	switch value := value.(type) {
 	case *Document:
-		keys := make([]string, len(value.keys))
-		copy(keys, value.keys)
-
-		m := make(map[string]any, len(value.m))
-		for k, v := range value.m {
-			m[k] = deepCopy(v)
+		fields := make([]field, len(value.fields))
+		for i, f := range value.fields {
+			fields[i] = field{
+				key:   f.key,
+				value: deepCopy(f.value),
+			}
 		}
 
-		return &Document{
-			keys: keys,
-			m:    m,
-		}
+		return &Document{fields}
 
 	case *Array:
 		s := make([]any, len(value.s))
