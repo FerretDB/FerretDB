@@ -72,7 +72,7 @@ func newConnMetrics(cmds []string) *ConnMetrics {
 				Name:      "responses_total",
 				Help:      "Total number of responses.",
 			},
-			[]string{"opcode", "command", "result"},
+			[]string{"opcode", "command", "result", "unimplemented"},
 		),
 		AggregationStages: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
