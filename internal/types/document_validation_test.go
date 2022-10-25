@@ -16,6 +16,7 @@ package types
 
 import (
 	"errors"
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -45,6 +46,14 @@ func TestDocumentValidateData(t *testing.T) {
 		"KeyContains$": {
 			doc:    must.NotFail(NewDocument("$v", "bar")),
 			reason: errors.New(`invalid key: "$v" (key must not contain $)`),
+		},
+		"Inf+": {
+			doc:    must.NotFail(NewDocument("v", math.Inf(1))),
+			reason: errors.New(`invalid value: { "v": +Inf } (infinity values are not allowed)`),
+		},
+		"Inf-": {
+			doc:    must.NotFail(NewDocument("v", math.Inf(-1))),
+			reason: errors.New(`invalid value: { "v": -Inf } (infinity values are not allowed)`),
 		},
 		"NoID": {
 			doc:    must.NotFail(NewDocument("foo", "bar")),
