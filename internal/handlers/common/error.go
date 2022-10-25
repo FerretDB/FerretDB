@@ -109,6 +109,7 @@ const (
 	ErrBadRegexOption = ErrorCode(51108) // Location51108
 )
 
+// ErrInfo represents additional error information.
 type ErrInfo struct {
 	Unimplemented string
 }
@@ -204,9 +205,10 @@ func (e *CommandError) Document() *types.Document {
 	return d
 }
 
+// Info implements ProtoErr interface.
 func (e *CommandError) Info() *ErrInfo {
 	// TODO implement me
-	panic("implement me")
+	return nil
 }
 
 // WriteErrors represents a slice of protocol write errors.
@@ -296,9 +298,10 @@ func (we *WriteErrors) Append(err error, index int32) {
 	*we = append(*we, writeError{err: err.Error(), code: errInternalError, index: &index})
 }
 
+// Info implements ProtoErr interface.
 func (we *WriteErrors) Info() *ErrInfo {
 	// TODO implement me
-	panic("implement me")
+	return nil
 }
 
 // writeError represents protocol write error.
