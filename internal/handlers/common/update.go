@@ -475,10 +475,10 @@ func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
 		case "$pop":
 			updateModifier = true
 		case "$mul", "$rename":
-			return false, NewErrorMsg(
+			return false, NewCommandErrorMsgWithOperator(
 				ErrNotImplemented,
 				fmt.Sprintf("update operator %s is not implemented", updateOp),
-				NewErrOption("operator", updateOp),
+				updateOp,
 			)
 		default:
 			if strings.HasPrefix(updateOp, "$") {

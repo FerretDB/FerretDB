@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 //go:generate ../../../bin/stringer -linecomment -type ErrorCode
@@ -67,7 +66,7 @@ const (
 	ErrDocumentValidationFailure = ErrorCode(121) // DocumentValidationFailure
 
 	// ErrNotImplemented indicates that a flag or command is not implemented.
-	ErrNotImplemented = ErrorCode(238) // Operator
+	ErrNotImplemented = ErrorCode(238) // NotImplemented
 
 	// ErrFailedToParseInput indicates invalid input (absent or malformed fields).
 	ErrFailedToParseInput = ErrorCode(40415) // Location40415
@@ -109,20 +108,6 @@ const (
 	ErrBadRegexOption = ErrorCode(51108) // Location51108
 )
 
-// ErrOption is an option to add error info.
-type ErrOption struct {
-	name  string
-	value any
-}
-
-// NewErrOption returns new ErrOption.
-func NewErrOption(name string, value any) *ErrOption {
-	return &ErrOption{
-		name:  name,
-		value: value,
-	}
-}
-
 // ErrInfo represents additional error information.
 type ErrInfo struct {
 	Operator string
@@ -131,17 +116,19 @@ type ErrInfo struct {
 // ProtoErr represents protocol error type.
 type ProtoErr interface {
 	error
+	// Unwrap returns unwrapped error.
+	Unwrap() error
 	// Code returns ErrorCode.
 	Code() ErrorCode
 	// Document returns *types.Document.
 	Document() *types.Document
-
+	// Info returns *ErrInfo.
 	Info() *ErrInfo
 }
 
 // ProtocolError converts any error to wire protocol error.
 //
-// Nil panics, *Error or *WriteErrors (possibly wrapped) is returned unwrapped with true,
+// Nil panics, *CommandError or *WriteErrors (possibly wrapped) is returned unwrapped with true,
 // any other value is wrapped with InternalError and returned with false.
 func ProtocolError(err error) (ProtoErr, bool) {
 	if err == nil {
@@ -158,208 +145,9 @@ func ProtocolError(err error) (ProtoErr, bool) {
 		return writeErr, true
 	}
 
-	return NewError(errInternalError, err).(*CommandError), false
-}
+	e = NewCommandError(errInternalError, err).(*CommandError) //nolint:errorlint // false positive
 
-// CommandError represents wire protocol command error.
-type CommandError struct {
-	err  error
-	code ErrorCode
-	info *ErrInfo
-}
-
-// NewError creates a new wire protocol error.
-//
-// Code can't be zero, err can't be nil.
-func NewError(code ErrorCode, err error, opts ...*ErrOption) error {
-	if err == nil {
-		panic("err is nil")
-	}
-
-	eInfo := new(ErrInfo)
-
-	for _, opt := range opts {
-		switch opt.name {
-		case "operator":
-			eInfo.Operator = opt.value.(string)
-		}
-	}
-
-	return &CommandError{
-		code: code,
-		err:  err,
-		info: eInfo,
-	}
-}
-
-// There should not be NewError function variant that accepts printf-like format specifiers.
-// Let the caller do safe formatting.
-
-// NewErrorMsg is variant for NewError with error string.
-//
-// Code can't be zero, err can't be empty.
-func NewErrorMsg(code ErrorCode, msg string, opts ...*ErrOption) error {
-	return NewError(code, errors.New(msg), opts...)
-}
-
-// Error implements error interface.
-func (e *CommandError) Error() string {
-	return fmt.Sprintf("%[1]s (%[1]d): %[2]v", e.code, e.err)
-}
-
-// Code implements ProtoErr interface.
-func (e *CommandError) Code() ErrorCode {
-	return e.code
-}
-
-// Unwrap implements standard error unwrapping interface.
-func (e *CommandError) Unwrap() error {
-	return e.err
-}
-
-// Document returns wire protocol error document.
-func (e *CommandError) Document() *types.Document {
-	d := must.NotFail(types.NewDocument(
-		"ok", float64(0),
-		"errmsg", e.err.Error(),
-	))
-	if e.code != errUnset {
-		d.Set("code", int32(e.code))
-		d.Set("codeName", e.code.String())
-	}
-	return d
-}
-
-// Info implements ProtoErr interface.
-func (e *CommandError) Info() *ErrInfo {
-	return e.info
-}
-
-// WriteErrors represents a slice of protocol write errors.
-// It could be returned for Update, Insert, Delete, and Replace operations.
-type WriteErrors struct {
-	errs []writeError
-	info *ErrInfo
-}
-
-// NewWriteErrorMsg creates a new protocol write error with given ErrorCode and message.
-func NewWriteErrorMsg(code ErrorCode, msg string, opts ...*ErrOption) error {
-	eInfo := new(ErrInfo)
-
-	for _, opt := range opts {
-		switch opt.name {
-		case "Operator":
-			eInfo.Operator = opt.value.(string)
-		}
-	}
-
-	return &WriteErrors{
-		errs: []writeError{{
-			code: code,
-			err:  msg,
-		}},
-		info: eInfo,
-	}
-}
-
-// Error implements error interface.
-func (we *WriteErrors) Error() string {
-	var err string
-	for _, e := range we.errs {
-		err += e.err + ","
-	}
-
-	return err
-}
-
-// Code implements ProtoErr interface.
-func (we *WriteErrors) Code() ErrorCode {
-	for _, e := range we.errs {
-		return e.code
-	}
-	return errUnset
-}
-
-// Unwrap implements a standard error unwrapping interface.
-func (we *WriteErrors) Unwrap() error {
-	for _, e := range we.errs {
-		return errors.New(e.err)
-	}
-	return nil
-}
-
-// Document implements ProtoErr interface.
-func (we *WriteErrors) Document() *types.Document {
-	errs := must.NotFail(types.NewArray())
-	for _, e := range we.errs {
-		doc := must.NotFail(types.NewDocument())
-
-		if e.index != nil {
-			doc.Set("index", *e.index)
-		}
-
-		// Fields "code" and "errmsg" must always be filled in so that clients can parse the error message.
-		// Otherwise, the mongo client would parse it as a CommandError.
-		doc.Set("code", int32(e.code))
-		doc.Set("errmsg", e.err)
-
-		must.NoError(errs.Append(doc))
-	}
-
-	// "writeErrors" field must be present in the result document so that clients can parse it as WriteErrors.
-	d := must.NotFail(types.NewDocument(
-		"ok", float64(1),
-		"writeErrors", errs,
-	))
-	return d
-}
-
-// Append converts the err to the writeError type and
-// appends it to WriteErrors. The index value is an
-// index of the query with error.
-func (we *WriteErrors) Append(err error, index int32) {
-	var writeErr *writeError
-	var cmdErr *CommandError
-
-	switch {
-	case errors.As(err, &writeErr):
-		writeErr.index = &index
-		we.errs = append(we.errs, *writeErr)
-
-		return
-
-	case errors.As(err, &cmdErr):
-		we.errs = append(we.errs, writeError{err: cmdErr.Unwrap().Error(), code: cmdErr.code, index: &index})
-
-		return
-	}
-
-	we.errs = append(we.errs, writeError{err: err.Error(), code: errInternalError, index: &index})
-}
-
-// Len returns the number of errors in WriteErrors.
-func (we *WriteErrors) Len() int {
-	return len(we.errs)
-}
-
-// Info implements ProtoErr interface.
-func (we *WriteErrors) Info() *ErrInfo {
-	return we.info
-}
-
-// writeError represents protocol write error.
-// It required to build the correct write error result.
-// The index field is optional and won't be used if it's nil.
-type writeError struct {
-	code  ErrorCode
-	err   string
-	index *int32
-}
-
-// Error returns the string that contains
-// an error message.
-func (we *writeError) Error() string {
-	return we.err
+	return e, false
 }
 
 // formatBitwiseOperatorErr formats protocol error for given internal error and bitwise operator.
@@ -367,25 +155,26 @@ func (we *writeError) Error() string {
 func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
 	switch err {
 	case errNotWholeNumber:
-		return NewErrorMsg(
+		return NewCommandErrorMsg(
 			ErrFailedToParse,
 			fmt.Sprintf("Expected an integer: %s: %#v", operator, maskValue),
 		)
 
 	case errNegativeNumber:
 		if _, ok := maskValue.(float64); ok {
-			return NewErrorMsg(
+			return NewCommandErrorMsg(
 				ErrFailedToParse,
 				fmt.Sprintf(`Expected a non-negative number in: %s: %.1f`, operator, maskValue),
 			)
 		}
-		return NewErrorMsg(
+
+		return NewCommandErrorMsg(
 			ErrFailedToParse,
 			fmt.Sprintf(`Expected a non-negative number in: %s: %v`, operator, maskValue),
 		)
 
 	case errNotBinaryMask:
-		return NewErrorMsg(
+		return NewCommandErrorMsg(
 			ErrBadValue,
 			fmt.Sprintf(`value takes an Array, a number, or a BinData but received: %s: %#v`, operator, maskValue),
 		)
@@ -394,9 +183,3 @@ func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
 		return err
 	}
 }
-
-// check interfaces
-var (
-	_ ProtoErr = (*CommandError)(nil)
-	_ ProtoErr = (*WriteErrors)(nil)
-)
