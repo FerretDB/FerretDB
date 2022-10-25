@@ -395,6 +395,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			// do not panic to make fuzzing easier
 			closeConn = true
 			result = pointer.ToString("unhandled")
+			operator = pointer.ToString("")
 			c.l.Error(
 				"Handler error for unhandled response opcode",
 				zap.Error(err), zap.Stringer("opcode", resHeader.OpCode),
@@ -405,6 +406,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			// do not panic to make fuzzing easier
 			closeConn = true
 			result = pointer.ToString("unexpected")
+			operator = pointer.ToString("")
 			c.l.Error(
 				"Handler error for unexpected response opcode",
 				zap.Error(err), zap.Stringer("opcode", resHeader.OpCode),
@@ -418,6 +420,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	b, err := resBody.MarshalBinary()
 	if err != nil {
 		result = nil
+		operator = nil
 		panic(err)
 	}
 	resHeader.MessageLength = int32(wire.MsgHeaderLen + len(b))
