@@ -12,201 +12,109 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package telemetry provides basic telemetry facilities.
 package telemetry
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
+	"encoding"
 	"fmt"
-	"net/http"
-	"runtime"
-	"time"
+	"strings"
 
 	"github.com/AlekSi/pointer"
 	"go.uber.org/zap"
-
-	"github.com/FerretDB/FerretDB/internal/util/state"
-	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
-// request represents telemetry request.
-type request struct {
-	Version string `json:"version"`
-	Commit  string `json:"commit"`
-	Branch  string `json:"branch"`
-	Dirty   bool   `json:"dirty"`
-	Debug   bool   `json:"debug"`
-	OS      string `json:"os"`
-	Arch    string `json:"arch"`
-
-	UUID   string        `json:"uuid"`
-	Uptime time.Duration `json:"uptime"`
-}
-
-// response represents telemetry response.
-type response struct {
-	LatestVersion string `json:"latest_version"`
-}
-
-// Reporter sends telemetry reports if telemetry is enabled.
-type Reporter struct {
-	*NewReporterOpts
-	c *http.Client
-}
-
-// NewReporterOpts represents reporter options.
-type NewReporterOpts struct {
-	URL            string
-	P              *state.Provider
-	L              *zap.Logger
-	UndecidedDelay time.Duration
-	ReportInterval time.Duration
-	ReportTimeout  time.Duration
-}
-
-// NewReporter creates a new reporter.
-func NewReporter(opts *NewReporterOpts) (*Reporter, error) {
-	return &Reporter{
-		NewReporterOpts: opts,
-		c:               http.DefaultClient,
-	}, nil
-}
-
-// Run runs reporter until context is canceled.
-func (r *Reporter) Run(ctx context.Context) {
-	r.L.Debug("Reporter started.")
-	defer r.L.Debug("Reporter stopped.")
-
-	ch := r.P.Subscribe()
-
-	r.firstReportDelay(ctx, ch)
-
-	for ctx.Err() == nil {
-		r.report(ctx)
-
-		delayCtx, delayCancel := context.WithTimeout(ctx, r.ReportInterval)
-		<-delayCtx.Done()
-		delayCancel()
-	}
-
-	// do one last report before exiting if telemetry is explicitly enabled
-	if pointer.GetBool(r.P.Get().Telemetry) {
-		r.report(context.Background())
+// parseValue parses a string value into true, false, or nil.
+func parseValue(s string) (*bool, error) {
+	switch strings.ToLower(s) {
+	case "1", "t", "true", "y", "yes", "on", "enable", "enabled", "optin", "opt-in", "allow":
+		return pointer.ToBool(true), nil
+	case "0", "f", "false", "n", "no", "off", "disable", "disabled", "optout", "opt-out", "disallow", "forbid":
+		return pointer.ToBool(false), nil
+	case "", "undecided":
+		return nil, nil
+	default:
+		return nil, fmt.Errorf("failed to parse %s", s)
 	}
 }
 
-// firstReportDelay waits until telemetry reporting state is decided,
-// main context is cancelled, or timeout is reached.
-func (r *Reporter) firstReportDelay(ctx context.Context, ch <-chan struct{}) {
-	if r.P.Get().Telemetry != nil {
-		return
+// Flag represents a Kong flag with three states: true, false, and undecided (nil).
+type Flag struct {
+	v *bool
+}
+
+// UnmarshalText is used by Kong to parse a flag value.
+func (s *Flag) UnmarshalText(text []byte) error {
+	v, err := parseValue(string(text))
+	if err != nil {
+		return err
 	}
 
-	msg := fmt.Sprintf(
-		"Telemetry state undecided, waiting %s before the first report. "+
-			"Read more about FerretDB telemetry at https://beacon.ferretdb.io",
-		r.UndecidedDelay,
-	)
-	r.L.Info(msg)
+	*s = Flag{v: v}
 
-	delayCtx, delayCancel := context.WithTimeout(ctx, r.UndecidedDelay)
-	defer delayCancel()
+	return nil
+}
 
-	for {
-		select {
-		case <-delayCtx.Done():
-			return
-		case <-ch:
-			if r.P.Get().Telemetry != nil {
-				return
-			}
+// initialState returns initial telemetry state based on:
+//   - Kong flag value (including `FERRETDB_TELEMETRY` environment variable);
+//   - common DO_NOT_TRACK environment variable;
+//   - executable name;
+//   - and the previously saved state.
+func initialState(f *Flag, dnt string, execName string, prev *bool, l *zap.Logger) (*bool, error) {
+	var disable bool
+
+	// https://consoledonottrack.com is not entirely clear about accepted values.
+	// Assume that "1", "t", "true", etc. mean that telemetry should be disabled,
+	// and other valid values, including "0" and empty string, mean undecided.
+	v, err := parseValue(dnt)
+	if err != nil {
+		return nil, err
+	}
+
+	if pointer.GetBool(v) {
+		l.Sugar().Infof("Telemetry is disabled by DO_NOT_TRACK=%s environment variable.", dnt)
+		disable = true
+	}
+
+	if strings.Contains(strings.ToLower(execName), "donottrack") {
+		l.Sugar().Infof("Telemetry is disabled by %q executable name.", execName)
+		disable = true
+	}
+
+	if disable {
+		// check for conflicts
+		if f.v != nil && *f.v {
+			return nil, fmt.Errorf("telemetry can't be enabled")
 		}
+
+		return pointer.ToBool(false), nil
 	}
+
+	if f.v == nil {
+		if prev == nil {
+			// undecided state, reporter would log about it during run
+			return nil, nil
+		}
+
+		if *prev {
+			l.Info("Telemetry is enabled because it was enabled previously.")
+		} else {
+			l.Info("Telemetry is disabled because it was disabled previously.")
+		}
+
+		return prev, nil
+	}
+
+	if *f.v {
+		l.Info("Telemetry enabled.")
+	} else {
+		l.Info("Telemetry disabled.")
+	}
+
+	return f.v, nil
 }
 
-// makeRequest creates a new telemetry request.
-func makeRequest(s *state.State) *request {
-	v := version.Get()
-
-	return &request{
-		Version: v.Version,
-		Commit:  v.Commit,
-		Branch:  v.Branch,
-		Dirty:   v.Dirty,
-		Debug:   v.Debug,
-		OS:      runtime.GOOS,
-		Arch:    runtime.GOARCH,
-
-		UUID:   s.UUID,
-		Uptime: time.Since(s.Start),
-	}
-}
-
-// report sends telemetry report unless telemetry is disabled.
-func (r *Reporter) report(ctx context.Context) {
-	s := r.P.Get()
-	if s.Telemetry != nil && !*s.Telemetry {
-		r.L.Debug("Telemetry is disabled, skipping reporting.")
-		return
-	}
-
-	request := makeRequest(s)
-	r.L.Info("Reporting telemetry.", zap.Reflect("data", request))
-
-	b, err := json.Marshal(request)
-	if err != nil {
-		r.L.Error("Failed to marshal telemetry request.", zap.Error(err))
-		return
-	}
-
-	reqCtx, reqCancel := context.WithTimeout(ctx, r.ReportTimeout)
-	defer reqCancel()
-
-	req, err := http.NewRequestWithContext(reqCtx, http.MethodPost, r.URL, bytes.NewReader(b))
-	if err != nil {
-		r.L.Error("Failed to create telemetry request.", zap.Error(err))
-		return
-	}
-
-	req.Header.Set("Content-Type", "application/json; charset=utf-8")
-
-	res, err := r.c.Do(req)
-	if err != nil {
-		r.L.Debug("Failed to send telemetry request.", zap.Error(err))
-		return
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusOK {
-		r.L.Debug("Failed to send telemetry request.", zap.Int("status", res.StatusCode))
-		return
-	}
-
-	var response response
-	if err = json.NewDecoder(res.Body).Decode(&response); err != nil {
-		r.L.Debug("Failed to read telemetry response.", zap.Error(err))
-		return
-	}
-
-	if response.LatestVersion == "" {
-		r.L.Debug("No latest version in telemetry response.")
-		return
-	}
-
-	if response.LatestVersion == s.LatestVersion {
-		r.L.Debug("Latest version is up to date.")
-		return
-	}
-
-	r.L.Info(
-		"New version available.",
-		zap.String("current_version", request.Version), zap.String("latest_version", response.LatestVersion),
-	)
-
-	err = r.P.Update(func(s *state.State) { s.LatestVersion = response.LatestVersion })
-	if err != nil {
-		r.L.Error("Failed to update state with latest version.", zap.Error(err))
-		return
-	}
-}
+// check interfaces
+var (
+	_ encoding.TextUnmarshaler = (*Flag)(nil)
+)
