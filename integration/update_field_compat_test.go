@@ -184,13 +184,16 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 	testUpdateCompat(t, testCases)
 }
 
-// TestUpdateFieldCompatNull checks that update works correctly for the null values.
 func TestUpdateFieldCompatSet(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]updateCompatTestCase{
 		"SetNullInExisingField": {
 			update: bson.D{{"$set", bson.D{{"v", nil}}}},
+		},
+		"DuplicateKeys": {
+			update: bson.D{{"$set", bson.D{{"v", 42}, {"v", "hello"}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1263",
 		},
 	}
 
