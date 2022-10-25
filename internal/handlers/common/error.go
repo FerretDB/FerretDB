@@ -224,8 +224,8 @@ func (e *CommandError) Document() *types.Document {
 		"errmsg", e.err.Error(),
 	))
 	if e.code != errUnset {
-		must.NoError(d.Set("code", int32(e.code)))
-		must.NoError(d.Set("codeName", e.code.String()))
+		d.Set("code", int32(e.code))
+		d.Set("codeName", e.code.String())
 	}
 	return d
 }
@@ -295,13 +295,13 @@ func (we *WriteErrors) Document() *types.Document {
 		doc := must.NotFail(types.NewDocument())
 
 		if e.index != nil {
-			must.NoError(doc.Set("index", *e.index))
+			doc.Set("index", *e.index)
 		}
 
 		// Fields "code" and "errmsg" must always be filled in so that clients can parse the error message.
 		// Otherwise, the mongo client would parse it as a CommandError.
-		must.NoError(doc.Set("code", int32(e.code)))
-		must.NoError(doc.Set("errmsg", e.err))
+		doc.Set("code", int32(e.code))
+		doc.Set("errmsg", e.err)
 
 		must.NoError(errs.Append(doc))
 	}

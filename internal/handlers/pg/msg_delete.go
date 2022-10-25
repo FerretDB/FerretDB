@@ -119,7 +119,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		replyDoc = delErrors.Document()
 	}
 
-	must.NoError(replyDoc.Set("n", deleted))
+	replyDoc.Set("n", deleted)
 
 	var reply wire.OpMsg
 
