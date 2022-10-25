@@ -115,24 +115,16 @@ func selectUnit(document, resDB *types.Document, showDetails, allParameters bool
 				item = val
 			}
 		}
-		err = doc.Set(k, item)
-		if err != nil {
-			return nil, err
-		}
+
+		doc.Set(k, item)
 	}
 
 	if doc.Len() < 1 {
-		err := doc.Set("ok", float64(0))
-		if err != nil {
-			return nil, err
-		}
+		doc.Set("ok", float64(0))
 		return doc, nil
 	}
 
-	err = doc.Set("ok", float64(1))
-	if err != nil {
-		return nil, err
-	}
+	doc.Set("ok", float64(1))
 	return doc, nil
 }
 

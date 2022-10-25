@@ -75,9 +75,7 @@ func (doc *documentType) UnmarshalJSON(data []byte) error {
 			return lazyerrors.Error(err)
 		}
 
-		if err = td.Set(key, v); err != nil {
-			return lazyerrors.Error(err)
-		}
+		td.Set(key, v)
 	}
 
 	*doc = documentType(*td)
