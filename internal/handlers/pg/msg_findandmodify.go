@@ -164,7 +164,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					upsert = params.Update
 
 					if !upsert.Has("_id") {
-						must.NoError(upsert.Set("_id", must.NotFail(resDocs[0].Get("_id"))))
+						upsert.Set("_id", must.NotFail(resDocs[0].Get("_id")))
 					}
 
 					_, err = h.update(ctx, tx, &sqlParam, upsert)
@@ -188,7 +188,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			))
 
 			if upserted {
-				must.NoError(lastErrorObject.Set("upserted", must.NotFail(resultDoc.Get("_id"))))
+				lastErrorObject.Set("upserted", must.NotFail(resultDoc.Get("_id")))
 			}
 
 			must.NoError(reply.SetSections(wire.OpMsgSection{
@@ -265,9 +265,9 @@ func (h *Handler) upsert(ctx context.Context, tx pgx.Tx, docs []*types.Document,
 
 		if !upsert.Has("_id") {
 			if params.query.Has("_id") {
-				must.NoError(upsert.Set("_id", must.NotFail(params.query.Get("_id"))))
+				upsert.Set("_id", must.NotFail(params.query.Get("_id")))
 			} else {
-				must.NoError(upsert.Set("_id", types.NewObjectID()))
+				upsert.Set("_id", types.NewObjectID())
 			}
 		}
 
@@ -288,7 +288,7 @@ func (h *Handler) upsert(ctx context.Context, tx pgx.Tx, docs []*types.Document,
 		}
 	} else {
 		for _, k := range params.update.Keys() {
-			must.NoError(upsert.Set(k, must.NotFail(params.update.Get(k))))
+			upsert.Set(k, must.NotFail(params.update.Get(k)))
 		}
 	}
 

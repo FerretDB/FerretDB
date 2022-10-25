@@ -128,8 +128,8 @@ func getTableName(ctx context.Context, tx pgx.Tx, db, collection string) (string
 	}
 
 	tableName := formatCollectionName(collection)
-	must.NoError(collections.Set(collection, tableName))
-	must.NoError(settings.Set("collections", collections))
+	collections.Set(collection, tableName)
+	settings.Set("collections", collections)
 
 	err = updateSettingsTable(ctx, tx, db, settings)
 	if err != nil {
@@ -199,7 +199,7 @@ func removeTableFromSettings(ctx context.Context, tx pgx.Tx, db, collection stri
 
 	collections.Remove(collection)
 
-	must.NoError(settings.Set("collections", collections))
+	settings.Set("collections", collections)
 
 	if err := updateSettingsTable(ctx, tx, db, settings); err != nil {
 		return lazyerrors.Error(err)
