@@ -25,7 +25,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -92,7 +91,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	if *debugSetupF {
 		level = zap.NewAtomicLevelAt(zap.DebugLevel)
 	}
-	logger := zaptest.NewLogger(tb, zaptest.Level(level), zaptest.WrapOptions(zap.AddCaller(), zap.Development()))
+	logger := testutil.Logger(tb, level)
 
 	targetPort := *targetPortF
 	if targetPort == 0 {

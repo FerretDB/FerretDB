@@ -86,13 +86,6 @@ linters-settings:
     allow-no-explanation: []
     require-explanation: true
     require-specific: true
-  revive:
-    ignore-generated-header: true
-    severity: warning
-    # TODO enable-all-rules: true
-    rules:
-      - name: exported
-        # TODO arguments: [checkPrivateReceivers]
   staticcheck:
     checks:
       - all
@@ -122,7 +115,6 @@ linters:
     - lll
     - misspell
     - nolintlint
-    - revive
     - staticcheck
     - unused
     - whitespace
