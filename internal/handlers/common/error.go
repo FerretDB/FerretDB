@@ -243,12 +243,22 @@ type WriteErrors struct {
 }
 
 // NewWriteErrorMsg creates a new protocol write error with given ErrorCode and message.
-func NewWriteErrorMsg(code ErrorCode, msg string) error {
+func NewWriteErrorMsg(code ErrorCode, msg string, opts ...*ErrOption) error {
+	eInfo := new(ErrInfo)
+
+	for _, opt := range opts {
+		switch opt.name {
+		case "Unimplemented":
+			eInfo.Unimplemented = opt.value.(string)
+		}
+	}
+
 	return &WriteErrors{
 		errs: []writeError{{
 			code: code,
 			err:  msg,
 		}},
+		info: eInfo,
 	}
 }
 
