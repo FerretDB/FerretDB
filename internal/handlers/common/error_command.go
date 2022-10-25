@@ -43,6 +43,7 @@ func NewCommandError(code ErrorCode, err error) error {
 	return &CommandError{
 		code: code,
 		err:  err,
+		info: &ErrInfo{},
 	}
 }
 
@@ -60,6 +61,7 @@ func NewCommandErrorMsg(code ErrorCode, msg string) error {
 	return NewCommandError(code, errors.New(msg))
 }
 
+// NewCommandErrorMsgWithOperator creates a new wire protocol error with operator.
 func NewCommandErrorMsgWithOperator(code ErrorCode, msg string, operator string) error {
 	return &CommandError{
 		err:  errors.New(msg),
