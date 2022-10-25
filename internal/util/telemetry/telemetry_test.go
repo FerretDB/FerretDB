@@ -17,8 +17,12 @@ package telemetry
 import (
 	"testing"
 
+	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestState(t *testing.T) {
@@ -29,9 +33,22 @@ func TestState(t *testing.T) {
 		dnt           string
 		execName      string
 		expectedState *bool
-		expectedErr   error
+		expectedErr   string
 	}{
 		"default": {},
+		"flag": {
+			flag:          "disable",
+			expectedState: pointer.ToBool(false),
+		},
+		"dnt": {
+			dnt:           "1",
+			expectedState: pointer.ToBool(false),
+		},
+		"conflict": {
+			flag:        "enable",
+			execName:    "DoNotTrack",
+			expectedErr: "telemetry is disabled by DO_NOT_TRACK environment variable or executable name",
+		},
 	} {
 		tc := tc
 		t.Run(name, func(t *testing.T) {
@@ -41,9 +58,14 @@ func TestState(t *testing.T) {
 			err := f.UnmarshalText([]byte(tc.flag))
 			require.NoError(t, err)
 
-			actualState, actualErr := State(&f, tc.dnt, tc.execName, nil)
+			logger := testutil.Logger(t, zap.NewAtomicLevelAt(zap.DebugLevel))
+			actualState, actualErr := State(&f, tc.dnt, tc.execName, logger)
 			assert.Equal(t, tc.expectedState, actualState)
-			assert.Equal(t, tc.expectedErr, actualErr)
+			if tc.expectedErr != "" {
+				assert.EqualError(t, actualErr, tc.expectedErr)
+				return
+			}
+			assert.NoError(t, actualErr)
 		})
 	}
 }
