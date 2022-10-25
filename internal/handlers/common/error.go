@@ -180,7 +180,7 @@ func NewError(code ErrorCode, err error, opts ...*ErrOption) error {
 
 	for _, opt := range opts {
 		switch opt.name {
-		case "Unimplemented":
+		case "unimplemented":
 			eInfo.Unimplemented = opt.value.(string)
 		}
 	}
