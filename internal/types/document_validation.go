@@ -16,6 +16,7 @@ package types
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"unicode/utf8"
 )
@@ -42,9 +43,9 @@ func (d *Document) ValidateData() error {
 
 	// TODO: make sure that `_id` is the first item in the map
 	//
-	// The following block should be used to checks that keys are valid.
-	// All further key related validation rules should be added here.
-	for _, key := range d.keys {
+	// The following block should be used to checks that keys and values are valid.
+	// All further validation rules should be added here.
+	for key, v := range d.m {
 		// Tests for this case are in `dance`.
 		if !utf8.ValidString(key) {
 			return newValidationError(fmt.Errorf("invalid key: %q (not a valid UTF-8 string)", key))
@@ -53,6 +54,10 @@ func (d *Document) ValidateData() error {
 		// Tests for this case are in `dance`.
 		if strings.Contains(key, "$") {
 			return newValidationError(fmt.Errorf("invalid key: %q (key must not contain $)", key))
+		}
+
+		if v, ok := v.(float64); ok && math.IsInf(v, 0) {
+			return newValidationError(fmt.Errorf("invalid value: { %q: %f } (infinity values are not allowed)", key, v))
 		}
 
 		if key == "_id" {
