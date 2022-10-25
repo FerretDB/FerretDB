@@ -25,7 +25,7 @@ import (
 // It could be returned for Update, Insert, Delete, and Replace operations.
 type WriteErrors struct {
 	errs []writeError
-	info *ErrInfo
+	info ErrInfo
 }
 
 // NewWriteErrorMsg creates a new protocol write error with given ErrorCode and message.
@@ -35,7 +35,6 @@ func NewWriteErrorMsg(code ErrorCode, msg string) error {
 			code: code,
 			err:  msg,
 		}},
-		info: new(ErrInfo),
 	}
 }
 
@@ -123,7 +122,7 @@ func (we *WriteErrors) Len() int {
 
 // Info implements ProtoErr interface.
 func (we *WriteErrors) Info() *ErrInfo {
-	return we.info
+	return &we.info
 }
 
 // writeError represents protocol write error.

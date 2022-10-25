@@ -430,7 +430,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	}
 
 	if operator == nil {
-		operator = pointer.ToString("")
+		operator = pointer.ToString("noop")
 	}
 
 	return
