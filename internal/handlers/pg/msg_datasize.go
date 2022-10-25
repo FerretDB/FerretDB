@@ -55,7 +55,18 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	db, collection := targets[0], targets[1]
 
 	started := time.Now()
-	stats, err := h.PgPool.SchemaStats(ctx, db, collection)
+
+	var stats *pgdb.DBStats
+	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		var err error
+		stats, err = pgdb.SchemaStats(ctx, tx, db, collection)
+		return err
+	})
+
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	elapses := time.Since(started)
 
 	addEstimate := true
