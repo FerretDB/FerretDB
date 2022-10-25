@@ -143,6 +143,8 @@ func (cm *ConnMetrics) GetResponses() map[string]CommandMetrics {
 				result = label.GetValue()
 			case "stage":
 				stage = must.NotFail(strconv.Atoi(label.GetValue()))
+			case "operator":
+				continue
 			default:
 				panic(fmt.Sprintf("%s is not a valid label. Allowed: [command, opcode, result, stage]", label.GetName()))
 			}
