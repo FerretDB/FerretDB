@@ -67,8 +67,7 @@ func CreateDatabaseIfNotExists(ctx context.Context, tx pgx.Tx, db string) error 
 		return ErrInvalidDatabaseName
 	}
 
-	sql := `CREATE SCHEMA IF NOT EXISTS ` + pgx.Identifier{db}.Sanitize()
-	_, err := tx.Exec(ctx, sql)
+	_, err := tx.Exec(ctx, `CREATE SCHEMA IF NOT EXISTS `+pgx.Identifier{db}.Sanitize())
 	if err == nil {
 		err = createSettingsTable(ctx, tx, db)
 	}
