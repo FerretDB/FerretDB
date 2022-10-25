@@ -109,6 +109,12 @@ const (
 	ErrBadRegexOption = ErrorCode(51108) // Location51108
 )
 
+// ErrOption is an option to add error info.
+type ErrOption struct {
+	name  string
+	value any
+}
+
 // ErrInfo represents additional error information.
 type ErrInfo struct {
 	Unimplemented string
@@ -151,19 +157,30 @@ func ProtocolError(err error) (ProtoErr, bool) {
 type CommandError struct {
 	err  error
 	code ErrorCode
+	info *ErrInfo
 }
 
 // NewError creates a new wire protocol error.
 //
 // Code can't be zero, err can't be nil.
-func NewError(code ErrorCode, err error) error {
+func NewError(code ErrorCode, err error, opts ...*ErrOption) error {
 	if err == nil {
 		panic("err is nil")
+	}
+
+	eInfo := new(ErrInfo)
+
+	for _, opt := range opts {
+		switch opt.name {
+		case "Unimplemented":
+			eInfo.Unimplemented = opt.value.(string)
+		}
 	}
 
 	return &CommandError{
 		code: code,
 		err:  err,
+		info: eInfo,
 	}
 }
 
@@ -173,8 +190,8 @@ func NewError(code ErrorCode, err error) error {
 // NewErrorMsg is variant for NewError with error string.
 //
 // Code can't be zero, err can't be empty.
-func NewErrorMsg(code ErrorCode, msg string) error {
-	return NewError(code, errors.New(msg))
+func NewErrorMsg(code ErrorCode, msg string, opts ...*ErrOption) error {
+	return NewError(code, errors.New(msg), opts...)
 }
 
 // Error implements error interface.
@@ -207,26 +224,30 @@ func (e *CommandError) Document() *types.Document {
 
 // Info implements ProtoErr interface.
 func (e *CommandError) Info() *ErrInfo {
-	// TODO implement me
-	return nil
+	return e.info
 }
 
 // WriteErrors represents a slice of protocol write errors.
 // It could be returned for Update, Insert, Delete, and Replace operations.
-type WriteErrors []writeError
+type WriteErrors struct {
+	errs []writeError
+	info *ErrInfo
+}
 
 // NewWriteErrorMsg creates a new protocol write error with given ErrorCode and message.
 func NewWriteErrorMsg(code ErrorCode, msg string) error {
-	return &WriteErrors{{
-		code: code,
-		err:  msg,
-	}}
+	return &WriteErrors{
+		errs: []writeError{{
+			code: code,
+			err:  msg,
+		}},
+	}
 }
 
 // Error implements error interface.
 func (we *WriteErrors) Error() string {
 	var err string
-	for _, e := range *we {
+	for _, e := range we.errs {
 		err += e.err + ","
 	}
 
@@ -235,7 +256,7 @@ func (we *WriteErrors) Error() string {
 
 // Code implements ProtoErr interface.
 func (we *WriteErrors) Code() ErrorCode {
-	for _, e := range *we {
+	for _, e := range we.errs {
 		return e.code
 	}
 	return errUnset
@@ -243,7 +264,7 @@ func (we *WriteErrors) Code() ErrorCode {
 
 // Unwrap implements a standard error unwrapping interface.
 func (we *WriteErrors) Unwrap() error {
-	for _, e := range *we {
+	for _, e := range we.errs {
 		return errors.New(e.err)
 	}
 	return nil
@@ -252,7 +273,7 @@ func (we *WriteErrors) Unwrap() error {
 // Document implements ProtoErr interface.
 func (we *WriteErrors) Document() *types.Document {
 	errs := must.NotFail(types.NewArray())
-	for _, e := range *we {
+	for _, e := range we.errs {
 		doc := must.NotFail(types.NewDocument())
 
 		if e.index != nil {
@@ -285,23 +306,22 @@ func (we *WriteErrors) Append(err error, index int32) {
 	switch {
 	case errors.As(err, &writeErr):
 		writeErr.index = &index
-		*we = append(*we, *writeErr)
+		we.errs = append(we.errs, *writeErr)
 
 		return
 
 	case errors.As(err, &cmdErr):
-		*we = append(*we, writeError{err: cmdErr.Unwrap().Error(), code: cmdErr.code, index: &index})
+		we.errs = append(we.errs, writeError{err: cmdErr.Unwrap().Error(), code: cmdErr.code, index: &index})
 
 		return
 	}
 
-	*we = append(*we, writeError{err: err.Error(), code: errInternalError, index: &index})
+	we.errs = append(we.errs, writeError{err: err.Error(), code: errInternalError, index: &index})
 }
 
 // Info implements ProtoErr interface.
 func (we *WriteErrors) Info() *ErrInfo {
-	// TODO implement me
-	return nil
+	return we.info
 }
 
 // writeError represents protocol write error.
