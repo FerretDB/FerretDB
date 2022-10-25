@@ -19,6 +19,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -27,9 +29,8 @@ import (
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
-func TestCreateStressPostgres(t *testing.T) {
+func TestCreateStress(t *testing.T) {
 	setup.SkipForPostgresWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1206")
-	setup.SkipForTigrisWithReason(t, "Tigris needs a schema for collection creation")
 
 	t.Parallel()
 
@@ -44,13 +45,32 @@ func TestCreateStressPostgres(t *testing.T) {
 
 		go func(i int) {
 			collName := fmt.Sprintf("stress_%d", i)
-			err := db.CreateCollection(ctx, collName)
-			_, errIns := db.Collection(collName).InsertOne(ctx, bson.D{{"_id", "foo"}, {"v", "bar"}})
+
+			schema := fmt.Sprintf(`{
+				"title": "%s",
+				"description": "Create Collection Stress %d",
+				"primary_key": ["_id"],
+				"properties": {
+					"_id": {"type": "string"},
+					"v": {"type": "string"}
+				}
+			}`, collName, i)
+			opts := options.CreateCollectionOptions{
+				Validator: bson.D{{"$tigrisSchemaString", schema}},
+			}
+
+			// Attempt to create a collection for Tigris with a schema.
+			// If we get an error, it's not Tigris, so we create collection without schema
+			err := db.CreateCollection(ctx, collName, &opts)
+			if err != nil {
+				err := db.CreateCollection(ctx, collName)
+				assert.NoError(t, err)
+			}
+
+			_, err = db.Collection(collName).InsertOne(ctx, bson.D{{"_id", "foo"}, {"v", "bar"}})
 
 			wg.Done()
-
-			require.NoError(t, err)
-			require.NoError(t, errIns)
+			assert.NoError(t, err)
 		}(i)
 	}
 
@@ -60,14 +80,18 @@ func TestCreateStressPostgres(t *testing.T) {
 	require.NoError(t, err)
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1206
-	// This check fails now. Even though all the collections are created as separate tables in the database,
+	// Without SkipForPostgres this test would fail.
+	// Even though all the collections are created as separate tables in the database,
 	// the settings table doesn't store all of them because of concurrency issues.
 	require.Len(t, colls, collNum)
 
 	// check that all collections were created, and we can query them
 	for i := 0; i < collNum; i++ {
+		i := i
+
 		t.Run(fmt.Sprintf("check_stress_%d", i), func(t *testing.T) {
 			t.Parallel()
+
 			collName := fmt.Sprintf("stress_%d", i)
 
 			var doc bson.D
