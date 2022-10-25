@@ -25,12 +25,11 @@ func TestState(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		flag           string
-		dnt            string
-		execName       string
-		expectedState  *bool
-		expectedLocked bool
-		expectedErr    error
+		flag          string
+		dnt           string
+		execName      string
+		expectedState *bool
+		expectedErr   error
 	}{
 		"default": {},
 	} {
@@ -42,9 +41,8 @@ func TestState(t *testing.T) {
 			err := f.UnmarshalText([]byte(tc.flag))
 			require.NoError(t, err)
 
-			actualState, actualLocked, actualErr := State(&f, tc.dnt, tc.execName, nil)
+			actualState, actualErr := State(&f, tc.dnt, tc.execName, nil)
 			assert.Equal(t, tc.expectedState, actualState)
-			assert.Equal(t, tc.expectedLocked, actualLocked)
 			assert.Equal(t, tc.expectedErr, actualErr)
 		})
 	}

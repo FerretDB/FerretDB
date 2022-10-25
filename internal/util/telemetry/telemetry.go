@@ -51,7 +51,7 @@ func (s *Flag) UnmarshalText(text []byte) error {
 	return nil
 }
 
-func State(f *Flag, dnt string, execName string, l *zap.Logger) (state *bool, locked bool, err error) {
+func State(f *Flag, dnt string, execName string, l *zap.Logger) (state *bool, err error) {
 	return
 }
 
