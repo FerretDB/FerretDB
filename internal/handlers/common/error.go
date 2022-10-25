@@ -115,6 +115,14 @@ type ErrOption struct {
 	value any
 }
 
+// NewErrOption returns new ErrOption.
+func NewErrOption(name string, value any) *ErrOption {
+	return &ErrOption{
+		name:  name,
+		value: value,
+	}
+}
+
 // ErrInfo represents additional error information.
 type ErrInfo struct {
 	Unimplemented string
