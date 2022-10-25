@@ -28,6 +28,7 @@ import (
 )
 
 func TestCreateStressPostgres(t *testing.T) {
+	setup.SkipForPostgresWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1206")
 	setup.SkipForTigrisWithReason(t, "Tigris needs a schema for collection creation")
 
 	t.Parallel()
@@ -44,22 +45,35 @@ func TestCreateStressPostgres(t *testing.T) {
 		go func(i int) {
 			collName := fmt.Sprintf("stress_%d", i)
 			err := db.CreateCollection(ctx, collName)
+			_, errIns := db.Collection(collName).InsertOne(ctx, bson.D{{"_id", "foo"}, {"v", "bar"}})
 
 			wg.Done()
+
 			require.NoError(t, err)
+			require.NoError(t, errIns)
 		}(i)
 	}
 
 	wg.Wait()
 
+	colls, err := db.ListCollectionNames(ctx, bson.D{})
+	require.NoError(t, err)
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/1206
+	// This check fails now. Even though all the collections are created as separate tables in the database,
+	// the settings table doesn't store all of them because of concurrency issues.
+	require.Len(t, colls, collNum)
+
 	// check that all collections were created, and we can query them
 	for i := 0; i < collNum; i++ {
 		t.Run(fmt.Sprintf("check_stress_%d", i), func(t *testing.T) {
 			t.Parallel()
-
 			collName := fmt.Sprintf("stress_%d", i)
-			res := db.Collection(collName).FindOne(ctx, bson.D{})
-			require.Equal(t, mongo.ErrNoDocuments, res.Err())
+
+			var doc bson.D
+			err := db.Collection(collName).FindOne(ctx, bson.D{{"_id", "foo"}}).Decode(&doc)
+			require.NoError(t, err)
+			require.Equal(t, bson.D{{"_id", "foo"}, {"v", "bar"}}, doc)
 		})
 	}
 }
