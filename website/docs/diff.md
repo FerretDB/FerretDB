@@ -11,7 +11,7 @@ sidebar_position: 6
 3. Document keys must not contain `$` sign.
 4. Database and collection names restrictions:
    * name cannot start with the reserved prefix `_ferretdb_`;
-   * name must not include non-latin letters, spaces, dots, dollars or dashes;
+   * name must not include non-latin letters, spaces, dots, dollars;
    * name must not start with a number;
    * database name cannot contain capital letters;
    * database name length cannot be more than 63 characters;
