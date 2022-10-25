@@ -352,26 +352,6 @@ func TestUpdateFieldInc(t *testing.T) {
 					UpsertedCount: 0,
 				},
 			},
-			"DoubleDoublePositiveInfinityIncrement": {
-				id:       "double",
-				update:   bson.D{{"$inc", bson.D{{"v", math.Inf(+1)}}}},
-				expected: bson.D{{"_id", "double"}, {"v", math.Inf(+1)}},
-				stat: &mongo.UpdateResult{
-					MatchedCount:  1,
-					ModifiedCount: 1,
-					UpsertedCount: 0,
-				},
-			},
-			"DoubleDoubleNegativeInfinityIncrement": {
-				id:       "double",
-				update:   bson.D{{"$inc", bson.D{{"v", math.Inf(-1)}}}},
-				expected: bson.D{{"_id", "double"}, {"v", math.Inf(-1)}},
-				stat: &mongo.UpdateResult{
-					MatchedCount:  1,
-					ModifiedCount: 1,
-					UpsertedCount: 0,
-				},
-			},
 			"DoubleDoubleBigIncrement": {
 				id:       "double",
 				update:   bson.D{{"$inc", bson.D{{"v", float64(2 << 60)}}}},
@@ -429,46 +409,6 @@ func TestUpdateFieldInc(t *testing.T) {
 				stat: &mongo.UpdateResult{
 					MatchedCount:  1,
 					ModifiedCount: 1,
-					UpsertedCount: 0,
-				},
-			},
-			"DoublePositiveInfinityPositiveIncrement": {
-				id:       "double-positive-infinity",
-				update:   bson.D{{"$inc", bson.D{{"v", 42.13}}}},
-				expected: bson.D{{"_id", "double-positive-infinity"}, {"v", math.Inf(+1)}},
-				stat: &mongo.UpdateResult{
-					MatchedCount:  1,
-					ModifiedCount: 0,
-					UpsertedCount: 0,
-				},
-			},
-			"DoublePositiveInfinityNegativeIncrement": {
-				id:       "double-positive-infinity",
-				update:   bson.D{{"$inc", bson.D{{"v", -42.13}}}},
-				expected: bson.D{{"_id", "double-positive-infinity"}, {"v", math.Inf(+1)}},
-				stat: &mongo.UpdateResult{
-					MatchedCount:  1,
-					ModifiedCount: 0,
-					UpsertedCount: 0,
-				},
-			},
-			"DoubleNegativeInfinityPositiveIncrement": {
-				id:       "double-negative-infinity",
-				update:   bson.D{{"$inc", bson.D{{"v", 42.13}}}},
-				expected: bson.D{{"_id", "double-negative-infinity"}, {"v", math.Inf(-1)}},
-				stat: &mongo.UpdateResult{
-					MatchedCount:  1,
-					ModifiedCount: 0,
-					UpsertedCount: 0,
-				},
-			},
-			"DoubleNegativeInfinityNegativeIncrement": {
-				id:       "double-negative-infinity",
-				update:   bson.D{{"$inc", bson.D{{"v", -42.13}}}},
-				expected: bson.D{{"_id", "double-negative-infinity"}, {"v", math.Inf(-1)}},
-				stat: &mongo.UpdateResult{
-					MatchedCount:  1,
-					ModifiedCount: 0,
 					UpsertedCount: 0,
 				},
 			},
@@ -808,16 +748,6 @@ func TestUpdateFieldSet(t *testing.T) {
 			id:       "double",
 			update:   bson.D{{"$set", bson.D{{"v", int32(1)}}}},
 			expected: bson.D{{"_id", "double"}, {"v", int32(1)}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-		},
-		"Inf": {
-			id:       "double",
-			update:   bson.D{{"$set", bson.D{{"v", math.Inf(+1)}}}},
-			expected: bson.D{{"_id", "double"}, {"v", math.Inf(+1)}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 1,

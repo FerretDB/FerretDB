@@ -16,8 +16,11 @@ package types
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // ValidationError describes an error that could occur when validating a document.
@@ -43,8 +46,7 @@ func (d *Document) ValidateData() error {
 	duplicateChecker := make(map[string]struct{}, len(keys))
 	var idPresent bool
 
-	// The following block should be used to checks that keys are valid.
-	// All further key related validation rules should be added here.
+	// TODO: make sure that `_id` is the first item in the map
 	for _, key := range keys {
 		// Tests for this case are in `dance`.
 		if !utf8.ValidString(key) {
@@ -61,9 +63,15 @@ func (d *Document) ValidateData() error {
 		}
 		duplicateChecker[key] = struct{}{}
 
-		// TODO: check that `_id` is the first item in the document.
 		if key == "_id" {
 			idPresent = true
+		}
+
+		value := must.NotFail(d.Get(key))
+
+		// TODO Add dance tests for infinity: https://github.com/FerretDB/FerretDB/issues/1151
+		if v, ok := value.(float64); ok && math.IsInf(v, 0) {
+			return newValidationError(fmt.Errorf("invalid value: { %q: %f } (infinity values are not allowed)", key, v))
 		}
 	}
 
