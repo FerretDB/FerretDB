@@ -32,11 +32,14 @@ type document interface {
 }
 
 // Document represents BSON document.
-//
-// Duplicate field names are not supported yet.
 type Document struct {
-	m    map[string]any
-	keys []string
+	fields []field
+}
+
+// field represents a field in the document.
+type field struct {
+	key   string
+	value any
 }
 
 // ConvertDocument converts bson.Document to *types.Document.
@@ -48,12 +51,22 @@ func ConvertDocument(d document) (*Document, error) {
 		panic("types.ConvertDocument: d is nil")
 	}
 
-	doc := &Document{
-		m:    d.Map(),
-		keys: d.Keys(),
+	// If both keys and map are nil, we don't need to allocate memory for fields.
+	if d.Keys() == nil && d.Map() == nil {
+		return new(Document), nil
 	}
 
-	return doc, nil
+	m := d.Map()
+
+	fields := make([]field, len(d.Keys()))
+	for i, key := range d.Keys() {
+		fields[i] = field{
+			key:   key,
+			value: m[key],
+		}
+	}
+
+	return &Document{fields}, nil
 }
 
 // MakeDocument creates an empty document with set capacity.
@@ -63,8 +76,7 @@ func MakeDocument(capacity int) *Document {
 	}
 
 	return &Document{
-		m:    make(map[string]any, capacity),
-		keys: make([]string, 0, capacity),
+		fields: make([]field, 0, capacity),
 	}
 }
 
@@ -113,27 +125,46 @@ func (d *Document) Len() int {
 	if d == nil {
 		return 0
 	}
-	return len(d.keys)
+
+	return len(d.fields)
 }
 
 // Map returns this document as a map. Do not modify it.
 //
+// If there are duplicate keys in the document, the last value is set in the corresponding field.
+//
 // It returns nil for nil Document.
+//
+// Deprecated: as Document might have duplicate keys, map is not a good representation of it.
 func (d *Document) Map() map[string]any {
 	if d == nil {
 		return nil
 	}
-	return d.m
+
+	m := make(map[string]any, len(d.fields))
+	for _, field := range d.fields {
+		m[field.key] = field.value
+	}
+
+	return m
 }
 
-// Keys returns document's keys. Do not modify it.
+// Keys returns a copy of document's keys.
+//
+// If there are duplicate keys in the document, the result will have duplicate keys too.
 //
 // It returns nil for nil Document.
 func (d *Document) Keys() []string {
 	if d == nil {
 		return nil
 	}
-	return d.keys
+
+	keys := make([]string, len(d.fields))
+	for i, field := range d.fields {
+		keys[i] = field.key
+	}
+
+	return keys
 }
 
 // Command returns the first document's key. This is often used as a command name.
@@ -146,92 +177,93 @@ func (d *Document) Command() string {
 	return keys[0]
 }
 
-// add adds the value for the given key, returning error if that key is already present.
+// add adds the value for the given key.
+// If the key already exists, it will create a duplicate key.
 //
 // As a special case, _id always becomes the first key.
 func (d *Document) add(key string, value any) error {
-	if _, ok := d.m[key]; ok {
-		return fmt.Errorf("types.Document.add: key already present: %q", key)
-	}
-
-	// update keys slice
 	if key == "_id" {
 		// TODO check that value is not regex or array: https://github.com/FerretDB/FerretDB/issues/1235
 
 		// ensure that _id is the first field
-		d.keys = slices.Insert(d.keys, 0, key)
+		d.fields = slices.Insert(d.fields, 0, field{key, value})
 	} else {
-		d.keys = append(d.keys, key)
+		d.fields = append(d.fields, field{key, value})
 	}
-
-	d.m[key] = value
 
 	return nil
 }
 
 // Has returns true if the given key is present in the document.
 func (d *Document) Has(key string) bool {
-	_, ok := d.m[key]
-	return ok
+	for _, field := range d.fields {
+		if field.key == key {
+			return true
+		}
+	}
+
+	return false
 }
 
 // Get returns a value at the given key.
+// If there are duplicated keys in the document, it returns the first value.
 func (d *Document) Get(key string) (any, error) {
-	if value, ok := d.m[key]; ok {
-		return value, nil
+	for _, field := range d.fields {
+		if field.key == key {
+			return field.value, nil
+		}
 	}
 
 	return nil, fmt.Errorf("types.Document.Get: key not found: %q", key)
 }
 
 // Set sets the value for the given key, replacing any existing value.
+// If the key is duplicated, it panics.
+// If the key doesn't exist, it will be set.
 //
 // As a special case, _id always becomes the first key.
-func (d *Document) Set(key string, value any) error {
-	// update keys slice
+func (d *Document) Set(key string, value any) {
+	if d.isKeyDuplicate(key) {
+		panic(fmt.Sprintf("types.Document.Set: key is duplicated: %s", key))
+	}
+
 	if key == "_id" {
 		// TODO check that value is not regex or array: https://github.com/FerretDB/FerretDB/issues/1235
 
 		// ensure that _id is the first field
-		if i := slices.Index(d.keys, key); i >= 0 {
-			d.keys = slices.Delete(d.keys, i, i+1)
+		if i := slices.Index(d.Keys(), key); i >= 0 {
+			d.fields = slices.Delete(d.fields, i, i+1)
 		}
-		d.keys = slices.Insert(d.keys, 0, key)
-	} else {
-		if _, ok := d.m[key]; !ok {
-			d.keys = append(d.keys, key)
+		d.fields = slices.Insert(d.fields, 0, field{key, value})
+
+		return
+	}
+
+	for i, f := range d.fields {
+		if f.key == key {
+			d.fields[i].value = value
+			return
 		}
 	}
 
-	if d.m == nil {
-		d.m = map[string]any{
-			key: value,
-		}
-		return nil
-	}
-
-	d.m[key] = value
-	return nil
+	d.fields = append(d.fields, field{key, value})
 }
 
 // Remove the given key and return its value, or nil if the key does not exist.
+// If the key is duplicated, it panics.
 func (d *Document) Remove(key string) any {
-	if _, ok := d.m[key]; !ok {
-		return nil
+	if d.isKeyDuplicate(key) {
+		panic(fmt.Sprintf("types.Document.Remove: key is duplicated: %s", key))
 	}
 
-	v := d.m[key]
-	delete(d.m, key)
-
-	for i, k := range d.keys {
-		if k == key {
-			d.keys = append(d.keys[:i], d.keys[i+1:]...)
-			return v
+	for i, field := range d.fields {
+		if field.key == key {
+			d.fields = slices.Delete(d.fields, i, i+1)
+			return field.value
 		}
 	}
 
-	// should not be reached
-	panic(fmt.Sprintf("types.Document.Remove: key not found: %q", key))
+	return nil
 }
 
 // HasByPath returns true if the given path is present in the document.
@@ -250,9 +282,11 @@ func (d *Document) GetByPath(path Path) (any, error) {
 // SetByPath sets value by given path. If the Path has only one element, it sets the value for the given key.
 // If some parts of the path are missing, they will be created.
 // The Document type will be used to create these parts.
+// If multiple fields match the path it panics.
 func (d *Document) SetByPath(path Path, value any) error {
 	if path.Len() == 1 {
-		return d.Set(path.Slice()[0], value)
+		d.Set(path.Slice()[0], value)
+		return nil
 	}
 
 	if !d.HasByPath(path.TrimSuffix()) {
@@ -266,7 +300,8 @@ func (d *Document) SetByPath(path Path, value any) error {
 
 	switch inner := innerComp.(type) {
 	case *Document:
-		return inner.Set(path.Suffix(), value)
+		inner.Set(path.Suffix(), value)
+		return nil
 	case *Array:
 		index, err := strconv.Atoi(path.Suffix())
 		if err != nil {
@@ -298,6 +333,24 @@ func (d *Document) RemoveByPath(path Path) {
 		return
 	}
 	removeByPath(d, path)
+}
+
+// isKeyDuplicate returns true if the target key is duplicated in the document and false otherwise.
+// If the key is not found, it returns false.
+func (d *Document) isKeyDuplicate(targetKey string) bool {
+	var found bool
+
+	for _, key := range d.Keys() {
+		if key == targetKey {
+			if found {
+				return true
+			}
+
+			found = true
+		}
+	}
+
+	return false
 }
 
 // check interfaces

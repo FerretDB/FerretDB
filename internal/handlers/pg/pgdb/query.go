@@ -291,7 +291,7 @@ func convertJSON(value any) any {
 		keys := maps.Keys(value)
 		for _, k := range keys {
 			v := value[k]
-			must.NoError(d.Set(k, convertJSON(v)))
+			d.Set(k, convertJSON(v))
 		}
 		return d
 

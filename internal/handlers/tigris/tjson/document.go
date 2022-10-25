@@ -84,9 +84,8 @@ func (doc *documentType) UnmarshalJSONWithSchema(data []byte, schema *Schema) er
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
-		if err = td.Set(key, v); err != nil {
-			return lazyerrors.Error(err)
-		}
+
+		td.Set(key, v)
 	}
 
 	*doc = documentType(*td)

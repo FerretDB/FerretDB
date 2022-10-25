@@ -57,7 +57,7 @@ func ServerStatus(startTime time.Time, cm *connmetrics.ConnMetrics) (*types.Docu
 			cmdDoc = must.NotFail(types.NewDocument("total", cmdMetrics.Total, "failed", cmdMetrics.Failed))
 		}
 
-		must.NoError(metricsDoc.Set(cmd, cmdDoc))
+		metricsDoc.Set(cmd, cmdDoc)
 	}
 
 	res := must.NotFail(types.NewDocument(
