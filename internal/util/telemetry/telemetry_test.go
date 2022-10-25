@@ -53,7 +53,7 @@ func TestState(t *testing.T) {
 		"conflict": {
 			flag:     "enable",
 			execName: "DoNotTrack",
-			err:      "telemetry is disabled by DO_NOT_TRACK environment variable or executable name",
+			err:      "telemetry can't be enabled",
 		},
 	} {
 		tc := tc
