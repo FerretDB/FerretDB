@@ -36,7 +36,7 @@ func TestCreateStressPostgres(t *testing.T) {
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
 	db := collection.Database()
 
-	collNum := 10
+	const collNum = runtime.GOMAXPROCS() * 10
 
 	var wg sync.WaitGroup
 	for i := 0; i < collNum; i++ {
@@ -47,7 +47,7 @@ func TestCreateStressPostgres(t *testing.T) {
 			err := db.CreateCollection(ctx, collName)
 			_, errIns := db.Collection(collName).InsertOne(ctx, bson.D{{"_id", "foo"}, {"v", "bar"}})
 
-			wg.Done()
+			defer wg.Done()
 
 			require.NoError(t, err)
 			require.NoError(t, errIns)
