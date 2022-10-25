@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -37,13 +36,20 @@ func TestCreateStress(t *testing.T) {
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
 	db := collection.Database()
 
-	collNum := 10
+	const collNum = 20 // runtime.GOMAXPROCS * 10
+
+	ready := make(chan struct{}, collNum)
+	start := make(chan struct{})
 
 	var wg sync.WaitGroup
 	for i := 0; i < collNum; i++ {
+
 		wg.Add(1)
 
 		go func(i int) {
+			ready <- struct{}{}
+			<-start
+
 			collName := fmt.Sprintf("stress_%d", i)
 
 			schema := fmt.Sprintf(`{
@@ -69,9 +75,11 @@ func TestCreateStress(t *testing.T) {
 
 			_, err = db.Collection(collName).InsertOne(ctx, bson.D{{"_id", "foo"}, {"v", "bar"}})
 
-			wg.Done()
 			assert.NoError(t, err)
+			defer wg.Done()
 		}(i)
+
+		close(start)
 	}
 
 	wg.Wait()
