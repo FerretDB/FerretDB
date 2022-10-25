@@ -109,6 +109,10 @@ const (
 	ErrBadRegexOption = ErrorCode(51108) // Location51108
 )
 
+type ErrInfo struct {
+	Unimplemented string
+}
+
 // ProtoErr represents protocol error type.
 type ProtoErr interface {
 	error
@@ -116,6 +120,8 @@ type ProtoErr interface {
 	Code() ErrorCode
 	// Document returns *types.Document.
 	Document() *types.Document
+
+	Info() *ErrInfo
 }
 
 // ProtocolError converts any error to wire protocol error.
@@ -146,9 +152,6 @@ type CommandError struct {
 	code ErrorCode
 }
 
-// There should not be NewError function variant that accepts printf-like format specifiers.
-// Let the caller do safe formatting.
-
 // NewError creates a new wire protocol error.
 //
 // Code can't be zero, err can't be nil.
@@ -162,6 +165,9 @@ func NewError(code ErrorCode, err error) error {
 		err:  err,
 	}
 }
+
+// There should not be NewError function variant that accepts printf-like format specifiers.
+// Let the caller do safe formatting.
 
 // NewErrorMsg is variant for NewError with error string.
 //
@@ -196,6 +202,11 @@ func (e *CommandError) Document() *types.Document {
 		must.NoError(d.Set("codeName", e.code.String()))
 	}
 	return d
+}
+
+func (e *CommandError) Info() *ErrInfo {
+	// TODO implement me
+	panic("implement me")
 }
 
 // WriteErrors represents a slice of protocol write errors.
@@ -283,6 +294,11 @@ func (we *WriteErrors) Append(err error, index int32) {
 	}
 
 	*we = append(*we, writeError{err: err.Error(), code: errInternalError, index: &index})
+}
+
+func (we *WriteErrors) Info() *ErrInfo {
+	// TODO implement me
+	panic("implement me")
 }
 
 // writeError represents protocol write error.

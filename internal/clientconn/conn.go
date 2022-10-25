@@ -299,12 +299,17 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	requests := c.m.Requests.MustCurryWith(prometheus.Labels{"opcode": reqHeader.OpCode.String()})
 	var command string
 	var result *string
+	var errInfo *common.ErrInfo
 	defer func() {
 		if result == nil {
 			result = pointer.ToString("panic")
 		}
 
-		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, *result).Inc()
+		if errInfo == nil {
+			errInfo = &common.ErrInfo{}
+		}
+
+		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, *result, errInfo.Unimplemented).Inc()
 	}()
 
 	connInfo := &conninfo.ConnInfo{
@@ -368,6 +373,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			}))
 			resBody = &res
 			result = pointer.ToString(protoErr.Code().String())
+			errInfo = protoErr.Info()
 
 		case wire.OpCodeQuery:
 			fallthrough
