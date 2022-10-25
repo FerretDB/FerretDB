@@ -67,7 +67,7 @@ const (
 	ErrDocumentValidationFailure = ErrorCode(121) // DocumentValidationFailure
 
 	// ErrNotImplemented indicates that a flag or command is not implemented.
-	ErrNotImplemented = ErrorCode(238) // NotImplemented
+	ErrNotImplemented = ErrorCode(238) // Operator
 
 	// ErrFailedToParseInput indicates invalid input (absent or malformed fields).
 	ErrFailedToParseInput = ErrorCode(40415) // Location40415
@@ -125,7 +125,7 @@ func NewErrOption(name string, value any) *ErrOption {
 
 // ErrInfo represents additional error information.
 type ErrInfo struct {
-	NotImplemented string
+	Operator string
 }
 
 // ProtoErr represents protocol error type.
@@ -180,8 +180,8 @@ func NewError(code ErrorCode, err error, opts ...*ErrOption) error {
 
 	for _, opt := range opts {
 		switch opt.name {
-		case "NotImplemented":
-			eInfo.NotImplemented = opt.value.(string)
+		case "operator":
+			eInfo.Operator = opt.value.(string)
 		}
 	}
 
@@ -248,8 +248,8 @@ func NewWriteErrorMsg(code ErrorCode, msg string, opts ...*ErrOption) error {
 
 	for _, opt := range opts {
 		switch opt.name {
-		case "NotImplemented":
-			eInfo.NotImplemented = opt.value.(string)
+		case "Operator":
+			eInfo.Operator = opt.value.(string)
 		}
 	}
 

@@ -478,7 +478,7 @@ func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
 			return false, NewErrorMsg(
 				ErrNotImplemented,
 				fmt.Sprintf("update operator %s is not implemented", updateOp),
-				NewErrOption("NotImplemented", updateOp),
+				NewErrOption("operator", updateOp),
 			)
 		default:
 			if strings.HasPrefix(updateOp, "$") {
