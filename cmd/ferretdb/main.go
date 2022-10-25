@@ -200,7 +200,7 @@ func setupLogger(stateProvider *state.Provider) *zap.Logger {
 func runTelemetryReporter(ctx context.Context, opts *telemetry.NewReporterOpts) {
 	r, err := telemetry.NewReporter(opts)
 	if err != nil {
-		opts.L.Fatal("Failed to create telemetry reporter.", zap.Error(err))
+		opts.L.Sugar().Fatalf("Failed to create telemetry reporter: %s.", err)
 	}
 
 	r.Run(ctx)
@@ -250,6 +250,9 @@ func run() {
 			ctx,
 			&telemetry.NewReporterOpts{
 				URL:            cli.Test.Telemetry.URL,
+				F:              &cli.Telemetry,
+				DNT:            os.Getenv("DO_NOT_TRACK"),
+				ExecName:       os.Args[0],
 				P:              stateProvider,
 				L:              logger.Named("telemetry"),
 				UndecidedDelay: cli.Test.Telemetry.UndecidedDelay,

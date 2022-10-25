@@ -29,28 +29,35 @@ func TestState(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		flag          string
-		dnt           string
-		execName      string
-		expectedState *bool
-		expectedErr   string
+		flag     string
+		dnt      string
+		execName string
+		prev     *bool
+		state    *bool
+		err      string
 	}{
 		"default": {},
+		"prev": {
+			prev:  pointer.ToBool(false),
+			state: pointer.ToBool(false),
+		},
 		"flag": {
-			flag:          "disable",
-			expectedState: pointer.ToBool(false),
+			flag:  "disable",
+			prev:  pointer.ToBool(true),
+			state: pointer.ToBool(false),
 		},
 		"dnt": {
-			dnt:           "1",
-			expectedState: pointer.ToBool(false),
+			dnt:   "1",
+			state: pointer.ToBool(false),
 		},
 		"conflict": {
-			flag:        "enable",
-			execName:    "DoNotTrack",
-			expectedErr: "telemetry is disabled by DO_NOT_TRACK environment variable or executable name",
+			flag:     "enable",
+			execName: "DoNotTrack",
+			err:      "telemetry is disabled by DO_NOT_TRACK environment variable or executable name",
 		},
 	} {
 		tc := tc
+
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -59,10 +66,10 @@ func TestState(t *testing.T) {
 			require.NoError(t, err)
 
 			logger := testutil.Logger(t, zap.NewAtomicLevelAt(zap.DebugLevel))
-			actualState, actualErr := State(&f, tc.dnt, tc.execName, logger)
-			assert.Equal(t, tc.expectedState, actualState)
-			if tc.expectedErr != "" {
-				assert.EqualError(t, actualErr, tc.expectedErr)
+			actualState, actualErr := initialState(&f, tc.dnt, tc.execName, tc.prev, logger)
+			assert.Equal(t, tc.state, actualState)
+			if tc.err != "" {
+				assert.EqualError(t, actualErr, tc.err)
 				return
 			}
 			assert.NoError(t, actualErr)

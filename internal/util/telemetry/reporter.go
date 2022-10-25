@@ -58,6 +58,9 @@ type Reporter struct {
 // NewReporterOpts represents reporter options.
 type NewReporterOpts struct {
 	URL            string
+	F              *Flag
+	DNT            string
+	ExecName       string
 	P              *state.Provider
 	L              *zap.Logger
 	UndecidedDelay time.Duration
@@ -67,6 +70,15 @@ type NewReporterOpts struct {
 
 // NewReporter creates a new reporter.
 func NewReporter(opts *NewReporterOpts) (*Reporter, error) {
+	t, err := initialState(opts.F, opts.DNT, opts.ExecName, opts.P.Get().Telemetry, opts.L)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = opts.P.Update(func(s *state.State) { s.Telemetry = t }); err != nil {
+		return nil, err
+	}
+
 	return &Reporter{
 		NewReporterOpts: opts,
 		c:               http.DefaultClient,

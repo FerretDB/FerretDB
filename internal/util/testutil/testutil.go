@@ -44,5 +44,6 @@ func Logger(tb testing.TB, level zap.AtomicLevel) *zap.Logger {
 		zaptest.Level(level),
 		zaptest.WrapOptions(zap.AddCaller(), zap.Development()),
 	}
+
 	return zaptest.NewLogger(tb, opts...)
 }

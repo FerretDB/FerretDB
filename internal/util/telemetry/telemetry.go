@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// parseValue parses a string value into true, false, or nil.
 func parseValue(s string) (*bool, error) {
 	switch strings.ToLower(s) {
 	case "1", "t", "true", "y", "yes", "on", "enable", "enabled", "optin", "opt-in", "allow":
@@ -37,10 +38,12 @@ func parseValue(s string) (*bool, error) {
 	}
 }
 
+// Flag represents a Kong flag with three states: true, false, and undecided (nil).
 type Flag struct {
 	v *bool
 }
 
+// UnmarshalText is used by Kong to parse a flag value.
 func (s *Flag) UnmarshalText(text []byte) error {
 	v, err := parseValue(string(text))
 	if err != nil {
@@ -48,36 +51,64 @@ func (s *Flag) UnmarshalText(text []byte) error {
 	}
 
 	*s = Flag{v: v}
+
 	return nil
 }
 
-func State(f *Flag, dnt string, execName string, l *zap.Logger) (*bool, error) {
-	var disabled bool
+// initialState returns initial telemetry state based on:
+//   - Kong flag value (including `FERRETDB_TELEMETRY` environment variable);
+//   - common DO_NOT_TRACK environment variable;
+//   - executable name;
+//   - and the previously saved state.
+func initialState(f *Flag, dnt string, execName string, prev *bool, l *zap.Logger) (*bool, error) {
+	var disable bool
 
 	// https://consoledonottrack.com is not entirely clear about accepted values.
 	// Assume that "1", "t", "true", etc. mean that telemetry should be disabled,
-	// and other valid values, including empty string, mean undecided.
+	// and other valid values, including "0" and empty string, mean undecided.
 	v, err := parseValue(dnt)
 	if err != nil {
 		return nil, err
 	}
+
 	if pointer.GetBool(v) {
 		l.Info(fmt.Sprintf("Telemetry is disabled by DO_NOT_TRACK=%s environment variable.", dnt))
-		disabled = true
+		disable = true
 	}
 
 	if strings.Contains(strings.ToLower(execName), "donottrack") {
 		l.Info(fmt.Sprintf("Telemetry is disabled by %q executable name.", execName))
-		disabled = true
+		disable = true
 	}
 
-	if disabled {
+	if disable {
 		// check for conflicts
 		if f.v != nil && *f.v {
-			return nil, fmt.Errorf("telemetry is disabled by DO_NOT_TRACK environment variable or executable name")
+			return nil, fmt.Errorf("telemetry can't be enabled")
 		}
 
 		return pointer.ToBool(false), nil
+	}
+
+	if f.v == nil {
+		if prev == nil {
+			// undecided state, reporter would log about it during run
+			return nil, nil
+		}
+
+		if *prev {
+			l.Info("Telemetry is enabled because it was enabled previously.")
+		} else {
+			l.Info("Telemetry is disabled because it was disabled previously.")
+		}
+
+		return prev, nil
+	}
+
+	if *f.v {
+		l.Info("Telemetry enabled.")
+	} else {
+		l.Info("Telemetry disabled.")
 	}
 
 	return f.v, nil
