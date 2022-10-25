@@ -54,8 +54,7 @@ func SetByPath[T types.CompositeTypeInterface](tb testing.TB, comp T, value any,
 			require.NoError(tb, err)
 
 			if last {
-				err = c.Set(p, value)
-				require.NoError(tb, err)
+				c.Set(p, value)
 			}
 
 		case *types.Array:

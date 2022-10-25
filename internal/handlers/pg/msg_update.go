@@ -183,7 +183,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 					return err
 				}
 				if !doc.Has("_id") {
-					must.NoError(doc.Set("_id", types.NewObjectID()))
+					doc.Set("_id", types.NewObjectID())
 				}
 
 				must.NoError(upserted.Append(must.NotFail(types.NewDocument(
@@ -233,11 +233,13 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	res := must.NotFail(types.NewDocument(
 		"n", matched,
 	))
+
 	if upserted.Len() != 0 {
-		must.NoError(res.Set("upserted", &upserted))
+		res.Set("upserted", &upserted)
 	}
-	must.NoError(res.Set("nModified", modified))
-	must.NoError(res.Set("ok", float64(1)))
+
+	res.Set("nModified", modified)
+	res.Set("ok", float64(1))
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{

@@ -96,7 +96,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	))
 
 	cmd := command.DeepCopy()
-	must.NoError(cmd.Set("$db", sp.DB))
+	cmd.Set("$db", sp.DB)
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
