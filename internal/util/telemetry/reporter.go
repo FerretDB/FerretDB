@@ -40,7 +40,7 @@ type request struct {
 	OS      string `json:"os"`
 	Arch    string `json:"arch"`
 
-	BackendVersion string `json:"backend_version"` // TODO PostgreSQL, Tigris, etc.
+	HandlerVersion string `json:"handler_version"` // PostgreSQL, Tigris, etc version
 
 	UUID   string        `json:"uuid"`
 	Uptime time.Duration `json:"uptime"`
@@ -154,6 +154,8 @@ func makeRequest(s *state.State) *request {
 		OS:      runtime.GOOS,
 		Arch:    runtime.GOARCH,
 
+		HandlerVersion: s.HandlerVersion,
+
 		UUID:   s.UUID,
 		Uptime: time.Since(s.Start),
 	}
@@ -194,7 +196,7 @@ func (r *Reporter) report(ctx context.Context) {
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusOK {
+	if res.StatusCode != http.StatusCreated {
 		r.L.Debug("Failed to send telemetry request.", zap.Int("status", res.StatusCode))
 		return
 	}

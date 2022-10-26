@@ -25,6 +25,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 const (
@@ -56,13 +57,26 @@ type DBStats struct {
 //
 // Passed context is used only by the first checking connection.
 // Canceling it after that function returns does nothing.
-func NewPool(ctx context.Context, connString string, logger *zap.Logger, lazy bool) (*Pool, error) {
+func NewPool(ctx context.Context, connString string, logger *zap.Logger, lazy bool, p *state.Provider) (*Pool, error) {
 	config, err := pgxpool.ParseConfig(connString)
 	if err != nil {
 		return nil, fmt.Errorf("pgdb.NewPool: %w", err)
 	}
 
 	config.LazyConnect = lazy
+
+	config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+		var v string
+		if err := conn.QueryRow(ctx, `SHOW server_version`).Scan(&v); err != nil {
+			return err
+		}
+
+		if err := p.Update(func(s *state.State) { s.HandlerVersion = v }); err != nil {
+			logger.Error("pgdb.Pool.AfterConnect: failed to update state", zap.Error(err))
+		}
+
+		return nil
+	}
 
 	// That only affects text protocol; pgx mostly uses a binary one.
 	// See:
@@ -79,13 +93,13 @@ func NewPool(ctx context.Context, connString string, logger *zap.Logger, lazy bo
 	config.ConnConfig.LogLevel = pgx.LogLevelTrace
 	config.ConnConfig.Logger = zapadapter.NewLogger(logger.Named("pgdb"))
 
-	p, err := pgxpool.ConnectConfig(ctx, config)
+	pool, err := pgxpool.ConnectConfig(ctx, config)
 	if err != nil {
 		return nil, fmt.Errorf("pgdb.NewPool: %w", err)
 	}
 
 	res := &Pool{
-		Pool: p,
+		Pool: pool,
 	}
 
 	if !lazy {
