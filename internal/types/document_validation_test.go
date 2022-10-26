@@ -59,6 +59,14 @@ func TestDocumentValidateData(t *testing.T) {
 			doc:    must.NotFail(NewDocument("foo", "bar")),
 			reason: errors.New(`invalid document: document must contain '_id' field`),
 		},
+		"Array": {
+			doc:    must.NotFail(NewDocument("_id", []string{"foo", "bar"})),
+			reason: errors.New("invalid value: []string{\"foo\", \"bar\"} (_id value mustn't be an array)"),
+		},
+		"Regex": {
+			doc:    must.NotFail(NewDocument("_id", Regex{Pattern: "regex$"})),
+			reason: errors.New("invalid value: types.Regex{Pattern:\"regex$\", Options:\"\"} (_id value mustn't be a regex)"),
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {

@@ -16,7 +16,6 @@ package types
 
 import (
 	"fmt"
-	"reflect"
 	"strconv"
 
 	"golang.org/x/exp/slices"
@@ -229,17 +228,6 @@ func (d *Document) Set(key string, value any) {
 	}
 
 	if key == "_id" {
-		// TODO check that value is not regex or array: https://github.com/FerretDB/FerretDB/issues/1235
-
-		switch value := value.(type) {
-		case Regex:
-			panic(fmt.Sprintf("types.Document.Set: _id is a regex: %v", value))
-
-		default:
-			if reflect.TypeOf(value).Kind() == reflect.Slice {
-				panic(fmt.Sprintf("types.Document.Set: _id is a slice: %v", value))
-			}
-		}
 
 		// ensure that _id is the first field
 		if i := slices.Index(d.Keys(), key); i >= 0 {

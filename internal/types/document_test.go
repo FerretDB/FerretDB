@@ -54,20 +54,6 @@ func TestDocument(t *testing.T) {
 		assert.Equal(t, "foo", doc.Command())
 	})
 
-	t.Run("ArrayValues", func(t *testing.T) {
-		t.Parallel()
-		var doc Document
-		assert.Panicsf(t, func() {
-			doc.Set("_id", []string{"foo", "bar"})
-		}, `types.Document.Set: _id is a slice: []string{"foo","bar"}`)
-	})
-
-	t.Run("RegexValues", func(t *testing.T) {
-		t.Parallel()
-		var doc Document
-		doc.Set("_id", Regex{Pattern: "Boo! I'm Regex placed in a wrong place!!"})
-	})
-
 	t.Run("NewDocument", func(t *testing.T) {
 		t.Parallel()
 

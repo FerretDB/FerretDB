@@ -17,6 +17,7 @@ package types
 import (
 	"fmt"
 	"math"
+	"reflect"
 	"strings"
 	"unicode/utf8"
 
@@ -77,6 +78,17 @@ func (d *Document) ValidateData() error {
 
 	if !idPresent {
 		return newValidationError(fmt.Errorf("invalid document: document must contain '_id' field"))
+	}
+
+	v := must.NotFail(d.Get("_id"))
+
+	switch v := v.(type) {
+	case Regex:
+		return newValidationError(fmt.Errorf("invalid value: %#v (_id value mustn't be a regex)", v))
+	}
+
+	if reflect.TypeOf(v).Kind() == reflect.Slice {
+		return newValidationError(fmt.Errorf("invalid value: %#v (_id value mustn't be an array)", v))
 	}
 
 	return nil
