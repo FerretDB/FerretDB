@@ -60,13 +60,13 @@ func NewCommandErrorMsg(code ErrorCode, msg string) error {
 	return NewCommandError(code, errors.New(msg))
 }
 
-// NewCommandErrorMsgWithOperator creates a new wire protocol error with operator.
-func NewCommandErrorMsgWithOperator(code ErrorCode, msg string, operator string) error {
+// NewCommandErrorMsgWithArgument creates a new wire protocol error with argument.
+func NewCommandErrorMsgWithArgument(code ErrorCode, msg string, argument string) error {
 	return &CommandError{
 		err:  errors.New(msg),
 		code: code,
 		info: &ErrInfo{
-			Operator: operator,
+			Argument: argument,
 		},
 	}
 }
@@ -107,8 +107,8 @@ func (e *CommandError) Document() *types.Document {
 	return d
 }
 
-// ErrInfo implements ProtoErr interface.
-func (e *CommandError) ErrInfo() *ErrInfo {
+// Info implements ProtoErr interface.
+func (e *CommandError) Info() *ErrInfo {
 	return e.info
 }
 
