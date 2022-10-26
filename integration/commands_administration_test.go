@@ -861,7 +861,7 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 				{{"update", "values"}, {"updates", bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}}}}},
 			},
 			metricsPath:    types.NewPath([]string{"metrics", "commands", "update"}),
-			expectedFields: []string{"arrayFilters", "failed", "pipeline", "total"},
+			expectedFields: []string{"failed", "total"},
 			expectedNoZero: []string{"total"},
 		},
 		"UpdateCmdFailed": {
@@ -869,7 +869,7 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 				{{"update", int32(1)}},
 			},
 			metricsPath:    types.NewPath([]string{"metrics", "commands", "update"}),
-			expectedFields: []string{"arrayFilters", "failed", "pipeline", "total"},
+			expectedFields: []string{"failed", "total"},
 			expectedNoZero: []string{"failed", "total"},
 		},
 		// TODO: https://github.com/FerretDB/FerretDB/issues/9
