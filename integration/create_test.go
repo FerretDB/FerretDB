@@ -16,6 +16,7 @@ package integration
 
 import (
 	"fmt"
+	"runtime"
 	"sync"
 	"testing"
 
@@ -36,7 +37,7 @@ func TestCreateStress(t *testing.T) {
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
 	db := collection.Database()
 
-	const collNum = 1 // runtime.GOMAXPROCS * 10
+	collNum := runtime.NumCPU() * 10
 
 	ready := make(chan struct{}, collNum)
 	start := make(chan struct{})
@@ -71,10 +72,10 @@ func TestCreateStress(t *testing.T) {
 			// Attempt to create a collection for Tigris with a schema.
 			// If we get an error, it's not Tigris, so we create collection without schema
 			err := db.CreateCollection(ctx, collName, &opts)
-			//if err != nil {
-			//	err := db.CreateCollection(ctx, collName)
-			assert.NoError(t, err)
-			//}
+			if err != nil {
+				err := db.CreateCollection(ctx, collName)
+				assert.NoError(t, err)
+			}
 
 			_, err = db.Collection(collName).InsertOne(ctx, bson.D{{"_id", "foo"}, {"v", "bar"}})
 
