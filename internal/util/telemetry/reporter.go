@@ -40,8 +40,12 @@ type request struct {
 	OS      string `json:"os"`
 	Arch    string `json:"arch"`
 
+	BackendVersion string `json:"backend_version"` // TODO PostgreSQL, Tigris, etc.
+
 	UUID   string        `json:"uuid"`
 	Uptime time.Duration `json:"uptime"`
+
+	// TODO errors with limited details
 }
 
 // response represents telemetry response.
