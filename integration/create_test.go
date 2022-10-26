@@ -36,18 +36,20 @@ func TestCreateStress(t *testing.T) {
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
 	db := collection.Database()
 
-	const collNum = 20 // runtime.GOMAXPROCS * 10
+	const collNum = 1 // runtime.GOMAXPROCS * 10
 
 	ready := make(chan struct{}, collNum)
 	start := make(chan struct{})
 
 	var wg sync.WaitGroup
 	for i := 0; i < collNum; i++ {
-
 		wg.Add(1)
 
 		go func(i int) {
+			defer wg.Done()
+
 			ready <- struct{}{}
+
 			<-start
 
 			collName := fmt.Sprintf("stress_%d", i)
@@ -60,7 +62,8 @@ func TestCreateStress(t *testing.T) {
 					"_id": {"type": "string"},
 					"v": {"type": "string"}
 				}
-			}`, collName, i)
+			}`, collName, i,
+			)
 			opts := options.CreateCollectionOptions{
 				Validator: bson.D{{"$tigrisSchemaString", schema}},
 			}
@@ -68,19 +71,22 @@ func TestCreateStress(t *testing.T) {
 			// Attempt to create a collection for Tigris with a schema.
 			// If we get an error, it's not Tigris, so we create collection without schema
 			err := db.CreateCollection(ctx, collName, &opts)
-			if err != nil {
-				err := db.CreateCollection(ctx, collName)
-				assert.NoError(t, err)
-			}
+			//if err != nil {
+			//	err := db.CreateCollection(ctx, collName)
+			assert.NoError(t, err)
+			//}
 
 			_, err = db.Collection(collName).InsertOne(ctx, bson.D{{"_id", "foo"}, {"v", "bar"}})
 
 			assert.NoError(t, err)
-			defer wg.Done()
 		}(i)
-
-		close(start)
 	}
+
+	for i := 0; i < collNum; i++ {
+		<-ready
+	}
+
+	close(start)
 
 	wg.Wait()
 
