@@ -57,7 +57,9 @@ func TestDocument(t *testing.T) {
 	t.Run("ArrayValues", func(t *testing.T) {
 		t.Parallel()
 		var doc Document
-		doc.Set("_id", []string{})
+		assert.Panicsf(t, func() {
+			doc.Set("_id", []string{"foo", "bar"})
+		}, `types.Document.Set: _id is a slice: []string{"foo","bar"}`)
 	})
 
 	t.Run("RegexValues", func(t *testing.T) {
