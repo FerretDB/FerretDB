@@ -297,7 +297,7 @@ func TestCollectionName(t *testing.T) {
 
 	t.Parallel()
 
-	t.Run("Err", func(t *testing.T) {
+	t.Run("All", func(t *testing.T) {
 		ctx, collection := setup.Setup(t)
 
 		collectionName300 := strings.Repeat("aB", 150)
@@ -312,11 +312,11 @@ func TestCollectionName(t *testing.T) {
 					Name: "InvalidNamespace",
 					Code: 73,
 					Message: fmt.Sprintf(
-						"Fully qualified namespace is too long. Namespace: testcollectionname_err.%s Max: 255",
+						"Fully qualified namespace is too long. Namespace: testcollectionname_all.%s Max: 255",
 						collectionName300,
 					),
 				},
-				alt: fmt.Sprintf("Invalid collection name: 'testcollectionname_err.%s'", collectionName300),
+				alt: fmt.Sprintf("Invalid collection name: 'testcollectionname_all.%s'", collectionName300),
 			},
 			"WithADollarSign": {
 				collection: "collection_name_with_a-$",
@@ -325,16 +325,22 @@ func TestCollectionName(t *testing.T) {
 					Code:    73,
 					Message: `Invalid collection name: collection_name_with_a-$`,
 				},
-				alt: `Invalid collection name: 'testcollectionname_err.collection_name_with_a-$'`,
+				alt: `Invalid collection name: 'testcollectionname_all.collection_name_with_a-$'`,
+			},
+			"WithADash": {
+				collection: "collection_name_with_a-",
+			},
+			"WithADashAtBeginning": {
+				collection: "-collection_name",
 			},
 			"Empty": {
 				collection: "",
 				err: &mongo.CommandError{
 					Name:    "InvalidNamespace",
 					Code:    73,
-					Message: "Invalid namespace specified 'testcollectionname_err.'",
+					Message: "Invalid namespace specified 'testcollectionname_all.'",
 				},
-				alt: "Invalid collection name: 'testcollectionname_err.'",
+				alt: "Invalid collection name: 'testcollectionname_all.'",
 			},
 		}
 
@@ -342,12 +348,16 @@ func TestCollectionName(t *testing.T) {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {
 				err := collection.Database().CreateCollection(ctx, tc.collection)
-				AssertEqualAltError(t, *tc.err, tc.alt, err)
+				if tc.err != nil {
+					AssertEqualAltError(t, *tc.err, tc.alt, err)
+					return
+				}
+				assert.NoError(t, err)
 			})
 		}
 	})
 
-	t.Run("Ok", func(t *testing.T) {
+	t.Run("LongName", func(t *testing.T) {
 		ctx, collection := setup.Setup(t)
 
 		longCollectionName := strings.Repeat("a", 100)
