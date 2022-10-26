@@ -39,7 +39,7 @@ func MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	if pipeline.Len() > 0 {
 		d := must.NotFail(pipeline.Get(0)).(*types.Document)
 
-		return nil, NewCommandErrorMsgWithOperator(
+		return nil, NewCommandErrorMsgWithArgument(
 			ErrNotImplemented,
 			fmt.Sprintf("`aggregate` %q is not implemented yet", d.Command()),
 			d.Command(),

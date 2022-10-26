@@ -475,7 +475,7 @@ func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
 		case "$pop":
 			updateModifier = true
 		case "$mul", "$rename":
-			return false, NewCommandErrorMsgWithOperator(
+			return false, NewCommandErrorMsgWithArgument(
 				ErrNotImplemented,
 				fmt.Sprintf("update operator %s is not implemented", updateOp),
 				updateOp,

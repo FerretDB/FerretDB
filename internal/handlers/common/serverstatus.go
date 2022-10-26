@@ -44,9 +44,9 @@ func ServerStatus(startTime time.Time, cm *connmetrics.ConnMetrics) (*types.Docu
 
 	metrics := cm.GetResponses()
 	for _, commands := range metrics {
-		for command, operators := range commands {
+		for command, arguments := range commands {
 			var total, failed int
-			for _, m := range operators {
+			for _, m := range arguments {
 				total += m.Total
 
 				for _, v := range m.Failures {

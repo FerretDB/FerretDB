@@ -110,7 +110,7 @@ const (
 
 // ErrInfo represents additional optional error information.
 type ErrInfo struct {
-	Operator string
+	Argument string // command's argument, operator, or aggregation pipeline stage
 }
 
 // ProtoErr represents protocol error type.
@@ -122,8 +122,8 @@ type ProtoErr interface {
 	Code() ErrorCode
 	// Document returns *types.Document.
 	Document() *types.Document
-	// ErrInfo returns *ErrInfo.
-	ErrInfo() *ErrInfo
+	// Info returns *Info.
+	Info() *ErrInfo
 }
 
 // ProtocolError converts any error to wire protocol error.

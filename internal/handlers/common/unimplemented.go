@@ -26,8 +26,12 @@ import (
 func Unimplemented(doc *types.Document, fields ...string) error {
 	for _, field := range fields {
 		if v, err := doc.Get(field); err == nil || v != nil {
-			err = fmt.Errorf("%s: support for field %q is not implemented yet", doc.Command(), field)
-			return NewError(ErrNotImplemented, err)
+			msg := fmt.Sprintf(
+				"%s: support for field %q is not implemented yet",
+				doc.Command(), field,
+			)
+
+			return NewCommandErrorMsgWithArgument(ErrNotImplemented, msg, field)
 		}
 	}
 
@@ -46,8 +50,12 @@ func UnimplementedNonDefault(doc *types.Document, field string, isDefault func(v
 		return nil
 	}
 
-	err = fmt.Errorf("%s: support for field %q with non-default value %v is not implemented yet", doc.Command(), field, v)
-	return NewError(ErrNotImplemented, err)
+	msg := fmt.Sprintf(
+		"%s: support for field %q with non-default value %v is not implemented yet",
+		doc.Command(), field, v,
+	)
+
+	return NewCommandErrorMsgWithArgument(ErrNotImplemented, msg, field)
 }
 
 // Ignored logs a message if doc has any of the given fields.

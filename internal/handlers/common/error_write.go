@@ -91,8 +91,8 @@ func (we *WriteErrors) Document() *types.Document {
 	))
 }
 
-// ErrInfo implements ProtoErr interface.
-func (we *WriteErrors) ErrInfo() *ErrInfo {
+// Info implements ProtoErr interface.
+func (we *WriteErrors) Info() *ErrInfo {
 	return nil
 }
 
