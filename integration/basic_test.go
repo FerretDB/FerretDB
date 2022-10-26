@@ -312,11 +312,11 @@ func TestCollectionName(t *testing.T) {
 					Name: "InvalidNamespace",
 					Code: 73,
 					Message: fmt.Sprintf(
-						"Fully qualified namespace is too long. Namespace: testcollectionname_all.%s Max: 255",
+						"Fully qualified namespace is too long. Namespace: testcollectionname-all.%s Max: 255",
 						collectionName300,
 					),
 				},
-				alt: fmt.Sprintf("Invalid collection name: 'testcollectionname_all.%s'", collectionName300),
+				alt: fmt.Sprintf("Invalid collection name: 'testcollectionname-all.%s'", collectionName300),
 			},
 			"WithADollarSign": {
 				collection: "collection_name_with_a-$",
