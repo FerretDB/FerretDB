@@ -299,12 +299,17 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	requests := c.m.Requests.MustCurryWith(prometheus.Labels{"opcode": reqHeader.OpCode.String()})
 	var command string
 	var result *string
+	var operator *string
 	defer func() {
 		if result == nil {
 			result = pointer.ToString("panic")
 		}
 
-		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, *result).Inc()
+		if operator == nil {
+			operator = pointer.ToString("")
+		}
+
+		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, *result, *operator).Inc()
 	}()
 
 	connInfo := &conninfo.ConnInfo{
@@ -368,6 +373,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			}))
 			resBody = &res
 			result = pointer.ToString(protoErr.Code().String())
+			operator = pointer.ToString(protoErr.Info().Operator)
 
 		case wire.OpCodeQuery:
 			fallthrough
@@ -389,6 +395,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			// do not panic to make fuzzing easier
 			closeConn = true
 			result = pointer.ToString("unhandled")
+			operator = pointer.ToString("noop")
 			c.l.Error(
 				"Handler error for unhandled response opcode",
 				zap.Error(err), zap.Stringer("opcode", resHeader.OpCode),
@@ -399,6 +406,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			// do not panic to make fuzzing easier
 			closeConn = true
 			result = pointer.ToString("unexpected")
+			operator = pointer.ToString("noop")
 			c.l.Error(
 				"Handler error for unexpected response opcode",
 				zap.Error(err), zap.Stringer("opcode", resHeader.OpCode),
@@ -412,6 +420,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	b, err := resBody.MarshalBinary()
 	if err != nil {
 		result = nil
+		operator = nil
 		panic(err)
 	}
 	resHeader.MessageLength = int32(wire.MsgHeaderLen + len(b))
@@ -422,6 +431,11 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	if result == nil {
 		result = pointer.ToString("ok")
 	}
+
+	if operator == nil {
+		operator = pointer.ToString("noop")
+	}
+
 	return
 }
 

@@ -26,6 +26,7 @@ import (
 type CommandError struct {
 	err  error
 	code ErrorCode
+	info ErrInfo
 }
 
 // There should not be NewCommandError function variant that accepts printf-like format specifiers.
@@ -57,6 +58,17 @@ func NewError(code ErrorCode, err error) error {
 // Code shouldn't be zero, err can't be empty.
 func NewCommandErrorMsg(code ErrorCode, msg string) error {
 	return NewCommandError(code, errors.New(msg))
+}
+
+// NewCommandErrorMsgWithOperator creates a new wire protocol error with operator.
+func NewCommandErrorMsgWithOperator(code ErrorCode, msg string, operator string) error {
+	return &CommandError{
+		err:  errors.New(msg),
+		code: code,
+		info: ErrInfo{
+			Operator: operator,
+		},
+	}
 }
 
 // NewErrorMsg is a deprecated alias for NewCommandErrorMsg.
@@ -93,6 +105,11 @@ func (e *CommandError) Document() *types.Document {
 	}
 
 	return d
+}
+
+// Info implements ProtoErr interface.
+func (e *CommandError) Info() *ErrInfo {
+	return &e.info
 }
 
 // check interfaces

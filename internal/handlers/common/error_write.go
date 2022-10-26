@@ -23,20 +23,25 @@ import (
 
 // WriteErrors represents a slice of protocol write errors.
 // It could be returned for Update, Insert, Delete, and Replace operations.
-type WriteErrors []writeError
+type WriteErrors struct {
+	errs []writeError
+	info ErrInfo
+}
 
 // NewWriteErrorMsg creates a new protocol write error with given ErrorCode and message.
 func NewWriteErrorMsg(code ErrorCode, msg string) error {
-	return &WriteErrors{{
-		code: code,
-		err:  msg,
-	}}
+	return &WriteErrors{
+		errs: []writeError{{
+			code: code,
+			err:  msg,
+		}},
+	}
 }
 
 // Error implements error interface.
 func (we *WriteErrors) Error() string {
 	var err string
-	for _, e := range *we {
+	for _, e := range we.errs {
 		err += e.err + ","
 	}
 
@@ -45,7 +50,7 @@ func (we *WriteErrors) Error() string {
 
 // Unwrap implements a standard error unwrapping interface.
 func (we *WriteErrors) Unwrap() error {
-	for _, e := range *we {
+	for _, e := range we.errs {
 		return errors.New(e.err)
 	}
 
@@ -54,7 +59,7 @@ func (we *WriteErrors) Unwrap() error {
 
 // Code implements ProtoErr interface.
 func (we *WriteErrors) Code() ErrorCode {
-	for _, e := range *we {
+	for _, e := range we.errs {
 		return e.code
 	}
 
@@ -65,7 +70,7 @@ func (we *WriteErrors) Code() ErrorCode {
 func (we *WriteErrors) Document() *types.Document {
 	errs := must.NotFail(types.NewArray())
 
-	for _, e := range *we {
+	for _, e := range we.errs {
 		doc := must.NotFail(types.NewDocument())
 
 		if e.index != nil {
@@ -97,17 +102,27 @@ func (we *WriteErrors) Append(err error, index int32) {
 	switch {
 	case errors.As(err, &writeErr):
 		writeErr.index = &index
-		*we = append(*we, *writeErr)
+		we.errs = append(we.errs, *writeErr)
 
 		return
 
 	case errors.As(err, &cmdErr):
-		*we = append(*we, writeError{err: cmdErr.Unwrap().Error(), code: cmdErr.code, index: &index})
+		we.errs = append(we.errs, writeError{err: cmdErr.Unwrap().Error(), code: cmdErr.code, index: &index})
 
 		return
 	}
 
-	*we = append(*we, writeError{err: err.Error(), code: errInternalError, index: &index})
+	we.errs = append(we.errs, writeError{err: err.Error(), code: errInternalError, index: &index})
+}
+
+// Len returns the number of errors.
+func (we *WriteErrors) Len() int {
+	return len(we.errs)
+}
+
+// Info implements ProtoErr interface.
+func (we *WriteErrors) Info() *ErrInfo {
+	return &we.info
 }
 
 // writeError represents protocol write error.

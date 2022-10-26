@@ -72,7 +72,7 @@ func newConnMetrics(cmds []string) *ConnMetrics {
 				Name:      "responses_total",
 				Help:      "Total number of responses.",
 			},
-			[]string{"opcode", "command", "result"},
+			[]string{"opcode", "command", "result", "operator"},
 		),
 		AggregationStages: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
@@ -143,6 +143,8 @@ func (cm *ConnMetrics) GetResponses() map[string]CommandMetrics {
 				result = label.GetValue()
 			case "stage":
 				stage = must.NotFail(strconv.Atoi(label.GetValue()))
+			case "operator":
+				continue
 			default:
 				panic(fmt.Sprintf("%s is not a valid label. Allowed: [command, opcode, result, stage]", label.GetName()))
 			}
