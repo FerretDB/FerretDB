@@ -1,5 +1,118 @@
 # Changelog
 
+## [v0.6.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.6.0) (2022-10-27)
+
+### What's Changed
+We are pleased to announce our first Alpha release!
+
+### New Features 🎉
+* Support `$max` field update operator by @noisersup in https://github.com/FerretDB/FerretDB/pull/1124
+* Migrate FerretDB to Kong by @noisersup in https://github.com/FerretDB/FerretDB/pull/1184
+* Make embedded FerretDB's address configurable by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1199
+* `tjson`: Support `null` by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1005
+* Add simple query pushdown for PostgreSQL by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1207
+* Run tests on CockroachDB by @noisersup in https://github.com/FerretDB/FerretDB/pull/1260
+* Add support for Unix domain sockets by @zhiburt in https://github.com/FerretDB/FerretDB/pull/1214
+* Add basic telemetry by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1299
+* Deprecate infinity values in data documents by @noisersup in https://github.com/FerretDB/FerretDB/pull/1296
+* Explicitly disallow duplicate keys in data documents by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1293
+
+### Fixed Bugs 🐛
+* Allow empty document field names by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1196
+* Fix test helpers for the `nil` case by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1241
+* Fix error messages for invalid `$and`/`$or`/`$nor` arguments by @ronaudinho in https://github.com/FerretDB/FerretDB/pull/1234
+* Fix `explain` command by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1294
+* Fix `tjson` schema unmarshalling by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1304
+
+### Enhancements 🛠
+* Add support for Tigris auth parameters by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1177
+* Use single transaction per `msg_insert` request by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1213
+* Improve `buildInfo` and `serverStatus` commands by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1197
+* Add UUID to log messages by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1208
+* Add update operators data document fields order test by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1238
+* Add UUID to Prometheus metrics if requested by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1240
+* Add simplest validation to check data documents by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1246
+* Add “metrics” section to `serverStatus` response by @noisersup in https://github.com/FerretDB/FerretDB/pull/1231
+* Call data document validation when insert or update documents in Tigris by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1290
+* Add support for empty command documents by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1277
+* Make `_id` field required in data documents by @noisersup in https://github.com/FerretDB/FerretDB/pull/1278
+* Add more ways to disable telemetry by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1311
+* Allow dashes (`-`) in collection names by @noisersup in https://github.com/FerretDB/FerretDB/pull/1312
+* Collect command metrics in telemetry by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1327
+* Include info about unimplemented arguments by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1330
+
+### Documentation 📄
+* Update introduction documentation by @Fashander in https://github.com/FerretDB/FerretDB/pull/1174
+* Add local search plugin by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1178
+* Setup documentation search by @Fashander in https://github.com/FerretDB/FerretDB/pull/1180
+* DRY known differences documentation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1181
+* Documentation website tweaks by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1183
+* Documentation for contributors by @Fashander in https://github.com/FerretDB/FerretDB/pull/1194
+* Add "CRUD operations" and "Understanding FerretDB" sections by @Fashander in https://github.com/FerretDB/FerretDB/pull/1232
+* Add documentation for the `.deb` package usage by @Fashander in https://github.com/FerretDB/FerretDB/pull/1267
+
+### Other Changes 🤖
+* Use transactions in more `pgdb` functions by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1157
+* Add `task` targets for offline work by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1171
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1175
+* Fuzz `wire` package with recorded data by @noisersup in https://github.com/FerretDB/FerretDB/pull/1168
+* Fix fluky test, refactor it by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1185
+* Simplify / unify similar cases by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1187
+* Setup Tigris test cases with explicit schemas by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1167
+* Migrate envtool to Kong by @noisersup in https://github.com/FerretDB/FerretDB/pull/1190
+* Replace `pgxtype.Querier` with `pgx.Tx` by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1188
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1195
+* Cleanup `pgdb` SQL statements by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1193
+* Run linters on integration tests folder by @ravilushqa in https://github.com/FerretDB/FerretDB/pull/1200
+* Use codecov upload token by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1204
+* Add security scan by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1142
+* Use single transaction per `msg_update` request by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1212
+* Use Go 1.19.2 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1211
+* Fix running `pg` and `tigris` tests in parallel by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1218
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1230
+* Use single transaction per `msg_findandmodify` request by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1217
+* Improve `task env-data` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1220
+* Split `fjson` into `pjson` and `types/fjson` by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1219
+* Use single transaction for `listDatabases` command by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1237
+* Cleanup old validation by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1179
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1245
+* Update internal process docs by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1249
+* Fix flag name by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1255
+* Fix CLI flags for Tigris by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1256
+* Remove forked `golangci-lint` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1258
+* Cleanup types/fjson package by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1254
+* Minor handlers refactoring by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1264
+* `fjson` and fuzzing cleanup by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1262
+* Skip `pjson` fuzzing of invalid documents for now by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1274
+* Add schema-related test cases to `tjson` package by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1247
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1275
+* Update docs for the `dummy` handler by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1276
+* Fix documentation for linking PRs and issues by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1268
+* Add experimental mergify configuration by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1281
+* Improve tests cleanup by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1287
+* Remove implicit mergify rules by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1288
+* Run CockroachDB tests on CI by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1289
+* Bump cockroachdb/cockroach from v22.1.8 to v22.1.9 in /build/deps by @dependabot in https://github.com/FerretDB/FerretDB/pull/1285
+* Migrate to a newer Tigris version and fix relevant tests by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1239
+* Add ability to subscribe to state changes by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1265
+* Move tjson into internal/handlers/tigris/tjson by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1291
+* Fix a typo in the `types` package docs by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1297
+* Disallow usage of old context package by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1292
+* Disable Unix sockets in tests for now by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1298
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1309
+* Expand `debugError` stub by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1303
+* Add comment about `diff` tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1302
+* Refactor handler errors by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1322
+
+## New Contributors
+* @chilagrow made their first contribution in https://github.com/FerretDB/FerretDB/pull/1254
+* @ronaudinho made their first contribution in https://github.com/FerretDB/FerretDB/pull/1234
+* @zhiburt made their first contribution in https://github.com/FerretDB/FerretDB/pull/1214
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/22?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v0.5.4...v0.6.0).
+
+
 ## [v0.5.4](https://github.com/FerretDB/FerretDB/releases/tag/v0.5.4) (2022-09-22)
 
 ### Fixed Bugs 🐛
