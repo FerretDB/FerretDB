@@ -296,8 +296,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 // They also should not use recover(). That allows us to use fuzzing.
 func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
 	connInfo := &conninfo.ConnInfo{
-		PeerAddr:          c.netConn.RemoteAddr(),
-		AggregationStages: c.m.AggregationStages,
+		PeerAddr: c.netConn.RemoteAddr(),
 	}
 	ctx, cancel := context.WithCancel(conninfo.WithConnInfo(ctx, connInfo))
 	defer cancel()

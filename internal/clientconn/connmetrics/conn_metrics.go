@@ -26,9 +26,8 @@ import (
 
 // ConnMetrics represents conn metrics.
 type ConnMetrics struct {
-	Requests          *prometheus.CounterVec
-	Responses         *prometheus.CounterVec
-	AggregationStages *prometheus.CounterVec
+	Requests  *prometheus.CounterVec
+	Responses *prometheus.CounterVec
 
 	cmds []string
 }
@@ -74,15 +73,6 @@ func newConnMetrics(cmds []string) *ConnMetrics {
 			},
 			[]string{"opcode", "command", "result", "operator"},
 		),
-		AggregationStages: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Namespace: namespace,
-				Subsystem: subsystem,
-				Name:      "aggregation_stages_total",
-				Help:      "Total number of aggregation pipeline stages.",
-			},
-			[]string{"command", "stage"},
-		),
 		cmds: cmds,
 	}
 }
@@ -91,14 +81,12 @@ func newConnMetrics(cmds []string) *ConnMetrics {
 func (cm *ConnMetrics) Describe(ch chan<- *prometheus.Desc) {
 	cm.Requests.Describe(ch)
 	cm.Responses.Describe(ch)
-	cm.AggregationStages.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
 func (cm *ConnMetrics) Collect(ch chan<- prometheus.Metric) {
 	cm.Requests.Collect(ch)
 	cm.Responses.Collect(ch)
-	cm.AggregationStages.Collect(ch)
 }
 
 // GetResponses returns a map with all metrics related to all commands.
@@ -122,7 +110,6 @@ func (cm *ConnMetrics) GetResponses() map[string]CommandMetrics {
 
 	go func() {
 		cm.Responses.Collect(metrics)
-		cm.AggregationStages.Collect(metrics)
 		close(metrics)
 	}()
 
