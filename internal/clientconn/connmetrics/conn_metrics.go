@@ -55,7 +55,7 @@ func newConnMetrics() *ConnMetrics {
 				Name:      "responses_total",
 				Help:      "Total number of responses.",
 			},
-			[]string{"opcode", "command", "operator", "result"},
+			[]string{"opcode", "command", "argument", "result"},
 		),
 	}
 }
@@ -74,7 +74,7 @@ func (cm *ConnMetrics) Collect(ch chan<- prometheus.Metric) {
 
 // GetResponses returns a map with all response metrics:
 //
-//	opcode (e.g. "OP_MSG") -> command (e.g. "update") -> operator (e.g. "$set") -> commandMetrics
+//	opcode (e.g. "OP_MSG") -> command (e.g. "update") -> argument (e.g. "$set") -> commandMetrics
 func (cm *ConnMetrics) GetResponses() map[string]map[string]map[string]commandMetrics {
 	metrics := make(chan prometheus.Metric)
 	go func() {
@@ -88,19 +88,19 @@ func (cm *ConnMetrics) GetResponses() map[string]map[string]map[string]commandMe
 		var content dto.Metric
 		must.NoError(m.Write(&content))
 
-		var opcode, command, operator, result string
+		var opcode, command, argument, result string
 		for _, label := range content.GetLabel() {
 			switch label.GetName() {
 			case "opcode":
 				opcode = label.GetValue()
 			case "command":
 				command = label.GetValue()
-			case "operator":
-				operator = label.GetValue()
+			case "argument":
+				argument = label.GetValue()
 			case "result":
 				result = label.GetValue()
 			default:
-				panic(fmt.Sprintf("%s is not a valid label. Allowed: [opcode, command, operator, result]", label.GetName()))
+				panic(fmt.Sprintf("%s is not a valid label. Allowed: [opcode, command, argument, result]", label.GetName()))
 			}
 		}
 
@@ -112,11 +112,11 @@ func (cm *ConnMetrics) GetResponses() map[string]map[string]map[string]commandMe
 			res[opcode][command] = map[string]commandMetrics{}
 		}
 
-		if _, ok := res[opcode][command][operator]; !ok {
-			res[opcode][command][operator] = commandMetrics{}
+		if _, ok := res[opcode][command][argument]; !ok {
+			res[opcode][command][argument] = commandMetrics{}
 		}
 
-		m := res[opcode][command][operator]
+		m := res[opcode][command][argument]
 
 		v := int(content.GetCounter().GetValue())
 		m.Total += v
@@ -128,7 +128,7 @@ func (cm *ConnMetrics) GetResponses() map[string]map[string]map[string]commandMe
 			m.Failures[result] += v
 		}
 
-		res[opcode][command][operator] = m
+		res[opcode][command][argument] = m
 	}
 
 	return res

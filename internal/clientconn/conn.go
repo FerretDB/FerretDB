@@ -301,17 +301,17 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	ctx, cancel := context.WithCancel(conninfo.WithConnInfo(ctx, connInfo))
 	defer cancel()
 
-	var command, result, operator string
+	var command, result, argument string
 	defer func() {
 		if result == "" {
 			result = "panic"
 		}
 
-		if operator == "" {
-			operator = "unknown"
+		if argument == "" {
+			argument = "unknown"
 		}
 
-		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, operator, result).Inc()
+		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, argument, result).Inc()
 	}()
 
 	resHeader = new(wire.MsgHeader)
@@ -375,8 +375,8 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 
 			result = protoErr.Code().String()
 
-			if info := protoErr.ErrInfo(); info != nil {
-				operator = info.Operator
+			if info := protoErr.Info(); info != nil {
+				argument = info.Argument
 			}
 
 		case wire.OpCodeQuery:
