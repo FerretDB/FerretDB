@@ -21,7 +21,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -31,11 +30,9 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
@@ -242,6 +239,8 @@ func run() {
 		debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, logger.Named("debug"))
 	}()
 
+	metrics := connmetrics.NewListenerMetrics()
+
 	wg.Add(1)
 
 	go func() {
@@ -254,6 +253,7 @@ func run() {
 				DNT:            os.Getenv("DO_NOT_TRACK"),
 				ExecName:       os.Args[0],
 				P:              stateProvider,
+				ConnMetrics:    metrics.ConnMetrics,
 				L:              logger.Named("telemetry"),
 				UndecidedDelay: cli.Test.Telemetry.UndecidedDelay,
 				ReportInterval: cli.Test.Telemetry.ReportInterval,
@@ -261,11 +261,6 @@ func run() {
 			},
 		)
 	}()
-
-	cmdsList := maps.Keys(common.Commands)
-	sort.Strings(cmdsList)
-
-	metrics := connmetrics.NewListenerMetrics(cmdsList)
 
 	h, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
 		Ctx:           ctx,

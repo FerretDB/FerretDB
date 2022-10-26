@@ -16,8 +16,8 @@ package common
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -26,8 +26,6 @@ import (
 
 // MsgAggregate is a common implementation of the aggregate command.
 func MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	m := conninfo.GetConnInfo(ctx).AggregationStages
-
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -38,9 +36,14 @@ func MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 		return nil, err
 	}
 
-	for i := 0; i < pipeline.Len(); i++ {
-		stage := must.NotFail(pipeline.Get(i)).(*types.Document)
-		m.WithLabelValues(document.Command(), stage.Command()).Inc()
+	if pipeline.Len() > 0 {
+		d := must.NotFail(pipeline.Get(0)).(*types.Document)
+
+		return nil, NewCommandErrorMsgWithOperator(
+			ErrNotImplemented,
+			fmt.Sprintf("`aggregate` %q is not implemented yet", d.Command()),
+			d.Command(),
+		)
 	}
 
 	return nil, NewErrorMsg(ErrNotImplemented, "`aggregate` command is not implemented yet")

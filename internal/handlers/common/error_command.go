@@ -26,6 +26,7 @@ import (
 type CommandError struct {
 	err  error
 	code ErrorCode
+	info *ErrInfo
 }
 
 // There should not be NewCommandError function variant that accepts printf-like format specifiers.
@@ -59,6 +60,17 @@ func NewCommandErrorMsg(code ErrorCode, msg string) error {
 	return NewCommandError(code, errors.New(msg))
 }
 
+// NewCommandErrorMsgWithOperator creates a new wire protocol error with operator.
+func NewCommandErrorMsgWithOperator(code ErrorCode, msg string, operator string) error {
+	return &CommandError{
+		err:  errors.New(msg),
+		code: code,
+		info: &ErrInfo{
+			Operator: operator,
+		},
+	}
+}
+
 // NewErrorMsg is a deprecated alias for NewCommandErrorMsg.
 //
 // Deprecated: use NewCommandErrorMsg instead.
@@ -71,7 +83,7 @@ func (e *CommandError) Error() string {
 	return fmt.Sprintf("%[1]s (%[1]d): %[2]v", e.code, e.err)
 }
 
-// Unwrap implements standard error unwrapping interface.
+// Unwrap implements ProtoErr interface.
 func (e *CommandError) Unwrap() error {
 	return e.err
 }
@@ -81,7 +93,7 @@ func (e *CommandError) Code() ErrorCode {
 	return e.code
 }
 
-// Document returns wire protocol error document.
+// Document implements ProtoErr interface.
 func (e *CommandError) Document() *types.Document {
 	d := must.NotFail(types.NewDocument(
 		"ok", float64(0),
@@ -93,6 +105,11 @@ func (e *CommandError) Document() *types.Document {
 	}
 
 	return d
+}
+
+// ErrInfo implements ProtoErr interface.
+func (e *CommandError) ErrInfo() *ErrInfo {
+	return e.info
 }
 
 // check interfaces
