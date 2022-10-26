@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -31,7 +32,11 @@ func getPool(ctx context.Context, tb testing.TB) *Pool {
 	tb.Helper()
 
 	logger := testutil.Logger(tb, zap.NewAtomicLevelAt(zap.DebugLevel))
-	pool, err := NewPool(ctx, testutil.PostgreSQLURL(tb, nil), logger, false)
+
+	p, err := state.NewProvider("")
+	require.NoError(tb, err)
+
+	pool, err := NewPool(ctx, testutil.PostgreSQLURL(tb, nil), logger, false, p)
 	require.NoError(tb, err)
 	tb.Cleanup(pool.Close)
 
