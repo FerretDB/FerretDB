@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"net"
 	"net/url"
-	"sort"
 	"sync"
 	"testing"
 
@@ -31,11 +30,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
-	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
@@ -105,10 +102,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 	u, err := url.Parse(*postgreSQLURLF)
 	require.NoError(tb, err)
 
-	cmdsList := maps.Keys(common.Commands)
-	sort.Strings(cmdsList)
-
-	metrics := connmetrics.NewListenerMetrics(cmdsList)
+	metrics := connmetrics.NewListenerMetrics()
 
 	h, err := registry.NewHandler(*handlerF, &registry.NewHandlerOpts{
 		Ctx:           ctx,

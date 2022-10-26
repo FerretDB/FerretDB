@@ -846,34 +846,30 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		cmds           []bson.D
-		metricsPath    types.Path
-		expectedFields []string
-		expectedNoZero []string
+		cmds            []bson.D
+		metricsPath     types.Path
+		expectedNonZero []string
 	}{
 		"BasicCmd": {
 			cmds: []bson.D{
 				{{"ping", int32(1)}},
 			},
-			metricsPath:    types.NewPath([]string{"metrics", "commands", "ping"}),
-			expectedFields: []string{"total", "failed"},
-			expectedNoZero: []string{"total"},
+			metricsPath:     types.NewPath([]string{"metrics", "commands", "ping"}),
+			expectedNonZero: []string{"total"},
 		},
 		"UpdateCmd": {
 			cmds: []bson.D{
 				{{"update", "values"}, {"updates", bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}}}}},
 			},
-			metricsPath:    types.NewPath([]string{"metrics", "commands", "update"}),
-			expectedFields: []string{"arrayFilters", "failed", "pipeline", "total"},
-			expectedNoZero: []string{"total"},
+			metricsPath:     types.NewPath([]string{"metrics", "commands", "update"}),
+			expectedNonZero: []string{"total"},
 		},
 		"UpdateCmdFailed": {
 			cmds: []bson.D{
 				{{"update", int32(1)}},
 			},
-			metricsPath:    types.NewPath([]string{"metrics", "commands", "update"}),
-			expectedFields: []string{"arrayFilters", "failed", "pipeline", "total"},
-			expectedNoZero: []string{"failed", "total"},
+			metricsPath:     types.NewPath([]string{"metrics", "commands", "update"}),
+			expectedNonZero: []string{"failed", "total"},
 		},
 		// TODO: https://github.com/FerretDB/FerretDB/issues/9
 	} {
@@ -901,10 +897,7 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 
 			actualFields := actualDoc.Keys()
 
-			sort.Strings(tc.expectedFields)
 			sort.Strings(actualFields)
-
-			assert.Equal(t, tc.expectedFields, actualFields)
 
 			var actualNotZeros []string
 			for key, value := range actualDoc.Map() {
@@ -915,7 +908,7 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 				}
 			}
 
-			for _, expectedName := range tc.expectedNoZero {
+			for _, expectedName := range tc.expectedNonZero {
 				assert.Contains(t, actualNotZeros, expectedName)
 			}
 		})

@@ -26,22 +26,29 @@ import (
 	"github.com/AlekSi/pointer"
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
 // request represents telemetry request.
 type request struct {
-	Version string `json:"version"`
-	Commit  string `json:"commit"`
-	Branch  string `json:"branch"`
-	Dirty   bool   `json:"dirty"`
-	Debug   bool   `json:"debug"`
-	OS      string `json:"os"`
-	Arch    string `json:"arch"`
+	Version          string         `json:"version"`
+	Commit           string         `json:"commit"`
+	Branch           string         `json:"branch"`
+	Dirty            bool           `json:"dirty"`
+	Debug            bool           `json:"debug"`
+	BuildEnvironment map[string]any `json:"build_environment"`
+	OS               string         `json:"os"`
+	Arch             string         `json:"arch"`
+
+	HandlerVersion string `json:"handler_version"` // PostgreSQL, Tigris, etc version
 
 	UUID   string        `json:"uuid"`
 	Uptime time.Duration `json:"uptime"`
+
+	// opcode (e.g. "OP_MSG") -> command (e.g. "update") -> operator (e.g. "$set") -> result (e.g. "ok") -> count
+	CommandMetrics map[string]map[string]map[string]map[string]int `json:"command_metrics"`
 }
 
 // response represents telemetry response.
@@ -62,6 +69,7 @@ type NewReporterOpts struct {
 	DNT            string
 	ExecName       string
 	P              *state.Provider
+	ConnMetrics    *connmetrics.ConnMetrics
 	L              *zap.Logger
 	UndecidedDelay time.Duration
 	ReportInterval time.Duration
@@ -138,20 +146,57 @@ func (r *Reporter) firstReportDelay(ctx context.Context, ch <-chan struct{}) {
 }
 
 // makeRequest creates a new telemetry request.
-func makeRequest(s *state.State) *request {
+func makeRequest(s *state.State, m *connmetrics.ConnMetrics) *request {
+	commandMetrics := map[string]map[string]map[string]map[string]int{}
+
+	for opcode, commands := range m.GetResponses() {
+		for command, operators := range commands {
+			for operator, m := range operators {
+				if _, ok := commandMetrics[opcode]; !ok {
+					commandMetrics[opcode] = map[string]map[string]map[string]int{}
+				}
+
+				if _, ok := commandMetrics[opcode][command]; !ok {
+					commandMetrics[opcode][command] = map[string]map[string]int{}
+				}
+
+				if _, ok := commandMetrics[opcode][command][operator]; !ok {
+					commandMetrics[opcode][command][operator] = map[string]int{}
+				}
+
+				var failures int
+
+				for result, c := range m.Failures {
+					if result == "ok" {
+						panic("result should not be ok")
+					}
+					commandMetrics[opcode][command][operator][result] = c
+					failures += c
+				}
+
+				commandMetrics[opcode][command][operator]["ok"] = m.Total - failures
+			}
+		}
+	}
+
 	v := version.Get()
 
 	return &request{
-		Version: v.Version,
-		Commit:  v.Commit,
-		Branch:  v.Branch,
-		Dirty:   v.Dirty,
-		Debug:   v.Debug,
-		OS:      runtime.GOOS,
-		Arch:    runtime.GOARCH,
+		Version:          v.Version,
+		Commit:           v.Commit,
+		Branch:           v.Branch,
+		Dirty:            v.Dirty,
+		Debug:            v.Debug,
+		BuildEnvironment: v.BuildEnvironment.Map(),
+		OS:               runtime.GOOS,
+		Arch:             runtime.GOARCH,
+
+		HandlerVersion: s.HandlerVersion,
 
 		UUID:   s.UUID,
 		Uptime: time.Since(s.Start),
+
+		CommandMetrics: commandMetrics,
 	}
 }
 
@@ -163,7 +208,7 @@ func (r *Reporter) report(ctx context.Context) {
 		return
 	}
 
-	request := makeRequest(s)
+	request := makeRequest(s, r.ConnMetrics)
 	r.L.Info("Reporting telemetry.", zap.Reflect("data", request))
 
 	b, err := json.Marshal(request)
@@ -190,7 +235,7 @@ func (r *Reporter) report(ctx context.Context) {
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusOK {
+	if res.StatusCode != http.StatusCreated {
 		r.L.Debug("Failed to send telemetry request.", zap.Int("status", res.StatusCode))
 		return
 	}
