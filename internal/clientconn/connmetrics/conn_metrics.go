@@ -30,6 +30,7 @@ type ConnMetrics struct {
 	Responses *prometheus.CounterVec
 }
 
+// commandMetrics represents command results metrics.
 type commandMetrics struct {
 	Failures map[string]int // by result, excluding "ok"
 	Total    int
