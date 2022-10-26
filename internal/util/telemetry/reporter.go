@@ -47,7 +47,7 @@ type request struct {
 	UUID   string        `json:"uuid"`
 	Uptime time.Duration `json:"uptime"`
 
-	// opcode (e.g. "OP_MSG") -> command (e.g. "update") -> operator (e.g. "$set") -> result (e.g. "ok") -> count
+	// opcode (e.g. "OP_MSG") -> command (e.g. "update") -> argument (e.g. "$set") -> result (e.g. "ok") -> count
 	CommandMetrics map[string]map[string]map[string]map[string]int `json:"command_metrics"`
 }
 
@@ -150,8 +150,8 @@ func makeRequest(s *state.State, m *connmetrics.ConnMetrics) *request {
 	commandMetrics := map[string]map[string]map[string]map[string]int{}
 
 	for opcode, commands := range m.GetResponses() {
-		for command, operators := range commands {
-			for operator, m := range operators {
+		for command, arguments := range commands {
+			for argument, m := range arguments {
 				if _, ok := commandMetrics[opcode]; !ok {
 					commandMetrics[opcode] = map[string]map[string]map[string]int{}
 				}
@@ -160,8 +160,8 @@ func makeRequest(s *state.State, m *connmetrics.ConnMetrics) *request {
 					commandMetrics[opcode][command] = map[string]map[string]int{}
 				}
 
-				if _, ok := commandMetrics[opcode][command][operator]; !ok {
-					commandMetrics[opcode][command][operator] = map[string]int{}
+				if _, ok := commandMetrics[opcode][command][argument]; !ok {
+					commandMetrics[opcode][command][argument] = map[string]int{}
 				}
 
 				var failures int
@@ -170,11 +170,11 @@ func makeRequest(s *state.State, m *connmetrics.ConnMetrics) *request {
 					if result == "ok" {
 						panic("result should not be ok")
 					}
-					commandMetrics[opcode][command][operator][result] = c
+					commandMetrics[opcode][command][argument][result] = c
 					failures += c
 				}
 
-				commandMetrics[opcode][command][operator]["ok"] = m.Total - failures
+				commandMetrics[opcode][command][argument]["ok"] = m.Total - failures
 			}
 		}
 	}
