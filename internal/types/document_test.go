@@ -54,6 +54,18 @@ func TestDocument(t *testing.T) {
 		assert.Equal(t, "foo", doc.Command())
 	})
 
+	t.Run("ArrayValues", func(t *testing.T) {
+		t.Parallel()
+		var doc Document
+		doc.Set("_id", []string{})
+	})
+
+	t.Run("RegexValues", func(t *testing.T) {
+		t.Parallel()
+		var doc Document
+		doc.Set("_id", Regex{Pattern: "Boo! I'm Regex placed in a wrong place!!"})
+	})
+
 	t.Run("NewDocument", func(t *testing.T) {
 		t.Parallel()
 
