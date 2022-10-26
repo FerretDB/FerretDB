@@ -27,7 +27,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/AlekSi/pointer"
 	"github.com/pmezard/go-difflib/difflib"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
@@ -290,34 +289,27 @@ func (c *conn) run(ctx context.Context) (err error) {
 //
 // The possible resBody returns:
 //   - normal response  - to be returned to the client, closeConn is false;
-//   - protocol error (*common.Error, possibly wrapped) - to be returned to the client, closeConn is false;
+//   - protocol error - to be returned to the client, closeConn is false;
 //   - any other error - to be returned to the client as InternalError before terminating connection, closeConn is true.
 //
 // Handlers to which it routes, should not panic on bad input, but may do so in "impossible" cases.
 // They also should not use recover(). That allows us to use fuzzing.
 func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
-	requests := c.m.Requests.MustCurryWith(prometheus.Labels{"opcode": reqHeader.OpCode.String()})
-	var command string
-	var result *string
-	var operator *string
-	defer func() {
-		if result == nil {
-			result = pointer.ToString("panic")
-		}
-
-		if operator == nil {
-			operator = pointer.ToString("")
-		}
-
-		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, *result, *operator).Inc()
-	}()
-
 	connInfo := &conninfo.ConnInfo{
 		PeerAddr:          c.netConn.RemoteAddr(),
 		AggregationStages: c.m.AggregationStages,
 	}
 	ctx, cancel := context.WithCancel(conninfo.WithConnInfo(ctx, connInfo))
 	defer cancel()
+
+	var command, result, operator string
+	defer func() {
+		if result == "" {
+			result = "panic"
+		}
+
+		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, result, operator).Inc()
+	}()
 
 	resHeader = new(wire.MsgHeader)
 	var err error
@@ -359,7 +351,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		err = lazyerrors.Errorf("unexpected OpCode %s", reqHeader.OpCode)
 	}
 
-	requests.WithLabelValues(command).Inc()
+	c.m.Requests.WithLabelValues(reqHeader.OpCode.String(), command).Inc()
 
 	// set body for error
 	if err != nil {
@@ -372,8 +364,8 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 				Documents: []*types.Document{protoErr.Document()},
 			}))
 			resBody = &res
-			result = pointer.ToString(protoErr.Code().String())
-			operator = pointer.ToString(protoErr.Info().Operator)
+			result = protoErr.Code().String()
+			operator = protoErr.Info().Operator
 
 		case wire.OpCodeQuery:
 			fallthrough
@@ -394,8 +386,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		case wire.OpCodeCompressed:
 			// do not panic to make fuzzing easier
 			closeConn = true
-			result = pointer.ToString("unhandled")
-			operator = pointer.ToString("noop")
+			result = "unhandled"
 			c.l.Error(
 				"Handler error for unhandled response opcode",
 				zap.Error(err), zap.Stringer("opcode", resHeader.OpCode),
@@ -405,8 +396,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		default:
 			// do not panic to make fuzzing easier
 			closeConn = true
-			result = pointer.ToString("unexpected")
-			operator = pointer.ToString("noop")
+			result = "unexpected"
 			c.l.Error(
 				"Handler error for unexpected response opcode",
 				zap.Error(err), zap.Stringer("opcode", resHeader.OpCode),
@@ -419,8 +409,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	// https://github.com/FerretDB/FerretDB/issues/273
 	b, err := resBody.MarshalBinary()
 	if err != nil {
-		result = nil
-		operator = nil
+		result = ""
 		panic(err)
 	}
 	resHeader.MessageLength = int32(wire.MsgHeaderLen + len(b))
@@ -428,12 +417,8 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	resHeader.RequestID = atomic.AddInt32(&c.lastRequestID, 1)
 	resHeader.ResponseTo = reqHeader.RequestID
 
-	if result == nil {
-		result = pointer.ToString("ok")
-	}
-
-	if operator == nil {
-		operator = pointer.ToString("noop")
+	if result == "" {
+		result = "ok"
 	}
 
 	return
