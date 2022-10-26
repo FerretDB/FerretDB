@@ -12,7 +12,8 @@ sidebar_position: 6
 4. Replacement documents must not contain `.` sign.
 5. Database and collection names restrictions:
    * name cannot start with the reserved prefix `_ferretdb_`;
-   * name must not include non-latin letters, spaces, dots, dollars or dashes;
+   * database name must not include non-latin letters, spaces, dots, dollars or dashes;
+   * collection name must not include non-latin letters, spaces, dots or dollars;
    * name must not start with a number;
    * database name cannot contain capital letters;
    * database name length cannot be more than 63 characters;
