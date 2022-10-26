@@ -108,7 +108,7 @@ const (
 	ErrBadRegexOption = ErrorCode(51108) // Location51108
 )
 
-// ErrInfo represents additional error information.
+// ErrInfo represents additional optional error information.
 type ErrInfo struct {
 	Operator string
 }
@@ -122,8 +122,8 @@ type ProtoErr interface {
 	Code() ErrorCode
 	// Document returns *types.Document.
 	Document() *types.Document
-	// Info returns *ErrInfo.
-	Info() *ErrInfo
+	// ErrInfo returns *ErrInfo.
+	ErrInfo() *ErrInfo
 }
 
 // ProtocolError converts any error to wire protocol error.

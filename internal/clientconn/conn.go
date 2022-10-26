@@ -372,7 +372,9 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			}))
 			resBody = &res
 			result = protoErr.Code().String()
-			operator = protoErr.Info().Operator
+			if info := protoErr.ErrInfo(); info != nil {
+				operator = info.Operator
+			}
 
 		case wire.OpCodeQuery:
 			fallthrough

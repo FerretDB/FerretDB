@@ -26,7 +26,7 @@ import (
 type CommandError struct {
 	err  error
 	code ErrorCode
-	info ErrInfo
+	info *ErrInfo
 }
 
 // There should not be NewCommandError function variant that accepts printf-like format specifiers.
@@ -65,7 +65,7 @@ func NewCommandErrorMsgWithOperator(code ErrorCode, msg string, operator string)
 	return &CommandError{
 		err:  errors.New(msg),
 		code: code,
-		info: ErrInfo{
+		info: &ErrInfo{
 			Operator: operator,
 		},
 	}
@@ -108,8 +108,8 @@ func (e *CommandError) Document() *types.Document {
 }
 
 // Info implements ProtoErr interface.
-func (e *CommandError) Info() *ErrInfo {
-	return &e.info
+func (e *CommandError) ErrInfo() *ErrInfo {
+	return e.info
 }
 
 // check interfaces
