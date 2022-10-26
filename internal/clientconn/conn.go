@@ -366,12 +366,15 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		case wire.OpCodeMsg:
 			protoErr, recoverable := common.ProtocolError(err)
 			closeConn = !recoverable
+
 			var res wire.OpMsg
 			must.NoError(res.SetSections(wire.OpMsgSection{
 				Documents: []*types.Document{protoErr.Document()},
 			}))
 			resBody = &res
+
 			result = protoErr.Code().String()
+
 			if info := protoErr.ErrInfo(); info != nil {
 				operator = info.Operator
 			}

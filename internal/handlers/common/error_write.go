@@ -25,7 +25,6 @@ import (
 // It could be returned for Update, Insert, Delete, and Replace operations.
 type WriteErrors struct {
 	errs []writeError
-	info *ErrInfo
 }
 
 // NewWriteErrorMsg creates a new protocol write error with given ErrorCode and message.
@@ -48,7 +47,7 @@ func (we *WriteErrors) Error() string {
 	return err
 }
 
-// Unwrap implements a standard error unwrapping interface.
+// Unwrap implements ProtoErr interface.
 func (we *WriteErrors) Unwrap() error {
 	for _, e := range we.errs {
 		return errors.New(e.err)
@@ -92,6 +91,11 @@ func (we *WriteErrors) Document() *types.Document {
 	))
 }
 
+// ErrInfo implements ProtoErr interface.
+func (we *WriteErrors) ErrInfo() *ErrInfo {
+	return nil
+}
+
 // Append converts the err to the writeError type and
 // appends it to WriteErrors. The index value is an
 // index of the query with error.
@@ -118,11 +122,6 @@ func (we *WriteErrors) Append(err error, index int32) {
 // Len returns the number of errors.
 func (we *WriteErrors) Len() int {
 	return len(we.errs)
-}
-
-// Info implements ProtoErr interface.
-func (we *WriteErrors) ErrInfo() *ErrInfo {
-	return we.info
 }
 
 // writeError represents protocol write error.
