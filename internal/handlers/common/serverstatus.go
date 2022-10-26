@@ -43,21 +43,20 @@ func ServerStatus(startTime time.Time, cm *connmetrics.ConnMetrics) (*types.Docu
 	metricsDoc := types.MakeDocument(0)
 
 	metrics := cm.GetResponses()
-	for cmd, cmdMetrics := range metrics {
-		var cmdDoc *types.Document
-		switch cmdMetrics := cmdMetrics.(type) {
-		case connmetrics.UpdateCommandMetrics:
-			cmdDoc = must.NotFail(types.NewDocument(
-				"arrayFilters", cmdMetrics.ArrayFilters,
-				"failed", cmdMetrics.Failed,
-				"pipeline", cmdMetrics.Pipeline,
-				"total", cmdMetrics.Total,
-			))
-		case connmetrics.BasicCommandMetrics:
-			cmdDoc = must.NotFail(types.NewDocument("total", cmdMetrics.Total, "failed", cmdMetrics.Failed))
-		}
+	for _, commands := range metrics {
+		for command, operators := range commands {
+			var total, failed int
+			for _, m := range operators {
+				total += m.Total
 
-		metricsDoc.Set(cmd, cmdDoc)
+				for _, v := range m.Failures {
+					failed += v
+				}
+			}
+
+			d := must.NotFail(types.NewDocument("total", int64(total), "failed", int64(failed)))
+			metricsDoc.Set(command, d)
+		}
 	}
 
 	res := must.NotFail(types.NewDocument(

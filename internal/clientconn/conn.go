@@ -307,7 +307,11 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			result = "panic"
 		}
 
-		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, result, operator).Inc()
+		if operator == "" {
+			operator = "unknown"
+		}
+
+		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, operator, result).Inc()
 	}()
 
 	resHeader = new(wire.MsgHeader)
@@ -348,6 +352,10 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 
 	default:
 		err = lazyerrors.Errorf("unexpected OpCode %s", reqHeader.OpCode)
+	}
+
+	if command == "" {
+		command = "unknown"
 	}
 
 	c.m.Requests.WithLabelValues(reqHeader.OpCode.String(), command).Inc()
