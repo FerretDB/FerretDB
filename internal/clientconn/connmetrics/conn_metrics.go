@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package connmetrics provides listener and connection metrics.
 package connmetrics
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
@@ -26,35 +26,18 @@ import (
 
 // ConnMetrics represents conn metrics.
 type ConnMetrics struct {
-	Requests          *prometheus.CounterVec
-	Responses         *prometheus.CounterVec
-	AggregationStages *prometheus.CounterVec
-
-	cmds []string
+	Requests  *prometheus.CounterVec
+	Responses *prometheus.CounterVec
 }
 
-// CommandMetrics represents metrics for a single command.
-type CommandMetrics interface{}
-
-// BasicCommandMetrics contains all metrics fields used in most of commands.
-type BasicCommandMetrics struct {
-	Failed int64
-	Total  int64
-}
-
-// UpdateCommandMetrics contains all metrics fields used in update, clusterUpdate and findAndModify commands.
-type UpdateCommandMetrics struct {
-	ArrayFilters int64
-	Failed       int64
-	Pipeline     int64
-	Total        int64
+// commandMetrics represents command results metrics.
+type commandMetrics struct {
+	Failures map[string]int // by result, excluding "ok"
+	Total    int
 }
 
 // newConnMetrics creates connection metrics.
-//
-// The cmds is the list of all expected commands that could be measured.
-// Commands provided in the list will be set with zero values.
-func newConnMetrics(cmds []string) *ConnMetrics {
+func newConnMetrics() *ConnMetrics {
 	return &ConnMetrics{
 		Requests: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
@@ -72,18 +55,8 @@ func newConnMetrics(cmds []string) *ConnMetrics {
 				Name:      "responses_total",
 				Help:      "Total number of responses.",
 			},
-			[]string{"opcode", "command", "result"},
+			[]string{"opcode", "command", "operator", "result"},
 		),
-		AggregationStages: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Namespace: namespace,
-				Subsystem: subsystem,
-				Name:      "aggregation_stages_total",
-				Help:      "Total number of aggregation pipeline stages.",
-			},
-			[]string{"command", "stage"},
-		),
-		cmds: cmds,
 	}
 }
 
@@ -91,92 +64,71 @@ func newConnMetrics(cmds []string) *ConnMetrics {
 func (cm *ConnMetrics) Describe(ch chan<- *prometheus.Desc) {
 	cm.Requests.Describe(ch)
 	cm.Responses.Describe(ch)
-	cm.AggregationStages.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
 func (cm *ConnMetrics) Collect(ch chan<- prometheus.Metric) {
 	cm.Requests.Collect(ch)
 	cm.Responses.Collect(ch)
-	cm.AggregationStages.Collect(ch)
 }
 
-// GetResponses returns a map with all metrics related to all commands.
-// The key in the map is the command name and the value is a struct with
-// all related metrics to this command.
-func (cm *ConnMetrics) GetResponses() map[string]CommandMetrics {
-	res := map[string]CommandMetrics{}
-
-	// initialize commands in the map to show zero values in the metrics output
-	for _, cmd := range cm.cmds {
-		// update related operators have more fields in the output
-		switch cmd {
-		case "update", "clusterUpdate", "findAndModify":
-			res[cmd] = UpdateCommandMetrics{}
-		default:
-			res[cmd] = BasicCommandMetrics{}
-		}
-	}
-
+// GetResponses returns a map with all response metrics:
+//
+//	opcode (e.g. "OP_MSG") -> command (e.g. "update") -> operator (e.g. "$set") -> commandMetrics
+func (cm *ConnMetrics) GetResponses() map[string]map[string]map[string]commandMetrics {
 	metrics := make(chan prometheus.Metric)
-
 	go func() {
 		cm.Responses.Collect(metrics)
-		cm.AggregationStages.Collect(metrics)
 		close(metrics)
 	}()
+
+	res := map[string]map[string]map[string]commandMetrics{}
 
 	for m := range metrics {
 		var content dto.Metric
 		must.NoError(m.Write(&content))
 
-		var stage int
-		var command, opcode, result string
-
+		var opcode, command, operator, result string
 		for _, label := range content.GetLabel() {
 			switch label.GetName() {
-			case "command":
-				command = label.GetValue()
 			case "opcode":
 				opcode = label.GetValue()
+			case "command":
+				command = label.GetValue()
+			case "operator":
+				operator = label.GetValue()
 			case "result":
 				result = label.GetValue()
-			case "stage":
-				stage = must.NotFail(strconv.Atoi(label.GetValue()))
 			default:
-				panic(fmt.Sprintf("%s is not a valid label. Allowed: [command, opcode, result, stage]", label.GetName()))
+				panic(fmt.Sprintf("%s is not a valid label. Allowed: [opcode, command, operator, result]", label.GetName()))
 			}
 		}
 
-		if opcode != "OP_MSG" {
-			continue
+		if _, ok := res[opcode]; !ok {
+			res[opcode] = map[string]map[string]commandMetrics{}
 		}
 
-		value := int64(content.GetCounter().GetValue())
-
-		cmdMetrics := res[command]
-		if cmdMetrics == nil {
-			cmdMetrics = BasicCommandMetrics{}
+		if _, ok := res[opcode][command]; !ok {
+			res[opcode][command] = map[string]commandMetrics{}
 		}
 
-		switch cmdMetrics := cmdMetrics.(type) {
-		case UpdateCommandMetrics:
-			cmdMetrics.Total += value
-			if result != "ok" && result != "Unset" {
-				cmdMetrics.Failed += value
+		if _, ok := res[opcode][command][operator]; !ok {
+			res[opcode][command][operator] = commandMetrics{}
+		}
+
+		m := res[opcode][command][operator]
+
+		v := int(content.GetCounter().GetValue())
+		m.Total += v
+
+		if result != "ok" {
+			if m.Failures == nil {
+				m.Failures = map[string]int{}
 			}
-			cmdMetrics.Pipeline += int64(stage)
-			// TODO: https://github.com/FerretDB/FerretDB/issues/1259
-			res[command] = cmdMetrics
-		case BasicCommandMetrics:
-			cmdMetrics.Total += value
-			if result != "ok" && result != "Unset" {
-				cmdMetrics.Failed += value
-			}
-			res[command] = cmdMetrics
-		default:
-			panic(fmt.Sprintf("Invalid command metric type: %T", cmdMetrics))
+			m.Failures[result] += v
 		}
+
+		res[opcode][command][operator] = m
 	}
 
 	return res

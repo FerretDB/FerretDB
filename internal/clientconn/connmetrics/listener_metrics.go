@@ -29,10 +29,7 @@ type ListenerMetrics struct {
 }
 
 // NewListenerMetrics creates new listener metrics.
-//
-// The cmds is the list of all expected commands that could be measured.
-// After providing them, they will be set with the zero values.
-func NewListenerMetrics(cmds []string) *ListenerMetrics {
+func NewListenerMetrics() *ListenerMetrics {
 	return &ListenerMetrics{
 		ConnectedClients: prometheus.NewGauge(
 			prometheus.GaugeOpts{
@@ -51,7 +48,7 @@ func NewListenerMetrics(cmds []string) *ListenerMetrics {
 			},
 			[]string{"error"},
 		),
-		ConnMetrics: newConnMetrics(cmds),
+		ConnMetrics: newConnMetrics(),
 	}
 }
 
