@@ -109,6 +109,7 @@ func (h *Handler) insert(ctx context.Context, tx pgx.Tx, sp *pgdb.SQLParam, doc 
 	}
 
 	err := pgdb.InsertDocument(ctx, tx, sp.DB, sp.Collection, d)
+
 	if err == nil {
 		return nil
 	}

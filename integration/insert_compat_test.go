@@ -18,14 +18,33 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/AlekSi/pointer"
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type insertTestCase struct {
+func TestInsertCompat(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]insertCompatTestCase{
+		"InsertEmptyDocument": {
+			insert:     bson.D{},
+			resultType: emptyResult,
+		},
+		"InsertIDArray": {
+			insert:     bson.D{{"_id", bson.A{"foo", "bar"}}},
+			resultType: emptyResult,
+		},
+	}
+
+	testInsertCompat(t, testCases)
+}
+
+type insertCompatTestCase struct {
 	insert        bson.D
 	resultType    compatTestCaseResultType // defaults to nonEmptyResult
 	skip          string                   // skips test if non-empty
@@ -33,7 +52,7 @@ type insertTestCase struct {
 }
 
 // testInsertCompat tests insert compatibility test cases.
-func testInsertCompat(t *testing.T, testCases map[string]insertTestCase) {
+func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 	t.Helper()
 
 	for name, tc := range testCases {
@@ -93,12 +112,13 @@ func testInsertCompat(t *testing.T, testCases map[string]insertTestCase) {
 							} else {
 								require.NoError(t, compatErr, "compat error; target returned no error")
 							}
-							// TODO: find a way to check for a default value
-							//if pointer.Get(targetInsertRes).InsertedID. {
-							// nonEmptyResults = true
-							//}
 
-							assert.Equal(t, compatInsertRes, targetInsertRes)
+							targetID, _ := pointer.Get(targetInsertRes).InsertedID.(primitive.ObjectID)
+							compatID, _ := pointer.Get(compatInsertRes).InsertedID.(primitive.ObjectID)
+
+							if !(targetID.IsZero() && compatID.IsZero()) {
+								nonEmptyResults = true
+							}
 
 							var targetFindRes, compatFindRes bson.D
 							require.NoError(t, targetCollection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&targetFindRes))
