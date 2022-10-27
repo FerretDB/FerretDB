@@ -89,7 +89,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		var log types.Array
 		for _, line := range []string{
-			"Powered by 🥭 FerretDB " + mv.Version + " and PostgreSQL " + pv + ".",
+			"Powered by FerretDB " + mv.Version + " and PostgreSQL " + pv + ".",
 			"Please star us on GitHub: https://github.com/FerretDB/FerretDB",
 		} {
 			b, err := json.Marshal(map[string]any{
