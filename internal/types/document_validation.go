@@ -43,7 +43,7 @@ func (e *ValidationError) RawError() error {
 }
 
 // ValidateData checks if the document represents a valid "data document".
-// If the document is not valid it returns *ValidationError.
+// If the document is not valid it returns *ValidationError or generic error message.
 func (d *Document) ValidateData() error {
 	keys := d.Keys()
 
