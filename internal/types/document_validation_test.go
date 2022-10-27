@@ -35,7 +35,7 @@ func TestDocumentValidateData(t *testing.T) {
 	for name, tc := range map[string]struct {
 		doc    *Document
 		reason error // if set, it expects ValidationError to be returned
-		err    error
+		err    error // if set, it expects any error that's not a ValidationError to be returned
 	}{
 		"Valid": {
 			doc:    must.NotFail(NewDocument("_id", "1", "foo", "bar")),
@@ -87,6 +87,8 @@ func TestDocumentValidateData(t *testing.T) {
 				assert.Equal(t, tc.reason, ve.reason)
 
 			case tc.err != nil:
+				var ve *ValidationError
+				require.False(t, errors.As(err, &ve))
 				require.Nil(t, tc.reason, "Only one of err and reason value can be set at once")
 				assert.Equal(t, tc.err, err)
 			}
