@@ -38,10 +38,6 @@ func (e *ValidationError) Error() string {
 	return fmt.Sprintf("Invalid document, reason: %s.", e.reason)
 }
 
-func (e *ValidationError) RawError() error {
-	return e.reason
-}
-
 // ValidateData checks if the document represents a valid "data document".
 // If the document is not valid it returns *ValidationError or generic error message.
 func (d *Document) ValidateData() error {
