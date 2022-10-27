@@ -37,7 +37,7 @@ func TestCreateStress(t *testing.T) {
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
 	db := collection.Database()
 
-	collNum := runtime.NumCPU() * 10
+	collNum := runtime.GOMAXPROCS(-1) * 10
 
 	ready := make(chan struct{}, collNum)
 	start := make(chan struct{})
