@@ -139,12 +139,9 @@ func TestCommandsDiagnosticGetLogTelemetryReported(t *testing.T) {
 	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 	require.NoError(t, err)
 
-	m := actual.Map()
-	log := m["log"].(bson.A)
-	assert.Equal(t, 3, len(log))
-
-	// check that the last line contains info about telemetry being undecided
-	assert.Contains(t, log[2].(string), "Telemetry state undecided")
+	log := actual.Map()["log"].(bson.A)
+	require.Len(t, log, 3)
+	assert.Contains(t, log[2], "The telemetry state is undecided")
 }
 
 func TestCommandsDiagnosticHostInfo(t *testing.T) {
