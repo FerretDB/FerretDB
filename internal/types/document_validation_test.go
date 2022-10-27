@@ -69,14 +69,20 @@ func TestDocumentValidateData(t *testing.T) {
 		"NestedDocumentNestedArray": {
 			doc: must.NotFail(NewDocument(
 				"_id", "1",
-				"foo", must.NotFail(NewDocument("bar", must.NotFail(NewArray("baz", must.NotFail(NewArray("qaz")))))),
+				"foo", must.NotFail(NewDocument(
+					"bar", must.NotFail(NewArray("baz", must.NotFail(NewArray("qaz")))),
+				)),
 			)),
 			reason: errors.New(`invalid value: { "bar": [ "baz", [ "qaz" ] ] } (nested arrays are not allowed)`),
 		},
 		"ArrayDocumentNestedArray": {
 			doc: must.NotFail(NewDocument(
 				"_id", "1",
-				"foo", must.NotFail(NewArray(must.NotFail(NewDocument("bar", must.NotFail(NewArray("baz", must.NotFail(NewArray("qaz")))))))),
+				"foo", must.NotFail(NewArray(
+					must.NotFail(NewDocument(
+						"bar", must.NotFail(NewArray("baz", must.NotFail(NewArray("qaz")))),
+					)),
+				)),
 			)),
 			reason: errors.New(`invalid value: { "bar": [ "baz", [ "qaz" ] ] } (nested arrays are not allowed)`),
 		},
