@@ -107,6 +107,6 @@ func (h *Handler) insert(ctx context.Context, fp *tigrisdb.FetchParam, doc *type
 
 		return lazyerrors.Error(err)
 	default:
-		return lazyerrors.Error(err)
+		return common.NewWriteErrorMsg(53, err.Error())
 	}
 }
