@@ -125,6 +125,25 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 	}
 }
 
+func TestCommandsDiagnosticGetLogTelemetryReported(t *testing.T) {
+	t.Parallel()
+	res := setup.SetupWithOpts(t, &setup.SetupOpts{
+		DatabaseName: "admin",
+	})
+
+	ctx, collection := res.Ctx, res.Collection
+
+	command := bson.D{{"getLog", "startupWarnings"}}
+
+	var actual bson.D
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	m := actual.Map()
+	log := m["log"].(bson.A)
+	assert.Equal(t, 3, len(log))
+}
+
 func TestCommandsDiagnosticHostInfo(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
