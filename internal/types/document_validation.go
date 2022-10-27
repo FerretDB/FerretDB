@@ -16,7 +16,9 @@ package types
 
 import (
 	"fmt"
+	"log"
 	"math"
+	"reflect"
 	"strings"
 	"unicode/utf8"
 
@@ -80,6 +82,9 @@ func (d *Document) ValidateData() error {
 	}
 
 	v := must.NotFail(d.Get("_id"))
+
+	vType := reflect.TypeOf(v)
+	log.Println(vType)
 
 	switch v.(type) {
 	case *Array:
