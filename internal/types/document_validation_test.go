@@ -76,7 +76,7 @@ func TestDocumentValidateData(t *testing.T) {
 			err := tc.doc.ValidateData()
 
 			switch {
-			case tc.reason == nil && tc.err != nil:
+			case tc.reason == nil && tc.err == nil:
 				assert.NoError(t, err)
 
 			case tc.reason != nil:

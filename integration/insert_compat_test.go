@@ -41,13 +41,17 @@ func TestInsertCompat(t *testing.T) {
 			insert:     bson.D{{"_id", bson.A{"foo", "bar"}}},
 			resultType: emptyResult,
 		},
+		"InsertIDRegex": {
+			insert:     bson.D{{"_id", "^regex$"}},
+			resultType: emptyResult,
+		},
 	}
 
 	testInsertCompat(t, testCases)
 }
 
 type insertCompatTestCase struct {
-	insert        bson.D
+	insert        bson.D                   // required
 	resultType    compatTestCaseResultType // defaults to nonEmptyResult
 	skip          string                   // skips test if non-empty
 	skipForTigris string                   // skips test for Tigris if non-empty
