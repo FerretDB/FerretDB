@@ -21,22 +21,18 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/AlekSi/pointer"
 	"github.com/alecthomas/kong"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
@@ -62,8 +58,7 @@ var cli struct {
 
 	MetricsUUID bool `default:"false" help:"Add instance UUID to all metrics."`
 
-	// TODO switch to string for 3 states
-	Telemetry bool `default:"false" help:"Enable basic telemetry. See https://beacon.ferretdb.io."`
+	Telemetry telemetry.Flag `default:"" help:"Enable or disable basic telemetry. See https://beacon.ferretdb.io."`
 
 	Handler string `default:"pg" help:"${help_handler}"`
 
@@ -199,13 +194,10 @@ func setupLogger(stateProvider *state.Provider) *zap.Logger {
 }
 
 // runTelemetryReporter runs telemetry reporter until ctx is canceled.
-func runTelemetryReporter(ctx context.Context, enabled bool, opts *telemetry.NewReporterOpts) {
-	// TODO probably move out of this function
-	opts.P.Update(func(s *state.State) { s.Telemetry = pointer.ToBool(enabled) })
-
+func runTelemetryReporter(ctx context.Context, opts *telemetry.NewReporterOpts) {
 	r, err := telemetry.NewReporter(opts)
 	if err != nil {
-		opts.L.Fatal("Failed to create telemetry reporter.", zap.Error(err))
+		opts.L.Sugar().Fatalf("Failed to create telemetry reporter: %s.", err)
 	}
 
 	r.Run(ctx)
@@ -247,16 +239,21 @@ func run() {
 		debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, logger.Named("debug"))
 	}()
 
+	metrics := connmetrics.NewListenerMetrics()
+
 	wg.Add(1)
 
 	go func() {
 		defer wg.Done()
 		runTelemetryReporter(
 			ctx,
-			cli.Telemetry,
 			&telemetry.NewReporterOpts{
 				URL:            cli.Test.Telemetry.URL,
+				F:              &cli.Telemetry,
+				DNT:            os.Getenv("DO_NOT_TRACK"),
+				ExecName:       os.Args[0],
 				P:              stateProvider,
+				ConnMetrics:    metrics.ConnMetrics,
 				L:              logger.Named("telemetry"),
 				UndecidedDelay: cli.Test.Telemetry.UndecidedDelay,
 				ReportInterval: cli.Test.Telemetry.ReportInterval,
@@ -264,11 +261,6 @@ func run() {
 			},
 		)
 	}()
-
-	cmdsList := maps.Keys(common.Commands)
-	sort.Strings(cmdsList)
-
-	metrics := connmetrics.NewListenerMetrics(cmdsList)
 
 	h, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
 		Ctx:           ctx,

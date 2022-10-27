@@ -27,7 +27,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/AlekSi/pointer"
 	"github.com/pmezard/go-difflib/difflib"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
@@ -290,29 +289,30 @@ func (c *conn) run(ctx context.Context) (err error) {
 //
 // The possible resBody returns:
 //   - normal response  - to be returned to the client, closeConn is false;
-//   - protocol error (*common.Error, possibly wrapped) - to be returned to the client, closeConn is false;
+//   - protocol error - to be returned to the client, closeConn is false;
 //   - any other error - to be returned to the client as InternalError before terminating connection, closeConn is true.
 //
 // Handlers to which it routes, should not panic on bad input, but may do so in "impossible" cases.
 // They also should not use recover(). That allows us to use fuzzing.
 func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
-	requests := c.m.Requests.MustCurryWith(prometheus.Labels{"opcode": reqHeader.OpCode.String()})
-	var command string
-	var result *string
-	defer func() {
-		if result == nil {
-			result = pointer.ToString("panic")
-		}
-
-		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, *result).Inc()
-	}()
-
 	connInfo := &conninfo.ConnInfo{
-		PeerAddr:          c.netConn.RemoteAddr(),
-		AggregationStages: c.m.AggregationStages,
+		PeerAddr: c.netConn.RemoteAddr(),
 	}
 	ctx, cancel := context.WithCancel(conninfo.WithConnInfo(ctx, connInfo))
 	defer cancel()
+
+	var command, result, argument string
+	defer func() {
+		if result == "" {
+			result = "panic"
+		}
+
+		if argument == "" {
+			argument = "unknown"
+		}
+
+		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, argument, result).Inc()
+	}()
 
 	resHeader = new(wire.MsgHeader)
 	var err error
@@ -354,7 +354,11 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		err = lazyerrors.Errorf("unexpected OpCode %s", reqHeader.OpCode)
 	}
 
-	requests.WithLabelValues(command).Inc()
+	if command == "" {
+		command = "unknown"
+	}
+
+	c.m.Requests.WithLabelValues(reqHeader.OpCode.String(), command).Inc()
 
 	// set body for error
 	if err != nil {
@@ -362,12 +366,18 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		case wire.OpCodeMsg:
 			protoErr, recoverable := common.ProtocolError(err)
 			closeConn = !recoverable
+
 			var res wire.OpMsg
 			must.NoError(res.SetSections(wire.OpMsgSection{
 				Documents: []*types.Document{protoErr.Document()},
 			}))
 			resBody = &res
-			result = pointer.ToString(protoErr.Code().String())
+
+			result = protoErr.Code().String()
+
+			if info := protoErr.Info(); info != nil {
+				argument = info.Argument
+			}
 
 		case wire.OpCodeQuery:
 			fallthrough
@@ -388,7 +398,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		case wire.OpCodeCompressed:
 			// do not panic to make fuzzing easier
 			closeConn = true
-			result = pointer.ToString("unhandled")
+			result = "unhandled"
 			c.l.Error(
 				"Handler error for unhandled response opcode",
 				zap.Error(err), zap.Stringer("opcode", resHeader.OpCode),
@@ -398,7 +408,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		default:
 			// do not panic to make fuzzing easier
 			closeConn = true
-			result = pointer.ToString("unexpected")
+			result = "unexpected"
 			c.l.Error(
 				"Handler error for unexpected response opcode",
 				zap.Error(err), zap.Stringer("opcode", resHeader.OpCode),
@@ -411,7 +421,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	// https://github.com/FerretDB/FerretDB/issues/273
 	b, err := resBody.MarshalBinary()
 	if err != nil {
-		result = nil
+		result = ""
 		panic(err)
 	}
 	resHeader.MessageLength = int32(wire.MsgHeaderLen + len(b))
@@ -419,9 +429,10 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	resHeader.RequestID = atomic.AddInt32(&c.lastRequestID, 1)
 	resHeader.ResponseTo = reqHeader.RequestID
 
-	if result == nil {
-		result = pointer.ToString("ok")
+	if result == "" {
+		result = "ok"
 	}
+
 	return
 }
 

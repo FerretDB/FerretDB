@@ -83,12 +83,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	case "startupWarnings":
-		var pv string
-		err = h.PgPool.QueryRow(ctx, "SHOW server_version").Scan(&pv)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-		pv, _, _ = strings.Cut(pv, " ")
+		pv, _, _ := strings.Cut(h.StateProvider.Get().HandlerVersion, " ")
 		mv := version.Get()
 
 		var log types.Array
