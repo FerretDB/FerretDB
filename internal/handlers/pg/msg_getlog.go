@@ -83,6 +83,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	case "startupWarnings":
+		// TODO telementry
 		pv, _, _ := strings.Cut(h.StateProvider.Get().HandlerVersion, " ")
 		mv := version.Get()
 
