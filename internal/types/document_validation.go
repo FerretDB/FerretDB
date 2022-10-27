@@ -87,9 +87,9 @@ func (d *Document) ValidateData() error {
 	log.Println(vType)
 
 	switch v.(type) {
-	case *Array:
+	case Array, *Array:
 		return fmt.Errorf("The '_id' value cannot be of type array")
-	case *Regex:
+	case Regex, *Regex:
 		return fmt.Errorf("The '_id' value cannot be of type regex")
 	}
 
