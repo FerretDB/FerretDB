@@ -244,14 +244,6 @@ func TestQueryComparisonEq(t *testing.T) {
 			filter:      bson.D{{"v", bson.D{{"$eq", bson.A{int32(42), "foo", nil}}}}},
 			expectedIDs: []any{"array-three"},
 		},
-		"ArrayEmbedded": {
-			filter:      bson.D{{"v", bson.D{{"$eq", bson.A{bson.A{int32(42), "foo"}, nil}}}}},
-			expectedIDs: []any{"array-first-embedded"},
-		},
-		"LongArrayEmbedded": {
-			filter:      bson.D{{"v", bson.D{{"$eq", bson.A{bson.A{int32(42), "foo"}, nil, "foo"}}}}},
-			expectedIDs: []any{},
-		},
 		"ArrayShuffledValues": {
 			filter:      bson.D{{"v", bson.D{{"$eq", bson.A{"foo", nil, int32(42)}}}}},
 			expectedIDs: []any{},
