@@ -26,10 +26,10 @@ import (
 )
 
 type insertTestCase struct {
-	insert bson.D
-
-	skip          string // skips test if non-empty
-	skipForTigris string // skips test for Tigris if non-empty
+	insert        bson.D
+	resultType    compatTestCaseResultType // defaults to nonEmptyResult
+	skip          string                   // skips test if non-empty
+	skipForTigris string                   // skips test for Tigris if non-empty
 }
 
 // testInsertCompat tests insert compatibility test cases.
@@ -71,7 +71,6 @@ func testInsertCompat(t *testing.T, testCases map[string]insertTestCase) {
 						t.Run(fmt.Sprint(id), func(t *testing.T) {
 							t.Helper()
 
-							filter := bson.D{{"_id", id}}
 							var targetInsertRes, compatInsertRes *mongo.InsertOneResult
 							var targetErr, compatErr error
 
@@ -94,10 +93,29 @@ func testInsertCompat(t *testing.T, testCases map[string]insertTestCase) {
 							} else {
 								require.NoError(t, compatErr, "compat error; target returned no error")
 							}
+							// TODO: find a way to check for a default value
+							//if pointer.Get(targetInsertRes).InsertedID. {
+							// nonEmptyResults = true
+							//}
 
+							assert.Equal(t, compatInsertRes, targetInsertRes)
+
+							var targetFindRes, compatFindRes bson.D
+							require.NoError(t, targetCollection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&targetFindRes))
+							require.NoError(t, compatCollection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&compatFindRes))
+							AssertEqualDocuments(t, compatFindRes, targetFindRes)
 						})
 					}
 				})
+			}
+
+			switch tc.resultType {
+			case nonEmptyResult:
+				assert.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
+			case emptyResult:
+				assert.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
+			default:
+				t.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}
