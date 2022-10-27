@@ -16,13 +16,12 @@ package types
 
 import (
 	"errors"
+	"github.com/stretchr/testify/require"
 	"math"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestDocumentValidateData covers ValidateData method.
@@ -33,7 +32,8 @@ func TestDocumentValidateData(t *testing.T) {
 
 	for name, tc := range map[string]struct {
 		doc    *Document
-		reason error
+		reason error // if set, it expects ValidationError to be returned
+		err    error
 	}{
 		"Valid": {
 			doc:    must.NotFail(NewDocument("_id", "1", "foo", "bar")),
@@ -60,12 +60,12 @@ func TestDocumentValidateData(t *testing.T) {
 			reason: errors.New(`invalid document: document must contain '_id' field`),
 		},
 		"Array": {
-			doc:    must.NotFail(NewDocument("_id", []string{"foo", "bar"})),
-			reason: errors.New("invalid value: []string{\"foo\", \"bar\"} (_id value mustn't be an array)"),
+			doc: must.NotFail(NewDocument("_id", []string{"foo", "bar"})),
+			err: errors.New("invalid value: []string{\"foo\", \"bar\"} (_id value mustn't be an array)"),
 		},
 		"Regex": {
-			doc:    must.NotFail(NewDocument("_id", Regex{Pattern: "regex$"})),
-			reason: errors.New("invalid value: types.Regex{Pattern:\"regex$\", Options:\"\"} (_id value mustn't be a regex)"),
+			doc: must.NotFail(NewDocument("_id", Regex{Pattern: "regex$"})),
+			err: errors.New("invalid value: types.Regex{Pattern:\"regex$\", Options:\"\"} (_id value mustn't be a regex)"),
 		},
 	} {
 		name, tc := name, tc
@@ -73,12 +73,20 @@ func TestDocumentValidateData(t *testing.T) {
 			t.Parallel()
 
 			err := tc.doc.ValidateData()
-			if tc.reason == nil {
+
+			switch {
+			case tc.reason == nil && tc.err != nil:
 				assert.NoError(t, err)
-			} else {
+
+			case tc.reason != nil:
+				require.Nil(t, tc.err, "Only one of err and reason value can be set at once")
 				var ve *ValidationError
 				require.True(t, errors.As(err, &ve))
 				assert.Equal(t, tc.reason, ve.reason)
+
+			case tc.err != nil:
+				require.Nil(t, tc.reason, "Only one of err and reason value can be set at once")
+				assert.Equal(t, tc.err, err)
 			}
 		})
 	}
