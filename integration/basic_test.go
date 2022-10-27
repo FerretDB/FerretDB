@@ -106,13 +106,6 @@ func TestInsertFind(t *testing.T) {
 	}
 }
 
-func TestInsertWrongID(t *testing.T) {
-	ctx, collection := setup.Setup(t)
-
-	_, err := collection.InsertOne(ctx, bson.D{{"_id", bson.A{"a", "b", "c"}}})
-	assert.EqualError(t, err, "aaa")
-}
-
 //nolint:paralleltest // we test a global list of databases
 func TestFindCommentMethod(t *testing.T) {
 	setup.SkipForTigris(t)
