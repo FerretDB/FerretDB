@@ -26,8 +26,9 @@ import (
 
 // State represents FerretDB process state.
 type State struct {
-	UUID      string `json:"uuid"`
-	Telemetry *bool  `json:"telemetry,omitempty"` // nil for undecided
+	UUID           string        `json:"uuid"`
+	Telemetry      *bool         `json:"telemetry,omitempty"` // nil for undecided
+	UndecidedDelay time.Duration `json:"undecided_delay,omitempty"`
 
 	// never persisted
 	Start          time.Time `json:"-"`
@@ -56,6 +57,7 @@ func (s *State) deepCopy() *State {
 	return &State{
 		UUID:           s.UUID,
 		Telemetry:      telemetry,
+		UndecidedDelay: s.UndecidedDelay,
 		Start:          s.Start,
 		LatestVersion:  s.LatestVersion,
 		HandlerVersion: s.HandlerVersion,

@@ -87,11 +87,23 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		pv, _, _ := strings.Cut(h.StateProvider.Get().HandlerVersion, " ")
 		mv := version.Get()
 
-		var log types.Array
-		for _, line := range []string{
+		startupWarnings := []string{
 			"Powered by FerretDB " + mv.Version + " and PostgreSQL " + pv + ".",
-			"Please star us on GitHub: https://github.com/FerretDB/FerretDB",
-		} {
+			"Please star us on GitHub: https://github.com/FerretDB/FerretDB.",
+		}
+
+		state := h.StateProvider.Get()
+		if state.Telemetry == nil {
+			startupWarnings = append(startupWarnings, fmt.Sprintf(
+				"Telemetry state undecided, waiting %s before the first report."+
+					" Read more about FerretDB telemetry at https://beacon.ferretdb.io.",
+				state.UndecidedDelay,
+			))
+		}
+
+		var log types.Array
+
+		for _, line := range startupWarnings {
 			b, err := json.Marshal(map[string]any{
 				"msg":  line,
 				"tags": []string{"startupWarnings"},
