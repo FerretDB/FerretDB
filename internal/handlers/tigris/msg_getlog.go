@@ -82,7 +82,6 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	case "startupWarnings":
-		// TODO telemetry
 		info, err := h.db.Driver.Info(ctx)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
