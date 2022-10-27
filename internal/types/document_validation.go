@@ -73,19 +73,20 @@ func (d *Document) ValidateData() error {
 		case *Document:
 			err := v.ValidateData()
 			if err != nil {
-				// TODO
+				return err
 			}
 		case *Array:
 			for i := 0; i < v.Len(); i++ {
 				item := must.NotFail(v.Get(i))
+
 				switch item := item.(type) {
 				case *Document:
 					err := item.ValidateData()
 					if err != nil {
-						// TODO
+						return err
 					}
 				case *Array:
-					return newValidationError(fmt.Errorf("invalid array: %v (nested arrays are not allowed)", v))
+					return newValidationError(fmt.Errorf("invalid value: { %q: %v } (nested arrays are not allowed)", key, FormatAnyValue(v)))
 				}
 			}
 		case float64:
