@@ -34,17 +34,12 @@ var Composites = &Values[string]{
 		"document-null":              bson.D{{"foo", nil}},
 		"document-empty":             bson.D{},
 
-		"array":                 bson.A{int32(42)},
-		"array-two":             bson.A{42.13, math.NaN()},
-		"array-three":           bson.A{int32(42), "foo", nil},
-		"array-three-reverse":   bson.A{nil, "foo", int32(42)},
-		"array-embedded":        bson.A{bson.A{"42", "foo"}},
-		"array-first-embedded":  bson.A{bson.A{int32(42), "foo"}, nil},
-		"array-middle-embedded": bson.A{nil, bson.A{int32(42), "foo"}, nil},
-		"array-last-embedded":   bson.A{nil, bson.A{int32(42), "foo"}},
-		"array-empty":           bson.A{},
-		"array-empty-nested":    bson.A{bson.A{}},
-		"array-null":            bson.A{nil},
+		"array":               bson.A{int32(42)},
+		"array-two":           bson.A{42.13, math.NaN()},
+		"array-three":         bson.A{int32(42), "foo", nil},
+		"array-three-reverse": bson.A{nil, "foo", int32(42)},
+		"array-empty":         bson.A{},
+		"array-null":          bson.A{nil},
 	},
 }
 

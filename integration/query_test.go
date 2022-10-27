@@ -56,7 +56,6 @@ func TestQuerySort(t *testing.T) {
 			sort: bson.D{{"v", 1}, {"_id", 1}},
 			expectedIDs: []any{
 				"array-empty",
-				"array-embedded",
 				"array-null",
 				"array-three",
 				"array-three-reverse",
@@ -119,7 +118,6 @@ func TestQuerySort(t *testing.T) {
 				"objectid-empty",
 				"binary",
 				"binary-empty",
-				"array-embedded",
 				"document-composite-reverse",
 				"document-composite",
 				"document",

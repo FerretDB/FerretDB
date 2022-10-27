@@ -166,19 +166,11 @@ func TestQueryArrayDotNotation(t *testing.T) {
 
 		"PositionTypeNull": {
 			filter:      bson.D{{"v.0", bson.D{{"$type", "null"}}}},
-			expectedIDs: []any{"array-last-embedded", "array-middle-embedded", "array-null", "array-three-reverse"},
+			expectedIDs: []any{"array-null", "array-three-reverse"},
 		},
 		"PositionRegex": {
 			filter:      bson.D{{"v.1", primitive.Regex{Pattern: "foo"}}},
 			expectedIDs: []any{"array-three", "array-three-reverse"},
-		},
-		"PositionArray": {
-			filter:      bson.D{{"v.0", bson.A{"42", "foo"}}},
-			expectedIDs: []any{"array-embedded"},
-		},
-		"PositionArrayEmpty": {
-			filter:      bson.D{{"v.0", bson.A{}}},
-			expectedIDs: []any{"array-empty-nested"},
 		},
 
 		"NoSuchFieldPosition": {
@@ -368,7 +360,7 @@ func TestArrayEquality(t *testing.T) {
 		},
 		"Two": {
 			array:       bson.A{42, "foo"},
-			expectedIDs: []any{"array-first-embedded", "array-last-embedded", "array-middle-embedded"},
+			expectedIDs: []any{},
 		},
 		"Three": {
 			array:       bson.A{int32(42), "foo", nil},
@@ -380,31 +372,11 @@ func TestArrayEquality(t *testing.T) {
 		},
 		"Empty": {
 			array:       bson.A{},
-			expectedIDs: []any{"array-empty", "array-empty-nested"},
+			expectedIDs: []any{"array-empty"},
 		},
 		"Null": {
 			array:       bson.A{nil},
 			expectedIDs: []any{"array-null"},
-		},
-		"EmptyNested": {
-			array:       bson.A{bson.A{}},
-			expectedIDs: []any{"array-empty-nested"},
-		},
-		"OneEmbedded": {
-			array:       bson.A{bson.A{"42", "foo"}},
-			expectedIDs: []any{"array-embedded"},
-		},
-		"FirstEmbedded": {
-			array:       bson.A{bson.A{int32(42), "foo"}, nil},
-			expectedIDs: []any{"array-first-embedded"},
-		},
-		"MiddleEmbedded": {
-			array:       bson.A{nil, bson.A{int32(42), "foo"}, nil},
-			expectedIDs: []any{"array-middle-embedded"},
-		},
-		"LastEmbedded": {
-			array:       bson.A{nil, bson.A{int32(42), "foo"}},
-			expectedIDs: []any{"array-last-embedded"},
 		},
 	} {
 		name, tc := name, tc
@@ -501,7 +473,6 @@ func TestQueryArrayAll(t *testing.T) {
 		"Nil": {
 			filter: bson.D{{"v", bson.D{{"$all", bson.A{nil}}}}},
 			expectedIDs: []any{
-				"array-first-embedded", "array-last-embedded", "array-middle-embedded",
 				"array-null", "array-three", "array-three-reverse", "many-integers", "null",
 			},
 			expectedErr: nil,
@@ -509,7 +480,6 @@ func TestQueryArrayAll(t *testing.T) {
 		"NilRepeated": {
 			filter: bson.D{{"v", bson.D{{"$all", bson.A{nil, nil, nil}}}}},
 			expectedIDs: []any{
-				"array-first-embedded", "array-last-embedded", "array-middle-embedded",
 				"array-null", "array-three", "array-three-reverse", "many-integers", "null",
 			},
 			expectedErr: nil,
@@ -525,11 +495,6 @@ func TestQueryArrayAll(t *testing.T) {
 			expectedIDs: []any{"array-three", "array-three-reverse"},
 			expectedErr: nil,
 		},
-		"ArrayEmbeddedEqual": {
-			filter:      bson.D{{"v", bson.D{{"$all", bson.A{bson.A{int32(42), "foo"}}}}}},
-			expectedIDs: []any{"array-first-embedded", "array-last-embedded", "array-middle-embedded"},
-			expectedErr: nil,
-		},
 		"ArrayEmbeddedReverseOrder": {
 			filter:      bson.D{{"v", bson.D{{"$all", bson.A{bson.A{"foo", int32(42)}}}}}},
 			expectedIDs: []any{},
@@ -543,7 +508,7 @@ func TestQueryArrayAll(t *testing.T) {
 		},
 		"EmptyNested": {
 			filter:      bson.D{{"v", bson.D{{"$all", bson.A{bson.A{}}}}}},
-			expectedIDs: []any{"array-empty", "array-empty-nested"},
+			expectedIDs: []any{"array-empty"},
 			expectedErr: nil,
 		},
 

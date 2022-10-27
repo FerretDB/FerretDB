@@ -15,6 +15,7 @@
 package types
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"strings"
@@ -22,6 +23,8 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
+
+var errIdIsNotPresent = fmt.Errorf("invalid document: document must contain '_id' field")
 
 // ValidationError describes an error that could occur when validating a document.
 type ValidationError struct {
@@ -36,6 +39,11 @@ func newValidationError(reason error) error {
 // Error implements the error interface.
 func (e *ValidationError) Error() string {
 	return fmt.Sprintf("Invalid document, reason: %s.", e.reason)
+}
+
+// Unwrap implements the errors.Unwrap interface.
+func (e *ValidationError) Unwrap() error {
+	return e.reason
 }
 
 // ValidateData checks if the document represents a valid "data document".
@@ -72,7 +80,7 @@ func (d *Document) ValidateData() error {
 		switch v := value.(type) {
 		case *Document:
 			err := v.ValidateData()
-			if err != nil {
+			if err != nil && !errors.Is(err, errIdIsNotPresent) {
 				return err
 			}
 		case *Array:
@@ -82,7 +90,7 @@ func (d *Document) ValidateData() error {
 				switch item := item.(type) {
 				case *Document:
 					err := item.ValidateData()
-					if err != nil {
+					if err != nil && !errors.Is(err, errIdIsNotPresent) {
 						return err
 					}
 				case *Array:
@@ -94,13 +102,11 @@ func (d *Document) ValidateData() error {
 			if math.IsInf(v, 0) {
 				return newValidationError(fmt.Errorf("invalid value: { %q: %f } (infinity values are not allowed)", key, v))
 			}
-		default:
-			continue
 		}
 	}
 
 	if !idPresent {
-		return newValidationError(fmt.Errorf("invalid document: document must contain '_id' field"))
+		return newValidationError(errIdIsNotPresent)
 	}
 
 	return nil
