@@ -94,13 +94,17 @@ func (d *Document) ValidateData() error {
 						return err
 					}
 				case *Array:
-					return newValidationError(fmt.Errorf("invalid value: { %q: %v } (nested arrays are not allowed)", key, FormatAnyValue(v)))
+					return newValidationError(fmt.Errorf(
+						"invalid value: { %q: %v } (nested arrays are not allowed)", key, FormatAnyValue(v),
+					))
 				}
 			}
 		case float64:
 			// TODO Add dance tests for infinity: https://github.com/FerretDB/FerretDB/issues/1151
 			if math.IsInf(v, 0) {
-				return newValidationError(fmt.Errorf("invalid value: { %q: %f } (infinity values are not allowed)", key, v))
+				return newValidationError(fmt.Errorf(
+					"invalid value: { %q: %f } (infinity values are not allowed)", key, v,
+				))
 			}
 		}
 	}
