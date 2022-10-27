@@ -142,6 +142,9 @@ func TestCommandsDiagnosticGetLogTelemetryReported(t *testing.T) {
 	m := actual.Map()
 	log := m["log"].(bson.A)
 	assert.Equal(t, 3, len(log))
+
+	// check that the last line contains info about telemetry being undecided
+	assert.Contains(t, log[2].(string), "Telemetry state undecided")
 }
 
 func TestCommandsDiagnosticHostInfo(t *testing.T) {
