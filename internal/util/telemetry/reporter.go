@@ -83,7 +83,7 @@ func NewReporter(opts *NewReporterOpts) (*Reporter, error) {
 		return nil, err
 	}
 
-	if err = opts.P.Update(func(s *state.State) { s.Telemetry = t; s.UndecidedDelay = opts.UndecidedDelay }); err != nil {
+	if err = opts.P.Update(func(s *state.State) { s.Telemetry = t }); err != nil {
 		return nil, err
 	}
 

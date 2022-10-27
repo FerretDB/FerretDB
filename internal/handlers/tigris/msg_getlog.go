@@ -95,11 +95,10 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		state := h.StateProvider.Get()
 		if state.Telemetry == nil {
-			startupWarnings = append(startupWarnings, fmt.Sprintf(
-				"Telemetry state undecided, waiting %s before the first report."+
+			startupWarnings = append(startupWarnings,
+				"Telemetry state undecided, the first report will be delayed."+
 					" Read more about FerretDB telemetry at https://beacon.ferretdb.io.",
-				state.UndecidedDelay,
-			))
+			)
 		}
 
 		var log types.Array
