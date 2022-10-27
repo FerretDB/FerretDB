@@ -33,7 +33,7 @@ func TestInsertCompat(t *testing.T) {
 	testCases := map[string]insertCompatTestCase{
 		"InsertEmptyDocument": {
 			insert:     bson.D{},
-			resultType: emptyResult,
+			resultType: nonEmptyResult,
 		},
 		"InsertIDArray": {
 			insert:     bson.D{{"_id", bson.A{"foo", "bar"}}},

@@ -38,6 +38,10 @@ func (e *ValidationError) Error() string {
 	return fmt.Sprintf("Invalid document, reason: %s.", e.reason)
 }
 
+func (e *ValidationError) RawError() error {
+	return e.reason
+}
+
 // ValidateData checks if the document represents a valid "data document".
 // If the document is not valid it returns *ValidationError.
 func (d *Document) ValidateData() error {
@@ -83,9 +87,9 @@ func (d *Document) ValidateData() error {
 
 	switch v.(type) {
 	case *Regex:
-		return newValidationError(fmt.Errorf("The '_id' value cannot be of type array"))
+		return fmt.Errorf("The '_id' value cannot be of type regex")
 	case *Array:
-		return newValidationError(fmt.Errorf("The '_id' value cannot be of type regex"))
+		return fmt.Errorf("The '_id' value cannot be of type array")
 	}
 
 	return nil
