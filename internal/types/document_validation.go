@@ -41,7 +41,7 @@ func (e *ValidationError) Error() string {
 	return fmt.Sprintf("Invalid document, reason: %s.", e.reason)
 }
 
-// Unwrap implements the errors.Unwrap interface.
+// Unwrap returns unwrapped error.
 func (e *ValidationError) Unwrap() error {
 	return e.reason
 }
