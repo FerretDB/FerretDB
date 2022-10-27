@@ -15,11 +15,14 @@
 package integration
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type insertTestCase struct {
@@ -51,6 +54,51 @@ func testInsertCompat(t *testing.T, testCases map[string]insertTestCase) {
 
 			insert := tc.insert
 			require.NotNil(t, insert)
+
+			var nonEmptyResults bool
+			for i := range targetCollections {
+				targetCollection := targetCollections[i]
+				compatCollection := compatCollections[i]
+				t.Run(targetCollection.Name(), func(t *testing.T) {
+					t.Helper()
+
+					allDocs := FindAll(t, ctx, targetCollection)
+
+					for _, doc := range allDocs {
+						id, ok := doc.Map()["_id"]
+						require.True(t, ok)
+
+						t.Run(fmt.Sprint(id), func(t *testing.T) {
+							t.Helper()
+
+							filter := bson.D{{"_id", id}}
+							var targetInsertRes, compatInsertRes *mongo.InsertOneResult
+							var targetErr, compatErr error
+
+							targetInsertRes, targetErr = targetCollection.InsertOne(ctx, insert)
+							compatInsertRes, compatErr = compatCollection.InsertOne(ctx, insert)
+
+							if targetErr != nil {
+								t.Logf("Target error: %v", targetErr)
+								targetErr = UnsetRaw(t, targetErr)
+								compatErr = UnsetRaw(t, compatErr)
+
+								// Skip inserts that could not be performed due to Tigris schema validation.
+								if e, ok := targetErr.(mongo.CommandError); ok && e.Name == "DocumentValidationFailure" {
+									if e.HasErrorCodeWithMessage(121, "json schema validation failed for field") {
+										setup.SkipForTigrisWithReason(t, targetErr.Error())
+									}
+								}
+
+								assert.Equal(t, compatErr, targetErr)
+							} else {
+								require.NoError(t, compatErr, "compat error; target returned no error")
+							}
+
+						})
+					}
+				})
+			}
 		})
 	}
 }
