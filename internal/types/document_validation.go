@@ -17,7 +17,6 @@ package types
 import (
 	"fmt"
 	"math"
-	"reflect"
 	"strings"
 	"unicode/utf8"
 
@@ -82,13 +81,11 @@ func (d *Document) ValidateData() error {
 
 	v := must.NotFail(d.Get("_id"))
 
-	switch v := v.(type) {
-	case Regex:
-		return newValidationError(fmt.Errorf("invalid value: %#v (_id value mustn't be a regex)", v))
-	}
-
-	if reflect.TypeOf(v).Kind() == reflect.Slice {
-		return newValidationError(fmt.Errorf("invalid value: %#v (_id value mustn't be an array)", v))
+	switch v.(type) {
+	case *Regex:
+		return newValidationError(fmt.Errorf("The '_id' value cannot be of type array"))
+	case *Array:
+		return newValidationError(fmt.Errorf("The '_id' value cannot be of type regex"))
 	}
 
 	return nil
