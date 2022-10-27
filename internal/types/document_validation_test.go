@@ -16,12 +16,14 @@ package types
 
 import (
 	"errors"
-	"github.com/stretchr/testify/require"
 	"math"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/stretchr/testify/require"
+
 	"github.com/stretchr/testify/assert"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // TestDocumentValidateData covers ValidateData method.

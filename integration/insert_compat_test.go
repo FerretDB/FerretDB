@@ -19,12 +19,13 @@ import (
 	"testing"
 
 	"github.com/AlekSi/pointer"
-	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestInsertCompat(t *testing.T) {
