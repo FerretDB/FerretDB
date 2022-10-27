@@ -69,9 +69,32 @@ func (d *Document) ValidateData() error {
 
 		value := must.NotFail(d.Get(key))
 
-		// TODO Add dance tests for infinity: https://github.com/FerretDB/FerretDB/issues/1151
-		if v, ok := value.(float64); ok && math.IsInf(v, 0) {
-			return newValidationError(fmt.Errorf("invalid value: { %q: %f } (infinity values are not allowed)", key, v))
+		switch v := value.(type) {
+		case *Document:
+			err := v.ValidateData()
+			if err != nil {
+				// TODO
+			}
+		case *Array:
+			for i := 0; i < v.Len(); i++ {
+				item := must.NotFail(v.Get(i))
+				switch item := item.(type) {
+				case *Document:
+					err := item.ValidateData()
+					if err != nil {
+						// TODO
+					}
+				case *Array:
+					return newValidationError(fmt.Errorf("invalid array: %v (nested arrays are not allowed)", v))
+				}
+			}
+		case float64:
+			// TODO Add dance tests for infinity: https://github.com/FerretDB/FerretDB/issues/1151
+			if math.IsInf(v, 0) {
+				return newValidationError(fmt.Errorf("invalid value: { %q: %f } (infinity values are not allowed)", key, v))
+			}
+		default:
+			continue
 		}
 	}
 
