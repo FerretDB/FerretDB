@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 //go:generate ../../../bin/stringer -linecomment -type ErrorCode
@@ -185,4 +186,18 @@ func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
 	default:
 		return err
 	}
+}
+
+func CheckError(err error) error {
+	switch err := err.(type) {
+	case *types.ValidationError:
+		switch err.Code() {
+		case types.ErrBadID:
+			return NewWriteErrorMsg(ErrInvalidID, err.Error())
+		default:
+			return NewErrorMsg(ErrBadValue, err.Error())
+		}
+	}
+
+	return lazyerrors.Error(err)
 }
