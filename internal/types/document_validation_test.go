@@ -44,9 +44,13 @@ func TestDocumentValidateData(t *testing.T) {
 			doc:    must.NotFail(NewDocument("\xf4\x90\x80\x80", "bar")), //  the key is out of range for UTF-8
 			reason: errors.New(`invalid key: "\xf4\x90\x80\x80" (not a valid UTF-8 string)`),
 		},
-		"KeyContains$": {
+		"KeyContainsDollarSign": {
 			doc:    must.NotFail(NewDocument("$v", "bar")),
-			reason: errors.New(`invalid key: "$v" (key must not contain $)`),
+			reason: errors.New(`invalid key: "$v" (key must not contain '$' sign)`),
+		},
+		"KeyContainsDotSign": {
+			doc:    must.NotFail(NewDocument("v.foo", "bar")),
+			reason: errors.New(`invalid key: "v.foo" (key must not contain '.' sign)`),
 		},
 		"Inf+": {
 			doc:    must.NotFail(NewDocument("v", math.Inf(1))),
