@@ -15,8 +15,10 @@
 package integration
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
+	"strings"
 	"sync"
 	"testing"
 
@@ -73,7 +75,13 @@ func TestCreateStress(t *testing.T) {
 			// If we get an error, it's not Tigris, so we create collection without schema
 			err := db.CreateCollection(ctx, collName, &opts)
 			if err != nil {
-				err := db.CreateCollection(ctx, collName)
+				var cmdErr *mongo.CommandError
+				if errors.As(err, &cmdErr) {
+					if strings.Contains(cmdErr.Message, `unknown top level operator: $tigrisSchemaString`) {
+						err = db.CreateCollection(ctx, collName)
+					}
+				}
+
 				assert.NoError(t, err)
 			}
 
