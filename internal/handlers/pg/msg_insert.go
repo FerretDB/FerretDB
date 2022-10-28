@@ -123,5 +123,5 @@ func (h *Handler) insert(ctx context.Context, tx pgx.Tx, sp *pgdb.SQLParam, doc 
 		return common.NewErrorMsg(common.ErrInvalidNamespace, msg)
 	}
 
-	return common.NewWriteErrorMsg(53, err.Error())
+	return common.NewWriteErrorMsg(common.ErrInvalidID, err.Error())
 }
