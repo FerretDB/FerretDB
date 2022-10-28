@@ -82,7 +82,7 @@ func (d *Document) ValidateData() error {
 	v := must.NotFail(d.Get("_id"))
 
 	switch v.(type) {
-	case Array:
+	case *Array:
 		return fmt.Errorf("The '_id' value cannot be of type array")
 	case Regex:
 		return fmt.Errorf("The '_id' value cannot be of type regex")
