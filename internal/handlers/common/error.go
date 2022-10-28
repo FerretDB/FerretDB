@@ -53,6 +53,9 @@ const (
 	// ErrNamespaceExists indicates that the collection already exists.
 	ErrNamespaceExists = ErrorCode(48) // NamespaceExists
 
+	// ErrInvalidID indicates that _id field is invalid.
+	ErrInvalidID = ErrorCode(53) // InvalidID
+
 	// ErrCommandNotFound indicates unknown command input.
 	ErrCommandNotFound = ErrorCode(59) // CommandNotFound
 
