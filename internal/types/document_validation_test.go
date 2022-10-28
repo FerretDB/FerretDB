@@ -33,8 +33,7 @@ func TestDocumentValidateData(t *testing.T) {
 
 	for name, tc := range map[string]struct {
 		doc    *Document
-		reason error // if set, it expects ValidationError to be returned
-		err    error // if set, it expects any error that's not a ValidationError to be returned
+		reason error
 	}{
 		"Valid": {
 			doc:    must.NotFail(NewDocument("_id", "1", "foo", "bar")),
@@ -78,7 +77,6 @@ func TestDocumentValidateData(t *testing.T) {
 			t.Parallel()
 
 			err := tc.doc.ValidateData()
-
 			if tc.reason == nil {
 				assert.NoError(t, err)
 			} else {
