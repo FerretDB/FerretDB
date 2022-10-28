@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/AlekSi/pointer"
@@ -86,51 +85,48 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
-					allDocs := FindAll(t, ctx, targetCollection)
+					t.Helper()
 
-					for _, doc := range allDocs {
-						id, ok := doc.Map()["_id"]
-						require.True(t, ok)
+					var targetInsertRes, compatInsertRes *mongo.InsertOneResult
+					var targetErr, compatErr error
 
-						t.Run(fmt.Sprint(id), func(t *testing.T) {
-							t.Helper()
+					targetInsertRes, targetErr = targetCollection.InsertOne(ctx, insert)
+					compatInsertRes, compatErr = compatCollection.InsertOne(ctx, insert)
 
-							var targetInsertRes, compatInsertRes *mongo.InsertOneResult
-							var targetErr, compatErr error
+					if targetErr != nil {
+						t.Logf("Target error: %v", targetErr)
+						targetErr = UnsetRaw(t, targetErr)
+						compatErr = UnsetRaw(t, compatErr)
 
-							targetInsertRes, targetErr = targetCollection.InsertOne(ctx, insert)
-							compatInsertRes, compatErr = compatCollection.InsertOne(ctx, insert)
-
-							if targetErr != nil {
-								t.Logf("Target error: %v", targetErr)
-								targetErr = UnsetRaw(t, targetErr)
-								compatErr = UnsetRaw(t, compatErr)
-
-								// Skip inserts that could not be performed due to Tigris schema validation.
-								if e, ok := targetErr.(mongo.CommandError); ok && e.Name == "DocumentValidationFailure" {
-									if e.HasErrorCodeWithMessage(121, "json schema validation failed for field") {
-										setup.SkipForTigrisWithReason(t, targetErr.Error())
-									}
-								}
-
-								assert.Equal(t, compatErr, targetErr)
-							} else {
-								require.NoError(t, compatErr, "compat error; target returned no error")
+						// Skip inserts that could not be performed due to Tigris schema validation.
+						if e, ok := targetErr.(mongo.CommandError); ok && e.Name == "DocumentValidationFailure" {
+							if e.HasErrorCodeWithMessage(121, "json schema validation failed for field") {
+								setup.SkipForTigrisWithReason(t, targetErr.Error())
 							}
+						}
 
-							targetID, _ := pointer.Get(targetInsertRes).InsertedID.(primitive.ObjectID)
-							compatID, _ := pointer.Get(compatInsertRes).InsertedID.(primitive.ObjectID)
-
-							if !(targetID.IsZero() && compatID.IsZero()) {
-								nonEmptyResults = true
-							}
-
-							var targetFindRes, compatFindRes bson.D
-							require.NoError(t, targetCollection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&targetFindRes))
-							require.NoError(t, compatCollection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&compatFindRes))
-							AssertEqualDocuments(t, compatFindRes, targetFindRes)
-						})
+						assert.Equal(t, compatErr, targetErr)
+					} else {
+						require.NoError(t, compatErr, "compat error; target returned no error")
 					}
+
+					targetID, _ := pointer.Get(targetInsertRes).InsertedID.(primitive.ObjectID)
+					compatID, _ := pointer.Get(compatInsertRes).InsertedID.(primitive.ObjectID)
+
+					if !(targetID.IsZero() && compatID.IsZero()) {
+						nonEmptyResults = true
+					}
+
+					var targetFindRes, compatFindRes bson.D
+					targetCur, err := targetCollection.Find(ctx, bson.D{{}})
+					require.NoError(t, err)
+					targetCur.Decode(&targetFindRes)
+
+					compatCur, err := compatCollection.Find(ctx, bson.D{{}})
+					require.NoError(t, err)
+					compatCur.Decode(&targetFindRes)
+
+					AssertEqualDocuments(t, compatFindRes, targetFindRes)
 				})
 			}
 
