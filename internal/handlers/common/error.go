@@ -191,7 +191,7 @@ func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
 // CheckError checks error type and returns properly translated error.
 func CheckError(err error) error {
 	var ve *types.ValidationError
-	if ok := errors.As(err, &ve); ok {
+	if errors.As(err, &ve) {
 		switch ve.Code() {
 		case types.ErrBadID:
 			return NewWriteErrorMsg(ErrInvalidID, err.Error())
