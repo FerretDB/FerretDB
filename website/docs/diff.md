@@ -8,7 +8,7 @@ sidebar_position: 6
 
 1. FerretDB uses the same protocol error names and codes, but the exact error messages may be different in some cases.
 2. FerretDB does not support NUL (`\0`) characters in strings.
-3. Document keys must not contain `$` sign.
+3. Document keys must not contain `$` or `.` signs.
 4. Database and collection names restrictions:
    * name cannot start with the reserved prefix `_ferretdb_`;
    * database name must not include non-latin letters, spaces, dots, dollars or dashes;
