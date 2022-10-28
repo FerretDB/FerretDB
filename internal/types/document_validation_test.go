@@ -65,12 +65,12 @@ func TestDocumentValidateData(t *testing.T) {
 			reason: errors.New(`invalid document: document must contain '_id' field`),
 		},
 		"Array": {
-			doc: must.NotFail(NewDocument("_id", Array{[]any{"foo", "bar"}})),
-			err: errors.New("The '_id' value cannot be of type array"),
+			doc:    must.NotFail(NewDocument("_id", &Array{[]any{"foo", "bar"}})),
+			reason: errors.New("The '_id' value cannot be of type array"),
 		},
 		"Regex": {
-			doc: must.NotFail(NewDocument("_id", Regex{Pattern: "regex$"})),
-			err: errors.New("The '_id' value cannot be of type regex"),
+			doc:    must.NotFail(NewDocument("_id", Regex{Pattern: "regex$"})),
+			reason: errors.New("The '_id' value cannot be of type regex"),
 		},
 	} {
 		name, tc := name, tc
@@ -79,21 +79,12 @@ func TestDocumentValidateData(t *testing.T) {
 
 			err := tc.doc.ValidateData()
 
-			switch {
-			case tc.reason == nil && tc.err == nil:
+			if tc.reason == nil {
 				assert.NoError(t, err)
-
-			case tc.reason != nil:
-				require.Nil(t, tc.err, "Only one of err and reason value can be set at once")
+			} else {
 				var ve *ValidationError
 				require.True(t, errors.As(err, &ve))
 				assert.Equal(t, tc.reason, ve.reason)
-
-			case tc.err != nil:
-				var ve *ValidationError
-				require.False(t, errors.As(err, &ve))
-				require.Nil(t, tc.reason, "Only one of err and reason value can be set at once")
-				assert.Equal(t, tc.err, err)
 			}
 		})
 	}
