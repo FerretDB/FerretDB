@@ -72,7 +72,8 @@ func TestCreateStress(t *testing.T) {
 			}
 
 			// Attempt to create a collection for Tigris with a schema.
-			// If we get an error, it's not Tigris, so we create collection without schema
+			// If we get an error, that's MongoDB (FerretDB ignores that argument for non-Tigris handlers),
+			// so we create collection without schema.
 			err := db.CreateCollection(ctx, collName, &opts)
 			if err != nil {
 				var cmdErr *mongo.CommandError
