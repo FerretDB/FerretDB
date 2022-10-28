@@ -506,11 +506,6 @@ func TestQueryArrayAll(t *testing.T) {
 			expectedIDs: []any{},
 			expectedErr: nil,
 		},
-		"EmptyNested": {
-			filter:      bson.D{{"v", bson.D{{"$all", bson.A{bson.A{}}}}}},
-			expectedIDs: []any{"array-empty"},
-			expectedErr: nil,
-		},
 
 		"NotFound": {
 			filter:      bson.D{{"v", bson.D{{"$all", bson.A{"hello"}}}}},
