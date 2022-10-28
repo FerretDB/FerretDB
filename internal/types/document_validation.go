@@ -23,10 +23,14 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// ValidationErrorCode represents ValidationData error code.
 type ValidationErrorCode int
 
 const (
+	// ErrValidation indicates that document is invalid.
 	ErrValidation ValidationErrorCode = iota
+
+	// ErrBadID indicates that _id field is invalid.
 	ErrBadID
 )
 
@@ -46,7 +50,7 @@ func (e *ValidationError) Error() string {
 	return e.reason.Error()
 }
 
-// Error returns the ValidationError code.
+// Code returns the ValidationError code.
 func (e *ValidationError) Code() ValidationErrorCode {
 	return e.code
 }
@@ -89,7 +93,9 @@ func (d *Document) ValidateData() error {
 
 		// TODO Add dance tests for infinity: https://github.com/FerretDB/FerretDB/issues/1151
 		if v, ok := value.(float64); ok && math.IsInf(v, 0) {
-			return newValidationError(fmt.Errorf("invalid value: { %q: %f } (infinity values are not allowed)", key, v), ErrValidation)
+			return newValidationError(
+				fmt.Errorf("invalid value: { %q: %f } (infinity values are not allowed)", key, v), ErrValidation,
+			)
 		}
 	}
 

@@ -187,7 +187,7 @@ func makeRequest(s *state.State, m *connmetrics.ConnMetrics) *request {
 		Branch:           v.Branch,
 		Dirty:            v.Dirty,
 		Debug:            v.Debug,
-		BuildEnvironment: v.BuildEnvironment.Map(),
+		BuildEnvironment: v.BuildEnvironment.DeepCopy().Map(),
 		OS:               runtime.GOOS,
 		Arch:             runtime.GOARCH,
 
