@@ -85,8 +85,6 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
-					t.Helper()
-
 					var targetInsertRes, compatInsertRes *mongo.InsertOneResult
 					var targetErr, compatErr error
 
