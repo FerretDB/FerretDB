@@ -53,7 +53,7 @@ func (tdb *TigrisDB) createDatabaseIfNotExists(ctx context.Context, db string) (
 				return false, nil
 			}
 
-			if IsOtherCreationInFlight(err) {
+			if isOtherCreationInFlight(err) {
 				time.Sleep(20 * time.Millisecond)
 				continue
 			}

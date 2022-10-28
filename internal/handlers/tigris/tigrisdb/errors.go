@@ -37,12 +37,12 @@ func IsAlreadyExists(err error) bool {
 	return pointer.Get(e).Code == api.Code_ALREADY_EXISTS //nolint:nosnakecase // Tigris named their const that way
 }
 
-// IsOtherCreationInFlight returns true if an attempt to create the database with the given name is already in progress.
+// isOtherCreationInFlight returns true if an attempt to create the database with the given name is already in progress.
 // This function is implemented to keep nolint in a single place.
-func IsOtherCreationInFlight(err error) bool {
+func isOtherCreationInFlight(err error) bool {
 	var driverErr *driver.Error
 	if !errors.As(err, &driverErr) {
-		panic("IsOtherCreationInFlight called with non-driver error")
+		panic("isOtherCreationInFlight called with non-driver error")
 	}
 
 	isUnknnown := pointer.Get(driverErr).Code == api.Code_UNKNOWN //nolint:nosnakecase // Tigris named their const that way
