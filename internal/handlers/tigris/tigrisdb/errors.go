@@ -39,6 +39,7 @@ func IsAlreadyExists(err error) bool {
 
 // isOtherCreationInFlight returns true if an attempt to create the database with the given name is already in progress.
 // This function is implemented to keep nolint in a single place.
+// TODO https://github.com/FerretDB/FerretDB/issues/1341
 func isOtherCreationInFlight(err error) bool {
 	var driverErr *driver.Error
 	if !errors.As(err, &driverErr) {
