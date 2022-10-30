@@ -129,11 +129,6 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 
 func TestCommandsDiagnosticGetLogTelemetryReported(t *testing.T) {
 	t.Parallel()
-	res := setup.SetupWithOpts(t, &setup.SetupOpts{
-		DatabaseName: "admin",
-	})
-
-	ctx, collection := res.Ctx, res.Collection
 
 	for name, tc := range map[string]struct {
 		telemetry        *bool
@@ -155,7 +150,14 @@ func TestCommandsDiagnosticGetLogTelemetryReported(t *testing.T) {
 		name, tc := name, tc
 
 		t.Run(name, func(t *testing.T) {
-			// These subtests can't be run in parallel as they access the same state file and modify its data.
+			t.Parallel()
+
+			// Setup separate env for each subtest as we want state files to be independent for subtests.
+			res := setup.SetupWithOpts(t, &setup.SetupOpts{
+				DatabaseName: "admin" + name,
+			})
+
+			ctx, collection := res.Ctx, res.Collection
 
 			err := res.StateProvider.Update(func(s *state.State) { s.Telemetry = tc.telemetry })
 			require.NoError(t, err)

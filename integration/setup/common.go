@@ -97,7 +97,7 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*state.Provider, int) {
 	tb.Helper()
 
-	stateFile, err := os.CreateTemp("", testutil.DatabaseName(tb)+".state")
+	stateFile, err := os.CreateTemp("", "test-*.state")
 	require.NoError(tb, err)
 
 	p, err := state.NewProvider(stateFile.Name())
