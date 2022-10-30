@@ -889,7 +889,8 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 			// TODO Don't ignore this error after https://github.com/FerretDB/FerretDB/issues/1317
 			if err != nil {
-				if strings.Contains(err.Error(), "SQLSTATE 3F000") {
+				if strings.Contains(err.Error(), "SQLSTATE 3F000") ||
+					strings.Contains(err.Error(), "SQLSTATE 42P01") {
 					err = nil
 				}
 			}
