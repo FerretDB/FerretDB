@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"math"
 	"net"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -921,39 +922,76 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 	}
 }
 
-func TestCommandsAdministrationServerStatusStressPostgres(t *testing.T) {
+func TestCommandsAdministrationServerStatusStress(t *testing.T) {
+	// TODO This tests reproduces the problem with SQLSTATE 3F000: https://github.com/FerretDB/FerretDB/issues/1317
 	setup.SkipForPostgresWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1317")
-	setup.SkipForTigrisWithReason(t, "Tigris needs a schema for collection creation")
 
 	t.Parallel()
 
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
 	client := collection.Database().Client()
 
-	collNum := 10
+	dbNum := runtime.GOMAXPROCS(-1) * 10
+
+	ready := make(chan struct{}, dbNum)
+	start := make(chan struct{})
 
 	var wg sync.WaitGroup
-	for i := 0; i < collNum; i++ {
+	for i := 0; i < dbNum; i++ {
 		wg.Add(1)
 
 		go func(i int) {
+			defer wg.Done()
+			ready <- struct{}{}
+			<-start
+
 			dbName := fmt.Sprintf("%s_stress_%d", collection.Database().Name(), i)
 			db := client.Database(dbName)
-			_ = db.Drop(ctx)
+			_ = db.Drop(ctx) // make sure DB doesn't exist (it will be created together with the collection)
 
 			collName := fmt.Sprintf("stress_%d", i)
-			_ = db.CreateCollection(ctx, collName)
-			_ = db.Drop(ctx)
+
+			schema := fmt.Sprintf(`{
+				"title": "%s",
+				"description": "Create Collection Stress %d",
+				"primary_key": ["_id"],
+				"properties": {
+					"_id": {"type": "string"},
+					"v": {"type": "string"}
+				}
+			}`, collName, i,
+			)
+			opts := options.CreateCollectionOptions{
+				Validator: bson.D{{"$tigrisSchemaString", schema}},
+			}
+
+			// Attempt to create a collection for Tigris with a schema.
+			// If we get an error, that's MongoDB (FerretDB ignores that argument for non-Tigris handlers),
+			// so we create collection without schema.
+			err := db.CreateCollection(ctx, collName, &opts)
+			if err != nil {
+				if strings.Contains(err.Error(), `support for field "validator" is not implemented yet`) {
+					err = db.CreateCollection(ctx, collName)
+				}
+			}
+			assert.NoError(t, err)
+
+			err = db.Drop(ctx)
+			assert.NoError(t, err)
 
 			command := bson.D{{"serverStatus", int32(1)}}
 			var actual bson.D
-			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+			err = collection.Database().RunCommand(ctx, command).Decode(&actual)
 
-			wg.Done()
-
-			require.NoError(t, err)
+			assert.NoError(t, err)
 		}(i)
 	}
+
+	for i := 0; i < dbNum; i++ {
+		<-ready
+	}
+
+	close(start)
 
 	wg.Wait()
 }
