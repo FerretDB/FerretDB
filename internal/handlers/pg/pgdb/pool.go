@@ -179,7 +179,7 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 // database, schema, table.
 // If schema is empty, it calculates statistics across the whole PostgreSQL database.
 // If collection is empty it calculates statistics across the whole PostgreSQL schema.
-func SchemaStats(ctx context.Context, tx pgx.Tx, schema, collection string) (*DBStats, error) {
+func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) (*DBStats, error) {
 	var res DBStats
 
 	sql := `
@@ -212,7 +212,7 @@ func SchemaStats(ctx context.Context, tx pgx.Tx, schema, collection string) (*DB
 	}
 
 	res.Name = schema
-	err := tx.QueryRow(ctx, sql, args...).
+	err := pgPool.QueryRow(ctx, sql, args...).
 		Scan(&res.CountTables, &res.CountRows, &res.SizeTotal, &res.SizeIndexes, &res.SizeRelation, &res.CountIndexes)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
