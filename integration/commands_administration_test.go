@@ -20,6 +20,7 @@ import (
 	"net"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -841,8 +842,6 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 }
 
 func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
-	setup.SkipForPostgresWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1317")
-
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
@@ -887,6 +886,13 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+			// TODO Don't ignore this error after https://github.com/FerretDB/FerretDB/issues/1317
+			if err != nil {
+				if strings.Contains(err.Error(), "SQLSTATE 3F000") {
+					err = nil
+				}
+			}
+
 			require.NoError(t, err)
 
 			actualMetric, err := ConvertDocument(t, actual).GetByPath(tc.metricsPath)
