@@ -19,10 +19,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/util/state"
-
 	"github.com/AlekSi/pointer"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -31,6 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 func TestCommandsDiagnosticGetLog(t *testing.T) {
@@ -144,10 +142,12 @@ func TestCommandsDiagnosticGetLogTelemetryReported(t *testing.T) {
 		"TelemetryEnabled": {
 			telemetry:        pointer.ToBool(true),
 			isWarningPresent: false,
-		}, "TelemetryDisabled": {
+		},
+		"TelemetryDisabled": {
 			telemetry:        pointer.ToBool(false),
 			isWarningPresent: false,
-		}, "TelemetryUndecided": {
+		},
+		"TelemetryUndecided": {
 			telemetry:        nil,
 			isWarningPresent: true,
 		},
