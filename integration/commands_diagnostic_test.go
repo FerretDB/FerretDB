@@ -19,6 +19,10 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/FerretDB/FerretDB/internal/util/state"
+
+	"github.com/AlekSi/pointer"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -133,15 +137,50 @@ func TestCommandsDiagnosticGetLogTelemetryReported(t *testing.T) {
 
 	ctx, collection := res.Ctx, res.Collection
 
-	command := bson.D{{"getLog", "startupWarnings"}}
+	for name, tc := range map[string]struct {
+		telemetry        *bool
+		isWarningPresent bool
+	}{
+		"TelemetryEnabled": {
+			telemetry:        pointer.ToBool(true),
+			isWarningPresent: false,
+		}, "TelemetryDisabled": {
+			telemetry:        pointer.ToBool(false),
+			isWarningPresent: false,
+		}, "TelemetryUndecided": {
+			telemetry:        nil,
+			isWarningPresent: true,
+		},
+	} {
+		name, tc := name, tc
 
-	var actual bson.D
-	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
-	require.NoError(t, err)
+		t.Run(name, func(t *testing.T) {
+			// These subtests can't be run in parallel as they access the same state file and modify its data.
 
-	log := actual.Map()["log"].(bson.A)
-	require.Len(t, log, 3)
-	assert.Contains(t, log[2], "The telemetry state is undecided")
+			err := res.StateProvider.Update(func(s *state.State) { s.Telemetry = tc.telemetry })
+			require.NoError(t, err)
+
+			// Check that state was stored correctly.
+			state := res.StateProvider.Get()
+			require.Equal(t, tc.telemetry, state.Telemetry)
+
+			command := bson.D{{"getLog", "startupWarnings"}}
+
+			var actual bson.D
+			err = collection.Database().RunCommand(ctx, command).Decode(&actual)
+			require.NoError(t, err)
+
+			log := actual.Map()["log"].(bson.A)
+
+			switch tc.isWarningPresent {
+			case true:
+				require.Len(t, log, 3)
+				assert.Contains(t, log[2], "The telemetry state is undecided")
+			case false:
+				require.Len(t, log, 2)
+			}
+		})
+	}
 }
 
 func TestCommandsDiagnosticHostInfo(t *testing.T) {

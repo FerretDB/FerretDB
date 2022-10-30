@@ -20,6 +20,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/FerretDB/FerretDB/internal/util/state"
+
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -54,6 +56,7 @@ type SetupCompatResult struct {
 	TargetPort        uint16
 	CompatCollections []*mongo.Collection
 	CompatPort        uint16
+	StateProvider     *state.Provider
 }
 
 // SetupCompatWithOpts setups the compatibility test according to given options.
@@ -93,9 +96,10 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	}
 	logger := testutil.Logger(tb, level)
 
+	var stateProvider *state.Provider
 	targetPort := *targetPortF
 	if targetPort == 0 {
-		targetPort = setupListener(tb, ctx, logger)
+		stateProvider, targetPort = setupListener(tb, ctx, logger)
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
@@ -112,6 +116,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 		TargetPort:        uint16(targetPort),
 		CompatCollections: compatCollections,
 		CompatPort:        uint16(compatPort),
+		StateProvider:     stateProvider,
 	}
 }
 

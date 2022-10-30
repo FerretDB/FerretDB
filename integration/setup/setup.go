@@ -18,6 +18,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/FerretDB/FerretDB/internal/util/state"
+
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -46,9 +48,10 @@ type SetupOpts struct {
 
 // SetupResult represents setup results.
 type SetupResult struct {
-	Ctx        context.Context
-	Collection *mongo.Collection
-	Port       uint16
+	Ctx           context.Context
+	Collection    *mongo.Collection
+	Port          uint16
+	StateProvider *state.Provider
 }
 
 // SetupWithOpts setups the test according to given options.
@@ -69,12 +72,13 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	}
 	logger := testutil.Logger(tb, level)
 
+	var stateProvider *state.Provider
 	port := *targetPortF
 	if port == 0 {
 		// TODO check targetUnixSocketF, setup Unix socket-only listener if true.
 		// TODO https://github.com/FerretDB/FerretDB/issues/1295
 		_ = *targetUnixSocketF
-		port = setupListener(tb, ctx, logger)
+		stateProvider, port = setupListener(tb, ctx, logger)
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
@@ -85,9 +89,10 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	level.SetLevel(*logLevelF)
 
 	return &SetupResult{
-		Ctx:        ctx,
-		Collection: collection,
-		Port:       uint16(port),
+		Ctx:           ctx,
+		Collection:    collection,
+		Port:          uint16(port),
+		StateProvider: stateProvider,
 	}
 }
 
