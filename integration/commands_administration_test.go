@@ -942,7 +942,9 @@ func TestCommandsAdministrationServerStatusStress(t *testing.T) {
 
 		go func(i int) {
 			defer wg.Done()
+
 			ready <- struct{}{}
+
 			<-start
 
 			dbName := fmt.Sprintf("%s_stress_%d", collection.Database().Name(), i)
@@ -974,6 +976,7 @@ func TestCommandsAdministrationServerStatusStress(t *testing.T) {
 					err = db.CreateCollection(ctx, collName)
 				}
 			}
+
 			assert.NoError(t, err)
 
 			err = db.Drop(ctx)
