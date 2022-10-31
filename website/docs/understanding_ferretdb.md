@@ -25,14 +25,13 @@ Documents are self-describing records containing both data types and a descripti
 They are similar to rows in relational databases.
 Here is an example of a single document:
 
-```json
+```js
 {
     first: "Thomas",
     last: "Edison",
     invention: "Lightbulb",
     birth: 1847
 }
-
 ```
 
 The above data is stored in a single document.
@@ -44,7 +43,7 @@ However, there are a few restrictions, which you can find  [here](https://docs.f
 
 For complex documents, you can nest objects (subdocuments) inside a document.
 
-```json
+```js
 {
   name: {
     first: "Thomas",
@@ -65,7 +64,7 @@ If a collection does not exist, FerretDB creates a new one when you insert docum
 A collection may contain one or more documents.
 For example, the following collection contains three documents.
 
-```json
+```js
 {
   Scientists: [
     {
@@ -85,7 +84,6 @@ For example, the following collection contains three documents.
     }
   ]
 }
-
 ```
 
 ## Indexing
