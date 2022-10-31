@@ -924,20 +924,6 @@ func TestQueryComparisonLt(t *testing.T) {
 			value:       bson.A{nil},
 			expectedIDs: []any{"array-empty"},
 		},
-		"ArrayEmbedded": {
-			value: bson.A{bson.A{int32(42), "foo"}, nil},
-			expectedIDs: []any{
-				"array", "array-empty",
-				"array-null", "array-three", "array-three-reverse", "array-two",
-			},
-		},
-		"LongArrayEmbedded": {
-			value: bson.A{bson.A{int32(42), "foo"}, nil, "foo"},
-			expectedIDs: []any{
-				"array", "array-empty",
-				"array-null", "array-three", "array-three-reverse", "array-two",
-			},
-		},
 		"ArraySlice": {
 			value: bson.A{int32(42), "foo"},
 			expectedIDs: []any{
@@ -1146,20 +1132,6 @@ func TestQueryComparisonLte(t *testing.T) {
 		"ArrayNull": {
 			value:       bson.A{nil},
 			expectedIDs: []any{"array-empty", "array-null"},
-		},
-		"ArrayEmbedded": {
-			value: bson.A{bson.A{int32(42), "foo"}, nil},
-			expectedIDs: []any{
-				"array", "array-empty",
-				"array-null", "array-three", "array-three-reverse", "array-two",
-			},
-		},
-		"LongArrayEmbedded": {
-			value: bson.A{bson.A{int32(42), "foo"}, nil, "foo"},
-			expectedIDs: []any{
-				"array", "array-empty",
-				"array-null", "array-three", "array-three-reverse", "array-two",
-			},
 		},
 		"ArraySlice": {
 			value: bson.A{int32(42), "foo"},

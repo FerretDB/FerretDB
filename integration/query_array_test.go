@@ -495,11 +495,6 @@ func TestQueryArrayAll(t *testing.T) {
 			expectedIDs: []any{"array-three", "array-three-reverse"},
 			expectedErr: nil,
 		},
-		"ArrayEmbeddedReverseOrder": {
-			filter:      bson.D{{"v", bson.D{{"$all", bson.A{bson.A{"foo", int32(42)}}}}}},
-			expectedIDs: []any{},
-			expectedErr: nil,
-		},
 
 		"Empty": {
 			filter:      bson.D{{"v", bson.D{{"$all", bson.A{}}}}},
