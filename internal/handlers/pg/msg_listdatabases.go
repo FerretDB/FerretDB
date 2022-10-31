@@ -106,7 +106,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 			return nil
 		}
 
-		return h.PgPool.QueryRow(ctx, "SELECT pg_database_size(current_database())").Scan(&totalSize)
+		return tx.QueryRow(ctx, "SELECT pg_database_size(current_database())").Scan(&totalSize)
 	})
 	if err != nil {
 		return nil, err
