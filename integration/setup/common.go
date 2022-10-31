@@ -100,7 +100,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*sta
 	stateFile, err := os.CreateTemp("", "test-*.state")
 	require.NoError(tb, err)
 
-	p, err := state.NewProvider(stateFile.Name())
+	p, err := state.NewProvider("")
 	require.NoError(tb, err)
 
 	u, err := url.Parse(*postgreSQLURLF)
