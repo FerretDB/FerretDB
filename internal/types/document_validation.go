@@ -89,7 +89,7 @@ func (d *Document) ValidateData() error {
 		}
 		duplicateChecker[key] = struct{}{}
 
-		if key == "_id" {
+		if key == IdKey {
 			idPresent = true
 		}
 
@@ -106,7 +106,7 @@ func (d *Document) ValidateData() error {
 				}
 			}
 		case *Array:
-			if key == "_id" {
+			if key == IdKey {
 				return newValidationError(ErrWrongIDType, fmt.Errorf("The '_id' value cannot be of type array"))
 			}
 
@@ -135,7 +135,7 @@ func (d *Document) ValidateData() error {
 				)
 			}
 		case Regex:
-			if key == "_id" {
+			if key == IdKey {
 				return newValidationError(ErrWrongIDType, fmt.Errorf("The '_id' value cannot be of type regex"))
 			}
 		}
