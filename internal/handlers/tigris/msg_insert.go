@@ -92,21 +92,17 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 func (h *Handler) insert(ctx context.Context, fp *tigrisdb.FetchParam, doc *types.Document) error {
 	err := h.db.InsertDocument(ctx, fp.DB, fp.Collection, doc)
 
-	var valErr *types.ValidationError
 	var driverErr *driver.Error
 
 	switch {
 	case err == nil:
 		return nil
-	case errors.As(err, &valErr):
-		return common.NewErrorMsg(common.ErrBadValue, err.Error())
 	case errors.As(err, &driverErr):
 		if tigrisdb.IsInvalidArgument(err) {
 			return common.NewErrorMsg(common.ErrDocumentValidationFailure, err.Error())
 		}
-
 		return lazyerrors.Error(err)
 	default:
-		return lazyerrors.Error(err)
+		return common.CheckError(err)
 	}
 }

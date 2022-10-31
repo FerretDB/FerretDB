@@ -261,10 +261,5 @@ func (h *Handler) update(ctx context.Context, tx pgx.Tx, sp *pgdb.SQLParam, doc 
 		return res, nil
 	}
 
-	var valErr *types.ValidationError
-	if errors.As(err, &valErr) {
-		return 0, common.NewErrorMsg(common.ErrBadValue, err.Error())
-	}
-
-	return 0, err
+	return 0, common.CheckError(err)
 }

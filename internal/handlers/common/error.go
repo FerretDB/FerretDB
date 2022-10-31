@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 //go:generate ../../../bin/stringer -linecomment -type ErrorCode
@@ -52,6 +53,9 @@ const (
 
 	// ErrNamespaceExists indicates that the collection already exists.
 	ErrNamespaceExists = ErrorCode(48) // NamespaceExists
+
+	// ErrInvalidID indicates that _id field is invalid.
+	ErrInvalidID = ErrorCode(53) // InvalidID
 
 	// ErrCommandNotFound indicates unknown command input.
 	ErrCommandNotFound = ErrorCode(59) // CommandNotFound
@@ -182,4 +186,21 @@ func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
 	default:
 		return err
 	}
+}
+
+// CheckError checks error type and returns properly translated error.
+func CheckError(err error) error {
+	var ve *types.ValidationError
+	if errors.As(err, &ve) {
+		switch ve.Code() {
+		case types.ErrBadID:
+			return NewWriteErrorMsg(ErrInvalidID, err.Error())
+		case types.ErrValidation:
+			return NewErrorMsg(ErrBadValue, err.Error())
+		default:
+			panic(fmt.Sprintf("Unknown error code: %v", ve.Code()))
+		}
+	}
+
+	return lazyerrors.Error(err)
 }
