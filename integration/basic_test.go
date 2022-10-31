@@ -312,11 +312,11 @@ func TestCollectionName(t *testing.T) {
 					Name: "InvalidNamespace",
 					Code: 73,
 					Message: fmt.Sprintf(
-						"Fully qualified namespace is too long. Namespace: testcollectionname-all.%s Max: 255",
+						"Fully qualified namespace is too long. Namespace: testcollectionname_all.%s Max: 255",
 						collectionName300,
 					),
 				},
-				alt: fmt.Sprintf("Invalid collection name: 'testcollectionname-all.%s'", collectionName300),
+				alt: fmt.Sprintf("Invalid collection name: 'testcollectionname_all.%s'", collectionName300),
 			},
 			"WithADollarSign": {
 				collection: "collection_name_with_a-$",
@@ -394,17 +394,17 @@ func TestDatabaseName(t *testing.T) {
 					Message: fmt.Sprintf(
 						"Invalid namespace specified '%s.%s'",
 						dbName64,
-						"TestDatabaseName_Err",
+						"TestDatabaseName-Err",
 					),
 				},
-				alt: fmt.Sprintf("Invalid namespace: %s.%s", dbName64, "TestDatabaseName_Err"),
+				alt: fmt.Sprintf("Invalid namespace: %s.%s", dbName64, "TestDatabaseName-Err"),
 			},
 			"WithADollarSign": {
 				db: "name_with_a-$",
 				err: &mongo.CommandError{
 					Name:    "InvalidNamespace",
 					Code:    73,
-					Message: `Invalid namespace: name_with_a-$.TestDatabaseName_Err`,
+					Message: `Invalid namespace: name_with_a-$.TestDatabaseName-Err`,
 				},
 			},
 		}
