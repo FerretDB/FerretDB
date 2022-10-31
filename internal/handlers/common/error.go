@@ -196,9 +196,9 @@ func CheckError(err error) error {
 		case types.ErrBadID:
 			return NewWriteErrorMsg(ErrInvalidID, err.Error())
 		case types.ErrValidation:
-			fallthrough
-		default:
 			return NewErrorMsg(ErrBadValue, err.Error())
+		default:
+			panic(fmt.Sprintf("Unknown error code: %v", ve.Code()))
 		}
 	}
 

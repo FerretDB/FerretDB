@@ -41,7 +41,7 @@ type ValidationError struct {
 }
 
 // newValidationError creates a new ValidationError.
-func newValidationError(reason error, code ValidationErrorCode) error {
+func newValidationError(code ValidationErrorCode, reason error) error {
 	return &ValidationError{reason: reason, code: code}
 }
 
@@ -56,7 +56,7 @@ func (e *ValidationError) Code() ValidationErrorCode {
 }
 
 // ValidateData checks if the document represents a valid "data document".
-// If the document is not valid it returns *ValidationError or generic error message.
+// If the document is not valid it returns *ValidationError.
 func (d *Document) ValidateData() error {
 	keys := d.Keys()
 
@@ -67,21 +67,21 @@ func (d *Document) ValidateData() error {
 	for _, key := range keys {
 		// Tests for this case are in `dance`.
 		if !utf8.ValidString(key) {
-			return newValidationError(fmt.Errorf("invalid key: %q (not a valid UTF-8 string)", key), ErrValidation)
+			return newValidationError(ErrValidation, fmt.Errorf("invalid key: %q (not a valid UTF-8 string)", key))
 		}
 
 		// Tests for this case are in `dance`.
 		if strings.Contains(key, "$") {
-			return newValidationError(fmt.Errorf("invalid key: %q (key must not contain '$' sign)", key), ErrValidation)
+			return newValidationError(ErrValidation, fmt.Errorf("invalid key: %q (key must not contain '$' sign)", key))
 		}
 
 		// Tests for this case are in `dance`.
 		if strings.Contains(key, ".") {
-			return newValidationError(fmt.Errorf("invalid key: %q (key must not contain '.' sign)", key), ErrValidation)
+			return newValidationError(ErrValidation, fmt.Errorf("invalid key: %q (key must not contain '.' sign)", key))
 		}
 
 		if _, ok := duplicateChecker[key]; ok {
-			return newValidationError(fmt.Errorf("invalid key: %q (duplicate keys are not allowed)", key), ErrValidation)
+			return newValidationError(ErrValidation, fmt.Errorf("invalid key: %q (duplicate keys are not allowed)", key))
 		}
 		duplicateChecker[key] = struct{}{}
 
@@ -94,22 +94,22 @@ func (d *Document) ValidateData() error {
 		// TODO Add dance tests for infinity: https://github.com/FerretDB/FerretDB/issues/1151
 		if v, ok := value.(float64); ok && math.IsInf(v, 0) {
 			return newValidationError(
-				fmt.Errorf("invalid value: { %q: %f } (infinity values are not allowed)", key, v), ErrValidation,
+				ErrValidation, fmt.Errorf("invalid value: { %q: %f } (infinity values are not allowed)", key, v),
 			)
 		}
 	}
 
 	if !idPresent {
-		return newValidationError(fmt.Errorf("invalid document: document must contain '_id' field"), ErrValidation)
+		return newValidationError(ErrValidation, fmt.Errorf("invalid document: document must contain '_id' field"))
 	}
 
 	v := must.NotFail(d.Get("_id"))
 
 	switch v.(type) {
 	case *Array:
-		return newValidationError(fmt.Errorf("The '_id' value cannot be of type array"), ErrBadID)
+		return newValidationError(ErrBadID, fmt.Errorf("The '_id' value cannot be of type array"))
 	case Regex:
-		return newValidationError(fmt.Errorf("The '_id' value cannot be of type regex"), ErrBadID)
+		return newValidationError(ErrBadID, fmt.Errorf("The '_id' value cannot be of type regex"))
 	}
 
 	return nil
