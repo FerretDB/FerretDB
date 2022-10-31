@@ -162,10 +162,6 @@ func TestCommandsDiagnosticGetLogTelemetryReported(t *testing.T) {
 			err := res.StateProvider.Update(func(s *state.State) { s.Telemetry = tc.telemetry })
 			require.NoError(t, err)
 
-			// Check that state was stored correctly.
-			state := res.StateProvider.Get()
-			require.Equal(t, tc.telemetry, state.Telemetry)
-
 			command := bson.D{{"getLog", "startupWarnings"}}
 
 			var actual bson.D

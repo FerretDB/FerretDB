@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"net"
 	"net/url"
-	"os"
 	"sync"
 	"testing"
 
@@ -97,9 +96,6 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*state.Provider, int) {
 	tb.Helper()
 
-	stateFile, err := os.CreateTemp("", "test-*.state")
-	require.NoError(tb, err)
-
 	p, err := state.NewProvider("")
 	require.NoError(tb, err)
 
@@ -151,7 +147,6 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*sta
 	// ensure that all listener's logs are written before test ends
 	tb.Cleanup(func() {
 		<-done
-		_ = os.Remove(stateFile.Name())
 		h.Close()
 	})
 
