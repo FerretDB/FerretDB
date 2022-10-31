@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"net"
@@ -26,6 +27,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -889,9 +892,12 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 			// TODO Don't ignore this error after https://github.com/FerretDB/FerretDB/issues/1317
 			if err != nil {
-				if strings.Contains(err.Error(), "SQLSTATE 3F000") ||
-					strings.Contains(err.Error(), "SQLSTATE 42P01") {
-					err = nil
+				var pgErr *pgconn.PgError
+				if errors.As(err, &pgErr) {
+					switch pgErr.Code {
+					case pgerrcode.InvalidSchemaName, pgerrcode.UndefinedTable:
+						err = nil
+					}
 				}
 			}
 
@@ -924,7 +930,6 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 }
 
 func TestCommandsAdministrationServerStatusStress(t *testing.T) {
-	// TODO This tests reproduces the problem with SQLSTATE 3F000: https://github.com/FerretDB/FerretDB/issues/1317
 	setup.SkipForPostgresWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1317")
 
 	t.Parallel()
