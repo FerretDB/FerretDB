@@ -31,11 +31,12 @@ const (
 	// ErrValidation indicates that document is invalid.
 	ErrValidation ValidationErrorCode = iota
 
-	// ErrBadID indicates that _id field is invalid.
-	ErrBadID
-)
+	// ErrWrongIDType indicates that _id field is invalid.
+	ErrWrongIDType
 
-var errIdIsNotPresent = fmt.Errorf("invalid document: document must contain '_id' field")
+	// ErrIDNotFound indicates that _id field is not found.
+	ErrIDNotFound
+)
 
 // ValidationError describes an error that could occur when validating a document.
 type ValidationError struct {
@@ -56,11 +57,6 @@ func (e *ValidationError) Error() string {
 // Code returns the ValidationError code.
 func (e *ValidationError) Code() ValidationErrorCode {
 	return e.code
-}
-
-// Unwrap returns unwrapped error.
-func (e *ValidationError) Unwrap() error {
-	return e.reason
 }
 
 // ValidateData checks if the document represents a valid "data document".
@@ -99,29 +95,34 @@ func (d *Document) ValidateData() error {
 
 		value := must.NotFail(d.Get(key))
 
-		// TODO Add dance tests for infinity: https://github.com/FerretDB/FerretDB/issues/1151
-		if v, ok := value.(float64); ok && math.IsInf(v, 0) {
-			return newValidationError(
-				ErrValidation, fmt.Errorf("invalid value: { %q: %f } (infinity values are not allowed)", key, v),
-			)
+		var vErr *ValidationError
+
 		switch v := value.(type) {
 		case *Document:
 			err := v.ValidateData()
-			if err != nil && !errors.Is(err, errIdIsNotPresent) {
-				return err
+			if err != nil && errors.As(err, &vErr) {
+				if vErr.code != ErrIDNotFound {
+					return err
+				}
 			}
 		case *Array:
+			if key == "_id" {
+				return newValidationError(ErrWrongIDType, fmt.Errorf("The '_id' value cannot be of type array"))
+			}
+
 			for i := 0; i < v.Len(); i++ {
 				item := must.NotFail(v.Get(i))
 
 				switch item := item.(type) {
 				case *Document:
 					err := item.ValidateData()
-					if err != nil && !errors.Is(err, errIdIsNotPresent) {
-						return err
+					if err != nil && errors.As(err, &vErr) {
+						if vErr.code != ErrIDNotFound {
+							return err
+						}
 					}
 				case *Array:
-					return newValidationError(fmt.Errorf(
+					return newValidationError(ErrValidation, fmt.Errorf(
 						"invalid value: { %q: %v } (nested arrays are not allowed)", key, FormatAnyValue(v),
 					))
 				}
@@ -129,24 +130,19 @@ func (d *Document) ValidateData() error {
 		case float64:
 			// TODO Add dance tests for infinity: https://github.com/FerretDB/FerretDB/issues/1151
 			if math.IsInf(v, 0) {
-				return newValidationError(fmt.Errorf(
-					"invalid value: { %q: %f } (infinity values are not allowed)", key, v,
-				))
+				return newValidationError(
+					ErrValidation, fmt.Errorf("invalid value: { %q: %f } (infinity values are not allowed)", key, v),
+				)
+			}
+		case Regex:
+			if key == "_id" {
+				return newValidationError(ErrWrongIDType, fmt.Errorf("The '_id' value cannot be of type regex"))
 			}
 		}
 	}
 
 	if !idPresent {
-		return newValidationError(ErrValidation, fmt.Errorf("invalid document: document must contain '_id' field"))
-	}
-
-	v := must.NotFail(d.Get("_id"))
-
-	switch v.(type) {
-	case *Array:
-		return newValidationError(ErrBadID, fmt.Errorf("The '_id' value cannot be of type array"))
-	case Regex:
-		return newValidationError(ErrBadID, fmt.Errorf("The '_id' value cannot be of type regex"))
+		return newValidationError(ErrIDNotFound, fmt.Errorf("invalid document: document must contain '_id' field"))
 	}
 
 	return nil
