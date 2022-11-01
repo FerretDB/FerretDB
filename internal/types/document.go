@@ -24,8 +24,8 @@ import (
 )
 
 const (
-	// IdKey is the key for _id field.
-	IdKey = "_id"
+	// idKey is the key for _id field.
+	idKey = "_id"
 )
 
 // Common interface with bson.Document.
@@ -187,7 +187,7 @@ func (d *Document) Command() string {
 //
 // As a special case, _id always becomes the first key.
 func (d *Document) add(key string, value any) error {
-	if key == IdKey {
+	if key == idKey {
 		// ensure that _id is the first field
 		d.fields = slices.Insert(d.fields, 0, field{key, value})
 	} else {
@@ -230,7 +230,7 @@ func (d *Document) Set(key string, value any) {
 		panic(fmt.Sprintf("types.Document.Set: key is duplicated: %s", key))
 	}
 
-	if key == IdKey {
+	if key == idKey {
 		// ensure that _id is the first field
 		if i := slices.Index(d.Keys(), key); i >= 0 {
 			d.fields = slices.Delete(d.fields, i, i+1)

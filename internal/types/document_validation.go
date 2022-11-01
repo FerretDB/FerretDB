@@ -89,24 +89,26 @@ func (d *Document) ValidateData() error {
 		}
 		duplicateChecker[key] = struct{}{}
 
-		if key == IdKey {
+		if key == idKey {
 			idPresent = true
 		}
 
 		value := must.NotFail(d.Get(key))
 
-		var vErr *ValidationError
-
 		switch v := value.(type) {
 		case *Document:
 			err := v.ValidateData()
-			if err != nil && errors.As(err, &vErr) {
-				if vErr.code != ErrIDNotFound {
+			if err != nil {
+				var vErr *ValidationError
+
+				if errors.As(err, &vErr) && vErr.code != ErrIDNotFound {
 					return err
 				}
+
+				return err
 			}
 		case *Array:
-			if key == IdKey {
+			if key == idKey {
 				return newValidationError(ErrWrongIDType, fmt.Errorf("The '_id' value cannot be of type array"))
 			}
 
@@ -116,10 +118,14 @@ func (d *Document) ValidateData() error {
 				switch item := item.(type) {
 				case *Document:
 					err := item.ValidateData()
-					if err != nil && errors.As(err, &vErr) {
-						if vErr.code != ErrIDNotFound {
+					if err != nil {
+						var vErr *ValidationError
+
+						if errors.As(err, &vErr) && vErr.code != ErrIDNotFound {
 							return err
 						}
+
+						return err
 					}
 				case *Array:
 					return newValidationError(ErrValidation, fmt.Errorf(
@@ -135,7 +141,7 @@ func (d *Document) ValidateData() error {
 				)
 			}
 		case Regex:
-			if key == IdKey {
+			if key == idKey {
 				return newValidationError(ErrWrongIDType, fmt.Errorf("The '_id' value cannot be of type regex"))
 			}
 		}
