@@ -28,32 +28,9 @@ import (
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
-func TestInsertCompat(t *testing.T) {
-	t.Parallel()
-
-	testCases := map[string]insertCompatTestCase{
-		"InsertEmptyDocument": {
-			insert:     bson.D{},
-			resultType: nonEmptyResult,
-		},
-		"InsertIDArray": {
-			insert:     bson.D{{"_id", bson.A{"foo", "bar"}}},
-			resultType: emptyResult,
-		},
-		"InsertIDRegex": {
-			insert:     bson.D{{"_id", "^regex$"}},
-			resultType: emptyResult,
-		},
-	}
-
-	testInsertCompat(t, testCases)
-}
-
 type insertCompatTestCase struct {
-	insert        bson.D                   // required
-	resultType    compatTestCaseResultType // defaults to nonEmptyResult
-	skip          string                   // skips test if non-empty
-	skipForTigris string                   // skips test for Tigris if non-empty
+	insert     bson.D                   // required
+	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
 // testInsertCompat tests insert compatibility test cases.
@@ -65,19 +42,12 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
 
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-			if tc.skipForTigris != "" {
-				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
-			}
-
 			t.Parallel()
 
 			ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
 			insert := tc.insert
-			require.NotNil(t, insert)
+			require.NotNil(t, insert, "insert should be set")
 
 			var nonEmptyResults bool
 			for i := range targetCollections {
@@ -86,11 +56,8 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
-					var targetInsertRes, compatInsertRes *mongo.InsertOneResult
-					var targetErr, compatErr error
-
-					targetInsertRes, targetErr = targetCollection.InsertOne(ctx, insert)
-					compatInsertRes, compatErr = compatCollection.InsertOne(ctx, insert)
+					targetInsertRes, targetErr := targetCollection.InsertOne(ctx, insert)
+					compatInsertRes, compatErr := compatCollection.InsertOne(ctx, insert)
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
@@ -118,13 +85,15 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 					}
 
 					var targetFindRes, compatFindRes bson.D
-					targetCur, err := targetCollection.Find(ctx, bson.D{{}})
+					targetCursor, err := targetCollection.Find(ctx, bson.D{{}})
 					require.NoError(t, err)
-					targetCur.Decode(&targetFindRes)
+					defer targetCursor.Close(ctx)
+					targetCursor.Decode(&targetFindRes)
 
-					compatCur, err := compatCollection.Find(ctx, bson.D{{}})
+					compatCursor, err := compatCollection.Find(ctx, bson.D{{}})
 					require.NoError(t, err)
-					compatCur.Decode(&targetFindRes)
+					defer compatCursor.Close(ctx)
+					compatCursor.Decode(&targetFindRes)
 
 					AssertEqualDocuments(t, compatFindRes, targetFindRes)
 				})
@@ -132,12 +101,32 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 
 			switch tc.resultType {
 			case nonEmptyResult:
-				assert.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
+				assert.True(t, nonEmptyResults, "expected non-empty results")
 			case emptyResult:
-				assert.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
+				assert.False(t, nonEmptyResults, "expected empty results")
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}
+}
+
+func TestInsertCompat(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]insertCompatTestCase{
+		"InsertEmptyDocument": {
+			insert: bson.D{},
+		},
+		"InsertIDArray": {
+			insert:     bson.D{{"_id", bson.A{"foo", "bar"}}},
+			resultType: emptyResult,
+		},
+		"InsertIDRegex": {
+			insert:     bson.D{{"_id", "^regex$"}},
+			resultType: emptyResult,
+		},
+	}
+
+	testInsertCompat(t, testCases)
 }
