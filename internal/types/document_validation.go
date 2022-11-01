@@ -101,8 +101,8 @@ func (d *Document) ValidateData() error {
 			if err != nil {
 				var vErr *ValidationError
 
-				if errors.As(err, &vErr) && vErr.code != ErrIDNotFound {
-					return err
+				if errors.As(err, &vErr) && vErr.code == ErrIDNotFound {
+					continue
 				}
 
 				return err
@@ -121,8 +121,8 @@ func (d *Document) ValidateData() error {
 					if err != nil {
 						var vErr *ValidationError
 
-						if errors.As(err, &vErr) && vErr.code != ErrIDNotFound {
-							return err
+						if errors.As(err, &vErr) && vErr.code == ErrIDNotFound {
+							continue
 						}
 
 						return err
