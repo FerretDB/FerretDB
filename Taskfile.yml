@@ -397,7 +397,7 @@ tasks:
   docs-fmt:
     desc: "Format and lint documentation"
     cmds:
-      - docker-compose run --rm markdownlint "**/*.md" "#CHANGELOG.md" "#node_modules"
+      - docker-compose run --rm markdownlint "**/*.md" "#CHANGELOG.md" "#**/node_modules"
       - docker-compose run --rm textlint --fix --rule one-sentence-per-line "**/*.md" ".github/**/*.md"
 
   docs-dev:
