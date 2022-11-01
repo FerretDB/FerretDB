@@ -28,7 +28,7 @@ type ValidationErrorCode int
 
 const (
 	// ErrValidation indicates that document is invalid.
-	ErrValidation ValidationErrorCode = iota
+	ErrValidation ValidationErrorCode = iota + 1
 
 	// ErrBadID indicates that _id field is invalid.
 	ErrBadID

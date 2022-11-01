@@ -33,24 +33,6 @@ type queryCompatTestCase struct {
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
-func TestQueryCompat(t *testing.T) {
-	t.Parallel()
-
-	testCases := map[string]queryCompatTestCase{
-		"Empty": {
-			filter: bson.D{},
-		},
-		"IDString": {
-			filter: bson.D{{"_id", "string"}},
-		},
-		"IDObjectID": {
-			filter: bson.D{{"_id", primitive.NilObjectID}},
-		},
-	}
-
-	testQueryCompat(t, testCases)
-}
-
 // testQueryCompat tests query compatibility test cases.
 func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 	t.Helper()
@@ -125,4 +107,22 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 			}
 		})
 	}
+}
+
+func TestQueryCompat(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]queryCompatTestCase{
+		"Empty": {
+			filter: bson.D{},
+		},
+		"IDString": {
+			filter: bson.D{{"_id", "string"}},
+		},
+		"IDObjectID": {
+			filter: bson.D{{"_id", primitive.NilObjectID}},
+		},
+	}
+
+	testQueryCompat(t, testCases)
 }
