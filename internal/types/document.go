@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	// idKey is the key for _id field.
+	// The idKey is key for _id field.
 	idKey = "_id"
 )
 
