@@ -16,6 +16,8 @@ package tigrisdb
 
 import (
 	"context"
+	"errors"
+	"time"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
 
@@ -37,19 +39,33 @@ func (tdb *TigrisDB) createDatabaseIfNotExists(ctx context.Context, db string) (
 
 	// Database does not exist. Try to create it,
 	// but keep in mind that it can be created in concurrent connection.
-	err = tdb.Driver.CreateDatabase(ctx, db)
-	switch err := err.(type) {
-	case nil:
-		return true, nil
-	case *driver.Error:
-		if IsAlreadyExists(err) {
-			return false, nil
-		}
+	// If we detect that other creation is in flight, we give up to three attempts to create the database.
+	// TODO https://github.com/FerretDB/FerretDB/issues/1341
+	for i := 0; i < 3; i++ {
+		err = tdb.Driver.CreateDatabase(ctx, db)
 
-		return false, lazyerrors.Error(err)
-	default:
-		return false, lazyerrors.Error(err)
+		var driverErr *driver.Error
+
+		switch {
+		case err == nil:
+			return true, nil
+		case errors.As(err, &driverErr):
+			if IsAlreadyExists(err) {
+				return false, nil
+			}
+
+			if isOtherCreationInFlight(err) {
+				time.Sleep(20 * time.Millisecond)
+				continue
+			}
+
+			return false, lazyerrors.Error(err)
+		default:
+			return false, lazyerrors.Error(err)
+		}
 	}
+
+	return false, lazyerrors.Error(err)
 }
 
 // databaseExists returns true if database exists.
