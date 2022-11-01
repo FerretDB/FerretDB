@@ -19,7 +19,6 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -28,7 +27,6 @@ import (
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 func TestCommandsDiagnosticGetLog(t *testing.T) {
@@ -122,60 +120,6 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 				if key != "log" && key != "totalLinesWritten" {
 					assert.Equal(t, m[key], item)
 				}
-			}
-		})
-	}
-}
-
-func TestCommandsDiagnosticGetLogTelemetryReported(t *testing.T) {
-	t.Parallel()
-
-	for name, tc := range map[string]struct {
-		telemetry        *bool
-		isWarningPresent bool
-	}{
-		"TelemetryEnabled": {
-			telemetry:        pointer.ToBool(true),
-			isWarningPresent: false,
-		},
-		"TelemetryDisabled": {
-			telemetry:        pointer.ToBool(false),
-			isWarningPresent: false,
-		},
-		"TelemetryUndecided": {
-			telemetry:        nil,
-			isWarningPresent: true,
-		},
-	} {
-		name, tc := name, tc
-
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			// Setup separate env for each subtest as we want state files to be independent for subtests.
-			res := setup.SetupWithOpts(t, &setup.SetupOpts{
-				DatabaseName: "admin" + name,
-			})
-
-			ctx, collection := res.Ctx, res.Collection
-
-			err := res.StateProvider.Update(func(s *state.State) { s.Telemetry = tc.telemetry })
-			require.NoError(t, err)
-
-			command := bson.D{{"getLog", "startupWarnings"}}
-
-			var actual bson.D
-			err = collection.Database().RunCommand(ctx, command).Decode(&actual)
-			require.NoError(t, err)
-
-			log := actual.Map()["log"].(bson.A)
-
-			switch tc.isWarningPresent {
-			case true:
-				require.Len(t, log, 3)
-				assert.Contains(t, log[2], "The telemetry state is undecided")
-			case false:
-				require.Len(t, log, 2)
 			}
 		})
 	}
