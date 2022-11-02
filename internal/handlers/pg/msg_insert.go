@@ -51,9 +51,10 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var ok bool
 	if sp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewErrorMsg(
+		return nil, common.NewCommandErrorMsgWithArgument(
 			common.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+			"insert",
 		)
 	}
 
@@ -102,9 +103,10 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 func (h *Handler) insert(ctx context.Context, tx pgx.Tx, sp *pgdb.SQLParam, doc any) error {
 	d, ok := doc.(*types.Document)
 	if !ok {
-		return common.NewErrorMsg(
+		return common.NewCommandErrorMsgWithArgument(
 			common.ErrBadValue,
 			fmt.Sprintf("document has invalid type %s", common.AliasFromType(doc)),
+			"insert",
 		)
 	}
 
@@ -115,7 +117,7 @@ func (h *Handler) insert(ctx context.Context, tx pgx.Tx, sp *pgdb.SQLParam, doc 
 
 	if errors.Is(pgdb.ErrInvalidTableName, err) || errors.Is(pgdb.ErrInvalidDatabaseName, err) {
 		msg := fmt.Sprintf("Invalid namespace: %s.%s", sp.DB, sp.Collection)
-		return common.NewErrorMsg(common.ErrInvalidNamespace, msg)
+		return common.NewCommandErrorMsgWithArgument(common.ErrInvalidNamespace, msg, "insert")
 	}
 
 	return common.CheckError(err)

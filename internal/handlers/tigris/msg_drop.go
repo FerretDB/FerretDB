@@ -52,7 +52,7 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		// do nothing
 	case *driver.Error:
 		if tigrisdb.IsNotFound(err) {
-			return nil, common.NewErrorMsg(common.ErrNamespaceNotFound, "ns not found")
+			return nil, common.NewCommandErrorMsgWithArgument(common.ErrNamespaceNotFound, "ns not found", "drop")
 		}
 		return nil, lazyerrors.Error(err)
 	default:

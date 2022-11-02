@@ -64,9 +64,10 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var ok bool
 	if sp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewErrorMsg(
+		return nil, common.NewCommandErrorMsgWithArgument(
 			common.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+			"delete",
 		)
 	}
 
@@ -149,17 +150,19 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 
 	l, err := deleteDoc.Get("limit")
 	if err != nil {
-		return nil, 0, common.NewErrorMsg(
+		return nil, 0, common.NewCommandErrorMsgWithArgument(
 			common.ErrMissingField,
 			"BSON field 'delete.deletes.limit' is missing but a required field",
+			"delete",
 		)
 	}
 
 	var limit int64
 	if limit, err = common.GetWholeNumberParam(l); err != nil || limit < 0 || limit > 1 {
-		return nil, 0, common.NewErrorMsg(
+		return nil, 0, common.NewCommandErrorMsgWithArgument(
 			common.ErrFailedToParse,
 			fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", l),
+			"delete",
 		)
 	}
 
