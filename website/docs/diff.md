@@ -4,11 +4,14 @@ sidebar_position: 6
 
 # Known differences
 
-<!-- Each point should have a corresponding test file in https://github.com/FerretDB/dance/tree/main/tests/diff -->
+<!--
+   Each numbered point should have a corresponding test file in https://github.com/FerretDB/dance/tree/main/tests/diff
+   Bullet subpoints should be in the same file as the parent point.
+-->
 
 1. FerretDB uses the same protocol error names and codes, but the exact error messages may be different in some cases.
 2. FerretDB does not support NUL (`\0`) characters in strings.
-3. Document keys must not contain `$` sign.
+3. Document keys must not contain `$` or `.` signs.
 4. Database and collection names restrictions:
    * name cannot start with the reserved prefix `_ferretdb_`;
    * database name must not include non-latin letters, spaces, dots, dollars or dashes;

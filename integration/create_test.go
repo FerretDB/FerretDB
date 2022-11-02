@@ -15,9 +15,14 @@
 package integration
 
 import (
+	"errors"
 	"fmt"
+	"runtime"
+	"strings"
+	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -25,6 +30,101 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
+
+func TestCreateStress(t *testing.T) {
+	setup.SkipForPostgresWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1206")
+
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
+	db := collection.Database()
+
+	collNum := runtime.GOMAXPROCS(-1) * 10
+
+	ready := make(chan struct{}, collNum)
+	start := make(chan struct{})
+
+	var wg sync.WaitGroup
+	for i := 0; i < collNum; i++ {
+		wg.Add(1)
+
+		go func(i int) {
+			defer wg.Done()
+
+			ready <- struct{}{}
+
+			<-start
+
+			collName := fmt.Sprintf("stress_%d", i)
+
+			schema := fmt.Sprintf(`{
+				"title": "%s",
+				"description": "Create Collection Stress %d",
+				"primary_key": ["_id"],
+				"properties": {
+					"_id": {"type": "string"},
+					"v": {"type": "string"}
+				}
+			}`, collName, i,
+			)
+			opts := options.CreateCollectionOptions{
+				Validator: bson.D{{"$tigrisSchemaString", schema}},
+			}
+
+			// Attempt to create a collection for Tigris with a schema.
+			// If we get an error, that's MongoDB (FerretDB ignores that argument for non-Tigris handlers),
+			// so we create collection without schema.
+			err := db.CreateCollection(ctx, collName, &opts)
+			if err != nil {
+				var cmdErr *mongo.CommandError
+				if errors.As(err, &cmdErr) {
+					if strings.Contains(cmdErr.Message, `unknown top level operator: $tigrisSchemaString`) {
+						err = db.CreateCollection(ctx, collName)
+					}
+				}
+
+				assert.NoError(t, err)
+			}
+
+			_, err = db.Collection(collName).InsertOne(ctx, bson.D{{"_id", "foo"}, {"v", "bar"}})
+
+			assert.NoError(t, err)
+		}(i)
+	}
+
+	for i := 0; i < collNum; i++ {
+		<-ready
+	}
+
+	close(start)
+
+	wg.Wait()
+
+	colls, err := db.ListCollectionNames(ctx, bson.D{})
+	require.NoError(t, err)
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/1206
+	// Without SkipForPostgres this test would fail.
+	// Even though all the collections are created as separate tables in the database,
+	// the settings table doesn't store all of them because of concurrency issues.
+	require.Len(t, colls, collNum)
+
+	// check that all collections were created, and we can query them
+	for i := 0; i < collNum; i++ {
+		i := i
+
+		t.Run(fmt.Sprintf("check_stress_%d", i), func(t *testing.T) {
+			t.Parallel()
+
+			collName := fmt.Sprintf("stress_%d", i)
+
+			var doc bson.D
+			err := db.Collection(collName).FindOne(ctx, bson.D{{"_id", "foo"}}).Decode(&doc)
+			require.NoError(t, err)
+			require.Equal(t, bson.D{{"_id", "foo"}, {"v", "bar"}}, doc)
+		})
+	}
+}
 
 func TestCreateTigris(t *testing.T) {
 	setup.SkipForPostgresWithReason(t, "Tigris-specific schema is used")

@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -26,34 +27,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
-
-func TestUpdateCompat(t *testing.T) {
-	t.Parallel()
-
-	testCases := map[string]updateCompatTestCase{
-		"UpdateEmptyDocument": {
-			update:     bson.D{},
-			resultType: emptyResult,
-		},
-
-		"ReplaceSimple": {
-			replace: bson.D{{"v", "foo"}},
-		},
-		"ReplaceEmpty": {
-			replace:       bson.D{{"v", ""}},
-			skipForTigris: "TODO",
-		},
-		"ReplaceNull": {
-			replace:       bson.D{{"v", nil}},
-			skipForTigris: "TODO",
-		},
-		"ReplaceEmptyDocument": {
-			replace: bson.D{},
-		},
-	}
-
-	testUpdateCompat(t, testCases)
-}
 
 // updateCompatTestCase describes update compatibility test case.
 type updateCompatTestCase struct {
@@ -126,7 +99,8 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 								compatErr = UnsetRaw(t, compatErr)
 
 								// Skip updates that could not be performed due to Tigris schema validation.
-								if e, ok := targetErr.(mongo.CommandError); ok && e.Name == "DocumentValidationFailure" {
+								var e mongo.CommandError
+								if errors.As(targetErr, &e) && e.Name == "DocumentValidationFailure" {
 									if e.HasErrorCodeWithMessage(121, "json schema validation failed for field") {
 										setup.SkipForTigrisWithReason(t, targetErr.Error())
 									}
@@ -162,4 +136,32 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 			}
 		})
 	}
+}
+
+func TestUpdateCompat(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]updateCompatTestCase{
+		"UpdateEmptyDocument": {
+			update:     bson.D{},
+			resultType: emptyResult,
+		},
+
+		"ReplaceSimple": {
+			replace: bson.D{{"v", "foo"}},
+		},
+		"ReplaceEmpty": {
+			replace:       bson.D{{"v", ""}},
+			skipForTigris: "TODO",
+		},
+		"ReplaceNull": {
+			replace:       bson.D{{"v", nil}},
+			skipForTigris: "TODO",
+		},
+		"ReplaceEmptyDocument": {
+			replace: bson.D{},
+		},
+	}
+
+	testUpdateCompat(t, testCases)
 }

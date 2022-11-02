@@ -15,6 +15,9 @@
 package tigrisdb
 
 import (
+	"errors"
+	"strings"
+
 	"github.com/AlekSi/pointer"
 	api "github.com/tigrisdata/tigris-client-go/api/server/v1"
 	"github.com/tigrisdata/tigris-client-go/driver"
@@ -32,6 +35,23 @@ func IsNotFound(err error) bool {
 func IsAlreadyExists(err error) bool {
 	e, _ := err.(*driver.Error)
 	return pointer.Get(e).Code == api.Code_ALREADY_EXISTS //nolint:nosnakecase // Tigris named their const that way
+}
+
+// isOtherCreationInFlight returns true if an attempt to create the database with the given name is already in progress.
+// This function is implemented to keep nolint in a single place.
+// TODO https://github.com/FerretDB/FerretDB/issues/1341
+func isOtherCreationInFlight(err error) bool {
+	var driverErr *driver.Error
+	if !errors.As(err, &driverErr) {
+		panic("isOtherCreationInFlight called with non-driver error")
+	}
+
+	isUnknnown := pointer.Get(driverErr).Code == api.Code_UNKNOWN //nolint:nosnakecase // Tigris named their const that way
+	if !isUnknnown {
+		return false
+	}
+
+	return strings.Contains(driverErr.Message, "duplicate key value, violates key constraint")
 }
 
 // IsInvalidArgument returns true if the error is "invalid argument" error.
