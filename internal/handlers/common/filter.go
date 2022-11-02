@@ -140,17 +140,17 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 		// {$and: [{expr1}, {expr2}, ...]}
 		exprs, ok := filterValue.(*types.Array)
 		if !ok {
-			return false, NewErrorMsg(ErrBadValue, "$and must be an array")
+			return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$and must be an array", operator)
 		}
 
 		if exprs.Len() == 0 {
-			return false, NewErrorMsg(ErrBadValue, "$and/$or/$nor must be a nonempty array")
+			return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$and/$or/$nor must be a nonempty array", operator)
 		}
 
 		for i := 0; i < exprs.Len(); i++ {
 			_, ok := must.NotFail(exprs.Get(i)).(*types.Document)
 			if !ok {
-				return false, NewErrorMsg(ErrBadValue, "$or/$and/$nor entries need to be full objects")
+				return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$or/$and/$nor entries need to be full objects", operator)
 			}
 		}
 
@@ -172,17 +172,17 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 		// {$or: [{expr1}, {expr2}, ...]}
 		exprs, ok := filterValue.(*types.Array)
 		if !ok {
-			return false, NewErrorMsg(ErrBadValue, "$or must be an array")
+			return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$or must be an array", operator)
 		}
 
 		if exprs.Len() == 0 {
-			return false, NewErrorMsg(ErrBadValue, "$and/$or/$nor must be a nonempty array")
+			return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$and/$or/$nor must be a nonempty array", operator)
 		}
 
 		for i := 0; i < exprs.Len(); i++ {
 			_, ok := must.NotFail(exprs.Get(i)).(*types.Document)
 			if !ok {
-				return false, NewErrorMsg(ErrBadValue, "$or/$and/$nor entries need to be full objects")
+				return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$or/$and/$nor entries need to be full objects", operator)
 			}
 		}
 
@@ -204,17 +204,17 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 		// {$nor: [{expr1}, {expr2}, ...]}
 		exprs, ok := filterValue.(*types.Array)
 		if !ok {
-			return false, NewErrorMsg(ErrBadValue, "$nor must be an array")
+			return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$nor must be an array", operator)
 		}
 
 		if exprs.Len() == 0 {
-			return false, NewErrorMsg(ErrBadValue, "$and/$or/$nor must be a nonempty array")
+			return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$and/$or/$nor must be a nonempty array", operator)
 		}
 
 		for i := 0; i < exprs.Len(); i++ {
 			_, ok := must.NotFail(exprs.Get(i)).(*types.Document)
 			if !ok {
-				return false, NewErrorMsg(ErrBadValue, "$or/$and/$nor entries need to be full objects")
+				return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$or/$and/$nor entries need to be full objects", operator)
 			}
 		}
 
@@ -241,6 +241,7 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 				`If you have a field name that starts with a '$' symbol, consider using $getField or $setField.`,
 			operator,
 		)
+		// TODO: unknown operator???
 		return false, NewErrorMsg(ErrBadValue, msg)
 	}
 }
@@ -328,7 +329,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				}
 				return false, nil
 			case types.Regex:
-				return false, NewErrorMsg(ErrBadValue, "Can't have regex as arg to $ne.")
+				return false, NewCommandErrorMsgWithArgument(ErrBadValue, "Can't have regex as arg to $ne.", exprKey)
 			default:
 				result := types.Compare(fieldValue, exprValue)
 				if types.ContainsCompareResult(result, types.Equal) {
@@ -340,7 +341,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			// {field: {$gt: exprValue}}
 			if _, ok := exprValue.(types.Regex); ok {
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
-				return false, NewErrorMsg(ErrBadValue, msg)
+				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
 			}
 			result := types.Compare(fieldValue, exprValue)
 			if !types.ContainsCompareResult(result, types.Greater) {
@@ -351,7 +352,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			// {field: {$gte: exprValue}}
 			if _, ok := exprValue.(types.Regex); ok {
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
-				return false, NewErrorMsg(ErrBadValue, msg)
+				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
 			}
 			result := types.Compare(fieldValue, exprValue)
 			if !types.ContainsCompareResult(result, types.Equal) &&
@@ -363,7 +364,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			// {field: {$lt: exprValue}}
 			if _, ok := exprValue.(types.Regex); ok {
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
-				return false, NewErrorMsg(ErrBadValue, msg)
+				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
 			}
 			result := types.Compare(fieldValue, exprValue)
 			if !types.ContainsCompareResult(result, types.Less) {
@@ -374,7 +375,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			// {field: {$lte: exprValue}}
 			if _, ok := exprValue.(types.Regex); ok {
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
-				return false, NewErrorMsg(ErrBadValue, msg)
+				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
 			}
 			result := types.Compare(fieldValue, exprValue)
 			if !types.ContainsCompareResult(result, types.Equal) &&
@@ -386,7 +387,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			// {field: {$in: [value1, value2, ...]}}
 			arr, ok := exprValue.(*types.Array)
 			if !ok {
-				return false, NewErrorMsg(ErrBadValue, "$in needs an array")
+				return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$in needs an array", exprKey)
 			}
 
 			var found bool
@@ -399,7 +400,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				case *types.Document:
 					for _, key := range arrValue.Keys() {
 						if strings.HasPrefix(key, "$") {
-							return false, NewErrorMsg(ErrBadValue, "cannot nest $ under $in")
+							return false, NewCommandErrorMsgWithArgument(ErrBadValue, "cannot nest $ under $in", exprKey)
 						}
 					}
 					fieldValue, ok := fieldValue.(*types.Document)
@@ -430,7 +431,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			// {field: {$nin: [value1, value2, ...]}}
 			arr, ok := exprValue.(*types.Array)
 			if !ok {
-				return false, NewErrorMsg(ErrBadValue, "$nin needs an array")
+				return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$nin needs an array", exprKey)
 			}
 
 			var found bool
@@ -443,7 +444,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				case *types.Document:
 					for _, key := range arrValue.Keys() {
 						if strings.HasPrefix(key, "$") {
-							return false, NewErrorMsg(ErrBadValue, "cannot nest $ under $in")
+							return false, NewCommandErrorMsgWithArgument(ErrBadValue, "cannot nest $ under $in", exprKey)
 						}
 					}
 					fieldValue, ok := fieldValue.(*types.Document)
@@ -485,7 +486,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 					return false, err
 				}
 			default:
-				return false, NewErrorMsg(ErrBadValue, "$not needs a regex or a document")
+				return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$not needs a regex or a document", exprKey)
 			}
 
 		case "$regex":
@@ -567,6 +568,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			}
 
 		default:
+			// TODO:
 			return false, NewErrorMsg(ErrBadValue, fmt.Sprintf("unknown operator: %s", exprKey))
 		}
 	}

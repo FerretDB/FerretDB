@@ -201,7 +201,7 @@ func CheckError(err error) error {
 
 	switch ve.Code() {
 	case types.ErrValidation:
-		return NewErrorMsg(ErrBadValue, err.Error())
+		return NewCommandErrorMsg(ErrBadValue, err.Error())
 	case types.ErrBadID:
 		return NewWriteErrorMsg(ErrInvalidID, err.Error())
 	default:
