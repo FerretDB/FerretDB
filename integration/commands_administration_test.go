@@ -930,8 +930,6 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 }
 
 func TestCommandsAdministrationServerStatusStress(t *testing.T) {
-	setup.SkipForPostgresWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1317")
-
 	t.Parallel()
 
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
