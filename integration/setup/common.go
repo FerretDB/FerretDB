@@ -93,7 +93,7 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 
 // setupListener starts in-process FerretDB server that runs until ctx is done,
 // and returns listening port number.
-func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
+func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*state.Provider, int) {
 	tb.Helper()
 
 	p, err := state.NewProvider("")
@@ -153,7 +153,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) int {
 	port := l.Addr().(*net.TCPAddr).Port
 	logger.Info("Listener started", zap.String("handler", *handlerF), zap.Int("port", port))
 
-	return port
+	return p, port
 }
 
 // setupClient returns MongoDB client for database on 127.0.0.1:port.
