@@ -73,7 +73,7 @@ Telemetry can be disabled using any of the following options:
 If telemetry is disabled, enable telemetry with the command-line flag `--telemetry` and assign any of these values to it: `1`, `t`, `enable`, `yes`, `true`, `y`, `enabled`, `optin`, `opt-in`, `allow`, `forbid`.
 
 ```sh
-–telemetry=enable
+--telemetry=enable
 ```
 
 If telemetry is disabled with a `donottrack` string in the executable, remove the `donottrack` string to use the command-line flag and values again.
