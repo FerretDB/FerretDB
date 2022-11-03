@@ -188,4 +188,4 @@ issues:
 
     # we don't want to introduce that constant
     - linters: [goconst]
-      text: "string `_id` has \d+ occurrences, make it a constant"
+      text: "^string `_id` has \\d+ occurrences, make it a constant"
