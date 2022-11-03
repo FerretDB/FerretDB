@@ -53,7 +53,7 @@ Telemetry can be disabled using any of the following options:
 1. Use a command-line flag: To disable telemetry, run the command-line flag `--telemetry` and assign any of these values to it: `0`, `f`, `disable`, `no`, `false`, `n`, `disabled`, `optout`, `opt-out`, `disallow`, `forbid`.
 
    ```sh
-   –telemetry=disable
+   --telemetry=disable
    ```
 
 2. Use an environment variable: To disable telemetry, assign any of these values to the `DO_NOT_TRACK` environment variable: `1`, `t`, `true`, or `enable`.
