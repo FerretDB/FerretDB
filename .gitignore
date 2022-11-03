@@ -6,7 +6,6 @@ bin/
 
 # dependencies
 vendor/
-node_modules/
 
 # task cache
 .task/
