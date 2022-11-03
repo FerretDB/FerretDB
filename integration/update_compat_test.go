@@ -28,34 +28,6 @@ import (
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
-func TestUpdateCompat(t *testing.T) {
-	t.Parallel()
-
-	testCases := map[string]updateCompatTestCase{
-		"UpdateEmptyDocument": {
-			update:     bson.D{},
-			resultType: emptyResult,
-		},
-
-		"ReplaceSimple": {
-			replace: bson.D{{"v", "foo"}},
-		},
-		"ReplaceEmpty": {
-			replace:       bson.D{{"v", ""}},
-			skipForTigris: "TODO",
-		},
-		"ReplaceNull": {
-			replace:       bson.D{{"v", nil}},
-			skipForTigris: "TODO",
-		},
-		"ReplaceEmptyDocument": {
-			replace: bson.D{},
-		},
-	}
-
-	testUpdateCompat(t, testCases)
-}
-
 // updateCompatTestCase describes update compatibility test case.
 type updateCompatTestCase struct {
 	update        bson.D                   // required if replace is nil
@@ -164,4 +136,32 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 			}
 		})
 	}
+}
+
+func TestUpdateCompat(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]updateCompatTestCase{
+		"UpdateEmptyDocument": {
+			update:     bson.D{},
+			resultType: emptyResult,
+		},
+
+		"ReplaceSimple": {
+			replace: bson.D{{"v", "foo"}},
+		},
+		"ReplaceEmpty": {
+			replace:       bson.D{{"v", ""}},
+			skipForTigris: "TODO",
+		},
+		"ReplaceNull": {
+			replace:       bson.D{{"v", nil}},
+			skipForTigris: "TODO",
+		},
+		"ReplaceEmptyDocument": {
+			replace: bson.D{},
+		},
+	}
+
+	testUpdateCompat(t, testCases)
 }
