@@ -97,7 +97,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	if !created {
 		msg := fmt.Sprintf("Collection %s.%s already exists.", db, collection)
-		return nil, common.NewErrorMsg(common.ErrNamespaceExists, msg)
+		return nil, common.NewCommandErrorMsg(common.ErrNamespaceExists, msg)
 	}
 
 	var reply wire.OpMsg

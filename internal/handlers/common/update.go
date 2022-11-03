@@ -361,7 +361,7 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			case types.Less:
 				// if document value is less than max value, update the value
 			case types.Incomparable:
-				return changed, NewErrorMsg(ErrNotImplemented, "document comparison is not implemented")
+				return changed, NewCommandErrorMsgWithArgument(ErrNotImplemented, "document comparison is not implemented", "$max")
 			}
 		}
 

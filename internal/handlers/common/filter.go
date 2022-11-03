@@ -586,6 +586,7 @@ func filterFieldRegex(fieldValue any, regex types.Regex) (bool, error) {
 	}
 
 	re, err := regex.Compile()
+	//TODO: attach operator outside this function
 	if err != nil && err == types.ErrOptionNotImplemented {
 		return false, NewErrorMsg(ErrNotImplemented, `option 'x' not implemented`)
 	}
@@ -1258,21 +1259,21 @@ func filterFieldExprElemMatch(doc *types.Document, filterKey string, exprValue a
 
 	for _, key := range expr.Keys() {
 		if slices.Contains([]string{"$text", "$where"}, key) {
-			return false, NewErrorMsg(ErrBadValue, fmt.Sprintf("%s can only be applied to the top-level document", key))
+			return false, NewCommandErrorMsgWithArgument(ErrBadValue, fmt.Sprintf("%s can only be applied to the top-level document", key), "$elemMatch")
 		}
 
 		// TODO: https://github.com/FerretDB/FerretDB/issues/730
 		if slices.Contains([]string{"$and", "$or", "$nor"}, key) {
-			return false, NewErrorMsg(ErrNotImplemented, fmt.Sprintf("$elemMatch: support for %s not implemented yet", key))
+			return false, NewCommandErrorMsgWithArgument(ErrNotImplemented, fmt.Sprintf("$elemMatch: support for %s not implemented yet", key), "$elemMatch")
 		}
 
 		// TODO: https://github.com/FerretDB/FerretDB/issues/731
 		if slices.Contains([]string{"$ne", "$not"}, key) {
-			return false, NewErrorMsg(ErrNotImplemented, fmt.Sprintf("$elemMatch: support for %s not implemented yet", key))
+			return false, NewCommandErrorMsgWithArgument(ErrNotImplemented, fmt.Sprintf("$elemMatch: support for %s not implemented yet", key), "$elemMatch")
 		}
 
 		if expr.Len() > 1 && !strings.HasPrefix(key, "$") {
-			return false, NewErrorMsg(ErrBadValue, fmt.Sprintf("unknown operator: %s", key))
+			return false, NewCommandErrorMsgWithArgument(ErrBadValue, fmt.Sprintf("unknown operator: %s", key), "$elemMatch")
 		}
 	}
 
