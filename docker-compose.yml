@@ -90,11 +90,11 @@ services:
       - .:/workdir
   textlint:
     build:
-      context: ./build/deps/textlint
-    container_name: ferretdb_textlint
+      context: ./build/deps
+      dockerfile: ferretdb-textlint.Dockerfile
+    container_name: ferretdb_ferretdb-textlint
     volumes:
       - .:/workdir
-      - /workdir/build/deps/textlint/node_modules
   docusaurus-docs:
     build:
       context: ./build/deps
