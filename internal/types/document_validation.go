@@ -129,7 +129,7 @@ func (d *Document) ValidateData() error {
 					}
 				case *Array:
 					return newValidationError(ErrValidation, fmt.Errorf(
-						"invalid value: { %q: %v } (nested arrays are not allowed)", key, FormatAnyValue(v),
+						"invalid value: { %q: %v } (nested arrays are not supported)", key, FormatAnyValue(v),
 					))
 				}
 			}
