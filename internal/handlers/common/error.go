@@ -191,14 +191,15 @@ func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
 // CheckError checks error type and returns properly translated error.
 func CheckError(err error) error {
 	var ve *types.ValidationError
+
 	if !errors.As(err, &ve) {
 		return lazyerrors.Error(err)
 	}
 
 	switch ve.Code() {
-	case types.ErrValidation:
+	case types.ErrValidation, types.ErrIDNotFound:
 		return NewErrorMsg(ErrBadValue, err.Error())
-	case types.ErrBadID:
+	case types.ErrWrongIDType:
 		return NewWriteErrorMsg(ErrInvalidID, err.Error())
 	default:
 		panic(fmt.Sprintf("Unknown error code: %v", ve.Code()))
