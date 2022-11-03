@@ -1,2 +1,4 @@
+# https://textlint.github.io/docs/ignore.html
+# node_modules are excluded by default.
+
 CHANGELOG.md
-website/node_modules/
