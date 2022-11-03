@@ -56,7 +56,6 @@ func TestQuerySort(t *testing.T) {
 			sort: bson.D{{"v", 1}, {"_id", 1}},
 			expectedIDs: []any{
 				"array-empty",
-				"array-embedded",
 				"array-null",
 				"array-three",
 				"array-three-reverse",
@@ -119,7 +118,6 @@ func TestQuerySort(t *testing.T) {
 				"objectid-empty",
 				"binary",
 				"binary-empty",
-				"array-embedded",
 				"document-composite-reverse",
 				"document-composite",
 				"document",
@@ -318,7 +316,7 @@ func TestQueryCount(t *testing.T) {
 	}{
 		"CountAllDocuments": {
 			command:  bson.D{{"count", collection.Name()}},
-			response: 52,
+			response: 47,
 		},
 		"CountExactlyOneDocument": {
 			command: bson.D{
@@ -339,7 +337,7 @@ func TestQueryCount(t *testing.T) {
 				{"count", collection.Name()},
 				{"query", bson.D{{"v", bson.D{{"$type", "array"}}}}},
 			},
-			response: 11,
+			response: 6,
 		},
 		"CountNonExistingCollection": {
 			command: bson.D{

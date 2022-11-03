@@ -118,8 +118,8 @@ func TestQueryElementType(t *testing.T) {
 		"Array": {
 			v: "array",
 			expectedIDs: []any{
-				"array", "array-embedded", "array-empty", "array-empty-nested", "array-first-embedded", "array-last-embedded",
-				"array-middle-embedded", "array-null", "array-three", "array-three-reverse", "array-two",
+				"array", "array-empty",
+				"array-null", "array-three", "array-three-reverse", "array-two",
 			},
 		},
 		"Double": {
@@ -152,7 +152,7 @@ func TestQueryElementType(t *testing.T) {
 		"Null": {
 			v: "null",
 			expectedIDs: []any{
-				"array-first-embedded", "array-last-embedded", "array-middle-embedded", "array-null", "array-three",
+				"array-null", "array-three",
 				"array-three-reverse", "null",
 			},
 		},
