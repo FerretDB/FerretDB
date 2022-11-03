@@ -95,12 +95,18 @@ services:
     volumes:
       - .:/workdir
       - /workdir/build/deps/textlint/node_modules
-  docusaurus:
+  docusaurus-docs:
     build:
-      context: ./website
-    container_name: ferretdb_docusaurus
+      context: ./build/deps
+      dockerfile: docusaurus-docs.Dockerfile
+    container_name: ferretdb_docusaurus-docs
     ports:
       - 3000:3000
     volumes:
-      - .:/workdir
-      - /workdir/website/node_modules
+      - ./website/docs:/workdir/docusaurus-docs/docs:ro
+      - ./website/src:/workdir/docusaurus-docs/src:ro
+      - ./website/static:/workdir/docusaurus-docs/static:ro
+      - ./website/babel.config.js:/workdir/docusaurus-docs/babel.config.js:ro
+      - ./website/docusaurus.config.js:/workdir/docusaurus-docs/docusaurus.config.js:ro
+      - ./website/sidebars.js:/workdir/docusaurus-docs/sidebars.js:ro
+      - ./website/build:/workdir/docusaurus-docs/build:rw
