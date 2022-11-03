@@ -81,18 +81,18 @@ services:
       - ./build/rpm:/rpm
 
   # for documentation
-  markdownlint:
-    build:
-      context: ./build/deps
-      dockerfile: markdownlint.Dockerfile
-    container_name: ferretdb_markdownlint
-    volumes:
-      - .:/workdir
   textlint:
     build:
       context: ./build/deps
       dockerfile: ferretdb-textlint.Dockerfile
     container_name: ferretdb_ferretdb-textlint
+    volumes:
+      - .:/workdir
+  markdownlint:
+    build:
+      context: ./build/deps
+      dockerfile: markdownlint.Dockerfile
+    container_name: ferretdb_markdownlint
     volumes:
       - .:/workdir
   docusaurus-docs:
