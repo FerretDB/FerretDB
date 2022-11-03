@@ -268,7 +268,7 @@ func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.A
 	switch projectionValue := projectionValue.(type) {
 	case *types.Array:
 		if projectionValue.Len() < 2 || projectionValue.Len() > 3 {
-			return nil, NewErrorMsg(
+			return nil, NewCommandErrorMsgWithArgument(
 				ErrInvalidArg,
 				fmt.Sprintf(
 					"Invalid $slice syntax. The given syntax "+
@@ -279,17 +279,19 @@ func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.A
 						"Expression $slice takes at least 2 arguments, and at most 3, but %d were passed in.",
 					projectionValue.Len(),
 				),
+				"$slice",
 			)
 		}
 
 		if projectionValue.Len() == 3 {
 			// this is the error MongoDB 5.0 is returning in this case
-			return nil, NewErrorMsg(
+			return nil, NewCommandErrorMsgWithArgument(
 				ErrSliceFirstArg,
 				fmt.Sprintf(
 					"First argument to $slice must be an array, but is of type: %s",
 					AliasFromType(must.NotFail(projectionValue.Get(0))),
 				),
+				"$slice",
 			)
 		}
 
@@ -299,13 +301,14 @@ func filterFieldArraySlice(docValue *types.Array, projectionValue any) (*types.A
 		return projectionSliceSingleArg(docValue, projectionValue), nil
 
 	default:
-		return nil, NewErrorMsg(
+		return nil, NewCommandErrorMsgWithArgument(
 			ErrInvalidArg,
 			"Invalid $slice syntax. The given syntax "+
 				"did not match the find() syntax because :: Location31273: "+
 				"$slice only supports numbers and [skip, limit] arrays :: "+
 				"The given syntax did not match the expression $slice syntax. :: caused by :: "+
 				"Expression $slice takes at least 2 arguments, and at most 3, but 1 were passed in.",
+			"$slice",
 		)
 	}
 }
@@ -398,22 +401,24 @@ func projectionSliceMultiArgs(arr, args *types.Array) (*types.Array, error) {
 			pair[i] = int(v)
 
 		default:
-			return nil, NewErrorMsg(
+			return nil, NewCommandErrorMsgWithArgument(
 				ErrSliceFirstArg,
 				fmt.Sprintf(
 					"First argument to $slice must be an array, but is of type: %s",
 					AliasFromType(must.NotFail(args.Get(0))),
 				),
+				"$slice",
 			)
 		}
 
 		if i == 1 && pair[i] < 0 { // limit can't be negative in case of 2 arguments
-			return nil, NewErrorMsg(
+			return nil, NewCommandErrorMsgWithArgument(
 				ErrSliceFirstArg,
 				fmt.Sprintf(
 					"First argument to $slice must be an array, but is of type: %s",
 					AliasFromType(must.NotFail(args.Get(0))),
 				),
+				"$slice",
 			)
 		}
 	}

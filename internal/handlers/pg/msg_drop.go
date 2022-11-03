@@ -55,7 +55,7 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	case err == nil:
 		// nothing
 	case errors.Is(err, pgdb.ErrSchemaNotExist), errors.Is(err, pgdb.ErrTableNotExist):
-		return nil, common.NewCommandErrorMsgWithArgument(common.ErrNamespaceNotFound, "ns not found", "drop")
+		return nil, common.NewCommandErrorMsg(common.ErrNamespaceNotFound, "ns not found")
 	default:
 		return nil, lazyerrors.Error(err)
 	}

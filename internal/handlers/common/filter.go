@@ -1254,7 +1254,7 @@ func filterFieldExprElemMatch(doc *types.Document, filterKey string, exprValue a
 
 	expr, ok := exprValue.(*types.Document)
 	if !ok {
-		return false, NewErrorMsg(ErrBadValue, "$elemMatch needs an Object")
+		return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$elemMatch needs an Object", "$elemMatch")
 	}
 
 	for _, key := range expr.Keys() {

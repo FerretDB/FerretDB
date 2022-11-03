@@ -37,12 +37,14 @@ func MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	switch action {
 	case "enable", "disable":
-		return nil, NewErrorMsg(
+		return nil, NewCommandErrorMsgWithArgument(
 			ErrFreeMonitoringDisabled,
 			"Free Monitoring has been disabled via the command-line and/or config file",
+			action,
 		)
 
 	default:
+		// TODO: invalid value?
 		return nil, NewErrorMsg(
 			ErrBadValue,
 			fmt.Sprintf(

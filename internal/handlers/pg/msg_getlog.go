@@ -47,10 +47,9 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	if _, ok := getLog.(types.NullType); ok {
-		return nil, common.NewCommandErrorMsgWithArgument(
+		return nil, common.NewCommandErrorMsg(
 			common.ErrMissingField,
 			`BSON field 'getLog.getLog' is missing but a required field`,
-			"getLog",
 		)
 	}
 

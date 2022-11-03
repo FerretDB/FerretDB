@@ -23,5 +23,5 @@ import (
 
 // MsgExplain implements HandlerInterface.
 func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, common.NewCommandErrorMsgWithArgument(common.ErrNotImplemented, "`explain` command is not implemented yet", "explain")
+	return nil, common.NewCommandErrorMsg(common.ErrNotImplemented, "`explain` command is not implemented yet")
 }

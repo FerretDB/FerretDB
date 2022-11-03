@@ -237,7 +237,7 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 func parseTypeCode(alias string) (typeCode, error) {
 	code, ok := aliasToTypeCode[alias]
 	if !ok {
-		return 0, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Unknown type name alias: %s`, alias))
+		return 0, NewCommandErrorMsgWithArgument(ErrBadValue, fmt.Sprintf(`Unknown type name alias: %s`, alias), "$type")
 	}
 
 	return code, nil

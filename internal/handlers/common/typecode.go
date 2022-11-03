@@ -53,7 +53,7 @@ const (
 	typeCodeNumber = typeCode(-128) // number
 )
 
-// newTypeCode returns typeCde and error by given code.
+// newTypeCode returns typeCode and error by given code.
 func newTypeCode(code int32) (typeCode, error) {
 	c := typeCode(code)
 	switch c {
@@ -62,9 +62,9 @@ func newTypeCode(code int32) (typeCode, error) {
 		typeCodeNull, typeCodeRegex, typeCodeInt, typeCodeTimestamp, typeCodeLong, typeCodeNumber:
 		return c, nil
 	case typeCodeDecimal, typeCodeMinKey, typeCodeMaxKey:
-		return 0, NewErrorMsg(ErrNotImplemented, fmt.Sprintf(`Type code %v not implemented`, code))
+		return 0, NewCommandErrorMsgWithArgument(ErrNotImplemented, fmt.Sprintf(`Type code %v not implemented`, code), "$type")
 	default:
-		return 0, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %d`, code))
+		return 0, NewCommandErrorMsgWithArgument(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %d`, code), "$type")
 	}
 }
 
