@@ -57,7 +57,7 @@ It accepts any of the following values: `0`, `f`, `disable`, `no`, `false`, `n`,
 
 2. Set the custom environment variable FERRETDB_TELEMETRY to accept any of the values available for the command-line flag.
 
-   ```js
+   ```text
    FERRETDB_TELEMETRY=disable
    ```
 
