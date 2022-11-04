@@ -31,13 +31,13 @@ func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		return nil, lazyerrors.Error(err)
 	}
 
-	stats, err := h.PgPool.SchemaStats(ctx, "", "")
+	_, err = h.PgPool.SchemaStats(ctx, "", "")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	res.Set("catalogStats", must.NotFail(types.NewDocument(
-		"collections", stats.CountTables,
+		"collections", int32(0),
 		"capped", int32(0),
 		"timeseries", int32(0),
 		"views", int32(0),
