@@ -76,7 +76,7 @@ func TestDocumentValidateData(t *testing.T) {
 				"_id", "1",
 				"foo", must.NotFail(NewArray("bar", must.NotFail(NewArray("baz")))),
 			)),
-			reason: errors.New(`invalid value: { "foo": [ "bar", [ "baz" ] ] } (nested arrays are not allowed)`),
+			reason: errors.New(`invalid value: { "foo": [ "bar", [ "baz" ] ] } (nested arrays are not supported)`),
 		},
 		"NestedDocumentNestedArray": {
 			doc: must.NotFail(NewDocument(
@@ -85,7 +85,7 @@ func TestDocumentValidateData(t *testing.T) {
 					"bar", must.NotFail(NewArray("baz", must.NotFail(NewArray("qaz")))),
 				)),
 			)),
-			reason: errors.New(`invalid value: { "bar": [ "baz", [ "qaz" ] ] } (nested arrays are not allowed)`),
+			reason: errors.New(`invalid value: { "bar": [ "baz", [ "qaz" ] ] } (nested arrays are not supported)`),
 		},
 		"ArrayDocumentNestedArray": {
 			doc: must.NotFail(NewDocument(
@@ -96,7 +96,7 @@ func TestDocumentValidateData(t *testing.T) {
 					)),
 				)),
 			)),
-			reason: errors.New(`invalid value: { "bar": [ "baz", [ "qaz" ] ] } (nested arrays are not allowed)`),
+			reason: errors.New(`invalid value: { "bar": [ "baz", [ "qaz" ] ] } (nested arrays are not supported)`),
 		},
 	} {
 		name, tc := name, tc
