@@ -185,3 +185,7 @@ issues:
     # that's a valid usage of bson.D
     - linters: [govet]
       text: "`go.mongodb.org/mongo-driver/bson/primitive.E` composite literal uses unkeyed fields"
+
+    # we don't want to introduce that constant
+    - linters: [goconst]
+      text: "^string `_id` has \\d+ occurrences, make it a constant"

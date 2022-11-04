@@ -89,7 +89,7 @@ func (d *Document) ValidateData() error {
 		}
 		duplicateChecker[key] = struct{}{}
 
-		if key == idKey {
+		if key == "_id" {
 			idPresent = true
 		}
 
@@ -108,7 +108,7 @@ func (d *Document) ValidateData() error {
 				return err
 			}
 		case *Array:
-			if key == idKey {
+			if key == "_id" {
 				return newValidationError(ErrWrongIDType, fmt.Errorf("The '_id' value cannot be of type array"))
 			}
 
@@ -129,7 +129,7 @@ func (d *Document) ValidateData() error {
 					}
 				case *Array:
 					return newValidationError(ErrValidation, fmt.Errorf(
-						"invalid value: { %q: %v } (nested arrays are not allowed)", key, FormatAnyValue(v),
+						"invalid value: { %q: %v } (nested arrays are not supported)", key, FormatAnyValue(v),
 					))
 				}
 			}
@@ -141,7 +141,7 @@ func (d *Document) ValidateData() error {
 				)
 			}
 		case Regex:
-			if key == idKey {
+			if key == "_id" {
 				return newValidationError(ErrWrongIDType, fmt.Errorf("The '_id' value cannot be of type regex"))
 			}
 		}
