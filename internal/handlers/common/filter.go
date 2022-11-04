@@ -624,7 +624,7 @@ func filterFieldExprRegex(fieldValue any, regexValue, optionsValue any) (bool, e
 	if optionsValue != nil {
 		var ok bool
 		if options, ok = optionsValue.(string); !ok {
-			return false, NewErrorMsg(ErrBadValue, "$options has to be a string")
+			return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$options has to be a string", "$options")
 		}
 	}
 
@@ -639,6 +639,7 @@ func filterFieldExprRegex(fieldValue any, regexValue, optionsValue any) (bool, e
 	case types.Regex:
 		if options != "" {
 			if regexValue.Options != "" {
+				//TODO: regex or options
 				return false, NewErrorMsg(ErrRegexOptions, "options set in both $regex and $options")
 			}
 			regexValue.Options = options
@@ -646,7 +647,7 @@ func filterFieldExprRegex(fieldValue any, regexValue, optionsValue any) (bool, e
 		return filterFieldRegex(fieldValue, regexValue)
 
 	default:
-		return false, NewErrorMsg(ErrBadValue, "$regex has to be a string")
+		return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$regex has to be a string", "$regex")
 	}
 }
 
@@ -661,30 +662,34 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 	if err != nil {
 		switch err {
 		case errUnexpectedType:
-			return false, NewError(
+			return false, NewCommandErrorMsgWithArgument(
 				ErrBadValue,
-				fmt.Errorf(`Failed to parse $size. Expected a number in: $size: %s`, types.FormatAnyValue(sizeValue)),
+				fmt.Sprintf(`Failed to parse $size. Expected a number in: $size: %s`, types.FormatAnyValue(sizeValue)),
+				"$size",
 			)
 		case errNotWholeNumber:
-			return false, NewError(
+			return false, NewCommandErrorMsgWithArgument(
 				ErrBadValue,
-				fmt.Errorf(`Failed to parse $size. Expected an integer: $size: %s`, types.FormatAnyValue(sizeValue)),
+				fmt.Sprintf(`Failed to parse $size. Expected an integer: $size: %s`, types.FormatAnyValue(sizeValue)),
+				"$size",
 			)
 		case errNaN:
-			return false, NewError(
+			return false, NewCommandErrorMsgWithArgument(
 				ErrBadValue,
-				fmt.Errorf(
+				fmt.Sprintf(
 					`Failed to parse $size. Expected an integer, but found NaN in: $size: %s`,
 					types.FormatAnyValue(sizeValue),
 				),
+				"$size",
 			)
 		case errInfinity:
-			return false, NewError(
+			return false, NewCommandErrorMsgWithArgument(
 				ErrBadValue,
-				fmt.Errorf(
+				fmt.Sprintf(
 					`Failed to parse $size. Cannot represent as a 64-bit integer: $size: %s`,
 					types.FormatAnyValue(sizeValue),
 				),
+				"$size",
 			)
 		default:
 			return false, err
@@ -692,12 +697,13 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 	}
 
 	if size < 0 {
-		return false, NewError(
+		return false, NewCommandErrorMsgWithArgument(
 			ErrBadValue,
-			fmt.Errorf(
+			fmt.Sprintf(
 				`Failed to parse $size. Expected a non-negative number in: $size: %s`,
 				types.FormatAnyValue(sizeValue),
 			),
+			"$size",
 		)
 	}
 
@@ -714,7 +720,7 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 func filterFieldExprAll(fieldValue any, allValue any) (bool, error) {
 	query, ok := allValue.(*types.Array)
 	if !ok {
-		return false, NewErrorMsg(ErrBadValue, "$all needs an array")
+		return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$all needs an array", "$all")
 	}
 
 	if query.Len() == 0 {
@@ -808,7 +814,7 @@ func filterFieldExprBitsAllSet(fieldValue, maskValue any) (bool, error) {
 
 	case types.Binary:
 		// TODO: https://github.com/FerretDB/FerretDB/issues/508
-		return false, NewErrorMsg(ErrNotImplemented, "BinData() not supported yet")
+		return false, NewCommandErrorMsgWithArgument(ErrNotImplemented, "BinData() not supported yet", "$bitsAllSet")
 
 	case int32:
 		bitmask, err := getBinaryMaskParam(maskValue)
@@ -852,7 +858,7 @@ func filterFieldExprBitsAnyClear(fieldValue, maskValue any) (bool, error) {
 
 	case types.Binary:
 		// TODO: https://github.com/FerretDB/FerretDB/issues/508
-		return false, NewErrorMsg(ErrNotImplemented, "BinData() not supported yet")
+		return false, NewCommandErrorMsgWithArgument(ErrNotImplemented, "BinData() not supported yet", "$bitsAnyClear")
 
 	case int32:
 		bitmask, err := getBinaryMaskParam(maskValue)
@@ -896,7 +902,7 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 
 	case types.Binary:
 		// TODO: https://github.com/FerretDB/FerretDB/issues/508
-		return false, NewErrorMsg(ErrNotImplemented, "BinData() not supported yet")
+		return false, NewCommandErrorMsgWithArgument(ErrNotImplemented, "BinData() not supported yet", "$bitsAnySet")
 
 	case int32:
 		bitmask, err := getBinaryMaskParam(maskValue)
@@ -944,23 +950,23 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 
 	arr := exprValue.(*types.Array)
 	if arr.Len() < 2 {
-		return false, NewErrorMsg(ErrBadValue, `malformed mod, not enough elements`)
+		return false, NewCommandErrorMsgWithArgument(ErrBadValue, `malformed mod, not enough elements`, "$mod")
 	}
 	if arr.Len() > 2 {
-		return false, NewErrorMsg(ErrBadValue, `malformed mod, too many elements`)
+		return false, NewCommandErrorMsgWithArgument(ErrBadValue, `malformed mod, too many elements`, "$mod")
 	}
 
 	switch d := must.NotFail(arr.Get(0)).(type) {
 	case float64:
 		if math.IsNaN(d) || math.IsInf(d, 0) {
-			return false, NewErrorMsg(ErrBadValue, `malformed mod, divisor value is invalid :: caused by :: `+
-				`Unable to coerce NaN/Inf to integral type`)
+			return false, NewCommandErrorMsgWithArgument(ErrBadValue, `malformed mod, divisor value is invalid :: caused by :: `+
+				`Unable to coerce NaN/Inf to integral type`, "$mod")
 		}
 
 		d = math.Trunc(d)
 		if d >= float64(math.MaxInt64) || d < float64(math.MinInt64) {
-			return false, NewErrorMsg(ErrBadValue, `malformed mod, divisor value is invalid :: caused by :: `+
-				`Out of bounds coercing to integral value`)
+			return false, NewCommandErrorMsgWithArgument(ErrBadValue, `malformed mod, divisor value is invalid :: caused by :: `+
+				`Out of bounds coercing to integral value`, "$mod")
 		}
 
 		divisor = int64(d)
@@ -975,21 +981,21 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 		divisor = d
 
 	default:
-		return false, NewErrorMsg(ErrBadValue, `malformed mod, divisor not a number`)
+		return false, NewCommandErrorMsgWithArgument(ErrBadValue, `malformed mod, divisor not a number`, "$mod")
 	}
 
 	switch r := must.NotFail(arr.Get(1)).(type) {
 	case float64:
 		if math.IsNaN(r) || math.IsInf(r, 0) {
-			return false, NewErrorMsg(ErrBadValue, `malformed mod, remainder value is invalid :: caused by :: `+
-				`Unable to coerce NaN/Inf to integral type`)
+			return false, NewCommandErrorMsgWithArgument(ErrBadValue, `malformed mod, remainder value is invalid :: caused by :: `+
+				`Unable to coerce NaN/Inf to integral type`, "$mod")
 		}
 
 		r = math.Trunc(r)
 
 		if r >= float64(math.MaxInt64) || r < float64(-9.223372036854776832e+18) {
-			return false, NewErrorMsg(ErrBadValue, `malformed mod, remainder value is invalid :: caused by :: `+
-				`Out of bounds coercing to integral value`)
+			return false, NewCommandErrorMsgWithArgument(ErrBadValue, `malformed mod, remainder value is invalid :: caused by :: `+
+				`Out of bounds coercing to integral value`, "$mod")
 		}
 
 		remainder = int64(r)
@@ -1005,11 +1011,11 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 		remainder = r
 
 	default:
-		return false, NewErrorMsg(ErrBadValue, `malformed mod, remainder not a number`)
+		return false, NewCommandErrorMsgWithArgument(ErrBadValue, `malformed mod, remainder not a number`, "$mod")
 	}
 
 	if divisor == 0 {
-		return false, NewErrorMsg(ErrBadValue, `divisor cannot be 0`)
+		return false, NewCommandErrorMsgWithArgument(ErrBadValue, `divisor cannot be 0`, "$mod")
 	}
 
 	f := field % divisor
@@ -1234,9 +1240,9 @@ func filterFieldValueByTypeCode(fieldValue any, code typeCode) (bool, error) {
 			return false, nil
 		}
 	case typeCodeDecimal, typeCodeMinKey, typeCodeMaxKey:
-		return false, NewErrorMsg(ErrNotImplemented, fmt.Sprintf(`Type code %v not implemented`, code))
+		return false, NewCommandErrorMsgWithArgument(ErrNotImplemented, fmt.Sprintf(`Type code %v not implemented`, code), "$type")
 	default:
-		return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Unknown type name alias: %s`, code.String()))
+		return false, NewCommandErrorMsgWithArgument(ErrBadValue, fmt.Sprintf(`Unknown type name alias: %s`, code.String()), "$type")
 	}
 
 	return true, nil
