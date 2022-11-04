@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Telemetry reporting
 
-The telemetry service collects anonymous usage data on FerretDB to help us achieve compatibility and enhance our product.
+FerretDB collects anonymous usage data and sends them to our telemetry service, which helps us understand its usage, and how we can further increase compatibility and enhance our product.
 
 It enables us to provide automated checks and updates on available versions.
 
@@ -22,9 +22,9 @@ The following usage data will be collected:
 
 ## Version notification
 
-The telemetry service sends periodic reports containing information about the latest FerretDB version.
+When a FerretDB update is available, the telemetry service sends periodic reports containing information about the latest FerretDB version.
 
-This information is recorded in the server logs, startupWarnings, and serverStatus outputs.
+This information is logged in the server logs, startupWarnings, and serverStatus outputs.
 
 While you may not upgrade to the latest release immediately, ensure that you update early to take advantage of recent bug fixes, new features, and performance improvements.
 
@@ -43,7 +43,7 @@ We urge you not to disable this service, as its insights will help us enhance ou
 While we are grateful for these usage insights, we understand that not everyone is comfortable with sending them.
 
 :::caution
-If you disable telemetry, automated version checks and updates will not be available.
+If you disable telemetry, automated version checks and information on updates will not be available.
 :::
 
 Telemetry can be disabled using any of the following options:
