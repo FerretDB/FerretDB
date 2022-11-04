@@ -1050,11 +1050,11 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 			switch exprValue := exprValue.(type) {
 			case float64:
 				if math.IsNaN(exprValue) || math.IsInf(exprValue, 0) {
-					return false, NewErrorMsg(ErrBadValue, `Invalid numerical type code: `+
-						strings.Trim(strings.ToLower(fmt.Sprintf("%v", exprValue)), "+"))
+					return false, NewCommandErrorMsgWithArgument(ErrBadValue, `Invalid numerical type code: `+
+						strings.Trim(strings.ToLower(fmt.Sprintf("%v", exprValue)), "+"), "$type")
 				}
 				if exprValue != math.Trunc(exprValue) {
-					return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %v`, exprValue))
+					return false, NewCommandErrorMsgWithArgument(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %v`, exprValue), "$type")
 				}
 
 				code, err := newTypeCode(int32(exprValue))
@@ -1104,18 +1104,18 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 					return true, nil
 				}
 			default:
-				return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %s`, exprValue))
+				return false, NewCommandErrorMsgWithArgument(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %s`, exprValue), "$type")
 			}
 		}
 		return false, nil
 
 	case float64:
 		if math.IsNaN(exprValue) || math.IsInf(exprValue, 0) {
-			return false, NewErrorMsg(ErrBadValue, `Invalid numerical type code: `+
-				strings.Trim(strings.ToLower(fmt.Sprintf("%v", exprValue)), "+"))
+			return false, NewCommandErrorMsgWithArgument(ErrBadValue, `Invalid numerical type code: `+
+				strings.Trim(strings.ToLower(fmt.Sprintf("%v", exprValue)), "+"), "$type")
 		}
 		if exprValue != math.Trunc(exprValue) {
-			return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %v`, exprValue))
+			return false, NewCommandErrorMsgWithArgument(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %v`, exprValue), "$type")
 		}
 
 		code, err := newTypeCode(int32(exprValue))
@@ -1142,7 +1142,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 		return filterFieldValueByTypeCode(fieldValue, code)
 
 	default:
-		return false, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %v`, exprValue))
+		return false, NewCommandErrorMsgWithArgument(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %v`, exprValue), "$type")
 	}
 }
 
