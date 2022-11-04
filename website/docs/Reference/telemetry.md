@@ -1,12 +1,10 @@
 ---
-
 sidebar_position: 1
-
 ---
 
 # Telemetry reporting
 
-FerretDB collects anonymous usage data to help us achieve compatibility and enhance our product.
+The telemetry service collects anonymous usage data on FerretDB to help us achieve compatibility and enhance our product.
 
 It enables us to provide automated checks and updates on available versions.
 
@@ -19,7 +17,7 @@ The following usage data will be collected:
 * Backend - PostgreSQL or Tigris
 * Build configuration - including build tags and installation type (Docker, package, self-built)
 * Query errors - error code, command name, and query operator name
-* Autonomous system number, cloud provider region, and country
+* Autonomous system number, cloud provider region, and country derived by temporarily logging IP address
 * Uptime performance (seconds) - the amount of time it takes to execute a particular FerretDB command
 
 ## Version notification
@@ -50,19 +48,26 @@ If you disable telemetry, automated version checks and updates will not be avail
 
 Telemetry can be disabled using any of the following options:
 
-1. Use a command-line flag: To disable telemetry, run the command-line flag `--telemetry` and assign any of these values to it: `0`, `f`, `disable`, `no`, `false`, `n`, `disabled`, `optout`, `opt-out`, `disallow`, `forbid`.
+1. Pass the command-line flag `--telemetry` to the FerretDB executable.
+It accepts any of the following values: `0`, `f`, `disable`, `no`, `false`, `n`, `disabled`, `optout`, `opt-out`, `disallow`, `forbid`.
 
    ```sh
    --telemetry=disable
    ```
 
-2. Use an environment variable: To disable telemetry, assign any of these values to the `DO_NOT_TRACK` environment variable: `1`, `t`, `true`, or `enable`.
+2. Set the custom environment variable FERRETDB_TELEMETRY to accept any of the values available for the command-line flag.
 
-   ```sh
-   DO_NOT_TRACK=true
+   ```js
+   FERRETDB_TELEMETRY=disable
    ```
 
-3. Rename FerretDB executable to include a `donottrack` string.
+3. Export the `DO_NOT_TRACK` environment variable with any of the following values: `1`, `t`, `enable`, `yes`, `true`, `y`, `enabled`, `optin`, `opt-in`, `allow`, `forbid`.
+
+   ```sh
+   export DO_NOT_TRACK=true
+   ```
+
+4. Rename FerretDB executable to include a `donottrack` string.
 
    :::caution
    If telemetry is disabled using this option, you cannot run the `--telemetry` flag until the `donottrack` string is removed.
