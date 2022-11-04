@@ -30,7 +30,7 @@ While you may not upgrade to the latest release immediately, ensure that you upd
 
 ## Configure telemetry
 
-The telemetry service has three state settings: enabled, disabled, and undecided (default).
+The telemetry service has three state settings: `enabled`, `disabled`, and `undecided` (default).
 
 :::info
 When the state setting is `undecided`, users have a delay period of one hour after startup before telemetry data is reported.
