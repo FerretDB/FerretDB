@@ -72,8 +72,6 @@ jobs:
         uses: actionsdesk/lfs-warning@v3.2
         with:
           filesizelimit: 1MB
-          exclusionPatterns: |
-            **/*.png
 
   pages:
     name: Deploy to Pages
