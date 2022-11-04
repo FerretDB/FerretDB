@@ -180,7 +180,9 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 // If schema is empty, it calculates statistics across the whole PostgreSQL database.
 // If collection is empty it calculates statistics across the whole PostgreSQL schema.
 func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) (*DBStats, error) {
-	return nil, nil
+	return &DBStats{
+		Name: schema,
+	}, nil
 }
 
 // InTransaction wraps the given function f in a transaction.
