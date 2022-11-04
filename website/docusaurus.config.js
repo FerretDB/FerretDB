@@ -56,8 +56,8 @@ const config = {
       navbar: {
         logo: {
           alt: 'FerretDB Logo',
-          src: 'img/logo_dark.png',
-          srcDark:'img/logo_light.png'
+          src: 'img/logo_black.png',
+          srcDark:'img/logo_white.png'
         },
         items: [
           {
