@@ -210,7 +210,7 @@ func applyComplexProjection(k1 string, doc, projectionVal *types.Document) (err 
 
 			doc.Set(k1, res)
 		default:
-			return NewError(ErrCommandNotFound,
+			return NewCommandError(ErrCommandNotFound,
 				lazyerrors.Errorf("applyComplexProjection: unknown projection operator: %q", projectionType),
 			)
 		}

@@ -568,8 +568,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			}
 
 		default:
-			// TODO:
-			return false, NewErrorMsg(ErrBadValue, fmt.Sprintf("unknown operator: %s", exprKey))
+			return false, NewCommandErrorMsgWithArgument(ErrBadValue, fmt.Sprintf("unknown operator: %s", exprKey), "$operator")
 		}
 	}
 
@@ -581,17 +580,17 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 func filterFieldRegex(fieldValue any, regex types.Regex) (bool, error) {
 	for _, option := range regex.Options {
 		if !slices.Contains([]rune{'i', 'm', 's', 'x'}, option) {
-			return false, NewError(ErrBadRegexOption, fmt.Errorf("invalid flag in regex options: %c", option))
+			return false, NewCommandErrorMsgWithArgument(ErrBadRegexOption, fmt.Sprintf("invalid flag in regex options: %c", option), "$options")
 		}
 	}
 
 	re, err := regex.Compile()
-	//TODO: attach operator outside this function
 	if err != nil && err == types.ErrOptionNotImplemented {
-		return false, NewErrorMsg(ErrNotImplemented, `option 'x' not implemented`)
+		// TODO: options can be set both in $options or $regex so it's hard to specify here the valid field
+		return false, NewCommandErrorMsgWithArgument(ErrNotImplemented, `option 'x' not implemented`, "$options")
 	}
 	if err != nil {
-		return false, NewError(ErrRegexMissingParen, err)
+		return false, NewCommandErrorMsgWithArgument(ErrRegexMissingParen, err.Error(), "$regex")
 	}
 
 	switch fieldValue := fieldValue.(type) {

@@ -128,7 +128,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	default:
-		return nil, common.NewError(
+		return nil, common.NewCommandError(
 			common.ErrOperationFailed,
 			fmt.Errorf("no RecentEntries named: %s", getLog),
 		)
