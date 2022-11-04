@@ -68,8 +68,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var ok bool
 	if fp.Collection, ok = collectionParam.(string); !ok {
-		// TODO: ?
-		return nil, common.NewErrorMsg(
+		return nil, common.NewCommandErrorMsg(
 			common.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
 		)

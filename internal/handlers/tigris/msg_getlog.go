@@ -46,7 +46,6 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	if _, ok := getLog.(types.NullType); ok {
-		// TODO: ?
 		return nil, common.NewCommandErrorMsg(
 			common.ErrMissingField,
 			`BSON field 'getLog.getLog' is missing but a required field`,
@@ -131,8 +130,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	default:
-		//TODO: ??
-		return nil, common.NewError(
+		return nil, common.NewCommandError(
 			common.ErrOperationFailed,
 			fmt.Errorf("no RecentEntries named: %s", getLog),
 		)

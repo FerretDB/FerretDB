@@ -54,7 +54,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	if _, ok := getLog.(string); !ok {
-		return nil, common.NewError(
+		return nil, common.NewCommandError(
 			common.ErrTypeMismatch,
 			fmt.Errorf(
 				"BSON field 'getLog.getLog' is the wrong type '%s', expected type 'string'",

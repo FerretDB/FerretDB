@@ -28,7 +28,6 @@ func GetRequiredParam[T types.Type](doc *types.Document, key string) (T, error) 
 
 	v, err := doc.Get(key)
 	if err != nil {
-		//TODO: what if parameter is missing
 		msg := fmt.Sprintf("required parameter %q is missing", key)
 		return zero, NewCommandErrorMsgWithArgument(ErrBadValue, msg, key)
 	}

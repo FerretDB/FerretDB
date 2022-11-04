@@ -44,14 +44,14 @@ func MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		)
 
 	default:
-		// TODO: invalid value?
-		return nil, NewErrorMsg(
+		return nil, NewCommandErrorMsgWithArgument(
 			ErrBadValue,
 			fmt.Sprintf(
 				"Enumeration value '%s' for field '%s' is not a valid value.",
 				action,
 				command+".action",
 			),
+			"action",
 		)
 	}
 }

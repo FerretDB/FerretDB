@@ -241,8 +241,7 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 				`If you have a field name that starts with a '$' symbol, consider using $getField or $setField.`,
 			operator,
 		)
-		// TODO: unknown operator???
-		return false, NewErrorMsg(ErrBadValue, msg)
+		return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, "$operator")
 	}
 }
 
