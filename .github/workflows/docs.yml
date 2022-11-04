@@ -27,11 +27,18 @@ jobs:
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
+    permissions: read-all
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
           lfs: true
+
+      - name: Check LFS status
+        uses: actionsdesk/lfs-warning@v3.2
+        with:
+          filesizelimit: 1MB
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
@@ -67,11 +74,6 @@ jobs:
         run: |
           git status
           git diff --exit-code
-
-      - name: Lfs warning
-        uses: actionsdesk/lfs-warning@v3.2
-        with:
-          filesizelimit: 1MB
 
   pages:
     name: Deploy to Pages
