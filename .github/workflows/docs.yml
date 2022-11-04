@@ -68,6 +68,14 @@ jobs:
           git status
           git diff --exit-code
 
+      - name: lfs warning
+        uses: actionsdesk/lfs-warning@v3.2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          filesizelimit: 10MB
+          exclusionPatterns: |
+          **/*.png
+
   pages:
     name: Deploy to Pages
     runs-on: ubuntu-20.04
