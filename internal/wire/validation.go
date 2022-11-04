@@ -22,14 +22,17 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// ValidationError is used for reporting validation errors.
 type ValidationError struct {
 	msg string
 }
 
+// Error implements error interface.
 func (v ValidationError) Error() string {
 	return v.msg
 }
 
+// NewValidationError returns new ValidationError.
 func NewValidationError(err error) error {
 	return &ValidationError{msg: err.Error()}
 }
