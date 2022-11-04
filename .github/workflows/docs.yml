@@ -27,8 +27,6 @@ jobs:
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
-    permissions: read-all
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -36,6 +34,7 @@ jobs:
           lfs: true
 
       - name: Check LFS status
+        if: false # TODO https://github.com/ActionsDesk/lfs-warning/issues/147
         uses: actionsdesk/lfs-warning@v3.2
         with:
           filesizelimit: 1MB
