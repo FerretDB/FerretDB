@@ -976,7 +976,11 @@ func TestCommandsAdministrationServerStatusStress(t *testing.T) {
 			// so we create collection without schema.
 			err := db.CreateCollection(ctx, collName, &opts)
 			if err != nil {
-				if strings.Contains(err.Error(), `support for field "validator" is not implemented yet`) {
+				if strings.Contains(
+					err.Error(),
+					`unknown top level operator: $tigrisSchemaString.`+
+						` If you have a field name that starts with a '$' symbol, consider using $getField or $setField.`,
+				) {
 					err = db.CreateCollection(ctx, collName)
 				}
 			}
