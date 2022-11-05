@@ -1,5 +1,6 @@
 ---
 sidebar_position: 6
+slug: /diff/
 ---
 
 # Known differences
