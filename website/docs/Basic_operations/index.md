@@ -2,8 +2,6 @@
 sidebar_position: 1
 ---
 
-
-
 # Performing CRUD operations
 
 CRUD (Create, Read, Update, and Delete) operations in FerretDB uses the same protocols and drivers as MongoDB.
