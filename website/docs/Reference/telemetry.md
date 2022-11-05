@@ -5,29 +5,33 @@ slug: /telemetry/
 
 # Telemetry reporting
 
-FerretDB collects anonymous usage data and sends them to our telemetry service, which helps us understand its usage, and how we can further increase compatibility and enhance our product.
+FerretDB collects anonymous usage data and sends them to our telemetry service ([FerretDB Beacon](https://beacon.ferretdb.io)),
+which helps us understand its usage, and how we can further increase compatibility and enhance our product.
+It also enables us to provide information about available updates.
 
-It enables us to provide automated checks and updates on available versions.
+Your privacy is important to us, and we understand how sensitive data collection can be,
+which is why we are not collecting any personally-identifying information
+or share any of the data with third parties.
 
-Your privacy is important to us, and we understand how sensitive data collection can be, which is why we will not collect any personally-identifying information or share any of the data with third parties.
+The following data will be collected:
 
-The following usage data will be collected:
-
-* Installation UUID
 * FerretDB version
-* Backend - PostgreSQL or Tigris
-* Build configuration - including build tags and installation type (Docker, package, self-built)
-* Query errors - error code, command name, and query operator name
-* Autonomous system number, cloud provider region, and country derived by temporarily logging IP address
-* Uptime performance (seconds) - the amount of time it takes to execute a particular FerretDB command
+* Random instance UUID
+* [Autonomous system](https://en.wikipedia.org/wiki/Autonomous_system_(Internet)) number,
+  cloud provider region, or country derived from IP address (but the IP address itself)
+* Uptime
+* Backend (PostgreSQL or Tigris) version
+* Build configuration and installation type (Docker, package, self-built)
+* Query errors: error code, command name, and query operator name (but not the query itself or its values)
 
 ## Version notification
 
 When a FerretDB update is available, the telemetry service sends periodic reports containing information about the latest FerretDB version.
 
-This information is logged in the server logs, startupWarnings, and serverStatus outputs.
+This information is logged in the server logs, `startupWarnings`, and `serverStatus` command output.
 
-While you may not upgrade to the latest release immediately, ensure that you update early to take advantage of recent bug fixes, new features, and performance improvements.
+While you may not upgrade to the latest release immediately,
+ensure that you update early to take advantage of recent bug fixes, new features, and performance improvements.
 
 ## Configure telemetry
 
@@ -49,20 +53,21 @@ If you disable telemetry, automated version checks and information on updates wi
 
 Telemetry can be disabled using any of the following options:
 
-1. Pass the command-line flag `--telemetry` to the FerretDB executable.
-It accepts any of the following values: `0`, `f`, `disable`, `no`, `false`, `n`, `disabled`, `optout`, `opt-out`, `disallow`, `forbid`.
+1. Pass the command-line flag `--telemetry` to the FerretDB executable with value:
+   `0`, `f`, `false`, `n`, `no`, `off`, `disable`, `disabled`, `optout`, `opt-out`, `disallow`, `forbid`:
 
    ```sh
    --telemetry=disable
    ```
 
-2. Set the custom environment variable FERRETDB_TELEMETRY to accept any of the values available for the command-line flag.
+2. Set the environment variable `FERRETDB_TELEMETRY`:
 
-   ```text
-   FERRETDB_TELEMETRY=disable
+   ```sh
+   export FERRETDB_TELEMETRY=disable
    ```
 
-3. Export the `DO_NOT_TRACK` environment variable with any of the following values: `1`, `t`, `enable`, `yes`, `true`, `y`, `enabled`, `optin`, `opt-in`, `allow`, `forbid`.
+3. Set the `DO_NOT_TRACK` environment variable with any of the following values:
+   `1`, `t`, `true`, `y`, `yes`, `on`, `enable`, `enabled`:
 
    ```sh
    export DO_NOT_TRACK=true
@@ -71,15 +76,20 @@ It accepts any of the following values: `0`, `f`, `disable`, `no`, `false`, `n`,
 4. Rename FerretDB executable to include a `donottrack` string.
 
    :::caution
-   If telemetry is disabled using this option, you cannot run the `--telemetry` flag until the `donottrack` string is removed.
+   If telemetry is disabled using this option, you cannot use the `--telemetry` flag or environment variables
+   until the `donottrack` string is removed.
    :::
 
 ### Enable Telemetry
 
-If telemetry is disabled, enable telemetry with the command-line flag `--telemetry` and assign any of these values to it: `1`, `t`, `enable`, `yes`, `true`, `y`, `enabled`, `optin`, `opt-in`, `allow`, `forbid`.
+If telemetry is disabled, enable telemetry with the command-line flag `--telemetry` and assign any of these values to it:
+`1`, `t`, `true`, `y`, `yes`, `on`, `enable`, `enabled`, `optin`, `opt-in`, `allow`:
 
 ```sh
 --telemetry=enable
 ```
 
-If telemetry is disabled with a `donottrack` string in the executable, remove the `donottrack` string to use the command-line flag and values again.
+You can also use `FERRETDB_TELEMETRY` environment variable with same values.
+
+If telemetry is disabled with a `donottrack` string in the executable,
+remove the `donottrack` string to use the command-line flag and values again.
